@@ -73,15 +73,24 @@ class WarehouseTests(Fixture):
 
     def test_base_tables_and_cached_answers_cannot_bypass_scope(self):
         for sql in ['SELECT * FROM main.records', 'SELECT * FROM main.patients', 'SELECT * FROM results']:
-            with self.subTest(sql=sql), self.assertRaises(sqlite3.DatabaseError):
+            with self.subTest(sql=sql), self.assertRaises((sqlite3.DatabaseError,ValueError)):
                 self.warehouse.query(sql)
+
+    def test_materialized_cte_cannot_impersonate_scoped_view(self):
+        for schema in ('main','MAIN','"main"',"'main'",'[main]','`main`'):
+            sql=f'WITH records AS MATERIALIZED (SELECT * FROM {schema} /* bypass */ .records) SELECT COUNT(*) FROM records'
+            with self.subTest(schema=schema), self.assertRaises(ValueError):
+                self.warehouse.query(sql)
+
+    def test_schema_guard_does_not_reject_comments_or_payload_text(self):
+        self.assertEqual(self.warehouse.query("SELECT 'main.records' AS label /* main.records */")['rows'],[{'label':'main.records'}])
 
     def test_mutations_attach_pragmas_and_extensions_rejected(self):
         statements = ["DELETE FROM records", "UPDATE main.records SET patient='oops'",
                       "ATTACH ':memory:' AS other", 'PRAGMA query_only=OFF', 'CREATE TABLE nope(x)',
                       "SELECT load_extension('nope')", "SELECT 1; DELETE FROM records"]
         for sql in statements:
-            with self.subTest(sql=sql), self.assertRaises(sqlite3.Error):
+            with self.subTest(sql=sql), self.assertRaises((sqlite3.Error,ValueError)):
                 self.warehouse.query(sql)
 
     def test_truncation_is_explicit(self):

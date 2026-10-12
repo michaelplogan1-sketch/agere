@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import json
 import math
+import re
 import sqlite3
 import time
 from pathlib import Path
@@ -40,6 +41,22 @@ def finite_number(value):
 def empty_answer(kind, status='answered'):
     return dict(status=status, answer_type=kind, count=None, patient_ids=None,
                 value=None, table=None, unknown_count=0, missing=[], grounding=[])
+
+
+def validate_sql_scope(sql):
+    """Block explicit base-schema access, including a CTE spoofing a view name.
+
+    The SQLite authorizer reports the innermost CTE name as the read origin.
+    A malicious MATERIALIZED CTE named 'records' could impersonate our view.
+    Only unqualified public views are needed, so reject main.<anything> outside
+    comments, recognizing every SQLite identifier quoting form.
+    """
+    tokens = re.findall(r"--[^\n]*|/\*[\s\S]*?\*/|'(?:''|[^'])*'|\"(?:\"\"|[^\"])*\"|`(?:``|[^`])*`|\[[^\]]*\]|[A-Za-z_][A-Za-z_0-9]*|[^\s]", sql)
+    tokens = [t for t in tokens if not t.startswith(('--', '/*'))]
+    for left, right in zip(tokens, tokens[1:]):
+        name = left[1:-1] if left[:1] in {'"', "'", '`', '['} else left
+        if name.casefold() == 'main' and right == '.':
+            raise ValueError('Direct base-schema access is unavailable; query the scoped public views')
 
 
 class Warehouse:
@@ -102,6 +119,7 @@ class Warehouse:
     def query(self, sql, *, max_rows=5000, max_chars=180000):
         if not isinstance(sql, str) or not sql.strip() or len(sql) > 30000:
             raise ValueError('A bounded SQL statement is required')
+        validate_sql_scope(sql)
         start = time.perf_counter()
         self.db.set_progress_handler(lambda: int(time.perf_counter() - start > self.timeout_s), 10000)
         try:
