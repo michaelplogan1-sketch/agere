@@ -132,8 +132,9 @@ def build_answer(plan, results, memberships, question):
         return answer
     terminal = next((n['id'] for n in reversed(plan['nodes']) if n['id'] in memberships), None)
     if terminal is None or plan['nodes'][-1]['id'] != terminal:
-        answer.update(status='partial', answer_type='table')
-        answer['missing'].append('Report output is not yet reduced to a direct answer.')
+        # A report-only graph has no direct answer: say what is missing instead of an empty table.
+        answer.update(status='unsupported' if plan.get('unmet_requirements') else 'partial', answer_type='unsupported')
+        answer['missing'].append('The plan ends in a descriptive report; no direct count, value or table answers the question.')
         return answer
     m = memberships[terminal]
     wants_count = bool(question and COUNT_QUESTION.search(question))

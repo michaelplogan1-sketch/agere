@@ -70,7 +70,9 @@ CONTRACTS = {
         'concepts':[],'contract':'','program_ids':[],'max_bytes':24000},
         'meaning':'Budgeted context/clocks/history/gaps; omissions block complete-case dispatch. program_ids accepts imported quoted package hashes. No answer.'},
     'cohort': {'inputs': [], 'parameters': {'specification': {'all': [], 'any': [], 'exclude': []}},
-               'meaning': 'Full observed set; atoms follow supplied cohort schema.'},
+               'meaning': 'Full observed set; atoms follow supplied cohort schema. PREFERRED population filter for diagnoses, labs, vitals and encounter types: '
+                          'concept/measurement atoms over clinical_concepts match every coding system and label received (ICD-10, SNOMED, free text, unit variants). '
+                          'Use evidence nodes only for narrative-text assertions with no clinical concept.'},
     'evidence': {'inputs': [], 'parameters': {'plan': {'match': 'all or any', 'clauses': [
         {'source': 'text or structured', 'concept': 'exact observed vocabulary', 'observation': 'present or not_observed'}]}},
         'meaning': 'Full indexed set. Optional concept_match=equals/prefix, text assertion/subject/time/relation; structured value_equals string/bool. event_date_from/event_date_through use source dates.'},
