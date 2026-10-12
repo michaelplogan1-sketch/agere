@@ -124,6 +124,12 @@ def build_answer(plan, results, memberships, question):
     if last['operation'] == 'vbc':
         report = results[-1]['result']
         partial = plan.get('coverage') != 'supported_observation' or plan.get('unmet_requirements')
+        if report['metric'] == 'change':
+            top = report['rows'][0]
+            answer.update(status='partial' if partial else 'answered', answer_type='table', table=report['rows'], method=report['method'],
+                          value=(f"{top['measure']} {top['value_a']} -> {top['value_b']} ({top['change']:+}): rate effect {top['rate_effect']:+}, "
+                                 f"mix effect {top['mix_effect']:+}. {top['reading']}"))
+            return answer
         single = len(report['rows']) == 1 and report['metric'] == 'shared_savings'
         answer.update(status='partial' if partial else 'answered', answer_type='value' if single else 'table',
                       value=(report['rows'][0].get('payment_to_aco', report['rows'][0].get('payment_from_aco')) if single else None),
