@@ -15,6 +15,32 @@ MAX_BYTES=REQUEST_MAX_BYTES
 PLAN_MAX_BYTES=MAX_BYTES  # Match the shared provider transport bound.
 
 
+CACHE=('cache_control',{'type':'ephemeral','ttl':'1h'})
+
+
+def content(data,render=None):
+    """User content: the catalog as one cacheable prefix block, then the question.
+
+    The catalog is identical across questions for a snapshot, so repeated planning
+    reads it from the prompt cache instead of paying full input price."""
+    data=dict(data);question=data.pop('question',None)
+    blocks=[{'type':'text','text':(render or serialize)(data),CACHE[0]:CACHE[1]}]
+    if isinstance(question,str):blocks.append({'type':'text','text':'question: '+question})
+    return blocks
+
+
+def text(message):
+    """Plain text of a user message (string or content blocks)."""
+    c=message['content']
+    return c if isinstance(c,str) else '\n'.join(b['text'] for b in c if b.get('type')=='text')
+
+
+def catalog_text(message):
+    """The serialized catalog block of a user message (string or content blocks)."""
+    c=message['content']
+    return c if isinstance(c,str) else c[0]['text']
+
+
 def bounded(body,limit=MAX_BYTES):return len(json.dumps(body,allow_nan=False).encode())<=limit
 
 
@@ -77,7 +103,9 @@ def coverage(graph,rows,scope,*,inherited_unmet=False):
                     if parent not in nodes:raise ValueError('Unknown coverage dependency')
                     visit(parent)
             for key in refs:visit(key)
-            if not set(s['operations'])<={nodes[k]['operation'] for k in ancestors}:raise ValueError('A selected requirement has no delivering graph node')
+            # Selected operators are candidate capabilities, not mandatory steps: a
+            # segment is delivered when actual nodes answer it, even by fewer operators.
+            if not ancestors:raise ValueError('A selected requirement has no delivering graph node')
     if gaps and (graph['coverage']=='supported_observation' or any(g not in graph['unmet_requirements'] for g in gaps)):raise ValueError('Unmet scoped requirements must remain visible in the answer')
     return rows
 
@@ -154,7 +182,7 @@ def typed_request(body,catalog,*,scoped):
     if 'cohort' in ops:
         payload['cohort_fields'].pop('predicate_contract',None)
         payload['cohort_fields'].pop('operators',None)
-    return {**body,'messages':[{'role':'user','content':serialize(payload)}],
+    return {**body,'messages':[{'role':'user','content':content(payload)}],
         'output_config':{'format':{'type':'json_schema','schema':schema}}}
 
 
@@ -180,7 +208,7 @@ def dispatch(body,catalog,send,*,parse):
     index['node_contracts']={o:{'parameters':{},'meaning':c['meaning'],'inputs':c.get('inputs',['earlier_set'])} for o,c in catalog['node_contracts'].items()}
     selector={**body,'max_tokens':3000,'system':
         'Scope v6. Select capabilities only; never answer or execute. Partition the WHOLE question into 1-16 exact ordered text segments including spaces. Each segment needs operators/helper dependencies or a nonempty unmet reason; preserve restrictions and prohibitions. Shared review already attaches results; do not add worklist/protocol_review just to save context. source_streams use only their enum; readable streams do not imply supported cohort predicates. Detailed field contracts load in planning. Use [] for self-contained operators. Select reference_ids by registered title for reference_review, otherwise []; exact dated questions load in planning. No inferred applicability.',
-        'messages':[{'role':'user','content':serialize(index)}],
+        'messages':[{'role':'user','content':content(index)}],
         'output_config':{'format':{'type':'json_schema','schema':selection_schema(catalog['node_contracts'],all_streams,all_references)}}}
     deferred=[]
     if not bounded(selector):
@@ -192,7 +220,7 @@ def dispatch(body,catalog,send,*,parse):
             'identity':digest(catalog['cohort_fields'])}
         selector['system']=selector['system'].replace('and the full supplied source vocabulary are visible.',
             'are visible. Detailed cohort/source fields are explicitly deferred until planning. Do not assert that an individual field or restriction is supported before those contracts are loaded.')
-        selector['messages']=[{'role':'user','content':serialize_index(index, all_streams)}]
+        selector['messages']=[{'role':'user','content':content(index,lambda d:serialize_index(d,all_streams))}]
     if not bounded(selector):
         # With many source categories, literal concept/value dictionaries can
         # dominate selection. Keep operator meanings and every source name;
@@ -206,7 +234,7 @@ def dispatch(body,catalog,send,*,parse):
         index['evidence_catalog']['concepts']={'text':[],'structured':[]}
         index['observed_values']=None
         selector['system']+=' Concept and observed-value dictionaries are also explicitly deferred; choose capabilities without asserting individual value support.'
-        selector['messages']=[{'role':'user','content':serialize_index(index, all_streams)}]
+        selector['messages']=[{'role':'user','content':content(index,lambda d:serialize_index(d,all_streams))}]
     if not bounded(selector) and typed:
         # Selection needs operator meanings, current work programs and all source
         # names. Exact analytical dictionaries load in the next stage, with their
@@ -217,7 +245,7 @@ def dispatch(body,catalog,send,*,parse):
         index['evidence_catalog']={'scientific_references':reference_index,'concepts':{'text':[],'structured':[]},'longitudinal':{'available':False},
             'longitudinal_status':'Deferred, not asserted unavailable.',
             'work_programs':catalog['evidence_catalog']['work_programs']}
-        selector['messages']=[{'role':'user','content':serialize_index(index,all_streams)}]
+        selector['messages']=[{'role':'user','content':content(index,lambda d:serialize_index(d,all_streams))}]
     if not bounded(selector) and typed and 'dependency_contract' in index:
         # Scope selection needs every operator meaning. Exact graph edge typing
         # remains authoritative in the fully loaded planning/execution stages.
@@ -228,7 +256,7 @@ def dispatch(body,catalog,send,*,parse):
                 'loading':'Detailed analyze-function contracts load when selected.'}
         index['dependency_contract']={'identity':digest(catalog['dependency_contract']),
             'loading':'Exact graph input/output rules load in planning; all operator meanings remain above.'}
-        selector['messages']=[{'role':'user','content':serialize_index(index,all_streams)}]
+        selector['messages']=[{'role':'user','content':content(index,lambda d:serialize_index(d,all_streams))}]
     if not bounded(selector):raise ValueError('Complete capability index exceeds bound; no vocabulary was silently removed')
     scope,first=send(selector,parse=lambda raw:selection(raw,catalog['question'],catalog['node_contracts'],all_streams,all_references))
     ops={o for s in scope['segments'] for o in s['operations']}
@@ -250,7 +278,7 @@ def dispatch(body,catalog,send,*,parse):
         'required':['segment','node_ids','unmet'],'additionalProperties':False}}
     schema['required'].append('requirement_coverage')
     planned={**body,'system':body['system']+' For every numbered requirement segment return requirement_coverage with its zero-based segment, delivering node_ids, and unmet. Load only supplied node contracts. Retain any unmet selector requirement verbatim in unmet_requirements; partial or unsupported coverage is required when unmet exists.',
-        'messages':[{'role':'user','content':serialize(selected)}],
+        'messages':[{'role':'user','content':content(selected)}],
         'output_config':{'format':{'type':'json_schema','schema':schema}}}
     if typed and ops:
         planned['system']=body['system']+' Each node parameters_json must encode an object matching its supplied typed parameter contract (JSON Schema), or its explicit legacy contract. For every segment return requirement_coverage with zero-based segment, delivering node_ids and additional unmet reason (empty only if delivered). Count upstream dependencies as delivery too. Every selected operation must deliver through those nodes or have an explicit unmet explanation. Selector gaps are preserved automatically. Coverage and unmet_requirements are compiled locally. Reports cannot become populations.'

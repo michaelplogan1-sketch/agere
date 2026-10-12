@@ -7,6 +7,7 @@ from .analysis_graph import OPERATIONS, validate
 from .cohorts import capabilities
 from .analytic_registry import CATALOG
 from .planner_catalog import serialize
+from .planner_scope import content as scope_content
 from . import graph_contracts
 
 SCHEMA = {'type': 'object', 'properties': {
@@ -229,7 +230,7 @@ def propose(question, path, ledger, *, snapshot, graph_catalog, observed_values=
     if semantic is not None: catalog['semantic_layer'] = semantic
     catalog['node_contracts']['worklist']['parameters']={'program':'Exact work_programs id; all currently registered programs are supplied.'}
     body = {'model': PersistentGateway.MODELS['claude'], 'max_tokens': 6000, 'system': instructions,
-        'messages': [{'role': 'user', 'content': serialize(catalog)}],
+        'messages': [{'role': 'user', 'content': scope_content(catalog)}],
         'output_config': {'format': {'type': 'json_schema', 'schema': SCHEMA}}}
 
     def parse(raw):

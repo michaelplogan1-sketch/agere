@@ -22,6 +22,14 @@ def fixture():
 
 
 class ScopeTests(unittest.TestCase):
+    # These fixtures exercise deferral/paging at a 20 KB bound; the production
+    # bound is larger, but the mechanism under test is the same.
+    def setUp(self):
+        original=S.bounded
+        for p in (patch.object(S,'MAX_BYTES',20000),patch.object(S,'PLAN_MAX_BYTES',20000),
+                  patch.object(S,'bounded',lambda body,limit=20000:original(body,min(limit,20000)))):
+            p.start();self.addCleanup(p.stop)
+
     def test_catalog_loading_follows_consumers_without_dropping_required_values(self):
         import yaml
         c=catalog();c['source_streams']=['notes','labs']
@@ -34,14 +42,14 @@ class ScopeTests(unittest.TestCase):
         c['graph_contract_version']='audit-contract-version'
         b={'system':'Registered observations only','output_config':{'format':{'schema':copy.deepcopy(SCHEMA)}}}
         before=copy.deepcopy(c)
-        wire=yaml.safe_load(S.typed_request(b,c,scoped=True)['messages'][0]['content'].split('\n',1)[1])
+        wire=yaml.safe_load(S.catalog_text(S.typed_request(b,c,scoped=True)['messages'][0]).split('\n',1)[1])
         self.assertEqual(c,before)
         self.assertIn('structured_scalar_values',wire['operator_catalog_loading']['deferred_dictionaries'])
         self.assertNotIn('graph_contract_version',wire)
         self.assertEqual(wire['source_streams'],c['source_streams'])
         self.assertEqual(wire['cohort_fields']['record_fields'],__import__('clinical_core.agere.clinical.planner_catalog',fromlist=['factor']).factor(c)['cohort_fields']['record_fields'])
         c['node_contracts']['evidence']={'parameters':{},'meaning':'Observed evidence'}
-        wire=yaml.safe_load(S.typed_request(b,c,scoped=True)['messages'][0]['content'].split('\n',1)[1])
+        wire=yaml.safe_load(S.catalog_text(S.typed_request(b,c,scoped=True)['messages'][0]).split('\n',1)[1])
         for key in ('text_axis_values','structured_scalar_values','boolean_valued_concepts'):
             self.assertEqual(wire['evidence_catalog'][key],c['evidence_catalog'][key])
 
@@ -69,7 +77,7 @@ class ScopeTests(unittest.TestCase):
         def send(body,*,parse):
             calls.append(body);self.assertTrue(S.bounded(body))
             if len(calls)==1:
-                for op in c['node_contracts']:self.assertIn(op,body['messages'][0]['content'])
+                for op in c['node_contracts']:self.assertIn(op,S.text(body['messages'][0]))
                 result={'segments':[{'text':c['question'],'operations':['op0'],'unmet':''}]}
             else:
                 self.assertEqual(body['output_config']['format']['schema']['properties']['nodes']['items']['properties']['operation']['enum'],['op0'])
@@ -125,7 +133,7 @@ class ScopeTests(unittest.TestCase):
             if len(calls)%2:
                 result={'segments':[{'text':c['question'],'operations':['op0'],'source_streams':['notes'],'unmet':''}]}
             else:
-                wire=yaml.safe_load(body['messages'][0]['content'].split('\n',1)[1]);fields=wire['cohort_fields']['record_fields'];self.assertEqual(set(fields['additional_by_stream']),{'notes'})
+                wire=yaml.safe_load(S.catalog_text(body['messages'][0]).split('\n',1)[1]);fields=wire['cohort_fields']['record_fields'];self.assertEqual(set(fields['additional_by_stream']),{'notes'})
                 self.assertEqual(wire['source_contract_loading']['not_loaded'],['labs'])
                 stream='notes' if len(calls)==2 else 'labs'
                 result={'nodes':[{'id':'a','operation':'op0','parameters':{'stream':stream}}],'coverage':'supported_observation','unmet_requirements':[],
@@ -148,11 +156,11 @@ class ScopeTests(unittest.TestCase):
         def send(body,*,parse):
             seen.append(body);self.assertTrue(S.bounded(body))
             if len(seen)==1:
-                self.assertIn('deferred_cohort_fields',body['messages'][0]['content'])
-                self.assertNotIn('field_139_',body['messages'][0]['content'])
+                self.assertIn('deferred_cohort_fields',S.text(body['messages'][0]))
+                self.assertNotIn('field_139_',S.text(body['messages'][0]))
                 result={'segments':[{'text':c['question'],'operations':['op0'],'unmet':''}]}
             else:
-                self.assertIn('field_139_',body['messages'][0]['content'])
+                self.assertIn('field_139_',S.text(body['messages'][0]))
                 result={'nodes':[{'id':'a','operation':'op0'}],'coverage':'supported_observation','unmet_requirements':[],
                     'requirement_coverage':[{'segment':0,'node_ids':['a'],'unmet':''}]}
             return parse(raw(result)),{'cache_hit':True}
@@ -178,7 +186,7 @@ class ScopeTests(unittest.TestCase):
         def send(body,*,parse):
             import yaml
             calls.append(body);self.assertTrue(S.bounded(body))
-            wire=yaml.safe_load(body['messages'][0]['content'].split('\n',1)[1])
+            wire=yaml.safe_load(S.catalog_text(body['messages'][0]).split('\n',1)[1])
             if len(calls)==1:
                 self.assertIn('deferred_value_catalogs',wire);self.assertIsNone(wire['observed_values'])
                 result={'segments':[{'text':c['question'],'operations':['op0'],'source_streams':[],'unmet':''}]}
