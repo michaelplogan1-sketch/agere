@@ -22,6 +22,10 @@ SCHEMA = {'type': 'object', 'properties': {
     'required': ['interpretation', 'coverage', 'unmet_requirements', 'nodes'], 'additionalProperties': False}
 
 CONTRACTS = {
+    'vbc': {'inputs':['optional earlier_set'],'parameters':{'metric':'eligibility|attribution|utilization|cost|risk|quality|shared_savings','group_by':'none|pcp|practice|coverage_type|age_band|sex',
+        'period':{'start':'YYYY-MM-DD','end':'YYYY-MM-DD'},'measure':'quality measure id','terms':'shared_savings contract terms (supplied by the user only)'},
+        'meaning':'Value-based-care metrics: member-months, PCP attribution, utilization per 1,000 (ED, admissions, readmission, 7-day follow-up) with empirical-Bayes shrinkage, '
+                  'completion-adjusted allowed/paid PMPM, internal risk score (not CMS-HCC), internal quality measures, and shared-savings settlement on user-supplied terms. Never invent contract terms.'},
     'sql': {'inputs':['optional earlier_set'],'parameters':{'query':'one read-only SELECT over semantic_layer tables','returns':'count|value|patient_set|table'},
         'meaning':'Exact answers to literal data questions: counts/sums/maxima of records or fields, record-level filters, date arithmetic (julianday), arrival lags, joins between streams, '
                   'group-by tables. Query the typed semantic_layer tables (concept columns already normalise ICD-10/SNOMED/labels/units); use record.payload with json_extract for other streams. '

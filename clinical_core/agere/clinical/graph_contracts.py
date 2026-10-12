@@ -11,7 +11,7 @@ SET_OPS = {'cohort', 'evidence', 'intersect', 'union', 'difference', 'sequence',
            'interpretation', 'source_state', 'pre_event_state', 'requirements', 'outcome',
            'protocol_review', 'program_document', 'functional_review', 'domain_review', 'appointment_followthrough'}
 WORK_SUPPORT = ('accountability_review', 'program_acquisition', 'measure_review')
-TYPED = {'aggregate', 'explain', 'sql', 'observation_process', 'reference_review', 'cohort', 'evidence', 'intersect', 'union', 'difference', 'compare', 'medication_identity',
+TYPED = {'aggregate', 'explain', 'sql', 'vbc', 'observation_process', 'reference_review', 'cohort', 'evidence', 'intersect', 'union', 'difference', 'compare', 'medication_identity',
          'assertion_review', 'source_state', 'pre_event_state', 'context', 'context_passes', 'functional_review',
          'domain_review', 'worklist', 'program_acquisition', 'retrieve', 'forecast',
          'source_changes', 'review', 'measure_review', 'financial_accounts', 'accountability_review', 'outcome', 'appointment_followthrough', 'interpretation', 'requirements', 'protocol_review', 'program_document'}
@@ -43,7 +43,7 @@ def input_contract(op):
     lo, hi = ((0, 0) if op in ('cohort', 'evidence') else
               (2, 2) if op == 'difference' else
               (2, 10) if op in ('intersect', 'union') else
-              (0, 1) if op == 'sql' else (1, 10) if op == 'reference_review' else (3, 10) if op == 'compare' else (1, 4) if op == 'worklist' else (1, 1))
+              (0, 1) if op in ('sql', 'vbc') else (1, 10) if op == 'reference_review' else (3, 10) if op == 'compare' else (1, 4) if op == 'worklist' else (1, 1))
     result = {'count': [lo, hi], 'type': 'membership',
               'output': 'membership' if op in SET_OPS else 'report'}
     if op in ('baseline', 'pre_event_state'): result['first_operation'] = 'outcome'
@@ -92,6 +92,13 @@ def parameter_schema(op, catalog):
             'group_by': string(aggregate.GROUP_BY), 'adjust': string(aggregate.ADJUSTMENTS, 'Case-mix standardisation for counts/shares'),
             'window': obj({'start': {'type': 'string', 'description': 'YYYY-MM-DD or empty'}, 'end': {'type': 'string', 'description': 'YYYY-MM-DD or empty'}}),
             'value_aggregate': string(['latest', 'all']), 'top': {'type': 'integer', 'minimum': 1, 'maximum': 200}})
+    if op == 'vbc':
+        from . import vbc
+        return obj({'metric': string(vbc.METRICS), 'group_by': string(vbc.GROUP_BY),
+                    'period': obj({'start': {'type': 'string'}, 'end': {'type': 'string'}}),
+                    'measure': string(['', 'diabetes_a1c_poor_control', 'bp_control', 'statin_therapy_diabetes']),
+                    'attribution': string(['hybrid', 'prospective', 'plurality']),
+                    'terms': {'type': 'object', 'description': 'shared_savings only: benchmark_pmpm, sharing_rate, msr, mlr, quality_score, two_sided, loss_rate, savings_cap_pct, loss_cap_pct, risk_adjust'}})
     if op == 'sql':
         from . import sql_query
         return obj({'query': {'type': 'string', 'description': 'One read-only SELECT/WITH over the semantic_layer tables. Reference the upstream population (if an input is given) as table population(patient_id).'},

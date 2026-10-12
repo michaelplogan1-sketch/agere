@@ -188,7 +188,9 @@ def compile(question, profile, as_of):
     r = Reader(q)
     info = {'compiler': VERSION, 'recognised': r.notes}
     # 0. Requests the received data cannot support: answer unsupported locally, naming the missing inputs.
+    terms = _contract_terms(r.low)
     for pattern, missing in UNSUPPORTED:
+        if terms and 'shared' in pattern: continue  # settlement is computable once terms are supplied
         if re.search(pattern, r.low):
             info.update(route='local_unsupported', unexplained=[])
             return {'interpretation': f'Unsupported by received data: {q}', 'coverage': 'unsupported', 'nodes': [],
@@ -204,6 +206,9 @@ def compile(question, profile, as_of):
     special = _record_constructs(q, r, profile, as_of, info)
     if special is not None:
         return special
+    vbc_plan = _vbc_question(q, r, profile, as_of, info, terms)
+    if vbc_plan is not None:
+        return vbc_plan
     literal = _literal_stream_question(q, r, profile, as_of, info)
     if literal is not None:
         return literal
@@ -656,6 +661,68 @@ def _record_constructs(q, r, profile, as_of, info):
                f"WHERE rn = 1 AND value_canonical {SQL_OPS[cmp[0]]} {cmp[1]}")
         return _finish(q, r, info, sql, 'patient_set', f'latest dated {concept}')
     return None
+
+
+def _contract_terms(low):
+    """Contract terms stated in the question: benchmark PMPM, sharing/loss rates, MSR/MLR, quality score, caps."""
+    pct = lambda pattern: (lambda m: float(m.group(1)) / 100 if m else None)(re.search(pattern, low))
+    num = lambda pattern: (lambda m: float(m.group(1).replace(',', '')) if m else None)(re.search(pattern, low))
+    terms = {'benchmark_pmpm': num(r'benchmark (?:of |is |at )?\$?([\d,]+(?:\.\d+)?) ?(?:pmpm|per member per month)'),
+             'sharing_rate': pct(r'(?:sharing|share) rate (?:of |is )?(\d+(?:\.\d+)?) ?%'),
+             'msr': pct(r'(?:msr|minimum savings rate) (?:of |is )?(\d+(?:\.\d+)?) ?%'),
+             'mlr': pct(r'(?:mlr|minimum loss rate) (?:of |is )?(\d+(?:\.\d+)?) ?%'),
+             'loss_rate': pct(r'loss (?:sharing )?rate (?:of |is )?(\d+(?:\.\d+)?) ?%'),
+             'quality_score': pct(r'quality score (?:of |is )?(\d+(?:\.\d+)?) ?%'),
+             'savings_cap_pct': pct(r'(?:savings )?cap (?:of |is )?(\d+(?:\.\d+)?) ?%')}
+    terms = {k: v for k, v in terms.items() if v is not None}
+    if re.search(r'two[- ]sided|downside', low): terms['two_sided'] = True
+    if re.search(r'risk[- ]adjust', low): terms['risk_adjust'] = True
+    return terms if {'benchmark_pmpm', 'sharing_rate'} <= set(terms) else {}
+
+
+VBC_PATTERNS = [
+    ('shared_savings', r'\bshared[- ]savings\b|\bsettlement\b'),
+    ('cost', r'\bpmpm\b|\bper member per month\b|\bcost per member\b|\btotal cost of care\b|\b(?:medical |claims )?spend(?:ing)?\b|\ballowed (?:amount|cost)s?\b'),
+    ('eligibility', r'\bmember[- ]months?\b|\benrolled members\b|\benrollment\b'),
+    ('attribution', r'\battribut(?:ed|ion)\b'),
+    ('risk', r'\brisk scores?\b|\brisk[- ]adjustment scores?\b|\bacuity\b'),
+    ('quality', r'\bquality measures?\b|\ba1c (?:poor )?control\b|\bpoorly controlled diabetes\b|\b(?:bp|blood pressure) control\b|\bstatin (?:therapy|use)\b'),
+    ('utilization', r'\bper 1,?000\b|\bper thousand\b|\butilization panel\b|\b7[- ]day follow[- ]?up\b|\bfollow[- ]?up within 7 days\b'),
+]
+QUALITY_MEASURES = [('diabetes_a1c_poor_control', r'a1c (?:poor )?control|poorly controlled diabetes'),
+                    ('bp_control', r'(?:bp|blood pressure) control'), ('statin_therapy_diabetes', r'statin')]
+
+
+def _vbc_question(q, r, profile, as_of, info, terms):
+    low = r.low
+    metric = next((m for m, pattern in VBC_PATTERNS if re.search(pattern, low)), None)
+    if metric is None or (metric == 'shared_savings' and not terms): return None
+    for m, pattern in VBC_PATTERNS:
+        if m == metric: r.take(pattern, f'vbc {metric}')
+    params = {'metric': metric, 'group_by': 'none'}
+    for pattern, g in GROUPS:
+        if g in ('facility',): continue
+        if r.take(pattern, f'group by {g}'): params['group_by'] = g; break
+    year = next(iter(r.take(r'\b(?:in|during|for) (\d{4})\b', 'year')), None)
+    if year: params['period'] = {'start': f'{year.group(1)}-01-01', 'end': min(f'{year.group(1)}-12-31', as_of)}
+    r.take(r'\b(?:over |in )?the (?:last|past) (?:12 months|year)\b', 'last 12 months')
+    if metric == 'quality':
+        for measure, pattern in QUALITY_MEASURES:
+            if re.search(pattern, low): params['measure'] = measure; r.take(pattern, f'measure {measure}', overlap=True); break
+    if metric == 'shared_savings':
+        params['terms'] = terms
+        r.take(r'benchmark (?:of |is |at )?\$?[\d,]+(?:\.\d+)? ?(?:pmpm|per member per month)|(?:sharing|share|loss(?: sharing)?) rate (?:of |is )?[\d.]+ ?%|'
+               r'(?:msr|mlr|minimum (?:savings|loss) rate) (?:of |is )?[\d.]+ ?%|quality score (?:of |is )?[\d.]+ ?%|(?:savings )?cap (?:of |is )?[\d.]+ ?%|'
+               r'two[- ]sided|downside|risk[- ]adjust\w*|\bwith\b|\band\b|\ba\b|\bof\b|\bour\b|\bwhat\b|\bwould\b|\bbe\b|\bpayment\b|\bunder\b|\bterms?\b|\bcontract\b', 'contract terms', overlap=True)
+    r.take(r'\b(?:what is|what are|what was|show|compare|calculate|compute|estimate|our|the|rate|rates|members?|visits?|ed|admissions?|readmissions?|'
+           r'follow[- ]?up|allowed|paid|medical|pharmacy|cost|costs|by|each|per|month|projected|actual|panel|scores?|measures?|internal|we|us|do|have|has|average|mean|how many|total)\b', None, overlap=True)
+    info['unexplained'] = r.leftover()
+    if info['unexplained']:
+        info.update(route='fallback', reason='words not interpreted locally: ' + ', '.join(info['unexplained'][:12]))
+        return None, info
+    info['route'] = 'local_compiler'
+    return {'interpretation': q, 'coverage': 'supported_observation', 'unmet_requirements': [],
+            'nodes': [{'id': 'answer', 'operation': 'vbc', 'inputs': [], 'parameters': params, 'purpose': f'VBC {metric}'}]}, info
 
 
 def _patient_question(q, r, profile, pids, info):

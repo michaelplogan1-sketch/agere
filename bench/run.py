@@ -35,8 +35,17 @@ def run_one(question, args, identity):
         row['release'] = warehouse.release
         row['source_manifest'] = {k: warehouse.manifest.get(k) for k in ('adapter', 'source_sha256', 'original_patient_id_digest', 'as_of')}
         try:
+            # References are computed once per (suite, release, question) and cached, so parallel
+            # runs never re-execute heavy reference SQL inside every worker.
+            cache = ROOT / 'results' / 'reference-cache' / f"{identity[:16]}-{warehouse.release}" / f"{question['id']}.json"
             reference_start = time.perf_counter()
-            expected, evidence = reference_answer(question, warehouse)
+            if cache.exists():
+                saved = json.loads(cache.read_text())
+                expected, evidence = saved['expected'], saved['evidence']
+            else:
+                expected, evidence = reference_answer(question, warehouse)
+                cache.parent.mkdir(parents=True, exist_ok=True)
+                tmp = cache.with_suffix('.tmp'); tmp.write_text(json.dumps({'expected': expected, 'evidence': evidence})); tmp.replace(cache)
             row.update(expected=expected, reference_evidence=evidence,
                        reference_latency_s=time.perf_counter() - reference_start)
         except Exception as exc:
@@ -73,7 +82,7 @@ def main(argv=None):
     parser.add_argument('--url', default='http://127.0.0.1:8885')
     parser.add_argument('--model', default=MODEL)
     parser.add_argument('--max-tools', type=int, default=20)
-    parser.add_argument('--sql-timeout', type=float, default=30)
+    parser.add_argument('--sql-timeout', type=float, default=180)
     parser.add_argument('--jobs', type=int, default=1)
     parser.add_argument('--resume', type=Path, help='Append only unanswered IDs to this prior JSONL; never silently retry a paid attempt')
     args = parser.parse_args(argv)
