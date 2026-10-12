@@ -18,13 +18,14 @@ PLAN_MAX_BYTES=MAX_BYTES  # Match the shared provider transport bound.
 CACHE=('cache_control',{'type':'ephemeral','ttl':'1h'})
 
 
-def content(data,render=None):
+def content(data,render=None,cache=True):
     """User content: the catalog as one cacheable prefix block, then the question.
 
     The catalog is identical across questions for a snapshot, so repeated planning
     reads it from the prompt cache instead of paying full input price."""
     data=dict(data);question=data.pop('question',None)
-    blocks=[{'type':'text','text':(render or serialize)(data),CACHE[0]:CACHE[1]}]
+    blocks=[{'type':'text','text':(render or serialize)(data)}]
+    if cache:blocks[0][CACHE[0]]=CACHE[1]
     if isinstance(question,str):blocks.append({'type':'text','text':'question: '+question})
     return blocks
 
@@ -182,7 +183,7 @@ def typed_request(body,catalog,*,scoped):
     if 'cohort' in ops:
         payload['cohort_fields'].pop('predicate_contract',None)
         payload['cohort_fields'].pop('operators',None)
-    return {**body,'messages':[{'role':'user','content':content(payload)}],
+    return {**body,'messages':[{'role':'user','content':content(payload,cache=not scoped)}],
         'output_config':{'format':{'type':'json_schema','schema':schema}}}
 
 
@@ -278,7 +279,7 @@ def dispatch(body,catalog,send,*,parse):
         'required':['segment','node_ids','unmet'],'additionalProperties':False}}
     schema['required'].append('requirement_coverage')
     planned={**body,'system':body['system']+' For every numbered requirement segment return requirement_coverage with its zero-based segment, delivering node_ids, and unmet. Load only supplied node contracts. Retain any unmet selector requirement verbatim in unmet_requirements; partial or unsupported coverage is required when unmet exists.',
-        'messages':[{'role':'user','content':content(selected)}],
+        'messages':[{'role':'user','content':content(selected,cache=False)}],
         'output_config':{'format':{'type':'json_schema','schema':schema}}}
     if typed and ops:
         planned['system']=body['system']+' Each node parameters_json must encode an object matching its supplied typed parameter contract (JSON Schema), or its explicit legacy contract. For every segment return requirement_coverage with zero-based segment, delivering node_ids and additional unmet reason (empty only if delivered). Count upstream dependencies as delivery too. Every selected operation must deliver through those nodes or have an explicit unmet explanation. Selector gaps are preserved automatically. Coverage and unmet_requirements are compiled locally. Reports cannot become populations.'
