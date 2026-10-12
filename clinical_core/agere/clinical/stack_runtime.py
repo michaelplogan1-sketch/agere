@@ -141,10 +141,11 @@ class Stack:
         try:
             values=json.loads((self.path/'cohort-values.json').read_text()) if (self.path/'cohort-values.json').exists() else None
             from .source_profile import load as load_profile
-            profile=load_profile(self.path)
+            from .semantic_layer import describe as describe_semantic
+            profile=load_profile(self.path);semantic=describe_semantic(self.path)
             def frontier(capabilities):
                 return propose(question,self.receipts,ledger,snapshot=self.retriever.meta['snapshot'],
-                               graph_catalog=capabilities,observed_values=values,profile=profile)
+                               graph_catalog=capabilities,observed_values=values,profile=profile,semantic=semantic)
             if planning=='auto':
                 from .economical_planner import plan
                 graph,receipt=plan(self,question,ledger,frontier)

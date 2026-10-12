@@ -22,7 +22,7 @@ from .clinical_events import validate_window
 
 VERSION = 'population-analysis-graph/1'
 from .graph_contracts import SET_OPS, validate_inputs, validate_parameters as validate_shared_parameters
-OPERATIONS = SET_OPS | {'aggregate', 'explain', 'observation_process', 'reference_review', 'compare', 'analyze', 'retrieve', 'forecast', 'source_changes', 'review','longitudinal','worklist','state_review','medication_identity','context','context_passes','assertion_review','baseline','decision_landmark','financial_accounts','accountability_review','protocol_change','program_document_change','program_acquisition','measure_review','evidence_portfolio'}
+OPERATIONS = SET_OPS | {'aggregate', 'explain', 'sql', 'observation_process', 'reference_review', 'compare', 'analyze', 'retrieve', 'forecast', 'source_changes', 'review','longitudinal','worklist','state_review','medication_identity','context','context_passes','assertion_review','baseline','decision_landmark','financial_accounts','accountability_review','protocol_change','program_document_change','program_acquisition','measure_review','evidence_portfolio'}
 NODE_FIELDS = {'id', 'operation', 'inputs', 'parameters', 'purpose'}
 LIMITS = [
     'Membership means observed predicate matches, not confirmed disease or absent care.',
@@ -113,6 +113,17 @@ def build_answer(plan, results, memberships, question):
             report_index = len(plan['nodes']) - 1
     else:
         report_index = len(plan['nodes']) - 1
+    if last['operation'] == 'sql':
+        report = results[-1]['result']
+        partial = plan.get('coverage') != 'supported_observation' or plan.get('unmet_requirements')
+        kind = report['returns']
+        answer.update(status='partial' if partial else 'answered', answer_type=kind, query=report['query'])
+        if kind == 'count': answer['count'] = report['value']
+        elif kind == 'value': answer['value'] = report['value']
+        elif kind == 'patient_set': answer.update(patient_ids=report['patient_ids'], count=len(report['patient_ids']))
+        else: answer['table'] = report['rows']
+        if report['truncated']: answer['missing'].append(f'Result truncated at {report["row_count"]} rows.')
+        return answer
     if last['operation'] == 'explain':
         report = results[-1]['result']
         partial = plan.get('coverage') != 'supported_observation' or plan.get('unmet_requirements')
@@ -124,7 +135,9 @@ def build_answer(plan, results, memberships, question):
         report = results[report_index]['result']
         partial = plan.get('coverage') != 'supported_observation' or plan.get('unmet_requirements')
         answer['concepts'] = interpretation + report.get('interpretation', [])
-        if last['parameters']['group_by'] == 'none':
+        if last['parameters']['group_by'] == 'none' and last['parameters']['statistic'] == 'count':
+            answer.update(answer_type='count', count=report['overall'].get('value'), table=[report['overall']])
+        elif last['parameters']['group_by'] == 'none':
             answer.update(answer_type='value', value=report['overall'].get('value'), table=[report['overall']])
         else:
             answer.update(answer_type='table', table=report['rows'])
@@ -190,6 +203,9 @@ def validate(plan, as_of):
         elif op == 'explain':
             from . import explain
             p = explain.validate(p)
+        elif op == 'sql':
+            from . import sql_query
+            p = sql_query.validate(p)
         elif op == 'evidence':
             if inputs or set(p) != {'plan'}:
                 raise ValueError('Evidence node needs its explicit plan')
@@ -715,6 +731,11 @@ def execute(stack, plan, *, question=None):
                 chosen = memberships[node['inputs'][0]]
                 detail = aggregate.execute(path, sorted(chosen.yes), params)
                 detail['input_membership'] = membership_receipt(chosen)
+            elif op == 'sql':
+                from . import sql_query
+                chosen = memberships[node['inputs'][0]] if node['inputs'] else None
+                detail = sql_query.execute(path, params, sorted(chosen.yes) if chosen else None)
+                if chosen: detail['input_membership'] = membership_receipt(chosen)
             elif op == 'explain':
                 from . import explain
                 chosen = memberships[node['inputs'][0]]

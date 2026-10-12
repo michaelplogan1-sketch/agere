@@ -21,6 +21,11 @@ SCHEMA = {'type': 'object', 'properties': {
     'required': ['interpretation', 'coverage', 'unmet_requirements', 'nodes'], 'additionalProperties': False}
 
 CONTRACTS = {
+    'sql': {'inputs':['optional earlier_set'],'parameters':{'query':'one read-only SELECT over semantic_layer tables','returns':'count|value|patient_set|table'},
+        'meaning':'Exact answers to literal data questions: counts/sums/maxima of records or fields, record-level filters, date arithmetic (julianday), arrival lags, joins between streams, '
+                  'group-by tables. Query the typed semantic_layer tables (concept columns already normalise ICD-10/SNOMED/labels/units); use record.payload with json_extract for other streams. '
+                  'Count records when asked about records, distinct patient_id when asked about patients. Read semantic_layer descriptions before writing SQL. '
+                  'Prefer aggregate/explain for adjusted comparisons and why-questions.'},
     'explain': {'inputs':['earlier_set'],'parameters':{'outcome':{'type':'readmission|concept|measurement','concept':'clinical_concepts id ("" for readmission)','op':'lt|le|gt|ge (measurement)','value':0,'aggregate':'latest|any'},'window':{'start':'','end':''}},
         'meaning':'Answers WHY questions descriptively: compares units with vs without the outcome (index hospital stays for readmission, else patients) across received-data factors '
                   '(age, sex, payer, chronic-condition burden, social screens, PCP attribution, prior ED use; for stays: 7-day follow-up, discharge planning, observation vs inpatient). '
@@ -127,7 +132,7 @@ def grounded_fields(fields, profile):
             'age_basis': 'Use age_reported (reported age); birth dates are not received.'}
 
 
-def propose(question, path, ledger, *, snapshot, graph_catalog, observed_values=None, profile=None):
+def propose(question, path, ledger, *, snapshot, graph_catalog, observed_values=None, profile=None, semantic=None):
     if not isinstance(question, str) or not 1 <= len(question.strip()) <= 1500:
         raise ValueError('Bounded population question required')
     fields = capabilities()
@@ -221,6 +226,7 @@ def propose(question, path, ledger, *, snapshot, graph_catalog, observed_values=
             'rule':'Only earlier membership outputs can feed population inputs. Reports cannot be unioned or used as populations. reference_review accepts population first, then distinct supported earlier evidence/report nodes declared in bindings; its output is a report. Baseline requires a direct outcome input. Worklist accepts membership first, then distinct optional accountability_review, program_acquisition, measure_review reports.'},
         'cohort_fields': fields, 'observed_values': observed, 'evidence_catalog': compact_catalog,
         'analytic_operators': [[k,v['purpose']] for k,v in CATALOG.items()]}
+    if semantic is not None: catalog['semantic_layer'] = semantic
     catalog['node_contracts']['worklist']['parameters']={'program':'Exact work_programs id; all currently registered programs are supplied.'}
     body = {'model': PersistentGateway.MODELS['claude'], 'max_tokens': 6000, 'system': instructions,
         'messages': [{'role': 'user', 'content': serialize(catalog)}],

@@ -1,0 +1,218 @@
+"""Semantic layer: typed, concept-normalised tables materialised from the received store.
+
+Built once per source digest into `semantic.sqlite3` beside the store. Planners
+query it with ordinary read-only SQL instead of exploring raw JSON, so one
+generated query replaces many exploratory tool calls. Every row keeps its
+source record_id; concept columns come from the concept library (all coding
+systems and label variants), and measurement values carry both the received
+value/unit and the canonical unit conversion.
+"""
+from collections import defaultdict
+from pathlib import Path
+import json, re, sqlite3, time
+
+from . import aggregate, concepts, source_profile
+
+VERSION = 'semantic-layer/1'
+
+DDL = """
+CREATE TABLE meta(key TEXT PRIMARY KEY, value TEXT);
+CREATE TABLE patient(patient_id TEXT PRIMARY KEY, age_reported INTEGER, sex_reported TEXT, coverage_type TEXT,
+  coverage_status TEXT, pcp_clinician_id TEXT, pcp_practice_id TEXT);
+CREATE TABLE record(record_id TEXT PRIMARY KEY, patient_id TEXT, stream TEXT, event_date TEXT, recorded_date TEXT,
+  available_date TEXT, organization_id TEXT, payload TEXT);
+CREATE TABLE condition(record_id TEXT, patient_id TEXT, source_table TEXT, concept TEXT, label TEXT, icd10 TEXT,
+  snomed TEXT, onset TEXT, event_date TEXT, recorded_date TEXT, available_date TEXT, organization_id TEXT);
+CREATE TABLE measurement(record_id TEXT, patient_id TEXT, source_table TEXT, concept TEXT, name TEXT, value REAL,
+  unit TEXT, value_canonical REAL, unit_canonical TEXT, result_status TEXT, event_date TEXT, recorded_date TEXT,
+  available_date TEXT, organization_id TEXT);
+CREATE TABLE encounter(record_id TEXT, patient_id TEXT, source_table TEXT, encounter_id TEXT, type TEXT,
+  type_concept TEXT, status TEXT, event_date TEXT, end_date TEXT, available_date TEXT, organization_id TEXT,
+  attending_clinician_id TEXT, disposition TEXT);
+CREATE TABLE stay(patient_id TEXT, admit_date TEXT, discharge_date TEXT, type TEXT, organization_id TEXT,
+  readmitted_30d INTEGER, days_to_readmission INTEGER);
+CREATE TABLE concept_patient(concept TEXT, kind TEXT, patient_id TEXT, records INTEGER, first_date TEXT, last_date TEXT,
+  PRIMARY KEY(concept, patient_id));
+"""
+INDEXES = """
+CREATE INDEX record_stream ON record(stream, patient_id);
+CREATE INDEX condition_concept ON condition(concept, patient_id);
+CREATE INDEX measurement_concept ON measurement(concept, patient_id);
+CREATE INDEX encounter_concept ON encounter(type_concept, patient_id);
+CREATE INDEX concept_patient_patient ON concept_patient(patient_id);
+"""
+
+SCHEMA_DOC = {
+    'patient': 'One row per roster patient. age_reported/sex_reported as received; coverage_type/status from latest coverage record; '
+               'pcp_* = latest assigned primary-care relationship.',
+    'condition': 'One row per (condition record, matching library concept); concept NULL when no library concept matches. '
+                 'Sources: conditions, condition_assessments, problem_lists. label = received description.',
+    'measurement': 'Labs and vitals, one row per (record, concept); concept NULL when unmapped. value/unit as received; '
+                   'value_canonical in unit_canonical when the unit converts (else NULL). Cancelled results have value NULL.',
+    'encounter': 'Encounter records plus ADT notifications (source_table adt, type = ADT event). type_concept = library encounter concept.',
+    'stay': 'Distinct hospital stays (inpatient/observation encounters collapsed by admit day and overlap) with 30-day readmission flag.',
+    'concept_patient': 'Patients having each library concept (condition, measurement, encounter), with record counts and first/last dates.',
+    'record': 'Every received record (all streams). Use json_extract(payload, \'$.field\') for fields of streams not modelled above.',
+}
+
+
+def _date(r): return (r.get('event_date') or '')[:10] or None
+
+
+def build(path):
+    path = Path(path)
+    started = time.perf_counter()
+    profile = source_profile.load(path)
+    resolved = {c: concepts.resolve(c, profile) for c in (*concepts.CONDITIONS, *concepts.MEASUREMENTS, *concepts.ENCOUNTERS)}
+    cond_labels = defaultdict(set)   # (stream, field, value) -> concepts
+    meas_names = defaultdict(set)
+    enc_values = defaultdict(set)
+    wide = defaultdict(set)          # vitals column -> concepts
+    for c, r in resolved.items():
+        for b in r['bindings']:
+            if 'values' in b and r['kind'] == 'condition':
+                for v in b['values']: cond_labels[(b['stream'], b['field'], v)].add(c)
+            elif 'values' in b:
+                for v in b['values']: enc_values[(b['stream'], b['field'], v)].add(c)
+            elif 'names' in b:
+                for v in b['names']: meas_names[(b['stream'], v)].add(c)
+            else:
+                wide[b['value_field']].add(c)
+    stay_type = re.compile(aggregate.STAY_TYPES, re.I)
+    target = path / 'semantic.sqlite3'
+    tmp = path / 'semantic.sqlite3.tmp'
+    tmp.unlink(missing_ok=True)
+    out = sqlite3.connect(tmp)
+    out.executescript(DDL)
+    src = sqlite3.connect(f'file:{path / "stack.sqlite3"}?mode=ro', uri=True)
+    try:
+        people = {pid: json.loads(p) for pid, p in src.execute('SELECT id, payload FROM patients')}
+        current, per_patient = None, []
+
+        def flush(pid, rows):
+            if pid is None: return
+            emit(pid, rows)
+
+        cp = defaultdict(lambda: [0, None, None])
+        def note(concept, kind, pid, d):
+            e = cp[(concept, kind, pid)]; e[0] += 1
+            if d: e[1] = min(e[1] or d, d); e[2] = max(e[2] or d, d)
+
+        def emit(pid, rows):
+            for r in rows:
+                st = r.get('source_table')
+                rid = r.get('record_id')
+                d = _date(r)
+                out.execute('INSERT OR IGNORE INTO record VALUES (?,?,?,?,?,?,?,?)',
+                            (rid, pid, st, d, (r.get('recorded_date') or '')[:10] or None, (r.get('available_date') or '')[:10] or None,
+                             r.get('organization_id'), json.dumps(r)))
+                if st in concepts.CONDITION_STREAMS:
+                    spec = concepts.CONDITION_STREAMS[st]
+                    found = set()
+                    code = r.get(spec['code'])
+                    if code: found |= cond_labels.get((st, spec['code'], code), set())
+                    label = None
+                    for f in spec['labels']:
+                        if r.get(f): label = label or r.get(f); found |= cond_labels.get((st, f, r.get(f)), set())
+                    for c in sorted(found) or [None]:
+                        out.execute('INSERT INTO condition VALUES (?,?,?,?,?,?,?,?,?,?,?,?)',
+                                    (rid, pid, st, c, label, r.get('icd10'), r.get('snomed'), r.get('onset'), d,
+                                     (r.get('recorded_date') or '')[:10] or None, (r.get('available_date') or '')[:10] or None, r.get('organization_id')))
+                        if c: note(c, 'condition', pid, d)
+                if st in concepts.MEASUREMENT_STREAMS:
+                    spec = concepts.MEASUREMENT_STREAMS[st]
+                    name = r.get(spec['name']) or next((r.get(f) for f in spec['alt_names'] if r.get(f)), None)
+                    series = []
+                    if name is not None:
+                        series.append((name, r.get(spec['value']), r.get(spec['unit']), meas_names.get((st, name), set())))
+                    if st == 'vitals':
+                        for col, cs in wide.items():
+                            if r.get(col) is not None:
+                                series.append((col, r.get(col), concepts.MEASUREMENTS[next(iter(cs))]['unit'], cs))
+                    for name, value, unit, cs in series:
+                        value = value if type(value) in (int, float) else None
+                        for c in sorted(cs) or [None]:
+                            canon, cunit = None, None
+                            if c:
+                                factor = concepts.MEASUREMENTS[c]['units'].get(unit)
+                                cunit = concepts.MEASUREMENTS[c]['unit']
+                                canon = value * factor if value is not None and factor is not None else None
+                                note(c, 'measurement', pid, d)
+                            out.execute('INSERT INTO measurement VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
+                                        (rid, pid, st, c, name, value, unit, canon, cunit, r.get('result_status'), d,
+                                         (r.get('recorded_date') or '')[:10] or None, (r.get('available_date') or '')[:10] or None, r.get('organization_id')))
+                if st in ('encounters', 'adt'):
+                    field = 'type' if st == 'encounters' else 'event'
+                    cs = set()
+                    for f in ('type', 'event', 'patient_class'):
+                        if r.get(f) is not None: cs |= enc_values.get((st, f, r.get(f)), set())
+                    for c in sorted(cs) or [None]:
+                        out.execute('INSERT INTO encounter VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)',
+                                    (rid, pid, st, r.get('encounter_id'), r.get(field), c, r.get('status'), d,
+                                     (r.get('end_time') or '')[:10] or None, (r.get('available_date') or '')[:10] or None,
+                                     r.get('organization_id'), r.get('attending_clinician_id'), r.get('disposition')))
+                        if c: note(c, 'encounter', pid, d)
+            for s in aggregate._stays(rows, {'start': '', 'end': ''}, '9999-12-31'):
+                out.execute('INSERT INTO stay VALUES (?,?,?,?,?,?,?)', (pid, s['admit'], s['discharge'], s['type'], s['organization'],
+                                                                        int(s['readmitted']), s['days_to_readmission']))
+            # Patient attributes (same rules as aggregate).
+            person = people.get(pid, {})
+            pcp = [r for r in rows if r.get('source_table') == 'care_team_relationships' and r.get('role') in aggregate.PCP_ROLES
+                   and r.get('status') in (None, 'assigned')]
+            pcp = max(pcp, key=lambda r: (r.get('effective_start') or r.get('event_date') or '')) if pcp else {}
+            cov = [r for r in rows if r.get('source_table') == 'coverage']
+            cov = max(cov, key=lambda r: r.get('event_date') or '') if cov else {}
+            out.execute('INSERT OR REPLACE INTO patient VALUES (?,?,?,?,?,?,?)',
+                        (pid, person.get('age_reported'), person.get('sex_reported'), cov.get('coverage_type'), cov.get('status'),
+                         pcp.get('clinician_id'), pcp.get('organization_id')))
+
+        for pid, payload in src.execute('SELECT patient, payload FROM records ORDER BY patient'):
+            if pid != current:
+                flush(current, per_patient); current, per_patient = pid, []
+            per_patient.append(json.loads(payload))
+        flush(current, per_patient)
+        for pid, person in people.items():  # roster patients without records
+            out.execute('INSERT OR IGNORE INTO patient(patient_id, age_reported, sex_reported) VALUES (?,?,?)',
+                        (pid, person.get('age_reported'), person.get('sex_reported')))
+        out.executemany('INSERT INTO concept_patient VALUES (?,?,?,?,?,?)',
+                        [(c, k, pid, n, f, l) for (c, k, pid), (n, f, l) in cp.items()])
+        out.executescript(INDEXES)
+        meta = json.loads((path / 'run.json').read_text())
+        out.executemany('INSERT INTO meta VALUES (?,?)', [('version', VERSION), ('source_digest', meta['source_digest']),
+                                                          ('as_of', meta['snapshot']['as_of'])])
+        out.commit()
+    finally:
+        src.close(); out.close()
+    tmp.replace(target)
+    return {'path': str(target), 'elapsed_seconds': round(time.perf_counter() - started, 1)}
+
+
+def ensure(path):
+    path = Path(path)
+    target = path / 'semantic.sqlite3'
+    meta = json.loads((path / 'run.json').read_text())
+    if target.exists():
+        db = sqlite3.connect(f'file:{target}?mode=ro', uri=True)
+        try:
+            row = dict(db.execute('SELECT key, value FROM meta').fetchall())
+        finally:
+            db.close()
+        if row.get('version') == VERSION and row.get('source_digest') == meta['source_digest']:
+            return target
+    build(path)
+    return target
+
+
+def describe(path):
+    """Schema + vocabulary for planners: table columns, meanings, concept ids."""
+    target = ensure(path)
+    db = sqlite3.connect(f'file:{target}?mode=ro', uri=True)
+    try:
+        tables = {}
+        for (name,) in db.execute("SELECT name FROM sqlite_master WHERE type='table' AND name <> 'meta'"):
+            cols = [r[1] for r in db.execute(f'PRAGMA table_info({name})')]
+            tables[name] = {'columns': cols, 'meaning': SCHEMA_DOC.get(name, '')}
+        streams = [r[0] for r in db.execute('SELECT DISTINCT stream FROM record ORDER BY stream')]
+    finally:
+        db.close()
+    return {'tables': tables, 'record_streams': streams, 'concepts': concepts.catalog()}

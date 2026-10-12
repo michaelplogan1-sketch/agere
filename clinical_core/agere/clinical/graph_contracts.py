@@ -11,7 +11,7 @@ SET_OPS = {'cohort', 'evidence', 'intersect', 'union', 'difference', 'sequence',
            'interpretation', 'source_state', 'pre_event_state', 'requirements', 'outcome',
            'protocol_review', 'program_document', 'functional_review', 'domain_review', 'appointment_followthrough'}
 WORK_SUPPORT = ('accountability_review', 'program_acquisition', 'measure_review')
-TYPED = {'aggregate', 'explain', 'observation_process', 'reference_review', 'cohort', 'evidence', 'intersect', 'union', 'difference', 'compare', 'medication_identity',
+TYPED = {'aggregate', 'explain', 'sql', 'observation_process', 'reference_review', 'cohort', 'evidence', 'intersect', 'union', 'difference', 'compare', 'medication_identity',
          'assertion_review', 'source_state', 'pre_event_state', 'context', 'context_passes', 'functional_review',
          'domain_review', 'worklist', 'program_acquisition', 'retrieve', 'forecast',
          'source_changes', 'review', 'measure_review', 'financial_accounts', 'accountability_review', 'outcome', 'appointment_followthrough', 'interpretation', 'requirements', 'protocol_review', 'program_document'}
@@ -43,7 +43,7 @@ def input_contract(op):
     lo, hi = ((0, 0) if op in ('cohort', 'evidence') else
               (2, 2) if op == 'difference' else
               (2, 10) if op in ('intersect', 'union') else
-              (1, 10) if op == 'reference_review' else (3, 10) if op == 'compare' else (1, 4) if op == 'worklist' else (1, 1))
+              (0, 1) if op == 'sql' else (1, 10) if op == 'reference_review' else (3, 10) if op == 'compare' else (1, 4) if op == 'worklist' else (1, 1))
     result = {'count': [lo, hi], 'type': 'membership',
               'output': 'membership' if op in SET_OPS else 'report'}
     if op in ('baseline', 'pre_event_state'): result['first_operation'] = 'outcome'
@@ -92,6 +92,10 @@ def parameter_schema(op, catalog):
             'group_by': string(aggregate.GROUP_BY), 'adjust': string(aggregate.ADJUSTMENTS, 'Case-mix standardisation for counts/shares'),
             'window': obj({'start': {'type': 'string', 'description': 'YYYY-MM-DD or empty'}, 'end': {'type': 'string', 'description': 'YYYY-MM-DD or empty'}}),
             'value_aggregate': string(['latest', 'all']), 'top': {'type': 'integer', 'minimum': 1, 'maximum': 200}})
+    if op == 'sql':
+        from . import sql_query
+        return obj({'query': {'type': 'string', 'description': 'One read-only SELECT/WITH over the semantic_layer tables. Reference the upstream population (if an input is given) as table population(patient_id).'},
+                    'returns': string(sql_query.RETURNS, 'count/value: first column of first row; patient_set: first column = patient_id; table: all rows')})
     if op == 'explain':
         from . import explain, concepts as library
         return obj({'outcome': obj({'type': string(explain.OUTCOME_TYPES),
