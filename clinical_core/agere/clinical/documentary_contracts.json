@@ -1,0 +1,423 @@
+{
+  "schema": "evidence-requirement-composition/1",
+  "authority": "internal_documentary_review",
+  "contracts": [
+    {
+      "id": "affordability_report",
+      "version": "1",
+      "title": "Documented affordability barrier",
+      "purpose": "Find supported source reports for assistance review; current need, consent and program eligibility remain separate.",
+      "bindings": {
+        "barrier": {
+          "label": "Affirmative affordability report",
+          "expected": "affirmed",
+          "source": {
+            "streams": [
+              "notes",
+              "financial"
+            ],
+            "concept": "financial hardship",
+            "relation": "reported_barrier",
+            "clock": "source_statement_date"
+          }
+        }
+      },
+      "expression": "barrier",
+      "supported_next_step": "Review the documented barrier, confirm current need and assess assistance-specific consent and eligibility."
+    },
+    {
+      "id": "nephrology_followthrough",
+      "version": "1",
+      "title": "Dated nephrology plan and completion accounts",
+      "purpose": "Reconcile evidence of a plan and completed care without assuming that an attendance account fulfills a particular referral.",
+      "bindings": {
+        "plan": {
+          "label": "Dated nephrology plan",
+          "expected": "affirmed",
+          "source": {
+            "streams": [
+              "notes",
+              "referrals"
+            ],
+            "concept": "care nephrology",
+            "relation": "care_order_plan",
+            "clock": "explicit_clinical_date"
+          }
+        },
+        "completion": {
+          "label": "Dated nephrology completion account",
+          "expected": "affirmed",
+          "source": {
+            "streams": [
+              "notes",
+              "referrals"
+            ],
+            "concept": "care nephrology",
+            "relation": "care_completion",
+            "clock": "explicit_clinical_date"
+          }
+        }
+      },
+      "expression": {
+        "all": [
+          "plan",
+          "completion"
+        ]
+      },
+      "supported_next_step": "Inspect both dated accounts and reconcile referral/attendance identity and ordering before declaring a referral fulfilled."
+    },
+    {
+      "id": "native_affordability_report",
+      "version": "1",
+      "title": "Received affordability-screen reports",
+      "purpose": "Find literal reported difficulty paying medical bills in received source accounts. A billing balance does not establish hardship; a positive screen does not establish current need or program eligibility.",
+      "bindings": {
+        "barrier": {
+          "label": "Reported difficulty paying medical bills",
+          "expected": "affirmed",
+          "source": {
+            "kind": "native_account",
+            "relation": "reported_affordability",
+            "where": [],
+            "conditions": [
+              {
+                "field": "difficulty_paying_medical_bills",
+                "op": "eq",
+                "value": true
+              }
+            ],
+            "quantifier": "any"
+          }
+        }
+      },
+      "expression": "barrier",
+      "supported_next_step": "Review the dated screen and confirm current need, consent and assistance-program criteria."
+    },
+    {
+      "id": "native_medication_nonuse",
+      "version": "1",
+      "title": "Medication non-use source reports",
+      "purpose": "Find a selected medication account reporting not_using, retaining separate prescription identities, unresolved timing and conflicting reports. This is a report-review signal, not established nonadherence or a treatment decision.",
+      "bindings": {
+        "nonuse": {
+          "label": "Medication account reporting non-use",
+          "expected": "affirmed",
+          "source": {
+            "kind": "native_account",
+            "relation": "reported_use",
+            "where": [],
+            "conditions": [
+              {
+                "field": "reported_intent",
+                "op": "eq",
+                "value": "not_using"
+              }
+            ],
+            "quantifier": "any"
+          }
+        }
+      },
+      "expression": "nonuse",
+      "supported_next_step": "Reconcile the named prescription, reported timing, current use and the reason for non-use before recommending a change."
+    },
+    {
+      "id": "native_outside_service",
+      "version": "1",
+      "title": "Linked outside-service documentation",
+      "purpose": "Find received status accounts that explicitly document an outside service, with their referral and imported-record dependencies present. This does not prove that a clinically indicated service or a particular program requirement was fulfilled.",
+      "bindings": {
+        "documentation": {
+          "label": "Outside-service account with received source links",
+          "expected": "affirmed",
+          "source": {
+            "kind": "native_account",
+            "relation": "outside_service_documentation",
+            "where": [],
+            "conditions": [
+              {
+                "field": "performed_service_documented",
+                "op": "eq",
+                "value": true
+              }
+            ],
+            "quantifier": "any"
+          }
+        }
+      },
+      "expression": "documentation",
+      "supported_next_step": "Review the linked referral and imported record for exact service, patient, date and clinical relevance."
+    },
+    {
+      "id": "native_advance_document_review",
+      "version": "1",
+      "title": "Advance-care document validity review",
+      "purpose": "Find received advance-care document accounts explicitly stating that legal validity was not determined. Their transcribed treatment fields do not authorize a code-status or goals-of-care decision.",
+      "bindings": {
+        "review": {
+          "label": "Document validity explicitly not determined",
+          "expected": "affirmed",
+          "source": {
+            "kind": "native_account",
+            "relation": "transcribed_document",
+            "where": [],
+            "conditions": [
+              {
+                "field": "legal_validity",
+                "op": "eq",
+                "value": "not_determined"
+              }
+            ],
+            "quantifier": "any"
+          }
+        }
+      },
+      "expression": "review",
+      "supported_next_step": "Verify the source document, version, signatures, applicability and patient preferences through the appropriate review process."
+    },
+    {
+      "id": "medication_report_readiness",
+      "version": "1",
+      "title": "Medication use and hold report readiness",
+      "purpose": "Determine whether beta-blocker reported-use and hold/stop accounts have resolved documentary polarity. Either positive or negative reports can supply review inputs; no medication decision follows from this contract.",
+      "bindings": {
+        "use": {
+          "label": "Reported beta-blocker use",
+          "expected": "affirmed",
+          "source": {
+            "streams": [
+              "notes",
+              "medication_history",
+              "medication_orders",
+              "pharmacy_claims",
+              "medication_administration"
+            ],
+            "concept": "medication bb",
+            "relation": "reported_use",
+            "clock": "source_statement_date"
+          }
+        },
+        "hold": {
+          "label": "Reported beta-blocker hold or stop",
+          "expected": "affirmed",
+          "source": {
+            "streams": [
+              "notes",
+              "medication_history",
+              "medication_orders",
+              "pharmacy_claims",
+              "medication_administration"
+            ],
+            "concept": "medication bb",
+            "relation": "treatment_hold_stop",
+            "clock": "source_statement_date"
+          }
+        }
+      },
+      "expression": {
+        "all": [
+          {
+            "any": [
+              "use",
+              {
+                "not": "use"
+              }
+            ]
+          },
+          {
+            "any": [
+              "hold",
+              {
+                "not": "hold"
+              }
+            ]
+          }
+        ]
+      },
+      "supported_next_step": "Reconcile exact medication identity, chronology, current use and hold rationale; dose tolerance and clinical appropriateness remain separate."
+    },
+    {
+      "id": "medication_regimen_confirmation",
+      "version": "1",
+      "title": "Medication regimen confirmation review",
+      "purpose": "Find explicit review entries requesting regimen confirmation, linked to the reported product, interview, historical list and pharmacy response. These are documentary review needs, not medication changes.",
+      "bindings": {
+        "regimen_unverified": {
+          "label": "current regimen not verified",
+          "expected": "affirmed",
+          "source": {
+            "kind": "native_account",
+            "relation": "medication_reconciliation_item",
+            "where": [],
+            "conditions": [
+              {
+                "field": "review.disposition",
+                "op": "eq",
+                "value": "current_regimen_not_verified"
+              }
+            ],
+            "quantifier": "any"
+          }
+        },
+        "label_requires_confirmation": {
+          "label": "historical dispensing label available current regimen requires confirmation",
+          "expected": "affirmed",
+          "source": {
+            "kind": "native_account",
+            "relation": "medication_reconciliation_item",
+            "where": [],
+            "conditions": [
+              {
+                "field": "review.disposition",
+                "op": "eq",
+                "value": "historical_dispensing_label_available_current_regimen_requires_confirmation"
+              }
+            ],
+            "quantifier": "any"
+          }
+        }
+      },
+      "expression": {
+        "any": [
+          "regimen_unverified",
+          "label_requires_confirmation"
+        ]
+      },
+      "supported_next_step": "Inspect the item-level source chain and clarify current use, directions and the remaining source discrepancies before considering treatment changes."
+    },
+    {
+      "id": "medication_label_report",
+      "version": "1",
+      "title": "Linked medication dispensing-label reports",
+      "purpose": "Find review entries explicitly reporting a dispensing label, retaining the exact response item, received copy and original dispense. This does not verify current directions or ingestion.",
+      "bindings": {
+        "item": {
+          "label": "Linked medication dispensing-label reports",
+          "expected": "affirmed",
+          "source": {
+            "kind": "native_account",
+            "relation": "medication_reconciliation_item",
+            "where": [],
+            "conditions": [
+              {
+                "field": "review.dispensing_label_available",
+                "op": "eq",
+                "value": true
+              }
+            ],
+            "quantifier": "any"
+          }
+        }
+      },
+      "expression": "item",
+      "supported_next_step": "Inspect the item-level source chain and clarify current use, directions and the remaining source discrepancies before considering treatment changes."
+    },
+    {
+      "id": "prescriber_reassessment_request",
+      "version": "1",
+      "title": "Received requests for prescriber reassessment",
+      "purpose": "Identify a received response explicitly requesting reassessment, with its linked request intact. No prescription, stop instruction, current medication use or completed reassessment is inferred.",
+      "bindings": {
+        "report": {
+          "label": "Received requests for prescriber reassessment",
+          "expected": "affirmed",
+          "source": {
+            "kind": "native_account",
+            "relation": "prescription_request_responses_account",
+            "where": [],
+            "conditions": [
+              {
+                "field": "status",
+                "op": "eq",
+                "value": "requires_prescriber_reassessment"
+              }
+            ],
+            "quantifier": "any"
+          }
+        }
+      },
+      "expression": "report",
+      "supported_next_step": "Inspect the exact request and response and reconcile current medication information before any clinical decision."
+    },
+    {
+      "id": "renewal_clarification_deferral",
+      "version": "1",
+      "title": "Received renewal deferrals for clarification",
+      "purpose": "Identify a received prescriber account that explicitly defers renewal pending clarification. This is documentary status, not an independent recommendation to hold or restart therapy.",
+      "bindings": {
+        "report": {
+          "label": "Received renewal deferrals for clarification",
+          "expected": "affirmed",
+          "source": {
+            "kind": "native_account",
+            "relation": "prescription_reassessment_decisions_account",
+            "where": [],
+            "conditions": [
+              {
+                "field": "status",
+                "op": "eq",
+                "value": "deferred_pending_clarification"
+              }
+            ],
+            "quantifier": "any"
+          }
+        }
+      },
+      "expression": "report",
+      "supported_next_step": "Review the named medication, laboratory links, reported supply and stated clarification need with the prescriber."
+    },
+    {
+      "id": "transport_support_report",
+      "version": "1",
+      "title": "Reported transport difficulty",
+      "purpose": "Find affirmative transport difficulty reports in received interviews. Historical reports, contact permission, eligibility, current need and completed services remain separate.",
+      "bindings": {
+        "report": {
+          "label": "Reported transport difficulty",
+          "expected": "affirmed",
+          "source": {
+            "kind": "native_account",
+            "relation": "care_support_interviews_account",
+            "where": [],
+            "conditions": [
+              {
+                "field": "transport_to_medical_visits_difficult_reported",
+                "op": "eq",
+                "value": true
+              }
+            ],
+            "quantifier": "any"
+          }
+        }
+      },
+      "expression": "report",
+      "supported_next_step": "Confirm the reported transport need and contact permission, then inspect available resources and their own eligibility requirements."
+    },
+    {
+      "id": "community_service_delivery_report",
+      "version": "1",
+      "title": "Received community-service delivery reports",
+      "purpose": "Find linked received accounts explicitly reporting service delivery. Scheduling alone is not delivery; missing reports do not establish that care did not occur.",
+      "bindings": {
+        "report": {
+          "label": "Received community-service delivery reports",
+          "expected": "affirmed",
+          "source": {
+            "kind": "native_account",
+            "relation": "community_service_outcomes_account",
+            "where": [],
+            "conditions": [
+              {
+                "field": "service_delivered",
+                "op": "eq",
+                "value": true
+              }
+            ],
+            "quantifier": "any"
+          }
+        }
+      },
+      "expression": "report",
+      "supported_next_step": "Review the linked referral and delivery account, including the exact service and date; do not infer broader program completion."
+    }
+  ]
+}

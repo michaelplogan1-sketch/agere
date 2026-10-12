@@ -1,0 +1,35 @@
+[
+  {
+    "key": "ats-2023-pr-delivery-choice",
+    "version": "1",
+    "kind": "guideline_recommendation",
+    "title": "Pulmonary rehabilitation delivery choice",
+    "published_on": "2023-08-15",
+    "checked_on": "2026-10-11",
+    "review_status": "machine_curated_unreviewed",
+    "citation": {
+      "title": "Pulmonary Rehabilitation for Adults with Chronic Respiratory Disease: An Official American Thoracic Society Clinical Practice Guideline",
+      "publisher": "American Thoracic Society",
+      "doi": "10.1164/rccm.202306-1066ST",
+      "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC10449064/",
+      "locator": "Question 5: ATS recommendation and implementation considerations",
+      "evidence_family": "doi:10.1164/rccm.202306-1066ST",
+      "independent_study_count": null
+    },
+    "quote": "For adults with stable CRD, we recommend offering the choice of center-based PR or telerehabilitation",
+    "paraphrase": "ATS supports a choice of pulmonary rehabilitation delivery for adults with stable chronic respiratory disease; this is not a finding about this patient.",
+    "reported_strength": "strong",
+    "reported_evidence_quality": "moderate",
+    "evidence_limitations": "The compared populations were predominantly COPD. Delivery models varied; one remote model was not established as best. Comprehensive assessment and essential rehabilitation components still matter.",
+    "effect_estimate": null,
+    "individual_treatment_effect": null,
+    "questions": [
+      {"key":"population","basis":"guideline_population","question":"Does current clinical evidence establish that this patient is an adult with stable chronic respiratory disease within the reference population?"},
+      {"key":"assessment","basis":"guideline_implementation","question":"Has an appropriate assessment established the rehabilitation components and supervision this patient needs?"},
+      {"key":"preference","basis":"agere_operational_requirement","question":"What rehabilitation delivery option does this patient currently prefer, and has participation been discussed with them?"},
+      {"key":"access","basis":"agere_operational_requirement","question":"Can the patient use the proposed delivery option given equipment, technology, travel and support needs?"},
+      {"key":"coverage","basis":"agere_operational_requirement","question":"Do the exact patient plan terms, provider participation and buyer capabilities support the proposed service and delivery option?"},
+      {"key":"currency","basis":"agere_reference_governance","question":"Has a qualified reviewer checked reference updates, corrections and applicability at this decision date?"}
+    ]
+  }
+]

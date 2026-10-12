@@ -1,0 +1,8 @@
+{
+  "schema":"baseline-input-maps/1",
+  "adapter":"synthetic_ecosystem_received_sources_v2",
+  "streams":["adt","allergies","coverage","documents","encounters","financial","households","labs","life_events","medical_claims","medication_administration","medication_history","medication_orders","notes","pharmacy_claims","problem_lists","procedure_orders","purchased_sdoh","referrals","sdoh","vitals"],
+  "medication_classes":["arb","bb","other"],
+  "block_streams":["notes","labs","pharmacy_claims"],
+  "meaning":"Fixed source vocabulary for the initial synthetic adapter. Drug classes are literal source categories, not independently validated treatment equivalence. Unmapped categories remain visible."
+}

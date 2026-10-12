@@ -1,0 +1,1172 @@
+{
+  "schema": "received-source-catalog/1",
+  "synthetic": true,
+  "basis": "Literal fields and same-patient reference types inspected in public received records; no clinical equivalence or target values.",
+  "source_manifest_sha256": "4cfa5de2a78ea2ed754b84c0ab52f6752db3241929743cc6c6fcd5a5fca141fa",
+  "source_warehouse_sha256": "edee010582ef0f2ce36f035a685a09abf194d25b3929fe60e969ca00353775a9",
+  "definitions": {
+    "care_management_contacts": {
+      "domain": "access",
+      "relation": "care_management_contacts_account",
+      "fields": [
+        "author_id",
+        "basis_record_id",
+        "new_visit_time",
+        "prior_document_date",
+        "purpose",
+        "reason",
+        "reason_reported",
+        "received_summary_record_id",
+        "respondent",
+        "status",
+        "text"
+      ],
+      "links": {
+        "basis_record_id": [
+          "functional_assessments",
+          "injury_followup_reports"
+        ],
+        "received_summary_record_id": [
+          "received_home_health_documents"
+        ]
+      },
+      "narrative_fields": [],
+      "explicit_clinical_clock_fields": []
+    },
+    "care_support_interviews": {
+      "domain": "access",
+      "relation": "care_support_interviews_account",
+      "fields": [
+        "financial_details",
+        "food_access_concern_reported",
+        "help_available_reported",
+        "helper_relationship_reported",
+        "housing_safety_concern_reported",
+        "legal_surrogate_status",
+        "permission_to_contact_helper",
+        "respondent",
+        "transport_to_medical_visits_difficult_reported"
+      ],
+      "links": {},
+      "narrative_fields": [
+        "help_available_reported",
+        "housing_safety_concern_reported"
+      ],
+      "explicit_clinical_clock_fields": []
+    },
+    "community_service_outcomes": {
+      "domain": "access",
+      "relation": "community_service_outcomes_account",
+      "fields": [
+        "information_source",
+        "prior_response_record_id",
+        "referral_record_id",
+        "service_delivered",
+        "service_requested",
+        "status",
+        "text"
+      ],
+      "links": {
+        "prior_response_record_id": [
+          "community_service_outcomes"
+        ],
+        "referral_record_id": [
+          "community_service_referrals"
+        ]
+      },
+      "narrative_fields": [],
+      "explicit_clinical_clock_fields": []
+    },
+    "community_service_referrals": {
+      "domain": "access",
+      "relation": "community_service_referrals_account",
+      "fields": [
+        "patient_consents",
+        "service_received",
+        "service_requested",
+        "status",
+        "support_interview_record_id"
+      ],
+      "links": {
+        "support_interview_record_id": [
+          "care_support_interviews"
+        ]
+      },
+      "narrative_fields": [],
+      "explicit_clinical_clock_fields": []
+    },
+    "endoscopy_reports": {
+      "domain": "procedure",
+      "relation": "endoscopy_reports_account",
+      "fields": [
+        "bowel_preparation",
+        "cecum_reached",
+        "immediate_complication",
+        "order_record_id",
+        "performed_procedures",
+        "performing_clinician_id",
+        "polyp_count",
+        "polyp_location",
+        "polyp_size_mm",
+        "preprocedure_assessment_record_id",
+        "procedure_end",
+        "procedure_start",
+        "recommendation",
+        "retrieved_for_histology",
+        "sedation_type_reported",
+        "sedative_agents_and_doses",
+        "status",
+        "text",
+        "upper_exam_extent",
+        "withdrawal_minutes_excluding_therapy"
+      ],
+      "links": {
+        "order_record_id": [
+          "procedure_orders"
+        ],
+        "preprocedure_assessment_record_id": [
+          "preprocedure_assessments"
+        ]
+      },
+      "narrative_fields": [
+        "recommendation"
+      ],
+      "explicit_clinical_clock_fields": [
+        "procedure_start"
+      ]
+    },
+    "facility_medication_supply": {
+      "domain": "medication",
+      "relation": "facility_medication_supply_account",
+      "fields": [
+        "dispensing_location",
+        "medication_name",
+        "order_record_id",
+        "outpatient_claim_created",
+        "quantity_supplied",
+        "quantity_unit",
+        "status",
+        "strength",
+        "strength_unit"
+      ],
+      "links": {
+        "order_record_id": [
+          "medication_orders"
+        ]
+      },
+      "narrative_fields": [],
+      "explicit_clinical_clock_fields": []
+    },
+    "functional_mobility_exams": {
+      "domain": "care",
+      "relation": "functional_mobility_exams_account",
+      "fields": [
+        "acute_dyspnea_at_rest_reported",
+        "age_reported",
+        "assessment_phase",
+        "author_id",
+        "basis_record_id",
+        "homebound_assessed",
+        "homebound_basis",
+        "leaving_home_requires_another_person_reported",
+        "leaving_home_taxing_effort_reported",
+        "new_fall_reported",
+        "new_focal_weakness_reported",
+        "new_therapy_order",
+        "patient_reported_remaining_concern",
+        "received_summary_record_id",
+        "recent_syncope_reported",
+        "skilled_need_assessed",
+        "test_protocol",
+        "timed_up_and_go_seconds",
+        "transfer_assistance_observed",
+        "usual_absences_reported",
+        "walking_distance_before_rest_metres_reported",
+        "walking_support_observed"
+      ],
+      "links": {
+        "basis_record_id": [
+          "functional_assessments",
+          "injury_followup_reports"
+        ],
+        "received_summary_record_id": [
+          "received_home_health_documents"
+        ]
+      },
+      "narrative_fields": [
+        "homebound_basis"
+      ],
+      "explicit_clinical_clock_fields": []
+    },
+    "home_health_assessments": {
+      "domain": "care",
+      "relation": "home_health_assessments_account",
+      "fields": [
+        "assessment_phase",
+        "author_id",
+        "discipline",
+        "emergency_plan_reviewed",
+        "exercise_days_reported_last_week",
+        "helper_relationship_reported",
+        "historical_medication_names_unverified",
+        "home_safety_observation",
+        "homebound_interview",
+        "homebound_status_reassessment",
+        "medication_report_record_ids",
+        "new_fall_reported",
+        "oasis_instrument_completed_in_this_export",
+        "packet_record_id",
+        "pain_reported_0_to_10",
+        "patient_permission_to_include_helper",
+        "red_flag_symptoms_reported",
+        "regimen_completely_verified",
+        "respondent",
+        "skin_observation",
+        "test_protocol",
+        "timed_up_and_go_seconds",
+        "transfer_assistance_observed",
+        "walking_distance_before_rest_metres_observed"
+      ],
+      "links": {
+        "medication_report_record_ids": [
+          "medication_followup_reports"
+        ],
+        "packet_record_id": [
+          "home_health_referral_packets"
+        ]
+      },
+      "narrative_fields": [],
+      "explicit_clinical_clock_fields": []
+    },
+    "home_health_billing_periods": {
+      "domain": "finance",
+      "relation": "home_health_billing_periods_account",
+      "fields": [
+        "charge_basis",
+        "completed_visit_record_ids",
+        "nursing_visits",
+        "payment_status",
+        "period_end_date",
+        "period_start_date",
+        "start_of_care_date",
+        "status",
+        "therapy_visits"
+      ],
+      "links": {
+        "completed_visit_record_ids": [
+          "home_health_assessments"
+        ]
+      },
+      "narrative_fields": [],
+      "explicit_clinical_clock_fields": []
+    },
+    "home_health_case_summaries": {
+      "domain": "care",
+      "relation": "home_health_case_summaries_account",
+      "fields": [
+        "actual_treatment_visits",
+        "author_id",
+        "baseline_timed_mobility_seconds",
+        "latest_assessment_record_id",
+        "latest_timed_mobility_seconds",
+        "new_plan_authorized",
+        "status",
+        "text"
+      ],
+      "links": {
+        "latest_assessment_record_id": [
+          "home_health_assessments"
+        ]
+      },
+      "narrative_fields": [],
+      "explicit_clinical_clock_fields": []
+    },
+    "home_health_intake": {
+      "domain": "care",
+      "relation": "home_health_intake_account",
+      "fields": [
+        "clinical_acceptance_is_not_payer_approval",
+        "contact_respondent",
+        "packet_record_id",
+        "payment_terms_status",
+        "reason_reported",
+        "status",
+        "visit_performed"
+      ],
+      "links": {
+        "packet_record_id": [
+          "home_health_referral_packets"
+        ]
+      },
+      "narrative_fields": [],
+      "explicit_clinical_clock_fields": []
+    },
+    "home_health_orders": {
+      "domain": "care",
+      "relation": "home_health_orders_account",
+      "fields": [
+        "assessment_record_id",
+        "coverage_determination",
+        "face_to_face_encounter_id",
+        "homebound_basis",
+        "initial_frequency",
+        "ordering_clinician_id",
+        "requested_disciplines",
+        "requested_services",
+        "status"
+      ],
+      "links": {
+        "assessment_record_id": [
+          "functional_mobility_exams"
+        ]
+      },
+      "narrative_fields": [
+        "homebound_basis",
+        "initial_frequency",
+        "requested_services"
+      ],
+      "explicit_clinical_clock_fields": []
+    },
+    "home_health_plan_responses": {
+      "domain": "care",
+      "relation": "home_health_plan_responses_account",
+      "fields": [
+        "approved_disciplines",
+        "author_id",
+        "frequency",
+        "payment_authorization",
+        "plan_end_date",
+        "received_plan_record_id",
+        "status",
+        "text"
+      ],
+      "links": {
+        "received_plan_record_id": [
+          "received_home_health_documents"
+        ]
+      },
+      "narrative_fields": [],
+      "explicit_clinical_clock_fields": []
+    },
+    "home_health_plans": {
+      "domain": "care",
+      "relation": "home_health_plans_account",
+      "fields": [
+        "assessment_record_id",
+        "author_id",
+        "caregiver_availability",
+        "discipline",
+        "frequency",
+        "goals",
+        "interventions",
+        "patient_stated_goal",
+        "payment_authorization",
+        "plan_end_date",
+        "plan_start_date",
+        "status"
+      ],
+      "links": {
+        "assessment_record_id": [
+          "home_health_assessments"
+        ]
+      },
+      "narrative_fields": [
+        "goals"
+      ],
+      "explicit_clinical_clock_fields": []
+    },
+    "home_health_referral_packets": {
+      "domain": "care",
+      "relation": "home_health_referral_packets_account",
+      "fields": [
+        "functional_assessment",
+        "original_note_record_id",
+        "original_order_record_id",
+        "original_signed_time",
+        "record_scope",
+        "referring_organization_id",
+        "support_interview",
+        "text"
+      ],
+      "links": {
+        "original_note_record_id": [
+          "notes"
+        ],
+        "original_order_record_id": [
+          "home_health_orders"
+        ]
+      },
+      "narrative_fields": [],
+      "explicit_clinical_clock_fields": []
+    },
+    "home_health_treatments": {
+      "domain": "care",
+      "relation": "home_health_treatments_account",
+      "fields": [
+        "approved_plan_received_record_id",
+        "assessment_record_id",
+        "author_id",
+        "caregiver_teaching_completed",
+        "gait_training_minutes",
+        "home_program_reviewed",
+        "patient_response",
+        "therapeutic_exercise_minutes",
+        "transfer_training_minutes",
+        "unplanned_medication_change"
+      ],
+      "links": {
+        "approved_plan_received_record_id": [
+          "received_home_health_documents"
+        ],
+        "assessment_record_id": [
+          "home_health_assessments"
+        ]
+      },
+      "narrative_fields": [
+        "patient_response"
+      ],
+      "explicit_clinical_clock_fields": []
+    },
+    "home_medication_questions": {
+      "domain": "medication",
+      "relation": "home_medication_questions_account",
+      "fields": [
+        "assessment_record_id",
+        "author_id",
+        "historical_names",
+        "medication_changed",
+        "patient_report_record_ids",
+        "received_question_record_id",
+        "status",
+        "text"
+      ],
+      "links": {
+        "assessment_record_id": [
+          "home_health_assessments"
+        ],
+        "patient_report_record_ids": [
+          "medication_followup_reports"
+        ],
+        "received_question_record_id": [
+          "received_home_health_documents"
+        ]
+      },
+      "narrative_fields": [],
+      "explicit_clinical_clock_fields": []
+    },
+    "hospital_care_transitions": {
+      "domain": "care",
+      "relation": "hospital_care_transitions_account",
+      "fields": [
+        "discharge_plan_record_id",
+        "followup_attendance_confirmed",
+        "home_health_ordered",
+        "patient_reports_help_available",
+        "rehabilitation_ordered",
+        "teach_back",
+        "transport_home"
+      ],
+      "links": {
+        "discharge_plan_record_id": [
+          "discharge_plans"
+        ]
+      },
+      "narrative_fields": [],
+      "explicit_clinical_clock_fields": []
+    },
+    "hospital_fluid_balance": {
+      "domain": "care",
+      "relation": "hospital_fluid_balance_account",
+      "fields": [
+        "observing_clinician_id",
+        "oral_intake_mL",
+        "oral_trial_tolerated",
+        "period_end",
+        "period_start",
+        "urine_output",
+        "urine_volume_measured_mL",
+        "vomiting_episodes_observed"
+      ],
+      "links": {},
+      "narrative_fields": [],
+      "explicit_clinical_clock_fields": []
+    },
+    "hospital_followup_assessments": {
+      "domain": "care",
+      "relation": "hospital_followup_assessments_account",
+      "fields": [
+        "drinking_normally_reported",
+        "new_medication_reported",
+        "received_summary_record_id",
+        "residual_fatigue_reported",
+        "respondent",
+        "return_to_work_or_daily_activity",
+        "urination_returned_to_usual_reported",
+        "vomiting_since_discharge_reported"
+      ],
+      "links": {
+        "received_summary_record_id": [
+          "received_hospital_summaries"
+        ]
+      },
+      "narrative_fields": [],
+      "explicit_clinical_clock_fields": []
+    },
+    "hospital_illness_assessments": {
+      "domain": "care",
+      "relation": "hospital_illness_assessments_account",
+      "fields": [
+        "abdominal_exam",
+        "assessment",
+        "history_of_cardiac_or_renal_failure_reported",
+        "loose_stools_past_day_reported",
+        "onset_reported",
+        "oral_intake_reported",
+        "phase",
+        "regular_medications_reported",
+        "stool_blood_reported",
+        "urine_output_reported",
+        "vomiting_episodes_past_day_reported"
+      ],
+      "links": {},
+      "narrative_fields": [
+        "abdominal_exam"
+      ],
+      "explicit_clinical_clock_fields": []
+    },
+    "inpatient_cardiac_reports": {
+      "domain": "care",
+      "relation": "inpatient_cardiac_reports_account",
+      "fields": [
+        "LVEF_percent",
+        "acquired_time",
+        "image_quality",
+        "interpreting_clinician_id",
+        "ordered_time",
+        "ordering_clinician_id",
+        "raw_images_in_extract",
+        "raw_waveform_in_extract",
+        "status",
+        "test",
+        "text"
+      ],
+      "links": {},
+      "narrative_fields": [],
+      "explicit_clinical_clock_fields": [
+        "acquired_time"
+      ]
+    },
+    "inpatient_discharge_reconciliation": {
+      "domain": "medication",
+      "relation": "inpatient_discharge_reconciliation_account",
+      "fields": [
+        "decision_basis",
+        "directions",
+        "inpatient_oral_administration_record_ids",
+        "medication_name",
+        "medication_order_record_id",
+        "other_medications_reported",
+        "outside_supply_verified",
+        "pharmacy_pickup_required",
+        "prior_home_order_record_id",
+        "reviewed_laboratory_record_ids",
+        "take_home_supply_confirmed"
+      ],
+      "links": {
+        "inpatient_oral_administration_record_ids": [
+          "medication_administrations"
+        ],
+        "medication_order_record_id": [
+          "medication_orders"
+        ],
+        "prior_home_order_record_id": [
+          "medication_orders"
+        ],
+        "reviewed_laboratory_record_ids": [
+          "labs"
+        ]
+      },
+      "narrative_fields": [
+        "directions"
+      ],
+      "explicit_clinical_clock_fields": []
+    },
+    "inpatient_fluid_charts": {
+      "domain": "care",
+      "relation": "inpatient_fluid_charts_account",
+      "fields": [
+        "collection_method",
+        "dyspnea_at_rest_reported",
+        "oral_intake_mL",
+        "period_end",
+        "period_start",
+        "related_administration_record_id",
+        "unmeasured_voids",
+        "urine_output_measured_mL"
+      ],
+      "links": {
+        "related_administration_record_id": [
+          "medication_administrations"
+        ]
+      },
+      "narrative_fields": [],
+      "explicit_clinical_clock_fields": []
+    },
+    "inpatient_medication_histories": {
+      "domain": "medication",
+      "relation": "inpatient_medication_histories_account",
+      "fields": [
+        "home_directions_verification",
+        "home_medication_plan",
+        "medication_name",
+        "otc_nsaid_use_reported",
+        "other_regular_medications_reported",
+        "patient_report_record_id",
+        "pharmacy_independent_verification"
+      ],
+      "links": {
+        "patient_report_record_id": [
+          "medication_followup_reports"
+        ]
+      },
+      "narrative_fields": [
+        "home_medication_plan"
+      ],
+      "explicit_clinical_clock_fields": []
+    },
+    "inpatient_volume_assessments": {
+      "domain": "care",
+      "relation": "inpatient_volume_assessments_account",
+      "fields": [
+        "chest_pain_reported",
+        "dizziness_reported",
+        "edema_grade",
+        "lung_exam",
+        "medication_container_report_record_id",
+        "orthopnea_reported",
+        "perfusion",
+        "phase",
+        "respondent",
+        "urine_output_reported",
+        "walking_tolerance",
+        "working_diagnosis"
+      ],
+      "links": {
+        "medication_container_report_record_id": [
+          "medication_followup_reports"
+        ]
+      },
+      "narrative_fields": [
+        "lung_exam",
+        "perfusion",
+        "working_diagnosis"
+      ],
+      "explicit_clinical_clock_fields": []
+    },
+    "pathology_accessions": {
+      "domain": "procedure",
+      "relation": "pathology_accessions_account",
+      "fields": [
+        "accession_number",
+        "body_site",
+        "cassette_count",
+        "collection_time",
+        "container_received",
+        "gross_description",
+        "originating_specimen_record_id",
+        "received_condition",
+        "referring_organization_id",
+        "specimen_label"
+      ],
+      "links": {
+        "originating_specimen_record_id": [
+          "pathology_specimens"
+        ]
+      },
+      "narrative_fields": [
+        "gross_description"
+      ],
+      "explicit_clinical_clock_fields": [
+        "collection_time"
+      ]
+    },
+    "pathology_reports": {
+      "domain": "procedure",
+      "relation": "pathology_reports_account",
+      "fields": [
+        "accession_record_id",
+        "author_id",
+        "body_site",
+        "diagnosis",
+        "margin_assessment",
+        "microscopic_description",
+        "specimen_label",
+        "status",
+        "text"
+      ],
+      "links": {
+        "accession_record_id": [
+          "pathology_accessions"
+        ]
+      },
+      "narrative_fields": [
+        "diagnosis",
+        "microscopic_description"
+      ],
+      "explicit_clinical_clock_fields": []
+    },
+    "pathology_specimens": {
+      "domain": "procedure",
+      "relation": "pathology_specimens_account",
+      "fields": [
+        "body_site",
+        "clinical_question",
+        "collection_time",
+        "container",
+        "ordering_clinician_id",
+        "procedure",
+        "procedure_report_record_id",
+        "specimen_label",
+        "specimen_type"
+      ],
+      "links": {
+        "procedure_report_record_id": [
+          "endoscopy_reports"
+        ]
+      },
+      "narrative_fields": [
+        "clinical_question"
+      ],
+      "explicit_clinical_clock_fields": [
+        "collection_time"
+      ]
+    },
+    "pharmacy_prescriber_responses": {
+      "domain": "medication",
+      "relation": "pharmacy_prescriber_responses_account",
+      "fields": [
+        "medication_name",
+        "new_prescription_issued",
+        "original_response_record_id",
+        "prescription_id",
+        "replacement_order_record_id",
+        "request_record_id",
+        "responding_organization_id",
+        "reviewing_clinician_id",
+        "status",
+        "text"
+      ],
+      "links": {
+        "original_response_record_id": [
+          "prescription_request_responses"
+        ],
+        "replacement_order_record_id": [
+          "medication_orders"
+        ],
+        "request_record_id": [
+          "received_prescription_requests"
+        ]
+      },
+      "narrative_fields": [],
+      "explicit_clinical_clock_fields": []
+    },
+    "pharmacy_renewal_requests": {
+      "domain": "medication",
+      "relation": "pharmacy_renewal_requests_account",
+      "fields": [
+        "directions_on_file",
+        "initiated_by",
+        "medication_name",
+        "prescriber_id",
+        "prescriber_organization_id",
+        "prescription_id",
+        "quantity_requested",
+        "quantity_unit",
+        "request_id",
+        "request_reason",
+        "requested_refills",
+        "status"
+      ],
+      "links": {},
+      "narrative_fields": [
+        "directions_on_file"
+      ],
+      "explicit_clinical_clock_fields": []
+    },
+    "preprocedure_assessments": {
+      "domain": "procedure",
+      "relation": "preprocedure_assessments_account",
+      "fields": [
+        "acute_illness_reported",
+        "age_reported",
+        "allergies_reported",
+        "allergy_review_completed",
+        "anesthesia_assessment_status",
+        "anesthesia_details_in_export",
+        "author_id",
+        "conditions_reported",
+        "consent_confirmed",
+        "current_medication_report_record_ids",
+        "decision",
+        "decision_reason",
+        "dysphagia_reported",
+        "escort_confirmed",
+        "fasting_confirmed",
+        "historical_medication_names_for_verification",
+        "historical_medications_current_status",
+        "interval_medication_change_reported",
+        "order_record_id",
+        "other_medicines_reported",
+        "overt_bleeding_reported",
+        "packet_record_id",
+        "prior_assessment_record_id",
+        "prior_endoscopy_report_available",
+        "respondent",
+        "weight_loss_reported"
+      ],
+      "links": {
+        "current_medication_report_record_ids": [
+          "medication_followup_reports"
+        ],
+        "order_record_id": [
+          "procedure_orders"
+        ],
+        "packet_record_id": [
+          "procedure_referral_packets"
+        ],
+        "prior_assessment_record_id": [
+          "preprocedure_assessments"
+        ]
+      },
+      "narrative_fields": [
+        "decision_reason"
+      ],
+      "explicit_clinical_clock_fields": []
+    },
+    "prescription_reassessment_decisions": {
+      "domain": "medication",
+      "relation": "prescription_reassessment_decisions_account",
+      "fields": [
+        "medication_name",
+        "new_order_record_id",
+        "patient_report_record_id",
+        "prior_prescription_id",
+        "reason",
+        "reviewed_laboratory_report_record_ids",
+        "status"
+      ],
+      "links": {
+        "new_order_record_id": [
+          "medication_orders"
+        ],
+        "patient_report_record_id": [
+          "medication_followup_reports"
+        ],
+        "reviewed_laboratory_report_record_ids": [
+          "laboratory_result_notifications"
+        ]
+      },
+      "narrative_fields": [],
+      "explicit_clinical_clock_fields": []
+    },
+    "prescription_request_responses": {
+      "domain": "medication",
+      "relation": "prescription_request_responses_account",
+      "fields": [
+        "medication_name",
+        "new_prescription_issued",
+        "prescription_id",
+        "replacement_order_record_id",
+        "request_record_id",
+        "reviewing_clinician_id",
+        "status",
+        "text"
+      ],
+      "links": {
+        "replacement_order_record_id": [
+          "medication_orders"
+        ],
+        "request_record_id": [
+          "received_prescription_requests"
+        ]
+      },
+      "narrative_fields": [],
+      "explicit_clinical_clock_fields": []
+    },
+    "procedure_access_contacts": {
+      "domain": "access",
+      "relation": "procedure_access_contacts_account",
+      "fields": [
+        "assessment_record_id",
+        "new_appointment_time",
+        "order_record_id",
+        "packet_record_id",
+        "purpose",
+        "reason",
+        "reason_reported",
+        "referral_record_id",
+        "respondent",
+        "status",
+        "text",
+        "transport_or_escort_discussed"
+      ],
+      "links": {
+        "assessment_record_id": [
+          "preprocedure_assessments"
+        ],
+        "order_record_id": [
+          "procedure_orders"
+        ],
+        "packet_record_id": [
+          "procedure_referral_packets"
+        ],
+        "referral_record_id": [
+          "referrals"
+        ]
+      },
+      "narrative_fields": [],
+      "explicit_clinical_clock_fields": []
+    },
+    "procedure_orders": {
+      "domain": "procedure",
+      "relation": "procedure_orders_account",
+      "fields": [
+        "assessment_record_id",
+        "consent_status",
+        "indication",
+        "ordering_clinician_id",
+        "requested_procedures",
+        "sedation_plan",
+        "status"
+      ],
+      "links": {
+        "assessment_record_id": [
+          "preprocedure_assessments"
+        ]
+      },
+      "narrative_fields": [],
+      "explicit_clinical_clock_fields": []
+    },
+    "procedure_preparation_contacts": {
+      "domain": "procedure",
+      "relation": "procedure_preparation_contacts_account",
+      "fields": [
+        "contact_result",
+        "dispensing_record_available",
+        "escort_confirmed",
+        "formulation_and_dose_in_this_export",
+        "instruction",
+        "medication_instruction",
+        "order_record_id",
+        "prep_instructions",
+        "prep_obtained_patient_report",
+        "procedure_date",
+        "respondent",
+        "text"
+      ],
+      "links": {
+        "order_record_id": [
+          "procedure_orders"
+        ]
+      },
+      "narrative_fields": [
+        "medication_instruction",
+        "prep_instructions"
+      ],
+      "explicit_clinical_clock_fields": []
+    },
+    "procedure_recovery_notes": {
+      "domain": "procedure",
+      "relation": "procedure_recovery_notes_account",
+      "fields": [
+        "alert_and_oriented",
+        "author_id",
+        "bleeding_observed",
+        "discharged_with_responsible_adult",
+        "instructions",
+        "oral_fluids_tolerated",
+        "pain_score_0_to_10",
+        "procedure_report_record_id"
+      ],
+      "links": {
+        "procedure_report_record_id": [
+          "endoscopy_reports"
+        ]
+      },
+      "narrative_fields": [],
+      "explicit_clinical_clock_fields": []
+    },
+    "procedure_referral_packets": {
+      "domain": "procedure",
+      "relation": "procedure_referral_packets_account",
+      "fields": [
+        "medication_verification",
+        "original_referral_record_id",
+        "permission_contact_record_id",
+        "reason",
+        "referral_date",
+        "referring_organization_id",
+        "source_report_extracts"
+      ],
+      "links": {
+        "original_referral_record_id": [
+          "referrals"
+        ],
+        "permission_contact_record_id": [
+          "procedure_access_contacts"
+        ]
+      },
+      "narrative_fields": [],
+      "explicit_clinical_clock_fields": []
+    },
+    "procedure_result_communications": {
+      "domain": "procedure",
+      "relation": "procedure_result_communications_account",
+      "fields": [
+        "anemia_cause_established",
+        "communication_result",
+        "procedure_report_record_id",
+        "received_pathology_record_id",
+        "repeat_colonoscopy_needed",
+        "repeat_performed",
+        "surveillance_interval_status",
+        "text"
+      ],
+      "links": {
+        "procedure_report_record_id": [
+          "endoscopy_reports"
+        ],
+        "received_pathology_record_id": [
+          "received_procedure_reports"
+        ]
+      },
+      "narrative_fields": [],
+      "explicit_clinical_clock_fields": []
+    },
+    "received_home_health_documents": {
+      "domain": "care",
+      "relation": "received_home_health_documents_account",
+      "fields": [
+        "capture_channel",
+        "content",
+        "document_type",
+        "original_organization_id",
+        "original_record_id",
+        "original_signed_time",
+        "purpose"
+      ],
+      "links": {
+        "original_record_id": [
+          "home_health_case_summaries",
+          "home_health_plan_responses",
+          "home_health_plans",
+          "home_medication_questions"
+        ]
+      },
+      "narrative_fields": [
+        "content"
+      ],
+      "explicit_clinical_clock_fields": []
+    },
+    "received_hospital_summaries": {
+      "domain": "care",
+      "relation": "received_hospital_summaries_account",
+      "fields": [
+        "capture_channel",
+        "original_encounter_id",
+        "original_organization_id",
+        "original_summary_record_id",
+        "text"
+      ],
+      "links": {
+        "original_summary_record_id": [
+          "notes"
+        ]
+      },
+      "narrative_fields": [],
+      "explicit_clinical_clock_fields": []
+    },
+    "received_prescription_requests": {
+      "domain": "medication",
+      "relation": "received_prescription_requests_account",
+      "fields": [
+        "directions_on_file",
+        "initiated_by",
+        "medication_name",
+        "original_request_record_id",
+        "original_response_record_id",
+        "patient_requested_primary_practice_review",
+        "prescriber_id",
+        "prescriber_organization_id",
+        "prescription_id",
+        "quantity_requested",
+        "quantity_unit",
+        "request_id",
+        "request_reason",
+        "requested_refills",
+        "sending_organization_id",
+        "sending_pharmacy_id",
+        "status",
+        "text"
+      ],
+      "links": {
+        "original_request_record_id": [
+          "pharmacy_renewal_requests",
+          "received_prescription_requests"
+        ],
+        "original_response_record_id": [
+          "prescription_request_responses"
+        ]
+      },
+      "narrative_fields": [
+        "directions_on_file"
+      ],
+      "explicit_clinical_clock_fields": []
+    },
+    "received_procedure_reports": {
+      "domain": "procedure",
+      "relation": "received_procedure_reports_account",
+      "fields": [
+        "capture_channel",
+        "original_organization_id",
+        "original_record_id",
+        "original_signed_time",
+        "report_type",
+        "source_report_fields",
+        "text"
+      ],
+      "links": {
+        "original_record_id": [
+          "endoscopy_reports",
+          "pathology_reports",
+          "procedure_result_communications"
+        ]
+      },
+      "narrative_fields": [],
+      "explicit_clinical_clock_fields": []
+    },
+    "transition_of_care_contacts": {
+      "domain": "care",
+      "relation": "transition_of_care_contacts_account",
+      "fields": [
+        "communication_result",
+        "performed_home_health_visit",
+        "received_summary_record_id",
+        "respondent",
+        "text"
+      ],
+      "links": {
+        "received_summary_record_id": [
+          "received_hospital_summaries"
+        ]
+      },
+      "narrative_fields": [],
+      "explicit_clinical_clock_fields": []
+    }
+  },
+  "limits": [
+    "New source accounts preserve literal reported values; no eligibility, care completion or ingestion inference.",
+    "Nested source packets remain received copies; nested references need separate qualification.",
+    "Reference types are pinned from inspected public transport; novel target types fail explicitly."
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "schema": "care-delivery-components/1",
+  "mappings": [{
+    "reference_doi": "10.7326/M22-2056",
+    "option_evidence_key": "mdd-initial-treatment",
+    "basis": "Operational decomposition of the dated ACP alternatives for service review. These components are not a complete clinical protocol or evidence of buyer capability.",
+    "components": [
+      {"key":"cbt_service","label":"Qualified CBT delivery and follow-up","checks":["Verify actual CBT intervention, clinician qualifications, format, schedule and follow-up.","Confirm patient preference, ability to participate and exact psychotherapy benefits."]},
+      {"key":"medication_service","label":"Prescribing assessment and medication monitoring","checks":["Verify an appropriately qualified prescribing clinician, medication review and monitoring arrangements.","Confirm exact medication access, formulary/authorization, follow-up and patient consent; no drug or dose is chosen here."]}
+    ],
+    "alternatives": {"cbt":["cbt_service"],"sga":["medication_service"],"combined":["cbt_service","medication_service"]}
+  }]
+}

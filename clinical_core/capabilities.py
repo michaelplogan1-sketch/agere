@@ -1,0 +1,38 @@
+"""Explicit role/status inventory: a candidate is never an installed model."""
+
+
+def stack_capabilities():
+    return [
+        {"role": "source_intake", "component": "Versioned SQLite source ledger", "status": "connected",
+         "purpose": "Exact identity, event/arrival cutoff, immutable corrections, document processing state"},
+        {"role": "clinical_reader", "component": "Inherited lexicon and clinical heuristics", "status": "connected",
+         "purpose": "Current synthetic baseline; evidence assertions remain unreviewed"},
+        {"role": "evidence_selection", "component": "Trained TF-IDF/logistic passage selector", "status": "connected_experimental",
+         "purpose": "Bounded packets with protected spans; no completeness guarantee"},
+        {"role": "observation", "component": "Evidence and source-coverage reconciliation", "status": "connected",
+         "purpose": "Distinguish source limitations, outside records, exceptions and barriers"},
+        {"role": "reasoning", "component": "Boolean kernel, versioned policies and dependency DAG", "status": "connected",
+         "purpose": "Possible outcomes, sufficient facts, information needs, incremental reuse"},
+        {"role": "trajectories", "component": "Uncertainty-weighted Gaussian change points", "status": "conditional",
+         "purpose": "Only compatible unit/assay series with supplied measurement error; not a diagnosis"},
+        {"role": "information_acquisition", "component": "Bayesian information-value calculator", "status": "conditional",
+         "purpose": "Requires explicit assumptions; current route queue does not estimate patient benefit"},
+        {"role": "question_planning", "component": "Trained research-domain router", "status": "optional_proposal",
+         "purpose": "Routes new questions for review; never invents an executable handler"},
+        {"role": "learning", "component": "Development-family review and export workflow", "status": "connected",
+         "purpose": "Machine suggestions remain separate from attributed reviewed targets"},
+        {"role": "bounded_decisions", "component": "Jev and Claude provider adapters", "status": "offline_request_preparation",
+         "purpose": "Prepare comparable requests; no paid calls from the integrated runner"},
+        {"role": "bounded_decisions", "component": "Perplexity Decider, Lev, Liquid d1", "status": "candidate",
+         "purpose": "Task-specific comparisons before promotion"},
+        {"role": "clinical_encoder", "component": "BioClinical ModernBERT", "status": "training_candidate",
+         "purpose": "Source-grounded evidence status and temporal/subject relations"},
+        {"role": "document_reader", "component": "Chandra, Interfaze Lite, MedGemma", "status": "candidate",
+         "purpose": "Imported extraction envelope works; native model execution is not installed"},
+        {"role": "retrieval", "component": "Granite embeddings, BGE/Qwen rerankers", "status": "candidate",
+         "purpose": "Improve exception/contradiction recall at measured total cost"},
+        {"role": "learned_observation", "component": "Joint patient/source state model", "status": "research",
+         "purpose": "Separate latent patient state from the process that produces visible records"},
+        {"role": "discovery", "component": "Causal effects, process monitoring, tensor interactions", "status": "research",
+         "purpose": "Require appropriate outcomes, sampling assumptions and simpler comparators"},
+    ]

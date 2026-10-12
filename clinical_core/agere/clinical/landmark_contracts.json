@@ -1,0 +1,30 @@
+{
+  "schema": "receipt-decision-contracts/1",
+  "authority": "internal_synthetic_observation_definitions",
+  "contracts": [
+    {
+      "id": "received_admission_future_discharge_30d",
+      "version": "1",
+      "title": "Future discharge after an admission record arrives",
+      "source_contract": "admission_discharge_source_30d",
+      "decision_rule": "next_calendar_day_after_first_index_receipt",
+      "endpoint_clock": "clinical",
+      "min_days": 0,
+      "max_days": 29,
+      "profile": "received_prior_180d",
+      "meaning": "First unambiguous admission record received in the requested receipt window, with an explicit clinical date no later than receipt. Observe explicit clinical discharge dates in the next 30 calendar days. Previously occurring or already received endpoints are not future targets. These are received observations, not adjudicated hospital stays."
+    },
+    {
+      "id": "received_discharge_future_admission_30d",
+      "version": "1",
+      "title": "Future admission after a discharge record arrives",
+      "source_contract": "discharge_admission_clinical_30d",
+      "decision_rule": "next_calendar_day_after_first_index_receipt",
+      "endpoint_clock": "clinical",
+      "min_days": 0,
+      "max_days": 29,
+      "profile": "received_prior_180d",
+      "meaning": "First unambiguous discharge record received in the requested receipt window, with an explicit clinical date no later than receipt. Observe explicit clinical admission dates in the next 30 calendar days. A late record of a prior admission is not a future admission. No CMS readmission denominator, clinical negative or intervention benefit is established."
+    }
+  ]
+}

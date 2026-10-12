@@ -1,0 +1,291 @@
+{
+  "package": {
+    "schema": "portable-synthetic-source/1",
+    "source_id": "independent-synthetic-intake-demo",
+    "synthetic": true,
+    "as_of": "2026-10-11",
+    "tables": {
+      "members": [
+        {
+          "member_key": "m1",
+          "label": "Synthetic intake patient 1"
+        },
+        {
+          "member_key": "m2",
+          "label": "Synthetic intake patient 2"
+        },
+        {
+          "member_key": "m3",
+          "label": "Synthetic intake patient 3"
+        },
+        {
+          "member_key": "m4",
+          "label": "Synthetic intake patient 4"
+        }
+      ],
+      "observations": [
+        {
+          "observation_key": "lab-old",
+          "member_key": "m1",
+          "category": "chemistry",
+          "written_on": "2026-09-10",
+          "authored_on": "2026-09-10",
+          "received_on": "2026-09-11",
+          "replaces": null,
+          "analyte": "eGFR",
+          "number": 31,
+          "units": "mL/min/1.73m2",
+          "result_state": "final",
+          "sample_day": "2026-09-09"
+        },
+        {
+          "observation_key": "lab-corrected",
+          "member_key": "m1",
+          "category": "chemistry",
+          "written_on": "2026-09-12",
+          "authored_on": "2026-09-12",
+          "received_on": "2026-09-13",
+          "replaces": "lab-old",
+          "analyte": "eGFR",
+          "number": 33,
+          "units": "mL/min/1.73m2",
+          "result_state": "final",
+          "sample_day": "2026-09-09"
+        },
+        {
+          "observation_key": "cr",
+          "member_key": "m1",
+          "category": "chemistry",
+          "written_on": "2026-09-10",
+          "authored_on": "2026-09-10",
+          "received_on": "2026-09-11",
+          "replaces": null,
+          "analyte": "creatinine",
+          "number": 1.2,
+          "units": "mg/dL",
+          "result_state": "final",
+          "sample_day": "2026-09-09"
+        },
+        {
+          "observation_key": "uacr",
+          "member_key": "m1",
+          "category": "chemistry",
+          "written_on": "2026-09-10",
+          "authored_on": "2026-09-10",
+          "received_on": "2026-09-11",
+          "replaces": null,
+          "analyte": "UACR",
+          "number": 100,
+          "units": "mg/g",
+          "result_state": "final",
+          "sample_day": "2026-09-09"
+        },
+        {
+          "observation_key": "referral",
+          "member_key": "m1",
+          "category": "specialty_visit",
+          "written_on": "2026-09-10",
+          "authored_on": "2026-09-10",
+          "received_on": "2026-09-11",
+          "replaces": null,
+          "clinic": "nephrology",
+          "attended": "completed",
+          "visit_day": "2026-09-08"
+        },
+        {
+          "observation_key": "cost-no",
+          "member_key": "m1",
+          "category": "cost_screen",
+          "written_on": "2026-09-10",
+          "authored_on": "2026-09-10",
+          "received_on": "2026-09-11",
+          "replaces": null,
+          "bills_difficult": false
+        },
+        {
+          "observation_key": "late",
+          "member_key": "m2",
+          "category": "chemistry",
+          "written_on": "2026-09-10",
+          "authored_on": "2026-09-10",
+          "received_on": "2026-10-12",
+          "replaces": null,
+          "analyte": "eGFR",
+          "number": 50,
+          "units": "mL/min/1.73m2",
+          "result_state": "final",
+          "sample_day": "2026-09-09"
+        },
+        {
+          "observation_key": "no-receipt",
+          "member_key": "m2",
+          "category": "chemistry",
+          "written_on": "2026-09-10",
+          "authored_on": "2026-09-10",
+          "received_on": null,
+          "replaces": null,
+          "analyte": "creatinine",
+          "number": 1,
+          "units": "mg/dL",
+          "result_state": "final",
+          "sample_day": "2026-09-09"
+        },
+        {
+          "observation_key": "opaque",
+          "member_key": "m2",
+          "category": "outside_packet",
+          "written_on": "2026-09-10",
+          "authored_on": "2026-09-10",
+          "received_on": "2026-09-11",
+          "replaces": null,
+          "received_document": "Synthetic outside report awaiting mapping"
+        },
+        {
+          "observation_key": "cost-yes",
+          "member_key": "m2",
+          "category": "cost_screen",
+          "written_on": "2026-09-10",
+          "authored_on": "2026-09-10",
+          "received_on": "2026-09-11",
+          "replaces": null,
+          "bills_difficult": true
+        },
+        {
+          "observation_key": "conflict-a",
+          "member_key": "m3",
+          "category": "chemistry",
+          "written_on": "2026-09-10",
+          "authored_on": "2026-09-10",
+          "received_on": "2026-09-11",
+          "replaces": null,
+          "analyte": "eGFR",
+          "number": 60,
+          "units": "mL/min/1.73m2",
+          "result_state": "final",
+          "sample_day": "2026-09-09"
+        },
+        {
+          "observation_key": "conflict-b",
+          "member_key": "m3",
+          "category": "chemistry",
+          "written_on": "2026-09-10",
+          "authored_on": "2026-09-10",
+          "received_on": "2026-09-11",
+          "replaces": null,
+          "analyte": "eGFR",
+          "number": 70,
+          "units": "mL/min/1.73m2",
+          "result_state": "final",
+          "sample_day": "2026-09-09"
+        },
+        {
+          "observation_key": "unknown-clock",
+          "member_key": "m3",
+          "category": "chemistry",
+          "written_on": null,
+          "authored_on": null,
+          "received_on": "2026-09-11",
+          "replaces": null,
+          "analyte": "UACR",
+          "number": 20,
+          "units": "mg/g",
+          "result_state": "final",
+          "sample_day": null
+        },
+        {
+          "observation_key": "future",
+          "member_key": "m3",
+          "category": "chemistry",
+          "written_on": "2026-10-12",
+          "authored_on": "2026-10-12",
+          "received_on": "2026-09-11",
+          "replaces": null,
+          "analyte": "creatinine",
+          "number": 1.2,
+          "units": "mg/dL",
+          "result_state": "final",
+          "sample_day": "2026-09-09"
+        },
+        {
+          "observation_key": "missing-parent",
+          "member_key": "m3",
+          "category": "chemistry",
+          "written_on": "2026-09-10",
+          "authored_on": "2026-09-10",
+          "received_on": "2026-09-11",
+          "replaces": "not-received",
+          "analyte": "creatinine",
+          "number": 1.1,
+          "units": "mg/dL",
+          "result_state": "final",
+          "sample_day": "2026-09-09"
+        }
+      ]
+    },
+    "crosswalk": [
+      {
+        "source_patient_id": "m1",
+        "patient_id": "PORT-01"
+      },
+      {
+        "source_patient_id": "m2",
+        "patient_id": "PORT-02"
+      },
+      {
+        "source_patient_id": "m3",
+        "patient_id": "PORT-03"
+      },
+      {
+        "source_patient_id": "m4",
+        "patient_id": "PORT-04"
+      }
+    ]
+  },
+  "mapping": {
+    "schema": "portable-source-map/1",
+    "version": "buyer-literal-map-v1",
+    "roster": {
+      "table": "members",
+      "id": "member_key"
+    },
+    "records": {
+      "table": "observations",
+      "id": "observation_key",
+      "patient": "member_key",
+      "kind": "category",
+      "clocks": {
+        "event_date": "written_on",
+        "recorded_date": "authored_on",
+        "available_date": "received_on"
+      },
+      "supersedes": "replaces"
+    },
+    "kinds": {
+      "chemistry": {
+        "source_table": "labs",
+        "fields": {
+          "test": "analyte",
+          "value": "number",
+          "unit": "units",
+          "status": "result_state"
+        }
+      },
+      "specialty_visit": {
+        "source_table": "referrals",
+        "fields": {
+          "service": "clinic",
+          "attendance_status": "attended",
+          "attendance_date": "visit_day"
+        }
+      },
+      "cost_screen": {
+        "source_table": "financial",
+        "fields": {
+          "difficulty_paying_medical_bills": "bills_difficult"
+        }
+      }
+    }
+  },
+  "contract": "renal_review",
+  "cutoff": "2026-10-11"
+}

@@ -1,0 +1,3792 @@
+{
+  "title": "CareSignal VBC intelligence question catalog",
+  "version": "executable-registry-1",
+  "as_of": "2026-10-08",
+  "status": "Synthetic development registry. Capability is explicit per question; question text is not proof of implementation.",
+  "priorities": {
+    "P0": "First validation slice; not a claim of current support",
+    "P1": "Subsequent capability requiring its listed data and validation"
+  },
+  "common_answer_contract": {
+    "identity": [
+      "question_id",
+      "cohort_definition",
+      "as_of_time",
+      "data_arrival_cutoff",
+      "clinical_rule_version",
+      "contract_or_program_version"
+    ],
+    "evidence": [
+      "source_id and source type",
+      "event time and availability time",
+      "exact supporting span or structured value with units",
+      "negation/temporality/subject",
+      "contradictory evidence",
+      "source completeness and freshness"
+    ],
+    "decision": [
+      "supported finding",
+      "eligible / ineligible / already addressed / appropriate hold / needs review / insufficient evidence",
+      "reason",
+      "unknowns",
+      "confidence with calibration status"
+    ],
+    "action": [
+      "candidate response",
+      "evidence strength",
+      "review owner",
+      "patient preferences",
+      "capacity dependencies",
+      "expected benefit separately from financial effect",
+      "assumptions and harms",
+      "outcome evaluation plan"
+    ],
+    "audit": [
+      "patient-level inclusion and exclusion reasons",
+      "reproducible query or rule execution",
+      "versioned data snapshot",
+      "review and correction history"
+    ]
+  },
+  "groups": [
+    {
+      "id": "CKD",
+      "title": "Kidney disease: progression, referral and missed opportunity",
+      "required_data": [
+        "Longitudinal creatinine/eGFR with units and collection times",
+        "urine albumin measurements",
+        "medications and actual use",
+        "acute illness episodes",
+        "nephrology referrals and outside visits",
+        "notes and patient preferences"
+      ],
+      "review_owner": "Nephrology / primary care",
+      "guardrail": "Do not infer chronic progression from one acute measurement. Missing albuminuria is unknown, not normal. Use validated risk equations only in their intended populations with required inputs.",
+      "source_refs": [
+        "kdigo"
+      ],
+      "questions": [
+        {
+          "id": "CKD-01",
+          "question": "Which patients have evidence supporting nephrology referral, and which have already received care outside our system?",
+          "analysis_type": "eligibility",
+          "expected_output": "Reviewable referral candidates, qualifying evidence, exclusions, existing care and unknowns.",
+          "candidate_response": "Specialist review or retrieve an outside consult before a duplicate referral.",
+          "acceptance_case": "Outside nephrology evidence changes an apparent new referral gap to already addressed.",
+          "build_priority": "P0",
+          "origin": "existing user-derived catalog",
+          "execution": {
+            "handler": null,
+            "status": "not_implemented",
+            "scope": "Needs the listed data, executable logic and independent validation.",
+            "required_data": [
+              "Longitudinal creatinine/eGFR with units and collection times",
+              "urine albumin measurements",
+              "medications and actual use",
+              "acute illness episodes",
+              "nephrology referrals and outside visits",
+              "notes and patient preferences"
+            ],
+            "review_owner": "Nephrology / primary care"
+          }
+        },
+        {
+          "id": "CKD-02",
+          "question": "Whose kidney function is deteriorating, and does the pattern suggest chronic progression, acute injury, or a change requiring reassessment?",
+          "analysis_type": "trajectory",
+          "expected_output": "Dated trend, baseline selection, acute context, uncertainty and clinician review priority.",
+          "candidate_response": "Clinical reassessment and appropriate follow-up testing.",
+          "acceptance_case": "An acute illness measurement is not silently used as the chronic baseline.",
+          "build_priority": "P0",
+          "origin": "existing user-derived catalog",
+          "execution": {
+            "handler": null,
+            "status": "not_implemented",
+            "scope": "Needs the listed data, executable logic and independent validation.",
+            "required_data": [
+              "Longitudinal creatinine/eGFR with units and collection times",
+              "urine albumin measurements",
+              "medications and actual use",
+              "acute illness episodes",
+              "nephrology referrals and outside visits",
+              "notes and patient preferences"
+            ],
+            "review_owner": "Nephrology / primary care"
+          }
+        },
+        {
+          "id": "CKD-03",
+          "question": "Who cannot be risk-stratified because albuminuria or another essential input is missing?",
+          "analysis_type": "data_gap",
+          "expected_output": "Missing inputs, last available results and decision that becomes possible with additional evidence.",
+          "candidate_response": "Retrieve outside testing or review need for measurement.",
+          "acceptance_case": "The system abstains from a kidney-failure probability when required inputs are absent.",
+          "build_priority": "P0",
+          "origin": "existing user-derived catalog",
+          "execution": {
+            "handler": null,
+            "status": "not_implemented",
+            "scope": "Needs the listed data, executable logic and independent validation.",
+            "required_data": [
+              "Longitudinal creatinine/eGFR with units and collection times",
+              "urine albumin measurements",
+              "medications and actual use",
+              "acute illness episodes",
+              "nephrology referrals and outside visits",
+              "notes and patient preferences"
+            ],
+            "review_owner": "Nephrology / primary care"
+          }
+        },
+        {
+          "id": "CKD-04",
+          "question": "Which kidney-protective treatment opportunities remain after accounting for contraindications, intolerance, affordability and patient preference?",
+          "analysis_type": "treatment_gap",
+          "expected_output": "Applicable guideline version and class-specific reason for each apparent gap.",
+          "candidate_response": "Clinician and pharmacist review with barrier-specific options.",
+          "acceptance_case": "A documented appropriate hold is separated from untreated eligible disease.",
+          "build_priority": "P1",
+          "origin": "existing user-derived catalog",
+          "execution": {
+            "handler": null,
+            "status": "not_implemented",
+            "scope": "Needs the listed data, executable logic and independent validation.",
+            "required_data": [
+              "Longitudinal creatinine/eGFR with units and collection times",
+              "urine albumin measurements",
+              "medications and actual use",
+              "acute illness episodes",
+              "nephrology referrals and outside visits",
+              "notes and patient preferences"
+            ],
+            "review_owner": "Nephrology / primary care"
+          }
+        },
+        {
+          "id": "CKD-05",
+          "question": "Which patients have repeated kidney injury after medication changes, illness or transitions between settings?",
+          "analysis_type": "hypothesis",
+          "expected_output": "Time-ordered episodes and plausible contributors, including competing explanations.",
+          "candidate_response": "Medication safety or transition-process review.",
+          "acceptance_case": "Association is labelled a hypothesis and no drug is automatically discontinued.",
+          "build_priority": "P1",
+          "origin": "existing user-derived catalog",
+          "execution": {
+            "handler": null,
+            "status": "not_implemented",
+            "scope": "Needs the listed data, executable logic and independent validation.",
+            "required_data": [
+              "Longitudinal creatinine/eGFR with units and collection times",
+              "urine albumin measurements",
+              "medications and actual use",
+              "acute illness episodes",
+              "nephrology referrals and outside visits",
+              "notes and patient preferences"
+            ],
+            "review_owner": "Nephrology / primary care"
+          }
+        },
+        {
+          "id": "CKD-06",
+          "question": "Which patients with advanced disease lack documented discussions of prognosis, treatment choices and what matters to them?",
+          "analysis_type": "needs_review",
+          "expected_output": "Missing discussion evidence, symptom burden and known preferences.",
+          "candidate_response": "Offer shared decision-making support and appropriate specialist input.",
+          "acceptance_case": "Dialysis preparation and conservative management are presented as preference-sensitive pathways, not cost rankings.",
+          "build_priority": "P1",
+          "origin": "existing user-derived catalog",
+          "execution": {
+            "handler": null,
+            "status": "not_implemented",
+            "scope": "Needs the listed data, executable logic and independent validation.",
+            "required_data": [
+              "Longitudinal creatinine/eGFR with units and collection times",
+              "urine albumin measurements",
+              "medications and actual use",
+              "acute illness episodes",
+              "nephrology referrals and outside visits",
+              "notes and patient preferences"
+            ],
+            "review_owner": "Nephrology / primary care"
+          }
+        },
+        {
+          "id": "CKD-07",
+          "question": "Which apparent kidney declines disappear after reconciling units, corrected results and duplicate labs?",
+          "origin": "additional question",
+          "analysis_type": "proposed_analysis",
+          "build_priority": "P1",
+          "expected_output": "Evidence-linked findings, alternative explanations and missing inputs.",
+          "candidate_response": "Review findings and define a testable response appropriate to the question.",
+          "acceptance_case": "Unsupported inputs or causal claims return an explicit limitation, not an invented conclusion.",
+          "execution": {
+            "handler": null,
+            "status": "not_implemented",
+            "scope": "Needs the listed data, executable logic and independent validation.",
+            "required_data": [
+              "Longitudinal creatinine/eGFR with units and collection times",
+              "urine albumin measurements",
+              "medications and actual use",
+              "acute illness episodes",
+              "nephrology referrals and outside visits",
+              "notes and patient preferences"
+            ],
+            "review_owner": "Nephrology / primary care"
+          }
+        },
+        {
+          "id": "CKD-08",
+          "question": "Where are recurrent potassium problems interrupting otherwise appropriate treatment?",
+          "origin": "additional question",
+          "analysis_type": "proposed_analysis",
+          "build_priority": "P1",
+          "expected_output": "Evidence-linked findings, alternative explanations and missing inputs.",
+          "candidate_response": "Review findings and define a testable response appropriate to the question.",
+          "acceptance_case": "Unsupported inputs or causal claims return an explicit limitation, not an invented conclusion.",
+          "execution": {
+            "handler": null,
+            "status": "not_implemented",
+            "scope": "Needs the listed data, executable logic and independent validation.",
+            "required_data": [
+              "Longitudinal creatinine/eGFR with units and collection times",
+              "urine albumin measurements",
+              "medications and actual use",
+              "acute illness episodes",
+              "nephrology referrals and outside visits",
+              "notes and patient preferences"
+            ],
+            "review_owner": "Nephrology / primary care"
+          }
+        },
+        {
+          "id": "CKD-09",
+          "question": "Which patients have an uncompleted kidney evaluation despite repeated abnormal observations?",
+          "origin": "additional question",
+          "analysis_type": "proposed_analysis",
+          "build_priority": "P1",
+          "expected_output": "Evidence-linked findings, alternative explanations and missing inputs.",
+          "candidate_response": "Review findings and define a testable response appropriate to the question.",
+          "acceptance_case": "Unsupported inputs or causal claims return an explicit limitation, not an invented conclusion.",
+          "execution": {
+            "handler": null,
+            "status": "not_implemented",
+            "scope": "Needs the listed data, executable logic and independent validation.",
+            "required_data": [
+              "Longitudinal creatinine/eGFR with units and collection times",
+              "urine albumin measurements",
+              "medications and actual use",
+              "acute illness episodes",
+              "nephrology referrals and outside visits",
+              "notes and patient preferences"
+            ],
+            "review_owner": "Nephrology / primary care"
+          }
+        },
+        {
+          "id": "CKD-10",
+          "question": "Which groups have missing outside renal care documentation that could distort referral demand?",
+          "origin": "additional question",
+          "analysis_type": "proposed_analysis",
+          "build_priority": "P1",
+          "expected_output": "Evidence-linked findings, alternative explanations and missing inputs.",
+          "candidate_response": "Review findings and define a testable response appropriate to the question.",
+          "acceptance_case": "Unsupported inputs or causal claims return an explicit limitation, not an invented conclusion.",
+          "execution": {
+            "handler": null,
+            "status": "not_implemented",
+            "scope": "Needs the listed data, executable logic and independent validation.",
+            "required_data": [
+              "Longitudinal creatinine/eGFR with units and collection times",
+              "urine albumin measurements",
+              "medications and actual use",
+              "acute illness episodes",
+              "nephrology referrals and outside visits",
+              "notes and patient preferences"
+            ],
+            "review_owner": "Nephrology / primary care"
+          }
+        }
+      ]
+    },
+    {
+      "id": "HF",
+      "title": "Heart failure: appropriate treatment and preventable deterioration",
+      "required_data": [
+        "Dated imaging and ejection fraction",
+        "medication orders fills and reconciliation",
+        "dose history",
+        "blood pressure heart rate kidney function potassium",
+        "symptoms and weights",
+        "admissions",
+        "affordability and patient goals"
+      ],
+      "review_owner": "Cardiology / primary care / pharmacy",
+      "guardrail": "Prescribed, dispensed and taken are different states. Below target dose does not establish below maximum tolerated dose. Classify HF phenotype and preserve legitimate holds.",
+      "source_refs": [
+        "acc_hf"
+      ],
+      "questions": [
+        {
+          "id": "HF-01",
+          "question": "Which confirmed HFrEF patients have potentially missing guideline-directed therapy after all exceptions are reconciled?",
+          "analysis_type": "treatment_gap",
+          "expected_output": "Class-by-class treatment state, source evidence, exception or unresolved reason.",
+          "candidate_response": "Clinician review of genuine opportunities.",
+          "acceptance_case": "Outside fills and contraindications remove false gaps while missing data stays unresolved.",
+          "build_priority": "P0",
+          "origin": "existing user-derived catalog",
+          "execution": {
+            "handler": "hf_gaps",
+            "status": "partial",
+            "scope": "Existing benchmark HFrEF medication-class heuristic; not complete GDMT, target dosing or guideline validation.",
+            "required_data": [
+              "Dated imaging and ejection fraction",
+              "medication orders fills and reconciliation",
+              "dose history",
+              "blood pressure heart rate kidney function potassium",
+              "symptoms and weights",
+              "admissions",
+              "affordability and patient goals"
+            ],
+            "review_owner": "Cardiology / primary care / pharmacy"
+          }
+        },
+        {
+          "id": "HF-02",
+          "question": "Who is below an appropriate target dose without evidence establishing that the current dose is maximally tolerated?",
+          "analysis_type": "treatment_gap",
+          "expected_output": "Dose trajectory, physiological constraints, prior intolerance and documentation gaps.",
+          "candidate_response": "Review titration suitability rather than issue an automatic dose change.",
+          "acceptance_case": "A prior failed titration with documented intolerance is not labelled therapeutic inertia.",
+          "build_priority": "P0",
+          "origin": "existing user-derived catalog",
+          "execution": {
+            "handler": null,
+            "status": "not_implemented",
+            "scope": "Needs the listed data, executable logic and independent validation.",
+            "required_data": [
+              "Dated imaging and ejection fraction",
+              "medication orders fills and reconciliation",
+              "dose history",
+              "blood pressure heart rate kidney function potassium",
+              "symptoms and weights",
+              "admissions",
+              "affordability and patient goals"
+            ],
+            "review_owner": "Cardiology / primary care / pharmacy"
+          }
+        },
+        {
+          "id": "HF-03",
+          "question": "Which patients are deteriorating before the next admission becomes apparent in claims?",
+          "analysis_type": "trajectory",
+          "expected_output": "Available symptom, weight, utilization and laboratory trends with timestamps and calibrated uncertainty.",
+          "candidate_response": "Review for worsening disease under the local escalation protocol.",
+          "acceptance_case": "Prediction uses only evidence available at the decision time, including data-arrival time.",
+          "build_priority": "P1",
+          "origin": "existing user-derived catalog",
+          "execution": {
+            "handler": null,
+            "status": "not_implemented",
+            "scope": "Needs the listed data, executable logic and independent validation.",
+            "required_data": [
+              "Dated imaging and ejection fraction",
+              "medication orders fills and reconciliation",
+              "dose history",
+              "blood pressure heart rate kidney function potassium",
+              "symptoms and weights",
+              "admissions",
+              "affordability and patient goals"
+            ],
+            "review_owner": "Cardiology / primary care / pharmacy"
+          }
+        },
+        {
+          "id": "HF-04",
+          "question": "Where does HF treatment stall: unaffordable medication, unavailable labs, follow-up delay, clinical intolerance or missing information?",
+          "analysis_type": "hypothesis",
+          "expected_output": "Barrier-specific cohorts, evidence and unresolved cases.",
+          "candidate_response": "Test the smallest intervention matching the barrier, such as lab access or benefit review.",
+          "acceptance_case": "A missed fill alone does not establish cost-related nonadherence.",
+          "build_priority": "P0",
+          "origin": "existing user-derived catalog",
+          "execution": {
+            "handler": "barriers",
+            "status": "partial",
+            "scope": "Observed medication gap reasons; does not infer causes of treatment failure.",
+            "required_data": [
+              "Dated imaging and ejection fraction",
+              "medication orders fills and reconciliation",
+              "dose history",
+              "blood pressure heart rate kidney function potassium",
+              "symptoms and weights",
+              "admissions",
+              "affordability and patient goals"
+            ],
+            "review_owner": "Cardiology / primary care / pharmacy"
+          }
+        },
+        {
+          "id": "HF-05",
+          "question": "Which apparent HFrEF gaps come from an old ejection fraction, recovered function or conflicting diagnoses?",
+          "analysis_type": "reconciliation",
+          "expected_output": "Phenotype timeline and contradictions requiring clinical interpretation.",
+          "candidate_response": "Reconcile phenotype and treatment rationale.",
+          "acceptance_case": "Improved ejection fraction does not automatically trigger stopping existing therapy.",
+          "build_priority": "P1",
+          "origin": "existing user-derived catalog",
+          "execution": {
+            "handler": null,
+            "status": "not_implemented",
+            "scope": "Needs the listed data, executable logic and independent validation.",
+            "required_data": [
+              "Dated imaging and ejection fraction",
+              "medication orders fills and reconciliation",
+              "dose history",
+              "blood pressure heart rate kidney function potassium",
+              "symptoms and weights",
+              "admissions",
+              "affordability and patient goals"
+            ],
+            "review_owner": "Cardiology / primary care / pharmacy"
+          }
+        },
+        {
+          "id": "HF-06",
+          "question": "Which discharge patterns precede recurrent HF admissions, and which are actionable while the patient is still stable?",
+          "analysis_type": "hypothesis",
+          "expected_output": "Episode comparisons, medication discrepancies, unresolved barriers and potential decision windows.",
+          "candidate_response": "Prospectively test an agreed discharge or outpatient intervention.",
+          "acceptance_case": "The output separates predicted admission risk from evidence that an intervention will help.",
+          "build_priority": "P1",
+          "origin": "existing user-derived catalog",
+          "execution": {
+            "handler": null,
+            "status": "not_implemented",
+            "scope": "Needs the listed data, executable logic and independent validation.",
+            "required_data": [
+              "Dated imaging and ejection fraction",
+              "medication orders fills and reconciliation",
+              "dose history",
+              "blood pressure heart rate kidney function potassium",
+              "symptoms and weights",
+              "admissions",
+              "affordability and patient goals"
+            ],
+            "review_owner": "Cardiology / primary care / pharmacy"
+          }
+        },
+        {
+          "id": "HF-07",
+          "question": "Which missing medication fills are explained by samples or an outside pharmacy?",
+          "origin": "additional question",
+          "analysis_type": "proposed_analysis",
+          "build_priority": "P1",
+          "expected_output": "Evidence-linked findings, alternative explanations and missing inputs.",
+          "candidate_response": "Review findings and define a testable response appropriate to the question.",
+          "acceptance_case": "Unsupported inputs or causal claims return an explicit limitation, not an invented conclusion.",
+          "execution": {
+            "handler": "outside",
+            "status": "partial",
+            "scope": "Existing note-reader classification of outside supply; not verified ingestion.",
+            "required_data": [
+              "Dated imaging and ejection fraction",
+              "medication orders fills and reconciliation",
+              "dose history",
+              "blood pressure heart rate kidney function potassium",
+              "symptoms and weights",
+              "admissions",
+              "affordability and patient goals"
+            ],
+            "review_owner": "Cardiology / primary care / pharmacy"
+          }
+        },
+        {
+          "id": "HF-08",
+          "question": "Which patients have a documented treatment barrier that remains unresolved at subsequent visits?",
+          "origin": "additional question",
+          "analysis_type": "proposed_analysis",
+          "build_priority": "P1",
+          "expected_output": "Evidence-linked findings, alternative explanations and missing inputs.",
+          "candidate_response": "Review findings and define a testable response appropriate to the question.",
+          "acceptance_case": "Unsupported inputs or causal claims return an explicit limitation, not an invented conclusion.",
+          "execution": {
+            "handler": null,
+            "status": "not_implemented",
+            "scope": "Needs the listed data, executable logic and independent validation.",
+            "required_data": [
+              "Dated imaging and ejection fraction",
+              "medication orders fills and reconciliation",
+              "dose history",
+              "blood pressure heart rate kidney function potassium",
+              "symptoms and weights",
+              "admissions",
+              "affordability and patient goals"
+            ],
+            "review_owner": "Cardiology / primary care / pharmacy"
+          }
+        },
+        {
+          "id": "HF-09",
+          "question": "Where do copied medication lists conflict with actual dispensing or documented discontinuation?",
+          "origin": "additional question",
+          "analysis_type": "proposed_analysis",
+          "build_priority": "P1",
+          "expected_output": "Evidence-linked findings, alternative explanations and missing inputs.",
+          "candidate_response": "Review findings and define a testable response appropriate to the question.",
+          "acceptance_case": "Unsupported inputs or causal claims return an explicit limitation, not an invented conclusion.",
+          "execution": {
+            "handler": null,
+            "status": "not_implemented",
+            "scope": "Needs the listed data, executable logic and independent validation.",
+            "required_data": [
+              "Dated imaging and ejection fraction",
+              "medication orders fills and reconciliation",
+              "dose history",
+              "blood pressure heart rate kidney function potassium",
+              "symptoms and weights",
+              "admissions",
+              "affordability and patient goals"
+            ],
+            "review_owner": "Cardiology / primary care / pharmacy"
+          }
+        },
+        {
+          "id": "HF-10",
+          "question": "Which patients have changes in ejection fraction that require reassessing their treatment-gap classification?",
+          "origin": "additional question",
+          "analysis_type": "proposed_analysis",
+          "build_priority": "P1",
+          "expected_output": "Evidence-linked findings, alternative explanations and missing inputs.",
+          "candidate_response": "Review findings and define a testable response appropriate to the question.",
+          "acceptance_case": "Unsupported inputs or causal claims return an explicit limitation, not an invented conclusion.",
+          "execution": {
+            "handler": null,
+            "status": "not_implemented",
+            "scope": "Needs the listed data, executable logic and independent validation.",
+            "required_data": [
+              "Dated imaging and ejection fraction",
+              "medication orders fills and reconciliation",
+              "dose history",
+              "blood pressure heart rate kidney function potassium",
+              "symptoms and weights",
+              "admissions",
+              "affordability and patient goals"
+            ],
+            "review_owner": "Cardiology / primary care / pharmacy"
+          }
+        }
+      ]
+    },
+    {
+      "id": "SEP",
+      "title": "Sepsis: antecedents, treatment reliability and recovery",
+      "required_data": [
+        "Infection episodes and microbiology",
+        "clinical observations and their availability times",
+        "device use",
+        "antimicrobial treatment",
+        "admission records",
+        "discharge summaries",
+        "post-illness function and symptoms"
+      ],
+      "review_owner": "Infectious diseases / critical care / primary care",
+      "guardrail": "Sepsis codes are not a complete clinical phenotype. Separate prevention, acute recognition and recovery tasks. A retrospective association does not validate an early warning tool.",
+      "source_refs": [
+        "sepsis"
+      ],
+      "questions": [
+        {
+          "id": "SEP-01",
+          "question": "Which recurrent infections or unresolved infection sources precede sepsis admissions?",
+          "analysis_type": "hypothesis",
+          "expected_output": "Validated infection sequences, source evidence and potential review points.",
+          "candidate_response": "Review recurrent infection management and unresolved source concerns.",
+          "acceptance_case": "The same copied diagnosis is not counted as repeated independent infection.",
+          "build_priority": "P1",
+          "origin": "existing user-derived catalog",
+          "execution": {
+            "handler": null,
+            "status": "not_implemented",
+            "scope": "Needs the listed data, executable logic and independent validation.",
+            "required_data": [
+              "Infection episodes and microbiology",
+              "clinical observations and their availability times",
+              "device use",
+              "antimicrobial treatment",
+              "admission records",
+              "discharge summaries",
+              "post-illness function and symptoms"
+            ],
+            "review_owner": "Infectious diseases / critical care / primary care"
+          }
+        },
+        {
+          "id": "SEP-02",
+          "question": "Which patients have infection risk related to devices or wounds that deserves clinical reassessment?",
+          "analysis_type": "needs_review",
+          "expected_output": "Documented device or wound status, symptoms, management plan and missing information.",
+          "candidate_response": "Review ongoing device necessity or wound/infection pathway.",
+          "acceptance_case": "Device presence alone does not label an infection or justify antibiotics.",
+          "build_priority": "P1",
+          "origin": "existing user-derived catalog",
+          "execution": {
+            "handler": null,
+            "status": "not_implemented",
+            "scope": "Needs the listed data, executable logic and independent validation.",
+            "required_data": [
+              "Infection episodes and microbiology",
+              "clinical observations and their availability times",
+              "device use",
+              "antimicrobial treatment",
+              "admission records",
+              "discharge summaries",
+              "post-illness function and symptoms"
+            ],
+            "review_owner": "Infectious diseases / critical care / primary care"
+          }
+        },
+        {
+          "id": "SEP-03",
+          "question": "Where do failures in recognition, escalation or treatment recur across sepsis episodes?",
+          "analysis_type": "process_audit",
+          "expected_output": "Timestamped process measures against a versioned local protocol and missing-time flags.",
+          "candidate_response": "Target the specific process failure for clinical quality improvement.",
+          "acceptance_case": "Retrospective diagnosis time is not substituted for the time clinicians could first know the finding.",
+          "build_priority": "P1",
+          "origin": "existing user-derived catalog",
+          "execution": {
+            "handler": null,
+            "status": "not_implemented",
+            "scope": "Needs the listed data, executable logic and independent validation.",
+            "required_data": [
+              "Infection episodes and microbiology",
+              "clinical observations and their availability times",
+              "device use",
+              "antimicrobial treatment",
+              "admission records",
+              "discharge summaries",
+              "post-illness function and symptoms"
+            ],
+            "review_owner": "Infectious diseases / critical care / primary care"
+          }
+        },
+        {
+          "id": "SEP-04",
+          "question": "Which sepsis survivors have unresolved medication issues, symptoms, functional loss or cognitive concerns?",
+          "analysis_type": "needs_review",
+          "expected_output": "Recovery needs by domain and evidence from patient reports and follow-up documentation.",
+          "candidate_response": "Clinician-selected recovery assessment and services.",
+          "acceptance_case": "No follow-up claim is labelled unknown care until external care is considered.",
+          "build_priority": "P1",
+          "origin": "existing user-derived catalog",
+          "execution": {
+            "handler": null,
+            "status": "not_implemented",
+            "scope": "Needs the listed data, executable logic and independent validation.",
+            "required_data": [
+              "Infection episodes and microbiology",
+              "clinical observations and their availability times",
+              "device use",
+              "antimicrobial treatment",
+              "admission records",
+              "discharge summaries",
+              "post-illness function and symptoms"
+            ],
+            "review_owner": "Infectious diseases / critical care / primary care"
+          }
+        },
+        {
+          "id": "SEP-05",
+          "question": "Which sepsis readmissions reflect recurrent infection versus organ dysfunction, treatment adverse effects or another cause?",
+          "analysis_type": "reconciliation",
+          "expected_output": "Adjudicable readmission categories with alternative explanations and uncertainty.",
+          "candidate_response": "Match the improvement pathway to the mechanism.",
+          "acceptance_case": "Readmission for another cause is not automatically counted as recurrent sepsis.",
+          "build_priority": "P1",
+          "origin": "existing user-derived catalog",
+          "execution": {
+            "handler": null,
+            "status": "not_implemented",
+            "scope": "Needs the listed data, executable logic and independent validation.",
+            "required_data": [
+              "Infection episodes and microbiology",
+              "clinical observations and their availability times",
+              "device use",
+              "antimicrobial treatment",
+              "admission records",
+              "discharge summaries",
+              "post-illness function and symptoms"
+            ],
+            "review_owner": "Infectious diseases / critical care / primary care"
+          }
+        },
+        {
+          "id": "SEP-06",
+          "question": "Which proposed sepsis interventions improve outcomes locally, and for whom do they add burden without benefit?",
+          "analysis_type": "causal_evaluation",
+          "expected_output": "Prespecified comparison, clinical outcomes, harms, workload and uncertainty.",
+          "candidate_response": "Continue, adapt or stop an intervention based on evaluated effects.",
+          "acceptance_case": "A before-and-after decline alone is not reported as a causal treatment effect.",
+          "build_priority": "P1",
+          "origin": "existing user-derived catalog",
+          "execution": {
+            "handler": null,
+            "status": "not_implemented",
+            "scope": "Needs the listed data, executable logic and independent validation.",
+            "required_data": [
+              "Infection episodes and microbiology",
+              "clinical observations and their availability times",
+              "device use",
+              "antimicrobial treatment",
+              "admission records",
+              "discharge summaries",
+              "post-illness function and symptoms"
+            ],
+            "review_owner": "Infectious diseases / critical care / primary care"
+          }
+        },
+        {
+          "id": "SEP-07",
+          "question": "Which sepsis survivors encounter a gap between discharge antibiotic plans and actual access?",
+          "origin": "additional question",
+          "analysis_type": "proposed_analysis",
+          "build_priority": "P1",
+          "expected_output": "Evidence-linked findings, alternative explanations and missing inputs.",
+          "candidate_response": "Review findings and define a testable response appropriate to the question.",
+          "acceptance_case": "Unsupported inputs or causal claims return an explicit limitation, not an invented conclusion.",
+          "execution": {
+            "handler": null,
+            "status": "not_implemented",
+            "scope": "Needs the listed data, executable logic and independent validation.",
+            "required_data": [
+              "Infection episodes and microbiology",
+              "clinical observations and their availability times",
+              "device use",
+              "antimicrobial treatment",
+              "admission records",
+              "discharge summaries",
+              "post-illness function and symptoms"
+            ],
+            "review_owner": "Infectious diseases / critical care / primary care"
+          }
+        },
+        {
+          "id": "SEP-08",
+          "question": "Where do pending culture results fail to receive documented follow-up?",
+          "origin": "additional question",
+          "analysis_type": "proposed_analysis",
+          "build_priority": "P1",
+          "expected_output": "Evidence-linked findings, alternative explanations and missing inputs.",
+          "candidate_response": "Review findings and define a testable response appropriate to the question.",
+          "acceptance_case": "Unsupported inputs or causal claims return an explicit limitation, not an invented conclusion.",
+          "execution": {
+            "handler": null,
+            "status": "not_implemented",
+            "scope": "Needs the listed data, executable logic and independent validation.",
+            "required_data": [
+              "Infection episodes and microbiology",
+              "clinical observations and their availability times",
+              "device use",
+              "antimicrobial treatment",
+              "admission records",
+              "discharge summaries",
+              "post-illness function and symptoms"
+            ],
+            "review_owner": "Infectious diseases / critical care / primary care"
+          }
+        },
+        {
+          "id": "SEP-09",
+          "question": "Which recurrent infections are associated with fragmented care across facilities?",
+          "origin": "additional question",
+          "analysis_type": "proposed_analysis",
+          "build_priority": "P1",
+          "expected_output": "Evidence-linked findings, alternative explanations and missing inputs.",
+          "candidate_response": "Review findings and define a testable response appropriate to the question.",
+          "acceptance_case": "Unsupported inputs or causal claims return an explicit limitation, not an invented conclusion.",
+          "execution": {
+            "handler": null,
+            "status": "not_implemented",
+            "scope": "Needs the listed data, executable logic and independent validation.",
+            "required_data": [
+              "Infection episodes and microbiology",
+              "clinical observations and their availability times",
+              "device use",
+              "antimicrobial treatment",
+              "admission records",
+              "discharge summaries",
+              "post-illness function and symptoms"
+            ],
+            "review_owner": "Infectious diseases / critical care / primary care"
+          }
+        },
+        {
+          "id": "SEP-10",
+          "question": "Which apparent improvements in sepsis performance disappear after accounting for changes in coding and severity?",
+          "origin": "additional question",
+          "analysis_type": "proposed_analysis",
+          "build_priority": "P1",
+          "expected_output": "Evidence-linked findings, alternative explanations and missing inputs.",
+          "candidate_response": "Review findings and define a testable response appropriate to the question.",
+          "acceptance_case": "Unsupported inputs or causal claims return an explicit limitation, not an invented conclusion.",
+          "execution": {
+            "handler": null,
+            "status": "not_implemented",
+            "scope": "Needs the listed data, executable logic and independent validation.",
+            "required_data": [
+              "Infection episodes and microbiology",
+              "clinical observations and their availability times",
+              "device use",
+              "antimicrobial treatment",
+              "admission records",
+              "discharge summaries",
+              "post-illness function and symptoms"
+            ],
+            "review_owner": "Infectious diseases / critical care / primary care"
+          }
+        }
+      ]
+    },
+    {
+      "id": "BEN",
+      "title": "Financial burden, access and assistance",
+      "required_data": [
+        "Patient-reported barriers",
+        "benefits and coverage dates",
+        "pharmacy transactions",
+        "authorizations and denials",
+        "household information provided for eligibility",
+        "program rules and service availability"
+      ],
+      "review_owner": "Benefits specialist / social work / pharmacy",
+      "guardrail": "Neighborhood deprivation cannot establish an individual financial need or program eligibility. Distinguish screening candidates, verified eligibility, enrollment and receipt of benefit.",
+      "source_refs": [],
+      "questions": [
+        {
+          "id": "BEN-01",
+          "question": "Who reports rationing medication, skipping visits or sacrificing basic needs because of healthcare costs?",
+          "analysis_type": "needs_review",
+          "expected_output": "Direct evidence of financial burden, recency and unverified signals.",
+          "candidate_response": "Offer a benefit or financial-assistance review.",
+          "acceptance_case": "Area-level income alone never produces a confirmed hardship label.",
+          "build_priority": "P0",
+          "origin": "existing user-derived catalog",
+          "execution": {
+            "handler": null,
+            "status": "not_implemented",
+            "scope": "Needs the listed data, executable logic and independent validation.",
+            "required_data": [
+              "Patient-reported barriers",
+              "benefits and coverage dates",
+              "pharmacy transactions",
+              "authorizations and denials",
+              "household information provided for eligibility",
+              "program rules and service availability"
+            ],
+            "review_owner": "Benefits specialist / social work / pharmacy"
+          }
+        },
+        {
+          "id": "BEN-02",
+          "question": "Which patients may qualify for medication assistance, hospital charity care, transportation or other named programs?",
+          "analysis_type": "eligibility",
+          "expected_output": "Rule-by-rule match, missing documentation, relevant geography and effective dates.",
+          "candidate_response": "Help verify eligibility for a named available program.",
+          "acceptance_case": "Unknown income or coverage produces eligibility pending, not eligible.",
+          "build_priority": "P0",
+          "origin": "existing user-derived catalog",
+          "execution": {
+            "handler": null,
+            "status": "not_implemented",
+            "scope": "Needs the listed data, executable logic and independent validation.",
+            "required_data": [
+              "Patient-reported barriers",
+              "benefits and coverage dates",
+              "pharmacy transactions",
+              "authorizations and denials",
+              "household information provided for eligibility",
+              "program rules and service availability"
+            ],
+            "review_owner": "Benefits specialist / social work / pharmacy"
+          }
+        },
+        {
+          "id": "BEN-03",
+          "question": "Which patients face coverage loss or a formulary change that could interrupt effective treatment?",
+          "analysis_type": "trajectory",
+          "expected_output": "Known effective date, affected therapy and evidence of transition risk.",
+          "candidate_response": "Review coverage continuity and clinically appropriate alternatives.",
+          "acceptance_case": "A plan change is not assumed until verified from an authoritative source.",
+          "build_priority": "P1",
+          "origin": "existing user-derived catalog",
+          "execution": {
+            "handler": null,
+            "status": "not_implemented",
+            "scope": "Needs the listed data, executable logic and independent validation.",
+            "required_data": [
+              "Patient-reported barriers",
+              "benefits and coverage dates",
+              "pharmacy transactions",
+              "authorizations and denials",
+              "household information provided for eligibility",
+              "program rules and service availability"
+            ],
+            "review_owner": "Benefits specialist / social work / pharmacy"
+          }
+        },
+        {
+          "id": "BEN-04",
+          "question": "Which treatment interruptions are associated with authorization delays, claim reversals or unaffordable copays?",
+          "analysis_type": "hypothesis",
+          "expected_output": "Transaction timeline, documented reason and competing explanations.",
+          "candidate_response": "Resolve the identified administrative or affordability barrier.",
+          "acceptance_case": "A paid pharmacy claim is not proof that the patient took the medication.",
+          "build_priority": "P1",
+          "origin": "existing user-derived catalog",
+          "execution": {
+            "handler": "barriers",
+            "status": "partial",
+            "scope": "Documented/reconciled reasons under synthetic benchmark rules; no longitudinal causal attribution.",
+            "required_data": [
+              "Patient-reported barriers",
+              "benefits and coverage dates",
+              "pharmacy transactions",
+              "authorizations and denials",
+              "household information provided for eligibility",
+              "program rules and service availability"
+            ],
+            "review_owner": "Benefits specialist / social work / pharmacy"
+          }
+        },
+        {
+          "id": "BEN-05",
+          "question": "Which eligible patients never receive the benefit because applications stall or services lack capacity?",
+          "analysis_type": "process_audit",
+          "expected_output": "Eligibility-to-service stages, failure reasons and available capacity.",
+          "candidate_response": "Improve application completion or source an available service.",
+          "acceptance_case": "Enrollment is not reported as a delivered service or a health outcome.",
+          "build_priority": "P1",
+          "origin": "existing user-derived catalog",
+          "execution": {
+            "handler": null,
+            "status": "not_implemented",
+            "scope": "Needs the listed data, executable logic and independent validation.",
+            "required_data": [
+              "Patient-reported barriers",
+              "benefits and coverage dates",
+              "pharmacy transactions",
+              "authorizations and denials",
+              "household information provided for eligibility",
+              "program rules and service availability"
+            ],
+            "review_owner": "Benefits specialist / social work / pharmacy"
+          }
+        },
+        {
+          "id": "BEN-06",
+          "question": "Which patients are overwhelmed by overlapping programs, appointments and monitoring requests?",
+          "analysis_type": "needs_review",
+          "expected_output": "Patient-reported burden, duplicate services and conflicting plans.",
+          "candidate_response": "Offer consolidation consistent with patient preference.",
+          "acceptance_case": "The system does not remove a service solely because another program is present.",
+          "build_priority": "P1",
+          "origin": "existing user-derived catalog",
+          "execution": {
+            "handler": null,
+            "status": "not_implemented",
+            "scope": "Needs the listed data, executable logic and independent validation.",
+            "required_data": [
+              "Patient-reported barriers",
+              "benefits and coverage dates",
+              "pharmacy transactions",
+              "authorizations and denials",
+              "household information provided for eligibility",
+              "program rules and service availability"
+            ],
+            "review_owner": "Benefits specialist / social work / pharmacy"
+          }
+        },
+        {
+          "id": "BEN-07",
+          "question": "Which assistance interventions address a documented financial barrier rather than a neighborhood risk estimate?",
+          "origin": "additional question",
+          "analysis_type": "proposed_analysis",
+          "build_priority": "P1",
+          "expected_output": "Evidence-linked findings, alternative explanations and missing inputs.",
+          "candidate_response": "Review findings and define a testable response appropriate to the question.",
+          "acceptance_case": "Unsupported inputs or causal claims return an explicit limitation, not an invented conclusion.",
+          "execution": {
+            "handler": null,
+            "status": "not_implemented",
+            "scope": "Needs the listed data, executable logic and independent validation.",
+            "required_data": [
+              "Patient-reported barriers",
+              "benefits and coverage dates",
+              "pharmacy transactions",
+              "authorizations and denials",
+              "household information provided for eligibility",
+              "program rules and service availability"
+            ],
+            "review_owner": "Benefits specialist / social work / pharmacy"
+          }
+        },
+        {
+          "id": "BEN-08",
+          "question": "Where do repeated authorizations consume effort without restoring access to treatment?",
+          "origin": "additional question",
+          "analysis_type": "proposed_analysis",
+          "build_priority": "P1",
+          "expected_output": "Evidence-linked findings, alternative explanations and missing inputs.",
+          "candidate_response": "Review findings and define a testable response appropriate to the question.",
+          "acceptance_case": "Unsupported inputs or causal claims return an explicit limitation, not an invented conclusion.",
+          "execution": {
+            "handler": null,
+            "status": "not_implemented",
+            "scope": "Needs the listed data, executable logic and independent validation.",
+            "required_data": [
+              "Patient-reported barriers",
+              "benefits and coverage dates",
+              "pharmacy transactions",
+              "authorizations and denials",
+              "household information provided for eligibility",
+              "program rules and service availability"
+            ],
+            "review_owner": "Benefits specialist / social work / pharmacy"
+          }
+        },
+        {
+          "id": "BEN-09",
+          "question": "Which medication substitutions resolve affordability without creating a new documented clinical problem?",
+          "origin": "additional question",
+          "analysis_type": "proposed_analysis",
+          "build_priority": "P1",
+          "expected_output": "Evidence-linked findings, alternative explanations and missing inputs.",
+          "candidate_response": "Review findings and define a testable response appropriate to the question.",
+          "acceptance_case": "Unsupported inputs or causal claims return an explicit limitation, not an invented conclusion.",
+          "execution": {
+            "handler": null,
+            "status": "not_implemented",
+            "scope": "Needs the listed data, executable logic and independent validation.",
+            "required_data": [
+              "Patient-reported barriers",
+              "benefits and coverage dates",
+              "pharmacy transactions",
+              "authorizations and denials",
+              "household information provided for eligibility",
+              "program rules and service availability"
+            ],
+            "review_owner": "Benefits specialist / social work / pharmacy"
+          }
+        },
+        {
+          "id": "BEN-10",
+          "question": "Which patients lose assistance eligibility mid-treatment and need an alternative plan?",
+          "origin": "additional question",
+          "analysis_type": "proposed_analysis",
+          "build_priority": "P1",
+          "expected_output": "Evidence-linked findings, alternative explanations and missing inputs.",
+          "candidate_response": "Review findings and define a testable response appropriate to the question.",
+          "acceptance_case": "Unsupported inputs or causal claims return an explicit limitation, not an invented conclusion.",
+          "execution": {
+            "handler": null,
+            "status": "not_implemented",
+            "scope": "Needs the listed data, executable logic and independent validation.",
+            "required_data": [
+              "Patient-reported barriers",
+              "benefits and coverage dates",
+              "pharmacy transactions",
+              "authorizations and denials",
+              "household information provided for eligibility",
+              "program rules and service availability"
+            ],
+            "review_owner": "Benefits specialist / social work / pharmacy"
+          }
+        }
+      ]
+    },
+    {
+      "id": "PAL",
+      "title": "Serious illness, quality of life and treatment burden",
+      "required_data": [
+        "Symptoms and function",
+        "patient-reported outcomes",
+        "serious illness trajectory",
+        "care preferences and decision-maker records",
+        "treatments and burdens",
+        "caregiver reports"
+      ],
+      "review_owner": "Treating clinician / palliative care team / patient and chosen supporters",
+      "guardrail": "Never autonomously label a person or treatment futile. Cost, disability, age or predicted mortality alone cannot decide benefit. Palliative support and hospice eligibility are separate questions.",
+      "source_refs": [
+        "palliative"
+      ],
+      "questions": [
+        {
+          "id": "PAL-01",
+          "question": "Who has serious illness with uncontrolled symptoms, caregiver strain or difficult decisions that could benefit from palliative care?",
+          "analysis_type": "needs_review",
+          "expected_output": "Needs-based review candidates, existing support and patient preferences.",
+          "candidate_response": "Offer palliative assessment alongside appropriate disease-directed care.",
+          "acceptance_case": "Ongoing disease treatment does not exclude a candidate from palliative review.",
+          "build_priority": "P1",
+          "origin": "existing user-derived catalog",
+          "execution": {
+            "handler": null,
+            "status": "not_implemented",
+            "scope": "Needs the listed data, executable logic and independent validation.",
+            "required_data": [
+              "Symptoms and function",
+              "patient-reported outcomes",
+              "serious illness trajectory",
+              "care preferences and decision-maker records",
+              "treatments and burdens",
+              "caregiver reports"
+            ],
+            "review_owner": "Treating clinician / palliative care team / patient and chosen supporters"
+          }
+        },
+        {
+          "id": "PAL-02",
+          "question": "Whose treatment burden appears to exceed the benefit they report, or conflict with their stated goals?",
+          "analysis_type": "needs_review",
+          "expected_output": "Goals, symptom/function trajectory, treatment burden and evidence gaps.",
+          "candidate_response": "Prompt a patient-clinician goals and treatment review.",
+          "acceptance_case": "High spending alone cannot trigger a low-benefit label.",
+          "build_priority": "P1",
+          "origin": "existing user-derived catalog",
+          "execution": {
+            "handler": null,
+            "status": "not_implemented",
+            "scope": "Needs the listed data, executable logic and independent validation.",
+            "required_data": [
+              "Symptoms and function",
+              "patient-reported outcomes",
+              "serious illness trajectory",
+              "care preferences and decision-maker records",
+              "treatments and burdens",
+              "caregiver reports"
+            ],
+            "review_owner": "Treating clinician / palliative care team / patient and chosen supporters"
+          }
+        },
+        {
+          "id": "PAL-03",
+          "question": "Where are documented preferences repeatedly lost during transfers, emergencies or new treatment decisions?",
+          "analysis_type": "process_audit",
+          "expected_output": "Preference timeline, conflicting records and the decisions affected.",
+          "candidate_response": "Verify current preferences and make them available at the point of decision.",
+          "acceptance_case": "An old preference is not assumed to remain current without context.",
+          "build_priority": "P1",
+          "origin": "existing user-derived catalog",
+          "execution": {
+            "handler": null,
+            "status": "not_implemented",
+            "scope": "Needs the listed data, executable logic and independent validation.",
+            "required_data": [
+              "Symptoms and function",
+              "patient-reported outcomes",
+              "serious illness trajectory",
+              "care preferences and decision-maker records",
+              "treatments and burdens",
+              "caregiver reports"
+            ],
+            "review_owner": "Treating clinician / palliative care team / patient and chosen supporters"
+          }
+        },
+        {
+          "id": "PAL-04",
+          "question": "Which patients and caregivers may benefit from additional support at home?",
+          "analysis_type": "needs_review",
+          "expected_output": "Function, symptom and caregiver needs with available service options.",
+          "candidate_response": "Discuss appropriate home support and preferences.",
+          "acceptance_case": "Absence of caregiver documentation is not interpreted as absence of need.",
+          "build_priority": "P1",
+          "origin": "existing user-derived catalog",
+          "execution": {
+            "handler": null,
+            "status": "not_implemented",
+            "scope": "Needs the listed data, executable logic and independent validation.",
+            "required_data": [
+              "Symptoms and function",
+              "patient-reported outcomes",
+              "serious illness trajectory",
+              "care preferences and decision-maker records",
+              "treatments and burdens",
+              "caregiver reports"
+            ],
+            "review_owner": "Treating clinician / palliative care team / patient and chosen supporters"
+          }
+        },
+        {
+          "id": "PAL-05",
+          "question": "Which intensive interventions should receive multidisciplinary review for uncertain benefit or possible goal discordance?",
+          "analysis_type": "needs_review",
+          "expected_output": "Reason for review, competing clinical views, patient priorities and uncertainty.",
+          "candidate_response": "Shared decision-making and, when appropriate, ethics consultation.",
+          "acceptance_case": "No automatic withholding, withdrawal or denial recommendation is produced.",
+          "build_priority": "P1",
+          "origin": "existing user-derived catalog",
+          "execution": {
+            "handler": null,
+            "status": "not_implemented",
+            "scope": "Needs the listed data, executable logic and independent validation.",
+            "required_data": [
+              "Symptoms and function",
+              "patient-reported outcomes",
+              "serious illness trajectory",
+              "care preferences and decision-maker records",
+              "treatments and burdens",
+              "caregiver reports"
+            ],
+            "review_owner": "Treating clinician / palliative care team / patient and chosen supporters"
+          }
+        },
+        {
+          "id": "PAL-06",
+          "question": "Where are patient-reported symptoms missing despite repeated serious-illness encounters?",
+          "origin": "additional question",
+          "analysis_type": "proposed_analysis",
+          "build_priority": "P1",
+          "expected_output": "Evidence-linked findings, alternative explanations and missing inputs.",
+          "candidate_response": "Review findings and define a testable response appropriate to the question.",
+          "acceptance_case": "Unsupported inputs or causal claims return an explicit limitation, not an invented conclusion.",
+          "execution": {
+            "handler": null,
+            "status": "not_implemented",
+            "scope": "Needs the listed data, executable logic and independent validation.",
+            "required_data": [
+              "Symptoms and function",
+              "patient-reported outcomes",
+              "serious illness trajectory",
+              "care preferences and decision-maker records",
+              "treatments and burdens",
+              "caregiver reports"
+            ],
+            "review_owner": "Treating clinician / palliative care team / patient and chosen supporters"
+          }
+        },
+        {
+          "id": "PAL-07",
+          "question": "Which patients repeatedly receive care inconsistent with a documented preference, requiring review?",
+          "origin": "additional question",
+          "analysis_type": "proposed_analysis",
+          "build_priority": "P1",
+          "expected_output": "Evidence-linked findings, alternative explanations and missing inputs.",
+          "candidate_response": "Review findings and define a testable response appropriate to the question.",
+          "acceptance_case": "Unsupported inputs or causal claims return an explicit limitation, not an invented conclusion.",
+          "execution": {
+            "handler": null,
+            "status": "not_implemented",
+            "scope": "Needs the listed data, executable logic and independent validation.",
+            "required_data": [
+              "Symptoms and function",
+              "patient-reported outcomes",
+              "serious illness trajectory",
+              "care preferences and decision-maker records",
+              "treatments and burdens",
+              "caregiver reports"
+            ],
+            "review_owner": "Treating clinician / palliative care team / patient and chosen supporters"
+          }
+        },
+        {
+          "id": "PAL-08",
+          "question": "Which caregivers report burdens that are absent from the patient's structured record?",
+          "origin": "additional question",
+          "analysis_type": "proposed_analysis",
+          "build_priority": "P1",
+          "expected_output": "Evidence-linked findings, alternative explanations and missing inputs.",
+          "candidate_response": "Review findings and define a testable response appropriate to the question.",
+          "acceptance_case": "Unsupported inputs or causal claims return an explicit limitation, not an invented conclusion.",
+          "execution": {
+            "handler": null,
+            "status": "not_implemented",
+            "scope": "Needs the listed data, executable logic and independent validation.",
+            "required_data": [
+              "Symptoms and function",
+              "patient-reported outcomes",
+              "serious illness trajectory",
+              "care preferences and decision-maker records",
+              "treatments and burdens",
+              "caregiver reports"
+            ],
+            "review_owner": "Treating clinician / palliative care team / patient and chosen supporters"
+          }
+        },
+        {
+          "id": "PAL-09",
+          "question": "Which changes in function or symptoms should prompt a goals-of-care reassessment?",
+          "origin": "additional question",
+          "analysis_type": "proposed_analysis",
+          "build_priority": "P1",
+          "expected_output": "Evidence-linked findings, alternative explanations and missing inputs.",
+          "candidate_response": "Review findings and define a testable response appropriate to the question.",
+          "acceptance_case": "Unsupported inputs or causal claims return an explicit limitation, not an invented conclusion.",
+          "execution": {
+            "handler": null,
+            "status": "not_implemented",
+            "scope": "Needs the listed data, executable logic and independent validation.",
+            "required_data": [
+              "Symptoms and function",
+              "patient-reported outcomes",
+              "serious illness trajectory",
+              "care preferences and decision-maker records",
+              "treatments and burdens",
+              "caregiver reports"
+            ],
+            "review_owner": "Treating clinician / palliative care team / patient and chosen supporters"
+          }
+        }
+      ]
+    },
+    {
+      "id": "ADM",
+      "title": "Admissions and readmissions: reconstructing failure sequences",
+      "required_data": [
+        "Longitudinal clinical record",
+        "claims and encounter feeds",
+        "appointments and referrals",
+        "messages and telephone encounters",
+        "pharmacy activity",
+        "patient-reported causes",
+        "deaths and outside admissions"
+      ],
+      "review_owner": "Clinical quality / service-line leaders / causal analyst",
+      "guardrail": "Distinguish event description, predicted risk, causal hypothesis and established intervention effect. Use both event time and time evidence became available.",
+      "source_refs": [],
+      "questions": [
+        {
+          "id": "ADM-01",
+          "question": "For each admission, what sequence of clinical changes and access failures might have contributed?",
+          "analysis_type": "hypothesis",
+          "expected_output": "Evidence-linked event sequence, alternative explanations and missing records.",
+          "candidate_response": "Review plausible, modifiable failure points.",
+          "acceptance_case": "The answer cannot state that a missed visit caused an admission solely from temporal order.",
+          "build_priority": "P1",
+          "origin": "existing user-derived catalog",
+          "execution": {
+            "handler": null,
+            "status": "not_implemented",
+            "scope": "Needs the listed data, executable logic and independent validation.",
+            "required_data": [
+              "Longitudinal clinical record",
+              "claims and encounter feeds",
+              "appointments and referrals",
+              "messages and telephone encounters",
+              "pharmacy activity",
+              "patient-reported causes",
+              "deaths and outside admissions"
+            ],
+            "review_owner": "Clinical quality / service-line leaders / causal analyst"
+          }
+        },
+        {
+          "id": "ADM-02",
+          "question": "Where was the last realistic opportunity to intervene using only information available then?",
+          "analysis_type": "process_audit",
+          "expected_output": "Decision windows, available evidence, feasible response and capacity constraints.",
+          "candidate_response": "Test an earlier review or access pathway.",
+          "acceptance_case": "Post-admission evidence is excluded from the reconstruction of prior knowledge.",
+          "build_priority": "P1",
+          "origin": "existing user-derived catalog",
+          "execution": {
+            "handler": null,
+            "status": "not_implemented",
+            "scope": "Needs the listed data, executable logic and independent validation.",
+            "required_data": [
+              "Longitudinal clinical record",
+              "claims and encounter feeds",
+              "appointments and referrals",
+              "messages and telephone encounters",
+              "pharmacy activity",
+              "patient-reported causes",
+              "deaths and outside admissions"
+            ],
+            "review_owner": "Clinical quality / service-line leaders / causal analyst"
+          }
+        },
+        {
+          "id": "ADM-03",
+          "question": "Which weekend or holiday transitions are associated with unavailable medication, equipment or follow-up?",
+          "analysis_type": "hypothesis",
+          "expected_output": "Comparable discharge cohorts, verified service availability and case-mix differences.",
+          "candidate_response": "Pilot a barrier-specific discharge change.",
+          "acceptance_case": "Weekend association is adjusted or explicitly unadjusted; it is not called causation.",
+          "build_priority": "P1",
+          "origin": "existing user-derived catalog",
+          "execution": {
+            "handler": null,
+            "status": "not_implemented",
+            "scope": "Needs the listed data, executable logic and independent validation.",
+            "required_data": [
+              "Longitudinal clinical record",
+              "claims and encounter feeds",
+              "appointments and referrals",
+              "messages and telephone encounters",
+              "pharmacy activity",
+              "patient-reported causes",
+              "deaths and outside admissions"
+            ],
+            "review_owner": "Clinical quality / service-line leaders / causal analyst"
+          }
+        },
+        {
+          "id": "ADM-04",
+          "question": "Which apparent readmissions are transfers, planned returns, coding artifacts or events outside the contract definition?",
+          "analysis_type": "reconciliation",
+          "expected_output": "Episode boundaries, exclusions and reconciled denominator.",
+          "candidate_response": "Correct measurement before targeting care.",
+          "acceptance_case": "Transfer chains are evaluated under the applicable measure rather than counted as independent failures.",
+          "build_priority": "P0",
+          "origin": "existing user-derived catalog",
+          "execution": {
+            "handler": null,
+            "status": "not_implemented",
+            "scope": "Needs the listed data, executable logic and independent validation.",
+            "required_data": [
+              "Longitudinal clinical record",
+              "claims and encounter feeds",
+              "appointments and referrals",
+              "messages and telephone encounters",
+              "pharmacy activity",
+              "patient-reported causes",
+              "deaths and outside admissions"
+            ],
+            "review_owner": "Clinical quality / service-line leaders / causal analyst"
+          }
+        },
+        {
+          "id": "ADM-05",
+          "question": "Which patients repeatedly seek acute care because outpatient alternatives are unavailable or not usable?",
+          "analysis_type": "hypothesis",
+          "expected_output": "Patient-reported reasons, access attempts and actual service availability.",
+          "candidate_response": "Test access improvements matched to the documented barrier.",
+          "acceptance_case": "Emergency care is not labelled unnecessary from the diagnosis code alone.",
+          "build_priority": "P1",
+          "origin": "existing user-derived catalog",
+          "execution": {
+            "handler": null,
+            "status": "not_implemented",
+            "scope": "Needs the listed data, executable logic and independent validation.",
+            "required_data": [
+              "Longitudinal clinical record",
+              "claims and encounter feeds",
+              "appointments and referrals",
+              "messages and telephone encounters",
+              "pharmacy activity",
+              "patient-reported causes",
+              "deaths and outside admissions"
+            ],
+            "review_owner": "Clinical quality / service-line leaders / causal analyst"
+          }
+        },
+        {
+          "id": "ADM-06",
+          "question": "Are falling readmissions accompanied by better survival, function and time at home, or by missing data and competing events?",
+          "analysis_type": "outcome_audit",
+          "expected_output": "Readmissions, mortality, outside utilization, patient-reported function and follow-up completeness.",
+          "candidate_response": "Investigate discordant indicators before declaring success.",
+          "acceptance_case": "A rise in deaths cannot be presented as successful admission prevention.",
+          "build_priority": "P1",
+          "origin": "existing user-derived catalog",
+          "execution": {
+            "handler": null,
+            "status": "not_implemented",
+            "scope": "Needs the listed data, executable logic and independent validation.",
+            "required_data": [
+              "Longitudinal clinical record",
+              "claims and encounter feeds",
+              "appointments and referrals",
+              "messages and telephone encounters",
+              "pharmacy activity",
+              "patient-reported causes",
+              "deaths and outside admissions"
+            ],
+            "review_owner": "Clinical quality / service-line leaders / causal analyst"
+          }
+        },
+        {
+          "id": "ADM-07",
+          "question": "Which admissions follow a documented medication access barrier that persisted across visits?",
+          "origin": "additional question",
+          "analysis_type": "proposed_analysis",
+          "build_priority": "P1",
+          "expected_output": "Evidence-linked findings, alternative explanations and missing inputs.",
+          "candidate_response": "Review findings and define a testable response appropriate to the question.",
+          "acceptance_case": "Unsupported inputs or causal claims return an explicit limitation, not an invented conclusion.",
+          "execution": {
+            "handler": null,
+            "status": "not_implemented",
+            "scope": "Needs the listed data, executable logic and independent validation.",
+            "required_data": [
+              "Longitudinal clinical record",
+              "claims and encounter feeds",
+              "appointments and referrals",
+              "messages and telephone encounters",
+              "pharmacy activity",
+              "patient-reported causes",
+              "deaths and outside admissions"
+            ],
+            "review_owner": "Clinical quality / service-line leaders / causal analyst"
+          }
+        },
+        {
+          "id": "ADM-08",
+          "question": "Which patients appear stable only because outside admissions have not reached our feeds?",
+          "origin": "additional question",
+          "analysis_type": "proposed_analysis",
+          "build_priority": "P1",
+          "expected_output": "Evidence-linked findings, alternative explanations and missing inputs.",
+          "candidate_response": "Review findings and define a testable response appropriate to the question.",
+          "acceptance_case": "Unsupported inputs or causal claims return an explicit limitation, not an invented conclusion.",
+          "execution": {
+            "handler": null,
+            "status": "not_implemented",
+            "scope": "Needs the listed data, executable logic and independent validation.",
+            "required_data": [
+              "Longitudinal clinical record",
+              "claims and encounter feeds",
+              "appointments and referrals",
+              "messages and telephone encounters",
+              "pharmacy activity",
+              "patient-reported causes",
+              "deaths and outside admissions"
+            ],
+            "review_owner": "Clinical quality / service-line leaders / causal analyst"
+          }
+        },
+        {
+          "id": "ADM-09",
+          "question": "Which recurring admission sequences suggest a testable service redesign rather than another patient alert?",
+          "origin": "additional question",
+          "analysis_type": "proposed_analysis",
+          "build_priority": "P1",
+          "expected_output": "Evidence-linked findings, alternative explanations and missing inputs.",
+          "candidate_response": "Review findings and define a testable response appropriate to the question.",
+          "acceptance_case": "Unsupported inputs or causal claims return an explicit limitation, not an invented conclusion.",
+          "execution": {
+            "handler": null,
+            "status": "not_implemented",
+            "scope": "Needs the listed data, executable logic and independent validation.",
+            "required_data": [
+              "Longitudinal clinical record",
+              "claims and encounter feeds",
+              "appointments and referrals",
+              "messages and telephone encounters",
+              "pharmacy activity",
+              "patient-reported causes",
+              "deaths and outside admissions"
+            ],
+            "review_owner": "Clinical quality / service-line leaders / causal analyst"
+          }
+        },
+        {
+          "id": "ADM-10",
+          "question": "Where does an intervention shift utilization to emergency or observation care without improving outcomes?",
+          "origin": "additional question",
+          "analysis_type": "proposed_analysis",
+          "build_priority": "P1",
+          "expected_output": "Evidence-linked findings, alternative explanations and missing inputs.",
+          "candidate_response": "Review findings and define a testable response appropriate to the question.",
+          "acceptance_case": "Unsupported inputs or causal claims return an explicit limitation, not an invented conclusion.",
+          "execution": {
+            "handler": null,
+            "status": "not_implemented",
+            "scope": "Needs the listed data, executable logic and independent validation.",
+            "required_data": [
+              "Longitudinal clinical record",
+              "claims and encounter feeds",
+              "appointments and referrals",
+              "messages and telephone encounters",
+              "pharmacy activity",
+              "patient-reported causes",
+              "deaths and outside admissions"
+            ],
+            "review_owner": "Clinical quality / service-line leaders / causal analyst"
+          }
+        }
+      ]
+    },
+    {
+      "id": "SNF",
+      "title": "Post-acute matching and learning",
+      "required_data": [
+        "Linked hospital and post-acute episodes",
+        "baseline function and cognition",
+        "diagnosis and severity",
+        "CMS facility measures",
+        "staffing and clinical capability",
+        "available beds coverage distance and patient choice"
+      ],
+      "review_owner": "Discharge clinicians / post-acute quality / patient",
+      "guardrail": "DRG and star rating alone are insufficient. Use case-mix adjustment, sample-size uncertainty and comparable follow-up; preserve choice and verify current capability.",
+      "source_refs": [
+        "snf",
+        "cjrx"
+      ],
+      "questions": [
+        {
+          "id": "SNF-01",
+          "question": "Which SNFs have the best supported outcomes for patients with this clinical and functional profile?",
+          "analysis_type": "provider_comparison",
+          "expected_output": "Condition/profile-specific outcomes, uncertainty, sample size and comparability limitations.",
+          "candidate_response": "Present suitable choices with evidence and patient priorities.",
+          "acceptance_case": "Small samples or incomparable case mix prevent an unsupported best-provider claim.",
+          "build_priority": "P1",
+          "origin": "existing user-derived catalog",
+          "execution": {
+            "handler": null,
+            "status": "not_implemented",
+            "scope": "Needs the listed data, executable logic and independent validation.",
+            "required_data": [
+              "Linked hospital and post-acute episodes",
+              "baseline function and cognition",
+              "diagnosis and severity",
+              "CMS facility measures",
+              "staffing and clinical capability",
+              "available beds coverage distance and patient choice"
+            ],
+            "review_owner": "Discharge clinicians / post-acute quality / patient"
+          }
+        },
+        {
+          "id": "SNF-02",
+          "question": "Which facilities deliver better functional recovery, return home and safety after similar joint-replacement episodes?",
+          "analysis_type": "provider_comparison",
+          "expected_output": "Risk-adjusted recovery and safety outcomes alongside utilization and spending.",
+          "candidate_response": "Review episode-specific post-acute partnerships.",
+          "acceptance_case": "Low spending without recovery evidence does not imply better care.",
+          "build_priority": "P1",
+          "origin": "existing user-derived catalog",
+          "execution": {
+            "handler": null,
+            "status": "not_implemented",
+            "scope": "Needs the listed data, executable logic and independent validation.",
+            "required_data": [
+              "Linked hospital and post-acute episodes",
+              "baseline function and cognition",
+              "diagnosis and severity",
+              "CMS facility measures",
+              "staffing and clinical capability",
+              "available beds coverage distance and patient choice"
+            ],
+            "review_owner": "Discharge clinicians / post-acute quality / patient"
+          }
+        },
+        {
+          "id": "SNF-03",
+          "question": "Which SNFs appear particularly capable for HF, complex wounds or other needs relevant to this patient?",
+          "analysis_type": "capability_match",
+          "expected_output": "Verified capability, relevant outcome evidence and current availability.",
+          "candidate_response": "Offer clinically suitable post-acute options.",
+          "acceptance_case": "Public facility averages cannot establish a disease-specific capability without verification.",
+          "build_priority": "P1",
+          "origin": "existing user-derived catalog",
+          "execution": {
+            "handler": null,
+            "status": "not_implemented",
+            "scope": "Needs the listed data, executable logic and independent validation.",
+            "required_data": [
+              "Linked hospital and post-acute episodes",
+              "baseline function and cognition",
+              "diagnosis and severity",
+              "CMS facility measures",
+              "staffing and clinical capability",
+              "available beds coverage distance and patient choice"
+            ],
+            "review_owner": "Discharge clinicians / post-acute quality / patient"
+          }
+        },
+        {
+          "id": "SNF-04",
+          "question": "Which hospital-SNF transitions repeatedly lose medication changes, pending results or care preferences?",
+          "analysis_type": "process_audit",
+          "expected_output": "Transfer-level evidence of missing or conflicting information and subsequent events.",
+          "candidate_response": "Fix the handoff data failure and evaluate its effect.",
+          "acceptance_case": "A missing receiving-system field is distinguished from proof that information was never sent.",
+          "build_priority": "P1",
+          "origin": "existing user-derived catalog",
+          "execution": {
+            "handler": null,
+            "status": "not_implemented",
+            "scope": "Needs the listed data, executable logic and independent validation.",
+            "required_data": [
+              "Linked hospital and post-acute episodes",
+              "baseline function and cognition",
+              "diagnosis and severity",
+              "CMS facility measures",
+              "staffing and clinical capability",
+              "available beds coverage distance and patient choice"
+            ],
+            "review_owner": "Discharge clinicians / post-acute quality / patient"
+          }
+        },
+        {
+          "id": "SNF-05",
+          "question": "Which facilities improve after a specific practice change, and could that practice transfer elsewhere?",
+          "analysis_type": "causal_evaluation",
+          "expected_output": "Change description, credible comparator, case-mix changes and effect uncertainty.",
+          "candidate_response": "Test transfer of the practice in another setting.",
+          "acceptance_case": "Regression to the mean is considered before declaring a successful facility intervention.",
+          "build_priority": "P1",
+          "origin": "existing user-derived catalog",
+          "execution": {
+            "handler": null,
+            "status": "not_implemented",
+            "scope": "Needs the listed data, executable logic and independent validation.",
+            "required_data": [
+              "Linked hospital and post-acute episodes",
+              "baseline function and cognition",
+              "diagnosis and severity",
+              "CMS facility measures",
+              "staffing and clinical capability",
+              "available beds coverage distance and patient choice"
+            ],
+            "review_owner": "Discharge clinicians / post-acute quality / patient"
+          }
+        },
+        {
+          "id": "SNF-06",
+          "question": "Which facility comparisons change materially when patient severity and functional status are included?",
+          "origin": "additional question",
+          "analysis_type": "proposed_analysis",
+          "build_priority": "P1",
+          "expected_output": "Evidence-linked findings, alternative explanations and missing inputs.",
+          "candidate_response": "Review findings and define a testable response appropriate to the question.",
+          "acceptance_case": "Unsupported inputs or causal claims return an explicit limitation, not an invented conclusion.",
+          "execution": {
+            "handler": null,
+            "status": "not_implemented",
+            "scope": "Needs the listed data, executable logic and independent validation.",
+            "required_data": [
+              "Linked hospital and post-acute episodes",
+              "baseline function and cognition",
+              "diagnosis and severity",
+              "CMS facility measures",
+              "staffing and clinical capability",
+              "available beds coverage distance and patient choice"
+            ],
+            "review_owner": "Discharge clinicians / post-acute quality / patient"
+          }
+        },
+        {
+          "id": "SNF-07",
+          "question": "Where are SNF rankings too uncertain or based on too few comparable episodes to guide placement?",
+          "origin": "additional question",
+          "analysis_type": "proposed_analysis",
+          "build_priority": "P1",
+          "expected_output": "Evidence-linked findings, alternative explanations and missing inputs.",
+          "candidate_response": "Review findings and define a testable response appropriate to the question.",
+          "acceptance_case": "Unsupported inputs or causal claims return an explicit limitation, not an invented conclusion.",
+          "execution": {
+            "handler": null,
+            "status": "not_implemented",
+            "scope": "Needs the listed data, executable logic and independent validation.",
+            "required_data": [
+              "Linked hospital and post-acute episodes",
+              "baseline function and cognition",
+              "diagnosis and severity",
+              "CMS facility measures",
+              "staffing and clinical capability",
+              "available beds coverage distance and patient choice"
+            ],
+            "review_owner": "Discharge clinicians / post-acute quality / patient"
+          }
+        },
+        {
+          "id": "SNF-08",
+          "question": "Which facilities meet a patient's clinical needs but lack timely capacity or acceptable travel access?",
+          "origin": "additional question",
+          "analysis_type": "proposed_analysis",
+          "build_priority": "P1",
+          "expected_output": "Evidence-linked findings, alternative explanations and missing inputs.",
+          "candidate_response": "Review findings and define a testable response appropriate to the question.",
+          "acceptance_case": "Unsupported inputs or causal claims return an explicit limitation, not an invented conclusion.",
+          "execution": {
+            "handler": null,
+            "status": "not_implemented",
+            "scope": "Needs the listed data, executable logic and independent validation.",
+            "required_data": [
+              "Linked hospital and post-acute episodes",
+              "baseline function and cognition",
+              "diagnosis and severity",
+              "CMS facility measures",
+              "staffing and clinical capability",
+              "available beds coverage distance and patient choice"
+            ],
+            "review_owner": "Discharge clinicians / post-acute quality / patient"
+          }
+        },
+        {
+          "id": "SNF-09",
+          "question": "Which post-acute complications are already developing before transfer, making attribution uncertain?",
+          "origin": "additional question",
+          "analysis_type": "proposed_analysis",
+          "build_priority": "P1",
+          "expected_output": "Evidence-linked findings, alternative explanations and missing inputs.",
+          "candidate_response": "Review findings and define a testable response appropriate to the question.",
+          "acceptance_case": "Unsupported inputs or causal claims return an explicit limitation, not an invented conclusion.",
+          "execution": {
+            "handler": null,
+            "status": "not_implemented",
+            "scope": "Needs the listed data, executable logic and independent validation.",
+            "required_data": [
+              "Linked hospital and post-acute episodes",
+              "baseline function and cognition",
+              "diagnosis and severity",
+              "CMS facility measures",
+              "staffing and clinical capability",
+              "available beds coverage distance and patient choice"
+            ],
+            "review_owner": "Discharge clinicians / post-acute quality / patient"
+          }
+        }
+      ]
+    },
+    {
+      "id": "PCP",
+      "title": "Physician and practice learning",
+      "required_data": [
+        "Longitudinal attributed panels",
+        "shared care roles",
+        "condition-specific process and outcomes",
+        "baseline risk",
+        "social and access context",
+        "staffing and capacity",
+        "patient experience"
+      ],
+      "review_owner": "Clinical leadership / practice improvement",
+      "guardrail": "Compare like populations, report uncertainty and account for shared care and selection. Adjustment must not hide disparities. Use results to learn before using them for consequential rankings.",
+      "source_refs": [],
+      "questions": [
+        {
+          "id": "PCP-01",
+          "question": "Which practices achieve better disease control and patient-reported outcomes among comparable patients?",
+          "analysis_type": "provider_comparison",
+          "expected_output": "Condition-specific adjusted outcomes, unadjusted disparities, uncertainty and attribution limits.",
+          "candidate_response": "Identify practices for deeper clinical review and learning.",
+          "acceptance_case": "A low-volume practice is not labelled superior from a noisy point estimate.",
+          "build_priority": "P1",
+          "origin": "existing user-derived catalog",
+          "execution": {
+            "handler": null,
+            "status": "not_implemented",
+            "scope": "Needs the listed data, executable logic and independent validation.",
+            "required_data": [
+              "Longitudinal attributed panels",
+              "shared care roles",
+              "condition-specific process and outcomes",
+              "baseline risk",
+              "social and access context",
+              "staffing and capacity",
+              "patient experience"
+            ],
+            "review_owner": "Clinical leadership / practice improvement"
+          }
+        },
+        {
+          "id": "PCP-02",
+          "question": "What do better-performing practices do differently that other locations could realistically adopt?",
+          "analysis_type": "hypothesis",
+          "expected_output": "Candidate process differences and alternative explanations including staffing and access.",
+          "candidate_response": "Test a replicable practice change.",
+          "acceptance_case": "Provider identity alone is not offered as an explanation of better outcomes.",
+          "build_priority": "P1",
+          "origin": "existing user-derived catalog",
+          "execution": {
+            "handler": null,
+            "status": "not_implemented",
+            "scope": "Needs the listed data, executable logic and independent validation.",
+            "required_data": [
+              "Longitudinal attributed panels",
+              "shared care roles",
+              "condition-specific process and outcomes",
+              "baseline risk",
+              "social and access context",
+              "staffing and capacity",
+              "patient experience"
+            ],
+            "review_owner": "Clinical leadership / practice improvement"
+          }
+        },
+        {
+          "id": "PCP-03",
+          "question": "Where do referral completion, medication optimization or diagnostic follow-up reliably break down?",
+          "analysis_type": "process_audit",
+          "expected_output": "Process-specific delays, evidence completeness, workload and local constraints.",
+          "candidate_response": "Target the bottleneck instead of issuing a general poor-performance label.",
+          "acceptance_case": "Cases managed by an outside specialist are not automatically assigned as PCP failures.",
+          "build_priority": "P1",
+          "origin": "existing user-derived catalog",
+          "execution": {
+            "handler": null,
+            "status": "not_implemented",
+            "scope": "Needs the listed data, executable logic and independent validation.",
+            "required_data": [
+              "Longitudinal attributed panels",
+              "shared care roles",
+              "condition-specific process and outcomes",
+              "baseline risk",
+              "social and access context",
+              "staffing and capacity",
+              "patient experience"
+            ],
+            "review_owner": "Clinical leadership / practice improvement"
+          }
+        },
+        {
+          "id": "PCP-04",
+          "question": "Which practices improve average outcomes while leaving particular groups behind?",
+          "analysis_type": "equity_audit",
+          "expected_output": "Within-practice subgroup results, missingness and uncertainty.",
+          "candidate_response": "Investigate access and service differences with affected communities.",
+          "acceptance_case": "Unstable subgroup estimates are flagged and privacy-sensitive small cells protected.",
+          "build_priority": "P1",
+          "origin": "existing user-derived catalog",
+          "execution": {
+            "handler": null,
+            "status": "not_implemented",
+            "scope": "Needs the listed data, executable logic and independent validation.",
+            "required_data": [
+              "Longitudinal attributed panels",
+              "shared care roles",
+              "condition-specific process and outcomes",
+              "baseline risk",
+              "social and access context",
+              "staffing and capacity",
+              "patient experience"
+            ],
+            "review_owner": "Clinical leadership / practice improvement"
+          }
+        },
+        {
+          "id": "PCP-05",
+          "question": "Would shifting capacity, adding pharmacy support or changing appointment access likely help more than another alert?",
+          "analysis_type": "scenario",
+          "expected_output": "Explicit assumptions, resource constraints and outcome hypotheses.",
+          "candidate_response": "Pilot the most plausible operational change.",
+          "acceptance_case": "Scenario estimates are labelled assumptions until supported by intervention evidence.",
+          "build_priority": "P1",
+          "origin": "existing user-derived catalog",
+          "execution": {
+            "handler": null,
+            "status": "not_implemented",
+            "scope": "Needs the listed data, executable logic and independent validation.",
+            "required_data": [
+              "Longitudinal attributed panels",
+              "shared care roles",
+              "condition-specific process and outcomes",
+              "baseline risk",
+              "social and access context",
+              "staffing and capacity",
+              "patient experience"
+            ],
+            "review_owner": "Clinical leadership / practice improvement"
+          }
+        },
+        {
+          "id": "PCP-06",
+          "question": "Which apparent provider gaps are driven by a missing source feed rather than missing care?",
+          "origin": "additional question",
+          "analysis_type": "proposed_analysis",
+          "build_priority": "P1",
+          "expected_output": "Evidence-linked findings, alternative explanations and missing inputs.",
+          "candidate_response": "Review findings and define a testable response appropriate to the question.",
+          "acceptance_case": "Unsupported inputs or causal claims return an explicit limitation, not an invented conclusion.",
+          "execution": {
+            "handler": null,
+            "status": "not_implemented",
+            "scope": "Needs the listed data, executable logic and independent validation.",
+            "required_data": [
+              "Longitudinal attributed panels",
+              "shared care roles",
+              "condition-specific process and outcomes",
+              "baseline risk",
+              "social and access context",
+              "staffing and capacity",
+              "patient experience"
+            ],
+            "review_owner": "Clinical leadership / practice improvement"
+          }
+        },
+        {
+          "id": "PCP-07",
+          "question": "Which practices reliably resolve affordability and authorization barriers after they are documented?",
+          "origin": "additional question",
+          "analysis_type": "proposed_analysis",
+          "build_priority": "P1",
+          "expected_output": "Evidence-linked findings, alternative explanations and missing inputs.",
+          "candidate_response": "Review findings and define a testable response appropriate to the question.",
+          "acceptance_case": "Unsupported inputs or causal claims return an explicit limitation, not an invented conclusion.",
+          "execution": {
+            "handler": null,
+            "status": "not_implemented",
+            "scope": "Needs the listed data, executable logic and independent validation.",
+            "required_data": [
+              "Longitudinal attributed panels",
+              "shared care roles",
+              "condition-specific process and outcomes",
+              "baseline risk",
+              "social and access context",
+              "staffing and capacity",
+              "patient experience"
+            ],
+            "review_owner": "Clinical leadership / practice improvement"
+          }
+        },
+        {
+          "id": "PCP-08",
+          "question": "Where does measured performance change when patients transfer between attributed clinicians?",
+          "origin": "additional question",
+          "analysis_type": "proposed_analysis",
+          "build_priority": "P1",
+          "expected_output": "Evidence-linked findings, alternative explanations and missing inputs.",
+          "candidate_response": "Review findings and define a testable response appropriate to the question.",
+          "acceptance_case": "Unsupported inputs or causal claims return an explicit limitation, not an invented conclusion.",
+          "execution": {
+            "handler": null,
+            "status": "not_implemented",
+            "scope": "Needs the listed data, executable logic and independent validation.",
+            "required_data": [
+              "Longitudinal attributed panels",
+              "shared care roles",
+              "condition-specific process and outcomes",
+              "baseline risk",
+              "social and access context",
+              "staffing and capacity",
+              "patient experience"
+            ],
+            "review_owner": "Clinical leadership / practice improvement"
+          }
+        },
+        {
+          "id": "PCP-09",
+          "question": "Which practice differences persist within comparable disease severity and access groups?",
+          "origin": "additional question",
+          "analysis_type": "proposed_analysis",
+          "build_priority": "P1",
+          "expected_output": "Evidence-linked findings, alternative explanations and missing inputs.",
+          "candidate_response": "Review findings and define a testable response appropriate to the question.",
+          "acceptance_case": "Unsupported inputs or causal claims return an explicit limitation, not an invented conclusion.",
+          "execution": {
+            "handler": null,
+            "status": "not_implemented",
+            "scope": "Needs the listed data, executable logic and independent validation.",
+            "required_data": [
+              "Longitudinal attributed panels",
+              "shared care roles",
+              "condition-specific process and outcomes",
+              "baseline risk",
+              "social and access context",
+              "staffing and capacity",
+              "patient experience"
+            ],
+            "review_owner": "Clinical leadership / practice improvement"
+          }
+        }
+      ]
+    },
+    {
+      "id": "NET",
+      "title": "Out-of-network care and actual access",
+      "required_data": [
+        "Complete claims and encounter feeds",
+        "dated network directories",
+        "referral attempts",
+        "appointment availability",
+        "service capability",
+        "geography",
+        "patient-reported preferences and reasons"
+      ],
+      "review_owner": "Network strategy / access operations / clinical leadership",
+      "guardrail": "Outside care may be clinically necessary or preferred. Directory presence is not available access; incomplete feeds can mimic leakage. Do not restrict emergency care or patient choice.",
+      "source_refs": [
+        "hrsa",
+        "transit"
+      ],
+      "questions": [
+        {
+          "id": "NET-01",
+          "question": "Who uses out-of-network services most often, for which needs, and what reasons are documented?",
+          "analysis_type": "descriptive",
+          "expected_output": "Service-specific use with verified, inferred and unknown reasons separated.",
+          "candidate_response": "Review access needs and patient preferences.",
+          "acceptance_case": "Unexplained outside care remains unknown rather than being assigned a convenience motive.",
+          "build_priority": "P1",
+          "origin": "existing user-derived catalog",
+          "execution": {
+            "handler": null,
+            "status": "not_implemented",
+            "scope": "Needs the listed data, executable logic and independent validation.",
+            "required_data": [
+              "Complete claims and encounter feeds",
+              "dated network directories",
+              "referral attempts",
+              "appointment availability",
+              "service capability",
+              "geography",
+              "patient-reported preferences and reasons"
+            ],
+            "review_owner": "Network strategy / access operations / clinical leadership"
+          }
+        },
+        {
+          "id": "NET-02",
+          "question": "Which outside referrals follow failed in-network access attempts or missing clinical capability?",
+          "analysis_type": "hypothesis",
+          "expected_output": "Referral and access timeline with actual capacity evidence.",
+          "candidate_response": "Improve specific capacity or retain the appropriate external partnership.",
+          "acceptance_case": "A listed in-network clinician is not assumed to accept new patients.",
+          "build_priority": "P1",
+          "origin": "existing user-derived catalog",
+          "execution": {
+            "handler": null,
+            "status": "not_implemented",
+            "scope": "Needs the listed data, executable logic and independent validation.",
+            "required_data": [
+              "Complete claims and encounter feeds",
+              "dated network directories",
+              "referral attempts",
+              "appointment availability",
+              "service capability",
+              "geography",
+              "patient-reported preferences and reasons"
+            ],
+            "review_owner": "Network strategy / access operations / clinical leadership"
+          }
+        },
+        {
+          "id": "NET-03",
+          "question": "Which apparent leakage is caused by stale directories, attribution errors or delayed claims?",
+          "analysis_type": "reconciliation",
+          "expected_output": "Dated network/attribution rules and data-quality exceptions.",
+          "candidate_response": "Correct the denominator and feed before intervening.",
+          "acceptance_case": "A provider joining a network later is not retrospectively treated as in-network earlier.",
+          "build_priority": "P1",
+          "origin": "existing user-derived catalog",
+          "execution": {
+            "handler": null,
+            "status": "not_implemented",
+            "scope": "Needs the listed data, executable logic and independent validation.",
+            "required_data": [
+              "Complete claims and encounter feeds",
+              "dated network directories",
+              "referral attempts",
+              "appointment availability",
+              "service capability",
+              "geography",
+              "patient-reported preferences and reasons"
+            ],
+            "review_owner": "Network strategy / access operations / clinical leadership"
+          }
+        },
+        {
+          "id": "NET-04",
+          "question": "Where could a clinically appropriate local service reduce travel and patient burden?",
+          "analysis_type": "scenario",
+          "expected_output": "Demand, capability, access, patient preferences and investment assumptions.",
+          "candidate_response": "Evaluate a local service or virtual option with clinical oversight.",
+          "acceptance_case": "Lower organizational leakage is not substituted for patient benefit.",
+          "build_priority": "P1",
+          "origin": "existing user-derived catalog",
+          "execution": {
+            "handler": null,
+            "status": "not_implemented",
+            "scope": "Needs the listed data, executable logic and independent validation.",
+            "required_data": [
+              "Complete claims and encounter feeds",
+              "dated network directories",
+              "referral attempts",
+              "appointment availability",
+              "service capability",
+              "geography",
+              "patient-reported preferences and reasons"
+            ],
+            "review_owner": "Network strategy / access operations / clinical leadership"
+          }
+        },
+        {
+          "id": "NET-05",
+          "question": "Which external providers deliver good outcomes and should become deliberate partners?",
+          "analysis_type": "provider_comparison",
+          "expected_output": "Comparable outcome evidence, access, total cost and uncertainty.",
+          "candidate_response": "Assess a partnership preserving patient choice.",
+          "acceptance_case": "High outside spending does not by itself establish poor value.",
+          "build_priority": "P1",
+          "origin": "existing user-derived catalog",
+          "execution": {
+            "handler": null,
+            "status": "not_implemented",
+            "scope": "Needs the listed data, executable logic and independent validation.",
+            "required_data": [
+              "Complete claims and encounter feeds",
+              "dated network directories",
+              "referral attempts",
+              "appointment availability",
+              "service capability",
+              "geography",
+              "patient-reported preferences and reasons"
+            ],
+            "review_owner": "Network strategy / access operations / clinical leadership"
+          }
+        },
+        {
+          "id": "NET-06",
+          "question": "Which outside encounters can close an apparent care gap once reconciled with local records?",
+          "origin": "additional question",
+          "analysis_type": "proposed_analysis",
+          "build_priority": "P1",
+          "expected_output": "Evidence-linked findings, alternative explanations and missing inputs.",
+          "candidate_response": "Review findings and define a testable response appropriate to the question.",
+          "acceptance_case": "Unsupported inputs or causal claims return an explicit limitation, not an invented conclusion.",
+          "execution": {
+            "handler": null,
+            "status": "not_implemented",
+            "scope": "Needs the listed data, executable logic and independent validation.",
+            "required_data": [
+              "Complete claims and encounter feeds",
+              "dated network directories",
+              "referral attempts",
+              "appointment availability",
+              "service capability",
+              "geography",
+              "patient-reported preferences and reasons"
+            ],
+            "review_owner": "Network strategy / access operations / clinical leadership"
+          }
+        },
+        {
+          "id": "NET-07",
+          "question": "Where do network directories claim access that appointment availability does not support?",
+          "origin": "additional question",
+          "analysis_type": "proposed_analysis",
+          "build_priority": "P1",
+          "expected_output": "Evidence-linked findings, alternative explanations and missing inputs.",
+          "candidate_response": "Review findings and define a testable response appropriate to the question.",
+          "acceptance_case": "Unsupported inputs or causal claims return an explicit limitation, not an invented conclusion.",
+          "execution": {
+            "handler": null,
+            "status": "not_implemented",
+            "scope": "Needs the listed data, executable logic and independent validation.",
+            "required_data": [
+              "Complete claims and encounter feeds",
+              "dated network directories",
+              "referral attempts",
+              "appointment availability",
+              "service capability",
+              "geography",
+              "patient-reported preferences and reasons"
+            ],
+            "review_owner": "Network strategy / access operations / clinical leadership"
+          }
+        },
+        {
+          "id": "NET-08",
+          "question": "Which recurring outside services fill a clinical capability gap in the contracted network?",
+          "origin": "additional question",
+          "analysis_type": "proposed_analysis",
+          "build_priority": "P1",
+          "expected_output": "Evidence-linked findings, alternative explanations and missing inputs.",
+          "candidate_response": "Review findings and define a testable response appropriate to the question.",
+          "acceptance_case": "Unsupported inputs or causal claims return an explicit limitation, not an invented conclusion.",
+          "execution": {
+            "handler": null,
+            "status": "not_implemented",
+            "scope": "Needs the listed data, executable logic and independent validation.",
+            "required_data": [
+              "Complete claims and encounter feeds",
+              "dated network directories",
+              "referral attempts",
+              "appointment availability",
+              "service capability",
+              "geography",
+              "patient-reported preferences and reasons"
+            ],
+            "review_owner": "Network strategy / access operations / clinical leadership"
+          }
+        },
+        {
+          "id": "NET-09",
+          "question": "Which out-of-network expenditures are likely attribution or duplicate-claim artifacts?",
+          "origin": "additional question",
+          "analysis_type": "proposed_analysis",
+          "build_priority": "P1",
+          "expected_output": "Evidence-linked findings, alternative explanations and missing inputs.",
+          "candidate_response": "Review findings and define a testable response appropriate to the question.",
+          "acceptance_case": "Unsupported inputs or causal claims return an explicit limitation, not an invented conclusion.",
+          "execution": {
+            "handler": null,
+            "status": "not_implemented",
+            "scope": "Needs the listed data, executable logic and independent validation.",
+            "required_data": [
+              "Complete claims and encounter feeds",
+              "dated network directories",
+              "referral attempts",
+              "appointment availability",
+              "service capability",
+              "geography",
+              "patient-reported preferences and reasons"
+            ],
+            "review_owner": "Network strategy / access operations / clinical leadership"
+          }
+        }
+      ]
+    },
+    {
+      "id": "DOC",
+      "title": "Documentation and risk-adjustment integrity",
+      "required_data": [
+        "Current clinical evidence",
+        "diagnosis history",
+        "encounter eligibility",
+        "coding rules by program and year",
+        "submitted codes and audit findings"
+      ],
+      "review_owner": "Clinician / coding specialist / compliance",
+      "guardrail": "Find supported omissions and unsupported diagnoses. A model suggestion is not a diagnosis or a billable code. Coding improvement is not a clinical outcome.",
+      "source_refs": [
+        "radv"
+      ],
+      "questions": [
+        {
+          "id": "DOC-01",
+          "question": "Which clinically supported conditions may be missing from the current record or required documentation?",
+          "analysis_type": "documentation_review",
+          "expected_output": "Supporting and contradictory evidence with program-specific documentation requirements.",
+          "candidate_response": "Clinician confirmation and coding review.",
+          "acceptance_case": "Copied historical text alone cannot establish an active diagnosis.",
+          "build_priority": "P1",
+          "origin": "existing user-derived catalog",
+          "execution": {
+            "handler": null,
+            "status": "not_implemented",
+            "scope": "Needs the listed data, executable logic and independent validation.",
+            "required_data": [
+              "Current clinical evidence",
+              "diagnosis history",
+              "encounter eligibility",
+              "coding rules by program and year",
+              "submitted codes and audit findings"
+            ],
+            "review_owner": "Clinician / coding specialist / compliance"
+          }
+        },
+        {
+          "id": "DOC-02",
+          "question": "Which submitted diagnoses appear stale, unsupported or inconsistent with the available chart?",
+          "analysis_type": "documentation_review",
+          "expected_output": "Code-level evidence gaps and contradictions for audit review.",
+          "candidate_response": "Correct the record and submission when warranted.",
+          "acceptance_case": "The system evaluates overstatement as well as understatement.",
+          "build_priority": "P1",
+          "origin": "existing user-derived catalog",
+          "execution": {
+            "handler": null,
+            "status": "not_implemented",
+            "scope": "Needs the listed data, executable logic and independent validation.",
+            "required_data": [
+              "Current clinical evidence",
+              "diagnosis history",
+              "encounter eligibility",
+              "coding rules by program and year",
+              "submitted codes and audit findings"
+            ],
+            "review_owner": "Clinician / coding specialist / compliance"
+          }
+        },
+        {
+          "id": "DOC-03",
+          "question": "Which locations have systematic documentation problems, and are they clinical, technical or workflow failures?",
+          "analysis_type": "process_audit",
+          "expected_output": "Cause-specific patterns, record availability and review sampling results.",
+          "candidate_response": "Improve the source process rather than encourage indiscriminate coding.",
+          "acceptance_case": "A missing feed is not assigned to clinician documentation failure.",
+          "build_priority": "P1",
+          "origin": "existing user-derived catalog",
+          "execution": {
+            "handler": "documentation",
+            "status": "partial",
+            "scope": "Note repetition and benchmark documentation counters; no verified workflow root cause.",
+            "required_data": [
+              "Current clinical evidence",
+              "diagnosis history",
+              "encounter eligibility",
+              "coding rules by program and year",
+              "submitted codes and audit findings"
+            ],
+            "review_owner": "Clinician / coding specialist / compliance"
+          }
+        },
+        {
+          "id": "DOC-04",
+          "question": "How much of a reported financial improvement comes from coding changes versus better clinical outcomes?",
+          "analysis_type": "financial_analysis",
+          "expected_output": "Separated documentation, utilization, price and outcome effects with uncertainty.",
+          "candidate_response": "Report each mechanism transparently.",
+          "acceptance_case": "Risk-score growth is not counted as prevented illness or better quality of life.",
+          "build_priority": "P1",
+          "origin": "existing user-derived catalog",
+          "execution": {
+            "handler": null,
+            "status": "not_implemented",
+            "scope": "Needs the listed data, executable logic and independent validation.",
+            "required_data": [
+              "Current clinical evidence",
+              "diagnosis history",
+              "encounter eligibility",
+              "coding rules by program and year",
+              "submitted codes and audit findings"
+            ],
+            "review_owner": "Clinician / coding specialist / compliance"
+          }
+        },
+        {
+          "id": "DOC-05",
+          "question": "Which copied diagnoses lack current corroboration and should be reviewed before reuse?",
+          "origin": "additional question",
+          "analysis_type": "proposed_analysis",
+          "build_priority": "P1",
+          "expected_output": "Evidence-linked findings, alternative explanations and missing inputs.",
+          "candidate_response": "Review findings and define a testable response appropriate to the question.",
+          "acceptance_case": "Unsupported inputs or causal claims return an explicit limitation, not an invented conclusion.",
+          "execution": {
+            "handler": null,
+            "status": "not_implemented",
+            "scope": "Needs the listed data, executable logic and independent validation.",
+            "required_data": [
+              "Current clinical evidence",
+              "diagnosis history",
+              "encounter eligibility",
+              "coding rules by program and year",
+              "submitted codes and audit findings"
+            ],
+            "review_owner": "Clinician / coding specialist / compliance"
+          }
+        },
+        {
+          "id": "DOC-06",
+          "question": "Which documentation requests would add information needed for care rather than merely increase coding volume?",
+          "origin": "additional question",
+          "analysis_type": "proposed_analysis",
+          "build_priority": "P1",
+          "expected_output": "Evidence-linked findings, alternative explanations and missing inputs.",
+          "candidate_response": "Review findings and define a testable response appropriate to the question.",
+          "acceptance_case": "Unsupported inputs or causal claims return an explicit limitation, not an invented conclusion.",
+          "execution": {
+            "handler": null,
+            "status": "not_implemented",
+            "scope": "Needs the listed data, executable logic and independent validation.",
+            "required_data": [
+              "Current clinical evidence",
+              "diagnosis history",
+              "encounter eligibility",
+              "coding rules by program and year",
+              "submitted codes and audit findings"
+            ],
+            "review_owner": "Clinician / coding specialist / compliance"
+          }
+        },
+        {
+          "id": "DOC-07",
+          "question": "Where does missing clinical documentation prevent distinguishing appropriate holds from untreated disease?",
+          "origin": "additional question",
+          "analysis_type": "proposed_analysis",
+          "build_priority": "P1",
+          "expected_output": "Evidence-linked findings, alternative explanations and missing inputs.",
+          "candidate_response": "Review findings and define a testable response appropriate to the question.",
+          "acceptance_case": "Unsupported inputs or causal claims return an explicit limitation, not an invented conclusion.",
+          "execution": {
+            "handler": null,
+            "status": "not_implemented",
+            "scope": "Needs the listed data, executable logic and independent validation.",
+            "required_data": [
+              "Current clinical evidence",
+              "diagnosis history",
+              "encounter eligibility",
+              "coding rules by program and year",
+              "submitted codes and audit findings"
+            ],
+            "review_owner": "Clinician / coding specialist / compliance"
+          }
+        },
+        {
+          "id": "DOC-08",
+          "question": "Which records contain contradictory condition status across notes, claims and problem lists?",
+          "origin": "additional question",
+          "analysis_type": "proposed_analysis",
+          "build_priority": "P1",
+          "expected_output": "Evidence-linked findings, alternative explanations and missing inputs.",
+          "candidate_response": "Review findings and define a testable response appropriate to the question.",
+          "acceptance_case": "Unsupported inputs or causal claims return an explicit limitation, not an invented conclusion.",
+          "execution": {
+            "handler": null,
+            "status": "not_implemented",
+            "scope": "Needs the listed data, executable logic and independent validation.",
+            "required_data": [
+              "Current clinical evidence",
+              "diagnosis history",
+              "encounter eligibility",
+              "coding rules by program and year",
+              "submitted codes and audit findings"
+            ],
+            "review_owner": "Clinician / coding specialist / compliance"
+          }
+        }
+      ]
+    },
+    {
+      "id": "FIN",
+      "title": "Contracts, locations and financial opportunity",
+      "required_data": [
+        "Signed contracts and amendments",
+        "measure specifications",
+        "attribution and enrollment",
+        "claims maturity",
+        "quality gates",
+        "benchmarks risk adjustment caps and corridors",
+        "intervention costs",
+        "staffing and capacity"
+      ],
+      "review_owner": "Contracting / actuarial finance / clinical leadership",
+      "guardrail": "Financial estimates must cite applicable clauses and assumptions. Patient benefit and financial return are separate outputs. Deduplicate overlapping patients and savings; do not optimize denial or avoidance of needed care.",
+      "source_refs": [],
+      "questions": [
+        {
+          "id": "FIN-01",
+          "question": "What exactly does each contract reward or penalize, and which rules apply to this population and period?",
+          "analysis_type": "contract_interpretation",
+          "expected_output": "Versioned clauses, computable definitions and unresolved ambiguities.",
+          "candidate_response": "Analyst-approved contract rule set.",
+          "acceptance_case": "An ambiguous exclusion blocks that calculation rather than being silently guessed.",
+          "build_priority": "P0",
+          "origin": "existing user-derived catalog",
+          "execution": {
+            "handler": null,
+            "status": "not_implemented",
+            "scope": "Needs the listed data, executable logic and independent validation.",
+            "required_data": [
+              "Signed contracts and amendments",
+              "measure specifications",
+              "attribution and enrollment",
+              "claims maturity",
+              "quality gates",
+              "benchmarks risk adjustment caps and corridors",
+              "intervention costs",
+              "staffing and capacity"
+            ],
+            "review_owner": "Contracting / actuarial finance / clinical leadership"
+          }
+        },
+        {
+          "id": "FIN-02",
+          "question": "Which locations have the largest evidence-supported opportunities to improve both patient outcomes and contract performance?",
+          "analysis_type": "financial_analysis",
+          "expected_output": "Eligible population, genuine gaps, attainable change, costs, capacity and uncertainty.",
+          "candidate_response": "Select a feasible clinical improvement initiative.",
+          "acceptance_case": "The largest raw gap count does not automatically rank as the best investment.",
+          "build_priority": "P1",
+          "origin": "existing user-derived catalog",
+          "execution": {
+            "handler": null,
+            "status": "not_implemented",
+            "scope": "Needs the listed data, executable logic and independent validation.",
+            "required_data": [
+              "Signed contracts and amendments",
+              "measure specifications",
+              "attribution and enrollment",
+              "claims maturity",
+              "quality gates",
+              "benchmarks risk adjustment caps and corridors",
+              "intervention costs",
+              "staffing and capacity"
+            ],
+            "review_owner": "Contracting / actuarial finance / clinical leadership"
+          }
+        },
+        {
+          "id": "FIN-03",
+          "question": "Which quality threshold or contract provision most constrains shared savings or downside exposure?",
+          "analysis_type": "financial_analysis",
+          "expected_output": "Sensitivity analysis with exact measure, threshold and contract-year citation.",
+          "candidate_response": "Evaluate targeted quality improvement.",
+          "acceptance_case": "A later contract amendment cannot affect an earlier period unless its terms require it.",
+          "build_priority": "P1",
+          "origin": "existing user-derived catalog",
+          "execution": {
+            "handler": null,
+            "status": "not_implemented",
+            "scope": "Needs the listed data, executable logic and independent validation.",
+            "required_data": [
+              "Signed contracts and amendments",
+              "measure specifications",
+              "attribution and enrollment",
+              "claims maturity",
+              "quality gates",
+              "benchmarks risk adjustment caps and corridors",
+              "intervention costs",
+              "staffing and capacity"
+            ],
+            "review_owner": "Contracting / actuarial finance / clinical leadership"
+          }
+        },
+        {
+          "id": "FIN-04",
+          "question": "What is the plausible net financial effect of an intervention after delivery cost, uptake and payment mechanics?",
+          "analysis_type": "scenario",
+          "expected_output": "Assumption-based range, time horizon, cost perspective and key sensitivities.",
+          "candidate_response": "Compare investment options while keeping clinical benefit explicit.",
+          "acceptance_case": "Gross avoided utilization is not represented as realized shared savings.",
+          "build_priority": "P1",
+          "origin": "existing user-derived catalog",
+          "execution": {
+            "handler": null,
+            "status": "not_implemented",
+            "scope": "Needs the listed data, executable logic and independent validation.",
+            "required_data": [
+              "Signed contracts and amendments",
+              "measure specifications",
+              "attribution and enrollment",
+              "claims maturity",
+              "quality gates",
+              "benchmarks risk adjustment caps and corridors",
+              "intervention costs",
+              "staffing and capacity"
+            ],
+            "review_owner": "Contracting / actuarial finance / clinical leadership"
+          }
+        },
+        {
+          "id": "FIN-05",
+          "question": "Which initiatives target the same people or events, causing double-counted savings or excessive treatment burden?",
+          "analysis_type": "overlap_analysis",
+          "expected_output": "Patient/episode overlap, interacting interventions and attribution of benefit.",
+          "candidate_response": "Coordinate the investment portfolio and simplify overlapping services.",
+          "acceptance_case": "Summing initiative-level estimates cannot count the same avoided admission twice.",
+          "build_priority": "P1",
+          "origin": "existing user-derived catalog",
+          "execution": {
+            "handler": null,
+            "status": "not_implemented",
+            "scope": "Needs the listed data, executable logic and independent validation.",
+            "required_data": [
+              "Signed contracts and amendments",
+              "measure specifications",
+              "attribution and enrollment",
+              "claims maturity",
+              "quality gates",
+              "benchmarks risk adjustment caps and corridors",
+              "intervention costs",
+              "staffing and capacity"
+            ],
+            "review_owner": "Contracting / actuarial finance / clinical leadership"
+          }
+        },
+        {
+          "id": "FIN-06",
+          "question": "Where does better patient care conflict with a local reimbursement incentive, and can contracting resolve it?",
+          "analysis_type": "scenario",
+          "expected_output": "Clinical opportunity, affected revenue/cost perspectives and contract options.",
+          "candidate_response": "Discuss incentive alignment with payer and delivery leadership.",
+          "acceptance_case": "Organizational margin is never labelled synonymous with patient welfare.",
+          "build_priority": "P1",
+          "origin": "existing user-derived catalog",
+          "execution": {
+            "handler": null,
+            "status": "not_implemented",
+            "scope": "Needs the listed data, executable logic and independent validation.",
+            "required_data": [
+              "Signed contracts and amendments",
+              "measure specifications",
+              "attribution and enrollment",
+              "claims maturity",
+              "quality gates",
+              "benchmarks risk adjustment caps and corridors",
+              "intervention costs",
+              "staffing and capacity"
+            ],
+            "review_owner": "Contracting / actuarial finance / clinical leadership"
+          }
+        },
+        {
+          "id": "FIN-07",
+          "question": "Which apparent savings disappear after claims maturity and runout are accounted for?",
+          "origin": "additional question",
+          "analysis_type": "proposed_analysis",
+          "build_priority": "P1",
+          "expected_output": "Evidence-linked findings, alternative explanations and missing inputs.",
+          "candidate_response": "Review findings and define a testable response appropriate to the question.",
+          "acceptance_case": "Unsupported inputs or causal claims return an explicit limitation, not an invented conclusion.",
+          "execution": {
+            "handler": null,
+            "status": "not_implemented",
+            "scope": "Needs the listed data, executable logic and independent validation.",
+            "required_data": [
+              "Signed contracts and amendments",
+              "measure specifications",
+              "attribution and enrollment",
+              "claims maturity",
+              "quality gates",
+              "benchmarks risk adjustment caps and corridors",
+              "intervention costs",
+              "staffing and capacity"
+            ],
+            "review_owner": "Contracting / actuarial finance / clinical leadership"
+          }
+        },
+        {
+          "id": "FIN-08",
+          "question": "Which contract opportunities remain favorable under conservative uptake and delivery-cost assumptions?",
+          "origin": "additional question",
+          "analysis_type": "proposed_analysis",
+          "build_priority": "P1",
+          "expected_output": "Evidence-linked findings, alternative explanations and missing inputs.",
+          "candidate_response": "Review findings and define a testable response appropriate to the question.",
+          "acceptance_case": "Unsupported inputs or causal claims return an explicit limitation, not an invented conclusion.",
+          "execution": {
+            "handler": null,
+            "status": "not_implemented",
+            "scope": "Needs the listed data, executable logic and independent validation.",
+            "required_data": [
+              "Signed contracts and amendments",
+              "measure specifications",
+              "attribution and enrollment",
+              "claims maturity",
+              "quality gates",
+              "benchmarks risk adjustment caps and corridors",
+              "intervention costs",
+              "staffing and capacity"
+            ],
+            "review_owner": "Contracting / actuarial finance / clinical leadership"
+          }
+        },
+        {
+          "id": "FIN-09",
+          "question": "Which patients would receive conflicting interventions from overlapping contract initiatives?",
+          "origin": "additional question",
+          "analysis_type": "proposed_analysis",
+          "build_priority": "P1",
+          "expected_output": "Evidence-linked findings, alternative explanations and missing inputs.",
+          "candidate_response": "Review findings and define a testable response appropriate to the question.",
+          "acceptance_case": "Unsupported inputs or causal claims return an explicit limitation, not an invented conclusion.",
+          "execution": {
+            "handler": null,
+            "status": "not_implemented",
+            "scope": "Needs the listed data, executable logic and independent validation.",
+            "required_data": [
+              "Signed contracts and amendments",
+              "measure specifications",
+              "attribution and enrollment",
+              "claims maturity",
+              "quality gates",
+              "benchmarks risk adjustment caps and corridors",
+              "intervention costs",
+              "staffing and capacity"
+            ],
+            "review_owner": "Contracting / actuarial finance / clinical leadership"
+          }
+        },
+        {
+          "id": "FIN-10",
+          "question": "Where does a financially attractive proposal lack evidence of patient benefit?",
+          "origin": "additional question",
+          "analysis_type": "proposed_analysis",
+          "build_priority": "P1",
+          "expected_output": "Evidence-linked findings, alternative explanations and missing inputs.",
+          "candidate_response": "Review findings and define a testable response appropriate to the question.",
+          "acceptance_case": "Unsupported inputs or causal claims return an explicit limitation, not an invented conclusion.",
+          "execution": {
+            "handler": null,
+            "status": "not_implemented",
+            "scope": "Needs the listed data, executable logic and independent validation.",
+            "required_data": [
+              "Signed contracts and amendments",
+              "measure specifications",
+              "attribution and enrollment",
+              "claims maturity",
+              "quality gates",
+              "benchmarks risk adjustment caps and corridors",
+              "intervention costs",
+              "staffing and capacity"
+            ],
+            "review_owner": "Contracting / actuarial finance / clinical leadership"
+          }
+        }
+      ]
+    },
+    {
+      "id": "POL",
+      "title": "Any payer program or measure: understand, update and apply",
+      "required_data": [
+        "Authoritative CMS state Medicaid and commercial-plan specifications",
+        "contracts amendments and bulletins",
+        "measure value sets and code versions",
+        "effective and publication dates",
+        "plan product geography and provider applicability",
+        "member coverage and attribution"
+      ],
+      "review_owner": "Program operations / measure steward / contracting / clinical reviewer",
+      "guardrail": "No hardcoded dependency on a named program. Resolve authority, applicability and effective time before execution. Distinguish eligibility from suitability and enrollment. Proposed or ambiguous rules cannot silently become active clinical or financial logic.",
+      "source_refs": [],
+      "questions": [
+        {
+          "id": "POL-01",
+          "question": "Given a newly published program or measure, what does it require and to whom does it apply?",
+          "analysis_type": "rule_interpretation",
+          "expected_output": "Source-linked purpose, population, eligibility, exclusions, measure logic, required data and unresolved ambiguity.",
+          "candidate_response": "Create an executable specification when supported, with explicit unsupported elements.",
+          "acceptance_case": "An unseen program is interpreted from its documents rather than guessed from its name.",
+          "build_priority": "P0",
+          "origin": "existing user-derived catalog",
+          "execution": {
+            "handler": null,
+            "status": "not_implemented",
+            "scope": "Needs the listed data, executable logic and independent validation.",
+            "required_data": [
+              "Authoritative CMS state Medicaid and commercial-plan specifications",
+              "contracts amendments and bulletins",
+              "measure value sets and code versions",
+              "effective and publication dates",
+              "plan product geography and provider applicability",
+              "member coverage and attribution"
+            ],
+            "review_owner": "Program operations / measure steward / contracting / clinical reviewer"
+          }
+        },
+        {
+          "id": "POL-02",
+          "question": "What changed when CMS, a state Medicaid program or a commercial plan updated its requirements?",
+          "analysis_type": "rule_change",
+          "expected_output": "Semantic differences in eligibility, codes, timing, attribution, exclusions, thresholds and payment dependencies.",
+          "candidate_response": "Validate and apply the approved effective version.",
+          "acceptance_case": "A wording-only edit does not create a false cohort change, while an exclusion change does.",
+          "build_priority": "P1",
+          "origin": "existing user-derived catalog",
+          "execution": {
+            "handler": null,
+            "status": "not_implemented",
+            "scope": "Needs the listed data, executable logic and independent validation.",
+            "required_data": [
+              "Authoritative CMS state Medicaid and commercial-plan specifications",
+              "contracts amendments and bulletins",
+              "measure value sets and code versions",
+              "effective and publication dates",
+              "plan product geography and provider applicability",
+              "member coverage and attribution"
+            ],
+            "review_owner": "Program operations / measure steward / contracting / clinical reviewer"
+          }
+        },
+        {
+          "id": "POL-03",
+          "question": "Which patients, clinicians, locations and contracts are affected by a new or amended rule?",
+          "analysis_type": "impact_analysis",
+          "expected_output": "Old-versus-new membership, measure and opportunity changes with patient-level explanations.",
+          "candidate_response": "Prepare affected teams and recompute applicable outputs.",
+          "acceptance_case": "Changes apply only to the correct plan, state, product, population and performance period.",
+          "build_priority": "P1",
+          "origin": "existing user-derived catalog",
+          "execution": {
+            "handler": null,
+            "status": "not_implemented",
+            "scope": "Needs the listed data, executable logic and independent validation.",
+            "required_data": [
+              "Authoritative CMS state Medicaid and commercial-plan specifications",
+              "contracts amendments and bulletins",
+              "measure value sets and code versions",
+              "effective and publication dates",
+              "plan product geography and provider applicability",
+              "member coverage and attribution"
+            ],
+            "review_owner": "Program operations / measure steward / contracting / clinical reviewer"
+          }
+        },
+        {
+          "id": "POL-04",
+          "question": "Which programs or measures overlap, conflict or leave needs uncovered for this population?",
+          "analysis_type": "overlap_analysis",
+          "expected_output": "Compatible requirements, conflicting definitions, duplicate benefit assumptions and unmet needs.",
+          "candidate_response": "Resolve applicable obligations and identify useful service options.",
+          "acceptance_case": "Similar measure names are not merged when denominator or exclusion definitions differ.",
+          "build_priority": "P1",
+          "origin": "existing user-derived catalog",
+          "execution": {
+            "handler": null,
+            "status": "not_implemented",
+            "scope": "Needs the listed data, executable logic and independent validation.",
+            "required_data": [
+              "Authoritative CMS state Medicaid and commercial-plan specifications",
+              "contracts amendments and bulletins",
+              "measure value sets and code versions",
+              "effective and publication dates",
+              "plan product geography and provider applicability",
+              "member coverage and attribution"
+            ],
+            "review_owner": "Program operations / measure steward / contracting / clinical reviewer"
+          }
+        },
+        {
+          "id": "POL-05",
+          "question": "Can we answer the new requirement with available data, and what evidence is missing?",
+          "analysis_type": "data_gap",
+          "expected_output": "Source-to-field mapping, computability status, missing value sets and affected decisions.",
+          "candidate_response": "Request the missing specification or data and abstain on unresolved results.",
+          "acceptance_case": "The system cannot invent a commercial-plan rule, restricted measure definition or missing eligibility fact.",
+          "build_priority": "P1",
+          "origin": "existing user-derived catalog",
+          "execution": {
+            "handler": null,
+            "status": "not_implemented",
+            "scope": "Needs the listed data, executable logic and independent validation.",
+            "required_data": [
+              "Authoritative CMS state Medicaid and commercial-plan specifications",
+              "contracts amendments and bulletins",
+              "measure value sets and code versions",
+              "effective and publication dates",
+              "plan product geography and provider applicability",
+              "member coverage and attribution"
+            ],
+            "review_owner": "Program operations / measure steward / contracting / clinical reviewer"
+          }
+        },
+        {
+          "id": "POL-06",
+          "question": "Which rule updates change only documentation requirements versus actual patient eligibility?",
+          "origin": "additional question",
+          "analysis_type": "proposed_analysis",
+          "build_priority": "P1",
+          "expected_output": "Evidence-linked findings, alternative explanations and missing inputs.",
+          "candidate_response": "Review findings and define a testable response appropriate to the question.",
+          "acceptance_case": "Unsupported inputs or causal claims return an explicit limitation, not an invented conclusion.",
+          "execution": {
+            "handler": null,
+            "status": "not_implemented",
+            "scope": "Needs the listed data, executable logic and independent validation.",
+            "required_data": [
+              "Authoritative CMS state Medicaid and commercial-plan specifications",
+              "contracts amendments and bulletins",
+              "measure value sets and code versions",
+              "effective and publication dates",
+              "plan product geography and provider applicability",
+              "member coverage and attribution"
+            ],
+            "review_owner": "Program operations / measure steward / contracting / clinical reviewer"
+          }
+        },
+        {
+          "id": "POL-07",
+          "question": "Which measure versions are simultaneously active across our contracts?",
+          "origin": "additional question",
+          "analysis_type": "proposed_analysis",
+          "build_priority": "P1",
+          "expected_output": "Evidence-linked findings, alternative explanations and missing inputs.",
+          "candidate_response": "Review findings and define a testable response appropriate to the question.",
+          "acceptance_case": "Unsupported inputs or causal claims return an explicit limitation, not an invented conclusion.",
+          "execution": {
+            "handler": null,
+            "status": "not_implemented",
+            "scope": "Needs the listed data, executable logic and independent validation.",
+            "required_data": [
+              "Authoritative CMS state Medicaid and commercial-plan specifications",
+              "contracts amendments and bulletins",
+              "measure value sets and code versions",
+              "effective and publication dates",
+              "plan product geography and provider applicability",
+              "member coverage and attribution"
+            ],
+            "review_owner": "Program operations / measure steward / contracting / clinical reviewer"
+          }
+        },
+        {
+          "id": "POL-08",
+          "question": "Which policy clauses cannot be translated into executable logic without clarification?",
+          "origin": "additional question",
+          "analysis_type": "proposed_analysis",
+          "build_priority": "P1",
+          "expected_output": "Evidence-linked findings, alternative explanations and missing inputs.",
+          "candidate_response": "Review findings and define a testable response appropriate to the question.",
+          "acceptance_case": "Unsupported inputs or causal claims return an explicit limitation, not an invented conclusion.",
+          "execution": {
+            "handler": null,
+            "status": "not_implemented",
+            "scope": "Needs the listed data, executable logic and independent validation.",
+            "required_data": [
+              "Authoritative CMS state Medicaid and commercial-plan specifications",
+              "contracts amendments and bulletins",
+              "measure value sets and code versions",
+              "effective and publication dates",
+              "plan product geography and provider applicability",
+              "member coverage and attribution"
+            ],
+            "review_owner": "Program operations / measure steward / contracting / clinical reviewer"
+          }
+        },
+        {
+          "id": "POL-09",
+          "question": "Which published corrections would change prior cohort assignments and require reprocessing?",
+          "origin": "additional question",
+          "analysis_type": "proposed_analysis",
+          "build_priority": "P1",
+          "expected_output": "Evidence-linked findings, alternative explanations and missing inputs.",
+          "candidate_response": "Review findings and define a testable response appropriate to the question.",
+          "acceptance_case": "Unsupported inputs or causal claims return an explicit limitation, not an invented conclusion.",
+          "execution": {
+            "handler": null,
+            "status": "not_implemented",
+            "scope": "Needs the listed data, executable logic and independent validation.",
+            "required_data": [
+              "Authoritative CMS state Medicaid and commercial-plan specifications",
+              "contracts amendments and bulletins",
+              "measure value sets and code versions",
+              "effective and publication dates",
+              "plan product geography and provider applicability",
+              "member coverage and attribution"
+            ],
+            "review_owner": "Program operations / measure steward / contracting / clinical reviewer"
+          }
+        }
+      ]
+    },
+    {
+      "id": "DISC",
+      "title": "Discovery across clinical and public data",
+      "required_data": [
+        "Longitudinal patient data",
+        "locally validated public datasets",
+        "weather and air-quality observations",
+        "transit schedules",
+        "provider directories",
+        "pharmacy service information",
+        "geography and timestamps"
+      ],
+      "review_owner": "Clinical analyst / domain expert / community partner",
+      "guardrail": "Discovery outputs are hypotheses until confirmed. Public area-level data are context, not individual traits. Use authorized APIs/downloads first, permitted scraping second; retain source dates, terms and provenance.",
+      "source_refs": [
+        "hrsa",
+        "heat",
+        "air",
+        "transit",
+        "snf"
+      ],
+      "questions": [
+        {
+          "id": "DISC-01",
+          "question": "Are heat or air-quality events associated with deterioration in particular local patient groups?",
+          "analysis_type": "hypothesis",
+          "expected_output": "Prespecified exposure windows, location uncertainty, comparable periods and replication plan.",
+          "candidate_response": "Test appropriate anticipatory support for a verified susceptible cohort.",
+          "acceptance_case": "Area-level conditions are not labelled measured personal exposure or proven admission causes.",
+          "build_priority": "P1",
+          "origin": "existing user-derived catalog",
+          "execution": {
+            "handler": null,
+            "status": "not_implemented",
+            "scope": "Needs the listed data, executable logic and independent validation.",
+            "required_data": [
+              "Longitudinal patient data",
+              "locally validated public datasets",
+              "weather and air-quality observations",
+              "transit schedules",
+              "provider directories",
+              "pharmacy service information",
+              "geography and timestamps"
+            ],
+            "review_owner": "Clinical analyst / domain expert / community partner"
+          }
+        },
+        {
+          "id": "DISC-02",
+          "question": "Do transit schedules make certain appointments or lab visits practically inaccessible?",
+          "analysis_type": "hypothesis",
+          "expected_output": "Travel-time feasibility at actual service times, mobility needs and patient confirmation.",
+          "candidate_response": "Test accessible scheduling, transportation or local alternatives.",
+          "acceptance_case": "A nearby transit stop is not assumed to mean a usable journey.",
+          "build_priority": "P1",
+          "origin": "existing user-derived catalog",
+          "execution": {
+            "handler": null,
+            "status": "not_implemented",
+            "scope": "Needs the listed data, executable logic and independent validation.",
+            "required_data": [
+              "Longitudinal patient data",
+              "locally validated public datasets",
+              "weather and air-quality observations",
+              "transit schedules",
+              "provider directories",
+              "pharmacy service information",
+              "geography and timestamps"
+            ],
+            "review_owner": "Clinical analyst / domain expert / community partner"
+          }
+        },
+        {
+          "id": "DISC-03",
+          "question": "Do pharmacy closures, changed hours or dispensing disruptions precede interruptions in treatment?",
+          "analysis_type": "hypothesis",
+          "expected_output": "Verified service changes and patient-level dispensing/access evidence.",
+          "candidate_response": "Assess alternate dispensing access with the patient.",
+          "acceptance_case": "A stale business listing cannot establish closure or medication interruption.",
+          "build_priority": "P1",
+          "origin": "existing user-derived catalog",
+          "execution": {
+            "handler": null,
+            "status": "not_implemented",
+            "scope": "Needs the listed data, executable logic and independent validation.",
+            "required_data": [
+              "Longitudinal patient data",
+              "locally validated public datasets",
+              "weather and air-quality observations",
+              "transit schedules",
+              "provider directories",
+              "pharmacy service information",
+              "geography and timestamps"
+            ],
+            "review_owner": "Clinical analyst / domain expert / community partner"
+          }
+        },
+        {
+          "id": "DISC-04",
+          "question": "Which patients are quietly deteriorating despite low utilization and little recorded spending?",
+          "analysis_type": "trajectory",
+          "expected_output": "Clinical changes, missingness, disengagement evidence and unknown outside care.",
+          "candidate_response": "Review unmet need without requiring prior high spending.",
+          "acceptance_case": "Low claims volume alone is not interpreted as either health or deterioration.",
+          "build_priority": "P1",
+          "origin": "existing user-derived catalog",
+          "execution": {
+            "handler": null,
+            "status": "not_implemented",
+            "scope": "Needs the listed data, executable logic and independent validation.",
+            "required_data": [
+              "Longitudinal patient data",
+              "locally validated public datasets",
+              "weather and air-quality observations",
+              "transit schedules",
+              "provider directories",
+              "pharmacy service information",
+              "geography and timestamps"
+            ],
+            "review_owner": "Clinical analyst / domain expert / community partner"
+          }
+        },
+        {
+          "id": "DISC-05",
+          "question": "Which surprising associations persist after checking duplicate notes, missing feeds, case mix and multiple testing?",
+          "analysis_type": "discovery",
+          "expected_output": "Ranked candidate patterns, negative controls, uncertainty and replication status.",
+          "candidate_response": "Adjudicate and prospectively test credible findings.",
+          "acceptance_case": "Searching many subgroups cannot yield an unqualified discovery claim from nominal significance.",
+          "build_priority": "P1",
+          "origin": "existing user-derived catalog",
+          "execution": {
+            "handler": "insights",
+            "status": "partial",
+            "scope": "Existing exploratory discovery only; no new confounder adjustment or multiple-testing correction.",
+            "required_data": [
+              "Longitudinal patient data",
+              "locally validated public datasets",
+              "weather and air-quality observations",
+              "transit schedules",
+              "provider directories",
+              "pharmacy service information",
+              "geography and timestamps"
+            ],
+            "review_owner": "Clinical analyst / domain expert / community partner"
+          }
+        },
+        {
+          "id": "DISC-06",
+          "question": "What additional piece of information would most change a consequential decision?",
+          "analysis_type": "value_of_information",
+          "expected_output": "Unresolved alternatives and the evidence needed to distinguish them.",
+          "candidate_response": "Retrieve the missing result, confirm the preference or obtain the appropriate assessment.",
+          "acceptance_case": "The system requests information instead of fabricating a confident answer.",
+          "build_priority": "P1",
+          "origin": "existing user-derived catalog",
+          "execution": {
+            "handler": null,
+            "status": "not_implemented",
+            "scope": "Needs the listed data, executable logic and independent validation.",
+            "required_data": [
+              "Longitudinal patient data",
+              "locally validated public datasets",
+              "weather and air-quality observations",
+              "transit schedules",
+              "provider directories",
+              "pharmacy service information",
+              "geography and timestamps"
+            ],
+            "review_owner": "Clinical analyst / domain expert / community partner"
+          }
+        },
+        {
+          "id": "DISC-07",
+          "question": "Which apparent population patterns vanish when copied sentences count as one observation?",
+          "origin": "additional question",
+          "analysis_type": "proposed_analysis",
+          "build_priority": "P1",
+          "expected_output": "Evidence-linked findings, alternative explanations and missing inputs.",
+          "candidate_response": "Review findings and define a testable response appropriate to the question.",
+          "acceptance_case": "Unsupported inputs or causal claims return an explicit limitation, not an invented conclusion.",
+          "execution": {
+            "handler": null,
+            "status": "not_implemented",
+            "scope": "Needs the listed data, executable logic and independent validation.",
+            "required_data": [
+              "Longitudinal patient data",
+              "locally validated public datasets",
+              "weather and air-quality observations",
+              "transit schedules",
+              "provider directories",
+              "pharmacy service information",
+              "geography and timestamps"
+            ],
+            "review_owner": "Clinical analyst / domain expert / community partner"
+          }
+        },
+        {
+          "id": "DISC-08",
+          "question": "Which newly emerging clusters coincide with changes in data completeness rather than patient health?",
+          "origin": "additional question",
+          "analysis_type": "proposed_analysis",
+          "build_priority": "P1",
+          "expected_output": "Evidence-linked findings, alternative explanations and missing inputs.",
+          "candidate_response": "Review findings and define a testable response appropriate to the question.",
+          "acceptance_case": "Unsupported inputs or causal claims return an explicit limitation, not an invented conclusion.",
+          "execution": {
+            "handler": null,
+            "status": "not_implemented",
+            "scope": "Needs the listed data, executable logic and independent validation.",
+            "required_data": [
+              "Longitudinal patient data",
+              "locally validated public datasets",
+              "weather and air-quality observations",
+              "transit schedules",
+              "provider directories",
+              "pharmacy service information",
+              "geography and timestamps"
+            ],
+            "review_owner": "Clinical analyst / domain expert / community partner"
+          }
+        },
+        {
+          "id": "DISC-09",
+          "question": "Which candidate interventions would be most informative to test prospectively?",
+          "origin": "additional question",
+          "analysis_type": "proposed_analysis",
+          "build_priority": "P1",
+          "expected_output": "Evidence-linked findings, alternative explanations and missing inputs.",
+          "candidate_response": "Review findings and define a testable response appropriate to the question.",
+          "acceptance_case": "Unsupported inputs or causal claims return an explicit limitation, not an invented conclusion.",
+          "execution": {
+            "handler": null,
+            "status": "not_implemented",
+            "scope": "Needs the listed data, executable logic and independent validation.",
+            "required_data": [
+              "Longitudinal patient data",
+              "locally validated public datasets",
+              "weather and air-quality observations",
+              "transit schedules",
+              "provider directories",
+              "pharmacy service information",
+              "geography and timestamps"
+            ],
+            "review_owner": "Clinical analyst / domain expert / community partner"
+          }
+        },
+        {
+          "id": "DISC-10",
+          "question": "Which insights persist across practices and time periods after correcting for repeated testing?",
+          "origin": "additional question",
+          "analysis_type": "proposed_analysis",
+          "build_priority": "P1",
+          "expected_output": "Evidence-linked findings, alternative explanations and missing inputs.",
+          "candidate_response": "Review findings and define a testable response appropriate to the question.",
+          "acceptance_case": "Unsupported inputs or causal claims return an explicit limitation, not an invented conclusion.",
+          "execution": {
+            "handler": null,
+            "status": "not_implemented",
+            "scope": "Needs the listed data, executable logic and independent validation.",
+            "required_data": [
+              "Longitudinal patient data",
+              "locally validated public datasets",
+              "weather and air-quality observations",
+              "transit schedules",
+              "provider directories",
+              "pharmacy service information",
+              "geography and timestamps"
+            ],
+            "review_owner": "Clinical analyst / domain expert / community partner"
+          }
+        }
+      ]
+    },
+    {
+      "id": "LEARN",
+      "title": "Learning which interventions actually help",
+      "required_data": [
+        "Adjudicated baseline decisions",
+        "intervention assignment and receipt",
+        "patient preferences",
+        "resource use",
+        "longitudinal outcomes and harms",
+        "comparison populations",
+        "dropout and missingness"
+      ],
+      "review_owner": "Clinical improvement / causal inference / patient representatives",
+      "guardrail": "Highest risk does not imply greatest preventable risk or greatest treatment benefit. Treatment-effect estimates require identification assumptions and external validation. Equity and clinical need constrain allocation.",
+      "source_refs": [],
+      "questions": [
+        {
+          "id": "LEARN-01",
+          "question": "Which patients benefit from which intervention, rather than merely having the highest predicted risk?",
+          "analysis_type": "causal_evaluation",
+          "expected_output": "Estimated benefit with uncertainty, applicability and evidence quality.",
+          "candidate_response": "Match an evaluated intervention to suitable patients.",
+          "acceptance_case": "A risk score cannot be relabelled as an individual treatment-effect estimate.",
+          "build_priority": "P1",
+          "origin": "existing user-derived catalog",
+          "execution": {
+            "handler": null,
+            "status": "not_implemented",
+            "scope": "Needs the listed data, executable logic and independent validation.",
+            "required_data": [
+              "Adjudicated baseline decisions",
+              "intervention assignment and receipt",
+              "patient preferences",
+              "resource use",
+              "longitudinal outcomes and harms",
+              "comparison populations",
+              "dropout and missingness"
+            ],
+            "review_owner": "Clinical improvement / causal inference / patient representatives"
+          }
+        },
+        {
+          "id": "LEARN-02",
+          "question": "With limited capacity, which allocation offers the most supported benefit while maintaining equitable access?",
+          "analysis_type": "allocation",
+          "expected_output": "Feasible options, benefit assumptions, patient preferences and distributional consequences.",
+          "candidate_response": "Human-reviewed capacity allocation.",
+          "acceptance_case": "Financial return alone cannot determine access to needed care.",
+          "build_priority": "P1",
+          "origin": "existing user-derived catalog",
+          "execution": {
+            "handler": null,
+            "status": "not_implemented",
+            "scope": "Needs the listed data, executable logic and independent validation.",
+            "required_data": [
+              "Adjudicated baseline decisions",
+              "intervention assignment and receipt",
+              "patient preferences",
+              "resource use",
+              "longitudinal outcomes and harms",
+              "comparison populations",
+              "dropout and missingness"
+            ],
+            "review_owner": "Clinical improvement / causal inference / patient representatives"
+          }
+        },
+        {
+          "id": "LEARN-03",
+          "question": "Which recommended interventions are accepted, delivered and sustained, and why do others fail?",
+          "analysis_type": "process_audit",
+          "expected_output": "Separate recommendation, offer, acceptance, receipt and persistence states.",
+          "candidate_response": "Fix the stage where delivery fails.",
+          "acceptance_case": "A generated recommendation is not counted as an intervention delivered.",
+          "build_priority": "P1",
+          "origin": "existing user-derived catalog",
+          "execution": {
+            "handler": null,
+            "status": "not_implemented",
+            "scope": "Needs the listed data, executable logic and independent validation.",
+            "required_data": [
+              "Adjudicated baseline decisions",
+              "intervention assignment and receipt",
+              "patient preferences",
+              "resource use",
+              "longitudinal outcomes and harms",
+              "comparison populations",
+              "dropout and missingness"
+            ],
+            "review_owner": "Clinical improvement / causal inference / patient representatives"
+          }
+        },
+        {
+          "id": "LEARN-04",
+          "question": "Which programs should be expanded, modified or stopped because of measured benefit, burden or harm?",
+          "analysis_type": "causal_evaluation",
+          "expected_output": "Comparative clinical and patient-reported outcomes, cost and uncertainty.",
+          "candidate_response": "Evidence-based program review.",
+          "acceptance_case": "Uncontrolled before/after improvement is labelled associational.",
+          "build_priority": "P1",
+          "origin": "existing user-derived catalog",
+          "execution": {
+            "handler": null,
+            "status": "not_implemented",
+            "scope": "Needs the listed data, executable logic and independent validation.",
+            "required_data": [
+              "Adjudicated baseline decisions",
+              "intervention assignment and receipt",
+              "patient preferences",
+              "resource use",
+              "longitudinal outcomes and harms",
+              "comparison populations",
+              "dropout and missingness"
+            ],
+            "review_owner": "Clinical improvement / causal inference / patient representatives"
+          }
+        },
+        {
+          "id": "LEARN-05",
+          "question": "Can the system recognize when it does not know enough to make a reliable recommendation?",
+          "analysis_type": "reliability_evaluation",
+          "expected_output": "Calibrated uncertainty, abstention reason and next evidence needed.",
+          "candidate_response": "Route uncertainty to appropriate review or additional data.",
+          "acceptance_case": "Correct abstention is rewarded rather than forced into an unsupported yes/no decision.",
+          "build_priority": "P0",
+          "origin": "existing user-derived catalog",
+          "execution": {
+            "handler": null,
+            "status": "not_implemented",
+            "scope": "Needs the listed data, executable logic and independent validation.",
+            "required_data": [
+              "Adjudicated baseline decisions",
+              "intervention assignment and receipt",
+              "patient preferences",
+              "resource use",
+              "longitudinal outcomes and harms",
+              "comparison populations",
+              "dropout and missingness"
+            ],
+            "review_owner": "Clinical improvement / causal inference / patient representatives"
+          }
+        },
+        {
+          "id": "LEARN-06",
+          "question": "Where do specialist and frontier models disagree, and which disagreement types predict errors?",
+          "origin": "additional question",
+          "analysis_type": "proposed_analysis",
+          "build_priority": "P1",
+          "expected_output": "Evidence-linked findings, alternative explanations and missing inputs.",
+          "candidate_response": "Review findings and define a testable response appropriate to the question.",
+          "acceptance_case": "Unsupported inputs or causal claims return an explicit limitation, not an invented conclusion.",
+          "execution": {
+            "handler": null,
+            "status": "not_implemented",
+            "scope": "Needs the listed data, executable logic and independent validation.",
+            "required_data": [
+              "Adjudicated baseline decisions",
+              "intervention assignment and receipt",
+              "patient preferences",
+              "resource use",
+              "longitudinal outcomes and harms",
+              "comparison populations",
+              "dropout and missingness"
+            ],
+            "review_owner": "Clinical improvement / causal inference / patient representatives"
+          }
+        },
+        {
+          "id": "LEARN-07",
+          "question": "Which evidence questions can a smaller model answer at acceptable accuracy and coverage?",
+          "origin": "additional question",
+          "analysis_type": "proposed_analysis",
+          "build_priority": "P1",
+          "expected_output": "Evidence-linked findings, alternative explanations and missing inputs.",
+          "candidate_response": "Review findings and define a testable response appropriate to the question.",
+          "acceptance_case": "Unsupported inputs or causal claims return an explicit limitation, not an invented conclusion.",
+          "execution": {
+            "handler": null,
+            "status": "not_implemented",
+            "scope": "Needs the listed data, executable logic and independent validation.",
+            "required_data": [
+              "Adjudicated baseline decisions",
+              "intervention assignment and receipt",
+              "patient preferences",
+              "resource use",
+              "longitudinal outcomes and harms",
+              "comparison populations",
+              "dropout and missingness"
+            ],
+            "review_owner": "Clinical improvement / causal inference / patient representatives"
+          }
+        },
+        {
+          "id": "LEARN-08",
+          "question": "Which cached findings need revision after new clinical evidence or a rule update?",
+          "origin": "additional question",
+          "analysis_type": "proposed_analysis",
+          "build_priority": "P1",
+          "expected_output": "Evidence-linked findings, alternative explanations and missing inputs.",
+          "candidate_response": "Review findings and define a testable response appropriate to the question.",
+          "acceptance_case": "Unsupported inputs or causal claims return an explicit limitation, not an invented conclusion.",
+          "execution": {
+            "handler": null,
+            "status": "not_implemented",
+            "scope": "Needs the listed data, executable logic and independent validation.",
+            "required_data": [
+              "Adjudicated baseline decisions",
+              "intervention assignment and receipt",
+              "patient preferences",
+              "resource use",
+              "longitudinal outcomes and harms",
+              "comparison populations",
+              "dropout and missingness"
+            ],
+            "review_owner": "Clinical improvement / causal inference / patient representatives"
+          }
+        },
+        {
+          "id": "LEARN-09",
+          "question": "Which human corrections generalize to new source-patient families rather than memorized templates?",
+          "origin": "additional question",
+          "analysis_type": "proposed_analysis",
+          "build_priority": "P1",
+          "expected_output": "Evidence-linked findings, alternative explanations and missing inputs.",
+          "candidate_response": "Review findings and define a testable response appropriate to the question.",
+          "acceptance_case": "Unsupported inputs or causal claims return an explicit limitation, not an invented conclusion.",
+          "execution": {
+            "handler": null,
+            "status": "not_implemented",
+            "scope": "Needs the listed data, executable logic and independent validation.",
+            "required_data": [
+              "Adjudicated baseline decisions",
+              "intervention assignment and receipt",
+              "patient preferences",
+              "resource use",
+              "longitudinal outcomes and harms",
+              "comparison populations",
+              "dropout and missingness"
+            ],
+            "review_owner": "Clinical improvement / causal inference / patient representatives"
+          }
+        }
+      ]
+    },
+    {
+      "id": "DATA",
+      "title": "Data and evidence integrity",
+      "required_data": [
+        "Source feeds and provenance",
+        "Arrival timestamps and identity crosswalks for historical/identity questions"
+      ],
+      "review_owner": "Data quality / clinical informatics",
+      "guardrail": "Missing observations never establish missing care.",
+      "questions": [
+        {
+          "id": "DATA-01",
+          "question": "How many records and patients are supplied by each feed?",
+          "origin": "additional question",
+          "analysis_type": "data_quality",
+          "expected_output": "Reproducible counts and explicit limitations",
+          "build_priority": "P0",
+          "execution": {
+            "handler": "feed_counts",
+            "status": "implemented",
+            "scope": "Counts supplied records, not real-world completeness.",
+            "required_data": [
+              "Source feeds and provenance",
+              "Arrival timestamps and identity crosswalks for historical/identity questions"
+            ],
+            "review_owner": "Data quality / clinical informatics"
+          }
+        },
+        {
+          "id": "DATA-02",
+          "question": "How much chart text repeats after sentence normalization?",
+          "origin": "additional question",
+          "analysis_type": "data_quality",
+          "expected_output": "Reproducible counts and explicit limitations",
+          "build_priority": "P0",
+          "execution": {
+            "handler": "documentation",
+            "status": "implemented",
+            "scope": "Sentence-normalized copy-forward counts from the existing chart reader.",
+            "required_data": [
+              "Source feeds and provenance",
+              "Arrival timestamps and identity crosswalks for historical/identity questions"
+            ],
+            "review_owner": "Data quality / clinical informatics"
+          }
+        },
+        {
+          "id": "DATA-03",
+          "question": "How many supplied records occur after the analysis cutoff?",
+          "origin": "additional question",
+          "analysis_type": "data_quality",
+          "expected_output": "Reproducible counts and explicit limitations",
+          "build_priority": "P0",
+          "execution": {
+            "handler": "cutoff",
+            "status": "implemented",
+            "scope": "Event-date exclusion only; arrival-time completeness is not known.",
+            "required_data": [
+              "Source feeds and provenance",
+              "Arrival timestamps and identity crosswalks for historical/identity questions"
+            ],
+            "review_owner": "Data quality / clinical informatics"
+          }
+        },
+        {
+          "id": "DATA-04",
+          "question": "Which lab tests are observed, and in how many patients?",
+          "origin": "additional question",
+          "analysis_type": "data_quality",
+          "expected_output": "Reproducible counts and explicit limitations",
+          "build_priority": "P0",
+          "execution": {
+            "handler": "lab_coverage",
+            "status": "implemented",
+            "scope": "Observed test coverage only; no clinical adequacy inference.",
+            "required_data": [
+              "Source feeds and provenance",
+              "Arrival timestamps and identity crosswalks for historical/identity questions"
+            ],
+            "review_owner": "Data quality / clinical informatics"
+          }
+        },
+        {
+          "id": "DATA-05",
+          "question": "Which returned note quotes cannot be located exactly in the supplied source?",
+          "origin": "additional question",
+          "analysis_type": "data_quality",
+          "expected_output": "Reproducible counts and explicit limitations",
+          "build_priority": "P0",
+          "execution": {
+            "handler": "source_references",
+            "status": "implemented",
+            "scope": "Exact quote location checks, not semantic entailment.",
+            "required_data": [
+              "Source feeds and provenance",
+              "Arrival timestamps and identity crosswalks for historical/identity questions"
+            ],
+            "review_owner": "Data quality / clinical informatics"
+          }
+        },
+        {
+          "id": "DATA-06",
+          "question": "Which judgments were sent to review by the reader?",
+          "origin": "additional question",
+          "analysis_type": "data_quality",
+          "expected_output": "Reproducible counts and explicit limitations",
+          "build_priority": "P0",
+          "execution": {
+            "handler": "reader_review",
+            "status": "implemented",
+            "scope": "Explicit reader review/validation states; does not detect all errors.",
+            "required_data": [
+              "Source feeds and provenance",
+              "Arrival timestamps and identity crosswalks for historical/identity questions"
+            ],
+            "review_owner": "Data quality / clinical informatics"
+          }
+        },
+        {
+          "id": "DATA-07",
+          "question": "Which source feeds arrived too late to have been available at the historical decision time?",
+          "origin": "additional question",
+          "analysis_type": "data_quality",
+          "expected_output": "Reproducible counts and explicit limitations",
+          "build_priority": "P0",
+          "execution": {
+            "handler": null,
+            "status": "not_implemented",
+            "scope": "Needs the listed data, executable logic and independent validation.",
+            "required_data": [
+              "Source feeds and provenance",
+              "Arrival timestamps and identity crosswalks for historical/identity questions"
+            ],
+            "review_owner": "Data quality / clinical informatics"
+          }
+        },
+        {
+          "id": "DATA-08",
+          "question": "Which patient identities cannot be reconciled across source systems?",
+          "origin": "additional question",
+          "analysis_type": "data_quality",
+          "expected_output": "Reproducible counts and explicit limitations",
+          "build_priority": "P0",
+          "execution": {
+            "handler": null,
+            "status": "not_implemented",
+            "scope": "Needs the listed data, executable logic and independent validation.",
+            "required_data": [
+              "Source feeds and provenance",
+              "Arrival timestamps and identity crosswalks for historical/identity questions"
+            ],
+            "review_owner": "Data quality / clinical informatics"
+          }
+        }
+      ]
+    }
+  ],
+  "sources": {
+    "kdigo": {
+      "title": "KDIGO CKD evaluation and management",
+      "url": "https://kdigo.org/guidelines/ckd-evaluation-and-management/",
+      "use": "Versioned CKD guideline source; clinical criteria require specialist approval."
+    },
+    "acc_hf": {
+      "title": "ACC HFrEF consensus pathway",
+      "url": "https://www.acc.org/latest-in-cardiology/articles/2024/04/01/00/42/new-in-clinical-documents-hfref-management-updated-guidance-from-new-expert-consensus-decision-pathway",
+      "use": "HFrEF treatment framework; not a machine-executable dosing protocol."
+    },
+    "sepsis": {
+      "title": "Surviving Sepsis Campaign adult guidelines 2026",
+      "url": "https://sccm.org/clinical-resources/guidelines/guidelines/surviving-sepsis-campaign-international-guidelines-for-management-of-sepsis-and-septic-shock-2026",
+      "use": "Clinical review framework for sepsis and recovery; intervention efficacy must be evaluated separately."
+    },
+    "palliative": {
+      "title": "CAPC palliative care definition",
+      "url": "https://shop.capc.org/about/palliative-care/",
+      "use": "Serious illness, symptom burden and quality of life; palliative care can accompany disease-directed treatment."
+    },
+    "snf": {
+      "title": "CMS SNF quality measures and technical information",
+      "url": "https://www.cms.gov/medicare/quality/snf-quality-reporting-program/measures-and-technical-information",
+      "use": "Public measure definitions; not sufficient alone for patient-specific or DRG-specific matching."
+    },
+    "radv": {
+      "title": "CMS Medicare Advantage risk adjustment data validation",
+      "url": "https://www.cms.gov/data-research/monitoring-programs/medicare-risk-adjustment-data-validation-program",
+      "use": "Documentation support for submitted diagnoses; use applicable program/year rules."
+    },
+    "access": {
+      "title": "CMS ACCESS",
+      "url": "https://www.cms.gov/priorities/innovation/innovation-models/access",
+      "use": "Program status and entry point to authoritative application and payment specifications."
+    },
+    "asm": {
+      "title": "CMS ASM",
+      "url": "https://www.cms.gov/priorities/innovation/innovation-models/asm",
+      "use": "Participation, dates and performance framework."
+    },
+    "cjrx": {
+      "title": "CMS CJR-X",
+      "url": "https://www.cms.gov/priorities/innovation/innovation-models/cjr-x",
+      "use": "Finalized model, implementation date and episode framework."
+    },
+    "hrsa": {
+      "title": "HRSA downloadable workforce and shortage data",
+      "url": "https://data.hrsa.gov/data/download?AHRF=&data=AHRF",
+      "use": "Context on local supply and shortages; not live appointment availability."
+    },
+    "heat": {
+      "title": "CDC heat and heat-related illness tracking",
+      "url": "https://www.cdc.gov/environmental-health-tracking/php/data-research/heat-heat-related-illness.html",
+      "use": "Area/time environmental context; not proof of individual exposure or cause."
+    },
+    "air": {
+      "title": "AirNow API documentation",
+      "url": "https://docs.airnowapi.org/webservices",
+      "use": "Air-quality observations and forecasts; validate coverage, timing and data quality."
+    },
+    "transit": {
+      "title": "FTA GTFS reporting information",
+      "url": "https://www.transit.dot.gov/ntd/upcoming-and-recent-ntd-developments-frequently-asked-questions",
+      "use": "Discover transit feeds; local schedules and accessibility must be verified."
+    }
+  },
+  "question_count": 140
+}

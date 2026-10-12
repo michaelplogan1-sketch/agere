@@ -1,0 +1,17 @@
+function addCareOptionContext(box,comparison){
+ const area=N('details'),body=N('div');area.append(N('summary','Inspect received coverage and patient-access reports'),body);box.append(area);let loaded=false;
+ function render(row,where){const s=row.summary;where.append(N('h4','Received reports for this comparison'),N('p',s.coverage_reports+' coverage reports · '+s.patient_reports+' patient/access reports · '+s.coverage_conflict_groups+' coverage disagreement groups · '+s.differing_patient_report_groups+' differing patient-report groups.','meta'),N('p',row.meaning,'scope-notice'));
+  if(row.current===false)for(const reason of row.stale_reasons)where.append(N('p',reason,'missing'));
+  for(const pair of [['Coverage',row.coverage_context.reports,row.coverage_review_targets],['Patient/access',row.patient_context.reports,row.patient_review_targets]]){
+   const reports=N('details'),content=N('div');reports.append(N('summary',pair[0]+' reports ('+pair[1].length+')'),content);where.append(reports);if(!pair[1].length)content.append(N('p','No reports in the current received-source projection. This does not establish absence of coverage or support.','meta'));
+   for(const r of pair[1]){const card=N('section',undefined,'finding-card');card.append(N('strong',r.record_id),N('p',r.source_table+' · source date '+(r.source_date||r.service_reference_date||'unknown')+' · received '+(r.available_date||'unknown')+' · '+human(r.temporal_scope),'meta'));if(r.superseded_by.length)card.append(N('p','Superseded by: '+r.superseded_by.join(', '),'missing'));card.append(details('Complete projected source values',r.fields),details('Exact source report and limitations',r));content.append(card)}
+   for(const target of pair[2]){const q=comparison.questions.find(q=>q.target.question_id===target.question_id),line=N('p'),a=N('a','Review '+(q?human(q.key):pair[0].toLowerCase())+' question');a.href='#reference-question-'+target.question_id;line.append(a);where.append(line)}
+  }
+  where.append(N('p','No report was selected as current coverage. Patient preference, consent, clinical fit and exact service benefits remain unresolved.','scope-notice'),details('Full received context, dates and source identities',row));
+ }
+ async function load(){body.replaceChildren();const h=await workspaceFetch('/api/stack/care-options/context-list',{comparison_id:comparison.id});
+  if(comparison.current!==false){const preview=N('button','Preview received reports for this comparison'),out=N('div');body.append(preview,out);preview.onclick=async()=>{preview.disabled=true;try{const p=await workspaceFetch('/api/stack/care-options/context-preview',{comparison_id:comparison.id});out.replaceChildren();render(p,out);const save=N('button','Attach dated reports for review'),status=N('p','','meta');out.append(save,status);save.onclick=async()=>{save.disabled=true;try{await workspaceFetch('/api/stack/care-options/context-prepare',{comparison_id:comparison.id,preview_id:p.id});await load()}catch(e){status.textContent=e.message;save.disabled=false}}}catch(e){out.replaceChildren(N('p',e.message,'missing'))}finally{preview.disabled=false}}}
+  for(const row of h.contexts){body.append(N('h3',(row.current?'Current':'Historical')+' received comparison context'));render(row,body)}
+ }
+ area.ontoggle=async()=>{if(!area.open||loaded)return;loaded=true;try{await load()}catch(e){body.append(N('p',e.message,'missing'));loaded=false}};
+}

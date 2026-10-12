@@ -1,0 +1,69 @@
+{
+  "schema": "cardiometabolic-source-configuration/1",
+  "checked_on": "2026-10-11",
+  "question": "What do these selected received BP, glycemic and diabetes-response accounts establish, and what remains unresolved about measurement context, confirmation, current regimen, goals and service applicability? Preserve source dates and subject, distinguish reported values from diagnosis or treatment response, and propose evidence-review steps only. Do not infer medication titration, coverage entitlement or completed care.",
+  "questions": [
+    {
+      "key": "population",
+      "basis": "guideline_population",
+      "question": "What current diagnosis, age, pregnancy status, comorbidities and care setting establish applicability? A condition label or observed BP value does not establish current hypertension."
+    },
+    {
+      "key": "assessment",
+      "basis": "agere_clinical_review_requirement",
+      "question": "Are repeat measurements valid and comparable, with validated device, cuff, position, rest, setting and current symptoms documented? Which confirmatory measurements and glycemic context need clinical review?"
+    },
+    {
+      "key": "medication",
+      "basis": "agere_clinical_review_requirement",
+      "question": "What is the current intended regimen, actual use, response and tolerability? Reconcile medication sources, contraindications, renal context and clinician goals before any change."
+    },
+    {
+      "key": "preference",
+      "basis": "agere_patient_requirement",
+      "question": "What goals, preferences, burden and service-specific patient agreement are confirmed?"
+    },
+    {
+      "key": "access",
+      "basis": "agere_operational_requirement",
+      "question": "Can the patient use the proposed measurement device and format, with technology, language, scheduling and qualified-team support?"
+    },
+    {
+      "key": "coverage",
+      "basis": "agere_operational_requirement",
+      "question": "Which exact member benefits, service requirements, participating provider and current plan terms apply? Original Medicare ACCESS and commercial or MA arrangements require separate checks."
+    },
+    {
+      "key": "currency",
+      "basis": "agere_reference_governance",
+      "question": "Has an appropriate reviewer checked the full guidance and program updates at the decision date? Public pages checked in 2026 do not establish currency in the future synthetic snapshot."
+    }
+  ],
+  "guidance": [
+    {
+      "title": "AHA 2025 high blood pressure guideline: official summary",
+      "url": "https://professional.heart.org/en/science-news/2025-high-blood-pressure-guideline/top-things-to-know",
+      "published_on": "2025-08-14",
+      "doi": "10.1161/CIR.0000000000001356",
+      "inspection_depth": "Official Top Things to Know summary, points 3 and 9; full guideline not inspected",
+      "application": "The summary supports standardized home measurement with team follow-up and multidisciplinary attention to access. This adapter does not apply diagnostic thresholds or choose medication treatment.",
+      "review_status": "machine_curated_unreviewed"
+    },
+    {
+      "title": "CMS ACCESS model: current public program notice",
+      "url": "https://www.cms.gov/priorities/innovation/innovation-models/access",
+      "published_on": null,
+      "inspection_depth": "Current official model overview, tracks and Medicare Advantage sections",
+      "application": "The page states a July 5, 2026 start for Original Medicare. eCKM includes hypertension, dyslipidemia, obesity or specified overweight, and prediabetes; CKM includes diabetes, CKD 3a/3b and ASCVD. New HF, COPD, substance-use, tobacco-cessation and follow-on MSK tracks are described for April 1, 2027. MA may adopt separate arrangements. These descriptions establish neither individual eligibility nor a participating provider, contract or payment.",
+      "review_status": "machine_curated_unreviewed",
+      "prior_catalog_preserved": true
+    }
+  ],
+  "limits": [
+    "Explicit received fields and ICD-10 subset only; this is not whole-chart recall or a validated diagnostic terminology service.",
+    "Source event dates are retained; receipt and recorded dates are not substituted. Unknown measurement context remains unresolved.",
+    "Glycemic account fields are literal reports; specimen links and final status do not by themselves establish diagnosis, treatment success or a patient-specific goal.",
+    "Medication and coverage context use existing dedicated review paths; absence from this selection is not absent care.",
+    "No new clinical thresholds, risk scores, treatment recommendations, validated outcomes, patient contact or external actions."
+  ]
+}

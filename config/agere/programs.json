@@ -1,0 +1,4 @@
+[
+ {"id":"kidney_specialist_review","version":"1","effective_start":"2024-03-01","effective_end":"2027-12-31","source":"https://kdigo.org/wp-content/uploads/2024/03/KDIGO-2024-CKD-Guideline.pdf","purpose":"Review referral context for persistent low eGFR with latest eGFR below 30; this is one screening criterion, not the full referral guideline or a determination of missing care.","predicate":{"all":[{"eq":["egfr_below_60_persistent",true]},{"lt":["latest_egfr",30]}]}},
+ {"id":"financial_assistance_screen","version":"1","effective_start":"2024-01-01","effective_end":"2027-12-31","source":"User-approved synthetic development workflow; no payer eligibility claim","purpose":"Offer financial-support eligibility review when the patient reports difficulty paying medical bills.","predicate":{"eq":["difficulty_paying",true]}}
+]

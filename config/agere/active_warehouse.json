@@ -1,0 +1,23 @@
+{
+  "schema": "active-healthcare-warehouse/1",
+  "build": "/Users/mikel/clinical-insights-local/artifacts/agere-healthcare-v123",
+  "source_release": "/Users/mikel/synthetic-patient-ecosystem/releases/healthcare-warehouse-v1.23",
+  "snapshot": {
+    "source_dataset": {
+      "adapter": "original-cohort-warehouse-adapter/1",
+      "source": "/Users/mikel/synthetic-patient-ecosystem/releases/healthcare-warehouse-v1.23/warehouse.sqlite",
+      "source_sha256": "edee010582ef0f2ce36f035a685a09abf194d25b3929fe60e969ca00353775a9",
+      "original_patient_id_digest": "87afb631de11e962b95a12470d2a32b270a8176c74667d28b5a7a653f8ab9a00"
+    },
+    "records_with_unknown_event_date": 46650,
+    "release": "c428263f463d98b8c71d53bbdff4df59d56a1478e71440422313a9aaa1537397",
+    "as_of": "2029-08-15",
+    "excluded": {},
+    "visible_records": 1238686,
+    "identity_method": "Explicit source crosswalk; no inferred fuzzy merge",
+    "coverage": "Unknown outside the observed contributing sources"
+  },
+  "synthetic": true,
+  "population_policy": "Original healthcare-warehouse roster; no expanded benchmark variants",
+  "activation_basis": "Qualified received-source migration, full-population contracts and diagnostic review; prior connection retained"
+}

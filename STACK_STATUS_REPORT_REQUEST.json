@@ -1,0 +1,42 @@
+{
+  "schema": "agere-status-report-request/1",
+  "status": "delivered",
+  "requested_at": "2026-10-10T17:00:23.423093+00:00",
+  "requested_on": "2026-10-10",
+  "timing": "After the next substantive implementation and verification milestone following WINDOWED_SOURCE_READER_BUILD.md; then continue the authorized build.",
+  "scope": "Everything completed in Agere today, plus whole-stack progress and remaining product/research work against AGERE_PRODUCT_DIRECTION.md.",
+  "include": [
+    "Today\u2019s delivered capabilities and how they connect to the question/state/work path",
+    "Actual validation evidence, source coverage and model results, including failed or unqualified results",
+    "Partially implemented capabilities and product/research integrations still missing",
+    "Usage and costs, operational limits, consequential blockers and next priorities"
+  ],
+  "delivery": "Save a dated source-linked daily/whole-stack report and provide a readable summary in this chat; mark this request delivered with its report path. Preserve the earlier midday report.",
+  "suggested_report_path": "/Users/mikel/clinical-insights-local/AGERE_DAILY_STACK_UPDATE_2026-10-10.md",
+  "continue_build_afterward": true,
+  "previous_requests": [
+    {
+      "schema": "agere-status-report-request/1",
+      "status": "delivered",
+      "requested_on": "2026-10-10",
+      "timing": "After the next substantive build turn, following RECORD_EVIDENCE_BUILD.md",
+      "scope": "Whole Agere stack against AGERE_PRODUCT_DIRECTION.md and the preserved research reconciliation",
+      "include": [
+        "Working capabilities and how they connect",
+        "Partially implemented or unvalidated capabilities",
+        "Product and research capabilities not yet included",
+        "Evidence, source coverage, model qualification, costs and material blockers",
+        "Prioritized next work"
+      ],
+      "delivery": "Save a source-linked report and provide a readable summary in this chat; then mark this request delivered with the report path.",
+      "continue_build_afterward": true,
+      "delivered_at": "2026-10-10T12:17:49.636424+00:00",
+      "report_path": "/Users/mikel/clinical-insights-local/AGERE_STACK_STATUS_2026-10-10.md",
+      "timing_override": "User requested the update immediately on October 10; no subsequent build milestone claimed."
+    }
+  ],
+  "delivered_at": "2026-10-10T17:17:48.307749+00:00",
+  "report_path": "/Users/mikel/clinical-insights-local/AGERE_DAILY_STACK_UPDATE_2026-10-10.md",
+  "implementation_milestone": "SOURCE_SPAN_PROPOSALS_BUILD.md",
+  "implementation_receipt": "/Users/mikel/clinical-insights-local/artifacts/agere-source-span-proposals-v1/implementation-receipt.json"
+}

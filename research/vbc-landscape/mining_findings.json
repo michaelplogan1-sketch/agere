@@ -1,0 +1,54 @@
+{
+  "as_of": "2026-10-08",
+  "source": "cms_model_directory_raw.json",
+  "rows": 105,
+  "unique_ids": 105,
+  "blank_fields": {
+    "Model Name": 0,
+    "Stage": 0,
+    "Number of Participants": 20,
+    "Category": 0,
+    "Authority": 3,
+    "Description": 0,
+    "Number of Beneficiaries Impacted": 105,
+    "Number of Physicians Impacted": 105,
+    "Date Began": 105,
+    "Date Ended": 105,
+    "States": 44,
+    "Keywords": 0,
+    "URL": 0,
+    "Display Model Summary": 0,
+    "Unique ID": 0
+  },
+  "category_memberships": {
+    "State & Community-Based Models": 24,
+    "Accountable Care Models": 27,
+    "Statutory Demonstrations and Other Projects": 25,
+    "Disease-Specific & Episode-Based Models": 31,
+    "Health Plan Models": 8,
+    "Prescription Drug Models": 9
+  },
+  "category_note": "A model may have multiple categories; totals are not disjoint.",
+  "timing_examples": [
+    {
+      "source_id": "MODEL106",
+      "directory_stage": "Active",
+      "page_observation": "Page describes a future launch. Directory stage is not equivalent to a started performance period."
+    },
+    {
+      "source_id": "MODEL100",
+      "directory_stage": "Announced",
+      "page_observation": "Page describes a launched model. Resolve stage semantics and effective participation from controlling documents."
+    },
+    {
+      "source_id": "MODEL82",
+      "page_observation": "Page includes early termination alongside older planned duration. Latest controlling notice must supersede historical plan."
+    }
+  ],
+  "implications": [
+    "Do not infer effective dates from directory stage",
+    "Blank participant-impact fields are unknown, not zero",
+    "Preserve metadata versus operational rule differences",
+    "Resolve legacy URLs and record source versions"
+  ]
+}

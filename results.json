@@ -1,0 +1,339 @@
+{
+  "mode": "synthetic deterministic baseline; no LLM or System One weights loaded",
+  "as_of": "2026-10-06",
+  "population_size": 8,
+  "previous_cohort": [
+    {
+      "patient": "P01",
+      "note_id": "N01",
+      "evidence": "Patient has type 2 diabetes.",
+      "concept": "DEMO:T2D",
+      "status": "present",
+      "lab_id": "L01",
+      "measured": "2026-09-10",
+      "value": 9.1
+    }
+  ],
+  "current_cohort": [
+    {
+      "patient": "P01",
+      "note_id": "N01",
+      "evidence": "Patient has type 2 diabetes.",
+      "concept": "DEMO:T2D",
+      "status": "present",
+      "lab_id": "L01",
+      "measured": "2026-09-10",
+      "value": 9.1
+    },
+    {
+      "patient": "P05",
+      "note_id": "N05",
+      "evidence": "Patient has T2DM.",
+      "concept": "DEMO:T2D",
+      "status": "present",
+      "lab_id": "L05",
+      "measured": "2026-09-10",
+      "value": 8.9
+    }
+  ],
+  "annotations": [
+    {
+      "patient": "P01",
+      "id": "N01",
+      "text": "Patient has type 2 diabetes.",
+      "status": "present",
+      "version": "v1",
+      "concept": "DEMO:T2D",
+      "span_start": 12,
+      "span_end": 27,
+      "classifier": "synthetic-template-baseline-v1",
+      "ontology_version": "demo-ontology-1"
+    },
+    {
+      "patient": "P01",
+      "id": "N01",
+      "text": "Patient has type 2 diabetes.",
+      "status": "present",
+      "version": "v2",
+      "concept": "DEMO:T2D",
+      "span_start": 12,
+      "span_end": 27,
+      "classifier": "synthetic-template-baseline-v2",
+      "ontology_version": "demo-ontology-1"
+    },
+    {
+      "patient": "P02",
+      "id": "N02",
+      "text": "No evidence of type 2 diabetes.",
+      "status": "negated",
+      "version": "v1",
+      "concept": "DEMO:T2D",
+      "span_start": 15,
+      "span_end": 30,
+      "classifier": "synthetic-template-baseline-v1",
+      "ontology_version": "demo-ontology-1"
+    },
+    {
+      "patient": "P02",
+      "id": "N02",
+      "text": "No evidence of type 2 diabetes.",
+      "status": "negated",
+      "version": "v2",
+      "concept": "DEMO:T2D",
+      "span_start": 15,
+      "span_end": 30,
+      "classifier": "synthetic-template-baseline-v2",
+      "ontology_version": "demo-ontology-1"
+    },
+    {
+      "patient": "P03",
+      "id": "N03",
+      "text": "Mother has type 2 diabetes.",
+      "status": "family_history",
+      "version": "v1",
+      "concept": "DEMO:T2D",
+      "span_start": 11,
+      "span_end": 26,
+      "classifier": "synthetic-template-baseline-v1",
+      "ontology_version": "demo-ontology-1"
+    },
+    {
+      "patient": "P03",
+      "id": "N03",
+      "text": "Mother has type 2 diabetes.",
+      "status": "family_history",
+      "version": "v2",
+      "concept": "DEMO:T2D",
+      "span_start": 11,
+      "span_end": 26,
+      "classifier": "synthetic-template-baseline-v2",
+      "ontology_version": "demo-ontology-1"
+    },
+    {
+      "patient": "P04",
+      "id": "N04",
+      "text": "Possible type 2 diabetes.",
+      "status": "uncertain",
+      "version": "v1",
+      "concept": "DEMO:T2D",
+      "span_start": 9,
+      "span_end": 24,
+      "classifier": "synthetic-template-baseline-v1",
+      "ontology_version": "demo-ontology-1"
+    },
+    {
+      "patient": "P04",
+      "id": "N04",
+      "text": "Possible type 2 diabetes.",
+      "status": "uncertain",
+      "version": "v2",
+      "concept": "DEMO:T2D",
+      "span_start": 9,
+      "span_end": 24,
+      "classifier": "synthetic-template-baseline-v2",
+      "ontology_version": "demo-ontology-1"
+    },
+    {
+      "patient": "P05",
+      "id": "N05",
+      "text": "Patient has T2DM.",
+      "status": "review",
+      "version": "v1",
+      "concept": null,
+      "span_start": null,
+      "span_end": null,
+      "classifier": "synthetic-template-baseline-v1",
+      "ontology_version": "demo-ontology-1"
+    },
+    {
+      "patient": "P05",
+      "id": "N05",
+      "text": "Patient has T2DM.",
+      "status": "present",
+      "version": "v2",
+      "concept": "DEMO:T2D",
+      "span_start": 12,
+      "span_end": 16,
+      "classifier": "synthetic-template-baseline-v2",
+      "ontology_version": "demo-ontology-1"
+    },
+    {
+      "patient": "P06",
+      "id": "N06",
+      "text": "Patient has type 2 diabetes.",
+      "status": "present",
+      "version": "v1",
+      "concept": "DEMO:T2D",
+      "span_start": 12,
+      "span_end": 27,
+      "classifier": "synthetic-template-baseline-v1",
+      "ontology_version": "demo-ontology-1"
+    },
+    {
+      "patient": "P06",
+      "id": "N06",
+      "text": "Patient has type 2 diabetes.",
+      "status": "present",
+      "version": "v2",
+      "concept": "DEMO:T2D",
+      "span_start": 12,
+      "span_end": 27,
+      "classifier": "synthetic-template-baseline-v2",
+      "ontology_version": "demo-ontology-1"
+    },
+    {
+      "patient": "P07",
+      "id": "N07",
+      "text": "History of type 2 diabetes.",
+      "status": "historical",
+      "version": "v1",
+      "concept": "DEMO:T2D",
+      "span_start": 11,
+      "span_end": 26,
+      "classifier": "synthetic-template-baseline-v1",
+      "ontology_version": "demo-ontology-1"
+    },
+    {
+      "patient": "P07",
+      "id": "N07",
+      "text": "History of type 2 diabetes.",
+      "status": "historical",
+      "version": "v2",
+      "concept": "DEMO:T2D",
+      "span_start": 11,
+      "span_end": 26,
+      "classifier": "synthetic-template-baseline-v2",
+      "ontology_version": "demo-ontology-1"
+    },
+    {
+      "patient": "P08",
+      "id": "N08",
+      "text": "Patient has type 2 diabetes.",
+      "status": "present",
+      "version": "v1",
+      "concept": "DEMO:T2D",
+      "span_start": 12,
+      "span_end": 27,
+      "classifier": "synthetic-template-baseline-v1",
+      "ontology_version": "demo-ontology-1"
+    },
+    {
+      "patient": "P08",
+      "id": "N08",
+      "text": "Patient has type 2 diabetes.",
+      "status": "present",
+      "version": "v2",
+      "concept": "DEMO:T2D",
+      "span_start": 12,
+      "span_end": 27,
+      "classifier": "synthetic-template-baseline-v2",
+      "ontology_version": "demo-ontology-1"
+    }
+  ],
+  "cross_source_evidence": [
+    {
+      "patient": "P01",
+      "claims": [
+        {
+          "id": "C01",
+          "patient": "P01",
+          "service_date": "2026-09-01",
+          "diagnosis": "type 2 diabetes",
+          "status": "paid"
+        }
+      ],
+      "pharmacy": [
+        {
+          "id": "RX01",
+          "patient": "P01",
+          "fill_date": "2026-09-02",
+          "drug": "metformin",
+          "status": "dispensed"
+        }
+      ],
+      "risk_feed": [
+        {
+          "id": "R01",
+          "patient": "P01",
+          "year": "2026",
+          "category": "DEMO:DIABETES",
+          "status": "recorded in synthetic feed"
+        }
+      ]
+    },
+    {
+      "patient": "P02",
+      "claims": [
+        {
+          "id": "C02",
+          "patient": "P02",
+          "service_date": "2026-09-01",
+          "diagnosis": "type 2 diabetes",
+          "status": "paid"
+        }
+      ],
+      "pharmacy": [],
+      "risk_feed": [
+        {
+          "id": "R02",
+          "patient": "P02",
+          "year": "2026",
+          "category": "DEMO:DIABETES",
+          "status": "recorded in synthetic feed"
+        }
+      ]
+    },
+    {
+      "patient": "P03",
+      "claims": [],
+      "pharmacy": [],
+      "risk_feed": []
+    },
+    {
+      "patient": "P04",
+      "claims": [],
+      "pharmacy": [],
+      "risk_feed": []
+    },
+    {
+      "patient": "P05",
+      "claims": [
+        {
+          "id": "C05",
+          "patient": "P05",
+          "service_date": "2026-08-01",
+          "diagnosis": "type 2 diabetes",
+          "status": "paid"
+        }
+      ],
+      "pharmacy": [
+        {
+          "id": "RX05",
+          "patient": "P05",
+          "fill_date": "2026-08-03",
+          "drug": "metformin",
+          "status": "reversed"
+        }
+      ],
+      "risk_feed": []
+    },
+    {
+      "patient": "P06",
+      "claims": [],
+      "pharmacy": [],
+      "risk_feed": []
+    },
+    {
+      "patient": "P07",
+      "claims": [],
+      "pharmacy": [],
+      "risk_feed": []
+    },
+    {
+      "patient": "P08",
+      "claims": [],
+      "pharmacy": [],
+      "risk_feed": []
+    }
+  ]
+}

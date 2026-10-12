@@ -1,0 +1,33 @@
+# Buyer capabilities connected to evidence and internal work
+
+Delivered October 10, 2026 in the active original-cohort v1.23 app. This follows the user's instruction to prioritize stack development and make buyer services a first-class input. The feature is available in **Care capabilities**, and from saved source interpretations and existing program assessments.
+
+## Executable behavior
+
+- Buyers enter and version their own services: free-form needs served, description, modality, regions, accepted payer types, exact plan IDs, related public pathways, responsible clinician/agent/team, availability, dated capacity, effective period, prerequisites and declaration source. Stale edits are rejected; historical versions are preserved.
+- Twenty-two optional service starting points span the user's examples plus monitoring, dementia/caregiver support, behavioral care, nutrition, diabetes education, cardiac rehabilitation, home nursing, navigation, transport, affordability, transitions, food support and others. Custom services are supported. Templates do not constitute buyer availability.
+- Twenty-one linked public program/benefit discovery entries include ACCESS tracks, GUIDE, Medicare benefits and commercial/serious-illness examples. Public program rules and buyer declarations remain separate from member-specific benefit verification.
+- A selected set of exact saved-answer findings, or an existing program assessment, supplies the source context. The operator maps needs with an explicit rationale and provides a labelled coverage context. Local matching returns potential routes, explicit mismatches, outstanding requirements, unmatched needs and unrelated services.
+- Dates, payer type, exact declared plan IDs, region, availability and current declared capacity affect route feasibility. Unknown information is retained. Future ACCESS tracks cannot be used before their start dates. MA core benefits are not incorrectly excluded merely because ACCESS excludes MA.
+- A potentially applicable service creates persistent assigned internal work in the existing `program-work.sqlite3`, using dedicated portfolio/plan/task/event tables. Repeated submissions deduplicate. A local deterministic worker prepares a handoff with original citations or assessment, service/owner, coverage context and outstanding checks. Hold and cancellation states are recorded. Changed source, service or policy dependencies block reuse; a refreshed matching plan updates the existing active task and preserves prior event history.
+- UI entry points include the main sidebar, saved answers, assessment preparation and a direct link from the existing program work detail. Buyer services and work survive browser reloads. No paid model is required for these operations.
+
+## Verification and actual artifacts
+
+`artifacts/agere-buyer-capabilities-v1/implementation-receipt.json` records hashes and evidence. `tests.log` contains **75 passing test executions** across the new routing tests and existing program work, synthesis bridge, record evidence and single/multipass synthesis contracts. Tests cover missingness, plan/geography/date/capacity constraints, Original Medicare versus MA/commercial boundaries, stale sources and policies, immutable buyer history, concurrent duplicate queue requests, task revisions, request replay, and current program-assessment binding.
+
+Actual HTTP and browser verification used clearly labelled **synthetic-demo-buyer** and **synthetic-api-fixture** declarations. These are test organizations, not real buyer contracts. P-1001's previously saved answer `d7d96be6f304b5649e24c329e38648d1ef6475c579c1645498dcd7fd177c8799`, finding `r1_f1`, retained its exact citations in the prepared handoff. One clinician-owned browser task and one agent-owned API task were prepared. Program assessment `394b2308c24c814613adcf50a47d3356abe533d3e198af80b0250e03270020ce` also produced a matching receipt. An exact plan mismatch was rejected for queueing; ACCESS/MA and commercial/Original Medicare routes were distinguished. These are engineering checks, not clinical validation.
+
+The browser showed the saved service, assigned queue, prepared handoff and assessment entry point; console errors were empty. At 390×844, the care workspace's document width was 390px, with no horizontal overflow; the temporary viewport was reset. Screenshots and live JSON receipts are in the artifact directory. JavaScript syntax checks pass.
+
+Runtime: owned server PID **79142**, tool session **64962**, port **8885**. Active warehouse and saved synthesis engines remain unchanged. New paid inference calls **0**; external actions, clinician reviews and patient contact **0**. No generator, source release, research corpus, frozen experiment, reserved cohort or training-boundary changes. Full stack acceptance remains **false**.
+
+## Honest remaining boundaries and next implementation
+
+This is an operational foundation, not autonomous clinical execution. Need tags are operator-selected and not automatically extracted or clinically confirmed. Coverage and service information is reported input; no insurer eligibility connector, actual contract, participant directory or authenticated buyer identity is attached. A potential route always requires verification. Public discovery summaries are incomplete, carry a checked date and do not establish coverage for the synthetic warehouse's future 2029 decision dates.
+
+Agent ownership routes an internal task; the implemented worker assembles evidence locally. It is not a deployed outreach agent or clinician. It cannot change medications, place orders, send referrals, schedule appointments, enroll patients, contact anyone or establish completed care. Queueing does not reserve a clinical service slot. Capacity is a dated buyer declaration, not a connected scheduling system. Expected clinical benefit, harm, cost effectiveness and comparative outcome improvements have not been estimated or validated.
+
+Next: connect typed evidence-need and service-prerequisite dispositions to existing reviewed assertions, corrections and evidence acquisition. Add source-bound patient coverage and contract clauses, participant confirmation, consent/goals, clinical appropriateness and explicit reviewer decisions before any execution promotion. Then add authorized connector adapters, acceptance/acknowledgement, real resource reservation, retries, completion evidence and outcome monitoring. Preserve the broader stack backlog, including source semantics, qualified prediction/discovery, policy updates and portable acceptance.
+
+Research and sources: `research/agere/BUYER_CAPABILITIES_RESEARCH_2026-10-10.md`; executable discovery catalog: `config/agere/care_pathways.json`.

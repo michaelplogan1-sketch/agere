@@ -1,0 +1,37 @@
+{
+  "schema": "care-review-protocols/1",
+  "authority": "guideline_informed_review_only",
+  "protocols": [
+    {
+      "id": "affordability_action_review",
+      "version": "1",
+      "title": "Affordability report to assistance review",
+      "purpose": "Turn a reconciled source report of affordability difficulty into a review proposal with exact evidence and separate program prerequisites.",
+      "sources": [],
+      "bindings": {
+        "barrier": {
+          "kind": "documentary",
+          "label": "Affirmative affordability barrier account",
+          "source": {
+            "streams": [
+              "notes",
+              "financial"
+            ],
+            "concept": "financial hardship",
+            "relation": "reported_barrier",
+            "clock": "source_statement_date"
+          },
+          "expected": "affirmed"
+        }
+      },
+      "trigger": "barrier",
+      "readiness": "barrier",
+      "review_action": "Verify current affordability needs and the patient's preferences, then assess applicable assistance benefits and application requirements.",
+      "unimplemented_clinical_requirements": [
+        "Current needs and program-specific consent",
+        "Effective assistance-program eligibility and available benefits"
+      ],
+      "boundary": "Internal documentary review workflow, not a medical guideline, program enrollment or payer eligibility decision."
+    }
+  ]
+}

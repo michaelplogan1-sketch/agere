@@ -1,0 +1,201 @@
+{
+  "schema": "agere-workflow-development-plan/1",
+  "cases": [
+    {
+      "id": "medication",
+      "patient": "P-1001",
+      "question": "What do the medication orders, pharmacy dispensing records and patient use reports say?",
+      "planning_question": "For patient P-1001: What do the medication orders, pharmacy dispensing records and patient use reports say? Prepare internal source-review work and report missing inputs. Do not infer current eligibility or contact the patient.",
+      "required_categories_if_received": [
+        "medication_orders",
+        "pharmacy_dispenses"
+      ],
+      "diagnostic_program": "hf_review",
+      "diagnostic_need_tag": "medication_review",
+      "family": "P-1001",
+      "comparison_id": "6cb42e97ce3aebc0c4467b70bbfb4cdd385e1aafea6d85c6b94de2fa4125cf83",
+      "selection_role": "already_inspected_original_training_development_example",
+      "expectations": {
+        "same_patient": true,
+        "original_question_retained": true,
+        "explicit_unknowns": true,
+        "clinical_authority": false,
+        "matching_available": "requires_verification",
+        "matching_unavailable": "blocked",
+        "matching_wrong_plan": "blocked",
+        "matching_unrelated": "excluded"
+      }
+    },
+    {
+      "id": "respiratory",
+      "patient": "P-1002",
+      "question": "What received records describe respiratory symptoms, oxygen use or pulmonary rehabilitation?",
+      "planning_question": "For patient P-1002: What received records describe respiratory symptoms, oxygen use or pulmonary rehabilitation? Prepare internal source-review work and report missing inputs. Do not infer current eligibility or contact the patient.",
+      "required_categories_if_received": [
+        "notes"
+      ],
+      "diagnostic_program": "respiratory_source_review",
+      "diagnostic_need_tag": "pulmonary_rehabilitation",
+      "family": "P-1002",
+      "comparison_id": "47d70b5c223998c21ce6e52627089bddba04982779d78e84213c5cd0623ce344",
+      "selection_role": "already_inspected_original_training_development_example",
+      "expectations": {
+        "same_patient": true,
+        "original_question_retained": true,
+        "explicit_unknowns": true,
+        "clinical_authority": false,
+        "matching_available": "requires_verification",
+        "matching_unavailable": "blocked",
+        "matching_wrong_plan": "blocked",
+        "matching_unrelated": "excluded"
+      }
+    },
+    {
+      "id": "cardiometabolic",
+      "patient": "P-1003",
+      "question": "What received records describe blood pressure, glycemic measurements and diabetes follow-up?",
+      "planning_question": "For patient P-1003: What received records describe blood pressure, glycemic measurements and diabetes follow-up? Prepare internal source-review work and report missing inputs. Do not infer current eligibility or contact the patient.",
+      "required_categories_if_received": [
+        "vitals",
+        "labs"
+      ],
+      "diagnostic_program": "cardiometabolic_source_review",
+      "diagnostic_need_tag": "primary_care",
+      "family": "P-1003",
+      "comparison_id": "67ec2bcfae27010edad76cc2c7f6d0f1b231c8c345832826f74fde9f52842403",
+      "selection_role": "already_inspected_original_training_development_example",
+      "expectations": {
+        "same_patient": true,
+        "original_question_retained": true,
+        "explicit_unknowns": true,
+        "clinical_authority": false,
+        "matching_available": "requires_verification",
+        "matching_unavailable": "blocked",
+        "matching_wrong_plan": "blocked",
+        "matching_unrelated": "excluded"
+      }
+    },
+    {
+      "id": "functional",
+      "patient": "P-1004",
+      "question": "What received records describe mobility, daily activities, falls or caregiver help?",
+      "planning_question": "For patient P-1004: What received records describe mobility, daily activities, falls or caregiver help? Prepare internal source-review work and report missing inputs. Do not infer current eligibility or contact the patient.",
+      "required_categories_if_received": [
+        "functional_assessments"
+      ],
+      "diagnostic_program": "functional_support_review",
+      "diagnostic_need_tag": "functional_support",
+      "family": "P-1004",
+      "comparison_id": "37bdaa8580ae9385357d66450ac6b17bb91b2f26f5ec9dcd2997d8eb88179f4e",
+      "selection_role": "already_inspected_original_training_development_example",
+      "expectations": {
+        "same_patient": true,
+        "original_question_retained": true,
+        "explicit_unknowns": true,
+        "clinical_authority": false,
+        "matching_available": "requires_verification",
+        "matching_unavailable": "blocked",
+        "matching_wrong_plan": "blocked",
+        "matching_unrelated": "excluded"
+      }
+    },
+    {
+      "id": "appointment",
+      "patient": "P-3002",
+      "question": "What do the received appointment bookings and status reports say about follow-through?",
+      "planning_question": "For patient P-3002: What do the received appointment bookings and status reports say about follow-through? Prepare internal source-review work and report missing inputs. Do not infer current eligibility or contact the patient.",
+      "required_categories_if_received": [
+        "appointments"
+      ],
+      "diagnostic_program": "appointment_followthrough_source_review",
+      "diagnostic_need_tag": "care_navigation",
+      "family": "P-3002",
+      "comparison_id": "09354369ae83011005cf3798b559d5c9d839b5bb3644e49761ccce1ebcded1a9",
+      "selection_role": "already_inspected_original_training_development_example",
+      "expectations": {
+        "same_patient": true,
+        "original_question_retained": true,
+        "explicit_unknowns": true,
+        "clinical_authority": false,
+        "matching_available": "requires_verification",
+        "matching_unavailable": "blocked",
+        "matching_wrong_plan": "blocked",
+        "matching_unrelated": "excluded"
+      }
+    },
+    {
+      "id": "payer",
+      "patient": "P-1006",
+      "question": "What received enrollment and eligibility reports describe the plan and dates of coverage?",
+      "planning_question": "For patient P-1006: What received enrollment and eligibility reports describe the plan and dates of coverage? Prepare internal source-review work and report missing inputs. Do not infer current eligibility or contact the patient.",
+      "required_categories_if_received": [
+        "coverage",
+        "coverage_verifications"
+      ],
+      "diagnostic_program": "affordability",
+      "diagnostic_need_tag": "benefits_navigation",
+      "family": "P-1006",
+      "comparison_id": "f7ed39f76b710226c871051f4da2bfe061cb3c8ff08a326e9271065ea55aa9ad",
+      "selection_role": "already_inspected_original_training_development_example",
+      "expectations": {
+        "same_patient": true,
+        "original_question_retained": true,
+        "explicit_unknowns": true,
+        "clinical_authority": false,
+        "matching_available": "requires_verification",
+        "matching_unavailable": "blocked",
+        "matching_wrong_plan": "blocked",
+        "matching_unrelated": "excluded"
+      }
+    }
+  ],
+  "source_run": "3a74f5306846a773240006463e2a62a4d7541caf0cf2a2f769044c2f9546ccd9",
+  "snapshot": {
+    "source_dataset": {
+      "adapter": "original-cohort-warehouse-adapter/1",
+      "source": "/Users/mikel/synthetic-patient-ecosystem/releases/healthcare-warehouse-v1.23/warehouse.sqlite",
+      "source_sha256": "edee010582ef0f2ce36f035a685a09abf194d25b3929fe60e969ca00353775a9",
+      "original_patient_id_digest": "87afb631de11e962b95a12470d2a32b270a8176c74667d28b5a7a653f8ab9a00"
+    },
+    "records_with_unknown_event_date": 46650,
+    "release": "c428263f463d98b8c71d53bbdff4df59d56a1478e71440422313a9aaa1537397",
+    "as_of": "2029-08-15",
+    "excluded": {},
+    "visible_records": 1238686,
+    "identity_method": "Explicit source crosswalk; no inferred fuzzy merge",
+    "coverage": "Unknown outside the observed contributing sources"
+  },
+  "targets": "Assistant-authored software/coverage expectations; no clinician labels or independent quality evaluation.",
+  "category_test": "At least one source from each named received category. This is a minimal documentation-coverage probe, not clinical relevance or recall.",
+  "matching_test": "Identical synthetic declared services for each manually supplied need tag. This tests matching constraints, not clinical indication or automatic need inference.",
+  "stages": [
+    "retrieval",
+    "reranking",
+    "source_scope",
+    "source_interpretation",
+    "reader_comparison",
+    "planning",
+    "matching",
+    "work_followthrough"
+  ],
+  "baselines": [
+    "RRF before BGE on identical candidates",
+    "received category inventory versus selected scope",
+    "existing same-statement local reader and majority/abstain receipts",
+    "explicit registered review program as diagnostic planning baseline",
+    "deterministic service-constraint truth table"
+  ],
+  "controls": [
+    "unavailable service",
+    "wrong plan",
+    "unrelated need tag",
+    "missing benefits verification",
+    "unassessed or omitted source units",
+    "unconnected downstream diagnostic branches"
+  ],
+  "no_training_or_promotion": true,
+  "do_not_resend_saved_failures": true,
+  "protected_manifest": "artifacts/agere-source-plan-answers-v1/protected-for-continuation.json",
+  "reader_development_exclusions": "artifacts/agere-reader-comparison-v1/development-exclusion-register.json",
+  "policy_sha256": "e9e090c579d57fcd98a516f1f2dd4659b32766f2f96637c6bde13a4fba4eb182"
+}

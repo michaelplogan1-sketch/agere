@@ -1,0 +1,25 @@
+"""Shared statement-reader controls without page-specific startup side effects."""
+
+SCRIPT = r'''
+async function semanticFetch(route,body){const response=await fetch(route,body?{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}:{});const data=await response.json();if(!response.ok)throw new Error(data.error||'Semantic request failed');return data}
+function renderSemantic(box,r){
+ const panel=N('div',undefined,'source');panel.append(N('h3','Statement interpretation · '+r.provider),N('blockquote',r.context.text),N('p','Target: '+r.context.target_quote+' · '+(r.context.context_complete?'complete received text field':'partial context; omissions retained'),'meta'),N('p',Object.entries(r.reading.labels).map(([k,v])=>k+': '+v.replaceAll('_',' ')).join(' · ')),N('p','Saved receipt: '+(r.cache_hit?'exact reading replay':'model result')+' · '+r.new_paid_api_calls+' paid API calls at that execution · interpretation requires review','missing'));
+ if(r.source_structure)panel.append(N('p','Source role: '+r.source_structure.role.replaceAll('_',' ')+(r.source_structure.clinical_account_excluded?' · excluded from patient event accounts':''),'meta'),details('Document structure checked at inspection; original model input unchanged',r.source_structure));
+ if(r.student)panel.append(N('p','Locally trained experimental head · '+r.student.supervision.replaceAll('_',' ')+' · shadow only. Passing a development confidence threshold does not authorize this interpretation.','missing'));
+ const lastReview=r.reviews?.at(-1);if(lastReview)panel.append(N('p','Latest saved review: '+lastReview.status+' · revision '+lastReview.revision,'meta'));const form=N('div'),selects={};for(const [axis,options] of Object.entries(SEMANTIC_AXES)){const label=N('label',axis+' '),select=N('select');select.setAttribute('aria-label','Reviewed '+axis);for(const option of options)select.add(new Option(option.replaceAll('_',' '),option));select.value=(lastReview?.labels||r.reading.labels)[axis];selects[axis]=select;label.append(select);form.append(label)}
+ const actor=N('input');actor.placeholder='Reviewer name';actor.maxLength=120;actor.setAttribute('aria-label','Semantic reviewer name');
+ const rationale=N('textarea');rationale.placeholder='Why this reading is supported, corrected, or unresolved';rationale.maxLength=1500;rationale.setAttribute('aria-label','Semantic review rationale');
+ const status=N('select');status.setAttribute('aria-label','Semantic review status');for(const key of ['unresolved','accepted','corrected','rejected'])status.add(new Option(key,key));
+ const save=N('button','Save my source interpretation','chip');const message=N('p','','meta');let revision=r.review_revision||0;
+ save.onclick=async()=>{save.disabled=true;try{const data=await semanticFetch('/api/stack/semantic/review',{reading_id:r.id,expected_revision:revision,request_id:crypto.randomUUID(),actor:actor.value,status:status.value,labels:Object.fromEntries(Object.entries(selects).map(([k,s])=>[k,s.value])),rationale:rationale.value});revision=data.revision;message.textContent='Saved review '+revision+'. '+(data.training_eligible?'Eligible for a future reviewed training set; no training ran.':'Kept out of the training export.');const bridge=await semanticFetch('/api/stack/semantic/prerequisites?patient='+encodeURIComponent(r.target.patient_id));panel.append(details('Existing prerequisites and source-review overlay',bridge))}catch(e){message.textContent=String(e)}finally{save.disabled=false}};
+ form.append(actor,rationale,status,save,message);panel.append(N('p','Saving records your interpretation of this source. It does not confirm current care, clinical eligibility, or consent.','meta'),form,details('Requirement candidates, model probabilities, source provenance and usage',r));box.append(panel);
+}
+function semanticControl(box,target){
+ const provider=N('select');provider.setAttribute('aria-label','Statement reader');for(const [key,label] of [['perplexity','Perplexity · API'],['jev','Jev · API'],['kev','Kev 4B · local experiment'],['d1','d1-3B · local experiment'],['student_lexical','Trained lexical head · shadow'],['student_minilm','Trained MiniLM head · shadow']])provider.add(new Option(label,key));
+ const button=N('button','Interpret this statement','chip'),message=N('p','','meta');
+ button.onclick=async()=>{button.disabled=true;message.textContent='Reading exact source context; native local models may take longer to load.';try{const r=await semanticFetch('/api/stack/semantic/read',{target,provider:provider.value});const latest=await semanticFetch('/api/stack/semantic?id='+r.id);renderSemantic(box,{...latest,cache_hit:r.cache_hit,new_paid_api_calls:r.new_paid_api_calls});message.textContent='Source-bound reading ready.'}catch(e){message.textContent=String(e)}finally{button.disabled=false}};box.append(provider,button,message);addReaderComparisonControl(box,target,provider);
+}
+'''
+
+from pathlib import Path
+SCRIPT += '\n' + (Path(__file__).with_name('assets')/'reader_comparison.js').read_text()

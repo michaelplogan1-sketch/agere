@@ -1,0 +1,25 @@
+{
+  "as_of": "2026-10-08",
+  "source_targets": 89,
+  "scoped_reviews": 84,
+  "discovery_only": [
+    "EVAL03",
+    "INT05",
+    "INT06",
+    "CMS08",
+    "FOUND03"
+  ],
+  "cms_directory_entries": 105,
+  "cms_overviews_reviewed": 40,
+  "cms_directory_stages": {
+    "Not Active": 61,
+    "Active": 20,
+    "Withdrawn": 3,
+    "Authorized for Expansion": 4,
+    "Performance Period Ended": 9,
+    "Announced": 8
+  },
+  "program_rules_compiled": 0,
+  "systematic_review": false,
+  "models_trained": 0
+}

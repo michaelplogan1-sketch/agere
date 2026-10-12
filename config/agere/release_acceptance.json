@@ -1,0 +1,221 @@
+{
+  "schema": "agere-local-release-contract/1",
+  "id": "original-cohort-local-release/1",
+  "individual_cases": [
+    "medication",
+    "respiratory",
+    "cardiometabolic",
+    "functional",
+    "appointment",
+    "payer"
+  ],
+  "requirements": [
+    {
+      "id": "individual_question_to_followup",
+      "axis": "engineering",
+      "scope_areas": [
+        1,
+        2,
+        4,
+        6,
+        10
+      ],
+      "evidence_kind": "individual_workflows",
+      "required_evidence": "All six original questions pass computed source, answer, planner, supported service, owned work, reopen and follow-up checks. Explicit uncertainty is allowed; missing implementation is not.",
+      "required_checks": [
+        "medication",
+        "respiratory",
+        "cardiometabolic",
+        "functional",
+        "appointment",
+        "payer"
+      ]
+    },
+    {
+      "id": "complete_population_program",
+      "axis": "engineering",
+      "scope_areas": [
+        1,
+        2,
+        6,
+        10
+      ],
+      "evidence_kind": "population_workflow",
+      "required_evidence": "One connected population/program execution with full roster and time scope, independently reconciled denominators, matched/nonmatched/unresolved members, supported opportunities, buyer capacity, payer/consent prerequisites, work ownership and internal follow-through. Demonstrate another program composition without a dedicated question handler.",
+      "required_checks": [
+        "original_roster_and_time_scope",
+        "independent_denominator_reconciliation",
+        "supported_and_unresolved_membership",
+        "buyer_capacity_and_payer_prerequisites",
+        "owned_work_and_internal_followthrough",
+        "second_program_composition"
+      ]
+    },
+    {
+      "id": "evidence_change_reassessment",
+      "axis": "engineering",
+      "scope_areas": [
+        1,
+        2,
+        4
+      ],
+      "evidence_kind": "dependency_workflow",
+      "required_evidence": "Changed, conflicting and late evidence recomputes the affected saved findings and work; unchanged results retain identity. Exact source clocks, dependencies, unresolved references and proposed acquisition remain inspectable.",
+      "required_checks": [
+        "changed_source_invalidates_dependents",
+        "unaffected_results_retain_identity",
+        "late_and_conflicting_sources",
+        "acquisition_tracks_blocking_dependency"
+      ]
+    },
+    {
+      "id": "source_and_adapter_conformance",
+      "axis": "engineering",
+      "scope_areas": [
+        1,
+        3,
+        10
+      ],
+      "evidence_kind": "adapter_workflow",
+      "required_evidence": "Pinned active release, exact original roster and received-record coverage; public metadata comparison for a deliberate migration; independent synthetic source mapping variant, explicit missing mappings, repeatable activation and recovery. Migration must not silently transfer stale models.",
+      "required_checks": [
+        "pinned_release_and_original_roster",
+        "received_row_coverage",
+        "source_clocks_and_lineage",
+        "independent_adapter_variant",
+        "activation_and_recovery"
+      ]
+    },
+    {
+      "id": "longitudinal_prediction_path",
+      "axis": "engineering",
+      "scope_areas": [
+        2,
+        7
+      ],
+      "evidence_kind": "prediction_workflow",
+      "required_evidence": "Scoped outcome/horizon with availability-safe features and labels, censoring/missingness, reproducible baseline and prediction result or specific evidence-based inability to estimate; displayed through the question path with source/model versions.",
+      "required_checks": [
+        "availability_time_and_leakage_checks",
+        "outcome_horizon_censoring_and_missingness",
+        "baseline_or_identified_nonestimability",
+        "versioned_query_result"
+      ]
+    },
+    {
+      "id": "discovery_explanation_path",
+      "axis": "engineering",
+      "scope_areas": [
+        4,
+        8
+      ],
+      "evidence_kind": "analytical_workflow",
+      "required_evidence": "Source-linked population finding with temporal or process explanation, competing hypotheses, assumptions, multiplicity controls when searching, and a simple-baseline comparison. No causal claim without supported identification.",
+      "required_checks": [
+        "source_linked_finding",
+        "artifact_and_multiplicity_controls",
+        "competing_explanations_and_assumptions",
+        "simple_baseline_comparison",
+        "question_path_execution"
+      ]
+    },
+    {
+      "id": "outcome_and_financial_reconciliation",
+      "axis": "engineering",
+      "scope_areas": [
+        6,
+        7,
+        9
+      ],
+      "evidence_kind": "financial_workflow",
+      "required_evidence": "Program work and follow-up connect to outcomes and versioned attribution/OAP/contract definitions. Actual service/adjudication/payment/balance inputs reconcile independently; scenario opportunity remains separate from received savings, with unresolved attribution explicit.",
+      "required_checks": [
+        "versioned_contract_and_attribution",
+        "independent_received_amount_reconciliation",
+        "work_outcome_and_payment_linkage",
+        "unknowns_and_scenario_separation"
+      ]
+    },
+    {
+      "id": "economical_role_routing",
+      "axis": "engineering",
+      "scope_areas": [
+        4,
+        5,
+        7,
+        8
+      ],
+      "evidence_kind": "routing_workflow",
+      "required_evidence": "Actual question path selects an appropriate code/local/specialist/frontier route; exact caching, bounded evidence, failed-key protection, full request/retry/review accounting and declared fallback/abstention are verified on equivalent task inputs.",
+      "required_checks": [
+        "actual_question_route",
+        "same_input_baseline",
+        "bounded_requests_and_exact_cache",
+        "duplicate_and_failed_key_controls",
+        "complete_cost_and_review_accounting"
+      ]
+    },
+    {
+      "id": "portable_local_operations",
+      "axis": "engineering",
+      "scope_areas": [
+        3,
+        10
+      ],
+      "evidence_kind": "package_workflow",
+      "required_evidence": "Reproducible local startup/configuration, stable interfaces, adapter conformance, restart/reopen, backup/restore and transaction recovery; final design-to-code mapping retains every acceptance area and records external dependencies.",
+      "required_checks": [
+        "reproducible_startup",
+        "stable_interface_and_configuration",
+        "adapter_conformance",
+        "restart_and_restore",
+        "transaction_recovery",
+        "complete_scope_mapping"
+      ]
+    },
+    {
+      "id": "model_and_method_qualification",
+      "axis": "qualification",
+      "scope_areas": [
+        4,
+        5,
+        7,
+        8
+      ],
+      "evidence_kind": "qualification",
+      "required_evidence": "Source-family-disjoint fitting/calibration/evaluation and honest role-specific baseline comparisons, selective thresholds, unsupported-claim/temporal/service errors, useful coverage and cost. Machine-authored labels remain identified; preserve negative results and unqualified roles.",
+      "required_checks": [
+        "appropriate_independent_role_evaluation"
+      ]
+    },
+    {
+      "id": "independent_clinical_review",
+      "axis": "qualification",
+      "scope_areas": [
+        4,
+        6,
+        7
+      ],
+      "evidence_kind": "qualification",
+      "required_evidence": "Real independent qualified clinical review and appropriate outcome validation before clinical accuracy or clinical deployment claims. Synthetic engineering tests cannot satisfy this requirement.",
+      "required_checks": [
+        "independent_qualified_clinical_validation"
+      ]
+    },
+    {
+      "id": "authorized_production_connections",
+      "axis": "external_dependency",
+      "scope_areas": [
+        3,
+        6,
+        9,
+        10
+      ],
+      "evidence_kind": "external_dependency",
+      "required_evidence": "Customer-specific authentication/tenant controls, governed EHR/pharmacy/scheduling/payer adapters, live benefit verification, clinician authority and deployment authorization. No employer access or actual outreach is authorized by this local release.",
+      "required_checks": [
+        "external_customer_and_clinician_authority"
+      ]
+    }
+  ]
+}

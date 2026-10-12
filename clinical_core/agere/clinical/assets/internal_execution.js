@@ -1,0 +1,18 @@
+// Credentials stay in this input only, are never persisted and clear after use.
+function addInternalExecution(box,task){
+ const area=N('details'),body=N('div');area.append(N('summary','Agent execution and packet review'),body);box.append(area);let loading=false;
+ async function load(){
+  const state=await workspaceFetch('/api/stack/internal-execution?id='+encodeURIComponent(task.id));body.replaceChildren(N('h4','Local evidence worker'),N('p','The worker checks recorded evidence dependencies. Completion does not resolve clinical requirements or deliver care.','meta'));
+  const current=state.runs.find(r=>r.id===state.current_run_id);
+  for(const r of state.runs){const row=N('div',undefined,'action-work-layer');row.append(N('h4',r.packet_current?'Current packet checks completed':'Historical packet checks'),N('p','Acknowledged by '+r.acknowledgement.principal.principal_id+' · '+human(r.acknowledgement.principal.identity_kind),'meta'),N('p',r.completion.checks.length+' dependency layers checked · '+human(r.follow_up_state),'pill'));
+   const latest=r.reviews.at(-1);if(latest)row.append(N('p',human(latest.disposition)+' · '+latest.principal.principal_id+' · follow-up '+latest.follow_up_on),N('p',latest.note,'meta'));row.append(details('Acknowledgement, completion and review history',r));body.append(row)}
+  const field=N('label','Scoped local credential'),credential=N('input');credential.type='password';credential.autocomplete='off';field.append(credential);body.append(field,N('p','Provisioned locally for this buyer/service and packet role. Credential possession is checked; human identity and clinical authority are not verified.','meta'));
+  const run=N('button','Run local packet checks'),status=N('p','','meta');run.disabled=!state.dispatch_available;body.append(run);if(state.dispatch_unavailable_reason)body.append(N('p',state.dispatch_unavailable_reason,'missing'));
+  async function send(endpoint,data){const token=credential.value.trim();credential.value='';if(!token)throw Error('Enter a scoped local credential.');const response=await fetch('/api/stack/internal-execution/'+endpoint,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},body:JSON.stringify(data)});const result=await response.json();if(!response.ok)throw Error(result.error||'Internal operation failed');await load()}
+  run.onclick=async()=>{run.disabled=true;try{await send('run',{task_id:task.id,expected_revision:state.task_revision,request_id:crypto.randomUUID()})}catch(e){status.textContent=e.message;run.disabled=!state.dispatch_available}};
+  if(current){const review=N('details'),form=N('div',undefined,'care-grid');review.append(N('summary','Record internal packet disposition'),form);const disposition=careSelect(form,'Packet disposition',[['accepted_for_evidence_review','Accept for evidence review'],['needs_more_evidence','More evidence needed']],'needs_more_evidence'),note=careField(form,'Packet review note',''),due=careField(form,'Operational follow-up date','');due.type='date';const submit=N('button','Save packet disposition');review.append(N('p','This records an internal review handoff, not a clinical approval. Follow-up uses the current operational calendar.','meta'),submit);body.append(review);
+   submit.onclick=async()=>{submit.disabled=true;try{await send('review',{run_id:current.id,expected_revision:current.reviews.at(-1)?.revision||0,request_id:crypto.randomUUID(),disposition:disposition.value,note:note.value,follow_up_on:due.value})}catch(e){status.textContent=e.message;submit.disabled=false}}}
+  body.append(status);
+ }
+ area.ontoggle=async()=>{if(!area.open||loading)return;loading=true;try{await load()}catch(e){body.replaceChildren(N('p',e.message,'missing'))}finally{loading=false}};
+}

@@ -1,0 +1,11 @@
+{
+  "schema":"baseline-evidence-profiles/1",
+  "profiles":[{
+    "id":"received_prior_180d","version":"1",
+    "title":"Evidence received before the index day",
+    "lookback_days":180,"recent_days":30,"source_block_months":6,
+    "cutoff":"previous_calendar_day",
+    "purpose":"Assemble source-bound candidate inputs from records both received and source-dated before each patient's index day; keep outcomes outside the feature payload.",
+    "authority":"retrospective_observation_features_only"
+  }]
+}

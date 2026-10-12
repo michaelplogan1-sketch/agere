@@ -1,0 +1,185 @@
+{
+  "schema": "supplemental-option-bundles/1",
+  "bundles": [
+    {
+      "key": "uspstf-falls-prevention",
+      "version": "1",
+      "reference": {
+        "key": "uspstf-2024-falls-interventions",
+        "version": "1",
+        "kind": "guideline_recommendation",
+        "title": "Falls prevention \u2014 exercise and individualized multifactorial review",
+        "published_on": "2024-06-04",
+        "checked_on": "2026-10-11",
+        "review_status": "machine_curated_unreviewed",
+        "citation": {
+          "title": "Interventions to Prevent Falls in Community-Dwelling Older Adults: US Preventive Services Task Force Recommendation Statement",
+          "publisher": "USPSTF / JAMA",
+          "doi": "10.1001/jama.2024.8481",
+          "url": "https://www.uspreventiveservicestaskforce.org/uspstf/recommendation/falls-prevention-community-dwelling-older-adults-interventions",
+          "locator": "Recommendation Summary and Practice Considerations; current public page inspected",
+          "evidence_family": "doi:10.1001/jama.2024.8481",
+          "independent_study_count": null
+        },
+        "quote": "The USPSTF recommends exercise interventions to prevent falls",
+        "paraphrase": "Exercise is recommended; multifactorial intervention decisions are individualized for the specified older population.",
+        "reported_strength": "Exercise: B; individualized multifactorial intervention: C",
+        "reported_evidence_quality": "Moderate certainty of moderate net benefit for exercise; small net benefit for multifactorial interventions",
+        "evidence_limitations": "Applies to community-dwelling adults aged at least 65 with increased fall risk. A dated functional report does not establish current fit. Standalone environmental or medication interventions are not established here as equivalent alternatives. Currentness at the future synthetic decision date remains unverified.",
+        "effect_estimate": null,
+        "individual_treatment_effect": null,
+        "questions": [
+          {
+            "key": "population",
+            "basis": "guideline_population",
+            "question": "Do dated sources establish age at least 65, community residence and current increased fall risk for this person?"
+          },
+          {
+            "key": "assessment",
+            "basis": "agere_clinical_review_requirement",
+            "question": "What current assessment, symptoms, safety concerns, medication review and limitations must an appropriate clinician evaluate before an intervention?"
+          },
+          {
+            "key": "preference",
+            "basis": "agere_patient_requirement",
+            "question": "What current goals, preferences, treatment burden and service-specific consent are confirmed by the patient?"
+          },
+          {
+            "key": "access",
+            "basis": "agere_operational_requirement",
+            "question": "Can this patient access and safely participate in the actual proposed program with suitable staff, schedule, travel, technology and support?"
+          },
+          {
+            "key": "coverage",
+            "basis": "agere_operational_requirement",
+            "question": "Which exact plan benefits, service requirements, qualified providers, participation and costs apply to each proposed component?"
+          },
+          {
+            "key": "currency",
+            "basis": "agere_reference_governance",
+            "question": "Has an appropriate reviewer checked updates and applicability of these dated references at the patient decision date?"
+          }
+        ]
+      },
+      "evidence": {
+        "schema": "care-option-evidence/1",
+        "key": "falls-prevention-interventions",
+        "reference_doi": "10.1001/jama.2024.8481",
+        "checked_on": "2026-10-11",
+        "review_status": "machine_curated_unreviewed",
+        "population": "Older community-dwelling populations in the reviewed studies; this patient\u2019s current applicability is unresolved.",
+        "comparison": "Separate exercise-versus-control and multifactorial-versus-control evidence; no head-to-head ranking",
+        "benefit_summary": "Pooled fall-rate estimates are below one for both intervention groups. These separate trial comparisons cannot identify the better option for this patient.",
+        "harm_summary": "Harms were incompletely reported, usually minor musculoskeletal events; this does not establish individual safety.",
+        "limitations": "High heterogeneity; fall-rate ratios are not probabilities of a person falling. No absolute benefit, NNT, individual prediction or between-option effect is calculated. Narrative pooled estimates are used; the public HTML summary table contains a conflicting repeated exercise row, retained as a source-format discrepancy requiring review.",
+        "quantitative_evidence_status": "Source-reported population rate ratios only. Do not subtract or rank separate pooled estimates; study counts are not summed across alternatives.",
+        "estimates": [
+          {
+            "key": "exercise-fall-rate",
+            "alternative_key": "exercise",
+            "outcome": "Rate of incident falls: Exercise versus trial control",
+            "metric": "incidence_rate_ratio",
+            "unit": "rate ratio",
+            "point": 0.85,
+            "interval": [
+              0.75,
+              0.96
+            ],
+            "interval_level": 0.95,
+            "null_value": 1,
+            "horizon": "Longest trial follow-up; heterogeneous follow-up periods",
+            "reported_rcts": 29,
+            "reported_participants": 14475,
+            "certainty": "moderate for fall-rate benefit (review summary)",
+            "locator": "Exercise interventions narrative, pooled fall-rate analysis",
+            "evidence_family": "doi:10.1001/jama.2024.4166",
+            "source_url": "https://www.uspreventiveservicestaskforce.org/uspstf/document/final-evidence-summary/falls-prevention-community-dwelling-older-adults-interventions",
+            "comparator": "Trial control groups, not the other listed intervention",
+            "comparison_label": "Exercise versus its own trial controls",
+            "head_to_head_between_listed_alternatives": false,
+            "heterogeneity_i_squared_percent": 82.7
+          },
+          {
+            "key": "multifactorial-fall-rate",
+            "alternative_key": "multifactorial",
+            "outcome": "Rate of incident falls: Multifactorial interventions versus trial control",
+            "metric": "incidence_rate_ratio",
+            "unit": "rate ratio",
+            "point": 0.84,
+            "interval": [
+              0.74,
+              0.95
+            ],
+            "interval_level": 0.95,
+            "null_value": 1,
+            "horizon": "Longest trial follow-up; heterogeneous follow-up periods",
+            "reported_rcts": 20,
+            "reported_participants": 22115,
+            "certainty": "moderate for fall-rate benefit (review summary)",
+            "locator": "Multifactorial interventions narrative, pooled fall-rate analysis",
+            "evidence_family": "doi:10.1001/jama.2024.4166",
+            "source_url": "https://www.uspreventiveservicestaskforce.org/uspstf/document/final-evidence-summary/falls-prevention-community-dwelling-older-adults-interventions",
+            "comparator": "Trial control groups, not the other listed intervention",
+            "comparison_label": "Multifactorial interventions versus its own trial controls",
+            "head_to_head_between_listed_alternatives": false,
+            "heterogeneity_i_squared_percent": 85.0
+          }
+        ],
+        "alternatives": [
+          {
+            "key": "exercise",
+            "label": "Falls-prevention exercise program",
+            "reported_recommendation": "B",
+            "compatible_modalities": [
+              "in_person",
+              "hybrid",
+              "virtual"
+            ],
+            "delivery_questions": [
+              "Does the proposed program actually provide assessed falls-prevention exercise, appropriate supervision and follow-up?",
+              "Is its delivery format suitable? Listing a modality is an operational proposal, not evidence that virtual and in-person outcomes are equivalent."
+            ]
+          },
+          {
+            "key": "multifactorial",
+            "label": "Individualized multifactorial assessment and follow-through",
+            "reported_recommendation": "C; individualized decision",
+            "compatible_modalities": [
+              "in_person",
+              "hybrid",
+              "virtual"
+            ],
+            "delivery_questions": [
+              "Who performs the assessment and coordinates only the interventions warranted by its findings?",
+              "Can each needed examination or service actually be delivered in the proposed format, with follow-up?"
+            ]
+          }
+        ],
+        "public_payment_context": {
+          "title": "Medicare outpatient physical therapy coverage",
+          "url": "https://www.medicare.gov/coverage/physical-therapy-services",
+          "checked_on": "2026-10-11",
+          "published_on": null,
+          "summary": "Part B describes medically necessary outpatient physical therapy with clinician certification and cost sharing. A community exercise class, remote format, home service or multifactorial package is not automatically covered. Exact patient enrollment, plan terms, service conditions and provider participation remain unverified.",
+          "scope": "Public background only, not patient entitlement or a quoted contract"
+        },
+        "implementation_resources": [
+          {
+            "title": "CDC STEADI clinical tools",
+            "url": "https://www.cdc.gov/steadi/hcp/clinical-resources/index.html",
+            "checked_on": "2026-10-11",
+            "scope": "Screening, assessment and intervention resources, including mobility/balance, orthostatic blood pressure and medication-review tools; no test has been administered here."
+          }
+        ],
+        "inspection_sources": [
+          "https://www.uspreventiveservicestaskforce.org/uspstf/recommendation/falls-prevention-community-dwelling-older-adults-interventions",
+          "https://www.uspreventiveservicestaskforce.org/uspstf/document/final-evidence-summary/falls-prevention-community-dwelling-older-adults-interventions",
+          "https://pubmed.ncbi.nlm.nih.gov/38833257/",
+          "https://www.cdc.gov/steadi/hcp/clinical-resources/index.html",
+          "https://www.medicare.gov/coverage/physical-therapy-services"
+        ],
+        "source_currency_status": "Public pages checked on the recorded date; no systematic literature update or future synthetic-date currency established."
+      }
+    }
+  ]
+}

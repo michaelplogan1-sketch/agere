@@ -1,0 +1,60 @@
+[
+  {
+    "id": "P",
+    "roster": {
+      "patient_id": "P",
+      "age": 70,
+      "sex": "F",
+      "practice": "Synthetic clinic",
+      "pcp": "Synthetic PCP",
+      "plan": "Synthetic plan",
+      "region": "Synthetic region"
+    },
+    "feeds": {
+      "notes": [
+        {
+          "patient_id": "P",
+          "note_id": "n-P",
+          "date": "2026-09-01",
+          "available_date": "2026-09-02",
+          "note_type": "cardiology",
+          "text": "HFrEF with EF 30%. Spironolactone held due to hyperkalemia."
+        }
+      ],
+      "medical_claims": [],
+      "pharmacy_claims": [],
+      "labs": [],
+      "adt": [],
+      "sdoh_purchased": []
+    }
+  },
+  {
+    "id": "Q",
+    "roster": {
+      "patient_id": "Q",
+      "age": 70,
+      "sex": "F",
+      "practice": "Synthetic clinic",
+      "pcp": "Synthetic PCP",
+      "plan": "Synthetic plan",
+      "region": "Synthetic region"
+    },
+    "feeds": {
+      "notes": [
+        {
+          "patient_id": "Q",
+          "note_id": "n-Q",
+          "date": "2026-09-01",
+          "available_date": "2026-09-02",
+          "note_type": "cardiology",
+          "text": "HFrEF with EF 30%. Spironolactone held due to hyperkalemia."
+        }
+      ],
+      "medical_claims": [],
+      "pharmacy_claims": [],
+      "labs": [],
+      "adt": [],
+      "sdoh_purchased": []
+    }
+  }
+]

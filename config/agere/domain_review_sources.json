@@ -1,0 +1,36 @@
+{
+  "schema": "domain-source-review-catalog/1",
+  "checked_on": "2026-10-10",
+  "authority": "Development source-review configuration; not clinician-approved protocols or patient-specific benefits",
+  "domains": {
+    "respiratory": {
+      "name": "Respiratory source review",
+      "question": "What do these received respiratory condition accounts, asthma symptom interviews and spirometry reports establish, and what remains unresolved before considering medication support, respiratory specialist care or rehabilitation? Keep source dates, current symptoms, age-specific assessment, confirmed inhaler directions, test limitations, patient goals and exact benefit eligibility separate. A historical label or prebronchodilator ratio alone must not establish current diagnosis, severity or service eligibility. Propose evidence-review steps, not treatment changes.",
+      "sources": ["nhlbi_asthma", "medicare_pulmonary"],
+      "selectors": [
+        {"id": "condition_labels", "stream": "conditions", "field": "description", "values": ["Asthma", "Asthma, unspecified with (acute) exacerbation", "Childhood asthma", "Moderate persistent asthma", "Moderate persistent asthma, uncomplicated", "COPD, unspecified (GOLD III)", "Chronic obstructive bronchitis"], "fields": ["description", "snomed", "icd10", "onset"]},
+        {"id": "asthma_accounts", "stream": "condition_assessments", "field": "condition", "values": ["asthma"], "fields": ["condition", "respondent", "recall_window_days", "symptom_days_per_week_reported", "night_wakings_reported", "activity_limitation_reported", "resting_respiratory_distress_observed", "reliever_directions_confirmed"]},
+        {"id": "spirometry", "stream": "diagnostic_test_reports", "field": "test_kind", "values": ["spirometry"], "fields": ["order_record_id", "session_record_id", "test_kind", "report_status", "test_quality", "text", "full_native_report_or_images_in_extract", "measurements.FVC_L", "measurements.FEV1_L", "measurements.FEV1_FVC", "measurements.bronchodilator_administered", "measurements.postbronchodilator_test_performed", "measurements.reference_equation", "measurements.percent_predicted", "measurements.lower_limit_of_normal"]}
+      ],
+      "unresolved": ["Current age-appropriate symptoms, functional goals and clinical severity need assessment.", "Medication names, intended regimen, actual use, inhaler technique and written action plan are outside this source selection.", "Historical condition labels and prebronchodilator measurements do not establish current COPD diagnosis or rehabilitation eligibility.", "Exact member benefits, provider participation, service capacity and patient agreement remain unverified."],
+      "review_topics": ["respiratory assessment", "medication-use and inhaler-direction reconciliation", "diagnostic test limitations", "patient goals and service applicability"]
+    },
+    "behavioral": {
+      "name": "Depression and anxiety source review",
+      "question": "What can these received depression/anxiety condition-list accounts establish, and what further evidence is needed to evaluate current symptoms, care continuity, treatment response, patient goals and appropriate behavioral support? Preserve unknown dates and distinguish a condition label from a current assessment or positive standardized screen. Do not infer absence of symptoms, safety, treatment failure, treatment indication or benefit eligibility. Identify targeted evidence questions before any service recommendation.",
+      "sources": ["uspstf_depression", "medicare_behavioral"],
+      "selectors": [
+        {"id": "condition_labels", "stream": "conditions", "field": "description", "values": ["GAD", "Generalized anxiety disorder", "Panic disorder", "MDD, recurrent", "MDD, recurrent, mild", "MDD, recurrent, moderate", "MDD, recurrent, severe", "MDD, single episode, moderate", "Major depressive disorder", "Postpartum depression"], "fields": ["description", "snomed", "icd10", "onset"]}
+      ],
+      "unresolved": ["This adapter selects condition labels only; current symptom, standardized-screen and treatment-response evidence has not been selected or assessed.", "Absence of a selected current assessment does not establish absent care, negative symptoms or patient safety.", "Current age, pregnancy/postpartum status, coexisting conditions, risks, preferences and care team require appropriate clinical assessment.", "Screening guidance does not turn a recorded diagnosis into a new screening result or automatically apply to diagnosed or symptomatic patients.", "Exact benefits, behavioral-provider participation, patient agreement and execution authority remain unverified."],
+      "review_topics": ["current symptom and care-continuity evidence", "treatment history and response", "patient goals and behavioral-service applicability"]
+    }
+  },
+  "guidance": {
+    "nhlbi_asthma": {"title": "NHLBI: Asthma treatment and action plan", "url": "https://www.nhlbi.nih.gov/health/asthma/treatment-action-plan", "application": "Review symptoms, correct inhaler use and the plan established with a healthcare provider. Treatment depends on age and clinical circumstances. This source review does not select or adjust medications."},
+    "medicare_pulmonary": {"title": "Medicare: Pulmonary rehabilitation", "url": "https://www.medicare.gov/coverage/pulmonary-rehabilitation-programs", "application": "The public coverage page describes specified COPD and post-COVID respiratory indications. A received label or asthma symptom account does not establish those criteria, member coverage or a service authorization."},
+    "uspstf_depression": {"title": "USPSTF: Depression and suicide-risk screening in adults", "url": "https://www.uspreventiveservicestaskforce.org/uspstf/recommendation/screening-depression-suicide-risk-adults", "application": "Positive depression screens require further evaluation and appropriate care. The screening recommendation addresses adults without diagnosed mental-health disorders or recognized symptoms; it is not a treatment protocol for the received condition labels or a safety assessment."},
+    "medicare_behavioral": {"title": "Medicare: Behavioral health integration", "url": "https://www.medicare.gov/coverage/behavioral-health-integration-services", "application": "Public information describes integration of behavioral care with other healthcare. Member eligibility, patient agreement and the participating team must be checked separately; a condition-list record does not verify them."}
+  },
+  "limits": ["Exact source selectors are a bounded development adapter, not whole-chart recall or a diagnostic terminology service.", "Source dates are not necessarily clinical onset or current state. Unknown and conflicting fields remain unresolved.", "All selected longitudinal records remain in the review receipt; answer preparation uses an explicit whole-record selection and does not silently truncate.", "Current public guidance is not validation of benefits at future synthetic dates.", "No automatic clinical service recommendation, patient contact, clinical action or execution authority."]
+}

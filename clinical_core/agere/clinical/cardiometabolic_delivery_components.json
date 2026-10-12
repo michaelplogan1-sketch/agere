@@ -1,0 +1,48 @@
+{
+  "schema": "cardiometabolic-component-registry/1",
+  "mappings": [
+    {
+      "bundle_key": "aha-bp-measurement-team-review",
+      "bundle_version": "1",
+      "reference_doi": "10.1161/CIR.0000000000001356",
+      "option_evidence_key": "bp-measurement-review-approaches",
+      "components": [
+        {
+          "key": "clinical_review",
+          "label": "Qualified measurement and clinical context review",
+          "checks": [
+            "Accountable clinician reviews current symptoms, measurement validity, comorbidities and goals.",
+            "Medication reconciliation and any treatment decision need appropriate clinical authority."
+          ]
+        },
+        {
+          "key": "measurement_support",
+          "label": "Validated device, instruction and measurement support",
+          "checks": [
+            "Confirm actual device and cuff suitability, standardized protocol and patient ability/agreement.",
+            "A generic virtual service or pharmacy tag does not establish device supply, training or usable readings."
+          ]
+        },
+        {
+          "key": "followup",
+          "label": "Result review and coordinated follow-up",
+          "checks": [
+            "Confirm named team, communication route, result review interval and symptom escalation process.",
+            "No automatic medication titration or patient contact is authorized by this proposal."
+          ]
+        }
+      ],
+      "alternatives": {
+        "source_confirmation": [
+          "clinical_review"
+        ],
+        "home_team_review": [
+          "clinical_review",
+          "measurement_support",
+          "followup"
+        ]
+      },
+      "basis": "Agere operational decomposition of measurement-review responsibilities informed by the AHA summary; not a clinical protocol, verified indication or declared buyer capability."
+    }
+  ]
+}

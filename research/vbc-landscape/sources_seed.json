@@ -1,0 +1,576 @@
+[
+  {
+    "id": "ORG01",
+    "title": "Aledade results",
+    "evidence_type": "company_claim",
+    "url": "https://aledade.com/newsroom/aledade-news/aledade-acos-save-over-1-billion-in-2024"
+  },
+  {
+    "id": "ORG02",
+    "title": "Innovaccer AHPA",
+    "evidence_type": "company_case_study",
+    "url": "https://innovaccer.com/resources/case-studies/adventist-healthcare-physician-alliance-transforms-workflows-to-succeed-in-mssp"
+  },
+  {
+    "id": "ORG03",
+    "title": "Pearl cohort analysis",
+    "evidence_type": "company_observational_analysis",
+    "url": "https://www.pearlhealth.com/blog/outperforming-the-national-trend"
+  },
+  {
+    "id": "ORG04",
+    "title": "Wellvana results",
+    "evidence_type": "company_claim",
+    "url": "https://wellvana.com/news/results-2024"
+  },
+  {
+    "id": "ORG05",
+    "title": "Oak Street social impact",
+    "evidence_type": "company_claim",
+    "url": "https://www.oakstreethealth.com/news/oak-street-health-releases-inaugural-social-impact-report"
+  },
+  {
+    "id": "PAY01",
+    "title": "Humana 2026 outcomes",
+    "evidence_type": "payer_claim",
+    "url": "https://policy.humana.com/news-and-resources/news-press/2026/humana-report-finds-value-based-care-improves-outcomes-for"
+  },
+  {
+    "id": "PAY02",
+    "title": "Cigna collaborative care",
+    "evidence_type": "payer_program",
+    "url": "https://www.cigna.com/employers/why-cigna/partnerships-with-hospitals-and-health-systems"
+  },
+  {
+    "id": "PAY03",
+    "title": "Elevance EPHC",
+    "evidence_type": "payer_analysis",
+    "url": "https://www.elevancehealth.com/public-policy-institute/early-results-from-the-enhanced-personal-health-care-program"
+  },
+  {
+    "id": "PAY04",
+    "title": "BCBS AQC eight years",
+    "evidence_type": "primary_observational_study_abstract",
+    "url": "https://pubmed.ncbi.nlm.nih.gov/31314969/"
+  },
+  {
+    "id": "PAY05",
+    "title": "UHC provider guide",
+    "evidence_type": "payer_manual",
+    "url": "https://www.uhcprovider.com/content/dam/provider/docs/public/admin-guides/2026-UHC-Administrative-Guide.pdf"
+  },
+  {
+    "id": "MED01",
+    "title": "Oregon CCO financial results",
+    "evidence_type": "state_analysis",
+    "url": "https://www.oregon.gov/oha/ERD/Pages/Increased-health-care-usage-grew-2024-expenses-for-Oregon-Medicaid-insurers.aspx"
+  },
+  {
+    "id": "MED02",
+    "title": "Oregon CCO quality",
+    "evidence_type": "state_analysis",
+    "url": "https://www.oregon.gov/oha/ERD/Pages/Oregon-Medicaid-insurers-improved-behavioral-health-care-quality-in-2024.aspx"
+  },
+  {
+    "id": "CMS01",
+    "title": "CMS model directory",
+    "evidence_type": "official_inventory",
+    "url": "https://www.cms.gov/priorities/innovation/models"
+  },
+  {
+    "id": "CMS02",
+    "title": "CMS synthesis 21 models",
+    "evidence_type": "official_evaluation_synthesis",
+    "url": "https://www.cms.gov/priorities/innovation/data-and-reports/2022/wp-eval-synthesis-21models"
+  },
+  {
+    "id": "CMS03",
+    "title": "CMS synthesis state models",
+    "evidence_type": "official_evaluation_synthesis",
+    "url": "https://www.cms.gov/priorities/innovation/data-and-reports/2025/sim-summary-report-exec-summary"
+  },
+  {
+    "id": "CMS04",
+    "title": "VBID termination FAQ",
+    "evidence_type": "official_policy_explanation",
+    "url": "https://www.cms.gov/priorities/innovation/innovation-models/medicare-advantage-value-based-insurance-design-model-frequently-asked-questions-about-end-model"
+  },
+  {
+    "id": "FOUND01",
+    "title": "Porter Kaplan initiative",
+    "evidence_type": "author_framework",
+    "url": "https://www.isc.hbs.edu/about-michael-porter/affiliated-organizations-institutions/vbhcd-initiative/Pages/default.aspx"
+  },
+  {
+    "id": "FOUND02",
+    "title": "Porter health care strategy",
+    "evidence_type": "author_framework",
+    "url": "https://www.isc.hbs.edu/health-care/Pages/default.aspx"
+  },
+  {
+    "id": "EVAL01",
+    "title": "Camden randomized trial",
+    "evidence_type": "primary_randomized_trial",
+    "url": "https://www.nejm.org/doi/full/10.1056/NEJMsa1906848"
+  },
+  {
+    "id": "EVAL02",
+    "title": "Long term MSSP",
+    "evidence_type": "primary_observational_study",
+    "url": "https://jamanetwork.com/journals/jama/fullarticle/2833341"
+  },
+  {
+    "id": "EVAL03",
+    "title": "ACO savings mechanisms",
+    "evidence_type": "primary_observational_study_abstract",
+    "url": "https://pubmed.ncbi.nlm.nih.gov/29200328/"
+  },
+  {
+    "id": "EVAL04",
+    "title": "Community health worker randomized trial",
+    "evidence_type": "primary_randomized_trial",
+    "url": "https://jamanetwork.com/journals/jamanetworkopen/fullarticle/2780265"
+  },
+  {
+    "id": "QI01",
+    "title": "AHRQ CUSP impact",
+    "evidence_type": "government_quality_improvement_evaluation",
+    "url": "https://www.ahrq.gov/hai/cusp/clabsi-final/clabsifinal3.html"
+  },
+  {
+    "id": "QI02",
+    "title": "AHRQ RED measurement",
+    "evidence_type": "government_implementation_guidance",
+    "url": "https://www.ahrq.gov/patient-safety/settings/hospital/red/toolkit/redtool6.html"
+  },
+  {
+    "id": "QI03",
+    "title": "IHI measurement",
+    "evidence_type": "improvement_framework",
+    "url": "https://www.ihi.org/library/model-for-improvement/establishing-measures"
+  },
+  {
+    "id": "QI04",
+    "title": "I PASS implementation",
+    "evidence_type": "primary_implementation_study_abstract",
+    "url": "https://pubmed.ncbi.nlm.nih.gov/36326255/"
+  },
+  {
+    "id": "INT01",
+    "title": "NHS linked population data",
+    "evidence_type": "government_case_study",
+    "url": "https://www.england.nhs.uk/long-read/linking-data-and-embedding-a-single-system-wide-population-health-management-approach/"
+  },
+  {
+    "id": "INT02",
+    "title": "Singapore outcome indicators",
+    "evidence_type": "government_program_update",
+    "url": "https://www.moh.gov.sg/newsroom/targeted-versus-medium-term-outcome-indicators-of-healthier-sg-programme/"
+  },
+  {
+    "id": "INT03",
+    "title": "OECD PaRIS",
+    "evidence_type": "international_primary_survey",
+    "url": "https://www.oecd.org/en/publications/does-healthcare-deliver_c8af05a5-en/full-report/executive-summary_e7073a79.html"
+  },
+  {
+    "id": "INT04",
+    "title": "Germany DMP population effects",
+    "evidence_type": "primary_quasi_experimental_study_abstract",
+    "url": "https://pubmed.ncbi.nlm.nih.gov/34781907/"
+  },
+  {
+    "id": "INT05",
+    "title": "Thailand UHC primary care",
+    "evidence_type": "policy_analysis",
+    "url": "https://iris.who.int/bitstream/handle/10665/325504/pmc6560367.pdf?sequence=1"
+  },
+  {
+    "id": "INT06",
+    "title": "International primary care survey",
+    "evidence_type": "primary_survey",
+    "url": "https://www.commonwealthfund.org/publications/surveys/2026/jun/case-integrated-primary-care-across-10-countries-2025-international-survey"
+  },
+  {
+    "id": "ENG01",
+    "title": "Google SRE alerting",
+    "evidence_type": "engineering_primary_reference",
+    "url": "https://sre.google/workbook/alerting-on-slos/"
+  },
+  {
+    "id": "ENG02",
+    "title": "NIST statistical process control",
+    "evidence_type": "engineering_primary_reference",
+    "url": "https://www.itl.nist.gov/div898/handbook/pmc/section1/pmc12.htm"
+  },
+  {
+    "id": "ENG03",
+    "title": "Process mining",
+    "evidence_type": "engineering_primary_reference",
+    "url": "https://github.com/process-intelligence-solutions/pm4py"
+  },
+  {
+    "id": "ENG04",
+    "title": "EconML",
+    "evidence_type": "engineering_primary_reference",
+    "url": "https://www.pywhy.org/EconML/spec/motivation.html"
+  },
+  {
+    "id": "ORG06",
+    "title": "Interwell kidney care",
+    "evidence_type": "company_case_study",
+    "url": "https://www.interwellhealth.com/resources/insights/at-eastern-nephrology-associates-value-based-care-delivers-results-that-matter"
+  },
+  {
+    "id": "INT07",
+    "title": "Brazil family health strategy",
+    "evidence_type": "primary_observational_study_abstract",
+    "url": "https://pubmed.ncbi.nlm.nih.gov/28069858/"
+  },
+  {
+    "id": "INT08",
+    "title": "Netherlands bundled payments spending",
+    "evidence_type": "primary_observational_study_abstract",
+    "url": "https://pubmed.ncbi.nlm.nih.gov/33947604/"
+  },
+  {
+    "id": "INT09",
+    "title": "Netherlands early integration",
+    "evidence_type": "primary_observational_study_abstract",
+    "url": "https://pubmed.ncbi.nlm.nih.gov/22323174/"
+  },
+  {
+    "id": "INT10",
+    "title": "Denmark digital infrastructure",
+    "evidence_type": "national_system_description",
+    "url": "https://healthcaredenmark.dk/news-publications/news/how-denmark-built-a-fully-digital-healthcare-system-and-what-comes-next/"
+  },
+  {
+    "id": "INT11",
+    "title": "Singapore implementation results",
+    "evidence_type": "government_case_study",
+    "url": "https://www.moh.gov.sg/newsroom/national-medical-excellence-awards-2025/"
+  },
+  {
+    "id": "ENG05",
+    "title": "NASA prognostic datasets",
+    "evidence_type": "engineering_primary_reference",
+    "url": "https://www.nasa.gov/intelligent-systems-division/discovery-and-systems-health/pcoe/pcoe-data-set-repository/"
+  },
+  {
+    "id": "ENG06",
+    "title": "Scheduling constraints",
+    "evidence_type": "engineering_primary_reference",
+    "url": "https://developers.google.com/optimization/scheduling/employee_scheduling"
+  },
+  {
+    "id": "CMS05",
+    "title": "AHC final evaluation",
+    "evidence_type": "official_evaluation",
+    "url": "https://www.cms.gov/priorities/innovation/data-and-reports/2026/ahc-final-report"
+  },
+  {
+    "id": "CMS06",
+    "title": "MSSP performance data",
+    "evidence_type": "official_program_data",
+    "url": "https://www.cms.gov/medicare/payment/fee-for-service-providers/shared-savings-program-ssp-acos/program-data"
+  },
+  {
+    "id": "CMS07",
+    "title": "CMS value based programs",
+    "evidence_type": "official_program_directory",
+    "url": "https://www.cms.gov/medicare/quality/value-based-programs"
+  },
+  {
+    "id": "CMS08",
+    "title": "MIPS overview",
+    "evidence_type": "official_program_description",
+    "url": "https://qpp.cms.gov/mips/overview"
+  },
+  {
+    "id": "FOUND03",
+    "title": "Porter value based framework",
+    "evidence_type": "author_framework",
+    "url": "https://www.isc.hbs.edu/health-care/value-based-health-care/Pages/default.aspx"
+  },
+  {
+    "id": "MODEL1",
+    "title": "Accountable Health Communities Model",
+    "evidence_type": "official_model_page",
+    "url": "https://www.cms.gov/priorities/innovation/innovation-models/ahcm",
+    "directory_stage": "Not Active"
+  },
+  {
+    "id": "MODEL3",
+    "title": "ACO REACH",
+    "evidence_type": "official_model_page",
+    "url": "https://www.cms.gov/priorities/innovation/innovation-models/aco-reach",
+    "directory_stage": "Active"
+  },
+  {
+    "id": "MODEL10",
+    "title": "Comprehensive Care for Joint Replacement Model",
+    "evidence_type": "official_model_page",
+    "url": "https://www.cms.gov/priorities/innovation/innovation-models/cjr",
+    "directory_stage": "Authorized for Expansion"
+  },
+  {
+    "id": "MODEL13",
+    "title": "Comprehensive Primary Care Plus",
+    "evidence_type": "official_model_page",
+    "url": "https://www.cms.gov/priorities/innovation/innovation-models/comprehensive-primary-care-plus",
+    "directory_stage": "Not Active"
+  },
+  {
+    "id": "MODEL15",
+    "title": "EOM (Enhancing Oncology) Model",
+    "evidence_type": "official_model_page",
+    "url": "https://www.cms.gov/priorities/innovation/innovation-models/enhancing-oncology-model",
+    "directory_stage": "Active"
+  },
+  {
+    "id": "MODEL17",
+    "title": "Expanded Home Health Value-Based Purchasing Model",
+    "evidence_type": "official_model_page",
+    "url": "https://www.cms.gov/priorities/innovation/innovation-models/expanded-home-health-value-based-purchasing-model",
+    "directory_stage": "Active"
+  },
+  {
+    "id": "MODEL20",
+    "title": "Frontier Community Health Integration Project Demonstration",
+    "evidence_type": "official_model_page",
+    "url": "https://www.cms.gov/priorities/innovation/innovation-models/Frontier-Community-Health-Integration-Project-Demonstration",
+    "directory_stage": "Active"
+  },
+  {
+    "id": "MODEL29",
+    "title": "Initiative to Reduce Avoidable Hospitalizations Among Nursing Facility Residents",
+    "evidence_type": "official_model_page",
+    "url": "https://www.cms.gov/priorities/innovation/innovation-models/rahnfr",
+    "directory_stage": "Not Active"
+  },
+  {
+    "id": "MODEL30",
+    "title": "Initiative to Reduce Avoidable Hospitalizations Among Nursing Facility Residents: Phase Two",
+    "evidence_type": "official_model_page",
+    "url": "https://www.cms.gov/priorities/innovation/innovation-models/rahnfr-phase-two",
+    "directory_stage": "Not Active"
+  },
+  {
+    "id": "MODEL31",
+    "title": "InCK (Integrated Care for Kids) Model",
+    "evidence_type": "official_model_page",
+    "url": "https://www.cms.gov/priorities/innovation/innovation-models/integrated-care-for-kids-model",
+    "directory_stage": "Active"
+  },
+  {
+    "id": "MODEL33",
+    "title": "KCC (Kidney Care Choices) Model",
+    "evidence_type": "official_model_page",
+    "url": "https://www.cms.gov/priorities/innovation/innovation-models/kidney-care-choices-kcc-model",
+    "directory_stage": "Active"
+  },
+  {
+    "id": "MODEL35",
+    "title": "Maryland Total Cost of Care Model",
+    "evidence_type": "official_model_page",
+    "url": "https://www.cms.gov/priorities/innovation/innovation-models/md-tccm",
+    "directory_stage": "Performance Period Ended"
+  },
+  {
+    "id": "MODEL41",
+    "title": "Medicare Advantage Value-Based Insurance Design Model",
+    "evidence_type": "official_model_page",
+    "url": "https://www.cms.gov/priorities/innovation/innovation-models/vbid",
+    "directory_stage": "Performance Period Ended"
+  },
+  {
+    "id": "MODEL42",
+    "title": "Medicare Care Choices Model",
+    "evidence_type": "official_model_page",
+    "url": "https://www.cms.gov/priorities/innovation/innovation-models/Medicare-Care-Choices",
+    "directory_stage": "Not Active"
+  },
+  {
+    "id": "MODEL53",
+    "title": "Next Generation ACO Model",
+    "evidence_type": "official_model_page",
+    "url": "https://www.cms.gov/priorities/innovation/innovation-models/Next-Generation-ACO-Model",
+    "directory_stage": "Not Active"
+  },
+  {
+    "id": "MODEL64",
+    "title": "Primary Care First Model Options",
+    "evidence_type": "official_model_page",
+    "url": "https://www.cms.gov/priorities/innovation/innovation-models/primary-care-first-model-options",
+    "directory_stage": "Performance Period Ended"
+  },
+  {
+    "id": "MODEL66",
+    "title": "Radiation Oncology Model",
+    "evidence_type": "official_model_page",
+    "url": "https://www.cms.gov/priorities/innovation/innovation-models/radiation-oncology-model",
+    "directory_stage": "Announced"
+  },
+  {
+    "id": "MODEL67",
+    "title": "Rural Community Hospital Demonstration",
+    "evidence_type": "official_model_page",
+    "url": "https://www.cms.gov/priorities/innovation/innovation-models/rural-community-hospital-demonstration",
+    "directory_stage": "Active"
+  },
+  {
+    "id": "MODEL79",
+    "title": "Vermont All-Payer ACO Model",
+    "evidence_type": "official_model_page",
+    "url": "https://www.cms.gov/priorities/innovation/innovation-models/vermont-all-payer-aco-model",
+    "directory_stage": "Performance Period Ended"
+  },
+  {
+    "id": "MODEL82",
+    "title": "Making Care Primary (MCP) Model",
+    "evidence_type": "official_model_page",
+    "url": "https://www.cms.gov/priorities/innovation/innovation-models/making-care-primary",
+    "directory_stage": "Performance Period Ended"
+  },
+  {
+    "id": "MODEL83",
+    "title": "GUIDE (Guiding an Improved Dementia Experience) Model",
+    "evidence_type": "official_model_page",
+    "url": "https://www.cms.gov/priorities/innovation/innovation-models/guide",
+    "directory_stage": "Active"
+  },
+  {
+    "id": "MODEL84",
+    "title": "AHEAD (Achieving Healthcare Efficiency through Accountable Design) Model",
+    "evidence_type": "official_model_page",
+    "url": "https://www.cms.gov/priorities/innovation/innovation-models/ahead",
+    "directory_stage": "Active"
+  },
+  {
+    "id": "MODEL85",
+    "title": "TMaH (Transforming Maternal Health) Model",
+    "evidence_type": "official_model_page",
+    "url": "https://www.cms.gov/priorities/innovation/innovation-models/transforming-maternal-health-tmah-model",
+    "directory_stage": "Active"
+  },
+  {
+    "id": "MODEL86",
+    "title": "IBH (Innovation in Behavioral Health) Model",
+    "evidence_type": "official_model_page",
+    "url": "https://www.cms.gov/priorities/innovation/innovation-models/innovation-behavioral-health-ibh-model",
+    "directory_stage": "Active"
+  },
+  {
+    "id": "MODEL89",
+    "title": "CGT (Cell and Gene Therapy Access) Model",
+    "evidence_type": "official_model_page",
+    "url": "https://www.cms.gov/priorities/innovation/innovation-models/cgt",
+    "directory_stage": "Active"
+  },
+  {
+    "id": "MODEL90",
+    "title": "ACO Primary Care Flex Model",
+    "evidence_type": "official_model_page",
+    "url": "https://www.cms.gov/priorities/innovation/innovation-models/aco-primary-care-flex-model",
+    "directory_stage": "Active"
+  },
+  {
+    "id": "MODEL91",
+    "title": "TEAM (Transforming Episode Accountability) Model",
+    "evidence_type": "official_model_page",
+    "url": "https://www.cms.gov/priorities/innovation/innovation-models/team-model",
+    "directory_stage": "Active"
+  },
+  {
+    "id": "MODEL92",
+    "title": "IOTA (Increasing Organ Transplant Access) Model",
+    "evidence_type": "official_model_page",
+    "url": "https://www.cms.gov/priorities/innovation/innovation-models/iota",
+    "directory_stage": "Active"
+  },
+  {
+    "id": "MODEL95",
+    "title": "Prior Authorization of Repetitive, Scheduled Non-Emergent Ambulance Transport (RSNAT)",
+    "evidence_type": "official_model_page",
+    "url": "https://www.cms.gov/data-research/monitoring-programs/medicare-fee-service-compliance-programs/prior-authorization-and-pre-claim-review-initiatives/prior-authorization-repetitive-scheduled-non-emergent-ambulance-transport-rsnat#timeline",
+    "directory_stage": "Active"
+  },
+  {
+    "id": "MODEL98",
+    "title": "WISeR (Wasteful and Inappropriate Service Reduction) Model ",
+    "evidence_type": "official_model_page",
+    "url": "https://www.cms.gov/priorities/innovation/innovation-models/wiser",
+    "directory_stage": "Active"
+  },
+  {
+    "id": "MODEL99",
+    "title": "ASM (Ambulatory Specialty Model)",
+    "evidence_type": "official_model_page",
+    "url": "https://www.cms.gov/priorities/innovation/innovation-models/asm",
+    "directory_stage": "Announced"
+  },
+  {
+    "id": "MODEL100",
+    "title": "GENEROUS (GENErating cost Reductions fOr U.S. Medicaid) Model",
+    "evidence_type": "official_model_page",
+    "url": "https://www.cms.gov/priorities/innovation/innovation-models/generous",
+    "directory_stage": "Announced"
+  },
+  {
+    "id": "MODEL101",
+    "title": "ACCESS (Advancing Chronic Care with Effective, Scalable Solutions) Model",
+    "evidence_type": "official_model_page",
+    "url": "https://www.cms.gov/priorities/innovation/innovation-models/access",
+    "directory_stage": "Active"
+  },
+  {
+    "id": "MODEL102",
+    "title": "MAHA ELEVATE (Make America Healthy Again: Enhancing Lifestyle and Evaluating Value-based Approaches Through Evidence) Model",
+    "evidence_type": "official_model_page",
+    "url": "https://www.cms.gov/priorities/innovation/innovation-models/maha-elevate",
+    "directory_stage": "Announced"
+  },
+  {
+    "id": "MODEL104",
+    "title": "Long-term Enhanced ACO Design (LEAD) Model",
+    "evidence_type": "official_model_page",
+    "url": "https://www.cms.gov/priorities/innovation/innovation-models/lead",
+    "directory_stage": "Announced"
+  },
+  {
+    "id": "MODEL105",
+    "title": "GUARD (Guarding U.S. Medicare Against Rising Drug Costs) Model",
+    "evidence_type": "official_model_page",
+    "url": "https://www.cms.gov/priorities/innovation/innovation-models/guard",
+    "directory_stage": "Announced"
+  },
+  {
+    "id": "MODEL106",
+    "title": "GLOBE (Global Benchmark for Efficient Drug Pricing) Model",
+    "evidence_type": "official_model_page",
+    "url": "https://www.cms.gov/priorities/innovation/innovation-models/globe",
+    "directory_stage": "Active"
+  },
+  {
+    "id": "MODEL107",
+    "title": "BALANCE (Better Approaches to Lifestyle and Nutrition for Comprehensive hEalth) Model",
+    "evidence_type": "official_model_page",
+    "url": "https://www.cms.gov/priorities/innovation/innovation-models/balance",
+    "directory_stage": "Active"
+  },
+  {
+    "id": "MODEL108",
+    "title": "ASPIRE (Accelerating State Pediatric Innovation Readiness and Effectiveness) Model",
+    "evidence_type": "official_model_page",
+    "url": "https://www.cms.gov/priorities/innovation/innovation-models/aspire",
+    "directory_stage": "Announced"
+  },
+  {
+    "id": "MODEL109",
+    "title": "CJR-X (Comprehensive Care for Joint Replacement Expanded) Model",
+    "evidence_type": "official_model_page",
+    "url": "https://www.cms.gov/priorities/innovation/innovation-models/cjr-x",
+    "directory_stage": "Announced"
+  }
+]

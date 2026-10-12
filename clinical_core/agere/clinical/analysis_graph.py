@@ -1,0 +1,899 @@
+"""Compose observed cohorts, narrative evidence and existing analytic operators.
+
+Memberships are complete patient sets, never retrieval samples. Statistical
+comparisons describe indexed observations; neither clinical absence nor causality
+is inferred. Source-bound text annotations retain their existing authority.
+"""
+from dataclasses import dataclass
+from pathlib import Path
+import hashlib
+import json
+import math
+import re
+import sqlite3
+import time
+
+from scipy.stats import fisher_exact
+
+from ...contracts import digest
+from ..mathematics import benjamini_hochberg, facility_shrinkage
+from . import cohorts, evidence_queries
+from .clinical_events import validate_window
+
+VERSION = 'population-analysis-graph/1'
+from .graph_contracts import SET_OPS, validate_inputs, validate_parameters as validate_shared_parameters
+OPERATIONS = SET_OPS | {'observation_process', 'reference_review', 'compare', 'analyze', 'retrieve', 'forecast', 'source_changes', 'review','longitudinal','worklist','state_review','medication_identity','context','context_passes','assertion_review','baseline','decision_landmark','financial_accounts','accountability_review','protocol_change','program_document_change','program_acquisition','measure_review','evidence_portfolio'}
+NODE_FIELDS = {'id', 'operation', 'inputs', 'parameters', 'purpose'}
+LIMITS = [
+    'Membership means observed predicate matches, not confirmed disease or absent care.',
+    'Text predicates select existing unvalidated machine annotations, not clinician-adjudicated facts.',
+    'These comparisons are associations of observed documentation; temporal order and causality are not established.',
+    'Fisher and beta-binomial calculations assume independent patient observations; independence and source capture are unverified.',
+    'BH adjustment covers only the listed comparisons within this node; repeated/adaptive searches and arbitrary dependence are not controlled.',
+    'Population comparisons are exploratory. Forecast and model-review nodes carry separate research limitations; no node authorizes clinical action.',
+]
+
+
+@dataclass
+class Membership:
+    universe: set
+    yes: set
+    unknown: set
+
+    @property
+    def no(self):
+        return self.universe - self.yes - self.unknown
+
+
+def combine(operation, values):
+    universe = values[0].universe
+    if any(v.universe != universe for v in values):
+        raise ValueError('Membership universes must agree')
+    if operation == 'intersect':
+        yes = set.intersection(*(v.yes for v in values))
+        no = set.union(*(v.no for v in values))
+    elif operation == 'union':
+        yes = set.union(*(v.yes for v in values))
+        no = set.intersection(*(v.no for v in values))
+    elif operation == 'difference':
+        yes, no = values[0].yes & values[1].no, values[0].no | values[1].yes
+    else:
+        raise ValueError('Unknown set operation')
+    return Membership(universe, yes, universe - yes - no)
+
+
+def answer_coverage(plan, results):
+    """Observed evidence gaps qualify planner scope without changing its saved plan."""
+    nodes = [{'node_id': r['node']['id'], 'concept': r['node']['parameters']['concept'],
+              'states': r['result']['status_counts'], **r['result']['evidence_coverage']}
+             for r in results if r['node']['operation'] in ('source_state', 'pre_event_state')]
+    gaps = any(n.get('patients_without_scoped_records', 0) or n.get('patients_with_unmapped_received_units', 0) or
+               any(k not in ('documented_affirmed', 'documented_negated') and v for k,v in n['states'].items())
+               for n in nodes)
+    return {'status': 'partial_evidence' if gaps or plan['unmet_requirements'] else 'bounded_observations',
+            'planner_scope': plan['coverage'], 'source_state_nodes': nodes,
+            'whole_question_answer_established': False,
+            'meaning': 'Execution coverage is separate from plan support. These are bounded source observations, not clinical or causal conclusions.'}
+
+
+def validate(plan, as_of):
+    from .stack_planner import validate as validate_analytic_plan
+    if not isinstance(plan, dict) or set(plan) != {'interpretation', 'nodes', 'coverage', 'unmet_requirements'}:
+        raise ValueError('Explicit population graph contract required')
+    if not isinstance(plan['interpretation'], str) or not 1 <= len(plan['interpretation']) <= 2000:
+        raise ValueError('Bounded interpretation required')
+    if plan['coverage'] not in ('supported_observation', 'partial', 'unsupported'):
+        raise ValueError('Invalid graph coverage')
+    unmet = plan['unmet_requirements']
+    if not isinstance(unmet, list) or len(unmet) > 20 or any(not isinstance(x, str) or not 1 <= len(x) <= 1000 for x in unmet):
+        raise ValueError('Bounded missing requirements required')
+    if not isinstance(plan['nodes'], list) or len(plan['nodes']) > 16:
+        raise ValueError('At most sixteen graph nodes')
+    if plan['coverage'] == 'unsupported' and plan['nodes']:
+        raise ValueError('Unsupported graph cannot execute')
+    if plan['coverage'] == 'supported_observation' and (unmet or not plan['nodes']):
+        raise ValueError('Inconsistent complete graph')
+    seen = {}
+    normalized = []
+    for node in plan['nodes']:
+        if not isinstance(node, dict) or set(node) != NODE_FIELDS:
+            raise ValueError('Invalid graph node fields')
+        ident, op, inputs, p = (node[k] for k in ('id', 'operation', 'inputs', 'parameters'))
+        if not isinstance(ident, str) or not re.fullmatch(r'[a-z][a-z0-9_]{0,39}', ident) or ident in seen:
+            raise ValueError('Unique bounded node IDs required')
+        if op not in OPERATIONS or not isinstance(p, dict):
+            raise ValueError('Unregistered graph operation or invalid parameters')
+        if not isinstance(node['purpose'], str) or not 1 <= len(node['purpose']) <= 1000:
+            raise ValueError('Node purpose required')
+        if not isinstance(inputs, list) or len(inputs) > 10 or any(not isinstance(x, str) for x in inputs) or len(set(inputs)) != len(inputs):
+            raise ValueError('Bounded unique node references required')
+        validate_inputs(op, inputs, seen)
+        p = validate_shared_parameters(op, p)
+        if op == 'cohort':
+            if inputs or set(p) != {'specification'}:
+                raise ValueError('Cohort node needs its explicit specification')
+            p = {'specification': cohorts.validate(p['specification'], as_of)}
+        elif op == 'evidence':
+            if inputs or set(p) != {'plan'}:
+                raise ValueError('Evidence node needs its explicit plan')
+            ep = evidence_queries.validate_plan(p['plan'])
+            for clause in ep['clauses']:
+                if any(clause.get(k, as_of) > as_of for k in ('event_date_from', 'event_date_through')):
+                    raise ValueError('Evidence window exceeds snapshot cutoff')
+            p = {'plan': ep}
+        elif op in ('intersect', 'union', 'difference'):
+            if p or len(inputs) < 2 or (op == 'difference' and len(inputs) != 2):
+                raise ValueError('Set operations need membership inputs and no parameters')
+        elif op == 'compare':
+            if p or not 3 <= len(inputs) <= 10:
+                raise ValueError('Compare inputs are base, observed endpoint, and one to eight groups')
+        elif op == 'analyze':
+            if len(inputs) != 1 or set(p) != {'operator', 'drug_class', 'view', 'analysis_window'}:
+                raise ValueError('Analyze needs one population and explicit operator settings')
+            if p['operator'] == 'evidence_search':
+                raise ValueError('Use retrieve for ranked source passages')
+            validate_analytic_plan({'interpretation': 'Execute selected population', 'steps': [{
+                'operation': p['operator'], 'query': '', 'patient_id': '', 'drug_class': p['drug_class'],
+                'view': p['view'], 'purpose': node['purpose']}], 'coverage': 'supported_observation',
+                'unmet_requirements': [], 'cohort': cohorts.empty(), 'analysis_window': p['analysis_window']}, as_of)
+        elif op == 'retrieve':
+            if len(inputs) != 1 or set(p) != {'query', 'analysis_window'} or not isinstance(p['query'], str) or not 1 <= len(p['query']) <= 1500:
+                raise ValueError('Retrieve needs one population and bounded query/window')
+            p = {**p, 'analysis_window': validate_window(p['analysis_window'], as_of)}
+        elif op == 'forecast':
+            if len(inputs)!=1 or set(p)!={'model'} or p['model'] not in ('all','logistic','boosted','boosted_blocks'):
+                raise ValueError('Forecast needs one population and a registered model')
+        elif op == 'observation_process':
+            from .graph_observation import validate as validate_observation
+            p=validate_observation(p,as_of)
+        elif op == 'source_changes':
+            if len(inputs)!=1 or set(p)!={'streams'} or not isinstance(p['streams'],list) or not 1<=len(p['streams'])<=5:
+                raise ValueError('Source changes need one population and one to five streams')
+            if any(not isinstance(s,str) or s not in cohorts.RECORD_FIELDS for s in p['streams']) or len(set(p['streams']))!=len(p['streams']):
+                raise ValueError('Distinct mapped source streams required')
+        elif op == 'review':
+            if len(inputs)!=1 or set(p)!={'providers','question','maximum_patients'}:
+                raise ValueError('Explicit bounded patient review required')
+            if not isinstance(p['providers'],list) or not 1<=len(p['providers'])<=2 or any(x not in ('jev','perplexity') for x in p['providers']) or len(set(p['providers']))!=len(p['providers']):
+                raise ValueError('Use named Jev/Perplexity review routes')
+            if type(p['maximum_patients']) is not int or not 1<=p['maximum_patients']<=3 or not isinstance(p['question'],str) or not 1<=len(p['question'])<=1000:
+                raise ValueError('One to three sampled patient reviews and a bounded assertion question required')
+        elif op in ('sequence','longitudinal'):
+            from .longitudinal import validate_parameters
+            if len(inputs)!=1:raise ValueError('Longitudinal operation requires one full population')
+            p=validate_parameters(p,as_of,'sequence' if op=='sequence' else 'context')
+        elif op == 'appointment_followthrough':
+            from .appointment_graph import validate as validate_appointments
+            p = validate_appointments(p, as_of)
+        elif op == 'functional_review':
+            if len(inputs)!=1:raise ValueError('Functional review requires one complete population')
+        elif op == 'domain_review':
+            if len(inputs)!=1:raise ValueError('Domain review requires one complete population')
+        elif op == 'worklist':
+            from .program_work import definition
+            support=[seen[x] for x in inputs[1:]]
+            if not 1<=len(inputs)<=4 or len(set(support))!=len(support) or any(x not in ('accountability_review','program_acquisition','measure_review') for x in support) or set(p) != {'program'}:
+                raise ValueError('Worklist needs one population, distinct optional accountability/acquisition results, and a registered program')
+            definition(p['program'])
+        elif op == 'state_review':
+            from .state_contracts import definition
+            if len(inputs)!=1 or set(p)!={'contract'}:
+                raise ValueError('State review needs one complete population and an evidence contract')
+            if p['contract']!='all':definition(p['contract'])
+        elif op == 'program_document':
+            from .program_documents import validate as validate_document
+            if len(inputs)!=1:raise ValueError('Program document needs one complete selected population')
+            p=validate_document(p)
+        elif op == 'reference_review':
+            from .graph_references import validate as validate_reference
+            p=validate_reference(p,as_of,inputs,normalized)
+        elif op == 'measure_review':
+            from .measure_composition import validate as validate_measure
+            if len(inputs)!=1:raise ValueError('Measure needs one complete population')
+            p=validate_measure(p)
+        elif op == 'evidence_portfolio':
+            from .evidence_portfolio import validate as validate_portfolio
+            if len(inputs)!=1:raise ValueError('Evidence portfolio requires one complete selected population')
+            p=validate_portfolio(p)
+        elif op == 'program_acquisition':
+            from .program_acquisition import validate as validate_program_acquisition
+            if len(inputs)!=1:raise ValueError('Program acquisition needs one complete selected population')
+            p=validate_program_acquisition(p)
+        elif op == 'program_document_change':
+            from .program_document_change import validate as validate_document_change
+            if len(inputs)!=1:raise ValueError('Quoted-rule comparison needs one complete selected population')
+            p=validate_document_change(p)
+        elif op == 'protocol_change':
+            from .protocol_change import validate as validate_change
+            if len(inputs)!=1:raise ValueError('Protocol comparison needs one complete selected population')
+            p=validate_change(p)
+        elif op == 'accountability_review':
+            from .program_accountability import validate as validate_accountability
+            if len(inputs)!=1:raise ValueError('Accountability review needs one complete selected population')
+            p=validate_accountability(p,as_of)
+        elif op == 'financial_accounts':
+            from .financial_accounts import validate as validate_financial
+            if len(inputs)!=1:raise ValueError('Financial accounts need one complete selected population')
+            p=validate_financial(p,as_of)
+        elif op == 'decision_landmark':
+            from .decision_landmarks import validate as validate_landmark
+            if len(inputs)!=1:raise ValueError('Decision landmark needs one complete selected population')
+            p=validate_landmark(p,as_of)
+        elif op == 'baseline':
+            from .baseline_evidence import validate as validate_baseline
+            if len(inputs)!=1 or seen[inputs[0]]!='outcome':raise ValueError('Baseline requires one direct upstream outcome population')
+            p=validate_baseline(p)
+        elif op == 'protocol_review':
+            from .care_protocols import validate as validate_protocol
+            if len(inputs)!=1:raise ValueError('Protocol review needs one complete selected population')
+            p=validate_protocol(p)
+        elif op == 'outcome':
+            from .outcomes import validate as validate_outcome
+            if len(inputs)!=1:raise ValueError('Outcome needs one complete selected population')
+            p=validate_outcome(p,as_of)
+        elif op == 'requirements':
+            from .evidence_requirements import validate as validate_requirements
+            if len(inputs)!=1:raise ValueError('Requirements need one complete selected population')
+            p=validate_requirements(p)
+        elif op in ('source_state', 'pre_event_state'):
+            if len(inputs)!=1:raise ValueError('Source state needs one complete selected population')
+        elif op == 'interpretation':
+            from .interpretation_state import validate as validate_interpretation
+            if len(inputs)!=1:raise ValueError('Interpretation needs one complete selected population')
+            p=validate_interpretation(p)
+        elif op == 'assertion_review':
+            if len(inputs)!=1:raise ValueError('Assertion review needs one complete selected population')
+        elif op in ('context','context_passes'):
+            if len(inputs)!=1:raise ValueError('Context needs one complete selected population')
+        elif op == 'medication_identity':
+            if len(inputs)!=1 or p:raise ValueError('Medication identity needs one complete population and no invented parameters')
+        if op == 'pre_event_state':
+            parent = next(n for n in normalized if n['id'] == inputs[0])
+            if parent['parameters']['filter'] != 'all':
+                raise ValueError('Pre-event state requires all-state outcome retention; missing indices must remain visible')
+        normalized.append({**node, 'parameters': p})
+        seen[ident] = op
+    # Work adapters assess at the current snapshot. Reject a temporal mismatch
+    # through any set-operation chain before executing or creating proposals.
+    appointment_ancestors = {}
+    for node in normalized:
+        parents = set().union(*(appointment_ancestors[x] for x in node['inputs']))
+        if node['operation'] == 'appointment_followthrough':
+            parents.add(node['parameters']['available_by'])
+        appointment_ancestors[node['id']] = parents
+        if node['operation'] == 'worklist' and any(day != as_of for day in parents):
+            raise ValueError('Historical appointment evidence cannot feed current-snapshot work')
+    by_id = {n['id']: n for n in normalized}
+    for node in normalized:
+        operands = node['inputs'][1:] if node['operation'] == 'compare' else node['inputs'] if node['operation'] in ('intersect', 'union', 'difference') else []
+        for ref in operands:
+            parent = by_id[ref]
+            if parent['operation'] in ('source_state', 'pre_event_state', 'appointment_followthrough') and parent['parameters']['filter'] == 'all':
+                raise ValueError('All-state retention is not a predicate for overlap or comparison; select an explicit state filter')
+    return {**plan, 'nodes': normalized}
+
+
+def membership_receipt(value):
+    return {'counts': {'evaluated': len(value.universe), 'matched': len(value.yes),
+                       'not_matched': len(value.no), 'unknown': len(value.unknown)},
+            'membership_digest': digest({'matched': sorted(value.yes), 'unknown': sorted(value.unknown)}),
+            'examples': {'matched': sorted(value.yes)[:10], 'unknown': sorted(value.unknown)[:10]},
+            'scope': 'Full observed patient membership; nonmatch is not absence of care.'}
+
+
+def evidence_connection(path, meta):
+    link = json.loads((path / 'annotation-link.json').read_text())
+    root = Path(link['path'])
+    evidence_meta = json.loads((root / 'run.json').read_text())
+    if (evidence_meta.get('synthetic') is not True or evidence_meta.get('schema') != evidence_queries.VERSION
+            or evidence_meta['source_run'] != meta['source_run']
+            or evidence_meta['snapshot'] != meta['snapshot']
+            or evidence_meta['model_identity'] != link['model_identity']):
+        raise ValueError('Evidence index and warehouse snapshot/model do not agree')
+    db = sqlite3.connect((root / 'evidence.sqlite3').resolve().as_uri() + '?mode=ro', uri=True)
+    return db, evidence_meta
+
+
+def evidence_membership(db, plan, universe):
+    if {r[0] for r in db.execute('SELECT id FROM patients')} != universe:
+        raise ValueError('Evidence and warehouse patient universes differ')
+    parts, params = [], []
+    for clause in plan['clauses']:
+        where, values = evidence_queries.predicate(clause)
+        negate = 'NOT ' if clause['observation'] == 'not_observed' else ''
+        parts.append(f'{negate}EXISTS (SELECT 1 FROM evidence e WHERE e.patient=p.id AND {where})')
+        params.extend(values)
+    expression = (' AND ' if plan['match'] == 'all' else ' OR ').join(parts)
+    yes = {r[0] for r in db.execute('SELECT id FROM patients p WHERE ' + expression, params)}
+    # This is the complete *indexed-observation* query. It says nothing about
+    # semantic extraction recall, outside care or the actual clinical state.
+    traces = []
+    for pid in sorted(yes)[:5]:
+        checks = []
+        for clause in plan['clauses']:
+            where, values = evidence_queries.predicate(clause)
+            count = db.execute('SELECT count(*) FROM evidence e WHERE e.patient=? AND ' + where, [pid, *values]).fetchone()[0]
+            support = [{'evidence_id': r[0], 'recorded_evidence': json.loads(r[1])} for r in db.execute(
+                'SELECT id,payload FROM evidence e WHERE e.patient=? AND ' + where + ' ORDER BY id LIMIT 2', [pid, *values])]
+            checks.append({'clause': clause, 'matching_occurrences': count, 'support': support})
+        traces.append({'patient_id': pid, 'checks': checks})
+    return Membership(universe, yes, set()), {'evidence_examples': traces, 'predicate': plan,
+        'authority': 'Structured observations and unvalidated text annotations. Nonmatch is only absence from this index.'}
+
+
+def compare_populations(base, endpoint, groups):
+    rows = []
+    for name, group in groups:
+        if endpoint.universe != base.universe or group.universe != base.universe:
+            raise ValueError('Comparison universes differ')
+        eligible = base.yes - endpoint.unknown - group.unknown
+        positive, negative = eligible & group.yes, eligible & group.no
+        a, b = positive & endpoint.yes, positive & endpoint.no
+        c, d = negative & endpoint.yes, negative & endpoint.no
+        row = {'group_node': name, 'base_patients': len(base.yes), 'base_unknown': len(base.unknown),
+               'patients_evaluated': len(eligible), 'excluded_unknown_endpoint_or_group': len(base.yes - eligible),
+               'cells': {'group_and_endpoint': len(a), 'group_without_observed_endpoint': len(b),
+                         'complement_and_endpoint': len(c), 'complement_without_observed_endpoint': len(d)},
+               'cell_examples': {k: sorted(v)[:3] for k, v in [
+                   ('group_and_endpoint', a), ('group_without_observed_endpoint', b),
+                   ('complement_and_endpoint', c), ('complement_without_observed_endpoint', d)]}}
+        if not positive or not negative:
+            row.update(status='insufficient_comparison_groups', nominal_fisher_p=None, nominal_bh_q=None,
+                       risk_difference=None, rates=[])
+        else:
+            rates = facility_shrinkage([{'group': 'predicate_matched', 'eligible': len(positive), 'events': len(a)},
+                                       {'group': 'predicate_not_matched', 'eligible': len(negative), 'events': len(c)}])
+            for rate in rates:
+                rate['observed_rate'] = rate['events'] / rate['eligible']
+            odds, p = fisher_exact([[len(a), len(b)], [len(c), len(d)]])
+            row.update(status='exploratory_comparison', rates=rates,
+                       risk_difference=len(a)/len(positive)-len(c)/len(negative),
+                       nominal_fisher_p=float(p), odds_ratio=float(odds) if math.isfinite(odds) else None,
+                       odds_ratio_nonfinite=not math.isfinite(odds))
+        rows.append(row)
+    computed = [row for row in rows if row['nominal_fisher_p'] is not None]
+    for row, q in zip(computed, benjamini_hochberg([r['nominal_fisher_p'] for r in computed])):
+        row['nominal_bh_q'] = q
+    return {'comparisons': rows, 'comparison_family': [name for name, _ in groups],
+            'computed_comparisons': len(computed), 'multiple_testing_method': 'Benjamini-Hochberg within this node only',
+            'inference_validity_verified': False, 'causal_effect_estimated': False, 'forecast': None,
+            'clinical_recommendation': None, 'limitations': LIMITS}
+
+
+def code_identity():
+    from .analytic_registry import code_identity as analytic_identity
+    return digest([analytic_identity(), cohorts.code_identity(),
+                   *[hashlib.sha256(p.read_bytes()).hexdigest() for p in
+                     [Path(__file__), Path(evidence_queries.__file__), Path(__file__).with_name('graph_contracts.py'),
+                      Path(__file__).with_name('warehouse_retrieval.py'),
+                      Path(__file__).with_name('warehouse_prediction.py'),
+                      Path(__file__).with_name('longitudinal.py'),
+                      *[Path(__file__).with_name(n) for n in ('program_work.py','program_work_current.py','program_work_v1.py','functional_programs.py','functional_review.py','registered_program_work.py','domain_programs.py','domain_review.py','work_adapters.py')],Path(__file__).with_name('program_documents.py'),Path(__file__).with_name('program_document_change.py'),
+                      Path(__file__).with_name('program_acquisition.py'),Path(__file__).with_name('evidence_portfolio.py'),Path(__file__).with_name('program_resolution.py'),Path(__file__).with_name('measure_composition.py'),
+                      Path(__file__).with_name('requirement_work.py'), Path(__file__).with_name('graph_decision.py'), Path(__file__).with_name('graph_criteria.py'), Path(__file__).with_name('graph_reports.py'), Path(__file__).with_name('graph_observation.py'), Path(__file__).with_name('graph_references.py'),
+                      Path(__file__).with_name('clinical_state.py'),
+                      Path(__file__).with_name('state_contracts.py'),
+                      Path(__file__).with_name('context_builder.py'),
+                      Path(__file__).with_name('context_passes.py'),
+                      Path(__file__).with_name('assertion_reconciliation.py'),
+                      Path(__file__).with_name('interpretation_state.py'),
+                      Path(__file__).with_name('pre_event_state.py'), Path(__file__).with_name('source_state.py'), Path(__file__).with_name('native_assertions.py'),
+                      Path(__file__).with_name('native_care_assertions.py'),
+                      Path(__file__).with_name('source_structure.py'),
+                      Path(__file__).with_name('evidence_requirements.py'),
+                      Path(__file__).with_name('native_requirements.py'),
+                      Path(__file__).with_name('documentary_contracts.json'),
+                      *[Path(__file__).with_name(n) for n in ('care_protocols.py','care_protocols.json','care_protocol_history.json','protocol_change.py','clinical_inputs.py','clinical_input_maps.json','selection_context.py')],
+                      *[Path(__file__).with_name(n) for n in ('baseline_evidence.py','baseline_profiles.json','baseline_input_maps.json','outcome_readiness.py')],
+                      Path(__file__).with_name('outcomes.py'),
+                      Path(__file__).with_name('financial_accounts.py'),
+                      Path(__file__).with_name('financial_account_maps.json'),
+                      *[Path(__file__).with_name(n) for n in ('program_accountability.py','accountability_contracts.json','accountability_source_maps.json')],
+                      Path(__file__).with_name('decision_landmarks.py'),
+                      Path(__file__).with_name('landmark_contracts.json'),
+                      Path(__file__).with_name('outcome_contracts.json'),
+                      Path(__file__).with_name('medication_identity.py'),
+                      Path(__file__).with_name('source_blocks.py')]]])
+
+
+def catalog(path):
+    from .graph_references import catalog as reference_catalog
+    from .native_care_assertions import concepts as care_concepts
+    from .program_documents import packages as document_packages
+    from .evidence_requirements import definitions
+    from .outcomes import definitions as outcome_definitions
+    from .care_protocols import definitions as protocol_definitions
+    from .care_protocols import read_catalog, CATALOG as PROTOCOL_CATALOG, HISTORY as PROTOCOL_HISTORY
+    from .baseline_evidence import profiles as baseline_profiles
+    from .decision_landmarks import definitions as landmark_definitions
+    path = Path(path)
+    meta = json.loads((path / 'run.json').read_text())
+    db, evidence_meta = evidence_connection(path, meta)
+    try:
+        concepts = [{'source': kind, 'concept': concept, 'observations': n} for kind, concept, n in
+                    db.execute('SELECT kind,concept,count(*) FROM evidence GROUP BY kind,concept ORDER BY kind,concept')]
+        axes = {field: [r[0] for r in db.execute(f'SELECT DISTINCT {field} FROM evidence WHERE kind=? ORDER BY {field}', ('text',))]
+                for field in sorted(evidence_queries.FIELDS - {'concept'})}
+        scalar_values = {}
+        boolean_concepts = []
+        for row in concepts:
+            if row['source'] != 'structured': continue
+            values = [json.loads(r[0]) for r in db.execute(
+                "SELECT DISTINCT value_json FROM evidence WHERE kind='structured' AND concept=? ORDER BY value_json LIMIT 17", (row['concept'],))]
+            if values and all(type(v) is bool for v in values): boolean_concepts.append(row['concept'])
+            if len(values)<=16 and all(type(v) in (str,bool) for v in values): scalar_values[row['concept']]=values
+    finally:
+        db.close()
+    forecast_info={'available':False}
+    if (path/'forecast-link.json').exists():
+        link=json.loads((path/'forecast-link.json').read_text());card=json.loads((Path(link['path'])/'model-card.json').read_text())
+        forecast_info={'available':True,'models':list(card['models']),'as_of':card['prediction_as_of'],
+                       'through':card['prediction_through'],'target':card['target'],'status':'research_only'}
+    longitudinal_info={'available':False}
+    if (path/'longitudinal-link.json').exists():
+        from .longitudinal import connect
+        ldb,lmeta=connect(path);ldb.close()
+        longitudinal_info={'available':True,'vocabulary':lmeta['vocabulary'],'clocks':['source_event','arrival','clinical','reference']}
+    return {'schema': VERSION, 'operations': sorted(OPERATIONS), 'evidence_concepts': concepts,
+            'native_care_concepts': sorted(care_concepts(path)),
+            'program_documents':document_packages(path), 'scientific_references':reference_catalog(path),
+            'appointment_followthrough':{'contract':'first_received_booking_terminal_7d_receipt_14d','authority':'received_source_review_only'},
+            'functional_review':{'filters':['source_review_candidates','source_available','source_absent'],'program':'functional_support_review','authority':'dated_source_review_only','clinical_quality_validated':False},
+            'domain_review':{'domains':['respiratory','behavioral'],'filters':['source_review_candidates','source_available','source_absent'],'programs':{'respiratory':'respiratory_source_review','behavioral':'behavioral_source_review'},'authority':'received_source_review_only','clinical_quality_validated':False},
+            'documentary_contracts':list(definitions().values()),
+            'outcome_contracts':list(outcome_definitions().values()),
+            'care_protocols':list(protocol_definitions().values()),
+            'protocol_versions':sorted(set(read_catalog(PROTOCOL_CATALOG))|set(read_catalog(PROTOCOL_HISTORY))),
+            'baseline_profiles':list(baseline_profiles().values()),
+            'landmark_contracts':list(landmark_definitions().values()),
+            'text_axis_values': axes, 'evidence_identity': evidence_meta['model_identity'],
+            'structured_scalar_values': scalar_values, 'boolean_valued_concepts': boolean_concepts,
+            'forecast':forecast_info,'longitudinal':longitudinal_info,
+            'clinical_state_available':(path/'clinical-state-link.json').exists(),
+            'medication_terminology_available':(path/'medication-terminology-link.json').exists(), 'typed_review_providers':['jev','perplexity'],
+            'limits': LIMITS, 'maximum_nodes': 16, 'membership_preview_is_complete': False,
+            'population_calculations_use_full_membership': True}
+
+
+def execute(stack, plan, *, question=None):
+    from .analytic_registry import execute as analytic_execute
+    started = time.perf_counter()
+    path, meta = stack.path, stack.retriever.meta
+    plan = validate(plan, meta['snapshot']['as_of'])
+    if question is not None and (not isinstance(question,str) or not 1 <= len(question) <= 1500):
+        raise ValueError('Bounded original graph question required')
+    db = sqlite3.connect(path / 'stack.sqlite3')
+    evidence_db = None
+    try:
+        universe = {r[0] for r in db.execute('SELECT id FROM patients')}
+        evidence_db, evidence_meta = evidence_connection(path, meta)
+        # Validate every narrative vocabulary before running any graph node.
+        observed = catalog(path)
+        concepts = {(r['source'], r['concept']) for r in observed['evidence_concepts']}
+        for node in plan['nodes']:
+            if node['operation'] in ('sequence','longitudinal'):
+                from .longitudinal import validate_parameters
+                if not observed['longitudinal']['available']:raise ValueError('No longitudinal artifact attached')
+                validate_parameters(node['parameters'],meta['snapshot']['as_of'],
+                                    'sequence' if node['operation']=='sequence' else 'context',observed['longitudinal']['vocabulary'])
+            if node['operation']=='review' and not stack.allow_live:
+                raise ValueError('Live model route disabled on this server')
+            if node['operation']=='forecast' and not observed['forecast']['available']:
+                raise ValueError('No fitted forecast artifact is attached')
+            if node['operation'] == 'evidence':
+                for clause in node['parameters']['plan']['clauses']:
+                    if not any(kind == clause['source'] and (concept.startswith(clause['concept']) if clause['concept_match'] == 'prefix' else concept == clause['concept']) for kind, concept in concepts):
+                        raise ValueError('Unmapped evidence concept; cannot interpret missing vocabulary as negative evidence')
+                    if clause['source'] == 'text' and any(clause[k] not in observed['text_axis_values'][k] for k in observed['text_axis_values'] if k in clause):
+                        raise ValueError('Unmapped narrative axis value')
+                    boolean_matches = [concept for concept in observed['boolean_valued_concepts'] if
+                                       (concept.startswith(clause['concept']) if clause['concept_match']=='prefix' else concept==clause['concept'])]
+                    if clause['source']=='structured' and boolean_matches and type(clause.get('value_equals')) is not bool:
+                        raise ValueError('Boolean-valued evidence requires explicit true/false comparison; screen presence is not a positive screen')
+        retrieval_identity = [getattr(getattr(stack.retriever, 'encoder', None), 'identity', None),
+                              getattr(getattr(stack.retriever, 'reranker', None), 'identity', None)]
+        # Program versions affect downstream analyses even when source data does not change.
+        from .program_registry import packages
+        program_identity = packages(path) if any(n['operation']=='analyze' and n['parameters']['operator']=='program_rule_review' for n in plan['nodes']) else None
+        forecast_identity=json.loads((path/'forecast-link.json').read_text()) if any(n['operation']=='forecast' for n in plan['nodes']) else None
+        longitudinal_identity=json.loads((path/'longitudinal-link.json').read_text()) if any(n['operation'] in ('sequence','longitudinal') for n in plan['nodes']) else None
+        review_identity=None
+        if any(n['operation']=='review' for n in plan['nodes']):
+            from ..gateway import PersistentGateway
+            review_identity={'models':PersistentGateway.MODELS,
+                'code':[hashlib.sha256(Path(__file__).with_name(name).read_bytes()).hexdigest()
+                        for name in ('stack_planner.py','model_reader.py','stack_runtime.py')]}
+        from . import functional_review as functional_sources
+        functional_population=functional_sources.prepare(path) if any(n['operation']=='functional_review' for n in plan['nodes']) else None
+        from . import domain_review as domain_sources
+        domain_populations={d:domain_sources.prepare(path,d) for d in sorted({n['parameters']['domain'] for n in plan['nodes'] if n['operation']=='domain_review'})}
+        from . import appointment_graph
+        appointment_dependency = (appointment_graph.dependency(path)
+            if any(n['operation']=='appointment_followthrough' for n in plan['nodes']) else None)
+        work_programs = [n['parameters']['program'] for n in plan['nodes'] if n['operation'] == 'worklist']
+        from .program_work import preparation_identity
+        work_identity = preparation_identity(path, work_programs) if work_programs else None
+        state_identity=None
+        if any(n['operation']=='state_review' for n in plan['nodes']):
+            from .clinical_state import attached
+            _,state_metadata=attached(path)
+            state_identity=state_metadata['identity']
+        medication_identity=None
+        if any(n['operation']=='medication_identity' for n in plan['nodes']):
+            from .medication_identity import identity
+            medication_identity=identity(path)
+        context_identities=[];interpretation_snapshots={};outcome_preparations={};protocol_preparations={};baseline_preparations={};landmark_preparations={};financial_preparations={};accountability_preparations={};change_preparations={}
+        document_preparations={};document_change_preparations={};acquisition_preparations={};measure_preparations={};reference_preparations={};observation_preparations={}
+        for n in plan['nodes']:
+            if n['operation']=='observation_process':
+                from .graph_observation import prepare as prepare_observation
+                observation_preparations[n['id']]=prepare_observation(path,n['parameters'])
+                context_identities.append(observation_preparations[n['id']]['identity'])
+            if n['operation']=='reference_review':
+                from .graph_references import prepare as prepare_reference
+                reference_preparations[n['id']]=prepare_reference(path,n['parameters'])
+                context_identities.append(reference_preparations[n['id']]['id'])
+            if n['operation']=='measure_review':
+                from .measure_composition import prepare as prepare_measure
+                measure_preparations[n['id']]=prepare_measure(path,n['parameters'])
+                context_identities.append(measure_preparations[n['id']]['identity'])
+            if n['operation']=='evidence_portfolio':
+                from .evidence_portfolio import dependency as portfolio_dependency
+                context_identities.append(portfolio_dependency(path,n['parameters']))
+            if n['operation']=='program_acquisition':
+                from .program_acquisition import dependency
+                acquisition_preparations[n['id']]=dependency(path,n['parameters'])
+                context_identities.append(acquisition_preparations[n['id']]['identity'])
+            if n['operation']=='program_document_change':
+                from .program_document_change import prepare as prepare_document_change
+                document_change_preparations[n['id']]=prepare_document_change(path,n['parameters'])
+                context_identities.append(document_change_preparations[n['id']]['identity'])
+            if n['operation']=='program_document':
+                from .program_documents import prepare as prepare_document
+                document_preparations[n['id']]=prepare_document(path,n['parameters'])
+                context_identities.append(document_preparations[n['id']]['identity'])
+            if n['operation']=='protocol_change':
+                from .protocol_change import prepare as prepare_change
+                change_preparations[n['id']]=prepare_change(path,n['parameters'])
+                context_identities.append(change_preparations[n['id']]['identity'])
+            if n['operation']=='accountability_review':
+                from .program_accountability import prepare as prepare_accountability
+                accountability_preparations[n['id']]=prepare_accountability(path,n['parameters'])
+                context_identities.append(accountability_preparations[n['id']]['identity'])
+            if n['operation']=='financial_accounts':
+                from .financial_accounts import prepare as prepare_financial
+                financial_preparations[n['id']]=prepare_financial(path,n['parameters'])
+                context_identities.append(financial_preparations[n['id']]['identity'])
+            if n['operation']=='decision_landmark':
+                from .decision_landmarks import prepare as prepare_landmark
+                landmark_preparations[n['id']]=prepare_landmark(path,n['parameters'])
+                context_identities.append(landmark_preparations[n['id']]['identity'])
+            if n['operation']=='baseline':
+                from .baseline_evidence import prepare as prepare_baseline
+                baseline_preparations[n['id']]=prepare_baseline(path,n['parameters'],outcome_preparations[n['inputs'][0]])
+                context_identities.append(baseline_preparations[n['id']]['identity'])
+            if n['operation']=='protocol_review':
+                from .care_protocols import prepare as prepare_protocol
+                protocol_preparations[n['id']]=prepare_protocol(path,n['parameters'])
+                context_identities.append(protocol_preparations[n['id']]['identity'])
+            if n['operation']=='outcome':
+                from .outcomes import prepare as prepare_outcome
+                outcome_preparations[n['id']]=prepare_outcome(path,n['parameters'])
+                context_identities.append(outcome_preparations[n['id']]['identity'])
+            if n['operation']=='requirements':
+                from .evidence_requirements import snapshot as requirement_snapshot
+                interpretation_snapshots[n['id']]=requirement_snapshot(path,n['parameters'])
+                context_identities.append(interpretation_snapshots[n['id']]['identity'])
+            if n['operation'] in ('source_state', 'pre_event_state'):
+                from .source_state import scope
+                from .interpretation_state import snapshot
+                interpretation_snapshots[n['id']]=snapshot(path,scope(n['parameters']))
+                context_identities.append(interpretation_snapshots[n['id']]['identity'])
+            if n['operation']=='interpretation':
+                from .interpretation_state import snapshot
+                interpretation_snapshots[n['id']]=snapshot(path,n['parameters'])
+                context_identities.append(interpretation_snapshots[n['id']]['identity'])
+            if n['operation']=='assertion_review':
+                from .assertion_reconciliation import dependency
+                context_identities.append(dependency(path,n['parameters'])[0])
+            if n['operation'] in ('context','context_passes'):
+                from .context_builder import dependency_identity
+                context_identities.append(dependency_identity(path,n['parameters'])[0])
+                if n['operation']=='context_passes':
+                    from .context_passes import code_identity as pass_identity
+                    context_identities.append(pass_identity())
+        if functional_population:context_identities.append(functional_population['id'])
+        context_identities.extend(r['id'] for r in domain_populations.values())
+        if appointment_dependency:
+            context_identities.append({'appointment_sources':appointment_dependency,'original_question':question})
+        context_identities.append({'original_question': question})
+        key = digest([VERSION, code_identity(), meta['source_digest'], evidence_meta['model_identity'],
+                      retrieval_identity, program_identity, forecast_identity, review_identity, longitudinal_identity, work_identity, state_identity, medication_identity, context_identities, plan])
+        old = db.execute('SELECT payload FROM result_cache WHERE id=?', (key,)).fetchone()
+        if old:
+            return {**json.loads(old[0]), 'cache_hit': True, 'new_paid_api_calls':0,'elapsed_seconds': time.perf_counter()-started,
+                    'compute': {'new_graph_nodes': 0, 'aggregate_result_replayed': True}}
+        memberships, results = {}, [];paid_calls=0;requirement_ancestors={};protocol_ancestors={};document_ancestors={}
+        node_index={n['id']:n for n in plan['nodes']}
+        appointment_ancestors = {}
+        for node in plan['nodes']:
+            op, params = node['operation'], node['parameters']
+            value, detail = None, {}
+            if op == 'cohort':
+                selected = cohorts.select(path, params['specification'])
+                value = Membership(universe, set(selected['patient_ids']), set(selected['unknown_patient_ids']))
+                detail = {'specification': selected['specification'], 'source_examples': selected['examples'],
+                          'selection_receipt': selected['id'], 'selection_cache_hit': selected['cache_hit']}
+            elif op == 'evidence':
+                value, detail = evidence_membership(evidence_db, params['plan'], universe)
+            elif op in ('intersect', 'union', 'difference'):
+                value = combine(op, [memberships[x] for x in node['inputs']])
+                detail = {'dependencies': node['inputs'], 'logic': 'Three-valued membership with unresolved predicates retained'}
+            elif op == 'compare':
+                base, endpoint, *groups = node['inputs']
+                detail = compare_populations(memberships[base], memberships[endpoint], [(g, memberships[g]) for g in groups])
+            elif op == 'analyze':
+                chosen = memberships[node['inputs'][0]]
+                detail = analytic_execute(path, params['operator'], drug_class=params['drug_class'] or None,
+                                          view=params['view'], analysis_window=params['analysis_window'],
+                                          patient_ids=sorted(chosen.yes))
+                detail['input_membership'] = membership_receipt(chosen)
+            elif op == 'retrieve':
+                chosen = memberships[node['inputs'][0]]
+                detail = stack.retriever.search(params['query'], patient_ids=sorted(chosen.yes), analysis_window=params['analysis_window'])
+                detail['input_membership'] = membership_receipt(chosen)
+            elif op == 'forecast':
+                from .warehouse_prediction import forecast
+                detail=forecast(path,sorted(memberships[node['inputs'][0]].yes),params['model'])
+            elif op == 'observation_process':
+                from .graph_observation import execute as observe_process
+                chosen=memberships[node['inputs'][0]]
+                detail=observe_process(path,sorted(chosen.yes),params,observation_preparations[node['id']])
+            elif op == 'source_changes':
+                from .source_blocks import source_summary
+                chosen=memberships[node['inputs'][0]];streams=params['streams']
+                rows=[json.loads(raw) for pid,raw in db.execute('SELECT patient,payload FROM records WHERE stream IN ('+','.join('?' for _ in streams)+')',streams) if pid in chosen.yes]
+                detail=source_summary(rows,meta['snapshot']['as_of'],streams)
+                detail['input_membership']=membership_receipt(chosen)
+                detail['source_record_count']=len(rows)
+            elif op == 'review':
+                chosen=memberships[node['inputs'][0]];ids=sorted(chosen.yes)[:params['maximum_patients']];reviews=[]
+                for pid in ids:
+                    for provider in params['providers']:
+                        review=stack.review(params['question'],pid,provider);reviews.append(review)
+                        paid_calls+=review['new_paid_api_calls']
+                detail={'providers':params['providers'],'selected_patients':ids,'population_patients':len(chosen.yes),
+                        'sampling':'First patient IDs in the selected set; bounded review sample, not full-population adjudication.',
+                        'reviews':reviews,'clinical_decision_authority':False}
+            elif op=='sequence':
+                from .longitudinal import sequence
+                chosen=memberships[node['inputs'][0]]
+                yes,unknown,detail=sequence(path,sorted(chosen.yes),params)
+                value=Membership(universe,yes,unknown|chosen.unknown)
+            elif op=='longitudinal':
+                from .longitudinal import context
+                chosen=memberships[node['inputs'][0]]
+                detail=context(path,sorted(chosen.yes),params)
+                detail['input_membership']=membership_receipt(chosen)
+            elif op == 'appointment_followthrough':
+                chosen=memberships[node['inputs'][0]]
+                yes,unknown,detail=appointment_graph.membership(path,sorted(chosen.yes),params)
+                detail['input_membership']=membership_receipt(chosen)
+                value=Membership(universe,yes,unknown|chosen.unknown)
+            elif op == 'functional_review':
+                from .functional_programs import membership as functional_membership
+                chosen=memberships[node['inputs'][0]]
+                yes,unknown,detail=functional_membership(functional_population,chosen.yes,params)
+                detail['input_membership']=membership_receipt(chosen)
+                value=Membership(universe,yes,unknown|chosen.unknown)
+            elif op == 'domain_review':
+                from .domain_programs import membership as domain_membership
+                chosen=memberships[node['inputs'][0]]
+                yes,unknown,detail=domain_membership(domain_populations[params['domain']],chosen.yes,params)
+                detail['input_membership']=membership_receipt(chosen)
+                value=Membership(universe,yes,unknown|chosen.unknown)
+            elif op == 'worklist':
+                from .program_work import prepare
+                chosen = memberships[node['inputs'][0]]
+                from .requirement_work import contexts
+                ancestors=requirement_ancestors.get(node['inputs'][0],set())
+                decisions=contexts(path,chosen.yes,[node_index[k] for k in sorted(ancestors)],interpretation_snapshots,
+                    evaluated_patients={k:memberships[node_index[k]['inputs'][0]].yes for k in ancestors}) if ancestors else None
+                protocol_nodes=protocol_ancestors.get(node['inputs'][0],set())
+                document_nodes=document_ancestors.get(node['inputs'][0],set());documents=None
+                if document_nodes:
+                    from .program_documents import contexts as document_contexts
+                    documents=document_contexts(path,chosen.yes,[node_index[k] for k in sorted(document_nodes)],document_preparations,
+                        evaluated_patients={k:memberships[node_index[k]['inputs'][0]].yes for k in document_nodes})
+                accountability=None;acquisition=None;measure=None
+                for support in node['inputs'][1:]:
+                    attached=next(r['result'] for r in results if r['node']['id']==support)
+                    if node_index[support]['operation']=='measure_review':
+                        from .measure_composition import contexts as measure_contexts
+                        measure=measure_contexts(path,attached['id'],chosen.yes)
+                    elif node_index[support]['operation']=='program_acquisition':
+                        from .program_acquisition import contexts as acquisition_contexts
+                        acquisition=acquisition_contexts(path,attached['id'],chosen.yes)
+                    else:
+                        from .program_accountability import contexts as accountability_contexts
+                        accountability=accountability_contexts(path,attached['id'],chosen.yes)
+                if protocol_nodes or document_nodes or acquisition is not None or measure is not None:
+                    from .selection_context import contexts as selection_contexts
+                    decisions=selection_contexts(path,chosen.yes,[node_index[k] for k in sorted(protocol_nodes)],protocol_preparations,
+                        evaluated_patients={k:memberships[node_index[k]['inputs'][0]].yes for k in protocol_nodes},documentary=decisions,program_documents=documents,program_acquisition=acquisition,measure=measure)
+                binding=membership_receipt(chosen)
+                appointment_nodes=appointment_ancestors.get(node['inputs'][0],set())
+                if appointment_nodes:
+                    reports=[r['result'] for r in results if r['node']['id'] in appointment_nodes]
+                    binding['question_context']=appointment_graph.work_binding(path,reports,question)
+                detail = prepare(path, params['program'], sorted(chosen.yes), input_membership=binding,decision_contexts=decisions,accountability_contexts=accountability)
+            elif op == 'state_review':
+                from .clinical_state import review
+                chosen=memberships[node['inputs'][0]]
+                detail=review(path,sorted(chosen.yes),params['contract'])
+                detail['input_membership']=membership_receipt(chosen)
+            elif op == 'program_document':
+                from .program_documents import execute as evaluate_document
+                chosen=memberships[node['inputs'][0]]
+                yes,unknown,detail=evaluate_document(path,sorted(chosen.yes),params,prepared=document_preparations[node['id']])
+                from .graph_criteria import member_index as criteria_index
+                detail['review_members']=criteria_index(path,op,sorted(chosen.yes),params,document_preparations[node['id']],yes,unknown)
+                detail['input_membership']=membership_receipt(chosen)
+                value=Membership(universe,yes,unknown|chosen.unknown)
+            elif op == 'reference_review':
+                from .graph_references import execute as execute_reference
+                chosen=memberships[node['inputs'][0]]
+                detail=execute_reference(path,chosen.yes,params,reference_preparations[node['id']],results,node,question,membership_receipt(chosen))
+            elif op == 'measure_review':
+                from .measure_composition import execute as execute_measure
+                chosen=memberships[node['inputs'][0]]
+                detail=execute_measure(path,sorted(chosen.yes),params,prepared=measure_preparations[node['id']],selection=membership_receipt(chosen))
+            elif op == 'evidence_portfolio':
+                from .evidence_portfolio import execute as execute_portfolio
+                chosen=memberships[node['inputs'][0]]
+                detail=execute_portfolio(path,sorted(chosen.yes),params,selection=membership_receipt(chosen))
+            elif op == 'program_acquisition':
+                from .program_acquisition import prepare as prepare_acquisition
+                chosen=memberships[node['inputs'][0]]
+                detail=prepare_acquisition(path,sorted(chosen.yes),params,prepared=acquisition_preparations[node['id']],selection=membership_receipt(chosen))
+            elif op == 'program_document_change':
+                from .program_document_change import execute as evaluate_document_change
+                chosen=memberships[node['inputs'][0]]
+                detail=evaluate_document_change(path,sorted(chosen.yes),params,prepared=document_change_preparations[node['id']])
+                detail['input_membership']=membership_receipt(chosen)
+            elif op == 'protocol_change':
+                from .protocol_change import execute as evaluate_change
+                chosen=memberships[node['inputs'][0]]
+                detail=evaluate_change(path,sorted(chosen.yes),params,prepared=change_preparations[node['id']])
+                detail['input_membership']=membership_receipt(chosen)
+            elif op == 'accountability_review':
+                from .program_accountability import execute as evaluate_accountability
+                chosen=memberships[node['inputs'][0]]
+                detail=evaluate_accountability(path,sorted(chosen.yes),params,prepared=accountability_preparations[node['id']],selection=membership_receipt(chosen))
+                detail['input_membership']=membership_receipt(chosen)
+            elif op == 'financial_accounts':
+                from .financial_accounts import execute as evaluate_financial
+                chosen=memberships[node['inputs'][0]]
+                detail=evaluate_financial(path,sorted(chosen.yes),params,prepared=financial_preparations[node['id']])
+                detail['input_membership']=membership_receipt(chosen)
+            elif op == 'decision_landmark':
+                from .decision_landmarks import execute as evaluate_landmark
+                chosen=memberships[node['inputs'][0]]
+                detail=evaluate_landmark(path,sorted(chosen.yes),params,prepared=landmark_preparations[node['id']])
+                detail['input_membership']=membership_receipt(chosen)
+            elif op == 'baseline':
+                from .baseline_evidence import execute as evaluate_baseline
+                chosen=memberships[node['inputs'][0]]
+                detail=evaluate_baseline(path,sorted(chosen.yes),params,prepared=baseline_preparations[node['id']])
+                detail['input_membership']=membership_receipt(chosen)
+            elif op == 'protocol_review':
+                from .care_protocols import execute as evaluate_protocol
+                chosen=memberships[node['inputs'][0]]
+                yes,unknown,detail=evaluate_protocol(path,sorted(chosen.yes),params,prepared=protocol_preparations[node['id']])
+                from .graph_criteria import member_index as criteria_index
+                detail['review_members']=criteria_index(path,op,sorted(chosen.yes),params,protocol_preparations[node['id']],yes,unknown)
+                detail['input_membership']=membership_receipt(chosen)
+                value=Membership(universe,yes,unknown|chosen.unknown)
+            elif op == 'outcome':
+                from .outcomes import execute as evaluate_outcome
+                chosen=memberships[node['inputs'][0]]
+                yes,unknown,detail=evaluate_outcome(path,sorted(chosen.yes),params,prepared=outcome_preparations[node['id']])
+                detail['input_membership']=membership_receipt(chosen)
+                value=Membership(universe,yes,unknown|chosen.unknown)
+            elif op == 'requirements':
+                from .evidence_requirements import execute as evaluate_requirements
+                chosen=memberships[node['inputs'][0]]
+                yes,unknown,detail=evaluate_requirements(path,sorted(chosen.yes),params,prepared=interpretation_snapshots[node['id']])
+                from .graph_criteria import member_index as criteria_index
+                detail['review_members']=criteria_index(path,op,sorted(chosen.yes),params,interpretation_snapshots[node['id']],yes,unknown)
+                detail['input_membership']=membership_receipt(chosen)
+                value=Membership(universe,yes,unknown|chosen.unknown)
+            elif op == 'pre_event_state':
+                from .pre_event_state import execute as project_pre_event
+                chosen=memberships[node['inputs'][0]]
+                yes,unknown,detail=project_pre_event(path,sorted(chosen.yes),params,
+                    prepared=interpretation_snapshots[node['id']],anchor_prepared=outcome_preparations[node['inputs'][0]])
+                from .graph_decision import member_index
+                detail['review_members'] = member_index(path, op, sorted(chosen.yes), params,
+                    interpretation_snapshots[node['id']], outcome_preparations[node['inputs'][0]])
+                detail['input_membership']=membership_receipt(chosen)
+                value=Membership(universe,yes,unknown|chosen.unknown)
+            elif op == 'source_state':
+                from .source_state import execute as project_source_state
+                chosen=memberships[node['inputs'][0]]
+                yes,unknown,detail=project_source_state(path,sorted(chosen.yes),params,prepared=interpretation_snapshots[node['id']])
+                from .graph_decision import member_index
+                detail['review_members'] = member_index(path, op, sorted(chosen.yes), params, interpretation_snapshots[node['id']])
+                detail['input_membership']=membership_receipt(chosen)
+                value=Membership(universe,yes,unknown|chosen.unknown)
+            elif op == 'interpretation':
+                from .interpretation_state import execute as interpret_population
+                chosen=memberships[node['inputs'][0]]
+                selected,detail=interpret_population(path,sorted(chosen.yes),params,prepared=interpretation_snapshots[node['id']])
+                detail['processing_counts']=detail.pop('counts')
+                detail['input_membership']=membership_receipt(chosen)
+                value=Membership(universe,selected,chosen.unknown)
+            elif op == 'assertion_review':
+                from .assertion_reconciliation import execute as reconcile_assertions
+                chosen=memberships[node['inputs'][0]]
+                detail=reconcile_assertions(path,sorted(chosen.yes),params)
+                detail['input_membership']=membership_receipt(chosen)
+            elif op == 'context_passes':
+                from .context_passes import execute as build_passes
+                chosen=memberships[node['inputs'][0]]
+                detail=build_passes(path,sorted(chosen.yes),params)
+                detail['input_membership']=membership_receipt(chosen)
+            elif op == 'context':
+                from .context_builder import execute as build_context
+                chosen=memberships[node['inputs'][0]]
+                detail=build_context(path,sorted(chosen.yes),params)
+                detail['input_membership']=membership_receipt(chosen)
+            elif op == 'medication_identity':
+                from .medication_identity import execute as medication_execute
+                chosen=memberships[node['inputs'][0]]
+                detail=medication_execute(path,sorted(chosen.yes))
+                detail['input_membership']=membership_receipt(chosen)
+            if value is not None:
+                memberships[node['id']] = value
+                appointment_ancestors[node['id']]=set().union(*(appointment_ancestors.get(x,set()) for x in node['inputs']))|({node['id']} if op=='appointment_followthrough' else set())
+                inherited=set().union(*(requirement_ancestors.get(x,set()) for x in node['inputs']))
+                requirement_ancestors[node['id']]=inherited|({node['id']} if op=='requirements' else set())
+                protocol_ancestors[node['id']]=set().union(*(protocol_ancestors.get(x,set()) for x in node['inputs']))|({node['id']} if op=='protocol_review' else set())
+                document_ancestors[node['id']]=set().union(*(document_ancestors.get(x,set()) for x in node['inputs']))|({node['id']} if op=='program_document' else set())
+                detail = {**membership_receipt(value), **detail}
+            from . import graph_reports
+            if op in graph_reports.OPERATIONS:
+                prep={'measure_review':measure_preparations,'financial_accounts':financial_preparations,
+                      'accountability_review':accountability_preparations,'outcome':outcome_preparations,
+                      'observation_process':observation_preparations}[op][node['id']]
+                graph_reports.attach(path,op,sorted(chosen.yes),params,prep,detail,membership_receipt(chosen))
+            results.append({'node': node, 'result': detail})
+        result = {'schema': VERSION, 'synthetic': True, 'graph': plan, 'results': results,
+                  'answer_coverage': answer_coverage(plan, results),
+                  'snapshot': meta['snapshot'], 'source_digest': meta['source_digest'],
+                  'evidence_model_identity': evidence_meta['model_identity'], 'cache_hit': False,
+                  'result_id': key, 'compute': {'new_graph_nodes': len(results), 'aggregate_result_replayed': False},
+                  'new_paid_api_calls': paid_calls, 'elapsed_seconds': time.perf_counter()-started,
+                  'clinical_execution_authorized': False, 'limitations': LIMITS}
+        if appointment_dependency and appointment_graph.dependency(path) != appointment_dependency:
+            raise ValueError('Appointment sources changed during graph execution; result not cached')
+        result['question']=question
+        if any(n['operation'] in ('source_state','pre_event_state','requirements','protocol_review','program_document','reference_review',*graph_reports.OPERATIONS) for n in plan['nodes']):
+            from .graph_decision import source_fingerprint
+            result['review_source_fingerprint'] = source_fingerprint(path, result)
+            from .graph_criteria import dependencies as criteria_dependencies
+            result['review_criteria_dependencies'] = criteria_dependencies(path,result)
+            result['review_report_dependencies'] = graph_reports.dependencies(path,result)
+            from .graph_references import dependencies as reference_dependencies
+            result['review_reference_dependencies'] = reference_dependencies(path,result)
+            if result['review_reference_dependencies'] != {k:v['id'] for k,v in reference_preparations.items()}:
+                raise ValueError('Reference changed during graph execution; result not cached')
+        if functional_population:functional_sources.inspect(path,functional_population['id'])
+        for population in domain_populations.values():domain_sources.inspect(path,population['id'])
+        with db:
+            db.execute('INSERT OR REPLACE INTO result_cache VALUES (?,?)', (key, json.dumps(result, allow_nan=False)))
+        return result
+    finally:
+        db.close()
+        if evidence_db is not None:
+            evidence_db.close()

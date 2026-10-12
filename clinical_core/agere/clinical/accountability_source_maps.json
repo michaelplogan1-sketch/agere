@@ -1,0 +1,9 @@
+{
+  "schema": "accountability-source-map/1",
+  "adapter": "original-cohort-warehouse-adapter/1",
+  "context": [
+    {"stream": "coverage", "fields": ["coverage_type", "status", "effective_start", "organization_id"], "meaning": "Reported coverage context, not contract attribution or verified current enrollment."},
+    {"stream": "coverage_verifications", "fields": ["account_id", "payer_organization_id", "plan_id", "service_reference_date", "status", "benefit_disclaimer"], "meaning": "Service-specific coverage response, not a VBC payment agreement."},
+    {"stream": "care_team_relationships", "fields": ["clinician_id", "role", "relationship_start", "assigned_primary_physician_id"], "meaning": "Recorded care-team relationship, not payer-defined performance attribution."}
+  ]
+}

@@ -1,0 +1,56 @@
+{
+  "schema": "option-component-registry/1",
+  "mappings": [
+    {
+      "bundle_key": "uspstf-falls-prevention",
+      "bundle_version": "1",
+      "reference_doi": "10.1001/jama.2024.8481",
+      "option_evidence_key": "falls-prevention-interventions",
+      "basis": "Agere operational decomposition for review, informed by USPSTF and CDC STEADI. Components are review responsibilities, not a complete clinical protocol, confirmed indication or established buyer capability.",
+      "components": [
+        {
+          "key": "exercise_delivery",
+          "label": "Assessed falls-prevention exercise delivery",
+          "checks": [
+            "Verify actual intervention, suitable staff and supervision, delivery format and clinical assessment.",
+            "Confirm patient agreement, practical participation and exact benefit requirements."
+          ]
+        },
+        {
+          "key": "exercise_followup",
+          "label": "Participation and safety follow-up",
+          "checks": [
+            "Specify who reviews participation, problems and relevant outcomes.",
+            "A packet, schedule or attendance report does not establish clinical benefit."
+          ]
+        },
+        {
+          "key": "risk_assessment",
+          "label": "Qualified falls-risk assessment",
+          "checks": [
+            "Verify assessment responsibility, current clinical information and necessary examination arrangements.",
+            "A received interview or service tag does not establish a completed clinical assessment."
+          ]
+        },
+        {
+          "key": "tailored_followthrough",
+          "label": "Assessment-directed intervention coordination",
+          "checks": [
+            "Identify only the components supported by an actual assessment; do not require every possible intervention for every patient.",
+            "Confirm accountable delivery teams, handoffs, patient agreement and benefit conditions for each selected component."
+          ]
+        }
+      ],
+      "alternatives": {
+        "exercise": [
+          "exercise_delivery",
+          "exercise_followup"
+        ],
+        "multifactorial": [
+          "risk_assessment",
+          "tailored_followthrough"
+        ]
+      }
+    }
+  ]
+}

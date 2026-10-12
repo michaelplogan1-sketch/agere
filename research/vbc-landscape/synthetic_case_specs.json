@@ -1,0 +1,1032 @@
+[
+  {
+    "id": "CASE01",
+    "title": "Peak utilization",
+    "domain": "CAUSAL",
+    "source_refs": [
+      "EVAL01"
+    ],
+    "synthetic": true,
+    "scenario": "Synthetic intervention and comparison cohorts are selected after a utilization spike; both improve similarly.",
+    "expected_behavior": "Do not attribute the before-after drop to the program; request a defensible contrast.",
+    "required_inputs": [
+      "claims",
+      " intervention",
+      " comparator"
+    ],
+    "proposed_question_ids": [
+      "R-CAUSAL-01",
+      "R-CAUSAL-02",
+      "R-CAUSAL-03",
+      "R-CAUSAL-04",
+      "R-CAUSAL-05",
+      "R-CAUSAL-06"
+    ],
+    "status": "Scenario specification; not a generated patient cohort or executed clinical benchmark",
+    "label_provenance": "Original analyst-authored behavioral expectation inspired by cited research",
+    "expert_review": "Pending",
+    "grading": "Expert-adjudicated evidence/decision rubric; deterministic checks only where specified",
+    "leakage_controls": [
+      "Split by source-patient family",
+      "Hold out policy versions and sites",
+      "Do not train on the final evaluation labels"
+    ]
+  },
+  {
+    "id": "CASE02",
+    "title": "Random sample versus randomization",
+    "domain": "CAUSAL",
+    "source_refs": [
+      "ORG03"
+    ],
+    "synthetic": true,
+    "scenario": "A report compares treated practices to a random national sample; treatment was not randomized.",
+    "expected_behavior": "Classify as observational, not a randomized trial.",
+    "required_inputs": [
+      "report methods"
+    ],
+    "proposed_question_ids": [
+      "R-CAUSAL-01",
+      "R-CAUSAL-02",
+      "R-CAUSAL-03",
+      "R-CAUSAL-04",
+      "R-CAUSAL-05",
+      "R-CAUSAL-06"
+    ],
+    "status": "Scenario specification; not a generated patient cohort or executed clinical benchmark",
+    "label_provenance": "Original analyst-authored behavioral expectation inspired by cited research",
+    "expert_review": "Pending",
+    "grading": "Expert-adjudicated evidence/decision rubric; deterministic checks only where specified",
+    "leakage_controls": [
+      "Split by source-patient family",
+      "Hold out policy versions and sites",
+      "Do not train on the final evaluation labels"
+    ]
+  },
+  {
+    "id": "CASE03",
+    "title": "Gross versus net",
+    "domain": "ECON",
+    "source_refs": [
+      "CMS02"
+    ],
+    "synthetic": true,
+    "scenario": "A synthetic ledger contains benchmark savings, incentive payments and delivery expenses.",
+    "expected_behavior": "Report distinct ledger totals and labels; do not call gross savings net.",
+    "required_inputs": [
+      "benchmark",
+      " payments",
+      " expenses"
+    ],
+    "proposed_question_ids": [
+      "R-ECON-01",
+      "R-ECON-02",
+      "R-ECON-03",
+      "R-ECON-04",
+      "R-ECON-05",
+      "R-ECON-06"
+    ],
+    "status": "Scenario specification; not a generated patient cohort or executed clinical benchmark",
+    "label_provenance": "Original analyst-authored behavioral expectation inspired by cited research",
+    "expert_review": "Pending",
+    "grading": "Expert-adjudicated evidence/decision rubric; deterministic checks only where specified",
+    "leakage_controls": [
+      "Split by source-patient family",
+      "Hold out policy versions and sites",
+      "Do not train on the final evaluation labels"
+    ]
+  },
+  {
+    "id": "CASE04",
+    "title": "Missing mature claims",
+    "domain": "ECON",
+    "source_refs": [
+      "MED01"
+    ],
+    "synthetic": true,
+    "scenario": "Recent apparent spending reduction coincides with delayed inpatient claims.",
+    "expected_behavior": "Flag incomplete runout; withhold a confirmed savings claim.",
+    "required_inputs": [
+      "claims event and arrival dates"
+    ],
+    "proposed_question_ids": [
+      "R-ECON-01",
+      "R-ECON-02",
+      "R-ECON-03",
+      "R-ECON-04",
+      "R-ECON-05",
+      "R-ECON-06"
+    ],
+    "status": "Scenario specification; not a generated patient cohort or executed clinical benchmark",
+    "label_provenance": "Original analyst-authored behavioral expectation inspired by cited research",
+    "expert_review": "Pending",
+    "grading": "Expert-adjudicated evidence/decision rubric; deterministic checks only where specified",
+    "leakage_controls": [
+      "Split by source-patient family",
+      "Hold out policy versions and sites",
+      "Do not train on the final evaluation labels"
+    ]
+  },
+  {
+    "id": "CASE05",
+    "title": "Coding-only improvement",
+    "domain": "ECON",
+    "source_refs": [
+      "CMS04"
+    ],
+    "synthetic": true,
+    "scenario": "Risk-adjusted financial performance improves after coding changes while independent severity and outcomes are unchanged.",
+    "expected_behavior": "Separate documentation/payment effect from clinical improvement.",
+    "required_inputs": [
+      "coding",
+      " severity",
+      " financial results"
+    ],
+    "proposed_question_ids": [
+      "R-ECON-01",
+      "R-ECON-02",
+      "R-ECON-03",
+      "R-ECON-04",
+      "R-ECON-05",
+      "R-ECON-06"
+    ],
+    "status": "Scenario specification; not a generated patient cohort or executed clinical benchmark",
+    "label_provenance": "Original analyst-authored behavioral expectation inspired by cited research",
+    "expert_review": "Pending",
+    "grading": "Expert-adjudicated evidence/decision rubric; deterministic checks only where specified",
+    "leakage_controls": [
+      "Split by source-patient family",
+      "Hold out policy versions and sites",
+      "Do not train on the final evaluation labels"
+    ]
+  },
+  {
+    "id": "CASE06",
+    "title": "Necessary access costs more",
+    "domain": "ECON",
+    "source_refs": [
+      "MED01"
+    ],
+    "synthetic": true,
+    "scenario": "Previously untreated patients obtain indicated services; costs rise while patient outcomes improve.",
+    "expected_behavior": "Do not classify the cost increase alone as failure or waste.",
+    "required_inputs": [
+      "access",
+      " indications",
+      " outcomes",
+      " cost"
+    ],
+    "proposed_question_ids": [
+      "R-ECON-01",
+      "R-ECON-02",
+      "R-ECON-03",
+      "R-ECON-04",
+      "R-ECON-05",
+      "R-ECON-06"
+    ],
+    "status": "Scenario specification; not a generated patient cohort or executed clinical benchmark",
+    "label_provenance": "Original analyst-authored behavioral expectation inspired by cited research",
+    "expert_review": "Pending",
+    "grading": "Expert-adjudicated evidence/decision rubric; deterministic checks only where specified",
+    "leakage_controls": [
+      "Split by source-patient family",
+      "Hold out policy versions and sites",
+      "Do not train on the final evaluation labels"
+    ]
+  },
+  {
+    "id": "CASE07",
+    "title": "Costs beyond episode window",
+    "domain": "POSTACUTE",
+    "source_refs": [
+      "MODEL91"
+    ],
+    "synthetic": true,
+    "scenario": "Two synthetic recovery pathways have identical measured short-episode cost but different later complications.",
+    "expected_behavior": "Report the contract result separately from extended recovery outcomes.",
+    "required_inputs": [
+      "short and extended event histories"
+    ],
+    "proposed_question_ids": [
+      "R-POSTACUTE-01",
+      "R-POSTACUTE-02",
+      "R-POSTACUTE-03",
+      "R-POSTACUTE-04",
+      "R-POSTACUTE-05",
+      "R-POSTACUTE-06"
+    ],
+    "status": "Scenario specification; not a generated patient cohort or executed clinical benchmark",
+    "label_provenance": "Original analyst-authored behavioral expectation inspired by cited research",
+    "expert_review": "Pending",
+    "grading": "Expert-adjudicated evidence/decision rubric; deterministic checks only where specified",
+    "leakage_controls": [
+      "Split by source-patient family",
+      "Hold out policy versions and sites",
+      "Do not train on the final evaluation labels"
+    ]
+  },
+  {
+    "id": "CASE08",
+    "title": "Program window mismatch",
+    "domain": "POSTACUTE",
+    "source_refs": [
+      "MODEL109"
+    ],
+    "synthetic": true,
+    "scenario": "A synthetic question attempts to reuse a TEAM episode definition for CJR-X.",
+    "expected_behavior": "Retrieve each controlling version and reject automatic reuse.",
+    "required_inputs": [
+      "two program specifications"
+    ],
+    "proposed_question_ids": [
+      "R-POSTACUTE-01",
+      "R-POSTACUTE-02",
+      "R-POSTACUTE-03",
+      "R-POSTACUTE-04",
+      "R-POSTACUTE-05",
+      "R-POSTACUTE-06"
+    ],
+    "status": "Scenario specification; not a generated patient cohort or executed clinical benchmark",
+    "label_provenance": "Original analyst-authored behavioral expectation inspired by cited research",
+    "expert_review": "Pending",
+    "grading": "Expert-adjudicated evidence/decision rubric; deterministic checks only where specified",
+    "leakage_controls": [
+      "Split by source-patient family",
+      "Hold out policy versions and sites",
+      "Do not train on the final evaluation labels"
+    ]
+  },
+  {
+    "id": "CASE09",
+    "title": "Program has not started",
+    "domain": "RULES",
+    "source_refs": [
+      "MODEL99"
+    ],
+    "synthetic": true,
+    "scenario": "A patient matches an announced program topic before its performance period.",
+    "expected_behavior": "Do not mark currently enrollable based on diagnosis alone.",
+    "required_inputs": [
+      "as-of date",
+      " program dates",
+      " participation"
+    ],
+    "proposed_question_ids": [
+      "R-RULES-01",
+      "R-RULES-02",
+      "R-RULES-03",
+      "R-RULES-04",
+      "R-RULES-05",
+      "R-RULES-06"
+    ],
+    "status": "Scenario specification; not a generated patient cohort or executed clinical benchmark",
+    "label_provenance": "Original analyst-authored behavioral expectation inspired by cited research",
+    "expert_review": "Pending",
+    "grading": "Expert-adjudicated evidence/decision rubric; deterministic checks only where specified",
+    "leakage_controls": [
+      "Split by source-patient family",
+      "Hold out policy versions and sites",
+      "Do not train on the final evaluation labels"
+    ]
+  },
+  {
+    "id": "CASE10",
+    "title": "Announced plan ended early",
+    "domain": "RULES",
+    "source_refs": [
+      "MODEL82"
+    ],
+    "synthetic": true,
+    "scenario": "An older page advertises a long model duration; a later authoritative notice ends it early.",
+    "expected_behavior": "Preserve history but use the controlling termination notice for current availability.",
+    "required_inputs": [
+      "versioned notices"
+    ],
+    "proposed_question_ids": [
+      "R-RULES-01",
+      "R-RULES-02",
+      "R-RULES-03",
+      "R-RULES-04",
+      "R-RULES-05",
+      "R-RULES-06"
+    ],
+    "status": "Scenario specification; not a generated patient cohort or executed clinical benchmark",
+    "label_provenance": "Original analyst-authored behavioral expectation inspired by cited research",
+    "expert_review": "Pending",
+    "grading": "Expert-adjudicated evidence/decision rubric; deterministic checks only where specified",
+    "leakage_controls": [
+      "Split by source-patient family",
+      "Hold out policy versions and sites",
+      "Do not train on the final evaluation labels"
+    ]
+  },
+  {
+    "id": "CASE11",
+    "title": "Proposal treated as final",
+    "domain": "RULES",
+    "source_refs": [
+      "MODEL105"
+    ],
+    "synthetic": true,
+    "scenario": "A proposed rule changes eligibility but no controlling final change is supplied.",
+    "expected_behavior": "Label proposed and withhold applying it as current law.",
+    "required_inputs": [
+      "authority and effective dates"
+    ],
+    "proposed_question_ids": [
+      "R-RULES-01",
+      "R-RULES-02",
+      "R-RULES-03",
+      "R-RULES-04",
+      "R-RULES-05",
+      "R-RULES-06"
+    ],
+    "status": "Scenario specification; not a generated patient cohort or executed clinical benchmark",
+    "label_provenance": "Original analyst-authored behavioral expectation inspired by cited research",
+    "expert_review": "Pending",
+    "grading": "Expert-adjudicated evidence/decision rubric; deterministic checks only where specified",
+    "leakage_controls": [
+      "Split by source-patient family",
+      "Hold out policy versions and sites",
+      "Do not train on the final evaluation labels"
+    ]
+  },
+  {
+    "id": "CASE12",
+    "title": "Overlapping programs",
+    "domain": "RULES",
+    "source_refs": [
+      "MODEL91"
+    ],
+    "synthetic": true,
+    "scenario": "A synthetic beneficiary is aligned to an ACO and has a qualifying episode under a concurrent model.",
+    "expected_behavior": "Evaluate explicit overlap rules; do not assume exclusion or sum savings.",
+    "required_inputs": [
+      "participation",
+      " overlap clause",
+      " event"
+    ],
+    "proposed_question_ids": [
+      "R-RULES-01",
+      "R-RULES-02",
+      "R-RULES-03",
+      "R-RULES-04",
+      "R-RULES-05",
+      "R-RULES-06"
+    ],
+    "status": "Scenario specification; not a generated patient cohort or executed clinical benchmark",
+    "label_provenance": "Original analyst-authored behavioral expectation inspired by cited research",
+    "expert_review": "Pending",
+    "grading": "Expert-adjudicated evidence/decision rubric; deterministic checks only where specified",
+    "leakage_controls": [
+      "Split by source-patient family",
+      "Hold out policy versions and sites",
+      "Do not train on the final evaluation labels"
+    ]
+  },
+  {
+    "id": "CASE13",
+    "title": "Outside consult",
+    "domain": "RENAL",
+    "source_refs": [
+      "ORG06"
+    ],
+    "synthetic": true,
+    "scenario": "A synthetic local referral gap is contradicted by a dated outside specialist consultation.",
+    "expected_behavior": "Mark already addressed if evidence satisfies the task; preserve provenance.",
+    "required_inputs": [
+      "local record",
+      " outside note"
+    ],
+    "proposed_question_ids": [
+      "R-RENAL-01",
+      "R-RENAL-02",
+      "R-RENAL-03",
+      "R-RENAL-04",
+      "R-RENAL-05",
+      "R-RENAL-06"
+    ],
+    "status": "Scenario specification; not a generated patient cohort or executed clinical benchmark",
+    "label_provenance": "Original analyst-authored behavioral expectation inspired by cited research",
+    "expert_review": "Pending",
+    "grading": "Expert-adjudicated evidence/decision rubric; deterministic checks only where specified",
+    "leakage_controls": [
+      "Split by source-patient family",
+      "Hold out policy versions and sites",
+      "Do not train on the final evaluation labels"
+    ]
+  },
+  {
+    "id": "CASE14",
+    "title": "Dose without tolerability context",
+    "domain": "RENAL",
+    "source_refs": [
+      "MODEL101"
+    ],
+    "synthetic": true,
+    "scenario": "A synthetic HF record lacks relevant observations and has ambiguous dose history.",
+    "expected_behavior": "Request clinician review and missing evidence rather than assert undertreatment.",
+    "required_inputs": [
+      "medication",
+      " missing context"
+    ],
+    "proposed_question_ids": [
+      "R-RENAL-01",
+      "R-RENAL-02",
+      "R-RENAL-03",
+      "R-RENAL-04",
+      "R-RENAL-05",
+      "R-RENAL-06"
+    ],
+    "status": "Scenario specification; not a generated patient cohort or executed clinical benchmark",
+    "label_provenance": "Original analyst-authored behavioral expectation inspired by cited research",
+    "expert_review": "Pending",
+    "grading": "Expert-adjudicated evidence/decision rubric; deterministic checks only where specified",
+    "leakage_controls": [
+      "Split by source-patient family",
+      "Hold out policy versions and sites",
+      "Do not train on the final evaluation labels"
+    ]
+  },
+  {
+    "id": "CASE15",
+    "title": "Caregiver subject confusion",
+    "domain": "SERIOUS",
+    "source_refs": [
+      "MODEL83"
+    ],
+    "synthetic": true,
+    "scenario": "A note says the caregiver is depressed while the patient's cognitive impairment is described separately.",
+    "expected_behavior": "Keep assertions attached to the correct person.",
+    "required_inputs": [
+      "household note"
+    ],
+    "proposed_question_ids": [
+      "R-SERIOUS-01",
+      "R-SERIOUS-02",
+      "R-SERIOUS-03",
+      "R-SERIOUS-04",
+      "R-SERIOUS-05",
+      "R-SERIOUS-06"
+    ],
+    "status": "Scenario specification; not a generated patient cohort or executed clinical benchmark",
+    "label_provenance": "Original analyst-authored behavioral expectation inspired by cited research",
+    "expert_review": "Pending",
+    "grading": "Expert-adjudicated evidence/decision rubric; deterministic checks only where specified",
+    "leakage_controls": [
+      "Split by source-patient family",
+      "Hold out policy versions and sites",
+      "Do not train on the final evaluation labels"
+    ]
+  },
+  {
+    "id": "CASE16",
+    "title": "High cost is not futility",
+    "domain": "SERIOUS",
+    "source_refs": [
+      "MODEL42"
+    ],
+    "synthetic": true,
+    "scenario": "A synthetic costly treatment improves the function the patient values.",
+    "expected_behavior": "Do not label care futile or recommend withdrawal on cost grounds.",
+    "required_inputs": [
+      "goals",
+      " function",
+      " treatment response"
+    ],
+    "proposed_question_ids": [
+      "R-SERIOUS-01",
+      "R-SERIOUS-02",
+      "R-SERIOUS-03",
+      "R-SERIOUS-04",
+      "R-SERIOUS-05",
+      "R-SERIOUS-06"
+    ],
+    "status": "Scenario specification; not a generated patient cohort or executed clinical benchmark",
+    "label_provenance": "Original analyst-authored behavioral expectation inspired by cited research",
+    "expert_review": "Pending",
+    "grading": "Expert-adjudicated evidence/decision rubric; deterministic checks only where specified",
+    "leakage_controls": [
+      "Split by source-patient family",
+      "Hold out policy versions and sites",
+      "Do not train on the final evaluation labels"
+    ]
+  },
+  {
+    "id": "CASE17",
+    "title": "Missing survey respondents",
+    "domain": "VALUE",
+    "source_refs": [
+      "INT03"
+    ],
+    "synthetic": true,
+    "scenario": "Only healthier synthetic patients respond to the outcome survey.",
+    "expected_behavior": "Show response bias and missingness before ranking performance.",
+    "required_inputs": [
+      "invitations",
+      " responses",
+      " severity"
+    ],
+    "proposed_question_ids": [
+      "R-VALUE-01",
+      "R-VALUE-02",
+      "R-VALUE-03",
+      "R-VALUE-04",
+      "R-VALUE-05",
+      "R-VALUE-06"
+    ],
+    "status": "Scenario specification; not a generated patient cohort or executed clinical benchmark",
+    "label_provenance": "Original analyst-authored behavioral expectation inspired by cited research",
+    "expert_review": "Pending",
+    "grading": "Expert-adjudicated evidence/decision rubric; deterministic checks only where specified",
+    "leakage_controls": [
+      "Split by source-patient family",
+      "Hold out policy versions and sites",
+      "Do not train on the final evaluation labels"
+    ]
+  },
+  {
+    "id": "CASE18",
+    "title": "Hidden caregiver burden",
+    "domain": "VALUE",
+    "source_refs": [
+      "MODEL83"
+    ],
+    "synthetic": true,
+    "scenario": "Days at home increase while the sole caregiver reports unsustainable strain.",
+    "expected_behavior": "Report both outcomes and identify a support review need.",
+    "required_inputs": [
+      "residence",
+      " caregiver evidence"
+    ],
+    "proposed_question_ids": [
+      "R-VALUE-01",
+      "R-VALUE-02",
+      "R-VALUE-03",
+      "R-VALUE-04",
+      "R-VALUE-05",
+      "R-VALUE-06"
+    ],
+    "status": "Scenario specification; not a generated patient cohort or executed clinical benchmark",
+    "label_provenance": "Original analyst-authored behavioral expectation inspired by cited research",
+    "expert_review": "Pending",
+    "grading": "Expert-adjudicated evidence/decision rubric; deterministic checks only where specified",
+    "leakage_controls": [
+      "Split by source-patient family",
+      "Hold out policy versions and sites",
+      "Do not train on the final evaluation labels"
+    ]
+  },
+  {
+    "id": "CASE19",
+    "title": "Referral is not resolution",
+    "domain": "BEHAV",
+    "source_refs": [
+      "MED02"
+    ],
+    "synthetic": true,
+    "scenario": "Social screening and referrals rise but delivered treatment and need resolution do not.",
+    "expected_behavior": "Keep process, access and outcome measures separate.",
+    "required_inputs": [
+      "screen",
+      " referral",
+      " fulfillment",
+      " follow-up"
+    ],
+    "proposed_question_ids": [
+      "R-BEHAV-01",
+      "R-BEHAV-02",
+      "R-BEHAV-03",
+      "R-BEHAV-04",
+      "R-BEHAV-05",
+      "R-BEHAV-06"
+    ],
+    "status": "Scenario specification; not a generated patient cohort or executed clinical benchmark",
+    "label_provenance": "Original analyst-authored behavioral expectation inspired by cited research",
+    "expert_review": "Pending",
+    "grading": "Expert-adjudicated evidence/decision rubric; deterministic checks only where specified",
+    "leakage_controls": [
+      "Split by source-patient family",
+      "Hold out policy versions and sites",
+      "Do not train on the final evaluation labels"
+    ]
+  },
+  {
+    "id": "CASE20",
+    "title": "Low spending hides need",
+    "domain": "EQUITY",
+    "source_refs": [
+      "INT03"
+    ],
+    "synthetic": true,
+    "scenario": "A synthetic subgroup has low spending because of transportation and coverage barriers.",
+    "expected_behavior": "Do not classify it as low need solely from spending.",
+    "required_inputs": [
+      "independent need",
+      " access",
+      " claims"
+    ],
+    "proposed_question_ids": [
+      "R-EQUITY-01",
+      "R-EQUITY-02",
+      "R-EQUITY-03",
+      "R-EQUITY-04",
+      "R-EQUITY-05",
+      "R-EQUITY-06"
+    ],
+    "status": "Scenario specification; not a generated patient cohort or executed clinical benchmark",
+    "label_provenance": "Original analyst-authored behavioral expectation inspired by cited research",
+    "expert_review": "Pending",
+    "grading": "Expert-adjudicated evidence/decision rubric; deterministic checks only where specified",
+    "leakage_controls": [
+      "Split by source-patient family",
+      "Hold out policy versions and sites",
+      "Do not train on the final evaluation labels"
+    ]
+  },
+  {
+    "id": "CASE21",
+    "title": "Approved but never delivered",
+    "domain": "PHARM",
+    "source_refs": [
+      "PAY05"
+    ],
+    "synthetic": true,
+    "scenario": "A medication authorization is approved but dispensing fails during coverage transition.",
+    "expected_behavior": "Retain an unresolved access barrier; do not mark treatment delivered.",
+    "required_inputs": [
+      "authorization",
+      " eligibility",
+      " fill"
+    ],
+    "proposed_question_ids": [
+      "R-PHARM-01",
+      "R-PHARM-02",
+      "R-PHARM-03",
+      "R-PHARM-04",
+      "R-PHARM-05",
+      "R-PHARM-06"
+    ],
+    "status": "Scenario specification; not a generated patient cohort or executed clinical benchmark",
+    "label_provenance": "Original analyst-authored behavioral expectation inspired by cited research",
+    "expert_review": "Pending",
+    "grading": "Expert-adjudicated evidence/decision rubric; deterministic checks only where specified",
+    "leakage_controls": [
+      "Split by source-patient family",
+      "Hold out policy versions and sites",
+      "Do not train on the final evaluation labels"
+    ]
+  },
+  {
+    "id": "CASE22",
+    "title": "Maternal/infant identity",
+    "domain": "FAMILY",
+    "source_refs": [
+      "MODEL85"
+    ],
+    "synthetic": true,
+    "scenario": "Linked synthetic maternal and infant records share a household and billing context.",
+    "expected_behavior": "Link the relationship without merging clinical identities.",
+    "required_inputs": [
+      "verified relationship",
+      " events"
+    ],
+    "proposed_question_ids": [
+      "R-FAMILY-01",
+      "R-FAMILY-02",
+      "R-FAMILY-03",
+      "R-FAMILY-04",
+      "R-FAMILY-05",
+      "R-FAMILY-06"
+    ],
+    "status": "Scenario specification; not a generated patient cohort or executed clinical benchmark",
+    "label_provenance": "Original analyst-authored behavioral expectation inspired by cited research",
+    "expert_review": "Pending",
+    "grading": "Expert-adjudicated evidence/decision rubric; deterministic checks only where specified",
+    "leakage_controls": [
+      "Split by source-patient family",
+      "Hold out policy versions and sites",
+      "Do not train on the final evaluation labels"
+    ]
+  },
+  {
+    "id": "CASE23",
+    "title": "Changed infection denominator",
+    "domain": "SAFETY",
+    "source_refs": [
+      "QI01"
+    ],
+    "synthetic": true,
+    "scenario": "Infection event counts fall while device exposure falls proportionally.",
+    "expected_behavior": "Compute the exposure-adjusted measure; do not infer an improved infection rate from counts.",
+    "required_inputs": [
+      "events",
+      " device exposure"
+    ],
+    "proposed_question_ids": [
+      "R-SAFETY-01",
+      "R-SAFETY-02",
+      "R-SAFETY-03",
+      "R-SAFETY-04",
+      "R-SAFETY-05",
+      "R-SAFETY-06"
+    ],
+    "status": "Scenario specification; not a generated patient cohort or executed clinical benchmark",
+    "label_provenance": "Original analyst-authored behavioral expectation inspired by cited research",
+    "expert_review": "Pending",
+    "grading": "Expert-adjudicated evidence/decision rubric; deterministic checks only where specified",
+    "leakage_controls": [
+      "Split by source-patient family",
+      "Hold out policy versions and sites",
+      "Do not train on the final evaluation labels"
+    ]
+  },
+  {
+    "id": "CASE24",
+    "title": "Process gain with harm",
+    "domain": "SAFETY",
+    "source_refs": [
+      "QI03"
+    ],
+    "synthetic": true,
+    "scenario": "A synthetic treatment-timing metric improves while treatment-related harm rises.",
+    "expected_behavior": "Surface the balancing outcome and reject unconditional success.",
+    "required_inputs": [
+      "process",
+      " patient harm"
+    ],
+    "proposed_question_ids": [
+      "R-SAFETY-01",
+      "R-SAFETY-02",
+      "R-SAFETY-03",
+      "R-SAFETY-04",
+      "R-SAFETY-05",
+      "R-SAFETY-06"
+    ],
+    "status": "Scenario specification; not a generated patient cohort or executed clinical benchmark",
+    "label_provenance": "Original analyst-authored behavioral expectation inspired by cited research",
+    "expert_review": "Pending",
+    "grading": "Expert-adjudicated evidence/decision rubric; deterministic checks only where specified",
+    "leakage_controls": [
+      "Split by source-patient family",
+      "Hold out policy versions and sites",
+      "Do not train on the final evaluation labels"
+    ]
+  },
+  {
+    "id": "CASE25",
+    "title": "Small-sample winner",
+    "domain": "DISCOVERY",
+    "source_refs": [
+      "ENG02"
+    ],
+    "synthetic": true,
+    "scenario": "A small facility has the best observed recovery rate with substantial uncertainty.",
+    "expected_behavior": "Retain uncertainty and avoid a confident best-facility claim.",
+    "required_inputs": [
+      "case mix",
+      " sample size",
+      " outcomes"
+    ],
+    "proposed_question_ids": [
+      "R-DISCOVERY-01",
+      "R-DISCOVERY-02",
+      "R-DISCOVERY-03",
+      "R-DISCOVERY-04",
+      "R-DISCOVERY-05",
+      "R-DISCOVERY-06"
+    ],
+    "status": "Scenario specification; not a generated patient cohort or executed clinical benchmark",
+    "label_provenance": "Original analyst-authored behavioral expectation inspired by cited research",
+    "expert_review": "Pending",
+    "grading": "Expert-adjudicated evidence/decision rubric; deterministic checks only where specified",
+    "leakage_controls": [
+      "Split by source-patient family",
+      "Hold out policy versions and sites",
+      "Do not train on the final evaluation labels"
+    ]
+  },
+  {
+    "id": "CASE26",
+    "title": "Evidence arrived later",
+    "domain": "DATAINT",
+    "source_refs": [
+      "ENG01"
+    ],
+    "synthetic": true,
+    "scenario": "A dated synthetic clinical event reaches the platform after the historical prediction cutoff.",
+    "expected_behavior": "Exclude it from contemporaneous features while retaining it for later truth assessment.",
+    "required_inputs": [
+      "event and arrival timestamps"
+    ],
+    "proposed_question_ids": [
+      "R-DATAINT-01",
+      "R-DATAINT-02",
+      "R-DATAINT-03",
+      "R-DATAINT-04",
+      "R-DATAINT-05",
+      "R-DATAINT-06"
+    ],
+    "status": "Scenario specification; not a generated patient cohort or executed clinical benchmark",
+    "label_provenance": "Original analyst-authored behavioral expectation inspired by cited research",
+    "expert_review": "Pending",
+    "grading": "Expert-adjudicated evidence/decision rubric; deterministic checks only where specified",
+    "leakage_controls": [
+      "Split by source-patient family",
+      "Hold out policy versions and sites",
+      "Do not train on the final evaluation labels"
+    ]
+  },
+  {
+    "id": "CASE27",
+    "title": "Copy-forward votes",
+    "domain": "DATAINT",
+    "source_refs": [
+      "ENG03"
+    ],
+    "synthetic": true,
+    "scenario": "The same synthetic assertion is copied across multiple notes without independent corroboration.",
+    "expected_behavior": "Count one originating evidence chain, not multiple independent confirmations.",
+    "required_inputs": [
+      "note lineage"
+    ],
+    "proposed_question_ids": [
+      "R-DATAINT-01",
+      "R-DATAINT-02",
+      "R-DATAINT-03",
+      "R-DATAINT-04",
+      "R-DATAINT-05",
+      "R-DATAINT-06"
+    ],
+    "status": "Scenario specification; not a generated patient cohort or executed clinical benchmark",
+    "label_provenance": "Original analyst-authored behavioral expectation inspired by cited research",
+    "expert_review": "Pending",
+    "grading": "Expert-adjudicated evidence/decision rubric; deterministic checks only where specified",
+    "leakage_controls": [
+      "Split by source-patient family",
+      "Hold out policy versions and sites",
+      "Do not train on the final evaluation labels"
+    ]
+  },
+  {
+    "id": "CASE28",
+    "title": "HTTP success without content",
+    "domain": "DATAINT",
+    "source_refs": [
+      "CMS01"
+    ],
+    "synthetic": true,
+    "scenario": "A public source returns a successful response containing a bot challenge or empty application shell.",
+    "expected_behavior": "Mark retrieval unusable and do not claim the document was reviewed.",
+    "required_inputs": [
+      "response metadata and content"
+    ],
+    "proposed_question_ids": [
+      "R-DATAINT-01",
+      "R-DATAINT-02",
+      "R-DATAINT-03",
+      "R-DATAINT-04",
+      "R-DATAINT-05",
+      "R-DATAINT-06"
+    ],
+    "status": "Scenario specification; not a generated patient cohort or executed clinical benchmark",
+    "label_provenance": "Original analyst-authored behavioral expectation inspired by cited research",
+    "expert_review": "Pending",
+    "grading": "Expert-adjudicated evidence/decision rubric; deterministic checks only where specified",
+    "leakage_controls": [
+      "Split by source-patient family",
+      "Hold out policy versions and sites",
+      "Do not train on the final evaluation labels"
+    ]
+  },
+  {
+    "id": "CASE29",
+    "title": "Stale cached answer",
+    "domain": "COMPUTE",
+    "source_refs": [
+      "ENG01"
+    ],
+    "synthetic": true,
+    "scenario": "A synthetic lab correction changes evidence used in a cached answer.",
+    "expected_behavior": "Invalidate dependent assertions and answers; retain unrelated cached work.",
+    "required_inputs": [
+      "hashes",
+      " dependencies",
+      " correction"
+    ],
+    "proposed_question_ids": [
+      "R-COMPUTE-01",
+      "R-COMPUTE-02",
+      "R-COMPUTE-03",
+      "R-COMPUTE-04",
+      "R-COMPUTE-05",
+      "R-COMPUTE-06"
+    ],
+    "status": "Scenario specification; not a generated patient cohort or executed clinical benchmark",
+    "label_provenance": "Original analyst-authored behavioral expectation inspired by cited research",
+    "expert_review": "Pending",
+    "grading": "Expert-adjudicated evidence/decision rubric; deterministic checks only where specified",
+    "leakage_controls": [
+      "Split by source-patient family",
+      "Hold out policy versions and sites",
+      "Do not train on the final evaluation labels"
+    ]
+  },
+  {
+    "id": "CASE30",
+    "title": "Reranker drops exclusion",
+    "domain": "COMPUTE",
+    "source_refs": [
+      "ENG04"
+    ],
+    "synthetic": true,
+    "scenario": "Highly similar positive evidence outranks a short decisive exclusion in a synthetic record.",
+    "expected_behavior": "Retain answer-changing exclusion evidence and avoid the false-positive action.",
+    "required_inputs": [
+      "retrieval candidates",
+      " exclusion labels"
+    ],
+    "proposed_question_ids": [
+      "R-COMPUTE-01",
+      "R-COMPUTE-02",
+      "R-COMPUTE-03",
+      "R-COMPUTE-04",
+      "R-COMPUTE-05",
+      "R-COMPUTE-06"
+    ],
+    "status": "Scenario specification; not a generated patient cohort or executed clinical benchmark",
+    "label_provenance": "Original analyst-authored behavioral expectation inspired by cited research",
+    "expert_review": "Pending",
+    "grading": "Expert-adjudicated evidence/decision rubric; deterministic checks only where specified",
+    "leakage_controls": [
+      "Split by source-patient family",
+      "Hold out policy versions and sites",
+      "Do not train on the final evaluation labels"
+    ]
+  },
+  {
+    "id": "CASE31",
+    "title": "Synthetic family leakage",
+    "domain": "COMPUTE",
+    "source_refs": [
+      "ENG05"
+    ],
+    "synthetic": true,
+    "scenario": "Different IDs are drawn from the same synthetic source-patient family across worlds.",
+    "expected_behavior": "Keep the family and derivatives in the same split; do not treat copies as independent patients.",
+    "required_inputs": [
+      "generation lineage"
+    ],
+    "proposed_question_ids": [
+      "R-COMPUTE-01",
+      "R-COMPUTE-02",
+      "R-COMPUTE-03",
+      "R-COMPUTE-04",
+      "R-COMPUTE-05",
+      "R-COMPUTE-06"
+    ],
+    "status": "Scenario specification; not a generated patient cohort or executed clinical benchmark",
+    "label_provenance": "Original analyst-authored behavioral expectation inspired by cited research",
+    "expert_review": "Pending",
+    "grading": "Expert-adjudicated evidence/decision rubric; deterministic checks only where specified",
+    "leakage_controls": [
+      "Split by source-patient family",
+      "Hold out policy versions and sites",
+      "Do not train on the final evaluation labels"
+    ]
+  },
+  {
+    "id": "CASE32",
+    "title": "No feasible appointment",
+    "domain": "ACCESS",
+    "source_refs": [
+      "ENG06"
+    ],
+    "synthetic": true,
+    "scenario": "The highest-ranked local service lacks accessible appointments; an outside service meets the patient's needs.",
+    "expected_behavior": "Present feasible patient-preferred options and explain the constraint.",
+    "required_inputs": [
+      "availability",
+      " needs",
+      " travel",
+      " preferences"
+    ],
+    "proposed_question_ids": [
+      "R-ACCESS-01",
+      "R-ACCESS-02",
+      "R-ACCESS-03",
+      "R-ACCESS-04",
+      "R-ACCESS-05",
+      "R-ACCESS-06"
+    ],
+    "status": "Scenario specification; not a generated patient cohort or executed clinical benchmark",
+    "label_provenance": "Original analyst-authored behavioral expectation inspired by cited research",
+    "expert_review": "Pending",
+    "grading": "Expert-adjudicated evidence/decision rubric; deterministic checks only where specified",
+    "leakage_controls": [
+      "Split by source-patient family",
+      "Hold out policy versions and sites",
+      "Do not train on the final evaluation labels"
+    ]
+  }
+]

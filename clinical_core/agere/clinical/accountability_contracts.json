@@ -1,0 +1,14 @@
+{
+  "schema": "program-accountability-contracts/1",
+  "contracts": [{
+    "id": "program_payment_evidence", "version": "1", "title": "Program payment evidence and account review",
+    "authority": "Development evidence prerequisites; not an installed payer contract or verified eligibility rule.",
+    "requirements": [
+      {"id": "effective_contract", "scope": "contract", "needed": "Source agreement, parties, version, effective dates and supersession rules.", "binding": null},
+      {"id": "performance_period", "scope": "contract", "needed": "Contract performance and payment periods, runout and finalization rules.", "binding": null},
+      {"id": "measure_and_payment_rule", "scope": "contract", "needed": "Measure specification, denominator, exclusions, benchmarks and payment formula with source clauses.", "binding": null},
+      {"id": "patient_attribution", "scope": "patient", "needed": "Contract-specific patient attribution and eligible observation periods; coverage and assigned PCP alone are insufficient.", "binding": null},
+      {"id": "program_outcome_link", "scope": "patient", "needed": "Source-linked program delivery, consent and contract-defined outcomes; staff-reported completion alone is insufficient.", "binding": null}
+    ]
+  }]
+}

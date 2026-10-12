@@ -1,0 +1,42 @@
+{
+  "schema": "care-option-evidence/1",
+  "key": "pulmonary-rehabilitation-delivery",
+  "reference_doi": "10.1164/rccm.202306-1066ST",
+  "checked_on": "2026-10-11",
+  "review_status": "machine_curated_unreviewed",
+  "population": "Stable chronic respiratory disease; compared study populations were predominantly COPD.",
+  "comparison": "Telerehabilitation versus center-based pulmonary rehabilitation",
+  "benefit_summary": "Reported improvements in exercise capacity were similar across delivery approaches. This comparison does not estimate benefit versus no rehabilitation.",
+  "harm_summary": "Reported adverse events were similar; reporting does not establish safety for this patient.",
+  "limitations": "Remote models varied. A preferred remote model was not established. Patient assessment and essential rehabilitation components remain necessary.",
+  "estimates": [
+    {
+      "key": "six-minute-walk-distance",
+      "outcome": "Difference in gains in six-minute-walk distance",
+      "metric": "mean_difference",
+      "unit": "m",
+      "point": 0.06,
+      "interval": [-11, 11],
+      "interval_level": 0.95,
+      "null_value": 0,
+      "horizon": "End of intervention",
+      "reported_rcts": 4,
+      "reported_participants": 556,
+      "certainty": "moderate",
+      "locator": "Question 5, Description of the evidence and its quality, first exercise-capacity meta-analysis",
+      "evidence_family": "doi:10.1164/rccm.202306-1066ST"
+    }
+  ],
+  "alternatives": [
+    {"key":"center","label":"Center-based pulmonary rehabilitation","compatible_modalities":["in_person","hybrid"],"delivery_questions":["Can this patient attend the proposed location and schedule?","Does the program provide the required assessment, components and supervision?"]},
+    {"key":"remote","label":"Telerehabilitation","compatible_modalities":["virtual","hybrid"],"delivery_questions":["Are the needed equipment, connection, skills and support available?","Does the program include center-based assessment before participation and the required components and supervision?"]}
+  ],
+  "public_payment_context": {
+    "title":"Medicare pulmonary rehabilitation coverage",
+    "url":"https://www.medicare.gov/coverage/pulmonary-rehabilitation-programs",
+    "checked_on":"2026-10-11",
+    "published_on":null,
+    "summary":"The public Part B page describes eligibility categories and office or hospital outpatient delivery. It does not verify this patient's enrollment, exact benefits, provider participation, authorization, costs or remote-service payment.",
+    "scope":"Background only; no automatic patient eligibility or telerehabilitation coverage determination"
+  }
+}

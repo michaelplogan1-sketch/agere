@@ -1,0 +1,15 @@
+{
+  "schema": "clinical-input-maps/1",
+  "adapter": "synthetic_ecosystem_v2_received_fields",
+  "measurements": {
+    "lvef": {"unit":"%", "sources":[
+      {"stream":"echo","names":[],"value_field":"ejection_fraction","unit_field":"unit","date_fields":["observation_date"]},
+      {"stream":"inpatient_cardiac_reports","names":[],"where":{"test":"transthoracic_echocardiogram"},"required_adapter":"original-cohort-warehouse-adapter/1","value_field":"LVEF_percent","unit_literal":"%","status_field":"status","accepted_status":["performed_final"],"quality_field":"image_quality","accepted_quality":["adequate_for_global_function"],"valid_range":[0,100],"date_fields":[]},
+      {"stream":"diagnostic_test_reports","names":[],"where":{"test_kind":"echocardiogram"},"required_adapter":"original-cohort-warehouse-adapter/1","value_field":"measurements.LVEF_percent","unit_literal":"%","status_field":"report_status","quality_field":"test_quality","accepted_quality":["adequate"],"valid_range":[0,100],"date_fields":[],"dependencies":{"order_record_id":["diagnostic_orders"],"session_record_id":["diagnostic_test_sessions"]}},
+      {"stream":"received_diagnostic_reports","names":[],"where":{"test_kind":"echocardiogram"},"required_adapter":"original-cohort-warehouse-adapter/1","value_field":"measurements.LVEF_percent","unit_literal":"%","status_field":"report_status","quality_field":"test_quality","accepted_quality":["adequate"],"valid_range":[0,100],"date_fields":[],"dependencies":{"order_record_id":["diagnostic_orders"],"original_report_record_id":["diagnostic_test_reports"]}}
+      ], "units":{"%":1}, "fact_concept":"ef"},
+    "egfr": {"unit":"mL/min/1.73m2", "sources":[{"stream":"labs","names":["egfr","egfrckdepi","33914-3"],"value_field":"value","unit_field":"unit","date_fields":["collection_date","specimen_date"]}], "units":{"ml/min/1.73m2":1,"ml/min/1.73m²":1,"ml/min/1.73m^2":1}, "fact_concept":null},
+    "creatinine": {"unit":"mg/dL", "sources":[{"stream":"labs","names":["creatinine","creat","scr","2160-0"],"value_field":"value","unit_field":"unit","date_fields":["collection_date","specimen_date"]}], "units":{"mg/dl":1,"umol/l":0.011312217194570135,"µmol/l":0.011312217194570135,"μmol/l":0.011312217194570135}, "fact_concept":null},
+    "uacr": {"unit":"mg/g", "sources":[{"stream":"labs","names":["uacr","acr","urine albumin creatinine ratio","9318-7"],"value_field":"value","unit_field":"unit","date_fields":["collection_date","specimen_date"]}], "units":{"mg/g":1}, "fact_concept":null}
+  }
+}

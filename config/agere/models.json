@@ -1,0 +1,14 @@
+{
+ "selection_basis":"Local task measurements and explicit role; no universal best-model claim",
+ "scope":"Historical batch/training branch. Current warehouse question runtime roles are published by clinical_core/agere/clinical/stack_runtime.py:Stack.model_roles and the /api/stack/meta endpoint; this file is not its active routing policy.",
+ "default_action_proposal":{"model":"TF-IDF + calibrated logistic specialist","artifact":"artifacts/agere-full/action-specialists-v1/lexical.joblib","reason":"Best measured family-held-out generator-target agreement in the current comparison, low runtime cost"},
+ "clinical_encoder":{"model":"BioClinical-ModernBERT-base","path":"models/bioclinical-modernbert","head":"artifacts/agere-full/action-specialists-v1/bioclinical-head.joblib","role":"Trained alternative action proposal; latest note/document features","default_decision_authority":false},
+ "retrieval":{"model":"Granite embedding English r2","path":"models/granite-english-r2","role":"Dense retrieval combined with BM25 and reciprocal-rank fusion"},
+ "reranker":{"model":"BGE reranker v2 m3","path":"models/bge-reranker-v2-m3","role":"Relevance reranking on bounded candidates; not clinical entailment"},
+ "decision_services":[{"provider":"jev","model":"jev-1.13.0","role":"Narrow typed clinical-evidence proposals"},{"provider":"perplexity","model":"pplx-decider-v1.1-27b","role":"Interchangeable typed decision challenger; live access needs PERPLEXITY_API_KEY"}],
+ "frontier":{"provider":"claude","model":"claude-opus-5-5","role":"Bounded difficult-case adjudication and structured policy proposals"},
+ "joint_state":{"artifact":"artifacts/agere-joint-v1/joint-model.json","role":"Care/channel/documentation hypotheses; earlier simulator training and explicit domain-shift limitation"},
+ "tensor_train":{"artifact":"artifacts/agere-full/action-specialists-v1/tensor-train.pt","role":"Classical low-rank research comparator; not default"},
+ "ocr":{"engine":"macOS PDFKit + Apple Vision","role":"Native/scan text extraction with coordinates, zero hosted requests"},
+ "not_default":{"Qwen":"Earlier local reader underperformed; remains an experiment","MedGemma":"No demonstrated advantage for current typed tabular/narrative tasks; no default download","Chandra OCR 2":"Candidate for difficult-layout OCR; current native OCR is running and needs error benchmarking first"}
+}

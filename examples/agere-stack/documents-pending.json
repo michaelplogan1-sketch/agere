@@ -1,0 +1,20 @@
+[
+  {
+    "schema": "agere-source/1",
+    "synthetic": true,
+    "namespace": "fixture",
+    "source_system": "outside-records",
+    "source_kind": "document",
+    "record_id": "outside-P",
+    "version": "v1",
+    "patient_id": "P",
+    "event_date": "2026-09-03",
+    "available_date": "2026-09-05",
+    "payload": {
+      "content_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "processing_status": "pending",
+      "extractor_revision": null,
+      "pages": []
+    }
+  }
+]

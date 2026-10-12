@@ -1,0 +1,245 @@
+{
+  "schema": "care-review-protocols/1",
+  "authority": "guideline_informed_review_only",
+  "protocols": [
+    {
+      "id": "reduced_ef_therapy_review",
+      "version": "2",
+      "title": "Reduced-EF history and therapy review",
+      "purpose": "Find recorded reduced-EF history worth reconciling, including patients whose later EF may have improved, then inspect current dated measurements and medication reports.",
+      "sources": [
+        {
+          "url": "https://www.heart.org/-/media/832EA0F4E73948848612F228F7FA2D35.pdf",
+          "title": "2022 AHA/ACC/HFSA heart-failure guideline slide set",
+          "pages": [
+            8,
+            22,
+            86
+          ],
+          "checked_on": "2026-10-09",
+          "short_quote": "LVEF \u226440%",
+          "interpretation": "The EF classification threshold motivates a review screen. Improved EF does not erase prior reduced-EF history. Titration depends on tolerability and clinical context."
+        }
+      ],
+      "bindings": {
+        "low_ef_history": {
+          "kind": "measurement",
+          "label": "Recorded EF at or below 40% in the available history",
+          "measure": "lvef",
+          "op": "le",
+          "value": 40,
+          "clock": "source_statement_date",
+          "selection": "any_history"
+        },
+        "dated_low_ef": {
+          "kind": "measurement",
+          "label": "Latest explicitly dated EF can be interpreted",
+          "measure": "lvef",
+          "op": "le",
+          "value": 40,
+          "clock": "explicit_clinical_date",
+          "selection": "latest",
+          "expected": "known"
+        },
+        "bb_use": {
+          "kind": "documentary",
+          "label": "Beta-blocker use report interpreted",
+          "source": {
+            "streams": [
+              "notes",
+              "medication_history"
+            ],
+            "concept": "medication bb",
+            "relation": "reported_use",
+            "clock": "source_statement_date"
+          },
+          "expected": "known"
+        },
+        "bb_hold": {
+          "kind": "documentary",
+          "label": "Beta-blocker hold/stop report interpreted",
+          "source": {
+            "streams": [
+              "notes",
+              "medication_history"
+            ],
+            "concept": "medication bb",
+            "relation": "treatment_hold_stop",
+            "clock": "source_statement_date"
+          },
+          "expected": "known"
+        },
+        "raas_use": {
+          "kind": "documentary",
+          "label": "ARNi use report interpreted (ACEi/ARB alternatives still require review)",
+          "source": {
+            "streams": [
+              "notes",
+              "medication_history"
+            ],
+            "concept": "medication arni",
+            "relation": "reported_use",
+            "clock": "source_statement_date"
+          },
+          "expected": "known"
+        },
+        "mra_use": {
+          "kind": "documentary",
+          "label": "MRA use report interpreted",
+          "source": {
+            "streams": [
+              "notes",
+              "medication_history"
+            ],
+            "concept": "medication mra",
+            "relation": "reported_use",
+            "clock": "source_statement_date"
+          },
+          "expected": "known"
+        },
+        "sglt2_use": {
+          "kind": "documentary",
+          "label": "SGLT2 inhibitor use report interpreted",
+          "source": {
+            "streams": [
+              "notes",
+              "medication_history"
+            ],
+            "concept": "medication sglt2",
+            "relation": "reported_use",
+            "clock": "source_statement_date"
+          },
+          "expected": "known"
+        }
+      },
+      "trigger": "low_ef_history",
+      "readiness": {
+        "all": [
+          "dated_low_ef",
+          "bb_use",
+          "bb_hold",
+          "raas_use",
+          "mra_use",
+          "sglt2_use"
+        ]
+      },
+      "review_action": "Reconcile the recorded EF trajectory and therapy history with the clinical team; determine indication, current regimen, appropriate exceptions and tolerability before considering a medication change.",
+      "unimplemented_clinical_requirements": [
+        "Confirmed HF phenotype and symptoms",
+        "Indication-specific regimens and ACEi/ARB/ARNi alternatives",
+        "Dose/formulation and titration history",
+        "Current vital signs, labs, contraindications and maximum tolerated dose",
+        "Patient goals/preferences and clinical assessment"
+      ],
+      "boundary": "A historical low EF or a known medication report is not a diagnosis, verified current use, under-treatment, or authorization to initiate/titrate. This is not a full GDMT protocol.",
+      "supporting_documentary_contracts": [
+        "medication_regimen_confirmation",
+        "medication_label_report"
+      ]
+    },
+    {
+      "id": "low_egfr_specialist_review",
+      "version": "1",
+      "title": "Low-eGFR evidence and specialist follow-through",
+      "purpose": "Find adults with a low recorded eGFR for evidence review, then inspect explicit clinical timing and nephrology completion accounts without inferring missing care.",
+      "sources": [
+        {
+          "url": "https://kdigo.org/wp-content/uploads/2024/03/KDIGO-2024-CKD-Guideline.pdf",
+          "title": "KDIGO 2024 CKD guideline",
+          "pages": [
+            57,
+            140
+          ],
+          "checked_on": "2026-10-09",
+          "short_quote": "Do not assume chronicity",
+          "interpretation": "The adult-CKD referral figure includes eGFR below 30 mL/min/1.73 m2 among multiple indications. A single abnormal result does not establish CKD chronicity."
+        }
+      ],
+      "bindings": {
+        "adult": {
+          "kind": "age",
+          "label": "Age at snapshot is at least 18",
+          "op": "ge",
+          "value": 18
+        },
+        "low_egfr": {
+          "kind": "measurement",
+          "label": "Latest source-dated eGFR below 30 mL/min/1.73m2",
+          "measure": "egfr",
+          "op": "lt",
+          "value": 30,
+          "clock": "source_statement_date",
+          "selection": "latest"
+        },
+        "dated_low_egfr": {
+          "kind": "measurement",
+          "label": "Latest explicitly dated eGFR can be interpreted",
+          "measure": "egfr",
+          "op": "lt",
+          "value": 30,
+          "clock": "explicit_clinical_date",
+          "selection": "latest",
+          "expected": "known"
+        },
+        "attendance": {
+          "kind": "documentary",
+          "label": "Dated nephrology completion account interpreted",
+          "source": {
+            "streams": [
+              "notes",
+              "referrals"
+            ],
+            "concept": "care nephrology",
+            "relation": "care_completion",
+            "clock": "explicit_clinical_date"
+          },
+          "expected": "known"
+        }
+      },
+      "trigger": {
+        "all": [
+          "adult",
+          "low_egfr"
+        ]
+      },
+      "readiness": {
+        "all": [
+          "dated_low_egfr",
+          "attendance"
+        ]
+      },
+      "review_action": "Verify measurement timing and acute/chronic clinical context, then reconcile nephrology attendance and outside records before deciding whether a referral is indicated or missing.",
+      "unimplemented_clinical_requirements": [
+        "Confirmed CKD chronicity and cause versus acute illness",
+        "All other guideline referral indications and patient-specific urgency",
+        "Verified specialist relationship and referral-to-visit identity"
+      ],
+      "boundary": "This is one guideline-informed review criterion. A nonmatch does not rule out referral, CKD or other kidney disease; an absent completion account does not prove missing specialist care."
+    },
+    {
+      "id": "affordability_action_review",
+      "version": "2",
+      "title": "Received affordability reports to assistance review",
+      "purpose": "Use the pinned native affordability-screen requirement to propose review of reported difficulty paying medical bills, preserving source accounts, unknowns and separate assistance-program prerequisites.",
+      "sources": [],
+      "bindings": {
+        "barrier": {
+          "kind": "requirement",
+          "label": "Received report of difficulty paying medical bills",
+          "contract": "native_affordability_report",
+          "version": "1",
+          "contract_hash": "d602285ccc4970d1c115e3efb84f8ca3c4961b139cfbfa1a42214b96ce57fcab",
+          "expected": "supported"
+        }
+      },
+      "trigger": "barrier",
+      "readiness": "barrier",
+      "review_action": "Verify current affordability needs and the patient's preferences, then assess applicable assistance benefits and application requirements.",
+      "unimplemented_clinical_requirements": [
+        "Current needs and program-specific consent",
+        "Effective assistance-program eligibility and available benefits"
+      ],
+      "boundary": "Internal documentary review workflow, not a medical guideline, program enrollment or payer eligibility decision."
+    }
+  ]
+}

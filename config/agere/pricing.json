@@ -1,0 +1,10 @@
+{
+ "checked_at":"2026-10-08",
+ "units":"USD per million tokens; estimates, not invoice amounts",
+ "jev-1.13.0":{"input":0.042,"output":0,"source":"https://docs.typesafe.ai/models"},
+ "pplx-decider-v1.1-27b":{"input":0.02,"output":0,"source":"https://docs.perplexity.ai/docs/decisions/quickstart"},
+ "claude-opus-5-5":{"input":4,"output":20,"cache_write_5m":5,"cache_write_1h":8,"cache_read":0.2,"source":"https://platform.claude.com/docs/en/about-claude/pricing"},
+ "local_compute_hour_usd":null,
+ "review_minute_usd":null,
+ "notes":"Do not treat local inference as economically free. Local amortization, energy and review rates require explicit assumptions. Fresh API pricing must be checked when changing models."
+}

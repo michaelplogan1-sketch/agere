@@ -1,0 +1,21 @@
+{
+  "schema": "functional-review-sources/1",
+  "checked_on": "2026-10-10",
+  "authority": "guidance_for_source_review_not_full_clinical_or_benefit_criteria",
+  "sources": [
+    {"id":"cdc_tug", "title":"CDC STEADI Timed Up & Go assessment", "url":"https://www.cdc.gov/steadi/media/pdfs/STEADI-Assessment-TUG-508.pdf", "page":1,
+     "short_quote":"An older adult who takes ≥12 seconds to complete the TUG is at risk for falling.",
+     "application":"Use an explicitly recorded test duration and compatible protocol to nominate dated source review. This does not estimate an individual's fall probability or determine a service."},
+    {"id":"medicare_home_health", "title":"Medicare home health services", "url":"https://www.medicare.gov/coverage/home-health-services",
+     "short_quote":"You must need part-time or intermittent skilled services",
+     "application":"Homebound criteria, an appropriate skilled need, provider evaluation and orders, and a certified agency require separate verification. Medicare Advantage requires exact plan checks. A mobility observation or support request does not establish coverage."}
+  ],
+  "review_configuration": {
+    "minimum_reported_age_for_tug_screen":65,
+    "tug_seconds_threshold_inclusive":12,
+    "age_boundary_authority":"Conservative older-adult development screen; the quoted TUG sheet says older adult without a numeric age. Not an independently validated eligibility criterion.",
+    "accepted_source_protocols":["rise from chair, walk three metres, turn, return and sit","rise, walk three metres, turn, return and sit using usual aid"]
+  },
+  "unimplemented_requirements":["Current clinical assessment and test quality", "Patient goals, preferences and consent", "Medication and fall circumstances review", "Homebound and skilled-service criteria when applicable", "Exact plan, service date, network, authorization and agency availability", "Clinical orders and accountable review before execution"],
+  "limits":["Source dates are not automatically clinical event dates or current status.", "The warehouse's future synthetic cutoff does not establish future guideline or benefit validity.", "No source signal is not a negative clinical finding; the selected categories do not cover the whole chart.", "Boolean fields retain their literal values; false is not rewritten as not assessed, no need, or ineligible."]
+}

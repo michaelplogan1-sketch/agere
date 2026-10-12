@@ -1,0 +1,24 @@
+# Buyer/provider participation in the action path
+
+Delivered October 10, 2026. Buyers can enter and revise participation declarations for an exact service, provider organization, payer organization, plan, region, relationship and effective period. Existing imported document clauses can be attached with publisher, exact quote, receipt/effective dates and pinned mapping-review revisions. This uses the existing quoted-document engine; it does not invent a new contract compiler.
+
+Each patient service match shows separate plan, geography, payer, receipt-time, period and pathway comparisons, while retaining out-of-scope entries and conflicting same-provider declarations. Missing identity remains unknown. A network declaration is not CMS program participation. Even a confirmed document mapping does not establish that the declaration correctly represents a contract or that the patient has covered benefits.
+
+The actual saved-answer → match → internal queue → evidence handoff path retains a versioned participation context alongside the prior clinical citations, coverage source and documentary readiness. Changes to declarations, exact clauses, mapping reviews or coverage evidence invalidate old context. Reusing an outdated queue or event fails; refreshing the match and queue permits a new internal evidence packet. Old queue attachments and declaration revisions remain append-only. Cancelled tasks cannot be reopened through idempotent queue replay.
+
+## Verified evidence
+
+- 100 focused/regression tests pass: 18 new participation tests and 82 coverage/readiness/matching/record/program/synthesis checks. The tests cover scope mismatch, unknowns, conflict grouping, exact clauses, future clauses, review changes, optimistic and concurrent updates, cancelled tasks, replay and legacy task migration. Python compilation and JavaScript syntax pass.
+- Real HTTP creates a synthetic declaration, prepares exact matching and handoff context, changes the declaration, observes stale context and 409 rejections, then refreshes the queue and handoff. Earlier coverage and readiness attachments remain current.
+- The buyer editor saves and replays the declaration while preserving synthetic-test provenance. Browser verification observes the stale task, refreshes its match/queue and prepares the new handoff; no console errors.
+- Live synthetic buyer `synthetic-coverage-buyer`, provider `WH-PRACTICE-7`, fictional plan `WH-FICTIONAL-PLAN-9d129a8824e631`, service `coverage-linked-pharmacy`. Final declaration revision **5**, reported participation **pending**. Task `a102c3a9d7c9b460a2e6665c048b78ba6e6c76c9d3ff3705fbfeeecacd3b6443`, revision **6**, has all three current attachments.
+- Attached live clause is the existing synthetic engineering statement “Attribution must be verified separately.” It is unreviewed and does not establish network participation or member attribution. No real payer contract was imported.
+- Exact saved answer and source matching identities are unchanged. Fourteen protected clinical, coverage, readiness and matching files/catalogs and the original-cohort v1.23 warehouse configuration remain unchanged. Documentary decisions remain ten unresolved synthetic observations; imported mapping reviews remain zero.
+
+## Limits and next work
+
+Participation is reported, not independently verified. There is no authenticated clinician review, real capacity reservation, referral delivery, patient contact or clinical execution. Patient goals/consent, current membership, service-specific benefit/authorization, actual provider participation and clinical appropriateness remain separate unresolved prerequisites. Source-to-declaration semantic alignment has not been clinically validated. Registry invalidation currently covers the buyer's complete declaration version, so a change to another service conservatively expires that buyer's report.
+
+Next substantive work: make the combined clinical/source, coverage, participation and prerequisite state visible in one actionable work view, with exact stale reasons and bounded refresh/review steps; then implement authenticated reviewer/adapter contracts and acknowledgement/completion/outcome evidence without claiming real-world execution. Continue stable cross-pass source references, broader warehouse interpretation, qualified prediction/discovery and economical learned routing against the full product direction. Real external actions remain outside current authority.
+
+No new paid inference, training, human reviews, generator/research changes, warehouse migration or external actions. Local deterministic checks are sufficient for this joining/versioning capability. Existing integrations remain available with uncapped spend and normal accounting. Full queue acceptance remains false; continuation is active for the current owner.

@@ -1,0 +1,644 @@
+{
+  "schema": "care-pathway-discovery/1",
+  "checked_on": "2026-10-10",
+  "scope": "Public discovery summaries checked against primary sources; incomplete eligibility and billing logic. No member benefits, contracts, participants, prices or clinician approval are verified. Service templates are examples, never installed buyer capabilities.",
+  "pathways": [
+    {
+      "id": "access_eckm",
+      "name": "CMS ACCESS \u2014 early cardio-kidney-metabolic",
+      "payer_types": [
+        "original_medicare"
+      ],
+      "effective_start": "2026-07-05",
+      "effective_end": "2036-06-30",
+      "source_url": "https://www.cms.gov/priorities/innovation/access-technical-frequently-asked-questions",
+      "summary": "Technology-supported chronic care with outcome-aligned payment; this track addresses hypertension, dyslipidemia, obesity-related criteria and prediabetes.",
+      "prerequisites": [
+        "Confirm qualifying track conditions and baseline measures",
+        "Verify participating organization, enrollment availability, patient agreement and applicable overlap rules"
+      ]
+    },
+    {
+      "id": "access_ckm",
+      "name": "CMS ACCESS \u2014 cardio-kidney-metabolic",
+      "payer_types": [
+        "original_medicare"
+      ],
+      "effective_start": "2026-07-05",
+      "effective_end": "2036-06-30",
+      "source_url": "https://www.cms.gov/priorities/innovation/access-technical-frequently-asked-questions",
+      "summary": "Initial track includes diabetes, chronic kidney disease and atherosclerotic cardiovascular disease.",
+      "prerequisites": [
+        "Verify qualifying conditions and baseline measures",
+        "Verify participant, enrollment assignment and overlap restrictions; medication titration alone is not ACCESS enrollment"
+      ]
+    },
+    {
+      "id": "access_msk",
+      "name": "CMS ACCESS \u2014 chronic musculoskeletal pain",
+      "payer_types": [
+        "original_medicare"
+      ],
+      "effective_start": "2026-07-05",
+      "effective_end": "2036-06-30",
+      "source_url": "https://www.cms.gov/priorities/innovation/access-technical-frequently-asked-questions",
+      "summary": "An initial chronic musculoskeletal pain track.",
+      "prerequisites": [
+        "Verify qualifying pain criteria and patient-reported measures",
+        "Verify participating provider, enrollment and concurrent-service restrictions"
+      ]
+    },
+    {
+      "id": "access_bh",
+      "name": "CMS ACCESS \u2014 behavioral health",
+      "payer_types": [
+        "original_medicare"
+      ],
+      "effective_start": "2026-07-05",
+      "effective_end": "2036-06-30",
+      "source_url": "https://www.cms.gov/priorities/innovation/access-technical-frequently-asked-questions",
+      "summary": "Initial behavioral health track includes depression and anxiety.",
+      "prerequisites": [
+        "Confirm track conditions and baseline measures",
+        "Verify participant and enrollment; a commercial ACCESS-aligned pledge is not coverage"
+      ]
+    },
+    {
+      "id": "access_hf",
+      "name": "CMS ACCESS \u2014 heart failure (announced expansion)",
+      "payer_types": [
+        "original_medicare"
+      ],
+      "effective_start": "2027-04-01",
+      "effective_end": "2036-06-30",
+      "source_url": "https://www.cms.gov/priorities/innovation/innovation-models/access",
+      "summary": "Published expansion names heart failure; future start date is a routing boundary, not a completed eligibility rule.",
+      "prerequisites": [
+        "Obtain effective heart failure track specification and qualifying criteria",
+        "Verify participant, enrollment and outcome requirements"
+      ]
+    },
+    {
+      "id": "access_copd",
+      "name": "CMS ACCESS \u2014 COPD (announced expansion)",
+      "payer_types": [
+        "original_medicare"
+      ],
+      "effective_start": "2027-04-01",
+      "effective_end": "2036-06-30",
+      "source_url": "https://www.cms.gov/priorities/innovation/innovation-models/access",
+      "summary": "Published expansion names COPD; pulmonary rehabilitation is a distinct service pathway.",
+      "prerequisites": [
+        "Obtain effective COPD track specification",
+        "Verify participant, eligibility, enrollment and overlap rules"
+      ]
+    },
+    {
+      "id": "access_sud",
+      "name": "CMS ACCESS \u2014 substance use disorder (announced expansion)",
+      "payer_types": [
+        "original_medicare"
+      ],
+      "effective_start": "2027-04-01",
+      "effective_end": "2036-06-30",
+      "source_url": "https://www.cms.gov/priorities/innovation/innovation-models/access",
+      "summary": "Published expansion names substance use disorder.",
+      "prerequisites": [
+        "Obtain effective track rules and clinical assessment",
+        "Verify participating organization and enrollment"
+      ]
+    },
+    {
+      "id": "access_tobacco",
+      "name": "CMS ACCESS \u2014 tobacco cessation (announced expansion)",
+      "payer_types": [
+        "original_medicare"
+      ],
+      "effective_start": "2027-04-01",
+      "effective_end": "2036-06-30",
+      "source_url": "https://www.cms.gov/priorities/innovation/innovation-models/access",
+      "summary": "Published expansion names tobacco cessation; routine cessation benefits require separate review.",
+      "prerequisites": [
+        "Obtain effective track rules",
+        "Verify participant and enrollment"
+      ]
+    },
+    {
+      "id": "guide",
+      "name": "CMS GUIDE \u2014 dementia and caregiver support",
+      "payer_types": [
+        "original_medicare"
+      ],
+      "effective_start": "2024-07-01",
+      "effective_end": "2032-06-30",
+      "source_url": "https://www.cms.gov/priorities/innovation/innovation-models/guide",
+      "summary": "Coordinated dementia care, navigation, caregiver education and qualifying respite through model participants.",
+      "prerequisites": [
+        "Verify current beneficiary eligibility, dementia criteria and exclusions",
+        "Verify participating organization and alignment",
+        "Verify caregiver needs and respite eligibility separately"
+      ]
+    },
+    {
+      "id": "ccm",
+      "name": "Medicare chronic care management",
+      "payer_types": [
+        "original_medicare",
+        "medicare_advantage"
+      ],
+      "source_url": "https://www.medicare.gov/coverage/chronic-care-management-services",
+      "summary": "Care planning and coordination for qualifying people with multiple chronic conditions.",
+      "prerequisites": [
+        "Confirm qualifying chronic conditions, consent and care plan",
+        "Verify provider, service requirements, billing overlap and cost sharing",
+        "For Medicare Advantage verify exact plan network, authorization, cost sharing and service arrangements"
+      ]
+    },
+    {
+      "id": "rpm",
+      "name": "Medicare remote patient monitoring",
+      "payer_types": [
+        "original_medicare",
+        "medicare_advantage"
+      ],
+      "source_url": "https://www.cms.gov/medicare/coverage/telehealth/remote-patient-monitoring",
+      "summary": "Connected physiologic measurements used by a provider to manage an acute or chronic condition.",
+      "prerequisites": [
+        "Verify medical necessity, consent, qualifying device and transmission requirements",
+        "Verify setup, management, billing and overlap rules for the service date",
+        "For Medicare Advantage verify exact plan network, authorization, cost sharing and service arrangements"
+      ]
+    },
+    {
+      "id": "pulmonary_rehab",
+      "name": "Medicare pulmonary rehabilitation",
+      "payer_types": [
+        "original_medicare",
+        "medicare_advantage"
+      ],
+      "source_url": "https://www.medicare.gov/coverage/pulmonary-rehabilitation-programs",
+      "summary": "A defined rehabilitation benefit with condition and service requirements; a COPD label alone is insufficient.",
+      "prerequisites": [
+        "Verify qualifying diagnosis, severity or applicable post-COVID criteria and referral",
+        "Verify program setting, supervision, visit limits and cost sharing",
+        "For Medicare Advantage verify exact plan network, authorization, cost sharing and service arrangements"
+      ]
+    },
+    {
+      "id": "cardiac_rehab",
+      "name": "Medicare cardiac rehabilitation",
+      "payer_types": [
+        "original_medicare",
+        "medicare_advantage"
+      ],
+      "source_url": "https://www.medicare.gov/coverage/cardiac-rehabilitation-programs",
+      "summary": "Rehabilitation for qualifying cardiac conditions or procedures, including certain stable chronic heart failure cases.",
+      "prerequisites": [
+        "Verify qualifying condition or procedure, stability and detailed coverage criteria",
+        "Verify referral, setting, supervision and remaining sessions",
+        "For Medicare Advantage verify exact plan network, authorization, cost sharing and service arrangements"
+      ]
+    },
+    {
+      "id": "dsmt",
+      "name": "Medicare diabetes self-management training",
+      "payer_types": [
+        "original_medicare",
+        "medicare_advantage"
+      ],
+      "source_url": "https://www.medicare.gov/coverage/diabetes-self-management-training",
+      "summary": "Structured diabetes education with referral and training limits.",
+      "prerequisites": [
+        "Verify diabetes diagnosis, written order and qualified training provider",
+        "Check initial versus follow-up training and remaining hours",
+        "For Medicare Advantage verify exact plan network, authorization, cost sharing and service arrangements"
+      ]
+    },
+    {
+      "id": "nutrition",
+      "name": "Medicare medical nutrition therapy",
+      "payer_types": [
+        "original_medicare",
+        "medicare_advantage"
+      ],
+      "source_url": "https://www.medicare.gov/coverage/medical-nutrition-therapy-services",
+      "summary": "Dietitian-led nutrition services for qualifying diabetes, kidney disease or recent kidney transplant.",
+      "prerequisites": [
+        "Verify diagnosis, referral and qualified nutrition professional",
+        "Check annual hours, additional referral and interaction with diabetes education",
+        "For Medicare Advantage verify exact plan network, authorization, cost sharing and service arrangements"
+      ]
+    },
+    {
+      "id": "bhi",
+      "name": "Medicare behavioral health integration",
+      "payer_types": [
+        "original_medicare",
+        "medicare_advantage"
+      ],
+      "source_url": "https://www.medicare.gov/coverage/behavioral-health-integration-services",
+      "summary": "Behavioral health care integrated with the treating care team.",
+      "prerequisites": [
+        "Verify behavioral health assessment and patient agreement",
+        "Verify provider model, monthly service requirements and cost sharing",
+        "For Medicare Advantage verify exact plan network, authorization, cost sharing and service arrangements"
+      ]
+    },
+    {
+      "id": "chi",
+      "name": "Medicare community health integration",
+      "payer_types": [
+        "original_medicare",
+        "medicare_advantage"
+      ],
+      "source_url": "https://www.medicare.gov/coverage/community-health-integration-services",
+      "summary": "Navigation and coordination for social barriers affecting diagnosis, treatment or access. It does not itself establish a meal or transport benefit.",
+      "prerequisites": [
+        "Verify relevant social need and initial treating-provider visit",
+        "Verify trained personnel, service and billing requirements",
+        "For Medicare Advantage verify exact plan network, authorization, cost sharing and service arrangements"
+      ]
+    },
+    {
+      "id": "pin",
+      "name": "Medicare principal illness navigation",
+      "payer_types": [
+        "original_medicare",
+        "medicare_advantage"
+      ],
+      "source_url": "https://www.medicare.gov/coverage/principal-illness-navigation-services",
+      "summary": "Navigation for qualifying serious, high-risk conditions.",
+      "prerequisites": [
+        "Verify qualifying serious condition, anticipated duration and risk",
+        "Verify initial visit, personnel and ongoing service requirements",
+        "For Medicare Advantage verify exact plan network, authorization, cost sharing and service arrangements"
+      ]
+    },
+    {
+      "id": "home_health",
+      "name": "Medicare home health",
+      "payer_types": [
+        "original_medicare",
+        "medicare_advantage"
+      ],
+      "source_url": "https://www.medicare.gov/coverage/home-health-services",
+      "summary": "Qualified intermittent skilled care and therapy at home; homebound and other requirements apply. General household support is not automatically covered.",
+      "prerequisites": [
+        "Verify homebound status, skilled need, certification and plan of care",
+        "Verify participating agency, available staff and exact covered services",
+        "For Medicare Advantage verify exact plan network, authorization, cost sharing and service arrangements"
+      ]
+    },
+    {
+      "id": "commercial_virtual",
+      "name": "Commercial plan virtual care \u2014 member-specific check",
+      "payer_types": [
+        "commercial"
+      ],
+      "source_url": "https://uhc-gpd-green.uhc.com/member-resources/telehealth-virtual-care/virtual-visits",
+      "summary": "A public UnitedHealthcare example includes virtual primary, urgent, behavioral and specialty care depending on benefits. It cannot establish another plan's coverage.",
+      "prerequisites": [
+        "Obtain exact employer product, plan year, benefit document and member eligibility",
+        "Verify network, state, modality, cost sharing and authorization; public marketing is not a contract"
+      ]
+    },
+    {
+      "id": "serious_illness_support",
+      "name": "Buyer or plan serious-illness support",
+      "payer_types": [
+        "commercial",
+        "medicare_advantage",
+        "original_medicare",
+        "medicaid",
+        "self_pay",
+        "other"
+      ],
+      "source_url": "https://www.aetna.com/individuals-families/member-rights-resources/compassionate-care-program/compassionate-care-resources.html",
+      "summary": "Public serious-illness planning resources motivate a support option. They do not establish a universal virtual palliative care benefit or hospice election.",
+      "prerequisites": [
+        "Obtain actual palliative or serious-illness service agreement and coverage terms",
+        "Review goals, symptom needs, clinician scope and consent separately from hospice eligibility"
+      ]
+    }
+  ],
+  "service_templates": [
+    {
+      "name": "Virtual pharmacy medication review and titration",
+      "need_tags": [
+        "medication_review",
+        "titration",
+        "medication_access"
+      ],
+      "modality": "virtual",
+      "pathway_ids": [],
+      "prerequisites": [
+        "Medication reconciliation, safety review, labs and authorized prescribing protocol"
+      ]
+    },
+    {
+      "name": "Heart failure clinic",
+      "need_tags": [
+        "heart_failure",
+        "medication_review",
+        "care_coordination"
+      ],
+      "modality": "hybrid",
+      "pathway_ids": [
+        "access_hf"
+      ],
+      "prerequisites": [
+        "Clinical triage, referral and documented treatment plan"
+      ]
+    },
+    {
+      "name": "Pulmonary rehabilitation",
+      "need_tags": [
+        "copd",
+        "functional_recovery"
+      ],
+      "modality": "in_person",
+      "pathway_ids": [
+        "pulmonary_rehab"
+      ],
+      "prerequisites": [
+        "Rehabilitation assessment and qualifying referral"
+      ]
+    },
+    {
+      "name": "Virtual palliative care",
+      "need_tags": [
+        "serious_illness",
+        "symptom_support",
+        "goals_of_care"
+      ],
+      "modality": "virtual",
+      "pathway_ids": [
+        "serious_illness_support"
+      ],
+      "prerequisites": [
+        "Patient goals, clinical appropriateness and service contract"
+      ]
+    },
+    {
+      "name": "Virtual primary care",
+      "need_tags": [
+        "primary_care",
+        "follow_up",
+        "care_coordination"
+      ],
+      "modality": "virtual",
+      "pathway_ids": [
+        "commercial_virtual"
+      ],
+      "prerequisites": [
+        "Continuity, state licensure and in-person escalation arrangements"
+      ]
+    },
+    {
+      "name": "Remote monitoring with clinical response",
+      "need_tags": [
+        "monitoring",
+        "blood_pressure",
+        "heart_failure",
+        "diabetes"
+      ],
+      "modality": "home",
+      "pathway_ids": [
+        "rpm"
+      ],
+      "prerequisites": [
+        "Device access, connectivity and accountable response team"
+      ]
+    },
+    {
+      "name": "Dementia and caregiver support",
+      "need_tags": [
+        "dementia",
+        "caregiver_support",
+        "respite"
+      ],
+      "modality": "hybrid",
+      "pathway_ids": [
+        "guide"
+      ],
+      "prerequisites": [
+        "Caregiver assessment and participant verification"
+      ]
+    },
+    {
+      "name": "Behavioral health collaborative care",
+      "need_tags": [
+        "behavioral_health",
+        "depression",
+        "anxiety"
+      ],
+      "modality": "hybrid",
+      "pathway_ids": [
+        "bhi",
+        "access_bh"
+      ],
+      "prerequisites": [
+        "Clinical assessment and urgent-risk pathway"
+      ]
+    },
+    {
+      "name": "Diabetes education",
+      "need_tags": [
+        "diabetes",
+        "self_management"
+      ],
+      "modality": "hybrid",
+      "pathway_ids": [
+        "dsmt"
+      ],
+      "prerequisites": [
+        "Order, educator availability and language access"
+      ]
+    },
+    {
+      "name": "Medical nutrition therapy",
+      "need_tags": [
+        "nutrition",
+        "diabetes",
+        "kidney_disease"
+      ],
+      "modality": "hybrid",
+      "pathway_ids": [
+        "nutrition"
+      ],
+      "prerequisites": [
+        "Referral and qualified dietitian"
+      ]
+    },
+    {
+      "name": "Cardiac rehabilitation",
+      "need_tags": [
+        "cardiac_recovery",
+        "functional_recovery",
+        "heart_failure"
+      ],
+      "modality": "in_person",
+      "pathway_ids": [
+        "cardiac_rehab"
+      ],
+      "prerequisites": [
+        "Condition-specific eligibility and program assessment"
+      ]
+    },
+    {
+      "name": "Home nursing and therapy",
+      "need_tags": [
+        "home_care",
+        "wound_care",
+        "functional_recovery"
+      ],
+      "modality": "home",
+      "pathway_ids": [
+        "home_health"
+      ],
+      "prerequisites": [
+        "Skilled need and receiving agency acceptance"
+      ]
+    },
+    {
+      "name": "Social needs and community navigation",
+      "need_tags": [
+        "transport",
+        "food_access",
+        "housing",
+        "care_access"
+      ],
+      "modality": "hybrid",
+      "pathway_ids": [
+        "chi"
+      ],
+      "prerequisites": [
+        "Local resource availability and separate funding for tangible services"
+      ]
+    },
+    {
+      "name": "Serious illness navigation",
+      "need_tags": [
+        "serious_illness",
+        "oncology",
+        "care_coordination"
+      ],
+      "modality": "hybrid",
+      "pathway_ids": [
+        "pin"
+      ],
+      "prerequisites": [
+        "Treating team relationship and navigation eligibility"
+      ]
+    },
+    {
+      "name": "Chronic care management",
+      "need_tags": [
+        "care_coordination",
+        "multimorbidity",
+        "follow_up"
+      ],
+      "modality": "virtual",
+      "pathway_ids": [
+        "ccm"
+      ],
+      "prerequisites": [
+        "Qualifying conditions, consent and care-plan responsibilities"
+      ]
+    },
+    {
+      "name": "Musculoskeletal pain support",
+      "need_tags": [
+        "pain",
+        "functional_recovery"
+      ],
+      "modality": "hybrid",
+      "pathway_ids": [
+        "access_msk"
+      ],
+      "prerequisites": [
+        "Assessment, functional goals and escalation criteria"
+      ]
+    },
+    {
+      "name": "Substance use treatment coordination",
+      "need_tags": [
+        "substance_use",
+        "behavioral_health"
+      ],
+      "modality": "hybrid",
+      "pathway_ids": [
+        "access_sud"
+      ],
+      "prerequisites": [
+        "Licensed treatment provider and urgent-risk pathway"
+      ]
+    },
+    {
+      "name": "Tobacco cessation support",
+      "need_tags": [
+        "tobacco_cessation"
+      ],
+      "modality": "virtual",
+      "pathway_ids": [
+        "access_tobacco"
+      ],
+      "prerequisites": [
+        "Readiness, clinical assessment and treatment access"
+      ]
+    },
+    {
+      "name": "Transportation assistance",
+      "need_tags": [
+        "transport",
+        "care_access"
+      ],
+      "modality": "in_person",
+      "pathway_ids": [],
+      "prerequisites": [
+        "Exact plan or community funding, ride availability and accessibility needs"
+      ]
+    },
+    {
+      "name": "Medication affordability assistance",
+      "need_tags": [
+        "medication_access",
+        "affordability"
+      ],
+      "modality": "virtual",
+      "pathway_ids": [],
+      "prerequisites": [
+        "Exact pharmacy benefit, formulary, assistance criteria and patient preference"
+      ]
+    },
+    {
+      "name": "Discharge transition support",
+      "need_tags": [
+        "transitions",
+        "follow_up",
+        "medication_review"
+      ],
+      "modality": "hybrid",
+      "pathway_ids": [],
+      "prerequisites": [
+        "Discharge details, responsible clinician, timing and benefit verification"
+      ]
+    },
+    {
+      "name": "Food and meal support",
+      "need_tags": [
+        "food_access",
+        "nutrition"
+      ],
+      "modality": "home",
+      "pathway_ids": [],
+      "prerequisites": [
+        "Separate funding or exact supplemental benefit and delivery capacity"
+      ]
+    }
+  ],
+  "medicare_advantage_context": {
+    "source_url": "https://www.medicare.gov/basics/get-started-with-medicare/get-more-coverage/your-coverage-options/compare-original-medicare-medicare-advantage",
+    "summary": "Original Medicare benefit discovery can inform Medicare Advantage options, but exact plan arrangements require verification. Innovation-model exclusions are separate."
+  }
+}

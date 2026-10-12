@@ -1,0 +1,51 @@
+{
+  "schema": "observed-outcome-contracts/1",
+  "authority": "internal_synthetic_observation_definitions",
+  "contracts": [
+    {
+      "id": "admission_discharge_source_30d",
+      "version": "1",
+      "title": "Discharge records after admission notifications",
+      "purpose": "Find a same-source discharge observation after each patient's first admission notification in the declared index window.",
+      "index": {"kind": "record", "stream": "adt", "event_type": "admission"},
+      "endpoint": {"kind": "record", "stream": "adt", "event_type": "discharge"},
+      "basis": "source_event",
+      "index_selection": "first_in_window",
+      "min_days": 1,
+      "max_days": 30,
+      "source_scope": "same_source_organization",
+      "encounter_rule": "same_when_present",
+      "meaning": "An observed notification pair; a pair without encounter identity is provisional. This is not an adjudicated hospital stay."
+    },
+    {
+      "id": "discharge_admission_source_30d",
+      "version": "1",
+      "title": "Admission records after discharge notifications",
+      "purpose": "Find an admission observation after each patient's first discharge notification in the declared index window, across contributing sources.",
+      "index": {"kind": "record", "stream": "adt", "event_type": "discharge"},
+      "endpoint": {"kind": "record", "stream": "adt", "event_type": "admission"},
+      "basis": "source_event",
+      "index_selection": "first_in_window",
+      "min_days": 1,
+      "max_days": 30,
+      "source_scope": "any_contributing_source",
+      "encounter_rule": "different_when_present",
+      "meaning": "An observed admission notification after a discharge notification, not a CMS readmission measure. Missing encounter identity prevents verification of a new stay."
+    },
+    {
+      "id": "discharge_admission_clinical_30d",
+      "version": "1",
+      "title": "Clinical-date admission observations after discharge",
+      "purpose": "Apply the same observation window using explicit clinical event dates only; expose unavailable clinical timing.",
+      "index": {"kind": "record", "stream": "adt", "event_type": "discharge"},
+      "endpoint": {"kind": "record", "stream": "adt", "event_type": "admission"},
+      "basis": "clinical",
+      "index_selection": "first_in_window",
+      "min_days": 1,
+      "max_days": 30,
+      "source_scope": "any_contributing_source",
+      "encounter_rule": "different_when_present",
+      "meaning": "Explicit clinical timing of received observations. No source-date fallback, verified readmission denominator, planned-admission exclusion or clinical outcome adjudication."
+    }
+  ]
+}

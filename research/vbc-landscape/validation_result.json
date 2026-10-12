@@ -1,0 +1,22 @@
+{
+  "status": "passed",
+  "scope": "Artifact integrity only; no clinical capability or model accuracy tested",
+  "source_targets": 89,
+  "scoped_reviews": 84,
+  "cms_entries": 105,
+  "original_questions": 140,
+  "research_formulations": 96,
+  "combined_rows": 236,
+  "synthetic_scenario_specs": 32,
+  "live_registry_matches_snapshot": true,
+  "checks": [
+    "Unique identifiers",
+    "Valid source, question and case references",
+    "Explicit review scopes",
+    "Coverage counts reproduced",
+    "CMS blank-field counts reproduced",
+    "Research rows unimplemented",
+    "Synthetic case labels explicit",
+    "Original registry statuses and hash preserved"
+  ]
+}

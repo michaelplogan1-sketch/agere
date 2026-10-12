@@ -1,0 +1,13 @@
+# Bounded frontier catalog composition — October 9, 2026
+
+The growing operator catalog exceeded the existing 20,000-byte provider-request safeguard for a maximum-length representative question. Agere now uses `planner_scope.py` when the full request does not fit. Small requests retain the one-call path; exact local questions still need no hosted planning.
+
+The first request exposes every registered operator's meaning and the same supplied source vocabulary. A bounded selector splits the entire question into exact, ordered text segments, choosing operator contracts and recording unmet requirements. The second request loads those contracts in full. It must link every segment to actual graph nodes or a visible unmet requirement. Missing segments, invented/unloaded operators, undelivered selected operations and silently discarded unmet requirements are rejected. Population and clinical-authority checks still run through the existing graph validator.
+
+Nothing is silently clipped to fit. If the complete selection index or selected contract set remains too large, the call fails explicitly or returns unsupported coverage with its limitation. General multi-page planning is not implemented. Scope coverage checks are structural; they cannot prove that a model understood the question correctly. The catalog supplied by the existing planner still has its documented observed-code sampling; this change does not establish exhaustive warehouse semantic coverage.
+
+Every provider stage uses the existing budget ledger, exact body cache and reservation safeguard. Combined receipts retain individual call receipts, new-call counts and usage. Mixed cache hits and unpriced calls retain cost uncertainty; local hardware/review costs remain excluded.
+
+Verification: six scope-specific tests plus graph, compiler, baseline and catalog checks (75 checks in the combined focused run). `artifacts/agere-scoped-planner-v1/verification.json` exercises the actual v1.18 catalog with a 1,500-character question using simulated provider responses: selection request 17,889 bytes; scoped plan request 16,031 bytes. Both remain below 20,000 bytes. No provider was called and semantic planning quality was not evaluated. A live paid comparison is not claimed.
+
+The subsequent financial-account integration expanded the catalog. The preserved v2 offline check (`artifacts/agere-scoped-planner-v2/verification.json`) passes at 18,307 bytes for selection and 16,031 for planning. The selection index now explicitly retains operator input signatures. Mixed unpriced/cached provider stages preserve known cost and usage; semantic completeness still requires independent evaluation.

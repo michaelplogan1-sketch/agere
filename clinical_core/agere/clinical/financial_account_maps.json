@@ -1,0 +1,109 @@
+{
+  "schema": "financial-account-map/1",
+  "adapter": "original-cohort-warehouse-adapter/1",
+  "account_field": "account_id",
+  "snapshot_stream": "patient_billing_accounts",
+  "currency_field": "currency",
+  "snapshot_amounts": [
+    "billed_cents",
+    "contractual_adjustment_cents",
+    "self_pay_discount_cents",
+    "payer_expected_cents",
+    "payer_received_cents",
+    "patient_responsibility_cents",
+    "received_cents",
+    "refunded_cents",
+    "balance_cents",
+    "patient_credit_cents",
+    "provider_pending_cents"
+  ],
+  "identities": [
+    {
+      "id": "patient_balance",
+      "coefficients": {
+        "patient_responsibility_cents": 1,
+        "received_cents": -1,
+        "refunded_cents": 1,
+        "balance_cents": -1,
+        "patient_credit_cents": 1
+      }
+    },
+    {
+      "id": "billed_allocation",
+      "coefficients": {
+        "billed_cents": 1,
+        "contractual_adjustment_cents": -1,
+        "self_pay_discount_cents": -1,
+        "payer_expected_cents": -1,
+        "patient_responsibility_cents": -1,
+        "provider_pending_cents": -1
+      }
+    }
+  ],
+  "transactions": [
+    {
+      "stream": "patient_payments",
+      "amount_field": "amount_cents",
+      "status_field": "status",
+      "accepted_status": "received",
+      "snapshot_field": "received_cents",
+      "currency_from_account_if_unrecorded": false,
+      "allow_negative": false
+    },
+    {
+      "stream": "patient_refunds",
+      "amount_field": "amount_cents",
+      "status_field": "status",
+      "accepted_status": "issued",
+      "snapshot_field": "refunded_cents",
+      "currency_from_account_if_unrecorded": false,
+      "allow_negative": false
+    },
+    {
+      "stream": "payer_cash_allocations",
+      "amount_field": "allocated_cents",
+      "status_field": null,
+      "accepted_status": null,
+      "snapshot_field": "payer_received_cents",
+      "currency_from_account_if_unrecorded": true,
+      "allow_negative": true
+    }
+  ],
+  "context_streams": [
+    "medical_claim_submissions",
+    "medical_claims",
+    "medical_claim_lines",
+    "provider_remittance_advice",
+    "claim_acknowledgements",
+    "claim_corrections",
+    "billing_authorizations",
+    "billing_documents",
+    "medical_payment_attempts",
+    "medical_payment_plans",
+    "coverage_verifications"
+  ],
+  "links": {
+    "care_record_id": [],
+    "previous_account_record_id": [
+      "patient_billing_accounts"
+    ],
+    "submission_record_id": [
+      "medical_claim_submissions"
+    ],
+    "original_submission_record_id": [
+      "medical_claim_submissions"
+    ],
+    "original_adjudication_record_id": [
+      "medical_claims"
+    ],
+    "eligibility_record_id": [
+      "coverage_verifications"
+    ]
+  },
+  "meaning": "Received account statements and explicit transaction reports. Integer-cent identities are accounting checks, not clinical judgments, collectability estimates, realized savings or contract settlements.",
+  "account_inheritance_links": [
+    "submission_record_id",
+    "original_submission_record_id",
+    "original_adjudication_record_id"
+  ]
+}

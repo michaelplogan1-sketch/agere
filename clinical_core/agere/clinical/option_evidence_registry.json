@@ -1,0 +1,84 @@
+{
+  "schema": "option-evidence-registry/1",
+  "bundles": [{
+    "key": "acp-mdd-initial-treatment",
+    "version": "1",
+    "reference": {
+      "key": "acp-2023-mdd-initial-treatment",
+      "version": "1",
+      "kind": "guideline_recommendation",
+      "title": "Depression initial-treatment alternatives — dated ACP reference",
+      "published_on": "2023-01-24",
+      "checked_on": "2026-10-11",
+      "review_status": "machine_curated_unreviewed",
+      "citation": {
+        "title": "Nonpharmacologic and Pharmacologic Treatments of Adults in the Acute Phase of Major Depressive Disorder: A Living Clinical Guideline From the American College of Physicians",
+        "publisher": "American College of Physicians",
+        "doi": "10.7326/M22-2056",
+        "url": "https://www.acpjournals.org/doi/10.7326/M22-2056",
+        "locator": "Recommendations 1a and 1b; recommendation text inspected in ACP's public clinical-information index and indexed publication abstract",
+        "evidence_family": "doi:10.7326/M22-2056",
+        "independent_study_count": null
+      },
+      "quote": "ACP recommends monotherapy with either cognitive behavioral therapy or a second-generation antidepressant as initial treatment",
+      "paraphrase": "For adults with an acute moderate-to-severe MDD episode, the dated recommendations support CBT or an SGA alone, with their combination a conditional alternative.",
+      "reported_strength": "1a strong; 1b conditional",
+      "reported_evidence_quality": "1a moderate certainty; 1b low certainty",
+      "evidence_limitations": "Restricted to initial treatment of the specified MDD population. A condition label does not establish current episode, severity, safety or treatment history. This is not an anxiety-treatment or treatment-resistance mapping. ACP lists a March 2026 update; its full text was unavailable, so change reconciliation is pending.",
+      "effect_estimate": null,
+      "individual_treatment_effect": null,
+      "questions": [
+        {"key":"population","basis":"guideline_population","question":"Does dated clinical assessment establish adult acute moderate-to-severe MDD, rather than relying on historical condition labels, and is this an initial-treatment decision?"},
+        {"key":"assessment","basis":"agere_clinical_review_requirement","question":"Has a qualified clinician assessed current symptoms, immediate safety needs, differential diagnosis, comorbidities, medication interactions, prior treatment and monitoring needs before considering these options?"},
+        {"key":"preference","basis":"guideline_personalization","question":"What benefits, harms, treatment burden and costs matter to this patient, which option do they prefer, and has service-specific consent been confirmed?"},
+        {"key":"access","basis":"agere_operational_requirement","question":"Can the patient access an appropriately qualified CBT clinician, prescribing clinician and follow-up, with suitable language, schedule, travel or technology support?"},
+        {"key":"coverage","basis":"agere_operational_requirement","question":"Do exact patient plan terms, psychotherapy and medication benefits, provider participation and buyer capabilities support each proposed component?"},
+        {"key":"currency","basis":"agere_reference_governance","question":"Has an appropriate reviewer reconciled the March 2026 ACP update and any later changes before using these dated recommendations at this decision date?"}
+      ]
+    },
+    "evidence": {
+      "schema": "care-option-evidence/1",
+      "key": "mdd-initial-treatment",
+      "reference_doi": "10.7326/M22-2056",
+      "checked_on": "2026-10-11",
+      "review_status": "machine_curated_unreviewed",
+      "population": "Adults in an acute moderate-to-severe MDD episode considering initial treatment. This patient's fit is unresolved.",
+      "comparison": "CBT alone, a second-generation antidepressant alone, or both",
+      "benefit_summary": "Recommendation 1a supports either monotherapy (strong, moderate certainty); 1b suggests the combination (conditional, low certainty). These grades do not rank benefits for this patient.",
+      "harm_summary": "Discuss potential harms, adverse effects and treatment burden with an appropriate clinician; no comparative harm rates were extracted.",
+      "limitations": "No severity, indication, failure of prior care or safe medication choice follows from a label. CBT is a specific intervention, not any behavioral service. Delivery formats are operational proposals, not a claim of clinical equivalence. No drug or dose is selected.",
+      "quantitative_evidence_status": "No numerical benefit or harm estimate extracted; this recommendation comparison does not calculate absolute effects, NNT, ranking or individualized benefit.",
+      "estimates": [],
+      "alternatives": [
+        {"key":"cbt","label":"Cognitive behavioral therapy alone","reported_recommendation":"1a: strong; moderate certainty","compatible_modalities":["in_person","virtual","hybrid"],"delivery_questions":["Is the proposed service actually structured CBT delivered by an appropriately qualified clinician?","Are attendance, language, treatment burden and follow-up arrangements suitable?"]},
+        {"key":"sga","label":"Second-generation antidepressant alone","reported_recommendation":"1a: strong; moderate certainty","compatible_modalities":["in_person","virtual","hybrid"],"delivery_questions":["Who can assess, prescribe and monitor treatment and discuss adverse effects and interactions?","Are the exact medication benefit, dispensing access and follow-up arrangements established?"]},
+        {"key":"combined","label":"CBT plus a second-generation antidepressant","reported_recommendation":"1b: conditional; low certainty","compatible_modalities":["in_person","virtual","hybrid"],"delivery_questions":["Does the proposed arrangement actually provide both CBT and medication management?","How will clinicians coordinate monitoring, preferences, burden and access for both components?"]}
+      ],
+      "public_payment_context": {
+        "title": "Medicare outpatient mental health coverage",
+        "url": "https://www.medicare.gov/coverage/mental-health-care-outpatient",
+        "checked_on": "2026-10-11",
+        "published_on": null,
+        "summary": "The public Part B page describes psychotherapy, psychiatric evaluation and medication management with provider and cost conditions. It does not establish this patient's membership, exact therapy or drug coverage, provider participation, authorization or out-of-pocket costs.",
+        "scope": "Public background only; exact plan, component and medication benefits require verification"
+      },
+      "currency_evidence": {
+        "status": "known_update_content_unreconciled",
+        "index_url": "https://www.acponline.org/clinical-information/clinical-guidelines-recommendations",
+        "listed_update": "Version 1, Update Alert 4",
+        "published_on": "2026-03-10",
+        "doi": "10.7326/ANNALS-26-00548",
+        "url": "https://www.acpjournals.org/doi/10.7326/ANNALS-26-00548",
+        "inspection": "ACP index and PubMed metadata inspected; journal full text returned HTTP 403. Update content, changes and future synthetic-date currentness are unresolved.",
+        "current_recommendation_verified": false
+      },
+      "inspection_sources": [
+        "https://www.acponline.org/clinical-information/search/depression",
+        "https://pubmed.ncbi.nlm.nih.gov/36689752/",
+        "https://www.acponline.org/clinical-information/clinical-guidelines-recommendations",
+        "https://pubmed.ncbi.nlm.nih.gov/41802255/",
+        "https://www.medicare.gov/coverage/mental-health-care-outpatient"
+      ]
+    }
+  }]
+}

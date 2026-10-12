@@ -1,0 +1,43 @@
+<!doctype html><html lang="en"><meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Local clinical insights — synthetic baseline</title>
+    <style>body{font:16px/1.6 system-ui;margin:40px auto;max-width:1100px;padding:0 24px;
+    background:#f5f7f9;color:#172b38}h1{font-size:38px;line-height:1.15}h2{margin-top:36px}
+    .badge{color:#23675e;font-weight:700} .card{background:white;border:1px solid #dbe3e9;
+    padding:24px;border-radius:14px;margin:18px 0}table{border-collapse:collapse;width:100%;
+    font-size:14px}td,th{padding:12px;text-align:left;border-bottom:1px solid #dbe3e9}
+    .scroll{overflow:auto}code{background:#e7edf2;padding:2px 5px}summary{cursor:pointer}
+    </style><p class="badge">LOCAL RESEARCH PROTOTYPE · SYNTHETIC DATA ONLY</p>
+    <h1>Every cohort result has a source.</h1>
+    <p>This executable baseline demonstrates ontology mapping, assertion classification,
+    versioned reclassification, and SQL analytics. No trained model is connected.</p>
+    <div class="card"><strong>Question</strong><p>Which synthetic patients have an explicit
+    present type 2 diabetes statement and a latest HbA1c greater than 8%, with both evidence
+    and measurement within the 180 days ending October 6, 2026?</p>
+    <p>The threshold is a demonstration filter, not a clinical care recommendation.</p></div>
+    <div class="card"><h2>2 of 8 synthetic patients match</h2>
+    <p>Before adding the T2DM synonym: 1. After reclassification: 2.
+    Original annotations remain available below.</p>
+    <div class="scroll"><table><tr><th>Patient</th><th>Note</th><th>Exact source text</th>
+    <th>Lab</th><th>Date</th><th>HbA1c %</th></tr><tr><td>P01</td><td>N01</td><td>Patient has type 2 diabetes.</td><td>L01</td><td>2026-09-10</td><td>9.1</td></tr><tr><td>P05</td><td>N05</td><td>Patient has T2DM.</td><td>L05</td><td>2026-09-10</td><td>8.9</td></tr></table></div></div>
+    <h2>Why other records do not qualify</h2><p>P02 is negated; P03 refers to a family member;
+    P04 is uncertain; P06 has an old lab; P07 is historical; P08's latest lab is below the
+    filter despite an older high value. Exclusion does not establish absence of disease.</p>
+    <h2>Claims, pharmacy and risk evidence alongside the clinical record</h2>
+    <p>P02 has a paid diagnosis claim and a risk-feed entry despite a negated note: this is a
+    discrepancy to investigate. P05 has a reversed pharmacy transaction, which is not evidence
+    of dispensing. These source facts do not override the note or prove medication use.</p>
+    <div class="scroll card"><table><tr><th>Patient</th><th>Claims</th><th>Pharmacy</th>
+    <th>Risk feed (demo categories)</th></tr><tr><td>P01</td><td>{&quot;id&quot;: &quot;C01&quot;, &quot;patient&quot;: &quot;P01&quot;, &quot;service_date&quot;: &quot;2026-09-01&quot;, &quot;diagnosis&quot;: &quot;type 2 diabetes&quot;, &quot;status&quot;: &quot;paid&quot;}</td><td>{&quot;id&quot;: &quot;RX01&quot;, &quot;patient&quot;: &quot;P01&quot;, &quot;fill_date&quot;: &quot;2026-09-02&quot;, &quot;drug&quot;: &quot;metformin&quot;, &quot;status&quot;: &quot;dispensed&quot;}</td><td>{&quot;id&quot;: &quot;R01&quot;, &quot;patient&quot;: &quot;P01&quot;, &quot;year&quot;: &quot;2026&quot;, &quot;category&quot;: &quot;DEMO:DIABETES&quot;, &quot;status&quot;: &quot;recorded in synthetic feed&quot;}</td></tr><tr><td>P02</td><td>{&quot;id&quot;: &quot;C02&quot;, &quot;patient&quot;: &quot;P02&quot;, &quot;service_date&quot;: &quot;2026-09-01&quot;, &quot;diagnosis&quot;: &quot;type 2 diabetes&quot;, &quot;status&quot;: &quot;paid&quot;}</td><td>Not observed in supplied demo feed</td><td>{&quot;id&quot;: &quot;R02&quot;, &quot;patient&quot;: &quot;P02&quot;, &quot;year&quot;: &quot;2026&quot;, &quot;category&quot;: &quot;DEMO:DIABETES&quot;, &quot;status&quot;: &quot;recorded in synthetic feed&quot;}</td></tr><tr><td>P03</td><td>Not observed in supplied demo feed</td><td>Not observed in supplied demo feed</td><td>Not observed in supplied demo feed</td></tr><tr><td>P04</td><td>Not observed in supplied demo feed</td><td>Not observed in supplied demo feed</td><td>Not observed in supplied demo feed</td></tr><tr><td>P05</td><td>{&quot;id&quot;: &quot;C05&quot;, &quot;patient&quot;: &quot;P05&quot;, &quot;service_date&quot;: &quot;2026-08-01&quot;, &quot;diagnosis&quot;: &quot;type 2 diabetes&quot;, &quot;status&quot;: &quot;paid&quot;}</td><td>{&quot;id&quot;: &quot;RX05&quot;, &quot;patient&quot;: &quot;P05&quot;, &quot;fill_date&quot;: &quot;2026-08-03&quot;, &quot;drug&quot;: &quot;metformin&quot;, &quot;status&quot;: &quot;reversed&quot;}</td><td>Not observed in supplied demo feed</td></tr><tr><td>P06</td><td>Not observed in supplied demo feed</td><td>Not observed in supplied demo feed</td><td>Not observed in supplied demo feed</td></tr><tr><td>P07</td><td>Not observed in supplied demo feed</td><td>Not observed in supplied demo feed</td><td>Not observed in supplied demo feed</td></tr><tr><td>P08</td><td>Not observed in supplied demo feed</td><td>Not observed in supplied demo feed</td><td>Not observed in supplied demo feed</td></tr></table></div>
+    <p>Missing rows mean not observed in the supplied feed. Enrollment, feed completeness,
+    claim replacements and reversals must be resolved before production care-gap analysis.</p>
+    <details class="card"><summary>Inspect classification history (16 annotations)</summary>
+    <div class="scroll"><table><tr><th>Patient</th><th>Source</th><th>Version</th><th>Status</th>
+    <th>Concept</th></tr><tr><td>P01</td><td>Patient has type 2 diabetes.</td><td>v1</td><td>present</td><td>DEMO:T2D</td></tr><tr><td>P01</td><td>Patient has type 2 diabetes.</td><td>v2</td><td>present</td><td>DEMO:T2D</td></tr><tr><td>P02</td><td>No evidence of type 2 diabetes.</td><td>v1</td><td>negated</td><td>DEMO:T2D</td></tr><tr><td>P02</td><td>No evidence of type 2 diabetes.</td><td>v2</td><td>negated</td><td>DEMO:T2D</td></tr><tr><td>P03</td><td>Mother has type 2 diabetes.</td><td>v1</td><td>family_history</td><td>DEMO:T2D</td></tr><tr><td>P03</td><td>Mother has type 2 diabetes.</td><td>v2</td><td>family_history</td><td>DEMO:T2D</td></tr><tr><td>P04</td><td>Possible type 2 diabetes.</td><td>v1</td><td>uncertain</td><td>DEMO:T2D</td></tr><tr><td>P04</td><td>Possible type 2 diabetes.</td><td>v2</td><td>uncertain</td><td>DEMO:T2D</td></tr><tr><td>P05</td><td>Patient has T2DM.</td><td>v1</td><td>review</td><td>None</td></tr><tr><td>P05</td><td>Patient has T2DM.</td><td>v2</td><td>present</td><td>DEMO:T2D</td></tr><tr><td>P06</td><td>Patient has type 2 diabetes.</td><td>v1</td><td>present</td><td>DEMO:T2D</td></tr><tr><td>P06</td><td>Patient has type 2 diabetes.</td><td>v2</td><td>present</td><td>DEMO:T2D</td></tr><tr><td>P07</td><td>History of type 2 diabetes.</td><td>v1</td><td>historical</td><td>DEMO:T2D</td></tr><tr><td>P07</td><td>History of type 2 diabetes.</td><td>v2</td><td>historical</td><td>DEMO:T2D</td></tr><tr><td>P08</td><td>Patient has type 2 diabetes.</td><td>v1</td><td>present</td><td>DEMO:T2D</td></tr><tr><td>P08</td><td>Patient has type 2 diabetes.</td><td>v2</td><td>present</td><td>DEMO:T2D</td></tr></table></div></details>
+    <h2>Next: replace the baseline and measure the difference</h2><p>A local System One model
+    selects concepts and assertion labels. A local LLM handles question interpretation and
+    evidence summaries. A reclassification service reruns affected records after terminology,
+    model, or reviewer changes. SQL continues to calculate the cohort.</p>
+    <p>Current limits: eight authored notes, narrow sentence templates, a two-node demo ontology,
+    one note per patient, one lab type. No real clinical validation or full OMOP/FHIR implementation.</p>
+    </html>

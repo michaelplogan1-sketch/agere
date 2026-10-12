@@ -1,0 +1,128 @@
+{
+  "schema": "cardiometabolic-option-bundles/1",
+  "bundles": [
+    {
+      "key": "aha-bp-measurement-team-review",
+      "version": "1",
+      "reference": {
+        "key": "aha-2025-bp-process-review",
+        "version": "1",
+        "kind": "guideline_recommendation",
+        "title": "Blood-pressure measurement and team follow-up review",
+        "published_on": "2025-08-14",
+        "checked_on": "2026-10-11",
+        "review_status": "machine_curated_unreviewed",
+        "citation": {
+          "title": "2025 High Blood Pressure Guideline: Top Things to Know",
+          "publisher": "American Heart Association",
+          "doi": "10.1161/CIR.0000000000001356",
+          "url": "https://professional.heart.org/en/science-news/2025-high-blood-pressure-guideline/top-things-to-know",
+          "locator": "Official summary points 3 and 9; full guideline not inspected",
+          "evidence_family": "doi:10.1161/CIR.0000000000001356",
+          "independent_study_count": null
+        },
+        "quote": "",
+        "paraphrase": "Standardized home measurement with multidisciplinary follow-up is a care-process option for appropriately assessed patients.",
+        "reported_strength": "Not extracted from the official summary",
+        "reported_evidence_quality": "Not extracted; full guideline and supporting trials not inspected",
+        "evidence_limitations": "Summary-level process guidance. No diagnostic thresholds, treatment algorithm, comparative effect or individual benefit is implemented. Review approaches below are local workflow proposals, not source-reported head-to-head alternatives.",
+        "effect_estimate": null,
+        "individual_treatment_effect": null,
+        "questions": [
+          {
+            "key": "population",
+            "basis": "guideline_population",
+            "question": "What current diagnosis, age, pregnancy status, comorbidities and care setting establish applicability? A condition label or observed BP value does not establish current hypertension."
+          },
+          {
+            "key": "assessment",
+            "basis": "agere_clinical_review_requirement",
+            "question": "Are repeat measurements valid and comparable, with validated device, cuff, position, rest, setting and current symptoms documented? Which confirmatory measurements and glycemic context need clinical review?"
+          },
+          {
+            "key": "medication",
+            "basis": "agere_clinical_review_requirement",
+            "question": "What is the current intended regimen, actual use, response and tolerability? Reconcile medication sources, contraindications, renal context and clinician goals before any change."
+          },
+          {
+            "key": "preference",
+            "basis": "agere_patient_requirement",
+            "question": "What goals, preferences, burden and service-specific patient agreement are confirmed?"
+          },
+          {
+            "key": "access",
+            "basis": "agere_operational_requirement",
+            "question": "Can the patient use the proposed measurement device and format, with technology, language, scheduling and qualified-team support?"
+          },
+          {
+            "key": "coverage",
+            "basis": "agere_operational_requirement",
+            "question": "Which exact member benefits, service requirements, participating provider and current plan terms apply? Original Medicare ACCESS and commercial or MA arrangements require separate checks."
+          },
+          {
+            "key": "currency",
+            "basis": "agere_reference_governance",
+            "question": "Has an appropriate reviewer checked the full guidance and program updates at the decision date? Public pages checked in 2026 do not establish currency in the future synthetic snapshot."
+          }
+        ]
+      },
+      "evidence": {
+        "schema": "care-option-evidence/1",
+        "key": "bp-measurement-review-approaches",
+        "reference_doi": "10.1161/CIR.0000000000001356",
+        "checked_on": "2026-10-11",
+        "review_status": "machine_curated_unreviewed",
+        "population": "People being evaluated for blood pressure management; applicability to this patient is unresolved.",
+        "comparison": "Local evidence-review baseline and a home-measurement/team-support proposal; not a clinical comparative-effectiveness result.",
+        "benefit_summary": "The public summary describes standardized home measurement and team follow-up. No benefit estimate is extracted.",
+        "harm_summary": "Patient-specific suitability, device accuracy, symptoms and clinician escalation requirements remain unresolved.",
+        "limitations": "Neither approach selects treatment. No equivalence, clinical rank, forecast, achieved BP control, confirmed diagnosis or entitlement is inferred.",
+        "quantitative_evidence_status": "No comparative estimates extracted from the summary; no head-to-head evidence asserted.",
+        "estimates": [],
+        "alternatives": [
+          {
+            "key": "source_confirmation",
+            "label": "Baseline: reconcile measurement and clinical context",
+            "reported_recommendation": "Local Agere review workflow; not a separate guideline recommendation",
+            "compatible_modalities": [
+              "virtual",
+              "hybrid",
+              "in_person"
+            ],
+            "delivery_questions": [
+              "Who reconciles the source measurements and determines which current clinical or repeat-measurement assessment is needed?",
+              "Which assessment elements require an appropriate in-person encounter?"
+            ]
+          },
+          {
+            "key": "home_team_review",
+            "label": "Consider standardized home measurement with team follow-up",
+            "reported_recommendation": "Process described in AHA summary; individual applicability unverified",
+            "compatible_modalities": [
+              "virtual",
+              "hybrid",
+              "in_person"
+            ],
+            "delivery_questions": [
+              "Is a validated device, usable cuff, instruction and standardized measurement protocol available?",
+              "Who reviews results, reconciles medications and owns symptom escalation and clinical decisions?"
+            ]
+          }
+        ],
+        "public_payment_context": {
+          "title": "CMS ACCESS model: current public program notice",
+          "url": "https://www.cms.gov/priorities/innovation/innovation-models/access",
+          "published_on": null,
+          "inspection_depth": "Current official model overview, tracks and Medicare Advantage sections",
+          "application": "The page states a July 5, 2026 start for Original Medicare. eCKM includes hypertension, dyslipidemia, obesity or specified overweight, and prediabetes; CKM includes diabetes, CKD 3a/3b and ASCVD. New HF, COPD, substance-use, tobacco-cessation and follow-on MSK tracks are described for April 1, 2027. MA may adopt separate arrangements. These descriptions establish neither individual eligibility nor a participating provider, contract or payment.",
+          "review_status": "machine_curated_unreviewed",
+          "prior_catalog_preserved": true,
+          "checked_on": "2026-10-11",
+          "summary": "The page states a July 5, 2026 start for Original Medicare. eCKM includes hypertension, dyslipidemia, obesity or specified overweight, and prediabetes; CKM includes diabetes, CKD 3a/3b and ASCVD. New HF, COPD, substance-use, tobacco-cessation and follow-on MSK tracks are described for April 1, 2027. MA may adopt separate arrangements. These descriptions establish neither individual eligibility nor a participating provider, contract or payment.",
+          "scope": "Public program context only; exact enrollment, participating organization, qualifying conditions and contract terms unverified."
+        },
+        "source_currency_status": "Public pages checked on recorded date; not a systematic update or future synthetic-date validation."
+      }
+    }
+  ]
+}

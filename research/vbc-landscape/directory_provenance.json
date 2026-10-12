@@ -1,0 +1,8 @@
+{
+  "retrieved_on": "2026-10-08",
+  "endpoint": "https://data.cms.gov/data-api/v1/dataset/0d753f51-c3de-43cd-95d2-550a23b8606a/data?size=5000",
+  "sha256": "03576c1743ca0c091ef67def6838b6eb062c7631fc4988b64795352152118ed7",
+  "rows": 105,
+  "matches_default_endpoint": true,
+  "scope": "All entries returned by the CMS Innovation Center model directory API. Not all CMS payment programs or all model technical documents."
+}

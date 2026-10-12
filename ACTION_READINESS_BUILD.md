@@ -1,0 +1,34 @@
+# Source-bound action readiness — October 10, 2026
+
+Agere now connects the original evidence questions and buyer-service prerequisites to explicit documentary decisions. The existing question → saved interpretation → assessment → service match → internal handoff path remains intact. This is executable documentary review infrastructure, not verified clinical eligibility or external clinical execution.
+
+## Delivered behavior
+
+- Each original question or exact service/pathway prerequisite has a stable typed target. An append-only decision preserves its question, source plan, actor declaration, rationale, revision and evidence dependencies. Addressed, unresolved and invalid-binding are explicit dispositions; a machine or synthetic test cannot mark a question addressed.
+- Dependencies can reference an exact received field (including literal false/null), an exact text span, a stable context source-unit ID, a consistent existing semantic review, or an exact imported program-document clause. Cross-patient records, invented fields/units, mismatched quotes/hashes, changed review revisions and future arrivals are rejected or shown stale. Pass-local aliases alone do not qualify.
+- Existing semantic-review grouping is reused. Unreviewed proposals, rejected/incomplete reviews and conflicting accepted readings cannot supply a qualified semantic-review binding. No semantic reviews were created by this build.
+- Imported clauses reuse the existing program-document engine and immutable packages. Publisher, source URI, quote offsets, document hash, validated typed-input package identity, receipt date, effective period and mapping-review revision travel with the dependency. These are general document evidence, explicitly not patient records. Unreviewed, disputed, future or ineffective clauses cannot mark a question addressed. Patient applicability remains unestablished even for a confirmed mapping.
+- Source, parent-question, implementation and review changes invalidate documentary decisions while preserving history. A removed/stale parent cannot accept a new decision. An internal handoff attaches an immutable readiness receipt; a subsequent decision makes that attachment outdated. Repreparing the internal packet attaches the new state and retains prior revisions.
+- Evidence acquisition can prepare the existing connected-record context from selected patient records at the decision cutoff. It reports excluded records, keeps source and decision clocks distinct, and feeds the existing bounded interpretation UI. Preparing a context makes no inference call or external request.
+- The main workspace provides field inspection/binding, an imported-clause picker, decision recording, history and task-prerequisite readiness. Exact span, stable-unit and semantic-review bindings are additionally exposed through the typed API; dedicated UI pickers for those three forms remain to be added.
+
+## Verification
+
+The final run passes **128 focused and regression unittest executions** across readiness, buyer capabilities, record evidence, semantic reviews, interpretation state, synthesis/work, program work and quoted program documents. Python compilation and JavaScript syntax checks pass. The actual localhost API verifies idempotence/revision conflict handling, synthetic-test rejection from “addressed,” literal false preservation, exact imported clauses, stale handoffs, refresh and connected-record acquisition. Browser checks exercise the source-field decision, refresh of stale state, document-clause picker, saved-question integration and current handoff attachment. See `artifacts/agere-action-readiness-v1/` for logs, snapshots, screenshots and the implementation receipt.
+
+The live demonstration uses P-1001, the existing saved five-record answer `d7d96be6f304b5649e24c329e38648d1ef6475c579c1645498dcd7fd177c8799`, response `WHM-R-f07f0c5291aacbe0494b18`, and existing synthetic buyer tasks. Its literal `new_prescription_issued: false` is preserved as source content. The imported attribution clause comes from an existing **synthetic engineering specification**, not an insurer contract or CMS policy. All newly recorded live decisions are explicitly synthetic-test observations and unresolved. Human reviews, new paid inference calls and external actions are zero.
+
+Initial test-fixture, server-startup timing and clause-dropdown defects are recorded in `verification-repairs.txt`; the final checks follow their repair. Earlier interim screenshots/receipts may predate the clause extension. The final per-buyer readiness snapshots and final screenshot are authoritative for the delivered state.
+
+## Preserved boundaries
+
+Original-cohort warehouse v1.23 remains active: 1,614 patients, 1,238,686 received records, 158 source categories, cutoff 2029-08-15. Existing capability matching and public-pathway files and seven protected synthesis/context modules retain their prior hashes. No migration, generator edits, hidden-truth transport, research-corpus edits, frozen experiment changes, new training or reserved-cohort changes occurred. Existing paid answers retain their identities. The current owned server is PID **81056**, tool session **21045**, port 8885; the single continuation heartbeat remains with this chat.
+
+## Remaining work and next priorities
+
+1. Bind patient enrollment/coverage and exact buyer/provider participation to dated plan evidence. Evaluate actual imported clauses against patient facts and exact plan/contract scope; the present picker does not perform that applicability judgment. Split compound prerequisites into explicit checks where needed. A public program summary and a quoted synthetic specification do not establish coverage.
+2. Add authenticated reviewer roles, consent/goals and jurisdiction/authority checks before enabling consequential execution. Current actor identities are self-reported. Documentary “addressed” is a recorded judgment, not independent clinical validation, certification or entitlement.
+3. Connect authorized execution adapters with acknowledgement, real service-slot reservation, completion evidence, reassessment and outcome monitoring. Current workers prepare internal evidence packets only. No referral, patient contact, prescription or care delivery occurs.
+4. Continue broad source semantics, stable cross-pass reference reconciliation, qualified prediction/discovery, economical learned routing and research integrations. Some existing context identities conservatively include all received records for the patient; narrowly selective invalidation is not complete. Dedicated span/unit/review pickers, larger document-catalog pagination and efficient bulk readiness evaluation remain unfinished.
+
+The full autonomous queue is not accepted as complete. Clinical accuracy, model superiority, patient benefit, real plan coverage and production readiness are not established by these engineering checks.
