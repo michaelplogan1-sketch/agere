@@ -6,7 +6,7 @@ from concurrent.futures import ThreadPoolExecutor
 from clinical_core.contracts import digest
 from clinical_core.agere import request_lineage as L
 from clinical_core.agere.gateway import BudgetLedger
-from clinical_core.agere.clinical.context_student import send
+from clinical_core.agere.clinical.context_student import send, REQUEST_MAX_BYTES
 from clinical_core.agere.clinical import economical_planner as planner
 
 class Lineage(unittest.TestCase):
@@ -39,7 +39,7 @@ class Lineage(unittest.TestCase):
   with patch.dict('os.environ',{'ANTHROPIC_API_KEY':'local-fixture'}),patch('urllib.request.urlopen',return_value=Response()) as transport:
    _,usage=send(body,'claude',self.ledger,self.root,parse=lambda r:r)
    _,cached=send(body,'claude',self.ledger,self.root,parse=lambda r:r)
-   with self.assertRaisesRegex(ValueError,'bound'):send({**body,'oversize':'x'*20000},'claude',self.ledger,self.root,parse=lambda r:r)
+   with self.assertRaisesRegex(ValueError,'bound'):send({**body,'oversize':'x'*REQUEST_MAX_BYTES},'claude',self.ledger,self.root,parse=lambda r:r)
    self.assertEqual(transport.call_count,1)
   e.finish({'usage':[usage,cached]});e.close()
   events=self.events(e);self.assertEqual(sum(r['kind']=='reserved' for r in events),1)

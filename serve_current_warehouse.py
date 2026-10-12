@@ -17,6 +17,13 @@ if __name__ == '__main__':
     recovery = config.get('recovery')
     if recovery and a.allow_live_stack:
         p.error('Restored checkpoints permit inspection only; live stack is unavailable')
+    from clinical_core.agere.gateway import BudgetLedger
+    ledger = BudgetLedger(ROOT / 'artifacts/agere-full/provider-budget.sqlite3')
+    try:
+        abandoned = ledger.abandon_pending()
+        if abandoned: print(f'Marked {abandoned} interrupted provider reservations as abandoned')
+    finally:
+        ledger.close()
     with build_lock(output):
         if a.check:
             print(json.dumps({'status': 'validated', 'build': str(output), 'recovery': recovery,

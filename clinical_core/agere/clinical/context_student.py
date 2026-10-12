@@ -48,6 +48,10 @@ def send(body,provider,ledger,out,*,parse,allow_failed_response_revalidation=Fal
                  'cost_estimate':usage_cost(raw['model'],raw.get('usage'))}
         (out/(key+'-revalidated.json')).write_text(json.dumps(receipt,indent=2))
         return result,receipt
+    if old and old[0]=='failed' and not saved.exists():
+        # Transport failure (timeout, 5xx) with no response: nothing deterministic was learned,
+        # so a new explicit attempt is allowed. Failed parses keep their saved response and stay blocked.
+        with ledger.db:ledger.db.execute("UPDATE calls SET status='abandoned' WHERE id=? AND status='failed'",(key,))
     endpoint,var=PersistentGateway.ENDPOINTS[provider]
     if not os.environ.get(var):raise ValueError('Missing '+var)
     # Max 8,192 output tokens and 20KB request keeps the configured token estimate below this hold.

@@ -259,7 +259,9 @@ def propose(question, path, ledger, *, snapshot, graph_catalog, observed_values=
         return graph
 
     from .planner_scope import dispatch
-    call = lambda b, **kw: send(b, 'claude', ledger, path, **kw)
+    # A saved response that failed validation is re-checked offline with current code before any paid resend.
+    call = lambda b, **kw: send(b, 'claude', ledger, path, **{'allow_failed_response_revalidation': True,
+                                                             'revalidation_reason': 'planner_code_updated', **kw})
     try:
         return dispatch(body, catalog, call, parse=parse)
     except (ValueError, KeyError, TypeError) as exc:

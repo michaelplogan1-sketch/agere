@@ -42,6 +42,10 @@ class BudgetLedger:
         self.db.execute('BEGIN IMMEDIATE')
         try:
             row=self.db.execute('SELECT status,response FROM calls WHERE id=?',(key,)).fetchone()
+            if row and row[0]=='abandoned':
+                # Reserved by a process that died before any response: a new attempt is explicit.
+                self.db.execute('DELETE FROM calls WHERE id=?',(key,));row=None
+                ledger_event(self,'abandoned_reservation_replaced',key,provider=provider,model=model)
             if row:
                 self.db.commit()
                 if row[0]=='validated':
@@ -56,6 +60,11 @@ class BudgetLedger:
             ledger_event(self,'reserved',key,provider=provider,model=model,status='pending')
             return None
         except Exception:self.db.rollback();raise
+    def abandon_pending(self):
+        """At service start, requests still pending belong to a dead process; mark them abandoned."""
+        with self.db:
+            n=self.db.execute("UPDATE calls SET status='abandoned',error='process ended before response' WHERE status='pending'").rowcount
+        return n
     def finish(self,key,response=None,error=None,seconds=0):
         with self.db:self.db.execute('UPDATE calls SET status=?,response=?,error=?,seconds=? WHERE id=?',
             ('validated' if response is not None else 'failed',json.dumps(response) if response is not None else None,error,seconds,key))
