@@ -11,7 +11,7 @@ SET_OPS = {'cohort', 'evidence', 'intersect', 'union', 'difference', 'sequence',
            'interpretation', 'source_state', 'pre_event_state', 'requirements', 'outcome',
            'protocol_review', 'program_document', 'functional_review', 'domain_review', 'appointment_followthrough'}
 WORK_SUPPORT = ('accountability_review', 'program_acquisition', 'measure_review')
-TYPED = {'aggregate', 'observation_process', 'reference_review', 'cohort', 'evidence', 'intersect', 'union', 'difference', 'compare', 'medication_identity',
+TYPED = {'aggregate', 'explain', 'observation_process', 'reference_review', 'cohort', 'evidence', 'intersect', 'union', 'difference', 'compare', 'medication_identity',
          'assertion_review', 'source_state', 'pre_event_state', 'context', 'context_passes', 'functional_review',
          'domain_review', 'worklist', 'program_acquisition', 'retrieve', 'forecast',
          'source_changes', 'review', 'measure_review', 'financial_accounts', 'accountability_review', 'outcome', 'appointment_followthrough', 'interpretation', 'requirements', 'protocol_review', 'program_document'}
@@ -92,6 +92,13 @@ def parameter_schema(op, catalog):
             'group_by': string(aggregate.GROUP_BY), 'adjust': string(aggregate.ADJUSTMENTS, 'Case-mix standardisation for counts/shares'),
             'window': obj({'start': {'type': 'string', 'description': 'YYYY-MM-DD or empty'}, 'end': {'type': 'string', 'description': 'YYYY-MM-DD or empty'}}),
             'value_aggregate': string(['latest', 'all']), 'top': {'type': 'integer', 'minimum': 1, 'maximum': 200}})
+    if op == 'explain':
+        from . import explain, concepts as library
+        return obj({'outcome': obj({'type': string(explain.OUTCOME_TYPES),
+                'concept': string(['', *library.CONDITIONS, *library.MEASUREMENTS, *library.ENCOUNTERS], 'Outcome concept for concept/measurement types; "" for readmission'),
+                'op': string(['', 'lt', 'le', 'gt', 'ge'], 'measurement outcomes only'), 'value': {'type': 'number'},
+                'aggregate': string(['latest', 'any'])}),
+            'window': obj({'start': {'type': 'string'}, 'end': {'type': 'string'}})})
     if op == 'observation_process':
         return obj({'stream':string(catalog.get('source_streams',streams)),
             'months':{'type':'integer','minimum':2,'maximum':24},

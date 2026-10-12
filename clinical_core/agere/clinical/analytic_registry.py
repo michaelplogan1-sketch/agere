@@ -17,7 +17,9 @@ def code_identity():
     parent=Path(__file__).parents[1]
     return digest({str(p.name):hashlib.sha256(p.read_bytes()).hexdigest() for p in
       [Path(__file__),parent/'operators.py',parent/'narrative_sources.py',parent/'policy.py',
-       Path(__file__).with_name('program_registry.py'),Path(__file__).with_name('cohorts.py'),
+       # cohorts.py is excluded: selections are keyed separately (selection id in
+       # every cache key) and per-patient operator results do not depend on it.
+       Path(__file__).with_name('program_registry.py'),
        Path(__file__).with_name('clinical_events.py'),Path(__file__).with_name('population_math.py'),
        Path(__file__).with_name('medication_reconciliation.py'),Path(__file__).with_name('warehouse_interpretation.py'),
        parent/'mathematics.py',parent.parent/'process_monitoring.py',parent/'received_source_catalog.py']}|{'received_source_catalog':source_catalog_identity()})

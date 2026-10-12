@@ -22,7 +22,7 @@ from .clinical_events import validate_window
 
 VERSION = 'population-analysis-graph/1'
 from .graph_contracts import SET_OPS, validate_inputs, validate_parameters as validate_shared_parameters
-OPERATIONS = SET_OPS | {'aggregate', 'observation_process', 'reference_review', 'compare', 'analyze', 'retrieve', 'forecast', 'source_changes', 'review','longitudinal','worklist','state_review','medication_identity','context','context_passes','assertion_review','baseline','decision_landmark','financial_accounts','accountability_review','protocol_change','program_document_change','program_acquisition','measure_review','evidence_portfolio'}
+OPERATIONS = SET_OPS | {'aggregate', 'explain', 'observation_process', 'reference_review', 'compare', 'analyze', 'retrieve', 'forecast', 'source_changes', 'review','longitudinal','worklist','state_review','medication_identity','context','context_passes','assertion_review','baseline','decision_landmark','financial_accounts','accountability_review','protocol_change','program_document_change','program_acquisition','measure_review','evidence_portfolio'}
 NODE_FIELDS = {'id', 'operation', 'inputs', 'parameters', 'purpose'}
 LIMITS = [
     'Membership means observed predicate matches, not confirmed disease or absent care.',
@@ -76,6 +76,9 @@ def answer_coverage(plan, results):
             'meaning': 'Execution coverage is separate from plan support. These are bounded source observations, not clinical or causal conclusions.'}
 
 
+STATISTIC_WORDS = [('share', r'\b(share|percent(age)?|proportion|fraction|what %)\b'),
+                   ('mean', r'\b(average|mean)\b'), ('median', r'\bmedian\b'),
+                   ('rate_per_1000', r'\b(rate|per 1,?000|utili[sz]ation)\b'), ('count', r'\b(how many|number of|count)\b')]
 COUNT_QUESTION = re.compile(r'\b(how many|number of|count|what (?:share|proportion|percent(?:age)?))\b', re.I)
 
 
@@ -99,8 +102,26 @@ def build_answer(plan, results, memberships, question):
         answer.update(status='unsupported', answer_type='unsupported')
         return answer
     last = plan['nodes'][-1]
-    if last['operation'] == 'aggregate':
+    aggregates = [i for i, n in enumerate(plan['nodes']) if n['operation'] == 'aggregate']
+    if last['operation'] == 'aggregate' and len(aggregates) > 1 and question:
+        # Several supporting numbers: answer with the statistic the question asks for.
+        wanted = next((s for s, rx in STATISTIC_WORDS if re.search(rx, question, re.I)), None)
+        chosen = [i for i in aggregates if plan['nodes'][i]['parameters']['statistic'] == wanted]
+        if chosen:
+            last, report_index = plan['nodes'][chosen[-1]], chosen[-1]
+        else:
+            report_index = len(plan['nodes']) - 1
+    else:
+        report_index = len(plan['nodes']) - 1
+    if last['operation'] == 'explain':
         report = results[-1]['result']
+        partial = plan.get('coverage') != 'supported_observation' or plan.get('unmet_requirements')
+        answer.update(status='partial' if partial else 'answered', answer_type='table', value=report['finding'],
+                      table=report['factors'] or report.get('cases'), method=report['method'],
+                      overall={k: report[k] for k in ('unit', 'units', 'positive_units', 'outcome_rate', 'status')})
+        return answer
+    if last['operation'] == 'aggregate':
+        report = results[report_index]['result']
         partial = plan.get('coverage') != 'supported_observation' or plan.get('unmet_requirements')
         answer['concepts'] = interpretation + report.get('interpretation', [])
         if last['parameters']['group_by'] == 'none':
@@ -165,6 +186,9 @@ def validate(plan, as_of):
         elif op == 'aggregate':
             from . import aggregate
             p = aggregate.validate(p)
+        elif op == 'explain':
+            from . import explain
+            p = explain.validate(p)
         elif op == 'evidence':
             if inputs or set(p) != {'plan'}:
                 raise ValueError('Evidence node needs its explicit plan')
@@ -689,6 +713,11 @@ def execute(stack, plan, *, question=None):
                 from . import aggregate
                 chosen = memberships[node['inputs'][0]]
                 detail = aggregate.execute(path, sorted(chosen.yes), params)
+                detail['input_membership'] = membership_receipt(chosen)
+            elif op == 'explain':
+                from . import explain
+                chosen = memberships[node['inputs'][0]]
+                detail = explain.execute(path, sorted(chosen.yes), params)
                 detail['input_membership'] = membership_receipt(chosen)
             elif op == 'evidence':
                 value, detail = evidence_membership(evidence_db, params['plan'], universe)

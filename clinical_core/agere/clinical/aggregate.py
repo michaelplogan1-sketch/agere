@@ -18,8 +18,11 @@ import json, math, sqlite3, statistics
 from . import concepts, grounding, source_profile
 
 VERSION = 'population-aggregate/1'
-GROUP_BY = ('none', 'pcp', 'practice', 'coverage_type', 'age_band', 'sex', 'event_organization')
-STATISTICS = {'patients': ('count', 'share'), 'events': ('count', 'rate_per_1000'), 'value': ('mean', 'median')}
+GROUP_BY = ('none', 'pcp', 'practice', 'coverage_type', 'age_band', 'sex', 'facility')
+STATISTICS = {'patients': ('count', 'share'), 'events': ('count', 'rate_per_1000'), 'value': ('mean', 'median'),
+              'readmissions': ('count', 'rate')}
+STAY_TYPES = r'^(inpatient.*|observation|l&d admission)$'
+READMIT_DAYS = 30
 ADJUSTMENTS = ('none', 'age_sex', 'age_sex_conditions')
 BURDEN_CONCEPTS = ('diabetes', 'hypertension', 'heart_failure', 'chronic_kidney_disease', 'copd', 'asthma',
                    'coronary_artery_disease', 'atrial_fibrillation', 'depression', 'dementia', 'cancer')
@@ -32,8 +35,9 @@ def validate(p):
                                              'value_aggregate', 'top'}:
         raise ValueError('Aggregate parameters: measure, concept, statistic, group_by, adjust, window, value_aggregate, top')
     measure = p.get('measure')
-    if measure not in STATISTICS: raise ValueError('measure must be patients, events or value')
+    if measure not in STATISTICS: raise ValueError('measure must be patients, events, value or readmissions')
     concept = p.get('concept', '')
+    if measure == 'readmissions' and concept: raise ValueError('readmissions use hospital stays; restrict the population upstream instead')
     if measure == 'value' and concept not in concepts.MEASUREMENTS:
         raise ValueError('value aggregates need a measurement concept')
     if measure == 'events' and concept not in concepts.ENCOUNTERS and concept not in concepts.CONDITIONS:
@@ -43,8 +47,10 @@ def validate(p):
     statistic = p.get('statistic') or STATISTICS[measure][-1]
     if statistic not in STATISTICS[measure]: raise ValueError(f'{measure} supports {STATISTICS[measure]}')
     group_by = p.get('group_by', 'none')
+    group_by = 'facility' if group_by in ('event_organization', 'hospital', 'organization') else group_by
     if group_by not in GROUP_BY: raise ValueError(f'group_by must be one of {GROUP_BY}')
-    if group_by == 'event_organization' and measure != 'events': raise ValueError('event_organization groups events only')
+    if group_by == 'facility' and measure not in ('events', 'readmissions'):
+        raise ValueError('facility groups events (where they occurred) or readmissions (index stay facility)')
     adjust = p.get('adjust', 'none')
     if adjust not in ADJUSTMENTS: raise ValueError(f'adjust must be one of {ADJUSTMENTS}')
     if adjust != 'none' and measure == 'value': raise ValueError('Standardisation applies to counts and shares')
@@ -107,12 +113,38 @@ def _poisson_ci(observed, expected):
     return [round(lo / expected, 3), round(hi / expected, 3)]
 
 
+def _stays(records, window, as_of):
+    """Distinct hospital stays (inpatient/observation encounters collapsed by admit day)
+    with a flag for a new stay starting within READMIT_DAYS of discharge."""
+    import re
+    by_day = {}
+    for r in records:
+        if r.get('source_table') != 'encounters' or not re.match(STAY_TYPES, str(r.get('type') or '').strip(), re.I): continue
+        start = (r.get('event_date') or '')[:10]
+        if not start or _in_window(r, window, as_of) is not True: continue
+        end = (r.get('end_time') or '')[:10] or start
+        prior = by_day.get(start)
+        by_day[start] = {'admit': start, 'discharge': max(end, prior['discharge']) if prior else end,
+                         'type': r.get('type'), 'organization': r.get('organization_id')}
+    ordered = []
+    for k in sorted(by_day):  # overlapping records (transfers, duplicates) form one stay
+        s = by_day[k]
+        if ordered and s['admit'] <= ordered[-1]['discharge']:
+            ordered[-1]['discharge'] = max(ordered[-1]['discharge'], s['discharge'])
+        else:
+            ordered.append(s)
+    from datetime import date
+    for i, s in enumerate(ordered):
+        nxt = ordered[i + 1] if i + 1 < len(ordered) else None
+        gap = (date.fromisoformat(nxt['admit']) - date.fromisoformat(s['discharge'])).days if nxt else None
+        s['readmitted'] = gap is not None and 0 <= gap <= READMIT_DAYS
+        s['days_to_readmission'] = gap if s['readmitted'] else None
+    return ordered
+
+
 def _resolve(concept, profile):
-    if not concept: return None
-    kind = 'measurement' if concept in concepts.MEASUREMENTS else 'concept'
-    atom = {'kind': 'concept', 'concept': concept, 'window': {'basis': 'all_observed', 'start': '', 'end': ''}}
-    grounded, _ = grounding.prepare({'all': [atom], 'any': [], 'exclude': []}, profile)
-    return grounded['all'][0]['_resolved']
+    """Concept bindings; a concept with no received records simply matches nothing."""
+    return concepts.resolve(concept, profile) if concept else None
 
 
 def execute(path, patient_ids, params):
@@ -123,7 +155,7 @@ def execute(path, patient_ids, params):
     profile = source_profile.load(path)
     target = _resolve(p['concept'], profile)
     burden = {c: _resolve(c, profile) for c in BURDEN_CONCEPTS} if p['adjust'] == 'age_sex_conditions' else {}
-    streams = {'care_team_relationships', 'coverage'}
+    streams = {'care_team_relationships', 'coverage'} | ({'encounters'} if p['measure'] == 'readmissions' else set())
     for r in [target, *burden.values()]:
         if r: streams.update(b['stream'] for b in r['bindings'])
     members = set(patient_ids)
@@ -155,7 +187,9 @@ def execute(path, patient_ids, params):
 
     # Per-patient numerators.
     events, has, values, unknown_dates = defaultdict(dict), {}, {}, 0
+    stays = {pid: _stays(records[pid], p['window'], as_of) for pid in people} if p['measure'] == 'readmissions' else {}
     for pid in people:
+        if p['measure'] == 'readmissions': continue
         hits = []
         for r in records[pid]:
             b = _matches(target, r) if target else None
@@ -175,7 +209,11 @@ def execute(path, patient_ids, params):
                 values[pid] = max(vals)[1] if p['value_aggregate'] == 'latest' else statistics.mean(v for _, v in vals)
 
     def numerator(pid):
+        if p['measure'] == 'readmissions': return sum(s['readmitted'] for s in stays[pid])
         return len(events[pid]) if p['measure'] == 'events' else int(has.get(pid, False))
+
+    def denominator(pids):
+        return sum(len(stays[x]) for x in pids) if p['measure'] == 'readmissions' else len(pids)
 
     # Indirect standardisation.
     expected = {}
@@ -183,11 +221,17 @@ def execute(path, patient_ids, params):
         key = (lambda a: (a['age_band'], a['sex'])) if p['adjust'] == 'age_sex' else (lambda a: (a['age_band'], a['sex'], a['burden']))
         strata = defaultdict(lambda: [0, 0])
         for pid in people:
-            s = strata[key(attrs[pid])]; s[0] += numerator(pid); s[1] += 1
-        expected = {pid: strata[key(attrs[pid])][0] / strata[key(attrs[pid])][1] for pid in people}
+            s = strata[key(attrs[pid])]; s[0] += numerator(pid); s[1] += denominator([pid])
+        expected = {pid: (strata[key(attrs[pid])][0] / strata[key(attrs[pid])][1] if strata[key(attrs[pid])][1] else 0)
+                         * denominator([pid]) for pid in people}
 
     groups = defaultdict(list)
-    if p['group_by'] == 'event_organization':
+    facility_stays = defaultdict(list)
+    if p['group_by'] == 'facility' and p['measure'] == 'readmissions':
+        for pid in people:
+            for s in stays[pid]:
+                groups[s['organization'] or 'unknown'].append(pid); facility_stays[s['organization'] or 'unknown'].append((pid, s))
+    elif p['group_by'] == 'facility':
         for pid in people:
             for org in events[pid].values(): groups[org].append(pid)
     else:
@@ -201,12 +245,19 @@ def execute(path, patient_ids, params):
             vals = [values[x] for x in unique if x in values]
             row.update(patients_with_value=len(vals), value=round(statistics.mean(vals) if p['statistic'] == 'mean' else statistics.median(vals), 3) if vals else None)
         else:
-            num = len(pids) if p['group_by'] == 'event_organization' else sum(numerator(x) for x in unique)
+            pairs = facility_stays.get(label) if p['group_by'] == 'facility' and p['measure'] == 'readmissions' else None
+            if pairs is not None: num = sum(s['readmitted'] for _, s in pairs)
+            else: num = len(pids) if p['group_by'] == 'facility' else sum(numerator(x) for x in unique)
             row['numerator'] = num
-            if p['statistic'] == 'share': row['value'] = round(num / len(unique), 4) if unique else None
+            if p['measure'] == 'readmissions':
+                row['index_stays'] = len(pairs) if pairs is not None else denominator(unique)
+                row['value'] = (round(num / row['index_stays'], 4) if row['index_stays'] else None) if p['statistic'] == 'rate' else num
+                chosen = pairs if pairs is not None else [(x, s) for x in unique for s in stays[x]]
+                row['readmissions'] = [{'patient_id': x, **s} for x, s in chosen if s['readmitted']][:20]
+            elif p['statistic'] == 'share': row['value'] = round(num / len(unique), 4) if unique else None
             elif p['statistic'] == 'rate_per_1000': row['value'] = round(1000 * num / len(unique), 2) if unique else None
             else: row['value'] = num
-            if expected and p['group_by'] != 'event_organization':
+            if expected and p['group_by'] != 'facility':
                 e = sum(expected[x] for x in unique)
                 row.update(expected=round(e, 2), oe_ratio=round(num / e, 3) if e else None, oe_ci95=_poisson_ci(num, e))
         row['small_group'] = len(unique) < SMALL_GROUP
@@ -216,10 +267,12 @@ def execute(path, patient_ids, params):
     rank = 'oe_ratio' if expected else 'value'
     rows.sort(key=lambda r: (r.get('small_group'), -(r.get(rank) if r.get(rank) is not None else -1e18), str(r['group'])))
     overall = summarise('all', list(people))
-    return {'schema': VERSION, 'parameters': p, 'rows': rows[:p['top']], 'groups_total': len(rows), 'overall': overall,
+    notes = [f"No received records match concept '{p['concept']}'."] if target is not None and not target['bindings'] else []
+    return {'schema': VERSION, 'parameters': p, 'notes': notes, 'rows': rows[:p['top']], 'groups_total': len(rows), 'overall': overall,
             'ranked_by': rank, 'records_with_unknown_date': unknown_dates,
             'unattributed_patients': sum(a['pcp'] == 'unattributed' for a in attrs.values()) if p['group_by'] in ('pcp', 'practice') else None,
             'interpretation': grounding.interpretation({'all': [{'kind': 'concept', '_resolved': target}]}) if target else [],
             'method': ('Events = distinct patient-days per concept. ' if p['measure'] == 'events' else '') +
+                      (f'Index stays = inpatient/observation encounters collapsed by admit day; readmission = next stay within {READMIT_DAYS} days of discharge. ' if p['measure'] == 'readmissions' else '') +
                       ('Indirect standardisation over ' + p['adjust'].replace('_', ' x ') + ' strata; O/E with Byar 95% CI. ' if expected else '') +
                       f'Groups under {SMALL_GROUP} patients are flagged and ranked last. PCP = latest assigned primary-care relationship.'}
