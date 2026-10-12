@@ -140,7 +140,8 @@ def summarize(rows, total_questions):
     costs = [r.get('estimated_cost_usd') for r in rows]
     known = [recorded_cost(r) for r in rows if recorded_cost(r) is not None]
     complete = all(finite_number(c) for c in costs) and bool(rows)
-    latency = [r['latency_s'] for r in rows if finite_number(r.get('latency_s'))]
+    # A fast connection refusal must not make answer delivery appear faster.
+    latency = [r['latency_s'] for r in rows if finite_number(r.get('latency_s')) and not r.get('error')]
     return {'attempted': len(rows), 'total_questions': total_questions, 'correct': correct,
             'value_matches': sum(r['score']['value_match'] for r in scored),
             'correct_abstentions': sum(r['score']['correct_abstention'] for r in scored),
@@ -182,7 +183,7 @@ def write_scorecard(results=ROOT / 'results', destination=ROOT / 'SCORECARD.md')
     systems = sorted({s for s, _ in latest})
     lines = ['# Independent answer benchmark', '',
              'Latest attempt per question, rescored from preserved answers with the current scorer; unrun questions are not passes. Reference results are SQL self-checks, not product accuracy.', '',
-             '| System | Attempted / suite | Correct | Value matches | Coverage | Correct abstentions | False assertions | Execution errors | p50 / p95 seconds | Known API USD | Cost complete | USD / correct |',
+             '| System | Attempted / suite | Correct | Value matches | Coverage | Correct abstentions | False assertions | Execution errors | Response p50 / p95 seconds | Known API USD | Cost complete | USD / correct |',
              '|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---|---:|']
     fmt = lambda v: 'unknown' if v is None else f'{v:.4f}'
     summaries = {}
@@ -241,7 +242,7 @@ def write_scorecard(results=ROOT / 'results', destination=ROOT / 'SCORECARD.md')
     lines += ['', '## Measurement limits', '',
               '- Development and challenge cases were authored from received data; challenges are visible and are not an independently sealed clinical test set.',
               '- Counts, units, date rules, tables and patient sets are checked against separate raw-source SQL. SQL semantics still require independent review.',
-              '- Latencies include failed attempts and are observed endpoint/tool-loop times with existing caches; see each row for concurrency. No controlled cold-start or deployment performance claim.',
+              '- Latency percentiles use completed responses without execution errors, including incorrect answers; fast connection refusals are excluded. Raw attempts retain every elapsed time. Existing caches and concurrency vary; this is not controlled deployment performance.',
               '- API estimates use recorded token usage and dated project prices. Local compute, engineering-chat usage and human review are excluded. Unknown costs stay unknown.',
               '- Different suite/source identities must not be interpreted as a controlled comparison. Both systems must complete the same cases before comparing aggregate accuracy.',
               '- Execution errors include unavailable/interrupted endpoints; these are operational failures, not evidence that the model gave an incorrect clinical answer.',

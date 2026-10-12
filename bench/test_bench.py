@@ -262,6 +262,11 @@ class ScorerTests(unittest.TestCase):
         rows=[{'score':score_answer(self.q,self.expected,None),'estimated_cost_usd':1,'latency_s':3}]
         self.assertIsNone(summarize(rows,50)['cost_per_correct_usd'])
 
+    def test_fast_connection_errors_do_not_improve_response_latency(self):
+        rows=[{'latency_s':.0001,'error':'Connection refused'},
+              {'latency_s':12,'error':None}]
+        self.assertEqual(summarize(rows,50)['latency_p50_s'],12)
+
     def test_latest_attempt_not_best_score(self):
         with tempfile.TemporaryDirectory() as d:
             folder=Path(d)/'agere';folder.mkdir()

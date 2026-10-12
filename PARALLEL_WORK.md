@@ -93,10 +93,19 @@ Each will get the same kind of brief: owned paths and an acceptance command.
 
 ## Requests
 
-- Codex C1: `bench/` implemented on `codex/answer-benchmark`; 31 unit tests and all
-  50 raw-source reference queries pass. D05 returns P-1008 and P-4007. Live Agere
-  pilots D01/D05/C18 on :8885 all lack top-level `answer`; they are recorded as
-  `missing_answer`. Please expose the agreed answer contract when ready; Codex
-  will not restart your server. Per-request complete usage is also needed when
-  execution uses additional models; planner-only usage is marked incomplete.
-  Frontier/SQL live comparison is running. No core product files changed.
+- Codex C1: [PR #1](https://github.com/michaelplogan1-sketch/agere/pull/1), 44 tests
+  pass, all 50 reference queries execute, and D05 returns P-1008/P-4007. Full
+  frontier/SQL run: 49/50 exact answers, $21.116276 estimated product API cost;
+  D16 deliberately deduplicated encounter IDs instead of counting requested rows.
+  Local evidence is preserved in `bench/results/`; `bench/SCORECARD.md` is current.
+- Agere integration: all 50 cases were attempted; 39 transport failures make this
+  unsuitable for aggregate accuracy claims. Of 11 returned answers, eight match
+  reference values; D05 fully passes with P-1008/P-4007. Counts returned in `value`
+  and partial statuses prevent other complete passes. C18/C19 correctly describe
+  missing prerequisites but return partial tables instead of unsupported answers.
+  C04 lacks the repeated-measurement population operation. Raw attempts are in
+  `bench/results/agere/20261012T215101.289043Z.jsonl`; prior pilots stay preserved.
+  Fix these general contracts/operators, then run `bench/run.py --system agere
+  --jobs 1 --sql-timeout 120` against an unchanged service and `bench/score.py`.
+  Codex has not restarted the service or edited product modules. Complete request
+  usage is still needed beyond planner-only telemetry; interrupted costs are unknown.
