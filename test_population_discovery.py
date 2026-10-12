@@ -97,7 +97,7 @@ class QuestionDiscovery(unittest.TestCase):
             with self.assertRaises(ValueError):S.run(self.retriever,self.request(d))
         with q.database(self.path) as db:self.assertEqual(db.execute('SELECT count(*) FROM question_decision_followups').fetchone()[0],0)
     def test_complete_empty_population_and_bound_failure(self):
-        self.req['cohort']={'all':[{'kind':'patient','field':'sex','op':'eq','value':'not-observed'}],'any':[],'exclude':[]}
+        self.req['cohort']={'all':[{'kind':'patient','field':'patient_id','op':'eq','value':'not-observed'}],'any':[],'exclude':[]}
         d=self.prepare();r=S.run(self.retriever,self.request(d));self.assertEqual(r['members'],[]);self.assertTrue(self.open(r,'')['current'])
         self.req['cohort']={'all':[],'any':[],'exclude':[]};d=self.prepare()
         with patch.object(S,'MAX_RECORDS',0):

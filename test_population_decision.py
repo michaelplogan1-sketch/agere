@@ -40,6 +40,9 @@ class PopulationDecision(unittest.TestCase):
         self.assertEqual(d['counts']['mapped_for_documentary_review'],1)
     def test_unknown_cohort_members_never_disappear(self):
         with sqlite3.connect(self.path/'stack.sqlite3') as db:
+            # sex is received for other patients; p5's value is missing.
+            for pid,payload in db.execute('SELECT id,payload FROM patients').fetchall():
+                db.execute('UPDATE patients SET payload=? WHERE id=?',(json.dumps({**json.loads(payload),'sex':'F'}),pid))
             raw=json.loads(db.execute("SELECT payload FROM patients WHERE id='p5'").fetchone()[0]);raw['sex']=None
             db.execute("UPDATE patients SET payload=? WHERE id='p5'",(json.dumps(raw),))
         self.req['cohort']={'all':[{'kind':'patient','field':'sex','op':'eq','value':'not-observed'}],'any':[],'exclude':[]}

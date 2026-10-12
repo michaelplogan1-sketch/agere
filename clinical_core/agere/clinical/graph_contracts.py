@@ -11,7 +11,7 @@ SET_OPS = {'cohort', 'evidence', 'intersect', 'union', 'difference', 'sequence',
            'interpretation', 'source_state', 'pre_event_state', 'requirements', 'outcome',
            'protocol_review', 'program_document', 'functional_review', 'domain_review', 'appointment_followthrough'}
 WORK_SUPPORT = ('accountability_review', 'program_acquisition', 'measure_review')
-TYPED = {'observation_process', 'reference_review', 'cohort', 'evidence', 'intersect', 'union', 'difference', 'compare', 'medication_identity',
+TYPED = {'aggregate', 'observation_process', 'reference_review', 'cohort', 'evidence', 'intersect', 'union', 'difference', 'compare', 'medication_identity',
          'assertion_review', 'source_state', 'pre_event_state', 'context', 'context_passes', 'functional_review',
          'domain_review', 'worklist', 'program_acquisition', 'retrieve', 'forecast',
          'source_changes', 'review', 'measure_review', 'financial_accounts', 'accountability_review', 'outcome', 'appointment_followthrough', 'interpretation', 'requirements', 'protocol_review', 'program_document'}
@@ -82,6 +82,16 @@ def parameter_schema(op, catalog):
     evidence = catalog['evidence_catalog']
     stream_list = array(string(catalog.get('source_streams', streams)), '1..30 distinct explicitly loaded source streams; never widen scope.')
     stream_list['minItems']=1
+    if op == 'aggregate':
+        from . import aggregate, concepts as library
+        return obj({'measure': string(aggregate.STATISTICS),
+            'concept': string(['', *library.CONDITIONS, *library.MEASUREMENTS, *library.ENCOUNTERS],
+                              'What is counted/averaged. patients: any concept or "" (population size); events: encounter or condition concept; value: measurement concept.'),
+            'statistic': string(sorted({s for v in aggregate.STATISTICS.values() for s in v}),
+                                'patients: count|share; events: count|rate_per_1000; value: mean|median'),
+            'group_by': string(aggregate.GROUP_BY), 'adjust': string(aggregate.ADJUSTMENTS, 'Case-mix standardisation for counts/shares'),
+            'window': obj({'start': {'type': 'string', 'description': 'YYYY-MM-DD or empty'}, 'end': {'type': 'string', 'description': 'YYYY-MM-DD or empty'}}),
+            'value_aggregate': string(['latest', 'all']), 'top': {'type': 'integer', 'minimum': 1, 'maximum': 200}})
     if op == 'observation_process':
         return obj({'stream':string(catalog.get('source_streams',streams)),
             'months':{'type':'integer','minimum':2,'maximum':24},
@@ -113,11 +123,14 @@ def parameter_schema(op, catalog):
         return obj({'package':string(r['id'] for r in evidence.get('program_documents',[])), 'filter':string(FILTERS)})
     if op == 'cohort':
         spec=copy.deepcopy(cohorts.SCHEMA)
+        from . import concepts as concept_library
         for prop in spec['properties'].values():
-            patient,record=prop['items']['anyOf']
+            patient,record,concept,measurement=prop['items']['anyOf']
             patient['properties']['field']=string(cohorts.PATIENT_FIELDS)
+            concept['properties']['concept']=string([*concept_library.CONDITIONS,*concept_library.MEASUREMENTS,*concept_library.ENCOUNTERS])
+            measurement['properties']['concept']=string(concept_library.MEASUREMENTS)
             if streams:record['properties']['stream']=string(streams)
-            else:prop['items']=patient
+            else:prop['items']={'anyOf':[patient,concept,measurement]}
         return obj({'specification':spec})
     if op == 'evidence':
         from .evidence_queries import FIELDS

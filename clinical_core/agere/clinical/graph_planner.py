@@ -21,6 +21,12 @@ SCHEMA = {'type': 'object', 'properties': {
     'required': ['interpretation', 'coverage', 'unmet_requirements', 'nodes'], 'additionalProperties': False}
 
 CONTRACTS = {
+    'aggregate': {'inputs':['earlier_set'],'parameters':{'measure':'patients|events|value','concept':'clinical_concepts id ("" = whole population for patients)',
+        'statistic':'patients: count|share; events: count|rate_per_1000; value: mean|median','group_by':'none|pcp|practice|coverage_type|age_band|sex|event_organization',
+        'adjust':'none|age_sex|age_sex_conditions','window':{'start':'YYYY-MM-DD or ""','end':'YYYY-MM-DD or ""'},'value_aggregate':'latest|all','top':25},
+        'meaning':'Counts, rates per 1000 patients, shares and mean/median values over the input population, optionally grouped by attributed PCP/practice (latest assigned primary-care relationship), payer type, age band or sex. '
+                  'Events are distinct patient-days of a concept. adjust standardises indirectly (age band x sex [x chronic-condition burden]) and reports O/E with 95% CI; use it for any "adjusted"/"case-mix"/"fair comparison" request. '
+                  'Use as the final node for how-many/rate/average/which-group questions.'},
     'observation_process': {'inputs':['earlier_set'],'parameters':{'stream':'One exact received source stream','months':'2..24 calendar months ending at cutoff','available_by':'literal YYYY-MM-DD receipt cutoff'},'meaning':'Full-population record arrival/source-date comparison, literal source/organization strata, Poisson partitions vs constant rate, repeated-text sensitivity and correction pointers. Retains no-arrival members and unknown dates; competing explanations and evidence requests. Report only: no unique clinical events, clinical change, outage, attribution, quality, causality or service indication.'},
     'reference_review': {'inputs':['earlier_population','optional_earlier_evidence_nodes'],'parameters':{'reference_id':'Exact scientific_references id','available_by':'ISO receipt cutoff','bindings':[{'question_key':'Exact registered applicability question key','node_ids':['earlier evidence node id']}]},'meaning':'Dated scientific reference/applicability questions with exact patient evidence links. Population first; optional receipt inputs bound to question keys. Applicability, currency and benefit unresolved. Report only; no eligibility/service inference.'},
     'appointment_followthrough': {'inputs':['earlier_set'],'parameters':{'available_by':'literal YYYY-MM-DD','filter':'all or explicit_fulfilled or explicit_no_show or explicit_cancelled or unresolved'},'meaning':'Received first-booking follow-through for every selected patient. Earliest booking received since 2026-01-01; exact source identity, terminal event through scheduled +7d and receipt +14d. Explicit dispositions only; absent/conflicting/censored follow-up stays unknown. Not every appointment or arbitrary event-window analysis. all retains the full input denominator; explicit status filters keep unknowns. Current-cutoff membership can feed existing appointment review work; historical cutoffs cannot feed current work. No cause, current need, attendance verification or risk prediction.'},
@@ -98,11 +104,31 @@ CONTRACTS = {
 }
 
 
-def propose(question, path, ledger, *, snapshot, graph_catalog, observed_values=None):
+def grounded_fields(fields, profile):
+    """Offer only streams/fields the received data populates, with small value vocabularies."""
+    from .source_profile import summary
+    observed = summary(profile)
+    # Field value: observed coded values, a [min, max] numeric range, or 'text'.
+    record_fields = {}
+    for stream, names in fields['record_fields'].items():
+        if stream not in observed: continue
+        present = {n: observed[stream]['fields'][n] for n in sorted(names) if n in observed[stream]['fields']}
+        if present: record_fields[stream] = present
+    patient_fields = [f for f in fields['patient_fields']
+                      if profile['patients']['fields'].get('birth_date' if f == 'age' else f, {}).get('populated')]
+    return {**fields, 'record_fields': record_fields, 'patient_fields': patient_fields,
+            'age_basis': 'Use age_reported (reported age); birth dates are not received.'}
+
+
+def propose(question, path, ledger, *, snapshot, graph_catalog, observed_values=None, profile=None):
     if not isinstance(question, str) or not 1 <= len(question.strip()) <= 1500:
         raise ValueError('Bounded population question required')
     fields = capabilities()
     fields.pop('schema')
+    if profile is not None:
+        from . import concepts
+        fields = grounded_fields(fields, profile)
+        fields['clinical_concepts'] = concepts.catalog()
     fields['operators'] = ['eq','ne','lt','le','gt','ge','contains','prefix']
     fields['record_atom_example'] = {'kind':'record','stream':'adt','conditions':[{'field':'event','op':'eq','value':'A01'}],
                                     'window':{'basis':'all_observed','start':'','end':''}}
@@ -171,6 +197,13 @@ def propose(question, path, ledger, *, snapshot, graph_catalog, observed_values=
         'patient':{'kind':'patient','field':'exact patient_fields name','op':'exact supplied operator','value':'scalar'},
         'record':{'kind':'record','stream':'exact record_fields name','conditions':[{'field':'exact field','op':'exact supplied operator','value':'scalar'}],
                   'window':{'basis':'all_observed','start':'','end':''}},
+        'concept':{'kind':'concept','concept':'clinical_concepts id (condition, or measurement = any result)',
+                   'window':{'basis':'all_observed','start':'','end':''}},
+        'measurement':{'kind':'measurement','concept':'clinical_concepts.measurements id','op':'lt|le|gt|ge|eq|ne',
+                       'value':'number in the concept unit','aggregate':'any or latest',
+                       'window':{'basis':'all_observed','start':'','end':''}},
+        'concept_rule':'For diagnoses, labs and vitals use concept/measurement atoms: they match every coding system and label actually received. '
+                       'Use raw record atoms only for non-clinical attributes listed in record_fields (values shown are the observed vocabulary).',
         'specification':{'all':[],'any':[],'exclude':[]},
         'rule':'Every atom must include kind. For one named patient put a patient_id eq atom in all. Never omit the patient restriction.'}
     catalog={'question': question, 'snapshot': {'as_of':snapshot['as_of']},
@@ -194,7 +227,9 @@ def propose(question, path, ledger, *, snapshot, graph_catalog, observed_values=
         for wire in graph['nodes']:
             if set(wire) != {'id', 'operation', 'inputs', 'parameters_json', 'purpose'} or not isinstance(wire['parameters_json'], str) or len(wire['parameters_json']) > 12000:
                 raise ValueError('Invalid wire graph node')
-            nodes.append({k: v for k, v in wire.items() if k != 'parameters_json'} | {'parameters': json.loads(wire['parameters_json'])})
+            parameters = json.loads(wire['parameters_json'])
+            if wire['operation'] == 'cohort': normalize_specification(parameters.get('specification'))
+            nodes.append({k: v for k, v in wire.items() if k != 'parameters_json'} | {'parameters': parameters})
         graph = validate({**graph, 'nodes': nodes}, snapshot['as_of'])
         for node in graph['nodes']:
             if node['operation'] == 'cohort':
@@ -204,4 +239,28 @@ def propose(question, path, ledger, *, snapshot, graph_catalog, observed_values=
         return graph
 
     from .planner_scope import dispatch
-    return dispatch(body,catalog,lambda b,**kw:send(b,'claude',ledger,path,**kw),parse=parse)
+    call = lambda b, **kw: send(b, 'claude', ledger, path, **kw)
+    try:
+        return dispatch(body, catalog, call, parse=parse)
+    except (ValueError, KeyError, TypeError) as exc:
+        if 'bound' in str(exc): raise
+        # One repair attempt: the same request plus the validator's message.
+        retry = {**body, 'system': body['system'] + f' A previous plan for this question failed validation with: {str(exc)[:400]}. Return a corrected graph that satisfies the contracts.'}
+        graph, receipt = dispatch(retry, catalog, call, parse=parse)
+        return graph, {**receipt, 'repaired_after_validation_error': str(exc)[:400]}
+
+
+ATOM_ALIASES = {'where': 'conditions', 'filters': 'conditions', 'predicates': 'conditions', 'clauses': 'conditions'}
+
+
+def normalize_specification(spec):
+    """Heal common wire slips (alias keys, missing groups) before strict validation."""
+    if not isinstance(spec, dict): return
+    for group in ('all', 'any', 'exclude'):
+        spec.setdefault(group, [])
+        for atom in spec[group] if isinstance(spec[group], list) else []:
+            if not isinstance(atom, dict): continue
+            for alias, name in ATOM_ALIASES.items():
+                if alias in atom and name not in atom: atom[name] = atom.pop(alias)
+            if atom.get('kind') == 'record': atom.setdefault('window', {'basis': 'all_observed', 'start': '', 'end': ''})
+            if atom.get('kind') == 'measurement': atom.setdefault('aggregate', 'any')

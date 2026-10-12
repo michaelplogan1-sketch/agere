@@ -1,5 +1,6 @@
 """Behavior checks for complete populations, unknowns and composed execution."""
 import itertools
+from clinical_core.agere.clinical.context_student import REQUEST_MAX_BYTES
 import json
 from pathlib import Path
 import sqlite3
@@ -294,7 +295,7 @@ class GraphExecution(unittest.TestCase):
 
     def test_provider_request_fits_existing_bound(self):
         def capture(body, *args, **kwargs):
-            self.assertLess(len(json.dumps(body).encode()), 20000)
+            self.assertLess(len(json.dumps(body).encode()), REQUEST_MAX_BYTES)
             schema = body['output_config']['format']['schema']
             if 'segments' in schema['properties']:
                 result = {'segments': [{'text': 'Describe observed populations.',

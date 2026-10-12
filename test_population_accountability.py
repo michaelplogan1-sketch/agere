@@ -78,7 +78,7 @@ class PopulationAccountability(unittest.TestCase):
         for change in ({'buyer_id':'other'},{'selected_task_ids':['other-question-task']},{'patient_ids':['p1']},{'current':False,'stale_reason':'changed'}):
             with patch.object(P,'inspect',return_value={**s,**change}),self.assertRaises(ValueError):q.population_accountability(self.retriever,req)
     def test_empty_cohort_stays_empty_and_unknowns_retained(self):
-        self.req['cohort']={'all':[{'kind':'patient','field':'sex','op':'eq','value':'not-observed'}],'any':[],'exclude':[]}
+        self.req['cohort']={'all':[{'kind':'patient','field':'patient_id','op':'eq','value':'not-observed'}],'any':[],'exclude':[]}
         d=self.prepare();r=q.population_accountability(self.retriever,self.request(d))
         self.assertEqual(len(r['members']),0);self.assertEqual(r['financial']['accounts_evaluated'],0);self.assertEqual(r['selection'],d['selection'])
     def test_receipt_tampering_detected_on_member_open(self):

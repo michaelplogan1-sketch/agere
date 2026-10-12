@@ -19,10 +19,15 @@ def identifier_groups(values):
 def factor(catalog):
     data=copy.deepcopy(catalog)
     fields=data['cohort_fields']['record_fields']
-    common=sorted(set.intersection(*(set(v) for v in fields.values()))) if fields else []
-    data['cohort_fields']['record_fields']={
-        'common_to_all_streams':common,
-        'additional_by_stream':{k:[x for x in v if x not in common] for k,v in fields.items()}}
+    if fields and all(isinstance(v,dict) for v in fields.values()):
+        # Grounded fields carry observed vocabularies per stream; keep them intact.
+        common=[]
+        data['cohort_fields']['record_fields']={'common_to_all_streams':common,'additional_by_stream':fields}
+    else:
+        common=sorted(set.intersection(*(set(v) for v in fields.values()))) if fields else []
+        data['cohort_fields']['record_fields']={
+            'common_to_all_streams':common,
+            'additional_by_stream':{k:[x for x in v if x not in common] for k,v in fields.items()}}
     longitudinal=data['evidence_catalog']['longitudinal']
     if longitudinal.get('available'):
         events=set(longitudinal.pop('event_types'));streams=set(longitudinal['streams'])

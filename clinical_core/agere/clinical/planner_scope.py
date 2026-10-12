@@ -10,8 +10,9 @@ from ...contracts import digest
 from .planner_catalog import serialize
 
 VERSION='bounded-planner-scope/7'
-MAX_BYTES=20000
-PLAN_MAX_BYTES=MAX_BYTES  # Match the actual shared provider transport bound.
+from .context_student import REQUEST_MAX_BYTES
+MAX_BYTES=REQUEST_MAX_BYTES
+PLAN_MAX_BYTES=MAX_BYTES  # Match the shared provider transport bound.
 
 
 def bounded(body,limit=MAX_BYTES):return len(json.dumps(body,allow_nan=False).encode())<=limit

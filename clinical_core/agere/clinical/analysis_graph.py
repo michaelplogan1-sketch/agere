@@ -17,12 +17,12 @@ from scipy.stats import fisher_exact
 
 from ...contracts import digest
 from ..mathematics import benjamini_hochberg, facility_shrinkage
-from . import cohorts, evidence_queries
+from . import cohorts, evidence_queries, grounding
 from .clinical_events import validate_window
 
 VERSION = 'population-analysis-graph/1'
 from .graph_contracts import SET_OPS, validate_inputs, validate_parameters as validate_shared_parameters
-OPERATIONS = SET_OPS | {'observation_process', 'reference_review', 'compare', 'analyze', 'retrieve', 'forecast', 'source_changes', 'review','longitudinal','worklist','state_review','medication_identity','context','context_passes','assertion_review','baseline','decision_landmark','financial_accounts','accountability_review','protocol_change','program_document_change','program_acquisition','measure_review','evidence_portfolio'}
+OPERATIONS = SET_OPS | {'aggregate', 'observation_process', 'reference_review', 'compare', 'analyze', 'retrieve', 'forecast', 'source_changes', 'review','longitudinal','worklist','state_review','medication_identity','context','context_passes','assertion_review','baseline','decision_landmark','financial_accounts','accountability_review','protocol_change','program_document_change','program_acquisition','measure_review','evidence_portfolio'}
 NODE_FIELDS = {'id', 'operation', 'inputs', 'parameters', 'purpose'}
 LIMITS = [
     'Membership means observed predicate matches, not confirmed disease or absent care.',
@@ -76,6 +76,55 @@ def answer_coverage(plan, results):
             'meaning': 'Execution coverage is separate from plan support. These are bounded source observations, not clinical or causal conclusions.'}
 
 
+COUNT_QUESTION = re.compile(r'\b(how many|number of|count|what (?:share|proportion|percent(?:age)?))\b', re.I)
+
+
+def build_answer(plan, results, memberships, question):
+    """Shared answer contract: the direct answer, what it covers, and why not if it can't.
+
+    The terminal membership node answers population questions. Report-only
+    graphs are partial until reduced to a scalar/table answer.
+    """
+    grounding_issues = [i for r in results for i in r['result'].get('grounding', [])]
+    failed = [r for r in results if r['result'].get('grounding_failed')]
+    interpretation = [i for r in results for i in r['result'].get('interpretation', [])]
+    answer = {'status': None, 'answer_type': None, 'count': None, 'patient_ids': None, 'value': None,
+              'table': None, 'unknown_count': 0, 'missing': list(plan.get('unmet_requirements', [])),
+              'grounding': grounding_issues, 'interpretation': plan.get('interpretation'), 'concepts': interpretation}
+    if failed:
+        answer.update(status='grounding_failed', answer_type='unsupported')
+        answer['missing'] += [i['detail'] for r in failed for i in r['result']['grounding'] if i.get('severity') == 'error']
+        return answer
+    if plan.get('coverage') == 'unsupported' or not plan['nodes']:
+        answer.update(status='unsupported', answer_type='unsupported')
+        return answer
+    last = plan['nodes'][-1]
+    if last['operation'] == 'aggregate':
+        report = results[-1]['result']
+        partial = plan.get('coverage') != 'supported_observation' or plan.get('unmet_requirements')
+        answer['concepts'] = interpretation + report.get('interpretation', [])
+        if last['parameters']['group_by'] == 'none':
+            answer.update(answer_type='value', value=report['overall'].get('value'), table=[report['overall']])
+        else:
+            answer.update(answer_type='table', table=report['rows'])
+        answer.update(status='partial' if partial else 'answered', method=report['method'], overall=report['overall'])
+        return answer
+    terminal = next((n['id'] for n in reversed(plan['nodes']) if n['id'] in memberships), None)
+    if terminal is None or plan['nodes'][-1]['id'] != terminal:
+        answer.update(status='partial', answer_type='table')
+        answer['missing'].append('Report output is not yet reduced to a direct answer.')
+        return answer
+    m = memberships[terminal]
+    wants_count = bool(question and COUNT_QUESTION.search(question))
+    answer.update(answer_type='count' if wants_count else 'patient_set', count=len(m.yes),
+                  patient_ids=sorted(m.yes), unknown_count=len(m.unknown))
+    partial = plan.get('coverage') != 'supported_observation' or plan.get('unmet_requirements') or m.unknown \
+        or any(i.get('severity') == 'warning' for i in grounding_issues)
+    if m.unknown: answer['missing'].append(f'{len(m.unknown)} patients could not be evaluated from the received records.')
+    answer['status'] = 'partial' if partial else 'answered'
+    return answer
+
+
 def validate(plan, as_of):
     from .stack_planner import validate as validate_analytic_plan
     if not isinstance(plan, dict) or set(plan) != {'interpretation', 'nodes', 'coverage', 'unmet_requirements'}:
@@ -113,6 +162,9 @@ def validate(plan, as_of):
             if inputs or set(p) != {'specification'}:
                 raise ValueError('Cohort node needs its explicit specification')
             p = {'specification': cohorts.validate(p['specification'], as_of)}
+        elif op == 'aggregate':
+            from . import aggregate
+            p = aggregate.validate(p)
         elif op == 'evidence':
             if inputs or set(p) != {'plan'}:
                 raise ValueError('Evidence node needs its explicit plan')
@@ -620,10 +672,24 @@ def execute(stack, plan, *, question=None):
             op, params = node['operation'], node['parameters']
             value, detail = None, {}
             if op == 'cohort':
-                selected = cohorts.select(path, params['specification'])
-                value = Membership(universe, set(selected['patient_ids']), set(selected['unknown_patient_ids']))
-                detail = {'specification': selected['specification'], 'source_examples': selected['examples'],
-                          'selection_receipt': selected['id'], 'selection_cache_hit': selected['cache_hit']}
+                try:
+                    selected = cohorts.select(path, params['specification'])
+                except grounding.GroundingError as exc:
+                    # The data cannot support this predicate: report it, don't
+                    # convert a binding failure into patient-level unknowns.
+                    value = Membership(universe, set(), set(universe))
+                    detail = {'specification': params['specification'], 'grounding_failed': True,
+                              'grounding': exc.issues}
+                else:
+                    value = Membership(universe, set(selected['patient_ids']), set(selected['unknown_patient_ids']))
+                    detail = {'specification': selected['specification'], 'source_examples': selected['examples'],
+                              'selection_receipt': selected['id'], 'selection_cache_hit': selected['cache_hit'],
+                              'grounding': selected.get('grounding', []), 'interpretation': selected.get('interpretation', [])}
+            elif op == 'aggregate':
+                from . import aggregate
+                chosen = memberships[node['inputs'][0]]
+                detail = aggregate.execute(path, sorted(chosen.yes), params)
+                detail['input_membership'] = membership_receipt(chosen)
             elif op == 'evidence':
                 value, detail = evidence_membership(evidence_db, params['plan'], universe)
             elif op in ('intersect', 'union', 'difference'):
@@ -878,6 +944,7 @@ def execute(stack, plan, *, question=None):
         if appointment_dependency and appointment_graph.dependency(path) != appointment_dependency:
             raise ValueError('Appointment sources changed during graph execution; result not cached')
         result['question']=question
+        result['answer']=build_answer(plan, results, memberships, question)
         if any(n['operation'] in ('source_state','pre_event_state','requirements','protocol_review','program_document','reference_review',*graph_reports.OPERATIONS) for n in plan['nodes']):
             from .graph_decision import source_fingerprint
             result['review_source_fingerprint'] = source_fingerprint(path, result)

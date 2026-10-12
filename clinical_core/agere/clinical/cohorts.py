@@ -9,6 +9,7 @@ from pathlib import Path
 import hashlib, json, math, sqlite3
 from ...contracts import digest
 from .clinical_events import WINDOW_SCHEMA, validate_window, window_state, bind_event
+from . import concepts, grounding, source_profile
 
 VERSION = 'observed-cohort/1'
 PATIENT_FIELDS = {'patient_id', 'age', 'sex', 'region', 'preferred_language', 'coverage',
@@ -56,7 +57,14 @@ ATOM_SCHEMA = {'anyOf': [
     {'type': 'object', 'properties': {'kind': {'type': 'string', 'enum': ['record']},
        'stream': {'type': 'string', 'enum': sorted(RECORD_FIELDS)},
        'conditions': {'type': 'array', 'items': CONDITION_SCHEMA}, 'window': WINDOW_SCHEMA},
-       'required': ['kind', 'stream', 'conditions', 'window'], 'additionalProperties': False}]}
+       'required': ['kind', 'stream', 'conditions', 'window'], 'additionalProperties': False},
+    {'type': 'object', 'properties': {'kind': {'type': 'string', 'enum': ['concept']},
+       'concept': {'type': 'string'}, 'window': WINDOW_SCHEMA},
+       'required': ['kind', 'concept', 'window'], 'additionalProperties': False},
+    {'type': 'object', 'properties': {'kind': {'type': 'string', 'enum': ['measurement']},
+       'concept': {'type': 'string'}, 'op': {'type': 'string', 'enum': ['eq', 'ne', 'lt', 'le', 'gt', 'ge']},
+       'value': {'type': 'number'}, 'aggregate': {'type': 'string', 'enum': ['any', 'latest']}, 'window': WINDOW_SCHEMA},
+       'required': ['kind', 'concept', 'op', 'value', 'aggregate', 'window'], 'additionalProperties': False}]}
 SCHEMA = {'type': 'object', 'properties': {k: {'type': 'array', 'items': ATOM_SCHEMA}
            for k in ('all', 'any', 'exclude')}, 'required': ['all', 'any', 'exclude'], 'additionalProperties': False}
 
@@ -103,6 +111,17 @@ def validate(spec, as_of=None):
             for c in atom['conditions']:
                 if c['field'] in ('dx', 'problem_code') and c['op'] not in ('contains', 'prefix'):
                     raise ValueError('Diagnosis lists require exact membership or explicit code prefix')
+        elif atom.get('kind') == 'concept':
+            if set(atom) != {'kind', 'concept', 'window'} or not concepts.is_concept(atom['concept']):
+                raise ValueError('Concept predicate needs a library concept id')
+            validate_window(atom['window'], as_of)
+        elif atom.get('kind') == 'measurement':
+            if set(atom) != {'kind', 'concept', 'op', 'value', 'aggregate', 'window'} or atom['concept'] not in concepts.MEASUREMENTS:
+                raise ValueError('Measurement predicate needs a library measurement concept')
+            if atom['op'] not in ('eq', 'ne', 'lt', 'le', 'gt', 'ge') or type(atom['value']) not in (int, float) \
+                    or not math.isfinite(atom['value']) or atom['aggregate'] not in ('any', 'latest'):
+                raise ValueError('Measurement predicate needs a numeric comparison and any/latest aggregate')
+            validate_window(atom['window'], as_of)
         else: raise ValueError('Unknown cohort predicate kind')
     return spec
 
@@ -145,6 +164,8 @@ def evaluate_atom(atom, patient, records, as_of):
         return compare(got, atom['op'], atom['value']), {'predicate': atom, 'observed_value': got,
                'source': {'table': 'patients', 'field': 'birth_date' if atom['field'] == 'age' else atom['field'],
                           'patient_hash': digest(patient), 'as_of': as_of}}
+    if atom['kind'] in ('concept', 'measurement'):
+        return evaluate_concept(atom, records, as_of)
     states, support, unknown = [], [], []
     eligible = [r for r in records if r['source_table'] == atom['stream']]
     from .warehouse_interpretation import index
@@ -167,6 +188,68 @@ def evaluate_atom(atom, patient, records, as_of):
             'support': support[:8], 'unknown_examples': unknown[:8],
             'nonmatch_meaning': 'No matching observed record, not absence of disease/care.'}
 
+def _record_date(r):
+    return r.get('event_date') or r.get('recorded_date') or r.get('available_date') or ''
+
+
+def _concept_matches(binding, r):
+    if 'values' in binding:
+        got = r.get(binding['field'])
+        values = set(binding['values'])
+        if isinstance(got, list): return any(isinstance(x, str) and x in values for x in got)
+        return isinstance(got, str) and got in values
+    if 'names' in binding:
+        return any(r.get(f) in binding['names'] for f in binding['name_fields'])
+    return r.get(binding['value_field']) is not None
+
+
+def _measurement_value(binding, r, units):
+    """Value converted to the concept's canonical unit, or None if not interpretable."""
+    raw = r.get(binding['value_field'])
+    if type(raw) not in (int, float) or not math.isfinite(raw): return None
+    unit = binding.get('fixed_unit') or r.get(binding['unit_field'])
+    factor = units.get(unit)
+    return None if factor is None else raw * factor
+
+
+def evaluate_concept(atom, records, as_of):
+    """Concept/measurement atoms match records via resolved bindings (all coding systems).
+
+    A patient with no record of the concept is not_matched (no observed match);
+    unknown is reserved for matching records whose window or value cannot be read.
+    """
+    resolved = atom['_resolved']
+    from .warehouse_interpretation import index
+    related = index(records)
+    hits, unreported = [], 0
+    for r in records:
+        binding = next((b for b in resolved['bindings'] if b['stream'] == r['source_table'] and _concept_matches(b, r)), None)
+        if binding is None: continue
+        if atom['kind'] == 'measurement' and r.get(binding['value_field']) is None:
+            # Cancelled/unreported results (e.g. hemolysed specimen) carry no measurement.
+            unreported += 1
+            continue
+        in_window = window_state(r, atom['window'], as_of, related)
+        if in_window is False: continue
+        value = _measurement_value(binding, r, resolved['units']) if atom['kind'] == 'measurement' else None
+        hits.append((r, binding, in_window, value))
+    if atom['kind'] == 'measurement':
+        if atom['aggregate'] == 'latest' and hits:
+            dated = [h for h in hits if h[2] is True and h[3] is not None]
+            hits = [max(dated, key=lambda h: _record_date(h[0]))] if dated else hits
+        states = [truth_all([h[2], compare(h[3], atom['op'], atom['value'])]) for h in hits]
+    else:
+        states = [h[2] for h in hits]
+    support = [{'record_id': h[0].get('record_id'), 'stream': h[0]['source_table'], 'date': _record_date(h[0]),
+                'label': next((h[0].get(f) for f in ('description', 'test', 'measurement', 'icd10') if h[0].get(f)), None),
+                **({'value': h[3], 'unit': resolved['unit']} if atom['kind'] == 'measurement' else {})}
+               for h, s in zip(hits, states) if s is True]
+    return truth_any(states), {'predicate': {k: v for k, v in atom.items() if k != '_resolved'},
+            'records_evaluated': len(hits), 'records_without_reported_value': unreported, 'support_count': len(support),
+            'unknown_record_count': sum(s is None for s in states), 'support': support[:8],
+            'nonmatch_meaning': 'No matching observed record, not absence of disease/care.'}
+
+
 def evaluate_patient(spec, patient, records, as_of):
     groups, traces = {}, []
     for group in ('all', 'any', 'exclude'):
@@ -182,8 +265,18 @@ def evaluate_patient(spec, patient, records, as_of):
 
 def code_identity():
     from .clinical_events import code_identity as event_identity
+    here = Path(__file__)
     return digest({p.name: hashlib.sha256(p.read_bytes()).hexdigest() for p in
-                   [Path(__file__), Path(__file__).with_name('clinical_events.py')]}|{'event_bindings':event_identity()})
+                   [here, here.with_name('clinical_events.py'), here.with_name('concepts.py'),
+                    here.with_name('grounding.py'), here.with_name('source_profile.py')]}|{'event_bindings':event_identity()})
+
+
+def _streams(spec):
+    out = set()
+    for a in sum(spec.values(), []):
+        if a['kind'] == 'record': out.add(a['stream'])
+        elif '_resolved' in a: out.update(b['stream'] for b in a['_resolved']['bindings'])
+    return sorted(out)
 
 def select(path, spec=None, *, patient=None, limit=10, patient_ids=None):
     path = Path(path); meta = json.loads((path/'run.json').read_text()); as_of = meta['snapshot']['as_of']
@@ -198,6 +291,8 @@ def select(path, spec=None, *, patient=None, limit=10, patient_ids=None):
             patient_ids=sorted(set(patient_ids))
             known={r[0] for r in db.execute('SELECT id FROM patients')}
             if set(patient_ids)-known:raise ValueError('Unknown patient in supplied membership')
+        # Grounding raises GroundingError for predicates the data cannot support.
+        grounded, grounding_report = grounding.prepare(spec, source_profile.load(path))
         key = digest([VERSION, code_identity(), meta['source_digest'], spec, patient, limit, patient_ids])
         old = db.execute('SELECT payload FROM result_cache WHERE id=?', (key,)).fetchone()
         if old: return {**json.loads(old[0]), 'cache_hit': True}
@@ -205,7 +300,7 @@ def select(path, spec=None, *, patient=None, limit=10, patient_ids=None):
                   (' WHERE id=?' if patient else '')+' ORDER BY id', [patient] if patient else [])]
         if patient_ids is not None:
             allowed=set(patient_ids);roster=[(pid,p) for pid,p in roster if pid in allowed]
-        streams = sorted({a['stream'] for a in sum(spec.values(), []) if a['kind'] == 'record'})
+        streams = _streams(grounded)
         records = defaultdict(list)
         if streams:
             sql = 'SELECT patient,payload FROM records WHERE stream IN ('+','.join('?' for _ in streams)+')'
@@ -214,7 +309,7 @@ def select(path, spec=None, *, patient=None, limit=10, patient_ids=None):
             for pid, payload in db.execute(sql+' ORDER BY id', params): records[pid].append(json.loads(payload))
         membership = {'matched': [], 'not_matched': [], 'unknown': []}; previews = {k: [] for k in membership}
         for pid, p in roster:
-            state, traces = evaluate_patient(spec, p, records[pid], as_of)
+            state, traces = evaluate_patient(grounded, p, records[pid], as_of)
             status = 'matched' if state is True else 'not_matched' if state is False else 'unknown'
             membership[status].append(pid)
             if len(previews[status]) < limit: previews[status].append({'patient_id': pid, 'status': status, 'predicates': traces})
@@ -224,6 +319,7 @@ def select(path, spec=None, *, patient=None, limit=10, patient_ids=None):
                   'patient_ids': membership['matched'], 'unknown_patient_ids': membership['unknown'],
                   'input_membership_digest': digest(patient_ids) if patient_ids is not None else None,
                   'examples': previews, 'cache_hit': False, 'new_paid_api_calls': 0,
+                  'grounding': grounding_report, 'interpretation': grounding.interpretation(grounded),
                   'scope': 'Complete selection over the observed snapshot. Unknowns are separate; no inferred clinical phenotype or provider attribution.'}
         with db: db.execute('INSERT OR REPLACE INTO result_cache VALUES (?,?)', (key, json.dumps(result, allow_nan=False)))
         return result

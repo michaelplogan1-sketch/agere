@@ -27,10 +27,14 @@ FAMILIES=[
  'cognitive impairment','hearing difficulty','dizziness on standing','poor medication adherence','home health visit']
 
 
+# Grounded planning carries observed field vocabularies and the concept library.
+REQUEST_MAX_BYTES=40000
+
+
 def send(body,provider,ledger,out,*,parse,allow_failed_response_revalidation=False,
          revalidation_reason='bounded_probability_rounding/2', timeout=60):
     payload=json.dumps(body,allow_nan=False).encode()
-    if len(payload)>20000:raise ValueError('Request exceeds synthetic research bound')
+    if len(payload)>REQUEST_MAX_BYTES:raise ValueError('Request exceeds synthetic research bound')
     key=digest({'contract':'context-student/1','provider':provider,'body':body})
     old=ledger.db.execute('SELECT status,response FROM calls WHERE id=?',(key,)).fetchone()
     if old and old[0]=='validated':return parse(json.loads(old[1])),{'cache_hit':True,'request_hash':key}

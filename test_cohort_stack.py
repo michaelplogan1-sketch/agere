@@ -1,5 +1,6 @@
 """Focused source-scope and unknown-time checks for new execution behavior."""
 import json,sqlite3,tempfile,unittest
+from clinical_core.agere.clinical.context_student import REQUEST_MAX_BYTES
 from unittest.mock import patch
 from pathlib import Path
 from clinical_core.agere.clinical.cohorts import evaluate_patient,validate,empty,select
@@ -61,7 +62,7 @@ class CohortContracts(unittest.TestCase):
     def test_planner_does_not_duplicate_schema_or_exceed_request_bound(self):
         from clinical_core.agere.clinical.stack_planner import propose
         def capture(body,*args,**kwargs):
-            self.assertLess(len(json.dumps(body).encode()),20000)
+            self.assertLess(len(json.dumps(body).encode()), REQUEST_MAX_BYTES)
             prompt=json.loads(body['messages'][0]['content'])
             self.assertNotIn('schema',prompt['cohort_contract'])
             return None

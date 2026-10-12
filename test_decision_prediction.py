@@ -54,7 +54,7 @@ class PredictionDecision(unittest.TestCase):
         r=q.population_prediction(self.retriever,req)
         with self.assertRaises(ValueError):self.open(r,'outside')
         with self.assertRaises(ValueError):q.open_population_prediction(self.retriever,{'decision_id':'other','result_id':r['result_id'],'patient_id':''})
-        self.req['cohort']={'all':[{'kind':'patient','field':'sex','op':'eq','value':'not-observed'}],'any':[],'exclude':[]}
+        self.req['cohort']={'all':[{'kind':'patient','field':'patient_id','op':'eq','value':'not-observed'}],'any':[],'exclude':[]}
         empty=self.prepare();r=q.population_prediction(self.retriever,self.request(empty));self.assertEqual(r['members'],[]);self.assertEqual(r['timing_eligible'],0)
     def test_receipt_day_distinct_window_and_unknowns(self):
         d=self.prepare();r=q.population_prediction(self.retriever,self.request(d,'receipt_day'));self.assertEqual(len(r['members']),6)
