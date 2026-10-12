@@ -83,9 +83,9 @@ ignoring instructions. Executable product gates remain required build work.
 ## Source control (from 2026-10-12)
 
 The repository is under git (`main`). Build owner: see `BUILD_OWNER.json`
-(currently Claude Code). Any other agent, including Codex, works on its own branch
-(`codex/<topic>`) and opens a pull request; never commit directly to `main` and
-never rewrite history. Git history replaces the hash-protected file manifest as
+(currently Claude Code). Codex is paused: it does no implementation, branches or pull
+requests unless Mike assigns a specific task in chat (see PARALLEL_WORK.md). Never
+commit directly to `main` from another agent and never rewrite history. Git history replaces the hash-protected file manifest as
 the preservation mechanism: edit modules in place instead of copying them or
 adding runtime `install()` patches. Large data (`artifacts/`, `models/`, SQLite,
 vectors) stays out of git per `.gitignore`.
