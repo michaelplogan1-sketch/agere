@@ -220,6 +220,14 @@ def _population_question(q, r, profile, as_of, info):
     low = r.low
     allp, excl = [], []
     # statistic / intent
+    hotspot = r.take(r'\b(?:where (?:is|are)\b(?=.*\bconcentrated\b)|concentrated|concentrations?|unusually (?:high|low|common)|hot ?spots?|outliers?|clusters?|'
+                     r'patterns? (?:of|in)|stands? out|which (?:groups?|segments?|populations?|subgroups?)(?= (?:have|has|show)))\b', 'discovery')
+    hot_segments = None
+    if hotspot:
+        named = {'practice': r'\b(?:practices?|clinics?)\b', 'pcp': r'\b(?:pcps?|physicians?|providers?|clinicians?)\b',
+                 'coverage_type': r'\b(?:payers?|plans?|insurers?)\b'}
+        hot_segments = [g for g, pattern in named.items() if r.take(pattern, f'segment {g}')] or None
+        r.take(r'\b(?:find|show|identify|look for|detect|any)\b', None)
     why = r.take(r'\b(?:why|what drives|what is driving|drivers? of|factors? (?:associated with|behind|for)|what distinguishes|contribut\w+ to|explain)\b', 'why')
     share = r.take(r'\b(?:what share|share|what percent(?:age)?|percentage|proportion|fraction|what %)\b(?: of)?', 'share')
     mean = r.take(r'\b(?:average|mean)\b', 'mean')
@@ -358,6 +366,22 @@ def _population_question(q, r, profile, as_of, info):
         info['route'] = 'fallback'
         info['reason'] = 'words not interpreted locally: ' + ', '.join(info['unexplained'][:12])
         return None, info
+
+    if hotspot:
+        segments = hot_segments or ([group] if group in ('practice', 'pcp', 'coverage_type') else None)
+        for concept, start in events:  # encounter types are outcomes here, not counted events
+            atom = {'kind': 'concept', 'concept': concept, 'window': W}
+            if atom not in allp: allp.append(atom)
+        if not allp and not excl:
+            info.update(route='fallback', reason='discovery requested without a recognised outcome'); return None, info
+        info['route'] = 'local_compiler'
+        params = {'outcome': {'all': allp[:20], 'any': [], 'exclude': excl[:20]}, 'pairs': True, 'direction': 'high'}
+        if segments: params['segments'] = segments
+        return {'interpretation': q, 'coverage': 'supported_observation', 'unmet_requirements': [], 'nodes': [
+            {'id': 'population', 'operation': 'cohort', 'inputs': [], 'parameters': {'specification': {'all': [], 'any': [], 'exclude': []}},
+             'purpose': 'Whole population'},
+            {'id': 'patterns', 'operation': 'discover', 'inputs': ['population'], 'parameters': params,
+             'purpose': 'Segments where the outcome is concentrated'}]}, info
 
     def cohort(atoms_all, atoms_excl):
         return {'id': 'population', 'operation': 'cohort', 'inputs': [],

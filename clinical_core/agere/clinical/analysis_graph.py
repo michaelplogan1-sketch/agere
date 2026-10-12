@@ -22,7 +22,7 @@ from .clinical_events import validate_window
 
 VERSION = 'population-analysis-graph/1'
 from .graph_contracts import SET_OPS, validate_inputs, validate_parameters as validate_shared_parameters
-OPERATIONS = SET_OPS | {'aggregate', 'explain', 'sql', 'vbc', 'observation_process', 'reference_review', 'compare', 'analyze', 'retrieve', 'forecast', 'source_changes', 'review','longitudinal','worklist','state_review','medication_identity','context','context_passes','assertion_review','baseline','decision_landmark','financial_accounts','accountability_review','protocol_change','program_document_change','program_acquisition','measure_review','evidence_portfolio'}
+OPERATIONS = SET_OPS | {'aggregate', 'explain', 'sql', 'vbc', 'discover', 'observation_process', 'reference_review', 'compare', 'analyze', 'retrieve', 'forecast', 'source_changes', 'review','longitudinal','worklist','state_review','medication_identity','context','context_passes','assertion_review','baseline','decision_landmark','financial_accounts','accountability_review','protocol_change','program_document_change','program_acquisition','measure_review','evidence_portfolio'}
 NODE_FIELDS = {'id', 'operation', 'inputs', 'parameters', 'purpose'}
 LIMITS = [
     'Membership means observed predicate matches, not confirmed disease or absent care.',
@@ -113,6 +113,14 @@ def build_answer(plan, results, memberships, question):
             report_index = len(plan['nodes']) - 1
     else:
         report_index = len(plan['nodes']) - 1
+    if last['operation'] == 'discover':
+        report = results[-1]['result']
+        partial = plan.get('coverage') != 'supported_observation' or plan.get('unmet_requirements')
+        answer.update(status='partial' if partial else 'answered', answer_type='table', table=report['cards'], method=report['method'],
+                      value=(f"{len(report['cards'])} significant concentrations among {report['cells_tested']} segment cells tested; "
+                             f"base rate {report['base_rate']:.1%}"),
+                      overall={k: report[k] for k in ('population', 'with_outcome', 'base_rate', 'cells_tested')})
+        return answer
     if last['operation'] == 'vbc':
         report = results[-1]['result']
         partial = plan.get('coverage') != 'supported_observation' or plan.get('unmet_requirements')
@@ -217,6 +225,10 @@ def validate(plan, as_of):
         elif op == 'vbc':
             from . import vbc
             p = vbc.validate(p)
+        elif op == 'discover':
+            from . import discover
+            p = discover.validate(p)
+            p['outcome'] = cohorts.validate(p['outcome'], as_of)
         elif op == 'evidence':
             if inputs or set(p) != {'plan'}:
                 raise ValueError('Evidence node needs its explicit plan')
@@ -741,6 +753,11 @@ def execute(stack, plan, *, question=None):
                 from . import aggregate
                 chosen = memberships[node['inputs'][0]]
                 detail = aggregate.execute(path, sorted(chosen.yes), params)
+                detail['input_membership'] = membership_receipt(chosen)
+            elif op == 'discover':
+                from . import discover
+                chosen = memberships[node['inputs'][0]]
+                detail = discover.execute(path, sorted(chosen.yes), params)
                 detail['input_membership'] = membership_receipt(chosen)
             elif op == 'vbc':
                 from . import vbc

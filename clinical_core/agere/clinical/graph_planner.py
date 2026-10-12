@@ -22,6 +22,8 @@ SCHEMA = {'type': 'object', 'properties': {
     'required': ['interpretation', 'coverage', 'unmet_requirements', 'nodes'], 'additionalProperties': False}
 
 CONTRACTS = {
+    'discover': {'inputs':['earlier_set'],'parameters':{'outcome':'cohort specification of the outcome','segments':['practice','pcp','coverage_type','age_band','sex','food_difficulty','transport_difficulty','financial_hardship'],'pairs':True,'direction':'high|low|both'},
+        'meaning':'Finds where an outcome is unusually concentrated across segments and segment pairs (two-proportion tests, BH-controlled), labelling documentation-limited cells. Use for where/which-groups/hotspot/pattern questions nobody specified.'},
     'vbc': {'inputs':['optional earlier_set'],'parameters':{'metric':'eligibility|attribution|utilization|cost|risk|quality|shared_savings','group_by':'none|pcp|practice|coverage_type|age_band|sex',
         'period':{'start':'YYYY-MM-DD','end':'YYYY-MM-DD'},'measure':'quality measure id','terms':'shared_savings contract terms (supplied by the user only)'},
         'meaning':'Value-based-care metrics: member-months, PCP attribution, utilization per 1,000 (ED, admissions, readmission, 7-day follow-up) with empirical-Bayes shrinkage, '
