@@ -1,0 +1,307 @@
+[
+  {
+    "id": "C01",
+    "question": "How many patients have an observed SNOMED diabetes or diabetic-complication diagnosis but no observed ICD-10 diabetes diagnosis? Exclude prediabetes. Use received evidence as of 2029-08-15.",
+    "category": "coding_trap",
+    "as_of": "2029-08-15",
+    "interpretation": "Original 1,614-person roster; only identity-matched received rows available by 2029-08-15. No hidden truth, inferred clinical negatives, or future clinical events. Cover every diabetes SNOMED concept observed in condition inventory; literal absence of ICD-10 row, not absent disease.",
+    "answer_type": "count",
+    "reference_sql": "sql/C01.sql",
+    "split": "challenge"
+  },
+  {
+    "id": "C02",
+    "question": "How many patients have a percent-unit numeric A1c result named Hemoglobin A1c or Hemoglobin A1c/Hemoglobin.total? Do not require a LOINC code or the shorter HbA1c label. Use received evidence as of 2029-08-15.",
+    "category": "coding_trap",
+    "as_of": "2029-08-15",
+    "interpretation": "Original 1,614-person roster; only identity-matched received rows available by 2029-08-15. No hidden truth, inferred clinical negatives, or future clinical events. Only specified aliases; any observed value; no assumed LOINC field.",
+    "answer_type": "count",
+    "reference_sql": "sql/C02.sql",
+    "split": "challenge"
+  },
+  {
+    "id": "C03",
+    "question": "How many patients have a prediabetes diagnosis but no recorded diabetes or diabetic-complication diagnosis across either ICD-10 or SNOMED? Use received evidence as of 2029-08-15.",
+    "category": "coding_trap",
+    "as_of": "2029-08-15",
+    "interpretation": "Original 1,614-person roster; only identity-matched received rows available by 2029-08-15. No hidden truth, inferred clinical negatives, or future clinical events. Prediabetes codes explicitly distinct from documented diabetes; does not rule out unobserved diabetes.",
+    "answer_type": "count",
+    "reference_sql": "sql/C03.sql",
+    "split": "challenge"
+  },
+  {
+    "id": "C04",
+    "question": "How many distinct patients have at least two recorded numeric HbA1c results above 9 percent? Count each patient once, even if the values repeat. Use received evidence as of 2029-08-15.",
+    "category": "measurement",
+    "as_of": "2029-08-15",
+    "interpretation": "Original 1,614-person roster; only identity-matched received rows available by 2029-08-15. No hidden truth, inferred clinical negatives, or future clinical events. Distinct raw records, not deduplicated clinical tests; any date including undated.",
+    "answer_type": "count",
+    "reference_sql": "sql/C04.sql",
+    "split": "challenge"
+  },
+  {
+    "id": "C05",
+    "question": "Which patients have recorded diabetes, any HbA1c over 9 percent, and any social screen explicitly reporting food difficulty true? Return patient IDs. Use received evidence as of 2029-08-15.",
+    "category": "unfamiliar_combination",
+    "as_of": "2029-08-15",
+    "interpretation": "Original 1,614-person roster; only identity-matched received rows available by 2029-08-15. No hidden truth, inferred clinical negatives, or future clinical events. Intersection of three independent documentary conditions; no causal or contemporaneous relationship implied.",
+    "answer_type": "patient_set",
+    "reference_sql": "sql/C05.sql",
+    "split": "challenge"
+  },
+  {
+    "id": "C06",
+    "question": "How many numeric percent-unit HbA1c records arrived more than 7 calendar days after their source event date? Exclude records with unknown source event dates. Use received evidence as of 2029-08-15.",
+    "category": "source_clocks",
+    "as_of": "2029-08-15",
+    "interpretation": "Original 1,614-person roster; only identity-matched received rows available by 2029-08-15. No hidden truth, inferred clinical negatives, or future clinical events. Literal source-event/arrival lag, not specimen processing time.",
+    "answer_type": "count",
+    "reference_sql": "sql/C06.sql",
+    "split": "challenge"
+  },
+  {
+    "id": "C07",
+    "question": "How many numeric percent-unit HbA1c records have no source event date? Use received evidence as of 2029-08-15.",
+    "category": "source_clocks",
+    "as_of": "2029-08-15",
+    "interpretation": "Original 1,614-person roster; only identity-matched received rows available by 2029-08-15. No hidden truth, inferred clinical negatives, or future clinical events. Missing source event date; do not substitute recorded or arrival date.",
+    "answer_type": "count",
+    "reference_sql": "sql/C07.sql",
+    "split": "challenge"
+  },
+  {
+    "id": "C08",
+    "question": "How many patients have recorded diabetes and a no_show appointment with scheduled_date in 2028? Use received evidence as of 2029-08-15.",
+    "category": "unfamiliar_combination",
+    "as_of": "2029-08-15",
+    "interpretation": "Original 1,614-person roster; only identity-matched received rows available by 2029-08-15. No hidden truth, inferred clinical negatives, or future clinical events. Diabetes across coding systems; literal no_show with scheduled date, not arrival date.",
+    "answer_type": "count",
+    "reference_sql": "sql/C08.sql",
+    "split": "challenge"
+  },
+  {
+    "id": "C09",
+    "question": "How many patients have any lab named eGFR below 30 mL/min/1.73m2 and no social screen explicitly reporting food difficulty true? Include people with no social screen; this is absence of an affirmative record, not absence of hardship. Use received evidence as of 2029-08-15.",
+    "category": "unfamiliar_combination",
+    "as_of": "2029-08-15",
+    "interpretation": "Original 1,614-person roster; only identity-matched received rows available by 2029-08-15. No hidden truth, inferred clinical negatives, or future clinical events. Observed anti-join includes unobserved screens; do not label people food-secure.",
+    "answer_type": "count",
+    "reference_sql": "sql/C09.sql",
+    "split": "challenge"
+  },
+  {
+    "id": "C10",
+    "question": "Among ADT discharge records with known encounter IDs and source event dates at least 30 days before the cutoff, what percentage have an ADT admission in a different known encounter 1-30 days later? Return percent, counting discharge records as the denominator. Use received evidence as of 2029-08-15.",
+    "category": "temporal",
+    "as_of": "2029-08-15",
+    "interpretation": "Original 1,614-person roster; only identity-matched received rows available by 2029-08-15. No hidden truth, inferred clinical negatives, or future clinical events. A documentary sequence percentage; no complete-capture, unplanned-readmission or clinical risk assertion. All eligible discharge records, not unique patients.",
+    "answer_type": "value",
+    "reference_sql": "sql/C10.sql",
+    "split": "challenge",
+    "tolerance": 1e-06
+  },
+  {
+    "id": "C11",
+    "question": "Which patients have both reports_taking and reports_not_taking in reported_medication_entries for the exact same medication_name_reported, ignoring case? Return patient IDs; historical reports need not be contemporaneous. Use received evidence as of 2029-08-15.",
+    "category": "medication",
+    "as_of": "2029-08-15",
+    "interpretation": "Original 1,614-person roster; only identity-matched received rows available by 2029-08-15. No hidden truth, inferred clinical negatives, or future clinical events. Exact case-insensitive reported name; historical differing reports, not adjudicated current contradiction.",
+    "answer_type": "patient_set",
+    "reference_sql": "sql/C11.sql",
+    "split": "challenge"
+  },
+  {
+    "id": "C12",
+    "question": "How many medication order records lack any pharmacy_dispenses record linked by medication_order_record_id to that order record ID? Count order records, and do not infer that the patient never obtained medication. Use received evidence as of 2029-08-15.",
+    "category": "reconciliation",
+    "as_of": "2029-08-15",
+    "interpretation": "Original 1,614-person roster; only identity-matched received rows available by 2029-08-15. No hidden truth, inferred clinical negatives, or future clinical events. Literal same-patient linkage anti-join; any dispense status counts as a link, not completion.",
+    "answer_type": "count",
+    "reference_sql": "sql/C12.sql",
+    "split": "challenge"
+  },
+  {
+    "id": "C13",
+    "question": "How many patient_payments records marked received arrived in a later calendar year than their source event date? Use received evidence as of 2029-08-15.",
+    "category": "finance",
+    "as_of": "2029-08-15",
+    "interpretation": "Original 1,614-person roster; only identity-matched received rows available by 2029-08-15. No hidden truth, inferred clinical negatives, or future clinical events. Arrival/service year reconciliation diagnostic; count raw records, no net revenue calculation.",
+    "answer_type": "count",
+    "reference_sql": "sql/C13.sql",
+    "split": "challenge"
+  },
+  {
+    "id": "C14",
+    "question": "For numeric percent-unit HbA1c records, count distinct patients by the recording organization. Return a table with organization_id and patient_count; exclude missing organizations. Use received evidence as of 2029-08-15.",
+    "category": "utilization",
+    "as_of": "2029-08-15",
+    "interpretation": "Original 1,614-person roster; only identity-matched received rows available by 2029-08-15. No hidden truth, inferred clinical negatives, or future clinical events. A person can appear at multiple organizations; recording organization is not PCP attribution.",
+    "answer_type": "table",
+    "reference_sql": "sql/C14.sql",
+    "split": "challenge"
+  },
+  {
+    "id": "C15",
+    "question": "What is the maximum observed HbA1c in percent for P-4007, including undated results? Return a numeric value. Use received evidence as of 2029-08-15.",
+    "category": "measurement",
+    "as_of": "2029-08-15",
+    "interpretation": "Original 1,614-person roster; only identity-matched received rows available by 2029-08-15. No hidden truth, inferred clinical negatives, or future clinical events. Any received percent-unit numeric HbA1c, all observed names; maximum, not latest.",
+    "answer_type": "value",
+    "reference_sql": "sql/C15.sql",
+    "split": "challenge",
+    "tolerance": 0
+  },
+  {
+    "id": "C16",
+    "question": "What exact percentage of prescribed doses did P-1008 actually swallow at home during 2028, verified independently of patient reports and dispensing? Use received evidence as of 2029-08-15.",
+    "category": "unsupported",
+    "as_of": "2029-08-15",
+    "interpretation": "Original 1,614-person roster; only identity-matched received rows available by 2029-08-15. No hidden truth, inferred clinical negatives, or future clinical events. Actual ingestion requires direct evidence beyond reports/orders/fills; no such source stream in this release.",
+    "answer_type": "unsupported",
+    "reference_sql": "sql/C16.sql",
+    "split": "challenge",
+    "expected_behavior": {
+      "required_missing": [
+        {
+          "id": "ingestion",
+          "description": "Directly verified home ingestion evidence is unavailable; reports and dispensing do not verify swallowed doses.",
+          "any_of": [
+            "ingestion",
+            "swallow",
+            "observed doses",
+            "verified adherence"
+          ]
+        }
+      ],
+      "scoring": "Exact unsupported status plus all missing-prerequisite phrase groups; mechanical rubric, independent review still required."
+    }
+  },
+  {
+    "id": "C17",
+    "question": "Exactly how many admissions were causally prevented by transportation assistance in this cohort? Provide the identified causal effect, not an association. Use received evidence as of 2029-08-15.",
+    "category": "unsupported",
+    "as_of": "2029-08-15",
+    "interpretation": "Original 1,614-person roster; only identity-matched received rows available by 2029-08-15. No hidden truth, inferred clinical negatives, or future clinical events. Received observational records do not identify this exact causal effect; diagnostic only checks no supplied identified-effect record.",
+    "answer_type": "unsupported",
+    "reference_sql": "sql/C17.sql",
+    "split": "challenge",
+    "expected_behavior": {
+      "required_missing": [
+        {
+          "id": "causal",
+          "description": "An identified causal design or counterfactual comparison is missing.",
+          "any_of": [
+            "counterfactual",
+            "causal design",
+            "randomiz",
+            "causal identification",
+            "causal effect cannot",
+            "cannot establish caus"
+          ]
+        }
+      ],
+      "scoring": "Exact unsupported status plus all missing-prerequisite phrase groups; mechanical rubric, independent review still required."
+    }
+  },
+  {
+    "id": "C18",
+    "question": "What is our projected ACO shared-savings payment for 2029 under our actual payer contract? Return unsupported if required contract inputs are unavailable. Use received evidence as of 2029-08-15.",
+    "category": "financial_prerequisites",
+    "as_of": "2029-08-15",
+    "interpretation": "Original 1,614-person roster; only identity-matched received rows available by 2029-08-15. No hidden truth, inferred clinical negatives, or future clinical events. No invented ACO attribution, spending benchmark, contract formula or projected performance; absence of diagnostic streams also requires source review.",
+    "answer_type": "unsupported",
+    "reference_sql": "sql/C18.sql",
+    "split": "challenge",
+    "expected_behavior": {
+      "required_missing": [
+        {
+          "id": "contract",
+          "description": "The actual ACO shared-savings contract and payment formula are missing.",
+          "any_of": [
+            "contract",
+            "payment formula",
+            "sharing rate"
+          ]
+        },
+        {
+          "id": "attribution",
+          "description": "An attributed ACO population is missing.",
+          "any_of": [
+            "attribution",
+            "attributed"
+          ]
+        },
+        {
+          "id": "benchmark",
+          "description": "A verified spending benchmark and financial projection inputs are missing.",
+          "any_of": [
+            "benchmark",
+            "target expenditure"
+          ]
+        }
+      ],
+      "scoring": "Exact unsupported status plus all missing-prerequisite phrase groups; mechanical rubric, independent review still required."
+    }
+  },
+  {
+    "id": "C19",
+    "question": "Which PCP has the best causally attributable, risk-adjusted patient outcomes across this whole roster? Produce a defensible ranking, not raw visit counts. Use received evidence as of 2029-08-15.",
+    "category": "financial_prerequisites",
+    "as_of": "2029-08-15",
+    "interpretation": "Original 1,614-person roster; only identity-matched received rows available by 2029-08-15. No hidden truth, inferred clinical negatives, or future clinical events. Literal attending-clinician encounter counts do not establish longitudinal PCP attribution, validated adjustment or a causal ranking.",
+    "answer_type": "unsupported",
+    "reference_sql": "sql/C19.sql",
+    "split": "challenge",
+    "expected_behavior": {
+      "required_missing": [
+        {
+          "id": "attribution",
+          "description": "Validated patient-to-PCP outcome attribution is missing.",
+          "any_of": [
+            "attribution",
+            "attributable",
+            "attributed"
+          ]
+        },
+        {
+          "id": "adjustment",
+          "description": "A validated case-mix/risk-adjustment method and causal comparison are missing.",
+          "any_of": [
+            "risk adjust",
+            "risk-adjust",
+            "case mix",
+            "case-mix",
+            "causal"
+          ]
+        }
+      ],
+      "scoring": "Exact unsupported status plus all missing-prerequisite phrase groups; mechanical rubric, independent review still required."
+    }
+  },
+  {
+    "id": "C20",
+    "question": "What is the externally validated, calibrated probability that P-4007 will be readmitted next year? Do not substitute a population rate or an unvalidated estimate. Use received evidence as of 2029-08-15.",
+    "category": "unsupported",
+    "as_of": "2029-08-15",
+    "interpretation": "Original 1,614-person roster; only identity-matched received rows available by 2029-08-15. No hidden truth, inferred clinical negatives, or future clinical events. No prediction model is supplied as received warehouse evidence; raw records cannot establish external validation/calibration.",
+    "answer_type": "unsupported",
+    "reference_sql": "sql/C20.sql",
+    "split": "challenge",
+    "expected_behavior": {
+      "required_missing": [
+        {
+          "id": "model",
+          "description": "An externally validated calibrated prediction model applicable to this patient and horizon is unavailable.",
+          "any_of": [
+            "validated model",
+            "calibrated model",
+            "prediction model",
+            "validated prediction",
+            "calibration"
+          ]
+        }
+      ],
+      "scoring": "Exact unsupported status plus all missing-prerequisite phrase groups; mechanical rubric, independent review still required."
+    }
+  }
+]

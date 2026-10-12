@@ -1,0 +1,1 @@
+SELECT COALESCE(SUM(json_extract(payload,'$.amount_cents')),0)/100.0 AS value FROM records WHERE stream='patient_payments' AND event BETWEEN '2028-01-01' AND '2028-12-31' AND json_extract(payload,'$.status')='received' AND json_extract(payload,'$.currency')='USD' AND json_type(payload,'$.amount_cents')='integer';

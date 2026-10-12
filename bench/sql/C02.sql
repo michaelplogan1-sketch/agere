@@ -1,0 +1,1 @@
+SELECT COUNT(DISTINCT patient) AS count FROM records WHERE stream='labs' AND (json_extract(payload,'$.name') IN ('Hemoglobin A1c','Hemoglobin A1c/Hemoglobin.total') AND json_extract(payload,'$.unit')='%' AND json_type(payload,'$.value') IN ('integer','real'));

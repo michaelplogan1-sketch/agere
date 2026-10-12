@@ -1,0 +1,308 @@
+[
+  {
+    "id": "D01",
+    "question": "How many patients are in the original warehouse roster? Use received evidence as of 2029-08-15.",
+    "category": "cohort",
+    "as_of": "2029-08-15",
+    "interpretation": "Original 1,614-person roster; only identity-matched received rows available by 2029-08-15. No hidden truth, inferred clinical negatives, or future clinical events. Count roster identities, not records.",
+    "answer_type": "count",
+    "reference_sql": "sql/D01.sql",
+    "split": "development"
+  },
+  {
+    "id": "D02",
+    "question": "How many roster patients have female reported sex? Use received evidence as of 2029-08-15.",
+    "category": "cohort",
+    "as_of": "2029-08-15",
+    "interpretation": "Original 1,614-person roster; only identity-matched received rows available by 2029-08-15. No hidden truth, inferred clinical negatives, or future clinical events. Literal reported sex F; no inferred gender.",
+    "answer_type": "count",
+    "reference_sql": "sql/D02.sql",
+    "split": "development"
+  },
+  {
+    "id": "D03",
+    "question": "How many patients had reported age at least 65 at their profile capture, without advancing that age to today? Use received evidence as of 2029-08-15.",
+    "category": "cohort",
+    "as_of": "2029-08-15",
+    "interpretation": "Original 1,614-person roster; only identity-matched received rows available by 2029-08-15. No hidden truth, inferred clinical negatives, or future clinical events. Use captured age_reported, not current age.",
+    "answer_type": "count",
+    "reference_sql": "sql/D03.sql",
+    "split": "development"
+  },
+  {
+    "id": "D04",
+    "question": "How many distinct patients have a recorded diabetes diagnosis, including diabetic complications, across ICD-10 and SNOMED? Exclude prediabetes and family history. Use received evidence as of 2029-08-15.",
+    "category": "cohort",
+    "as_of": "2029-08-15",
+    "interpretation": "Original 1,614-person roster; only identity-matched received rows available by 2029-08-15. No hidden truth, inferred clinical negatives, or future clinical events. Any observed condition; E08/E09/E10/E11/E13 or the five observed diabetes SNOMED concepts. No current phenotype claim.",
+    "answer_type": "count",
+    "reference_sql": "sql/D04.sql",
+    "split": "development"
+  },
+  {
+    "id": "D05",
+    "question": "Which patients have a recorded diabetes diagnosis and any observed HbA1c over 9 percent? Return the complete patient ID set; do not restrict to the latest result. Use received evidence as of 2029-08-15.",
+    "category": "measurement",
+    "as_of": "2029-08-15",
+    "interpretation": "Original 1,614-person roster; only identity-matched received rows available by 2029-08-15. No hidden truth, inferred clinical negatives, or future clinical events. Diabetes definition D04 plus any numeric HbA1c in percent across all three observed assay names. Missing event date does not exclude an any-observed result.",
+    "answer_type": "patient_set",
+    "reference_sql": "sql/D05.sql",
+    "split": "development",
+    "acceptance_patient_ids": [
+      "P-1008",
+      "P-4007"
+    ]
+  },
+  {
+    "id": "D06",
+    "question": "How many distinct patients have any recorded HbA1c above 9 percent, regardless of diagnosis? Use received evidence as of 2029-08-15.",
+    "category": "measurement",
+    "as_of": "2029-08-15",
+    "interpretation": "Original 1,614-person roster; only identity-matched received rows available by 2029-08-15. No hidden truth, inferred clinical negatives, or future clinical events. Any observed result, numeric percent, all three names; count people once.",
+    "answer_type": "count",
+    "reference_sql": "sql/D06.sql",
+    "split": "development"
+  },
+  {
+    "id": "D07",
+    "question": "Which patients have a latest source-event-dated HbA1c above 9 percent? Exclude undated results; on the same date use the latest arrival, then largest record ID. Return patient IDs. Use received evidence as of 2029-08-15.",
+    "category": "measurement",
+    "as_of": "2029-08-15",
+    "interpretation": "Original 1,614-person roster; only identity-matched received rows available by 2029-08-15. No hidden truth, inferred clinical negatives, or future clinical events. Latest eligible dated result, deterministic arrival/ID tie-break; this is not latest clinical specimen time.",
+    "answer_type": "patient_set",
+    "reference_sql": "sql/D07.sql",
+    "split": "development"
+  },
+  {
+    "id": "D08",
+    "question": "How many patients have any numeric lab named eGFR below 30 mL/min/1.73m2? Use received evidence as of 2029-08-15.",
+    "category": "measurement",
+    "as_of": "2029-08-15",
+    "interpretation": "Original 1,614-person roster; only identity-matched received rows available by 2029-08-15. No hidden truth, inferred clinical negatives, or future clinical events. Literal eGFR label/unit; any result; does not establish chronic disease.",
+    "answer_type": "count",
+    "reference_sql": "sql/D08.sql",
+    "split": "development"
+  },
+  {
+    "id": "D09",
+    "question": "How many patients have any numeric Potassium result over 5.5 mmol/L? Use received evidence as of 2029-08-15.",
+    "category": "measurement",
+    "as_of": "2029-08-15",
+    "interpretation": "Original 1,614-person roster; only identity-matched received rows available by 2029-08-15. No hidden truth, inferred clinical negatives, or future clinical events. Literal assay and unit, strict threshold, any observation.",
+    "answer_type": "count",
+    "reference_sql": "sql/D09.sql",
+    "split": "development"
+  },
+  {
+    "id": "D10",
+    "question": "Which patients have a recorded diabetes diagnosis and any lab named eGFR below 60 mL/min/1.73m2? Return patient IDs; this does not establish chronic kidney disease. Use received evidence as of 2029-08-15.",
+    "category": "measurement",
+    "as_of": "2029-08-15",
+    "interpretation": "Original 1,614-person roster; only identity-matched received rows available by 2029-08-15. No hidden truth, inferred clinical negatives, or future clinical events. Cross-domain intersection; diabetes includes observed ICD-10 and SNOMED; any eGFR with matching units.",
+    "answer_type": "patient_set",
+    "reference_sql": "sql/D10.sql",
+    "split": "development"
+  },
+  {
+    "id": "D11",
+    "question": "How many ADT records explicitly say admission? Count notification records, not unique stays. Use received evidence as of 2029-08-15.",
+    "category": "temporal",
+    "as_of": "2029-08-15",
+    "interpretation": "Original 1,614-person roster; only identity-matched received rows available by 2029-08-15. No hidden truth, inferred clinical negatives, or future clinical events. Literal admission notification count; not emergency or observation notifications.",
+    "answer_type": "count",
+    "reference_sql": "sql/D11.sql",
+    "split": "development"
+  },
+  {
+    "id": "D12",
+    "question": "How many distinct patients have an ADT admission notification? Use received evidence as of 2029-08-15.",
+    "category": "temporal",
+    "as_of": "2029-08-15",
+    "interpretation": "Original 1,614-person roster; only identity-matched received rows available by 2029-08-15. No hidden truth, inferred clinical negatives, or future clinical events. Distinct patients with literal admission notifications.",
+    "answer_type": "count",
+    "reference_sql": "sql/D12.sql",
+    "split": "development"
+  },
+  {
+    "id": "D13",
+    "question": "List all patient IDs with an ADT discharge notification. Use received evidence as of 2029-08-15.",
+    "category": "temporal",
+    "as_of": "2029-08-15",
+    "interpretation": "Original 1,614-person roster; only identity-matched received rows available by 2029-08-15. No hidden truth, inferred clinical negatives, or future clinical events. Documented discharge notification presence, not adjudicated discharge episodes.",
+    "answer_type": "patient_set",
+    "reference_sql": "sql/D13.sql",
+    "split": "development"
+  },
+  {
+    "id": "D14",
+    "question": "How many patients have an ADT admission 1 through 30 calendar days after an ADT discharge in a different, explicitly identified encounter? Use source event dates, not arrival dates. Use received evidence as of 2029-08-15.",
+    "category": "temporal",
+    "as_of": "2029-08-15",
+    "interpretation": "Original 1,614-person roster; only identity-matched received rows available by 2029-08-15. No hidden truth, inferred clinical negatives, or future clinical events. Observed date/encounter sequence only; does not claim unplanned readmission or complete capture. Exclude missing dates/encounter IDs.",
+    "answer_type": "count",
+    "reference_sql": "sql/D14.sql",
+    "split": "development"
+  },
+  {
+    "id": "D15",
+    "question": "Count 2028 source-event-dated encounter records by organization_id. Return a table with organization_id and encounter_count, excluding missing organizations. Use received evidence as of 2029-08-15.",
+    "category": "utilization",
+    "as_of": "2029-08-15",
+    "interpretation": "Original 1,614-person roster; only identity-matched received rows available by 2029-08-15. No hidden truth, inferred clinical negatives, or future clinical events. Raw encounter records, no quality attribution or inferred completed visits.",
+    "answer_type": "table",
+    "reference_sql": "sql/D15.sql",
+    "split": "development"
+  },
+  {
+    "id": "D16",
+    "question": "Count 2028 encounter records of type primary_care by attending_clinician_id. Return a table with clinician_id and encounter_count; exclude missing clinician IDs. Use received evidence as of 2029-08-15.",
+    "category": "utilization",
+    "as_of": "2029-08-15",
+    "interpretation": "Original 1,614-person roster; only identity-matched received rows available by 2029-08-15. No hidden truth, inferred clinical negatives, or future clinical events. Observed attending for literal primary_care encounters, not assigned-PCP attribution or quality.",
+    "answer_type": "table",
+    "reference_sql": "sql/D16.sql",
+    "split": "development"
+  },
+  {
+    "id": "D17",
+    "question": "How many encounter records explicitly have status completed? Use received evidence as of 2029-08-15.",
+    "category": "utilization",
+    "as_of": "2029-08-15",
+    "interpretation": "Original 1,614-person roster; only identity-matched received rows available by 2029-08-15. No hidden truth, inferred clinical negatives, or future clinical events. Count rows explicitly completed; unknown status is not completion.",
+    "answer_type": "count",
+    "reference_sql": "sql/D17.sql",
+    "split": "development"
+  },
+  {
+    "id": "D18",
+    "question": "How many distinct patients have a medication order whose medication_name contains metformin, ignoring case? Use received evidence as of 2029-08-15.",
+    "category": "medication",
+    "as_of": "2029-08-15",
+    "interpretation": "Original 1,614-person roster; only identity-matched received rows available by 2029-08-15. No hidden truth, inferred clinical negatives, or future clinical events. Documented order name includes metformin; no medication-use or adherence claim.",
+    "answer_type": "count",
+    "reference_sql": "sql/D18.sql",
+    "split": "development"
+  },
+  {
+    "id": "D19",
+    "question": "How many pharmacy_dispenses records explicitly have status dispensed, excluding prepared and returned-to-stock records? Use received evidence as of 2029-08-15.",
+    "category": "medication",
+    "as_of": "2029-08-15",
+    "interpretation": "Original 1,614-person roster; only identity-matched received rows available by 2029-08-15. No hidden truth, inferred clinical negatives, or future clinical events. Literal completed dispense status, not medication ingestion.",
+    "answer_type": "count",
+    "reference_sql": "sql/D19.sql",
+    "split": "development"
+  },
+  {
+    "id": "D20",
+    "question": "How many patients have any reported_medication_entries record with use_statement reports_taking? Use received evidence as of 2029-08-15.",
+    "category": "medication",
+    "as_of": "2029-08-15",
+    "interpretation": "Original 1,614-person roster; only identity-matched received rows available by 2029-08-15. No hidden truth, inferred clinical negatives, or future clinical events. Any historical report for any medication; not verified current use.",
+    "answer_type": "count",
+    "reference_sql": "sql/D20.sql",
+    "split": "development"
+  },
+  {
+    "id": "D21",
+    "question": "How many patients have a reported_medication_entries record explicitly reporting not taking a medication? Use received evidence as of 2029-08-15.",
+    "category": "medication",
+    "as_of": "2029-08-15",
+    "interpretation": "Original 1,614-person roster; only identity-matched received rows available by 2029-08-15. No hidden truth, inferred clinical negatives, or future clinical events. Any report with literal reports_not_taking; no inferred prescription discontinuation.",
+    "answer_type": "count",
+    "reference_sql": "sql/D21.sql",
+    "split": "development"
+  },
+  {
+    "id": "D22",
+    "question": "How many appointment records explicitly have status no_show? Use received evidence as of 2029-08-15.",
+    "category": "reconciliation",
+    "as_of": "2029-08-15",
+    "interpretation": "Original 1,614-person roster; only identity-matched received rows available by 2029-08-15. No hidden truth, inferred clinical negatives, or future clinical events. Literal no_show statuses; no inference from absent encounter.",
+    "answer_type": "count",
+    "reference_sql": "sql/D22.sql",
+    "split": "development"
+  },
+  {
+    "id": "D23",
+    "question": "How many fulfilled appointment records lack a completed_encounter_id? Use received evidence as of 2029-08-15.",
+    "category": "reconciliation",
+    "as_of": "2029-08-15",
+    "interpretation": "Original 1,614-person roster; only identity-matched received rows available by 2029-08-15. No hidden truth, inferred clinical negatives, or future clinical events. Missing reference on an explicitly fulfilled appointment; not absence of care.",
+    "answer_type": "count",
+    "reference_sql": "sql/D23.sql",
+    "split": "development"
+  },
+  {
+    "id": "D24",
+    "question": "How many patients have any social screen explicitly reporting food difficulty as true? Use received evidence as of 2029-08-15.",
+    "category": "reconciliation",
+    "as_of": "2029-08-15",
+    "interpretation": "Original 1,614-person roster; only identity-matched received rows available by 2029-08-15. No hidden truth, inferred clinical negatives, or future clinical events. Actual JSON boolean true; missing/text/false excluded; any historical report.",
+    "answer_type": "count",
+    "reference_sql": "sql/D24.sql",
+    "split": "development"
+  },
+  {
+    "id": "D25",
+    "question": "How many patients have any social screen explicitly reporting transport difficulty as true? Use received evidence as of 2029-08-15.",
+    "category": "reconciliation",
+    "as_of": "2029-08-15",
+    "interpretation": "Original 1,614-person roster; only identity-matched received rows available by 2029-08-15. No hidden truth, inferred clinical negatives, or future clinical events. Actual JSON boolean true, any received screen.",
+    "answer_type": "count",
+    "reference_sql": "sql/D25.sql",
+    "split": "development"
+  },
+  {
+    "id": "D26",
+    "question": "How many patients have any social screen explicitly reporting food difficulty as false? Do not count missing fields as false. Use received evidence as of 2029-08-15.",
+    "category": "reconciliation",
+    "as_of": "2029-08-15",
+    "interpretation": "Original 1,614-person roster; only identity-matched received rows available by 2029-08-15. No hidden truth, inferred clinical negatives, or future clinical events. Explicit documented negatives; may overlap with historical affirmative screens.",
+    "answer_type": "count",
+    "reference_sql": "sql/D26.sql",
+    "split": "development"
+  },
+  {
+    "id": "D27",
+    "question": "What is the gross sum in USD of patient_payments records marked received with source event dates in 2028? Do not subtract refunds or infer net balances. Use received evidence as of 2029-08-15.",
+    "category": "finance",
+    "as_of": "2029-08-15",
+    "interpretation": "Original 1,614-person roster; only identity-matched received rows available by 2029-08-15. No hidden truth, inferred clinical negatives, or future clinical events. Gross received payment records, integer USD cents, calendar source date; no opportunity or savings claim.",
+    "answer_type": "value",
+    "reference_sql": "sql/D27.sql",
+    "split": "development",
+    "tolerance": 0.005
+  },
+  {
+    "id": "D28",
+    "question": "What is the raw sum of allowed_cents across medical_claims rows whose service_date is in 2028? Return cents; do not net corrections or treat it as realized savings. Use received evidence as of 2029-08-15.",
+    "category": "finance",
+    "as_of": "2029-08-15",
+    "interpretation": "Original 1,614-person roster; only identity-matched received rows available by 2029-08-15. No hidden truth, inferred clinical negatives, or future clinical events. Literal raw allowed-amount sum, including any separate adjudication rows; deliberately not a reconciled financial outcome.",
+    "answer_type": "value",
+    "reference_sql": "sql/D28.sql",
+    "split": "development",
+    "tolerance": 0
+  },
+  {
+    "id": "D29",
+    "question": "How many patients have a coverage record with coverage_type commercial and status active? This asks about recorded coverage, not current eligibility. Use received evidence as of 2029-08-15.",
+    "category": "cohort",
+    "as_of": "2029-08-15",
+    "interpretation": "Original 1,614-person roster; only identity-matched received rows available by 2029-08-15. No hidden truth, inferred clinical negatives, or future clinical events. Any explicitly active commercial source coverage row.",
+    "answer_type": "count",
+    "reference_sql": "sql/D29.sql",
+    "split": "development"
+  },
+  {
+    "id": "D30",
+    "question": "Count medical_claims records with service_date in 2028 by service_organization_id. Return a table with organization_id and claim_record_count, excluding missing organizations. Use received evidence as of 2029-08-15.",
+    "category": "finance",
+    "as_of": "2029-08-15",
+    "interpretation": "Original 1,614-person roster; only identity-matched received rows available by 2029-08-15. No hidden truth, inferred clinical negatives, or future clinical events. Raw claim-record count by service organization; no provider attribution beyond literal field.",
+    "answer_type": "table",
+    "reference_sql": "sql/D30.sql",
+    "split": "development"
+  }
+]
