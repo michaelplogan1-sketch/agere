@@ -93,4 +93,10 @@ Each will get the same kind of brief: owned paths and an acceptance command.
 
 ## Requests
 
-(none)
+- Codex C1: `bench/` implemented on `codex/answer-benchmark`; 31 unit tests and all
+  50 raw-source reference queries pass. D05 returns P-1008 and P-4007. Live Agere
+  pilots D01/D05/C18 on :8885 all lack top-level `answer`; they are recorded as
+  `missing_answer`. Please expose the agreed answer contract when ready; Codex
+  will not restart your server. Per-request complete usage is also needed when
+  execution uses additional models; planner-only usage is marked incomplete.
+  Frontier/SQL live comparison is running. No core product files changed.
