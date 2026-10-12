@@ -119,6 +119,7 @@ CLARIFICATIONS = [  # (pattern, effect) - sentences that restate Agere's default
     (r'return (?:a )?table[^.?]*', 'table'), (r'return (?:a )?numeric value', 'value'), (r'return (?:percent|cents)', None),
     (r'do not (?:restrict to the latest result|subtract refunds|infer net balances|net corrections|treat it as realized savings'
      r'|count missing fields as false|require a loinc code|advance)[^.?]*', None),
+    (r'do not infer[^.?]*', None),
     (r'this (?:asks about|does not establish|is absence of)[^.?]*', None),
     (r'count each patient once[^.?]*', None), (r'include people with no social screen', None),
     (r'exclude prediabetes(?: and family history)?', None), (r'counting [a-z ]+ records as the denominator', None),
@@ -194,12 +195,15 @@ def compile(question, profile, as_of):
                     'unmet_requirements': [f'Missing input: {m}' for m in missing]}, info
     info['clarifications'] = []
     for pattern, effect in CLARIFICATIONS:
-        for m in r.take(r'(?:^|(?<=[.;?] )|(?<=; )|(?<=, ))' + pattern, None):
+        for m in r.take(r'(?:^|(?<=[.;?] )|(?<=; )|(?<=, )|(?<=and ))' + pattern, None):
             info['clarifications'].append(m.group(0))
             if effect: info.setdefault('output', effect)
     pid = r.take(r'\bp-[a-z0-9]+\b', 'patient id')
     if pid:  # single-patient questions with a measurement statistic
         return _patient_question(q, r, profile, [m.group(0).upper() for m in pid], info)
+    special = _record_constructs(q, r, profile, as_of, info)
+    if special is not None:
+        return special
     literal = _literal_stream_question(q, r, profile, as_of, info)
     if literal is not None:
         return literal
@@ -255,6 +259,24 @@ def _population_question(q, r, profile, as_of, info):
     for phrase, payer in PAYERS.items():
         if r.take(_alias_pattern(phrase), f'payer {payer}'):
             allp.append({'kind': 'record', 'stream': 'coverage', 'conditions': [{'field': 'coverage_type', 'op': 'eq', 'value': payer}], 'window': W})
+    # literal record predicates: a received stream named with one of its observed values
+    for s_name, forms in sorted(_stream_vocabulary(profile).items(), key=lambda kv: -max(map(len, kv[1]))):
+        if s_name in ('conditions', 'labs', 'vitals', 'encounters', 'coverage', 'social_screens', 'financial_screens'): continue
+        fields = profile['streams'][s_name]['fields']
+        for form in forms:
+            for sm in re.finditer(_alias_pattern(form), low):
+                window = low[max(0, sm.start() - 25):sm.end() + 45]
+                hit = next(((f, v) for f, spec in fields.items() for v in sorted(spec.get('values') or {}, key=len, reverse=True)
+                            if len(v) >= 3 and '_' in v and re.search(_alias_pattern(v), window)), None)
+                if not hit: continue
+                cond = [{'field': hit[0], 'op': 'eq', 'value': hit[1]}]
+                r.take(_alias_pattern(form), f'stream {s_name}'); r.take(_alias_pattern(hit[1]), f'{hit[0]} = {hit[1]}')
+                dm = re.search(r'with ([a-z_]+_date) in (\d{4})', window)
+                if dm and dm.group(1) in fields:
+                    cond.append({'field': dm.group(1), 'op': 'prefix', 'value': dm.group(2)})
+                    r.take(r'with ' + dm.group(1) + r' in ' + dm.group(2), 'date year')
+                atom = {'kind': 'record', 'stream': s_name, 'conditions': cond, 'window': W}
+                (excl if _negated(low, sm.start()) else allp).append(atom)
     # social-screen flags (true unless "as false"/"false")
     for phrase, (stream, field) in SOCIAL_FLAGS.items():
         for m in r.take(_alias_pattern(phrase), f'{field}'):
@@ -394,6 +416,9 @@ def _population_question(q, r, profile, as_of, info):
 # ---- literal data-dictionary questions -> governed SQL --------------------------
 def _literal_stream_question(q, r, profile, as_of, info):
     low = r.low
+    clinical = [a for al in (*CONDITION_ALIASES.values(), *MEASUREMENT_ALIASES.values()) for a in al if len(a) > 3]
+    if any(re.search(_alias_pattern(a), low) for a in clinical) and not re.search(r'\brecords?\b', low):
+        return None
     vocab = _stream_vocabulary(profile)
     stream, span = None, None
     for s, forms in sorted(vocab.items(), key=lambda kv: -max(map(len, kv[1]))):
@@ -408,6 +433,8 @@ def _literal_stream_question(q, r, profile, as_of, info):
     fields = profile['streams'][stream]['fields']
     for i in range(span.start(), span.end()): r.used[i] = True
     r.notes.append(f'stream {stream}')
+    for token in stream.split('_'):  # words of the stream's own name are explained by it
+        r.take(r'\b' + re.escape(token.rstrip('s')) + r's?\b', None, overlap=True)
     conds, sql_where, named_fields = [], [], []
     group_field = None
     g = re.search(r'\bby (?:the )?(?:recording |source |service )?([a-z_]+)\b', low)
@@ -436,10 +463,14 @@ def _literal_stream_question(q, r, profile, as_of, info):
         sql_where.append(f"lower(json_extract(payload,'$.{target}')) LIKE '%{m.group(1)}%'")
     r.take(r'\bignoring case\b|\bcase[- ]insensitive\b')
     # "lack(s|ing) a <field>" -> missing
-    lack = next(iter(r.take(r'\blacks? (?:a |an |any )?([a-z_]+)', 'lacks field')), None)
+    lack = next(iter(r.take(r'\blacks? (?:a |an |any )?([a-z_]+)', 'lacks field', overlap=True)), None)
     if lack and lack.group(1) in fields:
         sql_where.append(f"json_extract(payload,'$.{lack.group(1)}') IS NULL")
         named_fields = [x for x in named_fields if x != lack.group(1)]
+    for m in r.take(r'\barrived in a later calendar year than (?:their )?source event dates?\b', 'arrival year after event year'):
+        sql_where.append("event_date IS NOT NULL AND available_date IS NOT NULL AND substr(available_date,1,4) > substr(event_date,1,4)")
+    for m in r.take(r'\barrived more than (\d+) (?:calendar )?days after (?:their )?source event dates?\b', 'arrival lag'):
+        sql_where.append(f"event_date IS NOT NULL AND available_date IS NOT NULL AND julianday(available_date) - julianday(event_date) > {m.group(1)}")
     # year windows: "in 2028" on a named date field or the source event date
     date_field = next((f for f in named_fields if f.endswith('_date')), 'event_date')
     for m in r.take(r'\b(?:with )?(?:source[- ]event[- ]dated |source event dates? )?(?:in|during) (\d{4})\b|(?<=count )(\d{4})\b', 'year'):
@@ -482,6 +513,149 @@ def _literal_stream_question(q, r, profile, as_of, info):
     return {'interpretation': q, 'coverage': 'supported_observation', 'unmet_requirements': [],
             'nodes': [{'id': 'answer', 'operation': 'sql', 'inputs': [], 'parameters': {'query': sql, 'returns': returns},
                        'purpose': f'Literal {stream} question'}]}, info
+
+
+NUMBER_WORDS = {'one': 1, 'two': 2, 'three': 3, 'four': 4, 'five': 5, 'six': 6}
+SQL_OPS = {'gt': '>', 'ge': '>=', 'lt': '<', 'le': '<=', 'eq': '='}
+
+
+def _sql_graph(q, sql, returns, purpose, info):
+    info['route'] = 'local_compiler'
+    return {'interpretation': q, 'coverage': 'supported_observation', 'unmet_requirements': [],
+            'nodes': [{'id': 'answer', 'operation': 'sql', 'inputs': [], 'parameters': {'query': sql, 'returns': returns},
+                       'purpose': purpose}]}, info
+
+
+def _comparison(low, start):
+    for pattern, op in COMPARATORS:
+        mm = re.match(r'\s*(?:results?|values?|records?|of|is|was)?\s*' + pattern + r'\s*' + NUMBER, low[start:start + 50])
+        if mm: return op, float(mm.group(1)), start + mm.end()
+    return None
+
+
+def _finish(q, r, info, sql, returns, purpose):
+    info['unexplained'] = r.leftover()
+    if info['unexplained']:
+        info.update(route='fallback', reason='words not interpreted locally: ' + ', '.join(info['unexplained'][:12]))
+        return None, info
+    return _sql_graph(q, sql, returns, purpose, info)
+
+
+def _record_constructs(q, r, profile, as_of, info):
+    """Record-level analytics: event sequences, co-occurrence, linkage, repeated measures,
+    arrival lag and strict latest values. Returns None when no construct applies."""
+    low = r.low
+    streams = _stream_vocabulary(profile)
+    def stream_in(text):
+        for s, forms in sorted(streams.items(), key=lambda kv: -max(map(len, kv[1]))):
+            if any(re.search(_alias_pattern(f), text) for f in forms): return s
+        return None
+    def value_of(stream, text):
+        for f, spec in profile['streams'][stream]['fields'].items():
+            for v in sorted(spec.get('values') or {}, key=len, reverse=True):
+                if len(v) >= 3 and re.search(_value_pattern(v), text): return f, v
+        return None
+    patients = bool(re.search(r'\bpatients?\b', low))
+    count_expr = 'count(DISTINCT a.patient_id)' if patients else 'count(*)'
+
+    # 1. sequences: "<stream> <B> N through M days after a <stream> <A> in a different ... encounter"
+    m = re.search(r'(\w+) (\w+) (\d+) (?:through|to|-) (\d+) (?:calendar )?days after (?:an? )?(\w+) (\w+)', low)
+    if m and stream_in(m.group(1)) and stream_in(m.group(5)):
+        sa, sb = stream_in(m.group(5)), stream_in(m.group(1))
+        va, vb = value_of(sa, m.group(6)), value_of(sb, m.group(2))
+        if va and vb:
+            r.take(re.escape(m.group(0)), 'event sequence')
+            different = r.take(r'\bin a different[^.?]*encounter\b', 'different encounter')
+            r.take(r'\buse source event dates?(?:, not arrival dates)?\b|\bhave an?\b|\bhas an?\b', None)
+            sql = (f"SELECT {count_expr} FROM record a JOIN record b ON b.patient_id = a.patient_id "
+                   f"WHERE a.stream = '{sb}' AND json_extract(a.payload,'$.{vb[0]}') = '{vb[1]}' "
+                   f"AND b.stream = '{sa}' AND json_extract(b.payload,'$.{va[0]}') = '{va[1]}' "
+                   f"AND a.event_date IS NOT NULL AND b.event_date IS NOT NULL "
+                   f"AND julianday(a.event_date) - julianday(b.event_date) BETWEEN {m.group(3)} AND {m.group(4)}"
+                   + (" AND json_extract(a.payload,'$.encounter_id') IS NOT NULL AND json_extract(b.payload,'$.encounter_id') IS NOT NULL"
+                      " AND json_extract(a.payload,'$.encounter_id') <> json_extract(b.payload,'$.encounter_id')" if different else ''))
+            return _finish(q, r, info, sql, 'count', f'{sb} {vb[1]} {m.group(3)}-{m.group(4)} days after {sa} {va[1]}')
+
+    # 2. co-occurrence: "both <v1> and <v2> in <stream> for the (exact) same <field>"
+    m = re.search(r'\bboth ([a-z_]+) and ([a-z_]+) in ([a-z_]+) for the (?:exact )?same ([a-z_]+)', low)
+    if m and m.group(3) in profile['streams'] and m.group(4) in profile['streams'][m.group(3)]['fields']:
+        st, key = m.group(3), m.group(4)
+        field = next((f for f, spec in profile['streams'][st]['fields'].items()
+                      if m.group(1) in (spec.get('values') or {}) and m.group(2) in (spec.get('values') or {})), None)
+        if field:
+            r.take(re.escape(m.group(0)), 'co-occurrence'); r.take(r'\bwhich\b', None)
+            key_expr = f"lower(json_extract(payload,'$.{key}'))" if 'ignoring case' in low else f"json_extract(payload,'$.{key}')"
+            sql = (f"SELECT DISTINCT patient_id FROM record WHERE stream = '{st}' AND {key_expr} IS NOT NULL "
+                   f"GROUP BY patient_id, {key_expr} HAVING sum(json_extract(payload,'$.{field}') = '{m.group(1)}') > 0 "
+                   f"AND sum(json_extract(payload,'$.{field}') = '{m.group(2)}') > 0")
+            return _finish(q, r, info, sql, 'patient_set', 'co-occurring statuses for the same item')
+
+    # 3. linkage: "<stream A> records lack any <stream B> record linked by <field>"
+    m = re.search(r'([a-z_ ]+?) records? lacks? any ([a-z_]+) records? linked by ([a-z_]+)', low)
+    if m and stream_in(m.group(1)) and m.group(2) in profile['streams']:
+        sa, sb, field = stream_in(m.group(1)), m.group(2), m.group(3)
+        r.take(re.escape(m.group(0)), 'linkage'); r.take(r'\bto th(?:at|e) [a-z ]+? record ids?\b|\bcount [a-z ]+ records\b', None)
+        sql = (f"SELECT {'count(DISTINCT o.patient_id)' if patients and 'count' not in low else 'count(*)'} FROM record o WHERE o.stream = '{sa}' "
+               f"AND NOT EXISTS (SELECT 1 FROM link l WHERE l.target_record_id = o.record_id AND l.stream = '{sb}' AND l.field = '{field}')")
+        return _finish(q, r, info, sql, 'count', f'{sa} without linked {sb}')
+
+    # 4. measurement-record questions ("HbA1c records", "at least two HbA1c results", latest strictly dated)
+    for concept, aliases in MEASUREMENT_ALIASES.items():
+        for alias in sorted(aliases, key=len, reverse=True):
+            am = re.search(_alias_pattern(alias) + r'\s+(records?|results?)', low)
+            if not am: continue
+            if not (re.search(r'\b(?:at least|more than) \w+ (?:recorded )?(?:numeric )?' + re.escape(alias), low)
+                    or re.search(r'arrived more than \d+ (?:calendar )?days after|have no source event date|by the (?:recording |source )?organization', low)):
+                continue
+            where = [f"concept = '{concept}'", 'value_canonical IS NOT NULL']
+            r.take(r'\b(?:numeric )?(?:percent-unit )?(?:numeric )?' + re.escape(alias) + r'\s+(?:records?|results?)', f'{concept} records')
+            unit = concepts.MEASUREMENTS[concept]['unit']
+            if re.search(r'percent-unit|in percent', low) and unit == '%': r.take(r'\bpercent-unit\b|\bin percent\b', None)
+            cmp = _comparison(low, am.end())
+            if cmp:
+                where.append(f"value_canonical {SQL_OPS[cmp[0]]} {cmp[1]}")
+                for i in range(am.end(), cmp[2]): r.used[i] = True
+            repeat = re.search(r'\b(?:at least|more than) (\w+) (?:recorded )?(?:numeric )?' + re.escape(alias), low)
+            lag = re.search(r'arrived more than (\d+) (?:calendar )?days after (?:their )?source event date', low)
+            undated = re.search(r'\bhave no source event date\b', low)
+            group = re.search(r'\bby the (?:recording |source )?organization\b', low)
+            if repeat:
+                n = NUMBER_WORDS.get(repeat.group(1)) or (int(repeat.group(1)) if repeat.group(1).isdigit() else None)
+                if not n: return None
+                r.take(r'\b(?:at least|more than) \w+ (?:recorded )?(?:numeric )?', 'repeated measure', overlap=True)
+                sql = (f"SELECT count(*) FROM (SELECT patient_id FROM measurement WHERE {' AND '.join(where)} "
+                       f"GROUP BY patient_id HAVING count(*) >= {n})")
+                return _finish(q, r, info, sql, 'count', f'patients with >= {n} qualifying {concept} results')
+            if lag:
+                r.take(re.escape(lag.group(0)), 'arrival lag'); r.take(r'exclude records with unknown source event dates', None)
+                where += ['event_date IS NOT NULL', 'available_date IS NOT NULL', f"julianday(available_date) - julianday(event_date) > {lag.group(1)}"]
+                return _finish(q, r, info, f"SELECT count(*) FROM measurement WHERE {' AND '.join(where)}", 'count', 'late-arriving results')
+            if undated:
+                r.take(re.escape(undated.group(0)), 'undated')
+                where.append('event_date IS NULL')
+                return _finish(q, r, info, f"SELECT count(*) FROM measurement WHERE {' AND '.join(where)}", 'count', 'undated results')
+            if group:
+                r.take(re.escape(group.group(0)), 'by organization')
+                cols = re.search(r'table with ([a-z_]+) and ([a-z_]+)', low)
+                k, c = (cols.group(1), cols.group(2)) if cols else ('organization_id', 'patient_count')
+                r.take(r'\bfor\b|\bcount distinct patients\b|\bexclude missing organizations\b', None)
+                sql = (f"SELECT organization_id AS {k}, count(DISTINCT patient_id) AS {c} FROM measurement WHERE {' AND '.join(where)} "
+                       f"AND organization_id IS NOT NULL GROUP BY 1 ORDER BY 2 DESC")
+                return _finish(q, r, info, sql, 'table', f'{concept} patients by organization')
+            return None
+    m = re.search(r'\blatest (?:source[- ]event[- ]dated )?(' + '|'.join(re.escape(a) for al in MEASUREMENT_ALIASES.values() for a in al) + r')\b', low)
+    if m and re.search(r'source[- ]event[- ]dated|exclude undated', low):
+        concept = next(c for c, al in MEASUREMENT_ALIASES.items() if m.group(1) in al)
+        cmp = _comparison(low, m.end())
+        if not cmp: return None
+        r.take(re.escape(low[m.start():cmp[2]]), 'strict latest value')
+        r.take(r'exclude undated results|on the same date use the latest arrival, then largest record id|\bwhich\b', None)
+        sql = (f"SELECT patient_id FROM (SELECT patient_id, value_canonical, row_number() OVER (PARTITION BY patient_id "
+               f"ORDER BY event_date DESC, available_date DESC, record_id DESC) AS rn FROM measurement "
+               f"WHERE concept = '{concept}' AND event_date IS NOT NULL AND value_canonical IS NOT NULL) "
+               f"WHERE rn = 1 AND value_canonical {SQL_OPS[cmp[0]]} {cmp[1]}")
+        return _finish(q, r, info, sql, 'patient_set', f'latest dated {concept}')
+    return None
 
 
 def _patient_question(q, r, profile, pids, info):
