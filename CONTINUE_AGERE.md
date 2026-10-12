@@ -1,20 +1,33 @@
 # Continue Agere
 
-The owner is Claude Code (see BUILD_OWNER.json). Sequencing and checkpoint: AGERE_BUILD_CONTROL.json. Codex works in /Users/mikel/agere-codex on `codex/*` branches; see PARALLEL_WORK.md.
-The repo is https://github.com/michaelplogan1-sketch/agere (private). Commit to `main`; other agents use pull requests.
+The owner is Claude Code (BUILD_OWNER.json). Codex is paused (PARALLEL_WORK.md). Checkpoint: AGERE_BUILD_CONTROL.json.
+The repo is https://github.com/michaelplogan1-sketch/agere (private), branch `main`.
 
-## State (2026-10-12)
-- Answer path: /api/stack/compose. The Opus planner writes a graph over cohort (concept/measurement/record atoms), aggregate, explain, sql and the earlier operators. The result carries `answer{status, answer_type, count|patient_ids|value|table, missing, grounding, concepts}`.
-- Semantic layer: stack/semantic.sqlite3 holds patient, condition, measurement, encounter, stay, link, concept_patient and record tables. It rebuilds automatically per source digest (~70 s).
-- Benchmark (bench/ on codex/answer-benchmark): Agere 38/50, frontier+SQL 49/50 ($21.12), Agere $3.26.
-- Blocked: the Anthropic API credit balance is exhausted. 12 questions await a rerun.
+## Principle
+Right tool for the job. Agere plans questions itself (clinical_core/agere/clinical/local_compiler.py), executes them
+with its own operators, and calls a hosted LLM only when the compiler cannot account for part of a question. The
+answer records why. Run the service without `--allow-live-stack` unless hosted fallback is wanted.
+
+## Answer path
+compose -> local compiler (concepts, data dictionary, grammar) -> graph operations:
+- cohort (concept/measurement/encounter/record atoms)
+- aggregate (rates, shares, O/E adjustment, readmissions)
+- explain (factor statistics or case review)
+- discover (segment concentrations, BH-controlled, documentation guard)
+- vbc (eligibility, attribution, utilization/1000 with shrinkage, completion-adjusted PMPM, risk score, quality,
+  shared savings on supplied terms, metric-change decomposition with feed and event-type gap checks)
+- sql (governed read-only SQL over the semantic layer stack/semantic.sqlite3)
+
+## Measured
+Development benchmark (bench/, 50 questions): 49/50 correct, $0, no API calls, p50 0.65 s.
+Frontier+SQL baseline: 49/50, $21.12. A held-out set (bench/questions/heldout.json) is written independently of
+the compiler.
 
 ## Restart
-Kill the process listening on :8885, then run `.venv/bin/python serve_current_warehouse.py --port 8885 --allow-live-stack`.
-Startup marks interrupted provider reservations as abandoned so they can be retried.
-After editing fingerprinted operator files, recompute operators with clinical_core.agere.clinical.analytic_registry.compute_all (~85 s).
+Kill the process listening on :8885, then run `.venv/bin/python serve_current_warehouse.py --port 8885`.
+The semantic layer rebuilds automatically per source digest. After editing fingerprinted operator files, run
+analytic_registry.compute_all.
 
 ## Next
-1. Rerun: `cd ../agere-codex && ../clinical-insights-local/.venv/bin/python bench/run.py --system agere --sql-timeout 180 --ids C05 C09 C12 C18 C19 C20 D04 D09 D10 D24 D25 D26`, then `bench/score.py`.
-2. Codex C2: insight-tier benchmark (PARALLEL_WORK.md).
-3. Cost: measure a Sonnet 5.5 planner and parameterised plan reuse against the benchmark.
+Held-out results and fixes; survival / time-to-event; lab-trajectory change points (signal_math);
+value-of-information next-evidence; observation-aware deterioration; a UI on the MVP.

@@ -1,6 +1,6 @@
 {
  "schema": "agere-build-control/1",
- "updated_at": "2026-10-12T22:32:47.568025+00:00",
+ "updated_at": "2026-10-12T23:48:58.804070+00:00",
  "decision_basis": "AGERE_CTO_REVIEW_2026-10-11_EVENING.md",
  "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
  "required_references": [
@@ -278,8 +278,8 @@
   "kind": "manual_turn_checkpoint",
   "gate_id": "G3",
   "last_delivered_gate": "G3",
-  "user_behavior_delta": "Free-form population questions are grounded in the received data. Concept, measurement and encounter atoms cover ICD-10, SNOMED, labels and unit variants. The new operations are aggregate (rates, shares, means by PCP/practice/payer/facility, O/E case-mix adjustment, 30-day readmissions), explain (why-questions with factor statistics or case review) and governed read-only SQL over a typed semantic layer. /api/stack/compose returns a direct answer object.",
-  "measured_failure_reduction": "Diabetes + any HbA1c > 9 went from 0 matched / 1,227 unknown to {P-1008, P-4007}. Independent 50-question benchmark (Codex, bench/): Agere went from ~0 answerable to 38/50 correct with 1 false assertion, $3.26 known API cost. Frontier+SQL baseline: 49/50 at $21.12. 11 Agere errors in the final rerun are API credit exhaustion, not product failures.",
+  "user_behavior_delta": "Questions are planned locally by Agere (no LLM) and answered by grounded operators: cohorts across coding systems, aggregates with case-mix adjustment, explanations, pattern discovery, VBC metrics (attribution, utilization, PMPM with IBNR, risk, quality, shared savings on supplied terms, metric-change decomposition with data-feed checks) and governed SQL.",
+  "measured_failure_reduction": "Development benchmark 49/50 correct with zero API calls and $0 (p50 0.65 s), vs frontier+SQL 49/50 at $21.12. ED rate change correctly attributed to a 12-month event-type recording gap.",
   "evidence": [
    "PARALLEL_WORK.md",
    "clinical_core/agere/clinical/grounding.py",
@@ -288,8 +288,8 @@
    "test_aggregate_explain.py",
    "test_semantic_sql.py"
   ],
-  "remaining_gap": "Re-run the 12 benchmark questions blocked by credits: C05 C09 C12 C18 C19 C20 D04 D09 D10 D24 D25 D26. Their fixes are committed but unmeasured. Insight-tier benchmark (Codex C2) not yet built. Planner is still Opus-only, so there is no cheaper-model or plan-template route. No clinical validation. Full ten-area product scope retained.",
-  "next_action": "After the API credit top-up, restart the service and rerun the 12 IDs with bench/run.py --system agere --sql-timeout 180. Then Codex C2 (insight benchmark). Then measure a Sonnet 5.5 planner route and parameterised plan reuse for cost."
+  "remaining_gap": "Held-out generalisation; survival and lab change-point analytics; value-of-information; MVP UI; clinical validation not performed.",
+  "next_action": "Run the held-out set locally, fix generalisation failures, then survival/change-point analytics and the MVP answer UI."
  },
  "decisions": [
   {
@@ -715,6 +715,11 @@
    "at": "2026-10-12T22:32:47.568025+00:00",
    "by": "claude-code:821452c3-8962-40bd-bf83-e31db007dcba",
    "decision": "Delivered grounding, semantic layer, sql/aggregate/explain operations and the answer contract. Benchmark-driven fixes landed. Stopped at Anthropic API credit exhaustion."
+  },
+  {
+   "at": "2026-10-12T23:48:58.804070+00:00",
+   "by": "claude-code:821452c3-8962-40bd-bf83-e31db007dcba",
+   "decision": "Codex paused by Mike. Agere plans locally; hosted LLM is fallback only. Delivered VBC engine, discovery and change explanation."
   }
  ]
 }
