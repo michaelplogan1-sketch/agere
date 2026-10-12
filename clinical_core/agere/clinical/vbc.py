@@ -16,7 +16,8 @@ import numpy as np
 from . import aggregate, semantic_layer
 
 VERSION = 'vbc-engine/1'
-METRICS = ('eligibility', 'attribution', 'utilization', 'cost', 'risk', 'quality', 'shared_savings')
+METRICS = ('eligibility', 'attribution', 'utilization', 'cost', 'risk', 'quality', 'shared_savings', 'change')
+CHANGE_MEASURES = ('pmpm', 'ed_rate', 'admit_rate')
 GROUP_BY = ('none', 'pcp', 'practice', 'coverage_type', 'age_band', 'sex')
 PCP_VISIT_TYPES = ('primary_care_visit',)
 STATIN = re.compile(r'statin\b|atorvastatin|simvastatin|rosuvastatin|pravastatin|lovastatin|pitavastatin|fluvastatin', re.I)
@@ -50,7 +51,12 @@ def validate(p):
         terms = p.get('terms') or {}
         missing = [k for k in ('benchmark_pmpm', 'sharing_rate') if not isinstance(terms.get(k), (int, float))]
         if missing: raise ValueError('Shared savings needs supplied contract terms: ' + ', '.join(missing))
-    return {'metric': p['metric'], 'group_by': p.get('group_by', 'none'), 'period': p.get('period') or {},
+    if p['metric'] == 'change':
+        if p.get('measure') not in CHANGE_MEASURES: raise ValueError(f'change measure must be one of {CHANGE_MEASURES}')
+        cmp = p.get('compare') or {}
+        if cmp and not all(isinstance(cmp.get(k), dict) and cmp[k].get('start') and cmp[k].get('end') for k in ('a', 'b')):
+            raise ValueError('compare needs periods a and b with start/end dates')
+    return {'metric': p['metric'], 'group_by': p.get('group_by', 'none'), 'period': p.get('period') or {}, 'compare': p.get('compare') or {},
             'measure': p.get('measure', ''), 'terms': p.get('terms') or {}, 'attribution': p.get('attribution', 'hybrid')}
 
 
@@ -359,6 +365,104 @@ def _shared_savings(db, people, attr, p, start, end):
                       'actual cost = completion-adjusted allowed PMPM for enrolled member-months. ' + cost_method)
 
 
+def _measure_by_segment(db, measure, group_by, start, end, keep):
+    """(segment -> (exposure, numerator)) for one period. Exposure = member-months (pmpm) or member-years."""
+    people = eligibility(db, end, start, end)
+    if keep is not None: people = {k: v for k, v in people.items() if k in keep}
+    attr = attribution(db, people, start, end)
+    out = defaultdict(lambda: [0.0, 0.0])
+    for pid, info in people.items():
+        if info['months']:
+            out[_group_key(group_by, pid, people, attr)][0] += len(info['months']) / (1 if measure == 'pmpm' else 12)
+    months = {pid: set(i['months']) for pid, i in people.items()}
+    if measure == 'pmpm':
+        claims = _claims(db, start, end)
+        completion, _ = _completion(claims, end)
+        for pid, month, allowed, *_ in claims:
+            if month in months.get(pid, ()): out[_group_key(group_by, pid, people, attr)][1] += allowed / 100 * completion.get(month, 1.0)
+    else:
+        if measure == 'ed_rate':
+            rows = db.execute("SELECT DISTINCT patient_id, event_date FROM encounter WHERE type_concept='emergency_visit' AND event_date BETWEEN ? AND ?", (start, end))
+        else:
+            rows = db.execute("SELECT patient_id, admit_date FROM stay WHERE admit_date BETWEEN ? AND ?", (start, end))
+        for pid, d in rows:
+            if d and d[:7] in months.get(pid, ()): out[_group_key(group_by, pid, people, attr)][1] += 1
+    return out
+
+
+def _feed_checks(db, measure, a, b):
+    """Did the data feeding the measure change? Monthly record volume per source, CUSUM vs period A."""
+    from ...process_monitoring import monitor
+    stream = {'pmpm': 'medical_claims', 'ed_rate': 'encounters', 'admit_rate': 'encounters'}[measure]
+    counts = defaultdict(lambda: defaultdict(int))
+    for org, month, n in db.execute("SELECT organization_id, substr(event_date,1,7), count(*) FROM record WHERE stream=? AND event_date BETWEEN ? AND ? GROUP BY 1,2",
+                                    (stream, a['start'], b['end'])):
+        counts[org][month] = n
+    months_a, months_b = _months(a['start'], a['end']), _months(b['start'], b['end'])
+    alerts = []
+    for org, series in counts.items():
+        ref = [series.get(m, 0) for m in months_a]
+        if len(ref) < 3 or sum(ref) < 30: continue
+        mean, sd = float(np.mean(ref)), float(max(np.std(ref), math.sqrt(max(np.mean(ref), 1))))
+        res = monitor([float(series.get(m, 0)) for m in months_b], reference_mean=mean, reference_sd=sd)
+        flagged = [months_b[pt['index']] for pt in res['points'] if pt['investigate_source_change']]
+        if flagged:
+            alerts.append({'source': org, 'stream': stream, 'reference_monthly_mean': round(mean, 1),
+                           'period_b_monthly_mean': round(float(np.mean([series.get(m, 0) for m in months_b])), 1), 'first_flagged_month': flagged[0]})
+    # Event-type gaps: the measured event vanishes while its stream keeps flowing (coding/feed change, not care).
+    if measure in ('ed_rate', 'admit_rate'):
+        sql = ("SELECT substr(event_date,1,7), count(DISTINCT patient_id || event_date) FROM encounter WHERE type_concept='emergency_visit' "
+               "AND event_date BETWEEN ? AND ? GROUP BY 1" if measure == 'ed_rate' else
+               "SELECT substr(admit_date,1,7), count(*) FROM stay WHERE admit_date BETWEEN ? AND ? GROUP BY 1")
+        events = dict(db.execute(sql, (a['start'], b['end'])))
+        totals = dict(db.execute("SELECT substr(event_date,1,7), count(*) FROM record WHERE stream=? AND event_date BETWEEN ? AND ? GROUP BY 1",
+                                 (stream, a['start'], b['end'])))
+        for label, months in (('period_a', months_a), ('period_b', months_b)):
+            silent = [m for m in months if totals.get(m, 0) > 100 and events.get(m, 0) == 0]
+            if len(silent) >= 3:
+                alerts.append({'source': 'all', 'stream': stream, 'kind': 'event_type_gap', 'period': label,
+                               'months_without_events': len(silent), 'of_months': len(months),
+                               'detail': f'{len(silent)} of {len(months)} months in {label} record {stream} volume but none of this event type: '
+                                         'likely a coding or feed change, not a change in care.'})
+    return alerts
+
+
+def _change(db, p, as_of, keep):
+    """Kitagawa decomposition of a rate change into segment mix and within-segment rate effects, plus feed checks."""
+    end_b = (p['compare'].get('b') or {}).get('end') or as_of
+    b = p['compare'].get('b') or {'start': f'{int(end_b[:4]) - 1}{end_b[4:7]}-01', 'end': end_b}
+    a = p['compare'].get('a') or {'start': f'{int(b["start"][:4]) - 1}{b["start"][4:]}', 'end': f'{int(b["start"][:4]) - 1}{b["start"][4:7]}-01'}
+    if not p['compare'].get('a'):
+        a_end = date.fromordinal(date.fromisoformat(b['start']).toordinal() - 1).isoformat()
+        a = {'start': f'{int(b["start"][:4]) - 1}{b["start"][4:]}', 'end': a_end}
+    group_by = p['group_by'] if p['group_by'] != 'none' else 'coverage_type'
+    A = _measure_by_segment(db, p['measure'], group_by, a['start'], a['end'], keep)
+    B = _measure_by_segment(db, p['measure'], group_by, b['start'], b['end'], keep)
+    scale = 1.0 if p['measure'] == 'pmpm' else 1000.0
+    ea, eb = sum(x[0] for x in A.values()), sum(x[0] for x in B.values())
+    total_a = scale * sum(x[1] for x in A.values()) / ea if ea else 0
+    total_b = scale * sum(x[1] for x in B.values()) / eb if eb else 0
+    rows, rate_eff, mix_eff = [], 0.0, 0.0
+    for seg in sorted(set(A) | set(B)):
+        xa, xb = A.get(seg, [0, 0]), B.get(seg, [0, 0])
+        wa, wb = (xa[0] / ea if ea else 0), (xb[0] / eb if eb else 0)
+        ra, rb = (scale * xa[1] / xa[0] if xa[0] else 0), (scale * xb[1] / xb[0] if xb[0] else 0)
+        r_eff, m_eff = (rb - ra) * (wa + wb) / 2, (wb - wa) * (ra + rb) / 2
+        rate_eff += r_eff; mix_eff += m_eff
+        rows.append({'segment': seg, 'weight_a': round(wa, 4), 'weight_b': round(wb, 4), 'rate_a': round(ra, 2), 'rate_b': round(rb, 2),
+                     'rate_effect': round(r_eff, 2), 'mix_effect': round(m_eff, 2)})
+    rows.sort(key=lambda r: -abs(r['rate_effect']) - abs(r['mix_effect']))
+    feeds = _feed_checks(db, p['measure'], a, b)
+    summary = {'measure': p['measure'], 'period_a': a, 'period_b': b, 'value_a': round(total_a, 2), 'value_b': round(total_b, 2),
+               'change': round(total_b - total_a, 2), 'rate_effect': round(rate_eff, 2), 'mix_effect': round(mix_eff, 2),
+               'segments_by': group_by, 'feed_alerts': feeds,
+               'reading': (next((f['detail'] for f in feeds if f.get('kind') == 'event_type_gap'), None) or
+                           ('Feed volume changed in ' + ', '.join(f["source"] for f in feeds[:3]) + '; part of the change may be data, not care.')
+                           if feeds else 'No source-volume change detected in the feeding stream.')}
+    return [summary] + rows, ('Kitagawa decomposition: change = sum over segments of rate change x average weight (rate effect) + '
+                              'weight change x average rate (mix effect). Feed check: CUSUM on monthly record volume per source vs period A.')
+
+
 def execute(path, patient_ids, params, as_of=None):
     p = validate(params)
     db = _connect(path)
@@ -398,6 +502,8 @@ def execute(path, patient_ids, params, as_of=None):
             method = 'Internal risk score (Poisson GLM on age band, sex, chronic conditions; mean 1.0; not CMS-HCC). Fit: ' + json.dumps(fit['calibration_by_decile'][:3]) + '...'
         elif metric == 'quality':
             rows, method = _quality(db, people, attr, p, start, end)
+        elif metric == 'change':
+            rows, method = _change(db, p, as_of, set(patient_ids) if patient_ids is not None else None)
         else:
             rows, method = _shared_savings(db, people, attr, p, start, end)
     finally:

@@ -1,0 +1,485 @@
+[
+  {
+    "id": "H01",
+    "question": "I'm looking at uncontrolled blood pressure. How many of our hypertensive patients have a systolic reading of 160 or higher anywhere in their record? Data as of 2029-08-15.",
+    "category": "cohort",
+    "as_of": "2029-08-15",
+    "interpretation": "Original 1,614-person roster; only identity-matched received rows available by 2029-08-15. No hidden truth, inferred clinical negatives, or future clinical events. Hypertension = any observed condition with ICD-10 prefix I10 or SNOMED 59621000 (essential hypertension); pulmonary hypertension, preeclampsia and orthostatic hypotension are not hypertension. Systolic readings come from both vitals layouts: measurement bp_systolic with unit mmHg, and blood_pressure_systolic with units.blood_pressure_systolic mmHg; numeric values only, dated or undated. Threshold inclusive (>=160). Count distinct patients.",
+    "answer_type": "count",
+    "reference_sql": "sql/heldout/H01.sql",
+    "split": "heldout"
+  },
+  {
+    "id": "H02",
+    "question": "Give me the list of CKD patients whose potassium has ever exceeded 5.0. Use what we'd received by 2029-08-15.",
+    "category": "measurement",
+    "as_of": "2029-08-15",
+    "interpretation": "Original 1,614-person roster; only identity-matched received rows available by 2029-08-15. No hidden truth, inferred clinical negatives, or future clinical events. CKD = ICD-10 prefix N18 or SNOMED CKD stage concepts 431855005/431856006/433144002/431857002; diabetic kidney codes (E11.22, 127013003) and AKI are not counted as CKD. Potassium = lab name Potassium with unit mmol/L or mEq/L (equivalent), numeric value strictly > 5.0, any result dated or undated. Return distinct patient IDs.",
+    "answer_type": "patient_set",
+    "reference_sql": "sql/heldout/H02.sql",
+    "split": "heldout"
+  },
+  {
+    "id": "H03",
+    "question": "Among heart failure patients, how many have had an NT-proBNP at or above 1,000 pg/mL? As of Aug 15, 2029.",
+    "category": "measurement",
+    "as_of": "2029-08-15",
+    "interpretation": "Original 1,614-person roster; only identity-matched received rows available by 2029-08-15. No hidden truth, inferred clinical negatives, or future clinical events. Heart failure = any observed condition with ICD-10 prefix I50 or SNOMED 88805009. NT-proBNP = lab name NT-proBNP, unit pg/mL, numeric value >= 1000, any result including undated ones. Count distinct patients.",
+    "answer_type": "count",
+    "reference_sql": "sql/heldout/H03.sql",
+    "split": "heldout"
+  },
+  {
+    "id": "H04",
+    "question": "How many kids under 18 on the roster carry an asthma diagnosis? Evidence received through 2029-08-15.",
+    "category": "cohort",
+    "as_of": "2029-08-15",
+    "interpretation": "Original 1,614-person roster; only identity-matched received rows available by 2029-08-15. No hidden truth, inferred clinical negatives, or future clinical events. Asthma = ICD-10 prefix J45 or SNOMED 195967001 (Asthma) / 233678006 (Childhood asthma). Age = patient profile age_reported strictly < 18, not advanced to today. Count distinct patients.",
+    "answer_type": "count",
+    "reference_sql": "sql/heldout/H04.sql",
+    "split": "heldout"
+  },
+  {
+    "id": "H05",
+    "question": "How many patients have obesity documented on their problem list but no diabetes diagnosis of any kind? Received data as of 2029-08-15.",
+    "category": "cohort",
+    "as_of": "2029-08-15",
+    "interpretation": "Original 1,614-person roster; only identity-matched received rows available by 2029-08-15. No hidden truth, inferred clinical negatives, or future clinical events. Obesity = ICD-10 prefix E66 or SNOMED 162864005 (BMI 30+) / 408512008 (BMI 40+); Z98.84 history-of-obesity is excluded and BMI vitals are not used. Diabetes = any observed condition with ICD-10 prefix E08/E09/E10/E11/E13 or one of the five observed diabetes SNOMED concepts (44054006, 127013003, 90781000119102, 368581000119106, 157141000119108); prediabetes and family history excluded. Absence means no recorded diabetes condition, not a clinical negative.",
+    "answer_type": "count",
+    "reference_sql": "sql/heldout/H05.sql",
+    "split": "heldout"
+  },
+  {
+    "id": "H06",
+    "question": "Count our seniors (65 and over) who have COPD on file. Use the warehouse as received by 2029-08-15.",
+    "category": "cohort",
+    "as_of": "2029-08-15",
+    "interpretation": "Original 1,614-person roster; only identity-matched received rows available by 2029-08-15. No hidden truth, inferred clinical negatives, or future clinical events. COPD = ICD-10 prefix J44 or SNOMED 185086009 (chronic obstructive bronchitis) / 87433001 (pulmonary emphysema); asthma and sleep apnea excluded. Age = profile age_reported >= 65, not advanced. Count distinct patients.",
+    "answer_type": "count",
+    "reference_sql": "sql/heldout/H06.sql",
+    "split": "heldout"
+  },
+  {
+    "id": "H07",
+    "question": "Care gap check: how many diabetics have no HbA1c result of any kind in the warehouse? As of 2029-08-15.",
+    "category": "measurement",
+    "as_of": "2029-08-15",
+    "interpretation": "Original 1,614-person roster; only identity-matched received rows available by 2029-08-15. No hidden truth, inferred clinical negatives, or future clinical events. Diabetes = any observed condition with ICD-10 prefix E08/E09/E10/E11/E13 or one of the five observed diabetes SNOMED concepts (44054006, 127013003, 90781000119102, 368581000119106, 157141000119108); prediabetes and family history excluded. HbA1c = any lab record named HbA1c, Hemoglobin A1c or Hemoglobin A1c/Hemoglobin.total, regardless of unit, value or date. Count diabetic patients with zero such records; this is absence of received results, not proof the test was never done.",
+    "answer_type": "count",
+    "reference_sql": "sql/heldout/H07.sql",
+    "split": "heldout"
+  },
+  {
+    "id": "H08",
+    "question": "How many patients have ever had an oxygen saturation below 90% recorded in vitals? Through 2029-08-15.",
+    "category": "measurement",
+    "as_of": "2029-08-15",
+    "interpretation": "Original 1,614-person roster; only identity-matched received rows available by 2029-08-15. No hidden truth, inferred clinical negatives, or future clinical events. SpO2 from both vitals layouts: measurement spo2 with unit % and the oxygen_saturation_percent field; numeric values strictly < 90, dated or undated. Lab blood gases excluded. Count distinct patients.",
+    "answer_type": "count",
+    "reference_sql": "sql/heldout/H08.sql",
+    "split": "heldout"
+  },
+  {
+    "id": "H09",
+    "question": "Which hypertension patients have an LDL of 190 mg/dL or more on any draw? Return patient IDs; data received by 2029-08-15.",
+    "category": "measurement",
+    "as_of": "2029-08-15",
+    "interpretation": "Original 1,614-person roster; only identity-matched received rows available by 2029-08-15. No hidden truth, inferred clinical negatives, or future clinical events. Hypertension = any observed condition with ICD-10 prefix I10 or SNOMED 59621000 (essential hypertension); pulmonary hypertension, preeclampsia and orthostatic hypotension are not hypertension. LDL = lab name 'LDL cholesterol' or 'LDL', unit mg/dL, numeric value >= 190, any result. Non-HDL and total cholesterol excluded.",
+    "answer_type": "patient_set",
+    "reference_sql": "sql/heldout/H09.sql",
+    "split": "heldout"
+  },
+  {
+    "id": "H10",
+    "question": "How many women of reproductive age (18 to 44) have had a hemoglobin under 10 g/dL? Use the received record as of 2029-08-15.",
+    "category": "measurement",
+    "as_of": "2029-08-15",
+    "interpretation": "Original 1,614-person roster; only identity-matched received rows available by 2029-08-15. No hidden truth, inferred clinical negatives, or future clinical events. Women = profile sex_reported F; age_reported 18-44 inclusive, not advanced. Hemoglobin = lab name Hemoglobin or Hgb with unit g/dL, numeric value strictly < 10, any result. Hematocrit and HbA1c excluded. Count distinct patients.",
+    "answer_type": "count",
+    "reference_sql": "sql/heldout/H10.sql",
+    "split": "heldout"
+  },
+  {
+    "id": "H11",
+    "question": "How many ED visits have we seen so far in 2029 (through Aug 15)?",
+    "category": "utilization",
+    "as_of": "2029-08-15",
+    "interpretation": "Original 1,614-person roster; only identity-matched received rows available by 2029-08-15. No hidden truth, inferred clinical negatives, or future clinical events. ED visit = distinct encounter_id among encounters records with type emergency or ED (encounter rows repeat per status version, so count encounter IDs, not rows). Source event date between 2029-01-01 and 2029-08-15 inclusive; undated encounters excluded. Urgent care, observation and ADT emergency_registration rows are not counted.",
+    "answer_type": "count",
+    "reference_sql": "sql/heldout/H11.sql",
+    "split": "heldout"
+  },
+  {
+    "id": "H12",
+    "question": "Break down 2026 emergency department visits by the patient's insurance type. Give coverage_type and ed_visit_count. Data as of 2029-08-15.",
+    "category": "utilization",
+    "as_of": "2029-08-15",
+    "interpretation": "Original 1,614-person roster; only identity-matched received rows available by 2029-08-15. No hidden truth, inferred clinical negatives, or future clinical events. ED visit = distinct encounter_id among encounters records with type emergency or ED (encounter rows repeat per status version, so count encounter IDs, not rows). Source event date in calendar 2026. Coverage type = coverage_type from each patient's coverage record (one per patient, includes uninsured). Columns coverage_type, ed_visit_count; omit coverage types with zero visits.",
+    "answer_type": "table",
+    "reference_sql": "sql/heldout/H12.sql",
+    "split": "heldout"
+  },
+  {
+    "id": "H13",
+    "question": "What percent of our Medicare members have had at least one ER visit in 2029 to date (through 2029-08-15)?",
+    "category": "utilization",
+    "as_of": "2029-08-15",
+    "interpretation": "Original 1,614-person roster; only identity-matched received rows available by 2029-08-15. No hidden truth, inferred clinical negatives, or future clinical events. Denominator = distinct patients with a coverage record coverage_type medicare and status active. Numerator = those with an encounter of type emergency or ED with source event date 2029-01-01..2029-08-15. Return a percent (0-100).",
+    "answer_type": "value",
+    "reference_sql": "sql/heldout/H13.sql",
+    "split": "heldout",
+    "tolerance": 0.01
+  },
+  {
+    "id": "H14",
+    "question": "For each assigned PCP, how many primary care visits did their panel have in 2029 through August 15? Columns pcp_clinician_id and visit_count.",
+    "category": "utilization",
+    "as_of": "2029-08-15",
+    "interpretation": "Original 1,614-person roster; only identity-matched received rows available by 2029-08-15. No hidden truth, inferred clinical negatives, or future clinical events. PCP = clinician_id from care_team_relationships with role primary_care and status assigned (pediatric_primary_care is a different role and excluded). Visits = distinct encounter_id of encounters type primary_care with source event date 2029-01-01..2029-08-15, attributed to the patient's assigned PCP regardless of the attending clinician. Panel patients without visits contribute nothing; PCPs with zero visits omitted.",
+    "answer_type": "table",
+    "reference_sql": "sql/heldout/H14.sql",
+    "split": "heldout"
+  },
+  {
+    "id": "H15",
+    "question": "How many members had two or more separate inpatient stays on record? As of 2029-08-15.",
+    "category": "utilization",
+    "as_of": "2029-08-15",
+    "interpretation": "Original 1,614-person roster; only identity-matched received rows available by 2029-08-15. No hidden truth, inferred clinical negatives, or future clinical events. Inpatient stay = distinct encounter_id among encounters with type inpatient, any date including undated. Observation stays and ADT notifications not used. Count patients with >= 2 distinct inpatient encounter IDs.",
+    "answer_type": "count",
+    "reference_sql": "sql/heldout/H15.sql",
+    "split": "heldout"
+  },
+  {
+    "id": "H16",
+    "question": "Show urgent care volume by site for 2029 year to date (through 2029-08-15): organization_id and visit_count.",
+    "category": "utilization",
+    "as_of": "2029-08-15",
+    "interpretation": "Original 1,614-person roster; only identity-matched received rows available by 2029-08-15. No hidden truth, inferred clinical negatives, or future clinical events. Urgent care visit = distinct encounter_id among encounters with type urgent_care or urgentcare, source event date 2029-01-01..2029-08-15, grouped by the encounter's organization_id; missing organizations excluded.",
+    "answer_type": "table",
+    "reference_sql": "sql/heldout/H16.sql",
+    "split": "heldout"
+  },
+  {
+    "id": "H17",
+    "question": "What was our no-show rate for appointments scheduled in 2028? Express it as no-shows over kept-plus-missed appointments. Data as of 2029-08-15.",
+    "category": "utilization",
+    "as_of": "2029-08-15",
+    "interpretation": "Original 1,614-person roster; only identity-matched received rows available by 2029-08-15. No hidden truth, inferred clinical negatives, or future clinical events. Appointments with scheduled_date in calendar 2028 and an outcome status of fulfilled or no_show, counted as distinct appointment_id per status (no appointment has both). Rate = 100 * no_show / (fulfilled + no_show); booked, cancelled, rescheduled and arrived records excluded. Return a percent.",
+    "answer_type": "value",
+    "reference_sql": "sql/heldout/H17.sql",
+    "split": "heldout",
+    "tolerance": 0.01
+  },
+  {
+    "id": "H18",
+    "question": "Among patients who had any primary care visit in 2028, what was the average number of primary care visits per patient? As of 2029-08-15.",
+    "category": "utilization",
+    "as_of": "2029-08-15",
+    "interpretation": "Original 1,614-person roster; only identity-matched received rows available by 2029-08-15. No hidden truth, inferred clinical negatives, or future clinical events. Visits = distinct encounter_id of encounters type primary_care with source event date in calendar 2028. Average over patients with at least one such visit (zero-visit patients excluded from denominator).",
+    "answer_type": "value",
+    "reference_sql": "sql/heldout/H18.sql",
+    "split": "heldout",
+    "tolerance": 0.01
+  },
+  {
+    "id": "H19",
+    "question": "How many specialty referrals went to each specialty? Table with specialty and referral_count, as of 2029-08-15.",
+    "category": "referrals",
+    "as_of": "2029-08-15",
+    "interpretation": "Original 1,614-person roster; only identity-matched received rows available by 2029-08-15. No hidden truth, inferred clinical negatives, or future clinical events. Count referrals records that carry a non-null specialty field, grouped by specialty literal. Community/access referrals (referral_type such as dental_care_access, food_resource_contact) have no specialty and are excluded. Records, not patients.",
+    "answer_type": "table",
+    "reference_sql": "sql/heldout/H19.sql",
+    "split": "heldout"
+  },
+  {
+    "id": "H20",
+    "question": "How many X-ray reports came back read as a distal radius fracture? Through 2029-08-15.",
+    "category": "imaging",
+    "as_of": "2029-08-15",
+    "interpretation": "Original 1,614-person roster; only identity-matched received rows available by 2029-08-15. No hidden truth, inferred clinical negatives, or future clinical events. Count imaging_reports records whose impression is literally distal_radius_fracture. Report records, not patients or studies; free-text findings not parsed.",
+    "answer_type": "count",
+    "reference_sql": "sql/heldout/H20.sql",
+    "split": "heldout"
+  },
+  {
+    "id": "H21",
+    "question": "How many patients got a Tdap shot in August 2028? Use the received record as of 2029-08-15.",
+    "category": "immunization",
+    "as_of": "2029-08-15",
+    "interpretation": "Original 1,614-person roster; only identity-matched received rows available by 2029-08-15. No hidden truth, inferred clinical negatives, or future clinical events. immunizations records with vaccine Tdap, administration_status completed, source event date 2028-08-01..2028-08-31. Count distinct patients. Immunization history/order/decision streams not used.",
+    "answer_type": "count",
+    "reference_sql": "sql/heldout/H21.sql",
+    "split": "heldout"
+  },
+  {
+    "id": "H22",
+    "question": "What did payers pay on pharmacy claims with fill dates in September 2026? Answer in dollars. As of 2029-08-15.",
+    "category": "pharmacy",
+    "as_of": "2029-08-15",
+    "interpretation": "Original 1,614-person roster; only identity-matched received rows available by 2029-08-15. No hidden truth, inferred clinical negatives, or future clinical events. Sum payer_paid_cents (integer) across pharmacy_claims records with source event date 2026-09-01..2026-09-30, divided by 100. Patient-paid amounts and pharmacy_claim_transactions / pharmacy_payments excluded; no netting.",
+    "answer_type": "value",
+    "reference_sql": "sql/heldout/H22.sql",
+    "split": "heldout",
+    "tolerance": 0.005
+  },
+  {
+    "id": "H23",
+    "question": "For claims with 2029 service dates, give me a count by claim status. Columns status and claim_record_count. Data as of 2029-08-15.",
+    "category": "finance",
+    "as_of": "2029-08-15",
+    "interpretation": "Original 1,614-person roster; only identity-matched received rows available by 2029-08-15. No hidden truth, inferred clinical negatives, or future clinical events. medical_claims records with service_date in calendar 2029, grouped by literal status. Raw records; corrections/reversals not netted, duplicates not collapsed.",
+    "answer_type": "table",
+    "reference_sql": "sql/heldout/H23.sql",
+    "split": "heldout"
+  },
+  {
+    "id": "H24",
+    "question": "How many claim acknowledgements in 2027 were rejections for a bad member ID? As of 2029-08-15.",
+    "category": "finance",
+    "as_of": "2029-08-15",
+    "interpretation": "Original 1,614-person roster; only identity-matched received rows available by 2029-08-15. No hidden truth, inferred clinical negatives, or future clinical events. claim_acknowledgements records with status rejected_for_member_identifier and source event date in calendar 2027. Count acknowledgement records.",
+    "answer_type": "count",
+    "reference_sql": "sql/heldout/H24.sql",
+    "split": "heldout"
+  },
+  {
+    "id": "H25",
+    "question": "Total up 2029 year-to-date patient payments received, split by payment channel. Return payment_channel and total_cents. Through 2029-08-15.",
+    "category": "finance",
+    "as_of": "2029-08-15",
+    "interpretation": "Original 1,614-person roster; only identity-matched received rows available by 2029-08-15. No hidden truth, inferred clinical negatives, or future clinical events. patient_payments records with status received, currency USD, integer amount_cents, source event date 2029-01-01..2029-08-15, grouped by payment_channel; sum in cents. Refunds not subtracted; records without currency excluded.",
+    "answer_type": "table",
+    "reference_sql": "sql/heldout/H25.sql",
+    "split": "heldout"
+  },
+  {
+    "id": "H26",
+    "question": "How many appointments are booked for dates after August 15, 2029? Count appointments, using what we had received by 2029-08-15.",
+    "category": "scheduling",
+    "as_of": "2029-08-15",
+    "interpretation": "Original 1,614-person roster; only identity-matched received rows available by 2029-08-15. No hidden truth, inferred clinical negatives, or future clinical events. Distinct appointment_id with a booked record whose scheduled_date is after 2029-08-15. Known future scheduled appointments are received evidence; this does not claim they will be kept.",
+    "answer_type": "count",
+    "reference_sql": "sql/heldout/H26.sql",
+    "split": "heldout"
+  },
+  {
+    "id": "H27",
+    "question": "On average, how many days after the study date do imaging reports land in the warehouse? Use data as of 2029-08-15.",
+    "category": "temporal",
+    "as_of": "2029-08-15",
+    "interpretation": "Original 1,614-person roster; only identity-matched received rows available by 2029-08-15. No hidden truth, inferred clinical negatives, or future clinical events. Mean of (arrival date - source event date) in days over imaging_reports records with day-precision event and arrival dates. Return days as a number.",
+    "answer_type": "value",
+    "reference_sql": "sql/heldout/H27.sql",
+    "split": "heldout",
+    "tolerance": 0.01
+  },
+  {
+    "id": "H28",
+    "question": "How many systolic blood pressure readings in the vitals feed have no source event date? As of 2029-08-15.",
+    "category": "source_clocks",
+    "as_of": "2029-08-15",
+    "interpretation": "Original 1,614-person roster; only identity-matched received rows available by 2029-08-15. No hidden truth, inferred clinical negatives, or future clinical events. Count vitals records with null source event date that carry a numeric systolic value in either layout (measurement bp_systolic value, or blood_pressure_systolic field). Records, not patients; recorded/arrival dates do not substitute for event dates.",
+    "answer_type": "count",
+    "reference_sql": "sql/heldout/H28.sql",
+    "split": "heldout"
+  },
+  {
+    "id": "H29",
+    "question": "Are there any imaging studies with no report linked to them? How many? Received data through 2029-08-15.",
+    "category": "linkage",
+    "as_of": "2029-08-15",
+    "interpretation": "Original 1,614-person roster; only identity-matched received rows available by 2029-08-15. No hidden truth, inferred clinical negatives, or future clinical events. Count imaging_studies records whose record ID does not appear as study_record_id on any imaging_reports record. Linkage by explicit record ID only; accession-number matching not used.",
+    "answer_type": "count",
+    "reference_sql": "sql/heldout/H29.sql",
+    "split": "heldout"
+  },
+  {
+    "id": "H30",
+    "question": "How many referrals have never had a single status update come back on them? As of 2029-08-15.",
+    "category": "linkage",
+    "as_of": "2029-08-15",
+    "interpretation": "Original 1,614-person roster; only identity-matched received rows available by 2029-08-15. No hidden truth, inferred clinical negatives, or future clinical events. Count referrals records whose record ID is not referenced by referral_record_id on any referral_status_updates record. All referral types/specialties included. No update does not mean the referral was not completed.",
+    "answer_type": "count",
+    "reference_sql": "sql/heldout/H30.sql",
+    "split": "heldout"
+  },
+  {
+    "id": "H31",
+    "question": "How many patients were seen in primary care within a week after an ED visit (1 to 7 days later)? Use source event dates; data as of 2029-08-15.",
+    "category": "temporal",
+    "as_of": "2029-08-15",
+    "interpretation": "Original 1,614-person roster; only identity-matched received rows available by 2029-08-15. No hidden truth, inferred clinical negatives, or future clinical events. ED = encounters type emergency or ED; primary care = encounters type primary_care; both with valid day-precision source event dates on or before 2029-08-15. Count distinct patients having a primary care encounter dated 1-7 days (inclusive) after an ED encounter date. Same-day visits excluded.",
+    "answer_type": "count",
+    "reference_sql": "sql/heldout/H31.sql",
+    "split": "heldout"
+  },
+  {
+    "id": "H32",
+    "question": "Of the medical claims with 2028 service dates, how many showed up in the warehouse more than 60 days after the date of service? As of 2029-08-15.",
+    "category": "source_clocks",
+    "as_of": "2029-08-15",
+    "interpretation": "Original 1,614-person roster; only identity-matched received rows available by 2029-08-15. No hidden truth, inferred clinical negatives, or future clinical events. medical_claims records with a valid day service_date in calendar 2028 whose arrival date minus service_date exceeds 60 days (strict). Records, not distinct claims.",
+    "answer_type": "count",
+    "reference_sql": "sql/heldout/H32.sql",
+    "split": "heldout"
+  },
+  {
+    "id": "H33",
+    "question": "How many of our heart failure patients told us on a social screen that transportation is a problem? As of 2029-08-15.",
+    "category": "social_determinants",
+    "as_of": "2029-08-15",
+    "interpretation": "Original 1,614-person roster; only identity-matched received rows available by 2029-08-15. No hidden truth, inferred clinical negatives, or future clinical events. Heart failure = any observed condition with ICD-10 prefix I50 or SNOMED 88805009. Transportation problem = any social_screens record with transport_difficulty_reported explicitly true (the separate free-text transport field such as 'unreliable' is not used). Count distinct patients.",
+    "answer_type": "count",
+    "reference_sql": "sql/heldout/H33.sql",
+    "split": "heldout"
+  },
+  {
+    "id": "H34",
+    "question": "List hypertension patients who reported trouble paying their medical bills on a financial screen. Data received by 2029-08-15.",
+    "category": "social_determinants",
+    "as_of": "2029-08-15",
+    "interpretation": "Original 1,614-person roster; only identity-matched received rows available by 2029-08-15. No hidden truth, inferred clinical negatives, or future clinical events. Hypertension = any observed condition with ICD-10 prefix I10 or SNOMED 59621000 (essential hypertension); pulmonary hypertension, preeclampsia and orthostatic hypotension are not hypertension. Financial strain = any financial_screens record with difficulty_paying_medical_bills explicitly true. The social_screens difficulty_paying_for_care_reported field is not used. Return distinct patient IDs.",
+    "answer_type": "patient_set",
+    "reference_sql": "sql/heldout/H34.sql",
+    "split": "heldout"
+  },
+  {
+    "id": "H35",
+    "question": "How many patients who screened positive for food insecurity have any ED visit on record? As of 2029-08-15.",
+    "category": "social_determinants",
+    "as_of": "2029-08-15",
+    "interpretation": "Original 1,614-person roster; only identity-matched received rows available by 2029-08-15. No hidden truth, inferred clinical negatives, or future clinical events. Food insecurity = any social_screens record with food_difficulty_reported explicitly true. ED = any encounters record of type emergency or ED, any date including undated. Count distinct patients; no temporal ordering required.",
+    "answer_type": "count",
+    "reference_sql": "sql/heldout/H35.sql",
+    "split": "heldout"
+  },
+  {
+    "id": "H36",
+    "question": "Of patients who reported transportation difficulty, what share have missed at least one appointment (no-show)? As of 2029-08-15.",
+    "category": "social_determinants",
+    "as_of": "2029-08-15",
+    "interpretation": "Original 1,614-person roster; only identity-matched received rows available by 2029-08-15. No hidden truth, inferred clinical negatives, or future clinical events. Denominator = distinct patients with any social_screens transport_difficulty_reported explicitly true. Numerator = those with any appointments record status no_show, any date. Return a percent (0-100). Association only.",
+    "answer_type": "value",
+    "reference_sql": "sql/heldout/H36.sql",
+    "split": "heldout",
+    "tolerance": 0.01
+  },
+  {
+    "id": "H37",
+    "question": "What's our 2029 PMPM total cost of care compared with the capitation rate in our Medicare Advantage contract, and are we above or below it? As of 2029-08-15.",
+    "category": "unsupported",
+    "as_of": "2029-08-15",
+    "interpretation": "Original 1,614-person roster; only identity-matched received rows available by 2029-08-15. No hidden truth, inferred clinical negatives, or future clinical events. No capitation contract, premium/capitation rate or member-month enrollment spans are present as received evidence; claims allowed amounts alone cannot be compared to an unknown contracted rate.",
+    "answer_type": "unsupported",
+    "reference_sql": "sql/heldout/H37.sql",
+    "split": "heldout",
+    "expected_behavior": {
+      "required_missing": [
+        {
+          "id": "contract",
+          "description": "The Medicare Advantage capitation contract and its PMPM rate are missing.",
+          "any_of": [
+            "contract",
+            "capitation rate",
+            "capitated rate",
+            "pmpm rate"
+          ]
+        },
+        {
+          "id": "member_months",
+          "description": "Member-month enrollment/eligibility spans needed for a PMPM denominator are missing.",
+          "any_of": [
+            "member month",
+            "member-month",
+            "enrollment span",
+            "eligibility span",
+            "eligibility period"
+          ]
+        }
+      ],
+      "scoring": "Exact unsupported status plus all missing-prerequisite phrase groups; mechanical rubric, independent review still required."
+    }
+  },
+  {
+    "id": "H38",
+    "question": "Did enrolling patients in care management actually cut their ED use? Give me the causal effect, not a before/after comparison. As of 2029-08-15.",
+    "category": "unsupported",
+    "as_of": "2029-08-15",
+    "interpretation": "Original 1,614-person roster; only identity-matched received rows available by 2029-08-15. No hidden truth, inferred clinical negatives, or future clinical events. Observational care-management contacts and encounters do not identify a causal effect; no randomized assignment or validated comparison design is received.",
+    "answer_type": "unsupported",
+    "reference_sql": "sql/heldout/H38.sql",
+    "split": "heldout",
+    "expected_behavior": {
+      "required_missing": [
+        {
+          "id": "causal",
+          "description": "An identified causal design or counterfactual comparison is missing.",
+          "any_of": [
+            "counterfactual",
+            "causal design",
+            "randomiz",
+            "causal identification",
+            "causal effect cannot",
+            "cannot establish caus",
+            "confound"
+          ]
+        }
+      ],
+      "scoring": "Exact unsupported status plus all missing-prerequisite phrase groups; mechanical rubric, independent review still required."
+    }
+  },
+  {
+    "id": "H39",
+    "question": "Using a validated risk model, give me each member's calibrated probability of hospitalization in the next 90 days. As of 2029-08-15.",
+    "category": "unsupported",
+    "as_of": "2029-08-15",
+    "interpretation": "Original 1,614-person roster; only identity-matched received rows available by 2029-08-15. No hidden truth, inferred clinical negatives, or future clinical events. No prediction model, risk scores or validation/calibration evidence are present in the received warehouse; raw history cannot establish a validated calibrated probability.",
+    "answer_type": "unsupported",
+    "reference_sql": "sql/heldout/H39.sql",
+    "split": "heldout",
+    "expected_behavior": {
+      "required_missing": [
+        {
+          "id": "model",
+          "description": "An externally validated, calibrated hospitalization prediction model is unavailable.",
+          "any_of": [
+            "validated model",
+            "calibrated model",
+            "prediction model",
+            "validated prediction",
+            "calibration",
+            "risk model"
+          ]
+        }
+      ],
+      "scoring": "Exact unsupported status plus all missing-prerequisite phrase groups; mechanical rubric, independent review still required."
+    }
+  },
+  {
+    "id": "H40",
+    "question": "How many minutes of moderate exercise per week do our diabetic patients actually get, measured objectively rather than self-reported? As of 2029-08-15.",
+    "category": "unsupported",
+    "as_of": "2029-08-15",
+    "interpretation": "Original 1,614-person roster; only identity-matched received rows available by 2029-08-15. No hidden truth, inferred clinical negatives, or future clinical events. No wearable, accelerometer or device activity stream is received; notes and social history are not objective activity measurement.",
+    "answer_type": "unsupported",
+    "reference_sql": "sql/heldout/H40.sql",
+    "split": "heldout",
+    "expected_behavior": {
+      "required_missing": [
+        {
+          "id": "activity",
+          "description": "Objectively measured physical activity data (wearable/accelerometer/device) is missing.",
+          "any_of": [
+            "wearable",
+            "accelerometer",
+            "device",
+            "objective",
+            "activity data"
+          ]
+        }
+      ],
+      "scoring": "Exact unsupported status plus all missing-prerequisite phrase groups; mechanical rubric, independent review still required."
+    }
+  }
+]

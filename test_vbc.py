@@ -74,6 +74,14 @@ class VBC(unittest.TestCase):
         with self.assertRaises(ValueError):
             vbc.validate({'metric': 'shared_savings', 'terms': {'sharing_rate': 0.5}})
 
+    def test_change_decomposition_and_event_type_gap(self):
+        r = vbc.execute(self.path, None, {'metric': 'change', 'measure': 'pmpm',
+                                          'compare': {'a': {'start': '2028-01-01', 'end': '2028-02-29'},
+                                                      'b': {'start': '2028-03-01', 'end': '2028-04-30'}}}, '2029-08-15')
+        s = r['rows'][0]
+        self.assertAlmostEqual(s['change'], s['rate_effect'] + s['mix_effect'], places=1)
+        self.assertGreater(s['value_a'], s['value_b'])  # p1's $300 claim falls in period a
+
     def test_compiler_routes_vbc_questions_locally(self):
         profile = source_profile.load(self.path)
         g, info = local_compiler.compile('What is our allowed PMPM by payer?', profile, '2029-08-15')

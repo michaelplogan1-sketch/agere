@@ -111,7 +111,7 @@ numeric lab labs test tests reading readings measurement measurements visit visi
 across either both regardless including include also only per there their they it its from than then one roster
 original warehouse cohort population whole entire within during between date dates observation level levels percent
 mmol mg dl ml min m2 1.73m2 g l units unit total among notification notifications whose where
-it them so""".split())
+it them so get got gets getting become became""".split())
 
 
 CLARIFICATIONS = [  # (pattern, effect) - sentences that restate Agere's default semantics or the output shape
@@ -717,8 +717,40 @@ QUALITY_MEASURES = [('diabetes_a1c_poor_control', r'a1c (?:poor )?control|poorly
                     ('bp_control', r'(?:bp|blood pressure) control'), ('statin_therapy_diabetes', r'statin')]
 
 
+CHANGE_MEASURES = [('pmpm', r'\bpmpm\b|\bper member per month\b|\b(?:total |medical )?(?:cost|costs|spend|spending)\b'),
+                   ('ed_rate', r'\b(?:ed|er|emergency(?: department)?) (?:visits?|use|utili[sz]ation)\b|\bed rate\b'),
+                   ('admit_rate', r'\b(?:admissions?|hospitali[sz]ations?|admits?)\b')]
+
+
+def _change_question(q, r, profile, as_of, info):
+    low = r.low
+    verb = re.search(r'\b(?:why|what explains|what drove|explain)\b.*\b(?:go(?:ne)? up|went up|go(?:ne)? down|went down|increase[ds]?|rise|rose|risen|'
+                     r'grow|grew|change[ds]?|drop(?:ped)?|fall|fell|decrease[ds]?|decline[ds]?|jump(?:ed)?|spike[ds]?)\b', low)
+    measure = next((m for m, pattern in CHANGE_MEASURES if re.search(pattern, low)), None)
+    if not verb or not measure: return None
+    r.take(r'\b(?:why|what explains|what drove|explain)\b', 'why'); r.take(dict(CHANGE_MEASURES)[measure], f'measure {measure}')
+    r.take(r'\b(?:did|does|has|have|our|the|go(?:ne)? up|went up|go(?:ne)? down|went down|increase[ds]?|rise|rose|risen|grow|grew|change[ds]?|'
+           r'drop(?:ped)?|fall|fell|decrease[ds]?|decline[ds]?|jump(?:ed)?|spike[ds]?|so much|this year|last year|year over year)\b', None, overlap=True)
+    params = {'metric': 'change', 'measure': measure, 'group_by': 'none'}
+    years = re.search(r'\b(?:from|between) (\d{4}) (?:to|and) (\d{4})\b', low)
+    if years:
+        r.take(re.escape(years.group(0)), 'compare years')
+        ya, yb = years.group(1), years.group(2)
+        params['compare'] = {'a': {'start': f'{ya}-01-01', 'end': f'{ya}-12-31'}, 'b': {'start': f'{yb}-01-01', 'end': min(f'{yb}-12-31', as_of)}}
+    for pattern, g in GROUPS:
+        if g != 'facility' and r.take(pattern, f'group by {g}'): params['group_by'] = g; break
+    info['unexplained'] = r.leftover()
+    if info['unexplained']:
+        info.update(route='fallback', reason='words not interpreted locally: ' + ', '.join(info['unexplained'][:12])); return None, info
+    info['route'] = 'local_compiler'
+    return {'interpretation': q, 'coverage': 'supported_observation', 'unmet_requirements': [],
+            'nodes': [{'id': 'answer', 'operation': 'vbc', 'inputs': [], 'parameters': params, 'purpose': f'Explain change in {measure}'}]}, info
+
+
 def _vbc_question(q, r, profile, as_of, info, terms):
     low = r.low
+    change = _change_question(q, r, profile, as_of, info)
+    if change is not None: return change
     metric = next((m for m, pattern in VBC_PATTERNS if re.search(pattern, low)), None)
     if metric is None or (metric == 'shared_savings' and not terms): return None
     for m, pattern in VBC_PATTERNS:
