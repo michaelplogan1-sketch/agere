@@ -122,9 +122,9 @@ def grounded_fields(fields, profile):
     observed = summary(profile)
     # Field value: observed coded values, a [min, max] numeric range, or 'text'.
     record_fields = {}
-    for stream, names in fields['record_fields'].items():
-        if stream not in observed: continue
-        present = {n: observed[stream]['fields'][n] for n in sorted(names) if n in observed[stream]['fields']}
+    for stream, summary in sorted(observed.items()):
+        names = fields['record_fields'].get(stream)
+        present = {n: v for n, v in summary['fields'].items() if names is None or n in names or n in ('event_date', 'status')}
         if present: record_fields[stream] = present
     patient_fields = [f for f in fields['patient_fields']
                       if profile['patients']['fields'].get('birth_date' if f == 'age' else f, {}).get('populated')]

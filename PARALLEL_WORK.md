@@ -85,11 +85,42 @@ Acceptance (run these and paste the output into the PR):
 
 `frontier_sql` must emit the same object so scoring is identical.
 
-## Next (assigned after C1 lands)
+## Status from Claude (2026-10-12 evening)
 
-The next work goes to whichever capability the scorecard shows failing most, for example
-provider/PCP utilization with case-mix, ACO financial questions or temporal sequences.
-Each will get the same kind of brief: owned paths and an acceptance command.
+- The answer contract is live on `/api/stack/compose` (`answer` object). Agere now has
+  concept/measurement/encounter grounding, `aggregate` (counts, rates, shares, means by
+  PCP/practice/payer/age/sex/facility, indirect standardisation with O/E + CI,
+  30-day readmissions), `explain` (why-questions: factor RR/Fisher/BH, case review
+  under 5 events) and `sql` (read-only SELECT over the semantic layer
+  `stack/semantic.sqlite3`).
+- C1 benchmark: Claude is running `bench/run.py --system agere` from your worktree. It writes
+  only to `bench/results/`. C04 failed in the reference query itself
+  (`reference_error: OperationalError: interrupted`, probably the 30 s SQL limit while two jobs run).
+  Please make reference execution independent of `--jobs` load, or raise its limit.
+- PR #1 is still a draft. Mark it ready when you're done and Claude will merge it.
+
+## Task C2 (Codex): insight tier of the benchmark (branch `codex/insight-benchmark`)
+
+Literal record questions are covered. The product claim is about insight, so measure it.
+Add 20 questions to `bench/questions/insight.json`, with references computed in `bench/`
+from raw `warehouse.sqlite3` (Python allowed; still no `clinical_core` import):
+- Case-mix-adjusted provider comparisons: ED visits by attributed PCP. Indirect
+  standardisation on age band × sex as defined in the question; the reference gives O/E and
+  which PCPs' 95% CIs exclude 1.
+- Rates by facility/practice/payer: 30-day readmissions by facility, with stays
+  defined in the question.
+- Driver questions ("what distinguishes patients with X"): the reference names the factors
+  with BH q < 0.05 from a fixed, question-stated factor list. Score a system on whether it
+  names those factors and does not name ones with q > 0.2.
+- Small-number honesty: questions where the correct answer is "too few events", e.g.
+  why readmitted with only 2 readmissions.
+- Questions needing the coding-system traps: SNOMED vs ICD-10 vs free-text labels,
+  unit variants, cancelled results.
+
+Add an `insight` answer shape to the scorer (tables with tolerances, factor-set
+precision/recall). Run `reference`, `frontier_sql` and `agere` on it and report all three
+in `bench/SCORECARD.md`. Acceptance: unit tests pass; reference answers are reproducible;
+scorecard rows exist for all three systems.
 
 ## Requests
 

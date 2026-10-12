@@ -6,7 +6,7 @@ Filters on the same record atom must be satisfied by that same source record.
 from collections import Counter, defaultdict
 from datetime import date
 from pathlib import Path
-import hashlib, json, math, sqlite3
+import hashlib, json, math, re, sqlite3
 from ...contracts import digest
 from .clinical_events import WINDOW_SCHEMA, validate_window, window_state, bind_event
 from . import concepts, grounding, source_profile
@@ -102,11 +102,16 @@ def validate(spec, as_of=None):
             if atom['field'] == 'age' and (type(atom['value']) not in (int, float) or not 0 <= atom['value'] <= 130):
                 raise ValueError('Age must be a numeric value from zero through 130')
         elif atom.get('kind') == 'record':
-            if set(atom) != {'kind', 'stream', 'conditions', 'window'} or atom['stream'] not in RECORD_FIELDS:
+            # Any received stream/field is allowed by name; grounding checks it is populated.
+            if set(atom) != {'kind', 'stream', 'conditions', 'window'} or not isinstance(atom['stream'], str) \
+                    or not re.fullmatch(r'[a-z][a-z0-9_]{0,63}', atom['stream']):
                 raise ValueError('Invalid source-record predicate')
             if not isinstance(atom['conditions'], list) or len(atom['conditions']) > 8:
                 raise ValueError('At most eight conditions on one record')
-            for c in atom['conditions']: _condition(c, RECORD_FIELDS[atom['stream']] | COMMON)
+            allowed = RECORD_FIELDS.get(atom['stream'])
+            for c in atom['conditions']:
+                _condition(c, (allowed | COMMON) if allowed else {c.get('field')} if isinstance(c, dict)
+                           and isinstance(c.get('field'), str) and re.fullmatch(r'[A-Za-z][A-Za-z0-9_]{0,63}', c['field']) else set())
             validate_window(atom['window'], as_of)
             for c in atom['conditions']:
                 if c['field'] in ('dx', 'problem_code') and c['op'] not in ('contains', 'prefix'):
