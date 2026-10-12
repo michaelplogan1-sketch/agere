@@ -58,7 +58,9 @@ recent attempt per ID, never the best result, and writes `SCORECARD.md`.
 Counts and patient sets require exact matches; numerical values use the declared
 absolute tolerance. Tables compare row multisets with exact column names.
 Partial/grounding-failed answers do not pass as complete answers, even if their
-known count matches. Nonzero `unknown_count` alone is not a failure: a question
+known count matches. A correct count serialized in `value` is reported as a value
+match and answer-type failure, not a false numerical assertion. Nonzero
+`unknown_count` alone is not a failure: a question
 can explicitly exclude undated records and still have a complete scoped answer.
 The live C06 baseline exposed this distinction; its exact count remains correct
 while its 817 excluded undated records stay visible. Scorecard generation rescores
@@ -67,6 +69,12 @@ calls. Unsupported answers must identify the declared missing
 prerequisites. That phrase-based rubric does not establish clinical reasoning
 quality. Its diagnostic SQL confirms no supplied prerequisite artifact; it does
 not prove the absence of every possible narrative clue.
+
+The first full frontier run scored 49/50. D16 requested encounter records; its
+answer instead counted 3,875 distinct encounter IDs, explicitly explaining that
+the 7,750 received rows contained two versions per encounter. That disclosed
+interpretation fails the record-count reference; it is not an invented count.
+Keep this distinction visible when reading the mechanical false-assertion metric.
 
 Costs are product API estimates using the dated rates in `config/agere/pricing.json`,
 not invoices. Engineering-chat usage, local hardware and human review are excluded.

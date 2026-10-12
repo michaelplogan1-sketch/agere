@@ -79,10 +79,13 @@ def score_answer(question, expected, actual):
         correct = (actual['status'] == 'unsupported' and actual['answer_type'] == 'unsupported' and not missing)
         return {**result, 'correct': correct, 'correct_abstention': correct,
                 'false_assertion': result['covered'],
-                'reason': 'correct_abstention' if correct else 'missing_prerequisites:' + ','.join(missing)}
+                'reason': 'correct_abstention' if correct else
+                          ('missing_prerequisites:' + ','.join(missing) if missing else 'unsupported_contract_mismatch')}
     kind = question['answer_type']
     match = False
-    if actual['answer_type'] == kind:
+    type_match = actual['answer_type'] == kind
+    comparable = type_match or {kind, actual['answer_type']} == {'count', 'value'}
+    if type_match:
         if kind == 'patient_set':
             match = set(actual['patient_ids']) == set(expected['patient_ids'])
         elif kind == 'table':
@@ -91,13 +94,19 @@ def score_answer(question, expected, actual):
             match = actual['count'] == expected['count']
         else:
             match = same_value(actual['value'], expected['value'], question.get('tolerance', 0))
+    elif comparable:
+        # Preserve a correct scalar as diagnostic evidence, while still failing
+        # the requested type contract. A count returned as value is not a false
+        # numerical assertion merely because the answer serializer chose wrong.
+        match = same_value(actual[actual['answer_type']], expected[kind], question.get('tolerance', 0))
     # unknown_count can describe records explicitly excluded by the question
     # (e.g. undated results). It is not necessarily unresolved answer membership.
     # Incomplete answers must use partial/grounding_failed or declare missing.
-    correct = match and answered and not actual['missing']
+    correct = type_match and match and answered and not actual['missing']
     result.update(correct=correct, value_match=match,
-                  false_assertion=answered and not match,
-                  reason='correct' if correct else ('incomplete_answer' if match else 'answer_mismatch'))
+                  false_assertion=answered and comparable and not match,
+                  reason='answer_type_mismatch' if not type_match else
+                         ('correct' if correct else ('incomplete_answer' if match else 'answer_mismatch')))
     return result
 
 
@@ -110,15 +119,30 @@ def percentile(values, p):
     return ordered[low] + (ordered[high] - ordered[low]) * (index - low)
 
 
+def recorded_cost(row):
+    """Full measured cost, or a known lower bound when some usage is missing."""
+    if finite_number(row.get('estimated_cost_usd')):
+        return row['estimated_cost_usd']
+    if finite_number(row.get('known_cost_usd')):
+        return row['known_cost_usd']
+    if row.get('system') == 'agere':
+        planning = (row.get('response') or {}).get('planning_economics') or {}
+        # Only newly incurred planner spend, never historical cached-call cost.
+        if finite_number(planning.get('new_api_estimate_usd')):
+            return planning['new_api_estimate_usd']
+    return None
+
+
 def summarize(rows, total_questions):
     rows = list(rows)
     scored = [r for r in rows if r.get('score') is not None]
     correct = sum(r['score']['correct'] for r in scored)
     costs = [r.get('estimated_cost_usd') for r in rows]
-    known = [c for c in costs if finite_number(c)]
-    complete = len(known) == len(rows) and bool(rows)
+    known = [recorded_cost(r) for r in rows if recorded_cost(r) is not None]
+    complete = all(finite_number(c) for c in costs) and bool(rows)
     latency = [r['latency_s'] for r in rows if finite_number(r.get('latency_s'))]
     return {'attempted': len(rows), 'total_questions': total_questions, 'correct': correct,
+            'value_matches': sum(r['score']['value_match'] for r in scored),
             'correct_abstentions': sum(r['score']['correct_abstention'] for r in scored),
             'false_assertions': sum(r['score']['false_assertion'] for r in scored),
             'coverage': sum(r['score']['covered'] for r in scored),
@@ -158,15 +182,15 @@ def write_scorecard(results=ROOT / 'results', destination=ROOT / 'SCORECARD.md')
     systems = sorted({s for s, _ in latest})
     lines = ['# Independent answer benchmark', '',
              'Latest attempt per question, rescored from preserved answers with the current scorer; unrun questions are not passes. Reference results are SQL self-checks, not product accuracy.', '',
-             '| System | Attempted / suite | Correct | Coverage | Correct abstentions | False assertions | p50 / p95 seconds | Known API USD | Cost complete | USD / correct |',
-             '|---|---:|---:|---:|---:|---:|---:|---:|---|---:|']
+             '| System | Attempted / suite | Correct | Value matches | Coverage | Correct abstentions | False assertions | Execution errors | p50 / p95 seconds | Known API USD | Cost complete | USD / correct |',
+             '|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---|---:|']
     fmt = lambda v: 'unknown' if v is None else f'{v:.4f}'
     summaries = {}
     for system in systems:
         rows = [r for (s, i), r in latest.items() if s == system and i in questions]
         summary = summarize(rows, len(questions)); summaries[system] = summary
-        lines.append(f'| {system} | {summary["attempted"]} / {len(questions)} | {summary["correct"]} | {summary["coverage"]} | '
-                     f'{summary["correct_abstentions"]} | {summary["false_assertions"]} | '
+        lines.append(f'| {system} | {summary["attempted"]} / {len(questions)} | {summary["correct"]} | {summary["value_matches"]} | {summary["coverage"]} | '
+                     f'{summary["correct_abstentions"]} | {summary["false_assertions"]} | {summary["errors"]} | '
                      f'{fmt(summary["latency_p50_s"])} / {fmt(summary["latency_p95_s"])} | '
                      f'{fmt(summary["known_cost_usd"])} | {summary["cost_complete"]} | {fmt(summary["cost_per_correct_usd"])} |')
     compared = [s for s in systems if s != 'reference']
@@ -174,6 +198,7 @@ def write_scorecard(results=ROOT / 'results', destination=ROOT / 'SCORECARD.md')
     lines += ['', f'Common attempted questions across non-reference systems: {len(shared)}.',
               'Coverage counts answered structured attempts without declared missing requirements, including wrong answers. An unknown_count can describe explicitly excluded records and does not by itself invalidate an exact scoped answer. '
               'Unsupported scoring checks explicit prerequisite phrases; it is a mechanical rubric, not independent clinical adjudication.']
+    lines += ['Value matches include matching scalar values returned in the wrong count/value field or marked partial; they are not complete contract passes. Correct abstentions are counted separately. False assertions require a comparable structured value that disagrees with the requested scope; the scorer does not adjudicate every prose claim. A disclosed alternative interpretation can still fail exact-answer scoring.']
     if shared:
         lines += ['', '## Common attempted questions', '',
                   '| System | Correct / common | Coverage | Known API USD | USD / correct |',
@@ -188,7 +213,7 @@ def write_scorecard(results=ROOT / 'results', destination=ROOT / 'SCORECARD.md')
     for system in systems:
         attempts = [json.loads(line) for path in sorted((Path(results) / system).glob('*.jsonl'))
                     for line in path.read_text().splitlines() if line.strip()]
-        known = sum(r['estimated_cost_usd'] for r in attempts if finite_number(r.get('estimated_cost_usd')))
+        known = sum(recorded_cost(r) for r in attempts if recorded_cost(r) is not None)
         unknown = sum(not finite_number(r.get('estimated_cost_usd')) for r in attempts)
         lines.append(f'| {system} | {len(attempts)} | {known:.6f} | {unknown} |')
     lines += ['', '## Per answer type', '', '| Type | ' + ' | '.join(systems) + ' |',
@@ -216,9 +241,10 @@ def write_scorecard(results=ROOT / 'results', destination=ROOT / 'SCORECARD.md')
     lines += ['', '## Measurement limits', '',
               '- Development and challenge cases were authored from received data; challenges are visible and are not an independently sealed clinical test set.',
               '- Counts, units, date rules, tables and patient sets are checked against separate raw-source SQL. SQL semantics still require independent review.',
-              '- Latencies are observed endpoint/tool-loop times with existing caches; see each row for concurrency. No controlled cold-start or deployment performance claim.',
+              '- Latencies include failed attempts and are observed endpoint/tool-loop times with existing caches; see each row for concurrency. No controlled cold-start or deployment performance claim.',
               '- API estimates use recorded token usage and dated project prices. Local compute, engineering-chat usage and human review are excluded. Unknown costs stay unknown.',
               '- Different suite/source identities must not be interpreted as a controlled comparison. Both systems must complete the same cases before comparing aggregate accuracy.',
+              '- Execution errors include unavailable/interrupted endpoints; these are operational failures, not evidence that the model gave an incorrect clinical answer.',
               '', 'Run identities: `' + json.dumps(identities) + '`', '']
     Path(destination).write_text('\n'.join(lines))
     return summaries

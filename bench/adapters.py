@@ -124,8 +124,15 @@ def frontier_sql(question, warehouse: Warehouse, *, key=None, model=MODEL, max_t
         for _ in range(max_tools + 1):
             body = {'model': model, 'max_tokens': 8192, 'system': SYSTEM, 'messages': messages,
                     'tools': [SQL_TOOL], 'tool_choice': {'type': 'none' if calls >= max_tools else 'auto'}}
-            response = transport('https://api.anthropic.com/v1/messages', body,
-                                 {'x-api-key': credential, 'anthropic-version': '2023-06-01'})
+            try:
+                response = transport('https://api.anthropic.com/v1/messages', body,
+                                     {'x-api-key': credential, 'anthropic-version': '2023-06-01'})
+            except Exception:
+                # A disconnected/invalid response may have incurred unreported
+                # usage. Preserve prior measured spend without claiming a total.
+                result['known_cost_usd'] = result['estimated_cost_usd']
+                result['estimated_cost_usd'] = None
+                raise
             result['new_paid_api_calls'] += 1
             usage = response.get('usage', {})
             result['usage'].append(usage)
@@ -172,7 +179,4 @@ def frontier_sql(question, warehouse: Warehouse, *, key=None, model=MODEL, max_t
     except Exception as exc:
         # Keep all measured usage from successful calls even if final parsing fails.
         result['error'] = type(exc).__name__ + ': ' + str(exc)
-        if isinstance(exc, (RuntimeError, urllib.error.URLError, TimeoutError)):
-            result['known_cost_usd'] = result['estimated_cost_usd']
-            result['estimated_cost_usd'] = None
         return result

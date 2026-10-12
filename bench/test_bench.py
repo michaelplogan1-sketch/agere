@@ -242,6 +242,22 @@ class ScorerTests(unittest.TestCase):
         self.assertFalse(result['cost_complete']);self.assertIsNone(result['cost_per_correct_usd'])
         self.assertEqual(result['attempted'],1);self.assertEqual(result['total_questions'],50)
 
+    def test_correct_number_wrong_type_is_contract_failure_not_false_assertion(self):
+        actual={**empty_answer('value'),'value':self.expected['count']}
+        result=score_answer(self.q,self.expected,actual)
+        self.assertFalse(result['correct']);self.assertTrue(result['value_match'])
+        self.assertFalse(result['false_assertion'])
+        self.assertEqual(result['reason'],'answer_type_mismatch')
+
+    def test_partial_spend_counts_without_claiming_complete_cost(self):
+        rows=[{'score':score_answer(self.q,self.expected,self.expected),
+               'estimated_cost_usd':None,'known_cost_usd':.2},
+              {'system':'agere','estimated_cost_usd':None,'response':{
+                  'planning_economics':{'new_api_estimate_usd':.3,'known_api_estimate_usd':99}}}]
+        result=summarize(rows,50)
+        self.assertAlmostEqual(result['known_cost_usd'],.5)
+        self.assertFalse(result['cost_complete']);self.assertIsNone(result['cost_per_correct_usd'])
+
     def test_zero_correct_does_not_report_zero_cost_per_correct(self):
         rows=[{'score':score_answer(self.q,self.expected,None),'estimated_cost_usd':1,'latency_s':3}]
         self.assertIsNone(summarize(rows,50)['cost_per_correct_usd'])
@@ -308,6 +324,23 @@ class AdapterTests(Fixture):
         result=adapters.frontier_sql({'question':'test','as_of':'2029-08-15'},self.warehouse,key='fake',
             transport=lambda *a:{'content':[{'type':'text','text':'oops'}],'usage':{'input_tokens':10,'output_tokens':5}})
         self.assertIsNotNone(result['error']);self.assertGreater(result['estimated_cost_usd'],0)
+
+    def test_disconnected_provider_preserves_known_spend_but_total_is_unknown(self):
+        from http.client import RemoteDisconnected
+        replies = iter([{'content':[{'type':'tool_use','id':'t1','name':'query_sql',
+                                    'input':{'sql':'SELECT 1 AS n'}}],
+                         'usage':{'input_tokens':10,'output_tokens':5}}])
+        def transport(*args):
+            reply = next(replies, None)
+            if reply is None:
+                raise RemoteDisconnected('Provider closed response')
+            return reply
+        result=adapters.frontier_sql({'question':'test','as_of':'2029-08-15'},self.warehouse,
+                                    key='fake',transport=transport)
+        self.assertIn('RemoteDisconnected',result['error'])
+        self.assertIsNone(result['estimated_cost_usd'])
+        self.assertAlmostEqual(result['known_cost_usd'],.00014)
+        self.assertEqual(result['input_tokens'],10)
 
     def test_key_loader_only_reads_requested_variable(self):
         from unittest.mock import patch
