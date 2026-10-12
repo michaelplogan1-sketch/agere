@@ -1,0 +1,1 @@
+SELECT json_extract(payload,'$.service_organization_id') AS organization_id,COUNT(*) AS claim_record_count FROM records WHERE stream='medical_claims' AND json_extract(payload,'$.service_date') BETWEEN '2028-01-01' AND '2028-12-31' AND json_extract(payload,'$.service_organization_id') IS NOT NULL GROUP BY 1 ORDER BY 1;

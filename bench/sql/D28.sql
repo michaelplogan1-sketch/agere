@@ -1,0 +1,1 @@
+SELECT COALESCE(SUM(json_extract(payload,'$.allowed_cents')),0) AS value FROM records WHERE stream='medical_claims' AND json_extract(payload,'$.service_date') BETWEEN '2028-01-01' AND '2028-12-31' AND json_type(payload,'$.allowed_cents')='integer';

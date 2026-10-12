@@ -1,0 +1,1 @@
+SELECT COUNT(DISTINCT patient) AS count FROM records WHERE stream='labs' AND (json_extract(payload,'$.name')='Potassium' AND json_extract(payload,'$.unit')='mmol/L' AND json_type(payload,'$.value') IN ('integer','real') AND json_extract(payload,'$.value')>5.5);

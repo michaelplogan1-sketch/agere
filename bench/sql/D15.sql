@@ -1,0 +1,1 @@
+SELECT json_extract(payload,'$.organization_id') AS organization_id,COUNT(*) AS encounter_count FROM records WHERE stream='encounters' AND event BETWEEN '2028-01-01' AND '2028-12-31' AND json_extract(payload,'$.organization_id') IS NOT NULL GROUP BY 1 ORDER BY 1;
