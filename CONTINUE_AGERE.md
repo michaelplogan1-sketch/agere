@@ -1,6 +1,6 @@
 # Continue Agere
 
-The owner is Claude Code (see BUILD_OWNER.json). Codex works in /Users/mikel/agere-codex on `codex/*` branches; see PARALLEL_WORK.md.
+The owner is Claude Code (see BUILD_OWNER.json). Sequencing and checkpoint: AGERE_BUILD_CONTROL.json. Codex works in /Users/mikel/agere-codex on `codex/*` branches; see PARALLEL_WORK.md.
 The repo is https://github.com/michaelplogan1-sketch/agere (private). Commit to `main`; other agents use pull requests.
 
 ## State (2026-10-12)
