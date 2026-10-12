@@ -128,7 +128,9 @@ def summary(profile, max_values=15, max_value_length=40):
             if not f['populated'] or name.endswith(SKIP_VALUE_SUFFIXES) or name in PLANNER_SKIP:
                 continue
             values = f.get('values') or f.get('element_values')
-            if 'numeric_range' in f:
+            if f['types'].get('true') or f['types'].get('false'):
+                fields[name] = 'boolean (true/false; null = not reported)'
+            elif 'numeric_range' in f:
                 fields[name] = f['numeric_range']
             elif values and sorted(map(len, values))[len(values) // 2] <= max_value_length:
                 ranked = [v for v in sorted(values, key=lambda v: -values[v]) if len(v) <= max_value_length]

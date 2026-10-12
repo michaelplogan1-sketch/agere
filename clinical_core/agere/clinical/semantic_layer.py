@@ -13,7 +13,7 @@ import json, re, sqlite3, time
 
 from . import aggregate, concepts, source_profile
 
-VERSION = 'semantic-layer/1'
+VERSION = 'semantic-layer/2'
 
 DDL = """
 CREATE TABLE meta(key TEXT PRIMARY KEY, value TEXT);
@@ -31,6 +31,7 @@ CREATE TABLE encounter(record_id TEXT, patient_id TEXT, source_table TEXT, encou
   attending_clinician_id TEXT, disposition TEXT);
 CREATE TABLE stay(patient_id TEXT, admit_date TEXT, discharge_date TEXT, type TEXT, organization_id TEXT,
   readmitted_30d INTEGER, days_to_readmission INTEGER);
+CREATE TABLE link(record_id TEXT, stream TEXT, field TEXT, target_record_id TEXT);
 CREATE TABLE concept_patient(concept TEXT, kind TEXT, patient_id TEXT, records INTEGER, first_date TEXT, last_date TEXT,
   PRIMARY KEY(concept, patient_id));
 """
@@ -40,6 +41,8 @@ CREATE INDEX condition_concept ON condition(concept, patient_id);
 CREATE INDEX measurement_concept ON measurement(concept, patient_id);
 CREATE INDEX encounter_concept ON encounter(type_concept, patient_id);
 CREATE INDEX concept_patient_patient ON concept_patient(patient_id);
+CREATE INDEX link_target ON link(target_record_id, stream);
+CREATE INDEX link_source ON link(record_id);
 """
 
 SCHEMA_DOC = {
@@ -52,6 +55,8 @@ SCHEMA_DOC = {
     'encounter': 'Encounter records plus ADT notifications (source_table adt, type = ADT event). type_concept = library encounter concept.',
     'stay': 'Distinct hospital stays (inpatient/observation encounters collapsed by admit day and overlap) with 30-day readmission flag.',
     'concept_patient': 'Patients having each library concept (condition, measurement, encounter), with record counts and first/last dates.',
+    'link': 'Every record-to-record reference (fields ending _record_id/_record_ids): record_id/stream of the referring record, '
+            'field name, target_record_id. Indexed on target_record_id - use it for linkage questions (e.g. orders without dispenses).',
     'record': 'Every received record (all streams). Use json_extract(payload, \'$.field\') for fields of streams not modelled above.',
 }
 
@@ -103,6 +108,11 @@ def build(path):
                 st = r.get('source_table')
                 rid = r.get('record_id')
                 d = _date(r)
+                for k, v in r.items():
+                    if k.endswith('_record_id') and isinstance(v, str):
+                        out.execute('INSERT INTO link VALUES (?,?,?,?)', (rid, st, k, v))
+                    elif k.endswith('_record_ids') and isinstance(v, list):
+                        out.executemany('INSERT INTO link VALUES (?,?,?,?)', [(rid, st, k, x) for x in v if isinstance(x, str)])
                 out.execute('INSERT OR IGNORE INTO record VALUES (?,?,?,?,?,?,?,?)',
                             (rid, pid, st, d, (r.get('recorded_date') or '')[:10] or None, (r.get('available_date') or '')[:10] or None,
                              r.get('organization_id'), json.dumps(r)))

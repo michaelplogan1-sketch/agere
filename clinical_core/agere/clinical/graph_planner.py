@@ -1,5 +1,5 @@
 """Frontier composition of locally validated evidence/analysis dependency graphs."""
-import json
+import json, re
 
 from ..gateway import PersistentGateway
 from .context_student import send
@@ -133,7 +133,7 @@ def grounded_fields(fields, profile):
             'age_basis': 'Use age_reported (reported age); birth dates are not received.'}
 
 
-def propose(question, path, ledger, *, snapshot, graph_catalog, observed_values=None, profile=None, semantic=None):
+def propose(question, path, ledger, *, snapshot, graph_catalog, observed_values=None, profile=None, semantic=None, feedback=None):
     if not isinstance(question, str) or not 1 <= len(question.strip()) <= 1500:
         raise ValueError('Bounded population question required')
     fields = capabilities()
@@ -199,7 +199,11 @@ def propose(question, path, ledger, *, snapshot, graph_catalog, observed_values=
         'Source_state uses snapshot.as_of. For state before an event use pre_event_state directly after an outcome node with filter all, its exact supplied contract and user-specified index window/available_by; never compare latest snapshot states as pre-event features. Pre-event care completion remains documentary, not a matched referral or established care gap. '
         'When the question asks for scientific applicability, use registered scientific_references and reference_review with explicit question-to-evidence bindings. Preserve missing evidence and distinguish guideline population statements from patient observations. Never claim clinical applicability, current guideline coverage or benefit from these links. '
         'Saved-question review preserves parallel measure_review, financial_accounts, accountability_review and outcome reports with full member evidence and exact unresolved inputs. Reports do not become cohort filters or service needs. Do not invent a worklist/program solely to attach these reports. '
-        'Minimize nodes; examples/specialists only on request.'
+        'Minimize nodes; examples/specialists only on request. '
+        'unmet_requirements lists only parts of the question the graph does NOT answer; definitions and scope notes belong in interpretation. '
+        'When the question names a literal label, field, value or code (e.g. "lab named eGFR", "status no_show"), filter on that literal value (sql) rather than a broader concept. '
+        'If the question requires causal attribution, external validation, calibrated individual prediction or unavailable contract terms, return unsupported coverage with no nodes and name each missing input '
+        '(e.g. payer contract terms, attribution roster, benchmark/baseline expenditure, validated model, outcome definition) - never substitute a descriptive ranking or estimate.'
     )
     # The cohort schema already specifies types; avoid duplicating example objects
     # and enumerated operators in the bounded provider request.
@@ -229,6 +233,8 @@ def propose(question, path, ledger, *, snapshot, graph_catalog, observed_values=
         'analytic_operators': [[k,v['purpose']] for k,v in CATALOG.items()]}
     if semantic is not None: catalog['semantic_layer'] = semantic
     catalog['node_contracts']['worklist']['parameters']={'program':'Exact work_programs id; all currently registered programs are supplied.'}
+    if feedback:
+        instructions += f' A previous plan for this question failed when executed: {feedback[:500]}. Produce a different plan that avoids this failure.'
     body = {'model': PersistentGateway.MODELS['claude'], 'max_tokens': 6000, 'system': instructions,
         'messages': [{'role': 'user', 'content': scope_content(catalog)}],
         'output_config': {'format': {'type': 'json_schema', 'schema': SCHEMA}}}
@@ -264,6 +270,17 @@ def propose(question, path, ledger, *, snapshot, graph_catalog, observed_values=
         return graph, {**receipt, 'repaired_after_validation_error': str(exc)[:400]}
 
 
+def heal_concept(name):
+    """Map near-miss concept names ('Potassium', 'serum potassium', 'HbA1c') to library ids."""
+    from . import concepts
+    if concepts.is_concept(name): return name
+    key = re.sub(r'[^a-z0-9]+', '_', name.lower()).strip('_')
+    if concepts.is_concept(key): return key
+    for prefix in ('serum_', 'blood_', 'plasma_', 'documented_', 'diagnosis_of_'):
+        if key.startswith(prefix) and concepts.is_concept(key[len(prefix):]): return key[len(prefix):]
+    return concepts.concept_for_label(name) or name
+
+
 ATOM_ALIASES = {'where': 'conditions', 'filters': 'conditions', 'predicates': 'conditions', 'clauses': 'conditions'}
 
 
@@ -276,5 +293,7 @@ def normalize_specification(spec):
             if not isinstance(atom, dict): continue
             for alias, name in ATOM_ALIASES.items():
                 if alias in atom and name not in atom: atom[name] = atom.pop(alias)
+            if atom.get('kind') in ('concept', 'measurement') and isinstance(atom.get('concept'), str):
+                atom['concept'] = heal_concept(atom['concept'])
             if atom.get('kind') == 'record': atom.setdefault('window', {'basis': 'all_observed', 'start': '', 'end': ''})
             if atom.get('kind') == 'measurement': atom.setdefault('aggregate', 'any')

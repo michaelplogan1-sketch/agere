@@ -143,16 +143,31 @@ class Stack:
             from .source_profile import load as load_profile
             from .semantic_layer import describe as describe_semantic
             profile=load_profile(self.path);semantic=describe_semantic(self.path)
-            def frontier(capabilities):
+            def frontier(capabilities,feedback=None):
                 return propose(question,self.receipts,ledger,snapshot=self.retriever.meta['snapshot'],
-                               graph_catalog=capabilities,observed_values=values,profile=profile,semantic=semantic)
+                               graph_catalog=capabilities,observed_values=values,profile=profile,semantic=semantic,feedback=feedback)
             if planning=='auto':
                 from .economical_planner import plan
                 graph,receipt=plan(self,question,ledger,frontier)
                 calls=receipt['new_paid_api_calls']
             else:
                 graph,receipt=frontier(catalog(self.path));calls=0 if receipt.get('cache_hit') else 1
-            result=self.run_graph(graph,question=question)
+            try:
+                result=self.run_graph(graph,question=question)
+            except ValueError as exc:
+                # Heal, don't block: re-plan once with the execution error as feedback.
+                if not self.allow_live:raise
+                graph,retry=frontier(catalog(self.path),feedback=f'{type(exc).__name__}: {exc}')
+                receipt={**receipt,'steps':[*receipt.get('steps',[]),{'stage':'replan_after_execution_error','error':str(exc)[:400],'receipt':retry}],
+                         'new_paid_api_calls':receipt.get('new_paid_api_calls',0)+(0 if retry.get('cache_hit') else 1)}
+                calls=receipt['new_paid_api_calls'] if planning=='auto' else calls+1
+                result=self.run_graph(graph,question=question)
+                # Replace the cached plan that failed so the next ask reuses the working one.
+                with sqlite3.connect(self.path/'question-plans.sqlite3') as plans:
+                    for key,payload in plans.execute('SELECT id,payload FROM plans').fetchall():
+                        saved=json.loads(payload)
+                        if saved.get('question')==question:
+                            plans.execute('UPDATE plans SET payload=? WHERE id=?',(json.dumps({**saved,'graph':graph,'receipt':receipt}),key))
             from .economical_planner import economics
             costing=economics(receipt if planning=='auto' else {'steps':[{'receipt':receipt}]})
             return {**result,'question':question,'route':'economical_composition_local_execution' if planning=='auto' else 'frontier_composition_local_execution',
