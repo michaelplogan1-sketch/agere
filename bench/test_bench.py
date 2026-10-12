@@ -43,6 +43,20 @@ class Fixture(unittest.TestCase):
         self.before = hashlib.sha256(self.path.read_bytes()).hexdigest()
         self.warehouse = Warehouse(self.path, timeout_s=2)
 
+    def add_records(self, rows):
+        """Extend only this test's disposable fixture, never the shared source."""
+        self.warehouse.close()
+        with sqlite3.connect(self.path) as db:
+            for rid,pid,stream,event,arrival,payload in rows:
+                db.execute('INSERT INTO records VALUES (?,?,?,?,?,?,?,?,?,?)',
+                           ('r1',rid,pid,stream,event,arrival,'matched',None,'fixture',json.dumps(payload)))
+        self.before=hashlib.sha256(self.path.read_bytes()).hexdigest()
+        self.warehouse=Warehouse(self.path, timeout_s=2)
+
+    def answer(self, ident):
+        q=next(q for q in load_questions() if q['id']==ident)
+        return reference_answer(q,self.warehouse)[0]
+
     def tearDown(self):
         self.warehouse.close()
         self.assertEqual(hashlib.sha256(self.path.read_bytes()).hexdigest(), self.before)
@@ -96,6 +110,64 @@ class WarehouseTests(Fixture):
         self.assertIsNone(result['error'])
 
 
+class ReferenceSemanticsTests(Fixture):
+    def test_readmission_boundaries_distinct_encounters_and_receipt_cutoff(self):
+        self.add_records([
+            ('a','P-1008','adt','2028-01-01','2028-01-02',{'event':'discharge','encounter_id':'stay1'}),
+            ('b','P-1008','adt','2028-01-31','2028-02-01',{'event':'admission','encounter_id':'stay2'}),
+            ('c','P-4007','adt','2028-01-01','2028-01-02',{'event':'discharge','encounter_id':'stay3'}),
+            ('d','P-4007','adt','2028-02-01','2028-02-02',{'event':'admission','encounter_id':'stay4'}),
+            ('e','P-4007','adt','2028-01-02','2028-01-03',{'event':'admission','encounter_id':'stay3'}),
+            ('f','P-4007','adt','2028-01-02','2030-01-01',{'event':'admission','encounter_id':'stay5'}),
+        ])
+        self.assertEqual(self.answer('D14')['count'],1)
+        self.assertEqual(self.answer('C10')['value'],50)
+
+    def test_latest_date_arrival_id_and_units_are_not_any_result(self):
+        self.add_records([
+            ('new1','P-1008','labs','2028-02-01','2028-02-02',{'name':'HbA1c','value':8,'unit':'%'}),
+            ('new2','P-1008','labs','2028-02-01','2028-02-03',{'name':'HbA1c','value':11,'unit':'%'}),
+            ('new3','P-1008','labs','2028-02-01','2028-02-03',{'name':'HbA1c','value':7,'unit':'%'}),
+            ('mmol','P-4007','labs','2028-03-01','2028-03-02',{'name':'HbA1c','value':90,'unit':'mmol/mol'}),
+        ])
+        self.assertEqual(self.answer('D07')['patient_ids'],[])
+        self.assertEqual(self.answer('D05')['patient_ids'],['P-1008','P-4007'])
+
+    def test_egfr_equivalent_units_but_not_unindexed_clearance(self):
+        self.add_records([
+            ('eg1','P-1008','labs',None,'2028-01-01',{'name':'eGFR','value':20,'unit':'mL/min/1.73m²'}),
+            ('eg2','P-4007','labs',None,'2028-01-01',{'name':'eGFR','value':20,'unit':'mL/min'}),
+        ])
+        self.assertEqual(self.answer('D08')['count'],1)
+
+    def test_gross_payments_require_received_usd_integer_cents(self):
+        self.add_records([
+            ('pay1','P-1008','patient_payments','2028-01-01','2028-01-02',{'status':'received','currency':'USD','amount_cents':100}),
+            ('pay2','P-4007','patient_payments','2028-01-02','2028-01-03',{'status':'received','currency':'USD','amount_cents':200}),
+            ('pay3','P-4007','patient_payments','2028-01-02','2028-01-03',{'status':'pending','currency':'USD','amount_cents':500}),
+            ('pay4','P-4007','patient_payments','2028-01-02','2028-01-03',{'status':'received','currency':'GBP','amount_cents':500}),
+            ('ref1','P-1008','patient_refunds','2028-01-02','2028-01-03',{'status':'issued','currency':'USD','amount_cents':50}),
+        ])
+        self.assertEqual(self.answer('D27')['value'],3)
+
+    def test_boolean_false_is_distinct_from_missing_and_text(self):
+        self.add_records([
+            ('s1','P-1008','social_screens',None,'2028-01-01',{'food_difficulty_reported':True}),
+            ('s2','P-4007','social_screens',None,'2028-01-01',{'food_difficulty_reported':'true'}),
+            ('s3','P-4007','social_screens',None,'2028-01-01',{}),
+            ('s4','P-1008','social_screens',None,'2028-01-01',{'food_difficulty_reported':False}),
+        ])
+        self.assertEqual(self.answer('D24')['count'],1)
+        self.assertEqual(self.answer('D26')['count'],1)
+
+    def test_dispense_reference_requires_same_patient(self):
+        self.add_records([
+            ('order1','P-1008','medication_orders',None,'2028-01-01',{}),
+            ('fill1','P-4007','pharmacy_dispenses',None,'2028-01-01',{'medication_order_record_id':'order1'}),
+        ])
+        self.assertEqual(self.answer('C12')['count'],1)
+
+
 class ScorerTests(unittest.TestCase):
     def setUp(self):
         self.q={'answer_type':'count'}
@@ -118,9 +190,13 @@ class ScorerTests(unittest.TestCase):
         score=score_answer(self.q,self.expected,{**self.expected,'status':'partial','unknown_count':100})
         self.assertTrue(score['value_match']); self.assertFalse(score['correct'])
 
-    def test_unknown_or_missing_prevents_correct_complete_count(self):
-        for change in ({'unknown_count':1},{'missing':['unmapped codes']}):
-            self.assertFalse(score_answer(self.q,self.expected,{**self.expected,**change})['correct'])
+    def test_missing_requirements_prevent_complete_count(self):
+        score=score_answer(self.q,self.expected,{**self.expected,'missing':['unmapped codes']})
+        self.assertFalse(score['correct']); self.assertFalse(score['covered'])
+
+    def test_reported_excluded_unknown_dates_do_not_fail_correct_scoped_count(self):
+        score=score_answer(self.q,self.expected,{**self.expected,'unknown_count':817})
+        self.assertTrue(score['correct']); self.assertTrue(score['covered'])
 
     def test_same_count_wrong_members_fails(self):
         expected={**empty_answer('patient_set'),'count':2,'patient_ids':['a','b']}

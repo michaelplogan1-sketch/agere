@@ -92,6 +92,16 @@ def main(argv=None):
         existing = [json.loads(line) for line in destination.read_text().splitlines() if line.strip()]
         if any(r['system'] != args.system or r['suite_sha256'] != identity for r in existing):
             parser.error('Resume file system/suite mismatch')
+        if args.system == 'frontier_sql' and any(r.get('model') != args.model for r in existing):
+            parser.error('Resume file model mismatch')
+        warehouse = Warehouse(args.database, release=args.release)
+        try:
+            if any(r.get('release') != warehouse.release or
+                   r.get('source_manifest', {}).get('source_sha256') != warehouse.manifest.get('source_sha256')
+                   for r in existing):
+                parser.error('Resume file source mismatch')
+        finally:
+            warehouse.close()
         done = {r['id'] for r in existing}; questions = [q for q in questions if q['id'] not in done]
     else:
         timestamp = datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S.%fZ')

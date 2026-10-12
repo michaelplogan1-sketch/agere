@@ -58,7 +58,12 @@ recent attempt per ID, never the best result, and writes `SCORECARD.md`.
 Counts and patient sets require exact matches; numerical values use the declared
 absolute tolerance. Tables compare row multisets with exact column names.
 Partial/grounding-failed answers do not pass as complete answers, even if their
-known count matches. Unsupported answers must identify the declared missing
+known count matches. Nonzero `unknown_count` alone is not a failure: a question
+can explicitly exclude undated records and still have a complete scoped answer.
+The live C06 baseline exposed this distinction; its exact count remains correct
+while its 817 excluded undated records stay visible. Scorecard generation rescores
+preserved answers using current rules without rewriting raw runs or repeating paid
+calls. Unsupported answers must identify the declared missing
 prerequisites. That phrase-based rubric does not establish clinical reasoning
 quality. Its diagnostic SQL confirms no supplied prerequisite artifact; it does
 not prove the absence of every possible narrative clue.

@@ -71,7 +71,7 @@ def score_answer(question, expected, actual):
     if not valid_answer(actual):
         return {**result, 'reason': 'invalid_answer_contract'}
     answered = actual['status'] == 'answered'
-    result['covered'] = answered and actual['answer_type'] != 'unsupported'
+    result['covered'] = answered and actual['answer_type'] != 'unsupported' and not actual['missing']
     if question['answer_type'] == 'unsupported':
         text = ' '.join(actual['missing']).casefold()
         rubric = question['expected_behavior']['required_missing']
@@ -91,7 +91,10 @@ def score_answer(question, expected, actual):
             match = actual['count'] == expected['count']
         else:
             match = same_value(actual['value'], expected['value'], question.get('tolerance', 0))
-    correct = match and answered and actual['unknown_count'] == 0 and not actual['missing']
+    # unknown_count can describe records explicitly excluded by the question
+    # (e.g. undated results). It is not necessarily unresolved answer membership.
+    # Incomplete answers must use partial/grounding_failed or declare missing.
+    correct = match and answered and not actual['missing']
     result.update(correct=correct, value_match=match,
                   false_assertion=answered and not match,
                   reason='correct' if correct else ('incomplete_answer' if match else 'answer_mismatch'))
@@ -148,9 +151,13 @@ def read_latest(results):
 def write_scorecard(results=ROOT / 'results', destination=ROOT / 'SCORECARD.md'):
     questions = {q['id']: q for q in load_questions()}
     latest = read_latest(results)
+    # Keep raw result rows intact while applying the current explicit scorer.
+    for (_, ident), row in latest.items():
+        if ident in questions and row.get('expected') is not None and not row.get('reference_error'):
+            row['score'] = score_answer(questions[ident], row['expected'], row.get('answer'))
     systems = sorted({s for s, _ in latest})
     lines = ['# Independent answer benchmark', '',
-             'Latest attempt per question; unrun questions are not passes. Reference results are SQL self-checks, not product accuracy.', '',
+             'Latest attempt per question, rescored from preserved answers with the current scorer; unrun questions are not passes. Reference results are SQL self-checks, not product accuracy.', '',
              '| System | Attempted / suite | Correct | Coverage | Correct abstentions | False assertions | p50 / p95 seconds | Known API USD | Cost complete | USD / correct |',
              '|---|---:|---:|---:|---:|---:|---:|---:|---|---:|']
     fmt = lambda v: 'unknown' if v is None else f'{v:.4f}'
@@ -165,9 +172,36 @@ def write_scorecard(results=ROOT / 'results', destination=ROOT / 'SCORECARD.md')
     compared = [s for s in systems if s != 'reference']
     shared = set.intersection(*(set(i for s, i in latest if s == system) for system in compared)) if compared else set()
     lines += ['', f'Common attempted questions across non-reference systems: {len(shared)}.',
-              'Coverage counts complete structured answer attempts, including wrong answers; correctness also requires no unresolved members. '
-              'Unsupported scoring checks explicit prerequisite phrases; it is a mechanical rubric, not independent clinical adjudication.', '',
-              '## Per question', '', '| ID | Split | Type | ' + ' | '.join(systems) + ' |',
+              'Coverage counts answered structured attempts without declared missing requirements, including wrong answers. An unknown_count can describe explicitly excluded records and does not by itself invalidate an exact scoped answer. '
+              'Unsupported scoring checks explicit prerequisite phrases; it is a mechanical rubric, not independent clinical adjudication.']
+    if shared:
+        lines += ['', '## Common attempted questions', '',
+                  '| System | Correct / common | Coverage | Known API USD | USD / correct |',
+                  '|---|---:|---:|---:|---:|']
+        for system in compared:
+            s = summarize([latest[(system, i)] for i in shared], len(shared))
+            lines.append(f'| {system} | {s["correct"]} / {len(shared)} | {s["coverage"]} | '
+                         f'{fmt(s["known_cost_usd"])} | {fmt(s["cost_per_correct_usd"])} |')
+    lines += ['', '## Recorded spend across all attempts', '',
+              'These totals include prior failed/replaced attempts; the tables above use only the latest attempt per question.', '',
+              '| System | Attempts | Known API USD | Attempts with unknown cost |', '|---|---:|---:|---:|']
+    for system in systems:
+        attempts = [json.loads(line) for path in sorted((Path(results) / system).glob('*.jsonl'))
+                    for line in path.read_text().splitlines() if line.strip()]
+        known = sum(r['estimated_cost_usd'] for r in attempts if finite_number(r.get('estimated_cost_usd')))
+        unknown = sum(not finite_number(r.get('estimated_cost_usd')) for r in attempts)
+        lines.append(f'| {system} | {len(attempts)} | {known:.6f} | {unknown} |')
+    lines += ['', '## Per answer type', '', '| Type | ' + ' | '.join(systems) + ' |',
+              '|---|' + '---|' * len(systems)]
+    for kind in ('count', 'patient_set', 'value', 'table', 'unsupported'):
+        cells = []
+        total = sum(q['answer_type'] == kind for q in questions.values())
+        for system in systems:
+            rows = [r for (s, i), r in latest.items() if s == system and i in questions and questions[i]['answer_type'] == kind]
+            s = summarize(rows, total)
+            cells.append(f'{s["correct"]} correct / {s["attempted"]} attempted / {total} cases')
+        lines.append('| ' + kind + ' | ' + ' | '.join(cells) + ' |')
+    lines += ['', '## Per question', '', '| ID | Split | Type | ' + ' | '.join(systems) + ' |',
               '|---|---|---|' + '---|' * len(systems)]
     for ident, question in questions.items():
         values = []
