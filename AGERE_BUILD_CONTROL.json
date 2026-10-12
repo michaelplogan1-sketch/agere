@@ -1,6 +1,6 @@
 {
  "schema": "agere-build-control/1",
- "updated_at": "2026-10-12T21:10:04.688399+00:00",
+ "updated_at": "2026-10-12T22:32:47.568025+00:00",
  "decision_basis": "AGERE_CTO_REVIEW_2026-10-11_EVENING.md",
  "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
  "required_references": [
@@ -275,30 +275,21 @@
   }
  ],
  "checkpoint": {
-  "kind": "sealed_delivery_at_human_turn_boundary",
+  "kind": "manual_turn_checkpoint",
   "gate_id": "G3",
   "last_delivered_gate": "G3",
-  "user_behavior_delta": "Original free-form population questions now carry record-arrival/source-date comparisons, repeat sensitivity, literal source strata, correction pointers, competing explanations, exact member sources and owned internal evidence requests through the shared graph and MVP. Analytical reviews do not force clinical services.",
-  "measured_failure_reduction": "Two live development questions compose full1614member reports; hospital55records/50people/eightsources,30arrivals after source dates; ACO composition retains1217out-of-window referral updates explicitly. Private arrival/correction/cutoff edits change1member and preserve1613other receipts and prior work; arrival edit leaves source-date series unchanged.76tests, actual browser request/save/member flow, restart and MVP build pass. No calibrated/clinical/causal/competitive advantage established; Poisson baseline gain is in-sample only.",
+  "user_behavior_delta": "Free-form population questions are grounded in the received data. Concept, measurement and encounter atoms cover ICD-10, SNOMED, labels and unit variants. The new operations are aggregate (rates, shares, means by PCP/practice/payer/facility, O/E case-mix adjustment, 30-day readmissions), explain (why-questions with factor statistics or case review) and governed read-only SQL over a typed semantic layer. /api/stack/compose returns a direct answer object.",
+  "measured_failure_reduction": "Diabetes + any HbA1c > 9 went from 0 matched / 1,227 unknown to {P-1008, P-4007}. Independent 50-question benchmark (Codex, bench/): Agere went from ~0 answerable to 38/50 correct with 1 false assertion, $3.26 known API cost. Frontier+SQL baseline: 49/50 at $21.12. 11 Agere errors in the final rerun are API credit exhaustion, not product failures.",
   "evidence": [
-   "GRAPH_OBSERVATION_BUILD.md",
-   "artifacts/agere-graph-observation-v1/implementation-receipt.json",
-   "artifacts/agere-graph-observation-v1/workflow-verification.json",
-   "artifacts/agere-graph-observation-v1/composition-verification.json",
-   "artifacts/agere-graph-observation-v1/change-verification.json",
-   "artifacts/agere-graph-observation-v1/tests-final.txt",
-   "artifacts/agere-graph-observation-v1/restart-verification.json",
-   "artifacts/agere-graph-observation-v1/browser-verification.json",
-   "artifacts/agere-graph-observation-v1/mvp-verification.json",
-   "artifacts/agere-graph-observation-v1/preservation-final.json",
-   "artifacts/agere-graph-observation-v1/economics.json",
-   "artifacts/agere-graph-observation-v1/development-findings.json",
-   "artifacts/agere-graph-observation-v1/current-release-assessment.json",
-   "AGERE_EXTERNAL_REVIEW_RESPONSE_2026-10-12.md"
+   "PARALLEL_WORK.md",
+   "clinical_core/agere/clinical/grounding.py",
+   "clinical_core/agere/clinical/semantic_layer.py",
+   "test_grounding.py",
+   "test_aggregate_explain.py",
+   "test_semantic_sql.py"
   ],
-  "remaining_gap": "Joint health/observation identification and calibration, systematic hypothesis qualification, independent useful-answer/source-selection/clinical/model evaluation, causal effects, calibrated prediction, feasible interventions and outcome learning remain unbuilt or unqualified. Evidence requests are internal and declared-owner only; no source-feed logs or verified capture denominator were invented. Multi-step/shared acquisition and upstream reader fidelity remain open. Broad graph implementation hashes make prior contexts historical; legacy individual/criteria, medication and current-code compatibility gaps keep finite release6/9failed. Full ten-area and provider/contract/VBC/OAP scope retained.",
-  "next_action": "Remain PAUSED at the user's explicit external-review request; automatic heartbeat remains PAUSED. Read AGERE_EXTERNAL_REVIEW_RESPONSE_2026-10-12.md before any subsequent resumption. The population hypothesis increment is deferred. Proposed next delivery on explicit resumption: independently checked broad answer benchmark together with a reusable concept/measurement grounding repair, starting from the documented diabetes/A1c failure and testing unfamiliar compositions. This proposal is not authorization to implement it. Preserve all ten backlog areas, original cohort, frozen evidence, source boundaries and the separate design checkout.",
-  "review_hold": "AGERE_EXTERNAL_REVIEW_RESPONSE_2026-10-12.md"
+  "remaining_gap": "Re-run the 12 benchmark questions blocked by credits: C05 C09 C12 C18 C19 C20 D04 D09 D10 D24 D25 D26. Their fixes are committed but unmeasured. Insight-tier benchmark (Codex C2) not yet built. Planner is still Opus-only, so there is no cheaper-model or plan-template route. No clinical validation. Full ten-area product scope retained.",
+  "next_action": "After the API credit top-up, restart the service and rerun the 12 IDs with bench/run.py --system agere --sql-timeout 180. Then Codex C2 (insight benchmark). Then measure a Sonnet 5.5 planner route and parameterised plan reuse for cost."
  },
  "decisions": [
   {
@@ -719,6 +710,11 @@
    "at": "2026-10-12T21:10:04.688399+00:00",
    "by": "claude-code:821452c3-8962-40bd-bf83-e31db007dcba",
    "decision": "Ownership transferred to Claude Code by explicit user instruction. Adopted the corrective sequence in AGERE_EXTERNAL_REVIEW_RESPONSE_2026-10-12.md. Repository placed under git; hash-protected manifest superseded by git history going forward. Next: independent answer benchmark + concept/measurement grounding repair (diabetes/A1c failure first; reference answer = P-1008, P-4007)."
+  },
+  {
+   "at": "2026-10-12T22:32:47.568025+00:00",
+   "by": "claude-code:821452c3-8962-40bd-bf83-e31db007dcba",
+   "decision": "Delivered grounding, semantic layer, sql/aggregate/explain operations and the answer contract. Benchmark-driven fixes landed. Stopped at Anthropic API credit exhaustion."
   }
  ]
 }
