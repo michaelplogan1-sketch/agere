@@ -131,6 +131,12 @@ def prepare(spec, profile):
                 if not bound['bindings']:
                     errors.append({'issue': 'concept_not_observed', 'concept': atom['concept'], 'severity': 'error',
                                    'detail': f"No received records match concept {atom['concept']}."})
+                if atom.get('names'):
+                    observed = {n.lower() for b in bound['bindings'] for n in b.get('names', [])}
+                    missing = [n for n in atom['names'] if n.lower() not in observed]
+                    if missing:
+                        errors.append({'issue': 'value_not_observed', 'concept': atom['concept'], 'severity': 'error',
+                                       'detail': f"No {atom['concept']} results are labelled {missing}."})
                 if atom['kind'] == 'measurement' and atom['concept'] not in concepts.MEASUREMENTS:
                     errors.append({'issue': 'not_a_measurement', 'concept': atom['concept'], 'severity': 'error',
                                    'detail': 'Numeric comparisons need a measurement concept.'})

@@ -117,12 +117,14 @@ def validate(spec, as_of=None):
                 if c['field'] in ('dx', 'problem_code') and c['op'] not in ('contains', 'prefix'):
                     raise ValueError('Diagnosis lists require exact membership or explicit code prefix')
         elif atom.get('kind') == 'concept':
-            if set(atom) != {'kind', 'concept', 'window'} or not concepts.is_concept(atom['concept']):
-                raise ValueError('Concept predicate needs a library concept id')
+            if set(atom) - {'system'} != {'kind', 'concept', 'window'} or not concepts.is_concept(atom['concept']) \
+                    or atom.get('system', 'any') not in ('any', 'icd10', 'snomed', 'label'):
+                raise ValueError('Concept predicate needs a library concept id (optional system any/icd10/snomed/label)')
             validate_window(atom['window'], as_of)
         elif atom.get('kind') == 'measurement':
-            if set(atom) != {'kind', 'concept', 'op', 'value', 'aggregate', 'window'} or atom['concept'] not in concepts.MEASUREMENTS:
-                raise ValueError('Measurement predicate needs a library measurement concept')
+            if set(atom) - {'names'} != {'kind', 'concept', 'op', 'value', 'aggregate', 'window'} or atom['concept'] not in concepts.MEASUREMENTS \
+                    or not (isinstance(atom.get('names', []), list) and all(isinstance(n, str) for n in atom.get('names', []))):
+                raise ValueError('Measurement predicate needs a library measurement concept (optional literal names list)')
             if atom['op'] not in ('eq', 'ne', 'lt', 'le', 'gt', 'ge') or type(atom['value']) not in (int, float) \
                     or not math.isfinite(atom['value']) or atom['aggregate'] not in ('any', 'latest'):
                 raise ValueError('Measurement predicate needs a numeric comparison and any/latest aggregate')
@@ -177,8 +179,11 @@ def evaluate_atom(atom, patient, records, as_of):
     related=index(records)
     for r in eligible:
         values = {c['field']: record_value(r, c['field']) for c in atom['conditions']}
+        # A record that does not carry the field did not report it: no match, not unknown.
+        # (Grounding has already confirmed the field is populated in this stream.)
         state = truth_all([window_state(r, atom['window'], as_of,related),
-                           *[compare(values[c['field']], c['op'], c['value']) for c in atom['conditions']]])
+                           *[False if values[c['field']] is None else compare(values[c['field']], c['op'], c['value'])
+                             for c in atom['conditions']]])
         states.append(state)
         if state is True or state is None:
             event = bind_event(r, as_of,related)
@@ -230,6 +235,12 @@ def evaluate_concept(atom, records, as_of):
     for r in records:
         binding = next((b for b in resolved['bindings'] if b['stream'] == r['source_table'] and _concept_matches(b, r)), None)
         if binding is None: continue
+        if atom.get('names') and not any(str(r.get(f, '')).lower() in {n.lower() for n in atom['names']}
+                                         for f in binding.get('name_fields', [])): continue
+        system = atom.get('system', 'any')
+        if system == 'icd10' and not (r.get('icd10') or r.get('problem_code')): continue
+        if system == 'snomed' and not r.get('snomed'): continue
+        if system == 'label' and (r.get('icd10') or r.get('snomed')): continue
         if atom['kind'] == 'measurement' and r.get(binding['value_field']) is None:
             # Cancelled/unreported results (e.g. hemolysed specimen) carry no measurement.
             unreported += 1

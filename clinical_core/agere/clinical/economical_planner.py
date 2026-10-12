@@ -146,6 +146,24 @@ def plan(stack,question,ledger,frontier):
     if graph:
         return graph,{'route':'local_compiler','recipe':recipe,'model':None,'new_paid_api_calls':0,
                       'frontier_called':False,'steps':[],'elapsed_seconds':time.perf_counter()-start}
+    # Agere's own question compiler runs before any hosted model; the LLM is the fallback.
+    from .local_compiler import compile as compile_locally
+    from .source_profile import load as load_profile
+    try:
+        profile=load_profile(stack.path)
+    except (OSError,KeyError,ValueError,sqlite3.Error):
+        profile=None  # no materialised store (e.g. test fixtures): only the hosted planner applies
+    compiled,compile_info=(compile_locally(question,profile,meta['snapshot']['as_of']) if profile else
+                           (None,{'route':'fallback','reason':'no source profile available'}))
+    if compiled is not None:
+        try:
+            graph=validate(compiled,meta['snapshot']['as_of'])
+        except ValueError as exc:
+            compile_info.update(route='fallback',reason=f'local plan failed validation: {exc}')
+        else:
+            return graph,{'route':compile_info['route'],'model':None,'new_paid_api_calls':0,'frontier_called':False,
+                          'local_compiler':compile_info,'steps':[],'elapsed_seconds':time.perf_counter()-start}
+    local_decline=compile_info
     from .analysis_graph import catalog,code_identity
     # Catalog identity covers source/attached model/policy capability changes.
     capability=catalog(stack.path)
@@ -160,7 +178,7 @@ def plan(stack,question,ledger,frontier):
             return graph,{'route':'exact_question_cache','original_route':saved['receipt']['route'],
                          'model':None,'cache_hit':True,'new_paid_api_calls':0,'frontier_called':False,
                          'prior_planning_receipt':saved['receipt'],'elapsed_seconds':time.perf_counter()-start}
-        if not stack.allow_live:raise ValueError('No supported local plan; hosted planning disabled')
+        if not stack.allow_live:raise ValueError('Not handled locally ('+str(local_decline.get('reason'))+'); hosted planning disabled')
         steps=[];reason=escalation_reason(question);paid=0;request_key=None;before=None
         if reason is None:
             try:
@@ -194,6 +212,7 @@ def plan(stack,question,ledger,frontier):
         paid+=receipt.get('new_paid_api_calls',0 if receipt.get('cache_hit') else 1)
         steps.append({'stage':'frontier_planner','provider':'claude','receipt':receipt})
         result={'route':'frontier_escalation','model':PersistentGateway.MODELS['claude'],'escalation_reason':reason,
+                'local_compiler_declined':local_decline,
                 'new_paid_api_calls':paid,'frontier_called':True,'steps':steps,'elapsed_seconds':time.perf_counter()-start}
         with db:db.execute('INSERT OR REPLACE INTO plans VALUES (?,?)',(key,json.dumps({'question':question,'graph':graph,'receipt':result,'human_reviewed':False,'training_authority':'unreviewed model plan'})))
         return graph,result
