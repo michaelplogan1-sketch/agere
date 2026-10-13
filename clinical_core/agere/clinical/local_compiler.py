@@ -214,6 +214,8 @@ def _norm(q, as_of='2029-08-15'):
     q = re.sub(r'[,;(]?\s*' + lead + r'\s*' + snapshot + r'\)?\.?', ' ', q, flags=re.I)
     q = re.sub(r'\(\s*\)', ' ', q)
     q = re.sub(r'(?<![\d.])(\d{1,3})(?:,(\d{3}))+(?![\d])', lambda m: m.group(0).replace(',', ''), q)  # 1,000 -> 1000
+    # "in our network" = the whole population (filler); "out of network" / leakage phrasing is kept.
+    q = re.sub(r'(?<!out of )\b(?:in|across|throughout) (?:our|the) (?:whole |entire )?network\b', ' ', q, flags=re.I)
     return re.sub(r'\s+', ' ', q).strip()
 
 
