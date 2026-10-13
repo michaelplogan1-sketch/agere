@@ -163,5 +163,44 @@ class SemanticStandards(unittest.TestCase):
         self.assertEqual(s['conditions_with_source_icd10'], [1, 2]); self.assertEqual(s['claim_lines_cpt_or_hcpcs'], [1, 2])
 
 
+def adj(claim, rid, status, event, arrival, paid=0, orig=None):
+    return ('p1', 'medical_claims', {'record_id_hint': rid, 'claim_id': claim, 'status': status, 'service_date': '2028-01-01',
+                                     'payer_paid_cents': paid, 'original_adjudication_record_id': orig,
+                                     'event_date': event, 'available_date': arrival})
+
+
+class ClaimSettlement(unittest.TestCase):
+    """Repriced, repaid claims: the reversal of the original payment arrives after the replacement payment."""
+
+    def test_pairing_rules(self):
+        h = [{'record_id': 'a', 'status': 'paid', 'payer_paid_cents': 100},
+             {'record_id': 'b', 'status': 'paid', 'payer_paid_cents': 80},           # replacement payment
+             {'record_id': 'c', 'status': 'reversed', 'payer_paid_cents': 100, 'reverses': 'a'}]  # late reversal of a
+        self.assertEqual(semantic_layer.settle_history(h), ('paid', 80))
+        unlinked = [{'record_id': 'a', 'status': 'paid', 'payer_paid_cents': 100},
+                    {'record_id': 'c', 'status': 'reversed', 'payer_paid_cents': -100}]
+        self.assertEqual(semantic_layer.settle_history(unlinked), ('reversed', 0))
+        denied_then_paid = [{'record_id': 'a', 'status': 'denied'}, {'record_id': 'b', 'status': 'paid', 'payer_paid_cents': 50}]
+        self.assertEqual(semantic_layer.settle_history(denied_then_paid), ('paid', 50))
+
+    def test_semantic_claim_final_status_follows_chain(self):
+        recs = [adj('C1', 'pay1', 'paid', '2028-01-10', '2028-01-10', 10000),
+                adj('C1', 'pay2', 'paid', '2028-02-01', '2028-02-01', 8000),
+                adj('C1', 'rev1', 'reversed', '2028-01-31', '2028-02-05', 10000),  # arrives last, reverses r0 (pay1)
+                adj('C2', 'pay', 'paid', '2028-01-10', '2028-01-10', 5000),
+                adj('C2', 'rev', 'reversed', '2028-01-20', '2028-01-20', 5000)]
+        path = build(recs, {'p1': {'age_reported': 60, 'sex_reported': 'F'}})
+        # Fixture record ids are r0..r4; link the late reversal to the first payment explicitly.
+        db = sqlite3.connect(path / 'stack.sqlite3')
+        db.execute("UPDATE records SET payload = json_set(payload, '$.original_adjudication_record_id', 'r0') WHERE id = 'r2'")
+        db.commit(); db.close()
+        semantic_layer.build(path)
+        rows = {r['claim_id']: r for r in sql_query.execute(path, {'query': 'SELECT * FROM claim', 'returns': 'table'}, None)['rows']}
+        self.assertEqual((rows['C1']['received_final_status'], rows['C1']['final_status']), ('reversed', 'paid'))
+        self.assertEqual(rows['C1']['live_payer_paid_cents'], 8000)
+        self.assertEqual(rows['C1']['net_payer_paid_cents'], 8000)   # paid minus reversed is order-independent
+        self.assertEqual(rows['C2']['final_status'], 'reversed')
+
+
 if __name__ == '__main__':
     unittest.main()

@@ -129,8 +129,10 @@ SCHEMA_DOC = {
     'immunization': 'One row per immunization record: vaccine, product, cvx, mvx, status (administration_status).',
     'clinician': 'Clinician reference rows: specialty, synthetic npi, NUCC taxonomy_code, organization_id.',
     'organization': 'Organization reference rows: organization_type, npi, taxonomy_code, tin, city/state/postal_code.',
-    'claim': 'One row per medical claim_id (adjudications arrive as successive records: denied, paid, reversed, re-paid). first/final '
-             'status by arrival order; denied_then_paid = a denial later followed by payment; net_payer_paid_cents = paid minus reversed. '
+    'claim': 'One row per medical claim_id (adjudications arrive as successive records: denied, paid, reversed, re-paid). first_status '
+             'by arrival order; final_status follows the adjudication chain (each reversal paired with the payment it reverses; '
+             'final = last unreversed adjudication by event time), received_final_status = last-arrival status, '
+             'live_payer_paid_cents = payer paid on unreversed payments; denied_then_paid = a denial later followed by payment; net_payer_paid_cents = paid minus reversed. '
              'Legacy rows without claim_id are excluded.',
 }
 
@@ -354,6 +356,42 @@ def _medication_codes(out):
                      WHERE c.record_id = medication.record_id)
                    WHERE rxnorm IS NULL AND record_id IN (SELECT record_id FROM med_codes)""")
     out.execute("UPDATE medication SET rxnorm_source = 'source' WHERE rxnorm IS NOT NULL AND rxnorm_source IS NULL")
+
+
+def settle_history(history):
+    """Effective claim state from its adjudication chain (same pairing as claims_review.settle).
+    history: dicts with record_id, status, payer_paid_cents, reverses (original_adjudication_record_id), in event order
+    (event_date, then arrival). Each reversal is paired with the payment it names; an unlinked reversal reverses the
+    latest unreversed payment before it. final_status = the last unreversed, non-reversal adjudication by event time;
+    'reversed' when every adjudication was reversed. Returns (final_status, live_net_paid_cents)."""
+    reversed_ids = {x['reverses'] for x in history if x['status'] == 'reversed' and x.get('reverses')}
+    for i, x in enumerate(history):
+        if x['status'] == 'reversed' and not x.get('reverses'):
+            prior = [y for y in history[:i] if y['status'] == 'paid' and y['record_id'] not in reversed_ids]
+            if prior: reversed_ids.add(prior[-1]['record_id'])
+    live = [x for x in history if x['status'] != 'reversed' and x['record_id'] not in reversed_ids]
+    final = live[-1]['status'] if live else ('reversed' if history else None)
+    return final, sum((x.get('payer_paid_cents') or 0) for x in live if x['status'] == 'paid')
+
+
+def _settle_claims(out):
+    """claim.final_status follows the adjudication chain, not arrival order: a reversal that arrives after the replacement
+    payment no longer makes a repriced, repaid claim look reversed. The arrival-order value stays in received_final_status."""
+    _add(out, 'claim', 'received_final_status TEXT', 'live_payer_paid_cents INTEGER')
+    out.execute('UPDATE claim SET received_final_status = final_status')
+    hist = defaultdict(list)
+    for cid, rid, st, paid, orig in out.execute(
+            """SELECT json_extract(payload,'$.claim_id'), record_id, json_extract(payload,'$.status'),
+                      json_extract(payload,'$.payer_paid_cents'), json_extract(payload,'$.original_adjudication_record_id')
+               FROM record WHERE stream = 'medical_claims' AND json_extract(payload,'$.claim_id') IS NOT NULL
+               ORDER BY event_date, available_date, json_extract(payload,'$.available_time'), record_id"""):
+        hist[cid].append({'record_id': rid, 'status': st, 'payer_paid_cents': paid, 'reverses': orig})
+    rows = [(*settle_history(h), cid) for cid, h in hist.items()]
+    out.executemany('UPDATE claim SET final_status = ?, live_payer_paid_cents = ? WHERE claim_id = ?', rows)
+    return {'claims': len(rows), 'final_status_changed': out.execute(
+                'SELECT count(*) FROM claim WHERE final_status IS NOT received_final_status').fetchone()[0],
+            'net_paid_differs_from_live_payment': out.execute(
+                'SELECT count(*) FROM claim WHERE net_payer_paid_cents IS NOT live_payer_paid_cents').fetchone()[0]}
 
 
 def _claim_codes(out):
@@ -651,12 +689,14 @@ def build(path):
         out.execute("CREATE INDEX record_patient_stream ON record(patient_id, stream)")
         _standards(out, people)  # source standard codes first: the dictionary in _normalize only fills their gaps
         _derived(out)  # after indexes: derived entities read the record table by stream and patient
+        settlement = _settle_claims(out)
         _claim_codes(out)
         _entities(out, path)
         meta = json.loads((path / 'run.json').read_text())
         out.executemany('INSERT INTO meta VALUES (?,?)', [('version', VERSION), ('source_digest', meta['source_digest']),
                                                           ('as_of', meta['snapshot']['as_of']),
-                                                          ('standards', json.dumps(_standards_summary(out)))])
+                                                          ('standards', json.dumps(_standards_summary(out))),
+                                                          ('claim_settlement', json.dumps(settlement))])
         out.commit()
     finally:
         src.close(); out.close()
