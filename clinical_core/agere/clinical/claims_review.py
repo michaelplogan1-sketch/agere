@@ -323,7 +323,7 @@ def provider_review(claims, min_claims=30):
         effect = math.exp(math.log(r['oe_ratio_shrunk']) - med)
         u.update(intensity_vs_peers=round(effect, 3), intensity_z=round(z, 2))
         tests.append({'kind': 'billing_intensity', 'provider': u['provider'], 'p': _p_high(z, len(peers) - 1), 'z': round(z, 2),
-                      'effect': round(effect, 3), 'material': effect >= 1.15, 'peer_group': label, 'peers': len(peers),
+                      'effect': round(effect, 3), 'material': bool(effect >= 1.15), 'peer_group': label, 'peers': len(peers),
                       'dollars': round(max(0.0, u['allowed'] * (1 - 1 / effect)), 2),
                       'reason': f"bills {effect:.2f}x its {label.replace('_', ' ')} peers for the same service mix"})
     # b) services per patient (random-effects z) and c) first-pass denial rate (beta-binomial predictive tail vs peers).
@@ -344,7 +344,7 @@ def provider_review(claims, min_claims=30):
         ratio = math.exp(log_rate[u['provider']][0] - med)
         u.update(claims_per_patient=round(u['claims'] / max(u['patients'], 1), 2), volume_vs_peers=round(ratio, 3) if same else None)
         if same: tests.append({'kind': 'services_per_patient', 'provider': u['provider'], 'p': _p_high(z, len(others) - 1), 'z': round(z, 2),
-                      'effect': round(ratio, 3), 'material': ratio >= 1.25, 'peer_group': label, 'peers': len(peers),
+                      'effect': round(ratio, 3), 'material': bool(ratio >= 1.25), 'peer_group': label, 'peers': len(peers),
                       'dollars': round(max(0.0, u['claims'] - u['patients'] * math.exp(med)) * mean_allowed, 2),
                       'reason': f"bills {ratio:.2f}x the claims per patient of its {label.replace('_', ' ')} peers"})
         others = [x for x in peers if x['provider'] != u['provider']]
@@ -354,7 +354,7 @@ def provider_review(claims, min_claims=30):
         u.update(first_pass_denial_rate=round(u['first_pass_denials'] / u['claims'], 4), denial_rate_shrunk=round(denial[u['provider']], 4))
         tests.append({'kind': 'denial_rate', 'provider': u['provider'], 'p': pval, 'z': round(z, 2),
                       'effect': round(denial[u['provider']] / max(peer_rate, 1e-9), 3),
-                      'material': denial[u['provider']] >= 1.5 * peer_rate and denial[u['provider']] - peer_rate >= 0.02,
+                      'material': bool(denial[u['provider']] >= 1.5 * peer_rate and denial[u['provider']] - peer_rate >= 0.02),
                       'peer_group': label, 'peers': len(peers), 'dollars': round(excess * mean_allowed, 2),
                       'reason': f"first-pass denial rate {denial[u['provider']]:.1%} (shrunk) vs {peer_rate:.1%} for peers: rework and delayed cash"})
     # d) service mix: robust Mahalanobis on additive log-ratios, within each peer group.
@@ -395,7 +395,7 @@ def provider_review(claims, min_claims=30):
             j = int(np.argmax(own - peer_share))
             u['mix_distance'] = round(math.sqrt(d2), 2)
             tests.append({'kind': 'service_mix', 'provider': u['provider'], 'p': p, 'z': round(math.sqrt(d2), 2), 'effect': round(float(own[j] / max(peer_share[j], 1e-9)), 3),
-                          'material': float(own[j] - peer_share[j]) >= 0.05, 'peer_group': label,
+                          'material': bool(float(own[j] - peer_share[j]) >= 0.05), 'peer_group': label,
                           'peers': len(peers), 'dollars': round(dollars, 2),
                           'reason': f"service mix differs from peers (robust Mahalanobis d={math.sqrt(d2):.1f}, df={df}); "
                                     f"{order[j].replace('_', ' ')} is {own[j]:.0%} of claims vs {peer_share[j]:.0%} for peers"})
@@ -418,7 +418,7 @@ def benford_review(claims, min_first=300, min_second=1000):
                'reason': first.get('reason') or second.get('reason'), 'billed': round(sum(amounts), 2)}
         rows.append(row)
         if first['status'] in ('review_flag', 'conforms', 'nonconformity_not_significant'):
-            tests.append({'kind': 'benford_first_digit', 'provider': g, 'p': first['p_value'], 'material': first['conformity'] == 'nonconformity',
+            tests.append({'kind': 'benford_first_digit', 'provider': g, 'p': first['p_value'], 'material': bool(first['conformity'] == 'nonconformity'),
                           'z': None, 'effect': first['mad'], 'dollars': None, 'n': first['n'],
                           'reason': f"billed amounts depart from Benford's first-digit law (MAD {first['mad']}, {first['conformity'].replace('_', ' ')}, n={first['n']})"})
         if second['status'] == 'tested' and first['status'] not in ('not_applicable',):

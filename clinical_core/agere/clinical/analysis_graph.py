@@ -928,6 +928,14 @@ def code_identity():
                       Path(__file__).with_name('scheduling.py')]]])
 
 
+def _json_default(value):
+    """Engines compute with numpy; persist its scalars/arrays as plain JSON (anything else is a bug and still raises)."""
+    import numpy as np
+    if isinstance(value, np.generic): return value.item()
+    if isinstance(value, np.ndarray): return value.tolist()
+    raise TypeError(f'Object of type {type(value).__name__} is not JSON serializable')
+
+
 def catalog(path):
     from .graph_references import catalog as reference_catalog
     from .native_care_assertions import concepts as care_concepts
@@ -1528,7 +1536,7 @@ def execute(stack, plan, *, question=None):
         if functional_population:functional_sources.inspect(path,functional_population['id'])
         for population in domain_populations.values():domain_sources.inspect(path,population['id'])
         with db:
-            db.execute('INSERT OR REPLACE INTO result_cache VALUES (?,?)', (key, json.dumps(result, allow_nan=False)))
+            db.execute('INSERT OR REPLACE INTO result_cache VALUES (?,?)', (key, json.dumps(result, allow_nan=False, default=_json_default)))
         return result
     finally:
         db.close()

@@ -91,6 +91,7 @@ def sanity(question, sql, probe, roster):
 
 def signature(result):
     """What an answer says, independent of column names or row order."""
+    if not isinstance(result, dict): return ('s', str(result)[:2000])
     def norm(v):
         return round(float(v), 4) if isinstance(v, (int, float)) and not isinstance(v, bool) else v
     if 'value' in result: return ('v', norm(result['value']))

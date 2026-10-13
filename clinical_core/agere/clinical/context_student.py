@@ -28,7 +28,7 @@ FAMILIES=[
 
 
 # Grounded planning carries observed field vocabularies and the concept library.
-REQUEST_MAX_BYTES=40000
+REQUEST_MAX_BYTES=64000
 
 
 def send(body,provider,ledger,out,*,parse,allow_failed_response_revalidation=False,
