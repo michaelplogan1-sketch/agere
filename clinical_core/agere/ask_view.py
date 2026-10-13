@@ -17,7 +17,7 @@ th,td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--line);white-
 details{margin-top:10px}summary{cursor:pointer;color:var(--muted);font-size:13px}pre{white-space:pre-wrap;font-size:12px;color:var(--muted)}
 </style></head><body><main>
 <h1>Agere</h1><p class="sub">Ask about the population, care, cost or data. Agere plans the question itself; a hosted model is used only when it must be.</p>
-<form id="f"><input id="q" placeholder="e.g. Which CKD patients have a declining eGFR?" autocomplete="off"><button id="b">Ask</button></form>
+<p class="meta" id="econ"></p><form id="f"><input id="q" placeholder="e.g. Which CKD patients have a declining eGFR?" autocomplete="off"><button id="b">Ask</button></form>
 <div class="examples" id="ex"></div><div id="out"></div>
 <h1 style="margin-top:28px">Briefing</h1><p class="sub">What stands out in the data right now, computed locally without a question.</p><div id="brief" class="meta">Loading…</div>
 <script>
@@ -28,7 +28,7 @@ const ex=document.getElementById('ex');EX.forEach(t=>{const a=document.createEle
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 function table(rows){if(!rows||!rows.length)return'';const cols=Object.keys(rows[0]).filter(k=>!['readmissions','patients_with_outcome','pids'].includes(k));
  return '<table><tr>'+cols.map(c=>'<th>'+esc(c)+'</th>').join('')+'</tr>'+rows.slice(0,50).map(r=>'<tr>'+cols.map(c=>'<td>'+esc(typeof r[c]==='object'?JSON.stringify(r[c]):r[c])+'</td>').join('')+'</tr>').join('')+'</table>'}
-async function ask(e){if(e)e.preventDefault();const question=q.value.trim();if(!question)return;b.disabled=true;
+let ask=async function(e){if(e)e.preventDefault();const question=q.value.trim();if(!question)return;b.disabled=true;
  const out=document.getElementById('out');out.innerHTML='<div class="card meta">Working…</div>';const t0=performance.now();
  try{const r=await fetch('/api/stack/compose',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({question})});const d=await r.json();
   if(d.error){out.innerHTML='<div class="card"><div class="headline warn">Not answered locally</div><div class="meta">'+esc(d.error)+'</div></div>';return}
@@ -43,6 +43,9 @@ async function ask(e){if(e)e.preventDefault();const question=q.value.trim();if(!
   if(a.missing&&a.missing.length)html+='<details open><summary>Not covered</summary><pre>'+esc(a.missing.join('\n'))+'</pre></details>';
   out.innerHTML=html+'</div>'}catch(err){out.innerHTML='<div class="card warn">'+esc(err)+'</div>'}finally{b.disabled=false}}
 document.getElementById('f').onsubmit=ask;
+const loadEcon=()=>fetch('/api/stack/economics').then(r=>r.json()).then(e=>{if(!e.questions)return;document.getElementById('econ').innerHTML=
+ '<b>'+e.questions+'</b> questions answered here · <b>'+Math.round(100*(e.share_without_api_calls||0))+'%</b> with no model call · API spend <b>$'+(e.api_usd||0).toFixed(4)+'</b>'}).catch(()=>{});
+loadEcon();const _ask=ask;ask=async(e)=>{await _ask(e);loadEcon()};document.getElementById('f').onsubmit=ask;
 fetch('/api/stack/briefing').then(r=>r.json()).then(d=>{const el=document.getElementById('brief');
  el.innerHTML=(d.cards||[]).slice(0,10).map(c=>'<div class="card"><div class="meta"><b>'+esc(c.kind)+'</b> · '+esc(c.topic)+'</div><div class="headline" style="font-size:15px">'+esc(c.headline)+'</div><div class="meta"><a style="color:var(--accent);cursor:pointer" data-q="'+esc(c.follow_up)+'">'+esc(c.follow_up)+' →</a></div></div>').join('')||'No significant findings.';
  el.querySelectorAll('a[data-q]').forEach(a=>a.onclick=()=>{q.value=a.dataset.q;window.scrollTo(0,0);ask()})}).catch(()=>{document.getElementById('brief').textContent='Briefing unavailable.'});

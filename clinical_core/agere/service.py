@@ -1,5 +1,5 @@
 """Loopback research interface; hosted stack routes require explicit enablement."""
-import json,mimetypes
+import json,mimetypes,time
 from functools import lru_cache
 from http.server import BaseHTTPRequestHandler,ThreadingHTTPServer
 from threading import RLock
@@ -245,10 +245,16 @@ def serve(run,port,annotations=None,evidence_queries=None,stack=None,allow_live_
                     if set(body)!={'question','live'} or type(body['live']) is not bool:raise ValueError('Explicit question/live route required')
                     result=connected_stack.ask(body['question'],live=body['live'])
                 elif path=='/api/stack/compose':
-                    if set(body)=={'question'}:result=connected_stack.compose(body['question'])
-                    elif set(body)=={'question','planning'} and body['planning']=='scoped_local_candidate':
-                        result=connected_stack.compose(body['question'],planning=body['planning'])
-                    else:raise ValueError('Explicit composition question and supported optional candidate policy required')
+                    from .clinical import answer_log
+                    _t0=time.time()
+                    try:
+                        if set(body)=={'question'}:result=connected_stack.compose(body['question'])
+                        elif set(body)=={'question','planning'} and body['planning']=='scoped_local_candidate':
+                            result=connected_stack.compose(body['question'],planning=body['planning'])
+                        else:raise ValueError('Explicit composition question and supported optional candidate policy required')
+                    except Exception as _exc:
+                        answer_log.record(connected_stack.path,str(body.get('question','')),error=f'{type(_exc).__name__}: {_exc}',seconds=time.time()-_t0);raise
+                    answer_log.record(connected_stack.path,body['question'],result=result,seconds=time.time()-_t0)
                 elif path=='/api/stack/context/synthesize':
                     if set(body)!={'context_id'}:raise ValueError('Exact source context required')
                     result=connected_stack.synthesize_context(body['context_id'])
@@ -740,6 +746,10 @@ def serve(run,port,annotations=None,evidence_queries=None,stack=None,allow_live_
                         snapshot=connected_stack.retriever.meta['snapshot'])
                 raw=(json.dumps(report).encode() if parsed.path.startswith('/api/') else evaluation_page(report).encode())
                 mime='application/json' if parsed.path.startswith('/api/') else 'text/html; charset=utf-8'
+            elif parsed.path=='/api/stack/economics':
+                if connected_stack is None:self.send_error(404);return
+                from .clinical.answer_log import summary as economics_summary
+                raw=json.dumps(economics_summary(connected_stack.path)).encode();mime='application/json'
             elif parsed.path=='/api/stack/briefing':
                 if connected_stack is None:self.send_error(404);return
                 from .clinical.briefing import cached as briefing
