@@ -1,0 +1,30 @@
+{
+ "schema": "agere-risk-adjustment-payment/1",
+ "use": "CMS Part C payment-year parameters for non-PACE MA organizations, copied from the final Rate Announcements. A program rulebook entry (config/agere/programs*) with a risk_adjustment block overrides these.",
+ "payment_years": {
+  "2025": {
+   "source": "Announcement of Calendar Year (CY) 2025 Medicare Advantage Capitation Rates and Part C and Part D Payment Policies, April 1, 2024",
+   "url": "https://www.cms.gov/files/document/2025-announcement.pdf",
+   "sha256": "b01d8d6c1a60210fd7576069506276b96b7c3714ff1a86b394ee6b4789a5bad6",
+   "pages": {"blend": "p.80: 67% of the 2024 CMS-HCC model (V28) + 33% of the 2020 CMS-HCC model (V24)", "normalization": "p.5", "coding": "p.5"},
+   "blend": {"V24": 0.33, "V28": 0.67},
+   "normalization": {"V24": 1.153, "V28": 1.045},
+   "ma_coding_pattern_adjustment": 0.059,
+   "age_as_of": "02-01",
+   "data_collection_year_offset": -1
+  },
+  "2026": {
+   "source": "Announcement of Calendar Year (CY) 2026 Medicare Advantage Capitation Rates and Part C and Part D Payment Policies, April 7, 2025",
+   "url": "https://www.cms.gov/files/document/2026-announcement.pdf",
+   "sha256": "0c2baac47b08be34887cf952f3603306e005aac81beb4de3625dc8b6f9647a8c",
+   "pages": {"blend": "p.4 and p.62: 100% of the risk score from the 2024 CMS-HCC model (V28) for non-PACE organizations", "normalization": "p.5", "coding": "p.4"},
+   "blend": {"V28": 1.0},
+   "normalization": {"V28": 1.067},
+   "ma_coding_pattern_adjustment": 0.059,
+   "age_as_of": "02-01",
+   "data_collection_year_offset": -1
+  }
+ },
+ "formula": "payment RAF = (sum over models of blend_m x round(raw_m / normalization_m, 3)) x (1 - MA coding pattern adjustment); raw scores from the community segment.",
+ "not_loaded": "PY2027 tables and factors; PACE blends; ESRD and RxHCC models; frailty factors."
+}

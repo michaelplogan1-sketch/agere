@@ -193,6 +193,15 @@ CONTRACTS['briefing'] = {'inputs':['none'],'parameters':{'top':10},
               'log2(2 + impact); learned from opened / asked / dismissed feedback; MMR diversity; one explore slot), each with why it ranks there. '
               'Use for what-should-I-look-at-today / briefing / what-needs-attention questions.'}
 
+CONTRACTS['risk_adjustment'] = {'inputs':['optional earlier_set'],'parameters':{'focus':'all|raf|recapture|suspects|population',
+    'group_by':'none|practice|pcp|payer|coverage_type','payment_year':2026,'year':None,'coverage':'medicare|all','base_rate_pmpm':None,'patient':'','top':25},
+    'meaning':'CMS-HCC risk adjustment (MA / ACO REACH economics) from public CMS V24 and V28 model tables: risk-adjustment-eligible diagnoses '
+              '(CMS encounter filtering: face-to-face, acceptable provider, eligible CPT/HCPCS; no lab/radiology-only/DME), HCC hierarchies, interactions, '
+              'payment-HCC counts, age/sex factors, raw V24/V28 RAF, payment-year blend, normalization and MA coding adjustment -> payment RAF; '
+              'recapture gaps (HCCs coded last year not yet this year, last supporting encounter, RAF delta x base rate); suspects (eGFR, A1c, '
+              'diabetes drugs, EF, BMI, PHQ, problem list without a code) as documentation review prompts; RAF by practice/PCP/payer. '
+              'Use for RAF / HCC / coding gap / recapture / suspect condition / documentation gap questions; a plain internal "risk score" is vbc.'}
+
 CONTRACTS['claims_review'] = {'inputs':['optional earlier_set'],'parameters':{'focus':'all|providers|benford|duplicates|underpayment|denials|leakage',
     'by':'payer|provider|setting|service','period':{'start':'','end':''},'fdr':0.05,'min_claims':30,'window_days':3,'writeoff_days':120,'payer':'','provider':'','rework_cost':None},
     'meaning':'Payment integrity and revenue leakage over medical claims, every flag ranked by expected dollars (dollars x probability): provider peer outliers '

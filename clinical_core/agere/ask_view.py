@@ -568,9 +568,32 @@ function sigChart(rows,thr){const W=CW(),lh=22,L=Math.min(Math.round(W*.36),12+7
   if(isNum(r.snr))s+='<rect x="'+Math.min(X(0),X(r.snr))+'" y="'+(y+4)+'" width="'+Math.max(1,Math.abs(X(r.snr)-X(0)))+'" height="'+(lh-8)+'" rx="3" style="fill:'+c+'"><title>'+esc((r.driving_channels||[]).join(', '))+'</title></rect>';
   s+='<text x="'+(Math.max(X(0),X(isNum(r.snr)?r.snr:0))+4)+'" y="'+(y+lh/2+4)+'">'+esc(fmt(r.snr,2)+' · p='+f)+'</text></g>'});
  return s+'</svg><div class="legend"><span><span class="sw" style="background:var(--bad)"></span>above threshold</span><span><span class="sw" style="background:var(--s3)"></span>below</span><span>┊ threshold at the false-alarm rate</span></div>'}
+/* risk adjustment: KPI tiles, payment-RAF distribution (histogram), RAF by practice, then the gap / suspect / patient table */
+function vizRisk(a){const o=a.overall||{},ra=o.risk_adjustment||{},p=o.population||{},pay=ra.payment||{},rows=a.table||[];
+ const kp=(l,v)=>'<div class="kpi"><div class="l">'+l+'</div><div class="v">'+esc(v)+'</div></div>',r=p.payment_raf||{},rc=p.recapture||{},cc=p.coding_completeness||{},ds=p.dollars_at_stake||{};
+ const blend=Object.entries(pay.blend||{}).map(([m,w])=>Math.round(w*100)+'% '+m).join(' + ');
+ let h='<section class="sec" data-focus="risk"><h3>CMS-HCC risk adjustment — '+fmt(p.patients_in_scope)+' patients, collection year '+esc((ra.period||{}).collection_year)+', PY'+esc(pay.payment_year)+' ('+esc(blend)+')</h3><div class="kpis">'+
+  kp('Mean payment RAF',isNum(r.mean)?fmt(r.mean,3):'—')+kp('Raw V24 / V28',(isNum((p.raw||{}).V24&&p.raw.V24.mean)?fmt(p.raw.V24.mean,3):'—')+' / '+(isNum((p.raw||{}).V28&&p.raw.V28.mean)?fmt(p.raw.V28.mean,3):'—'))+
+  kp('Coding completeness',isNum(cc.rate)?pct(cc.rate,1):'—')+kp('Recapture (prior year)',isNum(rc.recapture_rate)?pct(rc.recapture_rate,1):'—')+
+  kp('Open recapture gaps',fmt(rc.open_gaps_current_year)+' · '+usdK(ds.recapture||0)+'/yr')+kp('Suspect prompts',fmt((p.suspects||[]).reduce((t,s)=>t+s.patients,0))+' · '+usdK(ds.suspects||0)+'/yr')+'</div>';
+ const hist=p.histogram||[];if(hist.length){const W=CW(),L=46,R=12,T=10,B=40,H=200,n=hist.length,hi=Math.max(1,...hist.map(b=>b.patients)),bw=(W-L-R)/n,Y=v=>T+(H-T-B)*(1-v/hi);
+  let s=svgOpen(W,H,'Distribution of payment RAF');ticks(0,hi,4).forEach(t=>{s+='<line class="gridl" x1="'+L+'" x2="'+(W-R)+'" y1="'+Y(t)+'" y2="'+Y(t)+'"/><text x="'+(L-6)+'" y="'+(Y(t)+4)+'" text-anchor="end">'+esc(fmt(t))+'</text>'});
+  hist.forEach((b,i)=>{const x=L+i*bw,lab=fmt(b.from,2)+(b.to==null?'+':'–'+fmt(b.to,2));s+='<rect x="'+(x+bw*.1)+'" y="'+Y(b.patients)+'" width="'+(bw*.8)+'" height="'+Math.max(1,H-B-Y(b.patients))+'" rx="2" style="fill:var(--s1)"><title>'+esc(lab+': '+b.patients+' patients')+'</title></rect>'+
+   '<text x="'+(x+bw/2)+'" y="'+(H-B+14)+'" text-anchor="middle">'+esc(lab)+'</text>'});
+  h+='<h3 style="margin-top:12px">Payment RAF distribution</h3>'+s+'</svg>'}
+ const by=(p.by||{}).practice||[];if(by.length)h+='<details open><summary>RAF by practice ('+by.length+')</summary>'+tableHTML(by,{name:'risk-by-practice',
+  cols:['group','patients','mean_payment_raf','median_payment_raf','mean_raw_v24','mean_raw_v28','open_recapture_gaps','suspects','dollars_at_stake'],render:{dollars_at_stake:v=>esc(usd(v))}})+'</details>';
+ const sus=p.suspects||[];if(sus.length)h+='<details><summary>Suspect categories ('+sus.length+')</summary>'+tableHTML(sus,{name:'risk-suspects',render:{annual_value_if_documented:v=>esc(usd(v))}})+'</details>';
+ h+='</section>';
+ if(rows.length)h+='<section class="sec"><h3>Gaps and patients</h3>'+tableHTML(rows,{name:'risk-adjustment',render:{annual_value:v=>esc(usd(v)),annual_value_if_documented:v=>esc(usd(v)),dollars_at_stake:v=>esc(usd(v))},
+  caption:'Suspects are documentation review prompts, not diagnoses. '+esc(pay.base_rate_note||'')})+'</section>';
+ if((ra.data_gaps||[]).length)h+='<details><summary>Data limits ('+ra.data_gaps.length+')</summary><ul>'+ra.data_gaps.map(x=>'<li>'+esc(x)+'</li>').join('')+'</ul></details>';
+ if((ra.assumptions||[]).length)h+='<p class="hint"><b>Assumptions.</b> '+esc(ra.assumptions.join(' '))+'</p>';
+ return h}
 function visual0(a){if(!a||a.answer_type==='unsupported')return '';const o=a.overall||{};
   if(o.early_signal)return vizEarlySignal(a);
   if(o.claims_review)return vizClaims(a);
+  if(o.risk_adjustment)return vizRisk(a);
   if(o.profile)return vizProfile(a);
   if(o.scheduling)return vizScheduling(a);
   if(o.matrix&&o.states)return vizPathway(a);
