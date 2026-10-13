@@ -282,12 +282,6 @@
   "domain": "pharmacy"
  },
  {
-  "question": "Did our outpatient stewardship feedback reports reduce inappropriate antibiotic prescribing?",
-  "expect_operation": "program_effect",
-  "id": "HQ-RX-036",
-  "domain": "pharmacy"
- },
- {
   "question": "Which patients on lithium or digoxin have levels trending toward the toxic range?",
   "expect_operation": "trajectory",
   "id": "HQ-RX-046",
@@ -348,12 +342,6 @@
   "domain": "quality_patient_safety"
  },
  {
-  "question": "Did our heart failure discharge bundle reduce 30-day readmissions?",
-  "expect_operation": "program_effect",
-  "id": "HQ-QS-044",
-  "domain": "quality_patient_safety"
- },
- {
   "question": "What quality and safety signals need my attention this week?",
   "expect_operation": "briefing",
   "id": "HQ-QS-045",
@@ -411,12 +399,6 @@
   "question": "Which registry patients are overdue for a PHQ-9 or care-manager contact and should be called this week?",
   "expect_operation": "outreach",
   "id": "HQ-BH-017",
-  "domain": "behavioral_health"
- },
- {
-  "question": "Did enrollment in collaborative care improve depression scores compared with usual care?",
-  "expect_operation": "program_effect",
-  "id": "HQ-BH-018",
   "domain": "behavioral_health"
  },
  {

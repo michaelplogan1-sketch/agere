@@ -229,6 +229,19 @@ def _explanation_only(low):
     return bool(asks and re.search(KNOWLEDGE_DOMAIN, low) and not re.search(OUR_NUMBER, low))
 
 
+# A question about published research or how an external standard works ("what does the evidence say about ...",
+# "how are work RVUs set", "what does the CDC SVI measure") is answered from the cited knowledge base even when the
+# topic (mortality, RVUs, deprivation indices) is data this warehouse does not receive.
+RESEARCH_QUESTION = (r"\bwhat (?:does|do) (?:the )?(?:evidence|research|literature|studies|trials?|data from studies) (?:say|show|suggest|find)\b|"
+                     r"\bwhat (?:has|have) (?:research|studies|trials) (?:shown|found)\b|"
+                     r"\bhow (?:are|is) [a-z0-9 /-]{2,60} (?:set|calculated|computed|defined|determined|derived|weighted)\b|"
+                     r"\bwhat (?:does|do) (?:the )?[a-z0-9 /-]{2,60} (?:measure|capture|represent)\b")
+
+
+def _research_only(low):
+    return bool(re.search(RESEARCH_QUESTION, low) and not re.search(OUR_NUMBER, low))
+
+
 def _knowledge_graph(question):
     from .vbc_knowledge import validate
     params = validate({'query': ' '.join(str(question).split())[:1500]})
@@ -294,7 +307,7 @@ def _refusal(q, low, profile, timed, terms, info):
         if timed and 'surviv' in pattern: continue
         if missing[0] == SETTLEMENT_RULE and terms: continue  # settlement is computable once terms are supplied
         if _received_for(missing, profile) or not re.search(pattern, low): continue
-        if missing[0] in (SETTLEMENT_RULE, CAUSAL_RULE) and _explanation_only(low):
+        if (missing[0] in (SETTLEMENT_RULE, CAUSAL_RULE) and _explanation_only(low)) or _research_only(low):
             # "how does the quality score scale our sharing rate?", "effect of the regional adjustment cap on our benchmark":
             # program mechanics asked as an explanation, answered from the cited knowledge base, never as a number
             return _knowledge_graph(q)
@@ -3022,6 +3035,10 @@ def _scheduling_question(q):
     low = q.lower()
     hits = [f for f, rx in SCHEDULING_INTENTS if re.search(rx, low)]
     if not hits: return None
+    if re.search(r'\bconcentrat\w*\b|\bhot ?spots?\b|\bunusually (?:high|low|common|long)\b|\bunexpectedly\b', low):
+        return None  # "where are long lead times unexpectedly concentrated" asks for hotspots (discover), not a schedule decision
+    if re.match(r'(?:why (?:is|are|do|does)|what (?:is|are)|how (?:is|are|does|do)|explain)\b', low) and not re.search(OUR_NUMBER, low):
+        return None  # an explanation of an access measure ("why is third next available preferred?") is knowledge, not a schedule
     params = {'focus': 'reminders' if set(hits) == {'no_show_risk', 'reminders'} else hits[0] if len(hits) == 1 else 'all'}
     m = re.search(r'\b(?:practice|clinic|site)\s+(?:#\s*)?(\d{1,3})\b|\b(wh-[a-z]+-\d+)\b', low)
     if m: params['practice'] = (m.group(1) or m.group(2)).upper()

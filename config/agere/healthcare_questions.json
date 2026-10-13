@@ -1237,6 +1237,21 @@
     ]
    ],
    "kind": "warehouse"
+  },
+  "hf_discharge_bundle_exposure": {
+   "description": "Per-patient dates of heart-failure discharge bundle delivery (program exposure)",
+   "checks": [],
+   "kind": "warehouse"
+  },
+  "collaborative_care_enrollment": {
+   "description": "Collaborative care (CoCM) enrollment and disenrollment dates per patient",
+   "checks": [],
+   "kind": "warehouse"
+  },
+  "stewardship_feedback_exposure": {
+   "description": "Dates each prescriber received antibiotic-stewardship feedback reports",
+   "checks": [],
+   "kind": "warehouse"
   }
  },
  "new_engines": {
@@ -4917,10 +4932,11 @@
    "question": "Did our outpatient stewardship feedback reports reduce inappropriate antibiotic prescribing?",
    "persona": "antimicrobial stewardship pharmacist",
    "domain": "pharmacy",
-   "expected_engine": "program_effect",
+   "expected_engine": "unsupported",
    "required_data": [
+    "encounters",
     "medication_orders",
-    "encounters"
+    "stewardship_feedback_exposure"
    ],
    "source": {
     "title": "CDC Core Elements of Outpatient Antibiotic Stewardship",
@@ -4928,7 +4944,12 @@
     "publisher": "CDC",
     "note": "Outpatient stewardship tracks antibiotic prescribing for conditions that rarely need antibiotics (e.g., acute bronchitis, viral URI)."
    },
-   "origin": "public-source research 2026-10-13"
+   "origin": "public-source research 2026-10-13",
+   "engine_when_data_arrives": "program_effect",
+   "missing_elements": [
+    "stewardship_feedback_exposure"
+   ],
+   "missing_data": "Dates each prescriber received antibiotic-stewardship feedback reports"
   },
   {
    "id": "HQ-RX-037",
@@ -6037,10 +6058,11 @@
    "question": "Did our heart failure discharge bundle reduce 30-day readmissions?",
    "persona": "hospital CMO",
    "domain": "quality_patient_safety",
-   "expected_engine": "program_effect",
+   "expected_engine": "unsupported",
    "required_data": [
     "adt_events",
-    "encounters"
+    "encounters",
+    "hf_discharge_bundle_exposure"
    ],
    "source": {
     "title": "Health Catalyst success stories (sepsis, CLABSI, LOS, readmissions)",
@@ -6048,7 +6070,12 @@
     "publisher": "Health Catalyst (vendor claim)",
     "note": "Vendor case studies on sepsis mortality, HAI reduction, LOS and readmission improvement with analytics."
    },
-   "origin": "public-source research 2026-10-13"
+   "origin": "public-source research 2026-10-13",
+   "engine_when_data_arrives": "program_effect",
+   "missing_elements": [
+    "hf_discharge_bundle_exposure"
+   ],
+   "missing_data": "Per-patient dates of heart-failure discharge bundle delivery (program exposure)"
   },
   {
    "id": "HQ-QS-045",
@@ -6455,10 +6482,11 @@
    "question": "Did enrollment in collaborative care improve depression scores compared with usual care?",
    "persona": "collaborative care manager",
    "domain": "behavioral_health",
-   "expected_engine": "program_effect",
+   "expected_engine": "unsupported",
    "required_data": [
-    "mood_screens",
-    "encounters"
+    "collaborative_care_enrollment",
+    "encounters",
+    "mood_screens"
    ],
    "source": {
     "title": "AIMS Center: Collaborative Care Model",
@@ -6466,7 +6494,12 @@
     "publisher": "University of Washington AIMS Center",
     "note": "Measurement-based care with registry, care manager and psychiatric consultant; PHQ-9 response/remission targets."
    },
-   "origin": "public-source research 2026-10-13"
+   "origin": "public-source research 2026-10-13",
+   "engine_when_data_arrives": "program_effect",
+   "missing_elements": [
+    "collaborative_care_enrollment"
+   ],
+   "missing_data": "Collaborative care (CoCM) enrollment and disenrollment dates per patient"
   },
   {
    "id": "HQ-BH-019",

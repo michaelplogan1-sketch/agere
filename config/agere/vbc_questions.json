@@ -2752,15 +2752,15 @@
    "question": "What percent of our attributed members' specialist spend goes to out-of-network specialists?",
    "persona": "payer VBC/network team",
    "domain": "network_leakage",
-   "expected_engine": "unsupported",
-   "missing_data": "network participant list (not received)",
+   "expected_engine": "network",
    "source": {
     "title": "Case Study: Referral Management (Vanguard Medical Group)",
     "url": "https://lightbeamhealth.com/wp-content/uploads/2026/01/Case-Study-Referral-Management.pdf",
     "publisher": "Lightbeam Health Solutions",
     "note": "Preferred-network referral routing ranked by specialist performance; reports leakage and cost reductions."
    },
-   "origin": "public-source research 2026-10-13"
+   "origin": "public-source research 2026-10-13",
+   "note": "Leakage = visits/dollars at organizations outside the attributed network (network.py definition, stated in the answer); a payer participant list would refine it."
   },
   {
    "id": "VQ-191",
@@ -2823,15 +2823,15 @@
    "question": "How much would we save if 50% of out-of-network orthopedic referrals moved to preferred orthopedists?",
    "persona": "CFO/finance",
    "domain": "network_leakage",
-   "expected_engine": "unsupported",
-   "missing_data": "preferred specialist list and referral cost model (not received)",
+   "expected_engine": "network",
    "source": {
     "title": "Case Study: Referral Management (Vanguard Medical Group)",
     "url": "https://lightbeamhealth.com/wp-content/uploads/2026/01/Case-Study-Referral-Management.pdf",
     "publisher": "Lightbeam Health Solutions",
     "note": "Preferred-network referral routing ranked by specialist performance; reports leakage and cost reductions."
    },
-   "origin": "public-source research 2026-10-13"
+   "origin": "public-source research 2026-10-13",
+   "note": "Steering simulation over the network leakage definition (outside organizations); savings use outside claims allowed amounts."
   },
   {
    "id": "VQ-196",
