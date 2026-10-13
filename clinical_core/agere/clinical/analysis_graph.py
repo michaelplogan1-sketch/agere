@@ -24,6 +24,7 @@ VERSION = 'population-analysis-graph/1'
 from .graph_contracts import SET_OPS, validate_inputs, validate_parameters as validate_shared_parameters
 OPERATIONS = SET_OPS | {'aggregate', 'explain', 'sql', 'vbc', 'monitor', 'demand', 'program_effect', 'discover', 'trajectory', 'survival', 'observation_process', 'reference_review', 'compare', 'analyze', 'retrieve', 'forecast', 'source_changes', 'review','longitudinal','worklist','state_review','medication_identity','context','context_passes','assertion_review','baseline','decision_landmark','financial_accounts','accountability_review','protocol_change','program_document_change','program_acquisition','measure_review','evidence_portfolio','outreach'}
 OPERATIONS |= {'market'}  # markets view: practice / PCP / payer tickers (market.py)
+OPERATIONS |= {'pathway'}  # care pathways (Markov chains, process mining)
 NODE_FIELDS = {'id', 'operation', 'inputs', 'parameters', 'purpose'}
 LIMITS = [
     'Membership means observed predicate matches, not confirmed disease or absent care.',
@@ -118,6 +119,7 @@ def standards(answer):
 
 NO_BENCHMARK_OPERATIONS = ('outreach', 'monitor', 'demand', 'survival', 'program_effect', 'discover', 'trajectory', 'explain')
 NO_BENCHMARK_OPERATIONS += ('market',)
+NO_BENCHMARK_OPERATIONS += ('pathway',)
 
 
 def benchmark_references(answer, question=None, operation=None):
@@ -262,6 +264,20 @@ def build_answer(plan, results, memberships, question):
                       overall={k: report[k] for k in ('event_label', 'time_zero', 'units', 'patients', 'events', 'excluded',
                                                       'included_without_baseline_result', 'groups', 'logrank', 'cox', 'curves')})
         if not report['units']:
+            answer['missing'].append(summary(report))
+        return answer
+    if last['operation'] == 'pathway':
+        from .pathway import summary
+        report = results[-1]['result']
+        partial = plan.get('coverage') != 'supported_observation' or plan.get('unmet_requirements')
+        ok = bool(report['transitions'])
+        answer.update(status='partial' if partial else ('answered' if ok else 'unsupported'),
+                      answer_type='table' if ok else 'unsupported', table=report['table'], method=report['method'],
+                      value=summary(report), count=report['transitions'],
+                      overall={k: report[k] for k in ('states', 'matrix', 'patients', 'transitions', 'anchors', 'chain', 'reach', 'variants',
+                                                      'conformance', 'bottlenecks', 'leakage', 'second_order', 'groups', 'acute_data_gaps',
+                                                      'excluded', 'parameters', 'notes')})
+        if not ok:
             answer['missing'].append(summary(report))
         return answer
     if last['operation'] == 'discover':
@@ -488,6 +504,11 @@ def validate(plan, as_of):
         elif op == 'survival':
             from . import survival
             p = survival.validate(p)
+        elif op == 'pathway':
+            from . import pathway
+            p = pathway.validate(p)
+            if any(v > as_of for v in p['period'].values()):
+                raise ValueError('Pathway period exceeds snapshot cutoff')
         elif op == 'discover':
             from . import discover
             p = discover.validate(p)
@@ -777,7 +798,8 @@ def code_identity():
                       Path(__file__).with_name('medication_identity.py'),
                       Path(__file__).with_name('source_blocks.py'),
                       Path(__file__).with_name('program_effect.py'),
-                      Path(__file__).with_name('outreach.py'), Path(__file__).with_name('outreach_bandit.py')]]])
+                      Path(__file__).with_name('outreach.py'), Path(__file__).with_name('outreach_bandit.py'),
+                      Path(__file__).with_name('pathway.py')]]])
 
 
 def catalog(path):
@@ -1035,6 +1057,11 @@ def execute(stack, plan, *, question=None):
                 chosen = memberships[node['inputs'][0]]
                 detail = survival.execute(path, sorted(chosen.yes), params)
                 detail['input_membership'] = membership_receipt(chosen)
+            elif op == 'pathway':
+                from . import pathway
+                chosen = memberships[node['inputs'][0]] if node['inputs'] else None
+                detail = pathway.execute(path, sorted(chosen.yes) if chosen else None, params)
+                if chosen: detail['input_membership'] = membership_receipt(chosen)
             elif op == 'discover':
                 from . import discover
                 chosen = memberships[node['inputs'][0]]

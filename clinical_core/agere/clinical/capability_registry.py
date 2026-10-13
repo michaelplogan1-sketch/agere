@@ -33,6 +33,8 @@ PRODUCT = {
                'use': 'Volume forecasts: ED visits, admissions, appointments, discharges or bed-days per week/month with intervals and backtest vs naive; '
                       'beds needed at a target occupancy and peak day; staffing from user-supplied ratios.'},
 }
+PRODUCT['pathway'] = {'population': 'optional', 'view': 'flow',
+                      'use': 'Care pathways / patient journeys: where patients go after an ED visit, discharge or PCP visit, follow-up within N days vs ED return, leakage to outside organisations, most common paths, chance of admission within N steps or days.'}
 
 # Questions a SQL query over the semantic tables answers exactly are handed to the verified SQL ladder.
 LITERAL = ('Literal data questions: counts, lists, sums, averages, maxima, record filters, date arithmetic, simple breakdowns '

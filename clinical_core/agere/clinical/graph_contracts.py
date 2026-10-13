@@ -17,6 +17,7 @@ TYPED = {'aggregate', 'explain', 'sql', 'vbc', 'monitor', 'demand', 'program_eff
          'source_changes', 'review', 'measure_review', 'financial_accounts', 'accountability_review', 'outcome', 'appointment_followthrough', 'interpretation', 'requirements', 'protocol_review', 'program_document'}
 TYPED |= {'market'}
 OPTIONAL_POPULATION = ('market',)  # report operators that take zero or one population input
+TYPED |= {'pathway'}
 
 
 def obj(properties):
@@ -42,6 +43,8 @@ def array(items, description=None):
 
 
 def input_contract(op):
+    if op == 'pathway':  # optional population; no population = everyone
+        return {'count': [0, 1], 'type': 'membership', 'output': 'report'}
     lo, hi = ((0, 0) if op in ('cohort', 'evidence') else
               (2, 2) if op == 'difference' else
               (2, 10) if op in ('intersect', 'union') else
@@ -170,6 +173,22 @@ def parameter_schema(op, catalog):
                     'staffing': {'type': 'boolean', 'description': 'true when the question asks for staff/FTE needs'},
                     'minutes_per_unit': {'type': ['number', 'null'], 'description': 'User-supplied staff minutes per unit; null if not stated (never invent)'},
                     'fte_hours_per_week': {'type': ['number', 'null'], 'description': 'User-supplied productive hours per FTE-week; null if not stated'}})
+    if op == 'pathway':
+        from . import pathway, concepts as library
+        return obj({'start': string(['', *pathway.EVENT_STATES], 'Anchor state paths start from ("" = each patient\'s first event); diagnosis needs index_concept'),
+                    'index_concept': string(['', *library.CONDITIONS], 'start diagnosis only: first documented record of this condition'),
+                    'anchor': string(pathway.ANCHORS, 'each occurrence of the start state, or only the first per patient'),
+                    'window_days': {'type': 'integer', 'minimum': 1, 'maximum': 730, 'description': 'a next event later than this = no further contact'},
+                    'period': obj({'start': {'type': 'string'}, 'end': {'type': 'string'}}),
+                    'targets': array(string([s for s in pathway.EVENT_STATES if s != 'diagnosis']), 'absorbing outcome states, e.g. inpatient, emergency'),
+                    'max_steps': {'type': 'integer', 'minimum': 1, 'maximum': 20},
+                    'horizons_days': array({'type': 'integer'}, 'days within window_days for empirical reach; [] for defaults'),
+                    'expected': obj({'from': string(['', *pathway.EVENT_STATES]), 'to': array(string(pathway.EVENT_STATES)),
+                                     'within_days': {'type': 'integer', 'minimum': 0, 'maximum': 730}}),
+                    'steps': {'type': 'integer', 'minimum': 1, 'maximum': 6}, 'top': {'type': 'integer', 'minimum': 1, 'maximum': 50},
+                    'group_by': string(pathway.GROUP_BY), 'leakage': string(pathway.LEAKAGE),
+                    'order': {'type': 'integer', 'minimum': 1, 'maximum': 2}, 'discharge_events': {'type': 'boolean'},
+                    'referral_events': {'type': 'boolean'}, 'include_other': {'type': 'boolean'}})
     if op == 'sql':
         from . import sql_query
         return obj({'query': {'type': 'string', 'description': 'One read-only SELECT/WITH over the semantic_layer tables. Reference the upstream population (if an input is given) as table population(patient_id).'},

@@ -1,0 +1,12 @@
+[
+  {"question": "How do heart failure patients move through care after an ED visit?", "expect_operation": "pathway"},
+  {"question": "Where do patients leak out of network after discharge?", "expect_operation": "pathway"},
+  {"question": "What happens after an ED visit - how many get primary care follow-up within 7 days vs return to the ED?", "expect_operation": "pathway"},
+  {"question": "Most common care paths for new diabetics", "expect_operation": "pathway"},
+  {"question": "Probability a CHF patient ends up admitted within 90 days starting from a PCP visit", "expect_operation": "pathway"},
+  {"question": "Where do our members go after a hospital discharge, by practice?", "expect_operation": "pathway"},
+  {"question": "Show the patient journey for COPD patients after an inpatient admission", "expect_operation": "pathway"},
+  {"question": "Which practices leak the most patients to outside organizations?", "expect_operation": "pathway"},
+  {"question": "Markov transition matrix for hypertension patients by payer", "expect_operation": "pathway"},
+  {"question": "Top 5 most common paths after an urgent care visit", "expect_operation": "pathway"}
+]
