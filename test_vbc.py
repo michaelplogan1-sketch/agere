@@ -94,3 +94,26 @@ class VBC(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+from pathlib import Path
+STACK = Path(__file__).resolve().parent / 'artifacts' / 'agere-healthcare-v123' / 'stack'
+
+
+class SettlementMath(unittest.TestCase):
+    def test_settle_corridor_and_two_sided(self):
+        from clinical_core.agere.clinical.vbc import settle
+        t = {'sharing_rate': 0.5, 'msr': 0.02, 'two_sided': True, 'loss_rate': 0.4}
+        self.assertEqual(settle(99.0, 100.0, 1000, t), 0.0)              # 1% savings: inside the corridor
+        self.assertAlmostEqual(settle(90.0, 100.0, 1000, t), 5000.0)     # 10% savings, 50% shared
+        self.assertAlmostEqual(settle(110.0, 100.0, 1000, t), -4000.0)   # 10% loss, 40% owed
+        self.assertEqual(settle(110.0, 100.0, 1000, {**t, 'two_sided': False}), 0.0)
+
+    @unittest.skipUnless(STACK.exists(), 'synthetic release not present')
+    def test_shapley_sums_to_pooled_settlement(self):
+        r = vbc.execute(STACK, None, {'metric': 'shared_savings', 'terms': {'benchmark_pmpm': 70, 'sharing_rate': 0.5, 'msr': 0.02,
+                                                                           'two_sided': True, 'loss_rate': 0.4}})
+        alloc = r['rows'][0]['fair_allocation']
+        self.assertAlmostEqual(sum(x['shapley_share'] for x in alloc['allocation']), alloc['pooled_settlement'], delta=1.0)
+        risk = r['rows'][0]['settlement_risk']
+        self.assertAlmostEqual(risk['p_earn_savings'] + risk['p_owe_loss'] + risk['p_within_corridor'], 1.0, places=2)

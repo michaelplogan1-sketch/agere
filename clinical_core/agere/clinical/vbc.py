@@ -331,6 +331,93 @@ def _quality(db, people, attr, p, start, end):
     return rows, 'Internal measure definitions on enrolled members (no official value sets in the received data); rates shrunk with beta-binomial.'
 
 
+def settle(actual, benchmark, mm, t):
+    """Net settlement for one actual PMPM: positive = paid to the ACO, negative = owed by it."""
+    if not benchmark or not mm: return 0.0
+    savings_pct = (benchmark - actual) / benchmark
+    total = (benchmark - actual) * mm
+    msr, mlr = float(t.get('msr', 0.02)), float(t.get('mlr', t.get('msr', 0.02)))
+    if savings_pct >= msr:
+        shared = total * float(t['sharing_rate']) * float(t.get('quality_score', 1.0))
+        if t.get('savings_cap_pct') is not None: shared = min(shared, benchmark * mm * float(t['savings_cap_pct']))
+        return shared
+    if -savings_pct >= mlr and t.get('two_sided'):
+        owed = -total * float(t.get('loss_rate', 1 - float(t['sharing_rate'])))
+        if t.get('loss_cap_pct') is not None: owed = min(owed, benchmark * mm * float(t['loss_cap_pct']))
+        return -owed
+    return 0.0
+
+
+def settlement_risk(db, people, start, end, benchmark, t, draws=4000, seed=7):
+    """Value-at-risk for the settlement: resample members (nonparametric bootstrap of member-level completed
+    allowed cost and member-months), run each draw through the exact contract arithmetic, and summarise the
+    distribution of the net payment. Captures population cost variability (high-cost claimants), not
+    benchmark or rule changes."""
+    claims = _claims(db, start, end)
+    completion, _ = _completion(claims, end)
+    months = {pid: set(info['months']) for pid, info in people.items() if info['months']}
+    cost = defaultdict(float)
+    for pid, month, allowed, _, _, _ in claims:
+        if month in months.get(pid, ()): cost[pid] += allowed / 100 * completion.get(month, 1.0)
+    pids = sorted(months)
+    if not pids: return None
+    c = np.array([cost[x] for x in pids]); m = np.array([len(months[x]) for x in pids], dtype=float)
+    rng = np.random.default_rng(seed)
+    idx = rng.integers(0, len(pids), size=(draws, len(pids)))
+    pmpm = c[idx].sum(axis=1) / m[idx].sum(axis=1)
+    mm = float(m.sum())
+    net = np.array([settle(x, benchmark, mm, t) for x in pmpm])
+    q = lambda a, v: round(float(np.quantile(a, v)), 2)
+    # Benchmark at which the expected settlement crosses from loss/corridor into earned savings.
+    breakeven = round(float(np.quantile(pmpm, 0.5)) / (1 - float(t.get('msr', 0.02))), 2)
+    return {'draws': draws, 'actual_pmpm_p5': q(pmpm, .05), 'actual_pmpm_p50': q(pmpm, .5), 'actual_pmpm_p95': q(pmpm, .95),
+            'p_earn_savings': round(float((net > 0).mean()), 3), 'p_owe_loss': round(float((net < 0).mean()), 3),
+            'p_within_corridor': round(float((net == 0).mean()), 3), 'expected_net_payment': round(float(net.mean()), 2),
+            'net_payment_p5': q(net, .05), 'net_payment_p50': q(net, .5), 'net_payment_p95': q(net, .95),
+            'value_at_risk_95': round(min(0.0, float(np.quantile(net, .05))), 2),
+            'benchmark_pmpm_needed_for_median_to_clear_msr': breakeven,
+            'top_1pct_members_share_of_cost': round(float(np.sort(c)[::-1][:max(1, len(c) // 100)].sum() / c.sum()), 3) if c.sum() else None}
+
+
+def shapley_allocation(db, people, attr, start, end, benchmark, t, group_by='practice', max_players=12):
+    """Fair split of the settlement across groups (exact Shapley values): each group's average marginal
+    effect on the pooled settlement over every order of joining. Because the MSR corridor, sharing rate
+    and caps make settlement non-additive, this differs from a pro-rata split; it sums exactly to the
+    pooled settlement."""
+    from itertools import combinations
+    from math import factorial
+    claims = _claims(db, start, end)
+    completion, _ = _completion(claims, end)
+    cost, mm = defaultdict(float), defaultdict(float)
+    months = {pid: set(info['months']) for pid, info in people.items() if info['months']}
+    key = {pid: _group_key(group_by, pid, people, attr) for pid in months}
+    for pid in months: mm[key[pid]] += len(months[pid])
+    for pid, month, allowed, _, _, _ in claims:
+        if month in months.get(pid, ()): cost[key[pid]] += allowed / 100 * completion.get(month, 1.0)
+    players = sorted(mm)
+    if not players or len(players) > max_players: return None
+    def v(coalition):
+        m = sum(mm[g] for g in coalition)
+        return settle(sum(cost[g] for g in coalition) / m, benchmark, m, t) if m else 0.0
+    n = len(players); value = {}
+    for size in range(n + 1):
+        for c in combinations(players, size): value[frozenset(c)] = v(c)
+    out = []
+    for g in players:
+        phi = 0.0
+        for coal, val in value.items():
+            if g in coal: continue
+            w = factorial(len(coal)) * factorial(n - len(coal) - 1) / factorial(n)
+            phi += w * (value[coal | {g}] - val)
+        alone = v((g,))
+        out.append({'group': g, 'member_months': mm[g], 'pmpm': round(cost[g] / mm[g], 2), 'shapley_share': round(phi, 2),
+                    'standalone_settlement': round(alone, 2),
+                    'pro_rata_share': None})
+    total = value[frozenset(players)]
+    for r in out: r['pro_rata_share'] = round(total * r['member_months'] / sum(mm.values()), 2)
+    return {'group_by': group_by, 'pooled_settlement': round(total, 2), 'allocation': sorted(out, key=lambda r: -r['shapley_share'])}
+
+
 def _shared_savings(db, people, attr, p, start, end):
     """Exact settlement arithmetic on supplied terms. Benchmark is risk-adjusted by the population's
     mean internal risk score relative to 1.0 when terms ask for it."""
@@ -361,8 +448,13 @@ def _shared_savings(db, people, attr, p, start, end):
         result.update(outcome='shared_loss_owed', payment_from_aco=round(owed, 2))
     else:
         result.update(outcome='within_corridor', payment_to_aco=0.0)
+    result['settlement_risk'] = settlement_risk(db, people, start, end, benchmark, t)
+    result['fair_allocation'] = shapley_allocation(db, people, attr, start, end, benchmark, t,
+                                                   group_by=p['group_by'] if p.get('group_by') in ('practice', 'pcp', 'coverage_type') else 'practice')
     return [result], ('Settlement on supplied terms: savings % vs MSR/MLR corridor, sharing/loss rates, quality factor and caps; '
-                      'actual cost = completion-adjusted allowed PMPM for enrolled member-months. ' + cost_method)
+                      'actual cost = completion-adjusted allowed PMPM for enrolled member-months. Settlement risk: 4,000-draw member '
+                      'bootstrap through the same contract arithmetic (population cost variability; benchmark and rule changes not modelled). '
+                      + cost_method)
 
 
 def _measure_by_segment(db, measure, group_by, start, end, keep):

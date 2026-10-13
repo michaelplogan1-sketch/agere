@@ -135,6 +135,11 @@ def headline(answer):
         defs.append(f"{c.get('label', c.get('concept'))} ({n} source labels)" if n else c.get('label', c.get('concept')))
     text = f'{core}.' if not core.endswith('.') else core
     if defs: text += ' Definitions: ' + '; '.join(defs) + '.'
+    risk = next((r.get('settlement_risk') for r in (answer.get('table') or []) if isinstance(r, dict) and r.get('settlement_risk')), None)
+    if risk:
+        text += (f" Settlement risk: {risk['p_earn_savings']:.0%} chance of earning savings, {risk['p_owe_loss']:.0%} of owing a loss, "
+                 f"{risk['p_within_corridor']:.0%} in the corridor; 95% value-at-risk ${_fmt(risk['value_at_risk_95'])}, "
+                 f"expected ${_fmt(risk['expected_net_payment'])}.")
     if status == 'partial' and answer.get('missing'): text += ' Partial: ' + answer['missing'][0]
     return text
 

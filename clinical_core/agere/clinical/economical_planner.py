@@ -229,14 +229,16 @@ def plan(stack,question,ledger,frontier):
             from ..gateway import BudgetLedger
             second=HostedModel(BudgetLedger(ledger.path),stack.receipts,model=os.environ.get('AGERE_SECOND_MODEL','claude-sonnet-5-5'))
             judge=HostedModel(ledger,stack.receipts,model=os.environ.get('AGERE_JUDGE_MODEL','claude-opus-5-5'))
-            params,result,receipt=verified_answer(stack.path,question,meta['snapshot']['as_of'],hosted,second,judge)
+            from .nl2sql import Decider
+            decider=Decider(ledger,stack.receipts) if os.environ.get('AGERE_DECIDER_JUDGE','on')!='off' else None
+            params,result,receipt=verified_answer(stack.path,question,meta['snapshot']['as_of'],hosted,second,judge,decider)
             from . import learning, verify
             learning.record_verified(stack.path,question,'sql',params,verify.signature(result),'hosted_verified_sql',
                                      [a.get('model') for a in receipt['attempts']],receipt['agreement'])
             graph=validate({'interpretation':question,'coverage':'supported_observation','unmet_requirements':[],
                             'nodes':[{'id':'answer','operation':'sql','inputs':[],'parameters':params,
                                       'purpose':'Hosted small-model query over the semantic layer'}]},meta['snapshot']['as_of'])
-            hosted.cost+=second.cost+judge.cost
+            hosted.cost+=second.cost+judge.cost+(decider.cost if decider else 0)
             return graph,{'route':'hosted_verified_sql','model':hosted.model,'new_paid_api_calls':len(receipt['attempts']),
                           'frontier_called':False,'local_compiler_declined':local_decline,'hosted_sql':receipt,
                           'steps':[{'stage':'hosted_verified_sql','receipt':{'cost_estimate':{'estimated_usd':hosted.cost}}}],
