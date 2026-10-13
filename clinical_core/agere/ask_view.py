@@ -603,6 +603,52 @@ function vizRisk(a){const o=a.overall||{},ra=o.risk_adjustment||{},p=o.populatio
  if((ra.data_gaps||[]).length)h+='<details><summary>Data limits ('+ra.data_gaps.length+')</summary><ul>'+ra.data_gaps.map(x=>'<li>'+esc(x)+'</li>').join('')+'</ul></details>';
  if((ra.assumptions||[]).length)h+='<p class="hint"><b>Assumptions.</b> '+esc(ra.assumptions.join(' '))+'</p>';
  return h}
+/* provider network: KPI tiles, community-grouped circular graph (deterministic, no force layout), then focus tables */
+function netGraph(v){const ns=(v||{}).nodes||[],es=(v||{}).edges||[];if(ns.length<2)return '';
+ const W=CW(),H=Math.min(560,Math.max(320,Math.round(W*.72))),cx=W/2,cy=H/2,R=Math.min(W,H)/2-46;
+ const groups={};ns.forEach(n=>{const k=n.community==null?'isolated':String(n.community);(groups[k]=groups[k]||[]).push(n)});
+ const keys=Object.keys(groups).sort((a,b)=>a==='isolated'?1:b==='isolated'?-1:(groups[b].length-groups[a].length)||(+a-+b));
+ const gap=2,slots=ns.length+gap*keys.length,pos={},maxPr=Math.max(...ns.map(n=>n.pagerank||0),1e-9),maxW=Math.max(...es.map(e=>e[2]),1);let i=0,labels='';
+ keys.forEach(k=>{const g=groups[k].slice().sort((a,b)=>(b.pagerank-a.pagerank)||(a.id<b.id?-1:1)),a0=i;
+  g.forEach(n=>{const t=2*Math.PI*i/slots-Math.PI/2;pos[n.id]=[cx+R*Math.cos(t),cy+R*Math.sin(t)];i++});
+  const tm=2*Math.PI*((a0+i-1)/2)/slots-Math.PI/2,lx=cx+(R+26)*Math.cos(tm),ly=cy+(R+26)*Math.sin(tm);
+  labels+='<text x="'+lx.toFixed(1)+'" y="'+(ly+4).toFixed(1)+'" text-anchor="'+(Math.cos(tm)>.3?'start':Math.cos(tm)<-.3?'end':'middle')+'" style="fill:var(--fg);font-weight:600">'+esc(k==='isolated'?'isolated':'C'+k)+' ('+g.length+')</text>';i+=gap});
+ let s=svgOpen(W,H,'Provider patient-sharing network grouped by community');
+ es.forEach(e=>{const na=ns[e[0]]||{},nb=ns[e[1]]||{},a=pos[na.id],b=pos[nb.id],w=e[2];if(!a||!b)return;const ca=na.community,cb=nb.community;
+  s+='<path d="M'+a[0].toFixed(1)+','+a[1].toFixed(1)+' Q'+cx.toFixed(1)+','+cy.toFixed(1)+' '+b[0].toFixed(1)+','+b[1].toFixed(1)+'" style="fill:none;stroke:'+(ca===cb&&ca!=null?SER[ca%SER.length]:'var(--muted)')+
+   ';stroke-opacity:'+(0.12+0.55*w/maxW).toFixed(2)+';stroke-width:'+(0.6+2.4*w/maxW).toFixed(2)+'"><title>'+esc(na.id+' – '+nb.id+': '+w+' shared patients')+'</title></path>'});
+ ns.forEach(n=>{const p=pos[n.id],r=2.5+7*Math.sqrt((n.pagerank||0)/maxPr),c=n.community==null?'var(--muted)':SER[n.community%SER.length];
+  s+='<circle cx="'+p[0].toFixed(1)+'" cy="'+p[1].toFixed(1)+'" r="'+r.toFixed(1)+'" style="fill:'+c+(n.in_network===false?';stroke:var(--bad);stroke-width:2':'')+'"><title>'+
+   esc(n.id+' ('+n.specialty+') · '+(n.organization||'')+' · '+n.patients+' patients, degree '+n.degree+', PageRank '+fmt(n.pagerank,4)+', betweenness '+fmt(n.betweenness,4)+(n.in_network===false?' · OUTSIDE network':''))+'</title></circle>'});
+ return s+labels+'</svg><div class="legend"><span>node size = PageRank</span><span>colour = community</span><span>curve = shared patients (darker = more)</span><span><span class="sw" style="background:var(--bad);height:3px"></span>outside network</span>'+
+  '<span>showing '+fmt(v.shown_nodes)+' nodes, '+fmt(v.shown_edges)+' edges</span></div>'}
+function spreadChart(sp){const pts=sp.over_time||[];if(pts.length<2)return '';const W=CW(),H=220,L=46,R=12,T=10,B=34,n=pts.length,hi=Math.max(1,...pts.map(p=>Math.max(p.p90,p.expected_pcps,p.degree_seeds_expected_pcps)));
+ const X=i=>L+(W-L-R)*i/(n-1),Y=v=>T+(H-T-B)*(1-v/hi);let s=svgOpen(W,H,'Expected PCPs adopting over diffusion rounds (model)');
+ ticks(0,hi,4).forEach(t=>{s+='<line class="gridl" x1="'+L+'" x2="'+(W-R)+'" y1="'+Y(t)+'" y2="'+Y(t)+'"/><text x="'+(L-6)+'" y="'+(Y(t)+4)+'" text-anchor="end">'+esc(fmt(t))+'</text>'});
+ s+='<path d="'+pts.map((p,i)=>(i?'L':'M')+X(i).toFixed(1)+','+Y(p.p90).toFixed(1)).join('')+pts.slice().reverse().map((p,j)=>'L'+X(n-1-j).toFixed(1)+','+Y(p.p10).toFixed(1)).join('')+'Z" style="fill:var(--band)"/>';
+ s+='<path d="'+pts.map((p,i)=>(i?'L':'M')+X(i).toFixed(1)+','+Y(p.degree_seeds_expected_pcps).toFixed(1)).join('')+'" style="fill:none;stroke:var(--muted);stroke-dasharray:4 3;stroke-width:1.5"/>';
+ s+='<path d="'+pts.map((p,i)=>(i?'L':'M')+X(i).toFixed(1)+','+Y(p.expected_pcps).toFixed(1)).join('')+'" style="fill:none;stroke:var(--s1);stroke-width:2"/>';
+ pts.forEach((p,i)=>{s+='<circle cx="'+X(i)+'" cy="'+Y(p.expected_pcps)+'" r="3" style="fill:var(--s1)"><title>'+esc('round '+p.step+': '+fmt(p.expected_pcps)+' PCPs ('+fmt(p.p10)+'–'+fmt(p.p90)+'), ~'+fmt(p.expected_attributed_patients)+' attributed patients')+'</title></circle><text x="'+X(i)+'" y="'+(H-B+14)+'" text-anchor="middle">'+p.step+'</text>'});
+ return s+'</svg><div class="legend"><span><span class="sw" style="background:var(--s1)"></span>greedy seeds (expected)</span><span><span class="sw" style="background:var(--band);height:10px"></span>10th–90th percentile</span><span>┄ top-degree seeds</span><span>x = diffusion round</span></div>'}
+function vizNetwork(a){const o=(a.overall||{}).provider_network||{},g=o.graph||{},p=o.parameters||{},rows=a.table||[],lk=(o.leakage||{}).overall||{},co=o.cohesion||{},cc=o.concentration||{};
+ const kp=(l,v)=>'<div class="kpi"><div class="l">'+esc(l)+'</div><div class="v">'+esc(v)+'</div></div>';
+ let h='<section class="sec" data-focus="network"><h3>Provider network — '+fmt(g.providers)+' '+esc(p.level||'')+'s, '+fmt(g.patients)+' patients, '+esc((o.period||{}).start||'')+' to '+esc((o.period||{}).end||'')+'</h3><div class="kpis">'+
+  kp('Significant edges',fmt(g.edges)+' of '+fmt(g.candidate_edges))+kp('Communities',fmt((o.communities||[]).length)+' · Q '+fmt(g.modularity,2))+
+  kp('Leakage (visits)',isNum(lk.leakage_share)?pct(lk.leakage_share,1):'—')+kp('Leaked claim dollars',usdK(lk.outside_dollars))+
+  kp('Care density (mean)',isNum(co.mean)?fmt(co.mean,1):'—')+kp('Referral HHI (mean)',isNum(cc.mean_hhi_organizations)?fmt(cc.mean_hhi_organizations,0):'—')+'</div>';
+ h+=netGraph(o.visual)+'</section>';
+ const sp=o.spread;if(sp&&sp.status==='model')h+='<section class="sec"><h3>Spread model (not an observation) — '+esc(sp.model.replace(/_/g,' '))+' over the '+esc(sp.graph.replace(/_/g,' '))+' graph</h3>'+spreadChart(sp)+
+  tableHTML(sp.seeds||[],{name:'network-seeds',caption:'Seeds chosen by '+esc(sp.seed_strategy)+' influence maximisation; '+esc(fmt(sp.runs))+' Monte Carlo runs, seed '+esc(sp.random_seed)})+'</section>';
+ const st=o.steering;if(st)h+='<section class="sec"><h3>Steering model — '+esc(st.service_line)+' to '+esc(st.target||'no target')+'</h3><div class="kpis">'+kp('Pool visits',fmt(st.pool_visits))+kp('Recovered visits',fmt(st.recovered_visits))+
+  kp('Recovered dollars',usdK(st.recovered_dollars))+kp('Target volume change',isNum(st.target_volume_increase)?'+'+pct(st.target_volume_increase,0):'—')+'</div></section>';
+ if(rows.length)h+='<section class="sec"><h3>'+esc(label(p.focus||'all'))+'</h3>'+tableHTML(rows,{name:'network-'+(p.focus||'all'),render:{claim_dollars:v=>esc(usd(v)),outside_dollars:v=>esc(usd(v)),pool_dollars:v=>esc(usd(v)),recovered_dollars:v=>esc(usd(v))}})+'</section>';
+ const by=(o.leakage||{}).by||[];if(p.focus!=='leakage'&&by.length)h+='<details><summary>Leakage by '+esc((o.leakage||{}).group_by||'')+' ('+by.length+')</summary>'+tableHTML(by,{name:'network-leakage',render:{claim_dollars:v=>esc(usd(v)),outside_dollars:v=>esc(usd(v))}})+'</details>';
+ if(p.focus!=='communities'&&(o.communities||[]).length)h+='<details><summary>Communities ('+o.communities.length+')</summary>'+tableHTML(o.communities,{name:'network-communities'})+'</details>';
+ if(p.focus!=='usage'&&(o.usage||[]).length)h+='<details><summary>Organisations patients use ('+o.usage.length+')</summary>'+tableHTML(o.usage,{name:'network-usage',render:{claim_dollars:v=>esc(usd(v))}})+'</details>';
+ if((o.notes||[]).length)h+='<ul class="hint">'+o.notes.map(x=>'<li>'+esc(x)+'</li>').join('')+'</ul>';
+ if((o.data_gaps||[]).length)h+='<details><summary>Data limits ('+o.data_gaps.length+')</summary><ul>'+o.data_gaps.map(x=>'<li>'+esc(x)+'</li>').join('')+'</ul></details>';
+ if((o.assumptions||[]).length)h+='<p class="hint"><b>Assumptions.</b> '+esc(o.assumptions.join(' '))+'</p>';
+ return h}
 function visual0(a){if(!a||a.answer_type==='unsupported')return '';const o=a.overall||{};
   if(o.knowledge)return vizKnowledge(a);
   if(o.early_signal)return vizEarlySignal(a);
@@ -610,6 +656,7 @@ function visual0(a){if(!a||a.answer_type==='unsupported')return '';const o=a.ove
   if(o.risk_adjustment)return vizRisk(a);
   if(o.profile)return vizProfile(a);
   if(o.scheduling)return vizScheduling(a);
+  if(o.provider_network)return vizNetwork(a);
   if(o.matrix&&o.states)return vizPathway(a);
  if(o.network&&o.data_gaps)return vizMarket(a);
  if(o.briefing)return vizBriefing(a);

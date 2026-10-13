@@ -34,6 +34,7 @@ OPERATIONS |= {'early_signal'}  # matched-filter precursor detection (early_sign
 OPERATIONS |= {'claims_review'}  # payment integrity and revenue leakage (claims_review.py)
 OPERATIONS |= {'knowledge'}  # cited VBC knowledge base: explanation / strategy questions (vbc_knowledge.py)
 OPERATIONS |= {'risk_adjustment'}  # CMS-HCC RAF, coding gaps, recapture, suspects (risk_adjustment.py)
+OPERATIONS |= {'network'}  # provider patient-sharing network: hubs, communities, cohesion, leakage, steering, spread (network.py)
 NODE_FIELDS = {'id', 'operation', 'inputs', 'parameters', 'purpose'}
 LIMITS = [
     'Membership means observed predicate matches, not confirmed disease or absent care.',
@@ -136,6 +137,7 @@ NO_BENCHMARK_OPERATIONS += ('early_signal',)
 NO_BENCHMARK_OPERATIONS += ('claims_review',)
 NO_BENCHMARK_OPERATIONS += ('knowledge',)
 NO_BENCHMARK_OPERATIONS += ('risk_adjustment',)
+NO_BENCHMARK_OPERATIONS += ('network',)
 
 
 def benchmark_references(answer, question=None, operation=None):
@@ -442,6 +444,23 @@ def build_answer(plan, results, memberships, question):
                                'population': {k: v for k, v in (report.get('population') or {}).items()}})
         if not ok: answer['missing'].append(value)
         return answer
+    if last['operation'] == 'network':
+        from .network import summarize as network_summary, visual as network_visual
+        report = results[-1]['result']
+        partial = plan.get('coverage') != 'supported_observation' or plan.get('unmet_requirements')
+        value, table = network_summary(report)
+        ok = report.get('status') == 'answered'
+        answer.update(status=('partial' if partial else 'answered') if ok else 'unsupported', answer_type='table' if ok else 'unsupported',
+                      value=value, table=table, count=(report.get('graph') or {}).get('providers'),
+                      method=report['method'], limitations=report['limitations'],
+                      overall={'provider_network': {**{k: report.get(k) for k in ('parameters', 'period', 'graph', 'communities', 'leakage',
+                                                                                 'steering', 'spread', 'assumptions', 'data_gaps', 'notes', 'capability')},
+                                                    'cohesion': {k: v for k, v in (report.get('cohesion') or {}).items() if k != 'by_pcp'},
+                                                    'concentration': {k: v for k, v in (report.get('concentration') or {}).items() if k != 'by_pcp'},
+                                                    'pcp_sharing': {k: v for k, v in (report.get('pcp_sharing') or {}).items() if k != 'pairs'},
+                                                    'usage': (report.get('usage') or [])[:25], 'visual': network_visual(report)}})
+        if not ok: answer['missing'].append(value)
+        return answer
     if last['operation'] == 'market':
         from .market import summarize as market_summary
         report = results[-1]['result']
@@ -637,6 +656,11 @@ def validate(plan, as_of):
             p = claims_review.validate(p)
             if any(v > as_of for v in p['period'].values()):
                 raise ValueError('Claims review period exceeds snapshot cutoff')
+        elif op == 'network':
+            from . import network
+            p = network.validate(p)
+            if any(v > str(as_of)[:10] for v in p['period'].values() if v):
+                raise ValueError('Network period exceeds snapshot cutoff')
         elif op == 'risk_adjustment':
             from . import risk_adjustment
             p = risk_adjustment.validate(p)
@@ -948,6 +972,7 @@ def code_identity():
                       Path(__file__).with_name('monitor.py'), Path(__file__).with_name('claims_review.py'),
                       Path(__file__).with_name('risk_adjustment.py'), Path(__file__).parents[3] / 'config' / 'agere' / 'risk_adjustment' / 'manifest.json',
                       Path(__file__).parents[3] / 'config' / 'agere' / 'risk_adjustment' / 'payment_parameters.json',
+                      Path(__file__).with_name('network.py'),
                       Path(__file__).with_name('market.py'),
                       Path(__file__).with_name('briefing.py'), Path(__file__).with_name('briefing_rank.py'),
                       Path(__file__).with_name('demand.py'),
@@ -1357,6 +1382,11 @@ def execute(stack, plan, *, question=None):
                 from . import claims_review
                 chosen = memberships[node['inputs'][0]] if node['inputs'] else None
                 detail = claims_review.execute(path, sorted(chosen.yes) if chosen else None, params, meta['snapshot']['as_of'])
+                if chosen: detail['input_membership'] = membership_receipt(chosen)
+            elif op == 'network':
+                from . import network
+                chosen = memberships[node['inputs'][0]] if node['inputs'] else None
+                detail = network.execute(path, sorted(chosen.yes) if chosen else None, params, meta['snapshot']['as_of'])
                 if chosen: detail['input_membership'] = membership_receipt(chosen)
             elif op == 'risk_adjustment':
                 from . import risk_adjustment

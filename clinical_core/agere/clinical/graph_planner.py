@@ -207,6 +207,19 @@ CONTRACTS['risk_adjustment'] = {'inputs':['optional earlier_set'],'parameters':{
               'diabetes drugs, EF, BMI, PHQ, problem list without a code) as documentation review prompts; RAF by practice/PCP/payer. '
               'Use for RAF / HCC / coding gap / recapture / suspect condition / documentation gap questions; a plain internal "risk score" is vbc.'}
 
+CONTRACTS['network'] = {'inputs':['optional earlier_set'],'parameters':{'focus':'all|usage|hubs|communities|pcp_sharing|cohesion|concentration|leakage|steering|spread',
+    'level':'clinician|organization','period':{'start':'','end':''},'min_shared':2,'filter':'hypergeometric|disparity|none','leakage':'organization|organization_or_practice|tins',
+    'network_tins':[],'group_by':'specialty|practice','specialty':'','steer_specialty':'','steer_to':'','steer_share':0.5,'steer_from':'outside|all_other',
+    'spread_model':'independent_cascade|linear_threshold','seeds':3,'transmission':0.05,'steps':6,'top':15},
+    'meaning':'Provider network from patient sharing (visits + claims with NPIs/TINs): bipartite patient-provider graph projected to provider-provider '
+              'edges weighted by shared patients, minimum-sharing threshold and hypergeometric (BH) or disparity significance filter; degree, weighted '
+              'betweenness, PageRank, eigenvector centrality; Louvain communities; care density (Pollack); referral concentration (HHI); which '
+              'organisations patients use; leakage of attributed patients\' visits and dollars outside the network by specialty or practice (OUTSIDE '
+              'definition shared with pathway, or a TIN list); steering arithmetic (share of leaked visits moved to an in-network target, capacity check); '
+              'independent-cascade / threshold diffusion over the PCP graph with greedy influence-maximising seeds (a model). Use for referral hubs, '
+              'shared patients, care-team cohesion, which specialists/hospitals patients use, leakage by specialty, steering and spread questions; '
+              'the sequence of next steps after an ED visit or discharge is pathway.'}
+
 CONTRACTS['claims_review'] = {'inputs':['optional earlier_set'],'parameters':{'focus':'all|providers|benford|duplicates|underpayment|denials|leakage',
     'by':'payer|provider|setting|service','period':{'start':'','end':''},'fdr':0.05,'min_claims':30,'window_days':3,'writeoff_days':120,'payer':'','provider':'','rework_cost':None},
     'meaning':'Payment integrity and revenue leakage over medical claims, every flag ranked by expected dollars (dollars x probability): provider peer outliers '
