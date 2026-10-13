@@ -18,15 +18,17 @@ VERSION = 'local-nl2sql/1'
 MODEL_DIR = Path(__file__).resolve().parents[3] / 'models' / 'qwen3-4b'
 TABLES = """patient(patient_id, age_reported, age_latest, sex_reported ['F','M'], coverage_type ['commercial','medicare','medicaid','uninsured'], coverage_status, pcp_clinician_id, pcp_practice_id)  -- use age_latest (latest reported age)
 condition(record_id, patient_id, concept, label, icd10, snomed, event_date, available_date, organization_id, is_diagnosis, icd10_category, chapter, chronic, normalized_label)  -- is_diagnosis=0 for assessment topics/tolerability/review rows  -- one row per (record, concept)
-measurement(record_id, patient_id, concept, name, value, unit, value_canonical, unit_canonical, result_status, event_date, available_date, organization_id, loinc, component, lab_category)  -- labs/vitals; concept for governed labs, loinc/component for every other test  -- labs and vitals; compare value_canonical
-visit(encounter_id, patient_id, type, type_concept, setting, status, event_date, end_date, available_date, first_available_date, organization_id, attending_clinician_id, disposition, in_person, is_practice)  -- one row per encounter; count visits here
+measurement(record_id, patient_id, concept, name, value, unit, value_canonical, unit_canonical, result_status, event_date, available_date, organization_id, loinc, component, lab_category, event_time)  -- labs/vitals; concept for governed labs, loinc/component for every other test  -- labs and vitals; compare value_canonical
+visit(encounter_id, patient_id, type, type_concept, setting, start_time, end_time, status, event_date, end_date, available_date, first_available_date, organization_id, attending_clinician_id, disposition, in_person, is_practice)  -- one row per encounter; count visits here
 stay(patient_id, admit_date, discharge_date, type, organization_id, readmitted_30d, days_to_readmission, los_days, discharge_known)  -- distinct hospital stays; los_days/discharge_date NULL when discharge unknown
 appointment(appointment_id, patient_id, scheduled_date, booked_date, final_status, ever_no_show, ever_cancelled, ever_rescheduled, kept, organization_id, clinician_id, purpose)  -- one row per appointment (statuses resolved); use for no-show/cancellation/kept questions
 medication(record_id, patient_id, source_stream, evidence ['dispensed','claim','ordered','listed','administered','reported','pharmacy_history'], drug_name, drug_class, status, event_date, available_date, ingredients, therapeutic_category)  -- every medication mention with drug_class by ingredient; use for any drug/class question
 measurement_latest(patient_id, concept, event_date, value_canonical, unit_canonical, same_day_values, same_day_min, record_id)  -- latest DATED value per patient+concept; use for "latest/most recent" questions
 current_record(stream, key_field, business_id, record_id, patient_id, versions, first_available_date, available_date, event_date, payload)  -- LATEST version of each entity in versioned streams; use json_extract(payload,'$.field') for current state
 social_need(patient_id, need ['food','transport','cost_of_care'], positive, instrument, source_stream, source_field, event_date, record_id)  -- social-needs screens normalised across instruments; use for any food/transport/cost-of-care question
-claim(claim_id, patient_id, payer, service_date, benefit_year, first_status, final_status, ever_denied, denied_then_paid, net_payer_paid_cents, billed_cents, allowed_cents, first_available_date, last_available_date, first_submitted_date, first_payer_cash_date, net_payer_cash_cents)  -- claim lag = first_submitted_date - service_date; days to payment = first_payer_cash_date - service_date
+claim(claim_id, patient_id, payer, service_date, benefit_year, first_status, final_status, ever_denied, denied_then_paid, net_payer_paid_cents, billed_cents, allowed_cents, first_available_date, last_available_date, first_submitted_date, first_payer_cash_date, net_payer_cash_cents, first_adjudication_date)  -- claim lag = first_submitted_date - service_date; days to payment = first_payer_cash_date - service_date
+-- claim money: net_payer_paid_cents already nets EVERY adjudication version (paid minus reversed); use it for totals.
+-- claim timing: first_adjudication_date (first decision), first_payer_cash_date (money received), first_submitted_date.
 claim_adjustment(claim_id, record_id, patient_id, adjudication_status, group_code, reason_code, category ['deductible','coinsurance','copay','contractual_adjustment',...], amount_cents, current_version)  -- adjustment lines (patient responsibility split)  -- one row per medical claim (adjudication sequence resolved; net paid = paid minus reversed)
 concept_patient(concept, kind, patient_id, records, first_date, last_date)  -- who has each concept
 link(record_id, stream, field, target_record_id)  -- every *_record_id reference between records
@@ -149,6 +151,8 @@ GLOSSARY = [
     (r'tetanus|immunization history|vaccine screening|contraindicat', ['immunization_screening', 'immunization_history']),
     (r'community (?:referrals?|services?|resources?)|food (?:bank|access|resources?)|transport(?:ation)? assistance', ['community_service_referrals', 'community_service_outcomes']),
     (r'phone (?:calls?|encounters?|messages?)|telephone|call volume', ['telephone_messages']),
+    (r'payment plans?|installment', ['medical_payment_plans', 'medical_payment_attempts']),
+    (r'specialt(?:y|ies)|specialist', ['encounters', 'referrals']),
     (r'statins?|beta[- ]?blockers?|ace inhibitors?|\barbs?\b|sglt2|glp-?1|insulin|metformin|anticoagul|opioids?|medications?|meds\b|prescri|fills?\b|refill|adherence', ['pharmacy_dispenses', 'medication_orders']),
 ]
 
@@ -588,6 +592,9 @@ VERIFY_RULES = """
 - drug_class and concept values are exact ids from the lists shown: compare with = or IN, never LIKE '%...%'.
 - Medications: use the medication table and drug_class; "on X" / "filled X" = evidence 'dispensed' or 'claim' unless the question
   says ordered/prescribed/listed.
+- Answer every part asked: "how many and how much" -> both a count and an amount column; "rate"/"share"/"%" -> a percentage,
+  not a count. Times: use visit.start_time/end_time or measurement.event_time when hours or draw times matter.
+- Visit specialty: visit.type and visit.setting (e.g. 'Cardiology clinic' -> setting specialty); organization_id marks the site.
 - In-person visits: visit.in_person = 1; practice visits: visit.is_practice = 1. Arrival lag of a visit: first_available_date.
 - Point-in-time: if the question states an "as of" / "received by" date earlier than the snapshot, count only rows whose
   available_date (arrival) is on or before that date, in every table you use."""

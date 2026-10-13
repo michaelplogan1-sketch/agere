@@ -13,7 +13,7 @@ import json, re, sqlite3, time
 
 from . import aggregate, concepts, source_profile
 
-VERSION = 'semantic-layer/10'
+VERSION = 'semantic-layer/11'
 
 # Source contract: streams whose records are successive snapshots of one business entity (key field).
 # Other repeated ids (payments per account, lines per claim, fills per prescription) are separate events, not versions.
@@ -135,13 +135,17 @@ CARC = {('PR', '1'): 'deductible', ('PR', '2'): 'coinsurance', ('PR', '3'): 'cop
 
 def _revenue_cycle(out):
     """Claim timing and adjustment primitives: first original submission, first payer cash, net cash, and adjustment lines."""
-    for col in ('first_submitted_date TEXT', 'first_payer_cash_date TEXT', 'net_payer_cash_cents INTEGER'):
+    for col in ('first_submitted_date TEXT', 'first_payer_cash_date TEXT', 'net_payer_cash_cents INTEGER', 'first_adjudication_date TEXT'):
         out.execute(f'ALTER TABLE claim ADD COLUMN {col}')
     out.execute("""CREATE TEMP TABLE subs AS SELECT json_extract(payload,'$.claim_id') AS claim_id, min(event_date) AS first_sub
                      FROM record WHERE stream = 'medical_claim_submissions'
                      AND coalesce(json_extract(payload,'$.submission_kind'),'original') = 'original' GROUP BY 1""")
     out.execute('CREATE INDEX temp.subs_claim ON subs(claim_id)')
     out.execute('UPDATE claim SET first_submitted_date = (SELECT first_sub FROM subs WHERE subs.claim_id = claim.claim_id)')
+    out.execute("""CREATE TEMP TABLE adjud AS SELECT json_extract(payload,'$.claim_id') AS claim_id, min(event_date) AS first_adj
+                     FROM record WHERE stream = 'medical_claims' GROUP BY 1""")
+    out.execute('CREATE INDEX temp.adjud_claim ON adjud(claim_id)')
+    out.execute('UPDATE claim SET first_adjudication_date = (SELECT first_adj FROM adjud WHERE adjud.claim_id = claim.claim_id)')
     out.execute("""CREATE TEMP TABLE cash AS SELECT json_extract(payload,'$.claim_id') AS claim_id,
                      min(CASE WHEN json_extract(payload,'$.allocated_cents') > 0 THEN event_date END) AS first_cash,
                      sum(json_extract(payload,'$.allocated_cents')) AS net_cash
@@ -286,6 +290,17 @@ def _derived(out):
                  row_number() OVER (PARTITION BY m.patient_id, m.concept ORDER BY m.event_date DESC, m.available_date DESC, m.record_id DESC) AS rn
           FROM measurement m WHERE m.concept IS NOT NULL AND m.value_canonical IS NOT NULL AND m.event_date IS NOT NULL
           WINDOW d AS (PARTITION BY m.patient_id, m.concept, m.event_date)) WHERE rn = 1""")
+    for col in ('start_time TEXT', 'end_time TEXT'):
+        out.execute(f'ALTER TABLE visit ADD COLUMN {col}')
+    out.execute("""CREATE TEMP TABLE visit_times AS SELECT json_extract(payload,'$.encounter_id') AS encounter_id,
+                     min(coalesce(json_extract(payload,'$.start_time'), json_extract(payload,'$.event_time'))) AS st,
+                     max(json_extract(payload,'$.end_time')) AS et FROM record WHERE stream = 'encounters' GROUP BY 1""")
+    out.execute('CREATE INDEX temp.visit_times_enc ON visit_times(encounter_id)')
+    out.execute('UPDATE visit SET start_time = (SELECT st FROM visit_times t WHERE t.encounter_id = visit.encounter_id), '
+                'end_time = (SELECT et FROM visit_times t WHERE t.encounter_id = visit.encounter_id)')
+    out.execute('ALTER TABLE measurement ADD COLUMN event_time TEXT')
+    out.execute("""UPDATE measurement SET event_time = (SELECT coalesce(json_extract(r.payload,'$.collected_time'), json_extract(r.payload,'$.event_time'))
+                     FROM record r WHERE r.record_id = measurement.record_id)""")
     out.execute("ALTER TABLE visit ADD COLUMN in_person INTEGER")
     out.execute("ALTER TABLE visit ADD COLUMN is_practice INTEGER")
     out.execute("ALTER TABLE visit ADD COLUMN first_available_date TEXT")
