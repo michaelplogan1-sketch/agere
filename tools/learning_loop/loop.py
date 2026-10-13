@@ -263,6 +263,7 @@ def expectation(expected, note=''):
 def regression_cases(store, observed):
     cases = []
     for c in store['corrections']:
+        if str(c.get('note') or '').startswith('quarantine:'): continue  # automatic quality quarantine, not a user-flagged mistake
         try:
             expected = json.loads(c['expected']) if isinstance(c.get('expected'), str) else c.get('expected')
         except ValueError:

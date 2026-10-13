@@ -85,6 +85,20 @@ def record_routing(path, question, info, executed):
         db.close()
 
 
+# Answer-level controls that, replayed over past blind runs, fired only on wrong answers (docs/agere/FMEA.md).
+QUARANTINE_CONTROLS = {'QC-PERIOD', 'QC-UNITS', 'QC-NUMBERS', 'QC-PARTS', 'QC-CLOCK'}
+
+
+def quarantine(path, question, answer):
+    """A verified pair whose answer trips a high-precision quality control must not be reused or trained on (FMEA FM-13/FM-23):
+    two models can agree on the same wrong answer. Logged as a correction with a 'quarantine:' note, so every consumer of
+    corrections (exact reuse, meaning cache, training-data promotion) already excludes it; the answer itself is unchanged."""
+    hits = sorted({c['control'] for c in (answer or {}).get('quality_checks') or []
+                   if c.get('severity') == 'warning' and c.get('control') in QUARANTINE_CONTROLS})
+    if hits: record_correction(path, question, 'quarantine: ' + ', '.join(hits))
+    return hits
+
+
 def record_correction(path, question, note, expected=None):
     db = _db(path)
     try:

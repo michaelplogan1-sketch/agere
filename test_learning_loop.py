@@ -294,3 +294,18 @@ class RoutingLog(unittest.TestCase):
             learning.record_routing(d, 'q', {}, executed=False)  # no decision: nothing logged
             rows = sqlite3.connect(f'{d}/learning.sqlite3').execute('SELECT decision, operator, chooser, executed FROM routing').fetchall()
         self.assertEqual(rows, [('trajectory', 'trajectory', 'learned_router', 1)])
+
+
+class Quarantine(unittest.TestCase):
+    def test_flagged_verified_pairs_are_not_reused(self):
+        import tempfile
+        from clinical_core.agere.clinical import learning
+        with tempfile.TemporaryDirectory() as d:
+            (__import__('pathlib').Path(d) / 'run.json').write_text('{"source_digest": "x"}')
+            learning.record_verified(d, 'ED visits by month in 2029', 'sql', {'query': 'SELECT 1'}, ('v', 1), 'hosted_verified_sql', [], 'agree')
+            self.assertIsNotNone(learning.lookup(d, 'ED visits by month in 2029'))
+            info = {'quality_checks': [{'control': 'QC-VERSION', 'severity': 'warning'}]}
+            self.assertEqual(learning.quarantine(d, 'ED visits by month in 2029', info), [])  # noisy control: no quarantine
+            info = {'quality_checks': [{'control': 'QC-PERIOD', 'severity': 'warning'}]}
+            self.assertEqual(learning.quarantine(d, 'ED visits by month in 2029', info), ['QC-PERIOD'])
+            self.assertIsNone(learning.lookup(d, 'ED visits by month in 2029'))
