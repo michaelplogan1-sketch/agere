@@ -36,6 +36,12 @@ CONTRACTS = {
         'period':{'start':'YYYY-MM-DD','end':'YYYY-MM-DD'},'measure':'quality measure id','terms':'shared_savings contract terms (supplied by the user only)'},
         'meaning':'Value-based-care metrics: member-months, PCP attribution, utilization per 1,000 (ED, admissions, readmission, 7-day follow-up) with empirical-Bayes shrinkage, '
                   'completion-adjusted allowed/paid PMPM, internal risk score (not CMS-HCC), internal quality measures, and shared-savings settlement on user-supplied terms. Never invent contract terms.'},
+    'outreach': {'inputs':['optional earlier_set'],'parameters':{'capacity_patients':40,'capacity_hours':'optional nurse hours','require':['care_gap','rising_risk','social_need','utilization'],
+        'group_by':'none|practice|pcp','min_per_practice':0,'max_per_practice':None,'method':'auto|exact|greedy','overlap_discount':0.5,'saturation':0},
+        'meaning':'Prioritised, capacity-constrained outreach worklist: per-patient expected value from avoidable utilization (risk score + recent admissions/ED), open care gaps '
+                  '(A1c, BP, statin, kidney health evaluation, HF GDMT pillars), Kalman-forecast rising risk and social needs, with reason codes and suggested actions; '
+                  'exact (sort / 0-1 knapsack) or certified greedy selection; portfolio expected value, SD and value lost per unit of capacity cut. '
+                  'Use for who-should-we-call / outreach-list / prioritise-for-follow-up questions with a stated capacity.'},
     'sql': {'inputs':['optional earlier_set'],'parameters':{'query':'one read-only SELECT over semantic_layer tables','returns':'count|value|patient_set|table'},
         'meaning':'Exact answers to literal data questions: counts/sums/maxima of records or fields, record-level filters, date arithmetic (julianday), arrival lags, joins between streams, '
                   'group-by tables. Query the typed semantic_layer tables (concept columns already normalise ICD-10/SNOMED/labels/units); use record.payload with json_extract for other streams. '

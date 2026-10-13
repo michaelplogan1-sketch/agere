@@ -408,8 +408,11 @@ def compile(question, profile, as_of):
             return {'interpretation': f'Unsupported by received data: {q}', 'coverage': 'unsupported', 'nodes': [],
                     'unmet_requirements': [f'Missing input: {m}' for m in missing]}, \
                    {'compiler': VERSION, 'recognised': [], 'route': 'local_unsupported', 'unexplained': []}
+    plan = _outreach_question(q, profile, as_of)  # before paraphrase: it rewrites "<x> outreach list" for plain patient lists
+    if plan is not None:
+        return plan
     q, paraphrased = _paraphrase(q, as_of)
-    named = re.search(r'(?:^|[.;?] |, )(?:give(?: me)?|return|show|columns?(?: named)?|with columns?|output)\s*:?\s*([a-z][a-z_]*)\s*(?:,|and|&)\s*([a-z]+_[a-z_]+)\.?\s*$', q)
+    named =re.search(r'(?:^|[.;?] |, )(?:give(?: me)?|return|show|columns?(?: named)?|with columns?|output)\s*:?\s*([a-z][a-z_]*)\s*(?:,|and|&)\s*([a-z]+_[a-z_]+)\.?\s*$', q)
     columns = None
     table_with = re.search(r'\btable with ([a-z][a-z_]*) and ([a-z][a-z_]*)', q)
     if named and not table_with:
@@ -1411,6 +1414,72 @@ def _vbc_question(q, r, profile, as_of, info, terms):
     info['route'] = 'local_compiler'
     return {'interpretation': q, 'coverage': 'supported_observation', 'unmet_requirements': [],
             'nodes': [{'id': 'answer', 'operation': 'vbc', 'inputs': [], 'parameters': params, 'purpose': f'VBC {metric}'}]}, info
+
+
+# ---- outreach worklists ------------------------------------------------------------
+# Intent needs an outreach/prioritisation verb AND a stated capacity; a plain "outreach list: everyone with X"
+# (no capacity) stays a patient-set question.
+OUTREACH_INTENT = (r'\boutreach\b|\bcare managers?\b|\bcare management\b|\bnurses?\b|\bcall(?:s|ed)?\b|\breach out\b|\bcontact\b|'
+                   r'\bfollow[- ]?up\b|\bprioriti[sz]e\b|\bworklist\b|\bwork list\b')
+OUTREACH_SLOTS = (r'\b(?:we have |with |for |capacity (?:of |for )?)?(\d{1,4}) (?:outreach |call |nurse |care[- ]manager )?(?:slots?|calls?|patients?|members?|people|contacts?)\b'
+                  r'(?: (?:a|per|this|next) (?:week|month|day))?|'
+                  r'\b(?:max(?:imum)?|top|up to|at most|no more than|limit(?: of)?|cap(?: of)?) (\d{1,4})\b(?! hours?)(?: (?:patients?|members?|people|slots?|calls?))?|'
+                  r'\b(?:which|what|the) (\d{1,4}) (?:patients?|members?|people)\b')
+OUTREACH_HOURS = r'\b(?:with |we have |for |capacity (?:of |for )?)?(\d{1,4}(?:\.\d+)?) (?:nurse |nursing |care[- ]manager |staff |rn )?hours?(?: of (?:nurse |nursing |care[- ]manager |staff )?(?:time|capacity))?(?: (?:a|per|this|next) (?:week|month))?\b'
+OUTREACH_REQUIRE = [('care_gap', r'\b(?:with |who have |having )?(?:open |unclosed |outstanding )?(?:care |quality )?gaps?(?: in care| open)?\b'),
+                    ('rising_risk', r'\b(?:with |who are )?(?:rising|increasing|emerging)[- ]risk\b'),
+                    ('social_need', r'\b(?:with |who have )?(?:social needs?|sdoh|social determinants?(?: of health)?)\b'),
+                    ('utilization', r'\b(?:with |who have )?(?:high |avoidable )(?:utili[sz]ation|ed use|admissions?)\b')]
+OUTREACH_PHRASES = (r'\b(?:who|which|whom) should (?:our |the )?(?:care managers?|nurses?|team|we)?\s*(?:call|contact|reach out to|follow up with|see)\b|'
+                    r'\b(?:build|create|make|generate|give|draft|pull|produce)(?: me| us)? (?:an? |the )?(?:prioriti[sz]ed )?(?:outreach |call |work ?)?(?:list|worklist|plan)\b|'
+                    r'\bprioriti[sz]e\b|\bfor (?:nurse |care[- ]manager |rn )?(?:outreach|follow[- ]?up|calls?)\b|\b(?:nurse|care[- ]manager) follow[- ]?up\b|'
+                    r'\b(?:give|get|yield|offer)s? (?:us )?the most (?:value|benefit|impact)(?: from (?:outreach|a call|calls))?\b|\bmost (?:value|valuable|benefit|impact)\b|'
+                    r'\bfrom outreach\b|\boutreach(?: list)?\b|\bcare managers?\b|\bcall\b|\bcontact\b|\bworklist\b|\bthis (?:week|month)\b|\bnext (?:week|month)\b|'
+                    r'\bpatients?\b|\bmembers?\b|\bpeople\b|\bour\b|\bwe\b|\bhave\b|\bshould\b|\bwho\b|\bwhich\b|\bfor\b|\bwith\b|\bof\b|\bthe\b|\ban?\b|\band\b|'
+                    r'\bcapacity\b|\bslots?\b|\bhours?\b|\blist\b|\bpriority\b|\bby\b|\bgive\b|\bgives\b|\bvalue\b')
+
+
+def _outreach_question(q, profile, as_of):
+    low = _strip_framing(q.lower())
+    if not re.search(OUTREACH_INTENT, low): return None
+    slots, hours = re.search(OUTREACH_SLOTS, low), re.search(OUTREACH_HOURS, low)
+    if not slots and not hours: return None
+    r = Reader(low); r.profile = profile
+    info = {'compiler': VERSION, 'recognised': r.notes, 'paraphrased': [], 'route': 'local_compiler'}
+    params = {}
+    for m in r.take(OUTREACH_HOURS, 'capacity hours'):
+        params['capacity_hours'] = float(m.group(1)) if '.' in m.group(1) else int(m.group(1))
+    for m in r.take(OUTREACH_SLOTS, 'capacity patients'):
+        params['capacity_patients'] = int(next(g for g in m.groups() if g))
+    for m in r.take(r'\b(?:at least|minimum(?: of)?|min(?:imum)?) (\d{1,4}) (?:patients? )?(?:per|from each|for each|in each) (?:practice|clinic)\b', 'practice floor'):
+        params['min_per_practice'] = int(m.group(1))
+    for m in r.take(r'\b(?:at most|no more than|max(?:imum)?(?: of)?|up to) (\d{1,4}) (?:patients? )?(?:per|from each|for each|in each|from any(?: one| single)?) (?:practice|clinic)\b', 'practice cap'):
+        params['max_per_practice'] = int(m.group(1))
+    if r.take(r'\b(?:by|per|for each|each|across) (?:practice|clinic)s?\b', 'group by practice'): params['group_by'] = 'practice'
+    elif r.take(r'\b(?:by|per|for each|each) (?:pcp|primary care (?:provider|physician|clinician)|physician|provider|clinician)s?\b', 'group by pcp'):
+        params['group_by'] = 'pcp'
+    require = [cat for cat, rx in OUTREACH_REQUIRE if r.take(rx, f'require {cat}')]
+    if require: params['require'] = require
+    conditions = []
+    for c, aliases in CONDITION_ALIASES.items():
+        for alias in sorted(aliases, key=len, reverse=True):
+            if r.take(_alias_pattern(alias), f'condition {c}'): conditions.append(c); break
+    r.take(r'\b(?:heart failure|hf|diabet\w+|ckd|copd|hypertensive) (?:patients|members|population|panel)\b', None, overlap=True)
+    r.take(OUTREACH_PHRASES, 'outreach', overlap=True)
+    r.take(r'\b(?:this|next|a|per) (?:week|month)\b|\bweekly\b|\bnurse\b|\bnurses\b|\bteam\b|\bto\b|\bcan\b|\bget\b|\bis\b|\bare\b|\bmost\b|\bfrom\b', None, overlap=True)
+    info['unexplained'] = r.blocking(profile)
+    info['ignored_words'] = getattr(r, 'ignored', [])
+    if info['unexplained']:
+        info.update(route='fallback', reason='outreach words not interpreted locally: ' + ', '.join(info['unexplained'][:12]))
+        return None, info
+    nodes = []
+    if conditions:
+        nodes.append({'id': 'population', 'operation': 'cohort', 'inputs': [],
+                      'parameters': {'specification': {'all': [{'kind': 'concept', 'concept': c, 'window': W} for c in conditions][:20], 'any': [], 'exclude': []}},
+                      'purpose': 'Population named in the question'})
+    nodes.append({'id': 'outreach', 'operation': 'outreach', 'inputs': ['population'] if conditions else [], 'parameters': params,
+                  'purpose': 'Prioritised outreach worklist within the stated capacity'})
+    return {'interpretation': q, 'coverage': 'supported_observation', 'unmet_requirements': [], 'nodes': nodes}, info
 
 
 def _patient_question(q, r, profile, pids, info):
