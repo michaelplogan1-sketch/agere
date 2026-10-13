@@ -740,6 +740,10 @@ def serve(run,port,annotations=None,evidence_queries=None,stack=None,allow_live_
                         snapshot=connected_stack.retriever.meta['snapshot'])
                 raw=(json.dumps(report).encode() if parsed.path.startswith('/api/') else evaluation_page(report).encode())
                 mime='application/json' if parsed.path.startswith('/api/') else 'text/html; charset=utf-8'
+            elif parsed.path=='/ask':
+                if connected_stack is None:self.send_error(404);return
+                from .ask_view import page as ask_page
+                raw=ask_page().encode();mime='text/html; charset=utf-8'
             elif parsed.path=='/stack':
                 if connected_stack is None:self.send_error(404);return
                 from .clinical.stack_workbench import page
