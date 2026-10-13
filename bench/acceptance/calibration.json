@@ -1,0 +1,10 @@
+[
+  {"question": "How well calibrated are our risk scores?", "expect_operation": "calibration"},
+  {"question": "How accurate are our forecasts?", "expect_operation": "calibration"},
+  {"question": "How accurate are our risk scores?", "expect_operation": "calibration"},
+  {"question": "Are the eGFR forecasts calibrated?", "expect_operation": "calibration"},
+  {"question": "Can we trust the A1c projections?", "expect_operation": "calibration"},
+  {"question": "What is the backtested coverage of our prediction intervals for blood pressure forecasts?", "expect_operation": "calibration"},
+  {"question": "Show the Brier score and reliability of our predictions", "expect_operation": "calibration"},
+  {"question": "How reliable are the outreach value predictions?", "expect_operation": "calibration"}
+]

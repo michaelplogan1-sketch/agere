@@ -404,6 +404,9 @@ def compile(question, profile, as_of):
     effect = _program_effect_question(q, profile)
     if effect is not None:
         return effect
+    calibrated = _calibration_question(q)
+    if calibrated is not None:
+        return calibrated
     for pattern, missing in UNSUPPORTED:  # checked on the user's own words, before any paraphrase
         if timed and 'surviv' in pattern: continue
         if re.search(pattern, low) and not (_contract_terms(low) and 'shared' in pattern):
@@ -1782,6 +1785,37 @@ MEDICATION_STREAMS = ('pharmacy_dispenses', 'pharmacy_claims', 'medication_order
 def _effect_unsupported(q, missing, info):
     return {'interpretation': f'Unsupported by received data: {q}', 'coverage': 'unsupported', 'nodes': [],
             'unmet_requirements': [f'Missing input: {m}' for m in missing]}, {**info, 'route': 'local_unsupported', 'unexplained': []}
+
+
+# ---- calibration of Agere's own predictions -------------------------------------------
+PREDICTION_WORDS = r'(?:risk scores?|risk models?|forecasts?|projections?|predictions?|predicted|outreach (?:values?|scores?))'
+CALIBRATION_INTENT = (r'\b(?:well[- ]|poorly |mis)?calibrat\w*|\bhow (?:accurate|reliable|trustworthy|good|well)\b[^.?]{0,40}\b' + PREDICTION_WORDS +
+                      r'|\b(?:accuracy|reliability|coverage|backtest\w*|brier|expected calibration error|ece)\b[^.?]{0,40}\b' + PREDICTION_WORDS +
+                      r'|\b' + PREDICTION_WORDS + r'\b[^.?]{0,40}\b(?:accura\w+|reliab\w+|trust\w*|backtest\w*|coverage)\b'
+                      r'|\b(?:can|should) we trust\b[^.?]{0,30}\b' + PREDICTION_WORDS)
+
+
+def _calibration_question(q):
+    """'How well calibrated are our risk scores / forecasts?' -> calibration (time-split conformal backtest)."""
+    low = q.lower()
+    if not re.search(CALIBRATION_INTENT, low): return None
+    # asking FOR a calibrated/validated prediction is a prediction request (left to the refusals), not an audit of ours
+    if re.search(r'\b(?:calibrated|validated) (?:probabilit|risk|estimate|prediction|forecast)|\bvalidated risk model\b', low): return None
+    info = {'compiler': VERSION, 'recognised': ['calibration question'], 'paraphrased': [], 'route': 'local_compiler', 'unexplained': []}
+    from .calibration import FORECASTS
+    params = {}
+    concept = next((c for c, aliases in sorted(MEASUREMENT_ALIASES.items(), key=lambda kv: -max(map(len, kv[1])))
+                    if c in {f[0] for f in FORECASTS} and any(re.search(_alias_pattern(a), low) for a in aliases)), None)
+    if concept:
+        _, threshold, direction = next(f for f in FORECASTS if f[0] == concept)
+        params.update(target='forecasts', concept=concept, threshold=threshold, direction=direction)
+    elif re.search(r'\b(?:forecasts?|projections?|trajector\w*|labs?|vitals?)\b', low): params['target'] = 'forecasts'
+    elif re.search(r'\brisk (?:scores?|models?)\b', low): params['target'] = 'risk_scores'
+    elif re.search(r'\boutreach\b|\butilization\b', low): params['target'] = 'outreach_utilization'
+    info['recognised'].append('target ' + params.get('target', 'all') + (f' ({concept})' if concept else ''))
+    return {'interpretation': q, 'coverage': 'supported_observation', 'unmet_requirements': [],
+            'nodes': [{'id': 'answer', 'operation': 'calibration', 'inputs': [], 'parameters': params,
+                       'purpose': 'Time-split conformal backtest of Agere predictions: coverage, Brier, ECE, reliability'}]}, info
 
 
 def _program_effect_question(q, profile):

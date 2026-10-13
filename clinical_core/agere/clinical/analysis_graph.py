@@ -22,7 +22,7 @@ from .clinical_events import validate_window
 
 VERSION = 'population-analysis-graph/1'
 from .graph_contracts import SET_OPS, validate_inputs, validate_parameters as validate_shared_parameters
-OPERATIONS = SET_OPS | {'aggregate', 'explain', 'sql', 'vbc', 'monitor', 'program_effect', 'discover', 'trajectory', 'survival', 'observation_process', 'reference_review', 'compare', 'analyze', 'retrieve', 'forecast', 'source_changes', 'review','longitudinal','worklist','state_review','medication_identity','context','context_passes','assertion_review','baseline','decision_landmark','financial_accounts','accountability_review','protocol_change','program_document_change','program_acquisition','measure_review','evidence_portfolio','outreach'}
+OPERATIONS = SET_OPS | {'aggregate', 'explain', 'sql', 'vbc', 'monitor', 'program_effect', 'discover', 'trajectory', 'survival', 'observation_process', 'reference_review', 'compare', 'analyze', 'retrieve', 'forecast', 'source_changes', 'review','longitudinal','worklist','state_review','medication_identity','context','context_passes','assertion_review','baseline','decision_landmark','financial_accounts','accountability_review','protocol_change','program_document_change','program_acquisition','measure_review','evidence_portfolio','outreach','calibration'}
 NODE_FIELDS = {'id', 'operation', 'inputs', 'parameters', 'purpose'}
 LIMITS = [
     'Membership means observed predicate matches, not confirmed disease or absent care.',
@@ -115,7 +115,7 @@ def standards(answer):
     return out
 
 
-NO_BENCHMARK_OPERATIONS = ('outreach', 'monitor', 'survival', 'program_effect', 'discover', 'trajectory', 'explain')
+NO_BENCHMARK_OPERATIONS = ('outreach', 'monitor', 'survival', 'program_effect', 'discover', 'trajectory', 'explain', 'calibration')
 
 
 def benchmark_references(answer, question=None, operation=None):
@@ -189,6 +189,9 @@ def headline(answer):
         text += (f" Settlement risk: {risk['p_earn_savings']:.0%} chance of earning savings, {risk['p_owe_loss']:.0%} of owing a loss, "
                  f"{risk['p_within_corridor']:.0%} in the corridor; 95% value-at-risk ${_fmt(risk['value_at_risk_95'])}, "
                  f"expected ${_fmt(risk['expected_net_payment'])}.")
+    calibration = (answer.get('overall') or {}).get('calibration') if isinstance(answer.get('overall'), dict) else None
+    if isinstance(calibration, dict) and calibration.get('statement') and 'onformal' not in text:
+        text += ' Conformal calibration: ' + calibration['statement']
     if answer.get('computed') and not defs: text += f" Computed as: {answer['computed'].rstrip('.')}."
     if status == 'partial' and answer.get('missing') and answer['missing'][0] not in text: text += ' Partial: ' + answer['missing'][0]
     others = [w for w in (answer.get('warnings') or []) if w not in text]
@@ -249,6 +252,18 @@ def build_answer(plan, results, memberships, question):
                              f"(probability >= 50%)." if report.get('mode') == 'forecast' else
                              f"{report['flagged']} of {report['patients_with_series']} patients with a {report['concept']} series show a material, "
                              f"statistically separable change ({report['direction']})."))
+        if report.get('conformal'):  # forecast mode: distribution-free intervals and their backtested coverage
+            answer['value'] += ' Conformal calibration: ' + report['conformal']['statement']
+            answer['overall'] = {**(answer.get('overall') or {}), 'calibration': report['conformal']}
+        return answer
+    if last['operation'] == 'calibration':
+        report = results[-1]['result']
+        partial = plan.get('coverage') != 'supported_observation' or plan.get('unmet_requirements')
+        tested = any(r['backtest_coverage'] is not None for r in report['rows'])
+        answer.update(status='partial' if partial or not tested else 'answered', answer_type='table',
+                      table=[{k: v for k, v in r.items() if k != 'statement'} for r in report['rows']], value=report['reading'],
+                      method=report['method'], limitations=report['limitations'],
+                      overall={'calibration': {'statement': report['reading'], 'receipts': report['receipts']}, 'reliability': report['reliability']})
         return answer
     if last['operation'] == 'survival':
         from .survival import summary
@@ -282,6 +297,7 @@ def build_answer(plan, results, memberships, question):
                                'capacity': report['capacity'], 'candidates': report['candidates'],
                                'assumptions': report['assumptions'], 'learning_loop': report['learning_loop'],
                                'limitations': report['limitations'],
+                               **({'calibration': report['conformal']} if report.get('conformal') else {}),
                                # display: plain-language label and category for each reason code on the worklist
                                'reason_labels': {c: {'category': REASONS[c][0], 'label': REASONS[c][1]} for c in sorted(used) if c in REASONS}})
         return answer
@@ -318,7 +334,8 @@ def build_answer(plan, results, memberships, question):
             single, value = True, report['rows'][0][column]
         answer.update(status='partial' if partial else 'answered', answer_type='value' if single else 'table',
                       value=value,
-                      table=report['rows'], method=report['method'], overall={'period': report['period'], 'members_in_scope': report['members_in_scope']})
+                      table=report['rows'], method=report['method'], overall={'period': report['period'], 'members_in_scope': report['members_in_scope'],
+                                                                             **({'calibration': report['conformal']} if report.get('conformal') else {})})
         return answer
     if last['operation'] == 'program_effect':
         report = results[-1]['result']
@@ -448,6 +465,9 @@ def validate(plan, as_of):
         elif op == 'outreach':
             from . import outreach
             p = outreach.validate(p)
+        elif op == 'calibration':
+            from . import calibration
+            p = calibration.validate(p)
         elif op == 'survival':
             from . import survival
             p = survival.validate(p)
@@ -738,7 +758,8 @@ def code_identity():
                       Path(__file__).with_name('medication_identity.py'),
                       Path(__file__).with_name('source_blocks.py'),
                       Path(__file__).with_name('program_effect.py'),
-                      Path(__file__).with_name('outreach.py'), Path(__file__).with_name('outreach_bandit.py')]]])
+                      Path(__file__).with_name('outreach.py'), Path(__file__).with_name('outreach_bandit.py'),
+                      Path(__file__).with_name('conformal.py'), Path(__file__).with_name('calibration.py')]]])
 
 
 def catalog(path):
@@ -1014,6 +1035,10 @@ def execute(stack, plan, *, question=None):
                 from . import outreach
                 chosen = memberships[node['inputs'][0]] if node['inputs'] else None
                 detail = outreach.execute(path, sorted(chosen.yes) if chosen else None, params, meta['snapshot']['as_of'])
+            elif op == 'calibration':
+                from . import calibration
+                chosen = memberships[node['inputs'][0]] if node['inputs'] else None
+                detail = calibration.execute(path, sorted(chosen.yes) if chosen else None, params, meta['snapshot']['as_of'])
             elif op == 'monitor':
                 from . import monitor
                 chosen = memberships[node['inputs'][0]] if node['inputs'] else None

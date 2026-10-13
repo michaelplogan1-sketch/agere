@@ -307,6 +307,108 @@ def risk_scores(db, people, start, end):
              'members': len(pids)})
 
 
+def _shift(day, days):
+    return date.fromordinal(date.fromisoformat(day[:10]).toordinal() + days).isoformat()
+
+
+def _risk_pairs(db, origin, group_by):
+    """Risk-score cost predictions issued at `origin` (score x population cost per member-year, fitted on the year before)
+    against each member's annualized allowed cost in the following year (members with >= 6 enrolled months then)."""
+    start = _shift(origin, -365)
+    people = eligibility(db, origin, start, origin)
+    if sum(1 for i in people.values() if i['months']) < 20: return [], {}, 0.0
+    attr = attribution(db, people, start, origin)
+    scores, _ = risk_scores(db, people, start, origin)
+    cost = defaultdict(float)
+    for pid, month, allowed, _, _, _ in _claims(db, start, origin):
+        if month in people.get(pid, {}).get('months', ()): cost[pid] += allowed / 100
+    years = sum(len(people[p]['months']) for p in scores) / 12
+    pmpy = sum(cost[p] for p in scores) / years if years else 0.0
+    after, horizon = _shift(origin, 1), _shift(origin, 365)
+    nxt = eligibility(db, horizon, after, horizon)
+    cost_next = defaultdict(float)
+    for pid, month, allowed, _, _, _ in _claims(db, after, horizon):
+        if month in nxt.get(pid, {}).get('months', ()): cost_next[pid] += allowed / 100
+    pairs = []
+    for pid, s in scores.items():
+        months = len(nxt.get(pid, {}).get('months', ()))
+        if months >= 6:
+            pairs.append({'patient_id': pid, 'pred': s * pmpy, 'y': cost_next[pid] * 12 / months,
+                          'group': _group_key(group_by, pid, people, attr) if group_by != 'none' else aggregate.age_band(people[pid]['age'])})
+    return pairs, scores, pmpy
+
+
+def risk_calibration(db, end, group_by, alpha=0.1, min_group=30):
+    """Mondrian split conformal for per-member next-year cost implied by the internal risk score.
+    Score = |observed - predicted| / predicted. Live intervals are calibrated on predictions issued a year before `end`
+    and scored on the following year; the backtest calibrates two years back and evaluates one year back."""
+    level = 1 - alpha
+    t1, t2 = _shift(end, -365), _shift(end, -730)
+    by = group_by if group_by != 'none' else 'age_band'
+    out = {'method': (f'Mondrian ({by}) split conformal on per-member next-year allowed cost predicted as risk score x population '
+                      f'cost per member-year; score |observed - predicted| / predicted; members with >= 6 enrolled months in the outcome year. '
+                      f'Live intervals calibrated on predictions issued {t1}; backtest calibrated on predictions issued {t2}, evaluated on {t1}.'),
+           'level': level, 'target': 'allowed cost per member-year, next 12 months (USD)', 'available': False}
+    live, _, _ = _risk_pairs(db, t1, group_by)
+    if len(live) < 20:
+        out['reason'] = f'only {len(live)} members with a prediction issued {t1} and >= 6 enrolled months after it (need 20)'
+        out['statement'] = 'Conformal calibration unavailable: ' + out['reason'] + '.'
+        return out
+    arr = lambda pairs, k: np.array([q[k] for q in pairs], dtype=float)
+    from . import conformal
+    norm = lambda pairs: conformal.scores(arr(pairs, 'y'), arr(pairs, 'pred'), np.maximum(arr(pairs, 'pred'), 1.0))
+    table = conformal.mondrian(norm(live), [q['group'] for q in live], alpha, min_group)
+    out.update(available=True, calibration_pairs=len(live), _table=table,
+               groups={str(g): {'q': round(v['q'], 4) if math.isfinite(v['q']) else None, 'calibration_cases': v['n'], 'pooled': v['pooled']}
+                       for g, v in table['groups'].items()})
+    earlier, _, _ = _risk_pairs(db, t2, group_by)
+    if len(earlier) >= 20:
+        bt = conformal.mondrian(norm(earlier), [q['group'] for q in earlier], alpha, min_group)
+        pred, y = arr(live, 'pred'), arr(live, 'y')
+        qs = np.array([conformal.mondrian_q(bt, q['group']) for q in live])
+        lo, hi = conformal.interval(pred, qs, np.maximum(pred, 1.0), lower=0.0)
+        hit = (y >= lo) & (y <= hi)
+        groups = np.array([q['group'] for q in live], dtype=object)
+        out.update(backtest_coverage=round(float(hit.mean()), 4), backtest_evaluation_pairs=len(live), backtest_calibration_pairs=len(earlier),
+                   backtest_by_group={str(g): {'cases': int((groups == g).sum()), 'coverage': round(float(hit[groups == g].mean()), 4)}
+                                      for g in sorted(set(groups.tolist()), key=str)})
+        out['statement'] = conformal.describe_coverage(level, out['backtest_coverage'], len(live)) + ' in the time-split backtest'
+    else:
+        out['statement'] = f'Conformal {level:.0%} intervals calibrated on {len(live)} members; too little earlier history to backtest their coverage'
+    out['statement'] += f' (per-member next-year cost from the risk score; Mondrian by {by}).'
+    return out
+
+
+def _risk_intervals(db, people, attr, p, start, end, scores, rows):
+    """Add per-group conformal fields to risk rows in place; returns the public calibration receipt."""
+    cal = risk_calibration(db, end, p['group_by'])
+    if cal.get('available') and scores:
+        cost = defaultdict(float)
+        for pid, month, allowed, _, _, _ in _claims(db, start, end):
+            if month in people.get(pid, {}).get('months', ()): cost[pid] += allowed / 100
+        years = sum(len(people[x]['months']) for x in scores) / 12
+        pmpy = sum(cost[x] for x in scores) / years if years else 0.0
+        from . import conformal
+        by_group = defaultdict(list)
+        for pid, s in scores.items():
+            g = _group_key(p['group_by'], pid, people, attr)
+            pred = s * pmpy
+            key = g if p['group_by'] != 'none' else aggregate.age_band(people[pid]['age'])
+            lo, hi = conformal.interval([pred], conformal.mondrian_q(cal['_table'], key), [max(pred, 1.0)], lower=0.0)
+            by_group[g].append((pred, float(lo[0]), float(hi[0])))
+        for r in rows:
+            got = by_group.get(r['group'])
+            if not got: continue
+            preds = np.array(got)
+            r['predicted_cost_per_member_year'] = round(float(preds[:, 0].mean()), 2)
+            if np.isfinite(preds[:, 2]).all():
+                r['member_interval_90_median'] = [round(float(np.median(preds[:, 1])), 2), round(float(np.median(preds[:, 2])), 2)]
+            bt = (cal.get('backtest_by_group') or {}).get(str(r['group']))
+            if bt: r['backtest_coverage_90'] = bt['coverage']
+            elif p['group_by'] == 'none' and cal.get('backtest_coverage') is not None: r['backtest_coverage_90'] = cal['backtest_coverage']
+    return {k: v for k, v in cal.items() if not k.startswith('_')}
+
+
 def _quality(db, people, attr, p, start, end):
     """Internal measures (not certified HEDIS): A1c poor control, BP control, statin therapy, 7-day follow-up."""
     has = defaultdict(set)
@@ -585,6 +687,7 @@ def execute(path, patient_ids, params, as_of=None):
             keep = set(patient_ids); people = {k: v for k, v in people.items() if k in keep}
         attr = attribution(db, people, start, end, p['attribution'])
         metric = p['metric']
+        calibration = None
         if metric == 'eligibility':
             groups = defaultdict(lambda: {'members': 0, 'member_months': 0})
             for pid, info in people.items():
@@ -611,6 +714,8 @@ def execute(path, patient_ids, params, as_of=None):
             rows = sorted(({'group': k, 'members': len(v), 'mean_risk_score': round(float(np.mean(v)), 3)} for k, v in groups.items()),
                           key=lambda r: -r['mean_risk_score'])
             method = 'Internal risk score (Poisson GLM on age band, sex, chronic conditions; mean 1.0; not CMS-HCC). Fit: ' + json.dumps(fit['calibration_by_decile'][:3]) + '...'
+            calibration = _risk_intervals(db, people, attr, p, start, end, scores, rows)
+            method += f" Intervals: {calibration['method']} {calibration['statement']}"
         elif metric == 'quality':
             rows, method = _quality(db, people, attr, p, start, end)
         elif metric == 'change':
@@ -620,4 +725,5 @@ def execute(path, patient_ids, params, as_of=None):
     finally:
         db.close()
     return {'schema': VERSION, 'metric': p['metric'], 'parameters': p, 'period': {'start': start, 'end': end},
-            'rows': rows, 'method': method, 'members_in_scope': sum(1 for i in people.values() if i['months'])}
+            'rows': rows, 'method': method, 'members_in_scope': sum(1 for i in people.values() if i['months']),
+            **({'conformal': calibration} if calibration is not None else {})}

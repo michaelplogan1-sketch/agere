@@ -12,7 +12,7 @@ from collections import defaultdict
 from datetime import date
 import json, math, sqlite3, statistics
 
-from . import concepts, semantic_layer
+from . import concepts, conformal, semantic_layer
 from ...signal_math import gaussian_change_points
 
 VERSION = 'trajectory/1'
@@ -74,6 +74,136 @@ def forecast(points, rel, floor, horizon_days, threshold, below=True):
     p_below = 0.5 * (1 + math.erf(z / math.sqrt(2)))
     return {'level_now': round(float(x[0]), 2), 'slope_per_year': round(float(x[1]) * 365.25, 2),
             'forecast': round(mean, 2), 'forecast_sd': round(sd, 2), 'p_cross': round(p_below if below else 1 - p_below, 3)}
+
+
+def _predict(points, rel, floor, horizon_days):
+    """Unrounded Kalman forecast mean and sd at horizon_days after the last point."""
+    import numpy as np
+    x, P, _ = kalman(points, rel, floor)
+    F = np.array([1.0, float(horizon_days)])
+    return float(F @ x), float(np.sqrt(max(F @ P @ F, 1e-12)))
+
+
+def _p_past(mean, sd, threshold, below):
+    p_below = 0.5 * (1 + math.erf((threshold - mean) / sd / math.sqrt(2)))
+    return p_below if below else 1 - p_below
+
+
+def backtest_pairs(series, origin, window, rel, floor, min_points, threshold, below, keep=None):
+    """Forecasts issued at `origin` from data on or before it, scored against the last value observed in
+    (origin, origin + window]. One pair per patient (patients are the exchangeable units)."""
+    out = []
+    for pid, days in series.items():
+        if keep is not None and pid not in keep: continue
+        pts = sorted((date.fromisoformat(d).toordinal(), statistics.mean(v)) for d, v in days.items())
+        past = [q for q in pts if q[0] <= origin]
+        future = [q for q in pts if origin < q[0] <= origin + window]
+        if len(past) < min_points or not future: continue
+        t, y = future[-1]
+        mean, sd = _predict(past, rel, floor, t - past[-1][0])
+        already = (past[-1][1] < threshold) if below else (past[-1][1] > threshold)
+        out.append({'patient_id': pid, 'mean': mean, 'sd': sd, 'y': y, 'p': _p_past(mean, sd, threshold, below),
+                    'crossed': (y < threshold) if below else (y > threshold), 'already': already, 't': t})
+    return out
+
+
+def _sequential(series, start, rel, floor, min_points, keep=None):
+    """One-step-ahead forecasts for every value observed after `start`, time ordered (for ACI)."""
+    steps = []
+    for pid, days in series.items():
+        if keep is not None and pid not in keep: continue
+        pts = sorted((date.fromisoformat(d).toordinal(), statistics.mean(v)) for d, v in days.items())
+        for i in range(min_points, len(pts)):
+            if pts[i][0] <= start: continue
+            mean, sd = _predict(pts[:i], rel, floor, pts[i][0] - pts[i - 1][0])
+            steps.append((pts[i][0], pts[i][1], mean, sd))
+    steps.sort()
+    return steps
+
+
+def calibrate(series, concept, snapshot, horizon_days, threshold, below, min_points=3, alpha=0.1, keep=None):
+    """Time-split conformal calibration of the Kalman forecast and its crossing probability.
+
+    Live intervals/probabilities are calibrated on forecasts issued at snapshot - H and scored on
+    (snapshot - H, snapshot]. The reported backtest repeats the procedure one window earlier: calibrate on
+    forecasts issued at snapshot - 2H, apply to forecasts issued at snapshot - H, score on the last window.
+    Nothing after the moment a reported interval would have been issued is used to build it."""
+    import numpy as np
+    rel, floor = NOISE[concept]
+    H = horizon_days
+    level = 1 - alpha
+    z = float(__import__('scipy.stats', fromlist=['norm']).norm.ppf(1 - alpha / 2))
+    eval_pairs = backtest_pairs(series, snapshot - H, H, rel, floor, min_points, threshold, below, keep)
+    cal_pairs = backtest_pairs(series, snapshot - 2 * H, H, rel, floor, min_points, threshold, below, keep)
+    out = {'method': (f'Split conformal on normalized residuals |value - forecast| / Kalman sd, time-split with one pair per patient; '
+                      f'crossing probability recalibrated by inductive Venn-Abers on patients not yet past the threshold. Live calibration: '
+                      f'forecasts issued {date.fromordinal(snapshot - H)} scored on the next {H} days; backtest: calibrated on forecasts issued '
+                      f'{date.fromordinal(snapshot - 2 * H)}, evaluated on those issued {date.fromordinal(snapshot - H)}.'),
+           'level': level, 'calibration_pairs': len(eval_pairs), 'backtest_calibration_pairs': len(cal_pairs),
+           'backtest_evaluation_pairs': len(eval_pairs), 'available': False}
+    if len(eval_pairs) < 20:
+        out['reason'] = f'only {len(eval_pairs)} patients have a forecast issued {date.fromordinal(snapshot - H)} and a later value (need 20)'
+        out['statement'] = 'Conformal calibration unavailable: ' + out['reason'] + '.'
+        return out
+    arr = lambda pairs, k: np.array([q[k] for q in pairs], dtype=float)
+    ey, em, es = arr(eval_pairs, 'y'), arr(eval_pairs, 'mean'), arr(eval_pairs, 'sd')
+    live = conformal.split_conformal(ey, em, alpha, es)
+    out.update(available=True, q=round(live['q'], 4) if math.isfinite(live['q']) else None, _q=live['q'],
+               kalman_nominal_coverage=round(conformal.coverage(ey, em - z * es, em + z * es), 4))
+    fresh = lambda pairs: [q for q in pairs if not q['already']]
+    two_class = lambda pairs: len(pairs) >= 20 and 0 < sum(q['crossed'] for q in pairs) < len(pairs)
+    if two_class(fresh(eval_pairs)):
+        out['_venn_abers'] = (arr(fresh(eval_pairs), 'p'), arr(fresh(eval_pairs), 'crossed'))
+    if len(cal_pairs) >= 20:
+        bt = conformal.split_conformal(arr(cal_pairs, 'y'), arr(cal_pairs, 'mean'), alpha, arr(cal_pairs, 'sd'))
+        lo, hi = conformal.interval(em, bt['q'], es)
+        out['backtest_coverage'] = round(conformal.coverage(ey, lo, hi), 4)
+        out['backtest_median_width'] = round(float(np.median(hi - lo)), 2) if math.isfinite(bt['q']) else None
+        cal_prob, ev_prob = fresh(cal_pairs), fresh(eval_pairs)
+        if two_class(cal_prob) and ev_prob:
+            raw, y = arr(ev_prob, 'p'), arr(ev_prob, 'crossed')
+            _, _, va = conformal.venn_abers(arr(cal_prob, 'p'), arr(cal_prob, 'crossed'), raw)
+            out['probability_backtest'] = {'cases': len(ev_prob), 'crossings': int(y.sum()),
+                                           'brier_kalman': round(conformal.brier(raw, y), 4), 'brier_calibrated': round(conformal.brier(va, y), 4),
+                                           'ece_kalman': round(conformal.ece(raw, y), 4), 'ece_calibrated': round(conformal.ece(va, y), 4),
+                                           'reliability_calibrated': conformal.reliability(va, y, 5)}
+    steps = _sequential(series, snapshot - 2 * H, rel, floor, min_points, keep)
+    if len(steps) >= 60:
+        a = conformal.aci([s[1] for s in steps], [s[2] for s in steps], [s[3] for s in steps], alpha, gamma=0.005, warmup=30)
+        out['aci'] = {'steps': a['steps'], 'coverage': round(a['coverage'], 4), 'final_alpha': round(float(a['alpha_path'][-1]), 4),
+                      'method': 'Adaptive conformal inference (Gibbs & Candes 2021, gamma 0.005) over time-ordered one-step-ahead forecasts'}
+    cov = out.get('backtest_coverage')
+    if cov is not None:
+        out['statement'] = (conformal.describe_coverage(level, cov, len(eval_pairs)) + ' in the time-split backtest'
+                            f' (Kalman +-{z:.2f} sd covered {out["kalman_nominal_coverage"]:.1%})')
+    else:
+        out['statement'] = (f'Conformal {level:.0%} intervals calibrated on {len(eval_pairs)} held-out values; '
+                            'too little earlier history to backtest their coverage')
+    if out.get('probability_backtest'):
+        pb = out['probability_backtest']
+        out['statement'] += f"; crossing-probability Brier {pb['brier_kalman']} (Kalman) vs {pb['brier_calibrated']} (Venn-Abers)"
+    if out.get('aci'):
+        out['statement'] += f"; adaptive (ACI) one-step intervals covered {out['aci']['coverage']:.1%} of {out['aci']['steps']} sequential values"
+    out['statement'] += '.'
+    return out
+
+
+def apply_calibration(row, cal):
+    """Add conformal fields to one forecast row in place; existing fields are untouched."""
+    import numpy as np
+    mean, sd = row.pop('_mean', None), row.pop('_sd', None)
+    if not cal.get('available') or mean is None: return row
+    if math.isfinite(cal['_q']):
+        row['conformal_low'], row['conformal_high'] = round(mean - cal['_q'] * sd, 2), round(mean + cal['_q'] * sd, 2)
+    if '_venn_abers' in cal:
+        p0, p1, merged = conformal.venn_abers(*cal['_venn_abers'], np.array([row['p_cross']]))
+        row['p_cross_calibrated'] = round(float(merged[0]), 3)
+        row['p_cross_calibrated_range'] = [round(float(p0[0]), 3), round(float(p1[0]), 3)]
+    return row
+
+
+def public(cal):
+    return {k: v for k, v in cal.items() if not k.startswith('_')}
 
 
 def _theil_sen(points):
@@ -139,16 +269,21 @@ def execute(path, patient_ids, params):
             f = forecast(pts, rel, floor, p['horizon_days'] + gap, p['threshold'], below)
             f['days_since_last_result'] = gap
             if f['p_cross'] >= 0.5:
+                f['_mean'], f['_sd'] = _predict(pts, rel, floor, p['horizon_days'] + gap)
                 at_risk.append({'patient_id': pid, 'last_value': round(pts[-1][1], 2), 'last_date': date.fromordinal(pts[-1][0]).isoformat(),
                                 'points': len(pts), **f})
         at_risk.sort(key=lambda r: -r['p_cross'])
         unit = concepts.MEASUREMENTS[c]['unit']
-        return {'schema': VERSION, 'concept': c, 'unit': unit, 'mode': 'forecast', 'threshold': p['threshold'],
+        cal = calibrate(series, c, snapshot, p['horizon_days'], p['threshold'], below, p['min_points'], keep=keep)
+        for r in at_risk:
+            apply_calibration(r, cal)
+        return {'schema': VERSION, 'concept': c, 'unit': unit, 'mode': 'forecast', 'threshold': p['threshold'], 'conformal': public(cal),
                 'horizon_days': p['horizon_days'], 'direction': 'below' if below else 'above', 'patients_with_series': evaluated,
                 'flagged': len(at_risk), 'patients': at_risk[:p['top']],
                 'method': (f'Local linear trend Kalman filter per patient (per-value error max({rel:.0%} x value, {floor} {unit})); '
                            f'flagged when P(value {"below" if below else "above"} {p["threshold"]} {unit} in {p["horizon_days"]} days) >= 0.5 '
-                           f'and not already past it; series need >= {p["min_points"]} dated values.')}
+                           f'and not already past it; series need >= {p["min_points"]} dated values. '
+                           f'Calibration: {cal["method"]} {cal["statement"]}')}
     unit = concepts.MEASUREMENTS[c]['unit']
     return {'schema': VERSION, 'concept': c, 'unit': unit, 'direction': wanted, 'patients_with_series': evaluated,
             'flagged': len(flagged), 'patients': flagged[:p['top']],
