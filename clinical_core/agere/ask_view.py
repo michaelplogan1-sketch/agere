@@ -2,7 +2,8 @@
 
 One self-contained HTML page (no external assets; charts are hand-written SVG). It reads only existing routes:
 /api/stack/compose (with conversation_id), /api/stack/conversation, /api/stack/briefing, /api/stack/economics and
-/api/stack/correct. /ask?demo=1 adds the scripted buyer walkthrough in DEMO_STEPS; every step asks a real question.
+/api/stack/correct, plus /api/stack/briefing-feedback (opened / asked follow-up / dismissed per briefing card,
+the briefing ranker's implicit feedback). /ask?demo=1 adds the scripted buyer walkthrough in DEMO_STEPS; every step asks a real question.
 """
 import json
 
@@ -118,6 +119,8 @@ details pre{white-space:pre-wrap;font-size:12px;color:var(--muted);margin:4px 0;
 .probbar .earn{background:#166534}.probbar .corr{background:#57534e}.probbar .owe{background:#b91c1c}
 .brief{display:flex;flex-direction:column;gap:8px}
 .brief button{text-align:left;border:1px solid var(--line);background:var(--soft);border-radius:10px;padding:10px;cursor:pointer;width:100%}
+.brief .bcard{position:relative}.brief button.x{position:absolute;top:4px;right:4px;width:auto;padding:2px 8px;border:none;background:none;color:var(--muted);font-size:16px}
+.brief details{font-size:12px;color:var(--muted);margin:2px 6px}.brief .xp{color:var(--accent)}
 .brief button:hover{border-color:var(--accent)}.brief .k{font-size:12px;color:var(--muted)}.brief .h{font-size:14px;font-weight:600;margin:2px 0;overflow-wrap:anywhere}.brief .f{font-size:13px;color:var(--accent);overflow-wrap:anywhere}
 .right.flash .panel{box-shadow:0 0 0 3px var(--accent)}
 .demo{background:var(--card);border-bottom:1px solid var(--line);padding:10px 16px}
@@ -458,6 +461,11 @@ function profChart(rows,net,thr,f){const W=CW(),lh=22,L=Math.min(Math.round(W*.3
   if(isNum(r.posterior_rate))s+='<circle cx="'+X(r.posterior_rate)+'" cy="'+y+'" r="5" style="fill:'+c+';stroke:var(--card);stroke-width:1.5"><title>'+esc(r.group+': shrunk '+f(r.posterior_rate)+', raw '+f(r.raw_rate)+', '+r.members+' members')+'</title></circle>';
   s+='</g>'});
  return s+'</svg>'}
+function vizBriefing(a){const rows=a.table||[],r=(a.overall||{}).briefing||{};let h='<section class="sec" data-focus="briefing"><h3>Briefing, ranked</h3>'+
+ '<p class="hint">'+esc(r.model||'')+(r.pairs?' · '+fmt(r.pairs)+' preference pairs from '+fmt(r.events||0)+' feedback events':'')+'</p><ol>';
+ rows.forEach(c=>{h+='<li><b>'+esc(label(c.kind||''))+'</b>'+(c.explore?' <span class="xp">explore</span>':'')+': '+esc(c.headline||'')+
+  '<div class="hint">'+esc(c.why||'')+'</div>'+(c.follow_up?'<button type="button" class="btn small" data-ask-standalone="'+esc(c.follow_up)+'" data-brief-card="'+esc(c.card_id||'')+'">Ask: '+esc(c.follow_up)+'</button>':'')+'</li>'});
+ return h+'</ol>'+csvButton(rows,'briefing')+'</section>'}
 function calNote(a){const c=((a&&a.overall)||{}).calibration;if(!c||!c.statement)return '';
  return '<p class="hint" data-calibration="1"><b>Calibration.</b> '+esc(c.statement)+(c.method?'<details class="why"><summary>Method</summary><span class="muted" style="font-size:12px">'+esc(c.method)+'</span></details>':'')+'</p>'}
 function visual(a){const v=visual0(a);return v==null?v:v+calNote(a)}
@@ -465,6 +473,7 @@ function visual0(a){if(!a||a.answer_type==='unsupported')return '';const o=a.ove
   if(o.profile)return vizProfile(a);
   if(o.matrix&&o.states)return vizPathway(a);
  if(o.network&&o.data_gaps)return vizMarket(a);
+ if(o.briefing)return vizBriefing(a);
  if(o.demand)return vizDemand(a);if(o.curves)return vizSurvival(a);if(o.charts||(o.tests_examined!=null&&o.look_elsewhere_bits!=null))return vizMonitor(a);if(o.did)return vizEffect(a);if(o.portfolio&&o.by_group)return vizOutreach(a);
  const v=vizVBC(a);if(v)return v;if(a.answer_type==='table'){const t=vizTrajectory(a);if(t)return t;return vizTable(a)}return vizScalar(a)}
 
@@ -532,9 +541,14 @@ function loadEcon(){fetch('/api/stack/economics').then(r=>r.ok?r.json():null).th
  $('#econ').innerHTML='<span class="pill" title="Questions answered by this installation"><b>'+fmt(e.questions||0)+'</b> questions</span>'+
   '<span class="pill" title="Answered without any paid model call"><b>'+(e.share_without_api_calls!=null?Math.round(100*e.share_without_api_calls)+'%':'—')+'</b> without paid calls</span>'+
   '<span class="pill" title="Known hosted model spend"><b>$'+(e.api_usd||0).toFixed(2)+'</b> spend</span>'}).catch(()=>{})}
-function loadBriefing(){return fetch('/api/stack/briefing').then(r=>r.ok?r.json():Promise.reject(r.status)).then(d=>{const cards=(d.cards||[]).slice().sort((x,y)=>(y.strength||0)-(x.strength||0));state.briefing=cards;
- $('#brief').innerHTML=cards.slice(0,10).map((c,i)=>'<button type="button" data-ask-standalone="'+esc(c.follow_up)+'"><div class="k">#'+(i+1)+' · '+esc(label(c.kind))+' · '+esc(label(c.topic||''))+(c.patients?' · '+fmt(c.patients)+' patients':'')+'</div>'+
-  '<div class="h">'+esc(c.headline)+'</div><div class="f">Ask: '+esc(c.follow_up)+' →</div></button>').join('')||'<p class="hint">No significant findings.</p>';return cards})
+function briefFeedback(card,event){if(!card)return;const body={card_id:card,event};if(state.briefingId)body.briefing_id=state.briefingId;
+ fetch('/api/stack/briefing-feedback',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)}).catch(()=>{})}
+function loadBriefing(){return fetch('/api/stack/briefing').then(r=>r.ok?r.json():Promise.reject(r.status)).then(d=>{const cards=(d.cards||[]).slice();state.briefing=cards;state.briefingId=d.briefing_id||null;
+ $('#brief').innerHTML=cards.slice(0,10).map((c,i)=>'<div class="bcard"><button type="button" data-ask-standalone="'+esc(c.follow_up)+'" data-brief-card="'+esc(c.card_id||'')+'"><div class="k">#'+(i+1)+(c.explore?' · <span class="xp" title="Explore slot: shown so the ranker can learn">explore</span>':'')+' · '+esc(label(c.kind))+' · '+esc(label(c.topic||''))+(c.patients?' · '+fmt(c.patients)+' patients':'')+'</div>'+
+  '<div class="h">'+esc(c.headline)+'</div><div class="f">Ask: '+esc(c.follow_up)+' →</div></button>'+
+  (c.why_text?'<details data-brief-open="'+esc(c.card_id||'')+'"><summary>Why #'+(i+1)+'</summary>'+esc(c.why_text)+'</details>':'')+
+  (c.card_id?'<button type="button" class="x" data-brief-dismiss="'+esc(c.card_id)+'" aria-label="Dismiss this card" title="Not useful">×</button>':'')+'</div>').join('')||'<p class="hint">No significant findings.</p>';
+ $('#brief').querySelectorAll('details[data-brief-open]').forEach(x=>x.addEventListener('toggle',()=>{if(x.open&&!x.dataset.sent){x.dataset.sent='1';briefFeedback(x.dataset.briefOpen,'opened')}}));return cards})
  .catch(()=>{$('#brief').innerHTML='<p class="hint">Briefing unavailable.</p>';return []})}
 
 /* ---------- demo ---------- */
@@ -551,7 +565,8 @@ async function runStep(i){const s=DEMO[i];if(!s||state.busy)return;if(i===0){new
 
 /* ---------- events (delegated; buttons and role=button elements are keyboard reachable) ---------- */
 function activate(el){if(el.dataset.csv){downloadCSV(el.dataset.csv);return}
- if(el.dataset.askStandalone!=null){ask(el.dataset.askStandalone);return}
+ if(el.dataset.briefDismiss){briefFeedback(el.dataset.briefDismiss,'dismissed');const b=el.closest('.bcard');if(b)b.remove();return}
+ if(el.dataset.askStandalone!=null){if(el.dataset.briefCard)briefFeedback(el.dataset.briefCard,'asked_follow_up');ask(el.dataset.askStandalone);return}
  if(el.dataset.ask!=null){ask(el.dataset.ask);return}
  if(el.dataset.turn!=null){renderTurn(+el.dataset.turn);return}
  if(el.dataset.demo!=null){runStep(+el.dataset.demo);return}
@@ -569,7 +584,7 @@ function activate(el){if(el.dataset.csv){downloadCSV(el.dataset.csv);return}
   fetch('/api/stack/correct',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({question,note})}).then(r=>r.json()).then(d=>{
    box.innerHTML='<p class="'+(d.error?'badc':'goodc')+'" role="status">'+esc(d.error||'Recorded: this answer will not be reused and becomes a regression case.')+'</p>'}).catch(e=>{box.innerHTML='<p class="badc">'+esc(e)+'</p>'})}}
 function refreshWorklist(){const t=state.turns[state.active];const box=document.querySelector('[data-worklist]');if(t&&t.data&&box){box.innerHTML=worklist(t.data.answer);box.scrollIntoView({behavior:'smooth',block:'nearest'})}}
-const ACT='[data-csv],[data-ask],[data-ask-standalone],[data-turn],[data-demo],#demonext,#demoreset,[data-clearfilter],[data-series],[data-pick],[data-flagopen],[data-flagcancel],[data-flagsend]';
+const ACT='[data-csv],[data-ask],[data-ask-standalone],[data-turn],[data-demo],#demonext,#demoreset,[data-clearfilter],[data-series],[data-pick],[data-flagopen],[data-flagcancel],[data-flagsend],[data-brief-dismiss]';
 document.addEventListener('click',e=>{const el=e.target.closest(ACT);if(el){e.preventDefault();activate(el)}});
 document.addEventListener('keydown',e=>{if(e.key!=='Enter'&&e.key!==' ')return;const el=e.target.closest(ACT);if(!el||el.tagName==='BUTTON')return;if(e.target.tagName==='TEXTAREA'||e.target.tagName==='INPUT')return;e.preventDefault();activate(el)});
 document.addEventListener('change',e=>{const d=e.target.closest('[data-demsel]');if(!d)return;const st=state[d.dataset.demsel];const box=document.querySelector('[data-chart="'+d.dataset.demsel+'"]');if(st&&box)box.innerHTML=fanChart(st.series[+d.value],st.o)});

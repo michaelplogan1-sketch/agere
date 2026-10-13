@@ -254,6 +254,9 @@ def serve(run,port,annotations=None,evidence_queries=None,stack=None,allow_live_
                         raise ValueError('Correction needs question and note (optional expected)')
                     learning.record_correction(connected_stack.path,body['question'],body['note'],body.get('expected'))
                     result={'recorded':True,'effect':'the stored answer for this question will not be reused; it becomes a regression case'}
+                elif path=='/api/stack/briefing-feedback':  # implicit feedback for the briefing ranker (briefing_rank)
+                    from .clinical import briefing_rank
+                    result=briefing_rank.handle_feedback(connected_stack.path,body)
                 elif path=='/api/stack/context/synthesize':
                     if set(body)!={'context_id'}:raise ValueError('Exact source context required')
                     result=connected_stack.synthesize_context(body['context_id'])
@@ -756,7 +759,8 @@ def serve(run,port,annotations=None,evidence_queries=None,stack=None,allow_live_
             elif parsed.path=='/api/stack/briefing':
                 if connected_stack is None:self.send_error(404);return
                 from .clinical.briefing import cached as briefing
-                raw=json.dumps(briefing(connected_stack.path),default=str).encode();mime='application/json'
+                from .clinical import briefing_rank  # learned re-rank; records what was shown (the only history writer)
+                raw=json.dumps(briefing_rank.serve(connected_stack.path,briefing(connected_stack.path),record=True),default=str).encode();mime='application/json'
             elif parsed.path=='/api/stack/conversation':
                 if connected_stack is None:self.send_error(404);return
                 from .clinical import conversation
