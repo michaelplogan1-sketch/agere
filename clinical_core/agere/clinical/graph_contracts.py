@@ -18,6 +18,7 @@ TYPED = {'aggregate', 'explain', 'sql', 'vbc', 'monitor', 'demand', 'program_eff
 TYPED |= {'market'}
 OPTIONAL_POPULATION = ('market',)  # report operators that take zero or one population input
 TYPED |= {'pathway'}
+TYPED = TYPED | {'profile'}
 
 
 def obj(properties):
@@ -48,7 +49,7 @@ def input_contract(op):
     lo, hi = ((0, 0) if op in ('cohort', 'evidence') else
               (2, 2) if op == 'difference' else
               (2, 10) if op in ('intersect', 'union') else
-              (0, 1) if op in ('sql', 'vbc', 'program_effect', 'outreach', 'monitor', 'demand') + OPTIONAL_POPULATION else (1, 10) if op == 'reference_review' else (3, 10) if op == 'compare' else (1, 4) if op == 'worklist' else (1, 1))
+              (0, 1) if op in ('sql', 'vbc', 'program_effect', 'outreach', 'monitor', 'demand', 'profile') + OPTIONAL_POPULATION else (1, 10) if op == 'reference_review' else (3, 10) if op == 'compare' else (1, 4) if op == 'worklist' else (1, 1))
     result = {'count': [lo, hi], 'type': 'membership',
               'output': 'membership' if op in SET_OPS else 'report'}
     if op in ('baseline', 'pre_event_state'): result['first_operation'] = 'outcome'
@@ -145,6 +146,16 @@ def parameter_schema(op, catalog):
                     'method': string(outreach.METHODS), 'overlap_discount': {'type': 'number', 'minimum': 0, 'maximum': 1},
                     'saturation': {'type': 'number', 'minimum': 0, 'maximum': 1000, 'description': '0 = additive; >0 = diminishing returns per practice x reason category'},
                     'top': {'type': 'integer', 'minimum': 1, 'maximum': 5000}})
+    if op == 'profile':
+        from . import profile
+        return obj({'metric': string(profile.METRICS, 'What is compared across units (rates per 1,000 member-years, measure shares, or PMPM)'),
+                    'unit': string(profile.UNITS, 'Profiled unit: attributed PCP or practice'),
+                    'adjust': string(profile.ADJUSTMENTS, 'Case mix: auto = age_sex for rates/readmissions/PMPM, none for quality shares'),
+                    'method': string(profile.METHODS, 'auto/bayes = hierarchical Bayes posterior drives flags and ranks; credibility = Buhlmann-Straub'),
+                    'period': obj({'start': {'type': 'string'}, 'end': {'type': 'string'}}),
+                    'threshold': {'type': ['number', 'null'], 'description': 'Optional stated threshold in display units (per 1,000, share 0..1 or percent, $ PMPM)'},
+                    'focus': {'type': 'string', 'description': 'One unit id the question asks about (Dr X / practice X), else empty'},
+                    'top': {'type': 'integer', 'minimum': 1, 'maximum': 500}})
     if op == 'monitor':
         from . import monitor
         return obj({'check': string(monitor.CHECKS, 'control_chart: SPC charts; feed: source-system volume; claims: claim series + integrity; '

@@ -1,0 +1,11 @@
+[
+  {"question": "Which PCPs have truly high ED use after accounting for panel size and case mix?", "expect_operation": "profile"},
+  {"question": "Rank practices on A1c poor control fairly", "expect_operation": "profile"},
+  {"question": "Is Dr drA0's admission rate really an outlier?", "expect_operation": "profile"},
+  {"question": "credibility-weighted PMPM by practice", "expect_operation": "profile"},
+  {"question": "Which primary care physicians are outliers on 30-day readmissions once you adjust for panel size?", "expect_operation": "profile"},
+  {"question": "Show shrunk emergency department visit rates for each provider", "expect_operation": "profile"},
+  {"question": "Compare our clinics fairly on hospitalizations, adjusted for age and sex", "expect_operation": "profile"},
+  {"question": "Which practices have truly worse blood pressure control than the network?", "expect_operation": "profile"},
+  {"question": "Using credibility weighting, which practices have total cost of care truly above $80 PMPM?", "expect_operation": "profile"}
+]

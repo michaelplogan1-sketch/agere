@@ -64,6 +64,11 @@ CONTRACTS = {
                   'level breaks and fits only the usable recent regime; picks ETS/NB-GLM/baselines by rolling-origin backtest (MASE vs naive, interval coverage). '
                   'Beds = bed-days/days/occupancy plus Poisson peak-day beds; staffing only from ratios the user states (else null, reported as missing). '
                   'Not for per-patient lab forecasts (use trajectory).'},
+    'profile': {'inputs':['optional earlier_set'],'parameters':{'metric':'ed_visits|admissions|urgent_care_visits|primary_care_visits|readmission_rate|a1c_poor_control|bp_control|statin_therapy_diabetes|pmpm',
+        'unit':'pcp|practice','adjust':'auto|none|age_sex|age_sex_conditions','method':'auto|bayes|credibility','period':{'start':'','end':''},'threshold':None,'focus':'unit id or ""'},
+        'meaning':'Fair provider/practice comparison: hierarchical Bayes (Poisson-gamma, beta-binomial, normal) on case-mix-adjusted O/E plus Buhlmann-Straub credibility; '
+                  'per unit raw vs shrunk rate, 95% interval, P(above network/threshold), rank with 95% rank interval, truly high/low/indistinguishable. '
+                  'Use for fair/adjusted-for-panel-size/truly-high/outlier-PCP/rank-practices/credibility-weighted questions.'},
     'sql': {'inputs':['optional earlier_set'],'parameters':{'query':'one read-only SELECT over semantic_layer tables','returns':'count|value|patient_set|table'},
         'meaning':'Exact answers to literal data questions: counts/sums/maxima of records or fields, record-level filters, date arithmetic (julianday), arrival lags, joins between streams, '
                   'group-by tables. Query the typed semantic_layer tables (concept columns already normalise ICD-10/SNOMED/labels/units); use record.payload with json_extract for other streams. '

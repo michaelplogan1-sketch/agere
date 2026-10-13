@@ -25,6 +25,7 @@ from .graph_contracts import SET_OPS, validate_inputs, validate_parameters as va
 OPERATIONS = SET_OPS | {'aggregate', 'explain', 'sql', 'vbc', 'monitor', 'demand', 'program_effect', 'discover', 'trajectory', 'survival', 'observation_process', 'reference_review', 'compare', 'analyze', 'retrieve', 'forecast', 'source_changes', 'review','longitudinal','worklist','state_review','medication_identity','context','context_passes','assertion_review','baseline','decision_landmark','financial_accounts','accountability_review','protocol_change','program_document_change','program_acquisition','measure_review','evidence_portfolio','outreach'}
 OPERATIONS |= {'market'}  # markets view: practice / PCP / payer tickers (market.py)
 OPERATIONS |= {'pathway'}  # care pathways (Markov chains, process mining)
+OPERATIONS = OPERATIONS | {'profile'}
 NODE_FIELDS = {'id', 'operation', 'inputs', 'parameters', 'purpose'}
 LIMITS = [
     'Membership means observed predicate matches, not confirmed disease or absent care.',
@@ -303,6 +304,19 @@ def build_answer(plan, results, memberships, question):
                                # display: plain-language label and category for each reason code on the worklist
                                'reason_labels': {c: {'category': REASONS[c][0], 'label': REASONS[c][1]} for c in sorted(used) if c in REASONS}})
         return answer
+    if last['operation'] == 'profile':
+        from .profile import summary
+        report = results[-1]['result']
+        partial = plan.get('coverage') != 'supported_observation' or plan.get('unmet_requirements')
+        ok = bool(report['units'])
+        answer.update(status=('partial' if partial else 'answered') if ok else 'unsupported', answer_type='table' if ok else 'unsupported',
+                      table=report['units'], value=summary(report), method=report['method'], count=report.get('units_total', 0),
+                      overall={'profile': {k: report.get(k) for k in ('metric_label', 'display_unit', 'network_rate', 'members', 'unattributed_members',
+                                                                      'units_total', 'counts', 'hyper', 'focus', 'shrinkage_median', 'period', 'notes')},
+                               'unit': report['parameters']['unit'], 'metric': report['parameters']['metric'],
+                               'threshold': report['parameters']['threshold'], 'method_used': report['parameters']['method']})
+        if not ok: answer['missing'].append(summary(report))
+        return answer
     if last['operation'] == 'monitor':
         from .monitor import summarize
         report = results[-1]['result']
@@ -509,6 +523,11 @@ def validate(plan, as_of):
             p = pathway.validate(p)
             if any(v > as_of for v in p['period'].values()):
                 raise ValueError('Pathway period exceeds snapshot cutoff')
+        elif op == 'profile':
+            from . import profile
+            p = profile.validate(p)
+            if any(v and v > as_of for v in p['period'].values()):
+                raise ValueError('Profile period exceeds snapshot cutoff')
         elif op == 'discover':
             from . import discover
             p = discover.validate(p)
@@ -771,6 +790,7 @@ def code_identity():
                       Path(__file__).with_name('monitor.py'),
                       Path(__file__).with_name('market.py'),
                       Path(__file__).with_name('demand.py'),
+                      Path(__file__).with_name('profile.py'),
                       *[Path(__file__).with_name(n) for n in ('program_work.py','program_work_current.py','program_work_v1.py','functional_programs.py','functional_review.py','registered_program_work.py','domain_programs.py','domain_review.py','work_adapters.py')],Path(__file__).with_name('program_documents.py'),Path(__file__).with_name('program_document_change.py'),
                       Path(__file__).with_name('program_acquisition.py'),Path(__file__).with_name('evidence_portfolio.py'),Path(__file__).with_name('program_resolution.py'),Path(__file__).with_name('measure_composition.py'),
                       Path(__file__).with_name('requirement_work.py'), Path(__file__).with_name('graph_decision.py'), Path(__file__).with_name('graph_criteria.py'), Path(__file__).with_name('graph_reports.py'), Path(__file__).with_name('graph_observation.py'), Path(__file__).with_name('graph_references.py'),
@@ -1080,6 +1100,11 @@ def execute(stack, plan, *, question=None):
                 from . import outreach
                 chosen = memberships[node['inputs'][0]] if node['inputs'] else None
                 detail = outreach.execute(path, sorted(chosen.yes) if chosen else None, params, meta['snapshot']['as_of'])
+            elif op == 'profile':
+                from . import profile
+                chosen = memberships[node['inputs'][0]] if node['inputs'] else None
+                detail = profile.execute(path, sorted(chosen.yes) if chosen else None, params, meta['snapshot']['as_of'])
+                if chosen: detail['input_membership'] = membership_receipt(chosen)
             elif op == 'monitor':
                 from . import monitor
                 chosen = memberships[node['inputs'][0]] if node['inputs'] else None

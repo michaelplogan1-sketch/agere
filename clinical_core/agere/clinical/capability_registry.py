@@ -32,6 +32,8 @@ PRODUCT = {
     'demand': {'population': 'optional', 'view': 'fan',
                'use': 'Volume forecasts: ED visits, admissions, appointments, discharges or bed-days per week/month with intervals and backtest vs naive; '
                       'beds needed at a target occupancy and peak day; staffing from user-supplied ratios.'},
+    'profile': {'population': 'optional', 'view': 'caterpillar',
+                'use': 'Fair PCP/practice comparison: which units are truly high or low on ED use, admissions, readmissions, A1c control or PMPM after panel size and case mix (shrunk rates, credibility, rank intervals).'},
 }
 PRODUCT['pathway'] = {'population': 'optional', 'view': 'flow',
                       'use': 'Care pathways / patient journeys: where patients go after an ED visit, discharge or PCP visit, follow-up within N days vs ED return, leakage to outside organisations, most common paths, chance of admission within N steps or days.'}
