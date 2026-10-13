@@ -513,7 +513,9 @@ VERIFY_RULES = """
 - Never invent streams, fields or values, and never substitute a different attribute for a missing one (e.g. sex for race).
   If the question needs data that is not listed (race, death, income, language, risk-adjustment scores, ...), output
   exactly one line: MISSING: <what is missing> - and no SQL.
-- Name output columns plainly (e.g. month, practice, visits, patients, total_usd)."""
+- Name output columns plainly (e.g. month, practice, visits, patients, total_usd).
+- Point-in-time: if the question states an "as of" / "received by" date earlier than the snapshot, count only rows whose
+  available_date (arrival) is on or before that date, in every table you use."""
 
 
 def answer(path, question, as_of, model=None):
