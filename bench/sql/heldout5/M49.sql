@@ -1,0 +1,3 @@
+-- Diagnostic: HCC / risk adjustment. No HCC category, RAF/risk score or risk-adjustment field exists in the roster or any stream. Expect 0.
+SELECT (SELECT COUNT(*) FROM patients WHERE payload LIKE '%"hcc%' OR payload LIKE '%"raf":%' OR instr(lower(payload),'"raf_score')>0 OR payload LIKE '%risk%')
+     + (SELECT COUNT(*) FROM records WHERE payload LIKE '%"hcc%' OR payload LIKE '%"raf":%' OR instr(lower(payload),'"raf_score')>0 OR payload LIKE '%risk_score%' OR payload LIKE '%risk_adjust%' OR payload LIKE '%risk adjustment%' OR payload LIKE '%hierarchical condition%') AS prerequisite_available;

@@ -1,0 +1,12 @@
+-- HbA1c control (<8.0%) for diabetics aged 18-75 by latest reported age (latest demographic_updates age, else roster age). Denominator: all such diabetics (E10/E11/E13, SNOMED 44054006, 'diabetes mellitus' excl. family history, T1DM/T2DM). Numerator: most recent A1c (HbA1c / Hemoglobin A1c / Hemoglobin A1c/Hemoglobin.total; numeric, non-cancelled) dated 2029-01-01..2029-08-15 is < 8.0 (strict; same-day ties -> lowest). No 2029 A1c = not controlled. Percent, 1 decimal.
+WITH r AS MATERIALIZED (SELECT patient, stream, payload FROM records WHERE stream IN ('conditions','labs','demographic_updates')),
+c AS (SELECT patient, lower(coalesce(json_extract(payload,'$.description'),'')) d, coalesce(json_extract(payload,'$.icd10'),'') i, coalesce(json_extract(payload,'$.snomed'),'') s FROM r WHERE stream='conditions'),
+dm AS (SELECT DISTINCT patient FROM c WHERE substr(i,1,3) IN ('E10','E11','E13') OR s='44054006' OR (d LIKE '%diabetes mellitus%' AND d NOT LIKE '%family history%') OR d LIKE '%t1dm%' OR d LIKE '%t2dm%'),
+du AS (SELECT patient, json_extract(payload,'$.age_reported') a, json_extract(payload,'$.event_date') ed FROM r WHERE stream='demographic_updates'),
+age AS (SELECT p.id patient, coalesce((SELECT a FROM du WHERE du.patient=p.id ORDER BY ed DESC LIMIT 1), json_extract(p.payload,'$.age_reported')) a FROM patients p),
+den AS (SELECT patient FROM dm JOIN age USING(patient) WHERE a BETWEEN 18 AND 75),
+a1 AS (SELECT patient, json_extract(payload,'$.event_date') d, json_extract(payload,'$.value') v FROM r WHERE stream='labs' AND json_extract(payload,'$.name') IN ('HbA1c','Hemoglobin A1c','Hemoglobin A1c/Hemoglobin.total')
+       AND typeof(json_extract(payload,'$.value')) IN ('integer','real') AND json_extract(payload,'$.event_date') BETWEEN '2029-01-01' AND '2029-08-15' AND coalesce(json_extract(payload,'$.result_status'),'final')<>'cancelled'),
+last AS (SELECT patient, max(d) d FROM a1 GROUP BY patient),
+lv AS (SELECT a1.patient, min(a1.v) v FROM a1 JOIN last USING(patient,d) GROUP BY a1.patient)
+SELECT ROUND(100.0*(SELECT COUNT(*) FROM den JOIN lv USING(patient) WHERE v<8.0)/(SELECT COUNT(*) FROM den),1) AS value;

@@ -1,0 +1,4 @@
+-- Patients with asthma (SNOMED 195967001/233678006, ICD-10 J45.*, description containing 'asthma') OR COPD (ICD-10 J44.*, SNOMED 87433001 emphysema / 185086009 chronic obstructive bronchitis, description containing 'COPD', 'emphysema' or 'chronic obstructive'). Union, distinct.
+WITH r AS MATERIALIZED (SELECT patient, payload FROM records WHERE stream='conditions'),
+c AS (SELECT patient, lower(coalesce(json_extract(payload,'$.description'),'')) d, coalesce(json_extract(payload,'$.icd10'),'') i, coalesce(json_extract(payload,'$.snomed'),'') s FROM r)
+SELECT DISTINCT patient AS patient_id FROM c WHERE s IN ('195967001','233678006','87433001','185086009') OR i LIKE 'J45%' OR i LIKE 'J44%' OR d LIKE '%asthma%' OR d LIKE '%copd%' OR d LIKE '%emphysema%' OR d LIKE '%chronic obstructive%' ORDER BY 1;

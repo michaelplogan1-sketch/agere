@@ -1,0 +1,3 @@
+-- Net payer-paid dollars for medical claims with service_date in 2028: sum of financial_deltas_cents.payer over every adjudication record of those claims (original payments, reversal takebacks as negatives, replacement payments), /100, rounded to cents. Denials contribute 0. Patient responsibility, payer cash allocations and pharmacy are excluded.
+WITH r AS MATERIALIZED (SELECT patient, payload FROM records WHERE stream='medical_claims')
+SELECT ROUND(SUM(json_extract(payload,'$.financial_deltas_cents.payer'))/100.0,2) AS value FROM r WHERE json_extract(payload,'$.claim_id') IS NOT NULL AND json_extract(payload,'$.service_date') BETWEEN '2028-01-01' AND '2028-12-31';

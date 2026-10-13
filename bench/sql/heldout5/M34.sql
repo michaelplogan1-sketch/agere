@@ -1,0 +1,5 @@
+-- Tdap catch-up: among patients whose immunization_history recall is 'does_not_recall_tetanus' or 'recalls_tetanus_over_ten_years', percent with a documented Tdap administration (immunizations stream, vaccine 'Tdap', administration_status 'completed') dated on or after that history interview. Patient recall alone is not documentation. Percent, 1 decimal.
+WITH r AS MATERIALIZED (SELECT patient, stream, payload FROM records WHERE stream IN ('immunization_history','immunizations')),
+h AS (SELECT patient, min(json_extract(payload,'$.event_date')) d FROM r WHERE stream='immunization_history' AND json_extract(payload,'$.recall') IN ('does_not_recall_tetanus','recalls_tetanus_over_ten_years') GROUP BY patient),
+v AS (SELECT DISTINCT h.patient FROM h JOIN r ON r.patient=h.patient AND r.stream='immunizations' AND json_extract(r.payload,'$.vaccine')='Tdap' AND json_extract(r.payload,'$.administration_status')='completed' AND json_extract(r.payload,'$.event_date')>=h.d)
+SELECT ROUND(100.0*(SELECT COUNT(*) FROM v)/(SELECT COUNT(*) FROM h),1) AS value;

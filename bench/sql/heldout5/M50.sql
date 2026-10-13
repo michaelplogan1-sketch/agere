@@ -1,0 +1,2 @@
+-- Diagnostic: patient experience / satisfaction surveys. No CAHPS, satisfaction, likelihood-to-recommend or experience-survey record or field exists. Expect 0.
+SELECT (SELECT COUNT(*) FROM records WHERE payload LIKE '%cahps%' OR payload LIKE '%"satisfaction%' OR payload LIKE '%patient_satisfaction%' OR payload LIKE '%likelihood_to_recommend%' OR payload LIKE '%experience_survey%' OR payload LIKE '%"nps%' OR payload LIKE '%press ganey%' OR payload LIKE '%top_box%') AS prerequisite_available;

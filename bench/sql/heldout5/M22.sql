@@ -1,0 +1,4 @@
+-- Percent of 2029 ED visits (completed ED encounter versions, type 'emergency', dated 2029-01-01..2029-08-15) whose ED disposition was a hospital admission or observation placement: disposition in ('admitted','inpatient_admission','observation','hospital_observation','observation_for_mobility'). Denominator = distinct ED encounters with a completed version (disposition known). Rounded to 1 decimal.
+WITH r AS MATERIALIZED (SELECT patient, payload FROM records WHERE stream='encounters'),
+ed AS (SELECT json_extract(payload,'$.encounter_id') eid, max(json_extract(payload,'$.disposition')) dispo FROM r WHERE json_extract(payload,'$.type')='emergency' AND json_extract(payload,'$.status')='completed' AND json_extract(payload,'$.event_date') BETWEEN '2029-01-01' AND '2029-08-15' GROUP BY 1)
+SELECT ROUND(100.0*SUM(dispo IN ('admitted','inpatient_admission','observation','hospital_observation','observation_for_mobility'))/COUNT(*),1) AS value FROM ed;

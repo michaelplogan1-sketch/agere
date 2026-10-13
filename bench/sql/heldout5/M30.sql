@@ -1,0 +1,6 @@
+-- Pharmacy claims (pharmacy_claim_transactions, claim_id) first PAID in 2028 (paid transaction event_date 2028), by payer (source_system): paid_fills = distinct claims, reversed_fills = those with a later 'reversed' transaction received by as-of, net_payer_paid = sum of payer_paid_delta_cents across the paid and reversal transactions of those claims, dollars 2 decimals. Rejected (REFILL_TOO_SOON) transactions excluded; the separate 2026 pharmacy_claims feed is not used.
+WITH r AS MATERIALIZED (SELECT patient, payload FROM records WHERE stream='pharmacy_claim_transactions'),
+t AS (SELECT json_extract(payload,'$.claim_id') cid, json_extract(payload,'$.source_system') payer, json_extract(payload,'$.transaction_status') st, json_extract(payload,'$.event_date') d, json_extract(payload,'$.payer_paid_delta_cents') amt FROM r),
+pc AS (SELECT cid, payer FROM t WHERE st='paid' GROUP BY cid HAVING min(d) BETWEEN '2028-01-01' AND '2028-12-31')
+SELECT pc.payer AS payer, COUNT(DISTINCT pc.cid) AS paid_fills, COUNT(DISTINCT CASE WHEN t.st='reversed' THEN pc.cid END) AS reversed_fills, ROUND(SUM(CASE WHEN t.st IN ('paid','reversed') THEN t.amt ELSE 0 END)/100.0,2) AS net_payer_paid
+FROM pc JOIN t USING(cid) GROUP BY pc.payer ORDER BY pc.payer;

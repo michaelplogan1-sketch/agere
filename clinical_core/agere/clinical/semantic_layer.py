@@ -13,7 +13,12 @@ import json, re, sqlite3, time
 
 from . import aggregate, concepts, source_profile
 
-VERSION = 'semantic-layer/6'
+VERSION = 'semantic-layer/7'
+
+# Source contract: streams whose records are successive snapshots of one business entity (key field).
+# Other repeated ids (payments per account, lines per claim, fills per prescription) are separate events, not versions.
+VERSIONED_STREAMS = {'patient_billing_accounts': 'account_id', 'medical_claims': 'claim_id', 'pharmacy_claim_transactions': 'claim_id',
+                     'appointments': 'appointment_id', 'provider_remittance_advice': 'claim_id', 'advance_care_document_status': 'document_id'}
 
 DDL = """
 CREATE TABLE meta(key TEXT PRIMARY KEY, value TEXT);
@@ -36,6 +41,8 @@ CREATE TABLE stay(patient_id TEXT, admit_date TEXT, discharge_date TEXT, type TE
 CREATE TABLE link(record_id TEXT, stream TEXT, field TEXT, target_record_id TEXT);
 CREATE TABLE concept_patient(concept TEXT, kind TEXT, patient_id TEXT, records INTEGER, first_date TEXT, last_date TEXT,
   PRIMARY KEY(concept, patient_id));
+CREATE TABLE current_record(stream TEXT, key_field TEXT, business_id TEXT, record_id TEXT, patient_id TEXT, versions INTEGER,
+  first_available_date TEXT, available_date TEXT, event_date TEXT, payload TEXT, PRIMARY KEY(stream, business_id));
 CREATE TABLE social_need(patient_id TEXT, need TEXT, positive INTEGER, instrument TEXT, source_stream TEXT, source_field TEXT,
   event_date TEXT, record_id TEXT);
 CREATE TEMP VIEW v_claim_rows AS SELECT json_extract(payload,'$.claim_id') AS claim_id, patient_id,
@@ -81,6 +88,8 @@ SCHEMA_DOC = {
     'record': 'Every received record (all streams). Use json_extract(payload, \'$.field\') for fields of streams not modelled above.',
     'appointment': 'One row per appointment_id (appointments arrive as a booked record plus later status records). scheduled_date from '
                    'the booking; final_status = latest status received; ever_* flags over all versions; kept = arrived or fulfilled.',
+    'current_record': 'Latest version of each business entity in versioned (snapshot) streams: stream, key_field, business_id, '
+                      'versions, payload of the latest version. Use it for current state (current balance, current claim status).',
     'social_need': 'Social-needs screening answers normalised across instruments: one row per (screen record, need) with positive 0/1. '
                    'need = food | transport | cost_of_care. transport positive = transport_difficulty_reported or transport unreliable '
                    '(family_ride/reliable = negative); cost_of_care = difficulty paying for care (social screen) or medical bills '
@@ -141,6 +150,15 @@ def _derived(out):
       AND json_extract(payload,'$.difficulty_paying_medical_bills') IS NOT NULL;
     CREATE INDEX social_need_patient ON social_need(need, patient_id);
     """)
+    for stream, key in VERSIONED_STREAMS.items():
+        out.execute(f"""INSERT INTO current_record
+            SELECT stream, '{key}', bid, record_id, patient_id, n, first_av, available_date, event_date, payload FROM (
+              SELECT r.*, json_extract(r.payload,'$.{key}') AS bid, count(*) OVER w AS n, min(r.available_date) OVER w AS first_av,
+                     row_number() OVER (PARTITION BY json_extract(r.payload,'$.{key}')
+                                        ORDER BY r.available_date DESC, json_extract(r.payload,'$.available_time') DESC, r.record_id DESC) AS rn
+              FROM record r WHERE r.stream = '{stream}' AND json_extract(r.payload,'$.{key}') IS NOT NULL
+              WINDOW w AS (PARTITION BY json_extract(r.payload,'$.{key}'))) WHERE rn = 1""")
+    out.execute('CREATE INDEX current_record_patient ON current_record(stream, patient_id)')
     out.execute("ALTER TABLE patient ADD COLUMN age_latest INTEGER")
     out.execute("""UPDATE patient SET age_latest = coalesce((SELECT CAST(json_extract(r.payload,'$.age_reported') AS INTEGER) FROM record r
                      WHERE r.stream = 'demographic_updates' AND r.patient_id = patient.patient_id

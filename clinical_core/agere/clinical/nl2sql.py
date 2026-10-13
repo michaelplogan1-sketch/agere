@@ -22,6 +22,7 @@ measurement(record_id, patient_id, concept, name, value, unit, value_canonical, 
 visit(encounter_id, patient_id, type, type_concept, status, event_date, end_date, available_date, organization_id, attending_clinician_id)  -- one row per encounter; count visits here
 stay(patient_id, admit_date, discharge_date, type, organization_id, readmitted_30d, days_to_readmission, los_days, discharge_known)  -- distinct hospital stays; los_days/discharge_date NULL when discharge unknown
 appointment(appointment_id, patient_id, scheduled_date, booked_date, final_status, ever_no_show, ever_cancelled, ever_rescheduled, kept, organization_id, clinician_id, purpose)  -- one row per appointment (statuses resolved); use for no-show/cancellation/kept questions
+current_record(stream, key_field, business_id, record_id, patient_id, versions, first_available_date, available_date, event_date, payload)  -- LATEST version of each entity in versioned streams; use json_extract(payload,'$.field') for current state
 social_need(patient_id, need ['food','transport','cost_of_care'], positive, instrument, source_stream, source_field, event_date, record_id)  -- social-needs screens normalised across instruments; use for any food/transport/cost-of-care question
 claim(claim_id, patient_id, payer, service_date, benefit_year, first_status, final_status, ever_denied, denied_then_paid, net_payer_paid_cents, billed_cents, allowed_cents, first_available_date, last_available_date)  -- one row per medical claim (adjudication sequence resolved; net paid = paid minus reversed)
 concept_patient(concept, kind, patient_id, records, first_date, last_date)  -- who has each concept
@@ -185,7 +186,10 @@ def schema_for(question, profile, extra=()):
             elif vals and len(vals) <= 12 and max(map(len, vals)) <= 40: fields.append(f"{f} {sorted(vals, key=lambda v: -vals[v])[:12]}")
             elif 'numeric_range' in fs: fields.append(f"{f} (number {fs['numeric_range'][0]}..{fs['numeric_range'][1]})")
             else: fields.append(f)
-        lines.append(f"stream '{s}' ({profile['streams'][s]['records']} records): " + ', '.join(fields))
+        from .semantic_layer import VERSIONED_STREAMS
+        versioned = (f" [VERSIONED by {VERSIONED_STREAMS[s]}: records are snapshots; current state = current_record WHERE stream = '{s}']"
+                     if s in VERSIONED_STREAMS else '')
+        lines.append(f"stream '{s}' ({profile['streams'][s]['records']} records){versioned}: " + ', '.join(fields))
     cat = concepts.catalog()
     concept_line = ('concept ids - conditions: ' + ', '.join(cat['conditions']) + '; measurements (value_canonical unit): ' +
                     ', '.join(f"{k} [{concepts.MEASUREMENTS[k]['unit']}]" for k in cat['measurements']) +

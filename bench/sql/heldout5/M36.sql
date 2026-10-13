@@ -1,0 +1,6 @@
+-- Post-discharge follow-up within the recommended window: discharge_plans records carrying recommended_within_days (7 or 14). Numerator: an in-person visit (encounter type office, primary_care, pediatric_office, specialist_office or specialty_followup) that has a 'completed' version, dated 1..recommended_within_days days after the discharge-plan event_date. Telephone contacts do not count. Percent of discharge plans, 1 decimal.
+WITH r AS MATERIALIZED (SELECT patient, stream, payload FROM records WHERE stream IN ('discharge_plans','encounters')),
+dp AS (SELECT patient, json_extract(payload,'$.record_id') rid, json_extract(payload,'$.event_date') d, json_extract(payload,'$.recommended_within_days') n FROM r WHERE stream='discharge_plans' AND json_extract(payload,'$.recommended_within_days') IS NOT NULL),
+v AS (SELECT patient, json_extract(payload,'$.encounter_id') eid, min(json_extract(payload,'$.event_date')) d FROM r WHERE stream='encounters' AND json_extract(payload,'$.type') IN ('office','primary_care','pediatric_office','specialist_office','specialty_followup') AND json_extract(payload,'$.status')='completed' GROUP BY 1,2),
+hit AS (SELECT DISTINCT dp.rid FROM dp JOIN v ON v.patient=dp.patient AND julianday(v.d)-julianday(dp.d) BETWEEN 1 AND dp.n)
+SELECT ROUND(100.0*(SELECT COUNT(*) FROM hit)/(SELECT COUNT(*) FROM dp),1) AS value;

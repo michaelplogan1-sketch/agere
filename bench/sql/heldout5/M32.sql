@@ -1,0 +1,12 @@
+-- Controlling high blood pressure: hypertensive patients (SNOMED 59621000, I10-I13/I15/I16, 'hypertension' excl. pulmonary, 'HTN') aged 18-85 by latest reported age. Numerator: on the most recent date in 2029-01-01..2029-08-15 with a dated vitals record carrying BOTH blood_pressure_systolic and blood_pressure_diastolic, the lowest systolic that day < 140 AND lowest diastolic that day < 90. Undated long-format bp_systolic/bp_diastolic rows cannot be placed in 2029. No 2029 reading = not controlled. Percent, 1 decimal.
+WITH r AS MATERIALIZED (SELECT patient, stream, payload FROM records WHERE stream IN ('conditions','vitals','demographic_updates')),
+c AS (SELECT patient, lower(coalesce(json_extract(payload,'$.description'),'')) d, coalesce(json_extract(payload,'$.icd10'),'') i, coalesce(json_extract(payload,'$.snomed'),'') s FROM r WHERE stream='conditions'),
+htn AS (SELECT DISTINCT patient FROM c WHERE s='59621000' OR substr(i,1,3) IN ('I10','I11','I12','I13','I15','I16') OR (d LIKE '%hypertension%' AND d NOT LIKE '%pulmonary hypertension%') OR d LIKE '%htn%'),
+du AS (SELECT patient, json_extract(payload,'$.age_reported') a, json_extract(payload,'$.event_date') ed FROM r WHERE stream='demographic_updates'),
+age AS (SELECT p.id patient, coalesce((SELECT a FROM du WHERE du.patient=p.id ORDER BY ed DESC LIMIT 1), json_extract(p.payload,'$.age_reported')) a FROM patients p),
+den AS (SELECT patient FROM htn JOIN age USING(patient) WHERE a BETWEEN 18 AND 85),
+bp AS (SELECT patient, json_extract(payload,'$.event_date') d, json_extract(payload,'$.blood_pressure_systolic') sbp, json_extract(payload,'$.blood_pressure_diastolic') dbp FROM r WHERE stream='vitals'
+       AND json_extract(payload,'$.blood_pressure_systolic') IS NOT NULL AND json_extract(payload,'$.blood_pressure_diastolic') IS NOT NULL AND json_extract(payload,'$.event_date') BETWEEN '2029-01-01' AND '2029-08-15'),
+last AS (SELECT patient, max(d) d FROM bp GROUP BY patient),
+lv AS (SELECT bp.patient, min(sbp) s, min(dbp) dd FROM bp JOIN last USING(patient,d) GROUP BY bp.patient)
+SELECT ROUND(100.0*(SELECT COUNT(*) FROM den JOIN lv USING(patient) WHERE s<140 AND dd<90)/(SELECT COUNT(*) FROM den),1) AS value;
