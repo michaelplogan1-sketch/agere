@@ -52,6 +52,11 @@ Z = float(norm.ppf(0.975))
 PRIOR_MASS = 1.0  # Dirichlet prior: total mass 1 spread evenly over the destinations observed anywhere (Perks)
 
 
+def outside_organization(org):
+    """Leakage definition shared with network.py: an organisation id marked OUTSIDE is outside the network."""
+    return bool(org) and 'OUTSIDE' in str(org).upper()
+
+
 # ---- parameters ----------------------------------------------------------------------
 def _iso(v, what):
     if not isinstance(v, str) or (v and not re.fullmatch(r'\d{4}-\d{2}-\d{2}', v)): raise ValueError(f'{what}: ISO date or ""')
@@ -266,7 +271,7 @@ def load(db, patient_ids, p):
         monthly[d[:7]][1] += 1
         if state in ACUTE: monthly[d[:7]][0] += 1
         if pid not in members: continue
-        if org and 'OUTSIDE' in org.upper():
+        if outside_organization(org):
             state = 'outside'
         elif p['leakage'] == 'organization_or_practice' and state == 'primary_care' and org in practices and \
                 attrs.get(pid, {}).get('practice') not in (None, 'unattributed', org):

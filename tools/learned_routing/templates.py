@@ -129,6 +129,18 @@ T = {
         'care pathway after an ED visit for {conds}', 'what sequence of care do {conds} follow after a hospitalization',
         'map the patient flow after discharge', 'next steps after an urgent care visit',
     ],
+    'network': [
+        'Map our provider network', 'which doctors act as brokers between our practices', 'most influential physicians in the referral graph',
+        'Which outside groups pull the most of our members?', 'how much of our cardiology volume goes out of network',
+        'which hospitals and specialty groups do {conds} end up using', 'Do our primary care doctors see each other\'s patients?',
+        'care density for {conds} by practice', 'how fragmented are care teams for {conds}', 'clusters of physicians who work together',
+        'how concentrated are each PCP\'s specialist referrals', 'repatriate out-of-network {group} visits: what would we gain?',
+        'what if we moved half of the leaked orthopedic visits to our own group', 'who should champion a new protocol so it reaches the most PCPs',
+        'simulate adoption of a care guideline across the physician network', 'betweenness and PageRank of our clinicians',
+        'pairs of primary care physicians with overlapping panels', 'redirect {group} referrals to our preferred specialists: visits and dollars regained',
+        'diffusion model of a new prescribing habit among PCPs', 'patient-sharing ties between our doctors',
+        'which PCPs are connected through common specialists',
+    ],
     'briefing': [
         'Morning briefing', 'Give me my daily briefing',
         'anything I should know about this morning', 'what are the most important things this week',

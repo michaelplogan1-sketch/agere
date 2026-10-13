@@ -1,0 +1,34 @@
+[
+ {
+  "question": "Which specialists and hospitals do our patients actually use?",
+  "expect_operation": "network"
+ },
+ {
+  "question": "Who are the key referral hubs in our network?",
+  "expect_operation": "network"
+ },
+ {
+  "question": "Where does care leak out of our preferred network?",
+  "expect_operation": "network"
+ },
+ {
+  "question": "Which PCPs share the most patients?",
+  "expect_operation": "network"
+ },
+ {
+  "question": "If we steer cardiology to practice 3, how much leakage do we recover?",
+  "expect_operation": "network"
+ },
+ {
+  "question": "How would a practice-pattern change spread through the PCP network?",
+  "expect_operation": "network"
+ },
+ {
+  "question": "How cohesive are our care teams? Show care density by practice",
+  "expect_operation": "network"
+ },
+ {
+  "question": "Show the communities of providers in our referral network",
+  "expect_operation": "network"
+ }
+]

@@ -29,6 +29,8 @@ OPTIONAL_POPULATION += ('claims_review',)
 TYPED |= {'knowledge'}  # cited VBC knowledge base (vbc_knowledge.py); takes no population
 TYPED |= {'risk_adjustment'}  # CMS-HCC RAF, coding gaps, recapture, suspects (risk_adjustment.py)
 OPTIONAL_POPULATION += ('risk_adjustment',)
+TYPED |= {'network'}  # provider patient-sharing network (network.py)
+OPTIONAL_POPULATION += ('network',)
 
 
 def _library_measures():
@@ -213,6 +215,22 @@ def parameter_schema(op, catalog):
                     'threshold': {'type': ['number', 'null'], 'description': 'Crossing threshold for concept'},
                     'direction': string(['below', 'above']), 'horizon_days': {'type': 'integer', 'minimum': 30, 'maximum': 730},
                     'level': {'type': 'number', 'minimum': 0.5, 'maximum': 0.99, 'description': 'Nominal interval coverage (default 0.9)'}})
+    if op == 'network':
+        from . import network as nw
+        return obj({'focus': string(nw.FOCUS, 'usage: which organisations/specialists patients use; hubs: centrality; communities; pcp_sharing; cohesion: '
+                                              'care density; concentration: referral HHI; leakage: outside-network share by specialty/practice; '
+                                              'steering: reassign leaked visits (needs steer_specialty); spread: diffusion model over PCPs; all'),
+                    'level': string(nw.LEVELS), 'period': obj({'start': {'type': 'string'}, 'end': {'type': 'string'}}),
+                    'min_shared': {'type': 'integer', 'minimum': 1, 'maximum': 100}, 'filter': string(nw.FILTERS),
+                    'leakage': string(nw.LEAKAGE, 'organization = OUTSIDE organisations (pathway definition); tins = outside network_tins'),
+                    'network_tins': array({'type': 'string'}, 'In-network TINs, only if the user lists them'),
+                    'group_by': string(nw.GROUP_BY), 'specialty': {'type': 'string', 'description': 'Service line filter, e.g. cardiology; else empty'},
+                    'steer_specialty': {'type': 'string', 'description': 'Service line to steer, e.g. cardiology'},
+                    'steer_to': {'type': 'string', 'description': 'Target organisation id or name; empty = busiest in-network'},
+                    'steer_share': {'type': 'number', 'minimum': 0, 'maximum': 1}, 'steer_from': string(nw.STEER_FROM),
+                    'spread_model': string(nw.SPREAD_MODELS), 'seeds': {'type': 'integer', 'minimum': 1, 'maximum': 10},
+                    'transmission': {'type': 'number', 'minimum': 0.001, 'maximum': 1}, 'steps': {'type': 'integer', 'minimum': 1, 'maximum': 20},
+                    'top': {'type': 'integer', 'minimum': 1, 'maximum': 200}})
     if op == 'risk_adjustment':
         from . import risk_adjustment as ra
         return obj({'focus': string(ra.FOCUS, 'raf: patient RAF/HCCs; recapture: HCCs coded last year not yet this year; suspects: evidence without a '

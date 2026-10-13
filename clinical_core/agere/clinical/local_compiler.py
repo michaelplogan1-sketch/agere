@@ -458,6 +458,9 @@ def _compile(question, profile, as_of):
     plan = _measure_question(q, profile, as_of)  # named library quality measures (HEDIS/Stars/eCQM/PQI approximations)
     if plan is not None:
         return plan
+    plan = _network_question(q, profile, as_of)  # provider network (hubs, shared patients, leakage by specialty, steering, spread); journeys stay pathway
+    if plan is not None:
+        return plan
     plan = _pathway_question(q, profile, as_of)  # care paths / journeys / leakage, before paraphrase rewrites the wording
     if plan is not None:
         return plan
@@ -2818,4 +2821,121 @@ def _early_signal_question(q, profile, as_of):
                       'purpose': 'Population named in the question'})
     nodes.append({'id': 'early_signal', 'operation': 'early_signal', 'inputs': ['population'] if conditions else [], 'parameters': params,
                   'purpose': 'Matched-filter search for the pre-event signature of ' + params['outcome'].replace('_', ' ')})
+    return {'interpretation': q, 'coverage': 'supported_observation', 'unmet_requirements': [], 'nodes': nodes}, info
+
+
+# ---- provider network: patient-sharing graph, hubs, cohesion, leakage by specialty, steering, spread (network.py) ----
+NETWORK_HUB = (r"\b(?:referral|network|provider|physician|care) hubs?\b|\bhubs? (?:of|in) (?:our |the )?(?:referral |provider )?network\b|"
+               r"\b(?:key|central|most (?:central|connected|influential)|best[- ]connected|influential) (?:referral )?(?:providers?|physicians?|doctors?|"
+               r"clinicians?|specialists?|practices?|hubs?|nodes?|brokers?|organi[sz]ations?)\b|\bcentrality\b|\bbetweenness\b|\bpagerank\b|\bbrokers?\b")
+NETWORK_SHARE = (r"\bshar(?:e|es|ed|ing) (?:the )?(?:most |many |more |any |a lot of )?(?:of (?:their|our|the same) )?(?:the same )?patients\b|"
+                 r"\bshared[- ]patients?\b|\bpatient[- ]sharing\b|\bpatients? in common\b")
+NETWORK_COHESION = r"\bcare[- ]teams? (?:cohesion|cohesiveness|density|fragmentation|networks?)\b|\bcare density\b|\bcohesi(?:on|ve|veness)\b"
+NETWORK_COMMUNITY = (r"\b(?:communit(?:y|ies)|clusters?|cliques?) (?:of|among|in) (?:our )?(?:providers?|physicians?|doctors?|clinicians?|practices?|specialists?)\b|"
+                     r"\b(?:provider|physician|referral|network) (?:communit(?:y|ies)|clusters?)\b")
+NETWORK_GRAPH = (r"\b(?:provider|physician|doctor|clinician|referral) (?:networks?|graphs?)\b|\bnetwork (?:graph|analysis|map|structure|science)\b|"
+                 r"\breferral (?:patterns?|concentration|flows?)\b|\bherfindahl\b|\bhhi\b|\bconcentrat\w+ (?:of )?(?:our )?referrals\b")
+NETWORK_USE = (r"\b(?:which|what) (?:specialists?|hospitals?|providers?|facilities|organi[sz]ations?|outside groups?)(?: and (?:specialists?|hospitals?|providers?|facilities))? "
+               r"(?:do|did|are) (?:our |the )?(?:[a-z0-9-]+ ){0,3}(?:patients|members|people) (?:actually |really )?(?:use|using|see|seeing|go to|going to|visit|rely on)\b")
+NETWORK_LEAK = r"\bleak\w*\b|\bout[- ]of[- ]network\b|\boutside (?:of )?(?:our |the )?(?:preferred )?network\b"
+NETWORK_LEAK_SCOPE = (r"\bby (?:specialty|specialties|service lines?|practice)\b|\b(?:which|what) (?:specialties|specialists|service lines)\b|\bspecialt(?:y|ies)\b|"
+                      r"\bpreferred network\b|\btins?\b|\bspecialists?\b|\bservice lines?\b")
+NETWORK_STEER = r"\bsteer(?:s|ed|ing)?\b|\bredirect(?:ing|ed)?\b|\brepatriat\w+\b|\brecover\w* (?:\w+ ){0,3}leak\w*\b|\brecaptur\w+ (?:\w+ ){0,3}leak\w*\b"
+NETWORK_SPREAD = (r"\b(?:spread|spreads|spreading|diffus\w+|propagat\w+|cascade\w*|ripple)\b|\binfluence maximi[sz]\w+\b|\bseed (?:pcps?|practices?|providers?|physicians?)\b|"
+                  r"\b(?:simulat\w+|model\w*) (?:the )?(?:[a-z-]+ ){0,4}adoption\b")
+NETWORK_SPREAD_SCOPE = r"\bnetwork\b|\bpcps?\b|\bpractices?\b|\bphysicians?\b|\bproviders?\b|\bdoctors?\b|\bclinicians?\b|\bprotocols?\b|\bpractice[- ]patterns?\b|\badopt\w*\b"
+NETWORK_SERVICE_LINES = [('cardiology', r'cardiolog\w*|cardiac (?:care|specialists?)|heart doctors?'), ('endocrinology', r'endocrinolog\w*|\bendo\b'),
+                         ('nephrology', r'nephrolog\w*|kidney (?:doctors?|specialists?)'), ('pulmonology', r'pulmonolog\w*|lung (?:doctors?|specialists?)'),
+                         ('orthopedics', r'orthop(?:a)?edic\w*|\bortho\b'), ('gastroenterology', r'gastroenterolog\w*|\bgi\b'),
+                         ('neurology', r'neurolog\w*'), ('oncology', r'oncolog\w*|cancer (?:care|doctors?)'), ('dentistry', r'dent(?:al|istry|ists?)'),
+                         ('optometry', r'optometr\w*|vision care|eye care'), ('audiology', r'audiolog\w*|hearing'), ('psychiatry', r'psychiatr\w*'),
+                         ('physical therapy', r'physical therap\w*'), ('diagnostic radiology', r'radiolog\w*|imaging'),
+                         ('emergency medicine', r'emergency medicine'), ('urgent care', r'urgent care')]
+
+
+def _network_question(q, profile, as_of):
+    """Provider-network questions -> network. Declines (None) for patient-journey wording ('after an ED visit', 'care paths'), revenue
+    leakage (denials, underpayments) and anything without a provider/network signal, so pathway and claims_review keep theirs."""
+    low = _strip_framing(q.lower())
+    hits = {k: bool(re.search(rx, low)) for k, rx in (('hub', NETWORK_HUB), ('share', NETWORK_SHARE), ('cohesion', NETWORK_COHESION),
+                                                      ('community', NETWORK_COMMUNITY), ('graph', NETWORK_GRAPH), ('use', NETWORK_USE),
+                                                      ('steer', NETWORK_STEER))}
+    hits['spread'] = bool(re.search(NETWORK_SPREAD, low) and re.search(NETWORK_SPREAD_SCOPE, low)
+                          and not re.search(r'\bspread (?:of|in) (?:the )?(?:values?|costs?|scores?|results?|a1c|lab|distribution)\b|\bdistribution\b', low))
+    journey = re.search(r'\b(?:after|following|post)[- ](?:an? |the |their |each |hospital |recent )*(?:ed|er|emergency|discharge\w*|admission|hospitali[sz]\w*|'
+                        r'inpatient|urgent care|pcp|primary care|visit|stay)\b|\bjourneys?\b|\bcare (?:paths?|pathways?|sequences?)\b|\bmarkov\b|\bnext steps?\b', low)
+    revenue = re.search(r'\bdenials?\b|\bunderpa\w*\b|\bwrite[- ]?offs?\b|\brework\b|\btake[- ]?backs?\b|\bleaking money\b|\brevenue leak\w*\b', low)
+    specialist_lines = '|'.join(rx for name, rx in NETWORK_SERVICE_LINES if name not in ('emergency medicine', 'urgent care'))
+    leak = bool(re.search(NETWORK_LEAK, low) and re.search(NETWORK_LEAK_SCOPE + '|' + specialist_lines, low) and not re.search(r'\bcompare\w*\b|\bpeers?\b', low))
+    if revenue or not (any(hits.values()) or leak): return None
+    if journey and not (hits['hub'] or hits['share'] or hits['cohesion'] or hits['community'] or hits['graph'] or hits['steer'] or hits['spread']):
+        return None
+    if hits['steer'] and not re.search(NETWORK_LEAK + r'|\bvolume\b|\bvisits?\b|\bin[- ]network\b|' + '|'.join(rx for _, rx in NETWORK_SERVICE_LINES), low):
+        return None
+    params, recognised = {}, ['provider network question']
+    line = next((name for name, rx in NETWORK_SERVICE_LINES if re.search(rf'(?:{rx})', low)), '')
+    focus = ('steering' if hits['steer'] else 'spread' if hits['spread'] else 'leakage' if leak else 'cohesion' if hits['cohesion'] else
+             'communities' if hits['community'] else 'concentration' if re.search(r'\breferral (?:concentration|patterns?)\b|\bherfindahl\b|\bhhi\b|\bconcentrat', low) else
+             'pcp_sharing' if hits['share'] and re.search(r'\bpcps?\b|\bprimary care\b|\bdoctors?\b|\bphysicians?\b|\bpractices?\b|\bproviders?\b', low) else
+             'usage' if hits['use'] else 'hubs' if hits['hub'] else 'all')
+    params['focus'] = focus
+    if focus == 'steering':
+        if not line: return None, {'compiler': VERSION, 'recognised': recognised, 'paraphrased': [], 'route': 'fallback',
+                                   'reason': 'steering question without a recognised service line'}
+        params['steer_specialty'] = line
+        m = re.search(r'\bto (wh-[a-z0-9-]+)\b', low) or re.search(r'\bto (?:the )?((?:practice|clinic|group|hospital|specialty care|organi[sz]ation) [a-z0-9-]+)\b', low)
+        if m: params['steer_to'] = m.group(1).upper() if m.group(1).startswith('wh-') else m.group(1)
+        s = re.search(r'\b(\d{1,3}(?:\.\d+)?)\s?%', low)
+        if s and 0 < float(s.group(1)) <= 100: params['steer_share'] = float(s.group(1)) / 100
+        elif re.search(r'\bhalf\b', low): params['steer_share'] = 0.5
+        elif re.search(r'\ball (?:of )?(?:the |our )?(?:leak\w*|it)\b', low): params['steer_share'] = 1.0
+        if re.search(r'\bconsolidat\w+\b|\ball other\b|\bfrom other (?:in[- ]network )?(?:practices|groups|providers)\b', low): params['steer_from'] = 'all_other'
+    elif line and focus in ('leakage', 'concentration'):
+        params['specialty'] = line
+    if focus == 'spread':
+        if re.search(r'\bthreshold\b', low): params['spread_model'] = 'linear_threshold'
+        m = re.search(r'\b(\d{1,2}) (?:seeds?|pcps?|practices?|champions?|early adopters?|physicians?|doctors?)\b', low)
+        if m and 1 <= int(m.group(1)) <= 10: params['seeds'] = int(m.group(1))
+        m = re.search(r'\b(\d{1,2}) (?:rounds?|steps?|generations?)\b', low)
+        if m and 1 <= int(m.group(1)) <= 20: params['steps'] = int(m.group(1))
+        m = re.search(r'\b(\d{1,2}(?:\.\d+)?)\s?% (?:transmission|chance|probability|adoption)\b', low)
+        if m and 0 < float(m.group(1)) <= 100: params['transmission'] = float(m.group(1)) / 100
+    if re.search(r'\bby (?:practice|clinic)s?\b|\b(?:each|per) (?:practice|clinic)\b|\bwhich practices\b', low): params['group_by'] = 'practice'
+    if focus in ('hubs', 'communities', 'all') and re.search(r'\b(?:organi[sz]ations?|facilit(?:y|ies)|hospitals?|practices?|groups?|tins?)\b', low) \
+            and not re.search(r'\b(?:pcps?|physicians?|doctors?|clinicians?|providers?|specialists?)\b', re.sub(r'\bprovider network\b', '', low)):
+        params['level'] = 'organization'
+    tins = re.findall(r'\b\d{2}-\d{7}\b', low)
+    if tins: params.update(leakage='tins', network_tins=tins)
+    elif re.search(r'\bnon[- ](?:aco|attributed) pcps?\b|\bother practices?\b', low): params['leakage'] = 'organization_or_practice'
+    m = re.search(r'\b(?:at least|>=?|minimum of|min(?:imum)?) (\d{1,3}) (?:shared )?patients\b', low)
+    if m and 1 <= int(m.group(1)) <= 100: params['min_shared'] = int(m.group(1))
+    if re.search(r'\bdisparity filter\b|\bbackbone\b', low): params['filter'] = 'disparity'
+    m = re.search(r'\btop (\d{1,3})\b', low)
+    if m and 1 <= int(m.group(1)) <= 200: params['top'] = int(m.group(1))
+    m = re.search(r'\b(?:in|for|during) (20\d\d)\b', low)
+    if m and m.group(1) <= as_of[:4]:
+        params['period'] = {'start': f'{m.group(1)}-01-01', 'end': min(f'{m.group(1)}-12-31', as_of[:10])}
+    else:
+        m = re.search(r'\b(?:last|past|previous) (\d{1,2}) (months?|years?)\b|\b(?:last|past) (year|12 months)\b', low)
+        if m:
+            days = 365 if m.group(3) else int(m.group(1)) * (30 if m.group(2).startswith('month') else 365)
+            if 30 <= days <= 3650: params['window_days'] = days
+    conditions = []
+    for c, aliases in CONDITION_ALIASES.items():
+        for alias in sorted(aliases, key=len, reverse=True):
+            if re.search(_alias_pattern(alias), low): conditions.append(c); break
+    from .network import validate
+    try:
+        params = validate(params)
+    except ValueError as exc:
+        return None, {'compiler': VERSION, 'recognised': recognised, 'paraphrased': [], 'route': 'fallback', 'reason': f'network parameters: {exc}'}
+    recognised.append(f"focus {params['focus']}" + (f" ({line})" if line else '') + (f" in {', '.join(conditions)}" if conditions else ''))
+    nodes = []
+    if conditions:
+        nodes.append({'id': 'population', 'operation': 'cohort', 'inputs': [],
+                      'parameters': {'specification': {'all': [{'kind': 'concept', 'concept': c, 'window': W} for c in conditions][:20], 'any': [], 'exclude': []}},
+                      'purpose': 'Population named in the question'})
+    nodes.append({'id': 'answer', 'operation': 'network', 'inputs': ['population'] if conditions else [], 'parameters': params,
+                  'purpose': f"Provider network: {params['focus']}" + (' (model)' if params['focus'] in ('steering', 'spread') else '')})
+    info = {'compiler': VERSION, 'recognised': recognised, 'paraphrased': [], 'route': 'local_compiler', 'unexplained': []}
     return {'interpretation': q, 'coverage': 'supported_observation', 'unmet_requirements': [], 'nodes': nodes}, info

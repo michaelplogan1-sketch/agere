@@ -76,6 +76,13 @@ PRODUCT['risk_adjustment'] = {'population': 'optional', 'view': 'raf',
                                      '(documentation gaps), coding completeness, RAF / risk score by practice, PCP or payer, dollars at stake. '
                                      'An internal (non-HCC) risk score is vbc.'}
 
+PRODUCT['network'] = {'population': 'optional', 'view': 'graph',
+                      'use': 'Provider network (patient-sharing graph of clinicians or organisations): which specialists and hospitals our patients actually use, '
+                             'key referral hubs (centrality), provider communities, which PCPs share the most patients, care-team cohesion (care density), '
+                             'referral concentration (HHI), care leaking out of the network by specialty or practice (visits and dollars), steering '
+                             'simulations (if we steer cardiology to practice X, how much leakage do we recover?) and how a practice-pattern change would '
+                             'spread across PCPs (diffusion model). Patient journeys / next steps after an ED visit or discharge are pathway.'}
+
 # Questions a SQL query over the semantic tables answers exactly are handed to the verified SQL ladder.
 LITERAL = ('Literal data questions: counts, lists, sums, averages, maxima, record filters, date arithmetic, simple breakdowns '
            'by a field, shares, rates per 1,000 without case-mix adjustment.')
