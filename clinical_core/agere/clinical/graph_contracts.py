@@ -6,12 +6,12 @@ The runtime validators remain authoritative for dates, bounds and source meaning
 """
 import copy
 
-VERSION = 'graph-operator-contracts/13'
+VERSION = 'graph-operator-contracts/14'
 SET_OPS = {'cohort', 'evidence', 'intersect', 'union', 'difference', 'sequence',
            'interpretation', 'source_state', 'pre_event_state', 'requirements', 'outcome',
            'protocol_review', 'program_document', 'functional_review', 'domain_review', 'appointment_followthrough'}
 WORK_SUPPORT = ('accountability_review', 'program_acquisition', 'measure_review')
-TYPED = {'aggregate', 'explain', 'sql', 'vbc', 'discover', 'trajectory', 'observation_process', 'reference_review', 'cohort', 'evidence', 'intersect', 'union', 'difference', 'compare', 'medication_identity',
+TYPED = {'aggregate', 'explain', 'sql', 'vbc', 'discover', 'trajectory', 'survival', 'observation_process', 'reference_review', 'cohort', 'evidence', 'intersect', 'union', 'difference', 'compare', 'medication_identity',
          'assertion_review', 'source_state', 'pre_event_state', 'context', 'context_passes', 'functional_review',
          'domain_review', 'worklist', 'program_acquisition', 'retrieve', 'forecast',
          'source_changes', 'review', 'measure_review', 'financial_accounts', 'accountability_review', 'outcome', 'appointment_followthrough', 'interpretation', 'requirements', 'protocol_review', 'program_document'}
@@ -96,6 +96,21 @@ def parameter_schema(op, catalog):
         from . import trajectory
         return obj({'concept': string(trajectory.NOISE), 'direction': string(['worse', 'better', 'up', 'down', 'any']),
                     'min_points': {'type': 'integer', 'minimum': 3, 'maximum': 50}, 'top': {'type': 'integer', 'minimum': 1, 'maximum': 200}})
+    if op == 'survival':
+        from . import survival, concepts as library
+        return obj({'index': obj({'type': string(survival.INDEX_TYPES, 'Time zero: discharge (each stay with a received discharge), '
+                                                 'condition_first_record (first dated record of concept), date (fixed date)'),
+                                  'concept': string(['', *library.CONDITIONS], 'condition_first_record only'),
+                                  'date': {'type': 'string', 'description': 'YYYY-MM-DD for date index, else empty'},
+                                  'window': obj({'start': {'type': 'string'}, 'end': {'type': 'string'}})}),
+                    'event': obj({'type': string(survival.EVENT_TYPES, 'readmission/followup need a discharge index'),
+                                  'concept': string(['', *library.ENCOUNTERS, *library.MEASUREMENTS], 'encounter or measurement concept'),
+                                  'op': string(['', *survival.OPS], 'measurement threshold comparison'), 'value': {'type': 'number'}}),
+                    'horizon_days': {'type': 'integer', 'minimum': 1, 'maximum': 3650},
+                    'time_points': array({'type': 'integer'}, '1..12 days within the horizon'),
+                    'group_by': string(survival.GROUP_BY), 'group_concept': string(['', *library.CONDITIONS], 'group_by condition only'),
+                    'cox': {'type': 'boolean'}, 'covariates': array(string([*survival.COVARIATES, *library.CONDITIONS]), 'Cox covariates; empty for defaults'),
+                    'top': {'type': 'integer', 'minimum': 1, 'maximum': 200}})
     if op == 'discover':
         from . import discover
         spec = parameter_schema('cohort', catalog)['properties']['specification']

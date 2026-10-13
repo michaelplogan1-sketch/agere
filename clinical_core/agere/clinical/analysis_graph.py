@@ -22,7 +22,7 @@ from .clinical_events import validate_window
 
 VERSION = 'population-analysis-graph/1'
 from .graph_contracts import SET_OPS, validate_inputs, validate_parameters as validate_shared_parameters
-OPERATIONS = SET_OPS | {'aggregate', 'explain', 'sql', 'vbc', 'discover', 'trajectory', 'observation_process', 'reference_review', 'compare', 'analyze', 'retrieve', 'forecast', 'source_changes', 'review','longitudinal','worklist','state_review','medication_identity','context','context_passes','assertion_review','baseline','decision_landmark','financial_accounts','accountability_review','protocol_change','program_document_change','program_acquisition','measure_review','evidence_portfolio'}
+OPERATIONS = SET_OPS | {'aggregate', 'explain', 'sql', 'vbc', 'discover', 'trajectory', 'survival', 'observation_process', 'reference_review', 'compare', 'analyze', 'retrieve', 'forecast', 'source_changes', 'review','longitudinal','worklist','state_review','medication_identity','context','context_passes','assertion_review','baseline','decision_landmark','financial_accounts','accountability_review','protocol_change','program_document_change','program_acquisition','measure_review','evidence_portfolio'}
 NODE_FIELDS = {'id', 'operation', 'inputs', 'parameters', 'purpose'}
 LIMITS = [
     'Membership means observed predicate matches, not confirmed disease or absent care.',
@@ -222,6 +222,18 @@ def build_answer(plan, results, memberships, question):
                              f"{report['flagged']} of {report['patients_with_series']} patients with a {report['concept']} series show a material, "
                              f"statistically separable change ({report['direction']})."))
         return answer
+    if last['operation'] == 'survival':
+        from .survival import summary
+        report = results[-1]['result']
+        partial = plan.get('coverage') != 'supported_observation' or plan.get('unmet_requirements')
+        answer.update(status='partial' if partial else ('answered' if report['units'] else 'unsupported'),
+                      answer_type='table' if report['units'] else 'unsupported', table=report['table'], method=report['method'],
+                      value=summary(report), count=report['units'],
+                      overall={k: report[k] for k in ('event_label', 'time_zero', 'units', 'patients', 'events', 'excluded',
+                                                      'included_without_baseline_result', 'groups', 'logrank', 'cox', 'curves')})
+        if not report['units']:
+            answer['missing'].append(summary(report))
+        return answer
     if last['operation'] == 'discover':
         report = results[-1]['result']
         partial = plan.get('coverage') != 'supported_observation' or plan.get('unmet_requirements')
@@ -361,6 +373,9 @@ def validate(plan, as_of):
         elif op == 'trajectory':
             from . import trajectory
             p = trajectory.validate(p)
+        elif op == 'survival':
+            from . import survival
+            p = survival.validate(p)
         elif op == 'discover':
             from . import discover
             p = discover.validate(p)
@@ -619,7 +634,7 @@ def code_identity():
                      [Path(__file__), Path(evidence_queries.__file__), Path(__file__).with_name('graph_contracts.py'),
                       Path(__file__).with_name('warehouse_retrieval.py'),
                       Path(__file__).with_name('warehouse_prediction.py'),
-                      Path(__file__).with_name('longitudinal.py'),
+                      Path(__file__).with_name('longitudinal.py'), Path(__file__).with_name('survival.py'),
                       *[Path(__file__).with_name(n) for n in ('program_work.py','program_work_current.py','program_work_v1.py','functional_programs.py','functional_review.py','registered_program_work.py','domain_programs.py','domain_review.py','work_adapters.py')],Path(__file__).with_name('program_documents.py'),Path(__file__).with_name('program_document_change.py'),
                       Path(__file__).with_name('program_acquisition.py'),Path(__file__).with_name('evidence_portfolio.py'),Path(__file__).with_name('program_resolution.py'),Path(__file__).with_name('measure_composition.py'),
                       Path(__file__).with_name('requirement_work.py'), Path(__file__).with_name('graph_decision.py'), Path(__file__).with_name('graph_criteria.py'), Path(__file__).with_name('graph_reports.py'), Path(__file__).with_name('graph_observation.py'), Path(__file__).with_name('graph_references.py'),
@@ -894,6 +909,11 @@ def execute(stack, plan, *, question=None):
                 from . import trajectory
                 chosen = memberships[node['inputs'][0]]
                 detail = trajectory.execute(path, sorted(chosen.yes), params)
+                detail['input_membership'] = membership_receipt(chosen)
+            elif op == 'survival':
+                from . import survival
+                chosen = memberships[node['inputs'][0]]
+                detail = survival.execute(path, sorted(chosen.yes), params)
                 detail['input_membership'] = membership_receipt(chosen)
             elif op == 'discover':
                 from . import discover
