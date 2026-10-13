@@ -13,7 +13,7 @@ one visit appears in several sources (encounter + ADT registration).
 """
 from collections import defaultdict
 from pathlib import Path
-import json, math, sqlite3, statistics
+import json, math, os, sqlite3, statistics
 
 from . import concepts, grounding, source_profile
 
@@ -178,15 +178,32 @@ def execute(path, patient_ids, params):
     for r in [target, *burden.values()]:
         if r: streams.update(b['stream'] for b in r['bindings'])
     members = set(patient_ids)
+    # Fast path: encounter concepts read the semantic layer's typed encounter rows (concept already resolved)
+    # instead of decoding every raw encounter payload; identical matching, dates and status.
+    fast = p['concept'] in concepts.ENCOUNTERS and p['measure'] in ('patients', 'events') and os.environ.get('AGERE_AGG_FAST', 'on') != 'off'
+    raw_streams = streams - {'encounters', 'adt'} if fast else streams
     db = sqlite3.connect(f'file:{path / "stack.sqlite3"}?mode=ro', uri=True)
     try:
         people = {pid: json.loads(payload) for pid, payload in db.execute('SELECT id, payload FROM patients') if pid in members}
         records = defaultdict(list)
-        sql = 'SELECT patient, payload FROM records WHERE stream IN (' + ','.join('?' * len(streams)) + ')'
-        for pid, payload in db.execute(sql, sorted(streams)):
-            if pid in members: records[pid].append(json.loads(payload))
+        if raw_streams:
+            sql = 'SELECT patient, payload FROM records WHERE stream IN (' + ','.join('?' * len(raw_streams)) + ')'
+            for pid, payload in db.execute(sql, sorted(raw_streams)):
+                if pid in members: records[pid].append(json.loads(payload))
     finally:
         db.close()
+    if fast:
+        from . import semantic_layer
+        sdb = sqlite3.connect(f'file:{semantic_layer.ensure(path)}?mode=ro', uri=True)
+        try:
+            for pid, st, d, rd, ad, org, status, rid in sdb.execute(
+                    'SELECT e.patient_id, e.source_table, e.event_date, r.recorded_date, r.available_date, e.organization_id, e.status, e.record_id '
+                    'FROM encounter e JOIN record r ON r.record_id = e.record_id WHERE e.type_concept = ?', (p['concept'],)):
+                if pid in members:
+                    records[pid].append({'source_table': st, 'event_date': d, 'recorded_date': rd, 'available_date': ad,
+                                         'organization_id': org, 'status': status, 'record_id': rid, '_concept': p['concept']})
+        finally:
+            sdb.close()
 
     # Patient attributes from received records.
     attrs = {}
@@ -211,7 +228,7 @@ def execute(path, patient_ids, params):
         if p['measure'] == 'readmissions': continue
         hits = []
         for r in records[pid]:
-            b = _matches(target, r) if target else None
+            b = (r.get('_concept') == p['concept'] or None) if fast and r.get('_concept') else (_matches(target, r) if target else None)
             if not b or (p.get('status') and r.get('status') != p['status']): continue
             w = _in_window(r, p['window'], as_of)
             if w is None: unknown_dates += 1; continue

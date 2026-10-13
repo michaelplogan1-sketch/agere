@@ -117,3 +117,20 @@ class SettlementMath(unittest.TestCase):
         self.assertAlmostEqual(sum(x['shapley_share'] for x in alloc['allocation']), alloc['pooled_settlement'], delta=1.0)
         risk = r['rows'][0]['settlement_risk']
         self.assertAlmostEqual(risk['p_earn_savings'] + risk['p_owe_loss'] + risk['p_within_corridor'], 1.0, places=2)
+
+
+class AggregateFastPath(unittest.TestCase):
+    @unittest.skipUnless(STACK.exists(), 'synthetic release not present')
+    def test_semantic_fast_path_matches_raw_records(self):
+        import os, json, sqlite3
+        from clinical_core.agere.clinical import aggregate
+        everyone = [r[0] for r in sqlite3.connect(STACK / 'semantic.sqlite3').execute('SELECT patient_id FROM patient')]
+        params = {'measure': 'events', 'concept': 'emergency_visit', 'statistic': 'count', 'group_by': 'coverage_type',
+                  'window': {'start': '2028-01-01', 'end': '2029-08-15'}}
+        try:
+            os.environ['AGERE_AGG_FAST'] = 'off'; slow = aggregate.execute(STACK, everyone, params)
+            os.environ['AGERE_AGG_FAST'] = 'on'; fast = aggregate.execute(STACK, everyone, params)
+        finally:
+            os.environ.pop('AGERE_AGG_FAST', None)
+        self.assertEqual(json.dumps(slow['rows'], sort_keys=True), json.dumps(fast['rows'], sort_keys=True))
+        self.assertEqual(slow['records_with_unknown_date'], fast['records_with_unknown_date'])
