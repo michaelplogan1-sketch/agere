@@ -57,7 +57,13 @@ def validate(p):
         if cmp and not all(isinstance(cmp.get(k), dict) and cmp[k].get('start') and cmp[k].get('end') for k in ('a', 'b')):
             raise ValueError('compare needs periods a and b with start/end dates')
     return {'metric': p['metric'], 'group_by': p.get('group_by', 'none'), 'period': p.get('period') or {}, 'compare': p.get('compare') or {},
-            'measure': p.get('measure', ''), 'terms': p.get('terms') or {}, 'attribution': p.get('attribution', 'hybrid')}
+            'measure': p.get('measure', ''), 'terms': p.get('terms') or {}, 'attribution': p.get('attribution', 'hybrid'),
+            'denominator': _denominator(p.get('denominator', 'member_years'))}
+
+
+def _denominator(d):
+    if d not in ('member_years', 'roster'): raise ValueError('denominator: member_years (default, NCQA/ACO REACH) or roster (headcount)')
+    return d
 
 
 # ---- building blocks -------------------------------------------------------------
@@ -184,7 +190,20 @@ def _utilization(db, people, attr, p, start, end):
             r['ed_per_1000_shrunk'] = round(1000 * r.pop('shrunk_rate'), 1)
             r['ed_per_1000_ci95'] = [round(1000 * x, 1) for x in r.pop('rate_ci95')]
     rows.sort(key=lambda r: -(r.get('ed_per_1000_shrunk') or 0))
-    return rows, ('Members with enrolled months in the period; ED visits = distinct ED days; admissions = distinct hospital stays; '
+    if p.get('denominator') == 'roster':  # registry variant: per 1,000 roster patients (headcount, not annualised)
+        roster = [pid for (pid,) in db.execute('SELECT patient_id FROM patient')]
+        keyed = defaultdict(list)
+        for pid in roster: keyed[_group_key(p['group_by'], pid, people, attr) if pid in people else 'not_enrolled'].append(pid)
+        for r in rows:
+            pids = keyed.get(r['group'], [])
+            r['roster_patients'] = len(pids)
+            r['ed_visits_roster'] = sum(len(ed[x]) for x in pids)
+            r['admissions_roster'] = sum(len(stays[x]) for x in pids)
+            r['ed_per_1000_roster'] = round(1000 * r['ed_visits_roster'] / len(pids), 1) if pids else None
+            r['admits_per_1000_roster'] = round(1000 * r['admissions_roster'] / len(pids), 1) if pids else None
+    return rows, (('Rates per 1,000 roster patients (headcount, not annualised) as requested; ' if p.get('denominator') == 'roster' else
+                   'Rates per 1,000 member-years (NCQA/ACO REACH convention); ') +
+                  'Members with enrolled months in the period; ED visits = distinct ED days; admissions = distinct hospital stays; '
                   '7-day follow-up = clinic/specialist/telehealth contact within 7 days after discharge. '
                   'ED rates shrunk with empirical-Bayes gamma-Poisson; rank on the shrunk rate and its interval.')
 

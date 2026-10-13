@@ -1233,6 +1233,9 @@ def _vbc_question(q, r, profile, as_of, info, terms):
     for m, pattern in VBC_PATTERNS:
         if m == metric: r.take(pattern, f'vbc {metric}')
     params = {'metric': metric, 'group_by': 'none'}
+    if metric == 'utilization' and r.take(r'\b(?:use |using |with )?(?:the )?(?:whole |entire |full )?roster (?:as (?:the )?denominator|headcount)\b|'
+                                          r'\bper 1,?000 (?:roster )?(?:patients|people) on the roster\b|\bheadcount denominator\b', 'denominator roster'):
+        params['denominator'] = 'roster'
     for pattern, g in GROUPS:
         if g in ('facility',): continue
         if r.take(pattern, f'group by {g}'): params['group_by'] = g; break

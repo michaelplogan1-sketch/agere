@@ -82,7 +82,9 @@ STATISTIC_WORDS = [('share', r'\b(share|percent(age)?|proportion|fraction|what %
 COUNT_QUESTION = re.compile(r'\b(how many|number of|count|what (?:share|proportion|percent(?:age)?))\b', re.I)
 
 
-VBC_VALUE_COLUMNS = [(r'\b(?:ed|er|emergency)\b.*\bper 1,?000\b|\bper 1,?000\b.*\b(?:ed|er|emergency)\b', 'ed_per_1000'),
+VBC_VALUE_COLUMNS = [(r'\b(?:ed|er|emergency)\b.*\bper 1,?000\b|\bper 1,?000\b.*\b(?:ed|er|emergency)\b', 'ed_per_1000_roster'),
+                     (r'\badmi\w*\b.*\bper 1,?000\b|\bper 1,?000\b.*\badmi\w*', 'admits_per_1000_roster'),
+                     (r'\b(?:ed|er|emergency)\b.*\bper 1,?000\b|\bper 1,?000\b.*\b(?:ed|er|emergency)\b', 'ed_per_1000'),
                      (r'\badmi\w*\b.*\bper 1,?000\b|\bper 1,?000\b.*\badmi\w*', 'admits_per_1000'),
                      (r'\breadmission rate\b', 'readmission_rate'), (r'\bfollow-?up rate\b|\b7-day follow', 'followup_7d_rate'),
                      (r'\bpmpm\b|\bper member per month\b', 'allowed_pmpm')]
