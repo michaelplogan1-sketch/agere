@@ -127,6 +127,12 @@ def requested_shape(question):
     return None
 
 
+def _tidy(v):
+    """Presentation precision for computed numbers: 2 decimals, 4 below 1 (exact values stay in the query result)."""
+    if isinstance(v, float) and math.isfinite(v): return round(v, 4 if abs(v) < 1 else 2)
+    return v
+
+
 def _fmt(v):
     if isinstance(v, float): return f'{v:,.2f}'.rstrip('0').rstrip('.') if abs(v) < 1e6 else f'{v:,.0f}'
     return f'{v:,}' if isinstance(v, int) else str(v)
@@ -250,9 +256,9 @@ def build_answer(plan, results, memberships, question):
         kind = report['returns']
         answer.update(status='partial' if partial else 'answered', answer_type=kind, query=report['query'])
         if kind == 'count': answer['count'] = report['value']
-        elif kind == 'value': answer['value'] = report['value']
+        elif kind == 'value': answer['value'] = _tidy(report['value'])
         elif kind == 'patient_set': answer.update(patient_ids=report['patient_ids'], count=len(report['patient_ids']))
-        else: answer['table'] = report['rows']
+        else: answer['table'] = [{k: _tidy(v) for k, v in r.items()} if isinstance(r, dict) else r for r in report['rows']]
         if report['truncated']: answer['missing'].append(f'Result truncated at {report["row_count"]} rows.')
         return answer
     if last['operation'] == 'explain':
