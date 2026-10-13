@@ -152,6 +152,15 @@ T = {
         'Payment integrity review flags ranked by dollars', 'Which claims were paid less than comparable claims?',
         'how much do takebacks and rework cost us', 'root causes of denials in dollars',
     ],
+    'knowledge': [
+        'How does the Medicare Shared Savings Program decide which beneficiaries belong to an ACO?', 'What is a High Needs ACO in REACH?',
+        'Explain prospective versus retrospective assignment', 'What is the minimum savings rate?', 'How do MA plans pay primary care groups under capitation?',
+        'What changed between CMS-HCC V24 and V28?', 'Why does coding intensity matter in Medicare Advantage?', 'What is a quality withhold?',
+        'How does Pearl Health work with independent practices?', 'Who acquired Signify Health and why?', 'How is Privia different from Aledade?',
+        'What are integrated practice units?', 'What did the Next Generation ACO evaluation find?', 'Is there evidence that ACOs save money?',
+        'Describe the Kidney Care Choices model', 'What is the ratchet problem in ACO benchmarks?', 'what does two-sided risk mean',
+        'Explain the HEDIS hybrid method', 'What is the Triple Aim?', 'Give me an overview of Medicaid managed care auto-assignment',
+    ],
     'not_answerable': [
         'How many patients died last year?', 'Mortality rate for {conds}', 'Breakdown of patients by race and ethnicity',
         'Total RVUs per physician', 'Which CPT codes are billed most?', 'Average HCC RAF score', 'patient satisfaction survey results',

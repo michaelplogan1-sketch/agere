@@ -1,0 +1,12 @@
+[
+  {"question": "How does beneficiary assignment work in the Medicare Shared Savings Program?", "expect_operation": "knowledge"},
+  {"question": "Explain how the ACO REACH benchmark is set", "expect_operation": "knowledge"},
+  {"question": "What is the difference between Aledade and agilon health?", "expect_operation": "knowledge"},
+  {"question": "What is Michael Porter's value agenda?", "expect_operation": "knowledge"},
+  {"question": "How is a RAF score calculated under CMS-HCC V28?", "expect_operation": "knowledge"},
+  {"question": "What does RADV stand for and why does it matter to MA plans?", "expect_operation": "knowledge"},
+  {"question": "Did the Camden Coalition hotspotting program reduce readmissions?", "expect_operation": "knowledge"},
+  {"question": "What are the HCP-LAN APM framework categories?", "expect_operation": "knowledge"},
+  {"question": "Tell me about the CMS Innovation Center's 2030 accountable care goal", "expect_operation": "knowledge"},
+  {"question": "Compare upside-only shared savings with global capitation", "expect_operation": "knowledge"}
+]

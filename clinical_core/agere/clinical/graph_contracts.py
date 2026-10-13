@@ -26,6 +26,7 @@ TYPED |= {'early_signal'}
 OPTIONAL_POPULATION += ('early_signal',)
 TYPED |= {'claims_review'}  # payment integrity and revenue leakage (claims_review.py)
 OPTIONAL_POPULATION += ('claims_review',)
+TYPED |= {'knowledge'}  # cited VBC knowledge base (vbc_knowledge.py); takes no population
 
 
 def obj(properties):
@@ -51,6 +52,8 @@ def array(items, description=None):
 
 
 def input_contract(op):
+    if op == 'knowledge':  # explanation from the cited knowledge base; never a population
+        return {'count': [0, 0], 'type': 'membership', 'output': 'report'}
     if op == 'briefing':  # whole-population briefing; takes no population
         return {'count': [0, 0], 'type': 'membership', 'output': 'report'}
     if op == 'pathway':  # optional population; no population = everyone
@@ -237,6 +240,11 @@ def parameter_schema(op, catalog):
                     'staffing': {'type': 'boolean', 'description': 'true when the question asks for staff/FTE needs'},
                     'minutes_per_unit': {'type': ['number', 'null'], 'description': 'User-supplied staff minutes per unit; null if not stated (never invent)'},
                     'fte_hours_per_week': {'type': ['number', 'null'], 'description': 'User-supplied productive hours per FTE-week; null if not stated'}})
+    if op == 'knowledge':
+        from . import vbc_knowledge
+        return obj({'query': {'type': 'string', 'description': 'The explanation question, verbatim'},
+                    'top': {'type': 'integer', 'minimum': 1, 'maximum': 10, 'description': 'Entries to retrieve (default 5)'},
+                    'topic': string([*vbc_knowledge.TOPICS, 'any'], 'Restrict to one topic, else any')})
     if op == 'briefing':
         return obj({'top': {'type': 'integer', 'minimum': 1, 'maximum': 25, 'description': 'Cards to return (default 10)'}})
     if op == 'pathway':
