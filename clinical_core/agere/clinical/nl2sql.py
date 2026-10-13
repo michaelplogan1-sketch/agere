@@ -133,6 +133,21 @@ def _stream_docs(profile):
 _DOCS = {}
 
 
+# Analyst vocabulary -> received streams (healthcare finance, operations and care-transition terms).
+GLOSSARY = [
+    (r'\ba/?r\b|accounts? receivable|outstanding balance|open balance|balances?\b|owe[sd]?\b|statements?\b|patient responsibility', ['patient_billing_accounts']),
+    (r'remittance|\b835\b|\bera\b|eob|explanation of benefits', ['provider_remittance_advice']),
+    (r'payer cash|cash posting|posted cash|payer payments?|first (?:payer )?cash|days to (?:payment|cash)|cash receipts?', ['payer_cash_allocations', 'provider_remittance_advice']),
+    (r'repric|reprocess|corrected claims?|claim corrections?|re-?adjudicat', ['claim_corrections']),
+    (r'claim lines?|service codes?|line items?|charges?\b', ['medical_claim_lines']),
+    (r'pharmacy (?:claims?|fills?|transactions?)|\bfills?\b.*\bpayer|reversed fills?|rx claims?', ['pharmacy_claim_transactions', 'pharmacy_claims']),
+    (r'discharge (?:plans?|instructions?)|follow[- ]?up (?:within|instructions?|recommended)|transitions? of care', ['discharge_plans', 'hospital_followup_assessments']),
+    (r'tetanus|immunization history|vaccine screening|contraindicat', ['immunization_screening', 'immunization_history']),
+    (r'community (?:referrals?|services?|resources?)|food (?:bank|access|resources?)|transport(?:ation)? assistance', ['community_service_referrals', 'community_service_outcomes']),
+    (r'phone (?:calls?|encounters?|messages?)|telephone|call volume', ['telephone_messages']),
+]
+
+
 def retrieve_streams(question, profile, k=4):
     key = id(profile)
     if key not in _DOCS: _DOCS[key] = _stream_docs(profile)
@@ -146,11 +161,20 @@ def retrieve_streams(question, profile, k=4):
         for f, fs in spec['fields'].items():
             for v in (fs.get('values') or {}):
                 if len(v) >= 3 and v.lower() in words: scores[s_name] = scores.get(s_name, 0) + 25
+    low = question.lower()
+    for s_name in profile['streams']:  # the stream named in plain words ("discharge plans", "claim corrections") ranks first
+        spaced = s_name.replace('_', ' ')
+        if re.search(r'\b' + re.escape(spaced.rstrip('s')) + r's?\b', low): scores[s_name] = scores.get(s_name, 0) + 2000
+    for pattern, names in GLOSSARY:
+        if re.search(pattern, low):
+            for i, s_name in enumerate(names):
+                if s_name in profile['streams']: scores[s_name] = scores.get(s_name, 0) + 1000 - i
     return [s for s, v in sorted(scores.items(), key=lambda kv: -kv[1]) if v > 0][:k]
 
 
-def schema_for(question, profile):
-    streams = retrieve_streams(question, profile)
+def schema_for(question, profile, extra=()):
+    streams = retrieve_streams(question, profile, k=6)
+    streams += [x for x in extra if x not in streams and x in profile['streams']]
     lines = []
     for s in streams:
         fields = []
@@ -166,6 +190,10 @@ def schema_for(question, profile):
     concept_line = ('concept ids - conditions: ' + ', '.join(cat['conditions']) + '; measurements (value_canonical unit): ' +
                     ', '.join(f"{k} [{concepts.MEASUREMENTS[k]['unit']}]" for k in cat['measurements']) +
                     '; encounter type_concept: ' + ', '.join(cat['encounters']))
+    enc = (profile['streams'].get('encounters') or {}).get('fields', {}).get('type', {}).get('values') or {}
+    if enc: concept_line += '; visit.type raw values (labels and codes not in type_concept are still queryable): ' + ', '.join(sorted(enc, key=lambda v: -enc[v])[:30])
+    concept_line += ('; condition labels outside the concept list are queryable via condition.label/icd10 '
+                     '(e.g. label LIKE \'%bipolar%\' or icd10 LIKE \'F31%\').')
     return streams, f"TABLES\n{TABLES}\n\nRELEVANT RECORD STREAMS\n" + '\n'.join(lines) + f"\n\n{concept_line}"
 
 
@@ -361,13 +389,29 @@ def _plausible(path, question, sql, probe):
                 raise ValueError(f'Implausible percentage {v}.')
 
 
-def verified_answer(path, question, as_of, primary, second, judge, decider=None):
+def verified_answer(path, question, as_of, primary, second, judge, decider=None, extra_streams=()):
+    """Run the ladder; a 'missing data' claim is checked against the full data dictionary first: when other
+    received streams match what was called missing, the question is re-asked with those streams in view."""
+    try:
+        return _verified_answer(path, question, as_of, primary, second, judge, decider, extra_streams)
+    except MissingData as exc:
+        if extra_streams: raise
+        profile = source_profile.load(path)
+        shown = retrieve_streams(question, profile, k=6)
+        found = [x for x in retrieve_streams(str(exc) + ' ' + question, profile, k=10) if x not in shown][:4]
+        if not found: raise
+        params, result, receipt = _verified_answer(path, question, as_of, primary, second, judge, decider, tuple(found))
+        receipt['missing_claim_rechecked'] = {'claim': str(exc)[:300], 'streams_added': found}
+        return params, result, receipt
+
+
+def _verified_answer(path, question, as_of, primary, second, judge, decider=None, extra_streams=()):
     """Hosted ladder: primary writes SQL (lint + sanity, one repair), an independent second model writes its own;
     agreement is accepted, disagreement goes to the judge, whose query must pass the same checks.
     Returns (params, result, receipt) or raises ValueError (the planner then escalates)."""
     from . import verify
     profile = source_profile.load(path)
-    streams, schema = schema_for(question, profile)
+    streams, schema = schema_for(question, profile, extra_streams)
     qt = set(_tokens(question))
     ranked = sorted(EXAMPLES, key=lambda e: -len(qt & set(_tokens(e[0] + ' ' + e[1]))))[:7]
     shots = '\n\n'.join(f'Q: {q}\n```sql\n{sq}\n```' for q, sq in ranked)
@@ -514,6 +558,9 @@ VERIFY_RULES = """
   If the question needs data that is not listed (race, death, income, language, risk-adjustment scores, ...), output
   exactly one line: MISSING: <what is missing> - and no SQL.
 - Name output columns plainly (e.g. month, practice, visits, patients, total_usd).
+- Versioned streams: records that repeat per business id (account_id, claim_id, appointment_id, prescription_id,
+  referral id) are successive versions. For "current", "now", "open" or "outstanding" questions take the latest record
+  per id (max available_date, then available_time) before summing; never sum all versions.
 - Point-in-time: if the question states an "as of" / "received by" date earlier than the snapshot, count only rows whose
   available_date (arrival) is on or before that date, in every table you use."""
 
