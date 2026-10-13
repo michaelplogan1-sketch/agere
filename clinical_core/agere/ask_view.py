@@ -14,11 +14,15 @@ button{padding:12px 18px;border:0;border-radius:10px;background:var(--accent);co
 .headline{font-size:17px;font-weight:600}.meta{color:var(--muted);font-size:13px;margin-top:6px}.meta b{color:var(--fg)}
 .warn{color:var(--warn)}table{border-collapse:collapse;width:100%;font-size:13px;margin-top:8px;display:block;overflow-x:auto}
 th,td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--line);white-space:nowrap}th{color:var(--muted);font-weight:600}
-details{margin-top:10px}summary{cursor:pointer;color:var(--muted);font-size:13px}pre{white-space:pre-wrap;font-size:12px;color:var(--muted)}
+details{margin-top:10px}.turnq{font-weight:600;margin-bottom:6px}.resolved{color:var(--muted);font-size:13px;margin:-2px 0 8px;border-left:3px solid var(--accent);padding-left:8px}
+.threadbar{display:flex;justify-content:space-between;align-items:center;margin-top:18px;color:var(--muted);font-size:13px}.threadbar button{padding:6px 12px;font-size:13px;background:transparent;color:var(--accent);border:1px solid var(--line)}
+.past{opacity:.85}summary{cursor:pointer;color:var(--muted);font-size:13px}pre{white-space:pre-wrap;font-size:12px;color:var(--muted)}
 </style></head><body><main>
 <h1>Agere</h1><p class="sub">Ask about the population, care, cost or data. Agere plans the question itself; a hosted model is used only when it must be.</p>
 <p class="meta" id="econ"></p><form id="f"><input id="q" placeholder="e.g. Which CKD patients have a declining eGFR?" autocomplete="off"><button id="b">Ask</button></form>
-<div class="examples" id="ex"></div><div id="out"></div>
+<div class="examples" id="ex"></div>
+<div class="threadbar"><span id="threadinfo">New conversation. Follow-ups like “now by practice”, “only Medicare”, “what about 2029?”, “list them”, “why?” build on the previous answer.</span><button id="newconv" type="button">New conversation</button></div>
+<div id="thread"></div><div id="out"></div>
 <h1 style="margin-top:28px">Briefing</h1><p class="sub">What stands out in the data right now, computed locally without a question.</p><div id="brief" class="meta">Loading…</div>
 <script>
 const EX=["How many patients have diabetes with A1c over 9?","Which CKD patients have a declining eGFR?","What is our allowed PMPM by payer?",
@@ -28,13 +32,24 @@ const ex=document.getElementById('ex');EX.forEach(t=>{const a=document.createEle
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 function table(rows){if(!rows||!rows.length)return'';const cols=Object.keys(rows[0]).filter(k=>!['readmissions','patients_with_outcome','pids'].includes(k));
  return '<table><tr>'+cols.map(c=>'<th>'+esc(c)+'</th>').join('')+'</tr>'+rows.slice(0,50).map(r=>'<tr>'+cols.map(c=>'<td>'+esc(typeof r[c]==='object'?JSON.stringify(r[c]):r[c])+'</td>').join('')+'</tr>').join('')+'</table>'}
+const store={get(){try{return sessionStorage.getItem('agere-conversation')}catch(_){return null}},set(v){try{v?sessionStorage.setItem('agere-conversation',v):sessionStorage.removeItem('agere-conversation')}catch(_){}}};
+let conversationId=store.get(),turns=0;const thread=document.getElementById('thread');
+const newId=()=>(crypto.randomUUID?crypto.randomUUID():String(Date.now())+Math.random().toString(16).slice(2)).replace(/[^A-Za-z0-9_-]/g,'');
+function info(){document.getElementById('threadinfo').textContent=turns?('Conversation · '+turns+' turn'+(turns>1?'s':'')+'. Follow-ups build on the last question.'):'New conversation. Follow-ups like “now by practice”, “only Medicare”, “what about 2029?”, “list them”, “why?” build on the previous answer.'}
+function resolvedLine(c){if(!c||c.resolved_question===c.question)return'';return '<div class="resolved">Answered as: <b>'+esc(c.resolved_question)+'</b>'+(c.method==='hosted'?' (rewritten by a hosted model, then planned normally)':'')+'</div>'}
+document.getElementById('newconv').onclick=()=>{conversationId=null;store.set(null);turns=0;thread.innerHTML='';document.getElementById('out').innerHTML='';info();q.focus()};
+if(conversationId)fetch('/api/stack/conversation?id='+encodeURIComponent(conversationId)).then(r=>r.json()).then(d=>{(d.turns||[]).forEach(t=>{turns++;
+ thread.insertAdjacentHTML('beforeend','<div class="card past"><div class="turnq">'+esc(t.question)+'</div>'+resolvedLine({question:t.question,resolved_question:t.resolved_question,method:t.method})+
+ '<div class="meta">'+esc(t.error?('Not answered: '+t.error):((t.answer_summary||{}).headline||''))+'</div></div>')});info()}).catch(()=>{});
 let ask=async function(e){if(e)e.preventDefault();const question=q.value.trim();if(!question)return;b.disabled=true;
- const out=document.getElementById('out');out.innerHTML='<div class="card meta">Working…</div>';const t0=performance.now();
- try{const r=await fetch('/api/stack/compose',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({question})});const d=await r.json();
-  if(d.error){out.innerHTML='<div class="card"><div class="headline warn">Not answered locally</div><div class="meta">'+esc(d.error)+'</div></div>';return}
+ if(!conversationId){conversationId=newId();store.set(conversationId)}
+ const out=document.createElement('div');thread.appendChild(out);out.innerHTML='<div class="card"><div class="turnq">'+esc(question)+'</div><div class="meta">Working…</div></div>';const t0=performance.now();
+ try{const r=await fetch('/api/stack/compose',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({question,conversation_id:conversationId})});const d=await r.json();
+  turns++;info();q.value='';
+  if(d.error){out.innerHTML='<div class="card"><div class="turnq">'+esc(question)+'</div><div class="headline warn">Not answered locally</div><div class="meta">'+esc(d.error)+'</div></div>';return}
   const a=d.answer||{},pr=d.planner_receipt||{},econ=d.planning_economics||{};
   const route={local_compiler:'Agere compiler',local_unsupported:'Agere compiler (unsupported)',local_model_rewrite_compiled:'Local model rewrite → Agere compiler',hosted_verified_sql:'Hosted models, cross-verified',learned_verified_sql:'Learned (previously verified)',hosted_missing_data:'Hosted models: data not available',frontier_escalation:'Frontier model'}[pr.route]||pr.route;
-  let html='<div class="card"><div class="headline">'+esc(a.headline||a.status)+'</div><div class="meta">Route <b>'+esc(route)+'</b> · API calls <b>'+(d.new_paid_api_calls||0)+'</b> · cost <b>$'+(econ.known_api_estimate_usd||0).toFixed(4)+'</b> · '+((performance.now()-t0)/1000).toFixed(2)+' s'+(pr.rewrite?' · rewrite: “'+esc(pr.rewrite)+'”':'')+'</div>';
+  let html='<div class="card"><div class="turnq">'+esc(question)+'</div>'+resolvedLine(d.conversation)+'<div class="headline">'+esc(a.headline||a.status)+'</div><div class="meta">Route <b>'+esc(route)+'</b> · API calls <b>'+(d.new_paid_api_calls||0)+'</b> · cost <b>$'+(econ.known_api_estimate_usd||0).toFixed(4)+'</b> · '+((performance.now()-t0)/1000).toFixed(2)+' s'+(pr.rewrite?' · rewrite: “'+esc(pr.rewrite)+'”':'')+'</div>';
   if(a.patient_ids&&a.patient_ids.length&&!a.table)html+='<details><summary>'+a.patient_ids.length+' patient IDs</summary><pre>'+esc(a.patient_ids.join(', '))+'</pre></details>';
   html+=table(a.table);
   if(a.concepts&&a.concepts.length)html+='<details><summary>Definitions</summary><pre>'+esc(JSON.stringify(a.concepts,null,1))+'</pre></details>';
@@ -43,11 +58,12 @@ let ask=async function(e){if(e)e.preventDefault();const question=q.value.trim();
   if(a.method)html+='<details><summary>Method</summary><pre>'+esc(a.method)+'</pre></details>';
   if(a.query)html+='<details><summary>Query</summary><pre>'+esc(a.query)+'</pre></details>';
   if(a.missing&&a.missing.length)html+='<details open><summary>Not covered</summary><pre>'+esc(a.missing.join('\n'))+'</pre></details>';
-  html+='<div class="meta" style="margin-top:10px"><a style="color:var(--warn);cursor:pointer" id="flag">Flag this answer as wrong</a></div>';
-  out.innerHTML=html+'</div>';
-  document.getElementById('flag').onclick=async()=>{const note=prompt('What is wrong with this answer?');if(!note)return;
-   await fetch('/api/stack/correct',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({question,note})});
-   document.getElementById('flag').textContent='Recorded: this answer will not be reused and becomes a regression case.'}}catch(err){out.innerHTML='<div class="card warn">'+esc(err)+'</div>'}finally{b.disabled=false}}
+  html+='<div class="meta" style="margin-top:10px"><a style="color:var(--warn);cursor:pointer" class="flag">Flag this answer as wrong</a></div>';
+  out.innerHTML=html+'</div>';out.scrollIntoView({block:'nearest'});
+  const answered=(d.conversation&&d.conversation.resolved_question)||question,flag=out.querySelector('.flag');
+  flag.onclick=async()=>{const note=prompt('What is wrong with this answer?');if(!note)return;
+   await fetch('/api/stack/correct',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({question:answered,note})});
+   flag.textContent='Recorded: this answer will not be reused and becomes a regression case.'}}catch(err){out.innerHTML='<div class="card warn">'+esc(err)+'</div>'}finally{b.disabled=false}}
 document.getElementById('f').onsubmit=ask;
 const loadEcon=()=>fetch('/api/stack/economics').then(r=>r.json()).then(e=>{if(!e.questions)return;document.getElementById('econ').innerHTML=
  '<b>'+e.questions+'</b> questions answered here · <b>'+Math.round(100*(e.share_without_api_calls||0))+'%</b> with no model call · API spend <b>$'+(e.api_usd||0).toFixed(4)+'</b>'}).catch(()=>{});

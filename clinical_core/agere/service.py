@@ -245,23 +245,9 @@ def serve(run,port,annotations=None,evidence_queries=None,stack=None,allow_live_
                     if set(body)!={'question','live'} or type(body['live']) is not bool:raise ValueError('Explicit question/live route required')
                     result=connected_stack.ask(body['question'],live=body['live'])
                 elif path=='/api/stack/compose':
-                    from .clinical import answer_log, learning
-                    _t0=time.time()
-                    try:
-                        if set(body)=={'question'}:result=connected_stack.compose(body['question'])
-                        elif set(body)=={'question','planning'} and body['planning']=='scoped_local_candidate':
-                            result=connected_stack.compose(body['question'],planning=body['planning'])
-                        else:raise ValueError('Explicit composition question and supported optional candidate policy required')
-                    except Exception as _exc:
-                        answer_log.record(connected_stack.path,str(body.get('question','')),error=f'{type(_exc).__name__}: {_exc}',seconds=time.time()-_t0)
-                        learning.record_outcome(connected_stack.path,str(body.get('question','')),'declined','declined',str(_exc));raise
-                    answer_log.record(connected_stack.path,body['question'],result=result,seconds=time.time()-_t0)
-                    _pr=result.get('planner_receipt') or {}
-                    _local=_pr.get('local_compiler_declined') or {}
-                    learning.record_outcome(connected_stack.path,body['question'],_pr.get('route') or 'unknown',
-                                            'escalated' if result.get('new_paid_api_calls') else (result.get('answer') or {}).get('status') or 'answered',
-                                            _local.get('reason') if isinstance(_local,dict) else None,
-                                            result.get('new_paid_api_calls') or 0,(result.get('planning_economics') or {}).get('known_api_estimate_usd') or 0)
+                    # {question}, {question, planning} and, for follow-ups, either plus conversation_id.
+                    from .clinical import conversation
+                    result=conversation.handle_compose(connected_stack,body)
                 elif path=='/api/stack/correct':
                     from .clinical import learning
                     if set(body)-{'question','note','expected'} or not isinstance(body.get('question'),str) or not isinstance(body.get('note'),str):
@@ -771,6 +757,13 @@ def serve(run,port,annotations=None,evidence_queries=None,stack=None,allow_live_
                 if connected_stack is None:self.send_error(404);return
                 from .clinical.briefing import cached as briefing
                 raw=json.dumps(briefing(connected_stack.path),default=str).encode();mime='application/json'
+            elif parsed.path=='/api/stack/conversation':
+                if connected_stack is None:self.send_error(404);return
+                from .clinical import conversation
+                try:
+                    cid=conversation.check_id(params.get('id',[''])[0] or '')
+                    raw=json.dumps({'id':cid,'turns':conversation.turns(connected_stack.path,cid)},default=str).encode();mime='application/json'
+                except ValueError as exc:self.send_error(400,str(exc));return
             elif parsed.path=='/ask':
                 if connected_stack is None:self.send_error(404);return
                 from .ask_view import page as ask_page
