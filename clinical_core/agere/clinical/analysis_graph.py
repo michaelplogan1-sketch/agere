@@ -154,7 +154,9 @@ def headline(answer):
             metrics = ['allowed_pmpm_completed', 'oe_ratio', 'ed_per_1000_shrunk', 'shrunk_rate', 'rate', 'mean_risk_score', 'value',
                        'readmission_rate', 'members', 'patient_count', 'total_cents', 'count']
             first = rows[0]
-            metric = next((m for m in metrics if isinstance(first.get(m), (int, float))), None) or \
+            measured = [k for k, v in first.items() if isinstance(v, (int, float)) and not isinstance(v, bool)
+                        and re.search(r'avg|average|mean|median|rate|pct|percent|share|per_1000|days|usd|dollars|_cents|ratio', k)]
+            metric = next((m for m in metrics if isinstance(first.get(m), (int, float))), None) or (measured[-1] if measured else None) or \
                      next((k for k, v in first.items() if isinstance(v, (int, float)) and k not in ('patients', 'members')), None)
             key = next((k for k in ('group', 'segment', 'factor', 'label') if k in first), None) or next(iter(first))
             if metric:
