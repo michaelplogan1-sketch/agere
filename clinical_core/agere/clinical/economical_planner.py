@@ -2,7 +2,7 @@
 
 Only complete registered observation plans are eligible for the cheap route.
 The classifier proposes a plan; its score is not calibrated clinical confidence.
-No approximate/semantic cache is used to reuse an answer to a different question.
+Approximate reuse is limited to semantic_cache: a verified query for a slot-identical paraphrase (never an answer).
 """
 from pathlib import Path
 import copy,hashlib,json,math,os,re,sqlite3,time
@@ -242,12 +242,33 @@ def plan(stack,question,ledger,frontier):
                               'elapsed_seconds':time.perf_counter()-start}
             except ValueError as exc:
                 local_decline={**local_decline,'learned_rejected':str(exc)[:200]}
+    # Semantic cache rung: a paraphrase of a VERIFIED question (same data/semantic context, identical slots: numbers,
+    # dates, thresholds, entities, concepts, and/or, units, answer shape) reuses its verified query at $0, re-linted.
+    # Never across corrected or benchmark questions. AGERE_SEMANTIC_CACHE=off disables it.
+    if profile is not None and os.environ.get('AGERE_SEMANTIC_CACHE','on')!='off':
+        from . import semantic_cache
+        try:
+            hit,cache_info=semantic_cache.lookup(stack.path,question,getattr(stack.retriever,'encoder',None))
+            if hit:
+                from . import verify
+                problems=verify.lint(profile,hit['plan']['query'])
+                if problems: raise ValueError('; '.join(problems))
+                graph=validate({'interpretation':question,'coverage':'supported_observation','unmet_requirements':[],
+                                'nodes':[{'id':'answer','operation':'sql','inputs':[],'parameters':hit['plan'],
+                                          'purpose':'Verified query reused for a paraphrase (semantic cache)'}]},meta['snapshot']['as_of'])
+                return graph,{'route':'semantic_cache','model':None,'new_paid_api_calls':0,'frontier_called':False,
+                              'learned_from':hit['agreement'],'semantic_cache':cache_info,'local_compiler_declined':local_decline,
+                              'steps':[],'elapsed_seconds':time.perf_counter()-start}
+            local_decline={**local_decline,'semantic_cache':{k:cache_info.get(k) for k in ('reason','candidates','similarity')}}
+        except (ValueError,RuntimeError,OSError,sqlite3.Error) as exc:
+            local_decline={**local_decline,'semantic_cache_rejected':str(exc)[:200]}
     # Operator router: any phrasing reaches the right analytic engine. One small-model call picks the operator
     # and fills its typed parameters; the runtime validators decide; literal questions go on to verified SQL.
     if profile is not None and stack.allow_live and os.environ.get('AGERE_ROUTER','on')!='off':
         from . import operator_router
         try:
-            routed,route_info=operator_router.route(question,meta['snapshot']['as_of'],ledger,stack.receipts,validate)
+            routed,route_info=operator_router.route(question,meta['snapshot']['as_of'],ledger,stack.receipts,validate,
+                                                    encoder=getattr(stack.retriever,'encoder',None))
         except (ValueError,RuntimeError,OSError) as exc:
             routed,route_info=None,{'router_error':str(exc)[:300],'calls':[]}
         local_decline={**local_decline,'operator_router':route_info}

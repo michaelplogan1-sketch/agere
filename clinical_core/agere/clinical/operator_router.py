@@ -172,26 +172,50 @@ def _ask(question, as_of, ledger, out, op=None, feedback=None, model=MODEL):
     return choice, {'model': model, 'api_usd': usd, 'cache_hit': bool(receipt.get('cache_hit')), 'step': 'choose' if op is None else 'fill'}
 
 
-def route(question, as_of, ledger, out, validate):
-    """-> (graph | None, info). info['decision'] is an operator, 'literal_lookup' or 'not_answerable'."""
+def route(question, as_of, ledger, out, validate, encoder=None):
+    """-> (graph | None, info). info['decision'] is an operator, 'literal_lookup' or 'not_answerable'.
+
+    Pre-step: with the stack's local encoder, the learned router (learned_router.py) may make the choose decision at
+    $0 when its calibrated probability clears its threshold; otherwise the paid choose call runs. The fill step is
+    always the paid typed call. If a locally chosen engine cannot be filled validly, the paid choose step decides."""
     start = time.perf_counter()
-    picked, call = _ask(question, as_of, ledger, out)
-    info = {'router': VERSION, 'calls': [call], 'decision': picked['name']}
-    if picked['name'] not in PRODUCT:
-        info['missing'] = (picked['input'] or {}).get('missing')
-        info['seconds'] = round(time.perf_counter() - start, 2)
-        return None, info
-    op, feedback = picked['name'], None
-    for attempt in range(2):
-        choice, call = _ask(question, as_of, ledger, out, op=op, feedback=feedback)
+    from . import learned_router
+    learned, learned_info = learned_router.decide(question, encoder) if encoder is not None else (None, None)
+    info = {'router': VERSION, 'calls': []}
+    if learned_info: info['learned_router'] = learned_info
+    picked = {'name': learned, 'input': {}} if learned is not None else None
+    while True:
+        if picked is None:
+            picked, call = _ask(question, as_of, ledger, out)
+            info['calls'].append(call)
+            info['chosen_by'] = 'paid_router'
+        else:
+            info.setdefault('chosen_by', 'learned_router')
+        info['decision'] = picked['name']
+        if picked['name'] not in PRODUCT:
+            info['missing'] = (picked['input'] or {}).get('missing')
+            info['seconds'] = round(time.perf_counter() - start, 2)
+            return None, info
+        op, feedback = picked['name'], None
+        for attempt in range(2):
+            choice, call = _ask(question, as_of, ledger, out, op=op, feedback=feedback)
+            info['calls'].append(call)
+            try:
+                graph = validate(to_graph(question, choice), as_of)
+                info.update(choice=choice, seconds=round(time.perf_counter() - start, 2))
+                return graph, info
+            except (ValueError, KeyError, TypeError) as exc:
+                info.setdefault('rejected', []).append({'choice': choice, 'error': str(exc)[:400]})
+                feedback = f'{type(exc).__name__}: {exc}'
+        if info['chosen_by'] != 'learned_router':
+            break
+        # the local choice could not be filled: let the paid router choose (once) unless it picks the same engine
+        info['chosen_by'] = 'paid_router_after_learned_fill_failed'
+        picked, call = _ask(question, as_of, ledger, out)
         info['calls'].append(call)
-        try:
-            graph = validate(to_graph(question, choice), as_of)
-            info.update(choice=choice, seconds=round(time.perf_counter() - start, 2))
-            return graph, info
-        except (ValueError, KeyError, TypeError) as exc:
-            info.setdefault('rejected', []).append({'choice': choice, 'error': str(exc)[:400]})
-            feedback = f'{type(exc).__name__}: {exc}'
+        if picked['name'] == op:
+            info['decision'] = op
+            break
     info['seconds'] = round(time.perf_counter() - start, 2)
     return None, info
 

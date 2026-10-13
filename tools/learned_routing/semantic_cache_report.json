@@ -1,0 +1,146 @@
+{
+ "summary": {
+  "threshold": 0.85,
+  "minimal_difference_pairs": 698,
+  "false_reuses": 0,
+  "slot_check_alone_would_reuse": 0,
+  "case_only_variants_left_to_exact_rung": 78,
+  "paraphrase_pairs": 305,
+  "paraphrases_reused": 287,
+  "paraphrase_recall": 0.941,
+  "paraphrase_slot_match": 305,
+  "paraphrase_similarity_min_p5_median": [
+   0.5619,
+   0.8388,
+   0.9767
+  ],
+  "by_kind_pairs_falsely_reused": {
+   "and_or": "0/59",
+   "comparator": "0/23",
+   "concept": "0/84",
+   "group": "0/18",
+   "handwritten": "0/40",
+   "month": "0/3",
+   "negation": "0/68",
+   "number": "0/91",
+   "payer": "0/14",
+   "sex": "0/2",
+   "shape": "0/87",
+   "status": "0/20",
+   "time": "0/43",
+   "unit": "0/122",
+   "year": "0/24"
+  }
+ },
+ "false_reuses": [],
+ "missed_paraphrases": [
+  {
+   "base": "Patients with heart failure and CKD",
+   "variant": "patients with heart failure and chronic kidney disease",
+   "reason": "identical slots but similarity below threshold",
+   "similarity": 0.8184
+  },
+  {
+   "base": "ED visits per month for Medicare members in 2029",
+   "variant": "Emergency department visits per month for Medicare members in 2029",
+   "reason": "identical slots but similarity below threshold",
+   "similarity": 0.7717
+  },
+  {
+   "base": "How many patients aged 65 or older have hypertension?",
+   "variant": "how many patients aged 65 or older have HTN",
+   "reason": "identical slots but similarity below threshold",
+   "similarity": 0.5619
+  },
+  {
+   "base": "Readmissions within 30 days after discharge for heart failure patients",
+   "variant": "readmissions within thirty days after discharge for CHF patients",
+   "reason": "identical slots but similarity below threshold",
+   "similarity": 0.7661
+  },
+  {
+   "base": "How many ED visits per 1,000 roster patients did we have last quarter?",
+   "variant": "How many emergency department visits per 1,000 roster patients did we have last quarter?",
+   "reason": "identical slots but similarity below threshold",
+   "similarity": 0.838
+  },
+  {
+   "base": "Share of patients missing age_reported or sex_reported.",
+   "variant": "Share of pts missing age_reported or sex_reported.",
+   "reason": "identical slots but similarity below threshold",
+   "similarity": 0.823
+  },
+  {
+   "base": "Repeat utilizers by coverage status: active vs inactive coverage among patients with 4+ ED visits",
+   "variant": "Repeat utilizers by coverage status: active vs inactive coverage among patients with 4+ emergency department visits",
+   "reason": "identical slots but similarity below threshold",
+   "similarity": 0.8458
+  },
+  {
+   "base": "List patients with 3 or more distinct hospital stays in the past 12 months, with their PCP name and coverage type.",
+   "variant": "List pts with 3 or more distinct hospital stays in the past 12 months, with their PCP name and coverage type.",
+   "reason": "identical slots but similarity below threshold",
+   "similarity": 0.8388
+  },
+  {
+   "base": "Year-over-year change in ED visits per 1,000 by coverage type",
+   "variant": "Year-over-year change in emergency department visits per 1,000 by coverage type",
+   "reason": "identical slots but similarity below threshold",
+   "similarity": 0.7574
+  },
+  {
+   "base": "How many attributed patients had zero kept appointments in the past 12 months?",
+   "variant": "How many attributed pts had zero kept appointments in the past 12 months?",
+   "reason": "identical slots but similarity below threshold",
+   "similarity": 0.7821
+  },
+  {
+   "base": "How many ED visits did we see in Q1 vs Q2 this year, and how many patients had 2+ ED visits in each quarter?",
+   "variant": "How many emergency department visits did we see in Q1 vs Q2 this year, and how many patients had 2+ emergency department visits in each quarter?",
+   "reason": "identical slots but similarity below threshold",
+   "similarity": 0.7959
+  },
+  {
+   "base": "Total payer paid on claims for patients with 3+ stays vs everyone else, current claim versions only.",
+   "variant": "Total payer paid on claims for pts with 3+ stays vs everyone else, current claim versions only.",
+   "reason": "identical slots but similarity below threshold",
+   "similarity": 0.8102
+  },
+  {
+   "base": "MRA use in HF patients by PCP, as a table.",
+   "variant": "MRA use in HF pts by PCP, as a table.",
+   "reason": "identical slots but similarity below threshold",
+   "similarity": 0.7598
+  },
+  {
+   "base": "List patients with a no-show followed by no kept appointment within 60 days.",
+   "variant": "List pts with a no-show followed by no kept appointment within 60 days.",
+   "reason": "identical slots but similarity below threshold",
+   "similarity": 0.7661
+  },
+  {
+   "base": "What is our ED visits per 1,000 for Medicare members?",
+   "variant": "What is our emergency department visits per 1,000 for Medicare members?",
+   "reason": "identical slots but similarity below threshold",
+   "similarity": 0.8459
+  },
+  {
+   "base": "How does ED utilization compare between patients with and without an assigned PCP?",
+   "variant": "How does ED utilization compare between pts with and without an assigned PCP?",
+   "reason": "identical slots but similarity below threshold",
+   "similarity": 0.8255
+  },
+  {
+   "base": "Share of patients with unmapped condition records (concept null). Data quality check.",
+   "variant": "Share of pts with unmapped condition records (concept null). Data quality check.",
+   "reason": "identical slots but similarity below threshold",
+   "similarity": 0.7444
+  },
+  {
+   "base": "How many patients have an unmapped condition record (no library concept) - and how many of those are their only condition?",
+   "variant": "How many pts have an unmapped condition record (no library concept) - and how many of those are their only condition?",
+   "reason": "identical slots but similarity below threshold",
+   "similarity": 0.7843
+  }
+ ]
+}

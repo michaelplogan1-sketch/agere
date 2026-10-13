@@ -1,0 +1,182 @@
+"""Synthetic paraphrase templates for the learned router (training material, never a benchmark).
+
+Written from the capability_registry.PRODUCT descriptions, not from bench/acceptance; templates that happened to
+reproduce an acceptance question verbatim were removed (train.py also drops anything with token Jaccard >= 0.5 to a bench question). Each template carries
+the engine its author intended; the deterministic local compiler relabels any question it compiles, so the
+intended label is used only where the compiler declines (exactly the questions that reach the router).
+"""
+import random
+
+FILL = {
+    'cond': ['diabetes', 'heart failure', 'CKD', 'COPD', 'hypertension', 'asthma', 'atrial fibrillation', 'depression',
+             'dementia', 'CHF', 'chronic kidney disease', 'type 2 diabetes', 'obesity', 'coronary artery disease'],
+    'conds': ['diabetics', 'heart failure patients', 'CKD patients', 'COPD patients', 'hypertensive patients', 'asthmatics',
+              'our afib patients', 'patients with depression', 'members with dementia', 'CHF members', 'obese patients'],
+    'lab': ['A1c', 'eGFR', 'LDL', 'systolic blood pressure', 'potassium', 'creatinine', 'BNP', 'weight', 'hemoglobin', 'blood pressure'],
+    'event': ['readmission', 'an ED visit', 'a hospital admission', 'an ER return', 'an urgent care visit', 'an inpatient stay',
+              'an observation stay', 'the next admission'],
+    'events': ['readmissions', 'ED visits', 'hospital admissions', 'ER visits', 'admissions', 'inpatient stays', 'avoidable ED use'],
+    'group': ['practice', 'PCP', 'payer', 'age band', 'sex', 'clinic', 'insurance type', 'provider'],
+    'unit': ['practices', 'PCPs', 'clinics', 'primary care doctors', 'physicians', 'payers'],
+    'metric': ['ED visits', 'admissions', 'PMPM', 'readmissions', 'A1c control', 'blood pressure control', 'total cost of care'],
+    'n': ['20', '25', '40', '50', '75', '100', '150', '200'],
+    'days': ['7', '14', '30', '60', '90', '180'],
+    'program': ['care management', 'transitions of care', 'our community health worker program', 'remote patient monitoring',
+                'care coordination', 'the diabetes education program', 'home visits', 'the CHF clinic', 'pharmacist outreach'],
+    'drug': ['an SGLT2 inhibitor', 'a statin', 'a GLP-1', 'metformin', 'an ACE inhibitor', 'a beta blocker', 'insulin'],
+    'grain': ['week', 'month'],
+    'horizon': ['next quarter', 'the next 8 weeks', 'next month', 'the next 6 months', 'this winter', 'the next 12 weeks'],
+    'need': ['food insecurity', 'transportation barriers', 'housing instability', 'financial strain'],
+    'feed': ['lab', 'claims', 'ADT', 'pharmacy', 'eligibility', 'EHR'],
+    'when': ['tomorrow', 'next week', 'Monday', 'this Friday', 'the next two weeks'],
+}
+
+T = {
+    'explain': [
+        'What drives {events} among {conds}?', 'Which factors are linked to {events} for patients with {cond}?',
+        'why do some {conds} end up with {events}', 'What characteristics go along with uncontrolled {cond}?',
+        'What is associated with high {lab} in {conds}?', 'Help me understand what separates {conds} who have {events} from those who do not',
+        'Key drivers of {events} in our population', 'what contributes to poor {lab} control',
+        'Explain why {events} are higher for some members', 'What is behind the {events} among patients with {cond}?',
+        'Which patient traits predict having {events}?', 'what sets apart {conds} with frequent {events}',
+        'Contributing factors for {cond} patients being hospitalized', 'which variables are most associated with {events}',
+        'Why are some {conds} not controlled?', 'What explains elevated {lab} among {conds}?',
+    ],
+    'discover': [
+        'Where are {events} concentrated?', 'Find pockets of the population with unusually high {events}',
+        'Which groups have more {cond} than expected?', 'Are there hotspots of {events} by {group} or {group}?',
+        'Show me segments where {cond} is overrepresented', 'Which combinations of {group} and {group} stand out for {events}?',
+        'any unexpected clusters of uncontrolled {cond}', 'Where do {conds} cluster across practices and payers?',
+        'Surface subgroups with surprisingly high {events}', 'Look for concentrations of {need} among {conds}',
+        'Which subpopulations are outliers for {events}?', 'find hidden hotspots for {events} nobody has looked at',
+        'where in the network is {cond} clustering', 'What segments have abnormal rates of {events}?',
+    ],
+    'trajectory': [
+        'Which {conds} have a worsening {lab} trend?', 'Who is likely to cross {lab} thresholds soon?',
+        'Which patients have declining {lab}?', 'Find patients whose {lab} is trending the wrong way',
+        'whose {lab} is getting worse over time', 'Which patients will probably hit a dangerous {lab} in the next few months?',
+        'Flag {conds} with a sharp change in {lab}', 'Show patients with a change point in {lab}',
+        'which members have rising {lab} trajectories', 'Forecast each patient\'s {lab} and show who is heading out of range',
+        'Patients whose kidney function is falling fastest', 'Who among {conds} has steadily climbing {lab}?',
+    ],
+    'survival': [
+        'How long until {event} after discharge for {conds}?', 'Time to {event} after a hospital stay, by {group}',
+        'Kaplan-Meier curve of time to {event} for {conds}', 'median days to {event} after discharge',
+        'How fast do {conds} have {event} after diagnosis?', 'Compare time to {event} between {conds} and everyone else',
+        'Hazard ratios for {event} by {group}', 'What share of {conds} have {event} within {days} days of discharge, as a curve',
+        'time-to-event analysis for {event} after an ED visit', 'how quickly after diagnosis do {conds} reach {lab} below 30',
+        'Days from discharge until first follow-up visit by {group}', 'Survival curve for {event}-free time after discharge',
+        'Cox model of time to {event} with age and sex', 'How soon after leaving the hospital do patients come back?',
+    ],
+    'vbc': [
+        'What is our PMPM for {conds}?', 'Calculate member months and PMPM by {group}', 'Shared savings settlement estimate for this year',
+        'What is the risk of missing our shared savings target?', 'Utilization per 1,000 for {events}', 'Attributed members by practice',
+        'How did total cost of care change and what drove it?', 'Quality measure performance for A1c control in the contract',
+        'Fair split of shared savings across practices', 'What is our value at risk on the shared savings contract?',
+        'Decompose the change in PMPM year over year', 'admits per 1000 and PMPM for the attributed population',
+        'what does the shared-savings math look like', 'Average risk score of attributed members by payer',
+    ],
+    'program_effect': [
+        'Did {program} reduce {events}?', 'Did enrollment in {program} lower PMPM?', 'Effect of {program} on {events}',
+        'Did starting {drug} change {lab}?', 'Does {program} work?', 'Impact of {program} on hospital use',
+        'Did patients in {program} have fewer {events} afterwards?', 'measure the effect of starting {drug} on {events}',
+        'Has {program} paid off in lower costs?', 'Did {program} improve {lab} for {conds}?',
+        'What happened to {events} after people joined {program}?', 'Is {program} making a difference for {conds}?',
+    ],
+    'outreach': [
+        'Who should our care managers call this week?', 'Build a prioritized list of {n} patients for outreach',
+        'We have {n} call slots, who should we contact?', 'Which {conds} should nurses reach out to first?',
+        'Give me an outreach worklist for {conds} with care gaps', 'Prioritize {n} members for care management outreach',
+        'Who are the top patients to contact about rising risk?', 'make a call list ranked by expected benefit',
+        'Our team has {n} hours, who should they call?', 'Which patients with {need} should we reach out to?',
+        'rank patients for nurse follow-up calls', 'who should the care team prioritise for outreach today',
+    ],
+    'calibration': [
+        'Backtest the trajectory forecasts',
+        'Brier score and calibration of the readmission risk model', 'Are our predictions reliable?',
+        'Show the reliability table for our risk predictions', 'how trustworthy are the outreach risk estimates',
+        'Check coverage of the prediction intervals', 'Is the risk model overconfident?', 'expected calibration error of our forecasts',
+    ],
+    'monitor': [
+        'Is anything out of control this month?', 'Control chart of {events} rate',
+        'Did any practice\'s {events} rate spike beyond normal variation?', 
+        'Has the denial rate shifted?', 'Any anomalies in {feed} data volume?', 'Run a Benford check on claims amounts',
+        'SPC chart for PMPM', 'Are there duplicate claims or peer outliers?', 'Is the {feed} feed down?',
+        'any special-cause variation in {events}', 'did lab volume drop unexpectedly',
+    ],
+    'market': [
+        'Show the markets view of practices', 'Which PCPs moved the most on {metric}?',
+        'Ticker view for each practice', 'Which payers changed the most versus baseline?', 'What changed most in {metric} versus last month?',
+        'biggest movers by practice this month', 'network-wide versus single-practice moves in {metric}',
+        'Rank practice moves by surprise and impact', 'which clinics are trending up on {metric} relative to the network',
+    ],
+    'demand': [
+        'Forecast {events} per {grain} for {horizon}', 'Project admissions for {horizon}',
+        'Predict appointment volume per {grain}', 'Staffing needed for expected ED volume {horizon}',
+        'What will ED demand look like {horizon}?', 'Expected discharges per {grain} with intervals',
+        'how many bed-days should we plan for {horizon}', 'forecast weekly ED arrivals', 'anticipated admission volume by {grain}',
+    ],
+    'profile': [
+        'Which {unit} are truly high on {metric} after case mix?', 'Fair comparison of {unit} on {metric}',
+        'Rank {unit} on {metric} adjusting for panel size', 'Which PCPs are outliers on {metric} once you account for their patients?',
+        'Compare practices fairly on readmissions', 'Shrunk rates of {metric} by PCP', 'Which doctors really have high {metric}?',
+        'risk-adjusted ranking of {unit} for {metric}', 'are any PCPs genuinely worse on {metric}',
+    ],
+    'pathway': [
+        'Where do patients go after an ED visit?', 'Most common paths after discharge', 'What happens next after a PCP visit?',
+        'Patient journeys after hospital discharge', 'Follow-up within {days} days versus ED return after discharge',
+        'How much leakage to outside organizations after discharge?', 'Chance of admission within three steps after an ED visit',
+        'care pathway after an ED visit for {conds}', 'what sequence of care do {conds} follow after a hospitalization',
+        'map the patient flow after discharge', 'next steps after an urgent care visit',
+    ],
+    'briefing': [
+        'Morning briefing', 'Give me my daily briefing',
+        'anything I should know about this morning', 'what are the most important things this week',
+        'top findings I should review today', 'what deserves my attention right now',
+    ],
+    'scheduling': [
+        'How much should we overbook each clinic?', 'Which appointments {when} are likely no-shows?',
+        'Who should get a reminder call before their appointment {when}?', 'How many extra slots can each practice book?',
+        'Overbooking recommendation per session', 'Predict no-shows for {when}', 'which upcoming visits are at risk of being missed',
+        'booking lead time and access by practice', 'safe overbooking level for each clinic session',
+    ],
+    'early_signal': [
+        'Which patients show the pattern that usually precedes an admission?', 'Who is heading toward decompensation?',
+        'Find {conds} with a pre-admission signature', 'Early warning: who looks like they are on the road to an ED visit?',
+        'Which patients look like past patients right before they were hospitalized?', 'pre-event signature matching for {conds}',
+        'who is showing early warning signs of an admission', 'patients whose recent pattern resembles the run-up to an ED visit',
+    ],
+    'claims_review': [
+        'Which providers bill unusually compared with peers?', 'Where are we leaking revenue?', 'Which claims were underpaid?',
+        'Denial patterns by payer and reason', 'Suspicious billing patterns', 'How much money are we losing to denial write-offs?',
+        'Payment integrity review flags ranked by dollars', 'Which claims were paid less than comparable claims?',
+        'how much do takebacks and rework cost us', 'root causes of denials in dollars',
+    ],
+    'not_answerable': [
+        'How many patients died last year?', 'Mortality rate for {conds}', 'Breakdown of patients by race and ethnicity',
+        'Total RVUs per physician', 'Which CPT codes are billed most?', 'Average HCC RAF score', 'patient satisfaction survey results',
+        'HCAHPS scores by practice', 'How many patients are still alive?', 'death rate after discharge', 'What is each patient\'s income?',
+        'Show the CAHPS survey results', 'RAF scores by PCP', 'how many deceased members', 'wRVU productivity by provider',
+    ],
+}
+
+
+def generate(per_template=6, seed=7):
+    """-> rows {question, intent, template}. Fillers are sampled; duplicates dropped."""
+    rng = random.Random(seed)
+    rows, seen = [], set()
+    for label, templates in T.items():
+        for t_index, template in enumerate(templates):
+            for _ in range(per_template * 3):
+                if sum(r['template'] == f'{label}:{t_index}' for r in rows) >= per_template: break
+                values = {}
+                text = template
+                for key, options in FILL.items():
+                    while '{' + key + '}' in text:
+                        text = text.replace('{' + key + '}', rng.choice(options), 1)
+                variants = [text, text.lower(), text.rstrip('?'), 'Can you tell me: ' + text[0].lower() + text[1:]]
+                text = rng.choice(variants)
+                if text.casefold() in seen: continue
+                seen.add(text.casefold())
+                rows.append({'question': text, 'intent': label, 'template': f'{label}:{t_index}'})
+    return rows
