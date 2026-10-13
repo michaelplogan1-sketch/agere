@@ -1,6 +1,6 @@
 {
  "schema": "agere-build-control/1",
- "updated_at": "2026-10-13T12:09:41.265447+00:00",
+ "updated_at": "2026-10-13T12:47:45.366411+00:00",
  "decision_basis": "AGERE_CTO_REVIEW_2026-10-11_EVENING.md",
  "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
  "required_references": [
@@ -279,7 +279,7 @@
   "gate_id": "G3",
   "last_delivered_gate": "G3",
   "user_behavior_delta": "Phase 1 (verified answers): hosted model output never reaches a user unchecked (lint, sanity, Haiku/Sonnet agreement, Perplexity decider, Opus judge); missing data is refused, not substituted; semantic entities (appointment, claim, social_need, age_latest, stay LOS/discharge_known); governed ops metrics compiled locally at $0; definitions registry signed off by owner and cited on every answer; learning store with verified reuse and user corrections; settlement VaR, Shapley allocation, Kalman forecasting.",
-  "measured_failure_reduction": "Blind L set (50, first run): 25 wrong -> 9 wrong after fixes (now contaminated), $1.16 -> $0.66. Blind K set: wrong 15 -> 9 with the verification ladder. Clean re-measure pending on blind set M (heldout5).",
+  "measured_failure_reduction": "Clean blind M (heldout5, 50): 23 correct + 6/6 abstentions, 12 strict-wrong, 7 false refusals, $1.01. Adjudicated (bench/adjudicate.py): of strict failures, 8 format-only, 1 definitional, 7-9 engine errors (~20% of answerable). Fixes since: missing-claim recheck (false refusals 7 -> 0 on M re-run), glossary retrieval, current_record for versioned streams, aggregate fast path (5-25x), governed ops metrics. L (contaminated): 25 -> 9 wrong.",
   "evidence": [
    "clinical_core/agere/clinical/verify.py",
    "clinical_core/agere/clinical/learning.py",
@@ -291,8 +291,8 @@
    "test_vbc.py",
    "test_trajectory.py"
   ],
-  "remaining_gap": "Phase 1 target (<3% wrong on blind sets) not yet met; hosted latency p50 ~20 s; local compiler coverage on novel questions low; generator defects D1-D7 logged.",
-  "next_action": "Run blind set M (heldout5) through the full stack with learned reuse off; classify failures; fix general causes; commission set N for the next clean measure."
+  "remaining_gap": "Engine errors ~20% on novel questions (target <3%): versioned-snapshot semantics, wrong-stream semantics, definition gaps; LLM critic and cross-model agreement do not separate right from wrong (measured); cohort operator still reads raw payloads (~5 s); generator defects D1-D8 logged.",
+  "next_action": "Run blind set N (heldout6) with learned reuse off; adjudicate; fix engine-error classes; commission set O."
  },
  "decisions": [
   {
@@ -728,6 +728,11 @@
    "at": "2026-10-13T12:09:41.265447+00:00",
    "by": "claude-code:821452c3-8962-40bd-bf83-e31db007dcba",
    "decision": "Mike: LLM calls fine when a question/deliverable needs one; definitions registry signed off; flag synthetic-data defects. Correlated LLM errors on blind L showed agreement is not verification: correctness moved into semantic entities."
+  },
+  {
+   "at": "2026-10-13T12:47:45.366411+00:00",
+   "by": "claude-code:821452c3-8962-40bd-bf83-e31db007dcba",
+   "decision": "Measured: Opus critic catches 2/18 wrong (most failures are format/definitional, not detectable errors) - not adopted as a gate. Benchmark reporting now includes an adjudicated error taxonomy."
   }
  ]
 }
