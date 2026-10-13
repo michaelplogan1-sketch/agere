@@ -437,6 +437,7 @@ def _compile(question, profile, as_of):
     for pattern, missing in UNSUPPORTED:  # checked on the user's own words, before any paraphrase
         if timed and 'surviv' in pattern: continue
         if re.search(pattern, low) and not (_contract_terms(low) and 'shared' in pattern):
+            missing = _settlement_missing(low, missing) if 'shared' in pattern else missing
             return {'interpretation': f'Unsupported by received data: {q}', 'coverage': 'unsupported', 'nodes': [],
                     'unmet_requirements': [f'Missing input: {m}' for m in missing]}, \
                    {'compiler': VERSION, 'recognised': [], 'route': 'local_unsupported', 'unexplained': []}
@@ -471,6 +472,7 @@ def _compile(question, profile, as_of):
         if terms and 'shared' in pattern: continue  # settlement is computable once terms are supplied
         if timed and 'surviv' in pattern: continue
         if re.search(pattern, r.low):
+            missing = _settlement_missing(r.low, missing) if 'shared' in pattern else missing
             info.update(route='local_unsupported', unexplained=[])
             return {'interpretation': f'Unsupported by received data: {q}', 'coverage': 'unsupported', 'nodes': [],
                     'unmet_requirements': [f'Missing input: {m}' for m in missing]}, info
@@ -1635,7 +1637,64 @@ def _contract_terms(low):
     terms = {k: v for k, v in terms.items() if v is not None}
     if re.search(r'two[- ]sided|downside', low): terms['two_sided'] = True
     if re.search(r'risk[- ]adjust', low): terms['risk_adjust'] = True
+    program = _program_terms(low, terms)
+    if program is not None: return program
     return terms if {'benchmark_pmpm', 'sharing_rate'} <= set(terms) else {}
+
+
+PROGRAM_SETTLEMENT_INTENT = (r'\b(?:earn\w*|payments?|pay(?:s|out)? us|paid|owe\w*|savings|shared[- ]savings|losses|settle\w*|bonus|'
+                             r'make|receive|get back|net)\b')
+PROGRAM_BENCHMARK = r'\bbenchmark (?:of |is |at )?\$([\d,]+(?:\.\d+)?)\b|\$([\d,]+(?:\.\d+)?) ?(?:pmpm |per member per month )?benchmark\b'
+
+
+def _named_program(low):
+    from . import programs
+    try: return programs.detect(low)
+    except (OSError, ValueError): return None
+
+
+def _program_kind(named):
+    from . import programs
+    return programs.load()[named['id']]['kind']
+
+
+def _stated_benchmark(low, stated):
+    stated = dict(stated)
+    if 'benchmark_pmpm' not in stated:
+        m = re.search(PROGRAM_BENCHMARK, low)
+        if m: stated['benchmark_pmpm'] = float((m.group(1) or m.group(2)).replace(',', ''))
+    return stated
+
+
+def _program_terms(low, stated):
+    """Terms of a program named in the question (MSSP BASIC A-E / ENHANCED, ACO REACH ...) merged under the
+    question's own terms -> terms with cited provenance, or None when no settleable program is named or the
+    benchmark (always contract-specific) is missing."""
+    named = _named_program(low)
+    if named is None: return None
+    from . import programs
+    try: terms = programs.contract_terms(named, _stated_benchmark(low, stated))
+    except ValueError: return None
+    return terms if not programs.missing_terms(terms) else None
+
+
+def _settlement_missing(low, default):
+    """Exactly the inputs a settlement question still lacks: with a named program only the contract-specific ones."""
+    named = _named_program(low)
+    if named is None: return default
+    from . import programs
+    try: res = programs.resolve(named)
+    except ValueError as e: return [str(e)]
+    if not res['doc'].get('settlement') and res['doc'].get('choose'):
+        return [f"program track: {res['doc']['choose']}", *([] if re.search(PROGRAM_BENCHMARK, low) else ['benchmark_pmpm (contract-specific)'])]
+    if not res['doc'].get('settlement'):
+        return [f"executed contract terms ({res['label']} is {res['doc']['kind'].replace('_', ' ')} reference material, not settlement terms)",
+                *[m for m in default[1:] if not (re.search(PROGRAM_BENCHMARK, low) and 'benchmark' in m)]]
+    terms = programs.contract_terms(res, _stated_benchmark(low, {}))
+    supplied = ', '.join(k for k in ('sharing_rate', 'msr', 'msr_schedule', 'mlr', 'loss_rate', 'savings_cap_pct', 'loss_cap_pct', 'corridors',
+                                     'discount_pct', 'quality_withhold_pct') if k in terms)
+    return [f'{k} (contract-specific; {res["label"]} {res["year_basis"].replace("_", " ")} {res["year"]} supplies {supplied})'
+            for k in programs.missing_terms(terms)]
 
 
 VBC_PATTERNS = [
@@ -1687,6 +1746,18 @@ def _vbc_question(q, r, profile, as_of, info, terms):
     change = _change_question(q, r, profile, as_of, info)
     if change is not None: return change
     metric = next((m for m, pattern in VBC_PATTERNS if re.search(pattern, low)), None)
+    named = _named_program(low)
+    if named is not None and _program_kind(named) not in ('shared_savings', 'program_rules', 'typical_range'):
+        named = None  # MA, episode and care-model reference entries do not turn a question into a settlement
+    if named is not None and re.search(PROGRAM_SETTLEMENT_INTENT + r'|\bbenchmark\b', low):
+        if not (terms or {}).get('program'):  # program named but not settleable as asked: say exactly what is missing
+            info.update(route='local_unsupported', unexplained=[])
+            return {'interpretation': f'Unsupported by received data: {q}', 'coverage': 'unsupported', 'nodes': [],
+                    'unmet_requirements': [f'Missing input: {m}' for m in _settlement_missing(low, ['executed payer contract terms'])]}, info
+        metric = 'shared_savings'
+        r.take(re.escape(low[named['span'][0]:named['span'][1]]), f"program {terms['program']['label']} {terms['program']['year']}", overlap=True)
+        r.take(PROGRAM_SETTLEMENT_INTENT + r'|' + PROGRAM_BENCHMARK + r'|\b(?:track|level|model|program|option|in|the|we|us|if|were|are|on|for|at|'
+               r'participat\w*|how much|money)\b', 'program settlement wording', overlap=True)
     if metric is None or (metric == 'shared_savings' and not terms): return None
     for m, pattern in VBC_PATTERNS:
         if m == metric: r.take(pattern, f'vbc {metric}')
@@ -1709,6 +1780,8 @@ def _vbc_question(q, r, profile, as_of, info, terms):
         params['terms'] = terms
         r.take(r'benchmark (?:of |is |at )?\$?[\d,]+(?:\.\d+)? ?(?:pmpm|per member per month)|(?:sharing|share|loss(?: sharing)?) rate (?:of |is )?[\d.]+ ?%|'
                r'(?:msr|mlr|minimum (?:savings|loss) rate) (?:of |is )?[\d.]+ ?%|quality score (?:of |is )?[\d.]+ ?%|(?:savings )?cap (?:of |is )?[\d.]+ ?%|'
+               r'[\d.]+ ?% (?:shared savings |savings )?shar(?:ing|e)\b|[\d.]+ ?% (?:msr|mlr|minimum (?:savings|loss) rate)|[\d.]+ ?% quality score|'
+               r'\$[\d,]+(?:\.\d+)? ?(?:pmpm )?benchmark|'
                r'two[- ]sided|downside|risk[- ]adjust\w*|\bwith\b|\band\b|\ba\b|\bof\b|\bour\b|\bwhat\b|\bwould\b|\bbe\b|\bpayment\b|\bunder\b|\bterms?\b|\bcontract\b', 'contract terms', overlap=True)
     r.take(r'\b(?:what is|what are|what was|show|compare|calculate|compute|estimate|our|the|rate|rates|members?|visits?|ed|admissions?|readmissions?|'
            r'follow[- ]?up|allowed|paid|medical|pharmacy|cost|costs|by|each|per|month|projected|actual|panel|scores?|measures?|internal|we|us|do|have|has|average|mean|how many|total)\b', None, overlap=True)

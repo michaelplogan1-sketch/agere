@@ -1,0 +1,10 @@
+[
+ {"question": "What would we earn under MSSP ENHANCED with a $1,000 benchmark?", "expect_operation": "vbc", "expect_program": "mssp_enhanced"},
+ {"question": "Under MSSP BASIC level E with a $950 PMPM benchmark, what is our shared savings?", "expect_operation": "vbc", "expect_program": "mssp_basic"},
+ {"question": "What is our settlement under ACO REACH Global 2026 with a benchmark of $1,100 PMPM?", "expect_operation": "vbc", "expect_program": "aco_reach"},
+ {"question": "How much would we owe or earn in the MSSP basic track level C with a $1,000 benchmark?", "expect_operation": "vbc", "expect_program": "mssp_basic"},
+ {"question": "Shared savings under the ENHANCED track for 2025 with a $980 PMPM benchmark", "expect_operation": "vbc", "expect_program": "mssp_enhanced"},
+ {"question": "If we were in ACO REACH Professional with a $1,050 benchmark, what would the settlement be?", "expect_operation": "vbc", "expect_program": "aco_reach"},
+ {"question": "What would our payment be under MSSP Level A with a $900 benchmark?", "expect_operation": "vbc", "expect_program": "mssp_basic"},
+ {"question": "With a $1,000 PMPM benchmark, how much shared savings would we earn under MSSP ENHANCED with a 2% MSR?", "expect_operation": "vbc", "expect_program": "mssp_enhanced"}
+]

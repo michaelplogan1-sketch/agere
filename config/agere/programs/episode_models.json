@@ -1,0 +1,32 @@
+{
+ "schema": "agere-program/1",
+ "id": "episode_models",
+ "program": "CMMI episode models (TEAM, BPCI Advanced)",
+ "label": "TEAM / BPCI Advanced",
+ "kind": "episode_model",
+ "status": "active",
+ "years": [2025, 2026],
+ "year_basis": "performance_year",
+ "aliases": ["\\bteam model\\b", "\\btransforming episode accountability\\b", "\\bbpci(?: advanced| a)?\\b", "\\bbundled payments? for care improvement\\b"],
+ "parameters": {
+  "team_dates": {"value": {"start": "2026-01-01", "end": "2030-12-31"}, "unit": "five performance years", "citations": ["team_page"]},
+  "team_episodes": {"value": ["CABG", "Major Bowel Procedure", "LEJR", "SHFFT", "Spinal Fusion"], "unit": "episode categories; anchor stay or procedure plus 30 days", "citations": ["team_overview"]},
+  "team_tracks": {"value": {
+    "Track 1": {"who": "all hospitals PY1; safety-net hospitals PY1-3", "stop_gain": 0.10, "stop_loss": null, "cqs_adjustment": "up to 10% on positive amounts"},
+    "Track 2": {"who": "safety-net, rural, sole community, Medicare-dependent and essential access hospitals, PY2-5", "stop_gain": 0.05, "stop_loss": 0.05, "cqs_adjustment": "up to 10% positive / 15% negative"},
+    "Track 3": {"who": "all hospitals, PY1-5", "stop_gain": 0.20, "stop_loss": 0.20, "cqs_adjustment": "up to 10% positive and negative"}},
+   "unit": "share of target price", "citations": ["team_overview"]},
+  "team_discount": {"value": {"CABG": 0.015, "Major Bowel Procedure": 0.015, "LEJR": 0.02, "SHFFT": 0.02, "Spinal Fusion": 0.02}, "unit": "target price discount", "citations": ["team_overview"]},
+  "bpci_status": {"value": "Ended: period of performance ended 2025-12-31", "unit": "text", "citations": ["bpci_page"]},
+  "bpci_discount_my6": {"value": {"medical": 0.02, "surgical": 0.03}, "unit": "CMS discount from Model Year 6 (2023)", "citations": ["bpci_my6"]},
+  "bpci_stop_gain_loss": {"value": 0.20, "unit": "+/- share of volume-weighted final target prices at the episode-initiator level", "citations": ["bpci_my6"]}
+ },
+ "citations": {
+  "team_page": {"url": "https://www.cms.gov/priorities/innovation/innovation-models/team-model", "title": "TEAM (Transforming Episode Accountability Model) page", "section": "Overview", "applies_to": "PY2026-PY2030", "retrieved": "2026-10-13", "primary": true, "excerpt": "five performance years from January 1, 2026, to December 31, 2030"},
+  "team_overview": {"url": "https://www.cms.gov/files/document/team-overview-updated.pdf", "title": "TEAM Model Overview (updated; reflects FY2025-FY2027 IPPS final rules)", "section": "pp. 7, 11, 15, 31", "applies_to": "PY2026-PY2030", "retrieved": "2026-10-13", "primary": true},
+  "bpci_page": {"url": "https://www.cms.gov/priorities/innovation/innovation-models/bpci-advanced", "title": "BPCI Advanced model page", "section": "Overview", "applies_to": "through 2025-12-31", "retrieved": "2026-10-13", "primary": true, "excerpt": "period of performance ends on December 31, 2025"},
+  "bpci_my6": {"url": "https://www.cms.gov/files/document/bpcia-my6-model-ovw-fs.pdf", "title": "BPCI Advanced Model Overview Fact Sheet - Model Year 6", "section": "Pricing; stop-loss/stop-gain", "applies_to": "Model Year 6 (2023) onward", "retrieved": "2026-10-13", "primary": true}
+ },
+ "unverified": ["TEAM terms checked against the CMS overview deck, not the Federal Register / eCFR text (eCFR blocked)", "BPCI Advanced MY7-MY8 discount carry-over"],
+ "last_verified": "2026-10-13"
+}

@@ -1,0 +1,52 @@
+{
+ "schema": "agere-program/1",
+ "id": "lead",
+ "program": "LEAD (Long-term Enhanced ACO Design)",
+ "label": "LEAD",
+ "kind": "shared_savings",
+ "status": "announced",
+ "years": [2027],
+ "year_basis": "performance_year",
+ "aliases": ["\\blead (?:model|aco)\\b", "\\blong[- ]term enhanced aco design\\b", "\\blead (?:global|professional)\\b"],
+ "variants": {
+  "Professional": {"aliases": ["\\bprofessional\\b"],
+   "parameters": {
+    "risk_share": {"value": 0.5, "unit": "share of savings/losses in the first corridor; minimum 4 PYs before Global", "citations": ["lead_65"]},
+    "discount_pct": {"value": 0.0, "unit": "benchmark discount", "citations": ["lead_65"]},
+    "corridors": {"value": [{"from": 0.0, "to": 0.10, "rate": 0.5}, {"from": 0.10, "to": 0.15, "rate": 0.35}, {"from": 0.15, "to": 0.20, "rate": 0.15}, {"from": 0.20, "to": null, "rate": 0.05}],
+                  "unit": "marginal share of savings/losses by % of benchmark", "citations": ["lead_66"]}}},
+  "Global higher-spending": {"aliases": ["\\bglobal\\b.{0,40}\\bhigh(?:er)?[- ]spending\\b", "\\bhigh(?:er)?[- ]spending\\b.{0,40}\\bglobal\\b"],
+   "parameters": {
+    "risk_share": {"value": 1.0, "unit": "share of savings/losses in the first corridor", "citations": ["lead_65"]},
+    "discount_pct": {"value": {"2027": 0.0175}, "unit": "ramping discount (1.75% 2027 rising 0.25 points a year to 3.0% in 2032-2036)", "citations": ["lead_62"]},
+    "corridors": {"value": [{"from": 0.0, "to": 0.15, "rate": 1.0}, {"from": 0.15, "to": 0.35, "rate": 0.5}, {"from": 0.35, "to": 0.50, "rate": 0.25}, {"from": 0.50, "to": null, "rate": 0.10}],
+                  "unit": "marginal share of savings/losses by % of benchmark", "citations": ["lead_66"]}}},
+  "Global": {"aliases": ["\\bglobal\\b"],
+   "parameters": {
+    "risk_share": {"value": 1.0, "unit": "share of savings/losses in the first corridor", "citations": ["lead_65"]},
+    "discount_pct": {"value": 0.03, "unit": "static discount for lower-spending ACOs (higher-spending ACOs: use the 'Global higher-spending' variant)", "citations": ["lead_62"]},
+    "corridors": {"value": [{"from": 0.0, "to": 0.15, "rate": 1.0}, {"from": 0.15, "to": 0.35, "rate": 0.5}, {"from": 0.35, "to": 0.50, "rate": 0.25}, {"from": 0.50, "to": null, "rate": 0.10}],
+                  "unit": "marginal share of savings/losses by % of benchmark", "citations": ["lead_66"]}}}
+ },
+ "settlement": {"corridors": "$corridors", "discount_pct": "$discount_pct", "quality_withhold_pct": "$quality_withhold_pct", "two_sided": true, "msr": 0.0, "mlr": 0.0,
+                "quality_mode": "withhold"},
+ "assumptions": ["Announced model starting 2027: terms are from the RFA and may change in participation agreements.",
+                 "Quality withhold fully earned back (quality_score 1.0); stop-loss, capitation and the retention incentive not modelled."],
+ "parameters": {
+  "quality_withhold_pct": {"value": 0.03, "unit": "share of benchmark withheld, earned back on quality", "citations": ["lead_63"]},
+  "msr_mlr": {"value": "None: first-dollar sharing", "unit": "text", "citations": ["lead_65"]},
+  "model_dates": {"value": {"start": "2027-01-01", "end": "2036-12-31"}, "unit": "10 performance years, national", "citations": ["lead_8"]},
+  "benchmark_design": {"value": "No rebasing over 10 years; ACPT plus blended national/regional trend; positive regional efficiency adjustment Global-only; 1.5% administrative add-on capitation for higher-spending ACOs; risk-score growth cap 3% (3-8% High Needs)", "unit": "text", "citations": ["lead_53"]},
+  "status_page": {"value": "Announced; RFA released 2026-03-31", "unit": "text", "citations": ["lead_page"]}
+ },
+ "citations": {
+  "lead_8": {"url": "https://www.cms.gov/priorities/innovation/files/lead-rfa.pdf", "title": "LEAD Model Request for Applications (revised)", "section": "p. 8", "applies_to": "PY2027-PY2036", "retrieved": "2026-10-13", "primary": true, "excerpt": "LEAD will begin on January 1, 2027, and end on December 31, 2036."},
+  "lead_53": {"url": "https://www.cms.gov/priorities/innovation/files/lead-rfa.pdf", "title": "LEAD Model Request for Applications (revised)", "section": "pp. 10, 53, 59, 63-65", "applies_to": "PY2027 onward", "retrieved": "2026-10-13", "primary": true},
+  "lead_62": {"url": "https://www.cms.gov/priorities/innovation/files/lead-rfa.pdf", "title": "LEAD Model Request for Applications (revised)", "section": "pp. 62-63, Section VIII.E, Table 9", "applies_to": "PY2027-PY2036", "retrieved": "2026-10-13", "primary": true},
+  "lead_63": {"url": "https://www.cms.gov/priorities/innovation/files/lead-rfa.pdf", "title": "LEAD Model Request for Applications (revised)", "section": "p. 63", "applies_to": "PY2027 onward", "retrieved": "2026-10-13", "primary": true, "excerpt": "A 3% quality withhold will be applied to all ACOs"},
+  "lead_65": {"url": "https://www.cms.gov/priorities/innovation/files/lead-rfa.pdf", "title": "LEAD Model Request for Applications (revised)", "section": "p. 65, Section IX.A", "applies_to": "PY2027 onward", "retrieved": "2026-10-13", "primary": true, "excerpt": "No discount will be applied to benchmarks for ACOs in the Professional Risk Option."},
+  "lead_66": {"url": "https://www.cms.gov/priorities/innovation/files/lead-rfa.pdf", "title": "LEAD Model Request for Applications (revised)", "section": "p. 66, Section IX.B, Tables 10-11", "applies_to": "PY2027 onward", "retrieved": "2026-10-13", "primary": true},
+  "lead_page": {"url": "https://www.cms.gov/priorities/innovation/innovation-models/lead", "title": "LEAD model page", "section": "Overview (last modified 2026-09-25)", "applies_to": "status as of 2026-10", "retrieved": "2026-10-13", "primary": true}
+ },
+ "last_verified": "2026-10-13"
+}

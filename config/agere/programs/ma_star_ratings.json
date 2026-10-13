@@ -1,0 +1,34 @@
+{
+ "schema": "agere-program/1",
+ "id": "ma_star_ratings",
+ "program": "Medicare Advantage",
+ "label": "Medicare Advantage Star Ratings and quality bonus",
+ "kind": "star_ratings",
+ "status": "active",
+ "years": [2026, 2027],
+ "year_basis": "star_year",
+ "aliases": ["\\bstar ratings?\\b", "\\bstars? (?:rating|bonus|cut ?points?)\\b", "\\bquality bonus payments?\\b", "\\bqbp\\b", "\\bma rebates?\\b"],
+ "parameters": {
+  "measure_weights": {
+   "value": {"improvement": 5, "outcome_or_intermediate_outcome": 3, "patient_experience_and_complaints": 2, "access": 2, "process": 1, "new_measure_first_year": 1},
+   "unit": "weight in the summary/overall rating (patient experience/complaints and access were 4 through the 2025 Star Ratings)",
+   "citations": ["cfr_422_166", "tn26_weights"]
+  },
+  "cut_point_method": {
+   "value": "Non-CAHPS: hierarchical clustering with mean resampling (10 groups, leave-one-out, averaged); Tukey outer-fence outliers (3.0 x IQR) removed first (since Star Ratings issued Oct 2023); guardrail caps cut-point movement at 5 points (0-100 scales) except improvement, CAHPS and first-3-year measures. CAHPS: relative distribution and significance testing.",
+   "unit": "text", "citations": ["cfr_422_166", "tn26_cuts"]
+  },
+  "reward_factor": {"value": "Historical reward factor (up to +0.4 for high mean, low variance) retained from 2027 Star Ratings; Health Equity Index reward not implemented", "unit": "text", "citations": ["cfr_422_166", "fr27_hei"]},
+  "qbp_bonus": {"value": {"min_stars": 4.0, "bonus_pct": 0.05, "double_bonus_pct": 0.10}, "unit": "percentage points added to the benchmark applicable percentage (doubled in qualifying counties)", "citations": ["cfr_422_258"]},
+  "rebate_percentage": {"value": [{"min_stars": 4.5, "rebate_pct": 0.70}, {"min_stars": 3.5, "rebate_pct": 0.65}, {"min_stars": 0.0, "rebate_pct": 0.50}], "unit": "share of bid-below-benchmark savings returned as rebate", "citations": ["cfr_422_266"]}
+ },
+ "citations": {
+  "cfr_422_166": {"url": "https://www.ecfr.gov/current/title-42/chapter-IV/subchapter-B/part-422/subpart-D/section-422.166", "title": "42 CFR 422.166 Calculation of Star Ratings", "section": "(a)(2)(i); (e)(1)(i)-(v); (f)(1)", "applies_to": "eCFR point-in-time 2026-10-01; 2026 and later Star Ratings", "retrieved": "2026-10-13", "primary": true, "excerpt": "Starting with the 2026 Star Ratings and subsequent Star Ratings years, patient experience and complaint measures receive a weight of 2."},
+  "tn26_weights": {"url": "https://www.cms.gov/files/document/2026-star-ratings-technical-notes.pdf", "title": "Medicare 2026 Part C & D Star Ratings Technical Notes", "section": "p. 129", "applies_to": "2026 Star Ratings", "retrieved": "2026-10-13", "primary": true, "excerpt": "Access or patient experience/complaints measure: Weight of 2"},
+  "tn26_cuts": {"url": "https://www.cms.gov/files/document/2026-star-ratings-technical-notes.pdf", "title": "Medicare 2026 Part C & D Star Ratings Technical Notes", "section": "p. 19; Attachment B", "applies_to": "2026 Star Ratings", "retrieved": "2026-10-13", "primary": true},
+  "fr27_hei": {"url": "https://www.federalregister.gov/documents/2026/04/06/2026-06600/", "title": "Medicare Program; Contract Year 2027 Policy and Technical Changes final rule (91 FR 17384)", "section": "91 FR 17496, 17515-17516", "applies_to": "2027 Star Ratings", "retrieved": "2026-10-13", "primary": true, "excerpt": "not move forward with the implementation of the Health Equity Index reward and to continue to include the historical reward factor"},
+  "cfr_422_258": {"url": "https://www.ecfr.gov/current/title-42/chapter-IV/subchapter-B/part-422/subpart-G/section-422.258", "title": "42 CFR 422.258 Calculation of benchmarks", "section": "(d)(7)(i)(C); (d)(7)(ii)(B)", "applies_to": "2014 and later", "retrieved": "2026-10-13", "primary": true, "excerpt": "For 2014 and subsequent years, by 5.0 percentage points"},
+  "cfr_422_266": {"url": "https://www.ecfr.gov/current/title-42/chapter-IV/subchapter-B/part-422/subpart-G/section-422.266", "title": "42 CFR 422.266 Beneficiary rebates", "section": "(a)(2)(ii)(A)-(C)", "applies_to": "2014 and later", "retrieved": "2026-10-13", "primary": true, "excerpt": "at least 4.5 stars, 70 percent"}
+ },
+ "last_verified": "2026-10-13"
+}

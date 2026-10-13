@@ -1,0 +1,25 @@
+{
+ "schema": "agere-program/1",
+ "id": "kidney_care_choices",
+ "program": "Kidney Care Choices (KCC)",
+ "label": "Kidney Care Choices",
+ "kind": "capitation_model",
+ "status": "active",
+ "years": [2026, 2027],
+ "year_basis": "performance_year",
+ "aliases": ["\\bkidney care choices\\b", "\\bkcc\\b", "\\bckcc\\b"],
+ "parameters": {
+  "options": {"value": {"CKCC Professional": "50% of shared savings/losses", "CKCC Global": "100% of total cost of care", "KCF": "terminated at the end of PY2025"}, "unit": "risk options", "citations": ["kcc_page", "kcc_qr26"]},
+  "py2026_discounts": {"value": "Global: additional 1% discount on CKD benchmarks on top of the ESRD discount; Professional: CKD and ESRD benchmarks each include a 1% discount", "unit": "text", "citations": ["kcc_qr26"]},
+  "py2026_other_changes": {"value": "CKD quarterly capitation payment reduced 50%; Kidney Transplant Bonus eliminated for transplants from PY2026", "unit": "text", "citations": ["kcc_qr26"]},
+  "model_end": {"value": "2027-12-31", "unit": "date (extended)", "citations": ["kcc_qr26"]},
+  "py2026_participants": {"value": {"KCEs": 74, "Global": 35, "Professional": 39}, "unit": "count", "citations": ["kcc_participants"]}
+ },
+ "citations": {
+  "kcc_page": {"url": "https://www.cms.gov/priorities/innovation/innovation-models/kidney-care-choices-kcc-model", "title": "Kidney Care Choices (KCC) Model page", "section": "Model design (modified 2026-09-21)", "applies_to": "PY2026", "retrieved": "2026-10-13", "primary": true},
+  "kcc_qr26": {"url": "https://www.cms.gov/kidney-care-choices-model-performance-year-2026-model-update-quick-reference", "title": "Kidney Care Choices Model PY2026 Model Update - Quick Reference", "section": "Model updates", "applies_to": "PY2026-PY2027", "retrieved": "2026-10-13", "primary": true, "excerpt": "end at the end of PY 2027 or December 31, 2027"},
+  "kcc_participants": {"url": "https://www.cms.gov/priorities/innovation/files/kcc-model-participants-affiliations-cy2026.pdf", "title": "KCC Model Participants and Affiliations CY2026", "section": "Summary", "applies_to": "PY2026", "retrieved": "2026-10-13", "primary": true}
+ },
+ "unverified": ["Current CKCC Global ESRD benchmark discount percentage (RFA set 3% for two PYs then +1 point a year, subject to adjustment)"],
+ "last_verified": "2026-10-13"
+}

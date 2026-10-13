@@ -1,0 +1,23 @@
+{
+ "schema": "agere-program/1",
+ "id": "hcp_lan_apm_framework",
+ "program": "HCP-LAN APM Framework",
+ "label": "HCP-LAN APM categories",
+ "kind": "typical_range",
+ "status": "reference",
+ "years": [2017, 2023],
+ "year_basis": "reference_year",
+ "aliases": ["\\bhcp[- ]?lan\\b", "\\blan (?:apm )?categor(?:y|ies)\\b", "\\bapm framework\\b"],
+ "disclaimer": "Classification framework and national payment mix; not contract terms. The 2017 refresh white paper URL now returns 404; categories are taken from the LAN fact sheet.",
+ "parameters": {
+  "categories": {"value": {"1": "Fee for service, no link to quality or value", "2A": "Foundational payments for infrastructure and operations", "2B": "Pay for reporting", "2C": "Pay for performance", "3A": "APMs with shared savings (upside risk only)", "3B": "APMs with shared savings and downside risk", "3N": "Risk-based payments not linked to quality", "4A": "Condition-specific population-based payment", "4B": "Comprehensive population-based payment (global budget or % of premium)", "4C": "Integrated finance and delivery systems", "4N": "Capitated payments not linked to quality"}, "unit": "category labels", "citations": ["lan_factsheet"]},
+  "all_payments_lan_3_4": {"value": 0.452, "unit": "share of all-payer payments in categories 3-4, CY2023", "citations": ["lan_2024"]},
+  "all_payments_lan_3b_4": {"value": 0.285, "unit": "share of all-payer payments in 3B-4, CY2023", "citations": ["lan_2024"]},
+  "ma_payments_lan_3_4": {"value": 0.643, "unit": "share of Medicare Advantage payments in categories 3-4, CY2023", "citations": ["lan_2024"]}
+ },
+ "citations": {
+  "lan_factsheet": {"url": "https://hcp-lan.org/wp-content/uploads/2025/08/APM-Framework-Factsheet.pdf", "title": "Alternative Payment Model (APM) Framework fact sheet", "section": "p. 1, Figure 1", "applies_to": "2017 refreshed framework", "retrieved": "2026-10-13", "publisher": "Health Care Payment Learning & Action Network", "primary": false, "excerpt": "APMs with Shared Savings and Downside Risk"},
+  "lan_2024": {"url": "https://hcp-lan.org/wp-content/uploads/2025/08/2024-HCPLAN-Methodology-Report.pdf", "title": "HCP-LAN 2024 APM Measurement Effort Methodology Report", "section": "pp. 13, 15", "applies_to": "CY2023 payments", "retrieved": "2026-10-13", "publisher": "Health Care Payment Learning & Action Network", "primary": false}
+ },
+ "last_verified": "2026-10-13"
+}

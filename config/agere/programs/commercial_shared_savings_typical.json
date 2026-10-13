@@ -1,0 +1,30 @@
+{
+ "schema": "agere-program/1",
+ "id": "commercial_shared_savings_typical",
+ "program": "Commercial shared savings (typical published ranges)",
+ "label": "Commercial shared savings - typical ranges",
+ "kind": "typical_range",
+ "status": "reference",
+ "years": [2011, 2013, 2023],
+ "year_basis": "reference_year",
+ "aliases": ["\\bcommercial (?:aco|shared[- ]savings|value[- ]based) (?:contract|arrangement|deal)s?\\b", "\\btypical commercial (?:shared[- ]savings|sharing)\\b"],
+ "disclaimer": "Typical ranges from public surveys and issue briefs, NOT any specific payer's contract. Sharing-term sources are 2011-2014 and payment mix is CY2023; no newer public survey of commercial sharing rates or MSRs was found. Never used as settlement terms: a commercial settlement needs the executed contract's terms.",
+ "parameters": {
+  "provider_sharing_rate_most_common": {"value": 0.5, "unit": "share of savings to provider", "note": "50/50 split most common", "citations": ["bailit_2011"]},
+  "provider_sharing_rate_range": {"value": {"low": 0.3, "high": 0.8}, "unit": "share of savings to provider", "note": "some arrangements reach 65% and 80%; quality-gated shares often below 50%", "citations": ["bailit_2011"]},
+  "provider_sharing_rate_mean_survey": {"value": 0.56, "unit": "mean share of savings to ACO, private contracts", "citations": ["lewis_2014"]},
+  "msr_practice": {"value": "often none; otherwise a flat percentage (payer retentions of 2% and 5% observed)", "unit": "text", "citations": ["bailit_2011"]},
+  "savings_caps_practice": {"value": "generally not found in commercial payer models (2011)", "unit": "text", "citations": ["bailit_2011"]},
+  "high_cost_truncation_range": {"value": {"low": 50000, "high": 500000, "most_often": [100000, 200000]}, "unit": "USD per member", "citations": ["bailit_2011"]},
+  "private_contracts_upside_only_share": {"value": 0.41, "unit": "share of ACO private contracts upside-only (2012-13 survey)", "citations": ["lewis_2014"]},
+  "private_contracts_quality_contingent_share": {"value": 0.79, "unit": "share of contracts with savings contingent on quality", "citations": ["lewis_2014"]},
+  "commercial_payments_lan_3_4": {"value": 0.392, "unit": "share of commercial payments in LAN categories 3-4, CY2023", "citations": ["lan_2024"]},
+  "commercial_payments_lan_3b_4": {"value": 0.216, "unit": "share of commercial payments with downside risk (3B-4), CY2023", "citations": ["lan_2024"]}
+ },
+ "citations": {
+  "bailit_2011": {"url": "https://bailit-health.com/publications/082111_bhp_key_designelements_sharedsavings.pdf", "title": "Key Design Elements of Shared-Savings Payment Arrangements (Bailit & Hughes, Commonwealth Fund issue brief)", "section": "pp. 4, 6-9", "applies_to": "2011 (32 interviews, 27 arrangements)", "retrieved": "2026-10-13", "publisher": "Bailit Health / The Commonwealth Fund", "primary": false, "excerpt": "50 percent to the provider and 50 percent to the payer"},
+  "lewis_2014": {"url": "https://www.ajmc.com/view/aco-contracting-with-private-and-public-payers-a-baseline-comparative-analysis", "title": "ACO Contracting With Private and Public Payers: A Baseline Comparative Analysis (Am J Manag Care 2014;20(12):1008-14)", "section": "Results", "applies_to": "National Survey of ACOs 2012-13, n=173", "retrieved": "2026-10-13", "publisher": "AJMC", "primary": false},
+  "lan_2024": {"url": "https://hcp-lan.org/wp-content/uploads/2025/08/2024-HCPLAN-Methodology-Report.pdf", "title": "HCP-LAN 2024 APM Measurement Effort Methodology Report", "section": "p. 14 (commercial)", "applies_to": "CY2023 payments", "retrieved": "2026-10-13", "publisher": "Health Care Payment Learning & Action Network", "primary": false}
+ },
+ "last_verified": "2026-10-13"
+}
