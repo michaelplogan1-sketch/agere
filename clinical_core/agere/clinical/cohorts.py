@@ -117,9 +117,11 @@ def validate(spec, as_of=None):
                 if c['field'] in ('dx', 'problem_code') and c['op'] not in ('contains', 'prefix'):
                     raise ValueError('Diagnosis lists require exact membership or explicit code prefix')
         elif atom.get('kind') == 'concept':
-            if set(atom) - {'system'} != {'kind', 'concept', 'window'} or not concepts.is_concept(atom['concept']) \
-                    or atom.get('system', 'any') not in ('any', 'icd10', 'snomed', 'label'):
-                raise ValueError('Concept predicate needs a library concept id (optional system any/icd10/snomed/label)')
+            if set(atom) - {'system', 'status'} != {'kind', 'concept', 'window'} or not concepts.is_concept(atom['concept']) \
+                    or atom.get('system', 'any') not in ('any', 'icd10', 'snomed', 'label') \
+                    or atom.get('status', 'completed') != 'completed' or ('status' in atom and atom['concept'] not in concepts.ENCOUNTERS):
+                raise ValueError('Concept predicate needs a library concept id (optional system any/icd10/snomed/label; '
+                                 'optional status "completed" for encounter concepts)')
             validate_window(atom['window'], as_of)
         elif atom.get('kind') == 'measurement':
             if set(atom) - {'names'} != {'kind', 'concept', 'op', 'value', 'aggregate', 'window'} or atom['concept'] not in concepts.MEASUREMENTS \
@@ -237,6 +239,7 @@ def evaluate_concept(atom, records, as_of):
         if binding is None: continue
         if atom.get('names') and not any(str(r.get(f, '')).lower() in {n.lower() for n in atom['names']}
                                          for f in binding.get('name_fields', [])): continue
+        if atom.get('status') and r.get('status') != atom['status']: continue
         system = atom.get('system', 'any')
         if system == 'icd10' and not (r.get('icd10') or r.get('problem_code')): continue
         if system == 'snomed' and not r.get('snomed'): continue

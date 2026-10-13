@@ -82,6 +82,12 @@ STATISTIC_WORDS = [('share', r'\b(share|percent(age)?|proportion|fraction|what %
 COUNT_QUESTION = re.compile(r'\b(how many|number of|count|what (?:share|proportion|percent(?:age)?))\b', re.I)
 
 
+VBC_VALUE_COLUMNS = [(r'\b(?:ed|er|emergency)\b.*\bper 1,?000\b|\bper 1,?000\b.*\b(?:ed|er|emergency)\b', 'ed_per_1000'),
+                     (r'\badmi\w*\b.*\bper 1,?000\b|\bper 1,?000\b.*\badmi\w*', 'admits_per_1000'),
+                     (r'\breadmission rate\b', 'readmission_rate'), (r'\bfollow-?up rate\b|\b7-day follow', 'followup_7d_rate'),
+                     (r'\bpmpm\b|\bper member per month\b', 'allowed_pmpm')]
+
+
 def requested_shape(question):
     """What kind of answer the question asks for, from its wording."""
     q = (question or '').lower()
@@ -190,8 +196,18 @@ def build_answer(plan, results, memberships, question):
                                  f"mix effect {top['mix_effect']:+}. {top['reading']}"))
             return answer
         single = len(report['rows']) == 1 and report['metric'] == 'shared_savings'
+        value = report['rows'][0].get('payment_to_aco', report['rows'][0].get('payment_from_aco')) if single else None
+        if not single and len(report['rows']) == 1 and requested_shape(question) == 'value':
+            # One population, one number asked for: pick the column the question names, or decline.
+            q = (question or '').lower()
+            column = next((c for pattern, c in VBC_VALUE_COLUMNS if re.search(pattern, q) and isinstance(report['rows'][0].get(c), (int, float))), None)
+            if column is None:
+                answer.update(status='unsupported', answer_type='unsupported',
+                              missing=['The question asks for one number; Agere could not tell which utilization measure is meant.'])
+                return answer
+            single, value = True, report['rows'][0][column]
         answer.update(status='partial' if partial else 'answered', answer_type='value' if single else 'table',
-                      value=(report['rows'][0].get('payment_to_aco', report['rows'][0].get('payment_from_aco')) if single else None),
+                      value=value,
                       table=report['rows'], method=report['method'], overall={'period': report['period'], 'members_in_scope': report['members_in_scope']})
         return answer
     if last['operation'] == 'sql':
@@ -222,7 +238,11 @@ def build_answer(plan, results, memberships, question):
             answer.update(answer_type='value', value=report['overall'].get('value'), table=[report['overall']])
             if last['parameters']['statistic'] == 'share': answer['unit'] = '%'
         else:
-            answer.update(answer_type='table', table=report['rows'])
+            rows = report['rows']
+            if last['parameters'].get('columns'):  # the user named the output columns
+                key, val = last['parameters']['columns']
+                rows = [{key: r['group'], val: r['value']} for r in rows]
+            answer.update(answer_type='table', table=rows)
         answer.update(status='partial' if partial else 'answered', method=report['method'], overall=report['overall'])
         return answer
     terminal = next((n['id'] for n in reversed(plan['nodes']) if n['id'] in memberships), None)

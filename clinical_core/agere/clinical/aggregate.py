@@ -18,7 +18,8 @@ import json, math, sqlite3, statistics
 from . import concepts, grounding, source_profile
 
 VERSION = 'population-aggregate/1'
-GROUP_BY = ('none', 'pcp', 'practice', 'coverage_type', 'age_band', 'sex', 'facility')
+TIME_GROUPS = ('month', 'quarter', 'year')
+GROUP_BY = ('none', 'pcp', 'practice', 'coverage_type', 'age_band', 'sex', 'facility') + TIME_GROUPS
 STATISTICS = {'patients': ('count', 'share'), 'events': ('count', 'rate_per_1000'), 'value': ('mean', 'median'),
               'readmissions': ('count', 'rate')}
 STAY_TYPES = r'^(inpatient.*|observation|l&d admission)$'
@@ -32,7 +33,7 @@ SMALL_GROUP = 11
 
 def validate(p):
     if not isinstance(p, dict) or set(p) - {'measure', 'concept', 'statistic', 'group_by', 'adjust', 'window',
-                                             'value_aggregate', 'top'}:
+                                             'value_aggregate', 'top', 'status', 'columns'}:
         raise ValueError('Aggregate parameters: measure, concept, statistic, group_by, adjust, window, value_aggregate, top')
     measure = p.get('measure')
     if measure not in STATISTICS: raise ValueError('measure must be patients, events, value or readmissions')
@@ -49,6 +50,8 @@ def validate(p):
     group_by = p.get('group_by', 'none')
     group_by = 'facility' if group_by in ('event_organization', 'hospital', 'organization') else group_by
     if group_by not in GROUP_BY: raise ValueError(f'group_by must be one of {GROUP_BY}')
+    if group_by in TIME_GROUPS and (measure != 'events' or (p.get('statistic') or 'count') != 'count'):
+        raise ValueError('time groups (month/quarter/year) count events per period')
     if group_by == 'facility' and measure not in ('events', 'readmissions'):
         raise ValueError('facility groups events (where they occurred) or readmissions (index stay facility)')
     adjust = p.get('adjust', 'none')
@@ -61,11 +64,25 @@ def validate(p):
         if v and (not isinstance(v, str) or len(v) != 10): raise ValueError('ISO dates required in window')
     value_aggregate = p.get('value_aggregate', 'latest')
     if value_aggregate not in ('latest', 'all'): raise ValueError('value_aggregate is latest or all')
+    if p.get('status', 'completed') != 'completed' or ('status' in p and concept not in concepts.ENCOUNTERS):
+        raise ValueError('status filter: "completed", for encounter concepts')
+    columns = p.get('columns')
+    if columns is not None and not (isinstance(columns, list) and len(columns) == 2 and
+                                    all(isinstance(c, str) and c.replace('_', '').isalnum() and len(c) <= 64 for c in columns)):
+        raise ValueError('columns: [group column name, value column name]')
     top = p.get('top', 25)
     if type(top) is not int or not 1 <= top <= 200: raise ValueError('top must be 1..200')
     return {'measure': measure, 'concept': concept, 'statistic': statistic, 'group_by': group_by, 'adjust': adjust,
             'window': {'start': window.get('start', ''), 'end': window.get('end', '')},
-            'value_aggregate': value_aggregate, 'top': top}
+            'value_aggregate': value_aggregate, 'top': top, **({'status': p['status']} if p.get('status') else {}),
+            **({'columns': columns} if columns else {})}
+
+
+def period_label(day, grain):
+    """'2028-07-14' -> '2028-07' (month), '2028-Q3' (quarter) or '2028' (year)."""
+    if grain == 'month': return day[:7]
+    if grain == 'quarter': return f'{day[:4]}-Q{(int(day[5:7]) - 1) // 3 + 1}'
+    return day[:4]
 
 
 def _date(r):
@@ -193,7 +210,7 @@ def execute(path, patient_ids, params):
         hits = []
         for r in records[pid]:
             b = _matches(target, r) if target else None
-            if not b: continue
+            if not b or (p.get('status') and r.get('status') != p['status']): continue
             w = _in_window(r, p['window'], as_of)
             if w is None: unknown_dates += 1; continue
             if w: hits.append((r, b))
@@ -234,6 +251,10 @@ def execute(path, patient_ids, params):
     elif p['group_by'] == 'facility':
         for pid in people:
             for org in events[pid].values(): groups[org].append(pid)
+    elif p['group_by'] in TIME_GROUPS:  # each event lands in the period of its source event date
+        for pid in people:
+            for day in events[pid]:
+                if len(day) == 10 and day[4] == '-': groups[period_label(day, p['group_by'])].append(pid)
     else:
         for pid in people:
             groups['all' if p['group_by'] == 'none' else attrs[pid][p['group_by']]].append(pid)
@@ -247,7 +268,7 @@ def execute(path, patient_ids, params):
         else:
             pairs = facility_stays.get(label) if p['group_by'] == 'facility' and p['measure'] == 'readmissions' else None
             if pairs is not None: num = sum(s['readmitted'] for _, s in pairs)
-            else: num = len(pids) if p['group_by'] == 'facility' else sum(numerator(x) for x in unique)
+            else: num = len(pids) if p['group_by'] in ('facility',) + TIME_GROUPS else sum(numerator(x) for x in unique)
             row['numerator'] = num
             if p['measure'] == 'readmissions':
                 row['index_stays'] = len(pairs) if pairs is not None else denominator(unique)
@@ -265,7 +286,8 @@ def execute(path, patient_ids, params):
 
     rows = [summarise(g, pids) for g, pids in groups.items()]
     rank = 'oe_ratio' if expected else 'value'
-    rows.sort(key=lambda r: (r.get('small_group'), -(r.get(rank) if r.get(rank) is not None else -1e18), str(r['group'])))
+    if p['group_by'] in TIME_GROUPS: rows.sort(key=lambda r: r['group'])  # chronological
+    else: rows.sort(key=lambda r: (r.get('small_group'), -(r.get(rank) if r.get(rank) is not None else -1e18), str(r['group'])))
     overall = summarise('all', list(people))
     notes = [f"No received records match concept '{p['concept']}'."] if target is not None and not target['bindings'] else []
     return {'schema': VERSION, 'parameters': p, 'notes': notes, 'rows': rows[:p['top']], 'groups_total': len(rows), 'overall': overall,

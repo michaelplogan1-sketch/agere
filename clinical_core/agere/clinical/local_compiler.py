@@ -28,7 +28,7 @@ CONDITION_ALIASES = {
     'heart_failure': ['heart failure', 'chf', 'hf', 'congestive heart failure'],
     'heart_failure_reduced_ef': ['hfref', 'systolic heart failure', 'reduced ejection fraction'],
     'chronic_kidney_disease': ['chronic kidney disease', 'ckd', 'kidney disease', 'renal disease'],
-    'copd': ['copd', 'chronic obstructive pulmonary disease', 'emphysema'],
+    'copd': ['copd', 'chronic obstructive pulmonary disease', 'emphysema', 'chronic obstructive bronchitis', 'chronic bronchitis', 'chronic obstructive lung disease'],
     'asthma': ['asthma', 'asthmatics', 'asthmatic'],
     'atrial_fibrillation': ['atrial fibrillation', 'afib', 'a-fib'],
     'coronary_artery_disease': ['coronary artery disease', 'cad', 'ischemic heart disease'],
@@ -83,23 +83,30 @@ SOCIAL_FLAGS = {  # phrase -> (stream, field)
     'transport difficulty': ('social_screens', 'transport_difficulty_reported'),
     'transportation difficulty': ('social_screens', 'transport_difficulty_reported'),
     'transportation barrier': ('social_screens', 'transport_difficulty_reported'),
+    'transportation barriers': ('social_screens', 'transport_difficulty_reported'),
+    'transportation problems': ('social_screens', 'transport_difficulty_reported'),
     'difficulty paying for care': ('social_screens', 'difficulty_paying_for_care_reported'),
     'financial hardship': ('social_screens', 'difficulty_paying_for_care_reported'),
     'difficulty paying medical bills': ('financial_screens', 'difficulty_paying_medical_bills'),
 }
 PAYERS = {'medicare': 'medicare', 'medicaid': 'medicaid', 'commercial': 'commercial', 'commercially insured': 'commercial',
           'uninsured': 'uninsured'}
-GROUPS = [(r'\bby (?:attributed )?(?:pcp|primary care (?:provider|physician|clinician)|physician|provider|clinician)s?\b', 'pcp'),
-          (r'\bby (?:practice|clinic)s?\b', 'practice'),
+GROUPS = [(r'\b(?:by|for each|per|each) (?:assigned |attributed )?(?:pcp(?:_clinician_id| clinician)?|primary care (?:provider|physician|clinician)|physician|provider|clinician)s?\b', 'pcp'),
+          (r'\b(?:by|for each|per|each) (?:attributed )?(?:practice|clinic)(?:_id)?s?\b', 'practice'),
           (r'\bby (?:hospital|facility|facilities|site)s?\b', 'facility'),
           (r'\bby (?:payer|payor|coverage(?: type)?|insurance(?: type)?|plan type)\b', 'coverage_type'),
-          (r'\bby age(?: band| group)?s?\b', 'age_band'), (r'\bby (?:sex|gender)\b', 'sex')]
+          (r'\bby age(?: band| group)?s?\b', 'age_band'), (r'\bby (?:sex|gender)\b', 'sex'),
+          (r'\b(?:by|per|each|for each|every) (?:calendar )?months?\b|\bmonthly\b|\bmonth[- ]by[- ]month\b', 'month'),
+          (r'\b(?:by|per|each|for each|every) (?:calendar )?quarters?\b|\bquarterly\b', 'quarter'),
+          (r'\b(?:by|per|each|for each|every) (?:calendar )?years?\b|\byearly\b|\bannually\b|\byear[- ]over[- ]year\b', 'year')]
+TIME_GROUPS = ('month', 'quarter', 'year')
 COMPARATORS = [(r'(?:at or above|at or over|at least|no less than|>=|≥)', 'ge'), (r'(?:at or below|at or under|at most|no more than|<=|≤)', 'le'),
                (r'(?:over|above|greater than|more than|higher than|exceed(?:ed|s|ing)?|>)', 'gt'),
                (r'(?:below|under|less than|lower than|<)', 'lt'), (r'(?:equal to|exactly|=)', 'eq')]
 NUMBER = r'(-?\d+(?:\.\d+)?)'
 UNSUPPORTED = [
-    (r'\bcausal(?:ly)?\b|\bcaus(?:ed|ally) (?:by|prevented)|\bprevented by\b|\bidentified causal effect\b|\battributable\b',
+    (r'\bcausal(?:ly)?\b|\bcaus(?:ed|ally) (?:by|prevented)|\bprevented by\b|\bidentified causal effect\b|\battributable\b|'
+     r'\b(?:did|does|do) [a-z -]{3,60} (?:reduce|lower|cut|prevent|improve|increase|decrease|drive down)\b|\bimpact of\b|\beffect of\b',
      ['identified causal design or randomised comparison', 'counterfactual outcome model', 'validated outcome attribution method']),
     (r'\b(?:externally )?validated,? calibrated\b|\bcalibrated probability\b',
      ['externally validated prediction model', 'calibration data for this population']),
@@ -113,7 +120,12 @@ UNSUPPORTED = [
     (r'\b(?:died|deaths?|mortality|deceased|passed away)\b', ['death or mortality records (none are received)']),
     (r'\brace\b|\bethnicit(?:y|ies)\b', ['race/ethnicity fields (none are received)']),
     (r'\bcahps\b|\bpatient experience scores?\b|\bsatisfaction scores?\b', ['patient experience survey results (none are received)']),
-    (r'\bhousehold income\b|\bincome (?:level|bracket)s?\b', ['household income data (not disclosed in received records)']),
+    (r'\bhousehold income\b|\bincome (?:level|bracket|distribution)s?\b|\bfpl\b|\bpoverty (?:level|line)\b|\bincome\b',
+     ['household income / federal poverty level (not disclosed in received records)']),
+    (r'\binterpreter\b|\bpreferred language\b|\blanguage preference\b|\blimited english\b|\blep\b',
+     ['preferred language / interpreter need (not received)']),
+    (r'\bsexual orientation\b|\bgender identity\b|\bsogi\b|\blgbtq?\+?\b', ['sexual orientation / gender identity (not received)']),
+    (r'\bw?rvus?\b|\brelative value units?\b|\bcpt\b', ['CPT procedure codes and RVU weights (claims carry local codes only)']),
     (r'\bswallow(?:ed)?\b|\bactually (?:took|taken|swallowed)\b|\bverified independently\b',
      ['direct observation of medication ingestion (no received source records it)']),
 ]
@@ -133,7 +145,8 @@ higher lower exceed exceeded exceeds exceeding after before within since until b
 linked unlinked twice two three four five six per average mean median rate rates percent percentage share sum total max min
 maximum minimum only neither nor nobody none missing lacks lack lacking january february march april june july august
 september october november december jan feb mar apr jun jul aug sep sept oct nov dec monthly quarterly weekly
-daily annually month months quarter quarters week weeks half q1 q2 q3 q4 died death deaths mortality deceased'''.split())
+daily annually month months quarter quarters week weeks half q1 q2 q3 q4 died death deaths mortality deceased
+denominator denominators numerator numerators'''.split())
 _VOCAB_CACHE = {}
 
 
@@ -188,7 +201,87 @@ def _norm(q, as_of='2029-08-15'):
             r'(?: as)? ?(?:received|available|had received|\'d received)? ?(?:as of|through|thru|by|until|up to|to date|on)?)')
     q = re.sub(r'[,;(]?\s*' + lead + r'\s*' + snapshot + r'\)?\.?', ' ', q, flags=re.I)
     q = re.sub(r'\(\s*\)', ' ', q)
+    q = re.sub(r'(?<![\d.])(\d{1,3})(?:,(\d{3}))+(?![\d])', lambda m: m.group(0).replace(',', ''), q)  # 1,000 -> 1000
     return re.sub(r'\s+', ' ', q).strip()
+
+
+# Plain analyst English -> the phrasing the grammar reads. Each rule preserves meaning exactly;
+# anything a rule cannot restate faithfully is left alone so the compiler declines it instead.
+PARAPHRASES = [
+    # conversational framing: who is asking and why does not change the question
+    (r'^(?:hi|hey|hello|ok|okay|quick question)[,!.]?\s+', ''),
+    (r'^(?:[a-z/&\'-]+ ){0,3}here[.,:!]\s*', ''),                                    # "CMO here."
+    (r"^i'?m (?:looking at|working on|thinking about|interested in|reviewing) [^.?!]*[.!]\s+(?=\S)", ''),     # topic sentence before the real question
+    (r'^(?:for|from) (?:the |our |a )?(?:[a-z/&\'-]+ ){1,5}(?:proposal|scorecard|review|report|deck|meeting|board|committee)[:,]\s*', ''),
+    (r'\b(?:please|pls|thanks|thank you|roughly|approximately|approx\.?|ballpark|quickly|just|actually|really)\b[,!]?', ' '),
+    (r'\b(?:have|did|do) we (?:seen|see|had|have|logged|recorded|gotten|got)\b', ' '),
+    (r'\b[a-z]+ outreach list\b', 'list'),
+    (r'\b(?:did |does |do )?(?:their|the|each) (?:pcp\'?s? )?panels? (?:have|had|get|got)\b|\bfor (?:their|the) panels?\b', ' '),
+    (r'\b(?:did|does|do) (?:each|every) ([a-z_ ]{3,20}?) (?:administer|give|send|order|perform|do|see|bill|submit|receive|write)\b', r'by \1'),
+    (r'\b(?:who|that) (?:say|said|report|reported) (?:they )?(?:struggle|struggled|have trouble|had trouble|have difficulty|had difficulty) (?:to )?(?:pay(?:ing)? for|afford(?:ing)?) (?:medical )?care\b', 'with difficulty paying for care'),
+    (r'\b(patients?|members?|people|adults|seniors) (?:reporting|who report(?:ed)?|that report(?:ed)?|who screened positive for|screening positive for)\b', r'\1 with'),
+    (r'\bnames?/ids?\b|\bnames? (?:and|or|&) ids?\b|\bmrns?\b', ' list '),
+    (r'\b(?:can|could|would) you (?:please )?(?:pull|get|give|send|run|show|find)(?: me| us)? (?:a |the )?list of\b', 'list'),
+    (r'\b(?:can|could|would) you (?:please )?tabulate\b', 'count'),
+    (r'\b(?:can|could|would) you (?:please )?(?:pull|get|give|send|run|show|tell|find|count)(?: me| us)?\b', ' '),
+    (r"\bi(?:'d| would)? (?:want|need|like)(?: to (?:know|see))?\b|\bi'm (?:trying to (?:find|see|figure out)|wondering)\b", ' '),
+    (r'\bhow big is (?:our |the )?([a-z0-9 -]+?) (?:population|cohort|panel|registry)\b', r'how many patients have \1'),
+    (r"\bwhat(?:'s| is) the size of (?:our |the )?([a-z0-9 -]+?) (?:population|cohort|panel|registry)\b", r'how many patients have \1'),
+    # abbreviations
+    (r'\bpts\b', 'patients'), (r'\bdx\b', 'diagnosis'), (r'\bhx\b', 'history'),
+    # default semantics restated: a condition counts however it is coded (ICD-10, SNOMED or label)
+    (r'\b(?:anywhere )?on (?:their|the|his|her) problem lists?\b|\b(?:however|no matter how) (?:it was|they were|it is|it\'s) coded\b|'
+     r'\b(?:of|in) any (?:kind|form|type|coding(?: system)?)\b|\bcoded (?:any ?way|anywhere)\b', ' '),
+    (r'\b(?:any|every|all) ([a-z0-9 -]+?) (?:results?|readings?|values?) counts?\b', ' '),
+    # grouping verbs
+    (r'\b(?:how (?:do|does) (?:they|it|that|these|those) )?break(?:s|ing)? (?:it |them |this |that )?(?:down|out) by\b', ' by '),
+    (r'\bbreak(?:s|ing)? (?:down|out)\b', ' '),
+    (r'\bsplit (?:it |them )?(?:out )?by\b|\bbroken (?:down|out) by\b', ' by '),
+    (r"\bby (?:the |their )?(?:patient'?s |member'?s )?(?:payer|insurance|coverage|plan)(?: type)?\b", 'by payer'),
+    (r'\b(?:by|per|for each|each) (?:practice|clinic)s?\b', 'by practice'),
+    (r'\b(by [a-z_ ]{2,30}?)\s*\((?:[a-z0-9 _-]+\s*(?:/|,|or|and)\s*)+[a-z0-9 _-]+\)', r'\1'),   # "by payer (medicare / medicaid)": categories, not filters
+    (r'\b(?:in |during |for )?calendar (?:year )?(\d{4})\b', r' in \1'),
+    # quantities
+    (r'\b(?:at least one|one or more|1\+)\b', 'any'),
+    (r'\b(ed|er|emergency department|urgent care|inpatient|primary care|admission|admit) (?:volume|volumes|counts?|utili[sz]ation)\b', r'\1 visits'),
+    # time
+    (r'\b(?:with|for|having) ((?:19|20)\d{2}) ([a-z]+) dates?\b', r'with \2 date in \1'),            # "claims with 2029 service dates"
+    (r'\b(?:for|with|in) ((?:19|20)\d{2}) dates? of ([a-z]+)\b', r'with \2 date in \1'),             # "for 2028 dates of service"
+    (r'(?<![\d/-])\b((?:19|20)\d{2}) (?!ytd\b|so far\b|to date\b|year)(?=(?:[a-z-]+ ){0,3}?(?:visits?|admissions?|stays?|claims?|claim rows|referrals?|reports?|payments?|fills?|appointments?|encounters?|orders?|discharges?|doses|records?|rows)\b)',
+     r'in \1 '),                                                                                            # "2026 ED visits"
+    (r'\bytd (\d{4})\b', r'\1 ytd'), (r'\b(\d{4}) (?:so far|ytd|year[- ]to[- ]date)(?: \((?:through|thru) [^)]*\))?', r'\1 ytd'),
+]
+
+
+# Words that only say who is asking or why ("Finance:", "Quality director question:", "Care gap check -").
+FRAMING_WORDS = set('''for from the our a an my this cmo cfo ceo coo cno cmio cio vp svp chief medical officer officers director directors
+manager managers lead leads head quality finance financial pharmacy nursing operations ops analytics analyst analysts data engineering
+engineer team teams question questions check checks request requests ask quick care gap gaps transitions transition population health
+value-based value based board committee scorecard proposal integration compliance revenue cycle here hi hey behavioral medicare advantage
+aco mssp contract contracting payer strategy network utilization management um cm case program programs outreach'''.split())
+
+
+def _strip_framing(low):
+    m = re.match(r'^([a-z/&\'\- ]{2,80}?)\s*(?:[:\u2014\u2013]|\s-\s)\s+(?=\S)', low)
+    if m and all(w in FRAMING_WORDS for w in re.split(r'[\s/&]+', m.group(1).strip()) if w):
+        return low[m.end():]
+    return low
+
+
+def _paraphrase(q, as_of):
+    """Apply PARAPHRASES; returns (text, rules applied)."""
+    low, applied = _strip_framing(q.lower()), []
+    if low != q.lower(): applied.append('framing')
+    y = as_of[:4]
+    us = f'{int(as_of[5:7])}/{int(as_of[8:10])}/{y}'  # the snapshot written as m/d/yyyy restates the default
+    low = re.sub(r'\(?\s*(?:through |thru |as of )?' + re.escape(us) + r'\s*\)?', ' ', low)
+    for pattern, repl in [(r'\bthis (?:calendar )?year\b(?: \(?\d{4} (?:so far|to date|ytd)\)?)?', f'{y} ytd'),
+                          (r'(?<!\d{4} )\b(?:year[- ]to[- ]date|ytd)\b(?! \d)', f'{y} ytd')] + PARAPHRASES:
+        new = re.sub(pattern, repl, low)
+        if new != low: applied.append(pattern[:40]); low = new
+    low = re.sub(r'\b(\d{4}) ytd (\d{4}) ytd\b', r'\1 ytd', low)
+    low = re.sub(r'\b(\d{4}) \1 ytd\b', r'\1 ytd', low)
+    return re.sub(r'\s+', ' ', low).strip(' ,'), applied
 
 
 class Reader:
@@ -214,14 +307,17 @@ class Reader:
         stems = {t[:5] for t in vocab if len(t) >= 5}
         left = self.leftover()
         # Inflections count: 'rejections' carries the meaning of the observed value 'rejected'.
-        block = [w for w in left if re.search(r'\d', w) or w in OPERATOR_WORDS or w.rstrip('s') in vocab or w in vocab
+        block = [w for w in left if re.search(r'\d', w) or '_' in w or w in OPERATOR_WORDS or w.rstrip('s') in vocab or w in vocab
                  or (len(w) >= 5 and w[:5] in stems)]
         self.ignored = [w for w in left if w not in block]
         return block
 
     def leftover(self):
-        words = re.findall(r"[a-z][a-z0-9'_/-]*", ''.join(c if not u else ' ' for c, u in zip(self.low, self.used)))
-        return [w.strip("-/'") for w in words if w.strip("-/'") not in FILLER and len(w.strip("-/'")) > 1]
+        text = ''.join(c if not u else ' ' for c, u in zip(self.low, self.used))
+        words = re.findall(r"[a-z][a-z0-9'_/-]*", text)
+        # Unused numbers always carry meaning (a year, a threshold, a count): never drop them silently.
+        numbers = [n for n in re.findall(r"(?<![a-z0-9.])\d+(?:[.,]\d+)?(?![a-z0-9])", text)]
+        return [w.strip("-/'") for w in words if w.strip("-/'") not in FILLER and len(w.strip("-/'")) > 1] + numbers
 
 
 def _value_pattern(value):
@@ -264,15 +360,51 @@ def _stream_vocabulary(profile):
         if spaced.endswith('s'): forms.add(spaced[:-1])
         names[s] = sorted(forms, key=len, reverse=True)
     names.setdefault('adt', []).extend(['adt notification', 'adt'])
+    for stream, words in STREAM_SYNONYMS.items():
+        if stream in profile['streams']: names[stream] = sorted(set(names.get(stream, [])) | set(words), key=len, reverse=True)
     return names
+
+
+FIELD_SYNONYMS = {'anatomic_site': ['body site', 'body part', 'anatomic site'], 'payment_channel': ['channel', 'payment method'],
+                  'requested_specialty': ['specialty'], 'vaccine': ['vaccine type'], 'impression': ['impression', 'read', 'finding']}
+
+
+# Everyday analyst nouns for received streams (used only when the stream exists in this release).
+STREAM_SYNONYMS = {
+    'medical_claims': ['medical claim rows', 'medical claim', 'medical claims', 'claim rows', 'professional claims', 'claims'],
+    'pharmacy_dispenses': ['pharmacy fills', 'prescription fills', 'rx fills', 'fills', 'dispenses', 'dispensings', 'dispensing events'],
+    'patient_payments': ['patient payments', 'payments received', 'payments'],
+    'immunizations': ['vaccine doses', 'vaccinations', 'vaccines', 'vaccine', 'shots', 'doses', 'immunization doses'],
+    'imaging_reports': ['x-ray reports', 'xray reports', 'radiology reports', 'imaging reports'],
+    'imaging_orders': ['imaging orders', 'radiology orders', 'x-ray orders'],
+    'laboratory_orders': ['lab orders', 'laboratory orders'],
+    'referrals': ['specialty referrals', 'referrals', 'referral'],
+    'appointments': ['appointments', 'appts', 'appointment'],
+    'telephone_messages': ['phone messages', 'telephone messages'],
+}
 
 
 def compile(question, profile, as_of):
     """Return (graph, info). graph is None when the question needs the fallback planner."""
     q = _norm(question, as_of)
+    low = q.lower()
+    for pattern, missing in UNSUPPORTED:  # checked on the user's own words, before any paraphrase
+        if re.search(pattern, low) and not (_contract_terms(low) and 'shared' in pattern):
+            return {'interpretation': f'Unsupported by received data: {q}', 'coverage': 'unsupported', 'nodes': [],
+                    'unmet_requirements': [f'Missing input: {m}' for m in missing]}, \
+                   {'compiler': VERSION, 'recognised': [], 'route': 'local_unsupported', 'unexplained': []}
+    q, paraphrased = _paraphrase(q, as_of)
+    named = re.search(r'(?:^|[.;?] |, )(?:give(?: me)?|return|show|columns?(?: named)?|with columns?|output)\s*:?\s*([a-z][a-z_]*)\s*(?:,|and|&)\s*([a-z]+_[a-z_]+)\.?\s*$', q)
+    columns = None
+    table_with = re.search(r'\btable with ([a-z][a-z_]*) and ([a-z][a-z_]*)', q)
+    if named and not table_with:
+        columns = [named.group(1), named.group(2)]
+        q = q[:named.start()].rstrip(' ,.;') + ('?' if q.rstrip().endswith('?') else '')
+    elif table_with:  # literal-stream SQL aliases these itself; population tables rename their rows
+        columns = [table_with.group(1), table_with.group(2)]
     r = Reader(q)
     r.profile = profile
-    info = {'compiler': VERSION, 'recognised': r.notes}
+    info = {'compiler': VERSION, 'recognised': r.notes, 'paraphrased': paraphrased, **({'columns': columns} if columns else {})}
     # 0. Requests the received data cannot support: answer unsupported locally, naming the missing inputs.
     terms = _contract_terms(r.low)
     for pattern, missing in UNSUPPORTED:
@@ -302,6 +434,34 @@ def compile(question, profile, as_of):
     return _population_question(q, r, profile, as_of, info)
 
 
+def _take_period(r, as_of, year_words=r'in|during|for'):
+    """Time windows in analyst language -> (start, end) ISO dates, consuming the words. None when no period is named."""
+    period = None
+    for m in r.take(r'\b(?:from|between) (\d{4}) (?:through|thru|to|and|until|-|–) (?:ytd |year[- ]to[- ]date )?(\d{4})(?: ytd| year[- ]to[- ]date| to date| so far)?\b', 'year range'):
+        period = (f'{m.group(1)}-01-01', min(f'{m.group(2)}-12-31', as_of))
+    for m in r.take(r'\b(?:so far in|year[- ]to[- ]date in|ytd in) (\d{4})\b|\b(\d{4}) (?:year[- ]to[- ]date|ytd|to date|so far)\b|\bin (\d{4}) (?:to date|so far)\b', 'year to date'):
+        y = next(g for g in m.groups() if g); period = (f'{y}-01-01', min(f'{y}-12-31', as_of))
+    for m in r.take(r'\b(?:in|during) ' + MONTH_RX + r' (\d{4})\b', 'month'):
+        mo, y = _month_number(m.group(1)), m.group(2)
+        import calendar
+        period = (f'{y}-{mo:02d}-01', f'{y}-{mo:02d}-{calendar.monthrange(int(y), mo)[1]:02d}')
+    for m in r.take(r'\b(?:in |during |for |over )?(?:the )?(?:q([1-4])|(first|second|third|fourth|1st|2nd|3rd|4th) quarter(?: of)?) (\d{4})'
+                    r'(?: \(?' + MONTH_RX + r'\s*(?:-|–|to|through)\s*' + MONTH_RX + r'\)?)?', 'quarter'):
+        n = int(m.group(1)) if m.group(1) else ['first', 'second', 'third', 'fourth'].index({'1st': 'first', '2nd': 'second', '3rd': 'third', '4th': 'fourth'}.get(m.group(2), m.group(2))) + 1
+        y = m.group(3); end = [f'{y}-03-31', f'{y}-06-30', f'{y}-09-30', f'{y}-12-31'][n - 1]
+        period = (f'{y}-{3 * n - 2:02d}-01', min(end, as_of))
+    for m in r.take(r'\b(?:in |during |for |over )?(?:the )?(?:(first|second) half(?: of)?|h([12])) (\d{4})\b', 'half year'):
+        first = m.group(1) == 'first' or m.group(2) == '1'; y = m.group(3)
+        period = (f'{y}-01-01', min(f'{y}-06-30', as_of)) if first else (f'{y}-07-01', min(f'{y}-12-31', as_of))
+    for m in r.take(r'\b(?:since|from) (?:the (?:start|beginning) of )?(?:' + MONTH_RX + r'(?: (\d{1,2})(?:st|nd|rd|th)?)?,? )?(\d{4})'
+                    r'(?: (?:through|thru|to|until) (?:today|now|date|the present))?\b(?! (?:to|through|thru|-|–) \d)', 'since'):
+        mo = _month_number(m.group(1)) if m.group(1) else 1
+        period = (f'{m.group(3)}-{mo:02d}-{int(m.group(2) or 1):02d}', as_of)
+    for m in r.take(r'\b(?:' + year_words + r') (\d{4})\b', 'year'):
+        y = m.group(1); period = period or (f'{y}-01-01', min(f'{y}-12-31', as_of))
+    return period
+
+
 # ---- population questions (concepts, aggregates, explanations) ------------------
 def _population_question(q, r, profile, as_of, info):
     low = r.low
@@ -318,7 +478,7 @@ def _population_question(q, r, profile, as_of, info):
         hot_segments = [g for g, pattern in named.items() if r.take(pattern, f'segment {g}')] or None
         r.take(r'\b(?:find|show|identify|look for|detect|any)\b', None)
     why = r.take(r'\b(?:why|what drives|what is driving|drivers? of|factors? (?:associated with|behind|for)|what distinguishes|contribut\w+ to|explain)\b', 'why')
-    share = r.take(r'\b(?:what share|share|what percent(?:age)?|percentage|proportion|fraction|what %)\b(?: of)?', 'share')
+    share = r.take(r'(?:\b(?:what share|share|what percent(?:age)?|percentage|proportion|fraction)\b|\bwhat ?%|\bpercent of\b)(?: of)?', 'share')
     mean = r.take(r'\b(?:average|mean)\b', 'mean')
     median = r.take(r'\bmedian\b', 'median')
     rate = r.take(r'\b(?:rates?|per 1,?000|utili[sz]ation)\b', 'rate')
@@ -329,15 +489,7 @@ def _population_question(q, r, profile, as_of, info):
     readmit = r.take(r'\b(?:30[- ]day )?readmi(?:ssions?|tted|t)\b(?: within 30 days)?', 'readmission')
     r.take(r'\bwithin 30 days\b')
     highest = r.take(r'\b(?:highest|lowest|top|worst|best|most|fewest)\b', 'ranking')
-    period = None
-    for m in r.take(r'\b(?:so far in|year[- ]to[- ]date in|ytd in) (\d{4})\b|\b(\d{4}) (?:year[- ]to[- ]date|ytd|to date|so far)\b|\bin (\d{4}) (?:to date|so far)\b', 'year to date'):
-        y = next(g for g in m.groups() if g); period = (f'{y}-01-01', min(f'{y}-12-31', as_of))
-    for m in r.take(r'\b(?:in|during) ' + MONTH_RX + r' (\d{4})\b', 'month'):
-        mo, y = _month_number(m.group(1)), m.group(2)
-        import calendar
-        period = (f'{y}-{mo:02d}-01', f'{y}-{mo:02d}-{calendar.monthrange(int(y), mo)[1]:02d}')
-    for m in r.take(r'\b(?:in|during|for) (\d{4})\b', 'year'):
-        y = m.group(1); period = period or (f'{y}-01-01', min(f'{y}-12-31', as_of))
+    period = _take_period(r, as_of)
     group = None
     for pattern, g in GROUPS:
         if r.take(pattern, f'group by {g}'): group = g; break
@@ -416,6 +568,13 @@ def _population_question(q, r, profile, as_of, info):
         for m in r.take(pattern, field):
             atom = {'kind': 'record', 'stream': stream, 'conditions': [{'field': field, 'op': 'eq', 'value': True}], 'window': W}
             (excl if _negated(low, m.start()) else allp).append(atom)
+    for m in r.take(r'\b(?:missed|no[- ]showed?(?: for)?|skipped) (?:any |an |a )?(?:appointments?|appts?|visits?)\b|\bno[- ]shows?\b', 'missed appointment'):
+        if 'appointments' in profile['streams'] and 'no_show' in (profile['streams']['appointments']['fields'].get('status', {}).get('values') or {}):
+            atom = {'kind': 'record', 'stream': 'appointments', 'conditions': [{'field': 'status', 'op': 'eq', 'value': 'no_show'}], 'window': W}
+            (excl if _negated(low, m.start()) else allp).append(atom)
+        else:
+            info.update(route='fallback', reason='no appointment no-show status is received'); return None, info
+    r.take(r'\b(?:have|has|had) both\b|\bboth\b', None)
     r.take(r'\b(?:any |a |on a )?(?:social|financial) screens?\b(?: explicitly)?(?: reporting)?|\bscreened positive(?: for)?\b|\btold us\b', None, overlap=True)
     # literal labels: "lab named eGFR", "result named Hemoglobin A1c or Hemoglobin A1c/Hemoglobin.total"
     measured = []
@@ -464,27 +623,66 @@ def _population_question(q, r, profile, as_of, info):
         (excl if _negated(low, start) else allp).append(atom)
     r.take(r'\b(?:percent|%|mmol/l|mg/dl|ml/min/1\.73\s?m2|mmhg|pg/ml|ng/l)\b')
     # encounters (as population filters, or as the counted event)
-    events = []
+    events, visit_atoms = [], []
     for concept, aliases in ENCOUNTER_ALIASES.items():
         for alias in sorted(aliases, key=len, reverse=True):
             for m in r.take(_alias_pattern(alias), f'encounter {concept}'):
-                events.append((concept, m.start()))
+                before = low[max(0, m.start() - 40):m.start()]
+                done = re.search(r'\bcompleted\s+(?:[a-z0-9-]+\s+)?$', before)
+                if done:
+                    r.take(r'\bcompleted(?=\s+(?:[a-z0-9-]+\s+)?' + re.escape(alias) + r')', 'completed', overlap=True)
+                # Counted ("how many ED visits") vs a condition on patients ("patients who had any ED visit").
+                counted = re.search(r'(?:how many|number of|count(?: of)?|total|tally of|volume of)\s+(?:[a-z0-9-]+\s+){0,3}$', before) \
+                    and not re.search(r'\b(?:patients?|members?|people|persons?)\b', before.split('how many')[-1].split('number of')[-1])
+                predicate = not counted and re.search(r'\b(?:had|have|has|having|with|any|an?|no|without|got|getting|made|making)\s+(?:[a-z0-9-]+\s+){0,2}$', before)
+                if predicate:
+                    atom = {'kind': 'concept', 'concept': concept, 'window': W, **({'status': 'completed'} if done else {})}
+                    visit_atoms.append(atom)
+                    (excl if _negated(low, m.start()) else allp).append(atom)
+                else:
+                    events.append((concept, m.start(), bool(done)))
     r.take(r'\b(?:including|incl\.?) (?:diabetic )?complications?\b', 'includes complications', overlap=True)
     # conditions
     conds = []
     for concept, aliases in sorted(CONDITION_ALIASES.items(), key=lambda kv: -max(map(len, kv[1]))):
         for alias in sorted(aliases, key=len, reverse=True):
             for m in r.take(_alias_pattern(alias), f'condition {concept}'):
-                conds.append((concept, m.start()))
+                conds.append((concept, m.start(), m.end()))
     r.take(r'\b(?:including|incl\.?) (?:diabetic )?complications?\b|\bdiabetic[- ]complications?\b|\bfamily history\b|\bicd-?10\b|\bsnomed\b')
-    for concept, start in conds:
+    anyp, or_gaps = [], []
+    ordered = sorted(conds, key=lambda c: c[1])
+    chains, chain = [], [ordered[0]] if ordered else []
+    for prev, cur in zip(ordered, ordered[1:]):
+        gap = low[prev[2]:cur[1]]
+        joined = re.fullmatch(r'\s*(?:,\s*)?(?:or|and/or|,)\s*(?:an?\s+|any\s+)?', gap)
+        if joined and _negated(low, prev[1]) and _negated(low, cur[1]):  # "no A or B": both excluded
+            or_gaps.append((prev[2], cur[1])); chains.append(chain); chain = [cur]
+        elif joined and not _negated(low, cur[1]):
+            chain.append(cur); or_gaps.append((prev[2], cur[1]))
+        else:
+            chains.append(chain); chain = [cur]
+    if chain: chains.append(chain)
+    or_chains = [c for c in chains if len(c) > 1 and re.search(r'\bor\b', low[c[0][1]:c[-1][2]])]
+    if len(or_chains) > 1:
+        info.update(route='fallback', reason='more than one either/or group of conditions'); return None, info
+    in_or = {c[1] for ch in or_chains for c in ch}
+    for concept, start, _end in conds:
         atom = {'kind': 'concept', 'concept': concept, 'window': W}
         system = re.search(r'\b(snomed|icd-?10)\b(?:\s+[a-z-]+){0,2}\s*$', low[max(0, start - 30):start])
         if system:
             atom['system'] = 'snomed' if system.group(1) == 'snomed' else 'icd10'
             r.take(r'\b' + re.escape(system.group(1)) + r'\b', 'coding system', overlap=True)
-        target = excl if _negated(low, start) else allp
+        target = anyp if start in in_or else excl if _negated(low, start) else allp
         if atom not in target: target.append(atom)
+    r.take(r'\beither\b', None)
+    # Every remaining "or" must be one Agere actually combined as either/or, or part of a fixed phrase.
+    for m in re.finditer(r'\bor\b', low):
+        if any(a <= m.start() < b for a, b in or_gaps) or r.used[m.start()]: continue  # combined, or inside an explained phrase
+        if re.match(r'or (?:higher|above|more|greater|lower|less|below|older|younger|over|under|equal|worse|better|not|fewer|after|before|later|earlier)\b', low[m.start():]) \
+                or re.search(r'(?:one|1|two|2|three|3|any|dated|positive|either) $', low[max(0, m.start() - 12):m.start()]) \
+                or re.search(r'(?:icd-?10|snomed|codes?|labels?|text|description|written|coded) $', low[max(0, m.start() - 14):m.start()]):
+            continue
+        info.update(route='fallback', reason='"or" joins terms that were not combined as either/or'); return None, info
     r.take(r'\b(?:no|not|without|but no|lack|lacking|excluding|exclude|except|but|have|has|had|with|and|or)\b')
     info['unexplained'] = r.blocking(profile)
     info['ignored_words'] = getattr(r, 'ignored', [])
@@ -503,19 +701,19 @@ def _population_question(q, r, profile, as_of, info):
         base = [a for a in allp if not (a['kind'] in ('measurement', 'concept') and a.get('concept') == target)]
         info['route'] = 'local_compiler'
         return {'interpretation': q, 'coverage': 'supported_observation', 'unmet_requirements': [], 'nodes': [
-            {'id': 'population', 'operation': 'cohort', 'inputs': [], 'parameters': {'specification': {'all': base[:20], 'any': [], 'exclude': excl[:20]}},
+            {'id': 'population', 'operation': 'cohort', 'inputs': [], 'parameters': {'specification': {'all': base[:20], 'any': anyp[:20], 'exclude': excl[:20]}},
              'purpose': 'Population named in the question'},
             {'id': 'trend', 'operation': 'trajectory', 'inputs': ['population'], 'parameters': {'concept': target, 'direction': direction},
              'purpose': f'{direction} {target} trajectories'}]}, info
     if hotspot:
         segments = hot_segments or ([group] if group in ('practice', 'pcp', 'coverage_type') else None)
-        for concept, start in events:  # encounter types are outcomes here, not counted events
+        for concept, start, _ in events:  # encounter types are outcomes here, not counted events
             atom = {'kind': 'concept', 'concept': concept, 'window': W}
             if atom not in allp: allp.append(atom)
         if not allp and not excl:
             info.update(route='fallback', reason='discovery requested without a recognised outcome'); return None, info
         info['route'] = 'local_compiler'
-        params = {'outcome': {'all': allp[:20], 'any': [], 'exclude': excl[:20]}, 'pairs': True, 'direction': 'high'}
+        params = {'outcome': {'all': allp[:20], 'any': anyp[:20], 'exclude': excl[:20]}, 'pairs': True, 'direction': 'high'}
         if segments: params['segments'] = segments
         return {'interpretation': q, 'coverage': 'supported_observation', 'unmet_requirements': [], 'nodes': [
             {'id': 'population', 'operation': 'cohort', 'inputs': [], 'parameters': {'specification': {'all': [], 'any': [], 'exclude': []}},
@@ -537,11 +735,12 @@ def _population_question(q, r, profile, as_of, info):
 
     def cohort(atoms_all, atoms_excl):
         return {'id': 'population', 'operation': 'cohort', 'inputs': [],
-                'parameters': {'specification': {'all': atoms_all[:20], 'any': [], 'exclude': atoms_excl[:20]}},
+                'parameters': {'specification': {'all': atoms_all[:20], 'any': anyp[:20], 'exclude': atoms_excl[:20]}},
                 'purpose': 'Population named in the question'}
 
     nodes, interpretation = [], q
     event_concept = events[0][0] if events else None
+    event_completed = events[0][2] if events else False
     if why:
         outcome = ({'type': 'readmission'} if readmit else
                    {'type': 'concept', 'concept': event_concept} if event_concept else None)
@@ -570,22 +769,36 @@ def _population_question(q, r, profile, as_of, info):
                       'value_aggregate': 'latest' if latest or True else 'all'}
         elif event_concept and not share:
             base_all = [a for a in allp if not (a['kind'] == 'concept' and a['concept'] == event_concept)]
-            params = {'measure': 'events', 'concept': event_concept, 'statistic': 'rate_per_1000' if rate or (group and not count) else 'count'}
+            params = {'measure': 'events', 'concept': event_concept,
+                      'statistic': 'rate_per_1000' if rate and group not in TIME_GROUPS else 'count',
+                      **({'status': 'completed'} if event_completed else {})}
         else:
             # share of the base population that has the last-named concept/measurement
             subject = allp[-1] if allp else None
-            if event_concept and (share or count):
+            if visit_atoms and visit_atoms[-1] in allp:  # "share of X who had a visit": the visit is the subject
+                subject = visit_atoms[-1]
+                allp = [a for a in allp if a is not subject] + [subject]
+            elif event_concept and (share or count):
                 subject = {'kind': 'concept', 'concept': event_concept, 'window': W}
+                allp = allp + [subject]
+            if group and not share and not visit_atoms:  # "how do they break out by payer": patients per group
+                subject = {'kind': 'concept', 'concept': '', 'window': W}
                 allp = allp + [subject]
             if subject is None or subject['kind'] not in ('concept', 'measurement'):
                 info.update(route='fallback', reason='share requested without a subject'); return None, info
             base_all = allp[:-1]
             if subject['kind'] == 'measurement':
                 info.update(route='fallback', reason='share of a measurement threshold needs a membership comparison'); return None, info
-            params = {'measure': 'patients', 'concept': subject['concept'], 'statistic': 'share' if share else 'count'}
+            params = {'measure': 'patients', 'concept': subject['concept'], 'statistic': 'share' if share else 'count',
+                      **({'status': subject['status']} if subject.get('status') else {})}
         params.update(group_by=group or 'none', adjust='age_sex_conditions' if adjust and params['measure'] != 'value' else 'none',
-                      window={'start': period[0], 'end': period[1]} if period else {'start': '', 'end': ''}, top=25)
+                      window={'start': period[0], 'end': period[1]} if period else {'start': '', 'end': ''}, top=25 if highest else 200)
         params.setdefault('value_aggregate', 'all')
+        if info.get('columns') and params['group_by'] != 'none':
+            params['columns'] = info['columns']
+            if params['measure'] == 'events' and re.search(r'count|visits$|_n$|number', info['columns'][1]): params['statistic'] = 'count'
+        elif info.get('columns'):
+            info.update(route='fallback', reason='named output columns but no grouping was recognised'); return None, info
         nodes = [cohort(base_all, excl), {'id': 'answer', 'operation': 'aggregate', 'inputs': ['population'],
                                           'parameters': params, 'purpose': 'Requested statistic'}]
     else:
@@ -626,11 +839,15 @@ def _literal_stream_question(q, r, profile, as_of, info):
     group_field = None
     forms = _field_forms(fields)
     forms.setdefault('organization_id', []).extend(['organization', 'site', 'facility'])
+    for f, words in FIELD_SYNONYMS.items():
+        if f in forms: forms[f] = sorted(set(forms[f]) | set(words), key=len, reverse=True)
+    if 'source_system' in forms and any('PRACTICE' in v for v in (fields['source_system'].get('values') or {})):
+        forms['source_system'] = sorted(set(forms['source_system']) | {'practice', 'clinic'}, key=len, reverse=True)
     g_lead = r'\b(?:by|for each|per|split by|broken down by|break(?:s)? down by|went to each|to each|each)\s+(?:the |their |claim |patient\'s )?(?:recording |source |service )?'
     hit = None
     for f, fs in sorted(forms.items(), key=lambda kv: -max(map(len, kv[1]))):
         for form in fs:
-            hit = next(iter(r.take(g_lead + _alias_pattern(form), f'group by {f}')), None)
+            hit = next(iter(r.take(g_lead + _alias_pattern(form), f'group by {f}', overlap=True)), None)  # field words may share the stream's name
             if hit: group_field = f; break
         if group_field: break
     # A second dimension ("by site and impression", "each practice ... by vaccine") is grouped too, never dropped.
@@ -675,6 +892,11 @@ def _literal_stream_question(q, r, profile, as_of, info):
         sql_where.append(f"json_extract(payload,'$.{lack.group(1)}') IS NULL")
         named_fields = [x for x in named_fields if x != lack.group(1)]
     date_field = next((f for f in named_fields if f.endswith('_date')), 'event_date')
+    span_period = _take_period(r, as_of, year_words=r'(?!x)x')  # quarters, halves, ranges, since, YTD, months; plain years below
+    if span_period:
+        col = 'event_date' if date_field == 'event_date' else f"json_extract(payload,'$.{date_field}')"
+        sql_where.append(f"{col} BETWEEN '{span_period[0]}' AND '{span_period[1]}'")
+        named_fields = [x for x in named_fields if x != date_field]
     for m in r.take(r'\b(?:with \w+ )?(?:in|during) ' + MONTH_RX + r' (\d{4})\b', 'month window'):
         import calendar
         mo, y = _month_number(m.group(1)), m.group(2)
@@ -696,6 +918,9 @@ def _literal_stream_question(q, r, profile, as_of, info):
     amount = next((f for f in named_fields if re.search(r'cents|amount', f)), None)
     if not sum_m and re.search(r'\bwhat did [\w ]*\bpay\b|\btotal(?: up)?\b|\bhow much\b', low):
         sum_m = r.take(r'\bwhat did\b|\bpay\b|\btotal(?: up)?\b|\bhow much\b', 'sum', overlap=True)
+    money = re.search(r'\bdollars?\b|\$|\busd\b|\bamounts?\b|\bgross\b|\brevenue\b|\bhow much\b', low)
+    if money and not sum_m:
+        sum_m = r.take(r'\bgross\b|\bamounts?\b|\brevenue\b', 'sum', overlap=True) or [money]
     if sum_m and not amount:
         prefs = ([r'payer_paid'] if re.search(r'\bpayers?\b', low) else []) + ([r'patient_paid|amount'] if re.search(r'\bpatients? (?:paid|pay)', low) else []) + \
                 ([r'allowed'] if 'allowed' in low else []) + ([r'billed|charge'] if re.search(r'billed|charges?', low) else []) + [r'amount_cents', r'paid_cents', r'_cents']
@@ -707,15 +932,21 @@ def _literal_stream_question(q, r, profile, as_of, info):
     if info['unexplained']:
         info.update(route='fallback', reason='words not interpreted locally: ' + ', '.join(info['unexplained'][:12]))
         return None, info
+    if info.get('columns') and not group_field:
+        info.update(route='fallback', reason='named output columns but no grouping was recognised'); return None, info
     cols = re.search(r'table with ([a-z_]+) and ([a-z_]+)', low)
-    key_name, count_name = (cols.group(1), cols.group(2)) if cols else (group_field, 'count')
+    key_name, count_name = (cols.group(1), cols.group(2)) if cols else tuple(info['columns']) if info.get('columns') else (group_field, 'count')
     if len(group_fields) == 2 and sum_m:
         info.update(route='fallback', reason='two-dimension sums are not compiled locally')
         return None, info
+    if sum_m and not amount:
+        info.update(route='fallback', reason='a money total was asked for but no amount field was identified'); return None, info
     if group_field and sum_m and amount:
-        key_name = cols.group(1) if cols else group_field
-        total_name = cols.group(2) if cols else 'total_cents'
-        sql = (f"SELECT json_extract(payload,'$.{group_field}') AS {key_name}, sum(json_extract(payload,'$.{amount}')) AS {total_name} "
+        key_name = cols.group(1) if cols else info['columns'][0] if info.get('columns') else group_field
+        dollars = bool(re.search(r'\busd\b|\bdollars?\b|\$', low)) and amount.endswith('_cents')
+        total_name = cols.group(2) if cols else info['columns'][1] if info.get('columns') else ('total_usd' if dollars else 'total_cents')
+        total = f"round(sum(json_extract(payload,'$.{amount}'))/100.0, 2)" if dollars else f"sum(json_extract(payload,'$.{amount}'))"
+        sql = (f"SELECT json_extract(payload,'$.{group_field}') AS {key_name}, {total} AS {total_name} "
                f"FROM record WHERE {where} AND json_extract(payload,'$.{group_field}') IS NOT NULL GROUP BY 1 ORDER BY 2 DESC")
         returns = 'table'
     elif len(group_fields) == 2:
