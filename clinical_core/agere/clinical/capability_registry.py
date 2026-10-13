@@ -83,6 +83,13 @@ PRODUCT['network'] = {'population': 'optional', 'view': 'graph',
                              'simulations (if we steer cardiology to practice X, how much leakage do we recover?) and how a practice-pattern change would '
                              'spread across PCPs (diffusion model). Patient journeys / next steps after an ED visit or discharge are pathway.'}
 
+PRODUCT['contract_strategy'] = {'population': 'optional', 'view': 'options',
+                                'use': 'Risk-contract STRATEGY: should we move tracks (MSSP BASIC to ENHANCED), which ACO REACH option / risk corridor is best for us, '
+                                       'what our upside/downside contract is worth (option value, VaR/CVaR, sensitivities to benchmark and trend), compare '
+                                       'two contract offers, what sharing rate / MSR to negotiate (Nash bargaining, break-even against care-management spend), '
+                                       'how much downside risk we can take at a confidence level. The settlement amount under ONE stated contract '
+                                       '("what would we earn under X") is vbc.'}
+
 # Questions a SQL query over the semantic tables answers exactly are handed to the verified SQL ladder.
 LITERAL = ('Literal data questions: counts, lists, sums, averages, maxima, record filters, date arithmetic, simple breakdowns '
            'by a field, shares, rates per 1,000 without case-mix adjustment.')

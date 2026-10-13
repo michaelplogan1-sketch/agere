@@ -38,6 +38,7 @@ def _cues():
         ('early_signal', rx(lc.EARLY_SIGNAL_INTENT)), ('analytic', rx(lc.ANALYTIC_INTENT)), ('scheduling', rx(scheduling)),
         ('unsupported', rx(unsupported)), ('death', rx(lc.DEATH_WORDS)),
         ('knowledge', lambda low: lc._knowledge_question(low) is not None),
+        ('contract_strategy', lambda low: lc._contract_strategy_question(low, None, None) is not None),
         ('count', rx(r'\b(?:how many|number of|count|counts)\b')), ('list', rx(r'\b(?:list|which patients|who (?:are|is|has|have))\b')),
         ('aggregate', rx(r'\b(?:average|mean|median|sum|total|max(?:imum)?|min(?:imum)?)\b')),
         ('share', rx(r'%|\b(?:percent(?:age)?|share|proportion|fraction|rate)\b')),

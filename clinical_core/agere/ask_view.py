@@ -649,7 +649,50 @@ function vizNetwork(a){const o=(a.overall||{}).provider_network||{},g=o.graph||{
  if((o.data_gaps||[]).length)h+='<details><summary>Data limits ('+o.data_gaps.length+')</summary><ul>'+o.data_gaps.map(x=>'<li>'+esc(x)+'</li>').join('')+'</ul></details>';
  if((o.assumptions||[]).length)h+='<p class="hint"><b>Assumptions.</b> '+esc(o.assumptions.join(' '))+'</p>';
  return h}
+/* contract strategy: KPI tiles, net-value distribution per option (step histograms), 5th-95th intervals, ranking flips,
+   Nash negotiation frontier (MSR x sharing rate: break-even and equal-value curves, bargaining bounds, Nash point) */
+function vizContract(a){const cs=(a.overall||{}).contract_strategy||{},rows=a.table||[],p=cs.parameters||{},n=cs.negotiation,sim=cs.simulation||{};
+ const kp=(l,v)=>'<div class="kpi"><div class="l">'+l+'</div><div class="v">'+esc(v)+'</div></div>',b=rows[0]||{},lam=cs.risk_aversion,cf=cs.confidence;
+ let h='<section class="sec" data-focus="contract"><h3>Contract strategy — benchmark $'+fmt(p.benchmark_pmpm,2)+' PMPM, base cost $'+fmt(sim.base_pmpm,2)+' PMPM, '+
+  fmt(sim.members)+' members, '+fmt(sim.draws)+' draws</h3>';
+ if(rows.length)h+='<div class="kpis">'+kp(rows.length>1?'Best risk-adjusted':'Contract',b.option||'—')+kp('Expected net',usd(b.expected_net))+
+  kp('Upside call / downside put',usdK(b.upside_value)+' / '+usdK(-b.downside_cost))+kp(pct(cf,0)+' CVaR loss',usd(b.cvar))+kp('P(net loss)',pct(b.p_net_loss,0))+
+  kp('Risk-adjusted (λ '+fmt(lam,2)+')',usd(b.risk_adjusted_value))+'</div>';
+ const d=cs.distribution;if(d&&d.edges&&rows.length){const e=d.edges,mid=e.slice(0,-1).map((v,i)=>(v+e[i+1])/2),names=rows.map(r=>r.option);
+  const S=names.map((nm,i)=>({name:nm,color:SER[i%SER.length],step:true,pts:[[e[0],0]].concat((d.shares[nm]||[]).map((y,k)=>[e[k+1],y])).concat([[e[e.length-1],0]])}));
+  h+='<h3 style="margin-top:14px">Distribution of net value per option</h3>'+lines(S,{title:'Share of simulated outcomes by net settlement value',y0:0,ytick:v=>pct(v,0),xtick:usdK,
+   xlabel:'net value to us (payout − care-management spend)',ylabel:'share of draws',under:(X,Y)=>'<line x1="'+X(0)+'" x2="'+X(0)+'" y1="'+Y(0)+'" y2="12" style="stroke:var(--muted);stroke-dasharray:3 3"/>'})+
+   '<div class="legend">'+S.map(s=>'<span><span class="sw" style="background:'+s.color+'"></span>'+esc(s.name)+'</span>').join('')+'<span>┊ zero</span></div>';
+  h+=intervals(rows.map((r,i)=>({label:r.option,est:r.expected_net,lo:r.net_p5,hi:r.net_p95,main:i===0,note:'E '+usdK(r.expected_net)})),{title:'Expected net value with the 5th to 95th percentile range',tick:usdK})}
+ const fl=cs.ranking_flips||[];if(fl.length)h+='<h4>Where the ranking flips</h4><ul class="hint">'+fl.slice(0,6).map(f=>'<li>'+esc(f.challenger)+' overtakes '+esc(f.leader)+
+  (isNum(f.flip_benchmark_pmpm)?' at a $'+fmt(f.flip_benchmark_pmpm,2)+' PMPM benchmark':'')+(isNum(f.flip_trend_pct)?(isNum(f.flip_benchmark_pmpm)?' or':' at')+' a '+pct(f.flip_trend_pct,1)+' cost trend':'')+
+  (!isNum(f.flip_benchmark_pmpm)&&!isNum(f.flip_trend_pct)?' nowhere within benchmark ±25% and trend ±15 points':'')+'</li>').join('')+'</ul>';
+ h+='</section>';
+ if(n){const fr=(n.frontier||[]).filter(r=>isNum(r.break_even_sharing_rate)||isNum(r.sharing_rate_for_nash_value)),bd=n.bounds||{},ns=n.nash;
+  h+='<section class="sec" data-focus="negotiation"><h3>Negotiation — Nash bargaining over sharing rate × MSR</h3><div class="kpis">'+
+   kp('Nash solution',ns?pct(ns.sharing_rate,0)+' sharing · '+pct(ns.msr,1)+' MSR':'no agreement zone')+kp('Our value at Nash',ns?usd(ns.aco_value):'—')+
+   kp('Payer retains',ns?usd(ns.payer_value):'—')+kp('Break-even sharing',isNum(n.break_even_sharing_rate)?pct(n.break_even_sharing_rate,1)+' @ '+pct(n.break_even_at_msr,1)+' MSR':'—')+'</div>';
+  if(fr.length){const S=[{name:'break-even (expected net = 0)',color:'var(--s4)',pts:fr.map(r=>[r.msr,r.break_even_sharing_rate])}];
+   if(ns)S.push({name:'equal value to us as the Nash terms',color:'var(--s1)',pts:fr.map(r=>[r.msr,r.sharing_rate_for_nash_value])});
+   const ys=[bd.sharing_rate_min,bd.sharing_rate_max].concat(ns?[ns.sharing_rate]:[]).filter(isNum);
+   h+=lines(S,{title:'Sharing rate needed at each MSR',extraY:ys,ytick:v=>pct(v,0),xtick:v=>pct(v,1),xlabel:'minimum savings rate (MSR)',ylabel:'sharing rate',
+    under:(X,Y)=>'<rect x="'+X(bd.msr_min)+'" y="'+Y(bd.sharing_rate_max)+'" width="'+Math.max(1,X(bd.msr_max)-X(bd.msr_min))+'" height="'+Math.max(1,Y(bd.sharing_rate_min)-Y(bd.sharing_rate_max))+'" style="fill:var(--band)"><title>'+esc('Bargaining bounds: '+n.typical_range_label)+'</title></rect>',
+    over:(X,Y)=>ns?'<circle cx="'+X(ns.msr)+'" cy="'+Y(ns.sharing_rate)+'" r="6" style="fill:var(--s2);stroke:var(--card);stroke-width:2"><title>'+esc('Nash: '+pct(ns.sharing_rate,0)+' sharing, '+pct(ns.msr,1)+' MSR')+'</title></circle>':''})+
+    '<div class="legend">'+S.map(s=>'<span><span class="sw" style="background:'+s.color+'"></span>'+esc(s.name)+'</span>').join('')+
+    '<span><span class="sw" style="background:var(--s2)"></span>Nash solution</span><span><span class="sw" style="background:var(--band);height:10px"></span>bargaining bounds</span></div>'}
+  const prov=n.bounds_provenance||{},typ=Object.entries(prov).filter(([,v])=>v!=='stated').map(([k])=>label(k));
+  h+='<p class="hint">Bounds: sharing '+pct(bd.sharing_rate_min,0)+'–'+pct(bd.sharing_rate_max,0)+', MSR '+pct(bd.msr_min,1)+'–'+pct(bd.msr_max,1)+
+   (typ.length?'; '+esc(typ.join(', '))+' from the '+esc(n.typical_range_label):' (all stated)')+'. Payer reservation '+usd(n.payer_reservation)+' — '+esc(n.payer_reservation_provenance)+'.</p>';
+  if((n.surface||[]).length)h+='<details><summary>Utilities along the Nash MSR ('+n.surface.length+')</summary>'+tableHTML(n.surface,{name:'nash-surface'})+'</details>';
+  h+='</section>'}
+ if(rows.length)h+='<section class="sec"><h3>Options</h3>'+tableHTML(rows,{name:'contract-options',render:Object.fromEntries(['expected_payout','expected_net','sd','value_at_risk','cvar','upside_value',
+  'downside_cost','net_p5','net_p50','net_p95','risk_adjusted_value','delta_trend_per_point','vega_per_10pct_volatility'].map(k=>[k,v=>esc(usd(v))])),
+  caption:'Greeks: delta per $1 PMPM of benchmark, per +1 point of cost trend, vega per +10% cost volatility (finite differences, common random numbers).'})+'</section>';
+ if((cs.assumptions||[]).length)h+='<p class="hint"><b>Assumptions.</b> '+esc(cs.assumptions.join(' '))+'</p>';
+ const src=cs.sources||[];if(src.length)h+='<details><summary>Program sources ('+src.length+')</summary><ol class="hint">'+src.map(c=>'<li>'+kbLink(c)+(c.section?' · '+esc(c.section):'')+'</li>').join('')+'</ol></details>';
+ return h}
 function visual0(a){if(!a||a.answer_type==='unsupported')return '';const o=a.overall||{};
+  if(o.contract_strategy)return vizContract(a);
   if(o.knowledge)return vizKnowledge(a);
   if(o.early_signal)return vizEarlySignal(a);
   if(o.claims_review)return vizClaims(a);

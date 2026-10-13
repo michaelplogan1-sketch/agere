@@ -23,6 +23,8 @@ SYSTEM = (
     'Use not_answerable only when the question needs data that clearly does not exist (death records, race, CPT/RVU, HCC/RAF, surveys). '
     'Choose knowledge for explanation or strategy questions about value-based care itself (how a program works, what a term means, '
     'how companies compare, what the evidence says) that do not ask about this population\'s data. '
+    'Choose contract_strategy for decisions about OUR risk contracts (should we switch tracks, which option is best for us, compare offers, '
+    'what to negotiate, what the contract is worth, how much downside we can take); one settlement amount under stated terms is vbc. '
     'Snapshot date: {as_of}.'
 )
 

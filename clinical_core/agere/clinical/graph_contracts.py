@@ -31,6 +31,8 @@ TYPED |= {'risk_adjustment'}  # CMS-HCC RAF, coding gaps, recapture, suspects (r
 OPTIONAL_POPULATION += ('risk_adjustment',)
 TYPED |= {'network'}  # provider patient-sharing network (network.py)
 OPTIONAL_POPULATION += ('network',)
+TYPED |= {'contract_strategy'}  # risk contracts as options, track selection, Nash negotiation (contract_strategy.py)
+OPTIONAL_POPULATION += ('contract_strategy',)
 
 
 def _library_measures():
@@ -240,6 +242,30 @@ def parameter_schema(op, catalog):
                     'coverage': string(ra.COVERAGE, 'medicare (default; CMS-HCC is a Medicare model) or all'),
                     'base_rate_pmpm': {'type': ['number', 'null'], 'description': 'User-stated $ PMPM for 1.0 RAF; null if not stated (never invent)'},
                     'patient': {'type': 'string', 'description': 'One patient id, else empty'}, 'top': {'type': 'integer', 'minimum': 1, 'maximum': 500}})
+    if op == 'contract_strategy':
+        from . import contract_strategy as cs
+        rate = lambda d: {'type': ['number', 'null'], 'minimum': 0, 'maximum': 1, 'description': d}
+        terms = {'type': 'object', 'description': 'Offer terms as stated (rates as fractions): sharing_rate, msr, mlr, two_sided, loss_rate, '
+                                                  'savings_cap_pct, loss_cap_pct, quality_score; override a named program\'s terms'}
+        option = obj({'label': {'type': 'string', 'description': 'Short name, e.g. "Offer A" or the program'},
+                      'program': {'type': 'string', 'description': 'Named track whose cited rulebook terms apply, e.g. "MSSP ENHANCED 2026", "MSSP BASIC" '
+                                                                   '(all levels), "MSSP BASIC level E", "ACO REACH" (both options), "ACO REACH Global"; "" for a plain offer'},
+                      'terms': terms})
+        return obj({'focus': string(cs.FOCUS, 'compare: rank tracks/offers; value: what one contract is worth; negotiate: Nash terms / break-even '
+                                              'sharing rate; capacity: downside at a confidence level'),
+                    'target': string(cs.TARGETS, 'negotiate only: nash (default) or break_even (needs care_management_pmpm)'),
+                    'benchmark_pmpm': {'type': ['number', 'null'], 'description': 'User-stated benchmark $ PMPM; null if not stated (never invent)'},
+                    'options': array(option, 'Contract options named or stated in the question; [] if none'),
+                    'care_management_pmpm': {'type': ['number', 'null'], 'description': 'User-stated care-management spend $ PMPM; null if not stated'},
+                    'risk_aversion': {'type': ['number', 'null'], 'minimum': 0, 'maximum': 10, 'description': 'lambda in E[net] - lambda x CVaR (default 0.5)'},
+                    'confidence': {'type': ['number', 'null'], 'minimum': 0.5, 'maximum': 0.999, 'description': 'VaR/CVaR confidence (default 0.95)'},
+                    'trend_pct': {'type': ['number', 'null'], 'description': 'Stated cost trend as a fraction (0.04 = 4%); null = none stated'},
+                    'risk_capacity': {'type': ['number', 'null'], 'description': 'Stated maximum tolerable loss in dollars; null if not stated'},
+                    'counterparty': obj({'sharing_rate_min': rate('Lowest sharing rate the payer offers, if stated'),
+                                         'sharing_rate_max': rate('Highest sharing rate the payer will concede, if stated'),
+                                         'msr_min': rate('Lowest MSR the payer accepts, if stated'), 'msr_max': rate('Highest MSR, if stated'),
+                                         'reservation_value': {'type': ['number', 'null'], 'description': 'Payer walk-away value $, if stated'}}),
+                    'period': obj({'start': {'type': 'string'}, 'end': {'type': 'string'}})})
     if op == 'claims_review':
         from . import claims_review as cr
         return obj({'focus': string(cr.FOCUS, 'providers: peer billing outliers; benford; duplicates: duplicates, resubmissions, reversals; '

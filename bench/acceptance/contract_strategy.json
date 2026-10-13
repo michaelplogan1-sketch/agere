@@ -1,0 +1,34 @@
+[
+ {
+  "question": "Should we move from MSSP BASIC to ENHANCED given a $120 PMPM benchmark?",
+  "expect_operation": "contract_strategy"
+ },
+ {
+  "question": "Which REACH option and risk corridor is best for us with a benchmark of $118 PMPM?",
+  "expect_operation": "contract_strategy"
+ },
+ {
+  "question": "What is our upside/downside contract worth under BASIC level E at a $121 benchmark?",
+  "expect_operation": "contract_strategy"
+ },
+ {
+  "question": "What sharing rate should we negotiate to break even with $1.50 PMPM of care management spend and a $124 PMPM benchmark?",
+  "expect_operation": "contract_strategy"
+ },
+ {
+  "question": "How much downside risk can we take at 95% confidence in the ENHANCED track with a $119 benchmark?",
+  "expect_operation": "contract_strategy"
+ },
+ {
+  "question": "Compare these two contract offers at a $123 PMPM benchmark: offer 1 is 45% sharing with a 3% MSR; offer 2 is 65% sharing two-sided with a 50% loss rate",
+  "expect_operation": "contract_strategy"
+ },
+ {
+  "question": "Is ACO REACH Global or Professional the better option for us with a $117 benchmark and a 3% trend?",
+  "expect_operation": "contract_strategy"
+ },
+ {
+  "question": "What terms should we negotiate with the payer if the benchmark is $126 PMPM and they insist on a 2% MSR?",
+  "expect_operation": "contract_strategy"
+ }
+]

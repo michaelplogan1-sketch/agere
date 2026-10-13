@@ -419,6 +419,8 @@ def compile(question, profile, as_of):
 
 
 def _compile(question, profile, as_of):
+    strategy = _contract_strategy_question(question, profile, as_of)  # should-we / which track / negotiate / option value; settlements stay vbc
+    if strategy is not None: return strategy
     explained = _knowledge_question(question)  # explanation / strategy questions about VBC itself, never data questions
     if explained is not None:
         return explained
@@ -2495,6 +2497,161 @@ def _knowledge_question(question):
     return {'interpretation': params['query'], 'coverage': 'supported_observation', 'unmet_requirements': [],
             'nodes': [{'id': 'answer', 'operation': 'knowledge', 'inputs': [], 'parameters': params,
                        'purpose': 'Cited explanation from the VBC knowledge base (public sources, extractive)'}]}, info
+
+
+def _contract_strategy_question(question, profile, as_of):
+    """Risk-contract STRATEGY -> contract_strategy (options valuation, track selection, Nash negotiation). Strict: needs a
+    strategy intent (should we switch / which track or offer is best / compare offers / negotiate / break even / what is the
+    contract worth / how much downside can we take) AND contract wording. A single settlement ("what would we earn under
+    MSSP ENHANCED with a $1,000 benchmark") never matches and stays vbc. Benchmark, offers and care-management spend come
+    only from the question; when missing the answer names them (requires input) instead of assuming them."""
+    low = ' '.join(str(question).lower().replace('’', "'").replace('−', '-').split())
+    words = r"(?:tracks?|options?|offers?|contracts?|levels?|corridors?|arrangements?|deals?|proposals?)"
+    intent = (r"\bshould (?:we|i|our (?:aco|group|practice|organi[sz]ation|network))\b (?:\w+ )?(?:move|switch|join|enter|take|accept|sign|choose|pick|go|stay|"
+              r"stick|upgrade|elect|apply|renew|drop|leave|negotiate|ask|push|counter|step|graduate|transition|select|opt)\b|"
+              rf"\bwhich (?:[\w-]+ ){{0,4}}{words}\b|\b(?:best|better|right|optimal|smart(?:er|est)|safer|safest|preferred) (?:[\w-]+ ){{0,2}}{words}\b|"
+              r"\b(?:better|best|right|a good fit|optimal) (?:choice |fit |option |deal )?for (?:us|our)\b|"
+              rf"\bcompare (?:[\w$%,./-]+ ){{0,8}}?{words}\b|\b(?:offers?|proposals?) (?:a|b|1|2|one|two)\b|"
+              r"\bnegotiat\w*\b|\bbargain\w*\b|\bcounter[- ]?offer\b|\bbreak[- ]?even\b|"
+              rf"\b(?:{words}|upside|downside|two[- ]sided(?: risk)?)\b[^.?;]{{0,40}}\bworth\b|\bworth\b[^.?;]{{0,25}}\b(?:{words}|upside|downside)\b|\boption value\b|"
+              r"\bvalue of (?:the |our |this )?(?:upside|downside)\b|\bgreeks\b|"
+              r"\bsensitiv\w+ (?:of|to) (?:our |the )?(?:payout|settlement|contract|shared savings|savings)\b|"
+              r"\bhow much (?:downside|risk|loss(?:es)?)(?: risk)? (?:can|could|should|would) (?:we|our \w+) (?:take|bear|absorb|afford|tolerate|handle|accept)\b|\brisk capacity\b|\b(?:can|could) we (?:take|bear|absorb|afford|tolerate|handle)\b|"
+              r"\b(?:move|switch|upgrade|step up|graduate|transition|go) (?:from|to) (?:mssp |the |aco )?(?:basic|enhanced|level [a-e]|reach|lead|two[- ]sided|downside)\b")
+    context = (r"\bmssp\b|\bbasic\b|\benhanced\b|\breach\b|\blead (?:model|aco|global|professional)\b|\btracks?\b|\bcontracts?\b|\boffers?\b|"
+               r"\bproposals?\b|\bsharing rate\b|\bshared[- ]savings\b|\bcorridors?\b|\bmsr\b|\bminimum savings rate\b|\bdownside\b|\bupside\b|"
+               r"\btwo[- ]sided\b|\bone[- ]sided\b|\b(?:risk|commercial|payer|vbc|aco|value[- ]based) (?:contract|arrangement|deal)s?\b")
+    versus = re.search(r"\bvs\.?(?=\s)|\bversus\b", low) and re.search(r"\b(?:we|us|our)\b|\$\s?\d|\bbenchmark\b", low) and \
+        len(re.findall(r"\b(?:basic|enhanced|reach|lead|offer|level [a-e]|professional|global|upside[- ]only|two[- ]sided)\b", low)) >= 2
+    ours = (r"\b(?:we|us|our|ours|we're|we've)\b|\$\s?\d|\d(?:\.\d+)? ?%|\bbenchmark\b|\b(?:offers?|proposals?) (?:a|b|1|2|one|two)\b|"
+            r"\bthese (?:two |three )?(?:offers?|contracts?|proposals?|deals?|options|tracks)\b|\bthis (?:offer|contract|deal|proposal)\b")
+    if not ((re.search(intent, low) or versus) and re.search(context, low) and re.search(ours, low)):
+        return None  # no sign it is about OUR contracts: an explanation ("compare upside-only and two-sided arrangements") is knowledge
+    info = {'compiler': VERSION, 'recognised': ['risk-contract strategy question'], 'paraphrased': [], 'route': 'local_compiler', 'unexplained': []}
+    money = lambda s, unit=None: float(s.replace(',', '')) * {'k': 1e3, 'thousand': 1e3, 'm': 1e6, 'million': 1e6}.get(unit or '', 1)
+    pct = lambda pattern, text=low: (lambda m: float(next(g for g in m.groups() if g)) / 100 if m else None)(re.search(pattern, text))
+    params = {}
+    m = re.search(r"\bbenchmark (?:of |is |at |=|around |near )?\$\s?([\d,]+(?:\.\d+)?)|\$\s?([\d,]+(?:\.\d+)?) ?(?:pmpm |per member per month )?benchmark\b", low)
+    if m: params['benchmark_pmpm'] = money(m.group(1) or m.group(2))
+    m = re.search(r"\bcare[- ]management (?:spend(?:ing)?|costs?|budget|investment|program)?(?: of| is| at| =|=)?(?: us| our \w+)? ?\$\s?([\d,]+(?:\.\d+)?)|"
+                  r"\$\s?([\d,]+(?:\.\d+)?) ?(?:pmpm |per member per month )?(?:of |on |for |in )?care[- ]management\b|"
+                  r"\bspend(?:ing)? (?:of )?\$\s?([\d,]+(?:\.\d+)?) ?(?:pmpm|per member per month)", low)
+    if m: params['care_management_pmpm'] = money(next(g for g in m.groups() if g))
+    t = pct(r"([+-]?\d+(?:\.\d+)?) ?% (?:cost |medical |annual )?trend\b|\btrend (?:of |is |at )?([+-]?\d+(?:\.\d+)?) ?%")
+    if t is not None: params['trend_pct'] = t
+    m = re.search(r"\b(?:risk[- ]aversion|lambda|λ)(?: of| is| =|=| at)? ?(\d+(?:\.\d+)?)", low)
+    if m: params['risk_aversion'] = float(m.group(1))
+    c = pct(r"\b(\d{2}(?:\.\d+)?) ?% (?:confidence|level|var\b|cvar\b|value[- ]at[- ]risk)|\bconfidence (?:of |level (?:of )?)?(\d{2}(?:\.\d+)?) ?%")
+    if c is not None: params['confidence'] = c
+    m = re.search(r"\b(?:absorb|afford|tolerate|bear|handle|lose|losing|loss(?:es)? of|capacity (?:of|is)|risk capacity (?:of |is )?)"
+                  r"(?: up to| at most| no more than| about)? \$\s?([\d,]+(?:\.\d+)?) ?(k|m|million|thousand)?\b", low)
+    if m: params['risk_capacity'] = money(m.group(1), m.group(2))
+    cp, rest = {}, low  # rest: the question without the counterparty's stated bounds (those are not our offer's terms)
+    for key, pattern in (('sharing_rate_max', r"\b(?:payer|plan|insurer|they)\b[^.;]{0,40}?(?:max(?:imum)?(?: of)?|caps? (?:it )?at|won't go (?:above|over|past)|"
+                                              r"will not go (?:above|over|past)|at most|up to|no more than|tops? out at|ceiling of) (\d+(?:\.\d+)?) ?% (?:shared savings |savings )?shar(?:ing|e)"),
+                         ('sharing_rate_min', r"\b(?:payer|plan|insurer|they)\b[^.;]{0,40}?(?:offer(?:s|ed|ing)?|floor of|at least|minimum of) (\d+(?:\.\d+)?) ?% (?:shared savings |savings )?shar(?:ing|e)"),
+                         ('msr_min', r"\b(?:payer|plan|insurer|they)\b[^.;]{0,40}?(?:insists? on|requires?|wants?|demands?|needs?)(?: at least| a| an)? (\d+(?:\.\d+)?) ?% (?:msr|minimum savings rate)")):
+        m = re.search(pattern, rest)
+        if m:
+            cp[key] = float(m.group(1)) / 100
+            rest = rest[:m.start()] + ' ; ' + rest[m.end():]
+    m = re.search(r"\b(?:payer|plan|insurer)(?:'s)? (?:reservation|walk[- ]away)(?: value)?(?: of| is)? \$\s?([\d,]+(?:\.\d+)?) ?(k|m|million|thousand)?", low)
+    if m: cp['reservation_value'] = money(m.group(1), m.group(2))
+
+    def offer_terms(seg):
+        t = {}
+        for key, pattern in (('loss_cap_pct', r"\bloss cap (?:of |at )?(\d+(?:\.\d+)?) ?%|(\d+(?:\.\d+)?) ?% (?:loss|downside) cap\b"),
+                             ('savings_cap_pct', r"\b(?:savings |upside )?cap (?:of |at )?(\d+(?:\.\d+)?) ?%|(\d+(?:\.\d+)?) ?% (?:savings |upside )?cap\b"),
+                             ('loss_rate', r"\bloss(?: sharing)?(?: rate)? (?:of |at |is )?(\d+(?:\.\d+)?) ?%|(\d+(?:\.\d+)?) ?% (?:shared )?loss(?:es)?(?: sharing| rate)?\b"),
+                             ('mlr', r"\b(?:mlr|minimum loss rate) (?:of |at |is )?(\d+(?:\.\d+)?) ?%|(\d+(?:\.\d+)?) ?% (?:mlr|minimum loss rate)\b"),
+                             ('msr', r"\b(?:msr|minimum savings rate) (?:of |at |is )?(\d+(?:\.\d+)?) ?%|(\d+(?:\.\d+)?) ?% (?:msr|minimum savings rate)\b"),
+                             ('sharing_rate', r"\b(?:shared savings |savings )?shar(?:ing|e)(?: rate)? (?:of |at |is )?(\d+(?:\.\d+)?) ?%|(\d+(?:\.\d+)?) ?% (?:shared savings |savings )?shar(?:ing|e)\b"),
+                             ('quality_score', r"\bquality score (?:of |is )?(\d+(?:\.\d+)?) ?%|(\d+(?:\.\d+)?) ?% quality score\b")):
+            mm = re.search(pattern, seg)
+            if mm:
+                t[key] = float(next(g for g in mm.groups() if g)) / 100
+                seg = seg[:mm.start()] + ' ' + seg[mm.end():]
+        if re.search(r"\btwo[- ]sided\b|\bdownside\b|\bloss(?:es)? (?:sharing|rate)\b", seg) or 'loss_rate' in t: t['two_sided'] = True
+        if re.search(r"\bupside[- ]only\b|\bone[- ]sided\b|\bno downside\b", seg): t['two_sided'] = False
+        return t
+
+    def named_programs(seg):
+        out = []
+        year = re.search(r"\b(?:py ?|performance year )?(20\d\d)\b", seg)
+        year = int(year.group(1)) if year else None
+        letters = re.findall(r"\bbasic(?: track)?(?: level)? ([a-e])\b(?!\s*(?:\$|\d))|\blevel ([a-e])\b", seg)
+        letters = sorted({a or b for a, b in letters})
+        if letters: out += [{'program': {'id': 'mssp_basic', 'variant': x.upper(), 'year': year}} for x in letters]
+        elif re.search(r"\bbasic\b", seg): out.append({'program': {'id': 'mssp_basic', 'variant': None, 'year': year}})
+        if re.search(r"\benhanced\b", seg): out.append({'program': {'id': 'mssp_enhanced', 'variant': None, 'year': year}})
+        lead = re.search(r"\blead (?:model|aco|global|professional)\b|\blong[- ]term enhanced aco design\b", seg)
+        if re.search(r"\breach\b", seg):
+            pro, glo = re.search(r"\bprofessional\b", seg) and not lead, re.search(r"\bglobal\b", seg) and not lead
+            for v in ([v for v, on in (('Professional', pro), ('Global', glo)) if on] if (pro or glo) and not re.search(r"\boptions\b|\bwhich\b", seg) else [None]):
+                out.append({'program': {'id': 'aco_reach', 'variant': v, 'year': year}})
+        if lead:
+            v = 'Global' if re.search(r"\bglobal\b", seg) else 'Professional' if re.search(r"\bprofessional\b", seg) else None
+            out.append({'program': {'id': 'lead', 'variant': v, 'year': year}})
+        return out
+
+    labels = list(re.finditer(r"\b(?:offer|proposal|deal|contract)\s+(?:#\s*)?([a-d1-4]|one|two|three)\b\s*[:(,-]?", rest))
+    segments = [(m.group(0).strip(' :(,-').title(), rest[m.end():labels[i + 1].start() if i + 1 < len(labels) else len(rest)]) for i, m in enumerate(labels)]
+    if len(segments) < 2:
+        parts = re.split(r"\s(?:vs\.?|versus|compared (?:with|to))\s|;\s", rest)
+        segments = [(None, s) for s in parts if offer_terms(s).get('sharing_rate') is not None]
+        if len(segments) < 2: segments = []
+    options = []
+    for i, (label, seg) in enumerate(segments):
+        t, progs = offer_terms(seg), named_programs(seg)
+        if progs: options += [{**pr, **({'label': label} if label and len(progs) == 1 else {}), **({'terms': t} if t else {})} for pr in progs]
+        elif t: options.append({'label': label or f'Offer {chr(65 + i)}', 'terms': t})
+    whole = offer_terms(rest) if not options else {}
+    if not options:
+        options = named_programs(rest)
+        numeric = {k: v for k, v in whole.items() if k != 'two_sided'}
+        if len(options) == 1 and numeric: options[0]['terms'] = numeric  # stated terms override the named track's
+        if options: whole = {}
+    negotiate = re.search(r"\bnegotiat\w*\b|\bbargain\w*\b|\bcounter[- ]?offer\b|\bbreak[- ]?even\b|\bwhat (?:sharing rate|msr|share)\b", low)
+    if negotiate:
+        params['focus'] = 'negotiate'
+        if re.search(r"\bbreak[- ]?even\b", low): params['target'] = 'break_even'
+        if whole.get('sharing_rate') is not None: options = [{'label': 'Current offer', 'terms': whole}]
+        elif whole.get('msr') is not None: cp.setdefault('msr_min', whole['msr']); cp.setdefault('msr_max', whole['msr'])  # MSR fixed as stated
+    else:
+        if not options and whole.get('sharing_rate') is not None: options = [{'label': 'Offer', 'terms': whole}]
+        several = len(options) > 1 or any((o.get('program') or {}).get('id') in ('mssp_basic', 'aco_reach', 'lead')
+                                          and (o.get('program') or {}).get('variant') is None for o in options)  # a family = all its options
+        params['focus'] = ('capacity' if re.search(r"\bhow much (?:downside|risk|loss(?:es)?)\b|\brisk capacity\b|"
+                                                  r"\b(?:can|could) we (?:take|bear|absorb|afford|tolerate|handle)\b|\bconfidence\b", low) else
+                           'compare' if several else 'value')
+    params['options'] = options
+    if cp: params['counterparty'] = cp
+    missing = []
+    if 'benchmark_pmpm' not in params: missing.append('benchmark_pmpm (the contract-specific benchmark in $ PMPM; Agere never assumes one)')
+    if params['focus'] != 'negotiate' and not options:
+        missing.append('contract options: named tracks (MSSP BASIC A-E / ENHANCED, ACO REACH Professional / Global, LEAD) or offer terms (sharing rate, MSR, loss rate, caps)')
+    if params.get('target') == 'break_even' and 'care_management_pmpm' not in params:
+        missing.append('care_management_pmpm (expected care-management spend, $ PMPM)')
+    if missing:
+        info.update(route='local_unsupported', operation='contract_strategy')
+        return {'interpretation': f'Needs inputs not in the data: {question}'[:2000], 'coverage': 'unsupported', 'nodes': [],
+                'unmet_requirements': [f'Missing input: {x}' for x in missing]}, info
+    from .contract_strategy import validate
+    try:
+        validate(params)
+    except ValueError as exc:
+        if 'needs supplied' in str(exc):
+            info.update(route='local_unsupported', operation='contract_strategy')
+            return {'interpretation': f'Needs inputs not in the data: {question}'[:2000], 'coverage': 'unsupported', 'nodes': [],
+                    'unmet_requirements': [f'Missing input: {exc}'[:1000]]}, info
+        info.update(route='fallback', reason=f'contract_strategy parameters: {exc}')
+        return None, info
+    info['recognised'] += [f"{k}={params[k]}" for k in ('focus', 'benchmark_pmpm', 'care_management_pmpm', 'trend_pct', 'risk_aversion', 'confidence',
+                                                        'risk_capacity') if k in params]
+    names = ', '.join(o.get('label') or ' '.join(str(x) for x in (o['program']['id'], o['program'].get('variant') or 'all options') if x) for o in options)
+    return {'interpretation': ' '.join(str(question).split())[:2000], 'coverage': 'supported_observation', 'unmet_requirements': [],
+            'nodes': [{'id': 'answer', 'operation': 'contract_strategy', 'inputs': [], 'parameters': params,
+                       'purpose': f"Contract strategy ({params['focus']}): {names or 'negotiated terms'}"[:1000]}]}, info
 
 
 def _briefing_question(q):

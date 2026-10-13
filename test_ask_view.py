@@ -148,3 +148,18 @@ class AnswerFields(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+class WholePageScript(unittest.TestCase):
+    def test_console_script_is_valid_javascript(self):
+        """Parallel-builder merges have broken the page script by dropping a shared closing line; node --check catches it."""
+        import re, shutil, subprocess, tempfile
+        node = shutil.which('node')
+        if not node: self.skipTest('node not installed')
+        from clinical_core.agere import ask_view
+        scripts = re.findall(r'<script>(.*?)</script>', ask_view.page(), re.S)
+        self.assertTrue(scripts)
+        with tempfile.NamedTemporaryFile('w', suffix='.js', delete=False) as f:
+            f.write(scripts[-1])
+        out = subprocess.run([node, '--check', f.name], capture_output=True, text=True)
+        self.assertEqual(out.returncode, 0, out.stderr[:400])

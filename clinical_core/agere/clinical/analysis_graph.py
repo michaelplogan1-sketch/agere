@@ -35,6 +35,7 @@ OPERATIONS |= {'claims_review'}  # payment integrity and revenue leakage (claims
 OPERATIONS |= {'knowledge'}  # cited VBC knowledge base: explanation / strategy questions (vbc_knowledge.py)
 OPERATIONS |= {'risk_adjustment'}  # CMS-HCC RAF, coding gaps, recapture, suspects (risk_adjustment.py)
 OPERATIONS |= {'network'}  # provider patient-sharing network: hubs, communities, cohesion, leakage, steering, spread (network.py)
+OPERATIONS |= {'contract_strategy'}  # risk contracts as options, track selection, Nash negotiation (contract_strategy.py)
 NODE_FIELDS = {'id', 'operation', 'inputs', 'parameters', 'purpose'}
 LIMITS = [
     'Membership means observed predicate matches, not confirmed disease or absent care.',
@@ -138,6 +139,7 @@ NO_BENCHMARK_OPERATIONS += ('claims_review',)
 NO_BENCHMARK_OPERATIONS += ('knowledge',)
 NO_BENCHMARK_OPERATIONS += ('risk_adjustment',)
 NO_BENCHMARK_OPERATIONS += ('network',)
+NO_BENCHMARK_OPERATIONS += ('contract_strategy',)
 
 
 def benchmark_references(answer, question=None, operation=None):
@@ -459,6 +461,19 @@ def build_answer(plan, results, memberships, question):
                                                     'concentration': {k: v for k, v in (report.get('concentration') or {}).items() if k != 'by_pcp'},
                                                     'pcp_sharing': {k: v for k, v in (report.get('pcp_sharing') or {}).items() if k != 'pairs'},
                                                     'usage': (report.get('usage') or [])[:25], 'visual': network_visual(report)}})
+        return answer
+    if last['operation'] == 'contract_strategy':
+        from .contract_strategy import summarize as cs_summary
+        report = results[-1]['result']
+        partial = plan.get('coverage') != 'supported_observation' or plan.get('unmet_requirements')
+        value, table = cs_summary(report)
+        ok = report.get('status') == 'answered'
+        answer.update(status=('partial' if partial else 'answered') if ok else 'unsupported', answer_type='table' if ok else 'unsupported',
+                      value=value, table=table, count=report.get('members_in_scope'), method=report['method'], limitations=report['limitations'],
+                      overall={'contract_strategy': {k: report.get(k) for k in ('parameters', 'period', 'terms', 'ranking_flips', 'negotiation',
+                                                                               'distribution', 'simulation', 'risk_aversion', 'confidence',
+                                                                               'assumptions', 'sources')}})
+        if report.get('assumptions'): answer['assumptions'] = report['assumptions']
         if not ok: answer['missing'].append(value)
         return answer
     if last['operation'] == 'market':
@@ -666,6 +681,11 @@ def validate(plan, as_of):
             p = risk_adjustment.validate(p)
             if p['year'] is not None and p['year'] > int(str(as_of)[:4]):
                 raise ValueError('Risk adjustment collection year exceeds snapshot cutoff')
+        elif op == 'contract_strategy':
+            from . import contract_strategy
+            p = contract_strategy.validate(p)
+            if any(v > as_of for v in p['period'].values()):
+                raise ValueError('Contract strategy period exceeds snapshot cutoff')
         elif op == 'market':
             from . import market
             p = market.validate(p)
@@ -974,6 +994,7 @@ def code_identity():
                       Path(__file__).parents[3] / 'config' / 'agere' / 'risk_adjustment' / 'payment_parameters.json',
                       Path(__file__).with_name('network.py'),
                       Path(__file__).with_name('market.py'),
+                      Path(__file__).with_name('contract_strategy.py'), Path(__file__).with_name('programs.py'), Path(__file__).with_name('vbc.py'),
                       Path(__file__).with_name('briefing.py'), Path(__file__).with_name('briefing_rank.py'),
                       Path(__file__).with_name('demand.py'),
                       Path(__file__).with_name('profile.py'),
@@ -1392,6 +1413,11 @@ def execute(stack, plan, *, question=None):
                 from . import risk_adjustment
                 chosen = memberships[node['inputs'][0]] if node['inputs'] else None
                 detail = risk_adjustment.execute(path, sorted(chosen.yes) if chosen else None, params, meta['snapshot']['as_of'])
+                if chosen: detail['input_membership'] = membership_receipt(chosen)
+            elif op == 'contract_strategy':
+                from . import contract_strategy
+                chosen = memberships[node['inputs'][0]] if node['inputs'] else None
+                detail = contract_strategy.execute(path, sorted(chosen.yes) if chosen else None, params, meta['snapshot']['as_of'])
                 if chosen: detail['input_membership'] = membership_receipt(chosen)
             elif op == 'market':
                 from . import market

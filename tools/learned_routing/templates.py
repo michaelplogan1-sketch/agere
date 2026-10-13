@@ -29,6 +29,9 @@ FILL = {
     'need': ['food insecurity', 'transportation barriers', 'housing instability', 'financial strain'],
     'feed': ['lab', 'claims', 'ADT', 'pharmacy', 'eligibility', 'EHR'],
     'when': ['tomorrow', 'next week', 'Monday', 'this Friday', 'the next two weeks'],
+    'bench': ['950', '1,020', '1,100', '880', '1,240', '760', '1,005', '1,150'],
+    'spend': ['4', '6.50', '9', '12', '3.25'],
+    'level': ['A', 'B', 'C', 'D', 'E'],
 }
 
 T = {
@@ -75,6 +78,9 @@ T = {
         'Fair split of shared savings across practices', 'What is our value at risk on the shared savings contract?',
         'Decompose the change in PMPM year over year', 'admits per 1000 and PMPM for the attributed population',
         'what does the shared-savings math look like', 'Average risk score of attributed members by payer',
+        # one settlement under one stated contract stays vbc (strategy across contracts is contract_strategy)
+        'Settlement payment under MSSP BASIC level {level} with a ${bench} benchmark', 'What do we receive in the ENHANCED track at a ${bench} PMPM benchmark?',
+        'shared savings owed to us under ACO REACH Professional with a ${bench} benchmark',
     ],
     'program_effect': [
         'Did {program} reduce {events}?', 'Did enrollment in {program} lower PMPM?', 'Effect of {program} on {events}',
@@ -178,6 +184,17 @@ T = {
         'Average HCC RAF score', 'RAF scores by PCP', 'Which HCCs have not been recaptured this year?', 'Open HCC recapture gaps',
         'Suspect conditions for {conds} without a diagnosis code', 'What is our coding completeness?', 'CMS-HCC risk score by practice',
         'documentation gaps worth reviewing', 'V24 versus V28 risk scores', 'coding gaps in dollars at our Medicare Advantage base rate',
+    ],
+    # risk-contract strategy (options valuation, track selection, negotiation); one settlement amount stays vbc
+    'contract_strategy': [
+        'Should our ACO switch to the ENHANCED track if the benchmark is ${bench} PMPM?', 'Is BASIC level {level} or ENHANCED the smarter track for us with a ${bench} benchmark',
+        'Which ACO REACH option should we pick with a ${bench} PMPM benchmark?', 'How much is two-sided risk in ENHANCED worth to us at a ${bench} benchmark?',
+        'What is the option value of our upside under MSSP BASIC level {level} with a ${bench} PMPM benchmark?', 'Value of the downside we take on in ENHANCED with a ${bench} benchmark',
+        'What MSR should we push for with a ${bench} PMPM benchmark?', 'What would a fair sharing rate be in negotiation at a ${bench} benchmark?',
+        'Break-even sharing rate if care management costs us ${spend} PMPM and the benchmark is ${bench}',
+        'How much loss can we absorb at 90% confidence under BASIC level {level} with a ${bench} benchmark?',
+        'compare offer A: 50% sharing upside only; offer B: 70% sharing two-sided, with a ${bench} PMPM benchmark', 'which ACO REACH risk corridor is right for us at a ${bench} benchmark',
+        'Should we step up from level {level} to two-sided risk given a ${bench} benchmark?', 'sensitivity of our payout to the benchmark under REACH Professional with a ${bench} benchmark',
     ],
     'not_answerable': [
         'How many patients died last year?', 'Mortality rate for {conds}', 'Breakdown of patients by race and ethnicity',
