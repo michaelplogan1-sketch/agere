@@ -10,7 +10,7 @@ import math, sqlite3, time
 
 from . import discover, trajectory, vbc, semantic_layer
 
-VERSION = 'briefing/1'
+VERSION = 'briefing/2'
 W = {'basis': 'all_observed', 'start': '', 'end': ''}
 DISCOVERY = [
     ('ED use', {'all': [{'kind': 'concept', 'concept': 'emergency_visit', 'window': W}], 'any': [], 'exclude': []}, 'Find hotspots of ED visits'),
@@ -24,6 +24,9 @@ DISCOVERY = [
 ]
 TRAJECTORIES = [('egfr', 'down', 'Which CKD patients have a declining eGFR?'), ('hemoglobin', 'down', 'Which patients have falling hemoglobin?'),
                 ('hba1c', 'up', 'Which diabetics have worsening A1c?'), ('systolic_bp', 'up', 'Show patients with rising systolic blood pressure')]
+FORECASTS = [('egfr', 30.0, 365, 'Which CKD patients are likely to drop below an eGFR of 30 in the next year?', 'eGFR below 30 (nephrology referral threshold)'),
+             ('hba1c', 9.0, 182, 'Which diabetics are on track to exceed an A1c of 9 within six months?', 'A1c above 9 (poor control)'),
+             ('systolic_bp', 160.0, 182, 'Which patients are likely to exceed a systolic of 160 within six months?', 'systolic above 160')]
 CHANGES = [('pmpm', 'Why did our PMPM increase?'), ('ed_rate', 'Why did ED visits go up?'), ('admit_rate', 'Why did admissions change?')]
 
 
@@ -67,6 +70,16 @@ def build(path):
                           'headline': (f"{r['flagged']} patients show a material {direction}ward {concept} trajectory "
                                        f"(e.g. {top['patient_id']}: {top['from']} -> {top['to']} {r['unit']} since {top['changed_on']})"),
                           'patients': r['flagged'], 'strength': min(top['z'], 10), 'follow_up': follow,
+                          'evidence': {'patients': r['patients'][:10], 'method': r['method']}})
+    for concept, threshold, horizon, follow, label in FORECASTS:
+        r = trajectory.execute(path, everyone, {'concept': concept, 'direction': 'any', 'threshold': threshold, 'horizon_days': horizon})
+        if r['flagged']:
+            top = r['patients'][0]
+            cards.append({'kind': 'forecast', 'topic': concept,
+                          'headline': (f"{r['flagged']} patients are projected to cross {label} within {horizon // 30} months "
+                                       f"(e.g. {top['patient_id']}: {top['last_value']} now, {top['slope_per_year']:+} per year, "
+                                       f"{top['p_cross']:.0%} chance)"),
+                          'patients': r['flagged'], 'strength': 4 + 4 * top['p_cross'], 'follow_up': follow,
                           'evidence': {'patients': r['patients'][:10], 'method': r['method']}})
     for measure, follow in CHANGES:
         r = vbc.execute(path, None, {'metric': 'change', 'measure': measure})
