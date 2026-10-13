@@ -271,7 +271,10 @@
   "question": "Which specialties have the highest leakage rate, and to which outside groups?",
   "expect_operation": "pathway",
   "id": "VQ-191",
-  "domain": "network_leakage"
+  "domain": "network_leakage",
+  "also_accept": [
+   "network"
+  ]
  },
  {
   "question": "What is our leakage rate for primary care visits (members seeing non-ACO PCPs)?",
@@ -325,7 +328,10 @@
   "question": "Which track and level of risk should we choose next agreement period based on our historical variance?",
   "expect_operation": "vbc",
   "id": "VQ-232",
-  "domain": "contract_settlement"
+  "domain": "contract_settlement",
+  "also_accept": [
+   "contract_strategy"
+  ]
  },
  {
   "question": "Do we owe any shared losses this year, and how close are we to the loss threshold?",
@@ -488,7 +494,10 @@
   "question": "How does each PCP compare to peers on referral rate to out-of-network specialists?",
   "expect_operation": "pathway",
   "id": "VQ-293",
-  "domain": "provider_performance"
+  "domain": "provider_performance",
+  "also_accept": [
+   "network"
+  ]
  },
  {
   "question": "Which practices are underperforming on blood pressure control and need coaching?",

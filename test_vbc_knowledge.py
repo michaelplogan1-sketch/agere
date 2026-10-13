@@ -231,6 +231,7 @@ class Routing(unittest.TestCase):
             while stack:
                 x = stack.pop()
                 if isinstance(x, dict):
+                    if x.get('expect_operation') == 'knowledge' or 'knowledge' in (x.get('also_accept') or []): continue  # meant for knowledge
                     for k, v in x.items():
                         if k == 'question' and isinstance(v, str):
                             if local_compiler._knowledge_question(v): stolen.append((f.name, v))
