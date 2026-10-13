@@ -282,3 +282,15 @@ class BenchFilterTest(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+class RoutingLog(unittest.TestCase):
+    def test_router_decisions_are_logged(self):
+        import tempfile, sqlite3
+        from clinical_core.agere.clinical import learning
+        with tempfile.TemporaryDirectory() as d:
+            learning.record_routing(d, 'whose kidney function is sliding', {'decision': 'trajectory', 'chosen_by': 'learned_router',
+                                    'choice': {'name': 'trajectory', 'input': {'parameters': {'concept': 'egfr'}}}}, executed=True)
+            learning.record_routing(d, 'q', {}, executed=False)  # no decision: nothing logged
+            rows = sqlite3.connect(f'{d}/learning.sqlite3').execute('SELECT decision, operator, chooser, executed FROM routing').fetchall()
+        self.assertEqual(rows, [('trajectory', 'trajectory', 'learned_router', 1)])

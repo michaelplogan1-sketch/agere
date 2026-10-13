@@ -14,6 +14,7 @@ CREATE TABLE IF NOT EXISTS verified(question TEXT, plan_kind TEXT, plan TEXT, si
 CREATE TABLE IF NOT EXISTS outcomes(question TEXT, route TEXT, status TEXT, reason TEXT, paid_calls INTEGER,
                                     usd REAL, created REAL);
 CREATE TABLE IF NOT EXISTS corrections(question TEXT, note TEXT, expected TEXT, created REAL);
+CREATE TABLE IF NOT EXISTS routing(question TEXT, decision TEXT, operator TEXT, parameters TEXT, chooser TEXT, executed INTEGER, created REAL);
 """
 
 
@@ -64,6 +65,21 @@ def record_outcome(path, question, route, status, reason=None, paid_calls=0, usd
     try:
         db.execute('INSERT INTO outcomes VALUES (?,?,?,?,?,?,?)',
                    (question.strip(), route, status, (reason or '')[:500], int(paid_calls or 0), float(usd or 0), time.time()))
+        db.commit()
+    finally:
+        db.close()
+
+
+def record_routing(path, question, info, executed):
+    """The operator router's decision for a question (training data for the learned router; never benchmark truth)."""
+    if not info or not info.get('decision'): return
+    choice = info.get('choice') or {}
+    chooser = info.get('chosen_by') or 'paid_router'
+    db = _db(path)
+    try:
+        db.execute('INSERT INTO routing VALUES (?,?,?,?,?,?,?)',
+                   (question.strip(), info['decision'], choice.get('name'), json.dumps(choice.get('input'), default=str)[:4000],
+                    chooser, int(bool(executed)), time.time()))
         db.commit()
     finally:
         db.close()

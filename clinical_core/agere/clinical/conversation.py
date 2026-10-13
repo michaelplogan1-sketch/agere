@@ -599,6 +599,8 @@ def handle_compose(stack, body, hosted_factory=None):
                             'escalated' if result.get('new_paid_api_calls') else (result.get('answer') or {}).get('status') or 'answered',
                             local.get('reason') if isinstance(local, dict) else None,
                             result.get('new_paid_api_calls') or 0, (result.get('planning_economics') or {}).get('known_api_estimate_usd') or 0)
+    if isinstance(local, dict) and local.get('operator_router'):
+        learning.record_routing(stack.path, logged, local['operator_router'], executed=pr.get('route') == 'operator_router')
     return result
 
 
