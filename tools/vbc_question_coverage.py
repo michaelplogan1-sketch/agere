@@ -35,6 +35,8 @@ def classify(item, graph, info):
     """coverage class + the operation the compiler produced."""
     route = info.get('route')
     expected = item['expected_engine']
+    if route == 'local_requires_input':  # the engine can answer once the user supplies a program/terms: it asks for them
+        return 'requires_input', None
     if graph and graph.get('coverage') == 'unsupported' or route == 'local_unsupported':
         return 'unsupported_local', None
     if graph and graph.get('nodes'):
@@ -43,8 +45,10 @@ def classify(item, graph, info):
             ok = op == expected and (not item.get('expected_measure') or graph['nodes'][-1]['parameters'].get('measure') == item['expected_measure'])
         elif expected == 'literal_lookup':
             ok = op not in PRODUCT
+        elif expected == 'knowledge':
+            ok = op == 'knowledge'  # an explanation answered from the cited knowledge base
         else:
-            ok = False  # compiled something for a knowledge/unsupported question: a wrong answer, not coverage
+            ok = False  # compiled something for an unsupported question: a wrong answer, not coverage
         return ('local' if ok else 'local_mismatch'), op
     return 'router', None
 
@@ -53,6 +57,8 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--stack', default=str(Path('/Users/mikel/clinical-insights-local/artifacts/agere-healthcare-v123/stack')))
     ap.add_argument('--as-of', default='2029-08-15')
+    ap.add_argument('--doc', default='docs/agere/VBC_QUESTION_COVERAGE.md', help='report path (relative to the repo)')
+    ap.add_argument('--no-acceptance', action='store_true', help='do not rewrite bench/acceptance/vbc_library.json')
     a = ap.parse_args()
     lib = json.loads((ROOT / 'config/agere/vbc_questions.json').read_text())
     profile = load_profile(a.stack)
@@ -70,19 +76,21 @@ def main():
     accept = [{'question': r['question'], 'expect_operation': r['expected_engine'], 'id': r['id'],
                **({'expect_measure': r['expected_measure']} if r.get('expected_measure') else {}), 'domain': r['domain']}
               for r in rows if r['expected_engine'] in PRODUCT]
-    (ROOT / 'bench/acceptance/vbc_library.json').write_text(json.dumps(accept, indent=1) + '\n')
+    if not a.no_acceptance:
+        (ROOT / 'bench/acceptance/vbc_library.json').write_text(json.dumps(accept, indent=1) + '\n')
 
     def bucket(r):
         e = r['expected_engine']
         if e == 'unsupported': return 'unsupported (data not received)'
         if e == 'knowledge': return 'knowledge (explanation)'
         if r['coverage'] == 'local': return 'answered locally'
+        if r['coverage'] == 'requires_input': return 'asks for missing inputs (program / contract terms)'
         if r['coverage'] == 'router': return 'needs router / hosted planner'
         if r['coverage'] == 'unsupported_local': return 'declined locally (compiler says unsupported)'
         return 'compiled to the wrong engine'
     for r in rows: r['bucket'] = bucket(r)
-    order = ['answered locally', 'needs router / hosted planner', 'compiled to the wrong engine', 'declined locally (compiler says unsupported)',
-             'knowledge (explanation)', 'unsupported (data not received)']
+    order = ['answered locally', 'asks for missing inputs (program / contract terms)', 'needs router / hosted planner', 'compiled to the wrong engine',
+             'declined locally (compiler says unsupported)', 'knowledge (explanation)', 'unsupported (data not received)']
     counts = Counter(r['bucket'] for r in rows)
     by_domain = defaultdict(Counter)
     for r in rows: by_domain[r['domain']][r['bucket']] += 1
@@ -120,17 +128,24 @@ def main():
     for kind in ('unsupported', 'knowledge'):
         sub = [r for r in rows if r['expected_engine'] == kind]
         c = Counter(r['coverage'] for r in sub)
-        L += ['', f'Of the {len(sub)} {kind} questions, the compiler declines {c["unsupported_local"]} locally, hands {c["router"]} to the router, '
-              f'and compiles {c["local_mismatch"]} into a data graph' + (' (an answer the data cannot support: a correctness risk).' if kind == 'unsupported'
-                                                                         else ' (a number where an explanation was asked).')]
-    L += ['', '## By expected engine (answerable questions)', '', '| Engine | Total | Local | Router | Wrong engine | Declined locally |', '|---|---:|---:|---:|---:|---:|']
+        graphs = Counter(r['compiled_operation'] for r in sub if r['coverage'] == 'local_mismatch')
+        L += ['', f'Of the {len(sub)} {kind} questions, the compiler declines {c["unsupported_local"]} locally, asks for missing inputs on '
+              f'{c["requires_input"]}, ' + (f'answers {c["local"]} from the cited knowledge base, ' if kind == 'knowledge' else '') +
+              f'hands {c["router"]} to the router, and compiles {c["local_mismatch"]} into a data graph'
+              + (f' ({", ".join(f"{k}: {v}" for k, v in sorted(graphs.items()))})' if graphs else '')
+              + (' (an answer the data cannot support: a correctness risk, unless this release now carries the input; see below).' if kind == 'unsupported'
+                 else ' (a number where an explanation was asked).')]
+    L += ['', '## By expected engine (answerable questions)', '', '| Engine | Total | Local | Asks for inputs | Router | Wrong engine | Declined locally |',
+          '|---|---:|---:|---:|---:|---:|---:|']
     for e, c in sorted(eng_cov.items(), key=lambda kv: -sum(kv[1].values())):
-        L.append(f'| {e} | {sum(c.values())} | {c["answered locally"]} | {c["needs router / hosted planner"]} | {c["compiled to the wrong engine"]} | '
-                 f'{c["declined locally (compiler says unsupported)"]} |')
-    L += ['', '## By domain', '', '| Domain | Total | Local | Router | Wrong engine | Declined locally | Knowledge | Unsupported |', '|---|---:|---:|---:|---:|---:|---:|---:|']
+        L.append(f'| {e} | {sum(c.values())} | {c["answered locally"]} | {c["asks for missing inputs (program / contract terms)"]} | '
+                 f'{c["needs router / hosted planner"]} | {c["compiled to the wrong engine"]} | {c["declined locally (compiler says unsupported)"]} |')
+    L += ['', '## By domain', '', '| Domain | Total | Local | Asks for inputs | Router | Wrong engine | Declined locally | Knowledge | Unsupported |',
+          '|---|---:|---:|---:|---:|---:|---:|---:|---:|']
     for d in lib['domains']:
         c = by_domain[d]
-        L.append(f'| {d} | {sum(c.values())} | {c["answered locally"]} | {c["needs router / hosted planner"]} | {c["compiled to the wrong engine"]} | '
+        L.append(f'| {d} | {sum(c.values())} | {c["answered locally"]} | {c["asks for missing inputs (program / contract terms)"]} | '
+                 f'{c["needs router / hosted planner"]} | {c["compiled to the wrong engine"]} | '
                  f'{c["declined locally (compiler says unsupported)"]} | {c["knowledge (explanation)"]} | {c["unsupported (data not received)"]} |')
     L += ['', '## By persona', '', '| Persona | Questions |', '|---|---:|'] + [f'| {p} | {n} |' for p, n in personas.most_common()]
     L += ['', '## Expected engines', '', '| Engine | Questions |', '|---|---:|'] + [f'| {e} | {n} |' for e, n in engines.most_common()]
@@ -140,7 +155,8 @@ def main():
           'Router = the local compiler declined (words it could not interpret); the operator router / hosted planner must pick the engine. '
           'Wrong engine = the compiler produced a graph whose final operation differs from the expected engine (a correctness bug, highest priority). '
           'Declined locally = the compiler\'s UNSUPPORTED rules fired although the expected engine could answer (rules stale for this release).', '']
-    for b in ('compiled to the wrong engine', 'declined locally (compiler says unsupported)', 'needs router / hosted planner'):
+    for b in ('compiled to the wrong engine', 'declined locally (compiler says unsupported)', 'asks for missing inputs (program / contract terms)',
+              'needs router / hosted planner'):
         items = [r for r in answerable if r['bucket'] == b]
         L += [f'### {b} ({len(items)})', '', '| ID | Domain | Expected | Compiled | Question | Compiler note |', '|---|---|---|---|---|---|']
         for r in items:
@@ -151,12 +167,19 @@ def main():
     risky = [r for r in rows if r['expected_engine'] in ('unsupported', 'knowledge') and r['coverage'] == 'local_mismatch']
     L += [f'### unsupported or knowledge questions compiled into a data graph ({len(risky)})', '', '| ID | Expected | Compiled | Question |', '|---|---|---|---|']
     L += [f"| {r['id']} | {r['expected_engine']}{': ' + r['missing_data'] if r.get('missing_data') else ''} | {r['compiled_operation']} | {r['question']} |" for r in risky]
+    if any(r['compiled_operation'] == 'risk_adjustment' for r in risky):
+        L += ['', 'Expected engines are assigned against the v1.23 release. A release that carries ICD-10 diagnoses on claims (v2.0+) makes '
+              'CMS-HCC questions answerable by risk_adjustment, so a risk_adjustment graph here is the data-aware answer, not a wrong one.']
+    asked = [r for r in rows if r['coverage'] == 'requires_input']
+    L += ['', f'### questions answered by asking for missing inputs ({len(asked)})', '', '| ID | Expected | Question | Asks for |', '|---|---|---|---|']
+    L += [f"| {r['id']} | {r['expected_engine']} | {r['question'].replace('|', '/')} | {(r['reason'] or '').replace('|', '/')[:140]} |" for r in asked]
     L += ['', '## Answered locally', '', '| ID | Engine | Parameters | Question |', '|---|---|---|---|']
     for r in rows:
         if r['bucket'] == 'answered locally':
             L.append(f"| {r['id']} | {r['compiled_operation']} | `{json.dumps(r['compiled_parameters'], sort_keys=True)[:90]}` | {r['question'].replace('|', '/')} |")
-    (ROOT / 'docs/agere/VBC_QUESTION_COVERAGE.md').write_text('\n'.join(L) + '\n')
-    print(json.dumps({'questions': len(rows), **{b: counts.get(b, 0) for b in order}, 'acceptance_cases': len(accept)}, indent=1))
+    (ROOT / a.doc).write_text('\n'.join(L) + '\n')
+    detail = {k: dict(Counter(r['coverage'] for r in rows if r['expected_engine'] == k)) for k in ('unsupported', 'knowledge')}
+    print(json.dumps({'questions': len(rows), **{b: counts.get(b, 0) for b in order}, 'acceptance_cases': len(accept), 'detail': detail}, indent=1))
 
 
 if __name__ == '__main__':

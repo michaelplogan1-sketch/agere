@@ -28,7 +28,7 @@ SCHEMA = 'agere-measure/1'
 LIBRARY_DIR = Path(__file__).resolve().parents[3] / 'config' / 'agere' / 'measures'
 UNITS = ('patient', 'index_event', 'admission_rate')
 TYPES = ('condition', 'measurement', 'blood_pressure', 'medication', 'service', 'encounter', 'stay', 'pdc')
-GROUP_BY = ('none', 'pcp', 'practice', 'coverage_type', 'payer', 'age_band', 'sex')
+GROUP_BY = ('none', 'pcp', 'practice', 'coverage_type', 'payer', 'age_band', 'sex', 'race', 'ethnicity', 'race_ethnicity', 'language', 'interpreter')
 OUTPUTS = ('rates', 'gaps')
 DISPENSE_STATUSES = ('dispensed', 'paid')
 INACTIVE_VISIT = ('cancelled', 'canceled', 'entered-in-error', 'entered_in_error', 'no_show', 'noshow')
@@ -437,6 +437,7 @@ def _enrolled(info, start, end, allowed_gap_months):
 def evaluate_db(db, m, start, end, as_of, group_by='none', keep=None, people=None, attr=None, output='rates', top=500):
     """Evaluate one measure dict on an open semantic-layer connection."""
     from . import vbc
+    vbc.require_demographics(db, group_by)  # health-equity stratification only where race/language are received
     ctx = Context(db)
     missing, warnings = availability(ctx, m, start, end)
     base = {'schema': VERSION, 'measure': m['id'], 'name': m['name'], 'status_of_definition': m['status'],
