@@ -70,6 +70,12 @@ PRODUCT['knowledge'] = {'population': 'none', 'view': 'passages',
                                'risk adjustment (HCC V28, RADV), Stars/HEDIS/APP, frameworks (Porter value agenda, Nash population health), '
                                'evidence on what works (MSSP savings, hotspotting RCT). Cited passages from a curated public-source knowledge base.'}
 
+PRODUCT['risk_adjustment'] = {'population': 'optional', 'view': 'raf',
+                              'use': 'CMS-HCC risk adjustment (Medicare Advantage / ACO REACH): RAF and HCCs per patient (V24, V28, payment-year blend), '
+                                     'coding gaps, HCC recapture (coded last year, not yet this year), suspect conditions without a diagnosis code '
+                                     '(documentation gaps), coding completeness, RAF / risk score by practice, PCP or payer, dollars at stake. '
+                                     'An internal (non-HCC) risk score is vbc.'}
+
 # Questions a SQL query over the semantic tables answers exactly are handed to the verified SQL ladder.
 LITERAL = ('Literal data questions: counts, lists, sums, averages, maxima, record filters, date arithmetic, simple breakdowns '
            'by a field, shares, rates per 1,000 without case-mix adjustment.')

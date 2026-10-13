@@ -33,6 +33,7 @@ OPERATIONS |= {'briefing'}  # ranked proactive briefing (briefing.py + briefing_
 OPERATIONS |= {'early_signal'}  # matched-filter precursor detection (early_signal.py)
 OPERATIONS |= {'claims_review'}  # payment integrity and revenue leakage (claims_review.py)
 OPERATIONS |= {'knowledge'}  # cited VBC knowledge base: explanation / strategy questions (vbc_knowledge.py)
+OPERATIONS |= {'risk_adjustment'}  # CMS-HCC RAF, coding gaps, recapture, suspects (risk_adjustment.py)
 NODE_FIELDS = {'id', 'operation', 'inputs', 'parameters', 'purpose'}
 LIMITS = [
     'Membership means observed predicate matches, not confirmed disease or absent care.',
@@ -134,6 +135,7 @@ NO_BENCHMARK_OPERATIONS += ('briefing',)
 NO_BENCHMARK_OPERATIONS += ('early_signal',)
 NO_BENCHMARK_OPERATIONS += ('claims_review',)
 NO_BENCHMARK_OPERATIONS += ('knowledge',)
+NO_BENCHMARK_OPERATIONS += ('risk_adjustment',)
 
 
 def benchmark_references(answer, question=None, operation=None):
@@ -426,6 +428,20 @@ def build_answer(plan, results, memberships, question):
                                'duplicates': report.get('duplicates'), 'churn': report.get('churn')})
         if not ok: answer['missing'].append(value)
         return answer
+    if last['operation'] == 'risk_adjustment':
+        from .risk_adjustment import summarize as ra_summary
+        report = results[-1]['result']
+        partial = plan.get('coverage') != 'supported_observation' or plan.get('unmet_requirements')
+        value, table = ra_summary(report)
+        ok = report.get('status') == 'answered'
+        answer.update(status=('partial' if partial else 'answered') if ok else 'unsupported', answer_type='table' if ok else 'unsupported',
+                      value=value, table=table, count=(report.get('population') or {}).get('patients_in_scope'),
+                      method=report['method'], limitations=report['limitations'],
+                      overall={'risk_adjustment': {k: report.get(k) for k in ('parameters', 'period', 'payment', 'assumptions', 'data_gaps',
+                                                                             'diagnosis_filter', 'capability')},
+                               'population': {k: v for k, v in (report.get('population') or {}).items()}})
+        if not ok: answer['missing'].append(value)
+        return answer
     if last['operation'] == 'market':
         from .market import summarize as market_summary
         report = results[-1]['result']
@@ -605,6 +621,11 @@ def validate(plan, as_of):
             p = claims_review.validate(p)
             if any(v > as_of for v in p['period'].values()):
                 raise ValueError('Claims review period exceeds snapshot cutoff')
+        elif op == 'risk_adjustment':
+            from . import risk_adjustment
+            p = risk_adjustment.validate(p)
+            if p['year'] is not None and p['year'] > int(str(as_of)[:4]):
+                raise ValueError('Risk adjustment collection year exceeds snapshot cutoff')
         elif op == 'market':
             from . import market
             p = market.validate(p)
@@ -909,6 +930,8 @@ def code_identity():
                       Path(__file__).with_name('warehouse_prediction.py'),
                       Path(__file__).with_name('longitudinal.py'), Path(__file__).with_name('survival.py'),
                       Path(__file__).with_name('monitor.py'), Path(__file__).with_name('claims_review.py'),
+                      Path(__file__).with_name('risk_adjustment.py'), Path(__file__).parents[3] / 'config' / 'agere' / 'risk_adjustment' / 'manifest.json',
+                      Path(__file__).parents[3] / 'config' / 'agere' / 'risk_adjustment' / 'payment_parameters.json',
                       Path(__file__).with_name('market.py'),
                       Path(__file__).with_name('briefing.py'), Path(__file__).with_name('briefing_rank.py'),
                       Path(__file__).with_name('demand.py'),
@@ -1318,6 +1341,11 @@ def execute(stack, plan, *, question=None):
                 from . import claims_review
                 chosen = memberships[node['inputs'][0]] if node['inputs'] else None
                 detail = claims_review.execute(path, sorted(chosen.yes) if chosen else None, params, meta['snapshot']['as_of'])
+                if chosen: detail['input_membership'] = membership_receipt(chosen)
+            elif op == 'risk_adjustment':
+                from . import risk_adjustment
+                chosen = memberships[node['inputs'][0]] if node['inputs'] else None
+                detail = risk_adjustment.execute(path, sorted(chosen.yes) if chosen else None, params, meta['snapshot']['as_of'])
                 if chosen: detail['input_membership'] = membership_receipt(chosen)
             elif op == 'market':
                 from . import market

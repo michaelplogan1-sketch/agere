@@ -439,6 +439,7 @@ def _compile(question, profile, as_of):
         return briefed
     for pattern, missing in UNSUPPORTED:  # checked on the user's own words, before any paraphrase
         if timed and 'surviv' in pattern: continue
+        if missing[0].startswith('CMS-HCC') and _diagnoses_received(profile): continue  # ICD-10 on claims: risk_adjustment answers
         if re.search(pattern, low) and not (_contract_terms(low) and 'shared' in pattern):
             missing = _settlement_missing(low, missing) if 'shared' in pattern else missing
             return {'interpretation': f'Unsupported by received data: {q}', 'coverage': 'unsupported', 'nodes': [],
@@ -473,6 +474,7 @@ def _compile(question, profile, as_of):
     terms = _contract_terms(r.low)
     for pattern, missing in UNSUPPORTED:
         if terms and 'shared' in pattern: continue  # settlement is computable once terms are supplied
+        if missing[0].startswith('CMS-HCC') and _diagnoses_received(profile): continue  # ICD-10 on claims: risk_adjustment answers
         if timed and 'surviv' in pattern: continue
         if re.search(pattern, r.low):
             missing = _settlement_missing(r.low, missing) if 'shared' in pattern else missing
@@ -485,6 +487,9 @@ def _compile(question, profile, as_of):
             info['clarifications'].append(m.group(0))
             if effect: info.setdefault('output', effect)
     r.take(r'\b(?:on file|on record|in (?:the |our )?(?:record|chart|warehouse)s?|on the roster|in the data)\b', None)
+    hcc = _risk_adjustment_question(q, r, profile, as_of, info)  # explicit HCC/RAF wording only; a plain "risk score" stays vbc
+    if hcc is not None:
+        return hcc
     pid = r.take(r'\bp-[a-z0-9]+\b', 'patient id')
     if pid:  # single-patient questions with a measurement statistic
         return _patient_question(q, r, profile, [m.group(0).upper() for m in pid], info)
@@ -696,6 +701,83 @@ def _claims_review_question(q, r, profile, as_of, info):
     return {'interpretation': q, 'coverage': 'supported_observation', 'unmet_requirements': [],
             'nodes': [{'id': 'answer', 'operation': 'claims_review', 'inputs': [], 'parameters': params,
                        'purpose': f"Claims review: {params['focus']}" + (f" by {params['by']}" if params['focus'] in ('denials', 'leakage', 'all') else '')}]}, info
+
+
+# ---- CMS-HCC risk adjustment: RAF, coding gaps, recapture, suspects -------------------------
+RA_RECAPTURE = (r"\bre-?captur(?:e|es|ed|ing)\b|\bcoded (?:last|in the prior|the previous) year\b|\bnot (?:yet )?(?:re)?(?:coded|captured) this year\b|"
+                r"\bopen hcc gaps?\b|\bhcc gaps?\b")
+RA_SUSPECT = (r"\bsuspect(?:ed|ing)? (?:conditions?|diagnos[ie]s|hccs?|list)\b|\bsuspects\b|\bsuspecting\b|\bdocumentation (?:gaps?|opportunit(?:y|ies)|review prompts?)\b|"
+              r"\b(?:conditions?|diagnos[ie]s|evidence) (?:without|missing|lacking) (?:a |an |any )?(?:diagnosis |icd(?:-10)? )?codes?\b|"
+              r"\bundocumented (?:conditions?|diagnos[ie]s)\b|\buncoded (?:conditions?|diagnos[ie]s)\b")
+RA_CORE = (r"\bhccs?\b|\brafs?\b|\brisk adjustment factors?\b|\bcms[- ]?hcc\b|\bhierarchical condition categor(?:y|ies)\b|\bv(?:24|28)\b|"
+           r"\bcoding (?:gaps?|completeness|opportunit(?:y|ies))\b|\brisk[- ]adjust(?:ed|ment) (?:revenue|payments?|dollars)\b|"
+           r"\b(?:cms|hcc|medicare advantage|ma|aco reach) risk scores?\b|\brisk scores? (?:for|under|in) (?:medicare advantage|ma|aco reach)\b")
+RA_TRIGGER = '|'.join((RA_CORE, RA_RECAPTURE, RA_SUSPECT))
+RA_FILLER = (r"\b(?:which|what|who|whose|where|how|show|list|give|me|find|our|the|a|an|of|for|is|are|was|were|have|has|had|with|by|per|each|"
+             r"patients?|members?|people|average|mean|median|typical|distribution|spread|score|scores|risk|adjustment|adjusted|coded|coding|code|codes|"
+             r"diagnosis|diagnoses|conditions?|gaps?|open|last|this|year|yet|not|still|missing|need|needs|needing|review|documentation|evidence|"
+             r"without|any|top|biggest|largest|most|dollars?|value|at stake|worth|how much|money|revenue|opportunit(?:y|ies)|rate|completeness|"
+             r"across|panel|population|current|prior|previous|we|us|do|does|did|in|on|to|from|be|been|and|or|whole|overall|status|"
+             r"cms|hcc|hccs|raf|rafs|payment|medicare advantage|medicare|ma|aco reach|reach|v24|v28|model|blended|normali[sz]ed|captured|capture)\b")
+
+
+def _diagnoses_received(profile):
+    """ICD-10 diagnosis codes arrive on medical claims (warehouse v2.0+); without them HCCs cannot be assigned."""
+    fields = (((profile or {}).get('streams') or {}).get('medical_claims') or {}).get('fields') or {}
+    return 'diagnosis_codes' in fields or 'principal_diagnosis' in fields
+
+
+def _risk_adjustment_question(q, r, profile, as_of, info):
+    low = r.low
+    if not re.search(RA_TRIGGER, low) or not _diagnoses_received(profile): return None
+    recap, suspect = bool(re.search(RA_RECAPTURE, low)), bool(re.search(RA_SUSPECT, low))
+    params = {}
+    gb = next((g for pattern, g in ((r'\bby (?:practice|clinic)s?\b|\bper (?:practice|clinic)\b|\beach (?:practice|clinic)\b', 'practice'),
+                                    (r'\bby (?:pcp|primary care (?:provider|physician)|physician|provider|doctor|clinician)s?\b|\bper pcp\b', 'pcp'),
+                                    (r'\bby (?:payer|payor|plan|insurer)s?\b', 'payer'), (r'\bby (?:coverage|insurance)(?: type)?\b', 'coverage_type'))
+               if r.take(pattern, f'group by {g}')), None)
+    if gb: params['group_by'] = gb
+    if recap and suspect or re.search(r'\bcoding (?:gaps?|opportunit(?:y|ies))\b', low) and not (recap or suspect): focus = 'all'
+    elif recap: focus = 'recapture'
+    elif suspect: focus = 'suspects'
+    elif gb or re.search(r'\bdistribution\b|\bcompleteness\b|\bspread\b', low): focus = 'population'
+    else: focus = 'raf'
+    params['focus'] = focus
+    for pattern in (RA_RECAPTURE, RA_SUSPECT, RA_CORE):
+        r.take(pattern, f'risk adjustment {focus}')
+    m = r.take(r'\b(?:py|payment year) ?(20\d\d)\b|\bfor (20\d\d) payments?\b', 'payment year')
+    if m: params['payment_year'] = int(m[0].group(1) or m[0].group(2))
+    m = r.take(r'\$\s?([\d,]+(?:\.\d+)?) ?(?:pmpm|per member per month)\b|\bbase rate (?:of |is |at )?\$?\s?([\d,]+(?:\.\d+)?)(?: ?pmpm)?', 'base rate')
+    if m: params['base_rate_pmpm'] = float((m[0].group(1) or m[0].group(2)).replace(',', ''))
+    r.take(r'\bthis (?:calendar )?year\b(?: \(?\d{4} (?:ytd|year[- ]to[- ]date)\)?)?|\(?\b\d{4} (?:ytd|year[- ]to[- ]date)\)?|\bytd\b|'
+           r'\bso far\b|\bto date\b', 'current year (recapture runs to the snapshot date)')
+    m = r.take(r'\b(?:in|for|during) (20\d\d)\b', 'collection year')
+    if m: params['year'] = int(m[0].group(1))
+    if r.take(r'\b(?:all|every|whole|entire) (?:patients|population|members|roster)\b|\beveryone\b|\bcommercial\b|\ball coverage\b', 'coverage all'):
+        params['coverage'] = 'all'
+    m = r.take(r'\b(p-[a-z0-9]+|syn-[a-z0-9]+-[a-z0-9]+)\b', 'patient id')
+    if m: params['patient'] = m[0].group(1).upper()
+    m = r.take(r'\btop (\d{1,3})\b', 'top')
+    if m: params['top'] = int(m[0].group(1))
+    r.take(RA_FILLER, None, overlap=True)
+    info['unexplained'] = r.blocking(profile)
+    info['ignored_words'] = getattr(r, 'ignored', [])
+    if info['unexplained']:
+        info.update(route='fallback', reason='risk adjustment words not interpreted locally: ' + ', '.join(info['unexplained'][:12]))
+        return None, info
+    from .risk_adjustment import validate
+    try:
+        params = validate(params)
+    except ValueError as exc:
+        info.update(route='fallback', reason=f'risk_adjustment parameters: {exc}')
+        return None, info
+    if params['year'] is not None and params['year'] > int(as_of[:4]):
+        info.update(route='fallback', reason='risk_adjustment collection year after the snapshot')
+        return None, info
+    info['route'] = 'local_compiler'
+    return {'interpretation': q, 'coverage': 'supported_observation', 'unmet_requirements': [],
+            'nodes': [{'id': 'answer', 'operation': 'risk_adjustment', 'inputs': [], 'parameters': params,
+                       'purpose': f"Risk adjustment: {params['focus']}" + (f" by {params['group_by']}" if params['group_by'] != 'none' else '')}]}, info
 
 
 # ---- markets view: practice / PCP / payer tickers ------------------------------------------

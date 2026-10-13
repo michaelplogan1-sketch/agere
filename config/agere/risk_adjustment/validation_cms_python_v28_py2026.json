@@ -1,0 +1,208 @@
+{
+ "schema": "agere-risk-adjustment-reference/1",
+ "source": "Output of the official CMS Python model software CMS_HCC_v28_2026_T_package_v3 (2026 Midyear/Final Model Software (Python), https://www.cms.gov/files/zip/2026-midyear-final-model-software-python.zip), run unmodified with pandas 2.3.3 / Python 3.12 (switch_edits=True, age as of 2026-02-01) on the beneficiary and diagnosis inputs below, 2026-10-13.",
+ "archive_sha256": "b47ed086d8a1cae0bf860526168ecffee07cb8d46766825a72fc21d57dbd47be",
+ "covers": "hierarchies (cancer, diabetes, heart failure), CC223 heart-failure patch, age split C50 -> CC22/CC23, D66 sex edit (CC111 male, CC112 female), interactions (DIABETES_HF, HF_CHR_LUNG, HF_KIDNEY, HF_HCC238, CHR_LUNG_CARD_RESP_FAIL, gSubUseDisorder_gPsych), payment-HCC counts D1..D10P, aged and disabled community segments, institutional, no-diagnosis person",
+ "cases": [
+  {
+   "id": "1",
+   "dob": "03/15/1954",
+   "sex": 2,
+   "orec": 0,
+   "age_at_2026_02_01": 71,
+   "icd10": [
+    "E119",
+    "I5022",
+    "N1831",
+    "J449",
+    "I480"
+   ],
+   "expected_hccs": [
+    38,
+    226,
+    238,
+    280,
+    329
+   ],
+   "expected_scores": {
+    "COMMUNITY_NA": 2.159,
+    "COMMUNITY_PBA": 2.249,
+    "COMMUNITY_FBA": 2.686,
+    "COMMUNITY_ND": 2.061,
+    "COMMUNITY_PBD": 2.202,
+    "COMMUNITY_FBD": 2.563,
+    "INSTITUTIONAL": 2.672
+   }
+  },
+  {
+   "id": "2",
+   "dob": "06/01/1945",
+   "sex": 1,
+   "orec": 0,
+   "age_at_2026_02_01": 80,
+   "icd10": [
+    "E1122",
+    "E119",
+    "C3490",
+    "C7951",
+    "I214",
+    "F321",
+    "I5084",
+    "Z95811"
+   ],
+   "expected_hccs": [
+    18,
+    37,
+    155,
+    222,
+    228
+   ],
+   "expected_scores": {
+    "COMMUNITY_NA": 6.296,
+    "COMMUNITY_PBA": 6.679,
+    "COMMUNITY_FBA": 7.22,
+    "COMMUNITY_ND": 8.978,
+    "COMMUNITY_PBD": 9.392,
+    "COMMUNITY_FBD": 10.163,
+    "INSTITUTIONAL": 4.172
+   }
+  },
+  {
+   "id": "3",
+   "dob": "01/10/1970",
+   "sex": 2,
+   "orec": 1,
+   "age_at_2026_02_01": 56,
+   "icd10": [
+    "F1020",
+    "F319",
+    "G40909",
+    "C50911"
+   ],
+   "expected_hccs": [
+    23,
+    139,
+    154,
+    201
+   ],
+   "expected_scores": {
+    "COMMUNITY_NA": 1.024,
+    "COMMUNITY_PBA": 1.07,
+    "COMMUNITY_FBA": 1.256,
+    "COMMUNITY_ND": 1.274,
+    "COMMUNITY_PBD": 1.279,
+    "COMMUNITY_FBD": 1.337,
+    "INSTITUTIONAL": 1.843
+   }
+  },
+  {
+   "id": "4",
+   "dob": "02/02/1959",
+   "sex": 1,
+   "orec": 0,
+   "age_at_2026_02_01": 66,
+   "icd10": [
+    "Z95811",
+    "D66"
+   ],
+   "expected_hccs": [
+    111
+   ],
+   "expected_scores": {
+    "COMMUNITY_NA": 4.971,
+    "COMMUNITY_PBA": 11.576,
+    "COMMUNITY_FBA": 16.07,
+    "COMMUNITY_ND": 30.706,
+    "COMMUNITY_PBD": 32.199,
+    "COMMUNITY_FBD": 31.424,
+    "INSTITUTIONAL": 7.585
+   }
+  },
+  {
+   "id": "5",
+   "dob": "12/31/1940",
+   "sex": 2,
+   "orec": 0,
+   "age_at_2026_02_01": 85,
+   "icd10": [
+    "E1122",
+    "I5022",
+    "I480",
+    "J449",
+    "N184",
+    "L89154",
+    "J9600",
+    "F321",
+    "G40909",
+    "E6601",
+    "C3490",
+    "I214",
+    "D66"
+   ],
+   "expected_hccs": [
+    20,
+    37,
+    48,
+    112,
+    155,
+    201,
+    213,
+    226,
+    228,
+    238,
+    280,
+    327,
+    379
+   ],
+   "expected_scores": {
+    "COMMUNITY_NA": 8.61,
+    "COMMUNITY_PBA": 9.55,
+    "COMMUNITY_FBA": 10.562,
+    "COMMUNITY_ND": 9.018,
+    "COMMUNITY_PBD": 9.356,
+    "COMMUNITY_FBD": 10.724,
+    "INSTITUTIONAL": 7.272
+   }
+  },
+  {
+   "id": "6",
+   "dob": "05/05/1981",
+   "sex": 2,
+   "orec": 1,
+   "age_at_2026_02_01": 44,
+   "icd10": [
+    "C50911"
+   ],
+   "expected_hccs": [
+    22
+   ],
+   "expected_scores": {
+    "COMMUNITY_NA": 0.363,
+    "COMMUNITY_PBA": 0.41,
+    "COMMUNITY_FBA": 0.382,
+    "COMMUNITY_ND": 0.654,
+    "COMMUNITY_PBD": 0.771,
+    "COMMUNITY_FBD": 0.741,
+    "INSTITUTIONAL": 1.491
+   }
+  },
+  {
+   "id": "7",
+   "dob": "07/04/1950",
+   "sex": 1,
+   "orec": 0,
+   "age_at_2026_02_01": 75,
+   "icd10": [],
+   "expected_hccs": [],
+   "expected_scores": {
+    "COMMUNITY_NA": 0.502,
+    "COMMUNITY_PBA": 0.498,
+    "COMMUNITY_FBA": 0.714,
+    "COMMUNITY_ND": 0.0,
+    "COMMUNITY_PBD": 0.0,
+    "COMMUNITY_FBD": 0.0,
+    "INSTITUTIONAL": 1.319
+   }
+  }
+ ]
+}

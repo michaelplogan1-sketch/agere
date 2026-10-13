@@ -1,0 +1,256 @@
+{
+ "schema": "agere-risk-adjustment-tables/1",
+ "status": "Public-domain CMS tables (U.S. Government work) extracted unmodified or reformatted only as noted.",
+ "archives": {
+  "py2026_python": {
+   "file": "2026-midyear-final-model-software-python.zip",
+   "url": "https://www.cms.gov/files/zip/2026-midyear-final-model-software-python.zip",
+   "sha256": "b47ed086d8a1cae0bf860526168ecffee07cb8d46766825a72fc21d57dbd47be",
+   "bytes": 332632
+  },
+  "py2025_sas": {
+   "file": "2025-midyear_final-model-software.zip",
+   "url": "https://www.cms.gov/files/zip/2025-midyear/final-model-software.zip",
+   "sha256": "94c369dc8a0cb06bdd9d6363994ab668f9b8821e6e6dedc84d209729b1f64c05",
+   "bytes": 802577
+  },
+  "py2025_mappings": {
+   "file": "2025-midyear_final-icd-10-mappings.zip-0",
+   "url": "https://www.cms.gov/files/zip/2025-midyear/final-icd-10-mappings.zip-0",
+   "sha256": "3fd8a313d8476332243fd4ad139cb3c71bd3597e1e1164c6e9f844a66de0b8ac",
+   "bytes": 780086
+  },
+  "py2026_mappings": {
+   "file": "2026-midyear-final-icd-10-mappings.zip",
+   "url": "https://www.cms.gov/files/zip/2026-midyear-final-icd-10-mappings.zip",
+   "sha256": "1143bc102311fa6f9da33ef7c72cb4a34849a4354feb0ef1c745d38c887f23a2",
+   "bytes": 706409
+  },
+  "cpt_cy2025": {
+   "file": "cpt2025.zip",
+   "url": "https://www.cms.gov/files/zip/2025-medicare-risk-adjustment-eligible-cpt-hcpcs-codes.zip",
+   "sha256": "3647a578f83e9a903d5be987a60f6e57ac6e3fc7b7fbf044cec13bed054adae2",
+   "bytes": 272703
+  },
+  "cpt_cy2026": {
+   "file": "cpt2026.zip",
+   "url": "https://www.cms.gov/files/zip/2026-medicare-risk-adjustment-eligible-cpt-hcpcs-codes.zip-0",
+   "sha256": "1999cdc93074ed13105bd81fc3d93b87ae72371d3892b7fe0e6c01cfe9d54dd9",
+   "bytes": 283165
+  }
+ },
+ "pages": {
+  "py2026": "https://www.cms.gov/medicare/payment/medicare-advantage-rates-statistics/risk-adjustment/2026-model-software-icd-10-mappings",
+  "py2025": "https://www.cms.gov/medicare/payment/medicare-advantage-rates-statistics/risk-adjustment/2025-model-software/icd-10-mappings",
+  "cpt": "https://www.cms.gov/medicare/health-plans/medicareadvtgspecratestats/risk-adjustors-items/cpt-hcpcs"
+ },
+ "tables": {
+  "v28_icd10_cc_py2026.csv": {
+   "source": "py2026_python",
+   "member": "CMS_HCC_v28_2026_T_package_v3.zip/software/CMS_HCC_v28/data/input/internal/ICD10_CC_mappings_CMS_HCC_2026_v28.csv",
+   "payment_year": 2026,
+   "sha256": "93307f974301b2a5d406ec6b095246e08601b54e346a4ad5fa5d82db59e1522e",
+   "archive_sha256": "b47ed086d8a1cae0bf860526168ecffee07cb8d46766825a72fc21d57dbd47be",
+   "url": "https://www.cms.gov/files/zip/2026-midyear-final-model-software-python.zip"
+  },
+  "v28_hierarchies.csv": {
+   "source": "py2026_python",
+   "member": "CMS_HCC_v28_2026_T_package_v3.zip/software/CMS_HCC_v28/data/input/internal/V28_HCC_Hierarchies.csv",
+   "payment_year": 2026,
+   "sha256": "e572d4de6317aee0374e618e1dd4f56cb4114a8295ee0102a48b77e2b04121a3",
+   "archive_sha256": "b47ed086d8a1cae0bf860526168ecffee07cb8d46766825a72fc21d57dbd47be",
+   "url": "https://www.cms.gov/files/zip/2026-midyear-final-model-software-python.zip"
+  },
+  "v28_relative_factors.csv": {
+   "source": "py2026_python",
+   "member": "CMS_HCC_v28_2026_T_package_v3.zip/software/CMS_HCC_v28/data/input/internal/V28_CE_Relative_Factors.csv",
+   "payment_year": 2026,
+   "sha256": "ed8b9fe9de9d743372821657f657da059bc91d9d42cfe1e47954680737d03049",
+   "archive_sha256": "b47ed086d8a1cae0bf860526168ecffee07cb8d46766825a72fc21d57dbd47be",
+   "url": "https://www.cms.gov/files/zip/2026-midyear-final-model-software-python.zip"
+  },
+  "v28_diagnosis_categories.csv": {
+   "source": "py2026_python",
+   "member": "CMS_HCC_v28_2026_T_package_v3.zip/software/CMS_HCC_v28/data/input/internal/V28_Diagnosis_Categories.csv",
+   "payment_year": 2026,
+   "sha256": "fc5b1ccb905e7a0aab19f56b6f0079a8627a8b0b3aef98c1bbc6413ce272d36a",
+   "archive_sha256": "b47ed086d8a1cae0bf860526168ecffee07cb8d46766825a72fc21d57dbd47be",
+   "url": "https://www.cms.gov/files/zip/2026-midyear-final-model-software-python.zip"
+  },
+  "v28_interactions.csv": {
+   "source": "py2026_python",
+   "member": "CMS_HCC_v28_2026_T_package_v3.zip/software/CMS_HCC_v28/data/input/internal/V28_Interactions.csv",
+   "payment_year": 2026,
+   "sha256": "9187340bdd7352bff0c3fb19839f7141e722bd084c76487cf9a0e51576820147",
+   "archive_sha256": "b47ed086d8a1cae0bf860526168ecffee07cb8d46766825a72fc21d57dbd47be",
+   "url": "https://www.cms.gov/files/zip/2026-midyear-final-model-software-python.zip"
+  },
+  "v24_icd10_cc_py2025.csv": {
+   "source": "py2025_sas",
+   "member": "CMS-HCC software V2425.86.P1.zip/F2425P1M.TXT",
+   "payment_year": 2025,
+   "sha256": "5c8b8a65e19db1c1a6deea15af10fd4a9e1b2f4830875e34c65acf4a2bd86f46",
+   "archive_sha256": "94c369dc8a0cb06bdd9d6363994ab668f9b8821e6e6dedc84d209729b1f64c05",
+   "url": "https://www.cms.gov/files/zip/2025-midyear/final-model-software.zip",
+   "note": "Tab-separated SAS format source (ICD10, CC, D = second assignment) rewritten as CSV; codes and CCs unchanged."
+  },
+  "v24_relative_factors.csv": {
+   "source": "py2025_sas",
+   "member": "CMS-HCC software V2425.86.P1.zip/C2419P1M.csv",
+   "payment_year": 2025,
+   "sha256": "c0a7d927c2619050cce026c31814d97fbc7b83ecde784538510eb63e875c5139",
+   "archive_sha256": "94c369dc8a0cb06bdd9d6363994ab668f9b8821e6e6dedc84d209729b1f64c05",
+   "url": "https://www.cms.gov/files/zip/2025-midyear/final-model-software.zip",
+   "note": "CRLF line endings normalised."
+  },
+  "v24_hierarchies.csv": {
+   "source": "py2025_sas",
+   "member": "CMS-HCC software V2425.86.P1.zip/V24H86H1.TXT",
+   "payment_year": 2025,
+   "sha256": "11454d018bbbaa61925f28347a93061e7481f3c5edb3549f07d8a47ab3e8334e",
+   "archive_sha256": "94c369dc8a0cb06bdd9d6363994ab668f9b8821e6e6dedc84d209729b1f64c05",
+   "url": "https://www.cms.gov/files/zip/2025-midyear/final-model-software.zip",
+   "note": "Parsed from the %SET0 statements in SAS order (order matters: SAS zeroes sequentially)."
+  },
+  "v24_labels.csv": {
+   "source": "py2025_sas",
+   "member": "CMS-HCC software V2425.86.P1.zip/V24H86L1.TXT",
+   "payment_year": 2025,
+   "sha256": "68e8b5d6123d0ff7fde9bd5b088cf42a2f09fa43618913253a3e566b5ba7489b",
+   "archive_sha256": "94c369dc8a0cb06bdd9d6363994ab668f9b8821e6e6dedc84d209729b1f64c05",
+   "url": "https://www.cms.gov/files/zip/2025-midyear/final-model-software.zip",
+   "note": "HCC labels parsed from the SAS LABEL statements."
+  },
+  "v28_labels.csv": {
+   "source": "py2025_sas",
+   "member": "CMS-HCC software V2825.115.T1.zip/V28115L3.TXT",
+   "payment_year": 2025,
+   "sha256": "c72f35475fa2ed4747ecbcc78fdbdb4bac64a5339bc21258a2bf2939619c7490",
+   "archive_sha256": "94c369dc8a0cb06bdd9d6363994ab668f9b8821e6e6dedc84d209729b1f64c05",
+   "url": "https://www.cms.gov/files/zip/2025-midyear/final-model-software.zip",
+   "note": "HCC labels parsed from the SAS LABEL statements."
+  },
+  "v24_sas_v2425p1m.txt": {
+   "source": "py2025_sas",
+   "member": "CMS-HCC software V2425.86.P1.zip/V2425P1M.TXT",
+   "payment_year": 2025,
+   "sha256": "e20321da5902ada711658c5574a124a5427d1b77537c1d9dea6334a43f8dcbc9",
+   "archive_sha256": "94c369dc8a0cb06bdd9d6363994ab668f9b8821e6e6dedc84d209729b1f64c05",
+   "url": "https://www.cms.gov/files/zip/2025-midyear/final-model-software.zip",
+   "note": "SAS source kept for audit; risk_adjustment.py transcribes its categories, interactions and edits."
+  },
+  "v24_sas_v2425p1p.txt": {
+   "source": "py2025_sas",
+   "member": "CMS-HCC software V2425.86.P1.zip/V2425P1P.TXT",
+   "payment_year": 2025,
+   "sha256": "246fd7cb4f485d18d790b28500c85d3c38ae7c95f4427d8da7e430f45c40cf5e",
+   "archive_sha256": "94c369dc8a0cb06bdd9d6363994ab668f9b8821e6e6dedc84d209729b1f64c05",
+   "url": "https://www.cms.gov/files/zip/2025-midyear/final-model-software.zip",
+   "note": "SAS source kept for audit; risk_adjustment.py transcribes its categories, interactions and edits."
+  },
+  "v24_sas_v24i0ed3.txt": {
+   "source": "py2025_sas",
+   "member": "CMS-HCC software V2425.86.P1.zip/V24I0ED3.TXT",
+   "payment_year": 2025,
+   "sha256": "3bb285925de5c50a1c22b3c0661a0f06737bce26a8f6c694d991c284b5e3bca6",
+   "archive_sha256": "94c369dc8a0cb06bdd9d6363994ab668f9b8821e6e6dedc84d209729b1f64c05",
+   "url": "https://www.cms.gov/files/zip/2025-midyear/final-model-software.zip",
+   "note": "SAS source kept for audit; risk_adjustment.py transcribes its categories, interactions and edits."
+  },
+  "v28_sas_v2825t1m.txt": {
+   "source": "py2025_sas",
+   "member": "CMS-HCC software V2825.115.T1.zip/V2825T1M.TXT",
+   "payment_year": 2025,
+   "sha256": "e24d12c8bfe50b02b4ecbdd1a2142471d244f73722d46823dc84125d5f7fbbda",
+   "archive_sha256": "94c369dc8a0cb06bdd9d6363994ab668f9b8821e6e6dedc84d209729b1f64c05",
+   "url": "https://www.cms.gov/files/zip/2025-midyear/final-model-software.zip",
+   "note": "SAS source kept for audit (CC223 heart-failure patch, categories, count variables)."
+  },
+  "eligible_cpt_hcpcs_cy2025.txt": {
+   "source": "cpt_cy2025",
+   "member": "CY2025Q4_CPTHCPCS_finalforposting.csv",
+   "payment_year": 2025,
+   "sha256": "922b99afc746a23564ab1f5653534521882c6a654c52cc55df63ac33a9fa4c1e",
+   "archive_sha256": "3647a578f83e9a903d5be987a60f6e57ac6e3fc7b7fbf044cec13bed054adae2",
+   "url": "https://www.cms.gov/files/zip/2025-medicare-risk-adjustment-eligible-cpt-hcpcs-codes.zip",
+   "note": "6748 codes marked included; descriptors omitted (CPT descriptors are AMA copyright)."
+  },
+  "eligible_cpt_hcpcs_cy2026.txt": {
+   "source": "cpt_cy2026",
+   "member": "CY2026Q3_CPTHCPCS_finalforposting.csv",
+   "payment_year": 2026,
+   "sha256": "d669236399e8c37496e47e0c31cd0d3700aab3831a50773394fd397b5cb46855",
+   "archive_sha256": "1999cdc93074ed13105bd81fc3d93b87ae72371d3892b7fe0e6c01cfe9d54dd9",
+   "url": "https://www.cms.gov/files/zip/2026-medicare-risk-adjustment-eligible-cpt-hcpcs-codes.zip-0",
+   "note": "6792 codes marked included; descriptors omitted (CPT descriptors are AMA copyright)."
+  }
+ },
+ "checks": {
+  "v28_py2025_sas_vs_py2026_python_coefficients": {
+   "compared": 1020,
+   "mismatches": 0
+  },
+  "py2025_mappings_V24": {
+   "workbook_payment_pairs": 10211,
+   "software_pairs": 10211,
+   "workbook_not_in_software": 0,
+   "software_not_in_workbook": 0,
+   "member": "2025 Midyear_Final ICD-10-CM Mappings.csv"
+  },
+  "py2026_mappings_V28": {
+   "workbook_payment_pairs": 8299,
+   "software_pairs": 8358,
+   "workbook_not_in_software": 0,
+   "software_not_in_workbook": 59,
+   "member": "2026 Final ICD-10-CM Mappings.csv"
+  }
+ },
+ "payment_parameters": {
+  "schema": "agere-risk-adjustment-payment/1",
+  "use": "CMS Part C payment-year parameters for non-PACE MA organizations, copied from the final Rate Announcements. A program rulebook entry (config/agere/programs*) with a risk_adjustment block overrides these.",
+  "payment_years": {
+   "2025": {
+    "source": "Announcement of Calendar Year (CY) 2025 Medicare Advantage Capitation Rates and Part C and Part D Payment Policies, April 1, 2024",
+    "url": "https://www.cms.gov/files/document/2025-announcement.pdf",
+    "sha256": "b01d8d6c1a60210fd7576069506276b96b7c3714ff1a86b394ee6b4789a5bad6",
+    "pages": {
+     "blend": "p.80: 67% of the 2024 CMS-HCC model (V28) + 33% of the 2020 CMS-HCC model (V24)",
+     "normalization": "p.5",
+     "coding": "p.5"
+    },
+    "blend": {
+     "V24": 0.33,
+     "V28": 0.67
+    },
+    "normalization": {
+     "V24": 1.153,
+     "V28": 1.045
+    },
+    "ma_coding_pattern_adjustment": 0.059,
+    "age_as_of": "02-01",
+    "data_collection_year_offset": -1
+   },
+   "2026": {
+    "source": "Announcement of Calendar Year (CY) 2026 Medicare Advantage Capitation Rates and Part C and Part D Payment Policies, April 7, 2025",
+    "url": "https://www.cms.gov/files/document/2026-announcement.pdf",
+    "sha256": "0c2baac47b08be34887cf952f3603306e005aac81beb4de3625dc8b6f9647a8c",
+    "pages": {
+     "blend": "p.4 and p.62: 100% of the risk score from the 2024 CMS-HCC model (V28) for non-PACE organizations",
+     "normalization": "p.5",
+     "coding": "p.4"
+    },
+    "blend": {
+     "V28": 1.0
+    },
+    "normalization": {
+     "V28": 1.067
+    },
+    "ma_coding_pattern_adjustment": 0.059,
+    "age_as_of": "02-01",
+    "data_collection_year_offset": -1
+   }
+  },
+  "formula": "payment RAF = (sum over models of blend_m x round(raw_m / normalization_m, 3)) x (1 - MA coding pattern adjustment); raw scores from the community segment.",
+  "not_loaded": "PY2027 tables and factors; PACE blends; ESRD and RxHCC models; frailty factors."
+ }
+}

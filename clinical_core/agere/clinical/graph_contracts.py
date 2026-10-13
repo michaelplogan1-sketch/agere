@@ -27,6 +27,8 @@ OPTIONAL_POPULATION += ('early_signal',)
 TYPED |= {'claims_review'}  # payment integrity and revenue leakage (claims_review.py)
 OPTIONAL_POPULATION += ('claims_review',)
 TYPED |= {'knowledge'}  # cited VBC knowledge base (vbc_knowledge.py); takes no population
+TYPED |= {'risk_adjustment'}  # CMS-HCC RAF, coding gaps, recapture, suspects (risk_adjustment.py)
+OPTIONAL_POPULATION += ('risk_adjustment',)
 
 
 def obj(properties):
@@ -200,6 +202,15 @@ def parameter_schema(op, catalog):
                     'threshold': {'type': ['number', 'null'], 'description': 'Crossing threshold for concept'},
                     'direction': string(['below', 'above']), 'horizon_days': {'type': 'integer', 'minimum': 30, 'maximum': 730},
                     'level': {'type': 'number', 'minimum': 0.5, 'maximum': 0.99, 'description': 'Nominal interval coverage (default 0.9)'}})
+    if op == 'risk_adjustment':
+        from . import risk_adjustment as ra
+        return obj({'focus': string(ra.FOCUS, 'raf: patient RAF/HCCs; recapture: HCCs coded last year not yet this year; suspects: evidence without a '
+                                              'code (documentation prompts); population: RAF distribution, completeness; all'),
+                    'group_by': string(ra.GROUP_BY), 'payment_year': {'type': 'integer', 'enum': [2025, 2026]},
+                    'year': {'type': ['integer', 'null'], 'description': 'Data collection year; null = last complete year'},
+                    'coverage': string(ra.COVERAGE, 'medicare (default; CMS-HCC is a Medicare model) or all'),
+                    'base_rate_pmpm': {'type': ['number', 'null'], 'description': 'User-stated $ PMPM for 1.0 RAF; null if not stated (never invent)'},
+                    'patient': {'type': 'string', 'description': 'One patient id, else empty'}, 'top': {'type': 'integer', 'minimum': 1, 'maximum': 500}})
     if op == 'claims_review':
         from . import claims_review as cr
         return obj({'focus': string(cr.FOCUS, 'providers: peer billing outliers; benford; duplicates: duplicates, resubmissions, reversals; '

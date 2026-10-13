@@ -1,0 +1,34 @@
+[
+ {
+  "question": "What is the average RAF score by practice?",
+  "expect_operation": "risk_adjustment"
+ },
+ {
+  "question": "Which patients have open HCC recapture gaps this year?",
+  "expect_operation": "risk_adjustment"
+ },
+ {
+  "question": "Show suspect conditions without a diagnosis code",
+  "expect_operation": "risk_adjustment"
+ },
+ {
+  "question": "What is our coding completeness rate?",
+  "expect_operation": "risk_adjustment"
+ },
+ {
+  "question": "Show the CMS-HCC risk score distribution for our Medicare Advantage members",
+  "expect_operation": "risk_adjustment"
+ },
+ {
+  "question": "Where are our biggest coding gaps?",
+  "expect_operation": "risk_adjustment"
+ },
+ {
+  "question": "Which HCCs were coded last year but not yet recaptured?",
+  "expect_operation": "risk_adjustment"
+ },
+ {
+  "question": "List documentation gaps by PCP",
+  "expect_operation": "risk_adjustment"
+ }
+]

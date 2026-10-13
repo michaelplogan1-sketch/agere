@@ -1,0 +1,1040 @@
+_NAME_,_LABEL_,COL1
+CFA_F65_69,Female 65-69,0.441
+CFA_F70_74,Female 70-74,0.519
+CFA_F75_79,Female 75-79,0.593
+CFA_F80_84,Female 80-84,0.716
+CFA_F85_89,Female 85-89,0.865
+CFA_F90_94,Female 90-94,0.987
+CFA_F95_GT,Female 95+,1.041
+CFA_M65_69,Male 65-69,0.494
+CFA_M70_74,Male 70-74,0.6
+CFA_M75_79,Male 75-79,0.71
+CFA_M80_84,Male 80-84,0.803
+CFA_M85_89,Male 85-89,1
+CFA_M90_94,Male 90-94,1.142
+CFA_M95_GT,Male 95+,1.267
+CFA_OriginallyDisabled_Female,Originally Disabled Female,0.173
+CFA_OriginallyDisabled_Male,Originally Disabled Male,0.182
+CFA_HCC1,HIV/AIDS,0.595
+CFA_HCC2,"Septicemia, Sepsis, Systemic Inflammatory Response Syndrome/Shock",0.453
+CFA_HCC6,Opportunistic Infections,0.572
+CFA_HCC8,Metastatic Cancer and Acute Leukemia,2.566
+CFA_HCC9,Lung and Other Severe Cancers,1.01
+CFA_HCC10,Lymphoma and Other Cancers,0.717
+CFA_HCC11,"Colorectal, Bladder, and Other Cancers",0.317
+CFA_HCC12,"Breast, Prostate, and Other Cancers and Tumors",0.158
+CFA_HCC17,Diabetes with Acute Complications,0.34
+CFA_HCC18,Diabetes with Chronic Complications,0.34
+CFA_HCC19,Diabetes without Complication,0.107
+CFA_HCC21,Protein-Calorie Malnutrition,0.693
+CFA_HCC22,Morbid Obesity,0.383
+CFA_HCC23,Other Significant Endocrine and Metabolic Disorders,0.211
+CFA_HCC27,End-Stage Liver Disease,1.111
+CFA_HCC28,Cirrhosis of Liver,0.411
+CFA_HCC29,Chronic Hepatitis,0.042
+CFA_HCC33,Intestinal Obstruction/Perforation,0.258
+CFA_HCC34,Chronic Pancreatitis,0.349
+CFA_HCC35,Inflammatory Bowel Disease,0.275
+CFA_HCC39,Bone/Joint/Muscle Infections/Necrosis,0.558
+CFA_HCC40,Rheumatoid Arthritis and Inflammatory Connective Tissue Disease,0.371
+CFA_HCC46,Severe Hematological Disorders,1.214
+CFA_HCC47,Disorders of Immunity,0.452
+CFA_HCC48,Coagulation Defects and Other Specified Hematological Disorders,0.221
+CFA_HCC54,Substance Use with Psychotic Complications,0.538
+CFA_HCC55,"Substance Use Disorder, Moderate/Severe, or Substance Use with Complications",0.538
+CFA_HCC56,"Substance Use Disorder, Mild, Except Alcohol and Cannabis",0.538
+CFA_HCC57,Schizophrenia,0.57
+CFA_HCC58,Reactive and Unspecified Psychosis,0.57
+CFA_HCC59,"Major Depressive, Bipolar, and Paranoid Disorders",0.299
+CFA_HCC60,Personality Disorders,0.299
+CFA_HCC70,Quadriplegia,1.038
+CFA_HCC71,Paraplegia,0.921
+CFA_HCC72,Spinal Cord Disorders/Injuries,0.532
+CFA_HCC73,Amyotrophic Lateral Sclerosis and Other Motor Neuron Disease,1.101
+CFA_HCC74,Cerebral Palsy,0
+CFA_HCC75,Myasthenia Gravis/Myoneural Disorders and Guillain-Barre Syndrome/Inflammatory and Toxic Neuropathy,0.407
+CFA_HCC76,Muscular Dystrophy,0.413
+CFA_HCC77,Multiple Sclerosis,0.742
+CFA_HCC78,Parkinson's and Huntington's Diseases,0.601
+CFA_HCC79,Seizure Disorders and Convulsions,0.237
+CFA_HCC80,"Coma, Brain Compression/Anoxic Damage",0.511
+CFA_HCC82,Respirator Dependence/Tracheostomy Status,2.183
+CFA_HCC83,Respiratory Arrest,0.902
+CFA_HCC84,Cardio-Respiratory Failure and Shock,0.492
+CFA_HCC85,Congestive Heart Failure,0.371
+CFA_HCC86,Acute Myocardial Infarction,0.377
+CFA_HCC87,Unstable Angina and Other Acute Ischemic Heart Disease,0.302
+CFA_HCC88,Angina Pectoris,0.034
+CFA_HCC96,Specified Heart Arrhythmias,0.384
+CFA_HCC99,Intracranial Hemorrhage,0.38
+CFA_HCC100,Ischemic or Unspecified Stroke,0.38
+CFA_HCC103,Hemiplegia/Hemiparesis,0.487
+CFA_HCC104,"Monoplegia, Other Paralytic Syndromes",0.345
+CFA_HCC106,Atherosclerosis of the Extremities with Ulceration or Gangrene,1.724
+CFA_HCC107,Vascular Disease with Complications,0.565
+CFA_HCC108,Vascular Disease,0.294
+CFA_HCC110,Cystic Fibrosis,0.509
+CFA_HCC111,Chronic Obstructive Pulmonary Disease,0.43
+CFA_HCC112,Fibrosis of Lung and Other Chronic Lung Disorders,0.161
+CFA_HCC114,Aspiration and Specified Bacterial Pneumonias,0.641
+CFA_HCC115,"Pneumococcal Pneumonia, Empyema, Lung Abscess",0.258
+CFA_HCC122,Proliferative Diabetic Retinopathy and Vitreous Hemorrhage,0.271
+CFA_HCC124,Exudative Macular Degeneration,0.298
+CFA_HCC134,Dialysis Status,0.683
+CFA_HCC135,Acute Renal Failure,0.683
+CFA_HCC136,"Chronic Kidney Disease, Stage 5",0.26
+CFA_HCC137,"Chronic Kidney Disease, Severe (Stage 4)",0.26
+CFA_HCC138,"Chronic Kidney Disease, Moderate (Stage 3)",0.017
+CFA_HCC157,"Pressure Ulcer of Skin with Necrosis Through to Muscle, Tendon, or Bone",2.463
+CFA_HCC158,Pressure Ulcer of Skin with Full Thickness Skin Loss,1.471
+CFA_HCC161,"Chronic Ulcer of Skin, Except Pressure",0.727
+CFA_HCC162,Severe Skin Burn or Condition,0.162
+CFA_HCC166,Severe Head Injury,0.511
+CFA_HCC167,Major Head Injury,0.144
+CFA_HCC169,Vertebral Fractures without Spinal Cord Injury,0.532
+CFA_HCC170,Hip Fracture/Dislocation,0.409
+CFA_HCC173,Traumatic Amputations and Complications,0.221
+CFA_HCC176,Complications of Specified Implanted Device or Graft,0.68
+CFA_HCC186,Major Organ Transplant or Replacement Status,0.728
+CFA_HCC188,Artificial Openings for Feeding or Elimination,0.742
+CFA_HCC189,"Amputation Status, Lower Limb/Amputation Complications",0.795
+CFA_HCC51,Dementia With Complications,0.453
+CFA_HCC52,Dementia Without Complication,0.453
+CFA_HCC159,Pressure Ulcer of Skin with Partial Thickness Skin Loss,0.863
+CFA_HCC47_gCancer,Immune Disorders*Cancer,0.853
+CFA_DIABETES_CHF,Congestive Heart Failure*Diabetes,0.192
+CFA_CHF_gCopdCF,Congestive Heart Failure*Chronic Obstructive Pulmonary Disease,0.23
+CFA_HCC85_gRenal_V24,Congestive Heart Failure*Renal,0.187
+CFA_gCopdCF_CARD_RESP_FAIL,Cardiorespiratory Failure *Chronic Obstructive Pulmonary Disease,0.528
+CFA_HCC85_HCC96,Congestive Heart Failure*Specified Heart Arrhythmias,0.138
+CFA_D6,6 payment HCCs,0.04
+CFA_D7,7 payment HCCs,0.057
+CFA_D8,8 payment HCCs,0.095
+CFA_D9,9 payment HCCs,0.156
+CFA_D10P,10 or more payment HCCs,0.373
+CFD_F0_34,Female 0-34,0.349
+CFD_F35_44,Female 35-44,0.349
+CFD_F45_54,Female 45-54,0.374
+CFD_F55_59,Female 55-59,0.434
+CFD_F60_64,Female 60-64,0.49
+CFD_M0_34,Male 0-34,0.24
+CFD_M35_44,Male 35-44,0.235
+CFD_M45_54,Male 45-54,0.307
+CFD_M55_59,Male 55-59,0.402
+CFD_M60_64,Male 60-64,0.526
+CFD_HCC1,HIV/AIDS,0.396
+CFD_HCC2,"Septicemia, Sepsis, Systemic Inflammatory Response Syndrome/Shock",0.53
+CFD_HCC6,Opportunistic Infections,0.803
+CFD_HCC8,Metastatic Cancer and Acute Leukemia,2.801
+CFD_HCC9,Lung and Other Severe Cancers,1.001
+CFD_HCC10,Lymphoma and Other Cancers,0.756
+CFD_HCC11,"Colorectal, Bladder, and Other Cancers",0.355
+CFD_HCC12,"Breast, Prostate, and Other Cancers and Tumors",0.212
+CFD_HCC17,Diabetes with Acute Complications,0.423
+CFD_HCC18,Diabetes with Chronic Complications,0.423
+CFD_HCC19,Diabetes without Complication,0.145
+CFD_HCC21,Protein-Calorie Malnutrition,0.723
+CFD_HCC22,Morbid Obesity,0.297
+CFD_HCC23,Other Significant Endocrine and Metabolic Disorders,0.299
+CFD_HCC27,End-Stage Liver Disease,1.101
+CFD_HCC28,Cirrhosis of Liver,0.365
+CFD_HCC29,Chronic Hepatitis,0.292
+CFD_HCC33,Intestinal Obstruction/Perforation,0.538
+CFD_HCC34,Chronic Pancreatitis,0.762
+CFD_HCC35,Inflammatory Bowel Disease,0.551
+CFD_HCC39,Bone/Joint/Muscle Infections/Necrosis,0.682
+CFD_HCC40,Rheumatoid Arthritis and Inflammatory Connective Tissue Disease,0.328
+CFD_HCC46,Severe Hematological Disorders,4.309
+CFD_HCC47,Disorders of Immunity,0.691
+CFD_HCC48,Coagulation Defects and Other Specified Hematological Disorders,0.298
+CFD_HCC54,Substance Use with Psychotic Complications,0.896
+CFD_HCC55,"Substance Use Disorder, Moderate/Severe, or Substance Use with Complications",0.356
+CFD_HCC56,"Substance Use Disorder, Mild, Except Alcohol and Cannabis",0.348
+CFD_HCC57,Schizophrenia,0.381
+CFD_HCC58,Reactive and Unspecified Psychosis,0.231
+CFD_HCC59,"Major Depressive, Bipolar, and Paranoid Disorders",0.127
+CFD_HCC60,Personality Disorders,0.1
+CFD_HCC70,Quadriplegia,1
+CFD_HCC71,Paraplegia,0.957
+CFD_HCC72,Spinal Cord Disorders/Injuries,0.377
+CFD_HCC73,Amyotrophic Lateral Sclerosis and Other Motor Neuron Disease,1.245
+CFD_HCC74,Cerebral Palsy,0
+CFD_HCC75,Myasthenia Gravis/Myoneural Disorders and Guillain-Barre Syndrome/Inflammatory and Toxic Neuropathy,0.404
+CFD_HCC76,Muscular Dystrophy,0.597
+CFD_HCC77,Multiple Sclerosis,0.789
+CFD_HCC78,Parkinson's and Huntington's Diseases,0.443
+CFD_HCC79,Seizure Disorders and Convulsions,0.139
+CFD_HCC80,"Coma, Brain Compression/Anoxic Damage",0.105
+CFD_HCC82,Respirator Dependence/Tracheostomy Status,1.465
+CFD_HCC83,Respiratory Arrest,0.531
+CFD_HCC84,Cardio-Respiratory Failure and Shock,0.531
+CFD_HCC85,Congestive Heart Failure,0.486
+CFD_HCC86,Acute Myocardial Infarction,0.425
+CFD_HCC87,Unstable Angina and Other Acute Ischemic Heart Disease,0.425
+CFD_HCC88,Angina Pectoris,0.152
+CFD_HCC96,Specified Heart Arrhythmias,0.308
+CFD_HCC99,Intracranial Hemorrhage,0.486
+CFD_HCC100,Ischemic or Unspecified Stroke,0.324
+CFD_HCC103,Hemiplegia/Hemiparesis,0.296
+CFD_HCC104,"Monoplegia, Other Paralytic Syndromes",0.258
+CFD_HCC106,Atherosclerosis of the Extremities with Ulceration or Gangrene,1.748
+CFD_HCC107,Vascular Disease with Complications,0.653
+CFD_HCC108,Vascular Disease,0.267
+CFD_HCC110,Cystic Fibrosis,3.516
+CFD_HCC111,Chronic Obstructive Pulmonary Disease,0.331
+CFD_HCC112,Fibrosis of Lung and Other Chronic Lung Disorders,0.275
+CFD_HCC114,Aspiration and Specified Bacterial Pneumonias,0.375
+CFD_HCC115,"Pneumococcal Pneumonia, Empyema, Lung Abscess",0
+CFD_HCC122,Proliferative Diabetic Retinopathy and Vitreous Hemorrhage,0.269
+CFD_HCC124,Exudative Macular Degeneration,0.145
+CFD_HCC134,Dialysis Status,0.594
+CFD_HCC135,Acute Renal Failure,0.594
+CFD_HCC136,"Chronic Kidney Disease, Stage 5",0.323
+CFD_HCC137,"Chronic Kidney Disease, Severe (Stage 4)",0.138
+CFD_HCC138,"Chronic Kidney Disease, Moderate (Stage 3)",0
+CFD_HCC157,"Pressure Ulcer of Skin with Necrosis Through to Muscle, Tendon, or Bone",2.582
+CFD_HCC158,Pressure Ulcer of Skin with Full Thickness Skin Loss,1.38
+CFD_HCC161,"Chronic Ulcer of Skin, Except Pressure",0.583
+CFD_HCC162,Severe Skin Burn or Condition,0.308
+CFD_HCC166,Severe Head Injury,0.105
+CFD_HCC167,Major Head Injury,0.025
+CFD_HCC169,Vertebral Fractures without Spinal Cord Injury,0.377
+CFD_HCC170,Hip Fracture/Dislocation,0.469
+CFD_HCC173,Traumatic Amputations and Complications,0.525
+CFD_HCC176,Complications of Specified Implanted Device or Graft,0.982
+CFD_HCC186,Major Organ Transplant or Replacement Status,0.865
+CFD_HCC188,Artificial Openings for Feeding or Elimination,0.77
+CFD_HCC189,"Amputation Status, Lower Limb/Amputation Complications",0.934
+CFD_HCC51,Dementia With Complications,0.256
+CFD_HCC52,Dementia Without Complication,0.256
+CFD_HCC159,Pressure Ulcer of Skin with Partial Thickness Skin Loss,0.467
+CFD_HCC47_gCancer,Immune Disorders*Cancer,0.679
+CFD_DIABETES_CHF,Congestive Heart Failure*Diabetes,0.043
+CFD_CHF_gCopdCF,Congestive Heart Failure*Chronic Obstructive Pulmonary Disease,0.154
+CFD_HCC85_gRenal_V24,Congestive Heart Failure*Renal,0.461
+CFD_gCopdCF_CARD_RESP_FAIL,Cardiorespiratory Failure *Chronic Obstructive Pulmonary Disease,0.455
+CFD_HCC85_HCC96,Congestive Heart Failure*Specified Heart Arrhythmias,0.361
+CFD_gSubstanceUseDisorder_gPsych,Substance Use Disorder*Psychiatric,0.191
+CFD_D5,5 payment HCCs,0.055
+CFD_D6,6 payment HCCs,0.167
+CFD_D7,7 payment HCCs,0.269
+CFD_D8,8 payment HCCs,0.424
+CFD_D9,9 payment HCCs,0.549
+CFD_D10P,10 or more payment HCCs,1.056
+CPA_F65_69,Female 65-69,0.359
+CPA_F70_74,Female 70-74,0.406
+CPA_F75_79,Female 75-79,0.476
+CPA_F80_84,Female 80-84,0.55
+CPA_F85_89,Female 85-89,0.653
+CPA_F90_94,Female 90-94,0.783
+CPA_F95_GT,Female 95+,0.873
+CPA_M65_69,Male 65-69,0.37
+CPA_M70_74,Male 70-74,0.427
+CPA_M75_79,Male 75-79,0.5
+CPA_M80_84,Male 80-84,0.544
+CPA_M85_89,Male 85-89,0.659
+CPA_M90_94,Male 90-94,0.834
+CPA_M95_GT,Male 95+,1.047
+CPA_OriginallyDisabled_Female,Originally Disabled Female,0.136
+CPA_OriginallyDisabled_Male,Originally Disabled Male,0.083
+CPA_HCC1,HIV/AIDS,0.482
+CPA_HCC2,"Septicemia, Sepsis, Systemic Inflammatory Response Syndrome/Shock",0.316
+CPA_HCC6,Opportunistic Infections,0.318
+CPA_HCC8,Metastatic Cancer and Acute Leukemia,2.455
+CPA_HCC9,Lung and Other Severe Cancers,1.001
+CPA_HCC10,Lymphoma and Other Cancers,0.648
+CPA_HCC11,"Colorectal, Bladder, and Other Cancers",0.33
+CPA_HCC12,"Breast, Prostate, and Other Cancers and Tumors",0.154
+CPA_HCC17,Diabetes with Acute Complications,0.326
+CPA_HCC18,Diabetes with Chronic Complications,0.326
+CPA_HCC19,Diabetes without Complication,0.087
+CPA_HCC21,Protein-Calorie Malnutrition,0.457
+CPA_HCC22,Morbid Obesity,0.233
+CPA_HCC23,Other Significant Endocrine and Metabolic Disorders,0.174
+CPA_HCC27,End-Stage Liver Disease,0.729
+CPA_HCC28,Cirrhosis of Liver,0.403
+CPA_HCC29,Chronic Hepatitis,0.181
+CPA_HCC33,Intestinal Obstruction/Perforation,0.232
+CPA_HCC34,Chronic Pancreatitis,0.371
+CPA_HCC35,Inflammatory Bowel Disease,0.275
+CPA_HCC39,Bone/Joint/Muscle Infections/Necrosis,0.443
+CPA_HCC40,Rheumatoid Arthritis and Inflammatory Connective Tissue Disease,0.347
+CPA_HCC46,Severe Hematological Disorders,1.234
+CPA_HCC47,Disorders of Immunity,0.674
+CPA_HCC48,Coagulation Defects and Other Specified Hematological Disorders,0.186
+CPA_HCC54,Substance Use with Psychotic Complications,0.372
+CPA_HCC55,"Substance Use Disorder, Moderate/Severe, or Substance Use with Complications",0.372
+CPA_HCC56,"Substance Use Disorder, Mild, Except Alcohol and Cannabis",0.372
+CPA_HCC57,Schizophrenia,0.495
+CPA_HCC58,Reactive and Unspecified Psychosis,0.449
+CPA_HCC59,"Major Depressive, Bipolar, and Paranoid Disorders",0.306
+CPA_HCC60,Personality Disorders,0.255
+CPA_HCC70,Quadriplegia,1
+CPA_HCC71,Paraplegia,1
+CPA_HCC72,Spinal Cord Disorders/Injuries,0.512
+CPA_HCC73,Amyotrophic Lateral Sclerosis and Other Motor Neuron Disease,0.687
+CPA_HCC74,Cerebral Palsy,0.114
+CPA_HCC75,Myasthenia Gravis/Myoneural Disorders and Guillain-Barre Syndrome/Inflammatory and Toxic Neuropathy,0.287
+CPA_HCC76,Muscular Dystrophy,0
+CPA_HCC77,Multiple Sclerosis,0.276
+CPA_HCC78,Parkinson's and Huntington's Diseases,0.536
+CPA_HCC79,Seizure Disorders and Convulsions,0.257
+CPA_HCC80,"Coma, Brain Compression/Anoxic Damage",0.729
+CPA_HCC82,Respirator Dependence/Tracheostomy Status,0.836
+CPA_HCC83,Respiratory Arrest,0.361
+CPA_HCC84,Cardio-Respiratory Failure and Shock,0.361
+CPA_HCC85,Congestive Heart Failure,0.336
+CPA_HCC86,Acute Myocardial Infarction,0.293
+CPA_HCC87,Unstable Angina and Other Acute Ischemic Heart Disease,0.276
+CPA_HCC88,Angina Pectoris,0.149
+CPA_HCC96,Specified Heart Arrhythmias,0.264
+CPA_HCC99,Intracranial Hemorrhage,0.23
+CPA_HCC100,Ischemic or Unspecified Stroke,0.23
+CPA_HCC103,Hemiplegia/Hemiparesis,0.438
+CPA_HCC104,"Monoplegia, Other Paralytic Syndromes",0.3
+CPA_HCC106,Atherosclerosis of the Extremities with Ulceration or Gangrene,1.504
+CPA_HCC107,Vascular Disease with Complications,0.463
+CPA_HCC108,Vascular Disease,0.297
+CPA_HCC110,Cystic Fibrosis,0.392
+CPA_HCC111,Chronic Obstructive Pulmonary Disease,0.358
+CPA_HCC112,Fibrosis of Lung and Other Chronic Lung Disorders,0.2
+CPA_HCC114,Aspiration and Specified Bacterial Pneumonias,0.514
+CPA_HCC115,"Pneumococcal Pneumonia, Empyema, Lung Abscess",0.093
+CPA_HCC122,Proliferative Diabetic Retinopathy and Vitreous Hemorrhage,0.182
+CPA_HCC124,Exudative Macular Degeneration,0.393
+CPA_HCC134,Dialysis Status,0.446
+CPA_HCC135,Acute Renal Failure,0.446
+CPA_HCC136,"Chronic Kidney Disease, Stage 5",0.28
+CPA_HCC137,"Chronic Kidney Disease, Severe (Stage 4)",0.28
+CPA_HCC138,"Chronic Kidney Disease, Moderate (Stage 3)",0.043
+CPA_HCC157,"Pressure Ulcer of Skin with Necrosis Through to Muscle, Tendon, or Bone",2.028
+CPA_HCC158,Pressure Ulcer of Skin with Full Thickness Skin Loss,1.162
+CPA_HCC161,"Chronic Ulcer of Skin, Except Pressure",0.541
+CPA_HCC162,Severe Skin Burn or Condition,0
+CPA_HCC166,Severe Head Injury,0.729
+CPA_HCC167,Major Head Injury,0.034
+CPA_HCC169,Vertebral Fractures without Spinal Cord Injury,0.512
+CPA_HCC170,Hip Fracture/Dislocation,0.354
+CPA_HCC173,Traumatic Amputations and Complications,0.176
+CPA_HCC176,Complications of Specified Implanted Device or Graft,0.52
+CPA_HCC186,Major Organ Transplant or Replacement Status,0.438
+CPA_HCC188,Artificial Openings for Feeding or Elimination,0.52
+CPA_HCC189,"Amputation Status, Lower Limb/Amputation Complications",0.697
+CPA_HCC51,Dementia With Complications,0.42
+CPA_HCC52,Dementia Without Complication,0.42
+CPA_HCC159,Pressure Ulcer of Skin with Partial Thickness Skin Loss,0.649
+CPA_HCC47_gCancer,Immune Disorders*Cancer,0.656
+CPA_DIABETES_CHF,Congestive Heart Failure*Diabetes,0.113
+CPA_CHF_gCopdCF,Congestive Heart Failure*Chronic Obstructive Pulmonary Disease,0.158
+CPA_HCC85_gRenal_V24,Congestive Heart Failure*Renal,0.186
+CPA_gCopdCF_CARD_RESP_FAIL,Cardiorespiratory Failure *Chronic Obstructive Pulmonary Disease,0.392
+CPA_HCC85_HCC96,Congestive Heart Failure*Specified Heart Arrhythmias,0.101
+CPA_D5,5 payment HCCs,0.037
+CPA_D6,6 payment HCCs,0.071
+CPA_D7,7 payment HCCs,0.08
+CPA_D8,8 payment HCCs,0.125
+CPA_D9,9 payment HCCs,0.402
+CPA_D10P,10 or more payment HCCs,0.548
+CPD_F0_34,Female 0-34,0.383
+CPD_F35_44,Female 35-44,0.414
+CPD_F45_54,Female 45-54,0.418
+CPD_F55_59,Female 55-59,0.414
+CPD_F60_64,Female 60-64,0.412
+CPD_M0_34,Male 0-34,0.389
+CPD_M35_44,Male 35-44,0.282
+CPD_M45_54,Male 45-54,0.313
+CPD_M55_59,Male 55-59,0.34
+CPD_M60_64,Male 60-64,0.373
+CPD_HCC1,HIV/AIDS,0.2
+CPD_HCC2,"Septicemia, Sepsis, Systemic Inflammatory Response Syndrome/Shock",0.297
+CPD_HCC6,Opportunistic Infections,0.658
+CPD_HCC8,Metastatic Cancer and Acute Leukemia,2.659
+CPD_HCC9,Lung and Other Severe Cancers,0.88
+CPD_HCC10,Lymphoma and Other Cancers,0.667
+CPD_HCC11,"Colorectal, Bladder, and Other Cancers",0.351
+CPD_HCC12,"Breast, Prostate, and Other Cancers and Tumors",0.181
+CPD_HCC17,Diabetes with Acute Complications,0.373
+CPD_HCC18,Diabetes with Chronic Complications,0.373
+CPD_HCC19,Diabetes without Complication,0.122
+CPD_HCC21,Protein-Calorie Malnutrition,0.679
+CPD_HCC22,Morbid Obesity,0.204
+CPD_HCC23,Other Significant Endocrine and Metabolic Disorders,0.319
+CPD_HCC27,End-Stage Liver Disease,0.887
+CPD_HCC28,Cirrhosis of Liver,0.341
+CPD_HCC29,Chronic Hepatitis,0.238
+CPD_HCC33,Intestinal Obstruction/Perforation,0.552
+CPD_HCC34,Chronic Pancreatitis,0.597
+CPD_HCC35,Inflammatory Bowel Disease,0.543
+CPD_HCC39,Bone/Joint/Muscle Infections/Necrosis,0.435
+CPD_HCC40,Rheumatoid Arthritis and Inflammatory Connective Tissue Disease,0.264
+CPD_HCC46,Severe Hematological Disorders,4.138
+CPD_HCC47,Disorders of Immunity,0.594
+CPD_HCC48,Coagulation Defects and Other Specified Hematological Disorders,0.33
+CPD_HCC54,Substance Use with Psychotic Complications,0.679
+CPD_HCC55,"Substance Use Disorder, Moderate/Severe, or Substance Use with Complications",0.275
+CPD_HCC56,"Substance Use Disorder, Mild, Except Alcohol and Cannabis",0.275
+CPD_HCC57,Schizophrenia,0.309
+CPD_HCC58,Reactive and Unspecified Psychosis,0.239
+CPD_HCC59,"Major Depressive, Bipolar, and Paranoid Disorders",0.109
+CPD_HCC60,Personality Disorders,0.065
+CPD_HCC70,Quadriplegia,1.134
+CPD_HCC71,Paraplegia,0.933
+CPD_HCC72,Spinal Cord Disorders/Injuries,0.336
+CPD_HCC73,Amyotrophic Lateral Sclerosis and Other Motor Neuron Disease,0.933
+CPD_HCC74,Cerebral Palsy,0
+CPD_HCC75,Myasthenia Gravis/Myoneural Disorders and Guillain-Barre Syndrome/Inflammatory and Toxic Neuropathy,0.314
+CPD_HCC76,Muscular Dystrophy,0.286
+CPD_HCC77,Multiple Sclerosis,0.46
+CPD_HCC78,Parkinson's and Huntington's Diseases,0.43
+CPD_HCC79,Seizure Disorders and Convulsions,0.169
+CPD_HCC80,"Coma, Brain Compression/Anoxic Damage",0.134
+CPD_HCC82,Respirator Dependence/Tracheostomy Status,0.769
+CPD_HCC83,Respiratory Arrest,0.769
+CPD_HCC84,Cardio-Respiratory Failure and Shock,0.343
+CPD_HCC85,Congestive Heart Failure,0.422
+CPD_HCC86,Acute Myocardial Infarction,0.379
+CPD_HCC87,Unstable Angina and Other Acute Ischemic Heart Disease,0.379
+CPD_HCC88,Angina Pectoris,0.149
+CPD_HCC96,Specified Heart Arrhythmias,0.281
+CPD_HCC99,Intracranial Hemorrhage,0.163
+CPD_HCC100,Ischemic or Unspecified Stroke,0.163
+CPD_HCC103,Hemiplegia/Hemiparesis,0.31
+CPD_HCC104,"Monoplegia, Other Paralytic Syndromes",0.164
+CPD_HCC106,Atherosclerosis of the Extremities with Ulceration or Gangrene,1.525
+CPD_HCC107,Vascular Disease with Complications,0.45
+CPD_HCC108,Vascular Disease,0.314
+CPD_HCC110,Cystic Fibrosis,3.051
+CPD_HCC111,Chronic Obstructive Pulmonary Disease,0.267
+CPD_HCC112,Fibrosis of Lung and Other Chronic Lung Disorders,0.229
+CPD_HCC114,Aspiration and Specified Bacterial Pneumonias,0.198
+CPD_HCC115,"Pneumococcal Pneumonia, Empyema, Lung Abscess",0.082
+CPD_HCC122,Proliferative Diabetic Retinopathy and Vitreous Hemorrhage,0.201
+CPD_HCC124,Exudative Macular Degeneration,0.158
+CPD_HCC134,Dialysis Status,0.48
+CPD_HCC135,Acute Renal Failure,0.48
+CPD_HCC136,"Chronic Kidney Disease, Stage 5",0.261
+CPD_HCC137,"Chronic Kidney Disease, Severe (Stage 4)",0.039
+CPD_HCC138,"Chronic Kidney Disease, Moderate (Stage 3)",0
+CPD_HCC157,"Pressure Ulcer of Skin with Necrosis Through to Muscle, Tendon, or Bone",2.512
+CPD_HCC158,Pressure Ulcer of Skin with Full Thickness Skin Loss,0.925
+CPD_HCC161,"Chronic Ulcer of Skin, Except Pressure",0.542
+CPD_HCC162,Severe Skin Burn or Condition,0.324
+CPD_HCC166,Severe Head Injury,0.134
+CPD_HCC167,Major Head Injury,0.019
+CPD_HCC169,Vertebral Fractures without Spinal Cord Injury,0.336
+CPD_HCC170,Hip Fracture/Dislocation,0.333
+CPD_HCC173,Traumatic Amputations and Complications,0.18
+CPD_HCC176,Complications of Specified Implanted Device or Graft,0.832
+CPD_HCC186,Major Organ Transplant or Replacement Status,0.613
+CPD_HCC188,Artificial Openings for Feeding or Elimination,0.732
+CPD_HCC189,"Amputation Status, Lower Limb/Amputation Complications",0.626
+CPD_HCC51,Dementia With Complications,0.257
+CPD_HCC52,Dementia Without Complication,0.257
+CPD_HCC159,Pressure Ulcer of Skin with Partial Thickness Skin Loss,0.824
+CPD_HCC47_gCancer,Immune Disorders*Cancer,0.601
+CPD_DIABETES_CHF,Congestive Heart Failure*Diabetes,0
+CPD_CHF_gCopdCF,Congestive Heart Failure*Chronic Obstructive Pulmonary Disease,0.141
+CPD_HCC85_gRenal_V24,Congestive Heart Failure*Renal,0.382
+CPD_gCopdCF_CARD_RESP_FAIL,Cardiorespiratory Failure *Chronic Obstructive Pulmonary Disease,0.479
+CPD_HCC85_HCC96,Congestive Heart Failure*Specified Heart Arrhythmias,0.303
+CPD_gSubstanceUseDisorder_gPsych,Substance Use Disorder*Psychiatric,0.201
+CPD_D5,5 payment HCCs,0.083
+CPD_D6,6 payment HCCs,0.117
+CPD_D7,7 payment HCCs,0.291
+CPD_D8,8 payment HCCs,0.452
+CPD_D9,9 payment HCCs,0.499
+CPD_D10P,10 or more payment HCCs,0.893
+CND_F0_34,Female 0-34,0.241
+CND_F35_44,Female 35-44,0.315
+CND_F45_54,Female 45-54,0.348
+CND_F55_59,Female 55-59,0.379
+CND_F60_64,Female 60-64,0.428
+CND_M0_34,Male 0-34,0.156
+CND_M35_44,Male 35-44,0.199
+CND_M45_54,Male 45-54,0.241
+CND_M55_59,Male 55-59,0.287
+CND_M60_64,Male 60-64,0.33
+CND_HCC1,HIV/AIDS,0.287
+CND_HCC2,"Septicemia, Sepsis, Systemic Inflammatory Response Syndrome/Shock",0.414
+CND_HCC6,Opportunistic Infections,0.74
+CND_HCC8,Metastatic Cancer and Acute Leukemia,2.714
+CND_HCC9,Lung and Other Severe Cancers,0.91
+CND_HCC10,Lymphoma and Other Cancers,0.663
+CND_HCC11,"Colorectal, Bladder, and Other Cancers",0.345
+CND_HCC12,"Breast, Prostate, and Other Cancers and Tumors",0.212
+CND_HCC17,Diabetes with Acute Complications,0.351
+CND_HCC18,Diabetes with Chronic Complications,0.351
+CND_HCC19,Diabetes without Complication,0.124
+CND_HCC21,Protein-Calorie Malnutrition,0.674
+CND_HCC22,Morbid Obesity,0.183
+CND_HCC23,Other Significant Endocrine and Metabolic Disorders,0.378
+CND_HCC27,End-Stage Liver Disease,1.065
+CND_HCC28,Cirrhosis of Liver,0.334
+CND_HCC29,Chronic Hepatitis,0.314
+CND_HCC33,Intestinal Obstruction/Perforation,0.503
+CND_HCC34,Chronic Pancreatitis,0.58
+CND_HCC35,Inflammatory Bowel Disease,0.523
+CND_HCC39,Bone/Joint/Muscle Infections/Necrosis,0.378
+CND_HCC40,Rheumatoid Arthritis and Inflammatory Connective Tissue Disease,0.367
+CND_HCC46,Severe Hematological Disorders,3.566
+CND_HCC47,Disorders of Immunity,0.86
+CND_HCC48,Coagulation Defects and Other Specified Hematological Disorders,0.312
+CND_HCC54,Substance Use with Psychotic Complications,0.543
+CND_HCC55,"Substance Use Disorder, Moderate/Severe, or Substance Use with Complications",0.279
+CND_HCC56,"Substance Use Disorder, Mild, Except Alcohol and Cannabis",0.247
+CND_HCC57,Schizophrenia,0.352
+CND_HCC58,Reactive and Unspecified Psychosis,0.352
+CND_HCC59,"Major Depressive, Bipolar, and Paranoid Disorders",0.164
+CND_HCC60,Personality Disorders,0.108
+CND_HCC70,Quadriplegia,1.001
+CND_HCC71,Paraplegia,0.739
+CND_HCC72,Spinal Cord Disorders/Injuries,0.369
+CND_HCC73,Amyotrophic Lateral Sclerosis and Other Motor Neuron Disease,1.132
+CND_HCC74,Cerebral Palsy,0.098
+CND_HCC75,Myasthenia Gravis/Myoneural Disorders and Guillain-Barre Syndrome/Inflammatory and Toxic Neuropathy,0.481
+CND_HCC76,Muscular Dystrophy,0.621
+CND_HCC77,Multiple Sclerosis,0.566
+CND_HCC78,Parkinson's and Huntington's Diseases,0.501
+CND_HCC79,Seizure Disorders and Convulsions,0.196
+CND_HCC80,"Coma, Brain Compression/Anoxic Damage",0.274
+CND_HCC82,Respirator Dependence/Tracheostomy Status,0.781
+CND_HCC83,Respiratory Arrest,0.4
+CND_HCC84,Cardio-Respiratory Failure and Shock,0.385
+CND_HCC85,Congestive Heart Failure,0.447
+CND_HCC86,Acute Myocardial Infarction,0.264
+CND_HCC87,Unstable Angina and Other Acute Ischemic Heart Disease,0.264
+CND_HCC88,Angina Pectoris,0.111
+CND_HCC96,Specified Heart Arrhythmias,0.262
+CND_HCC99,Intracranial Hemorrhage,0.17
+CND_HCC100,Ischemic or Unspecified Stroke,0.146
+CND_HCC103,Hemiplegia/Hemiparesis,0.281
+CND_HCC104,"Monoplegia, Other Paralytic Syndromes",0.27
+CND_HCC106,Atherosclerosis of the Extremities with Ulceration or Gangrene,1.521
+CND_HCC107,Vascular Disease with Complications,0.464
+CND_HCC108,Vascular Disease,0.301
+CND_HCC110,Cystic Fibrosis,2.676
+CND_HCC111,Chronic Obstructive Pulmonary Disease,0.246
+CND_HCC112,Fibrosis of Lung and Other Chronic Lung Disorders,0.237
+CND_HCC114,Aspiration and Specified Bacterial Pneumonias,0.236
+CND_HCC115,"Pneumococcal Pneumonia, Empyema, Lung Abscess",0
+CND_HCC122,Proliferative Diabetic Retinopathy and Vitreous Hemorrhage,0.231
+CND_HCC124,Exudative Macular Degeneration,0.314
+CND_HCC134,Dialysis Status,0.406
+CND_HCC135,Acute Renal Failure,0.406
+CND_HCC136,"Chronic Kidney Disease, Stage 5",0.231
+CND_HCC137,"Chronic Kidney Disease, Severe (Stage 4)",0.105
+CND_HCC138,"Chronic Kidney Disease, Moderate (Stage 3)",0.021
+CND_HCC157,"Pressure Ulcer of Skin with Necrosis Through to Muscle, Tendon, or Bone",2.097
+CND_HCC158,Pressure Ulcer of Skin with Full Thickness Skin Loss,1.212
+CND_HCC161,"Chronic Ulcer of Skin, Except Pressure",0.592
+CND_HCC162,Severe Skin Burn or Condition,0.506
+CND_HCC166,Severe Head Injury,0.274
+CND_HCC167,Major Head Injury,0
+CND_HCC169,Vertebral Fractures without Spinal Cord Injury,0.369
+CND_HCC170,Hip Fracture/Dislocation,0.394
+CND_HCC173,Traumatic Amputations and Complications,0.172
+CND_HCC176,Complications of Specified Implanted Device or Graft,0.911
+CND_HCC186,Major Organ Transplant or Replacement Status,0.445
+CND_HCC188,Artificial Openings for Feeding or Elimination,0.755
+CND_HCC189,"Amputation Status, Lower Limb/Amputation Complications",0.437
+CND_HCC51,Dementia With Complications,0.224
+CND_HCC52,Dementia Without Complication,0.224
+CND_HCC159,Pressure Ulcer of Skin with Partial Thickness Skin Loss,0.628
+CND_HCC47_gCancer,Immune Disorders*Cancer,0.46
+CND_DIABETES_CHF,Congestive Heart Failure*Diabetes,0.024
+CND_CHF_gCopdCF,Congestive Heart Failure*Chronic Obstructive Pulmonary Disease,0.121
+CND_HCC85_gRenal_V24,Congestive Heart Failure*Renal,0.411
+CND_gCopdCF_CARD_RESP_FAIL,Cardiorespiratory Failure *Chronic Obstructive Pulmonary Disease,0.379
+CND_HCC85_HCC96,Congestive Heart Failure*Specified Heart Arrhythmias,0.282
+CND_gSubstanceUseDisorder_gPsych,Substance Use Disorder*Psychiatric,0.138
+CND_D5,5 payment HCCs,0.043
+CND_D6,6 payment HCCs,0.131
+CND_D7,7 payment HCCs,0.201
+CND_D8,8 payment HCCs,0.441
+CND_D9,9 payment HCCs,0.441
+CND_D10P,10 or more payment HCCs,0.897
+INS_F0_34,Female 0-34,0.902
+INS_F35_44,Female 35-44,1.105
+INS_F45_54,Female 45-54,1.043
+INS_F55_59,Female 55-59,1.065
+INS_F60_64,Female 60-64,1.067
+INS_F65_69,Female 65-69,1.245
+INS_F70_74,Female 70-74,1.15
+INS_F75_79,Female 75-79,1.014
+INS_F80_84,Female 80-84,0.882
+INS_F85_89,Female 85-89,0.798
+INS_F90_94,Female 90-94,0.668
+INS_F95_GT,Female 95+,0.501
+INS_M0_34,Male 0-34,1.101
+INS_M35_44,Male 35-44,1.002
+INS_M45_54,Male 45-54,0.965
+INS_M55_59,Male 55-59,1.017
+INS_M60_64,Male 60-64,1.061
+INS_M65_69,Male 65-69,1.288
+INS_M70_74,Male 70-74,1.329
+INS_M75_79,Male 75-79,1.317
+INS_M80_84,Male 80-84,1.207
+INS_M85_89,Male 85-89,1.122
+INS_M90_94,Male 90-94,0.989
+INS_M95_GT,Male 95+,0.821
+INS_LTIMCAID,Medicaid,0.061
+INS_ORIGDS,Originally Disabled,0
+INS_DISABLED_HCC85,"Disabled, Congestive Heart Failure",0.279
+INS_DISABLED_PRESSURE_ULCER,"Disabled, Pressure Ulcer",0.544
+INS_DISABLED_HCC161,"Disabled, Chronic Ulcer of the Skin, Except Pressure Ulcer",0.473
+INS_DISABLED_HCC39,"Disabled, Bone/Joint Muscle Infections/Necrosis",0.456
+INS_DISABLED_HCC77,"Disabled, Multiple Sclerosis",0.496
+INS_DISABLED_HCC6,"Disabled, Opportunistic Infections",0.405
+INS_CHF_gCopdCF,Congestive Heart Failure*Chronic Obstructive Pulmonary Disease,0.191
+INS_gCopdCF_CARD_RESP_FAIL,Cardiorespiratory Failure *Chronic Obstructive Pulmonary Disease,0.414
+INS_SEPSIS_PRESSURE_ULCER,Sepsis*Pressure Ulcer,0.155
+INS_SEPSIS_ARTIF_OPENINGS,Sepsis*Artificial Openings for Feeding or Elimination,0.474
+INS_ART_OPENINGS_PRESS_ULCER,Artificial Openings for Feeding or Elimination*Pressure Ulcer,0.359
+INS_DIABETES_CHF,Congestive Heart Failure*Diabetes,0.169
+INS_gCopdCF_ASP_SPEC_B_PNEUM,Chronic Obstructive Pulmonary Disease*Aspiration and Specified Bacterial Pneumonias,0.216
+INS_ASP_SPEC_B_PNEUM_PRES_ULC,Aspiration and Specified Bacterial Pneumonias*Pressure Ulcer,0.472
+INS_SEPSIS_ASP_SPEC_BACT_PNEUM,Sepsis*Aspiration and Specified Bacterial Pneumonias,0.346
+INS_SCHIZOPHRENIA_gCopdCF,Schizophrenia*Chronic Obstructive Pulmonary Disease,0.417
+INS_SCHIZOPHRENIA_CHF,Schizophrenia*Congestive Heart Failure,0.127
+INS_SCHIZOPHRENIA_SEIZURES,Schizophrenia*Seizure Disorders and Convulsions,0.573
+INS_HCC1,HIV/AIDS,1.722
+INS_HCC2,"Septicemia, Sepsis, Systemic Inflammatory Response Syndrome/Shock",0.324
+INS_HCC6,Opportunistic Infections,0.534
+INS_HCC8,Metastatic Cancer and Acute Leukemia,1.303
+INS_HCC9,Lung and Other Severe Cancers,0.623
+INS_HCC10,Lymphoma and Other Cancers,0.461
+INS_HCC11,"Colorectal, Bladder, and Other Cancers",0.294
+INS_HCC12,"Breast, Prostate, and Other Cancers and Tumors",0.21
+INS_HCC17,Diabetes with Acute Complications,0.44
+INS_HCC18,Diabetes with Chronic Complications,0.44
+INS_HCC19,Diabetes without Complication,0.178
+INS_HCC21,Protein-Calorie Malnutrition,0.267
+INS_HCC22,Morbid Obesity,0.455
+INS_HCC23,Other Significant Endocrine and Metabolic Disorders,0.379
+INS_HCC27,End-Stage Liver Disease,0.874
+INS_HCC28,Cirrhosis of Liver,0.485
+INS_HCC29,Chronic Hepatitis,0.485
+INS_HCC33,Intestinal Obstruction/Perforation,0.352
+INS_HCC34,Chronic Pancreatitis,0.422
+INS_HCC35,Inflammatory Bowel Disease,0.355
+INS_HCC39,Bone/Joint/Muscle Infections/Necrosis,0.401
+INS_HCC40,Rheumatoid Arthritis and Inflammatory Connective Tissue Disease,0.292
+INS_HCC46,Severe Hematological Disorders,0.799
+INS_HCC47,Disorders of Immunity,0.576
+INS_HCC48,Coagulation Defects and Other Specified Hematological Disorders,0.19
+INS_HCC54,Substance Use with Psychotic Complications,0.178
+INS_HCC55,"Substance Use Disorder, Moderate/Severe, or Substance Use with Complications",0.178
+INS_HCC56,"Substance Use Disorder, Mild, Except Alcohol and Cannabis",0.178
+INS_HCC57,Schizophrenia,0.187
+INS_HCC58,Reactive and Unspecified Psychosis,0.187
+INS_HCC59,"Major Depressive, Bipolar, and Paranoid Disorders",0.187
+INS_HCC60,Personality Disorders,0
+INS_HCC70,Quadriplegia,0.549
+INS_HCC71,Paraplegia,0.492
+INS_HCC72,Spinal Cord Disorders/Injuries,0.289
+INS_HCC73,Amyotrophic Lateral Sclerosis and Other Motor Neuron Disease,0.476
+INS_HCC74,Cerebral Palsy,0
+INS_HCC75,Myasthenia Gravis/Myoneural Disorders and Guillain-Barre Syndrome/Inflammatory and Toxic Neuropathy,0.332
+INS_HCC76,Muscular Dystrophy,0.356
+INS_HCC77,Multiple Sclerosis,0
+INS_HCC78,Parkinson's and Huntington's Diseases,0.159
+INS_HCC79,Seizure Disorders and Convulsions,0.065
+INS_HCC80,"Coma, Brain Compression/Anoxic Damage",0
+INS_HCC82,Respirator Dependence/Tracheostomy Status,1.622
+INS_HCC83,Respiratory Arrest,0.511
+INS_HCC84,Cardio-Respiratory Failure and Shock,0.313
+INS_HCC85,Congestive Heart Failure,0.203
+INS_HCC86,Acute Myocardial Infarction,0.366
+INS_HCC87,Unstable Angina and Other Acute Ischemic Heart Disease,0.366
+INS_HCC88,Angina Pectoris,0.366
+INS_HCC96,Specified Heart Arrhythmias,0.252
+INS_HCC99,Intracranial Hemorrhage,0.111
+INS_HCC100,Ischemic or Unspecified Stroke,0.111
+INS_HCC103,Hemiplegia/Hemiparesis,0
+INS_HCC104,"Monoplegia, Other Paralytic Syndromes",0
+INS_HCC106,Atherosclerosis of the Extremities with Ulceration or Gangrene,0.867
+INS_HCC107,Vascular Disease with Complications,0.299
+INS_HCC108,Vascular Disease,0.093
+INS_HCC110,Cystic Fibrosis,0.593
+INS_HCC111,Chronic Obstructive Pulmonary Disease,0.311
+INS_HCC112,Fibrosis of Lung and Other Chronic Lung Disorders,0.11
+INS_HCC114,Aspiration and Specified Bacterial Pneumonias,0.156
+INS_HCC115,"Pneumococcal Pneumonia, Empyema, Lung Abscess",0.156
+INS_HCC122,Proliferative Diabetic Retinopathy and Vitreous Hemorrhage,0.394
+INS_HCC124,Exudative Macular Degeneration,0.217
+INS_HCC134,Dialysis Status,0.468
+INS_HCC135,Acute Renal Failure,0.468
+INS_HCC136,"Chronic Kidney Disease, Stage 5",0.245
+INS_HCC137,"Chronic Kidney Disease, Severe (Stage 4)",0.201
+INS_HCC138,"Chronic Kidney Disease, Moderate (Stage 3)",0.092
+INS_HCC157,"Pressure Ulcer of Skin with Necrosis Through to Muscle, Tendon, or Bone",0.854
+INS_HCC158,Pressure Ulcer of Skin with Full Thickness Skin Loss,0.322
+INS_HCC161,"Chronic Ulcer of Skin, Except Pressure",0.294
+INS_HCC162,Severe Skin Burn or Condition,0
+INS_HCC166,Severe Head Injury,0
+INS_HCC167,Major Head Injury,0
+INS_HCC169,Vertebral Fractures without Spinal Cord Injury,0.25
+INS_HCC170,Hip Fracture/Dislocation,0
+INS_HCC173,Traumatic Amputations and Complications,0.092
+INS_HCC176,Complications of Specified Implanted Device or Graft,0.469
+INS_HCC186,Major Organ Transplant or Replacement Status,1.046
+INS_HCC188,Artificial Openings for Feeding or Elimination,0.514
+INS_HCC189,"Amputation Status, Lower Limb/Amputation Complications",0.357
+INS_HCC51,Dementia With Complications,0
+INS_HCC52,Dementia Without Complication,0
+INS_HCC159,Pressure Ulcer of Skin with Partial Thickness Skin Loss,0.322
+NE_NMCAID_NORIGDIS_NEF0_34,Baseline – Neither Medicaid nor Originally Disabled Female 0-34,0.804
+NE_NMCAID_NORIGDIS_NEF35_44,Baseline – Neither Medicaid nor Originally Disabled Female 35-44,0.947
+NE_NMCAID_NORIGDIS_NEF45_54,Baseline – Neither Medicaid nor Originally Disabled Female 45-54,1.016
+NE_NMCAID_NORIGDIS_NEF55_59,Baseline – Neither Medicaid nor Originally Disabled Female 55-59,1.017
+NE_NMCAID_NORIGDIS_NEF60_64,Baseline – Neither Medicaid nor Originally Disabled Female 60-64,1.122
+NE_NMCAID_NORIGDIS_NEF65,Baseline – Neither Medicaid nor Originally Disabled Female 65,0.52
+NE_NMCAID_NORIGDIS_NEF66,Baseline – Neither Medicaid nor Originally Disabled Female 66,0.515
+NE_NMCAID_NORIGDIS_NEF67,Baseline – Neither Medicaid nor Originally Disabled Female 67,0.544
+NE_NMCAID_NORIGDIS_NEF68,Baseline – Neither Medicaid nor Originally Disabled Female 68,0.598
+NE_NMCAID_NORIGDIS_NEF69,Baseline – Neither Medicaid nor Originally Disabled Female 69,0.6
+NE_NMCAID_NORIGDIS_NEF70_74,Baseline – Neither Medicaid nor Originally Disabled Female 70-74,0.69
+NE_NMCAID_NORIGDIS_NEF75_79,Baseline – Neither Medicaid nor Originally Disabled Female 75-79,0.86
+NE_NMCAID_NORIGDIS_NEF80_84,Baseline – Neither Medicaid nor Originally Disabled Female 80-84,1.014
+NE_NMCAID_NORIGDIS_NEF85_89,Baseline – Neither Medicaid nor Originally Disabled Female 85-89,1.293
+NE_NMCAID_NORIGDIS_NEF90_94,Baseline – Neither Medicaid nor Originally Disabled Female 90-94,1.293
+NE_NMCAID_NORIGDIS_NEF95_GT,Baseline – Neither Medicaid nor Originally Disabled Female 95+,1.293
+NE_NMCAID_NORIGDIS_NEM0_34,Baseline – Neither Medicaid nor Originally Disabled Male 0-34,0.442
+NE_NMCAID_NORIGDIS_NEM35_44,Baseline – Neither Medicaid nor Originally Disabled Male 35-44,0.657
+NE_NMCAID_NORIGDIS_NEM45_54,Baseline – Neither Medicaid nor Originally Disabled Male 45-54,0.864
+NE_NMCAID_NORIGDIS_NEM55_59,Baseline – Neither Medicaid nor Originally Disabled Male 55-59,0.904
+NE_NMCAID_NORIGDIS_NEM60_64,Baseline – Neither Medicaid nor Originally Disabled Male 60-64,0.921
+NE_NMCAID_NORIGDIS_NEM65,Baseline – Neither Medicaid nor Originally Disabled Male 65,0.518
+NE_NMCAID_NORIGDIS_NEM66,Baseline – Neither Medicaid nor Originally Disabled Male 66,0.533
+NE_NMCAID_NORIGDIS_NEM67,Baseline – Neither Medicaid nor Originally Disabled Male 67,0.582
+NE_NMCAID_NORIGDIS_NEM68,Baseline – Neither Medicaid nor Originally Disabled Male 68,0.626
+NE_NMCAID_NORIGDIS_NEM69,Baseline – Neither Medicaid nor Originally Disabled Male 69,0.69
+NE_NMCAID_NORIGDIS_NEM70_74,Baseline – Neither Medicaid nor Originally Disabled Male 70-74,0.786
+NE_NMCAID_NORIGDIS_NEM75_79,Baseline – Neither Medicaid nor Originally Disabled Male 75-79,1.06
+NE_NMCAID_NORIGDIS_NEM80_84,Baseline – Neither Medicaid nor Originally Disabled Male 80-84,1.247
+NE_NMCAID_NORIGDIS_NEM85_89,Baseline – Neither Medicaid nor Originally Disabled Male 85-89,1.498
+NE_NMCAID_NORIGDIS_NEM90_94,Baseline – Neither Medicaid nor Originally Disabled Male 90-94,1.498
+NE_NMCAID_NORIGDIS_NEM95_GT,Baseline – Neither Medicaid nor Originally Disabled Male 95+,1.498
+NE_MCAID_NORIGDIS_NEF0_34,Medicaid Only – Not Originally Disabled Female 0-34,0.969
+NE_MCAID_NORIGDIS_NEF35_44,Medicaid Only – Not Originally Disabled Female 35-44,1.202
+NE_MCAID_NORIGDIS_NEF45_54,Medicaid Only – Not Originally Disabled Female 45-54,1.306
+NE_MCAID_NORIGDIS_NEF55_59,Medicaid Only – Not Originally Disabled Female 55-59,1.307
+NE_MCAID_NORIGDIS_NEF60_64,Medicaid Only – Not Originally Disabled Female 60-64,1.408
+NE_MCAID_NORIGDIS_NEF65,Medicaid Only – Not Originally Disabled Female 65,0.993
+NE_MCAID_NORIGDIS_NEF66,Medicaid Only – Not Originally Disabled Female 66,0.897
+NE_MCAID_NORIGDIS_NEF67,Medicaid Only – Not Originally Disabled Female 67,0.92
+NE_MCAID_NORIGDIS_NEF68,Medicaid Only – Not Originally Disabled Female 68,0.951
+NE_MCAID_NORIGDIS_NEF69,Medicaid Only – Not Originally Disabled Female 69,0.951
+NE_MCAID_NORIGDIS_NEF70_74,Medicaid Only – Not Originally Disabled Female 70-74,0.985
+NE_MCAID_NORIGDIS_NEF75_79,Medicaid Only – Not Originally Disabled Female 75-79,1.134
+NE_MCAID_NORIGDIS_NEF80_84,Medicaid Only – Not Originally Disabled Female 80-84,1.353
+NE_MCAID_NORIGDIS_NEF85_89,Medicaid Only – Not Originally Disabled Female 85-89,1.536
+NE_MCAID_NORIGDIS_NEF90_94,Medicaid Only – Not Originally Disabled Female 90-94,1.701
+NE_MCAID_NORIGDIS_NEF95_GT,Medicaid Only – Not Originally Disabled Female 95+,1.701
+NE_MCAID_NORIGDIS_NEM0_34,Medicaid Only – Not Originally Disabled Male 0-34,0.734
+NE_MCAID_NORIGDIS_NEM35_44,Medicaid Only – Not Originally Disabled Male 35-44,1.059
+NE_MCAID_NORIGDIS_NEM45_54,Medicaid Only – Not Originally Disabled Male 45-54,1.353
+NE_MCAID_NORIGDIS_NEM55_59,Medicaid Only – Not Originally Disabled Male 55-59,1.418
+NE_MCAID_NORIGDIS_NEM60_64,Medicaid Only – Not Originally Disabled Male 60-64,1.551
+NE_MCAID_NORIGDIS_NEM65,Medicaid Only – Not Originally Disabled Male 65,1.144
+NE_MCAID_NORIGDIS_NEM66,Medicaid Only – Not Originally Disabled Male 66,1.094
+NE_MCAID_NORIGDIS_NEM67,Medicaid Only – Not Originally Disabled Male 67,1.151
+NE_MCAID_NORIGDIS_NEM68,Medicaid Only – Not Originally Disabled Male 68,1.202
+NE_MCAID_NORIGDIS_NEM69,Medicaid Only – Not Originally Disabled Male 69,1.202
+NE_MCAID_NORIGDIS_NEM70_74,Medicaid Only – Not Originally Disabled Male 70-74,1.298
+NE_MCAID_NORIGDIS_NEM75_79,Medicaid Only – Not Originally Disabled Male 75-79,1.407
+NE_MCAID_NORIGDIS_NEM80_84,Medicaid Only – Not Originally Disabled Male 80-84,1.555
+NE_MCAID_NORIGDIS_NEM85_89,Medicaid Only – Not Originally Disabled Male 85-89,1.777
+NE_MCAID_NORIGDIS_NEM90_94,Medicaid Only – Not Originally Disabled Male 90-94,1.777
+NE_MCAID_NORIGDIS_NEM95_GT,Medicaid Only – Not Originally Disabled Male 95+,1.777
+NE_NMCAID_ORIGDIS_NEF65,Originally Disabled Only – Not Medicaid Female 65,1.122
+NE_NMCAID_ORIGDIS_NEF66,Originally Disabled Only – Not Medicaid Female 66,1.174
+NE_NMCAID_ORIGDIS_NEF67,Originally Disabled Only – Not Medicaid Female 67,1.174
+NE_NMCAID_ORIGDIS_NEF68,Originally Disabled Only – Not Medicaid Female 68,1.174
+NE_NMCAID_ORIGDIS_NEF69,Originally Disabled Only – Not Medicaid Female 69,1.174
+NE_NMCAID_ORIGDIS_NEF70_74,Originally Disabled Only – Not Medicaid Female 70-74,1.174
+NE_NMCAID_ORIGDIS_NEF75_79,Originally Disabled Only – Not Medicaid Female 75-79,1.174
+NE_NMCAID_ORIGDIS_NEF80_84,Originally Disabled Only – Not Medicaid Female 80-84,1.174
+NE_NMCAID_ORIGDIS_NEF85_89,Originally Disabled Only – Not Medicaid Female 85-89,1.293
+NE_NMCAID_ORIGDIS_NEF90_94,Originally Disabled Only – Not Medicaid Female 90-94,1.293
+NE_NMCAID_ORIGDIS_NEF95_GT,Originally Disabled Only – Not Medicaid Female 95+,1.293
+NE_NMCAID_ORIGDIS_NEM65,Originally Disabled Only – Not Medicaid Male 65,0.921
+NE_NMCAID_ORIGDIS_NEM66,Originally Disabled Only – Not Medicaid Male 66,1.071
+NE_NMCAID_ORIGDIS_NEM67,Originally Disabled Only – Not Medicaid Male 67,1.123
+NE_NMCAID_ORIGDIS_NEM68,Originally Disabled Only – Not Medicaid Male 68,1.123
+NE_NMCAID_ORIGDIS_NEM69,Originally Disabled Only – Not Medicaid Male 69,1.32
+NE_NMCAID_ORIGDIS_NEM70_74,Originally Disabled Only – Not Medicaid Male 70-74,1.408
+NE_NMCAID_ORIGDIS_NEM75_79,Originally Disabled Only – Not Medicaid Male 75-79,1.408
+NE_NMCAID_ORIGDIS_NEM80_84,Originally Disabled Only – Not Medicaid Male 80-84,1.408
+NE_NMCAID_ORIGDIS_NEM85_89,Originally Disabled Only – Not Medicaid Male 85-89,1.498
+NE_NMCAID_ORIGDIS_NEM90_94,Originally Disabled Only – Not Medicaid Male 90-94,1.498
+NE_NMCAID_ORIGDIS_NEM95_GT,Originally Disabled Only – Not Medicaid Male 95+,1.498
+NE_MCAID_ORIGDIS_NEF65,Medicaid and Originally Disabled Female 65,1.462
+NE_MCAID_ORIGDIS_NEF66,Medicaid and Originally Disabled Female 66,1.887
+NE_MCAID_ORIGDIS_NEF67,Medicaid and Originally Disabled Female 67,1.887
+NE_MCAID_ORIGDIS_NEF68,Medicaid and Originally Disabled Female 68,1.887
+NE_MCAID_ORIGDIS_NEF69,Medicaid and Originally Disabled Female 69,1.887
+NE_MCAID_ORIGDIS_NEF70_74,Medicaid and Originally Disabled Female 70-74,1.887
+NE_MCAID_ORIGDIS_NEF75_79,Medicaid and Originally Disabled Female 75-79,1.887
+NE_MCAID_ORIGDIS_NEF80_84,Medicaid and Originally Disabled Female 80-84,1.887
+NE_MCAID_ORIGDIS_NEF85_89,Medicaid and Originally Disabled Female 85-89,1.887
+NE_MCAID_ORIGDIS_NEF90_94,Medicaid and Originally Disabled Female 90-94,1.887
+NE_MCAID_ORIGDIS_NEF95_GT,Medicaid and Originally Disabled Female 95+,1.887
+NE_MCAID_ORIGDIS_NEM65,Medicaid and Originally Disabled Male 65,1.811
+NE_MCAID_ORIGDIS_NEM66,Medicaid and Originally Disabled Male 66,2.199
+NE_MCAID_ORIGDIS_NEM67,Medicaid and Originally Disabled Male 67,2.199
+NE_MCAID_ORIGDIS_NEM68,Medicaid and Originally Disabled Male 68,2.199
+NE_MCAID_ORIGDIS_NEM69,Medicaid and Originally Disabled Male 69,2.199
+NE_MCAID_ORIGDIS_NEM70_74,Medicaid and Originally Disabled Male 70-74,2.199
+NE_MCAID_ORIGDIS_NEM75_79,Medicaid and Originally Disabled Male 75-79,2.199
+NE_MCAID_ORIGDIS_NEM80_84,Medicaid and Originally Disabled Male 80-84,2.199
+NE_MCAID_ORIGDIS_NEM85_89,Medicaid and Originally Disabled Male 85-89,2.199
+NE_MCAID_ORIGDIS_NEM90_94,Medicaid and Originally Disabled Male 90-94,2.199
+NE_MCAID_ORIGDIS_NEM95_GT,Medicaid and Originally Disabled Male 95+,2.199
+CFA_D1,1 payment HCC,0
+CFA_D2,2 payment HCCs,0
+CFA_D3,3 payment HCCs,0
+CFA_D4,4 payment HCCs,0
+CFA_D5,5 payment HCCs,0
+CPA_D1,1 payment HCC,0
+CPA_D2,2 payment HCCs,0
+CPA_D3,3 payment HCCs,0
+CPA_D4,4 payment HCCs,0
+CFD_D1,1 payment HCC,0
+CFD_D2,2 payment HCCs,0
+CFD_D3,3 payment HCCs,0
+CFD_D4,4 payment HCCs,0
+CND_D1,1 payment HCC,0
+CND_D2,2 payment HCCs,0
+CND_D3,3 payment HCCs,0
+CND_D4,4 payment HCCs,0
+CPD_D1,1 payment HCC,0
+CPD_D2,2 payment HCCs,0
+CPD_D3,3 payment HCCs,0
+CPD_D4,4 payment HCCs,0
+CNA_F65_69,Female 65-69,0.323
+CNA_F70_74,Female 70-74,0.386
+CNA_F75_79,Female 75-79,0.451
+CNA_F80_84,Female 80-84,0.528
+CNA_F85_89,Female 85-89,0.641
+CNA_F90_94,Female 90-94,0.783
+CNA_F95_GT,Female 95+,0.787
+CNA_M65_69,Male 65-69,0.308
+CNA_M70_74,Male 70-74,0.394
+CNA_M75_79,Male 75-79,0.473
+CNA_M80_84,Male 80-84,0.556
+CNA_M85_89,Male 85-89,0.686
+CNA_M90_94,Male 90-94,0.841
+CNA_M95_GT,Male 95+,0.986
+CNA_OriginallyDisabled_Female,Originally Disabled Female,0.25
+CNA_OriginallyDisabled_Male,Originally Disabled Male,0.147
+CNA_HCC1,HIV/AIDS,0.335
+CNA_HCC2,"Septicemia, Sepsis, Systemic Inflammatory Response Syndrome/Shock",0.352
+CNA_HCC6,Opportunistic Infections,0.424
+CNA_HCC8,Metastatic Cancer and Acute Leukemia,2.659
+CNA_HCC9,Lung and Other Severe Cancers,1.024
+CNA_HCC10,Lymphoma and Other Cancers,0.675
+CNA_HCC11,"Colorectal, Bladder, and Other Cancers",0.307
+CNA_HCC12,"Breast, Prostate, and Other Cancers and Tumors",0.15
+CNA_HCC17,Diabetes with Acute Complications,0.302
+CNA_HCC18,Diabetes with Chronic Complications,0.302
+CNA_HCC19,Diabetes without Complication,0.105
+CNA_HCC21,Protein-Calorie Malnutrition,0.455
+CNA_HCC22,Morbid Obesity,0.25
+CNA_HCC23,Other Significant Endocrine and Metabolic Disorders,0.194
+CNA_HCC27,End-Stage Liver Disease,0.882
+CNA_HCC28,Cirrhosis of Liver,0.363
+CNA_HCC29,Chronic Hepatitis,0.147
+CNA_HCC33,Intestinal Obstruction/Perforation,0.219
+CNA_HCC34,Chronic Pancreatitis,0.287
+CNA_HCC35,Inflammatory Bowel Disease,0.308
+CNA_HCC39,Bone/Joint/Muscle Infections/Necrosis,0.401
+CNA_HCC40,Rheumatoid Arthritis and Inflammatory Connective Tissue Disease,0.421
+CNA_HCC46,Severe Hematological Disorders,1.372
+CNA_HCC47,Disorders of Immunity,0.665
+CNA_HCC48,Coagulation Defects and Other Specified Hematological Disorders,0.192
+CNA_HCC54,Substance Use with Psychotic Complications,0.329
+CNA_HCC55,"Substance Use Disorder, Moderate/Severe, or Substance Use with Complications",0.329
+CNA_HCC56,"Substance Use Disorder, Mild, Except Alcohol and Cannabis",0.329
+CNA_HCC57,Schizophrenia,0.524
+CNA_HCC58,Reactive and Unspecified Psychosis,0.393
+CNA_HCC59,"Major Depressive, Bipolar, and Paranoid Disorders",0.309
+CNA_HCC60,Personality Disorders,0.309
+CNA_HCC70,Quadriplegia,1.242
+CNA_HCC71,Paraplegia,1.068
+CNA_HCC72,Spinal Cord Disorders/Injuries,0.481
+CNA_HCC73,Amyotrophic Lateral Sclerosis and Other Motor Neuron Disease,0.999
+CNA_HCC74,Cerebral Palsy,0.339
+CNA_HCC75,Myasthenia Gravis/Myoneural Disorders and Guillain-Barre Syndrome/Inflammatory and Toxic Neuropathy,0.472
+CNA_HCC76,Muscular Dystrophy,0.518
+CNA_HCC77,Multiple Sclerosis,0.423
+CNA_HCC78,Parkinson's and Huntington's Diseases,0.606
+CNA_HCC79,Seizure Disorders and Convulsions,0.22
+CNA_HCC80,"Coma, Brain Compression/Anoxic Damage",0.486
+CNA_HCC82,Respirator Dependence/Tracheostomy Status,1
+CNA_HCC83,Respiratory Arrest,0.354
+CNA_HCC84,Cardio-Respiratory Failure and Shock,0.282
+CNA_HCC85,Congestive Heart Failure,0.331
+CNA_HCC86,Acute Myocardial Infarction,0.195
+CNA_HCC87,Unstable Angina and Other Acute Ischemic Heart Disease,0.195
+CNA_HCC88,Angina Pectoris,0.135
+CNA_HCC96,Specified Heart Arrhythmias,0.268
+CNA_HCC99,Intracranial Hemorrhage,0.23
+CNA_HCC100,Ischemic or Unspecified Stroke,0.23
+CNA_HCC103,Hemiplegia/Hemiparesis,0.437
+CNA_HCC104,"Monoplegia, Other Paralytic Syndromes",0.331
+CNA_HCC106,Atherosclerosis of the Extremities with Ulceration or Gangrene,1.488
+CNA_HCC107,Vascular Disease with Complications,0.383
+CNA_HCC108,Vascular Disease,0.288
+CNA_HCC110,Cystic Fibrosis,0.51
+CNA_HCC111,Chronic Obstructive Pulmonary Disease,0.335
+CNA_HCC112,Fibrosis of Lung and Other Chronic Lung Disorders,0.219
+CNA_HCC114,Aspiration and Specified Bacterial Pneumonias,0.517
+CNA_HCC115,"Pneumococcal Pneumonia, Empyema, Lung Abscess",0.13
+CNA_HCC122,Proliferative Diabetic Retinopathy and Vitreous Hemorrhage,0.222
+CNA_HCC124,Exudative Macular Degeneration,0.521
+CNA_HCC134,Dialysis Status,0.435
+CNA_HCC135,Acute Renal Failure,0.435
+CNA_HCC136,"Chronic Kidney Disease, Stage 5",0.289
+CNA_HCC137,"Chronic Kidney Disease, Severe (Stage 4)",0.289
+CNA_HCC138,"Chronic Kidney Disease, Moderate (Stage 3)",0.069
+CNA_HCC157,"Pressure Ulcer of Skin with Necrosis Through to Muscle, Tendon, or Bone",2.028
+CNA_HCC158,Pressure Ulcer of Skin with Full Thickness Skin Loss,1.069
+CNA_HCC161,"Chronic Ulcer of Skin, Except Pressure",0.515
+CNA_HCC162,Severe Skin Burn or Condition,0.224
+CNA_HCC166,Severe Head Injury,0.486
+CNA_HCC167,Major Head Injury,0.077
+CNA_HCC169,Vertebral Fractures without Spinal Cord Injury,0.476
+CNA_HCC170,Hip Fracture/Dislocation,0.35
+CNA_HCC173,Traumatic Amputations and Complications,0.208
+CNA_HCC176,Complications of Specified Implanted Device or Graft,0.582
+CNA_HCC186,Major Organ Transplant or Replacement Status,0.832
+CNA_HCC188,Artificial Openings for Feeding or Elimination,0.534
+CNA_HCC189,"Amputation Status, Lower Limb/Amputation Complications",0.519
+CNA_HCC51,Dementia With Complications,0.346
+CNA_HCC52,Dementia Without Complication,0.346
+CNA_HCC159,Pressure Ulcer of Skin with Partial Thickness Skin Loss,0.656
+CNA_HCC47_gCancer,Immune Disorders*Cancer,0.838
+CNA_DIABETES_CHF,Congestive Heart Failure*Diabetes,0.121
+CNA_CHF_gCopdCF,Congestive Heart Failure*Chronic Obstructive Pulmonary Disease,0.155
+CNA_HCC85_gRenal_V24,Congestive Heart Failure*Renal,0.156
+CNA_gCopdCF_CARD_RESP_FAIL,Cardiorespiratory Failure *Chronic Obstructive Pulmonary Disease,0.363
+CNA_HCC85_HCC96,Congestive Heart Failure*Specified Heart Arrhythmias,0.085
+CNA_D4,4 payment HCCs,0.006
+CNA_D5,5 payment HCCs,0.042
+CNA_D6,6 payment HCCs,0.077
+CNA_D7,7 payment HCCs,0.126
+CNA_D8,8 payment HCCs,0.214
+CNA_D9,9 payment HCCs,0.258
+CNA_D10P,10 or more payment HCCs,0.505
+CNA_D1,1 payment HCC,0
+CNA_D2,2 payment HCCs,0
+CNA_D3,3 payment HCCs,0
+SNPNE_NMCAID_NORIGDIS_NEF0_34,Baseline – Neither Medicaid nor Originally Disabled Female 0-34,1.513
+SNPNE_NMCAID_NORIGDIS_NEF35_44,Baseline – Neither Medicaid nor Originally Disabled Female 35-44,1.513
+SNPNE_NMCAID_NORIGDIS_NEF45_54,Baseline – Neither Medicaid nor Originally Disabled Female 45-54,1.513
+SNPNE_NMCAID_NORIGDIS_NEF55_59,Baseline – Neither Medicaid nor Originally Disabled Female 55-59,1.619
+SNPNE_NMCAID_NORIGDIS_NEF60_64,Baseline – Neither Medicaid nor Originally Disabled Female 60-64,1.686
+SNPNE_NMCAID_NORIGDIS_NEF65,Baseline – Neither Medicaid nor Originally Disabled Female 65,0.999
+SNPNE_NMCAID_NORIGDIS_NEF66,Baseline – Neither Medicaid nor Originally Disabled Female 66,0.999
+SNPNE_NMCAID_NORIGDIS_NEF67,Baseline – Neither Medicaid nor Originally Disabled Female 67,1.07
+SNPNE_NMCAID_NORIGDIS_NEF68,Baseline – Neither Medicaid nor Originally Disabled Female 68,1.108
+SNPNE_NMCAID_NORIGDIS_NEF69,Baseline – Neither Medicaid nor Originally Disabled Female 69,1.164
+SNPNE_NMCAID_NORIGDIS_NEF70_74,Baseline – Neither Medicaid nor Originally Disabled Female 70-74,1.31
+SNPNE_NMCAID_NORIGDIS_NEF75_79,Baseline – Neither Medicaid nor Originally Disabled Female 75-79,1.516
+SNPNE_NMCAID_NORIGDIS_NEF80_84,Baseline – Neither Medicaid nor Originally Disabled Female 80-84,1.746
+SNPNE_NMCAID_NORIGDIS_NEF85_89,Baseline – Neither Medicaid nor Originally Disabled Female 85-89,1.971
+SNPNE_NMCAID_NORIGDIS_NEF90_94,Baseline – Neither Medicaid nor Originally Disabled Female 90-94,2.161
+SNPNE_NMCAID_NORIGDIS_NEF95_GT,Baseline – Neither Medicaid nor Originally Disabled Female 95+,2.161
+SNPNE_NMCAID_NORIGDIS_NEM0_34,Baseline – Neither Medicaid nor Originally Disabled Male 0-34,1.276
+SNPNE_NMCAID_NORIGDIS_NEM35_44,Baseline – Neither Medicaid nor Originally Disabled Male 35-44,1.276
+SNPNE_NMCAID_NORIGDIS_NEM45_54,Baseline – Neither Medicaid nor Originally Disabled Male 45-54,1.498
+SNPNE_NMCAID_NORIGDIS_NEM55_59,Baseline – Neither Medicaid nor Originally Disabled Male 55-59,1.63
+SNPNE_NMCAID_NORIGDIS_NEM60_64,Baseline – Neither Medicaid nor Originally Disabled Male 60-64,1.673
+SNPNE_NMCAID_NORIGDIS_NEM65,Baseline – Neither Medicaid nor Originally Disabled Male 65,0.98
+SNPNE_NMCAID_NORIGDIS_NEM66,Baseline – Neither Medicaid nor Originally Disabled Male 66,0.98
+SNPNE_NMCAID_NORIGDIS_NEM67,Baseline – Neither Medicaid nor Originally Disabled Male 67,1.02
+SNPNE_NMCAID_NORIGDIS_NEM68,Baseline – Neither Medicaid nor Originally Disabled Male 68,1.082
+SNPNE_NMCAID_NORIGDIS_NEM69,Baseline – Neither Medicaid nor Originally Disabled Male 69,1.14
+SNPNE_NMCAID_NORIGDIS_NEM70_74,Baseline – Neither Medicaid nor Originally Disabled Male 70-74,1.345
+SNPNE_NMCAID_NORIGDIS_NEM75_79,Baseline – Neither Medicaid nor Originally Disabled Male 75-79,1.581
+SNPNE_NMCAID_NORIGDIS_NEM80_84,Baseline – Neither Medicaid nor Originally Disabled Male 80-84,1.832
+SNPNE_NMCAID_NORIGDIS_NEM85_89,Baseline – Neither Medicaid nor Originally Disabled Male 85-89,2.095
+SNPNE_NMCAID_NORIGDIS_NEM90_94,Baseline – Neither Medicaid nor Originally Disabled Male 90-94,2.351
+SNPNE_NMCAID_NORIGDIS_NEM95_GT,Baseline – Neither Medicaid nor Originally Disabled Male 95+,2.351
+SNPNE_MCAID_NORIGDIS_NEF0_34,Medicaid Only – Not Originally Disabled Female 0-34,1.776
+SNPNE_MCAID_NORIGDIS_NEF35_44,Medicaid Only – Not Originally Disabled Female 35-44,1.776
+SNPNE_MCAID_NORIGDIS_NEF45_54,Medicaid Only – Not Originally Disabled Female 45-54,2.01
+SNPNE_MCAID_NORIGDIS_NEF55_59,Medicaid Only – Not Originally Disabled Female 55-59,2.095
+SNPNE_MCAID_NORIGDIS_NEF60_64,Medicaid Only – Not Originally Disabled Female 60-64,2.126
+SNPNE_MCAID_NORIGDIS_NEF65,Medicaid Only – Not Originally Disabled Female 65,1.375
+SNPNE_MCAID_NORIGDIS_NEF66,Medicaid Only – Not Originally Disabled Female 66,1.375
+SNPNE_MCAID_NORIGDIS_NEF67,Medicaid Only – Not Originally Disabled Female 67,1.483
+SNPNE_MCAID_NORIGDIS_NEF68,Medicaid Only – Not Originally Disabled Female 68,1.559
+SNPNE_MCAID_NORIGDIS_NEF69,Medicaid Only – Not Originally Disabled Female 69,1.576
+SNPNE_MCAID_NORIGDIS_NEF70_74,Medicaid Only – Not Originally Disabled Female 70-74,1.789
+SNPNE_MCAID_NORIGDIS_NEF75_79,Medicaid Only – Not Originally Disabled Female 75-79,1.98
+SNPNE_MCAID_NORIGDIS_NEF80_84,Medicaid Only – Not Originally Disabled Female 80-84,2.194
+SNPNE_MCAID_NORIGDIS_NEF85_89,Medicaid Only – Not Originally Disabled Female 85-89,2.49
+SNPNE_MCAID_NORIGDIS_NEF90_94,Medicaid Only – Not Originally Disabled Female 90-94,2.68
+SNPNE_MCAID_NORIGDIS_NEF95_GT,Medicaid Only – Not Originally Disabled Female 95+,2.68
+SNPNE_MCAID_NORIGDIS_NEM0_34,Medicaid Only – Not Originally Disabled Male 0-34,1.533
+SNPNE_MCAID_NORIGDIS_NEM35_44,Medicaid Only – Not Originally Disabled Male 35-44,1.533
+SNPNE_MCAID_NORIGDIS_NEM45_54,Medicaid Only – Not Originally Disabled Male 45-54,1.854
+SNPNE_MCAID_NORIGDIS_NEM55_59,Medicaid Only – Not Originally Disabled Male 55-59,2.041
+SNPNE_MCAID_NORIGDIS_NEM60_64,Medicaid Only – Not Originally Disabled Male 60-64,2.167
+SNPNE_MCAID_NORIGDIS_NEM65,Medicaid Only – Not Originally Disabled Male 65,1.525
+SNPNE_MCAID_NORIGDIS_NEM66,Medicaid Only – Not Originally Disabled Male 66,1.525
+SNPNE_MCAID_NORIGDIS_NEM67,Medicaid Only – Not Originally Disabled Male 67,1.646
+SNPNE_MCAID_NORIGDIS_NEM68,Medicaid Only – Not Originally Disabled Male 68,1.646
+SNPNE_MCAID_NORIGDIS_NEM69,Medicaid Only – Not Originally Disabled Male 69,1.646
+SNPNE_MCAID_NORIGDIS_NEM70_74,Medicaid Only – Not Originally Disabled Male 70-74,1.967
+SNPNE_MCAID_NORIGDIS_NEM75_79,Medicaid Only – Not Originally Disabled Male 75-79,2.14
+SNPNE_MCAID_NORIGDIS_NEM80_84,Medicaid Only – Not Originally Disabled Male 80-84,2.272
+SNPNE_MCAID_NORIGDIS_NEM85_89,Medicaid Only – Not Originally Disabled Male 85-89,2.63
+SNPNE_MCAID_NORIGDIS_NEM90_94,Medicaid Only – Not Originally Disabled Male 90-94,2.63
+SNPNE_MCAID_NORIGDIS_NEM95_GT,Medicaid Only – Not Originally Disabled Male 95+,2.63
+SNPNE_NMCAID_ORIGDIS_NEF65,Originally Disabled Only – Not Medicaid Female 65,1.81
+SNPNE_NMCAID_ORIGDIS_NEF66,Originally Disabled Only – Not Medicaid Female 66,1.81
+SNPNE_NMCAID_ORIGDIS_NEF67,Originally Disabled Only – Not Medicaid Female 67,1.834
+SNPNE_NMCAID_ORIGDIS_NEF68,Originally Disabled Only – Not Medicaid Female 68,1.834
+SNPNE_NMCAID_ORIGDIS_NEF69,Originally Disabled Only – Not Medicaid Female 69,1.834
+SNPNE_NMCAID_ORIGDIS_NEF70_74,Originally Disabled Only – Not Medicaid Female 70-74,2.006
+SNPNE_NMCAID_ORIGDIS_NEF75_79,Originally Disabled Only – Not Medicaid Female 75-79,2.112
+SNPNE_NMCAID_ORIGDIS_NEF80_84,Originally Disabled Only – Not Medicaid Female 80-84,2.476
+SNPNE_NMCAID_ORIGDIS_NEF85_89,Originally Disabled Only – Not Medicaid Female 85-89,2.476
+SNPNE_NMCAID_ORIGDIS_NEF90_94,Originally Disabled Only – Not Medicaid Female 90-94,2.476
+SNPNE_NMCAID_ORIGDIS_NEF95_GT,Originally Disabled Only – Not Medicaid Female 95+,2.476
+SNPNE_NMCAID_ORIGDIS_NEM65,Originally Disabled Only – Not Medicaid Male 65,1.664
+SNPNE_NMCAID_ORIGDIS_NEM66,Originally Disabled Only – Not Medicaid Male 66,1.667
+SNPNE_NMCAID_ORIGDIS_NEM67,Originally Disabled Only – Not Medicaid Male 67,1.725
+SNPNE_NMCAID_ORIGDIS_NEM68,Originally Disabled Only – Not Medicaid Male 68,1.74
+SNPNE_NMCAID_ORIGDIS_NEM69,Originally Disabled Only – Not Medicaid Male 69,1.797
+SNPNE_NMCAID_ORIGDIS_NEM70_74,Originally Disabled Only – Not Medicaid Male 70-74,1.935
+SNPNE_NMCAID_ORIGDIS_NEM75_79,Originally Disabled Only – Not Medicaid Male 75-79,2.073
+SNPNE_NMCAID_ORIGDIS_NEM80_84,Originally Disabled Only – Not Medicaid Male 80-84,2.349
+SNPNE_NMCAID_ORIGDIS_NEM85_89,Originally Disabled Only – Not Medicaid Male 85-89,2.349
+SNPNE_NMCAID_ORIGDIS_NEM90_94,Originally Disabled Only – Not Medicaid Male 90-94,2.349
+SNPNE_NMCAID_ORIGDIS_NEM95_GT,Originally Disabled Only – Not Medicaid Male 95+,2.349
+SNPNE_MCAID_ORIGDIS_NEF65,Medicaid and Originally Disabled Female 65,2.183
+SNPNE_MCAID_ORIGDIS_NEF66,Medicaid and Originally Disabled Female 66,2.209
+SNPNE_MCAID_ORIGDIS_NEF67,Medicaid and Originally Disabled Female 67,2.213
+SNPNE_MCAID_ORIGDIS_NEF68,Medicaid and Originally Disabled Female 68,2.248
+SNPNE_MCAID_ORIGDIS_NEF69,Medicaid and Originally Disabled Female 69,2.336
+SNPNE_MCAID_ORIGDIS_NEF70_74,Medicaid and Originally Disabled Female 70-74,2.424
+SNPNE_MCAID_ORIGDIS_NEF75_79,Medicaid and Originally Disabled Female 75-79,2.562
+SNPNE_MCAID_ORIGDIS_NEF80_84,Medicaid and Originally Disabled Female 80-84,2.772
+SNPNE_MCAID_ORIGDIS_NEF85_89,Medicaid and Originally Disabled Female 85-89,2.772
+SNPNE_MCAID_ORIGDIS_NEF90_94,Medicaid and Originally Disabled Female 90-94,2.772
+SNPNE_MCAID_ORIGDIS_NEF95_GT,Medicaid and Originally Disabled Female 95+,2.772
+SNPNE_MCAID_ORIGDIS_NEM65,Medicaid and Originally Disabled Male 65,2.173
+SNPNE_MCAID_ORIGDIS_NEM66,Medicaid and Originally Disabled Male 66,2.173
+SNPNE_MCAID_ORIGDIS_NEM67,Medicaid and Originally Disabled Male 67,2.179
+SNPNE_MCAID_ORIGDIS_NEM68,Medicaid and Originally Disabled Male 68,2.179
+SNPNE_MCAID_ORIGDIS_NEM69,Medicaid and Originally Disabled Male 69,2.179
+SNPNE_MCAID_ORIGDIS_NEM70_74,Medicaid and Originally Disabled Male 70-74,2.419
+SNPNE_MCAID_ORIGDIS_NEM75_79,Medicaid and Originally Disabled Male 75-79,2.509
+SNPNE_MCAID_ORIGDIS_NEM80_84,Medicaid and Originally Disabled Male 80-84,2.805
+SNPNE_MCAID_ORIGDIS_NEM85_89,Medicaid and Originally Disabled Male 85-89,2.805
+SNPNE_MCAID_ORIGDIS_NEM90_94,Medicaid and Originally Disabled Male 90-94,2.805
+SNPNE_MCAID_ORIGDIS_NEM95_GT,Medicaid and Originally Disabled Male 95+,2.805

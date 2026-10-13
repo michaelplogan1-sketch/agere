@@ -161,11 +161,17 @@ T = {
         'Describe the Kidney Care Choices model', 'What is the ratchet problem in ACO benchmarks?', 'what does two-sided risk mean',
         'Explain the HEDIS hybrid method', 'What is the Triple Aim?', 'Give me an overview of Medicaid managed care auto-assignment',
     ],
+    # answerable once ICD-10 arrives on claims (warehouse v2.0); on a build without it the compiler answers not_answerable
+    'risk_adjustment': [
+        'Average HCC RAF score', 'RAF scores by PCP', 'Which HCCs have not been recaptured this year?', 'Open HCC recapture gaps',
+        'Suspect conditions for {conds} without a diagnosis code', 'What is our coding completeness?', 'CMS-HCC risk score by practice',
+        'documentation gaps worth reviewing', 'V24 versus V28 risk scores', 'coding gaps in dollars at our Medicare Advantage base rate',
+    ],
     'not_answerable': [
         'How many patients died last year?', 'Mortality rate for {conds}', 'Breakdown of patients by race and ethnicity',
-        'Total RVUs per physician', 'Which CPT codes are billed most?', 'Average HCC RAF score', 'patient satisfaction survey results',
+        'Total RVUs per physician', 'Which CPT codes are billed most?', 'patient satisfaction survey results',
         'HCAHPS scores by practice', 'How many patients are still alive?', 'death rate after discharge', 'What is each patient\'s income?',
-        'Show the CAHPS survey results', 'RAF scores by PCP', 'how many deceased members', 'wRVU productivity by provider',
+        'Show the CAHPS survey results', 'how many deceased members', 'wRVU productivity by provider',
     ],
 }
 
