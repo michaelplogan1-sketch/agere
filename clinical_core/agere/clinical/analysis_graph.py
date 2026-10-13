@@ -82,6 +82,19 @@ STATISTIC_WORDS = [('share', r'\b(share|percent(age)?|proportion|fraction|what %
 COUNT_QUESTION = re.compile(r'\b(how many|number of|count|what (?:share|proportion|percent(?:age)?))\b', re.I)
 
 
+def requested_shape(question):
+    """What kind of answer the question asks for, from its wording."""
+    q = (question or '').lower()
+    if re.search(r'\b(?:by|per|for each|each|break(?:s)? ?(?:it )?(?:down|out)|split|tabulate|monthly|quarterly|weekly|trend)\b(?! 1,?000\b)', q) and \
+            not re.search(r'\bper 1,?000\b(?!.*\bby\b)', q):
+        return 'table'
+    if '%' in q or re.search(r'\b(?:percent(?:age)?|share|proportion|fraction|rate|per 1,?000|average|mean|median|sum|total|how much)\b', q):
+        return 'value'
+    if re.search(r'\b(?:which|list|who)\b', q): return 'patient_set'
+    if re.search(r'\b(?:how many|number of|count)\b', q): return 'count'
+    return None
+
+
 def _fmt(v):
     if isinstance(v, float): return f'{v:,.2f}'.rstrip('0').rstrip('.') if abs(v) < 1e6 else f'{v:,.0f}'
     return f'{v:,}' if isinstance(v, int) else str(v)
@@ -95,7 +108,7 @@ def headline(answer):
         return f'Not answerable from the received data. Missing: {missing}.' if missing else 'Not answerable from the received data.'
     if kind == 'count': core = f"{_fmt(answer.get('count'))}"
     elif kind == 'patient_set': core = f"{_fmt(answer.get('count') if answer.get('count') is not None else len(answer.get('patient_ids') or []))} patients"
-    elif kind == 'value': core = _fmt(answer.get('value')) if not isinstance(answer.get('value'), str) else answer['value']
+    elif kind == 'value': core = (_fmt(answer.get('value')) + answer.get('unit', '')) if not isinstance(answer.get('value'), str) else answer['value']
     else:
         rows = answer.get('table') or []
         core = answer['value'] if isinstance(answer.get('value'), str) else f'{len(rows)} rows'
@@ -207,6 +220,7 @@ def build_answer(plan, results, memberships, question):
             answer.update(answer_type='count', count=report['overall'].get('value'), table=[report['overall']])
         elif last['parameters']['group_by'] == 'none':
             answer.update(answer_type='value', value=report['overall'].get('value'), table=[report['overall']])
+            if last['parameters']['statistic'] == 'share': answer['unit'] = '%'
         else:
             answer.update(answer_type='table', table=report['rows'])
         answer.update(status='partial' if partial else 'answered', method=report['method'], overall=report['overall'])

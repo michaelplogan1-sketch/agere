@@ -254,7 +254,7 @@ def execute(path, patient_ids, params):
                 row['value'] = (round(num / row['index_stays'], 4) if row['index_stays'] else None) if p['statistic'] == 'rate' else num
                 chosen = pairs if pairs is not None else [(x, s) for x in unique for s in stays[x]]
                 row['readmissions'] = [{'patient_id': x, **s} for x, s in chosen if s['readmitted']][:20]
-            elif p['statistic'] == 'share': row['value'] = round(num / len(unique), 4) if unique else None
+            elif p['statistic'] == 'share': row['value'] = round(100 * num / len(unique), 4) if unique else None  # percent
             elif p['statistic'] == 'rate_per_1000': row['value'] = round(1000 * num / len(unique), 2) if unique else None
             else: row['value'] = num
             if expected and p['group_by'] != 'facility':

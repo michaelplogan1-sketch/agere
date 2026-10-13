@@ -110,6 +110,10 @@ UNSUPPORTED = [
      ['executed payer contract with capitation/premium rates', 'member-month eligibility under the contract', 'risk-adjusted revenue schedule']),
     (r'\bobjectively\b|\bwearable\b|\bactivity tracker\b|\baccelerometer\b|\bminutes of (?:moderate|vigorous) exercise\b',
      ['device or objectively measured activity data (none is received)']),
+    (r'\b(?:died|deaths?|mortality|deceased|passed away)\b', ['death or mortality records (none are received)']),
+    (r'\brace\b|\bethnicit(?:y|ies)\b', ['race/ethnicity fields (none are received)']),
+    (r'\bcahps\b|\bpatient experience scores?\b|\bsatisfaction scores?\b', ['patient experience survey results (none are received)']),
+    (r'\bhousehold income\b|\bincome (?:level|bracket)s?\b', ['household income data (not disclosed in received records)']),
     (r'\bswallow(?:ed)?\b|\bactually (?:took|taken|swallowed)\b|\bverified independently\b',
      ['direct observation of medication ingestion (no received source records it)']),
 ]
@@ -128,7 +132,8 @@ OPERATOR_WORDS = set('''not no never without except excluding exclude over under
 higher lower exceed exceeded exceeds exceeding after before within since until between first last latest earliest same different
 linked unlinked twice two three four five six per average mean median rate rates percent percentage share sum total max min
 maximum minimum only neither nor nobody none missing lacks lack lacking january february march april june july august
-september october november december jan feb mar apr jun jul aug sep sept oct nov dec'''.split())
+september october november december jan feb mar apr jun jul aug sep sept oct nov dec monthly quarterly weekly
+daily annually month months quarter quarters week weeks half q1 q2 q3 q4 died death deaths mortality deceased'''.split())
 _VOCAB_CACHE = {}
 
 
@@ -521,6 +526,7 @@ def _population_question(q, r, profile, as_of, info):
     if period:  # periods bound events, measurements and records; chronic conditions keep full history
         timed = {'basis': 'source_event', 'start': period[0], 'end': period[1]}
         for atom in allp + excl:
+            if atom['kind'] == 'record' and atom.get('stream') == 'coverage': continue  # payer membership describes who, not when
             if atom['kind'] in ('measurement', 'record') or (atom['kind'] == 'concept' and atom['concept'] in concepts.ENCOUNTERS):
                 atom['window'] = dict(timed)
 
@@ -562,9 +568,9 @@ def _population_question(q, r, profile, as_of, info):
             base_all = [a for a in allp if not (a['kind'] == 'concept' and a['concept'] == target)]
             params = {'measure': 'value', 'concept': target, 'statistic': 'median' if median else 'mean',
                       'value_aggregate': 'latest' if latest or True else 'all'}
-        elif event_concept:
+        elif event_concept and not share:
             base_all = [a for a in allp if not (a['kind'] == 'concept' and a['concept'] == event_concept)]
-            params = {'measure': 'events', 'concept': event_concept, 'statistic': 'rate_per_1000' if (rate or group) else 'count'}
+            params = {'measure': 'events', 'concept': event_concept, 'statistic': 'rate_per_1000' if rate or (group and not count) else 'count'}
         else:
             # share of the base population that has the last-named concept/measurement
             subject = allp[-1] if allp else None
@@ -621,11 +627,23 @@ def _literal_stream_question(q, r, profile, as_of, info):
     forms = _field_forms(fields)
     forms.setdefault('organization_id', []).extend(['organization', 'site', 'facility'])
     g_lead = r'\b(?:by|for each|per|split by|broken down by|break(?:s)? down by|went to each|to each|each)\s+(?:the |their |claim |patient\'s )?(?:recording |source |service )?'
+    hit = None
     for f, fs in sorted(forms.items(), key=lambda kv: -max(map(len, kv[1]))):
         for form in fs:
             hit = next(iter(r.take(g_lead + _alias_pattern(form), f'group by {f}')), None)
             if hit: group_field = f; break
         if group_field: break
+    # A second dimension ("by site and impression", "each practice ... by vaccine") is grouped too, never dropped.
+    group_fields = [group_field] if group_field else []
+    if hit:
+        for f, fs in sorted(forms.items(), key=lambda kv: -max(map(len, kv[1]))):
+            if f == group_field: continue
+            for form in fs:
+                m = re.compile(r'\s*(?:,|\band\b|\bthen\b)\s*(?:by\s+)?(?:the\s+)?' + _alias_pattern(form)).match(low, hit.end())
+                second = r.take(r'(?<=\S)\s*(?:,|\band\b|\bthen\b)\s*(?:by\s+)?(?:the\s+)?' + _alias_pattern(form), f'group by {f}') if m else \
+                    r.take(g_lead + _alias_pattern(form), f'group by {f}')
+                if second: group_fields.append(f); break
+            if len(group_fields) == 2: break
     for m in r.take(r'\barrived in a later calendar year than (?:their )?source event dates?\b', 'arrival year after event year'):
         sql_where.append("event_date IS NOT NULL AND available_date IS NOT NULL AND substr(available_date,1,4) > substr(event_date,1,4)")
     for m in r.take(r'\barrived more than (\d+) (?:calendar )?days after (?:their )?source event dates?\b', 'arrival lag'):
@@ -691,11 +709,19 @@ def _literal_stream_question(q, r, profile, as_of, info):
         return None, info
     cols = re.search(r'table with ([a-z_]+) and ([a-z_]+)', low)
     key_name, count_name = (cols.group(1), cols.group(2)) if cols else (group_field, 'count')
+    if len(group_fields) == 2 and sum_m:
+        info.update(route='fallback', reason='two-dimension sums are not compiled locally')
+        return None, info
     if group_field and sum_m and amount:
         key_name = cols.group(1) if cols else group_field
         total_name = cols.group(2) if cols else 'total_cents'
         sql = (f"SELECT json_extract(payload,'$.{group_field}') AS {key_name}, sum(json_extract(payload,'$.{amount}')) AS {total_name} "
                f"FROM record WHERE {where} AND json_extract(payload,'$.{group_field}') IS NOT NULL GROUP BY 1 ORDER BY 2 DESC")
+        returns = 'table'
+    elif len(group_fields) == 2:
+        a, b = group_fields
+        sql = (f"SELECT json_extract(payload,'$.{a}') AS {a}, json_extract(payload,'$.{b}') AS {b}, count(*) AS count FROM record WHERE {where} "
+               f"AND json_extract(payload,'$.{a}') IS NOT NULL AND json_extract(payload,'$.{b}') IS NOT NULL GROUP BY 1, 2 ORDER BY 1, 2")
         returns = 'table'
     elif group_field:
         sql = (f"SELECT json_extract(payload,'$.{group_field}') AS {key_name}, count(*) AS {count_name} FROM record WHERE {where} "

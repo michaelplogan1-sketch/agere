@@ -17,6 +17,24 @@ VERSION='economical-question-planner/1'
 DECISION_THRESHOLD=.95  # Conservative engineering cutoff; not clinical calibration.
 
 
+GENERIC_NOTES={'count','sum','year','contains','lacks field'}
+
+
+def rewrite_dropped(original,rewritten):
+    """What the compiler understood in the user's own words must survive the model's rewrite.
+
+    Each recognised element of the original question (stream, filter value, group-by,
+    concept, payer) has to be recognised again in the rewrite; otherwise the rewrite
+    answers a different question and is refused. Values enumerated as the categories
+    of a group-by field are implied by that group-by.
+    """
+    before=[n for n in original.get('recognised') or [] if n not in GENERIC_NOTES]
+    after=set(rewritten.get('recognised') or [])
+    grouped=[n.split('group by ',1)[1] for n in before if n.startswith('group by ')]
+    implied=lambda n:(n.startswith('payer ') and 'coverage_type' in grouped) or any(n.startswith(g+' = ') for g in grouped)
+    return [n for n in before if n not in after and not implied(n)]
+
+
 def recipes():
     """Read-only, full-population observations; no enrollment or clinical decisions."""
     definitions=[
@@ -173,6 +191,12 @@ def plan(stack,question,ledger,frontier):
                 rewrite,stats=canonicalize(stack.path,question,meta['snapshot']['as_of'])
                 if rewrite:
                     compiled,info=compile_locally(rewrite,profile,meta['snapshot']['as_of'])
+                    dropped=rewrite_dropped(compile_info,info)
+                    from .analysis_graph import requested_shape
+                    if requested_shape(question) not in (None,requested_shape(rewrite)):
+                        dropped=dropped+[f'answer shape {requested_shape(question)} became {requested_shape(rewrite)}']
+                    if compiled is not None and dropped:
+                        compiled,info=None,{**info,'reason':'rewrite dropped what the question said: '+', '.join(dropped)}
                     if compiled is not None:
                         graph=validate(compiled,meta['snapshot']['as_of'])
                         return graph,{'route':'local_model_rewrite_compiled','model':stats.get('model'),'new_paid_api_calls':0,

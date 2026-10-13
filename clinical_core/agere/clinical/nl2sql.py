@@ -284,16 +284,24 @@ def canonicalize(path, question, as_of, model=None):
 
 MEANING_CLASSES = {  # each class present in the question must be present in the rewrite
     'negation': r'\b(?:no|not|never|without|lacks?|lacking|missing|none|neither)\b',
-    'patients': r'\b(?:patients?|people|persons?|members?|kids|children|seniors|women|men|diabetics|hypertensives)\b',
+    'patients': r'\b(?:patients?|people|persons?|members?(?! ids?\b)|kids|children|seniors|women|men|diabetics|hypertensives)\b',
     'average': r'\b(?:average|mean|median)\b', 'percent': r'\b(?:percent|percentage|share|proportion|fraction|rate)\b|%',
     'sum': r'\b(?:sum|total|dollars|amount|paid|pay)\b', 'grouping': r'\b(?:by|per|for each|split|break(?:s)? ?down|each)\b',
     'after': r'\b(?:after|later|within|before|since)\b', 'undated': r'\b(?:no|missing|unknown|without) (?:source )?event dates?\b|\bundated\b',
     'dollars': r'\bdollars?\b|\$',
+    'at least': r'\bor (?:higher|above|more|greater)\b|\bat least\b|\bno (?:less|lower|fewer) than\b|>=|≥',
+    'at most': r'\bor (?:lower|below|less|fewer)\b|\bat most\b|\bno (?:more|higher|greater) than\b|<=|≤',
+    'granularity': r'\b(?:monthly|quarterly|weekly|daily|by (?:month|quarter|week|day)|per (?:month|quarter|week)|each (?:month|quarter|week))\b',
+    'partial period': r'\b(?:first|second|1st|2nd) half\b|\bq[1-4]\b|\bquarter\b|\bh[12]\b',
+    # a cutoff other than the snapshot itself (the snapshot date is blanked out before this check)
+    'cutoff': r'\b(?:as of|received by|arrived by|available by)\s+(?:the\s+)?(?:\d|jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec|new year|end of|year[- ]end|close of)',
 }
 
 
 def meaning_drift(question, rewrite, as_of):
-    q = re.sub(as_of, ' ', question.lower()); w = rewrite.lower()
+    import calendar
+    spoken = calendar.month_name[int(as_of[5:7])].lower()[:3] + r'[a-z]*\.? ' + str(int(as_of[8:10])) + r'(?:st|nd|rd|th)?,? ' + as_of[:4]
+    q = re.sub(spoken, ' ', re.sub(as_of, ' ', question.lower())); w = rewrite.lower()
     nums = lambda t: set(re.findall(r'\d+(?:\.\d+)?', t))
     drift = sorted(nums(q) - nums(w) - {str(int(as_of[8:10])), as_of[:4]})
     months = re.findall(r'\b(jan(?:uary)?|feb(?:ruary)?|march|april|june|july|aug(?:ust)?|sep(?:t(?:ember)?)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)\b', q)
