@@ -11,7 +11,7 @@ If anything substantive is left over, it declines and reports exactly which
 words it could not interpret, so the fallback is explicit and measurable.
 """
 import re
-from collections import Counter
+from collections import Counter, defaultdict
 
 from . import concepts, source_profile
 
@@ -437,6 +437,9 @@ def compile(question, profile, as_of):
     special = _record_constructs(q, r, profile, as_of, info)
     if special is not None:
         return special
+    ops = _ops_question(q, r, profile, as_of, info)
+    if ops is not None:
+        return ops
     vbc_plan = _vbc_question(q, r, profile, as_of, info, terms)
     if vbc_plan is not None:
         return vbc_plan
@@ -988,6 +991,20 @@ def _literal_stream_question(q, r, profile, as_of, info):
 
     r.take(r'\breturn (?:a )?table\b|\breturn cents\b|\bexcluding missing organizations\b|\bmissing\b|\borganizations\b')
     patients = bool(re.search(r'\b(?:patients?|people)\b', low))
+    # Two values of one field cannot both hold on a record: "or" means either; anything else is a sequence -> decline.
+    same_field = defaultdict(list)
+    for clause in sql_where:
+        m = re.fullmatch(r"json_extract\(payload,'\$\.([a-z0-9_]+)'\) = '([^']*)'", clause)
+        if m: same_field[m.group(1)].append((clause, m.group(2)))
+    for field, items in same_field.items():
+        if len(items) < 2: continue
+        values = [v for _, v in items]
+        if re.search(r'\bor\b', low):
+            sql_where = [c for c in sql_where if c not in [x for x, _ in items]] + \
+                        [f"json_extract(payload,'$.{field}') IN (" + ', '.join(f"'{v}'" for v in values) + ')']
+        else:
+            info.update(route='fallback', reason=f'{field} cannot be both {" and ".join(values)} on one record (a sequence across records)')
+            return None, info
     where = ' AND '.join([f"stream = '{stream}'", *sql_where])
     amount = next((f for f in named_fields if re.search(r'cents|amount', f)), None)
     if not sum_m and re.search(r'\bwhat did [\w ]*\bpay\b|\btotal(?: up)?\b|\bhow much\b', low):
@@ -1051,6 +1068,50 @@ def _literal_stream_question(q, r, profile, as_of, info):
 
 NUMBER_WORDS = {'one': 1, 'two': 2, 'three': 3, 'four': 4, 'five': 5, 'six': 6}
 SQL_OPS = {'gt': '>', 'ge': '>=', 'lt': '<', 'le': '<=', 'eq': '='}
+
+
+# Governed operations metrics over the semantic entity tables (formula stated in the purpose).
+OPS_METRICS = [
+    (r'\bno[- ]?show rates?\b|\bno[- ]?show (?:percentage|share|%)|(?:rate|share|percent(?:age)?|%) of (?:appointments|appts) (?:that )?(?:were |ended (?:as|in) )?(?:a )?no[- ]?shows?',
+     'appointment', 'scheduled_date', "round(100.0 * sum(ever_no_show) / nullif(sum(kept) + sum(ever_no_show), 0), 2)",
+     'No-show rate = no-shows / (kept + no-shows), per appointment, by scheduled date'),
+    (r'\bcancell?ation rates?\b|(?:rate|share|percent(?:age)?|%) of (?:appointments|appts) (?:that )?(?:were |got )?cancell?ed',
+     'appointment', 'scheduled_date', "round(100.0 * sum(ever_cancelled) / count(*), 2)",
+     'Cancellation rate = appointments ever cancelled / all appointments, by scheduled date'),
+    (r'\b(?:first[- ]pass |initial )?denial rates?\b',
+     'claim', 'service_date', "round(100.0 * sum(first_status = 'denied') / count(*), 2)",
+     'First-pass denial rate = claims whose first adjudication was a denial / claims, by service date'),
+    (r'\b(?:overturned denials|denials? (?:that were |later )?(?:overturned|paid)|denied,? (?:and |then |but )*(?:later |eventually |subsequently )?(?:got )?paid)\b',
+     'claim', 'service_date', "sum(denied_then_paid)", 'Claims with a denial later followed by payment'),
+    (r'\bnet (?:payer[- ]?)?paid\b|\bnet (?:payer )?payments?\b|\bpaid after reversals\b',
+     'claim', 'service_date', "round(sum(net_payer_paid_cents) / 100.0, 2)", 'Net payer paid (USD) = paid minus reversed, per claim, by service date'),
+    (r'\b(?:average|mean|avg) (?:inpatient )?(?:length of stay|los)\b|\balos\b',
+     'stay', 'admit_date', "round(avg(los_days), 2)", 'Average length of stay (days) over inpatient stays with a received discharge time, by admit date'),
+]
+OPS_GROUPS = {'appointment': {'practice': 'organization_id', 'clinic': 'organization_id', 'clinician': 'clinician_id', 'provider': 'clinician_id'},
+              'claim': {'payer': 'payer', 'insurer': 'payer', 'plan': 'payer'},
+              'stay': {'hospital': 'organization_id', 'facility': 'organization_id'}}
+
+
+def _ops_question(q, r, profile, as_of, info):
+    low = r.low
+    hit = next(((rx, table, date_col, expr, purpose) for rx, table, date_col, expr, purpose in OPS_METRICS if re.search(rx, low)), None)
+    if hit is None: return None
+    rx, table, date_col, expr, purpose = hit
+    r.take(rx, f'ops {table}')
+    where = ["type = 'inpatient' AND los_days IS NOT NULL"] if table == 'stay' else []
+    period = _take_period(r, as_of, year_words=r'in|during|for|with service dates? in|scheduled (?:for|in)|scheduled during')
+    if period: where.append(f"{date_col} BETWEEN '{period[0]}' AND '{period[1]}'")
+    group = None
+    for word, col in OPS_GROUPS.get(table, {}).items():
+        if r.take(r'\b(?:by|per|for each|each|split by|broken down by) (?:the )?' + word + r's?\b', f'group by {col}'): group = col; break
+    r.take(r'\b(?:appointments?|appts?|claims?|medical claims?|inpatient|stays?|admissions?|scheduled|our|the|what|was|were|is|in days)\b', None, overlap=True)
+    sql_where = (' WHERE ' + ' AND '.join(where)) if where else ''
+    if group:
+        sql = f"SELECT {group} AS {group.replace('_id', '')}, {expr} AS value FROM {table}{sql_where} GROUP BY 1 ORDER BY 1"
+        return _finish(q, r, info, sql, 'table', purpose)
+    returns = 'count' if expr.startswith('sum(denied') else 'value'
+    return _finish(q, r, info, f"SELECT {expr} FROM {table}{sql_where}", returns, purpose)
 
 
 def _sql_graph(q, sql, returns, purpose, info):
