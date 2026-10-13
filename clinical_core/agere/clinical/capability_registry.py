@@ -42,6 +42,10 @@ PRODUCT = {
 PRODUCT['pathway'] = {'population': 'optional', 'view': 'flow',
                       'use': 'Care pathways / patient journeys: where patients go after an ED visit, discharge or PCP visit, follow-up within N days vs ED return, leakage to outside organisations, most common paths, chance of admission within N steps or days. Use for the SEQUENCE of next steps; '
                              'for how quickly / median days until one event, use survival.'}
+PRODUCT['early_signal'] = {'population': 'optional', 'view': 'signal',
+                           'use': 'Early warning: WHICH PATIENTS show the multichannel pattern that usually PRECEDES an admission or ED visit (pre-admission signature, '
+                                  'heading toward decompensation), by matched filtering against templates learned from past events. Not one lab trend (trajectory), '
+                                  'not time-until curves (survival), not a capacity-limited call list (outreach).'}
 
 # Questions a SQL query over the semantic tables answers exactly are handed to the verified SQL ladder.
 LITERAL = ('Literal data questions: counts, lists, sums, averages, maxima, record filters, date arithmetic, simple breakdowns '

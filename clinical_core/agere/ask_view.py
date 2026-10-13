@@ -461,7 +461,40 @@ function profChart(rows,net,thr,f){const W=CW(),lh=22,L=Math.min(Math.round(W*.3
 function calNote(a){const c=((a&&a.overall)||{}).calibration;if(!c||!c.statement)return '';
  return '<p class="hint" data-calibration="1"><b>Calibration.</b> '+esc(c.statement)+(c.method?'<details class="why"><summary>Method</summary><span class="muted" style="font-size:12px">'+esc(c.method)+'</span></details>':'')+'</p>'}
 function visual(a){const v=visual0(a);return v==null?v:v+calNote(a)}
+/* early signal: learned pre-event template per channel (whitened units, months before the event) + patients ranked by matched-filter SNR */
+function vizEarlySignal(a){const o=a.overall||{},es=o.early_signal||{},ev=es.evaluation||{},rows=(a.table||[]).slice(0,20);
+ const kp=(l,v)=>'<div class="kpi"><div class="l">'+l+'</div><div class="v">'+esc(v)+'</div></div>',pc=v=>isNum(v)?pct(v,1):'—';
+ let h='<section class="sec" data-focus="signal"><h3>Pre-event signature of '+esc(es.outcome_label||'the event')+'</h3><div class="kpis">'+
+  kp('Flagged',fmt(es.flagged)+' of '+fmt(es.patients_scored))+kp('SNR threshold',isNum(es.threshold_snr)?fmt(es.threshold_snr,2):'—')+kp('Template events',fmt(es.training_events))+
+  kp('Background samples',fmt(es.background_samples))+'</div>';
+ const tp=(es.templates||[]).filter(t=>t.energy>0).slice(0,6);
+ if(tp.length){const series=tp.map(t=>({name:t.label,pts:t.template.map((v,i)=>[t.months_before_event[i],v])}));const key='sig'+(++state.seq);state[key]={series,draw:sigTemplate};
+  h+=legend(series,key)+'<div data-chart="'+key+'">'+sigTemplate(state[key])+'</div>'}
+ else h+='<p class="hint">No channel carries a template above its noise (all cells shrunk to zero).</p>';
+ if(rows.length)h+='<h3 style="margin-top:12px">Patients ranked by matched-filter SNR</h3>'+sigChart(rows,es.threshold_snr);
+ if(ev.status==='evaluated'){const m=ev.matched_filter||{},b=ev.baseline||{},mv=ev.baseline_at_matched_volume||{};
+  h+='<h3 style="margin-top:12px">Time-split check (cutoff '+esc(ev.cutoff)+', labels '+esc(ev.label_months)+')</h3><div class="kpis">'+
+   kp('Precision',pc(m.precision)+' vs '+pc(b.precision))+kp('Recall',pc(m.recall)+' vs '+pc(b.recall))+kp('AUC',(isNum(m.auc)?fmt(m.auc,2):'—')+' vs '+(isNum(b.auc)?fmt(b.auc,2):'—'))+
+   kp('Median lead (months)',(m.median_lead_months!=null?fmt(m.median_lead_months,1):'—'))+kp('Events',fmt(ev.positives)+' in '+fmt(ev.patient_months)+' patient-months')+'</div>'+
+   '<p class="hint">Matched filter vs baseline ('+esc(b.rule||'')+'). Baseline at the same alert volume: precision '+pc(mv.precision)+'. False-alarm rate on later non-event months: '+pc(ev.null_false_alarm_rate_test)+'.</p>'}
+ else if(ev.reason)h+='<p class="hint">Not evaluated: '+esc(ev.reason)+'</p>';
+ (es.notes||[]).forEach(n=>{h+='<p class="hint">'+esc(n)+'</p>'});
+ return h+tableHTML(a.table,{name:'early-signal-patients',cols:['patient_id','snr','false_alarm_probability','alert','aligned_lead_months','driving_channels','acute_visits_last_3_months','event_in_window'],
+  head:{snr:'SNR',false_alarm_probability:'false-alarm prob.',aligned_lead_months:'lead (months)',acute_visits_last_3_months:'acute visits 3 mo'},render:{false_alarm_probability:v=>isNum(v)?esc(v<0.001?'<0.001':v.toFixed(3)):''}})+'</section>'}
+function sigTemplate(st){const xs=st.series.flatMap(s=>s.pts.map(p=>p[0]));return lines(st.series,{title:'Learned template: whitened deviation by month before the event',xlabel:'months before the event',
+ ylabel:'template (SD units)',extraY:[0],xtick:v=>String(Math.round(v)),under:(X,Y)=>'<line x1="'+X(Math.min(...xs))+'" x2="'+X(Math.max(...xs))+'" y1="'+Y(0)+'" y2="'+Y(0)+'" style="stroke:var(--muted);stroke-dasharray:3 3"/>'})}
+function sigChart(rows,thr){const W=CW(),lh=22,L=Math.min(Math.round(W*.36),12+7*Math.max(...rows.map(r=>String(r.patient_id).length))),R=70,T=8,H=T+rows.length*lh+28;
+ const vs=rows.map(r=>r.snr).concat([thr,0]).filter(isNum);const lo=Math.min(...vs),hi=Math.max(...vs)*1.05||1;const X=v=>L+(v-lo)/(hi-lo||1)*(W-L-R);
+ let s=svgOpen(W,H,'Matched-filter SNR per patient with the false-alarm threshold');
+ ticks(lo,hi,W<480?3:5).forEach(t=>{s+='<line class="gridl" x1="'+X(t)+'" x2="'+X(t)+'" y1="'+T+'" y2="'+(H-24)+'"/><text x="'+X(t)+'" y="'+(H-8)+'" text-anchor="middle">'+esc(fmt(t,1))+'</text>'});
+ if(isNum(thr))s+='<line x1="'+X(thr)+'" x2="'+X(thr)+'" y1="'+T+'" y2="'+(H-24)+'" style="stroke:var(--warn);stroke-dasharray:4 3"/>';
+ rows.forEach((r,i)=>{const y=T+i*lh,c=r.alert?'var(--bad)':'var(--s3)',f=isNum(r.false_alarm_probability)?(r.false_alarm_probability<0.001?'<0.001':r.false_alarm_probability.toFixed(3)):'';
+  s+='<g tabindex="0" aria-label="'+esc(r.patient_id+': SNR '+fmt(r.snr,2)+', false-alarm probability '+f)+'"><text x="'+(L-6)+'" y="'+(y+lh/2+4)+'" text-anchor="end" style="fill:var(--fg)">'+esc(r.patient_id)+'</text>';
+  if(isNum(r.snr))s+='<rect x="'+Math.min(X(0),X(r.snr))+'" y="'+(y+4)+'" width="'+Math.max(1,Math.abs(X(r.snr)-X(0)))+'" height="'+(lh-8)+'" rx="3" style="fill:'+c+'"><title>'+esc((r.driving_channels||[]).join(', '))+'</title></rect>';
+  s+='<text x="'+(Math.max(X(0),X(isNum(r.snr)?r.snr:0))+4)+'" y="'+(y+lh/2+4)+'">'+esc(fmt(r.snr,2)+' · p='+f)+'</text></g>'});
+ return s+'</svg><div class="legend"><span><span class="sw" style="background:var(--bad)"></span>above threshold</span><span><span class="sw" style="background:var(--s3)"></span>below</span><span>┊ threshold at the false-alarm rate</span></div>'}
 function visual0(a){if(!a||a.answer_type==='unsupported')return '';const o=a.overall||{};
+  if(o.early_signal)return vizEarlySignal(a);
   if(o.profile)return vizProfile(a);
   if(o.matrix&&o.states)return vizPathway(a);
  if(o.network&&o.data_gaps)return vizMarket(a);
@@ -558,7 +591,7 @@ function activate(el){if(el.dataset.csv){downloadCSV(el.dataset.csv);return}
  if(el.id==='demonext'){runStep(demo.i);return}if(el.id==='demoreset'){demo.i=0;demo.done.clear();renderDemo();return}
  if(el.dataset.clearfilter){state.outFilter=null;refreshWorklist();return}
  if(el.dataset.series!=null){const key=el.closest('[data-legend]').dataset.legend,st=state[key];if(!st)return;const s=st.series[+el.dataset.series];s.hidden=!s.hidden;el.setAttribute('aria-pressed',String(!s.hidden));
-  const box=document.querySelector('[data-chart="'+key+'"]');if(box)box.innerHTML=survChart(st);return}
+  const box=document.querySelector('[data-chart="'+key+'"]');if(box)box.innerHTML=st.draw?st.draw(st):survChart(st);return}
  if(el.dataset.pick!=null){const mon=el.closest('#answer')&&document.querySelector('[data-monsel]');
   if(mon&&el.tagName==='TR'){if(+el.dataset.pick>=0){mon.value=el.dataset.pick;mon.dispatchEvent(new Event('change',{bubbles:true}));mon.scrollIntoView({behavior:'smooth',block:'center'})}return}
   state.outFilter=el.dataset.pick;refreshWorklist();return}

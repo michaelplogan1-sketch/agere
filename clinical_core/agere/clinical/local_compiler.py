@@ -432,6 +432,9 @@ def _compile(question, profile, as_of):
             return {'interpretation': f'Unsupported by received data: {q}', 'coverage': 'unsupported', 'nodes': [],
                     'unmet_requirements': [f'Missing input: {m}' for m in missing]}, \
                    {'compiler': VERSION, 'recognised': [], 'route': 'local_unsupported', 'unexplained': []}
+    plan = _early_signal_question(q, profile, as_of)  # precursor signatures: before demand ("visits in the next 3 months"), outreach, pathway
+    if plan is not None:
+        return plan
     if demand_intent(low):  # volume forecasts: before outreach, whose capacity grammar would read "36 hours per week" as call capacity
         plan = _demand_question(q, profile, as_of)
         if plan is not None:
@@ -2316,4 +2319,53 @@ def _pathway_question(q, profile, as_of):
     nodes.append({'id': 'pathway', 'operation': 'pathway', 'inputs': ['population'] if conditions else [], 'parameters': params,
                   'purpose': f'Care pathway from {start.replace("_", " ")}' + (f" to {', '.join(params['targets'])}" if targets else '')
                              + (f" by {params['group_by']}" if params['group_by'] != 'none' else '')})
+    return {'interpretation': q, 'coverage': 'supported_observation', 'unmet_requirements': [], 'nodes': nodes}, info
+
+
+# ---- early warning: matched filtering for pre-event signatures -> early_signal ----------------------
+_ACUTE_WORDS = r'(?:admissions?|hospitali\w+|ed visits?|er visits?|emergency(?: department)?(?: visits?)?|decompensation)'
+EARLY_SIGNAL_INTENT = (r'\bheading (?:toward|towards|for)\b|\bon (?:the|a) (?:road|path|way) to (?:an? |the )?(?:\w+ ){0,2}' + _ACUTE_WORDS + r'|'
+                       r'\bprecursors?\b|\bprodrom\w*|\bpre[- ]?(?:admission|hospitali[sz]ation|ed|event|decompensation) (?:signatures?|patterns?|signals?|templates?|shapes?)\b|'
+                       r'\b(?:signatures?|patterns?|signals?|shapes?) (?:that )?(?:usually |typically |often |commonly |tends? to )?(?:precedes?|comes? before|leads? (?:up )?to|foreshadows?)\b|'
+                       r'\b(?:signatures?|patterns?|signals?) (?:of|before|preceding|ahead of|leading (?:up )?to) (?:an? |the )?(?:\w+ ){0,3}' + _ACUTE_WORDS + r'\b|'
+                       r'\bearly[- ]warning\b|\b(?:early )?warning signs?\b|\bearly signs?\b|\bdecompensat\w*|\bmatched[- ]filter\w*|\bleading indicators?\b|'
+                       r'\babout to (?:be admitted|be hospitali[sz]ed|decompensate|end up in (?:the )?(?:ed|er|hospital))\b')
+
+
+def _early_signal_question(q, profile, as_of):
+    """'Which patients look like they're heading toward an admission?' -> early_signal (matched-filter precursor detection).
+    Capacity-limited call lists stay with outreach; time-until questions stay with survival."""
+    low = _strip_framing(q.lower())
+    if not re.search(EARLY_SIGNAL_INTENT, low) or survival_intent(low) or re.search(DEATH_WORDS, low): return None
+    if re.search(OUTREACH_INTENT, low) and (re.search(OUTREACH_SLOTS, low) or re.search(OUTREACH_HOURS, low)): return None
+    info = {'compiler': VERSION, 'recognised': ['early-signal question'], 'paraphrased': [], 'route': 'local_compiler', 'unexplained': []}
+    params = {}
+    admit = re.search(r'\b(?:re)?admi(?:t|ssion|tted)\w*|\bhospitali[sz]\w*|\binpatient\b', low)
+    ed = re.search(r'\b(?:ed|er)\b|\bemergency\b', low)
+    acute = re.search(r'\bacute (?:care|visits?|events?|utili[sz]ation)\b', low)
+    params['outcome'] = 'acute_care' if acute or (admit and ed) or not (admit or ed) else 'ed_visit' if ed else 'admission'
+    m = re.search(r'\b(?:within|in|over|during)(?: the)? (?:next |coming |following )?(\d{1,3}|one|two|three|four|five|six) (days?|weeks?|months?)\b', low)
+    if m:
+        n = int(m.group(1)) if m.group(1).isdigit() else PATHWAY_NUMBERS[m.group(1)]
+        months = max(1, min(6, round(n * {'d': 1 / 30.44, 'w': 7 / 30.44, 'm': 1}[m.group(2)[0]])))
+        params['horizon_months'] = months; info['recognised'].append(f'horizon {months} months')
+    w = re.search(r'\b(\d{1,2})[- ]months? (?:pre[- ]?(?:event|admission)|before|look[- ]?back|window|signature|template)\b', low)
+    if w and 3 <= int(w.group(1)) <= 12: params['window_months'] = int(w.group(1))
+    f = re.search(r'\bfalse[- ]alarm (?:rate|probability) (?:of |at |below |under )?(\d+(?:\.\d+)?)(%)?', low)
+    if f:
+        v = float(f.group(1)) / (100 if f.group(2) or float(f.group(1)) > 1 else 1)
+        if 0.001 <= v <= 0.5: params['false_alarm_rate'] = v
+    conditions = []
+    for c, aliases in CONDITION_ALIASES.items():
+        for alias in sorted(aliases, key=len, reverse=True):
+            if re.search(_alias_pattern(alias), low): conditions.append(c); break
+    if 'heart_failure_reduced_ef' in conditions and 'heart_failure' in conditions: conditions.remove('heart_failure')
+    info['recognised'].append(f"outcome {params['outcome']}" + (f" in {', '.join(conditions)}" if conditions else ''))
+    nodes = []
+    if conditions:
+        nodes.append({'id': 'population', 'operation': 'cohort', 'inputs': [],
+                      'parameters': {'specification': {'all': [{'kind': 'concept', 'concept': c, 'window': W} for c in conditions][:20], 'any': [], 'exclude': []}},
+                      'purpose': 'Population named in the question'})
+    nodes.append({'id': 'early_signal', 'operation': 'early_signal', 'inputs': ['population'] if conditions else [], 'parameters': params,
+                  'purpose': 'Matched-filter search for the pre-event signature of ' + params['outcome'].replace('_', ' ')})
     return {'interpretation': q, 'coverage': 'supported_observation', 'unmet_requirements': [], 'nodes': nodes}, info

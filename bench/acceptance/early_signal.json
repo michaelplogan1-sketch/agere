@@ -1,0 +1,10 @@
+[
+  {"question": "Which patients look like they're heading toward a heart failure admission?", "expect_operation": "early_signal"},
+  {"question": "Find patients showing the pattern that usually precedes an ED visit", "expect_operation": "early_signal"},
+  {"question": "Early warning signs of decompensation", "expect_operation": "early_signal"},
+  {"question": "Who has the pre-admission signature?", "expect_operation": "early_signal"},
+  {"question": "Which diabetics are showing early signs of an upcoming hospitalization?", "expect_operation": "early_signal"},
+  {"question": "Search the panel for precursors of emergency department visits in the next 3 months", "expect_operation": "early_signal"},
+  {"question": "Who is about to be admitted, based on the signals that came before past admissions?", "expect_operation": "early_signal"},
+  {"question": "Show me CHF patients with the leading indicators of an acute care visit", "expect_operation": "early_signal"}
+]
