@@ -26,6 +26,7 @@ medication(record_id, patient_id, source_stream, evidence ['dispensed','claim','
 measurement_latest(patient_id, concept, event_date, value_canonical, unit_canonical, same_day_values, same_day_min, record_id)  -- latest DATED value per patient+concept; use for "latest/most recent" questions
 current_record(stream, key_field, business_id, record_id, patient_id, versions, first_available_date, available_date, event_date, payload)  -- LATEST version of each entity in versioned streams; use json_extract(payload,'$.field') for current state
 social_need(patient_id, need ['food','transport','cost_of_care'], positive, instrument, source_stream, source_field, event_date, record_id)  -- social-needs screens normalised across instruments; use for any food/transport/cost-of-care question
+note_fact(patient_id, record_id, stream, fact_type ['ejection_fraction','dyspnea','edema','symptom','medication_nonadherence','medication_days_used','social_need','smoking_status','goals_of_care','follow_up','imaging_finding','walk_distance'], value, unit, negated, temporality ['current','historical'], event_date, evidence_text, qualifier, confidence)  -- facts found only in note/document/report TEXT; negated = 0 for presence; value numeric for ejection_fraction (%), medication_days_used (fraction), follow_up (days); qualifier = drug/site/modality
 claim(claim_id, patient_id, payer, service_date, benefit_year, first_status, final_status, ever_denied, denied_then_paid, net_payer_paid_cents, billed_cents, allowed_cents, first_available_date, last_available_date, first_submitted_date, first_payer_cash_date, net_payer_cash_cents, first_adjudication_date)  -- claim lag = first_submitted_date - service_date; days to payment = first_payer_cash_date - service_date
 -- claim money: net_payer_paid_cents already nets EVERY adjudication version (paid minus reversed); use it for totals.
 -- claim timing: first_adjudication_date (first decision), first_payer_cash_date (money received), first_submitted_date.
@@ -114,6 +115,12 @@ EXAMPLES = [  # generic semantic-layer patterns; retrieved per question (not ben
      "SELECT avg(los_days) FROM stay WHERE type = 'inpatient' AND substr(admit_date,1,4) = '2027' AND los_days IS NOT NULL"),
     ("How many men aged 40 to 64 are commercially insured?",
      "SELECT count(*) FROM patient WHERE sex_reported = 'M' AND age_latest BETWEEN 40 AND 64 AND coverage_type = 'commercial'"),
+    ("How many heart failure patients have an ejection fraction under 40 documented in their notes or reports?",
+     "SELECT count(DISTINCT n.patient_id) FROM note_fact n JOIN concept_patient cp ON cp.patient_id = n.patient_id AND cp.concept = 'heart_failure' WHERE n.fact_type = 'ejection_fraction' AND typeof(n.value) IN ('integer','real') AND n.value < 40"),
+    ("How many patients told us they stopped a medication because of cost or side effects, by reason?",
+     "SELECT value AS reason, count(DISTINCT patient_id) AS patients FROM note_fact WHERE fact_type = 'medication_nonadherence' AND value IN ('cost','side_effects') AND negated = 0 GROUP BY value"),
+    ("Which patients had transportation problems mentioned in their notes?",
+     "SELECT DISTINCT patient_id FROM note_fact WHERE fact_type = 'social_need' AND value = 'transport' AND negated = 0"),
     ("How many imaging reports mention pneumonia?",
      "SELECT count(*) FROM record WHERE stream = 'imaging_reports' AND lower(payload) LIKE '%pneumonia%'"),
 ]
