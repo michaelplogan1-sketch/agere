@@ -362,9 +362,9 @@ function vizOutreach(a){const o=a.overall||{},p=o.portfolio||{},labels=o.reason_
  return h}
 function worklist(a){const labels=((a.overall||{}).reason_labels)||{};let rows=a.table||[];const f=state.outFilter;if(f)rows=rows.filter(r=>r.practice===f||r.pcp===f);
  return (f?'<div class="tools"><span class="badge">Showing '+esc(f)+' · '+rows.length+' patients</span><button type="button" class="btn small" data-clearfilter="1">Show all</button></div>':'')+
-  tableHTML(rows,{name:'outreach-worklist',cols:['priority','patient_id','top_reasons','expected_value','engagement_probability','minutes','practice','pcp','suggested_action'],
-   head:{expected_value:'expected value',engagement_probability:'P(engage)',top_reasons:'reasons',reason_detail:'why (evidence)'},
-   render:{expected_value:v=>usd(v),engagement_probability:v=>pct(v,0),
+  tableHTML(rows,{name:'outreach-worklist',cols:['priority','patient_id','top_reasons','expected_value','expected_value_interval_90','engagement_probability','minutes','practice','pcp','suggested_action'],
+   head:{expected_value:'expected value',expected_value_interval_90:'90% conformal',engagement_probability:'P(engage)',top_reasons:'reasons',reason_detail:'why (evidence)'},
+   render:{expected_value:v=>usd(v),expected_value_interval_90:v=>Array.isArray(v)?usd(v[0])+' – '+usd(v[1]):'—',engagement_probability:v=>pct(v,0),
     top_reasons:(v,r)=>(v||[]).map(c=>{const l=labels[c]||{};return '<span class="rchip '+esc(l.category||'')+'" title="'+esc(c)+'">'+esc(l.label||c)+'</span>'}).join('')+
      (r.reason_detail?'<details class="why"><summary>Evidence</summary><span class="muted" style="font-size:12px">'+esc(r.reason_detail)+'</span></details>':''),
     suggested_action:v=>'<span style="font-size:12px">'+esc(v)+'</span>'}})}
@@ -458,7 +458,10 @@ function profChart(rows,net,thr,f){const W=CW(),lh=22,L=Math.min(Math.round(W*.3
   if(isNum(r.posterior_rate))s+='<circle cx="'+X(r.posterior_rate)+'" cy="'+y+'" r="5" style="fill:'+c+';stroke:var(--card);stroke-width:1.5"><title>'+esc(r.group+': shrunk '+f(r.posterior_rate)+', raw '+f(r.raw_rate)+', '+r.members+' members')+'</title></circle>';
   s+='</g>'});
  return s+'</svg>'}
-function visual(a){if(!a||a.answer_type==='unsupported')return '';const o=a.overall||{};
+function calNote(a){const c=((a&&a.overall)||{}).calibration;if(!c||!c.statement)return '';
+ return '<p class="hint" data-calibration="1"><b>Calibration.</b> '+esc(c.statement)+(c.method?'<details class="why"><summary>Method</summary><span class="muted" style="font-size:12px">'+esc(c.method)+'</span></details>':'')+'</p>'}
+function visual(a){const v=visual0(a);return v==null?v:v+calNote(a)}
+function visual0(a){if(!a||a.answer_type==='unsupported')return '';const o=a.overall||{};
   if(o.profile)return vizProfile(a);
   if(o.matrix&&o.states)return vizPathway(a);
  if(o.network&&o.data_gaps)return vizMarket(a);

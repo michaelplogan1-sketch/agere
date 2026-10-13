@@ -42,6 +42,11 @@ CONTRACTS = {
                   '(A1c, BP, statin, kidney health evaluation, HF GDMT pillars), Kalman-forecast rising risk and social needs, with reason codes and suggested actions; '
                   'exact (sort / 0-1 knapsack) or certified greedy selection; portfolio expected value, SD and value lost per unit of capacity cut. '
                   'Use for who-should-we-call / outreach-list / prioritise-for-follow-up questions with a stated capacity.'},
+    'calibration': {'inputs':['optional earlier_set'],'parameters':{'target':'all|forecasts|risk_scores|outreach_utilization','concept':'optional measurement concept',
+        'threshold':'number (with concept)','direction':'below|above','horizon_days':365,'level':0.9},
+        'meaning':'How well calibrated are Agere\'s own predictions: time-split conformal backtest of Kalman lab/vital forecasts and crossing probabilities, '
+                  'risk-score cost predictions and outreach utilization value; reports empirical coverage of held-out values, Brier score, ECE, '
+                  'reliability tables and adaptive-conformal coverage. Use for how-accurate / how-calibrated / can-we-trust-the-forecasts questions.'},
     'survival': {'inputs':['earlier_set'],'parameters':{'index':{'type':'discharge|condition_first_record|date','concept':'condition (condition_first_record)','date':'YYYY-MM-DD (date)','window':{'start':'','end':''}},
         'event':{'type':'readmission|followup|encounter|measurement','concept':'encounter or measurement concept','op':'lt|le|gt|ge','value':0},
         'horizon_days':365,'time_points':[30,90],'group_by':'none|coverage_type|practice|pcp|sex|age_band|condition','group_concept':'condition (group_by condition)','cox':False,'covariates':[]},

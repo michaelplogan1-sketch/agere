@@ -24,6 +24,8 @@ PRODUCT = {
                        'use': 'Did a program or medication start work: care management, transitions of care, community services, care coordination, starting a drug class; effect on ED visits, admissions, PMPM or a lab.'},
     'outreach': {'population': 'optional', 'view': 'worklist',
                  'use': 'Who should we call / prioritise: a capacity-limited outreach worklist ranked by expected value with reasons (care gaps, rising risk, social needs, utilization).'},
+    'calibration': {'population': 'optional', 'view': 'table',
+                    'use': 'How well calibrated / how accurate are our forecasts and risk scores: time-split conformal backtest coverage, Brier score, ECE, reliability tables.'},
     'monitor': {'population': 'none', 'view': 'chart',
                 'use': 'Is anything out of control: SPC control charts of ED/admit rates, PMPM, lab volume, denial rate, arrival lag; data-feed breaks; claims integrity, Benford, peer outliers, duplicates.'},
     'market': {'population': 'optional', 'view': 'tickers',
