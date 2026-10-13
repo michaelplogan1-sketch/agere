@@ -39,13 +39,16 @@ def tokens(t): return set(re.findall(r'[a-z0-9]+', t.lower()))
 
 def main(out, per_area=40):
     bench = [q['question'] for f in (ROOT / 'bench' / 'questions').glob('*.json') for q in json.load(open(f))]
+    for prior in (ROOT / 'artifacts' / 'bottling').glob('questions-*.jsonl'):  # do not repeat earlier training questions
+        bench += [json.loads(l)['question'] for l in prior.open() if l.strip()]
     bench_tokens = [tokens(b) for b in bench]
     doc = '\n'.join(f'{k}: {v}' for k, v in semantic_layer.SCHEMA_DOC.items())
     def ask(item):
         area, desc = item
         ledger = BudgetLedger(ROOT / 'artifacts/agere-full/provider-budget.sqlite3')
         m = nl2sql.HostedModel(ledger, ROOT / 'artifacts/agere-healthcare-v123/stack/provider-receipts', model='claude-opus-5-5')
-        text, _ = m(SYS, f'DATA\n{doc}\n\nEXAMPLES\nArea: {area} ({desc}). Write {per_area} distinct questions for this area.', max_tokens=6000)
+        style = os.environ.get('BOTTLING_STYLE', '')
+        text, _ = m(SYS, f'DATA\n{doc}\n\nEXAMPLES\nArea: {area} ({desc}). Write {per_area} distinct questions for this area.{style}', max_tokens=9000)
         mm = re.search(r'\[.*\]', text, re.S)
         qs = json.loads(mm.group(0)) if mm else []
         return area, qs, m.cost
