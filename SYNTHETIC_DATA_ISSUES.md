@@ -16,6 +16,7 @@ Owner request (2026-10-13): flag anything that is a mistake in how the synthetic
 | D4 | **ED spike in one month** | 92 ED visits in 2026-09 vs 3-4 in the neighbouring months | Monthly ED series and change-point detection dominated by one month | Smooth acute-event generation over time (seasonality ok, single-month burst not) |
 | D5 | **No appointment cancellations after 2026** | Cancellations: 61 in 2026, 0 in 2027-2029; reschedules only 13 total | Cancellation and access metrics are meaningless after 2026 | Keep cancellation/reschedule processes active in all years |
 | D6 | **Every screened uninsured patient reports cost difficulty** | Uninsured: 108 screened, 108 positive (100%) vs 5-7% for insured | Financial-strain analyses by payer are degenerate | Draw cost-difficulty from a probability by payer, not a deterministic rule |
+| D8 | **Glycemic control is implausibly good** | Only 2 patients ever have an A1c > 9% (max 11.8) among ~230 diabetics; 28 have a latest A1c >= 8 | Poor-control (HEDIS GSD >9%) analyses and outreach demos have almost no population | Draw A1c from a realistic diabetic distribution (US: roughly 15-20% > 9%) |
 | D7 | **Problem-list conditions carry no dates** | All 6,929 `conditions` rows have no event date (onset present on all but 13) | Incident-condition and "new diagnosis in period" questions need onset parsing; partly realistic | Emit recorded/diagnosis dates, or confirm intentional |
 
 ## Deliberate realism (keep: Agere handles these)
