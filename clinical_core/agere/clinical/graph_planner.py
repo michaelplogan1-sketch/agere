@@ -51,6 +51,13 @@ CONTRACTS = {
         'group_by':'auto|none|practice|payer|facility|source_system','period':{'start':'','end':''}},
         'meaning':'Statistical process control and integrity monitoring: Laney p\'/u\' and I-MR control charts with Western Electric rules, CUSUM/EWMA, '
                   'data-feed volume breaks, claims Benford, peer outliers and duplicate flags. Use for is-anything-out-of-control / spikes / feed-problem questions.'},
+    'demand': {'inputs':['optional earlier_set'],'parameters':{'measure':'ed_visits|inpatient_admissions|observation_stays|urgent_care_visits|primary_care_visits|specialist_visits|appointments|discharges|bed_days',
+        'frequency':'week|month','horizon':6,'group_by':'none|practice|facility|payer','target_occupancy':0.85,'peak_quantile':0.95,'staffing':False,
+        'minutes_per_unit':None,'fte_hours_per_week':None},
+        'meaning':'Volume forecasting: visits/admissions/appointments/discharges/bed-days per week or month with prediction intervals. Detects feed gaps, spikes and '
+                  'level breaks and fits only the usable recent regime; picks ETS/NB-GLM/baselines by rolling-origin backtest (MASE vs naive, interval coverage). '
+                  'Beds = bed-days/days/occupancy plus Poisson peak-day beds; staffing only from ratios the user states (else null, reported as missing). '
+                  'Not for per-patient lab forecasts (use trajectory).'},
     'sql': {'inputs':['optional earlier_set'],'parameters':{'query':'one read-only SELECT over semantic_layer tables','returns':'count|value|patient_set|table'},
         'meaning':'Exact answers to literal data questions: counts/sums/maxima of records or fields, record-level filters, date arithmetic (julianday), arrival lags, joins between streams, '
                   'group-by tables. Query the typed semantic_layer tables (concept columns already normalise ICD-10/SNOMED/labels/units); use record.payload with json_extract for other streams. '

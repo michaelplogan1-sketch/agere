@@ -1,0 +1,10 @@
+[
+  {"question": "Forecast ED visits for the next 6 months", "expect_operation": "demand"},
+  {"question": "How many beds will we need next quarter?", "expect_operation": "demand"},
+  {"question": "Projected primary care appointment demand by practice", "expect_operation": "demand"},
+  {"question": "Weekly admissions forecast with uncertainty", "expect_operation": "demand"},
+  {"question": "How many nurses do we need for next month's discharges?", "expect_operation": "demand"},
+  {"question": "Predict urgent care visits for the next 8 weeks by payer", "expect_operation": "demand"},
+  {"question": "What will our observation stay volume look like over the next 3 months?", "expect_operation": "demand"},
+  {"question": "Projected hospital census and beds needed next month at 85% occupancy", "expect_operation": "demand"}
+]

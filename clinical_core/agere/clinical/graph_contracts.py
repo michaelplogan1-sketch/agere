@@ -11,7 +11,7 @@ SET_OPS = {'cohort', 'evidence', 'intersect', 'union', 'difference', 'sequence',
            'interpretation', 'source_state', 'pre_event_state', 'requirements', 'outcome',
            'protocol_review', 'program_document', 'functional_review', 'domain_review', 'appointment_followthrough'}
 WORK_SUPPORT = ('accountability_review', 'program_acquisition', 'measure_review')
-TYPED = {'aggregate', 'explain', 'sql', 'vbc', 'monitor', 'program_effect', 'outreach', 'discover', 'trajectory', 'survival', 'observation_process', 'reference_review', 'cohort', 'evidence', 'intersect', 'union', 'difference', 'compare', 'medication_identity',
+TYPED = {'aggregate', 'explain', 'sql', 'vbc', 'monitor', 'demand', 'program_effect', 'outreach', 'discover', 'trajectory', 'survival', 'observation_process', 'reference_review', 'cohort', 'evidence', 'intersect', 'union', 'difference', 'compare', 'medication_identity',
          'assertion_review', 'source_state', 'pre_event_state', 'context', 'context_passes', 'functional_review',
          'domain_review', 'worklist', 'program_acquisition', 'retrieve', 'forecast',
          'source_changes', 'review', 'measure_review', 'financial_accounts', 'accountability_review', 'outcome', 'appointment_followthrough', 'interpretation', 'requirements', 'protocol_review', 'program_document'}
@@ -43,7 +43,7 @@ def input_contract(op):
     lo, hi = ((0, 0) if op in ('cohort', 'evidence') else
               (2, 2) if op == 'difference' else
               (2, 10) if op in ('intersect', 'union') else
-              (0, 1) if op in ('sql', 'vbc', 'program_effect', 'outreach', 'monitor') else (1, 10) if op == 'reference_review' else (3, 10) if op == 'compare' else (1, 4) if op == 'worklist' else (1, 1))
+              (0, 1) if op in ('sql', 'vbc', 'program_effect', 'outreach', 'monitor', 'demand') else (1, 10) if op == 'reference_review' else (3, 10) if op == 'compare' else (1, 4) if op == 'worklist' else (1, 1))
     result = {'count': [lo, hi], 'type': 'membership',
               'output': 'membership' if op in SET_OPS else 'report'}
     if op in ('baseline', 'pre_event_state'): result['first_operation'] = 'outcome'
@@ -149,6 +149,17 @@ def parameter_schema(op, catalog):
                     'method': string(monitor.METHODS), 'amount': string(monitor.AMOUNTS),
                     'stream': {'type': 'string', 'description': 'One source stream for feed checks, or empty'},
                     'period': obj({'start': {'type': 'string'}, 'end': {'type': 'string'}})})
+    if op == 'demand':
+        from . import demand
+        return obj({'measure': string(demand.MEASURES, 'Volume series: visits by setting, scheduled appointments, discharges or bed-days'),
+                    'frequency': string(demand.FREQUENCIES), 'horizon': {'type': 'integer', 'minimum': 1, 'maximum': 104, 'description': 'Periods ahead (months 1..24, weeks 1..104)'},
+                    'group_by': string(demand.GROUP_BY, 'practice = attributed PCP practice (appointments: scheduling practice); facility = where it occurred'),
+                    'top': {'type': 'integer', 'minimum': 1, 'maximum': 30},
+                    'target_occupancy': {'type': 'number', 'minimum': 0.3, 'maximum': 1.0, 'description': 'bed_days only; default 0.85'},
+                    'peak_quantile': {'type': 'number', 'minimum': 0.5, 'maximum': 0.999, 'description': 'bed_days peak-day coverage; default 0.95'},
+                    'staffing': {'type': 'boolean', 'description': 'true when the question asks for staff/FTE needs'},
+                    'minutes_per_unit': {'type': ['number', 'null'], 'description': 'User-supplied staff minutes per unit; null if not stated (never invent)'},
+                    'fte_hours_per_week': {'type': ['number', 'null'], 'description': 'User-supplied productive hours per FTE-week; null if not stated'}})
     if op == 'sql':
         from . import sql_query
         return obj({'query': {'type': 'string', 'description': 'One read-only SELECT/WITH over the semantic_layer tables. Reference the upstream population (if an input is given) as table population(patient_id).'},
