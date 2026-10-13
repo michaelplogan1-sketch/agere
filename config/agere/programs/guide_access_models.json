@@ -1,0 +1,30 @@
+{
+ "schema": "agere-program/1",
+ "id": "guide_access_models",
+ "program": "CMMI care models (GUIDE dementia, ACCESS chronic care)",
+ "label": "GUIDE / ACCESS",
+ "kind": "care_model",
+ "status": "active",
+ "years": [2026],
+ "year_basis": "performance_year",
+ "aliases": ["\\bguide model\\b", "\\bguiding an improved dementia experience\\b", "\\baccess model\\b", "\\badvancing chronic care with effective, scalable solutions\\b"],
+ "parameters": {
+  "guide_dates": {"value": {"established_track_start": "2024-07-01", "new_program_track_start": "2025-07-01", "end": "2032-06-30"}, "unit": "dates", "citations": ["guide_page"]},
+  "guide_dcmp_monthly_py2026": {"value": {
+    "low_complexity_dyad": [157, 68], "moderate_complexity_dyad": [288, 126], "high_complexity_dyad": [377, 231],
+    "low_complexity_individual": [241, 126], "moderate_high_complexity_individual": [409, 225], "residential_care_community": [180, 70]},
+   "unit": "USD per beneficiary per month [first 6 months, after 6 months]", "citations": ["guide_pmp"]},
+  "guide_population_income_adjustment": {"value": [{"percentile_min": 80, "usd": 15}, {"percentile_min": 51, "usd": 0}, {"percentile_min": 0, "usd": -6}], "unit": "USD per beneficiary per month", "citations": ["guide_pmp"]},
+  "guide_respite_cap_py2026": {"value": 2625, "unit": "USD per beneficiary per year (2,500 at launch; 2,563 in PY2025)", "citations": ["guide_pmp"]},
+  "access_dates": {"value": {"start": "2026-07-05", "duration_years": 10}, "unit": "dates", "citations": ["access_page"]},
+  "access_annual_payment": {"value": {"eCKM": [360, 180], "CKM": [420, 210], "MSK": [180, null], "BH": [180, 90]}, "unit": "USD allowed per year [initial, follow-on]", "citations": ["access_pay"]},
+  "access_rules": {"value": "Monthly payments capped at 50% of the Medicare portion with the rest withheld and reconciled; 5% multi-track discount; full payment if at least 50% of patients meet outcome targets; rural add-on +$15 (eCKM/CKM initial)", "unit": "text", "citations": ["access_pay"]}
+ },
+ "citations": {
+  "guide_page": {"url": "https://www.cms.gov/priorities/innovation/innovation-models/guide", "title": "GUIDE (Guiding an Improved Dementia Experience) Model page", "section": "Overview", "applies_to": "2024-2032", "retrieved": "2026-10-13", "primary": true},
+  "guide_pmp": {"url": "https://www.cms.gov/priorities/innovation/files/guide-payment-methodology-paper.pdf", "title": "GUIDE Payment Methodology Paper v3.0 (effective 2026-06-01)", "section": "Exhibit 8 (p. 28); Exhibit 14; Section 5 (p. 46)", "applies_to": "PY2026", "retrieved": "2026-10-13", "primary": true, "excerpt": "The annual respite cap is $2,625"},
+  "access_page": {"url": "https://www.cms.gov/priorities/innovation/innovation-models/access", "title": "ACCESS Model page", "section": "Overview", "applies_to": "from 2026-07-05", "retrieved": "2026-10-13", "primary": true},
+  "access_pay": {"url": "https://www.cms.gov/priorities/innovation/files/access-payments-amts-perf-targets.pdf", "title": "ACCESS Model Payment Amounts and Performance Targets (effective 2026-07-05 to 2027-12-31)", "section": "Table 1 (p. 3); p. 4", "applies_to": "2026-07-05 to 2027-12-31", "retrieved": "2026-10-13", "primary": true}
+ },
+ "last_verified": "2026-10-13"
+}

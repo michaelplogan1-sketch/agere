@@ -1,0 +1,60 @@
+{
+ "schema": "agere-program/1",
+ "id": "mssp_program_rules",
+ "program": "Medicare Shared Savings Program",
+ "label": "MSSP program rules (quality, assignment, benchmark, advance payments)",
+ "kind": "program_rules",
+ "status": "active",
+ "years": [2025, 2026],
+ "year_basis": "performance_year",
+ "choose": "MSSP BASIC level A-E or MSSP ENHANCED",
+ "aliases": ["\\bmssp\\b", "\\bmedicare shared savings program\\b", "\\bmedicare aco\\b"],
+ "parameters": {
+  "quality": {
+   "performance_standard": {"value": "Report the APP Plus measure set and score at or above the 40th percentile of all MIPS Quality performance category scores", "unit": "text", "citations": ["cfr_512"]},
+   "performance_standard_py2025_score": {"value": 76.70, "unit": "MIPS Quality score (mean of PY2021-2023 40th percentiles)", "citations": ["cms_40th_2025"]},
+   "ecqm_incentive": {"value": "PY2025-2026: ACOs reporting all eCQMs/MIPS CQMs with data completeness meet the standard at >=10th percentile on one outcome measure and >=40th on one other; eCQMs only from PY2027", "unit": "text", "citations": ["cfr_512"]},
+   "alternative_standard": {"value": "At or above the 10th percentile on at least one APP Plus outcome measure: sharing rate scaled by the ACO's quality score (sliding scale)", "unit": "text", "citations": ["cfr_512"]},
+   "enhanced_loss_effect": {"value": "ENHANCED loss rate = 1 - 0.75 x quality score within 40-75%; 75% if neither standard met; BASIC C-E loss rate fixed at 30%", "unit": "text", "citations": ["cfr_610_f"]},
+   "app_plus_measures": {"value": {"2025": ["321 CAHPS for MIPS", "479 Hospital-Wide Readmission", "001 Diabetes HbA1c Poor Control", "134 Depression Screening and Follow-up", "236 Controlling High Blood Pressure", "112 Breast Cancer Screening"], "2026": ["adds 113 Colorectal Cancer Screening"], "2027": ["adds 305 Initiation and Engagement of SUD Treatment"]}, "unit": "Quality ID by performance year", "citations": ["cy26_fs"]},
+   "health_equity_quality_adjustment": {"value": "Quality-score health equity adjustment applies PY2023-2025 only; removed starting PY2026", "unit": "text", "citations": ["cfr_512", "cy26_fs"]}
+  },
+  "assignment": {
+   "methods": {"value": ["prospective", "preliminary prospective with retrospective reconciliation"], "unit": "elected before each agreement period; may change annually", "citations": ["cfr_400"]},
+   "stepwise": {"value": "Step 1 plurality of allowed primary care charges by primary care physicians/NPPs; Step 2 specialists for beneficiaries with no primary care practitioner service; Step 3 (PY2025+) expanded 24-month window for beneficiaries with a non-physician ACO professional service", "unit": "text", "citations": ["cfr_402"]},
+   "voluntary_alignment": {"value": "Beneficiary designation of an ACO professional assigns the beneficiary prospectively, regardless of track", "unit": "text", "citations": ["cfr_402"]}
+  },
+  "benchmark": {
+   "regional_adjustment_positive_cap": {"value": 0.05, "unit": "share of national per capita expenditure", "citations": ["cfr_656"]},
+   "regional_adjustment_negative_cap": {"value": -0.015, "unit": "share of national per capita expenditure", "citations": ["cfr_656"]},
+   "acpt_weight": {"value": 0.3333, "unit": "Accountable Care Prospective Trend share of the three-way update factor (agreement periods from 2024)", "citations": ["cfr_652"]},
+   "risk_score_growth_cap": {"value": "Aggregate demographic risk-score growth plus 3 percentage points (agreement periods from 2024); flat 3% before 2024", "unit": "text", "citations": ["cfr_605_a"]},
+   "prior_savings_adjustment": {"value": "Lesser of 50% of pro-rated average per capita savings or 5% of national per capita expenditure", "unit": "text", "citations": ["cfr_658"]},
+   "hcc_model": {"value": "Uses the CMS-HCC model(s) of the performance year for all benchmark years, following the MA phase-in (PY2024 67% V24/33% V28)", "unit": "text", "citations": ["cy24_fs"]}
+  },
+  "advance_investment_payments": {
+   "eligibility": {"value": "New (not renewing/re-entering), inexperienced with risk, low-revenue ACOs entering the BASIC glide path at Level A", "unit": "text", "citations": ["cfr_630"]},
+   "one_time_payment": {"value": 250000, "unit": "USD at start of PY1", "citations": ["cfr_630"]},
+   "quarterly_per_beneficiary": {"value": [{"score_min": 1, "score_max": 24, "usd": 0}, {"score_min": 25, "score_max": 34, "usd": 20}, {"score_min": 35, "score_max": 44, "usd": 24}, {"score_min": 45, "score_max": 54, "usd": 28}, {"score_min": 55, "score_max": 64, "usd": 32}, {"score_min": 65, "score_max": 74, "usd": 36}, {"score_min": 75, "score_max": 84, "usd": 40}, {"score_min": 85, "score_max": 100, "usd": 45}], "unit": "USD per assigned beneficiary per quarter by risk factor score (max 8 quarters, 10,000 beneficiaries)", "citations": ["cfr_630"]},
+   "recoupment": {"value": "Recouped from any shared savings the ACO earns, carried into later agreement periods", "unit": "text", "citations": ["cfr_630"]},
+   "prepaid_shared_savings": {"value": "Renewing ACOs (agreement periods from 2026) with prior shared savings and a positive prior savings adjustment in Level C-E or ENHANCED; quarterly prepayment recouped from shared savings; >=50% to direct beneficiary services", "unit": "text", "citations": ["cfr_640"]}
+  }
+ },
+ "citations": {
+  "cfr_512": {"url": "https://www.ecfr.gov/current/title-42/chapter-IV/subchapter-B/part-425/subpart-F/section-425.512", "title": "42 CFR 425.512 Determining the ACO quality performance standard", "section": "(a)(5)(i)(B); (a)(5)(ii)(B); (b)", "applies_to": "performance years 2025-2026 (eCFR version 2026-10-08)", "retrieved": "2026-10-13", "primary": true, "excerpt": "equivalent to or higher than the 40th percentile across all MIPS Quality performance category scores"},
+  "cms_40th_2025": {"url": "https://www.cms.gov/files/document/performance-year-2025-40th-percentile-mips-quality-performance-category-score.pdf", "title": "40th Percentile MIPS Quality Performance Category Score for Performance Year 2025", "section": "p. 1", "applies_to": "performance year 2025", "retrieved": "2026-10-13", "primary": true},
+  "cfr_610_f": {"url": "https://www.ecfr.gov/current/title-42/chapter-IV/subchapter-B/part-425/subpart-G/section-425.610", "title": "42 CFR 425.610 Calculation of shared savings and losses under the ENHANCED track", "section": "(f)(4)", "applies_to": "performance years 2024 and later", "retrieved": "2026-10-13", "primary": true},
+  "cy26_fs": {"url": "https://www.cms.gov/newsroom/fact-sheets/calendar-year-cy-2026-medicare-physician-fee-schedule-final-rule-cms-1832-f-medicare-shared-savings", "title": "CY 2026 Medicare Physician Fee Schedule Final Rule (CMS-1832-F) Medicare Shared Savings Program fact sheet", "section": "Quality / APP Plus measure set", "applies_to": "performance years 2025-2027", "retrieved": "2026-10-13", "primary": true},
+  "cfr_400": {"url": "https://www.ecfr.gov/current/title-42/chapter-IV/subchapter-B/part-425/subpart-E/section-425.400", "title": "42 CFR 425.400 General (beneficiary assignment)", "section": "(a)(2)-(4)", "applies_to": "performance years 2019 and later", "retrieved": "2026-10-13", "primary": true},
+  "cfr_402": {"url": "https://www.ecfr.gov/current/title-42/chapter-IV/subchapter-B/part-425/subpart-E/section-425.402", "title": "42 CFR 425.402 Basic assignment methodology", "section": "(b)(1)-(5); (e)", "applies_to": "performance years 2025 and later (step 3)", "retrieved": "2026-10-13", "primary": true, "excerpt": "For performance year 2025 and subsequent performance years, CMS employs the following third step"},
+  "cfr_656": {"url": "https://www.ecfr.gov/current/title-42/chapter-IV/subchapter-B/part-425/subpart-G/section-425.656", "title": "42 CFR 425.656 Calculating the regional adjustment to the historical benchmark", "section": "(c)(3)-(4); (e)", "applies_to": "agreement periods starting 2024 and later", "retrieved": "2026-10-13", "primary": true, "excerpt": "5 percent of the national per capita expenditure amount"},
+  "cfr_652": {"url": "https://www.ecfr.gov/current/title-42/chapter-IV/subchapter-B/part-425/subpart-G/section-425.652", "title": "42 CFR 425.652 Establishing, adjusting, and updating the benchmark", "section": "(b)(4)(i)", "applies_to": "agreement periods starting 2024 and later", "retrieved": "2026-10-13", "primary": true},
+  "cfr_605_a": {"url": "https://www.ecfr.gov/current/title-42/chapter-IV/subchapter-B/part-425/subpart-G/section-425.605", "title": "42 CFR 425.605 Calculation of shared savings and losses under the BASIC track", "section": "(a)(1)(ii)", "applies_to": "agreement periods starting 2024 and later", "retrieved": "2026-10-13", "primary": true},
+  "cfr_658": {"url": "https://www.ecfr.gov/current/title-42/chapter-IV/subchapter-B/part-425/subpart-G/section-425.658", "title": "42 CFR 425.658 Calculating the adjustment for prior savings", "section": "(c)", "applies_to": "agreement periods starting 2024 and later", "retrieved": "2026-10-13", "primary": true},
+  "cy24_fs": {"url": "https://www.cms.gov/newsroom/fact-sheets/calendar-year-cy-2024-medicare-physician-fee-schedule-final-rule-medicare-shared-savings-program", "title": "CY 2024 Medicare Physician Fee Schedule Final Rule: Medicare Shared Savings Program fact sheet", "section": "Risk adjustment", "applies_to": "agreement periods starting 2024 and later", "retrieved": "2026-10-13", "primary": true},
+  "cfr_630": {"url": "https://www.ecfr.gov/current/title-42/chapter-IV/subchapter-B/part-425/subpart-H/section-425.630", "title": "42 CFR 425.630 Advance investment payments", "section": "(b); (f) Table 1; (g)(1)", "applies_to": "agreement periods starting 2024 and later", "retrieved": "2026-10-13", "primary": true, "excerpt": "a one-time payment of $250,000"},
+  "cfr_640": {"url": "https://www.ecfr.gov/current/title-42/chapter-IV/subchapter-B/part-425/subpart-H/section-425.640", "title": "42 CFR 425.640 Prepaid shared savings", "section": "(a)-(e)", "applies_to": "agreement periods starting 2026 and later (and 2025 renewals from PY2026)", "retrieved": "2026-10-13", "primary": true}
+ },
+ "pending_changes": "CY2027 PFS proposed rule (PROPOSED): drop measures 305 and 493 from APP Plus; AIP flat $45/$25 per quarter from PY2028; prepaid shared savings closes after the 2027 cycle. Not compiled.",
+ "last_verified": "2026-10-13"
+}

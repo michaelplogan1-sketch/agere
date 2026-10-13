@@ -1,0 +1,37 @@
+{
+ "$schema": "https://json-schema.org/draft/2020-12/schema",
+ "$id": "agere-program/1",
+ "title": "Agere VBC program rulebook entry",
+ "description": "One program/track (variants for levels/options) for the listed years. Every parameter leaf carries citations; clinical_core/agere/clinical/programs.py validate_program() enforces this plus cross-references (python -m clinical_core.agere.clinical.programs). Files starting with '_' are not loaded.",
+ "type": "object",
+ "required": ["schema", "id", "program", "label", "kind", "status", "years", "year_basis", "aliases", "parameters", "citations", "last_verified"],
+ "properties": {
+  "schema": {"const": "agere-program/1"},
+  "id": {"type": "string", "pattern": "^[a-z0-9_]+$"},
+  "program": {"type": "string"},
+  "label": {"type": "string"},
+  "kind": {"enum": ["shared_savings", "capitation_model", "episode_model", "care_model", "risk_adjustment", "star_ratings", "program_rules", "typical_range"]},
+  "status": {"enum": ["active", "announced", "ended", "terminated_early", "ending", "reference"]},
+  "years": {"type": "array", "items": {"type": "integer"}, "minItems": 1},
+  "year_basis": {"enum": ["performance_year", "payment_year", "star_year", "reference_year"]},
+  "aliases": {"type": "array", "items": {"type": "string", "description": "case-insensitive regex matched against lower-cased text"}},
+  "choose": {"type": "string", "description": "program_rules entries: the track choice a settlement needs"},
+  "variants": {"type": "object", "additionalProperties": {"type": "object", "properties": {"aliases": {"type": "array", "items": {"type": "string"}}, "parameters": {"$ref": "#/$defs/parameters"}}}},
+  "settlement": {"type": "object", "description": "vbc.settle term -> '$parameter' reference or a literal", "propertyNames": {"enum": ["sharing_rate", "msr", "mlr", "msr_schedule", "loss_rate", "loss_rate_min", "loss_rate_max", "savings_cap_pct", "loss_cap_pct", "loss_cap_revenue_pct", "two_sided", "quality_score", "quality_mode", "corridors", "discount_pct", "quality_withhold_pct"]}},
+  "assumptions": {"type": "array", "items": {"type": "string"}},
+  "disclaimer": {"type": "string", "description": "required for typical_range"},
+  "parameters": {"$ref": "#/$defs/parameters"},
+  "citations": {"type": "object", "additionalProperties": {"$ref": "#/$defs/citation"}},
+  "pending_changes": {"type": "string"},
+  "unverified": {"type": "array", "items": {"type": "string"}},
+  "last_verified": {"type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$"}
+ },
+ "$defs": {
+  "leaf": {"type": "object", "required": ["value", "citations"], "properties": {"value": {}, "unit": {"type": "string"}, "note": {"type": "string"}, "citations": {"type": "array", "items": {"type": "string"}, "minItems": 1}}},
+  "parameters": {"type": "object", "additionalProperties": {"anyOf": [{"$ref": "#/$defs/leaf"}, {"$ref": "#/$defs/parameters"}]}},
+  "citation": {"type": "object", "required": ["url", "title", "section", "applies_to", "retrieved"],
+   "properties": {"url": {"type": "string", "pattern": "^https://"}, "title": {"type": "string"}, "section": {"type": "string"}, "applies_to": {"type": "string"},
+                  "retrieved": {"type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$"}, "publisher": {"type": "string"}, "primary": {"type": "boolean"},
+                  "excerpt": {"type": "string", "description": "at most 25 words"}, "verification": {"type": "string"}}}
+ }
+}

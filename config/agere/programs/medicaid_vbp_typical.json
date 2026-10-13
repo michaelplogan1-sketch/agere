@@ -1,0 +1,28 @@
+{
+ "schema": "agere-program/1",
+ "id": "medicaid_vbp_typical",
+ "program": "Medicaid value-based payment (state documents, typical ranges)",
+ "label": "Medicaid VBP - typical ranges",
+ "kind": "typical_range",
+ "status": "reference",
+ "years": [2022, 2023],
+ "year_basis": "reference_year",
+ "aliases": ["\\bmedicaid (?:vbp|value[- ]based (?:payment|care)|shared[- ]savings|aco)\\b", "\\bny(?:s)? (?:medicaid )?vbp\\b"],
+ "disclaimer": "Published state guidance floors and guideline ranges (New York VBP Roadmap) and national payment mix, NOT any managed-care plan's contract. MassHealth, Minnesota IHP and Oregon figures seen only in search snippets are listed as unverified in docs/agere/VBC_RULEBOOK.md and are not compiled. Never used as settlement terms.",
+ "parameters": {
+  "ny_level1_min_savings_share": {"value": 0.4, "unit": "minimum share of savings to provider, Level 1 (upside only), if quality goals met", "citations": ["ny_roadmap"]},
+  "ny_level2_min_loss_share": {"value": 0.2, "unit": "minimum share of losses borne by provider, Level 2", "citations": ["ny_roadmap"]},
+  "ny_level2_loss_cap": {"value": {"year_1": 0.03, "year_2_plus": 0.05}, "unit": "share of target budget", "citations": ["ny_roadmap"]},
+  "ny_guideline_level1_savings_share": {"value": 0.5, "unit": "share of savings, >50% of quality targets met", "citations": ["ny_roadmap"]},
+  "ny_guideline_level2_max_savings_share": {"value": 0.9, "unit": "up to this share of savings, Level 2 under budget", "citations": ["ny_roadmap"]},
+  "ny_guideline_level2_max_loss_share": {"value": 0.5, "unit": "up to this share of losses when >50% of quality targets met", "citations": ["ny_roadmap"]},
+  "ny_level3": {"value": "prospective capitation (PMPM or bundles); contractor assumes full responsibility for savings and losses", "unit": "text", "citations": ["ny_roadmap"]},
+  "medicaid_payments_lan_3_4": {"value": 0.437, "unit": "share of Medicaid payments in LAN categories 3-4, CY2023", "citations": ["lan_2024"]},
+  "medicaid_payments_lan_3b_4": {"value": 0.211, "unit": "share of Medicaid payments with downside risk, CY2023", "citations": ["lan_2024"]}
+ },
+ "citations": {
+  "ny_roadmap": {"url": "https://healthweb-back.health.ny.gov/health_care/medicaid/redesign/vbp/roadmaps/final_updated_roadmap.htm", "title": "Value Based Payment Update - NYS Roadmap for Medicaid Payment Reform (revised May 2022)", "section": "Appendix A-4; Appendix A-7 Table 4", "applies_to": "NY Medicaid VBP arrangements, roadmap revised 2022", "retrieved": "2026-10-13", "publisher": "New York State Department of Health", "primary": false, "verification": "read via page summary; excerpts not character-checked"},
+  "lan_2024": {"url": "https://hcp-lan.org/wp-content/uploads/2025/08/2024-HCPLAN-Methodology-Report.pdf", "title": "HCP-LAN 2024 APM Measurement Effort Methodology Report", "section": "p. 16 (Medicaid)", "applies_to": "CY2023 payments", "retrieved": "2026-10-13", "publisher": "Health Care Payment Learning & Action Network", "primary": false}
+ },
+ "last_verified": "2026-10-13"
+}

@@ -1,0 +1,54 @@
+{
+ "schema": "agere-program/1",
+ "id": "aco_reach",
+ "program": "ACO REACH",
+ "label": "ACO REACH",
+ "kind": "shared_savings",
+ "status": "ending",
+ "years": [2025, 2026],
+ "year_basis": "performance_year",
+ "aliases": ["\\baco reach\\b", "\\breach (?:model|aco)\\b", "\\breach (?:global|professional)\\b"],
+ "variants": {
+  "Professional": {"aliases": ["\\bprofessional\\b"],
+   "parameters": {
+    "risk_share": {"value": 0.5, "unit": "share of savings/losses in the first corridor", "citations": ["r26_23", "r26_511"]},
+    "discount_pct": {"value": 0.0, "unit": "benchmark discount", "citations": ["r26_23", "r25_45"]},
+    "corridors": {"value": [{"from": 0.0, "to": 0.05, "rate": 0.5}, {"from": 0.05, "to": 0.10, "rate": 0.35}, {"from": 0.10, "to": 0.15, "rate": 0.15}, {"from": 0.15, "to": null, "rate": 0.05}],
+                  "unit": "marginal share of savings/losses by % of benchmark", "citations": ["r26_511", "r25_511"]},
+    "capitation": {"value": "Primary Care Capitation required; Advanced Payment Option optional", "unit": "text", "citations": ["r26_21"]}}},
+  "Global": {"aliases": ["\\bglobal\\b"],
+   "parameters": {
+    "risk_share": {"value": 1.0, "unit": "share of savings/losses in the first corridor", "citations": ["r26_23", "r26_511"]},
+    "discount_pct": {"value": {"2025": 0.035, "2026": 0.04}, "unit": "benchmark discount by performance year", "citations": ["r25_45", "r26_45"]},
+    "corridors": {"value": {"2025": [{"from": 0.0, "to": 0.25, "rate": 1.0}, {"from": 0.25, "to": 0.35, "rate": 0.5}, {"from": 0.35, "to": 0.50, "rate": 0.25}, {"from": 0.50, "to": null, "rate": 0.10}],
+                            "2026": [{"from": 0.0, "to": 0.10, "rate": 1.0}, {"from": 0.10, "to": 0.35, "rate": 0.5}, {"from": 0.35, "to": 0.50, "rate": 0.25}, {"from": 0.50, "to": null, "rate": 0.10}]},
+                  "unit": "marginal share of savings/losses by % of benchmark, by performance year", "citations": ["r26_511", "r25_511"]},
+    "capitation": {"value": "Total Care Capitation or Primary Care Capitation; Advanced Payment Option only with Primary Care Capitation", "unit": "text", "citations": ["r26_21"]}}}
+ },
+ "settlement": {"corridors": "$corridors", "discount_pct": "$discount_pct", "quality_withhold_pct": "$quality_withhold_pct", "two_sided": true, "msr": 0.0, "mlr": 0.0,
+                "quality_mode": "withhold"},
+ "assumptions": ["The quality withhold is fully earned back (quality_score 1.0); a stated quality score earns back that share.",
+                 "Benchmark supplied before the discount and withhold; population (health equity) adjustment, stop-loss and capitation reconciliation not modelled."],
+ "parameters": {
+  "quality_withhold_pct": {"value": {"2025": 0.02, "2026": 0.05}, "unit": "share of benchmark withheld, earned back on quality performance", "citations": ["r26_47"]},
+  "stop_loss": {"value": "Optional for Global and Professional; residual-based with a PBPM charge; payouts budget-neutral since PY2025 (attachment points not published in the guide)", "unit": "text", "citations": ["r26_24"]},
+  "population_adjustment_pbpm": {"value": [{"percentile_min": 90, "usd": 30}, {"percentile_min": 80, "usd": 20}, {"percentile_min": 70, "usd": 10}, {"percentile_min": 30, "usd": 0}, {"percentile_min": 0, "usd": -10}],
+                                 "unit": "USD per beneficiary per month by Population Score percentile (CDI replaces ADI in PY2026)", "citations": ["r26_48"]},
+  "model_end": {"value": "2026-12-31", "unit": "date; four performance years PY2023-PY2026, no new applications", "citations": ["reach_page"]},
+  "py2026_changes": {"value": "Benchmark historical/regional blend 60/40 (standard) and 55/45 (new entrant, high needs); additional 3% cap on risk-score growth; V28 at 100%; quality withhold 5%", "unit": "text", "citations": ["reach_qr26"]}
+ },
+ "citations": {
+  "r26_23": {"url": "https://www.cms.gov/priorities/innovation/files/aco-reach-py26-financial-ops-guide-ovw.pdf", "title": "ACO REACH Model PY2026 Financial Operating Guide: Overview (Rev. 1.1)", "section": "Section 2.3", "applies_to": "PY2026", "retrieved": "2026-10-13", "primary": true},
+  "r26_21": {"url": "https://www.cms.gov/priorities/innovation/files/aco-reach-py26-financial-ops-guide-ovw.pdf", "title": "ACO REACH Model PY2026 Financial Operating Guide: Overview (Rev. 1.1)", "section": "Section 2.1, Figure 2.2", "applies_to": "PY2026", "retrieved": "2026-10-13", "primary": true, "excerpt": "An ACO electing the Professional risk arrangement must participate in Primary Care Capitation."},
+  "r26_24": {"url": "https://www.cms.gov/priorities/innovation/files/aco-reach-py26-financial-ops-guide-ovw.pdf", "title": "ACO REACH Model PY2026 Financial Operating Guide: Overview (Rev. 1.1)", "section": "Sections 2.4, 5.1.2", "applies_to": "PY2026", "retrieved": "2026-10-13", "primary": true},
+  "r26_45": {"url": "https://www.cms.gov/priorities/innovation/files/aco-reach-py26-financial-ops-guide-ovw.pdf", "title": "ACO REACH Model PY2026 Financial Operating Guide: Overview (Rev. 1.1)", "section": "Section 4.5", "applies_to": "PY2026", "retrieved": "2026-10-13", "primary": true},
+  "r26_47": {"url": "https://www.cms.gov/priorities/innovation/files/aco-reach-py26-financial-ops-guide-ovw.pdf", "title": "ACO REACH Model PY2026 Financial Operating Guide: Overview (Rev. 1.1)", "section": "Section 4.7, Figure 4.12", "applies_to": "PY2021-PY2026", "retrieved": "2026-10-13", "primary": true, "excerpt": "In PY2026, the quality withhold increased to 5%, all tied to performance."},
+  "r26_48": {"url": "https://www.cms.gov/priorities/innovation/files/aco-reach-py26-financial-ops-guide-ovw.pdf", "title": "ACO REACH Model PY2026 Financial Operating Guide: Overview (Rev. 1.1)", "section": "Section 4.8, Figure 4.13 (pp. 21-22)", "applies_to": "PY2026", "retrieved": "2026-10-13", "primary": true, "excerpt": "CDI will be used in place of the Area Deprivation Index"},
+  "r26_511": {"url": "https://www.cms.gov/priorities/innovation/files/aco-reach-py26-financial-ops-guide-ovw.pdf", "title": "ACO REACH Model PY2026 Financial Operating Guide: Overview (Rev. 1.1)", "section": "Section 5.1.1, Figure 5.1 and footnote 2", "applies_to": "PY2026 (footnote gives prior Global corridors)", "retrieved": "2026-10-13", "primary": true, "excerpt": "Prior to PY2026, the Global Option Corridor 1 Percent of Benchmark was less than 25%"},
+  "r25_45": {"url": "https://www.cms.gov/files/document/py25-reach-fin-op-guide.pdf", "title": "ACO REACH Model PY2025 Financial Operating Guide: Overview (Rev. 1.2)", "section": "Section 4.5", "applies_to": "PY2025-PY2026", "retrieved": "2026-10-13", "primary": true},
+  "r25_511": {"url": "https://www.cms.gov/files/document/py25-reach-fin-op-guide.pdf", "title": "ACO REACH Model PY2025 Financial Operating Guide: Overview (Rev. 1.2)", "section": "Section 5.1.1, Figure 5.1", "applies_to": "PY2025", "retrieved": "2026-10-13", "primary": true},
+  "reach_page": {"url": "https://www.cms.gov/priorities/innovation/innovation-models/aco-reach", "title": "ACO REACH model page", "section": "Model summary", "applies_to": "status as of 2026-10", "retrieved": "2026-10-13", "primary": true, "excerpt": "will run for four performance years (PY 2023 through PY 2026)"},
+  "reach_qr26": {"url": "https://www.cms.gov/priorities/innovation/aco-reach-model-performance-year-2026-model-update-quick-reference", "title": "ACO REACH Model Performance Year 2026 Model Update - Quick Reference", "section": "Benchmark and risk adjustment updates", "applies_to": "PY2026", "retrieved": "2026-10-13", "primary": true}
+ },
+ "last_verified": "2026-10-13"
+}

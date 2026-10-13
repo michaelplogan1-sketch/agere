@@ -49,8 +49,16 @@ def validate(p):
     if p.get('group_by', 'none') not in GROUP_BY: raise ValueError(f'group_by must be one of {GROUP_BY}')
     if p['metric'] == 'shared_savings':
         terms = p.get('terms') or {}
-        missing = [k for k in ('benchmark_pmpm', 'sharing_rate') if not isinstance(terms.get(k), (int, float))]
-        if missing: raise ValueError('Shared savings needs supplied contract terms: ' + ', '.join(missing))
+        if p.get('program'):  # a named program (e.g. 'MSSP ENHANCED 2026') supplies its cited terms; stated terms override
+            from . import programs
+            terms = programs.contract_terms(p['program'], terms)
+            p = {**p, 'terms': terms}
+        missing = [k for k in ('benchmark_pmpm', 'sharing_rate') if not isinstance(terms.get(k), (int, float))
+                   and not (k == 'sharing_rate' and terms.get('corridors'))]
+        if missing:
+            known = (terms.get('program') or {}).get('label')
+            raise ValueError('Shared savings needs supplied contract terms: ' + ', '.join(missing)
+                             + (f' ({known} supplies the sharing, MSR/MLR, loss and cap terms; the benchmark is contract-specific)' if known else ''))
     if p['metric'] == 'change':
         if p.get('measure') not in CHANGE_MEASURES: raise ValueError(f'change measure must be one of {CHANGE_MEASURES}')
         cmp = p.get('compare') or {}
@@ -452,19 +460,38 @@ def _quality(db, people, attr, p, start, end):
     return rows, 'Internal measure definitions on enrolled members (no official value sets in the received data); rates shrunk with beta-binomial.'
 
 
+def effective_benchmark(benchmark, t):
+    """Benchmark after a program discount (e.g. ACO REACH Global) and any quality withhold not earned back."""
+    withhold = float(t.get('quality_withhold_pct') or 0)
+    earned = float(t.get('quality_score', 1.0)) if t.get('quality_mode') == 'withhold' else 1.0
+    return benchmark * (1 - float(t.get('discount_pct') or 0) - withhold * (1 - earned))
+
+
+def _corridor_share(pct, corridors):
+    """Share of a savings/loss percentage under tiered risk corridors [{'from','to','rate'}] (marginal bands)."""
+    return sum(float(c['rate']) * max(0.0, min(pct, float(c['to']) if c.get('to') is not None else pct) - float(c['from'])) for c in corridors)
+
+
 def settle(actual, benchmark, mm, t):
     """Net settlement for one actual PMPM: positive = paid to the ACO, negative = owed by it."""
     if not benchmark or not mm: return 0.0
+    benchmark = effective_benchmark(benchmark, t)
     savings_pct = (benchmark - actual) / benchmark
     total = (benchmark - actual) * mm
-    msr, mlr = float(t.get('msr', 0.02)), float(t.get('mlr', t.get('msr', 0.02)))
-    if savings_pct >= msr:
-        shared = total * float(t['sharing_rate']) * float(t.get('quality_score', 1.0))
+    default_msr = 0.0 if t.get('corridors') else 0.02
+    msr, mlr = float(t.get('msr', default_msr)), float(t.get('mlr', t.get('msr', default_msr)))
+    quality = float(t.get('quality_score', 1.0)) if t.get('quality_mode', 'sharing_multiplier') == 'sharing_multiplier' else 1.0
+    if savings_pct >= msr and savings_pct > 0:
+        if t.get('corridors'): shared = benchmark * mm * _corridor_share(savings_pct, t['corridors']) * quality
+        else: shared = total * float(t['sharing_rate']) * quality
         if t.get('savings_cap_pct') is not None: shared = min(shared, benchmark * mm * float(t['savings_cap_pct']))
         return shared
-    if -savings_pct >= mlr and t.get('two_sided'):
-        owed = -total * float(t.get('loss_rate', 1 - float(t['sharing_rate'])))
+    if -savings_pct >= mlr and savings_pct < 0 and t.get('two_sided'):
+        if t.get('corridors'): owed = benchmark * mm * _corridor_share(-savings_pct, t['corridors'])
+        else: owed = -total * float(t.get('loss_rate', 1 - float(t['sharing_rate'])))
         if t.get('loss_cap_pct') is not None: owed = min(owed, benchmark * mm * float(t['loss_cap_pct']))
+        if t.get('loss_cap_revenue_pct') is not None and t.get('participant_revenue') is not None:
+            owed = min(owed, float(t['participant_revenue']) * float(t['loss_cap_revenue_pct']))
         return -owed
     return 0.0
 
@@ -551,31 +578,32 @@ def _shared_savings(db, people, attr, p, start, end):
     if t.get('risk_adjust'):
         scores, _ = risk_scores(db, people, start, end)
         benchmark *= float(np.mean(list(scores.values()))) if scores else 1.0
-    savings_pct = (benchmark - actual) / benchmark if benchmark else 0
-    total = (benchmark - actual) * mm
-    msr, mlr = float(t.get('msr', 0.02)), float(t.get('mlr', t.get('msr', 0.02)))
-    quality = float(t.get('quality_score', 1.0))
+    if t.get('msr_schedule') and 'msr' not in t:  # program MSR/MLR that varies with the assigned population
+        from . import programs
+        rate = programs.variable_msr(sum(1 for i in people.values() if i['months']), t['msr_schedule'])
+        t = {**t, 'msr': rate, **({'mlr': rate} if 'mlr' not in t else {})}
+    adjusted = effective_benchmark(benchmark, t)
+    savings_pct = (adjusted - actual) / adjusted if adjusted else 0
+    total = (adjusted - actual) * mm
     result = {'member_months': mm, 'benchmark_pmpm': round(benchmark, 2), 'actual_pmpm_completed': actual,
               'savings_pct': round(savings_pct, 4), 'gross_savings_or_loss': round(total, 2), 'terms': t}
-    if savings_pct >= msr:
-        shared = total * float(t['sharing_rate']) * quality
-        cap = t.get('savings_cap_pct')
-        if cap is not None: shared = min(shared, benchmark * mm * float(cap))
-        result.update(outcome='shared_savings_earned', payment_to_aco=round(shared, 2))
-    elif -savings_pct >= mlr and t.get('two_sided'):
-        owed = -total * float(t.get('loss_rate', 1 - float(t['sharing_rate'])))
-        cap = t.get('loss_cap_pct')
-        if cap is not None: owed = min(owed, benchmark * mm * float(cap))
-        result.update(outcome='shared_loss_owed', payment_from_aco=round(owed, 2))
-    else:
-        result.update(outcome='within_corridor', payment_to_aco=0.0)
+    if adjusted != benchmark: result['benchmark_after_program_adjustments_pmpm'] = round(adjusted, 2)
+    net = settle(actual, benchmark, mm, t)
+    if net > 0: result.update(outcome='shared_savings_earned', payment_to_aco=round(net, 2))
+    elif net < 0: result.update(outcome='shared_loss_owed', payment_from_aco=round(-net, 2))
+    else: result.update(outcome='within_corridor', payment_to_aco=0.0)
     result['settlement_risk'] = settlement_risk(db, people, start, end, benchmark, t)
     result['fair_allocation'] = shapley_allocation(db, people, attr, start, end, benchmark, t,
                                                    group_by=p['group_by'] if p.get('group_by') in ('practice', 'pcp', 'coverage_type') else 'practice')
     return [result], ('Settlement on supplied terms: savings % vs MSR/MLR corridor, sharing/loss rates, quality factor and caps; '
                       'actual cost = completion-adjusted allowed PMPM for enrolled member-months. Settlement risk: 4,000-draw member '
                       'bootstrap through the same contract arithmetic (population cost variability; benchmark and rule changes not modelled). '
-                      + cost_method)
+                      + cost_method + (' ' + _program_note(t) if t.get('program') else ''))
+
+
+def _program_note(t):
+    from . import programs
+    return programs.describe_terms(t)
 
 
 def _measure_by_segment(db, measure, group_by, start, end, keep):

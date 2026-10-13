@@ -1,0 +1,48 @@
+{
+ "schema": "agere-program/1",
+ "id": "ma_risk_adjustment",
+ "program": "Medicare Advantage",
+ "label": "Medicare Advantage CMS-HCC risk adjustment",
+ "kind": "risk_adjustment",
+ "status": "active",
+ "years": [2024, 2025, 2026, 2027],
+ "year_basis": "payment_year",
+ "aliases": ["\\bmedicare advantage risk adjustment\\b", "\\bcms[- ]hcc (?:v ?2[48]|model)\\b", "\\bv ?28\\b", "\\bv ?24\\b", "\\bma risk (?:adjustment|scores?)\\b"],
+ "note": "CMS names the models '2020 CMS-HCC' and '2024 CMS-HCC'; the labels V24 and V28 are the industry convention for those models and do not appear in the Rate Announcements. Non-PACE organizations only; PACE uses the 2017 model blends.",
+ "parameters": {
+  "model_blend": {
+   "value": {"2024": {"V24": 0.67, "V28": 0.33}, "2025": {"V24": 0.33, "V28": 0.67}, "2026": {"V24": 0.0, "V28": 1.0}, "2027": {"V24": 0.0, "V28": 1.0}},
+   "unit": "weight on each model's risk score (V24 = 2020 CMS-HCC, V28 = 2024 CMS-HCC)",
+   "citations": ["ra24_blend", "ra25_blend", "ra26_blend", "ra27_model"]
+  },
+  "normalization_factor": {
+   "value": {"2024": {"V24": 1.146, "V28": 1.015}, "2025": {"V24": 1.153, "V28": 1.045}, "2026": {"V28": 1.067}, "2027": {"V28": 1.079}},
+   "unit": "divisor applied to the raw model risk score",
+   "citations": ["ra24_norm", "ra25_norm", "ra26_norm", "ra27_norm"]
+  },
+  "coding_pattern_adjustment": {
+   "value": {"2024": 0.059, "2025": 0.059, "2026": 0.059, "2027": 0.059},
+   "unit": "share by which normalized scores are reduced (statutory minimum 5.9% for 2019 and later)",
+   "citations": ["ra24_norm", "ra25_norm", "ra26_ci", "ra27_ci"]
+  },
+  "coding_pattern_adjustment_statutory_minimum": {"value": 0.059, "unit": "share, 2019 and each later year", "citations": ["ra26_ci"]},
+  "diagnosis_sources_2027": {
+   "value": "Encounter data and FFS claims; diagnoses from unlinked chart review records excluded (except beneficiaries switching MA organizations); audio-only (modifiers 93/FQ) diagnoses excluded",
+   "unit": "text", "citations": ["ra27_dx"]
+  }
+ },
+ "citations": {
+  "ra24_blend": {"url": "https://www.cms.gov/files/document/2024-announcement-pdf.pdf", "title": "Announcement of Calendar Year (CY) 2024 Medicare Advantage Capitation Rates and Part C and Part D Payment Policies", "section": "p. 3; p. 65", "applies_to": "payment year 2024", "retrieved": "2026-10-13", "primary": true, "excerpt": "blend of 67% of the risk scores calculated with the current model (the 2020 model) and 33%"},
+  "ra24_norm": {"url": "https://www.cms.gov/files/document/2024-announcement-pdf.pdf", "title": "Announcement of CY 2024 Medicare Advantage Capitation Rates and Part C and Part D Payment Policies", "section": "pp. 5-6 (normalization; MA coding pattern adjustment)", "applies_to": "payment year 2024", "retrieved": "2026-10-13", "primary": true, "excerpt": "2024 CMS-HCC model (for non-PACE organizations), for blended risk score calculations: 1.015"},
+  "ra25_blend": {"url": "https://www.cms.gov/files/document/2025-announcement.pdf", "title": "Announcement of CY 2025 Medicare Advantage Capitation Rates and Part C and Part D Payment Policies", "section": "p. 4", "applies_to": "payment year 2025", "retrieved": "2026-10-13", "primary": true, "excerpt": "blending 67 percent of the risk score calculated using the updated 2024 CMS-HCC risk adjustment model with 33 percent"},
+  "ra25_norm": {"url": "https://www.cms.gov/files/document/2025-announcement.pdf", "title": "Announcement of CY 2025 Medicare Advantage Capitation Rates and Part C and Part D Payment Policies", "section": "p. 5 (normalization; MA coding pattern adjustment)", "applies_to": "payment year 2025", "retrieved": "2026-10-13", "primary": true},
+  "ra26_blend": {"url": "https://www.cms.gov/files/document/2026-announcement.pdf", "title": "Announcement of CY 2026 Medicare Advantage Capitation Rates and Part C and Part D Payment Policies", "section": "p. 4", "applies_to": "payment year 2026", "retrieved": "2026-10-13", "primary": true, "excerpt": "by using 100 percent of the risk score calculated using the 2024 CMS-HCC risk adjustment model"},
+  "ra26_norm": {"url": "https://www.cms.gov/files/document/2026-announcement.pdf", "title": "Announcement of CY 2026 Medicare Advantage Capitation Rates and Part C and Part D Payment Policies", "section": "p. 5 (normalization factors)", "applies_to": "payment year 2026", "retrieved": "2026-10-13", "primary": true},
+  "ra26_ci": {"url": "https://www.cms.gov/files/document/2026-announcement.pdf", "title": "Announcement of CY 2026 Medicare Advantage Capitation Rates and Part C and Part D Payment Policies", "section": "p. 4; p. 72 (SSA 1853(a)(1)(C)(ii))", "applies_to": "payment year 2026; statutory minimum 2019+", "retrieved": "2026-10-13", "primary": true, "excerpt": "minimum coding pattern difference adjustment factor of 5.9 percent for 2019 and each year after"},
+  "ra27_model": {"url": "https://www.cms.gov/files/document/2027-announcement.pdf", "title": "Announcement of CY 2027 Medicare Advantage Capitation Rates and Part C and Part D Payment Policies", "section": "p. 3; pp. 53-54", "applies_to": "payment year 2027", "retrieved": "2026-10-13", "primary": true, "excerpt": "CMS will continue to use the 2024 CMS-HCC risk adjustment model that was fully implemented for CY 2026"},
+  "ra27_norm": {"url": "https://www.cms.gov/files/document/2027-announcement.pdf", "title": "Announcement of CY 2027 Medicare Advantage Capitation Rates and Part C and Part D Payment Policies", "section": "p. 3 (normalization: four-year simple linear regression, 2022-2025)", "applies_to": "payment year 2027", "retrieved": "2026-10-13", "primary": true},
+  "ra27_ci": {"url": "https://www.cms.gov/files/document/2027-announcement.pdf", "title": "Announcement of CY 2027 Medicare Advantage Capitation Rates and Part C and Part D Payment Policies", "section": "p. 5; p. 69", "applies_to": "payment year 2027", "retrieved": "2026-10-13", "primary": true, "excerpt": "statutory minimum MA coding pattern difference adjustment factor of 5.90 percent"},
+  "ra27_dx": {"url": "https://www.cms.gov/files/document/2027-announcement.pdf", "title": "Announcement of CY 2027 Medicare Advantage Capitation Rates and Part C and Part D Payment Policies", "section": "pp. 3, 5", "applies_to": "payment year 2027", "retrieved": "2026-10-13", "primary": true, "excerpt": "exclude diagnoses from unlinked chart review records (CRRs), with an exception for beneficiaries who switch"}
+ },
+ "last_verified": "2026-10-13"
+}
