@@ -1520,6 +1520,7 @@ def execute(stack, plan, *, question=None):
             raise ValueError('Appointment sources changed during graph execution; result not cached')
         result['question']=question
         result['answer']=build_answer(plan, results, memberships, question)
+        from .answer_checks import annotate as quality_annotate; quality_annotate(result['answer'], question, meta['snapshot']['as_of'])  # FMEA poka-yoke: warnings only
         result['answer']['standards']=standards(result['answer'])
         result['answer']['headline']=headline(result['answer'])
         result['answer']['benchmark']=benchmark_references(result['answer'], question, plan['nodes'][-1]['operation'] if plan.get('nodes') else None)

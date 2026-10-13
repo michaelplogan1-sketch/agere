@@ -45,3 +45,11 @@ with ThreadPoolExecutor(4) as ex: res=list(ex.map(judge, items))
 import collections; c=collections.Counter(); cost=0
 for i,v,usd in res: c[v.get('category')]+=1; cost+=usd or 0; print(i, v.get('category'), '|', (v.get('reason') or '')[:170])
 print(dict(c), '$%.2f'%cost)
+# Persist the adjudication next to the run so defect tracking and /scorecard can use it (tools/quality/defects.py).
+import time as _time
+_src=Path(sys.argv[1]).resolve(); _out=ROOT/'bench'/'results'/'adjudications'; _out.mkdir(parents=True,exist_ok=True)
+(_out/f'{_src.parent.name}__{_src.stem}.json').write_text(json.dumps({'schema':'bench-adjudication/1','system':_src.parent.name,
+    'results_file':f'{_src.parent.name}/{_src.name}','adjudicated_at':_time.strftime('%Y-%m-%dT%H:%M:%SZ',_time.gmtime()),
+    'adjudicator':'claude-opus-5-5 via bench/adjudicate.py rubric','provenance':'bench/adjudicate.py','counts':dict(c),
+    'items':[{'id':i,'category':v.get('category'),'reason':(v.get('reason') or '')[:400]} for i,v,_ in res],'items_complete':True,
+    'cost_usd':round(cost,4)},indent=1))
