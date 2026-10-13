@@ -434,6 +434,9 @@ def compile(question, profile, as_of):
     pid = r.take(r'\bp-[a-z0-9]+\b', 'patient id')
     if pid:  # single-patient questions with a measurement statistic
         return _patient_question(q, r, profile, [m.group(0).upper() for m in pid], info)
+    watch = _monitor_question(q, r, profile, as_of, info)
+    if watch is not None:
+        return watch
     special = _record_constructs(q, r, profile, as_of, info)
     if special is not None:
         return special
@@ -450,6 +453,100 @@ def compile(question, profile, as_of):
     if literal is not None:
         return literal
     return _population_question(q, r, profile, as_of, info)
+
+
+# ---- monitoring: statistical process control, feed health and claims review flags -------------
+MONITOR_TRIGGER = (r"\bout of (?:statistical )?control\b|\banomal(?:y|ies|ous)\b|\bbenford(?:'s)?\b|\bcontrol charts?\b|\bspc\b|"
+                   r"\bstatistical process control\b|\bwestern electric\b|\bnelson rules?\b|\bewma\b|\bbehaving (?:ab)?normally\b|"
+                   r"\bbehaving (?:oddly|strangely|unusually)\b|\bduplicate (?:claims?|billing|bills)\b|\bbilling (?:intensity )?outliers?\b|"
+                   r"\bunusual billing\b|\bfeeds? (?:gaps?|outages?|drop(?:out)?s?|health)\b")
+MONITOR_SERIES = [('ed_rate', r'\b(?:ed|er|emergency(?: department)?) (?:use|visits?|utili[sz]ation|rates?)\b'),
+                  ('admit_rate', r'\b(?:inpatient )?(?:admissions?|admits?|hospitali[sz]ations?)(?: rates?)?\b'),
+                  ('pmpm', r'\bpmpm\b|\bper member per month\b|\b(?:total |medical )?(?:cost|spend(?:ing)?)\b'),
+                  ('denial_rate', r'\b(?:claims? )?denials?(?: rates?)?\b|\bdenial rates?\b'),
+                  ('arrival_lag', r'\b(?:claims? )?(?:arrival |submission )?lag\b'),
+                  ('lab_volume', r'\blab(?:oratory)? (?:volumes?|results?|counts?)\b')]
+MONITOR_STREAMS = [(r'\blab(?:oratory)?s?(?: results?)? feeds?\b|\blabs?\b(?= (?:from|feed))', 'labs'),
+                   (r'\bclaims? feeds?\b', 'medical_claims'), (r'\b(?:encounter|visit) feeds?\b', 'encounters'),
+                   (r'\bsocial screens?(?:ing)? feeds?\b', 'social_screens'), (r'\badt feeds?\b', 'adt'),
+                   (r'\bappointments? feeds?\b', 'appointments'), (r'\bpharmacy feeds?\b', 'pharmacy_dispenses'),
+                   (r'\bvitals? feeds?\b', 'vitals'), (r'\bnotes? feeds?\b', 'notes')]
+MONITOR_GROUPS = [(r'\b(?:which|what|by|each|per|any|for each) (?:of (?:our|the) )?(?:practices?|clinics?)\b', 'practice'),
+                  (r'\b(?:which|what|by|each|per|any|for each) (?:of (?:our|the) )?(?:payers?|payors?|plans?|insurers?)\b', 'payer'),
+                  (r'\b(?:which|what|by|each|per|any|for each) (?:of (?:our|the) )?(?:facilit(?:y|ies)|hospitals?|sites?|service organi[sz]ations?)\b', 'facility'),
+                  (r'\b(?:which|what|by|each|per|any|for each|from any) (?:of (?:our|the) )?(?:source systems?|sources?|systems?)\b', 'source_system')]
+
+
+def _monitor_question(q, r, profile, as_of, info):
+    low = r.low
+    if not re.search(MONITOR_TRIGGER, low): return None
+    params = {}
+    claims_words = r'\b(?:claims?|billing|bills?|billed amounts?|allowed amounts?)\b'
+    # A named feed first ('lab feed' must not be read as a generic 'feed'): received stream names, then common aliases.
+    named = sorted((s for s in (profile or {}).get('streams', {}) if len(s) > 2), key=len, reverse=True)
+    for stream, pattern in [(s, r'\b' + re.escape(s.replace('_', ' ')) + r' feeds?\b') for s in named] + \
+                           [(s, p) for p, s in MONITOR_STREAMS]:
+        if r.take(pattern, f'feed {stream}'):
+            params['stream'] = stream
+            break
+    if r.take(r"\bbenford(?:'s)?(?: law)?(?: (?:check|test|analysis|conformity))?\b", 'monitor benford'):
+        params['check'] = 'benford'
+    elif r.take(r'\bduplicate (?:claims?|billing|bills)\b|\bduplicat(?:e|ed|es) (?:charges?|submissions?)\b', 'monitor duplicates'):
+        params['check'] = 'duplicates'
+    elif r.take(r'\bbilling (?:intensity )?outliers?\b|\bunusual billing\b', 'monitor peer outliers'):
+        params['check'] = 'peer_outliers'
+        r.take(r'\b(?:service )?organi[sz]ations?\b|\b(?:versus|vs\.?|compared (?:to|with)|relative to) (?:their |its )?peers?\b|\bpeers?\b', None)
+    elif r.take(r'\bout of (?:statistical )?control\b|\bcontrol charts?\b|\bspc\b|\bstatistical process control\b|\bwestern electric\b|'
+                r'\bnelson rules?\b', 'monitor control chart'):
+        params['check'] = 'control_chart'
+    elif r.take(r'\b(?:data )?feeds?\b(?=.*\b(?:behaving|anomal|gaps?|outages?|drop|health)\b)', 'monitor feed') or \
+            re.search(r'\bfeeds? (?:gaps?|outages?|drop(?:out)?s?|health)\b', low):
+        params['check'] = 'feed'
+    elif params.get('stream'):
+        params['check'] = 'feed'
+    elif re.search(claims_words, low):
+        params['check'] = 'claims'
+    else:
+        params['check'] = 'all'
+    r.take(r"\banomal(?:y|ies|ous)\b|\bbehaving (?:ab)?normally\b|\bbehaving (?:oddly|strangely|unusually)\b|\bfeeds? (?:gaps?|outages?|"
+           r"drop(?:out)?s?|health)\b|\bewma\b", 'monitor anomaly')
+    series = []
+    for s, pattern in MONITOR_SERIES:
+        if r.take(pattern, f'series {s}'): series.append(s)
+    if params.get('stream') == 'labs' and 'lab_volume' not in series: series.append('lab_volume')
+    if series and params['check'] in ('all', 'claims'): params['check'] = 'control_chart'
+    if series: params['series'] = series
+    if re.search(r'\bewma\b|\bexponentially weighted\b', low): params['method'] = 'ewma'
+    for pattern, g in MONITOR_GROUPS:
+        if r.take(pattern, f'group by {g}'): params['group_by'] = g; break
+    if params['check'] == 'benford' and 'group_by' not in params: params['group_by'] = 'payer'
+    amount = r.take(r'\b(billed|allowed|charged?)(?: amounts?| charges?| dollars?)?\b', 'amount')
+    if amount: params['amount'] = 'allowed' if amount[0].group(1) == 'allowed' else 'billed'
+    period = _take_period(r, as_of)
+    if period:
+        params['period'] = {'start': period[0], 'end': period[1]}
+    elif r.take(r'\b(?:this|the current) year\b|\byear[- ]to[- ]date\b|\bytd\b|\bso far this year\b', 'this year'):
+        params['period'] = {'start': f'{as_of[:4]}-01-01', 'end': as_of}
+    elif r.take(r'\blast year\b|\bthe prior year\b', 'last year'):
+        y = int(as_of[:4]) - 1
+        params['period'] = {'start': f'{y}-01-01', 'end': f'{y}-12-31'}
+    r.take(claims_words, None, overlap=True)
+    r.take(r"\b(?:run|do|check|test|look|scan|flag|show|find|are there|is there|any|our|the|on|in|of|for|from|by|which|what|are|is|"
+           r"were|was|has|have|been|seen|signs?|anything|unusual|abnormal(?:ly)?|odd|strange|behaving|data|feeds?|check|test|analysis|"
+           r"amounts?|charges?|statistically|currently|right now|lately|recently|use|rates?|volumes?|it|they|them|over time|monthly)\b",
+           None, overlap=True)
+    info['unexplained'] = r.blocking(profile)
+    info['ignored_words'] = getattr(r, 'ignored', [])
+    if info['unexplained']:
+        info.update(route='fallback', reason='words not interpreted locally: ' + ', '.join(info['unexplained'][:12]))
+        return None, info
+    info['route'] = 'local_compiler'
+    from .monitor import validate
+    params = validate(params)
+    return {'interpretation': q, 'coverage': 'supported_observation', 'unmet_requirements': [],
+            'nodes': [{'id': 'answer', 'operation': 'monitor', 'inputs': [], 'parameters': params,
+                       'purpose': f"Monitor: {params['check']}" + (f" {', '.join(params['series'])}" if params['series'] else '')
+                                  + (f" by {params['group_by']}" if params['group_by'] != 'auto' else '')}]}, info
 
 
 def _take_period(r, as_of, year_words=r'in|during|for'):
