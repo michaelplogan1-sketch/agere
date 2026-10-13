@@ -15,6 +15,8 @@ TYPED = {'aggregate', 'explain', 'sql', 'vbc', 'monitor', 'program_effect', 'out
          'assertion_review', 'source_state', 'pre_event_state', 'context', 'context_passes', 'functional_review',
          'domain_review', 'worklist', 'program_acquisition', 'retrieve', 'forecast',
          'source_changes', 'review', 'measure_review', 'financial_accounts', 'accountability_review', 'outcome', 'appointment_followthrough', 'interpretation', 'requirements', 'protocol_review', 'program_document'}
+TYPED |= {'market'}
+OPTIONAL_POPULATION = ('market',)  # report operators that take zero or one population input
 
 
 def obj(properties):
@@ -43,7 +45,7 @@ def input_contract(op):
     lo, hi = ((0, 0) if op in ('cohort', 'evidence') else
               (2, 2) if op == 'difference' else
               (2, 10) if op in ('intersect', 'union') else
-              (0, 1) if op in ('sql', 'vbc', 'program_effect', 'outreach', 'monitor') else (1, 10) if op == 'reference_review' else (3, 10) if op == 'compare' else (1, 4) if op == 'worklist' else (1, 1))
+              (0, 1) if op in ('sql', 'vbc', 'program_effect', 'outreach', 'monitor') + OPTIONAL_POPULATION else (1, 10) if op == 'reference_review' else (3, 10) if op == 'compare' else (1, 4) if op == 'worklist' else (1, 1))
     result = {'count': [lo, hi], 'type': 'membership',
               'output': 'membership' if op in SET_OPS else 'report'}
     if op in ('baseline', 'pre_event_state'): result['first_operation'] = 'outcome'
@@ -149,6 +151,14 @@ def parameter_schema(op, catalog):
                     'method': string(monitor.METHODS), 'amount': string(monitor.AMOUNTS),
                     'stream': {'type': 'string', 'description': 'One source stream for feed checks, or empty'},
                     'period': obj({'start': {'type': 'string'}, 'end': {'type': 'string'}})})
+    if op == 'market':
+        from . import market
+        return obj({'unit': string(market.UNITS, 'Ticker unit: attributed practice, attributed PCP, or payer'),
+                    'metrics': array(string(market.METRICS), '[] = every metric with data'),
+                    'direction': string(market.DIRECTIONS, 'worse/better keeps only tickers whose latest move went that way'),
+                    'period': obj({'start': {'type': 'string', 'description': 'YYYY-MM-DD or empty'},
+                                   'end': {'type': 'string', 'description': 'YYYY-MM-DD or empty (last complete month by default)'}}),
+                    'top': {'type': 'integer', 'minimum': 1, 'maximum': 500}})
     if op == 'sql':
         from . import sql_query
         return obj({'query': {'type': 'string', 'description': 'One read-only SELECT/WITH over the semantic_layer tables. Reference the upstream population (if an input is given) as table population(patient_id).'},

@@ -51,6 +51,12 @@ CONTRACTS = {
         'group_by':'auto|none|practice|payer|facility|source_system','period':{'start':'','end':''}},
         'meaning':'Statistical process control and integrity monitoring: Laney p\'/u\' and I-MR control charts with Western Electric rules, CUSUM/EWMA, '
                   'data-feed volume breaks, claims Benford, peer outliers and duplicate flags. Use for is-anything-out-of-control / spikes / feed-problem questions.'},
+    'market': {'inputs':['optional earlier_set'],'parameters':{'unit':'practice|pcp|payer','metrics':['ed_rate','admit_rate','pmpm','a1c_poor','bp_control','denial_rate','no_show_rate'],
+        'direction':'any|worse|better','period':{'start':'','end':''},'top':25},
+        'meaning':'Markets view: each practice/PCP/payer is a ticker per metric (ED and admissions per 1,000, allowed PMPM, A1c poor control, BP control, denial and no-show rates) '
+                  'with last value, change vs prior month and 12-month baseline, Theil-Sen trend, volatility, z, beta to the network, drawdown; moves ranked by surprise '
+                  '(-log2 p under the unit\'s baseline moved by the network) x impact, network-wide vs idiosyncratic, co-moving sectors; feed gaps excluded, small units shrunk. '
+                  'Use for what-moved / market-view / tickers / movers / trending-worse / most-surprising-change questions (not control-chart questions).'},
     'sql': {'inputs':['optional earlier_set'],'parameters':{'query':'one read-only SELECT over semantic_layer tables','returns':'count|value|patient_set|table'},
         'meaning':'Exact answers to literal data questions: counts/sums/maxima of records or fields, record-level filters, date arithmetic (julianday), arrival lags, joins between streams, '
                   'group-by tables. Query the typed semantic_layer tables (concept columns already normalise ICD-10/SNOMED/labels/units); use record.payload with json_extract for other streams. '

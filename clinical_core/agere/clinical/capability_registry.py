@@ -26,6 +26,9 @@ PRODUCT = {
                  'use': 'Who should we call / prioritise: a capacity-limited outreach worklist ranked by expected value with reasons (care gaps, rising risk, social needs, utilization).'},
     'monitor': {'population': 'none', 'view': 'chart',
                 'use': 'Is anything out of control: SPC control charts of ED/admit rates, PMPM, lab volume, denial rate, arrival lag; data-feed breaks; claims integrity, Benford, peer outliers, duplicates.'},
+    'market': {'population': 'optional', 'view': 'tickers',
+               'use': 'What moved / markets view: each practice, PCP or payer as a ticker for ED and admission rates, PMPM, A1c and BP control, denial and no-show rates; '
+                      'change vs prior month and baseline, trend, volatility, beta to the network, moves ranked by surprise x impact, network-wide vs one-practice moves.'},
 }
 
 # Questions a SQL query over the semantic tables answers exactly are handed to the verified SQL ladder.

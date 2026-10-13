@@ -358,7 +358,30 @@ function vizScalar(a){if(a.answer_type==='count'||a.answer_type==='value'){const
   return '<section class="sec"><div class="big">'+fmt(a.count!=null?a.count:ids.length)+'</div><div class="muted">patients'+(a.unknown_count?' · '+fmt(a.unknown_count)+' could not be evaluated':'')+'</div>'+
    (ids.length?'<details open><summary>'+ids.length+' patient IDs</summary><div class="pids">'+ids.slice(0,300).map(i=>'<span>'+esc(i)+'</span>').join('')+'</div>'+(ids.length>300?'<p class="hint">First 300 shown; the CSV has all.</p>':'')+csvButton(rows,'patients')+'</details>':'')+'</section>'}
  return ''}
+function sparkline(vals,dir,title){const v=(vals||[]).filter(isNum);if(v.length<2)return '';const w=96,h=24,lo=Math.min(...v),hi=Math.max(...v),sp=hi-lo||1;
+ const X=i=>2+i*(w-6)/(v.length-1),Y=x=>h-3-(x-lo)/sp*(h-6);const d=v.map((x,i)=>(i?'L':'M')+X(i).toFixed(1)+' '+Y(x).toFixed(1)).join('');
+ return '<svg class="spark" width="'+w+'" height="'+h+'" viewBox="0 0 '+w+' '+h+'" role="img" aria-label="'+esc(title)+'"><title>'+esc(title)+'</title><path d="'+d+'" style="fill:none;stroke:var(--s1);stroke-width:1.5"/>'+
+  '<circle cx="'+X(v.length-1).toFixed(1)+'" cy="'+Y(v[v.length-1]).toFixed(1)+'" r="2.8" style="fill:var('+(dir==='worse'?'--bad':'--good')+')"/></svg>'}
+function mval(v,m){if(!isNum(v))return '—';if(['a1c_poor','bp_control','denial_rate','no_show_rate'].includes(m))return pct(v,1);if(m==='pmpm')return usd(v);return fmt(v,1)}
+function vizMarket(a){const o=a.overall||{},rows=a.table||[];let h='<section class="sec" data-focus="market"><h3>Market view by '+esc(o.unit||'unit')+'</h3><div class="kpis">'+
+  [['Tickers examined',fmt(o.tests_examined)],['Salient moves',fmt(rows.filter(r=>r.salient).length)],['Look-elsewhere cost',fmt(o.look_elsewhere_bits)+' bits'],['Members',fmt(o.members_in_scope)]]
+  .map(k=>'<div class="kpi"><div class="l">'+k[0]+'</div><div class="v">'+k[1]+'</div></div>').join('')+'</div>';
+ const st=Object.values(o.network||{}).map(n=>n.statement).filter(Boolean);if(st.length)h+='<ul class="hint">'+st.map(s=>'<li>'+esc(s)+'</li>').join('')+'</ul>';
+ if(rows.length){h+='<div class="tools"><span class="muted" style="font-size:13px">Ranked by surprise × impact. Select a ticker to ask its follow-up.</span></div><div class="tablewrap" tabindex="0" role="region" aria-label="ticker board"><table><thead><tr>'+
+   ['Ticker','Metric','Month','Trend','Last','Δ prior','Δ baseline','z','β','Surprise','Move'].map(c=>'<th scope="col">'+c+'</th>').join('')+'</tr></thead><tbody>';
+  rows.slice(0,60).forEach(r=>{const chg=isNum(r.change_prior_pct)?(r.change_prior_pct>0?'+':'')+pct(r.change_prior_pct,0):'—',cb=isNum(r.change_baseline_pct)?(r.change_baseline_pct>0?'+':'')+pct(r.change_baseline_pct,0):'—';
+   h+='<tr'+(r.follow_up?' data-ask="'+esc(r.follow_up)+'" tabindex="0" title="Ask: '+esc(r.follow_up)+'"':'')+'><td><b>'+esc(r.unit)+'</b>'+(r.low_volume?' <span class="muted" title="low volume: shrunk toward the network, not headlined">(low vol)</span>':'')+'</td><td>'+esc(label(r.metric))+'</td><td>'+esc(r.month)+'</td>'+
+    '<td>'+sparkline(r.spark,r.direction,r.unit+' '+label(r.metric)+' (shrunk monthly values)')+'</td><td class="n">'+mval(r.last,r.metric)+'</td><td class="n" style="color:var('+(r.direction==='worse'?'--bad':'--good')+')">'+chg+'</td><td class="n">'+cb+'</td>'+
+    '<td class="n">'+fmt(r.z,2)+'</td><td class="n">'+(isNum(r.beta)?fmt(r.beta,2):'—')+'</td><td class="n">'+fmt(r.surprise_bits,1)+' bits</td><td>'+esc(r.move_type||'')+'</td></tr>'});
+  h+='</tbody></table></div>'+csvButton(rows.map(r=>{const c=Object.assign({},r);delete c.spark;return c}),'market-tickers')}
+ const gaps=Object.entries(o.data_gaps||{}).flatMap(([m,g])=>(g||[]).filter(x=>x.reason!=='no_data').map(x=>label(m)+' '+x.months+' ('+label(x.reason)+')'));
+ if(gaps.length)h+='<p class="hint">Data gaps excluded (not read as moves): '+esc(gaps.join('; '))+'</p>';
+ const sk=Object.entries(o.skipped_metrics||{});if(sk.length)h+='<p class="hint">Not ranked: '+esc(sk.map(([m,w])=>label(m)+' ('+w+')').join('; '))+'</p>';
+ const sec=(o.sectors||[]).filter(s=>(s.sectors||[]).length);if(sec.length)h+='<details><summary>Co-moving sectors</summary><ul>'+sec.map(s=>'<li><b>'+esc(label(s.metric))+'</b> (network factor '+pct(s.network_factor_share,0)+'): '+
+  esc(s.sectors.map(g=>g.units.join(', ')+' (r̄ '+fmt(g.mean_correlation,2)+')').join('; '))+'</li>').join('')+'</ul></details>';
+ return h+'</section>'}
 function visual(a){if(!a||a.answer_type==='unsupported')return '';const o=a.overall||{};
+ if(o.network&&o.data_gaps)return vizMarket(a);
  if(o.curves)return vizSurvival(a);if(o.charts||(o.tests_examined!=null&&o.look_elsewhere_bits!=null))return vizMonitor(a);if(o.did)return vizEffect(a);if(o.portfolio&&o.by_group)return vizOutreach(a);
  const v=vizVBC(a);if(v)return v;if(a.answer_type==='table'){const t=vizTrajectory(a);if(t)return t;return vizTable(a)}return vizScalar(a)}
 
