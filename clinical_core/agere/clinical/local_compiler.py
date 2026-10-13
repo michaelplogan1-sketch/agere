@@ -1117,6 +1117,12 @@ def _medication_question(q, r, profile, as_of, info):
         if m: found = (cls, m); break
     if not found or not re.search(r'\b(?:on|taking|take|filled|fill|dispensed|prescribed|ordered|using|receiving|got)\b', low): return None
     cls, m = found
+    # This path has no encounter grammar: "diabetics not on insulin who had an ED visit in 2028" would
+    # silently drop the visit and apply the year to dispensing. Decline so a verified planner handles it.
+    if any(re.search(_alias_pattern(a), low) for aliases in ENCOUNTER_ALIASES.values() for a in aliases) or \
+            re.search(r'\b(?:ed|er)\b', low):
+        info.update(route='fallback', reason='medication filter combined with an encounter is not compiled locally')
+        return None, info
     classes = GROUPS.get(cls, [cls])
     r.take(r'\b(?:' + ({**DRUG_ALIASES, **DRUG_GROUP_ALIASES}[cls]) + r')\b', f'drug class {cls}')
     evidence = "('dispensed','claim')"
