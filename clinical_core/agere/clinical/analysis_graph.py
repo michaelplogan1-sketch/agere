@@ -82,6 +82,44 @@ STATISTIC_WORDS = [('share', r'\b(share|percent(age)?|proportion|fraction|what %
 COUNT_QUESTION = re.compile(r'\b(how many|number of|count|what (?:share|proportion|percent(?:age)?))\b', re.I)
 
 
+def _fmt(v):
+    if isinstance(v, float): return f'{v:,.2f}'.rstrip('0').rstrip('.') if abs(v) < 1e6 else f'{v:,.0f}'
+    return f'{v:,}' if isinstance(v, int) else str(v)
+
+
+def headline(answer):
+    """One plain-English sentence stating the answer and the definitions behind it (deterministic, no model)."""
+    status, kind = answer.get('status'), answer.get('answer_type')
+    if status in ('unsupported', 'grounding_failed') or kind == 'unsupported':
+        missing = '; '.join(m.replace('Missing input: ', '') for m in answer.get('missing', [])[:4])
+        return f'Not answerable from the received data. Missing: {missing}.' if missing else 'Not answerable from the received data.'
+    if kind == 'count': core = f"{_fmt(answer.get('count'))}"
+    elif kind == 'patient_set': core = f"{_fmt(answer.get('count') if answer.get('count') is not None else len(answer.get('patient_ids') or []))} patients"
+    elif kind == 'value': core = _fmt(answer.get('value')) if not isinstance(answer.get('value'), str) else answer['value']
+    else:
+        rows = answer.get('table') or []
+        core = answer['value'] if isinstance(answer.get('value'), str) else f'{len(rows)} rows'
+        if rows and not isinstance(answer.get('value'), str):
+            metrics = ['allowed_pmpm_completed', 'oe_ratio', 'ed_per_1000_shrunk', 'shrunk_rate', 'rate', 'mean_risk_score', 'value',
+                       'readmission_rate', 'members', 'patient_count', 'total_cents', 'count']
+            first = rows[0]
+            metric = next((m for m in metrics if isinstance(first.get(m), (int, float))), None) or \
+                     next((k for k, v in first.items() if isinstance(v, (int, float)) and k not in ('patients', 'members')), None)
+            key = next((k for k in ('group', 'segment', 'factor', 'label') if k in first), None) or next(iter(first))
+            if metric:
+                items = [f"{r.get(key) if not isinstance(r.get(key), dict) else ', '.join(f'{a}={b}' for a, b in r[key].items())} "
+                         f"{_fmt(round(r[metric], 2) if isinstance(r[metric], float) else r[metric])}" for r in rows[:3] if metric in r]
+                core = f"{metric.replace('_', ' ')}: " + '; '.join(items) + (f' (+{len(rows) - 3} more)' if len(rows) > 3 else '')
+    defs = []
+    for c in (answer.get('concepts') or [])[:3]:
+        n = len(c.get('included_labels') or c.get('included_series') or [])
+        defs.append(f"{c.get('label', c.get('concept'))} ({n} source labels)" if n else c.get('label', c.get('concept')))
+    text = f'{core}.' if not core.endswith('.') else core
+    if defs: text += ' Definitions: ' + '; '.join(defs) + '.'
+    if status == 'partial' and answer.get('missing'): text += ' Partial: ' + answer['missing'][0]
+    return text
+
+
 def build_answer(plan, results, memberships, question):
     """Shared answer contract: the direct answer, what it covers, and why not if it can't.
 
@@ -1051,6 +1089,7 @@ def execute(stack, plan, *, question=None):
             raise ValueError('Appointment sources changed during graph execution; result not cached')
         result['question']=question
         result['answer']=build_answer(plan, results, memberships, question)
+        result['answer']['headline']=headline(result['answer'])
         if any(n['operation'] in ('source_state','pre_event_state','requirements','protocol_review','program_document','reference_review',*graph_reports.OPERATIONS) for n in plan['nodes']):
             from .graph_decision import source_fingerprint
             result['review_source_fingerprint'] = source_fingerprint(path, result)
