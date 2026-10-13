@@ -410,6 +410,35 @@ def _plausible(path, question, sql, probe):
                 raise ValueError(f'Implausible percentage {v}.')
 
 
+_HARVEST = {}
+
+
+def harvested_examples(question, k=4):
+    """Most similar verified pairs from bottling harvests (generated training questions only - never benchmark or
+    user-asked questions, so measurements stay clean)."""
+    root = Path(__file__).resolve().parents[3] / 'artifacts' / 'bottling'
+    files = sorted(root.glob('answers-*.jsonl')) if root.exists() else []
+    stamp = tuple((f.name, f.stat().st_mtime) for f in files)
+    if _HARVEST.get('stamp') != stamp:
+        bench = set()
+        for f in (Path(__file__).resolve().parents[3] / 'bench' / 'questions').glob('*.json'):
+            bench |= {q['question'].strip().lower() for q in json.load(open(f))}
+        pairs = []
+        for f in files:
+            for line in f.open():
+                if not line.strip(): continue
+                r = json.loads(line)
+                sql = r.get('query') or ''
+                if r.get('route') in ('hosted_verified_sql', 'local_compiler') and re.search(r'(?i)\bselect\b', sql) \
+                        and r['question'].strip().lower() not in bench:
+                    pairs.append((r['question'], re.sub(r'--[^\n]*\n', '', sql).strip(), set(_tokens(r['question']))))
+        _HARVEST.update(stamp=stamp, pairs=pairs)
+    qt = set(_tokens(question))
+    scored = sorted(((len(qt & t) / max(len(qt | t), 1), q, sql) for q, sql, t in _HARVEST['pairs']
+                     if q.strip().lower() != question.strip().lower()), reverse=True)
+    return [(q, sql) for score, q, sql in scored[:k] if score >= 0.2]
+
+
 def verified_answer(path, question, as_of, primary, second, judge, decider=None, extra_streams=()):
     """Run the ladder; a 'missing data' claim is checked against the full data dictionary first: when other
     received streams match what was called missing, the question is re-asked with those streams in view."""
@@ -434,7 +463,8 @@ def _verified_answer(path, question, as_of, primary, second, judge, decider=None
     profile = source_profile.load(path)
     streams, schema = schema_for(question, profile, extra_streams)
     qt = set(_tokens(question))
-    ranked = sorted(EXAMPLES, key=lambda e: -len(qt & set(_tokens(e[0] + ' ' + e[1]))))[:7]
+    similar = harvested_examples(question) if os.environ.get('AGERE_HARVEST_SHOTS', 'on') != 'off' else []
+    ranked = similar + sorted(EXAMPLES, key=lambda e: -len(qt & set(_tokens(e[0] + ' ' + e[1]))))[:7 - min(len(similar), 3)]
     shots = '\n\n'.join(f'Q: {q}\n```sql\n{sq}\n```' for q, sq in ranked)
     system = RULES + VERIFY_RULES + f'\nThe data snapshot is as of {as_of}.'
     user = f'{schema}\n\nEXAMPLES\n{shots}\n\nQ: {question}'
