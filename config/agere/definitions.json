@@ -1,0 +1,304 @@
+{
+ "schema": "agere-definitions/1",
+ "status": "DRAFT - awaiting owner sign-off",
+ "researched": "2026-10-13 via Perplexity Agent API (fast preset), sources cited per entry",
+ "definitions": {
+  "emergency_visit": {
+   "label": "Emergency department visit",
+   "agere_default": "One per patient per day across encounter and ADT registration feeds (same-day duplicates merged).",
+   "standard": {
+    "name": "NCQA HEDIS EDU",
+    "summary": "Count each ED visit once; multiple ED visits on the same date count as one; ED visits resulting in inpatient admission are excluded.",
+    "sources": [
+     {
+      "title": "HEDIS MY 2025 Measures and Descriptions",
+      "url": "https://wpcdn.ncqa.org/www-prod/wp-content/uploads/HEDIS-MY-2025-Measure-Description.pdf"
+     },
+     {
+      "title": "[PDF] Emergency Medicine Measure - QPP",
+      "url": "https://qpp.cms.gov/docs/cost_specifications/2025-12-py2025-mif-ebcm-emergency.pdf"
+     },
+     {
+      "title": "Final 20201103",
+      "url": "https://wpcdn.ncqa.org/www-prod/wp-content/uploads/2020/11/HEDIS_CalculationSpecification_MY2020.pdf"
+     },
+     {
+      "title": "Emergency Department Utilization (EDU)",
+      "url": "https://www.ncqa.org/report-cards/health-plans/state-of-health-care-quality-report/emergency-department-utilization-edu/"
+     }
+    ]
+   },
+   "alignment": "matches unit (one per date); differs: Agere does not yet exclude ED visits that end in admission",
+   "variants": {
+    "distinct_encounter": "Count distinct encounter IDs (operations view; same-day repeat visits count separately).",
+    "hedis_edu": "One per date and exclude ED visits that resulted in an inpatient admission."
+   }
+  },
+  "utilization_per_1000": {
+   "label": "Utilization per 1,000",
+   "agere_default": "Per 1,000 member-years (enrolled member-months / 12).",
+   "standard": {
+    "name": "NCQA utilization convention; CMS ACO REACH",
+    "summary": "Member-years (commercial/Medicare) or member-months (Medicaid); ACO REACH reports ED visits per 1,000 person-years.",
+    "sources": [
+     {
+      "title": "Final 20201103",
+      "url": "https://wpcdn.ncqa.org/www-prod/wp-content/uploads/2020/11/HEDIS_CalculationSpecification_MY2020.pdf"
+     },
+     {
+      "title": "Performance Year Financial and Quality Results",
+      "url": "https://data.cms.gov/resources/performance-year-financial-and-quality-results-data-dictionary"
+     },
+     {
+      "title": "HEDIS MY 2025 Measures and Descriptions",
+      "url": "https://wpcdn.ncqa.org/www-prod/wp-content/uploads/HEDIS-MY-2025-Measure-Description.pdf"
+     },
+     {
+      "title": "Emergency Department Utilization (EDU)",
+      "url": "https://www.ncqa.org/report-cards/health-plans/state-of-health-care-quality-report/emergency-department-utilization-edu/"
+     }
+    ]
+   },
+   "alignment": "matches",
+   "variants": {
+    "per_headcount": "Per 1,000 patients on the roster (not annualised; partial-year periods read lower)."
+   }
+  },
+  "primary_care_visit": {
+   "label": "Primary care / ambulatory visit",
+   "agere_default": "Primary care, office, wellness, pediatric office and ambulatory encounter types.",
+   "standard": {
+    "name": "NCQA HEDIS AAP (ambulatory/preventive access)",
+    "summary": "Ambulatory, other ambulatory, telephone and online-assessment visits count; ED and inpatient do not.",
+    "sources": [
+     {
+      "title": "[PDF] Adults' Access to Preventive/Ambulatory Health Services (AAP)",
+      "url": "https://medicaidquality.nh.gov/sites/default/files/user-uploads/0-admin/7188/NCQA%20Measure%20Specifications_V4.pdf"
+     },
+     {
+      "title": "Adults' Access to Preventive/Ambulatory Health Services ...",
+      "url": "https://www.ncqa.org/report-cards/health-plans/state-of-health-care-quality-report/adults-access-to-preventive-ambulatory-health-services-aap/"
+     },
+     {
+      "title": "[PDF] Adults' Access to Preventive/Ambulatory Health Services ( ...",
+      "url": "https://www.molinahealthcare.com/~/media/Molina/PublicWebsite/PDF/providers/ma/Quality/HEDIS%20Tip%20Sheet_AAP_Adult%20Access.pdf%20target="
+     },
+     {
+      "title": "Measure specifications: Acute Hospital Utilization",
+      "url": "https://www.hca.wa.gov/assets/program/measure-specs-adult-access-preventive-ambulatory-health-services.pdf"
+     }
+    ]
+   },
+   "alignment": "close; differs: Agere counts telephone/virtual separately (telehealth_contact)",
+   "variants": {
+    "primary_care_type_only": "Only encounters typed primary_care (excludes office/wellness).",
+    "hedis_aap": "Default plus telephone and virtual encounters."
+   }
+  },
+  "inpatient_admission": {
+   "label": "Inpatient stay",
+   "agere_default": "Distinct stays: inpatient/observation encounters collapsed by admit day and overlap.",
+   "standard": {
+    "name": "NCQA HEDIS AHU / PCR",
+    "summary": "Direct transfers (next admission same or next day) are one stay; AHU includes observation, PCR index stays exclude observation-only.",
+    "sources": [
+     {
+      "title": "Proposed Changes to Existing Measure for HEDIS\u00ae1 MY 2025:",
+      "url": "https://wpcdn.ncqa.org/www-prod/wp-content/uploads/06.-AHU.pdf"
+     },
+     {
+      "title": "FAQ Directory",
+      "url": "https://www.ncqa.org/FAQs/?faq-sort=desc&pg=3&pg=6"
+     },
+     {
+      "title": "FAQs - NCQA",
+      "url": "https://www.ncqa.org/FAQs/?faq=000025678&print=1"
+     },
+     {
+      "title": "Proposed Changes to Existing Measure for HEDIS\u00ae1 MY 2022:",
+      "url": "https://wpcdn.ncqa.org/www-prod/wp-content/uploads/2021/02/07.-AHU.pdf"
+     }
+    ]
+   },
+   "alignment": "partly; differs: next-day transfers are not yet merged",
+   "variants": {
+    "admission_records": "Count admission records (no stay collapsing).",
+    "hedis_transfer_merge": "Merge stays whose next admission is within 1 day of discharge."
+   }
+  },
+  "chronic_kidney_disease": {
+   "label": "Chronic kidney disease",
+   "agere_default": "N18 stages, diabetic kidney disease (E08-E13 .2x), hypertensive CKD (I12, I13), and labels.",
+   "standard": {
+    "name": "CMS Chronic Conditions Data Warehouse (CCW) CKD",
+    "summary": "Includes diabetic kidney disease (E11.21/.22/.29 and analogues) and ESRD N18.6; broader than N18 alone; CCW also requires qualifying claims over two years.",
+    "sources": [
+     {
+      "title": "30 CCW Chronic Conditions Algorithms",
+      "url": "https://www2.ccwdata.org/documents/10280/19139421/chr-chronic-condition-algorithms.pdf"
+     },
+     {
+      "title": "ICD-10-CM/PCS MS-DRG v43.0 Definitions Manual",
+      "url": "https://www.cms.gov/icd10m/FY2026-fr-v43-fullcode-cms/fullcode_cms/P1548.html"
+     },
+     {
+      "title": "www.cms.gov \u203a ICD10Manual \u203a version33-fullcode-cmsICD-10-CM/PCS MS-DRGv33 Definitions Manual",
+      "url": "https://www.cms.gov/ICD10Manual/version33-fullcode-cms/fullcode_cms/P0253.html"
+     },
+     {
+      "title": "ICD-10-CM/PCS MS-DRG v34.0 Definitions Manual - CMS",
+      "url": "https://www.cms.gov/ICD10M/version34-fullcode-cms/fullcode_cms/P1364.html"
+     }
+    ]
+   },
+   "alignment": "matches code scope; differs: no two-year claims qualification rule",
+   "variants": {
+    "staged_ckd_only": "Only N18.x stage codes or explicit CKD stage labels."
+   }
+  },
+  "heart_failure": {
+   "label": "Heart failure",
+   "agere_default": "I50, I11.0, I13.0, I13.2 and heart-failure labels.",
+   "standard": {
+    "name": "CMS CCW Heart Failure and Non-Ischemic Heart Disease",
+    "summary": "Includes I50.x, I11.0, I13.0, I13.2 plus cardiomyopathy codes (I42.x, I43) and I09.81.",
+    "sources": [
+     {
+      "title": "30 CCW Chronic Conditions Algorithms",
+      "url": "https://www2.ccwdata.org/documents/10280/19139421/chr-chronic-condition-algorithms.pdf"
+     },
+     {
+      "title": "HEDIS Measures and Technical Resources - NCQA",
+      "url": "https://www.ncqa.org/hedis/measures/"
+     },
+     {
+      "title": "[PDF] 27 CCW Chronic Conditions Algorithms: MBSF_CC_{YYYY} File",
+      "url": "https://www2.ccwdata.org/documents/10280/19139421/ccw-chronic-condition-algorithms.pdf"
+     },
+     {
+      "title": "CMS Manual System",
+      "url": "https://www.cms.gov/regulations-and-guidance/guidance/transmittals/downloads/r3054cp.pdf"
+     }
+    ]
+   },
+   "alignment": "matches core HF codes; CCW combined condition also includes cardiomyopathies",
+   "variants": {
+    "ccw_combined": "Add I42.x, I43, I09.81 (CCW combined condition)."
+   }
+  },
+  "diabetes_a1c_poor_control": {
+   "label": "Diabetes A1c poor control (>9%)",
+   "agere_default": "Latest A1c in period > 9%, or no A1c in period counts as poor control.",
+   "standard": {
+    "name": "NCQA HEDIS GSD (Glycemic Status Assessment)",
+    "summary": "Most recent HbA1c or GMI in the measurement year; missing assessment is numerator-compliant for the >9% indicator.",
+    "sources": [
+     {
+      "title": "Practitioner Clinical Guide HEDIS\u00ae MY2026",
+      "url": "https://www.alliancehealthplan.org/document-library/Practitioner-Clinical-Guide-HEDIS%C2%AE-MY2026-Adult-Measures.pdf"
+     },
+     {
+      "title": "Glycemic Status Assessment for Patient with Diabetes (GSD)",
+      "url": "https://www.bcbsnd.com/providers/programs/bluealliance-and-bluealliance-care-plus/hedis-tip-sheets/hedis-tip-sheet-search/gsd"
+     },
+     {
+      "title": "GSD Template Example",
+      "url": "https://wpcdn.ncqa.org/www-prod/Glycemic-Status-Assessment-for-Patients-With-Diabetes-Example.pdf"
+     },
+     {
+      "title": "[PDF] Glycemic Status Assessment for Patients With Diabetes (GSD)",
+      "url": "https://healthplanofnevada.com/content/dam/hpnv-public-sites/health-plan-of-nevada/provider/hedis/diabetes/2026/Glycemic%20Status%20Assessment%20for%20Patients%20With%20Diabetes%20(GSD).pdf"
+     }
+    ]
+   },
+   "alignment": "matches",
+   "variants": {}
+  },
+  "readmission_30d": {
+   "label": "30-day readmission",
+   "agere_default": "Any new stay starting within 30 days of a prior stay discharge (all-cause, planned not excluded).",
+   "standard": {
+    "name": "NCQA HEDIS PCR / CMS",
+    "summary": "Unplanned acute or observation readmission within 30 days; planned readmissions and pregnancy/perinatal index stays excluded.",
+    "sources": [
+     {
+      "title": "Plan All-Cause Readmissions (PCR) - NCQA",
+      "url": "https://www.ncqa.org/report-cards/health-plans/state-of-health-care-quality-report/plan-all-cause-readmissions-pcr/"
+     },
+     {
+      "title": "[PDF] Guidance for Calculating the Plan All-Cause Readmission (PCR ...",
+      "url": "https://www.medicaid.gov/medicaid/quality-of-care/downloads/performance-measurement/pcr-resource.pdf"
+     },
+     {
+      "title": "[PDF] Calculating the Plan All-Cause Readmission (PCR) Measure in the ...",
+      "url": "https://www.medicaid.gov/sites/default/files/2023-04/pcr-ta-resource-2023.pdf"
+     },
+     {
+      "title": "Hosp. Readmission Reduction - CMS",
+      "url": "https://www.cms.gov/medicare/quality/value-based-programs/hospital-readmissions"
+     }
+    ]
+   },
+   "alignment": "differs: planned-readmission and pregnancy exclusions not applied",
+   "variants": {
+    "hedis_pcr": "Apply planned and pregnancy/perinatal exclusions (needs procedure/diagnosis detail)."
+   }
+  },
+  "follow_up_after_ed": {
+   "label": "Follow-up after ED visit",
+   "agere_default": "Not a governed metric yet.",
+   "standard": {
+    "name": "NCQA HEDIS FMC",
+    "summary": "Follow-up on the ED date or within 7 days after (8-day window); outpatient, telehealth, telephone, e-visit, care-management and behavioral-health services count.",
+    "sources": [
+     {
+      "title": "[PDF] HEDIS MY2026 \u2013 patient eligibility and compliance by measure",
+      "url": "https://assets.humana.com/is/content/humana/HEDIS%20Eligibility%20and%20Exclusionspdf"
+     },
+     {
+      "title": "HEDIS MY 2025 Measures and Descriptions",
+      "url": "https://wpcdn.ncqa.org/www-prod/wp-content/uploads/HEDIS-MY-2025-Measure-Description.pdf"
+     },
+     {
+      "title": "[PDF] 2026 HEDIS Measure FMC - Florida Blue Portal",
+      "url": "https://files.guidewell.com/m/1ccc50113287ef7e/original/providers-programs-quality-hedis-fmc.pdf"
+     },
+     {
+      "title": "HEDIS MY 2024 Measures and Descriptions",
+      "url": "https://wpcdn.ncqa.org/www-prod/wp-content/uploads/HEDIS-MY-2024-Measure-Description.pdf"
+     }
+    ]
+   },
+   "alignment": "to build",
+   "variants": {}
+  },
+  "no_show_rate": {
+   "label": "Appointment no-show rate",
+   "agere_default": "Not a governed metric yet.",
+   "standard": {
+    "name": "AAMC/Vizient ambulatory operations (one common spec)",
+    "summary": "No universal denominator; AAMC/Vizient: (no-shows + day-of/day-before cancellations) / (that + completed). Others: no-shows / (kept + no-shows).",
+    "sources": [
+     {
+      "title": "AAMC and Vizient Data Snapshot: Ambulatory Access Measures",
+      "url": "https://vizientinc-delivery.sitecorecontenthub.cloud/api/public/content/db31e17c01ba4078a4c696446b8e2bec"
+     },
+     {
+      "title": "How to Track Clinic No Show Trends Effectively",
+      "url": "https://www.linkedin.com/pulse/how-track-clinic-show-trends-effectively-kamran-qureshi-mba-i8nqc"
+     },
+     {
+      "title": "Reduce No-Show Appointments: 9 Proven Tips | Auditdata",
+      "url": "https://www.auditdata.com/insights/blog/9-proven-ways-to-prevent-no-shows-and-last-minute-cancellations/"
+     },
+     {
+      "title": "Optimising the booking horizon in healthcare clinics considering no ...",
+      "url": "https://www.tandfonline.com/doi/full/10.1080/00207543.2021.1913292"
+     }
+    ]
+   },
+   "alignment": "to build; must state the formula used",
+   "variants": {}
+  }
+ }
+}

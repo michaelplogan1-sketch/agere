@@ -1,0 +1,392 @@
+{
+ "ed_visit_unit": {
+  "question": "In NCQA HEDIS Emergency Department Utilization (EDU) and CMS ACO measures, how is an ED visit counted (per encounter, per member-day, per claim)? Is an ED visit that results in inpatient admission counted?",
+  "answer": "For NCQA HEDIS EDU, the numerator counts **ED visits**, not claims or member-days: each ED visit counts once, and multiple ED visits on the same date count as one; visits resulting in inpatient admission are excluded[9]. For CMS ACO measures, \u201cACO measures\u201d is not specific enough to give one universal encounter-counting rule: the cited CMS ACO REACH materials describe particular measures, not a general ED-utilization measure[10].",
+  "sources": [
+   {
+    "title": "HEDIS MY 2025 Measures and Descriptions",
+    "url": "https://wpcdn.ncqa.org/www-prod/wp-content/uploads/HEDIS-MY-2025-Measure-Description.pdf"
+   },
+   {
+    "title": "[PDF] Emergency Medicine Measure - QPP",
+    "url": "https://qpp.cms.gov/docs/cost_specifications/2025-12-py2025-mif-ebcm-emergency.pdf"
+   },
+   {
+    "title": "Final 20201103",
+    "url": "https://wpcdn.ncqa.org/www-prod/wp-content/uploads/2020/11/HEDIS_CalculationSpecification_MY2020.pdf"
+   },
+   {
+    "title": "Emergency Department Utilization (EDU)",
+    "url": "https://www.ncqa.org/report-cards/health-plans/state-of-health-care-quality-report/emergency-department-utilization-edu/"
+   },
+   {
+    "title": "[PDF] Emergency Medicine Measure - Quality Payment Program (QPP)",
+    "url": "https://qpp.cms.gov/docs/cost_specifications/2025-12-py2026-mif-ebcm-emergency.pdf"
+   },
+   {
+    "title": "Evaluation of the ACO REACH Model",
+    "url": "https://www.cms.gov/priorities/innovation/data-and-reports/2026/aco-reach-3rd-eval-exec-sum"
+   },
+   {
+    "title": "HEDIS Measure Library & Historical Data - NCQA",
+    "url": "https://www.ncqa.org/report-cards/health-plans/state-of-health-care-quality-report/"
+   },
+   {
+    "title": "Preparing for HEDIS MY 2028: What New Risk-Adjusted ...",
+    "url": "https://www.ncqa.org/videos/preparing-for-hedis-my-2028-what-new-risk-adjusted-utilization-strategies-mean-for-your-organization/"
+   }
+  ],
+  "usd": 0.00154
+ },
+ "primary_care_visit": {
+  "question": "How do NCQA HEDIS and CMS define a primary care or ambulatory/office visit for measures such as Adults Access to Preventive/Ambulatory Health Services (AAP)? Which visit types count (office, wellness, telehealth)?",
+  "answer": "For HEDIS AAP, a qualifying visit is **not limited to a primary-care office visit**: the specification counts encounters identified by the \u201cAmbulatory Visits,\u201d \u201cOther Ambulatory Visits,\u201d \u201cTelephone Visits,\u201d and \u201cOnline Assessments\u201d value sets.[1] This includes qualifying office/outpatient and preventive visits, such as annual wellness visits, as well as eligible synchronous telehealth, telephone, and online-assessment encounters; the billed service must match the specification\u2019s codes.[1][2] Emergency-department and acute inpatient encounters do not count, and laboratory-only claims are excluded.[2][3] AAP defines qualifying ambulatory or preventive care\u2014not the clinician\u2019s specialty\u2014so \u201cprimary care\u201d alone is not the test for whether a visit counts.[1]",
+  "sources": [
+   {
+    "title": "[PDF] Adults' Access to Preventive/Ambulatory Health Services (AAP)",
+    "url": "https://medicaidquality.nh.gov/sites/default/files/user-uploads/0-admin/7188/NCQA%20Measure%20Specifications_V4.pdf"
+   },
+   {
+    "title": "Adults' Access to Preventive/Ambulatory Health Services ...",
+    "url": "https://www.ncqa.org/report-cards/health-plans/state-of-health-care-quality-report/adults-access-to-preventive-ambulatory-health-services-aap/"
+   },
+   {
+    "title": "[PDF] Adults' Access to Preventive/Ambulatory Health Services ( ...",
+    "url": "https://www.molinahealthcare.com/~/media/Molina/PublicWebsite/PDF/providers/ma/Quality/HEDIS%20Tip%20Sheet_AAP_Adult%20Access.pdf%20target="
+   },
+   {
+    "title": "Measure specifications: Acute Hospital Utilization",
+    "url": "https://www.hca.wa.gov/assets/program/measure-specs-adult-access-preventive-ambulatory-health-services.pdf"
+   },
+   {
+    "title": "HEDIS\u00ae Toolkit",
+    "url": "https://www.texaschildrenshealthplan.org/sites/default/files/2025-07/PR-2507-127%20HEDIS%20Toolkit_Adults%20Access%20to%20Preventative%20Ambulatory%20Health%20Services%20(AAP).pdf"
+   },
+   {
+    "title": "[PDF] 2020-2021 Telehealth HEDIS\u00ae Measure Quick Reference Guide",
+    "url": "https://www.caresource.com/documents/mp-telehealth-hedis-measure-reference-guide/"
+   },
+   {
+    "title": "2023-2024 Telehealth HEDIS Measure Quick Reference Guide",
+    "url": "https://www.caresource.com/documents/multi-exc-p-336109a-revision-telehealth-hedis-measure-quick-reference-guide.pdf"
+   },
+   {
+    "title": "[PDF] HEDIS\u00ae Quick Reference Guide - Superior Health Plan",
+    "url": "https://www.superiorhealthplan.com/content/dam/centene/Superior/Provider/PDFs/SHP_20174053_HEDIS-QRG-P-02262019.pdf"
+   }
+  ],
+  "usd": 0.00166
+ },
+ "inpatient_stay": {
+  "question": "How do NCQA HEDIS (Acute Hospital Utilization AHU, Plan All-Cause Readmissions PCR) count inpatient stays: how are transfers and overlapping or same-day admissions combined, and are observation stays included?",
+  "answer": "For **AHU**, observation stays are included; direct transfers among acute inpatient and observation settings count as one discharge, using the final discharge date.[1][3] For **PCR**, observation-only stays are not index hospital stays: acute-to-acute direct transfers count as one stay, retaining the first admission date and last discharge date; stays are distinct when the next admission is at least two calendar days after the prior discharge.[7] A direct transfer is admission to the next setting on the same day as, or the day after, the prior discharge\u2014so same-day admissions qualify.[6][7]",
+  "sources": [
+   {
+    "title": "Proposed Changes to Existing Measure for HEDIS\u00ae1 MY 2025:",
+    "url": "https://wpcdn.ncqa.org/www-prod/wp-content/uploads/06.-AHU.pdf"
+   },
+   {
+    "title": "FAQ Directory",
+    "url": "https://www.ncqa.org/FAQs/?faq-sort=desc&pg=3&pg=6"
+   },
+   {
+    "title": "FAQs - NCQA",
+    "url": "https://www.ncqa.org/FAQs/?faq=000025678&print=1"
+   },
+   {
+    "title": "Proposed Changes to Existing Measure for HEDIS\u00ae1 MY 2022:",
+    "url": "https://wpcdn.ncqa.org/www-prod/wp-content/uploads/2021/02/07.-AHU.pdf"
+   },
+   {
+    "title": "HEDIS 2020 October Update",
+    "url": "https://wpcdn.ncqa.org/www-prod/wp-content/uploads/2019/09/20190930_HEDIS-2020-Vol-2-Technical-Update.pdf"
+   },
+   {
+    "title": "FAQ Directory - FAQs - NCQA",
+    "url": "https://www.ncqa.org/FAQs/?faq-sort=desc&pg=87"
+   },
+   {
+    "title": "[PDF] Guidance for Calculating the Plan All-Cause Readmission (PCR ...",
+    "url": "https://www.medicaid.gov/medicaid/quality-of-care/downloads/performance-measurement/pcr-resource.pdf"
+   },
+   {
+    "title": "HEDIS MY 2024 Vol 2 Technical Update",
+    "url": "https://wpcdn.ncqa.org/www-prod/wp-content/uploads/HEDIS-MY-2024-Volume-2-Technical-Update.pdf"
+   }
+  ],
+  "usd": 0.00159
+ },
+ "utilization_per_1000": {
+  "question": "In payer and ACO utilization reporting, is \"ED visits per 1,000\" computed per 1,000 members (headcount) or per 1,000 member-years (member months/12)? What do HEDIS EDU and CMS use?",
+  "answer": "\u201cED visits per 1,000\u201d depends on the specification: when exposure is meant to account for enrollment duration, the denominator is member-years\u2014typically member months \u00f7 12\u2014not a simple headcount. HEDIS EDU is **not** a standard visits-per-1,000 measure: it reports a risk-adjusted observed-to-expected ratio; NCQA\u2019s utilization-rate convention uses member-years for commercial/Medicare and member-months for Medicaid.[1][3] CMS ACO REACH reports outpatient ED visits per 1,000 **person-years**.[2][6] CMS also publishes other ED measures explicitly per 1,000 beneficiaries, so check the particular metric\u2019s definition before comparing rates.[5]",
+  "sources": [
+   {
+    "title": "Final 20201103",
+    "url": "https://wpcdn.ncqa.org/www-prod/wp-content/uploads/2020/11/HEDIS_CalculationSpecification_MY2020.pdf"
+   },
+   {
+    "title": "Performance Year Financial and Quality Results",
+    "url": "https://data.cms.gov/resources/performance-year-financial-and-quality-results-data-dictionary"
+   },
+   {
+    "title": "HEDIS MY 2025 Measures and Descriptions",
+    "url": "https://wpcdn.ncqa.org/www-prod/wp-content/uploads/HEDIS-MY-2025-Measure-Description.pdf"
+   },
+   {
+    "title": "Emergency Department Utilization (EDU)",
+    "url": "https://www.ncqa.org/report-cards/health-plans/state-of-health-care-quality-report/emergency-department-utilization-edu/"
+   },
+   {
+    "title": "Medicare Geographic Variation by National, State & ...",
+    "url": "https://data.cms.gov/resources/medicare-geographic-variation-by-national-state-county-data-dictionary"
+   },
+   {
+    "title": "ACO REACH PY2024 Financial and Quality Results Data Dictionary",
+    "url": "https://data.cms.gov/sites/default/files/2026-07/ACOREACH_FinancialQualityDataDictionary_2024_508v2.pdf"
+   },
+   {
+    "title": "[PDF] All-cause Emergency Department Utilization Rate for - Medicaid",
+    "url": "https://www.medicaid.gov/state-resource-center/innovation-accelerator-program/iap-downloads/functional-areas/pmh-20-ed-tech-specs-manual.pdf"
+   },
+   {
+    "title": "ACO REACH Financial and Quality Results Data Dictionary",
+    "url": "https://data.cms.gov/resources/aco-reach-financial-and-quality-results-data-dictionary"
+   }
+  ],
+  "usd": 0.00146
+ },
+ "ckd_definition": {
+  "question": "For population health registries and CMS chronic condition definitions, does chronic kidney disease include diabetic kidney disease (ICD-10 E11.2x/E11.22) and ESRD (N18.6)? Which ICD-10 codes define CKD in the CMS Chronic Conditions Data Warehouse?",
+  "answer": "Yes. CMS\u2019s CCW Chronic Kidney Disease algorithm includes diabetic kidney disease codes **E11.21, E11.22, and E11.29** (along with analogous codes for other diabetes types), and it includes **N18.6** for end-stage renal disease.[1] The algorithm\u2019s CKD code set is broader than the N18 stage codes: it also lists specified diabetes, hypertension, and other kidney-disease codes; it requires qualifying claims over two years.[1]",
+  "sources": [
+   {
+    "title": "30 CCW Chronic Conditions Algorithms",
+    "url": "https://www2.ccwdata.org/documents/10280/19139421/chr-chronic-condition-algorithms.pdf"
+   },
+   {
+    "title": "ICD-10-CM/PCS MS-DRG v43.0 Definitions Manual",
+    "url": "https://www.cms.gov/icd10m/FY2026-fr-v43-fullcode-cms/fullcode_cms/P1548.html"
+   },
+   {
+    "title": "www.cms.gov \u203a ICD10Manual \u203a version33-fullcode-cmsICD-10-CM/PCS MS-DRGv33 Definitions Manual",
+    "url": "https://www.cms.gov/ICD10Manual/version33-fullcode-cms/fullcode_cms/P0253.html"
+   },
+   {
+    "title": "ICD-10-CM/PCS MS-DRG v34.0 Definitions Manual - CMS",
+    "url": "https://www.cms.gov/ICD10M/version34-fullcode-cms/fullcode_cms/P1364.html"
+   },
+   {
+    "title": "ICD-10-CM/PCS MS-DRG v38.0 Definitions Manual",
+    "url": "https://www.cms.gov/icd10m/version38-fullcode-cms/fullcode_cms/P0258.html"
+   },
+   {
+    "title": "ICD-10-CM/PCS MS-DRG v37.2 Definitions Manual - CMS",
+    "url": "https://www.cms.gov/icd10m/version372-fullcode-cms/fullcode_cms/P0254.html"
+   },
+   {
+    "title": "ICD-10-CM/PCS MS-DRG v37.0 Definitions Manual",
+    "url": "https://www.cms.gov/ICD10Manual/version37-fullcode-cms/fullcode_cms/P0254.html"
+   },
+   {
+    "title": "[PDF] CCW White Paper CCW Condition Categories Impact of Conversion ...",
+    "url": "https://www2.ccwdata.org/documents/10280/19002256/ccw-condition-categories-impact-of-icd9-to-icd10-conversion.pdf"
+   }
+  ],
+  "usd": 0.00151
+ },
+ "heart_failure_definition": {
+  "question": "Which ICD-10 codes define heart failure in the CMS Chronic Conditions Warehouse and HEDIS value sets? Are hypertensive heart disease with heart failure (I11.0, I13.0) included?",
+  "answer": "The CMS CCW\u2019s current \u201cHeart Failure and Non-Ischemic Heart Disease\u201d algorithm includes **I09.81, I11.0, I13.0, I13.2, I42.0, I42.5\u2013I42.8, I43, I50.1, I50.20\u2013I50.23, I50.30\u2013I50.33, I50.40\u2013I50.43, I50.810\u2013I50.814, I50.82\u2013I50.84, I50.89, I50.9, and P29.0**; it uses a two-year lookback and specified qualifying claims.[1] **Yes: both I11.0 and I13.0 are explicitly included** (as is I13.2).[1] \u201cHEDIS value sets\u201d do not define one universal heart-failure code list; the applicable codes depend on the specific measure and measurement-year specification, so the available official NCQA reference does not establish that I11.0 and I13.0 are included in every HEDIS heart-failure value set.[2]",
+  "sources": [
+   {
+    "title": "30 CCW Chronic Conditions Algorithms",
+    "url": "https://www2.ccwdata.org/documents/10280/19139421/chr-chronic-condition-algorithms.pdf"
+   },
+   {
+    "title": "HEDIS Measures and Technical Resources - NCQA",
+    "url": "https://www.ncqa.org/hedis/measures/"
+   },
+   {
+    "title": "[PDF] 27 CCW Chronic Conditions Algorithms: MBSF_CC_{YYYY} File",
+    "url": "https://www2.ccwdata.org/documents/10280/19139421/ccw-chronic-condition-algorithms.pdf"
+   },
+   {
+    "title": "CMS Manual System",
+    "url": "https://www.cms.gov/regulations-and-guidance/guidance/transmittals/downloads/r3054cp.pdf"
+   },
+   {
+    "title": "www2.ccwdata.org \u00b7 condition-categories-chronicChronic Conditions - Chronic Conditions Data Warehouse",
+    "url": "https://www2.ccwdata.org/web/guest/condition-categories-chronic/"
+   },
+   {
+    "title": "[PDF] APPENDIX A CMS Chronic Conditions Data Warehouse (CCW ...",
+    "url": "https://aspe.hhs.gov/sites/default/files/private/pdf/252376/AppendixA.pdf"
+   },
+   {
+    "title": "ICD-10-CM/PCS MS-DRG v43.1 Definitions Manual",
+    "url": "https://www.cms.gov/icd10m/FY2026-fr-v43.1-fullcode-cms/fullcode_cms/P1357.html"
+   },
+   {
+    "title": "ICD-10-CM/PCS MS-DRG v37.0 Definitions Manual - CMS",
+    "url": "https://www.cms.gov/icd10manual/version37-fullcode-cms/fullcode_cms/P0114.html"
+   }
+  ],
+  "usd": 0.00158
+ },
+ "diabetes_a1c_control": {
+  "question": "In NCQA HEDIS Glycemic Status Assessment for Patients With Diabetes (GSD, formerly HbA1c control), what counts: the most recent A1c in the measurement year, and how are patients with no test handled (counted as poor control?)",
+  "answer": "Use the most recent HbA1c **or GMI result from the measurement year**; if more than one assessment occurs on the same date, use the lowest result.[3] GSD reports two rates: <8.0% and >9.0%.[8] A missing result or no assessment is **not** treated as poor control in the sense of an observed >9% value, but it is counted as numerator-compliant for the >9% indicator; for the <8% indicator, it is not numerator-compliant.[3]",
+  "sources": [
+   {
+    "title": "Practitioner Clinical Guide HEDIS\u00ae MY2026",
+    "url": "https://www.alliancehealthplan.org/document-library/Practitioner-Clinical-Guide-HEDIS%C2%AE-MY2026-Adult-Measures.pdf"
+   },
+   {
+    "title": "Glycemic Status Assessment for Patient with Diabetes (GSD)",
+    "url": "https://www.bcbsnd.com/providers/programs/bluealliance-and-bluealliance-care-plus/hedis-tip-sheets/hedis-tip-sheet-search/gsd"
+   },
+   {
+    "title": "GSD Template Example",
+    "url": "https://wpcdn.ncqa.org/www-prod/Glycemic-Status-Assessment-for-Patients-With-Diabetes-Example.pdf"
+   },
+   {
+    "title": "[PDF] Glycemic Status Assessment for Patients With Diabetes (GSD)",
+    "url": "https://healthplanofnevada.com/content/dam/hpnv-public-sites/health-plan-of-nevada/provider/hedis/diabetes/2026/Glycemic%20Status%20Assessment%20for%20Patients%20With%20Diabetes%20(GSD).pdf"
+   },
+   {
+    "title": "GSD - Glycemic Status Assessment for Patients With Diabetes",
+    "url": "https://www.hopkinsmedicine.org/johns-hopkins-health-plans/providers-physicians/health-care-performance-measures/hedis/comprehensive-diabetes-care-diabetic-hba1c-test-controlled-result"
+   },
+   {
+    "title": "www.oregon.gov \u203a oha \u203a HPAOHA Internal Measure Steward Information - Oregon.gov",
+    "url": "https://www.oregon.gov/oha/HPA/ANALYTICS/CCOMetrics/2026-Glycemic-Status-Assessment-for-Patients%20With%20Diabetes%202025.12.31.pdf"
+   },
+   {
+    "title": "2027 Quality Rating System Measure Technical Specifications",
+    "url": "https://www.cms.gov/files/document/2027-qrs-measure-technical-specifications-march-2026.pdf"
+   },
+   {
+    "title": "Glycemic Status Assessment for Patients With Diabetes (GSD ...",
+    "url": "https://www.ncqa.org/report-cards/health-plans/state-of-health-care-quality-report/glycemic-status-assessment-for-patients-with-diabetes-gsd/"
+   }
+  ],
+  "usd": 0.00159
+ },
+ "readmission_30d": {
+  "question": "How does CMS / NCQA HEDIS Plan All-Cause Readmissions define a 30-day readmission: index stay exclusions, planned readmissions, and day counting from discharge?",
+  "answer": "In NCQA HEDIS PCR, the index is an acute inpatient or observation stay discharged during the measurement year; exclude stays ending in death, with a principal discharge diagnosis of pregnancy or a perinatal condition, and stays not meeting the measure\u2019s eligibility/date rules.[1][3] A readmission is an **unplanned** acute inpatient or observation admission for any diagnosis within 30 days; planned stays identified by the specification\u2019s criteria are not counted, and an index stay is excluded when its first readmission is planned.[1][2][10] The window is based on the **readmission admission date**: it must fall within 30 days after the index discharge date; the discharge day is day zero, so the next calendar day is day one.[2]",
+  "sources": [
+   {
+    "title": "Plan All-Cause Readmissions (PCR) - NCQA",
+    "url": "https://www.ncqa.org/report-cards/health-plans/state-of-health-care-quality-report/plan-all-cause-readmissions-pcr/"
+   },
+   {
+    "title": "[PDF] Guidance for Calculating the Plan All-Cause Readmission (PCR ...",
+    "url": "https://www.medicaid.gov/medicaid/quality-of-care/downloads/performance-measurement/pcr-resource.pdf"
+   },
+   {
+    "title": "[PDF] Calculating the Plan All-Cause Readmission (PCR) Measure in the ...",
+    "url": "https://www.medicaid.gov/sites/default/files/2023-04/pcr-ta-resource-2023.pdf"
+   },
+   {
+    "title": "Hosp. Readmission Reduction - CMS",
+    "url": "https://www.cms.gov/medicare/quality/value-based-programs/hospital-readmissions"
+   },
+   {
+    "title": "[PDF] Hospital-wide- (All-condition) 30\u2010Day Readmission Measure - CMS",
+    "url": "https://www.cms.gov/medicare/quality-initiatives-patient-assessment-instruments/mms/downloads/mmshospital-wideall-conditionreadmissionrate.pdf"
+   },
+   {
+    "title": "[PDF] ACO #8 \u2013 Risk Standardized All Condition Readmissions | CMS",
+    "url": "https://www.cms.gov/files/document/2017-aco8-risk-standardized-all-condition-readmissions-pdf.pdf"
+   },
+   {
+    "title": "Potentially Preventable Hospital Readmission Measures ...",
+    "url": "https://www.cms.gov/Medicare/Quality-Initiatives-Patient-Assessment-Instruments/MMS/Downloads/Draft-Measure-Specifications-for-Potentially-Preventable-Hospital-Readmission-Measures-for-PAC-.pdf"
+   },
+   {
+    "title": "Hospital Readmissions Reduction Program Measures - QualityNet",
+    "url": "https://qualitynet.cms.gov/inpatient/hrrp/measures"
+   }
+  ],
+  "usd": 0.00168
+ },
+ "follow_up_after_ed": {
+  "question": "What are the NCQA HEDIS Follow-Up After Emergency Department Visit measures (FMC for multiple chronic conditions): which follow-up visit types count and within how many days?",
+  "answer": "FMC counts a follow-up service on the ED date or within **7 days after the ED visit**\u2014an eight-day window including the ED date.[2][3] Qualifying types include outpatient visits; telehealth or telephone visits; e-visits or virtual check-ins; transitional-care management, case-management, or complex-care-management visits; outpatient or telehealth behavioral-health visits; intensive outpatient or partial-hospitalization encounters; community mental-health-center visits; observation visits; and substance-use-disorder counseling or services.[3]",
+  "sources": [
+   {
+    "title": "[PDF] HEDIS MY2026 \u2013 patient eligibility and compliance by measure",
+    "url": "https://assets.humana.com/is/content/humana/HEDIS%20Eligibility%20and%20Exclusionspdf"
+   },
+   {
+    "title": "HEDIS MY 2025 Measures and Descriptions",
+    "url": "https://wpcdn.ncqa.org/www-prod/wp-content/uploads/HEDIS-MY-2025-Measure-Description.pdf"
+   },
+   {
+    "title": "[PDF] 2026 HEDIS Measure FMC - Florida Blue Portal",
+    "url": "https://files.guidewell.com/m/1ccc50113287ef7e/original/providers-programs-quality-hedis-fmc.pdf"
+   },
+   {
+    "title": "HEDIS MY 2024 Measures and Descriptions",
+    "url": "https://wpcdn.ncqa.org/www-prod/wp-content/uploads/HEDIS-MY-2024-Measure-Description.pdf"
+   },
+   {
+    "title": "2026 Health Plan",
+    "url": "https://www.thpmedicare.org/sites/default/files/Resources/PY2026_Resource_PRV_IA_Coding-Guide_03052026.pdf"
+   },
+   {
+    "title": "2026 HEDIS\u00ae Measure Summary",
+    "url": "https://www.mclarenhealthplan.org/Uploads/Public/Documents/HealthPlan/documents/Provider%20Forms/HEDIS-Measures.pdf"
+   },
+   {
+    "title": "Coding Reference Guide Measure Year 2025 Follow-Up ...",
+    "url": "https://www.mvphealthcare.com/-/media/project/mvp/healthcare/documents/hedis/2025/follow-up-after-ed-visit-for-patients-with-multiple-chronic-conditions-fmc.pdf?rev=9be4b199e59840479fa1a867b0b60e6f&hash=D1DCD14742AF12BE511E1722EFAF99C6"
+   },
+   {
+    "title": "HEDIS\u00ae MY 2026 Quick Reference Guide",
+    "url": "https://www.fideliscare.org/Portals/0/Providers/TipSheets/FC-Reference-Guide-HEDIS-2026.pdf"
+   }
+  ],
+  "usd": 0.00149
+ },
+ "no_show_rate": {
+  "question": "What is the standard definition of an appointment no-show rate in ambulatory practice operations: denominator (all scheduled, or kept plus no-shows), and are same-day cancellations counted?",
+  "answer": "There is no single universal denominator: it depends on the reporting specification. A clear ambulatory operational specification (AAMC/Vizient) defines the rate as patient no-shows **plus patient cancellations on the appointment day or day before**, divided by that numerator **plus completed appointments**\u2014so it excludes earlier cancellations and is not \u201call originally scheduled\u201d appointments[1]. Other specifications use true no-shows only and exclude cancellations from scheduled appointments, so report the cancellation window and formula explicitly[8].",
+  "sources": [
+   {
+    "title": "AAMC and Vizient Data Snapshot: Ambulatory Access Measures",
+    "url": "https://vizientinc-delivery.sitecorecontenthub.cloud/api/public/content/db31e17c01ba4078a4c696446b8e2bec"
+   },
+   {
+    "title": "How to Track Clinic No Show Trends Effectively",
+    "url": "https://www.linkedin.com/pulse/how-track-clinic-show-trends-effectively-kamran-qureshi-mba-i8nqc"
+   },
+   {
+    "title": "Reduce No-Show Appointments: 9 Proven Tips | Auditdata",
+    "url": "https://www.auditdata.com/insights/blog/9-proven-ways-to-prevent-no-shows-and-last-minute-cancellations/"
+   },
+   {
+    "title": "Optimising the booking horizon in healthcare clinics considering no ...",
+    "url": "https://www.tandfonline.com/doi/full/10.1080/00207543.2021.1913292"
+   },
+   {
+    "title": "digital_health::appointment_no_show_rate - Rust - Docs.rs",
+    "url": "https://docs.rs/digital-health/latest/digital_health/appointment_no_show_rate/index.html"
+   },
+   {
+    "title": "How to Reduce Patient No-Shows in 2026: 15 Proven ...",
+    "url": "https://www.certifyhealth.com/blog/how-to-reduce-patient-no-shows-15-proven-strategies-for-2026/"
+   },
+   {
+    "title": "Dashboard Definitions (with 3 sliders) - Alameda Health Systemwww.alamedahealthsystem.org \u203a dashboard-definitions-3-sliders",
+    "url": "https://www.alamedahealthsystem.org/dashboard-definitions-3-sliders/"
+   },
+   {
+    "title": "[PDF] No Show/Missed Appointments - MedStar Health",
+    "url": "https://www.medstarhealth.org/-/media/project/mho/medstar/pdf/mmg-no-show-appointments---aug-2024-final.pdf"
+   }
+  ],
+  "usd": 0.00159
+ }
+}

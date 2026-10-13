@@ -38,6 +38,7 @@ let ask=async function(e){if(e)e.preventDefault();const question=q.value.trim();
   if(a.patient_ids&&a.patient_ids.length&&!a.table)html+='<details><summary>'+a.patient_ids.length+' patient IDs</summary><pre>'+esc(a.patient_ids.join(', '))+'</pre></details>';
   html+=table(a.table);
   if(a.concepts&&a.concepts.length)html+='<details><summary>Definitions</summary><pre>'+esc(JSON.stringify(a.concepts,null,1))+'</pre></details>';
+  if(a.standards&&a.standards.length)html+='<details><summary>Standards</summary><pre>'+esc(a.standards.map(x=>x.definition+': '+x.standard+' ('+x.alignment+')\n  Agere: '+x.agere_default+'\n  '+x.sources.join('\n  ')).join('\n\n'))+'</pre></details>';
   if(a.method)html+='<details><summary>Method</summary><pre>'+esc(a.method)+'</pre></details>';
   if(a.query)html+='<details><summary>Query</summary><pre>'+esc(a.query)+'</pre></details>';
   if(a.missing&&a.missing.length)html+='<details open><summary>Not covered</summary><pre>'+esc(a.missing.join('\n'))+'</pre></details>';

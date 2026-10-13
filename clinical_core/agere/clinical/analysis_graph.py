@@ -88,6 +88,30 @@ VBC_VALUE_COLUMNS = [(r'\b(?:ed|er|emergency)\b.*\bper 1,?000\b|\bper 1,?000\b.*
                      (r'\bpmpm\b|\bper member per month\b', 'allowed_pmpm')]
 
 
+_REGISTRY = {}
+
+
+def standards(answer):
+    """Published standard behind each governed definition the answer used (definitions registry)."""
+    from pathlib import Path
+    import json as _json
+    if not _REGISTRY:
+        target = Path(__file__).resolve().parents[3] / 'config' / 'agere' / 'definitions.json'
+        _REGISTRY.update(_json.loads(target.read_text())['definitions'] if target.exists() else {})
+    used = [c.get('concept') for c in (answer.get('concepts') or []) if isinstance(c, dict)]
+    text = _json.dumps(answer.get('table') or [], default=str)[:4000] + ' ' + str(answer.get('method') or '')
+    if re.search(r'per_1000|per 1,?000|member[- ]years?', text): used.append('utilization_per_1000')
+    if 'readmission' in text: used.append('readmission_30d')
+    if 'a1c_poor_control' in text: used.append('diabetes_a1c_poor_control')
+    out = []
+    for c in dict.fromkeys(u for u in used if u in _REGISTRY):
+        d = _REGISTRY[c]
+        out.append({'definition': c, 'agere_default': d['agere_default'], 'standard': d['standard']['name'],
+                    'alignment': d['alignment'], 'sources': [x['url'] for x in d['standard']['sources']][:3],
+                    'variants': list(d.get('variants', {}))})
+    return out
+
+
 def requested_shape(question):
     """What kind of answer the question asks for, from its wording."""
     q = (question or '').lower()
@@ -1131,6 +1155,7 @@ def execute(stack, plan, *, question=None):
             raise ValueError('Appointment sources changed during graph execution; result not cached')
         result['question']=question
         result['answer']=build_answer(plan, results, memberships, question)
+        result['answer']['standards']=standards(result['answer'])
         result['answer']['headline']=headline(result['answer'])
         if any(n['operation'] in ('source_state','pre_event_state','requirements','protocol_review','program_document','reference_review',*graph_reports.OPERATIONS) for n in plan['nodes']):
             from .graph_decision import source_fingerprint
