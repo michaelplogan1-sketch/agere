@@ -196,6 +196,18 @@ def headline(answer):
     return text
 
 
+def chart_points(report, limit=60):
+    """Monitor control charts as display series (already computed by the operator; the answer table omits the points)."""
+    from .monitor import LABELS
+    out = []
+    for c in (report.get('chart_status') or [])[:limit]:
+        out.append({'series': c['series'], 'label': LABELS.get(c['series'], c['series']), 'group_by': c['group_by'], 'group': c['group'],
+                    'status': c['status'], 'center': c['center'], 'rate_signal_months': c.get('rate_signal_months') or [],
+                    'data_signal_months': c.get('data_signal_months') or [],
+                    'points': [{k: p.get(k) for k in ('month', 'value', 'lcl', 'ucl')} for p in c.get('chart') or []]})
+    return out
+
+
 def build_answer(plan, results, memberships, question):
     """Shared answer contract: the direct answer, what it covers, and why not if it can't.
 
@@ -261,13 +273,17 @@ def build_answer(plan, results, memberships, question):
     if last['operation'] == 'outreach':
         report = results[-1]['result']
         partial = plan.get('coverage') != 'supported_observation' or plan.get('unmet_requirements')
+        from .outreach import REASONS
         table = [{k: v for k, v in w.items() if k != 'reasons'} for w in report['worklist']]
+        used = {c['code'] for w in report['worklist'] for c in w.get('reasons') or []}
         answer.update(status='partial' if partial else 'answered', answer_type='table', table=table, value=report['headline'],
                       count=report['selected'], patient_ids=[w['patient_id'] for w in report['worklist']], method=report['method'],
                       overall={'portfolio': report['portfolio'], 'optimization': report['optimization'], 'by_group': report['by_group'],
                                'capacity': report['capacity'], 'candidates': report['candidates'],
                                'assumptions': report['assumptions'], 'learning_loop': report['learning_loop'],
-                               'limitations': report['limitations']})
+                               'limitations': report['limitations'],
+                               # display: plain-language label and category for each reason code on the worklist
+                               'reason_labels': {c: {'category': REASONS[c][0], 'label': REASONS[c][1]} for c in sorted(used) if c in REASONS}})
         return answer
     if last['operation'] == 'monitor':
         from .monitor import summarize
@@ -277,7 +293,8 @@ def build_answer(plan, results, memberships, question):
         answer.update(status='partial' if partial else 'answered', answer_type='table', value=value, table=table,
                       method=report['method'], limitations=report['limitations'],
                       overall={'period': report['period'], 'members_in_scope': report['members_in_scope'],
-                               'tests_examined': report['tests_examined'], 'look_elsewhere_bits': report['look_elsewhere_bits']})
+                               'tests_examined': report['tests_examined'], 'look_elsewhere_bits': report['look_elsewhere_bits'],
+                               'charts': chart_points(report)})
         return answer
     if last['operation'] == 'vbc':
         report = results[-1]['result']
