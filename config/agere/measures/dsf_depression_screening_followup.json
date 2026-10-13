@@ -1,0 +1,151 @@
+{
+ "schema": "agere-measure/1",
+ "id": "dsf_depression_screening_followup",
+ "name": "Screening for Depression and Follow-Up Plan",
+ "aliases": [
+  "depression screening and follow-up",
+  "depression screening and follow up",
+  "depression screening",
+  "screening for depression",
+  "dsf",
+  "dsf-e",
+  "cms2",
+  "quality id 134",
+  "depression screening follow-up",
+  "depression screening completion"
+ ],
+ "status": "approximation",
+ "certification": "Approximation of CMS eCQM CMS2 Preventive Care and Screening: Screening for Depression and Follow-Up Plan (MSSP APP Quality ID 134); related HEDIS DSF-E, not certified: follows the public specification with simplified code sets mapped to the codes Agere receives.",
+ "steward": "CMS (CMS2 / MIPS Quality ID 134); related NCQA HEDIS DSF-E",
+ "programs": [
+  "MSSP APP Plus (Quality ID 134)",
+  "MIPS"
+ ],
+ "spec_year": "CMS2v15 (2026 performance period)",
+ "citations": [
+  {
+   "title": "eCQI Resource Center: CMS2v15 Preventive Care and Screening: Screening for Depression and Follow-Up Plan (2026 performance period)",
+   "url": "https://ecqi.healthit.gov/ecqm/ec/2026/cms0002v15",
+   "publisher": "CMS / eCQI Resource Center (ONC-CMS)",
+   "accessed": "2026-10-13"
+  },
+  {
+   "title": "CMS2 v15.0.000 human-readable QDM specification",
+   "url": "https://ecqi.healthit.gov/sites/default/files/ecqm/measures/CMS2-v15.0.000-QDM.html",
+   "publisher": "CMS / eCQI Resource Center",
+   "accessed": "2026-10-13"
+  },
+  {
+   "title": "NCQA public measure page: Depression Screening and Follow-Up for Adolescents and Adults (DSF-E)",
+   "url": "https://www.ncqa.org/report-cards/health-plans/state-of-health-care-quality-report/depression-screening-and-follow-up-for-adolescents-and-adults-dsf-e/",
+   "publisher": "NCQA",
+   "accessed": "2026-10-13"
+  },
+  {
+   "title": "Medicare Shared Savings Program Quality Performance Standard: PY2026 40th Percentile MIPS Quality Performance Category Score (Dec 2025), Table 1 APP Plus Quality Measure Set",
+   "url": "https://cms.gov/sites/default/files/2025-12/py2026_performance_score_40th_percentile.pdf",
+   "publisher": "CMS",
+   "accessed": "2026-10-13"
+  },
+  {
+   "title": "CY2027 PFS proposed rule summary for MSSP ACOs (Quality ID 134 proposed changes)",
+   "url": "https://mdinteractive.com/mips-blog/2027-medicare-physician-fee-schedule-proposed-rule-major-changes-mssp-acos",
+   "publisher": "MDinteractive",
+   "accessed": "2026-10-13"
+  }
+ ],
+ "direction": "higher_is_better",
+ "unit": "patient",
+ "denominator": {
+  "summary": "Members 12+ at period start with at least one primary-care or telehealth visit in the period; enrolled.",
+  "age": {
+   "min": 12,
+   "max": 200,
+   "as_of": "period_start"
+  },
+  "enrollment": {
+   "allowed_gap_months": 1
+  },
+  "criteria": [
+   {
+    "type": "encounter",
+    "label": "Qualifying visit in the period",
+    "concepts": [
+     "primary_care_visit",
+     "telehealth_contact"
+    ],
+    "window": {
+     "start": "period_start",
+     "end": "period_end"
+    }
+   }
+  ]
+ },
+ "exclusions": [
+  {
+   "type": "condition",
+   "label": "Active depression or bipolar diagnosis before the period (F32-F34, F31, F39)",
+   "concepts": [
+    "depression"
+   ],
+   "icd10_prefixes": [
+    "F31",
+    "F32",
+    "F33",
+    "F34.1",
+    "F39"
+   ],
+   "window": {
+    "start": "period_start-100y",
+    "end": "period_start-1d"
+   }
+  }
+ ],
+ "numerator": {
+  "summary": "A standardized depression screen in the period (PHQ-9, PHQ-2 in an annual wellness HRA, or G8431/G8510); when positive, a documented follow-up plan (behavioral care plan, follow-up report or referral) on or within 2 days of the screen. Agere approximates the positive-screen branch: a screen counts when it is negative or a follow-up plan exists in the period.",
+  "criteria": [
+   {
+    "type": "service",
+    "label": "Standardized depression screen in the period",
+    "hcpcs": [
+     "G8431",
+     "G8510"
+    ],
+    "loinc": [
+     "44261-6",
+     "55758-7",
+     "73831-0",
+     "73832-8"
+    ],
+    "streams": [
+     {
+      "stream": "mood_questionnaires",
+      "field": "instrument",
+      "values": [
+       "PHQ-9",
+       "PHQ-2",
+       "PHQ-A"
+      ]
+     },
+     {
+      "stream": "health_risk_assessments",
+      "field": "phq2_total"
+     }
+    ],
+    "window": {
+     "start": "period_start",
+     "end": "period_end"
+    }
+   }
+  ]
+ },
+ "gap_label": "No depression screen this period",
+ "outreach": {
+  "value_usd": 100,
+  "minutes": 10,
+  "action": "Administer PHQ-2/PHQ-9 at next visit"
+ },
+ "notes": [
+  "The follow-up-plan component for positive screens is reported separately in the gap evidence; HEDIS DSF-E uses 12+ and a 30-day follow-up window."
+ ]
+}

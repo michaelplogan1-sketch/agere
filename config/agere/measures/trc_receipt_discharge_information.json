@@ -1,0 +1,135 @@
+{
+ "schema": "agere-measure/1",
+ "id": "trc_receipt_discharge_information",
+ "name": "Transitions of Care: Receipt of Discharge Information",
+ "aliases": [
+  "receipt of discharge information",
+  "trc receipt of discharge information",
+  "discharge summary receipt rate"
+ ],
+ "status": "approximation",
+ "certification": "Approximation of HEDIS Transitions of Care (receipt of discharge information indicator) (TRC), not certified: built from NCQA's public measure summary; the licensed HEDIS value sets are not used (codes here are public ICD-10-CM/LOINC/CPT examples).",
+ "steward": "NCQA (HEDIS TRC)",
+ "programs": [
+  "HEDIS",
+  "Medicare Part C Star Ratings (TRC composite)"
+ ],
+ "spec_year": "HEDIS MY2025",
+ "citations": [
+  {
+   "title": "NCQA public measure page: Transitions of Care (TRC)",
+   "url": "https://www.ncqa.org/report-cards/health-plans/state-of-health-care-quality-report/transitions-of-care-trc/",
+   "publisher": "NCQA",
+   "accessed": "2026-10-13"
+  },
+  {
+   "title": "2027 Part C & D Star Ratings Technical Notes (last updated 09/30/2026; measurement year 2025 data)",
+   "url": "https://www.cms.gov/files/document/2027-tech-notes-2026-09-30.pdf",
+   "publisher": "CMS",
+   "accessed": "2026-10-13"
+  },
+  {
+   "title": "2026 Part C & D Star Ratings Technical Notes (updated 09/25/2025)",
+   "url": "https://www.cms.gov/files/document/2026-star-ratings-technical-notes.pdf",
+   "publisher": "CMS",
+   "accessed": "2026-10-13"
+  },
+  {
+   "title": "MLN908628 Transitional Care Management Services (Aug 2025)",
+   "url": "https://www.cms.gov/files/document/mln908628-transitional-care-management-services.pdf",
+   "publisher": "CMS Medicare Learning Network",
+   "accessed": "2026-10-13"
+  }
+ ],
+ "direction": "higher_is_better",
+ "unit": "index_event",
+ "index": {
+  "type": "stay",
+  "label": "Acute inpatient/observation discharges",
+  "index_date": "discharge",
+  "window": {
+   "start": "period_start",
+   "end": "period_end-30d"
+  }
+ },
+ "denominator": {
+  "summary": "Discharges in the period (January 1 - December 1 analogue: through 30 days before period end) by members 18+.",
+  "age": {
+   "min": 18,
+   "max": 200
+  },
+  "criteria": []
+ },
+ "exclusions": [
+  {
+   "type": "service",
+   "label": "Hospice or palliative care (Z51.5 / hospice encounter)",
+   "streams": [
+    {
+     "stream": "hospice_enrollments"
+    }
+   ],
+   "hcpcs": [
+    "G9473",
+    "G9474",
+    "G9475",
+    "G9476",
+    "G9477",
+    "G9478",
+    "G9479",
+    "Q5003",
+    "Q5004",
+    "Q5005",
+    "Q5006",
+    "Q5007",
+    "Q5008",
+    "Q5010",
+    "S9126",
+    "T2042",
+    "T2043",
+    "T2044",
+    "T2045",
+    "T2046"
+   ],
+   "window": {
+    "start": "period_start",
+    "end": "period_end"
+   }
+  }
+ ],
+ "numerator": {
+  "summary": "Discharge information (hospital summary, discharge plan or ADT discharge event) received on the discharge day through 2 days after.",
+  "criteria": [
+   {
+    "type": "service",
+    "label": "Discharge information within 2 days",
+    "streams": [
+     {
+      "stream": "received_hospital_summaries"
+     },
+     {
+      "stream": "discharge_plans"
+     },
+     {
+      "stream": "adt",
+      "field": "event",
+      "values": [
+       "discharge"
+      ]
+     }
+    ],
+    "window": {
+     "start": "index_end",
+     "end": "index_end+2d"
+    },
+    "lookback_check": false
+   }
+  ]
+ },
+ "gap_label": "Discharge information not received within 2 days",
+ "outreach": {
+  "value_usd": 0,
+  "minutes": 5,
+  "action": "Request discharge summary"
+ }
+}

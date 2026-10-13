@@ -1,0 +1,176 @@
+{
+ "schema": "agere-measure/1",
+ "id": "bcs",
+ "name": "Breast Cancer Screening",
+ "aliases": [
+  "breast cancer screening",
+  "bcs",
+  "bcs-e",
+  "mammography screening rate",
+  "mammogram screening rate",
+  "cms125",
+  "quality id 112",
+  "mammogram gaps",
+  "mammography gaps",
+  "mammograms"
+ ],
+ "status": "approximation",
+ "certification": "Approximation of HEDIS Breast Cancer Screening (BCS-E), not certified: built from NCQA's public measure summary; the licensed HEDIS value sets are not used (codes here are public ICD-10-CM/LOINC/CPT examples).",
+ "steward": "NCQA (HEDIS BCS-E); CMS eCQM CMS125 / MIPS Quality ID 112",
+ "programs": [
+  "HEDIS",
+  "Medicare Part C Star Ratings",
+  "MSSP APP Plus (Quality ID 112)"
+ ],
+ "spec_year": "CMS125v14 (2026 performance period); HEDIS BCS-E",
+ "citations": [
+  {
+   "title": "eCQI Resource Center: CMS125v14 Breast Cancer Screening (2026 performance period)",
+   "url": "https://ecqi.healthit.gov/ecqm/ec/2026/cms0125v14",
+   "publisher": "CMS / eCQI Resource Center (ONC-CMS)",
+   "accessed": "2026-10-13"
+  },
+  {
+   "title": "CMS125 v14.0.000 human-readable QDM specification",
+   "url": "https://ecqi.healthit.gov/sites/default/files/ecqm/measures/CMS125-v14.0.000-QDM.html",
+   "publisher": "CMS / eCQI Resource Center",
+   "accessed": "2026-10-13"
+  },
+  {
+   "title": "NCQA public measure page: Breast Cancer Screening (BCS, BCS-E)",
+   "url": "https://www.ncqa.org/report-cards/health-plans/state-of-health-care-quality-report/breast-cancer-screening-bcs-e/",
+   "publisher": "NCQA",
+   "accessed": "2026-10-13"
+  },
+  {
+   "title": "2027 Part C & D Star Ratings Technical Notes (last updated 09/30/2026; measurement year 2025 data)",
+   "url": "https://www.cms.gov/files/document/2027-tech-notes-2026-09-30.pdf",
+   "publisher": "CMS",
+   "accessed": "2026-10-13"
+  },
+  {
+   "title": "Medicare Shared Savings Program Quality Performance Standard: PY2026 40th Percentile MIPS Quality Performance Category Score (Dec 2025), Table 1 APP Plus Quality Measure Set",
+   "url": "https://cms.gov/sites/default/files/2025-12/py2026_performance_score_40th_percentile.pdf",
+   "publisher": "CMS",
+   "accessed": "2026-10-13"
+  },
+  {
+   "title": "Medicare Claims Processing Manual, Chapter 18 - Preventive and Screening Services",
+   "url": "https://www.cms.gov/Regulations-and-Guidance/Guidance/Manuals/downloads/clm104c18.pdf",
+   "publisher": "CMS",
+   "accessed": "2026-10-13"
+  }
+ ],
+ "direction": "higher_is_better",
+ "unit": "patient",
+ "denominator": {
+  "summary": "Women 42-74 at period end (CMS125v14: screening from age 40 with a 27-month look-back; 2027 Star Ratings still use 52-74 for MY2025); enrolled.",
+  "age": {
+   "min": 42,
+   "max": 74,
+   "as_of": "period_end"
+  },
+  "sex": "F",
+  "enrollment": {
+   "allowed_gap_months": 1
+  },
+  "criteria": []
+ },
+ "exclusions": [
+  {
+   "type": "service",
+   "label": "Hospice or palliative care (Z51.5 / hospice encounter)",
+   "streams": [
+    {
+     "stream": "hospice_enrollments"
+    }
+   ],
+   "hcpcs": [
+    "G9473",
+    "G9474",
+    "G9475",
+    "G9476",
+    "G9477",
+    "G9478",
+    "G9479",
+    "Q5003",
+    "Q5004",
+    "Q5005",
+    "Q5006",
+    "Q5007",
+    "Q5008",
+    "Q5010",
+    "S9126",
+    "T2042",
+    "T2043",
+    "T2044",
+    "T2045",
+    "T2046"
+   ],
+   "window": {
+    "start": "period_start",
+    "end": "period_end"
+   }
+  },
+  {
+   "type": "condition",
+   "label": "Palliative care encounter (Z51.5)",
+   "icd10_prefixes": [
+    "Z51.5"
+   ],
+   "window": {
+    "start": "period_start",
+    "end": "period_end"
+   }
+  },
+  {
+   "type": "condition",
+   "label": "Bilateral mastectomy history (Z90.13)",
+   "icd10_prefixes": [
+    "Z90.13"
+   ],
+   "window": {
+    "start": "period_end-100y",
+    "end": "period_end"
+   }
+  }
+ ],
+ "numerator": {
+  "summary": "Screening mammography (CPT 77061-77063, 77065-77067 or a received screening mammography result) from October 1 two years before the period end through period end (27 months).",
+  "criteria": [
+   {
+    "type": "service",
+    "label": "Screening mammography in 27 months",
+    "cpt": [
+     "77061",
+     "77062",
+     "77063",
+     "77065",
+     "77066",
+     "77067"
+    ],
+    "streams": [
+     {
+      "stream": "cancer_screening_results",
+      "field": "test",
+      "values": [
+       "bilateral_screening_mammography",
+       "screening_mammography",
+       "digital_breast_tomosynthesis"
+      ]
+     }
+    ],
+    "window": {
+     "start": "period_end-27m",
+     "end": "period_end"
+    }
+   }
+  ]
+ },
+ "gap_label": "Breast cancer screening due (no mammogram in 27 months)",
+ "outreach": {
+  "value_usd": 200,
+  "minutes": 10,
+  "action": "Order screening mammogram"
+ }
+}

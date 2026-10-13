@@ -1,0 +1,201 @@
+{
+ "schema": "agere-measure/1",
+ "id": "cbp",
+ "name": "Controlling High Blood Pressure",
+ "aliases": [
+  "controlling high blood pressure",
+  "controlling blood pressure",
+  "cbp",
+  "cbp measure",
+  "cms165",
+  "quality id 236",
+  "quality #236",
+  "hypertension control measure",
+  "controlling bp"
+ ],
+ "status": "approximation",
+ "certification": "Approximation of HEDIS Controlling High Blood Pressure (CBP), not certified: built from NCQA's public measure summary; the licensed HEDIS value sets are not used (codes here are public ICD-10-CM/LOINC/CPT examples).",
+ "steward": "NCQA (HEDIS CBP); CMS eCQM CMS165 / MSSP APP Quality ID 236",
+ "programs": [
+  "HEDIS",
+  "Medicare Part C Star Ratings",
+  "MSSP APP Plus (Quality ID 236)"
+ ],
+ "spec_year": "CMS165v14 (2026 performance period); HEDIS CBP MY2025 (2027 Star Ratings C14)",
+ "citations": [
+  {
+   "title": "eCQI Resource Center: CMS165v14 Controlling High Blood Pressure (2026 performance period)",
+   "url": "https://ecqi.healthit.gov/ecqm/ec/2026/cms0165v14",
+   "publisher": "CMS / eCQI Resource Center (ONC-CMS)",
+   "accessed": "2026-10-13"
+  },
+  {
+   "title": "CMS165 v14.0.000 human-readable QDM specification",
+   "url": "https://ecqi.healthit.gov/sites/default/files/ecqm/measures/CMS165-v14.0.000-QDM.html",
+   "publisher": "CMS / eCQI Resource Center",
+   "accessed": "2026-10-13"
+  },
+  {
+   "title": "NCQA public measure page: Controlling High Blood Pressure (CBP)",
+   "url": "https://www.ncqa.org/report-cards/health-plans/state-of-health-care-quality-report/controlling-high-blood-pressure-cbp/",
+   "publisher": "NCQA",
+   "accessed": "2026-10-13"
+  },
+  {
+   "title": "NCQA public measure page: Blood Pressure Control for Patients With Hypertension (BPC-E)",
+   "url": "https://www.ncqa.org/report-cards/health-plans/state-of-health-care-quality-report/blood-pressure-control-for-patients-with-hypertension-bpc-e/",
+   "publisher": "NCQA",
+   "accessed": "2026-10-13"
+  },
+  {
+   "title": "2027 Part C & D Star Ratings Technical Notes (last updated 09/30/2026; measurement year 2025 data)",
+   "url": "https://www.cms.gov/files/document/2027-tech-notes-2026-09-30.pdf",
+   "publisher": "CMS",
+   "accessed": "2026-10-13"
+  },
+  {
+   "title": "Medicare Shared Savings Program Quality Performance Standard: PY2026 40th Percentile MIPS Quality Performance Category Score (Dec 2025), Table 1 APP Plus Quality Measure Set",
+   "url": "https://cms.gov/sites/default/files/2025-12/py2026_performance_score_40th_percentile.pdf",
+   "publisher": "CMS",
+   "accessed": "2026-10-13"
+  }
+ ],
+ "direction": "higher_is_better",
+ "unit": "patient",
+ "denominator": {
+  "summary": "Members 18-85 at period end with hypertension (I10-I13, I16 or Agere hypertension concept) diagnosed before or during the first six months of the period (CMS165 convention); enrolled.",
+  "age": {
+   "min": 18,
+   "max": 85,
+   "as_of": "period_end"
+  },
+  "enrollment": {
+   "allowed_gap_months": 1
+  },
+  "criteria": [
+   {
+    "type": "condition",
+    "label": "Hypertension diagnosis",
+    "concepts": [
+     "hypertension"
+    ],
+    "icd10_prefixes": [
+     "I10",
+     "I11",
+     "I12",
+     "I13",
+     "I16"
+    ],
+    "window": {
+     "start": "period_start-50y",
+     "end": "period_start+6m"
+    }
+   }
+  ]
+ },
+ "exclusions": [
+  {
+   "type": "service",
+   "label": "Hospice or palliative care (Z51.5 / hospice encounter)",
+   "streams": [
+    {
+     "stream": "hospice_enrollments"
+    }
+   ],
+   "hcpcs": [
+    "G9473",
+    "G9474",
+    "G9475",
+    "G9476",
+    "G9477",
+    "G9478",
+    "G9479",
+    "Q5003",
+    "Q5004",
+    "Q5005",
+    "Q5006",
+    "Q5007",
+    "Q5008",
+    "Q5010",
+    "S9126",
+    "T2042",
+    "T2043",
+    "T2044",
+    "T2045",
+    "T2046"
+   ],
+   "window": {
+    "start": "period_start",
+    "end": "period_end"
+   }
+  },
+  {
+   "type": "condition",
+   "label": "Palliative care encounter (Z51.5)",
+   "icd10_prefixes": [
+    "Z51.5"
+   ],
+   "window": {
+    "start": "period_start",
+    "end": "period_end"
+   }
+  },
+  {
+   "type": "condition",
+   "label": "End-stage renal disease or dialysis (N18.6, Z99.2)",
+   "icd10_prefixes": [
+    "N18.6",
+    "Z99.2"
+   ],
+   "window": {
+    "start": "period_start-12m",
+    "end": "period_end"
+   }
+  },
+  {
+   "type": "condition",
+   "label": "Pregnancy during the period (O00-O9A)",
+   "icd10_prefixes": [
+    "O0",
+    "O1",
+    "O2",
+    "O3",
+    "O4",
+    "O6",
+    "O7",
+    "O8",
+    "O9",
+    "Z33",
+    "Z34"
+   ],
+   "window": {
+    "start": "period_start",
+    "end": "period_end"
+   }
+  }
+ ],
+ "numerator": {
+  "summary": "Representative BP = most recent date in the period with both readings; lowest systolic and diastolic on that date; controlled when < 140/90. No reading = not controlled.",
+  "criteria": [
+   {
+    "type": "blood_pressure",
+    "label": "Most recent blood pressure",
+    "window": {
+     "start": "period_start",
+     "end": "period_end"
+    },
+    "systolic_below": 140,
+    "diastolic_below": 90
+   }
+  ]
+ },
+ "gap_label": "Hypertension: latest BP not below 140/90 (or no BP this period)",
+ "outreach": {
+  "value_usd": 300,
+  "minutes": 15,
+  "action": "BP recheck / home cuff; PCP follow-up"
+ },
+ "notes": [
+  "HEDIS excludes readings taken in acute inpatient or ED settings; measurement setting is not received for vitals."
+ ]
+}

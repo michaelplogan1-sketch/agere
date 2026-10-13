@@ -31,6 +31,15 @@ TYPED |= {'risk_adjustment'}  # CMS-HCC RAF, coding gaps, recapture, suspects (r
 OPTIONAL_POPULATION += ('risk_adjustment',)
 
 
+def _library_measures():
+    """Measure-library ids and set names (config/agere/measures), for the vbc quality schema."""
+    try:
+        from . import measures
+        return [*measures.library(), *measures.measure_sets()]
+    except (OSError, ValueError):
+        return []
+
+
 def obj(properties):
     return {'type': 'object', 'properties': properties, 'required': list(properties), 'additionalProperties': False}
 
@@ -140,7 +149,9 @@ def parameter_schema(op, catalog):
         from . import vbc
         return obj({'metric': string(vbc.METRICS), 'group_by': string(vbc.GROUP_BY),
                     'period': obj({'start': {'type': 'string'}, 'end': {'type': 'string'}}),
-                    'measure': string(['', 'diabetes_a1c_poor_control', 'bp_control', 'statin_therapy_diabetes']),
+                    'measure': string(['', 'diabetes_a1c_poor_control', 'bp_control', 'statin_therapy_diabetes', *_library_measures()],
+                                      'quality only: internal measure, a measure-library id (config/agere/measures) or a measure set'),
+                    'output': string(['rates', 'gaps'], 'quality library measures: rates (default) or the care-gap patient list'),
                     'attribution': string(['hybrid', 'prospective', 'plurality']),
                     'terms': {'type': 'object', 'description': 'shared_savings only: benchmark_pmpm, sharing_rate, msr, mlr, quality_score, two_sided, loss_rate, savings_cap_pct, loss_cap_pct, risk_adjust'},
                     'program': {'type': 'string', 'description': 'shared_savings only: a named program whose cited rulebook terms apply, e.g. "MSSP ENHANCED 2026", '

@@ -1,0 +1,223 @@
+{
+ "schema": "agere-measure/1",
+ "id": "spc_statin_cvd",
+ "name": "Statin Therapy for Patients With Cardiovascular Disease: received statin therapy",
+ "aliases": [
+  "statin therapy for patients with cardiovascular disease",
+  "statin therapy for cardiovascular disease",
+  "spc measure",
+  "spc",
+  "statin therapy for ascvd",
+  "cms347",
+  "quality id 438",
+  "statin therapy for the prevention and treatment of cardiovascular disease"
+ ],
+ "status": "approximation",
+ "certification": "Approximation of HEDIS Statin Therapy for Patients With Cardiovascular Disease (SPC), not certified: built from NCQA's public measure summary; the licensed HEDIS value sets are not used (codes here are public ICD-10-CM/LOINC/CPT examples).",
+ "steward": "NCQA (HEDIS SPC); related CMS eCQM CMS347",
+ "programs": [
+  "HEDIS",
+  "Medicare Part C Star Ratings (C18 in 2027)",
+  "MIPS Quality ID 438 (CMS347v9; not in APP Plus)"
+ ],
+ "spec_year": "HEDIS SPC MY2025 (2027 Star Ratings)",
+ "citations": [
+  {
+   "title": "NCQA public measure page: Statin Therapy for Patients with Cardiovascular Disease (SPC)",
+   "url": "https://www.ncqa.org/report-cards/health-plans/state-of-health-care-quality-report/statin-therapy-for-patients-with-cardiovascular-disease-spc/",
+   "publisher": "NCQA",
+   "accessed": "2026-10-13"
+  },
+  {
+   "title": "2027 Part C & D Star Ratings Technical Notes (last updated 09/30/2026; measurement year 2025 data)",
+   "url": "https://www.cms.gov/files/document/2027-tech-notes-2026-09-30.pdf",
+   "publisher": "CMS",
+   "accessed": "2026-10-13"
+  },
+  {
+   "title": "2026 Part C & D Star Ratings Technical Notes (updated 09/25/2025)",
+   "url": "https://www.cms.gov/files/document/2026-star-ratings-technical-notes.pdf",
+   "publisher": "CMS",
+   "accessed": "2026-10-13"
+  },
+  {
+   "title": "eCQI Resource Center: CMS347v9 Statin Therapy for the Prevention and Treatment of Cardiovascular Disease (2026 performance period)",
+   "url": "https://ecqi.healthit.gov/ecqm/ec/2026/cms0347v9",
+   "publisher": "CMS / eCQI Resource Center (ONC-CMS)",
+   "accessed": "2026-10-13"
+  },
+  {
+   "title": "CMS347 v9.0.000 human-readable QDM specification",
+   "url": "https://ecqi.healthit.gov/sites/default/files/ecqm/measures/CMS347-v9.0.000-QDM.html",
+   "publisher": "CMS / eCQI Resource Center",
+   "accessed": "2026-10-13"
+  }
+ ],
+ "direction": "higher_is_better",
+ "unit": "patient",
+ "denominator": {
+  "summary": "Men 21-75 and women 40-75 with ASCVD (MI, IHD, revascularization status, ischemic stroke, PAD) in the measurement or prior year; enrolled. Agere applies 21-75 to both sexes and drops women under 40 via the sex-specific criterion.",
+  "age": {
+   "min": 21,
+   "max": 75,
+   "as_of": "period_end"
+  },
+  "enrollment": {
+   "allowed_gap_months": 1
+  },
+  "criteria": [
+   {
+    "type": "condition",
+    "label": "Atherosclerotic cardiovascular disease (MI, IHD, revascularization, ischemic stroke, PAD)",
+    "concepts": [
+     "coronary_artery_disease",
+     "myocardial_infarction",
+     "stroke"
+    ],
+    "icd10_prefixes": [
+     "I20",
+     "I21",
+     "I22",
+     "I23",
+     "I24",
+     "I25",
+     "I63",
+     "I65",
+     "I66",
+     "I70",
+     "I73.9",
+     "I74",
+     "Z95.1",
+     "Z95.5",
+     "Z98.61"
+    ],
+    "window": {
+     "start": "period_start-12m",
+     "end": "period_end"
+    }
+   }
+  ]
+ },
+ "exclusions": [
+  {
+   "type": "service",
+   "label": "Hospice or palliative care (Z51.5 / hospice encounter)",
+   "streams": [
+    {
+     "stream": "hospice_enrollments"
+    }
+   ],
+   "hcpcs": [
+    "G9473",
+    "G9474",
+    "G9475",
+    "G9476",
+    "G9477",
+    "G9478",
+    "G9479",
+    "Q5003",
+    "Q5004",
+    "Q5005",
+    "Q5006",
+    "Q5007",
+    "Q5008",
+    "Q5010",
+    "S9126",
+    "T2042",
+    "T2043",
+    "T2044",
+    "T2045",
+    "T2046"
+   ],
+   "window": {
+    "start": "period_start",
+    "end": "period_end"
+   }
+  },
+  {
+   "type": "condition",
+   "label": "Palliative care encounter (Z51.5)",
+   "icd10_prefixes": [
+    "Z51.5"
+   ],
+   "window": {
+    "start": "period_start",
+    "end": "period_end"
+   }
+  },
+  {
+   "type": "condition",
+   "label": "End-stage renal disease or dialysis (N18.6, Z99.2)",
+   "icd10_prefixes": [
+    "N18.6",
+    "Z99.2"
+   ],
+   "window": {
+    "start": "period_start-12m",
+    "end": "period_end"
+   }
+  },
+  {
+   "type": "condition",
+   "label": "Myalgia, myositis, myopathy or rhabdomyolysis (M60.8, M60.9, M62.82, M79.1, G72.0, G72.9)",
+   "icd10_prefixes": [
+    "M60.8",
+    "M60.9",
+    "M62.82",
+    "M79.1",
+    "G72.0",
+    "G72.9"
+   ],
+   "window": {
+    "start": "period_start",
+    "end": "period_end"
+   }
+  },
+  {
+   "type": "condition",
+   "label": "Cirrhosis (K70.3, K71.7, K74.3-K74.6)",
+   "icd10_prefixes": [
+    "K70.3",
+    "K71.7",
+    "K74.3",
+    "K74.4",
+    "K74.5",
+    "K74.6"
+   ],
+   "window": {
+    "start": "period_start-12m",
+    "end": "period_end"
+   }
+  }
+ ],
+ "numerator": {
+  "summary": "At least one statin (any intensity) dispensed in the period.",
+  "criteria": [
+   {
+    "type": "medication",
+    "label": "Statin dispensed",
+    "classes": [
+     "statin"
+    ],
+    "evidence": [
+     "dispensed",
+     "claim"
+    ],
+    "window": {
+     "start": "period_start",
+     "end": "period_end"
+    }
+   }
+  ]
+ },
+ "gap_label": "ASCVD: no statin dispensed this period",
+ "outreach": {
+  "value_usd": 350,
+  "minutes": 10,
+  "action": "Statin discussion with PCP"
+ },
+ "notes": [
+  "HEDIS SPC numerator requires moderate- or high-intensity statins; dose is not reliably received, so any statin counts.",
+  "Women under 40 are not removed (sex-specific age floors are not expressible in one age band); the effect is small."
+ ]
+}

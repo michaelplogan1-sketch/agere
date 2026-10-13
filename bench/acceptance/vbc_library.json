@@ -1,0 +1,580 @@
+[
+ {
+  "question": "Which practices lost the most attributed lives year over year, and is it driven by plurality of visits shifting to specialists or urgent care?",
+  "expect_operation": "vbc",
+  "id": "VQ-005",
+  "domain": "attribution"
+ },
+ {
+  "question": "What would our assigned population look like if we elected prospective instead of retrospective (preliminary prospective with retrospective reconciliation) assignment?",
+  "expect_operation": "vbc",
+  "id": "VQ-008",
+  "domain": "attribution"
+ },
+ {
+  "question": "How many attributed patients does each PCP have, and which panels exceed our target size?",
+  "expect_operation": "vbc",
+  "id": "VQ-014",
+  "domain": "attribution"
+ },
+ {
+  "question": "Which practices have the highest avoidable ED visits per 1,000?",
+  "expect_operation": "profile",
+  "id": "VQ-026",
+  "domain": "utilization"
+ },
+ {
+  "question": "What are our inpatient admissions per 1,000 by quarter, and how do they compare to the regional FFS rate?",
+  "expect_operation": "vbc",
+  "id": "VQ-027",
+  "domain": "utilization"
+ },
+ {
+  "question": "What are our acute inpatient days per 1,000, and how far are we from the county average?",
+  "expect_operation": "vbc",
+  "id": "VQ-028",
+  "domain": "utilization"
+ },
+ {
+  "question": "What are ambulatory-care-sensitive admissions per 1,000 by practice?",
+  "expect_operation": "vbc",
+  "id": "VQ-037",
+  "expect_measure": "pqi_90_overall_composite",
+  "domain": "utilization"
+ },
+ {
+  "question": "Why did ED visits per 1,000 rise in Q3 compared with Q2?",
+  "expect_operation": "vbc",
+  "id": "VQ-045",
+  "domain": "utilization"
+ },
+ {
+  "question": "What is our total cost of care PMPM year to date, and how does it compare to benchmark?",
+  "expect_operation": "vbc",
+  "id": "VQ-050",
+  "domain": "cost_pmpm"
+ },
+ {
+  "question": "Which service categories (inpatient, outpatient, SNF, home health, Part B drugs, professional) drove PMPM growth this year?",
+  "expect_operation": "vbc",
+  "id": "VQ-052",
+  "domain": "cost_pmpm"
+ },
+ {
+  "question": "What is PMPM by practice, risk-adjusted?",
+  "expect_operation": "profile",
+  "id": "VQ-053",
+  "domain": "cost_pmpm"
+ },
+ {
+  "question": "What is PMPM for members with heart failure vs without, adjusted for age?",
+  "expect_operation": "vbc",
+  "id": "VQ-060",
+  "domain": "cost_pmpm"
+ },
+ {
+  "question": "Are we on track to meet the MSSP quality performance standard (40th percentile MIPS Quality score) this year?",
+  "expect_operation": "vbc",
+  "id": "VQ-098",
+  "expect_measure": "mssp_app_plus",
+  "domain": "quality_stars"
+ },
+ {
+  "question": "Which of the APP Plus measures are we below the 40th percentile on right now?",
+  "expect_operation": "vbc",
+  "id": "VQ-099",
+  "expect_measure": "mssp_app_plus",
+  "domain": "quality_stars"
+ },
+ {
+  "question": "What is our diabetes HbA1c poor control (>9%) rate by practice?",
+  "expect_operation": "vbc",
+  "id": "VQ-101",
+  "expect_measure": "gsd_poor_control",
+  "domain": "quality_stars"
+ },
+ {
+  "question": "What is our controlling high blood pressure rate by PCP, and how many patients need one more reading to close the gap?",
+  "expect_operation": "vbc",
+  "id": "VQ-102",
+  "expect_measure": "cbp",
+  "domain": "quality_stars"
+ },
+ {
+  "question": "Which members are on statins with PDC below 80%?",
+  "expect_operation": "vbc",
+  "id": "VQ-103",
+  "expect_measure": "pdc_statins",
+  "domain": "quality_stars"
+ },
+ {
+  "question": "How many members are at risk of falling below 80% PDC on diabetes, RAS antagonist or statin medications by year-end?",
+  "expect_operation": "vbc",
+  "id": "VQ-104",
+  "expect_measure": "pdc_diabetes",
+  "domain": "quality_stars"
+ },
+ {
+  "question": "Which practices have the most open colorectal cancer screening gaps?",
+  "expect_operation": "vbc",
+  "id": "VQ-105",
+  "expect_measure": "col",
+  "domain": "quality_stars"
+ },
+ {
+  "question": "What is our depression screening and follow-up rate by practice?",
+  "expect_operation": "vbc",
+  "id": "VQ-106",
+  "expect_measure": "dsf_depression_screening_followup",
+  "domain": "quality_stars"
+ },
+ {
+  "question": "How close are we to the 4-star cut point on Plan All-Cause Readmissions?",
+  "expect_operation": "vbc",
+  "id": "VQ-107",
+  "expect_measure": "pcr_readmissions",
+  "domain": "quality_stars"
+ },
+ {
+  "question": "How many breast cancer screening gaps are open among women 50-74, by PCP?",
+  "expect_operation": "vbc",
+  "id": "VQ-112",
+  "expect_measure": "bcs",
+  "domain": "quality_stars"
+ },
+ {
+  "question": "How many patients with diabetes are missing a kidney health evaluation (eGFR plus uACR) this year?",
+  "expect_operation": "vbc",
+  "id": "VQ-115",
+  "expect_measure": "ked",
+  "domain": "quality_stars"
+ },
+ {
+  "question": "Why did our controlling blood pressure rate drop from last quarter?",
+  "expect_operation": "explain",
+  "id": "VQ-116",
+  "domain": "quality_stars"
+ },
+ {
+  "question": "Which members have a care gap that could be closed at their next scheduled appointment?",
+  "expect_operation": "outreach",
+  "id": "VQ-118",
+  "domain": "quality_stars"
+ },
+ {
+  "question": "Which members are in the top 5% risk tier but not enrolled in care management?",
+  "expect_operation": "outreach",
+  "id": "VQ-123",
+  "domain": "care_management"
+ },
+ {
+  "question": "Which high-risk members have not been contacted in the last 30 days?",
+  "expect_operation": "outreach",
+  "id": "VQ-126",
+  "domain": "care_management"
+ },
+ {
+  "question": "How do we segment our high-risk population into subgroups (frailty, serious mental illness, heart failure)?",
+  "expect_operation": "discover",
+  "id": "VQ-127",
+  "domain": "care_management"
+ },
+ {
+  "question": "Which patients on our high-risk list are actually expected to cost the most next year according to the predictive model?",
+  "expect_operation": "outreach",
+  "id": "VQ-139",
+  "domain": "care_management"
+ },
+ {
+  "question": "What percent of discharged members had a follow-up visit within 7 days, by practice?",
+  "expect_operation": "vbc",
+  "id": "VQ-146",
+  "expect_measure": "fuh_7day_followup",
+  "domain": "transitions"
+ },
+ {
+  "question": "What is our 30-day all-cause readmission rate, and which hospitals have the highest rate?",
+  "expect_operation": "vbc",
+  "id": "VQ-149",
+  "expect_measure": "pcr_readmissions",
+  "domain": "transitions"
+ },
+ {
+  "question": "Which hospitals are not sending us ADT event notifications?",
+  "expect_operation": "monitor",
+  "id": "VQ-152",
+  "domain": "transitions"
+ },
+ {
+  "question": "Was medication reconciliation completed on or before the post-discharge visit for recently discharged members?",
+  "expect_operation": "vbc",
+  "id": "VQ-155",
+  "expect_measure": "trc_medication_reconciliation",
+  "domain": "transitions"
+ },
+ {
+  "question": "Do members who receive a TCM visit have lower 30-day readmission and cost than those who do not?",
+  "expect_operation": "program_effect",
+  "id": "VQ-156",
+  "domain": "transitions"
+ },
+ {
+  "question": "How many SNF discharges this quarter had a PCP visit within 14 days of returning home?",
+  "expect_operation": "pathway",
+  "id": "VQ-157",
+  "domain": "transitions"
+ },
+ {
+  "question": "How many heart failure discharges had a cardiology or PCP visit within 7 days?",
+  "expect_operation": "pathway",
+  "id": "VQ-160",
+  "domain": "transitions"
+ },
+ {
+  "question": "What is our readmission performance on the MSSP/REACH claims-based readmission measure vs prior year?",
+  "expect_operation": "vbc",
+  "id": "VQ-165",
+  "expect_measure": "pcr_readmissions",
+  "domain": "transitions"
+ },
+ {
+  "question": "Which members were discharged from the ED in the last 48 hours and still need a follow-up call?",
+  "expect_operation": "outreach",
+  "id": "VQ-168",
+  "domain": "transitions"
+ },
+ {
+  "question": "Why is our Z code capture rate so low compared with positive screening rates in the EHR?",
+  "expect_operation": "explain",
+  "id": "VQ-171",
+  "domain": "sdoh"
+ },
+ {
+  "question": "Do members with documented housing instability have higher ED visits per 1,000?",
+  "expect_operation": "explain",
+  "id": "VQ-173",
+  "domain": "sdoh"
+ },
+ {
+  "question": "Do members with transportation barriers miss more scheduled appointments?",
+  "expect_operation": "explain",
+  "id": "VQ-178",
+  "domain": "sdoh"
+ },
+ {
+  "question": "What is total cost PMPM for members with vs without a documented social need, adjusted for risk?",
+  "expect_operation": "explain",
+  "id": "VQ-181",
+  "domain": "sdoh"
+ },
+ {
+  "question": "Which specialties have the highest leakage rate, and to which outside groups?",
+  "expect_operation": "pathway",
+  "id": "VQ-191",
+  "domain": "network_leakage"
+ },
+ {
+  "question": "What is our leakage rate for primary care visits (members seeing non-ACO PCPs)?",
+  "expect_operation": "pathway",
+  "id": "VQ-192",
+  "domain": "network_leakage"
+ },
+ {
+  "question": "Which preferred specialists have the best cost and quality performance for our patients?",
+  "expect_operation": "profile",
+  "id": "VQ-194",
+  "domain": "network_leakage"
+ },
+ {
+  "question": "Which SNFs score best on our risk-adjusted cost and readmission composite?",
+  "expect_operation": "profile",
+  "id": "VQ-198",
+  "domain": "network_leakage"
+ },
+ {
+  "question": "How many members were seen at an urgent care center outside our network in the last quarter?",
+  "expect_operation": "pathway",
+  "id": "VQ-207",
+  "domain": "network_leakage"
+ },
+ {
+  "question": "What share of our members' admissions go to our participating hospitals, and where else are members admitted?",
+  "expect_operation": "pathway",
+  "id": "VQ-211",
+  "domain": "network_leakage"
+ },
+ {
+  "question": "What is our projected shared-savings payment if the benchmark is $X PMPM?",
+  "expect_operation": "vbc",
+  "id": "VQ-212",
+  "domain": "contract_settlement"
+ },
+ {
+  "question": "What portion of our shared savings will be distributed to each practice under our distribution methodology?",
+  "expect_operation": "vbc",
+  "id": "VQ-226",
+  "domain": "contract_settlement"
+ },
+ {
+  "question": "What is the sensitivity of our settlement to a 1% change in national trend?",
+  "expect_operation": "vbc",
+  "id": "VQ-227",
+  "domain": "contract_settlement"
+ },
+ {
+  "question": "Which track and level of risk should we choose next agreement period based on our historical variance?",
+  "expect_operation": "vbc",
+  "id": "VQ-232",
+  "domain": "contract_settlement"
+ },
+ {
+  "question": "Do we owe any shared losses this year, and how close are we to the loss threshold?",
+  "expect_operation": "vbc",
+  "id": "VQ-234",
+  "domain": "contract_settlement"
+ },
+ {
+  "question": "What is our projected year-end PMPM given current claims run-rate and completion factors?",
+  "expect_operation": "vbc",
+  "id": "VQ-237",
+  "domain": "forecasting"
+ },
+ {
+  "question": "What completion factors should we apply to the last 3 months of claims to estimate IBNR?",
+  "expect_operation": "vbc",
+  "id": "VQ-238",
+  "domain": "forecasting"
+ },
+ {
+  "question": "What is our projected savings rate for the performance year with a range of flat, +3% and -3% trend scenarios?",
+  "expect_operation": "vbc",
+  "id": "VQ-240",
+  "domain": "forecasting"
+ },
+ {
+  "question": "Which members are predicted to have an admission in the next 90 days?",
+  "expect_operation": "early_signal",
+  "id": "VQ-241",
+  "domain": "forecasting"
+ },
+ {
+  "question": "How does claims seasonality affect our mid-year projection of savings?",
+  "expect_operation": "demand",
+  "id": "VQ-246",
+  "domain": "forecasting"
+ },
+ {
+  "question": "How many PDC adherence failures do we expect by year-end if no intervention happens?",
+  "expect_operation": "vbc",
+  "id": "VQ-248",
+  "domain": "forecasting"
+ },
+ {
+  "question": "What is the probability that we exceed the MSR this year?",
+  "expect_operation": "vbc",
+  "id": "VQ-249",
+  "domain": "forecasting"
+ },
+ {
+  "question": "What is the expected number of SNF admissions next quarter given current inpatient volume?",
+  "expect_operation": "demand",
+  "id": "VQ-251",
+  "domain": "forecasting"
+ },
+ {
+  "question": "If we grow by 20,000 lives, what care management staffing will we need?",
+  "expect_operation": "demand",
+  "id": "VQ-253",
+  "domain": "forecasting"
+ },
+ {
+  "question": "Which members are likely to transition from rising-risk to high-risk next year?",
+  "expect_operation": "outreach",
+  "id": "VQ-257",
+  "domain": "forecasting"
+ },
+ {
+  "question": "What is the IBNR reserve we should book for this quarter, and which method (chain ladder vs paid PMPM) is more reliable for us?",
+  "expect_operation": "vbc",
+  "id": "VQ-258",
+  "domain": "forecasting"
+ },
+ {
+  "question": "Did our high-risk care management program reduce spending compared with similar members who had not yet enrolled?",
+  "expect_operation": "program_effect",
+  "id": "VQ-260",
+  "domain": "program_evaluation"
+ },
+ {
+  "question": "What is the effect of 7+ months in care management on ED visits and admissions?",
+  "expect_operation": "program_effect",
+  "id": "VQ-261",
+  "domain": "program_evaluation"
+ },
+ {
+  "question": "How much of our measured savings is real versus selection or regression to the mean?",
+  "expect_operation": "program_effect",
+  "id": "VQ-265",
+  "domain": "program_evaluation"
+ },
+ {
+  "question": "Is our ED diversion program's effect statistically significant?",
+  "expect_operation": "program_effect",
+  "id": "VQ-267",
+  "domain": "program_evaluation"
+ },
+ {
+  "question": "Which of our interventions had the biggest effect on avoidable admissions per 1,000?",
+  "expect_operation": "program_effect",
+  "id": "VQ-272",
+  "domain": "program_evaluation"
+ },
+ {
+  "question": "Did the SDOH screening program change downstream utilization for those referred to community resources?",
+  "expect_operation": "program_effect",
+  "id": "VQ-273",
+  "domain": "program_evaluation"
+ },
+ {
+  "question": "What does a difference-in-differences estimate show for our new practice cohort vs comparison practices?",
+  "expect_operation": "program_effect",
+  "id": "VQ-279",
+  "domain": "program_evaluation"
+ },
+ {
+  "question": "Which PCPs have the highest risk-adjusted cost per attributed patient?",
+  "expect_operation": "profile",
+  "id": "VQ-283",
+  "domain": "provider_performance"
+ },
+ {
+  "question": "Rank practices by quality gap closure rate this year.",
+  "expect_operation": "market",
+  "id": "VQ-284",
+  "domain": "provider_performance"
+ },
+ {
+  "question": "Which PCPs have the highest avoidable ED rate per 1,000 among their panel?",
+  "expect_operation": "profile",
+  "id": "VQ-286",
+  "domain": "provider_performance"
+ },
+ {
+  "question": "What is each practice's share of the savings we earned, under our distribution model?",
+  "expect_operation": "vbc",
+  "id": "VQ-288",
+  "domain": "provider_performance"
+ },
+ {
+  "question": "Which practices improved most on quality and cost since last year?",
+  "expect_operation": "market",
+  "id": "VQ-289",
+  "domain": "provider_performance"
+ },
+ {
+  "question": "How do PCPs compare on admissions per 1,000 patients?",
+  "expect_operation": "profile",
+  "id": "VQ-290",
+  "domain": "provider_performance"
+ },
+ {
+  "question": "Which providers' patients have the lowest statin adherence rates?",
+  "expect_operation": "vbc",
+  "id": "VQ-292",
+  "expect_measure": "pdc_statins",
+  "domain": "provider_performance"
+ },
+ {
+  "question": "How does each PCP compare to peers on referral rate to out-of-network specialists?",
+  "expect_operation": "pathway",
+  "id": "VQ-293",
+  "domain": "provider_performance"
+ },
+ {
+  "question": "Which practices are underperforming on blood pressure control and need coaching?",
+  "expect_operation": "profile",
+  "id": "VQ-296",
+  "domain": "provider_performance"
+ },
+ {
+  "question": "Which practices have the highest depression screening completion?",
+  "expect_operation": "vbc",
+  "id": "VQ-300",
+  "expect_measure": "dsf_depression_screening_followup",
+  "domain": "provider_performance"
+ },
+ {
+  "question": "Which PCPs have the most patients with uncontrolled diabetes?",
+  "expect_operation": "vbc",
+  "id": "VQ-301",
+  "expect_measure": "gsd_poor_control",
+  "domain": "provider_performance"
+ },
+ {
+  "question": "Which practices have the highest rate of patients with an ED visit followed by no PCP follow-up?",
+  "expect_operation": "vbc",
+  "id": "VQ-302",
+  "expect_measure": "fmc_ed_followup",
+  "domain": "provider_performance"
+ },
+ {
+  "question": "How many months of claims lag do we have, and how complete is the most recent month?",
+  "expect_operation": "monitor",
+  "id": "VQ-306",
+  "domain": "data_quality"
+ },
+ {
+  "question": "Which hospitals' ADT feeds have gaps or delays compared with claims?",
+  "expect_operation": "monitor",
+  "id": "VQ-318",
+  "domain": "data_quality"
+ },
+ {
+  "question": "How do we interpret a sudden drop in claim counts for a provider - billing issue or real change?",
+  "expect_operation": "monitor",
+  "id": "VQ-328",
+  "domain": "data_quality"
+ },
+ {
+  "question": "Would the apparent success of our high-utilizer program remain if untreated patients selected at the same utilization peak were compared?",
+  "expect_operation": "program_effect",
+  "id": "R-CAUSAL-01",
+  "domain": "program_evaluation"
+ },
+ {
+  "question": "How sensitive is projected contract performance to claim runout, attribution changes and high-cost outliers?",
+  "expect_operation": "vbc",
+  "id": "R-ECON-04",
+  "domain": "contract_settlement"
+ },
+ {
+  "question": "Which improvements are sustained changes beyond ordinary variation rather than a favorable month?",
+  "expect_operation": "monitor",
+  "id": "R-SAFETY-04",
+  "domain": "quality_stars"
+ },
+ {
+  "question": "Which low-utilization communities have high unmet need that a spending-trained model systematically overlooks?",
+  "expect_operation": "discover",
+  "id": "R-EQUITY-01",
+  "domain": "sdoh"
+ },
+ {
+  "question": "Which missing observations are concentrated in an outside provider or payer feed rather than in patient care?",
+  "expect_operation": "monitor",
+  "id": "R-DATAINT-03",
+  "domain": "data_quality"
+ },
+ {
+  "question": "Which admission clusters persist after removing copied text, coding changes and missing-feed periods?",
+  "expect_operation": "discover",
+  "id": "R-DISCOVERY-02",
+  "domain": "program_evaluation"
+ },
+ {
+  "question": "Which apparent provider success survives shrinkage, uncertainty estimates and validation in a later cohort?",
+  "expect_operation": "profile",
+  "id": "R-DISCOVERY-04",
+  "domain": "program_evaluation"
+ }
+]

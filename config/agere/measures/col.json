@@ -1,0 +1,304 @@
+{
+ "schema": "agere-measure/1",
+ "id": "col",
+ "name": "Colorectal Cancer Screening",
+ "aliases": [
+  "colorectal cancer screening",
+  "colon cancer screening",
+  "col",
+  "col-e",
+  "crc screening",
+  "colorectal screening",
+  "cms130",
+  "quality id 113",
+  "colonoscopy screening rate"
+ ],
+ "status": "approximation",
+ "certification": "Approximation of HEDIS Colorectal Cancer Screening (COL-E), not certified: built from NCQA's public measure summary; the licensed HEDIS value sets are not used (codes here are public ICD-10-CM/LOINC/CPT examples).",
+ "steward": "NCQA (HEDIS COL-E); CMS eCQM CMS130 / MIPS Quality ID 113",
+ "programs": [
+  "HEDIS",
+  "Medicare Part C Star Ratings",
+  "MSSP APP Plus (Quality ID 113, added PY2026)"
+ ],
+ "spec_year": "CMS130v14 (2026 performance period); HEDIS COL-E MY2025",
+ "citations": [
+  {
+   "title": "eCQI Resource Center: CMS130v14 Colorectal Cancer Screening (2026 performance period)",
+   "url": "https://ecqi.healthit.gov/ecqm/ec/2026/cms0130v14",
+   "publisher": "CMS / eCQI Resource Center (ONC-CMS)",
+   "accessed": "2026-10-13"
+  },
+  {
+   "title": "CMS130 v14.0.000 human-readable QDM specification",
+   "url": "https://ecqi.healthit.gov/sites/default/files/ecqm/measures/CMS130-v14.0.000-QDM.html",
+   "publisher": "CMS / eCQI Resource Center",
+   "accessed": "2026-10-13"
+  },
+  {
+   "title": "NCQA public measure page: Colorectal Cancer Screening (COL, COL-E)",
+   "url": "https://www.ncqa.org/report-cards/health-plans/state-of-health-care-quality-report/colorectal-cancer-screening-col-e/",
+   "publisher": "NCQA",
+   "accessed": "2026-10-13"
+  },
+  {
+   "title": "2027 Part C & D Star Ratings Technical Notes (last updated 09/30/2026; measurement year 2025 data)",
+   "url": "https://www.cms.gov/files/document/2027-tech-notes-2026-09-30.pdf",
+   "publisher": "CMS",
+   "accessed": "2026-10-13"
+  },
+  {
+   "title": "Medicare Shared Savings Program Quality Performance Standard: PY2026 40th Percentile MIPS Quality Performance Category Score (Dec 2025), Table 1 APP Plus Quality Measure Set",
+   "url": "https://cms.gov/sites/default/files/2025-12/py2026_performance_score_40th_percentile.pdf",
+   "publisher": "CMS",
+   "accessed": "2026-10-13"
+  },
+  {
+   "title": "Medicare Claims Processing Manual, Chapter 18 - Preventive and Screening Services",
+   "url": "https://www.cms.gov/Regulations-and-Guidance/Guidance/Manuals/downloads/clm104c18.pdf",
+   "publisher": "CMS",
+   "accessed": "2026-10-13"
+  }
+ ],
+ "direction": "higher_is_better",
+ "unit": "patient",
+ "denominator": {
+  "summary": "Members 46-75 at period end (45-75 during the period); enrolled.",
+  "age": {
+   "min": 46,
+   "max": 75,
+   "as_of": "period_end"
+  },
+  "enrollment": {
+   "allowed_gap_months": 1
+  },
+  "criteria": []
+ },
+ "exclusions": [
+  {
+   "type": "service",
+   "label": "Hospice or palliative care (Z51.5 / hospice encounter)",
+   "streams": [
+    {
+     "stream": "hospice_enrollments"
+    }
+   ],
+   "hcpcs": [
+    "G9473",
+    "G9474",
+    "G9475",
+    "G9476",
+    "G9477",
+    "G9478",
+    "G9479",
+    "Q5003",
+    "Q5004",
+    "Q5005",
+    "Q5006",
+    "Q5007",
+    "Q5008",
+    "Q5010",
+    "S9126",
+    "T2042",
+    "T2043",
+    "T2044",
+    "T2045",
+    "T2046"
+   ],
+   "window": {
+    "start": "period_start",
+    "end": "period_end"
+   }
+  },
+  {
+   "type": "condition",
+   "label": "Palliative care encounter (Z51.5)",
+   "icd10_prefixes": [
+    "Z51.5"
+   ],
+   "window": {
+    "start": "period_start",
+    "end": "period_end"
+   }
+  },
+  {
+   "type": "condition",
+   "label": "Colorectal cancer or total colectomy (C18-C20, Z85.03, Z85.04, Z90.49)",
+   "icd10_prefixes": [
+    "C18",
+    "C19",
+    "C20",
+    "Z85.03",
+    "Z85.04"
+   ],
+   "window": {
+    "start": "period_end-100y",
+    "end": "period_end"
+   }
+  }
+ ],
+ "numerator": {
+  "summary": "Any of: FOBT/FIT in the period; stool DNA (FIT-DNA) in the period or 2 years prior; flexible sigmoidoscopy or CT colonography in the period or 4 years prior; colonoscopy in the period or 9 years prior.",
+  "combine": "any",
+  "criteria": [
+   {
+    "type": "service",
+    "label": "FOBT/FIT in the period",
+    "cpt": [
+     "82270",
+     "82274"
+    ],
+    "hcpcs": [
+     "G0328"
+    ],
+    "loinc": [
+     "2335-8",
+     "12503-9",
+     "12504-7",
+     "14563-1",
+     "14564-9",
+     "14565-6",
+     "27396-1",
+     "27401-9",
+     "27925-7",
+     "27926-5",
+     "29771-3",
+     "56490-6",
+     "56491-4",
+     "57905-2",
+     "58453-2",
+     "80372-6"
+    ],
+    "streams": [
+     {
+      "stream": "cancer_screening_results",
+      "field": "test",
+      "values": [
+       "FIT",
+       "FOBT",
+       "gFOBT"
+      ]
+     }
+    ],
+    "window": {
+     "start": "period_start",
+     "end": "period_end"
+    }
+   },
+   {
+    "type": "service",
+    "label": "Stool DNA (FIT-DNA) in 3 years",
+    "cpt": [
+     "81528"
+    ],
+    "loinc": [
+     "77353-1",
+     "77354-9"
+    ],
+    "streams": [
+     {
+      "stream": "cancer_screening_results",
+      "field": "test",
+      "values": [
+       "FIT-DNA",
+       "stool_dna"
+      ]
+     }
+    ],
+    "window": {
+     "start": "period_start-2y",
+     "end": "period_end"
+    },
+    "lookback_check": false
+   },
+   {
+    "type": "service",
+    "label": "Flexible sigmoidoscopy or CT colonography in 5 years",
+    "cpt": [
+     "45330",
+     "45331",
+     "45332",
+     "45333",
+     "45334",
+     "45335",
+     "45337",
+     "45338",
+     "45340",
+     "45341",
+     "45342",
+     "45346",
+     "45347",
+     "45349",
+     "45350",
+     "74261",
+     "74262",
+     "74263"
+    ],
+    "hcpcs": [
+     "G0104"
+    ],
+    "window": {
+     "start": "period_start-4y",
+     "end": "period_end"
+    },
+    "lookback_check": false
+   },
+   {
+    "type": "service",
+    "label": "Colonoscopy in 10 years",
+    "cpt": [
+     "44388",
+     "44389",
+     "44390",
+     "44391",
+     "44392",
+     "44394",
+     "44401",
+     "44402",
+     "44403",
+     "44404",
+     "44405",
+     "44406",
+     "44407",
+     "44408",
+     "45378",
+     "45379",
+     "45380",
+     "45381",
+     "45382",
+     "45384",
+     "45385",
+     "45386",
+     "45388",
+     "45389",
+     "45390",
+     "45391",
+     "45392",
+     "45393",
+     "45398"
+    ],
+    "hcpcs": [
+     "G0105",
+     "G0121"
+    ],
+    "streams": [
+     {
+      "stream": "endoscopy_reports",
+      "field": "performed_procedures",
+      "contains": "colonoscopy"
+     }
+    ],
+    "window": {
+     "start": "period_start-9y",
+     "end": "period_end"
+    }
+   }
+  ]
+ },
+ "gap_label": "Colorectal cancer screening due",
+ "outreach": {
+  "value_usd": 200,
+  "minutes": 10,
+  "action": "Offer FIT kit or colonoscopy referral"
+ }
+}

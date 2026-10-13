@@ -64,9 +64,18 @@ def validate(p):
         cmp = p.get('compare') or {}
         if cmp and not all(isinstance(cmp.get(k), dict) and cmp[k].get('start') and cmp[k].get('end') for k in ('a', 'b')):
             raise ValueError('compare needs periods a and b with start/end dates')
-    return {'metric': p['metric'], 'group_by': p.get('group_by', 'none'), 'period': p.get('period') or {}, 'compare': p.get('compare') or {},
-            'measure': p.get('measure', ''), 'terms': p.get('terms') or {}, 'attribution': p.get('attribution', 'hybrid'),
-            'denominator': _denominator(p.get('denominator', 'member_years'))}
+    out = {'metric': p['metric'], 'group_by': p.get('group_by', 'none'), 'period': p.get('period') or {}, 'compare': p.get('compare') or {},
+           'measure': p.get('measure', ''), 'terms': p.get('terms') or {}, 'attribution': p.get('attribution', 'hybrid'),
+           'denominator': _denominator(p.get('denominator', 'member_years'))}
+    if p['metric'] == 'quality' and (p.get('measure') or p.get('measures')) and p.get('measure') not in INTERNAL_MEASURES:
+        # Measure library (config/agere/measures): a measure id, a list, or a named set (e.g. mssp_app_plus).
+        from . import measures
+        lib = measures.validate({'measure': p.get('measure'), 'measures': p.get('measures'), 'output': p.get('output', 'rates')})
+        out.update(measure_ids=lib['measures'], output=lib['output'], **({'measures': p['measures']} if p.get('measures') else {}))
+    return out
+
+
+INTERNAL_MEASURES = ('', 'diabetes_a1c_poor_control', 'bp_control', 'statin_therapy_diabetes')
 
 
 def _denominator(d):
@@ -417,8 +426,14 @@ def _risk_intervals(db, people, attr, p, start, end, scores, rows):
     return {k: v for k, v in cal.items() if not k.startswith('_')}
 
 
-def _quality(db, people, attr, p, start, end):
-    """Internal measures (not certified HEDIS): A1c poor control, BP control, statin therapy, 7-day follow-up."""
+def _quality(db, people, attr, p, start, end, extra=None, as_of=None):
+    """Internal measures (not certified HEDIS): A1c poor control, BP control, statin therapy, 7-day follow-up.
+    A library measure id (config/agere/measures) is evaluated by measures.py instead."""
+    if p.get('measure_ids'):
+        from . import measures
+        rows, method, more = measures.vbc_quality(db, people, attr, p, start, end, as_of or end)
+        if extra is not None: extra.update(more)
+        return rows, method
     has = defaultdict(set)
     for c, pid in db.execute("SELECT concept, patient_id FROM concept_patient WHERE concept IN ('diabetes','hypertension','coronary_artery_disease')"):
         has[c].add(pid)
@@ -716,6 +731,7 @@ def execute(path, patient_ids, params, as_of=None):
         attr = attribution(db, people, start, end, p['attribution'])
         metric = p['metric']
         calibration = None
+        extra = {}  # measure-library report fields (declines, care gaps, citations)
         if metric == 'eligibility':
             groups = defaultdict(lambda: {'members': 0, 'member_months': 0})
             for pid, info in people.items():
@@ -745,7 +761,7 @@ def execute(path, patient_ids, params, as_of=None):
             calibration = _risk_intervals(db, people, attr, p, start, end, scores, rows)
             method += f" Intervals: {calibration['method']} {calibration['statement']}"
         elif metric == 'quality':
-            rows, method = _quality(db, people, attr, p, start, end)
+            rows, method = _quality(db, people, attr, p, start, end, extra, as_of)
         elif metric == 'change':
             rows, method = _change(db, p, as_of, set(patient_ids) if patient_ids is not None else None)
         else:
@@ -754,4 +770,4 @@ def execute(path, patient_ids, params, as_of=None):
         db.close()
     return {'schema': VERSION, 'metric': p['metric'], 'parameters': p, 'period': {'start': start, 'end': end},
             'rows': rows, 'method': method, 'members_in_scope': sum(1 for i in people.values() if i['months']),
-            **({'conformal': calibration} if calibration is not None else {})}
+            **({'conformal': calibration} if calibration is not None else {}), **extra}

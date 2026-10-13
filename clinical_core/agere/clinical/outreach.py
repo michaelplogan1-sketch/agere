@@ -82,7 +82,7 @@ HF = ('heart_failure', 'heart_failure_reduced_ef')
 
 def validate(p):
     allowed = {'capacity_patients', 'capacity_hours', 'require', 'group_by', 'min_per_practice', 'max_per_practice',
-               'method', 'overlap_discount', 'saturation', 'top'}
+               'method', 'overlap_discount', 'saturation', 'top', 'measures'}
     if not isinstance(p, dict) or set(p) - allowed:
         raise ValueError('outreach parameters: ' + ', '.join(sorted(allowed)))
     out = {'capacity_patients': p.get('capacity_patients'), 'capacity_hours': p.get('capacity_hours'),
@@ -107,7 +107,20 @@ def validate(p):
     s = out['saturation']
     if type(s) not in (int, float) or not 0 <= s <= 1000: raise ValueError('saturation 0 (off) or patients per (practice, category) scale')
     if type(out['top']) is not int or not 1 <= out['top'] <= 5000: raise ValueError('top 1..5000')
+    if p.get('measures'):  # care gaps from the measure library (config/agere/measures), in addition to the internal gaps
+        from . import measures
+        out['measures'] = measures.validate({'measures': p['measures']})['measures']
     return out
+
+
+def _register_measure_reasons(measure_ids):
+    """Outreach reason codes for library measures: GAP_M_<ID> with the measure file's outreach value/minutes/action."""
+    from . import measures
+    lib = measures.library()
+    for mid in measure_ids:
+        o = lib[mid].get('outreach') or {}
+        REASONS.setdefault(f'GAP_M_{mid.upper()}', ('care_gap', lib[mid].get('gap_label', lib[mid]['name']), o.get('value_usd', 150),
+                                                    o.get('action', 'Close the care gap with the PCP team'), o.get('minutes', 10)))
 
 
 # ---- candidate values --------------------------------------------------------------
@@ -265,8 +278,9 @@ def utilization_interval(cal, pred, age):
     return float(lo[0]), float(hi[0])
 
 
-def candidates(db, as_of, keep=None, discount=0.5):
-    """Every in-scope patient with explained value components. Returns (rows, context)."""
+def candidates(db, as_of, keep=None, discount=0.5, measure_gaps=None):
+    """Every in-scope patient with explained value components. Returns (rows, context).
+    measure_gaps: {patient_id: [(measure id, label, evidence)]} from the measure library (optional)."""
     A = ASSUMPTIONS
     # Risk model, base rates and attendance are fitted on the whole roster; only candidates are restricted to `keep`,
     # so a cohort's scores stay on the population scale (a heart-failure cohort is not re-centred to mean 1.0).
@@ -363,6 +377,8 @@ def candidates(db, as_of, keep=None, discount=0.5):
         for need, code in (('food', 'SDOH_FOOD'), ('transport', 'SDOH_TRANSPORT'), ('cost_of_care', 'SDOH_COST')):
             got = needs.get((pid, need))
             if got and got[0]: add(code, REASONS[code][2], f'positive {need} screen on {(got[1] or "undated")[:10]}')
+        for mid, _label, evidence in (measure_gaps or {}).get(pid, ()):
+            add(f'GAP_M_{mid.upper()}', REASONS[f'GAP_M_{mid.upper()}'][2], f'{mid}: {evidence}')
         if not reasons: continue
         reasons.sort(key=lambda r: -r['value_if_engaged'])
         kept, noshow = appts[pid]
@@ -625,7 +641,13 @@ def execute(path, patient_ids, params, as_of=None):
     db = sqlite3_connect(path)
     try:
         as_of = as_of or dict(db.execute('SELECT key, value FROM meta')).get('as_of')
-        rows, context = candidates(db, as_of, set(patient_ids) if patient_ids is not None else None, p['overlap_discount'])
+        measure_gaps, skipped_measures = None, []
+        if p.get('measures'):
+            from . import measures
+            _register_measure_reasons(p['measures'])
+            measure_gaps, skipped_measures = measures.care_gaps(db, p['measures'], as_of, set(patient_ids) if patient_ids is not None else None)
+        rows, context = candidates(db, as_of, set(patient_ids) if patient_ids is not None else None, p['overlap_discount'], measure_gaps)
+        if p.get('measures'): context['measure_library'] = {'measures': p['measures'], 'declined': skipped_measures}
         cal = calibrate_utilization(db, as_of)
         rising = calibrate_rising(db, as_of)
     finally:

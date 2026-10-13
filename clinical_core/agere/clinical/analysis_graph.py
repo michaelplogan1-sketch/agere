@@ -472,6 +472,22 @@ def build_answer(plan, results, memberships, question):
     if last['operation'] == 'vbc':
         report = results[-1]['result']
         partial = plan.get('coverage') != 'supported_observation' or plan.get('unmet_requirements')
+        if report.get('declined'):  # measure library: an input the measure needs is not in the received data
+            answer.update(status='unsupported', answer_type='unsupported', value=report.get('reading'), method=report['method'])
+            answer['missing'] += report.get('missing_inputs', [])
+            return answer
+        if report['metric'] == 'quality' and report.get('reading'):  # measure library: rate (or gap list), citation, gaps
+            answer.update(status='partial' if partial else 'answered', answer_type='table', table=report['rows'], value=report['reading'],
+                          method=report['method'],
+                          overall={'period': report['period'], 'members_in_scope': report['members_in_scope'],
+                                   **{k: report[k] for k in ('overall', 'gap_count', 'care_gaps', 'citations', 'certification', 'spec_year') if k in report}})
+            if report.get('warnings'): answer['warnings'] = report['warnings']
+            o = report.get('overall') or {}
+            rate = o.get('rate') if 'rate' in o else next((v for k, v in o.items() if k.startswith('rate_per_')), None)
+            if rate is not None and len(report['rows']) == 1 and requested_shape(question) == 'value':
+                answer.update(answer_type='value', value=round(100 * rate, 1) if 'rate' in o else rate)  # percent, or rate per N
+                answer['overall']['reading'] = report['reading']
+            return answer
         if report['metric'] == 'change':
             top = report['rows'][0]
             answer.update(status='partial' if partial else 'answered', answer_type='table', table=report['rows'], method=report['method'],

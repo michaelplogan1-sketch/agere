@@ -1,0 +1,188 @@
+{
+ "schema": "agere-measure/1",
+ "id": "spd_statin_diabetes",
+ "name": "Statin Therapy for Patients With Diabetes: received statin therapy",
+ "aliases": [
+  "statin therapy for patients with diabetes",
+  "statin therapy for diabetes",
+  "spd measure",
+  "spd",
+  "statins for diabetics measure"
+ ],
+ "status": "approximation",
+ "certification": "Approximation of HEDIS Statin Therapy for Patients With Diabetes (SPD), not certified: built from NCQA's public measure summary; the licensed HEDIS value sets are not used (codes here are public ICD-10-CM/LOINC/CPT examples).",
+ "steward": "NCQA (HEDIS SPD)",
+ "programs": [
+  "HEDIS"
+ ],
+ "spec_year": "HEDIS MY2025",
+ "citations": [
+  {
+   "title": "2027 Part C & D Star Ratings Technical Notes (last updated 09/30/2026; measurement year 2025 data)",
+   "url": "https://www.cms.gov/files/document/2027-tech-notes-2026-09-30.pdf",
+   "publisher": "CMS",
+   "accessed": "2026-10-13"
+  },
+  {
+   "title": "2026 Part C & D Star Ratings Technical Notes (updated 09/25/2025)",
+   "url": "https://www.cms.gov/files/document/2026-star-ratings-technical-notes.pdf",
+   "publisher": "CMS",
+   "accessed": "2026-10-13"
+  },
+  {
+   "title": "NCQA public measure page: Statin Therapy for Patients with Diabetes (SPD)",
+   "url": "https://www.ncqa.org/report-cards/health-plans/state-of-health-care-quality-report/statin-therapy-for-patients-with-diabetes-spd/",
+   "publisher": "NCQA",
+   "accessed": "2026-10-13"
+  }
+ ],
+ "direction": "higher_is_better",
+ "unit": "patient",
+ "denominator": {
+  "summary": "Members 40-75 with diabetes and without ASCVD; enrolled.",
+  "age": {
+   "min": 40,
+   "max": 75,
+   "as_of": "period_end"
+  },
+  "enrollment": {
+   "allowed_gap_months": 1
+  },
+  "criteria": [
+   {
+    "type": "condition",
+    "label": "Diabetes diagnosis (E10, E11, E13) in the measurement or prior year",
+    "concepts": [
+     "diabetes",
+     "type_2_diabetes",
+     "type_1_diabetes"
+    ],
+    "icd10_prefixes": [
+     "E10",
+     "E11",
+     "E13"
+    ],
+    "window": {
+     "start": "period_start-12m",
+     "end": "period_end"
+    }
+   }
+  ]
+ },
+ "exclusions": [
+  {
+   "type": "condition",
+   "label": "ASCVD (counted in SPC instead)",
+   "concepts": [
+    "coronary_artery_disease",
+    "myocardial_infarction",
+    "stroke"
+   ],
+   "icd10_prefixes": [
+    "I20",
+    "I21",
+    "I22",
+    "I23",
+    "I24",
+    "I25",
+    "I63",
+    "I65",
+    "I66",
+    "I70",
+    "I73.9",
+    "I74",
+    "Z95.1",
+    "Z95.5",
+    "Z98.61"
+   ],
+   "window": {
+    "start": "period_start-12m",
+    "end": "period_end"
+   }
+  },
+  {
+   "type": "service",
+   "label": "Hospice or palliative care (Z51.5 / hospice encounter)",
+   "streams": [
+    {
+     "stream": "hospice_enrollments"
+    }
+   ],
+   "hcpcs": [
+    "G9473",
+    "G9474",
+    "G9475",
+    "G9476",
+    "G9477",
+    "G9478",
+    "G9479",
+    "Q5003",
+    "Q5004",
+    "Q5005",
+    "Q5006",
+    "Q5007",
+    "Q5008",
+    "Q5010",
+    "S9126",
+    "T2042",
+    "T2043",
+    "T2044",
+    "T2045",
+    "T2046"
+   ],
+   "window": {
+    "start": "period_start",
+    "end": "period_end"
+   }
+  },
+  {
+   "type": "condition",
+   "label": "Palliative care encounter (Z51.5)",
+   "icd10_prefixes": [
+    "Z51.5"
+   ],
+   "window": {
+    "start": "period_start",
+    "end": "period_end"
+   }
+  },
+  {
+   "type": "condition",
+   "label": "End-stage renal disease or dialysis (N18.6, Z99.2)",
+   "icd10_prefixes": [
+    "N18.6",
+    "Z99.2"
+   ],
+   "window": {
+    "start": "period_start-12m",
+    "end": "period_end"
+   }
+  }
+ ],
+ "numerator": {
+  "summary": "At least one statin dispensed in the period.",
+  "criteria": [
+   {
+    "type": "medication",
+    "label": "Statin dispensed",
+    "classes": [
+     "statin"
+    ],
+    "evidence": [
+     "dispensed",
+     "claim"
+    ],
+    "window": {
+     "start": "period_start",
+     "end": "period_end"
+    }
+   }
+  ]
+ },
+ "gap_label": "Diabetes 40-75: no statin dispensed this period",
+ "outreach": {
+  "value_usd": 350,
+  "minutes": 10,
+  "action": "Statin discussion with PCP"
+ }
+}

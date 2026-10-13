@@ -1,0 +1,199 @@
+{
+ "schema": "agere-measure/1",
+ "id": "ked",
+ "name": "Kidney Health Evaluation for Patients With Diabetes",
+ "aliases": [
+  "kidney health evaluation",
+  "ked",
+  "ked measure",
+  "cms951",
+  "kidney health evaluation for patients with diabetes",
+  "egfr and uacr"
+ ],
+ "status": "approximation",
+ "certification": "Approximation of HEDIS Kidney Health Evaluation for Patients With Diabetes (KED), not certified: built from NCQA's public measure summary; the licensed HEDIS value sets are not used (codes here are public ICD-10-CM/LOINC/CPT examples).",
+ "steward": "NCQA (HEDIS KED); eCQM CMS951 (National Kidney Foundation, MIPS Quality ID 488)",
+ "programs": [
+  "HEDIS",
+  "Medicare Part C Star Ratings (C13)",
+  "MIPS Quality ID 488"
+ ],
+ "spec_year": "CMS951v4 (2026); HEDIS KED MY2025",
+ "citations": [
+  {
+   "title": "eCQI Resource Center: CMS951v4 Kidney Health Evaluation (2026 performance period)",
+   "url": "https://ecqi.healthit.gov/ecqm/ec/2026/cms0951v4",
+   "publisher": "CMS / eCQI Resource Center (ONC-CMS)",
+   "accessed": "2026-10-13"
+  },
+  {
+   "title": "CMS951 v4.0.000 human-readable QDM specification",
+   "url": "https://ecqi.healthit.gov/sites/default/files/ecqm/measures/CMS951-v4.0.000-QDM.html",
+   "publisher": "CMS / eCQI Resource Center",
+   "accessed": "2026-10-13"
+  },
+  {
+   "title": "NCQA public measure page: Kidney Health Evaluation for Patients With Diabetes (KED)",
+   "url": "https://www.ncqa.org/report-cards/health-plans/state-of-health-care-quality-report/kidney-health-evaluation-for-patients-with-diabetes-ked/",
+   "publisher": "NCQA",
+   "accessed": "2026-10-13"
+  },
+  {
+   "title": "2027 Part C & D Star Ratings Technical Notes (last updated 09/30/2026; measurement year 2025 data)",
+   "url": "https://www.cms.gov/files/document/2027-tech-notes-2026-09-30.pdf",
+   "publisher": "CMS",
+   "accessed": "2026-10-13"
+  }
+ ],
+ "direction": "higher_is_better",
+ "unit": "patient",
+ "denominator": {
+  "summary": "Members 18-85 with diabetes in the measurement or prior year; enrolled.",
+  "age": {
+   "min": 18,
+   "max": 85,
+   "as_of": "period_end"
+  },
+  "enrollment": {
+   "allowed_gap_months": 1
+  },
+  "criteria": [
+   {
+    "type": "condition",
+    "label": "Diabetes diagnosis (E10, E11, E13) in the measurement or prior year",
+    "concepts": [
+     "diabetes",
+     "type_2_diabetes",
+     "type_1_diabetes"
+    ],
+    "icd10_prefixes": [
+     "E10",
+     "E11",
+     "E13"
+    ],
+    "window": {
+     "start": "period_start-12m",
+     "end": "period_end"
+    }
+   }
+  ]
+ },
+ "exclusions": [
+  {
+   "type": "service",
+   "label": "Hospice or palliative care (Z51.5 / hospice encounter)",
+   "streams": [
+    {
+     "stream": "hospice_enrollments"
+    }
+   ],
+   "hcpcs": [
+    "G9473",
+    "G9474",
+    "G9475",
+    "G9476",
+    "G9477",
+    "G9478",
+    "G9479",
+    "Q5003",
+    "Q5004",
+    "Q5005",
+    "Q5006",
+    "Q5007",
+    "Q5008",
+    "Q5010",
+    "S9126",
+    "T2042",
+    "T2043",
+    "T2044",
+    "T2045",
+    "T2046"
+   ],
+   "window": {
+    "start": "period_start",
+    "end": "period_end"
+   }
+  },
+  {
+   "type": "condition",
+   "label": "Palliative care encounter (Z51.5)",
+   "icd10_prefixes": [
+    "Z51.5"
+   ],
+   "window": {
+    "start": "period_start",
+    "end": "period_end"
+   }
+  },
+  {
+   "type": "condition",
+   "label": "End-stage renal disease or dialysis (N18.6, Z99.2)",
+   "icd10_prefixes": [
+    "N18.6",
+    "Z99.2"
+   ],
+   "window": {
+    "start": "period_start-12m",
+    "end": "period_end"
+   }
+  }
+ ],
+ "numerator": {
+  "summary": "Both an eGFR and a urine albumin-creatinine ratio (uACR) in the period.",
+  "criteria": [
+   {
+    "type": "measurement",
+    "label": "eGFR in the period",
+    "concept": "egfr",
+    "loinc": [
+     "33914-3",
+     "48642-3",
+     "48643-1",
+     "50044-7",
+     "50210-4",
+     "62238-1",
+     "69405-9",
+     "70969-1",
+     "77147-7",
+     "88293-6",
+     "88294-4",
+     "94677-2",
+     "96591-3",
+     "96592-1",
+     "98979-8",
+     "98980-6"
+    ],
+    "window": {
+     "start": "period_start",
+     "end": "period_end"
+    }
+   },
+   {
+    "type": "measurement",
+    "label": "uACR in the period",
+    "concept": "uacr",
+    "loinc": [
+     "9318-7",
+     "13705-9",
+     "14958-3",
+     "14959-1",
+     "30000-4",
+     "44292-1",
+     "59159-4",
+     "76401-9",
+     "89998-9"
+    ],
+    "window": {
+     "start": "period_start",
+     "end": "period_end"
+    }
+   }
+  ]
+ },
+ "gap_label": "Diabetes: eGFR and/or uACR missing this period",
+ "outreach": {
+  "value_usd": 150,
+  "minutes": 10,
+  "action": "Order eGFR and uACR"
+ }
+}

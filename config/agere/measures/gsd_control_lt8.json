@@ -1,0 +1,163 @@
+{
+ "schema": "agere-measure/1",
+ "id": "gsd_control_lt8",
+ "name": "Glycemic Status Assessment for Patients With Diabetes: control (<8.0%)",
+ "aliases": [
+  "glycemic status <8",
+  "gsd control",
+  "a1c control below 8",
+  "a1c under 8 measure",
+  "hba1c control (<8"
+ ],
+ "status": "approximation",
+ "certification": "Approximation of HEDIS Glycemic Status Assessment for Patients With Diabetes (GSD <8.0%), not certified: built from NCQA's public measure summary; the licensed HEDIS value sets are not used (codes here are public ICD-10-CM/LOINC/CPT examples).",
+ "steward": "NCQA (HEDIS GSD)",
+ "programs": [
+  "HEDIS",
+  "Medicare Part C Star Ratings"
+ ],
+ "spec_year": "HEDIS MY2025",
+ "citations": [
+  {
+   "title": "eCQI Resource Center: CMS122v14 Diabetes: Glycemic Status Assessment Greater Than 9% (2026 performance period)",
+   "url": "https://ecqi.healthit.gov/ecqm/ec/2026/cms0122v14",
+   "publisher": "CMS / eCQI Resource Center (ONC-CMS)",
+   "accessed": "2026-10-13"
+  },
+  {
+   "title": "CMS122 v14.0.000 human-readable QDM specification",
+   "url": "https://ecqi.healthit.gov/sites/default/files/ecqm/measures/CMS122-v14.0.000-QDM.html",
+   "publisher": "CMS / eCQI Resource Center",
+   "accessed": "2026-10-13"
+  },
+  {
+   "title": "NCQA public measure page: Glycemic Status Assessment for Patients With Diabetes (GSD)",
+   "url": "https://www.ncqa.org/report-cards/health-plans/state-of-health-care-quality-report/glycemic-status-assessment-for-patients-with-diabetes-gsd/",
+   "publisher": "NCQA",
+   "accessed": "2026-10-13"
+  },
+  {
+   "title": "2027 Part C & D Star Ratings Technical Notes (last updated 09/30/2026; measurement year 2025 data)",
+   "url": "https://www.cms.gov/files/document/2027-tech-notes-2026-09-30.pdf",
+   "publisher": "CMS",
+   "accessed": "2026-10-13"
+  },
+  {
+   "title": "Medicare Shared Savings Program Quality Performance Standard: PY2026 40th Percentile MIPS Quality Performance Category Score (Dec 2025), Table 1 APP Plus Quality Measure Set",
+   "url": "https://cms.gov/sites/default/files/2025-12/py2026_performance_score_40th_percentile.pdf",
+   "publisher": "CMS",
+   "accessed": "2026-10-13"
+  }
+ ],
+ "direction": "higher_is_better",
+ "unit": "patient",
+ "denominator": {
+  "summary": "Members 18-75 with diabetes in the measurement or prior year; enrolled.",
+  "age": {
+   "min": 18,
+   "max": 75,
+   "as_of": "period_end"
+  },
+  "enrollment": {
+   "allowed_gap_months": 1
+  },
+  "criteria": [
+   {
+    "type": "condition",
+    "label": "Diabetes diagnosis (E10, E11, E13) in the measurement or prior year",
+    "concepts": [
+     "diabetes",
+     "type_2_diabetes",
+     "type_1_diabetes"
+    ],
+    "icd10_prefixes": [
+     "E10",
+     "E11",
+     "E13"
+    ],
+    "window": {
+     "start": "period_start-12m",
+     "end": "period_end"
+    }
+   }
+  ]
+ },
+ "exclusions": [
+  {
+   "type": "service",
+   "label": "Hospice or palliative care (Z51.5 / hospice encounter)",
+   "streams": [
+    {
+     "stream": "hospice_enrollments"
+    }
+   ],
+   "hcpcs": [
+    "G9473",
+    "G9474",
+    "G9475",
+    "G9476",
+    "G9477",
+    "G9478",
+    "G9479",
+    "Q5003",
+    "Q5004",
+    "Q5005",
+    "Q5006",
+    "Q5007",
+    "Q5008",
+    "Q5010",
+    "S9126",
+    "T2042",
+    "T2043",
+    "T2044",
+    "T2045",
+    "T2046"
+   ],
+   "window": {
+    "start": "period_start",
+    "end": "period_end"
+   }
+  },
+  {
+   "type": "condition",
+   "label": "Palliative care encounter (Z51.5)",
+   "icd10_prefixes": [
+    "Z51.5"
+   ],
+   "window": {
+    "start": "period_start",
+    "end": "period_end"
+   }
+  }
+ ],
+ "numerator": {
+  "summary": "Most recent HbA1c in the period < 8.0%.",
+  "criteria": [
+   {
+    "type": "measurement",
+    "label": "Most recent HbA1c",
+    "concept": "hba1c",
+    "loinc": [
+     "4548-4",
+     "4549-2",
+     "17855-8",
+     "17856-6"
+    ],
+    "window": {
+     "start": "period_start",
+     "end": "period_end"
+    },
+    "value": {
+     "op": "<",
+     "threshold": 8.0
+    }
+   }
+  ]
+ },
+ "gap_label": "Diabetes: HbA1c not below 8% (or untested)",
+ "outreach": {
+  "value_usd": 300,
+  "minutes": 15,
+  "action": "Diabetes visit; medication review"
+ }
+}
