@@ -77,6 +77,10 @@ SOCIAL_PHRASES = [  # regex -> (stream, field)
     (r'(?:trouble|difficulty|problems?) paying (?:their |his |her )?(?:medical )?bills', ('financial_screens', 'difficulty_paying_medical_bills')),
     (r'(?:trouble|difficulty) affording (?:care|food)', ('social_screens', 'difficulty_paying_for_care_reported')),
 ]
+# The same need recorded by another instrument (plain-language questions match either).
+NEED_INSTRUMENTS = {'transport_difficulty_reported': [('social_screens', 'transport', 'unreliable')],
+                    'difficulty_paying_for_care_reported': [('financial_screens', 'difficulty_paying_medical_bills', True)],
+                    'difficulty_paying_medical_bills': [('social_screens', 'difficulty_paying_for_care_reported', True)]}
 SOCIAL_FLAGS = {  # phrase -> (stream, field)
     'food difficulty': ('social_screens', 'food_difficulty_reported'),
     'food insecurity': ('social_screens', 'food_difficulty_reported'),
@@ -84,6 +88,9 @@ SOCIAL_FLAGS = {  # phrase -> (stream, field)
     'transportation difficulty': ('social_screens', 'transport_difficulty_reported'),
     'transportation barrier': ('social_screens', 'transport_difficulty_reported'),
     'transportation barriers': ('social_screens', 'transport_difficulty_reported'),
+    'transport problem': ('social_screens', 'transport_difficulty_reported'),
+    'financial strain': ('social_screens', 'difficulty_paying_for_care_reported'),
+    'trouble paying for care': ('social_screens', 'difficulty_paying_for_care_reported'),
     'transportation problems': ('social_screens', 'transport_difficulty_reported'),
     'difficulty paying for care': ('social_screens', 'difficulty_paying_for_care_reported'),
     'financial hardship': ('social_screens', 'difficulty_paying_for_care_reported'),
@@ -590,17 +597,26 @@ def _population_question(q, r, profile, as_of, info):
                 atom = {'kind': 'record', 'stream': s_name, 'conditions': cond, 'window': W}
                 (excl if _negated(low, sm.start()) else allp).append(atom)
     # social-screen flags (true unless "as false"/"false")
+    need_groups = []  # a social need asked in plain words matches either screening instrument
+
+    def need_atoms(stream, field, value, start, literal):
+        atom = {'kind': 'record', 'stream': stream, 'conditions': [{'field': field, 'op': 'eq', 'value': value}], 'window': W}
+        extra = [] if literal or value is not True else [
+            {'kind': 'record', 'stream': s2, 'conditions': [{'field': f2, 'op': 'eq', 'value': v2}], 'window': W}
+            for s2, f2, v2 in NEED_INSTRUMENTS.get(field, []) if s2 in profile['streams'] and f2 in profile['streams'][s2]['fields']]
+        if _negated(low, start) or not extra: (excl if _negated(low, start) else allp).append(atom)
+        else: need_groups.append([atom] + extra)
+
     for phrase, (stream, field) in SOCIAL_FLAGS.items():
         for m in r.take(_alias_pattern(phrase), f'{field}'):
             tail = low[m.end():m.end() + 25]
             value = not re.match(r'\s*(?:as |is |reported )?false', tail)
+            literal = bool(re.match(r'\s*(?:as |is |reported )?(?:true|false)', tail)) or 'screen reporting' in low[max(0, m.start() - 30):m.start()]
             r.take(r'\b(?:as )?(?:true|false)\b')
-            atom = {'kind': 'record', 'stream': stream, 'conditions': [{'field': field, 'op': 'eq', 'value': value}], 'window': W}
-            (excl if _negated(low, m.start()) else allp).append(atom)
+            need_atoms(stream, field, value, m.start(), literal)
     for pattern, (stream, field) in SOCIAL_PHRASES:
         for m in r.take(pattern, field):
-            atom = {'kind': 'record', 'stream': stream, 'conditions': [{'field': field, 'op': 'eq', 'value': True}], 'window': W}
-            (excl if _negated(low, m.start()) else allp).append(atom)
+            need_atoms(stream, field, True, m.start(), False)
     for m in r.take(r'\b(?:missed|no[- ]showed?(?: for)?|skipped) (?:any |an |a )?(?:appointments?|appts?|visits?)\b|\bno[- ]shows?\b', 'missed appointment'):
         if 'appointments' in profile['streams'] and 'no_show' in (profile['streams']['appointments']['fields'].get('status', {}).get('values') or {}):
             atom = {'kind': 'record', 'stream': 'appointments', 'conditions': [{'field': 'status', 'op': 'eq', 'value': 'no_show'}], 'window': W}
@@ -686,6 +702,8 @@ def _population_question(q, r, profile, as_of, info):
                 conds.append((concept, m.start(), m.end()))
     r.take(r'\b(?:including|incl\.?) (?:diabetic )?complications?\b|\bdiabetic[- ]complications?\b|\bfamily history\b|\bicd-?10\b|\bsnomed\b')
     anyp, or_gaps = [], []
+    if len(need_groups) > 1:
+        info.update(route='fallback', reason='more than one multi-instrument social need'); return None, info
     ordered = sorted(conds, key=lambda c: c[1])
     chains, chain = [], [ordered[0]] if ordered else []
     for prev, cur in zip(ordered, ordered[1:]):
@@ -699,8 +717,9 @@ def _population_question(q, r, profile, as_of, info):
             chains.append(chain); chain = [cur]
     if chain: chains.append(chain)
     or_chains = [c for c in chains if len(c) > 1 and re.search(r'\bor\b', low[c[0][1]:c[-1][2]])]
-    if len(or_chains) > 1:
-        info.update(route='fallback', reason='more than one either/or group of conditions'); return None, info
+    if len(or_chains) + len(need_groups) > 1:
+        info.update(route='fallback', reason='more than one either/or group'); return None, info
+    if need_groups: anyp.extend(need_groups[0])
     in_or = {c[1] for ch in or_chains for c in ch}
     for concept, start, _end in conds:
         atom = {'kind': 'concept', 'concept': concept, 'window': W}
