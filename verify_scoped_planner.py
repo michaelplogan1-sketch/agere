@@ -21,7 +21,8 @@ def exercise(stack):
         calls.append({'stage':'selection' if select else 'planning','request_bytes':size,
             'request_sha256':S.digest(body),'simulation':True,'provider_called':False})
         if select:
-            for op in G.CONTRACTS:assert op in body['messages'][0]['content']
+            content=body['messages'][0]['content']; text=content if isinstance(content,str) else ''.join(b.get('text','') for b in content if isinstance(b,dict))
+            for op in G.CONTRACTS:assert op in text,op
             result={'segments':[{'text':question,'operations':['cohort','decision_landmark'],'source_streams':[],'unmet':''}]}
         else:
             result=copy.deepcopy(ex['graph'])
