@@ -1,0 +1,6 @@
+-- % of CAD patients with a dispensed statin in trailing 12 months.
+WITH r AS MATERIALIZED (SELECT patient, stream, payload FROM records WHERE stream IN ('conditions','pharmacy_dispenses')), c AS (SELECT patient, json_extract(payload,'$.description') d, coalesce(json_extract(payload,'$.icd10'),'') i, coalesce(json_extract(payload,'$.snomed'),'') s FROM r WHERE stream='conditions'),
+cad AS (SELECT DISTINCT patient FROM c WHERE (s IN ('414545008','399261000','399211009','401314000','401303003','4557003') OR substr(i,1,3) IN ('I20','I21','I22','I23','I24','I25') OR lower(d) LIKE '%coronary%' OR lower(d) LIKE '%myocardial infarction%' OR lower(d) LIKE '%ischemic heart disease%' OR d LIKE '%STEMI%' OR d LIKE '%Non-ST elevation MI%')),
+st AS (SELECT DISTINCT patient FROM (SELECT patient, json_extract(payload,'$.medication_name') m, payload FROM r WHERE stream='pharmacy_dispenses')
+       WHERE json_extract(payload,'$.status')='dispensed' AND json_extract(payload,'$.event_date') BETWEEN '2028-08-16' AND '2029-08-15' AND (lower(m) LIKE '%atorvastatin%' OR lower(m) LIKE '%simvastatin%' OR lower(m) LIKE '%rosuvastatin%' OR lower(m) LIKE '%pravastatin%' OR lower(m) LIKE '%lovastatin%' OR lower(m) LIKE '%pitavastatin%' OR lower(m) LIKE '%fluvastatin%'))
+SELECT round(100.0*SUM(patient IN (SELECT patient FROM st))/COUNT(*),1) AS value FROM cad;

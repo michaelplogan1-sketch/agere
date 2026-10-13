@@ -1,0 +1,7 @@
+-- % of diabetics age 18-85 with both a dated 2028 eGFR and uACR.
+WITH r AS MATERIALIZED (SELECT patient, stream, payload FROM records WHERE stream IN ('conditions','labs','demographic_updates')), c AS (SELECT patient, json_extract(payload,'$.description') d, coalesce(json_extract(payload,'$.icd10'),'') i, coalesce(json_extract(payload,'$.snomed'),'') s FROM r WHERE stream='conditions'), du AS (SELECT patient, json_extract(payload,'$.age_reported') a, json_extract(payload,'$.age_reference_date') ad FROM r WHERE stream='demographic_updates'), demo AS (SELECT p.id patient, json_extract(p.payload,'$.sex_reported') sex, coalesce((SELECT a FROM du WHERE du.patient=p.id ORDER BY ad DESC LIMIT 1), json_extract(p.payload,'$.age_reported')) age FROM patients p),
+dm AS (SELECT DISTINCT c.patient FROM c JOIN demo d ON d.patient=c.patient WHERE (substr(i,1,3) IN ('E10','E11','E13') OR s='44054006' OR (lower(d) LIKE '%diabetes mellitus%' AND lower(d) NOT LIKE 'family history%') OR d LIKE '%T1DM%' OR d LIKE '%T2DM%') AND d.age BETWEEN 18 AND 85),
+l AS (SELECT patient, json_extract(payload,'$.name') n FROM r WHERE stream='labs' AND json_extract(payload,'$.event_date') BETWEEN '2028-01-01' AND '2028-12-31'),
+eg AS (SELECT DISTINCT patient FROM l WHERE n IN ('eGFR','Glomerular filtration rate')),
+ua AS (SELECT DISTINCT patient FROM l WHERE n IN ('Urine albumin/creatinine ratio','Microalbumin/Creatinine'))
+SELECT round(100.0*SUM(patient IN (SELECT patient FROM eg) AND patient IN (SELECT patient FROM ua))/COUNT(*),1) AS value FROM dm;

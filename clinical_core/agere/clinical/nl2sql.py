@@ -16,17 +16,21 @@ from . import concepts, source_profile, sql_query
 
 VERSION = 'local-nl2sql/1'
 MODEL_DIR = Path(__file__).resolve().parents[3] / 'models' / 'qwen3-4b'
-TABLES = """patient(patient_id, age_reported, sex_reported ['F','M'], coverage_type ['commercial','medicare','medicaid','uninsured'], coverage_status, pcp_clinician_id, pcp_practice_id)
+TABLES = """patient(patient_id, age_reported, age_latest, sex_reported ['F','M'], coverage_type ['commercial','medicare','medicaid','uninsured'], coverage_status, pcp_clinician_id, pcp_practice_id)  -- use age_latest (latest reported age)
 condition(record_id, patient_id, concept, label, icd10, snomed, event_date, available_date, organization_id)  -- one row per (record, concept)
 measurement(record_id, patient_id, concept, name, value, unit, value_canonical, unit_canonical, result_status, event_date, available_date, organization_id)  -- labs and vitals; compare value_canonical
 visit(encounter_id, patient_id, type, type_concept, status, event_date, end_date, available_date, organization_id, attending_clinician_id)  -- one row per encounter; count visits here
-stay(patient_id, admit_date, discharge_date, type, organization_id, readmitted_30d, days_to_readmission)  -- distinct hospital stays
+stay(patient_id, admit_date, discharge_date, type, organization_id, readmitted_30d, days_to_readmission, los_days, discharge_known)  -- distinct hospital stays; los_days/discharge_date NULL when discharge unknown
+appointment(appointment_id, patient_id, scheduled_date, booked_date, final_status, ever_no_show, ever_cancelled, ever_rescheduled, kept, organization_id, clinician_id, purpose)  -- one row per appointment (statuses resolved); use for no-show/cancellation/kept questions
+claim(claim_id, patient_id, payer, service_date, benefit_year, first_status, final_status, ever_denied, denied_then_paid, net_payer_paid_cents, billed_cents, allowed_cents, first_available_date, last_available_date)  -- one row per medical claim (adjudication sequence resolved; net paid = paid minus reversed)
 concept_patient(concept, kind, patient_id, records, first_date, last_date)  -- who has each concept
 link(record_id, stream, field, target_record_id)  -- every *_record_id reference between records
 record(record_id, patient_id, stream, event_date, recorded_date, available_date, organization_id, payload)  -- every received record; other fields via json_extract(payload,'$.field')"""
 RULES = """Write ONE SQLite SELECT that answers the question. Rules:
 - Use only the tables/fields shown. Dates are 'YYYY-MM-DD' strings; event_date = when it happened, available_date = when it arrived.
 - Patients: count(DISTINCT patient_id). Records/rows: count(*). Visits: use visit (encounter rows repeat per status version).
+- Appointments: use appointment (one row each, statuses resolved). Claims: use claim (one row per claim_id; net paid after reversals).
+- Age: patient.age_latest (latest reported). Length of stay: stay.los_days.
 - Clinical conditions, labs, vitals and encounter types: use the concept columns (they cover ICD-10, SNOMED and label variants).
 - Stream fields not in a typed table: json_extract(payload,'$.field') on record WHERE stream='<stream>'. Booleans compare to 1/0.
 - Day differences: julianday(a) - julianday(b). Year: substr(date,1,4). Percent: 100.0 * part / whole.
@@ -91,6 +95,18 @@ EXAMPLES = [  # generic semantic-layer patterns; retrieved per question (not ben
      "SELECT json_extract(payload,'$.payment_channel') AS payment_channel, sum(json_extract(payload,'$.amount_cents')) AS total_cents FROM record WHERE stream = 'patient_payments' AND substr(event_date,1,4) = '2028' GROUP BY 1"),
     ("How many appointments are scheduled after the snapshot date?",
      "SELECT count(*) FROM record WHERE stream = 'appointments' AND json_extract(payload,'$.scheduled_date') > '2029-08-15'"),
+    ("What share of appointments scheduled in 2027 ended in a cancellation?",
+     "SELECT 100.0 * sum(ever_cancelled) / count(*) FROM appointment WHERE substr(scheduled_date,1,4) = '2027'"),
+    ("How many patients have missed two or more appointments?",
+     "SELECT count(*) FROM (SELECT patient_id FROM appointment WHERE ever_no_show = 1 GROUP BY patient_id HAVING count(*) >= 2)"),
+    ("Net payer-paid dollars on medical claims with 2027 service dates, after reversals?",
+     "SELECT sum(net_payer_paid_cents) / 100.0 FROM claim WHERE substr(service_date,1,4) = '2027'"),
+    ("Share of 2027 claims denied on first adjudication, by payer.",
+     "SELECT payer, count(*) AS claims, sum(first_status = 'denied') AS first_pass_denied, round(100.0 * sum(first_status = 'denied') / count(*), 1) AS denial_rate_pct FROM claim WHERE substr(service_date,1,4) = '2027' GROUP BY payer"),
+    ("Average inpatient length of stay in 2027?",
+     "SELECT avg(los_days) FROM stay WHERE type = 'inpatient' AND substr(admit_date,1,4) = '2027' AND los_days IS NOT NULL"),
+    ("How many men aged 40 to 64 are commercially insured?",
+     "SELECT count(*) FROM patient WHERE sex_reported = 'M' AND age_latest BETWEEN 40 AND 64 AND coverage_type = 'commercial'"),
     ("How many imaging reports mention pneumonia?",
      "SELECT count(*) FROM record WHERE stream = 'imaging_reports' AND lower(payload) LIKE '%pneumonia%'"),
 ]
@@ -371,12 +387,21 @@ def verified_answer(path, question, as_of, primary, second, judge, decider=None)
         fatal, warn = verify.sanity(question, sql, probe, roster)
         if fatal: raise ValueError('sanity: ' + '; '.join(fatal))
         returns = returns_for(question, probe['columns'], probe.get('rows'))
-        if returns == 'patient_set' and probe['columns'][0] != 'patient_id': returns = 'table'
+        wants_list = re.search(r'\b(?:which|who|list|names?|ids?|pull|roster of)\b', question.lower()) and \
+            not re.search(r'\b(?:how many|count|number of|by|per|breakdown|break down)\b', question.lower())
+        if wants_list and 'patient_id' in probe['columns']:
+            # a patient list was asked for: the answer is the set of patients, whatever extra columns the query carried
+            sql = f'SELECT DISTINCT patient_id FROM ({sql}) WHERE patient_id IS NOT NULL'
+            returns = 'patient_set'
+        elif returns == 'patient_set' and probe['columns'][0] != 'patient_id': returns = 'table'
         result = sql_query.execute(path, {'query': sql, 'returns': returns}) if returns != 'table' else probe
         return {'query': sql, 'returns': returns}, result, warn
 
     def attempt(model, label, extra=''):
         text, stats = model(system, user + extra)
+        if re.match(r'\s*(?:--\s*)?MISSING:', text):
+            receipt['attempts'].append({'role': label, 'missing': text.strip()[:300], **stats})
+            return 'missing'
         sql = _extract_sql(text)
         entry = {'role': label, 'sql': sql, **stats}
         try:
@@ -405,6 +430,9 @@ def verified_answer(path, question, as_of, primary, second, judge, decider=None)
         f2 = pool.submit(attempt, second, 'second')
         first = attempt(primary, 'primary')
         other = f2.result()
+    if 'missing' in (first, other):  # either analyst says the data does not exist: refuse rather than substitute
+        reasons = [a['missing'] for a in receipt['attempts'] if a.get('missing')]
+        raise MissingData('; '.join(reasons))
     if first and other and verify.signature(first[1]) == verify.signature(other[1]):
         receipt['agreement'] = 'primary=second'
         return first[0], first[1], receipt
@@ -435,6 +463,10 @@ def verified_answer(path, question, as_of, primary, second, judge, decider=None)
                                           '=second' if other and verify.signature(final[1]) == verify.signature(other[1]) else '_own')
         return final[0], final[1], receipt
     raise ValueError('Verified SQL ladder declined: ' + (notes or 'no candidate passed verification')[:300])
+
+
+class MissingData(ValueError):
+    """A hosted analyst reports that the question needs data the release does not contain."""
 
 
 class Decider:
@@ -477,8 +509,9 @@ VERIFY_RULES = """
 - Money: amounts are stored in *_cents; when the question asks for dollars or "how much", divide by 100.0.
 - Percentages: 100.0 * part / whole (0-100 scale).
 - Missing dates: a record "with no date" means event_date IS NULL on the typed table or record row.
-- Never invent streams, fields or values: if something the question needs is not listed, say so in a SQL comment
-  and answer only what the listed data supports.
+- Never invent streams, fields or values, and never substitute a different attribute for a missing one (e.g. sex for race).
+  If the question needs data that is not listed (race, death, income, language, risk-adjustment scores, ...), output
+  exactly one line: MISSING: <what is missing> - and no SQL.
 - Name output columns plainly (e.g. month, practice, visits, patients, total_usd)."""
 
 

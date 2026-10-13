@@ -1,0 +1,7 @@
+-- % of completed inpatient/observation discharges (discharge date in trailing 12 months) with a completed office-type visit 1-7 days later.
+WITH r AS MATERIALIZED (SELECT patient, stream, payload FROM records WHERE stream IN ('encounters')),
+e AS (SELECT patient, json_extract(payload,'$.encounter_id') eid, json_extract(payload,'$.type') t, json_extract(payload,'$.status') st,
+             json_extract(payload,'$.event_date') d, substr(json_extract(payload,'$.end_time'),1,10) dd FROM r),
+dc AS (SELECT DISTINCT patient, eid, dd FROM e WHERE t IN ('inpatient','observation') AND st='completed' AND dd BETWEEN '2028-08-16' AND '2029-08-15'),
+fu AS (SELECT DISTINCT patient, d FROM e WHERE t IN ('primary_care','office','pediatric_office','specialty_followup','specialist_office','home_health') AND st='completed')
+SELECT round(100.0*SUM(EXISTS(SELECT 1 FROM fu WHERE fu.patient=dc.patient AND julianday(fu.d)-julianday(dc.dd) BETWEEN 1 AND 7))/COUNT(*),1) AS value FROM dc;

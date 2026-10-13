@@ -142,12 +142,14 @@ def _stays(records, window, as_of):
         end = (r.get('end_time') or '')[:10] or start
         prior = by_day.get(start)
         by_day[start] = {'admit': start, 'discharge': max(end, prior['discharge']) if prior else end,
-                         'type': r.get('type'), 'organization': r.get('organization_id')}
+                         'type': r.get('type'), 'organization': r.get('organization_id'),
+                         'discharge_known': bool(r.get('end_time')) or bool(prior and prior['discharge_known'])}
     ordered = []
     for k in sorted(by_day):  # overlapping records (transfers, duplicates) form one stay
         s = by_day[k]
         if ordered and s['admit'] <= ordered[-1]['discharge']:
             ordered[-1]['discharge'] = max(ordered[-1]['discharge'], s['discharge'])
+            ordered[-1]['discharge_known'] = ordered[-1]['discharge_known'] or s['discharge_known']
         else:
             ordered.append(s)
     from datetime import date

@@ -11,7 +11,7 @@ from ...contracts import digest
 from .clinical_events import WINDOW_SCHEMA, validate_window, window_state, bind_event
 from . import concepts, grounding, source_profile
 
-VERSION = 'observed-cohort/1'
+VERSION = 'observed-cohort/2'
 PATIENT_FIELDS = {'patient_id', 'age', 'sex', 'region', 'preferred_language', 'coverage',
                   'age_reported','sex_reported','profile_captured_date'}
 COMMON = {'organization_id', 'source_system', 'status'}
@@ -170,6 +170,10 @@ def patient_value(patient, field, as_of):
 def evaluate_atom(atom, patient, records, as_of):
     if atom['kind'] == 'patient':
         got = patient_value(patient, atom['field'], as_of)
+        if atom['field'] == 'age_reported':  # a later reported age (demographic update) supersedes the roster value
+            updates = [r for r in records if r.get('source_table') == 'demographic_updates' and isinstance(r.get('age_reported'), (int, float))
+                       and (r.get('event_date') or '')[:10] <= as_of]
+            if updates: got = max(updates, key=lambda r: (r.get('event_date') or '', r.get('available_date') or ''))['age_reported']
         return compare(got, atom['op'], atom['value']), {'predicate': atom, 'observed_value': got,
                'source': {'table': 'patients', 'field': 'birth_date' if atom['field'] == 'age' else atom['field'],
                           'patient_hash': digest(patient), 'as_of': as_of}}
@@ -320,6 +324,8 @@ def select(path, spec=None, *, patient=None, limit=10, patient_ids=None):
         if patient_ids is not None:
             allowed=set(patient_ids);roster=[(pid,p) for pid,p in roster if pid in allowed]
         streams = _streams(grounded)
+        if any(a.get('kind') == 'patient' and a.get('field') == 'age_reported' for part in grounded.values() if isinstance(part, list) for a in part):
+            streams = set(streams) | {'demographic_updates'}  # latest reported age supersedes the roster age
         records = defaultdict(list)
         if streams:
             sql = 'SELECT patient,payload FROM records WHERE stream IN ('+','.join('?' for _ in streams)+')'

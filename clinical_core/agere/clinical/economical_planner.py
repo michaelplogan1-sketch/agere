@@ -244,6 +244,12 @@ def plan(stack,question,ledger,frontier):
                           'steps':[{'stage':'hosted_verified_sql','receipt':{'cost_estimate':{'estimated_usd':hosted.cost}}}],
                           'elapsed_seconds':time.perf_counter()-start}
         except (ValueError,RuntimeError,OSError) as exc:
+            from .nl2sql import MissingData
+            if isinstance(exc,MissingData):  # an analyst says the needed data does not exist: answer unsupported, never substitute
+                graph=validate({'interpretation':f'Unsupported by received data: {question}','coverage':'unsupported','nodes':[],
+                                'unmet_requirements':['Missing input: '+str(exc)[:400]]},meta['snapshot']['as_of'])
+                return graph,{'route':'hosted_missing_data','model':hosted.model,'new_paid_api_calls':2,'frontier_called':False,
+                              'local_compiler_declined':local_decline,'steps':[],'elapsed_seconds':time.perf_counter()-start}
             local_decline={**local_decline,'hosted_sql_error':str(exc)[:300]}
     from .analysis_graph import catalog,code_identity
     # Catalog identity covers source/attached model/policy capability changes.

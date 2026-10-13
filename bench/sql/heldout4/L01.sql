@@ -1,0 +1,3 @@
+-- Distinct patients with hypertension on the condition list (SNOMED 59621000, ICD-10 I10-I16, 'hypertension' excl. pulmonary, or 'HTN').
+WITH r AS MATERIALIZED (SELECT patient, stream, payload FROM records WHERE stream IN ('conditions')), c AS (SELECT patient, json_extract(payload,'$.description') d, coalesce(json_extract(payload,'$.icd10'),'') i, coalesce(json_extract(payload,'$.snomed'),'') s FROM r WHERE stream='conditions')
+SELECT COUNT(DISTINCT patient) AS count FROM c WHERE (s='59621000' OR substr(i,1,3) IN ('I10','I11','I12','I13','I15','I16') OR (lower(d) LIKE '%hypertension%' AND lower(d) NOT LIKE '%pulmonary hypertension%') OR d LIKE '%HTN%');

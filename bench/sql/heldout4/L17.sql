@@ -1,0 +1,3 @@
+-- Patients with >= 2 distinct ED encounters in trailing 12 months.
+WITH r AS MATERIALIZED (SELECT patient, stream, payload FROM records WHERE stream IN ('encounters')), ed AS (SELECT patient, json_extract(payload,'$.encounter_id') eid, min(json_extract(payload,'$.event_date')) d FROM r WHERE stream='encounters' AND json_extract(payload,'$.type') IN ('emergency','ED','ED stroke alert') AND json_extract(payload,'$.event_date') IS NOT NULL GROUP BY patient, eid)
+SELECT patient AS patient_id FROM ed WHERE d BETWEEN '2028-08-16' AND '2029-08-15' GROUP BY patient HAVING COUNT(*) >= 2 ORDER BY patient;

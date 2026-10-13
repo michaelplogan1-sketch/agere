@@ -1,0 +1,4 @@
+-- Asthma on problem list and latest reported age < 18.
+WITH r AS MATERIALIZED (SELECT patient, stream, payload FROM records WHERE stream IN ('conditions','demographic_updates')), c AS (SELECT patient, json_extract(payload,'$.description') d, coalesce(json_extract(payload,'$.icd10'),'') i, coalesce(json_extract(payload,'$.snomed'),'') s FROM r WHERE stream='conditions'), du AS (SELECT patient, json_extract(payload,'$.age_reported') a, json_extract(payload,'$.age_reference_date') ad FROM r WHERE stream='demographic_updates'), demo AS (SELECT p.id patient, json_extract(p.payload,'$.sex_reported') sex, coalesce((SELECT a FROM du WHERE du.patient=p.id ORDER BY ad DESC LIMIT 1), json_extract(p.payload,'$.age_reported')) age FROM patients p)
+SELECT COUNT(DISTINCT c.patient) AS count FROM c JOIN demo d ON d.patient=c.patient
+WHERE (lower(c.d) LIKE '%asthma%' OR c.i LIKE 'J45%') AND d.age < 18;

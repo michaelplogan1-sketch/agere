@@ -1,0 +1,2 @@
+-- Diagnostic: program assignment / control or comparison group for a causal estimate. No enrollment, randomization or control fields exist.
+SELECT (SELECT COUNT(*) FROM records WHERE payload LIKE '%randomiz%' OR payload LIKE '%control_group%' OR payload LIKE '%counterfactual%' OR payload LIKE '%program_enroll%' OR payload LIKE '%treatment_arm%' OR payload LIKE '%comparison_group%') AS prerequisite_available;

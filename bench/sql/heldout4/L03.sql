@@ -1,0 +1,4 @@
+-- Female, latest reported age 50-74 inclusive, coverage medicare or medicaid.
+WITH r AS MATERIALIZED (SELECT patient, stream, payload FROM records WHERE stream IN ('demographic_updates','coverage')), du AS (SELECT patient, json_extract(payload,'$.age_reported') a, json_extract(payload,'$.age_reference_date') ad FROM r WHERE stream='demographic_updates'), demo AS (SELECT p.id patient, json_extract(p.payload,'$.sex_reported') sex, coalesce((SELECT a FROM du WHERE du.patient=p.id ORDER BY ad DESC LIMIT 1), json_extract(p.payload,'$.age_reported')) age FROM patients p), cov AS (SELECT patient, json_extract(payload,'$.coverage_type') ctype, json_extract(payload,'$.organization_id') payer FROM r WHERE stream='coverage')
+SELECT COUNT(*) AS count FROM demo d JOIN cov ON cov.patient=d.patient
+WHERE d.sex='F' AND d.age BETWEEN 50 AND 74 AND cov.ctype IN ('medicare','medicaid');

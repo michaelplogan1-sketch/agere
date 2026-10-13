@@ -1,0 +1,4 @@
+-- Sum paid payer_paid_cents minus reversed payer_paid_cents, claims with 2028 service_date, in dollars.
+WITH r AS MATERIALIZED (SELECT patient, stream, payload FROM records WHERE stream IN ('medical_claims')), mc AS (SELECT json_extract(payload,'$.claim_id') cid, json_extract(payload,'$.status') st, json_extract(payload,'$.service_date') sd, json_extract(payload,'$.event_date') ed, json_extract(payload,'$.available_time') at, json_extract(payload,'$.organization_id') payer, json_extract(payload,'$.payer_paid_cents') paid FROM r WHERE stream='medical_claims' AND json_extract(payload,'$.claim_id') IS NOT NULL)
+SELECT round((SUM(CASE WHEN st='paid' THEN paid ELSE 0 END) - SUM(CASE WHEN st='reversed' THEN paid ELSE 0 END))/100.0, 2) AS value
+FROM mc WHERE sd BETWEEN '2028-01-01' AND '2028-12-31';

@@ -13,7 +13,7 @@ import json, re, sqlite3, time
 
 from . import aggregate, concepts, source_profile
 
-VERSION = 'semantic-layer/3'
+VERSION = 'semantic-layer/5'
 
 DDL = """
 CREATE TABLE meta(key TEXT PRIMARY KEY, value TEXT);
@@ -32,10 +32,23 @@ CREATE TABLE encounter(record_id TEXT, patient_id TEXT, source_table TEXT, encou
 CREATE TABLE visit(encounter_id TEXT, patient_id TEXT, type TEXT, type_concept TEXT, status TEXT, event_date TEXT,
   end_date TEXT, available_date TEXT, organization_id TEXT, attending_clinician_id TEXT, disposition TEXT, versions INTEGER);
 CREATE TABLE stay(patient_id TEXT, admit_date TEXT, discharge_date TEXT, type TEXT, organization_id TEXT,
-  readmitted_30d INTEGER, days_to_readmission INTEGER);
+  readmitted_30d INTEGER, days_to_readmission INTEGER, discharge_known INTEGER);
 CREATE TABLE link(record_id TEXT, stream TEXT, field TEXT, target_record_id TEXT);
 CREATE TABLE concept_patient(concept TEXT, kind TEXT, patient_id TEXT, records INTEGER, first_date TEXT, last_date TEXT,
   PRIMARY KEY(concept, patient_id));
+CREATE TEMP VIEW v_claim_rows AS SELECT json_extract(payload,'$.claim_id') AS claim_id, patient_id,
+  json_extract(payload,'$.source_system') AS payer, json_extract(payload,'$.service_date') AS service_date,
+  CAST(json_extract(payload,'$.benefit_year') AS TEXT) AS benefit_year, json_extract(payload,'$.status') AS status,
+  json_extract(payload,'$.payer_paid_cents') AS payer_paid_cents, json_extract(payload,'$.billed_cents') AS billed_cents,
+  json_extract(payload,'$.allowed_cents') AS allowed_cents, available_date, json_extract(payload,'$.available_time') AS available_time,
+  json_extract(payload,'$.service_organization_id') AS service_organization_id, record_id
+  FROM record WHERE stream = 'medical_claims' AND json_extract(payload,'$.claim_id') IS NOT NULL;
+CREATE TABLE appointment(appointment_id TEXT PRIMARY KEY, patient_id TEXT, scheduled_date TEXT, booked_date TEXT, final_status TEXT,
+  ever_no_show INTEGER, ever_cancelled INTEGER, ever_rescheduled INTEGER, kept INTEGER, organization_id TEXT, clinician_id TEXT,
+  purpose TEXT, versions INTEGER);
+CREATE TABLE claim(claim_id TEXT PRIMARY KEY, patient_id TEXT, payer TEXT, service_date TEXT, benefit_year TEXT, first_status TEXT,
+  final_status TEXT, ever_denied INTEGER, denied_then_paid INTEGER, net_payer_paid_cents INTEGER, billed_cents INTEGER,
+  allowed_cents INTEGER, first_available_date TEXT, last_available_date TEXT, service_organization_id TEXT, versions INTEGER);
 """
 INDEXES = """
 CREATE INDEX record_stream ON record(stream, patient_id);
@@ -58,15 +71,60 @@ SCHEMA_DOC = {
     'encounter': 'Encounter records plus ADT notifications (source_table adt, type = ADT event). type_concept = library encounter concept.',
     'visit': 'One row per encounter (encounter records repeat once per status version; use visit, not encounter, to count visits). '
              'Latest version wins; versions = number of received versions.',
-    'stay': 'Distinct hospital stays (inpatient/observation encounters collapsed by admit day and overlap) with 30-day readmission flag.',
+    'stay': 'Distinct hospital stays (inpatient/observation encounters collapsed by admit day and overlap) with 30-day readmission flag. '
+            'discharge_date and los_days are NULL when no discharge time was received (discharge_known = 0); never treat those as 0 days.',
     'concept_patient': 'Patients having each library concept (condition, measurement, encounter), with record counts and first/last dates.',
     'link': 'Every record-to-record reference (fields ending _record_id/_record_ids): record_id/stream of the referring record, '
             'field name, target_record_id. Indexed on target_record_id - use it for linkage questions (e.g. orders without dispenses).',
     'record': 'Every received record (all streams). Use json_extract(payload, \'$.field\') for fields of streams not modelled above.',
+    'appointment': 'One row per appointment_id (appointments arrive as a booked record plus later status records). scheduled_date from '
+                   'the booking; final_status = latest status received; ever_* flags over all versions; kept = arrived or fulfilled.',
+    'claim': 'One row per medical claim_id (adjudications arrive as successive records: denied, paid, reversed, re-paid). first/final '
+             'status by arrival order; denied_then_paid = a denial later followed by payment; net_payer_paid_cents = paid minus reversed. '
+             'Legacy rows without claim_id are excluded.',
 }
 
 
 def _date(r): return (r.get('event_date') or '')[:10] or None
+
+
+def _derived(out):
+    """Entity tables that resolve each stream's versioning, so queries count things, not records."""
+    out.executescript("""
+    INSERT INTO appointment
+    SELECT appointment_id, max(patient_id),
+      max(CASE WHEN status = 'booked' THEN scheduled_date END), min(CASE WHEN status = 'booked' THEN event_date END),
+      max(CASE WHEN rn_last = 1 THEN status END),
+      max(status = 'no_show'), max(status = 'cancelled'), max(status = 'rescheduled'), max(status IN ('arrived','fulfilled')),
+      max(organization_id), max(clinician_id), max(purpose), count(*)
+    FROM (SELECT json_extract(payload,'$.appointment_id') AS appointment_id, patient_id, json_extract(payload,'$.status') AS status,
+                 coalesce(json_extract(payload,'$.scheduled_date'), event_date) AS scheduled_date, event_date, organization_id,
+                 json_extract(payload,'$.clinician_id') AS clinician_id, json_extract(payload,'$.purpose') AS purpose,
+                 row_number() OVER (PARTITION BY json_extract(payload,'$.appointment_id')
+                                    ORDER BY available_date DESC, json_extract(payload,'$.available_time') DESC, record_id DESC) AS rn_last
+          FROM record WHERE stream = 'appointments' AND json_extract(payload,'$.appointment_id') IS NOT NULL)
+    GROUP BY appointment_id;
+    INSERT INTO claim
+    SELECT claim_id, max(patient_id), max(payer), max(service_date), max(benefit_year),
+      max(CASE WHEN rn_first = 1 THEN status END), max(CASE WHEN rn_last = 1 THEN status END),
+      max(status = 'denied'),
+      coalesce(max(CASE WHEN status = 'paid' THEN ord END) > min(CASE WHEN status = 'denied' THEN ord END), 0),
+      sum(CASE status WHEN 'paid' THEN coalesce(payer_paid_cents,0) WHEN 'reversed' THEN -abs(coalesce(payer_paid_cents,0)) ELSE 0 END),
+      max(billed_cents), max(allowed_cents), min(available_date), max(available_date), max(service_organization_id), count(*)
+    FROM (SELECT *, coalesce(available_date,'') || coalesce(available_time,'') || record_id AS ord,
+                 row_number() OVER (PARTITION BY claim_id ORDER BY available_date, available_time, record_id) AS rn_first,
+                 row_number() OVER (PARTITION BY claim_id ORDER BY available_date DESC, available_time DESC, record_id DESC) AS rn_last
+          FROM v_claim_rows)
+    GROUP BY claim_id;
+    """)
+    out.execute("ALTER TABLE patient ADD COLUMN age_latest INTEGER")
+    out.execute("""UPDATE patient SET age_latest = coalesce((SELECT CAST(json_extract(r.payload,'$.age_reported') AS INTEGER) FROM record r
+                     WHERE r.stream = 'demographic_updates' AND r.patient_id = patient.patient_id
+                       AND json_extract(r.payload,'$.age_reported') IS NOT NULL
+                     ORDER BY r.event_date DESC, r.available_date DESC LIMIT 1), age_reported)""")
+    out.execute("ALTER TABLE stay ADD COLUMN los_days INTEGER")
+    out.execute("UPDATE stay SET los_days = CAST(julianday(discharge_date) - julianday(admit_date) AS INTEGER) WHERE discharge_date IS NOT NULL")
+    out.executescript("CREATE INDEX appointment_patient ON appointment(patient_id); CREATE INDEX claim_patient ON claim(patient_id);")
 
 
 def build(path):
@@ -168,8 +226,9 @@ def build(path):
                                      r.get('organization_id'), r.get('attending_clinician_id'), r.get('disposition')))
                         if c: note(c, 'encounter', pid, d)
             for s in aggregate._stays(rows, {'start': '', 'end': ''}, '9999-12-31'):
-                out.execute('INSERT INTO stay VALUES (?,?,?,?,?,?,?)', (pid, s['admit'], s['discharge'], s['type'], s['organization'],
-                                                                        int(s['readmitted']), s['days_to_readmission']))
+                out.execute('INSERT INTO stay VALUES (?,?,?,?,?,?,?,?)', (pid, s['admit'], s['discharge'] if s['discharge_known'] else None,
+                                                                          s['type'], s['organization'], int(s['readmitted']),
+                                                                          s['days_to_readmission'], int(s['discharge_known'])))
             # Patient attributes (same rules as aggregate).
             person = people.get(pid, {})
             pcp = [r for r in rows if r.get('source_table') == 'care_team_relationships' and r.get('role') in aggregate.PCP_ROLES
@@ -198,6 +257,8 @@ def build(path):
         out.executemany('INSERT INTO concept_patient VALUES (?,?,?,?,?,?)',
                         [(c, k, pid, n, f, l) for (c, k, pid), (n, f, l) in cp.items()])
         out.executescript(INDEXES)
+        out.execute("CREATE INDEX record_patient_stream ON record(patient_id, stream)")
+        _derived(out)  # after indexes: derived entities read the record table by stream and patient
         meta = json.loads((path / 'run.json').read_text())
         out.executemany('INSERT INTO meta VALUES (?,?)', [('version', VERSION), ('source_digest', meta['source_digest']),
                                                           ('as_of', meta['snapshot']['as_of'])])

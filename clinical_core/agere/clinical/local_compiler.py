@@ -117,8 +117,13 @@ UNSUPPORTED = [
      ['executed payer contract with capitation/premium rates', 'member-month eligibility under the contract', 'risk-adjusted revenue schedule']),
     (r'\bobjectively\b|\bwearable\b|\bactivity tracker\b|\baccelerometer\b|\bminutes of (?:moderate|vigorous) exercise\b',
      ['device or objectively measured activity data (none is received)']),
-    (r'\b(?:died|deaths?|mortality|deceased|passed away)\b', ['death or mortality records (none are received)']),
-    (r'\brace\b|\bethnicit(?:y|ies)\b', ['race/ethnicity fields (none are received)']),
+    (r"\b(?:died|deaths?|mortality|deceased|passed away|expired|vital status|surviv\w*|didn'?t make it|did not make it|still alive)\b",
+     ['death or mortality records (none are received)']),
+    (r'\brace\b|\bethnicit(?:y|ies)\b|\bracial\b|\bhispanic\b|\blatin[oax]\b|\b(?:black|white|asian|native american|pacific islander|'
+     r'african american)(?: (?:and|or|vs\.?|versus) (?:black|white|asian|hispanic|latin[oax]))? (?:patients|members|people|population|adults|women|men)\b',
+     ['race/ethnicity fields (none are received)']),
+    (r'\braf\b|\bhcc\b|\bcms-hcc\b|\brisk adjustment factor\b|\brisk[- ]adjusted revenue\b',
+     ['CMS-HCC risk adjustment factors (no HCC mapping or RAF scores are received; Agere has only an internal cost-risk score)']),
     (r'\bcahps\b|\bpatient experience scores?\b|\bsatisfaction scores?\b', ['patient experience survey results (none are received)']),
     (r'\bhousehold income\b|\bincome (?:level|bracket|distribution)s?\b|\bfpl\b|\bpoverty (?:level|line)\b|\bincome\b',
      ['household income / federal poverty level (not disclosed in received records)']),
@@ -642,12 +647,14 @@ def _population_question(q, r, profile, as_of, info):
                         cmp = ('ge' if re.search(r'higher|more|above|greater|over|\+', mm.group(2)) else 'le', float(mm.group(1)))
                         for i in range(m.end(), m.end() + mm.end()): r.used[i] = True
                 measured.append((concept, cmp, m.start()))
+    position = {}  # where each atom is mentioned: the last-mentioned subject of a share is its outcome
     for concept, cmp, start in measured:
         if cmp:
             atom = {'kind': 'measurement', 'concept': concept, 'op': cmp[0], 'value': cmp[1],
                     'aggregate': 'latest' if latest else 'any', 'window': W}
         else:
             atom = {'kind': 'concept', 'concept': concept, 'window': W}
+        position[id(atom)] = start
         (excl if _negated(low, start) else allp).append(atom)
     r.take(r'\b(?:percent|%|mmol/l|mg/dl|ml/min/1\.73\s?m2|mmhg|pg/ml|ng/l)\b')
     # encounters (as population filters, or as the counted event)
@@ -665,6 +672,7 @@ def _population_question(q, r, profile, as_of, info):
                 predicate = not counted and re.search(r'\b(?:had|have|has|having|with|any|an?|no|without|got|getting|made|making)\s+(?:[a-z0-9-]+\s+){0,2}$', before)
                 if predicate:
                     atom = {'kind': 'concept', 'concept': concept, 'window': W, **({'status': 'completed'} if done else {})}
+                    position[id(atom)] = m.start()
                     visit_atoms.append(atom)
                     (excl if _negated(low, m.start()) else allp).append(atom)
                 else:
@@ -696,6 +704,7 @@ def _population_question(q, r, profile, as_of, info):
     in_or = {c[1] for ch in or_chains for c in ch}
     for concept, start, _end in conds:
         atom = {'kind': 'concept', 'concept': concept, 'window': W}
+        position[id(atom)] = start
         system = re.search(r'\b(snomed|icd-?10)\b(?:\s+[a-z-]+){0,2}\s*$', low[max(0, start - 30):start])
         if system:
             atom['system'] = 'snomed' if system.group(1) == 'snomed' else 'icd10'
@@ -818,8 +827,10 @@ def _population_question(q, r, profile, as_of, info):
                       **({'status': 'completed'} if event_completed else {})}
         else:
             # share of the base population that has the last-named concept/measurement
-            subject = allp[-1] if allp else None
-            if visit_atoms and visit_atoms[-1] in allp:  # "share of X who had a visit": the visit is the subject
+            ranked = [a for a in allp if a['kind'] in ('concept', 'measurement') and id(a) in position]
+            subject = max(ranked, key=lambda a: position[id(a)]) if share and ranked else (allp[-1] if allp else None)
+            if subject is not None and subject in allp: allp = [a for a in allp if a is not subject] + [subject]
+            if visit_atoms and visit_atoms[-1] in allp and not (share and ranked):  # "share of X who had a visit": the visit is the subject
                 subject = visit_atoms[-1]
                 allp = [a for a in allp if a is not subject] + [subject]
             elif event_concept and (share or count):
