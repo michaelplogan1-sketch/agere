@@ -1,0 +1,6 @@
+-- Statin therapy for diabetes: denominator = type 1/2 diabetics (N01-style) aged 40-75 (roster age_reported); numerator = >=1 pharmacy record with status 'dispensed' of any statin with event_date in 2028. Prepared/returned fills do not count. Percent.
+WITH r AS MATERIALIZED (SELECT patient, stream, payload FROM records WHERE stream IN ('conditions','pharmacy_dispenses')),
+dm AS (SELECT DISTINCT patient FROM (SELECT patient, lower(coalesce(json_extract(payload,'$.description'),'')) d, coalesce(json_extract(payload,'$.icd10'),'') i FROM r WHERE stream='conditions') WHERE (d LIKE '%diabet%' OR d LIKE 't1dm%' OR d LIKE 't2dm%' OR i LIKE 'E10%' OR i LIKE 'E11%') AND d NOT LIKE '%prediabet%' AND d NOT LIKE '%family history%' AND d NOT LIKE 'gdm%' AND i NOT LIKE 'O24%' AND i NOT LIKE 'Z83%'),
+st AS (SELECT DISTINCT patient FROM r WHERE stream='pharmacy_dispenses' AND json_extract(payload,'$.status')='dispensed' AND json_extract(payload,'$.event_date') BETWEEN '2028-01-01' AND '2028-12-31' AND lower(json_extract(payload,'$.medication_name')) LIKE '%statin%'),
+den AS (SELECT dm.patient FROM dm JOIN patients p ON p.id=dm.patient WHERE json_extract(p.payload,'$.age_reported') BETWEEN 40 AND 75)
+SELECT round(100.0*sum(den.patient IN (SELECT patient FROM st))/count(*),1) AS value FROM den;

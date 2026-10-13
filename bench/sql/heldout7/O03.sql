@@ -1,0 +1,6 @@
+-- Women (sex_reported F) aged 65+ (roster age_reported) with an osteoporosis condition ('osteoporosis' in description or ICD-10 M80/M81) and no bisphosphonate (alendron*/risedron*/ibandron*/zoledron*) pharmacy record with status 'dispensed' ever.
+WITH r AS MATERIALIZED (SELECT patient, stream, payload FROM records WHERE stream IN ('conditions','pharmacy_dispenses')),
+op AS (SELECT DISTINCT patient FROM r WHERE stream='conditions' AND (lower(json_extract(payload,'$.description')) LIKE '%osteoporosis%' OR coalesce(json_extract(payload,'$.icd10'),'') LIKE 'M80%' OR coalesce(json_extract(payload,'$.icd10'),'') LIKE 'M81%')),
+bp AS (SELECT DISTINCT patient FROM r WHERE stream='pharmacy_dispenses' AND json_extract(payload,'$.status')='dispensed' AND (lower(json_extract(payload,'$.medication_name')) LIKE '%alendron%' OR lower(json_extract(payload,'$.medication_name')) LIKE '%risedron%' OR lower(json_extract(payload,'$.medication_name')) LIKE '%ibandron%' OR lower(json_extract(payload,'$.medication_name')) LIKE '%zoledron%'))
+SELECT COUNT(*) AS count FROM patients p JOIN op ON op.patient=p.id
+WHERE json_extract(p.payload,'$.sex_reported')='F' AND json_extract(p.payload,'$.age_reported')>=65 AND p.id NOT IN (SELECT patient FROM bp);

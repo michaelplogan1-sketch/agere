@@ -1,0 +1,491 @@
+{
+ "domain": "encounters",
+ "entries": {
+  "Adolescent med": {
+   "agere_concept": "primary_care_visit",
+   "confidence": 0.7,
+   "in_person": true,
+   "setting": "primary_care",
+   "source_count": 1
+  },
+  "Annual physical": {
+   "agere_concept": "primary_care_visit",
+   "confidence": 0.85,
+   "in_person": true,
+   "setting": "preventive",
+   "source_count": 8
+  },
+  "Cardiology": {
+   "agere_concept": "specialist_visit",
+   "confidence": 0.82,
+   "in_person": true,
+   "setting": "specialty",
+   "source_count": 1
+  },
+  "Cardiology clinic": {
+   "agere_concept": "specialist_visit",
+   "confidence": 0.93,
+   "in_person": true,
+   "setting": "specialty",
+   "source_count": 1
+  },
+  "Cardiology f/u": {
+   "agere_concept": "specialist_visit",
+   "confidence": 0.9,
+   "in_person": true,
+   "setting": "specialty",
+   "source_count": 1
+  },
+  "Cardiology follow-up": {
+   "agere_concept": "specialist_visit",
+   "confidence": 0.9,
+   "in_person": true,
+   "setting": "specialty",
+   "source_count": 12
+  },
+  "ED": {
+   "agere_concept": "emergency_visit",
+   "confidence": 0.95,
+   "in_person": true,
+   "setting": "emergency",
+   "source_count": 7
+  },
+  "ED stroke alert": {
+   "agere_concept": "emergency_visit",
+   "confidence": 0.95,
+   "in_person": true,
+   "setting": "emergency",
+   "source_count": 1
+  },
+  "Encounter": {
+   "agere_concept": null,
+   "confidence": 0.2,
+   "in_person": true,
+   "setting": "other",
+   "source_count": 1
+  },
+  "Endo": {
+   "agere_concept": "specialist_visit",
+   "confidence": 0.8,
+   "in_person": true,
+   "setting": "specialty",
+   "source_count": 5
+  },
+  "Endo / NSG": {
+   "agere_concept": "specialist_visit",
+   "confidence": 0.55,
+   "in_person": true,
+   "setting": "specialty",
+   "source_count": 1
+  },
+  "First-episode psychosis clinic": {
+   "agere_concept": "specialist_visit",
+   "confidence": 0.8,
+   "in_person": true,
+   "setting": "behavioral_health",
+   "source_count": 1
+  },
+  "Geri": {
+   "agere_concept": "specialist_visit",
+   "confidence": 0.65,
+   "in_person": true,
+   "setting": "specialty",
+   "source_count": 3
+  },
+  "Geri primary care": {
+   "agere_concept": "primary_care_visit",
+   "confidence": 0.92,
+   "in_person": true,
+   "setting": "primary_care",
+   "source_count": 1
+  },
+  "Geri psych": {
+   "agere_concept": "specialist_visit",
+   "confidence": 0.5,
+   "in_person": true,
+   "setting": "behavioral_health",
+   "source_count": 1
+  },
+  "Goals-of-care meeting": {
+   "agere_concept": null,
+   "confidence": 0.55,
+   "in_person": true,
+   "setting": "other",
+   "source_count": 2
+  },
+  "HF clinic": {
+   "agere_concept": "specialist_visit",
+   "confidence": 0.9,
+   "in_person": true,
+   "setting": "specialty",
+   "source_count": 1
+  },
+  "ID": {
+   "agere_concept": "specialist_visit",
+   "confidence": 0.6,
+   "in_person": true,
+   "setting": "specialty",
+   "source_count": 1
+  },
+  "IOP intake": {
+   "agere_concept": null,
+   "confidence": 0.7,
+   "in_person": true,
+   "setting": "behavioral_health",
+   "source_count": 1
+  },
+  "Inpatient HD3": {
+   "agere_concept": "inpatient_admission",
+   "confidence": 0.92,
+   "in_person": true,
+   "setting": "inpatient",
+   "source_count": 1
+  },
+  "Inpatient POD3": {
+   "agere_concept": "inpatient_admission",
+   "confidence": 0.92,
+   "in_person": true,
+   "setting": "inpatient",
+   "source_count": 1
+  },
+  "L&D admission": {
+   "agere_concept": "inpatient_admission",
+   "confidence": 0.93,
+   "in_person": true,
+   "setting": "inpatient",
+   "source_count": 1
+  },
+  "MFM": {
+   "agere_concept": "specialist_visit",
+   "confidence": 0.85,
+   "in_person": true,
+   "setting": "specialty",
+   "source_count": 1
+  },
+  "Med onc": {
+   "agere_concept": "specialist_visit",
+   "confidence": 0.88,
+   "in_person": true,
+   "setting": "specialty",
+   "source_count": 2
+  },
+  "Movement disorders": {
+   "agere_concept": "specialist_visit",
+   "confidence": 0.88,
+   "in_person": true,
+   "setting": "specialty",
+   "source_count": 1
+  },
+  "Nephrology": {
+   "agere_concept": "specialist_visit",
+   "confidence": 0.88,
+   "in_person": true,
+   "setting": "specialty",
+   "source_count": 1
+  },
+  "Neuro": {
+   "agere_concept": "specialist_visit",
+   "confidence": 0.8,
+   "in_person": true,
+   "setting": "specialty",
+   "source_count": 1
+  },
+  "Office visit": {
+   "agere_concept": null,
+   "confidence": 0.5,
+   "in_person": true,
+   "setting": "primary_care",
+   "source_count": 31
+  },
+  "Ortho": {
+   "agere_concept": "specialist_visit",
+   "confidence": 0.82,
+   "in_person": true,
+   "setting": "specialty",
+   "source_count": 1
+  },
+  "Ortho trauma": {
+   "agere_concept": "specialist_visit",
+   "confidence": 0.65,
+   "in_person": true,
+   "setting": "specialty",
+   "source_count": 1
+  },
+  "PCP": {
+   "agere_concept": "primary_care_visit",
+   "confidence": 0.9,
+   "in_person": true,
+   "setting": "primary_care",
+   "source_count": 2
+  },
+  "PPV": {
+   "agere_concept": null,
+   "confidence": 0.3,
+   "in_person": true,
+   "setting": "other",
+   "source_count": 1
+  },
+  "Peds": {
+   "agere_concept": "primary_care_visit",
+   "confidence": 0.75,
+   "in_person": true,
+   "setting": "primary_care",
+   "source_count": 1
+  },
+  "Post-op clinic": {
+   "agere_concept": "specialist_visit",
+   "confidence": 0.85,
+   "in_person": true,
+   "setting": "specialty",
+   "source_count": 1
+  },
+  "Pre-op anesthesia": {
+   "agere_concept": "specialist_visit",
+   "confidence": 0.75,
+   "in_person": true,
+   "setting": "specialty",
+   "source_count": 1
+  },
+  "Primary care": {
+   "agere_concept": "primary_care_visit",
+   "confidence": 0.95,
+   "in_person": true,
+   "setting": "primary_care",
+   "source_count": 1
+  },
+  "Psych f/u": {
+   "agere_concept": "specialist_visit",
+   "confidence": 0.75,
+   "in_person": true,
+   "setting": "behavioral_health",
+   "source_count": 4
+  },
+  "Pulm": {
+   "agere_concept": "specialist_visit",
+   "confidence": 0.8,
+   "in_person": true,
+   "setting": "specialty",
+   "source_count": 1
+  },
+  "Pulm clinic": {
+   "agere_concept": "specialist_visit",
+   "confidence": 0.93,
+   "in_person": true,
+   "setting": "specialty",
+   "source_count": 1
+  },
+  "REI": {
+   "agere_concept": "specialist_visit",
+   "confidence": 0.75,
+   "in_person": true,
+   "setting": "specialty",
+   "source_count": 1
+  },
+  "Spine clinic": {
+   "agere_concept": "specialist_visit",
+   "confidence": 0.85,
+   "in_person": true,
+   "setting": "specialty",
+   "source_count": 1
+  },
+  "Sports med": {
+   "agere_concept": "specialist_visit",
+   "confidence": 0.85,
+   "in_person": true,
+   "setting": "specialty",
+   "source_count": 1
+  },
+  "Structural heart clinic": {
+   "agere_concept": "specialist_visit",
+   "confidence": 0.88,
+   "in_person": true,
+   "setting": "specialty",
+   "source_count": 1
+  },
+  "Surg post-op": {
+   "agere_concept": "specialist_visit",
+   "confidence": 0.8,
+   "in_person": true,
+   "setting": "specialty",
+   "source_count": 1
+  },
+  "VA psych": {
+   "agere_concept": "specialist_visit",
+   "confidence": 0.7,
+   "in_person": true,
+   "setting": "behavioral_health",
+   "source_count": 1
+  },
+  "Weight clinic": {
+   "agere_concept": "specialist_visit",
+   "confidence": 0.75,
+   "in_person": true,
+   "setting": "specialty",
+   "source_count": 1
+  },
+  "ambulatory": {
+   "agere_concept": null,
+   "confidence": 0.5,
+   "in_person": true,
+   "setting": "other",
+   "source_count": 2320
+  },
+  "diagnostic_test": {
+   "agere_concept": null,
+   "confidence": 0.85,
+   "in_person": true,
+   "setting": "diagnostic",
+   "source_count": 228
+  },
+  "emergency": {
+   "agere_concept": "emergency_visit",
+   "confidence": 0.97,
+   "in_person": true,
+   "setting": "emergency",
+   "source_count": 590
+  },
+  "home": {
+   "agere_concept": null,
+   "confidence": 0.6,
+   "in_person": true,
+   "setting": "home_health",
+   "source_count": 8
+  },
+  "home_health": {
+   "agere_concept": null,
+   "confidence": 0.85,
+   "in_person": true,
+   "setting": "home_health",
+   "source_count": 191
+  },
+  "hospice": {
+   "agere_concept": null,
+   "confidence": 0.6,
+   "in_person": true,
+   "setting": "other",
+   "source_count": 13
+  },
+  "inpatient": {
+   "agere_concept": "inpatient_admission",
+   "confidence": 0.97,
+   "in_person": true,
+   "setting": "inpatient",
+   "source_count": 128
+  },
+  "medication_management": {
+   "agere_concept": null,
+   "confidence": 0.75,
+   "in_person": true,
+   "setting": "pharmacy_or_med_management",
+   "source_count": 1508
+  },
+  "medication_management_followup": {
+   "agere_concept": null,
+   "confidence": 0.75,
+   "in_person": true,
+   "setting": "pharmacy_or_med_management",
+   "source_count": 1376
+  },
+  "observation": {
+   "agere_concept": "observation_stay",
+   "confidence": 0.95,
+   "in_person": true,
+   "setting": "observation",
+   "source_count": 136
+  },
+  "office": {
+   "agere_concept": null,
+   "confidence": 0.5,
+   "in_person": true,
+   "setting": "primary_care",
+   "source_count": 7340
+  },
+  "outpatient": {
+   "agere_concept": null,
+   "confidence": 0.5,
+   "in_person": true,
+   "setting": "other",
+   "source_count": 488
+  },
+  "outpatient_procedure": {
+   "agere_concept": null,
+   "confidence": 0.85,
+   "in_person": true,
+   "setting": "procedure",
+   "source_count": 20
+  },
+  "pediatric_office": {
+   "agere_concept": "primary_care_visit",
+   "confidence": 0.85,
+   "in_person": true,
+   "setting": "primary_care",
+   "source_count": 661
+  },
+  "primary_care": {
+   "agere_concept": "primary_care_visit",
+   "confidence": 0.95,
+   "in_person": true,
+   "setting": "primary_care",
+   "source_count": 26534
+  },
+  "snf": {
+   "agere_concept": "skilled_nursing_or_post_acute",
+   "confidence": 0.9,
+   "in_person": true,
+   "setting": "inpatient",
+   "source_count": 16
+  },
+  "specialist_office": {
+   "agere_concept": "specialist_visit",
+   "confidence": 0.92,
+   "in_person": true,
+   "setting": "specialty",
+   "source_count": 402
+  },
+  "specialty_followup": {
+   "agere_concept": "specialist_visit",
+   "confidence": 0.9,
+   "in_person": true,
+   "setting": "specialty",
+   "source_count": 2788
+  },
+  "telephone": {
+   "agere_concept": "telehealth_contact",
+   "confidence": 0.95,
+   "in_person": false,
+   "setting": "telehealth",
+   "source_count": 28980
+  },
+  "urgent_care": {
+   "agere_concept": "urgent_care_visit",
+   "confidence": 0.97,
+   "in_person": true,
+   "setting": "urgent_care",
+   "source_count": 467
+  },
+  "urgentcare": {
+   "agere_concept": "urgent_care_visit",
+   "confidence": 0.95,
+   "in_person": true,
+   "setting": "urgent_care",
+   "source_count": 66
+  },
+  "virtual": {
+   "agere_concept": "telehealth_contact",
+   "confidence": 0.92,
+   "in_person": false,
+   "setting": "telehealth",
+   "source_count": 27
+  },
+  "wellness": {
+   "agere_concept": "primary_care_visit",
+   "confidence": 0.8,
+   "in_person": true,
+   "setting": "preventive",
+   "source_count": 1327
+  }
+ },
+ "mapped_by": "claude-opus-5-5",
+ "review_status": "unreviewed",
+ "schema": "agere-normalization/1"
+}

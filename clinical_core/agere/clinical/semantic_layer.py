@@ -13,7 +13,7 @@ import json, re, sqlite3, time
 
 from . import aggregate, concepts, source_profile
 
-VERSION = 'semantic-layer/9'
+VERSION = 'semantic-layer/10'
 
 # Source contract: streams whose records are successive snapshots of one business entity (key field).
 # Other repeated ids (payments per account, lines per claim, fills per prescription) are separate events, not versions.
@@ -101,6 +101,9 @@ SCHEMA_DOC = {
                   'listed, administered, reported, pharmacy_history), drug_name as received, status. drug_class from the active '
                   'ingredient (statin, beta_blocker, hf_evidence_based_beta_blocker, ace_inhibitor, arb, arni, mra, sglt2_inhibitor, '
                   'glp1_agonist, metformin, insulin, anticoagulant, opioid, ...); NULL when unclassified.',
+    'normalization': 'measurement.loinc/component/lab_category, condition.is_diagnosis/icd10_category/chapter/chronic/'
+                     'normalized_label, medication.ingredients/therapeutic_category, visit.setting come from the normalization '
+                     'dictionary (each source string mapped once to standard terminology).',
     'measurement_latest': 'Latest DATED value per patient and measurement concept (undated rows never count as latest); '
                           'same_day_values/same_day_min for same-date ties (HEDIS uses the lowest).',
     'current_record': 'Latest version of each business entity in versioned (snapshot) streams: stream, key_field, business_id, '
@@ -157,6 +160,50 @@ def _revenue_cycle(out):
                          a.get('amount_cents'), int(rid in current)))
     out.executemany('INSERT INTO claim_adjustment VALUES (?,?,?,?,?,?,?,?,?)', rows)
     out.execute('CREATE INDEX claim_adjustment_claim ON claim_adjustment(claim_id)')
+
+
+NORMALIZATION = Path(__file__).resolve().parents[3] / 'config' / 'agere' / 'normalization'
+
+
+def _dictionary(domain):
+    target = NORMALIZATION / f'{domain}.json'
+    return json.loads(target.read_text())['entries'] if target.exists() else {}
+
+
+def _normalize(out):
+    """Apply the normalization dictionary (each distinct source string mapped once to standard terminology).
+    Rules stay authoritative where they map; the dictionary fills gaps and adds standard codes and categories."""
+    labs, conds, meds, encs = (_dictionary(d) for d in ('labs', 'conditions', 'medications', 'encounters'))
+    for col in ('loinc TEXT', 'component TEXT', 'lab_category TEXT'):
+        out.execute(f'ALTER TABLE measurement ADD COLUMN {col}')
+    out.executemany('UPDATE measurement SET loinc = ?, component = ?, lab_category = ?, concept = coalesce(concept, ?) WHERE name = ?',
+                    [(v.get('loinc'), v.get('component'), v.get('category'), v.get('agere_concept') if (v.get('confidence') or 0) >= 0.8 else None, k)
+                     for k, v in labs.items()])
+    for col in ('is_diagnosis INTEGER', 'icd10_category TEXT', 'chapter TEXT', 'chronic INTEGER', 'normalized_label TEXT'):
+        out.execute(f'ALTER TABLE condition ADD COLUMN {col}')
+    out.executemany('UPDATE condition SET is_diagnosis = ?, icd10_category = ?, chapter = ?, chronic = ?, normalized_label = ? WHERE label = ?',
+                    [(None if v.get('is_diagnosis') is None else int(bool(v['is_diagnosis'])), v.get('icd10_category'), v.get('chapter'),
+                      None if v.get('chronic') is None else int(bool(v['chronic'])), v.get('normalized_label'), k) for k, v in conds.items()])
+    for col in ('ingredients TEXT', 'therapeutic_category TEXT'):
+        out.execute(f'ALTER TABLE medication ADD COLUMN {col}')
+    out.executemany('UPDATE medication SET ingredients = ?, therapeutic_category = ? WHERE drug_name = ?',
+                    [(', '.join(v.get('ingredients') or []), v.get('therapeutic_category'), k) for k, v in meds.items()])
+    # Drug classes: union of rule classes and dictionary classes (dictionary catches abbreviations such as ASA, HCTZ).
+    extra = []
+    for name, v in meds.items():
+        have = {c for (c,) in out.execute('SELECT DISTINCT drug_class FROM medication WHERE drug_name = ? AND drug_class IS NOT NULL', (name,))}
+        add = [c for c in (v.get('drug_classes') or []) if c not in have and (v.get('confidence') or 0) >= 0.8]
+        if not add: continue
+        for row in out.execute('SELECT DISTINCT record_id, patient_id, source_stream, evidence, drug_name, status, event_date, available_date, '
+                               'therapeutic_category, ingredients FROM medication WHERE drug_name = ?', (name,)).fetchall():
+            extra += [(row[0], row[1], row[2], row[3], row[4], c, row[5], row[6], row[7], row[9], row[8]) for c in add]
+    out.executemany('INSERT INTO medication(record_id, patient_id, source_stream, evidence, drug_name, drug_class, status, event_date, '
+                    'available_date, ingredients, therapeutic_category) VALUES (?,?,?,?,?,?,?,?,?,?,?)', extra)
+    out.execute("DELETE FROM medication WHERE drug_class IS NULL AND drug_name IN (SELECT drug_name FROM medication WHERE drug_class IS NOT NULL)")
+    out.execute('ALTER TABLE visit ADD COLUMN setting TEXT')
+    out.executemany('UPDATE visit SET setting = ? WHERE type = ?', [(v.get('setting'), k) for k, v in encs.items()])
+    out.executemany('UPDATE visit SET in_person = ? WHERE type = ? AND type_concept IS NULL',
+                    [(int(bool(v.get('in_person'))), k) for k, v in encs.items() if v.get('in_person') is not None])
 
 
 def _medications(out):
@@ -256,6 +303,7 @@ def _derived(out):
     out.execute("ALTER TABLE stay ADD COLUMN los_days INTEGER")
     out.execute("UPDATE stay SET los_days = CAST(julianday(discharge_date) - julianday(admit_date) AS INTEGER) WHERE discharge_date IS NOT NULL")
     out.executescript("CREATE INDEX appointment_patient ON appointment(patient_id); CREATE INDEX claim_patient ON claim(patient_id);")
+    _normalize(out)  # last: fills columns added above (visit.in_person, measurement concept)
 
 
 def build(path):

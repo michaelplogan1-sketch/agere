@@ -1,0 +1,6 @@
+-- Latest dated LDL ('LDL cholesterol', numeric, final; ties -> highest) >= 160 mg/dL AND no 'dispensed' statin dated 2028-08-16..2029-08-15. Undated LDL rows (incl. 'LDL') are ignored.
+WITH r AS MATERIALIZED (SELECT patient, stream, payload FROM records WHERE stream IN ('labs','pharmacy_dispenses')),
+a AS (SELECT patient, json_extract(payload,'$.event_date') d, CAST(json_extract(payload,'$.value') AS REAL) v FROM r WHERE stream='labs' AND coalesce(json_extract(payload,'$.name'),json_extract(payload,'$.test'))='LDL cholesterol' AND json_extract(payload,'$.event_date') IS NOT NULL AND typeof(json_extract(payload,'$.value')) IN ('integer','real') AND coalesce(json_extract(payload,'$.result_status'),'final')<>'cancelled'),
+l AS (SELECT patient, max(d) d FROM a GROUP BY 1), lv AS (SELECT a.patient, max(v) v FROM a JOIN l USING(patient,d) GROUP BY 1),
+st AS (SELECT DISTINCT patient FROM r WHERE stream='pharmacy_dispenses' AND json_extract(payload,'$.status')='dispensed' AND json_extract(payload,'$.event_date') BETWEEN '2028-08-16' AND '2029-08-15' AND lower(json_extract(payload,'$.medication_name')) LIKE '%statin%')
+SELECT COUNT(*) AS count FROM lv WHERE v>=160 AND patient NOT IN (SELECT patient FROM st);

@@ -1,0 +1,2618 @@
+{
+ "domain": "conditions",
+ "entries": {
+  "28 weeks gestation": {
+   "agere_concept": null,
+   "chapter": "factors_influencing_health",
+   "chronic": false,
+   "confidence": 0.95,
+   "icd10_category": "Z3A",
+   "is_diagnosis": false,
+   "normalized_label": "28 weeks gestation of pregnancy",
+   "source_count": 2
+  },
+  "32 weeks gestation": {
+   "agere_concept": null,
+   "chapter": "factors_influencing_health",
+   "chronic": false,
+   "confidence": 0.95,
+   "icd10_category": "Z3A",
+   "is_diagnosis": false,
+   "normalized_label": "32 weeks gestation of pregnancy",
+   "source_count": 2
+  },
+  "ADHD, predominantly inattentive": {
+   "agere_concept": null,
+   "chapter": "mental_behavioral",
+   "chronic": true,
+   "confidence": 0.96,
+   "icd10_category": "F90",
+   "is_diagnosis": true,
+   "normalized_label": "ADHD, predominantly inattentive type",
+   "source_count": 2
+  },
+  "AFib": {
+   "agere_concept": "atrial_fibrillation",
+   "chapter": "circulatory",
+   "chronic": true,
+   "confidence": 0.97,
+   "icd10_category": "I48",
+   "is_diagnosis": true,
+   "normalized_label": "Atrial fibrillation, unspecified",
+   "source_count": 2
+  },
+  "ASCVD of native coronary artery with unstable angina": {
+   "agere_concept": "coronary_artery_disease",
+   "chapter": "circulatory",
+   "chronic": true,
+   "confidence": 0.96,
+   "icd10_category": "I25",
+   "is_diagnosis": true,
+   "normalized_label": "Atherosclerotic heart disease of native coronary artery with unstable angina pectoris",
+   "source_count": 1
+  },
+  "AUD, severe": {
+   "agere_concept": "substance_use_disorder",
+   "chapter": "mental_behavioral",
+   "chronic": true,
+   "confidence": 0.95,
+   "icd10_category": "F10",
+   "is_diagnosis": true,
+   "normalized_label": "Alcohol use disorder, severe (alcohol dependence)",
+   "source_count": 2
+  },
+  "Acute ST segment elevation myocardial infarction": {
+   "agere_concept": "myocardial_infarction",
+   "chapter": "circulatory",
+   "chronic": false,
+   "confidence": 0.97,
+   "icd10_category": "I21",
+   "is_diagnosis": true,
+   "normalized_label": "Acute STEMI",
+   "source_count": 36
+  },
+  "Acute bacterial sinusitis": {
+   "agere_concept": null,
+   "chapter": "respiratory",
+   "chronic": false,
+   "confidence": 0.88,
+   "icd10_category": "J01",
+   "is_diagnosis": true,
+   "normalized_label": "Acute bacterial sinusitis",
+   "source_count": 1
+  },
+  "Acute biliary pancreatitis without necrosis": {
+   "agere_concept": null,
+   "chapter": "digestive",
+   "chronic": false,
+   "confidence": 0.96,
+   "icd10_category": "K85",
+   "is_diagnosis": true,
+   "normalized_label": "Biliary acute pancreatitis without necrosis or infection",
+   "source_count": 1
+  },
+  "Acute bronchitis": {
+   "agere_concept": null,
+   "chapter": "respiratory",
+   "chronic": false,
+   "confidence": 0.93,
+   "icd10_category": "J20",
+   "is_diagnosis": true,
+   "normalized_label": "Acute bronchitis",
+   "source_count": 3
+  },
+  "Acute infective cystitis": {
+   "agere_concept": null,
+   "chapter": "genitourinary",
+   "chronic": false,
+   "confidence": 0.9,
+   "icd10_category": "N30",
+   "is_diagnosis": true,
+   "normalized_label": "Acute infective cystitis",
+   "source_count": 1
+  },
+  "Acute kidney injury": {
+   "agere_concept": null,
+   "chapter": "genitourinary",
+   "chronic": false,
+   "confidence": 0.96,
+   "icd10_category": "N17",
+   "is_diagnosis": true,
+   "normalized_label": "Acute kidney failure, unspecified",
+   "source_count": 1
+  },
+  "Acute non-ST segment elevation myocardial infarction": {
+   "agere_concept": "myocardial_infarction",
+   "chapter": "circulatory",
+   "chronic": false,
+   "confidence": 0.97,
+   "icd10_category": "I21",
+   "is_diagnosis": true,
+   "normalized_label": "Acute NSTEMI",
+   "source_count": 56
+  },
+  "Acute respiratory distress syndrome": {
+   "agere_concept": null,
+   "chapter": "respiratory",
+   "chronic": false,
+   "confidence": 0.95,
+   "icd10_category": "J80",
+   "is_diagnosis": true,
+   "normalized_label": "Acute respiratory distress syndrome",
+   "source_count": 3
+  },
+  "Acute viral pharyngitis": {
+   "agere_concept": null,
+   "chapter": "respiratory",
+   "chronic": false,
+   "confidence": 0.88,
+   "icd10_category": "J02",
+   "is_diagnosis": true,
+   "normalized_label": "Acute viral pharyngitis",
+   "source_count": 4
+  },
+  "Adhesive capsulitis, R shoulder": {
+   "agere_concept": null,
+   "chapter": "musculoskeletal",
+   "chronic": true,
+   "confidence": 0.95,
+   "icd10_category": "M75",
+   "is_diagnosis": true,
+   "normalized_label": "Adhesive capsulitis of right shoulder",
+   "source_count": 1
+  },
+  "Adolescent idiopathic scoliosis": {
+   "agere_concept": null,
+   "chapter": "musculoskeletal",
+   "chronic": true,
+   "confidence": 0.95,
+   "icd10_category": "M41",
+   "is_diagnosis": true,
+   "normalized_label": "Adolescent idiopathic scoliosis",
+   "source_count": 44
+  },
+  "Aftercare following digestive system surgery": {
+   "agere_concept": null,
+   "chapter": "factors_influencing_health_status",
+   "chronic": false,
+   "confidence": 0.96,
+   "icd10_category": "Z48",
+   "is_diagnosis": false,
+   "normalized_label": "Aftercare following surgery on the digestive system",
+   "source_count": 1
+  },
+  "Aftercare following joint replacement": {
+   "agere_concept": null,
+   "chapter": "factors_influencing_health_status",
+   "chronic": false,
+   "confidence": 0.96,
+   "icd10_category": "Z47",
+   "is_diagnosis": false,
+   "normalized_label": "Aftercare following joint replacement surgery",
+   "source_count": 1
+  },
+  "Aftercare following joint replacement surgery": {
+   "agere_concept": null,
+   "chapter": "factors_influencing_health_status",
+   "chronic": false,
+   "confidence": 0.96,
+   "icd10_category": "Z47",
+   "is_diagnosis": false,
+   "normalized_label": "Aftercare following joint replacement surgery",
+   "source_count": 1
+  },
+  "Age-related osteoporosis": {
+   "agere_concept": "osteoporosis",
+   "chapter": "musculoskeletal",
+   "chronic": true,
+   "confidence": 0.97,
+   "icd10_category": "M81",
+   "is_diagnosis": true,
+   "normalized_label": "Age-related osteoporosis without current pathological fracture",
+   "source_count": 1
+  },
+  "Alcoholic cirrhosis without ascites": {
+   "agere_concept": null,
+   "chapter": "digestive",
+   "chronic": true,
+   "confidence": 0.95,
+   "icd10_category": "K70",
+   "is_diagnosis": true,
+   "normalized_label": "Alcoholic cirrhosis of liver without ascites",
+   "source_count": 1
+  },
+  "Alcoholism": {
+   "agere_concept": "substance_use_disorder",
+   "chapter": "mental_behavioural",
+   "chronic": true,
+   "confidence": 0.95,
+   "icd10_category": "F10",
+   "is_diagnosis": true,
+   "normalized_label": "Alcohol dependence",
+   "source_count": 9
+  },
+  "Alzheimer disease (MMSE 18)": {
+   "agere_concept": "dementia",
+   "chapter": "nervous",
+   "chronic": true,
+   "confidence": 0.95,
+   "icd10_category": "G30",
+   "is_diagnosis": true,
+   "normalized_label": "Alzheimer disease, unspecified",
+   "source_count": 1
+  },
+  "Alzheimer disease, unspecified (MMSE 24)": {
+   "agere_concept": "dementia",
+   "chapter": "nervous",
+   "chronic": true,
+   "confidence": 0.95,
+   "icd10_category": "G30",
+   "is_diagnosis": true,
+   "normalized_label": "Alzheimer disease, unspecified",
+   "source_count": 1
+  },
+  "Alzheimer's disease": {
+   "agere_concept": "dementia",
+   "chapter": "nervous",
+   "chronic": true,
+   "confidence": 0.95,
+   "icd10_category": "G30",
+   "is_diagnosis": true,
+   "normalized_label": "Alzheimer's disease",
+   "source_count": 17
+  },
+  "Anemia": {
+   "agere_concept": "anemia",
+   "chapter": "blood",
+   "chronic": false,
+   "confidence": 0.9,
+   "icd10_category": "D64",
+   "is_diagnosis": true,
+   "normalized_label": "Anemia, unspecified",
+   "source_count": 529
+  },
+  "Antiphospholipid syndrome": {
+   "agere_concept": null,
+   "chapter": "blood_immune",
+   "chronic": true,
+   "confidence": 0.96,
+   "icd10_category": "D68",
+   "is_diagnosis": true,
+   "normalized_label": "Antiphospholipid syndrome",
+   "source_count": 2
+  },
+  "Aortic valve regurgitation": {
+   "agere_concept": null,
+   "chapter": "circulatory",
+   "chronic": true,
+   "confidence": 0.92,
+   "icd10_category": "I35",
+   "is_diagnosis": true,
+   "normalized_label": "Aortic valve regurgitation",
+   "source_count": 6
+  },
+  "Aortic valve stenosis": {
+   "agere_concept": null,
+   "chapter": "circulatory",
+   "chronic": true,
+   "confidence": 0.92,
+   "icd10_category": "I35",
+   "is_diagnosis": true,
+   "normalized_label": "Aortic valve stenosis",
+   "source_count": 6
+  },
+  "Asthma": {
+   "agere_concept": "asthma",
+   "chapter": "respiratory",
+   "chronic": true,
+   "confidence": 0.97,
+   "icd10_category": "J45",
+   "is_diagnosis": true,
+   "normalized_label": "Asthma",
+   "source_count": 66
+  },
+  "Asthma, unspecified with (acute) exacerbation": {
+   "agere_concept": "asthma",
+   "chapter": "respiratory",
+   "chronic": true,
+   "confidence": 0.97,
+   "icd10_category": "J45",
+   "is_diagnosis": true,
+   "normalized_label": "Asthma, unspecified, with acute exacerbation",
+   "source_count": 1
+  },
+  "Atopic dermatitis": {
+   "agere_concept": null,
+   "chapter": "skin",
+   "chronic": true,
+   "confidence": 0.97,
+   "icd10_category": "L20",
+   "is_diagnosis": true,
+   "normalized_label": "Atopic dermatitis",
+   "source_count": 23
+  },
+  "Atrial fibrillation": {
+   "agere_concept": "atrial_fibrillation",
+   "chapter": "circulatory",
+   "chronic": true,
+   "confidence": 0.98,
+   "icd10_category": "I48",
+   "is_diagnosis": true,
+   "normalized_label": "Atrial fibrillation",
+   "source_count": 8
+  },
+  "Benign neoplasm of unspecified adrenal gland (pheo)": {
+   "agere_concept": null,
+   "chapter": "neoplasms",
+   "chronic": true,
+   "confidence": 0.9,
+   "icd10_category": "D35",
+   "is_diagnosis": true,
+   "normalized_label": "Benign neoplasm of adrenal gland (pheochromocytoma), unspecified side",
+   "source_count": 1
+  },
+  "Bipolar I disorder": {
+   "agere_concept": null,
+   "chapter": "mental_behavioral",
+   "chronic": true,
+   "confidence": 0.93,
+   "icd10_category": "F31",
+   "is_diagnosis": true,
+   "normalized_label": "Bipolar I disorder",
+   "source_count": 2
+  },
+  "Bleeding from anus": {
+   "agere_concept": null,
+   "chapter": "digestive",
+   "chronic": false,
+   "confidence": 0.85,
+   "icd10_category": "K62",
+   "is_diagnosis": true,
+   "normalized_label": "Hemorrhage of anus and rectum",
+   "source_count": 2
+  },
+  "Blighted ovum": {
+   "agere_concept": null,
+   "chapter": "pregnancy_childbirth_puerperium",
+   "chronic": false,
+   "confidence": 0.93,
+   "icd10_category": "O02",
+   "is_diagnosis": true,
+   "normalized_label": "Blighted ovum (anembryonic pregnancy)",
+   "source_count": 1
+  },
+  "Body mass index 30+ - obesity": {
+   "agere_concept": "obesity",
+   "chapter": "endocrine",
+   "chronic": true,
+   "confidence": 0.9,
+   "icd10_category": "E66",
+   "is_diagnosis": true,
+   "normalized_label": "Obesity (BMI 30+)",
+   "source_count": 755
+  },
+  "Body mass index 40+ - severely obese": {
+   "agere_concept": "obesity",
+   "chapter": "factors_influencing_health",
+   "chronic": true,
+   "confidence": 0.7,
+   "icd10_category": "Z68",
+   "is_diagnosis": false,
+   "normalized_label": "BMI 40 or greater, adult (severe obesity finding)",
+   "source_count": 3
+  },
+  "CHF, unspecified": {
+   "agere_concept": "heart_failure",
+   "chapter": "circulatory",
+   "chronic": true,
+   "confidence": 0.97,
+   "icd10_category": "I50",
+   "is_diagnosis": true,
+   "normalized_label": "Heart failure, unspecified",
+   "source_count": 1
+  },
+  "CKD stage 2": {
+   "agere_concept": "chronic_kidney_disease",
+   "chapter": "genitourinary",
+   "chronic": true,
+   "confidence": 0.98,
+   "icd10_category": "N18",
+   "is_diagnosis": true,
+   "normalized_label": "Chronic kidney disease, stage 2 (mild)",
+   "source_count": 1
+  },
+  "CKD stage 3": {
+   "agere_concept": "chronic_kidney_disease",
+   "chapter": "genitourinary",
+   "chronic": true,
+   "confidence": 0.97,
+   "icd10_category": "N18",
+   "is_diagnosis": true,
+   "normalized_label": "Chronic kidney disease, stage 3 (moderate), unspecified",
+   "source_count": 1
+  },
+  "CKD stage 3b": {
+   "agere_concept": "chronic_kidney_disease",
+   "chapter": "genitourinary",
+   "chronic": true,
+   "confidence": 0.98,
+   "icd10_category": "N18",
+   "is_diagnosis": true,
+   "normalized_label": "Chronic kidney disease, stage 3b",
+   "source_count": 1
+  },
+  "CKD stage 4": {
+   "agere_concept": "chronic_kidney_disease",
+   "chapter": "genitourinary",
+   "chronic": true,
+   "confidence": 0.98,
+   "icd10_category": "N18",
+   "is_diagnosis": true,
+   "normalized_label": "Chronic kidney disease, stage 4 (severe)",
+   "source_count": 1
+  },
+  "COPD, unspecified (GOLD III)": {
+   "agere_concept": "copd",
+   "chapter": "respiratory",
+   "chronic": true,
+   "confidence": 0.97,
+   "icd10_category": "J44",
+   "is_diagnosis": true,
+   "normalized_label": "Chronic obstructive pulmonary disease, severe (GOLD III)",
+   "source_count": 1
+  },
+  "Cannabis use disorder, moderate": {
+   "agere_concept": "substance_use_disorder",
+   "chapter": "mental",
+   "chronic": true,
+   "confidence": 0.95,
+   "icd10_category": "F12",
+   "is_diagnosis": true,
+   "normalized_label": "Cannabis use disorder, moderate (dependence)",
+   "source_count": 1
+  },
+  "Carcinoma in situ of prostate": {
+   "agere_concept": "cancer",
+   "chapter": "neoplasms",
+   "chronic": true,
+   "confidence": 0.8,
+   "icd10_category": "D07",
+   "is_diagnosis": true,
+   "normalized_label": "Carcinoma in situ of prostate",
+   "source_count": 9
+  },
+  "Cerebral infarction, L MCA": {
+   "agere_concept": "stroke",
+   "chapter": "circulatory",
+   "chronic": false,
+   "confidence": 0.97,
+   "icd10_category": "I63",
+   "is_diagnosis": true,
+   "normalized_label": "Cerebral infarction, left middle cerebral artery",
+   "source_count": 1
+  },
+  "Cerebral palsy": {
+   "agere_concept": null,
+   "chapter": "nervous",
+   "chronic": true,
+   "confidence": 0.93,
+   "icd10_category": "G80",
+   "is_diagnosis": true,
+   "normalized_label": "Cerebral palsy",
+   "source_count": 3
+  },
+  "Chiari malformation type II": {
+   "agere_concept": null,
+   "chapter": "congenital",
+   "chronic": true,
+   "confidence": 0.9,
+   "icd10_category": "Q07",
+   "is_diagnosis": true,
+   "normalized_label": "Arnold-Chiari malformation type II",
+   "source_count": 1
+  },
+  "Child attention deficit disorder": {
+   "agere_concept": null,
+   "chapter": "mental_behavioural",
+   "chronic": true,
+   "confidence": 0.92,
+   "icd10_category": "F90",
+   "is_diagnosis": true,
+   "normalized_label": "Attention deficit disorder (childhood)",
+   "source_count": 7
+  },
+  "Childhood asthma": {
+   "agere_concept": "asthma",
+   "chapter": "respiratory",
+   "chronic": true,
+   "confidence": 0.96,
+   "icd10_category": "J45",
+   "is_diagnosis": true,
+   "normalized_label": "Childhood asthma",
+   "source_count": 23
+  },
+  "Cholelithiasis without obstruction": {
+   "agere_concept": null,
+   "chapter": "digestive",
+   "chronic": false,
+   "confidence": 0.95,
+   "icd10_category": "K80",
+   "is_diagnosis": true,
+   "normalized_label": "Calculus of gallbladder without cholecystitis or obstruction",
+   "source_count": 1
+  },
+  "Chronic congestive heart failure": {
+   "agere_concept": "heart_failure",
+   "chapter": "circulatory",
+   "chronic": true,
+   "confidence": 0.95,
+   "icd10_category": "I50",
+   "is_diagnosis": true,
+   "normalized_label": "Chronic congestive heart failure",
+   "source_count": 279
+  },
+  "Chronic diastolic (congestive) heart failure": {
+   "agere_concept": "heart_failure",
+   "chapter": "circulatory",
+   "chronic": true,
+   "confidence": 0.95,
+   "icd10_category": "I50",
+   "is_diagnosis": true,
+   "normalized_label": "Chronic diastolic heart failure",
+   "source_count": 4
+  },
+  "Chronic hepatitis C": {
+   "agere_concept": null,
+   "chapter": "infectious",
+   "chronic": true,
+   "confidence": 0.95,
+   "icd10_category": "B18",
+   "is_diagnosis": true,
+   "normalized_label": "Chronic viral hepatitis C",
+   "source_count": 2
+  },
+  "Chronic intractable migraine without aura": {
+   "agere_concept": null,
+   "chapter": "nervous",
+   "chronic": true,
+   "confidence": 0.95,
+   "icd10_category": "G43",
+   "is_diagnosis": true,
+   "normalized_label": "Chronic intractable migraine without aura",
+   "source_count": 57
+  },
+  "Chronic kidney disease stage 1": {
+   "agere_concept": "chronic_kidney_disease",
+   "chapter": "genitourinary",
+   "chronic": true,
+   "confidence": 0.97,
+   "icd10_category": "N18",
+   "is_diagnosis": true,
+   "normalized_label": "Chronic kidney disease stage 1",
+   "source_count": 106
+  },
+  "Chronic kidney disease stage 2": {
+   "agere_concept": "chronic_kidney_disease",
+   "chapter": "genitourinary",
+   "chronic": true,
+   "confidence": 0.97,
+   "icd10_category": "N18",
+   "is_diagnosis": true,
+   "normalized_label": "Chronic kidney disease stage 2",
+   "source_count": 73
+  },
+  "Chronic kidney disease stage 3": {
+   "agere_concept": "chronic_kidney_disease",
+   "chapter": "genitourinary",
+   "chronic": true,
+   "confidence": 0.98,
+   "icd10_category": "N18",
+   "is_diagnosis": true,
+   "normalized_label": "CKD stage 3",
+   "source_count": 27
+  },
+  "Chronic kidney disease stage 4": {
+   "agere_concept": "chronic_kidney_disease",
+   "chapter": "genitourinary",
+   "chronic": true,
+   "confidence": 0.97,
+   "icd10_category": "N18",
+   "is_diagnosis": true,
+   "normalized_label": "Chronic kidney disease, stage 4",
+   "source_count": 4
+  },
+  "Chronic kidney disease, stage 3 (moderate)": {
+   "agere_concept": "chronic_kidney_disease",
+   "chapter": "genitourinary",
+   "chronic": true,
+   "confidence": 0.97,
+   "icd10_category": "N18",
+   "is_diagnosis": true,
+   "normalized_label": "Chronic kidney disease, stage 3",
+   "source_count": 3
+  },
+  "Chronic low back pain": {
+   "agere_concept": null,
+   "chapter": "musculoskeletal",
+   "chronic": true,
+   "confidence": 0.9,
+   "icd10_category": "M54",
+   "is_diagnosis": true,
+   "normalized_label": "Chronic low back pain",
+   "source_count": 298
+  },
+  "Chronic neck pain": {
+   "agere_concept": null,
+   "chapter": "musculoskeletal",
+   "chronic": true,
+   "confidence": 0.85,
+   "icd10_category": "M54",
+   "is_diagnosis": true,
+   "normalized_label": "Chronic neck pain (cervicalgia)",
+   "source_count": 186
+  },
+  "Chronic obstructive bronchitis": {
+   "agere_concept": "copd",
+   "chapter": "respiratory",
+   "chronic": true,
+   "confidence": 0.93,
+   "icd10_category": "J44",
+   "is_diagnosis": true,
+   "normalized_label": "Chronic obstructive bronchitis",
+   "source_count": 8
+  },
+  "Chronic pain": {
+   "agere_concept": null,
+   "chapter": "nervous",
+   "chronic": true,
+   "confidence": 0.85,
+   "icd10_category": "G89",
+   "is_diagnosis": true,
+   "normalized_label": "Chronic pain",
+   "source_count": 395
+  },
+  "Chronic pain, NEC": {
+   "agere_concept": null,
+   "chapter": "nervous",
+   "chronic": true,
+   "confidence": 0.93,
+   "icd10_category": "G89",
+   "is_diagnosis": true,
+   "normalized_label": "Other chronic pain",
+   "source_count": 1
+  },
+  "Chronic sinusitis": {
+   "agere_concept": null,
+   "chapter": "respiratory",
+   "chronic": true,
+   "confidence": 0.95,
+   "icd10_category": "J32",
+   "is_diagnosis": true,
+   "normalized_label": "Chronic sinusitis",
+   "source_count": 295
+  },
+  "Chronic systolic (congestive) heart failure": {
+   "agere_concept": "heart_failure_reduced_ef",
+   "chapter": "circulatory",
+   "chronic": true,
+   "confidence": 0.93,
+   "icd10_category": "I50",
+   "is_diagnosis": true,
+   "normalized_label": "Chronic systolic heart failure (HFrEF)",
+   "source_count": 22
+  },
+  "Chronic systolic CHF": {
+   "agere_concept": "heart_failure_reduced_ef",
+   "chapter": "circulatory",
+   "chronic": true,
+   "confidence": 0.92,
+   "icd10_category": "I50",
+   "is_diagnosis": true,
+   "normalized_label": "Chronic systolic (congestive) heart failure",
+   "source_count": 2
+  },
+  "Complete miscarriage": {
+   "agere_concept": null,
+   "chapter": "pregnancy",
+   "chronic": false,
+   "confidence": 0.9,
+   "icd10_category": "O03",
+   "is_diagnosis": true,
+   "normalized_label": "Complete spontaneous abortion",
+   "source_count": 1
+  },
+  "Concussion injury of brain": {
+   "agere_concept": null,
+   "chapter": "injury",
+   "chronic": false,
+   "confidence": 0.9,
+   "icd10_category": "S06",
+   "is_diagnosis": true,
+   "normalized_label": "Concussion",
+   "source_count": 3
+  },
+  "Concussion with loss of consciousness": {
+   "agere_concept": null,
+   "chapter": "injury",
+   "chronic": false,
+   "confidence": 0.93,
+   "icd10_category": "S06",
+   "is_diagnosis": true,
+   "normalized_label": "Concussion with loss of consciousness",
+   "source_count": 1
+  },
+  "Concussion with no loss of consciousness": {
+   "agere_concept": null,
+   "chapter": "injury",
+   "chronic": false,
+   "confidence": 0.93,
+   "icd10_category": "S06",
+   "is_diagnosis": true,
+   "normalized_label": "Concussion without loss of consciousness",
+   "source_count": 1
+  },
+  "Congenital deformity of foot": {
+   "agere_concept": null,
+   "chapter": "congenital",
+   "chronic": true,
+   "confidence": 0.9,
+   "icd10_category": "Q66",
+   "is_diagnosis": true,
+   "normalized_label": "Congenital deformity of foot",
+   "source_count": 1
+  },
+  "Coronary artery disease": {
+   "agere_concept": "coronary_artery_disease",
+   "chapter": "circulatory",
+   "chronic": true,
+   "confidence": 0.98,
+   "icd10_category": "I25",
+   "is_diagnosis": true,
+   "normalized_label": "Coronary artery disease",
+   "source_count": 1
+  },
+  "DVT, L femoral vein": {
+   "agere_concept": null,
+   "chapter": "circulatory",
+   "chronic": false,
+   "confidence": 0.85,
+   "icd10_category": "I82",
+   "is_diagnosis": true,
+   "normalized_label": "Acute DVT of left femoral vein (received I82.401 = right, unspecified vein; correct code I82.412)",
+   "source_count": 1
+  },
+  "Delirium": {
+   "agere_concept": null,
+   "chapter": "mental",
+   "chronic": false,
+   "confidence": 0.95,
+   "icd10_category": "F05",
+   "is_diagnosis": true,
+   "normalized_label": "Delirium",
+   "source_count": 1
+  },
+  "Dependent drug abuse": {
+   "agere_concept": "substance_use_disorder",
+   "chapter": "mental_behavioral",
+   "chronic": true,
+   "confidence": 0.8,
+   "icd10_category": "F19",
+   "is_diagnosis": true,
+   "normalized_label": "Drug dependence",
+   "source_count": 59
+  },
+  "Diabetes mellitus type 2": {
+   "agere_concept": "type_2_diabetes",
+   "chapter": "endocrine",
+   "chronic": true,
+   "confidence": 0.98,
+   "icd10_category": "E11",
+   "is_diagnosis": true,
+   "normalized_label": "Type 2 diabetes mellitus",
+   "source_count": 226
+  },
+  "Dislocation of hip joint": {
+   "agere_concept": null,
+   "chapter": "injury",
+   "chronic": false,
+   "confidence": 0.85,
+   "icd10_category": "S73",
+   "is_diagnosis": true,
+   "normalized_label": "Dislocation of hip",
+   "source_count": 1
+  },
+  "Disorder of kidney due to diabetes mellitus": {
+   "agere_concept": "diabetes",
+   "chapter": "endocrine",
+   "chronic": true,
+   "confidence": 0.7,
+   "icd10_category": "E11",
+   "is_diagnosis": true,
+   "normalized_label": "Diabetic kidney disease (diabetes type unspecified)",
+   "source_count": 262
+  },
+  "Displaced fracture of lateral condyle of R tibia": {
+   "agere_concept": null,
+   "chapter": "injury",
+   "chronic": false,
+   "confidence": 0.95,
+   "icd10_category": "S82",
+   "is_diagnosis": true,
+   "normalized_label": "Displaced fracture of lateral condyle of right tibia, initial encounter",
+   "source_count": 1
+  },
+  "Do not resuscitate (DNR / DNI)": {
+   "agere_concept": null,
+   "chapter": "factors_influencing_health",
+   "chronic": false,
+   "confidence": 0.95,
+   "icd10_category": "Z66",
+   "is_diagnosis": false,
+   "normalized_label": "Do not resuscitate status",
+   "source_count": 2
+  },
+  "Dysthyroid exophthalmos": {
+   "agere_concept": null,
+   "chapter": "endocrine",
+   "chronic": true,
+   "confidence": 0.7,
+   "icd10_category": "E05",
+   "is_diagnosis": true,
+   "normalized_label": "Thyroid eye disease (dysthyroid exophthalmos); received H06.2 is WHO-only, ICD-10-CM codes to E05.00",
+   "source_count": 1
+  },
+  "Dystonia": {
+   "agere_concept": null,
+   "chapter": "nervous",
+   "chronic": true,
+   "confidence": 0.9,
+   "icd10_category": "G24",
+   "is_diagnosis": true,
+   "normalized_label": "Dystonia",
+   "source_count": 1
+  },
+  "Encounter for palliative care": {
+   "agere_concept": null,
+   "chapter": "factors_influencing_health",
+   "chronic": false,
+   "confidence": 0.95,
+   "icd10_category": "Z51",
+   "is_diagnosis": false,
+   "normalized_label": "Encounter for palliative care",
+   "source_count": 2
+  },
+  "End-stage heart failure (NYHA IV, AHA stage D)": {
+   "agere_concept": "heart_failure",
+   "chapter": "circulatory",
+   "chronic": true,
+   "confidence": 0.93,
+   "icd10_category": "I50",
+   "is_diagnosis": true,
+   "normalized_label": "End-stage heart failure (stage D); ejection fraction not specified",
+   "source_count": 1
+  },
+  "End-stage renal disease": {
+   "agere_concept": "chronic_kidney_disease",
+   "chapter": "genitourinary",
+   "chronic": true,
+   "confidence": 0.95,
+   "icd10_category": "N18",
+   "is_diagnosis": true,
+   "normalized_label": "End-stage renal disease (N18.6)",
+   "source_count": 1
+  },
+  "Endometriosis": {
+   "agere_concept": null,
+   "chapter": "genitourinary",
+   "chronic": true,
+   "confidence": 0.97,
+   "icd10_category": "N80",
+   "is_diagnosis": true,
+   "normalized_label": "Endometriosis",
+   "source_count": 1
+  },
+  "Epilepsy": {
+   "agere_concept": null,
+   "chapter": "nervous",
+   "chronic": true,
+   "confidence": 0.97,
+   "icd10_category": "G40",
+   "is_diagnosis": true,
+   "normalized_label": "Epilepsy",
+   "source_count": 27
+  },
+  "Essential (primary) hypertension": {
+   "agere_concept": "hypertension",
+   "chapter": "circulatory",
+   "chronic": true,
+   "confidence": 0.98,
+   "icd10_category": "I10",
+   "is_diagnosis": true,
+   "normalized_label": "Essential (primary) hypertension",
+   "source_count": 2
+  },
+  "Essential HTN (resistant)": {
+   "agere_concept": "hypertension",
+   "chapter": "circulatory",
+   "chronic": true,
+   "confidence": 0.95,
+   "icd10_category": "I10",
+   "is_diagnosis": true,
+   "normalized_label": "Essential hypertension, resistant",
+   "source_count": 1
+  },
+  "Essential hypertension": {
+   "agere_concept": "hypertension",
+   "chapter": "circulatory",
+   "chronic": true,
+   "confidence": 0.98,
+   "icd10_category": "I10",
+   "is_diagnosis": true,
+   "normalized_label": "Essential hypertension",
+   "source_count": 353
+  },
+  "Excessive salivation": {
+   "agere_concept": null,
+   "chapter": "digestive",
+   "chronic": false,
+   "confidence": 0.8,
+   "icd10_category": "K11",
+   "is_diagnosis": true,
+   "normalized_label": "Sialorrhea",
+   "source_count": 1
+  },
+  "Familial Alzheimer's disease of early onset": {
+   "agere_concept": "dementia",
+   "chapter": "nervous",
+   "chronic": true,
+   "confidence": 0.9,
+   "icd10_category": "G30",
+   "is_diagnosis": true,
+   "normalized_label": "Alzheimer disease with early onset (familial)",
+   "source_count": 2
+  },
+  "Family history of diabetes mellitus": {
+   "agere_concept": null,
+   "chapter": "factors_influencing_health",
+   "chronic": false,
+   "confidence": 0.97,
+   "icd10_category": "Z83",
+   "is_diagnosis": false,
+   "normalized_label": "Family history of diabetes mellitus",
+   "source_count": 1
+  },
+  "Female infertility": {
+   "agere_concept": null,
+   "chapter": "genitourinary",
+   "chronic": true,
+   "confidence": 0.95,
+   "icd10_category": "N97",
+   "is_diagnosis": true,
+   "normalized_label": "Female infertility",
+   "source_count": 1
+  },
+  "Female infertility, age-related": {
+   "agere_concept": null,
+   "chapter": "genitourinary",
+   "chronic": true,
+   "confidence": 0.9,
+   "icd10_category": "N97",
+   "is_diagnosis": true,
+   "normalized_label": "Female infertility, age-related",
+   "source_count": 1
+  },
+  "Female infertility, unspecified": {
+   "agere_concept": null,
+   "chapter": "genitourinary",
+   "chronic": true,
+   "confidence": 0.95,
+   "icd10_category": "N97",
+   "is_diagnosis": true,
+   "normalized_label": "Female infertility",
+   "source_count": 1
+  },
+  "Fibromyalgia": {
+   "agere_concept": null,
+   "chapter": "musculoskeletal",
+   "chronic": true,
+   "confidence": 0.97,
+   "icd10_category": "M79",
+   "is_diagnosis": true,
+   "normalized_label": "Fibromyalgia",
+   "source_count": 38
+  },
+  "Fracture of ankle": {
+   "agere_concept": null,
+   "chapter": "injury",
+   "chronic": false,
+   "confidence": 0.9,
+   "icd10_category": "S82",
+   "is_diagnosis": true,
+   "normalized_label": "Fracture of ankle",
+   "source_count": 1
+  },
+  "Fracture of bone": {
+   "agere_concept": null,
+   "chapter": "injury",
+   "chronic": false,
+   "confidence": 0.8,
+   "icd10_category": "T14",
+   "is_diagnosis": true,
+   "normalized_label": "Fracture, unspecified site",
+   "source_count": 4
+  },
+  "Fracture of clavicle": {
+   "agere_concept": null,
+   "chapter": "injury",
+   "chronic": false,
+   "confidence": 0.9,
+   "icd10_category": "S42",
+   "is_diagnosis": true,
+   "normalized_label": "Fracture of clavicle",
+   "source_count": 2
+  },
+  "Fracture of forearm": {
+   "agere_concept": null,
+   "chapter": "injury",
+   "chronic": false,
+   "confidence": 0.9,
+   "icd10_category": "S52",
+   "is_diagnosis": true,
+   "normalized_label": "Fracture of forearm",
+   "source_count": 1
+  },
+  "Frailty (clinical frailty scale 7)": {
+   "agere_concept": null,
+   "chapter": "symptoms_signs",
+   "chronic": true,
+   "confidence": 0.85,
+   "icd10_category": "R54",
+   "is_diagnosis": true,
+   "normalized_label": "Frailty, severe (CFS 7)",
+   "source_count": 1
+  },
+  "GAD": {
+   "agere_concept": "anxiety",
+   "chapter": "mental_behavioral",
+   "chronic": true,
+   "confidence": 0.95,
+   "icd10_category": "F41",
+   "is_diagnosis": true,
+   "normalized_label": "Generalized anxiety disorder",
+   "source_count": 2
+  },
+  "GDM, diet controlled": {
+   "agere_concept": null,
+   "chapter": "pregnancy",
+   "chronic": false,
+   "confidence": 0.9,
+   "icd10_category": "O24",
+   "is_diagnosis": true,
+   "normalized_label": "Gestational diabetes mellitus in pregnancy, diet controlled",
+   "source_count": 2
+  },
+  "GERD": {
+   "agere_concept": null,
+   "chapter": "digestive",
+   "chronic": true,
+   "confidence": 0.97,
+   "icd10_category": "K21",
+   "is_diagnosis": true,
+   "normalized_label": "Gastroesophageal reflux disease",
+   "source_count": 1
+  },
+  "GI bleed, unspecified": {
+   "agere_concept": null,
+   "chapter": "digestive",
+   "chronic": false,
+   "confidence": 0.95,
+   "icd10_category": "K92",
+   "is_diagnosis": true,
+   "normalized_label": "Gastrointestinal hemorrhage, unspecified",
+   "source_count": 1
+  },
+  "Gastroesophageal reflux disease": {
+   "agere_concept": null,
+   "chapter": "digestive",
+   "chronic": true,
+   "confidence": 0.95,
+   "icd10_category": "K21",
+   "is_diagnosis": true,
+   "normalized_label": "Gastroesophageal reflux disease",
+   "source_count": 1
+  },
+  "Generalized anxiety disorder": {
+   "agere_concept": "anxiety",
+   "chapter": "mental_behavioral",
+   "chronic": true,
+   "confidence": 0.97,
+   "icd10_category": "F41",
+   "is_diagnosis": true,
+   "normalized_label": "Generalized anxiety disorder",
+   "source_count": 2
+  },
+  "Gingivitis": {
+   "agere_concept": null,
+   "chapter": "digestive",
+   "chronic": false,
+   "confidence": 0.93,
+   "icd10_category": "K05",
+   "is_diagnosis": true,
+   "normalized_label": "Gingivitis",
+   "source_count": 16
+  },
+  "HIV (virologically suppressed)": {
+   "agere_concept": "hiv",
+   "chapter": "infectious",
+   "chronic": true,
+   "confidence": 0.95,
+   "icd10_category": "B20",
+   "is_diagnosis": true,
+   "normalized_label": "HIV disease, virologically suppressed",
+   "source_count": 1
+  },
+  "HTN": {
+   "agere_concept": "hypertension",
+   "chapter": "circulatory",
+   "chronic": true,
+   "confidence": 0.98,
+   "icd10_category": "I10",
+   "is_diagnosis": true,
+   "normalized_label": "Essential (primary) hypertension",
+   "source_count": 3
+  },
+  "History of coronary artery bypass grafting": {
+   "agere_concept": null,
+   "chapter": "factors_influencing_health_status",
+   "chronic": true,
+   "confidence": 0.85,
+   "icd10_category": "Z95",
+   "is_diagnosis": false,
+   "normalized_label": "Status post coronary artery bypass graft",
+   "source_count": 76
+  },
+  "History of myocardial infarction": {
+   "agere_concept": "myocardial_infarction",
+   "chapter": "circulatory",
+   "chronic": true,
+   "confidence": 0.85,
+   "icd10_category": "I25",
+   "is_diagnosis": false,
+   "normalized_label": "History of myocardial infarction (old MI)",
+   "source_count": 102
+  },
+  "Human immunodeficiency virus infection": {
+   "agere_concept": "hiv",
+   "chapter": "infectious",
+   "chronic": true,
+   "confidence": 0.93,
+   "icd10_category": "B20",
+   "is_diagnosis": true,
+   "normalized_label": "HIV disease",
+   "source_count": 3
+  },
+  "Hyperglycemia": {
+   "agere_concept": null,
+   "chapter": "symptoms_signs_abnormal_findings",
+   "chronic": false,
+   "confidence": 0.85,
+   "icd10_category": "R73",
+   "is_diagnosis": true,
+   "normalized_label": "Hyperglycemia",
+   "source_count": 55
+  },
+  "Hyperlipidemia": {
+   "agere_concept": "hyperlipidemia",
+   "chapter": "endocrine",
+   "chronic": true,
+   "confidence": 0.97,
+   "icd10_category": "E78",
+   "is_diagnosis": true,
+   "normalized_label": "Hyperlipidemia",
+   "source_count": 168
+  },
+  "Hyperlipidemia, unspecified": {
+   "agere_concept": "hyperlipidemia",
+   "chapter": "endocrine",
+   "chronic": true,
+   "confidence": 0.97,
+   "icd10_category": "E78",
+   "is_diagnosis": true,
+   "normalized_label": "Hyperlipidemia, unspecified",
+   "source_count": 2
+  },
+  "Hypertriglyceridemia": {
+   "agere_concept": "hyperlipidemia",
+   "chapter": "endocrine",
+   "chronic": true,
+   "confidence": 0.85,
+   "icd10_category": "E78",
+   "is_diagnosis": true,
+   "normalized_label": "Hypertriglyceridemia",
+   "source_count": 106
+  },
+  "Hypoglycemia unawareness": {
+   "agere_concept": null,
+   "chapter": "endocrine",
+   "chronic": true,
+   "confidence": 0.8,
+   "icd10_category": "E16",
+   "is_diagnosis": true,
+   "normalized_label": "Hypoglycemia unawareness",
+   "source_count": 1
+  },
+  "Hypothyroidism": {
+   "agere_concept": "hypothyroidism",
+   "chapter": "endocrine",
+   "chronic": true,
+   "confidence": 0.98,
+   "icd10_category": "E03",
+   "is_diagnosis": true,
+   "normalized_label": "Hypothyroidism",
+   "source_count": 1
+  },
+  "Idiopathic atrophic hypothyroidism": {
+   "agere_concept": "hypothyroidism",
+   "chapter": "endocrine",
+   "chronic": true,
+   "confidence": 0.95,
+   "icd10_category": "E03",
+   "is_diagnosis": true,
+   "normalized_label": "Idiopathic atrophic hypothyroidism",
+   "source_count": 7
+  },
+  "Impacted molars": {
+   "agere_concept": null,
+   "chapter": "digestive",
+   "chronic": false,
+   "confidence": 0.9,
+   "icd10_category": "K01",
+   "is_diagnosis": true,
+   "normalized_label": "Impacted molar teeth",
+   "source_count": 64
+  },
+  "Incomplete rotator cuff tear, R shoulder": {
+   "agere_concept": null,
+   "chapter": "musculoskeletal",
+   "chronic": false,
+   "confidence": 0.9,
+   "icd10_category": "M75",
+   "is_diagnosis": true,
+   "normalized_label": "Incomplete rotator cuff tear, right shoulder (non-traumatic)",
+   "source_count": 1
+  },
+  "Infantile atopic dermatitis": {
+   "agere_concept": null,
+   "chapter": "skin",
+   "chronic": true,
+   "confidence": 0.95,
+   "icd10_category": "L20",
+   "is_diagnosis": true,
+   "normalized_label": "Atopic dermatitis, infantile",
+   "source_count": 1
+  },
+  "Injury of neck": {
+   "agere_concept": null,
+   "chapter": "injury",
+   "chronic": false,
+   "confidence": 0.75,
+   "icd10_category": "S19",
+   "is_diagnosis": true,
+   "normalized_label": "Injury of neck, unspecified",
+   "source_count": 2
+  },
+  "Iron deficiency anemia": {
+   "agere_concept": "anemia",
+   "chapter": "blood",
+   "chronic": true,
+   "confidence": 0.97,
+   "icd10_category": "D50",
+   "is_diagnosis": true,
+   "normalized_label": "Iron deficiency anemia",
+   "source_count": 1
+  },
+  "Ischemic heart disease": {
+   "agere_concept": "coronary_artery_disease",
+   "chapter": "circulatory",
+   "chronic": true,
+   "confidence": 0.85,
+   "icd10_category": "I25",
+   "is_diagnosis": true,
+   "normalized_label": "Chronic ischemic heart disease",
+   "source_count": 196
+  },
+  "Laceration - injury": {
+   "agere_concept": null,
+   "chapter": "injury",
+   "chronic": false,
+   "confidence": 0.6,
+   "icd10_category": "T14",
+   "is_diagnosis": true,
+   "normalized_label": "Laceration, unspecified site",
+   "source_count": 2
+  },
+  "Laceration of hand": {
+   "agere_concept": null,
+   "chapter": "injury",
+   "chronic": false,
+   "confidence": 0.9,
+   "icd10_category": "S61",
+   "is_diagnosis": true,
+   "normalized_label": "Laceration of hand",
+   "source_count": 1
+  },
+  "Laceration of thigh": {
+   "agere_concept": null,
+   "chapter": "injury",
+   "chronic": false,
+   "confidence": 0.9,
+   "icd10_category": "S71",
+   "is_diagnosis": true,
+   "normalized_label": "Laceration of thigh",
+   "source_count": 1
+  },
+  "Leukemia  disease": {
+   "agere_concept": "cancer",
+   "chapter": "neoplasms",
+   "chronic": true,
+   "confidence": 0.85,
+   "icd10_category": "C95",
+   "is_diagnosis": true,
+   "normalized_label": "Leukemia, unspecified cell type",
+   "source_count": 4
+  },
+  "Localized  primary osteoarthritis of the hand": {
+   "agere_concept": null,
+   "chapter": "musculoskeletal",
+   "chronic": true,
+   "confidence": 0.85,
+   "icd10_category": "M19",
+   "is_diagnosis": true,
+   "normalized_label": "Localized primary osteoarthritis of hand",
+   "source_count": 36
+  },
+  "Loss of teeth": {
+   "agere_concept": null,
+   "chapter": "digestive",
+   "chronic": true,
+   "confidence": 0.85,
+   "icd10_category": "K08",
+   "is_diagnosis": true,
+   "normalized_label": "Loss of teeth",
+   "source_count": 190
+  },
+  "Lupus erythematosus": {
+   "agere_concept": null,
+   "chapter": "skin",
+   "chronic": true,
+   "confidence": 0.6,
+   "icd10_category": "L93",
+   "is_diagnosis": true,
+   "normalized_label": "Lupus erythematosus (SLE vs cutaneous lupus not specified)",
+   "source_count": 1
+  },
+  "MDD, recurrent": {
+   "agere_concept": "depression",
+   "chapter": "mental",
+   "chronic": true,
+   "confidence": 0.9,
+   "icd10_category": "F33",
+   "is_diagnosis": true,
+   "normalized_label": "Major depressive disorder, recurrent (coded F33.1, moderate)",
+   "source_count": 1
+  },
+  "MDD, recurrent, mild": {
+   "agere_concept": "depression",
+   "chapter": "mental",
+   "chronic": true,
+   "confidence": 0.97,
+   "icd10_category": "F33",
+   "is_diagnosis": true,
+   "normalized_label": "Major depressive disorder, recurrent, mild",
+   "source_count": 1
+  },
+  "MDD, recurrent, moderate": {
+   "agere_concept": "depression",
+   "chapter": "mental_behavioral",
+   "chronic": true,
+   "confidence": 0.96,
+   "icd10_category": "F33",
+   "is_diagnosis": true,
+   "normalized_label": "Major depressive disorder, recurrent, moderate",
+   "source_count": 2
+  },
+  "MDD, recurrent, severe": {
+   "agere_concept": "depression",
+   "chapter": "mental_behavioral",
+   "chronic": true,
+   "confidence": 0.96,
+   "icd10_category": "F33",
+   "is_diagnosis": true,
+   "normalized_label": "Major depressive disorder, recurrent, severe without psychotic features",
+   "source_count": 2
+  },
+  "MDD, single episode, moderate": {
+   "agere_concept": "depression",
+   "chapter": "mental",
+   "chronic": false,
+   "confidence": 0.95,
+   "icd10_category": "F32",
+   "is_diagnosis": true,
+   "normalized_label": "Major depressive disorder, single episode, moderate",
+   "source_count": 3
+  },
+  "Major depressive disorder": {
+   "agere_concept": "depression",
+   "chapter": "mental_behavioural",
+   "chronic": true,
+   "confidence": 0.95,
+   "icd10_category": "F32",
+   "is_diagnosis": true,
+   "normalized_label": "Major depressive disorder",
+   "source_count": 10
+  },
+  "Male infertility, oligospermia": {
+   "agere_concept": null,
+   "chapter": "genitourinary",
+   "chronic": true,
+   "confidence": 0.92,
+   "icd10_category": "N46",
+   "is_diagnosis": true,
+   "normalized_label": "Male infertility due to oligospermia",
+   "source_count": 1
+  },
+  "Malignant neoplasm of R breast, stage IIIA, ER+/PR+/HER2-": {
+   "agere_concept": "cancer",
+   "chapter": "neoplasms",
+   "chronic": true,
+   "confidence": 0.95,
+   "icd10_category": "C50",
+   "is_diagnosis": true,
+   "normalized_label": "Malignant neoplasm of right breast, stage IIIA, hormone receptor positive, HER2 negative",
+   "source_count": 1
+  },
+  "Malignant neoplasm of R lung, stage IV, PD-L1 80%": {
+   "agere_concept": "cancer",
+   "chapter": "neoplasms",
+   "chronic": true,
+   "confidence": 0.95,
+   "icd10_category": "C34",
+   "is_diagnosis": true,
+   "normalized_label": "Malignant neoplasm of right lung, stage IV",
+   "source_count": 1
+  },
+  "Malignant neoplasm of breast": {
+   "agere_concept": "cancer",
+   "chapter": "neoplasms",
+   "chronic": true,
+   "confidence": 0.97,
+   "icd10_category": "C50",
+   "is_diagnosis": true,
+   "normalized_label": "Breast cancer",
+   "source_count": 20
+  },
+  "Malignant neoplasm of colon": {
+   "agere_concept": "cancer",
+   "chapter": "neoplasms",
+   "chronic": true,
+   "confidence": 0.96,
+   "icd10_category": "C18",
+   "is_diagnosis": true,
+   "normalized_label": "Malignant neoplasm of colon",
+   "source_count": 4
+  },
+  "Meningomyelocele": {
+   "agere_concept": null,
+   "chapter": "congenital",
+   "chronic": true,
+   "confidence": 0.9,
+   "icd10_category": "Q05",
+   "is_diagnosis": true,
+   "normalized_label": "Myelomeningocele (spina bifida)",
+   "source_count": 1
+  },
+  "Metabolic syndrome X": {
+   "agere_concept": null,
+   "chapter": "endocrine",
+   "chronic": true,
+   "confidence": 0.95,
+   "icd10_category": "E88",
+   "is_diagnosis": true,
+   "normalized_label": "Metabolic syndrome",
+   "source_count": 220
+  },
+  "Metastatic breast cancer (bone, liver) \u2014 disease-modifying therapy stopped": {
+   "agere_concept": "cancer",
+   "chapter": "neoplasms",
+   "chronic": true,
+   "confidence": 0.9,
+   "icd10_category": "C50",
+   "is_diagnosis": true,
+   "normalized_label": "Metastatic malignant neoplasm of breast, with bone and liver metastases",
+   "source_count": 1
+  },
+  "Microalbuminuria due to type 2 diabetes mellitus": {
+   "agere_concept": "type_2_diabetes",
+   "chapter": "endocrine",
+   "chronic": true,
+   "confidence": 0.9,
+   "icd10_category": "E11",
+   "is_diagnosis": true,
+   "normalized_label": "Type 2 diabetes with microalbuminuria",
+   "source_count": 176
+  },
+  "Migraine with aura, not intractable": {
+   "agere_concept": null,
+   "chapter": "nervous",
+   "chronic": true,
+   "confidence": 0.96,
+   "icd10_category": "G43",
+   "is_diagnosis": true,
+   "normalized_label": "Migraine with aura, not intractable",
+   "source_count": 2
+  },
+  "Miscarriage in first trimester": {
+   "agere_concept": null,
+   "chapter": "pregnancy",
+   "chronic": false,
+   "confidence": 0.85,
+   "icd10_category": "O03",
+   "is_diagnosis": true,
+   "normalized_label": "Spontaneous abortion, first trimester",
+   "source_count": 2
+  },
+  "Mitral valve regurgitation": {
+   "agere_concept": null,
+   "chapter": "circulatory",
+   "chronic": true,
+   "confidence": 0.9,
+   "icd10_category": "I34",
+   "is_diagnosis": true,
+   "normalized_label": "Mitral regurgitation",
+   "source_count": 7
+  },
+  "Mitral valve stenosis": {
+   "agere_concept": null,
+   "chapter": "circulatory",
+   "chronic": true,
+   "confidence": 0.8,
+   "icd10_category": "I05",
+   "is_diagnosis": true,
+   "normalized_label": "Mitral valve stenosis",
+   "source_count": 1
+  },
+  "Mixed obsessional thoughts and acts": {
+   "agere_concept": null,
+   "chapter": "mental",
+   "chronic": true,
+   "confidence": 0.9,
+   "icd10_category": "F42",
+   "is_diagnosis": true,
+   "normalized_label": "Obsessive-compulsive disorder, mixed obsessional thoughts and acts",
+   "source_count": 1
+  },
+  "Moderate persistent asthma": {
+   "agere_concept": "asthma",
+   "chapter": "respiratory",
+   "chronic": true,
+   "confidence": 0.97,
+   "icd10_category": "J45",
+   "is_diagnosis": true,
+   "normalized_label": "Moderate persistent asthma",
+   "source_count": 1
+  },
+  "Moderate persistent asthma, uncomplicated": {
+   "agere_concept": "asthma",
+   "chapter": "respiratory",
+   "chronic": true,
+   "confidence": 0.97,
+   "icd10_category": "J45",
+   "is_diagnosis": true,
+   "normalized_label": "Moderate persistent asthma, uncomplicated",
+   "source_count": 1
+  },
+  "Morbid obesity": {
+   "agere_concept": "obesity",
+   "chapter": "endocrine",
+   "chronic": true,
+   "confidence": 0.96,
+   "icd10_category": "E66",
+   "is_diagnosis": true,
+   "normalized_label": "Morbid (severe) obesity due to excess calories",
+   "source_count": 1
+  },
+  "Morbid obesity (BMI 42)": {
+   "agere_concept": "obesity",
+   "chapter": "endocrine",
+   "chronic": true,
+   "confidence": 0.96,
+   "icd10_category": "E66",
+   "is_diagnosis": true,
+   "normalized_label": "Morbid (severe) obesity due to excess calories",
+   "source_count": 2
+  },
+  "Multiple myeloma": {
+   "agere_concept": "cancer",
+   "chapter": "neoplasms",
+   "chronic": true,
+   "confidence": 0.95,
+   "icd10_category": "C90",
+   "is_diagnosis": true,
+   "normalized_label": "Multiple myeloma",
+   "source_count": 2
+  },
+  "Myocardial infarction, history of": {
+   "agere_concept": "myocardial_infarction",
+   "chapter": "circulatory",
+   "chronic": true,
+   "confidence": 0.85,
+   "icd10_category": "I25",
+   "is_diagnosis": false,
+   "normalized_label": "Old myocardial infarction (history of MI)",
+   "source_count": 2
+  },
+  "Neoplasm of prostate": {
+   "agere_concept": null,
+   "chapter": "neoplasms",
+   "chronic": true,
+   "confidence": 0.65,
+   "icd10_category": "D49",
+   "is_diagnosis": true,
+   "normalized_label": "Neoplasm of prostate (behaviour unspecified)",
+   "source_count": 9
+  },
+  "Neuropathy due to type 2 diabetes mellitus": {
+   "agere_concept": "type_2_diabetes",
+   "chapter": "endocrine",
+   "chronic": true,
+   "confidence": 0.95,
+   "icd10_category": "E11",
+   "is_diagnosis": true,
+   "normalized_label": "Type 2 diabetes with neuropathy",
+   "source_count": 56
+  },
+  "Non-ST elevation MI": {
+   "agere_concept": "myocardial_infarction",
+   "chapter": "circulatory",
+   "chronic": false,
+   "confidence": 0.97,
+   "icd10_category": "I21",
+   "is_diagnosis": true,
+   "normalized_label": "Non-ST elevation myocardial infarction (NSTEMI)",
+   "source_count": 2
+  },
+  "Nonrheumatic aortic (valve) stenosis": {
+   "agere_concept": null,
+   "chapter": "circulatory",
+   "chronic": true,
+   "confidence": 0.96,
+   "icd10_category": "I35",
+   "is_diagnosis": true,
+   "normalized_label": "Nonrheumatic aortic valve stenosis",
+   "source_count": 1
+  },
+  "Obesity": {
+   "agere_concept": "obesity",
+   "chapter": "endocrine",
+   "chronic": true,
+   "confidence": 0.98,
+   "icd10_category": "E66",
+   "is_diagnosis": true,
+   "normalized_label": "Obesity",
+   "source_count": 6
+  },
+  "Obesity, history of, post-bariatric surgery": {
+   "agere_concept": null,
+   "chapter": "factors_health_status",
+   "chronic": false,
+   "confidence": 0.88,
+   "icd10_category": "Z98",
+   "is_diagnosis": false,
+   "normalized_label": "Bariatric surgery status (history of obesity)",
+   "source_count": 1
+  },
+  "Obesity, unspecified": {
+   "agere_concept": "obesity",
+   "chapter": "endocrine",
+   "chronic": true,
+   "confidence": 0.98,
+   "icd10_category": "E66",
+   "is_diagnosis": true,
+   "normalized_label": "Obesity, unspecified",
+   "source_count": 3
+  },
+  "Obesity, unspecified (BMI 34)": {
+   "agere_concept": "obesity",
+   "chapter": "endocrine",
+   "chronic": true,
+   "confidence": 0.95,
+   "icd10_category": "E66",
+   "is_diagnosis": true,
+   "normalized_label": "Obesity, unspecified",
+   "source_count": 2
+  },
+  "Obstructive sleep apnea syndrome": {
+   "agere_concept": "sleep_apnea",
+   "chapter": "nervous",
+   "chronic": true,
+   "confidence": 0.98,
+   "icd10_category": "G47",
+   "is_diagnosis": true,
+   "normalized_label": "Obstructive sleep apnea",
+   "source_count": 56
+  },
+  "Opioid use disorder, moderate": {
+   "agere_concept": "substance_use_disorder",
+   "chapter": "mental",
+   "chronic": true,
+   "confidence": 0.95,
+   "icd10_category": "F11",
+   "is_diagnosis": true,
+   "normalized_label": "Opioid use disorder, moderate (opioid dependence)",
+   "source_count": 1
+  },
+  "Orthostatic hypotension": {
+   "agere_concept": null,
+   "chapter": "circulatory",
+   "chronic": false,
+   "confidence": 0.95,
+   "icd10_category": "I95",
+   "is_diagnosis": true,
+   "normalized_label": "Orthostatic hypotension",
+   "source_count": 1
+  },
+  "Osteoarthritis": {
+   "agere_concept": null,
+   "chapter": "musculoskeletal",
+   "chronic": true,
+   "confidence": 0.94,
+   "icd10_category": "M19",
+   "is_diagnosis": true,
+   "normalized_label": "Osteoarthritis, unspecified site",
+   "source_count": 1
+  },
+  "Osteoarthritis of hip": {
+   "agere_concept": null,
+   "chapter": "musculoskeletal",
+   "chronic": true,
+   "confidence": 0.97,
+   "icd10_category": "M16",
+   "is_diagnosis": true,
+   "normalized_label": "Hip osteoarthritis",
+   "source_count": 18
+  },
+  "Osteoarthritis of knee": {
+   "agere_concept": null,
+   "chapter": "musculoskeletal",
+   "chronic": true,
+   "confidence": 0.97,
+   "icd10_category": "M17",
+   "is_diagnosis": true,
+   "normalized_label": "Osteoarthritis of knee",
+   "source_count": 79
+  },
+  "Osteoporosis": {
+   "agere_concept": "osteoporosis",
+   "chapter": "musculoskeletal",
+   "chronic": true,
+   "confidence": 0.95,
+   "icd10_category": "M81",
+   "is_diagnosis": true,
+   "normalized_label": "Osteoporosis",
+   "source_count": 57
+  },
+  "Other intervertebral disc degeneration, lumbar": {
+   "agere_concept": null,
+   "chapter": "musculoskeletal",
+   "chronic": true,
+   "confidence": 0.93,
+   "icd10_category": "M51",
+   "is_diagnosis": true,
+   "normalized_label": "Lumbar intervertebral disc degeneration",
+   "source_count": 1
+  },
+  "Other pulmonary embolism without acute cor pulmonale (submassive)": {
+   "agere_concept": null,
+   "chapter": "circulatory",
+   "chronic": false,
+   "confidence": 0.93,
+   "icd10_category": "I26",
+   "is_diagnosis": true,
+   "normalized_label": "Pulmonary embolism without acute cor pulmonale (submassive)",
+   "source_count": 1
+  },
+  "Other seasonal allergic rhinitis": {
+   "agere_concept": null,
+   "chapter": "respiratory",
+   "chronic": true,
+   "confidence": 0.95,
+   "icd10_category": "J30",
+   "is_diagnosis": true,
+   "normalized_label": "Seasonal allergic rhinitis",
+   "source_count": 1
+  },
+  "Other tear of medial meniscus, L knee": {
+   "agere_concept": null,
+   "chapter": "injury",
+   "chronic": false,
+   "confidence": 0.93,
+   "icd10_category": "S83",
+   "is_diagnosis": true,
+   "normalized_label": "Other tear of medial meniscus, left knee, initial encounter",
+   "source_count": 1
+  },
+  "Otitis media": {
+   "agere_concept": null,
+   "chapter": "ear",
+   "chronic": false,
+   "confidence": 0.88,
+   "icd10_category": "H66",
+   "is_diagnosis": true,
+   "normalized_label": "Otitis media",
+   "source_count": 5
+  },
+  "Overlapping malignant neoplasm of colon": {
+   "agere_concept": "cancer",
+   "chapter": "neoplasms",
+   "chronic": true,
+   "confidence": 0.92,
+   "icd10_category": "C18",
+   "is_diagnosis": true,
+   "normalized_label": "Malignant neoplasm of overlapping sites of colon",
+   "source_count": 1
+  },
+  "Overweight": {
+   "agere_concept": null,
+   "chapter": "endocrine",
+   "chronic": true,
+   "confidence": 0.9,
+   "icd10_category": "E66",
+   "is_diagnosis": true,
+   "normalized_label": "Overweight",
+   "source_count": 1
+  },
+  "PTSD": {
+   "agere_concept": null,
+   "chapter": "mental",
+   "chronic": true,
+   "confidence": 0.8,
+   "icd10_category": "F43",
+   "is_diagnosis": true,
+   "normalized_label": "Post-traumatic stress disorder",
+   "source_count": 3
+  },
+  "Panic disorder": {
+   "agere_concept": "anxiety",
+   "chapter": "mental",
+   "chronic": true,
+   "confidence": 0.88,
+   "icd10_category": "F41",
+   "is_diagnosis": true,
+   "normalized_label": "Panic disorder",
+   "source_count": 1
+  },
+  "Parkinson disease": {
+   "agere_concept": null,
+   "chapter": "nervous",
+   "chronic": true,
+   "confidence": 0.97,
+   "icd10_category": "G20",
+   "is_diagnosis": true,
+   "normalized_label": "Parkinson disease",
+   "source_count": 2
+  },
+  "Perennial allergic rhinitis": {
+   "agere_concept": null,
+   "chapter": "respiratory",
+   "chronic": true,
+   "confidence": 0.95,
+   "icd10_category": "J30",
+   "is_diagnosis": true,
+   "normalized_label": "Perennial allergic rhinitis",
+   "source_count": 15
+  },
+  "Perennial allergic rhinitis with seasonal variation": {
+   "agere_concept": null,
+   "chapter": "respiratory",
+   "chronic": true,
+   "confidence": 0.93,
+   "icd10_category": "J30",
+   "is_diagnosis": true,
+   "normalized_label": "Perennial allergic rhinitis with seasonal variation",
+   "source_count": 13
+  },
+  "Personal history of HCV (treated SVR12)": {
+   "agere_concept": null,
+   "chapter": "factors_health_status",
+   "chronic": false,
+   "confidence": 0.92,
+   "icd10_category": "Z86",
+   "is_diagnosis": false,
+   "normalized_label": "Personal history of hepatitis C, treated with sustained virologic response at 12 weeks (SVR12)",
+   "source_count": 1
+  },
+  "Pituitary-dependent Cushing disease": {
+   "agere_concept": null,
+   "chapter": "endocrine",
+   "chronic": true,
+   "confidence": 0.95,
+   "icd10_category": "E24",
+   "is_diagnosis": true,
+   "normalized_label": "Cushing disease (pituitary-dependent)",
+   "source_count": 1
+  },
+  "Pneumonia, unspecified": {
+   "agere_concept": null,
+   "chapter": "respiratory",
+   "chronic": false,
+   "confidence": 0.96,
+   "icd10_category": "J18",
+   "is_diagnosis": true,
+   "normalized_label": "Pneumonia, unspecified organism",
+   "source_count": 1
+  },
+  "Polycystic ovarian syndrome": {
+   "agere_concept": null,
+   "chapter": "endocrine",
+   "chronic": true,
+   "confidence": 0.96,
+   "icd10_category": "E28",
+   "is_diagnosis": true,
+   "normalized_label": "Polycystic ovary syndrome",
+   "source_count": 1
+  },
+  "Polyp of colon": {
+   "agere_concept": null,
+   "chapter": "digestive",
+   "chronic": false,
+   "confidence": 0.85,
+   "icd10_category": "K63",
+   "is_diagnosis": true,
+   "normalized_label": "Colon polyp",
+   "source_count": 28
+  },
+  "Postpartum depression": {
+   "agere_concept": "depression",
+   "chapter": "mental_behavioral",
+   "chronic": false,
+   "confidence": 0.9,
+   "icd10_category": "F53",
+   "is_diagnosis": true,
+   "normalized_label": "Postpartum depression",
+   "source_count": 2
+  },
+  "Prediabetes": {
+   "agere_concept": "prediabetes",
+   "chapter": "symptoms_signs_abnormal_findings",
+   "chronic": true,
+   "confidence": 0.97,
+   "icd10_category": "R73",
+   "is_diagnosis": true,
+   "normalized_label": "Prediabetes",
+   "source_count": 623
+  },
+  "Preeclampsia, history of": {
+   "agere_concept": null,
+   "chapter": "pregnancy",
+   "chronic": false,
+   "confidence": 0.8,
+   "icd10_category": "O09",
+   "is_diagnosis": false,
+   "normalized_label": "History of preeclampsia (supervision of high-risk pregnancy)",
+   "source_count": 1
+  },
+  "Preinfarction syndrome": {
+   "agere_concept": "coronary_artery_disease",
+   "chapter": "circulatory",
+   "chronic": false,
+   "confidence": 0.88,
+   "icd10_category": "I20",
+   "is_diagnosis": true,
+   "normalized_label": "Unstable angina (preinfarction syndrome)",
+   "source_count": 8
+  },
+  "Pressure injury stage II": {
+   "agere_concept": null,
+   "chapter": "skin",
+   "chronic": false,
+   "confidence": 0.88,
+   "icd10_category": "L89",
+   "is_diagnosis": true,
+   "normalized_label": "Pressure ulcer stage 2",
+   "source_count": 1
+  },
+  "Primary OA, R knee": {
+   "agere_concept": null,
+   "chapter": "musculoskeletal",
+   "chronic": true,
+   "confidence": 0.96,
+   "icd10_category": "M17",
+   "is_diagnosis": true,
+   "normalized_label": "Primary osteoarthritis, right knee",
+   "source_count": 2
+  },
+  "Primary adrenocortical insufficiency": {
+   "agere_concept": null,
+   "chapter": "endocrine",
+   "chronic": true,
+   "confidence": 0.95,
+   "icd10_category": "E27",
+   "is_diagnosis": true,
+   "normalized_label": "Primary adrenal insufficiency (Addison disease)",
+   "source_count": 1
+  },
+  "Primary fibromyalgia syndrome": {
+   "agere_concept": null,
+   "chapter": "musculoskeletal",
+   "chronic": true,
+   "confidence": 0.9,
+   "icd10_category": "M79",
+   "is_diagnosis": true,
+   "normalized_label": "Fibromyalgia",
+   "source_count": 6
+  },
+  "Proteinuria due to type 2 diabetes mellitus": {
+   "agere_concept": "type_2_diabetes",
+   "chapter": "endocrine",
+   "chronic": true,
+   "confidence": 0.9,
+   "icd10_category": "E11",
+   "is_diagnosis": true,
+   "normalized_label": "Type 2 diabetes with proteinuria",
+   "source_count": 88
+  },
+  "Pulmonary emphysema": {
+   "agere_concept": "copd",
+   "chapter": "respiratory",
+   "chronic": true,
+   "confidence": 0.9,
+   "icd10_category": "J43",
+   "is_diagnosis": true,
+   "normalized_label": "Emphysema",
+   "source_count": 25
+  },
+  "Pulmonary hypertension, unspecified": {
+   "agere_concept": null,
+   "chapter": "circulatory",
+   "chronic": true,
+   "confidence": 0.95,
+   "icd10_category": "I27",
+   "is_diagnosis": true,
+   "normalized_label": "Pulmonary hypertension, unspecified",
+   "source_count": 1
+  },
+  "Pulmonic valve regurgitation": {
+   "agere_concept": null,
+   "chapter": "circulatory",
+   "chronic": true,
+   "confidence": 0.88,
+   "icd10_category": "I37",
+   "is_diagnosis": true,
+   "normalized_label": "Pulmonary valve regurgitation",
+   "source_count": 1
+  },
+  "Pulmonic valve stenosis": {
+   "agere_concept": null,
+   "chapter": "circulatory",
+   "chronic": true,
+   "confidence": 0.85,
+   "icd10_category": "I37",
+   "is_diagnosis": true,
+   "normalized_label": "Pulmonary valve stenosis",
+   "source_count": 4
+  },
+  "Pure hypercholesterolemia, unspecified": {
+   "agere_concept": "hyperlipidemia",
+   "chapter": "endocrine",
+   "chronic": true,
+   "confidence": 0.95,
+   "icd10_category": "E78",
+   "is_diagnosis": true,
+   "normalized_label": "Pure hypercholesterolemia",
+   "source_count": 1
+  },
+  "Recurrent pregnancy loss": {
+   "agere_concept": null,
+   "chapter": "genitourinary",
+   "chronic": true,
+   "confidence": 0.92,
+   "icd10_category": "N96",
+   "is_diagnosis": true,
+   "normalized_label": "Recurrent pregnancy loss",
+   "source_count": 2
+  },
+  "Recurrent rectal polyp": {
+   "agere_concept": null,
+   "chapter": "digestive",
+   "chronic": false,
+   "confidence": 0.88,
+   "icd10_category": "K62",
+   "is_diagnosis": true,
+   "normalized_label": "Recurrent rectal polyp",
+   "source_count": 19
+  },
+  "Recurrent urinary tract infection": {
+   "agere_concept": null,
+   "chapter": "genitourinary",
+   "chronic": false,
+   "confidence": 0.85,
+   "icd10_category": "N39",
+   "is_diagnosis": true,
+   "normalized_label": "Recurrent urinary tract infection",
+   "source_count": 63
+  },
+  "Repeated falls": {
+   "agere_concept": null,
+   "chapter": "symptoms_signs",
+   "chronic": false,
+   "confidence": 0.9,
+   "icd10_category": "R29",
+   "is_diagnosis": true,
+   "normalized_label": "Repeated falls",
+   "source_count": 1
+  },
+  "Rheumatoid arthritis": {
+   "agere_concept": null,
+   "chapter": "musculoskeletal",
+   "chronic": true,
+   "confidence": 0.9,
+   "icd10_category": "M06",
+   "is_diagnosis": true,
+   "normalized_label": "Rheumatoid arthritis",
+   "source_count": 4
+  },
+  "Routine postpartum follow-up": {
+   "agere_concept": null,
+   "chapter": "factors_influencing_health",
+   "chronic": false,
+   "confidence": 0.95,
+   "icd10_category": "Z39",
+   "is_diagnosis": false,
+   "normalized_label": "Routine postpartum follow-up",
+   "source_count": 2
+  },
+  "STEMI involving LAD": {
+   "agere_concept": "myocardial_infarction",
+   "chapter": "circulatory",
+   "chronic": false,
+   "confidence": 0.96,
+   "icd10_category": "I21",
+   "is_diagnosis": true,
+   "normalized_label": "STEMI involving left anterior descending coronary artery",
+   "source_count": 2
+  },
+  "Schizophrenia": {
+   "agere_concept": null,
+   "chapter": "mental",
+   "chronic": true,
+   "confidence": 0.97,
+   "icd10_category": "F20",
+   "is_diagnosis": true,
+   "normalized_label": "Schizophrenia",
+   "source_count": 1
+  },
+  "Schizophrenia, first episode": {
+   "agere_concept": null,
+   "chapter": "mental",
+   "chronic": true,
+   "confidence": 0.9,
+   "icd10_category": "F20",
+   "is_diagnosis": true,
+   "normalized_label": "Schizophrenia, first episode",
+   "source_count": 1
+  },
+  "Scoliosis deformity of spine": {
+   "agere_concept": null,
+   "chapter": "musculoskeletal",
+   "chronic": true,
+   "confidence": 0.9,
+   "icd10_category": "M41",
+   "is_diagnosis": true,
+   "normalized_label": "Scoliosis",
+   "source_count": 1
+  },
+  "Seasonal allergic rhinitis": {
+   "agere_concept": null,
+   "chapter": "respiratory",
+   "chronic": true,
+   "confidence": 0.95,
+   "icd10_category": "J30",
+   "is_diagnosis": true,
+   "normalized_label": "Seasonal allergic rhinitis",
+   "source_count": 7
+  },
+  "Seizure disorder": {
+   "agere_concept": null,
+   "chapter": "nervous",
+   "chronic": true,
+   "confidence": 0.85,
+   "icd10_category": "G40",
+   "is_diagnosis": true,
+   "normalized_label": "Seizure disorder",
+   "source_count": 44
+  },
+  "Sepsis": {
+   "agere_concept": "sepsis",
+   "chapter": "infectious",
+   "chronic": false,
+   "confidence": 0.95,
+   "icd10_category": "A41",
+   "is_diagnosis": true,
+   "normalized_label": "Sepsis",
+   "source_count": 35
+  },
+  "Sepsis, unspecified": {
+   "agere_concept": "sepsis",
+   "chapter": "infectious",
+   "chronic": false,
+   "confidence": 0.97,
+   "icd10_category": "A41",
+   "is_diagnosis": true,
+   "normalized_label": "Sepsis, unspecified organism",
+   "source_count": 1
+  },
+  "Septic shock": {
+   "agere_concept": "sepsis",
+   "chapter": "symptoms_signs_abnormal_findings",
+   "chronic": false,
+   "confidence": 0.93,
+   "icd10_category": "R65",
+   "is_diagnosis": true,
+   "normalized_label": "Septic shock",
+   "source_count": 6
+  },
+  "Severe preeclampsia, third trimester": {
+   "agere_concept": null,
+   "chapter": "pregnancy",
+   "chronic": false,
+   "confidence": 0.93,
+   "icd10_category": "O14",
+   "is_diagnosis": true,
+   "normalized_label": "Severe pre-eclampsia, third trimester",
+   "source_count": 2
+  },
+  "Shock": {
+   "agere_concept": null,
+   "chapter": "symptoms_signs_abnormal_findings",
+   "chronic": false,
+   "confidence": 0.88,
+   "icd10_category": "R57",
+   "is_diagnosis": true,
+   "normalized_label": "Shock",
+   "source_count": 14
+  },
+  "Sinusitis": {
+   "agere_concept": null,
+   "chapter": "respiratory",
+   "chronic": false,
+   "confidence": 0.6,
+   "icd10_category": "J01",
+   "is_diagnosis": true,
+   "normalized_label": "Sinusitis, unspecified",
+   "source_count": 3
+  },
+  "Sleep apnea": {
+   "agere_concept": "sleep_apnea",
+   "chapter": "nervous",
+   "chronic": true,
+   "confidence": 0.95,
+   "icd10_category": "G47",
+   "is_diagnosis": true,
+   "normalized_label": "Sleep apnea",
+   "source_count": 24
+  },
+  "Sleep disorder": {
+   "agere_concept": null,
+   "chapter": "nervous",
+   "chronic": false,
+   "confidence": 0.8,
+   "icd10_category": "G47",
+   "is_diagnosis": true,
+   "normalized_label": "Sleep disorder, unspecified",
+   "source_count": 79
+  },
+  "Smokes tobacco daily": {
+   "agere_concept": null,
+   "chapter": "mental_behavioural",
+   "chronic": true,
+   "confidence": 0.8,
+   "icd10_category": "F17",
+   "is_diagnosis": false,
+   "normalized_label": "Daily tobacco smoker (social finding)",
+   "source_count": 12
+  },
+  "Spinal stenosis, lumbar region": {
+   "agere_concept": null,
+   "chapter": "musculoskeletal",
+   "chronic": true,
+   "confidence": 0.96,
+   "icd10_category": "M48",
+   "is_diagnosis": true,
+   "normalized_label": "Spinal stenosis, lumbar region",
+   "source_count": 1
+  },
+  "Sprain of ACL, L knee, initial": {
+   "agere_concept": null,
+   "chapter": "injury",
+   "chronic": false,
+   "confidence": 0.96,
+   "icd10_category": "S83",
+   "is_diagnosis": true,
+   "normalized_label": "Sprain of anterior cruciate ligament of left knee, initial encounter",
+   "source_count": 1
+  },
+  "Sprain of ankle": {
+   "agere_concept": null,
+   "chapter": "injury",
+   "chronic": false,
+   "confidence": 0.9,
+   "icd10_category": "S93",
+   "is_diagnosis": true,
+   "normalized_label": "Sprain of ankle",
+   "source_count": 1
+  },
+  "T1DM": {
+   "agere_concept": "type_1_diabetes",
+   "chapter": "endocrine",
+   "chronic": true,
+   "confidence": 0.97,
+   "icd10_category": "E10",
+   "is_diagnosis": true,
+   "normalized_label": "Type 1 diabetes mellitus",
+   "source_count": 4
+  },
+  "T1DM with ketoacidosis without coma": {
+   "agere_concept": "type_1_diabetes",
+   "chapter": "endocrine",
+   "chronic": true,
+   "confidence": 0.96,
+   "icd10_category": "E10",
+   "is_diagnosis": true,
+   "normalized_label": "Type 1 diabetes mellitus with ketoacidosis without coma",
+   "source_count": 2
+  },
+  "T2DM": {
+   "agere_concept": "type_2_diabetes",
+   "chapter": "endocrine",
+   "chronic": true,
+   "confidence": 0.98,
+   "icd10_category": "E11",
+   "is_diagnosis": true,
+   "normalized_label": "Type 2 diabetes mellitus",
+   "source_count": 10
+  },
+  "T2DM (cortisol-induced)": {
+   "agere_concept": "diabetes",
+   "chapter": "endocrine",
+   "chronic": true,
+   "confidence": 0.5,
+   "icd10_category": "E09",
+   "is_diagnosis": true,
+   "normalized_label": "Drug/steroid-induced diabetes mellitus (source code E11.9 conflicts with label; if endogenous Cushing's, E08)",
+   "source_count": 2
+  },
+  "T2DM with CKD": {
+   "agere_concept": "type_2_diabetes",
+   "chapter": "endocrine",
+   "chronic": true,
+   "confidence": 0.93,
+   "icd10_category": "E11",
+   "is_diagnosis": true,
+   "normalized_label": "Type 2 diabetes mellitus with diabetic chronic kidney disease",
+   "source_count": 3
+  },
+  "T2DM with unspecified diabetic retinopathy": {
+   "agere_concept": "type_2_diabetes",
+   "chapter": "endocrine",
+   "chronic": true,
+   "confidence": 0.95,
+   "icd10_category": "E11",
+   "is_diagnosis": true,
+   "normalized_label": "Type 2 diabetes mellitus with unspecified diabetic retinopathy",
+   "source_count": 2
+  },
+  "Thyrotoxicosis with diffuse goiter": {
+   "agere_concept": null,
+   "chapter": "endocrine",
+   "chronic": true,
+   "confidence": 0.95,
+   "icd10_category": "E05",
+   "is_diagnosis": true,
+   "normalized_label": "Thyrotoxicosis with diffuse goiter (Graves disease)",
+   "source_count": 1
+  },
+  "Transformed migraine": {
+   "agere_concept": null,
+   "chapter": "nervous",
+   "chronic": true,
+   "confidence": 0.92,
+   "icd10_category": "G43",
+   "is_diagnosis": true,
+   "normalized_label": "Chronic (transformed) migraine",
+   "source_count": 11
+  },
+  "Traumatic or nontraumatic brain injury": {
+   "agere_concept": null,
+   "chapter": "nervous",
+   "chronic": false,
+   "confidence": 0.6,
+   "icd10_category": null,
+   "is_diagnosis": true,
+   "normalized_label": "Brain injury (traumatic or nontraumatic)",
+   "source_count": 9
+  },
+  "Tricuspid valve regurgitation": {
+   "agere_concept": null,
+   "chapter": "circulatory",
+   "chronic": true,
+   "confidence": 0.75,
+   "icd10_category": "I36",
+   "is_diagnosis": true,
+   "normalized_label": "Tricuspid valve regurgitation",
+   "source_count": 1
+  },
+  "Type 2 diabetes mellitus": {
+   "agere_concept": "type_2_diabetes",
+   "chapter": "endocrine",
+   "chronic": true,
+   "confidence": 0.98,
+   "icd10_category": "E11",
+   "is_diagnosis": true,
+   "normalized_label": "Type 2 diabetes mellitus",
+   "source_count": 4
+  },
+  "Type 2 diabetes mellitus without complications": {
+   "agere_concept": "type_2_diabetes",
+   "chapter": "endocrine",
+   "chronic": true,
+   "confidence": 0.98,
+   "icd10_category": "E11",
+   "is_diagnosis": true,
+   "normalized_label": "Type 2 diabetes mellitus without complications",
+   "source_count": 4
+  },
+  "UTI, site not specified": {
+   "agere_concept": null,
+   "chapter": "genitourinary",
+   "chronic": false,
+   "confidence": 0.96,
+   "icd10_category": "N39",
+   "is_diagnosis": true,
+   "normalized_label": "Urinary tract infection, site not specified",
+   "source_count": 1
+  },
+  "Unspecified atrial fibrillation": {
+   "agere_concept": "atrial_fibrillation",
+   "chapter": "circulatory",
+   "chronic": true,
+   "confidence": 0.97,
+   "icd10_category": "I48",
+   "is_diagnosis": true,
+   "normalized_label": "Atrial fibrillation, unspecified",
+   "source_count": 3
+  },
+  "Unspecified protein-calorie malnutrition": {
+   "agere_concept": null,
+   "chapter": "endocrine",
+   "chronic": false,
+   "confidence": 0.95,
+   "icd10_category": "E46",
+   "is_diagnosis": true,
+   "normalized_label": "Unspecified protein-calorie malnutrition",
+   "source_count": 1
+  },
+  "Urinary tract infectious disease": {
+   "agere_concept": null,
+   "chapter": "genitourinary",
+   "chronic": false,
+   "confidence": 0.9,
+   "icd10_category": "N39",
+   "is_diagnosis": true,
+   "normalized_label": "Urinary tract infection, site not specified",
+   "source_count": 1
+  },
+  "Viral sinusitis": {
+   "agere_concept": null,
+   "chapter": "respiratory",
+   "chronic": false,
+   "confidence": 0.85,
+   "icd10_category": "J01",
+   "is_diagnosis": true,
+   "normalized_label": "Acute viral sinusitis",
+   "source_count": 5
+  },
+  "Whiplash injury to neck": {
+   "agere_concept": null,
+   "chapter": "injury",
+   "chronic": false,
+   "confidence": 0.85,
+   "icd10_category": "S13",
+   "is_diagnosis": true,
+   "normalized_label": "Sprain of cervical spine (whiplash)",
+   "source_count": 2
+  },
+  "anemia_etiology_review": {
+   "agere_concept": null,
+   "chapter": null,
+   "chronic": false,
+   "confidence": 0.85,
+   "icd10_category": null,
+   "is_diagnosis": false,
+   "normalized_label": "Anemia etiology review (assessment topic)",
+   "source_count": 94
+  },
+  "asthma": {
+   "agere_concept": "asthma",
+   "chapter": "respiratory",
+   "chronic": true,
+   "confidence": 0.95,
+   "icd10_category": "J45",
+   "is_diagnosis": true,
+   "normalized_label": "Asthma",
+   "source_count": 726
+  },
+  "cough": {
+   "agere_concept": null,
+   "chapter": "symptoms_signs_abnormal_findings",
+   "chronic": false,
+   "confidence": 0.9,
+   "icd10_category": "R05",
+   "is_diagnosis": true,
+   "normalized_label": "Cough",
+   "source_count": 8
+  },
+  "diabetes_treatment_response": {
+   "agere_concept": null,
+   "chapter": null,
+   "chronic": false,
+   "confidence": 0.85,
+   "icd10_category": null,
+   "is_diagnosis": false,
+   "normalized_label": "Diabetes treatment response (assessment topic)",
+   "source_count": 813
+  },
+  "heart_failure": {
+   "agere_concept": "heart_failure",
+   "chapter": "circulatory",
+   "chronic": true,
+   "confidence": 0.95,
+   "icd10_category": "I50",
+   "is_diagnosis": true,
+   "normalized_label": "Heart failure",
+   "source_count": 3176
+  },
+  "iron_tolerability": {
+   "agere_concept": null,
+   "chapter": null,
+   "chronic": false,
+   "confidence": 0.9,
+   "icd10_category": null,
+   "is_diagnosis": false,
+   "normalized_label": "Iron supplement tolerability (assessment topic)",
+   "source_count": 1800
+  },
+  "lipid_medication_tolerability": {
+   "agere_concept": null,
+   "chapter": null,
+   "chronic": false,
+   "confidence": 0.9,
+   "icd10_category": null,
+   "is_diagnosis": false,
+   "normalized_label": "Lipid-lowering medication tolerability (assessment topic)",
+   "source_count": 595
+  },
+  "thyroid_replacement_administration": {
+   "agere_concept": null,
+   "chapter": null,
+   "chronic": false,
+   "confidence": 0.85,
+   "icd10_category": null,
+   "is_diagnosis": false,
+   "normalized_label": "Thyroid replacement administration (assessment topic)",
+   "source_count": 65
+  }
+ },
+ "mapped_by": "claude-opus-5-5",
+ "review_status": "unreviewed",
+ "schema": "agere-normalization/1"
+}

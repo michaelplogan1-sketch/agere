@@ -180,8 +180,9 @@ def resolve_condition(concept, profile):
             labels = _labels(profile, stream, field)
             hits = []
             for label, n in labels.items():
-                if not text.search(label): continue
-                if exclude and exclude.search(label): excluded[label] = n; continue
+                readable = str(label).replace('_', ' ')  # coded labels such as 'heart_failure' read as words
+                if not text.search(readable): continue
+                if exclude and exclude.search(readable): excluded[label] = n; continue
                 hits.append(label); included[label] = n
             if hits: bindings.append({'stream': stream, 'field': field, 'values': sorted(hits), 'system': 'source label'})
     return {'concept': concept, 'kind': 'condition', 'label': d['label'], 'bindings': bindings,

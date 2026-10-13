@@ -1,0 +1,2 @@
+-- Diagnostic: HCC risk adjustment / RAF scores. No HCC categories, risk adjustment factors or risk scores are recorded (conditions carry only description/ICD-10/onset). Expect 0.
+SELECT (SELECT COUNT(*) FROM records WHERE payload LIKE '%hcc%' OR payload LIKE '%hierarchical condition%' OR payload LIKE '%risk adjust%' OR payload LIKE '%risk_adjust%' OR payload LIKE '%risk score%' OR payload LIKE '%risk_score%' OR payload LIKE '%raf_score%' OR payload LIKE '%raf score%') AS prerequisite_available;

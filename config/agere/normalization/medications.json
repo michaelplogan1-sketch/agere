@@ -1,0 +1,4530 @@
+{
+ "domain": "medications",
+ "entries": {
+  "12 HR Hydrocodone Bitartrate 10 MG Extended Release Oral Capsule": {
+   "confidence": 0.94,
+   "dose_form": "extended release oral capsule",
+   "drug_classes": [
+    "opioid"
+   ],
+   "ingredients": [
+    "hydrocodone"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "5489",
+   "source_count": 78,
+   "therapeutic_category": "opioid analgesic"
+  },
+  "120 ACTUAT fluticasone propionate 0.044 MG/ACTUAT Metered Dose Inhaler [Flovent]": {
+   "confidence": 0.94,
+   "dose_form": "metered dose inhaler",
+   "drug_classes": [
+    "inhaled_corticosteroid"
+   ],
+   "ingredients": [
+    "fluticasone"
+   ],
+   "route": "inhalation",
+   "rxnorm_ingredient_cui": "41126",
+   "source_count": 87,
+   "therapeutic_category": "inhaled corticosteroid"
+  },
+  "120 ACTUAT fluticasone propionate 0.11 MG/ACTUAT Metered Dose Inhaler [Flovent]": {
+   "confidence": 0.95,
+   "dose_form": "metered dose inhaler",
+   "drug_classes": [
+    "inhaled_corticosteroid"
+   ],
+   "ingredients": [
+    "fluticasone"
+   ],
+   "route": "inhalation",
+   "rxnorm_ingredient_cui": "41126",
+   "source_count": 23,
+   "therapeutic_category": "inhaled corticosteroid"
+  },
+  "120 ACTUAT fluticasone propionate 0.22 MG/ACTUAT Metered Dose Inhaler [Flovent]": {
+   "confidence": 0.95,
+   "dose_form": "metered dose inhaler",
+   "drug_classes": [
+    "inhaled_corticosteroid"
+   ],
+   "ingredients": [
+    "fluticasone"
+   ],
+   "route": "inhalation",
+   "rxnorm_ingredient_cui": "41126",
+   "source_count": 2,
+   "therapeutic_category": "inhaled corticosteroid"
+  },
+  "168 HR Ethinyl Estradiol 0.00146 MG/HR / norelgestromin 0.00625 MG/HR Transdermal System": {
+   "confidence": 0.94,
+   "dose_form": "transdermal system",
+   "drug_classes": [],
+   "ingredients": [
+    "ethinyl estradiol",
+    "norelgestromin"
+   ],
+   "route": "transdermal",
+   "rxnorm_ingredient_cui": [
+    "4124",
+    "389221"
+   ],
+   "source_count": 8,
+   "therapeutic_category": "hormonal contraceptive"
+  },
+  "21 DAY ethinyl estradiol 0.000625 MG/HR / etonogestrel 0.005 MG/HR Vaginal System [NuvaRing]": {
+   "confidence": 0.93,
+   "dose_form": "vaginal ring",
+   "drug_classes": [],
+   "ingredients": [
+    "ethinyl estradiol",
+    "etonogestrel"
+   ],
+   "route": "vaginal",
+   "rxnorm_ingredient_cui": null,
+   "source_count": 14,
+   "therapeutic_category": "hormonal contraceptive"
+  },
+  "24 HR Donepezil hydrochloride 10 MG / Memantine hydrochloride 28 MG Extended Release Oral Capsule": {
+   "confidence": 0.92,
+   "dose_form": "extended release oral capsule",
+   "drug_classes": [],
+   "ingredients": [
+    "donepezil",
+    "memantine"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": [
+    "135447",
+    "6719"
+   ],
+   "source_count": 26,
+   "therapeutic_category": "antidementia"
+  },
+  "24 HR Metformin hydrochloride 500 MG Extended Release Oral Tablet": {
+   "confidence": 0.96,
+   "dose_form": "extended release oral tablet",
+   "drug_classes": [
+    "metformin"
+   ],
+   "ingredients": [
+    "metformin"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "6809",
+   "source_count": 187,
+   "therapeutic_category": "antidiabetic"
+  },
+  "24 HR carvedilol phosphate 20 MG Extended Release Oral Capsule [Coreg]": {
+   "confidence": 0.94,
+   "dose_form": "extended release oral capsule",
+   "drug_classes": [
+    "beta_blocker",
+    "hf_evidence_based_beta_blocker"
+   ],
+   "ingredients": [
+    "carvedilol"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "20352",
+   "source_count": 12,
+   "therapeutic_category": "antihypertensive"
+  },
+  "24 HR metoprolol succinate 100 MG Extended Release Oral Tablet": {
+   "confidence": 0.95,
+   "dose_form": "extended-release tablet",
+   "drug_classes": [
+    "beta_blocker",
+    "hf_evidence_based_beta_blocker"
+   ],
+   "ingredients": [
+    "metoprolol"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "6918",
+   "source_count": 1258,
+   "therapeutic_category": "antihypertensive"
+  },
+  "24 HR metoprolol succinate 25 MG Extended Release Oral Tablet": {
+   "confidence": 0.95,
+   "dose_form": "extended release oral tablet",
+   "drug_classes": [
+    "beta_blocker",
+    "hf_evidence_based_beta_blocker"
+   ],
+   "ingredients": [
+    "metoprolol"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "6918",
+   "source_count": 86,
+   "therapeutic_category": "beta blocker"
+  },
+  "24 HR metoprolol succinate 50 MG Extended Release Oral Tablet": {
+   "confidence": 0.95,
+   "dose_form": "extended release oral tablet",
+   "drug_classes": [
+    "beta_blocker",
+    "hf_evidence_based_beta_blocker"
+   ],
+   "ingredients": [
+    "metoprolol"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "6918",
+   "source_count": 60,
+   "therapeutic_category": "beta blocker"
+  },
+  "24 HR metoprolol succinate 50 MG Extended Release Oral Tablet [Toprol]": {
+   "confidence": 0.95,
+   "dose_form": "extended release oral tablet",
+   "drug_classes": [
+    "beta_blocker",
+    "hf_evidence_based_beta_blocker"
+   ],
+   "ingredients": [
+    "metoprolol"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "6918",
+   "source_count": 4,
+   "therapeutic_category": "antihypertensive"
+  },
+  "24 HR nicotine 0.292 MG/HR Transdermal System": {
+   "confidence": 0.94,
+   "dose_form": "transdermal system",
+   "drug_classes": [],
+   "ingredients": [
+    "nicotine"
+   ],
+   "route": "transdermal",
+   "rxnorm_ingredient_cui": "7407",
+   "source_count": 36,
+   "therapeutic_category": "smoking cessation"
+  },
+  "24 HR tacrolimus 1 MG Extended Release Oral Tablet [Envarsus]": {
+   "confidence": 0.94,
+   "dose_form": "extended release oral tablet",
+   "drug_classes": [],
+   "ingredients": [
+    "tacrolimus"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "42316",
+   "source_count": 56,
+   "therapeutic_category": "immunosuppressant"
+  },
+  "24 HR tacrolimus 5 MG Extended Release Oral Capsule [Astagraf]": {
+   "confidence": 0.94,
+   "dose_form": "extended release oral capsule",
+   "drug_classes": [],
+   "ingredients": [
+    "tacrolimus"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "42316",
+   "source_count": 17,
+   "therapeutic_category": "immunosuppressant"
+  },
+  "30 ACTUAT fluticasone furoate 0.2 MG/ACTUAT Dry Powder Inhaler [Arnuity]": {
+   "confidence": 0.93,
+   "dose_form": "dry powder inhaler",
+   "drug_classes": [
+    "inhaled_corticosteroid"
+   ],
+   "ingredients": [
+    "fluticasone"
+   ],
+   "route": "inhalation",
+   "rxnorm_ingredient_cui": "41126",
+   "source_count": 2,
+   "therapeutic_category": "inhaled corticosteroid"
+  },
+  "60 ACTUAT Fluticasone propionate 0.25 MG/ACTUAT / salmeterol 0.05 MG/ACTUAT Dry Powder Inhaler": {
+   "confidence": 0.93,
+   "dose_form": "dry powder inhaler",
+   "drug_classes": [
+    "inhaled_corticosteroid"
+   ],
+   "ingredients": [
+    "fluticasone",
+    "salmeterol"
+   ],
+   "route": "inhalation",
+   "rxnorm_ingredient_cui": [
+    "41126",
+    "36117"
+   ],
+   "source_count": 97,
+   "therapeutic_category": "ics/laba inhaler"
+  },
+  "72 HR Fentanyl 0.025 MG/HR Transdermal System": {
+   "confidence": 0.95,
+   "dose_form": "transdermal system",
+   "drug_classes": [
+    "opioid"
+   ],
+   "ingredients": [
+    "fentanyl"
+   ],
+   "route": "transdermal",
+   "rxnorm_ingredient_cui": "4337",
+   "source_count": 97,
+   "therapeutic_category": "opioid analgesic"
+  },
+  "AC chemotherapy": {
+   "confidence": 0.75,
+   "dose_form": "injectable solution",
+   "drug_classes": [],
+   "ingredient_cuis": {
+    "cyclophosphamide": "3002",
+    "doxorubicin": "3639"
+   },
+   "ingredients": [
+    "doxorubicin",
+    "cyclophosphamide"
+   ],
+   "note": "Assumes the standard meaning of AC as doxorubicin (Adriamycin) plus cyclophosphamide, a regimen rather than a single product.",
+   "route": "intravenous",
+   "rxnorm_ingredient_cui": null,
+   "source_count": 1,
+   "therapeutic_category": "antineoplastic chemotherapy regimen"
+  },
+  "ASA": {
+   "confidence": 0.85,
+   "dose_form": null,
+   "drug_classes": [
+    "antiplatelet"
+   ],
+   "ingredients": [
+    "aspirin"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "1191",
+   "source_count": 4,
+   "therapeutic_category": "antiplatelet"
+  },
+  "Abuse-Deterrent 12 HR Oxycodone Hydrochloride 10 MG Extended Release Oral Tablet [Oxycontin]": {
+   "confidence": 0.95,
+   "dose_form": "extended release oral tablet",
+   "drug_classes": [
+    "opioid"
+   ],
+   "ingredients": [
+    "oxycodone"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "7804",
+   "source_count": 85,
+   "therapeutic_category": "opioid analgesic"
+  },
+  "Abuse-Deterrent 12 HR Oxycodone Hydrochloride 15 MG Extended Release Oral Tablet": {
+   "confidence": 0.97,
+   "dose_form": "extended release oral tablet",
+   "drug_classes": [
+    "opioid"
+   ],
+   "ingredients": [
+    "oxycodone"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "7804",
+   "source_count": 2,
+   "therapeutic_category": "opioid analgesic"
+  },
+  "Acetaminophen": {
+   "confidence": 0.92,
+   "dose_form": null,
+   "drug_classes": [],
+   "ingredients": [
+    "acetaminophen"
+   ],
+   "route": null,
+   "rxnorm_ingredient_cui": "161",
+   "source_count": 20,
+   "therapeutic_category": "analgesic"
+  },
+  "Acetaminophen 160 MG Chewable Tablet": {
+   "confidence": 0.97,
+   "dose_form": "chewable tablet",
+   "drug_classes": [],
+   "ingredients": [
+    "acetaminophen"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "161",
+   "source_count": 2,
+   "therapeutic_category": "analgesic"
+  },
+  "Acetaminophen 21.7 MG/ML / Dextromethorphan Hydrobromide 1 MG/ML / doxylamine succinate 0.417 MG/ML Oral Solution": {
+   "confidence": 0.9,
+   "dose_form": "oral solution",
+   "drug_classes": [],
+   "ingredients": [
+    "acetaminophen",
+    "dextromethorphan",
+    "doxylamine"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": null,
+   "source_count": 4,
+   "therapeutic_category": "cold and cough combination"
+  },
+  "Acetaminophen 300 MG / Codeine Phosphate 15 MG Oral Tablet": {
+   "confidence": 0.95,
+   "dose_form": "oral tablet",
+   "drug_classes": [
+    "opioid"
+   ],
+   "ingredients": [
+    "acetaminophen",
+    "codeine"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": [
+    "161",
+    "2670"
+   ],
+   "source_count": 61,
+   "therapeutic_category": "opioid analgesic"
+  },
+  "Acetaminophen 300 MG / Hydrocodone Bitartrate 5 MG Oral Tablet": {
+   "confidence": 0.93,
+   "dose_form": "tablet",
+   "drug_classes": [
+    "opioid"
+   ],
+   "ingredients": [
+    "acetaminophen",
+    "hydrocodone"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": null,
+   "source_count": 345,
+   "therapeutic_category": "analgesic"
+  },
+  "Acetaminophen 325 MG / HYDROcodone Bitartrate 7.5 MG Oral Tablet": {
+   "confidence": 0.93,
+   "dose_form": "oral tablet",
+   "drug_classes": [
+    "opioid"
+   ],
+   "ingredients": [
+    "acetaminophen",
+    "hydrocodone"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": null,
+   "source_count": 20,
+   "therapeutic_category": "analgesic"
+  },
+  "Acetaminophen 325 MG / Oxycodone Hydrochloride 10 MG Oral Tablet [Percocet]": {
+   "confidence": 0.96,
+   "dose_form": "oral tablet",
+   "drug_classes": [
+    "opioid"
+   ],
+   "ingredients": [
+    "acetaminophen",
+    "oxycodone"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": [
+    "161",
+    "7804"
+   ],
+   "source_count": 197,
+   "therapeutic_category": "opioid analgesic"
+  },
+  "Acetaminophen 325 MG / oxyCODONE Hydrochloride 5 MG Oral Tablet": {
+   "confidence": 0.96,
+   "dose_form": "oral tablet",
+   "drug_classes": [
+    "opioid"
+   ],
+   "ingredients": [
+    "acetaminophen",
+    "oxycodone"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": [
+    "161",
+    "7804"
+   ],
+   "source_count": 31,
+   "therapeutic_category": "analgesic"
+  },
+  "Acetaminophen 325 MG Oral Tablet": {
+   "confidence": 0.97,
+   "dose_form": "oral tablet",
+   "drug_classes": [],
+   "ingredients": [
+    "acetaminophen"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "161",
+   "source_count": 23,
+   "therapeutic_category": "analgesic"
+  },
+  "Acetaminophen 325 MG Oral Tablet [Tylenol]": {
+   "confidence": 0.97,
+   "dose_form": "oral tablet",
+   "drug_classes": [],
+   "ingredients": [
+    "acetaminophen"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "161",
+   "source_count": 231,
+   "therapeutic_category": "analgesic"
+  },
+  "Albuterol": {
+   "confidence": 0.9,
+   "dose_form": null,
+   "drug_classes": [
+    "short_acting_beta_agonist"
+   ],
+   "ingredients": [
+    "albuterol"
+   ],
+   "route": "inhalation",
+   "rxnorm_ingredient_cui": "435",
+   "source_count": 3,
+   "therapeutic_category": "bronchodilator"
+  },
+  "Albuterol HFA": {
+   "confidence": 0.94,
+   "dose_form": "metered dose inhaler",
+   "drug_classes": [
+    "short_acting_beta_agonist"
+   ],
+   "ingredients": [
+    "albuterol"
+   ],
+   "route": "inhalation",
+   "rxnorm_ingredient_cui": "435",
+   "source_count": 7,
+   "therapeutic_category": "bronchodilator"
+  },
+  "Albuterol/Ipratropium neb": {
+   "confidence": 0.9,
+   "dose_form": "inhalation solution",
+   "drug_classes": [
+    "short_acting_beta_agonist"
+   ],
+   "ingredient_cuis": {
+    "albuterol": "435",
+    "ipratropium": "7213"
+   },
+   "ingredients": [
+    "albuterol",
+    "ipratropium"
+   ],
+   "route": "inhalation",
+   "rxnorm_ingredient_cui": null,
+   "source_count": 1,
+   "therapeutic_category": "bronchodilator (SABA + short-acting antimuscarinic)"
+  },
+  "Alendronic acid 10 MG Oral Tablet": {
+   "confidence": 0.93,
+   "dose_form": "oral tablet",
+   "drug_classes": [],
+   "ingredients": [
+    "alendronate"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "46041",
+   "source_count": 199,
+   "therapeutic_category": "bisphosphonate"
+  },
+  "Alprazolam": {
+   "confidence": 0.95,
+   "dose_form": null,
+   "drug_classes": [
+    "benzodiazepine"
+   ],
+   "ingredients": [
+    "alprazolam"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "596",
+   "source_count": 1,
+   "therapeutic_category": "anxiolytic"
+  },
+  "Alteplase 100 MG Injection": {
+   "confidence": 0.9,
+   "dose_form": "injection",
+   "drug_classes": [],
+   "ingredients": [
+    "alteplase"
+   ],
+   "route": "intravenous",
+   "rxnorm_ingredient_cui": "8410",
+   "source_count": 61,
+   "therapeutic_category": "thrombolytic"
+  },
+  "Amlodipine": {
+   "confidence": 0.93,
+   "dose_form": null,
+   "drug_classes": [
+    "calcium_channel_blocker"
+   ],
+   "ingredients": [
+    "amlodipine"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "17767",
+   "source_count": 7,
+   "therapeutic_category": "antihypertensive"
+  },
+  "Amoxicillin 250 MG / Clavulanate 125 MG Oral Tablet": {
+   "confidence": 0.96,
+   "dose_form": "oral tablet",
+   "drug_classes": [],
+   "ingredients": [
+    "amoxicillin",
+    "clavulanate"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": [
+    "723",
+    "48203"
+   ],
+   "source_count": 7,
+   "therapeutic_category": "antibiotic"
+  },
+  "Apixaban": {
+   "confidence": 0.94,
+   "dose_form": null,
+   "drug_classes": [
+    "anticoagulant"
+   ],
+   "ingredients": [
+    "apixaban"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "1364430",
+   "source_count": 15,
+   "therapeutic_category": "anticoagulant"
+  },
+  "Aripiprazole": {
+   "confidence": 0.93,
+   "dose_form": null,
+   "drug_classes": [],
+   "ingredients": [
+    "aripiprazole"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "89013",
+   "source_count": 1,
+   "therapeutic_category": "atypical antipsychotic"
+  },
+  "Aspirin": {
+   "confidence": 0.88,
+   "dose_form": null,
+   "drug_classes": [
+    "antiplatelet"
+   ],
+   "ingredients": [
+    "aspirin"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "1191",
+   "source_count": 9,
+   "therapeutic_category": "antiplatelet/analgesic"
+  },
+  "Astemizole 10 MG Oral Tablet": {
+   "confidence": 0.85,
+   "dose_form": "oral tablet",
+   "drug_classes": [],
+   "ingredients": [
+    "astemizole"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": null,
+   "source_count": 57,
+   "therapeutic_category": "antihistamine"
+  },
+  "Atenolol": {
+   "confidence": 0.95,
+   "dose_form": null,
+   "drug_classes": [
+    "beta_blocker"
+   ],
+   "ingredients": [
+    "atenolol"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "1202",
+   "source_count": 1,
+   "therapeutic_category": "antihypertensive"
+  },
+  "Atorvastatin": {
+   "confidence": 0.95,
+   "dose_form": null,
+   "drug_classes": [
+    "statin"
+   ],
+   "ingredients": [
+    "atorvastatin"
+   ],
+   "route": null,
+   "rxnorm_ingredient_cui": "83367",
+   "source_count": 24,
+   "therapeutic_category": "lipid lowering"
+  },
+  "Azithromycin": {
+   "confidence": 0.93,
+   "dose_form": null,
+   "drug_classes": [],
+   "ingredients": [
+    "azithromycin"
+   ],
+   "route": null,
+   "rxnorm_ingredient_cui": "18631",
+   "source_count": 5,
+   "therapeutic_category": "antibiotic"
+  },
+  "Betamethasone": {
+   "confidence": 0.85,
+   "dose_form": null,
+   "drug_classes": [],
+   "ingredients": [
+    "betamethasone"
+   ],
+   "route": null,
+   "rxnorm_ingredient_cui": "1514",
+   "source_count": 2,
+   "therapeutic_category": "corticosteroid"
+  },
+  "Bictegravir/FTC/TAF": {
+   "confidence": 0.9,
+   "dose_form": "oral tablet",
+   "drug_classes": [],
+   "ingredients": [
+    "bictegravir",
+    "emtricitabine",
+    "tenofovir alafenamide"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": null,
+   "source_count": 2,
+   "therapeutic_category": "antiretroviral"
+  },
+  "Blood cultures x2": {
+   "confidence": 0.95,
+   "dose_form": null,
+   "drug_classes": [],
+   "ingredients": [],
+   "note": "Not a medication; this is a laboratory order (blood culture). Exclude from the medication mapping.",
+   "route": null,
+   "rxnorm_ingredient_cui": null,
+   "source_count": 1,
+   "therapeutic_category": null
+  },
+  "Breath-Actuated 120 ACTUAT beclomethasone dipropionate 0.04 MG/ACTUAT Metered Dose Inhaler [Qvar]": {
+   "confidence": 0.95,
+   "dose_form": "metered dose inhaler",
+   "drug_classes": [
+    "inhaled_corticosteroid"
+   ],
+   "ingredients": [
+    "beclomethasone"
+   ],
+   "route": "inhalation",
+   "rxnorm_ingredient_cui": "1347",
+   "source_count": 7,
+   "therapeutic_category": "inhaled corticosteroid"
+  },
+  "Buprenorphine-naloxone": {
+   "confidence": 0.9,
+   "dose_form": null,
+   "drug_classes": [
+    "opioid"
+   ],
+   "ingredient_cuis": {
+    "buprenorphine": "1819",
+    "naloxone": "7242"
+   },
+   "ingredients": [
+    "buprenorphine",
+    "naloxone"
+   ],
+   "route": "sublingual",
+   "rxnorm_ingredient_cui": null,
+   "source_count": 1,
+   "therapeutic_category": "opioid use disorder treatment"
+  },
+  "Bupropion XL": {
+   "confidence": 0.92,
+   "dose_form": "extended release oral tablet",
+   "drug_classes": [],
+   "ingredients": [
+    "bupropion"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "42347",
+   "source_count": 5,
+   "therapeutic_category": "antidepressant"
+  },
+  "Buspirone": {
+   "confidence": 0.9,
+   "dose_form": null,
+   "drug_classes": [],
+   "ingredients": [
+    "buspirone"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "1827",
+   "source_count": 4,
+   "therapeutic_category": "anxiolytic"
+  },
+  "Calcitriol": {
+   "confidence": 0.9,
+   "dose_form": null,
+   "drug_classes": [],
+   "ingredients": [
+    "calcitriol"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "1894",
+   "source_count": 5,
+   "therapeutic_category": "vitamin d analog"
+  },
+  "Calcium carbonate": {
+   "confidence": 0.9,
+   "dose_form": null,
+   "drug_classes": [],
+   "ingredients": [
+    "calcium carbonate"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "1897",
+   "source_count": 8,
+   "therapeutic_category": "calcium supplement/antacid"
+  },
+  "Carbidopa/Levodopa": {
+   "confidence": 0.9,
+   "dose_form": null,
+   "drug_classes": [],
+   "ingredients": [
+    "carbidopa",
+    "levodopa"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": null,
+   "source_count": 2,
+   "therapeutic_category": "antiparkinsonian"
+  },
+  "Carvedilol": {
+   "confidence": 0.92,
+   "dose_form": null,
+   "drug_classes": [
+    "beta_blocker",
+    "hf_evidence_based_beta_blocker"
+   ],
+   "ingredients": [
+    "carvedilol"
+   ],
+   "route": null,
+   "rxnorm_ingredient_cui": "20352",
+   "source_count": 66,
+   "therapeutic_category": "beta blocker"
+  },
+  "Ceftriaxone": {
+   "confidence": 0.93,
+   "dose_form": "injectable",
+   "drug_classes": [],
+   "ingredients": [
+    "ceftriaxone"
+   ],
+   "route": "parenteral",
+   "rxnorm_ingredient_cui": "2193",
+   "source_count": 7,
+   "therapeutic_category": "antibiotic"
+  },
+  "Chlorpheniramine Maleate 2 MG/ML Oral Solution": {
+   "confidence": 0.93,
+   "dose_form": "oral solution",
+   "drug_classes": [],
+   "ingredients": [
+    "chlorpheniramine"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "2400",
+   "source_count": 79,
+   "therapeutic_category": "antihistamine"
+  },
+  "Chlorpheniramine Maleate 4 MG Oral Tablet": {
+   "confidence": 0.94,
+   "dose_form": "oral tablet",
+   "drug_classes": [],
+   "ingredients": [
+    "chlorpheniramine"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "2400",
+   "source_count": 1,
+   "therapeutic_category": "antihistamine"
+  },
+  "Chlorthalidone": {
+   "confidence": 0.93,
+   "dose_form": null,
+   "drug_classes": [
+    "thiazide_diuretic"
+   ],
+   "ingredients": [
+    "chlorthalidone"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "2409",
+   "source_count": 1,
+   "therapeutic_category": "thiazide-like diuretic"
+  },
+  "Clopidogrel 75 MG Oral Tablet": {
+   "confidence": 0.97,
+   "dose_form": "tablet",
+   "drug_classes": [
+    "antiplatelet"
+   ],
+   "ingredients": [
+    "clopidogrel"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "32968",
+   "source_count": 659,
+   "therapeutic_category": "antiplatelet"
+  },
+  "Clozapine": {
+   "confidence": 0.92,
+   "dose_form": null,
+   "drug_classes": [],
+   "ingredients": [
+    "clozapine"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "2626",
+   "source_count": 4,
+   "therapeutic_category": "antipsychotic"
+  },
+  "Cyclobenzaprine": {
+   "confidence": 0.9,
+   "dose_form": "oral tablet",
+   "drug_classes": [],
+   "ingredients": [
+    "cyclobenzaprine"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "21949",
+   "source_count": 3,
+   "therapeutic_category": "muscle relaxant"
+  },
+  "Dapagliflozin": {
+   "confidence": 0.9,
+   "dose_form": "oral tablet",
+   "drug_classes": [
+    "sglt2_inhibitor"
+   ],
+   "ingredients": [
+    "dapagliflozin"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "1488564",
+   "source_count": 3,
+   "therapeutic_category": "antidiabetic"
+  },
+  "Dexamethasone": {
+   "confidence": 0.9,
+   "dose_form": null,
+   "drug_classes": [],
+   "ingredients": [
+    "dexamethasone"
+   ],
+   "route": null,
+   "rxnorm_ingredient_cui": "3264",
+   "source_count": 5,
+   "therapeutic_category": "systemic corticosteroid"
+  },
+  "Diazepam 5 MG Oral Tablet": {
+   "confidence": 0.96,
+   "dose_form": "oral tablet",
+   "drug_classes": [
+    "benzodiazepine"
+   ],
+   "ingredients": [
+    "diazepam"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "3322",
+   "source_count": 20,
+   "therapeutic_category": "anxiolytic"
+  },
+  "Digoxin 0.125 MG Oral Tablet": {
+   "confidence": 0.95,
+   "dose_form": "oral tablet",
+   "drug_classes": [],
+   "ingredients": [
+    "digoxin"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "3407",
+   "source_count": 25,
+   "therapeutic_category": "cardiac glycoside"
+  },
+  "Diphenhydramine": {
+   "confidence": 0.92,
+   "dose_form": null,
+   "drug_classes": [],
+   "ingredients": [
+    "diphenhydramine"
+   ],
+   "route": null,
+   "rxnorm_ingredient_cui": "3498",
+   "source_count": 4,
+   "therapeutic_category": "antihistamine"
+  },
+  "Donepezil": {
+   "confidence": 0.92,
+   "dose_form": null,
+   "drug_classes": [],
+   "ingredients": [
+    "donepezil"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "135447",
+   "source_count": 5,
+   "therapeutic_category": "cholinesterase inhibitor"
+  },
+  "Duloxetine": {
+   "confidence": 0.95,
+   "dose_form": null,
+   "drug_classes": [],
+   "ingredients": [
+    "duloxetine"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "72625",
+   "source_count": 2,
+   "therapeutic_category": "snri antidepressant"
+  },
+  "Empagliflozin": {
+   "confidence": 0.93,
+   "dose_form": null,
+   "drug_classes": [
+    "sglt2_inhibitor"
+   ],
+   "ingredients": [
+    "empagliflozin"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "1545653",
+   "source_count": 15,
+   "therapeutic_category": "antidiabetic"
+  },
+  "Enoxaparin": {
+   "confidence": 0.94,
+   "dose_form": "injectable solution",
+   "drug_classes": [
+    "anticoagulant"
+   ],
+   "ingredients": [
+    "enoxaparin"
+   ],
+   "route": "subcutaneous",
+   "rxnorm_ingredient_cui": "67108",
+   "source_count": 1,
+   "therapeutic_category": "low molecular weight heparin"
+  },
+  "Escitalopram": {
+   "confidence": 0.95,
+   "dose_form": null,
+   "drug_classes": [
+    "ssri"
+   ],
+   "ingredients": [
+    "escitalopram"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "321988",
+   "source_count": 1,
+   "therapeutic_category": "antidepressant"
+  },
+  "FLUoxetine 20 MG Oral Capsule": {
+   "confidence": 0.96,
+   "dose_form": "oral capsule",
+   "drug_classes": [
+    "ssri"
+   ],
+   "ingredients": [
+    "fluoxetine"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "4493",
+   "source_count": 21,
+   "therapeutic_category": "antidepressant"
+  },
+  "Ferrous sulfate": {
+   "confidence": 0.9,
+   "dose_form": null,
+   "drug_classes": [],
+   "ingredients": [
+    "ferrous sulfate"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": null,
+   "source_count": 4,
+   "therapeutic_category": "iron supplement"
+  },
+  "Fexofenadine hydrochloride 30 MG Oral Tablet": {
+   "confidence": 0.94,
+   "dose_form": "oral tablet",
+   "drug_classes": [],
+   "ingredients": [
+    "fexofenadine"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "87636",
+   "source_count": 116,
+   "therapeutic_category": "antihistamine"
+  },
+  "Fexofenadine hydrochloride 60 MG Oral Tablet": {
+   "confidence": 0.94,
+   "dose_form": "oral tablet",
+   "drug_classes": [],
+   "ingredients": [
+    "fexofenadine"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "87636",
+   "source_count": 37,
+   "therapeutic_category": "antihistamine"
+  },
+  "Fludrocortisone": {
+   "confidence": 0.9,
+   "dose_form": null,
+   "drug_classes": [],
+   "ingredients": [
+    "fludrocortisone"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "4452",
+   "source_count": 1,
+   "therapeutic_category": "mineralocorticoid"
+  },
+  "Fluoxetine": {
+   "confidence": 0.95,
+   "dose_form": null,
+   "drug_classes": [
+    "ssri"
+   ],
+   "ingredients": [
+    "fluoxetine"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "4493",
+   "source_count": 3,
+   "therapeutic_category": "antidepressant"
+  },
+  "Fluticasone (Flovent HFA)": {
+   "confidence": 0.95,
+   "dose_form": "metered dose inhaler",
+   "drug_classes": [
+    "inhaled_corticosteroid"
+   ],
+   "ingredients": [
+    "fluticasone"
+   ],
+   "route": "inhalation",
+   "rxnorm_ingredient_cui": "41126",
+   "source_count": 2,
+   "therapeutic_category": "inhaled corticosteroid"
+  },
+  "Fluticasone nasal": {
+   "confidence": 0.9,
+   "dose_form": "nasal spray",
+   "drug_classes": [],
+   "ingredients": [
+    "fluticasone"
+   ],
+   "route": "nasal",
+   "rxnorm_ingredient_cui": "41126",
+   "source_count": 2,
+   "therapeutic_category": "intranasal corticosteroid"
+  },
+  "Fluticasone/Salmeterol": {
+   "confidence": 0.9,
+   "dose_form": "inhalation powder",
+   "drug_classes": [
+    "inhaled_corticosteroid"
+   ],
+   "ingredients": [
+    "fluticasone",
+    "salmeterol"
+   ],
+   "route": "inhalation",
+   "rxnorm_ingredient_cui": null,
+   "source_count": 2,
+   "therapeutic_category": "ICS/LABA combination inhaler"
+  },
+  "Fluvoxamine": {
+   "confidence": 0.93,
+   "dose_form": null,
+   "drug_classes": [
+    "ssri"
+   ],
+   "ingredients": [
+    "fluvoxamine"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "42355",
+   "source_count": 1,
+   "therapeutic_category": "antidepressant"
+  },
+  "Folic acid": {
+   "confidence": 0.95,
+   "dose_form": "oral tablet",
+   "drug_classes": [],
+   "ingredients": [
+    "folic acid"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "4511",
+   "source_count": 2,
+   "therapeutic_category": "vitamin supplement"
+  },
+  "Follitropin alfa": {
+   "confidence": 0.85,
+   "dose_form": "injectable solution",
+   "drug_classes": [],
+   "ingredients": [
+    "follitropin alfa"
+   ],
+   "route": "subcutaneous",
+   "rxnorm_ingredient_cui": null,
+   "source_count": 3,
+   "therapeutic_category": "fertility agent (gonadotropin)"
+  },
+  "Furosemide": {
+   "confidence": 0.93,
+   "dose_form": null,
+   "drug_classes": [
+    "loop_diuretic"
+   ],
+   "ingredients": [
+    "furosemide"
+   ],
+   "route": null,
+   "rxnorm_ingredient_cui": "4603",
+   "source_count": 44,
+   "therapeutic_category": "diuretic"
+  },
+  "Furosemide 40 MG Oral Tablet": {
+   "confidence": 0.97,
+   "dose_form": "tablet",
+   "drug_classes": [
+    "loop_diuretic"
+   ],
+   "ingredients": [
+    "furosemide"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "4603",
+   "source_count": 873,
+   "therapeutic_category": "diuretic"
+  },
+  "Gabapentin": {
+   "confidence": 0.93,
+   "dose_form": null,
+   "drug_classes": [],
+   "ingredients": [
+    "gabapentin"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "25480",
+   "source_count": 4,
+   "therapeutic_category": "anticonvulsant"
+  },
+  "Galantamine 4 MG Oral Tablet": {
+   "confidence": 0.92,
+   "dose_form": "oral tablet",
+   "drug_classes": [],
+   "ingredients": [
+    "galantamine"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "4637",
+   "source_count": 56,
+   "therapeutic_category": "cholinesterase inhibitor"
+  },
+  "Glucagon (nasal)": {
+   "confidence": 0.92,
+   "dose_form": "nasal powder",
+   "drug_classes": [],
+   "ingredients": [
+    "glucagon"
+   ],
+   "route": "nasal",
+   "rxnorm_ingredient_cui": "4832",
+   "source_count": 1,
+   "therapeutic_category": "antihypoglycemic"
+  },
+  "Glycopyrrolate": {
+   "confidence": 0.85,
+   "dose_form": null,
+   "drug_classes": [],
+   "ingredients": [
+    "glycopyrrolate"
+   ],
+   "route": null,
+   "rxnorm_ingredient_cui": "4917",
+   "source_count": 5,
+   "therapeutic_category": "anticholinergic"
+  },
+  "HCTZ": {
+   "confidence": 0.93,
+   "dose_form": null,
+   "drug_classes": [
+    "thiazide_diuretic"
+   ],
+   "ingredients": [
+    "hydrochlorothiazide"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "5487",
+   "source_count": 4,
+   "therapeutic_category": "antihypertensive"
+  },
+  "Heparin": {
+   "confidence": 0.9,
+   "dose_form": "injectable solution",
+   "drug_classes": [
+    "anticoagulant"
+   ],
+   "ingredients": [
+    "heparin"
+   ],
+   "route": "parenteral",
+   "rxnorm_ingredient_cui": "5224",
+   "source_count": 2,
+   "therapeutic_category": "anticoagulant"
+  },
+  "Home O2 2 L NC continuous": {
+   "confidence": 0.9,
+   "dose_form": "gas for inhalation",
+   "drug_classes": [],
+   "ingredients": [
+    "oxygen"
+   ],
+   "route": "inhalation (nasal cannula)",
+   "rxnorm_ingredient_cui": "7806",
+   "source_count": 1,
+   "therapeutic_category": "medical gas"
+  },
+  "Hydrochlorothiazide 25 MG Oral Tablet": {
+   "confidence": 0.97,
+   "dose_form": "tablet",
+   "drug_classes": [
+    "thiazide_diuretic"
+   ],
+   "ingredients": [
+    "hydrochlorothiazide"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "5487",
+   "source_count": 531,
+   "therapeutic_category": "diuretic"
+  },
+  "Hydrocortisone": {
+   "confidence": 0.88,
+   "dose_form": null,
+   "drug_classes": [],
+   "ingredients": [
+    "hydrocortisone"
+   ],
+   "route": null,
+   "rxnorm_ingredient_cui": "5492",
+   "source_count": 1,
+   "therapeutic_category": "corticosteroid"
+  },
+  "Hydrocortisone 10 MG/ML Topical Cream": {
+   "confidence": 0.94,
+   "dose_form": "topical cream",
+   "drug_classes": [],
+   "ingredients": [
+    "hydrocortisone"
+   ],
+   "route": "topical",
+   "rxnorm_ingredient_cui": "5492",
+   "source_count": 84,
+   "therapeutic_category": "topical corticosteroid"
+  },
+  "Hydromorphone": {
+   "confidence": 0.95,
+   "dose_form": null,
+   "drug_classes": [
+    "opioid"
+   ],
+   "ingredients": [
+    "hydromorphone"
+   ],
+   "route": null,
+   "rxnorm_ingredient_cui": "3423",
+   "source_count": 3,
+   "therapeutic_category": "opioid analgesic"
+  },
+  "Ibuprofen": {
+   "confidence": 0.95,
+   "dose_form": null,
+   "drug_classes": [],
+   "ingredients": [
+    "ibuprofen"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "5640",
+   "source_count": 1,
+   "therapeutic_category": "nsaid"
+  },
+  "Ibuprofen 100 MG Oral Tablet": {
+   "confidence": 0.97,
+   "dose_form": "oral tablet",
+   "drug_classes": [],
+   "ingredients": [
+    "ibuprofen"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "5640",
+   "source_count": 1,
+   "therapeutic_category": "nsaid"
+  },
+  "Ibuprofen 200 MG Oral Tablet": {
+   "confidence": 0.97,
+   "dose_form": "oral tablet",
+   "drug_classes": [],
+   "ingredients": [
+    "ibuprofen"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "5640",
+   "source_count": 8,
+   "therapeutic_category": "nsaid"
+  },
+  "Ibuprofen 400 MG Oral Tablet [Ibu]": {
+   "confidence": 0.96,
+   "dose_form": "tablet",
+   "drug_classes": [],
+   "ingredients": [
+    "ibuprofen"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "5640",
+   "source_count": 256,
+   "therapeutic_category": "nsaid"
+  },
+  "Insulin NPH": {
+   "confidence": 0.9,
+   "dose_form": "injectable suspension",
+   "drug_classes": [
+    "insulin"
+   ],
+   "ingredients": [
+    "insulin isophane"
+   ],
+   "route": "subcutaneous",
+   "rxnorm_ingredient_cui": null,
+   "source_count": 3,
+   "therapeutic_category": "antidiabetic"
+  },
+  "Insulin aspart (pump)": {
+   "confidence": 0.85,
+   "dose_form": "injectable solution",
+   "drug_classes": [
+    "insulin"
+   ],
+   "ingredients": [
+    "insulin aspart"
+   ],
+   "route": "subcutaneous (pump)",
+   "rxnorm_ingredient_cui": "51428",
+   "source_count": 1,
+   "therapeutic_category": "insulin"
+  },
+  "Insulin glargine": {
+   "confidence": 0.93,
+   "dose_form": "injectable solution",
+   "drug_classes": [
+    "insulin"
+   ],
+   "ingredients": [
+    "insulin glargine"
+   ],
+   "route": "subcutaneous",
+   "rxnorm_ingredient_cui": "274783",
+   "source_count": 10,
+   "therapeutic_category": "antidiabetic"
+  },
+  "Insulin regular gtt": {
+   "confidence": 0.88,
+   "dose_form": "injectable solution (infusion)",
+   "drug_classes": [
+    "insulin"
+   ],
+   "ingredients": [
+    "insulin regular, human"
+   ],
+   "route": "intravenous",
+   "rxnorm_ingredient_cui": "253182",
+   "source_count": 1,
+   "therapeutic_category": "insulin"
+  },
+  "K+ replacement": {
+   "confidence": 0.7,
+   "dose_form": null,
+   "drug_classes": [],
+   "ingredients": [
+    "potassium"
+   ],
+   "route": null,
+   "rxnorm_ingredient_cui": null,
+   "source_count": 4,
+   "therapeutic_category": "electrolyte replacement"
+  },
+  "KCl": {
+   "confidence": 0.85,
+   "dose_form": null,
+   "drug_classes": [],
+   "ingredients": [
+    "potassium chloride"
+   ],
+   "route": null,
+   "rxnorm_ingredient_cui": "8591",
+   "source_count": 2,
+   "therapeutic_category": "electrolyte supplement"
+  },
+  "LR": {
+   "confidence": 0.7,
+   "dose_form": "injectable solution",
+   "drug_classes": [],
+   "ingredients": [
+    "sodium chloride",
+    "sodium lactate",
+    "potassium chloride",
+    "calcium chloride"
+   ],
+   "route": "intravenous",
+   "rxnorm_ingredient_cui": null,
+   "source_count": 3,
+   "therapeutic_category": "intravenous fluid"
+  },
+  "Labetalol": {
+   "confidence": 0.92,
+   "dose_form": null,
+   "drug_classes": [
+    "beta_blocker"
+   ],
+   "ingredients": [
+    "labetalol"
+   ],
+   "route": null,
+   "rxnorm_ingredient_cui": "6185",
+   "source_count": 7,
+   "therapeutic_category": "antihypertensive"
+  },
+  "Levothyroxine": {
+   "confidence": 0.95,
+   "dose_form": "oral tablet",
+   "drug_classes": [
+    "levothyroxine"
+   ],
+   "ingredients": [
+    "levothyroxine"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "10582",
+   "source_count": 2,
+   "therapeutic_category": "thyroid hormone"
+  },
+  "Levothyroxine Sodium 0.075 MG Oral Tablet": {
+   "confidence": 0.96,
+   "dose_form": "oral tablet",
+   "drug_classes": [
+    "levothyroxine"
+   ],
+   "ingredients": [
+    "levothyroxine"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "10582",
+   "source_count": 13,
+   "therapeutic_category": "thyroid hormone"
+  },
+  "Lidocaine 5% patch": {
+   "confidence": 0.95,
+   "dose_form": "transdermal patch",
+   "drug_classes": [],
+   "ingredients": [
+    "lidocaine"
+   ],
+   "route": "topical",
+   "rxnorm_ingredient_cui": "6387",
+   "source_count": 3,
+   "therapeutic_category": "local anesthetic"
+  },
+  "Lisinopril": {
+   "confidence": 0.94,
+   "dose_form": null,
+   "drug_classes": [
+    "ace_inhibitor"
+   ],
+   "ingredients": [
+    "lisinopril"
+   ],
+   "route": null,
+   "rxnorm_ingredient_cui": "29046",
+   "source_count": 29,
+   "therapeutic_category": "antihypertensive"
+  },
+  "Lithium": {
+   "confidence": 0.82,
+   "dose_form": null,
+   "drug_classes": [],
+   "ingredients": [
+    "lithium"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "6448",
+   "source_count": 6,
+   "therapeutic_category": "mood stabilizer"
+  },
+  "Lithium carbonate ER": {
+   "confidence": 0.9,
+   "dose_form": "extended release oral tablet",
+   "drug_classes": [],
+   "ingredients": [
+    "lithium carbonate"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "42351",
+   "source_count": 1,
+   "therapeutic_category": "mood stabilizer"
+  },
+  "Loratadine 10 MG Oral Tablet": {
+   "confidence": 0.95,
+   "dose_form": "oral tablet",
+   "drug_classes": [],
+   "ingredients": [
+    "loratadine"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "28889",
+   "source_count": 31,
+   "therapeutic_category": "antihistamine"
+  },
+  "Loratadine 5 MG Chewable Tablet": {
+   "confidence": 0.95,
+   "dose_form": "chewable tablet",
+   "drug_classes": [],
+   "ingredients": [
+    "loratadine"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "28889",
+   "source_count": 150,
+   "therapeutic_category": "antihistamine"
+  },
+  "Lorazepam": {
+   "confidence": 0.93,
+   "dose_form": null,
+   "drug_classes": [
+    "benzodiazepine"
+   ],
+   "ingredients": [
+    "lorazepam"
+   ],
+   "route": null,
+   "rxnorm_ingredient_cui": "6470",
+   "source_count": 9,
+   "therapeutic_category": "anxiolytic"
+  },
+  "Losartan": {
+   "confidence": 0.93,
+   "dose_form": null,
+   "drug_classes": [
+    "arb"
+   ],
+   "ingredients": [
+    "losartan"
+   ],
+   "route": null,
+   "rxnorm_ingredient_cui": "52175",
+   "source_count": 10,
+   "therapeutic_category": "antihypertensive"
+  },
+  "Magnesium sulfate": {
+   "confidence": 0.88,
+   "dose_form": null,
+   "drug_classes": [],
+   "ingredients": [
+    "magnesium sulfate"
+   ],
+   "route": null,
+   "rxnorm_ingredient_cui": "6585",
+   "source_count": 5,
+   "therapeutic_category": "electrolyte replacement"
+  },
+  "Megestrol": {
+   "confidence": 0.85,
+   "dose_form": null,
+   "drug_classes": [],
+   "ingredients": [
+    "megestrol"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": null,
+   "source_count": 4,
+   "therapeutic_category": "progestin"
+  },
+  "Melatonin": {
+   "confidence": 0.85,
+   "dose_form": null,
+   "drug_classes": [],
+   "ingredients": [
+    "melatonin"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "6711",
+   "source_count": 4,
+   "therapeutic_category": "sleep aid"
+  },
+  "Memantine": {
+   "confidence": 0.93,
+   "dose_form": null,
+   "drug_classes": [],
+   "ingredients": [
+    "memantine"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "6719",
+   "source_count": 1,
+   "therapeutic_category": "NMDA antagonist (dementia)"
+  },
+  "Meperidine Hydrochloride 50 MG Oral Tablet": {
+   "confidence": 0.94,
+   "dose_form": "oral tablet",
+   "drug_classes": [
+    "opioid"
+   ],
+   "ingredients": [
+    "meperidine"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "6754",
+   "source_count": 34,
+   "therapeutic_category": "analgesic"
+  },
+  "Metformin": {
+   "confidence": 0.94,
+   "dose_form": null,
+   "drug_classes": [
+    "metformin"
+   ],
+   "ingredients": [
+    "metformin"
+   ],
+   "route": null,
+   "rxnorm_ingredient_cui": "6809",
+   "source_count": 27,
+   "therapeutic_category": "antidiabetic"
+  },
+  "Methimazole": {
+   "confidence": 0.93,
+   "dose_form": "oral tablet",
+   "drug_classes": [],
+   "ingredients": [
+    "methimazole"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "6835",
+   "source_count": 1,
+   "therapeutic_category": "antithyroid agent"
+  },
+  "Methylphenidate ER": {
+   "confidence": 0.93,
+   "dose_form": "extended release oral",
+   "drug_classes": [],
+   "ingredients": [
+    "methylphenidate"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "6901",
+   "source_count": 1,
+   "therapeutic_category": "CNS stimulant"
+  },
+  "Methylphenidate Hydrochloride 20 MG Oral Tablet": {
+   "confidence": 0.95,
+   "dose_form": "oral tablet",
+   "drug_classes": [],
+   "ingredients": [
+    "methylphenidate"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "6901",
+   "source_count": 14,
+   "therapeutic_category": "CNS stimulant"
+  },
+  "Methylprednisolone": {
+   "confidence": 0.93,
+   "dose_form": null,
+   "drug_classes": [],
+   "ingredients": [
+    "methylprednisolone"
+   ],
+   "route": null,
+   "rxnorm_ingredient_cui": "6902",
+   "source_count": 1,
+   "therapeutic_category": "corticosteroid"
+  },
+  "Metoprolol": {
+   "confidence": 0.9,
+   "dose_form": null,
+   "drug_classes": [
+    "beta_blocker"
+   ],
+   "ingredients": [
+    "metoprolol"
+   ],
+   "route": null,
+   "rxnorm_ingredient_cui": "6918",
+   "source_count": 6,
+   "therapeutic_category": "antihypertensive"
+  },
+  "Metoprolol succinate": {
+   "confidence": 0.9,
+   "dose_form": "extended release oral tablet",
+   "drug_classes": [
+    "beta_blocker",
+    "hf_evidence_based_beta_blocker"
+   ],
+   "ingredients": [
+    "metoprolol"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "6918",
+   "source_count": 14,
+   "therapeutic_category": "antihypertensive"
+  },
+  "Midodrine": {
+   "confidence": 0.93,
+   "dose_form": "oral tablet",
+   "drug_classes": [],
+   "ingredients": [
+    "midodrine"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "6963",
+   "source_count": 1,
+   "therapeutic_category": "vasopressor (alpha-1 agonist)"
+  },
+  "Mirtazapine": {
+   "confidence": 0.92,
+   "dose_form": null,
+   "drug_classes": [],
+   "ingredients": [
+    "mirtazapine"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "15996",
+   "source_count": 4,
+   "therapeutic_category": "antidepressant"
+  },
+  "Montelukast": {
+   "confidence": 0.9,
+   "dose_form": "oral tablet",
+   "drug_classes": [],
+   "ingredients": [
+    "montelukast"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "88249",
+   "source_count": 2,
+   "therapeutic_category": "leukotriene receptor antagonist"
+  },
+  "Morphine": {
+   "confidence": 0.92,
+   "dose_form": null,
+   "drug_classes": [
+    "opioid"
+   ],
+   "ingredients": [
+    "morphine"
+   ],
+   "route": null,
+   "rxnorm_ingredient_cui": "7052",
+   "source_count": 5,
+   "therapeutic_category": "analgesic"
+  },
+  "NDA020800 0.3 ML Epinephrine 1 MG/ML Auto-Injector": {
+   "confidence": 0.95,
+   "dose_form": "auto-injector",
+   "drug_classes": [],
+   "ingredients": [
+    "epinephrine"
+   ],
+   "route": "intramuscular",
+   "rxnorm_ingredient_cui": "3992",
+   "source_count": 432,
+   "therapeutic_category": "epinephrine"
+  },
+  "NDA020983 200 ACTUAT albuterol 0.09 MG/ACTUAT Metered Dose Inhaler [Ventolin]": {
+   "confidence": 0.96,
+   "dose_form": "metered dose inhaler",
+   "drug_classes": [
+    "short_acting_beta_agonist"
+   ],
+   "ingredients": [
+    "albuterol"
+   ],
+   "route": "inhalation",
+   "rxnorm_ingredient_cui": "435",
+   "source_count": 30,
+   "therapeutic_category": "bronchodilator"
+  },
+  "NDA021457 200 ACTUAT albuterol 0.09 MG/ACTUAT Metered Dose Inhaler [ProAir]": {
+   "confidence": 0.96,
+   "dose_form": "metered dose inhaler",
+   "drug_classes": [
+    "short_acting_beta_agonist"
+   ],
+   "ingredients": [
+    "albuterol"
+   ],
+   "route": "inhalation",
+   "rxnorm_ingredient_cui": "435",
+   "source_count": 54,
+   "therapeutic_category": "bronchodilator"
+  },
+  "NS 30 mL/kg": {
+   "confidence": 0.93,
+   "dose_form": "injectable solution (0.9%)",
+   "drug_classes": [],
+   "ingredients": [
+    "sodium chloride"
+   ],
+   "route": "intravenous",
+   "rxnorm_ingredient_cui": "9863",
+   "source_count": 1,
+   "therapeutic_category": "IV fluid"
+  },
+  "NS bolus 1 L": {
+   "confidence": 0.93,
+   "dose_form": "injectable solution (0.9%)",
+   "drug_classes": [],
+   "ingredients": [
+    "sodium chloride"
+   ],
+   "route": "intravenous",
+   "rxnorm_ingredient_cui": "9863",
+   "source_count": 1,
+   "therapeutic_category": "IV fluid"
+  },
+  "Naltrexone": {
+   "confidence": 0.9,
+   "dose_form": null,
+   "drug_classes": [],
+   "ingredients": [
+    "naltrexone"
+   ],
+   "route": null,
+   "rxnorm_ingredient_cui": "7243",
+   "source_count": 4,
+   "therapeutic_category": "opioid antagonist"
+  },
+  "Naproxen": {
+   "confidence": 0.93,
+   "dose_form": null,
+   "drug_classes": [],
+   "ingredients": [
+    "naproxen"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "7258",
+   "source_count": 4,
+   "therapeutic_category": "nsaid"
+  },
+  "Naproxen 500 MG Oral Tablet": {
+   "confidence": 0.96,
+   "dose_form": "oral tablet",
+   "drug_classes": [],
+   "ingredients": [
+    "naproxen"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "7258",
+   "source_count": 38,
+   "therapeutic_category": "nsaid"
+  },
+  "Naproxen sodium 220 MG Oral Tablet": {
+   "confidence": 0.95,
+   "dose_form": "tablet",
+   "drug_classes": [],
+   "ingredients": [
+    "naproxen"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "7258",
+   "source_count": 329,
+   "therapeutic_category": "nsaid"
+  },
+  "Nitroglycerin 0.4 MG/ACTUAT Mucosal Spray": {
+   "confidence": 0.95,
+   "dose_form": "mucosal spray",
+   "drug_classes": [],
+   "ingredients": [
+    "nitroglycerin"
+   ],
+   "route": "sublingual",
+   "rxnorm_ingredient_cui": "4917",
+   "source_count": 607,
+   "therapeutic_category": "nitrate"
+  },
+  "Norepinephrine": {
+   "confidence": 0.9,
+   "dose_form": "injection",
+   "drug_classes": [],
+   "ingredients": [
+    "norepinephrine"
+   ],
+   "route": "intravenous",
+   "rxnorm_ingredient_cui": "7512",
+   "source_count": 4,
+   "therapeutic_category": "vasopressor"
+  },
+  "Norethindrone acetate": {
+   "confidence": 0.88,
+   "dose_form": "oral tablet",
+   "drug_classes": [],
+   "ingredients": [
+    "norethindrone acetate"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": null,
+   "source_count": 1,
+   "therapeutic_category": "progestin"
+  },
+  "O2 4 L NC": {
+   "confidence": 0.9,
+   "dose_form": "gas for inhalation",
+   "drug_classes": [],
+   "ingredients": [
+    "oxygen"
+   ],
+   "route": "inhalation (nasal cannula)",
+   "rxnorm_ingredient_cui": "7806",
+   "source_count": 1,
+   "therapeutic_category": "medical gas"
+  },
+  "Octreotide": {
+   "confidence": 0.93,
+   "dose_form": "injectable solution",
+   "drug_classes": [],
+   "ingredients": [
+    "octreotide"
+   ],
+   "route": null,
+   "rxnorm_ingredient_cui": "7617",
+   "source_count": 1,
+   "therapeutic_category": "somatostatin analogue"
+  },
+  "Omeprazole": {
+   "confidence": 0.95,
+   "dose_form": null,
+   "drug_classes": [],
+   "ingredients": [
+    "omeprazole"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "7646",
+   "source_count": 3,
+   "therapeutic_category": "proton pump inhibitor"
+  },
+  "Ondansetron": {
+   "confidence": 0.93,
+   "dose_form": null,
+   "drug_classes": [],
+   "ingredients": [
+    "ondansetron"
+   ],
+   "route": null,
+   "rxnorm_ingredient_cui": "26225",
+   "source_count": 8,
+   "therapeutic_category": "antiemetic"
+  },
+  "Oxybutynin": {
+   "confidence": 0.9,
+   "dose_form": null,
+   "drug_classes": [],
+   "ingredients": [
+    "oxybutynin"
+   ],
+   "route": null,
+   "rxnorm_ingredient_cui": "32675",
+   "source_count": 4,
+   "therapeutic_category": "urinary antispasmodic"
+  },
+  "Oxycodone": {
+   "confidence": 0.93,
+   "dose_form": null,
+   "drug_classes": [
+    "opioid"
+   ],
+   "ingredients": [
+    "oxycodone"
+   ],
+   "route": null,
+   "rxnorm_ingredient_cui": "7804",
+   "source_count": 9,
+   "therapeutic_category": "opioid analgesic"
+  },
+  "Oxygen": {
+   "confidence": 0.9,
+   "dose_form": "gas for inhalation",
+   "drug_classes": [],
+   "ingredients": [
+    "oxygen"
+   ],
+   "route": "inhalation",
+   "rxnorm_ingredient_cui": "7806",
+   "source_count": 7,
+   "therapeutic_category": "medical gas"
+  },
+  "PRBC": {
+   "confidence": 0.9,
+   "dose_form": "blood product",
+   "drug_classes": [],
+   "ingredients": [
+    "packed red blood cells"
+   ],
+   "route": "intravenous",
+   "rxnorm_ingredient_cui": null,
+   "source_count": 1,
+   "therapeutic_category": "blood product transfusion"
+  },
+  "Pantoprazole": {
+   "confidence": 0.95,
+   "dose_form": null,
+   "drug_classes": [],
+   "ingredients": [
+    "pantoprazole"
+   ],
+   "route": null,
+   "rxnorm_ingredient_cui": "40790",
+   "source_count": 1,
+   "therapeutic_category": "proton pump inhibitor"
+  },
+  "Pegfilgrastim": {
+   "confidence": 0.85,
+   "dose_form": "injection",
+   "drug_classes": [],
+   "ingredients": [
+    "pegfilgrastim"
+   ],
+   "route": "subcutaneous",
+   "rxnorm_ingredient_cui": "338036",
+   "source_count": 4,
+   "therapeutic_category": "colony stimulating factor"
+  },
+  "Pembrolizumab": {
+   "confidence": 0.88,
+   "dose_form": "injection",
+   "drug_classes": [],
+   "ingredients": [
+    "pembrolizumab"
+   ],
+   "route": "intravenous",
+   "rxnorm_ingredient_cui": "1547545",
+   "source_count": 4,
+   "therapeutic_category": "immune checkpoint inhibitor"
+  },
+  "Phenoxybenzamine": {
+   "confidence": 0.9,
+   "dose_form": "oral capsule",
+   "drug_classes": [],
+   "ingredients": [
+    "phenoxybenzamine"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": null,
+   "source_count": 1,
+   "therapeutic_category": "alpha blocker"
+  },
+  "Prazosin": {
+   "confidence": 0.92,
+   "dose_form": null,
+   "drug_classes": [],
+   "ingredients": [
+    "prazosin"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "8629",
+   "source_count": 8,
+   "therapeutic_category": "alpha-1 blocker"
+  },
+  "Prenatal vitamin": {
+   "confidence": 0.75,
+   "dose_form": null,
+   "drug_classes": [],
+   "ingredients": [
+    "prenatal multivitamin"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": null,
+   "source_count": 5,
+   "therapeutic_category": "vitamin supplement"
+  },
+  "Quetiapine": {
+   "confidence": 0.95,
+   "dose_form": null,
+   "drug_classes": [],
+   "ingredients": [
+    "quetiapine"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "51272",
+   "source_count": 1,
+   "therapeutic_category": "atypical antipsychotic"
+  },
+  "Rasagiline": {
+   "confidence": 0.88,
+   "dose_form": null,
+   "drug_classes": [],
+   "ingredients": [
+    "rasagiline"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "134748",
+   "source_count": 4,
+   "therapeutic_category": "antiparkinson (MAO-B inhibitor)"
+  },
+  "Risperidone": {
+   "confidence": 0.92,
+   "dose_form": null,
+   "drug_classes": [],
+   "ingredients": [
+    "risperidone"
+   ],
+   "route": null,
+   "rxnorm_ingredient_cui": "35636",
+   "source_count": 4,
+   "therapeutic_category": "antipsychotic"
+  },
+  "Sacubitril/Valsartan": {
+   "confidence": 0.93,
+   "dose_form": null,
+   "drug_classes": [
+    "arni"
+   ],
+   "ingredients": [
+    "sacubitril",
+    "valsartan"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": null,
+   "source_count": 14,
+   "therapeutic_category": "heart failure agent"
+  },
+  "Sacubitril/valsartan": {
+   "confidence": 0.9,
+   "dose_form": null,
+   "drug_classes": [
+    "arni"
+   ],
+   "ingredients": [
+    "sacubitril",
+    "valsartan"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": null,
+   "source_count": 4,
+   "therapeutic_category": "heart failure therapy"
+  },
+  "Salmeterol/Fluticasone": {
+   "confidence": 0.93,
+   "dose_form": "inhaler",
+   "drug_classes": [
+    "inhaled_corticosteroid"
+   ],
+   "ingredients": [
+    "fluticasone",
+    "salmeterol"
+   ],
+   "route": "inhalation",
+   "rxnorm_ingredient_cui": null,
+   "source_count": 1,
+   "therapeutic_category": "ICS/LABA inhaler"
+  },
+  "Scopolamine patch": {
+   "confidence": 0.92,
+   "dose_form": "transdermal system",
+   "drug_classes": [],
+   "ingredients": [
+    "scopolamine"
+   ],
+   "route": "transdermal",
+   "rxnorm_ingredient_cui": "9601",
+   "source_count": 9,
+   "therapeutic_category": "antiemetic (anticholinergic)"
+  },
+  "Semaglutide": {
+   "confidence": 0.92,
+   "dose_form": null,
+   "drug_classes": [
+    "glp1_agonist"
+   ],
+   "ingredients": [
+    "semaglutide"
+   ],
+   "route": null,
+   "rxnorm_ingredient_cui": "1991302",
+   "source_count": 8,
+   "therapeutic_category": "antidiabetic/weight management"
+  },
+  "Senna-S": {
+   "confidence": 0.85,
+   "dose_form": "oral tablet",
+   "drug_classes": [],
+   "ingredients": [
+    "sennosides",
+    "docusate"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": null,
+   "source_count": 2,
+   "therapeutic_category": "laxative"
+  },
+  "Sertraline": {
+   "confidence": 0.93,
+   "dose_form": null,
+   "drug_classes": [
+    "ssri"
+   ],
+   "ingredients": [
+    "sertraline"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "36437",
+   "source_count": 14,
+   "therapeutic_category": "antidepressant"
+  },
+  "Sertraline 100 MG Oral Tablet": {
+   "confidence": 0.96,
+   "dose_form": "oral tablet",
+   "drug_classes": [
+    "ssri"
+   ],
+   "ingredients": [
+    "sertraline"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "36437",
+   "source_count": 32,
+   "therapeutic_category": "antidepressant"
+  },
+  "Sevelamer": {
+   "confidence": 0.85,
+   "dose_form": "oral tablet",
+   "drug_classes": [],
+   "ingredients": [
+    "sevelamer"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": null,
+   "source_count": 2,
+   "therapeutic_category": "phosphate binder"
+  },
+  "Simvastatin 10 MG Oral Tablet": {
+   "confidence": 0.97,
+   "dose_form": "tablet",
+   "drug_classes": [
+    "statin"
+   ],
+   "ingredients": [
+    "simvastatin"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "36567",
+   "source_count": 512,
+   "therapeutic_category": "lipid-lowering agent"
+  },
+  "Simvastatin 20 MG Oral Tablet": {
+   "confidence": 0.97,
+   "dose_form": "tablet",
+   "drug_classes": [
+    "statin"
+   ],
+   "ingredients": [
+    "simvastatin"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "36567",
+   "source_count": 571,
+   "therapeutic_category": "lipid-lowering agent"
+  },
+  "Spironolactone": {
+   "confidence": 0.93,
+   "dose_form": null,
+   "drug_classes": [
+    "mra"
+   ],
+   "ingredients": [
+    "spironolactone"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "9997",
+   "source_count": 14,
+   "therapeutic_category": "diuretic"
+  },
+  "Sumatriptan": {
+   "confidence": 0.9,
+   "dose_form": null,
+   "drug_classes": [],
+   "ingredients": [
+    "sumatriptan"
+   ],
+   "route": null,
+   "rxnorm_ingredient_cui": "37418",
+   "source_count": 2,
+   "therapeutic_category": "antimigraine (triptan)"
+  },
+  "Tamsulosin": {
+   "confidence": 0.9,
+   "dose_form": null,
+   "drug_classes": [],
+   "ingredients": [
+    "tamsulosin"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "77492",
+   "source_count": 5,
+   "therapeutic_category": "alpha blocker (BPH)"
+  },
+  "Terfenadine 60 MG Oral Tablet": {
+   "confidence": 0.9,
+   "dose_form": "oral tablet",
+   "drug_classes": [],
+   "ingredients": [
+    "terfenadine"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": null,
+   "source_count": 14,
+   "therapeutic_category": "antihistamine"
+  },
+  "Thiamine": {
+   "confidence": 0.93,
+   "dose_form": null,
+   "drug_classes": [],
+   "ingredients": [
+    "thiamine"
+   ],
+   "route": null,
+   "rxnorm_ingredient_cui": "10454",
+   "source_count": 1,
+   "therapeutic_category": "vitamin supplement"
+  },
+  "Ticagrelor": {
+   "confidence": 0.95,
+   "dose_form": "oral tablet",
+   "drug_classes": [
+    "antiplatelet"
+   ],
+   "ingredients": [
+    "ticagrelor"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "1116632",
+   "source_count": 1,
+   "therapeutic_category": "P2Y12 inhibitor"
+  },
+  "Tiotropium": {
+   "confidence": 0.9,
+   "dose_form": "inhalant",
+   "drug_classes": [],
+   "ingredients": [
+    "tiotropium"
+   ],
+   "route": "inhalation",
+   "rxnorm_ingredient_cui": "69120",
+   "source_count": 3,
+   "therapeutic_category": "long-acting muscarinic antagonist bronchodilator"
+  },
+  "Tirzepatide": {
+   "confidence": 0.85,
+   "dose_form": "injectable solution",
+   "drug_classes": [
+    "glp1_agonist"
+   ],
+   "ingredients": [
+    "tirzepatide"
+   ],
+   "route": "subcutaneous",
+   "rxnorm_ingredient_cui": "2601723",
+   "source_count": 1,
+   "therapeutic_category": "GIP/GLP-1 receptor agonist"
+  },
+  "Topiramate": {
+   "confidence": 0.95,
+   "dose_form": null,
+   "drug_classes": [],
+   "ingredients": [
+    "topiramate"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "38404",
+   "source_count": 1,
+   "therapeutic_category": "anticonvulsant"
+  },
+  "Triamcinolone 0.1% ointment": {
+   "confidence": 0.95,
+   "dose_form": "topical ointment",
+   "drug_classes": [],
+   "ingredients": [
+    "triamcinolone"
+   ],
+   "route": "topical",
+   "rxnorm_ingredient_cui": "10759",
+   "source_count": 2,
+   "therapeutic_category": "topical corticosteroid"
+  },
+  "Venlafaxine XR": {
+   "confidence": 0.93,
+   "dose_form": "extended release oral capsule",
+   "drug_classes": [],
+   "ingredients": [
+    "venlafaxine"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "39786",
+   "source_count": 1,
+   "therapeutic_category": "snri antidepressant"
+  },
+  "Vit D3": {
+   "confidence": 0.88,
+   "dose_form": null,
+   "drug_classes": [],
+   "ingredients": [
+    "cholecalciferol"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "2418",
+   "source_count": 18,
+   "therapeutic_category": "vitamin D supplement"
+  },
+  "Vitamin B12": {
+   "confidence": 0.8,
+   "dose_form": null,
+   "drug_classes": [],
+   "ingredients": [
+    "cyanocobalamin"
+   ],
+   "route": null,
+   "rxnorm_ingredient_cui": "11248",
+   "source_count": 1,
+   "therapeutic_category": "vitamin supplement"
+  },
+  "Vitamin B12 5 MG/ML Injectable Solution": {
+   "confidence": 0.8,
+   "dose_form": "injectable solution",
+   "drug_classes": [],
+   "ingredients": [
+    "cyanocobalamin"
+   ],
+   "route": "injection",
+   "rxnorm_ingredient_cui": "11248",
+   "source_count": 263,
+   "therapeutic_category": "vitamin supplement"
+  },
+  "Warfarin Sodium 5 MG Oral Tablet": {
+   "confidence": 0.96,
+   "dose_form": "oral tablet",
+   "drug_classes": [
+    "anticoagulant"
+   ],
+   "ingredients": [
+    "warfarin"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "11289",
+   "source_count": 25,
+   "therapeutic_category": "anticoagulant"
+  },
+  "acetaminophen": {
+   "confidence": 0.9,
+   "dose_form": null,
+   "drug_classes": [],
+   "ingredients": [
+    "acetaminophen"
+   ],
+   "route": null,
+   "rxnorm_ingredient_cui": "161",
+   "source_count": 290,
+   "therapeutic_category": "analgesic"
+  },
+  "acetaminophen 300 MG / hydrocodone bitartrate 10 MG Oral Tablet": {
+   "confidence": 0.93,
+   "dose_form": "oral tablet",
+   "drug_classes": [
+    "opioid"
+   ],
+   "ingredients": [
+    "acetaminophen",
+    "hydrocodone"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": null,
+   "source_count": 20,
+   "therapeutic_category": "analgesic"
+  },
+  "albuterol": {
+   "confidence": 0.9,
+   "dose_form": null,
+   "drug_classes": [
+    "short_acting_beta_agonist"
+   ],
+   "ingredients": [
+    "albuterol"
+   ],
+   "route": null,
+   "rxnorm_ingredient_cui": "435",
+   "source_count": 152,
+   "therapeutic_category": "bronchodilator"
+  },
+  "albuterol 0.21 MG/ML Inhalation Solution": {
+   "confidence": 0.95,
+   "dose_form": "inhalation solution",
+   "drug_classes": [
+    "short_acting_beta_agonist"
+   ],
+   "ingredients": [
+    "albuterol"
+   ],
+   "route": "inhalation",
+   "rxnorm_ingredient_cui": "435",
+   "source_count": 28,
+   "therapeutic_category": "bronchodilator"
+  },
+  "albuterol 0.417 MG/ML Inhalation Solution": {
+   "confidence": 0.95,
+   "dose_form": "inhalation solution",
+   "drug_classes": [
+    "short_acting_beta_agonist"
+   ],
+   "ingredients": [
+    "albuterol"
+   ],
+   "route": "inhalation",
+   "rxnorm_ingredient_cui": "435",
+   "source_count": 19,
+   "therapeutic_category": "bronchodilator"
+  },
+  "albuterol 0.83 MG/ML Inhalation Solution": {
+   "confidence": 0.96,
+   "dose_form": "inhalation solution",
+   "drug_classes": [
+    "short_acting_beta_agonist"
+   ],
+   "ingredients": [
+    "albuterol"
+   ],
+   "route": "inhalation",
+   "rxnorm_ingredient_cui": "435",
+   "source_count": 124,
+   "therapeutic_category": "bronchodilator"
+  },
+  "albuterol 5 MG/ML Inhalation Solution": {
+   "confidence": 0.96,
+   "dose_form": "inhalation solution",
+   "drug_classes": [
+    "short_acting_beta_agonist"
+   ],
+   "ingredients": [
+    "albuterol"
+   ],
+   "route": "inhalation",
+   "rxnorm_ingredient_cui": "435",
+   "source_count": 89,
+   "therapeutic_category": "bronchodilator"
+  },
+  "amLODIPine 2.5 MG Oral Tablet": {
+   "confidence": 0.97,
+   "dose_form": "tablet",
+   "drug_classes": [
+    "calcium_channel_blocker"
+   ],
+   "ingredients": [
+    "amlodipine"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "17767",
+   "source_count": 604,
+   "therapeutic_category": "antihypertensive"
+  },
+  "amlodipine 10 MG / benazepril hydrochloride 40 MG Oral Capsule": {
+   "confidence": 0.95,
+   "dose_form": "oral capsule",
+   "drug_classes": [
+    "calcium_channel_blocker",
+    "ace_inhibitor"
+   ],
+   "ingredients": [
+    "amlodipine",
+    "benazepril"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": null,
+   "source_count": 2,
+   "therapeutic_category": "antihypertensive"
+  },
+  "amlodipine 10 mg tablet": {
+   "confidence": 0.95,
+   "dose_form": "oral tablet",
+   "drug_classes": [
+    "calcium_channel_blocker"
+   ],
+   "ingredients": [
+    "amlodipine"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "17767",
+   "source_count": 114,
+   "therapeutic_category": "antihypertensive"
+  },
+  "amlodipine 2.5 mg tablet": {
+   "confidence": 0.97,
+   "dose_form": "tablet",
+   "drug_classes": [
+    "calcium_channel_blocker"
+   ],
+   "ingredients": [
+    "amlodipine"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "17767",
+   "source_count": 8129,
+   "therapeutic_category": "antihypertensive"
+  },
+  "amlodipine 5 mg tablet": {
+   "confidence": 0.95,
+   "dose_form": "oral tablet",
+   "drug_classes": [
+    "calcium_channel_blocker"
+   ],
+   "ingredients": [
+    "amlodipine"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "17767",
+   "source_count": 27,
+   "therapeutic_category": "antihypertensive"
+  },
+  "aspirin 81 MG Oral Capsule [Vazalore]": {
+   "confidence": 0.94,
+   "dose_form": "oral capsule",
+   "drug_classes": [
+    "antiplatelet"
+   ],
+   "ingredients": [
+    "aspirin"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "1191",
+   "source_count": 27,
+   "therapeutic_category": "antiplatelet"
+  },
+  "aspirin 81 MG Oral Tablet": {
+   "confidence": 0.96,
+   "dose_form": "oral tablet",
+   "drug_classes": [
+    "antiplatelet"
+   ],
+   "ingredients": [
+    "aspirin"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "1191",
+   "source_count": 213,
+   "therapeutic_category": "antiplatelet"
+  },
+  "atenolol 100 MG Oral Tablet": {
+   "confidence": 0.97,
+   "dose_form": "oral tablet",
+   "drug_classes": [
+    "beta_blocker"
+   ],
+   "ingredients": [
+    "atenolol"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "1202",
+   "source_count": 5,
+   "therapeutic_category": "antihypertensive"
+  },
+  "atenolol 25 MG Oral Tablet": {
+   "confidence": 0.97,
+   "dose_form": "oral tablet",
+   "drug_classes": [
+    "beta_blocker"
+   ],
+   "ingredients": [
+    "atenolol"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "1202",
+   "source_count": 5,
+   "therapeutic_category": "antihypertensive"
+  },
+  "atenolol 50 MG Oral Tablet": {
+   "confidence": 0.96,
+   "dose_form": "oral tablet",
+   "drug_classes": [
+    "beta_blocker"
+   ],
+   "ingredients": [
+    "atenolol"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "1202",
+   "source_count": 13,
+   "therapeutic_category": "antihypertensive"
+  },
+  "atorvastatin 10 MG Oral Tablet": {
+   "confidence": 0.97,
+   "dose_form": "oral tablet",
+   "drug_classes": [
+    "statin"
+   ],
+   "ingredients": [
+    "atorvastatin"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "83367",
+   "source_count": 16,
+   "therapeutic_category": "lipid-lowering agent"
+  },
+  "atorvastatin 10 mg tablet": {
+   "confidence": 0.97,
+   "dose_form": "tablet",
+   "drug_classes": [
+    "statin"
+   ],
+   "ingredients": [
+    "atorvastatin"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "83367",
+   "source_count": 336,
+   "therapeutic_category": "lipid-lowering agent"
+  },
+  "atorvastatin 20 MG Oral Tablet": {
+   "confidence": 0.97,
+   "dose_form": "oral tablet",
+   "drug_classes": [
+    "statin"
+   ],
+   "ingredients": [
+    "atorvastatin"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "83367",
+   "source_count": 22,
+   "therapeutic_category": "lipid-lowering agent"
+  },
+  "atorvastatin 20 mg tablet": {
+   "confidence": 0.97,
+   "dose_form": "tablet",
+   "drug_classes": [
+    "statin"
+   ],
+   "ingredients": [
+    "atorvastatin"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "83367",
+   "source_count": 509,
+   "therapeutic_category": "lipid-lowering agent"
+  },
+  "atorvastatin 40 MG Oral Tablet": {
+   "confidence": 0.97,
+   "dose_form": "oral tablet",
+   "drug_classes": [
+    "statin"
+   ],
+   "ingredients": [
+    "atorvastatin"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "83367",
+   "source_count": 32,
+   "therapeutic_category": "lipid lowering"
+  },
+  "atorvastatin 40 mg tablet": {
+   "confidence": 0.97,
+   "dose_form": "tablet",
+   "drug_classes": [
+    "statin"
+   ],
+   "ingredients": [
+    "atorvastatin"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "83367",
+   "source_count": 507,
+   "therapeutic_category": "lipid-lowering agent"
+  },
+  "atorvastatin 80 MG Oral Tablet": {
+   "confidence": 0.97,
+   "dose_form": "oral tablet",
+   "drug_classes": [
+    "statin"
+   ],
+   "ingredients": [
+    "atorvastatin"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "83367",
+   "source_count": 31,
+   "therapeutic_category": "lipid lowering"
+  },
+  "atorvastatin 80 mg tablet": {
+   "confidence": 0.97,
+   "dose_form": "tablet",
+   "drug_classes": [
+    "statin"
+   ],
+   "ingredients": [
+    "atorvastatin"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "83367",
+   "source_count": 303,
+   "therapeutic_category": "lipid-lowering agent"
+  },
+  "benazepril hydrochloride 10 MG Oral Tablet": {
+   "confidence": 0.97,
+   "dose_form": "oral tablet",
+   "drug_classes": [
+    "ace_inhibitor"
+   ],
+   "ingredients": [
+    "benazepril"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "18867",
+   "source_count": 7,
+   "therapeutic_category": "antihypertensive"
+  },
+  "bictegravir 50 MG / emtricitabine 200 MG / tenofovir alafenamide 25 MG Oral Tablet": {
+   "confidence": 0.9,
+   "dose_form": "oral tablet",
+   "drug_classes": [],
+   "ingredients": [
+    "bictegravir",
+    "emtricitabine",
+    "tenofovir alafenamide"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": null,
+   "source_count": 4,
+   "therapeutic_category": "antiretroviral"
+  },
+  "bisoprolol fumarate 10 MG Oral Tablet": {
+   "confidence": 0.95,
+   "dose_form": "oral tablet",
+   "drug_classes": [
+    "beta_blocker",
+    "hf_evidence_based_beta_blocker"
+   ],
+   "ingredients": [
+    "bisoprolol"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "19484",
+   "source_count": 2,
+   "therapeutic_category": "antihypertensive"
+  },
+  "bisoprolol fumarate 2.5 MG / hydrochlorothiazide 6.25 MG Oral Tablet": {
+   "confidence": 0.9,
+   "dose_form": "oral tablet",
+   "drug_classes": [
+    "beta_blocker",
+    "hf_evidence_based_beta_blocker",
+    "thiazide_diuretic"
+   ],
+   "ingredients": [
+    "bisoprolol",
+    "hydrochlorothiazide"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": null,
+   "source_count": 12,
+   "therapeutic_category": "antihypertensive"
+  },
+  "bisoprolol fumarate 5 MG Oral Tablet": {
+   "confidence": 0.94,
+   "dose_form": "oral tablet",
+   "drug_classes": [
+    "beta_blocker",
+    "hf_evidence_based_beta_blocker"
+   ],
+   "ingredients": [
+    "bisoprolol"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "19484",
+   "source_count": 4,
+   "therapeutic_category": "antihypertensive"
+  },
+  "budesonide 0.125 MG/ML Inhalation Suspension": {
+   "confidence": 0.95,
+   "dose_form": "inhalation suspension",
+   "drug_classes": [
+    "inhaled_corticosteroid"
+   ],
+   "ingredients": [
+    "budesonide"
+   ],
+   "route": "inhalation",
+   "rxnorm_ingredient_cui": "19831",
+   "source_count": 35,
+   "therapeutic_category": "corticosteroid"
+  },
+  "budesonide 0.125 MG/ML Inhalation Suspension [Pulmicort]": {
+   "confidence": 0.95,
+   "dose_form": "inhalation suspension",
+   "drug_classes": [
+    "inhaled_corticosteroid"
+   ],
+   "ingredients": [
+    "budesonide"
+   ],
+   "route": "inhalation",
+   "rxnorm_ingredient_cui": "19831",
+   "source_count": 35,
+   "therapeutic_category": "corticosteroid"
+  },
+  "budesonide 0.25 MG/ML Inhalation Suspension": {
+   "confidence": 0.94,
+   "dose_form": "inhalation suspension",
+   "drug_classes": [
+    "inhaled_corticosteroid"
+   ],
+   "ingredients": [
+    "budesonide"
+   ],
+   "route": "inhalation",
+   "rxnorm_ingredient_cui": "19831",
+   "source_count": 71,
+   "therapeutic_category": "inhaled corticosteroid"
+  },
+  "buprenorphine 2 MG / naloxone 0.5 MG Sublingual Tablet": {
+   "confidence": 0.95,
+   "dose_form": "sublingual tablet",
+   "drug_classes": [
+    "opioid"
+   ],
+   "ingredients": [
+    "buprenorphine",
+    "naloxone"
+   ],
+   "route": "sublingual",
+   "rxnorm_ingredient_cui": [
+    "1819",
+    "7242"
+   ],
+   "source_count": 10,
+   "therapeutic_category": "opioid use disorder treatment"
+  },
+  "carbamazepine 20 MG/ML Oral Suspension [Tegretol]": {
+   "confidence": 0.95,
+   "dose_form": "oral suspension",
+   "drug_classes": [],
+   "ingredients": [
+    "carbamazepine"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "2002",
+   "source_count": 14,
+   "therapeutic_category": "anticonvulsant"
+  },
+  "carvedilol 12.5 MG Oral Tablet": {
+   "confidence": 0.95,
+   "dose_form": "oral tablet",
+   "drug_classes": [
+    "beta_blocker",
+    "hf_evidence_based_beta_blocker"
+   ],
+   "ingredients": [
+    "carvedilol"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "20352",
+   "source_count": 4,
+   "therapeutic_category": "antihypertensive"
+  },
+  "carvedilol 12.5 mg tablet": {
+   "confidence": 0.97,
+   "dose_form": "tablet",
+   "drug_classes": [
+    "beta_blocker",
+    "hf_evidence_based_beta_blocker"
+   ],
+   "ingredients": [
+    "carvedilol"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "20352",
+   "source_count": 388,
+   "therapeutic_category": "antihypertensive"
+  },
+  "carvedilol 25 MG Oral Tablet": {
+   "confidence": 0.97,
+   "dose_form": "tablet",
+   "drug_classes": [
+    "beta_blocker",
+    "hf_evidence_based_beta_blocker"
+   ],
+   "ingredients": [
+    "carvedilol"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "20352",
+   "source_count": 928,
+   "therapeutic_category": "antihypertensive"
+  },
+  "carvedilol 25 mg tablet": {
+   "confidence": 0.97,
+   "dose_form": "tablet",
+   "drug_classes": [
+    "beta_blocker",
+    "hf_evidence_based_beta_blocker"
+   ],
+   "ingredients": [
+    "carvedilol"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "20352",
+   "source_count": 8698,
+   "therapeutic_category": "antihypertensive"
+  },
+  "carvedilol 6.25 MG Oral Tablet": {
+   "confidence": 0.96,
+   "dose_form": "oral tablet",
+   "drug_classes": [
+    "beta_blocker",
+    "hf_evidence_based_beta_blocker"
+   ],
+   "ingredients": [
+    "carvedilol"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "20352",
+   "source_count": 22,
+   "therapeutic_category": "antihypertensive"
+  },
+  "carvedilol 6.25 mg tablet": {
+   "confidence": 0.97,
+   "dose_form": "tablet",
+   "drug_classes": [
+    "beta_blocker",
+    "hf_evidence_based_beta_blocker"
+   ],
+   "ingredients": [
+    "carvedilol"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "20352",
+   "source_count": 518,
+   "therapeutic_category": "antihypertensive"
+  },
+  "cetirizine hydrochloride 5 MG Oral Tablet": {
+   "confidence": 0.94,
+   "dose_form": "oral tablet",
+   "drug_classes": [],
+   "ingredients": [
+    "cetirizine"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "20610",
+   "source_count": 61,
+   "therapeutic_category": "antihistamine"
+  },
+  "clonazePAM 0.25 MG Oral Tablet": {
+   "confidence": 0.95,
+   "dose_form": "oral tablet",
+   "drug_classes": [
+    "benzodiazepine"
+   ],
+   "ingredients": [
+    "clonazepam"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "2598",
+   "source_count": 13,
+   "therapeutic_category": "anxiolytic/anticonvulsant"
+  },
+  "clopidogrel 75 mg tablet": {
+   "confidence": 0.97,
+   "dose_form": "tablet",
+   "drug_classes": [
+    "antiplatelet"
+   ],
+   "ingredients": [
+    "clopidogrel"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "32968",
+   "source_count": 9404,
+   "therapeutic_category": "antiplatelet"
+  },
+  "cobicistat 150 MG / elvitegravir 150 MG / emtricitabine 200 MG / tenofovir disoproxil fumarate 300 MG Oral Tablet": {
+   "confidence": 0.9,
+   "dose_form": "oral tablet",
+   "drug_classes": [],
+   "ingredients": [
+    "cobicistat",
+    "elvitegravir",
+    "emtricitabine",
+    "tenofovir disoproxil"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": null,
+   "source_count": 2,
+   "therapeutic_category": "antiretroviral"
+  },
+  "diphenhydrAMINE Hydrochloride 25 MG Oral Tablet": {
+   "confidence": 0.95,
+   "dose_form": "oral tablet",
+   "drug_classes": [],
+   "ingredients": [
+    "diphenhydramine"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "3498",
+   "source_count": 108,
+   "therapeutic_category": "antihistamine"
+  },
+  "dolutegravir 50 MG Oral Tablet": {
+   "confidence": 0.9,
+   "dose_form": "oral tablet",
+   "drug_classes": [],
+   "ingredients": [
+    "dolutegravir"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "1433868",
+   "source_count": 2,
+   "therapeutic_category": "antiretroviral"
+  },
+  "doxycycline hyclate 100 MG": {
+   "confidence": 0.85,
+   "dose_form": null,
+   "drug_classes": [],
+   "ingredients": [
+    "doxycycline"
+   ],
+   "route": null,
+   "rxnorm_ingredient_cui": "3640",
+   "source_count": 56,
+   "therapeutic_category": "antibiotic"
+  },
+  "empagliflozin 10 mg tablet": {
+   "confidence": 0.94,
+   "dose_form": "oral tablet",
+   "drug_classes": [
+    "sglt2_inhibitor"
+   ],
+   "ingredients": [
+    "empagliflozin"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "1545653",
+   "source_count": 42,
+   "therapeutic_category": "antidiabetic"
+  },
+  "emtricitabine 200 MG / tenofovir alafenamide 25 MG Oral Tablet": {
+   "confidence": 0.9,
+   "dose_form": "oral tablet",
+   "drug_classes": [],
+   "ingredients": [
+    "emtricitabine",
+    "tenofovir alafenamide"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": null,
+   "source_count": 2,
+   "therapeutic_category": "antiretroviral"
+  },
+  "enalapril maleate 10 MG Oral Tablet": {
+   "confidence": 0.97,
+   "dose_form": "oral tablet",
+   "drug_classes": [
+    "ace_inhibitor"
+   ],
+   "ingredients": [
+    "enalapril"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "3827",
+   "source_count": 7,
+   "therapeutic_category": "antihypertensive"
+  },
+  "enalapril maleate 20 MG Oral Tablet": {
+   "confidence": 0.95,
+   "dose_form": "oral tablet",
+   "drug_classes": [
+    "ace_inhibitor"
+   ],
+   "ingredients": [
+    "enalapril"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "3827",
+   "source_count": 4,
+   "therapeutic_category": "antihypertensive"
+  },
+  "enalapril maleate 5 MG Oral Tablet": {
+   "confidence": 0.95,
+   "dose_form": "oral tablet",
+   "drug_classes": [
+    "ace_inhibitor"
+   ],
+   "ingredients": [
+    "enalapril"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "3827",
+   "source_count": 2,
+   "therapeutic_category": "antihypertensive"
+  },
+  "ferrous sulfate 325 MG Oral Tablet": {
+   "confidence": 0.9,
+   "dose_form": "oral tablet",
+   "drug_classes": [],
+   "ingredients": [
+    "ferrous sulfate"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": null,
+   "source_count": 172,
+   "therapeutic_category": "iron supplement"
+  },
+  "ferrous sulfate 325 mg (65 mg elemental iron) tablet": {
+   "confidence": 0.9,
+   "dose_form": "tablet",
+   "drug_classes": [],
+   "ingredients": [
+    "ferrous sulfate"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "24947",
+   "source_count": 5313,
+   "therapeutic_category": "iron supplement"
+  },
+  "fluticasone propionate HFA 44 mcg/actuation": {
+   "confidence": 0.93,
+   "dose_form": "metered dose inhaler",
+   "drug_classes": [
+    "inhaled_corticosteroid"
+   ],
+   "ingredients": [
+    "fluticasone"
+   ],
+   "route": "inhalation",
+   "rxnorm_ingredient_cui": "41126",
+   "source_count": 865,
+   "therapeutic_category": "inhaled corticosteroid"
+  },
+  "furosemide": {
+   "confidence": 0.92,
+   "dose_form": null,
+   "drug_classes": [
+    "loop_diuretic"
+   ],
+   "ingredients": [
+    "furosemide"
+   ],
+   "route": null,
+   "rxnorm_ingredient_cui": "4603",
+   "source_count": 116,
+   "therapeutic_category": "diuretic"
+  },
+  "furosemide 20 mg tablet": {
+   "confidence": 0.95,
+   "dose_form": "oral tablet",
+   "drug_classes": [
+    "loop_diuretic"
+   ],
+   "ingredients": [
+    "furosemide"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "4603",
+   "source_count": 112,
+   "therapeutic_category": "diuretic"
+  },
+  "furosemide 40 mg tablet": {
+   "confidence": 0.97,
+   "dose_form": "tablet",
+   "drug_classes": [
+    "loop_diuretic"
+   ],
+   "ingredients": [
+    "furosemide"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "4603",
+   "source_count": 11869,
+   "therapeutic_category": "diuretic"
+  },
+  "glycopyrrolate 1.5 MG Oral Tablet [Glycate]": {
+   "confidence": 0.9,
+   "dose_form": "oral tablet",
+   "drug_classes": [],
+   "ingredients": [
+    "glycopyrrolate"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "4955",
+   "source_count": 2,
+   "therapeutic_category": "anticholinergic"
+  },
+  "hydrochlorothiazide 12.5 MG / lisinopril 10 MG Oral Tablet": {
+   "confidence": 0.96,
+   "dose_form": "oral tablet",
+   "drug_classes": [
+    "thiazide_diuretic",
+    "ace_inhibitor"
+   ],
+   "ingredients": [
+    "hydrochlorothiazide",
+    "lisinopril"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": [
+    "5487",
+    "29046"
+   ],
+   "source_count": 26,
+   "therapeutic_category": "antihypertensive"
+  },
+  "hydrochlorothiazide 12.5 MG / lisinopril 20 MG Oral Tablet": {
+   "confidence": 0.95,
+   "dose_form": "oral tablet",
+   "drug_classes": [
+    "thiazide_diuretic",
+    "ace_inhibitor"
+   ],
+   "ingredients": [
+    "hydrochlorothiazide",
+    "lisinopril"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": [
+    "5487",
+    "29046"
+   ],
+   "source_count": 4,
+   "therapeutic_category": "antihypertensive"
+  },
+  "hydrochlorothiazide 12.5 MG / losartan potassium 50 MG Oral Tablet": {
+   "confidence": 0.94,
+   "dose_form": "oral tablet",
+   "drug_classes": [
+    "arb",
+    "thiazide_diuretic"
+   ],
+   "ingredients": [
+    "hydrochlorothiazide",
+    "losartan"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": null,
+   "source_count": 18,
+   "therapeutic_category": "antihypertensive"
+  },
+  "hydrochlorothiazide 12.5 MG / valsartan 160 MG Oral Tablet": {
+   "confidence": 0.96,
+   "dose_form": "oral tablet",
+   "drug_classes": [
+    "thiazide_diuretic",
+    "arb"
+   ],
+   "ingredients": [
+    "hydrochlorothiazide",
+    "valsartan"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": [
+    "5487",
+    "69749"
+   ],
+   "source_count": 10,
+   "therapeutic_category": "antihypertensive"
+  },
+  "hydrochlorothiazide 25 MG / lisinopril 20 MG Oral Tablet": {
+   "confidence": 0.94,
+   "dose_form": "oral tablet",
+   "drug_classes": [
+    "ace_inhibitor",
+    "thiazide_diuretic"
+   ],
+   "ingredients": [
+    "hydrochlorothiazide",
+    "lisinopril"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": null,
+   "source_count": 12,
+   "therapeutic_category": "antihypertensive"
+  },
+  "hydrochlorothiazide 25 MG / losartan potassium 100 MG Oral Tablet": {
+   "confidence": 0.96,
+   "dose_form": "oral tablet",
+   "drug_classes": [
+    "thiazide_diuretic",
+    "arb"
+   ],
+   "ingredients": [
+    "hydrochlorothiazide",
+    "losartan"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": [
+    "5487",
+    "52175"
+   ],
+   "source_count": 6,
+   "therapeutic_category": "antihypertensive"
+  },
+  "insulin isophane  human 70 UNT/ML / insulin  regular  human 30 UNT/ML Injectable Suspension [Humulin]": {
+   "confidence": 0.92,
+   "dose_form": "injectable suspension",
+   "drug_classes": [
+    "insulin"
+   ],
+   "ingredients": [
+    "insulin isophane human",
+    "insulin regular human"
+   ],
+   "route": "subcutaneous",
+   "rxnorm_ingredient_cui": null,
+   "source_count": 288,
+   "therapeutic_category": "antidiabetic"
+  },
+  "ipratropium bromide": {
+   "confidence": 0.9,
+   "dose_form": null,
+   "drug_classes": [],
+   "ingredients": [
+    "ipratropium"
+   ],
+   "route": null,
+   "rxnorm_ingredient_cui": "7213",
+   "source_count": 38,
+   "therapeutic_category": "anticholinergic bronchodilator"
+  },
+  "irbesartan 300 MG Oral Tablet": {
+   "confidence": 0.95,
+   "dose_form": "oral tablet",
+   "drug_classes": [
+    "arb"
+   ],
+   "ingredients": [
+    "irbesartan"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "83818",
+   "source_count": 2,
+   "therapeutic_category": "antihypertensive"
+  },
+  "irbesartan 75 MG Oral Tablet": {
+   "confidence": 0.97,
+   "dose_form": "oral tablet",
+   "drug_classes": [
+    "arb"
+   ],
+   "ingredients": [
+    "irbesartan"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "83818",
+   "source_count": 8,
+   "therapeutic_category": "antihypertensive"
+  },
+  "labetalol hydrochloride 100 MG Oral Tablet": {
+   "confidence": 0.95,
+   "dose_form": "oral tablet",
+   "drug_classes": [
+    "beta_blocker"
+   ],
+   "ingredients": [
+    "labetalol"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "6185",
+   "source_count": 2,
+   "therapeutic_category": "antihypertensive"
+  },
+  "labetalol hydrochloride 200 MG Oral Tablet": {
+   "confidence": 0.95,
+   "dose_form": "oral tablet",
+   "drug_classes": [
+    "beta_blocker"
+   ],
+   "ingredients": [
+    "labetalol"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "6185",
+   "source_count": 5,
+   "therapeutic_category": "antihypertensive"
+  },
+  "labetalol hydrochloride 300 MG Oral Tablet": {
+   "confidence": 0.96,
+   "dose_form": "oral tablet",
+   "drug_classes": [
+    "beta_blocker"
+   ],
+   "ingredients": [
+    "labetalol"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "6185",
+   "source_count": 6,
+   "therapeutic_category": "antihypertensive"
+  },
+  "levothyroxine 50 mcg tablet": {
+   "confidence": 0.95,
+   "dose_form": "oral tablet",
+   "drug_classes": [
+    "levothyroxine"
+   ],
+   "ingredients": [
+    "levothyroxine"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "10582",
+   "source_count": 51,
+   "therapeutic_category": "thyroid hormone"
+  },
+  "levothyroxine 75 mcg tablet": {
+   "confidence": 0.97,
+   "dose_form": "tablet",
+   "drug_classes": [
+    "levothyroxine"
+   ],
+   "ingredients": [
+    "levothyroxine"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "10582",
+   "source_count": 304,
+   "therapeutic_category": "thyroid hormone"
+  },
+  "levothyroxine 88 mcg tablet": {
+   "confidence": 0.95,
+   "dose_form": "oral tablet",
+   "drug_classes": [
+    "levothyroxine"
+   ],
+   "ingredients": [
+    "levothyroxine"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "10582",
+   "source_count": 25,
+   "therapeutic_category": "thyroid hormone"
+  },
+  "lisinopril 10 MG Oral Tablet": {
+   "confidence": 0.97,
+   "dose_form": "tablet",
+   "drug_classes": [
+    "ace_inhibitor"
+   ],
+   "ingredients": [
+    "lisinopril"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "29046",
+   "source_count": 694,
+   "therapeutic_category": "antihypertensive"
+  },
+  "lisinopril 10 mg tablet": {
+   "confidence": 0.97,
+   "dose_form": "tablet",
+   "drug_classes": [
+    "ace_inhibitor"
+   ],
+   "ingredients": [
+    "lisinopril"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "29046",
+   "source_count": 10070,
+   "therapeutic_category": "antihypertensive"
+  },
+  "lisinopril 2.5 MG Oral Tablet": {
+   "confidence": 0.97,
+   "dose_form": "oral tablet",
+   "drug_classes": [
+    "ace_inhibitor"
+   ],
+   "ingredients": [
+    "lisinopril"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "29046",
+   "source_count": 10,
+   "therapeutic_category": "antihypertensive"
+  },
+  "lisinopril 2.5 mg tablet": {
+   "confidence": 0.95,
+   "dose_form": "oral tablet",
+   "drug_classes": [
+    "ace_inhibitor"
+   ],
+   "ingredients": [
+    "lisinopril"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "29046",
+   "source_count": 98,
+   "therapeutic_category": "antihypertensive"
+  },
+  "lisinopril 20 MG Oral Tablet": {
+   "confidence": 0.97,
+   "dose_form": "tablet",
+   "drug_classes": [
+    "ace_inhibitor"
+   ],
+   "ingredients": [
+    "lisinopril"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "29046",
+   "source_count": 374,
+   "therapeutic_category": "antihypertensive"
+  },
+  "lisinopril 20 mg tablet": {
+   "confidence": 0.97,
+   "dose_form": "tablet",
+   "drug_classes": [
+    "ace_inhibitor"
+   ],
+   "ingredients": [
+    "lisinopril"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "29046",
+   "source_count": 3455,
+   "therapeutic_category": "antihypertensive"
+  },
+  "lisinopril 30 MG Oral Tablet": {
+   "confidence": 0.95,
+   "dose_form": "oral tablet",
+   "drug_classes": [
+    "ace_inhibitor"
+   ],
+   "ingredients": [
+    "lisinopril"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "29046",
+   "source_count": 2,
+   "therapeutic_category": "antihypertensive"
+  },
+  "lisinopril 30 mg tablet": {
+   "confidence": 0.95,
+   "dose_form": "oral tablet",
+   "drug_classes": [
+    "ace_inhibitor"
+   ],
+   "ingredients": [
+    "lisinopril"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "29046",
+   "source_count": 74,
+   "therapeutic_category": "antihypertensive"
+  },
+  "lisinopril 40 MG Oral Tablet": {
+   "confidence": 0.97,
+   "dose_form": "oral tablet",
+   "drug_classes": [
+    "ace_inhibitor"
+   ],
+   "ingredients": [
+    "lisinopril"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "29046",
+   "source_count": 5,
+   "therapeutic_category": "antihypertensive"
+  },
+  "lisinopril 40 mg tablet": {
+   "confidence": 0.96,
+   "dose_form": "oral tablet",
+   "drug_classes": [
+    "ace_inhibitor"
+   ],
+   "ingredients": [
+    "lisinopril"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "29046",
+   "source_count": 22,
+   "therapeutic_category": "antihypertensive"
+  },
+  "lisinopril 5 MG Oral Tablet": {
+   "confidence": 0.97,
+   "dose_form": "oral tablet",
+   "drug_classes": [
+    "ace_inhibitor"
+   ],
+   "ingredients": [
+    "lisinopril"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "29046",
+   "source_count": 6,
+   "therapeutic_category": "antihypertensive"
+  },
+  "lisinopril 5 mg tablet": {
+   "confidence": 0.95,
+   "dose_form": "oral tablet",
+   "drug_classes": [
+    "ace_inhibitor"
+   ],
+   "ingredients": [
+    "lisinopril"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "29046",
+   "source_count": 89,
+   "therapeutic_category": "antihypertensive"
+  },
+  "loratadine 5 mg chewable tablet": {
+   "confidence": 0.95,
+   "dose_form": "chewable tablet",
+   "drug_classes": [],
+   "ingredients": [
+    "loratadine"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "28889",
+   "source_count": 1814,
+   "therapeutic_category": "antihistamine"
+  },
+  "losartan 100 mg tablet": {
+   "confidence": 0.95,
+   "dose_form": "oral tablet",
+   "drug_classes": [
+    "arb"
+   ],
+   "ingredients": [
+    "losartan"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "52175",
+   "source_count": 60,
+   "therapeutic_category": "antihypertensive"
+  },
+  "losartan 25 mg tablet": {
+   "confidence": 0.95,
+   "dose_form": "oral tablet",
+   "drug_classes": [
+    "arb"
+   ],
+   "ingredients": [
+    "losartan"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "52175",
+   "source_count": 209,
+   "therapeutic_category": "antihypertensive"
+  },
+  "losartan 50 mg tablet": {
+   "confidence": 0.97,
+   "dose_form": "tablet",
+   "drug_classes": [
+    "arb"
+   ],
+   "ingredients": [
+    "losartan"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "52175",
+   "source_count": 2761,
+   "therapeutic_category": "antihypertensive"
+  },
+  "losartan potassium 100 MG Oral Tablet": {
+   "confidence": 0.97,
+   "dose_form": "oral tablet",
+   "drug_classes": [
+    "arb"
+   ],
+   "ingredients": [
+    "losartan"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "52175",
+   "source_count": 7,
+   "therapeutic_category": "antihypertensive"
+  },
+  "losartan potassium 25 MG Oral Tablet": {
+   "confidence": 0.97,
+   "dose_form": "oral tablet",
+   "drug_classes": [
+    "arb"
+   ],
+   "ingredients": [
+    "losartan"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "52175",
+   "source_count": 5,
+   "therapeutic_category": "antihypertensive"
+  },
+  "losartan potassium 50 MG Oral Tablet": {
+   "confidence": 0.97,
+   "dose_form": "tablet",
+   "drug_classes": [
+    "arb"
+   ],
+   "ingredients": [
+    "losartan"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "52175",
+   "source_count": 320,
+   "therapeutic_category": "antihypertensive"
+  },
+  "lovastatin 20 MG Oral Tablet": {
+   "confidence": 0.96,
+   "dose_form": "oral tablet",
+   "drug_classes": [
+    "statin"
+   ],
+   "ingredients": [
+    "lovastatin"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "6472",
+   "source_count": 4,
+   "therapeutic_category": "lipid lowering"
+  },
+  "lovastatin 40 MG Oral Tablet": {
+   "confidence": 0.97,
+   "dose_form": "oral tablet",
+   "drug_classes": [
+    "statin"
+   ],
+   "ingredients": [
+    "lovastatin"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "6472",
+   "source_count": 5,
+   "therapeutic_category": "lipid-lowering agent"
+  },
+  "metformin 1000 mg tablet": {
+   "confidence": 0.97,
+   "dose_form": "tablet",
+   "drug_classes": [
+    "metformin"
+   ],
+   "ingredients": [
+    "metformin"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "6809",
+   "source_count": 555,
+   "therapeutic_category": "antidiabetic"
+  },
+  "metformin 500 mg extended-release tablet": {
+   "confidence": 0.97,
+   "dose_form": "extended-release tablet",
+   "drug_classes": [
+    "metformin"
+   ],
+   "ingredients": [
+    "metformin"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "6809",
+   "source_count": 4151,
+   "therapeutic_category": "antidiabetic"
+  },
+  "metformin 500 mg tablet": {
+   "confidence": 0.96,
+   "dose_form": "oral tablet",
+   "drug_classes": [
+    "metformin"
+   ],
+   "ingredients": [
+    "metformin"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "6809",
+   "source_count": 13,
+   "therapeutic_category": "antidiabetic"
+  },
+  "metoprolol tartrate 100 MG Oral Tablet": {
+   "confidence": 0.95,
+   "dose_form": "oral tablet",
+   "drug_classes": [
+    "beta_blocker"
+   ],
+   "ingredients": [
+    "metoprolol"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "6918",
+   "source_count": 4,
+   "therapeutic_category": "antihypertensive"
+  },
+  "metoprolol tartrate 25 MG Oral Tablet": {
+   "confidence": 0.95,
+   "dose_form": "oral tablet",
+   "drug_classes": [
+    "beta_blocker"
+   ],
+   "ingredients": [
+    "metoprolol"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "6918",
+   "source_count": 15,
+   "therapeutic_category": "antihypertensive"
+  },
+  "metoprolol tartrate 50 MG Oral Tablet": {
+   "confidence": 0.95,
+   "dose_form": "oral tablet",
+   "drug_classes": [
+    "beta_blocker"
+   ],
+   "ingredients": [
+    "metoprolol"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "6918",
+   "source_count": 14,
+   "therapeutic_category": "antihypertensive"
+  },
+  "prasugrel 10 MG Oral Tablet": {
+   "confidence": 0.94,
+   "dose_form": "oral tablet",
+   "drug_classes": [
+    "antiplatelet"
+   ],
+   "ingredients": [
+    "prasugrel"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "613391",
+   "source_count": 142,
+   "therapeutic_category": "antiplatelet"
+  },
+  "pravastatin sodium 20 MG Oral Tablet": {
+   "confidence": 0.97,
+   "dose_form": "oral tablet",
+   "drug_classes": [
+    "statin"
+   ],
+   "ingredients": [
+    "pravastatin"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "42463",
+   "source_count": 10,
+   "therapeutic_category": "lipid-lowering agent"
+  },
+  "pravastatin sodium 40 MG Oral Tablet": {
+   "confidence": 0.95,
+   "dose_form": "oral tablet",
+   "drug_classes": [
+    "statin"
+   ],
+   "ingredients": [
+    "pravastatin"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "42463",
+   "source_count": 2,
+   "therapeutic_category": "lipid-lowering agent"
+  },
+  "pravastatin sodium 80 MG Oral Tablet": {
+   "confidence": 0.96,
+   "dose_form": "oral tablet",
+   "drug_classes": [
+    "statin"
+   ],
+   "ingredients": [
+    "pravastatin"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "42463",
+   "source_count": 4,
+   "therapeutic_category": "lipid lowering"
+  },
+  "prednisolone": {
+   "confidence": 0.88,
+   "dose_form": null,
+   "drug_classes": [],
+   "ingredients": [
+    "prednisolone"
+   ],
+   "route": null,
+   "rxnorm_ingredient_cui": "8638",
+   "source_count": 107,
+   "therapeutic_category": "systemic corticosteroid"
+  },
+  "propranolol hydrochloride 20 MG Oral Tablet": {
+   "confidence": 0.97,
+   "dose_form": "oral tablet",
+   "drug_classes": [
+    "beta_blocker"
+   ],
+   "ingredients": [
+    "propranolol"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "8787",
+   "source_count": 5,
+   "therapeutic_category": "antihypertensive"
+  },
+  "quinapril 20 MG Oral Tablet": {
+   "confidence": 0.95,
+   "dose_form": "oral tablet",
+   "drug_classes": [
+    "ace_inhibitor"
+   ],
+   "ingredients": [
+    "quinapril"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "35208",
+   "source_count": 2,
+   "therapeutic_category": "antihypertensive"
+  },
+  "quinapril 40 MG Oral Tablet": {
+   "confidence": 0.96,
+   "dose_form": "oral tablet",
+   "drug_classes": [
+    "ace_inhibitor"
+   ],
+   "ingredients": [
+    "quinapril"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "35208",
+   "source_count": 5,
+   "therapeutic_category": "antihypertensive"
+  },
+  "ramipril 1.25 MG Oral Capsule": {
+   "confidence": 0.95,
+   "dose_form": "oral capsule",
+   "drug_classes": [
+    "ace_inhibitor"
+   ],
+   "ingredients": [
+    "ramipril"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "35296",
+   "source_count": 2,
+   "therapeutic_category": "antihypertensive"
+  },
+  "ramipril 10 MG Oral Capsule": {
+   "confidence": 0.95,
+   "dose_form": "oral capsule",
+   "drug_classes": [
+    "ace_inhibitor"
+   ],
+   "ingredients": [
+    "ramipril"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "35296",
+   "source_count": 2,
+   "therapeutic_category": "antihypertensive"
+  },
+  "ramipril 2.5 MG Oral Capsule": {
+   "confidence": 0.95,
+   "dose_form": "oral capsule",
+   "drug_classes": [
+    "ace_inhibitor"
+   ],
+   "ingredients": [
+    "ramipril"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "35296",
+   "source_count": 2,
+   "therapeutic_category": "antihypertensive"
+  },
+  "rosuvastatin calcium 10 MG Oral Tablet": {
+   "confidence": 0.97,
+   "dose_form": "oral tablet",
+   "drug_classes": [
+    "statin"
+   ],
+   "ingredients": [
+    "rosuvastatin"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "301542",
+   "source_count": 10,
+   "therapeutic_category": "lipid-lowering agent"
+  },
+  "rosuvastatin calcium 40 MG Oral Tablet": {
+   "confidence": 0.97,
+   "dose_form": "oral tablet",
+   "drug_classes": [
+    "statin"
+   ],
+   "ingredients": [
+    "rosuvastatin"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "301542",
+   "source_count": 5,
+   "therapeutic_category": "lipid-lowering agent"
+  },
+  "rosuvastatin calcium 5 MG Oral Tablet": {
+   "confidence": 0.97,
+   "dose_form": "oral tablet",
+   "drug_classes": [
+    "statin"
+   ],
+   "ingredients": [
+    "rosuvastatin"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "301542",
+   "source_count": 5,
+   "therapeutic_category": "lipid-lowering agent"
+  },
+  "sacubitril 97 MG / valsartan 103 MG Oral Tablet [Entresto]": {
+   "confidence": 0.95,
+   "dose_form": "oral tablet",
+   "drug_classes": [
+    "arni"
+   ],
+   "ingredients": [
+    "sacubitril",
+    "valsartan"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": [
+    "1656328",
+    "69749"
+   ],
+   "source_count": 204,
+   "therapeutic_category": "heart failure agent"
+  },
+  "simvastatin 10 mg tablet": {
+   "confidence": 0.97,
+   "dose_form": "tablet",
+   "drug_classes": [
+    "statin"
+   ],
+   "ingredients": [
+    "simvastatin"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "36567",
+   "source_count": 8007,
+   "therapeutic_category": "lipid-lowering agent"
+  },
+  "simvastatin 20 MG Oral Tablet": {
+   "confidence": 0.97,
+   "dose_form": "oral tablet",
+   "drug_classes": [
+    "statin"
+   ],
+   "ingredients": [
+    "simvastatin"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "36567",
+   "source_count": 13,
+   "therapeutic_category": "lipid-lowering agent"
+  },
+  "simvastatin 20 mg tablet": {
+   "confidence": 0.97,
+   "dose_form": "tablet",
+   "drug_classes": [
+    "statin"
+   ],
+   "ingredients": [
+    "simvastatin"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "36567",
+   "source_count": 10078,
+   "therapeutic_category": "lipid-lowering agent"
+  },
+  "simvastatin 40 MG Oral Tablet": {
+   "confidence": 0.97,
+   "dose_form": "oral tablet",
+   "drug_classes": [
+    "statin"
+   ],
+   "ingredients": [
+    "simvastatin"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "36567",
+   "source_count": 12,
+   "therapeutic_category": "lipid-lowering agent"
+  },
+  "simvastatin 40 mg tablet": {
+   "confidence": 0.96,
+   "dose_form": "oral tablet",
+   "drug_classes": [
+    "statin"
+   ],
+   "ingredients": [
+    "simvastatin"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "36567",
+   "source_count": 91,
+   "therapeutic_category": "lipid-lowering"
+  },
+  "simvastatin 80 MG Oral Tablet": {
+   "confidence": 0.98,
+   "dose_form": "oral tablet",
+   "drug_classes": [
+    "statin"
+   ],
+   "ingredients": [
+    "simvastatin"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "36567",
+   "source_count": 1,
+   "therapeutic_category": "lipid-lowering agent"
+  },
+  "sodium chloride 0.9%": {
+   "confidence": 0.85,
+   "dose_form": "solution",
+   "drug_classes": [],
+   "ingredients": [
+    "sodium chloride"
+   ],
+   "route": null,
+   "rxnorm_ingredient_cui": "9863",
+   "source_count": 16,
+   "therapeutic_category": "electrolyte/IV fluid"
+  },
+  "sodium chloride 0.9% intravenous solution": {
+   "confidence": 0.94,
+   "dose_form": "injectable solution",
+   "drug_classes": [],
+   "ingredients": [
+    "sodium chloride"
+   ],
+   "route": "intravenous",
+   "rxnorm_ingredient_cui": "9863",
+   "source_count": 200,
+   "therapeutic_category": "iv fluid/electrolyte"
+  },
+  "spironolactone 25 mg tablet": {
+   "confidence": 0.95,
+   "dose_form": "oral tablet",
+   "drug_classes": [
+    "mra"
+   ],
+   "ingredients": [
+    "spironolactone"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "9997",
+   "source_count": 110,
+   "therapeutic_category": "diuretic"
+  },
+  "tramadol hydrochloride 50 MG Oral Tablet": {
+   "confidence": 0.95,
+   "dose_form": "oral tablet",
+   "drug_classes": [
+    "opioid"
+   ],
+   "ingredients": [
+    "tramadol"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "10689",
+   "source_count": 105,
+   "therapeutic_category": "opioid analgesic"
+  },
+  "valsartan 160 MG Oral Tablet": {
+   "confidence": 0.97,
+   "dose_form": "oral tablet",
+   "drug_classes": [
+    "arb"
+   ],
+   "ingredients": [
+    "valsartan"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "69749",
+   "source_count": 9,
+   "therapeutic_category": "antihypertensive"
+  },
+  "verapamil hydrochloride 80 MG Oral Tablet [Calan]": {
+   "confidence": 0.95,
+   "dose_form": "oral tablet",
+   "drug_classes": [
+    "calcium_channel_blocker"
+   ],
+   "ingredients": [
+    "verapamil"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "11170",
+   "source_count": 24,
+   "therapeutic_category": "antiarrhythmic/antihypertensive"
+  },
+  "warfarin sodium 5 MG Oral Tablet": {
+   "confidence": 0.96,
+   "dose_form": "oral tablet",
+   "drug_classes": [
+    "anticoagulant"
+   ],
+   "ingredients": [
+    "warfarin"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "11289",
+   "source_count": 15,
+   "therapeutic_category": "anticoagulant"
+  },
+  "{21 (ethinyl estradiol 0.03 MG / levonorgestrel 0.15 MG Oral Tablet) / 7 (inert ingredients 1 MG Oral Tablet) } Pack [Levora 0.15/30 28 Day]": {
+   "confidence": 0.93,
+   "dose_form": "pack",
+   "drug_classes": [],
+   "ingredients": [
+    "ethinyl estradiol",
+    "levonorgestrel"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": [
+    "4124",
+    "6373"
+   ],
+   "source_count": 37,
+   "therapeutic_category": "hormonal contraceptive"
+  },
+  "{24 (drospirenone 3 MG / ethinyl estradiol 0.02 MG Oral Tablet) / 4 (inert ingredients 1 MG Oral Tablet) } Pack [Yaz 28 Day]": {
+   "confidence": 0.92,
+   "dose_form": "oral tablet pack",
+   "drug_classes": [],
+   "ingredients": [
+    "drospirenone",
+    "ethinyl estradiol"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": null,
+   "source_count": 17,
+   "therapeutic_category": "hormonal contraceptive"
+  },
+  "{28 (norethindrone 0.35 MG Oral Tablet) } Pack [Camila 28 Day]": {
+   "confidence": 0.93,
+   "dose_form": "pack",
+   "drug_classes": [],
+   "ingredients": [
+    "norethindrone"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "7514",
+   "source_count": 25,
+   "therapeutic_category": "hormonal contraceptive"
+  },
+  "{28 (norethindrone 0.35 MG Oral Tablet) } Pack [Errin 28 Day]": {
+   "confidence": 0.93,
+   "dose_form": "oral tablet pack",
+   "drug_classes": [],
+   "ingredients": [
+    "norethindrone"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "7514",
+   "source_count": 17,
+   "therapeutic_category": "hormonal contraceptive"
+  },
+  "{28 (norethindrone 0.35 MG Oral Tablet) } Pack [Jolivette 28 Day]": {
+   "confidence": 0.93,
+   "dose_form": "oral tablet pack",
+   "drug_classes": [],
+   "ingredients": [
+    "norethindrone"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": "7514",
+   "source_count": 22,
+   "therapeutic_category": "hormonal contraceptive"
+  },
+  "{5 (dienogest 2 MG / estradiol valerate 2 MG Oral Tablet) / 17 (dienogest 3 MG / estradiol valerate 2 MG Oral Tablet) / 2 (estradiol valerate 1 MG Oral Tablet) / 2 (estradiol valerate 3 MG Oral Tablet) / 2 (inert ingredients 1 MG Oral Tablet) } Pack [Natazia 28 Day]": {
+   "confidence": 0.88,
+   "dose_form": "pack",
+   "drug_classes": [],
+   "ingredients": [
+    "dienogest",
+    "estradiol"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": [
+    null,
+    "4083"
+   ],
+   "source_count": 52,
+   "therapeutic_category": "hormonal contraceptive"
+  },
+  "{7 (ethinyl estradiol 0.01 MG Oral Tablet) / 84 (ethinyl estradiol 0.03 MG / levonorgestrel 0.15 MG Oral Tablet) } Pack [Seasonique]": {
+   "confidence": 0.93,
+   "dose_form": "pack",
+   "drug_classes": [],
+   "ingredients": [
+    "ethinyl estradiol",
+    "levonorgestrel"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": [
+    "4124",
+    "6373"
+   ],
+   "source_count": 30,
+   "therapeutic_category": "hormonal contraceptive"
+  },
+  "{7 (ethinyl estradiol 0.035 MG / norgestimate 0.18 MG Oral Tablet) / 7 (ethinyl estradiol 0.035 MG / norgestimate 0.215 MG Oral Tablet) / 7 (ethinyl estradiol 0.035 MG / norgestimate 0.25 MG Oral Tablet) / 7 (inert ingredients 1 MG Oral Tablet) } Pack [Trinessa 28 Day]": {
+   "confidence": 0.92,
+   "dose_form": "pack",
+   "drug_classes": [],
+   "ingredients": [
+    "ethinyl estradiol",
+    "norgestimate"
+   ],
+   "route": "oral",
+   "rxnorm_ingredient_cui": [
+    "4124",
+    "31994"
+   ],
+   "source_count": 38,
+   "therapeutic_category": "hormonal contraceptive"
+  }
+ },
+ "mapped_by": "claude-opus-5-5",
+ "review_status": "unreviewed",
+ "schema": "agere-normalization/1"
+}
