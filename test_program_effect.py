@@ -218,8 +218,21 @@ class Compile(unittest.TestCase):
 STACK = Path('/Users/mikel/clinical-insights-local/artifacts/program-effect/stack')
 
 
+def _semantic_current(stack):
+    """Only run against a semantic layer built by the current code (never trigger a multi-GB rebuild from a test)."""
+    import sqlite3
+    from clinical_core.agere.clinical import semantic_layer
+    try:
+        db = sqlite3.connect(f'file:{stack / "semantic.sqlite3"}?mode=ro', uri=True)
+        version = dict(db.execute('SELECT key, value FROM meta').fetchall()).get('version')
+        db.close()
+        return version == semantic_layer.VERSION and (stack / 'stack.sqlite3').exists()
+    except Exception:
+        return False
+
+
 class RealRelease(unittest.TestCase):
-    @unittest.skipUnless((STACK / 'semantic.sqlite3').exists(), 'synthetic release copy not present')
+    @unittest.skipUnless((STACK / 'semantic.sqlite3').exists() and _semantic_current(STACK), 'synthetic release copy not present or not current')
     def test_care_management_on_release_reports_warnings(self):
         r = program_effect.execute(STACK, None, {'program': 'care_management', 'outcome': 'ed_visits', 'bootstrap': 300})
         self.assertTrue(r['warnings'])

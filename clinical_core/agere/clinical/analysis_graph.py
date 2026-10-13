@@ -263,6 +263,7 @@ def build_answer(plan, results, memberships, question):
                                'capacity': report['capacity'], 'candidates': report['candidates'],
                                'assumptions': report['assumptions'], 'learning_loop': report['learning_loop'],
                                'limitations': report['limitations']})
+        return answer
     if last['operation'] == 'monitor':
         from .monitor import summarize
         report = results[-1]['result']
