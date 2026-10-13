@@ -10,6 +10,7 @@ from clinical_core.agere.clinical import evidence_requirements as er,analysis_gr
 from clinical_core.agere.clinical.graph_workbench import requirement_examples
 from clinical_core.agere.clinical.stack_runtime import Stack
 from clinical_core.agere.warehouse_activation import code_identity as qualification_code
+from clinical_core.agere.clinical.context_student import REQUEST_MAX_BYTES  # shared provider request bound
 
 # Independent source comparison, deliberately not calling the runtime projector,
 # account interpreter or its field/clock helpers to manufacture expected results.
@@ -95,7 +96,7 @@ def main():
         from verify_scoped_planner import exercise
         wire=exercise(path);sizes=[r['request_bytes'] for r in wire['calls']]
         write(out/'planner-wire.json',wire)
-        assert max(sizes)<=20000,sizes
+        assert max(sizes)<=REQUEST_MAX_BYTES,sizes
         receipt={'synthetic':True,'source_snapshot':meta['snapshot'],'patients':len(ids),'results':results,
                  'qualification_code_identity':qualification_code(),
                  'frontier_request_bytes_1500_ascii_question':max(sizes),'new_paid_api_calls':0,

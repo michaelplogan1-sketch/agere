@@ -7,6 +7,7 @@ from unittest.mock import patch
 from clinical_core.agere.active import stack_path
 from clinical_core.agere.clinical import analysis_graph as A, graph_planner as G, planner_scope as S, graph_contracts as C
 from clinical_core.agere.clinical.graph_workbench import landmark_examples,snapshot_examples
+from clinical_core.agere.clinical.context_student import REQUEST_MAX_BYTES  # shared provider request bound
 
 
 def exercise(stack):
@@ -15,7 +16,7 @@ def exercise(stack):
     ex=snapshot_examples(landmark_examples(),meta['snapshot']['as_of'])[0]
     question=ex['question'].ljust(1500);calls=[]
     def wire(body,*args,parse,**kwargs):
-        size=len(json.dumps(body).encode());assert size<=20000
+        size=len(json.dumps(body).encode());assert size<=REQUEST_MAX_BYTES
         schema=body['output_config']['format']['schema'];select='segments' in schema['properties']
         calls.append({'stage':'selection' if select else 'planning','request_bytes':size,
             'request_sha256':S.digest(body),'simulation':True,'provider_called':False})

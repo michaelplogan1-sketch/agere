@@ -8,6 +8,7 @@ from pathlib import Path
 from clinical_core.contracts import digest
 from clinical_core.agere.active import stack_path
 from clinical_core.agere.clinical import learning_queue as L, semantic_learning as S
+from clinical_core.agere.clinical.context_student import REQUEST_MAX_BYTES  # shared provider request bound
 
 OUT = Path('artifacts/agere-retrieval-source-plan-v1')
 meta = json.loads((stack_path()/'run.json').read_text())
@@ -48,7 +49,7 @@ def main():
             # Existing bounded-interpretation planning; no inference or native token call.
             plan = call('context/plan', {'context_id': context['id']})
             assert plan['can_dispatch'] and plan['source_units'] == context['budget']['candidate_units']
-            assert all(n <= 20000 for n in plan['request_bytes'])
+            assert all(n <=REQUEST_MAX_BYTES for n in plan['request_bytes'])
             plans.append(plan)
         for source in p['records']:
             pid, raw = db.execute('SELECT patient,payload FROM records WHERE id=?', (source['record_id'],)).fetchone()

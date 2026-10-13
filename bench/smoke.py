@@ -10,17 +10,27 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 URL = os.environ.get('AGERE_URL', 'http://127.0.0.1:8885')
-PROBES = [  # question, expected route prefix, expected value (count/value) or None to only check the route
-    ('How many claims were denied and then paid?', 'local_compiler', 959),
-    ('What was our no-show rate for appointments scheduled in 2027?', 'local_compiler', 8.98),
-    ('Which diabetics are not on a statin?', 'local_compiler', 119),
-    ('What % of our heart failure patients are on an evidence-based beta blocker?', 'local_compiler', 45.79),
-    ('Which CKD patients are likely to drop below an eGFR of 30 in the next year?', 'local_compiler', None),
-    ('How many lab results came in without any collection date?', 'hosted_verified_sql', 16543),
-    ('Average days from service date to first payer cash for 2028 medical claims?', 'hosted_verified_sql', None),
-    ('How many patients filled a first-generation antihistamine in 2028?', 'hosted_verified_sql', None),
-    ('What is the race breakdown of our diabetic patients?', 'local_unsupported', None),
+# question -> (expected route prefix, {snapshot as_of: expected count/value}); a value of None checks the route only.
+# A new warehouse release starts with no baseline: probes then check the route and print BASELINE NEEDED until
+# values verified against independent SQL are added here.
+PROBES = [
+    ('How many claims were denied and then paid?', 'local_compiler', {'2029-08-15': 959}),
+    ('What was our no-show rate for appointments scheduled in 2027?', 'local_compiler', {'2029-08-15': 8.98}),
+    ('Which diabetics are not on a statin?', 'local_compiler', {'2029-08-15': 119}),
+    ('What % of our heart failure patients are on an evidence-based beta blocker?', 'local_compiler', {'2029-08-15': 45.79}),
+    ('Which CKD patients are likely to drop below an eGFR of 30 in the next year?', 'local_compiler', {'2029-08-15': None}),
+    ('How many lab results came in without any collection date?', 'hosted_verified_sql', {'2029-08-15': 16543}),
+    ('Average days from service date to first payer cash for 2028 medical claims?', 'hosted_verified_sql', {'2029-08-15': None}),
+    ('How many patients filled a first-generation antihistamine in 2028?', 'hosted_verified_sql', {'2029-08-15': None}),
+    ('What is the race breakdown of our diabetic patients?', 'local_unsupported', {'2029-08-15': None}),  # v2.0 adds race
 ]
+
+
+def active_as_of():
+    try:
+        return json.loads((ROOT / 'config/agere/active_warehouse.json').read_text())['snapshot']['as_of']
+    except (OSError, ValueError, KeyError):
+        return '2029-08-15'
 
 
 def ask(q):
@@ -34,7 +44,11 @@ def ask(q):
 
 def main():
     failures = []
-    for q, route, expected in PROBES:
+    as_of = active_as_of()
+    for q, route, baselines in PROBES:
+        if as_of not in baselines:
+            print(f"BASELINE NEEDED  {q[:70]:70s} (snapshot {as_of})"); continue
+        expected = baselines[as_of]
         d = ask(q)
         pr = d.get('planner_receipt') or {}
         a = d.get('answer') or {}
@@ -44,7 +58,7 @@ def main():
         ok_value = expected is None or (isinstance(got, (int, float)) and abs(got - expected) <= max(0.01, abs(expected) * 0.001))
         print(f"{'PASS' if ok_route and ok_value else 'FAIL'}  {q[:70]:70s} route={pr.get('route')} got={got} {d.get('error', '')[:120]}")
         if not (ok_route and ok_value): failures.append(q)
-    run = subprocess.run([str(ROOT / '.venv/bin/python'), str(ROOT / 'bench/run.py'), '--system', 'agere', '--jobs', '2', '--url', URL, '--ids',
+    run = subprocess.run([str(ROOT / '.venv/bin/python'), str(ROOT / 'bench/run.py'), '--system', 'agere', '--jobs', '2', '--url', URL, *(['--as-of', as_of] if as_of != '2029-08-15' else []), '--ids',
                           *[f'D{i:02d}' for i in range(1, 31)], *[f'C{i:02d}' for i in range(1, 21)]], capture_output=True, text=True, cwd=ROOT)
     latest = max((ROOT / 'bench/results/agere').glob('*.jsonl'), key=lambda p: p.stat().st_mtime)
     correct = sum(1 for l in latest.open() if json.loads(l)['score'].get('correct'))

@@ -6,6 +6,7 @@ are excluded. All patients and received records are synthetic.
 """
 import json, sys, urllib.request, urllib.error
 from pathlib import Path
+from clinical_core.agere.clinical.context_student import REQUEST_MAX_BYTES  # shared provider request bound
 ROOT=Path(__file__).resolve().parent
 OUT=ROOT/'artifacts/agere-medication-interpretation-v1'
 OLD=ROOT/'artifacts/agere-medication-source-review-v1'
@@ -35,7 +36,7 @@ def prepare():
   c=call('context?id='+s['context_id']);write(patient+'-context.json',c)
   assert not c['record_scope']['complete_chart'] and set(c['model_context']['sources'])==set(ids)
   p=call('context/plan',{'context_id':s['context_id']});write(patient+'-plan.json',p)
-  assert max(p['request_bytes'])<=20000
+  assert max(p['request_bytes'])<=REQUEST_MAX_BYTES
   print(patient,'context',s['context_id'],'records',len(ids),'excluded narratives',len(s['unselected_narrative_record_ids']),'pass bytes',p['request_bytes'],flush=True)
   for bad in [{**req,'question_receipt_ids':['other']},{**req,'record_ids':['other']},{**req,'original_questions_changed':True}]:
    try:call('medication-interpretation/select',bad);raise AssertionError('Bad scope accepted')

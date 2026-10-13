@@ -5,6 +5,7 @@ from run_integrated_stack import keys
 from clinical_core.agere.clinical import case_passes as cp, case_synthesis as single
 from clinical_core.agere.gateway import BudgetLedger
 from clinical_core.agere.clinical import source_synthesis as router
+from clinical_core.agere.clinical.context_student import REQUEST_MAX_BYTES  # shared provider request bound
 
 ROOT=Path(__file__).resolve().parent
 
@@ -21,7 +22,7 @@ def main():
   replay=router.synthesize(path,context_id,ledger,allow_live=False)
   assert answer['id']==replay['id'] and replay['cache_hit'] and replay['new_paid_api_calls']==0
   assert answer['coverage']['submitted_units']==row['budget']['candidate_units']
-  assert all(p['request_bytes']<=20000 for p in answer['passes']) and answer['reconciliation']['request_bytes']<=20000
+  assert all(p['request_bytes']<=REQUEST_MAX_BYTES for p in answer['passes']) and answer['reconciliation']['request_bytes']<=REQUEST_MAX_BYTES
   citations=[c for f in answer['findings'] for c in f['citations']]
   assert citations and all(c['citation_verified'] for c in citations)
   report={'synthetic':True,'context_id':context_id,'answer_id':answer['id'],'source_units':answer['coverage']['submitted_units'],

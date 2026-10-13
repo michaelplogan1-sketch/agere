@@ -12,6 +12,7 @@ from clinical_core.agere.clinical import evidence_acquisition as acquisition,ana
 from clinical_core.agere.clinical.graph_workbench import requirement_examples
 from clinical_core.agere.clinical.stack_runtime import Stack
 from clinical_core.contracts import digest
+from clinical_core.agere.clinical.context_student import REQUEST_MAX_BYTES  # shared provider request bound
 
 
 def write(p,v):p.write_text(json.dumps(v,indent=2,allow_nan=False)+'\n')
@@ -101,7 +102,7 @@ def main():
         sizes=[]
         with patch.object(graph_planner,'send',side_effect=lambda body,*a,**kw:sizes.append(len(json.dumps(body,allow_nan=False).encode()))):
             graph_planner.propose('x'*1500,None,None,snapshot=meta['snapshot'],graph_catalog=analysis_graph.catalog(args.stack),observed_values=json.loads((args.stack/'cohort-values.json').read_text()))
-        assert sizes[0]<=20000,sizes
+        assert sizes[0]<=REQUEST_MAX_BYTES,sizes
         receipt={'schema':'medication-item-verification/1','synthetic':True,'snapshot':meta['snapshot'],'patients':len(ids),
           'public_review_entries':expected_entries,'public_reported_entries':expected_reports,'counts':dict(counts),'link_issues':dict(issues),
           'contracts':checks,'acquisition_proposal':proposal['id'],'planner_request_bytes':sizes[0],

@@ -18,6 +18,12 @@ from bench.adapters import MODEL, agere, frontier_sql
 from bench.score import score_answer
 
 
+def redate(question, as_of):
+    """Move a question to a new snapshot: its stated as-of date and its reference cutoff change together."""
+    old = question['as_of']
+    return {**question, 'as_of': as_of, 'question': question['question'].replace(old, as_of)}
+
+
 def suite_digest(questions):
     payload = [(q, (ROOT / q['reference_sql']).read_text()) for q in questions]
     return hashlib.sha256(json.dumps(payload, sort_keys=True).encode()).hexdigest()
@@ -37,7 +43,7 @@ def run_one(question, args, identity):
         try:
             # References are computed once per (suite, release, question) and cached, so parallel
             # runs never re-execute heavy reference SQL inside every worker.
-            cache = ROOT / 'results' / 'reference-cache' / f"{identity[:16]}-{warehouse.release}" / f"{question['id']}.json"
+            cache = ROOT / 'results' / 'reference-cache' / f"{identity[:16]}-{warehouse.release}-{question['as_of']}" / f"{question['id']}.json"
             reference_start = time.perf_counter()
             if cache.exists():
                 saved = json.loads(cache.read_text())
@@ -78,6 +84,8 @@ def main(argv=None):
     parser.add_argument('--system', choices=['reference', 'agere', 'frontier_sql'], required=True)
     parser.add_argument('--database', type=Path, default=DEFAULT_DB)
     parser.add_argument('--release')
+    parser.add_argument('--as-of', help='Re-date every question to this snapshot (YYYY-MM-DD), e.g. a newer warehouse cutoff; '
+                                        'the date in the question text and the reference cutoff both change')
     parser.add_argument('--ids', nargs='+', help='Space- or comma-separated question IDs')
     parser.add_argument('--url', default='http://127.0.0.1:8885')
     parser.add_argument('--model', default=MODEL)
@@ -89,6 +97,8 @@ def main(argv=None):
     if not 1 <= args.jobs <= 4 or not 1 <= args.max_tools <= 20 or args.sql_timeout <= 0:
         parser.error('jobs must be 1..4, max-tools 1..20 and SQL timeout positive')
     all_questions = load_questions(); identity = suite_digest(all_questions)
+    if args.as_of:
+        all_questions = [redate(q, args.as_of) for q in all_questions]
     questions = all_questions
     if args.ids:
         ids = {i for arg in args.ids for i in arg.split(',')}

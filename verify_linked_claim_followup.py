@@ -1,6 +1,7 @@
 """Return a narrow source expansion to the new consolidated review question."""
 from verify_linked_claim_reconciliation_http import call,write,OUT
 import json,sys
+from clinical_core.agere.clinical.context_student import REQUEST_MAX_BYTES  # shared provider request bound
 
 def prepare():
  a=json.loads((OUT/'P-1001-answer.json').read_text())
@@ -12,7 +13,7 @@ def prepare():
  s=call('reference-scope/select',{'preview_id':p['id'],'record_ids':roots});write('followup-selection.json',s)
  assert s['status']=='source_context_prepared' and len(s['selected_record_ids'])==2 and s['unselected_record_ids']
  plan=call('context/plan',{'context_id':s['context_id']});write('followup-plan.json',plan)
- assert plan['source_passes']==1 and max(plan['request_bytes'])<=20000
+ assert plan['source_passes']==1 and max(plan['request_bytes'])<=REQUEST_MAX_BYTES
  print('Exact follow-up prepared:',plan['source_units'],'units;',len(s['unselected_record_ids']),'linked records explicitly excluded;',plan['request_bytes'],'request bytes',flush=True)
 def run():
  s=json.loads((OUT/'followup-selection.json').read_text());a=call('context/synthesize',{'context_id':s['context_id']});write('followup-answer.json',a)

@@ -1,6 +1,7 @@
 """Actual synthetic task -> unresolved records -> new selected review -> attachment."""
 import json,sys,urllib.request,urllib.error
 from pathlib import Path
+from clinical_core.agere.clinical.context_student import REQUEST_MAX_BYTES  # shared provider request bound
 OUT=Path('artifacts/agere-source-meaning-v1');PRIOR=Path('artifacts/agere-linked-reconciliation-v1')
 OLD=Path('artifacts/agere-medication-interpretation-v1')
 TASK='972c00cfb436e95844ab5b7d46f338938e1d40f96522c812d4669bb61d0801db'
@@ -49,7 +50,7 @@ def verify_prepared():
  for group in ('historical','followup'):
   selection=read(group+'-selection.json');p=call('context/plan',{'context_id':selection['context_id']})
   assert p==read(group+'-plan.json') and p['source_meaning_contract']=='source-meaning/1'
-  assert p['source_passes']==1 and all(x<=20000 for x in p['request_bytes'])
+  assert p['source_passes']==1 and all(x<=REQUEST_MAX_BYTES for x in p['request_bytes'])
   assert call('medication-interpretation/select',selection['request'])==selection
  state=call('medication-interpretation/task',{'task_id':TASK});write('task-state.json',state)
  assert state['task_revision']==2 and all(x['current'] for x in state['answers']) and all(x['current'] for x in state['selections'])

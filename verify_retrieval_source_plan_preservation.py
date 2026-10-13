@@ -11,6 +11,7 @@ from clinical_core.agere.clinical import synthesis_availability as A, reference_
 from clinical_core.agere.clinical import meaning_source_stage as M, source_meaning as meaning, record_synthesis as RS, case_passes as P
 from clinical_core.agere.clinical.structured_transport import install as install_structured
 from clinical_core.agere.clinical.meaning_source_dispatch import install as install_meaning, pinned
+from clinical_core.agere.clinical.context_student import REQUEST_MAX_BYTES  # shared provider request bound
 
 OUT = Path('artifacts/agere-retrieval-source-plan-v1'); PRIOR = Path('artifacts/agere-retrieval-comparison-v1')
 original_envelope = A.envelope
@@ -54,7 +55,7 @@ def main():
                 restored = deepcopy(body)
                 restored['messages'][0]['content'] = P.context.encode(F.restore_wire(json.loads(body['messages'][0]['content']))).decode()
                 assert restored == ordinary and units == original_units
-                assert P.request_bytes(body) <= 20000
+                assert P.request_bytes(body) <=REQUEST_MAX_BYTES
                 submitted.extend(u['id'] for u in packet['evidence'])
                 audit.append({'workflow': workflow, 'group_context': c['id'], 'pass_number': packet['pass_number'],
                               'source_units': len(packet['evidence']), 'ordinary_bytes': P.request_bytes(ordinary),

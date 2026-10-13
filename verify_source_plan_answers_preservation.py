@@ -16,6 +16,7 @@ from clinical_core.agere.clinical.warehouse_retrieval import Retriever
 from clinical_core.agere.clinical import source_plan_answers as A, source_plan_reconciliation as R
 from clinical_core.agere.clinical import source_plan_recovery as Q
 from clinical_core.agere.gateway import BudgetLedger
+from clinical_core.agere.clinical.context_student import REQUEST_MAX_BYTES  # shared provider request bound
 
 OUT=Path('artifacts/agere-source-plan-answers-v1');PRIOR=Path('artifacts/agere-reader-comparison-v1')
 
@@ -67,7 +68,7 @@ def main():
         for stage,(body,units) in zip(saved['passes'],packets):
             source_request_keys.append(digest({'contract':'context-student/1','provider':'claude','body':body}))
             assert source_request_keys[-1] in {c['id'] for c in new}
-            assert P.request_bytes(body)==stage['request_bytes']<=20000
+            assert P.request_bytes(body)==stage['request_bytes']<=REQUEST_MAX_BYTES
             for review in stage['result']['unit_reviews']:submitted.append(review['source_unit_id'])
         for unit in by_unit.values():
             if unit['kind']!='narrative':continue

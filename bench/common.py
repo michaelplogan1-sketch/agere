@@ -9,7 +9,18 @@ import time
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
-DEFAULT_DB = Path('/Users/mikel/clinical-insights-local/artifacts/agere-healthcare-v123/warehouse.sqlite3')
+def _active_db():
+    """The warehouse of the ACTIVE Agere build (config/agere/active_warehouse.json), so references follow activation."""
+    config = ROOT.parent / 'config/agere/active_warehouse.json'
+    try:
+        db = Path(json.loads(config.read_text())['build']) / 'warehouse.sqlite3'
+        if db.exists(): return db
+    except (OSError, ValueError, KeyError):
+        pass
+    return Path('/Users/mikel/clinical-insights-local/artifacts/agere-healthcare-v123/warehouse.sqlite3')
+
+
+DEFAULT_DB = _active_db()
 ANSWER_TYPES = {'count', 'patient_set', 'value', 'table', 'unsupported'}
 
 
