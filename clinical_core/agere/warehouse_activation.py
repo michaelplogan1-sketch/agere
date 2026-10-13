@@ -45,7 +45,7 @@ def validate_extension(connection,receipt,*,current_code,catalog_hash,categories
     return True
 
 
-def activate(build,config):
+def activate(build,config,restatement=False):
     from .healthcare_warehouse import checksum
     from .clinical import clinical_state,longitudinal
     build=Path(build).resolve();config=Path(config).resolve()
@@ -58,7 +58,13 @@ def activate(build,config):
         validate_extension(connection,read(build/'source-extension-verification.json'),current_code=code_identity(),
                            catalog_hash=catalog_identity(),categories=DEFINITIONS)
     migration=read(build/'migration-audit.json');snapshot=connection['snapshot'];dataset=snapshot['source_dataset']
-    if (migration.get('identical_roster') is not True or migration.get('prior_rows_missing_or_changed')!=0 or
+    # A restated release (the source re-delivers history with corrections) is allowed only when asked for explicitly:
+    # same roster, nothing dropped, every changed row counted per table in the audit. Results keyed to the old
+    # source digest (learned answers, plan caches) stop matching automatically.
+    restated=(restatement and migration.get('kind')=='restatement' and migration.get('prior_rows_missing')==0
+              and isinstance(migration.get('prior_rows_changed'),int) and isinstance(migration.get('changed_by_table'),dict))
+    if restatement and not restated:raise ValueError('Restatement activation needs a restatement migration audit (no missing rows, changes counted per table)')
+    if (migration.get('identical_roster') is not True or (not restated and migration.get('prior_rows_missing_or_changed')!=0) or
         migration.get('new_received_rows')!=connection['records'] or migration.get('patient_id_digest')!=dataset['original_patient_id_digest'] or
         migration.get('manifest_source_sha256')!=dataset['source_sha256']):raise ValueError('Unverified original-cohort migration')
     if checksum(dataset['source'])!=dataset['source_sha256']:raise ValueError('Pinned source content changed')
@@ -68,7 +74,7 @@ def activate(build,config):
                   prior['snapshot']['as_of']>snapshot['as_of']):raise ValueError('Activation would change the roster or roll back the cutoff')
     value={'schema':'active-healthcare-warehouse/1','build':str(build),'source_release':connection['release'],
            'snapshot':snapshot,'synthetic':True,'population_policy':'Original healthcare-warehouse roster; no expanded benchmark variants',
-           'activation_basis':'Qualified received-source migration, full-population contracts and diagnostic review; prior connection retained'}
+           'activation_basis':('Restated release: ' if restated else '')+'Qualified received-source migration, full-population contracts and diagnostic review; prior connection retained'}
     config.parent.mkdir(parents=True,exist_ok=True)
     if prior:
         history=config.parent/'activation-history';history.mkdir(exist_ok=True)
@@ -80,6 +86,7 @@ def activate(build,config):
         json.dump(value,f,indent=2);f.write('\n');f.flush();os.fsync(f.fileno());temporary=f.name
     os.replace(temporary,config)
     receipt={'synthetic':True,'active_build':str(build),'source_snapshot':snapshot,'prior_build':prior['build'] if prior else None,
-             'qualification_code_identity':code_identity(),'configuration':str(config),'clinical_validation_claimed':False}
+             'qualification_code_identity':code_identity(),'configuration':str(config),'clinical_validation_claimed':False,
+             'restatement':{k:migration[k] for k in ('prior_rows_changed','changed_by_table','prior_release') if k in migration} if restated else None}
     (build/'activation.json').write_text(json.dumps(receipt,indent=2)+'\n')
     return receipt
