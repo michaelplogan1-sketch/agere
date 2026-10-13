@@ -129,7 +129,7 @@ UNSUPPORTED = [
     (r'\brace\b|\bethnicit(?:y|ies)\b|\bracial\b|\bhispanic\b|\blatin[oax]\b|\b(?:black|white|asian|native american|pacific islander|'
      r'african american)(?: (?:and|or|vs\.?|versus) (?:black|white|asian|hispanic|latin[oax]))? (?:patients|members|people|population|adults|women|men)\b',
      ['race/ethnicity fields (none are received)']),
-    (r'\braf\b|\bhcc\b|\bcms-hcc\b|\brisk adjustment factor\b|\brisk[- ]adjusted revenue\b',
+    (r'\braf(?: scores?)?\b|\b(?:cms-)?hccs? (?:scores?|codes?|coding|capture|gaps?|risk|categor\w+|weights?)\b|\brisk adjustment factors?\b|\brisk[- ]adjusted revenue\b',
      ['CMS-HCC risk adjustment factors (no HCC mapping or RAF scores are received; Agere has only an internal cost-risk score)']),
     (r'\bcahps\b|\bpatient experience scores?\b|\bsatisfaction scores?\b', ['patient experience survey results (none are received)']),
     (r'\bhousehold income\b|\bincome (?:level|bracket|distribution)s?\b|\bfpl\b|\bpoverty (?:level|line)\b|\bincome\b',

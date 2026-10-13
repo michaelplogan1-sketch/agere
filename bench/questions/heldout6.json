@@ -1,0 +1,612 @@
+[
+ {
+  "id": "N01",
+  "question": "How many diabetics are on our books? Type 1 or type 2, and count anyone coded with a diabetic complication (kidney disease, neuropathy, microalbuminuria). Don't count prediabetes or gestational diabetes.",
+  "category": "cohort",
+  "as_of": "2029-08-15",
+  "interpretation": "Original 1,614-person roster; identity-matched records received on or before the as-of date (2029-08-15) only. No inferred diagnoses, hidden truth or future events. Distinct patients. Diabetes = conditions record whose description contains 'diabet' (e.g. 'Diabetes mellitus type 2', 'Disorder of kidney due to diabetes mellitus', 'Neuropathy due to type 2 diabetes mellitus', 'Microalbuminuria due to type 2 diabetes mellitus') or starts with 'T1DM'/'T2DM', or ICD-10 E10.*/E11.*. Excluded: 'Prediabetes' (R73.03), gestational diabetes ('GDM, diet controlled', O24.*), 'Family history of diabetes mellitus' (Z83.3). Hyperglycemia and hypoglycemia unawareness are not diabetes diagnoses. No lab or medication inference. Condition records are undated.",
+  "answer_type": "count",
+  "reference_sql": "sql/heldout6/N01.sql",
+  "split": "heldout6"
+ },
+ {
+  "id": "N02",
+  "question": "Give me the list of patients whose latest eGFR is under 45 and whose latest urine albumin/creatinine ratio is 30 or above. Those are the ones nephrology wants to see first.",
+  "category": "cohort",
+  "as_of": "2029-08-15",
+  "interpretation": "Original 1,614-person roster; identity-matched records received on or before the as-of date (2029-08-15) only. No inferred diagnoses, hidden truth or future events. eGFR = labs named 'eGFR' (unit 'mL/min/1.73m2' or 'mL/min/1.73m²'; same measure) or 'Glomerular filtration rate'; UACR = labs named 'Urine albumin/creatinine ratio' or 'Microalbumin/Creatinine' (mg/g). Only numeric, non-cancelled results with an event_date can be 'latest'; undated results (all 'Glomerular filtration rate', the ²-unit eGFR rows and all 'Microalbumin/Creatinine' rows are undated) are ignored. Latest = maximum event_date; if several results share that date the worst value is used (lowest eGFR, highest UACR). Qualifies when latest eGFR < 45 (strict) AND latest UACR >= 30 (inclusive). Patients missing either dated test are excluded. 'Urine albumin' (mg/L) alone is not a ratio and is not used.",
+  "answer_type": "patient_set",
+  "reference_sql": "sql/heldout6/N02.sql",
+  "split": "heldout6"
+ },
+ {
+  "id": "N03",
+  "question": "Headcount: women 65 and over who are on Medicare.",
+  "category": "cohort",
+  "as_of": "2029-08-15",
+  "interpretation": "Original 1,614-person roster; identity-matched records received on or before the as-of date (2029-08-15) only. No inferred diagnoses, hidden truth or future events. Roster sex_reported = 'F' and roster age_reported >= 65 (age as captured on the roster profile; later 'reported_age_confirmation' updates are not used to re-age patients). Medicare = the patient's coverage record with coverage_type 'medicare' (all are active). Medicare-type coverage reported in claim eligibility verifications is not substituted for the coverage record. Distinct patients.",
+  "answer_type": "count",
+  "reference_sql": "sql/heldout6/N03.sql",
+  "split": "heldout6"
+ },
+ {
+  "id": "N04",
+  "question": "How many patients are on insulin of any kind? Check the med list, orders and pharmacy side.",
+  "category": "cohort",
+  "as_of": "2029-08-15",
+  "interpretation": "Original 1,614-person roster; identity-matched records received on or before the as-of date (2029-08-15) only. No inferred diagnoses, hidden truth or future events. Distinct patients with any record whose medication name contains 'insulin' or 'humulin' (case-insensitive), in medication_lists (name), medication_orders, pharmacy_dispenses, pharmacy_claims or pharmacy_history (medication_name). Includes 'insulin isophane/regular 70/30 [Humulin]', 'Insulin glargine', 'Insulin NPH', 'Insulin aspart (pump)' and 'Insulin regular gtt'. Any record counts regardless of status or date; this is a 'has insulin on record' cohort, not an adherence measure.",
+  "answer_type": "count",
+  "reference_sql": "sql/heldout6/N04.sql",
+  "split": "heldout6"
+ },
+ {
+  "id": "N05",
+  "question": "Which heart failure patients have no beta-blocker anywhere in their medication records? I want names to review for GDMT gaps.",
+  "category": "cohort",
+  "as_of": "2029-08-15",
+  "interpretation": "Original 1,614-person roster; identity-matched records received on or before the as-of date (2029-08-15) only. No inferred diagnoses, hidden truth or future events. Heart failure = conditions record with SNOMED 88805009, ICD-10 I50.*, or description containing 'heart failure' or 'CHF'. Beta-blocker = any medication record (medication_lists name; medication_orders, pharmacy_dispenses, pharmacy_claims, pharmacy_history medication_name) containing metoprolol (succinate or tartrate), carvedilol, bisoprolol (incl. bisoprolol/HCTZ combination), atenolol, propranolol, nebivolol, labetalol or Toprol. Any record at any time counts as 'has a beta-blocker'. Return HF patients with none. No contraindication logic.",
+  "answer_type": "patient_set",
+  "reference_sql": "sql/heldout6/N05.sql",
+  "split": "heldout6"
+ },
+ {
+  "id": "N06",
+  "question": "Using sex-specific cutoffs — hemoglobin under 12 for women, under 13 for men — how many patients are anemic on their most recent hemoglobin?",
+  "category": "cohort",
+  "as_of": "2029-08-15",
+  "interpretation": "Original 1,614-person roster; identity-matched records received on or before the as-of date (2029-08-15) only. No inferred diagnoses, hidden truth or future events. Hemoglobin = labs named exactly 'Hemoglobin' or 'Hgb' (g/dL). 'Hemoglobin A1c', 'Hemoglobin A1c/Hemoglobin.total' and 'Hemoglobin.gastrointestinal.lower' are different tests and are excluded. Only numeric, non-cancelled results with an event_date can be 'most recent' (all 'Hgb' rows and some 'Hemoglobin' rows are undated and ignored). Most recent = max event_date; same-date ties use the lowest value. Sex from roster sex_reported: F < 12.0, M < 13.0 (strict). The Anemia diagnosis is not used. Distinct patients.",
+  "answer_type": "count",
+  "reference_sql": "sql/heldout6/N06.sql",
+  "split": "heldout6"
+ },
+ {
+  "id": "N07",
+  "question": "How many adults have a BMI of 30 or more based on their latest weight? Compute it from height and weight, don't rely on the obesity diagnosis.",
+  "category": "cohort",
+  "as_of": "2029-08-15",
+  "interpretation": "Original 1,614-person roster; identity-matched records received on or before the as-of date (2029-08-15) only. No inferred diagnoses, hidden truth or future events. Adults = roster age_reported >= 18. Height = the patient's vitals height_cm measurement (one per patient, undated baseline). Weight = the most recent dated vitals weight_kg (max event_date, then max event_time; same-time ties use the highest); if a patient has no dated weight, the undated baseline weight_kg measurement is used. BMI = kg / (height_cm/100)^2, qualifies at >= 30.0 (inclusive). The 'Body mass index 30+ - obesity' diagnosis is not used. Distinct patients.",
+  "answer_type": "count",
+  "reference_sql": "sql/heldout6/N07.sql",
+  "split": "heldout6"
+ },
+ {
+  "id": "N08",
+  "question": "Possible undiagnosed diabetes for HCC/outreach review: patients whose most recent A1c is 6.5 or higher but who have no diabetes diagnosis on their problem list.",
+  "category": "cohort",
+  "as_of": "2029-08-15",
+  "interpretation": "Original 1,614-person roster; identity-matched records received on or before the as-of date (2029-08-15) only. No inferred diagnoses, hidden truth or future events. A1c = labs named 'HbA1c', 'Hemoglobin A1c' or 'Hemoglobin A1c/Hemoglobin.total' (%), numeric, non-cancelled, with an event_date (undated results — all 'Hemoglobin A1c' and 'Hemoglobin A1c/Hemoglobin.total' rows — cannot be 'most recent' and are ignored). Most recent = max event_date; same-date ties use the highest value. Qualifies when latest A1c >= 6.5 (inclusive) AND the patient has no diabetes diagnosis (description contains 'diabet' or starts 'T1DM'/'T2DM', or ICD-10 E10.*/E11.*; prediabetes, GDM/O24.* and family history Z83.3 do NOT count as a diabetes diagnosis, so a patient with only 'Prediabetes' still qualifies). Medications are not used.",
+  "answer_type": "patient_set",
+  "reference_sql": "sql/heldout6/N08.sql",
+  "split": "heldout6"
+ },
+ {
+  "id": "N09",
+  "question": "Anyone with an LDL of 190 or higher on file? Doesn't matter when it was drawn — I'm looking for possible FH.",
+  "category": "cohort",
+  "as_of": "2029-08-15",
+  "interpretation": "Original 1,614-person roster; identity-matched records received on or before the as-of date (2029-08-15) only. No inferred diagnoses, hidden truth or future events. LDL = labs named 'LDL cholesterol' or 'LDL' (mg/dL), numeric, not cancelled. Because timing does not matter, undated results count (most LDL results are undated). Qualifies with any result >= 190 (inclusive). Distinct patients. Non-HDL and total cholesterol are not LDL.",
+  "answer_type": "count",
+  "reference_sql": "sql/heldout6/N09.sql",
+  "split": "heldout6"
+ },
+ {
+  "id": "N10",
+  "question": "Pediatric asthma — how many kids under 18 carry an asthma diagnosis?",
+  "category": "cohort",
+  "as_of": "2029-08-15",
+  "interpretation": "Original 1,614-person roster; identity-matched records received on or before the as-of date (2029-08-15) only. No inferred diagnoses, hidden truth or future events. Under 18 = roster age_reported < 18. Asthma = conditions record whose description contains 'asthma' ('Asthma', 'Childhood asthma', 'Moderate persistent asthma', 'Asthma, unspecified with (acute) exacerbation', etc.) or ICD-10 J45.*. COPD/emphysema are not asthma. No inhaler-based inference. Distinct patients.",
+  "answer_type": "count",
+  "reference_sql": "sql/heldout6/N10.sql",
+  "split": "heldout6"
+ },
+ {
+  "id": "N11",
+  "question": "Bleeding-risk check: which afib patients have both an anticoagulant and an antiplatelet on record?",
+  "category": "cohort",
+  "as_of": "2029-08-15",
+  "interpretation": "Original 1,614-person roster; identity-matched records received on or before the as-of date (2029-08-15) only. No inferred diagnoses, hidden truth or future events. Atrial fibrillation = conditions record with description containing 'atrial fibrillation' or starting with 'AFib', or ICD-10 I48.*. Anticoagulant = any medication record (medication_lists name; medication_orders, pharmacy_dispenses, pharmacy_claims, pharmacy_history medication_name) naming warfarin, apixaban, rivaroxaban, dabigatran or edoxaban (or Eliquis/Xarelto/Coumadin). Antiplatelet = clopidogrel, prasugrel, ticagrelor or aspirin (including the abbreviation 'ASA'). Both classes must appear on record at any time (not necessarily concurrently). Digoxin, verapamil, alteplase (one-time thrombolytic) are neither.",
+  "answer_type": "patient_set",
+  "reference_sql": "sql/heldout6/N11.sql",
+  "split": "heldout6"
+ },
+ {
+  "id": "N12",
+  "question": "Commercial members aged 40 to 64 with a potassium of 5.0 or higher in the past year — send me the list.",
+  "category": "cohort",
+  "as_of": "2029-08-15",
+  "interpretation": "Original 1,614-person roster; identity-matched records received on or before the as-of date (2029-08-15) only. No inferred diagnoses, hidden truth or future events. Commercial = coverage record coverage_type 'commercial'. Age 40–64 inclusive by roster age_reported. Potassium = labs named 'Potassium' (units mmol/L and mEq/L are equivalent), numeric value only, result_status not 'cancelled' (hemolyzed specimens are cancelled with no numeric potassium), with an event_date in the 12 months ending on the as-of date (2028-08-16 through 2029-08-15 inclusive). Undated results cannot be placed in the window. Qualifies with any such result >= 5.0 (inclusive).",
+  "answer_type": "patient_set",
+  "reference_sql": "sql/heldout6/N12.sql",
+  "split": "heldout6"
+ },
+ {
+  "id": "N13",
+  "question": "Specialist visits per 1,000 patients by coverage type for calendar 2027 — commercial, Medicare, Medicaid, uninsured.",
+  "category": "utilization",
+  "as_of": "2029-08-15",
+  "interpretation": "Original 1,614-person roster; identity-matched records received on or before the as-of date (2029-08-15) only. No inferred diagnoses, hidden truth or future events. Specialist visit = distinct encounter_id (in_progress/completed versions de-duplicated; earliest event_date per encounter) at a specialty organization: organization_id starting 'WH-SPECIALTY-' (cardiology, endocrinology, nephrology, pulmonology, pediatric specialty) or 'WH-GI-' (gastroenterology), any encounter type, with event_date in 2027-01-01..2027-12-31. Primary care practices, urgent care, hospitals, rehab, diagnostic, outside dental/optometry/audiology are not specialist visits. Coverage type from each patient's coverage record (one per patient). Denominator = all roster patients with that coverage type, whether or not they had a visit. per_1000 = visits / patients * 1000 rounded to 1 decimal. Columns: coverage_type, patients, specialist_visits, per_1000; one row per coverage type (4 rows).",
+  "answer_type": "table",
+  "reference_sql": "sql/heldout6/N13.sql",
+  "split": "heldout6",
+  "tolerance": 0.1
+ },
+ {
+  "id": "N14",
+  "question": "What share of our hospital discharges in the last 12 months got an outpatient visit within 7 days? Inpatient and observation stays both count.",
+  "category": "utilization",
+  "as_of": "2029-08-15",
+  "interpretation": "Original 1,614-person roster; identity-matched records received on or before the as-of date (2029-08-15) only. No inferred diagnoses, hidden truth or future events. Hospital discharge = ADT 'discharge' event for an encounter whose type is 'inpatient' or 'observation' (ED-only discharges excluded), with discharge event_date from 2028-08-16 through 2029-08-08 (so the full 7-day window ends on or before the as-of date). Each discharge event counts once. Numerator: the same patient has at least one distinct outpatient encounter of type primary_care, office, pediatric_office, specialty_followup, specialist_office or wellness whose earliest event_date is 1–7 days after the discharge date (same-day contacts do not count). Telephone, urgent care, ED and home health encounters are not follow-up visits here. Value = numerator / discharges * 100, percent rounded to 1 decimal.",
+  "answer_type": "value",
+  "reference_sql": "sql/heldout6/N14.sql",
+  "split": "heldout6",
+  "tolerance": 0.1
+ },
+ {
+  "id": "N15",
+  "question": "Who are our repeat ED users — two or more ER visits in the last 12 months?",
+  "category": "utilization",
+  "as_of": "2029-08-15",
+  "interpretation": "Original 1,614-person roster; identity-matched records received on or before the as-of date (2029-08-15) only. No inferred diagnoses, hidden truth or future events. ED visit = distinct encounter_id of type 'emergency', 'ED' or 'ED stroke alert' (in_progress/completed versions de-duplicated; earliest event_date). Window = event_date 2028-08-16 through 2029-08-15 inclusive; undated ED encounters cannot be placed in the window. Urgent care and observation are not ED visits. Qualifies with >= 2 distinct ED encounters in the window.",
+  "answer_type": "patient_set",
+  "reference_sql": "sql/heldout6/N15.sql",
+  "split": "heldout6"
+ },
+ {
+  "id": "N16",
+  "question": "Observation vs inpatient: how many stays of each did we have per year, 2026 through 2029?",
+  "category": "utilization",
+  "as_of": "2029-08-15",
+  "interpretation": "Original 1,614-person roster; identity-matched records received on or before the as-of date (2029-08-15) only. No inferred diagnoses, hidden truth or future events. Stay = distinct encounter_id (in_progress/completed versions de-duplicated) of type 'inpatient' or 'observation' (any organization, including hospital stays imported into practice histories), by calendar year of the encounter's earliest event_date. ED visits that were converted to observation are counted once, as the observation encounter. Undated stays are excluded. Columns: year (text 'YYYY'), inpatient_stays, observation_stays; exactly one row per year 2026, 2027, 2028, 2029, with zeros where there were none.",
+  "answer_type": "table",
+  "reference_sql": "sql/heldout6/N16.sql",
+  "split": "heldout6"
+ },
+ {
+  "id": "N17",
+  "question": "By attributed practice: how many in-person primary care visits did our attributed patients have in 2028, per 1,000 attributed patients?",
+  "category": "utilization",
+  "as_of": "2029-08-15",
+  "interpretation": "Original 1,614-person roster; identity-matched records received on or before the as-of date (2029-08-15) only. No inferred diagnoses, hidden truth or future events. Attribution = care_team_relationships role 'primary_care' or 'pediatric_primary_care' with status 'assigned'; the practice is that record's organization_id (WH-PRACTICE-0..7; every roster patient has exactly one). In-person primary care visit = distinct encounter_id (versions de-duplicated, earliest event_date in 2028) of type primary_care, office, pediatric_office or wellness held at any 'WH-PRACTICE-*' organization (counted for the patient's attributed practice even if seen at another practice). Telephone and virtual encounters, and office visits at specialty/outside organizations, are excluded. Denominator = all patients attributed to the practice. per_1000 = visits / attributed * 1000 rounded to 1 decimal. Columns: practice, attributed_patients, visits, per_1000; 8 rows.",
+  "answer_type": "table",
+  "reference_sql": "sql/heldout6/N17.sql",
+  "split": "heldout6",
+  "tolerance": 0.1
+ },
+ {
+  "id": "N18",
+  "question": "How many of our attributed patients haven't had an in-person primary care visit in the past 12 months?",
+  "category": "utilization",
+  "as_of": "2029-08-15",
+  "interpretation": "Original 1,614-person roster; identity-matched records received on or before the as-of date (2029-08-15) only. No inferred diagnoses, hidden truth or future events. All 1,614 roster patients are attributed (care_team_relationships role primary_care/pediatric_primary_care, status assigned). In-person primary care visit = distinct encounter of type primary_care, office, pediatric_office or wellness at a 'WH-PRACTICE-*' organization with earliest event_date between 2028-08-16 and 2029-08-15 inclusive. Telephone/virtual contacts, specialty, urgent care, ED and outside (dental/optometry/audiology) visits do not count. Booked future appointments do not count. Count = attributed patients with no such visit.",
+  "answer_type": "count",
+  "reference_sql": "sql/heldout6/N18.sql",
+  "split": "heldout6"
+ },
+ {
+  "id": "N19",
+  "question": "Specialty referrals we sent in 2027, broken out by specialty.",
+  "category": "utilization",
+  "as_of": "2029-08-15",
+  "interpretation": "Original 1,614-person roster; identity-matched records received on or before the as-of date (2029-08-15) only. No inferred diagnoses, hidden truth or future events. Specialty referral = referrals record with a specialty in either field: 'specialty' (older referral shape) or 'requested_specialty' (newer consult-order shape); both shapes occur in 2027 and must be combined. Community/dental/vision/audiology/orthopedic-reassessment referrals (referral_type only, no specialty) and hospital transfer referrals are excluded. Each referral record counts once, by event_date in 2027-01-01..2027-12-31. Columns: specialty, referrals; one row per specialty with at least one referral.",
+  "answer_type": "table",
+  "reference_sql": "sql/heldout6/N19.sql",
+  "split": "heldout6"
+ },
+ {
+  "id": "N20",
+  "question": "ED-to-hospital conversion: of our hospital ED visits since we started receiving hospital feeds (Sept 2026), what percent turned into an observation stay or an admission?",
+  "category": "utilization",
+  "as_of": "2029-08-15",
+  "interpretation": "Original 1,614-person roster; identity-matched records received on or before the as-of date (2029-08-15) only. No inferred diagnoses, hidden truth or future events. Hospital ED visit = distinct encounter_id of type 'emergency' at a 'WH-HOSPITAL-*' organization (versions de-duplicated) with earliest event_date >= 2026-09-01 (imported historical ED visits in practice records are excluded). Converted = the ED encounter_id appears as referring_encounter_id on an inpatient or observation encounter or on an ADT admission/observation_start event, or as transferred_from_encounter_id on an ADT event, or the ED encounter has an ADT 'transfer_to_observation' event. ED visits discharged home are not converted. Value = converted / hospital ED visits * 100, rounded to 1 decimal.",
+  "answer_type": "value",
+  "reference_sql": "sql/heldout6/N20.sql",
+  "split": "heldout6",
+  "tolerance": 0.1
+ },
+ {
+  "id": "N21",
+  "question": "Number of patients who used urgent care in the last 12 months but never went to the ED in that same period.",
+  "category": "utilization",
+  "as_of": "2029-08-15",
+  "interpretation": "Original 1,614-person roster; identity-matched records received on or before the as-of date (2029-08-15) only. No inferred diagnoses, hidden truth or future events. Urgent care = distinct encounters of type 'urgent_care' or 'urgentcare' (any organization). ED = encounter type 'emergency', 'ED' or 'ED stroke alert'. Window for both = earliest encounter event_date 2028-08-16 through 2029-08-15 inclusive. Count distinct patients with >= 1 urgent care encounter in the window and no ED encounter in the window (ED visits outside the window do not disqualify).",
+  "answer_type": "count",
+  "reference_sql": "sql/heldout6/N21.sql",
+  "split": "heldout6"
+ },
+ {
+  "id": "N22",
+  "question": "Telehealth share by practice for 2028: what percent of each practice's patient contacts were by phone or video?",
+  "category": "utilization",
+  "as_of": "2029-08-15",
+  "interpretation": "Original 1,614-person roster; identity-matched records received on or before the as-of date (2029-08-15) only. No inferred diagnoses, hidden truth or future events. Contacts = distinct encounter_id (versions de-duplicated, earliest event_date in 2028) held at each 'WH-PRACTICE-*' organization (the encounter's organization, not the patient's attribution) of type telephone, virtual (telehealth), primary_care, office, pediatric_office or wellness (in-person). telehealth_pct = (telephone + virtual) / all such contacts * 100, rounded to 1 decimal. ED/inpatient/urgent care and imported historical types are excluded. Columns: practice, telehealth_contacts, in_person_contacts, telehealth_pct; one row per practice (8 rows).",
+  "answer_type": "table",
+  "reference_sql": "sql/heldout6/N22.sql",
+  "split": "heldout6",
+  "tolerance": 0.1
+ },
+ {
+  "id": "N23",
+  "question": "Denial overturn rate: of claims that got denied at least once, what percent did we eventually get paid?",
+  "category": "finance",
+  "as_of": "2029-08-15",
+  "interpretation": "Original 1,614-person roster; identity-matched records received on or before the as-of date (2029-08-15) only. No inferred diagnoses, hidden truth or future events. Professional/institutional medical claims (medical_claims) grouped by claim_id; legacy claim rows without a claim_id are excluded. A claim is 'denied at least once' if any adjudication record has status 'denied'. It is 'overturned' if a 'paid' adjudication record exists with an event_time later than its first denial (typically after the member-identifier correction and resubmission). Clearinghouse rejections (claim_acknowledgements) are not payer denials. Reversed-and-repriced claims are irrelevant unless denied. Value = overturned / denied-at-least-once * 100, rounded to 1 decimal.",
+  "answer_type": "value",
+  "reference_sql": "sql/heldout6/N23.sql",
+  "split": "heldout6",
+  "tolerance": 0.1
+ },
+ {
+  "id": "N24",
+  "question": "How much did we refund to patients in 2028, in dollars?",
+  "category": "finance",
+  "as_of": "2029-08-15",
+  "interpretation": "Original 1,614-person roster; identity-matched records received on or before the as-of date (2029-08-15) only. No inferred diagnoses, hidden truth or future events. Sum of patient_refunds amount_cents (status 'issued', currency USD; all refunds are credits after insurance reprocessing) with event_date in 2028-01-01..2028-12-31, converted to dollars (cents / 100) and rounded to 2 decimals. Each refund record counts once. Pharmacy reversals and payer recoupments are not patient refunds.",
+  "answer_type": "value",
+  "reference_sql": "sql/heldout6/N24.sql",
+  "split": "heldout6",
+  "tolerance": 0.01
+ },
+ {
+  "id": "N25",
+  "question": "Payer cash posted in 2028 by payer — net of any take-backs.",
+  "category": "finance",
+  "as_of": "2029-08-15",
+  "interpretation": "Original 1,614-person roster; identity-matched records received on or before the as-of date (2029-08-15) only. No inferred diagnoses, hidden truth or future events. Payer cash = payer_cash_allocations (provider-recorded EFT allocations) with event_date in 2028-01-01..2028-12-31. Allocations do not name the payer: payer = the organization_id (WH-PAYER-0/1/2) on the medical_claims adjudication records for the same claim_id. Negative allocations are recoupments/take-backs and are netted in. Columns: payer, allocations (number of allocation records), net_cash_dollars (sum of allocated_cents / 100, rounded to 2 decimals); one row per payer.",
+  "answer_type": "table",
+  "reference_sql": "sql/heldout6/N25.sql",
+  "split": "heldout6",
+  "tolerance": 0.01
+ },
+ {
+  "id": "N26",
+  "question": "What's our average claim lag — days from date of service to first submission — for 2028 dates of service?",
+  "category": "finance",
+  "as_of": "2029-08-15",
+  "interpretation": "Original 1,614-person roster; identity-matched records received on or before the as-of date (2029-08-15) only. No inferred diagnoses, hidden truth or future events. medical_claim_submissions with submission_kind 'original' (corrected resubmissions are excluded so they do not inflate lag), one per claim_id (earliest original submission if several). Lag = julianday(submission event_date) - julianday(service_date), in days. Claims with service_date in 2028-01-01..2028-12-31. Value = mean lag rounded to 2 decimals.",
+  "answer_type": "value",
+  "reference_sql": "sql/heldout6/N26.sql",
+  "split": "heldout6",
+  "tolerance": 0.01
+ },
+ {
+  "id": "N27",
+  "question": "Net pharmacy claim dollars the payers paid us for 2028 fills, after reversals.",
+  "category": "finance",
+  "as_of": "2029-08-15",
+  "interpretation": "Original 1,614-person roster; identity-matched records received on or before the as-of date (2029-08-15) only. No inferred diagnoses, hidden truth or future events. pharmacy_claim_transactions with event_date in 2028. Net payer paid = sum of payer_paid_delta_cents across 'paid' (positive) and 'reversed' (negative deltas) transactions; 'rejected' transactions carry 0. Converted to dollars rounded to 2 decimals. Copay-card/cash patient payments (pharmacy_payments) and the separate 2026 pharmacy_claims feed are not included.",
+  "answer_type": "value",
+  "reference_sql": "sql/heldout6/N27.sql",
+  "split": "heldout6",
+  "tolerance": 0.01
+ },
+ {
+  "id": "N28",
+  "question": "For 2028 dates of service, how much of the patient responsibility was deductible vs copay vs coinsurance?",
+  "category": "finance",
+  "as_of": "2029-08-15",
+  "interpretation": "Original 1,614-person roster; identity-matched records received on or before the as-of date (2029-08-15) only. No inferred diagnoses, hidden truth or future events. medical_claims adjudications with service_date in 2028 (legacy rows without service_date excluded). Patient-responsibility adjustments are the PR-group entries of the adjustments array: reason_code '1' = deductible, '2' = coinsurance, '3' = copay. Sum across ALL adjudication records of each claim, including reversals (which carry negative amounts) so that reprocessed claims net to their final adjudication; denied adjudications carry no PR amounts. Columns: component ('deductible','coinsurance','copay'), dollars (cents / 100 rounded to 2 decimals); 3 rows.",
+  "answer_type": "table",
+  "reference_sql": "sql/heldout6/N28.sql",
+  "split": "heldout6",
+  "tolerance": 0.01
+ },
+ {
+  "id": "N29",
+  "question": "On average, how many days does it take from date of service until the payer's money first lands, for 2028 services?",
+  "category": "finance",
+  "as_of": "2029-08-15",
+  "interpretation": "Original 1,614-person roster; identity-matched records received on or before the as-of date (2029-08-15) only. No inferred diagnoses, hidden truth or future events. Claims (claim_id) with service_date in 2028 (from medical_claims) that have at least one positive payer_cash_allocations record. Days = julianday(earliest positive allocation event_date) - julianday(service_date). Negative allocations (recoupments) are not 'money landing'. Claims with no payer cash (denied, zero-pay deductible claims, not yet paid) are excluded. Value = mean days rounded to 2 decimals.",
+  "answer_type": "value",
+  "reference_sql": "sql/heldout6/N29.sql",
+  "split": "heldout6",
+  "tolerance": 0.01
+ },
+ {
+  "id": "N30",
+  "question": "How many claims bounced at the clearinghouse in 2027 because of a bad member ID?",
+  "category": "finance",
+  "as_of": "2029-08-15",
+  "interpretation": "Original 1,614-person roster; identity-matched records received on or before the as-of date (2029-08-15) only. No inferred diagnoses, hidden truth or future events. claim_acknowledgements with status 'rejected_for_member_identifier' and event_date in 2027-01-01..2027-12-31. Count distinct claim_id (a claim rejected more than once counts once). Payer denials (medical_claims status 'denied', CO-16) are not clearinghouse rejections.",
+  "answer_type": "count",
+  "reference_sql": "sql/heldout6/N30.sql",
+  "split": "heldout6"
+ },
+ {
+  "id": "N31",
+  "question": "Controlling high blood pressure: among hypertensive patients 18 to 85, what percent have their most recent BP under 140/90 in the last 12 months?",
+  "category": "quality",
+  "as_of": "2029-08-15",
+  "interpretation": "Original 1,614-person roster; identity-matched records received on or before the as-of date (2029-08-15) only. No inferred diagnoses, hidden truth or future events. Denominator: roster age_reported 18–85 inclusive with a hypertension diagnosis (conditions description containing 'hypertension' or 'HTN', or ICD-10 I10; 'Pulmonary hypertension' and 'Orthostatic hypotension' excluded). Readings: dated vitals records carrying blood_pressure_systolic and blood_pressure_diastolic with event_date 2028-08-16 through 2029-08-15. Undated baseline 'bp_systolic'/'bp_diastolic' measurements cannot be placed in the period and are ignored. Most recent = latest event_date; when several readings share that date, the lowest systolic and the lowest diastolic of that date are used (HEDIS convention). Controlled = systolic < 140 AND diastolic < 90. Patients with no reading in the period count as not controlled. Value = controlled / denominator * 100, rounded to 1 decimal.",
+  "answer_type": "value",
+  "reference_sql": "sql/heldout6/N31.sql",
+  "split": "heldout6",
+  "tolerance": 0.1
+ },
+ {
+  "id": "N32",
+  "question": "What percent of our diabetics had an A1c drawn in the last 12 months?",
+  "category": "quality",
+  "as_of": "2029-08-15",
+  "interpretation": "Original 1,614-person roster; identity-matched records received on or before the as-of date (2029-08-15) only. No inferred diagnoses, hidden truth or future events. Diabetes = conditions description containing 'diabet' or starting 'T1DM'/'T2DM', or ICD-10 E10.*/E11.*, excluding prediabetes, GDM/O24.* and family history Z83.3. Denominator = all such patients (any age). Numerator = at least one numeric, non-cancelled A1c result (labs named 'HbA1c', 'Hemoglobin A1c' or 'Hemoglobin A1c/Hemoglobin.total') with event_date 2028-08-16 through 2029-08-15. Undated results cannot satisfy a time window. Value percent rounded to 1 decimal.",
+  "answer_type": "value",
+  "reference_sql": "sql/heldout6/N32.sql",
+  "split": "heldout6",
+  "tolerance": 0.1
+ },
+ {
+  "id": "N33",
+  "question": "Statin use in diabetes: of our diabetics aged 40 to 75, what percent have a statin on record?",
+  "category": "quality",
+  "as_of": "2029-08-15",
+  "interpretation": "Original 1,614-person roster; identity-matched records received on or before the as-of date (2029-08-15) only. No inferred diagnoses, hidden truth or future events. Diabetes = conditions description containing 'diabet' or starting 'T1DM'/'T2DM', or ICD-10 E10.*/E11.*, excluding prediabetes, GDM/O24.* and family history Z83.3. Age 40–75 inclusive by roster age_reported. Statin = any medication record (medication_lists name; medication_orders, pharmacy_dispenses, pharmacy_claims, pharmacy_history medication_name) containing 'statin' — atorvastatin, simvastatin, rosuvastatin, pravastatin, lovastatin, pitavastatin, fluvastatin (nystatin is an antifungal and excluded). Any record at any time counts. No exclusions for ESRD/pregnancy etc. Value = statin patients / denominator * 100, rounded to 1 decimal.",
+  "answer_type": "value",
+  "reference_sql": "sql/heldout6/N33.sql",
+  "split": "heldout6",
+  "tolerance": 0.1
+ },
+ {
+  "id": "N34",
+  "question": "Kidney health evaluation for diabetics in 2028 — both an eGFR and a urine albumin-creatinine ratio in the same calendar year. What's our rate?",
+  "category": "quality",
+  "as_of": "2029-08-15",
+  "interpretation": "Original 1,614-person roster; identity-matched records received on or before the as-of date (2029-08-15) only. No inferred diagnoses, hidden truth or future events. Diabetes = conditions description containing 'diabet' or starting 'T1DM'/'T2DM', or ICD-10 E10.*/E11.*, excluding prediabetes, GDM/O24.* and family history Z83.3. Denominator: those diabetics with roster age_reported 18–85. Numerator: at least one eGFR (labs named 'eGFR' or 'Glomerular filtration rate') AND at least one UACR (labs named 'Urine albumin/creatinine ratio' or 'Microalbumin/Creatinine'), each numeric, non-cancelled and with event_date in 2028-01-01..2028-12-31. A urine albumin alone (mg/L) does not satisfy UACR. Undated results cannot satisfy the year. Value percent rounded to 1 decimal.",
+  "answer_type": "value",
+  "reference_sql": "sql/heldout6/N34.sql",
+  "split": "heldout6",
+  "tolerance": 0.1
+ },
+ {
+  "id": "N35",
+  "question": "Tdap catch-up: among adults who told us they either couldn't remember their last tetanus shot or it was over ten years ago, what share actually got a Tdap from us afterward?",
+  "category": "quality",
+  "as_of": "2029-08-15",
+  "interpretation": "Original 1,614-person roster; identity-matched records received on or before the as-of date (2029-08-15) only. No inferred diagnoses, hidden truth or future events. Denominator: patients with an immunization_history record (tetanus/diphtheria/pertussis family) whose recall is 'does_not_recall_tetanus' or 'recalls_tetanus_over_ten_years'. Patients who recall a recent tetanus dose and parents' undated childhood-series recall are excluded. Numerator: a Tdap record in the immunizations stream (administration_status 'completed') with event_date on or after the date of that history interview. Orders without administration and screening/decision records do not count. Value percent rounded to 1 decimal.",
+  "answer_type": "value",
+  "reference_sql": "sql/heldout6/N35.sql",
+  "split": "heldout6",
+  "tolerance": 0.1
+ },
+ {
+  "id": "N36",
+  "question": "When urgent care or the hospital tells a patient to follow up with their PCP within 14 days, how often does that visit actually happen in time?",
+  "category": "quality",
+  "as_of": "2029-08-15",
+  "interpretation": "Original 1,614-person roster; identity-matched records received on or before the as-of date (2029-08-15) only. No inferred diagnoses, hidden truth or future events. Discharge plans (discharge_plans) with followup_service 'usual_primary_care' (all carry recommended_within_days = 14). Met = the same patient has an in-person primary care encounter (distinct encounter of type primary_care, office, pediatric_office or wellness at a 'WH-PRACTICE-*' organization, earliest event_date) dated 1 to 14 days after the discharge plan's event_date. Telephone contacts and booked-but-not-held appointments do not count. Each discharge plan counts once. Value = met / plans * 100, rounded to 1 decimal.",
+  "answer_type": "value",
+  "reference_sql": "sql/heldout6/N36.sql",
+  "split": "heldout6",
+  "tolerance": 0.1
+ },
+ {
+  "id": "N37",
+  "question": "Data engineering check: how many lab result rows have no result date at all?",
+  "category": "data_quality",
+  "as_of": "2029-08-15",
+  "interpretation": "Original 1,614-person roster; identity-matched records received on or before the as-of date (2029-08-15) only. No inferred diagnoses, hidden truth or future events. Lab records (labs stream) received by the as-of date whose event_date is null, regardless of test name, unit or status. Each record counts once (not distinct patients). Recorded/available dates are load metadata and do not supply a result date.",
+  "answer_type": "count",
+  "reference_sql": "sql/heldout6/N37.sql",
+  "split": "heldout6"
+ },
+ {
+  "id": "N38",
+  "question": "How many encounters are stuck open — we got an in-progress message but never a completed one?",
+  "category": "data_quality",
+  "as_of": "2029-08-15",
+  "interpretation": "Original 1,614-person roster; identity-matched records received on or before the as-of date (2029-08-15) only. No inferred diagnoses, hidden truth or future events. Encounters grouped by encounter_id. Stuck = at least one version with status 'in_progress' and no version with status 'completed'. Legacy imported encounters that carry no status at all are not 'open'. Count distinct encounter_id.",
+  "answer_type": "count",
+  "reference_sql": "sql/heldout6/N38.sql",
+  "split": "heldout6"
+ },
+ {
+  "id": "N39",
+  "question": "Average lag in days between a lab's result date and when it became available to us, for 2029 results.",
+  "category": "data_quality",
+  "as_of": "2029-08-15",
+  "interpretation": "Original 1,614-person roster; identity-matched records received on or before the as-of date (2029-08-15) only. No inferred diagnoses, hidden truth or future events. Lab records with event_date in 2029-01-01..2029-08-15 (undated results excluded). Lag = julianday(available_date) - julianday(event_date) in whole days, per record (every lab record counts, including cancelled ones). Value = mean lag rounded to 2 decimals.",
+  "answer_type": "value",
+  "reference_sql": "sql/heldout6/N39.sql",
+  "split": "heldout6",
+  "tolerance": 0.01
+ },
+ {
+  "id": "N40",
+  "question": "How many original claims did we send out with no member ID on them?",
+  "category": "data_quality",
+  "as_of": "2029-08-15",
+  "interpretation": "Original 1,614-person roster; identity-matched records received on or before the as-of date (2029-08-15) only. No inferred diagnoses, hidden truth or future events. medical_claim_submissions with submission_kind 'original' whose member_identifier_submitted is null/missing. Count distinct claim_id. Corrected resubmissions are excluded (they always carry the verified identifier).",
+  "answer_type": "count",
+  "reference_sql": "sql/heldout6/N40.sql",
+  "split": "heldout6"
+ },
+ {
+  "id": "N41",
+  "question": "For 2029 encounters, what percent reached the warehouse three or more days after the visit date?",
+  "category": "data_quality",
+  "as_of": "2029-08-15",
+  "interpretation": "Original 1,614-person roster; identity-matched records received on or before the as-of date (2029-08-15) only. No inferred diagnoses, hidden truth or future events. Encounters de-duplicated by encounter_id (in_progress/completed versions are one encounter). Visit date = earliest event_date across versions, in 2029-01-01..2029-08-15. Arrival = earliest available_date across the encounter's versions (the first time any version reached us). Late = arrival - visit date >= 3 days. Value = late / encounters * 100, rounded to 1 decimal.",
+  "answer_type": "value",
+  "reference_sql": "sql/heldout6/N41.sql",
+  "split": "heldout6",
+  "tolerance": 0.1
+ },
+ {
+  "id": "N42",
+  "question": "How many patients screened positive for each social need — food, transportation, and trouble paying for care?",
+  "category": "social_needs",
+  "as_of": "2029-08-15",
+  "interpretation": "Original 1,614-person roster; identity-matched records received on or before the as-of date (2029-08-15) only. No inferred diagnoses, hidden truth or future events. Food need = social_screens food_difficulty_reported true. Transportation need = social_screens transport_difficulty_reported true OR transport = 'unreliable' (two screening shapes exist; 'family_ride' is not a need). Cost-of-care need = social_screens difficulty_paying_for_care_reported true OR financial_screens difficulty_paying_medical_bills true. Any screen at any time counts; distinct patients. Housing and income were not asked/disclosed and are not domains here. Columns: need ('food','transportation','cost_of_care'), patients; 3 rows.",
+  "answer_type": "table",
+  "reference_sql": "sql/heldout6/N42.sql",
+  "split": "heldout6"
+ },
+ {
+  "id": "N43",
+  "question": "Of patients who told us transportation is a problem, what percent got any kind of transportation referral?",
+  "category": "social_needs",
+  "as_of": "2029-08-15",
+  "interpretation": "Original 1,614-person roster; identity-matched records received on or before the as-of date (2029-08-15) only. No inferred diagnoses, hidden truth or future events. Transportation need as defined: social_screens transport_difficulty_reported true OR transport = 'unreliable'. Transportation referral = referrals record with referral_type 'transport_assistance' OR community_service_referrals record with service_requested 'transport', at any time. Whether the ride was delivered is irrelevant. Value = referred / with need * 100, rounded to 1 decimal.",
+  "answer_type": "value",
+  "reference_sql": "sql/heldout6/N43.sql",
+  "split": "heldout6",
+  "tolerance": 0.1
+ },
+ {
+  "id": "N44",
+  "question": "How many patients have two or more social needs at once (food, transportation, cost of care)?",
+  "category": "social_needs",
+  "as_of": "2029-08-15",
+  "interpretation": "Original 1,614-person roster; identity-matched records received on or before the as-of date (2029-08-15) only. No inferred diagnoses, hidden truth or future events. Food need = social_screens food_difficulty_reported true. Transportation need = social_screens transport_difficulty_reported true OR transport = 'unreliable' (two screening shapes exist; 'family_ride' is not a need). Cost-of-care need = social_screens difficulty_paying_for_care_reported true OR financial_screens difficulty_paying_medical_bills true. Any screen at any time counts; distinct patients. Housing and income were not asked/disclosed and are not domains here. Count patients positive in >= 2 of the 3 domains.",
+  "answer_type": "count",
+  "reference_sql": "sql/heldout6/N44.sql",
+  "split": "heldout6"
+ },
+ {
+  "id": "N45",
+  "question": "What are our CAHPS / patient satisfaction scores by practice?",
+  "category": "unsupported",
+  "as_of": "2029-08-15",
+  "interpretation": "Original 1,614-person roster; identity-matched records received on or before the as-of date (2029-08-15) only. No inferred diagnoses, hidden truth or future events. Requires patient experience survey responses (CAHPS, satisfaction or NPS scores). No received stream carries survey instruments, satisfaction ratings or respondent experience scores; the word 'satisfactory' in fracture notes is clinical alignment language, not a survey.",
+  "answer_type": "unsupported",
+  "reference_sql": "sql/heldout6/N45.sql",
+  "split": "heldout6",
+  "expected_behavior": {
+   "required_missing": [
+    {
+     "id": "experience_survey",
+     "description": "Patient experience/satisfaction survey (CAHPS, satisfaction or NPS) data is not recorded.",
+     "any_of": [
+      "cahps",
+      "survey",
+      "satisfaction",
+      "patient experience",
+      "nps"
+     ]
+    }
+   ],
+   "scoring": "Scoring: exact unsupported status plus all missing-prerequisite phrase groups; mechanical rubric."
+  }
+ },
+ {
+  "id": "N46",
+  "question": "How many of our diabetics would need their education materials in Spanish?",
+  "category": "unsupported",
+  "as_of": "2029-08-15",
+  "interpretation": "Original 1,614-person roster; identity-matched records received on or before the as-of date (2029-08-15) only. No inferred diagnoses, hidden truth or future events. Requires a preferred-language (or interpreter-need) field. The roster has only age, sex and display name, and no received stream records preferred language, interpreter need or Spanish/limited-English status; names must not be used to infer language.",
+  "answer_type": "unsupported",
+  "reference_sql": "sql/heldout6/N46.sql",
+  "split": "heldout6",
+  "expected_behavior": {
+   "required_missing": [
+    {
+     "id": "language",
+     "description": "Preferred language / interpreter need is not recorded for patients.",
+     "any_of": [
+      "language",
+      "interpreter",
+      "spanish",
+      "limited english"
+     ]
+    }
+   ],
+   "scoring": "Scoring: exact unsupported status plus all missing-prerequisite phrase groups; mechanical rubric."
+  }
+ },
+ {
+  "id": "N47",
+  "question": "Rank our PCPs by wRVUs generated in 2028.",
+  "category": "unsupported",
+  "as_of": "2029-08-15",
+  "interpretation": "Original 1,614-person roster; identity-matched records received on or before the as-of date (2029-08-15) only. No inferred diagnoses, hidden truth or future events. Requires work RVUs (relative value units) per service or per clinician. Claims carry synthetic local service codes and charge/allowed/paid amounts but no CPT-based RVU values or RVU fields; charges and visit counts are not RVUs.",
+  "answer_type": "unsupported",
+  "reference_sql": "sql/heldout6/N47.sql",
+  "split": "heldout6",
+  "expected_behavior": {
+   "required_missing": [
+    {
+     "id": "rvu",
+     "description": "Work RVU (relative value unit) data is not available.",
+     "any_of": [
+      "rvu",
+      "relative value"
+     ]
+    }
+   ],
+   "scoring": "Scoring: exact unsupported status plus all missing-prerequisite phrase groups; mechanical rubric."
+  }
+ },
+ {
+  "id": "N48",
+  "question": "How many of our heart failure patients died in the past year?",
+  "category": "unsupported",
+  "as_of": "2029-08-15",
+  "interpretation": "Original 1,614-person roster; identity-matched records received on or before the as-of date (2029-08-15) only. No inferred diagnoses, hidden truth or future events. Heart failure can be identified, but deaths cannot: no stream records death, date of death, deceased status or mortality (no death ADT disposition; hospice/comfort-care notes are not deaths). Absence of later activity must not be treated as death.",
+  "answer_type": "unsupported",
+  "reference_sql": "sql/heldout6/N48.sql",
+  "split": "heldout6",
+  "expected_behavior": {
+   "required_missing": [
+    {
+     "id": "death",
+     "description": "Death / date of death (mortality) is not recorded.",
+     "any_of": [
+      "death",
+      "deceased",
+      "died",
+      "mortality"
+     ]
+    }
+   ],
+   "scoring": "Scoring: exact unsupported status plus all missing-prerequisite phrase groups; mechanical rubric."
+  }
+ },
+ {
+  "id": "N49",
+  "question": "Map our repeat ED users by ZIP code so we can place a mobile clinic.",
+  "category": "unsupported",
+  "as_of": "2029-08-15",
+  "interpretation": "Original 1,614-person roster; identity-matched records received on or before the as-of date (2029-08-15) only. No inferred diagnoses, hidden truth or future events. Repeat ED users can be identified, but the roster and streams carry no ZIP/postal code or street address (social history has only a free-text city of residence for some patients). A ZIP-level map cannot be produced.",
+  "answer_type": "unsupported",
+  "reference_sql": "sql/heldout6/N49.sql",
+  "split": "heldout6",
+  "expected_behavior": {
+   "required_missing": [
+    {
+     "id": "zip",
+     "description": "Patient ZIP/postal code (address geography) is not recorded.",
+     "any_of": [
+      "zip",
+      "postal",
+      "address"
+     ]
+    }
+   ],
+   "scoring": "Scoring: exact unsupported status plus all missing-prerequisite phrase groups; mechanical rubric."
+  }
+ },
+ {
+  "id": "N50",
+  "question": "What's our prior authorization approval rate with each payer this year?",
+  "category": "unsupported",
+  "as_of": "2029-08-15",
+  "interpretation": "Original 1,614-person roster; identity-matched records received on or before the as-of date (2029-08-15) only. No inferred diagnoses, hidden truth or future events. Requires payer prior-authorization requests and decisions. The 'billing_authorizations' stream is a patient self-pay arrangement (payment_basis 'self_pay', insurance submission not requested), and home-health payment_authorization text states it is not determined; no payer prior-auth/precertification request, approval or denial is recorded. Claim denials are not prior-auth decisions.",
+  "answer_type": "unsupported",
+  "reference_sql": "sql/heldout6/N50.sql",
+  "split": "heldout6",
+  "expected_behavior": {
+   "required_missing": [
+    {
+     "id": "prior_auth",
+     "description": "Payer prior authorization requests/decisions are not recorded.",
+     "any_of": [
+      "prior auth",
+      "prior-auth",
+      "preauth",
+      "precert",
+      "authorization"
+     ]
+    }
+   ],
+   "scoring": "Scoring: exact unsupported status plus all missing-prerequisite phrase groups; mechanical rubric."
+  }
+ }
+]
