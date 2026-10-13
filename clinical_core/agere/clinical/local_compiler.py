@@ -19,16 +19,16 @@ W = {'basis': 'all_observed', 'start': '', 'end': ''}
 
 # ---- vocabulary -----------------------------------------------------------------
 CONDITION_ALIASES = {
-    'diabetes': ['diabetes', 'diabetic', 'diabetes mellitus', 'dm', 'diabetic-complication', 'diabetic complication'],
+    'diabetes': ['diabetes', 'diabetics', 'diabetic', 'diabetes mellitus', 'dm', 'diabetic-complication', 'diabetic complication'],
     'type_2_diabetes': ['type 2 diabetes', 't2dm', 'type ii diabetes'],
     'type_1_diabetes': ['type 1 diabetes', 't1dm', 'type i diabetes'],
     'prediabetes': ['prediabetes', 'pre-diabetes', 'prediabetic'],
-    'hypertension': ['hypertension', 'htn', 'high blood pressure', 'hypertensive'],
+    'hypertension': ['hypertension', 'htn', 'high blood pressure', 'hypertensives', 'hypertensive'],
     'heart_failure': ['heart failure', 'chf', 'hf', 'congestive heart failure'],
     'heart_failure_reduced_ef': ['hfref', 'systolic heart failure', 'reduced ejection fraction'],
     'chronic_kidney_disease': ['chronic kidney disease', 'ckd', 'kidney disease', 'renal disease'],
     'copd': ['copd', 'chronic obstructive pulmonary disease', 'emphysema'],
-    'asthma': ['asthma', 'asthmatic'],
+    'asthma': ['asthma', 'asthmatics', 'asthmatic'],
     'atrial_fibrillation': ['atrial fibrillation', 'afib', 'a-fib'],
     'coronary_artery_disease': ['coronary artery disease', 'cad', 'ischemic heart disease'],
     'myocardial_infarction': ['myocardial infarction', 'heart attack', 'mi'],
@@ -71,6 +71,11 @@ ENCOUNTER_ALIASES = {
     'specialist_visit': ['specialist visits', 'specialty visits'],
     'telehealth_contact': ['telehealth', 'telephone visits', 'virtual visits'],
 }
+SOCIAL_PHRASES = [  # regex -> (stream, field)
+    (r'transportation (?:is |was )?(?:a |an )?(?:problem|issue|barrier|difficult\w*)', ('social_screens', 'transport_difficulty_reported')),
+    (r'(?:trouble|difficulty|problems?) paying (?:their |his |her )?(?:medical )?bills', ('financial_screens', 'difficulty_paying_medical_bills')),
+    (r'(?:trouble|difficulty) affording (?:care|food)', ('social_screens', 'difficulty_paying_for_care_reported')),
+]
 SOCIAL_FLAGS = {  # phrase -> (stream, field)
     'food difficulty': ('social_screens', 'food_difficulty_reported'),
     'food insecurity': ('social_screens', 'food_difficulty_reported'),
@@ -88,8 +93,8 @@ GROUPS = [(r'\bby (?:attributed )?(?:pcp|primary care (?:provider|physician|clin
           (r'\bby (?:hospital|facility|facilities|site)s?\b', 'facility'),
           (r'\bby (?:payer|payor|coverage(?: type)?|insurance(?: type)?|plan type)\b', 'coverage_type'),
           (r'\bby age(?: band| group)?s?\b', 'age_band'), (r'\bby (?:sex|gender)\b', 'sex')]
-COMPARATORS = [(r'(?:at least|no less than|>=|≥)', 'ge'), (r'(?:at most|no more than|<=|≤)', 'le'),
-               (r'(?:over|above|greater than|more than|higher than|exceeding|>)', 'gt'),
+COMPARATORS = [(r'(?:at or above|at or over|at least|no less than|>=|≥)', 'ge'), (r'(?:at or below|at or under|at most|no more than|<=|≤)', 'le'),
+               (r'(?:over|above|greater than|more than|higher than|exceed(?:ed|s|ing)?|>)', 'gt'),
                (r'(?:below|under|less than|lower than|<)', 'lt'), (r'(?:equal to|exactly|=)', 'eq')]
 NUMBER = r'(-?\d+(?:\.\d+)?)'
 UNSUPPORTED = [
@@ -114,6 +119,32 @@ mmol mg dl ml min m2 1.73m2 g l units unit total among notification notification
 it them so get got gets getting become became""".split())
 
 
+OPERATOR_WORDS = set('''not no never without except excluding exclude over under above below more less least most fewer greater
+higher lower exceed exceeded exceeds exceeding after before within since until between first last latest earliest same different
+linked unlinked twice two three four five six per average mean median rate rates percent percentage share sum total max min
+maximum minimum only neither nor nobody none missing lacks lack lacking january february march april june july august
+september october november december jan feb mar apr jun jul aug sep sept oct nov dec'''.split())
+_VOCAB_CACHE = {}
+
+
+def _vocabulary(profile):
+    key = id(profile)
+    if key not in _VOCAB_CACHE:
+        words = set()
+        for s, spec in profile['streams'].items():
+            words.update(t for t in s.split('_') if len(t) > 3)
+            for f, fs in spec['fields'].items():
+                words.update(t for t in f.split('_') if len(t) > 3 and t not in ('date', 'time', 'record', 'patient', 'source', 'system', 'status'))
+                for v in (fs.get('values') or {}):
+                    if len(v) <= 40: words.update(t for t in re.split(r'[^a-z0-9]+', v.lower()) if len(t) > 3)
+        for aliases in (*CONDITION_ALIASES.values(), *MEASUREMENT_ALIASES.values(), *ENCOUNTER_ALIASES.values()):
+            for a in aliases: words.update(t for t in re.split(r'[^a-z0-9]+', a) if len(t) > 3)
+        words -= FILLER | {'with', 'have', 'from', 'that', 'this', 'what', 'were', 'been', 'their', 'they', 'when', 'into', 'than',
+                           'visit', 'visits', 'patient', 'patients', 'type', 'data', 'received', 'report', 'reports', 'reported'}
+        _VOCAB_CACHE[key] = words
+    return _VOCAB_CACHE[key]
+
+
 CLARIFICATIONS = [  # (pattern, effect) - sentences that restate Agere's default semantics or the output shape
     (r'return (?:the |a |all )?(?:complete )?patient ids?(?: set)?', 'patient_set'),
     (r'return (?:a )?table[^.?]*', 'table'), (r'return (?:a )?numeric value', 'value'), (r'return (?:percent|cents)', None),
@@ -128,9 +159,25 @@ CLARIFICATIONS = [  # (pattern, effect) - sentences that restate Agere's default
 ]
 
 
-def _norm(q):
+MONTHS = {m: i for i, m in enumerate(['january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september',
+                                      'october', 'november', 'december'], 1)}
+MONTH_RX = r'(jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|june?|july?|aug(?:ust)?|sep(?:t(?:ember)?)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)'
+
+
+def _month_number(token):
+    token = token.lower()
+    return next(i for name, i in MONTHS.items() if name.startswith(token[:3]))
+
+
+def _norm(q, as_of='2029-08-15'):
     q = q.strip()
-    q = re.sub(r'\s*use received evidence as of \d{4}-\d{2}-\d{2}\.?', ' ', q, flags=re.I)
+    y, m, d = as_of.split('-')
+    month = list(MONTHS)[int(m) - 1]
+    snapshot = (rf'(?:{as_of}|{month[:3]}[a-z]* {int(d)}(?:st|nd|rd|th)?,? {y}|{month[:3]}[a-z]* {int(d)}(?:st|nd|rd|th)?)')
+    lead = (r'(?:(?:use|using|with)? ?(?:the |what )?(?:received |the )?(?:evidence|data|record|warehouse|what we(?:\'d| had| have)?)?'
+            r'(?: as)? ?(?:received|available|had received|\'d received)? ?(?:as of|through|thru|by|until|up to|to date|on)?)')
+    q = re.sub(r'[,;(]?\s*' + lead + r'\s*' + snapshot + r'\)?\.?', ' ', q, flags=re.I)
+    q = re.sub(r'\(\s*\)', ' ', q)
     return re.sub(r'\s+', ' ', q).strip()
 
 
@@ -149,6 +196,15 @@ class Reader:
             hits.append(m)
         if hits and note: self.notes.append(note)
         return hits
+
+    def blocking(self, profile):
+        """Leftover words that carry meaning Agere failed to use: numbers, operators, or data-dictionary/clinical terms.
+        Conversational filler is ignored (and recorded)."""
+        vocab = _vocabulary(profile)
+        left = self.leftover()
+        block = [w for w in left if re.search(r'\d', w) or w in OPERATOR_WORDS or w.rstrip('s') in vocab or w in vocab]
+        self.ignored = [w for w in left if w not in block]
+        return block
 
     def leftover(self):
         words = re.findall(r"[a-z][a-z0-9'_/-]*", ''.join(c if not u else ' ' for c, u in zip(self.low, self.used)))
@@ -184,8 +240,9 @@ def _stream_vocabulary(profile):
 
 def compile(question, profile, as_of):
     """Return (graph, info). graph is None when the question needs the fallback planner."""
-    q = _norm(question)
+    q = _norm(question, as_of)
     r = Reader(q)
+    r.profile = profile
     info = {'compiler': VERSION, 'recognised': r.notes}
     # 0. Requests the received data cannot support: answer unsupported locally, naming the missing inputs.
     terms = _contract_terms(r.low)
@@ -200,6 +257,7 @@ def compile(question, profile, as_of):
         for m in r.take(r'(?:^|(?<=[.;?] )|(?<=; )|(?<=, )|(?<=and ))' + pattern, None):
             info['clarifications'].append(m.group(0))
             if effect: info.setdefault('output', effect)
+    r.take(r'\b(?:on file|on record|in (?:the |our )?(?:record|chart|warehouse)s?|on the roster|in the data)\b', None)
     pid = r.take(r'\bp-[a-z0-9]+\b', 'patient id')
     if pid:  # single-patient questions with a measurement statistic
         return _patient_question(q, r, profile, [m.group(0).upper() for m in pid], info)
@@ -240,6 +298,15 @@ def _population_question(q, r, profile, as_of, info):
     readmit = r.take(r'\b(?:30[- ]day )?readmi(?:ssions?|tted|t)\b(?: within 30 days)?', 'readmission')
     r.take(r'\bwithin 30 days\b')
     highest = r.take(r'\b(?:highest|lowest|top|worst|best|most|fewest)\b', 'ranking')
+    period = None
+    for m in r.take(r'\b(?:so far in|year[- ]to[- ]date in|ytd in) (\d{4})\b|\b(\d{4}) (?:year[- ]to[- ]date|ytd|to date|so far)\b|\bin (\d{4}) (?:to date|so far)\b', 'year to date'):
+        y = next(g for g in m.groups() if g); period = (f'{y}-01-01', min(f'{y}-12-31', as_of))
+    for m in r.take(r'\b(?:in|during) ' + MONTH_RX + r' (\d{4})\b', 'month'):
+        mo, y = _month_number(m.group(1)), m.group(2)
+        import calendar
+        period = (f'{y}-{mo:02d}-01', f'{y}-{mo:02d}-{calendar.monthrange(int(y), mo)[1]:02d}')
+    for m in r.take(r'\b(?:in|during|for) (\d{4})\b', 'year'):
+        y = m.group(1); period = period or (f'{y}-01-01', min(f'{y}-12-31', as_of))
     group = None
     for pattern, g in GROUPS:
         if r.take(pattern, f'group by {g}'): group = g; break
@@ -251,10 +318,23 @@ def _population_question(q, r, profile, as_of, info):
     age_patterns = [
         (r'\bover (?:the age of |age )(\d{1,3})(?![\d.])', 'gt'), (r'\bunder (?:the age of |age )(\d{1,3})(?![\d.])', 'lt'),
         (r'\b(?:aged|age(?:d)? (?:of )?|ages )(at least|over|above|under|below|older than|younger than)?\s*(\d{1,3})(?![\d.])(?:\s*(?:years?(?: old)?|\+|or older|and older|or over|or younger|and under))?', None),
-        (r'\b(\d{1,3})(?![\d.])\s*(?:\+|years? (?:old )?(?:or|and) (?:older|over)|or older|and older)', 'ge'),
+        (r'\b(\d{1,3})(?![\d.])\s*(?:\+|years? (?:old )?(?:or|and) (?:older|over)|or older|and older|and over|or over|and up)', 'ge'),
+        (r'(?<=kids |dren |nors |tric )(?:under|below|younger than) (\d{1,2})(?![\d.])', 'lt'),
         (r'\b(\d{1,3})(?![\d.])\s*(?:years? (?:old )?(?:or|and) (?:younger|under)|or younger|and under)', 'le'),
         (r'\b(older|younger) than (\d{1,3})(?![\d.])', None),
         (r'\breported age (at least|over|above|under|below) (\d{1,3})(?![\d.])', None)]
+    for m in [m for m in re.finditer(r'\(?(\d{1,2}) ?(?:to|-|through|and) ?(\d{1,3})\)?', low)
+              if re.search(r'\b(?:age[ds]?|aged|years? old|reproductive)\b', low[max(0, m.start() - 30):m.end() + 15])
+              and not any(r.used[m.start():m.end()])]:
+        for i in range(m.start(), m.end()): r.used[i] = True
+        r.notes.append('age range')
+        allp.append({'kind': 'patient', 'field': 'age_reported', 'op': 'ge', 'value': int(m.group(1))})
+        allp.append({'kind': 'patient', 'field': 'age_reported', 'op': 'le', 'value': int(m.group(2))})
+        r.take(r'\breproductive age\b|\bof reproductive age\b', None, overlap=True)
+    if r.take(r'\b(?:kids|children|child|pediatric|paediatric|minors)\b', 'children') and not any(a.get('field') == 'age_reported' for a in allp):
+        allp.append({'kind': 'patient', 'field': 'age_reported', 'op': 'lt', 'value': 18})
+    if r.take(r'\b(?:seniors|elderly|older adults|geriatric)\b', 'seniors') and not any(a.get('field') == 'age_reported' for a in allp):
+        allp.append({'kind': 'patient', 'field': 'age_reported', 'op': 'ge', 'value': 65})
     words_to_op = {'at least': 'ge', 'over': 'gt', 'above': 'gt', 'older than': 'gt', 'older': 'gt', 'under': 'lt', 'below': 'lt',
                    'younger than': 'lt', 'younger': 'lt'}
     for pattern, fixed in age_patterns:
@@ -298,7 +378,11 @@ def _population_question(q, r, profile, as_of, info):
             r.take(r'\b(?:as )?(?:true|false)\b')
             atom = {'kind': 'record', 'stream': stream, 'conditions': [{'field': field, 'op': 'eq', 'value': value}], 'window': W}
             (excl if _negated(low, m.start()) else allp).append(atom)
-    r.take(r'\b(?:any |a )?social screens?\b(?: explicitly)?(?: reporting)?')
+    for pattern, (stream, field) in SOCIAL_PHRASES:
+        for m in r.take(pattern, field):
+            atom = {'kind': 'record', 'stream': stream, 'conditions': [{'field': field, 'op': 'eq', 'value': True}], 'window': W}
+            (excl if _negated(low, m.start()) else allp).append(atom)
+    r.take(r'\b(?:any |a |on a )?(?:social|financial) screens?\b(?: explicitly)?(?: reporting)?|\bscreened positive(?: for)?\b|\btold us\b', None, overlap=True)
     # literal labels: "lab named eGFR", "result named Hemoglobin A1c or Hemoglobin A1c/Hemoglobin.total"
     measured = []
     for m in r.take(r'\b(?:any )?(?:numeric )?(?:percent-unit )?(?:numeric )?(?:labs?|results?|tests?|a1c result) named ((?:(?! or | below| above| over| under| less| greater| at least| with|[?,]).)+)(?: or ((?:(?! below| above| over| under| less| greater| at least| with|[?,]).)+))?', 'literal lab names'):
@@ -321,14 +405,21 @@ def _population_question(q, r, profile, as_of, info):
     for concept, aliases in MEASUREMENT_ALIASES.items():
         for alias in sorted(aliases, key=len, reverse=True):
             for m in r.take(_alias_pattern(alias), f'measurement {concept}'):
-                tail = low[m.end():m.end() + 45]
+                tail = low[m.end():m.end() + 60]
                 cmp = None
+                gap = r'\s*(?:(?:has|have|had|ever|any|a|an|the|results?|values?|levels?|readings?|of|is|was|were|on any draw|draws?)\s+)*'
                 for pattern, op in COMPARATORS:
-                    mm = re.match(r'\s*(?:results?|values?|levels?|of|is|was)?\s*' + pattern + r'\s*' + NUMBER, tail)
+                    mm = re.match(gap + pattern + r'\s*' + NUMBER, tail)
                     if mm:
                         cmp = (op, float(mm.group(1)))
                         for i in range(m.end(), m.end() + mm.end()): r.used[i] = True
                         break
+                if cmp is None:
+                    mm = re.match(gap + NUMBER + r'\s*(?:[a-z%/.0-9]+\s*)?(or (?:higher|more|above|greater|over)|and (?:above|higher|over)|\+|'
+                                  r'or (?:lower|less|below|under)|and (?:below|under))', tail)
+                    if mm:
+                        cmp = ('ge' if re.search(r'higher|more|above|greater|over|\+', mm.group(2)) else 'le', float(mm.group(1)))
+                        for i in range(m.end(), m.end() + mm.end()): r.used[i] = True
                 measured.append((concept, cmp, m.start()))
     for concept, cmp, start in measured:
         if cmp:
@@ -361,7 +452,8 @@ def _population_question(q, r, profile, as_of, info):
         target = excl if _negated(low, start) else allp
         if atom not in target: target.append(atom)
     r.take(r'\b(?:no|not|without|but no|lack|lacking|excluding|exclude|except|but|have|has|had|with|and|or)\b')
-    info['unexplained'] = r.leftover()
+    info['unexplained'] = r.blocking(profile)
+    info['ignored_words'] = getattr(r, 'ignored', [])
     if info['unexplained']:
         info['route'] = 'fallback'
         info['reason'] = 'words not interpreted locally: ' + ', '.join(info['unexplained'][:12])
@@ -382,6 +474,17 @@ def _population_question(q, r, profile, as_of, info):
              'purpose': 'Whole population'},
             {'id': 'patterns', 'operation': 'discover', 'inputs': ['population'], 'parameters': params,
              'purpose': 'Segments where the outcome is concentrated'}]}, info
+
+    if period:  # periods bound events, measurements and records; chronic conditions keep full history
+        timed = {'basis': 'source_event', 'start': period[0], 'end': period[1]}
+        for atom in allp + excl:
+            if atom['kind'] in ('measurement', 'record') or (atom['kind'] == 'concept' and atom['concept'] in concepts.ENCOUNTERS):
+                atom['window'] = dict(timed)
+
+    contradictory = [a for a in allp if a in excl]
+    if contradictory:
+        info.update(route='fallback', reason=f'contradictory constraints: {contradictory[0].get("concept") or contradictory[0].get("field")}')
+        return None, info
 
     def cohort(atoms_all, atoms_excl):
         return {'id': 'population', 'operation': 'cohort', 'inputs': [],
@@ -429,7 +532,7 @@ def _population_question(q, r, profile, as_of, info):
                 info.update(route='fallback', reason='share of a measurement threshold needs a membership comparison'); return None, info
             params = {'measure': 'patients', 'concept': subject['concept'], 'statistic': 'share' if share else 'count'}
         params.update(group_by=group or 'none', adjust='age_sex_conditions' if adjust and params['measure'] != 'value' else 'none',
-                      window={'start': '', 'end': ''}, top=25)
+                      window={'start': period[0], 'end': period[1]} if period else {'start': '', 'end': ''}, top=25)
         params.setdefault('value_aggregate', 'all')
         nodes = [cohort(base_all, excl), {'id': 'answer', 'operation': 'aggregate', 'inputs': ['population'],
                                           'parameters': params, 'purpose': 'Requested statistic'}]
@@ -477,7 +580,8 @@ def _literal_stream_question(q, r, profile, as_of, info):
         for m in r.take(_alias_pattern(f), f'field {f}'): named_fields.append(f)
     sum_m = r.take(r'\b(?:gross |raw |total )?sum(?: in usd)?(?: of)?\b', 'sum', overlap=True)
     # observed values mentioned (for low-cardinality fields)
-    candidates = [(f, v) for f, spec in fields.items() for v in (spec.get('values') or {}) if len(v) >= 3]
+    candidates = [(f, v) for f, spec in fields.items() for v in (spec.get('values') or {})
+                  if len(v) >= 3 and not re.fullmatch(r'[\d\s:/.+-]+', v) and not f.endswith(('_date', '_time', 'date'))]
     exact = lambda v: re.search(_alias_pattern(v.lower()), low) is not None and v == v.lower()
     for f, v in sorted(candidates, key=lambda fv: (not exact(fv[1]), -len(fv[1]))):
         if True:
@@ -496,6 +600,13 @@ def _literal_stream_question(q, r, profile, as_of, info):
     if lack and lack.group(1) in fields:
         sql_where.append(f"json_extract(payload,'$.{lack.group(1)}') IS NULL")
         named_fields = [x for x in named_fields if x != lack.group(1)]
+    date_field = next((f for f in named_fields if f.endswith('_date')), 'event_date')
+    for m in r.take(r'\b(?:with \w+ )?(?:in|during) ' + MONTH_RX + r' (\d{4})\b', 'month window'):
+        import calendar
+        mo, y = _month_number(m.group(1)), m.group(2)
+        col = 'event_date' if date_field == 'event_date' else f"json_extract(payload,'$.{date_field}')"
+        sql_where.append(f"{col} BETWEEN '{y}-{mo:02d}-01' AND '{y}-{mo:02d}-{calendar.monthrange(int(y), mo)[1]:02d}'")
+        named_fields = [x for x in named_fields if x != date_field]
     for m in r.take(r'\barrived in a later calendar year than (?:their )?source event dates?\b', 'arrival year after event year'):
         sql_where.append("event_date IS NOT NULL AND available_date IS NOT NULL AND substr(available_date,1,4) > substr(event_date,1,4)")
     for m in r.take(r'\barrived more than (\d+) (?:calendar )?days after (?:their )?source event dates?\b', 'arrival lag'):
@@ -515,7 +626,7 @@ def _literal_stream_question(q, r, profile, as_of, info):
     amount = next((f for f in named_fields if re.search(r'cents|amount', f)), None)
     if sum_m and not amount:
         amount = next((f for f in fields if re.search(r'(?:amount|allowed|paid)_cents', f)), None)
-    info['unexplained'] = [w for w in r.leftover() if w not in {'usd', 'gross', 'raw', 'rows', 'net', 'refunds', 'subtract', 'infer',
+    info['unexplained'] = [w for w in r.blocking(profile) if w not in {'usd', 'gross', 'raw', 'rows', 'net', 'refunds', 'subtract', 'infer',
                                                                 'balances', 'corrections', 'realized', 'savings', 'treat', 'cents', 'table',
                                                                 'organization_id', 'encounter_count', 'claim_record_count', 'clinician_id'}]
     if info['unexplained']:
@@ -529,7 +640,7 @@ def _literal_stream_question(q, r, profile, as_of, info):
         returns = 'table'
     elif sum_m and amount:
         sql = f"SELECT sum(json_extract(payload,'$.{amount}')) FROM record WHERE {where}"
-        if 'usd' in low and amount.endswith('_cents'): sql = f"SELECT sum(json_extract(payload,'$.{amount}'))/100.0 FROM record WHERE {where}"
+        if re.search(r'\busd\b|\bdollars?\b|\$', low) and amount.endswith('_cents'): sql = f"SELECT sum(json_extract(payload,'$.{amount}'))/100.0 FROM record WHERE {where}"
         returns = 'value'
     elif patients:
         sql = f"SELECT count(DISTINCT patient_id) FROM record WHERE {where}"
@@ -563,7 +674,8 @@ def _comparison(low, start):
 
 
 def _finish(q, r, info, sql, returns, purpose):
-    info['unexplained'] = r.leftover()
+    info['unexplained'] = r.blocking(r.profile)
+    info['ignored_words'] = getattr(r, 'ignored', [])
     if info['unexplained']:
         info.update(route='fallback', reason='words not interpreted locally: ' + ', '.join(info['unexplained'][:12]))
         return None, info
@@ -739,7 +851,8 @@ def _change_question(q, r, profile, as_of, info):
         params['compare'] = {'a': {'start': f'{ya}-01-01', 'end': f'{ya}-12-31'}, 'b': {'start': f'{yb}-01-01', 'end': min(f'{yb}-12-31', as_of)}}
     for pattern, g in GROUPS:
         if g != 'facility' and r.take(pattern, f'group by {g}'): params['group_by'] = g; break
-    info['unexplained'] = r.leftover()
+    info['unexplained'] = r.blocking(profile)
+    info['ignored_words'] = getattr(r, 'ignored', [])
     if info['unexplained']:
         info.update(route='fallback', reason='words not interpreted locally: ' + ', '.join(info['unexplained'][:12])); return None, info
     info['route'] = 'local_compiler'
@@ -772,7 +885,8 @@ def _vbc_question(q, r, profile, as_of, info, terms):
                r'two[- ]sided|downside|risk[- ]adjust\w*|\bwith\b|\band\b|\ba\b|\bof\b|\bour\b|\bwhat\b|\bwould\b|\bbe\b|\bpayment\b|\bunder\b|\bterms?\b|\bcontract\b', 'contract terms', overlap=True)
     r.take(r'\b(?:what is|what are|what was|show|compare|calculate|compute|estimate|our|the|rate|rates|members?|visits?|ed|admissions?|readmissions?|'
            r'follow[- ]?up|allowed|paid|medical|pharmacy|cost|costs|by|each|per|month|projected|actual|panel|scores?|measures?|internal|we|us|do|have|has|average|mean|how many|total)\b', None, overlap=True)
-    info['unexplained'] = r.leftover()
+    info['unexplained'] = r.blocking(profile)
+    info['ignored_words'] = getattr(r, 'ignored', [])
     if info['unexplained']:
         info.update(route='fallback', reason='words not interpreted locally: ' + ', '.join(info['unexplained'][:12]))
         return None, info
@@ -791,7 +905,7 @@ def _patient_question(q, r, profile, pids, info):
             if r.take(_alias_pattern(a), f'measurement {c}'): concept = c; break
         if concept: break
     r.take(r'\b(?:in percent|percent|including undated results|return a numeric value|what is the|for)\b')
-    info['unexplained'] = r.leftover()
+    info['unexplained'] = r.blocking(profile)
     if info['unexplained'] or not concept or not stat:
         info.update(route='fallback', reason='patient question not fully interpreted: ' + ', '.join(info['unexplained'][:12]))
         return None, info

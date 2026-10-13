@@ -5,7 +5,7 @@ The classifier proposes a plan; its score is not calibrated clinical confidence.
 No approximate/semantic cache is used to reuse an answer to a different question.
 """
 from pathlib import Path
-import copy,hashlib,json,math,re,sqlite3,time
+import copy,hashlib,json,math,os,re,sqlite3,time
 import numpy as np
 from ...contracts import digest
 from ..gateway import PersistentGateway
@@ -164,6 +164,54 @@ def plan(stack,question,ledger,frontier):
             return graph,{'route':compile_info['route'],'model':None,'new_paid_api_calls':0,'frontier_called':False,
                           'local_compiler':compile_info,'steps':[],'elapsed_seconds':time.perf_counter()-start}
     local_decline=compile_info
+    # Next rung: the local small model rewrites the question into canonical phrasing; the deterministic
+    # compiler must then fully parse it. The model never executes anything the compiler does not understand.
+    if profile is not None and os.environ.get('AGERE_LOCAL_MODEL','on')!='off':
+        try:
+            from .nl2sql import canonicalize, MODEL_DIR
+            if MODEL_DIR.exists():
+                rewrite,stats=canonicalize(stack.path,question,meta['snapshot']['as_of'])
+                if rewrite:
+                    compiled,info=compile_locally(rewrite,profile,meta['snapshot']['as_of'])
+                    if compiled is not None:
+                        graph=validate(compiled,meta['snapshot']['as_of'])
+                        return graph,{'route':'local_model_rewrite_compiled','model':stats.get('model'),'new_paid_api_calls':0,
+                                      'frontier_called':False,'rewrite':rewrite,'local_compiler':info,'local_compiler_declined':compile_info,
+                                      'steps':[],'elapsed_seconds':time.perf_counter()-start}
+                    local_decline={**compile_info,'rewrite':rewrite,'rewrite_declined':info.get('reason')}
+                else:
+                    local_decline={**compile_info,'rewrite':None,'rewrite_stats':stats}
+        except (ValueError,ImportError,OSError) as exc:
+            local_decline={**compile_info,'rewrite_error':str(exc)[:300]}
+    # Free-form local SQL is off by default: its held-out precision was too low for unsupervised answers.
+    if profile is not None and os.environ.get('AGERE_LOCAL_SQL','off')=='on':
+        try:
+            from .nl2sql import answer as local_sql, MODEL_DIR
+            if MODEL_DIR.exists():
+                params,_,receipt=local_sql(stack.path,question,meta['snapshot']['as_of'])
+                graph=validate({'interpretation':question,'coverage':'supported_observation','unmet_requirements':[],
+                                'nodes':[{'id':'answer','operation':'sql','inputs':[],'parameters':params,
+                                          'purpose':'Local model query over the semantic layer'}]},meta['snapshot']['as_of'])
+                return graph,{'route':'local_model_sql','model':receipt['attempts'][-1]['model'],'new_paid_api_calls':0,
+                              'frontier_called':False,'local_compiler_declined':compile_info,'local_model':receipt,'steps':[],
+                              'elapsed_seconds':time.perf_counter()-start}
+        except (ValueError,ImportError,OSError) as exc:
+            local_decline={**local_decline,'local_model_error':str(exc)[:300]}
+    # Cheapest hosted rung: one Haiku call writing governed SQL over the cached schema (~$0.001).
+    if profile is not None and stack.allow_live and os.environ.get('AGERE_HOSTED_SQL','on')!='off':
+        try:
+            from .nl2sql import answer as model_sql, HostedModel
+            hosted=HostedModel(ledger,stack.receipts)
+            params,_,receipt=model_sql(stack.path,question,meta['snapshot']['as_of'],hosted)
+            graph=validate({'interpretation':question,'coverage':'supported_observation','unmet_requirements':[],
+                            'nodes':[{'id':'answer','operation':'sql','inputs':[],'parameters':params,
+                                      'purpose':'Hosted small-model query over the semantic layer'}]},meta['snapshot']['as_of'])
+            return graph,{'route':'hosted_small_model_sql','model':hosted.model,'new_paid_api_calls':len(receipt['attempts']),
+                          'frontier_called':False,'local_compiler_declined':local_decline,'hosted_sql':receipt,
+                          'steps':[{'stage':'hosted_small_model_sql','receipt':{'cost_estimate':{'estimated_usd':hosted.cost}}}],
+                          'elapsed_seconds':time.perf_counter()-start}
+        except (ValueError,RuntimeError,OSError) as exc:
+            local_decline={**local_decline,'hosted_sql_error':str(exc)[:300]}
     from .analysis_graph import catalog,code_identity
     # Catalog identity covers source/attached model/policy capability changes.
     capability=catalog(stack.path)

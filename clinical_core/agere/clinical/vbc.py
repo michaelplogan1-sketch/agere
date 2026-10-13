@@ -88,7 +88,7 @@ def attribution(db, people, start, end, method='hybrid'):
                 assigned[pid] = (key, r.get('clinician_id'), r.get('organization_id'))
     visits = defaultdict(lambda: defaultdict(lambda: [0, '', None]))
     for pid, clin, org, d in db.execute(
-            "SELECT patient_id, attending_clinician_id, organization_id, event_date FROM encounter "
+            "SELECT patient_id, attending_clinician_id, organization_id, event_date FROM visit "
             "WHERE type_concept IN ('primary_care_visit') AND attending_clinician_id IS NOT NULL AND event_date BETWEEN ? AND ?",
             (start, end)):
         v = visits[pid][clin]; v[0] += 1; v[1] = max(v[1], d or ''); v[2] = org

@@ -13,7 +13,7 @@ import json, re, sqlite3, time
 
 from . import aggregate, concepts, source_profile
 
-VERSION = 'semantic-layer/2'
+VERSION = 'semantic-layer/3'
 
 DDL = """
 CREATE TABLE meta(key TEXT PRIMARY KEY, value TEXT);
@@ -29,6 +29,8 @@ CREATE TABLE measurement(record_id TEXT, patient_id TEXT, source_table TEXT, con
 CREATE TABLE encounter(record_id TEXT, patient_id TEXT, source_table TEXT, encounter_id TEXT, type TEXT,
   type_concept TEXT, status TEXT, event_date TEXT, end_date TEXT, available_date TEXT, organization_id TEXT,
   attending_clinician_id TEXT, disposition TEXT);
+CREATE TABLE visit(encounter_id TEXT, patient_id TEXT, type TEXT, type_concept TEXT, status TEXT, event_date TEXT,
+  end_date TEXT, available_date TEXT, organization_id TEXT, attending_clinician_id TEXT, disposition TEXT, versions INTEGER);
 CREATE TABLE stay(patient_id TEXT, admit_date TEXT, discharge_date TEXT, type TEXT, organization_id TEXT,
   readmitted_30d INTEGER, days_to_readmission INTEGER);
 CREATE TABLE link(record_id TEXT, stream TEXT, field TEXT, target_record_id TEXT);
@@ -42,6 +44,7 @@ CREATE INDEX measurement_concept ON measurement(concept, patient_id);
 CREATE INDEX encounter_concept ON encounter(type_concept, patient_id);
 CREATE INDEX concept_patient_patient ON concept_patient(patient_id);
 CREATE INDEX link_target ON link(target_record_id, stream);
+CREATE INDEX visit_concept ON visit(type_concept, patient_id);
 CREATE INDEX link_source ON link(record_id);
 """
 
@@ -53,6 +56,8 @@ SCHEMA_DOC = {
     'measurement': 'Labs and vitals, one row per (record, concept); concept NULL when unmapped. value/unit as received; '
                    'value_canonical in unit_canonical when the unit converts (else NULL). Cancelled results have value NULL.',
     'encounter': 'Encounter records plus ADT notifications (source_table adt, type = ADT event). type_concept = library encounter concept.',
+    'visit': 'One row per encounter (encounter records repeat once per status version; use visit, not encounter, to count visits). '
+             'Latest version wins; versions = number of received versions.',
     'stay': 'Distinct hospital stays (inpatient/observation encounters collapsed by admit day and overlap) with 30-day readmission flag.',
     'concept_patient': 'Patients having each library concept (condition, measurement, encounter), with record counts and first/last dates.',
     'link': 'Every record-to-record reference (fields ending _record_id/_record_ids): record_id/stream of the referring record, '
@@ -184,6 +189,12 @@ def build(path):
         for pid, person in people.items():  # roster patients without records
             out.execute('INSERT OR IGNORE INTO patient(patient_id, age_reported, sex_reported) VALUES (?,?,?)',
                         (pid, person.get('age_reported'), person.get('sex_reported')))
+        out.execute("""INSERT INTO visit SELECT encounter_id, patient_id, type, type_concept, status, event_date, end_date, available_date,
+            organization_id, attending_clinician_id, disposition, n FROM (
+              SELECT e.*, count(*) OVER (PARTITION BY coalesce(e.encounter_id, e.record_id)) AS n,
+                     row_number() OVER (PARTITION BY coalesce(e.encounter_id, e.record_id)
+                                        ORDER BY (e.status = 'completed') DESC, e.available_date DESC, e.record_id DESC) AS rn
+              FROM encounter e WHERE e.source_table = 'encounters') WHERE rn = 1""")
         out.executemany('INSERT INTO concept_patient VALUES (?,?,?,?,?,?)',
                         [(c, k, pid, n, f, l) for (c, k, pid), (n, f, l) in cp.items()])
         out.executescript(INDEXES)
