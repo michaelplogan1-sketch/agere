@@ -19,9 +19,11 @@ MODEL_DIR = Path(__file__).resolve().parents[3] / 'models' / 'qwen3-4b'
 TABLES = """patient(patient_id, age_reported, age_latest, sex_reported ['F','M'], coverage_type ['commercial','medicare','medicaid','uninsured'], coverage_status, pcp_clinician_id, pcp_practice_id)  -- use age_latest (latest reported age)
 condition(record_id, patient_id, concept, label, icd10, snomed, event_date, available_date, organization_id)  -- one row per (record, concept)
 measurement(record_id, patient_id, concept, name, value, unit, value_canonical, unit_canonical, result_status, event_date, available_date, organization_id)  -- labs and vitals; compare value_canonical
-visit(encounter_id, patient_id, type, type_concept, status, event_date, end_date, available_date, organization_id, attending_clinician_id)  -- one row per encounter; count visits here
+visit(encounter_id, patient_id, type, type_concept, status, event_date, end_date, available_date, first_available_date, organization_id, attending_clinician_id, disposition, in_person, is_practice)  -- one row per encounter; count visits here
 stay(patient_id, admit_date, discharge_date, type, organization_id, readmitted_30d, days_to_readmission, los_days, discharge_known)  -- distinct hospital stays; los_days/discharge_date NULL when discharge unknown
 appointment(appointment_id, patient_id, scheduled_date, booked_date, final_status, ever_no_show, ever_cancelled, ever_rescheduled, kept, organization_id, clinician_id, purpose)  -- one row per appointment (statuses resolved); use for no-show/cancellation/kept questions
+medication(record_id, patient_id, source_stream, evidence ['dispensed','claim','ordered','listed','administered','reported','pharmacy_history'], drug_name, drug_class, status, event_date, available_date)  -- every medication mention with drug_class by ingredient; use for any drug/class question
+measurement_latest(patient_id, concept, event_date, value_canonical, unit_canonical, same_day_values, same_day_min, record_id)  -- latest DATED value per patient+concept; use for "latest/most recent" questions
 current_record(stream, key_field, business_id, record_id, patient_id, versions, first_available_date, available_date, event_date, payload)  -- LATEST version of each entity in versioned streams; use json_extract(payload,'$.field') for current state
 social_need(patient_id, need ['food','transport','cost_of_care'], positive, instrument, source_stream, source_field, event_date, record_id)  -- social-needs screens normalised across instruments; use for any food/transport/cost-of-care question
 claim(claim_id, patient_id, payer, service_date, benefit_year, first_status, final_status, ever_denied, denied_then_paid, net_payer_paid_cents, billed_cents, allowed_cents, first_available_date, last_available_date)  -- one row per medical claim (adjudication sequence resolved; net paid = paid minus reversed)
@@ -146,6 +148,7 @@ GLOSSARY = [
     (r'tetanus|immunization history|vaccine screening|contraindicat', ['immunization_screening', 'immunization_history']),
     (r'community (?:referrals?|services?|resources?)|food (?:bank|access|resources?)|transport(?:ation)? assistance', ['community_service_referrals', 'community_service_outcomes']),
     (r'phone (?:calls?|encounters?|messages?)|telephone|call volume', ['telephone_messages']),
+    (r'statins?|beta[- ]?blockers?|ace inhibitors?|\barbs?\b|sglt2|glp-?1|insulin|metformin|anticoagul|opioids?|medications?|meds\b|prescri|fills?\b|refill|adherence', ['pharmacy_dispenses', 'medication_orders']),
 ]
 
 
@@ -567,6 +570,12 @@ VERIFY_RULES = """
 - Versioned streams: records that repeat per business id (account_id, claim_id, appointment_id, prescription_id,
   referral id) are successive versions. For "current", "now", "open" or "outstanding" questions take the latest record
   per id (max available_date, then available_time) before summing; never sum all versions.
+- Patient names are not stored (synthetic identities): when names or a list are requested, return patient_id rows; never refuse for names.
+- Lab results: exclude only rows with value_canonical NULL (cancelled/hemolysed); do not filter result_status = 'final' unless asked.
+  "Latest/most recent" means the latest dated value (measurement_latest); undated rows never count as latest.
+- Medications: use the medication table and drug_class; "on X" / "filled X" = evidence 'dispensed' or 'claim' unless the question
+  says ordered/prescribed/listed.
+- In-person visits: visit.in_person = 1; practice visits: visit.is_practice = 1. Arrival lag of a visit: first_available_date.
 - Point-in-time: if the question states an "as of" / "received by" date earlier than the snapshot, count only rows whose
   available_date (arrival) is on or before that date, in every table you use."""
 

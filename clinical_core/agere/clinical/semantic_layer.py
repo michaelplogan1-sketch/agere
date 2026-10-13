@@ -13,7 +13,7 @@ import json, re, sqlite3, time
 
 from . import aggregate, concepts, source_profile
 
-VERSION = 'semantic-layer/7'
+VERSION = 'semantic-layer/8'
 
 # Source contract: streams whose records are successive snapshots of one business entity (key field).
 # Other repeated ids (payments per account, lines per claim, fills per prescription) are separate events, not versions.
@@ -41,6 +41,10 @@ CREATE TABLE stay(patient_id TEXT, admit_date TEXT, discharge_date TEXT, type TE
 CREATE TABLE link(record_id TEXT, stream TEXT, field TEXT, target_record_id TEXT);
 CREATE TABLE concept_patient(concept TEXT, kind TEXT, patient_id TEXT, records INTEGER, first_date TEXT, last_date TEXT,
   PRIMARY KEY(concept, patient_id));
+CREATE TABLE medication(record_id TEXT, patient_id TEXT, source_stream TEXT, evidence TEXT, drug_name TEXT, drug_class TEXT,
+  status TEXT, event_date TEXT, available_date TEXT);
+CREATE TABLE measurement_latest(patient_id TEXT, concept TEXT, event_date TEXT, value_canonical REAL, unit_canonical TEXT,
+  same_day_values INTEGER, same_day_min REAL, record_id TEXT, PRIMARY KEY(patient_id, concept));
 CREATE TABLE current_record(stream TEXT, key_field TEXT, business_id TEXT, record_id TEXT, patient_id TEXT, versions INTEGER,
   first_available_date TEXT, available_date TEXT, event_date TEXT, payload TEXT, PRIMARY KEY(stream, business_id));
 CREATE TABLE social_need(patient_id TEXT, need TEXT, positive INTEGER, instrument TEXT, source_stream TEXT, source_field TEXT,
@@ -88,6 +92,12 @@ SCHEMA_DOC = {
     'record': 'Every received record (all streams). Use json_extract(payload, \'$.field\') for fields of streams not modelled above.',
     'appointment': 'One row per appointment_id (appointments arrive as a booked record plus later status records). scheduled_date from '
                    'the booking; final_status = latest status received; ever_* flags over all versions; kept = arrived or fulfilled.',
+    'medication': 'Every medication mention, one row per (record, drug_class): source_stream and evidence (dispensed, claim, ordered, '
+                  'listed, administered, reported, pharmacy_history), drug_name as received, status. drug_class from the active '
+                  'ingredient (statin, beta_blocker, hf_evidence_based_beta_blocker, ace_inhibitor, arb, arni, mra, sglt2_inhibitor, '
+                  'glp1_agonist, metformin, insulin, anticoagulant, opioid, ...); NULL when unclassified.',
+    'measurement_latest': 'Latest DATED value per patient and measurement concept (undated rows never count as latest); '
+                          'same_day_values/same_day_min for same-date ties (HEDIS uses the lowest).',
     'current_record': 'Latest version of each business entity in versioned (snapshot) streams: stream, key_field, business_id, '
                       'versions, payload of the latest version. Use it for current state (current balance, current claim status).',
     'social_need': 'Social-needs screening answers normalised across instruments: one row per (screen record, need) with positive 0/1. '
@@ -101,6 +111,30 @@ SCHEMA_DOC = {
 
 
 def _date(r): return (r.get('event_date') or '')[:10] or None
+
+
+MED_SOURCES = [  # stream, name field, status field, evidence label
+    ('pharmacy_dispenses', 'medication_name', 'status', 'dispensed'), ('pharmacy_claims', 'medication_name', 'transaction_status', 'claim'),
+    ('medication_orders', 'medication_name', 'status', 'ordered'), ('medication_lists', 'name', None, 'listed'),
+    ('medication_administrations', 'medication_name', 'administration_status', 'administered'),
+    ('reported_medication_entries', 'medication_name_reported', 'use_statement', 'reported'),
+    ('pharmacy_history', 'medication_name', 'reported_status', 'pharmacy_history')]
+
+
+def _medications(out):
+    """One row per (medication record, drug class) across every medication source; class from the ingredient."""
+    from .drug_classes import classify
+    rows = []
+    for stream, name_f, status_f, evidence in MED_SOURCES:
+        for rid, pid, payload, d, av in out.execute('SELECT record_id, patient_id, payload, event_date, available_date FROM record WHERE stream = ?', (stream,)):
+            r = json.loads(payload)
+            name = r.get(name_f)
+            if not name: continue
+            status = r.get(status_f) if status_f else None
+            for c in classify(name) or [None]:
+                rows.append((rid, pid, stream, evidence, name, c, status, d, av))
+    out.executemany('INSERT INTO medication VALUES (?,?,?,?,?,?,?,?,?)', rows)
+    out.executescript('CREATE INDEX medication_class ON medication(drug_class, patient_id); CREATE INDEX measurement_latest_concept ON measurement_latest(concept);')
 
 
 def _derived(out):
@@ -159,6 +193,20 @@ def _derived(out):
               FROM record r WHERE r.stream = '{stream}' AND json_extract(r.payload,'$.{key}') IS NOT NULL
               WINDOW w AS (PARTITION BY json_extract(r.payload,'$.{key}'))) WHERE rn = 1""")
     out.execute('CREATE INDEX current_record_patient ON current_record(stream, patient_id)')
+    _medications(out)
+    out.execute("""INSERT INTO measurement_latest
+        SELECT patient_id, concept, event_date, value_canonical, unit_canonical, n, mn, record_id FROM (
+          SELECT m.*, count(*) OVER d AS n, min(m.value_canonical) OVER d AS mn,
+                 row_number() OVER (PARTITION BY m.patient_id, m.concept ORDER BY m.event_date DESC, m.available_date DESC, m.record_id DESC) AS rn
+          FROM measurement m WHERE m.concept IS NOT NULL AND m.value_canonical IS NOT NULL AND m.event_date IS NOT NULL
+          WINDOW d AS (PARTITION BY m.patient_id, m.concept, m.event_date)) WHERE rn = 1""")
+    out.execute("ALTER TABLE visit ADD COLUMN in_person INTEGER")
+    out.execute("ALTER TABLE visit ADD COLUMN is_practice INTEGER")
+    out.execute("ALTER TABLE visit ADD COLUMN first_available_date TEXT")
+    out.execute("""UPDATE visit SET in_person = CASE WHEN type_concept = 'telehealth_contact' OR lower(type) IN ('telephone','virtual','video','phone')
+                     THEN 0 ELSE 1 END, is_practice = (organization_id LIKE '%PRACTICE%')""")
+    out.execute("""UPDATE visit SET first_available_date = (SELECT min(e.available_date) FROM encounter e
+                     WHERE e.source_table = 'encounters' AND e.encounter_id = visit.encounter_id)""")
     out.execute("ALTER TABLE patient ADD COLUMN age_latest INTEGER")
     out.execute("""UPDATE patient SET age_latest = coalesce((SELECT CAST(json_extract(r.payload,'$.age_reported') AS INTEGER) FROM record r
                      WHERE r.stream = 'demographic_updates' AND r.patient_id = patient.patient_id
