@@ -28,6 +28,7 @@ OPERATIONS |= {'pathway'}  # care pathways (Markov chains, process mining)
 OPERATIONS = OPERATIONS | {'profile'}
 OPERATIONS |= {'calibration'}  # calibration of predictions (conformal.py)
 OPERATIONS |= {'scheduling'}  # no-show model, overbooking, access, reminders (scheduling.py)
+OPERATIONS |= {'briefing'}  # ranked proactive briefing (briefing.py + briefing_rank.py)
 NODE_FIELDS = {'id', 'operation', 'inputs', 'parameters', 'purpose'}
 LIMITS = [
     'Membership means observed predicate matches, not confirmed disease or absent care.',
@@ -125,6 +126,7 @@ NO_BENCHMARK_OPERATIONS += ('market',)
 NO_BENCHMARK_OPERATIONS += ('pathway',)
 NO_BENCHMARK_OPERATIONS += ('calibration',)
 NO_BENCHMARK_OPERATIONS += ('scheduling',)
+NO_BENCHMARK_OPERATIONS += ('briefing',)
 
 
 def benchmark_references(answer, question=None, operation=None):
@@ -302,6 +304,15 @@ def build_answer(plan, results, memberships, question):
                                                       'included_without_baseline_result', 'groups', 'logrank', 'cox', 'curves')})
         if not report['units']:
             answer['missing'].append(summary(report))
+        return answer
+    if last['operation'] == 'briefing':
+        from .briefing import summarize as briefing_summary
+        report = results[-1]['result']
+        partial = plan.get('coverage') != 'supported_observation' or plan.get('unmet_requirements')
+        value, table = briefing_summary(report, last['parameters'].get('top', 10))
+        answer.update(status='partial' if partial else 'answered', answer_type='table', value=value, table=table, method=report.get('method'),
+                      overall={'briefing': report.get('ranking') or {}, 'cards': len(report.get('cards') or []),
+                               'cache_hit': report.get('cache_hit')})
         return answer
     if last['operation'] == 'pathway':
         from .pathway import summary
@@ -562,6 +573,9 @@ def validate(plan, as_of):
         elif op == 'scheduling':
             from . import scheduling
             p = scheduling.validate(p)
+        elif op == 'briefing':
+            from . import briefing_rank
+            p = briefing_rank.validate(p)
         elif op == 'pathway':
             from . import pathway
             p = pathway.validate(p)
@@ -833,6 +847,7 @@ def code_identity():
                       Path(__file__).with_name('longitudinal.py'), Path(__file__).with_name('survival.py'),
                       Path(__file__).with_name('monitor.py'),
                       Path(__file__).with_name('market.py'),
+                      Path(__file__).with_name('briefing.py'), Path(__file__).with_name('briefing_rank.py'),
                       Path(__file__).with_name('demand.py'),
                       Path(__file__).with_name('profile.py'),
                       *[Path(__file__).with_name(n) for n in ('program_work.py','program_work_current.py','program_work_v1.py','functional_programs.py','functional_review.py','registered_program_work.py','domain_programs.py','domain_review.py','work_adapters.py')],Path(__file__).with_name('program_documents.py'),Path(__file__).with_name('program_document_change.py'),
@@ -1123,6 +1138,9 @@ def execute(stack, plan, *, question=None):
                 chosen = memberships[node['inputs'][0]]
                 detail = survival.execute(path, sorted(chosen.yes), params)
                 detail['input_membership'] = membership_receipt(chosen)
+            elif op == 'briefing':
+                from . import briefing, briefing_rank
+                detail = briefing_rank.serve(path, briefing.cached(path), record=False)
             elif op == 'pathway':
                 from . import pathway
                 chosen = memberships[node['inputs'][0]] if node['inputs'] else None

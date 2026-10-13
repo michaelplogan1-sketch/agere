@@ -429,6 +429,9 @@ def _compile(question, profile, as_of):
     booked = _scheduling_question(q)  # overbooking / likely no-shows / reminders / access; plain no-show RATES stay literal metrics
     if booked is not None:
         return booked
+    briefed = _briefing_question(q)  # 'what should I look at today?' -> the ranked proactive briefing
+    if briefed is not None:
+        return briefed
     for pattern, missing in UNSUPPORTED:  # checked on the user's own words, before any paraphrase
         if timed and 'surviv' in pattern: continue
         if re.search(pattern, low) and not (_contract_terms(low) and 'shared' in pattern):
@@ -2109,6 +2112,35 @@ CALIBRATION_INTENT = (r'\b(?:well[- ]|poorly |mis)?calibrat\w*|\bhow (?:accurate
                       r'|\b(?:accuracy|reliability|coverage|backtest\w*|brier|expected calibration error|ece)\b[^.?]{0,40}\b' + PREDICTION_WORDS +
                       r'|\b' + PREDICTION_WORDS + r'\b[^.?]{0,40}\b(?:accura\w+|reliab\w+|trust\w*|backtest\w*|coverage)\b'
                       r'|\b(?:can|should) we trust\b[^.?]{0,30}\b' + PREDICTION_WORDS)
+
+
+BRIEFING_TRIGGER = (r"\b(?:(?:morning|daily|today'?s|this week'?s|weekly)\s+)?briefing\b|"
+                    r"\bwhat (?:should|do) (?:i|we) (?:need to )?(?:look at|focus on|know|pay attention to|worry about|review|prioriti[sz]e)\b|"
+                    r"\bwhat needs (?:my|our) attention\b|\banything (?:i|we) should (?:know|look at|worry about)\b|"
+                    r"\bwhat stands out\b|\bwhere should (?:i|we) (?:start|focus)\b|\bwhat(?:'s| is) (?:important|notable|worth (?:a look|looking at))\b|"
+                    r"\btoday'?s (?:top (?:\d{1,2} )?)?(?:findings|insights|priorities)\b")
+BRIEFING_FILLER = (r"\b(?:what|whats|which|should|do|does|i|we|need|needs|to|my|our|me|us|the|a|an|is|are|anything|today|this|morning|week|"
+                   r"right|now|first|please|give|show|tell|run|start|focus|look|at|on|in|data|across|population|network|panel|any|most|"
+                   r"important|notable|worth|looking|stands?|out|know|about|worry|review|prioriti[sz]e|attention|pay|top|findings?|cards?|"
+                   r"insights?|items?|things?|priorities|daily|weekly|where|for|of|and|with|ranked|ranking|briefing|s)\b|\d+")
+
+
+def _briefing_question(q):
+    """'What should I look at today?' / 'morning briefing' -> the ranked proactive briefing. Strict: a question that names
+    anything the briefing does not ('what should I know about Mrs Smith's A1c') is left to the other routes."""
+    low = q.lower()
+    if not re.search(BRIEFING_TRIGGER, low): return None
+    rest = re.sub(BRIEFING_FILLER, ' ', re.sub(BRIEFING_TRIGGER, ' ', low))
+    if re.search(r'[a-z]', rest): return None
+    params = {}
+    m = re.search(r'\btop (\d{1,2})\b|\b(\d{1,2}) (?:findings?|cards?|insights?|items?|things?)\b', low)
+    if m: params['top'] = max(1, min(25, int(m.group(1) or m.group(2))))
+    from .briefing_rank import validate
+    params = validate(params)
+    info = {'compiler': VERSION, 'recognised': ['briefing question'], 'paraphrased': [], 'route': 'local_compiler', 'unexplained': []}
+    return {'interpretation': q, 'coverage': 'supported_observation', 'unmet_requirements': [],
+            'nodes': [{'id': 'answer', 'operation': 'briefing', 'inputs': [], 'parameters': params,
+                       'purpose': f"Ranked proactive briefing (top {params['top']}): learned ranking with the reason for each position"}]}, info
 
 
 def _calibration_question(q):

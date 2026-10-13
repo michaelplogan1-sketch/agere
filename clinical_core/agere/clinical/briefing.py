@@ -7,13 +7,14 @@ monitor findings (control-chart signals, data-feed gaps, claims review flags) an
 'what moved' market cards (the most surprising practice moves, network-wide vs idiosyncratic).
 Each card carries its evidence, the method and a follow-up question that
 reproduces it through the normal answer path. Cards are ranked by information x
-impact: surprise in bits times log2(2 + patients affected). No model calls.
+impact: surprise in bits times log2(2 + patients affected), the cold-start prior of briefing_rank, which learns
+the order from card feedback (opened / asked follow-up / dismissed). No model calls.
 """
 import math, sqlite3, time
 
 from . import discover, market, monitor, trajectory, vbc, semantic_layer
 
-VERSION = 'briefing/4'
+VERSION = 'briefing/5'  # /5: cards carry card_id, ranking features and 'why' (briefing_rank)
 W = {'basis': 'all_observed', 'start': '', 'end': ''}
 DISCOVERY = [
     ('ED use', {'all': [{'kind': 'concept', 'concept': 'emergency_visit', 'window': W}], 'any': [], 'exclude': []}, 'Find hotspots of ED visits'),
@@ -118,6 +119,8 @@ def build(path):
     for c in cards:
         rank(c, annual)
     cards.sort(key=lambda c: -c['score'])
+    from . import briefing_rank  # cold-start order: the information x impact prior plus MMR diversity (no history, no explore)
+    cards = briefing_rank.rank(cards, explore=False)
     return {'schema': VERSION, 'cards': cards, 'elapsed_seconds': round(time.perf_counter() - started, 1), 'api_calls': 0,
             'monitor': {k: watch[k] for k in ('tests_examined', 'look_elsewhere_bits', 'period')} if watch else None,
             'method': 'Discovery (BH-controlled segment tests), uncertainty-weighted lab trajectories, Kitagawa change decomposition with '
@@ -125,7 +128,9 @@ def build(path):
                       'monitoring. Ranked by information x impact: surprise in bits (-log2 of the multiplicity-adjusted p - BH q for '
                       'discovery, -log2 p minus the look-elsewhere cost for monitor findings, the two-sided normal tail of the '
                       'standardised strength otherwise) times log2(2 + patients affected, with dollars counted as member-years of '
-                      'average allowed spend).'}
+                      'average allowed spend). That rule is the cold-start prior of a learning-to-rank model (briefing_rank): '
+                      'cards are re-ordered for diversity (MMR) and, as feedback accrues, by a pairwise ranker over surprise, impact, '
+                      'actionability, novelty, confidence, data-quality and recency, with one Thompson-sampled explore slot.'}
 
 
 MAX_CARD_BITS = 40.0
@@ -163,3 +168,14 @@ def monitor_cards(watch, limit=10):
                                                          'look_elsewhere_bits', 'excess_bits')}})
         if len(cards) >= limit: break
     return cards
+
+
+def summarize(report, top=10):
+    """The briefing as an answer: value sentence and one row per card with the reason for its position."""
+    cards = report.get('cards') or []
+    rows = [{'rank': c.get('rank', i + 1), 'kind': c.get('kind'), 'topic': c.get('topic'), 'headline': c.get('headline'),
+             'patients': c.get('patients'), 'surprise_bits': c.get('surprise_bits'), 'score': c.get('rank_score'),
+             'explore': bool(c.get('explore')), 'why': c.get('why_text'), 'follow_up': c.get('follow_up'), 'card_id': c.get('card_id')}
+            for i, c in enumerate(cards[:top])]
+    if not rows: return 'No significant findings in this data release.', rows
+    return (f"{len(cards)} findings; top: {rows[0]['headline']}" + (f" (ask: {rows[0]['follow_up']})" if rows[0]['follow_up'] else '')), rows

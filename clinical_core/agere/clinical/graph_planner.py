@@ -181,6 +181,12 @@ CONTRACTS['pathway'] = {'inputs':['optional earlier_set'],'parameters':{'start':
               'targets within N steps and empirical reach within N days, top path variants, conformance to an expected next step, bottlenecks, leakage to outside '
               'organisations, group comparison (permutation chi-square). Use for patient-journey / where-do-patients-go-after / leakage / care-path questions.'}
 
+CONTRACTS['briefing'] = {'inputs':['none'],'parameters':{'top':10},
+    'meaning':'Proactive daily briefing over the whole population (no question needed): cards from discovery, lab trajectories and forecasts, '
+              'cost/utilization change decomposition, shrunk outliers, monitor and market moves; ranked by briefing_rank (prior = surprise bits x '
+              'log2(2 + impact); learned from opened / asked / dismissed feedback; MMR diversity; one explore slot), each with why it ranks there. '
+              'Use for what-should-I-look-at-today / briefing / what-needs-attention questions.'}
+
 
 def grounded_fields(fields, profile):
     """Offer only streams/fields the received data populates, with small value vocabularies."""

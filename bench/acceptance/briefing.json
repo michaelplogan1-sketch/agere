@@ -1,0 +1,10 @@
+[
+  {"question": "What should I look at today?", "expect_operation": "briefing"},
+  {"question": "Give me the morning briefing", "expect_operation": "briefing"},
+  {"question": "What needs my attention?", "expect_operation": "briefing"},
+  {"question": "Anything I should know about this week?", "expect_operation": "briefing"},
+  {"question": "What stands out in our data today?", "expect_operation": "briefing"},
+  {"question": "Where should we focus first?", "expect_operation": "briefing"},
+  {"question": "Show me today's top 5 findings", "expect_operation": "briefing"},
+  {"question": "Run the daily briefing", "expect_operation": "briefing"}
+]

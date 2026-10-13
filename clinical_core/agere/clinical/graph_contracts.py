@@ -21,6 +21,7 @@ TYPED |= {'pathway'}
 TYPED = TYPED | {'profile'}
 TYPED |= {'scheduling'}
 OPTIONAL_POPULATION += ('scheduling',)
+TYPED |= {'briefing'}
 
 
 def obj(properties):
@@ -46,6 +47,8 @@ def array(items, description=None):
 
 
 def input_contract(op):
+    if op == 'briefing':  # whole-population briefing; takes no population
+        return {'count': [0, 0], 'type': 'membership', 'output': 'report'}
     if op == 'pathway':  # optional population; no population = everyone
         return {'count': [0, 1], 'type': 'membership', 'output': 'report'}
     lo, hi = ((0, 0) if op in ('cohort', 'evidence') else
@@ -207,6 +210,8 @@ def parameter_schema(op, catalog):
                     'staffing': {'type': 'boolean', 'description': 'true when the question asks for staff/FTE needs'},
                     'minutes_per_unit': {'type': ['number', 'null'], 'description': 'User-supplied staff minutes per unit; null if not stated (never invent)'},
                     'fte_hours_per_week': {'type': ['number', 'null'], 'description': 'User-supplied productive hours per FTE-week; null if not stated'}})
+    if op == 'briefing':
+        return obj({'top': {'type': 'integer', 'minimum': 1, 'maximum': 25, 'description': 'Cards to return (default 10)'}})
     if op == 'pathway':
         from . import pathway, concepts as library
         return obj({'start': string(['', *pathway.EVENT_STATES], 'Anchor state paths start from ("" = each patient\'s first event); diagnosis needs index_concept'),
