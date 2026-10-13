@@ -2,15 +2,17 @@
 
 Runs Agere's own analytics over the whole population without a question:
 discovery on actionable outcomes, material lab trajectories, metric-change
-explanations (with data-feed checks) and shrinkage-ranked utilization outliers.
+explanations (with data-feed checks), shrinkage-ranked utilization outliers, and
+monitor findings (control-chart signals, data-feed gaps, claims review flags).
 Each card carries its evidence, the method and a follow-up question that
-reproduces it through the normal answer path. No model calls.
+reproduces it through the normal answer path. Cards are ranked by information x
+impact: surprise in bits times log2(2 + patients affected). No model calls.
 """
 import math, sqlite3, time
 
-from . import discover, trajectory, vbc, semantic_layer
+from . import discover, monitor, trajectory, vbc, semantic_layer
 
-VERSION = 'briefing/2'
+VERSION = 'briefing/3'
 W = {'basis': 'all_observed', 'start': '', 'end': ''}
 DISCOVERY = [
     ('ED use', {'all': [{'kind': 'concept', 'concept': 'emergency_visit', 'window': W}], 'any': [], 'exclude': []}, 'Find hotspots of ED visits'),
@@ -101,9 +103,58 @@ def build(path):
                           'headline': f"PCP {r['group']}: ED {r['ed_per_1000_shrunk']}/1000 (95% CI {ci[0]}-{ci[1]}) vs {mean:.0f} overall, after shrinkage",
                           'patients': r['members'], 'strength': (r['ed_per_1000_shrunk'] - mean) / max((ci[1] - ci[0]) / 4, 1e-9),
                           'follow_up': 'What are ED visits per 1,000 by PCP?', 'evidence': r})
+    annual = None
+    try:
+        watch = monitor.execute(path, None, {'check': 'all'})
+        annual = watch.get('annual_allowed_per_member')
+        cards += monitor_cards(watch)
+    except ValueError:  # too little history to chart: the other cards stand on their own
+        watch = None
     for c in cards:
-        c['score'] = round(c['strength'] * math.log(2 + (c['patients'] or 10)), 2)
+        rank(c, annual)
     cards.sort(key=lambda c: -c['score'])
     return {'schema': VERSION, 'cards': cards, 'elapsed_seconds': round(time.perf_counter() - started, 1), 'api_calls': 0,
+            'monitor': {k: watch[k] for k in ('tests_examined', 'look_elsewhere_bits', 'period')} if watch else None,
             'method': 'Discovery (BH-controlled segment tests), uncertainty-weighted lab trajectories, Kitagawa change decomposition with '
-                      'feed checks, and empirical-Bayes utilization outliers; ranked by evidence strength x patients affected.'}
+                      'feed checks, empirical-Bayes utilization outliers, and statistical process control / feed / claims-integrity '
+                      'monitoring. Ranked by information x impact: surprise in bits (-log2 of the multiplicity-adjusted p - BH q for '
+                      'discovery, -log2 p minus the look-elsewhere cost for monitor findings, the two-sided normal tail of the '
+                      'standardised strength otherwise) times log2(2 + patients affected, with dollars counted as member-years of '
+                      'average allowed spend).'}
+
+
+MAX_CARD_BITS = 40.0
+
+
+def surprise_bits(card):
+    """Multiplicity-adjusted surprise of a card, in bits."""
+    if card.get('surprise_bits') is not None: return float(card['surprise_bits'])
+    q = (card.get('evidence') or {}).get('q') if isinstance(card.get('evidence'), dict) else None
+    if isinstance(q, (int, float)) and q > 0: return round(min(MAX_CARD_BITS, -math.log2(q)), 2)
+    return monitor.z_bits(card.get('strength') or 0.0)
+
+
+def rank(card, annual=None):
+    card['surprise_bits'] = surprise_bits(card)
+    card['impact'] = round((card.get('patients') or 0) + ((card.get('dollars') or 0) / annual if annual else 0), 1)
+    card['score'] = monitor.score(card['surprise_bits'], card['impact'] or 10)
+    return card
+
+
+def monitor_cards(watch, limit=10):
+    """Salient monitor findings as briefing cards: one per distinct (kind of problem, series/stream), echoes left out."""
+    cards, seen = [], set()
+    kinds = {'data_feed': 'data gap', 'rate': 'anomaly', 'claims_review_flag': 'review flag'}
+    same = {'event_type_gap': 'gap', 'feed_gap': 'gap'}
+    for f in watch['rows']:
+        if not f['salient'] or f.get('echo'): continue
+        key = (same.get(f['category'], f['category']), f.get('series') or f.get('stream') or f['group'])
+        if key in seen: continue
+        seen.add(key)
+        cards.append({'kind': kinds.get(f['kind'], 'anomaly'), 'topic': (f.get('series') or f.get('stream') or f['category']).replace('_', ' '),
+                      'headline': f['headline'], 'patients': f.get('patients'), 'dollars': f.get('dollars'),
+                      'strength': f['excess_bits'], 'surprise_bits': max(f['excess_bits'], 0.0), 'follow_up': f['follow_up'],
+                      'evidence': {k: f.get(k) for k in ('kind', 'category', 'group_by', 'group', 'months', 'rules', 'surprise_bits',
+                                                         'look_elsewhere_bits', 'excess_bits')}})
+        if len(cards) >= limit: break
+    return cards
