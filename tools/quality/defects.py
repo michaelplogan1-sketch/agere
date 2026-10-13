@@ -374,6 +374,8 @@ def validate_fmea(fmea):
             if key in m and not (isinstance(m[key], int) and 1 <= m[key] <= 10): problems.append(f"{m.get('id')}: {key} must be an integer 1-10")
         if 'rpn' in m and m['rpn'] != m['severity'] * m['occurrence'] * m['detection']: problems.append(f"{m['id']}: rpn != S x O x D")
         if m.get('detection', 0) > m.get('detection_before', 0): problems.append(f"{m.get('id')}: detection worse after controls")
+        if not m.get('controls_added') and m.get('detection') != m.get('detection_before'):
+            problems.append(f"{m.get('id')}: detection changed without an added control")
     missing_stage = stages - {m.get('stage') for m in fmea.get('modes', [])}
     if missing_stage: problems.append(f'stages without failure modes: {sorted(missing_stage)}')
     for i in fmea.get('classification_order', []):

@@ -116,7 +116,7 @@
    "cause": "Learning captures every verified answer; verification misses correlated errors (FM-13)",
    "severity": 8,
    "detection_before": 8,
-   "detection": 7,
+   "detection": 8,
    "controls_existing": [
     "only verified or user-confirmed answers are captured",
     "corrections table"
@@ -137,7 +137,7 @@
      "opportunities": 132
     }
    },
-   "rpn": 560,
+   "rpn": 640,
    "rpn_before": 640,
    "rank": 2
   },
@@ -698,7 +698,7 @@
    "effect": "No answer where one was possible; user goes elsewhere",
    "cause": "MissingData raised by the hosted SQL writer when stream retrieval misses the right stream",
    "severity": 5,
-   "detection_before": 4,
+   "detection_before": 3,
    "detection": 3,
    "controls_existing": [
     "missing-data claim re-checked against the full data dictionary before refusing (2026-10-13)"
@@ -734,7 +734,7 @@
     }
    },
    "rpn": 120,
-   "rpn_before": 160,
+   "rpn_before": 120,
    "rank": 17
   },
   {

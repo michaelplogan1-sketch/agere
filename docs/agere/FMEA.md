@@ -47,7 +47,7 @@ table below is regenerated from it by `.venv/bin/python tools/quality/defects.py
 | Rank | ID | Stage | Failure mode | S | O | D | RPN | RPN before | Evidence | Controls added |
 |---:|---|---|---|---:|---:|---:|---:|---:|---|---|
 | 1 | FM-13 | verification | Correlated two-model error passes the agreement check | 9 | 10 | 8 | 720 | 810 | 24 hosted-route engine errors / 132 | QC-CLOCK, QC-DENOM, QC-NUMBERS, QC-PARTS, QC-PERIOD, QC-UNITS, QC-VERSION |
-| 2 | FM-23 | learning_reuse | Wrong answer captured as a verified training pair | 8 | 10 | 7 | 560 | 640 | 24 hosted-route engine errors / 132 | - |
+| 2 | FM-23 | learning_reuse | Wrong answer captured as a verified training pair | 8 | 10 | 8 | 640 | 640 | 24 hosted-route engine errors / 132 | - |
 | 3 | FM-05 | population | Wrong denominator or population restriction (age band, roster, attribution, organisation scope) | 8 | 8 | 6 | 384 | 512 | 4 adjudicated / 132 | QC-DENOM |
 | 4 | FM-06 | definitions | Concept or value set too narrow or too broad (drug class, visit types, lab concept) | 7 | 8 | 6 | 336 | 336 | 6 adjudicated / 132 | - |
 | 5 | FM-08 | sql_generation | Snapshot/version duplicates counted or summed (encounters, claims, appointments, accounts) | 8 | 9 | 4 | 288 | 432 | 7 adjudicated / 132; QC-VERSION fired on 11 wrong / 13 right | QC-VERSION |
@@ -62,7 +62,7 @@ table below is regenerated from it by `.venv/bin/python tools/quality/defects.py
 | 14 | FM-14 | verification | Unit mismatch (cents vs dollars, days vs hours, fraction vs percent) | 8 | 6 | 3 | 144 | 240 | 1 adjudicated / 132; QC-UNITS fired on 3 wrong / 0 right | QC-UNITS |
 | 15 | FM-11 | sql_generation | Nonexistent field, stream or join (hallucinated schema) | 8 | 6 | 3 | 144 | 144 | 1 adjudicated / 132 | - |
 | 16 | FM-16 | execution | Partial current period in a time series (latest month/quarter/year only partly observed) | 6 | 7 | 3 | 126 | 378 | QC-PERIOD fired on 19 wrong / 0 right | QC-PERIOD |
-| 17 | FM-04 | routing | False "data is missing" refusal on an answerable question | 5 | 8 | 3 | 120 | 160 | 4 adjudicated / 132; 37 scored / 1718 | - |
+| 17 | FM-04 | routing | False "data is missing" refusal on an answerable question | 5 | 8 | 3 | 120 | 120 | 4 adjudicated / 132; 37 scored / 1718 | - |
 | 18 | FM-22 | learning_reuse | Stale learned plan reused after the data or semantic layer changed | 8 | 3 | 4 | 96 | 96 | judgment (no benchmark measures this mode) | - |
 | 19 | FM-15 | execution | Execution error, timeout or no answer | 4 | 10 | 2 | 80 | 80 | 800 scored / 1718 | - |
 | 20 | FM-12 | sql_generation | Wrong time window or as-of cutoff | 7 | 2 | 5 | 70 | 84 | 0 adjudicated / 132 | QC-NUMBERS |
