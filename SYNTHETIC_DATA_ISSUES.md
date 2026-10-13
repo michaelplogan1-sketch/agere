@@ -36,3 +36,7 @@ Owner request (2026-10-13): flag anything that is a mistake in how the synthetic
 Death/vital status, race/ethnicity, preferred language, income/FPL (fields present but undisclosed), CMS-HCC/RAF,
 CPT/RVU (claims use local codes), patient-experience surveys.
 If any of these should exist for demos (e.g. race/ethnicity for equity analyses, death for mortality), they need generating.
+
+## Note on the public site (2026-10-13)
+The site's "Did health change? Or did the records start arriving?" section is built on the hospital-summary gap and
+abrupt start, which overlaps defect D2. Re-anchor that story once the generator is fixed.
