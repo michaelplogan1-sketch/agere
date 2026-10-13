@@ -43,7 +43,7 @@ def lint(profile, sql):
         records = sum(streams[s]['records'] for s in owners)
         if populated == 0:
             problems.append(f"field '{field}' is never populated in {', '.join(owners)}")
-        elif records and populated / records < 0.02 and re.search(r"'\$\." + field + r"'\s*\)\s*is\s+null", sql, re.I):
+        elif records and populated / records < 0.02 and re.search(r"\bis\s+null\b|=\s*''|\bcoalesce\s*\(|\bnullif\s*\(", sql, re.I):
             problems.append(f"field '{field}' is populated in only {populated} of {records} records of {', '.join(owners)}")
         if op and literal and literal.startswith(("'", '(')):
             values = set().union(*[set((streams[s]['fields'][field].get('values') or {})) for s in owners])

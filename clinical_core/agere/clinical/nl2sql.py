@@ -606,7 +606,8 @@ class Decider:
 VERIFY_RULES = """
 - Money: amounts are stored in *_cents; when the question asks for dollars or "how much", divide by 100.0.
 - Percentages: 100.0 * part / whole (0-100 scale).
-- Missing dates: a record "with no date" means event_date IS NULL on the typed table or record row.
+- Missing dates: a record "with no date" means event_date IS NULL on the typed table or record row. A lab's collection/draw
+  date, a visit's date and a claim's service event are event_date; sparsely filled payload date fields are not the record date.
 - Never invent streams, fields or values, and never substitute a different attribute for a missing one (e.g. sex for race).
   If the question needs data that is not listed (race, death, income, language, risk-adjustment scores, ...), output
   exactly one line: MISSING: <what is missing> - and no SQL.
