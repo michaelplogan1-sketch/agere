@@ -281,7 +281,7 @@ def _match(treated, pool, p, outcome, ed, adm, people, rng, score, caliper):
     """Greedy nearest-neighbour matching on the baseline score, without replacement, inside exact age band/sex/payer strata.
     treated: [(pid, t0, cov, post)]; ties broken by the closest covariate vector, then patient id."""
     strata = defaultdict(list)
-    for c in pool:
+    for c in sorted(pool):  # deterministic strata order: seeded draws must not depend on string-hash order
         a = people[c]
         strata[(a['age_band'], a['sex'], a['payer'])].append(c)
     used, sets, unmatched = set(), [], 0
