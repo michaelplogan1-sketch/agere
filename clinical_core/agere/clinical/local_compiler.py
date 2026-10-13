@@ -469,6 +469,34 @@ def _population_question(q, r, profile, as_of, info):
     # statistic / intent
     hotspot = r.take(r'\b(?:where (?:is|are)\b(?=.*\bconcentrated\b)|concentrated|concentrations?|unusually (?:high|low|common)|hot ?spots?|outliers?|clusters?|'
                      r'patterns? (?:of|in)|stands? out|which (?:groups?|segments?|populations?|subgroups?)(?= (?:have|has|show)))\b', 'discovery')
+    projected = next(iter(r.take(r'\b(?:(?:are |is )?(?:likely|projected|expected|predicted|forecast|on track|at risk|going) (?:to )?|will )'
+                                 r'(?:drop|fall|go|decline|slip|rise|climb|exceed|cross|reach|hit)\b', 'forecast')), None)
+    forecast_target = None
+    if projected:  # "drop below an eGFR of 30", "exceed an A1c of 9", "fall under 30 on eGFR"
+        verb = projected.group(0)
+        for concept, aliases in MEASUREMENT_ALIASES.items():
+            for alias in sorted(aliases, key=len, reverse=True):
+                m = re.compile(r'\s*(below|under|above|over|past)?\s*(?:an? |the |their )?' + re.escape(alias) +
+                               r'(?: level| value| result)?\s*(?:of\s*)?' + NUMBER + r'(?![\d.])').match(low, projected.end())
+                if m:
+                    word = (m.group(1) or '') + ' ' + verb
+                    op = 'lt' if re.search(r'below|under|drop|fall|declin|slip', word) else 'gt'
+                    forecast_target = (concept, op, float(m.group(2)))
+                    for i in range(m.start(), m.end()): r.used[i] = True
+                    r.notes.append(f'forecast {concept} {op} {m.group(2)}')
+                    break
+            if forecast_target: break
+    horizon = None
+    for m in r.take(r'\b(?:in|within|over|during) (?:the )?(?:next |coming )?(\d+|a|one|two|three|six|twelve|eighteen) ?(days?|weeks?|months?|years?|yr)\b'
+                    r'|\b(?:in|within|over|during) the (?:next|coming) (year|quarter|month|six months)\b|\bnext (year|quarter)\b', 'horizon'):
+        words = {'a': 1, 'one': 1, 'two': 2, 'three': 3, 'six': 6, 'twelve': 12, 'eighteen': 18}
+        if m.group(1):
+            n = int(m.group(1)) if m.group(1).isdigit() else words[m.group(1)]
+            unit = m.group(2)
+        else:
+            phrase = m.group(3) or m.group(4)
+            n, unit = {'year': (1, 'year'), 'quarter': (3, 'month'), 'month': (1, 'month'), 'six months': (6, 'month')}[phrase]
+        horizon = int(n * {'d': 1, 'w': 7, 'm': 30.44, 'y': 365.25}[unit[0]])
     trend = next(iter(r.take(r'\b(?:declin(?:e|es|ed|ing)(?: in)?|dropp(?:ed|ing)|fall(?:ing|en)|worsen(?:ing|ed)|deteriorat(?:ing|ed|ion)(?: in| of)?|'
                              r'ris(?:ing|en)|increas(?:ing|ed)|climb(?:ing|ed)|improv(?:ing|ed)|trend(?:ing)? (?:up|down)|trajector(?:y|ies)(?: of)?)\b', 'trend')), None)
     hot_segments = None
@@ -691,6 +719,22 @@ def _population_question(q, r, profile, as_of, info):
         info['reason'] = 'words not interpreted locally: ' + ', '.join(info['unexplained'][:12])
         return None, info
 
+    if projected:
+        target = (forecast_target[0], (forecast_target[1], forecast_target[2])) if forecast_target else \
+            next(((c, cmp) for c, cmp, _ in measured if cmp), None)
+        if target is None:
+            info.update(route='fallback', reason='forecast requested without a measurement threshold'); return None, info
+        (c, (op, value)) = target
+        if c not in __import__('clinical_core.agere.clinical.trajectory', fromlist=['NOISE']).NOISE:
+            info.update(route='fallback', reason=f'no trajectory noise model for {c}'); return None, info
+        base = [a for a in allp if not (a['kind'] in ('measurement', 'concept') and a.get('concept') == c)]
+        info['route'] = 'local_compiler'
+        return {'interpretation': q, 'coverage': 'supported_observation', 'unmet_requirements': [], 'nodes': [
+            {'id': 'population', 'operation': 'cohort', 'inputs': [], 'parameters': {'specification': {'all': base[:20], 'any': anyp[:20], 'exclude': excl[:20]}},
+             'purpose': 'Population named in the question'},
+            {'id': 'forecast', 'operation': 'trajectory', 'inputs': ['population'],
+             'parameters': {'concept': c, 'direction': 'down' if op in ('lt', 'le') else 'up', 'threshold': value, 'horizon_days': horizon or 365},
+             'purpose': f'Patients projected to cross {c} {value}'}]}, info
     if trend:
         target = next((c for c, cmp, _ in measured), None)
         if target is None:

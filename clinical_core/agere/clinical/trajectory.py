@@ -30,14 +30,50 @@ WORSE = {'egfr': 'down', 'hemoglobin': 'down', 'hdl': 'down', 'platelets': 'down
 
 
 def validate(p):
-    if not isinstance(p, dict) or set(p) - {'concept', 'direction', 'min_points', 'top'}:
-        raise ValueError('trajectory parameters: concept, direction, min_points, top')
+    if not isinstance(p, dict) or set(p) - {'concept', 'direction', 'min_points', 'top', 'threshold', 'horizon_days'}:
+        raise ValueError('trajectory parameters: concept, direction, min_points, top, threshold, horizon_days')
+    if 'threshold' in p and (type(p['threshold']) not in (int, float) or not math.isfinite(p['threshold'])): raise ValueError('threshold must be a number')
+    if 'horizon_days' in p and (type(p['horizon_days']) is not int or not 7 <= p['horizon_days'] <= 1095): raise ValueError('horizon_days 7..1095')
     if p.get('concept') not in NOISE: raise ValueError(f'trajectory concept must be one of {sorted(NOISE)}')
     direction = p.get('direction', 'worse')
     if direction not in ('worse', 'better', 'up', 'down', 'any'): raise ValueError('direction: worse, better, up, down or any')
     mp = p.get('min_points', 3)
     if type(mp) is not int or not 3 <= mp <= 50: raise ValueError('min_points 3..50')
-    return {'concept': p['concept'], 'direction': direction, 'min_points': mp, 'top': p.get('top', 50)}
+    out = {'concept': p['concept'], 'direction': direction, 'min_points': mp, 'top': p.get('top', 50)}
+    if 'threshold' in p: out.update(threshold=float(p['threshold']), horizon_days=p.get('horizon_days', 365))
+    return out
+
+
+def kalman(points, rel, floor, drift_per_year=None):
+    """Local linear trend Kalman filter (level + slope per day) with per-value measurement error
+    max(rel x value, floor). Returns final state mean [level, slope/day] and covariance."""
+    import numpy as np
+    t0, v0 = points[0]
+    q_level = (floor * 0.5) ** 2 / 365.0          # true level wanders slowly (per day)
+    q_slope = (drift_per_year or floor) ** 2 / 365.0 ** 3
+    x = np.array([v0, 0.0]); P = np.diag([max(rel * abs(v0), floor) ** 2, (floor / 365.0) ** 2 * 4])
+    last = t0
+    for t, v in points:
+        dt = max(t - last, 0); last = t
+        F = np.array([[1.0, dt], [0.0, 1.0]])
+        Q = np.array([[q_level * dt + q_slope * dt ** 3 / 3, q_slope * dt ** 2 / 2], [q_slope * dt ** 2 / 2, q_slope * dt]])
+        x = F @ x; P = F @ P @ F.T + Q
+        R = max(rel * abs(v), floor) ** 2
+        S = P[0, 0] + R; K = P[:, 0] / S
+        x = x + K * (v - x[0]); P = P - np.outer(K, P[0, :])
+    return x, P, last
+
+
+def forecast(points, rel, floor, horizon_days, threshold, below=True):
+    """Predicted value at the horizon (mean, sd) and the probability it is past the threshold."""
+    import numpy as np
+    x, P, last = kalman(points, rel, floor)
+    F = np.array([1.0, float(horizon_days)])
+    mean = float(F @ x); sd = float(np.sqrt(max(F @ P @ F, 1e-12)))
+    z = (threshold - mean) / sd
+    p_below = 0.5 * (1 + math.erf(z / math.sqrt(2)))
+    return {'level_now': round(float(x[0]), 2), 'slope_per_year': round(float(x[1]) * 365.25, 2),
+            'forecast': round(mean, 2), 'forecast_sd': round(sd, 2), 'p_cross': round(p_below if below else 1 - p_below, 3)}
 
 
 def _theil_sen(points):
@@ -88,6 +124,31 @@ def execute(path, patient_ids, params):
                         'slope_per_year': round(_theil_sen(pts), 2) if _theil_sen(pts) is not None else None,
                         'points': len(pts), 'last_value': round(values[-1], 2), 'last_date': date.fromordinal(times[-1]).isoformat()})
     flagged.sort(key=lambda f: (-abs(f['change']) / max(abs(f['from']), 1e-9)))
+    if 'threshold' in p:  # forecast mode: who is projected to cross the threshold within the horizon
+        below = wanted in ('down',) or (wanted in ('worse', 'any') and worse == 'down')
+        import json as _json
+        from pathlib import Path as _Path
+        snapshot = date.fromisoformat(_json.loads((_Path(path) / 'run.json').read_text())['snapshot']['as_of']).toordinal()
+        at_risk = []
+        for pid, days in series.items():
+            if keep is not None and pid not in keep: continue
+            pts = sorted((date.fromisoformat(d).toordinal(), statistics.mean(v)) for d, v in days.items())
+            if len(pts) < p['min_points']: continue
+            if (pts[-1][1] < p['threshold']) if below else (pts[-1][1] > p['threshold']): continue  # already past it
+            gap = max(0, snapshot - pts[-1][0])  # the horizon runs from the snapshot, not the last result
+            f = forecast(pts, rel, floor, p['horizon_days'] + gap, p['threshold'], below)
+            f['days_since_last_result'] = gap
+            if f['p_cross'] >= 0.5:
+                at_risk.append({'patient_id': pid, 'last_value': round(pts[-1][1], 2), 'last_date': date.fromordinal(pts[-1][0]).isoformat(),
+                                'points': len(pts), **f})
+        at_risk.sort(key=lambda r: -r['p_cross'])
+        unit = concepts.MEASUREMENTS[c]['unit']
+        return {'schema': VERSION, 'concept': c, 'unit': unit, 'mode': 'forecast', 'threshold': p['threshold'],
+                'horizon_days': p['horizon_days'], 'direction': 'below' if below else 'above', 'patients_with_series': evaluated,
+                'flagged': len(at_risk), 'patients': at_risk[:p['top']],
+                'method': (f'Local linear trend Kalman filter per patient (per-value error max({rel:.0%} x value, {floor} {unit})); '
+                           f'flagged when P(value {"below" if below else "above"} {p["threshold"]} {unit} in {p["horizon_days"]} days) >= 0.5 '
+                           f'and not already past it; series need >= {p["min_points"]} dated values.')}
     unit = concepts.MEASUREMENTS[c]['unit']
     return {'schema': VERSION, 'concept': c, 'unit': unit, 'direction': wanted, 'patients_with_series': evaluated,
             'flagged': len(flagged), 'patients': flagged[:p['top']],

@@ -33,3 +33,17 @@ class Trajectory(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+class Forecast(unittest.TestCase):
+    def test_steady_decline_is_projected_across_threshold(self):
+        from clinical_core.agere.clinical.trajectory import forecast
+        pts = [(738000 + 60 * i, 50.0 - 2.0 * i) for i in range(8)]  # -12/yr, last value 36
+        f = forecast(pts, 0.08, 3.0, 365, 30.0, below=True)
+        self.assertLess(f['slope_per_year'], -6)
+        self.assertGreater(f['p_cross'], 0.5)
+
+    def test_stable_series_is_not_projected(self):
+        from clinical_core.agere.clinical.trajectory import forecast
+        pts = [(738000 + 60 * i, 55.0 + (0.5 if i % 2 else -0.5)) for i in range(8)]
+        self.assertLess(forecast(pts, 0.08, 3.0, 365, 30.0, below=True)['p_cross'], 0.05)

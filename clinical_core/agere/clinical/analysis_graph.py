@@ -180,8 +180,11 @@ def build_answer(plan, results, memberships, question):
         partial = plan.get('coverage') != 'supported_observation' or plan.get('unmet_requirements')
         answer.update(status='partial' if partial else 'answered', answer_type='table', table=report['patients'], method=report['method'],
                       count=report['flagged'], patient_ids=[x['patient_id'] for x in report['patients']],
-                      value=f"{report['flagged']} of {report['patients_with_series']} patients with a {report['concept']} series show a material, "
-                            f"statistically separable change ({report['direction']}).")
+                      value=(f"{report['flagged']} of {report['patients_with_series']} patients with a {report['concept']} series are projected "
+                             f"to go {report['direction']} {_fmt(report['threshold'])} {report['unit']} within {report['horizon_days']} days "
+                             f"(probability >= 50%)." if report.get('mode') == 'forecast' else
+                             f"{report['flagged']} of {report['patients_with_series']} patients with a {report['concept']} series show a material, "
+                             f"statistically separable change ({report['direction']})."))
         return answer
     if last['operation'] == 'discover':
         report = results[-1]['result']
