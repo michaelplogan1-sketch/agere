@@ -18,7 +18,7 @@ import json, math, sqlite3
 
 from scipy.stats import fisher_exact
 
-from . import aggregate, cohorts, grounding, source_profile
+from . import aggregate, cohorts, grounding, record_store, source_profile
 from ..mathematics import benjamini_hochberg
 
 VERSION = 'outcome-explanation/1'
@@ -112,9 +112,7 @@ def execute(path, patient_ids, params):
     db = sqlite3.connect(f'file:{path / "stack.sqlite3"}?mode=ro', uri=True)
     try:
         people = {pid: json.loads(x) for pid, x in db.execute('SELECT id, payload FROM patients') if pid in members}
-        records = defaultdict(list)
-        for pid, x in db.execute('SELECT patient, payload FROM records WHERE stream IN (' + ','.join('?' * len(streams)) + ')', sorted(streams)):
-            if pid in members: records[pid].append(json.loads(x))
+        records = record_store.load(path, streams, members=members)  # = the stream IN (...) scan, per-patient order kept
     finally:
         db.close()
 

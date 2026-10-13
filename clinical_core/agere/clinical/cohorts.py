@@ -6,10 +6,10 @@ Filters on the same record atom must be satisfied by that same source record.
 from collections import Counter, defaultdict
 from datetime import date
 from pathlib import Path
-import hashlib, json, math, re, sqlite3
+import hashlib, json, math, os, re, sqlite3
 from ...contracts import digest
 from .clinical_events import WINDOW_SCHEMA, validate_window, window_state, bind_event
-from . import concepts, grounding, source_profile
+from . import concepts, grounding, record_store, source_profile
 
 VERSION = 'observed-cohort/2'
 PATIENT_FIELDS = {'patient_id', 'age', 'sex', 'region', 'preferred_language', 'coverage',
@@ -317,7 +317,8 @@ def select(path, spec=None, *, patient=None, limit=10, patient_ids=None):
         # Grounding raises GroundingError for predicates the data cannot support.
         grounded, grounding_report = grounding.prepare(spec, source_profile.load(path))
         key = digest([VERSION, code_identity(), meta['source_digest'], spec, patient, limit, patient_ids])
-        old = db.execute('SELECT payload FROM result_cache WHERE id=?', (key,)).fetchone()
+        caching = os.environ.get('AGERE_RESULT_CACHE', 'on') != 'off'
+        old = db.execute('SELECT payload FROM result_cache WHERE id=?', (key,)).fetchone() if caching else None
         if old: return {**json.loads(old[0]), 'cache_hit': True}
         roster = [(pid, json.loads(payload)) for pid, payload in db.execute('SELECT id,payload FROM patients'+
                   (' WHERE id=?' if patient else '')+' ORDER BY id', [patient] if patient else [])]
@@ -326,12 +327,8 @@ def select(path, spec=None, *, patient=None, limit=10, patient_ids=None):
         streams = _streams(grounded)
         if any(a.get('kind') == 'patient' and a.get('field') == 'age_latest' for part in grounded.values() if isinstance(part, list) for a in part):
             streams = set(streams) | {'demographic_updates'}  # latest reported age supersedes the roster age
-        records = defaultdict(list)
-        if streams:
-            sql = 'SELECT patient,payload FROM records WHERE stream IN ('+','.join('?' for _ in streams)+')'
-            params = list(streams)
-            if patient: sql += ' AND patient=?'; params.append(patient)
-            for pid, payload in db.execute(sql+' ORDER BY id', params): records[pid].append(json.loads(payload))
+        # Same rows and per-patient order as `... WHERE stream IN (...) [AND patient=?] ORDER BY id` (record_store).
+        records = record_store.load(path, streams, patient=patient or None, order='id')
         membership = {'matched': [], 'not_matched': [], 'unknown': []}; previews = {k: [] for k in membership}
         for pid, p in roster:
             state, traces = evaluate_patient(grounded, p, records[pid], as_of)
@@ -346,7 +343,8 @@ def select(path, spec=None, *, patient=None, limit=10, patient_ids=None):
                   'examples': previews, 'cache_hit': False, 'new_paid_api_calls': 0,
                   'grounding': grounding_report, 'interpretation': grounding.interpretation(grounded),
                   'scope': 'Complete selection over the observed snapshot. Unknowns are separate; no inferred clinical phenotype or provider attribution.'}
-        with db: db.execute('INSERT OR REPLACE INTO result_cache VALUES (?,?)', (key, json.dumps(result, allow_nan=False)))
+        if caching:
+            with db: db.execute('INSERT OR REPLACE INTO result_cache VALUES (?,?)', (key, json.dumps(result, allow_nan=False)))
         return result
     finally: db.close()
 
