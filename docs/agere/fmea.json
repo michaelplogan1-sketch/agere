@@ -1,0 +1,1015 @@
+{
+ "schema": "agere-fmea/1",
+ "scope": "Agere answer pipeline: question parse -> routing -> population -> definitions -> SQL generation -> verification -> execution -> answer rendering -> follow-ups -> learning reuse",
+ "scales": {
+  "severity": "1 no effect ... 2 cosmetic ... 4-5 no answer or a usable answer needing rework ... 7-8 wrong number delivered with confidence ... 9 wrong number carrying a verified receipt or a fabricated answer ... 10 harm without warning",
+  "occurrence": "Derived from evidence: adjudicated engine errors (or mechanical failures, or control replay hits) per answerable blind question. >=10%:10, >=5%:9, >=2%:8, >=1%:7, >=0.5%:6, >=0.2%:5, >=0.1%:4, observed but rarer:3, not observed in n opportunities:2. Modes with no measurable evidence use occurrence_judgment.",
+  "occurrence_bands": [
+   [
+    0.1,
+    10
+   ],
+   [
+    0.05,
+    9
+   ],
+   [
+    0.02,
+    8
+   ],
+   [
+    0.01,
+    7
+   ],
+   [
+    0.005,
+    6
+   ],
+   [
+    0.002,
+    5
+   ],
+   [
+    0.001,
+    4
+   ]
+  ],
+  "detection": "1 certain detection before the user sees it ... 3 automated check flags it on the answer ... 5 caught only by a benchmark or reviewer ... 7 rarely caught ... 9-10 undetectable without a reference answer",
+  "rpn": "severity x occurrence x detection; detection_before = before the answer-level controls in clinical_core/agere/clinical/answer_checks.py"
+ },
+ "classification_order": [
+  "FM-04",
+  "FM-11",
+  "FM-10",
+  "FM-02",
+  "FM-08",
+  "FM-09",
+  "FM-14",
+  "FM-01",
+  "FM-05",
+  "FM-07",
+  "FM-06",
+  "FM-12"
+ ],
+ "category_modes": {
+  "format_only": "FM-18",
+  "defensible_definition": "FM-19"
+ },
+ "mechanical_modes": {
+  "shape_mismatch": "FM-02",
+  "false_refusal": "FM-04",
+  "execution_error": "FM-15",
+  "invalid_contract": "FM-17",
+  "partial_but_right": "FM-18",
+  "unsupported_answered": "FM-24",
+  "acceptance_failure": "FM-03",
+  "wrong_value_unadjudicated": null
+ },
+ "modes": [
+  {
+   "id": "FM-13",
+   "stage": "verification",
+   "failure_mode": "Correlated two-model error passes the agreement check",
+   "effect": "Wrong answer carries a \"verified\" receipt",
+   "cause": "Both models share the same misreading of the data; agreement predicted correctness ~60% vs ~50% when measured on blind L/M",
+   "severity": 9,
+   "detection_before": 9,
+   "detection": 8,
+   "controls_existing": [
+    "verify.lint + verify.sanity on both queries",
+    "judge on disagreement"
+   ],
+   "controls_added": [
+    "QC-CLOCK",
+    "QC-DENOM",
+    "QC-NUMBERS",
+    "QC-PARTS",
+    "QC-PERIOD",
+    "QC-UNITS",
+    "QC-VERSION"
+   ],
+   "evidence_rule": {
+    "adjudicated_pattern": null,
+    "mechanical": [],
+    "replay_control": null,
+    "derived": "adjudicated_engine_errors_on_hosted_verified_sql"
+   },
+   "occurrence_judgment": null,
+   "note": "Every adjudicated hosted-route engine error passed lint, sanity and agreement; the added answer checks are independent of the models but cover only part of the mode.",
+   "occurrence": 10,
+   "occurrence_basis": "measured: 24 per 132 opportunities",
+   "evidence": {
+    "adjudicated_hosted_route": {
+     "count": 24,
+     "opportunities": 132
+    }
+   },
+   "rpn": 720,
+   "rpn_before": 810,
+   "rank": 1
+  },
+  {
+   "id": "FM-23",
+   "stage": "learning_reuse",
+   "failure_mode": "Wrong answer captured as a verified training pair",
+   "effect": "Errors that passed verification become examples for future questions and bottled-model training",
+   "cause": "Learning captures every verified answer; verification misses correlated errors (FM-13)",
+   "severity": 8,
+   "detection_before": 8,
+   "detection": 7,
+   "controls_existing": [
+    "only verified or user-confirmed answers are captured",
+    "corrections table"
+   ],
+   "controls_added": [],
+   "evidence_rule": {
+    "adjudicated_pattern": null,
+    "mechanical": [],
+    "replay_control": null,
+    "derived": "adjudicated_engine_errors_on_hosted_verified_sql"
+   },
+   "occurrence_judgment": null,
+   "occurrence": 10,
+   "occurrence_basis": "measured: 24 per 132 opportunities",
+   "evidence": {
+    "adjudicated_hosted_route": {
+     "count": 24,
+     "opportunities": 132
+    }
+   },
+   "rpn": 560,
+   "rpn_before": 640,
+   "rank": 2
+  },
+  {
+   "id": "FM-05",
+   "stage": "population",
+   "failure_mode": "Wrong denominator or population restriction (age band, roster, attribution, organisation scope)",
+   "effect": "Rate or count over the wrong population; looks plausible, so it is rarely questioned",
+   "cause": "Measure denominators (HEDIS age bands, attribution, practice organisations) not encoded for the SQL writer",
+   "severity": 8,
+   "detection_before": 8,
+   "detection": 6,
+   "controls_existing": [
+    "definitions registry cites the governing standard (local and graph routes)",
+    "verify.sanity whole-roster check"
+   ],
+   "controls_added": [
+    "QC-DENOM"
+   ],
+   "evidence_rule": {
+    "adjudicated_pattern": "denominator|age restriction|\\b18.?85\\b|roster|attribut|population|WH-PRACTICE|organi[sz]ations",
+    "mechanical": [],
+    "replay_control": null
+   },
+   "occurrence_judgment": null,
+   "occurrence": 8,
+   "occurrence_basis": "measured: 4 per 132 opportunities",
+   "evidence": {
+    "adjudicated": {
+     "count": 4,
+     "opportunities": 132,
+     "examples": [
+      "M:M05",
+      "N:N10",
+      "N:N18",
+      "O:O31"
+     ]
+    }
+   },
+   "rpn": 384,
+   "rpn_before": 512,
+   "rank": 3
+  },
+  {
+   "id": "FM-06",
+   "stage": "definitions",
+   "failure_mode": "Concept or value set too narrow or too broad (drug class, visit types, lab concept)",
+   "effect": "Numerator misses or over-includes cases",
+   "cause": "Free-text LIKE filters; concept library gaps for the question's vocabulary",
+   "severity": 7,
+   "detection_before": 6,
+   "detection": 6,
+   "controls_existing": [
+    "concept library + drug_classes (verify.lint rejects unknown classes and LIKE on drug_class)",
+    "definitions registry"
+   ],
+   "controls_added": [],
+   "evidence_rule": {
+    "adjudicated_pattern": "concept|drug.?class|visit type|therapeutic|narrow|sweeps in|statin records|definition|instead of|missed the|qualify|inflates the numerator",
+    "mechanical": [],
+    "replay_control": null
+   },
+   "occurrence_judgment": null,
+   "occurrence": 8,
+   "occurrence_basis": "measured: 6 per 132 opportunities",
+   "evidence": {
+    "adjudicated": {
+     "count": 6,
+     "opportunities": 132,
+     "examples": [
+      "M:M20",
+      "M:M22",
+      "N:N05",
+      "N:N09",
+      "N:N11",
+      "N:N14"
+     ]
+    }
+   },
+   "rpn": 336,
+   "rpn_before": 336,
+   "rank": 4
+  },
+  {
+   "id": "FM-08",
+   "stage": "sql_generation",
+   "failure_mode": "Snapshot/version duplicates counted or summed (encounters, claims, appointments, accounts)",
+   "effect": "Inflated counts and money totals",
+   "cause": "Versioned streams arrive as successive snapshots; raw record table holds every version",
+   "severity": 8,
+   "detection_before": 6,
+   "detection": 4,
+   "controls_existing": [
+    "semantic tables (visit, appointment, claim, current_record)",
+    "VERSIONED_STREAMS hints in the SQL prompt"
+   ],
+   "controls_added": [
+    "QC-VERSION"
+   ],
+   "evidence_rule": {
+    "adjudicated_pattern": "without distinct|rather than distinct|not distinct|de-?duplicat|duplicate|versions? (?:are|is) counted|encounter versions|adjudication versions|versioned|snapshot|current[- ]state|current/as-of",
+    "mechanical": [],
+    "replay_control": "QC-VERSION"
+   },
+   "occurrence_judgment": null,
+   "occurrence": 9,
+   "occurrence_basis": "measured: 7 per 132 opportunities",
+   "evidence": {
+    "adjudicated": {
+     "count": 7,
+     "opportunities": 132,
+     "examples": [
+      "M:M27",
+      "M:M29",
+      "M:M40",
+      "N:N17",
+      "N:N25",
+      "O:O30",
+      "O:O40"
+     ]
+    },
+    "control_replay": {
+     "control": "QC-VERSION",
+     "fired_on_wrong_answers": 11,
+     "fired_on_correct_answers": 13,
+     "opportunities": 1718
+    }
+   },
+   "rpn": 288,
+   "rpn_before": 432,
+   "rank": 5
+  },
+  {
+   "id": "FM-01",
+   "stage": "question_parse",
+   "failure_mode": "Explicit qualifier or requested part silently dropped (in-person, first-generation, same draw time, \"how many and how much\")",
+   "effect": "A confident answer to a broader or different question; the user cannot see the constraint was ignored",
+   "cause": "Hosted SQL writer ignores a qualifier the local compiler would have refused to drop; no word-coverage check on the SQL route",
+   "severity": 8,
+   "detection_before": 7,
+   "detection": 5,
+   "controls_existing": [
+    "local_compiler unexplained-word guard (compiler route only)",
+    "economical_planner.rewrite_dropped (follow-up rewrites)",
+    "nl2sql.meaning_drift (rewrites)"
+   ],
+   "controls_added": [
+    "QC-NUMBERS",
+    "QC-PARTS"
+   ],
+   "evidence_rule": {
+    "adjudicated_pattern": "asks specifically|specifically for|explicitly asked|question specifies|dropped the|ignoring the user",
+    "mechanical": [],
+    "replay_control": "QC-NUMBERS"
+   },
+   "occurrence_judgment": null,
+   "occurrence": 7,
+   "occurrence_basis": "measured: 2 per 132 opportunities",
+   "evidence": {
+    "adjudicated": {
+     "count": 2,
+     "opportunities": 132,
+     "examples": [
+      "O:O11",
+      "O:O26"
+     ]
+    },
+    "control_replay": {
+     "control": "QC-NUMBERS",
+     "fired_on_wrong_answers": 5,
+     "fired_on_correct_answers": 0,
+     "opportunities": 1718
+    }
+   },
+   "rpn": 280,
+   "rpn_before": 392,
+   "rank": 6
+  },
+  {
+   "id": "FM-07",
+   "stage": "definitions",
+   "failure_mode": "Wrong clock or date field (arrival vs event, submission vs adjudication)",
+   "effect": "Timing metrics measure the data feed instead of the business event",
+   "cause": "Several clocks per record (event, recorded, available, first_available); semantic layer exposes some derived dates only",
+   "severity": 7,
+   "detection_before": 7,
+   "detection": 5,
+   "controls_existing": [
+    "semantic layer first_adjudication_date / first_payer_cash_date / first_submitted_date",
+    "nl2sql rules on event_date vs available_date"
+   ],
+   "controls_added": [
+    "QC-CLOCK"
+   ],
+   "evidence_rule": {
+    "adjudicated_pattern": "first_available_date|availability date|arriv|date field|\\bclock\\b|rather than from the earliest|event_date for each",
+    "mechanical": [],
+    "replay_control": "QC-CLOCK"
+   },
+   "occurrence_judgment": null,
+   "occurrence": 8,
+   "occurrence_basis": "measured: 3 per 132 opportunities",
+   "evidence": {
+    "adjudicated": {
+     "count": 3,
+     "opportunities": 132,
+     "examples": [
+      "N:N26",
+      "N:N29",
+      "O:O27"
+     ]
+    },
+    "control_replay": {
+     "control": "QC-CLOCK",
+     "fired_on_wrong_answers": 4,
+     "fired_on_correct_answers": 0,
+     "opportunities": 1718
+    }
+   },
+   "rpn": 280,
+   "rpn_before": 392,
+   "rank": 7
+  },
+  {
+   "id": "FM-09",
+   "stage": "sql_generation",
+   "failure_mode": "Undated or null records mishandled (undated rows picked as latest, undated baseline joins drop everyone)",
+   "effect": "Wrong \"latest\" values or empty results",
+   "cause": "16,543 undated labs; baselines recorded once without a date",
+   "severity": 7,
+   "detection_before": 6,
+   "detection": 6,
+   "controls_existing": [
+    "measurement_latest (dated values only)",
+    "verify.sanity empty/zero-result warning"
+   ],
+   "controls_added": [],
+   "evidence_rule": {
+    "adjudicated_pattern": "undated|(?<!non-)\\bnulls?\\b",
+    "mechanical": [],
+    "replay_control": null
+   },
+   "occurrence_judgment": null,
+   "occurrence": 6,
+   "occurrence_basis": "measured: 1 per 132 opportunities",
+   "evidence": {
+    "adjudicated": {
+     "count": 1,
+     "opportunities": 132,
+     "examples": [
+      "N:N07"
+     ]
+    }
+   },
+   "rpn": 252,
+   "rpn_before": 252,
+   "rank": 8
+  },
+  {
+   "id": "FM-10",
+   "stage": "sql_generation",
+   "failure_mode": "Wrong entity counted (patients vs rows vs encounters)",
+   "effect": "Answer counts something else entirely (e.g. roster size)",
+   "cause": "Question names records but the query counts patients, or the reverse",
+   "severity": 8,
+   "detection_before": 5,
+   "detection": 5,
+   "controls_existing": [
+    "nl2sql rules: patients = count(DISTINCT patient_id), records = count(*)",
+    "verify.sanity roster-size check"
+   ],
+   "controls_added": [],
+   "evidence_rule": {
+    "adjudicated_pattern": "roster size|wrong entity|counted patients",
+    "mechanical": [],
+    "replay_control": null
+   },
+   "occurrence_judgment": null,
+   "occurrence": 6,
+   "occurrence_basis": "measured: 1 per 132 opportunities",
+   "evidence": {
+    "adjudicated": {
+     "count": 1,
+     "opportunities": 132,
+     "examples": [
+      "N:N37"
+     ]
+    }
+   },
+   "rpn": 240,
+   "rpn_before": 240,
+   "rank": 9
+  },
+  {
+   "id": "FM-24",
+   "stage": "routing",
+   "failure_mode": "Answers a question the data cannot support",
+   "effect": "A fabricated-looking number for something not in the data (race, death, CPT)",
+   "cause": "Unsupported prerequisites not recognised",
+   "severity": 9,
+   "detection_before": 3,
+   "detection": 3,
+   "controls_existing": [
+    "local_unsupported route",
+    "operator router not_answerable",
+    "missing-prerequisite rubric"
+   ],
+   "controls_added": [],
+   "evidence_rule": {
+    "adjudicated_pattern": null,
+    "mechanical": [
+     "unsupported_answered"
+    ],
+    "replay_control": null
+   },
+   "occurrence_judgment": null,
+   "occurrence": 8,
+   "occurrence_basis": "measured: 6 per 212 opportunities",
+   "evidence": {
+    "mechanical": {
+     "count": 6,
+     "opportunities": 212,
+     "classes": [
+      "unsupported_answered"
+     ]
+    }
+   },
+   "rpn": 216,
+   "rpn_before": 216,
+   "rank": 10
+  },
+  {
+   "id": "FM-19",
+   "stage": "answer_rendering",
+   "failure_mode": "Defensible alternative definition used without the user seeing it",
+   "effect": "A reasonable but different number; the reader assumes their own definition",
+   "cause": "Ambiguous question; definition stated only when a governed definition was used",
+   "severity": 4,
+   "detection_before": 6,
+   "detection": 5,
+   "controls_existing": [
+    "answer.computed / -- DEFINITION line",
+    "definitions registry standards on answers"
+   ],
+   "controls_added": [
+    "QC-DENOM"
+   ],
+   "evidence_rule": {
+    "adjudicated_pattern": null,
+    "categories": [
+     "defensible_definition"
+    ],
+    "mechanical": [],
+    "replay_control": null
+   },
+   "occurrence_judgment": null,
+   "occurrence": 10,
+   "occurrence_basis": "measured: 14 per 132 opportunities",
+   "evidence": {
+    "adjudicated": {
+     "count": 14,
+     "opportunities": 132,
+     "examples": []
+    }
+   },
+   "rpn": 200,
+   "rpn_before": 240,
+   "rank": 11
+  },
+  {
+   "id": "FM-25",
+   "stage": "population",
+   "failure_mode": "Source data defects distort results (feed gaps, partial feeds, generator defects)",
+   "effect": "Trends and rates reflect data arrival, not care",
+   "cause": "Synthetic generator defects D1-D22 (SYNTHETIC_DATA_ISSUES.md)",
+   "severity": 6,
+   "detection_before": 5,
+   "detection": 5,
+   "controls_existing": [
+    "monitor.feed_checks and systemic feed events",
+    "briefing flags feed gaps",
+    "LOS left empty when discharge unknown"
+   ],
+   "controls_added": [],
+   "evidence_rule": {
+    "adjudicated_pattern": null,
+    "mechanical": [],
+    "replay_control": null
+   },
+   "occurrence_judgment": 6,
+   "note": "Occurrence judged from the 22 logged generator defects, not from benchmark failures.",
+   "occurrence": 6,
+   "occurrence_basis": "judgment (no benchmark measures this mode)",
+   "evidence": {},
+   "rpn": 180,
+   "rpn_before": 180,
+   "rank": 12
+  },
+  {
+   "id": "FM-02",
+   "stage": "question_parse",
+   "failure_mode": "Wrong answer shape (count vs list vs rate vs table)",
+   "effect": "Answer is not usable as asked (a count when a rate or list was requested)",
+   "cause": "Shape inferred from wording; SQL writer returns its own shape",
+   "severity": 5,
+   "detection_before": 4,
+   "detection": 4,
+   "controls_existing": [
+    "analysis_graph.requested_shape",
+    "list-request-as-count rejection (nl2sql)"
+   ],
+   "controls_added": [],
+   "evidence_rule": {
+    "adjudicated_pattern": "instead of a (?:rate|list|count|table|percentage)|returned a count of",
+    "mechanical": [
+     "shape_mismatch"
+    ],
+    "replay_control": null
+   },
+   "occurrence_judgment": null,
+   "occurrence": 8,
+   "occurrence_basis": "measured: 63 per 1718 opportunities",
+   "evidence": {
+    "adjudicated": {
+     "count": 1,
+     "opportunities": 132,
+     "examples": [
+      "O:O42"
+     ]
+    },
+    "mechanical": {
+     "count": 63,
+     "opportunities": 1718,
+     "classes": [
+      "shape_mismatch"
+     ]
+    }
+   },
+   "rpn": 160,
+   "rpn_before": 160,
+   "rank": 13
+  },
+  {
+   "id": "FM-14",
+   "stage": "verification",
+   "failure_mode": "Unit mismatch (cents vs dollars, days vs hours, fraction vs percent)",
+   "effect": "Off by 100x or 24x; or a hours figure that is really whole days",
+   "cause": "Money stored in cents; durations stored as day counts",
+   "severity": 8,
+   "detection_before": 5,
+   "detection": 3,
+   "controls_existing": [
+    "verify.sanity cents-vs-dollars and fraction-vs-percent checks (SQL route, scalar results)"
+   ],
+   "controls_added": [
+    "QC-UNITS"
+   ],
+   "evidence_rule": {
+    "adjudicated_pattern": "\\bunits?\\b|instead of .{0,40}cents|in cents|by 24|fraction|\\bhours\\b",
+    "mechanical": [],
+    "replay_control": "QC-UNITS"
+   },
+   "occurrence_judgment": null,
+   "occurrence": 6,
+   "occurrence_basis": "measured: 1 per 132 opportunities",
+   "evidence": {
+    "adjudicated": {
+     "count": 1,
+     "opportunities": 132,
+     "examples": [
+      "O:O15"
+     ]
+    },
+    "control_replay": {
+     "control": "QC-UNITS",
+     "fired_on_wrong_answers": 3,
+     "fired_on_correct_answers": 0,
+     "opportunities": 1718
+    }
+   },
+   "rpn": 144,
+   "rpn_before": 240,
+   "rank": 14
+  },
+  {
+   "id": "FM-11",
+   "stage": "sql_generation",
+   "failure_mode": "Nonexistent field, stream or join (hallucinated schema)",
+   "effect": "NULL-filled joins give zero or empty results presented as findings",
+   "cause": "json_extract on a missing field silently returns NULL",
+   "severity": 8,
+   "detection_before": 3,
+   "detection": 3,
+   "controls_existing": [
+    "verify.lint: streams, fields, values and concepts must exist in the received data"
+   ],
+   "controls_added": [],
+   "evidence_rule": {
+    "adjudicated_pattern": "nonexistent|does not exist|not present in",
+    "mechanical": [],
+    "replay_control": null
+   },
+   "occurrence_judgment": null,
+   "occurrence": 6,
+   "occurrence_basis": "measured: 1 per 132 opportunities",
+   "evidence": {
+    "adjudicated": {
+     "count": 1,
+     "opportunities": 132,
+     "examples": [
+      "M:M44"
+     ]
+    }
+   },
+   "rpn": 144,
+   "rpn_before": 144,
+   "rank": 15
+  },
+  {
+   "id": "FM-16",
+   "stage": "execution",
+   "failure_mode": "Partial current period in a time series (latest month/quarter/year only partly observed)",
+   "effect": "An apparent drop in the latest period that is only missing days",
+   "cause": "Snapshot cutoff falls mid-period; series answers report the latest period like any other",
+   "severity": 6,
+   "detection_before": 9,
+   "detection": 3,
+   "controls_existing": [
+    "early_signal and monitor exclude the partial month (engine routes only)"
+   ],
+   "controls_added": [
+    "QC-PERIOD"
+   ],
+   "evidence_rule": {
+    "adjudicated_pattern": null,
+    "mechanical": [],
+    "replay_control": "QC-PERIOD"
+   },
+   "occurrence_judgment": null,
+   "occurrence": 7,
+   "occurrence_basis": "measured: 19 per 1718 opportunities",
+   "evidence": {
+    "control_replay": {
+     "control": "QC-PERIOD",
+     "fired_on_wrong_answers": 19,
+     "fired_on_correct_answers": 0,
+     "opportunities": 1718
+    }
+   },
+   "rpn": 126,
+   "rpn_before": 378,
+   "rank": 16
+  },
+  {
+   "id": "FM-04",
+   "stage": "routing",
+   "failure_mode": "False \"data is missing\" refusal on an answerable question",
+   "effect": "No answer where one was possible; user goes elsewhere",
+   "cause": "MissingData raised by the hosted SQL writer when stream retrieval misses the right stream",
+   "severity": 5,
+   "detection_before": 4,
+   "detection": 3,
+   "controls_existing": [
+    "missing-data claim re-checked against the full data dictionary before refusing (2026-10-13)"
+   ],
+   "controls_added": [],
+   "evidence_rule": {
+    "adjudicated_pattern": "refus|claim(?:ed|ing)? (?:the )?(?:\\w+ )*(?:missing|unavailable)|wrongly claimed|returned no (?:result|answer|rate)|no answer|null answer|wrongly called",
+    "mechanical": [
+     "false_refusal"
+    ],
+    "replay_control": null
+   },
+   "occurrence_judgment": null,
+   "occurrence": 8,
+   "occurrence_basis": "measured: 4 per 132 opportunities",
+   "evidence": {
+    "adjudicated": {
+     "count": 4,
+     "opportunities": 132,
+     "examples": [
+      "N:N28",
+      "O:O17",
+      "O:O32",
+      "O:O44"
+     ]
+    },
+    "mechanical": {
+     "count": 37,
+     "opportunities": 1718,
+     "classes": [
+      "false_refusal"
+     ]
+    }
+   },
+   "rpn": 120,
+   "rpn_before": 160,
+   "rank": 17
+  },
+  {
+   "id": "FM-22",
+   "stage": "learning_reuse",
+   "failure_mode": "Stale learned plan reused after the data or semantic layer changed",
+   "effect": "Yesterday's verified plan answers today's data with yesterday's logic",
+   "cause": "Learned plans keyed on question text",
+   "severity": 8,
+   "detection_before": 4,
+   "detection": 4,
+   "controls_existing": [
+    "learning.lookup requires context = source digest + semantic_layer.VERSION",
+    "user corrections block reuse"
+   ],
+   "controls_added": [],
+   "evidence_rule": {
+    "adjudicated_pattern": null,
+    "mechanical": [],
+    "replay_control": null
+   },
+   "occurrence_judgment": 3,
+   "note": "Residual: a semantic-layer change that does not bump VERSION keeps old plans eligible.",
+   "occurrence": 3,
+   "occurrence_basis": "judgment (no benchmark measures this mode)",
+   "evidence": {},
+   "rpn": 96,
+   "rpn_before": 96,
+   "rank": 18
+  },
+  {
+   "id": "FM-15",
+   "stage": "execution",
+   "failure_mode": "Execution error, timeout or no answer",
+   "effect": "User gets an error instead of an answer",
+   "cause": "Service restarts mid-run, provider budget exhaustion, validator exceptions",
+   "severity": 4,
+   "detection_before": 2,
+   "detection": 2,
+   "controls_existing": [
+    "bench/smoke.py pre-measurement suite",
+    "errors surface as explicit failures, never as answers"
+   ],
+   "controls_added": [],
+   "evidence_rule": {
+    "adjudicated_pattern": null,
+    "mechanical": [
+     "execution_error"
+    ],
+    "replay_control": null
+   },
+   "occurrence_judgment": null,
+   "occurrence": 10,
+   "occurrence_basis": "measured: 800 per 1718 opportunities",
+   "evidence": {
+    "mechanical": {
+     "count": 800,
+     "opportunities": 1718,
+     "classes": [
+      "execution_error"
+     ]
+    }
+   },
+   "rpn": 80,
+   "rpn_before": 80,
+   "rank": 19
+  },
+  {
+   "id": "FM-12",
+   "stage": "sql_generation",
+   "failure_mode": "Wrong time window or as-of cutoff",
+   "effect": "Answer covers the wrong period",
+   "cause": "Relative periods (\"past 12 months\", \"2028\") translated by the model",
+   "severity": 7,
+   "detection_before": 6,
+   "detection": 5,
+   "controls_existing": [
+    "local compiler period parser",
+    "nl2sql.meaning_drift numbers/months check on rewrites"
+   ],
+   "controls_added": [
+    "QC-NUMBERS"
+   ],
+   "evidence_rule": {
+    "adjudicated_pattern": "as-of|as of date|cutoff|window|wrong period",
+    "mechanical": [],
+    "replay_control": null
+   },
+   "occurrence_judgment": null,
+   "occurrence": 2,
+   "occurrence_basis": "measured: not observed in the recorded opportunities",
+   "evidence": {
+    "adjudicated": {
+     "count": 0,
+     "opportunities": 132,
+     "examples": []
+    }
+   },
+   "rpn": 70,
+   "rpn_before": 84,
+   "rank": 20
+  },
+  {
+   "id": "FM-20",
+   "stage": "follow_ups",
+   "failure_mode": "Follow-up rewrite drops or changes a slot",
+   "effect": "The follow-up answers a different question than the conversation implies",
+   "cause": "Model rewrite of \"now by practice\" / \"only Medicare\" into a standalone question",
+   "severity": 7,
+   "detection_before": 3,
+   "detection": 3,
+   "controls_existing": [
+    "economical_planner.rewrite_dropped refuses rewrites that lose recognised elements",
+    "resolved question shown on the card"
+   ],
+   "controls_added": [],
+   "evidence_rule": {
+    "adjudicated_pattern": null,
+    "mechanical": [],
+    "replay_control": null
+   },
+   "occurrence_judgment": 3,
+   "note": "One silent drop (medication-plus-visit) found and fixed by the follow-up builder on 2026-10-13; no benchmark measures follow-ups yet.",
+   "occurrence": 3,
+   "occurrence_basis": "judgment (no benchmark measures this mode)",
+   "evidence": {},
+   "rpn": 63,
+   "rpn_before": 63,
+   "rank": 21
+  },
+  {
+   "id": "FM-18",
+   "stage": "answer_rendering",
+   "failure_mode": "Right numbers, wrong presentation (rounding, column names, split rows, partial flag on a right value)",
+   "effect": "Strict contract fails although the substance is right",
+   "cause": "Presentation precision and naming differ from the requester's",
+   "severity": 2,
+   "detection_before": 3,
+   "detection": 3,
+   "controls_existing": [
+    "_tidy presentation precision",
+    "user-named output columns"
+   ],
+   "controls_added": [],
+   "evidence_rule": {
+    "adjudicated_pattern": null,
+    "categories": [
+     "format_only"
+    ],
+    "mechanical": [
+     "partial_but_right"
+    ],
+    "replay_control": null
+   },
+   "occurrence_judgment": null,
+   "occurrence": 10,
+   "occurrence_basis": "measured: 22 per 132 opportunities",
+   "evidence": {
+    "adjudicated": {
+     "count": 22,
+     "opportunities": 132,
+     "examples": []
+    },
+    "mechanical": {
+     "count": 10,
+     "opportunities": 1718,
+     "classes": [
+      "partial_but_right"
+     ]
+    }
+   },
+   "rpn": 60,
+   "rpn_before": 60,
+   "rank": 22
+  },
+  {
+   "id": "FM-17",
+   "stage": "answer_rendering",
+   "failure_mode": "Invalid answer contract or truncated result",
+   "effect": "Answer cannot be read by the client; or a table silently cut",
+   "cause": "Contract assembly bug; row limits",
+   "severity": 5,
+   "detection_before": 2,
+   "detection": 2,
+   "controls_existing": [
+    "bench scorer contract validation",
+    "truncation added to answer.missing"
+   ],
+   "controls_added": [],
+   "evidence_rule": {
+    "adjudicated_pattern": null,
+    "mechanical": [
+     "invalid_contract"
+    ],
+    "replay_control": null
+   },
+   "occurrence_judgment": null,
+   "occurrence": 5,
+   "occurrence_basis": "measured: 8 per 1718 opportunities",
+   "evidence": {
+    "mechanical": {
+     "count": 8,
+     "opportunities": 1718,
+     "classes": [
+      "invalid_contract"
+     ]
+    }
+   },
+   "rpn": 50,
+   "rpn_before": 50,
+   "rank": 23
+  },
+  {
+   "id": "FM-03",
+   "stage": "routing",
+   "failure_mode": "Question routed to the wrong engine or rung",
+   "effect": "Right data, wrong method (e.g. a literal count sent to an analytic engine or vice versa)",
+   "cause": "Operator router is a small-model classification; compiler accepts a near-miss reading",
+   "severity": 6,
+   "detection_before": 4,
+   "detection": 4,
+   "controls_existing": [
+    "bench/acceptance.py capability reachability (140 phrasings)",
+    "runtime validators on router plans",
+    "one repair attempt"
+   ],
+   "controls_added": [],
+   "evidence_rule": {
+    "adjudicated_pattern": null,
+    "mechanical": [
+     "acceptance_failure"
+    ],
+    "replay_control": null
+   },
+   "occurrence_judgment": null,
+   "occurrence": 2,
+   "occurrence_basis": "measured: not observed in the recorded opportunities",
+   "evidence": {
+    "acceptance": {
+     "count": 0,
+     "opportunities": 140,
+     "file": "acceptance/20261013T140851.json"
+    }
+   },
+   "rpn": 48,
+   "rpn_before": 48,
+   "rank": 24
+  },
+  {
+   "id": "FM-21",
+   "stage": "follow_ups",
+   "failure_mode": "Cached plan or answer reused across a changed slot or context",
+   "effect": "A stale answer to a different question",
+   "cause": "Cache keyed too loosely",
+   "severity": 8,
+   "detection_before": 2,
+   "detection": 2,
+   "controls_existing": [
+    "exact-question plan cache keyed on question text + code + source digest + snapshot",
+    "result cache keyed on plan + code identity"
+   ],
+   "controls_added": [],
+   "evidence_rule": {
+    "adjudicated_pattern": null,
+    "mechanical": [],
+    "replay_control": null
+   },
+   "occurrence_judgment": 2,
+   "note": "No approximate/semantic answer cache exists by design (economical_planner docstring).",
+   "occurrence": 2,
+   "occurrence_basis": "judgment (no benchmark measures this mode)",
+   "evidence": {},
+   "rpn": 32,
+   "rpn_before": 32,
+   "rank": 25
+  }
+ ]
+}
