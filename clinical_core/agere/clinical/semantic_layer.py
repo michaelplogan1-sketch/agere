@@ -13,7 +13,7 @@ import json, re, sqlite3, time
 
 from . import aggregate, concepts, source_profile
 
-VERSION = 'semantic-layer/11'
+VERSION = 'semantic-layer/12'
 
 # Source contract: streams whose records are successive snapshots of one business entity (key field).
 # Other repeated ids (payments per account, lines per claim, fills per prescription) are separate events, not versions.
@@ -97,6 +97,9 @@ SCHEMA_DOC = {
     'claim_adjustment': 'One row per adjustment line on each medical claim adjudication record: group_code (CO/PR/OA), reason_code '
                         '(X12 CARC), category (deductible, coinsurance, copay, contractual_adjustment, else group-code), amount_cents; '
                         'current_version = 1 on the claim\'s latest version.',
+    'note_fact': 'Facts found only in free text (EF, symptoms, edema, dyspnea, medication non-adherence and reasons, social needs, '
+                 'imaging findings, follow-up instructions, goals of care) with negation, temporality and evidence spans; rule '
+                 'extractor admitted per fact type at >= 0.90 measured precision.',
     'medication': 'Every medication mention, one row per (record, drug_class): source_stream and evidence (dispensed, claim, ordered, '
                   'listed, administered, reported, pharmacy_history), drug_name as received, status. drug_class from the active '
                   'ingredient (statin, beta_blocker, hf_evidence_based_beta_blocker, ace_inhibitor, arb, arni, mra, sglt2_inhibitor, '
@@ -459,6 +462,8 @@ def build(path):
         out.commit()
     finally:
         src.close(); out.close()
+    from . import note_facts
+    note_facts.build(tmp)  # facts found only in free text, read from and written into the new build
     tmp.replace(target)
     return {'path': str(target), 'elapsed_seconds': round(time.perf_counter() - started, 1)}
 
