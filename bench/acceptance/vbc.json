@@ -23,7 +23,7 @@
   "expect_operation": "vbc"
  },
  {
-  "question": "Split the savings fairly across practices",
+  "question": "With a $950 PMPM benchmark and 50% sharing rate, split the shared savings fairly across practices",
   "expect_operation": "vbc"
  },
  {

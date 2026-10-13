@@ -90,6 +90,12 @@ class Route(unittest.TestCase):
         self.assertIsNotNone(graph); self.assertEqual(len(calls), 3); self.assertTrue(calls[2][1])
         self.assertAlmostEqual(router.cost(info), 0.005)
 
+    def test_missing_user_inputs_are_named_not_guessed(self):
+        terms = {'name': 'vbc', 'input': {'parameters': {'metric': 'shared_savings', 'group_by': 'practice'}}}
+        with mock.patch.object(router, '_ask', side_effect=lambda *a, op=None, **k: (({'name': 'vbc', 'input': {}} if op is None else terms), {'api_usd': 0.0})):
+            graph, info = router.route('Split the savings fairly across practices', AS_OF, None, None, validate)
+        self.assertIsNone(graph); self.assertIn('contract terms', info['requires_input'])
+
     def test_two_invalid_plans_fall_through(self):
         bad = {'name': 'trajectory', 'input': {'parameters': {'concept': 'not_a_lab'}}}
         with mock.patch.object(router, '_ask', side_effect=lambda *a, op=None, **k: (({'name': 'trajectory', 'input': {}} if op is None else bad), {'api_usd': 0.0})):

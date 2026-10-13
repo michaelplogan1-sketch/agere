@@ -272,6 +272,13 @@ def plan(stack,question,ledger,frontier):
         except (ValueError,RuntimeError,OSError) as exc:
             routed,route_info=None,{'router_error':str(exc)[:300],'calls':[]}
         local_decline={**local_decline,'operator_router':route_info}
+        if routed is None and route_info.get('requires_input'):
+            graph=validate({'interpretation':f'Needs inputs not in the data: {question}','coverage':'unsupported','nodes':[],
+                            'unmet_requirements':['Missing input: '+route_info['requires_input'][:400]]},meta['snapshot']['as_of'])
+            return graph,{'route':'operator_router_requires_input','model':operator_router.MODEL,'operator':route_info.get('decision'),
+                          'new_paid_api_calls':sum(0 if c.get('cache_hit') else 1 for c in route_info['calls']),'frontier_called':False,
+                          'local_compiler_declined':local_decline,'steps':[{'stage':'operator_router','receipt':{'cost_estimate':{'estimated_usd':operator_router.cost(route_info)}}}],
+                          'elapsed_seconds':time.perf_counter()-start}
         if routed is not None:
             return routed,{'route':'operator_router','model':operator_router.MODEL,'new_paid_api_calls':
                            sum(0 if c.get('cache_hit') else 1 for c in route_info['calls']),'frontier_called':False,

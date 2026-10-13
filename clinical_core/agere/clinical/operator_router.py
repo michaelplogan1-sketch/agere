@@ -5,7 +5,7 @@ capability_registry.PRODUCT and fills its typed parameters (the same schemas the
 The plan is validated by the runtime validators before anything executes; one repair attempt is allowed
 with the validator's error. Literal data questions are handed to the verified SQL ladder unchanged.
 """
-import copy, json, time
+import copy, json, re, time
 
 from .capability_registry import PRODUCT, LITERAL
 
@@ -238,6 +238,10 @@ def route(question, as_of, ledger, out, validate, encoder=None):
         if picked['name'] == op:
             info['decision'] = op
             break
+    # The engine is right but the question lacks inputs only the user can supply (e.g. contract terms): say so, don't guess.
+    errors = [r['error'] for r in info.get('rejected', [])]
+    if errors and all(re.search(r'needs supplied|supplied by the user|user[- ]supplied', e) for e in errors):
+        info['requires_input'] = errors[-1]
     info['seconds'] = round(time.perf_counter() - start, 2)
     return None, info
 
