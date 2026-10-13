@@ -58,6 +58,14 @@ class Graphs(unittest.TestCase):
         self.assertEqual(g['nodes'][0]['parameters']['specification']['all'][0]['concept'], 'heart_failure')
         self.ok('survival', {'parameters': '{"index": {"type": "discharge"}, "event": {"type": "readmission"}}}'})
 
+    def test_social_need_outcome(self):
+        g = self.ok('discover', {'parameters': {'outcome': [{'kind': 'social_need', 'need': 'food_difficulty'}], 'direction': 'high'}})
+        outcome = g['nodes'][-1]['parameters']['outcome']
+        self.assertEqual(outcome['all'][0]['conditions'][0]['field'], 'food_difficulty_reported')
+        g = self.ok('survival', {'population': [{'kind': 'social_need', 'need': 'transport_difficulty'}],
+                                 'parameters': {'index': {'type': 'discharge'}, 'event': {'type': 'readmission'}}})
+        self.assertEqual(len(g['nodes'][0]['parameters']['specification']['any']), 2)  # both transport instruments
+
     def test_unregistered_operator_refused(self):
         with self.assertRaises(ValueError):
             router.to_graph('q', {'name': 'sql', 'input': {'parameters': {}}})

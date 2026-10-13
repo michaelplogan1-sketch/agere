@@ -42,7 +42,8 @@ def population_schema():
     """Compact population grammar for the router (validated by cohorts.validate after normalisation)."""
     from . import concepts, cohorts
     atom = {'type': 'object', 'properties': {
-        'kind': {'type': 'string', 'enum': ['concept', 'measurement', 'patient']},
+        'kind': {'type': 'string', 'enum': ['concept', 'measurement', 'patient', 'social_need']},
+        'need': {'type': 'string', 'enum': sorted(SOCIAL_NEEDS), 'description': 'social_need atoms only: a positive social-needs screen'},
         'concept': {'type': 'string', 'enum': sorted({*concepts.CONDITIONS, *concepts.ENCOUNTERS, *concepts.MEASUREMENTS}),
                     'description': 'concept: a condition or encounter type; measurement: a lab/vital'},
         'field': {'type': 'string', 'enum': sorted(cohorts.PATIENT_FIELDS - {'patient_id', 'profile_captured_date'}), 'description': 'patient atoms only'},
@@ -53,6 +54,18 @@ def population_schema():
         'role': {'type': 'string', 'enum': ['all', 'any', 'exclude'], 'description': 'all = must match (default); any = at least one of the any-atoms; exclude = must not match'}},
         'required': ['kind']}
     return {'type': 'array', 'items': atom, 'description': 'Who the analysis covers, as predicate atoms; omit for everyone.'}
+
+
+# Social needs -> the screening-record atoms the compiler uses (every instrument that reports the need).
+SOCIAL_NEEDS = {'food_difficulty': [('social_screens', 'food_difficulty_reported', True)],
+                'transport_difficulty': [('social_screens', 'transport_difficulty_reported', True), ('social_screens', 'transport', 'unreliable')],
+                'financial_hardship': [('social_screens', 'difficulty_paying_for_care_reported', True),
+                                       ('financial_screens', 'difficulty_paying_medical_bills', True)]}
+
+
+def _social_atoms(need):
+    return [{'kind': 'record', 'stream': stream, 'conditions': [{'field': field, 'op': 'eq', 'value': value}],
+             'window': {'basis': 'all_observed', 'start': '', 'end': ''}} for stream, field, value in SOCIAL_NEEDS.get(need, [])]
 
 
 def normalize_atom(atom):
@@ -69,8 +82,17 @@ def normalize_atom(atom):
 def normalize_spec(spec):
     if isinstance(spec, list):  # router form: atoms carrying a role
         out = {'all': [], 'any': [], 'exclude': []}
+        needs = [a for a in spec if isinstance(a, dict) and a.get('kind') == 'social_need']
         for a in spec:
-            if isinstance(a, dict): out[a.get('role') if a.get('role') in out else 'all'].append(normalize_atom(a))
+            if not isinstance(a, dict) or a.get('kind') == 'social_need': continue
+            out[a.get('role') if a.get('role') in out else 'all'].append(normalize_atom(a))
+        for a in needs:
+            atoms = _social_atoms(a.get('need'))
+            if not atoms: raise ValueError(f"Unknown social need: {a.get('need')}")
+            role = a.get('role') if a.get('role') in out else 'all'
+            if role == 'exclude': out['exclude'] += atoms  # excluded if any instrument reports the need
+            elif role == 'any' or (len(atoms) > 1 and not out['any'] and len(needs) == 1): out['any'] += atoms  # any instrument
+            else: out['all'].append(atoms[0])  # several needs required together: primary instrument each
         return out
     return {k: [normalize_atom(a) for a in (spec or {}).get(k) or [] if isinstance(a, dict)] for k in ('all', 'any', 'exclude')}
 
