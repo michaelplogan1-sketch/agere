@@ -49,4 +49,11 @@ _COMPILED = {k: re.compile(v, re.I) for k, v in CLASSES.items()}
 def classify(name):
     """Drug classes for a received medication name (possibly several for combination products)."""
     if not name: return []
-    return [k for k, rx in _COMPILED.items() if rx.search(str(name))]
+    found = [k for k, rx in _COMPILED.items() if rx.search(str(name))]
+    if 'arni' in found and 'arb' in found and not _OTHER_ARB.search(_VALSARTAN.sub('', str(name))):
+        found.remove('arb')  # sacubitril/valsartan (Entresto) is an ARNI; its valsartan component does not make it an ARB
+    return found
+
+
+_VALSARTAN = re.compile(r'\bvalsartan\b', re.I)
+_OTHER_ARB = _COMPILED['arb']

@@ -2,7 +2,7 @@
 
 One self-contained HTML page (no external assets; charts are hand-written SVG). It reads only existing routes:
 /api/stack/compose (with conversation_id), /api/stack/conversation, /api/stack/briefing, /api/stack/economics and
-/api/stack/correct, plus /api/stack/briefing-feedback (opened / asked follow-up / dismissed per briefing card,
+/api/stack/correct, /api/stack/learning-loop (read-only loop summary pill), plus /api/stack/briefing-feedback (opened / asked follow-up / dismissed per briefing card,
 the briefing ranker's implicit feedback). /ask?demo=1 adds the scripted buyer walkthrough in DEMO_STEPS; every step asks a real question.
 """
 import json
@@ -642,7 +642,9 @@ function newConversation(){state.cid=null;store.set('agere-conversation',null);s
 function loadEcon(){fetch('/api/stack/economics').then(r=>r.ok?r.json():null).then(e=>{if(!e)return;
  $('#econ').innerHTML='<span class="pill" title="Questions answered by this installation"><b>'+fmt(e.questions||0)+'</b> questions</span>'+
   '<span class="pill" title="Answered without any paid model call"><b>'+(e.share_without_api_calls!=null?Math.round(100*e.share_without_api_calls)+'%':'—')+'</b> without paid calls</span>'+
-  '<span class="pill" title="Known hosted model spend"><b>$'+(e.api_usd||0).toFixed(2)+'</b> spend</span>'}).catch(()=>{})}
+  '<span class="pill" title="Known hosted model spend"><b>$'+(e.api_usd||0).toFixed(2)+'</b> spend</span><span id="loop"></span>';loadLoop()}).catch(()=>{})}
+function loadLoop(){fetch('/api/stack/learning-loop').then(r=>r.ok?r.json():null).then(l=>{if(!l||l.status!=='ok'||!$('#loop'))return;const g=l.gaps||{},rt=l.retrain||{};
+ $('#loop').innerHTML='<span class="pill" title="'+esc('Learning loop: '+(l.detail||'')+(rt.reason?'. Retrain: '+rt.reason:''))+'"><b>'+fmt(g.actionable_clusters||0)+'</b> gap clusters · <b>'+fmt((l.regressions||{}).cases||0)+'</b> regressions · <b>'+fmt((l.proposals||{}).count||0)+'</b> proposals'+(rt.recommend_retrain?' · retrain due':'')+'</span>'}).catch(()=>{})}
 function briefFeedback(card,event){if(!card)return;const body={card_id:card,event};if(state.briefingId)body.briefing_id=state.briefingId;
  fetch('/api/stack/briefing-feedback',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)}).catch(()=>{})}
 function loadBriefing(){return fetch('/api/stack/briefing').then(r=>r.ok?r.json():Promise.reject(r.status)).then(d=>{const cards=(d.cards||[]).slice();state.briefing=cards;state.briefingId=d.briefing_id||null;

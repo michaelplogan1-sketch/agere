@@ -91,3 +91,20 @@ def summary(path):
         db.close()
     return {'schema': VERSION, 'routes': routes, 'statuses': statuses, 'verified_training_pairs': verified,
             'corrections': corrections, 'top_gaps': [{'reason': r, 'count': n} for r, n in gaps]}
+
+
+def loop_summary(path):
+    """Read-only summary of the last learning-loop run (tools/learning_loop) for this stack, or status not_run."""
+    root = Path(__file__).resolve().parents[3]
+    base = (Path(os.environ['AGERE_LEARNING_LOOP_DIR']) if os.environ.get('AGERE_LEARNING_LOOP_DIR')
+            else root / 'artifacts' / 'learning-loop' / Path(path).parent.name)
+    target = base / 'loop.json'
+    if not target.exists():
+        return {'schema': 'learning-loop/1', 'status': 'not_run',
+                'detail': 'Run python -m tools.learning_loop to cluster gaps, write regression cases and grammar proposals.'}
+    try:
+        result = json.loads(target.read_text())
+    except ValueError:
+        return {'schema': 'learning-loop/1', 'status': 'unreadable', 'detail': target.name}
+    result['age_seconds'] = round(time.time() - target.stat().st_mtime)
+    return result

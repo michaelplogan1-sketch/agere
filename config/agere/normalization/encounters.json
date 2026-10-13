@@ -941,6 +941,29 @@
    "setting": "diagnostic",
    "source_count": 228
   },
+  "diagnostic_testing": {
+   "added_at": "2026-10-13",
+   "added_by": "normalization-incremental/1",
+   "agere_concept": null,
+   "confidence": 0.85,
+   "in_person": true,
+   "jev_choice": "dictionary_and_rules",
+   "jev_input": "aaf2b99d84bdbae5c318b5993b21c80ff2349d7aa4c4c9d66ae83a049c60f841",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary_and_rules",
+    "none"
+   ],
+   "jev_p": 0.58,
+   "jev_probabilities": {
+    "dictionary_and_rules": 0.58,
+    "none": 0.42
+   },
+   "note": "Standalone diagnostic testing encounter (lab or imaging). None of the AGERE IDs is a diagnostic-only encounter. In-person is assumed because testing is typically on-site.",
+   "setting": "diagnostic",
+   "source_count": 248,
+   "source_release": "healthcare-warehouse-v2.0"
+  },
   "emergency": {
    "agere_concept": "emergency_visit",
    "confidence": 0.97,
@@ -1345,6 +1368,31 @@
    },
    "setting": "preventive",
    "source_count": 1327
+  },
+  "youth_health_supervision": {
+   "added_at": "2026-10-13",
+   "added_by": "normalization-incremental/1",
+   "agere_concept": "primary_care_visit",
+   "confidence": 0.85,
+   "in_person": true,
+   "jev_choice": "dictionary",
+   "jev_input": "784132cf908191e1dfcfb696a0ff92a6e42be9a1f14b106f09afdae2218461ed",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary",
+    "rules",
+    "none"
+   ],
+   "jev_p": 0.81,
+   "jev_probabilities": {
+    "dictionary": 0.81,
+    "none": 0.09,
+    "rules": 0.1
+   },
+   "note": "Child/adolescent health supervision is a well-child preventive visit. It is delivered as a primary care encounter, so it maps to primary_care_visit.",
+   "setting": "preventive",
+   "source_count": 396,
+   "source_release": "healthcare-warehouse-v2.0"
   }
  },
  "jev_check": {

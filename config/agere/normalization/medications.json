@@ -660,32 +660,48 @@
    "therapeutic_category": "analgesic"
   },
   "Acetaminophen 21.7 MG/ML / Dextromethorphan Hydrobromide 1 MG/ML / doxylamine succinate 0.417 MG/ML Oral Solution": {
-   "confidence": 0.9,
+   "added_at": "2026-10-13",
+   "added_by": "normalization-incremental/1 remap",
+   "confidence": 0.93,
    "dose_form": "oral solution",
-   "drug_classes": [],
+   "drug_classes": [
+    "first_generation_antihistamine"
+   ],
    "ingredients": [
     "acetaminophen",
     "dextromethorphan",
     "doxylamine"
    ],
-   "jev_choice": "rules",
-   "jev_input": "c6260024cff118e7897f1b2449e6b26f9995919526e5fb314b82365010812708",
+   "jev_choice": "dictionary_and_rules",
+   "jev_input": "2923a6312c7e339108961ca7aff10c2086d8e58467be837b9c2b6a587834a0e0",
    "jev_model": "jev-1.13.0",
    "jev_options": [
-    "dictionary",
-    "rules",
+    "dictionary_and_rules",
     "none"
    ],
-   "jev_p": 0.8,
+   "jev_p": 0.98,
    "jev_probabilities": {
-    "dictionary": 0.16,
-    "none": 0.04,
-    "rules": 0.8
+    "dictionary_and_rules": 0.98,
+    "none": 0.02
+   },
+   "previous_mapping": {
+    "confidence": 0.9,
+    "drug_classes": [],
+    "ingredients": [
+     "acetaminophen",
+     "dextromethorphan",
+     "doxylamine"
+    ],
+    "jev_choice": "rules"
    },
    "route": "oral",
-   "rxnorm_ingredient_cui": null,
+   "rxnorm_ingredient_cui": [
+    "161",
+    "3289",
+    "3640"
+   ],
    "source_count": 4,
-   "therapeutic_category": "cold and cough combination"
+   "therapeutic_category": "cough/cold combination (analgesic + antitussive + antihistamine)"
   },
   "Acetaminophen 300 MG / Codeine Phosphate 15 MG Oral Tablet": {
    "confidence": 0.95,
@@ -963,25 +979,35 @@
    "therapeutic_category": "bronchodilator (SABA + short-acting antimuscarinic)"
   },
   "Alendronic acid 10 MG Oral Tablet": {
-   "confidence": 0.93,
+   "added_at": "2026-10-13",
+   "added_by": "normalization-incremental/1 remap",
+   "confidence": 0.95,
    "dose_form": "oral tablet",
-   "drug_classes": [],
+   "drug_classes": [
+    "bisphosphonate"
+   ],
    "ingredients": [
     "alendronate"
    ],
-   "jev_choice": "rules",
-   "jev_input": "e36ba880578051515b32b766b453646ccf9571e220258762c28ee3422b1e7a6e",
+   "jev_choice": "dictionary_and_rules",
+   "jev_input": "bcf0346bce738a0848550e612aac0708380caf77f5bd2a669eb642bef612dda4",
    "jev_model": "jev-1.13.0",
    "jev_options": [
-    "dictionary",
-    "rules",
+    "dictionary_and_rules",
     "none"
    ],
-   "jev_p": 0.86,
+   "jev_p": 0.84,
    "jev_probabilities": {
-    "dictionary": 0.06,
-    "none": 0.08,
-    "rules": 0.86
+    "dictionary_and_rules": 0.84,
+    "none": 0.16
+   },
+   "previous_mapping": {
+    "confidence": 0.93,
+    "drug_classes": [],
+    "ingredients": [
+     "alendronate"
+    ],
+    "jev_choice": "rules"
    },
    "route": "oral",
    "rxnorm_ingredient_cui": "46041",
@@ -1119,30 +1145,40 @@
    "therapeutic_category": "anticoagulant"
   },
   "Aripiprazole": {
-   "confidence": 0.93,
+   "added_at": "2026-10-13",
+   "added_by": "normalization-incremental/1 remap",
+   "confidence": 0.95,
    "dose_form": null,
-   "drug_classes": [],
+   "drug_classes": [
+    "antipsychotic"
+   ],
    "ingredients": [
     "aripiprazole"
    ],
-   "jev_choice": "rules",
-   "jev_input": "7ca316dab70a2f8f7bdeb3181c9ff5be1463119ba065e7902ca6a292b57d380d",
+   "jev_choice": "dictionary_and_rules",
+   "jev_input": "1c07bc03e7b6370afea985a360ced7e0d684b68e81f18cf0573ccc0a49431326",
    "jev_model": "jev-1.13.0",
    "jev_options": [
-    "dictionary",
-    "rules",
+    "dictionary_and_rules",
     "none"
    ],
-   "jev_p": 0.97,
+   "jev_p": 0.99,
    "jev_probabilities": {
-    "dictionary": 0.01,
-    "none": 0.02,
-    "rules": 0.97
+    "dictionary_and_rules": 0.99,
+    "none": 0.01
    },
-   "route": "oral",
+   "previous_mapping": {
+    "confidence": 0.93,
+    "drug_classes": [],
+    "ingredients": [
+     "aripiprazole"
+    ],
+    "jev_choice": "rules"
+   },
+   "route": null,
    "rxnorm_ingredient_cui": "89013",
    "source_count": 1,
-   "therapeutic_category": "atypical antipsychotic"
+   "therapeutic_category": "antipsychotic"
   },
   "Aspirin": {
    "confidence": 0.88,
@@ -1573,25 +1609,35 @@
    "therapeutic_category": "antibiotic"
   },
   "Chlorpheniramine Maleate 2 MG/ML Oral Solution": {
-   "confidence": 0.93,
+   "added_at": "2026-10-13",
+   "added_by": "normalization-incremental/1 remap",
+   "confidence": 0.95,
    "dose_form": "oral solution",
-   "drug_classes": [],
+   "drug_classes": [
+    "first_generation_antihistamine"
+   ],
    "ingredients": [
     "chlorpheniramine"
    ],
-   "jev_choice": "rules",
-   "jev_input": "3a8d7f3990b7dc7e0c0be2605b7f82d2886b014db2d157eb70b292376d47e5cb",
+   "jev_choice": "dictionary_and_rules",
+   "jev_input": "b9a51467961b168e1bcbdd27eb50d1f406c32287d67c2dd1f85c5a068dea4763",
    "jev_model": "jev-1.13.0",
    "jev_options": [
-    "dictionary",
-    "rules",
+    "dictionary_and_rules",
     "none"
    ],
-   "jev_p": 0.96,
+   "jev_p": 0.99,
    "jev_probabilities": {
-    "dictionary": 0.01,
-    "none": 0.03,
-    "rules": 0.96
+    "dictionary_and_rules": 0.99,
+    "none": 0.01
+   },
+   "previous_mapping": {
+    "confidence": 0.93,
+    "drug_classes": [],
+    "ingredients": [
+     "chlorpheniramine"
+    ],
+    "jev_choice": "rules"
    },
    "route": "oral",
    "rxnorm_ingredient_cui": "2400",
@@ -1599,25 +1645,35 @@
    "therapeutic_category": "antihistamine"
   },
   "Chlorpheniramine Maleate 4 MG Oral Tablet": {
-   "confidence": 0.94,
+   "added_at": "2026-10-13",
+   "added_by": "normalization-incremental/1 remap",
+   "confidence": 0.95,
    "dose_form": "oral tablet",
-   "drug_classes": [],
+   "drug_classes": [
+    "first_generation_antihistamine"
+   ],
    "ingredients": [
     "chlorpheniramine"
    ],
-   "jev_choice": "rules",
-   "jev_input": "ac8c6329b76325c9e6b0d6f084777120e507e8f4552c2104cd67470b9000f5ad",
+   "jev_choice": "dictionary_and_rules",
+   "jev_input": "7b3bba4b0bcb6231822dde5b68871fccbce9f5d8a594a36577d41533029374eb",
    "jev_model": "jev-1.13.0",
    "jev_options": [
-    "dictionary",
-    "rules",
+    "dictionary_and_rules",
     "none"
    ],
-   "jev_p": 0.97,
+   "jev_p": 0.99,
    "jev_probabilities": {
-    "dictionary": 0.01,
-    "none": 0.02,
-    "rules": 0.97
+    "dictionary_and_rules": 0.99,
+    "none": 0.01
+   },
+   "previous_mapping": {
+    "confidence": 0.94,
+    "drug_classes": [],
+    "ingredients": [
+     "chlorpheniramine"
+    ],
+    "jev_choice": "rules"
    },
    "route": "oral",
    "rxnorm_ingredient_cui": "2400",
@@ -1677,56 +1733,76 @@
    "therapeutic_category": "antiplatelet"
   },
   "Clozapine": {
-   "confidence": 0.92,
+   "added_at": "2026-10-13",
+   "added_by": "normalization-incremental/1 remap",
+   "confidence": 0.95,
    "dose_form": null,
-   "drug_classes": [],
+   "drug_classes": [
+    "antipsychotic"
+   ],
    "ingredients": [
     "clozapine"
    ],
-   "jev_choice": "rules",
-   "jev_input": "b24b7b5fd4ca1d1f4cd27176d9b60701f6ec332ec61c8ee7abb7dc76671d3073",
+   "jev_choice": "dictionary_and_rules",
+   "jev_input": "16f4a3b52e0de0ad6f6c80b9aa3977d25f4298c9708392638fe397aa482da70f",
    "jev_model": "jev-1.13.0",
    "jev_options": [
-    "dictionary",
-    "rules",
+    "dictionary_and_rules",
     "none"
    ],
-   "jev_p": 0.92,
+   "jev_p": 0.98,
    "jev_probabilities": {
-    "dictionary": 0.04,
-    "none": 0.04,
-    "rules": 0.92
+    "dictionary_and_rules": 0.98,
+    "none": 0.02
    },
-   "route": "oral",
+   "previous_mapping": {
+    "confidence": 0.92,
+    "drug_classes": [],
+    "ingredients": [
+     "clozapine"
+    ],
+    "jev_choice": "rules"
+   },
+   "route": null,
    "rxnorm_ingredient_cui": "2626",
    "source_count": 4,
    "therapeutic_category": "antipsychotic"
   },
   "Cyclobenzaprine": {
-   "confidence": 0.9,
-   "dose_form": "oral tablet",
-   "drug_classes": [],
+   "added_at": "2026-10-13",
+   "added_by": "normalization-incremental/1 remap",
+   "confidence": 0.95,
+   "dose_form": null,
+   "drug_classes": [
+    "skeletal_muscle_relaxant"
+   ],
    "ingredients": [
     "cyclobenzaprine"
    ],
-   "jev_choice": "rules",
-   "jev_input": "7460abcdea97225886fc4a3f97154e1210f83ee822ebcd35d0216b19c401946f",
+   "jev_choice": "dictionary_and_rules",
+   "jev_input": "35a47810afc00b837a3cd10ed63f18460516daeb8b7b99b80a5fe89d7aaf7fb0",
    "jev_model": "jev-1.13.0",
    "jev_options": [
-    "dictionary",
-    "rules",
+    "dictionary_and_rules",
     "none"
    ],
-   "jev_p": 0.97,
+   "jev_p": 0.99,
    "jev_probabilities": {
-    "dictionary": 0.01,
-    "none": 0.02,
-    "rules": 0.97
+    "dictionary_and_rules": 0.99,
+    "none": 0.01
    },
-   "route": "oral",
+   "previous_mapping": {
+    "confidence": 0.9,
+    "drug_classes": [],
+    "ingredients": [
+     "cyclobenzaprine"
+    ],
+    "jev_choice": "rules"
+   },
+   "route": null,
    "rxnorm_ingredient_cui": "21949",
    "source_count": 3,
-   "therapeutic_category": "muscle relaxant"
+   "therapeutic_category": "skeletal muscle relaxant"
   },
   "Dapagliflozin": {
    "confidence": 0.9,
@@ -1829,25 +1905,35 @@
    "therapeutic_category": "cardiac glycoside"
   },
   "Diphenhydramine": {
-   "confidence": 0.92,
+   "added_at": "2026-10-13",
+   "added_by": "normalization-incremental/1 remap",
+   "confidence": 0.95,
    "dose_form": null,
-   "drug_classes": [],
+   "drug_classes": [
+    "first_generation_antihistamine"
+   ],
    "ingredients": [
     "diphenhydramine"
    ],
-   "jev_choice": "rules",
-   "jev_input": "8f360d182f8118a378db69a51b8932bfeaee572dd3b66aa1fc2c38e3f9eb389d",
+   "jev_choice": "dictionary_and_rules",
+   "jev_input": "603613d8b2e1e9cceb83a1386ac4090a4d23fcafc36ff2426b83f8e7afb6e125",
    "jev_model": "jev-1.13.0",
    "jev_options": [
-    "dictionary",
-    "rules",
+    "dictionary_and_rules",
     "none"
    ],
    "jev_p": 0.96,
    "jev_probabilities": {
-    "dictionary": 0.02,
-    "none": 0.02,
-    "rules": 0.96
+    "dictionary_and_rules": 0.96,
+    "none": 0.04
+   },
+   "previous_mapping": {
+    "confidence": 0.92,
+    "drug_classes": [],
+    "ingredients": [
+     "diphenhydramine"
+    ],
+    "jev_choice": "rules"
    },
    "route": null,
    "rxnorm_ingredient_cui": "3498",
@@ -2007,51 +2093,71 @@
    "therapeutic_category": "antidepressant"
   },
   "Ferrous sulfate": {
-   "confidence": 0.9,
+   "added_at": "2026-10-13",
+   "added_by": "normalization-incremental/1 remap",
+   "confidence": 0.92,
    "dose_form": null,
-   "drug_classes": [],
+   "drug_classes": [
+    "iron_supplement"
+   ],
    "ingredients": [
     "ferrous sulfate"
    ],
-   "jev_choice": "rules",
-   "jev_input": "0790d287759ddda17ea4408aac3fd8c95ff011d93ec1051ad2d9e0893e87609b",
+   "jev_choice": "dictionary_and_rules",
+   "jev_input": "d93448b0c24838c5d94e265edf0530a6038f747f2e6711a34e2a9438ead40506",
    "jev_model": "jev-1.13.0",
    "jev_options": [
-    "dictionary",
-    "rules",
+    "dictionary_and_rules",
     "none"
    ],
-   "jev_p": 0.95,
+   "jev_p": 0.99,
    "jev_probabilities": {
-    "dictionary": 0.03,
-    "none": 0.02,
-    "rules": 0.95
+    "dictionary_and_rules": 0.99,
+    "none": 0.01
    },
-   "route": "oral",
-   "rxnorm_ingredient_cui": null,
+   "previous_mapping": {
+    "confidence": 0.9,
+    "drug_classes": [],
+    "ingredients": [
+     "ferrous sulfate"
+    ],
+    "jev_choice": "rules"
+   },
+   "route": null,
+   "rxnorm_ingredient_cui": "24947",
    "source_count": 4,
    "therapeutic_category": "iron supplement"
   },
   "Fexofenadine hydrochloride 30 MG Oral Tablet": {
-   "confidence": 0.94,
+   "added_at": "2026-10-13",
+   "added_by": "normalization-incremental/1 remap",
+   "confidence": 0.95,
    "dose_form": "oral tablet",
-   "drug_classes": [],
+   "drug_classes": [
+    "second_generation_antihistamine"
+   ],
    "ingredients": [
     "fexofenadine"
    ],
-   "jev_choice": "rules",
-   "jev_input": "454dc4e2eb76441a33613ce8c3f651f1950d2c994a9ebd4176e005207e8da1fe",
+   "jev_choice": "dictionary_and_rules",
+   "jev_input": "0026e51faa0d65537b5012c970266580b8a631ffc467bd15ec2d83fda71b0b22",
    "jev_model": "jev-1.13.0",
    "jev_options": [
-    "dictionary",
-    "rules",
+    "dictionary_and_rules",
     "none"
    ],
-   "jev_p": 0.96,
+   "jev_p": 0.98,
    "jev_probabilities": {
-    "dictionary": 0.01,
-    "none": 0.03,
-    "rules": 0.96
+    "dictionary_and_rules": 0.98,
+    "none": 0.02
+   },
+   "previous_mapping": {
+    "confidence": 0.94,
+    "drug_classes": [],
+    "ingredients": [
+     "fexofenadine"
+    ],
+    "jev_choice": "rules"
    },
    "route": "oral",
    "rxnorm_ingredient_cui": "87636",
@@ -2059,25 +2165,35 @@
    "therapeutic_category": "antihistamine"
   },
   "Fexofenadine hydrochloride 60 MG Oral Tablet": {
-   "confidence": 0.94,
+   "added_at": "2026-10-13",
+   "added_by": "normalization-incremental/1 remap",
+   "confidence": 0.95,
    "dose_form": "oral tablet",
-   "drug_classes": [],
+   "drug_classes": [
+    "second_generation_antihistamine"
+   ],
    "ingredients": [
     "fexofenadine"
    ],
-   "jev_choice": "rules",
-   "jev_input": "e67f5229523ab90ac5fc61cdfd400507a3847726d3f355e67e214f221839e416",
+   "jev_choice": "dictionary_and_rules",
+   "jev_input": "92dcdbbf1d190b49e054a2606c2e763501cb4464ed41643efe8e42c2d85c2b1f",
    "jev_model": "jev-1.13.0",
    "jev_options": [
-    "dictionary",
-    "rules",
+    "dictionary_and_rules",
     "none"
    ],
-   "jev_p": 0.97,
+   "jev_p": 0.98,
    "jev_probabilities": {
-    "dictionary": 0.01,
-    "none": 0.02,
-    "rules": 0.97
+    "dictionary_and_rules": 0.98,
+    "none": 0.02
+   },
+   "previous_mapping": {
+    "confidence": 0.94,
+    "drug_classes": [],
+    "ingredients": [
+     "fexofenadine"
+    ],
+    "jev_choice": "rules"
    },
    "route": "oral",
    "rxnorm_ingredient_cui": "87636",
@@ -2616,51 +2732,71 @@
    "therapeutic_category": "opioid analgesic"
   },
   "Ibuprofen": {
-   "confidence": 0.95,
+   "added_at": "2026-10-13",
+   "added_by": "normalization-incremental/1 remap",
+   "confidence": 0.96,
    "dose_form": null,
-   "drug_classes": [],
+   "drug_classes": [
+    "nsaid"
+   ],
    "ingredients": [
     "ibuprofen"
    ],
-   "jev_choice": "rules",
-   "jev_input": "6534b7cb728e8da0831ec4f97f06a886ee85732ff29f2f3bc330ce1b66cfabfa",
+   "jev_choice": "dictionary_and_rules",
+   "jev_input": "c6a83b9626a8acd5a181d4ae957388fbc43697a716f1d72787c566038ce53d77",
    "jev_model": "jev-1.13.0",
    "jev_options": [
-    "dictionary",
-    "rules",
+    "dictionary_and_rules",
     "none"
    ],
-   "jev_p": 0.92,
+   "jev_p": 0.97,
    "jev_probabilities": {
-    "dictionary": 0.05,
-    "none": 0.03,
-    "rules": 0.92
+    "dictionary_and_rules": 0.97,
+    "none": 0.03
    },
-   "route": "oral",
+   "previous_mapping": {
+    "confidence": 0.95,
+    "drug_classes": [],
+    "ingredients": [
+     "ibuprofen"
+    ],
+    "jev_choice": "rules"
+   },
+   "route": null,
    "rxnorm_ingredient_cui": "5640",
    "source_count": 1,
    "therapeutic_category": "nsaid"
   },
   "Ibuprofen 100 MG Oral Tablet": {
-   "confidence": 0.97,
+   "added_at": "2026-10-13",
+   "added_by": "normalization-incremental/1 remap",
+   "confidence": 0.95,
    "dose_form": "oral tablet",
-   "drug_classes": [],
+   "drug_classes": [
+    "nsaid"
+   ],
    "ingredients": [
     "ibuprofen"
    ],
-   "jev_choice": "rules",
-   "jev_input": "1765d4b7ba1fe6d93846b8661228772b635887b1c422a26a37bf929bbeb18288",
+   "jev_choice": "dictionary_and_rules",
+   "jev_input": "a1bc8fe0fbcc6e29917bb3e3e53a56d1a6a470ba4136201e13469e10a1872de5",
    "jev_model": "jev-1.13.0",
    "jev_options": [
-    "dictionary",
-    "rules",
+    "dictionary_and_rules",
     "none"
    ],
-   "jev_p": 0.89,
+   "jev_p": 0.99,
    "jev_probabilities": {
-    "dictionary": 0.04,
-    "none": 0.07,
-    "rules": 0.89
+    "dictionary_and_rules": 0.99,
+    "none": 0.01
+   },
+   "previous_mapping": {
+    "confidence": 0.97,
+    "drug_classes": [],
+    "ingredients": [
+     "ibuprofen"
+    ],
+    "jev_choice": "rules"
    },
    "route": "oral",
    "rxnorm_ingredient_cui": "5640",
@@ -2668,25 +2804,35 @@
    "therapeutic_category": "nsaid"
   },
   "Ibuprofen 200 MG Oral Tablet": {
-   "confidence": 0.97,
+   "added_at": "2026-10-13",
+   "added_by": "normalization-incremental/1 remap",
+   "confidence": 0.96,
    "dose_form": "oral tablet",
-   "drug_classes": [],
+   "drug_classes": [
+    "nsaid"
+   ],
    "ingredients": [
     "ibuprofen"
    ],
-   "jev_choice": "rules",
-   "jev_input": "67b1a9b9b82687e270120c900ceb23776efc8e697036f861a9bbd56bf895d21d",
+   "jev_choice": "dictionary_and_rules",
+   "jev_input": "4d367abc4344b5c4cc1123827506ef8da35f2aa084702cdd4b7b76c7d181544d",
    "jev_model": "jev-1.13.0",
    "jev_options": [
-    "dictionary",
-    "rules",
+    "dictionary_and_rules",
     "none"
    ],
-   "jev_p": 0.9,
+   "jev_p": 0.98,
    "jev_probabilities": {
-    "dictionary": 0.04,
-    "none": 0.06,
-    "rules": 0.9
+    "dictionary_and_rules": 0.98,
+    "none": 0.02
+   },
+   "previous_mapping": {
+    "confidence": 0.97,
+    "drug_classes": [],
+    "ingredients": [
+     "ibuprofen"
+    ],
+    "jev_choice": "rules"
    },
    "route": "oral",
    "rxnorm_ingredient_cui": "5640",
@@ -2694,25 +2840,36 @@
    "therapeutic_category": "nsaid"
   },
   "Ibuprofen 400 MG Oral Tablet [Ibu]": {
-   "confidence": 0.96,
-   "dose_form": "tablet",
-   "drug_classes": [],
+   "added_at": "2026-10-13",
+   "added_by": "normalization-incremental/1 remap",
+   "confidence": 0.95,
+   "dose_form": "oral tablet",
+   "drug_classes": [
+    "nsaid"
+   ],
    "ingredients": [
     "ibuprofen"
    ],
-   "jev_choice": "rules",
-   "jev_input": "3509bba02f36be67c3fe605296064d694e1527d982008ed5047b28cb8a1ccd45",
+   "jev_choice": "dictionary_and_rules",
+   "jev_input": "d04937ba74ea87100c3d6abea398e9e03ad22bf3c11d02129297eb880e0eddf5",
    "jev_model": "jev-1.13.0",
    "jev_options": [
-    "dictionary",
-    "rules",
+    "dictionary_and_rules",
     "none"
    ],
-   "jev_p": 0.9,
+   "jev_p": 0.99,
    "jev_probabilities": {
-    "dictionary": 0.04,
-    "none": 0.06,
-    "rules": 0.9
+    "dictionary_and_rules": 0.99,
+    "none": 0.01
+   },
+   "note": "Branded product (Ibu).",
+   "previous_mapping": {
+    "confidence": 0.96,
+    "drug_classes": [],
+    "ingredients": [
+     "ibuprofen"
+    ],
+    "jev_choice": "rules"
    },
    "route": "oral",
    "rxnorm_ingredient_cui": "5640",
@@ -3075,25 +3232,35 @@
    "therapeutic_category": "mood stabilizer"
   },
   "Loratadine 10 MG Oral Tablet": {
-   "confidence": 0.95,
+   "added_at": "2026-10-13",
+   "added_by": "normalization-incremental/1 remap",
+   "confidence": 0.96,
    "dose_form": "oral tablet",
-   "drug_classes": [],
+   "drug_classes": [
+    "second_generation_antihistamine"
+   ],
    "ingredients": [
     "loratadine"
    ],
-   "jev_choice": "rules",
-   "jev_input": "287e7ee804f3f2407b73839653045a817b8772851c5931063df7a78dd8626e2f",
+   "jev_choice": "dictionary_and_rules",
+   "jev_input": "a7c5242a811c123ba70622068676b107ef41076511e53706595e599a7890fbdc",
    "jev_model": "jev-1.13.0",
    "jev_options": [
-    "dictionary",
-    "rules",
+    "dictionary_and_rules",
     "none"
    ],
-   "jev_p": 0.96,
+   "jev_p": 0.99,
    "jev_probabilities": {
-    "dictionary": 0.01,
-    "none": 0.03,
-    "rules": 0.96
+    "dictionary_and_rules": 0.99,
+    "none": 0.01
+   },
+   "previous_mapping": {
+    "confidence": 0.95,
+    "drug_classes": [],
+    "ingredients": [
+     "loratadine"
+    ],
+    "jev_choice": "rules"
    },
    "route": "oral",
    "rxnorm_ingredient_cui": "28889",
@@ -3101,25 +3268,35 @@
    "therapeutic_category": "antihistamine"
   },
   "Loratadine 5 MG Chewable Tablet": {
+   "added_at": "2026-10-13",
+   "added_by": "normalization-incremental/1 remap",
    "confidence": 0.95,
    "dose_form": "chewable tablet",
-   "drug_classes": [],
+   "drug_classes": [
+    "second_generation_antihistamine"
+   ],
    "ingredients": [
     "loratadine"
    ],
-   "jev_choice": "rules",
-   "jev_input": "a505768e2372a50318f6148083e13dea9e2ea447aaddb8b4ad2a45ef8a5902c8",
+   "jev_choice": "dictionary_and_rules",
+   "jev_input": "e38dbdf7711a6af8330c5b20c9dd775f610b3edfefd21f675e51b82aef12d5ef",
    "jev_model": "jev-1.13.0",
    "jev_options": [
-    "dictionary",
-    "rules",
+    "dictionary_and_rules",
     "none"
    ],
-   "jev_p": 0.95,
+   "jev_p": 0.98,
    "jev_probabilities": {
-    "dictionary": 0.01,
-    "none": 0.04,
-    "rules": 0.95
+    "dictionary_and_rules": 0.98,
+    "none": 0.02
+   },
+   "previous_mapping": {
+    "confidence": 0.95,
+    "drug_classes": [],
+    "ingredients": [
+     "loratadine"
+    ],
+    "jev_choice": "rules"
    },
    "route": "oral",
    "rxnorm_ingredient_cui": "28889",
@@ -3724,51 +3901,71 @@
    "therapeutic_category": "opioid antagonist"
   },
   "Naproxen": {
-   "confidence": 0.93,
+   "added_at": "2026-10-13",
+   "added_by": "normalization-incremental/1 remap",
+   "confidence": 0.96,
    "dose_form": null,
-   "drug_classes": [],
+   "drug_classes": [
+    "nsaid"
+   ],
    "ingredients": [
     "naproxen"
    ],
-   "jev_choice": "rules",
-   "jev_input": "bceb4d4fc522e32bbb224588d8bc8e23e8504ecdb941cfbd5cddab5a23277b2a",
+   "jev_choice": "dictionary_and_rules",
+   "jev_input": "c76a2e90ff47b8ed11d59be3d309047ed1f4af3826ef55d194618f649a26e203",
    "jev_model": "jev-1.13.0",
    "jev_options": [
-    "dictionary",
-    "rules",
+    "dictionary_and_rules",
     "none"
    ],
-   "jev_p": 0.93,
+   "jev_p": 0.98,
    "jev_probabilities": {
-    "dictionary": 0.03,
-    "none": 0.04,
-    "rules": 0.93
+    "dictionary_and_rules": 0.98,
+    "none": 0.02
    },
-   "route": "oral",
+   "previous_mapping": {
+    "confidence": 0.93,
+    "drug_classes": [],
+    "ingredients": [
+     "naproxen"
+    ],
+    "jev_choice": "rules"
+   },
+   "route": null,
    "rxnorm_ingredient_cui": "7258",
    "source_count": 4,
    "therapeutic_category": "nsaid"
   },
   "Naproxen 500 MG Oral Tablet": {
+   "added_at": "2026-10-13",
+   "added_by": "normalization-incremental/1 remap",
    "confidence": 0.96,
    "dose_form": "oral tablet",
-   "drug_classes": [],
+   "drug_classes": [
+    "nsaid"
+   ],
    "ingredients": [
     "naproxen"
    ],
-   "jev_choice": "rules",
-   "jev_input": "3b8866b4972de6184ca66cd13cd2cd7990ea78ba38bcb86e80a028d3323a4a63",
+   "jev_choice": "dictionary_and_rules",
+   "jev_input": "bdfedb884101d61a8f2922aad5167f63d660d93bb0fb50bb5221760e0d5afa7c",
    "jev_model": "jev-1.13.0",
    "jev_options": [
-    "dictionary",
-    "rules",
+    "dictionary_and_rules",
     "none"
    ],
-   "jev_p": 0.92,
+   "jev_p": 0.98,
    "jev_probabilities": {
-    "dictionary": 0.03,
-    "none": 0.05,
-    "rules": 0.92
+    "dictionary_and_rules": 0.98,
+    "none": 0.02
+   },
+   "previous_mapping": {
+    "confidence": 0.96,
+    "drug_classes": [],
+    "ingredients": [
+     "naproxen"
+    ],
+    "jev_choice": "rules"
    },
    "route": "oral",
    "rxnorm_ingredient_cui": "7258",
@@ -3776,25 +3973,36 @@
    "therapeutic_category": "nsaid"
   },
   "Naproxen sodium 220 MG Oral Tablet": {
-   "confidence": 0.95,
-   "dose_form": "tablet",
-   "drug_classes": [],
+   "added_at": "2026-10-13",
+   "added_by": "normalization-incremental/1 remap",
+   "confidence": 0.94,
+   "dose_form": "oral tablet",
+   "drug_classes": [
+    "nsaid"
+   ],
    "ingredients": [
     "naproxen"
    ],
-   "jev_choice": "rules",
-   "jev_input": "f1d363493e8454e2beb83147dcc8a3ff28c651bd583fb5115d901f1f0f4a41cf",
+   "jev_choice": "dictionary_and_rules",
+   "jev_input": "e90fb4e07cf8cd78279645f1e869751f48c03fb5918025faf72347c71c971118",
    "jev_model": "jev-1.13.0",
    "jev_options": [
-    "dictionary",
-    "rules",
+    "dictionary_and_rules",
     "none"
    ],
-   "jev_p": 0.88,
+   "jev_p": 0.75,
    "jev_probabilities": {
-    "dictionary": 0.02,
-    "none": 0.1,
-    "rules": 0.88
+    "dictionary_and_rules": 0.75,
+    "none": 0.25
+   },
+   "note": "Salt form is naproxen sodium; the CUI given is the ingredient-level naproxen CUI.",
+   "previous_mapping": {
+    "confidence": 0.95,
+    "drug_classes": [],
+    "ingredients": [
+     "naproxen"
+    ],
+    "jev_choice": "rules"
    },
    "route": "oral",
    "rxnorm_ingredient_cui": "7258",
@@ -3802,27 +4010,37 @@
    "therapeutic_category": "nsaid"
   },
   "Nitroglycerin 0.4 MG/ACTUAT Mucosal Spray": {
+   "added_at": "2026-10-13",
+   "added_by": "normalization-incremental/1 remap",
    "confidence": 0.95,
    "dose_form": "mucosal spray",
-   "drug_classes": [],
+   "drug_classes": [
+    "nitrate"
+   ],
    "ingredients": [
     "nitroglycerin"
    ],
-   "jev_choice": "rules",
-   "jev_input": "40c92a37060a2e86865cf02b7e1810fd2fc1086eca2af2f670636dc702db488b",
+   "jev_choice": "dictionary_and_rules",
+   "jev_input": "258a0966946bea26c3a1911742eafbe556a57f370a6cb56b52cf96b7b7b16392",
    "jev_model": "jev-1.13.0",
    "jev_options": [
-    "dictionary",
-    "rules",
+    "dictionary_and_rules",
     "none"
    ],
-   "jev_p": 0.9,
+   "jev_p": 0.97,
    "jev_probabilities": {
-    "dictionary": 0.05,
-    "none": 0.05,
-    "rules": 0.9
+    "dictionary_and_rules": 0.97,
+    "none": 0.03
    },
-   "route": "sublingual",
+   "previous_mapping": {
+    "confidence": 0.95,
+    "drug_classes": [],
+    "ingredients": [
+     "nitroglycerin"
+    ],
+    "jev_choice": "rules"
+   },
+   "route": "sublingual/oromucosal",
    "rxnorm_ingredient_cui": "4917",
    "source_count": 607,
    "therapeutic_category": "nitrate"
@@ -3924,27 +4142,37 @@
    "therapeutic_category": "somatostatin analogue"
   },
   "Omeprazole": {
-   "confidence": 0.95,
+   "added_at": "2026-10-13",
+   "added_by": "normalization-incremental/1 remap",
+   "confidence": 0.96,
    "dose_form": null,
-   "drug_classes": [],
+   "drug_classes": [
+    "proton_pump_inhibitor"
+   ],
    "ingredients": [
     "omeprazole"
    ],
-   "jev_choice": "rules",
-   "jev_input": "fd2cd300679b089bf645f5bdae2803c2d010789a322970f03e3df78469c25887",
+   "jev_choice": "dictionary_and_rules",
+   "jev_input": "d17281adde12693f57f20585501610c5dc8a8b07201cef6fc410707c078aa63f",
    "jev_model": "jev-1.13.0",
    "jev_options": [
-    "dictionary",
-    "rules",
+    "dictionary_and_rules",
     "none"
    ],
-   "jev_p": 0.93,
+   "jev_p": 0.97,
    "jev_probabilities": {
-    "dictionary": 0.04,
-    "none": 0.03,
-    "rules": 0.93
+    "dictionary_and_rules": 0.97,
+    "none": 0.03
    },
-   "route": "oral",
+   "previous_mapping": {
+    "confidence": 0.95,
+    "drug_classes": [],
+    "ingredients": [
+     "omeprazole"
+    ],
+    "jev_choice": "rules"
+   },
+   "route": null,
    "rxnorm_ingredient_cui": "7646",
    "source_count": 3,
    "therapeutic_category": "proton pump inhibitor"
@@ -4072,25 +4300,35 @@
    "therapeutic_category": "blood product transfusion"
   },
   "Pantoprazole": {
-   "confidence": 0.95,
+   "added_at": "2026-10-13",
+   "added_by": "normalization-incremental/1 remap",
+   "confidence": 0.96,
    "dose_form": null,
-   "drug_classes": [],
+   "drug_classes": [
+    "proton_pump_inhibitor"
+   ],
    "ingredients": [
     "pantoprazole"
    ],
-   "jev_choice": "rules",
-   "jev_input": "841d29a345f798692d0a8c8e8140f5c4af48a615bec57288c3049625ef76672c",
+   "jev_choice": "dictionary_and_rules",
+   "jev_input": "cc972609c50103f780a16ea54d81d4f6e5b07dd336000e8f074ade93275d456c",
    "jev_model": "jev-1.13.0",
    "jev_options": [
-    "dictionary",
-    "rules",
+    "dictionary_and_rules",
     "none"
    ],
-   "jev_p": 0.93,
+   "jev_p": 0.98,
    "jev_probabilities": {
-    "dictionary": 0.03,
-    "none": 0.04,
-    "rules": 0.93
+    "dictionary_and_rules": 0.98,
+    "none": 0.02
+   },
+   "previous_mapping": {
+    "confidence": 0.95,
+    "drug_classes": [],
+    "ingredients": [
+     "pantoprazole"
+    ],
+    "jev_choice": "rules"
    },
    "route": null,
    "rxnorm_ingredient_cui": "40790",
@@ -4218,30 +4456,40 @@
    "therapeutic_category": "vitamin supplement"
   },
   "Quetiapine": {
+   "added_at": "2026-10-13",
+   "added_by": "normalization-incremental/1 remap",
    "confidence": 0.95,
    "dose_form": null,
-   "drug_classes": [],
+   "drug_classes": [
+    "antipsychotic"
+   ],
    "ingredients": [
     "quetiapine"
    ],
-   "jev_choice": "rules",
-   "jev_input": "3f8e2361d31932f537f7e353a51cfe970b31f7c1c9822bc9a4a857d1b8fda285",
+   "jev_choice": "dictionary_and_rules",
+   "jev_input": "0b005a8397874b7de326ac1b36c50e7d7c9a17037c969d9f6d6396026f228064",
    "jev_model": "jev-1.13.0",
    "jev_options": [
-    "dictionary",
-    "rules",
+    "dictionary_and_rules",
     "none"
    ],
-   "jev_p": 0.95,
+   "jev_p": 0.99,
    "jev_probabilities": {
-    "dictionary": 0.03,
-    "none": 0.02,
-    "rules": 0.95
+    "dictionary_and_rules": 0.99,
+    "none": 0.01
    },
-   "route": "oral",
+   "previous_mapping": {
+    "confidence": 0.95,
+    "drug_classes": [],
+    "ingredients": [
+     "quetiapine"
+    ],
+    "jev_choice": "rules"
+   },
+   "route": null,
    "rxnorm_ingredient_cui": "51272",
    "source_count": 1,
-   "therapeutic_category": "atypical antipsychotic"
+   "therapeutic_category": "antipsychotic"
   },
   "Rasagiline": {
    "confidence": 0.88,
@@ -4268,25 +4516,35 @@
    "therapeutic_category": "antiparkinson (MAO-B inhibitor)"
   },
   "Risperidone": {
-   "confidence": 0.92,
+   "added_at": "2026-10-13",
+   "added_by": "normalization-incremental/1 remap",
+   "confidence": 0.95,
    "dose_form": null,
-   "drug_classes": [],
+   "drug_classes": [
+    "antipsychotic"
+   ],
    "ingredients": [
     "risperidone"
    ],
-   "jev_choice": "rules",
-   "jev_input": "c5a17524355d5c8390d50e29fccf54b0d54eeb0e2925db5134d5ecb292ef9fb5",
+   "jev_choice": "dictionary_and_rules",
+   "jev_input": "8047f9a4ec938cb7b6d7481ccfb87a17c57d7718939944d7ace48fe9894df367",
    "jev_model": "jev-1.13.0",
    "jev_options": [
-    "dictionary",
-    "rules",
+    "dictionary_and_rules",
     "none"
    ],
-   "jev_p": 0.94,
+   "jev_p": 0.99,
    "jev_probabilities": {
-    "dictionary": 0.03,
-    "none": 0.03,
-    "rules": 0.94
+    "dictionary_and_rules": 0.99,
+    "none": 0.01
+   },
+   "previous_mapping": {
+    "confidence": 0.92,
+    "drug_classes": [],
+    "ingredients": [
+     "risperidone"
+    ],
+    "jev_choice": "rules"
    },
    "route": null,
    "rxnorm_ingredient_cui": "35636",
@@ -4303,19 +4561,17 @@
     "sacubitril",
     "valsartan"
    ],
-   "jev_choice": "dictionary",
-   "jev_input": "5dbf9e1aeae9fcea01c5a12ffb70e1ca34760473c41040adbc38f9b6fa0ec43c",
+   "jev_choice": "dictionary_and_rules",
+   "jev_input": "29dec5c4d6db15c1e8a76d1c67f957f6a9752891b71492770cc732aaa4ace855",
    "jev_model": "jev-1.13.0",
    "jev_options": [
-    "dictionary",
-    "rules",
+    "dictionary_and_rules",
     "none"
    ],
-   "jev_p": 0.83,
+   "jev_p": 0.98,
    "jev_probabilities": {
-    "dictionary": 0.83,
-    "none": 0.02,
-    "rules": 0.15
+    "dictionary_and_rules": 0.98,
+    "none": 0.02
    },
    "route": "oral",
    "rxnorm_ingredient_cui": null,
@@ -4332,19 +4588,17 @@
     "sacubitril",
     "valsartan"
    ],
-   "jev_choice": "dictionary",
-   "jev_input": "cbdc1f70a1b584473445295d2db58139f75b702ca76f84ffde3432cf20d11e83",
+   "jev_choice": "dictionary_and_rules",
+   "jev_input": "32162bb6b2254c40ee1bae4f6f5e28cbed45bf119d96b626b8ee304f4dc60bba",
    "jev_model": "jev-1.13.0",
    "jev_options": [
-    "dictionary",
-    "rules",
+    "dictionary_and_rules",
     "none"
    ],
-   "jev_p": 0.8,
+   "jev_p": 0.98,
    "jev_probabilities": {
-    "dictionary": 0.8,
-    "none": 0.02,
-    "rules": 0.18
+    "dictionary_and_rules": 0.98,
+    "none": 0.02
    },
    "route": "oral",
    "rxnorm_ingredient_cui": null,
@@ -4658,23 +4912,38 @@
    "therapeutic_category": "alpha blocker (BPH)"
   },
   "Terfenadine 60 MG Oral Tablet": {
-   "confidence": 0.9,
+   "added_at": "2026-10-13",
+   "added_by": "normalization-incremental/1 remap",
+   "confidence": 0.85,
    "dose_form": "oral tablet",
-   "drug_classes": [],
+   "drug_classes": [
+    "second_generation_antihistamine"
+   ],
    "ingredients": [
     "terfenadine"
    ],
-   "jev_choice": "none",
-   "jev_input": "746f4ed1db80f5a5c6fa1f4cda95c6288a74446589287c42487ace35c2ab4864",
+   "jev_choice": "dictionary",
+   "jev_input": "e6ca3e1c8f69b9a67e6d61eb3c1ad1649defbb175443ef08c349b0511e37961e",
    "jev_model": "jev-1.13.0",
    "jev_options": [
-    "dictionary_and_rules",
+    "dictionary",
+    "rules",
     "none"
    ],
-   "jev_p": 0.53,
+   "jev_p": 0.47,
    "jev_probabilities": {
-    "dictionary_and_rules": 0.47,
-    "none": 0.53
+    "dictionary": 0.47,
+    "none": 0.19,
+    "rules": 0.34
+   },
+   "note": "Withdrawn product. The ingredient CUI is left null because it is not confidently known.",
+   "previous_mapping": {
+    "confidence": 0.9,
+    "drug_classes": [],
+    "ingredients": [
+     "terfenadine"
+    ],
+    "jev_choice": "none"
    },
    "route": "oral",
    "rxnorm_ingredient_cui": null,
@@ -6032,25 +6301,35 @@
    "therapeutic_category": "antihypertensive"
   },
   "cetirizine hydrochloride 5 MG Oral Tablet": {
-   "confidence": 0.94,
+   "added_at": "2026-10-13",
+   "added_by": "normalization-incremental/1 remap",
+   "confidence": 0.95,
    "dose_form": "oral tablet",
-   "drug_classes": [],
+   "drug_classes": [
+    "second_generation_antihistamine"
+   ],
    "ingredients": [
     "cetirizine"
    ],
-   "jev_choice": "rules",
-   "jev_input": "78e8bb0f2bdf7d54ef9bd0f74f469e32a48a7db0f4995d087d19d71dc549398c",
+   "jev_choice": "dictionary_and_rules",
+   "jev_input": "6b624e341f8c3f3f08ee3ca1eb90b8001331bdfa3392933073fe2ee1a6890fa9",
    "jev_model": "jev-1.13.0",
    "jev_options": [
-    "dictionary",
-    "rules",
+    "dictionary_and_rules",
     "none"
    ],
-   "jev_p": 0.97,
+   "jev_p": 0.99,
    "jev_probabilities": {
-    "dictionary": 0.01,
-    "none": 0.02,
-    "rules": 0.97
+    "dictionary_and_rules": 0.99,
+    "none": 0.01
+   },
+   "previous_mapping": {
+    "confidence": 0.94,
+    "drug_classes": [],
+    "ingredients": [
+     "cetirizine"
+    ],
+    "jev_choice": "rules"
    },
    "route": "oral",
    "rxnorm_ingredient_cui": "20610",
@@ -6137,25 +6416,35 @@
    "therapeutic_category": "antiretroviral"
   },
   "diphenhydrAMINE Hydrochloride 25 MG Oral Tablet": {
-   "confidence": 0.95,
+   "added_at": "2026-10-13",
+   "added_by": "normalization-incremental/1 remap",
+   "confidence": 0.96,
    "dose_form": "oral tablet",
-   "drug_classes": [],
+   "drug_classes": [
+    "first_generation_antihistamine"
+   ],
    "ingredients": [
     "diphenhydramine"
    ],
-   "jev_choice": "rules",
-   "jev_input": "ea312e4786e5dbe4c340d9009012f5e4da6bf6e3ea1f86fe3bb4a65b4ad035bc",
+   "jev_choice": "dictionary_and_rules",
+   "jev_input": "d31986e41bad9be14b7b3e703b6f66d2006bf50a20cc178ac21ad43e9db0c639",
    "jev_model": "jev-1.13.0",
    "jev_options": [
-    "dictionary",
-    "rules",
+    "dictionary_and_rules",
     "none"
    ],
-   "jev_p": 0.99,
+   "jev_p": 0.98,
    "jev_probabilities": {
-    "dictionary": 0.0,
-    "none": 0.01,
-    "rules": 0.99
+    "dictionary_and_rules": 0.98,
+    "none": 0.02
+   },
+   "previous_mapping": {
+    "confidence": 0.95,
+    "drug_classes": [],
+    "ingredients": [
+     "diphenhydramine"
+    ],
+    "jev_choice": "rules"
    },
    "route": "oral",
    "rxnorm_ingredient_cui": "3498",
@@ -6340,55 +6629,77 @@
    "therapeutic_category": "antihypertensive"
   },
   "ferrous sulfate 325 MG Oral Tablet": {
-   "confidence": 0.9,
-   "dose_form": "oral tablet",
-   "drug_classes": [],
+   "added_at": "2026-10-13",
+   "added_by": "normalization-incremental/1 remap",
+   "confidence": 0.95,
+   "dose_form": "Oral Tablet",
+   "drug_classes": [
+    "iron_supplement"
+   ],
    "ingredients": [
     "ferrous sulfate"
    ],
-   "jev_choice": "rules",
-   "jev_input": "328a0d7eb17fca4c65f8aa557647a61ebedfa3017335200b4ebc7d43e8e8cdf0",
+   "jev_choice": "dictionary_and_rules",
+   "jev_input": "8255b8a7840486cdb12c2aedc71713a0c55e65d1b3223e17cbf769edcd11fa2d",
    "jev_model": "jev-1.13.0",
    "jev_options": [
-    "dictionary",
-    "rules",
+    "dictionary_and_rules",
     "none"
    ],
-   "jev_p": 0.93,
+   "jev_p": 0.99,
    "jev_probabilities": {
-    "dictionary": 0.05,
-    "none": 0.02,
-    "rules": 0.93
+    "dictionary_and_rules": 0.99,
+    "none": 0.01
+   },
+   "previous_mapping": {
+    "confidence": 0.9,
+    "drug_classes": [],
+    "ingredients": [
+     "ferrous sulfate"
+    ],
+    "jev_choice": "rules"
    },
    "route": "oral",
-   "rxnorm_ingredient_cui": null,
+   "rxnorm_ingredient_cui": "24947",
    "source_count": 172,
+   "strength": "325 mg",
    "therapeutic_category": "iron supplement"
   },
   "ferrous sulfate 325 mg (65 mg elemental iron) tablet": {
-   "confidence": 0.9,
-   "dose_form": "tablet",
-   "drug_classes": [],
+   "added_at": "2026-10-13",
+   "added_by": "normalization-incremental/1 remap",
+   "confidence": 0.94,
+   "dose_form": "Oral Tablet",
+   "drug_classes": [
+    "iron_supplement"
+   ],
    "ingredients": [
     "ferrous sulfate"
    ],
-   "jev_choice": "rules",
-   "jev_input": "0c52f96226968b7212408a1d1c938b30c60a9e004e01b1cc7b787cb44741636d",
+   "jev_choice": "dictionary_and_rules",
+   "jev_input": "7b2c9dfac22bd65dc60f854a3c19a4a4127a1f001c5d2bc9e0b56e311e369386",
    "jev_model": "jev-1.13.0",
    "jev_options": [
-    "dictionary",
-    "rules",
+    "dictionary_and_rules",
     "none"
    ],
-   "jev_p": 0.95,
+   "jev_p": 0.99,
    "jev_probabilities": {
-    "dictionary": 0.03,
-    "none": 0.02,
-    "rules": 0.95
+    "dictionary_and_rules": 0.99,
+    "none": 0.01
+   },
+   "previous_mapping": {
+    "confidence": 0.9,
+    "drug_classes": [],
+    "ingredients": [
+     "ferrous sulfate"
+    ],
+    "jev_choice": "rules"
    },
    "route": "oral",
    "rxnorm_ingredient_cui": "24947",
    "source_count": 5313,
+   "strength": "325 mg (65 mg elemental iron)",
    "therapeutic_category": "iron supplement"
   },
   "fluticasone propionate HFA 44 mcg/actuation": {
@@ -7271,29 +7582,40 @@
    "therapeutic_category": "antihypertensive"
   },
   "loratadine 5 mg chewable tablet": {
+   "added_at": "2026-10-13",
+   "added_by": "normalization-incremental/1 remap",
    "confidence": 0.95,
-   "dose_form": "chewable tablet",
-   "drug_classes": [],
+   "dose_form": "Chewable Tablet",
+   "drug_classes": [
+    "second_generation_antihistamine"
+   ],
    "ingredients": [
     "loratadine"
    ],
-   "jev_choice": "rules",
-   "jev_input": "668d2a44be6f4b88a4e2a18a2159bdba6e46488d2b0f5d6d68880dff1f1e5cbe",
+   "jev_choice": "dictionary_and_rules",
+   "jev_input": "79df1b5eb18e9dc89c26e110f96f6e43eb3978e7d49055719048064bd47b69dd",
    "jev_model": "jev-1.13.0",
    "jev_options": [
-    "dictionary",
-    "rules",
+    "dictionary_and_rules",
     "none"
    ],
-   "jev_p": 0.99,
+   "jev_p": 0.98,
    "jev_probabilities": {
-    "dictionary": 0.0,
-    "none": 0.01,
-    "rules": 0.99
+    "dictionary_and_rules": 0.98,
+    "none": 0.02
+   },
+   "previous_mapping": {
+    "confidence": 0.95,
+    "drug_classes": [],
+    "ingredients": [
+     "loratadine"
+    ],
+    "jev_choice": "rules"
    },
    "route": "oral",
    "rxnorm_ingredient_cui": "28889",
    "source_count": 1814,
+   "strength": "5 mg",
    "therapeutic_category": "antihistamine"
   },
   "losartan 100 mg tablet": {
@@ -8032,19 +8354,17 @@
     "sacubitril",
     "valsartan"
    ],
-   "jev_choice": "dictionary",
-   "jev_input": "7cc6da3e8bd5064da57b0b0d5930b9a944c4e24ad379790d9d4cde857b49630c",
+   "jev_choice": "dictionary_and_rules",
+   "jev_input": "461ffee8ef5b1cab9351cef117a0f679bea26bb2c433163432f22d5c1e57870f",
    "jev_model": "jev-1.13.0",
    "jev_options": [
-    "dictionary",
-    "rules",
+    "dictionary_and_rules",
     "none"
    ],
-   "jev_p": 0.81,
+   "jev_p": 0.99,
    "jev_probabilities": {
-    "dictionary": 0.81,
-    "none": 0.02,
-    "rules": 0.17
+    "dictionary_and_rules": 0.99,
+    "none": 0.01
    },
    "route": "oral",
    "rxnorm_ingredient_cui": [

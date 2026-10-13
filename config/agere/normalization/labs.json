@@ -1025,6 +1025,61 @@
    "source_count": 1204,
    "specimen": "serum/plasma"
   },
+  "Cholesterol in HDL": {
+   "added_at": "2026-10-13",
+   "added_by": "normalization-incremental/1",
+   "agere_concept": "hdl",
+   "canonical_unit": "mg/dL",
+   "category": "lipid",
+   "component": "Cholesterol in HDL",
+   "confidence": 0.95,
+   "factor_to_canonical": 1,
+   "jev_choice": "dictionary",
+   "jev_input": "35144334a7eed0128d73314672b8773601b5460ab40d6740cea3e2a87e033af2",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary",
+    "none"
+   ],
+   "jev_p": 1.0,
+   "jev_probabilities": {
+    "dictionary": 1.0,
+    "none": 0.0
+   },
+   "loinc": "2085-9",
+   "property": "mass concentration",
+   "source_count": 602,
+   "source_release": "healthcare-warehouse-v2.0",
+   "specimen": "serum/plasma"
+  },
+  "Cholesterol in LDL": {
+   "added_at": "2026-10-13",
+   "added_by": "normalization-incremental/1",
+   "agere_concept": "ldl",
+   "canonical_unit": "mg/dL",
+   "category": "lipid",
+   "component": "Cholesterol in LDL",
+   "confidence": 0.85,
+   "factor_to_canonical": 1,
+   "jev_choice": "dictionary",
+   "jev_input": "8c2d6b3c52ada29a578a65aed61b649b1f29e86e630bdb6d014ba7df3c3bd946",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary",
+    "none"
+   ],
+   "jev_p": 1.0,
+   "jev_probabilities": {
+    "dictionary": 1.0,
+    "none": 0.0
+   },
+   "loinc": "2089-1",
+   "note": "The method is not stated. 2089-1 is the generic or direct LDL code. If the source is a calculated LDL (Friedewald or similar), use 13457-7 instead. Check with the source system.",
+   "property": "mass concentration",
+   "source_count": 602,
+   "source_release": "healthcare-warehouse-v2.0",
+   "specimen": "serum/plasma"
+  },
   "Cladosporium herbarum IgE Ab": {
    "agere_concept": null,
    "canonical_unit": "kU/L",

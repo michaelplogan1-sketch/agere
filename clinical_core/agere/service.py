@@ -756,6 +756,10 @@ def serve(run,port,annotations=None,evidence_queries=None,stack=None,allow_live_
                 if connected_stack is None:self.send_error(404);return
                 from .clinical.learning import summary as learning_summary
                 raw=json.dumps(learning_summary(connected_stack.path)).encode();mime='application/json'
+            elif parsed.path=='/api/stack/learning-loop':  # read-only summary of the last tools/learning_loop run
+                if connected_stack is None:self.send_error(404);return
+                from .clinical.learning import loop_summary
+                raw=json.dumps(loop_summary(connected_stack.path),default=str).encode();mime='application/json'
             elif parsed.path=='/api/stack/briefing':
                 if connected_stack is None:self.send_error(404);return
                 from .clinical.briefing import cached as briefing
