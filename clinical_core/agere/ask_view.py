@@ -19,6 +19,7 @@ details{margin-top:10px}summary{cursor:pointer;color:var(--muted);font-size:13px
 <h1>Agere</h1><p class="sub">Ask about the population, care, cost or data. Agere plans the question itself; a hosted model is used only when it must be.</p>
 <form id="f"><input id="q" placeholder="e.g. Which CKD patients have a declining eGFR?" autocomplete="off"><button id="b">Ask</button></form>
 <div class="examples" id="ex"></div><div id="out"></div>
+<h1 style="margin-top:28px">Briefing</h1><p class="sub">What stands out in the data right now, computed locally without a question.</p><div id="brief" class="meta">Loading…</div>
 <script>
 const EX=["How many patients have diabetes with A1c over 9?","Which CKD patients have a declining eGFR?","What is our allowed PMPM by payer?",
 "Which PCPs have the highest emergency department utilization, adjusted for case mix?","Why did ED visits go up from 2027 to 2028?",
@@ -42,6 +43,9 @@ async function ask(e){if(e)e.preventDefault();const question=q.value.trim();if(!
   if(a.missing&&a.missing.length)html+='<details open><summary>Not covered</summary><pre>'+esc(a.missing.join('\n'))+'</pre></details>';
   out.innerHTML=html+'</div>'}catch(err){out.innerHTML='<div class="card warn">'+esc(err)+'</div>'}finally{b.disabled=false}}
 document.getElementById('f').onsubmit=ask;
+fetch('/api/stack/briefing').then(r=>r.json()).then(d=>{const el=document.getElementById('brief');
+ el.innerHTML=(d.cards||[]).slice(0,10).map(c=>'<div class="card"><div class="meta"><b>'+esc(c.kind)+'</b> · '+esc(c.topic)+'</div><div class="headline" style="font-size:15px">'+esc(c.headline)+'</div><div class="meta"><a style="color:var(--accent);cursor:pointer" data-q="'+esc(c.follow_up)+'">'+esc(c.follow_up)+' →</a></div></div>').join('')||'No significant findings.';
+ el.querySelectorAll('a[data-q]').forEach(a=>a.onclick=()=>{q.value=a.dataset.q;window.scrollTo(0,0);ask()})}).catch(()=>{document.getElementById('brief').textContent='Briefing unavailable.'});
 </script></main></body></html>"""
 
 
