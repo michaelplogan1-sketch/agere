@@ -358,7 +358,32 @@ function vizScalar(a){if(a.answer_type==='count'||a.answer_type==='value'){const
   return '<section class="sec"><div class="big">'+fmt(a.count!=null?a.count:ids.length)+'</div><div class="muted">patients'+(a.unknown_count?' · '+fmt(a.unknown_count)+' could not be evaluated':'')+'</div>'+
    (ids.length?'<details open><summary>'+ids.length+' patient IDs</summary><div class="pids">'+ids.slice(0,300).map(i=>'<span>'+esc(i)+'</span>').join('')+'</div>'+(ids.length>300?'<p class="hint">First 300 shown; the CSV has all.</p>':'')+csvButton(rows,'patients')+'</details>':'')+'</section>'}
  return ''}
+/* care pathway: transition-probability heatmap (rows = from, columns = to) + reach/conformance/leakage KPIs + path variants */
+const PW={emergency:'ED',inpatient:'Inpatient',observation:'Obs',urgent_care:'Urgent',primary_care:'PCP',specialty:'Specialty',telehealth:'Tele',
+ post_acute:'Post-acute',outside:'Outside',other:'Other',discharge:'Discharge',referral:'Referral',diagnosis:'Diagnosis',end:'No contact'};
+const pw=s=>PW[s]||label(s);
+function pathMatrix(m,start){const st=m.states||[],P=m.probabilities||[],N=m.counts||[];const rows=st.filter((s,i)=>s!=='end'&&(N[i]||[]).some(x=>x>0));
+ const W=CW(),L=78,T=58,cw=Math.max(26,Math.min(52,Math.floor((W-L-8)/st.length))),ch=24,H=T+rows.length*ch+8;let s=svgOpen(L+cw*st.length+8,H,'Transition probabilities from each state (row) to the next (column)');
+ st.forEach((c,j)=>{s+='<text transform="translate('+(L+j*cw+cw/2)+','+(T-6)+') rotate(-40)" style="fill:var(--fg)">'+esc(pw(c))+'</text>'});
+ rows.forEach((r,k)=>{const i=st.indexOf(r),y=T+k*ch,n=(N[i]||[]).reduce((x,y)=>x+y,0);
+  s+='<text x="'+(L-6)+'" y="'+(y+ch/2+4)+'" text-anchor="end" style="fill:var(--fg);font-weight:'+(r===start?700:400)+'">'+esc(pw(r))+'</text>';
+  st.forEach((c,j)=>{const p=(P[i]||[])[j]||0,x=L+j*cw;s+='<g><title>'+esc(pw(r)+' → '+pw(c)+': '+pct(p)+' ('+((N[i]||[])[j]||0)+' of '+n+')')+'</title>'+
+   '<rect x="'+x+'" y="'+y+'" width="'+(cw-2)+'" height="'+(ch-2)+'" rx="3" style="fill:var(--s1);fill-opacity:'+(p>0?(.08+.92*p).toFixed(3):0)+';stroke:var(--line)"/>'+
+   (p>=.005?'<text x="'+(x+cw/2-1)+'" y="'+(y+ch/2+4)+'" text-anchor="middle" style="fill:'+(p>.55?'var(--card)':'var(--fg)')+';font-size:11px">'+Math.round(100*p)+'</text>':'')+'</g>'})});
+ return s+'</svg>'}
+function vizPathway(a){const o=a.overall||{},p=o.parameters||{},start=p.start||'';let h='<section class="sec" data-focus="flow"><h3>Care pathway'+(start?' after '+esc(pw(start)):'')+
+ ' · '+esc(fmt(o.transitions))+' transitions, '+esc(fmt(o.patients))+' patients</h3>';const k=[];const c=o.conformance;
+ if(c&&c.occurrences)k.push([pw(c.from)+' → '+c.to.map(pw).join('/')+' ≤'+c.within_days+'d',pct(c.share)+' <span class="muted" style="font-size:12px">'+pct(c.ci95_low)+'–'+pct(c.ci95_high)+'</span>']);
+ Object.entries(o.reach||{}).forEach(([t,rs])=>{const r=(rs||[])[c?0:rs.length-1];if(r&&r.anchors)k.push([pw(t)+' within '+r.days+'d',pct(r.share)+' <span class="muted" style="font-size:12px">'+pct(r.ci95_low)+'–'+pct(r.ci95_high)+'</span>'])});
+ const lk=o.leakage||{};if(lk.transitions)k.push(['Leakage to outside',pct(lk.share,2)]);if(o.chain)k.push(['Expected steps in care',fmt(o.chain.expected_steps)]);
+ if(k.length)h+='<div class="kpis">'+k.map(x=>'<div class="kpi"><div class="l">'+esc(x[0])+'</div><div class="v">'+x[1]+'</div></div>').join('')+'</div>';
+ if(o.matrix)h+='<p class="hint">Row = current step, column = next step; cells are % of the row ('+esc(fmt(p.window_days))+'-day window; “No contact” = nothing further recorded).</p>'+pathMatrix(o.matrix,start);
+ (o.acute_data_gaps||[]).forEach(g=>{h+='<p class="hint">ED/inpatient records absent '+esc(g.start)+'..'+esc(g.end)+' (feed defect): windows overlapping it are excluded.</p>'});
+ if(o.variants&&o.variants.length)h+=tableHTML(o.variants.map(v=>({path:v.states.map(pw).join(' → '),count:v.count,share:v.share,ci95_low:v.ci95_low,ci95_high:v.ci95_high})),{name:'pathway-variants',caption:'Most common paths'});
+ if(o.groups&&o.groups.tests&&o.groups.tests.length)h+=tableHTML(o.groups.tests,{name:'pathway-group-tests',caption:'Do next steps differ by '+label(o.groups.by)+'? (permutation test)'});
+ return h+'</section>'}
 function visual(a){if(!a||a.answer_type==='unsupported')return '';const o=a.overall||{};
+ if(o.matrix&&o.states)return vizPathway(a);
  if(o.curves)return vizSurvival(a);if(o.charts||(o.tests_examined!=null&&o.look_elsewhere_bits!=null))return vizMonitor(a);if(o.did)return vizEffect(a);if(o.portfolio&&o.by_group)return vizOutreach(a);
  const v=vizVBC(a);if(v)return v;if(a.answer_type==='table'){const t=vizTrajectory(a);if(t)return t;return vizTable(a)}return vizScalar(a)}
 

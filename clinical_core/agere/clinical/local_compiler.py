@@ -413,6 +413,9 @@ def compile(question, profile, as_of):
     plan = _outreach_question(q, profile, as_of)  # before paraphrase: it rewrites "<x> outreach list" for plain patient lists
     if plan is not None:
         return plan
+    plan = _pathway_question(q, profile, as_of)  # care paths / journeys / leakage, before paraphrase rewrites the wording
+    if plan is not None:
+        return plan
     q, paraphrased = _paraphrase(q, as_of)
     named =re.search(r'(?:^|[.;?] |, )(?:give(?: me)?|return|show|columns?(?: named)?|with columns?|output)\s*:?\s*([a-z][a-z_]*)\s*(?:,|and|&)\s*([a-z]+_[a-z_]+)\.?\s*$', q)
     columns = None
@@ -1836,3 +1839,137 @@ def _program_effect_question(q, profile):
     return {'interpretation': q, 'coverage': 'supported_observation', 'unmet_requirements': [],
             'nodes': [{'id': 'answer', 'operation': 'program_effect', 'inputs': [], 'parameters': params,
                        'purpose': f'Estimated effect of {label} on {lab or outcome} under stated assumptions (matched DiD, diagnostics)'}]}, info
+
+
+# ---- care pathways: transitions, journeys, leakage ---------------------------------------
+PATHWAY_INTENT = (r'\bcare (?:path(?:way)?s?|journeys?|flows?|sequences?|trajector(?:y|ies))\b|\bclinical pathways?\b|\bpatient (?:journeys?|flows?|paths?)\b|'
+                  r'\bjourneys?\b|\bwhere (?:do|did|does) (?:\w+ ){0,4}(?:go|end up|head|turn up)\b|\bleak(?:s|ed|ing|age)?\b|\bout[- ]of[- ]network\b|'
+                  r'\bwhat happens (?:\w+ ){0,4}after\b|\bflow of patients\b|\bflows? (?:through|after|from)\b|\bmove (?:through|between) (?:care|settings|the system)\b|'
+                  r'\b(?:most )?(?:common|frequent|typical) (?:care )?(?:paths?|routes?|sequences?)\b|\bmarkov\b|\bsankey\b|\btransition (?:matrix|probabilit(?:y|ies))\b|'
+                  r'\bends? up (?:being )?(?:admitted|hospitali[sz]ed|in the (?:ed|er|hospital))\b.*\bstarting (?:from|with|at)\b')
+PATHWAY_STATES = [  # longest aliases first within each state
+    ('emergency', ['emergency department visits', 'emergency department visit', 'emergency room visits', 'emergency room visit', 'emergency visits',
+                   'emergency visit', 'emergency department', 'emergency room', 'ed visits', 'ed visit', 'er visits', 'er visit', 'ed', 'er']),
+    ('discharge', ['hospital discharges', 'hospital discharge', 'inpatient discharge', 'discharges', 'discharge', 'being discharged', 'discharged']),
+    ('observation', ['observation stays', 'observation stay', 'observation']),
+    ('inpatient', ['inpatient admissions', 'inpatient admission', 'hospital admissions', 'hospital admission', 'hospitalizations', 'hospitalization',
+                   'hospitalisations', 'hospitalisation', 'inpatient stays', 'inpatient stay', 'admissions', 'admission', 'inpatient']),
+    ('urgent_care', ['urgent care visits', 'urgent care visit', 'urgent care']),
+    ('primary_care', ['primary care visits', 'primary care visit', 'pcp visits', 'pcp visit', 'office visits', 'office visit', 'primary care', 'pcp']),
+    ('specialty', ['specialist visits', 'specialist visit', 'specialty visits', 'specialty visit', 'specialty care', 'specialists', 'specialist']),
+    ('telehealth', ['telehealth visits', 'telehealth visit', 'virtual visits', 'virtual visit', 'telehealth']),
+    ('referral', ['referrals', 'referral']),
+]
+PATHWAY_START = (r'\b(?:after|following|post|from|starting (?:from|with|at)|beginning (?:from|with|at)|leaving)'
+                 r'(?: (?:an?|the|their|each|every|a recent|recent|hospital))*[- ]({})\b')
+PATHWAY_FOLLOWUP = r'(?:outpatient |clinic )?follow[- ]?ups?(?: (?:visits?|care|appointments?|contacts?))?\b'
+PATHWAY_NUMBERS = {'one': 1, 'two': 2, 'three': 3, 'four': 4, 'five': 5, 'six': 6, 'seven': 7}
+
+
+def _pathway_alias(state):
+    return '|'.join(re.escape(a) for a in dict(PATHWAY_STATES)[state])
+
+
+def _pathway_question(q, profile, as_of):
+    """Care-pathway questions -> pathway operator, or decline (fallback) when anything meaningful is left unexplained."""
+    low = _strip_framing(q.lower())
+    if not re.search(PATHWAY_INTENT, low): return None
+    info = {'compiler': VERSION, 'recognised': [], 'paraphrased': [], 'route': 'local_compiler'}
+    decline = lambda reason: (None, {**info, 'route': 'fallback', 'reason': reason})
+    if re.search(r'\bcash flow\b|\bfund(?:s|ing)? flow\b|\bclaims? flow\b|\bby (?:month|quarter|year|week)\b|\bmonthly\b|\bquarterly\b', low):
+        return decline('pathway wording with a time-series or financial meaning')
+    r = Reader(low); r.profile = profile; info['recognised'] = r.notes
+    params = {}
+    starts = []
+    any_state = '|'.join(re.escape(a) for _, al in PATHWAY_STATES for a in al)
+    if re.search(PATHWAY_START.format(any_state) + r'(?: visits?)? (?:or|and|vs\.?|versus) (?:an? |the |after |following )*(?:' + any_state + r')\b', low):
+        return decline('more than one starting point named')
+    for state, _ in PATHWAY_STATES:
+        if r.take(PATHWAY_START.format(_pathway_alias(state)), f'start {state}'): starts.append(state)
+    any_condition = '|'.join(re.escape(a) for al in CONDITION_ALIASES.values() for a in sorted(al, key=len, reverse=True))
+    new = r.take(r'\b(?:new(?:ly)?(?: diagnosed)?|incident|recently diagnosed)\b(?= (?:\w+ )?(?:' + any_condition + r'))', 'newly diagnosed')
+    diagnosis = r.take(r'\b(?:after|since|from|following) (?:(?:their|the|first|initial|a) )*(?:diagnosis|dx)\b', 'start diagnosis')
+    conditions = []
+    for c, aliases in CONDITION_ALIASES.items():
+        for alias in sorted(aliases, key=len, reverse=True):
+            if r.take(_alias_pattern(alias), f'condition {c}'): conditions.append(c); break
+    if new or diagnosis:
+        if len(conditions) != 1: return decline('newly diagnosed needs exactly one named condition')
+        starts.append('diagnosis'); params['index_concept'] = conditions[0]; params['anchor'] = 'first'
+    if len(set(starts)) > 1: return decline('more than one starting point named: ' + ', '.join(sorted(set(starts))))
+    if starts: params['start'] = starts[0]
+    steps = r.take(r'\bwithin (\d{1,2}|two|three|four|five) (?:steps?|transitions?|moves?|hops?)\b', 'max steps')
+    if steps:
+        v = steps[0].group(1); params['max_steps'] = int(v) if v.isdigit() else PATHWAY_NUMBERS[v]
+    days = None
+    for m in r.take(r'\b(?:within|in|over|during|inside|by) (?:the )?(?:first |next |following )?(\d{1,3}|one|two|three|four|six|seven) (days?|weeks?|months?)\b', 'window'):
+        n = int(m.group(1)) if m.group(1).isdigit() else PATHWAY_NUMBERS[m.group(1)]
+        days = int(round(n * {'d': 1, 'w': 7, 'm': 30.44}[m.group(2)[0]]))
+    for m in r.take(r'\b(\d{1,3})[- ]days?\b', 'window'):
+        days = int(m.group(1))
+    if days is not None and not 1 <= days <= 730: return decline('pathway window must be 1..730 days')
+    targets = []
+    if r.take(r'\b(?:return(?:s|ed|ing)?|come(?:s)? back|bounce(?:s|d)? back|go(?:es)? back|revisit(?:s)?)(?: visits?)? (?:to )?(?:the )?(?:ed|er|emergency(?: department| room)?)\b|'
+              r'\b(?:ed|er) (?:returns?|revisits?|bounce[- ]?backs?)\b|\b(?:end|ends|ending) up (?:back )?in the (?:ed|er|emergency(?: department| room)?)\b', 'target emergency'):
+        targets.append('emergency')
+    if r.take(r'\b(?:(?:end|ends|ending) up |being |get |gets |getting |is |are )?(?:admitted|hospitali[sz]ed|readmitted)\b|\b(?:re)?admissions?\b|'
+              r'\bhospitali[sz]ations?\b|\binpatient(?: stays?)?\b', 'target inpatient'):
+        targets.append('inpatient')
+    expected = None
+    fu = r.take(r'\b(?:(?:get|gets|getting|got|have|has|had|receive|received|see|seen|with) )?(?:an? )?(?:(primary care|pcp|specialist|specialty|telehealth)(?: visit)? )?'
+                + PATHWAY_FOLLOWUP, 'expected follow-up')
+    if not fu:
+        fu = r.take(r'\b(?:get|gets|getting|got|have|has|had|receive|received|see|seen) (?:an? )?(primary care|pcp|specialist|specialty|telehealth)(?: visits?)?\b', 'expected visit')
+    if fu:
+        to = {'primary care': ['primary_care'], 'pcp': ['primary_care'], 'specialist': ['specialty'], 'specialty': ['specialty'],
+              'telehealth': ['telehealth']}.get(fu[0].group(1), ['primary_care', 'specialty', 'telehealth'])
+        if 'start' not in params: return decline('an expected follow-up needs a starting point (after an ED visit, after discharge...)')
+        expected = {'from': params['start'], 'to': to, 'within_days': days or 7}
+    if targets: params['targets'] = targets
+    leak = r.take(r'\bleak(?:s|ed|ing|age)?(?: out)?(?: of (?:the )?network)?\b|\bout[- ]of[- ]network\b|\boutside (?:the )?(?:network|organi[sz]ations?|providers?|system)\b', 'leakage')
+    if r.take(r'\b(?:other|outside (?:their|the|of their)) (?:practices?|clinics?)\b|\boutside (?:their|of their) (?:own |attributed )?practice\b', 'leakage incl. other practices'):
+        params['leakage'] = 'organization_or_practice'
+    paths = r.take(r'\b(?:the )?(?:top (\d{1,2}) )?(?:most )?(?:common|frequent|typical|usual) (?:care )?(?:paths?|journeys?|routes?|sequences?|pathways?)\b', 'path variants')
+    if paths and paths[0].group(1): params['top'] = min(50, int(paths[0].group(1)))
+    if r.take(r'\bsecond[- ]order\b', 'second order'): params['order'] = 2
+    if r.take(r'\bby (?:attributed )?(?:practice|clinic)s?\b|\b(?:compar(?:e|ed|ing)(?: across| between)?|across|between|which) (?:the |our )?(?:practices|clinics)\b', 'group by practice'):
+        params['group_by'] = 'practice'
+    elif r.take(r'\bby (?:payer|payor|coverage(?: type)?|insurance(?: type)?|plan type)\b|'
+                r'\b(?:compar(?:e|ed|ing)(?: across| between)?|across|between|which) (?:the |our )?(?:payers|payors|insurers|plans)\b', 'group by payer'):
+        params['group_by'] = 'coverage_type'
+    period = _take_period(r, as_of)
+    if period: params['period'] = {'start': period[0], 'end': period[1]}
+    if expected:
+        params['expected'] = expected
+        params['window_days'] = max(30, expected['within_days'])
+        params['horizons_days'] = sorted({expected['within_days'], params['window_days']})
+    elif days:
+        params['window_days'] = days; params['horizons_days'] = [days]
+    r.take(PATHWAY_INTENT, 'pathway', overlap=True)
+    r.take(r'\b(?:vs\.?|versus|or|compared (?:to|with)|how many|what (?:share|fraction|proportion|percent(?:age)?)|probability|chance|likelihood|likely|'
+           r'share|percent(?:age)?|proportion|rate|odds|where|what|which|how|do|does|did|go|goes|went|next|then|after|afterwards|subsequently|'
+           r'happen(?:s|ed)?|move|moves|through|care|path|paths|pathway|pathways|journey|journeys|typically|usually|common|most|our|patients?|members?|'
+           r'people|a|an|the|their|they|them|from|starting|start|visit|visits|end|ends|up|step|steps|show|map|trace|describe|look|like|instead|'
+           r'within|days?|weeks?|months?|network|out|of|in|any|those|who|ones?|cases?|is|are|that|for|among|with)\b', None, overlap=True)
+    info['unexplained'] = r.blocking(profile)
+    info['ignored_words'] = getattr(r, 'ignored', [])
+    if info['unexplained']:
+        return decline('pathway words not interpreted locally: ' + ', '.join(info['unexplained'][:12]))
+    explicit = re.search(r'\bmarkov\b|\btransition (?:matrix|probabilit)|\bsankey\b|\bcare (?:path|journey|flow)|\bpatient (?:journey|flow|path)|\bclinical pathway', low)
+    if not (params.get('start') or leak or paths or params.get('group_by') or targets or explicit):
+        return decline('pathway question without a starting point, outcome, leakage or path request')
+    from .pathway import validate
+    try:
+        params = validate(params)
+    except ValueError as exc:
+        return decline(f'pathway parameters: {exc}')
+    nodes = []
+    if conditions:
+        nodes.append({'id': 'population', 'operation': 'cohort', 'inputs': [],
+                      'parameters': {'specification': {'all': [{'kind': 'concept', 'concept': c, 'window': W} for c in conditions][:20], 'any': [], 'exclude': []}},
+                      'purpose': 'Population named in the question'})
+    start = params['start'] or 'first event'
+    nodes.append({'id': 'pathway', 'operation': 'pathway', 'inputs': ['population'] if conditions else [], 'parameters': params,
+                  'purpose': f'Care pathway from {start.replace("_", " ")}' + (f" to {', '.join(params['targets'])}" if targets else '')
+                             + (f" by {params['group_by']}" if params['group_by'] != 'none' else '')})
+    return {'interpretation': q, 'coverage': 'supported_observation', 'unmet_requirements': [], 'nodes': nodes}, info

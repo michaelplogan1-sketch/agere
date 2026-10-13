@@ -144,6 +144,12 @@ CONTRACTS = {
     'medication_identity': {'inputs':['earlier_set'],'parameters':{},
                             'meaning':'Offline RxNorm names, spans, doses/forms and RAAS alternatives. Not use/tolerance.'},
 }
+CONTRACTS['pathway'] = {'inputs':['optional earlier_set'],'parameters':{'start':'emergency|inpatient|observation|urgent_care|primary_care|specialty|telehealth|outside|discharge|referral|diagnosis ("" = first event)',
+    'index_concept':'condition (start diagnosis only)','anchor':'each|first','window_days':90,'targets':['inpatient','emergency'],'max_steps':5,'horizons_days':[7,30,90],
+    'expected':{'from':'discharge','to':['primary_care'],'within_days':7},'steps':3,'group_by':'none|practice|coverage_type','leakage':'organization|organization_or_practice','order':1},
+    'meaning':'Care pathways over visit sequences: Markov transition matrix (Wilson/Dirichlet CIs, median days per step), absorbing-chain probability of reaching '
+              'targets within N steps and empirical reach within N days, top path variants, conformance to an expected next step, bottlenecks, leakage to outside '
+              'organisations, group comparison (permutation chi-square). Use for patient-journey / where-do-patients-go-after / leakage / care-path questions.'}
 
 
 def grounded_fields(fields, profile):
