@@ -42,6 +42,15 @@ CONTRACTS = {
                   '(A1c, BP, statin, kidney health evaluation, HF GDMT pillars), Kalman-forecast rising risk and social needs, with reason codes and suggested actions; '
                   'exact (sort / 0-1 knapsack) or certified greedy selection; portfolio expected value, SD and value lost per unit of capacity cut. '
                   'Use for who-should-we-call / outreach-list / prioritise-for-follow-up questions with a stated capacity.'},
+    'survival': {'inputs':['earlier_set'],'parameters':{'index':{'type':'discharge|condition_first_record|date','concept':'condition (condition_first_record)','date':'YYYY-MM-DD (date)','window':{'start':'','end':''}},
+        'event':{'type':'readmission|followup|encounter|measurement','concept':'encounter or measurement concept','op':'lt|le|gt|ge','value':0},
+        'horizon_days':365,'time_points':[30,90],'group_by':'none|coverage_type|practice|pcp|sex|age_band|condition','group_concept':'condition (group_by condition)','cox':False,'covariates':[]},
+        'meaning':'Time-to-event over the input population: Kaplan-Meier curves with Greenwood 95% CIs, medians, k-group log-rank and optional Cox hazard ratios. '
+                  'Use for readmission/follow-up curves after discharge, time from diagnosis to an event, time to a lab threshold. No mortality (no death records).'},
+    'monitor': {'inputs':['none'],'parameters':{'check':'control_chart|feed|claims|claims_integrity|benford|peer_outliers|duplicates|all','series':['ed_rate','admit_rate','pmpm','lab_volume','denial_rate','arrival_lag'],
+        'group_by':'auto|none|practice|payer|facility|source_system','period':{'start':'','end':''}},
+        'meaning':'Statistical process control and integrity monitoring: Laney p\'/u\' and I-MR control charts with Western Electric rules, CUSUM/EWMA, '
+                  'data-feed volume breaks, claims Benford, peer outliers and duplicate flags. Use for is-anything-out-of-control / spikes / feed-problem questions.'},
     'sql': {'inputs':['optional earlier_set'],'parameters':{'query':'one read-only SELECT over semantic_layer tables','returns':'count|value|patient_set|table'},
         'meaning':'Exact answers to literal data questions: counts/sums/maxima of records or fields, record-level filters, date arithmetic (julianday), arrival lags, joins between streams, '
                   'group-by tables. Query the typed semantic_layer tables (concept columns already normalise ICD-10/SNOMED/labels/units); use record.payload with json_extract for other streams. '
