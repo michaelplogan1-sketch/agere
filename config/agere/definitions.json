@@ -1,6 +1,6 @@
 {
  "schema": "agere-definitions/1",
- "status": "DRAFT - awaiting owner sign-off",
+ "status": "SIGNED OFF by owner (Michael Logan) 2026-10-13: standard-aligned defaults adopted; variants available on request",
  "researched": "2026-10-13 via Perplexity Agent API (fast preset), sources cited per entry",
  "definitions": {
   "emergency_visit": {
