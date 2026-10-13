@@ -6,7 +6,7 @@ The runtime validators remain authoritative for dates, bounds and source meaning
 """
 import copy
 
-VERSION = 'graph-operator-contracts/19'
+VERSION = 'graph-operator-contracts/20'
 SET_OPS = {'cohort', 'evidence', 'intersect', 'union', 'difference', 'sequence',
            'interpretation', 'source_state', 'pre_event_state', 'requirements', 'outcome',
            'protocol_review', 'program_document', 'functional_review', 'domain_review', 'appointment_followthrough'}
