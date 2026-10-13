@@ -107,13 +107,34 @@ def tools():
     return [*menu(), *[tool(op) for op in PRODUCT]]
 
 
+def _decode(text):
+    """Best-effort parse of a stringified parameters object -> (parameters, siblings)."""
+    try:
+        value = json.loads(text)
+        if isinstance(value, dict): return value, {}
+    except ValueError:
+        pass
+    try:  # '{params}, "population": [...]}' -> wrap it as the object the model meant
+        value = json.loads('{"parameters": ' + text)
+        if isinstance(value, dict) and isinstance(value.get('parameters'), dict):
+            return value.pop('parameters'), value
+    except ValueError:
+        pass
+    try:  # trailing characters after one complete object
+        value, _ = json.JSONDecoder().raw_decode(text.strip())
+        if isinstance(value, dict): return value, {}
+    except ValueError:
+        pass
+    raise ValueError('parameters must be an object')
+
+
 def to_graph(question, choice):
     op, args = choice['name'], choice.get('input') or {}
     if op not in PRODUCT: raise ValueError(f'Not a routable operator: {op}')
     parameters = args.get('parameters') or {}
-    if isinstance(parameters, str):  # heal: a JSON-encoded object
-        try: parameters = json.loads(parameters)
-        except ValueError: raise ValueError('parameters must be an object')
+    if isinstance(parameters, str):  # heal: a JSON-encoded object, possibly with population appended or a stray brace
+        parameters, extra = _decode(parameters)
+        if extra.get('population') and not args.get('population'): args = {**args, 'population': extra['population']}
     if not isinstance(parameters, dict): raise ValueError('parameters must be an object')
     parameters = dict(parameters)
     if 'population' in parameters and 'population' not in (PRODUCT[op].get('parameter_names') or ()):

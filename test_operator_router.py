@@ -52,6 +52,12 @@ class Graphs(unittest.TestCase):
                                                           'population': [{'kind': 'concept', 'concept': 'heart_failure'}]})})
         self.assertEqual(g['nodes'][0]['parameters']['specification']['all'][0]['concept'], 'heart_failure')
 
+    def test_heals_malformed_parameter_strings(self):
+        appended = '{"index": {"type": "discharge"}, "event": {"type": "readmission"}}, "population": [{"kind": "concept", "concept": "heart_failure"}]}'
+        g = self.ok('survival', {'parameters': appended})
+        self.assertEqual(g['nodes'][0]['parameters']['specification']['all'][0]['concept'], 'heart_failure')
+        self.ok('survival', {'parameters': '{"index": {"type": "discharge"}, "event": {"type": "readmission"}}}'})
+
     def test_unregistered_operator_refused(self):
         with self.assertRaises(ValueError):
             router.to_graph('q', {'name': 'sql', 'input': {'parameters': {}}})

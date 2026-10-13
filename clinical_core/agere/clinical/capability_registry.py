@@ -15,9 +15,11 @@ PRODUCT = {
     'discover': {'population': 'required', 'view': 'table',
                  'use': 'WHERE / which groups: unexpected concentrations of an outcome across practices, PCPs, payers, age, sex, social needs (hotspots nobody specified).'},
     'trajectory': {'population': 'required', 'view': 'table',
-                   'use': 'Per-patient lab or vital trends and forecasts: who is declining, who will cross a threshold (Kalman forecast), change points.'},
+                   'use': 'Per-patient lab or vital trends: WHICH PATIENTS are declining or will cross a threshold (Kalman forecast), change points. '
+                          'Population-level "what fraction reach X within T" is survival.'},
     'survival': {'population': 'required', 'view': 'curve',
-                 'use': 'Time-to-event: readmission or follow-up curves after discharge, time from diagnosis to an event or lab threshold, Kaplan-Meier by group, log-rank, Cox hazard ratios.'},
+                 'use': 'Time-to-event: HOW QUICKLY / HOW LONG UNTIL / median days until / what fraction reach an event within a time: readmission or follow-up '
+                        'after discharge, time from diagnosis to an event or lab threshold (e.g. eGFR < 30 within 2 years); Kaplan-Meier by group, log-rank, Cox hazard ratios.'},
     'vbc': {'population': 'optional', 'view': 'table',
             'use': 'Value-based care: member months, attribution, utilization per 1,000, PMPM cost, risk score, quality measures, shared-savings settlement and its risk (VaR), fair (Shapley) split of savings, cost change decomposition.'},
     'program_effect': {'population': 'optional', 'view': 'effect',
@@ -38,7 +40,8 @@ PRODUCT = {
                 'use': 'Fair PCP/practice comparison: which units are truly high or low on ED use, admissions, readmissions, A1c control or PMPM after panel size and case mix (shrunk rates, credibility, rank intervals).'},
 }
 PRODUCT['pathway'] = {'population': 'optional', 'view': 'flow',
-                      'use': 'Care pathways / patient journeys: where patients go after an ED visit, discharge or PCP visit, follow-up within N days vs ED return, leakage to outside organisations, most common paths, chance of admission within N steps or days.'}
+                      'use': 'Care pathways / patient journeys: where patients go after an ED visit, discharge or PCP visit, follow-up within N days vs ED return, leakage to outside organisations, most common paths, chance of admission within N steps or days. Use for the SEQUENCE of next steps; '
+                             'for how quickly / median days until one event, use survival.'}
 
 # Questions a SQL query over the semantic tables answers exactly are handed to the verified SQL ladder.
 LITERAL = ('Literal data questions: counts, lists, sums, averages, maxima, record filters, date arithmetic, simple breakdowns '
