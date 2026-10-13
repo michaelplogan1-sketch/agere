@@ -400,6 +400,9 @@ def compile(question, profile, as_of):
     """Return (graph, info). graph is None when the question needs the fallback planner."""
     q = _norm(question, as_of)
     low = q.lower()
+    effect = _program_effect_question(q, profile)
+    if effect is not None:
+        return effect
     for pattern, missing in UNSUPPORTED:  # checked on the user's own words, before any paraphrase
         if re.search(pattern, low) and not (_contract_terms(low) and 'shared' in pattern):
             return {'interpretation': f'Unsupported by received data: {q}', 'coverage': 'unsupported', 'nodes': [],
@@ -1433,3 +1436,87 @@ def _patient_question(q, r, profile, pids, info):
     return {'interpretation': q, 'coverage': 'supported_observation', 'unmet_requirements': [],
             'nodes': [{'id': 'answer', 'operation': 'sql', 'inputs': [], 'parameters': {'query': sql, 'returns': 'value'},
                        'purpose': f'{stat} {concept} for {", ".join(pids)}'}]}, info
+
+
+
+# ---- program effect ("did the program work?") -------------------------------------
+EFFECT_QUESTION = (r'\b(?:effect|impact|influence)s? of\b|\bestimate (?:the |an? )?(?:effect|impact)\b|'
+                   r'\b(?:did|does|do|has|have|is|was)\b[^?.;]{0,90}?\b(?:reduce[ds]?|lower(?:ed|s)?|cut|prevent(?:ed|s)?|improve[ds]?|'
+                   r'increase[ds]?|decrease[ds]?|drive down|drove down|slow(?:ed|s)?|change[ds]?|affect(?:ed|s)?|work(?:ed|s)?|help(?:ed|s)?|bend)\b')
+# Demands the data cannot meet even with a named program: identified causal effects and counterfactual counts. These fall
+# through to the general UNSUPPORTED 'causal' refusal (which names the missing causal design and counterfactual model).
+IDENTIFIED_CAUSAL = (r'\bcausal(?:ly)?\b|\bcause[ds]?\b|\battributable\b|\bidentified (?:causal )?effect\b|\bprevented by\b|'
+                     r'\bhow many\b[^?.]{0,80}\bprevent(?:ed)?\b|\bcounterfactual\b')
+RANDOMISED = r'\brandomi[sz](?:ed|ation)\b|\brct\b|\btrial\b'
+EFFECT_PROGRAMS = [  # program -> (pattern, received stream that identifies exposure)
+    ('transitions_of_care', r'transitions?[- ]of[- ]care|\btoc\b|post[- ]discharge (?:calls?|contacts?|follow[- ]?up calls?)|care transitions? (?:calls?|contacts?|program)',
+     'transition_of_care_contacts'),
+    ('care_management', r'\b(?:care|case) management\b|\bcare managers?\b', 'care_management_contacts'),
+    ('community_services', r'\bcommunity (?:service|resource)s?\b|\bsocial service referrals?\b', 'community_service_outcomes'),
+    ('care_coordination', r'\bcare coordination\b', 'care_coordination_contacts'),
+]
+EFFECT_OUTCOMES = [
+    ('admissions', r'\b(?:re)?admissions?\b|\badmits?\b|\bhospitali[sz]ations?\b|\binpatient (?:stays?|admissions?)\b'),
+    ('ed_visits', r'\b(?:ed|er|emergency(?: department| room)?) (?:visits?|use|utili[sz]ation)\b|\bemergency visits?\b'),
+    ('pmpm', r'\bpmpm\b|\bper member per month\b|\btotal cost of care\b|\b(?:medical |total )?(?:costs?|spend(?:ing)?)\b'),
+]
+MEDICATION_STREAMS = ('pharmacy_dispenses', 'pharmacy_claims', 'medication_orders')
+
+
+def _effect_unsupported(q, missing, info):
+    return {'interpretation': f'Unsupported by received data: {q}', 'coverage': 'unsupported', 'nodes': [],
+            'unmet_requirements': [f'Missing input: {m}' for m in missing]}, {**info, 'route': 'local_unsupported', 'unexplained': []}
+
+
+def _program_effect_question(q, profile):
+    """'Did X reduce Y?' / 'impact of X on Y' -> program_effect when X is a program or medication start identified by received
+    records and Y a recognised outcome. Declines (unsupported, naming the missing input) otherwise; returns None when the
+    question is not effect-shaped or demands an identified causal effect (left to the general refusal)."""
+    low = q.lower()
+    if not re.search(EFFECT_QUESTION, low) or re.search(IDENTIFIED_CAUSAL, low): return None
+    info = {'compiler': VERSION, 'recognised': ['program effect question'], 'paraphrased': []}
+    if re.search(RANDOMISED, low):
+        return _effect_unsupported(q, ['randomised assignment records (none are received; program receipt is observational, so a trial '
+                                       'result cannot be reproduced or claimed)'], info)
+    program = next(((name, stream) for name, rx, stream in EFFECT_PROGRAMS if re.search(rx, low)), None)
+    drug = None
+    if program is None:
+        for cls, rx in sorted(DRUG_ALIASES.items(), key=lambda kv: -len(kv[1])):
+            if re.search(r'\b(?:' + rx + r')\b', low): drug = cls; break
+        if drug: program = ('medication_start', None)
+    if program is None:
+        return _effect_unsupported(q, ['a named program or exposure recorded in received data (care management contacts, transition-of-care '
+                                       'contacts, community service outcomes, care coordination contacts, or a medication start)',
+                                       'an identifiable assignment (first exposure) date per patient'], info)
+    name, stream = program
+    streams = profile.get('streams', {})
+    if stream and stream not in streams:
+        return _effect_unsupported(q, [f'received {stream} records ({name.replace("_", " ")} exposure is not in this warehouse)'], info)
+    if not stream and not any(s in streams for s in MEDICATION_STREAMS):
+        return _effect_unsupported(q, ['received dispense, pharmacy claim or medication order records'], info)
+    info['recognised'].append(f'program {name}' + (f' ({drug})' if drug else ''))
+    lab = None
+    for concept, aliases in sorted(MEASUREMENT_ALIASES.items(), key=lambda kv: -max(map(len, kv[1]))):
+        if any(re.search(_alias_pattern(a), low) for a in aliases): lab = concept; break
+    outcome = 'lab' if lab else next((o for o, rx in EFFECT_OUTCOMES if re.search(rx, low)), None)
+    if outcome is None:
+        return _effect_unsupported(q, ['a recognised outcome (ED visits, admissions, PMPM/cost, or a lab measurement)'], info)
+    info['recognised'].append(f'outcome {lab or outcome}')
+    params = {'program': name, 'outcome': outcome}
+    if drug: params['drug_class'] = drug
+    if lab: params['lab'] = lab
+    days = re.search(r'\b(\d{1,3})[- ]day\b', low)
+    if days:
+        params['post_days'] = min(max(int(days.group(1)), 14), 365)
+        info['recognised'].append(f'post window {params["post_days"]} days')
+    conds = []
+    for concept, aliases in CONDITION_ALIASES.items():
+        if any(re.search(r'\b(?:among|in|for|with)\b(?: our| the)? ' + re.escape(a) + r'\b', low) for a in aliases): conds.append(concept)
+    if conds:
+        params['population_conditions'] = conds[:5]
+        info['recognised'].append('population ' + ', '.join(conds[:5]))
+    info.update(route='local_compiler', unexplained=[])
+    label = f'{drug} start' if drug else name.replace('_', ' ')
+    return {'interpretation': q, 'coverage': 'supported_observation', 'unmet_requirements': [],
+            'nodes': [{'id': 'answer', 'operation': 'program_effect', 'inputs': [], 'parameters': params,
+                       'purpose': f'Estimated effect of {label} on {lab or outcome} under stated assumptions (matched DiD, diagnostics)'}]}, info
