@@ -115,8 +115,13 @@ def standards(answer):
     return out
 
 
-def benchmark_references(answer, question=None):
-    """National/peer reference values for the answer's metric (config/agere/benchmarks.json); never alters the answer."""
+NO_BENCHMARK_OPERATIONS = ('outreach', 'monitor', 'survival', 'program_effect', 'discover', 'trajectory', 'explain')
+
+
+def benchmark_references(answer, question=None, operation=None):
+    """National/peer reference values for the answer's metric (config/agere/benchmarks.json); never alters the answer.
+    Worklists, monitoring reports, curves and effect estimates are not population rates, so they carry none."""
+    if operation in NO_BENCHMARK_OPERATIONS: return []
     from .benchmarks import benchmarks
     try:
         return benchmarks(answer, question)
@@ -936,7 +941,7 @@ def execute(stack, plan, *, question=None):
         if old:
             replay = json.loads(old[0])
             if isinstance(replay.get('answer'), dict):  # reference library may be newer than the cached result
-                replay['answer']['benchmark'] = benchmark_references(replay['answer'], question)
+                replay['answer']['benchmark'] = benchmark_references(replay['answer'], question, plan['nodes'][-1]['operation'] if plan.get('nodes') else None)
             return {**replay, 'cache_hit': True, 'new_paid_api_calls':0,'elapsed_seconds': time.perf_counter()-started,
                     'compute': {'new_graph_nodes': 0, 'aggregate_result_replayed': True}}
         memberships, results = {}, [];paid_calls=0;requirement_ancestors={};protocol_ancestors={};document_ancestors={}
@@ -1264,7 +1269,7 @@ def execute(stack, plan, *, question=None):
         result['answer']=build_answer(plan, results, memberships, question)
         result['answer']['standards']=standards(result['answer'])
         result['answer']['headline']=headline(result['answer'])
-        result['answer']['benchmark']=benchmark_references(result['answer'], question)
+        result['answer']['benchmark']=benchmark_references(result['answer'], question, plan['nodes'][-1]['operation'] if plan.get('nodes') else None)
         if any(n['operation'] in ('source_state','pre_event_state','requirements','protocol_review','program_document','reference_review',*graph_reports.OPERATIONS) for n in plan['nodes']):
             from .graph_decision import source_fingerprint
             result['review_source_fingerprint'] = source_fingerprint(path, result)
