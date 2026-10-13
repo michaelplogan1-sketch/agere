@@ -207,6 +207,17 @@ CONTRACTS['risk_adjustment'] = {'inputs':['optional earlier_set'],'parameters':{
               'diabetes drugs, EF, BMI, PHQ, problem list without a code) as documentation review prompts; RAF by practice/PCP/payer. '
               'Use for RAF / HCC / coding gap / recapture / suspect condition / documentation gap questions; a plain internal "risk score" is vbc.'}
 
+CONTRACTS['contract_strategy'] = {'inputs':['optional earlier_set'],'parameters':{'focus':'compare|value|negotiate|capacity','target':'nash|break_even',
+    'benchmark_pmpm':None,'options':[{'label':'','program':'MSSP ENHANCED 2026','terms':{}}],'care_management_pmpm':None,'risk_aversion':0.5,
+    'confidence':0.95,'trend_pct':None,'risk_capacity':None,'counterparty':{'sharing_rate_max':None,'msr_min':None,'reservation_value':None},'period':{'start':'','end':''}},
+    'meaning':'Risk contracts valued as options on performance-year cost (upside = sharing x max(benchmark - cost - MSR, 0) capped, a call; '
+              'downside = loss x max(cost - benchmark - MLR, 0) capped, a put) with the exact vbc.settle arithmetic and the cited program rulebook '
+              '(MSSP BASIC A-E / ENHANCED, ACO REACH Professional / Global, LEAD). Monte Carlo: member bootstrap of completion-adjusted cost x trend '
+              'x risk-score drift; expected payout, SD, P(loss), VaR/CVaR, option decomposition, Greeks (dBenchmark, dTrend, vega); ranking by '
+              'E[net] - lambda x CVaR with the benchmark/trend where it flips; Nash bargaining over sharing rate x MSR, break-even sharing rate vs '
+              'care-management spend, equal-value frontier. The benchmark, offers and spend must be stated (never invented). Use for should-we / '
+              'which-track / compare-offers / negotiate / option-value / downside-capacity questions; one settlement amount is vbc.'}
+
 CONTRACTS['claims_review'] = {'inputs':['optional earlier_set'],'parameters':{'focus':'all|providers|benford|duplicates|underpayment|denials|leakage',
     'by':'payer|provider|setting|service','period':{'start':'','end':''},'fdr':0.05,'min_claims':30,'window_days':3,'writeoff_days':120,'payer':'','provider':'','rework_cost':None},
     'meaning':'Payment integrity and revenue leakage over medical claims, every flag ranked by expected dollars (dollars x probability): provider peer outliers '
