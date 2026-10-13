@@ -358,8 +358,33 @@ function vizScalar(a){if(a.answer_type==='count'||a.answer_type==='value'){const
   return '<section class="sec"><div class="big">'+fmt(a.count!=null?a.count:ids.length)+'</div><div class="muted">patients'+(a.unknown_count?' · '+fmt(a.unknown_count)+' could not be evaluated':'')+'</div>'+
    (ids.length?'<details open><summary>'+ids.length+' patient IDs</summary><div class="pids">'+ids.slice(0,300).map(i=>'<span>'+esc(i)+'</span>').join('')+'</div>'+(ids.length>300?'<p class="hint">First 300 shown; the CSV has all.</p>':'')+csvButton(rows,'patients')+'</details>':'')+'</section>'}
  return ''}
+/* fair profiling: caterpillar of shrunk rates with 95% intervals, raw (adjusted) rate as a hollow dot, network line */
+function vizProfile(a){const o=a.overall||{},pr=o.profile||{},rows=(a.table||[]).slice(0,40);if(!rows.length)return '';const c=pr.counts||{};
+ const share=/share/.test(pr.display_unit||''),cost=/\$/.test(pr.display_unit||''),f=v=>share?pct(v,1):cost?'$'+fmt(v,2):fmt(v,0);
+ let h='<section class="sec" data-focus="profile"><h3>'+esc(label(o.unit==='practice'?'practices':'PCPs'))+' on '+esc(pr.metric_label||label(o.metric||''))+'</h3><div class="kpis">'+
+  [['Truly high',fmt(c.truly_high)],['Truly low',fmt(c.truly_low)],['Indistinguishable',fmt(c.indistinguishable)],['Network',f(pr.network_rate)],
+   ['Median shrinkage',isNum(pr.shrinkage_median)?pct(pr.shrinkage_median,0):'—']].map(k=>'<div class="kpi"><div class="l">'+k[0]+'</div><div class="v">'+esc(k[1])+'</div></div>').join('')+'</div>';
+ h+=profChart(rows,pr.network_rate,o.threshold,f)+'<div class="legend"><span><span class="sw" style="background:var(--bad)"></span>truly high</span><span><span class="sw" style="background:var(--good)"></span>truly low</span>'+
+  '<span><span class="sw" style="background:var(--s3)"></span>indistinguishable</span><span>○ raw (case-mix adjusted)</span><span>┊ network</span></div>';
+ if((a.table||[]).length>rows.length)h+='<p class="hint">Chart shows the first '+rows.length+' of '+a.table.length+' units by shrunk rate; the table has all.</p>';
+ return h+tableHTML(a.table,{name:'profile-units',ask:r=>'is '+r.group+' really an outlier?',cols:['group','flag','posterior_rate','ci95_low','ci95_high','raw_rate','members','p_above_network','rank','rank_ci95','credibility_z','credibility_rate','observed','expected'],
+  head:{posterior_rate:'shrunk rate',p_above_network:'P(above network)',credibility_z:'credibility Z',rank_ci95:'rank 95%'},render:{p_above_network:v=>pct(v,0),flag:v=>esc(label(v||''))}})+'</section>'}
+function profChart(rows,net,thr,f){const W=CW(),lh=22,L=Math.min(Math.round(W*.36),12+7*Math.max(...rows.map(r=>String(r.group).length))),R=20,T=8,H=T+rows.length*lh+28;
+ const vs=rows.flatMap(r=>[r.ci95_low,r.ci95_high,r.adjusted_raw_rate]).concat([net,thr]).filter(isNum);let lo=Math.min(0,...vs),hi=Math.max(...vs);const pd=(hi-lo)*.04||1;hi+=pd;
+ const X=v=>L+(v-lo)/(hi-lo)*(W-L-R);let s=svgOpen(W,H,'Shrunk rate with 95% interval per unit');
+ ticks(lo,hi,W<480?3:5).forEach(t=>{s+='<line class="gridl" x1="'+X(t)+'" x2="'+X(t)+'" y1="'+T+'" y2="'+(H-24)+'"/><text x="'+X(t)+'" y="'+(H-8)+'" text-anchor="middle">'+esc(f(t))+'</text>'});
+ if(isNum(net))s+='<line x1="'+X(net)+'" x2="'+X(net)+'" y1="'+T+'" y2="'+(H-24)+'" style="stroke:var(--fg);stroke-dasharray:4 3"/>';
+ if(isNum(thr))s+='<line x1="'+X(thr)+'" x2="'+X(thr)+'" y1="'+T+'" y2="'+(H-24)+'" style="stroke:var(--warn);stroke-dasharray:2 2"/>';
+ rows.forEach((r,i)=>{const y=T+i*lh+lh/2,c=r.flag==='truly_high'?'var(--bad)':r.flag==='truly_low'?'var(--good)':'var(--s3)',q='is '+r.group+' really an outlier?';
+  s+='<g data-ask="'+esc(q)+'" tabindex="0" role="button" aria-label="'+esc(r.group+': '+f(r.posterior_rate)+' ('+f(r.ci95_low)+' to '+f(r.ci95_high)+'), '+label(r.flag))+'">';
+  s+='<text x="'+(L-6)+'" y="'+(y+4)+'" text-anchor="end" style="fill:var(--fg)">'+esc(r.group)+'</text>';
+  if(isNum(r.ci95_low)&&isNum(r.ci95_high))s+='<line x1="'+X(r.ci95_low)+'" x2="'+X(r.ci95_high)+'" y1="'+y+'" y2="'+y+'" style="stroke:'+c+';stroke-width:3;stroke-linecap:round"/>';
+  if(isNum(r.adjusted_raw_rate))s+='<circle cx="'+X(Math.min(r.adjusted_raw_rate,hi))+'" cy="'+y+'" r="3.5" style="fill:none;stroke:var(--muted);stroke-width:1.5"/>';
+  if(isNum(r.posterior_rate))s+='<circle cx="'+X(r.posterior_rate)+'" cy="'+y+'" r="5" style="fill:'+c+';stroke:var(--card);stroke-width:1.5"><title>'+esc(r.group+': shrunk '+f(r.posterior_rate)+', raw '+f(r.raw_rate)+', '+r.members+' members')+'</title></circle>';
+  s+='</g>'});
+ return s+'</svg>'}
 function visual(a){if(!a||a.answer_type==='unsupported')return '';const o=a.overall||{};
- if(o.curves)return vizSurvival(a);if(o.charts||(o.tests_examined!=null&&o.look_elsewhere_bits!=null))return vizMonitor(a);if(o.did)return vizEffect(a);if(o.portfolio&&o.by_group)return vizOutreach(a);
+ if(o.profile)return vizProfile(a);if(o.curves)return vizSurvival(a);if(o.charts||(o.tests_examined!=null&&o.look_elsewhere_bits!=null))return vizMonitor(a);if(o.did)return vizEffect(a);if(o.portfolio&&o.by_group)return vizOutreach(a);
  const v=vizVBC(a);if(v)return v;if(a.answer_type==='table'){const t=vizTrajectory(a);if(t)return t;return vizTable(a)}return vizScalar(a)}
 
 /* ---------- answer card ---------- */

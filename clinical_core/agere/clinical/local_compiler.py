@@ -449,6 +449,9 @@ def compile(question, profile, as_of):
     timed_plan = _survival_question(q, r, profile, as_of, info)
     if timed_plan is not None:
         return timed_plan
+    fair = _profile_question(q, r, profile, as_of, info)
+    if fair is not None:
+        return fair
     special = _record_constructs(q, r, profile, as_of, info)
     if special is not None:
         return special
@@ -1754,6 +1757,101 @@ def _survival_question(q, r, profile, as_of, info):
         {'id': 'population', 'operation': 'cohort', 'inputs': [], 'parameters': {'specification': spec}, 'purpose': 'Population named in the question'},
         {'id': 'survival', 'operation': 'survival', 'inputs': ['population'], 'parameters': params,
          'purpose': f'Time from {index["type"].replace("_", " ")} to {kind}' + (f' by {group_concept or group}' if group != 'none' else '')}]}, info
+
+# ---- fair provider/practice profiling (hierarchical Bayes + credibility) -------------------
+PROFILE_STRONG = (r"\bfair(?:ly|er|est|ness)?\b|\b(?:adjust\w*|account\w*|controll?\w*|correct\w*) for (?:their |the |different |differences in )?panel sizes?\b|"
+                  r"\bpanel[- ]size[- ](?:adjusted|fair)\b|\btruly (?:high|low|higher|lower|worse|better|different|above|below|an outlier|outliers?)\b|\bcredib\w*\b|"
+                  r"\bshrunk(?:en)?\b|\bshrinkage\b|\bhierarchical\b|\bempirical[- ]bayes\b|\bbuhlmann\b|\bbühlmann\b|\bcaterpillar\b|\bstatistically (?:high|low|higher|lower)\b")
+PROFILE_WEAK = r"\boutliers?\b|\brank(?:s|ed|ing)?\b"
+PROFILE_UNITS = [(r"\b(?:practices?|clinics?)\b", 'practice'),
+                 (r"\b(?:pcps?|primary care (?:providers?|physicians?|doctors?|clinicians?)|physicians?|providers?|doctors?|clinicians?|dr\.?)\b", 'pcp')]
+PROFILE_METRICS = [
+    ('readmission_rate', r"\b(?:30[- ]day )?readmi(?:ssions?|ts?)(?: rates?)?\b"),
+    ('ed_visits', r"\b(?:ed|er|emergency(?: department| room)?) (?:use|visits?|utili[sz]ation|rates?|visit rates?)\b|\bemergency visits?\b"),
+    ('urgent_care_visits', r"\burgent[- ]care(?: visits?| use)?\b"),
+    ('primary_care_visits', r"\b(?:primary[- ]care|office) visits?\b"),
+    ('admissions', r"\b(?:inpatient |hospital )?(?:admissions?|admits?)(?: rates?)?\b|\bhospitali[sz]ations?(?: rates?)?\b"),
+    ('a1c_poor_control', r"\b(?:hb)?a1c(?: poor)? control\b|\bpoor(?:ly)? controlled (?:diabetes|a1c)\b|\bpoor (?:a1c|glycemic|diabetes) control\b|\b(?:glycemic|diabetes) control\b"),
+    ('bp_control', r"\b(?:bp|blood pressure|hypertension) control\b|\bcontrolled (?:bp|blood pressure)\b"),
+    ('statin_therapy_diabetes', r"\bstatin (?:therapy|use|prescribing)\b"),
+    ('pmpm', r"\bpmpm\b|\bper member per month\b|\btotal cost of care\b|\b(?:medical |total |allowed )?(?:costs?|spend(?:ing)?)\b"),
+]
+PROFILE_FILLER = (r"\b(?:which|what|who|whose|is|are|was|were|do|does|have|has|had|the|our|their|its|a|an|of|on|in|for|by|to|and|or|with|after|"
+                  r"accounting|account|adjusting|adjusted|adjust|controlling|taking|into|consideration|truly|really|actually|high|higher|highest|low|lower|lowest|"
+                  r"worse|worst|better|best|different|outliers?|outlier|rank|ranks|ranked|ranking|fair|fairly|compare|comparison|comparing|"
+                  r"show|give|me|us|list|rate|rates|use|utilization|level|levels|panel|panels|size|sizes|patients?|members?|population|network|"
+                  r"average|than|vs|versus|others|peers|each|every|all|between|across|statistically|significantly|meaningfully|really|"
+                  r"weighted|weighting|weights?|once|using|you|we|when|estimates?|scores?|performance|perform|performing|stands?|out|there|any|how|much|many|be|it|this|that|those|these)\b")
+
+
+def _profile_question(q, r, profile, as_of, info):
+    low = r.low
+    strong = re.search(PROFILE_STRONG, low)
+    if not strong and not re.search(PROFILE_WEAK, low): return None
+    if re.search(r"\bshared[- ]savings\b|\bsettlement\b|\bshapley\b|\ballocat\w*\b|\bsplit\b|\bbilling\b|\bclaims? (?:integrity|review)\b", low): return None
+    units = [(m.start(), u) for pattern, u in PROFILE_UNITS for m in re.finditer(pattern, low)]
+    if not units: return None
+    metric = next((m for m, pattern in PROFILE_METRICS if re.search(pattern, low)), None)
+    decline = lambda reason: (info.update(route='fallback', reason=reason), (None, info))[1]
+    if metric is None:
+        return decline('provider/practice profiling question without a recognised measure') if strong else None
+    params = {'metric': metric}
+    # focus unit: "Dr X", "practice WH-PRACTICE-3"
+    m = re.search(r"\b(?:dr\.?|doctor) ([a-z0-9][a-z0-9_.-]*?)(?:'s)?(?=[\s,?.]|$)", low) or \
+        re.search(r"\b(?:pcp|provider|clinician|practice|clinic) ([a-z0-9_.-]*\d[a-z0-9_.-]*?)(?:'s)?(?=[\s,?.]|$)", low)
+    if m:
+        params['focus'] = m.group(1)
+        r.take(re.escape(m.group(0)), 'focus unit')
+        params['unit'] = 'practice' if re.match(r"(?:practice|clinic)", m.group(0)) else 'pcp'
+    else:
+        params['unit'] = min(units)[1]
+    for pattern, _ in PROFILE_UNITS: r.take(pattern, 'profiled unit')
+    for name, pattern in PROFILE_METRICS:
+        if name == metric: r.take(pattern, f'metric {metric}')
+    for t in r.take(r"\b(?:above|over|exceed\w*|higher than|more than|worse than|beyond) (?:a |the |our )?(?:threshold|target|goal|benchmark|cutoff)?(?: of)? ?"
+                    r"\$?(\d+(?:\.\d+)?)\s*(%|percent| per 1000| per thousand| pmpm)?", 'threshold'):
+        params['threshold'] = float(t.group(1))
+    r.take(PROFILE_STRONG, 'fair comparison', overlap=True)
+    if r.take(r"\bunadjusted\b|\bwithout (?:any )?(?:case[- ]mix |risk )?adjust\w*\b|\braw\b|\bcrude\b", 'no adjustment'):
+        params['adjust'] = 'none'
+    if r.take(r"\b(?:chronic[- ]condition|illness|disease|comorbidit\w*) burden\b|\bcomorbidit\w*\b|\bchronic conditions?\b|\bhow sick\b|\bacuity\b", 'adjust conditions'):
+        params['adjust'] = 'age_sex_conditions'
+    elif r.take(r"\bcase[- ]mix(?:[- ]adjusted)?\b|\brisk[- ]adjusted\b|\bage(?: band)?,? (?:and |& )?(?:sex|gender)\b|\bdemographics?\b", 'adjust age sex'):
+        params.setdefault('adjust', 'age_sex')
+    if r.take(r"\bcredib\w*\b|\bbuhlmann(?:[- ]straub)?\b|\bbühlmann(?:[- ]straub)?\b|\bactuarial\w*\b", 'credibility', overlap=True):
+        params['method'] = 'credibility'
+    elif r.take(r"\bbayes(?:ian)?\b|\bhierarchical\b|\bshrunk(?:en)?\b|\bshrinkage\b|\bmultilevel\b", 'bayes', overlap=True):
+        params['method'] = 'bayes'
+    period = _take_period(r, as_of)
+    if period:
+        params['period'] = {'start': period[0], 'end': period[1]}
+    elif r.take(r"\b(?:over |in |during )?the (?:last|past) (?:12 months|year)\b|\blast year\b", 'last 12 months'):
+        pass  # the operator default: the 12 months ending at the snapshot
+    r.take(r"\bper 1000(?: member[- ]years?)?\b|\bper thousand\b|\bmember[- ]years?\b|\bvisits?\b|\bcase[- ]mix\b|\bmix\b|\bcase\b", None, overlap=True)
+    r.take(PROFILE_FILLER, None, overlap=True)
+    # population: whatever is left must be a cohort the population grammar fully explains
+    spec = None
+    if r.leftover():
+        info['unexplained'] = r.blocking(profile)
+        if info['unexplained']:
+            plan, info2 = _population_question(q, r, profile, as_of, info)
+            if plan is None or len(plan['nodes']) != 1 or plan['nodes'][0]['operation'] != 'cohort':
+                return decline('profiling words not interpreted locally: ' + ', '.join(info['unexplained'][:12]))
+            spec = plan['nodes'][0]['parameters']['specification']
+    info['unexplained'], info['ignored_words'] = [], getattr(r, 'ignored', [])
+    from .profile import validate
+    try:
+        params = validate(params)
+    except ValueError as exc:
+        return decline(f'profile parameters: {exc}')
+    info['route'] = 'local_compiler'
+    nodes = []
+    if spec is not None:
+        nodes.append({'id': 'population', 'operation': 'cohort', 'inputs': [], 'parameters': {'specification': spec}, 'purpose': 'Population named in the question'})
+    nodes.append({'id': 'profile', 'operation': 'profile', 'inputs': ['population'] if spec is not None else [], 'parameters': params,
+                  'purpose': f"Fair comparison of {params['unit']}s on {params['metric']}" + (f" (focus {params['focus']})" if params['focus'] else '')})
+    return {'interpretation': q, 'coverage': 'supported_observation', 'unmet_requirements': [], 'nodes': nodes}, info
+
 
 # ---- program effect ("did the program work?") -------------------------------------
 EFFECT_QUESTION = (r'\b(?:effect|impact|influence)s? of\b|\bestimate (?:the |an? )?(?:effect|impact)\b|'

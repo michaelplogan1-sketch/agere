@@ -26,6 +26,8 @@ PRODUCT = {
                  'use': 'Who should we call / prioritise: a capacity-limited outreach worklist ranked by expected value with reasons (care gaps, rising risk, social needs, utilization).'},
     'monitor': {'population': 'none', 'view': 'chart',
                 'use': 'Is anything out of control: SPC control charts of ED/admit rates, PMPM, lab volume, denial rate, arrival lag; data-feed breaks; claims integrity, Benford, peer outliers, duplicates.'},
+    'profile': {'population': 'optional', 'view': 'caterpillar',
+                'use': 'Fair PCP/practice comparison: which units are truly high or low on ED use, admissions, readmissions, A1c control or PMPM after panel size and case mix (shrunk rates, credibility, rank intervals).'},
 }
 
 # Questions a SQL query over the semantic tables answers exactly are handed to the verified SQL ladder.
