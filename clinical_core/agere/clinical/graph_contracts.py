@@ -11,7 +11,7 @@ SET_OPS = {'cohort', 'evidence', 'intersect', 'union', 'difference', 'sequence',
            'interpretation', 'source_state', 'pre_event_state', 'requirements', 'outcome',
            'protocol_review', 'program_document', 'functional_review', 'domain_review', 'appointment_followthrough'}
 WORK_SUPPORT = ('accountability_review', 'program_acquisition', 'measure_review')
-TYPED = {'aggregate', 'explain', 'sql', 'vbc', 'discover', 'observation_process', 'reference_review', 'cohort', 'evidence', 'intersect', 'union', 'difference', 'compare', 'medication_identity',
+TYPED = {'aggregate', 'explain', 'sql', 'vbc', 'discover', 'trajectory', 'observation_process', 'reference_review', 'cohort', 'evidence', 'intersect', 'union', 'difference', 'compare', 'medication_identity',
          'assertion_review', 'source_state', 'pre_event_state', 'context', 'context_passes', 'functional_review',
          'domain_review', 'worklist', 'program_acquisition', 'retrieve', 'forecast',
          'source_changes', 'review', 'measure_review', 'financial_accounts', 'accountability_review', 'outcome', 'appointment_followthrough', 'interpretation', 'requirements', 'protocol_review', 'program_document'}
@@ -92,6 +92,10 @@ def parameter_schema(op, catalog):
             'group_by': string(aggregate.GROUP_BY), 'adjust': string(aggregate.ADJUSTMENTS, 'Case-mix standardisation for counts/shares'),
             'window': obj({'start': {'type': 'string', 'description': 'YYYY-MM-DD or empty'}, 'end': {'type': 'string', 'description': 'YYYY-MM-DD or empty'}}),
             'value_aggregate': string(['latest', 'all']), 'top': {'type': 'integer', 'minimum': 1, 'maximum': 200}})
+    if op == 'trajectory':
+        from . import trajectory
+        return obj({'concept': string(trajectory.NOISE), 'direction': string(['worse', 'better', 'up', 'down', 'any']),
+                    'min_points': {'type': 'integer', 'minimum': 3, 'maximum': 50}, 'top': {'type': 'integer', 'minimum': 1, 'maximum': 200}})
     if op == 'discover':
         from . import discover
         spec = parameter_schema('cohort', catalog)['properties']['specification']

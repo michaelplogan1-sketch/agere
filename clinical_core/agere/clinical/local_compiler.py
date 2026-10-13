@@ -304,6 +304,8 @@ def _population_question(q, r, profile, as_of, info):
     # statistic / intent
     hotspot = r.take(r'\b(?:where (?:is|are)\b(?=.*\bconcentrated\b)|concentrated|concentrations?|unusually (?:high|low|common)|hot ?spots?|outliers?|clusters?|'
                      r'patterns? (?:of|in)|stands? out|which (?:groups?|segments?|populations?|subgroups?)(?= (?:have|has|show)))\b', 'discovery')
+    trend = next(iter(r.take(r'\b(?:declin(?:e|es|ed|ing)(?: in)?|dropp(?:ed|ing)|fall(?:ing|en)|worsen(?:ing|ed)|deteriorat(?:ing|ed|ion)(?: in| of)?|'
+                             r'ris(?:ing|en)|increas(?:ing|ed)|climb(?:ing|ed)|improv(?:ing|ed)|trend(?:ing)? (?:up|down)|trajector(?:y|ies)(?: of)?)\b', 'trend')), None)
     hot_segments = None
     if hotspot:
         named = {'practice': r'\b(?:practices?|clinics?)\b', 'pcp': r'\b(?:pcps?|physicians?|providers?|clinicians?)\b',
@@ -484,6 +486,20 @@ def _population_question(q, r, profile, as_of, info):
         info['reason'] = 'words not interpreted locally: ' + ', '.join(info['unexplained'][:12])
         return None, info
 
+    if trend:
+        target = next((c for c, cmp, _ in measured), None)
+        if target is None:
+            info.update(route='fallback', reason='trend requested without a measurement'); return None, info
+        word = trend.group(0)
+        direction = ('down' if re.search(r'declin|dropp|fall|down', word) else 'up' if re.search(r'ris|increas|climb|up', word) else
+                     'better' if 'improv' in word else 'worse')
+        base = [a for a in allp if not (a['kind'] in ('measurement', 'concept') and a.get('concept') == target)]
+        info['route'] = 'local_compiler'
+        return {'interpretation': q, 'coverage': 'supported_observation', 'unmet_requirements': [], 'nodes': [
+            {'id': 'population', 'operation': 'cohort', 'inputs': [], 'parameters': {'specification': {'all': base[:20], 'any': [], 'exclude': excl[:20]}},
+             'purpose': 'Population named in the question'},
+            {'id': 'trend', 'operation': 'trajectory', 'inputs': ['population'], 'parameters': {'concept': target, 'direction': direction},
+             'purpose': f'{direction} {target} trajectories'}]}, info
     if hotspot:
         segments = hot_segments or ([group] if group in ('practice', 'pcp', 'coverage_type') else None)
         for concept, start in events:  # encounter types are outcomes here, not counted events
