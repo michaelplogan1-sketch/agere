@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-10-13T18:30:56.420414+00:00",
+  "updated_at": "2026-10-13T19:11:36.181930+00:00",
   "decision_basis": "AGERE_CTO_REVIEW_2026-10-11_EVENING.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -278,8 +278,8 @@
     "kind": "manual_turn_checkpoint",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "Integration milestone: one capability registry drives the operator router, frontier planner contracts, console and acceptance suite. Operator router (two-step Haiku tool call: choose engine, fill typed schema; validators authoritative; heals malformed parameters) makes every engine reachable from any phrasing. Wave A merged: profile (hierarchical Bayes + Buhlmann credibility), pathway (Markov chains, absorbing chains, process mining, leakage), demand (ETS/NB-GLM with rolling-origin backtest, conformal intervals, beds/staffing), market (practice/PCP/payer tickers ranked by surprise x impact, briefing card), conformal layer + calibration operation (trajectory/outreach/vbc intervals with backtested coverage). Compiler declines count-only plans for why/trend questions; age_reported vs age_latest split (D03 fixed).",
-    "measured_failure_reduction": "Acceptance 107/107 across 13 engines end to end through the service ($0.25 per full run uncached); smoke 49/50 + all probes. Blind P (heldout8) baseline unchanged: ~14% engine errors.",
+    "user_behavior_delta": "Integration milestone: one capability registry drives the operator router, frontier planner contracts, console and acceptance suite. Operator router (two-step Haiku tool call: choose engine, fill typed schema; validators authoritative; heals malformed parameters) makes every engine reachable from any phrasing. Wave A merged: profile (hierarchical Bayes + Buhlmann credibility), pathway (Markov chains, absorbing chains, process mining, leakage), demand (ETS/NB-GLM with rolling-origin backtest, conformal intervals, beds/staffing), market (practice/PCP/payer tickers ranked by surprise x impact, briefing card), conformal layer + calibration operation (trajectory/outreach/vbc intervals with backtested coverage). Compiler declines count-only plans for why/trend questions; age_reported vs age_latest split (D03 fixed). Wave B merged: early_signal (matched filter, false-alarm controlled), claims_review (peer outliers, Benford, duplicates, underpayment, denial Pareto in dollars), scheduling (no-show model, overbooking, reminders, access), briefing learning-to-rank (prior = old rule, pairwise ranker from feedback, MMR, explore slot) + briefing question route. 16 registered engines; live service 8885 on current code.",
+    "measured_failure_reduction": "Acceptance 140/140 across 17 capability files on the live service; smoke 49/50 + all probes. Engines on synthetic data report no-skill where the generator has no signal (D21 precursors, D22 no-shows).",
     "evidence": [
       "clinical_core/agere/clinical/verify.py",
       "clinical_core/agere/clinical/learning.py",
@@ -293,7 +293,7 @@
     ],
     "remaining_gap": "Engine errors ~14% vs <3% target; bottled local model not yet trained; v1.24 data re-baseline pending.",
     "next_action": "Adjudicate frontier on P; finish harvest; train bottled model; next blind set with head-to-head.",
-    "next": "Wave B (matched filter, peer-outlier claims, overbooking, learning-to-rank briefing), Wave C (reranker, learned router, embedding cache, Jev online, bottled SLM rung, automated learning loop), Wave D (DuckDB/latency, FMEA, scorecard). Capability benchmark (bench/capability, 40 items, blind) reserved for the single final head-to-head with Mike-approved cost."
+    "next": "Merge v2.0 warehouse migration (feature/warehouse-v2, in progress) and re-baseline; Wave C model layer (bottled SLM rung, reranker, learned router, embedding cache, Jev online, automated learning loop); Wave D; v2.1 data (D9-D22) when the generator delivers."
   },
   "decisions": [
     {
