@@ -42,6 +42,11 @@ PRODUCT = {
 PRODUCT['pathway'] = {'population': 'optional', 'view': 'flow',
                       'use': 'Care pathways / patient journeys: where patients go after an ED visit, discharge or PCP visit, follow-up within N days vs ED return, leakage to outside organisations, most common paths, chance of admission within N steps or days. Use for the SEQUENCE of next steps; '
                              'for how quickly / median days until one event, use survival.'}
+PRODUCT['claims_review'] = {'population': 'optional', 'view': 'pareto',
+                            'use': 'Payment integrity and revenue leakage in DOLLARS: which providers bill unusually vs peers, suspicious billing patterns, '
+                                   'where we leak money (denial write-offs, underpayments, take-backs, rework), which claims were underpaid vs comparable claims, '
+                                   'denial patterns by payer and reason; review flags ranked by expected dollars. '
+                                   'Is-it-out-of-control charts, denial-rate shifts over time and feed health are monitor.'}
 
 # Questions a SQL query over the semantic tables answers exactly are handed to the verified SQL ladder.
 LITERAL = ('Literal data questions: counts, lists, sums, averages, maxima, record filters, date arithmetic, simple breakdowns '

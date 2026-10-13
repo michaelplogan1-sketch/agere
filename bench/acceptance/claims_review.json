@@ -1,0 +1,34 @@
+[
+ {
+  "question": "Which providers bill unusually compared to peers?",
+  "expect_operation": "claims_review"
+ },
+ {
+  "question": "Any suspicious billing patterns?",
+  "expect_operation": "claims_review"
+ },
+ {
+  "question": "Where are we leaking money in claims (denials, underpayments, rework)?",
+  "expect_operation": "claims_review"
+ },
+ {
+  "question": "Which claims were underpaid versus what similar claims were paid?",
+  "expect_operation": "claims_review"
+ },
+ {
+  "question": "Explain the denial patterns by payer and reason",
+  "expect_operation": "claims_review"
+ },
+ {
+  "question": "Which payers underpay us the most?",
+  "expect_operation": "claims_review"
+ },
+ {
+  "question": "How much revenue did we write off in denials last year?",
+  "expect_operation": "claims_review"
+ },
+ {
+  "question": "Show reversals and take-backs by payer",
+  "expect_operation": "claims_review"
+ }
+]

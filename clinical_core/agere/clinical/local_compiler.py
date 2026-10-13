@@ -475,6 +475,9 @@ def _compile(question, profile, as_of):
     watch = _monitor_question(q, r, profile, as_of, info)
     if watch is not None:
         return watch
+    integrity = _claims_review_question(q, r, profile, as_of, info)  # after monitor: Benford/duplicate/control-chart wording stays there
+    if integrity is not None:
+        return integrity
     moved = _market_question(q, r, profile, as_of, info)  # after monitor: control-chart questions stay with monitor
     if moved is not None:
         return moved
@@ -594,6 +597,89 @@ def _monitor_question(q, r, profile, as_of, info):
             'nodes': [{'id': 'answer', 'operation': 'monitor', 'inputs': [], 'parameters': params,
                        'purpose': f"Monitor: {params['check']}" + (f" {', '.join(params['series'])}" if params['series'] else '')
                                   + (f" by {params['group_by']}" if params['group_by'] != 'auto' else '')}]}, info
+
+
+# ---- claims review: payment integrity and revenue leakage in dollars ---------------------------------
+CLAIMS_UNDERPAID = r"\bunder[- ]?pa(?:id|ys?|yments?|ying)\b|\bshort[- ]?pa(?:id|ys?|yments?)\b|\bpaid (?:us )?less than (?:expected|similar|comparable|contract)"
+CLAIMS_LEAK = (r"\bleak(?:s|ing|age)?\b|\blosing (?:money|revenue|dollars)\b|\b(?:revenue|money|dollars?) (?:lost|left on the table)\b|"
+               r"\bwrite[- ]?offs?\b|\bwritten[- ]off\b")
+CLAIMS_DENIALS = (r"\bdenial (?:patterns?|reasons?|pareto|codes?|root causes?|categor(?:y|ies)|drivers?)\b|\b(?:patterns?|reasons?|causes?) (?:of|for|behind) "
+                  r"(?:(?:our|the|claims?) )*denials?\b|\bwhy (?:are|were|do|did) (?:our |the )?claims? (?:get )?denied\b|\boverturn(?:ed)?(?: rates?)?\b|"
+                  r"\bcarcs?\b|\badjustment reason codes?\b|\bdenials? (?:by|per) (?:payer|reason)\b")
+CLAIMS_CHURN = (r"\bresubmi(?:ssions?|tted|ts?)\b|\brework\b|\breversals?\b|\btake[- ]?backs?\b|\bclaw[- ]?backs?\b|\brecoup(?:ments?|ed)?\b|"
+                r"\brepric(?:ed|ing)\b|\bduplicate or resubmitted\b")
+CLAIMS_PEERS = (r"\b(?:bill(?:s|ed|ing)?|charg(?:e|es|ed|ing)) (?:unusually|abnormally|oddly|strangely|differently|much more|more)\b|"
+                r"\bunusual(?:ly)? (?:high )?(?:billers?|billing providers?)\b|\b(?:billing|coding) (?:outliers?|anomal\w*)\b(?= .*\bproviders?\b)|"
+                r"\b(?:over[- ]?bill\w*|upcod\w*|outlier billers?)\b")
+CLAIMS_INTEGRITY = (r"\bsuspicious (?:billing|claims?|patterns?|charges?)\b|\bbilling patterns?\b|\bpayment integrity\b|\bclaims? (?:integrity )?review flags?\b|"
+                    r"\bfraud\w*\b|\bwaste,? (?:and |or )?abuse\b|\bimproper payments?\b")
+CLAIMS_TRIGGER = '|'.join((CLAIMS_UNDERPAID, CLAIMS_LEAK, CLAIMS_DENIALS, CLAIMS_CHURN, CLAIMS_PEERS, CLAIMS_INTEGRITY))
+CLAIMS_FILLER = (r"\b(?:which|what|where|who|whose|why|how|is|are|was|were|do|does|did|have|has|had|been|be|we|us|our|the|a|an|any|anything|of|on|in|for|"
+                 r"by|to|and|or|with|versus|vs|than|that|this|these|those|there|show|list|find|flag|give|tell|explain|identify|spot|look|check|run|see|"
+                 r"me|it|they|them|their|its|most|top|biggest|largest|main|some|signs?|patterns?|claims?|billing|bills?|billed|money|dollars?|revenue|"
+                 r"cash|payments?|paid|pay|payers?|plans?|insurers?|reasons?|reason codes?|denials?|denied|providers?|practices?|clinics?|organi[sz]ations?|"
+                 r"facilit(?:y|ies)|peers?|similar|comparable|compared|relative|against|expected|unusual(?:ly)?|suspicious|abnormal(?:ly)?|odd|weird|"
+                 r"strange|outliers?|high|higher|much|more|less|lower|getting|get|being|going|losing|lost|patterns?|leaking|trend|days?|"
+                 r"resolution|recovered|recover|rates?|duplicates?|duplicated|exact|near|first[- ]pass|other|others|same|services?|setting|mix|"
+                 r"where are we|could|should|can|would|happening|happen|problems?|issues?|amounts?|charges?|charged|by how much|recently|lately)\b")
+
+
+def _claims_review_question(q, r, profile, as_of, info):
+    low = r.low
+    if not re.search(CLAIMS_TRIGGER, low): return None
+    hit = lambda pattern: bool(re.search(pattern, low))
+    under, leak, deny, churn = hit(CLAIMS_UNDERPAID), hit(CLAIMS_LEAK), hit(CLAIMS_DENIALS), hit(CLAIMS_CHURN)
+    peers, integrity = hit(CLAIMS_PEERS), hit(CLAIMS_INTEGRITY)
+    # Plain counts of received events ("how many reversals / overturned denials") stay literal: no estimation method needed.
+    if re.search(r'^\s*(?:how many|count (?:of |the )?|number of|what (?:is|was) the (?:number|count|total) of)\b', low) and \
+            not (under or leak or peers or integrity) and not re.search(r'\b(?:patterns?|reasons?|pareto|why)\b', low):
+        return None
+    if leak or (under and (deny or churn)) or (deny and churn):
+        focus = 'leakage' if not (peers or integrity) else 'all'
+    elif under: focus = 'underpayment'
+    elif deny: focus = 'denials'
+    elif churn: focus = 'duplicates'
+    elif peers and not integrity: focus = 'providers'
+    else: focus = 'all'
+    params = {'focus': focus}
+    for pattern in (CLAIMS_UNDERPAID, CLAIMS_LEAK, CLAIMS_DENIALS, CLAIMS_CHURN, CLAIMS_PEERS, CLAIMS_INTEGRITY):
+        r.take(pattern, f'claims review {focus}')
+    for pattern, by in ((r'\bby (?:payer|payor|plan|insurer)s?\b', 'payer'), (r'\bby (?:provider|practice|clinic|organi[sz]ation|facility)s?\b', 'provider'),
+                        (r'\bby (?:service|service code|procedure)s?\b', 'service'), (r'\bby (?:setting|site type)s?\b', 'setting')):
+        if r.take(pattern, f'by {by}'):
+            params.setdefault('by', by)
+    m = r.take(r'\b(?:payer|plan) ((?:wh-)?payer-\d+|[a-z]+-[a-z0-9_.-]*\d)\b|\b(wh-payer-\d+)\b', 'payer filter')
+    if m: params['payer'] = (m[0].group(1) or m[0].group(2)).upper()
+    m = r.take(r'\b(wh-(?:practice|lab|specialty|hospital|medcare|urgent|gi|diagnostic|[a-z]+)-\d+)\b', 'provider filter')
+    if m: params['provider'] = m[0].group(1).upper()
+    m = r.take(r'\$(\d+(?:\.\d+)?) (?:per|a|each|for each) (?:rework|touch|resubmission|correction|rejection)s?\b', 'rework cost')
+    if m: params['rework_cost'] = float(m[0].group(1))
+    m = r.take(r'\b(?:fdr|false discovery rate)(?: of| at)? (\d+(?:\.\d+)?)\s*(%|percent)?', 'fdr')
+    if m: params['fdr'] = float(m[0].group(1)) / (100 if m[0].group(2) or float(m[0].group(1)) > 1 else 1)
+    period = _take_period(r, as_of)
+    if period:
+        params['period'] = {'start': period[0], 'end': period[1]}
+    elif r.take(r'\b(?:this|the current) year\b|\byear[- ]to[- ]date\b|\bytd\b|\bso far this year\b', 'this year'):
+        params['period'] = {'start': f'{as_of[:4]}-01-01', 'end': as_of}
+    elif r.take(r'\blast year\b|\bthe prior year\b', 'last year'):
+        y = int(as_of[:4]) - 1
+        params['period'] = {'start': f'{y}-01-01', 'end': f'{y}-12-31'}
+    r.take(CLAIMS_FILLER, None, overlap=True)
+    info['unexplained'] = r.blocking(profile)
+    info['ignored_words'] = getattr(r, 'ignored', [])
+    if info['unexplained']:
+        info.update(route='fallback', reason='claims review words not interpreted locally: ' + ', '.join(info['unexplained'][:12]))
+        return None, info
+    from .claims_review import validate
+    try:
+        params = validate(params)
+    except ValueError as exc:
+        info.update(route='fallback', reason=f'claims_review parameters: {exc}')
+        return None, info
+    info['route'] = 'local_compiler'
+    return {'interpretation': q, 'coverage': 'supported_observation', 'unmet_requirements': [],
+            'nodes': [{'id': 'answer', 'operation': 'claims_review', 'inputs': [], 'parameters': params,
+                       'purpose': f"Claims review: {params['focus']}" + (f" by {params['by']}" if params['focus'] in ('denials', 'leakage', 'all') else '')}]}, info
 
 
 # ---- markets view: practice / PCP / payer tickers ------------------------------------------
@@ -2218,6 +2304,8 @@ def _pathway_question(q, profile, as_of):
     """Care-pathway questions -> pathway operator, or decline (fallback) when anything meaningful is left unexplained."""
     low = _strip_framing(q.lower())
     if not re.search(PATHWAY_INTENT, low): return None
+    if re.search(CLAIMS_LEAK, low) and re.search(r'\b(?:money|revenue|dollars?|cash|claims?|denials?|underpa\w*|billing|payments?)\b', low):
+        return None  # revenue leakage is a claims_review question, not patients leaving the network
     info = {'compiler': VERSION, 'recognised': [], 'paraphrased': [], 'route': 'local_compiler'}
     decline = lambda reason: (None, {**info, 'route': 'fallback', 'reason': reason})
     if re.search(r'\bcash flow\b|\bfund(?:s|ing)? flow\b|\bclaims? flow\b|\bby (?:month|quarter|year|week)\b|\bmonthly\b|\bquarterly\b', low):

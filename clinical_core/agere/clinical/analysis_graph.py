@@ -27,6 +27,7 @@ OPERATIONS |= {'market'}  # markets view: practice / PCP / payer tickers (market
 OPERATIONS |= {'pathway'}  # care pathways (Markov chains, process mining)
 OPERATIONS = OPERATIONS | {'profile'}
 OPERATIONS |= {'calibration'}  # calibration of predictions (conformal.py)
+OPERATIONS |= {'claims_review'}  # payment integrity and revenue leakage (claims_review.py)
 NODE_FIELDS = {'id', 'operation', 'inputs', 'parameters', 'purpose'}
 LIMITS = [
     'Membership means observed predicate matches, not confirmed disease or absent care.',
@@ -123,6 +124,7 @@ NO_BENCHMARK_OPERATIONS = ('outreach', 'monitor', 'demand', 'survival', 'program
 NO_BENCHMARK_OPERATIONS += ('market',)
 NO_BENCHMARK_OPERATIONS += ('pathway',)
 NO_BENCHMARK_OPERATIONS += ('calibration',)
+NO_BENCHMARK_OPERATIONS += ('claims_review',)
 
 
 def benchmark_references(answer, question=None, operation=None):
@@ -346,6 +348,22 @@ def build_answer(plan, results, memberships, question):
                                'tests_examined': report['tests_examined'], 'look_elsewhere_bits': report['look_elsewhere_bits'],
                                'charts': chart_points(report)})
         return answer
+    if last['operation'] == 'claims_review':
+        from .claims_review import summarize as claims_summary
+        report = results[-1]['result']
+        partial = plan.get('coverage') != 'supported_observation' or plan.get('unmet_requirements')
+        value, table = claims_summary(report)
+        ok = bool(report['claims'])
+        answer.update(status=('partial' if partial else 'answered') if ok else 'unsupported', answer_type='table' if ok else 'unsupported',
+                      value=value, table=table, count=len(report['flags']), method=report['method'], limitations=report['limitations'],
+                      overall={'claims_review': {k: report.get(k) for k in ('parameters', 'period', 'claims', 'patients', 'providers', 'payers', 'billed',
+                                                                         'allowed', 'runs', 'notes', 'leakage_pareto')},
+                               'denials': {k: v for k, v in (report.get('denials') or {}).items()} or None,
+                               'underpayment': {k: v for k, v in (report.get('underpayment') or {}).items() if k != 'claims'} or None,
+                               'providers': report.get('provider_review'), 'benford': report.get('benford'),
+                               'duplicates': report.get('duplicates'), 'churn': report.get('churn')})
+        if not ok: answer['missing'].append(value)
+        return answer
     if last['operation'] == 'market':
         from .market import summarize as market_summary
         report = results[-1]['result']
@@ -520,6 +538,11 @@ def validate(plan, as_of):
             p = monitor.validate(p)
             if any(v > as_of for v in p['period'].values()):
                 raise ValueError('Monitor period exceeds snapshot cutoff')
+        elif op == 'claims_review':
+            from . import claims_review
+            p = claims_review.validate(p)
+            if any(v > as_of for v in p['period'].values()):
+                raise ValueError('Claims review period exceeds snapshot cutoff')
         elif op == 'market':
             from . import market
             p = market.validate(p)
@@ -809,7 +832,7 @@ def code_identity():
                       Path(__file__).with_name('warehouse_retrieval.py'),
                       Path(__file__).with_name('warehouse_prediction.py'),
                       Path(__file__).with_name('longitudinal.py'), Path(__file__).with_name('survival.py'),
-                      Path(__file__).with_name('monitor.py'),
+                      Path(__file__).with_name('monitor.py'), Path(__file__).with_name('claims_review.py'),
                       Path(__file__).with_name('market.py'),
                       Path(__file__).with_name('demand.py'),
                       Path(__file__).with_name('profile.py'),
@@ -1136,6 +1159,11 @@ def execute(stack, plan, *, question=None):
                 from . import monitor
                 chosen = memberships[node['inputs'][0]] if node['inputs'] else None
                 detail = monitor.execute(path, sorted(chosen.yes) if chosen else None, params, meta['snapshot']['as_of'])
+                if chosen: detail['input_membership'] = membership_receipt(chosen)
+            elif op == 'claims_review':
+                from . import claims_review
+                chosen = memberships[node['inputs'][0]] if node['inputs'] else None
+                detail = claims_review.execute(path, sorted(chosen.yes) if chosen else None, params, meta['snapshot']['as_of'])
                 if chosen: detail['input_membership'] = membership_receipt(chosen)
             elif op == 'market':
                 from . import market
