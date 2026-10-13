@@ -1,0 +1,19 @@
+# MLX LoRA for the bottled plan model (Qwen3-4B). Run after tools/bottling/prepare.py:
+#   .venv/bin/python -m mlx_lm lora -c tools/bottling/lora.yaml
+model: models/qwen3-4b
+train: true
+data: artifacts/bottling/data
+adapter_path: artifacts/bottling/adapters-v1
+fine_tune_type: lora
+num_layers: 16
+batch_size: 1
+grad_accumulation_steps: 8
+iters: 600
+learning_rate: 1.0e-4
+mask_prompt: true          # learn the SQL, not the schema
+max_seq_length: 6144
+grad_checkpoint: true
+steps_per_report: 20
+steps_per_eval: 100
+save_every: 200
+seed: 7
