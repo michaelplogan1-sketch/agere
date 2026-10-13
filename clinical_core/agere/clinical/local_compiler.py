@@ -11,6 +11,7 @@ If anything substantive is left over, it declines and reports exactly which
 words it could not interpret, so the fallback is explicit and measurable.
 """
 import re
+from collections import Counter
 
 from . import concepts, source_profile
 
@@ -105,6 +106,10 @@ UNSUPPORTED = [
     (r'\bshared[- ]savings\b|\bpayer contract\b|\bsettlement\b',
      ['executed payer contract terms', 'attribution roster under the contract', 'benchmark/baseline expenditure',
       'quality score and sharing-rate schedule']),
+    (r'\bcapitation\b|\bcontract(?:ed)? rate\b|\bmedicare advantage contract\b|\bmla\b|\bpremium revenue\b',
+     ['executed payer contract with capitation/premium rates', 'member-month eligibility under the contract', 'risk-adjusted revenue schedule']),
+    (r'\bobjectively\b|\bwearable\b|\bactivity tracker\b|\baccelerometer\b|\bminutes of (?:moderate|vigorous) exercise\b',
+     ['device or objectively measured activity data (none is received)']),
     (r'\bswallow(?:ed)?\b|\bactually (?:took|taken|swallowed)\b|\bverified independently\b',
      ['direct observation of medication ingestion (no received source records it)']),
 ]
@@ -201,8 +206,11 @@ class Reader:
         """Leftover words that carry meaning Agere failed to use: numbers, operators, or data-dictionary/clinical terms.
         Conversational filler is ignored (and recorded)."""
         vocab = _vocabulary(profile)
+        stems = {t[:5] for t in vocab if len(t) >= 5}
         left = self.leftover()
-        block = [w for w in left if re.search(r'\d', w) or w in OPERATOR_WORDS or w.rstrip('s') in vocab or w in vocab]
+        # Inflections count: 'rejections' carries the meaning of the observed value 'rejected'.
+        block = [w for w in left if re.search(r'\d', w) or w in OPERATOR_WORDS or w.rstrip('s') in vocab or w in vocab
+                 or (len(w) >= 5 and w[:5] in stems)]
         self.ignored = [w for w in left if w not in block]
         return block
 
@@ -224,6 +232,22 @@ def _alias_pattern(alias):
 def _negated(low, start):
     window = low[max(0, start - 40):start]
     return bool(re.search(r'\b(?:no|not|without|never|lacks?|lacking|but no|excluding|exclude|except)\b(?:\s+\S+){0,4}\s*$', window))
+
+
+NATURAL_STREAM_EXCLUDE = {'conditions', 'labs', 'vitals', 'encounters', 'patients', 'coverage', 'notes', 'documents', 'social_screens', 'financial_screens'}
+
+
+def _field_forms(fields):
+    """Natural names for fields: 'payment channel', and a distinctive last word ('channel') when unique."""
+    last = Counter(f.split('_')[-1] for f in fields)
+    forms = {}
+    for f, spec in fields.items():
+        if not spec['populated'] or len(f) < 3: continue
+        out = {f, f.replace('_', ' ')}
+        tail = f.split('_')[-1]
+        if last[tail] == 1 and len(tail) > 4 and tail not in ('cents', 'reported', 'date', 'time', 'status'): out.add(tail)
+        forms[f] = sorted(out, key=len, reverse=True)
+    return forms
 
 
 def _stream_vocabulary(profile):
@@ -367,7 +391,8 @@ def _population_question(q, r, profile, as_of, info):
                 dm = re.search(r'with ([a-z_]+_date) in (\d{4})', window)
                 if dm and dm.group(1) in fields:
                     cond.append({'field': dm.group(1), 'op': 'prefix', 'value': dm.group(2)})
-                    r.take(r'with ' + dm.group(1) + r' in ' + dm.group(2), 'date year')
+                    r.take(r'with ' + dm.group(1) + r' in ' + dm.group(2), 'date year', overlap=True)
+                    if period and period[0][:4] == dm.group(2): period = None  # the year belongs to this field, not a global window
                 atom = {'kind': 'record', 'stream': s_name, 'conditions': cond, 'window': W}
                 (excl if _negated(low, sm.start()) else allp).append(atom)
     # social-screen flags (true unless "as false"/"false")
@@ -525,6 +550,9 @@ def _population_question(q, r, profile, as_of, info):
         else:
             # share of the base population that has the last-named concept/measurement
             subject = allp[-1] if allp else None
+            if event_concept and (share or count):
+                subject = {'kind': 'concept', 'concept': event_concept, 'window': W}
+                allp = allp + [subject]
             if subject is None or subject['kind'] not in ('concept', 'measurement'):
                 info.update(route='fallback', reason='share requested without a subject'); return None, info
             base_all = allp[:-1]
@@ -557,7 +585,10 @@ def _literal_stream_question(q, r, profile, as_of, info):
         for f in forms:
             m = re.search(_alias_pattern(f) + r'(?:\s+(?:records?|rows?|notifications?|entries|entry))?', low)
             named_field = any(re.search(_alias_pattern(x), low) for x in profile['streams'][s]['fields'] if '_' in x and len(x) > 6)
-            if m and (re.search(r'records?|rows?|notifications?|entr', m.group(0)) or '_' in f or s == 'adt' or named_field):
+            subject = m and len(f) >= 5 and s not in NATURAL_STREAM_EXCLUDE and profile['streams'][s]['records'] >= 20 and (
+                re.search(r'\b(?:how many|count|number of|total(?: up)?|sum of|list|which|each|on|of|for)\b(?:\s+[\w-]+){0,4}\s+' + _alias_pattern(f), low)
+                or re.search(_alias_pattern(f) + r'\s+(?:with|that|which|whose|have|has|had|by|in|from|were|was|are|is|went|came|marked|scheduled|booked|split|lack)\b', low))
+            if m and (re.search(r'records?|rows?|notifications?|entr', m.group(0)) or '_' in f or s == 'adt' or named_field or subject):
                 stream, span = s, m
                 break
         if stream: break
@@ -569,15 +600,22 @@ def _literal_stream_question(q, r, profile, as_of, info):
         r.take(r'\b' + re.escape(token.rstrip('s')) + r's?\b', None, overlap=True)
     conds, sql_where, named_fields = [], [], []
     group_field = None
-    g = re.search(r'\bby (?:the )?(?:recording |source |service )?([a-z_]+)\b', low)
-    if g:
-        cand = g.group(1) if g.group(1) in fields else {'organization': 'organization_id', 'clinician': 'attending_clinician_id'}.get(g.group(1))
-        if cand in fields:
-            group_field = cand; r.take(r'\bby (?:the )?(?:recording |source |service )?' + re.escape(g.group(1)) + r'\b', f'group by {cand}')
-    # literal field names mentioned
-    for f in sorted(fields, key=len, reverse=True):
-        if not fields[f]['populated'] or len(f) < 3: continue
-        for m in r.take(_alias_pattern(f), f'field {f}'): named_fields.append(f)
+    forms = _field_forms(fields)
+    forms.setdefault('organization_id', []).extend(['organization', 'site', 'facility'])
+    g_lead = r'\b(?:by|for each|per|split by|broken down by|break(?:s)? down by|went to each|to each|each)\s+(?:the |their |claim |patient\'s )?(?:recording |source |service )?'
+    for f, fs in sorted(forms.items(), key=lambda kv: -max(map(len, kv[1]))):
+        for form in fs:
+            hit = next(iter(r.take(g_lead + _alias_pattern(form), f'group by {f}')), None)
+            if hit: group_field = f; break
+        if group_field: break
+    for m in r.take(r'\barrived in a later calendar year than (?:their )?source event dates?\b', 'arrival year after event year'):
+        sql_where.append("event_date IS NOT NULL AND available_date IS NOT NULL AND substr(available_date,1,4) > substr(event_date,1,4)")
+    for m in r.take(r'\barrived more than (\d+) (?:calendar )?days after (?:their )?source event dates?\b', 'arrival lag'):
+        sql_where.append(f"event_date IS NOT NULL AND available_date IS NOT NULL AND julianday(available_date) - julianday(event_date) > {m.group(1)}")
+    # field names mentioned (exact or natural)
+    for f, fs in sorted(forms.items(), key=lambda kv: -max(map(len, kv[1]))):
+        for form in fs:
+            for m in r.take(_alias_pattern(form), f'field {f}'): named_fields.append(f)
     sum_m = r.take(r'\b(?:gross |raw |total )?sum(?: in usd)?(?: of)?\b', 'sum', overlap=True)
     # observed values mentioned (for low-cardinality fields)
     candidates = [(f, v) for f, spec in fields.items() for v in (spec.get('values') or {})
@@ -607,10 +645,6 @@ def _literal_stream_question(q, r, profile, as_of, info):
         col = 'event_date' if date_field == 'event_date' else f"json_extract(payload,'$.{date_field}')"
         sql_where.append(f"{col} BETWEEN '{y}-{mo:02d}-01' AND '{y}-{mo:02d}-{calendar.monthrange(int(y), mo)[1]:02d}'")
         named_fields = [x for x in named_fields if x != date_field]
-    for m in r.take(r'\barrived in a later calendar year than (?:their )?source event dates?\b', 'arrival year after event year'):
-        sql_where.append("event_date IS NOT NULL AND available_date IS NOT NULL AND substr(available_date,1,4) > substr(event_date,1,4)")
-    for m in r.take(r'\barrived more than (\d+) (?:calendar )?days after (?:their )?source event dates?\b', 'arrival lag'):
-        sql_where.append(f"event_date IS NOT NULL AND available_date IS NOT NULL AND julianday(available_date) - julianday(event_date) > {m.group(1)}")
     # year windows: "in 2028" on a named date field or the source event date
     date_field = next((f for f in named_fields if f.endswith('_date')), 'event_date')
     for m in r.take(r'\b(?:with )?(?:source[- ]event[- ]dated |source event dates? )?(?:in|during) (\d{4})\b|(?<=count )(\d{4})\b', 'year'):
@@ -624,8 +658,13 @@ def _literal_stream_question(q, r, profile, as_of, info):
     patients = bool(re.search(r'\b(?:patients?|people)\b', low))
     where = ' AND '.join([f"stream = '{stream}'", *sql_where])
     amount = next((f for f in named_fields if re.search(r'cents|amount', f)), None)
+    if not sum_m and re.search(r'\bwhat did [\w ]*\bpay\b|\btotal(?: up)?\b|\bhow much\b', low):
+        sum_m = r.take(r'\bwhat did\b|\bpay\b|\btotal(?: up)?\b|\bhow much\b', 'sum', overlap=True)
     if sum_m and not amount:
-        amount = next((f for f in fields if re.search(r'(?:amount|allowed|paid)_cents', f)), None)
+        prefs = ([r'payer_paid'] if re.search(r'\bpayers?\b', low) else []) + ([r'patient_paid|amount'] if re.search(r'\bpatients? (?:paid|pay)', low) else []) + \
+                ([r'allowed'] if 'allowed' in low else []) + ([r'billed|charge'] if re.search(r'billed|charges?', low) else []) + [r'amount_cents', r'paid_cents', r'_cents']
+        amount = next((f for pat in prefs for f in fields if f.endswith('_cents') and re.search(pat, f)), None)
+        r.take(r'\bpayers?\b|\bpaid\b|\bpay\b|\ballowed\b|\bbilled\b|\bdollars?\b|\bcents\b|\banswer in\b', None, overlap=True)
     info['unexplained'] = [w for w in r.blocking(profile) if w not in {'usd', 'gross', 'raw', 'rows', 'net', 'refunds', 'subtract', 'infer',
                                                                 'balances', 'corrections', 'realized', 'savings', 'treat', 'cents', 'table',
                                                                 'organization_id', 'encounter_count', 'claim_record_count', 'clinician_id'}]
@@ -634,7 +673,13 @@ def _literal_stream_question(q, r, profile, as_of, info):
         return None, info
     cols = re.search(r'table with ([a-z_]+) and ([a-z_]+)', low)
     key_name, count_name = (cols.group(1), cols.group(2)) if cols else (group_field, 'count')
-    if group_field:
+    if group_field and sum_m and amount:
+        key_name = cols.group(1) if cols else group_field
+        total_name = cols.group(2) if cols else 'total_cents'
+        sql = (f"SELECT json_extract(payload,'$.{group_field}') AS {key_name}, sum(json_extract(payload,'$.{amount}')) AS {total_name} "
+               f"FROM record WHERE {where} AND json_extract(payload,'$.{group_field}') IS NOT NULL GROUP BY 1 ORDER BY 2 DESC")
+        returns = 'table'
+    elif group_field:
         sql = (f"SELECT json_extract(payload,'$.{group_field}') AS {key_name}, count(*) AS {count_name} FROM record WHERE {where} "
                f"AND json_extract(payload,'$.{group_field}') IS NOT NULL GROUP BY 1 ORDER BY 2 DESC")
         returns = 'table'
