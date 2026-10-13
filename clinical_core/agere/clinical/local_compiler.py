@@ -111,36 +111,202 @@ COMPARATORS = [(r'(?:at or above|at or over|at least|no less than|>=|≥)', 'ge'
                (r'(?:over|above|greater than|more than|higher than|exceed(?:ed|s|ing)?|>)', 'gt'),
                (r'(?:below|under|less than|lower than|<)', 'lt'), (r'(?:equal to|exactly|=)', 'eq')]
 NUMBER = r'(-?\d+(?:\.\d+)?)'
+# Demographic and coding words whose answerability depends on the release (v2.0 adds race/ethnicity, language,
+# interpreter need and CPT/HCPCS): the refusal applies only when the source profile shows the field is not received.
+RACE_WORDS = (r'\brace\b|\braces\b|\bethnicit(?:y|ies)\b|\bracial\b|\bhispanic\b|\blatin[oax]\b|\b(?:black|white|asian|native american|pacific islander|'
+              r'african american)(?: (?:and|or|vs\.?|versus) (?:black|white|asian|hispanic|latin[oax]))? (?:patients|members|people|population|adults|women|men)\b|'
+              r'\bhealth equity stratif\w+\b|\bequity stratif\w+\b')
+LANGUAGE_WORDS = (r'\binterpreters?\b|\bpreferred languages?\b|\blanguage preferences?\b|\blimited english\b|\blep\b|\bnon[- ]english\b|'
+                  r'\b(?:by|per|for each) (?:primary |spoken )?language\b|\blanguage other than english\b|'
+                  r'\b(?:english|spanish|portuguese|chinese|mandarin|cantonese|vietnamese|korean|khmer|haitian(?: creole)?|creole|russian|arabic)[- ]speak\w*\b|'
+                  r'\bspeak(?:s|ing)? (?:english|spanish|portuguese|chinese|mandarin|cantonese|vietnamese|korean|khmer|haitian(?: creole)?|creole|russian|arabic)\b')
+# Category words name a subgroup (a filter); only group-by stratification is answered locally, so these go to the router.
+DEMOGRAPHIC_CATEGORY = (r'\bhispanic\b(?! ethnicity)|\blatin[oax]\b|\b(?:black|white|asian|native american|pacific islander|african american)\b|'
+                        r'\b(?:english|spanish|portuguese|chinese|mandarin|cantonese|vietnamese|korean|khmer|haitian|creole|russian|arabic)\b|'
+                        r'\bnon[- ]english\b|\blimited english\b|\blep\b|\bother than english\b|\bneed(?:s|ing|ed)? an interpreter\b')
+CPT_WORDS = r'\bcpt(?:/hcpcs)?\b|\bhcpcs\b'
+DEMOGRAPHIC_GROUPS = ('race', 'ethnicity', 'race_ethnicity', 'language', 'interpreter')
+GROUPS_DEMOGRAPHIC = [  # only offered when the source profile carries the field
+    (r'\b(?:by|across|per|for each|stratified by|stratify(?:ing)? by|broken (?:down|out) by) race(?:/| and | or |, )ethnicity\b|'
+     r'\b(?:by|across|stratified by) racial(?: and| or|/) ethnic (?:groups?|categor\w+)\b', 'race_ethnicity'),
+    (r'\b(?:by|across|per|for each|stratified by|stratify(?:ing)? by|broken (?:down|out) by) (?:race|racial (?:groups?|categor\w+))\b', 'race'),
+    (r'\b(?:by|across|per|for each|stratified by|stratify(?:ing)? by|broken (?:down|out) by) (?:ethnicity|ethnic (?:groups?|categor\w+)|hispanic ethnicity)\b', 'ethnicity'),
+    (r'\b(?:by|across|per|for each|stratified by|broken (?:down|out) by) (?:preferred |primary |spoken )?language\b', 'language'),
+    (r'\b(?:race|racial) (?:breakdown|mix|distribution|split|makeup|composition)\b', 'race'),
+    (r'\bethnic(?:ity)? (?:breakdown|mix|distribution|split|makeup|composition)\b', 'ethnicity'),
+    (r'\b(?:preferred )?language (?:breakdown|mix|distribution|split)\b', 'language'),
+    (r'\b(?:by|across|stratified by|broken (?:down|out) by) (?:interpreter (?:need(?:ed)?|use|status)|whether (?:they|members|patients) need an interpreter)\b', 'interpreter')]
+
+
+def _patient_fields(profile, *fields):
+    """True when the release populates any of these patient fields (source profile, read-only)."""
+    spec = ((profile or {}).get('patients') or {}).get('fields') or {}
+    return any((spec.get(f) or {}).get('populated') for f in fields)
+
+
+def _race_received(profile): return _patient_fields(profile, 'race', 'ethnicity')
+def _language_received(profile): return _patient_fields(profile, 'preferred_language', 'interpreter_needed')
+
+
+def _cpt_received(profile):
+    for s in ('medical_claim_lines', 'medical_claims'):
+        values = ((((profile or {}).get('streams') or {}).get(s) or {}).get('fields') or {}).get('service_code_system', {}).get('values') or {}
+        if any(v in ('CPT', 'HCPCS') for v in values): return True
+    return False
+
+
+def _demographic_groups(profile):
+    """Group-by phrasings the release can answer: race/ethnicity and language only when received."""
+    ok = {'race': _race_received(profile), 'ethnicity': _race_received(profile), 'race_ethnicity': _race_received(profile),
+          'language': _language_received(profile), 'interpreter': _language_received(profile)}
+    return [(rx, g) for rx, g in GROUPS_DEMOGRAPHIC if ok[g]]
+
+
 UNSUPPORTED = [
     (r'\bcausal(?:ly)?\b|\bcaus(?:ed|ally) (?:by|prevented)|\bprevented by\b|\bidentified causal effect\b|\battributable\b|'
-     r'\b(?:did|does|do) [a-z -]{3,60} (?:reduce|lower|cut|prevent|improve|increase|decrease|drive down)\b|\bimpact of\b|\beffect of\b',
+     # "do they have lower AWV completion" compares groups; it is not a claim that something lowered something
+     r'\b(?:did|does|do) [a-z -]{3,60} (?<!have )(?<!has )(?<!had )(?:reduce|lower|cut|prevent|improve|increase|decrease|drive down)\b|\bimpact of\b|\beffect of\b',
      ['identified causal design or randomised comparison', 'counterfactual outcome model', 'validated outcome attribution method']),
     (r'\b(?:externally )?validated,? calibrated\b|\bcalibrated probability\b',
      ['externally validated prediction model', 'calibration data for this population']),
-    (r'\bshared[- ]savings\b|\bpayer contract\b|\bsettlement\b',
+    (r'\bcapitation\b|\bcontract(?:ed)? rate\b|\bmedicare advantage contract\b|\bmla\b|\bpremium revenue\b|\bpercent[- ]of[- ]premium\b|\bmedical margin\b',
+     ['executed payer contract with capitation/premium rates', 'member-month eligibility under the contract', 'risk-adjusted revenue schedule']),
+    # CMS's own figures (reports, assignment lists, its final settlement) are not received: before the settlement rule, which
+    # would otherwise ask for contract terms that cannot reproduce CMS's numbers
+    (r"\bcms(?:'s|') (?:[a-z-]+ ){0,2}(?:reports?|settlement|reconciliation|results?|figures?|numbers?|calculation)\b|"
+     r"\bcms (?:quarterly |annual |program |settlement |benchmark |financial )?reports?\b|"
+     r"\b(?:quarterly|annual) (?:assignment |benchmark |financial |program )?reports? (?:from|by|issued by) cms\b|\b(?:cms )?(?:quarterly )?assignment lists?\b",
+     ['CMS ACO program reports, assignment lists and settlement results (not received; Agere computes PMPM, attribution and utilization '
+      'from received claims and records, so a reconciliation to CMS figures needs the CMS report itself)']),
+    (r'\bshared[- ]savings\b|\bpayer contract\b|\bsettlement\b|\bshared[- ]loss(?:es)?\b|\bloss threshold\b|\b(?:exceed|meet|clear|hit) (?:the |our )?msr\b|'
+     r'\b(?:projected|expected|estimated) savings rate\b|\bsavings (?:we|they) (?:earned|earn)\b|\b(?:savings )?distribution (?:model|methodology|method)\b|'
+     r'\bcontract performance\b',
      ['executed payer contract terms', 'attribution roster under the contract', 'benchmark/baseline expenditure',
       'quality score and sharing-rate schedule']),
-    (r'\bcapitation\b|\bcontract(?:ed)? rate\b|\bmedicare advantage contract\b|\bmla\b|\bpremium revenue\b',
-     ['executed payer contract with capitation/premium rates', 'member-month eligibility under the contract', 'risk-adjusted revenue schedule']),
     (r'\bobjectively\b|\bwearable\b|\bactivity tracker\b|\baccelerometer\b|\bminutes of (?:moderate|vigorous) exercise\b',
      ['device or objectively measured activity data (none is received)']),
-    (r"\b(?:died|deaths?|mortality|deceased|passed away|expired|vital status|surviv\w*|didn'?t make it|did not make it|still alive)\b",
+    # 'survives shrinkage' is not mortality: only the vital-status senses of survive count
+    (r"\b(?:died|deaths?|mortality|deceased|passed away|expired|vital status|survival|survivors?|survived|surviving|survive|"
+     r"didn'?t make it|did not make it|still alive)\b",
      ['death or mortality records (none are received)']),
-    (r'\brace\b|\bethnicit(?:y|ies)\b|\bracial\b|\bhispanic\b|\blatin[oax]\b|\b(?:black|white|asian|native american|pacific islander|'
-     r'african american)(?: (?:and|or|vs\.?|versus) (?:black|white|asian|hispanic|latin[oax]))? (?:patients|members|people|population|adults|women|men)\b',
-     ['race/ethnicity fields (none are received)']),
+    (RACE_WORDS, ['race/ethnicity fields (none are received)']),
     (r'\braf(?: scores?)?\b|\b(?:cms-)?hccs? (?:scores?|codes?|coding|capture|gaps?|risk|categor\w+|weights?)\b|\brisk adjustment factors?\b|\brisk[- ]adjusted revenue\b',
      ['CMS-HCC risk adjustment factors (no HCC mapping or RAF scores are received; Agere has only an internal cost-risk score)']),
     (r'\bcahps\b|\bpatient experience scores?\b|\bsatisfaction scores?\b', ['patient experience survey results (none are received)']),
     (r'\bhousehold income\b|\bincome (?:level|bracket|distribution)s?\b|\bfpl\b|\bpoverty (?:level|line)\b|\bincome\b',
      ['household income / federal poverty level (not disclosed in received records)']),
-    (r'\binterpreter\b|\bpreferred language\b|\blanguage preference\b|\blimited english\b|\blep\b',
-     ['preferred language / interpreter need (not received)']),
+    (LANGUAGE_WORDS, ['preferred language / interpreter need (not received)']),
     (r'\bsexual orientation\b|\bgender identity\b|\bsogi\b|\blgbtq?\+?\b', ['sexual orientation / gender identity (not received)']),
-    (r'\bw?rvus?\b|\brelative value units?\b|\bcpt\b', ['CPT procedure codes and RVU weights (claims carry local codes only)']),
+    (r'\bw?rvus?\b|\brelative value units?\b', ['RVU weights (no relative value unit table is received; Agere cannot weight services by RVU)']),
+    (CPT_WORDS, ['CPT/HCPCS procedure codes (claims carry local service codes only)']),
+    (r'\b(?:area |neighbou?rhood |community )?deprivation(?: index| indices| scores?| levels?)?\b|\badi\b|\bsocial vulnerability index\b|\bsvi\b',
+     ['area-level deprivation index (ADI/SVI) linked to patient addresses (not received)']),
+    (r'\bdrive[- ]?times?\b|\bdriving (?:times?|distances?)\b|\btravel (?:times?|distances?)\b',
+     ['facility locations and drive-time/travel-distance data (not received)']),
+    (r'\b(?:medicare )?(?:enrollment|entitlement|eligibility) (?:types?|categor(?:y|ies)|status(?:es)?|reasons?)\b|'
+     r'\bdual[- ]?(?:eligib\w*|status)\b|\bduals\b|\baged/(?:non-?)?dual\b|\blow[- ]income subsidy\b|\blis status\b|\borec\b|'
+     r'\boriginal reason for entitlement\b|\besrd (?:status|beneficiar\w+|enrollees?)\b',
+     ['Medicare enrollment/entitlement status (ESRD, disabled, aged, dual/LIS) (not received; coverage records carry only '
+      'commercial/medicaid/medicare/uninsured)']),
     (r'\bswallow(?:ed)?\b|\bactually (?:took|taken|swallowed)\b|\bverified independently\b',
      ['direct observation of medication ingestion (no received source records it)']),
 ]
+SETTLEMENT_RULE = 'executed payer contract terms'
+CAUSAL_RULE = 'identified causal design or randomised comparison'
+# A number about this population (ours / how much / will we / $) makes it a data question even when phrased as "how does".
+OUR_NUMBER = (r"\bhow (?:much|many)\b|\bwhat (?:is|are|was|were|will be|would be) (?:our|we)\b|\bours\b|\bour (?:projected|expected|estimated|final|current|actual)\b|"
+              r"\$|\bif (?:the|our) benchmark\b|\bwill we\b|\bdo we (?:owe|earn|get|qualify)\b|\bare we (?:on track|likely|eligible|going)\b|"
+              r"\bwhere do we stand\b|\bby (?:practice|pcp|payer|month|quarter)\b|\beach practice\b|\bprobabilit(?:y|ies)\b|\blikel(?:y|ihood)\b|"
+              r"\b(?:this|next|last) (?:year|quarter|month)\b|\bproject(?:ed|ion)\b|\bwhat were\b|\b(?:19|20)\d\d\b|\bpy ?20\d\d\b|"
+              r"\bour (?:aco|acos|contracts?|participation|performance|population|members|beneficiaries|patients)\b|"
+              r"\bactual (?:spend|spending|costs?|pmpm|expenditures?|savings|results?)\b")
+
+
+def _explanation_only(low):
+    """Program mechanics asked as an explanation (how does X work / what is the difference / which expenditures are excluded),
+    with no request for a number about this population."""
+    asks = re.search(KNOWLEDGE_INTENT, low) or re.search(r'^which [a-z -]{2,40} (?:are|is) (?:excluded|included|counted|adjusted|capped)\b', low)
+    return bool(asks and re.search(KNOWLEDGE_DOMAIN, low) and not re.search(OUR_NUMBER, low))
+
+
+def _knowledge_graph(question):
+    from .vbc_knowledge import validate
+    params = validate({'query': ' '.join(str(question).split())[:1500]})
+    info = {'compiler': VERSION, 'recognised': ['explanation question about value-based care'], 'paraphrased': [],
+            'route': 'local_compiler', 'unexplained': []}
+    return {'interpretation': params['query'], 'coverage': 'supported_observation', 'unmet_requirements': [],
+            'nodes': [{'id': 'answer', 'operation': 'knowledge', 'inputs': [], 'parameters': params,
+                       'purpose': 'Cited explanation from the VBC knowledge base (public sources, extractive)'}]}, info
+SETTLEMENT_ASK = ['program or contract terms: name the program and track (for example MSSP ENHANCED 2026, MSSP BASIC level E or ACO REACH) '
+                  'so its cited rulebook terms apply, or state the contract terms (benchmark_pmpm and sharing_rate, plus MSR/MLR, '
+                  'quality score and caps where they apply)',
+                  'benchmark_pmpm (always contract-specific; a placeholder such as $X is not a value)']
+
+
+SETTLEMENT_ASK_INTENT = (r'\b(?:earn\w*|payments?|pay(?:s|out)? us|paid|owe\w*|savings|losses|settle\w*|bonus|receive|net|sensitiv\w*|'
+                         r'distribut\w*|probability|msr|loss threshold|contract performance|projected)\b')
+
+
+def _settlement_suppliable(low):
+    """True when the settlement is computable once the user supplies a program/track or terms (no program named, or a
+    named settlement program that only lacks its track or benchmark); False for reference material that has no terms."""
+    named = _named_program(low)
+    if named is None: return True
+    from . import programs
+    try: res = programs.resolve(named)
+    except ValueError: return True  # e.g. a program option to choose: the user can supply it
+    return bool(res['doc'].get('settlement') or res['doc'].get('choose'))
+
+
+def _requires_input(q, asks, info):
+    """The engine can answer once the user supplies these inputs: ask for them (the requires-input path), never guess."""
+    info.update(route='local_requires_input', unexplained=[], requires_input=asks)
+    return {'interpretation': f'Needs inputs not in the data: {q}', 'coverage': 'unsupported', 'nodes': [],
+            'unmet_requirements': [f'Missing input: {m}' for m in asks]}, info
+
+
+def _received_for(missing, profile):
+    """A refusal whose input this release does receive no longer applies (the engines answer instead)."""
+    head = missing[0]
+    if head.startswith('CMS-HCC'): return _diagnoses_received(profile)  # ICD-10 on claims: risk_adjustment answers
+    if head.startswith('race/ethnicity'): return _race_received(profile)
+    if head.startswith('preferred language'): return _language_received(profile)
+    if head.startswith('CPT/HCPCS'): return _cpt_received(profile)
+    return False
+
+
+def _refusal_text(missing, profile):
+    """Name what is missing against what this release does carry."""
+    head = missing[0]
+    if head.startswith('RVU') and _cpt_received(profile):
+        return ['RVU weights (no relative value unit table is received; this release carries CPT/HCPCS codes on claim lines, so service '
+                'counts by code are answerable but RVU-weighted totals are not)']
+    if head.startswith('area-level') and _patient_fields(profile, 'postal_code', 'county_fips'):
+        return ['area-level deprivation index (ADI/SVI) (not received; patient ZIP code and county FIPS are received, but no index table '
+                'to link them to)']
+    return missing
+
+
+def _refusal(q, low, profile, timed, terms, info):
+    """UNSUPPORTED rules, data-aware: -> (graph, info) declining with the missing inputs named, or None.
+    Settlement without terms asks for the program or terms (requires input) instead of a bare decline."""
+    for pattern, missing in UNSUPPORTED:
+        if timed and 'surviv' in pattern: continue
+        if missing[0] == SETTLEMENT_RULE and terms: continue  # settlement is computable once terms are supplied
+        if _received_for(missing, profile) or not re.search(pattern, low): continue
+        if missing[0] in (SETTLEMENT_RULE, CAUSAL_RULE) and _explanation_only(low):
+            # "how does the quality score scale our sharing rate?", "effect of the regional adjustment cap on our benchmark":
+            # program mechanics asked as an explanation, answered from the cited knowledge base, never as a number
+            return _knowledge_graph(q)
+        if missing[0] == SETTLEMENT_RULE and re.search(SETTLEMENT_ASK_INTENT, low) and _settlement_suppliable(low):
+            return _requires_input(q, _settlement_missing(low, SETTLEMENT_ASK), info)
+        if missing[0] == SETTLEMENT_RULE: missing = _settlement_missing(low, missing)  # reference material / no settlement asked
+        info.update(route='local_unsupported', unexplained=[])
+        return {'interpretation': f'Unsupported by received data: {q}', 'coverage': 'unsupported', 'nodes': [],
+                'unmet_requirements': [f'Missing input: {m}' for m in _refusal_text(missing, profile)]}, info
+    return None
+
+
 FILLER = set("""a an the of in on at to for with and or any all each every this that these those is are was were be been
 having has have had do does did which who whose what how many much number count list return give show tell me us our
 patients patient people person persons members member distinct unique recorded observed documented received evidence
@@ -158,7 +324,7 @@ linked unlinked twice two three four five six per average mean median rate rates
 maximum minimum only neither nor nobody none missing lacks lack lacking january february march april june july august
 september october november december jan feb mar apr jun jul aug sep sept oct nov dec monthly quarterly weekly
 daily annually month months quarter quarters week weeks half q1 q2 q3 q4 died death deaths mortality deceased
-denominator denominators numerator numerators'''.split())
+denominator denominators numerator numerators avoidable preventable unnecessary inappropriate'''.split())
 _VOCAB_CACHE = {}
 
 
@@ -230,6 +396,7 @@ PARAPHRASES = [
     (r'\b(?:please|pls|thanks|thank you|roughly|approximately|approx\.?|ballpark|quickly|just|actually|really)\b[,!]?', ' '),
     (r'\b(?:have|did|do) we (?:seen|see|had|have|logged|recorded|gotten|got)\b', ' '),
     (r'\b[a-z]+ outreach list\b', 'list'),
+    (r'\b(?:for|in) (?:the |our |a )?(?:health )?equity (?:report|view|dashboard|analysis|review|scorecard|work)\b', ' '),
     (r'\b(?:did |does |do )?(?:their|the|each) (?:pcp\'?s? )?panels? (?:have|had|get|got)\b|\bfor (?:their|the) panels?\b', ' '),
     (r'\b(?:did|does|do) (?:each|every) ([a-z_ ]{3,20}?) (?:administer|give|send|order|perform|do|see|bill|submit|receive|write)\b', r'by \1'),
     (r'\b(?:who|that) (?:say|said|report|reported) (?:they )?(?:struggle|struggled|have trouble|had trouble|have difficulty|had difficulty) (?:to )?(?:pay(?:ing)? for|afford(?:ing)?) (?:medical )?care\b', 'with difficulty paying for care'),
@@ -411,11 +578,34 @@ def compile(question, profile, as_of):
     A plan made only of counting/listing operations is declined when the question asks for an analytic
     method (why, trend, ...): the operator router then picks the engine instead of a count answering it."""
     graph, info = _compile(question, profile, as_of)
+    unread = _unread_demographics(question, profile, graph, info)
+    if unread:  # the release has the field, but this plan does not use it: never answer as if the words were not there
+        return None, {**info, 'route': 'fallback', 'reason': f'{unread} wording not interpreted locally'}
     if graph and graph.get('nodes') and {n['operation'] for n in graph['nodes']} <= PLAIN_OPS \
             and re.search(ANALYTIC_INTENT, question.lower()) \
             and not re.search(r'\b(?:monthly|weekly|quarterly|yearly|annual|by (?:month|week|quarter|year)|per (?:month|week|quarter|year)|over time)\b', question.lower()):
         return None, {**info, 'route': 'fallback', 'reason': 'analytic intent (why/trend) not expressible as a count'}
     return graph, info
+
+
+def _unread_demographics(question, profile, graph, info):
+    """When the release carries race/ethnicity, language or CPT the refusal no longer fires; the words must then be
+    consumed by the plan (a demographic group_by, or the CPT lookup), else the plan would silently ignore them."""
+    if not graph or not graph.get('nodes') or graph['nodes'][-1]['operation'] == 'knowledge': return None
+    low = ' '.join(str(question).lower().split())
+    groups = {str((n.get('parameters') or {}).get('group_by')) for n in graph['nodes']}
+    rest = low
+    for rx, _ in GROUPS_DEMOGRAPHIC: rest = re.sub(rx, ' ', rest)
+    if (_race_received(profile) or _language_received(profile)) and re.search(DEMOGRAPHIC_CATEGORY, rest) \
+            and re.search(RACE_WORDS + '|' + LANGUAGE_WORDS, low):
+        return 'demographic subgroup'
+    if _race_received(profile) and re.search(RACE_WORDS, low) and not groups & {'race', 'ethnicity', 'race_ethnicity'}:
+        return 'race/ethnicity'
+    if _language_received(profile) and re.search(LANGUAGE_WORDS, low) and not groups & {'language', 'interpreter'}:
+        return 'language/interpreter'
+    if _cpt_received(profile) and re.search(CPT_WORDS, low) and not info.get('cpt_lookup'):
+        return 'CPT/HCPCS'
+    return None
 
 
 def _compile(question, profile, as_of):
@@ -439,14 +629,9 @@ def _compile(question, profile, as_of):
     briefed = _briefing_question(q)  # 'what should I look at today?' -> the ranked proactive briefing
     if briefed is not None:
         return briefed
-    for pattern, missing in UNSUPPORTED:  # checked on the user's own words, before any paraphrase
-        if timed and 'surviv' in pattern: continue
-        if missing[0].startswith('CMS-HCC') and _diagnoses_received(profile): continue  # ICD-10 on claims: risk_adjustment answers
-        if re.search(pattern, low) and not (_contract_terms(low) and 'shared' in pattern):
-            missing = _settlement_missing(low, missing) if 'shared' in pattern else missing
-            return {'interpretation': f'Unsupported by received data: {q}', 'coverage': 'unsupported', 'nodes': [],
-                    'unmet_requirements': [f'Missing input: {m}' for m in missing]}, \
-                   {'compiler': VERSION, 'recognised': [], 'route': 'local_unsupported', 'unexplained': []}
+    refused = _refusal(q, low, profile, timed, _contract_terms(low), {'compiler': VERSION, 'recognised': [], 'unexplained': []})
+    if refused is not None:  # checked on the user's own words, before any paraphrase
+        return refused
     plan = _early_signal_question(q, profile, as_of)  # precursor signatures: before demand ("visits in the next 3 months"), outreach, pathway
     if plan is not None:
         return plan
@@ -480,15 +665,9 @@ def _compile(question, profile, as_of):
     info = {'compiler': VERSION, 'recognised': r.notes, 'paraphrased': paraphrased, **({'columns': columns} if columns else {})}
     # 0. Requests the received data cannot support: answer unsupported locally, naming the missing inputs.
     terms = _contract_terms(r.low)
-    for pattern, missing in UNSUPPORTED:
-        if terms and 'shared' in pattern: continue  # settlement is computable once terms are supplied
-        if missing[0].startswith('CMS-HCC') and _diagnoses_received(profile): continue  # ICD-10 on claims: risk_adjustment answers
-        if timed and 'surviv' in pattern: continue
-        if re.search(pattern, r.low):
-            missing = _settlement_missing(r.low, missing) if 'shared' in pattern else missing
-            info.update(route='local_unsupported', unexplained=[])
-            return {'interpretation': f'Unsupported by received data: {q}', 'coverage': 'unsupported', 'nodes': [],
-                    'unmet_requirements': [f'Missing input: {m}' for m in missing]}, info
+    refused = _refusal(q, r.low, profile, timed, terms, info)
+    if refused is not None:
+        return refused
     info['clarifications'] = []
     for pattern, effect in CLARIFICATIONS:
         for m in r.take(r'(?:^|(?<=[.;?] )|(?<=; )|(?<=, )|(?<=and ))' + pattern, None):
@@ -516,6 +695,9 @@ def _compile(question, profile, as_of):
     fair = _profile_question(q, r, profile, as_of, info)
     if fair is not None:
         return fair
+    coded = _cpt_question(q, r, profile, as_of, info)  # CPT/HCPCS service counts (releases that carry the codes)
+    if coded is not None:
+        return coded
     special = _record_constructs(q, r, profile, as_of, info)
     if special is not None:
         return special
@@ -538,7 +720,8 @@ def _compile(question, profile, as_of):
 MONITOR_TRIGGER = (r"\bout of (?:statistical )?control\b|\banomal(?:y|ies|ous)\b|\bbenford(?:'s)?\b|\bcontrol charts?\b|\bspc\b|"
                    r"\bstatistical process control\b|\bwestern electric\b|\bnelson rules?\b|\bewma\b|\bbehaving (?:ab)?normally\b|"
                    r"\bbehaving (?:oddly|strangely|unusually)\b|\bduplicate (?:claims?|billing|bills)\b|\bbilling (?:intensity )?outliers?\b|"
-                   r"\bunusual billing\b|\bfeeds? (?:gaps?|outages?|drop(?:out)?s?|health)\b")
+                   r"\bunusual billing\b|\bfeeds? (?:gaps?|outages?|drop(?:out)?s?|health)\b|"
+                   r"\b(?:not|stopped|aren'?t|isn'?t|no longer) sending (?:us )?(?:any |their )?(?:adt|lab|claims?|encounter)\b")
 MONITOR_SERIES = [('ed_rate', r'\b(?:ed|er|emergency(?: department)?) (?:use|visits?|utili[sz]ation|rates?)\b'),
                   ('admit_rate', r'\b(?:inpatient )?(?:admissions?|admits?|hospitali[sz]ations?)(?: rates?)?\b'),
                   ('pmpm', r'\bpmpm\b|\bper member per month\b|\b(?:total |medical )?(?:cost|spend(?:ing)?)\b'),
@@ -547,7 +730,7 @@ MONITOR_SERIES = [('ed_rate', r'\b(?:ed|er|emergency(?: department)?) (?:use|vis
                   ('lab_volume', r'\blab(?:oratory)? (?:volumes?|results?|counts?)\b')]
 MONITOR_STREAMS = [(r'\blab(?:oratory)?s?(?: results?)? feeds?\b|\blabs?\b(?= (?:from|feed))', 'labs'),
                    (r'\bclaims? feeds?\b', 'medical_claims'), (r'\b(?:encounter|visit) feeds?\b', 'encounters'),
-                   (r'\bsocial screens?(?:ing)? feeds?\b', 'social_screens'), (r'\badt feeds?\b', 'adt'),
+                   (r'\bsocial screens?(?:ing)? feeds?\b', 'social_screens'), (r'\badt (?:event )?(?:feeds?|notifications?|messages?)\b', 'adt'),
                    (r'\bappointments? feeds?\b', 'appointments'), (r'\bpharmacy feeds?\b', 'pharmacy_dispenses'),
                    (r'\bvitals? feeds?\b', 'vitals'), (r'\bnotes? feeds?\b', 'notes')]
 MONITOR_GROUPS = [(r'\b(?:which|what|by|each|per|any|for each) (?:of (?:our|the) )?(?:practices?|clinics?)\b', 'practice'),
@@ -579,7 +762,8 @@ def _monitor_question(q, r, profile, as_of, info):
                 r'\bnelson rules?\b', 'monitor control chart'):
         params['check'] = 'control_chart'
     elif r.take(r'\b(?:data )?feeds?\b(?=.*\b(?:behaving|anomal|gaps?|outages?|drop|health)\b)', 'monitor feed') or \
-            re.search(r'\bfeeds? (?:gaps?|outages?|drop(?:out)?s?|health)\b', low):
+            re.search(r'\bfeeds? (?:gaps?|outages?|drop(?:out)?s?|health)\b', low) or \
+            r.take(r"\b(?:are |is )?(?:not|stopped|aren'?t|isn'?t|no longer) sending(?: us)?(?: any| their)?\b", 'feed silence'):
         params['check'] = 'feed'
     elif params.get('stream'):
         params['check'] = 'feed'
@@ -767,6 +951,10 @@ def _risk_adjustment_question(q, r, profile, as_of, info):
     if m: params['patient'] = m[0].group(1).upper()
     m = r.take(r'\btop (\d{1,3})\b', 'top')
     if m: params['top'] = int(m[0].group(1))
+    if re.search(r'\b(?:vs\.?|versus|compared (?:with|to)|than (?:those|patients|members)|those who (?:did|do|have|had) not)\b', low) and not gb:
+        # "RAF of patients who had an AWV vs those who did not": a two-group comparison the RAF report does not split by
+        info.update(route='fallback', reason='risk adjustment comparison between groups not interpreted locally')
+        return None, info
     r.take(RA_FILLER, None, overlap=True)
     info['unexplained'] = r.blocking(profile)
     info['ignored_words'] = getattr(r, 'ignored', [])
@@ -929,7 +1117,7 @@ def _population_question(q, r, profile, as_of, info):
     highest = r.take(r'\b(?:highest|lowest|top|worst|best|most|fewest)\b', 'ranking')
     period = _take_period(r, as_of)
     group = None
-    for pattern, g in GROUPS:
+    for pattern, g in GROUPS + _demographic_groups(profile):
         if r.take(pattern, f'group by {g}'): group = g; break
     if not group and highest:
         for pattern, g in [(r'\b(?:pcps?|physicians?|providers?|clinicians?)\b', 'pcp'), (r'\b(?:practices?|clinics?)\b', 'practice'),
@@ -1569,6 +1757,49 @@ def _ops_question(q, r, profile, as_of, info):
     return _finish(q, r, info, f"SELECT {expr} FROM {table}{sql_where}", returns, purpose)
 
 
+CPT_CODE = r'(?<![\d$.,])(?:\d{4}[0-9ft]|[a-v]\d{4})(?![\d.,%])'
+
+
+def _cpt_question(q, r, profile, as_of, info):
+    """'How many patients had CPT 99214 or 99215 this year?', 'top 10 CPT codes by volume' -> governed SQL over claim_line
+    (CPT/HCPCS on medical claim lines). Only on releases that carry the codes; RVU weighting is never implied."""
+    low = r.low
+    if not _cpt_received(profile) or not re.search(CPT_WORDS, low): return None
+    codes = [c.upper() for c in re.findall(CPT_CODE, low)]
+    ranked = re.search(r'\b(?:top|most (?:common|frequent|frequently billed|billed)|highest[- ]volume)\b|\bby (?:cpt |hcpcs )?code\b|\beach code\b|\bper code\b', low)
+    if not codes and not ranked: return None  # "how many CPT codes ..." without a code or ranking: the other rungs read it
+    info['cpt_lookup'] = True
+    r.take(r'\b(?:cpt|hcpcs)(?:/hcpcs)?(?: (?:procedure |service |billing )?codes?)?\b|\bprocedure codes?\b|\bcodes?\b', 'CPT/HCPCS')
+    if codes: r.take(CPT_CODE, 'codes ' + ', '.join(codes))
+    code_expr = 'coalesce(cpt, hcpcs)'
+    where = [f'{code_expr} IS NOT NULL']
+    if codes: where.append(f"{code_expr} IN ({', '.join(repr(c) for c in codes)})")
+    period = _take_period(r, as_of, year_words=r'in|during|for|with service dates? in')
+    if period: where.append(f"service_date BETWEEN '{period[0]}' AND '{period[1]}'")
+    elif r.take(r'\b(?:in |over |during )?the (?:last|past) (?:12 months|year)\b', 'last 12 months'):
+        y, rest = int(as_of[:4]) - 1, as_of[4:]
+        where.append(f"service_date > '{y}{rest}' AND service_date <= '{as_of}'")
+    where_sql = ' WHERE ' + ' AND '.join(where)
+    top = next(iter(r.take(r'\b(?:top|most (?:common|frequent|frequently billed|billed)|highest[- ]volume)(?: (\d{1,3}))?\b', 'top codes')), None)
+    if top or r.take(r'\bby (?:cpt |hcpcs )?code\b|\beach code\b|\bper code\b', 'group by code'):
+        n = int(top.group(1)) if top and top.group(1) else (len(codes) or 10)
+        r.take(r'\bby (?:volume|count|frequency|lines?|claim lines?)\b|\bbilled\b|\bused\b', None)
+        sql = (f'SELECT {code_expr} AS code, count(*) AS claim_lines, count(DISTINCT claim_id) AS claims, count(DISTINCT patient_id) AS patients '
+               f'FROM claim_line{where_sql} GROUP BY 1 ORDER BY claim_lines DESC, code LIMIT {min(n, 200)}')
+        returns, purpose = 'table', 'CPT/HCPCS codes by claim-line volume'
+    else:
+        unit = next(((m, rx) for m, rx in (('patients', r'\b(?:patients|members|people|beneficiaries)\b'), ('claims', r'\bclaims\b'),
+                                            ('units', r'\bunits\b'), ('lines', r'\b(?:claim lines|lines|services|times|billed|instances)\b'))
+                     if re.search(rx, low)), ('lines', None))
+        if unit[1]: r.take(unit[1], f'count {unit[0]}')
+        expr = {'patients': 'count(DISTINCT patient_id)', 'claims': 'count(DISTINCT claim_id)', 'units': 'coalesce(sum(units), 0)',
+                'lines': 'count(*)'}[unit[0]]
+        sql, returns, purpose = f'SELECT {expr} FROM claim_line{where_sql}', 'count', f'{unit[0]} with CPT/HCPCS ' + ', '.join(codes)
+    r.take(r'\b(?:how many|number of|count|what|which|were|was|is|are|did|do|does|we|our|the|have|has|had|with|for|of|or|and|billed|'
+           r'submitted|performed|done|had a|received|got|claim|claims|lines?|medical|on|in|a|an|any)\b', None, overlap=True)
+    return _finish(q, r, info, sql, returns, purpose)
+
+
 def _sql_graph(q, sql, returns, purpose, info):
     info['route'] = 'local_compiler'
     return {'interpretation': q, 'coverage': 'supported_observation', 'unmet_requirements': [],
@@ -1792,12 +2023,14 @@ def _settlement_missing(low, default):
 
 VBC_PATTERNS = [
     ('shared_savings', r'\bshared[- ]savings\b|\bsettlement\b'),
-    ('cost', r'\bpmpm\b|\bper member per month\b|\bcost per member\b|\btotal cost of care\b|\b(?:medical |claims )?spend(?:ing)?\b|\ballowed (?:amount|cost)s?\b'),
+    ('cost', r'\bpmpm\b|\bper member per month\b|\bcost per member\b|\btotal cost of care\b|\b(?:medical |claims )?spend(?:ing)?\b|\ballowed (?:amount|cost)s?\b|'
+             r'\bibnr(?: reserves?| estimates?)?\b|\b(?:claims? )?completion factors?\b|\bincurred but not reported\b|\bclaims? run-?out\b'),
     ('eligibility', r'\bmember[- ]months?\b|\benrolled members\b|\benrollment\b'),
     ('attribution', r'\battribut(?:ed|ion)\b'),
     ('risk', r'\brisk scores?\b|\brisk[- ]adjustment scores?\b|\bacuity\b'),
     ('quality', r'\bquality measures?\b|\ba1c (?:poor )?control\b|\bpoorly controlled diabetes\b|\b(?:bp|blood pressure) control\b|\bstatin (?:therapy|use)\b'),
-    ('utilization', r'\bper 1,?000\b|\bper thousand\b|\butilization panel\b|\b7[- ]day follow[- ]?up\b|\bfollow[- ]?up within 7 days\b'),
+    ('utilization', r'\bper 1,?000\b|\bper thousand\b|\butilization panel\b|\b7[- ]day (?:post[- ]discharge )?follow[- ]?up\b|'
+                    r'\bfollow[- ]?up (?:(?:visit|appointment|contact)s? )?within 7 days\b'),
 ]
 QUALITY_MEASURES = [('diabetes_a1c_poor_control', r'a1c (?:poor )?control|poorly controlled diabetes'),
                     ('bp_control', r'(?:bp|blood pressure) control'), ('statin_therapy_diabetes', r'statin')]
@@ -1813,17 +2046,41 @@ def _change_question(q, r, profile, as_of, info):
     verb = re.search(r'\b(?:why|what explains|what drove|explain)\b.*\b(?:go(?:ne)? up|went up|go(?:ne)? down|went down|increase[ds]?|rise|rose|risen|'
                      r'grow|grew|change[ds]?|drop(?:ped)?|fall|fell|decrease[ds]?|decline[ds]?|jump(?:ed)?|spike[ds]?)\b', low)
     measure = next((m for m, pattern in CHANGE_MEASURES if re.search(pattern, low)), None)
-    if not verb or not measure: return None
+    # "this year vs last year", "compared with the prior year": year to date against the same window a year earlier
+    prior = re.search(r"(?:\b(\d{4}) ytd |\bthis year )?(?:(?:how (?:does|do|did) (?:it|that|they|this) )?compared? (?:with|to)|vs\.?|versus|relative to|against) "
+                      r"(?:the )?(?:same (?:period|time) )?(?:last|prior|previous) year(?:'s)?(?: same period)?\b", low)
+    if not (verb or prior) or not measure: return None
     r.take(r'\b(?:why|what explains|what drove|explain)\b', 'why'); r.take(dict(CHANGE_MEASURES)[measure], f'measure {measure}')
+    if prior:
+        r.take(re.escape(prior.group(0)), 'year to date vs the same window last year')
+        y = int(prior.group(1) or as_of[:4]); md = as_of[5:10] if as_of[5:10] != '02-29' else '02-28'
+        compare_prior = {'a': {'start': f'{y - 1}-01-01', 'end': f'{y - 1}-{md}'}, 'b': {'start': f'{y}-01-01', 'end': min(f'{y}-12-31', as_of)}}
+    else:
+        compare_prior = None
     r.take(r'\b(?:did|does|has|have|our|the|go(?:ne)? up|went up|go(?:ne)? down|went down|increase[ds]?|rise|rose|risen|grow|grew|change[ds]?|'
            r'drop(?:ped)?|fall|fell|decrease[ds]?|decline[ds]?|jump(?:ed)?|spike[ds]?|so much|this year|last year|year over year)\b', None, overlap=True)
     params = {'metric': 'change', 'measure': measure, 'group_by': 'none'}
+    if compare_prior: params['compare'] = compare_prior
     years = re.search(r'\b(?:from|between) (\d{4}) (?:to|and) (\d{4})\b', low)
     if years:
         r.take(re.escape(years.group(0)), 'compare years')
         ya, yb = years.group(1), years.group(2)
         params['compare'] = {'a': {'start': f'{ya}-01-01', 'end': f'{ya}-12-31'}, 'b': {'start': f'{yb}-01-01', 'end': min(f'{yb}-12-31', as_of)}}
-    for pattern, g in GROUPS:
+    quarters = re.search(r'\b(?:in )?q([1-4])(?: (\d{4}))? (?:compared (?:with|to)|vs\.?|versus|relative to|over) q([1-4])(?: (\d{4}))?\b|'
+                         r'\b(?:from|between) q([1-4])(?: (\d{4}))? (?:to|and) q([1-4])(?: (\d{4}))?\b', low)
+    if not years and quarters:  # "rise in Q3 compared with Q2": b = the later-named quarter's period, a = the comparison quarter
+        g = quarters.groups()
+        (qb, yb, qa, ya) = g[:4] if g[0] else (g[6], g[7], g[4], g[5])
+        def bounds(n, y):
+            n = int(n); return {'start': f'{y}-{3 * n - 2:02d}-01', 'end': min([f'{y}-03-31', f'{y}-06-30', f'{y}-09-30', f'{y}-12-31'][n - 1], as_of)}
+        year = int(as_of[:4])
+        if not yb and f'{year}-{3 * int(qb) - 2:02d}-01' > as_of: year -= 1  # a quarter that has not started yet means last year's
+        yb = yb or str(year)
+        ya = ya or (yb if int(qa) < int(qb) else str(int(yb) - 1))
+        r.take(re.escape(quarters.group(0)), 'compare quarters')
+        params['compare'] = {'a': bounds(qa, ya), 'b': bounds(qb, yb)}
+    r.take(r'\bper 1,?000\b|\bper thousand\b|\brate\b', None)
+    for pattern, g in GROUPS + _demographic_groups(profile):
         if g != 'facility' and r.take(pattern, f'group by {g}'): params['group_by'] = g; break
     info['unexplained'] = r.blocking(profile)
     info['ignored_words'] = getattr(r, 'ignored', [])
@@ -1843,30 +2100,68 @@ def _vbc_question(q, r, profile, as_of, info, terms):
     if named is not None and _program_kind(named) not in ('shared_savings', 'program_rules', 'typical_range'):
         named = None  # MA, episode and care-model reference entries do not turn a question into a settlement
     if named is not None and re.search(PROGRAM_SETTLEMENT_INTENT + r'|\bbenchmark\b', low):
+        if not (terms or {}).get('program') and _explanation_only(low):  # program rules asked as an explanation
+            return _knowledge_graph(q)
         if not (terms or {}).get('program'):  # program named but not settleable as asked: say exactly what is missing
+            asks = _settlement_missing(low, ['executed payer contract terms'])
+            if _settlement_suppliable(low): return _requires_input(q, asks, info)  # a track or benchmark the user can supply
             info.update(route='local_unsupported', unexplained=[])
             return {'interpretation': f'Unsupported by received data: {q}', 'coverage': 'unsupported', 'nodes': [],
-                    'unmet_requirements': [f'Missing input: {m}' for m in _settlement_missing(low, ['executed payer contract terms'])]}, info
+                    'unmet_requirements': [f'Missing input: {m}' for m in asks]}, info
         metric = 'shared_savings'
         r.take(re.escape(low[named['span'][0]:named['span'][1]]), f"program {terms['program']['label']} {terms['program']['year']}", overlap=True)
         r.take(PROGRAM_SETTLEMENT_INTENT + r'|' + PROGRAM_BENCHMARK + r'|\b(?:track|level|model|program|option|in|the|we|us|if|were|are|on|for|at|'
                r'participat\w*|how much|money)\b', 'program settlement wording', overlap=True)
     if metric is None or (metric == 'shared_savings' and not terms): return None
+    if metric != 'shared_savings' and re.search(r'\bbenchmarks?\b', low):
+        # "how does it compare to benchmark": the benchmark is contract-specific and not received; never drop the comparison
+        if metric == 'cost' and not re.search(r'\$\s?\d|\bbenchmark (?:of |is |at )?\d', low):
+            return _requires_input(q, ['benchmark_pmpm (contract-specific and not in the received data: state the benchmark PMPM with the program '
+                                       'and track, e.g. MSSP ENHANCED 2026, or the sharing terms, and the comparison runs as a settlement)'], info)
+        info.update(route='fallback', reason='benchmark comparison not interpreted locally')
+        return None, info
+    if metric != 'shared_savings' and re.search(r'\byear[- ]end\b|\bend of (?:the )?year\b|\bproject(?:ed|ions?|ing)\b|\bforecast\w*\b|\bnext (?:year|quarter)\b', low):
+        # the vbc engine reports observed (completion-adjusted) values; a year-end projection is a different question
+        info.update(route='fallback', reason='projection requested; the vbc engine reports observed, completion-adjusted values')
+        return None, info
     for m, pattern in VBC_PATTERNS:
         if m == metric: r.take(pattern, f'vbc {metric}')
+    followup_measure = metric == 'utilization' and re.search(r'follow[- ]?up', low) and re.search(r'discharg', low)
+    if metric == 'utilization' and re.search(r'follow[- ]?up', low):  # 7-day post-discharge follow-up is a share of discharges
+        r.take(r'\b(?:what )?(?:percent(?:age)?|share|proportion) of\b|\b(?:discharged|recently discharged) (?:members|patients)\b|'
+               r'\b(?:after|following) (?:a |their |hospital )*discharges?\b|\bpost[- ]discharge\b|\bdischarges?\b|\bhad\b|\bgot\b', None)
+    if metric == 'cost':
+        r.take(r'\b(?:should we|do we|would we|to) (?:apply|use|book|hold)\b|\bto estimate\b|\bestimate\b|\bof claims\b|\bclaims\b', None)
+        months = next(iter(r.take(r'\b(?:for |over |in )?(?:the )?(?:last|past|most recent|latest) (\d{1,2}) months\b', 'recent months')), None)
+        if months:
+            n = int(months.group(1)); y, m = int(as_of[:4]), int(as_of[5:7]) - n + 1
+            while m < 1: y, m = y - 1, m + 12
+            params_period = {'start': f'{y:04d}-{m:02d}-01', 'end': as_of}
+        else:
+            params_period = None
+    else:
+        params_period = None
     params = {'metric': metric, 'group_by': 'none'}
     if metric == 'utilization' and r.take(r'\b(?:use |using |with )?(?:the )?(?:whole |entire |full )?roster (?:as (?:the )?denominator|headcount)\b|'
                                           r'\bper 1,?000 (?:roster )?(?:patients|people) on the roster\b|\bheadcount denominator\b', 'denominator roster'):
         params['denominator'] = 'roster'
-    for pattern, g in GROUPS:
-        if g in ('facility',): continue
+    for pattern, g in GROUPS + _demographic_groups(profile):
+        if g in ('facility',) or (g in TIME_GROUPS and metric not in ('cost', 'utilization')): continue
         if r.take(pattern, f'group by {g}'): params['group_by'] = g; break
+    if params_period: params['period'] = params_period
     period = _take_period(r, as_of)  # year ranges, YTD ("this year" paraphrases to "<year> ytd"), quarters, months
     if period: params['period'] = {'start': period[0], 'end': period[1]}
     year = None if period else next(iter(r.take(r'\b(?:in|during|for) (\d{4})\b', 'year')), None)
     if year: params['period'] = {'start': f'{year.group(1)}-01-01', 'end': min(f'{year.group(1)}-12-31', as_of)}
     r.take(r'\b(?:over |in )?the (?:last|past) (?:12 months|year)\b', 'last 12 months')
-    if metric == 'quality':
+    if followup_measure and params.get('denominator') != 'roster':
+        # post-discharge 7-day follow-up has a library measure (FUH-style, documented denominator/numerator): report it as such
+        metric = 'quality'
+        params = {'metric': 'quality', 'measure': 'fuh_7day_followup', **{k: v for k, v in params.items() if k != 'metric'}}
+        if params['group_by'] in TIME_GROUPS:  # measures have no calendar-period grouping: the router decides
+            info.update(route='fallback', reason='follow-up measure by calendar period not interpreted locally')
+            return None, info
+    elif metric == 'quality':
         for measure, pattern in QUALITY_MEASURES:
             if re.search(pattern, low): params['measure'] = measure; r.take(pattern, f'measure {measure}', overlap=True); break
     if metric == 'shared_savings':
@@ -1895,7 +2190,7 @@ MEASURE_GAPS = (r'\b(?:open |outstanding )?(?:care[- ]gaps?|gaps? in care|gap li
 MEASURE_FRAMING = (r'\b(?:rate|rates|performance|compliance|compliant|score|scores|measure|measures|results?|hedis|stars?|star ratings?|mssp|app plus|'
                    r'ecqm|quality|what is|what was|what are|how (?:are|is|did|do) we|how many|show|give|list|for|on|in|with|of|patients|members|'
                    r'people|percent(?:age)?|share|doing|by|each|per|currently|current|we|us|do|did|have|has|at|are|is|who|which|a|an|our|the|'
-                   r'gaps?|me|had|had a|been|get|got|received|look|looks?|this|that|what|how|year|period|network|overall|total)\b')
+                   r'gaps?|me|had|had a|been|get|got|received|look|looks?|this|that|what|how|year|period|network|overall|total|open|outstanding)\b')
 
 
 def _measure_question(q, profile, as_of):
@@ -1922,7 +2217,7 @@ def _measure_question(q, profile, as_of):
     if r.take(MEASURE_GAPS, 'care-gap list'): params['output'] = 'gaps'
     if mid.startswith('pdc_') and r.take(r'\b(?:pdc |adherence )?(?:below|under|less than|lower than|<) ?80 ?%?|\bnon[- ]?adherent\b|\bnot adherent\b', 'PDC below 80%', overlap=True):
         params['output'] = 'gaps'
-    for pattern, g in GROUPS + [(r'\b(?:which|what) (?:practices|clinics)\b', 'practice'),
+    for pattern, g in GROUPS + _demographic_groups(profile) + [(r'\b(?:which|what) (?:practices|clinics)\b', 'practice'),
                                 (r'\b(?:which|what) (?:pcps|providers|physicians|clinicians|doctors)\b|\bproviders\'', 'pcp')]:
         if g in ('facility',) + TIME_GROUPS: continue
         if r.take(pattern, f'group by {g}'):
@@ -1935,6 +2230,13 @@ def _measure_question(q, profile, as_of):
                  (measures.library().get(mid) or {}).get('gap_label', '')]:
         words |= {w for w in re.findall(r'[a-z][a-z0-9-]+', text.lower()) if len(w) >= 3}
     if words: r.take(r'\b(?:' + '|'.join(re.escape(w) for w in sorted(words, key=len, reverse=True)) + r')s?\b', None, overlap=True)
+    # A threshold that restates the measure's own definition ("poor control (>9%)") is explained by the measure; any other
+    # number (a different age band, a different cut-off) stays unexplained so the question is not answered as asked.
+    spec = measures.library().get(mid) or {}
+    defined = {float(x) for x in re.findall(r'(?<![\d.])\d+(?:\.\d+)?', ' '.join([spec.get('name', ''), *[
+        str((spec.get(k) or {}).get('summary', '')) for k in ('numerator', 'denominator')]]))}
+    for m in re.finditer(r'\(?\s*(?:>=|<=|>|<|≥|≤|over |above |under |below )?\s*(?<![\d.,])(\d{1,3}(?:\.\d+)?)(?![\d.,])\s*%?\s*\)?', low):
+        if float(m.group(1)) in defined: r.take(re.escape(m.group(0).strip()), 'measure definition restated', overlap=True)
     r.take(r'\bper 1,?000\b|\bper 100,?000\b|\bper thousand\b|\bmost\b|\bhighest\b|\blowest\b|\bfewest\b|\bworst\b|\bbest\b|\brank(?:ed)?\b|\bplus\b|\band\b|\bon\b|\bwith\b', None, overlap=True)
     period = _take_period(r, as_of)
     if not period and r.take(r'\bthis year\b|\bytd\b|\byear[- ]to[- ]date\b|\bso far\b', 'year to date'):
@@ -2309,8 +2611,10 @@ def _demand_question(q, profile, as_of):
 # ---- fair provider/practice profiling (hierarchical Bayes + credibility) -------------------
 PROFILE_STRONG = (r"\bfair(?:ly|er|est|ness)?\b|\b(?:adjust\w*|account\w*|controll?\w*|correct\w*) for (?:their |the |different |differences in )?panel sizes?\b|"
                   r"\bpanel[- ]size[- ](?:adjusted|fair)\b|\btruly (?:high|low|higher|lower|worse|better|different|above|below|an outlier|outliers?)\b|\bcredib\w*\b|"
-                  r"\bshrunk(?:en)?\b|\bshrinkage\b|\bhierarchical\b|\bempirical[- ]bayes\b|\bbuhlmann\b|\bbühlmann\b|\bcaterpillar\b|\bstatistically (?:high|low|higher|lower)\b")
-PROFILE_WEAK = r"\boutliers?\b|\brank(?:s|ed|ing)?\b"
+                  r"\bshrunk(?:en)?\b|\bshrinkage\b|\bhierarchical\b|\bempirical[- ]bayes\b|\bbuhlmann\b|\bbühlmann\b|\bcaterpillar\b|\bstatistically (?:high|low|higher|lower)\b|"
+                  r"\b(?:risk|case[- ]mix)[- ]adjusted\b")
+PROFILE_WEAK = (r"\boutliers?\b|\brank(?:s|ed|ing)?\b|\bhow (?:do|does) (?:our |the |each |individual )?(?:pcps?|practices?|providers?|physicians?|clinicians?|doctors?|clinics?) compare\b|"
+                r"\bcompare (?:our |the )?(?:pcps|practices|providers|physicians|clinicians|doctors|clinics)\b")
 PROFILE_UNITS = [(r"\b(?:practices?|clinics?)\b", 'practice'),
                  (r"\b(?:pcps?|primary care (?:providers?|physicians?|doctors?|clinicians?)|physicians?|providers?|doctors?|clinicians?|dr\.?)\b", 'pcp')]
 PROFILE_METRICS = [
@@ -2329,7 +2633,8 @@ PROFILE_FILLER = (r"\b(?:which|what|who|whose|is|are|was|were|do|does|have|has|h
                   r"worse|worst|better|best|different|outliers?|outlier|rank|ranks|ranked|ranking|fair|fairly|compare|comparison|comparing|"
                   r"show|give|me|us|list|rate|rates|use|utilization|level|levels|panel|panels|size|sizes|patients?|members?|population|network|"
                   r"average|than|vs|versus|others|peers|each|every|all|between|across|statistically|significantly|meaningfully|really|"
-                  r"weighted|weighting|weights?|once|using|you|we|when|estimates?|scores?|performance|perform|performing|stands?|out|there|any|how|much|many|be|it|this|that|those|these)\b")
+                  r"weighted|weighting|weights?|once|using|you|we|when|estimates?|scores?|performance|perform|performing|stands?|out|there|any|how|much|many|be|it|this|that|those|these|"
+                  r"attributed|assigned|per (?:attributed |assigned )?(?:patient|member)|per (?:patient|member) on (?:their|the) panel)\b")
 
 
 def _profile_question(q, r, profile, as_of, info):
@@ -2364,7 +2669,8 @@ def _profile_question(q, r, profile, as_of, info):
         params['adjust'] = 'none'
     if r.take(r"\b(?:chronic[- ]condition|illness|disease|comorbidit\w*) burden\b|\bcomorbidit\w*\b|\bchronic conditions?\b|\bhow sick\b|\bacuity\b", 'adjust conditions'):
         params['adjust'] = 'age_sex_conditions'
-    elif r.take(r"\bcase[- ]mix(?:[- ]adjusted)?\b|\brisk[- ]adjusted\b|\bage(?: band)?,? (?:and |& )?(?:sex|gender)\b|\bdemographics?\b", 'adjust age sex'):
+    elif r.take(r"\bcase[- ]mix(?:[- ]adjusted)?\b|\brisk[- ]adjusted\b|\bage(?: band)?,? (?:and |& )?(?:sex|gender)\b|\bdemographics?\b", 'adjust age sex',
+                overlap=True):
         params.setdefault('adjust', 'age_sex')
     if r.take(r"\bcredib\w*\b|\bbuhlmann(?:[- ]straub)?\b|\bbühlmann(?:[- ]straub)?\b|\bactuarial\w*\b", 'credibility', overlap=True):
         params['method'] = 'credibility'
@@ -2410,8 +2716,11 @@ EFFECT_QUESTION = (r'\b(?:effect|impact|influence)s? of\b|\bestimate (?:the |an?
 IDENTIFIED_CAUSAL = (r'\bcausal(?:ly)?\b|\bcause[ds]?\b|\battributable\b|\bidentified (?:causal )?effect\b|\bprevented by\b|'
                      r'\bhow many\b[^?.]{0,80}\bprevent(?:ed)?\b|\bcounterfactual\b')
 RANDOMISED = r'\brandomi[sz](?:ed|ation)\b|\brct\b|\btrial\b'
+INTERVENTION_WORDS = (r'\bprograms?\b|\binterventions?\b|\binitiatives?\b|\bpilots?\b|\bcampaigns?\b|\boutreach\b|\bjoin(?:ing|ed)? (?:the |an |our )?acos?\b|'
+                      r'\blaunch(?:ed|ing)?\b|\brolled out\b|\bimplement(?:ed|ing|ation)\b|\bintroduc(?:ed|ing|tion)\b')
 EFFECT_PROGRAMS = [  # program -> (pattern, received stream that identifies exposure)
-    ('transitions_of_care', r'transitions?[- ]of[- ]care|\btoc\b|post[- ]discharge (?:calls?|contacts?|follow[- ]?up calls?)|care transitions? (?:calls?|contacts?|program)',
+    ('transitions_of_care', r'transitions?[- ]of[- ]care|\btoc\b|\btcm\b|\btransitional care management\b|'
+                            r'post[- ]discharge (?:calls?|contacts?|follow[- ]?up calls?)|care transitions? (?:calls?|contacts?|program)',
      'transition_of_care_contacts'),
     ('care_management', r'\b(?:care|case) management\b|\bcare managers?\b', 'care_management_contacts'),
     ('community_services', r'\bcommunity (?:service|resource)s?\b|\bsocial service referrals?\b', 'community_service_outcomes'),
@@ -2483,20 +2792,18 @@ KNOWLEDGE_DATA = (
     r"\b(?:patients|members) (?:with|who|whose|that|in)\b|\btop \d+\b|\b(?:last|this|past|previous|next) (?:month|quarter|year|week)\b|\bby (?:practice|payer|pcp|provider|month|quarter|clinic|facility)\b|"
     r"\bper 1,?000\b|\b(?:average|mean|median)\b|\btrend(?:s|ing)?\b|\$\s?\d|\bdr\.? [a-z]|\bpatient [a-z0-9-]*\d|"
     r"\b(?:distribution|breakdown|total|highest|lowest)\b|\b(?:percentage|proportion) of (?:patients|members)\b|"
-    r"\b(?:of|for|among) (?:the )?(?:attributed |assigned |aligned |enrolled )?(?:patients|members|population)\b")
+    r"\b(?:of|for|among) (?:the )?(?:attributed |assigned |aligned |enrolled )?(?:patients|members|population)\b|"
+    # breakdowns and comparisons over this population's units are data questions, whatever the opening words
+    r"\bfor each\b|\b(?:by|per) (?:[a-z]+ )?(?:type|types|agency|agencies|plans?|hospitals?|snfs?|county|counties|race|ethnicity|language|"
+    r"specialty|specialties|categor(?:y|ies)|tins?|npis?|region|cohort)\b|\bwhich (?:agencies|hospitals|snfs|plans|specialists)\b|"
+    r"\boutliers?\b|\bmismatch(?:es)?\b|\b(?:new|continuing) (?:and (?:new|continuing) )?(?:beneficiaries|members|patients)\b")
 
 
 def _knowledge_question(question):
     low = ' '.join(str(question).lower().replace('’', "'").split())
     if not (re.search(KNOWLEDGE_INTENT, low) and re.search(KNOWLEDGE_DOMAIN, low)) or re.search(KNOWLEDGE_DATA, low):
         return None
-    from .vbc_knowledge import validate
-    params = validate({'query': ' '.join(str(question).split())[:1500]})
-    info = {'compiler': VERSION, 'recognised': ['explanation question about value-based care'], 'paraphrased': [],
-            'route': 'local_compiler', 'unexplained': []}
-    return {'interpretation': params['query'], 'coverage': 'supported_observation', 'unmet_requirements': [],
-            'nodes': [{'id': 'answer', 'operation': 'knowledge', 'inputs': [], 'parameters': params,
-                       'purpose': 'Cited explanation from the VBC knowledge base (public sources, extractive)'}]}, info
+    return _knowledge_graph(question)
 
 
 def _contract_strategy_question(question, profile, as_of):
@@ -2758,6 +3065,10 @@ def _program_effect_question(q, profile):
         for cls, rx in sorted(DRUG_ALIASES.items(), key=lambda kv: -len(kv[1])):
             if re.search(r'\b(?:' + rx + r')\b', low): drug = cls; break
         if drug: program = ('medication_start', None)
+    if program is None and not re.search(INTERVENTION_WORDS, low):
+        # 'do they have lower AWV completion', 'which affects assignment', 'a 1% change in trend': comparisons or
+        # sensitivities, not a program-effect question; the other routes (or the router) decide
+        return None
     if program is None:
         return _effect_unsupported(q, ['a named program or exposure recorded in received data (care management contacts, transition-of-care '
                                        'contacts, community service outcomes, care coordination contacts, or a medication start)',

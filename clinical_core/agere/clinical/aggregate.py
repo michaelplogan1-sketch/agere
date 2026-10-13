@@ -19,7 +19,8 @@ from . import concepts, grounding, record_store, source_profile
 
 VERSION = 'population-aggregate/1'
 TIME_GROUPS = ('month', 'quarter', 'year')
-GROUP_BY = ('none', 'pcp', 'practice', 'coverage_type', 'age_band', 'sex', 'facility') + TIME_GROUPS
+DEMOGRAPHIC_GROUPS = ('race', 'ethnicity', 'race_ethnicity', 'language', 'interpreter')  # received from v2.0 releases
+GROUP_BY = ('none', 'pcp', 'practice', 'coverage_type', 'age_band', 'sex', 'facility') + TIME_GROUPS + DEMOGRAPHIC_GROUPS
 STATISTICS = {'patients': ('count', 'share'), 'events': ('count', 'rate_per_1000'), 'value': ('mean', 'median'),
               'readmissions': ('count', 'rate')}
 STAY_TYPES = r'^(inpatient.*|observation|l&d admission)$'
@@ -216,6 +217,14 @@ def execute(path, patient_ids, params):
                       'coverage_type': (cov or {}).get('coverage_type') or 'unknown',
                       'age_band': age_band(person.get('age_reported')), 'sex': person.get('sex_reported') or 'unknown',
                       'burden': min(n_conditions, 3)}
+        if p['group_by'] in DEMOGRAPHIC_GROUPS:
+            from .vbc import demographic_key
+            attrs[pid][p['group_by']] = demographic_key(p['group_by'], {
+                'race': person.get('race'), 'ethnicity': person.get('ethnicity'), 'language': person.get('preferred_language'),
+                'interpreter': person.get('interpreter_needed')})
+    if p['group_by'] in DEMOGRAPHIC_GROUPS and not any(
+            person.get(f) is not None for person in people.values() for f in ('race', 'ethnicity', 'preferred_language', 'interpreter_needed')):
+        raise ValueError(f"group_by {p['group_by']} needs race/ethnicity/language fields, which this release does not carry")
 
     # Per-patient numerators.
     events, has, values, unknown_dates = defaultdict(dict), {}, {}, 0

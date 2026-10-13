@@ -166,7 +166,7 @@ details pre{white-space:pre-wrap;font-size:12px;color:var(--muted);margin:4px 0;
 const DEMO=JSON.parse(document.getElementById('demo-script').textContent);
 const EXAMPLES=["What is our allowed PMPM by payer?","Which CKD patients have a declining eGFR?","Are any of our rates out of control?",
  "who should our care managers call this week? we have 40 slots","Did care management reduce ED visits?","What does the readmission curve look like by payer?"];
-const ROUTES={local_compiler:'Agere compiler',local_unsupported:'Agere compiler (unsupported)',local_model_rewrite_compiled:'Local rewrite → compiler',
+const ROUTES={local_compiler:'Agere compiler',local_unsupported:'Agere compiler (unsupported)',local_requires_input:'Agere compiler (needs your inputs)',local_model_rewrite_compiled:'Local rewrite → compiler',
  hosted_verified_sql:'Hosted models, cross-verified',learned_verified_sql:'Learned (previously verified)',hosted_missing_data:'Hosted: data not available',frontier_escalation:'Frontier model'};
 const $=(s,el)=>(el||document).querySelector(s);
 const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));

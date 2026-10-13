@@ -18,7 +18,17 @@ from . import aggregate, semantic_layer
 VERSION = 'vbc-engine/1'
 METRICS = ('eligibility', 'attribution', 'utilization', 'cost', 'risk', 'quality', 'shared_savings', 'change')
 CHANGE_MEASURES = ('pmpm', 'ed_rate', 'admit_rate')
-GROUP_BY = ('none', 'pcp', 'practice', 'coverage_type', 'age_band', 'sex')
+# race/ethnicity/language/interpreter: health-equity stratification, only where the release carries the fields (v2.0+)
+DEMOGRAPHIC_GROUPS = ('race', 'ethnicity', 'race_ethnicity', 'language', 'interpreter')
+TIME_GROUPS = ('month', 'quarter', 'year')  # calendar periods: cost and utilization only
+GROUP_BY = ('none', 'pcp', 'practice', 'coverage_type', 'age_band', 'sex') + DEMOGRAPHIC_GROUPS + TIME_GROUPS
+
+
+def _time_key(month, group_by):
+    """'2029-08' -> '2029-08' | '2029-Q3' | '2029'."""
+    if group_by == 'month': return month
+    if group_by == 'quarter': return f'{month[:4]}-Q{(int(month[5:7]) - 1) // 3 + 1}'
+    return month[:4]
 PCP_VISIT_TYPES = ('primary_care_visit',)
 STATIN = re.compile(r'statin\b|atorvastatin|simvastatin|rosuvastatin|pravastatin|lovastatin|pitavastatin|fluvastatin', re.I)
 CHRONIC = aggregate.BURDEN_CONCEPTS
@@ -47,6 +57,8 @@ def validate(p):
     if not isinstance(p, dict) or p.get('metric') not in METRICS:
         raise ValueError(f'vbc metric must be one of {METRICS}')
     if p.get('group_by', 'none') not in GROUP_BY: raise ValueError(f'group_by must be one of {GROUP_BY}')
+    if p.get('group_by') in TIME_GROUPS and p['metric'] not in ('cost', 'utilization'):
+        raise ValueError('group_by month/quarter/year applies to cost and utilization (calendar-period rates)')
     if p['metric'] == 'shared_savings':
         terms = p.get('terms') or {}
         if p.get('program'):  # a named program (e.g. 'MSSP ENHANCED 2026') supplies its cited terms; stated terms override
@@ -89,6 +101,8 @@ def eligibility(db, as_of, start, end):
     (the warehouse records no termination dates), confirmed by any benefit verification in the period."""
     people = {pid: {'age': a, 'sex': s, 'coverage_type': ct, 'status': st}
               for pid, a, s, ct, st in db.execute('SELECT patient_id, age_reported, sex_reported, coverage_type, coverage_status FROM patient')}
+    for pid, values in demographics(db).items():
+        if pid in people: people[pid].update(values)
     starts = {pid: d for pid, d in db.execute("SELECT patient_id, min(coalesce(json_extract(payload,'$.effective_start'), event_date)) "
                                               "FROM record WHERE stream='coverage' GROUP BY 1")}
     window = _months(start, end)
@@ -131,11 +145,40 @@ def attribution(db, people, start, end, method='hybrid'):
     return out
 
 
+def demographics(db):
+    """Received race/ethnicity/language/interpreter fields per patient ({} when the release has none: v1.x)."""
+    cols = {r[1] for r in db.execute('PRAGMA table_info(patient)')}
+    if not {'race', 'ethnicity', 'preferred_language', 'interpreter_needed'} <= cols: return {}
+    return {pid: {'race': race, 'ethnicity': eth, 'language': lang, 'interpreter': interp}
+            for pid, race, eth, lang, interp in db.execute('SELECT patient_id, race, ethnicity, preferred_language, interpreter_needed FROM patient')
+            if any(v is not None for v in (race, eth, lang, interp))}
+
+
+def demographic_key(group_by, values):
+    """Stratum label for a demographic group_by; missing values are labelled, never dropped."""
+    v = values or {}
+    if group_by == 'race': return v.get('race') or 'not reported'
+    if group_by == 'ethnicity': return v.get('ethnicity') or 'not reported'
+    if group_by == 'race_ethnicity': return f"{v.get('race') or 'race not reported'} / {v.get('ethnicity') or 'ethnicity not reported'}"
+    if group_by == 'language': return v.get('language') or 'not reported'
+    if group_by == 'interpreter':
+        i = v.get('interpreter')
+        return 'not reported' if i is None else 'interpreter needed' if i in (1, True, '1', 'true', 'yes') else 'no interpreter needed'
+    raise ValueError(f'not a demographic group: {group_by}')
+
+
+def require_demographics(db, group_by):
+    """A demographic stratification on a release without the fields is an error, not a table of 'not reported'."""
+    if group_by in DEMOGRAPHIC_GROUPS and not demographics(db):
+        raise ValueError(f'group_by {group_by} needs race/ethnicity/language fields, which this release does not carry')
+
+
 def _group_key(group_by, pid, people, attr):
     if group_by == 'none': return 'all'
     if group_by in ('pcp', 'practice'): return attr[pid][group_by] or 'unattributed'
     if group_by == 'age_band': return aggregate.age_band(people[pid]['age'])
     if group_by == 'sex': return people[pid]['sex'] or 'unknown'
+    if group_by in DEMOGRAPHIC_GROUPS: return demographic_key(group_by, people[pid])
     return people[pid]['coverage_type'] or 'unknown'
 
 
@@ -184,12 +227,24 @@ def _utilization(db, people, attr, p, start, end):
     for pid, d in db.execute("SELECT patient_id, event_date FROM encounter WHERE type_concept IN ('primary_care_visit','specialist_visit','telehealth_contact') "
                              "AND event_date IS NOT NULL"):
         visits[pid].append(d)
+    timed = p['group_by'] in TIME_GROUPS
     for pid, info in people.items():
         if not info['months']: continue
-        g = groups[_group_key(p['group_by'], pid, people, attr)]
-        g['members'] += 1; g['member_years'] = round(g['member_years'] + len(info['months']) / 12, 4)
-        g['ed_visits'] += len(ed[pid])
-        for a, dis, rd in stays[pid]:
+        if timed:  # each enrolled month, ED day, stay and discharge lands in its own calendar period
+            enrolled = set(info['months'])
+            for key in {_time_key(m, p['group_by']) for m in enrolled}: groups[key]['members'] += 1
+            for m in enrolled:
+                g = groups[_time_key(m, p['group_by'])]; g['member_years'] = round(g['member_years'] + 1 / 12, 4)
+            for d in ed[pid]:
+                if d and d[:7] in enrolled: groups[_time_key(d[:7], p['group_by'])]['ed_visits'] += 1
+            keyed_stays = [((a or '')[:7], a, dis, rd) for a, dis, rd in stays[pid] if a and a[:7] in enrolled]
+        else:
+            g = groups[_group_key(p['group_by'], pid, people, attr)]
+            g['members'] += 1; g['member_years'] = round(g['member_years'] + len(info['months']) / 12, 4)
+            g['ed_visits'] += len(ed[pid])
+            keyed_stays = [(None, a, dis, rd) for a, dis, rd in stays[pid]]
+        for month, a, dis, rd in keyed_stays:
+            g = groups[_time_key(month, p['group_by'])] if timed else g
             g['admissions'] += 1; g['index_stays'] += 1; g['readmissions'] += rd
             if dis and dis <= end:
                 g['discharges_7d_eligible'] += 1
@@ -201,12 +256,14 @@ def _utilization(db, people, attr, p, start, end):
         r['admits_per_1000'] = round(1000 * r['admissions'] / r['member_years'], 1) if r['member_years'] else None
         r['readmission_rate'] = round(r['readmissions'] / r['index_stays'], 4) if r['index_stays'] else None
         r['followup_7d_rate'] = round(r['followup_7d'] / r['discharges_7d_eligible'], 4) if r['discharges_7d_eligible'] else None
-    _gamma_poisson(rows, 'ed_visits', 'member_years')
+    if not timed: _gamma_poisson(rows, 'ed_visits', 'member_years')  # periods are a series, not exchangeable units to shrink together
     for r in rows:
         if 'shrunk_rate' in r:
             r['ed_per_1000_shrunk'] = round(1000 * r.pop('shrunk_rate'), 1)
             r['ed_per_1000_ci95'] = [round(1000 * x, 1) for x in r.pop('rate_ci95')]
-    rows.sort(key=lambda r: -(r.get('ed_per_1000_shrunk') or 0))
+    if timed: rows.sort(key=lambda r: r['group'])  # chronological
+    else: rows.sort(key=lambda r: -(r.get('ed_per_1000_shrunk') or 0))
+    if p.get('denominator') == 'roster' and timed: raise ValueError('roster denominators are headcounts; use member-years for rates by period')
     if p.get('denominator') == 'roster':  # registry variant: per 1,000 roster patients (headcount, not annualised)
         roster = [pid for (pid,) in db.execute('SELECT patient_id FROM patient')]
         keyed = defaultdict(list)
@@ -221,7 +278,9 @@ def _utilization(db, people, attr, p, start, end):
     return rows, (('Rates per 1,000 roster patients (headcount, not annualised) as requested; ' if p.get('denominator') == 'roster' else
                    'Rates per 1,000 member-years (NCQA/ACO REACH convention); ') +
                   'Members with enrolled months in the period; ED visits = distinct ED days; admissions = distinct hospital stays; '
-                  '7-day follow-up = clinic/specialist/telehealth contact within 7 days after discharge. '
+                  '7-day follow-up = clinic/specialist/telehealth contact within 7 days after discharge. ' +
+                  (f'By {p["group_by"]}: member-years, ED days and stays (by admit month) fall in their own calendar period, counted in '
+                   'enrolled months. ' if timed else '') +
                   'ED rates shrunk with empirical-Bayes gamma-Poisson; rank on the shrunk rate and its interval.')
 
 
@@ -258,16 +317,25 @@ def _completion(claims, end):
 
 def _cost(db, people, attr, p, start, end):
     claims = _claims(db, start, end)
-    completion, factors = _completion(claims, end)
+    # Completion factors need mature months (6+ months of runout): a window shorter than 12 months (the last 3 months, one
+    # quarter) estimates them on the 12 months ending at the period end, not on its own immature months (factors of 1.0).
+    twelve = f'{int(end[:4]) - 1}{end[4:7]}-01'
+    completion, factors = _completion(_claims(db, twelve, end) if start > twelve else claims, end)
     groups = defaultdict(lambda: {'members': 0, 'member_months': 0, 'allowed': 0.0, 'paid': 0.0, 'allowed_completed': 0.0, 'pharmacy_allowed': 0.0})
     member_months = {pid: set(info['months']) for pid, info in people.items()}
+    timed = p['group_by'] in TIME_GROUPS
+    key = (lambda pid, month: _time_key(month, p['group_by'])) if timed else (lambda pid, month: _group_key(p['group_by'], pid, people, attr))
     for pid, info in people.items():
         if not info['months']: continue
-        g = groups[_group_key(p['group_by'], pid, people, attr)]
+        if timed:
+            for k in {key(pid, m) for m in info['months']}: groups[k]['members'] += 1
+            for m in info['months']: groups[key(pid, m)]['member_months'] += 1
+            continue
+        g = groups[key(pid, None)]
         g['members'] += 1; g['member_months'] += len(info['months'])
     for pid, month, allowed, paid, kind, _ in claims:
         if month not in member_months.get(pid, ()): continue
-        g = groups[_group_key(p['group_by'], pid, people, attr)]
+        g = groups[key(pid, month)]
         g['allowed'] += allowed / 100; g['paid'] += paid / 100
         g['allowed_completed'] += allowed / 100 * completion.get(month, 1.0)
         if kind == 'pharmacy': g['pharmacy_allowed'] += allowed / 100
@@ -279,7 +347,7 @@ def _cost(db, people, attr, p, start, end):
                      'allowed_pmpm_completed': round(g['allowed_completed'] / mm, 2),
                      'ibnr_estimate': round(g['allowed_completed'] - g['allowed'], 2),
                      'pharmacy_share': round(g['pharmacy_allowed'] / g['allowed'], 4) if g['allowed'] else None})
-    rows.sort(key=lambda r: -r['allowed_pmpm_completed'])
+    rows.sort(key=(lambda r: r['group']) if timed else (lambda r: -r['allowed_pmpm_completed']))
     return rows, ('Paid medical claims by service month plus paid pharmacy claims, for enrolled member-months. '
                   f'Completion via chain-ladder on arrival lag (factors by months of runout: { {k: round(v, 3) for k, v in factors.items()} }).')
 
@@ -724,6 +792,7 @@ def execute(path, patient_ids, params, as_of=None):
     db = _connect(path)
     try:
         as_of = as_of or dict(db.execute('SELECT key, value FROM meta')).get('as_of')
+        require_demographics(db, p['group_by'])
         start, end = _period(p, as_of)
         people = eligibility(db, as_of, start, end)
         if patient_ids is not None:
