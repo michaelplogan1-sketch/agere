@@ -465,6 +465,7 @@ def build(path):
     from . import note_facts
     note_facts.build(tmp)  # facts found only in free text, read from and written into the new build
     tmp.replace(target)
+    from . import record_store; record_store.build(path)  # stream-clustered record copy for population scans (record_store.py)
     return {'path': str(target), 'elapsed_seconds': round(time.perf_counter() - started, 1)}
 
 

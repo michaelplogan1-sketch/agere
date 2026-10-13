@@ -30,6 +30,28 @@ def ask(port, question):
             'seconds': round(time.perf_counter() - start, 1)}
 
 
+def _pct(values, q):
+    v = sorted(values)
+    if not v: return float('nan')
+    k = (len(v) - 1) * q; lo = int(k); hi = min(lo + 1, len(v) - 1)
+    return v[lo] + (v[hi] - v[lo]) * (k - lo)
+
+
+def timing_summary(results):
+    """End-to-end wall time (HTTP compose, planning + execution) p50/p95 by route and by expected capability."""
+    lines = ['end-to-end seconds (p50 / p95 / max, n):']
+    for title, key in (('route', lambda r: r.get('route') or 'error'), ('capability', lambda r: r['expect_operation'])):
+        groups = {}
+        for r in results:
+            if r.get('seconds') is not None: groups.setdefault(key(r), []).append(r['seconds'])
+        lines.append(f'  by {title}:')
+        for k, v in sorted(groups.items()):
+            lines.append(f'    {k:32s} {_pct(v, .5):7.2f} / {_pct(v, .95):7.2f} / {max(v):7.2f}  n={len(v)}')
+    every = [r['seconds'] for r in results if r.get('seconds') is not None]
+    if every: lines.append(f'  all: {_pct(every, .5):.2f} / {_pct(every, .95):.2f} / {max(every):.2f}  n={len(every)}')
+    return '\n'.join(lines)
+
+
 def main():
     p = argparse.ArgumentParser()
     p.add_argument('--port', type=int, default=8886); p.add_argument('--ops', default=''); p.add_argument('--jobs', type=int, default=4)
@@ -51,6 +73,7 @@ def main():
     for op, v in sorted(by_op.items()): print(f'  {op:15s} {sum(v)}/{len(v)}')
     print('routes:', routes)
     print(f'total {sum(r["pass"] for r in results)}/{len(results)}  cost ${cost:.3f}')
+    print(timing_summary(results))
     out = Path(__file__).resolve().parent / 'results' / 'acceptance'
     out.mkdir(parents=True, exist_ok=True)
     (out / (time.strftime('%Y%m%dT%H%M%S') + '.json')).write_text(json.dumps(results, indent=1))

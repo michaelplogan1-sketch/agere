@@ -6,6 +6,7 @@ is inferred. Source-bound text annotations retain their existing authority.
 """
 from dataclasses import dataclass
 from pathlib import Path
+import copy
 import hashlib
 import json
 import math
@@ -928,12 +929,61 @@ def code_identity():
                       Path(__file__).with_name('scheduling.py')]]])
 
 
+def result_cache_enabled():
+    """AGERE_RESULT_CACHE=off computes every graph/cohort afresh and writes nothing (cold-path profiling, read-only stacks)."""
+    import os
+    return os.environ.get('AGERE_RESULT_CACHE', 'on') != 'off'
+
+
 def _json_default(value):
     """Engines compute with numpy; persist its scalars/arrays as plain JSON (anything else is a bug and still raises)."""
     import numpy as np
     if isinstance(value, np.generic): return value.item()
     if isinstance(value, np.ndarray): return value.tolist()
     raise TypeError(f'Object of type {type(value).__name__} is not JSON serializable')
+
+
+_VOCABULARY = {}
+_RECORDS_DERIVED = {}
+
+
+def _records_memo(name, path, compute):
+    """Memoise a value computed only from stack records, keyed by the records data version (record_store.token)."""
+    from . import record_store
+    token = record_store.token(path)
+    if token is None: return compute(path)
+    key = (name, str(Path(path).resolve()), token)
+    if key not in _RECORDS_DERIVED:
+        _RECORDS_DERIVED.clear() if len(_RECORDS_DERIVED) > 64 else None
+        _RECORDS_DERIVED[key] = compute(path)
+    return copy.deepcopy(_RECORDS_DERIVED[key])
+
+
+def _evidence_vocabulary(path, db, evidence_meta):
+    """Observed evidence vocabulary (~0.25-2 s of GROUP BY/DISTINCT scans), memoised per evidence file version.
+
+    Key: the evidence index file's identity (path, size, mtime) and model identity, so a rebuilt or
+    modified index is re-read; the queries and their results are unchanged."""
+    root = Path(json.loads((Path(path) / 'annotation-link.json').read_text())['path'])
+    files = [root / 'evidence.sqlite3', *(root / f'evidence.sqlite3{x}' for x in ('-wal',))]
+    key = (str(root.resolve()), evidence_meta['model_identity'],
+           tuple((f.stat().st_size, f.stat().st_mtime_ns) if f.exists() else None for f in files))
+    if key in _VOCABULARY: return _VOCABULARY[key]
+    concepts = [{'source': kind, 'concept': concept, 'observations': n} for kind, concept, n in
+                db.execute('SELECT kind,concept,count(*) FROM evidence GROUP BY kind,concept ORDER BY kind,concept')]
+    axes = {field: [r[0] for r in db.execute(f'SELECT DISTINCT {field} FROM evidence WHERE kind=? ORDER BY {field}', ('text',))]
+            for field in sorted(evidence_queries.FIELDS - {'concept'})}
+    scalar_values = {}
+    boolean_concepts = []
+    for row in concepts:
+        if row['source'] != 'structured': continue
+        values = [json.loads(r[0]) for r in db.execute(
+            "SELECT DISTINCT value_json FROM evidence WHERE kind='structured' AND concept=? ORDER BY value_json LIMIT 17", (row['concept'],))]
+        if values and all(type(v) is bool for v in values): boolean_concepts.append(row['concept'])
+        if len(values)<=16 and all(type(v) in (str,bool) for v in values): scalar_values[row['concept']]=values
+    _VOCABULARY.clear()
+    _VOCABULARY[key] = (concepts, axes, scalar_values, boolean_concepts)
+    return _VOCABULARY[key]
 
 
 def catalog(path):
@@ -950,18 +1000,7 @@ def catalog(path):
     meta = json.loads((path / 'run.json').read_text())
     db, evidence_meta = evidence_connection(path, meta)
     try:
-        concepts = [{'source': kind, 'concept': concept, 'observations': n} for kind, concept, n in
-                    db.execute('SELECT kind,concept,count(*) FROM evidence GROUP BY kind,concept ORDER BY kind,concept')]
-        axes = {field: [r[0] for r in db.execute(f'SELECT DISTINCT {field} FROM evidence WHERE kind=? ORDER BY {field}', ('text',))]
-                for field in sorted(evidence_queries.FIELDS - {'concept'})}
-        scalar_values = {}
-        boolean_concepts = []
-        for row in concepts:
-            if row['source'] != 'structured': continue
-            values = [json.loads(r[0]) for r in db.execute(
-                "SELECT DISTINCT value_json FROM evidence WHERE kind='structured' AND concept=? ORDER BY value_json LIMIT 17", (row['concept'],))]
-            if values and all(type(v) is bool for v in values): boolean_concepts.append(row['concept'])
-            if len(values)<=16 and all(type(v) in (str,bool) for v in values): scalar_values[row['concept']]=values
+        concepts, axes, scalar_values, boolean_concepts = copy.deepcopy(_evidence_vocabulary(path, db, evidence_meta))
     finally:
         db.close()
     forecast_info={'available':False}
@@ -975,7 +1014,7 @@ def catalog(path):
         ldb,lmeta=connect(path);ldb.close()
         longitudinal_info={'available':True,'vocabulary':lmeta['vocabulary'],'clocks':['source_event','arrival','clinical','reference']}
     return {'schema': VERSION, 'operations': sorted(OPERATIONS), 'evidence_concepts': concepts,
-            'native_care_concepts': sorted(care_concepts(path)),
+            'native_care_concepts': sorted(_records_memo('care_concepts', path, care_concepts)),
             'program_documents':document_packages(path), 'scientific_references':reference_catalog(path),
             'appointment_followthrough':{'contract':'first_received_booking_terminal_7d_receipt_14d','authority':'received_source_review_only'},
             'functional_review':{'filters':['source_review_candidates','source_available','source_absent'],'program':'functional_support_review','authority':'dated_source_review_only','clinical_quality_validated':False},
@@ -1149,7 +1188,8 @@ def execute(stack, plan, *, question=None):
         context_identities.append({'original_question': question})
         key = digest([VERSION, code_identity(), meta['source_digest'], evidence_meta['model_identity'],
                       retrieval_identity, program_identity, forecast_identity, review_identity, longitudinal_identity, work_identity, state_identity, medication_identity, context_identities, plan])
-        old = db.execute('SELECT payload FROM result_cache WHERE id=?', (key,)).fetchone()
+        setup_seconds = time.perf_counter() - started
+        old = db.execute('SELECT payload FROM result_cache WHERE id=?', (key,)).fetchone() if result_cache_enabled() else None
         if old:
             replay = json.loads(old[0])
             if isinstance(replay.get('answer'), dict):  # reference library may be newer than the cached result
@@ -1159,9 +1199,11 @@ def execute(stack, plan, *, question=None):
         memberships, results = {}, [];paid_calls=0;requirement_ancestors={};protocol_ancestors={};document_ancestors={}
         node_index={n['id']:n for n in plan['nodes']}
         appointment_ancestors = {}
+        node_seconds = []
         for node in plan['nodes']:
             op, params = node['operation'], node['parameters']
             value, detail = None, {}
+            node_started = time.perf_counter()
             if op == 'cohort':
                 try:
                     selected = cohorts.select(path, params['specification'])
@@ -1509,6 +1551,8 @@ def execute(stack, plan, *, question=None):
                       'observation_process':observation_preparations}[op][node['id']]
                 graph_reports.attach(path,op,sorted(chosen.yes),params,prep,detail,membership_receipt(chosen))
             results.append({'node': node, 'result': detail})
+            node_seconds.append({'id': node['id'], 'operation': op, 'seconds': round(time.perf_counter() - node_started, 4)})
+        answer_started = time.perf_counter()
         result = {'schema': VERSION, 'synthetic': True, 'graph': plan, 'results': results,
                   'answer_coverage': answer_coverage(plan, results),
                   'snapshot': meta['snapshot'], 'source_digest': meta['source_digest'],
@@ -1536,8 +1580,12 @@ def execute(stack, plan, *, question=None):
                 raise ValueError('Reference changed during graph execution; result not cached')
         if functional_population:functional_sources.inspect(path,functional_population['id'])
         for population in domain_populations.values():domain_sources.inspect(path,population['id'])
-        with db:
-            db.execute('INSERT OR REPLACE INTO result_cache VALUES (?,?)', (key, json.dumps(result, allow_nan=False, default=_json_default)))
+        # Wall-time receipt per phase/operator (latency budgets read it); not part of the cache key.
+        result['compute']['timings'] = {'setup_seconds': round(setup_seconds, 4), 'nodes': node_seconds,
+                                        'answer_seconds': round(time.perf_counter() - answer_started, 4)}
+        if result_cache_enabled():
+            with db:
+                db.execute('INSERT OR REPLACE INTO result_cache VALUES (?,?)', (key, json.dumps(result, allow_nan=False, default=_json_default)))
         return result
     finally:
         db.close()

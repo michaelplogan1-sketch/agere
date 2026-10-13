@@ -15,7 +15,7 @@ from collections import defaultdict
 from pathlib import Path
 import json, math, os, sqlite3, statistics
 
-from . import concepts, grounding, source_profile
+from . import concepts, grounding, record_store, source_profile
 
 VERSION = 'population-aggregate/1'
 TIME_GROUPS = ('month', 'quarter', 'year')
@@ -185,11 +185,7 @@ def execute(path, patient_ids, params):
     db = sqlite3.connect(f'file:{path / "stack.sqlite3"}?mode=ro', uri=True)
     try:
         people = {pid: json.loads(payload) for pid, payload in db.execute('SELECT id, payload FROM patients') if pid in members}
-        records = defaultdict(list)
-        if raw_streams:
-            sql = 'SELECT patient, payload FROM records WHERE stream IN (' + ','.join('?' * len(raw_streams)) + ')'
-            for pid, payload in db.execute(sql, sorted(raw_streams)):
-                if pid in members: records[pid].append(json.loads(payload))
+        records = record_store.load(path, raw_streams, members=members)  # = the stream IN (...) scan, per-patient order kept
     finally:
         db.close()
     if fast:
