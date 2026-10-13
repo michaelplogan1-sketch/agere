@@ -1,3 +1,5 @@
+> **Superseded (2026-10-13).** This table records the 2026-10-12 run, when Agere's service route was failing (39 execution errors). It does not describe the current stack. Current results: the live `/scorecard` page (blind sets with adjudicated error rates), `bench/smoke.py` and `bench/acceptance.py`.
+
 # Independent answer benchmark
 
 Latest attempt per question, rescored from preserved answers with the current scorer; unrun questions are not passes. Reference results are SQL self-checks, not product accuracy.
