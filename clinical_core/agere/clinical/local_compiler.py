@@ -437,6 +437,9 @@ def compile(question, profile, as_of):
     special = _record_constructs(q, r, profile, as_of, info)
     if special is not None:
         return special
+    med = _medication_question(q, r, profile, as_of, info)
+    if med is not None:
+        return med
     ops = _ops_question(q, r, profile, as_of, info)
     if ops is not None:
         return ops
@@ -1091,6 +1094,60 @@ OPS_METRICS = [
 OPS_GROUPS = {'appointment': {'practice': 'organization_id', 'clinic': 'organization_id', 'clinician': 'clinician_id', 'provider': 'clinician_id'},
               'claim': {'payer': 'payer', 'insurer': 'payer', 'plan': 'payer'},
               'stay': {'hospital': 'organization_id', 'facility': 'organization_id'}}
+
+
+DRUG_ALIASES = {
+    'statin': r'statins?', 'beta_blocker': r'beta[- ]?blockers?', 'hf_evidence_based_beta_blocker': r'(?:evidence[- ]based|gdmt) (?:hf )?beta[- ]?blockers?',
+    'ace_inhibitor': r'ace[- ]?(?:inhibitors?|i)s?', 'arb': r'arbs?|angiotensin receptor blockers?', 'arni': r'arnis?|entresto|sacubitril',
+    'mra': r'mras?|mineralocorticoid (?:receptor )?antagonists?|spironolactone|eplerenone', 'sglt2_inhibitor': r'sglt-?2(?: inhibitors?|is?)?',
+    'glp1_agonist': r'glp-?1(?: agonists?| ras?| receptor agonists?)?', 'metformin': r'metformin', 'insulin': r'insulin',
+    'anticoagulant': r'anticoagulants?|blood thinners?|doacs?', 'opioid': r'opioids?|narcotics?', 'benzodiazepine': r'benzodiazepines?|benzos?',
+    'inhaled_corticosteroid': r'inhaled (?:cortico)?steroids?|ics', 'loop_diuretic': r'loop diuretics?', 'antiplatelet': r'antiplatelets?',
+}
+DRUG_GROUP_ALIASES = {'raas_inhibitor': r'(?:ace|acei)/arb(?:/arni)?|raas inhibitors?', 'diabetes_medication': r'diabetes (?:meds|medications?)'}
+
+
+def _medication_question(q, r, profile, as_of, info):
+    """Patients on / not on a drug class, optionally within a condition population and a period ($0, semantic medication table)."""
+    from .drug_classes import GROUPS
+    low = r.low
+    found = None
+    for cls, rx in sorted({**DRUG_ALIASES, **DRUG_GROUP_ALIASES}.items(), key=lambda kv: -len(kv[1])):
+        m = re.search(r'\b(?:' + rx + r')\b', low)
+        if m: found = (cls, m); break
+    if not found or not re.search(r'\b(?:on|taking|take|filled|fill|dispensed|prescribed|ordered|using|receiving|got)\b', low): return None
+    cls, m = found
+    classes = GROUPS.get(cls, [cls])
+    r.take(r'\b(?:' + ({**DRUG_ALIASES, **DRUG_GROUP_ALIASES}[cls]) + r')\b', f'drug class {cls}')
+    evidence = "('dispensed','claim')"
+    if r.take(r'\b(?:prescribed|ordered|on an order)\b', 'evidence ordered'): evidence = "('ordered')"
+    elif r.take(r'\b(?:on (?:their|the) med(?:ication)? lists?|listed)\b', 'evidence listed'): evidence = "('listed')"
+    elif r.take(r'\b(?:any (?:source|evidence)|any record)\b', 'evidence any'): evidence = None
+    r.take(r'\b(?:on|taking|take|filled|fill|dispensed|using|receiving|got|a|an|any|of|currently|active)\b', None, overlap=True)
+    negated = bool(re.search(r'\b(?:not|no|without|never|lacking|missing)\b(?:\s+\w+){0,4}\s+(?:' + ({**DRUG_ALIASES, **DRUG_GROUP_ALIASES}[cls]) + r')', low))
+    r.take(r'\b(?:not|no|without|never|lacking|missing|but)\b', None)
+    period = _take_period(r, as_of)
+    conds = []
+    for concept, aliases in sorted(CONDITION_ALIASES.items(), key=lambda kv: -max(map(len, kv[1]))):
+        for alias in sorted(aliases, key=len, reverse=True):
+            if r.take(_alias_pattern(alias), f'condition {concept}'): conds.append(concept)
+    which = r.take(r'\b(?:which|list|who|names?|ids?|pull)\b', 'patient list')
+    share = r.take(r'(?:\bwhat (?:share|percent(?:age)?|proportion|fraction)\b|\bwhat ?%|\bpercent(?:age)? of\b)', 'share')
+    r.take(r'\b(?:how many|number of|count|patients?|members?|people|have|has|had|with|and|our|the|are|is|were|was|been)\b', None, overlap=True)
+    med = f"SELECT DISTINCT patient_id FROM medication WHERE drug_class IN ({', '.join(repr(c) for c in classes)})" + \
+          (f" AND evidence IN {evidence}" if evidence else '') + (f" AND event_date BETWEEN '{period[0]}' AND '{period[1]}'" if period else '')
+    base = 'SELECT patient_id FROM patient' + ''.join(f" WHERE patient_id IN (SELECT patient_id FROM concept_patient WHERE concept = '{c}')" if i == 0 else
+                                                      f" AND patient_id IN (SELECT patient_id FROM concept_patient WHERE concept = '{c}')" for i, c in enumerate(conds))
+    cohort = f"{base} {'AND' if conds else 'WHERE'} patient_id {'NOT IN' if negated else 'IN'} ({med})"
+    purpose = (f"Patients {'not ' if negated else ''}with {cls} ({', '.join(classes)}) evidence {evidence or 'any source'}"
+               + (f" in {period[0]}..{period[1]}" if period else '') + (f" among {', '.join(conds)}" if conds else ''))
+    if share:
+        if not conds:
+            info.update(route='fallback', reason='share of a medication needs a population'); return None, info
+        sql = f"SELECT round(100.0 * (SELECT count(*) FROM ({cohort})) / (SELECT count(*) FROM ({base})), 2)"
+        return _finish(q, r, info, sql, 'value', purpose + ' as % of the population')
+    if which: return _finish(q, r, info, f"SELECT patient_id FROM ({cohort}) ORDER BY 1", 'patient_set', purpose)
+    return _finish(q, r, info, f"SELECT count(*) FROM ({cohort})", 'count', purpose)
 
 
 def _ops_question(q, r, profile, as_of, info):
