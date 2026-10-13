@@ -1,0 +1,1500 @@
+{
+ "version": "learned-router/1",
+ "trained_at": "2026-10-13T14:38:53",
+ "training_rows": 1422,
+ "label_sources": {
+  "harvest_route": 82,
+  "compiler": 86,
+  "harvest_area": 300,
+  "unlabelled": 449,
+  "excluded_bench_or_near": 596,
+  "router_log": 2,
+  "compiler_template": 438,
+  "template_template": 514
+ },
+ "labels": {
+  "not_answerable": 123,
+  "literal_lookup": 444,
+  "vbc": 35,
+  "scheduling": 27,
+  "monitor": 43,
+  "outreach": 53,
+  "survival": 101,
+  "explain": 116,
+  "demand": 52,
+  "discover": 91,
+  "trajectory": 79,
+  "program_effect": 50,
+  "calibration": 16,
+  "market": 35,
+  "profile": 66,
+  "pathway": 40,
+  "briefing": 10,
+  "early_signal": 27,
+  "claims_review": 14
+ },
+ "splits": {
+  "train": 969,
+  "cal": 205,
+  "heldout": 248
+ },
+ "C": 4.0,
+ "temperature": 0.5016969106227039,
+ "heldout": {
+  "n": 248,
+  "argmax_accuracy": 0.7823,
+  "threshold": 0.9711228176430868,
+  "coverage": 0.4435,
+  "accuracy_at_threshold": 0.9818,
+  "ece": 0.0827,
+  "brier": 0.1434
+ },
+ "acceptance_test": {
+  "all": {
+   "n": 140,
+   "argmax_accuracy": 0.8643,
+   "coverage": 0.6,
+   "covered": 84,
+   "accuracy_when_covered": 0.9762,
+   "wrong_when_covered": [
+    [
+     "credibility-weighted PMPM by practice",
+     "profile",
+     "vbc",
+     0.9804
+    ],
+    [
+     "How many member months did we have in 2029?",
+     "vbc",
+     "literal_lookup",
+     0.9971
+    ]
+   ]
+  },
+  "compiler_declined": {
+   "n": 41,
+   "argmax_accuracy": 0.8049,
+   "coverage": 0.5122,
+   "covered": 21,
+   "accuracy_when_covered": 1.0,
+   "wrong_when_covered": []
+  },
+  "paid_router_on_logged_acceptance": {
+   "n": 42,
+   "accuracy": 0.9286
+  }
+ },
+ "acceptance_rows": [
+  {
+   "question": "What should I look at today?",
+   "expect": "briefing",
+   "predicted": "briefing",
+   "probability": 0.999,
+   "covered": true,
+   "correct": true,
+   "compiler_handles": true,
+   "paid_router_logged": null
+  },
+  {
+   "question": "Give me the morning briefing",
+   "expect": "briefing",
+   "predicted": "briefing",
+   "probability": 0.9998,
+   "covered": true,
+   "correct": true,
+   "compiler_handles": true,
+   "paid_router_logged": null
+  },
+  {
+   "question": "What needs my attention?",
+   "expect": "briefing",
+   "predicted": "briefing",
+   "probability": 0.9998,
+   "covered": true,
+   "correct": true,
+   "compiler_handles": true,
+   "paid_router_logged": null
+  },
+  {
+   "question": "Anything I should know about this week?",
+   "expect": "briefing",
+   "predicted": "briefing",
+   "probability": 0.956,
+   "covered": false,
+   "correct": true,
+   "compiler_handles": true,
+   "paid_router_logged": null
+  },
+  {
+   "question": "What stands out in our data today?",
+   "expect": "briefing",
+   "predicted": "briefing",
+   "probability": 0.8722,
+   "covered": false,
+   "correct": true,
+   "compiler_handles": true,
+   "paid_router_logged": null
+  },
+  {
+   "question": "Where should we focus first?",
+   "expect": "briefing",
+   "predicted": "briefing",
+   "probability": 0.8701,
+   "covered": false,
+   "correct": true,
+   "compiler_handles": true,
+   "paid_router_logged": null
+  },
+  {
+   "question": "Show me today's top 5 findings",
+   "expect": "briefing",
+   "predicted": "briefing",
+   "probability": 0.9999,
+   "covered": true,
+   "correct": true,
+   "compiler_handles": true,
+   "paid_router_logged": null
+  },
+  {
+   "question": "Run the daily briefing",
+   "expect": "briefing",
+   "predicted": "briefing",
+   "probability": 0.9987,
+   "covered": true,
+   "correct": true,
+   "compiler_handles": true,
+   "paid_router_logged": null
+  },
+  {
+   "question": "How well calibrated are our risk scores?",
+   "expect": "calibration",
+   "predicted": "calibration",
+   "probability": 0.9994,
+   "covered": true,
+   "correct": true,
+   "compiler_handles": true,
+   "paid_router_logged": null
+  },
+  {
+   "question": "How accurate are our forecasts?",
+   "expect": "calibration",
+   "predicted": "calibration",
+   "probability": 0.9997,
+   "covered": true,
+   "correct": true,
+   "compiler_handles": true,
+   "paid_router_logged": null
+  },
+  {
+   "question": "How accurate are our risk scores?",
+   "expect": "calibration",
+   "predicted": "calibration",
+   "probability": 0.9987,
+   "covered": true,
+   "correct": true,
+   "compiler_handles": true,
+   "paid_router_logged": null
+  },
+  {
+   "question": "Are the eGFR forecasts calibrated?",
+   "expect": "calibration",
+   "predicted": "calibration",
+   "probability": 0.9982,
+   "covered": true,
+   "correct": true,
+   "compiler_handles": true,
+   "paid_router_logged": null
+  },
+  {
+   "question": "Can we trust the A1c projections?",
+   "expect": "calibration",
+   "predicted": "calibration",
+   "probability": 0.9937,
+   "covered": true,
+   "correct": true,
+   "compiler_handles": true,
+   "paid_router_logged": null
+  },
+  {
+   "question": "What is the backtested coverage of our prediction intervals for blood pressure forecasts?",
+   "expect": "calibration",
+   "predicted": "calibration",
+   "probability": 0.9956,
+   "covered": true,
+   "correct": true,
+   "compiler_handles": true,
+   "paid_router_logged": null
+  },
+  {
+   "question": "Show the Brier score and reliability of our predictions",
+   "expect": "calibration",
+   "predicted": "calibration",
+   "probability": 0.9997,
+   "covered": true,
+   "correct": true,
+   "compiler_handles": true,
+   "paid_router_logged": null
+  },
+  {
+   "question": "How reliable are the outreach value predictions?",
+   "expect": "calibration",
+   "predicted": "calibration",
+   "probability": 0.9998,
+   "covered": true,
+   "correct": true,
+   "compiler_handles": true,
+   "paid_router_logged": null
+  },
+  {
+   "question": "Which providers bill unusually compared to peers?",
+   "expect": "claims_review",
+   "predicted": "claims_review",
+   "probability": 0.9694,
+   "covered": false,
+   "correct": true,
+   "compiler_handles": true,
+   "paid_router_logged": null
+  },
+  {
+   "question": "Any suspicious billing patterns?",
+   "expect": "claims_review",
+   "predicted": "claims_review",
+   "probability": 0.9982,
+   "covered": true,
+   "correct": true,
+   "compiler_handles": true,
+   "paid_router_logged": null
+  },
+  {
+   "question": "Where are we leaking money in claims (denials, underpayments, rework)?",
+   "expect": "claims_review",
+   "predicted": "claims_review",
+   "probability": 0.9956,
+   "covered": true,
+   "correct": true,
+   "compiler_handles": true,
+   "paid_router_logged": null
+  },
+  {
+   "question": "Which claims were underpaid versus what similar claims were paid?",
+   "expect": "claims_review",
+   "predicted": "claims_review",
+   "probability": 0.9997,
+   "covered": true,
+   "correct": true,
+   "compiler_handles": true,
+   "paid_router_logged": null
+  },
+  {
+   "question": "Explain the denial patterns by payer and reason",
+   "expect": "claims_review",
+   "predicted": "claims_review",
+   "probability": 0.9972,
+   "covered": true,
+   "correct": true,
+   "compiler_handles": true,
+   "paid_router_logged": null
+  },
+  {
+   "question": "Which payers underpay us the most?",
+   "expect": "claims_review",
+   "predicted": "claims_review",
+   "probability": 0.9958,
+   "covered": true,
+   "correct": true,
+   "compiler_handles": true,
+   "paid_router_logged": null
+  },
+  {
+   "question": "How much revenue did we write off in denials last year?",
+   "expect": "claims_review",
+   "predicted": "claims_review",
+   "probability": 0.9936,
+   "covered": true,
+   "correct": true,
+   "compiler_handles": true,
+   "paid_router_logged": null
+  },
+  {
+   "question": "Show reversals and take-backs by payer",
+   "expect": "claims_review",
+   "predicted": "claims_review",
+   "probability": 0.9981,
+   "covered": true,
+   "correct": true,
+   "compiler_handles": true,
+   "paid_router_logged": null
+  },
+  {
+   "question": "Forecast ED visits for the next 6 months",
+   "expect": "demand",
+   "predicted": "demand",
+   "probability": 0.8638,
+   "covered": false,
+   "correct": true,
+   "compiler_handles": true,
+   "paid_router_logged": null
+  },
+  {
+   "question": "How many beds will we need next quarter?",
+   "expect": "demand",
+   "predicted": "literal_lookup",
+   "probability": 0.8998,
+   "covered": false,
+   "correct": false,
+   "compiler_handles": true,
+   "paid_router_logged": null
+  },
+  {
+   "question": "Projected primary care appointment demand by practice",
+   "expect": "demand",
+   "predicted": "demand",
+   "probability": 0.9499,
+   "covered": false,
+   "correct": true,
+   "compiler_handles": true,
+   "paid_router_logged": null
+  },
+  {
+   "question": "Weekly admissions forecast with uncertainty",
+   "expect": "demand",
+   "predicted": "demand",
+   "probability": 0.9959,
+   "covered": true,
+   "correct": true,
+   "compiler_handles": true,
+   "paid_router_logged": null
+  },
+  {
+   "question": "How many nurses do we need for next month's discharges?",
+   "expect": "demand",
+   "predicted": "literal_lookup",
+   "probability": 0.4379,
+   "covered": false,
+   "correct": false,
+   "compiler_handles": true,
+   "paid_router_logged": null
+  },
+  {
+   "question": "Predict urgent care visits for the next 8 weeks by payer",
+   "expect": "demand",
+   "predicted": "demand",
+   "probability": 0.963,
+   "covered": false,
+   "correct": true,
+   "compiler_handles": true,
+   "paid_router_logged": null
+  },
+  {
+   "question": "What will our observation stay volume look like over the next 3 months?",
+   "expect": "demand",
+   "predicted": "demand",
+   "probability": 0.422,
+   "covered": false,
+   "correct": true,
+   "compiler_handles": true,
+   "paid_router_logged": null
+  },
+  {
+   "question": "Projected hospital census and beds needed next month at 85% occupancy",
+   "expect": "demand",
+   "predicted": "literal_lookup",
+   "probability": 0.8671,
+   "covered": false,
+   "correct": false,
+   "compiler_handles": true,
+   "paid_router_logged": null
+  },
+  {
+   "question": "Are there pockets of the population where uncontrolled diabetes clusters?",
+   "expect": "discover",
+   "predicted": "discover",
+   "probability": 0.9979,
+   "covered": true,
+   "correct": true,
+   "compiler_handles": false,
+   "paid_router_logged": "discover"
+  },
+  {
+   "question": "Show me unexpected hot spots for ED use",
+   "expect": "discover",
+   "predicted": "discover",
+   "probability": 0.8712,
+   "covered": false,
+   "correct": true,
+   "compiler_handles": true,
+   "paid_router_logged": null
+  },
+  {
+   "question": "Where is heart failure unusually common in our network?",
+   "expect": "discover",
+   "predicted": "discover",
+   "probability": 0.4035,
+   "covered": false,
+   "correct": true,
+   "compiler_handles": true,
+   "paid_router_logged": null
+  },
+  {
+   "question": "Any subgroups with surprisingly high rates of food insecurity?",
+   "expect": "discover",
+   "predicted": "discover",
+   "probability": 0.9914,
+   "covered": true,
+   "correct": true,
+   "compiler_handles": false,
+   "paid_router_logged": "discover"
+  },
+  {
+   "question": "Find segments where depression is over-represented",
+   "expect": "discover",
+   "predicted": "discover",
+   "probability": 0.545,
+   "covered": false,
+   "correct": true,
+   "compiler_handles": false,
+   "paid_router_logged": "discover"
+  },
+  {
+   "question": "which combinations of practice and payer have unusually many admissions",
+   "expect": "discover",
+   "predicted": "discover",
+   "probability": 0.7832,
+   "covered": false,
+   "correct": true,
+   "compiler_handles": false,
+   "paid_router_logged": "discover"
+  },
+  {
+   "question": "Surface any concentration of high blood pressure readings we didn't know about",
+   "expect": "discover",
+   "predicted": "explain",
+   "probability": 0.329,
+   "covered": false,
+   "correct": false,
+   "compiler_handles": true,
+   "paid_router_logged": null
+  },
+  {
+   "question": "Look for clusters of CKD by age, sex, payer or practice",
+   "expect": "discover",
+   "predicted": "discover",
+   "probability": 0.9271,
+   "covered": false,
+   "correct": true,
+   "compiler_handles": false,
+   "paid_router_logged": "discover"
+  },
+  {
+   "question": "Which patients look like they're heading toward a heart failure admission?",
+   "expect": "early_signal",
+   "predicted": "early_signal",
+   "probability": 0.996,
+   "covered": true,
+   "correct": true,
+   "compiler_handles": true,
+   "paid_router_logged": null
+  },
+  {
+   "question": "Find patients showing the pattern that usually precedes an ED visit",
+   "expect": "early_signal",
+   "predicted": "early_signal",
+   "probability": 0.9997,
+   "covered": true,
+   "correct": true,
+   "compiler_handles": true,
+   "paid_router_logged": null
+  },
+  {
+   "question": "Early warning signs of decompensation",
+   "expect": "early_signal",
+   "predicted": "early_signal",
+   "probability": 0.9969,
+   "covered": true,
+   "correct": true,
+   "compiler_handles": true,
+   "paid_router_logged": null
+  },
+  {
+   "question": "Who has the pre-admission signature?",
+   "expect": "early_signal",
+   "predicted": "early_signal",
+   "probability": 1.0,
+   "covered": true,
+   "correct": true,
+   "compiler_handles": true,
+   "paid_router_logged": null
+  },
+  {
+   "question": "Which diabetics are showing early signs of an upcoming hospitalization?",
+   "expect": "early_signal",
+   "predicted": "early_signal",
+   "probability": 0.9619,
+   "covered": false,
+   "correct": true,
+   "compiler_handles": true,
+   "paid_router_logged": null
+  },
+  {
+   "question": "Search the panel for precursors of emergency department visits in the next 3 months",
+   "expect": "early_signal",
+   "predicted": "early_signal",
+   "probability": 0.867,
+   "covered": false,
+   "correct": true,
+   "compiler_handles": true,
+   "paid_router_logged": null
+  },
+  {
+   "question": "Who is about to be admitted, based on the signals that came before past admissions?",
+   "expect": "early_signal",
+   "predicted": "early_signal",
+   "probability": 0.9999,
+   "covered": true,
+   "correct": true,
+   "compiler_handles": true,
+   "paid_router_logged": null
+  },
+  {
+   "question": "Show me CHF patients with the leading indicators of an acute care visit",
+   "expect": "early_signal",
+   "predicted": "early_signal",
+   "probability": 0.9675,
+   "covered": false,
+   "correct": true,
+   "compiler_handles": true,
+   "paid_router_logged": null
+  },
+  {
+   "question": "What's behind our heart failure readmissions?",
+   "expect": "explain",
+   "predicted": "explain",
+   "probability": 0.9687,
+   "covered": false,
+   "correct": true,
+   "compiler_handles": false,
+   "paid_router_logged": "explain"
+  },
+  {
+   "question": "Which factors are associated with patients ending up in the ED?",
+   "expect": "explain",
+   "predicted": "explain",
+   "probability": 0.9998,
+   "covered": true,
+   "correct": true,
+   "compiler_handles": false,
+   "paid_router_logged": "explain"
+  },
+  {
+   "question": "Help me understand what is different about diabetics whose latest A1c is above 9",
+   "expect": "explain",
+   "predicted": "trajectory",
+   "probability": 0.2833,
+   "covered": false,
+   "correct": false,
+   "compiler_handles": false,
+   "paid_router_logged": "explain"
+  },
+  {
+   "question": "what predicts a 30 day bounce back after a hospital stay",
+   "expect": "explain",
+   "predicted": "trajectory",
+   "probability": 0.454,
+   "covered": false,
+   "correct": false,
+   "compiler_handles": false,
+   "paid_router_logged": "explain"
+  },
+  {
+   "question": "Any patterns that explain why some COPD patients get admitted?",
+   "expect": "explain",
+   "predicted": "explain",
+   "probability": 0.9998,
+   "covered": true,
+   "correct": true,
+   "compiler_handles": false,
+   "paid_router_logged": "explain"
+  },
+  {
+   "question": "Why do some hypertensive patients have uncontrolled blood pressure?",
+   "expect": "explain",
+   "predicted": "explain",
+   "probability": 0.9972,
+   "covered": true,
+   "correct": true,
+   "compiler_handles": false,
+   "paid_router_logged": "explain"
+  },
+  {
+   "question": "what's driving ED utilization among medicaid members",
+   "expect": "explain",
+   "predicted": "explain",
+   "probability": 0.9975,
+   "covered": true,
+   "correct": true,
+   "compiler_handles": false,
+   "paid_router_logged": "explain"
+  },
+  {
+   "question": "Tell me what characteristics go along with readmission",
+   "expect": "explain",
+   "predicted": "explain",
+   "probability": 0.9966,
+   "covered": true,
+   "correct": true,
+   "compiler_handles": false,
+   "paid_router_logged": "explain"
+  },
+  {
+   "question": "What moved this month?",
+   "expect": "market",
+   "predicted": "market",
+   "probability": 0.9976,
+   "covered": true,
+   "correct": true,
+   "compiler_handles": true,
+   "paid_router_logged": null
+  },
+  {
+   "question": "Give me the market view of our practices",
+   "expect": "market",
+   "predicted": "market",
+   "probability": 0.9913,
+   "covered": true,
+   "correct": true,
+   "compiler_handles": true,
+   "paid_router_logged": null
+  },
+  {
+   "question": "Which practices are trending worse on ED use and cost?",
+   "expect": "market",
+   "predicted": "market",
+   "probability": 0.9999,
+   "covered": true,
+   "correct": true,
+   "compiler_handles": true,
+   "paid_router_logged": null
+  },
+  {
+   "question": "Show me practice tickers for PMPM, ED rate, admissions and care-gap closure",
+   "expect": "market",
+   "predicted": "market",
+   "probability": 0.9503,
+   "covered": false,
+   "correct": true,
+   "compiler_handles": true,
+   "paid_router_logged": null
+  },
+  {
+   "question": "What's the most surprising change across the network?",
+   "expect": "market",
+   "predicted": "market",
+   "probability": 0.9997,
+   "covered": true,
+   "correct": true,
+   "compiler_handles": true,
+   "paid_router_logged": null
+  },
+  {
+   "question": "Who are the top movers among our PCPs?",
+   "expect": "market",
+   "predicted": "market",
+   "probability": 0.9994,
+   "covered": true,
+   "correct": true,
+   "compiler_handles": true,
+   "paid_router_logged": null
+  },
+  {
+   "question": "Show me payer tickers for denials",
+   "expect": "market",
+   "predicted": "monitor",
+   "probability": 0.4901,
+   "covered": false,
+   "correct": false,
+   "compiler_handles": true,
+   "paid_router_logged": null
+  },
+  {
+   "question": "Which doctors are trending better on BP control?",
+   "expect": "market",
+   "predicted": "market",
+   "probability": 0.9812,
+   "covered": true,
+   "correct": true,
+   "compiler_handles": true,
+   "paid_router_logged": null
+  },
+  {
+   "question": "Is anything out of control in our ED volumes?",
+   "expect": "monitor",
+   "predicted": "monitor",
+   "probability": 0.9993,
+   "covered": true,
+   "correct": true,
+   "compiler_handles": true,
+   "paid_router_logged": null
+  },
+  {
+   "question": "Are any of our data feeds broken?",
+   "expect": "monitor",
+   "predicted": "monitor",
+   "probability": 0.9778,
+   "covered": true,
+   "correct": true,
+   "compiler_handles": false,
+   "paid_router_logged": "monitor"
+  },
+  {
+   "question": "Check claims for unusual billing patterns",
+   "expect": "monitor",
+   "predicted": "claims_review",
+   "probability": 0.9239,
+   "covered": false,
+   "correct": true,
+   "compiler_handles": false,
+   "paid_router_logged": "claims_review"
+  },
+  {
+   "question": "Did any practice's admission rate spike beyond normal variation?",
+   "expect": "monitor",
+   "predicted": "market",
+   "probability": 0.5967,
+   "covered": false,
+   "correct": false,
+   "compiler_handles": false,
+   "paid_router_logged": "monitor"
+  },
+  {
+   "question": "Any signs of duplicate claims?",
+   "expect": "monitor",
+   "predicted": "monitor",
+   "probability": 0.995,
+   "covered": true,
+   "correct": true,
+   "compiler_handles": true,
+   "paid_router_logged": null
+  },
+  {
+   "question": "Is the lab feed arriving late?",
+   "expect": "monitor",
+   "predicted": "monitor",
+   "probability": 0.9754,
+   "covered": true,
+   "correct": true,
+   "compiler_handles": false,
+   "paid_router_logged": "monitor"
+  },
+  {
+   "question": "Run Benford's law on claim amounts",
+   "expect": "monitor",
+   "predicted": "monitor",
+   "probability": 0.9997,
+   "covered": true,
+   "correct": true,
+   "compiler_handles": true,
+   "paid_router_logged": null
+  },
+  {
+   "question": "Has the denial rate shifted recently?",
+   "expect": "monitor",
+   "predicted": "monitor",
+   "probability": 0.4758,
+   "covered": false,
+   "correct": true,
+   "compiler_handles": false,
+   "paid_router_logged": "monitor"
+  },
+  {
+   "question": "Our nurses can make 30 calls this week - who should they call?",
+   "expect": "outreach",
+   "predicted": "outreach",
+   "probability": 0.9995,
+   "covered": true,
+   "correct": true,
+   "compiler_handles": true,
+   "paid_router_logged": null
+  },
+  {
+   "question": "Build me a prioritized list of 50 patients for care management outreach",
+   "expect": "outreach",
+   "predicted": "outreach",
+   "probability": 0.9999,
+   "covered": true,
+   "correct": true,
+   "compiler_handles": false,
+   "paid_router_logged": "outreach"
+  },
+  {
+   "question": "Who are the top patients to reach out to about open care gaps? We have 20 hours of nurse time",
+   "expect": "outreach",
+   "predicted": "outreach",
+   "probability": 0.9999,
+   "covered": true,
+   "correct": true,
+   "compiler_handles": false,
+   "paid_router_logged": "outreach"
+  },
+  {
+   "question": "Give me tomorrow's call list, 25 people, max 5 per practice",
+   "expect": "outreach",
+   "predicted": "outreach",
+   "probability": 0.9936,
+   "covered": true,
+   "correct": true,
+   "compiler_handles": false,
+   "paid_router_logged": "outreach"
+  },
+  {
+   "question": "Which patients with social needs should we contact first? capacity 40",
+   "expect": "outreach",
+   "predicted": "outreach",
+   "probability": 0.9998,
+   "covered": true,
+   "correct": true,
+   "compiler_handles": false,
+   "paid_router_logged": "outreach"
+  },
+  {
+   "question": "rank rising-risk patients for outreach, 60 slots",
+   "expect": "outreach",
+   "predicted": "outreach",
+   "probability": 0.9933,
+   "covered": true,
+   "correct": true,
+   "compiler_handles": true,
+   "paid_router_logged": null
+  },
+  {
+   "question": "Prioritize 100 patients for outreach across practices",
+   "expect": "outreach",
+   "predicted": "outreach",
+   "probability": 0.9955,
+   "covered": true,
+   "correct": true,
+   "compiler_handles": true,
+   "paid_router_logged": null
+  },
+  {
+   "question": "who needs a phone call most this week? 15 slots",
+   "expect": "outreach",
+   "predicted": "outreach",
+   "probability": 0.9933,
+   "covered": true,
+   "correct": true,
+   "compiler_handles": false,
+   "paid_router_logged": "outreach"
+  },
+  {
+   "question": "How do heart failure patients move through care after an ED visit?",
+   "expect": "pathway",
+   "predicted": "pathway",
+   "probability": 0.9998,
+   "covered": true,
+   "correct": true,
+   "compiler_handles": true,
+   "paid_router_logged": null
+  },
+  {
+   "question": "Where do patients leak out of network after discharge?",
+   "expect": "pathway",
+   "predicted": "pathway",
+   "probability": 0.9983,
+   "covered": true,
+   "correct": true,
+   "compiler_handles": true,
+   "paid_router_logged": null
+  },
+  {
+   "question": "What happens after an ED visit - how many get primary care follow-up within 7 days vs return to the ED?",
+   "expect": "pathway",
+   "predicted": "pathway",
+   "probability": 0.998,
+   "covered": true,
+   "correct": true,
+   "compiler_handles": true,
+   "paid_router_logged": null
+  },
+  {
+   "question": "Most common care paths for new diabetics",
+   "expect": "pathway",
+   "predicted": "pathway",
+   "probability": 0.9342,
+   "covered": false,
+   "correct": true,
+   "compiler_handles": true,
+   "paid_router_logged": null
+  },
+  {
+   "question": "Probability a CHF patient ends up admitted within 90 days starting from a PCP visit",
+   "expect": "pathway",
+   "predicted": "pathway",
+   "probability": 0.9417,
+   "covered": false,
+   "correct": true,
+   "compiler_handles": true,
+   "paid_router_logged": null
+  },
+  {
+   "question": "Where do our members go after a hospital discharge, by practice?",
+   "expect": "pathway",
+   "predicted": "pathway",
+   "probability": 0.9988,
+   "covered": true,
+   "correct": true,
+   "compiler_handles": true,
+   "paid_router_logged": null
+  },
+  {
+   "question": "Show the patient journey for COPD patients after an inpatient admission",
+   "expect": "pathway",
+   "predicted": "pathway",
+   "probability": 0.9895,
+   "covered": true,
+   "correct": true,
+   "compiler_handles": true,
+   "paid_router_logged": null
+  },
+  {
+   "question": "Which practices leak the most patients to outside organizations?",
+   "expect": "pathway",
+   "predicted": "discover",
+   "probability": 0.4876,
+   "covered": false,
+   "correct": false,
+   "compiler_handles": true,
+   "paid_router_logged": null
+  },
+  {
+   "question": "Markov transition matrix for hypertension patients by payer",
+   "expect": "pathway",
+   "predicted": "pathway",
+   "probability": 0.6407,
+   "covered": false,
+   "correct": true,
+   "compiler_handles": true,
+   "paid_router_logged": null
+  },
+  {
+   "question": "Top 5 most common paths after an urgent care visit",
+   "expect": "pathway",
+   "predicted": "pathway",
+   "probability": 0.9995,
+   "covered": true,
+   "correct": true,
+   "compiler_handles": true,
+   "paid_router_logged": null
+  },
+  {
+   "question": "Which PCPs have truly high ED use after accounting for panel size and case mix?",
+   "expect": "profile",
+   "predicted": "profile",
+   "probability": 0.9983,
+   "covered": true,
+   "correct": true,
+   "compiler_handles": true,
+   "paid_router_logged": null
+  },
+  {
+   "question": "Rank practices on A1c poor control fairly",
+   "expect": "profile",
+   "predicted": "profile",
+   "probability": 0.9972,
+   "covered": true,
+   "correct": true,
+   "compiler_handles": true,
+   "paid_router_logged": null
+  },
+  {
+   "question": "Is Dr drA0's admission rate really an outlier?",
+   "expect": "profile",
+   "predicted": "profile",
+   "probability": 0.82,
+   "covered": false,
+   "correct": true,
+   "compiler_handles": true,
+   "paid_router_logged": null
+  },
+  {
+   "question": "credibility-weighted PMPM by practice",
+   "expect": "profile",
+   "predicted": "vbc",
+   "probability": 0.9804,
+   "covered": true,
+   "correct": false,
+   "compiler_handles": true,
+   "paid_router_logged": null
+  },
+  {
+   "question": "Which primary care physicians are outliers on 30-day readmissions once you adjust for panel size?",
+   "expect": "profile",
+   "predicted": "profile",
+   "probability": 1.0,
+   "covered": true,
+   "correct": true,
+   "compiler_handles": true,
+   "paid_router_logged": null
+  },
+  {
+   "question": "Show shrunk emergency department visit rates for each provider",
+   "expect": "profile",
+   "predicted": "demand",
+   "probability": 0.2356,
+   "covered": false,
+   "correct": false,
+   "compiler_handles": true,
+   "paid_router_logged": null
+  },
+  {
+   "question": "Compare our clinics fairly on hospitalizations, adjusted for age and sex",
+   "expect": "profile",
+   "predicted": "profile",
+   "probability": 0.801,
+   "covered": false,
+   "correct": true,
+   "compiler_handles": true,
+   "paid_router_logged": null
+  },
+  {
+   "question": "Which practices have truly worse blood pressure control than the network?",
+   "expect": "profile",
+   "predicted": "profile",
+   "probability": 0.9729,
+   "covered": true,
+   "correct": true,
+   "compiler_handles": true,
+   "paid_router_logged": null
+  },
+  {
+   "question": "Using credibility weighting, which practices have total cost of care truly above $80 PMPM?",
+   "expect": "profile",
+   "predicted": "profile",
+   "probability": 0.9909,
+   "covered": true,
+   "correct": true,
+   "compiler_handles": true,
+   "paid_router_logged": null
+  },
+  {
+   "question": "Did enrolling people in care management cut their ED use?",
+   "expect": "program_effect",
+   "predicted": "program_effect",
+   "probability": 0.951,
+   "covered": false,
+   "correct": true,
+   "compiler_handles": true,
+   "paid_router_logged": null
+  },
+  {
+   "question": "Is the transitions of care program lowering readmissions?",
+   "expect": "program_effect",
+   "predicted": "program_effect",
+   "probability": 0.9423,
+   "covered": false,
+   "correct": true,
+   "compiler_handles": false,
+   "paid_router_logged": "program_effect"
+  },
+  {
+   "question": "What happened to A1c after patients started an SGLT2 inhibitor?",
+   "expect": "program_effect",
+   "predicted": "program_effect",
+   "probability": 0.9427,
+   "covered": false,
+   "correct": true,
+   "compiler_handles": false,
+   "paid_router_logged": "program_effect"
+  },
+  {
+   "question": "Did starting statins change LDL?",
+   "expect": "program_effect",
+   "predicted": "program_effect",
+   "probability": 0.9781,
+   "covered": true,
+   "correct": true,
+   "compiler_handles": true,
+   "paid_router_logged": null
+  },
+  {
+   "question": "Impact of community services referral on admissions",
+   "expect": "program_effect",
+   "predicted": "not_answerable",
+   "probability": 0.6561,
+   "covered": false,
+   "correct": false,
+   "compiler_handles": true,
+   "paid_router_logged": null
+  },
+  {
+   "question": "Has care coordination reduced cost per member?",
+   "expect": "program_effect",
+   "predicted": "program_effect",
+   "probability": 0.7994,
+   "covered": false,
+   "correct": true,
+   "compiler_handles": true,
+   "paid_router_logged": null
+  },
+  {
+   "question": "effect of care management on PMPM",
+   "expect": "program_effect",
+   "predicted": "program_effect",
+   "probability": 0.8692,
+   "covered": false,
+   "correct": true,
+   "compiler_handles": true,
+   "paid_router_logged": null
+  },
+  {
+   "question": "did transitions of care reduce ED visits",
+   "expect": "program_effect",
+   "predicted": "not_answerable",
+   "probability": 0.7458,
+   "covered": false,
+   "correct": false,
+   "compiler_handles": true,
+   "paid_router_logged": null
+  },
+  {
+   "question": "How much should each clinic overbook?",
+   "expect": "scheduling",
+   "predicted": "scheduling",
+   "probability": 0.9437,
+   "covered": false,
+   "correct": true,
+   "compiler_handles": true,
+   "paid_router_logged": null
+  },
+  {
+   "question": "Which appointments are likely no-shows tomorrow?",
+   "expect": "scheduling",
+   "predicted": "scheduling",
+   "probability": 1.0,
+   "covered": true,
+   "correct": true,
+   "compiler_handles": true,
+   "paid_router_logged": null
+  },
+  {
+   "question": "Which appointments next week are likely to be no-shows?",
+   "expect": "scheduling",
+   "predicted": "scheduling",
+   "probability": 1.0,
+   "covered": true,
+   "correct": true,
+   "compiler_handles": true,
+   "paid_router_logged": null
+  },
+  {
+   "question": "How many extra slots can practice 3 safely book?",
+   "expect": "scheduling",
+   "predicted": "scheduling",
+   "probability": 0.9159,
+   "covered": false,
+   "correct": true,
+   "compiler_handles": true,
+   "paid_router_logged": null
+  },
+  {
+   "question": "What's our access \u2014 days to third-next-available?",
+   "expect": "scheduling",
+   "predicted": "scheduling",
+   "probability": 0.9994,
+   "covered": true,
+   "correct": true,
+   "compiler_handles": true,
+   "paid_router_logged": null
+  },
+  {
+   "question": "Who should get a reminder call to cut no-shows?",
+   "expect": "scheduling",
+   "predicted": "scheduling",
+   "probability": 0.9978,
+   "covered": true,
+   "correct": true,
+   "compiler_handles": true,
+   "paid_router_logged": null
+  },
+  {
+   "question": "Predict no-shows for the next 10 days at practice 2",
+   "expect": "scheduling",
+   "predicted": "scheduling",
+   "probability": 0.9988,
+   "covered": true,
+   "correct": true,
+   "compiler_handles": true,
+   "paid_router_logged": null
+  },
+  {
+   "question": "Should practice 1 double-book, with 6 slots per session and an overflow cost of 3?",
+   "expect": "scheduling",
+   "predicted": "scheduling",
+   "probability": 0.9943,
+   "covered": true,
+   "correct": true,
+   "compiler_handles": true,
+   "paid_router_logged": null
+  },
+  {
+   "question": "Rank upcoming appointments by no-show risk",
+   "expect": "scheduling",
+   "predicted": "scheduling",
+   "probability": 0.9999,
+   "covered": true,
+   "correct": true,
+   "compiler_handles": true,
+   "paid_router_logged": null
+  },
+  {
+   "question": "How quickly do heart failure patients come back to the hospital after discharge?",
+   "expect": "survival",
+   "predicted": "survival",
+   "probability": 0.5211,
+   "covered": false,
+   "correct": true,
+   "compiler_handles": false,
+   "paid_router_logged": "survival"
+  },
+  {
+   "question": "Time from discharge to first primary care visit, by payer",
+   "expect": "survival",
+   "predicted": "pathway",
+   "probability": 0.5506,
+   "covered": false,
+   "correct": false,
+   "compiler_handles": false,
+   "paid_router_logged": "survival"
+  },
+  {
+   "question": "Kaplan-Meier for 90-day readmission after any hospital stay",
+   "expect": "survival",
+   "predicted": "survival",
+   "probability": 0.9996,
+   "covered": true,
+   "correct": true,
+   "compiler_handles": false,
+   "paid_router_logged": "survival"
+  },
+  {
+   "question": "How long after a diabetes diagnosis until the first ED visit?",
+   "expect": "survival",
+   "predicted": "survival",
+   "probability": 0.9995,
+   "covered": true,
+   "correct": true,
+   "compiler_handles": true,
+   "paid_router_logged": null
+  },
+  {
+   "question": "Compare time to readmission for patients with and without COPD",
+   "expect": "survival",
+   "predicted": "survival",
+   "probability": 0.9993,
+   "covered": true,
+   "correct": true,
+   "compiler_handles": true,
+   "paid_router_logged": null
+  },
+  {
+   "question": "Hazard ratio for readmission by age and sex",
+   "expect": "survival",
+   "predicted": "survival",
+   "probability": 0.9915,
+   "covered": true,
+   "correct": true,
+   "compiler_handles": true,
+   "paid_router_logged": null
+  },
+  {
+   "question": "median days until follow-up after discharge, by practice",
+   "expect": "survival",
+   "predicted": "survival",
+   "probability": 0.9978,
+   "covered": true,
+   "correct": true,
+   "compiler_handles": false,
+   "paid_router_logged": "survival"
+  },
+  {
+   "question": "what fraction of CKD patients reach eGFR below 30 within two years",
+   "expect": "survival",
+   "predicted": "literal_lookup",
+   "probability": 0.913,
+   "covered": false,
+   "correct": false,
+   "compiler_handles": false,
+   "paid_router_logged": "survival"
+  },
+  {
+   "question": "Whose kidney function is sliding?",
+   "expect": "trajectory",
+   "predicted": "trajectory",
+   "probability": 0.9917,
+   "covered": true,
+   "correct": true,
+   "compiler_handles": false,
+   "paid_router_logged": "trajectory"
+  },
+  {
+   "question": "Which diabetics are getting worse on their A1c over time?",
+   "expect": "trajectory",
+   "predicted": "trajectory",
+   "probability": 0.9742,
+   "covered": true,
+   "correct": true,
+   "compiler_handles": false,
+   "paid_router_logged": "trajectory"
+  },
+  {
+   "question": "Flag CKD patients likely to drop below an eGFR of 30 within the next year",
+   "expect": "trajectory",
+   "predicted": "trajectory",
+   "probability": 0.9644,
+   "covered": false,
+   "correct": true,
+   "compiler_handles": false,
+   "paid_router_logged": "trajectory"
+  },
+  {
+   "question": "Show patients with a steady climb in systolic pressure",
+   "expect": "trajectory",
+   "predicted": "trajectory",
+   "probability": 0.9914,
+   "covered": true,
+   "correct": true,
+   "compiler_handles": false,
+   "paid_router_logged": "trajectory"
+  },
+  {
+   "question": "Who has a meaningful downward trend in eGFR",
+   "expect": "trajectory",
+   "predicted": "trajectory",
+   "probability": 0.9999,
+   "covered": true,
+   "correct": true,
+   "compiler_handles": false,
+   "paid_router_logged": "trajectory"
+  },
+  {
+   "question": "which patients' LDL is trending the wrong way",
+   "expect": "trajectory",
+   "predicted": "trajectory",
+   "probability": 0.9997,
+   "covered": true,
+   "correct": true,
+   "compiler_handles": false,
+   "paid_router_logged": "trajectory"
+  },
+  {
+   "question": "project potassium trajectories for heart failure patients",
+   "expect": "trajectory",
+   "predicted": "trajectory",
+   "probability": 0.9679,
+   "covered": false,
+   "correct": true,
+   "compiler_handles": true,
+   "paid_router_logged": null
+  },
+  {
+   "question": "Anyone whose weight is creeping up among HF patients?",
+   "expect": "trajectory",
+   "predicted": "trajectory",
+   "probability": 0.859,
+   "covered": false,
+   "correct": true,
+   "compiler_handles": false,
+   "paid_router_logged": "trajectory"
+  },
+  {
+   "question": "What's our PMPM by payer this year?",
+   "expect": "vbc",
+   "predicted": "vbc",
+   "probability": 0.9991,
+   "covered": true,
+   "correct": true,
+   "compiler_handles": true,
+   "paid_router_logged": "literal_lookup"
+  },
+  {
+   "question": "How much shared savings would we earn with a $950 benchmark, 50% sharing and a 2% MSR?",
+   "expect": "vbc",
+   "predicted": "not_answerable",
+   "probability": 0.9978,
+   "covered": false,
+   "correct": false,
+   "compiler_handles": false,
+   "paid_router_logged": "vbc"
+  },
+  {
+   "question": "Which PCPs have the most attributed members?",
+   "expect": "vbc",
+   "predicted": "profile",
+   "probability": 0.4748,
+   "covered": false,
+   "correct": false,
+   "compiler_handles": false,
+   "paid_router_logged": "literal_lookup"
+  },
+  {
+   "question": "How many member months did we have in 2029?",
+   "expect": "vbc",
+   "predicted": "literal_lookup",
+   "probability": 0.9971,
+   "covered": true,
+   "correct": false,
+   "compiler_handles": true,
+   "paid_router_logged": null
+  },
+  {
+   "question": "With a $1,000 PMPM benchmark, 50% sharing rate and 2% MSR, what's the chance the contract pays us nothing?",
+   "expect": "vbc",
+   "predicted": "vbc",
+   "probability": 0.2965,
+   "covered": false,
+   "correct": true,
+   "compiler_handles": false,
+   "paid_router_logged": "vbc"
+  },
+  {
+   "question": "Split the savings fairly across practices",
+   "expect": "vbc",
+   "predicted": "discover",
+   "probability": 0.388,
+   "covered": false,
+   "correct": false,
+   "compiler_handles": false,
+   "paid_router_logged": "vbc"
+  },
+  {
+   "question": "ED visits per thousand members by practice",
+   "expect": "vbc",
+   "predicted": "vbc",
+   "probability": 0.473,
+   "covered": false,
+   "correct": true,
+   "compiler_handles": true,
+   "paid_router_logged": null
+  },
+  {
+   "question": "What drove the change in cost per member between 2028 and 2029?",
+   "expect": "vbc",
+   "predicted": "vbc",
+   "probability": 0.7314,
+   "covered": false,
+   "correct": true,
+   "compiler_handles": true,
+   "paid_router_logged": null
+  }
+ ],
+ "paid_choose_step": {
+  "receipts": 46,
+  "mean_usd": 0.000314,
+  "mean_seconds": 0.926
+ },
+ "savings_estimate": {
+  "per_100_router_questions_usd": 0.0161,
+  "per_100_router_questions_seconds": 47.4,
+  "coverage_used": 0.5122
+ },
+ "seconds": 157.2
+}
