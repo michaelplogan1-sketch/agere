@@ -436,8 +436,10 @@ def _verified_answer(path, question, as_of, primary, second, judge, decider=None
         fatal, warn = verify.sanity(question, sql, probe, roster)
         if fatal: raise ValueError('sanity: ' + '; '.join(fatal))
         returns = returns_for(question, probe['columns'], probe.get('rows'))
-        wants_list = re.search(r'\b(?:which|who|list|names?|ids?|pull|roster of)\b', question.lower()) and \
-            not re.search(r'\b(?:how many|count|number of|by|per|breakdown|break down)\b', question.lower())
+        wants_list = re.search(r'\b(?:which|who|list|names?|ids?|pull|roster of|registry|worklist|outreach list)\b', question.lower()) and \
+            not re.search(r'\b(?:how many|count|number of|by|per|breakdown|break down|what (?:%|percent|share))\b', question.lower())
+        if wants_list and len(probe['columns']) == 1 and len(probe.get('rows') or []) == 1 and 'patient_id' not in probe['columns']:
+            raise ValueError('shape: the question asks for a list of patients; return patient_id rows, not a count')
         if wants_list and 'patient_id' in probe['columns']:
             # a patient list was asked for: the answer is the set of patients, whatever extra columns the query carried
             sql = f'SELECT DISTINCT patient_id FROM ({sql}) WHERE patient_id IS NOT NULL'
