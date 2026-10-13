@@ -400,10 +400,12 @@ def compile(question, profile, as_of):
     """Return (graph, info). graph is None when the question needs the fallback planner."""
     q = _norm(question, as_of)
     low = q.lower()
+    timed = survival_intent(low) and not re.search(DEATH_WORDS, low)  # "readmission-free survival" is not mortality
     effect = _program_effect_question(q, profile)
     if effect is not None:
         return effect
     for pattern, missing in UNSUPPORTED:  # checked on the user's own words, before any paraphrase
+        if timed and 'surviv' in pattern: continue
         if re.search(pattern, low) and not (_contract_terms(low) and 'shared' in pattern):
             return {'interpretation': f'Unsupported by received data: {q}', 'coverage': 'unsupported', 'nodes': [],
                     'unmet_requirements': [f'Missing input: {m}' for m in missing]}, \
@@ -427,6 +429,7 @@ def compile(question, profile, as_of):
     terms = _contract_terms(r.low)
     for pattern, missing in UNSUPPORTED:
         if terms and 'shared' in pattern: continue  # settlement is computable once terms are supplied
+        if timed and 'surviv' in pattern: continue
         if re.search(pattern, r.low):
             info.update(route='local_unsupported', unexplained=[])
             return {'interpretation': f'Unsupported by received data: {q}', 'coverage': 'unsupported', 'nodes': [],
@@ -440,6 +443,9 @@ def compile(question, profile, as_of):
     pid = r.take(r'\bp-[a-z0-9]+\b', 'patient id')
     if pid:  # single-patient questions with a measurement statistic
         return _patient_question(q, r, profile, [m.group(0).upper() for m in pid], info)
+    timed_plan = _survival_question(q, r, profile, as_of, info)
+    if timed_plan is not None:
+        return timed_plan
     special = _record_constructs(q, r, profile, as_of, info)
     if special is not None:
         return special
@@ -1513,6 +1519,144 @@ def _patient_question(q, r, profile, pids, info):
                        'purpose': f'{stat} {concept} for {", ".join(pids)}'}]}, info
 
 
+# ---- time-to-event questions -> survival ------------------------------------------
+SURVIVAL_INTENT = (r'\b[a-z]+-free survival\b|\bkaplan[- ]meier\b|\bk-?m (?:curves?|estimates?|analysis)\b|\bsurvival (?:curves?|analys[ie]s|estimates?)\b|'
+                   r'\btime[- ]to[- ](?:event|first|next)\b|\btime (?:to|until|till) (?:a |an |the )?(?:first |next )?\w|\bcumulative incidence\b|'
+                   r'\bhazard ratios?\b|\bcox (?:model|regression|proportional)|\b(?:readmission|readmit|follow[- ]?up|ed visit|er visit|emergency visit) curves?\b|'
+                   r'\bhow (?:long|many days|quickly|soon) (?:until|till|before|after|does it take|do(?:es)? it take|(?:do|does|did) (?:\w+ ){1,4}(?:take|wait) to)\b|'
+                   r'\bdays (?:to|until|till) (?:a |an |the )?(?:first |next )?(?:follow|readmi|ed\b|er\b|emerg)')
+DEATH_WORDS = r"\b(?:die|dies|dying|died|deaths?|mortality|deceased|passed away|expired|vital status|still alive|didn'?t make it|did not make it|overall survival)\b"
+SURVIVAL_DISCHARGE = r'\b(?:(?:after|following|from|since) (?:a |the |their |each |hospital |inpatient )*)?(?:post[- ])?(?:hospital |inpatient )?discharge[sd]?\b|\bindex (?:stays?|admissions?)\b'
+SURVIVAL_ONSET = r'\b(?:after|since|from|following) (?:(?:their|the|first|initial|a) )*(?:diagnosis|diagnoses|dx|onset|cohort entry|entry into the cohort|entry)\b'
+SURVIVAL_GROUP_CONDITION = r'\b(?:by (?:whether (?:they|patients|members) (?:have|had) )?|(?:with|having) (?:vs\.?|versus|or) without )({})(?: status)?\b'
+COX_WORDS = r'\bcox(?: (?:model|regression|proportional hazards?(?: model| regression)?))?\b|\bhazard ratios?\b'
+
+
+def survival_intent(low):
+    return bool(re.search(SURVIVAL_INTENT, low))
+
+
+def _survival_question(q, r, profile, as_of, info):
+    """Time-to-event questions: decide event, time zero, groups and population, or decline (fallback)."""
+    low = r.low
+    if not survival_intent(low): return None
+    decline = lambda reason: (info.update(route='fallback', reason=reason), (None, info))[1]
+    # event (exactly one)
+    events = []
+    if re.search(r'\breadmi(?:ssions?|tted|ts?)\b', low): events.append(('readmission', {'type': 'readmission'}, r'\b(?:30[- ]day |hospital )?readmi(?:ssions?|tted|ts?)\b'))
+    if re.search(r'\bfollow[- ]?ups?\b', low):
+        events.append(('followup', {'type': 'followup'}, r'\b(?:a |an |first )?(?:outpatient )?follow[- ]?ups?(?: (?:visits?|appointments?|contacts?|care))?\b'))
+    found = None
+    for concept, aliases in MEASUREMENT_ALIASES.items():
+        for alias in sorted(aliases, key=len, reverse=True):
+            for op_pattern, op in COMPARATORS:
+                if op not in ('lt', 'le', 'gt', 'ge'): continue
+                rx = (_alias_pattern(alias) + r'(?: levels?| values?| results?)?\s*(?:(?:to |that |is |are )?(?:drop|fall|go|decline|slip|rise|climb|cross|get|reach)\w*\s*)?'
+                      r'(?:to )?' + op_pattern + r'\s*(?:an? |the )?' + NUMBER + r'(?![\d.])')
+                m = re.search(rx, low)
+                if m: found = ('measurement', {'type': 'measurement', 'concept': concept, 'op': op, 'value': float(m.group(1))}, re.escape(m.group(0))); break
+            if found: break
+        if found: break
+    if found: events.append(found)
+    for concept, aliases in ENCOUNTER_ALIASES.items():
+        hit = next((a for a in sorted(aliases, key=len, reverse=True) if re.search(_alias_pattern(a), low)), None)
+        if hit:
+            events.append(('encounter', {'type': 'encounter', 'concept': concept}, r'\b(?:a |an |the |their )?(?:first |next )?' + _alias_pattern(hit)))
+    if not events and (re.search(DEATH_WORDS, low) or re.search(r'\bsurviv', low)):  # survival of patients = mortality
+        info.update(route='local_unsupported', unexplained=[])
+        return {'interpretation': f'Unsupported by received data: {q}', 'coverage': 'unsupported', 'nodes': [],
+                'unmet_requirements': ['Missing input: death or mortality records (none are received)']}, info
+    if not events:  # explicit survival vocabulary is ours to decline; "how many days ... until" may belong to another route
+        strong = re.search(r'kaplan|\bk-?m\b|survival|cumulative incidence|hazard ratio|\bcox\b|time[- ]to[- ]event|\bcurves?\b', low)
+        return decline('time-to-event question without a recognised event') if strong else None
+    if len(events) > 1: return decline('time-to-event question names more than one event: ' + ', '.join(e[0] for e in events))
+    kind, event, event_rx = events[0]
+    r.take(SURVIVAL_INTENT, 'time to event')
+    r.take(event_rx, f'event {kind}')
+    # time zero
+    index = None
+    if r.take(SURVIVAL_DISCHARGE, 'index discharge') or kind in ('readmission', 'followup'):
+        index = {'type': 'discharge'}
+    onset = r.take(SURVIVAL_ONSET, 'index cohort entry')
+    fixed = r.take(r'\b(?:after|since|from|starting(?: on| from)?) (\d{4}-\d{2}-\d{2}|\d{4})\b', 'index date')
+    if sum(map(bool, (index, onset, fixed))) > 1: return decline('more than one time zero named')
+    if fixed:
+        d = fixed[0].group(1); index = {'type': 'date', 'date': d if len(d) == 10 else f'{d}-01-01'}
+        if index['date'] > as_of: return decline('time zero after the snapshot')
+    # horizon and time points
+    params = {}
+    for m in r.take(r'\b(\d{1,4})((?:\s*(?:/|,|and|or)\s*\d{1,4})*)[- ]days?\b(?! (?:after|before|of))', 'day marks'):
+        days = [int(m.group(1))] + [int(x) for x in re.findall(r'\d+', m.group(2))]
+        params['time_points'] = sorted(set(days)); params['horizon_days'] = max(days)
+    for m in r.take(r'\b(?:within|over|in|during) (?:the )?(?:first |next )?(\d{1,4}|one|two|three|five) (days?|weeks?|months?|years?)\b', 'horizon'):
+        n = int(m.group(1)) if m.group(1).isdigit() else {'one': 1, 'two': 2, 'three': 3, 'five': 5}[m.group(1)]
+        params['horizon_days'] = int(round(n * {'d': 1, 'w': 7, 'm': 30.44, 'y': 365.25}[m.group(2)[0]]))
+    if not 1 <= params.get('horizon_days', 1) <= 3650: return decline('horizon must be 1 day to ten years')
+    if 'horizon_days' in params and ('time_points' not in params or max(params['time_points']) > params['horizon_days']):
+        h = params['horizon_days']
+        base = (7, 14, 30, 60, 90) if index and index['type'] == 'discharge' else (30, 90, 180, 365, 730)
+        params['time_points'] = sorted({x for x in base if x < h} | {h})[-12:]
+    # groups
+    group, group_concept = 'none', None
+    for concept, aliases in CONDITION_ALIASES.items():
+        alt = '|'.join(re.escape(a) for a in sorted(aliases, key=len, reverse=True))
+        if r.take(SURVIVAL_GROUP_CONDITION.format(alt), f'group by {concept}'):
+            group, group_concept = 'condition', concept; break
+    if group == 'none':
+        for pattern, g in GROUPS:
+            if r.take(pattern, f'group by {g}'):
+                if g in ('facility',) + TIME_GROUPS: return decline(f'survival curves are not split by {g}')
+                group = g; break
+    r.take(r'\b(?:compar\w+|vs\.?|versus|across|between)\b', None)
+    # Cox model
+    cox = bool(r.take(COX_WORDS, 'cox model'))
+    covariates = []
+    adj = next(iter(r.take(r'\b(?:adjust(?:ed|ing)?|control(?:led|ling)?) for ([a-z ,&-]+?)(?=[.?;]|$| by\b)', 'adjusted for')), None)
+    if adj:
+        cox = True
+        for word in re.split(r',|\band\b|&', adj.group(1)):
+            word = word.strip()
+            if not word: continue
+            if re.fullmatch(r'age(?: bands?| groups?)?', word): covariates.append('age_band')
+            elif re.fullmatch(r'sex|gender', word): covariates.append('sex')
+            elif re.fullmatch(r'payer|payor|insurance|coverage(?: type)?', word): covariates.append('coverage_type')
+            else:
+                c = next((c for c, al in CONDITION_ALIASES.items() if word in al), None)
+                if c is None: return decline(f'unrecognised adjustment variable: {word}')
+                covariates.append(c)
+    # time zero window: "discharges in 2028"
+    period = _take_period(r, as_of)
+    if period and not (index and index['type'] == 'discharge'): return decline('a period restricts index discharges only')
+    r.take(r'\b(?:curves?|plots?|estimates?|show(?: me)?|give(?: me)?|what(?:\'s| is| are)|draw|chart|get|gets|getting|see|seen|until|till|before|after|'
+           r'take|takes|took|wait|first|next|time|times|days?|incidence|cumulative|survival|analysis|how|long|rates?|probability|risk|event)\b', None)
+    # population: whatever is left must be a cohort the population grammar fully explains
+    spec = {'all': [], 'any': [], 'exclude': []}
+    if r.leftover():
+        plan, info = _population_question(q, r, profile, as_of, info)
+        if plan is None and info.get('reason') == 'no population or statistic recognised':
+            plan = {'nodes': [{'operation': 'cohort', 'parameters': {'specification': spec}}]}  # whole population
+            info.pop('route', None); info.pop('reason', None)
+        if plan is None: return None, info
+        if len(plan['nodes']) != 1 or plan['nodes'][0]['operation'] != 'cohort':
+            return decline('time-to-event question also asks for another statistic')
+        spec = plan['nodes'][0]['parameters']['specification']
+    else:
+        info['unexplained'], info['ignored_words'] = [], getattr(r, 'ignored', [])
+    named = [a['concept'] for a in spec['all'] if a.get('kind') == 'concept' and a.get('concept') in concepts.CONDITIONS]
+    if index is None or onset:
+        if len(named) != 1:
+            return decline('no time zero: name a discharge, a date, or exactly one condition whose first record is cohort entry')
+        index = {'type': 'condition_first_record', 'concept': named[0]}
+    if period: index['window'] = {'start': period[0], 'end': period[1]}
+    params.update(index=index, event=event, group_by=group)
+    if group_concept: params['group_concept'] = group_concept
+    if cox: params['cox'] = True
+    if covariates: params['covariates'] = covariates
+    info['route'] = 'local_compiler'
+    return {'interpretation': q, 'coverage': 'supported_observation', 'unmet_requirements': [], 'nodes': [
+        {'id': 'population', 'operation': 'cohort', 'inputs': [], 'parameters': {'specification': spec}, 'purpose': 'Population named in the question'},
+        {'id': 'survival', 'operation': 'survival', 'inputs': ['population'], 'parameters': params,
+         'purpose': f'Time from {index["type"].replace("_", " ")} to {kind}' + (f' by {group_concept or group}' if group != 'none' else '')}]}, info
 
 # ---- program effect ("did the program work?") -------------------------------------
 EFFECT_QUESTION = (r'\b(?:effect|impact|influence)s? of\b|\bestimate (?:the |an? )?(?:effect|impact)\b|'
