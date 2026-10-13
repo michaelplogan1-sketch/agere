@@ -1,0 +1,70 @@
+{
+ "schema": "agere-measure/1",
+ "id": "cahps_patient_experience",
+ "name": "CAHPS for MIPS / ACO patient experience survey",
+ "aliases": [
+  "cahps",
+  "cahps for mips",
+  "patient experience survey",
+  "quality id 321"
+ ],
+ "status": "approximation",
+ "certification": "Survey-based measure (MSSP Quality ID 321); Agere cannot compute it without survey results.",
+ "steward": "CMS (CAHPS for MIPS)",
+ "programs": [
+  "MSSP APP Plus (Quality ID 321)"
+ ],
+ "spec_year": "PY2026",
+ "citations": [
+  {
+   "title": "Medicare Shared Savings Program Quality Performance Standard: PY2026 40th Percentile MIPS Quality Performance Category Score (Dec 2025), Table 1 APP Plus Quality Measure Set",
+   "url": "https://cms.gov/sites/default/files/2025-12/py2026_performance_score_40th_percentile.pdf",
+   "publisher": "CMS",
+   "accessed": "2026-10-13"
+  },
+  {
+   "title": "Shared Savings Program Guidance & Regulations (links to 2026 HWR, MCC, MIPS CQM and Medicare CQM spec packages)",
+   "url": "https://www.cms.gov/medicare/payment/fee-for-service-providers/shared-savings-program-ssp-acos/guidance-regulations",
+   "publisher": "CMS",
+   "accessed": "2026-10-13"
+  },
+  {
+   "title": "CY2027 Medicare PFS Proposed Rule: Major Changes for MSSP ACOs (posted 2026-07-15)",
+   "url": "https://mdinteractive.com/mips-blog/2027-medicare-physician-fee-schedule-proposed-rule-major-changes-mssp-acos",
+   "publisher": "MDinteractive",
+   "accessed": "2026-10-13"
+  },
+  {
+   "title": "2025 PFS Final Rule: What's Changing in the Quality Payment Program",
+   "url": "https://blog.medisolv.com/articles/2025-pfs-final-rule-whats-changing-in-the-quality-payment-program",
+   "publisher": "Medisolv",
+   "accessed": "2026-10-13"
+  }
+ ],
+ "direction": "higher_is_better",
+ "unit": "patient",
+ "requires_inputs": [],
+ "denominator": {
+  "summary": "Survey sample (CMS-selected).",
+  "criteria": []
+ },
+ "numerator": {
+  "summary": "Survey top-box scores.",
+  "criteria": [
+   {
+    "type": "service",
+    "label": "CAHPS for MIPS survey responses",
+    "streams": [
+     {
+      "stream": "cahps_survey_responses"
+     }
+    ],
+    "window": {
+     "start": "period_start",
+     "end": "period_end"
+    }
+   }
+  ]
+ },
+ "exclusions": []
+}

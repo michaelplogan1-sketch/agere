@@ -1,0 +1,148 @@
+{
+ "schema": "agere-measure/1",
+ "id": "pcr_readmissions",
+ "name": "Plan All-Cause Readmissions (observed 30-day rate)",
+ "aliases": [
+  "plan all-cause readmissions",
+  "plan all-cause readmission",
+  "plan all cause readmissions",
+  "pcr",
+  "pcr measure",
+  "all-cause readmission measure",
+  "30-day all-cause readmission rate",
+  "hospital-wide all-cause unplanned readmission",
+  "hwr measure",
+  "claims-based readmission measure",
+  "readmission measure"
+ ],
+ "status": "approximation",
+ "certification": "Approximation of HEDIS Plan All-Cause Readmissions (PCR), not certified: built from NCQA's public measure summary; the licensed HEDIS value sets are not used (codes here are public ICD-10-CM/LOINC/CPT examples). Observed rate only: the HEDIS risk-adjusted expected rate and O/E ratio are not computed.",
+ "steward": "NCQA (HEDIS PCR); related CMS MSSP Quality ID 479 (HWR)",
+ "programs": [
+  "HEDIS",
+  "Medicare Part C Star Ratings (PCR)",
+  "MSSP (HWR, related)"
+ ],
+ "spec_year": "HEDIS PCR MY2025 (2027 Star Ratings C17)",
+ "citations": [
+  {
+   "title": "NCQA public measure page: Plan All-Cause Readmissions (PCR)",
+   "url": "https://www.ncqa.org/report-cards/health-plans/state-of-health-care-quality-report/plan-all-cause-readmissions-pcr/",
+   "publisher": "NCQA",
+   "accessed": "2026-10-13"
+  },
+  {
+   "title": "2027 Part C & D Star Ratings Technical Notes (last updated 09/30/2026; measurement year 2025 data)",
+   "url": "https://www.cms.gov/files/document/2027-tech-notes-2026-09-30.pdf",
+   "publisher": "CMS",
+   "accessed": "2026-10-13"
+  },
+  {
+   "title": "Medicare Shared Savings Program Quality Performance Standard: PY2026 40th Percentile MIPS Quality Performance Category Score (Dec 2025), Table 1 APP Plus Quality Measure Set",
+   "url": "https://cms.gov/sites/default/files/2025-12/py2026_performance_score_40th_percentile.pdf",
+   "publisher": "CMS",
+   "accessed": "2026-10-13"
+  },
+  {
+   "title": "Shared Savings Program Guidance & Regulations (links to 2026 HWR, MCC, MIPS CQM and Medicare CQM spec packages)",
+   "url": "https://www.cms.gov/medicare/payment/fee-for-service-providers/shared-savings-program-ssp-acos/guidance-regulations",
+   "publisher": "CMS",
+   "accessed": "2026-10-13"
+  },
+  {
+   "title": "CY2027 PFS proposed rule summary for MSSP ACOs (Quality ID 479 change)",
+   "url": "https://mdinteractive.com/mips-blog/2027-medicare-physician-fee-schedule-proposed-rule-major-changes-mssp-acos",
+   "publisher": "MDinteractive",
+   "accessed": "2026-10-13"
+  }
+ ],
+ "direction": "lower_is_better",
+ "unit": "index_event",
+ "index": {
+  "type": "stay",
+  "label": "Acute inpatient/observation discharges",
+  "index_date": "discharge",
+  "window": {
+   "start": "period_start",
+   "end": "period_end-30d"
+  }
+ },
+ "denominator": {
+  "summary": "Index discharges (January 1 - December 1 analogue) of members 18+ with a known discharge date.",
+  "age": {
+   "min": 18,
+   "max": 200
+  },
+  "criteria": []
+ },
+ "exclusions": [
+  {
+   "type": "service",
+   "label": "Hospice or palliative care (Z51.5 / hospice encounter)",
+   "streams": [
+    {
+     "stream": "hospice_enrollments"
+    }
+   ],
+   "hcpcs": [
+    "G9473",
+    "G9474",
+    "G9475",
+    "G9476",
+    "G9477",
+    "G9478",
+    "G9479",
+    "Q5003",
+    "Q5004",
+    "Q5005",
+    "Q5006",
+    "Q5007",
+    "Q5008",
+    "Q5010",
+    "S9126",
+    "T2042",
+    "T2043",
+    "T2044",
+    "T2045",
+    "T2046"
+   ],
+   "window": {
+    "start": "period_start",
+    "end": "period_end"
+   }
+  },
+  {
+   "type": "condition",
+   "label": "Pregnancy or perinatal principal condition (O00-O9A, Z33-Z3A)",
+   "icd10_prefixes": [
+    "O",
+    "Z33",
+    "Z34",
+    "Z3A"
+   ],
+   "window": {
+    "start": "index",
+    "end": "index_end"
+   }
+  }
+ ],
+ "numerator": {
+  "summary": "Any acute or observation stay admitted 1-30 days after the index discharge (planned readmissions are not excluded: the planned-procedure value sets are licensed).",
+  "criteria": [
+   {
+    "type": "stay",
+    "label": "Readmission within 30 days",
+    "window": {
+     "start": "index_end+1d",
+     "end": "index_end+30d"
+    }
+   }
+  ]
+ },
+ "gap_label": "Readmitted within 30 days",
+ "outreach": {
+  "value_usd": 0,
+  "minutes": 0,
+  "action": "Readmission review"
+ }
+}

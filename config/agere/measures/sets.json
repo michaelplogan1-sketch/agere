@@ -1,0 +1,220 @@
+{
+ "schema": "agere-measure-sets/1",
+ "sets": {
+  "mssp_app_plus": {
+   "name": "MSSP APP Plus quality measure set (computable approximations)",
+   "aliases": [
+    "app plus measures",
+    "app plus measure set",
+    "app plus",
+    "mssp quality measures",
+    "mssp app measures",
+    "app measure set",
+    "mssp quality measure set",
+    "aco quality measures"
+   ],
+   "measures": [
+    "gsd_poor_control",
+    "dsf_depression_screening_followup",
+    "cbp",
+    "bcs",
+    "col",
+    "pcr_readmissions",
+    "uamcc_unplanned_admissions",
+    "cahps_patient_experience"
+   ],
+   "note": "PY2026 APP Plus = Quality IDs 321 (CAHPS), 479 (HWR), 484 (UAMCC), 001, 134, 236, 112, 113 (eight measures; 438 is not in the set). Agere uses PCR (observed) as the readmission approximation for 479, observed UAMCC for 484, and declines CAHPS.",
+   "citations": [
+    {
+     "title": "Medicare Shared Savings Program Quality Performance Standard: PY2026 40th Percentile MIPS Quality Performance Category Score (Dec 2025), Table 1 APP Plus Quality Measure Set",
+     "url": "https://cms.gov/sites/default/files/2025-12/py2026_performance_score_40th_percentile.pdf",
+     "publisher": "CMS",
+     "accessed": "2026-10-13"
+    },
+    {
+     "title": "Shared Savings Program Guidance & Regulations (links to 2026 HWR, MCC, MIPS CQM and Medicare CQM spec packages)",
+     "url": "https://www.cms.gov/medicare/payment/fee-for-service-providers/shared-savings-program-ssp-acos/guidance-regulations",
+     "publisher": "CMS",
+     "accessed": "2026-10-13"
+    },
+    {
+     "title": "CY2027 Medicare PFS Proposed Rule: Major Changes for MSSP ACOs (posted 2026-07-15)",
+     "url": "https://mdinteractive.com/mips-blog/2027-medicare-physician-fee-schedule-proposed-rule-major-changes-mssp-acos",
+     "publisher": "MDinteractive",
+     "accessed": "2026-10-13"
+    },
+    {
+     "title": "2025 PFS Final Rule: What's Changing in the Quality Payment Program",
+     "url": "https://blog.medisolv.com/articles/2025-pfs-final-rule-whats-changing-in-the-quality-payment-program",
+     "publisher": "Medisolv",
+     "accessed": "2026-10-13"
+    }
+   ]
+  },
+  "part_d_adherence": {
+   "name": "Part D medication adherence (triple-weighted Star measures)",
+   "aliases": [
+    "part d adherence measures",
+    "adherence measures",
+    "triple-weighted adherence"
+   ],
+   "measures": [
+    "pdc_statins",
+    "pdc_rasa",
+    "pdc_diabetes"
+   ],
+   "citations": [
+    {
+     "title": "2027 Part C & D Star Ratings Technical Notes (last updated 09/30/2026; measurement year 2025 data)",
+     "url": "https://www.cms.gov/files/document/2027-tech-notes-2026-09-30.pdf",
+     "publisher": "CMS",
+     "accessed": "2026-10-13"
+    },
+    {
+     "title": "2026 Part C & D Star Ratings Technical Notes (updated 09/25/2025)",
+     "url": "https://www.cms.gov/files/document/2026-star-ratings-technical-notes.pdf",
+     "publisher": "CMS",
+     "accessed": "2026-10-13"
+    },
+    {
+     "title": "PQA Measures overview",
+     "url": "https://www.pqa.org/measures/",
+     "publisher": "Pharmacy Quality Alliance",
+     "accessed": "2026-10-13"
+    }
+   ]
+  },
+  "pqi_composites": {
+   "name": "AHRQ PQI composites",
+   "aliases": [
+    "pqi composites",
+    "prevention quality indicators"
+   ],
+   "measures": [
+    "pqi_90_overall_composite",
+    "pqi_91_acute_composite",
+    "pqi_92_chronic_composite"
+   ],
+   "citations": [
+    {
+     "title": "AHRQ QI ICD-10-CM/PCS Specification v2025 (Aug 2025): PQI 90 Overall Composite",
+     "url": "https://qualityindicators.ahrq.gov/Downloads/Modules/PQI/V2025/TechSpecs/PQI_90_Prevention_Quality_Overall_Composite.pdf",
+     "publisher": "AHRQ",
+     "accessed": "2026-10-13"
+    },
+    {
+     "title": "AHRQ QI ICD-10-CM/PCS Specification v2025 (Aug 2025): PQI 91 Acute Composite",
+     "url": "https://qualityindicators.ahrq.gov/Downloads/Modules/PQI/V2025/TechSpecs/PQI_91_Prevention_Quality_Acute_Composite.pdf",
+     "publisher": "AHRQ",
+     "accessed": "2026-10-13"
+    },
+    {
+     "title": "AHRQ QI ICD-10-CM/PCS Specification v2025 (Aug 2025): PQI 92 Chronic Composite",
+     "url": "https://qualityindicators.ahrq.gov/Downloads/Modules/PQI/V2025/TechSpecs/PQI_92_Prevention_Quality_Chronic_Composite.pdf",
+     "publisher": "AHRQ",
+     "accessed": "2026-10-13"
+    },
+    {
+     "title": "AHRQ QI ICD-10-CM/PCS Specification v2025 (Aug 2025): PQI 01",
+     "url": "https://qualityindicators.ahrq.gov/Downloads/Modules/PQI/V2025/TechSpecs/PQI_01_Diabetes_Short-term_Complications_Admission_Rate.pdf",
+     "publisher": "AHRQ",
+     "accessed": "2026-10-13"
+    },
+    {
+     "title": "AHRQ QI ICD-10-CM/PCS Specification v2025 (Aug 2025): PQI 03",
+     "url": "https://qualityindicators.ahrq.gov/Downloads/Modules/PQI/V2025/TechSpecs/PQI_03_Diabetes_Long-term_Complications_Admission_Rate.pdf",
+     "publisher": "AHRQ",
+     "accessed": "2026-10-13"
+    },
+    {
+     "title": "AHRQ QI ICD-10-CM/PCS Specification v2025 (Aug 2025): PQI 05",
+     "url": "https://qualityindicators.ahrq.gov/Downloads/Modules/PQI/V2025/TechSpecs/PQI_05_Chronic_Obstructive_Pulmonary_Disease_(COPD)_or_Asthma_in_Older_Adults_Admission_Rate.pdf",
+     "publisher": "AHRQ",
+     "accessed": "2026-10-13"
+    },
+    {
+     "title": "AHRQ QI ICD-10-CM/PCS Specification v2025 (Aug 2025): PQI 07",
+     "url": "https://qualityindicators.ahrq.gov/Downloads/Modules/PQI/V2025/TechSpecs/PQI_07_Hypertension_Admission_Rate.pdf",
+     "publisher": "AHRQ",
+     "accessed": "2026-10-13"
+    },
+    {
+     "title": "AHRQ QI ICD-10-CM/PCS Specification v2025 (Aug 2025): PQI 08",
+     "url": "https://qualityindicators.ahrq.gov/Downloads/Modules/PQI/V2025/TechSpecs/PQI_08_Heart_Failure_Admission_Rate.pdf",
+     "publisher": "AHRQ",
+     "accessed": "2026-10-13"
+    },
+    {
+     "title": "AHRQ QI ICD-10-CM/PCS Specification v2025 (Aug 2025): PQI 11",
+     "url": "https://qualityindicators.ahrq.gov/Downloads/Modules/PQI/V2025/TechSpecs/PQI_11_Community_Acquired%20_Pneumonia_Admission_Rate.pdf",
+     "publisher": "AHRQ",
+     "accessed": "2026-10-13"
+    },
+    {
+     "title": "AHRQ QI ICD-10-CM/PCS Specification v2025 (Aug 2025): PQI 12",
+     "url": "https://qualityindicators.ahrq.gov/Downloads/Modules/PQI/V2025/TechSpecs/PQI_12_Urinary_Tract_Infection_Admission_Rate.pdf",
+     "publisher": "AHRQ",
+     "accessed": "2026-10-13"
+    },
+    {
+     "title": "AHRQ QI ICD-10-CM/PCS Specification v2025 (Aug 2025): PQI 14",
+     "url": "https://qualityindicators.ahrq.gov/Downloads/Modules/PQI/V2025/TechSpecs/PQI_14_Uncontrolled_Diabetes_Admission_Rate.pdf",
+     "publisher": "AHRQ",
+     "accessed": "2026-10-13"
+    },
+    {
+     "title": "AHRQ QI ICD-10-CM/PCS Specification v2025 (Aug 2025): PQI 15",
+     "url": "https://qualityindicators.ahrq.gov/Downloads/Modules/PQI/V2025/TechSpecs/PQI_15_Asthma_in_Younger_Adults_Admission_Rate.pdf",
+     "publisher": "AHRQ",
+     "accessed": "2026-10-13"
+    },
+    {
+     "title": "AHRQ QI ICD-10-CM/PCS Specification v2025 (Aug 2025): PQI 16",
+     "url": "https://qualityindicators.ahrq.gov/Downloads/Modules/PQI/V2025/TechSpecs/PQI_16_Lower_Extremity_Amputation_among_Patients_with_Diabetes_Rate.pdf",
+     "publisher": "AHRQ",
+     "accessed": "2026-10-13"
+    }
+   ]
+  },
+  "transitions_of_care": {
+   "name": "HEDIS Transitions of Care indicators",
+   "aliases": [
+    "transitions of care measures",
+    "trc measures",
+    "transitions of care"
+   ],
+   "measures": [
+    "trc_notification_inpatient_admission",
+    "trc_receipt_discharge_information",
+    "trc_patient_engagement",
+    "trc_medication_reconciliation"
+   ],
+   "citations": [
+    {
+     "title": "NCQA public measure page: Transitions of Care (TRC)",
+     "url": "https://www.ncqa.org/report-cards/health-plans/state-of-health-care-quality-report/transitions-of-care-trc/",
+     "publisher": "NCQA",
+     "accessed": "2026-10-13"
+    },
+    {
+     "title": "2027 Part C & D Star Ratings Technical Notes (last updated 09/30/2026; measurement year 2025 data)",
+     "url": "https://www.cms.gov/files/document/2027-tech-notes-2026-09-30.pdf",
+     "publisher": "CMS",
+     "accessed": "2026-10-13"
+    },
+    {
+     "title": "2026 Part C & D Star Ratings Technical Notes (updated 09/25/2025)",
+     "url": "https://www.cms.gov/files/document/2026-star-ratings-technical-notes.pdf",
+     "publisher": "CMS",
+     "accessed": "2026-10-13"
+    },
+    {
+     "title": "MLN908628 Transitional Care Management Services (Aug 2025)",
+     "url": "https://www.cms.gov/files/document/mln908628-transitional-care-management-services.pdf",
+     "publisher": "CMS Medicare Learning Network",
+     "accessed": "2026-10-13"
+    }
+   ]
+  }
+ }
+}

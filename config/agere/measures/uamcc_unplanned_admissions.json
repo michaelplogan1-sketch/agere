@@ -1,0 +1,258 @@
+{
+ "schema": "agere-measure/1",
+ "id": "uamcc_unplanned_admissions",
+ "name": "Risk-Standardized All-Cause Unplanned Admissions for Patients with Multiple Chronic Conditions (observed rate)",
+ "aliases": [
+  "uamcc",
+  "unplanned admissions for patients with multiple chronic conditions",
+  "quality id 484",
+  "all-cause unplanned admissions for patients with multiple chronic conditions"
+ ],
+ "status": "approximation",
+ "certification": "Approximation of MSSP Quality ID 484 (UAMCC), not certified: follows the public specification with simplified code sets mapped to the codes Agere receives. Observed admissions per 100 person-years only; CMS risk standardization and planned-admission exclusions are not applied.",
+ "steward": "CMS (MSSP Quality ID 484)",
+ "programs": [
+  "MSSP APP Plus (claims-based)",
+  "ACO REACH"
+ ],
+ "spec_year": "PY2026",
+ "citations": [
+  {
+   "title": "Medicare Shared Savings Program Quality Performance Standard: PY2026 40th Percentile MIPS Quality Performance Category Score (Dec 2025), Table 1 APP Plus Quality Measure Set",
+   "url": "https://cms.gov/sites/default/files/2025-12/py2026_performance_score_40th_percentile.pdf",
+   "publisher": "CMS",
+   "accessed": "2026-10-13"
+  },
+  {
+   "title": "Shared Savings Program Guidance & Regulations (links to 2026 HWR, MCC, MIPS CQM and Medicare CQM spec packages)",
+   "url": "https://www.cms.gov/medicare/payment/fee-for-service-providers/shared-savings-program-ssp-acos/guidance-regulations",
+   "publisher": "CMS",
+   "accessed": "2026-10-13"
+  },
+  {
+   "title": "CY2027 Medicare PFS Proposed Rule: Major Changes for MSSP ACOs (posted 2026-07-15)",
+   "url": "https://mdinteractive.com/mips-blog/2027-medicare-physician-fee-schedule-proposed-rule-major-changes-mssp-acos",
+   "publisher": "MDinteractive",
+   "accessed": "2026-10-13"
+  },
+  {
+   "title": "2025 PFS Final Rule: What's Changing in the Quality Payment Program",
+   "url": "https://blog.medisolv.com/articles/2025-pfs-final-rule-whats-changing-in-the-quality-payment-program",
+   "publisher": "Medisolv",
+   "accessed": "2026-10-13"
+  }
+ ],
+ "direction": "lower_is_better",
+ "unit": "admission_rate",
+ "index": {
+  "type": "encounter",
+  "label": "Acute inpatient admissions with a principal diagnosis",
+  "concepts": [
+   "inpatient_admission"
+  ],
+  "window": {
+   "start": "period_start",
+   "end": "period_end"
+  }
+ },
+ "denominator": {
+  "summary": "Medicare-age members 65+ with two or more of the UAMCC chronic conditions (AMI, AF, CKD, COPD/asthma, dementia, depression, diabetes, HF, stroke).",
+  "age": {
+   "min": 65,
+   "max": 200
+  },
+  "criteria": [
+   {
+    "type": "condition",
+    "label": "Two or more chronic conditions (COPD/asthma, dementia, CKD, depression, HF, AMI, AF, stroke) in the measurement or prior year",
+    "concepts": [
+     "copd",
+     "asthma",
+     "dementia",
+     "chronic_kidney_disease",
+     "depression",
+     "heart_failure",
+     "myocardial_infarction",
+     "atrial_fibrillation",
+     "stroke",
+     "diabetes",
+     "type_2_diabetes"
+    ],
+    "icd10_prefixes": [
+     "J41",
+     "J42",
+     "J43",
+     "J44",
+     "J45",
+     "J47",
+     "F01",
+     "F02",
+     "F03",
+     "G30",
+     "N18",
+     "F32",
+     "F33",
+     "I50",
+     "I11.0",
+     "I13.0",
+     "I13.2",
+     "I21",
+     "I22",
+     "I48",
+     "I60",
+     "I61",
+     "I63",
+     "E10",
+     "E11"
+    ],
+    "window": {
+     "start": "period_start-12m",
+     "end": "period_end"
+    },
+    "min_groups": 2,
+    "groups": {
+     "copd_asthma": {
+      "concepts": [
+       "copd",
+       "asthma"
+      ],
+      "icd10_prefixes": [
+       "J41",
+       "J42",
+       "J43",
+       "J44",
+       "J45",
+       "J47"
+      ]
+     },
+     "dementia": {
+      "concepts": [
+       "dementia"
+      ],
+      "icd10_prefixes": [
+       "F01",
+       "F02",
+       "F03",
+       "G30"
+      ]
+     },
+     "ckd": {
+      "concepts": [
+       "chronic_kidney_disease"
+      ],
+      "icd10_prefixes": [
+       "N18"
+      ]
+     },
+     "depression": {
+      "concepts": [
+       "depression"
+      ],
+      "icd10_prefixes": [
+       "F32",
+       "F33"
+      ]
+     },
+     "heart_failure": {
+      "concepts": [
+       "heart_failure"
+      ],
+      "icd10_prefixes": [
+       "I50",
+       "I11.0",
+       "I13.0",
+       "I13.2"
+      ]
+     },
+     "ami": {
+      "concepts": [
+       "myocardial_infarction"
+      ],
+      "icd10_prefixes": [
+       "I21",
+       "I22"
+      ]
+     },
+     "atrial_fibrillation": {
+      "concepts": [
+       "atrial_fibrillation"
+      ],
+      "icd10_prefixes": [
+       "I48"
+      ]
+     },
+     "stroke": {
+      "concepts": [
+       "stroke"
+      ],
+      "icd10_prefixes": [
+       "I60",
+       "I61",
+       "I63"
+      ]
+     },
+     "diabetes": {
+      "concepts": [
+       "diabetes",
+       "type_2_diabetes",
+       "type_1_diabetes"
+      ],
+      "icd10_prefixes": [
+       "E10",
+       "E11",
+       "E13"
+      ]
+     }
+    }
+   }
+  ]
+ },
+ "numerator": {
+  "summary": "Acute admissions in the period (any principal diagnosis except obstetric), per 100 person-years.",
+  "per": 100,
+  "components": [
+   {
+    "id": "all_cause",
+    "label": "All-cause admission",
+    "icd10_prefixes": [
+     "A",
+     "B",
+     "C",
+     "D",
+     "E",
+     "F",
+     "G",
+     "H",
+     "I",
+     "J",
+     "K",
+     "L",
+     "M",
+     "N",
+     "O",
+     "P",
+     "Q",
+     "R",
+     "S",
+     "T",
+     "U",
+     "V",
+     "W",
+     "X",
+     "Y",
+     "Z"
+    ]
+   }
+  ],
+  "exclude_icd10_prefixes": [
+   "O"
+  ]
+ },
+ "gap_label": "Unplanned admission (multiple chronic conditions)",
+ "outreach": {
+  "value_usd": 0,
+  "minutes": 0,
+  "action": "Admission review"
+ },
+ "exclusions": []
+}

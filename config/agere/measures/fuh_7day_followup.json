@@ -1,0 +1,145 @@
+{
+ "schema": "agere-measure/1",
+ "id": "fuh_7day_followup",
+ "name": "Follow-Up Within 7 Days After Acute Hospital Discharge",
+ "aliases": [
+  "follow-up after hospitalization",
+  "follow up after hospitalization",
+  "follow-up after discharge",
+  "post-discharge follow-up",
+  "post discharge follow-up rate",
+  "fuh measure",
+  "7-day post-discharge follow-up measure"
+ ],
+ "status": "internal",
+ "certification": "Agere internal measure aligned with the CMS/NCQA post-discharge follow-up concept (not a certified HEDIS measure).",
+ "steward": "Agere (internal); concept from NCQA TRC patient engagement and CMS TCM",
+ "programs": [
+  "internal"
+ ],
+ "spec_year": "2026",
+ "citations": [
+  {
+   "title": "NCQA public measure page: Transitions of Care (TRC)",
+   "url": "https://www.ncqa.org/report-cards/health-plans/state-of-health-care-quality-report/transitions-of-care-trc/",
+   "publisher": "NCQA",
+   "accessed": "2026-10-13"
+  },
+  {
+   "title": "2027 Part C & D Star Ratings Technical Notes (last updated 09/30/2026; measurement year 2025 data)",
+   "url": "https://www.cms.gov/files/document/2027-tech-notes-2026-09-30.pdf",
+   "publisher": "CMS",
+   "accessed": "2026-10-13"
+  },
+  {
+   "title": "2026 Part C & D Star Ratings Technical Notes (updated 09/25/2025)",
+   "url": "https://www.cms.gov/files/document/2026-star-ratings-technical-notes.pdf",
+   "publisher": "CMS",
+   "accessed": "2026-10-13"
+  },
+  {
+   "title": "MLN908628 Transitional Care Management Services (Aug 2025)",
+   "url": "https://www.cms.gov/files/document/mln908628-transitional-care-management-services.pdf",
+   "publisher": "CMS Medicare Learning Network",
+   "accessed": "2026-10-13"
+  }
+ ],
+ "direction": "higher_is_better",
+ "unit": "index_event",
+ "index": {
+  "type": "stay",
+  "label": "Acute inpatient/observation discharges",
+  "index_date": "discharge",
+  "window": {
+   "start": "period_start",
+   "end": "period_end-7d"
+  }
+ },
+ "denominator": {
+  "summary": "Discharges (stay with a known discharge date) in the period by enrolled members 18+.",
+  "age": {
+   "min": 18,
+   "max": 200
+  },
+  "criteria": []
+ },
+ "exclusions": [
+  {
+   "type": "stay",
+   "label": "Readmitted within 7 days (follow-up window interrupted)",
+   "window": {
+    "start": "index_end+1d",
+    "end": "index_end+7d"
+   }
+  },
+  {
+   "type": "service",
+   "label": "Hospice or palliative care (Z51.5 / hospice encounter)",
+   "streams": [
+    {
+     "stream": "hospice_enrollments"
+    }
+   ],
+   "hcpcs": [
+    "G9473",
+    "G9474",
+    "G9475",
+    "G9476",
+    "G9477",
+    "G9478",
+    "G9479",
+    "Q5003",
+    "Q5004",
+    "Q5005",
+    "Q5006",
+    "Q5007",
+    "Q5008",
+    "Q5010",
+    "S9126",
+    "T2042",
+    "T2043",
+    "T2044",
+    "T2045",
+    "T2046"
+   ],
+   "window": {
+    "start": "period_start",
+    "end": "period_end"
+   }
+  }
+ ],
+ "numerator": {
+  "summary": "Outpatient, telehealth or specialist visit, or transition-of-care contact, within 7 days after discharge (discharge day excluded).",
+  "criteria": [
+   {
+    "type": "service",
+    "label": "Follow-up within 7 days after discharge",
+    "visit_concepts": [
+     "primary_care_visit",
+     "telehealth_contact",
+     "specialist_visit"
+    ],
+    "streams": [
+     {
+      "stream": "transition_of_care_contacts"
+     }
+    ],
+    "cpt": [
+     "99495",
+     "99496"
+    ],
+    "window": {
+     "start": "index_end+1d",
+     "end": "index_end+7d"
+    },
+    "lookback_check": false
+   }
+  ]
+ },
+ "gap_label": "Discharge without 7-day follow-up",
+ "outreach": {
+  "value_usd": 400,
+  "minutes": 20,
+  "action": "Transition call; schedule PCP visit within 7 days"
+ }
+}

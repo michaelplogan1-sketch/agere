@@ -450,6 +450,9 @@ def _compile(question, profile, as_of):
     plan = _outreach_question(q, profile, as_of)  # before paraphrase: it rewrites "<x> outreach list" for plain patient lists
     if plan is not None:
         return plan
+    plan = _measure_question(q, profile, as_of)  # named library quality measures (HEDIS/Stars/eCQM/PQI approximations)
+    if plan is not None:
+        return plan
     plan = _pathway_question(q, profile, as_of)  # care paths / journeys / leakage, before paraphrase rewrites the wording
     if plan is not None:
         return plan
@@ -1720,6 +1723,71 @@ def _vbc_question(q, r, profile, as_of, info, terms):
     info['route'] = 'local_compiler'
     return {'interpretation': q, 'coverage': 'supported_observation', 'unmet_requirements': [],
             'nodes': [{'id': 'answer', 'operation': 'vbc', 'inputs': [], 'parameters': params, 'purpose': f'VBC {metric}'}]}, info
+
+
+# ---- measure library (config/agere/measures) ------------------------------------------
+MEASURE_GAPS = (r'\b(?:open |outstanding )?(?:care[- ]gaps?|gaps? in care|gap lists?|open gaps?|gaps?)\b|\bnon[- ]?compliant\b|\bnot compliant\b|'
+                r'\b(?:which|what|list(?: the)?|who are(?: the)?|show(?: me)?(?: the)?) (?:patients|members|people|discharges|admissions|ed visits)\b|'
+                r'\bwho (?:still )?(?:needs?|is due|are due|is missing|are missing|has not|have not|hasn\'t|haven\'t)\b|\b(?:missing|overdue|due for)\b')
+MEASURE_FRAMING = (r'\b(?:rate|rates|performance|compliance|compliant|score|scores|measure|measures|results?|hedis|stars?|star ratings?|mssp|app plus|'
+                   r'ecqm|quality|what is|what was|what are|how (?:are|is|did|do) we|how many|show|give|list|for|on|in|with|of|patients|members|'
+                   r'people|percent(?:age)?|share|doing|by|each|per|currently|current|we|us|do|did|have|has|at|are|is|who|which|a|an|our|the|'
+                   r'gaps?|me|had|had a|been|get|got|received|look|looks?|this|that|what|how|year|period|network|overall|total)\b')
+
+
+def _measure_question(q, profile, as_of):
+    from . import measures
+    low = _strip_framing(q.lower())
+    try:
+        mid, alias = measures.match(low)
+    except (OSError, ValueError):
+        return None
+    adherence = re.search(r'\b(?:pdc|proportion of days covered|adherence (?:rates?|measures?|scores?))\b', low)
+    if adherence and (mid is None or mid.startswith('pdc_')):  # "<class> ... PDC/adherence" in any order
+        for cls_rx, pdc in ((r'\bstatins?\b|\bcholesterol\b', 'pdc_statins'), (r'\bras antagonists?\b|\brasa?\b|\bace(?:i| inhibitors?)?\b|\barbs?\b|\bhypertension\b', 'pdc_rasa'),
+                            (r'\bdiabetes\b|\bdiabetic\b|\boral diabetes\b', 'pdc_diabetes')):
+            if re.search(cls_rx, low): mid, alias = pdc, adherence.group(0); break
+    if mid is None:
+        sets = measures.measure_sets()
+        hit = next(((k, a) for k, s in sets.items() for a in s.get('aliases', []) if re.search(_alias_pattern(a.lower()), low)), None)
+        if hit is None: return None
+        mid, alias = hit
+    r = Reader(low); r.profile = profile
+    info = {'compiler': VERSION, 'recognised': r.notes, 'paraphrased': [], 'route': 'local_compiler'}
+    r.take(_alias_pattern(alias.lower()), f'measure {mid}')
+    params = {'metric': 'quality', 'measure': mid, 'group_by': 'none'}
+    if r.take(MEASURE_GAPS, 'care-gap list'): params['output'] = 'gaps'
+    if mid.startswith('pdc_') and r.take(r'\b(?:pdc |adherence )?(?:below|under|less than|lower than|<) ?80 ?%?|\bnon[- ]?adherent\b|\bnot adherent\b', 'PDC below 80%', overlap=True):
+        params['output'] = 'gaps'
+    for pattern, g in GROUPS + [(r'\b(?:which|what) (?:practices|clinics)\b', 'practice'),
+                                (r'\b(?:which|what) (?:pcps|providers|physicians|clinicians|doctors)\b|\bproviders\'', 'pcp')]:
+        if g in ('facility',) + TIME_GROUPS: continue
+        if r.take(pattern, f'group by {g}'):
+            params['group_by'] = g
+            if params.get('output') == 'gaps' and re.search(r'\bmost\b|\bhighest\b|\bfewest\b|\blowest\b', low): params.pop('output')  # ranking groups by gaps
+            break
+    # Words of the measure's own name and aliases ("kidney health evaluation ... eGFR plus uACR ... with diabetes") are explained by it.
+    words = set()
+    for text in [*(measures.library().get(mid) or {}).get('aliases', []), (measures.library().get(mid) or {}).get('name', ''),
+                 (measures.library().get(mid) or {}).get('gap_label', '')]:
+        words |= {w for w in re.findall(r'[a-z][a-z0-9-]+', text.lower()) if len(w) >= 3}
+    if words: r.take(r'\b(?:' + '|'.join(re.escape(w) for w in sorted(words, key=len, reverse=True)) + r')s?\b', None, overlap=True)
+    r.take(r'\bper 1,?000\b|\bper 100,?000\b|\bper thousand\b|\bmost\b|\bhighest\b|\blowest\b|\bfewest\b|\bworst\b|\bbest\b|\brank(?:ed)?\b|\bplus\b|\band\b|\bon\b|\bwith\b', None, overlap=True)
+    period = _take_period(r, as_of)
+    if not period and r.take(r'\bthis year\b|\bytd\b|\byear[- ]to[- ]date\b|\bso far\b', 'year to date'):
+        period = (f'{as_of[:4]}-01-01', as_of)
+    if not period and r.take(r'\blast year\b|\bprior year\b', 'last year'):
+        y = int(as_of[:4]) - 1; period = (f'{y}-01-01', f'{y}-12-31')
+    r.take(r'\b(?:over |in )?the (?:last|past) (?:12 months|year)\b|\b(?:rolling|trailing) (?:12 months|year)\b', 'last 12 months')
+    if period: params['period'] = {'start': period[0], 'end': period[1]}
+    r.take(MEASURE_FRAMING, None, overlap=True)
+    info['unexplained'] = r.blocking(profile)
+    info['ignored_words'] = getattr(r, 'ignored', [])
+    if info['unexplained']:
+        info.update(route='fallback', reason=f'measure {mid} named, but words not interpreted locally: ' + ', '.join(info['unexplained'][:12]))
+        return None, info
+    return {'interpretation': q, 'coverage': 'supported_observation', 'unmet_requirements': [],
+            'nodes': [{'id': 'answer', 'operation': 'vbc', 'inputs': [], 'parameters': params, 'purpose': f'Quality measure {mid}'}]}, info
 
 
 # ---- outreach worklists ------------------------------------------------------------

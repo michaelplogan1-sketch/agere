@@ -1,0 +1,273 @@
+{
+ "schema": "agere-measure/1",
+ "id": "fmc_ed_followup",
+ "name": "Follow-Up After Emergency Department Visit for People With Multiple High-Risk Chronic Conditions (7 days)",
+ "aliases": [
+  "follow-up after emergency department visit for people with multiple high-risk chronic conditions",
+  "fmc",
+  "fmc measure",
+  "follow-up after ed visit",
+  "follow up after ed visit",
+  "follow-up after emergency department visit",
+  "ed follow-up rate",
+  "ed follow up rate",
+  "ed visit followed by no pcp follow-up",
+  "ed visit followed by no follow-up"
+ ],
+ "status": "approximation",
+ "certification": "Approximation of HEDIS Follow-Up After ED Visit for People With Multiple High-Risk Chronic Conditions (FMC), not certified: built from NCQA's public measure summary; the licensed HEDIS value sets are not used (codes here are public ICD-10-CM/LOINC/CPT examples).",
+ "steward": "NCQA (HEDIS FMC)",
+ "programs": [
+  "HEDIS",
+  "Medicare Part C Star Ratings (C20 in 2027)"
+ ],
+ "spec_year": "HEDIS FMC MY2025 (2027 Star Ratings)",
+ "citations": [
+  {
+   "title": "NCQA public measure page: Follow-Up After ED Visit for People With High-Risk Multiple Chronic Conditions (FMC)",
+   "url": "https://www.ncqa.org/report-cards/health-plans/state-of-health-care-quality-report/follow-up-after-emergency-department-visit-for-people-with-high-risk-multiple-chronic-conditions-fmc/",
+   "publisher": "NCQA",
+   "accessed": "2026-10-13"
+  },
+  {
+   "title": "2027 Part C & D Star Ratings Technical Notes (last updated 09/30/2026; measurement year 2025 data)",
+   "url": "https://www.cms.gov/files/document/2027-tech-notes-2026-09-30.pdf",
+   "publisher": "CMS",
+   "accessed": "2026-10-13"
+  },
+  {
+   "title": "2026 Part C & D Star Ratings Technical Notes (updated 09/25/2025)",
+   "url": "https://www.cms.gov/files/document/2026-star-ratings-technical-notes.pdf",
+   "publisher": "CMS",
+   "accessed": "2026-10-13"
+  }
+ ],
+ "direction": "higher_is_better",
+ "unit": "index_event",
+ "index": {
+  "type": "encounter",
+  "label": "ED visits",
+  "concepts": [
+   "emergency_visit"
+  ],
+  "window": {
+   "start": "period_start",
+   "end": "period_end-7d"
+  },
+  "one_per_days": 7
+ },
+ "denominator": {
+  "summary": "ED visits (Jan 1 - Dec 24 analogue: period start to 7 days before period end) by members 18+ with two or more high-risk chronic conditions; only the first ED visit in any 8-day window counts.",
+  "age": {
+   "min": 18,
+   "max": 200
+  },
+  "criteria": [
+   {
+    "type": "condition",
+    "label": "Two or more chronic conditions (COPD/asthma, dementia, CKD, depression, HF, AMI, AF, stroke) in the measurement or prior year",
+    "concepts": [
+     "copd",
+     "asthma",
+     "dementia",
+     "chronic_kidney_disease",
+     "depression",
+     "heart_failure",
+     "myocardial_infarction",
+     "atrial_fibrillation",
+     "stroke"
+    ],
+    "icd10_prefixes": [
+     "J41",
+     "J42",
+     "J43",
+     "J44",
+     "J45",
+     "J47",
+     "F01",
+     "F02",
+     "F03",
+     "G30",
+     "N18",
+     "F32",
+     "F33",
+     "I50",
+     "I11.0",
+     "I13.0",
+     "I13.2",
+     "I21",
+     "I22",
+     "I48",
+     "I60",
+     "I61",
+     "I63"
+    ],
+    "window": {
+     "start": "period_start-12m",
+     "end": "index"
+    },
+    "min_groups": 2,
+    "groups": {
+     "copd_asthma": {
+      "concepts": [
+       "copd",
+       "asthma"
+      ],
+      "icd10_prefixes": [
+       "J41",
+       "J42",
+       "J43",
+       "J44",
+       "J45",
+       "J47"
+      ]
+     },
+     "dementia": {
+      "concepts": [
+       "dementia"
+      ],
+      "icd10_prefixes": [
+       "F01",
+       "F02",
+       "F03",
+       "G30"
+      ]
+     },
+     "ckd": {
+      "concepts": [
+       "chronic_kidney_disease"
+      ],
+      "icd10_prefixes": [
+       "N18"
+      ]
+     },
+     "depression": {
+      "concepts": [
+       "depression"
+      ],
+      "icd10_prefixes": [
+       "F32",
+       "F33"
+      ]
+     },
+     "heart_failure": {
+      "concepts": [
+       "heart_failure"
+      ],
+      "icd10_prefixes": [
+       "I50",
+       "I11.0",
+       "I13.0",
+       "I13.2"
+      ]
+     },
+     "ami": {
+      "concepts": [
+       "myocardial_infarction"
+      ],
+      "icd10_prefixes": [
+       "I21",
+       "I22"
+      ]
+     },
+     "atrial_fibrillation": {
+      "concepts": [
+       "atrial_fibrillation"
+      ],
+      "icd10_prefixes": [
+       "I48"
+      ]
+     },
+     "stroke": {
+      "concepts": [
+       "stroke"
+      ],
+      "icd10_prefixes": [
+       "I60",
+       "I61",
+       "I63"
+      ]
+     }
+    }
+   }
+  ]
+ },
+ "exclusions": [
+  {
+   "type": "stay",
+   "label": "ED visit followed by an inpatient/observation stay within 1 day",
+   "window": {
+    "start": "index",
+    "end": "index+1d"
+   }
+  },
+  {
+   "type": "service",
+   "label": "Hospice or palliative care (Z51.5 / hospice encounter)",
+   "streams": [
+    {
+     "stream": "hospice_enrollments"
+    }
+   ],
+   "hcpcs": [
+    "G9473",
+    "G9474",
+    "G9475",
+    "G9476",
+    "G9477",
+    "G9478",
+    "G9479",
+    "Q5003",
+    "Q5004",
+    "Q5005",
+    "Q5006",
+    "Q5007",
+    "Q5008",
+    "Q5010",
+    "S9126",
+    "T2042",
+    "T2043",
+    "T2044",
+    "T2045",
+    "T2046"
+   ],
+   "window": {
+    "start": "period_start",
+    "end": "period_end"
+   }
+  }
+ ],
+ "numerator": {
+  "summary": "A follow-up service (primary care, specialist or telehealth visit, care-management or transition contact) on the ED date through 7 days after.",
+  "criteria": [
+   {
+    "type": "service",
+    "label": "Follow-up within 7 days of the ED visit",
+    "visit_concepts": [
+     "primary_care_visit",
+     "telehealth_contact",
+     "specialist_visit"
+    ],
+    "streams": [
+     {
+      "stream": "care_management_contacts"
+     },
+     {
+      "stream": "transition_of_care_contacts"
+     }
+    ],
+    "window": {
+     "start": "index",
+     "end": "index+7d"
+    },
+    "lookback_check": false
+   }
+  ]
+ },
+ "gap_label": "ED visit without 7-day follow-up",
+ "outreach": {
+  "value_usd": 250,
+  "minutes": 15,
+  "action": "Post-ED follow-up call and visit"
+ }
+}

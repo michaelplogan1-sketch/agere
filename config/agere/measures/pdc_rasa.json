@@ -1,0 +1,142 @@
+{
+ "schema": "agere-measure/1",
+ "id": "pdc_rasa",
+ "name": "Medication Adherence for Hypertension (RAS Antagonists)",
+ "aliases": [
+  "medication adherence for hypertension",
+  "ras antagonist adherence",
+  "rasa adherence",
+  "rasa pdc",
+  "ras antagonist pdc",
+  "ace/arb adherence",
+  "pdc for ras antagonists"
+ ],
+ "status": "approximation",
+ "certification": "Approximation of the PQA proportion-of-days-covered measure used for Part D Star Rating Medication Adherence for Hypertension (RAS Antagonists), not certified: follows the public specification with simplified code sets mapped to the codes Agere receives. Inpatient/SNF stay days are not credited.",
+ "steward": "Pharmacy Quality Alliance (PQA); CMS Part D Star Ratings",
+ "programs": [
+  "Medicare Part D Star Ratings (D09, triple-weighted)"
+ ],
+ "spec_year": "2027 Star Ratings (PDE dates of service 2025)",
+ "citations": [
+  {
+   "title": "2027 Part C & D Star Ratings Technical Notes (last updated 09/30/2026; measurement year 2025 data)",
+   "url": "https://www.cms.gov/files/document/2027-tech-notes-2026-09-30.pdf",
+   "publisher": "CMS",
+   "accessed": "2026-10-13"
+  },
+  {
+   "title": "2026 Part C & D Star Ratings Technical Notes (updated 09/25/2025)",
+   "url": "https://www.cms.gov/files/document/2026-star-ratings-technical-notes.pdf",
+   "publisher": "CMS",
+   "accessed": "2026-10-13"
+  },
+  {
+   "title": "PQA Measures overview",
+   "url": "https://www.pqa.org/measures/",
+   "publisher": "Pharmacy Quality Alliance",
+   "accessed": "2026-10-13"
+  }
+ ],
+ "direction": "higher_is_better",
+ "unit": "patient",
+ "denominator": {
+  "summary": "Members 18+ with at least two fills of the class on different dates in the period and a treatment period (first fill to period end) of at least 91 days; enrolled.",
+  "age": {
+   "min": 18,
+   "max": 200,
+   "as_of": "period_end"
+  },
+  "enrollment": {
+   "allowed_gap_months": 1
+  },
+  "criteria": []
+ },
+ "exclusions": [
+  {
+   "type": "service",
+   "label": "Hospice or palliative care (Z51.5 / hospice encounter)",
+   "streams": [
+    {
+     "stream": "hospice_enrollments"
+    }
+   ],
+   "hcpcs": [
+    "G9473",
+    "G9474",
+    "G9475",
+    "G9476",
+    "G9477",
+    "G9478",
+    "G9479",
+    "Q5003",
+    "Q5004",
+    "Q5005",
+    "Q5006",
+    "Q5007",
+    "Q5008",
+    "Q5010",
+    "S9126",
+    "T2042",
+    "T2043",
+    "T2044",
+    "T2045",
+    "T2046"
+   ],
+   "window": {
+    "start": "period_start",
+    "end": "period_end"
+   }
+  },
+  {
+   "type": "condition",
+   "label": "End-stage renal disease or dialysis (N18.6, Z99.2)",
+   "icd10_prefixes": [
+    "N18.6",
+    "Z99.2"
+   ],
+   "window": {
+    "start": "period_start-12m",
+    "end": "period_end"
+   }
+  },
+  {
+   "type": "medication",
+   "label": "Sacubitril/valsartan (ARNI) fill",
+   "classes": [
+    "arni"
+   ],
+   "evidence": [
+    "dispensed",
+    "claim"
+   ],
+   "window": {
+    "start": "period_start",
+    "end": "period_end"
+   }
+  }
+ ],
+ "numerator": {
+  "summary": "Proportion of days covered >= 80% from the first fill in the period to period end (days supply from the dispense; overlapping fills shift forward).",
+  "criteria": [
+   {
+    "type": "pdc",
+    "label": "PDC Hypertension (RAS Antagonists)",
+    "classes": [
+     "ace_inhibitor",
+     "arb"
+    ],
+    "threshold": 0.8,
+    "min_fills": 2,
+    "min_treatment_days": 91,
+    "exclude_names": "sacubitril"
+   }
+  ]
+ },
+ "gap_label": "PDC below 80%: Hypertension (RAS Antagonists)",
+ "outreach": {
+  "value_usd": 250,
+  "minutes": 15,
+  "action": "Adherence outreach; 90-day fills / synchronization"
+ }
+}

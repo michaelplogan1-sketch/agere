@@ -21,7 +21,7 @@ PRODUCT = {
                  'use': 'Time-to-event: HOW QUICKLY / HOW LONG UNTIL / median days until / what fraction reach an event within a time: readmission or follow-up '
                         'after discharge, time from diagnosis to an event or lab threshold (e.g. eGFR < 30 within 2 years); Kaplan-Meier by group, log-rank, Cox hazard ratios.'},
     'vbc': {'population': 'optional', 'view': 'table',
-            'use': 'Value-based care: member months, attribution, utilization per 1,000, PMPM cost, risk score, quality measures, shared-savings settlement and its risk (VaR), fair (Shapley) split of savings, cost change decomposition.'},
+            'use': 'Value-based care: member months, attribution, utilization per 1,000, PMPM cost, risk score, quality measures (measure library: HEDIS/Stars/eCQM approximations such as GSD, CBP, KED, breast and colorectal screening, depression screening, FMC, TRC, PCR, AHRQ PQI 90/91/92, Part D PDC adherence, the MSSP APP Plus set, with care-gap patient lists), shared-savings settlement and its risk (VaR), fair (Shapley) split of savings, cost change decomposition.'},
     'program_effect': {'population': 'optional', 'view': 'effect',
                        'use': 'Did a program or medication start work: care management, transitions of care, community services, care coordination, starting a drug class; effect on ED visits, admissions, PMPM or a lab.'},
     'outreach': {'population': 'optional', 'view': 'worklist',

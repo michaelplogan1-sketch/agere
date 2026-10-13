@@ -1,0 +1,138 @@
+{
+ "schema": "agere-measure/1",
+ "id": "trc_patient_engagement",
+ "name": "Transitions of Care: Patient Engagement After Inpatient Discharge",
+ "aliases": [
+  "transitions of care patient engagement",
+  "trc patient engagement",
+  "patient engagement after inpatient discharge",
+  "patient engagement within 30 days"
+ ],
+ "status": "approximation",
+ "certification": "Approximation of HEDIS Transitions of Care (patient engagement indicator) (TRC), not certified: built from NCQA's public measure summary; the licensed HEDIS value sets are not used (codes here are public ICD-10-CM/LOINC/CPT examples).",
+ "steward": "NCQA (HEDIS TRC)",
+ "programs": [
+  "HEDIS",
+  "Medicare Part C Star Ratings (TRC composite)"
+ ],
+ "spec_year": "HEDIS MY2025",
+ "citations": [
+  {
+   "title": "NCQA public measure page: Transitions of Care (TRC)",
+   "url": "https://www.ncqa.org/report-cards/health-plans/state-of-health-care-quality-report/transitions-of-care-trc/",
+   "publisher": "NCQA",
+   "accessed": "2026-10-13"
+  },
+  {
+   "title": "2027 Part C & D Star Ratings Technical Notes (last updated 09/30/2026; measurement year 2025 data)",
+   "url": "https://www.cms.gov/files/document/2027-tech-notes-2026-09-30.pdf",
+   "publisher": "CMS",
+   "accessed": "2026-10-13"
+  },
+  {
+   "title": "2026 Part C & D Star Ratings Technical Notes (updated 09/25/2025)",
+   "url": "https://www.cms.gov/files/document/2026-star-ratings-technical-notes.pdf",
+   "publisher": "CMS",
+   "accessed": "2026-10-13"
+  },
+  {
+   "title": "MLN908628 Transitional Care Management Services (Aug 2025)",
+   "url": "https://www.cms.gov/files/document/mln908628-transitional-care-management-services.pdf",
+   "publisher": "CMS Medicare Learning Network",
+   "accessed": "2026-10-13"
+  }
+ ],
+ "direction": "higher_is_better",
+ "unit": "index_event",
+ "index": {
+  "type": "stay",
+  "label": "Acute inpatient/observation discharges",
+  "index_date": "discharge",
+  "window": {
+   "start": "period_start",
+   "end": "period_end-30d"
+  }
+ },
+ "denominator": {
+  "summary": "Discharges in the period (January 1 - December 1 analogue: through 30 days before period end) by members 18+.",
+  "age": {
+   "min": 18,
+   "max": 200
+  },
+  "criteria": []
+ },
+ "exclusions": [
+  {
+   "type": "service",
+   "label": "Hospice or palliative care (Z51.5 / hospice encounter)",
+   "streams": [
+    {
+     "stream": "hospice_enrollments"
+    }
+   ],
+   "hcpcs": [
+    "G9473",
+    "G9474",
+    "G9475",
+    "G9476",
+    "G9477",
+    "G9478",
+    "G9479",
+    "Q5003",
+    "Q5004",
+    "Q5005",
+    "Q5006",
+    "Q5007",
+    "Q5008",
+    "Q5010",
+    "S9126",
+    "T2042",
+    "T2043",
+    "T2044",
+    "T2045",
+    "T2046"
+   ],
+   "window": {
+    "start": "period_start",
+    "end": "period_end"
+   }
+  }
+ ],
+ "numerator": {
+  "summary": "Patient engagement (office, home, telehealth visit or transition contact) within 30 days after discharge, discharge day excluded.",
+  "criteria": [
+   {
+    "type": "service",
+    "label": "Engagement within 30 days after discharge",
+    "visit_concepts": [
+     "primary_care_visit",
+     "telehealth_contact",
+     "specialist_visit"
+    ],
+    "streams": [
+     {
+      "stream": "transition_of_care_contacts"
+     },
+     {
+      "stream": "care_management_contacts"
+     }
+    ],
+    "cpt": [
+     "99495",
+     "99496"
+    ],
+    "window": {
+     "start": "index_end+1d",
+     "end": "index_end+30d"
+    },
+    "lookback_check": false
+   }
+  ]
+ },
+ "gap_label": "Discharge without engagement in 30 days",
+ "outreach": {
+  "value_usd": 300,
+  "minutes": 15,
+  "action": "Transition call / visit"
+ }
+}

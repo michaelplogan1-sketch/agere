@@ -1,0 +1,148 @@
+{
+ "schema": "agere-measure/1",
+ "id": "supd_statin_use_diabetes",
+ "name": "Statin Use in Persons with Diabetes (Part D)",
+ "aliases": [
+  "statin use in persons with diabetes",
+  "supd",
+  "supd measure",
+  "part d statin use in diabetes"
+ ],
+ "status": "approximation",
+ "certification": "Approximation of the PQA Statin Use in Persons with Diabetes (SUPD) measure, not certified: follows the public specification with simplified code sets mapped to the codes Agere receives.",
+ "steward": "Pharmacy Quality Alliance (PQA); CMS Part D Star Ratings",
+ "programs": [
+  "Medicare Part D Star Ratings"
+ ],
+ "spec_year": "2027 Star Ratings (PDE dates of service 2025), Part D D11",
+ "citations": [
+  {
+   "title": "2027 Part C & D Star Ratings Technical Notes (last updated 09/30/2026; measurement year 2025 data)",
+   "url": "https://www.cms.gov/files/document/2027-tech-notes-2026-09-30.pdf",
+   "publisher": "CMS",
+   "accessed": "2026-10-13"
+  },
+  {
+   "title": "2026 Part C & D Star Ratings Technical Notes (updated 09/25/2025)",
+   "url": "https://www.cms.gov/files/document/2026-star-ratings-technical-notes.pdf",
+   "publisher": "CMS",
+   "accessed": "2026-10-13"
+  },
+  {
+   "title": "PQA Measures overview (lists SUPD, PDC measures)",
+   "url": "https://www.pqa.org/measures/",
+   "publisher": "Pharmacy Quality Alliance",
+   "accessed": "2026-10-13"
+  }
+ ],
+ "direction": "higher_is_better",
+ "unit": "patient",
+ "denominator": {
+  "summary": "Members 40-75 with at least two fills of a diabetes medication (insulin excluded) on different dates in the period; enrolled.",
+  "age": {
+   "min": 40,
+   "max": 75,
+   "as_of": "period_end"
+  },
+  "enrollment": {
+   "allowed_gap_months": 1
+  },
+  "criteria": [
+   {
+    "type": "medication",
+    "label": "Two or more diabetes medication fills",
+    "classes": [
+     "metformin",
+     "sulfonylurea",
+     "dpp4_inhibitor",
+     "sglt2_inhibitor",
+     "glp1_agonist"
+    ],
+    "evidence": [
+     "dispensed",
+     "claim"
+    ],
+    "window": {
+     "start": "period_start",
+     "end": "period_end"
+    },
+    "min_dates": 2
+   }
+  ]
+ },
+ "exclusions": [
+  {
+   "type": "service",
+   "label": "Hospice or palliative care (Z51.5 / hospice encounter)",
+   "streams": [
+    {
+     "stream": "hospice_enrollments"
+    }
+   ],
+   "hcpcs": [
+    "G9473",
+    "G9474",
+    "G9475",
+    "G9476",
+    "G9477",
+    "G9478",
+    "G9479",
+    "Q5003",
+    "Q5004",
+    "Q5005",
+    "Q5006",
+    "Q5007",
+    "Q5008",
+    "Q5010",
+    "S9126",
+    "T2042",
+    "T2043",
+    "T2044",
+    "T2045",
+    "T2046"
+   ],
+   "window": {
+    "start": "period_start",
+    "end": "period_end"
+   }
+  },
+  {
+   "type": "condition",
+   "label": "End-stage renal disease or dialysis (N18.6, Z99.2)",
+   "icd10_prefixes": [
+    "N18.6",
+    "Z99.2"
+   ],
+   "window": {
+    "start": "period_start-12m",
+    "end": "period_end"
+   }
+  }
+ ],
+ "numerator": {
+  "summary": "At least one statin fill in the period.",
+  "criteria": [
+   {
+    "type": "medication",
+    "label": "Statin fill",
+    "classes": [
+     "statin"
+    ],
+    "evidence": [
+     "dispensed",
+     "claim"
+    ],
+    "window": {
+     "start": "period_start",
+     "end": "period_end"
+    }
+   }
+  ]
+ },
+ "gap_label": "On diabetes medication, no statin fill this period",
+ "outreach": {
+  "value_usd": 350,
+  "minutes": 10,
+  "action": "Statin discussion with prescriber"
+ }
+}

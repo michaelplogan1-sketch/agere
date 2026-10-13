@@ -33,7 +33,7 @@ CONTRACTS = {
                   'parallel-trends and placebo checks, synthetic control when feasible, and explicit data-support warnings. Never an identified causal '
                   'effect; refuse randomised-trial or counterfactual-count claims, and unnamed programs.'},
     'vbc': {'inputs':['optional earlier_set'],'parameters':{'metric':'eligibility|attribution|utilization|cost|risk|quality|shared_savings','group_by':'none|pcp|practice|coverage_type|age_band|sex',
-        'period':{'start':'YYYY-MM-DD','end':'YYYY-MM-DD'},'measure':'quality measure id','terms':'shared_savings contract terms (supplied by the user only)'},
+        'period':{'start':'YYYY-MM-DD','end':'YYYY-MM-DD'},'measure':'quality measure id (internal or config/agere/measures library id or set)','output':'quality: rates|gaps','terms':'shared_savings contract terms (supplied by the user only)'},
         'meaning':'Value-based-care metrics: member-months, PCP attribution, utilization per 1,000 (ED, admissions, readmission, 7-day follow-up) with empirical-Bayes shrinkage, '
                   'completion-adjusted allowed/paid PMPM, internal risk score (not CMS-HCC), internal quality measures, and shared-savings settlement on user-supplied terms. Never invent contract terms.'},
     'outreach': {'inputs':['optional earlier_set'],'parameters':{'capacity_patients':40,'capacity_hours':'optional nurse hours','require':['care_gap','rising_risk','social_need','utilization'],

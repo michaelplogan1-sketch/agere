@@ -1,0 +1,252 @@
+{
+ "schema": "agere-measure/1",
+ "id": "pqi_92_chronic_composite",
+ "name": "PQI 92 Prevention Quality Chronic Composite",
+ "aliases": [
+  "pqi 92",
+  "pqi92",
+  "prevention quality chronic composite",
+  "chronic ambulatory care sensitive admissions",
+  "chronic acsc admissions"
+ ],
+ "status": "approximation",
+ "certification": "Approximation of AHRQ Prevention Quality Indicator PQI 92, not certified: principal-diagnosis ICD-10-CM families from the AHRQ technical specification; procedure, transfer and immunocompromised exclusions are simplified.",
+ "steward": "AHRQ Quality Indicators",
+ "programs": [
+  "AHRQ PQI (population health)",
+  "used in ACO and Medicaid reporting"
+ ],
+ "spec_year": "AHRQ QI v2025 (August 2025)",
+ "citations": [
+  {
+   "title": "AHRQ QI ICD-10-CM/PCS Specification v2025 (Aug 2025): PQI 90 Overall Composite",
+   "url": "https://qualityindicators.ahrq.gov/Downloads/Modules/PQI/V2025/TechSpecs/PQI_90_Prevention_Quality_Overall_Composite.pdf",
+   "publisher": "AHRQ",
+   "accessed": "2026-10-13"
+  },
+  {
+   "title": "AHRQ QI ICD-10-CM/PCS Specification v2025 (Aug 2025): PQI 91 Acute Composite",
+   "url": "https://qualityindicators.ahrq.gov/Downloads/Modules/PQI/V2025/TechSpecs/PQI_91_Prevention_Quality_Acute_Composite.pdf",
+   "publisher": "AHRQ",
+   "accessed": "2026-10-13"
+  },
+  {
+   "title": "AHRQ QI ICD-10-CM/PCS Specification v2025 (Aug 2025): PQI 92 Chronic Composite",
+   "url": "https://qualityindicators.ahrq.gov/Downloads/Modules/PQI/V2025/TechSpecs/PQI_92_Prevention_Quality_Chronic_Composite.pdf",
+   "publisher": "AHRQ",
+   "accessed": "2026-10-13"
+  },
+  {
+   "title": "AHRQ QI ICD-10-CM/PCS Specification v2025 (Aug 2025): PQI 01",
+   "url": "https://qualityindicators.ahrq.gov/Downloads/Modules/PQI/V2025/TechSpecs/PQI_01_Diabetes_Short-term_Complications_Admission_Rate.pdf",
+   "publisher": "AHRQ",
+   "accessed": "2026-10-13"
+  },
+  {
+   "title": "AHRQ QI ICD-10-CM/PCS Specification v2025 (Aug 2025): PQI 03",
+   "url": "https://qualityindicators.ahrq.gov/Downloads/Modules/PQI/V2025/TechSpecs/PQI_03_Diabetes_Long-term_Complications_Admission_Rate.pdf",
+   "publisher": "AHRQ",
+   "accessed": "2026-10-13"
+  },
+  {
+   "title": "AHRQ QI ICD-10-CM/PCS Specification v2025 (Aug 2025): PQI 05",
+   "url": "https://qualityindicators.ahrq.gov/Downloads/Modules/PQI/V2025/TechSpecs/PQI_05_Chronic_Obstructive_Pulmonary_Disease_(COPD)_or_Asthma_in_Older_Adults_Admission_Rate.pdf",
+   "publisher": "AHRQ",
+   "accessed": "2026-10-13"
+  },
+  {
+   "title": "AHRQ QI ICD-10-CM/PCS Specification v2025 (Aug 2025): PQI 07",
+   "url": "https://qualityindicators.ahrq.gov/Downloads/Modules/PQI/V2025/TechSpecs/PQI_07_Hypertension_Admission_Rate.pdf",
+   "publisher": "AHRQ",
+   "accessed": "2026-10-13"
+  },
+  {
+   "title": "AHRQ QI ICD-10-CM/PCS Specification v2025 (Aug 2025): PQI 08",
+   "url": "https://qualityindicators.ahrq.gov/Downloads/Modules/PQI/V2025/TechSpecs/PQI_08_Heart_Failure_Admission_Rate.pdf",
+   "publisher": "AHRQ",
+   "accessed": "2026-10-13"
+  },
+  {
+   "title": "AHRQ QI ICD-10-CM/PCS Specification v2025 (Aug 2025): PQI 11",
+   "url": "https://qualityindicators.ahrq.gov/Downloads/Modules/PQI/V2025/TechSpecs/PQI_11_Community_Acquired%20_Pneumonia_Admission_Rate.pdf",
+   "publisher": "AHRQ",
+   "accessed": "2026-10-13"
+  },
+  {
+   "title": "AHRQ QI ICD-10-CM/PCS Specification v2025 (Aug 2025): PQI 12",
+   "url": "https://qualityindicators.ahrq.gov/Downloads/Modules/PQI/V2025/TechSpecs/PQI_12_Urinary_Tract_Infection_Admission_Rate.pdf",
+   "publisher": "AHRQ",
+   "accessed": "2026-10-13"
+  },
+  {
+   "title": "AHRQ QI ICD-10-CM/PCS Specification v2025 (Aug 2025): PQI 14",
+   "url": "https://qualityindicators.ahrq.gov/Downloads/Modules/PQI/V2025/TechSpecs/PQI_14_Uncontrolled_Diabetes_Admission_Rate.pdf",
+   "publisher": "AHRQ",
+   "accessed": "2026-10-13"
+  },
+  {
+   "title": "AHRQ QI ICD-10-CM/PCS Specification v2025 (Aug 2025): PQI 15",
+   "url": "https://qualityindicators.ahrq.gov/Downloads/Modules/PQI/V2025/TechSpecs/PQI_15_Asthma_in_Younger_Adults_Admission_Rate.pdf",
+   "publisher": "AHRQ",
+   "accessed": "2026-10-13"
+  },
+  {
+   "title": "AHRQ QI ICD-10-CM/PCS Specification v2025 (Aug 2025): PQI 16",
+   "url": "https://qualityindicators.ahrq.gov/Downloads/Modules/PQI/V2025/TechSpecs/PQI_16_Lower_Extremity_Amputation_among_Patients_with_Diabetes_Rate.pdf",
+   "publisher": "AHRQ",
+   "accessed": "2026-10-13"
+  }
+ ],
+ "direction": "lower_is_better",
+ "unit": "admission_rate",
+ "index": {
+  "type": "encounter",
+  "label": "Acute inpatient admissions with a principal diagnosis",
+  "concepts": [
+   "inpatient_admission"
+  ],
+  "window": {
+   "start": "period_start",
+   "end": "period_end"
+  }
+ },
+ "denominator": {
+  "summary": "Enrolled member-years of adults 18+ (component-specific ages: PQI 05 40+, PQI 15 18-39).",
+  "age": {
+   "min": 18,
+   "max": 200
+  },
+  "criteria": []
+ },
+ "numerator": {
+  "summary": "Acute inpatient admissions in the period whose principal ICD-10-CM diagnosis falls in a component family; obstetric principal diagnoses excluded. Rate per 100,000 member-years.",
+  "per": 100000,
+  "components": [
+   {
+    "id": "pqi_01",
+    "label": "Diabetes short-term complications",
+    "icd10_prefixes": [
+     "E10.10",
+     "E10.11",
+     "E10.641",
+     "E11.00",
+     "E11.01",
+     "E11.10",
+     "E11.11",
+     "E11.641",
+     "E13.00",
+     "E13.01",
+     "E13.10",
+     "E13.11",
+     "E13.641"
+    ],
+    "age_min": 18,
+    "age_max": 200
+   },
+   {
+    "id": "pqi_03",
+    "label": "Diabetes long-term complications",
+    "icd10_prefixes": [
+     "E10.2",
+     "E10.3",
+     "E10.4",
+     "E10.5",
+     "E10.6",
+     "E10.8",
+     "E11.2",
+     "E11.3",
+     "E11.4",
+     "E11.5",
+     "E11.6",
+     "E11.8",
+     "E13.2",
+     "E13.3",
+     "E13.4",
+     "E13.5",
+     "E13.6",
+     "E13.8"
+    ],
+    "age_min": 18,
+    "age_max": 200
+   },
+   {
+    "id": "pqi_05",
+    "label": "COPD or asthma in older adults",
+    "icd10_prefixes": [
+     "J41",
+     "J42",
+     "J43",
+     "J44",
+     "J47",
+     "J45"
+    ],
+    "age_min": 40,
+    "age_max": 200
+   },
+   {
+    "id": "pqi_07",
+    "label": "Hypertension",
+    "icd10_prefixes": [
+     "I10",
+     "I11.9",
+     "I12.9",
+     "I13.10",
+     "I16"
+    ],
+    "age_min": 18,
+    "age_max": 200
+   },
+   {
+    "id": "pqi_08",
+    "label": "Heart failure",
+    "icd10_prefixes": [
+     "I50",
+     "I11.0",
+     "I13.0",
+     "I13.2",
+     "I09.81"
+    ],
+    "age_min": 18,
+    "age_max": 200
+   },
+   {
+    "id": "pqi_14",
+    "label": "Uncontrolled diabetes",
+    "icd10_prefixes": [
+     "E10.649",
+     "E10.65",
+     "E11.649",
+     "E11.65",
+     "E13.649",
+     "E13.65"
+    ],
+    "age_min": 18,
+    "age_max": 200
+   },
+   {
+    "id": "pqi_15",
+    "label": "Asthma in younger adults",
+    "icd10_prefixes": [
+     "J45"
+    ],
+    "age_min": 18,
+    "age_max": 39
+   }
+  ],
+  "exclude_icd10_prefixes": [
+   "O",
+   "Z3"
+  ]
+ },
+ "gap_label": "Ambulatory-care-sensitive admission",
+ "outreach": {
+  "value_usd": 0,
+  "minutes": 0,
+  "action": "Review for avoidability"
+ },
+ "notes": [
+  "PQI 16 (lower-extremity amputation among patients with diabetes) is procedure-based and not included.",
+  "AHRQ excludes transfers from other facilities and (for PQI 08) cardiac procedures; those are not applied."
+ ],
+ "exclusions": []
+}
