@@ -245,7 +245,7 @@ def serve(run,port,annotations=None,evidence_queries=None,stack=None,allow_live_
                     if set(body)!={'question','live'} or type(body['live']) is not bool:raise ValueError('Explicit question/live route required')
                     result=connected_stack.ask(body['question'],live=body['live'])
                 elif path=='/api/stack/compose':
-                    from .clinical import answer_log
+                    from .clinical import answer_log, learning
                     _t0=time.time()
                     try:
                         if set(body)=={'question'}:result=connected_stack.compose(body['question'])
@@ -253,8 +253,15 @@ def serve(run,port,annotations=None,evidence_queries=None,stack=None,allow_live_
                             result=connected_stack.compose(body['question'],planning=body['planning'])
                         else:raise ValueError('Explicit composition question and supported optional candidate policy required')
                     except Exception as _exc:
-                        answer_log.record(connected_stack.path,str(body.get('question','')),error=f'{type(_exc).__name__}: {_exc}',seconds=time.time()-_t0);raise
+                        answer_log.record(connected_stack.path,str(body.get('question','')),error=f'{type(_exc).__name__}: {_exc}',seconds=time.time()-_t0)
+                        learning.record_outcome(connected_stack.path,str(body.get('question','')),'declined','declined',str(_exc));raise
                     answer_log.record(connected_stack.path,body['question'],result=result,seconds=time.time()-_t0)
+                    _pr=result.get('planner_receipt') or {}
+                    _local=_pr.get('local_compiler_declined') or {}
+                    learning.record_outcome(connected_stack.path,body['question'],_pr.get('route') or 'unknown',
+                                            'escalated' if result.get('new_paid_api_calls') else (result.get('answer') or {}).get('status') or 'answered',
+                                            _local.get('reason') if isinstance(_local,dict) else None,
+                                            result.get('new_paid_api_calls') or 0,(result.get('planning_economics') or {}).get('known_api_estimate_usd') or 0)
                 elif path=='/api/stack/context/synthesize':
                     if set(body)!={'context_id'}:raise ValueError('Exact source context required')
                     result=connected_stack.synthesize_context(body['context_id'])
@@ -750,6 +757,10 @@ def serve(run,port,annotations=None,evidence_queries=None,stack=None,allow_live_
                 if connected_stack is None:self.send_error(404);return
                 from .clinical.answer_log import summary as economics_summary
                 raw=json.dumps(economics_summary(connected_stack.path)).encode();mime='application/json'
+            elif parsed.path=='/api/stack/learning':
+                if connected_stack is None:self.send_error(404);return
+                from .clinical.learning import summary as learning_summary
+                raw=json.dumps(learning_summary(connected_stack.path)).encode();mime='application/json'
             elif parsed.path=='/api/stack/briefing':
                 if connected_stack is None:self.send_error(404);return
                 from .clinical.briefing import cached as briefing

@@ -33,7 +33,7 @@ let ask=async function(e){if(e)e.preventDefault();const question=q.value.trim();
  try{const r=await fetch('/api/stack/compose',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({question})});const d=await r.json();
   if(d.error){out.innerHTML='<div class="card"><div class="headline warn">Not answered locally</div><div class="meta">'+esc(d.error)+'</div></div>';return}
   const a=d.answer||{},pr=d.planner_receipt||{},econ=d.planning_economics||{};
-  const route={local_compiler:'Agere compiler',local_unsupported:'Agere compiler (unsupported)',local_model_rewrite_compiled:'Local model rewrite → Agere compiler',hosted_small_model_sql:'Hosted small model',frontier_escalation:'Frontier model'}[pr.route]||pr.route;
+  const route={local_compiler:'Agere compiler',local_unsupported:'Agere compiler (unsupported)',local_model_rewrite_compiled:'Local model rewrite → Agere compiler',hosted_verified_sql:'Hosted models, cross-verified',frontier_escalation:'Frontier model'}[pr.route]||pr.route;
   let html='<div class="card"><div class="headline">'+esc(a.headline||a.status)+'</div><div class="meta">Route <b>'+esc(route)+'</b> · API calls <b>'+(d.new_paid_api_calls||0)+'</b> · cost <b>$'+(econ.known_api_estimate_usd||0).toFixed(4)+'</b> · '+((performance.now()-t0)/1000).toFixed(2)+' s'+(pr.rewrite?' · rewrite: “'+esc(pr.rewrite)+'”':'')+'</div>';
   if(a.patient_ids&&a.patient_ids.length&&!a.table)html+='<details><summary>'+a.patient_ids.length+' patient IDs</summary><pre>'+esc(a.patient_ids.join(', '))+'</pre></details>';
   html+=table(a.table);

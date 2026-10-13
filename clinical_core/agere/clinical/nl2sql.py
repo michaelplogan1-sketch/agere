@@ -344,6 +344,97 @@ def _plausible(path, question, sql, probe):
                 raise ValueError(f'Implausible percentage {v}.')
 
 
+def verified_answer(path, question, as_of, primary, second, judge):
+    """Hosted ladder: primary writes SQL (lint + sanity, one repair), an independent second model writes its own;
+    agreement is accepted, disagreement goes to the judge, whose query must pass the same checks.
+    Returns (params, result, receipt) or raises ValueError (the planner then escalates)."""
+    from . import verify
+    profile = source_profile.load(path)
+    streams, schema = schema_for(question, profile)
+    qt = set(_tokens(question))
+    ranked = sorted(EXAMPLES, key=lambda e: -len(qt & set(_tokens(e[0] + ' ' + e[1]))))[:7]
+    shots = '\n\n'.join(f'Q: {q}\n```sql\n{sq}\n```' for q, sq in ranked)
+    system = RULES + VERIFY_RULES + f'\nThe data snapshot is as of {as_of}.'
+    user = f'{schema}\n\nEXAMPLES\n{shots}\n\nQ: {question}'
+    import sqlite3
+    db = sqlite3.connect(f'file:{sql_query.semantic_layer.ensure(path)}?mode=ro', uri=True)
+    try: roster = db.execute('SELECT count(*) FROM patient').fetchone()[0]
+    finally: db.close()
+    receipt = {'version': VERSION + '+verified', 'streams_retrieved': streams, 'attempts': [], 'agreement': None}
+
+    def check(sql):
+        """Execute and verify; returns (params, result, warnings) or raises ValueError with the reasons."""
+        problems = verify.lint(profile, sql)
+        if problems: raise ValueError('lint: ' + '; '.join(problems))
+        probe = sql_query.execute(path, {'query': sql, 'returns': 'table'})
+        _plausible(path, question, sql, probe)
+        fatal, warn = verify.sanity(question, sql, probe, roster)
+        if fatal: raise ValueError('sanity: ' + '; '.join(fatal))
+        returns = returns_for(question, probe['columns'], probe.get('rows'))
+        if returns == 'patient_set' and probe['columns'][0] != 'patient_id': returns = 'table'
+        result = sql_query.execute(path, {'query': sql, 'returns': returns}) if returns != 'table' else probe
+        return {'query': sql, 'returns': returns}, result, warn
+
+    def attempt(model, label, extra=''):
+        text, stats = model(system, user + extra)
+        sql = _extract_sql(text)
+        entry = {'role': label, 'sql': sql, **stats}
+        try:
+            params, result, warn = check(sql)
+            entry['warnings'] = warn
+            receipt['attempts'].append(entry)
+            return params, result, warn
+        except ValueError as exc:
+            entry['error'] = str(exc)[:400]
+            receipt['attempts'].append(entry)
+            text, stats = model(system, f'{user}{extra}\n\nYour SQL was rejected: {entry["error"]}\nRejected SQL: {sql}\n'
+                                        'Write a corrected query using only streams, fields and values shown above.')
+            sql = _extract_sql(text); entry = {'role': label, 'repair': True, 'sql': sql, **stats}
+            try:
+                params, result, warn = check(sql)
+                entry['warnings'] = warn
+                receipt['attempts'].append(entry)
+                return params, result, warn
+            except ValueError as exc2:
+                entry['error'] = str(exc2)[:400]
+                receipt['attempts'].append(entry)
+                return None
+
+    from concurrent.futures import ThreadPoolExecutor
+    with ThreadPoolExecutor(max_workers=1) as pool:  # independent analysts work at the same time (separate ledger connections)
+        f2 = pool.submit(attempt, second, 'second')
+        first = attempt(primary, 'primary')
+        other = f2.result()
+    if first and other and verify.signature(first[1]) == verify.signature(other[1]):
+        receipt['agreement'] = 'primary=second'
+        return first[0], first[1], receipt
+    # Disagreement (or one side failed): the judge sees both candidates and decides.
+    def show(c, label):
+        if not c: return f'{label}: no valid query (see rejection reasons above)'
+        res = c[1]
+        preview = res.get('value', res.get('patient_ids', (res.get('rows') or [])[:12]))
+        return f'{label} SQL:\n{c[0]["query"]}\n{label} result: {json.dumps(preview, default=str)[:900]}\nwarnings: {c[2]}'
+    notes = '\n'.join(f'- {a["role"]}: {a["error"]}' for a in receipt['attempts'] if a.get('error'))
+    brief = (f'\n\nTwo analysts answered this question independently and disagree (or one failed).\n{show(first, "A")}\n\n{show(other, "B")}\n'
+             f'Rejections:\n{notes or "- none"}\n\nDecide what the question actually asks, then write the single correct query. '
+             'You may reuse A or B if one is right.')
+    final = attempt(judge, 'judge', brief)
+    if final:
+        receipt['agreement'] = 'judge' + ('=primary' if first and verify.signature(final[1]) == verify.signature(first[1]) else
+                                          '=second' if other and verify.signature(final[1]) == verify.signature(other[1]) else '_own')
+        return final[0], final[1], receipt
+    raise ValueError('Verified SQL ladder declined: ' + (notes or 'no candidate passed verification')[:300])
+
+
+VERIFY_RULES = """
+- Money: amounts are stored in *_cents; when the question asks for dollars or "how much", divide by 100.0.
+- Percentages: 100.0 * part / whole (0-100 scale).
+- Missing dates: a record "with no date" means event_date IS NULL on the typed table or record row.
+- Never invent streams, fields or values: if something the question needs is not listed, say so in a SQL comment
+  and answer only what the listed data supports.
+- Name output columns plainly (e.g. month, practice, visits, patients, total_usd)."""
+
+
 def answer(path, question, as_of, model=None):
     """Return (sql_node_parameters, result, receipt) or raise ValueError."""
     model = model or LocalModel.get()

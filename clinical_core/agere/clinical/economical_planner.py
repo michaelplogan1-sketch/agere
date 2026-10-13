@@ -224,15 +224,22 @@ def plan(stack,question,ledger,frontier):
     # Cheapest hosted rung: one Haiku call writing governed SQL over the cached schema (~$0.001).
     if profile is not None and stack.allow_live and os.environ.get('AGERE_HOSTED_SQL','on')!='off':
         try:
-            from .nl2sql import answer as model_sql, HostedModel
-            hosted=HostedModel(ledger,stack.receipts)
-            params,_,receipt=model_sql(stack.path,question,meta['snapshot']['as_of'],hosted)
+            from .nl2sql import verified_answer, HostedModel
+            hosted=HostedModel(ledger,stack.receipts,model=os.environ.get('AGERE_PRIMARY_MODEL','claude-haiku-5-5'))
+            from ..gateway import BudgetLedger
+            second=HostedModel(BudgetLedger(ledger.path),stack.receipts,model=os.environ.get('AGERE_SECOND_MODEL','claude-sonnet-5-5'))
+            judge=HostedModel(ledger,stack.receipts,model=os.environ.get('AGERE_JUDGE_MODEL','claude-opus-5-5'))
+            params,result,receipt=verified_answer(stack.path,question,meta['snapshot']['as_of'],hosted,second,judge)
+            from . import learning, verify
+            learning.record_verified(stack.path,question,'sql',params,verify.signature(result),'hosted_verified_sql',
+                                     [a.get('model') for a in receipt['attempts']],receipt['agreement'])
             graph=validate({'interpretation':question,'coverage':'supported_observation','unmet_requirements':[],
                             'nodes':[{'id':'answer','operation':'sql','inputs':[],'parameters':params,
                                       'purpose':'Hosted small-model query over the semantic layer'}]},meta['snapshot']['as_of'])
-            return graph,{'route':'hosted_small_model_sql','model':hosted.model,'new_paid_api_calls':len(receipt['attempts']),
+            hosted.cost+=second.cost+judge.cost
+            return graph,{'route':'hosted_verified_sql','model':hosted.model,'new_paid_api_calls':len(receipt['attempts']),
                           'frontier_called':False,'local_compiler_declined':local_decline,'hosted_sql':receipt,
-                          'steps':[{'stage':'hosted_small_model_sql','receipt':{'cost_estimate':{'estimated_usd':hosted.cost}}}],
+                          'steps':[{'stage':'hosted_verified_sql','receipt':{'cost_estimate':{'estimated_usd':hosted.cost}}}],
                           'elapsed_seconds':time.perf_counter()-start}
         except (ValueError,RuntimeError,OSError) as exc:
             local_decline={**local_decline,'hosted_sql_error':str(exc)[:300]}

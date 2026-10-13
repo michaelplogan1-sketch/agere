@@ -11,7 +11,8 @@ class BudgetLedger:
     def __init__(self,path,*,cap_usd=None,legacy_summary=None):
         if cap_usd is not None and (not math.isfinite(cap_usd) or cap_usd<0):raise ValueError('Invalid cap')
         Path(path).parent.mkdir(parents=True,exist_ok=True)
-        self.db=sqlite3.connect(path,timeout=30)
+        self.path=path
+        self.db=sqlite3.connect(path,timeout=30,check_same_thread=False)  # one connection per ledger object; never shared concurrently
         self.db.executescript('''CREATE TABLE IF NOT EXISTS authorization (id INTEGER PRIMARY KEY, cap REAL);
         CREATE TABLE IF NOT EXISTS calls (id TEXT PRIMARY KEY,provider TEXT,model TEXT,reserved REAL,status TEXT,response TEXT,error TEXT,seconds REAL);
         CREATE TABLE IF NOT EXISTS imports (id TEXT PRIMARY KEY,reserved REAL);''')
