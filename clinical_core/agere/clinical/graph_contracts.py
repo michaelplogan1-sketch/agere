@@ -22,6 +22,8 @@ TYPED = TYPED | {'profile'}
 TYPED |= {'scheduling'}
 OPTIONAL_POPULATION += ('scheduling',)
 TYPED |= {'briefing'}
+TYPED |= {'early_signal'}
+OPTIONAL_POPULATION += ('early_signal',)
 
 
 def obj(properties):
@@ -151,6 +153,15 @@ def parameter_schema(op, catalog):
                     'method': string(outreach.METHODS), 'overlap_discount': {'type': 'number', 'minimum': 0, 'maximum': 1},
                     'saturation': {'type': 'number', 'minimum': 0, 'maximum': 1000, 'description': '0 = additive; >0 = diminishing returns per practice x reason category'},
                     'top': {'type': 'integer', 'minimum': 1, 'maximum': 5000}})
+    if op == 'early_signal':
+        from . import early_signal
+        return obj({'outcome': string(early_signal.OUTCOMES, 'acute event the precursor leads to; acute_care = ED visit or admission'),
+                    'window_months': {'type': 'integer', 'minimum': 3, 'maximum': 12, 'description': 'pre-event template length (default 6)'},
+                    'horizon_months': {'type': 'integer', 'minimum': 1, 'maximum': 6, 'description': 'how far ahead the event may fall (default 3)'},
+                    'false_alarm_rate': {'type': 'number', 'minimum': 0.001, 'maximum': 0.5, 'description': 'default 0.05'},
+                    'train_cutoff': {'type': 'string', 'description': 'YYYY-MM time-split cutoff or "" (automatic)'},
+                    'channels': array(string(early_signal.CHANNELS), 'subset of channels; empty = all'),
+                    'top': {'type': 'integer', 'minimum': 1, 'maximum': 200}})
     if op == 'profile':
         from . import profile
         return obj({'metric': string(profile.METRICS, 'What is compared across units (rates per 1,000 member-years, measure shares, or PMPM)'),

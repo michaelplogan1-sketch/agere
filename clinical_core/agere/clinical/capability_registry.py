@@ -52,6 +52,11 @@ PRODUCT['scheduling'] = {'population': 'optional', 'view': 'yield',
                                 'WHICH UPCOMING APPOINTMENTS are likely no-shows (tomorrow / next week), who should get a reminder call, access (booking lead time). '
                                 'A past no-show RATE is a literal lookup, not this.'}
 
+PRODUCT['early_signal'] = {'population': 'optional', 'view': 'signal',
+                           'use': 'Early warning: WHICH PATIENTS show the multichannel pattern that usually PRECEDES an admission or ED visit (pre-admission signature, '
+                                  'heading toward decompensation), by matched filtering against templates learned from past events. Not one lab trend (trajectory), '
+                                  'not time-until curves (survival), not a capacity-limited call list (outreach).'}
+
 # Questions a SQL query over the semantic tables answers exactly are handed to the verified SQL ladder.
 LITERAL = ('Literal data questions: counts, lists, sums, averages, maxima, record filters, date arithmetic, simple breakdowns '
            'by a field, shares, rates per 1,000 without case-mix adjustment.')

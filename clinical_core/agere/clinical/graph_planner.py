@@ -180,6 +180,12 @@ CONTRACTS['pathway'] = {'inputs':['optional earlier_set'],'parameters':{'start':
     'meaning':'Care pathways over visit sequences: Markov transition matrix (Wilson/Dirichlet CIs, median days per step), absorbing-chain probability of reaching '
               'targets within N steps and empirical reach within N days, top path variants, conformance to an expected next step, bottlenecks, leakage to outside '
               'organisations, group comparison (permutation chi-square). Use for patient-journey / where-do-patients-go-after / leakage / care-path questions.'}
+CONTRACTS['early_signal'] = {'inputs':['optional earlier_set'],'parameters':{'outcome':'acute_care|admission|ed_visit','window_months':6,'horizon_months':3,
+    'false_alarm_rate':0.05,'train_cutoff':'YYYY-MM or ""','channels':['ed_visits','phone_messages','weight','...'],'top':25},
+    'meaning':'Matched filter for a faint pre-event signature: learns the multichannel monthly shape (ED/urgent/admissions, PCP/telehealth, phone messages, '
+              'missed appointments, dispenses, weight/BP/K/creatinine/eGFR vs own baseline) before past acute events, scores each patient\'s recent months '
+              '(SNR, empirical false-alarm probability vs time-shifted non-event background), time-split precision/recall/lead time vs a recent-ED baseline; '
+              'acute-data gaps masked. Use for heading-toward-admission / pre-admission signature / early-warning / decompensation questions.'}
 
 CONTRACTS['briefing'] = {'inputs':['none'],'parameters':{'top':10},
     'meaning':'Proactive daily briefing over the whole population (no question needed): cards from discovery, lab trajectories and forecasts, '

@@ -29,6 +29,7 @@ OPERATIONS = OPERATIONS | {'profile'}
 OPERATIONS |= {'calibration'}  # calibration of predictions (conformal.py)
 OPERATIONS |= {'scheduling'}  # no-show model, overbooking, access, reminders (scheduling.py)
 OPERATIONS |= {'briefing'}  # ranked proactive briefing (briefing.py + briefing_rank.py)
+OPERATIONS |= {'early_signal'}  # matched-filter precursor detection (early_signal.py)
 NODE_FIELDS = {'id', 'operation', 'inputs', 'parameters', 'purpose'}
 LIMITS = [
     'Membership means observed predicate matches, not confirmed disease or absent care.',
@@ -127,6 +128,7 @@ NO_BENCHMARK_OPERATIONS += ('pathway',)
 NO_BENCHMARK_OPERATIONS += ('calibration',)
 NO_BENCHMARK_OPERATIONS += ('scheduling',)
 NO_BENCHMARK_OPERATIONS += ('briefing',)
+NO_BENCHMARK_OPERATIONS += ('early_signal',)
 
 
 def benchmark_references(answer, question=None, operation=None):
@@ -351,6 +353,20 @@ def build_answer(plan, results, memberships, question):
                                **({'calibration': report['conformal']} if report.get('conformal') else {}),
                                # display: plain-language label and category for each reason code on the worklist
                                'reason_labels': {c: {'category': REASONS[c][0], 'label': REASONS[c][1]} for c in sorted(used) if c in REASONS}})
+        return answer
+    if last['operation'] == 'early_signal':
+        from .early_signal import summary
+        report = results[-1]['result']
+        partial = plan.get('coverage') != 'supported_observation' or plan.get('unmet_requirements')
+        ok = bool(report['patients'])
+        answer.update(status=('partial' if partial else 'answered') if ok else 'unsupported', answer_type='table' if ok else 'unsupported',
+                      table=report['patients'], value=summary(report), method=report['method'], count=report['flagged'],
+                      patient_ids=[x['patient_id'] for x in report['patients'] if x['alert']],
+                      overall={'early_signal': {k: report[k] for k in ('outcome_label', 'panel', 'acute_data_gaps', 'acute_spikes', 'partial_month',
+                                                                       'patients_scored', 'flagged', 'threshold_snr', 'training_events', 'template_source',
+                                                                       'background_samples', 'template_norm', 'templates', 'evaluation', 'notes')},
+                               'parameters': report['parameters']})
+        if not ok: answer['missing'].append(summary(report))
         return answer
     if last['operation'] == 'profile':
         from .profile import summary
@@ -581,6 +597,11 @@ def validate(plan, as_of):
             p = pathway.validate(p)
             if any(v > as_of for v in p['period'].values()):
                 raise ValueError('Pathway period exceeds snapshot cutoff')
+        elif op == 'early_signal':
+            from . import early_signal
+            p = early_signal.validate(p)
+            if p['train_cutoff'] and p['train_cutoff'] > as_of[:7]:
+                raise ValueError('early_signal train_cutoff exceeds snapshot cutoff')
         elif op == 'profile':
             from . import profile
             p = profile.validate(p)
@@ -850,6 +871,7 @@ def code_identity():
                       Path(__file__).with_name('briefing.py'), Path(__file__).with_name('briefing_rank.py'),
                       Path(__file__).with_name('demand.py'),
                       Path(__file__).with_name('profile.py'),
+                      Path(__file__).with_name('early_signal.py'),
                       *[Path(__file__).with_name(n) for n in ('program_work.py','program_work_current.py','program_work_v1.py','functional_programs.py','functional_review.py','registered_program_work.py','domain_programs.py','domain_review.py','work_adapters.py')],Path(__file__).with_name('program_documents.py'),Path(__file__).with_name('program_document_change.py'),
                       Path(__file__).with_name('program_acquisition.py'),Path(__file__).with_name('evidence_portfolio.py'),Path(__file__).with_name('program_resolution.py'),Path(__file__).with_name('measure_composition.py'),
                       Path(__file__).with_name('requirement_work.py'), Path(__file__).with_name('graph_decision.py'), Path(__file__).with_name('graph_criteria.py'), Path(__file__).with_name('graph_reports.py'), Path(__file__).with_name('graph_observation.py'), Path(__file__).with_name('graph_references.py'),
@@ -1164,6 +1186,11 @@ def execute(stack, plan, *, question=None):
                 from . import outreach
                 chosen = memberships[node['inputs'][0]] if node['inputs'] else None
                 detail = outreach.execute(path, sorted(chosen.yes) if chosen else None, params, meta['snapshot']['as_of'])
+            elif op == 'early_signal':
+                from . import early_signal
+                chosen = memberships[node['inputs'][0]] if node['inputs'] else None
+                detail = early_signal.execute(path, sorted(chosen.yes) if chosen else None, params, meta['snapshot']['as_of'])
+                if chosen: detail['input_membership'] = membership_receipt(chosen)
             elif op == 'profile':
                 from . import profile
                 chosen = memberships[node['inputs'][0]] if node['inputs'] else None
