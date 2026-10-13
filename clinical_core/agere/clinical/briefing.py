@@ -3,16 +3,17 @@
 Runs Agere's own analytics over the whole population without a question:
 discovery on actionable outcomes, material lab trajectories, metric-change
 explanations (with data-feed checks), shrinkage-ranked utilization outliers, and
-monitor findings (control-chart signals, data-feed gaps, claims review flags).
+monitor findings (control-chart signals, data-feed gaps, claims review flags) and
+'what moved' market cards (the most surprising practice moves, network-wide vs idiosyncratic).
 Each card carries its evidence, the method and a follow-up question that
 reproduces it through the normal answer path. Cards are ranked by information x
 impact: surprise in bits times log2(2 + patients affected). No model calls.
 """
 import math, sqlite3, time
 
-from . import discover, monitor, trajectory, vbc, semantic_layer
+from . import discover, market, monitor, trajectory, vbc, semantic_layer
 
-VERSION = 'briefing/3'
+VERSION = 'briefing/4'
 W = {'basis': 'all_observed', 'start': '', 'end': ''}
 DISCOVERY = [
     ('ED use', {'all': [{'kind': 'concept', 'concept': 'emergency_visit', 'window': W}], 'any': [], 'exclude': []}, 'Find hotspots of ED visits'),
@@ -110,6 +111,10 @@ def build(path):
         cards += monitor_cards(watch)
     except ValueError:  # too little history to chart: the other cards stand on their own
         watch = None
+    try:  # markets view: the month's most surprising practice moves (feed gaps already excluded inside market)
+        cards += market.market_cards(market.execute(path, None, {}))
+    except ValueError:
+        pass
     for c in cards:
         rank(c, annual)
     cards.sort(key=lambda c: -c['score'])

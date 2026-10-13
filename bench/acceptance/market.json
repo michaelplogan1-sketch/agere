@@ -1,0 +1,10 @@
+[
+  {"question": "What moved this month?", "expect_operation": "market"},
+  {"question": "Give me the market view of our practices", "expect_operation": "market"},
+  {"question": "Which practices are trending worse on ED use and cost?", "expect_operation": "market"},
+  {"question": "Show me practice tickers for PMPM, ED rate, admissions and care-gap closure", "expect_operation": "market"},
+  {"question": "What's the most surprising change across the network?", "expect_operation": "market"},
+  {"question": "Who are the top movers among our PCPs?", "expect_operation": "market"},
+  {"question": "Show me payer tickers for denials", "expect_operation": "market"},
+  {"question": "Which doctors are trending better on BP control?", "expect_operation": "market"}
+]

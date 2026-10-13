@@ -465,6 +465,9 @@ def _compile(question, profile, as_of):
     watch = _monitor_question(q, r, profile, as_of, info)
     if watch is not None:
         return watch
+    moved = _market_question(q, r, profile, as_of, info)  # after monitor: control-chart questions stay with monitor
+    if moved is not None:
+        return moved
     timed_plan = _survival_question(q, r, profile, as_of, info)
     if timed_plan is not None:
         return timed_plan
@@ -578,6 +581,60 @@ def _monitor_question(q, r, profile, as_of, info):
             'nodes': [{'id': 'answer', 'operation': 'monitor', 'inputs': [], 'parameters': params,
                        'purpose': f"Monitor: {params['check']}" + (f" {', '.join(params['series'])}" if params['series'] else '')
                                   + (f" by {params['group_by']}" if params['group_by'] != 'auto' else '')}]}, info
+
+
+# ---- markets view: practice / PCP / payer tickers ------------------------------------------
+MARKET_TRIGGER = (r"\bwhat(?:'s| has| have)? (?:moved|changed (?:the )?most)\b|\bmarkets? (?:view|board|map|summary)\b|\btickers?\b|"
+                  r"\b(?:top |biggest |largest )?movers\b|\btrending (?:worse|better|up|down)\b|"
+                  r"\bmost (?:surprising|unexpected) (?:changes?|moves?|shifts?)\b|\bbiggest (?:moves?|swings?)\b")
+MARKET_UNITS = [(r'\b(?:pcps?|primary care (?:physicians?|providers?|doctors?|clinicians?)|doctors?|physicians?|providers?|clinicians?)\b', 'pcp'),
+                (r'\b(?:payers?|payors?|health plans?|plans?|insurers?|coverage types?)\b', 'payer'),
+                (r'\b(?:practices?|clinics?)\b', 'practice')]
+MARKET_METRICS = [('ed_rate', r'\b(?:ed|er|emergency(?: department| room)?)(?: (?:use|visits?|utili[sz]ation|rates?))?\b'),
+                  ('admit_rate', r'\b(?:inpatient )?(?:admissions?|admits?|hospitali[sz]ations?)(?: rates?)?\b'),
+                  ('pmpm', r'\bpmpm\b|\bper member per month\b|\b(?:total |medical |allowed )?(?:costs?|spend(?:ing)?)\b'),
+                  ('a1c_poor', r'\b(?:hb)?a1c(?: (?:poor[- ])?control)?\b|\b(?:diabetes|glycemic) control\b'),
+                  ('bp_control', r'\b(?:bp|blood pressure)(?: control)?\b|\bhypertension control\b'),
+                  ('denial_rate', r'\b(?:claims? )?denials?(?: rates?)?\b'),
+                  ('no_show_rate', r'\bno[- ]shows?(?: rates?)?\b|\bmissed appointments?\b')]
+
+
+def _market_question(q, r, profile, as_of, info):
+    low = r.low
+    if not re.search(MARKET_TRIGGER, low): return None
+    params = {}
+    if r.take(r'\b(?:worse|worsening|deteriorat\w*|declining|slipping)\b', 'direction worse'): params['direction'] = 'worse'
+    elif r.take(r'\b(?:better|improv\w*)\b', 'direction better'): params['direction'] = 'better'
+    r.take(MARKET_TRIGGER, 'market view', overlap=True)
+    for pattern, unit in MARKET_UNITS:
+        if r.take(pattern, f'unit {unit}'): params.setdefault('unit', unit)
+    metrics = []
+    if r.take(r'\bcare[- ]gaps?(?: closure)?\b|\bgap closure\b|\bquality (?:measures?|gaps?)\b', 'care-gap closure'):
+        metrics += ['a1c_poor', 'bp_control']
+    for m, pattern in MARKET_METRICS:
+        if r.take(pattern, f'metric {m}') and m not in metrics: metrics.append(m)
+    if metrics: params['metrics'] = metrics
+    period = _take_period(r, as_of)
+    if period: params['period'] = {'end': period[1]}
+    r.take(r"\b(?:this|last|the latest|the last|past|previous) month\b|\b(?:give|show|tell|let)(?: me| us)?\b|\bnetwork(?:[- ]wide)?\b|"
+           r"\b(?:what|which|who|where|are|is|was|were|has|have|been|the|a|an|our|my|of|for|on|and|in|across|by|per|each|all|every|most|"
+           r"surprising|unexpected|changes?|moved?|moves?|moving|trending|trend|up|down|top|biggest|largest|view|board|rates?|see|today|"
+           r"lately|recently|now|right|me|us|how|did|do|does|any|anything|month|monthly|panel|use|visits?|to|vs|versus|over|time|with)\b",
+           None, overlap=True)
+    info['unexplained'] = r.blocking(profile)
+    info['ignored_words'] = getattr(r, 'ignored', [])
+    # Strict: a movers question with words the market view cannot place ("the zebra feed") is declined, not guessed.
+    unclear = info['unexplained'] + [w for w in info['ignored_words'] if w not in ('among', 'please', 'between', 'whole', 'kind')]
+    if unclear:
+        info.update(route='fallback', reason='words not interpreted locally: ' + ', '.join(unclear[:12]))
+        return None, info
+    info['route'] = 'local_compiler'
+    from .market import validate
+    params = validate(params)
+    return {'interpretation': q, 'coverage': 'supported_observation', 'unmet_requirements': [],
+            'nodes': [{'id': 'answer', 'operation': 'market', 'inputs': [], 'parameters': params,
+                       'purpose': f"Market view: {params['unit']} tickers" + (f" for {', '.join(params['metrics'])}" if params['metrics'] else '')
+                                  + (f", moves {params['direction']}" if params['direction'] != 'any' else '')}]}, info
 
 
 def _take_period(r, as_of, year_words=r'in|during|for'):
