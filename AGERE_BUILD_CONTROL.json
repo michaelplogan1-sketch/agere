@@ -1,6 +1,6 @@
 {
  "schema": "agere-build-control/1",
- "updated_at": "2026-10-12T23:48:58.804070+00:00",
+ "updated_at": "2026-10-13T12:09:41.265447+00:00",
  "decision_basis": "AGERE_CTO_REVIEW_2026-10-11_EVENING.md",
  "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
  "required_references": [
@@ -278,18 +278,21 @@
   "kind": "manual_turn_checkpoint",
   "gate_id": "G3",
   "last_delivered_gate": "G3",
-  "user_behavior_delta": "Questions are planned locally by Agere (no LLM) and answered by grounded operators: cohorts across coding systems, aggregates with case-mix adjustment, explanations, pattern discovery, VBC metrics (attribution, utilization, PMPM with IBNR, risk, quality, shared savings on supplied terms, metric-change decomposition with data-feed checks) and governed SQL.",
-  "measured_failure_reduction": "Development benchmark 49/50 correct with zero API calls and $0 (p50 0.65 s), vs frontier+SQL 49/50 at $21.12. ED rate change correctly attributed to a 12-month event-type recording gap.",
+  "user_behavior_delta": "Phase 1 (verified answers): hosted model output never reaches a user unchecked (lint, sanity, Haiku/Sonnet agreement, Perplexity decider, Opus judge); missing data is refused, not substituted; semantic entities (appointment, claim, social_need, age_latest, stay LOS/discharge_known); governed ops metrics compiled locally at $0; definitions registry signed off by owner and cited on every answer; learning store with verified reuse and user corrections; settlement VaR, Shapley allocation, Kalman forecasting.",
+  "measured_failure_reduction": "Blind L set (50, first run): 25 wrong -> 9 wrong after fixes (now contaminated), $1.16 -> $0.66. Blind K set: wrong 15 -> 9 with the verification ladder. Clean re-measure pending on blind set M (heldout5).",
   "evidence": [
-   "PARALLEL_WORK.md",
-   "clinical_core/agere/clinical/grounding.py",
+   "clinical_core/agere/clinical/verify.py",
+   "clinical_core/agere/clinical/learning.py",
    "clinical_core/agere/clinical/semantic_layer.py",
-   "test_grounding.py",
-   "test_aggregate_explain.py",
-   "test_semantic_sql.py"
+   "config/agere/definitions.json",
+   "SYNTHETIC_DATA_ISSUES.md",
+   "bench/questions/heldout4.json",
+   "test_rewrite_guards.py",
+   "test_vbc.py",
+   "test_trajectory.py"
   ],
-  "remaining_gap": "Held-out generalisation; survival and lab change-point analytics; value-of-information; MVP UI; clinical validation not performed.",
-  "next_action": "Run the held-out set locally, fix generalisation failures, then survival/change-point analytics and the MVP answer UI."
+  "remaining_gap": "Phase 1 target (<3% wrong on blind sets) not yet met; hosted latency p50 ~20 s; local compiler coverage on novel questions low; generator defects D1-D7 logged.",
+  "next_action": "Run blind set M (heldout5) through the full stack with learned reuse off; classify failures; fix general causes; commission set N for the next clean measure."
  },
  "decisions": [
   {
@@ -720,6 +723,11 @@
    "at": "2026-10-12T23:48:58.804070+00:00",
    "by": "claude-code:821452c3-8962-40bd-bf83-e31db007dcba",
    "decision": "Codex paused by Mike. Agere plans locally; hosted LLM is fallback only. Delivered VBC engine, discovery and change explanation."
+  },
+  {
+   "at": "2026-10-13T12:09:41.265447+00:00",
+   "by": "claude-code:821452c3-8962-40bd-bf83-e31db007dcba",
+   "decision": "Mike: LLM calls fine when a question/deliverable needs one; definitions registry signed off; flag synthetic-data defects. Correlated LLM errors on blind L showed agreement is not verification: correctness moved into semantic entities."
   }
  ]
 }
