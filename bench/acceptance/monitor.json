@@ -9,7 +9,10 @@
  },
  {
   "question": "Check claims for unusual billing patterns",
-  "expect_operation": "monitor"
+  "expect_operation": "monitor",
+  "also_accept": [
+   "claims_review"
+  ]
  },
  {
   "question": "Did any practice's admission rate spike beyond normal variation?",

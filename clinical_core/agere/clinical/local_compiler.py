@@ -1695,7 +1695,9 @@ def _vbc_question(q, r, profile, as_of, info, terms):
     for pattern, g in GROUPS:
         if g in ('facility',): continue
         if r.take(pattern, f'group by {g}'): params['group_by'] = g; break
-    year = next(iter(r.take(r'\b(?:in|during|for) (\d{4})\b', 'year')), None)
+    period = _take_period(r, as_of)  # year ranges, YTD ("this year" paraphrases to "<year> ytd"), quarters, months
+    if period: params['period'] = {'start': period[0], 'end': period[1]}
+    year = None if period else next(iter(r.take(r'\b(?:in|during|for) (\d{4})\b', 'year')), None)
     if year: params['period'] = {'start': f'{year.group(1)}-01-01', 'end': min(f'{year.group(1)}-12-31', as_of)}
     r.take(r'\b(?:over |in )?the (?:last|past) (?:12 months|year)\b', 'last 12 months')
     if metric == 'quality':
