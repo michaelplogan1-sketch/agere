@@ -22,7 +22,7 @@ from .clinical_events import validate_window
 
 VERSION = 'population-analysis-graph/1'
 from .graph_contracts import SET_OPS, validate_inputs, validate_parameters as validate_shared_parameters
-OPERATIONS = SET_OPS | {'aggregate', 'explain', 'sql', 'vbc', 'discover', 'trajectory', 'observation_process', 'reference_review', 'compare', 'analyze', 'retrieve', 'forecast', 'source_changes', 'review','longitudinal','worklist','state_review','medication_identity','context','context_passes','assertion_review','baseline','decision_landmark','financial_accounts','accountability_review','protocol_change','program_document_change','program_acquisition','measure_review','evidence_portfolio'}
+OPERATIONS = SET_OPS | {'aggregate', 'explain', 'sql', 'vbc', 'program_effect', 'discover', 'trajectory', 'observation_process', 'reference_review', 'compare', 'analyze', 'retrieve', 'forecast', 'source_changes', 'review','longitudinal','worklist','state_review','medication_identity','context','context_passes','assertion_review','baseline','decision_landmark','financial_accounts','accountability_review','protocol_change','program_document_change','program_acquisition','measure_review','evidence_portfolio'}
 NODE_FIELDS = {'id', 'operation', 'inputs', 'parameters', 'purpose'}
 LIMITS = [
     'Membership means observed predicate matches, not confirmed disease or absent care.',
@@ -176,7 +176,9 @@ def headline(answer):
                  f"{risk['p_within_corridor']:.0%} in the corridor; 95% value-at-risk ${_fmt(risk['value_at_risk_95'])}, "
                  f"expected ${_fmt(risk['expected_net_payment'])}.")
     if answer.get('computed') and not defs: text += f" Computed as: {answer['computed'].rstrip('.')}."
-    if status == 'partial' and answer.get('missing'): text += ' Partial: ' + answer['missing'][0]
+    if status == 'partial' and answer.get('missing') and answer['missing'][0] not in text: text += ' Partial: ' + answer['missing'][0]
+    others = [w for w in (answer.get('warnings') or []) if w not in text]
+    if others: text += f" Warnings ({len(answer['warnings'])}): " + ' '.join(others[:2])
     return text
 
 
@@ -253,6 +255,16 @@ def build_answer(plan, results, memberships, question):
         answer.update(status='partial' if partial else 'answered', answer_type='value' if single else 'table',
                       value=value,
                       table=report['rows'], method=report['method'], overall={'period': report['period'], 'members_in_scope': report['members_in_scope']})
+        return answer
+    if last['operation'] == 'program_effect':
+        report = results[-1]['result']
+        partial = (plan.get('coverage') != 'supported_observation' or plan.get('unmet_requirements')
+                   or report['inference'] != 'supported_under_assumptions')
+        answer.update(status='partial' if partial else 'answered', answer_type='table', table=report['rows'], value=report['reading'],
+                      method=report['method'], warnings=report['warnings'], assumptions=report['assumptions'],
+                      overall={k: report[k] for k in ('exposure', 'outcome', 'sample', 'did', 'balance', 'pre_trend', 'placebo',
+                                                       'synthetic_control', 'feed_checks', 'inference')})
+        answer['missing'] += report['blocking_warnings']
         return answer
     if last['operation'] == 'sql':
         report = results[-1]['result']
@@ -358,6 +370,9 @@ def validate(plan, as_of):
         elif op == 'vbc':
             from . import vbc
             p = vbc.validate(p)
+        elif op == 'program_effect':
+            from . import program_effect
+            p = program_effect.validate(p)
         elif op == 'trajectory':
             from . import trajectory
             p = trajectory.validate(p)
@@ -645,7 +660,8 @@ def code_identity():
                       Path(__file__).with_name('landmark_contracts.json'),
                       Path(__file__).with_name('outcome_contracts.json'),
                       Path(__file__).with_name('medication_identity.py'),
-                      Path(__file__).with_name('source_blocks.py')]]])
+                      Path(__file__).with_name('source_blocks.py'),
+                      Path(__file__).with_name('program_effect.py')]]])
 
 
 def catalog(path):
@@ -904,6 +920,11 @@ def execute(stack, plan, *, question=None):
                 from . import vbc
                 chosen = memberships[node['inputs'][0]] if node['inputs'] else None
                 detail = vbc.execute(path, sorted(chosen.yes) if chosen else None, params, meta['snapshot']['as_of'])
+                if chosen: detail['input_membership'] = membership_receipt(chosen)
+            elif op == 'program_effect':
+                from . import program_effect
+                chosen = memberships[node['inputs'][0]] if node['inputs'] else None
+                detail = program_effect.execute(path, sorted(chosen.yes) if chosen else None, params, meta['snapshot']['as_of'])
                 if chosen: detail['input_membership'] = membership_receipt(chosen)
             elif op == 'sql':
                 from . import sql_query

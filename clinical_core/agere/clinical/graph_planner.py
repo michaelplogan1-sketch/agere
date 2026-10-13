@@ -26,6 +26,12 @@ CONTRACTS = {
         'meaning':'Per-patient lab/vital trajectories: uncertainty-weighted change points + Theil-Sen slope; flags material, statistically separable changes (e.g. declining eGFR).'},
     'discover': {'inputs':['earlier_set'],'parameters':{'outcome':'cohort specification of the outcome','segments':['practice','pcp','coverage_type','age_band','sex','food_difficulty','transport_difficulty','financial_hardship'],'pairs':True,'direction':'high|low|both'},
         'meaning':'Finds where an outcome is unusually concentrated across segments and segment pairs (two-proportion tests, BH-controlled), labelling documentation-limited cells. Use for where/which-groups/hotspot/pattern questions nobody specified.'},
+    'program_effect': {'inputs':['optional earlier_set'],'parameters':{'program':'care_management|transitions_of_care|community_services|care_coordination|medication_start',
+        'drug_class':'medication_start only','outcome':'ed_visits|admissions|pmpm|lab','lab':'measurement concept (lab outcome only)',
+        'pre_days':'30..730 (default 180)','post_days':'14..365 (default 90)'},
+        'meaning':'Estimated effect of a program or medication start identified from received records: matched difference-in-differences with balance, '
+                  'parallel-trends and placebo checks, synthetic control when feasible, and explicit data-support warnings. Never an identified causal '
+                  'effect; refuse randomised-trial or counterfactual-count claims, and unnamed programs.'},
     'vbc': {'inputs':['optional earlier_set'],'parameters':{'metric':'eligibility|attribution|utilization|cost|risk|quality|shared_savings','group_by':'none|pcp|practice|coverage_type|age_band|sex',
         'period':{'start':'YYYY-MM-DD','end':'YYYY-MM-DD'},'measure':'quality measure id','terms':'shared_savings contract terms (supplied by the user only)'},
         'meaning':'Value-based-care metrics: member-months, PCP attribution, utilization per 1,000 (ED, admissions, readmission, 7-day follow-up) with empirical-Bayes shrinkage, '
