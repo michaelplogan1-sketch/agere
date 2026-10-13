@@ -13,7 +13,7 @@ import json, re, sqlite3, time
 
 from . import aggregate, concepts, source_profile
 
-VERSION = 'semantic-layer/5'
+VERSION = 'semantic-layer/6'
 
 DDL = """
 CREATE TABLE meta(key TEXT PRIMARY KEY, value TEXT);
@@ -36,6 +36,8 @@ CREATE TABLE stay(patient_id TEXT, admit_date TEXT, discharge_date TEXT, type TE
 CREATE TABLE link(record_id TEXT, stream TEXT, field TEXT, target_record_id TEXT);
 CREATE TABLE concept_patient(concept TEXT, kind TEXT, patient_id TEXT, records INTEGER, first_date TEXT, last_date TEXT,
   PRIMARY KEY(concept, patient_id));
+CREATE TABLE social_need(patient_id TEXT, need TEXT, positive INTEGER, instrument TEXT, source_stream TEXT, source_field TEXT,
+  event_date TEXT, record_id TEXT);
 CREATE TEMP VIEW v_claim_rows AS SELECT json_extract(payload,'$.claim_id') AS claim_id, patient_id,
   json_extract(payload,'$.source_system') AS payer, json_extract(payload,'$.service_date') AS service_date,
   CAST(json_extract(payload,'$.benefit_year') AS TEXT) AS benefit_year, json_extract(payload,'$.status') AS status,
@@ -79,6 +81,10 @@ SCHEMA_DOC = {
     'record': 'Every received record (all streams). Use json_extract(payload, \'$.field\') for fields of streams not modelled above.',
     'appointment': 'One row per appointment_id (appointments arrive as a booked record plus later status records). scheduled_date from '
                    'the booking; final_status = latest status received; ever_* flags over all versions; kept = arrived or fulfilled.',
+    'social_need': 'Social-needs screening answers normalised across instruments: one row per (screen record, need) with positive 0/1. '
+                   'need = food | transport | cost_of_care. transport positive = transport_difficulty_reported or transport unreliable '
+                   '(family_ride/reliable = negative); cost_of_care = difficulty paying for care (social screen) or medical bills '
+                   '(financial screen). Screened = has a row for that need.',
     'claim': 'One row per medical claim_id (adjudications arrive as successive records: denied, paid, reversed, re-paid). first/final '
              'status by arrival order; denied_then_paid = a denial later followed by payment; net_payer_paid_cents = paid minus reversed. '
              'Legacy rows without claim_id are excluded.',
@@ -116,6 +122,24 @@ def _derived(out):
                  row_number() OVER (PARTITION BY claim_id ORDER BY available_date DESC, available_time DESC, record_id DESC) AS rn_last
           FROM v_claim_rows)
     GROUP BY claim_id;
+    """)
+    out.executescript("""
+    INSERT INTO social_need SELECT patient_id, 'food', json_extract(payload,'$.food_difficulty_reported'), json_extract(payload,'$.instrument'),
+      stream, 'food_difficulty_reported', event_date, record_id FROM record WHERE stream = 'social_screens'
+      AND json_extract(payload,'$.food_difficulty_reported') IS NOT NULL;
+    INSERT INTO social_need SELECT patient_id, 'transport',
+      CASE WHEN json_extract(payload,'$.transport_difficulty_reported') = 1 OR json_extract(payload,'$.transport') = 'unreliable' THEN 1 ELSE 0 END,
+      json_extract(payload,'$.instrument'), stream,
+      CASE WHEN json_extract(payload,'$.transport_difficulty_reported') IS NOT NULL THEN 'transport_difficulty_reported' ELSE 'transport' END,
+      event_date, record_id FROM record WHERE stream = 'social_screens'
+      AND (json_extract(payload,'$.transport_difficulty_reported') IS NOT NULL OR json_extract(payload,'$.transport') IS NOT NULL);
+    INSERT INTO social_need SELECT patient_id, 'cost_of_care', json_extract(payload,'$.difficulty_paying_for_care_reported'), json_extract(payload,'$.instrument'),
+      stream, 'difficulty_paying_for_care_reported', event_date, record_id FROM record WHERE stream = 'social_screens'
+      AND json_extract(payload,'$.difficulty_paying_for_care_reported') IS NOT NULL;
+    INSERT INTO social_need SELECT patient_id, 'cost_of_care', json_extract(payload,'$.difficulty_paying_medical_bills'), 'financial_screen',
+      stream, 'difficulty_paying_medical_bills', event_date, record_id FROM record WHERE stream = 'financial_screens'
+      AND json_extract(payload,'$.difficulty_paying_medical_bills') IS NOT NULL;
+    CREATE INDEX social_need_patient ON social_need(need, patient_id);
     """)
     out.execute("ALTER TABLE patient ADD COLUMN age_latest INTEGER")
     out.execute("""UPDATE patient SET age_latest = coalesce((SELECT CAST(json_extract(r.payload,'$.age_reported') AS INTEGER) FROM record r

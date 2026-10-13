@@ -22,6 +22,7 @@ measurement(record_id, patient_id, concept, name, value, unit, value_canonical, 
 visit(encounter_id, patient_id, type, type_concept, status, event_date, end_date, available_date, organization_id, attending_clinician_id)  -- one row per encounter; count visits here
 stay(patient_id, admit_date, discharge_date, type, organization_id, readmitted_30d, days_to_readmission, los_days, discharge_known)  -- distinct hospital stays; los_days/discharge_date NULL when discharge unknown
 appointment(appointment_id, patient_id, scheduled_date, booked_date, final_status, ever_no_show, ever_cancelled, ever_rescheduled, kept, organization_id, clinician_id, purpose)  -- one row per appointment (statuses resolved); use for no-show/cancellation/kept questions
+social_need(patient_id, need ['food','transport','cost_of_care'], positive, instrument, source_stream, source_field, event_date, record_id)  -- social-needs screens normalised across instruments; use for any food/transport/cost-of-care question
 claim(claim_id, patient_id, payer, service_date, benefit_year, first_status, final_status, ever_denied, denied_then_paid, net_payer_paid_cents, billed_cents, allowed_cents, first_available_date, last_available_date)  -- one row per medical claim (adjudication sequence resolved; net paid = paid minus reversed)
 concept_patient(concept, kind, patient_id, records, first_date, last_date)  -- who has each concept
 link(record_id, stream, field, target_record_id)  -- every *_record_id reference between records
@@ -30,7 +31,7 @@ RULES = """Write ONE SQLite SELECT that answers the question. Rules:
 - Use only the tables/fields shown. Dates are 'YYYY-MM-DD' strings; event_date = when it happened, available_date = when it arrived.
 - Patients: count(DISTINCT patient_id). Records/rows: count(*). Visits: use visit (encounter rows repeat per status version).
 - Appointments: use appointment (one row each, statuses resolved). Claims: use claim (one row per claim_id; net paid after reversals).
-- Age: patient.age_latest (latest reported). Length of stay: stay.los_days.
+- Age: patient.age_latest (latest reported). Length of stay: stay.los_days. Social needs: social_need (both screening instruments).
 - Clinical conditions, labs, vitals and encounter types: use the concept columns (they cover ICD-10, SNOMED and label variants).
 - Stream fields not in a typed table: json_extract(payload,'$.field') on record WHERE stream='<stream>'. Booleans compare to 1/0.
 - Day differences: julianday(a) - julianday(b). Year: substr(date,1,4). Percent: 100.0 * part / whole.

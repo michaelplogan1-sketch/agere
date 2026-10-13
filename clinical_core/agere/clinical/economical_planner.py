@@ -184,7 +184,10 @@ def plan(stack,question,ledger,frontier):
     local_decline=compile_info
     # Next rung: the local small model rewrites the question into canonical phrasing; the deterministic
     # compiler must then fully parse it. The model never executes anything the compiler does not understand.
-    if profile is not None and os.environ.get('AGERE_LOCAL_MODEL','on')!='off':
+    # The local rewrite rung trades accuracy for $0; when verified hosted answering is available it is skipped
+    # (a wrong free answer costs more than a right one-cent answer). AGERE_LOCAL_MODEL=on forces it.
+    rewrite_default='off' if stack.allow_live else 'on'
+    if profile is not None and os.environ.get('AGERE_LOCAL_MODEL',rewrite_default)!='off':
         try:
             from .nl2sql import canonicalize, MODEL_DIR
             if MODEL_DIR.exists():
