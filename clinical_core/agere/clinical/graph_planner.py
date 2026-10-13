@@ -167,6 +167,13 @@ CONTRACTS = {
     'medication_identity': {'inputs':['earlier_set'],'parameters':{},
                             'meaning':'Offline RxNorm names, spans, doses/forms and RAAS alternatives. Not use/tolerance.'},
 }
+CONTRACTS['scheduling'] = {'inputs':['optional earlier_set'],'parameters':{'focus':'all|no_show_risk|overbooking|access|reminders','practice':'organisation id or ""',
+    'horizon_days':14,'value_per_visit':1.0,'overflow_cost':2.0,'reminder_effect':0.3,'reminder_capacity':25,'capacity':None,'max_overflow_probability':None},
+    'meaning':'Access and yield management: time-split-validated logistic no-show model (vs practice-rate baseline: AUC, Brier, calibration), per-session '
+              'overbooking level maximising value x served - overflow_cost x overflow under a Poisson-binomial show distribution, ranked upcoming '
+              'appointments by no-show risk, reminder targeting by expected no-shows averted, and booking lead times. Value, overflow cost and '
+              'reminder effect are stated assumptions. Use for overbook / likely no-shows / extra slots / reminder-call / access questions; '
+              'a plain historical no-show RATE is a literal metric (sql).'}
 CONTRACTS['pathway'] = {'inputs':['optional earlier_set'],'parameters':{'start':'emergency|inpatient|observation|urgent_care|primary_care|specialty|telehealth|outside|discharge|referral|diagnosis ("" = first event)',
     'index_concept':'condition (start diagnosis only)','anchor':'each|first','window_days':90,'targets':['inpatient','emergency'],'max_steps':5,'horizons_days':[7,30,90],
     'expected':{'from':'discharge','to':['primary_care'],'within_days':7},'steps':3,'group_by':'none|practice|coverage_type','leakage':'organization|organization_or_practice','order':1},

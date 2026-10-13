@@ -426,6 +426,9 @@ def _compile(question, profile, as_of):
     calibrated = _calibration_question(q)
     if calibrated is not None:
         return calibrated
+    booked = _scheduling_question(q)  # overbooking / likely no-shows / reminders / access; plain no-show RATES stay literal metrics
+    if booked is not None:
+        return booked
     for pattern, missing in UNSUPPORTED:  # checked on the user's own words, before any paraphrase
         if timed and 'surviv' in pattern: continue
         if re.search(pattern, low) and not (_contract_terms(low) and 'shared' in pattern):
@@ -2129,6 +2132,53 @@ def _calibration_question(q):
     return {'interpretation': q, 'coverage': 'supported_observation', 'unmet_requirements': [],
             'nodes': [{'id': 'answer', 'operation': 'calibration', 'inputs': [], 'parameters': params,
                        'purpose': 'Time-split conformal backtest of Agere predictions: coverage, Brier, ECE, reliability'}]}, info
+
+
+# ---- scheduling: no-show prediction, overbooking, reminders, access ------------------------------
+NO_SHOW = r'no[- ]?shows?'
+SCHEDULING_INTENTS = [
+    ('overbooking', r'\bover[- ]?book\w*|\bdouble[- ]?book\w*|\byield management\b|\b(?:extra|additional) (?:slots?|appointments?|bookings?)\b'),
+    ('reminders', r'\breminders?\b[^.?]{0,40}\b' + NO_SHOW + r'|\bwho should (?:get|receive|we (?:call|text|remind))\b[^.?]{0,30}\breminders?\b'
+                  r'|\breminder (?:calls?|texts?|messages?|outreach)\b'),
+    ('no_show_risk', r'\b(?:likely|predicted|expected|probable|projected|at risk|risk of|going)\b[^.?]{0,25}\b' + NO_SHOW +
+                     r'|\b' + NO_SHOW + r' (?:risk|probabilit\w*|model|predictions?|predictors?|scores?|forecasts?)\b'
+                     r'|\b(?:likely|going|expected) to (?:not show|miss (?:their|the|an|her|his) (?:appointment|visit))\b|\bpredict\w*\b[^.?]{0,30}\b' + NO_SHOW),
+    ('access', r'\bthird[- ]next[- ]available\b|\bdays to (?:the )?third\b|\b(?:appointment|clinic|scheduling|booking) (?:access|lead times?)\b'
+               r"|\bwhat'?s our access\b|\bhow (?:good|long) is (?:our )?access\b"),
+]
+
+
+def _scheduling_question(q):
+    """'How much should each clinic overbook?' / 'which appointments are likely no-shows next week?' -> scheduling.
+    A historical no-show RATE ('what was our no-show rate in 2027') carries none of these intents and stays an ops metric."""
+    low = q.lower()
+    hits = [f for f, rx in SCHEDULING_INTENTS if re.search(rx, low)]
+    if not hits: return None
+    params = {'focus': 'reminders' if set(hits) == {'no_show_risk', 'reminders'} else hits[0] if len(hits) == 1 else 'all'}
+    m = re.search(r'\b(?:practice|clinic|site)\s+(?:#\s*)?(\d{1,3})\b|\b(wh-[a-z]+-\d+)\b', low)
+    if m: params['practice'] = (m.group(1) or m.group(2)).upper()
+    if re.search(r'\btomorrow\b', low): params['horizon_days'] = 1
+    elif re.search(r'\b(?:next|this|coming) week\b', low): params['horizon_days'] = 7
+    elif re.search(r'\b(?:next|coming) (?:two|2) weeks\b', low): params['horizon_days'] = 14
+    elif re.search(r'\b(?:next|this|coming) month\b', low): params['horizon_days'] = 30
+    else:
+        d = re.search(r'\b(?:next|coming|within(?: the next)?) (\d{1,3}) days?\b', low)
+        if d and 1 <= int(d.group(1)) <= 120: params['horizon_days'] = int(d.group(1))
+    if re.search(r'\bsafe(?:ly)?\b|\bwithout (?:running over|overflow\w*)\b', low): params['max_overflow_probability'] = 0.1
+    c = re.search(r'\b(\d{1,3})[- ](?:slots?|appointments?|patients?) (?:per|a|each|in (?:a|each)) (?:session|day|clinic|half[- ]day)\b', low)
+    if c and 1 <= int(c.group(1)) <= 200: params['capacity'] = int(c.group(1))
+    e = re.search(r'\breminders? (?:cut|reduce|prevent|avert)s? (?:no[- ]?shows? )?(?:by )?(\d{1,3})\s?%', low)
+    if e and int(e.group(1)) <= 100: params['reminder_effect'] = int(e.group(1)) / 100
+    k = re.search(r'\b(\d{1,4}) (?:reminder )?(?:calls?|reminders?)\b', low)
+    if k: params['reminder_capacity'] = int(k.group(1))
+    o = re.search(r'\b(?:overflow|overtime|over[- ]capacity) (?:costs?|penalty) (?:of |is |= )?\$?(\d+(?:\.\d+)?)', low)
+    if o: params['overflow_cost'] = float(o.group(1))
+    v = re.search(r'\b(?:visit|served visit|kept visit) (?:is )?worth \$?(\d+(?:\.\d+)?)|\bvalue (?:per|of a) (?:visit|appointment) (?:of |is )?\$?(\d+(?:\.\d+)?)', low)
+    if v: params['value_per_visit'] = float(v.group(1) or v.group(2))
+    info = {'compiler': VERSION, 'recognised': ['scheduling question', 'focus ' + params['focus']], 'paraphrased': [], 'route': 'local_compiler', 'unexplained': []}
+    return {'interpretation': q, 'coverage': 'supported_observation', 'unmet_requirements': [],
+            'nodes': [{'id': 'answer', 'operation': 'scheduling', 'inputs': [], 'parameters': params,
+                       'purpose': 'No-show model, session overbooking, reminder targeting and access from the appointment table'}]}, info
 
 
 def _program_effect_question(q, profile):

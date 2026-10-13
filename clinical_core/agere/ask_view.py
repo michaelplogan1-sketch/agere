@@ -458,11 +458,41 @@ function profChart(rows,net,thr,f){const W=CW(),lh=22,L=Math.min(Math.round(W*.3
   if(isNum(r.posterior_rate))s+='<circle cx="'+X(r.posterior_rate)+'" cy="'+y+'" r="5" style="fill:'+c+';stroke:var(--card);stroke-width:1.5"><title>'+esc(r.group+': shrunk '+f(r.posterior_rate)+', raw '+f(r.raw_rate)+', '+r.members+' members')+'</title></circle>';
   s+='</g>'});
  return s+'</svg>'}
+/* scheduling / yield: expected net value vs extra bookings per clinic session (recommended level marked) + ranked upcoming appointments */
+function vizScheduling(a){const o=(a.overall||{}).scheduling||{},m=o.model||{},me=m.model||{},be=m.baseline||{},rem=o.reminders||{},S=(o.sessions||[]).slice(0,6);
+ let h='<section class="sec" data-focus="yield"><h3>Scheduling'+(o.practice?' · '+esc(o.practice):'')+'</h3><div class="kpis">'+
+  [['No-show AUC (model / practice rate)',isNum(me.auc)?fmt(me.auc,3)+' / '+fmt(be.auc,3):'—'],['Brier (model / practice rate)',isNum(me.brier)?fmt(me.brier,4)+' / '+fmt(be.brier,4):'—'],
+   ['Held-out no-show rate',isNum(me.observed_rate)?pct(me.observed_rate,1):'—'],['Upcoming in window',fmt((o.counts||{}).in_horizon)],
+   ['Expected no-shows',isNum(rem.expected_no_shows)?fmt(rem.expected_no_shows,1):'—']].map(k=>'<div class="kpi"><div class="l">'+esc(k[0])+'</div><div class="v">'+esc(k[1])+'</div></div>').join('')+'</div>';
+ if(S.length){h+='<p class="hint">Expected net value of a typical session (served visits × value − patients beyond capacity × overflow cost) as extra bookings are added; ● = recommended level.</p>'+yieldChart(S)+
+  '<div class="legend">'+S.map((s,i)=>'<span><span class="sw" style="background:'+SER[i%SER.length]+'"></span>'+esc(s.practice)+' (cap '+s.capacity+', +'+s.recommended_extra+')</span>').join('')+'</div>';
+  h+=tableHTML(o.sessions.map(s=>{const c=Object.assign({},s);delete c.curve;return c}),{name:'scheduling-sessions',caption:'Recommended extra bookings per typical session',
+   cols:['practice','capacity','mean_no_show_probability','recommended_extra','p_overflow','expected_overflow','expected_idle_without','expected_idle_with','expected_value_gain'],
+   head:{mean_no_show_probability:'P(no-show)',p_overflow:'P(overflow)'},render:{mean_no_show_probability:v=>pct(v,1),p_overflow:v=>pct(v,0)}})}
+ const ap=o.appointments||[];if(ap.length)h+=tableHTML(ap,{name:'scheduling-appointments',caption:'Upcoming appointments ranked by no-show risk'+(rem.selected?' (top '+rem.selected+' = reminder calls; expected '+fmt(rem.expected_averted,2)+' no-shows averted vs '+fmt(rem.random_choice_averted,2)+' at random)':''),
+  cols:['rank','scheduled_date','practice','appointment_id','patient_id','purpose','lead_days','p_no_show','remind','reasons'],head:{p_no_show:'P(no-show)'},
+  render:{p_no_show:v=>'<span style="display:inline-block;height:8px;width:'+Math.round(60*Math.min(1,v||0))+'px;background:var(--s4);border-radius:2px;margin-right:6px"></span>'+pct(v,0),
+   remind:v=>v?'call':'',reasons:v=>esc((v||[]).join('; '))}});
+ if((o.access||[]).length)h+=tableHTML(o.access,{name:'scheduling-access',caption:'Access: booking lead time (booked → scheduled), last test window'});
+ const d=o.data_defects||[];if(d.length)h+='<details><summary>Data limits ('+d.length+')</summary><ul>'+d.map(x=>'<li>'+esc(x.statement)+'</li>').join('')+'</ul></details>';
+ if((o.assumptions||[]).length)h+='<p class="hint"><b>Assumptions.</b> '+esc(o.assumptions.join(' '))+'</p>';
+ return h+'</section>'}
+function yieldChart(S){const W=CW(),L=52,R=14,T=10,B=34,H=230;const kmax=Math.max(...S.map(s=>s.curve.length-1));
+ const gain=s=>s.curve.map(r=>r.expected_value-s.curve[0].expected_value);const vs=S.flatMap(gain);let lo=Math.min(0,...vs),hi=Math.max(0.05,...vs);const pd=(hi-lo)*.06||.1;lo-=pd;hi+=pd;
+ const X=k=>L+k/(kmax||1)*(W-L-R),Y=v=>T+(hi-v)/(hi-lo)*(H-T-B);let s=svgOpen(W,H,'Expected net value versus extra bookings per session');
+ ticks(lo,hi,4).forEach(t=>{s+='<line class="gridl" x1="'+L+'" x2="'+(W-R)+'" y1="'+Y(t)+'" y2="'+Y(t)+'"/><text x="'+(L-6)+'" y="'+(Y(t)+4)+'" text-anchor="end">'+esc(fmt(t,2))+'</text>'});
+ for(let k=0;k<=kmax;k+=Math.max(1,Math.ceil(kmax/10)))s+='<text x="'+X(k)+'" y="'+(H-16)+'" text-anchor="middle">+'+k+'</text>';
+ s+='<line x1="'+L+'" x2="'+(W-R)+'" y1="'+Y(0)+'" y2="'+Y(0)+'" style="stroke:var(--fg);stroke-dasharray:4 3"/>';
+ s+='<text x="'+((L+W-R)/2)+'" y="'+(H-2)+'" text-anchor="middle" style="fill:var(--muted)">extra bookings beyond capacity (gain vs no overbooking)</text>';
+ S.forEach((ss,i)=>{const g=gain(ss),c=SER[i%SER.length];s+='<path d="'+g.map((v,k)=>(k?'L':'M')+X(k).toFixed(1)+' '+Y(v).toFixed(1)).join('')+'" style="fill:none;stroke:'+c+';stroke-width:2"/>';
+  const k=ss.recommended_extra;s+='<circle cx="'+X(k)+'" cy="'+Y(g[k])+'" r="5" style="fill:'+c+';stroke:var(--card);stroke-width:1.5"><title>'+esc(ss.practice+': +'+k+' extra, gain '+fmt(g[k],3)+', P(overflow) '+pct(ss.p_overflow,0))+'</title></circle>'});
+ return s+'</svg>'}
 function calNote(a){const c=((a&&a.overall)||{}).calibration;if(!c||!c.statement)return '';
  return '<p class="hint" data-calibration="1"><b>Calibration.</b> '+esc(c.statement)+(c.method?'<details class="why"><summary>Method</summary><span class="muted" style="font-size:12px">'+esc(c.method)+'</span></details>':'')+'</p>'}
 function visual(a){const v=visual0(a);return v==null?v:v+calNote(a)}
 function visual0(a){if(!a||a.answer_type==='unsupported')return '';const o=a.overall||{};
   if(o.profile)return vizProfile(a);
+  if(o.scheduling)return vizScheduling(a);
   if(o.matrix&&o.states)return vizPathway(a);
  if(o.network&&o.data_gaps)return vizMarket(a);
  if(o.demand)return vizDemand(a);if(o.curves)return vizSurvival(a);if(o.charts||(o.tests_examined!=null&&o.look_elsewhere_bits!=null))return vizMonitor(a);if(o.did)return vizEffect(a);if(o.portfolio&&o.by_group)return vizOutreach(a);

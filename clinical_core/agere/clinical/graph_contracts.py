@@ -19,6 +19,8 @@ TYPED |= {'market'}
 OPTIONAL_POPULATION = ('market',)  # report operators that take zero or one population input
 TYPED |= {'pathway'}
 TYPED = TYPED | {'profile'}
+TYPED |= {'scheduling'}
+OPTIONAL_POPULATION += ('scheduling',)
 
 
 def obj(properties):
@@ -156,6 +158,20 @@ def parameter_schema(op, catalog):
                     'threshold': {'type': ['number', 'null'], 'description': 'Optional stated threshold in display units (per 1,000, share 0..1 or percent, $ PMPM)'},
                     'focus': {'type': 'string', 'description': 'One unit id the question asks about (Dr X / practice X), else empty'},
                     'top': {'type': 'integer', 'minimum': 1, 'maximum': 500}})
+    if op == 'scheduling':
+        from . import scheduling
+        n = lambda lo, hi, d: {'type': ['number', 'null'], 'minimum': lo, 'maximum': hi, 'description': d}
+        return obj({'focus': string(scheduling.FOCUS, 'overbooking: extra bookings per session; no_show_risk: ranked upcoming appointments; '
+                                                      'access: lead times; reminders: who to call; all: everything'),
+                    'practice': {'type': 'string', 'description': 'One scheduling organisation the question names (e.g. "3" or WH-PRACTICE-3), else empty'},
+                    'horizon_days': {'type': 'integer', 'minimum': 1, 'maximum': 120, 'description': 'Upcoming window: tomorrow = 1, next week = 7 (default 14)'},
+                    'value_per_visit': n(0.01, 1e6, 'Value of a served visit, only if stated (default 1)'),
+                    'overflow_cost': n(0, 1e6, 'Cost per patient beyond capacity, same units, only if stated (default 2)'),
+                    'reminder_effect': n(0, 1, 'Share of targeted no-shows a reminder prevents, only if stated (default 0.3)'),
+                    'reminder_capacity': {'type': 'integer', 'minimum': 0, 'maximum': 5000, 'description': 'Reminder calls available (default 25)'},
+                    'capacity': {'type': ['integer', 'null'], 'minimum': 1, 'maximum': 200, 'description': 'Slots per session, only if stated'},
+                    'max_overflow_probability': n(0, 1, '"safely": cap on P(more shows than slots), e.g. 0.1'),
+                    'top': {'type': 'integer', 'minimum': 1, 'maximum': 1000}})
     if op == 'calibration':
         from . import calibration, trajectory
         return obj({'target': string(calibration.TARGETS, 'all = every prediction type; forecasts = Kalman lab/vital forecasts'),

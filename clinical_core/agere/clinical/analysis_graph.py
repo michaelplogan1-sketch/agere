@@ -27,6 +27,7 @@ OPERATIONS |= {'market'}  # markets view: practice / PCP / payer tickers (market
 OPERATIONS |= {'pathway'}  # care pathways (Markov chains, process mining)
 OPERATIONS = OPERATIONS | {'profile'}
 OPERATIONS |= {'calibration'}  # calibration of predictions (conformal.py)
+OPERATIONS |= {'scheduling'}  # no-show model, overbooking, access, reminders (scheduling.py)
 NODE_FIELDS = {'id', 'operation', 'inputs', 'parameters', 'purpose'}
 LIMITS = [
     'Membership means observed predicate matches, not confirmed disease or absent care.',
@@ -123,6 +124,7 @@ NO_BENCHMARK_OPERATIONS = ('outreach', 'monitor', 'demand', 'survival', 'program
 NO_BENCHMARK_OPERATIONS += ('market',)
 NO_BENCHMARK_OPERATIONS += ('pathway',)
 NO_BENCHMARK_OPERATIONS += ('calibration',)
+NO_BENCHMARK_OPERATIONS += ('scheduling',)
 
 
 def benchmark_references(answer, question=None, operation=None):
@@ -271,6 +273,23 @@ def build_answer(plan, results, memberships, question):
                       table=[{k: v for k, v in r.items() if k != 'statement'} for r in report['rows']], value=report['reading'],
                       method=report['method'], limitations=report['limitations'],
                       overall={'calibration': {'statement': report['reading'], 'receipts': report['receipts']}, 'reliability': report['reliability']})
+        return answer
+    if last['operation'] == 'scheduling':
+        from .scheduling import summary
+        report = results[-1]['result']
+        partial = plan.get('coverage') != 'supported_observation' or plan.get('unmet_requirements')
+        ok = report.get('model') is not None
+        focus = report['parameters']['focus']
+        table = (report['appointments'] if focus in ('no_show_risk', 'reminders') else report['access'] if focus == 'access' else
+                 [{k: v for k, v in s.items() if k != 'curve'} for s in report['sessions']] or report['appointments'])
+        answer.update(status=('partial' if partial else 'answered') if ok else 'unsupported', answer_type='table' if ok else 'unsupported',
+                      table=table, value=summary(report), method=report['method'], limitations=report['limitations'],
+                      count=len(table), patient_ids=[a['patient_id'] for a in report['appointments']] if focus in ('no_show_risk', 'reminders') else [],
+                      overall={'scheduling': {k: report.get(k) for k in ('practice', 'counts', 'model', 'sessions', 'upcoming_sessions',
+                                                                         'appointments', 'reminders', 'access', 'access_unavailable',
+                                                                         'data_defects', 'by_year', 'assumptions', 'notes')} | {'focus': focus},
+                               'assumptions': report['assumptions']})
+        if not ok: answer['missing'].append(summary(report))
         return answer
     if last['operation'] == 'survival':
         from .survival import summary
@@ -540,6 +559,9 @@ def validate(plan, as_of):
         elif op == 'survival':
             from . import survival
             p = survival.validate(p)
+        elif op == 'scheduling':
+            from . import scheduling
+            p = scheduling.validate(p)
         elif op == 'pathway':
             from . import pathway
             p = pathway.validate(p)
@@ -842,7 +864,8 @@ def code_identity():
                       Path(__file__).with_name('program_effect.py'),
                       Path(__file__).with_name('outreach.py'), Path(__file__).with_name('outreach_bandit.py'),
                       Path(__file__).with_name('pathway.py'),
-                      Path(__file__).with_name('conformal.py'), Path(__file__).with_name('calibration.py')]]])
+                      Path(__file__).with_name('conformal.py'), Path(__file__).with_name('calibration.py'),
+                      Path(__file__).with_name('scheduling.py')]]])
 
 
 def catalog(path):
@@ -1127,6 +1150,11 @@ def execute(stack, plan, *, question=None):
                 from . import profile
                 chosen = memberships[node['inputs'][0]] if node['inputs'] else None
                 detail = profile.execute(path, sorted(chosen.yes) if chosen else None, params, meta['snapshot']['as_of'])
+                if chosen: detail['input_membership'] = membership_receipt(chosen)
+            elif op == 'scheduling':
+                from . import scheduling
+                chosen = memberships[node['inputs'][0]] if node['inputs'] else None
+                detail = scheduling.execute(path, sorted(chosen.yes) if chosen else None, params, meta['snapshot']['as_of'])
                 if chosen: detail['input_membership'] = membership_receipt(chosen)
             elif op == 'calibration':
                 from . import calibration
