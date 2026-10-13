@@ -1,0 +1,34 @@
+[
+ {
+  "question": "What's behind our heart failure readmissions?",
+  "expect_operation": "explain"
+ },
+ {
+  "question": "Which factors are associated with patients ending up in the ED?",
+  "expect_operation": "explain"
+ },
+ {
+  "question": "Help me understand what is different about diabetics whose latest A1c is above 9",
+  "expect_operation": "explain"
+ },
+ {
+  "question": "what predicts a 30 day bounce back after a hospital stay",
+  "expect_operation": "explain"
+ },
+ {
+  "question": "Any patterns that explain why some COPD patients get admitted?",
+  "expect_operation": "explain"
+ },
+ {
+  "question": "Why do some hypertensive patients have uncontrolled blood pressure?",
+  "expect_operation": "explain"
+ },
+ {
+  "question": "what's driving ED utilization among medicaid members",
+  "expect_operation": "explain"
+ },
+ {
+  "question": "Tell me what characteristics go along with readmission",
+  "expect_operation": "explain"
+ }
+]

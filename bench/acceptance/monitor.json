@@ -1,0 +1,34 @@
+[
+ {
+  "question": "Is anything out of control in our ED volumes?",
+  "expect_operation": "monitor"
+ },
+ {
+  "question": "Are any of our data feeds broken?",
+  "expect_operation": "monitor"
+ },
+ {
+  "question": "Check claims for unusual billing patterns",
+  "expect_operation": "monitor"
+ },
+ {
+  "question": "Did any practice's admission rate spike beyond normal variation?",
+  "expect_operation": "monitor"
+ },
+ {
+  "question": "Any signs of duplicate claims?",
+  "expect_operation": "monitor"
+ },
+ {
+  "question": "Is the lab feed arriving late?",
+  "expect_operation": "monitor"
+ },
+ {
+  "question": "Run Benford's law on claim amounts",
+  "expect_operation": "monitor"
+ },
+ {
+  "question": "Has the denial rate shifted recently?",
+  "expect_operation": "monitor"
+ }
+]

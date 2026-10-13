@@ -1,0 +1,34 @@
+[
+ {
+  "question": "Whose kidney function is sliding?",
+  "expect_operation": "trajectory"
+ },
+ {
+  "question": "Which diabetics are getting worse on their A1c over time?",
+  "expect_operation": "trajectory"
+ },
+ {
+  "question": "Flag CKD patients likely to drop below an eGFR of 30 within the next year",
+  "expect_operation": "trajectory"
+ },
+ {
+  "question": "Show patients with a steady climb in systolic pressure",
+  "expect_operation": "trajectory"
+ },
+ {
+  "question": "Who has a meaningful downward trend in eGFR",
+  "expect_operation": "trajectory"
+ },
+ {
+  "question": "which patients' LDL is trending the wrong way",
+  "expect_operation": "trajectory"
+ },
+ {
+  "question": "project potassium trajectories for heart failure patients",
+  "expect_operation": "trajectory"
+ },
+ {
+  "question": "Anyone whose weight is creeping up among HF patients?",
+  "expect_operation": "trajectory"
+ }
+]

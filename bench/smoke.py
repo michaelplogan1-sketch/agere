@@ -5,10 +5,11 @@
 3. Hosted probes must not fall through to the frontier fallback because of validation/infrastructure errors.
 Usage: .venv/bin/python bench/smoke.py   (needs the service on :8885)
 """
-import json, subprocess, sys, urllib.request
+import json, os, subprocess, sys, urllib.request
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
+URL = os.environ.get('AGERE_URL', 'http://127.0.0.1:8885')
 PROBES = [  # question, expected route prefix, expected value (count/value) or None to only check the route
     ('How many claims were denied and then paid?', 'local_compiler', 959),
     ('What was our no-show rate for appointments scheduled in 2027?', 'local_compiler', 8.98),
@@ -23,7 +24,7 @@ PROBES = [  # question, expected route prefix, expected value (count/value) or N
 
 
 def ask(q):
-    req = urllib.request.Request('http://127.0.0.1:8885/api/stack/compose', data=json.dumps({'question': q}).encode(),
+    req = urllib.request.Request(URL + '/api/stack/compose', data=json.dumps({'question': q}).encode(),
                                  headers={'content-type': 'application/json'})
     try:
         return json.load(urllib.request.urlopen(req, timeout=600))
@@ -43,7 +44,7 @@ def main():
         ok_value = expected is None or (isinstance(got, (int, float)) and abs(got - expected) <= max(0.01, abs(expected) * 0.001))
         print(f"{'PASS' if ok_route and ok_value else 'FAIL'}  {q[:70]:70s} route={pr.get('route')} got={got} {d.get('error', '')[:120]}")
         if not (ok_route and ok_value): failures.append(q)
-    run = subprocess.run([str(ROOT / '.venv/bin/python'), str(ROOT / 'bench/run.py'), '--system', 'agere', '--jobs', '2', '--ids',
+    run = subprocess.run([str(ROOT / '.venv/bin/python'), str(ROOT / 'bench/run.py'), '--system', 'agere', '--jobs', '2', '--url', URL, '--ids',
                           *[f'D{i:02d}' for i in range(1, 31)], *[f'C{i:02d}' for i in range(1, 21)]], capture_output=True, text=True, cwd=ROOT)
     latest = max((ROOT / 'bench/results/agere').glob('*.jsonl'), key=lambda p: p.stat().st_mtime)
     correct = sum(1 for l in latest.open() if json.loads(l)['score'].get('correct'))

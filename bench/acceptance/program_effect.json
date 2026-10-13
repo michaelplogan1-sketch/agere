@@ -1,0 +1,34 @@
+[
+ {
+  "question": "Did enrolling people in care management cut their ED use?",
+  "expect_operation": "program_effect"
+ },
+ {
+  "question": "Is the transitions of care program lowering readmissions?",
+  "expect_operation": "program_effect"
+ },
+ {
+  "question": "What happened to A1c after patients started an SGLT2 inhibitor?",
+  "expect_operation": "program_effect"
+ },
+ {
+  "question": "Did starting statins change LDL?",
+  "expect_operation": "program_effect"
+ },
+ {
+  "question": "Impact of community services referral on admissions",
+  "expect_operation": "program_effect"
+ },
+ {
+  "question": "Has care coordination reduced cost per member?",
+  "expect_operation": "program_effect"
+ },
+ {
+  "question": "effect of care management on PMPM",
+  "expect_operation": "program_effect"
+ },
+ {
+  "question": "did transitions of care reduce ED visits",
+  "expect_operation": "program_effect"
+ }
+]

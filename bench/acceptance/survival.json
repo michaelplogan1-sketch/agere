@@ -1,0 +1,34 @@
+[
+ {
+  "question": "How quickly do heart failure patients come back to the hospital after discharge?",
+  "expect_operation": "survival"
+ },
+ {
+  "question": "Time from discharge to first primary care visit, by payer",
+  "expect_operation": "survival"
+ },
+ {
+  "question": "Kaplan-Meier for 90-day readmission after any hospital stay",
+  "expect_operation": "survival"
+ },
+ {
+  "question": "How long after a diabetes diagnosis until the first ED visit?",
+  "expect_operation": "survival"
+ },
+ {
+  "question": "Compare time to readmission for patients with and without COPD",
+  "expect_operation": "survival"
+ },
+ {
+  "question": "Hazard ratio for readmission by age and sex",
+  "expect_operation": "survival"
+ },
+ {
+  "question": "median days until follow-up after discharge, by practice",
+  "expect_operation": "survival"
+ },
+ {
+  "question": "what fraction of CKD patients reach eGFR below 30 within two years",
+  "expect_operation": "survival"
+ }
+]

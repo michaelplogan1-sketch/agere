@@ -242,6 +242,21 @@ def plan(stack,question,ledger,frontier):
                               'elapsed_seconds':time.perf_counter()-start}
             except ValueError as exc:
                 local_decline={**local_decline,'learned_rejected':str(exc)[:200]}
+    # Operator router: any phrasing reaches the right analytic engine. One small-model call picks the operator
+    # and fills its typed parameters; the runtime validators decide; literal questions go on to verified SQL.
+    if profile is not None and stack.allow_live and os.environ.get('AGERE_ROUTER','on')!='off':
+        from . import operator_router
+        try:
+            routed,route_info=operator_router.route(question,meta['snapshot']['as_of'],ledger,stack.receipts,validate)
+        except (ValueError,RuntimeError,OSError) as exc:
+            routed,route_info=None,{'router_error':str(exc)[:300],'calls':[]}
+        local_decline={**local_decline,'operator_router':route_info}
+        if routed is not None:
+            return routed,{'route':'operator_router','model':operator_router.MODEL,'new_paid_api_calls':
+                           sum(0 if c.get('cache_hit') else 1 for c in route_info['calls']),'frontier_called':False,
+                           'operator':route_info['decision'],'local_compiler_declined':local_decline,
+                           'steps':[{'stage':'operator_router','receipt':{'cost_estimate':{'estimated_usd':operator_router.cost(route_info)}}}],
+                           'elapsed_seconds':time.perf_counter()-start}
     # Cheapest hosted rung: one Haiku call writing governed SQL over the cached schema (~$0.001).
     if profile is not None and stack.allow_live and os.environ.get('AGERE_HOSTED_SQL','on')!='off':
         try:
@@ -259,7 +274,7 @@ def plan(stack,question,ledger,frontier):
             graph=validate({'interpretation':question,'coverage':'supported_observation','unmet_requirements':[],
                             'nodes':[{'id':'answer','operation':'sql','inputs':[],'parameters':params,
                                       'purpose':'Hosted small-model query over the semantic layer'}]},meta['snapshot']['as_of'])
-            hosted.cost+=second.cost+judge.cost+(decider.cost if decider else 0)
+            hosted.cost+=second.cost+judge.cost+(decider.cost if decider else 0)+sum(c.get('api_usd') or 0 for c in local_decline.get('operator_router',{}).get('calls',[]))
             return graph,{'route':'hosted_verified_sql','model':hosted.model,'new_paid_api_calls':len(receipt['attempts']),
                           'frontier_called':False,'local_compiler_declined':local_decline,'hosted_sql':receipt,
                           'steps':[{'stage':'hosted_verified_sql','receipt':{'cost_estimate':{'estimated_usd':hosted.cost}}}],

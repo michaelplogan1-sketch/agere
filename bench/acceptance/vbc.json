@@ -1,0 +1,37 @@
+[
+ {
+  "question": "What's our PMPM by payer this year?",
+  "expect_operation": "vbc"
+ },
+ {
+  "question": "How much shared savings would we earn with a $950 benchmark, 50% sharing and a 2% MSR?",
+  "expect_operation": "vbc"
+ },
+ {
+  "question": "Which PCPs have the most attributed members?",
+  "expect_operation": "vbc",
+  "also_accept": [
+   "sql"
+  ]
+ },
+ {
+  "question": "How many member months did we have in 2029?",
+  "expect_operation": "vbc"
+ },
+ {
+  "question": "With a $1,000 PMPM benchmark, 50% sharing rate and 2% MSR, what's the chance the contract pays us nothing?",
+  "expect_operation": "vbc"
+ },
+ {
+  "question": "Split the savings fairly across practices",
+  "expect_operation": "vbc"
+ },
+ {
+  "question": "ED visits per thousand members by practice",
+  "expect_operation": "vbc"
+ },
+ {
+  "question": "What drove the change in cost per member between 2028 and 2029?",
+  "expect_operation": "vbc"
+ }
+]

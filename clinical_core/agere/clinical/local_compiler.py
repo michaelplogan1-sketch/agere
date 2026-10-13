@@ -396,8 +396,27 @@ STREAM_SYNONYMS = {
 }
 
 
+# Words that ask for an analytic method; a plain count or population list never answers them.
+ANALYTIC_INTENT = (r"\b(?:why|what'?s behind|what is behind|driv(?:ing|ers?|es)|associated with|go(?:es)? along with|characteristics|"
+                   r"contribut\w*|predicts?|explain|trend(?:s|ing)?|sliding|creeping|getting worse|worsening|declin\w+|trajector\w*|"
+                   r"climb\w*|wrong way)\b")
+PLAIN_OPS = {'cohort', 'aggregate', 'sql', 'union', 'intersect', 'difference'}
+
+
 def compile(question, profile, as_of):
-    """Return (graph, info). graph is None when the question needs the fallback planner."""
+    """Return (graph, info). graph is None when the question needs the fallback planner.
+
+    A plan made only of counting/listing operations is declined when the question asks for an analytic
+    method (why, trend, ...): the operator router then picks the engine instead of a count answering it."""
+    graph, info = _compile(question, profile, as_of)
+    if graph and graph.get('nodes') and {n['operation'] for n in graph['nodes']} <= PLAIN_OPS \
+            and re.search(ANALYTIC_INTENT, question.lower()) \
+            and not re.search(r'\b(?:monthly|weekly|quarterly|yearly|annual|by (?:month|week|quarter|year)|per (?:month|week|quarter|year)|over time)\b', question.lower()):
+        return None, {**info, 'route': 'fallback', 'reason': 'analytic intent (why/trend) not expressible as a count'}
+    return graph, info
+
+
+def _compile(question, profile, as_of):
     q = _norm(question, as_of)
     low = q.lower()
     timed = survival_intent(low) and not re.search(DEATH_WORDS, low)  # "readmission-free survival" is not mortality
@@ -591,6 +610,8 @@ def _take_period(r, as_of, year_words=r'in|during|for'):
 
 # ---- population questions (concepts, aggregates, explanations) ------------------
 def _population_question(q, r, profile, as_of, info):
+    # Age as captured on the roster only when the question says so; otherwise the latest reported age.
+    AGE_FIELD = 'age_reported' if re.search(r'\b(?:at (?:their |the )?profile capture|as captured|roster age|without advancing|originally reported)\b', q.lower()) else 'age_latest'
     low = r.low
     allp, excl = [], []
     # statistic / intent
@@ -668,13 +689,13 @@ def _population_question(q, r, profile, as_of, info):
               and not any(r.used[m.start():m.end()])]:
         for i in range(m.start(), m.end()): r.used[i] = True
         r.notes.append('age range')
-        allp.append({'kind': 'patient', 'field': 'age_reported', 'op': 'ge', 'value': int(m.group(1))})
-        allp.append({'kind': 'patient', 'field': 'age_reported', 'op': 'le', 'value': int(m.group(2))})
+        allp.append({'kind': 'patient', 'field': AGE_FIELD, 'op': 'ge', 'value': int(m.group(1))})
+        allp.append({'kind': 'patient', 'field': AGE_FIELD, 'op': 'le', 'value': int(m.group(2))})
         r.take(r'\breproductive age\b|\bof reproductive age\b', None, overlap=True)
-    if r.take(r'\b(?:kids|children|child|pediatric|paediatric|minors)\b', 'children') and not any(a.get('field') == 'age_reported' for a in allp):
-        allp.append({'kind': 'patient', 'field': 'age_reported', 'op': 'lt', 'value': 18})
-    if r.take(r'\b(?:seniors|elderly|older adults|geriatric)\b', 'seniors') and not any(a.get('field') == 'age_reported' for a in allp):
-        allp.append({'kind': 'patient', 'field': 'age_reported', 'op': 'ge', 'value': 65})
+    if r.take(r'\b(?:kids|children|child|pediatric|paediatric|minors)\b', 'children') and not any(a.get('field') in ('age_reported', 'age_latest') for a in allp):
+        allp.append({'kind': 'patient', 'field': AGE_FIELD, 'op': 'lt', 'value': 18})
+    if r.take(r'\b(?:seniors|elderly|older adults|geriatric)\b', 'seniors') and not any(a.get('field') in ('age_reported', 'age_latest') for a in allp):
+        allp.append({'kind': 'patient', 'field': AGE_FIELD, 'op': 'ge', 'value': 65})
     words_to_op = {'at least': 'ge', 'over': 'gt', 'above': 'gt', 'older than': 'gt', 'older': 'gt', 'under': 'lt', 'below': 'lt',
                    'younger than': 'lt', 'younger': 'lt'}
     for pattern, fixed in age_patterns:
@@ -685,7 +706,7 @@ def _population_question(q, r, profile, as_of, info):
             op = fixed or words_to_op.get(word, 'ge' if re.search(r'older|\+|least', m.group(0)) else 'eq' if not word else 'ge')
             if re.search(r'or older|and older|\+|or over', m.group(0)): op = 'ge'
             if re.search(r'or younger|and under', m.group(0)): op = 'le'
-            allp.append({'kind': 'patient', 'field': 'age_reported', 'op': op, 'value': n})
+            allp.append({'kind': 'patient', 'field': AGE_FIELD, 'op': op, 'value': n})
     if r.take(r'\b(?:female|women|woman)\b(?: reported sex)?', 'female'): allp.append({'kind': 'patient', 'field': 'sex_reported', 'op': 'eq', 'value': 'F'})
     if r.take(r'\b(?:male|men|man)\b(?: reported sex)?', 'male'): allp.append({'kind': 'patient', 'field': 'sex_reported', 'op': 'eq', 'value': 'M'})
     r.take(r'\breported (?:sex|age)\b|\bat (?:their )?profile capture\b|\bwithout advancing (?:that|the) age(?: to today)?\b')
@@ -1437,6 +1458,13 @@ def _contract_terms(low):
              'loss_rate': pct(r'loss (?:sharing )?rate (?:of |is )?(\d+(?:\.\d+)?) ?%'),
              'quality_score': pct(r'quality score (?:of |is )?(\d+(?:\.\d+)?) ?%'),
              'savings_cap_pct': pct(r'(?:savings )?cap (?:of |is )?(\d+(?:\.\d+)?) ?%')}
+    # Value-first phrasings: "$950 benchmark", "50% sharing", "2% MSR".
+    after = {'benchmark_pmpm': num(r'\$([\d,]+(?:\.\d+)?) ?(?:pmpm )?benchmark'),
+             'sharing_rate': pct(r'(\d+(?:\.\d+)?) ?% (?:shared savings |savings )?shar(?:ing|e)\b'),
+             'msr': pct(r'(\d+(?:\.\d+)?) ?% (?:msr|minimum savings rate)'),
+             'mlr': pct(r'(\d+(?:\.\d+)?) ?% (?:mlr|minimum loss rate)'),
+             'quality_score': pct(r'(\d+(?:\.\d+)?) ?% quality score')}
+    terms = {k: terms.get(k) if terms.get(k) is not None else after.get(k) for k in {*terms, *after}}
     terms = {k: v for k, v in terms.items() if v is not None}
     if re.search(r'two[- ]sided|downside', low): terms['two_sided'] = True
     if re.search(r'risk[- ]adjust', low): terms['risk_adjust'] = True

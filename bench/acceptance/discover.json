@@ -1,0 +1,34 @@
+[
+ {
+  "question": "Are there pockets of the population where uncontrolled diabetes clusters?",
+  "expect_operation": "discover"
+ },
+ {
+  "question": "Show me unexpected hot spots for ED use",
+  "expect_operation": "discover"
+ },
+ {
+  "question": "Where is heart failure unusually common in our network?",
+  "expect_operation": "discover"
+ },
+ {
+  "question": "Any subgroups with surprisingly high rates of food insecurity?",
+  "expect_operation": "discover"
+ },
+ {
+  "question": "Find segments where depression is over-represented",
+  "expect_operation": "discover"
+ },
+ {
+  "question": "which combinations of practice and payer have unusually many admissions",
+  "expect_operation": "discover"
+ },
+ {
+  "question": "Surface any concentration of high blood pressure readings we didn't know about",
+  "expect_operation": "discover"
+ },
+ {
+  "question": "Look for clusters of CKD by age, sex, payer or practice",
+  "expect_operation": "discover"
+ }
+]

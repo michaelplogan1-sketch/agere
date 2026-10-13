@@ -1,0 +1,34 @@
+[
+ {
+  "question": "Our nurses can make 30 calls this week - who should they call?",
+  "expect_operation": "outreach"
+ },
+ {
+  "question": "Build me a prioritized list of 50 patients for care management outreach",
+  "expect_operation": "outreach"
+ },
+ {
+  "question": "Who are the top patients to reach out to about open care gaps? We have 20 hours of nurse time",
+  "expect_operation": "outreach"
+ },
+ {
+  "question": "Give me tomorrow's call list, 25 people, max 5 per practice",
+  "expect_operation": "outreach"
+ },
+ {
+  "question": "Which patients with social needs should we contact first? capacity 40",
+  "expect_operation": "outreach"
+ },
+ {
+  "question": "rank rising-risk patients for outreach, 60 slots",
+  "expect_operation": "outreach"
+ },
+ {
+  "question": "Prioritize 100 patients for outreach across practices",
+  "expect_operation": "outreach"
+ },
+ {
+  "question": "who needs a phone call most this week? 15 slots",
+  "expect_operation": "outreach"
+ }
+]
