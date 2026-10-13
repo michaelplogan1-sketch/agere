@@ -188,23 +188,44 @@ def retrieve_streams(question, profile, k=4):
     return [s for s, v in sorted(scores.items(), key=lambda kv: -kv[1]) if v > 0][:k]
 
 
-def schema_for(question, profile, extra=()):
+def schema_for(question, profile, extra=(), path=None):
+    """Schema slice for the hosted ladder. AGERE_SCHEMA_RERANK=on|off chooses the learned schema reranker
+    (schema_rerank.py: ordered slice within the legacy prompt size) or the legacy lexical slice."""
+    if os.environ.get('AGERE_SCHEMA_RERANK', 'on') != 'off':
+        try:
+            from . import schema_rerank
+            return schema_rerank.schema_slice(question, profile, extra, path=path)
+        except (OSError, ValueError, KeyError, ImportError) as exc:  # missing model/encoder/data: legacy slice
+            _SCHEMA_RERANK_ERRORS.append(str(exc)[:200])
+    return legacy_schema_for(question, profile, extra)
+
+
+_SCHEMA_RERANK_ERRORS = []
+
+
+def stream_line(profile, s):
+    fields = []
+    for f, fs in sorted(profile['streams'][s]['fields'].items()):
+        if not fs['populated'] or f in source_profile.PLANNER_SKIP or f.endswith(('_time',)): continue
+        vals = fs.get('values') or {}
+        if fs['types'].get('true') or fs['types'].get('false'): fields.append(f'{f} (boolean)')
+        elif vals and len(vals) <= 12 and max(map(len, vals)) <= 40: fields.append(f"{f} {sorted(vals, key=lambda v: -vals[v])[:12]}")
+        elif 'numeric_range' in fs: fields.append(f"{f} (number {fs['numeric_range'][0]}..{fs['numeric_range'][1]})")
+        else: fields.append(f)
+    from .semantic_layer import VERSIONED_STREAMS
+    versioned = (f" [VERSIONED by {VERSIONED_STREAMS[s]}: records are snapshots; current state = current_record WHERE stream = '{s}']"
+                 if s in VERSIONED_STREAMS else '')
+    return f"stream '{s}' ({profile['streams'][s]['records']} records){versioned}: " + ', '.join(fields)
+
+
+def legacy_schema_for(question, profile, extra=()):
     streams = retrieve_streams(question, profile, k=6)
     streams += [x for x in extra if x not in streams and x in profile['streams']]
-    lines = []
-    for s in streams:
-        fields = []
-        for f, fs in sorted(profile['streams'][s]['fields'].items()):
-            if not fs['populated'] or f in source_profile.PLANNER_SKIP or f.endswith(('_time',)): continue
-            vals = fs.get('values') or {}
-            if fs['types'].get('true') or fs['types'].get('false'): fields.append(f'{f} (boolean)')
-            elif vals and len(vals) <= 12 and max(map(len, vals)) <= 40: fields.append(f"{f} {sorted(vals, key=lambda v: -vals[v])[:12]}")
-            elif 'numeric_range' in fs: fields.append(f"{f} (number {fs['numeric_range'][0]}..{fs['numeric_range'][1]})")
-            else: fields.append(f)
-        from .semantic_layer import VERSIONED_STREAMS
-        versioned = (f" [VERSIONED by {VERSIONED_STREAMS[s]}: records are snapshots; current state = current_record WHERE stream = '{s}']"
-                     if s in VERSIONED_STREAMS else '')
-        lines.append(f"stream '{s}' ({profile['streams'][s]['records']} records){versioned}: " + ', '.join(fields))
+    lines = [stream_line(profile, s) for s in streams]
+    return streams, f"TABLES\n{TABLES}\n\nRELEVANT RECORD STREAMS\n" + '\n'.join(lines) + f"\n\n{concept_line(profile)}"
+
+
+def concept_line(profile):
     cat = concepts.catalog()
     concept_line = ('concept ids - conditions: ' + ', '.join(cat['conditions']) + '; measurements (value_canonical unit): ' +
                     ', '.join(f"{k} [{concepts.MEASUREMENTS[k]['unit']}]" for k in cat['measurements']) +
@@ -217,7 +238,7 @@ def schema_for(question, profile, extra=()):
     if enc: concept_line += '; visit.type raw values (labels and codes not in type_concept are still queryable): ' + ', '.join(sorted(enc, key=lambda v: -enc[v])[:30])
     concept_line += ('; condition labels outside the concept list are queryable via condition.label/icd10 '
                      '(e.g. label LIKE \'%bipolar%\' or icd10 LIKE \'F31%\').')
-    return streams, f"TABLES\n{TABLES}\n\nRELEVANT RECORD STREAMS\n" + '\n'.join(lines) + f"\n\n{concept_line}"
+    return concept_line
 
 
 def returns_for(question, columns, rows=None):
@@ -443,6 +464,13 @@ def harvested_examples(question, k=4):
     qt = set(_tokens(question))
     scored = sorted(((len(qt & t) / max(len(qt | t), 1), q, sql) for q, sql, t in _HARVEST['pairs']
                      if q.strip().lower() != question.strip().lower()), reverse=True)
+    if os.environ.get('AGERE_HARVEST_SHOTS_RANK', 'hybrid') == 'hybrid' and scored:
+        try:
+            from . import schema_rerank
+            picked = schema_rerank.rank_examples(question, scored, k)
+            if picked is not None: return picked
+        except (OSError, ValueError, ImportError, RuntimeError):
+            pass
     return [(q, sql) for score, q, sql in scored[:k] if score >= 0.2]
 
 
@@ -468,7 +496,7 @@ def _verified_answer(path, question, as_of, primary, second, judge, decider=None
     Returns (params, result, receipt) or raises ValueError (the planner then escalates)."""
     from . import verify
     profile = source_profile.load(path)
-    streams, schema = schema_for(question, profile, extra_streams)
+    streams, schema = schema_for(question, profile, extra_streams, path=path)
     qt = set(_tokens(question))
     similar = harvested_examples(question) if os.environ.get('AGERE_HARVEST_SHOTS', 'on') != 'off' else []
     ranked = similar + sorted(EXAMPLES, key=lambda e: -len(qt & set(_tokens(e[0] + ' ' + e[1]))))[:7 - min(len(similar), 3)]

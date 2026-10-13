@@ -17,6 +17,7 @@ class Stack:
         self.database_concurrency=configure(path)
         self.path=Path(path);self.retriever=Retriever(path,rerank=rerank);self.allow_live=allow_live
         self.receipts=self.path/'provider-receipts';self.receipts.mkdir(exist_ok=True)
+        from . import schema_rerank;schema_rerank.use_encoder(self.retriever.encoder)  # schema reranker reuses the loaded encoder
     def close(self):self.retriever.close()
     def metadata(self):
         from .analysis_graph import catalog
