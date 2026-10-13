@@ -1,0 +1,746 @@
+[
+ {
+  "question": "How many ED arrivals should we expect per day over the next four weeks, with a peak-day estimate?",
+  "expect_operation": "demand",
+  "id": "HQ-OPS-010",
+  "domain": "hospital_operations"
+ },
+ {
+  "question": "What is the forecast of ED arrivals by hour of day for next Monday so we can match provider shifts?",
+  "expect_operation": "demand",
+  "id": "HQ-OPS-011",
+  "domain": "hospital_operations"
+ },
+ {
+  "question": "After an ED visit, what share of patients go home, to observation, to inpatient, or transfer out?",
+  "expect_operation": "pathway",
+  "id": "HQ-OPS-014",
+  "domain": "hospital_operations"
+ },
+ {
+  "question": "What will our daily inpatient census be over the next 14 days, and on which days will occupancy exceed 90%?",
+  "expect_operation": "demand",
+  "id": "HQ-OPS-024",
+  "domain": "hospital_operations"
+ },
+ {
+  "question": "How many discharges should we expect each day next week by service?",
+  "expect_operation": "demand",
+  "id": "HQ-OPS-025",
+  "domain": "hospital_operations"
+ },
+ {
+  "question": "What surgical case volume should we expect by service over the next 8 weeks?",
+  "expect_operation": "demand",
+  "id": "HQ-OPS-041",
+  "domain": "hospital_operations"
+ },
+ {
+  "question": "What capacity issues need my attention this morning across the ED and inpatient units?",
+  "expect_operation": "briefing",
+  "id": "HQ-OPS-049",
+  "domain": "hospital_operations"
+ },
+ {
+  "question": "What are the evidence-based practices for improving hospital-wide patient flow, such as smoothing elective surgery schedules?",
+  "expect_operation": "knowledge",
+  "id": "HQ-OPS-050",
+  "domain": "hospital_operations"
+ },
+ {
+  "question": "What does the CMS Emergency Care Access and Timeliness measure count, and how is boarding defined?",
+  "expect_operation": "knowledge",
+  "id": "HQ-OPS-051",
+  "domain": "hospital_operations"
+ },
+ {
+  "question": "Which denial reasons cost us the most dollars this year, by payer?",
+  "expect_operation": "claims_review",
+  "id": "HQ-RCM-002",
+  "domain": "revenue_cycle"
+ },
+ {
+  "question": "Did the denial rate for any payer jump out of its normal range in the last month?",
+  "expect_operation": "monitor",
+  "id": "HQ-RCM-003",
+  "domain": "revenue_cycle"
+ },
+ {
+  "question": "Where are denials unexpectedly concentrated across service lines, payers and billing providers?",
+  "expect_operation": "discover",
+  "id": "HQ-RCM-004",
+  "domain": "revenue_cycle"
+ },
+ {
+  "question": "What claim characteristics are most associated with being denied (eligibility, coding, service type, payer)?",
+  "expect_operation": "explain",
+  "id": "HQ-RCM-005",
+  "domain": "revenue_cycle"
+ },
+ {
+  "question": "Which payers moved the most this month on denial rate and days to payment?",
+  "expect_operation": "market",
+  "id": "HQ-RCM-017",
+  "domain": "revenue_cycle"
+ },
+ {
+  "question": "What net collections should we expect over the next three months?",
+  "expect_operation": "demand",
+  "id": "HQ-RCM-018",
+  "domain": "revenue_cycle"
+ },
+ {
+  "question": "Which claims were paid below comparable claims for the same service and payer (possible underpayments)?",
+  "expect_operation": "claims_review",
+  "id": "HQ-RCM-019",
+  "domain": "revenue_cycle"
+ },
+ {
+  "question": "How much revenue did we lose to payer take-backs and reprocessed claims this year?",
+  "expect_operation": "claims_review",
+  "id": "HQ-RCM-024",
+  "domain": "revenue_cycle"
+ },
+ {
+  "question": "Did our case mix index drop unexpectedly this quarter?",
+  "expect_operation": "monitor",
+  "id": "HQ-RCM-028",
+  "domain": "revenue_cycle"
+ },
+ {
+  "question": "Which providers bill E/M level 5 visits far more often than their peers?",
+  "expect_operation": "claims_review",
+  "id": "HQ-RCM-031",
+  "domain": "revenue_cycle"
+ },
+ {
+  "question": "Which self-pay accounts should our financial counselors call first this week to screen for financial assistance?",
+  "expect_operation": "outreach",
+  "id": "HQ-RCM-041",
+  "domain": "revenue_cycle"
+ },
+ {
+  "question": "What patient and visit factors are associated with balances going to bad debt?",
+  "expect_operation": "explain",
+  "id": "HQ-RCM-043",
+  "domain": "revenue_cycle"
+ },
+ {
+  "question": "What are the HFMA MAP Keys and how is net days in A/R defined?",
+  "expect_operation": "knowledge",
+  "id": "HQ-RCM-050",
+  "domain": "revenue_cycle"
+ },
+ {
+  "question": "What is the difference between a CARC group code CO and PR, and which denials are recoverable?",
+  "expect_operation": "knowledge",
+  "id": "HQ-RCM-051",
+  "domain": "revenue_cycle"
+ },
+ {
+  "question": "How likely is a high-cost claimant this year to remain high-cost next year?",
+  "expect_operation": "survival",
+  "id": "HQ-PAY-015",
+  "domain": "payer_utilization_management"
+ },
+ {
+  "question": "What conditions and service categories drive our high-cost claimant spend?",
+  "expect_operation": "explain",
+  "id": "HQ-PAY-016",
+  "domain": "payer_utilization_management"
+ },
+ {
+  "question": "Which members are on a trajectory to become high-cost claimants in the next six months?",
+  "expect_operation": "early_signal",
+  "id": "HQ-PAY-017",
+  "domain": "payer_utilization_management"
+ },
+ {
+  "question": "What medical claims cost should we expect per month over the next two quarters?",
+  "expect_operation": "demand",
+  "id": "HQ-PAY-022",
+  "domain": "payer_utilization_management"
+ },
+ {
+  "question": "Which specialists deliver lower episode cost after adjusting for patient mix?",
+  "expect_operation": "profile",
+  "id": "HQ-PAY-027",
+  "domain": "payer_utilization_management"
+ },
+ {
+  "question": "Which providers bill unusually high units or codes compared with their specialty peers?",
+  "expect_operation": "claims_review",
+  "id": "HQ-PAY-029",
+  "domain": "payer_utilization_management"
+ },
+ {
+  "question": "Which claims show likely unbundling of procedures that should be billed together?",
+  "expect_operation": "claims_review",
+  "id": "HQ-PAY-030",
+  "domain": "payer_utilization_management"
+ },
+ {
+  "question": "Which claims are probable duplicates billed by the same or different providers?",
+  "expect_operation": "claims_review",
+  "id": "HQ-PAY-031",
+  "domain": "payer_utilization_management"
+ },
+ {
+  "question": "Which providers billed more hours of service in a day than is physically possible?",
+  "expect_operation": "claims_review",
+  "id": "HQ-PAY-034",
+  "domain": "payer_utilization_management"
+ },
+ {
+  "question": "Did any provider's billing volume for a code spike abruptly this quarter?",
+  "expect_operation": "monitor",
+  "id": "HQ-PAY-035",
+  "domain": "payer_utilization_management"
+ },
+ {
+  "question": "Which DME and lab suppliers show billing patterns typical of fraud schemes (high-cost codes, no prior visit)?",
+  "expect_operation": "claims_review",
+  "id": "HQ-PAY-036",
+  "domain": "payer_utilization_management"
+ },
+ {
+  "question": "Which members with rising costs and no care manager should our care management team contact first?",
+  "expect_operation": "outreach",
+  "id": "HQ-PAY-039",
+  "domain": "payer_utilization_management"
+ },
+ {
+  "question": "Did our complex case management program reduce inpatient admissions among enrolled members?",
+  "expect_operation": "program_effect",
+  "id": "HQ-PAY-040",
+  "domain": "payer_utilization_management"
+ },
+ {
+  "question": "What does the CMS Interoperability and Prior Authorization rule require payers to report publicly?",
+  "expect_operation": "knowledge",
+  "id": "HQ-PAY-045",
+  "domain": "payer_utilization_management"
+ },
+ {
+  "question": "How is the medical loss ratio calculated and what counts as quality improvement expense?",
+  "expect_operation": "knowledge",
+  "id": "HQ-PAY-046",
+  "domain": "payer_utilization_management"
+ },
+ {
+  "question": "Did spending on any drug class jump outside its normal monthly range?",
+  "expect_operation": "monitor",
+  "id": "HQ-RX-004",
+  "domain": "pharmacy"
+ },
+ {
+  "question": "What GLP-1 agonist spend should we expect over the next 12 months?",
+  "expect_operation": "demand",
+  "id": "HQ-RX-005",
+  "domain": "pharmacy"
+ },
+ {
+  "question": "What is the proportion of days covered for statins, RAS antagonists and diabetes drugs among commercial members?",
+  "expect_operation": "vbc",
+  "id": "HQ-RX-014",
+  "domain": "pharmacy"
+ },
+ {
+  "question": "How long do new users of GLP-1 agonists stay on therapy before a 60-day gap?",
+  "expect_operation": "survival",
+  "id": "HQ-RX-015",
+  "domain": "pharmacy"
+ },
+ {
+  "question": "What is persistence at 12 months for patients newly started on oral anticoagulants?",
+  "expect_operation": "survival",
+  "id": "HQ-RX-016",
+  "domain": "pharmacy"
+ },
+ {
+  "question": "What patient factors (copay, pharmacy type, number of medications) are associated with low adherence?",
+  "expect_operation": "explain",
+  "id": "HQ-RX-017",
+  "domain": "pharmacy"
+ },
+ {
+  "question": "Which members late for a refill of a chronic medication should a pharmacist call this week?",
+  "expect_operation": "outreach",
+  "id": "HQ-RX-018",
+  "domain": "pharmacy"
+ },
+ {
+  "question": "Which prescribers prescribe opioids at unusually high rates after accounting for their patient mix?",
+  "expect_operation": "profile",
+  "id": "HQ-RX-028",
+  "domain": "pharmacy"
+ },
+ {
+  "question": "Which practices are outliers on antibiotic prescribing for respiratory infections after accounting for patient mix?",
+  "expect_operation": "profile",
+  "id": "HQ-RX-035",
+  "domain": "pharmacy"
+ },
+ {
+  "question": "Did our outpatient stewardship feedback reports reduce inappropriate antibiotic prescribing?",
+  "expect_operation": "program_effect",
+  "id": "HQ-RX-036",
+  "domain": "pharmacy"
+ },
+ {
+  "question": "Which patients on lithium or digoxin have levels trending toward the toxic range?",
+  "expect_operation": "trajectory",
+  "id": "HQ-RX-046",
+  "domain": "pharmacy"
+ },
+ {
+  "question": "How does the 340B program define an eligible patient and what is a duplicate discount?",
+  "expect_operation": "knowledge",
+  "id": "HQ-RX-047",
+  "domain": "pharmacy"
+ },
+ {
+  "question": "What are the CDC Core Elements of hospital antibiotic stewardship?",
+  "expect_operation": "knowledge",
+  "id": "HQ-RX-048",
+  "domain": "pharmacy"
+ },
+ {
+  "question": "Which attending physicians have high readmission rates after adjusting for case mix and volume?",
+  "expect_operation": "profile",
+  "id": "HQ-QS-005",
+  "domain": "quality_patient_safety"
+ },
+ {
+  "question": "How does Hospital VBP score achievement and improvement, and what share of DRG payments is at risk?",
+  "expect_operation": "knowledge",
+  "id": "HQ-QS-010",
+  "domain": "quality_patient_safety"
+ },
+ {
+  "question": "Which measures make up the HAC Reduction Program and how is the worst-quartile penalty applied?",
+  "expect_operation": "knowledge",
+  "id": "HQ-QS-011",
+  "domain": "quality_patient_safety"
+ },
+ {
+  "question": "Which current inpatients show the vital-sign and lab pattern that usually precedes septic shock?",
+  "expect_operation": "early_signal",
+  "id": "HQ-QS-022",
+  "domain": "quality_patient_safety"
+ },
+ {
+  "question": "Which ward patients show early signs of deterioration that preceded past rapid-response calls?",
+  "expect_operation": "early_signal",
+  "id": "HQ-QS-031",
+  "domain": "quality_patient_safety"
+ },
+ {
+  "question": "How is the Leapfrog Hospital Safety Grade calculated and which measures carry the most weight?",
+  "expect_operation": "knowledge",
+  "id": "HQ-QS-041",
+  "domain": "quality_patient_safety"
+ },
+ {
+  "question": "Which hospitals in our system moved the most this month on readmissions and ED returns?",
+  "expect_operation": "market",
+  "id": "HQ-QS-043",
+  "domain": "quality_patient_safety"
+ },
+ {
+  "question": "Did our heart failure discharge bundle reduce 30-day readmissions?",
+  "expect_operation": "program_effect",
+  "id": "HQ-QS-044",
+  "domain": "quality_patient_safety"
+ },
+ {
+  "question": "What quality and safety signals need my attention this week?",
+  "expect_operation": "briefing",
+  "id": "HQ-QS-045",
+  "domain": "quality_patient_safety"
+ },
+ {
+  "question": "Where are readmissions unexpectedly concentrated across units, payers, ZIP codes and age groups?",
+  "expect_operation": "discover",
+  "id": "HQ-QS-047",
+  "domain": "quality_patient_safety"
+ },
+ {
+  "question": "What share of ED visits for mental illness had a follow-up within 7 days?",
+  "expect_operation": "vbc",
+  "id": "HQ-BH-002",
+  "domain": "behavioral_health"
+ },
+ {
+  "question": "What share of ED visits for alcohol or drug use had follow-up treatment within 30 days?",
+  "expect_operation": "vbc",
+  "id": "HQ-BH-003",
+  "domain": "behavioral_health"
+ },
+ {
+  "question": "What share of new substance use disorder episodes initiated treatment within 14 days and stayed engaged within 34 days?",
+  "expect_operation": "vbc",
+  "id": "HQ-BH-004",
+  "domain": "behavioral_health"
+ },
+ {
+  "question": "How long do patients stay on buprenorphine after starting, and what share are retained at 180 days?",
+  "expect_operation": "survival",
+  "id": "HQ-BH-006",
+  "domain": "behavioral_health"
+ },
+ {
+  "question": "Did starting MOUD reduce ED visits and admissions for patients with opioid use disorder?",
+  "expect_operation": "program_effect",
+  "id": "HQ-BH-008",
+  "domain": "behavioral_health"
+ },
+ {
+  "question": "Which patients with opioid use disorder who stopped buprenorphine in the last 30 days should we reach out to first?",
+  "expect_operation": "outreach",
+  "id": "HQ-BH-011",
+  "domain": "behavioral_health"
+ },
+ {
+  "question": "Which patients in treatment for depression are not improving on their PHQ-9 scores over time?",
+  "expect_operation": "trajectory",
+  "id": "HQ-BH-014",
+  "domain": "behavioral_health"
+ },
+ {
+  "question": "Which registry patients are overdue for a PHQ-9 or care-manager contact and should be called this week?",
+  "expect_operation": "outreach",
+  "id": "HQ-BH-017",
+  "domain": "behavioral_health"
+ },
+ {
+  "question": "Did enrollment in collaborative care improve depression scores compared with usual care?",
+  "expect_operation": "program_effect",
+  "id": "HQ-BH-018",
+  "domain": "behavioral_health"
+ },
+ {
+  "question": "How quickly do patients referred to behavioral health get seen, and does it differ by payer?",
+  "expect_operation": "survival",
+  "id": "HQ-BH-020",
+  "domain": "behavioral_health"
+ },
+ {
+  "question": "What drives high ED use among members with serious mental illness?",
+  "expect_operation": "explain",
+  "id": "HQ-BH-034",
+  "domain": "behavioral_health"
+ },
+ {
+  "question": "How many behavioral health ED visits should we expect per week this winter?",
+  "expect_operation": "demand",
+  "id": "HQ-BH-038",
+  "domain": "behavioral_health"
+ },
+ {
+  "question": "Where are behavioral health ED visits unexpectedly concentrated by age, payer, practice or ZIP code?",
+  "expect_operation": "discover",
+  "id": "HQ-BH-039",
+  "domain": "behavioral_health"
+ },
+ {
+  "question": "What are the core components of the Collaborative Care Model and how is it billed?",
+  "expect_operation": "knowledge",
+  "id": "HQ-BH-041",
+  "domain": "behavioral_health"
+ },
+ {
+  "question": "What does the evidence say about retention and mortality on buprenorphine versus methadone?",
+  "expect_operation": "knowledge",
+  "id": "HQ-BH-042",
+  "domain": "behavioral_health"
+ },
+ {
+  "question": "Which current home health patients show the pattern that usually precedes a hospitalization?",
+  "expect_operation": "early_signal",
+  "id": "HQ-PAC-020",
+  "domain": "post_acute_home_health"
+ },
+ {
+  "question": "How many home health admissions should we expect per week next quarter, by discipline?",
+  "expect_operation": "demand",
+  "id": "HQ-PAC-022",
+  "domain": "post_acute_home_health"
+ },
+ {
+  "question": "Which patients with advanced illness show the decline that usually precedes the last six months of life and may benefit from a hospice discussion?",
+  "expect_operation": "early_signal",
+  "id": "HQ-PAC-029",
+  "domain": "post_acute_home_health"
+ },
+ {
+  "question": "Which seriously ill patients without a documented goals-of-care conversation should the palliative team see first?",
+  "expect_operation": "outreach",
+  "id": "HQ-PAC-031",
+  "domain": "post_acute_home_health"
+ },
+ {
+  "question": "How does the SNF Value-Based Purchasing program score facilities?",
+  "expect_operation": "knowledge",
+  "id": "HQ-PAC-040",
+  "domain": "post_acute_home_health"
+ },
+ {
+  "question": "How does the home health PDGM payment model group 30-day periods and when does a LUPA apply?",
+  "expect_operation": "knowledge",
+  "id": "HQ-PAC-041",
+  "domain": "post_acute_home_health"
+ },
+ {
+  "question": "How many RNs will each unit need per shift next week given the census forecast and a 1:5 ratio?",
+  "expect_operation": "demand",
+  "id": "HQ-WF-006",
+  "domain": "workforce_productivity"
+ },
+ {
+  "question": "Which clinicians carry an unusually heavy inbox load after accounting for panel size?",
+  "expect_operation": "profile",
+  "id": "HQ-WF-029",
+  "domain": "workforce_productivity"
+ },
+ {
+  "question": "Has the volume of patient messages per clinician shifted outside its usual range?",
+  "expect_operation": "monitor",
+  "id": "HQ-WF-031",
+  "domain": "workforce_productivity"
+ },
+ {
+  "question": "How many visits will each practice need to staff for next month?",
+  "expect_operation": "demand",
+  "id": "HQ-WF-034",
+  "domain": "workforce_productivity"
+ },
+ {
+  "question": "What does the research show about nurse staffing ratios and patient mortality?",
+  "expect_operation": "knowledge",
+  "id": "HQ-WF-040",
+  "domain": "workforce_productivity"
+ },
+ {
+  "question": "How are work RVUs set in the physician fee schedule and why do they matter for productivity pay?",
+  "expect_operation": "knowledge",
+  "id": "HQ-WF-041",
+  "domain": "workforce_productivity"
+ },
+ {
+  "question": "Which open referrals should schedulers call first to get patients booked?",
+  "expect_operation": "outreach",
+  "id": "HQ-PX-014",
+  "domain": "patient_experience_access"
+ },
+ {
+  "question": "Which appointments next week are most likely to be no-shows, and how many extra slots can each clinic safely book?",
+  "expect_operation": "scheduling",
+  "id": "HQ-PX-016",
+  "domain": "patient_experience_access"
+ },
+ {
+  "question": "What patient and appointment factors are associated with no-shows?",
+  "expect_operation": "explain",
+  "id": "HQ-PX-017",
+  "domain": "patient_experience_access"
+ },
+ {
+  "question": "How many new-patient appointment requests should we expect per week for dermatology next quarter?",
+  "expect_operation": "demand",
+  "id": "HQ-PX-022",
+  "domain": "patient_experience_access"
+ },
+ {
+  "question": "Where are long appointment lead times unexpectedly concentrated across ZIP codes, payers, ages and languages?",
+  "expect_operation": "discover",
+  "id": "HQ-PX-036",
+  "domain": "patient_experience_access"
+ },
+ {
+  "question": "Which practices moved the most this month on no-show rate and lead time?",
+  "expect_operation": "market",
+  "id": "HQ-PX-038",
+  "domain": "patient_experience_access"
+ },
+ {
+  "question": "How is HCAHPS top-box scoring calculated and how does patient-mix adjustment work?",
+  "expect_operation": "knowledge",
+  "id": "HQ-PX-039",
+  "domain": "patient_experience_access"
+ },
+ {
+  "question": "Why is third next available appointment preferred over first available as an access measure?",
+  "expect_operation": "knowledge",
+  "id": "HQ-PX-040",
+  "domain": "patient_experience_access"
+ },
+ {
+  "question": "Which unvaccinated high-risk adults should we call first for this season's flu and COVID vaccines?",
+  "expect_operation": "outreach",
+  "id": "HQ-PH-007",
+  "domain": "public_population_health"
+ },
+ {
+  "question": "Did our vaccination outreach calls raise flu vaccination compared with patients not called?",
+  "expect_operation": "program_effect",
+  "id": "HQ-PH-009",
+  "domain": "public_population_health"
+ },
+ {
+  "question": "Is the share of ED visits for influenza-like illness above its seasonal baseline this week?",
+  "expect_operation": "monitor",
+  "id": "HQ-PH-013",
+  "domain": "public_population_health"
+ },
+ {
+  "question": "Did ED visits for suspected opioid overdose spike this week compared with the prior eight weeks?",
+  "expect_operation": "monitor",
+  "id": "HQ-PH-016",
+  "domain": "public_population_health"
+ },
+ {
+  "question": "How many respiratory-illness ED visits should we expect each week for the next six weeks?",
+  "expect_operation": "demand",
+  "id": "HQ-PH-019",
+  "domain": "public_population_health"
+ },
+ {
+  "question": "Which ZIP codes have unexpectedly high rates of asthma ED visits?",
+  "expect_operation": "discover",
+  "id": "HQ-PH-028",
+  "domain": "public_population_health"
+ },
+ {
+  "question": "Which social and geographic factors are most associated with avoidable ED use in our community?",
+  "expect_operation": "explain",
+  "id": "HQ-PH-034",
+  "domain": "public_population_health"
+ },
+ {
+  "question": "What does the CDC Social Vulnerability Index measure and how should it be used for planning?",
+  "expect_operation": "knowledge",
+  "id": "HQ-PH-040",
+  "domain": "public_population_health"
+ },
+ {
+  "question": "How does syndromic surveillance use ED chief complaints to detect outbreaks?",
+  "expect_operation": "knowledge",
+  "id": "HQ-PH-041",
+  "domain": "public_population_health"
+ },
+ {
+  "question": "How many newly diagnosed heart failure patients per month should we expect to screen over the next year?",
+  "expect_operation": "demand",
+  "id": "HQ-LS-007",
+  "domain": "life_sciences_rwe"
+ },
+ {
+  "question": "What are the most common treatment sequences for patients newly diagnosed with type 2 diabetes?",
+  "expect_operation": "pathway",
+  "id": "HQ-LS-009",
+  "domain": "life_sciences_rwe"
+ },
+ {
+  "question": "What is time to treatment discontinuation for SGLT2 inhibitors versus GLP-1 agonists in type 2 diabetes?",
+  "expect_operation": "survival",
+  "id": "HQ-LS-013",
+  "domain": "life_sciences_rwe"
+ },
+ {
+  "question": "What is the time from CKD stage 3 diagnosis to eGFR below 15 or dialysis?",
+  "expect_operation": "survival",
+  "id": "HQ-LS-014",
+  "domain": "life_sciences_rwe"
+ },
+ {
+  "question": "What is time to insulin initiation after metformin start for type 2 diabetes?",
+  "expect_operation": "survival",
+  "id": "HQ-LS-015",
+  "domain": "life_sciences_rwe"
+ },
+ {
+  "question": "Did starting an SGLT2 inhibitor reduce heart-failure admissions in our patients with HFrEF?",
+  "expect_operation": "program_effect",
+  "id": "HQ-LS-021",
+  "domain": "life_sciences_rwe"
+ },
+ {
+  "question": "What does FDA expect when validating outcome definitions in EHR and claims-based studies?",
+  "expect_operation": "knowledge",
+  "id": "HQ-LS-025",
+  "domain": "life_sciences_rwe"
+ },
+ {
+  "question": "What is target trial emulation and why does time zero matter?",
+  "expect_operation": "knowledge",
+  "id": "HQ-LS-026",
+  "domain": "life_sciences_rwe"
+ },
+ {
+  "question": "What drives cost variation among patients with chronic kidney disease?",
+  "expect_operation": "explain",
+  "id": "HQ-LS-030",
+  "domain": "life_sciences_rwe"
+ },
+ {
+  "question": "Where is uptake of a new drug class unexpectedly low across practices, payers and age groups?",
+  "expect_operation": "discover",
+  "id": "HQ-LS-034",
+  "domain": "life_sciences_rwe"
+ },
+ {
+  "question": "Is the rate of a monitored adverse event among new users rising beyond expected?",
+  "expect_operation": "monitor",
+  "id": "HQ-LS-039",
+  "domain": "life_sciences_rwe"
+ },
+ {
+  "question": "How does FDA Sentinel run active drug safety surveillance on distributed data?",
+  "expect_operation": "knowledge",
+  "id": "HQ-LS-043",
+  "domain": "life_sciences_rwe"
+ },
+ {
+  "question": "How long after a positive fecal immunochemical test do patients get a colonoscopy, and what share wait more than 6 months?",
+  "expect_operation": "survival",
+  "id": "HQ-CDS-005",
+  "domain": "clinical_decision_support"
+ },
+ {
+  "question": "What are the main sources of diagnostic error in ambulatory care and how are they measured?",
+  "expect_operation": "knowledge",
+  "id": "HQ-CDS-015",
+  "domain": "clinical_decision_support"
+ },
+ {
+  "question": "Which patients with CKD have eGFR declining fast enough to reach stage 4 within two years?",
+  "expect_operation": "trajectory",
+  "id": "HQ-CDS-027",
+  "domain": "clinical_decision_support"
+ },
+ {
+  "question": "Which heart failure patients show the weight, symptom and lab pattern that preceded past decompensations?",
+  "expect_operation": "early_signal",
+  "id": "HQ-CDS-028",
+  "domain": "clinical_decision_support"
+ },
+ {
+  "question": "How well calibrated is our readmission risk score across risk deciles?",
+  "expect_operation": "calibration",
+  "id": "HQ-CDS-029",
+  "domain": "clinical_decision_support"
+ },
+ {
+  "question": "Which patients have the most open guideline gaps beyond our contract measures (uACR, statin, lung screening) and should be prioritized at upcoming visits?",
+  "expect_operation": "outreach",
+  "id": "HQ-CDS-035",
+  "domain": "clinical_decision_support"
+ },
+ {
+  "question": "How do CDS Hooks and CQL let us deliver computable guideline logic in the EHR workflow?",
+  "expect_operation": "knowledge",
+  "id": "HQ-CDS-046",
+  "domain": "clinical_decision_support"
+ }
+]
