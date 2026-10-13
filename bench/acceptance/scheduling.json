@@ -1,0 +1,11 @@
+[
+  {"question": "How much should each clinic overbook?", "expect_operation": "scheduling"},
+  {"question": "Which appointments are likely no-shows tomorrow?", "expect_operation": "scheduling"},
+  {"question": "Which appointments next week are likely to be no-shows?", "expect_operation": "scheduling"},
+  {"question": "How many extra slots can practice 3 safely book?", "expect_operation": "scheduling"},
+  {"question": "What's our access — days to third-next-available?", "expect_operation": "scheduling"},
+  {"question": "Who should get a reminder call to cut no-shows?", "expect_operation": "scheduling"},
+  {"question": "Predict no-shows for the next 10 days at practice 2", "expect_operation": "scheduling"},
+  {"question": "Should practice 1 double-book, with 6 slots per session and an overflow cost of 3?", "expect_operation": "scheduling"},
+  {"question": "Rank upcoming appointments by no-show risk", "expect_operation": "scheduling"}
+]
