@@ -13,7 +13,7 @@ import json, re, sqlite3, time
 
 from . import aggregate, concepts, source_profile
 
-VERSION = 'semantic-layer/12'
+VERSION = 'semantic-layer/13'
 
 # Source contract: streams whose records are successive snapshots of one business entity (key field).
 # Other repeated ids (payments per account, lines per claim, fills per prescription) are separate events, not versions.
@@ -115,8 +115,24 @@ SCHEMA_DOC = {
                    'need = food | transport | cost_of_care. transport positive = transport_difficulty_reported or transport unreliable '
                    '(family_ride/reliable = negative); cost_of_care = difficulty paying for care (social screen) or medical bills '
                    '(financial screen). Screened = has a row for that need.',
-    'claim': 'One row per medical claim_id (adjudications arrive as successive records: denied, paid, reversed, re-paid). first/final '
-             'status by arrival order; denied_then_paid = a denial later followed by payment; net_payer_paid_cents = paid minus reversed. '
+    'standards': 'Standard codes received from the source sit beside the local values (NULL when a release has none): '
+                 'condition.icd10 (+icd10_source), measurement.loinc (+loinc_source = source | dictionary, loinc_dictionary, '
+                 'reference_range, abnormal_flag), medication.rxnorm (+rxnorm_source = source | dictionary_ingredient, '
+                 'rxnorm_ingredient) and medication.ndc, visit.principal_icd10/place_of_service, claim.drg/drg_grouper_version/'
+                 'principal_diagnosis/diagnosis_codes (JSON)/billing_npi/rendering_npi/type_of_bill/cpt/hcpcs/local_charge_code, '
+                 'patient.birth_date/race/ethnicity/preferred_language/interpreter_needed/marital_status/zip/county (FIPS)/state. '
+                 'Source codes win over dictionary mappings; *_source records which was used. meta.standards holds coverage.',
+    'encounter_diagnosis': 'ICD-10-CM diagnoses coded on encounters: one row per (encounter_id, rank, icd10, type); '
+                           'type principal/primary/secondary. Administrative contacts are uncoded by design.',
+    'claim_line': 'One row per medical claim line: cpt or hcpcs (CPT/HCPCS service code), local_charge_code (the local charge '
+                  'code, kept across releases), revenue_code (UB-04 lines), units, charge_cents.',
+    'immunization': 'One row per immunization record: vaccine, product, cvx, mvx, status (administration_status).',
+    'clinician': 'Clinician reference rows: specialty, synthetic npi, NUCC taxonomy_code, organization_id.',
+    'organization': 'Organization reference rows: organization_type, npi, taxonomy_code, tin, city/state/postal_code.',
+    'claim': 'One row per medical claim_id (adjudications arrive as successive records: denied, paid, reversed, re-paid). first_status '
+             'by arrival order; final_status follows the adjudication chain (each reversal paired with the payment it reverses; '
+             'final = last unreversed adjudication by event time), received_final_status = last-arrival status, '
+             'live_payer_paid_cents = payer paid on unreversed payments; denied_then_paid = a denial later followed by payment; net_payer_paid_cents = paid minus reversed. '
              'Legacy rows without claim_id are excluded.',
 }
 
@@ -177,15 +193,36 @@ def _dictionary(domain):
     return json.loads(target.read_text())['entries'] if target.exists() else {}
 
 
+def _cuis(v):
+    c = v.get('rxnorm_ingredient_cui')
+    return ','.join(str(x) for x in c) if isinstance(c, list) else (str(c) if c not in (None, '') else None)
+
+
+def _cui(v):
+    """Single-ingredient CUI only; combination products stay uncoded rather than picking one ingredient."""
+    c = v.get('rxnorm_ingredient_cui')
+    if isinstance(c, list): c = c[0] if len(c) == 1 else None
+    return str(c) if c not in (None, '') else None
+
+
 def _normalize(out):
     """Apply the normalization dictionary (each distinct source string mapped once to standard terminology).
     Rules stay authoritative where they map; the dictionary fills gaps and adds standard codes and categories."""
     labs, conds, meds, encs = (_dictionary(d) for d in ('labs', 'conditions', 'medications', 'encounters'))
-    for col in ('loinc TEXT', 'component TEXT', 'lab_category TEXT'):
+    for col in ('component TEXT', 'lab_category TEXT'):
         out.execute(f'ALTER TABLE measurement ADD COLUMN {col}')
-    out.executemany('UPDATE measurement SET loinc = ?, component = ?, lab_category = ?, concept = coalesce(concept, ?) WHERE name = ?',
-                    [(v.get('loinc'), v.get('component'), v.get('category'), v.get('agere_concept') if (v.get('confidence') or 0) >= 0.8 else None, k)
-                     for k, v in labs.items()])
+    # loinc / loinc_source were filled from source codes by _standards; the dictionary only fills the gaps.
+    out.executemany("""UPDATE measurement SET loinc_dictionary = ?, component = ?, lab_category = ?, concept = coalesce(concept, ?),
+                         loinc_source = CASE WHEN loinc IS NOT NULL THEN loinc_source WHEN ? IS NOT NULL THEN 'dictionary' END,
+                         loinc = coalesce(loinc, ?) WHERE name = ?""",
+                    [(v.get('loinc'), v.get('component'), v.get('category'), v.get('agere_concept') if (v.get('confidence') or 0) >= 0.8 else None,
+                      v.get('loinc'), v.get('loinc'), k) for k, v in labs.items()])
+    # Source LOINC identifies the analyte even when the local name is not in the concept library or dictionary.
+    by_loinc = defaultdict(set)
+    for v in labs.values():
+        if v.get('loinc') and v.get('agere_concept') and (v.get('confidence') or 0) >= 0.8: by_loinc[v['loinc']].add(v['agere_concept'])
+    out.executemany("UPDATE measurement SET concept = ? WHERE concept IS NULL AND loinc_source = 'source' AND loinc = ?",
+                    [(next(iter(cs)), code) for code, cs in by_loinc.items() if len(cs) == 1])
     for col in ('is_diagnosis INTEGER', 'icd10_category TEXT', 'chapter TEXT', 'chronic INTEGER', 'normalized_label TEXT'):
         out.execute(f'ALTER TABLE condition ADD COLUMN {col}')
     out.executemany('UPDATE condition SET is_diagnosis = ?, icd10_category = ?, chapter = ?, chronic = ?, normalized_label = ? WHERE label = ?',
@@ -207,6 +244,12 @@ def _normalize(out):
     out.executemany('INSERT INTO medication(record_id, patient_id, source_stream, evidence, drug_name, drug_class, status, event_date, '
                     'available_date, ingredients, therapeutic_category) VALUES (?,?,?,?,?,?,?,?,?,?,?)', extra)
     out.execute("DELETE FROM medication WHERE drug_class IS NULL AND drug_name IN (SELECT drug_name FROM medication WHERE drug_class IS NOT NULL)")
+    _medication_codes(out)  # rows added above for dictionary classes need their source codes too
+    # RxNorm: the source product RxCUI wins; the dictionary ingredient CUI fills rows the source left uncoded.
+    out.executemany("""UPDATE medication SET rxnorm_ingredient = ?,
+                         rxnorm_source = CASE WHEN rxnorm IS NOT NULL THEN rxnorm_source WHEN ? IS NOT NULL THEN 'dictionary_ingredient' END,
+                         rxnorm = coalesce(rxnorm, ?) WHERE drug_name = ?""",
+                    [(_cuis(v), _cui(v), _cui(v), k) for k, v in meds.items()])
     out.execute('ALTER TABLE visit ADD COLUMN setting TEXT')
     out.executemany('UPDATE visit SET setting = ? WHERE type = ?', [(v.get('setting'), k) for k, v in encs.items()])
     out.executemany('UPDATE visit SET in_person = ? WHERE type = ? AND type_concept IS NULL',
@@ -227,6 +270,195 @@ def _medications(out):
                 rows.append((rid, pid, stream, evidence, name, c, status, d, av))
     out.executemany('INSERT INTO medication VALUES (?,?,?,?,?,?,?,?,?)', rows)
     out.executescript('CREATE INDEX medication_class ON medication(drug_class, patient_id); CREATE INDEX measurement_latest_concept ON measurement_latest(concept);')
+
+
+PATIENT_STANDARD = (('birth_date', 'birth_date'), ('race', 'race'), ('ethnicity', 'ethnicity'),
+                    ('preferred_language', 'preferred_language'), ('interpreter_needed', 'interpreter_needed'),
+                    ('marital_status', 'marital_status'), ('zip', 'postal_code'), ('county', 'county_fips'), ('state', 'state'))
+
+
+def _columns(out, table):
+    return {r[1] for r in out.execute(f'PRAGMA table_info({table})')}
+
+
+def _add(out, table, *cols):
+    have = _columns(out, table)
+    for col in cols:
+        if col.split()[0] not in have: out.execute(f'ALTER TABLE {table} ADD COLUMN {col}')
+
+
+def _standards(out, people):
+    """Standard codes received from the source (v2.0+ releases), beside the existing local values.
+    Releases without them leave these columns NULL; nothing here is derived from free text or labels."""
+    _add(out, 'patient', *(f'{c} {"INTEGER" if c == "interpreter_needed" else "TEXT"}' for c, _ in PATIENT_STANDARD))
+    out.executemany('UPDATE patient SET ' + ', '.join(f'{c} = ?' for c, _ in PATIENT_STANDARD) + ' WHERE patient_id = ?',
+                    [(*(p.get(f) for _, f in PATIENT_STANDARD), pid) for pid, p in people.items()])
+    _add(out, 'condition', 'icd10_source TEXT')
+    out.execute("UPDATE condition SET icd10_source = 'source' WHERE icd10 IS NOT NULL AND icd10 <> ''")
+    _add(out, 'measurement', 'loinc TEXT', 'loinc_source TEXT', 'loinc_dictionary TEXT', 'reference_range TEXT', 'abnormal_flag TEXT')
+    out.execute("""CREATE TEMP TABLE lab_codes AS SELECT record_id, json_extract(payload,'$.loinc') AS loinc,
+                     json_extract(payload,'$.reference_range') AS rr, json_extract(payload,'$.abnormal_flag') AS flag
+                     FROM record WHERE stream = 'labs' AND (json_extract(payload,'$.loinc') IS NOT NULL
+                       OR json_extract(payload,'$.reference_range') IS NOT NULL OR json_extract(payload,'$.abnormal_flag') IS NOT NULL)""")
+    out.execute('CREATE INDEX temp.lab_codes_id ON lab_codes(record_id)')
+    out.execute("""UPDATE measurement SET (loinc, reference_range, abnormal_flag) =
+                     (SELECT l.loinc, l.rr, l.flag FROM lab_codes l WHERE l.record_id = measurement.record_id)
+                   WHERE source_table = 'labs' AND record_id IN (SELECT record_id FROM lab_codes)""")
+    out.execute("UPDATE measurement SET loinc_source = 'source' WHERE loinc IS NOT NULL")
+    out.executescript("""
+    CREATE TABLE encounter_diagnosis(encounter_id TEXT, patient_id TEXT, rank INTEGER, icd10 TEXT, type TEXT, record_id TEXT);
+    INSERT INTO encounter_diagnosis SELECT encounter_id, patient_id, rank, icd10, type, min(record_id) FROM (
+      SELECT json_extract(r.payload,'$.encounter_id') AS encounter_id, r.patient_id, CAST(json_extract(d.value,'$.rank') AS INTEGER) AS rank,
+             json_extract(d.value,'$.icd10') AS icd10, json_extract(d.value,'$.type') AS type, r.record_id
+      FROM record r, json_each(r.payload, '$.diagnoses') d
+      WHERE r.stream = 'encounters' AND json_type(r.payload, '$.diagnoses') = 'array')
+    GROUP BY encounter_id, patient_id, rank, icd10, type;
+    CREATE INDEX encounter_diagnosis_code ON encounter_diagnosis(icd10, patient_id);
+    CREATE INDEX encounter_diagnosis_encounter ON encounter_diagnosis(encounter_id);
+    CREATE TABLE claim_line(record_id TEXT, claim_id TEXT, patient_id TEXT, line_number INTEGER, service_date TEXT, code_system TEXT,
+      cpt TEXT, hcpcs TEXT, local_charge_code TEXT, revenue_code TEXT, units REAL, charge_cents INTEGER, service_organization_id TEXT);
+    INSERT INTO claim_line SELECT record_id, json_extract(payload,'$.claim_id'), patient_id, json_extract(payload,'$.line_number'),
+      json_extract(payload,'$.service_date'), json_extract(payload,'$.service_code_system'),
+      CASE WHEN json_extract(payload,'$.service_code_system') = 'CPT' THEN json_extract(payload,'$.service_code') END,
+      CASE WHEN json_extract(payload,'$.service_code_system') = 'HCPCS' THEN json_extract(payload,'$.service_code') END,
+      coalesce(json_extract(payload,'$.local_charge_code'),
+               CASE WHEN json_extract(payload,'$.service_code_system') NOT IN ('CPT','HCPCS') THEN json_extract(payload,'$.service_code') END),
+      json_extract(payload,'$.revenue_code'), json_extract(payload,'$.units'), json_extract(payload,'$.charge_cents'),
+      json_extract(payload,'$.service_organization_id')
+      FROM record WHERE stream = 'medical_claim_lines';
+    CREATE INDEX claim_line_claim ON claim_line(claim_id);
+    CREATE INDEX claim_line_cpt ON claim_line(cpt, patient_id);
+    CREATE TABLE immunization(record_id TEXT, patient_id TEXT, vaccine TEXT, product TEXT, cvx TEXT, mvx TEXT, status TEXT,
+      event_date TEXT, available_date TEXT);
+    INSERT INTO immunization SELECT record_id, patient_id, json_extract(payload,'$.vaccine'), json_extract(payload,'$.product'),
+      json_extract(payload,'$.cvx_code'), json_extract(payload,'$.mvx_code'), json_extract(payload,'$.administration_status'),
+      event_date, available_date FROM record WHERE stream = 'immunizations';
+    CREATE INDEX immunization_cvx ON immunization(cvx, patient_id);
+    """)
+    _add(out, 'visit', 'principal_icd10 TEXT', 'place_of_service TEXT')
+    out.execute("""UPDATE visit SET principal_icd10 = (SELECT d.icd10 FROM encounter_diagnosis d WHERE d.encounter_id = visit.encounter_id
+                     ORDER BY (d.type = 'principal' OR d.type = 'primary') DESC, d.rank LIMIT 1)""")
+    out.execute("""CREATE TEMP TABLE pos AS SELECT json_extract(payload,'$.encounter_id') AS encounter_id,
+                     max(json_extract(payload,'$.place_of_service')) AS pos FROM record
+                     WHERE stream = 'encounters' AND json_extract(payload,'$.place_of_service') IS NOT NULL GROUP BY 1""")
+    out.execute('CREATE INDEX temp.pos_enc ON pos(encounter_id)')
+    out.execute('UPDATE visit SET place_of_service = (SELECT pos FROM pos WHERE pos.encounter_id = visit.encounter_id)')
+
+
+def _medication_codes(out):
+    _add(out, 'medication', 'rxnorm TEXT', 'rxnorm_source TEXT', 'rxnorm_ingredient TEXT', 'ndc TEXT')
+    out.execute("""CREATE TEMP TABLE IF NOT EXISTS med_codes AS SELECT record_id, json_extract(payload,'$.rxcui') AS rxcui,
+                     json_extract(payload,'$.ndc') AS ndc FROM record
+                     WHERE (json_extract(payload,'$.rxcui') IS NOT NULL OR json_extract(payload,'$.ndc') IS NOT NULL)
+                       AND stream IN (""" + ','.join(f"'{s[0]}'" for s in MED_SOURCES) + ')')
+    out.execute('CREATE INDEX IF NOT EXISTS temp.med_codes_id ON med_codes(record_id)')
+    out.execute("""UPDATE medication SET (rxnorm, ndc) = (SELECT CAST(c.rxcui AS TEXT), CAST(c.ndc AS TEXT) FROM med_codes c
+                     WHERE c.record_id = medication.record_id)
+                   WHERE rxnorm IS NULL AND record_id IN (SELECT record_id FROM med_codes)""")
+    out.execute("UPDATE medication SET rxnorm_source = 'source' WHERE rxnorm IS NOT NULL AND rxnorm_source IS NULL")
+
+
+def settle_history(history):
+    """Effective claim state from its adjudication chain (same pairing as claims_review.settle).
+    history: dicts with record_id, status, payer_paid_cents, reverses (original_adjudication_record_id), in event order
+    (event_date, then arrival). Each reversal is paired with the payment it names; an unlinked reversal reverses the
+    latest unreversed payment before it. final_status = the last unreversed, non-reversal adjudication by event time;
+    'reversed' when every adjudication was reversed. Returns (final_status, live_net_paid_cents)."""
+    reversed_ids = {x['reverses'] for x in history if x['status'] == 'reversed' and x.get('reverses')}
+    for i, x in enumerate(history):
+        if x['status'] == 'reversed' and not x.get('reverses'):
+            prior = [y for y in history[:i] if y['status'] == 'paid' and y['record_id'] not in reversed_ids]
+            if prior: reversed_ids.add(prior[-1]['record_id'])
+    live = [x for x in history if x['status'] != 'reversed' and x['record_id'] not in reversed_ids]
+    final = live[-1]['status'] if live else ('reversed' if history else None)
+    return final, sum((x.get('payer_paid_cents') or 0) for x in live if x['status'] == 'paid')
+
+
+def _settle_claims(out):
+    """claim.final_status follows the adjudication chain, not arrival order: a reversal that arrives after the replacement
+    payment no longer makes a repriced, repaid claim look reversed. The arrival-order value stays in received_final_status."""
+    _add(out, 'claim', 'received_final_status TEXT', 'live_payer_paid_cents INTEGER')
+    out.execute('UPDATE claim SET received_final_status = final_status')
+    hist = defaultdict(list)
+    for cid, rid, st, paid, orig in out.execute(
+            """SELECT json_extract(payload,'$.claim_id'), record_id, json_extract(payload,'$.status'),
+                      json_extract(payload,'$.payer_paid_cents'), json_extract(payload,'$.original_adjudication_record_id')
+               FROM record WHERE stream = 'medical_claims' AND json_extract(payload,'$.claim_id') IS NOT NULL
+               ORDER BY event_date, available_date, json_extract(payload,'$.available_time'), record_id"""):
+        hist[cid].append({'record_id': rid, 'status': st, 'payer_paid_cents': paid, 'reverses': orig})
+    rows = [(*settle_history(h), cid) for cid, h in hist.items()]
+    out.executemany('UPDATE claim SET final_status = ?, live_payer_paid_cents = ? WHERE claim_id = ?', rows)
+    return {'claims': len(rows), 'final_status_changed': out.execute(
+                'SELECT count(*) FROM claim WHERE final_status IS NOT received_final_status').fetchone()[0],
+            'net_paid_differs_from_live_payment': out.execute(
+                'SELECT count(*) FROM claim WHERE net_payer_paid_cents IS NOT live_payer_paid_cents').fetchone()[0]}
+
+
+def _claim_codes(out):
+    """Claim-level standard codes from the claim's latest adjudication version (MS-DRG, ICD-10 diagnoses, NPIs, bill type)."""
+    cols = (('drg', '$.ms_drg'), ('drg_grouper_version', '$.grouper_version'), ('principal_diagnosis', '$.principal_diagnosis'),
+            ('diagnosis_codes', '$.diagnosis_codes'), ('billing_npi', '$.billing_provider_npi'), ('rendering_npi', '$.rendering_provider_npi'),
+            ('place_of_service', '$.place_of_service'), ('type_of_bill', '$.type_of_bill'), ('revenue_code', '$.revenue_code'),
+            ('service_code_system', '$.service_code_system'), ('service_code', '$.service_code'), ('local_charge_code', '$.local_charge_code'),
+            ('admission_date', '$.admission_date'), ('discharge_date', '$.discharge_date'))
+    _add(out, 'claim', *(f'{c} TEXT' for c, _ in cols))
+    out.execute('UPDATE claim SET (' + ', '.join(c for c, _ in cols) + ') = (SELECT ' +
+                ', '.join(f"CAST(json_extract(r.payload,'{p}') AS TEXT)" for _, p in cols) +
+                " FROM current_record r WHERE r.stream = 'medical_claims' AND r.business_id = claim.claim_id)")
+    # Legacy local codes stayed in service_code before v2.0; keep one local column across releases.
+    out.execute("UPDATE claim SET local_charge_code = service_code WHERE local_charge_code IS NULL AND service_code_system = 'synthetic_local'")
+    _add(out, 'claim', 'cpt TEXT', 'hcpcs TEXT')
+    out.execute("UPDATE claim SET cpt = CASE WHEN service_code_system = 'CPT' THEN service_code END, "
+                "hcpcs = CASE WHEN service_code_system = 'HCPCS' THEN service_code END")
+    out.execute('CREATE INDEX claim_drg ON claim(drg)')
+
+
+def _entities(out, path):
+    """Clinician and organization reference rows (NPI, NUCC taxonomy, TIN) from the build's received warehouse."""
+    out.executescript("""
+    CREATE TABLE clinician(clinician_id TEXT PRIMARY KEY, organization_id TEXT, specialty TEXT, npi TEXT, taxonomy_code TEXT);
+    CREATE TABLE organization(organization_id TEXT PRIMARY KEY, organization_type TEXT, display_name TEXT, npi TEXT,
+      taxonomy_code TEXT, tin TEXT, city TEXT, state TEXT, postal_code TEXT);
+    """)
+    source = Path(path).parent / 'warehouse.sqlite3'
+    try:
+        release = json.loads((Path(path) / 'run.json').read_text())['snapshot']['release']
+    except (OSError, KeyError, ValueError):
+        return 0
+    if not source.is_file(): return 0
+    db = sqlite3.connect(f'file:{source}?mode=ro', uri=True)
+    try:
+        if not db.execute("SELECT 1 FROM sqlite_master WHERE name = 'source_entities'").fetchone(): return 0
+        rows = [(k, json.loads(p)) for k, p in db.execute('SELECT kind, payload FROM source_entities WHERE release = ?', (release,))]
+    finally:
+        db.close()
+    out.executemany('INSERT OR REPLACE INTO clinician VALUES (?,?,?,?,?)',
+                    [(o.get('clinician_id'), o.get('organization_id'), o.get('specialty'), o.get('npi'), o.get('taxonomy_code'))
+                     for k, o in rows if k == 'clinicians'])
+    out.executemany('INSERT OR REPLACE INTO organization VALUES (?,?,?,?,?,?,?,?,?)',
+                    [(o.get('organization_id'), o.get('organization_type'), o.get('display_name'), o.get('npi'), o.get('taxonomy_code'),
+                      o.get('tin'), o.get('city'), o.get('state'), o.get('postal_code')) for k, o in rows if k == 'organizations'])
+    return len(rows)
+
+
+def _standards_summary(out):
+    """Code coverage and provenance, stored in meta so every answer can state which codes came from the source."""
+    one = lambda sql: out.execute(sql).fetchone()
+    s = {}
+    n, coded = one("SELECT count(DISTINCT record_id), count(DISTINCT CASE WHEN icd10_source = 'source' THEN record_id END) FROM condition WHERE source_table = 'conditions'")
+    s['conditions_with_source_icd10'] = [coded, n]
+    n, src, dic, dis = one("""SELECT count(DISTINCT record_id), count(DISTINCT CASE WHEN loinc_source = 'source' THEN record_id END),
+        count(DISTINCT CASE WHEN loinc_source = 'dictionary' THEN record_id END),
+        count(DISTINCT CASE WHEN loinc_source = 'source' AND loinc_dictionary IS NOT NULL AND loinc_dictionary <> loinc THEN record_id END)
+        FROM measurement WHERE source_table = 'labs'""")
+    s['labs_loinc'] = {'records': n, 'source': src, 'dictionary_fallback': dic, 'source_disagrees_with_dictionary': dis}
+    s['medication_rxnorm'] = {k: v for k, v in out.execute(
+        "SELECT coalesce(rxnorm_source, 'none'), count(DISTINCT record_id) FROM medication GROUP BY 1")}
+    s['claim_lines_cpt_or_hcpcs'] = list(one("SELECT count(CASE WHEN cpt IS NOT NULL OR hcpcs IS NOT NULL THEN 1 END), count(*) FROM claim_line"))
+    s['claims_with_drg'] = one('SELECT count(drg) FROM claim')[0]
+    s['clinicians_with_npi'] = list(one('SELECT count(npi), count(*) FROM clinician'))
+    s['patients_with_birth_date'] = list(one('SELECT count(birth_date), count(*) FROM patient'))
+    return s
 
 
 def _derived(out):
@@ -455,10 +687,16 @@ def build(path):
                         [(c, k, pid, n, f, l) for (c, k, pid), (n, f, l) in cp.items()])
         out.executescript(INDEXES)
         out.execute("CREATE INDEX record_patient_stream ON record(patient_id, stream)")
+        _standards(out, people)  # source standard codes first: the dictionary in _normalize only fills their gaps
         _derived(out)  # after indexes: derived entities read the record table by stream and patient
+        settlement = _settle_claims(out)
+        _claim_codes(out)
+        _entities(out, path)
         meta = json.loads((path / 'run.json').read_text())
         out.executemany('INSERT INTO meta VALUES (?,?)', [('version', VERSION), ('source_digest', meta['source_digest']),
-                                                          ('as_of', meta['snapshot']['as_of'])])
+                                                          ('as_of', meta['snapshot']['as_of']),
+                                                          ('standards', json.dumps(_standards_summary(out))),
+                                                          ('claim_settlement', json.dumps(settlement))])
         out.commit()
     finally:
         src.close(); out.close()

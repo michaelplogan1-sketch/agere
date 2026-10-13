@@ -5,7 +5,14 @@ import sqlite3
 import time
 from pathlib import Path
 from clinical_core.agere.warehouse import Warehouse
-from clinical_core.agere.healthcare_warehouse import ingest
+from clinical_core.agere import healthcare_warehouse, healthcare_warehouse_v2
+
+
+def ingest(warehouse, release):
+    """v1 manifests keep adapter/1 (reproducible release identity); standards-coded v2 manifests use adapter/2."""
+    manifest=json.loads((Path(release)/'manifest.json').read_text())
+    module=healthcare_warehouse if healthcare_warehouse_v2.adapter_for(manifest)==healthcare_warehouse.VERSION else healthcare_warehouse_v2
+    return module.ingest(warehouse,release)
 
 
 def write(path,value): path.write_text(json.dumps(value,indent=2,allow_nan=False)+'\n')
