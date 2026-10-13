@@ -242,6 +242,22 @@ def plan(stack,question,ledger,frontier):
                               'elapsed_seconds':time.perf_counter()-start}
             except ValueError as exc:
                 local_decline={**local_decline,'learned_rejected':str(exc)[:200]}
+    # Bottled rung ($0): the local model fine-tuned on verified ladder answers writes k queries; answered only when the
+    # greedy query passes lint + sanity and enough decodes agree on the result (see bottled.py); else falls through.
+    from . import bottled
+    if profile is not None and bottled.enabled():
+        try:
+            if bottled.BottledModel.available():
+                params,receipt=bottled.answer(stack.path,question,meta['snapshot']['as_of'],profile)
+                graph=validate({'interpretation':question,'coverage':'supported_observation','unmet_requirements':[],
+                                'nodes':[{'id':'answer','operation':'sql','inputs':[],'parameters':params,
+                                          'purpose':'Bottled local model query (distilled from verified answers)'}]},meta['snapshot']['as_of'])
+                return graph,{'route':'bottled_sql','model':receipt['model'],'new_paid_api_calls':0,'frontier_called':False,
+                              'bottled':receipt,'local_compiler_declined':local_decline,'steps':[],
+                              'elapsed_seconds':time.perf_counter()-start}
+        except (ValueError,ImportError,OSError,RuntimeError) as exc:
+            local_decline={**local_decline,'bottled_declined':str(exc)[:300],
+                           **({'bottled':exc.receipt} if hasattr(exc,'receipt') else {})}
     # Operator router: any phrasing reaches the right analytic engine. One small-model call picks the operator
     # and fills its typed parameters; the runtime validators decide; literal questions go on to verified SQL.
     if profile is not None and stack.allow_live and os.environ.get('AGERE_ROUTER','on')!='off':

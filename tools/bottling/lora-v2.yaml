@@ -1,0 +1,27 @@
+# MLX LoRA for the bottled SQL rung (Qwen3-4B 4-bit). Data from tools/bottling/prepare.py (verified pairs, clustered split).
+#   .venv/bin/python -m mlx_lm lora -c tools/bottling/lora-v2.yaml
+# Paths are the main checkout's artifacts (gitignored). Compact prompt (~3.4k tokens) ~10 s/iter on an M5 ->
+# 1100 iters (~2 epochs of 530 pairs) fits the 4 h training budget with periodic validation.
+model: /Users/mikel/clinical-insights-local/models/qwen3-4b
+train: true
+data: /Users/mikel/clinical-insights-local/artifacts/bottling/data-v2
+adapter_path: /Users/mikel/clinical-insights-local/artifacts/bottling/adapters-v2
+fine_tune_type: lora
+num_layers: 16
+batch_size: 1
+grad_accumulation_steps: 2
+iters: 1100
+learning_rate: 1.0e-4
+lr_schedule:
+  name: cosine_decay
+  warmup: 15         # optimizer updates (iters / grad_accumulation_steps)
+  warmup_init: 1.0e-6
+  arguments: [1.0e-4, 535, 1.0e-5]
+mask_prompt: true          # learn the SQL, not the schema
+max_seq_length: 4608
+grad_checkpoint: true
+steps_per_report: 10
+steps_per_eval: 200
+val_batches: 21
+save_every: 100
+seed: 7
