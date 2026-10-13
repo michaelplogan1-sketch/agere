@@ -1,0 +1,550 @@
+{
+ "schema": "agere-benchmarks/1",
+ "status": "machine-researched reference values with cited sources; not reviewed by a person",
+ "researched_via": "Perplexity Agent API (POST /v1/responses, web search); preset fast unless the entry says otherwise",
+ "use": "Shown next to answers as national/peer reference only; never changes a computed answer. Populations, definitions and years differ from the received data.",
+ "benchmarks": {
+  "a1c_poor_control": {
+   "id": "a1c_poor_control",
+   "family": "a1c_poor_control",
+   "payer": null,
+   "label": "HbA1c poor control (>9%) among adults with diabetes, HEDIS",
+   "unit": "%",
+   "value": 38.8,
+   "low": 18,
+   "high": 38.8,
+   "population": "Medicaid adults ages 18–64 for the single best national figure; the range includes recent commercial, Medicaid, and Medicare Advantage references, which are not a pooled national average.",
+   "year": 2024,
+   "summary": "CMS’s 2024 Adult Core Set reports a 38.8% national median for Medicaid adults with HbA1c poor control; recent NCQA-based product-line benchmarks and Medicare Advantage references span 18%–38.8%.",
+   "sources": [
+    {
+     "title": "Core Set Data Dashboard - Medicaid",
+     "url": "https://www.medicaid.gov/medicaid/quality-of-care/core-set-data-dashboard/main",
+     "publisher": "medicaid.gov",
+     "search_result_date": null
+    },
+    {
+     "title": "www.iha.org",
+     "url": "https://www.iha.org/wp-content/uploads/2024/10/AMP-incentive-design-benchmarks-MY-2024-25.pdf",
+     "publisher": "iha.org",
+     "search_result_date": null
+    },
+    {
+     "title": "HCBI Quality Benchmarks",
+     "url": "https://portal.ct.gov/ohs/programs-and-initiatives/healthcare-benchmark-initiative/hcbi-quality-benchmarks",
+     "publisher": "portal.ct.gov",
+     "search_result_date": "2022-01-01"
+    }
+   ],
+   "served_model": "openai/gpt-6-luna",
+   "preset": "medium",
+   "status": "cited",
+   "query": "HEDIS Hemoglobin A1c Control for Patients With Diabetes / Glycemic Status Assessment: poor control (HbA1c >9.0%) rate, lower is better; national average from NCQA State of Healthcare Quality / Quality Compass, with the range across commercial, Medicaid and Medicare product lines",
+   "query_digest": "7230c3e0f5e62ca6a7e5b3e1ccda1e7afe895be7a5daf2c914c5f951b38cf66c",
+   "researched_at": "2026-10-13",
+   "request_hash": "0ea514345594c376b66d03fd353a5cbbbc5f72b904bd0649a8ce1bf1394bacd0"
+  },
+  "admits_per_1000_commercial": {
+   "id": "admits_per_1000_commercial",
+   "family": "admits_per_1000",
+   "payer": "commercial",
+   "label": "Inpatient admissions per 1,000 commercially insured members",
+   "unit": "admissions per 1,000 member-years",
+   "value": 46,
+   "low": null,
+   "high": null,
+   "population": "National employer-sponsored insurance, group plans; inpatient admissions",
+   "year": 2021,
+   "summary": "HCCI reports 46 inpatient admissions per 1,000 for group coverage in 2021; its 2022 report says admissions declined nearly 6% that year but does not give an exact 2022 rate. [web:109][web:1]",
+   "sources": [
+    {
+     "title": "NHID - 2022 Final Report of Health Care Premium & Claim cost drivers Oliver Wyman Acturial Consulting, Inc.",
+     "url": "https://mm.nh.gov/files/uploads/nhid/documents/nhid-annualhearing-report-2023.pdf",
+     "publisher": "mm.nh.gov",
+     "search_result_date": null
+    },
+    {
+     "title": "[PDF] 2022 Health Care Cost and Utilization Report",
+     "url": "https://healthcostinstitute.org/wp-content/uploads/images/pdfs/HCCI_2022_Health_Care_Cost_and_Utilization_Report.pdf",
+     "publisher": "healthcostinstitute.org",
+     "search_result_date": null
+    }
+   ],
+   "served_model": "openai/gpt-6-luna",
+   "preset": "medium",
+   "status": "cited",
+   "query": "inpatient hospital admissions per 1,000 commercially insured (employer-sponsored) members per year, national (HCCI Health Care Cost and Utilization Report, Milliman, or peer-reviewed)",
+   "query_digest": "7a864c478741f7470808c32dd25823c3a79cf42ed00c23ce70c9a7e7761da090",
+   "researched_at": "2026-10-13",
+   "request_hash": "72cf69faac073ab3ce24e461996cb3c5f799abdba1977bd4e764491cd0e8fcfc"
+  },
+  "admits_per_1000_medicaid": {
+   "id": "admits_per_1000_medicaid",
+   "family": "admits_per_1000",
+   "payer": "medicaid",
+   "label": "Inpatient admissions per 1,000 Medicaid enrollees",
+   "unit": "admissions per 1,000 member-years",
+   "value": 81.6,
+   "low": null,
+   "high": null,
+   "population": "National Medicaid enrollees across benefit categories; inpatient hospital stays with expected primary payer Medicaid, normalized by all-enrollee full-year-equivalent enrollment",
+   "year": 2023,
+   "summary": "AHRQ HCUP estimates 7,494,257 Medicaid-payer inpatient stays in 2023; dividing by MACPAC’s FY 2023 enrollment FYE of 91,860,390 yields about 81.6 admissions per 1,000 member-years.[web:86][web:92]",
+   "sources": [
+    {
+     "title": "[XLS] https://datatools.ahrq.gov/hcup-fast-stats/wp-cont...",
+     "url": "https://datatools.ahrq.gov/hcup-fast-stats/wp-content/uploads/sites/3/2026/03/FSNationalTrendsInpatientStays-dy23Deliverable-12Dec2025.xlsx",
+     "publisher": "datatools.ahrq.gov",
+     "search_result_date": null
+    },
+    {
+     "title": "[XLS] https://www.macpac.gov/wp-content/uploads/2026/01/...",
+     "url": "https://www.macpac.gov/wp-content/uploads/2026/01/EXHIBIT-15.-Medicaid-Full-Year-Equivalent-Enrollment-by-State-and-Eligibility-Group-FY-2023.xlsx",
+     "publisher": "macpac.gov",
+     "search_result_date": null
+    }
+   ],
+   "served_model": "openai/gpt-6-luna",
+   "preset": "medium",
+   "status": "cited",
+   "query": "inpatient hospital stays per 1,000 Medicaid enrollees per year, national (AHRQ HCUP statistical briefs on Medicaid inpatient stays, MACPAC, or peer-reviewed studies)",
+   "query_digest": "19c417ce3e0ae6ffc6fbd626b18ab2702c10115c4549915ecccfd2224b66b662",
+   "researched_at": "2026-10-13",
+   "request_hash": "ea74f6efb4aa58b373a7ea189444f52c9a1e69b8b211e89c167c8af0867e017b"
+  },
+  "admits_per_1000_medicare": {
+   "id": "admits_per_1000_medicare",
+   "family": "admits_per_1000",
+   "payer": "medicare",
+   "label": "Acute inpatient admissions per 1,000, Medicare FFS",
+   "unit": "admissions per 1,000 member-years",
+   "value": 197,
+   "low": 197,
+   "high": 202,
+   "population": "U.S. Medicare fee-for-service beneficiaries; acute inpatient hospital stays",
+   "year": 2024,
+   "summary": "MedPAC reports 197 inpatient stays per 1,000 FFS Medicare beneficiaries in FY 2024; its 2022 figure was 202 stays per 1,000, providing the recent-source range.",
+   "sources": [
+    {
+     "title": "Chapter 6: July 2026 Data Book",
+     "url": "https://www.medpac.gov/wp-content/uploads/2026/07/July2026_MedPAC_DataBook_Sec6_SEC.pdf",
+     "publisher": "medpac.gov",
+     "search_result_date": null
+    },
+    {
+     "title": "[PDF] Acute inpatient services - MedPAC",
+     "url": "https://www.medpac.gov/wp-content/uploads/2024/07/July2024_MedPAC_DataBook_Sec6_SEC.pdf",
+     "publisher": "medpac.gov",
+     "search_result_date": null
+    }
+   ],
+   "served_model": "openai/gpt-6-luna",
+   "preset": "fast",
+   "status": "cited",
+   "query": "acute inpatient hospital stays per 1,000 Medicare fee-for-service beneficiaries per year, national (CMS Medicare Geographic Variation Public Use File \"IP covered stays per 1000 beneficiaries\", or MedPAC data book)",
+   "query_digest": "f963038d1f49c8babad3982426d33a850487d42a811cb3a660565bc3704da328",
+   "researched_at": "2026-10-13",
+   "request_hash": "d02885e4ac77a2f4c10cc75a66cfb7be4de294c359697bc533a7f2c22fd1c2b1"
+  },
+  "bp_control": {
+   "id": "bp_control",
+   "family": "bp_control",
+   "payer": null,
+   "label": "Controlling High Blood Pressure (<140/90), HEDIS CBP",
+   "unit": "%",
+   "value": 60.58,
+   "low": 52.8,
+   "high": 60.58,
+   "population": "National HEDIS Quality Compass 50th-percentile benchmark for commercial plans; Medicaid national benchmark (MY 2022)",
+   "year": 2022,
+   "summary": "NCQA Quality Compass data identify a 60.58% commercial 50th-percentile national CBP benchmark, while a state Medicaid report citing Quality Compass gives a 52.8% Medicaid national benchmark; no comparable Medicare national CBP rate is established by the available results.",
+   "sources": [
+    {
+     "title": "Blue Cross and Blue Shield of Texas, a Division of Health Care Service Corporation, a Mutual Legal Reserve Company, an Independent Licensee of",
+     "url": "https://www.bcbstx.com/docs/provider/tx/education/news/2026/tx-qi-performance-data.pdf",
+     "publisher": "bcbstx.com",
+     "search_result_date": null
+    },
+    {
+     "title": "CBP: Controlling High Blood Pressure (GC-MY22) - Clear Impact",
+     "url": "https://embed.clearimpact.com/Measure/Embed/100249431",
+     "publisher": "embed.clearimpact.com",
+     "search_result_date": "2022-01-01"
+    }
+   ],
+   "served_model": "openai/gpt-6-luna",
+   "preset": "fast",
+   "status": "cited",
+   "query": "HEDIS Controlling High Blood Pressure (CBP, adequately controlled <140/90 mm Hg) rate; national average from NCQA State of Healthcare Quality / Quality Compass, with the range across commercial, Medicaid and Medicare product lines",
+   "query_digest": "ccc9934b7f7e3576d35fab58d7d690c0eb75b5e69030b3a8c787cc8b9f793eee",
+   "researched_at": "2026-10-13",
+   "request_hash": "8131cfe6e94008ae52c12e41a2ab2abbd3771e6ce78d90c2b95f00fcf4d807a8"
+  },
+  "days_to_payment": {
+   "id": "days_to_payment",
+   "family": "days_to_payment",
+   "payer": null,
+   "label": "Days to payment / days in accounts receivable",
+   "unit": "days",
+   "value": 26,
+   "low": 26,
+   "high": 53,
+   "population": "Professional and ancillary claims billed to Medicaid managed-care organizations in 39 states and the District of Columbia; national claim-level median and mean",
+   "year": 2022,
+   "summary": "A 2022 national TAF-data study in Health Affairs Scholar measured time from service through provider billing and payer reimbursement, reporting a 26-day median and 53-day mean for professional claims.",
+   "sources": [
+    {
+     "title": "Variation in Time to Payment in Medicaid Managed Care: Evidence from National TAF Data, 2022",
+     "url": "https://academic.oup.com/healthaffairsscholar/advance-article/doi/10.1093/haschl/qxag102/8665209?searchresult=1",
+     "publisher": "academic.oup.com",
+     "search_result_date": "2026-04-30"
+    },
+    {
+     "title": "Variation in time to payment in Medicaid managed care",
+     "url": "https://academic.oup.com/healthaffairsscholar/article/4/5/qxag102/8665209",
+     "publisher": "academic.oup.com",
+     "search_result_date": "2026-05-05"
+    }
+   ],
+   "served_model": "openai/gpt-6-luna",
+   "preset": "fast",
+   "status": "cited",
+   "query": "average days in accounts receivable (or days from claim submission to payment) for US hospitals and physician practices (HFMA, MGMA, Kodiak or similar)",
+   "query_digest": "8b6ab49d555c2b00914bbf5a81a6682358c9f158e60c78b70af1e896dfcaabb0",
+   "researched_at": "2026-10-13",
+   "request_hash": "525741d852a7c94008f0be0b27b4a7c0747a21553c0253cae71d401fb482fa39"
+  },
+  "denial_rate": {
+   "id": "denial_rate",
+   "family": "denial_rate",
+   "payer": null,
+   "label": "Initial (first-pass) claim denial rate",
+   "unit": "%",
+   "value": 11.65,
+   "low": 11.2,
+   "high": 15,
+   "population": "US hospitals and physicians in Kodiak Solutions’ revenue-cycle benchmarking platform; broader hospital, health system, and post-acute care respondents in Premier’s national survey of private-payer claims",
+   "year": 2025,
+   "summary": "HFMA reports Kodiak’s platform-measured initial denial rate was 11.65% through November 2025; recent benchmarks include 11.2% in 2022 and Premier’s approximately 15% initial denial rate for private-payer claims based on 2022 claims data.",
+   "sources": [
+    {
+     "title": "Battle of the Bots intensifies over healthcare denials | HFMA",
+     "url": "https://www.hfma.org/revenue-cycle/denials-management/battle-of-the-bots-intensifies-over-denials/",
+     "publisher": "hfma.org",
+     "search_result_date": "2026-01-30"
+    },
+    {
+     "title": "Payers' increasing claims denials, delays 'wreaking havoc' on provider revenue cycles",
+     "url": "https://www.fiercehealthcare.com/finance/payers-increasing-claims-denials-delays-wreaking-havoc-provider-revenue-cycles",
+     "publisher": "fiercehealthcare.com",
+     "search_result_date": null
+    },
+    {
+     "title": "Claims denials are costing hospitals nearly $20B per year | Becker's",
+     "url": "https://www.beckershospitalreview.com/finance/claims-denials-are-costing-hospitals-nearly-20b-per-year/",
+     "publisher": "beckershospitalreview.com",
+     "search_result_date": "2024-03-25"
+    }
+   ],
+   "served_model": "openai/gpt-6-luna",
+   "preset": "fast",
+   "status": "cited",
+   "query": "initial (first-pass) claim denial rate for US hospitals and health systems (share of claims denied on first submission; Change Healthcare, Kodiak, HFMA, AHA or similar)",
+   "query_digest": "e7635d6de8cd3eb0bd8a75891091354d5036a6bddab58a6f272394828637837c",
+   "researched_at": "2026-10-13",
+   "request_hash": "9e3bf4da52904bbf586769b65c9e000e372d44e584d331bda619405e896cde9a"
+  },
+  "ed_per_1000_commercial": {
+   "id": "ed_per_1000_commercial",
+   "family": "ed_per_1000",
+   "payer": "commercial",
+   "label": "ED visits per 1,000 commercially insured members",
+   "unit": "visits per 1,000 member-years",
+   "value": 172,
+   "low": 172,
+   "high": 172,
+   "population": "People under age 65 with employer-sponsored insurance in the United States; emergency department visits",
+   "year": 2022,
+   "summary": "HCCI’s 2022 Health Care Cost and Utilization Report measures 172 emergency room visits per 1,000 people with employer-sponsored insurance under age 65.[4]",
+   "sources": [
+    {
+     "title": "Sunny for Employers & TPAs",
+     "url": "https://sunnyhealthai.com/employers/self-insured/",
+     "publisher": "sunnyhealthai.com",
+     "search_result_date": null
+    }
+   ],
+   "served_model": "openai/gpt-6-luna",
+   "preset": "fast",
+   "status": "cited",
+   "query": "emergency department visits per 1,000 commercially insured (employer-sponsored) members per year (national; HCCI, FAIR Health, NCQA or similar)",
+   "query_digest": "cdcb121920031b570415fb3b4590e251eb14ca96960c5cea9fdf67cf46d278f3",
+   "researched_at": "2026-10-13",
+   "request_hash": "613ba87cc9acc75ab74c5ec5875b63072c6d53e11636f97e36016b92a7a17b57"
+  },
+  "ed_per_1000_medicaid": {
+   "id": "ed_per_1000_medicaid",
+   "family": "ed_per_1000",
+   "payer": "medicaid",
+   "label": "ED visits per 1,000 Medicaid enrollees",
+   "unit": "visits per 1,000 member-years",
+   "value": 990,
+   "low": null,
+   "high": null,
+   "population": "U.S. patients with Medicaid, CHIP, or other state-based public coverage; emergency department visits, all settings",
+   "year": 2022,
+   "summary": "CDC’s National Hospital Ambulatory Medical Care Survey estimated 99 ED visits per 100 people for patients with Medicaid, CHIP, or other state-based programs in 2022; converted to 1,000 people, this is 990 visits per 1,000 member-years.",
+   "sources": [
+    {
+     "title": "Emergency Department Visit Rates by Selected Characteristics - CDC",
+     "url": "https://www.cdc.gov/nchs/products/databriefs/db503.htm",
+     "publisher": "cdc.gov",
+     "search_result_date": "2024-08-14"
+    }
+   ],
+   "served_model": "openai/gpt-6-luna",
+   "preset": "fast",
+   "status": "cited",
+   "query": "emergency department visits per 1,000 Medicaid enrollees (or per 1,000 member-years) per year, national; e.g. MACPAC MACStats, CMS T-MSIS analyses, NCQA HEDIS EDU Medicaid, or peer-reviewed studies",
+   "query_digest": "b4f9c93f854a3f1a6027f9db2c0ab939af0f57e69be6a6331e2844fc75a4d3ce",
+   "researched_at": "2026-10-13",
+   "request_hash": "99b8d48c250eea02d371448132cda6fef2a9dc2cb184a7c57792c7b7ac7c8127"
+  },
+  "ed_per_1000_medicare": {
+   "id": "ed_per_1000_medicare",
+   "family": "ed_per_1000",
+   "payer": "medicare",
+   "label": "ED visits per 1,000 beneficiaries, Medicare FFS",
+   "unit": "visits per 1,000 member-years",
+   "value": 590.5484,
+   "low": null,
+   "high": null,
+   "population": "National Original Medicare fee-for-service beneficiaries, all ages; inpatient and outpatient emergency department visits",
+   "year": 2024,
+   "summary": "CMS’s 2024 Medicare Geographic Variation data report 590.5484 inpatient or outpatient ED visits per 1,000 Original Medicare beneficiaries nationally. [web:50][web:51]",
+   "sources": [
+    {
+     "title": "Medicare Geographic Variation - by National, State & County",
+     "url": "https://data.cms.gov/summary-statistics-on-use-and-payments/medicare-geographic-comparisons/medicare-geographic-variation-by-national-state-county",
+     "publisher": "data.cms.gov",
+     "search_result_date": "2026-04-29"
+    },
+    {
+     "title": "2014-2024 Original Medicare Geographic Variation by ...",
+     "url": "https://data.cms.gov/sites/default/files/2026-05/267755af-8e26-4bcd-a3ea-fef41c96b7fc/2014-2024%20Original%20Medicare%20Geographic%20Variation%20Data%20Dictionary.pdf",
+     "publisher": "data.cms.gov",
+     "search_result_date": null
+    }
+   ],
+   "served_model": "openai/gpt-6-luna",
+   "preset": "medium",
+   "status": "cited",
+   "query": "emergency department visits per 1,000 Medicare fee-for-service beneficiaries per year (national, CMS Geographic Variation or similar)",
+   "query_digest": "1458af1e7b9619a95539290b3120cc5b41a27dc360ceaef544fcfdb996e5d889",
+   "researched_at": "2026-10-13",
+   "request_hash": "eb5fc914ac1c803d0b0359582b53426e8830c548833ad252b445e51e9ab25a94"
+  },
+  "no_show": {
+   "id": "no_show",
+   "family": "no_show",
+   "payer": null,
+   "label": "Outpatient appointment no-show rate",
+   "unit": "%",
+   "value": 7,
+   "low": 5,
+   "high": 7,
+   "population": "U.S. single-specialty medical group practices across specialties; aggregate benchmark, not all ambulatory care settings",
+   "year": 2019,
+   "summary": "MGMA’s 2023 DataDive report gives a 7.00% single-specialty aggregate no-show rate for 2019, compared with 5.00% in 2022; this is the most recent authoritative national benchmark available in the cited results.",
+   "sources": [
+    {
+     "title": "www.mgma.com › getkaiasset › ef6e357a-412b-41de-848fRESTORING BALANCE TO PATIENT ACCESS AND MEDICAL PRACTICE ...",
+     "url": "https://www.mgma.com/getkaiasset/ef6e357a-412b-41de-848f-a1b506b4261b/MGMA-PracticeOperations-DataReport-August2023-FINAL.pdf",
+     "publisher": "mgma.com",
+     "search_result_date": null
+    }
+   ],
+   "served_model": "openai/gpt-6-luna",
+   "preset": "fast",
+   "status": "cited",
+   "query": "outpatient / ambulatory clinic appointment no-show rate in US practices (MGMA or peer-reviewed systematic review)",
+   "query_digest": "2af749ce11d31d31e4951d15482914248d83c674f1e84f517fd8203983dab655",
+   "researched_at": "2026-10-13",
+   "request_hash": "6767edec7cf1570a2294240dfea5ac402bdd8bc5b655c26e05e6946326b86f72"
+  },
+  "pmpm_commercial": {
+   "id": "pmpm_commercial",
+   "family": "pmpm",
+   "payer": "commercial",
+   "label": "Commercial (employer) health spending per member per month",
+   "unit": "USD PMPM",
+   "value": 562.75,
+   "low": null,
+   "high": null,
+   "population": "People under age 65 with employer-sponsored insurance in the United States; total health care spending per person, including consumer out-of-pocket spending",
+   "year": 2023,
+   "summary": "HCCI reported average annual spending of $6,743 per person in 2023, equivalent to $562.75 PMPM.",
+   "sources": [
+    {
+     "title": "Health Care Spending for People with Employer-Sponsored Insurance Reached $6,743 Per Person in 2023",
+     "url": "https://www.morningstar.com/news/pr-newswire/20261013dc70176/health-care-spending-for-people-with-employer-sponsored-insurance-reached-6743-per-person-in-2023",
+     "publisher": "morningstar.com",
+     "search_result_date": "2026-10-13"
+    }
+   ],
+   "served_model": "openai/gpt-6-luna",
+   "preset": "fast",
+   "status": "cited",
+   "query": "average employer-sponsored (commercial) health spending per member per month (PMPM), national (HCCI, Milliman, KFF or similar)",
+   "query_digest": "ca4bebc3dfb1e0354d313a8d29ad4d65abb5f12bdd4ac3ed5a158e4202be06a6",
+   "researched_at": "2026-10-13",
+   "request_hash": "edc541612d4a0d2e3e74f307ab2d3c5d72ca4e0d679c74d6930bb05045812d42"
+  },
+  "pmpm_medicaid": {
+   "id": "pmpm_medicaid",
+   "family": "pmpm",
+   "payer": "medicaid",
+   "label": "Medicaid spending per enrollee per month",
+   "unit": "USD PMPM",
+   "value": 821.58,
+   "low": null,
+   "high": null,
+   "population": "National Medicaid full-benefit enrollees across all eligibility groups; benefit spending from federal and state funds, measured per full-year-equivalent enrollee",
+   "year": 2023,
+   "summary": "MACPAC reports $9,859 in FY 2023 benefit spending per full-year-equivalent full-benefit enrollee; divided by 12, this is $821.58 PMPM.",
+   "sources": [
+    {
+     "title": "EXHIBIT 22. Medicaid Benefit Spending Per Full-Year ...",
+     "url": "https://www.macpac.gov/wp-content/uploads/2026/01/EXHIBIT-22.-Medicaid-Benefit-Spending-Per-Full-Year-Equivalent-FYE-Enrollee-by-State-and-Eligibility-Group-FY-2023.pdf",
+     "publisher": "macpac.gov",
+     "search_result_date": null
+    }
+   ],
+   "served_model": "openai/gpt-6-luna",
+   "preset": "medium",
+   "status": "cited",
+   "query": "average Medicaid spending per full-benefit enrollee per month (PMPM), national, all eligibility groups",
+   "query_digest": "3f6bbefd57fe8b0ede5218fb7b7da9ab2b253a4069bd3eb56585a748d0e8cb1c",
+   "researched_at": "2026-10-13",
+   "request_hash": "a6ff3c44694113d88ce791d1f7e12f3706f2a81acd2a945f51d04cd15a9b1616"
+  },
+  "pmpm_medicare": {
+   "id": "pmpm_medicare",
+   "family": "pmpm",
+   "payer": "medicare",
+   "label": "Total cost of care per member per month, Medicare FFS",
+   "unit": "USD PMPM",
+   "value": 1133.83,
+   "low": 1133.83,
+   "high": 1133.83,
+   "population": "U.S. Original Medicare fee-for-service beneficiaries, Parts A and B",
+   "year": 2024,
+   "summary": "CMS reports 2024 actual total per-capita costs of $13,606 for the Original Medicare study population; divided by 12, this is $1,133.83 PMPM.[5]",
+   "sources": [
+    {
+     "title": "Geographic Variation in Standardized Medicare Spending - State",
+     "url": "https://data.cms.gov/tools/geographic-variation-in-standardized-medicare-spending-state",
+     "publisher": "data.cms.gov",
+     "search_result_date": "2026-05-15"
+    }
+   ],
+   "served_model": "openai/gpt-6-luna",
+   "preset": "fast",
+   "status": "cited",
+   "query": "Medicare fee-for-service total Parts A and B spending per beneficiary, national (CMS Geographic Variation \"total actual costs per capita\" or MedPAC), expressed per member per month: divide an annual per-capita figure by 12",
+   "query_digest": "8da8daf8911abb8561ea56abe3ba902361c24a772b9874f673ecf5511ea53727",
+   "researched_at": "2026-10-13",
+   "request_hash": "dc0ae96277ed9aae8d261f01a962e1abb4ca518f1a76d2da45dd68e88b420a6a"
+  },
+  "readmission_30d_all_payer": {
+   "id": "readmission_30d_all_payer",
+   "family": "readmission_30d",
+   "payer": null,
+   "label": "30-day all-cause readmission rate, all payers",
+   "unit": "%",
+   "value": 13.9,
+   "low": 13.9,
+   "high": 13.9,
+   "population": "All-payer U.S. hospital inpatient admissions, including all expected payer groups; index admissions with at least one subsequent all-cause hospital admission within 30 days",
+   "year": 2020,
+   "summary": "AHRQ HCUP’s Nationwide Readmissions Database reports a 13.9% national 30-day all-cause readmission rate in 2020, stable from 2016 through 2020.",
+   "sources": [
+    {
+     "title": "Characteristics of 30-Day All-Cause Hospital Readmissions ...",
+     "url": "https://hcup-us.ahrq.gov/reports/statbriefs/sb304-readmissions-2016-2020.jsp",
+     "publisher": "hcup-us.ahrq.gov",
+     "search_result_date": null
+    }
+   ],
+   "served_model": "openai/gpt-6-luna",
+   "preset": "fast",
+   "status": "cited",
+   "query": "30-day all-cause hospital readmission rate for all payers combined in US hospitals (national; AHRQ HCUP Nationwide Readmissions Database or similar)",
+   "query_digest": "367168247181608f5357099176b5df8d3efdac4e881fd9505a6e5a5aed314277",
+   "researched_at": "2026-10-13",
+   "request_hash": "b3b515d0c9493727a996806a255bbfe64c24ca67e7597d49ef2e705abcd7f90f"
+  },
+  "readmission_30d_medicare": {
+   "id": "readmission_30d_medicare",
+   "family": "readmission_30d",
+   "payer": "medicare",
+   "label": "30-day all-cause readmission rate, Medicare FFS",
+   "unit": "%",
+   "value": 15.5,
+   "low": null,
+   "high": null,
+   "population": "Medicare fee-for-service beneficiaries; all-cause inpatient hospital readmissions within 30 days of discharge",
+   "year": 2019,
+   "summary": "A CMS Medicare Geographic Variation Public Use File summary reports a 15.5% all-cause readmission rate for the 2017–2019 reporting period.",
+   "sources": [
+    {
+     "title": "Hospital Readmission Reduction Program (HRRP) Revisited",
+     "url": "https://www.cmsne.org/wp-content/uploads/2023/01/2-4-23-session-I-Morley-HRRP-handouts.pdf",
+     "publisher": "cmsne.org",
+     "search_result_date": null
+    },
+    {
+     "title": "Geographic Variation            In Medicre Cost & Quality",
+     "url": "https://data.cms.gov/sites/default/files/2022-01/Geographic%20Variation%20Public%20Use%20File%20Methods%20Paper_0.pdf",
+     "publisher": "data.cms.gov",
+     "search_result_date": null
+    }
+   ],
+   "served_model": "openai/gpt-6-luna",
+   "preset": "low",
+   "status": "cited",
+   "query": "30-day all-cause hospital readmission rate for Medicare fee-for-service beneficiaries, national (CMS Medicare Geographic Variation Public Use File or CMS Hospital Compare / HRRP national rate)",
+   "query_digest": "2a32c2c87f04820d2910830c838170f9fd1135e8543d4f3c3250f2b1a7a31ea1",
+   "researched_at": "2026-10-13",
+   "request_hash": "fd282f111c0ecd89696cebf355cb22cde0d4fe6e6d9b64c62eea0cc9705799c0"
+  },
+  "statin_diabetes": {
+   "id": "statin_diabetes",
+   "family": "statin_diabetes",
+   "payer": null,
+   "label": "Statin therapy for patients with diabetes, HEDIS SPD",
+   "unit": "%",
+   "value": 63.83,
+   "low": 63.83,
+   "high": 63.83,
+   "population": "National HEDIS plans; product-line breakdown not specified in the available source; members ages 40–75 with diabetes and no clinical ASCVD who received at least one statin",
+   "year": 2023,
+   "summary": "NCQA’s 2023 national average for the HEDIS SPD received-statin-therapy rate was 63.83%; the available source does not provide averages by product line.",
+   "sources": [
+    {
+     "title": "[PDF] Statin Therapy for patients With Diabetes (SPD)",
+     "url": "https://www.trilliumhealthresources.org/sites/default/files/docs/HEDIS/Trillium-SPD-Tip-Sheet.pdf",
+     "publisher": "trilliumhealthresources.org",
+     "search_result_date": null
+    }
+   ],
+   "served_model": "openai/gpt-6-luna",
+   "preset": "fast",
+   "status": "cited",
+   "query": "HEDIS Statin Therapy for Patients With Diabetes (SPD, received statin therapy) rate, national averages by product line",
+   "query_digest": "4138ac75950b8a1de53c8adc6c659f237312a7b4c46df44c2572cf2026007822",
+   "researched_at": "2026-10-13",
+   "request_hash": "2ea949d19c3e2146989af3ae58e088e596648af24333a825c7da95b660160371"
+  }
+ }
+}

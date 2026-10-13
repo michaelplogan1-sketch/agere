@@ -137,7 +137,9 @@ class BudgetLedger:
 class PersistentGateway:
     ENDPOINTS={'jev':('https://api.typesafe.ai/v1/systemone','TYPESAFE_API_KEY'),
                'claude':('https://api.anthropic.com/v1/messages','ANTHROPIC_API_KEY'),
-               'perplexity':('https://api.perplexity.ai/v1/decisions','PERPLEXITY_API_KEY')}
+               'perplexity':('https://api.perplexity.ai/v1/decisions','PERPLEXITY_API_KEY'),
+               # Agent API (web-grounded answers with search results); preset-routed, model chosen server-side.
+               'perplexity_agent':('https://api.perplexity.ai/v1/responses','PERPLEXITY_API_KEY')}
     MODELS={'jev':'jev-1.13.0','claude':'claude-opus-5-5','perplexity':'pplx-decider-v1.1-27b'}
     def __init__(self,ledger,allow_live=False,transport=None):
         self.ledger=ledger;self.allow_live=allow_live;self.transport=transport or urllib.request.urlopen

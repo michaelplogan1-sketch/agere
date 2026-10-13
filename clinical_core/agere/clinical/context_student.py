@@ -32,7 +32,10 @@ REQUEST_MAX_BYTES=40000
 
 
 def send(body,provider,ledger,out,*,parse,allow_failed_response_revalidation=False,
-         revalidation_reason='bounded_probability_rounding/2', timeout=60):
+         revalidation_reason='bounded_probability_rounding/2', timeout=60, transport=None):
+    # Preset-routed providers (Perplexity Agent API) choose the model server-side: the ledger
+    # records 'preset:<name>' and the returned model revision is kept, not pinned.
+    expected=body.get('model');ledger_model=expected or 'preset:'+str(body.get('preset'))
     payload=json.dumps(body,allow_nan=False).encode()
     if len(payload)>REQUEST_MAX_BYTES:raise ValueError('Request exceeds synthetic research bound')
     key=digest({'contract':'context-student/1','provider':provider,'body':body})
@@ -41,11 +44,11 @@ def send(body,provider,ledger,out,*,parse,allow_failed_response_revalidation=Fal
     saved=out/(key+'.json')
     if old and old[0]=='failed' and allow_failed_response_revalidation and saved.exists():
         raw=json.loads(saved.read_text())['response']
-        if raw.get('model')!=body['model']:raise ValueError('Unexpected saved model revision')
+        if expected and raw.get('model')!=expected:raise ValueError('Unexpected saved model revision')
         result=parse(raw)
         receipt={'cache_hit':True,'request_hash':key,'offline_revalidation':revalidation_reason,
                  'prior_failed_reservation_preserved':True,'new_paid_api_calls':0,'usage':raw.get('usage'),
-                 'cost_estimate':usage_cost(raw['model'],raw.get('usage'))}
+                 'cost_estimate':usage_cost(raw.get('model') if expected else ledger_model,raw.get('usage'))}
         (out/(key+'-revalidated.json')).write_text(json.dumps(receipt,indent=2))
         return result,receipt
     if old and old[0]=='failed' and not saved.exists():
@@ -55,18 +58,21 @@ def send(body,provider,ledger,out,*,parse,allow_failed_response_revalidation=Fal
     endpoint,var=PersistentGateway.ENDPOINTS[provider]
     if not os.environ.get(var):raise ValueError('Missing '+var)
     # Max 8,192 output tokens and 20KB request keeps the configured token estimate below this hold.
-    ledger.reserve(key,provider,body['model'])
+    ledger.reserve(key,provider,ledger_model)
     headers={'Content-Type':'application/json'}
     if provider=='claude':headers.update({'x-api-key':os.environ[var],'anthropic-version':'2023-06-01'})
     else:headers['Authorization']='Bearer '+os.environ[var]
     t=time.perf_counter();raw=None
     try:
-        with urllib.request.urlopen(urllib.request.Request(endpoint,data=payload,headers=headers),timeout=timeout) as response:raw=json.loads(response.read())
+        with (transport or urllib.request.urlopen)(urllib.request.Request(endpoint,data=payload,headers=headers),timeout=timeout) as response:raw=json.loads(response.read())
+        if not expected:raw=_compact_agent_response(raw)
         # Preserve returned synthetic content and usage even when validation fails.
         # A failed parse remains a failed budget reservation, never a successful label.
         (out/(key+'.json')).write_text(json.dumps({'response':raw,'status':'received_pending_validation'},indent=2))
-        if raw.get('model')!=body['model']:raise ValueError('Unexpected model revision')
-        result=parse(raw);seconds=time.perf_counter()-t;ledger.finish(key,response=raw,seconds=seconds)
+        if expected and raw.get('model')!=expected:raise ValueError('Unexpected model revision')
+        result=parse(raw);seconds=time.perf_counter()-t
+        if not expected:raw={**raw,'served_model':raw.get('model'),'model':ledger_model}  # ledger model column stays the preset label
+        ledger.finish(key,response=raw,seconds=seconds)
         receipt={'request_hash':key,'model':raw['model'],'seconds':seconds,'usage':raw.get('usage'),'cost_estimate':usage_cost(raw['model'],raw.get('usage'))}
         (out/(key+'.json')).write_text(json.dumps({'response':raw,'receipt':receipt},indent=2))
         return result,receipt
@@ -84,6 +90,16 @@ def send(body,provider,ledger,out,*,parse,allow_failed_response_revalidation=Fal
             except (ValueError,TypeError,AttributeError):pass
         (out/(key+'-failure.json')).write_text(json.dumps({'status':'failed','error':error,'request_hash':key,'returned_usage':raw.get('usage') if isinstance(raw,dict) else None},indent=2))
         ledger.finish(key,error=error,seconds=time.perf_counter()-t);raise RuntimeError(error) from None
+
+
+def _compact_agent_response(raw):
+    """Agent API responses can carry whole fetched pages (MBs); keep a bounded excerpt so the ledger stays small."""
+    for item in raw.get('output') or []:
+        if isinstance(item,dict) and item.get('type')=='fetch_url_results':
+            for c in item.get('contents') or []:
+                if isinstance(c,dict) and isinstance(c.get('snippet'),str) and len(c['snippet'])>4000:
+                    c['snippet']=c['snippet'][:4000];c['truncated']=True
+    return raw
 
 
 def generate_batch(indices,ledger,out):

@@ -5,6 +5,12 @@ ROOT=Path(__file__).resolve().parents[2]
 
 def usage_cost(model,usage):
     prices=json.loads((ROOT/'config/agere/pricing.json').read_text())
+    reported=(usage or {}).get('cost') if isinstance(usage,dict) else None
+    if model not in prices and isinstance(reported,dict) and type(reported.get('total_cost')) in (int,float) \
+            and math.isfinite(reported['total_cost']) and reported['total_cost']>=0:
+        # Preset-routed providers (Perplexity Agent API) report their own per-request cost.
+        return {'estimated_usd':float(reported['total_cost']),'price_checked_at':None,'source':'provider-reported usage.cost',
+                'invoice_verified':False}
     if model not in prices or not isinstance(usage,dict):return None
     for key in ('input_tokens','output_tokens'):
         if type(usage.get(key))!=int or usage[key]<0:return None
