@@ -6,6 +6,7 @@ from clinical_core.agere.clinical.stack_runtime import Stack
 from clinical_core.agere.clinical.graph_workbench import medication_examples
 from clinical_core.agere.clinical.graph_planner import propose
 from clinical_core.agere.clinical.analysis_graph import catalog
+from clinical_core.agere.clinical.context_student import REQUEST_MAX_BYTES  # shared provider request bound
 
 def main():
  root=Path('artifacts/agere-population-stack-v3');out=root/'examples/medication-identity-v1';out.mkdir(parents=True,exist_ok=True)
@@ -27,7 +28,7 @@ def main():
   assert len(arb)==data['patient_counts'].get('recorded_raas_arb',0)
   assert len(metoprolol)==data['patient_counts'].get('formulation_unresolved',0)
   size={}
-  def measure(body,*a,**kw):size['maximum_ascii_question_request_bytes']=len(json.dumps(body).encode());assert size['maximum_ascii_question_request_bytes']<=20000
+  def measure(body,*a,**kw):size['maximum_ascii_question_request_bytes']=len(json.dumps(body).encode());assert size['maximum_ascii_question_request_bytes']<=REQUEST_MAX_BYTES
   with patch('clinical_core.agere.clinical.graph_planner.send',side_effect=measure):
    propose('x'*1500,root,None,snapshot=stack.retriever.meta['snapshot'],graph_catalog=catalog(root),observed_values=json.loads((root/'cohort-values.json').read_text()))
   report={'synthetic':True,'source_identity':data['source_identity'],'patients_evaluated':data['patients_evaluated'],

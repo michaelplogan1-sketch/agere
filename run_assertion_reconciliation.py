@@ -8,6 +8,7 @@ from clinical_core.agere.clinical import assertion_reconciliation as ar
 from clinical_core.agere.clinical.graph_workbench import assertion_examples, SCRIPT
 from clinical_core.agere.clinical.graph_planner import propose
 from clinical_core.agere.clinical.analysis_graph import catalog
+from clinical_core.agere.clinical.context_student import REQUEST_MAX_BYTES  # shared provider request bound
 
 
 def main():
@@ -32,7 +33,7 @@ def main():
          'scope':'Source accounting and documentary reconciliation; not clinical accuracy or outcome validation.'},indent=2))
     Path('/tmp/agere-assertion-workbench.js').write_text(SCRIPT)
     print('Planner bytes: '+str(size[0]),flush=True)
-    assert size[0]<=20000, 'Planner exceeds provider cap'
+    assert size[0]<=REQUEST_MAX_BYTES, 'Planner exceeds provider cap'
 
 
 if __name__=='__main__':main()

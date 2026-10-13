@@ -12,6 +12,7 @@ from clinical_core.agere.clinical.graph_planner import propose
 from clinical_core.agere.clinical.graph_workbench import work_examples
 from clinical_core.agere.clinical.stack_runtime import Stack
 from run_integrated_stack import keys
+from clinical_core.agere.clinical.context_student import REQUEST_MAX_BYTES  # shared provider request bound
 
 
 def lifecycle_demo(stack_path, out, proposal):
@@ -70,7 +71,7 @@ def main():
                     'clinical_goal_verified':demo['detail']['item']['clinical_goal_verified'],'events':len(demo['detail']['history'])}
         db.close()
         def request_size(body,*a,**kw):
-            size=len(json.dumps(body).encode());assert size<=20000,size
+            size=len(json.dumps(body).encode());assert size<=REQUEST_MAX_BYTES,size
             report['maximum_ascii_question_request_bytes']=size
         with patch('clinical_core.agere.clinical.graph_planner.send',side_effect=request_size):
             propose('x'*1500,args.stack,None,snapshot=stack.retriever.meta['snapshot'],graph_catalog=catalog(args.stack),

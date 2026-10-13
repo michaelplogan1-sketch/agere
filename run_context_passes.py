@@ -11,6 +11,7 @@ from clinical_core.agere.clinical import context_builder as context, context_pas
 from clinical_core.agere.clinical.graph_workbench import pass_examples, context_examples
 from clinical_core.agere.clinical.graph_planner import propose
 from clinical_core.agere.clinical.analysis_graph import catalog
+from clinical_core.agere.clinical.context_student import REQUEST_MAX_BYTES  # shared provider request bound
 
 
 def main():
@@ -55,7 +56,7 @@ def main():
                               'counts':r['counts'],'checks':checks,'seconds':r['elapsed_seconds']}),flush=True)
         size=[]
         def capture(body,*a,**kw):
-            size.append(len(json.dumps(body).encode()));assert size[-1]<=20000,size[-1]
+            size.append(len(json.dumps(body).encode()));assert size[-1]<=REQUEST_MAX_BYTES,size[-1]
         meta=json.loads((args.stack/'run.json').read_text())
         with patch('clinical_core.agere.clinical.graph_planner.send',side_effect=capture):
             propose('x'*1500,args.stack,None,snapshot=meta['snapshot'],graph_catalog=catalog(args.stack),

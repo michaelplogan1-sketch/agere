@@ -9,6 +9,7 @@ from clinical_core.agere.clinical.context_builder import execute, inspect
 from clinical_core.agere.clinical.graph_workbench import context_examples
 from clinical_core.agere.clinical.graph_planner import propose
 from clinical_core.agere.clinical.analysis_graph import catalog
+from clinical_core.agere.clinical.context_student import REQUEST_MAX_BYTES  # shared provider request bound
 
 
 def main():
@@ -33,7 +34,7 @@ def main():
         receipts.append(result)
     planner_bytes=[]
     def capture(body,*a,**kw):
-        size=len(json.dumps(body).encode());planner_bytes.append(size);assert size<=20000,size
+        size=len(json.dumps(body).encode());planner_bytes.append(size);assert size<=REQUEST_MAX_BYTES,size
     meta=json.loads((args.stack/'run.json').read_text())
     with patch('clinical_core.agere.clinical.graph_planner.send',side_effect=capture):
         propose('x'*1500,args.stack,None,snapshot=meta['snapshot'],graph_catalog=catalog(args.stack),

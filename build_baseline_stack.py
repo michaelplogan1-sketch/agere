@@ -8,6 +8,7 @@ from unittest.mock import patch
 from clinical_core.agere.clinical import baseline_evidence as B, graph_planner, analysis_graph
 from clinical_core.agere.clinical.stack_runtime import Stack
 from clinical_core.agere.clinical.graph_workbench import baseline_examples, snapshot_examples
+from clinical_core.agere.clinical.context_student import REQUEST_MAX_BYTES  # shared provider request bound
 
 
 def main():
@@ -38,7 +39,7 @@ def main():
         with patch.object(graph_planner,'send',side_effect=capture):
             graph_planner.propose('x'*1500,None,None,snapshot=meta['snapshot'],graph_catalog=analysis_graph.catalog(path),
                 observed_values=json.loads((path/'cohort-values.json').read_text()))
-        if max(sizes)>20000:raise ValueError('Provider request exceeds current bound')
+        if max(sizes)>REQUEST_MAX_BYTES:raise ValueError('Provider request exceeds current bound')
         receipt={'schema':B.VERSION,'synthetic':True,'code_identity':B.code_identity(),'runs':runs,'exports':exports,
             'frontier_request_bytes_1500_ascii_char_question':sizes[0],'new_paid_api_calls':0,'new_model_weights':False,
             'limits':B.LIMITS}

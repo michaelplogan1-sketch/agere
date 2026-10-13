@@ -9,6 +9,7 @@ from clinical_core.agere.clinical.stack_runtime import Stack
 from clinical_core.agere.clinical.graph_workbench import baseline_examples,snapshot_examples
 from clinical_core.agere.clinical import analysis_graph,graph_planner
 from clinical_core.agere.warehouse_activation import code_identity as qualification_code
+from clinical_core.agere.clinical.context_student import REQUEST_MAX_BYTES  # shared provider request bound
 
 
 def write(path,value):path.write_text(json.dumps(value,indent=2,allow_nan=False)+'\n')
@@ -68,7 +69,7 @@ def main():
             'clinical_accuracy_measured':False,'source_file_sha256':connection['snapshot']['source_dataset']['source_sha256']}
         receipt['semantic_students']={'attached':False,'reason':'Narrative source contract changed; separate requalification required.'}
         write(out/'verification.json',receipt);print(json.dumps(receipt,indent=2),flush=True)
-        if max(sizes)>20000:raise ValueError('New source catalog exceeds existing provider request bound')
+        if max(sizes)>REQUEST_MAX_BYTES:raise ValueError('New source catalog exceeds existing provider request bound')
     finally:stack.close()
 
 

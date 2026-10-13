@@ -10,6 +10,7 @@ from clinical_core.agere.clinical.graph_planner import propose
 from clinical_core.agere.clinical.graph_workbench import longitudinal_examples
 from clinical_core.agere.clinical.stack_runtime import Stack
 from run_integrated_stack import keys
+from clinical_core.agere.clinical.context_student import REQUEST_MAX_BYTES  # shared provider request bound
 
 
 def independent_counts(path):
@@ -54,7 +55,7 @@ def main():
         summary['independent_check']={k:v for k,v in direct.items() if k!='pairs'}
         (out/'longitudinal-independent-counts.json').write_text(json.dumps(direct,indent=2))
         def request_size(body,*a,**kw):
-            size=len(json.dumps(body).encode());assert size<=20000,size
+            size=len(json.dumps(body).encode());assert size<=REQUEST_MAX_BYTES,size
             summary['maximum_ascii_question_request_bytes']=size
         with patch('clinical_core.agere.clinical.graph_planner.send',side_effect=request_size):
             propose('x'*1500,args.stack,None,snapshot=stack.retriever.meta['snapshot'],graph_catalog=catalog(args.stack),

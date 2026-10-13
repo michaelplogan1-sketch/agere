@@ -8,6 +8,7 @@ from clinical_core.agere.clinical.graph_planner import propose
 from clinical_core.agere.clinical.graph_workbench import state_examples
 from clinical_core.agere.clinical.stack_runtime import Stack
 from run_integrated_stack import keys
+from clinical_core.agere.clinical.context_student import REQUEST_MAX_BYTES  # shared provider request bound
 
 
 def main():
@@ -41,7 +42,7 @@ def main():
                 'new_paid_api_calls':0,'cache_replay_new_paid_api_calls':replay['new_paid_api_calls'],'limits':data['limits']}
         def size(body,*a,**kw):
             count=len(json.dumps(body).encode());report['maximum_ascii_question_request_bytes']=count
-            assert count<=20000,count
+            assert count<=REQUEST_MAX_BYTES,count
         with patch('clinical_core.agere.clinical.graph_planner.send',side_effect=size):
             propose('x'*1500,args.stack,None,snapshot=stack.retriever.meta['snapshot'],graph_catalog=catalog(args.stack),
                     observed_values=json.loads((args.stack/'cohort-values.json').read_text()))

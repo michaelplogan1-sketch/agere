@@ -9,6 +9,7 @@ from clinical_core.agere.clinical import analysis_graph as graph, source_state a
 from clinical_core.agere.clinical.graph_workbench import source_state_examples
 from clinical_core.agere.clinical.graph_planner import propose
 from clinical_core.agere.clinical.economical_planner import local_plan
+from clinical_core.agere.clinical.context_student import REQUEST_MAX_BYTES  # shared provider request bound
 
 
 def main():
@@ -31,7 +32,7 @@ def main():
     sizes=[]
     with patch('clinical_core.agere.clinical.graph_planner.send',side_effect=lambda body,*a,**k:sizes.append(len(json.dumps(body).encode()))):
         propose('x'*1500,root,None,snapshot=meta['snapshot'],graph_catalog=graph.catalog(root),observed_values=json.loads((root/'cohort-values.json').read_text()))
-    assert sizes[0]<=20000, sizes[0]
+    assert sizes[0]<=REQUEST_MAX_BYTES, sizes[0]
     (out/'run.json').write_text(json.dumps({'synthetic':True,'runs':runs,'new_paid_api_calls':0,'planner_max_ascii_request_bytes':sizes[0],
         'scope':'Full-population documented relations on explicit clocks, not current care or eligibility.'},indent=2))
     print('Bounded planner bytes: '+str(sizes[0]))
