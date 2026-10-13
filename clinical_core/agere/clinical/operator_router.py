@@ -9,7 +9,7 @@ import copy, json, time
 
 from .capability_registry import PRODUCT, LITERAL
 
-VERSION = 'operator-router/1'
+VERSION = 'operator-router/2'
 MODEL = 'claude-haiku-5-5'
 
 SYSTEM = (
@@ -75,28 +75,36 @@ def normalize_spec(spec):
     return {k: [normalize_atom(a) for a in (spec or {}).get(k) or [] if isinstance(a, dict)] for k in ('all', 'any', 'exclude')}
 
 
-def tools():
+def tool(op):
+    """The full typed tool for one operator (step 2: fill parameters)."""
     from .graph_contracts import parameter_schema
     from .graph_planner import CONTRACTS
     stub = {'cohort_fields': {'record_fields': {}}, 'evidence_catalog': {}}
     population = population_schema()
-    result = []
-    for op, spec in PRODUCT.items():
-        parameters = _loose(parameter_schema(op, stub))
-        for key, value in parameters.get('properties', {}).items():  # nested population specs use the compact grammar
-            if isinstance(value, dict) and set(value.get('properties', {})) == {'all', 'any', 'exclude'}:
-                parameters['properties'][key] = population
-        properties = {'parameters': parameters}
-        if spec['population'] != 'none': properties['population'] = population
-        result.append({'name': op, 'description': spec['use'] + ' ' + CONTRACTS[op]['meaning'],
-                       'input_schema': {'type': 'object', 'properties': properties, 'required': ['parameters']}})
-    result.append({'name': 'literal_lookup', 'description': LITERAL,
-                   'input_schema': {'type': 'object', 'properties': {}}})
+    parameters = _loose(parameter_schema(op, stub))
+    for key, value in parameters.get('properties', {}).items():  # nested population specs use the compact grammar
+        if isinstance(value, dict) and set(value.get('properties', {})) == {'all', 'any', 'exclude'}:
+            parameters['properties'][key] = population
+    properties = {'parameters': parameters}
+    if PRODUCT[op]['population'] != 'none': properties['population'] = population
+    return {'name': op, 'description': PRODUCT[op]['use'] + ' ' + CONTRACTS[op]['meaning'],
+            'input_schema': {'type': 'object', 'properties': properties, 'required': ['parameters']}}
+
+
+def menu():
+    """Step 1: choose the engine from one-line descriptions (stays small as capabilities grow)."""
+    result = [{'name': op, 'description': spec['use'], 'input_schema': {'type': 'object', 'properties': {}}}
+              for op, spec in PRODUCT.items()]
+    result.append({'name': 'literal_lookup', 'description': LITERAL, 'input_schema': {'type': 'object', 'properties': {}}})
     result.append({'name': 'not_answerable', 'description': 'The data needed does not exist in this warehouse.',
                    'input_schema': {'type': 'object', 'properties': {'missing': {'type': 'array', 'items': {'type': 'string'}}},
                                     'required': ['missing']}})
-    result[-1]['cache_control'] = {'type': 'ephemeral'}
     return result
+
+
+def tools():
+    """Every tool the router can expose (for size checks and docs)."""
+    return [*menu(), *[tool(op) for op in PRODUCT]]
 
 
 def to_graph(question, choice):
@@ -124,12 +132,15 @@ def to_graph(question, choice):
     return {'interpretation': question, 'coverage': 'supported_observation', 'unmet_requirements': [], 'nodes': nodes}
 
 
-def _ask(question, as_of, ledger, out, feedback=None, model=MODEL):
+def _ask(question, as_of, ledger, out, op=None, feedback=None, model=MODEL):
+    """op None: choose an engine from the menu. op given: fill that engine's typed parameters."""
     from .context_student import send
     content = question if not feedback else (f'{question}\n\nYour previous tool call was rejected by the validator: {feedback[:600]}\n'
-                                             'Call a tool again with corrected parameters.')
-    body = {'model': model, 'max_tokens': 1200, 'system': SYSTEM.format(as_of=as_of), 'tools': tools(),
-            'tool_choice': {'type': 'any', 'disable_parallel_tool_use': True},
+                                             'Call the tool again with corrected parameters.')
+    body = {'model': model, 'max_tokens': 1200, 'system': SYSTEM.format(as_of=as_of),
+            'tools': menu() if op is None else [tool(op)],
+            'tool_choice': {'type': 'any', 'disable_parallel_tool_use': True} if op is None else
+                           {'type': 'tool', 'name': op, 'disable_parallel_tool_use': True},
             'messages': [{'role': 'user', 'content': content}]}
     def parse(raw):
         calls = [b for b in raw.get('content', []) if b.get('type') == 'tool_use']
@@ -137,29 +148,29 @@ def _ask(question, as_of, ledger, out, feedback=None, model=MODEL):
         return {'name': calls[0]['name'], 'input': calls[0].get('input') or {}}
     choice, receipt = send(body, 'claude', ledger, out, parse=parse)
     usd = 0.0 if receipt.get('cache_hit') else ((receipt.get('cost_estimate') or {}).get('estimated_usd') or 0.0)
-    return choice, {'model': model, 'api_usd': usd, 'cache_hit': bool(receipt.get('cache_hit'))}
+    return choice, {'model': model, 'api_usd': usd, 'cache_hit': bool(receipt.get('cache_hit')), 'step': 'choose' if op is None else 'fill'}
 
 
 def route(question, as_of, ledger, out, validate):
     """-> (graph | None, info). info['decision'] is an operator, 'literal_lookup' or 'not_answerable'."""
     start = time.perf_counter()
-    choice, call = _ask(question, as_of, ledger, out)
-    info = {'router': VERSION, 'calls': [call], 'decision': choice['name']}
-    if choice['name'] in ('literal_lookup', 'not_answerable'):
-        info['missing'] = (choice['input'] or {}).get('missing')
+    picked, call = _ask(question, as_of, ledger, out)
+    info = {'router': VERSION, 'calls': [call], 'decision': picked['name']}
+    if picked['name'] not in PRODUCT:
+        info['missing'] = (picked['input'] or {}).get('missing')
         info['seconds'] = round(time.perf_counter() - start, 2)
         return None, info
+    op, feedback = picked['name'], None
     for attempt in range(2):
+        choice, call = _ask(question, as_of, ledger, out, op=op, feedback=feedback)
+        info['calls'].append(call)
         try:
             graph = validate(to_graph(question, choice), as_of)
             info.update(choice=choice, seconds=round(time.perf_counter() - start, 2))
             return graph, info
         except (ValueError, KeyError, TypeError) as exc:
             info.setdefault('rejected', []).append({'choice': choice, 'error': str(exc)[:400]})
-            if attempt: break
-            choice, call = _ask(question, as_of, ledger, out, feedback=f'{type(exc).__name__}: {exc}')
-            info['calls'].append(call); info['decision'] = choice['name']
-            if choice['name'] in ('literal_lookup', 'not_answerable'): break
+            feedback = f'{type(exc).__name__}: {exc}'
     info['seconds'] = round(time.perf_counter() - start, 2)
     return None, info
 

@@ -18,9 +18,10 @@ class Registry(unittest.TestCase):
             self.assertIn(op, CONTRACTS, f'{op} missing from frontier planner contracts')
             self.assertIn(op, graph_contracts.TYPED, op)
 
-    def test_tool_request_fits_the_request_bound(self):
-        self.assertLess(len(json.dumps(router.tools())), 38000)
-        self.assertEqual({t['name'] for t in router.tools()}, {*PRODUCT, 'literal_lookup', 'not_answerable'})
+    def test_each_request_fits_the_request_bound(self):
+        self.assertLess(len(json.dumps(router.menu())), 12000)
+        for op in PRODUCT: self.assertLess(len(json.dumps(router.tool(op))), 20000, op)
+        self.assertEqual({t['name'] for t in router.menu()}, {*PRODUCT, 'literal_lookup', 'not_answerable'})
 
 
 class Graphs(unittest.TestCase):
@@ -66,16 +67,18 @@ class Route(unittest.TestCase):
         bad = {'name': 'trajectory', 'input': {'parameters': {'concept': 'not_a_lab'}}}
         good = {'name': 'trajectory', 'input': {'parameters': {'concept': 'egfr', 'direction': 'worse'}}}
         calls = []
-        def fake(question, as_of, ledger, out, feedback=None, model=None):
-            calls.append(feedback); return (good if feedback else bad), {'api_usd': 0.002}
+        def fake(question, as_of, ledger, out, op=None, feedback=None, model=None):
+            calls.append((op, feedback))
+            if op is None: return {'name': 'trajectory', 'input': {}}, {'api_usd': 0.001}
+            return (good if feedback else bad), {'api_usd': 0.002}
         with mock.patch.object(router, '_ask', side_effect=fake):
             graph, info = router.route('whose kidney function is sliding', AS_OF, None, None, validate)
-        self.assertIsNotNone(graph); self.assertEqual(len(calls), 2); self.assertTrue(calls[1])
-        self.assertAlmostEqual(router.cost(info), 0.004)
+        self.assertIsNotNone(graph); self.assertEqual(len(calls), 3); self.assertTrue(calls[2][1])
+        self.assertAlmostEqual(router.cost(info), 0.005)
 
     def test_two_invalid_plans_fall_through(self):
         bad = {'name': 'trajectory', 'input': {'parameters': {'concept': 'not_a_lab'}}}
-        with mock.patch.object(router, '_ask', return_value=(bad, {'api_usd': 0.0})):
+        with mock.patch.object(router, '_ask', side_effect=lambda *a, op=None, **k: (({'name': 'trajectory', 'input': {}} if op is None else bad), {'api_usd': 0.0})):
             graph, info = router.route('q', AS_OF, None, None, validate)
         self.assertIsNone(graph); self.assertEqual(len(info['rejected']), 2)
 

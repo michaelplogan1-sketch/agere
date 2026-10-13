@@ -279,6 +279,35 @@ function vizMonitor(a){const charts=(a.overall||{}).charts||[];let h='';
    ask:r=>r.follow_up||null,pick:(r,i)=>isStatus&&charts.length?charts.findIndex(c=>c.series===r.series&&c.group===r.group&&c.group_by===r.group_by):null,
    caption:isStatus?'Select a row to show its chart.':'Select a finding to ask its follow-up.'})+'</section>'}
  return h}
+function vizDemand(a){const o=a.overall||{},all=(o.demand||[]);const ok=all.filter(s=>s.status==='forecast');let h='';
+ if(ok.length){const key='dem'+(++state.seq);state[key]={series:ok,o};
+  h+='<section class="sec" data-focus="forecast"><h3>'+esc(label(o.measure||'volume'))+' per '+esc(o.frequency||'period')+': history and forecast</h3>'+
+   (ok.length>1?'<label class="sr" for="'+key+'s">Series</label><select id="'+key+'s" data-demsel="'+key+'" class="btn small" style="max-width:100%">'+ok.map((s,i)=>'<option value="'+i+'">'+esc(s.group==='all'?'Overall':s.group)+'</option>').join('')+'</select>':'')+
+   '<div data-chart="'+key+'">'+fanChart(ok[0],o)+'</div><div class="legend"><span><span class="sw" style="background:var(--s1)"></span>observed (fitted regime)</span><span><span class="sw" style="background:var(--muted)"></span>observed (not fitted)</span>'+
+   '<span><span class="sw" style="background:var(--s2)"></span>forecast</span><span><span class="sw" style="background:var(--band);height:10px"></span>80% / 95% interval</span><span><span class="sw" style="background:var(--warn);height:8px;width:8px"></span>gap or spike excluded</span></div>';
+  const s=ok[0],bt=s.backtest||{},c80=(bt.coverage||{})['80']||{},c95=(bt.coverage||{})['95']||{};
+  h+='<div class="kpis" style="margin-top:8px">'+[['Model',label(s.model||'')],['Backtest MASE',fmt(bt.selected_mase)],[label(bt.baseline||'naive')+' MASE',fmt(bt.baseline_mase)],
+   ['Skill vs baseline',isNum(bt.skill_vs_baseline)?pct(bt.skill_vs_baseline,0):'—'],['80% coverage',isNum(c80.conformal_sequential)?pct(c80.conformal_sequential,0)+' of '+fmt(c80.evaluated):'too few'],
+   ['95% coverage',isNum(c95.conformal_sequential)?pct(c95.conformal_sequential,0)+' of '+fmt(c95.evaluated):'too few'],['Fitted '+(o.frequency||'period')+'s',fmt((s.regime||{}).periods)+' from '+((s.regime||{}).start||'—')]]
+   .map(k=>'<div class="kpi"><div class="l">'+esc(k[0])+'</div><div class="v" style="font-size:16px">'+esc(k[1])+'</div></div>').join('')+'</div>';
+  const issues=all.flatMap(x=>(x.data_issues||[]).map(d=>({group:x.group,kind:d.kind,periods:d.periods,detail:d.detail})));
+  if(issues.length)h+='<div class="alert warn"><h3>Data checks ('+issues.length+')</h3><ul>'+issues.slice(0,8).map(d=>'<li>'+esc((d.group==='all'?'':d.group+': ')+d.kind.replace('_',' ')+' '+d.periods+' — '+d.detail)+'</li>').join('')+'</ul></div>';
+  h+='</section>'}
+ const bad=all.filter(s=>s.status!=='forecast');if(bad.length)h+='<div class="alert bad"><h3>Not forecast</h3><ul>'+bad.map(s=>'<li>'+esc((s.group==='all'?'Overall':s.group)+': '+(s.reason||''))+'</li>').join('')+'</ul></div>';
+ if((a.table||[]).length)h+='<section class="sec"><h3>Forecast</h3>'+tableHTML(a.table,{name:'demand-forecast'})+'</section>';
+ if((o.capacity||[]).length)h+='<section class="sec"><h3>Capacity</h3>'+tableHTML(o.capacity,{name:'demand-capacity'})+'</section>';
+ return h}
+function fanChart(s,o){const hist=(s.history||[]).slice(-48),fc=s.forecast||[];const cats=hist.map(p=>p.period).concat(fc.map(p=>p.period)),n=hist.length;
+ const used=hist.map((p,i)=>[i,p.status==='used'||p.status==='spike'?p.value:null]),other=hist.map((p,i)=>[i,p.status==='before_regime'?p.value:null]);
+ const pt=[[n-1,n?hist[n-1].value:null]].concat(fc.map((p,i)=>[n+i,p.point]));
+ const S=[{name:'other',pts:other,color:'var(--muted)'},{name:'observed',pts:used,color:'var(--s1)'},{name:'forecast',pts:pt,color:'var(--s2)',dash:true}];
+ const band=(X,Y,lo,hi,op)=>{if(!fc.length)return '';let up='',dn='';fc.forEach((p,i)=>{up+=(up?'L':'M')+X(n+i)+' '+Y(p[hi])});for(let i=fc.length-1;i>=0;i--)dn+='L'+X(n+i)+' '+Y(fc[i][lo]);
+  return '<path d="'+up+dn+'Z" style="fill:var(--band);opacity:'+op+';stroke:none"/>'};
+ const rs=hist.findIndex(p=>p.period===(s.regime||{}).start);
+ return lines(S,{title:(s.group==='all'?'Overall':s.group)+' '+(o.measure||'')+' forecast',cats,y0:0,extraY:fc.map(p=>p.hi95).concat(hist.map(p=>p.value)),ytick:v=>fmt(v),ylabel:label(o.measure||''),
+  under:(X,Y)=>band(X,Y,'lo95','hi95',1)+band(X,Y,'lo80','hi80',1)+(rs>0?'<line x1="'+X(rs)+'" x2="'+X(rs)+'" y1="'+Y(0)+'" y2="12" style="stroke:var(--muted);stroke-dasharray:3 3"/><text x="'+(X(rs)+4)+'" y="22">fitted from here</text>':''),
+  over:(X,Y)=>hist.map((p,i)=>p.status==='gap'||p.status==='spike'?'<rect x="'+(X(i)-3.5)+'" y="'+(Y(p.value)-3.5)+'" width="7" height="7" style="fill:var(--warn)"><title>'+esc(p.period+': '+fmt(p.value)+' ('+p.status+', excluded)')+'</title></rect>':'').join('')+
+   fc.map((p,i)=>'<circle cx="'+X(n+i)+'" cy="'+Y(p.point)+'" r="3" style="fill:var(--s2)"><title>'+esc(p.period+': '+fmt(p.point)+' (80% '+fmt(p.lo80)+'–'+fmt(p.hi80)+', 95% '+fmt(p.lo95)+'–'+fmt(p.hi95)+')'+(p.in_progress?' — in progress':''))+'</title></circle>').join('')})}
 function monthIn(m,list){return (list||[]).some(s=>{const p=String(s).split('..');return p.length>1?m>=p[0]&&m<=p[1]:m===p[0]})}
 function controlChart(c){const pts=c.points||[];const cats=pts.map(p=>p.month);const S=[{name:'observed',pts:pts.map((p,i)=>[i,p.value])}];
  const ys=pts.flatMap(p=>[p.lcl,p.ucl]).filter(isNum);
@@ -382,7 +411,7 @@ function vizMarket(a){const o=a.overall||{},rows=a.table||[];let h='<section cla
  return h+'</section>'}
 function visual(a){if(!a||a.answer_type==='unsupported')return '';const o=a.overall||{};
  if(o.network&&o.data_gaps)return vizMarket(a);
- if(o.curves)return vizSurvival(a);if(o.charts||(o.tests_examined!=null&&o.look_elsewhere_bits!=null))return vizMonitor(a);if(o.did)return vizEffect(a);if(o.portfolio&&o.by_group)return vizOutreach(a);
+ if(o.demand)return vizDemand(a);if(o.curves)return vizSurvival(a);if(o.charts||(o.tests_examined!=null&&o.look_elsewhere_bits!=null))return vizMonitor(a);if(o.did)return vizEffect(a);if(o.portfolio&&o.by_group)return vizOutreach(a);
  const v=vizVBC(a);if(v)return v;if(a.answer_type==='table'){const t=vizTrajectory(a);if(t)return t;return vizTable(a)}return vizScalar(a)}
 
 /* ---------- answer card ---------- */
@@ -489,6 +518,7 @@ function refreshWorklist(){const t=state.turns[state.active];const box=document.
 const ACT='[data-csv],[data-ask],[data-ask-standalone],[data-turn],[data-demo],#demonext,#demoreset,[data-clearfilter],[data-series],[data-pick],[data-flagopen],[data-flagcancel],[data-flagsend]';
 document.addEventListener('click',e=>{const el=e.target.closest(ACT);if(el){e.preventDefault();activate(el)}});
 document.addEventListener('keydown',e=>{if(e.key!=='Enter'&&e.key!==' ')return;const el=e.target.closest(ACT);if(!el||el.tagName==='BUTTON')return;if(e.target.tagName==='TEXTAREA'||e.target.tagName==='INPUT')return;e.preventDefault();activate(el)});
+document.addEventListener('change',e=>{const d=e.target.closest('[data-demsel]');if(!d)return;const st=state[d.dataset.demsel];const box=document.querySelector('[data-chart="'+d.dataset.demsel+'"]');if(st&&box)box.innerHTML=fanChart(st.series[+d.value],st.o)});
 document.addEventListener('change',e=>{const s=e.target.closest('[data-monsel]');if(!s)return;const st=state[s.dataset.monsel];const box=document.querySelector('[data-chart="'+s.dataset.monsel+'"]');if(st&&box)box.innerHTML=controlChart(st.charts[+s.value])});
 $('#askf').addEventListener('submit',e=>{e.preventDefault();const v=$('#q').value;$('#q').value='';ask(v)});
 $('#newconv').addEventListener('click',newConversation);

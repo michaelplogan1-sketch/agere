@@ -29,6 +29,9 @@ PRODUCT = {
     'market': {'population': 'optional', 'view': 'tickers',
                'use': 'What moved / markets view: each practice, PCP or payer as a ticker for ED and admission rates, PMPM, A1c and BP control, denial and no-show rates; '
                       'change vs prior month and baseline, trend, volatility, beta to the network, moves ranked by surprise x impact, network-wide vs one-practice moves.'},
+    'demand': {'population': 'optional', 'view': 'fan',
+               'use': 'Volume forecasts: ED visits, admissions, appointments, discharges or bed-days per week/month with intervals and backtest vs naive; '
+                      'beds needed at a target occupancy and peak day; staffing from user-supplied ratios.'},
 }
 
 # Questions a SQL query over the semantic tables answers exactly are handed to the verified SQL ladder.

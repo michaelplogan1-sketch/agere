@@ -429,6 +429,10 @@ def _compile(question, profile, as_of):
             return {'interpretation': f'Unsupported by received data: {q}', 'coverage': 'unsupported', 'nodes': [],
                     'unmet_requirements': [f'Missing input: {m}' for m in missing]}, \
                    {'compiler': VERSION, 'recognised': [], 'route': 'local_unsupported', 'unexplained': []}
+    if demand_intent(low):  # volume forecasts: before outreach, whose capacity grammar would read "36 hours per week" as call capacity
+        plan = _demand_question(q, profile, as_of)
+        if plan is not None:
+            return plan
     plan = _outreach_question(q, profile, as_of)  # before paraphrase: it rewrites "<x> outreach list" for plain patient lists
     if plan is not None:
         return plan
@@ -1839,6 +1843,129 @@ def _survival_question(q, r, profile, as_of, info):
         {'id': 'population', 'operation': 'cohort', 'inputs': [], 'parameters': {'specification': spec}, 'purpose': 'Population named in the question'},
         {'id': 'survival', 'operation': 'survival', 'inputs': ['population'], 'parameters': params,
          'purpose': f'Time from {index["type"].replace("_", " ")} to {kind}' + (f' by {group_concept or group}' if group != 'none' else '')}]}, info
+
+# ---- demand: volume, bed and staffing forecasts ---------------------------------------
+DEMAND_VERB = (r"\bforecast(?:s|ed|ing)?\b|\bproject(?:ed|ion|ions|ing)?\b|\bpredict(?:ed|ion|ions|ing)?\b|\banticipat(?:e|ed|ing)\b|"
+               r"\b(?:will|do|would|should) we (?:need|see|have|expect)\b|\bhow many [a-z /-]{1,40}? (?:will|do|would|should) we need\b|"
+               r"\b(?:next|coming|upcoming) (?:\d{1,3} |one |two |three |four |six |twelve )?(?:weeks?|months?|quarters?|years?)(?:'s)?\b|\bplan for\b")
+DEMAND_MEASURES = [  # (measure, pattern) - order matters: specific settings before generic words
+    ('appointments', r"\b(?:primary care |clinic |pcp |outpatient )?appointments?(?: demand| volumes?| counts?)?\b"),
+    ('ed_visits', r"\b(?:ed|er|emergency(?: department| room)?)(?: department)? (?:visits?|volumes?|arrivals?|encounters?|demand|census|use|utili[sz]ation)\b"),
+    ('observation_stays', r"\bobservation (?:stays?|visits?|admissions?|volumes?)\b"),
+    ('urgent_care_visits', r"\burgent care(?: visits?| volumes?| demand)?\b"),
+    ('primary_care_visits', r"\bprimary care (?:visits?|volumes?|demand|encounters?)\b"),
+    ('specialist_visits', r"\bspecialt?(?:y|ist) (?:visits?|volumes?|demand|encounters?)\b"),
+    ('bed_days', r"\b(?:inpatient |hospital |staffed )?beds?(?:[- ]days?)?\b|\b(?:inpatient |hospital |daily )?census\b|\boccupancy\b"),
+    ('discharges', r"\b(?:hospital |inpatient )?discharges?\b"),
+    ('inpatient_admissions', r"\b(?:inpatient |hospital )?(?:admissions?|admits?|hospitali[sz]ations?)\b"),
+]
+DEMAND_WORDS = r'\b(?:visits?|volumes?|demand|encounters?|utili[sz]ation)\b'
+STAFF_WORDS = r"\b(?:nurses?|nursing(?: staff)?|rns?|care managers?|case managers?|staff(?:ing)?|ftes?|headcount|clinicians? needed)\b"
+NUMBER_WORDS_DEMAND = {'one': 1, 'two': 2, 'three': 3, 'four': 4, 'six': 6, 'twelve': 12}
+
+
+def demand_intent(low):
+    """A volume forecast: a forward-looking verb plus a volume, capacity or staffing noun, and not a per-patient projection."""
+    if not re.search(DEMAND_VERB, low): return False
+    if not (any(re.search(p, low) for _, p in DEMAND_MEASURES) or re.search(DEMAND_WORDS, low) or re.search(STAFF_WORDS, low)): return False
+    if any(re.search(_alias_pattern(a), low) for aliases in MEASUREMENT_ALIASES.values() for a in aliases): return False  # lab trajectories
+    if re.search(r'\b(?:which|who|whose|list)\b(?: [a-z]+){0,3} (?:patients|members|people)\b|\b(?:patients|members) (?:are |who are |that are )?'
+                 r'(?:likely|projected|expected|predicted|at risk|going) to\b|\bp-[a-z0-9]+\b', low):
+        return False
+    return True
+
+
+def _demand_question(q, profile, as_of):
+    q, paraphrased = _paraphrase(q, as_of)
+    r = Reader(q); r.profile = profile
+    info = {'compiler': VERSION, 'recognised': r.notes, 'paraphrased': paraphrased}
+    decline = lambda reason: (info.update(route='fallback', reason=reason), (None, info))[1]
+    low = r.low
+    params = {}
+    # staffing ratios first (their nouns must not be read as measures)
+    for m in r.take(r'\b(\d{1,4}(?:\.\d+)?) (?:staff |nurse |nursing |rn |care[- ]manager )?min(?:ute)?s? (?:of (?:staff |nurse |nursing )?time )?'
+                    r'(?:per|for each|each|a|an) [a-z-]+\b', 'minutes per unit'):
+        params['minutes_per_unit'] = float(m.group(1))
+    for m in r.take(r'\b(\d{1,2}(?:\.\d+)?) (?:productive |worked |paid )?hours? (?:per|a|each) (?:fte|nurse|rn|staff member|care manager)?(?:[- ]?week)?'
+                    r'(?: per week| a week)?\b', 'productive hours per fte-week'):
+        params['fte_hours_per_week'] = float(m.group(1))
+    if r.take(STAFF_WORDS, 'staffing'): params['staffing'] = True
+    # occupancy target
+    for m in r.take(r'\b(?:at |with |using )?(?:an? )?(?:target )?(\d{2,3}(?:\.\d+)?)\s*%\s*(?:target )?occupancy(?: target| rate)?\b|'
+                    r'\b(?:target )?occupancy (?:target |rate |of |at |goal )*(\d{2,3}(?:\.\d+)?)\s*%', 'target occupancy'):
+        v = float(m.group(1) or m.group(2))
+        if not 30 <= v <= 100: return decline('occupancy target must be 30-100%')
+        params['target_occupancy'] = v / 100
+    # measure (exactly one)
+    found = []
+    for measure, pattern in DEMAND_MEASURES:
+        if r.take(pattern, f'measure {measure}'): found.append(measure)
+    if 'bed_days' in found and len(found) > 1:  # "beds needed for next quarter's admissions": beds are the answer, bed-days the series
+        found = ['bed_days']
+    if 'discharges' in found and 'inpatient_admissions' in found: return decline('volume forecast names both admissions and discharges')
+    if len(found) != 1:
+        return decline('volume forecast names more than one series: ' + ', '.join(found) if found else
+                       'volume forecast without a recognised series (name ED visits, admissions, appointments, discharges or beds)')
+    params['measure'] = found[0]
+    # frequency and horizon
+    freq = None
+    if r.take(r'\b(?:weekly|per week|by week|each week|week by week|week-by-week)\b', 'weekly'): freq = 'week'
+    if r.take(r'\b(?:monthly|per month|by month|each month|month by month|month-by-month)\b', 'monthly'):
+        if freq: return decline('both weekly and monthly requested')
+        freq = 'month'
+    horizon = None
+    for m in r.take(r"\b(?:for |over |in |during )?(?:the )?(?:next|coming|upcoming) (?:(\d{1,3}|one|two|three|four|six|twelve) )?(weeks?|months?|quarters?|years?)(?:'s)?\b|"
+                    r"\b(\d{1,3})[- ](weeks?|months?)(?: ahead| out| horizon| forecast)?\b", 'horizon'):
+        n = m.group(1) or m.group(3); unit = (m.group(2) or m.group(4))[0]
+        n = int(n) if n and n.isdigit() else NUMBER_WORDS_DEMAND.get(n, 1)
+        if unit == 'w':
+            freq = freq or 'week'
+            horizon = n if freq == 'week' else max(1, int(-(-n // 4.345)))
+        else:
+            months = n * {'m': 1, 'q': 3, 'y': 12}[unit]
+            freq = freq or 'month'
+            horizon = months if freq == 'month' else int(round(months * 4.345))
+    freq = freq or 'month'
+    if horizon is not None:
+        if not 1 <= horizon <= (24 if freq == 'month' else 104): return decline(f'forecast horizon beyond {24 if freq == "month" else 104} {freq}s')
+        params['horizon'] = horizon
+    params['frequency'] = freq
+    # groups
+    for pattern, g in [(r'\b(?:by|per|for each|each|across) (?:practice|clinic)s?\b', 'practice'),
+                       (r'\b(?:by|per|for each|each|across) (?:facilit(?:y|ies)|hospitals?|sites?|locations?)\b', 'facility'),
+                       (r'\b(?:by|per|for each|each|across) (?:payer|payor|insurance|plan)s?\b', 'payer')]:
+        if r.take(pattern, f'group by {g}'): params['group_by'] = g; break
+    if re.search(r'\bby (?:pcp|provider|physician|clinician|age|sex|gender|condition|diagnosis)\b', r.low):
+        return decline('volume forecasts are grouped by practice, facility or payer only')
+    # wording that only restates a forecast
+    r.take(DEMAND_VERB, 'forecast', overlap=True)
+    r.take(r"\b(?:how many|what|what's|will|we|need|needed|needs|do|does|would|should|be|is|are|the|our|for|of|with|a|an|to|and|in|over|"
+           r"uncertainty|(?:prediction |confidence )?intervals?|ranges?|bands?|error bars?|estimates?|estimated?|expected|outlook|plan|planning|"
+           r"volumes?|demand|counts?|total|numbers?|levels?|capacity|required|requirements?|going|look|like|give|me|us|show|"
+           r"'s|ahead|future|period|periods|please|roughly|about)\b", None, overlap=True)
+    spec = {'all': [], 'any': [], 'exclude': []}
+    if r.leftover():
+        plan, info = _population_question(q, r, profile, as_of, info)
+        if plan is None and info.get('reason') == 'no population or statistic recognised':
+            plan = {'nodes': [{'operation': 'cohort', 'parameters': {'specification': spec}}]}
+            info.pop('route', None); info.pop('reason', None)
+        if plan is None: return None, info
+        if len(plan['nodes']) != 1 or plan['nodes'][0]['operation'] != 'cohort':
+            return decline('volume forecast also asks for another statistic')
+        spec = plan['nodes'][0]['parameters']['specification']
+    else:
+        info['unexplained'], info['ignored_words'] = [], getattr(r, 'ignored', [])
+    from .demand import validate
+    params = validate(params)
+    info['route'] = 'local_compiler'
+    restricted = any(spec[k] for k in spec)
+    nodes = ([{'id': 'population', 'operation': 'cohort', 'inputs': [], 'parameters': {'specification': spec}, 'purpose': 'Population named in the question'}]
+             if restricted else [])
+    nodes.append({'id': 'demand', 'operation': 'demand', 'inputs': ['population'] if restricted else [], 'parameters': params,
+                  'purpose': f"Forecast {params['measure'].replace('_', ' ')} per {params['frequency']}, {params['horizon']} ahead"
+                             + (f" by {params['group_by']}" if params['group_by'] != 'none' else '')})
+    return {'interpretation': q, 'coverage': 'supported_observation', 'unmet_requirements': [], 'nodes': nodes}, info
+
 
 # ---- program effect ("did the program work?") -------------------------------------
 EFFECT_QUESTION = (r'\b(?:effect|impact|influence)s? of\b|\bestimate (?:the |an? )?(?:effect|impact)\b|'
