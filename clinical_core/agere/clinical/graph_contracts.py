@@ -6,12 +6,12 @@ The runtime validators remain authoritative for dates, bounds and source meaning
 """
 import copy
 
-VERSION = 'graph-operator-contracts/13'
+VERSION = 'graph-operator-contracts/14'
 SET_OPS = {'cohort', 'evidence', 'intersect', 'union', 'difference', 'sequence',
            'interpretation', 'source_state', 'pre_event_state', 'requirements', 'outcome',
            'protocol_review', 'program_document', 'functional_review', 'domain_review', 'appointment_followthrough'}
 WORK_SUPPORT = ('accountability_review', 'program_acquisition', 'measure_review')
-TYPED = {'aggregate', 'explain', 'sql', 'vbc', 'discover', 'trajectory', 'observation_process', 'reference_review', 'cohort', 'evidence', 'intersect', 'union', 'difference', 'compare', 'medication_identity',
+TYPED = {'aggregate', 'explain', 'sql', 'vbc', 'outreach', 'discover', 'trajectory', 'observation_process', 'reference_review', 'cohort', 'evidence', 'intersect', 'union', 'difference', 'compare', 'medication_identity',
          'assertion_review', 'source_state', 'pre_event_state', 'context', 'context_passes', 'functional_review',
          'domain_review', 'worklist', 'program_acquisition', 'retrieve', 'forecast',
          'source_changes', 'review', 'measure_review', 'financial_accounts', 'accountability_review', 'outcome', 'appointment_followthrough', 'interpretation', 'requirements', 'protocol_review', 'program_document'}
@@ -43,7 +43,7 @@ def input_contract(op):
     lo, hi = ((0, 0) if op in ('cohort', 'evidence') else
               (2, 2) if op == 'difference' else
               (2, 10) if op in ('intersect', 'union') else
-              (0, 1) if op in ('sql', 'vbc') else (1, 10) if op == 'reference_review' else (3, 10) if op == 'compare' else (1, 4) if op == 'worklist' else (1, 1))
+              (0, 1) if op in ('sql', 'vbc', 'outreach') else (1, 10) if op == 'reference_review' else (3, 10) if op == 'compare' else (1, 4) if op == 'worklist' else (1, 1))
     result = {'count': [lo, hi], 'type': 'membership',
               'output': 'membership' if op in SET_OPS else 'report'}
     if op in ('baseline', 'pre_event_state'): result['first_operation'] = 'outcome'
@@ -108,6 +108,16 @@ def parameter_schema(op, catalog):
                     'measure': string(['', 'diabetes_a1c_poor_control', 'bp_control', 'statin_therapy_diabetes']),
                     'attribution': string(['hybrid', 'prospective', 'plurality']),
                     'terms': {'type': 'object', 'description': 'shared_savings only: benchmark_pmpm, sharing_rate, msr, mlr, quality_score, two_sided, loss_rate, savings_cap_pct, loss_cap_pct, risk_adjust'}})
+    if op == 'outreach':
+        from . import outreach
+        return obj({'capacity_patients': {'type': ['integer', 'null'], 'minimum': 1, 'maximum': 5000, 'description': 'Outreach slots (patients).'},
+                    'capacity_hours': {'type': ['number', 'null'], 'minimum': 0.25, 'maximum': 2000, 'description': 'Nurse/care-manager hours; tasks carry minute estimates.'},
+                    'require': array(string(outreach.CATEGORIES), 'Only patients with at least one reason in these categories; [] = any reason.'),
+                    'group_by': string(outreach.GROUP_BY), 'min_per_practice': {'type': 'integer', 'minimum': 0, 'maximum': 1000},
+                    'max_per_practice': {'type': ['integer', 'null'], 'minimum': 1, 'maximum': 5000},
+                    'method': string(outreach.METHODS), 'overlap_discount': {'type': 'number', 'minimum': 0, 'maximum': 1},
+                    'saturation': {'type': 'number', 'minimum': 0, 'maximum': 1000, 'description': '0 = additive; >0 = diminishing returns per practice x reason category'},
+                    'top': {'type': 'integer', 'minimum': 1, 'maximum': 5000}})
     if op == 'sql':
         from . import sql_query
         return obj({'query': {'type': 'string', 'description': 'One read-only SELECT/WITH over the semantic_layer tables. Reference the upstream population (if an input is given) as table population(patient_id).'},

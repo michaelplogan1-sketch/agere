@@ -22,7 +22,7 @@ from .clinical_events import validate_window
 
 VERSION = 'population-analysis-graph/1'
 from .graph_contracts import SET_OPS, validate_inputs, validate_parameters as validate_shared_parameters
-OPERATIONS = SET_OPS | {'aggregate', 'explain', 'sql', 'vbc', 'discover', 'trajectory', 'observation_process', 'reference_review', 'compare', 'analyze', 'retrieve', 'forecast', 'source_changes', 'review','longitudinal','worklist','state_review','medication_identity','context','context_passes','assertion_review','baseline','decision_landmark','financial_accounts','accountability_review','protocol_change','program_document_change','program_acquisition','measure_review','evidence_portfolio'}
+OPERATIONS = SET_OPS | {'aggregate', 'explain', 'sql', 'vbc', 'discover', 'trajectory', 'observation_process', 'reference_review', 'compare', 'analyze', 'retrieve', 'forecast', 'source_changes', 'review','longitudinal','worklist','state_review','medication_identity','context','context_passes','assertion_review','baseline','decision_landmark','financial_accounts','accountability_review','protocol_change','program_document_change','program_acquisition','measure_review','evidence_portfolio','outreach'}
 NODE_FIELDS = {'id', 'operation', 'inputs', 'parameters', 'purpose'}
 LIMITS = [
     'Membership means observed predicate matches, not confirmed disease or absent care.',
@@ -230,6 +230,17 @@ def build_answer(plan, results, memberships, question):
                              f"base rate {report['base_rate']:.1%}"),
                       overall={k: report[k] for k in ('population', 'with_outcome', 'base_rate', 'cells_tested')})
         return answer
+    if last['operation'] == 'outreach':
+        report = results[-1]['result']
+        partial = plan.get('coverage') != 'supported_observation' or plan.get('unmet_requirements')
+        table = [{k: v for k, v in w.items() if k != 'reasons'} for w in report['worklist']]
+        answer.update(status='partial' if partial else 'answered', answer_type='table', table=table, value=report['headline'],
+                      count=report['selected'], patient_ids=[w['patient_id'] for w in report['worklist']], method=report['method'],
+                      overall={'portfolio': report['portfolio'], 'optimization': report['optimization'], 'by_group': report['by_group'],
+                               'capacity': report['capacity'], 'candidates': report['candidates'],
+                               'assumptions': report['assumptions'], 'learning_loop': report['learning_loop'],
+                               'limitations': report['limitations']})
+        return answer
     if last['operation'] == 'vbc':
         report = results[-1]['result']
         partial = plan.get('coverage') != 'supported_observation' or plan.get('unmet_requirements')
@@ -361,6 +372,9 @@ def validate(plan, as_of):
         elif op == 'trajectory':
             from . import trajectory
             p = trajectory.validate(p)
+        elif op == 'outreach':
+            from . import outreach
+            p = outreach.validate(p)
         elif op == 'discover':
             from . import discover
             p = discover.validate(p)
@@ -645,7 +659,7 @@ def code_identity():
                       Path(__file__).with_name('landmark_contracts.json'),
                       Path(__file__).with_name('outcome_contracts.json'),
                       Path(__file__).with_name('medication_identity.py'),
-                      Path(__file__).with_name('source_blocks.py')]]])
+                      Path(__file__).with_name('source_blocks.py'), Path(__file__).with_name('outreach.py'), Path(__file__).with_name('outreach_bandit.py')]]])
 
 
 def catalog(path):
@@ -904,6 +918,11 @@ def execute(stack, plan, *, question=None):
                 from . import vbc
                 chosen = memberships[node['inputs'][0]] if node['inputs'] else None
                 detail = vbc.execute(path, sorted(chosen.yes) if chosen else None, params, meta['snapshot']['as_of'])
+                if chosen: detail['input_membership'] = membership_receipt(chosen)
+            elif op == 'outreach':
+                from . import outreach
+                chosen = memberships[node['inputs'][0]] if node['inputs'] else None
+                detail = outreach.execute(path, sorted(chosen.yes) if chosen else None, params, meta['snapshot']['as_of'])
                 if chosen: detail['input_membership'] = membership_receipt(chosen)
             elif op == 'sql':
                 from . import sql_query
