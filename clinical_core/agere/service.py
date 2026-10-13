@@ -262,6 +262,12 @@ def serve(run,port,annotations=None,evidence_queries=None,stack=None,allow_live_
                                             'escalated' if result.get('new_paid_api_calls') else (result.get('answer') or {}).get('status') or 'answered',
                                             _local.get('reason') if isinstance(_local,dict) else None,
                                             result.get('new_paid_api_calls') or 0,(result.get('planning_economics') or {}).get('known_api_estimate_usd') or 0)
+                elif path=='/api/stack/correct':
+                    from .clinical import learning
+                    if set(body)-{'question','note','expected'} or not isinstance(body.get('question'),str) or not isinstance(body.get('note'),str):
+                        raise ValueError('Correction needs question and note (optional expected)')
+                    learning.record_correction(connected_stack.path,body['question'],body['note'],body.get('expected'))
+                    result={'recorded':True,'effect':'the stored answer for this question will not be reused; it becomes a regression case'}
                 elif path=='/api/stack/context/synthesize':
                     if set(body)!={'context_id'}:raise ValueError('Exact source context required')
                     result=connected_stack.synthesize_context(body['context_id'])

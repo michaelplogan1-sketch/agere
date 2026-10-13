@@ -221,6 +221,24 @@ def plan(stack,question,ledger,frontier):
                               'elapsed_seconds':time.perf_counter()-start}
         except (ValueError,ImportError,OSError) as exc:
             local_decline={**local_decline,'local_model_error':str(exc)[:300]}
+    # Learned rung: a question already answered through the verified hosted ladder reuses its verified query at $0
+    # (re-checked by lint and sanity against the current data before use).
+    if profile is not None:
+        from . import learning
+        known=learning.lookup(stack.path,question)
+        if known and known['plan_kind']=='sql':
+            try:
+                from . import verify
+                problems=verify.lint(profile,known['plan']['query'])
+                if problems: raise ValueError('; '.join(problems))
+                graph=validate({'interpretation':question,'coverage':'supported_observation','unmet_requirements':[],
+                                'nodes':[{'id':'answer','operation':'sql','inputs':[],'parameters':known['plan'],
+                                          'purpose':'Previously verified query (learned)'}]},meta['snapshot']['as_of'])
+                return graph,{'route':'learned_verified_sql','model':None,'new_paid_api_calls':0,'frontier_called':False,
+                              'learned_from':known['agreement'],'local_compiler_declined':local_decline,'steps':[],
+                              'elapsed_seconds':time.perf_counter()-start}
+            except ValueError as exc:
+                local_decline={**local_decline,'learned_rejected':str(exc)[:200]}
     # Cheapest hosted rung: one Haiku call writing governed SQL over the cached schema (~$0.001).
     if profile is not None and stack.allow_live and os.environ.get('AGERE_HOSTED_SQL','on')!='off':
         try:

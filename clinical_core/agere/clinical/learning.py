@@ -4,7 +4,7 @@ Only verified or user-confirmed answers become training data; Agere never learns
 unverified output. Declines and escalations are kept with their reasons so gaps can be clustered
 into new grammar rules or bottled-model training examples.
 """
-import json, sqlite3, time
+import json, os, sqlite3, time
 from pathlib import Path
 
 VERSION = 'learning-store/1'
@@ -20,18 +20,43 @@ CREATE TABLE IF NOT EXISTS corrections(question TEXT, note TEXT, expected TEXT, 
 def _db(path):
     db = sqlite3.connect(Path(path) / 'learning.sqlite3')
     db.executescript(SCHEMA)
+    if 'context' not in [r[1] for r in db.execute('PRAGMA table_info(verified)')]:
+        db.execute('ALTER TABLE verified ADD COLUMN context TEXT')
     return db
+
+
+def context(path):
+    """What a verified answer depends on: the data release and the semantic layer that interpreted it."""
+    from . import semantic_layer
+    meta = json.loads((Path(path) / 'run.json').read_text())
+    return f"{meta['source_digest']}|{semantic_layer.VERSION}"
 
 
 def record_verified(path, question, plan_kind, plan, signature, route, models, agreement):
     db = _db(path)
     try:
-        db.execute('INSERT OR REPLACE INTO verified VALUES (?,?,?,?,?,?,?,?)',
+        db.execute('INSERT OR REPLACE INTO verified VALUES (?,?,?,?,?,?,?,?,?)',
                    (question.strip(), plan_kind, json.dumps(plan, sort_keys=True), json.dumps(signature, default=str)[:4000],
-                    route, json.dumps(models), agreement, time.time()))
+                    route, json.dumps(models), agreement, time.time(), context(path)))
         db.commit()
     finally:
         db.close()
+
+
+def lookup(path, question):
+    """A previously verified plan for this exact question (normalised), or None."""
+    target = Path(path) / 'learning.sqlite3'
+    if not target.exists() or os.environ.get('AGERE_LEARNED', 'on') == 'off': return None
+    _db(path).close()  # migrate older stores
+    db = sqlite3.connect(f'file:{target}?mode=ro', uri=True)
+    try:
+        corrected = db.execute('SELECT 1 FROM corrections WHERE lower(trim(question)) = lower(trim(?))', (question,)).fetchone()
+        if corrected: return None  # a user flagged this question: re-derive, never reuse
+        row = db.execute('SELECT plan_kind, plan, agreement FROM verified WHERE lower(trim(question)) = lower(trim(?)) AND context = ? '
+                         'ORDER BY created DESC LIMIT 1', (question, context(path))).fetchone()
+    finally:
+        db.close()
+    return {'plan_kind': row[0], 'plan': json.loads(row[1]), 'agreement': row[2]} if row else None
 
 
 def record_outcome(path, question, route, status, reason=None, paid_calls=0, usd=0.0):
