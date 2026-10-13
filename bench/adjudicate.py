@@ -28,10 +28,12 @@ def judge(item):
     i,q,ref_interp,exp,sql,got=item
     ledger=BudgetLedger(ROOT/'artifacts/agere-full/provider-budget.sqlite3')
     m=nl2sql.HostedModel(ledger,P/'provider-receipts',model='claude-opus-5-5')
-    text,_=m(SYS, f"QUESTION: {q}\n\nEXAMPLES\nREFERENCE DEFINITION: {ref_interp}\nREFERENCE ANSWER: {exp}\n\nENGINE SQL: {sql}\nENGINE ANSWER: {got}", max_tokens=300)
+    text,_=m(SYS, f"QUESTION: {q}\n\nEXAMPLES\nREFERENCE DEFINITION: {ref_interp}\nREFERENCE ANSWER: {exp}\n\nENGINE SQL: {sql}\nENGINE ANSWER: {got}", max_tokens=700)
     mm=re.search(r'\{.*\}',text,re.S)
     try: return i, json.loads(mm.group(0)), m.cost
-    except Exception: return i, {'category':'unparsed'}, m.cost
+    except Exception:
+        cat=next((c for c in ('engine_error','format_only','defensible_definition','reference_questionable') if c in text), 'unparsed')
+        return i, {'category':cat,'reason':text[:200]}, m.cost
 items=[]
 for l in open(sys.argv[1]):
     r=json.loads(l); s=r['score']

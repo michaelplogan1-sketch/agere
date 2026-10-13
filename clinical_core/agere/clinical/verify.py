@@ -52,6 +52,12 @@ def lint(profile, sql):
                 missing = [v for v in asked if v not in values]
                 if missing:
                     problems.append(f"value(s) {missing} never occur in '{field}'; observed: {sorted(values)[:15]}")
+    from .drug_classes import CLASSES
+    for m in re.finditer(r"drug_class\s*(?:=\s*'([a-z0-9_]+)'|in\s*\(([^)]*)\)|like\s*'([^']*)')", sql, re.I):
+        if m.group(3) is not None:
+            problems.append(f"drug_class must be compared exactly (= or IN); valid classes: {', '.join(sorted(CLASSES))}")
+        for c in _names(m.group(1), m.group(2)):
+            if c not in CLASSES: problems.append(f"drug_class '{c}' is not a known class; valid: {', '.join(sorted(CLASSES))}")
     known = set(concepts.CONDITIONS) | set(concepts.MEASUREMENTS) | set(concepts.ENCOUNTERS)
     for m in CONCEPT_RX.finditer(sql):
         for c in _names(m.group(1), m.group(2)):

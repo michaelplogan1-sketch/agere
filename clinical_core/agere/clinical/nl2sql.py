@@ -26,7 +26,8 @@ medication(record_id, patient_id, source_stream, evidence ['dispensed','claim','
 measurement_latest(patient_id, concept, event_date, value_canonical, unit_canonical, same_day_values, same_day_min, record_id)  -- latest DATED value per patient+concept; use for "latest/most recent" questions
 current_record(stream, key_field, business_id, record_id, patient_id, versions, first_available_date, available_date, event_date, payload)  -- LATEST version of each entity in versioned streams; use json_extract(payload,'$.field') for current state
 social_need(patient_id, need ['food','transport','cost_of_care'], positive, instrument, source_stream, source_field, event_date, record_id)  -- social-needs screens normalised across instruments; use for any food/transport/cost-of-care question
-claim(claim_id, patient_id, payer, service_date, benefit_year, first_status, final_status, ever_denied, denied_then_paid, net_payer_paid_cents, billed_cents, allowed_cents, first_available_date, last_available_date)  -- one row per medical claim (adjudication sequence resolved; net paid = paid minus reversed)
+claim(claim_id, patient_id, payer, service_date, benefit_year, first_status, final_status, ever_denied, denied_then_paid, net_payer_paid_cents, billed_cents, allowed_cents, first_available_date, last_available_date, first_submitted_date, first_payer_cash_date, net_payer_cash_cents)  -- claim lag = first_submitted_date - service_date; days to payment = first_payer_cash_date - service_date
+claim_adjustment(claim_id, record_id, patient_id, adjudication_status, group_code, reason_code, category ['deductible','coinsurance','copay','contractual_adjustment',...], amount_cents, current_version)  -- adjustment lines (patient responsibility split)  -- one row per medical claim (adjudication sequence resolved; net paid = paid minus reversed)
 concept_patient(concept, kind, patient_id, records, first_date, last_date)  -- who has each concept
 link(record_id, stream, field, target_record_id)  -- every *_record_id reference between records
 record(record_id, patient_id, stream, event_date, recorded_date, available_date, organization_id, payload)  -- every received record; other fields via json_extract(payload,'$.field')"""
@@ -573,6 +574,7 @@ VERIFY_RULES = """
 - Patient names are not stored (synthetic identities): when names or a list are requested, return patient_id rows; never refuse for names.
 - Lab results: exclude only rows with value_canonical NULL (cancelled/hemolysed); do not filter result_status = 'final' unless asked.
   "Latest/most recent" means the latest dated value (measurement_latest); undated rows never count as latest.
+- drug_class and concept values are exact ids from the lists shown: compare with = or IN, never LIKE '%...%'.
 - Medications: use the medication table and drug_class; "on X" / "filled X" = evidence 'dispensed' or 'claim' unless the question
   says ordered/prescribed/listed.
 - In-person visits: visit.in_person = 1; practice visits: visit.is_practice = 1. Arrival lag of a visit: first_available_date.

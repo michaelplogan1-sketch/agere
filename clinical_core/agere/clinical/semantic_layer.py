@@ -13,7 +13,7 @@ import json, re, sqlite3, time
 
 from . import aggregate, concepts, source_profile
 
-VERSION = 'semantic-layer/8'
+VERSION = 'semantic-layer/9'
 
 # Source contract: streams whose records are successive snapshots of one business entity (key field).
 # Other repeated ids (payments per account, lines per claim, fills per prescription) are separate events, not versions.
@@ -41,6 +41,8 @@ CREATE TABLE stay(patient_id TEXT, admit_date TEXT, discharge_date TEXT, type TE
 CREATE TABLE link(record_id TEXT, stream TEXT, field TEXT, target_record_id TEXT);
 CREATE TABLE concept_patient(concept TEXT, kind TEXT, patient_id TEXT, records INTEGER, first_date TEXT, last_date TEXT,
   PRIMARY KEY(concept, patient_id));
+CREATE TABLE claim_adjustment(claim_id TEXT, record_id TEXT, patient_id TEXT, adjudication_status TEXT, group_code TEXT,
+  reason_code TEXT, category TEXT, amount_cents INTEGER, current_version INTEGER);
 CREATE TABLE medication(record_id TEXT, patient_id TEXT, source_stream TEXT, evidence TEXT, drug_name TEXT, drug_class TEXT,
   status TEXT, event_date TEXT, available_date TEXT);
 CREATE TABLE measurement_latest(patient_id TEXT, concept TEXT, event_date TEXT, value_canonical REAL, unit_canonical TEXT,
@@ -92,6 +94,9 @@ SCHEMA_DOC = {
     'record': 'Every received record (all streams). Use json_extract(payload, \'$.field\') for fields of streams not modelled above.',
     'appointment': 'One row per appointment_id (appointments arrive as a booked record plus later status records). scheduled_date from '
                    'the booking; final_status = latest status received; ever_* flags over all versions; kept = arrived or fulfilled.',
+    'claim_adjustment': 'One row per adjustment line on each medical claim adjudication record: group_code (CO/PR/OA), reason_code '
+                        '(X12 CARC), category (deductible, coinsurance, copay, contractual_adjustment, else group-code), amount_cents; '
+                        'current_version = 1 on the claim\'s latest version.',
     'medication': 'Every medication mention, one row per (record, drug_class): source_stream and evidence (dispensed, claim, ordered, '
                   'listed, administered, reported, pharmacy_history), drug_name as received, status. drug_class from the active '
                   'ingredient (statin, beta_blocker, hf_evidence_based_beta_blocker, ace_inhibitor, arb, arni, mra, sglt2_inhibitor, '
@@ -119,6 +124,39 @@ MED_SOURCES = [  # stream, name field, status field, evidence label
     ('medication_administrations', 'medication_name', 'administration_status', 'administered'),
     ('reported_medication_entries', 'medication_name_reported', 'use_statement', 'reported'),
     ('pharmacy_history', 'medication_name', 'reported_status', 'pharmacy_history')]
+
+
+# X12 claim adjustment reason codes most used in patient-responsibility questions.
+CARC = {('PR', '1'): 'deductible', ('PR', '2'): 'coinsurance', ('PR', '3'): 'copay', ('CO', '45'): 'contractual_adjustment'}
+
+
+def _revenue_cycle(out):
+    """Claim timing and adjustment primitives: first original submission, first payer cash, net cash, and adjustment lines."""
+    for col in ('first_submitted_date TEXT', 'first_payer_cash_date TEXT', 'net_payer_cash_cents INTEGER'):
+        out.execute(f'ALTER TABLE claim ADD COLUMN {col}')
+    out.execute("""CREATE TEMP TABLE subs AS SELECT json_extract(payload,'$.claim_id') AS claim_id, min(event_date) AS first_sub
+                     FROM record WHERE stream = 'medical_claim_submissions'
+                     AND coalesce(json_extract(payload,'$.submission_kind'),'original') = 'original' GROUP BY 1""")
+    out.execute('CREATE INDEX temp.subs_claim ON subs(claim_id)')
+    out.execute('UPDATE claim SET first_submitted_date = (SELECT first_sub FROM subs WHERE subs.claim_id = claim.claim_id)')
+    out.execute("""CREATE TEMP TABLE cash AS SELECT json_extract(payload,'$.claim_id') AS claim_id,
+                     min(CASE WHEN json_extract(payload,'$.allocated_cents') > 0 THEN event_date END) AS first_cash,
+                     sum(json_extract(payload,'$.allocated_cents')) AS net_cash
+                     FROM record WHERE stream = 'payer_cash_allocations' GROUP BY 1""")
+    out.execute('CREATE INDEX temp.cash_claim ON cash(claim_id)')
+    out.execute('UPDATE claim SET first_payer_cash_date = (SELECT first_cash FROM cash WHERE cash.claim_id = claim.claim_id), '
+                'net_payer_cash_cents = (SELECT net_cash FROM cash WHERE cash.claim_id = claim.claim_id)')
+    current = {rid for (rid,) in out.execute("SELECT record_id FROM current_record WHERE stream = 'medical_claims'")}
+    rows = []
+    for rid, pid, payload in out.execute("SELECT record_id, patient_id, payload FROM record WHERE stream = 'medical_claims'"):
+        r = json.loads(payload)
+        for a in (r.get('adjustments') or []):
+            if not isinstance(a, dict): continue
+            g, code = str(a.get('group') or ''), str(a.get('reason_code') or '')
+            rows.append((r.get('claim_id'), rid, pid, r.get('status'), g, code, CARC.get((g, code), f'{g}-{code}'),
+                         a.get('amount_cents'), int(rid in current)))
+    out.executemany('INSERT INTO claim_adjustment VALUES (?,?,?,?,?,?,?,?,?)', rows)
+    out.execute('CREATE INDEX claim_adjustment_claim ON claim_adjustment(claim_id)')
 
 
 def _medications(out):
@@ -194,6 +232,7 @@ def _derived(out):
               WINDOW w AS (PARTITION BY json_extract(r.payload,'$.{key}'))) WHERE rn = 1""")
     out.execute('CREATE INDEX current_record_patient ON current_record(stream, patient_id)')
     _medications(out)
+    _revenue_cycle(out)
     out.execute("""INSERT INTO measurement_latest
         SELECT patient_id, concept, event_date, value_canonical, unit_canonical, n, mn, record_id FROM (
           SELECT m.*, count(*) OVER d AS n, min(m.value_canonical) OVER d AS mn,
@@ -205,8 +244,10 @@ def _derived(out):
     out.execute("ALTER TABLE visit ADD COLUMN first_available_date TEXT")
     out.execute("""UPDATE visit SET in_person = CASE WHEN type_concept = 'telehealth_contact' OR lower(type) IN ('telephone','virtual','video','phone')
                      THEN 0 ELSE 1 END, is_practice = (organization_id LIKE '%PRACTICE%')""")
-    out.execute("""UPDATE visit SET first_available_date = (SELECT min(e.available_date) FROM encounter e
-                     WHERE e.source_table = 'encounters' AND e.encounter_id = visit.encounter_id)""")
+    out.execute("""CREATE TEMP TABLE first_arrival AS SELECT encounter_id, min(available_date) AS first_av FROM encounter
+                     WHERE source_table = 'encounters' AND encounter_id IS NOT NULL GROUP BY 1""")
+    out.execute('CREATE INDEX temp.first_arrival_enc ON first_arrival(encounter_id)')
+    out.execute('UPDATE visit SET first_available_date = (SELECT first_av FROM first_arrival f WHERE f.encounter_id = visit.encounter_id)')
     out.execute("ALTER TABLE patient ADD COLUMN age_latest INTEGER")
     out.execute("""UPDATE patient SET age_latest = coalesce((SELECT CAST(json_extract(r.payload,'$.age_reported') AS INTEGER) FROM record r
                      WHERE r.stream = 'demographic_updates' AND r.patient_id = patient.patient_id
