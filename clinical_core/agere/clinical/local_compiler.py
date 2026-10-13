@@ -419,6 +419,9 @@ def compile(question, profile, as_of):
 
 
 def _compile(question, profile, as_of):
+    explained = _knowledge_question(question)  # explanation / strategy questions about VBC itself, never data questions
+    if explained is not None:
+        return explained
     q = _norm(question, as_of)
     low = q.lower()
     timed = survival_intent(low) and not re.search(DEATH_WORDS, low)  # "readmission-free survival" is not mortality
@@ -2216,6 +2219,56 @@ BRIEFING_FILLER = (r"\b(?:what|whats|which|should|do|does|i|we|need|needs|to|my|
                    r"right|now|first|please|give|show|tell|run|start|focus|look|at|on|in|data|across|population|network|panel|any|most|"
                    r"important|notable|worth|looking|stands?|out|know|about|worry|review|prioriti[sz]e|attention|pay|top|findings?|cards?|"
                    r"insights?|items?|things?|priorities|daily|weekly|where|for|of|and|with|ranked|ranking|briefing|s)\b|\d+")
+
+
+# ---- explanation / strategy questions -> cited VBC knowledge base (vbc_knowledge.py) ---------------------------
+# Routed only when the wording asks for an explanation AND names a VBC concept, program, model, company or framework AND
+# carries no sign of a question about this population's data (our/we/how many/list/which patients/by practice/averages).
+KNOWLEDGE_INTENT = (
+    r"^(?:(?:can|could|would) you |please |so,? |ok,? |quick question:? )*(?:explain|describe|summari[sz]e|define|outline|walk me through|"
+    r"tell me (?:about|how|what|why)|give (?:me )?(?:an? )?(?:overview|primer|summary|rundown)|help me understand|what do you know about)\b|"
+    r"^(?:how|why) (?:does|do|did|is|are|was|were|would|should|can|could|will|has|have)\b|"
+    r"^what(?:'s| is| are| was| were| does| do)\b|^who (?:is|are|was|were|owns|runs|founded)\b|^which (?:companies|firms|organi[sz]ations|models|programs)\b|"
+    r"^(?:is|are|does|do|did) (?:there |the )?(?:evidence|research|studies|data show)\b|^(?:does|do|did) [a-z0-9' -]{2,60} (?:work|save money|reduce|improve)\b|"
+    r"\b(?:difference|differences|distinction|compare|comparison|contrast)\b|\bvs\.?(?=\s)|\bversus\b|\bpros and cons\b|"
+    r"\bwhat works\b|\bevidence (?:on|for|that|about)\b")
+KNOWLEDGE_DOMAIN = (
+    r"\bmssp\b|\bshared savings\b|\bacos?\b|\baccountable care\b|\breach\b|\bdirect contracting\b|\bnext ?gen(?:eration)?\b|\bpioneer\b|"
+    r"\bmedicare advantage\b|\bma (?:plans?|enrollment|benchmarks?|payment|star)\b|\bpart [cd]\b|\bmedicaid (?:managed care|mcos?|vbp|value|expansion)\b|\bmanaged care\b|"
+    r"\bcapitat\w*\b|\bglobal (?:risk|budget|cap)\w*\b|\bfull[- ]risk\b|\bpercent of premium\b|\btwo[- ]sided\b|\bupside[- ]only\b|\bdownside risk\b|\brisk corridors?\b|"
+    r"\bstop[- ]loss\b|\bbenchmark(?:s|ing)?\b|\bratchet\b|\brebas\w*\b|\bminimum savings rate\b|\bmsr\b|\bsharing rate\b|\bquality withhold\b|"
+    r"\battribut\w*\b|\bassignment\b|\bassigned\b|\balign(?:ed|ment)\b|"
+    r"\bhccs?\b|\bcms[- ]hcc\b|\bv2[48]\b|\braf\b|\brisk adjust\w*\b|\brisk scores?\b|\bcoding intensity\b|\brecapture\b|\bradv\b|\bmeat criteria\b|\bnormali[sz]ation factor\b|"
+    r"\bstars? (?:ratings?|program|bonus\w*)\b|\bhedis\b|\bncqa\b|\bcahps\b|\bapp (?:measures?|measure set)\b|\bquality (?:performance standard|measures?|bonus)\b|\becqms?\b|\bmips\b|\bqps?\b|\badvanced apms?\b|"
+    r"\bcmmi\b|\binnovation center\b|\bcms innovation\b|\b2030 (?:goal|target)\b|\bcms models?\b|\bapms?\b|\balternative payment\b|\bhcp[- ]lan\b|\blan (?:framework|categor\w+)\b|"
+    r"\bkidney care choices\b|\bprimary care first\b|\bcpc\+|\bmaking care primary\b|\bguide model\b|\bteam model\b|\bbpci\b|\bbundled payments?\b|\bcjr\b|\bahead model\b|\bmaryland (?:model|total cost)\b|"
+    r"\benhancing oncology\b|\boncology care model\b|\bvbid\b|\blead model\b|"
+    r"\bvalue[- ]based (?:care|payment|contracts?|arrangements?|programs?|models?)\b|\bvbc\b|\bfee[- ]for[- ]service\b|\bpmpm\b|\bmedical loss ratio\b|\bmlr\b|\bhealth equity benchmark\b|"
+    r"\baledade\b|\bpearl health\b|\bwellvana\b|\bagilon\b|\bprivia\b|\boak street\b|\bchenmed\b|\bvillage ?md\b|\biora\b|\bone medical\b|\bevolent\b|\bsignify\b|"
+    r"\boptum\b|\bcenterwell\b|\bhumana\b|\bcityblock\b|\blumeris\b|\bcaravan health\b|\benablement (?:compan\w+|models?|platforms?)\b|"
+    r"\bporter\b|\bvalue agenda\b|\bintegrated practice units?\b|\bteisberg\b|\bnash\b|\bpopulation health\b|\btriple aim\b|\bquadruple aim\b|\bberwick\b|\btime[- ]driven activity\b|"
+    r"\bhot[- ]?spott\w*\b|\bcamden\b|\bsuper[- ]?utili[sz]ers?\b|\bnaacos\b|\bmedpac\b|"
+    r"\b(?:evidence|research|studies|trials?|rcts?|literature)\b.*\bcare (?:management|coordination)\b|\bcare (?:management|coordination)\b.*\b(?:evidence|research|studies|trials?|rcts?|literature)\b")
+KNOWLEDGE_DATA = (
+    r"\b(?:our|ours|my|we|we've|we're|us|your|yours|this population|these patients|this panel|the data|this data|the warehouse|received)\b|"
+    r"\bhow many\b|\bcount\b|\bnumber of (?:patients|members|visits|claims|admissions)\b|\blist\b|\bshow(?: me)?\b|\bwhich (?:patients|members|practices|pcps|providers|clinics|physicians|doctors)\b|"
+    r"\b(?:patients|members) (?:with|who|whose|that|in)\b|\btop \d+\b|\b(?:last|this|past|previous|next) (?:month|quarter|year|week)\b|\bby (?:practice|payer|pcp|provider|month|quarter|clinic|facility)\b|"
+    r"\bper 1,?000\b|\b(?:average|mean|median)\b|\btrend(?:s|ing)?\b|\$\s?\d|\bdr\.? [a-z]|\bpatient [a-z0-9-]*\d|"
+    r"\b(?:distribution|breakdown|total|highest|lowest)\b|\b(?:percentage|proportion) of (?:patients|members)\b|"
+    r"\b(?:of|for|among) (?:the )?(?:attributed |assigned |aligned |enrolled )?(?:patients|members|population)\b")
+
+
+def _knowledge_question(question):
+    low = ' '.join(str(question).lower().replace('’', "'").split())
+    if not (re.search(KNOWLEDGE_INTENT, low) and re.search(KNOWLEDGE_DOMAIN, low)) or re.search(KNOWLEDGE_DATA, low):
+        return None
+    from .vbc_knowledge import validate
+    params = validate({'query': ' '.join(str(question).split())[:1500]})
+    info = {'compiler': VERSION, 'recognised': ['explanation question about value-based care'], 'paraphrased': [],
+            'route': 'local_compiler', 'unexplained': []}
+    return {'interpretation': params['query'], 'coverage': 'supported_observation', 'unmet_requirements': [],
+            'nodes': [{'id': 'answer', 'operation': 'knowledge', 'inputs': [], 'parameters': params,
+                       'purpose': 'Cited explanation from the VBC knowledge base (public sources, extractive)'}]}, info
 
 
 def _briefing_question(q):

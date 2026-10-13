@@ -37,6 +37,7 @@ def _cues():
         ('calibration', rx(lc.CALIBRATION_INTENT)), ('briefing', rx(lc.BRIEFING_TRIGGER)), ('pathway', rx(lc.PATHWAY_INTENT)),
         ('early_signal', rx(lc.EARLY_SIGNAL_INTENT)), ('analytic', rx(lc.ANALYTIC_INTENT)), ('scheduling', rx(scheduling)),
         ('unsupported', rx(unsupported)), ('death', rx(lc.DEATH_WORDS)),
+        ('knowledge', lambda low: lc._knowledge_question(low) is not None),
         ('count', rx(r'\b(?:how many|number of|count|counts)\b')), ('list', rx(r'\b(?:list|which patients|who (?:are|is|has|have))\b')),
         ('aggregate', rx(r'\b(?:average|mean|median|sum|total|max(?:imum)?|min(?:imum)?)\b')),
         ('share', rx(r'%|\b(?:percent(?:age)?|share|proportion|fraction|rate)\b')),

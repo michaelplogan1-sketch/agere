@@ -21,6 +21,8 @@ SYSTEM = (
     'omit parameters the question does not determine. Put population restrictions (conditions, labs, age, sex, payer) '
     'in population using concept/measurement/patient atoms, never inside parameters. '
     'Use not_answerable only when the question needs data that clearly does not exist (death records, race, CPT/RVU, HCC/RAF, surveys). '
+    'Choose knowledge for explanation or strategy questions about value-based care itself (how a program works, what a term means, '
+    'how companies compare, what the evidence says) that do not ask about this population\'s data. '
     'Snapshot date: {as_of}.'
 )
 

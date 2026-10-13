@@ -63,6 +63,12 @@ PRODUCT['claims_review'] = {'population': 'optional', 'view': 'pareto',
                                    'denial patterns by payer and reason; review flags ranked by expected dollars. '
                                    'Is-it-out-of-control charts, denial-rate shifts over time and feed health are monitor.'}
 
+PRODUCT['knowledge'] = {'population': 'none', 'view': 'passages',
+                        'use': 'EXPLANATION / STRATEGY questions about value-based care itself, not this population\'s data: how does X work, what is X, '
+                               'explain, how are patients attributed/aligned, compare companies (Aledade vs agilon), CMS/CMMI models and strategy, '
+                               'risk adjustment (HCC V28, RADV), Stars/HEDIS/APP, frameworks (Porter value agenda, Nash population health), '
+                               'evidence on what works (MSSP savings, hotspotting RCT). Cited passages from a curated public-source knowledge base.'}
+
 # Questions a SQL query over the semantic tables answers exactly are handed to the verified SQL ladder.
 LITERAL = ('Literal data questions: counts, lists, sums, averages, maxima, record filters, date arithmetic, simple breakdowns '
            'by a field, shares, rates per 1,000 without case-mix adjustment.')

@@ -187,6 +187,11 @@ CONTRACTS['early_signal'] = {'inputs':['optional earlier_set'],'parameters':{'ou
               '(SNR, empirical false-alarm probability vs time-shifted non-event background), time-split precision/recall/lead time vs a recent-ED baseline; '
               'acute-data gaps masked. Use for heading-toward-admission / pre-admission signature / early-warning / decompensation questions.'}
 
+CONTRACTS['knowledge'] = {'inputs':['none'],'parameters':{'query':'the question verbatim','top':5,'topic':'any|attribution|program_mechanics|risk_adjustment|quality|cms_strategy|cms_models|market_players|thought_leaders|evidence|industry_analysis'},
+    'meaning':'Cited VBC knowledge base (public sources, summarised): BM25 + local encoder retrieval, extractive answer with numbered citations. '
+              'Use for how-does / what-is / explain / compare-companies / strategy / evidence questions about programs (MSSP, REACH, MA, Medicaid), '
+              'attribution, risk adjustment, quality programs, CMMI models, market players and frameworks - never for counts or rates in this data.'}
+
 CONTRACTS['briefing'] = {'inputs':['none'],'parameters':{'top':10},
     'meaning':'Proactive daily briefing over the whole population (no question needed): cards from discovery, lab trajectories and forecasts, '
               'cost/utilization change decomposition, shrunk outliers, monitor and market moves; ranked by briefing_rank (prior = surprise bits x '

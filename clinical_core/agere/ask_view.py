@@ -490,6 +490,19 @@ function yieldChart(S){const W=CW(),L=52,R=14,T=10,B=34,H=230;const kmax=Math.ma
  S.forEach((ss,i)=>{const g=gain(ss),c=SER[i%SER.length];s+='<path d="'+g.map((v,k)=>(k?'L':'M')+X(k).toFixed(1)+' '+Y(v).toFixed(1)).join('')+'" style="fill:none;stroke:'+c+';stroke-width:2"/>';
   const k=ss.recommended_extra;s+='<circle cx="'+X(k)+'" cy="'+Y(g[k])+'" r="5" style="fill:'+c+';stroke:var(--card);stroke-width:1.5"><title>'+esc(ss.practice+': +'+k+' extra, gain '+fmt(g[k],3)+', P(overflow) '+pct(ss.p_overflow,0))+'</title></circle>'});
  return s+'</svg>'}
+/* knowledge: cited passages from the VBC knowledge base (public sources, summarised) */
+function kbLink(c){const u=String(c.url||'');return /^https?:\/\//i.test(u)?'<a href="'+esc(u)+'" target="_blank" rel="noopener noreferrer">'+esc(c.title||u)+'</a>':esc(c.title||'')}
+function kbFacts(f){const ks=Object.keys(f||{}).slice(0,6);if(!ks.length)return '';return '<ul class="hint">'+ks.map(k=>{const v=f[k];
+ return '<li><b>'+esc(label(k))+'</b>: '+esc(typeof v==='object'&&v!==null?JSON.stringify(v).slice(0,240):String(v).slice(0,240))+'</li>'}).join('')+'</ul>'}
+function vizKnowledge(a){const k=(a.overall||{}).knowledge||{},rows=a.table||[];if(!rows.length)return '';
+ let h='<section class="sec" data-focus="knowledge"><h3>Cited passages</h3><p class="hint">'+esc(fmt(rows.length))+' of '+esc(fmt((k.corpus||{}).entries))+
+  ' knowledge entries · retrieval '+esc(k.retrieval||'')+(k.synthesis?' · synthesised by '+esc(k.synthesis.model||'model'):' · extractive (no model wrote the text)')+'</p>';
+ rows.forEach(r=>{h+='<article class="sec"><h4>'+esc(r.n+'. '+(r.title||r.id))+'</h4><div class="hint">'+esc(label(r.topic||''))+' · confidence '+esc(r.confidence||'')+
+  ' · verified '+esc(r.last_verified||'')+'</div><p>'+esc(r.summary||'')+'</p>'+kbFacts(r.facts);
+  (r.contradictions||[]).slice(0,3).forEach(c=>{h+='<p class="hint"><b>Sources disagree:</b> '+esc(c.claim||'')+' — '+esc(c.note||'')+'</p>'});
+  h+='<ol class="hint">'+(r.citations||[]).map(c=>'<li>'+kbLink(c)+' · '+esc(c.publisher||'')+(c.date?' · '+esc(c.date):'')+(c.quote?' — “'+esc(c.quote)+'”':'')+'</li>').join('')+'</ol></article>'});
+ const s=k.sources||[];if(s.length)h+='<h4>Sources</h4><ol class="hint">'+s.map(c=>'<li value="'+esc(c.n)+'">'+kbLink(c)+' · '+esc(c.publisher||'')+(c.date?' · '+esc(c.date):'')+'</li>').join('')+'</ol>';
+ return h+'</section>'}
 function vizBriefing(a){const rows=a.table||[],r=(a.overall||{}).briefing||{};let h='<section class="sec" data-focus="briefing"><h3>Briefing, ranked</h3>'+
  '<p class="hint">'+esc(r.model||'')+(r.pairs?' · '+fmt(r.pairs)+' preference pairs from '+fmt(r.events||0)+' feedback events':'')+'</p><ol>';
  rows.forEach(c=>{h+='<li><b>'+esc(label(c.kind||''))+'</b>'+(c.explore?' <span class="xp">explore</span>':'')+': '+esc(c.headline||'')+
@@ -569,6 +582,7 @@ function sigChart(rows,thr){const W=CW(),lh=22,L=Math.min(Math.round(W*.36),12+7
   s+='<text x="'+(Math.max(X(0),X(isNum(r.snr)?r.snr:0))+4)+'" y="'+(y+lh/2+4)+'">'+esc(fmt(r.snr,2)+' · p='+f)+'</text></g>'});
  return s+'</svg><div class="legend"><span><span class="sw" style="background:var(--bad)"></span>above threshold</span><span><span class="sw" style="background:var(--s3)"></span>below</span><span>┊ threshold at the false-alarm rate</span></div>'}
 function visual0(a){if(!a||a.answer_type==='unsupported')return '';const o=a.overall||{};
+  if(o.knowledge)return vizKnowledge(a);
   if(o.early_signal)return vizEarlySignal(a);
   if(o.claims_review)return vizClaims(a);
   if(o.profile)return vizProfile(a);

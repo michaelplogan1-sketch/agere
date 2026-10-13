@@ -32,6 +32,7 @@ OPERATIONS |= {'scheduling'}  # no-show model, overbooking, access, reminders (s
 OPERATIONS |= {'briefing'}  # ranked proactive briefing (briefing.py + briefing_rank.py)
 OPERATIONS |= {'early_signal'}  # matched-filter precursor detection (early_signal.py)
 OPERATIONS |= {'claims_review'}  # payment integrity and revenue leakage (claims_review.py)
+OPERATIONS |= {'knowledge'}  # cited VBC knowledge base: explanation / strategy questions (vbc_knowledge.py)
 NODE_FIELDS = {'id', 'operation', 'inputs', 'parameters', 'purpose'}
 LIMITS = [
     'Membership means observed predicate matches, not confirmed disease or absent care.',
@@ -132,6 +133,7 @@ NO_BENCHMARK_OPERATIONS += ('scheduling',)
 NO_BENCHMARK_OPERATIONS += ('briefing',)
 NO_BENCHMARK_OPERATIONS += ('early_signal',)
 NO_BENCHMARK_OPERATIONS += ('claims_review',)
+NO_BENCHMARK_OPERATIONS += ('knowledge',)
 
 
 def benchmark_references(answer, question=None, operation=None):
@@ -356,6 +358,19 @@ def build_answer(plan, results, memberships, question):
                                **({'calibration': report['conformal']} if report.get('conformal') else {}),
                                # display: plain-language label and category for each reason code on the worklist
                                'reason_labels': {c: {'category': REASONS[c][0], 'label': REASONS[c][1]} for c in sorted(used) if c in REASONS}})
+        return answer
+    if last['operation'] == 'knowledge':
+        from .vbc_knowledge import summary
+        report = results[-1]['result']
+        ok = report['answered']
+        rows = [{'n': i + 1, 'id': h['id'], 'topic': h['topic'], 'title': h['title'], 'score': h['score'], 'confidence': h['confidence'],
+                 'last_verified': h['last_verified'], 'summary': h['summary'], 'facts': h['facts'], 'citations': h['citations'],
+                 'contradictions': h['contradictions']} for i, h in enumerate(h for h in report['hits'] if h['relevant'])]
+        answer.update(status='answered' if ok else 'unsupported', answer_type='table' if ok else 'unsupported', table=rows,
+                      value=summary(report), method=report['method'], count=len(rows),
+                      overall={'knowledge': {'query': report['query'], 'retrieval': report['retrieval'], 'corpus': report['corpus'],
+                                             'sources': report['sources'], 'synthesis': report['synthesis']}})
+        if not ok: answer['missing'].append(summary(report))
         return answer
     if last['operation'] == 'early_signal':
         from .early_signal import summary
@@ -621,6 +636,9 @@ def validate(plan, as_of):
             p = pathway.validate(p)
             if any(v > as_of for v in p['period'].values()):
                 raise ValueError('Pathway period exceeds snapshot cutoff')
+        elif op == 'knowledge':
+            from . import vbc_knowledge
+            p = vbc_knowledge.validate(p)
         elif op == 'early_signal':
             from . import early_signal
             p = early_signal.validate(p)
@@ -896,6 +914,7 @@ def code_identity():
                       Path(__file__).with_name('demand.py'),
                       Path(__file__).with_name('profile.py'),
                       Path(__file__).with_name('early_signal.py'),
+                      Path(__file__).with_name('vbc_knowledge.py'), *sorted((Path(__file__).resolve().parents[3] / 'config/agere/knowledge').glob('*.jsonl')),
                       *[Path(__file__).with_name(n) for n in ('program_work.py','program_work_current.py','program_work_v1.py','functional_programs.py','functional_review.py','registered_program_work.py','domain_programs.py','domain_review.py','work_adapters.py')],Path(__file__).with_name('program_documents.py'),Path(__file__).with_name('program_document_change.py'),
                       Path(__file__).with_name('program_acquisition.py'),Path(__file__).with_name('evidence_portfolio.py'),Path(__file__).with_name('program_resolution.py'),Path(__file__).with_name('measure_composition.py'),
                       Path(__file__).with_name('requirement_work.py'), Path(__file__).with_name('graph_decision.py'), Path(__file__).with_name('graph_criteria.py'), Path(__file__).with_name('graph_reports.py'), Path(__file__).with_name('graph_observation.py'), Path(__file__).with_name('graph_references.py'),
@@ -1259,6 +1278,18 @@ def execute(stack, plan, *, question=None):
                 from . import outreach
                 chosen = memberships[node['inputs'][0]] if node['inputs'] else None
                 detail = outreach.execute(path, sorted(chosen.yes) if chosen else None, params, meta['snapshot']['as_of'])
+            elif op == 'knowledge':
+                from . import vbc_knowledge
+                ledger = None
+                if vbc_knowledge.synthesis_enabled() and getattr(stack, 'allow_live', False):  # optional hosted synthesis, off by default
+                    from ..gateway import BudgetLedger
+                    ledger = BudgetLedger(Path(__file__).resolve().parents[3] / 'artifacts/agere-full/provider-budget.sqlite3')
+                try:
+                    detail = vbc_knowledge.execute(params, encoder=getattr(stack.retriever, 'encoder', None), allow_live=ledger is not None,
+                                                   ledger=ledger, out=Path(__file__).resolve().parents[3] / 'artifacts/vbc-knowledge/synthesis')
+                finally:
+                    if ledger is not None: ledger.close()
+                paid_calls += detail['new_paid_api_calls']
             elif op == 'early_signal':
                 from . import early_signal
                 chosen = memberships[node['inputs'][0]] if node['inputs'] else None
