@@ -8,6 +8,18 @@
    "component": "Carbohydrate-deficient transferrin/Transferrin.total",
    "confidence": 0.6,
    "factor_to_canonical": 1,
+   "jev_choice": "none",
+   "jev_input": "d8665c6dcf67ad296972c420b25f708e7d18121d74cb85681d6c07295c608970",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary",
+    "none"
+   ],
+   "jev_p": 0.93,
+   "jev_probabilities": {
+    "dictionary": 0.07,
+    "none": 0.93
+   },
    "loinc": null,
    "note": "Analyte is clear. The LOINC code is not confidently known, so it is left null.",
    "property": "mass fraction",
@@ -21,6 +33,18 @@
    "component": "Glucose 1 hour post meal",
    "confidence": 0.6,
    "factor_to_canonical": 1,
+   "jev_choice": "dictionary_and_rules",
+   "jev_input": "66e00e01d7ab6db84a82d2641c7fdaf47d589d8d467233be774bd623cb194f9e",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary_and_rules",
+    "none"
+   ],
+   "jev_p": 0.98,
+   "jev_probabilities": {
+    "dictionary_and_rules": 0.98,
+    "none": 0.02
+   },
    "loinc": "1521-4",
    "note": "Analyte (glucose) is inferred from context. Timed postprandial sample, not fasting. The LOINC code needs verification.",
    "property": "mass conc",
@@ -34,6 +58,18 @@
    "component": "Glucose 1 hour post meal",
    "confidence": 0.65,
    "factor_to_canonical": 1,
+   "jev_choice": "dictionary_and_rules",
+   "jev_input": "fe8684495ad684914faf96bd84cbcb597b65b2a0835f04e277180e191ac5d49c",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary_and_rules",
+    "none"
+   ],
+   "jev_p": 0.99,
+   "jev_probabilities": {
+    "dictionary_and_rules": 0.99,
+    "none": 0.01
+   },
    "loinc": "1521-4",
    "note": "Timed postprandial sample. The LOINC code needs verification.",
    "property": "mass conc",
@@ -47,6 +83,18 @@
    "component": "Cortisol free, 24 hour",
    "confidence": 0.6,
    "factor_to_canonical": 1,
+   "jev_choice": "dictionary",
+   "jev_input": "4e4c57107ab0715b68799467dc68051618f2db0da63738977004aa5df127b4cb",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary",
+    "none"
+   ],
+   "jev_p": 0.96,
+   "jev_probabilities": {
+    "dictionary": 0.96,
+    "none": 0.04
+   },
    "loinc": "2147-7",
    "note": "The LOINC code needs verification.",
    "property": "mass rate",
@@ -60,6 +108,18 @@
    "component": "25-hydroxyvitamin D2+D3",
    "confidence": 0.85,
    "factor_to_canonical": 1,
+   "jev_choice": "dictionary",
+   "jev_input": "465cac1f2a76602e764f7093f60153806f9550707679d2bfe1e064302950ee1a",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary",
+    "none"
+   ],
+   "jev_p": 0.99,
+   "jev_probabilities": {
+    "dictionary": 0.99,
+    "none": 0.01
+   },
    "loinc": "62292-8",
    "property": "mass conc",
    "source_count": 2,
@@ -72,6 +132,18 @@
    "component": "Carbon dioxide partial pressure",
    "confidence": 0.9,
    "factor_to_canonical": 1,
+   "jev_choice": "dictionary",
+   "jev_input": "7294ebdbe74097d848a289e89a7429f8b075f33b50813586fb0dbc0977b425d6",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary",
+    "none"
+   ],
+   "jev_p": 0.99,
+   "jev_probabilities": {
+    "dictionary": 0.99,
+    "none": 0.01
+   },
    "loinc": "2019-8",
    "property": "pressure",
    "source_count": 2,
@@ -84,6 +156,18 @@
    "component": "Oxygen partial pressure",
    "confidence": 0.9,
    "factor_to_canonical": 1,
+   "jev_choice": "dictionary",
+   "jev_input": "7c3c56c4fd28b26dea9b90938a4d84bfaddc024edf8d26763b7f311b03a0370d",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary",
+    "none"
+   ],
+   "jev_p": 1.0,
+   "jev_probabilities": {
+    "dictionary": 1.0,
+    "none": 0.0
+   },
    "loinc": "2703-7",
    "note": "Not SpO2.",
    "property": "pressure",
@@ -97,6 +181,18 @@
    "component": "Oxygen partial pressure (room air)",
    "confidence": 0.85,
    "factor_to_canonical": 1,
+   "jev_choice": "dictionary",
+   "jev_input": "a711f54386559d433840047756450736e4a9b315c81de5eab252d9ca2501c104",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary",
+    "none"
+   ],
+   "jev_p": 1.0,
+   "jev_probabilities": {
+    "dictionary": 1.0,
+    "none": 0.0
+   },
    "loinc": "2703-7",
    "note": "Room air recorded as a qualifier. Not SpO2.",
    "property": "pressure",
@@ -110,6 +206,18 @@
    "component": "Corticotropin (ACTH)",
    "confidence": 0.85,
    "factor_to_canonical": 1,
+   "jev_choice": "dictionary",
+   "jev_input": "c0aa41cf2331983f217333e72b9dbf9b7a858bb0eb954aaa0001a10285e203d5",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary",
+    "none"
+   ],
+   "jev_p": 0.98,
+   "jev_probabilities": {
+    "dictionary": 0.98,
+    "none": 0.02
+   },
    "loinc": "2141-0",
    "property": "mass conc",
    "source_count": 2,
@@ -122,6 +230,18 @@
    "component": "Apnea-hypopnea index",
    "confidence": 0.6,
    "factor_to_canonical": 1,
+   "jev_choice": "dictionary",
+   "jev_input": "fc776906cba0b539a1d4ea9560b70c8777c4e3b5d4543af99ec5b48697297ec5",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary",
+    "none"
+   ],
+   "jev_p": 1.0,
+   "jev_probabilities": {
+    "dictionary": 1.0,
+    "none": 0.0
+   },
    "loinc": null,
    "property": "rate",
    "source_count": 1,
@@ -134,6 +254,18 @@
    "component": "Alanine aminotransferase",
    "confidence": 0.9,
    "factor_to_canonical": 1,
+   "jev_choice": "dictionary",
+   "jev_input": "b9908cdb71febc5a7b73cd417e69ce09c47d4095307e38fc25565b1939e62a9c",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary",
+    "none"
+   ],
+   "jev_p": 1.0,
+   "jev_probabilities": {
+    "dictionary": 1.0,
+    "none": 0.0
+   },
    "loinc": "1742-6",
    "property": "catalytic conc",
    "source_count": 12,
@@ -146,6 +278,18 @@
    "component": "Mullerian inhibiting substance (AMH)",
    "confidence": 0.8,
    "factor_to_canonical": 1,
+   "jev_choice": "dictionary",
+   "jev_input": "1fcf18b29127b5f5433e0bc8347225675a1ddd1e70e1ae3f9a8d509fc495c76f",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary",
+    "none"
+   ],
+   "jev_p": 0.99,
+   "jev_probabilities": {
+    "dictionary": 0.99,
+    "none": 0.01
+   },
    "loinc": "38476-8",
    "property": "mass conc",
    "source_count": 4,
@@ -158,6 +302,18 @@
    "component": "Neutrophils (absolute count)",
    "confidence": 0.9,
    "factor_to_canonical": 1,
+   "jev_choice": "dictionary",
+   "jev_input": "81d239537b8ca3ccbbcaa68dbabf7eb26ae8573b8bb7a95361d59127b7dd74a6",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary",
+    "none"
+   ],
+   "jev_p": 0.96,
+   "jev_probabilities": {
+    "dictionary": 0.96,
+    "none": 0.04
+   },
    "loinc": "751-8",
    "note": "Not WBC.",
    "property": "number conc",
@@ -171,6 +327,18 @@
    "component": "Aldosterone/Renin ratio",
    "confidence": 0.5,
    "factor_to_canonical": null,
+   "jev_choice": "dictionary",
+   "jev_input": "66f48d7619dbd286cf4ebd282fe1f04f550d5cf476b05606e37ec5e970779b08",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary",
+    "none"
+   ],
+   "jev_p": 0.99,
+   "jev_probabilities": {
+    "dictionary": 0.99,
+    "none": 0.01
+   },
    "loinc": null,
    "note": "Unit is missing. Ratio units depend on the renin assay (activity vs. concentration), so the value cannot be normalised. The 'aldosterone/renin ratio' reading itself is inferred.",
    "property": "ratio",
@@ -184,6 +352,18 @@
    "component": "Adult ADHD Self-Report Scale, Part A screener",
    "confidence": 0.6,
    "factor_to_canonical": 1,
+   "jev_choice": "dictionary",
+   "jev_input": "110ae73f3e51f041e4145aeae286db3b5827934352891783218b997dac179e93",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary",
+    "none"
+   ],
+   "jev_p": 0.99,
+   "jev_probabilities": {
+    "dictionary": 0.99,
+    "none": 0.01
+   },
    "loinc": null,
    "property": "score (count of positive items)",
    "source_count": 1,
@@ -196,6 +376,18 @@
    "component": "Aspartate aminotransferase",
    "confidence": 0.9,
    "factor_to_canonical": 1,
+   "jev_choice": "dictionary",
+   "jev_input": "5ba0a489d160b4cf5f42f28a1c0660f925267d2cfb6a914f80084ee3b5c138f0",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary",
+    "none"
+   ],
+   "jev_p": 0.99,
+   "jev_probabilities": {
+    "dictionary": 0.99,
+    "none": 0.01
+   },
    "loinc": "1920-8",
    "property": "catalytic conc",
    "source_count": 7,
@@ -208,6 +400,18 @@
    "component": "AUDIT-C total score",
    "confidence": 0.8,
    "factor_to_canonical": 1,
+   "jev_choice": "dictionary",
+   "jev_input": "3008a1bedf0d2654c4f7f513597440757d34b9b7abd974b98f4d5b4300cb2b17",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary",
+    "none"
+   ],
+   "jev_p": 0.99,
+   "jev_probabilities": {
+    "dictionary": 0.99,
+    "none": 0.01
+   },
    "loinc": "75626-2",
    "property": "score",
    "source_count": 1,
@@ -220,6 +424,18 @@
    "component": "Eosinophils (absolute count)",
    "confidence": 0.85,
    "factor_to_canonical": 0.001,
+   "jev_choice": "dictionary",
+   "jev_input": "30305d14069a935d1333e1371aa73f1fc4fa2e5d31981ada6ea8200e969ef83e",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary",
+    "none"
+   ],
+   "jev_p": 0.99,
+   "jev_probabilities": {
+    "dictionary": 0.99,
+    "none": 0.01
+   },
    "loinc": "711-2",
    "note": "Received in /uL. Converted to 10*3/uL (x0.001).",
    "property": "number conc",
@@ -233,6 +449,18 @@
    "component": "Eosinophils",
    "confidence": 0.9,
    "factor_to_canonical": 0.001,
+   "jev_choice": "dictionary",
+   "jev_input": "13533a75a8ae4f7b339517c58e88a8210785450a2a734e781650bb8ac2f0f742",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary",
+    "none"
+   ],
+   "jev_p": 0.99,
+   "jev_probabilities": {
+    "dictionary": 0.99,
+    "none": 0.01
+   },
    "loinc": "711-2",
    "property": "number concentration",
    "source_count": 1,
@@ -245,6 +473,18 @@
    "component": "Albumin",
    "confidence": 0.9,
    "factor_to_canonical": 1,
+   "jev_choice": "dictionary",
+   "jev_input": "c65336e391886e036d7a6a8700d0889f7c07383a07a3d338a2cf6deb63144873",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary",
+    "none"
+   ],
+   "jev_p": 0.97,
+   "jev_probabilities": {
+    "dictionary": 0.97,
+    "none": 0.03
+   },
    "loinc": "1751-7",
    "note": "Serum albumin, not urine albumin and not UACR.",
    "property": "mass conc",
@@ -258,6 +498,18 @@
    "component": "Aldosterone",
    "confidence": 0.85,
    "factor_to_canonical": 1,
+   "jev_choice": "dictionary",
+   "jev_input": "bcd3d238804fa4878f1d66167170604713ddc85bf780d4c10ba9d018dba0b186",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary",
+    "none"
+   ],
+   "jev_p": 0.94,
+   "jev_probabilities": {
+    "dictionary": 0.94,
+    "none": 0.06
+   },
    "loinc": "1763-2",
    "property": "mass concentration",
    "source_count": 1,
@@ -270,6 +522,18 @@
    "component": "Alkaline phosphatase",
    "confidence": 0.95,
    "factor_to_canonical": 1,
+   "jev_choice": "dictionary",
+   "jev_input": "f564f43a3915bac00112c9cf4d75a4079dc4c1e70179b191ddc50c3d387bab02",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary",
+    "none"
+   ],
+   "jev_p": 1.0,
+   "jev_probabilities": {
+    "dictionary": 1.0,
+    "none": 0.0
+   },
    "loinc": "6768-6",
    "property": "catalytic concentration",
    "source_count": 1,
@@ -282,6 +546,18 @@
    "component": "Dermatophagoides farinae Ab.IgE",
    "confidence": 0.82,
    "factor_to_canonical": 1,
+   "jev_choice": "none",
+   "jev_input": "96c9a7913da90399c58f85e22c8b0e4bc9d0ebca0849fa06e9f9285dd79e3399",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary",
+    "none"
+   ],
+   "jev_p": 0.77,
+   "jev_probabilities": {
+    "dictionary": 0.23,
+    "none": 0.77
+   },
    "loinc": "6095-4",
    "property": "arbitrary conc",
    "source_count": 69,
@@ -294,6 +570,18 @@
    "component": "Amylase",
    "confidence": 0.9,
    "factor_to_canonical": 1,
+   "jev_choice": "dictionary",
+   "jev_input": "ab9261627457333950de6f690c66874f5fdf011cb7aef260f63176f49dde2287",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary",
+    "none"
+   ],
+   "jev_p": 0.95,
+   "jev_probabilities": {
+    "dictionary": 0.95,
+    "none": 0.05
+   },
    "loinc": "1798-8",
    "property": "catalytic concentration",
    "source_count": 1,
@@ -306,6 +594,18 @@
    "component": "Anion gap",
    "confidence": 0.8,
    "factor_to_canonical": 1,
+   "jev_choice": "dictionary",
+   "jev_input": "be6f871dbdad7e622392d1850d866dad7b39ed27400e4caa424d71b3005ff2fb",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary",
+    "none"
+   ],
+   "jev_p": 0.99,
+   "jev_probabilities": {
+    "dictionary": 0.99,
+    "none": 0.01
+   },
    "loinc": "33037-3",
    "note": "Unit is blank. mmol/L (= mEq/L) is assumed. Whether K+ is included in the calculation is unknown.",
    "property": "substance conc",
@@ -319,6 +619,18 @@
    "component": "Beta-2 glycoprotein 1 IgG antibody",
    "confidence": 0.8,
    "factor_to_canonical": 1,
+   "jev_choice": "dictionary",
+   "jev_input": "395d2a960390089cd1cd1ff9e19c68168c9b99dcfe65a7ce8db2e790e45faced",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary",
+    "none"
+   ],
+   "jev_p": 0.99,
+   "jev_probabilities": {
+    "dictionary": 0.99,
+    "none": 0.01
+   },
    "loinc": null,
    "property": "arbitrary concentration",
    "source_count": 1,
@@ -331,6 +643,18 @@
    "component": "Cardiolipin Ab.IgG",
    "confidence": 0.6,
    "factor_to_canonical": 1,
+   "jev_choice": "dictionary",
+   "jev_input": "a28f40ab46db8ef8cacb71cff921e40641f0232a617be9401ebb5e1092969168",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary",
+    "none"
+   ],
+   "jev_p": 0.98,
+   "jev_probabilities": {
+    "dictionary": 0.98,
+    "none": 0.02
+   },
    "loinc": null,
    "note": "Analyte is clear. The specific LOINC code is not confidently known, so it is left null.",
    "property": "arbitrary conc",
@@ -344,6 +668,18 @@
    "component": "Ovarian antral follicle count (ultrasound)",
    "confidence": 0.6,
    "factor_to_canonical": 1,
+   "jev_choice": "dictionary",
+   "jev_input": "3a870f9daa91edb7df232001e5cdf74c06dc7c5bfd765764fee8d639e35a7e77",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary",
+    "none"
+   ],
+   "jev_p": 0.99,
+   "jev_probabilities": {
+    "dictionary": 0.99,
+    "none": 0.01
+   },
    "loinc": null,
    "note": "Imaging measurement, not a lab test.",
    "property": "number",
@@ -357,6 +693,18 @@
    "component": "Cobalamin (Vitamin B12)",
    "confidence": 0.9,
    "factor_to_canonical": 1,
+   "jev_choice": "dictionary",
+   "jev_input": "ca46e7f3f4160beb239ac0d584167c54333861d1852443ab3eaed89de3787dfe",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary",
+    "none"
+   ],
+   "jev_p": 0.99,
+   "jev_probabilities": {
+    "dictionary": 0.99,
+    "none": 0.01
+   },
    "loinc": "2132-9",
    "property": "mass conc",
    "source_count": 3,
@@ -369,6 +717,18 @@
    "component": "Urea nitrogen",
    "confidence": 0.95,
    "factor_to_canonical": 1,
+   "jev_choice": "dictionary_and_rules",
+   "jev_input": "c838888505d29b62581f24de8a8062980b5fae9dff8e872d397e51928a2154aa",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary_and_rules",
+    "none"
+   ],
+   "jev_p": 1.0,
+   "jev_probabilities": {
+    "dictionary_and_rules": 1.0,
+    "none": 0.0
+   },
    "loinc": "3094-0",
    "property": "mass concentration",
    "source_count": 6635,
@@ -381,6 +741,18 @@
    "component": "Bicarbonate",
    "confidence": 0.85,
    "factor_to_canonical": 1,
+   "jev_choice": "dictionary",
+   "jev_input": "9b4b2674647fec71b181114ed137f646ceea0020cbce4ebfb7ad21d23a2f9b3a",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary",
+    "none"
+   ],
+   "jev_p": 0.97,
+   "jev_probabilities": {
+    "dictionary": 0.97,
+    "none": 0.03
+   },
    "loinc": "1963-8",
    "property": "substance conc",
    "source_count": 5812,
@@ -393,6 +765,18 @@
    "component": "Columbia Suicide Severity Rating Scale ideation severity",
    "confidence": 0.8,
    "factor_to_canonical": 1,
+   "jev_choice": "dictionary",
+   "jev_input": "a303f1a250059048e620c467c58b1728b0a3442e367dfc50131831ffecb68cfd",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary",
+    "none"
+   ],
+   "jev_p": 0.99,
+   "jev_probabilities": {
+    "dictionary": 0.99,
+    "none": 0.01
+   },
    "loinc": null,
    "property": "ordinal score",
    "source_count": 1,
@@ -405,6 +789,18 @@
    "component": "Cancer antigen 125",
    "confidence": 0.9,
    "factor_to_canonical": 1,
+   "jev_choice": "dictionary",
+   "jev_input": "ea8cb8e133856c5b56047e0c61464e411c4266d05584602f060b0607ff990233",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary",
+    "none"
+   ],
+   "jev_p": 0.99,
+   "jev_probabilities": {
+    "dictionary": 0.99,
+    "none": 0.01
+   },
    "loinc": "10334-1",
    "property": "arbitrary concentration",
    "source_count": 1,
@@ -417,6 +813,18 @@
    "component": "CD4 T cells",
    "confidence": 0.85,
    "factor_to_canonical": 1,
+   "jev_choice": "dictionary",
+   "jev_input": "06856549f2b6900b74bc17b9ec34902bd699c187e5737d6ca04fbb0f13d813d5",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary",
+    "none"
+   ],
+   "jev_p": 0.97,
+   "jev_probabilities": {
+    "dictionary": 0.97,
+    "none": 0.03
+   },
    "loinc": "24467-3",
    "property": "number concentration",
    "source_count": 1,
@@ -429,6 +837,18 @@
    "component": "CGM time below range <70 mg/dL",
    "confidence": 0.85,
    "factor_to_canonical": 1,
+   "jev_choice": "dictionary",
+   "jev_input": "65ed92ac403066a11291de8003ae5a848d06e80366a7d2ca3281409059071756",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary",
+    "none"
+   ],
+   "jev_p": 0.99,
+   "jev_probabilities": {
+    "dictionary": 0.99,
+    "none": 0.01
+   },
    "loinc": null,
    "property": "time fraction",
    "source_count": 1,
@@ -441,6 +861,18 @@
    "component": "CGM time in range 70-180 mg/dL",
    "confidence": 0.85,
    "factor_to_canonical": 1,
+   "jev_choice": "dictionary",
+   "jev_input": "11828c7fff6250e35428fb13a615f121815c58b6f374416c99a966fa0f2fd4c1",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary",
+    "none"
+   ],
+   "jev_p": 0.99,
+   "jev_probabilities": {
+    "dictionary": 0.99,
+    "none": 0.01
+   },
    "loinc": null,
    "property": "time fraction",
    "source_count": 1,
@@ -453,6 +885,18 @@
    "component": "Calcium",
    "confidence": 0.93,
    "factor_to_canonical": 1,
+   "jev_choice": "dictionary",
+   "jev_input": "bccadf0eb00b1df2aea30a4600e742385500152ef3f31f3f7f60e993fd9e73a6",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary",
+    "none"
+   ],
+   "jev_p": 0.96,
+   "jev_probabilities": {
+    "dictionary": 0.96,
+    "none": 0.04
+   },
    "loinc": "17861-6",
    "property": "mass concentration",
    "source_count": 5806,
@@ -465,6 +909,18 @@
    "component": "Carbon dioxide partial pressure (pCO2)",
    "confidence": 0.65,
    "factor_to_canonical": 1,
+   "jev_choice": "none",
+   "jev_input": "7dc1abd5148bf5bb0b33eb62526a43ac651a04b0068b941ef825d13c89a5e0ac",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary",
+    "none"
+   ],
+   "jev_p": 0.6,
+   "jev_probabilities": {
+    "dictionary": 0.4,
+    "none": 0.6
+   },
    "loinc": "2019-8",
    "note": "This is pCO2 from a blood gas, not serum total CO2. Do not merge with 'Carbon dioxide  total'. The specimen (arterial vs venous) is assumed.",
    "property": "partial pressure",
@@ -478,6 +934,18 @@
    "component": "Carbon dioxide total",
    "confidence": 0.85,
    "factor_to_canonical": 1,
+   "jev_choice": "dictionary",
+   "jev_input": "939c318caab0ffebe3a398d8e373b65ecaaece9440b6a992e16e62130e8b0446",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary",
+    "none"
+   ],
+   "jev_p": 0.98,
+   "jev_probabilities": {
+    "dictionary": 0.98,
+    "none": 0.02
+   },
    "loinc": "2028-9",
    "note": "A minimum of 1.7 mmol/L is implausible. Review for data errors.",
    "property": "substance conc",
@@ -491,6 +959,18 @@
    "component": "Cat dander Ab.IgE",
    "confidence": 0.82,
    "factor_to_canonical": 1,
+   "jev_choice": "dictionary",
+   "jev_input": "da7d7fe60fd43608668d53553bf3ca174b3685492e90221b02dd5d66ad3ce0bf",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary",
+    "none"
+   ],
+   "jev_p": 0.98,
+   "jev_probabilities": {
+    "dictionary": 0.98,
+    "none": 0.02
+   },
    "loinc": "6833-8",
    "property": "arbitrary conc",
    "source_count": 69,
@@ -503,6 +983,18 @@
    "component": "Chloride",
    "confidence": 0.9,
    "factor_to_canonical": 1,
+   "jev_choice": "dictionary",
+   "jev_input": "c9897ff10299677abcd3449a49c07e2a14af8a9c656ae7c0a327158f6079d52c",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary",
+    "none"
+   ],
+   "jev_p": 0.98,
+   "jev_probabilities": {
+    "dictionary": 0.98,
+    "none": 0.02
+   },
    "loinc": "2075-0",
    "property": "substance conc",
    "source_count": 6211,
@@ -515,6 +1007,18 @@
    "component": "Cholesterol (total)",
    "confidence": 0.88,
    "factor_to_canonical": 1,
+   "jev_choice": "dictionary_and_rules",
+   "jev_input": "6ce070f8cd4f6613abc0bd293b292135728792fa4ff16560500f21504caf680f",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary_and_rules",
+    "none"
+   ],
+   "jev_p": 0.98,
+   "jev_probabilities": {
+    "dictionary_and_rules": 0.98,
+    "none": 0.02
+   },
    "loinc": "2093-3",
    "note": "negative values (min -12.8) are invalid; exclude or review them",
    "property": "mass concentration",
@@ -528,6 +1032,18 @@
    "component": "Cladosporium herbarum Ab.IgE",
    "confidence": 0.82,
    "factor_to_canonical": 1,
+   "jev_choice": "dictionary",
+   "jev_input": "39ef6b007ce146074abbc1f0f639175ef8f45a388bf1ea177c27f17d7ab3c0d6",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary",
+    "none"
+   ],
+   "jev_p": 0.97,
+   "jev_probabilities": {
+    "dictionary": 0.97,
+    "none": 0.03
+   },
    "loinc": "6075-6",
    "property": "arbitrary conc",
    "source_count": 69,
@@ -540,6 +1056,18 @@
    "component": "Common ragweed Ab.IgE",
    "confidence": 0.82,
    "factor_to_canonical": 1,
+   "jev_choice": "dictionary",
+   "jev_input": "0d276d75174b43a503ff504341fdf6b67c97e91550b9b874f0ab6ae122a7763d",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary",
+    "none"
+   ],
+   "jev_p": 0.98,
+   "jev_probabilities": {
+    "dictionary": 0.98,
+    "none": 0.02
+   },
    "loinc": "6085-5",
    "property": "arbitrary conc",
    "source_count": 69,
@@ -552,6 +1080,18 @@
    "component": "Cortisol",
    "confidence": 0.8,
    "factor_to_canonical": 1,
+   "jev_choice": "dictionary",
+   "jev_input": "19f11ba9f988dee8843784c79f672a1f85a74276bd8389b435e305f83f388e78",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary",
+    "none"
+   ],
+   "jev_p": 0.98,
+   "jev_probabilities": {
+    "dictionary": 0.98,
+    "none": 0.02
+   },
    "loinc": "2143-6",
    "note": "AM is timing context. Morning-specific LOINC variants exist, so the generic code is used.",
    "property": "mass conc",
@@ -565,6 +1105,18 @@
    "component": "Cow milk Ab.IgE",
    "confidence": 0.82,
    "factor_to_canonical": 1,
+   "jev_choice": "dictionary",
+   "jev_input": "8918db4572fdf9df46d1b4ed7908ceee30a9a63712cc179e1d4939804e61fd11",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary",
+    "none"
+   ],
+   "jev_p": 0.96,
+   "jev_probabilities": {
+    "dictionary": 0.96,
+    "none": 0.04
+   },
    "loinc": "7258-7",
    "property": "arbitrary conc",
    "source_count": 69,
@@ -577,6 +1129,18 @@
    "component": "Creatinine",
    "confidence": 0.94,
    "factor_to_canonical": 1,
+   "jev_choice": "dictionary_and_rules",
+   "jev_input": "56ba015924c2517787f6a073431e5c94841746f886c5719130f9a2fd57de39d6",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary_and_rules",
+    "none"
+   ],
+   "jev_p": 0.98,
+   "jev_probabilities": {
+    "dictionary_and_rules": 0.98,
+    "none": 0.02
+   },
    "loinc": "2160-0",
    "note": "max 32.3 mg/dL is extreme; review outliers",
    "property": "mass concentration",
@@ -590,6 +1154,18 @@
    "component": "D-dimer",
    "confidence": 0.75,
    "factor_to_canonical": 1,
+   "jev_choice": "dictionary",
+   "jev_input": "c89e6fcd5a3c31c3dbdc41371c9824db898c50934f9ac893dc4cd493c027d27e",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary",
+    "none"
+   ],
+   "jev_p": 0.97,
+   "jev_probabilities": {
+    "dictionary": 0.97,
+    "none": 0.03
+   },
    "loinc": null,
    "property": "mass concentration",
    "source_count": 1,
@@ -602,6 +1178,18 @@
    "component": "Edinburgh Postnatal Depression Scale total score",
    "confidence": 0.8,
    "factor_to_canonical": 1,
+   "jev_choice": "dictionary",
+   "jev_input": "7bcfc905f500db78850f048541bff018af375d8a54c935fd2848d9c9cf268513",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary",
+    "none"
+   ],
+   "jev_p": 0.99,
+   "jev_probabilities": {
+    "dictionary": 0.99,
+    "none": 0.01
+   },
    "loinc": "71354-5",
    "property": "score",
    "source_count": 1,
@@ -614,6 +1202,18 @@
    "component": "Epworth Sleepiness Scale total score",
    "confidence": 0.85,
    "factor_to_canonical": 1,
+   "jev_choice": "dictionary",
+   "jev_input": "8093731b51095b6a32219140a0c7539f2f63fb7b9c5ad756c50b721fe7e234f8",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary",
+    "none"
+   ],
+   "jev_p": 0.98,
+   "jev_probabilities": {
+    "dictionary": 0.98,
+    "none": 0.02
+   },
    "loinc": null,
    "property": "score",
    "source_count": 1,
@@ -626,6 +1226,18 @@
    "component": "Estradiol",
    "confidence": 0.85,
    "factor_to_canonical": 1,
+   "jev_choice": "dictionary",
+   "jev_input": "5721e2fcd37a3f625c3cc46f47eb4bf75b362584cccbb8efbbc0193f69ba3f73",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary",
+    "none"
+   ],
+   "jev_p": 0.93,
+   "jev_probabilities": {
+    "dictionary": 0.93,
+    "none": 0.07
+   },
    "loinc": "2243-4",
    "property": "mass concentration",
    "source_count": 1,
@@ -638,6 +1250,18 @@
    "component": "Follitropin",
    "confidence": 0.85,
    "factor_to_canonical": 1,
+   "jev_choice": "dictionary",
+   "jev_input": "c11fdb039764cc5996aee1c5084c429492bcae10c00fe7ed6b9c17467ff8e0e5",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary",
+    "none"
+   ],
+   "jev_p": 0.96,
+   "jev_probabilities": {
+    "dictionary": 0.96,
+    "none": 0.04
+   },
    "loinc": "15067-2",
    "property": "arbitrary concentration",
    "source_count": 1,
@@ -650,6 +1274,18 @@
    "component": "Follitropin (FSH)",
    "confidence": 0.8,
    "factor_to_canonical": 1,
+   "jev_choice": "dictionary",
+   "jev_input": "fb35e7e7365c0fbaedf68b861a377bcb5f3a7ba88c135b0c144666a62e4e96b6",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary",
+    "none"
+   ],
+   "jev_p": 0.96,
+   "jev_probabilities": {
+    "dictionary": 0.96,
+    "none": 0.04
+   },
    "loinc": "15067-2",
    "note": "'Day 3' is cycle-timing context. Keep it as a qualifier.",
    "property": "arbitrary conc",
@@ -663,6 +1299,18 @@
    "component": "Glucose, fasting",
    "confidence": 0.92,
    "factor_to_canonical": 1,
+   "jev_choice": "dictionary_and_rules",
+   "jev_input": "ceb18ec76a95a9a52ef8c9edbcaaef461251ed30b5d42994e72622804324a1e0",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary_and_rules",
+    "none"
+   ],
+   "jev_p": 0.97,
+   "jev_probabilities": {
+    "dictionary_and_rules": 0.97,
+    "none": 0.03
+   },
    "loinc": "1558-6",
    "property": "mass concentration",
    "source_count": 1,
@@ -675,6 +1323,18 @@
    "component": "Glucose, fasting (home glucometer)",
    "confidence": 0.85,
    "factor_to_canonical": 1,
+   "jev_choice": "dictionary_and_rules",
+   "jev_input": "8cd96ba784348ec1ecd63675e527cf7dea7a654c04aee0ffbd3cf989bea9436e",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary_and_rules",
+    "none"
+   ],
+   "jev_p": 0.99,
+   "jev_probabilities": {
+    "dictionary_and_rules": 0.99,
+    "none": 0.01
+   },
    "loinc": null,
    "property": "mass concentration",
    "source_count": 1,
@@ -687,6 +1347,18 @@
    "component": "Ferritin",
    "confidence": 0.95,
    "factor_to_canonical": 1,
+   "jev_choice": "dictionary_and_rules",
+   "jev_input": "37190f710a5d1c2a95d64f8f466bea62746aee82c098e7ac68dd5c3fc0bab6f8",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary_and_rules",
+    "none"
+   ],
+   "jev_p": 0.99,
+   "jev_probabilities": {
+    "dictionary_and_rules": 0.99,
+    "none": 0.01
+   },
    "loinc": "2276-4",
    "property": "mass concentration",
    "source_count": 473,
@@ -699,6 +1371,18 @@
    "component": "Triiodothyronine, free",
    "confidence": 0.9,
    "factor_to_canonical": 1,
+   "jev_choice": "dictionary",
+   "jev_input": "a6590fe5e20ca9fb5da89d6a58bbb6499f13cbf8b9556b09819f296628b29767",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary",
+    "none"
+   ],
+   "jev_p": 0.99,
+   "jev_probabilities": {
+    "dictionary": 0.99,
+    "none": 0.01
+   },
    "loinc": "3051-0",
    "property": "mass concentration",
    "source_count": 1,
@@ -711,6 +1395,18 @@
    "component": "Thyroxine free",
    "confidence": 0.9,
    "factor_to_canonical": 1,
+   "jev_choice": "dictionary",
+   "jev_input": "d8544da3c4a66358a4b840070ddceec70d52a20abd4524c5db1f88f6bd0dac2a",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary",
+    "none"
+   ],
+   "jev_p": 0.98,
+   "jev_probabilities": {
+    "dictionary": 0.98,
+    "none": 0.02
+   },
    "loinc": "3024-7",
    "property": "mass conc",
    "source_count": 41,
@@ -723,6 +1419,18 @@
    "component": "GAD-7 total score",
    "confidence": 0.9,
    "factor_to_canonical": 1,
+   "jev_choice": "dictionary",
+   "jev_input": "8c97fef47c54862340b8211b85866ce82805b0f4c5a9639e1ec6e63751ca98eb",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary",
+    "none"
+   ],
+   "jev_p": 0.99,
+   "jev_probabilities": {
+    "dictionary": 0.99,
+    "none": 0.01
+   },
    "loinc": "70274-6",
    "note": "Not PHQ-9.",
    "property": "score",
@@ -736,6 +1444,18 @@
    "component": "Gamma glutamyl transferase",
    "confidence": 0.95,
    "factor_to_canonical": 1,
+   "jev_choice": "dictionary",
+   "jev_input": "734108acd2911711a35478c105d0923b59ddabc5ce6d1ffa4cb5889cf47d1360",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary",
+    "none"
+   ],
+   "jev_p": 0.99,
+   "jev_probabilities": {
+    "dictionary": 0.99,
+    "none": 0.01
+   },
    "loinc": "2324-2",
    "property": "catalytic concentration",
    "source_count": 1,
@@ -751,6 +1471,18 @@
      "component": "Glomerular filtration rate (not BSA-normalised)",
      "confidence": 0.45,
      "factor_to_canonical": 1,
+     "jev_choice": "dictionary_and_rules",
+     "jev_input": "ea0eff0695855f906783a65919221f87ce2d206b9d69ae65a541ce1001e7c1df",
+     "jev_model": "jev-1.13.0",
+     "jev_options": [
+      "dictionary_and_rules",
+      "none"
+     ],
+     "jev_p": 0.73,
+     "jev_probabilities": {
+      "dictionary_and_rules": 0.73,
+      "none": 0.27
+     },
      "loinc": null,
      "note": "Unit lacks the /1.73 m2 normalisation. This may be a unit-labelling artefact, or it may be a creatinine clearance or Cockcroft-Gault value. Verify before pooling with eGFR.",
      "property": "volume rate",
@@ -763,6 +1495,18 @@
      "component": "Glomerular filtration rate/1.73 sq M.predicted",
      "confidence": 0.72,
      "factor_to_canonical": 1,
+     "jev_choice": "dictionary_and_rules",
+     "jev_input": "4cff1bafef58db482e7cd7817f62207c4dc917cc2300f1bd6659fe68f1cc7475",
+     "jev_model": "jev-1.13.0",
+     "jev_options": [
+      "dictionary_and_rules",
+      "none"
+     ],
+     "jev_p": 0.99,
+     "jev_probabilities": {
+      "dictionary_and_rules": 0.99,
+      "none": 0.01
+     },
      "loinc": "33914-3",
      "note": "The equation (MDRD vs CKD-EPI, e.g. 62238-1) is unknown.",
      "property": "volume rate/area",
@@ -777,6 +1521,18 @@
    "component": "Glucose",
    "confidence": 0.9,
    "factor_to_canonical": 1,
+   "jev_choice": "dictionary_and_rules",
+   "jev_input": "e7caa896f44cb3da5b27ac48e5baa71a3f2f3eea37cdc3c0e8c1d94d03514259",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary_and_rules",
+    "none"
+   ],
+   "jev_p": 0.96,
+   "jev_probabilities": {
+    "dictionary_and_rules": 0.96,
+    "none": 0.04
+   },
    "loinc": "2345-7",
    "note": "specimen assumed serum/plasma; fasting status unknown",
    "property": "mass concentration",
@@ -790,6 +1546,18 @@
    "component": "Hepatitis C virus RNA",
    "confidence": 0.6,
    "factor_to_canonical": null,
+   "jev_choice": "dictionary",
+   "jev_input": "8bbd8b6fda24649736757c1fd466a64a9a8e02c9836c20124fa66ed7e7289569",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary",
+    "none"
+   ],
+   "jev_p": 0.99,
+   "jev_probabilities": {
+    "dictionary": 0.99,
+    "none": 0.01
+   },
    "loinc": null,
    "property": "presence or viral load (unspecified)",
    "source_count": 1,
@@ -802,6 +1570,18 @@
    "component": "Hepatitis C virus antibody",
    "confidence": 0.8,
    "factor_to_canonical": 1,
+   "jev_choice": "dictionary",
+   "jev_input": "3f01e96e1ca59f24d5d135150496390fc7bd64b993279d9773a45d2cf6653011",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary",
+    "none"
+   ],
+   "jev_p": 0.98,
+   "jev_probabilities": {
+    "dictionary": 0.98,
+    "none": 0.02
+   },
    "loinc": null,
    "property": "presence (ordinal)",
    "source_count": 1,
@@ -814,6 +1594,18 @@
    "component": "Cholesterol in HDL",
    "confidence": 0.95,
    "factor_to_canonical": 1,
+   "jev_choice": "dictionary_and_rules",
+   "jev_input": "f8c131b57c58438c4983cd2c51e26248b57fd090dab87b5bc368efc7bacd56ff",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary_and_rules",
+    "none"
+   ],
+   "jev_p": 0.99,
+   "jev_probabilities": {
+    "dictionary_and_rules": 0.99,
+    "none": 0.01
+   },
    "loinc": "2085-9",
    "property": "mass conc",
    "source_count": 4,
@@ -826,6 +1618,18 @@
    "component": "Cholesterol in HDL",
    "confidence": 0.95,
    "factor_to_canonical": 1,
+   "jev_choice": "dictionary_and_rules",
+   "jev_input": "9198b0150c9e512edde114a14775289c5d43029a81ab494d9e56446e290e4cce",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary_and_rules",
+    "none"
+   ],
+   "jev_p": 0.99,
+   "jev_probabilities": {
+    "dictionary_and_rules": 0.99,
+    "none": 0.01
+   },
    "loinc": "2085-9",
    "property": "mass concentration",
    "source_count": 1474,
@@ -838,6 +1642,18 @@
    "component": "HIV 1+2 antibody and HIV-1 p24 antigen",
    "confidence": 0.8,
    "factor_to_canonical": 1,
+   "jev_choice": "dictionary",
+   "jev_input": "5f859ca380c63a6ed09ff23da8ca3616801272bb03f867a0b89dbdbc6b267419",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary",
+    "none"
+   ],
+   "jev_p": 0.97,
+   "jev_probabilities": {
+    "dictionary": 0.97,
+    "none": 0.03
+   },
    "loinc": null,
    "property": "presence (ordinal)",
    "source_count": 1,
@@ -850,6 +1666,18 @@
    "component": "HIV-1 RNA (viral load)",
    "confidence": 0.6,
    "factor_to_canonical": null,
+   "jev_choice": "dictionary",
+   "jev_input": "9802359c908c04a78f6c657aeb16c9daf4d04091bfd7c4745f149a089dfc617f",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary",
+    "none"
+   ],
+   "jev_p": 0.99,
+   "jev_probabilities": {
+    "dictionary": 0.99,
+    "none": 0.01
+   },
    "loinc": null,
    "property": "number concentration (units not received)",
    "source_count": 1,
@@ -862,6 +1690,18 @@
    "component": "Hemoglobin A1c/Hemoglobin.total",
    "confidence": 0.95,
    "factor_to_canonical": 1,
+   "jev_choice": "dictionary_and_rules",
+   "jev_input": "455fbcec786b249a0bb80bc384c0e9ef53c19115602d538f93c0cb715dde7892",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary_and_rules",
+    "none"
+   ],
+   "jev_p": 0.98,
+   "jev_probabilities": {
+    "dictionary_and_rules": 0.98,
+    "none": 0.02
+   },
    "loinc": "4548-4",
    "property": "mass fraction",
    "source_count": 7100,
@@ -874,6 +1714,18 @@
    "component": "Hematocrit",
    "confidence": 0.93,
    "factor_to_canonical": 1,
+   "jev_choice": "dictionary",
+   "jev_input": "dee35ebb9f41accd1d19b5efcacbed1b86844505435105bd0874a2d3444099ef",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary",
+    "none"
+   ],
+   "jev_p": 0.99,
+   "jev_probabilities": {
+    "dictionary": 0.99,
+    "none": 0.01
+   },
    "loinc": "4544-3",
    "property": "volume fraction",
    "source_count": 6844,
@@ -886,6 +1738,18 @@
    "component": "Hemoglobin",
    "confidence": 0.95,
    "factor_to_canonical": 1,
+   "jev_choice": "dictionary_and_rules",
+   "jev_input": "045edbcfd50c7052e92fe97773492c12d2ab3031be05fe4c3a881c326861fe7d",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary_and_rules",
+    "none"
+   ],
+   "jev_p": 0.99,
+   "jev_probabilities": {
+    "dictionary_and_rules": 0.99,
+    "none": 0.01
+   },
    "loinc": "718-7",
    "property": "mass concentration",
    "source_count": 7879,
@@ -898,6 +1762,18 @@
    "component": "Hemoglobin A1c/Hemoglobin.total",
    "confidence": 0.94,
    "factor_to_canonical": 1,
+   "jev_choice": "dictionary_and_rules",
+   "jev_input": "c4e7a77ba1f80f7e8dfdc3f50b9938be3508da76357fcf63282c43c020b8283d",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary_and_rules",
+    "none"
+   ],
+   "jev_p": 0.93,
+   "jev_probabilities": {
+    "dictionary_and_rules": 0.93,
+    "none": 0.07
+   },
    "loinc": "4548-4",
    "property": "mass fraction",
    "source_count": 8,
@@ -910,6 +1786,18 @@
    "component": "Hemoglobin A1c/Hemoglobin.total",
    "confidence": 0.96,
    "factor_to_canonical": 1,
+   "jev_choice": "dictionary_and_rules",
+   "jev_input": "536a23b2173be3e7b9e01f285715e9c840502002e7a906a7f5c904fb9e974a08",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary_and_rules",
+    "none"
+   ],
+   "jev_p": 0.99,
+   "jev_probabilities": {
+    "dictionary_and_rules": 0.99,
+    "none": 0.01
+   },
    "loinc": "4548-4",
    "note": "min 2.4% is implausible",
    "property": "mass fraction",
@@ -923,6 +1811,18 @@
    "component": "Hemoglobin.gastrointestinal.lower (fecal immunochemical test)",
    "confidence": 0.6,
    "factor_to_canonical": 1,
+   "jev_choice": "dictionary",
+   "jev_input": "584e956cf92861a598cf69e2584f8ade53942aca9fb0aa69f2e6dd01530d4477",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary",
+    "none"
+   ],
+   "jev_p": 0.82,
+   "jev_probabilities": {
+    "dictionary": 0.82,
+    "none": 0.18
+   },
    "loinc": null,
    "note": "This is a quantitative FIT, NOT blood hemoglobin. Do not map to 'hemoglobin'. The exact quantitative LOINC is uncertain, so it is left null.",
    "property": "mass conc",
@@ -936,6 +1836,18 @@
    "component": "Hemoglobin",
    "confidence": 0.94,
    "factor_to_canonical": 1,
+   "jev_choice": "dictionary_and_rules",
+   "jev_input": "2c9a3097d124e4c10679fe20d2536dbac8e04212ba187ca8338040c17c7ffd93",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary_and_rules",
+    "none"
+   ],
+   "jev_p": 0.99,
+   "jev_probabilities": {
+    "dictionary_and_rules": 0.99,
+    "none": 0.01
+   },
    "loinc": "718-7",
    "property": "mass conc",
    "source_count": 83,
@@ -948,6 +1860,18 @@
    "component": "Honey bee venom Ab.IgE",
    "confidence": 0.8,
    "factor_to_canonical": 1,
+   "jev_choice": "dictionary",
+   "jev_input": "6ea4ec9dbc1208e64752a73dc52abfc51283b993b5c5565d089a650331894787",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary",
+    "none"
+   ],
+   "jev_p": 0.95,
+   "jev_probabilities": {
+    "dictionary": 0.95,
+    "none": 0.05
+   },
    "loinc": "6844-5",
    "property": "arbitrary conc",
    "source_count": 69,
@@ -960,6 +1884,18 @@
    "component": "INR (coagulation)",
    "confidence": 0.9,
    "factor_to_canonical": 1,
+   "jev_choice": "dictionary",
+   "jev_input": "93ffde7db2b809af25face781f4f786a662ef296b1dc077ee1989df932276ad5",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary",
+    "none"
+   ],
+   "jev_p": 0.99,
+   "jev_probabilities": {
+    "dictionary": 0.99,
+    "none": 0.01
+   },
    "loinc": "6301-6",
    "note": "Both INR entries collapse to this key. The variant with unit 'H' is a high-abnormal flag mis-captured as a unit, not a real unit. Its values (1.6-2.6) are still INR ratios, factor 1.",
    "property": "ratio",
@@ -973,6 +1909,18 @@
    "component": "Iron",
    "confidence": 0.93,
    "factor_to_canonical": 1,
+   "jev_choice": "dictionary",
+   "jev_input": "e1779ae46e6655ab45c8e86f9b4c2845146912b9c37267cdcbdd6b306b6e3d61",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary",
+    "none"
+   ],
+   "jev_p": 0.98,
+   "jev_probabilities": {
+    "dictionary": 0.98,
+    "none": 0.02
+   },
    "loinc": "2498-4",
    "property": "mass concentration",
    "source_count": 471,
@@ -985,6 +1933,18 @@
    "component": "Cholesterol in LDL (calculated)",
    "confidence": 0.6,
    "factor_to_canonical": 1,
+   "jev_choice": "dictionary_and_rules",
+   "jev_input": "34edc4627bd9d7576397a6ce7bb90d3dd413433a9dcb7508ce6995970a7353da",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary_and_rules",
+    "none"
+   ],
+   "jev_p": 0.98,
+   "jev_probabilities": {
+    "dictionary_and_rules": 0.98,
+    "none": 0.02
+   },
    "loinc": "13457-7",
    "note": "It is unknown whether this is calculated or direct. A direct measurement would be 18262-6.",
    "property": "mass conc",
@@ -998,6 +1958,18 @@
    "component": "Cholesterol in LDL (calculated)",
    "confidence": 0.85,
    "factor_to_canonical": 1,
+   "jev_choice": "dictionary_and_rules",
+   "jev_input": "4f5e7e4671549707f4157bbc04116197699e5be9e3cf05e997ec5a13a777f51a",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary_and_rules",
+    "none"
+   ],
+   "jev_p": 0.99,
+   "jev_probabilities": {
+    "dictionary_and_rules": 0.99,
+    "none": 0.01
+   },
    "loinc": "13457-7",
    "note": "decimal values suggest a calculated result; direct LDL would be 18262-6",
    "property": "mass concentration",
@@ -1011,6 +1983,18 @@
    "component": "Lutropin",
    "confidence": 0.85,
    "factor_to_canonical": 1,
+   "jev_choice": "dictionary",
+   "jev_input": "785101054eec9f410aca4d820660f152731cbdc7c2f1109a9b030e819e0367d2",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary",
+    "none"
+   ],
+   "jev_p": 0.99,
+   "jev_probabilities": {
+    "dictionary": 0.99,
+    "none": 0.01
+   },
    "loinc": "10501-5",
    "property": "arbitrary concentration",
    "source_count": 1,
@@ -1023,6 +2007,18 @@
    "component": "Lactate",
    "confidence": 0.7,
    "factor_to_canonical": 1,
+   "jev_choice": "dictionary",
+   "jev_input": "4e75c1779d4f4dadc7a7fda177acb2a3f40df900ac7f634e39a5aa23ec92f7c5",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary",
+    "none"
+   ],
+   "jev_p": 0.97,
+   "jev_probabilities": {
+    "dictionary": 0.97,
+    "none": 0.03
+   },
    "loinc": "2524-7",
    "note": "Use 32693-4 if the specimen is whole blood.",
    "property": "substance conc",
@@ -1036,6 +2032,18 @@
    "component": "Cortisol, late-night",
    "confidence": 0.8,
    "factor_to_canonical": 1,
+   "jev_choice": "dictionary",
+   "jev_input": "0148da876faf7aa1637188a3cb825859c48af35fbb83e25ac5fce1517c589e78",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary",
+    "none"
+   ],
+   "jev_p": 0.99,
+   "jev_probabilities": {
+    "dictionary": 0.99,
+    "none": 0.01
+   },
    "loinc": null,
    "property": "mass concentration",
    "source_count": 1,
@@ -1048,6 +2056,18 @@
    "component": "Latex Ab.IgE",
    "confidence": 0.82,
    "factor_to_canonical": 1,
+   "jev_choice": "dictionary",
+   "jev_input": "3689ec364a2f3f5713f4c755d06d91ede4a7be34ead5acd7ebeaf7cd38aad444",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary",
+    "none"
+   ],
+   "jev_p": 0.96,
+   "jev_probabilities": {
+    "dictionary": 0.96,
+    "none": 0.04
+   },
    "loinc": "6158-0",
    "property": "arbitrary conc",
    "source_count": 69,
@@ -1060,6 +2080,18 @@
    "component": "Leukocytes",
    "confidence": 0.95,
    "factor_to_canonical": 1,
+   "jev_choice": "dictionary_and_rules",
+   "jev_input": "ee8fe5afeb976792baf9d2477e7e268b5b93579e51250b2ced28ac8faf50f673",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary_and_rules",
+    "none"
+   ],
+   "jev_p": 0.97,
+   "jev_probabilities": {
+    "dictionary_and_rules": 0.97,
+    "none": 0.03
+   },
    "loinc": "6690-2",
    "property": "number concentration",
    "source_count": 698,
@@ -1072,6 +2104,18 @@
    "component": "Lipase",
    "confidence": 0.9,
    "factor_to_canonical": 1,
+   "jev_choice": "dictionary",
+   "jev_input": "19a77fe04a96f0bbedfacba1d63f83bda8efd3e365988fc20f53bf3974d0e4ba",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary",
+    "none"
+   ],
+   "jev_p": 0.98,
+   "jev_probabilities": {
+    "dictionary": 0.98,
+    "none": 0.02
+   },
    "loinc": "3040-3",
    "property": "catalytic concentration",
    "source_count": 1,
@@ -1084,6 +2128,18 @@
    "component": "Lithium",
    "confidence": 0.85,
    "factor_to_canonical": 1,
+   "jev_choice": "dictionary",
+   "jev_input": "a5b0d94a092179f8d56adc0370a379210e189b008e3d3872bc718cb02c024248",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary",
+    "none"
+   ],
+   "jev_p": 0.99,
+   "jev_probabilities": {
+    "dictionary": 0.99,
+    "none": 0.01
+   },
    "loinc": "14334-7",
    "property": "substance concentration",
    "source_count": 1,
@@ -1096,6 +2152,18 @@
    "component": "Lupus anticoagulant",
    "confidence": 0.75,
    "factor_to_canonical": 1,
+   "jev_choice": "dictionary",
+   "jev_input": "688830812b608740e9805f48e610c9632e4040d9f6311337191096fd6bd97b14",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary",
+    "none"
+   ],
+   "jev_p": 0.96,
+   "jev_probabilities": {
+    "dictionary": 0.96,
+    "none": 0.04
+   },
    "loinc": null,
    "property": "presence (ordinal)",
    "source_count": 1,
@@ -1108,6 +2176,18 @@
    "component": "Mean corpuscular volume",
    "confidence": 0.94,
    "factor_to_canonical": 1,
+   "jev_choice": "dictionary",
+   "jev_input": "a73a1bf021bd7f7b070f541b96ed1de920d2fd686daebb5365d8752d796ae51f",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary",
+    "none"
+   ],
+   "jev_p": 0.98,
+   "jev_probabilities": {
+    "dictionary": 0.98,
+    "none": 0.02
+   },
    "loinc": "787-2",
    "property": "entitic volume",
    "source_count": 6149,
@@ -1120,6 +2200,18 @@
    "component": "Magnesium",
    "confidence": 0.85,
    "factor_to_canonical": 1,
+   "jev_choice": "dictionary",
+   "jev_input": "a70813cbd90c8f39540a4bc693149741f24693a3f23e3df181c52cf986776f5e",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary",
+    "none"
+   ],
+   "jev_p": 0.97,
+   "jev_probabilities": {
+    "dictionary": 0.97,
+    "none": 0.03
+   },
    "loinc": "19123-9",
    "note": "All values are 2.0. Check whether this is a constant or placeholder.",
    "property": "mass conc",
@@ -1133,6 +2225,18 @@
    "component": "Microalbumin/Creatinine",
    "confidence": 0.92,
    "factor_to_canonical": 1,
+   "jev_choice": "dictionary_and_rules",
+   "jev_input": "9e9cc38a785941f90e235eca546b7d4d74b03895ed94af377f524d32c8a14801",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary_and_rules",
+    "none"
+   ],
+   "jev_p": 0.99,
+   "jev_probabilities": {
+    "dictionary_and_rules": 0.99,
+    "none": 0.01
+   },
    "loinc": "14959-1",
    "property": "mass ratio",
    "source_count": 117,
@@ -1145,6 +2249,18 @@
    "component": "Montreal Cognitive Assessment total score",
    "confidence": 0.8,
    "factor_to_canonical": 1,
+   "jev_choice": "dictionary",
+   "jev_input": "715313c8c6d0bc64860f67a2dc38376cb8c664edbcd2c845ad5c7c0b4ee34bb5",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary",
+    "none"
+   ],
+   "jev_p": 0.97,
+   "jev_probabilities": {
+    "dictionary": 0.97,
+    "none": 0.03
+   },
    "loinc": "72172-0",
    "property": "score",
    "source_count": 1,
@@ -1157,6 +2273,18 @@
    "component": "Natriuretic peptide.B prohormone N-Terminal",
    "confidence": 0.92,
    "factor_to_canonical": 1,
+   "jev_choice": "dictionary_and_rules",
+   "jev_input": "1838a25e4f7be1afe7d42ab9c61581b865584988e9a6f62916d6c59526ae4304",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary_and_rules",
+    "none"
+   ],
+   "jev_p": 1.0,
+   "jev_probabilities": {
+    "dictionary_and_rules": 1.0,
+    "none": 0.0
+   },
    "loinc": "33762-6",
    "property": "mass conc",
    "source_count": 29,
@@ -1169,6 +2297,18 @@
    "component": "Cholesterol.non HDL",
    "confidence": 0.92,
    "factor_to_canonical": 1,
+   "jev_choice": "dictionary",
+   "jev_input": "7370fda8e8aaac46751d8d06b8b5ad341881402e688a4b034974e67dba0a030a",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary",
+    "none"
+   ],
+   "jev_p": 0.98,
+   "jev_probabilities": {
+    "dictionary": 0.98,
+    "none": 0.02
+   },
    "loinc": "43396-1",
    "note": "Not total cholesterol and not HDL. Do not merge.",
    "property": "mass conc",
@@ -1182,6 +2322,18 @@
    "component": "Sperm normal morphology",
    "confidence": 0.7,
    "factor_to_canonical": 1,
+   "jev_choice": "dictionary",
+   "jev_input": "474d533fa2e684aaa82d218c928f44abd27be8b6a5e05975138cd00876575945",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary",
+    "none"
+   ],
+   "jev_p": 0.66,
+   "jev_probabilities": {
+    "dictionary": 0.66,
+    "none": 0.34
+   },
    "loinc": null,
    "property": "number fraction",
    "source_count": 1,
@@ -1194,6 +2346,18 @@
    "component": "PTSD Checklist for DSM-5 total score",
    "confidence": 0.85,
    "factor_to_canonical": 1,
+   "jev_choice": "dictionary",
+   "jev_input": "f6c31373e84b25a23eeef13c78c0e13fb2b8605691b6e7b6757d2a0117766141",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary",
+    "none"
+   ],
+   "jev_p": 0.99,
+   "jev_probabilities": {
+    "dictionary": 0.99,
+    "none": 0.01
+   },
    "loinc": null,
    "property": "score",
    "source_count": 1,
@@ -1206,6 +2370,18 @@
    "component": "PHQ-9 total score",
    "confidence": 0.92,
    "factor_to_canonical": 1,
+   "jev_choice": "dictionary_and_rules",
+   "jev_input": "5174b4863b4f899a736590bd2fb8e74ce25a5498b99fe45abb5e6af765de74ad",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary_and_rules",
+    "none"
+   ],
+   "jev_p": 0.99,
+   "jev_probabilities": {
+    "dictionary_and_rules": 0.99,
+    "none": 0.01
+   },
    "loinc": "44261-6",
    "property": "score",
    "source_count": 7,
@@ -1218,6 +2394,18 @@
    "component": "PHQ-9 modified for adolescents total score",
    "confidence": 0.75,
    "factor_to_canonical": 1,
+   "jev_choice": "dictionary",
+   "jev_input": "1773932bd2a276836e419fce4125cbce2dfac59ccf7c2a752a6874805c9177ad",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary",
+    "none"
+   ],
+   "jev_p": 0.98,
+   "jev_probabilities": {
+    "dictionary": 0.98,
+    "none": 0.02
+   },
    "loinc": null,
    "property": "score",
    "source_count": 1,
@@ -1230,6 +2418,18 @@
    "component": "Parathyrin, intact",
    "confidence": 0.85,
    "factor_to_canonical": 1,
+   "jev_choice": "dictionary",
+   "jev_input": "93e8b0166fe57e9f19f653b6334a583465ad34eea33bf23b5f89f12782f43109",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary",
+    "none"
+   ],
+   "jev_p": 0.98,
+   "jev_probabilities": {
+    "dictionary": 0.98,
+    "none": 0.02
+   },
    "loinc": "2731-8",
    "property": "mass concentration",
    "source_count": 1,
@@ -1242,6 +2442,18 @@
    "component": "Peak expiratory flow",
    "confidence": 0.8,
    "factor_to_canonical": 1,
+   "jev_choice": "dictionary",
+   "jev_input": "ddbfac95d15b386d4962d217d3f50ed392af2d41b4d514a8a8dc34d08e1a54a7",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary",
+    "none"
+   ],
+   "jev_p": 0.98,
+   "jev_probabilities": {
+    "dictionary": 0.98,
+    "none": 0.02
+   },
    "loinc": "19935-6",
    "property": "volume flow rate",
    "source_count": 1,
@@ -1254,6 +2466,18 @@
    "component": "Phosphate",
    "confidence": 0.9,
    "factor_to_canonical": 1,
+   "jev_choice": "dictionary",
+   "jev_input": "3f1f065d2db3214d204dba7f6137f6781176c2e5fe89ee0049ede80ad40b0570",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary",
+    "none"
+   ],
+   "jev_p": 0.71,
+   "jev_probabilities": {
+    "dictionary": 0.71,
+    "none": 0.29
+   },
    "loinc": "2777-1",
    "property": "mass concentration",
    "source_count": 1,
@@ -1266,6 +2490,18 @@
    "component": "Metanephrine, free",
    "confidence": 0.7,
    "factor_to_canonical": 1,
+   "jev_choice": "dictionary",
+   "jev_input": "edd96e277cbeda72307f81af2c2003c71c7b9a98255a210f1cc174285628099f",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary",
+    "none"
+   ],
+   "jev_p": 0.94,
+   "jev_probabilities": {
+    "dictionary": 0.94,
+    "none": 0.06
+   },
    "loinc": null,
    "property": "substance concentration",
    "source_count": 1,
@@ -1278,6 +2514,18 @@
    "component": "Normetanephrine, free",
    "confidence": 0.75,
    "factor_to_canonical": 1,
+   "jev_choice": "dictionary",
+   "jev_input": "c44a1ed86833e457770850d592993696373c19ca3c13658317cd7978f74baa59",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary",
+    "none"
+   ],
+   "jev_p": 0.98,
+   "jev_probabilities": {
+    "dictionary": 0.98,
+    "none": 0.02
+   },
    "loinc": null,
    "property": "substance concentration",
    "source_count": 1,
@@ -1290,6 +2538,18 @@
    "component": "Platelets",
    "confidence": 0.94,
    "factor_to_canonical": 1,
+   "jev_choice": "dictionary_and_rules",
+   "jev_input": "8f6a38f5eef16d8c9d40ef21abd3c9b1d1f4c6f9b1e645524281c116d2be5e4a",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary_and_rules",
+    "none"
+   ],
+   "jev_p": 0.98,
+   "jev_probabilities": {
+    "dictionary_and_rules": 0.98,
+    "none": 0.02
+   },
    "loinc": "777-3",
    "property": "number conc",
    "source_count": 6159,
@@ -1302,6 +2562,18 @@
    "component": "Potassium",
    "confidence": 0.88,
    "factor_to_canonical": 1,
+   "jev_choice": "dictionary_and_rules",
+   "jev_input": "8169cb88dae0cd2589fb17a25a8aba6bbb2727b2d716a8ea849fe9b8e36bd5de",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary_and_rules",
+    "none"
+   ],
+   "jev_p": 0.98,
+   "jev_probabilities": {
+    "dictionary_and_rules": 0.98,
+    "none": 0.02
+   },
    "loinc": "2823-3",
    "note": "Specimen is assumed. Use 6298-4 if the specimen is whole blood.",
    "property": "substance conc",
@@ -1315,6 +2587,18 @@
    "component": "Prealbumin (transthyretin)",
    "confidence": 0.85,
    "factor_to_canonical": 1,
+   "jev_choice": "dictionary",
+   "jev_input": "ad6371f99faff815673397e0e7d19ee8af697b5029596a0c7a10be36f675466c",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary",
+    "none"
+   ],
+   "jev_p": 0.99,
+   "jev_probabilities": {
+    "dictionary": 0.99,
+    "none": 0.01
+   },
    "loinc": "14338-8",
    "property": "mass concentration",
    "source_count": 1,
@@ -1327,6 +2611,18 @@
    "component": "Procalcitonin",
    "confidence": 0.9,
    "factor_to_canonical": 1,
+   "jev_choice": "dictionary",
+   "jev_input": "52efaad1cf290b0aa49404527917a0af34f81d0fc1aef8ac9365c0e7ff1e3f22",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary",
+    "none"
+   ],
+   "jev_p": 0.98,
+   "jev_probabilities": {
+    "dictionary": 0.98,
+    "none": 0.02
+   },
    "loinc": "33959-8",
    "property": "mass conc",
    "source_count": 2,
@@ -1339,6 +2635,18 @@
    "component": "Sperm progressive motility",
    "confidence": 0.75,
    "factor_to_canonical": 1,
+   "jev_choice": "dictionary",
+   "jev_input": "4c108f61a39cf8e7c9c58eb7e199d66339c20104e51087d96aceb71463befc60",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary",
+    "none"
+   ],
+   "jev_p": 0.98,
+   "jev_probabilities": {
+    "dictionary": 0.98,
+    "none": 0.02
+   },
    "loinc": null,
    "property": "number fraction",
    "source_count": 1,
@@ -1351,6 +2659,18 @@
    "component": "Prolactin",
    "confidence": 0.9,
    "factor_to_canonical": 1,
+   "jev_choice": "dictionary",
+   "jev_input": "eaeb1a7b3734961b2e156e928f56b7f568bd581a0c0bfdeaa21f4ea04e407b7d",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary",
+    "none"
+   ],
+   "jev_p": 0.97,
+   "jev_probabilities": {
+    "dictionary": 0.97,
+    "none": 0.03
+   },
    "loinc": "2842-3",
    "property": "mass conc",
    "source_count": 2,
@@ -1363,6 +2683,18 @@
    "component": "Prostate specific Ag",
    "confidence": 0.9,
    "factor_to_canonical": 1,
+   "jev_choice": "dictionary",
+   "jev_input": "e873244a3f86860da207da4a1abd72c1d054abb6a5e102c53e1a844ce17ae3ee",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary",
+    "none"
+   ],
+   "jev_p": 0.98,
+   "jev_probabilities": {
+    "dictionary": 0.98,
+    "none": 0.02
+   },
    "loinc": "2857-1",
    "property": "mass conc",
    "source_count": 3,
@@ -1375,6 +2707,18 @@
    "component": "Erythrocytes",
    "confidence": 0.94,
    "factor_to_canonical": 1,
+   "jev_choice": "dictionary",
+   "jev_input": "0b20df276f6e82af837408f78891f8f29adbd701b30a9357d1d2fed9d0f04451",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary",
+    "none"
+   ],
+   "jev_p": 0.99,
+   "jev_probabilities": {
+    "dictionary": 0.99,
+    "none": 0.01
+   },
    "loinc": "789-8",
    "property": "number concentration",
    "source_count": 6150,
@@ -1387,6 +2731,18 @@
    "component": "Renin activity",
    "confidence": 0.65,
    "factor_to_canonical": 1,
+   "jev_choice": "dictionary",
+   "jev_input": "dcecea5419fa7822b4ce0b5ba815ac18f73ea7e22d0a81defe712fe8f9f36519",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary",
+    "none"
+   ],
+   "jev_p": 0.66,
+   "jev_probabilities": {
+    "dictionary": 0.66,
+    "none": 0.34
+   },
    "loinc": "2915-1",
    "property": "enzymatic activity/volume",
    "source_count": 1,
@@ -1399,6 +2755,18 @@
    "component": "Semen volume",
    "confidence": 0.6,
    "factor_to_canonical": 1,
+   "jev_choice": "dictionary",
+   "jev_input": "b175f8cd63ce65b6dad39e4e7c1eea2792ceedd00fc6b4d464455f97ac6b0c51",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary",
+    "none"
+   ],
+   "jev_p": 0.99,
+   "jev_probabilities": {
+    "dictionary": 0.99,
+    "none": 0.01
+   },
    "loinc": "3160-3",
    "property": "volume",
    "source_count": 1,
@@ -1411,6 +2779,18 @@
    "component": "Sodium",
    "confidence": 0.9,
    "factor_to_canonical": 1,
+   "jev_choice": "dictionary_and_rules",
+   "jev_input": "76d3a03de4d98e21b725ba63b997a2180144d644e2840beaac64488e91906f4d",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary_and_rules",
+    "none"
+   ],
+   "jev_p": 0.97,
+   "jev_probabilities": {
+    "dictionary_and_rules": 0.97,
+    "none": 0.03
+   },
    "loinc": "2951-2",
    "property": "substance conc",
    "source_count": 7073,
@@ -1423,6 +2803,18 @@
    "component": "Spermatozoa count",
    "confidence": 0.75,
    "factor_to_canonical": 1,
+   "jev_choice": "dictionary",
+   "jev_input": "061d1f2a00db5f593d80bc40c1bcbbe68b001471cdd457787f301e04d938d0c8",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary",
+    "none"
+   ],
+   "jev_p": 0.99,
+   "jev_probabilities": {
+    "dictionary": 0.99,
+    "none": 0.01
+   },
    "loinc": null,
    "property": "number concentration",
    "source_count": 1,
@@ -1435,6 +2827,18 @@
    "component": "Iron binding capacity",
    "confidence": 0.93,
    "factor_to_canonical": 1,
+   "jev_choice": "dictionary",
+   "jev_input": "bffbcb88dc49bd578d2c76d8751f266b283aaf056c8e911d6f3acfa21b032c3a",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary",
+    "none"
+   ],
+   "jev_p": 0.99,
+   "jev_probabilities": {
+    "dictionary": 0.99,
+    "none": 0.01
+   },
    "loinc": "2500-7",
    "property": "mass conc",
    "source_count": 471,
@@ -1447,6 +2851,18 @@
    "component": "Thyrotropin receptor antibody",
    "confidence": 0.55,
    "factor_to_canonical": 1,
+   "jev_choice": "dictionary",
+   "jev_input": "b1daa83a52c40e261280297aa71ff16df7b4cf5b94c35eef86c6517a3ab0c751",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary",
+    "none"
+   ],
+   "jev_p": 0.99,
+   "jev_probabilities": {
+    "dictionary": 0.99,
+    "none": 0.01
+   },
    "loinc": "5385-4",
    "property": "arbitrary concentration",
    "source_count": 1,
@@ -1462,6 +2878,18 @@
      "component": "Thyrotropin",
      "confidence": 0.93,
      "factor_to_canonical": 1,
+     "jev_choice": "dictionary_and_rules",
+     "jev_input": "e4aa911770a47604f7645301e585469db6a1b6122f6a7e8c95ce7b4e08438b84",
+     "jev_model": "jev-1.13.0",
+     "jev_options": [
+      "dictionary_and_rules",
+      "none"
+     ],
+     "jev_p": 0.99,
+     "jev_probabilities": {
+      "dictionary_and_rules": 0.99,
+      "none": 0.01
+     },
      "loinc": "3016-3",
      "property": "arbitrary conc",
      "specimen": "serum/plasma"
@@ -1473,6 +2901,18 @@
      "component": "Thyrotropin",
      "confidence": 0.92,
      "factor_to_canonical": 1,
+     "jev_choice": "dictionary_and_rules",
+     "jev_input": "b2520ff46f4806f6120f0442f2fc7cf000dd8dd3e2dcfe5189b083f58d5410bf",
+     "jev_model": "jev-1.13.0",
+     "jev_options": [
+      "dictionary_and_rules",
+      "none"
+     ],
+     "jev_p": 0.96,
+     "jev_probabilities": {
+      "dictionary_and_rules": 0.96,
+      "none": 0.04
+     },
      "loinc": "3016-3",
      "note": "uIU/mL equals mIU/L, so the factor is 1.",
      "property": "arbitrary conc",
@@ -1487,6 +2927,18 @@
    "component": "Thyrotropin (TSH)",
    "confidence": 0.92,
    "factor_to_canonical": 1,
+   "jev_choice": "dictionary_and_rules",
+   "jev_input": "8c617cd4011a24e8b3e61bb3f0dc3243784c3e0768c19ac90080360804744225",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary_and_rules",
+    "none"
+   ],
+   "jev_p": 0.99,
+   "jev_probabilities": {
+    "dictionary_and_rules": 0.99,
+    "none": 0.01
+   },
    "loinc": "3016-3",
    "property": "arbitrary concentration",
    "source_count": 1,
@@ -1499,6 +2951,18 @@
    "component": "Thyroxine free (FT4)",
    "confidence": 0.85,
    "factor_to_canonical": 1,
+   "jev_choice": "dictionary",
+   "jev_input": "d291377a59a84c988fdd24d809f0deaa645ee734b16a2939d2232353aa81812f",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary",
+    "none"
+   ],
+   "jev_p": 0.99,
+   "jev_probabilities": {
+    "dictionary": 0.99,
+    "none": 0.01
+   },
    "loinc": "3024-7",
    "property": "mass concentration",
    "source_count": 1,
@@ -1511,6 +2975,18 @@
    "component": "IgE (total)",
    "confidence": 0.85,
    "factor_to_canonical": 1,
+   "jev_choice": "dictionary",
+   "jev_input": "256cf9099651ccbba8bfa474e907e3e5b0c4e1c443674f76bb0286501d96751e",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary",
+    "none"
+   ],
+   "jev_p": 0.99,
+   "jev_probabilities": {
+    "dictionary": 0.99,
+    "none": 0.01
+   },
    "loinc": "19113-0",
    "property": "arbitrary conc",
    "source_count": 2,
@@ -1523,6 +2999,18 @@
    "component": "Bilirubin.total",
    "confidence": 0.95,
    "factor_to_canonical": 1,
+   "jev_choice": "dictionary",
+   "jev_input": "da0d0f8bfad58bb914d2b39449de983f6a451b75f61b35d9311d856078d868ba",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary",
+    "none"
+   ],
+   "jev_p": 0.99,
+   "jev_probabilities": {
+    "dictionary": 0.99,
+    "none": 0.01
+   },
    "loinc": "1975-2",
    "property": "mass conc",
    "source_count": 3,
@@ -1535,6 +3023,18 @@
    "component": "Cholesterol",
    "confidence": 0.96,
    "factor_to_canonical": 1,
+   "jev_choice": "dictionary_and_rules",
+   "jev_input": "4a9a217f7963fb06e9338c61d79bb56fb6de66637ea9eb7ce803a1ec54e87bf2",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary_and_rules",
+    "none"
+   ],
+   "jev_p": 0.99,
+   "jev_probabilities": {
+    "dictionary_and_rules": 0.99,
+    "none": 0.01
+   },
    "loinc": "2093-3",
    "property": "mass conc",
    "source_count": 454,
@@ -1547,6 +3047,18 @@
    "component": "Testosterone (total)",
    "confidence": 0.9,
    "factor_to_canonical": 1,
+   "jev_choice": "dictionary",
+   "jev_input": "55f12a7c84529d43459e61ea0f3b1757e0ba9374012d9b94021880b2c7f9a78f",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary",
+    "none"
+   ],
+   "jev_p": 0.99,
+   "jev_probabilities": {
+    "dictionary": 0.99,
+    "none": 0.01
+   },
    "loinc": "2986-8",
    "property": "mass conc",
    "source_count": 2,
@@ -1559,6 +3071,18 @@
    "component": "Iron saturation",
    "confidence": 0.9,
    "factor_to_canonical": 1,
+   "jev_choice": "dictionary",
+   "jev_input": "84086c6e44818f3ca6d7131f8e4b797e0a3e844d5b7fa5d624a1f1d718ea1270",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary",
+    "none"
+   ],
+   "jev_p": 0.98,
+   "jev_probabilities": {
+    "dictionary": 0.98,
+    "none": 0.02
+   },
    "loinc": "2502-3",
    "property": "mass fraction",
    "source_count": 471,
@@ -1571,6 +3095,18 @@
    "component": "Triglyceride",
    "confidence": 0.95,
    "factor_to_canonical": 1,
+   "jev_choice": "dictionary_and_rules",
+   "jev_input": "a32f24995dd165b92a2bb12810254e3eb99d999764ad8bfbbf762ca02651d0ff",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary_and_rules",
+    "none"
+   ],
+   "jev_p": 0.98,
+   "jev_probabilities": {
+    "dictionary_and_rules": 0.98,
+    "none": 0.02
+   },
    "loinc": "2571-8",
    "property": "mass concentration",
    "source_count": 559,
@@ -1583,6 +3119,18 @@
    "component": "Triglyceride",
    "confidence": 0.96,
    "factor_to_canonical": 1,
+   "jev_choice": "dictionary_and_rules",
+   "jev_input": "7d3cb314365438eddccc0fd4f5a648a77975364b62c0a10caa9d3ace02bad8f8",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary_and_rules",
+    "none"
+   ],
+   "jev_p": 0.99,
+   "jev_probabilities": {
+    "dictionary_and_rules": 0.99,
+    "none": 0.01
+   },
    "loinc": "2571-8",
    "property": "mass conc",
    "source_count": 465,
@@ -1595,6 +3143,18 @@
    "component": "Troponin I.cardiac",
    "confidence": 0.85,
    "factor_to_canonical": 1,
+   "jev_choice": "dictionary_and_rules",
+   "jev_input": "cbc24a8592b01acfb3b7f7fec1a1085c08c54aefa1e547a4886ef6467bde90b0",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary_and_rules",
+    "none"
+   ],
+   "jev_p": 0.99,
+   "jev_probabilities": {
+    "dictionary_and_rules": 0.99,
+    "none": 0.01
+   },
    "loinc": "10839-9",
    "note": "Conventional (non-high-sensitivity) assay assumed. If the hs-assay is used, ng/L applies (x1000; LOINC 89579-7).",
    "property": "mass conc",
@@ -1608,6 +3168,18 @@
    "component": "Troponin I, cardiac (3-hour serial sample)",
    "confidence": 0.8,
    "factor_to_canonical": 1000,
+   "jev_choice": "dictionary_and_rules",
+   "jev_input": "907a50eada6882f625de1f8561b269c21694349524be0392fc7e4d18abd6cb7e",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary_and_rules",
+    "none"
+   ],
+   "jev_p": 0.99,
+   "jev_probabilities": {
+    "dictionary_and_rules": 0.99,
+    "none": 0.01
+   },
    "loinc": "10839-9",
    "property": "mass concentration",
    "source_count": 1,
@@ -1620,6 +3192,18 @@
    "component": "ABO/Rh group and antibody screen panel",
    "confidence": 0.7,
    "factor_to_canonical": null,
+   "jev_choice": "dictionary",
+   "jev_input": "7f6cb27f723adb2bb2c79e023110dc27e21f5d7c8d2227bafc3389e0703836ed",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary",
+    "none"
+   ],
+   "jev_p": 0.98,
+   "jev_probabilities": {
+    "dictionary": 0.98,
+    "none": 0.02
+   },
    "loinc": null,
    "property": "panel",
    "source_count": 1,
@@ -1632,6 +3216,18 @@
    "component": "Cannabinoids screen",
    "confidence": 0.7,
    "factor_to_canonical": null,
+   "jev_choice": "dictionary",
+   "jev_input": "8bb3dcd9349974d37e55df21d67cba54deb3d5a1c1120f342807d00716d1668c",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary",
+    "none"
+   ],
+   "jev_p": 0.99,
+   "jev_probabilities": {
+    "dictionary": 0.99,
+    "none": 0.01
+   },
    "loinc": null,
    "property": "presence (ordinal)",
    "source_count": 1,
@@ -1644,6 +3240,18 @@
    "component": "Urinalysis complete panel",
    "confidence": 0.55,
    "factor_to_canonical": null,
+   "jev_choice": "dictionary",
+   "jev_input": "ece321defc992503d395eb3afb9a672adf9c950d1a176d47076cb0d771e4a0bd",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary",
+    "none"
+   ],
+   "jev_p": 0.98,
+   "jev_probabilities": {
+    "dictionary": 0.98,
+    "none": 0.02
+   },
    "loinc": "24356-8",
    "property": "panel",
    "source_count": 1,
@@ -1656,6 +3264,18 @@
    "component": "Albumin/Creatinine ratio",
    "confidence": 0.95,
    "factor_to_canonical": 1,
+   "jev_choice": "dictionary_and_rules",
+   "jev_input": "ba4b211f3864ffdeb42fe6f57e31d3b41a0aa575c9ae6b7851b58b45447344f8",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary_and_rules",
+    "none"
+   ],
+   "jev_p": 0.99,
+   "jev_probabilities": {
+    "dictionary_and_rules": 0.99,
+    "none": 0.01
+   },
    "loinc": "9318-7",
    "property": "mass ratio",
    "source_count": 2,
@@ -1668,6 +3288,18 @@
    "component": "Urea nitrogen",
    "confidence": 0.93,
    "factor_to_canonical": 1,
+   "jev_choice": "dictionary_and_rules",
+   "jev_input": "a593ae4d1114cc24214fff46f0debaa8ded19947709b801f5699a93e8e3cd1e8",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary_and_rules",
+    "none"
+   ],
+   "jev_p": 0.99,
+   "jev_probabilities": {
+    "dictionary_and_rules": 0.99,
+    "none": 0.01
+   },
    "loinc": "3094-0",
    "property": "mass conc",
    "source_count": 39,
@@ -1680,6 +3312,18 @@
    "component": "Urea nitrogen",
    "confidence": 0.95,
    "factor_to_canonical": 1,
+   "jev_choice": "dictionary_and_rules",
+   "jev_input": "2cc4d3620b698e43633039c849dba0efc1ba3fb410ea3fd215eb5dc42697f06d",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary_and_rules",
+    "none"
+   ],
+   "jev_p": 0.99,
+   "jev_probabilities": {
+    "dictionary_and_rules": 0.99,
+    "none": 0.01
+   },
    "loinc": "3094-0",
    "property": "mass concentration",
    "source_count": 795,
@@ -1692,6 +3336,18 @@
    "component": "Urate",
    "confidence": 0.9,
    "factor_to_canonical": 1,
+   "jev_choice": "dictionary",
+   "jev_input": "7403d1abecc10f658ed34467b56271ef922d03e6f2aa3e248fa2b5f30bed65ba",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary",
+    "none"
+   ],
+   "jev_p": 0.98,
+   "jev_probabilities": {
+    "dictionary": 0.98,
+    "none": 0.02
+   },
    "loinc": "3084-1",
    "property": "mass conc",
    "source_count": 2,
@@ -1704,6 +3360,18 @@
    "component": "Protein/Creatinine ratio",
    "confidence": 0.65,
    "factor_to_canonical": 1,
+   "jev_choice": "dictionary",
+   "jev_input": "f8743ba574be26667467b14bd92a6bf67f09461b6bdf604ebdac0de65d09b59e",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary",
+    "none"
+   ],
+   "jev_p": 0.99,
+   "jev_probabilities": {
+    "dictionary": 0.99,
+    "none": 0.01
+   },
    "loinc": "2890-2",
    "property": "mass ratio",
    "source_count": 1,
@@ -1716,6 +3384,18 @@
    "component": "Albumin (microalbumin)",
    "confidence": 0.85,
    "factor_to_canonical": 1,
+   "jev_choice": "dictionary",
+   "jev_input": "6d12dc411449d70fdb3808eea181e4e5df2c2945c57e77875334e326c5687fcb",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary",
+    "none"
+   ],
+   "jev_p": 0.98,
+   "jev_probabilities": {
+    "dictionary": 0.98,
+    "none": 0.02
+   },
    "loinc": "14957-5",
    "note": "not UACR",
    "property": "mass concentration",
@@ -1729,6 +3409,18 @@
    "component": "Albumin/Creatinine",
    "confidence": 0.93,
    "factor_to_canonical": 1,
+   "jev_choice": "dictionary_and_rules",
+   "jev_input": "d20895f1cc371cdc5d279bc060663ec1e5fc422b4d79b8df0c374ccde59ea211",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary_and_rules",
+    "none"
+   ],
+   "jev_p": 0.99,
+   "jev_probabilities": {
+    "dictionary_and_rules": 0.99,
+    "none": 0.01
+   },
    "loinc": "9318-7",
    "property": "mass ratio",
    "source_count": 3230,
@@ -1741,6 +3433,18 @@
    "component": "Creatinine",
    "confidence": 0.92,
    "factor_to_canonical": 1,
+   "jev_choice": "dictionary",
+   "jev_input": "ce633affb5ef11d6c34ecd2186c3e2218d98d4090af8313e7b31b6639d73e721",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary",
+    "none"
+   ],
+   "jev_p": 0.99,
+   "jev_probabilities": {
+    "dictionary": 0.99,
+    "none": 0.01
+   },
    "loinc": "2161-8",
    "note": "not serum creatinine",
    "property": "mass concentration",
@@ -1754,6 +3458,18 @@
    "component": "Protein/Creatinine ratio",
    "confidence": 0.8,
    "factor_to_canonical": 1000,
+   "jev_choice": "dictionary",
+   "jev_input": "651d408c5be0eb0d2c5e3911f58377e9b5b84bb7109ee0e3cdf9507f61e6570a",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary",
+    "none"
+   ],
+   "jev_p": 0.99,
+   "jev_probabilities": {
+    "dictionary": 0.99,
+    "none": 0.01
+   },
    "loinc": "2890-2",
    "note": "Protein-to-creatinine ratio (UPCR) is not the albumin ratio (UACR), so it is not mapped to 'uacr'. mg/mg is converted to mg/g (x1000).",
    "property": "mass ratio",
@@ -1767,6 +3483,18 @@
    "component": "Cobalamin (Vitamin B12)",
    "confidence": 0.9,
    "factor_to_canonical": 1,
+   "jev_choice": "dictionary",
+   "jev_input": "a0eb717fa982c3180c1bebddf1e47a6bab1d0328767aed9406dc821345e81a1d",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary",
+    "none"
+   ],
+   "jev_p": 0.99,
+   "jev_probabilities": {
+    "dictionary": 0.99,
+    "none": 0.01
+   },
    "loinc": "2132-9",
    "property": "mass conc",
    "source_count": 2,
@@ -1779,6 +3507,18 @@
    "component": "Leukocytes",
    "confidence": 0.94,
    "factor_to_canonical": 1,
+   "jev_choice": "dictionary_and_rules",
+   "jev_input": "847faed351705613604a17027640ae3063d14c9cfae58b0e086b13d0d146d2e1",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary_and_rules",
+    "none"
+   ],
+   "jev_p": 0.99,
+   "jev_probabilities": {
+    "dictionary_and_rules": 0.99,
+    "none": 0.01
+   },
    "loinc": "6690-2",
    "property": "number conc",
    "source_count": 6155,
@@ -1791,6 +3531,18 @@
    "component": "White oak Ab.IgE",
    "confidence": 0.8,
    "factor_to_canonical": 1,
+   "jev_choice": "dictionary",
+   "jev_input": "b11c21a3a9393465a0080397f265c05f46e624e72e5103f83140ceeeb7ae4ef5",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary",
+    "none"
+   ],
+   "jev_p": 0.96,
+   "jev_probabilities": {
+    "dictionary": 0.96,
+    "none": 0.04
+   },
    "loinc": "6189-5",
    "property": "arbitrary conc",
    "source_count": 69,
@@ -1803,6 +3555,18 @@
    "component": "Diastolic blood pressure",
    "confidence": 0.97,
    "factor_to_canonical": 1,
+   "jev_choice": "dictionary",
+   "jev_input": "e587ffe5fe6b40d5f3f5d561086f41706419706bdf67b0901b37106db8dad806",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary",
+    "none"
+   ],
+   "jev_p": 1.0,
+   "jev_probabilities": {
+    "dictionary": 1.0,
+    "none": 0.0
+   },
    "loinc": "8462-4",
    "property": "pressure",
    "source_count": 12859,
@@ -1815,6 +3579,18 @@
    "component": "Systolic blood pressure",
    "confidence": 0.97,
    "factor_to_canonical": 1,
+   "jev_choice": "dictionary",
+   "jev_input": "5ac64378e7a3b7e340ca19e13d03cd8900c44dfdb2e601d3374c0deeb061b9e0",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary",
+    "none"
+   ],
+   "jev_p": 1.0,
+   "jev_probabilities": {
+    "dictionary": 1.0,
+    "none": 0.0
+   },
    "loinc": "8480-6",
    "property": "pressure",
    "source_count": 12868,
@@ -1827,6 +3603,18 @@
    "component": "Diastolic blood pressure",
    "confidence": 0.95,
    "factor_to_canonical": 1,
+   "jev_choice": "dictionary_and_rules",
+   "jev_input": "c0b0ac7d6573c78b9b467064b850846cc72e6720ed5eb6d2003683398e60f6de",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary_and_rules",
+    "none"
+   ],
+   "jev_p": 1.0,
+   "jev_probabilities": {
+    "dictionary_and_rules": 1.0,
+    "none": 0.0
+   },
    "loinc": "8462-4",
    "note": "min 24 mmHg is implausible; review",
    "property": "pressure",
@@ -1840,6 +3628,18 @@
    "component": "free-text blood pressure note",
    "confidence": 0.3,
    "factor_to_canonical": null,
+   "jev_choice": "dictionary",
+   "jev_input": "0094c050b5fe9cccb13cd7606c67b292388913123eff6581c366541427f1daa8",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary",
+    "none"
+   ],
+   "jev_p": 0.97,
+   "jev_probabilities": {
+    "dictionary": 0.97,
+    "none": 0.03
+   },
    "loinc": null,
    "note": "No numeric values. Do not map to systolic_bp or diastolic_bp.",
    "property": "narrative",
@@ -1853,6 +3653,18 @@
    "component": "Systolic blood pressure",
    "confidence": 0.95,
    "factor_to_canonical": 1,
+   "jev_choice": "dictionary_and_rules",
+   "jev_input": "450237fbe24b28b91a6630e60ccc28e8922f6dd08ccf31db0b81fe6d80be9930",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary_and_rules",
+    "none"
+   ],
+   "jev_p": 1.0,
+   "jev_probabilities": {
+    "dictionary_and_rules": 1.0,
+    "none": 0.0
+   },
    "loinc": "8480-6",
    "note": "min 53 mmHg is suspicious",
    "property": "pressure",
@@ -1866,6 +3678,18 @@
    "component": "Glomerular filtration rate/1.73 sq M.predicted",
    "confidence": 0.7,
    "factor_to_canonical": 1,
+   "jev_choice": "dictionary_and_rules",
+   "jev_input": "2ef7d598613737174dfbd68ae05b600bcaf4a037a77716a1868e359e7507aa0c",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary_and_rules",
+    "none"
+   ],
+   "jev_p": 0.99,
+   "jev_probabilities": {
+    "dictionary_and_rules": 0.99,
+    "none": 0.01
+   },
    "loinc": "33914-3",
    "note": "The equation is unspecified. CKD-EPI would be 62238-1.",
    "property": "volume rate/area",
@@ -1879,6 +3703,18 @@
    "component": "Heart rate",
    "confidence": 0.97,
    "factor_to_canonical": 1,
+   "jev_choice": "dictionary_and_rules",
+   "jev_input": "9438dad4e0b7cdae47c3aefb7bed932516319090ecebab8dc0c23dd727e56bcd",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary_and_rules",
+    "none"
+   ],
+   "jev_p": 1.0,
+   "jev_probabilities": {
+    "dictionary_and_rules": 1.0,
+    "none": 0.0
+   },
    "loinc": "8867-4",
    "property": "rate (NRat)",
    "source_count": 13364,
@@ -1891,6 +3727,18 @@
    "component": "Body height",
    "confidence": 0.96,
    "factor_to_canonical": 1,
+   "jev_choice": "dictionary",
+   "jev_input": "0eab9af7d8253fd3667f3af0a3db5bb51a50d5a6e0c32a4ea7ddbf6fde72b331",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary",
+    "none"
+   ],
+   "jev_p": 1.0,
+   "jev_probabilities": {
+    "dictionary": 1.0,
+    "none": 0.0
+   },
    "loinc": "8302-2",
    "property": "length",
    "source_count": 1614,
@@ -1903,6 +3751,18 @@
    "component": "Troponin I.cardiac (high sensitivity)",
    "confidence": 0.88,
    "factor_to_canonical": 1,
+   "jev_choice": "dictionary_and_rules",
+   "jev_input": "d8256265f8403335b83dbb62684b2188f183644d6bcc1b9a0c27488f53e8f9a6",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary_and_rules",
+    "none"
+   ],
+   "jev_p": 1.0,
+   "jev_probabilities": {
+    "dictionary_and_rules": 1.0,
+    "none": 0.0
+   },
    "loinc": "89579-7",
    "property": "mass conc",
    "source_count": 102,
@@ -1915,6 +3775,18 @@
    "component": "Heart rate",
    "confidence": 0.93,
    "factor_to_canonical": 1,
+   "jev_choice": "dictionary_and_rules",
+   "jev_input": "474eb29bef043bcd1ee3cf9e50471e8257fe5ab716873f275e446729de4664b6",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary_and_rules",
+    "none"
+   ],
+   "jev_p": 1.0,
+   "jev_probabilities": {
+    "dictionary_and_rules": 1.0,
+    "none": 0.0
+   },
    "loinc": "8867-4",
    "property": "rate (NRat)",
    "source_count": 1614,
@@ -1927,6 +3799,18 @@
    "component": "Oxygen saturation by pulse oximetry",
    "confidence": 0.88,
    "factor_to_canonical": 1,
+   "jev_choice": "dictionary",
+   "jev_input": "d7b70c913b46175850eeedb5ff84e20b76395d6e9edf822264129a598cde1d19",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary",
+    "none"
+   ],
+   "jev_p": 0.98,
+   "jev_probabilities": {
+    "dictionary": 0.98,
+    "none": 0.02
+   },
    "loinc": "59408-5",
    "note": "2708-6 applies if this is arterial blood gas rather than oximetry",
    "property": "mass fraction",
@@ -1940,6 +3824,18 @@
    "component": "pH",
    "confidence": 0.45,
    "factor_to_canonical": 1,
+   "jev_choice": "dictionary",
+   "jev_input": "18116dac11e491c1d33c2b97353fc6fe8841b2d9ff14496c750e6fe0f09d8f2e",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary",
+    "none"
+   ],
+   "jev_p": 0.97,
+   "jev_probabilities": {
+    "dictionary": 0.97,
+    "none": 0.03
+   },
    "loinc": "11558-4",
    "property": "pH",
    "source_count": 1,
@@ -1952,6 +3848,18 @@
    "component": "Respiratory rate",
    "confidence": 0.93,
    "factor_to_canonical": 1,
+   "jev_choice": "dictionary",
+   "jev_input": "bd21200c533159c5f3bc9dbb6210016280384c1999eb7ddb10a21b1a2e6cc419",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary",
+    "none"
+   ],
+   "jev_p": 0.99,
+   "jev_probabilities": {
+    "dictionary": 0.99,
+    "none": 0.01
+   },
    "loinc": "9279-1",
    "property": "rate (NRat)",
    "source_count": 1576,
@@ -1964,6 +3872,18 @@
    "component": "Oxygen saturation by pulse oximetry",
    "confidence": 0.9,
    "factor_to_canonical": 1,
+   "jev_choice": "dictionary_and_rules",
+   "jev_input": "de3dde2062f3693f37e32223c6728eaa228b965c718bb3f65c438f4b7576791f",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary_and_rules",
+    "none"
+   ],
+   "jev_p": 0.99,
+   "jev_probabilities": {
+    "dictionary_and_rules": 0.99,
+    "none": 0.01
+   },
    "loinc": "59408-5",
    "property": "mass fraction",
    "source_count": 462,
@@ -1976,6 +3896,18 @@
    "component": "Body temperature",
    "confidence": 0.95,
    "factor_to_canonical": 1,
+   "jev_choice": "dictionary",
+   "jev_input": "692210dc2a9538347443ba692fefca07cf828cab1bf600f80df011427b8a430a",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary",
+    "none"
+   ],
+   "jev_p": 0.99,
+   "jev_probabilities": {
+    "dictionary": 0.99,
+    "none": 0.01
+   },
    "loinc": "8310-5",
    "note": "max 42.2 C is extreme",
    "property": "temperature",
@@ -1989,6 +3921,18 @@
    "component": "Body weight",
    "confidence": 0.96,
    "factor_to_canonical": 1,
+   "jev_choice": "dictionary_and_rules",
+   "jev_input": "2743797e046ea994ef8294fe84e7d39dc68eaf571a8618f89cb80058271459c4",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary_and_rules",
+    "none"
+   ],
+   "jev_p": 1.0,
+   "jev_probabilities": {
+    "dictionary_and_rules": 1.0,
+    "none": 0.0
+   },
    "loinc": "29463-7",
    "note": "min 21.7 kg suggests pediatric patients or an error",
    "property": "mass",
@@ -2002,11 +3946,29 @@
    "component": "Beta-hydroxybutyrate",
    "confidence": 0.55,
    "factor_to_canonical": 1,
+   "jev_choice": "dictionary",
+   "jev_input": "d5d23dea24a4fabd2453970e218712c10a4b6d56ef17bce580cd51b7d0aa7614",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary",
+    "none"
+   ],
+   "jev_p": 0.98,
+   "jev_probabilities": {
+    "dictionary": 0.98,
+    "none": 0.02
+   },
    "loinc": "53060-9",
    "property": "substance concentration",
    "source_count": 1,
    "specimen": "serum/plasma"
   }
+ },
+ "jev_check": {
+  "checked_at": "2026-10-13",
+  "contract": "agere-normalization-jev/1",
+  "model": "jev-1.13.0",
+  "review_status": "machine second check; not terminologist review"
  },
  "mapped_by": "claude-opus-5-5",
  "review_status": "unreviewed",

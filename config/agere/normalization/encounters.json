@@ -5,6 +5,20 @@
    "agere_concept": "primary_care_visit",
    "confidence": 0.7,
    "in_person": true,
+   "jev_choice": "dictionary",
+   "jev_input": "91614b63ca060b5ca4da8fd7b081c3c69c2f310d9fe59bfc116eb9d5bdd70fc7",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary",
+    "rules",
+    "none"
+   ],
+   "jev_p": 0.78,
+   "jev_probabilities": {
+    "dictionary": 0.78,
+    "none": 0.1,
+    "rules": 0.12
+   },
    "setting": "primary_care",
    "source_count": 1
   },
@@ -12,6 +26,18 @@
    "agere_concept": "primary_care_visit",
    "confidence": 0.85,
    "in_person": true,
+   "jev_choice": "dictionary_and_rules",
+   "jev_input": "ec42be8bcb5e0cde43882167ca1560e633c2230183cc6d574725c0d0b27fca26",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary_and_rules",
+    "none"
+   ],
+   "jev_p": 0.99,
+   "jev_probabilities": {
+    "dictionary_and_rules": 0.99,
+    "none": 0.01
+   },
    "setting": "preventive",
    "source_count": 8
   },
@@ -19,6 +45,18 @@
    "agere_concept": "specialist_visit",
    "confidence": 0.82,
    "in_person": true,
+   "jev_choice": "dictionary_and_rules",
+   "jev_input": "74a3e0c00bffb3fd6e35026992adbbdefcba178472a0d5fc28022a83c7a570aa",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary_and_rules",
+    "none"
+   ],
+   "jev_p": 0.97,
+   "jev_probabilities": {
+    "dictionary_and_rules": 0.97,
+    "none": 0.03
+   },
    "setting": "specialty",
    "source_count": 1
   },
@@ -26,6 +64,18 @@
    "agere_concept": "specialist_visit",
    "confidence": 0.93,
    "in_person": true,
+   "jev_choice": "dictionary_and_rules",
+   "jev_input": "b373e61e62a7b9b53b9962fc566d70adfed8d19063a4f8addca4d879b95bd750",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary_and_rules",
+    "none"
+   ],
+   "jev_p": 0.98,
+   "jev_probabilities": {
+    "dictionary_and_rules": 0.98,
+    "none": 0.02
+   },
    "setting": "specialty",
    "source_count": 1
   },
@@ -33,6 +83,18 @@
    "agere_concept": "specialist_visit",
    "confidence": 0.9,
    "in_person": true,
+   "jev_choice": "dictionary_and_rules",
+   "jev_input": "8384ea4d5eaa6a82ce90326442e95dff0c08335570f2f113c459113876e03987",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary_and_rules",
+    "none"
+   ],
+   "jev_p": 0.98,
+   "jev_probabilities": {
+    "dictionary_and_rules": 0.98,
+    "none": 0.02
+   },
    "setting": "specialty",
    "source_count": 1
   },
@@ -40,6 +102,18 @@
    "agere_concept": "specialist_visit",
    "confidence": 0.9,
    "in_person": true,
+   "jev_choice": "dictionary_and_rules",
+   "jev_input": "4797917178a6f8e72578e73049be457eadff6f97fbb3d9dcac834014f80f6f5e",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary_and_rules",
+    "none"
+   ],
+   "jev_p": 0.97,
+   "jev_probabilities": {
+    "dictionary_and_rules": 0.97,
+    "none": 0.03
+   },
    "setting": "specialty",
    "source_count": 12
   },
@@ -47,6 +121,18 @@
    "agere_concept": "emergency_visit",
    "confidence": 0.95,
    "in_person": true,
+   "jev_choice": "dictionary_and_rules",
+   "jev_input": "c42d0c5be2d16f3b1631b71e6e90a103857bd9ff8cc3c16e7742d9d697e5481c",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary_and_rules",
+    "none"
+   ],
+   "jev_p": 0.99,
+   "jev_probabilities": {
+    "dictionary_and_rules": 0.99,
+    "none": 0.01
+   },
    "setting": "emergency",
    "source_count": 7
   },
@@ -54,6 +140,18 @@
    "agere_concept": "emergency_visit",
    "confidence": 0.95,
    "in_person": true,
+   "jev_choice": "dictionary_and_rules",
+   "jev_input": "4fb758209fae8d16499a666256fa5268a3f2bd11891fe04d5a076af667ca426c",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary_and_rules",
+    "none"
+   ],
+   "jev_p": 0.99,
+   "jev_probabilities": {
+    "dictionary_and_rules": 0.99,
+    "none": 0.01
+   },
    "setting": "emergency",
    "source_count": 1
   },
@@ -61,6 +159,18 @@
    "agere_concept": null,
    "confidence": 0.2,
    "in_person": true,
+   "jev_choice": "none",
+   "jev_input": "a3e7e917c1b735e6a4740f7e5c18710015bde44c92e3c90050be2c3b3bf5908b",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary_and_rules",
+    "none"
+   ],
+   "jev_p": 0.72,
+   "jev_probabilities": {
+    "dictionary_and_rules": 0.28,
+    "none": 0.72
+   },
    "setting": "other",
    "source_count": 1
   },
@@ -68,6 +178,18 @@
    "agere_concept": "specialist_visit",
    "confidence": 0.8,
    "in_person": true,
+   "jev_choice": "dictionary_and_rules",
+   "jev_input": "4316be29392e1d1417f935ed0f296ce2b6b25b85a59fc7b8159359e3ea85f94f",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary_and_rules",
+    "none"
+   ],
+   "jev_p": 0.95,
+   "jev_probabilities": {
+    "dictionary_and_rules": 0.95,
+    "none": 0.05
+   },
    "setting": "specialty",
    "source_count": 5
   },
@@ -75,6 +197,18 @@
    "agere_concept": "specialist_visit",
    "confidence": 0.55,
    "in_person": true,
+   "jev_choice": "dictionary_and_rules",
+   "jev_input": "a354e8bed801d6af9d9fe73d2bb1d50f1e13598404cb031603f5681a9ad3ffa6",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary_and_rules",
+    "none"
+   ],
+   "jev_p": 0.85,
+   "jev_probabilities": {
+    "dictionary_and_rules": 0.85,
+    "none": 0.15
+   },
    "setting": "specialty",
    "source_count": 1
   },
@@ -82,6 +216,18 @@
    "agere_concept": "specialist_visit",
    "confidence": 0.8,
    "in_person": true,
+   "jev_choice": "dictionary_and_rules",
+   "jev_input": "cac44fd109fd6b4277c50a41f2e2cf01af538624f336d1063637a4a73eddd7c7",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary_and_rules",
+    "none"
+   ],
+   "jev_p": 0.91,
+   "jev_probabilities": {
+    "dictionary_and_rules": 0.91,
+    "none": 0.09
+   },
    "setting": "behavioral_health",
    "source_count": 1
   },
@@ -89,6 +235,20 @@
    "agere_concept": "specialist_visit",
    "confidence": 0.65,
    "in_person": true,
+   "jev_choice": "dictionary",
+   "jev_input": "377a062b8b9e76b961b8f1048afac043746dd534a22804aa0f4f6b5f3b55f982",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary",
+    "rules",
+    "none"
+   ],
+   "jev_p": 0.58,
+   "jev_probabilities": {
+    "dictionary": 0.58,
+    "none": 0.16,
+    "rules": 0.26
+   },
    "setting": "specialty",
    "source_count": 3
   },
@@ -96,6 +256,18 @@
    "agere_concept": "primary_care_visit",
    "confidence": 0.92,
    "in_person": true,
+   "jev_choice": "dictionary_and_rules",
+   "jev_input": "556c45971879becc3b4a27dbea9b29adc22dd34afd2b06af7e8b5c21fd43434c",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary_and_rules",
+    "none"
+   ],
+   "jev_p": 0.98,
+   "jev_probabilities": {
+    "dictionary_and_rules": 0.98,
+    "none": 0.02
+   },
    "setting": "primary_care",
    "source_count": 1
   },
@@ -103,6 +275,20 @@
    "agere_concept": "specialist_visit",
    "confidence": 0.5,
    "in_person": true,
+   "jev_choice": "dictionary",
+   "jev_input": "dbcd3dbb2f3cdd180aa08ef215881accf7c4f2686358de4e71caa1a3c0cdc17f",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary",
+    "rules",
+    "none"
+   ],
+   "jev_p": 0.91,
+   "jev_probabilities": {
+    "dictionary": 0.91,
+    "none": 0.04,
+    "rules": 0.05
+   },
    "setting": "behavioral_health",
    "source_count": 1
   },
@@ -110,6 +296,18 @@
    "agere_concept": null,
    "confidence": 0.55,
    "in_person": true,
+   "jev_choice": "dictionary_and_rules",
+   "jev_input": "0f3d157ea5684b69dd58aea878e8f650b89e15d10901d559b0f8f0b771a3326c",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary_and_rules",
+    "none"
+   ],
+   "jev_p": 0.68,
+   "jev_probabilities": {
+    "dictionary_and_rules": 0.68,
+    "none": 0.32
+   },
    "setting": "other",
    "source_count": 2
   },
@@ -117,6 +315,18 @@
    "agere_concept": "specialist_visit",
    "confidence": 0.9,
    "in_person": true,
+   "jev_choice": "dictionary_and_rules",
+   "jev_input": "cb37a1dc76fb92bf8f6b91b69b23994c5b4aa832c4773cfa7ec37e52131f2f7c",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary_and_rules",
+    "none"
+   ],
+   "jev_p": 0.95,
+   "jev_probabilities": {
+    "dictionary_and_rules": 0.95,
+    "none": 0.05
+   },
    "setting": "specialty",
    "source_count": 1
   },
@@ -124,6 +334,20 @@
    "agere_concept": "specialist_visit",
    "confidence": 0.6,
    "in_person": true,
+   "jev_choice": "dictionary",
+   "jev_input": "66e1b9c3cf5d3185857fa1a8c1e839d78e6612c0fad221cc1e01cd670e45d952",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary",
+    "rules",
+    "none"
+   ],
+   "jev_p": 0.95,
+   "jev_probabilities": {
+    "dictionary": 0.95,
+    "none": 0.03,
+    "rules": 0.02
+   },
    "setting": "specialty",
    "source_count": 1
   },
@@ -131,6 +355,18 @@
    "agere_concept": null,
    "confidence": 0.7,
    "in_person": true,
+   "jev_choice": "dictionary_and_rules",
+   "jev_input": "62ef75a8605f86c0c75cf2af368cfdf1eee771fec73c8396ecfd7ff2988ba39a",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary_and_rules",
+    "none"
+   ],
+   "jev_p": 0.91,
+   "jev_probabilities": {
+    "dictionary_and_rules": 0.91,
+    "none": 0.09
+   },
    "setting": "behavioral_health",
    "source_count": 1
   },
@@ -138,6 +374,18 @@
    "agere_concept": "inpatient_admission",
    "confidence": 0.92,
    "in_person": true,
+   "jev_choice": "dictionary_and_rules",
+   "jev_input": "a7eeeeecac3a434c1abc265f8dc123515f7caa06e973aafa33d7bff72c311e1f",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary_and_rules",
+    "none"
+   ],
+   "jev_p": 0.97,
+   "jev_probabilities": {
+    "dictionary_and_rules": 0.97,
+    "none": 0.03
+   },
    "setting": "inpatient",
    "source_count": 1
   },
@@ -145,6 +393,18 @@
    "agere_concept": "inpatient_admission",
    "confidence": 0.92,
    "in_person": true,
+   "jev_choice": "dictionary_and_rules",
+   "jev_input": "861f6ba018a5cf49fdb4dfafce3076f37969e186568fe1eaaeee2a2ff59b962c",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary_and_rules",
+    "none"
+   ],
+   "jev_p": 0.98,
+   "jev_probabilities": {
+    "dictionary_and_rules": 0.98,
+    "none": 0.02
+   },
    "setting": "inpatient",
    "source_count": 1
   },
@@ -152,6 +412,18 @@
    "agere_concept": "inpatient_admission",
    "confidence": 0.93,
    "in_person": true,
+   "jev_choice": "dictionary_and_rules",
+   "jev_input": "89d7e925ea1b13fb502c07118dc3da8e54057d290d0d782458624c08d1ec64a8",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary_and_rules",
+    "none"
+   ],
+   "jev_p": 0.94,
+   "jev_probabilities": {
+    "dictionary_and_rules": 0.94,
+    "none": 0.06
+   },
    "setting": "inpatient",
    "source_count": 1
   },
@@ -159,6 +431,20 @@
    "agere_concept": "specialist_visit",
    "confidence": 0.85,
    "in_person": true,
+   "jev_choice": "dictionary",
+   "jev_input": "8e5075cca786f5859799ad3b8fc992cab031adc1feac4bfda6106b8cea6eade3",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary",
+    "rules",
+    "none"
+   ],
+   "jev_p": 0.92,
+   "jev_probabilities": {
+    "dictionary": 0.92,
+    "none": 0.04,
+    "rules": 0.04
+   },
    "setting": "specialty",
    "source_count": 1
   },
@@ -166,6 +452,18 @@
    "agere_concept": "specialist_visit",
    "confidence": 0.88,
    "in_person": true,
+   "jev_choice": "dictionary_and_rules",
+   "jev_input": "412351f5c95233ab072767df0f0633eaea362356363f126f177f3fc239aa7b09",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary_and_rules",
+    "none"
+   ],
+   "jev_p": 0.96,
+   "jev_probabilities": {
+    "dictionary_and_rules": 0.96,
+    "none": 0.04
+   },
    "setting": "specialty",
    "source_count": 2
   },
@@ -173,6 +471,20 @@
    "agere_concept": "specialist_visit",
    "confidence": 0.88,
    "in_person": true,
+   "jev_choice": "dictionary",
+   "jev_input": "a715f1d88c7c601a02c97b21e09225a963cea3649b289fcd8ed61fcbb56b052a",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary",
+    "rules",
+    "none"
+   ],
+   "jev_p": 0.96,
+   "jev_probabilities": {
+    "dictionary": 0.96,
+    "none": 0.02,
+    "rules": 0.02
+   },
    "setting": "specialty",
    "source_count": 1
   },
@@ -180,6 +492,18 @@
    "agere_concept": "specialist_visit",
    "confidence": 0.88,
    "in_person": true,
+   "jev_choice": "dictionary_and_rules",
+   "jev_input": "6d47f118b77098066913b2b8558f0a97f008a3ce915a4c474d999d5a275bcd64",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary_and_rules",
+    "none"
+   ],
+   "jev_p": 0.94,
+   "jev_probabilities": {
+    "dictionary_and_rules": 0.94,
+    "none": 0.06
+   },
    "setting": "specialty",
    "source_count": 1
   },
@@ -187,6 +511,18 @@
    "agere_concept": "specialist_visit",
    "confidence": 0.8,
    "in_person": true,
+   "jev_choice": "dictionary_and_rules",
+   "jev_input": "d51f1907154ad6e864ed794166da38183eb0547c0935586d25fae17ea0172553",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary_and_rules",
+    "none"
+   ],
+   "jev_p": 0.93,
+   "jev_probabilities": {
+    "dictionary_and_rules": 0.93,
+    "none": 0.07
+   },
    "setting": "specialty",
    "source_count": 1
   },
@@ -194,6 +530,20 @@
    "agere_concept": null,
    "confidence": 0.5,
    "in_person": true,
+   "jev_choice": "rules",
+   "jev_input": "bcb3c527a496dfc302c42c51b925f6c3aec0c02de631a54fe1262b2256e3bf0c",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary",
+    "rules",
+    "none"
+   ],
+   "jev_p": 0.98,
+   "jev_probabilities": {
+    "dictionary": 0.01,
+    "none": 0.01,
+    "rules": 0.98
+   },
    "setting": "primary_care",
    "source_count": 31
   },
@@ -201,6 +551,18 @@
    "agere_concept": "specialist_visit",
    "confidence": 0.82,
    "in_person": true,
+   "jev_choice": "dictionary_and_rules",
+   "jev_input": "edeaa1683e1430b6bbce8d4d12089a568194ce2b077b545edfda81078aa71ff9",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary_and_rules",
+    "none"
+   ],
+   "jev_p": 0.94,
+   "jev_probabilities": {
+    "dictionary_and_rules": 0.94,
+    "none": 0.06
+   },
    "setting": "specialty",
    "source_count": 1
   },
@@ -208,6 +570,18 @@
    "agere_concept": "specialist_visit",
    "confidence": 0.65,
    "in_person": true,
+   "jev_choice": "dictionary_and_rules",
+   "jev_input": "dfa5e27a12ae32dda4910f2b179495854f7e7055b4c742ce67aeb26ef442bdaa",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary_and_rules",
+    "none"
+   ],
+   "jev_p": 0.94,
+   "jev_probabilities": {
+    "dictionary_and_rules": 0.94,
+    "none": 0.06
+   },
    "setting": "specialty",
    "source_count": 1
   },
@@ -215,6 +589,18 @@
    "agere_concept": "primary_care_visit",
    "confidence": 0.9,
    "in_person": true,
+   "jev_choice": "dictionary_and_rules",
+   "jev_input": "0dfd61dc2f6ed3f63994be958c2e1e17e8dbe113af13e1157f678764b36f38ac",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary_and_rules",
+    "none"
+   ],
+   "jev_p": 0.96,
+   "jev_probabilities": {
+    "dictionary_and_rules": 0.96,
+    "none": 0.04
+   },
    "setting": "primary_care",
    "source_count": 2
   },
@@ -222,6 +608,18 @@
    "agere_concept": null,
    "confidence": 0.3,
    "in_person": true,
+   "jev_choice": "none",
+   "jev_input": "6f4507c30d5eb59150b7d34a8124b753c35b185554897e5857ba44b1798b4670",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary_and_rules",
+    "none"
+   ],
+   "jev_p": 0.73,
+   "jev_probabilities": {
+    "dictionary_and_rules": 0.27,
+    "none": 0.73
+   },
    "setting": "other",
    "source_count": 1
   },
@@ -229,6 +627,18 @@
    "agere_concept": "primary_care_visit",
    "confidence": 0.75,
    "in_person": true,
+   "jev_choice": "dictionary_and_rules",
+   "jev_input": "da8b60a2451c7e58a7a581ae3d96224c28d8b32587da6d7804d2eb849faf653b",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary_and_rules",
+    "none"
+   ],
+   "jev_p": 0.97,
+   "jev_probabilities": {
+    "dictionary_and_rules": 0.97,
+    "none": 0.03
+   },
    "setting": "primary_care",
    "source_count": 1
   },
@@ -236,6 +646,18 @@
    "agere_concept": "specialist_visit",
    "confidence": 0.85,
    "in_person": true,
+   "jev_choice": "dictionary_and_rules",
+   "jev_input": "82c95df9815e94d04b403e63dfb4f0343fd897293cd2a941898e277c90db180f",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary_and_rules",
+    "none"
+   ],
+   "jev_p": 0.83,
+   "jev_probabilities": {
+    "dictionary_and_rules": 0.83,
+    "none": 0.17
+   },
    "setting": "specialty",
    "source_count": 1
   },
@@ -243,6 +665,20 @@
    "agere_concept": "specialist_visit",
    "confidence": 0.75,
    "in_person": true,
+   "jev_choice": "dictionary",
+   "jev_input": "6e81dffe623f2f15ca90f90ff23a3e04213dd8ab85e53db2dbbbcd745a7bcf51",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary",
+    "rules",
+    "none"
+   ],
+   "jev_p": 0.86,
+   "jev_probabilities": {
+    "dictionary": 0.86,
+    "none": 0.05,
+    "rules": 0.09
+   },
    "setting": "specialty",
    "source_count": 1
   },
@@ -250,6 +686,18 @@
    "agere_concept": "primary_care_visit",
    "confidence": 0.95,
    "in_person": true,
+   "jev_choice": "dictionary_and_rules",
+   "jev_input": "334f33705bf7bc9c2244763dc0e9f461e503732b7a97067e5c0be8719b15a96e",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary_and_rules",
+    "none"
+   ],
+   "jev_p": 0.98,
+   "jev_probabilities": {
+    "dictionary_and_rules": 0.98,
+    "none": 0.02
+   },
    "setting": "primary_care",
    "source_count": 1
   },
@@ -257,6 +705,20 @@
    "agere_concept": "specialist_visit",
    "confidence": 0.75,
    "in_person": true,
+   "jev_choice": "dictionary",
+   "jev_input": "c8afb9bc31848f3b8cd6b12e73206124cef58980a4078f8485f865cc738f8fe8",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary",
+    "rules",
+    "none"
+   ],
+   "jev_p": 0.93,
+   "jev_probabilities": {
+    "dictionary": 0.93,
+    "none": 0.03,
+    "rules": 0.04
+   },
    "setting": "behavioral_health",
    "source_count": 4
   },
@@ -264,6 +726,18 @@
    "agere_concept": "specialist_visit",
    "confidence": 0.8,
    "in_person": true,
+   "jev_choice": "dictionary_and_rules",
+   "jev_input": "863417ded7ac8f7d469bad9a315b269f7ff7a91a47b8833a8e94a0fcf4bd8263",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary_and_rules",
+    "none"
+   ],
+   "jev_p": 0.94,
+   "jev_probabilities": {
+    "dictionary_and_rules": 0.94,
+    "none": 0.06
+   },
    "setting": "specialty",
    "source_count": 1
   },
@@ -271,6 +745,18 @@
    "agere_concept": "specialist_visit",
    "confidence": 0.93,
    "in_person": true,
+   "jev_choice": "dictionary_and_rules",
+   "jev_input": "f58ab01776532d043659471607744389a5dcf6cc8568acfcc6ca25de2df35db9",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary_and_rules",
+    "none"
+   ],
+   "jev_p": 0.97,
+   "jev_probabilities": {
+    "dictionary_and_rules": 0.97,
+    "none": 0.03
+   },
    "setting": "specialty",
    "source_count": 1
   },
@@ -278,6 +764,20 @@
    "agere_concept": "specialist_visit",
    "confidence": 0.75,
    "in_person": true,
+   "jev_choice": "dictionary",
+   "jev_input": "1e28611db23634e410fe75a8fee1ac8300b879fb94ae55a9f8e000be2c32af3a",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary",
+    "rules",
+    "none"
+   ],
+   "jev_p": 0.88,
+   "jev_probabilities": {
+    "dictionary": 0.88,
+    "none": 0.07,
+    "rules": 0.05
+   },
    "setting": "specialty",
    "source_count": 1
   },
@@ -285,6 +785,18 @@
    "agere_concept": "specialist_visit",
    "confidence": 0.85,
    "in_person": true,
+   "jev_choice": "dictionary_and_rules",
+   "jev_input": "14e69d3cea9969b78f069291109fcbd8d1f8c61670ed045087a10c62d727104b",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary_and_rules",
+    "none"
+   ],
+   "jev_p": 0.97,
+   "jev_probabilities": {
+    "dictionary_and_rules": 0.97,
+    "none": 0.03
+   },
    "setting": "specialty",
    "source_count": 1
   },
@@ -292,6 +804,20 @@
    "agere_concept": "specialist_visit",
    "confidence": 0.85,
    "in_person": true,
+   "jev_choice": "dictionary",
+   "jev_input": "47abaeb59929d0d603aa2f2b114d24bd7179040994271632ed5252f69a25edb6",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary",
+    "rules",
+    "none"
+   ],
+   "jev_p": 0.94,
+   "jev_probabilities": {
+    "dictionary": 0.94,
+    "none": 0.03,
+    "rules": 0.03
+   },
    "setting": "specialty",
    "source_count": 1
   },
@@ -299,6 +825,18 @@
    "agere_concept": "specialist_visit",
    "confidence": 0.88,
    "in_person": true,
+   "jev_choice": "dictionary_and_rules",
+   "jev_input": "75901b3680dd3b0123ccf03808ecaf25ab54ff300d08c49b6d776db6ebe9e313",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary_and_rules",
+    "none"
+   ],
+   "jev_p": 0.97,
+   "jev_probabilities": {
+    "dictionary_and_rules": 0.97,
+    "none": 0.03
+   },
    "setting": "specialty",
    "source_count": 1
   },
@@ -306,6 +844,20 @@
    "agere_concept": "specialist_visit",
    "confidence": 0.8,
    "in_person": true,
+   "jev_choice": "dictionary",
+   "jev_input": "c51ed17169953990e688253dd1117d42cf0dc32fd88235c6c36fc901e8fb65a6",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary",
+    "rules",
+    "none"
+   ],
+   "jev_p": 0.65,
+   "jev_probabilities": {
+    "dictionary": 0.65,
+    "none": 0.13,
+    "rules": 0.22
+   },
    "setting": "specialty",
    "source_count": 1
   },
@@ -313,6 +865,20 @@
    "agere_concept": "specialist_visit",
    "confidence": 0.7,
    "in_person": true,
+   "jev_choice": "dictionary",
+   "jev_input": "dfa1d9539439a3a221492b9154401a929c1fe9d7d039e237ccd3cf11af9ffa78",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary",
+    "rules",
+    "none"
+   ],
+   "jev_p": 0.9,
+   "jev_probabilities": {
+    "dictionary": 0.9,
+    "none": 0.05,
+    "rules": 0.05
+   },
    "setting": "behavioral_health",
    "source_count": 1
   },
@@ -320,6 +886,18 @@
    "agere_concept": "specialist_visit",
    "confidence": 0.75,
    "in_person": true,
+   "jev_choice": "dictionary_and_rules",
+   "jev_input": "407d6c7af3a97025aaf69d3d1e905a9363fddfc102cc87e727d400ac1482f00b",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary_and_rules",
+    "none"
+   ],
+   "jev_p": 0.81,
+   "jev_probabilities": {
+    "dictionary_and_rules": 0.81,
+    "none": 0.19
+   },
    "setting": "specialty",
    "source_count": 1
   },
@@ -327,6 +905,20 @@
    "agere_concept": null,
    "confidence": 0.5,
    "in_person": true,
+   "jev_choice": "rules",
+   "jev_input": "46c33dfd56ae05fefbcab72de421da8c7efb064c166feef171e64d1cf5d431af",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary",
+    "rules",
+    "none"
+   ],
+   "jev_p": 0.47,
+   "jev_probabilities": {
+    "dictionary": 0.38,
+    "none": 0.15,
+    "rules": 0.47
+   },
    "setting": "other",
    "source_count": 2320
   },
@@ -334,6 +926,18 @@
    "agere_concept": null,
    "confidence": 0.85,
    "in_person": true,
+   "jev_choice": "dictionary_and_rules",
+   "jev_input": "695b73d343574797e9d2d0aed77039083e896f3f29f01e314b81b94abe651c2a",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary_and_rules",
+    "none"
+   ],
+   "jev_p": 0.8,
+   "jev_probabilities": {
+    "dictionary_and_rules": 0.8,
+    "none": 0.2
+   },
    "setting": "diagnostic",
    "source_count": 228
   },
@@ -341,6 +945,18 @@
    "agere_concept": "emergency_visit",
    "confidence": 0.97,
    "in_person": true,
+   "jev_choice": "dictionary_and_rules",
+   "jev_input": "2bd9992232ae9ae88276c4ceee8bc9f0811e4b73c212b11c57fc8b4c22a2c11b",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary_and_rules",
+    "none"
+   ],
+   "jev_p": 0.99,
+   "jev_probabilities": {
+    "dictionary_and_rules": 0.99,
+    "none": 0.01
+   },
    "setting": "emergency",
    "source_count": 590
   },
@@ -348,6 +964,18 @@
    "agere_concept": null,
    "confidence": 0.6,
    "in_person": true,
+   "jev_choice": "dictionary_and_rules",
+   "jev_input": "201e9c9f3be348215cfa6b8cddb38b6ed90d169524e0b2d7fe5bdb1f1f560f25",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary_and_rules",
+    "none"
+   ],
+   "jev_p": 0.74,
+   "jev_probabilities": {
+    "dictionary_and_rules": 0.74,
+    "none": 0.26
+   },
    "setting": "home_health",
    "source_count": 8
   },
@@ -355,6 +983,20 @@
    "agere_concept": null,
    "confidence": 0.85,
    "in_person": true,
+   "jev_choice": "rules",
+   "jev_input": "f55a396aab0e7ad57ffc1677c65bd62437d2ff8c825101af479d89f1c2d55187",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary",
+    "rules",
+    "none"
+   ],
+   "jev_p": 1.0,
+   "jev_probabilities": {
+    "dictionary": 0.0,
+    "none": 0.0,
+    "rules": 1.0
+   },
    "setting": "home_health",
    "source_count": 191
   },
@@ -362,6 +1004,20 @@
    "agere_concept": null,
    "confidence": 0.6,
    "in_person": true,
+   "jev_choice": "rules",
+   "jev_input": "eaae941e86d2c9c24c283c31a693faa6204c896baff8b827d14294f32237055e",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary",
+    "rules",
+    "none"
+   ],
+   "jev_p": 1.0,
+   "jev_probabilities": {
+    "dictionary": 0.0,
+    "none": 0.0,
+    "rules": 1.0
+   },
    "setting": "other",
    "source_count": 13
   },
@@ -369,6 +1025,18 @@
    "agere_concept": "inpatient_admission",
    "confidence": 0.97,
    "in_person": true,
+   "jev_choice": "dictionary_and_rules",
+   "jev_input": "f8f3daa896a0212e1e9ce9961fa0f837ef3d63081f083ac6f621e594d4b52c50",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary_and_rules",
+    "none"
+   ],
+   "jev_p": 0.99,
+   "jev_probabilities": {
+    "dictionary_and_rules": 0.99,
+    "none": 0.01
+   },
    "setting": "inpatient",
    "source_count": 128
   },
@@ -376,6 +1044,18 @@
    "agere_concept": null,
    "confidence": 0.75,
    "in_person": true,
+   "jev_choice": "dictionary_and_rules",
+   "jev_input": "3be1af7d5a6c94a135c2bf88f3e65af5b3910e4a3968e81a33cb870b9ebcef06",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary_and_rules",
+    "none"
+   ],
+   "jev_p": 0.77,
+   "jev_probabilities": {
+    "dictionary_and_rules": 0.77,
+    "none": 0.23
+   },
    "setting": "pharmacy_or_med_management",
    "source_count": 1508
   },
@@ -383,6 +1063,18 @@
    "agere_concept": null,
    "confidence": 0.75,
    "in_person": true,
+   "jev_choice": "dictionary_and_rules",
+   "jev_input": "a16ac0fd4afe516e57f2b95c142a6b19e310eb804ad774f584458cbee7b06307",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary_and_rules",
+    "none"
+   ],
+   "jev_p": 0.75,
+   "jev_probabilities": {
+    "dictionary_and_rules": 0.75,
+    "none": 0.25
+   },
    "setting": "pharmacy_or_med_management",
    "source_count": 1376
   },
@@ -390,6 +1082,18 @@
    "agere_concept": "observation_stay",
    "confidence": 0.95,
    "in_person": true,
+   "jev_choice": "dictionary_and_rules",
+   "jev_input": "c81e7c62e42aa8ebec3a54b8b15047a8a4f97f44aed239aa939e5b4b8d49e525",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary_and_rules",
+    "none"
+   ],
+   "jev_p": 0.99,
+   "jev_probabilities": {
+    "dictionary_and_rules": 0.99,
+    "none": 0.01
+   },
    "setting": "observation",
    "source_count": 136
   },
@@ -397,6 +1101,20 @@
    "agere_concept": null,
    "confidence": 0.5,
    "in_person": true,
+   "jev_choice": "rules",
+   "jev_input": "4e1940506470e70a84e27600fa197cd468a19236f21686f84de50e4050e86b86",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary",
+    "rules",
+    "none"
+   ],
+   "jev_p": 0.98,
+   "jev_probabilities": {
+    "dictionary": 0.01,
+    "none": 0.01,
+    "rules": 0.98
+   },
    "setting": "primary_care",
    "source_count": 7340
   },
@@ -404,6 +1122,18 @@
    "agere_concept": null,
    "confidence": 0.5,
    "in_person": true,
+   "jev_choice": "dictionary_and_rules",
+   "jev_input": "5d08ff0cf09a270b21245b73ce98e611a6cd3a92ebe74ac123e942a918f9ae84",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary_and_rules",
+    "none"
+   ],
+   "jev_p": 0.72,
+   "jev_probabilities": {
+    "dictionary_and_rules": 0.72,
+    "none": 0.28
+   },
    "setting": "other",
    "source_count": 488
   },
@@ -411,6 +1141,18 @@
    "agere_concept": null,
    "confidence": 0.85,
    "in_person": true,
+   "jev_choice": "dictionary_and_rules",
+   "jev_input": "d8e982e24de47ca516c3123829c0960059c9fc66eba185dad0d724c2319b0bf1",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary_and_rules",
+    "none"
+   ],
+   "jev_p": 0.92,
+   "jev_probabilities": {
+    "dictionary_and_rules": 0.92,
+    "none": 0.08
+   },
    "setting": "procedure",
    "source_count": 20
   },
@@ -418,6 +1160,18 @@
    "agere_concept": "primary_care_visit",
    "confidence": 0.85,
    "in_person": true,
+   "jev_choice": "dictionary_and_rules",
+   "jev_input": "9fd65bc6f8804b94229073f09c5002bfe3b2d20c81d43f316f1c6709ebbe2d25",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary_and_rules",
+    "none"
+   ],
+   "jev_p": 0.99,
+   "jev_probabilities": {
+    "dictionary_and_rules": 0.99,
+    "none": 0.01
+   },
    "setting": "primary_care",
    "source_count": 661
   },
@@ -425,6 +1179,18 @@
    "agere_concept": "primary_care_visit",
    "confidence": 0.95,
    "in_person": true,
+   "jev_choice": "dictionary_and_rules",
+   "jev_input": "38263ae1e063e9f800a3f95a9b65463fa19af59f19af7973dd347bfad10c92f3",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary_and_rules",
+    "none"
+   ],
+   "jev_p": 0.99,
+   "jev_probabilities": {
+    "dictionary_and_rules": 0.99,
+    "none": 0.01
+   },
    "setting": "primary_care",
    "source_count": 26534
   },
@@ -432,6 +1198,18 @@
    "agere_concept": "skilled_nursing_or_post_acute",
    "confidence": 0.9,
    "in_person": true,
+   "jev_choice": "dictionary_and_rules",
+   "jev_input": "e8158f8f1b2e433f76ad6bada421bcde3a0d4c748126fbf3f0f206273f07c897",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary_and_rules",
+    "none"
+   ],
+   "jev_p": 0.97,
+   "jev_probabilities": {
+    "dictionary_and_rules": 0.97,
+    "none": 0.03
+   },
    "setting": "inpatient",
    "source_count": 16
   },
@@ -439,6 +1217,18 @@
    "agere_concept": "specialist_visit",
    "confidence": 0.92,
    "in_person": true,
+   "jev_choice": "dictionary_and_rules",
+   "jev_input": "c18b1f7b610e58e34a138b3736d39ffd091bbc5fe79c8b521103df1177e3e7f9",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary_and_rules",
+    "none"
+   ],
+   "jev_p": 0.99,
+   "jev_probabilities": {
+    "dictionary_and_rules": 0.99,
+    "none": 0.01
+   },
    "setting": "specialty",
    "source_count": 402
   },
@@ -446,6 +1236,18 @@
    "agere_concept": "specialist_visit",
    "confidence": 0.9,
    "in_person": true,
+   "jev_choice": "dictionary_and_rules",
+   "jev_input": "69ca2e070dfc2cd6b02536a93d0fed8b5870957dad366a1ffce382f6b0a71040",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary_and_rules",
+    "none"
+   ],
+   "jev_p": 0.75,
+   "jev_probabilities": {
+    "dictionary_and_rules": 0.75,
+    "none": 0.25
+   },
    "setting": "specialty",
    "source_count": 2788
   },
@@ -453,6 +1255,18 @@
    "agere_concept": "telehealth_contact",
    "confidence": 0.95,
    "in_person": false,
+   "jev_choice": "dictionary_and_rules",
+   "jev_input": "0c0c06c063d4b93e37db1c8b370a98394abfc72bd2ac62c869bc150fa6678140",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary_and_rules",
+    "none"
+   ],
+   "jev_p": 1.0,
+   "jev_probabilities": {
+    "dictionary_and_rules": 1.0,
+    "none": 0.0
+   },
    "setting": "telehealth",
    "source_count": 28980
   },
@@ -460,6 +1274,18 @@
    "agere_concept": "urgent_care_visit",
    "confidence": 0.97,
    "in_person": true,
+   "jev_choice": "dictionary_and_rules",
+   "jev_input": "b1649290b2aa95979157ecf2a4d553473a79e688d3780b62ecdba4322a7a308f",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary_and_rules",
+    "none"
+   ],
+   "jev_p": 0.99,
+   "jev_probabilities": {
+    "dictionary_and_rules": 0.99,
+    "none": 0.01
+   },
    "setting": "urgent_care",
    "source_count": 467
   },
@@ -467,6 +1293,18 @@
    "agere_concept": "urgent_care_visit",
    "confidence": 0.95,
    "in_person": true,
+   "jev_choice": "dictionary_and_rules",
+   "jev_input": "fa97e4689a108f8e823ac2550b630d4ff3677a719d348e4a14006ffdfb8b2c8f",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary_and_rules",
+    "none"
+   ],
+   "jev_p": 0.99,
+   "jev_probabilities": {
+    "dictionary_and_rules": 0.99,
+    "none": 0.01
+   },
    "setting": "urgent_care",
    "source_count": 66
   },
@@ -474,6 +1312,18 @@
    "agere_concept": "telehealth_contact",
    "confidence": 0.92,
    "in_person": false,
+   "jev_choice": "dictionary_and_rules",
+   "jev_input": "9ef36c6cee43a837cd6c6cb9e02ca8a54637aec2daa25b7c8093a7fcd13e4cff",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary_and_rules",
+    "none"
+   ],
+   "jev_p": 1.0,
+   "jev_probabilities": {
+    "dictionary_and_rules": 1.0,
+    "none": 0.0
+   },
    "setting": "telehealth",
    "source_count": 27
   },
@@ -481,9 +1331,27 @@
    "agere_concept": "primary_care_visit",
    "confidence": 0.8,
    "in_person": true,
+   "jev_choice": "dictionary_and_rules",
+   "jev_input": "58dea2d7a4e007c88dad898d0b6495c1e411926e9411b4d417c9dbd7093dd996",
+   "jev_model": "jev-1.13.0",
+   "jev_options": [
+    "dictionary_and_rules",
+    "none"
+   ],
+   "jev_p": 0.98,
+   "jev_probabilities": {
+    "dictionary_and_rules": 0.98,
+    "none": 0.02
+   },
    "setting": "preventive",
    "source_count": 1327
   }
+ },
+ "jev_check": {
+  "checked_at": "2026-10-13",
+  "contract": "agere-normalization-jev/1",
+  "model": "jev-1.13.0",
+  "review_status": "machine second check; not terminologist review"
  },
  "mapped_by": "claude-opus-5-5",
  "review_status": "unreviewed",
