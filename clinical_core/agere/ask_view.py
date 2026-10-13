@@ -495,6 +495,44 @@ function vizBriefing(a){const rows=a.table||[],r=(a.overall||{}).briefing||{};le
  rows.forEach(c=>{h+='<li><b>'+esc(label(c.kind||''))+'</b>'+(c.explore?' <span class="xp">explore</span>':'')+': '+esc(c.headline||'')+
   '<div class="hint">'+esc(c.why||'')+'</div>'+(c.follow_up?'<button type="button" class="btn small" data-ask-standalone="'+esc(c.follow_up)+'" data-brief-card="'+esc(c.card_id||'')+'">Ask: '+esc(c.follow_up)+'</button>':'')+'</li>'});
  return h+'</ol>'+csvButton(rows,'briefing')+'</section>'}
+function vizClaims(a){const o=a.overall||{},c=o.claims_review||{},d=o.denials||{},u=o.underpayment||{},rows=a.table||[];
+ const exp=rows.reduce((t,r)=>t+(isNum(r.expected_dollars)?r.expected_dollars:0),0);
+ let h='<section class="sec" data-focus="claims"><h3>Claims review — '+fmt(c.claims)+' claims, '+fmt(c.providers)+' providers, '+fmt((c.payers||[]).length)+' payers</h3><div class="kpis">'+
+  [['Review flags',fmt(rows.length)],['Expected $ at stake',usdK(exp)],['First-pass denial rate',isNum(d.first_pass_denial_rate)?pct(d.first_pass_denial_rate,1):'—'],
+   ['Overturn rate',isNum(d.overturn_rate)?pct(d.overturn_rate,0):'—'],['Written off',isNum(d.written_off)?usdK(d.written_off):'—'],
+   ['Underpaid claims',isNum(u.flagged)?fmt(u.flagged)+' of '+fmt(u.claims_compared):'—']].map(k=>'<div class="kpi"><div class="l">'+k[0]+'</div><div class="v">'+esc(k[1])+'</div></div>').join('')+'</div>';
+ const leak=(c.leakage_pareto||[]).map(x=>({label:x.leak,value:x.dollars,cum:x.cumulative_share}));
+ const den=(d.pareto||[]).map(x=>({label:x.reason,value:x.denials,cum:x.cumulative_share}));
+ if(leak.length)h+='<h3 style="margin-top:12px">Where the money leaks (Pareto)</h3>'+paretoChart(leak.slice(0,12),usdK);
+ if(den.length)h+='<h3 style="margin-top:12px">Denial reasons (Pareto)</h3>'+paretoChart(den.slice(0,12),v=>fmt(v));
+ if(leak.length||den.length)h+='<div class="legend"><span><span class="sw" style="background:var(--s1)"></span>amount</span><span><span class="sw" style="background:var(--warn);height:3px"></span>cumulative share</span></div>';
+ h+='</section>';
+ if(rows.length)h+='<section class="sec"><h3>Review flags, ranked by expected dollars</h3>'+tableHTML(rows,{name:'claims-review-flags',ask:r=>r.follow_up||null,
+  cols:['rank','category','subject','reason','dollars_at_stake','probability','expected_dollars','q_value'],head:{dollars_at_stake:'$ at stake',expected_dollars:'expected $',q_value:'q (BH)'},
+  render:{dollars_at_stake:v=>esc(usd(v)),expected_dollars:v=>esc(usd(v)),probability:v=>esc(pct(v,0)),category:v=>esc(label(v||''))},
+  caption:'Review prompts, not findings of fraud. Select a flag to ask its follow-up.'})+'</section>';
+ else h+='<p class="hint">No review flags at the stated false-discovery rate.</p>';
+ if(d.table&&d.table.length)h+='<details><summary>Denials by '+esc(label(d.by||'payer'))+' ('+d.table.length+')</summary>'+tableHTML(d.table,{name:'claims-denials',
+  cols:['group','claims','first_pass_denial_rate','denial_rate_shrunk','overturn_rate','median_days_to_resolution','recovered','written_off','pending'],
+  render:{first_pass_denial_rate:v=>esc(pct(v,1)),denial_rate_shrunk:v=>esc(pct(v,1)),overturn_rate:v=>esc(pct(v,0)),recovered:v=>esc(usd(v)),written_off:v=>esc(usd(v)),pending:v=>esc(usd(v))}})+'</details>';
+ if(o.providers&&(o.providers.units||[]).length)h+='<details><summary>Provider peer profiles ('+o.providers.units.length+')</summary>'+tableHTML(o.providers.units,{name:'claims-providers'})+'</details>';
+ if(u.cells&&u.cells.length)h+='<details><summary>Expected payment by payer × service × setting ('+u.cells.length+')</summary>'+tableHTML(u.cells,{name:'claims-underpayment-cells'})+'</details>';
+ if(o.benford&&o.benford.length)h+='<details><summary>Benford tests ('+o.benford.length+' groups)</summary>'+tableHTML(o.benford,{name:'claims-benford'})+'</details>';
+ if((c.notes||[]).length)h+='<p class="hint">'+c.notes.map(esc).join(' ')+'</p>';
+ return h}
+/* Pareto: bars (left axis) largest first plus cumulative share line (right axis, 0-100%); rows {label,value,cum} */
+function paretoChart(rows,f){const W=CW(),T=10,B=74,L=58,R=40,H=T+190+B;const n=rows.length,hi=Math.max(...rows.map(r=>r.value).filter(isNum),1);
+ const bw=(W-L-R)/n,X=i=>L+i*bw+bw/2,Y=v=>T+190-(v/hi)*190,Yc=q=>T+190-q*190;let s=svgOpen(W,H,'Pareto chart: amount per category with cumulative share');
+ ticks(0,hi,4).forEach(t=>{s+='<line class="gridl" x1="'+L+'" x2="'+(W-R)+'" y1="'+Y(t)+'" y2="'+Y(t)+'"/><text x="'+(L-6)+'" y="'+(Y(t)+4)+'" text-anchor="end">'+esc(f(t))+'</text>'});
+ [0,.5,1].forEach(q=>{s+='<text x="'+(W-R+6)+'" y="'+(Yc(q)+4)+'">'+(q*100)+'%</text>'});
+ rows.forEach((r,i)=>{const x=X(i),w=Math.max(4,bw*.7),lab=String(r.label);
+  s+='<rect x="'+(x-w/2)+'" y="'+Y(r.value)+'" width="'+w+'" height="'+Math.max(1,T+190-Y(r.value))+'" rx="2" style="fill:var(--s1)"><title>'+esc(lab+': '+f(r.value)+(isNum(r.cum)?' (cumulative '+pct(r.cum,0)+')':''))+'</title></rect>';
+  s+='<text transform="translate('+x+','+(T+198)+') rotate(35)" style="fill:var(--fg)">'+esc(lab.length>26?lab.slice(0,25)+'…':lab)+'</text>'});
+ const pts=rows.map((r,i)=>isNum(r.cum)?X(i)+','+Yc(r.cum):null).filter(Boolean);
+ if(pts.length>1)s+='<polyline points="'+pts.join(' ')+'" style="fill:none;stroke:var(--warn);stroke-width:2"/>';
+ rows.forEach((r,i)=>{if(isNum(r.cum))s+='<circle cx="'+X(i)+'" cy="'+Yc(r.cum)+'" r="3" style="fill:var(--warn)"/>'});
+ s+='<line class="axis" x1="'+L+'" x2="'+(W-R)+'" y1="'+(T+190)+'" y2="'+(T+190)+'"/>';
+ return s+'</svg>'}
 function calNote(a){const c=((a&&a.overall)||{}).calibration;if(!c||!c.statement)return '';
  return '<p class="hint" data-calibration="1"><b>Calibration.</b> '+esc(c.statement)+(c.method?'<details class="why"><summary>Method</summary><span class="muted" style="font-size:12px">'+esc(c.method)+'</span></details>':'')+'</p>'}
 function visual(a){const v=visual0(a);return v==null?v:v+calNote(a)}
@@ -532,6 +570,7 @@ function sigChart(rows,thr){const W=CW(),lh=22,L=Math.min(Math.round(W*.36),12+7
  return s+'</svg><div class="legend"><span><span class="sw" style="background:var(--bad)"></span>above threshold</span><span><span class="sw" style="background:var(--s3)"></span>below</span><span>┊ threshold at the false-alarm rate</span></div>'}
 function visual0(a){if(!a||a.answer_type==='unsupported')return '';const o=a.overall||{};
   if(o.early_signal)return vizEarlySignal(a);
+  if(o.claims_review)return vizClaims(a);
   if(o.profile)return vizProfile(a);
   if(o.scheduling)return vizScheduling(a);
   if(o.matrix&&o.states)return vizPathway(a);

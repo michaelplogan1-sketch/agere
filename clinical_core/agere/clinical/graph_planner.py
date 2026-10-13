@@ -193,6 +193,14 @@ CONTRACTS['briefing'] = {'inputs':['none'],'parameters':{'top':10},
               'log2(2 + impact); learned from opened / asked / dismissed feedback; MMR diversity; one explore slot), each with why it ranks there. '
               'Use for what-should-I-look-at-today / briefing / what-needs-attention questions.'}
 
+CONTRACTS['claims_review'] = {'inputs':['optional earlier_set'],'parameters':{'focus':'all|providers|benford|duplicates|underpayment|denials|leakage',
+    'by':'payer|provider|setting|service','period':{'start':'','end':''},'fdr':0.05,'min_claims':30,'window_days':3,'writeoff_days':120,'payer':'','provider':'','rework_cost':None},
+    'meaning':'Payment integrity and revenue leakage over medical claims, every flag ranked by expected dollars (dollars x probability): provider peer outliers '
+              '(EB-shrunk robust z on intensity, claims per patient, denial rate; robust Mahalanobis on service mix; Benjamini-Hochberg), Benford first/second '
+              'digit with volume guards, exact/near duplicates with P(duplicate), resubmission chains and reversal/repricing churn, underpayment vs comparable '
+              'paid claims (payer x service x setting) with intervals, denial CARC Pareto, first-pass/overturn rates, days to resolution, recovered vs written off. '
+              'Use for billing-pattern / leaking-money / underpaid / denial-pattern questions; control charts and feed health stay with monitor.'}
+
 
 def grounded_fields(fields, profile):
     """Offer only streams/fields the received data populates, with small value vocabularies."""

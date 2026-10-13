@@ -24,6 +24,8 @@ OPTIONAL_POPULATION += ('scheduling',)
 TYPED |= {'briefing'}
 TYPED |= {'early_signal'}
 OPTIONAL_POPULATION += ('early_signal',)
+TYPED |= {'claims_review'}  # payment integrity and revenue leakage (claims_review.py)
+OPTIONAL_POPULATION += ('claims_review',)
 
 
 def obj(properties):
@@ -193,6 +195,18 @@ def parameter_schema(op, catalog):
                     'threshold': {'type': ['number', 'null'], 'description': 'Crossing threshold for concept'},
                     'direction': string(['below', 'above']), 'horizon_days': {'type': 'integer', 'minimum': 30, 'maximum': 730},
                     'level': {'type': 'number', 'minimum': 0.5, 'maximum': 0.99, 'description': 'Nominal interval coverage (default 0.9)'}})
+    if op == 'claims_review':
+        from . import claims_review as cr
+        return obj({'focus': string(cr.FOCUS, 'providers: peer billing outliers; benford; duplicates: duplicates, resubmissions, reversals; '
+                                              'underpayment: paid vs comparable claims; denials: CARC Pareto, overturns, write-offs; leakage: '
+                                              'duplicates + underpayment + denials; all'),
+                    'by': string(cr.BY, 'Denial table grouping'), 'period': obj({'start': {'type': 'string'}, 'end': {'type': 'string'}}),
+                    'fdr': {'type': 'number', 'minimum': 0.001, 'maximum': 0.25, 'description': 'Benjamini-Hochberg false-discovery rate (default 0.05)'},
+                    'min_claims': {'type': 'integer', 'minimum': 5, 'maximum': 5000}, 'window_days': {'type': 'integer', 'minimum': 0, 'maximum': 30},
+                    'writeoff_days': {'type': 'integer', 'minimum': 30, 'maximum': 730},
+                    'payer': {'type': 'string', 'description': 'One payer id, else empty'}, 'provider': {'type': 'string', 'description': 'One service organization id, else empty'},
+                    'rework_cost': {'type': ['number', 'null'], 'description': 'User-stated $ per rework touch; null if not stated (never invent)'},
+                    'top': {'type': 'integer', 'minimum': 1, 'maximum': 500}})
     if op == 'monitor':
         from . import monitor
         return obj({'check': string(monitor.CHECKS, 'control_chart: SPC charts; feed: source-system volume; claims: claim series + integrity; '

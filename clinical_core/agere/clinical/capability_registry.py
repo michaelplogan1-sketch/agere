@@ -57,6 +57,12 @@ PRODUCT['early_signal'] = {'population': 'optional', 'view': 'signal',
                                   'heading toward decompensation), by matched filtering against templates learned from past events. Not one lab trend (trajectory), '
                                   'not time-until curves (survival), not a capacity-limited call list (outreach).'}
 
+PRODUCT['claims_review'] = {'population': 'optional', 'view': 'pareto',
+                            'use': 'Payment integrity and revenue leakage in DOLLARS: which providers bill unusually vs peers, suspicious billing patterns, '
+                                   'where we leak money (denial write-offs, underpayments, take-backs, rework), which claims were underpaid vs comparable claims, '
+                                   'denial patterns by payer and reason; review flags ranked by expected dollars. '
+                                   'Is-it-out-of-control charts, denial-rate shifts over time and feed health are monitor.'}
+
 # Questions a SQL query over the semantic tables answers exactly are handed to the verified SQL ladder.
 LITERAL = ('Literal data questions: counts, lists, sums, averages, maxima, record filters, date arithmetic, simple breakdowns '
            'by a field, shares, rates per 1,000 without case-mix adjustment.')
