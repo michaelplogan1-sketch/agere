@@ -370,8 +370,10 @@ def meaning_drift(question, rewrite, as_of):
 def _extract_sql(text):
     m = re.search(r'```(?:sql)?\s*(.+?)```', text, re.S | re.I)
     sql = (m.group(1) if m else text).strip()
-    m = re.search(r'(?is)\b(with|select)\b.*', sql)
-    return m.group(0).strip().rstrip(';') if m else sql
+    definition = re.search(r'--\s*DEFINITION:\s*(.+)', sql)
+    m = re.search(r'(?is)\b(with|select)\b.*', re.sub(r'--[^\n]*', '', sql))
+    body = m.group(0).strip().rstrip(';') if m else sql
+    return f'-- DEFINITION: {definition.group(1).strip()}\n{body}' if definition else body
 
 
 def _plausible(path, question, sql, probe):
@@ -568,6 +570,8 @@ VERIFY_RULES = """
   If the question needs data that is not listed (race, death, income, language, risk-adjustment scores, ...), output
   exactly one line: MISSING: <what is missing> - and no SQL.
 - Name output columns plainly (e.g. month, practice, visits, patients, total_usd).
+- Start the SQL with one comment line: -- DEFINITION: <population, counting unit (patients/visits/claims/records), date field
+  and window, inclusions/exclusions, as a buyer would read it>.
 - Versioned streams: records that repeat per business id (account_id, claim_id, appointment_id, prescription_id,
   referral id) are successive versions. For "current", "now", "open" or "outstanding" questions take the latest record
   per id (max available_date, then available_time) before summing; never sum all versions.

@@ -25,7 +25,7 @@ def validate(p):
         raise ValueError('sql parameters: query (one SELECT), returns')
     q = p['query'].strip().rstrip(';').strip()
     if not 1 <= len(q) <= 8000: raise ValueError('Bounded SQL query required')
-    if not re.match(r'(?is)^(select|with)\b', q) or ';' in q:
+    if not re.match(r'(?is)^(?:--[^\n]*\n\s*)*(select|with)\b', q) or ';' in q:
         raise ValueError('Exactly one SELECT/WITH statement is allowed')
     if p.get('returns') not in RETURNS: raise ValueError(f'returns must be one of {RETURNS}')
     return {'query': q, 'returns': p['returns']}

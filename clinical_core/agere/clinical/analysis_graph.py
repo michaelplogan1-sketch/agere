@@ -172,6 +172,7 @@ def headline(answer):
         text += (f" Settlement risk: {risk['p_earn_savings']:.0%} chance of earning savings, {risk['p_owe_loss']:.0%} of owing a loss, "
                  f"{risk['p_within_corridor']:.0%} in the corridor; 95% value-at-risk ${_fmt(risk['value_at_risk_95'])}, "
                  f"expected ${_fmt(risk['expected_net_payment'])}.")
+    if answer.get('computed') and not defs: text += f" Computed as: {answer['computed'].rstrip('.')}."
     if status == 'partial' and answer.get('missing'): text += ' Partial: ' + answer['missing'][0]
     return text
 
@@ -255,6 +256,9 @@ def build_answer(plan, results, memberships, question):
         partial = plan.get('coverage') != 'supported_observation' or plan.get('unmet_requirements')
         kind = report['returns']
         answer.update(status='partial' if partial else 'answered', answer_type=kind, query=report['query'])
+        stated = re.search(r'--\s*DEFINITION:\s*(.+)', report['query'] or '')
+        purpose = plan['nodes'][-1].get('purpose') if plan.get('nodes') else None
+        answer['computed'] = stated.group(1).strip() if stated else purpose
         if kind == 'count': answer['count'] = report['value']
         elif kind == 'value': answer['value'] = _tidy(report['value'])
         elif kind == 'patient_set': answer.update(patient_ids=report['patient_ids'], count=len(report['patient_ids']))
