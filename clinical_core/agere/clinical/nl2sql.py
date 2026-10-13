@@ -198,6 +198,10 @@ def schema_for(question, profile, extra=()):
     concept_line = ('concept ids - conditions: ' + ', '.join(cat['conditions']) + '; measurements (value_canonical unit): ' +
                     ', '.join(f"{k} [{concepts.MEASUREMENTS[k]['unit']}]" for k in cat['measurements']) +
                     '; encounter type_concept: ' + ', '.join(cat['encounters']))
+    from .drug_classes import CLASSES, GROUPS
+    concept_line += ('; medication.drug_class ids: ' + ', '.join(sorted(CLASSES)) + ' (groups: ' +
+                     '; '.join(f"{g} = {'/'.join(v)}" for g, v in GROUPS.items()) + '); medication.therapeutic_category covers other drugs '
+                     '(e.g. nsaid, bisphosphonate, antihistamine, iron supplement, nitrate) - match it with LIKE \'%nsaid%\' when no drug_class fits')
     enc = (profile['streams'].get('encounters') or {}).get('fields', {}).get('type', {}).get('values') or {}
     if enc: concept_line += '; visit.type raw values (labels and codes not in type_concept are still queryable): ' + ', '.join(sorted(enc, key=lambda v: -enc[v])[:30])
     concept_line += ('; condition labels outside the concept list are queryable via condition.label/icd10 '
@@ -372,8 +376,11 @@ def _extract_sql(text):
     sql = (m.group(1) if m else text).strip()
     definition = re.search(r'--\s*DEFINITION:\s*(.+)', sql)
     m = re.search(r'(?is)\b(with|select)\b.*', re.sub(r'--[^\n]*', '', sql))
-    body = m.group(0).strip().rstrip(';') if m else sql
-    return f'-- DEFINITION: {definition.group(1).strip()}\n{body}' if definition else body
+    body = m.group(0).strip().rstrip(';').strip() if m else ''
+    if definition and body:
+        stated = re.sub(r'[;\r\n]+', ' ', definition.group(1)).strip()[:600]  # one safe comment line
+        return f'-- DEFINITION: {stated}\n{body}'
+    return body
 
 
 def _plausible(path, question, sql, probe):

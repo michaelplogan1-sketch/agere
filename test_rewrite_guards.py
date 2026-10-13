@@ -52,3 +52,17 @@ class Shape(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+class StatedDefinition(unittest.TestCase):
+    def test_definition_comment_with_semicolons_still_validates(self):
+        from clinical_core.agere.clinical import sql_query
+        text = "```sql\n-- DEFINITION: diabetics; latest A1c; 2029\n-- another note\nSELECT count(*) FROM patient;\n```"
+        sql = nl2sql._extract_sql(text)
+        self.assertTrue(sql.startswith('-- DEFINITION: diabetics'))
+        self.assertEqual(sql_query.validate({'query': sql, 'returns': 'count'})['returns'], 'count')
+
+    def test_comment_cannot_hide_a_second_statement(self):
+        from clinical_core.agere.clinical import sql_query
+        with self.assertRaises(ValueError):
+            sql_query.validate({'query': "SELECT 1; DELETE FROM patient", 'returns': 'count'})
