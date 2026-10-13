@@ -241,7 +241,31 @@ CANONICAL = """Rewrite the question into ONE canonical question Agere's compiler
 Keep which date is meant (e.g. service_date, scheduled_date). If the question names output columns, end with
 "Return a table with <col1> and <col2>." using those exact names.
 If no form fits without changing the meaning, output exactly: NO_CANONICAL_FORM
-Output only the rewritten question on one line."""
+Output only the rewritten question on one line.
+
+Examples:
+Q: quick one - roughly how many of our folks with htn ever had a systolic over 180?
+A: How many patients have hypertension and any systolic blood pressure over 180?
+Q: pull the list of copd people whose oxygen sat dropped below 88 at any point
+A: Which patients have copd and any oxygen saturation under 88?
+Q: what fraction of our medicaid population carries a depression dx?
+A: What share of patients with medicaid coverage have depression?
+Q: give me urgent care volume for 2028 by site please
+A: How many urgent care visits in 2028? by site
+Q: total patient payments in 2027 broken down by payment channel, columns payment_channel and total_cents
+A: What is the sum of amount_cents across patient_payments records in 2027 by payment_channel? Return a table with payment_channel and total_cents.
+Q: how many lab orders came in during March 2029?
+A: How many laboratory_orders records in March 2029?
+Q: any medication orders that never got a dispense tied to them? how many
+A: How many medication_orders records lack any pharmacy_dispenses record linked by medication_order_record_id?
+Q: kids with asthma who said transportation is hard for them on a screen - count?
+A: How many patients under 18 have asthma and any social screen reporting transport difficulty as true?
+Q: did our ER usage go up from 2028 to 2029 and why
+A: Why did ED visits go up from 2028 to 2029?
+Q: is anyone's kidney function tanking? CKD folks specifically
+A: Which CKD patients have a declining eGFR?
+Q: what's the causal effect of our outreach program on admissions?
+A: NO_CANONICAL_FORM"""
 
 
 def canonicalize(path, question, as_of, model=None):

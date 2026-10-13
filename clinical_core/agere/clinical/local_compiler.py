@@ -346,6 +346,8 @@ def _population_question(q, r, profile, as_of, info):
         (r'\b(?:aged|age(?:d)? (?:of )?|ages )(at least|over|above|under|below|older than|younger than)?\s*(\d{1,3})(?![\d.])(?:\s*(?:years?(?: old)?|\+|or older|and older|or over|or younger|and under))?', None),
         (r'\b(\d{1,3})(?![\d.])\s*(?:\+|years? (?:old )?(?:or|and) (?:older|over)|or older|and older|and over|or over|and up)', 'ge'),
         (r'(?<=kids |dren |nors |tric )(?:under|below|younger than) (\d{1,2})(?![\d.])', 'lt'),
+        (r'\b(?:patients?|members|people) (?:under|below|younger than) (\d{1,3})(?![\d.])', 'lt'),
+        (r'\b(?:patients?|members|people) (?:over|above|older than) (\d{1,3})(?![\d.])', 'gt'),
         (r'\b(\d{1,3})(?![\d.])\s*(?:years? (?:old )?(?:or|and) (?:younger|under)|or younger|and under)', 'le'),
         (r'\b(older|younger) than (\d{1,3})(?![\d.])', None),
         (r'\breported age (at least|over|above|under|below) (\d{1,3})(?![\d.])', None)]
@@ -376,7 +378,7 @@ def _population_question(q, r, profile, as_of, info):
     if r.take(r'\b(?:male|men|man)\b(?: reported sex)?', 'male'): allp.append({'kind': 'patient', 'field': 'sex_reported', 'op': 'eq', 'value': 'M'})
     r.take(r'\breported (?:sex|age)\b|\bat (?:their )?profile capture\b|\bwithout advancing (?:that|the) age(?: to today)?\b')
     for phrase, payer in PAYERS.items():
-        if r.take(_alias_pattern(phrase), f'payer {payer}'):
+        if r.take(_alias_pattern(phrase) + r'(?: coverage| members?| patients?| population| plan)?', f'payer {payer}'):
             allp.append({'kind': 'record', 'stream': 'coverage', 'conditions': [{'field': 'coverage_type', 'op': 'eq', 'value': payer}], 'window': W})
     # literal record predicates: a received stream named with one of its observed values
     for s_name, forms in sorted(_stream_vocabulary(profile).items(), key=lambda kv: -max(map(len, kv[1]))):
