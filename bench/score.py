@@ -19,12 +19,12 @@ def same_value(a, b, tolerance=0):
     return type(a) is type(b) and a == b
 
 
-CONFIDENCE_LEVELS = ('verified', 'low')
+CONFIDENCE_LEVELS = ('verified', 'unverified', 'low')
 _LEGACY_LEVELS = {'verified': 'verified', 'governed': 'verified', 'low': 'low'}
 
 
 def confidence_of(answer):
-    """'verified' | 'low' | None. Reads the answer contract's confidence field, and the earlier dict form
+    """'verified' | 'unverified' | 'low' | None. Reads the answer contract's confidence field, and the earlier dict form
     ({'level': 'governed'|'verified'|'low'}) of preserved answers."""
     if not isinstance(answer, dict):
         return None
@@ -37,7 +37,7 @@ def confidence_of(answer):
 def valid_answer(answer):
     if not isinstance(answer, dict):
         return False
-    # confidence is optional; when present it is 'verified' | 'low' (or the earlier {'level': ...} form). It never
+    # confidence is optional; when present it is 'verified' | 'unverified' | 'low' (or the earlier {'level': ...} form). It never
     # changes how correctness is scored.
     c = answer.get('confidence')
     if c is not None and not (c in CONFIDENCE_LEVELS or (isinstance(c, dict) and c.get('level') in _LEGACY_LEVELS)):
@@ -154,7 +154,7 @@ def recorded_cost(row):
 
 
 def by_confidence(rows):
-    """Precision of asserted answers split by the answer's confidence flag (verified | low | unlabelled).
+    """Precision of asserted answers split by the answer's confidence flag (verified | unverified | low | unlabelled).
 
     asserted = a scored, non-abstaining answer with a comparable value; precision = value matches / asserted (a correct value
     marked partial by an older contract still counts as a correct value here); correct uses the unchanged strict rule."""
@@ -298,13 +298,17 @@ def write_scorecard(results=ROOT / 'results', destination=ROOT / 'SCORECARD.md',
             lines.append(f'| {system} | {s["correct"]} / {len(shared)} | {s["coverage"]} | '
                          f'{fmt(s["known_cost_usd"])} | {fmt(s["cost_per_correct_usd"])} |')
     lines += ['', '## Precision by confidence', '',
-              'Answers carry confidence verified (governed metric, independent agreement, lint-clean governed SQL) or low '
-              '(unverified free-form SQL). Precision = value matches / asserted answers in each group; correctness scoring is unchanged.', '',
-              '| System | Verified: matches / asserted | Verified precision | Low: matches / asserted | Low precision | Unlabelled: matches / asserted |',
-              '|---|---:|---:|---:|---:|---:|']
+              'Answers carry confidence verified (every gate on the answer path has a Learn-then-Test certificate and passed; '
+              'clinical_core/agere/clinical/gate_policy.py), unverified (no failed check, but an uncertified gate) or low (a check '
+              'failed, e.g. free-form SQL without independent agreement). Precision = value matches / asserted answers in each group; '
+              'correctness scoring is unchanged.', '',
+              '| System | Verified: matches / asserted | Verified precision | Unverified: matches / asserted | Unverified precision | '
+              'Low: matches / asserted | Low precision | Unlabelled: matches / asserted |',
+              '|---|---:|---:|---:|---:|---:|---:|---:|']
     for system in systems:
         bc = summaries[system]['by_confidence']
         lines.append(f'| {system} | {bc["verified"]["value_matches"]} / {bc["verified"]["asserted"]} | {fmt(bc["verified"]["precision"])} | '
+                     f'{bc["unverified"]["value_matches"]} / {bc["unverified"]["asserted"]} | {fmt(bc["unverified"]["precision"])} | '
                      f'{bc["low"]["value_matches"]} / {bc["low"]["asserted"]} | {fmt(bc["low"]["precision"])} | '
                      f'{bc["unlabelled"]["value_matches"]} / {bc["unlabelled"]["asserted"]} |')
     lines += ['', f'## Reliability (pass^{k})', '',

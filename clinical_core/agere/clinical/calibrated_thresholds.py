@@ -7,7 +7,7 @@ Each gate that accepts a model output when a score clears a cutoff reads its cut
   learned_router                local router calibrated top probability         (fallback: the value saved with the model)
   semantic_cache.similarity     encoder cosine for slot-identical paraphrases   (hand-set fallback 0.85)
 
-The fitted values live in calibrated_thresholds.json, written by tools/calibration/fit_thresholds.py from labelled
+The fitted values live in calibrated_thresholds.json, written by tools/certify_gates.py (gate_policy.GATES) from labelled
 outcomes (the data each record names). A record is used only when Learn-then-Test (conformal.ltt_threshold) certified
 a threshold: with probability >= 1 - delta over the calibration draw, the error rate among accepted cases is <= alpha,
 assuming future cases are exchangeable with the calibration cases. When the data are too few or too noisy to certify

@@ -20,7 +20,8 @@ DECISION_THRESHOLD=.95  # Hand-set fallback; a Learn-then-Test value from calibr
 def decision_threshold():
     """Typed-router acceptance cutoff: certified (calibrated_thresholds 'economical_planner.decision') or the hand-set value."""
     from .calibrated_thresholds import get
-    return get('economical_planner.decision',DECISION_THRESHOLD)
+    from .gate_policy import identity
+    return get('economical_planner.decision',DECISION_THRESHOLD,bind=identity('economical_planner.decision'))
 
 
 GENERIC_NOTES={'count','sum','year','contains','lacks field'}

@@ -1,5 +1,9 @@
 """Fit the gate thresholds in clinical_core/agere/clinical/calibrated_thresholds.json with Learn-then-Test.
 
+SUPERSEDED by tools/certify_gates.py, which certifies every gate on the answer paths (gate_policy.GATES), never calibrates
+on blind sets, checks each certificate on held-back data and binds it to gate_policy.identity(). Its --write would replace
+those records with the four below; it now refuses unless --legacy-write is given. cache_data() is reused by certify_gates.
+
 Target (calibrated_thresholds.TARGET): error among accepted <= 2% with probability >= 90%. Each gate's calibration data:
 
   learned_router              held-out split of the router's own non-benchmark training rows (tools/learned_routing/train.py
@@ -137,7 +141,7 @@ def receipt_data(results, kind):
 def main(argv=None):
     ap = argparse.ArgumentParser()
     ap.add_argument('--stack', default=str(LIVE)); ap.add_argument('--results', default=str(ROOT / 'bench' / 'results'))
-    ap.add_argument('--skip', default=''); ap.add_argument('--write', action='store_true'); ap.add_argument('--out', default=None)
+    ap.add_argument('--skip', default=''); ap.add_argument('--write', action='store_true'); ap.add_argument('--out', default=None); ap.add_argument('--legacy-write', action='store_true')
     a = ap.parse_args(argv)
     stack, skip = Path(a.stack), set(filter(None, a.skip.split(',')))
     from clinical_core.agere.clinical import learned_router as LR, nl2sql, semantic_cache as SC, economical_planner as EP
@@ -155,6 +159,8 @@ def main(argv=None):
     records.append(CT.fit('economical_planner.decision', s, e, EP.DECISION_THRESHOLD, data))
     for r in records:
         print(r['name'], 'calibrated' if r['calibrated'] else 'FALLBACK', r.get('threshold'), '|', r.get('guarantee') or r.get('reason'))
+    if (a.write and not a.legacy_write) and not a.out:
+        raise SystemExit('superseded: run tools/certify_gates.py --write (or pass --legacy-write)')
     if a.write or a.out:
         CT.write(records, a.out)
 

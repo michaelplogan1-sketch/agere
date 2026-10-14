@@ -175,7 +175,7 @@ class Stack:
                 result={**result,'answer':attach_readings(result['answer'],readings)}
             if planning=='auto' and isinstance(receipt,dict) and isinstance(result.get('answer'),dict):  # metric-first answer contract
                 from .metric_router import finalize_answer
-                result={**result,'answer':finalize_answer(result['answer'],receipt)}
+                result={**result,'answer':finalize_answer(result['answer'],receipt,encoder=getattr(getattr(self,'retriever',None),'encoder',None))}
             from .economical_planner import economics
             costing=economics(receipt if planning=='auto' else {'steps':[{'receipt':receipt}]})
             return {**result,'question':question,'route':'economical_composition_local_execution' if planning=='auto' else 'frontier_composition_local_execution',

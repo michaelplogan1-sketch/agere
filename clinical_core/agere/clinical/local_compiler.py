@@ -436,7 +436,7 @@ PARAPHRASES = [
     # abbreviations
     (r'\bpts\b', 'patients'), (r'\bdx\b', 'diagnosis'), (r'\bhx\b', 'history'),
     # default semantics restated: a condition counts however it is coded (ICD-10, SNOMED or label)
-    (r'\b(?:anywhere )?on (?:their|the|his|her) problem lists?\b|\b(?:however|no matter how) (?:it was|they were|it is|it\'s) coded\b|'
+    (r'(?<!only )(?<!just )\b(?:anywhere )?on (?:their|the|his|her) problem lists?\b(?! only)|\b(?:however|no matter how) (?:it was|they were|it is|it\'s) coded\b|'
      r'\b(?:of|in) any (?:kind|form|type|coding(?: system)?)\b|\bcoded (?:any ?way|anywhere)\b', ' '),
     (r'\b(?:any|every|all) ([a-z0-9 -]+?) (?:results?|readings?|values?) counts?\b', ' '),
     # grouping verbs
@@ -530,6 +530,63 @@ def _value_pattern(value):
     parts = [t for t in re.split(r'[_\s-]+', value.lower()) if t]
     stem = lambda t: re.escape(t[:5]) + r'\w*' if len(t) > 5 else re.escape(t)
     return r'(?<![a-z0-9])' + r'[\s_-]+'.join(stem(t) for t in parts) + r'(?![a-z0-9])'
+
+
+# Evidence-type wording (cohorts.py / concepts.EVIDENCE_TYPES). Without such wording a condition matches what it always
+# matched: diagnosis records (coded diagnoses, problem-list entries, lab-based condition records). "Diagnosed with",
+# "coded", "documented" and "on their problem list" restate that default (the warehouse's condition list) and add no
+# parameter. Wording that names another source adds or narrows evidence types:
+#   mentioned in notes / note text                   -> note_mention
+#   on claims / billed for / claims diagnosis        -> claim_diagnosis
+#   as a medication indication / indication for      -> medication_indication
+#   only on the problem list / problem-list only     -> problem_list
+#   from any source / across all sources             -> every type
+# "diagnosed with X or mentioned in notes" keeps the diagnosis default and adds the named source.
+DIAGNOSIS_EVIDENCE = ['coded_diagnosis', 'problem_list', 'lab_inferred']
+EVIDENCE_WORDING = (
+    (r'\b(?:mentioned|mentions?|documented|noted|written|recorded) (?:only )?in (?:the |their |any |a )?(?:clinical |progress |visit )?notes?\b'
+     r'|\b(?:clinical |progress )?notes? (?:that )?mentions?(?: of)?\b|\bnote text\b|\bin (?:the |their )?(?:clinical |progress )?notes\b',
+     ['note_mention']),
+    (r'\b(?:on|in|from) (?:a |any |their |the )?(?:medical )?claims?(?: data)?\b|\bbilled (?:for|with|as)\b|\bclaims?[- ](?:based |level )?diagnos[ie]s\b',
+     ['claim_diagnosis']),
+    (r'\bas (?:the |an |a )?(?:medication )?indication\b|\b(?:medication[- ]list )?indications? (?:for|of)\b|\bmedication[- ]list indications?\b',
+     ['medication_indication']),
+    (r'\b(?:only|just) (?:on|from) (?:the |their )?problem lists?\b|\bproblem[- ]list (?:entries |records )?only\b',
+     ['problem_list']),
+    (r'\b(?:in|from|across) (?:any|all|every) (?:source|sources|record types?|evidence types?)\b', list(concepts.EVIDENCE_TYPES)),
+)
+DIAGNOSIS_WORDING = r'\b(?:diagnosed with|diagnos[ie]s (?:of|for)|coded(?: as| with| for)?|(?:icd-?10|diagnosis) codes?)\b'
+
+
+def _evidence_wording(r, conds, reach=60):
+    """-> [(start, end, kinds)] for evidence-type phrases within `reach` characters of a condition mention. They are
+    consumed so the unexplained-word guard accepts them; a phrase far from any condition is left alone."""
+    near = lambda a, b: any(min(abs(c[1] - b), abs(a - c[2])) <= reach for c in conds)
+    spans = []
+    for pattern, kinds in EVIDENCE_WORDING:
+        for m in re.finditer(pattern, r.low, re.I):
+            if m.end() == m.start() or all(r.used[m.start():m.end()]) or not near(m.start(), m.end()): continue
+            for i in range(m.start(), m.end()): r.used[i] = True
+            spans.append((m.start(), m.end(), list(kinds)))
+    if spans:
+        r.notes.append('evidence types')
+        for m in re.finditer(DIAGNOSIS_WORDING, r.low):
+            if near(m.start(), m.end()): spans.append((m.start(), m.end(), list(DIAGNOSIS_EVIDENCE)))
+    return spans
+
+
+def _evidence_for(start, conds, spans):
+    """Evidence types for the condition mentioned at `start`: the phrases nearest to it (each phrase belongs to the closest
+    condition mention), in EVIDENCE_TYPES order; None when no source-naming phrase applies (default semantics)."""
+    mine = set()
+    named = False
+    for a, b, kinds in spans:
+        nearest = min(conds, key=lambda c: min(abs(c[1] - b), abs(a - c[2])))
+        if nearest[1] != start: continue
+        mine.update(kinds)
+        named = named or kinds != DIAGNOSIS_EVIDENCE
+    if not named: return None
+    return [k for k in concepts.EVIDENCE_TYPES if k in mine]
 
 
 CODED_BOTH = r'\b(?:icd-?10 (?:and|or) snomed|snomed (?:and|or) icd-?10|coded (?:diagnos[ie]s|conditions?))\b'
@@ -1344,6 +1401,7 @@ def _population_question(q, r, profile, as_of, info):
             for m in r.take(_alias_pattern(alias), f'condition {concept}'):
                 conds.append((concept, m.start(), m.end()))
     r.take(r'\b(?:including|incl\.?) (?:diabetic )?complications?\b|\bdiabetic[- ]complications?\b|\bfamily history\b|\bicd-?10\b|\bsnomed\b')
+    evidence_spans = _evidence_wording(r, conds) if conds else []
     anyp, or_gaps = [], []
     if len(need_groups) > 1:
         info.update(route='fallback', reason='more than one multi-instrument social need'); return None, info
@@ -1373,6 +1431,9 @@ def _population_question(q, r, profile, as_of, info):
             r.take(r'\b' + re.escape(system.group(1)) + r'\b', 'coding system', overlap=True)
         elif re.search(CODED_BOTH, low):  # "across ICD-10 and SNOMED": coded diagnoses only, not free-text mentions
             atom['system'] = 'coded'
+        kinds = _evidence_for(start, conds, evidence_spans)
+        if kinds and concept in concepts.CONDITIONS:
+            atom['evidence'] = kinds
         target = anyp if start in in_or else excl if _negated(low, start) else allp
         if atom not in target: target.append(atom)
     r.take(r'\beither\b', None)

@@ -317,7 +317,9 @@ def metric_findings(answer, question, as_of=None, execute=None):
     found = metrics.lint(question, query, as_of, source=execute, resolution=r) if query else []
     answer['computed_as'] = {'metric': r['id'], 'version': r['version'], 'variant': r.get('variant'), 'layer': metrics.VERSION,
                              'definition': r['metric']['summary'], 'conforms': not found if query else None,
-                             'citations': [c['url'] for c in r.get('citations') or []][:3]}
+                             'citations': [c['url'] for c in r.get('citations') or []][:3],
+                             **({'evidence': answer['computed_as']['evidence']} if isinstance(answer.get('computed_as'), dict)
+                                and answer['computed_as'].get('evidence') else {})}
     arith = rate_arithmetic(answer)
     if arith:  # state the arithmetic that produced the number; a definition naming another denominator does not conform
         answer['computed_as']['arithmetic'] = arith['statement']

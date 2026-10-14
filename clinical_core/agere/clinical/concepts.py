@@ -185,7 +185,127 @@ def _labels(profile, stream, field):
     return f.get('values') or {}
 
 
-def resolve_condition(concept, profile):
+# --- Evidence types ---------------------------------------------------------------------------------------------------
+# Every record that matches a condition concept is tagged with the KIND of evidence it is, deterministically from its
+# stream and fields (evidence_type below). A concept atom may restrict itself to some kinds: {'evidence': [...]}.
+# Without that parameter a concept matches exactly what it always matched (the diagnosis streams in CONDITION_STREAMS);
+# claim diagnoses, medication-list indications and note text are bound only when a question asks for them.
+EVIDENCE_TYPES = ('coded_diagnosis', 'problem_list', 'claim_diagnosis', 'medication_indication', 'note_mention', 'lab_inferred')
+EVIDENCE_MEANING = {
+    'coded_diagnosis': 'a structured diagnosis entry (encounter diagnosis / condition record, coded or labelled)',
+    'problem_list': 'an entry on the EHR problem list',
+    'claim_diagnosis': 'a diagnosis code billed on a medical claim',
+    'medication_indication': 'the indication written on a medication-list entry',
+    'note_mention': 'an affirmed mention in clinical note text (negated, family-history and rule-out mentions excluded)',
+    'lab_inferred': 'a condition record whose stated basis is laboratory evidence',
+}
+CLAIM_STREAMS = {'medical_claims': ('principal_diagnosis', 'diagnosis_codes', 'dx')}
+INDICATION_STREAMS = {'medication_lists': 'indication'}
+NOTE_STREAMS = {'notes': 'text', 'documents': 'text'}
+
+
+def evidence_type(record, binding=None):
+    """The kind of evidence one matched record is (EVIDENCE_TYPES), from its stream and fields; None for non-condition
+    records (encounters, measurements). A binding that names its evidence (claims, indications, notes) decides it."""
+    if binding and binding.get('evidence'): return binding['evidence']
+    stream = record.get('source_table')
+    if stream == 'problem_lists': return 'problem_list'
+    if stream in ('conditions', 'condition_assessments'):
+        basis = str(record.get('diagnosis_basis') or '').lower()
+        if record.get('problem_type') == 'problem_list' or basis in ('ehr_problem_list', 'problem_list'): return 'problem_list'
+        if basis in ('laboratory_evidence', 'lab_evidence', 'laboratory'): return 'lab_inferred'
+        return 'coded_diagnosis'
+    if stream in CLAIM_STREAMS: return 'claim_diagnosis'
+    if stream in INDICATION_STREAMS: return 'medication_indication'
+    if stream in NOTE_STREAMS: return 'note_mention'
+    return None
+
+
+def validate_evidence(evidence):
+    if not isinstance(evidence, list) or not evidence or len(evidence) > len(EVIDENCE_TYPES) \
+            or any(e not in EVIDENCE_TYPES for e in evidence) or len(set(evidence)) != len(evidence):
+        raise ValueError(f'evidence must be a non-empty list of distinct types from {list(EVIDENCE_TYPES)}')
+    return evidence
+
+
+def _field_values(profile, stream, field):
+    return {str(k) for k in _labels(profile, stream, field)}
+
+
+def _fields(profile, stream):
+    return profile['streams'].get(stream, {}).get('fields', {})
+
+
+def default_evidence(profile):
+    """Evidence kinds the default (unparameterised) condition bindings can produce on this source profile."""
+    out = set()
+    streams = profile['streams']
+    if 'problem_lists' in streams: out.add('problem_list')
+    for stream in ('conditions', 'condition_assessments'):
+        if stream not in streams: continue
+        out.add('coded_diagnosis')
+        basis = {v.lower() for v in _field_values(profile, stream, 'diagnosis_basis')}
+        if 'problem_list' in _field_values(profile, stream, 'problem_type') or basis & {'ehr_problem_list', 'problem_list'}:
+            out.add('problem_list')
+        if basis & {'laboratory_evidence', 'lab_evidence', 'laboratory'}: out.add('lab_inferred')
+    return out
+
+
+# Negation / family / hypothetical cues for free-text mentions (NegEx-style, deterministic). A cue counts when it sits
+# in the same sentence before the mention with at most a few words between; a historical cue keeps the mention (a
+# "history of diabetes" is evidence of diabetes) but is recorded as historical.
+NEGATION_CUES = r'\b(?:no|not|denies|denied|without|negative for|free of|ruled out|rule out|r/o|rules out|absence of|never had)\b'
+FAMILY_CUES = r'\b(?:family history|fhx|fh of|mother|father|sister|brother|sibling|parent|grandmother|grandfather|aunt|uncle)\b'
+HYPOTHETICAL_CUES = r'\b(?:screen(?:ing)? for|risk (?:of|for)|evaluate for|concern for|possible|possibly|suspected|cannot exclude|if)\b'
+HISTORICAL_CUES = r'\b(?:history of|h/o|hx of|prior|past|previous|resolved|remote)\b'
+
+
+def mention_state(text, pattern, exclude=None):
+    """-> 'affirmed' | 'historical' | 'negated' | 'family' | 'hypothetical' | None (no mention) for a concept's text
+    pattern in free text. The first affirmed (else historical) mention decides; a mention whose own phrase matches the
+    concept's exclude pattern (e.g. 'prediabetes' for diabetes) is not a mention."""
+    if not isinstance(text, str) or not text: return None
+    rx = re.compile(pattern, re.I)
+    ex = re.compile(exclude, re.I) if exclude else None
+    states = []
+    for sentence in re.split(r'(?<=[.;!?\n])\s+', text):
+        for m in rx.finditer(sentence):
+            local = sentence[max(0, m.start() - 25):m.end() + 25]
+            if ex and ex.search(local): continue
+            before = sentence[:m.start()].lower()
+            near = ' '.join(before.split()[-6:])
+            if re.search(FAMILY_CUES, before): states.append('family')
+            elif re.search(NEGATION_CUES, near): states.append('negated')
+            elif re.search(HYPOTHETICAL_CUES, near) or sentence.rstrip().endswith('?'): states.append('hypothetical')
+            elif re.search(HISTORICAL_CUES, near): states.append('historical')
+            else: states.append('affirmed')
+    if not states: return None
+    for s in ('affirmed', 'historical', 'hypothetical', 'negated', 'family'):
+        if s in states: return s
+    return None
+
+
+def _evidence_bindings(concept, profile, evidence):
+    """Extra bindings for evidence kinds outside the default diagnosis streams (claims, indications, note text)."""
+    d = CONDITIONS[concept]
+    out = []
+    if 'claim_diagnosis' in evidence:
+        for stream, candidates in CLAIM_STREAMS.items():
+            fields = [f for f in candidates if f in _fields(profile, stream)]
+            if stream in profile['streams'] and fields:
+                out.append({'stream': stream, 'code_fields': fields, 'prefixes': list(d['icd10']), 'system': 'ICD-10-CM',
+                            'evidence': 'claim_diagnosis'})
+    for kind, streams in (('medication_indication', INDICATION_STREAMS), ('note_mention', NOTE_STREAMS)):
+        if kind not in evidence: continue
+        for stream, field in streams.items():
+            if stream in profile['streams'] and field in _fields(profile, stream):
+                out.append({'stream': stream, 'text_field': field, 'pattern': d['text'], 'exclude': d.get('exclude'),
+                            'system': 'free text' if kind == 'note_mention' else 'source label', 'evidence': kind,
+                            **({'negation': True} if kind == 'note_mention' else {})})
+    return out
+
+
+def resolve_condition(concept, profile, evidence=None):
     d = CONDITIONS[concept]
     text = re.compile(d['text'], re.I)
     exclude = re.compile(d['exclude'], re.I) if d.get('exclude') else None
@@ -204,8 +324,18 @@ def resolve_condition(concept, profile):
                 if exclude and exclude.search(readable): excluded[label] = n; continue
                 hits.append(label); included[label] = n
             if hits: bindings.append({'stream': stream, 'field': field, 'values': sorted(hits), 'system': 'source label'})
-    return {'concept': concept, 'kind': 'condition', 'label': d['label'], 'bindings': bindings,
-            'included_labels': included, 'excluded_labels': excluded}
+    out = {'concept': concept, 'kind': 'condition', 'label': d['label'], 'bindings': bindings,
+           'included_labels': included, 'excluded_labels': excluded,
+           'default_evidence': sorted(default_evidence(profile), key=EVIDENCE_TYPES.index) if bindings else []}
+    if evidence:
+        evidence = validate_evidence(list(evidence))
+        default = default_evidence(profile) if bindings else set()
+        extra = _evidence_bindings(concept, profile, evidence)
+        available = (default | {b['evidence'] for b in extra}) & set(evidence)
+        # Default bindings stay only when a default kind is requested; record-level filtering does the rest.
+        out['bindings'] = (bindings if default & set(evidence) else []) + extra
+        out['evidence'] = {'requested': list(evidence), 'available': sorted(available, key=EVIDENCE_TYPES.index)}
+    return out
 
 
 def resolve_measurement(concept, profile):
@@ -244,9 +374,10 @@ def resolve_encounter(concept, profile):
             'included_labels': included, 'excluded_labels': {}}
 
 
-def resolve(concept, profile):
+def resolve(concept, profile, evidence=None):
+    if evidence and concept not in CONDITIONS: raise ValueError('evidence types apply to condition concepts only')
     if concept in ENCOUNTERS: return resolve_encounter(concept, profile)
-    if concept in CONDITIONS: return resolve_condition(concept, profile)
+    if concept in CONDITIONS: return resolve_condition(concept, profile, evidence)
     if concept in MEASUREMENTS: return resolve_measurement(concept, profile)
     raise ValueError(f'Unknown concept: {concept}')
 

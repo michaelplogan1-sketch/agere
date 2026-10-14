@@ -244,6 +244,29 @@ def chart_points(report, limit=60):
 
 
 def build_answer(plan, results, memberships, question):
+    """build_answer_core plus the evidence mix of every condition concept the cohorts matched (computed_as['evidence']):
+    which kinds of evidence (coded diagnosis, problem list, claim, medication indication, note mention, lab-inferred)
+    supported the matched patients."""
+    answer = build_answer_core(plan, results, memberships, question)
+    mix = [m for r in results for m in (r.get('result') or {}).get('evidence_mix') or []]
+    if mix and isinstance(answer, dict) and answer.get('status') not in ('grounding_failed', 'unsupported'):
+        answer['computed_as'] = {**(answer.get('computed_as') or {}), 'evidence': evidence_statement(mix)}
+    return answer
+
+
+def evidence_statement(mix):
+    """-> {'concepts': [...mix...], 'statement': one line per concept}."""
+    from .concepts import EVIDENCE_TYPES
+    lines = []
+    for m in mix:
+        asked = m['evidence'] if isinstance(m['evidence'], list) else m.get('default_evidence') or []
+        counts = ', '.join(f"{k} {v}" for k, v in m['patients_by_type'].items()) or 'no matched patients'
+        lines.append(f"{m['concept']}: evidence {'+'.join(asked) or 'default'}"
+                     f"{' (default)' if not isinstance(m['evidence'], list) else ''}; matched patients by evidence type: {counts}")
+    return {'concepts': mix, 'statement': '; '.join(lines), 'types': list(EVIDENCE_TYPES)}
+
+
+def build_answer_core(plan, results, memberships, question):
     """Shared answer contract: the direct answer, what it covers, and why not if it can't.
 
     The terminal membership node answers population questions. Report-only
@@ -1425,7 +1448,8 @@ def execute(stack, plan, *, question=None):
                     value = Membership(universe, set(selected['patient_ids']), set(selected['unknown_patient_ids']))
                     detail = {'specification': selected['specification'], 'source_examples': selected['examples'],
                               'selection_receipt': selected['id'], 'selection_cache_hit': selected['cache_hit'],
-                              'grounding': selected.get('grounding', []), 'interpretation': selected.get('interpretation', [])}
+                              'grounding': selected.get('grounding', []), 'interpretation': selected.get('interpretation', []),
+                              **({'evidence_mix': selected['evidence_mix']} if selected.get('evidence_mix') else {})}
             elif op == 'aggregate':
                 from . import aggregate
                 chosen = memberships[node['inputs'][0]]

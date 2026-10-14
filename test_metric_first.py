@@ -273,8 +273,10 @@ class FreeFormAcceptance(unittest.TestCase):
             out = MR.finalize_answer(answer, receipt)
         self.assertEqual((out['status'], out['answer_type'], out['count']), ('partial', 'unsupported', None))
         self.assertTrue(out['missing'][0].startswith('Withheld'))
+        # acceptance 'verified' passes the free-form check, but the check's own error rate is uncertified: unverified
         verified = MR.finalize_answer(answer, {'route': 'hosted_verified_sql', 'acceptance': {'status': 'verified', 'basis': 'independent'}})
-        self.assertEqual((verified['status'], verified['confidence']), ('answered', 'verified'))
+        self.assertEqual((verified['status'], verified['confidence']), ('answered', 'unverified'))
+        self.assertIn('freeform_sql.verified', verified['confidence_reason'])
         # an answer that is genuinely incomplete keeps its partial status
         incomplete = MR.finalize_answer({**answer, 'status': 'partial', 'unknown_count': 3}, receipt)
         self.assertEqual((incomplete['status'], incomplete['confidence']), ('partial', 'low'))
