@@ -104,7 +104,8 @@ SCHEMA_DOC = {
                         '(X12 CARC), category (deductible, coinsurance, copay, contractual_adjustment, else group-code), amount_cents; '
                         'current_version = 1 on the claim\'s latest version.',
     'note_fact': 'Facts found only in free text (EF, symptoms, edema, dyspnea, medication non-adherence and reasons, social needs, '
-                 'imaging findings, follow-up instructions, goals of care) with negation, temporality and evidence spans; rule '
+                 'imaging findings, follow-up instructions, goals of care, smoking status) in notes, documents and HIE ED/discharge '
+                 'summaries, with negation, temporality and evidence spans; copied-forward note lines count once per patient; rule '
                  'extractor admitted per fact type at >= 0.90 measured precision.',
     'medication': 'Every medication mention, one row per (record, drug_class): source_stream and evidence (dispensed, claim, ordered, '
                   'listed, administered, reported, pharmacy_history, payer_claim = payer pharmacy claim), drug_name as received, status. drug_class from the active '

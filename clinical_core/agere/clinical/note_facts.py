@@ -11,7 +11,7 @@ semantic_layer.build. build(path, target=...) writes the table into another SQLi
 from pathlib import Path
 import json, re, sqlite3, time
 
-VERSION = 'note-facts/1'
+VERSION = 'note-facts/2'
 
 # stream -> text fields read. Structured streams (condition_assessments, social_history booleans) are excluded: their
 # facts are already typed columns in `record`.
@@ -24,7 +24,12 @@ TEXT_SOURCES = {
     'medication_clarification_contacts': ['text'], 'received_procedure_reports': ['text'], 'procedure_result_communications': ['text'],
     'outside_followup_contacts': ['text'], 'transported_handoffs': ['text'], 'endoscopy_reports': ['text'],
     'referral_status_updates': ['text'], 'community_service_outcomes': ['text'], 'diagnostic_access_contacts': ['text'],
+    'hie_documents': ['text'],  # v2.2 HIE-pushed ED / discharge summaries (sectioned: Principal diagnosis, Hospital course, ...)
 }
+# Sections a documentation persona copies forward from the prior note (PMH/exam/ROS/social/allergies/medications). The loader
+# drops facts from a line of these sections that repeats the patient's previous note word for word (without_copy_forward).
+COPY_FORWARD_SECTIONS = {'ros', 'review of systems', 'pmh', 'past medical history', 'exam', 'physical exam', 'social',
+                         'social history', 'allergies', 'medications'}
 
 FACT_DEFINITIONS = {
     'ejection_fraction': 'left ventricular ejection fraction. value = percent as a numeral (midpoint of a range), or '
@@ -73,7 +78,9 @@ CREATE INDEX note_fact_type ON note_fact(fact_type, value, patient_id);
 CREATE INDEX note_fact_patient ON note_fact(patient_id, fact_type);"""
 
 SCHEMA_DOC = ('One row per clinical fact found only in free text (notes, imported documents, phone messages, imaging and '
-              'diagnostic reports, chart summaries, advance-care documents). fact_type/value/unit with negated (1 = '
+              'diagnostic reports, chart summaries, advance-care documents, HIE ED/discharge summaries). Text copied '
+              'forward unchanged from the previous note (PMH/exam/ROS/social lines) counts once, at its first note date. '
+              'fact_type/value/unit with negated (1 = '
               'documented absent) and temporality (current | historical); hypothetical mentions (return precautions) are '
               'excluded. value is numeric for ejection_fraction (%), medication_days_used (fraction), walk_distance (m), '
               'follow_up (days). qualifier = medication, modality, site or follow-up target. evidence_text quotes the '
@@ -94,7 +101,7 @@ def units(record_row):
 # Deterministic extractor
 # ---------------------------------------------------------------------------------------------------------------------
 
-EXTRACTOR = 'rules/1'
+EXTRACTOR = 'rules/2'
 _SENT = re.compile(r'(?:[^.\n;]|\.(?=[^\s]))+(?:[.;]|\n|$)')  # '2.5 mg' does not end a sentence
 HYPOTHETICAL = re.compile(
     r"\b(?:seek|urgent assessment for|requires urgent|warrants?|return (?:if|for)|call (?:if|back if|us|sooner)|contact (?:us|"
@@ -103,25 +110,60 @@ HYPOTHETICAL = re.compile(
     r"oral)|precautions?|reassess(?:ment)? (?:promptly )?if|watch for|report any|should .* prompt)\b", re.I)
 HISTORICAL = re.compile(r'\b(?:earlier explanation on file|prior entry dated|history on file|previously|prior report|'
                         r'received outside discharge document|history of|prior evidence|visit on \d{4}-\d\d-\d\d recorded|'
-                        r'plan recorded then)\b', re.I)
+                        r'plan recorded then|seen in the (?:emergency department|hospital) on)\b', re.I)
 NUMWORDS = {'one': 1, 'two': 2, 'three': 3, 'four': 4, 'five': 5, 'six': 6, 'seven': 7, 'eight': 8, 'nine': 9, 'ten': 10,
             'twelve': 12, 'fourteen': 14, 'a': 1, 'an': 1}
 UNIT_DAYS = {'day': 1, 'week': 7, 'month': 30, 'year': 365}
 
 
-def _sentences(text):
-    """(start, end, sentence, section) - section = nearest preceding ALL-CAPS header or 'Label:' prefix."""
-    section = ''
+# Note-level sections ('Label:' or ALL-CAPS header). Sub-labels inside a section (CV:, Resp:, Ext:, Gen:) keep the major
+# section, so 'Ext: no edema' stays in exam and 'lisinopril (cough)' under ALLERGIES stays in allergies.
+MAJOR_SECTIONS = {'cc', 'chief complaint', 'hpi', 'history of present illness', 'interval history', 'ros', 'review of systems',
+                  'pmh', 'past medical history', 'medications', 'current medications', 'allergies', 'social', 'social history',
+                  'vitals', 'exam', 'physical exam', 'data', 'assessment and plan', 'assessment', 'plan', 'a/p', 'basis',
+                  'development', 'screening', 'growth', 'immunizations', 'principal diagnosis', 'hospital course',
+                  'discharge medications', 'disposition', 'follow-up', 'visit type', 's', 'o', 'admission date'}
+
+
+def _sentences(text, majors=False):
+    """(start, end, sentence, section[, major]) - section = nearest preceding ALL-CAPS header or 'Label:' prefix; major =
+    nearest preceding note-level section (MAJOR_SECTIONS), unchanged by sub-labels."""
+    section, major = '', ''
     out = []
     for m in _SENT.finditer(text):
         s = m.group(0)
         if not s.strip(): continue
+        if re.fullmatch(r'\s*\d{1,2}\.\s*', s):  # '1.' item marker: run-on notes start the numbered plan without a header
+            if major in COPY_FORWARD_SECTIONS or major in ('data', 'vitals', ''): major = 'assessment and plan'
+            continue
         hm = re.match(r'\s*(?:\d+\.\s*)?([A-Z][A-Za-z /-]{2,30}):\s', s)
         if s.strip().isupper() and len(s.strip()) < 40:
-            section = s.strip().lower(); continue
-        if hm: section = hm.group(1).lower()
-        out.append((m.start(), m.end(), s, section))
+            section = s.strip().lower()
+            if section.rstrip(':') in MAJOR_SECTIONS: major = section.rstrip(':')
+            continue
+        if hm:
+            section = hm.group(1).lower()
+            if section in MAJOR_SECTIONS: major = section
+        out.append((m.start(), m.end(), s, section, major) if majors else (m.start(), m.end(), s, section))
     return out
+
+
+# Adjacent-letter transpositions of words the rules key on ('Nveer smoker', 'Follwo up', 'feevr') are read as the word.
+# The repair keeps every length, so spans still index the original text.
+_TYPO_VOCAB = ('never', 'former', 'current', 'smoker', 'follow', 'sooner', 'fever', 'fevers', 'cough', 'pain', 'edema',
+               'chest', 'dyspnea', 'nausea', 'vomiting', 'diarrhea', 'fatigue', 'wheezes', 'wheezing', 'shortness', 'breath',
+               'denies', 'negative', 'fracture', 'transportation', 'barriers', 'missing', 'doses', 'weeks', 'months', 'month',
+               'week', 'days', 'within', 'recheck', 'insecurity', 'affording', 'groceries', 'rides', 'pitting', 'swelling')
+_TYPO = {w[:i] + w[i + 1] + w[i] + w[i + 2:]: w for w in _TYPO_VOCAB for i in range(len(w) - 1) if w[i] != w[i + 1]}
+_TYPO = {k: v for k, v in _TYPO.items() if k not in _TYPO_VOCAB}
+
+
+def _repair_typos(text):
+    def fix(m):
+        w = m.group(0); r = _TYPO.get(w.lower())
+        if not r: return w
+        return r.upper() if w.isupper() and len(w) > 1 else (r[0].upper() + r[1:] if w[0].isupper() else r)
+    return re.sub(r'[A-Za-z]+', fix, text)
 
 
 def _drug(name):
@@ -152,6 +194,9 @@ P_NOTUSED = re.compile(r"(?:Patient reports )?" + MED + r" is not being used: (?
 P_NOSUPPLY = re.compile(MED + r":? no supply remaining\. Reports difficulty obtaining the new prescription", re.I)
 P_INCONSISTENT = re.compile(r"Reported use has been inconsistent", re.I)
 P_NOTRESTARTED = re.compile(MED + r" still has not been restarted", re.I)
+P_MISSED = re.compile(r"\b(?:admits|reports|has been|with) (?:missing|missed) (?:some |several |a few |multiple )?doses\b", re.I)
+P_RANOUT = re.compile(r"\bran out of (?:some |her |his |their |the )?(?:medications?|pills|tablets|refills|inhalers?)(?: and did not refill(?: on time)?)?", re.I)
+P_COST_REFILLS = re.compile(r"\bcost has made it hard to keep up (?:with|w/) (?:refills|medications?)", re.I)
 REASONS = [(r'afford|cost|expens|price|pay', 'cost'), (r'made (?:them|him|her) feel|side effect|nause|dizz|cough|tired|muscle',
            'side_effects'), (r'unsure|still needed|not sure|thought', 'unsure_if_needed'), (r'forg', 'forgot'),
            (r'transport|ride|get to', 'transport'), (r'supply|refill|obtain|pharmacy', 'supply_access')]
@@ -170,11 +215,21 @@ P_DYS = [(re.compile(r"no resting (?:breathlessness|shortness of breath|dyspnea)
          (re.compile(r"(?<!no )breathless(?:ness)? at rest|(?<!no )resting (?:breathlessness|dyspnea)(?! reported: False)|short of breath at rest", re.I), 'resting', False),
          (re.compile(r"(?<!no )(?<!new )(?:shortness of breath|dyspnea|breathlessness)(?: reported| present)", re.I), 'unspecified', False),
          (re.compile(r"(?<!no )(?:reports|reporting|with|has) (?:worsening |increased )?(?:shortness of breath|breathlessness|dyspnea)", re.I), 'unspecified', False),
-         (re.compile(r"breathing easier|no breathing difficulty|denies (?:shortness of breath|dyspnea)", re.I), 'unspecified', True)]
+         (re.compile(r"breathing easier|no breathing difficulty|denies (?:shortness of breath|dyspnea)", re.I), 'unspecified', True),
+         # abbreviations and bare mentions; negation from the clause ('No SOB or chest pain', 'Resp: no SOB', 'Denies orthopnea, PND')
+         (re.compile(r"(?-i:\bDOE\b)|(?-i:\bSOB\b) (?:on|with) exertion", re.I), 'exertional', False),
+         (re.compile(r"(?-i:\bSOB\b)|\b(?:shortness of breath|dyspnea|breathlessness|orthopnea|PND)\b", re.I), 'unspecified', None)]
+# a bare symptom word counts only as a list item after a cue ('No SOB or chest pain', 'Denies orthopnea, PND', 'presented
+# with dyspnea, orthopnea', 'seen ... for dyspnea'), not in prose ('does not identify the cause of breathlessness')
+_LIST_ITEMS = r"\s+(?:[A-Za-z/+-]+(?: [A-Za-z/+-]+)?(?:,|,? or|,? and)\s+)*$"
+LIST_NEG = re.compile(r"\b(?:no|denies|denied|without|negative for)\b" + _LIST_ITEMS, re.I)
+LIST_POS = re.compile(r"(?:\b(?:with|for|reports|c/o|has|having)\b" + _LIST_ITEMS + r")|(?:[:+]\s*$)", re.I)
 P_EDEMA = re.compile(r"\b(?:edema|oedema)[: ]+(?P<sev>none|trace|mild|moderate|severe|1\+|2\+|3\+|4\+|present|absent)\b"
-                     r"|(?P<sev2>trace|mild|moderate|severe|1\+|2\+|3\+|4\+|pitting|ankle|leg|bilateral)(?: pitting)? (?:leg |ankle |lower[- ]extremity |peripheral )?edema"
-                     r"|\bno (?:peripheral |leg |ankle )?edema"
-                     r"|(?P<pos>(?:orthopnea|congestion), edema\b|swollen (?:ankles|legs)|(?:ankle|leg) swelling)", re.I)
+                     r"|(?P<sev2>trace|mild|moderate|severe|1\+|2\+|3\+|4\+|pitting|ankle|leg|bilateral)(?: pitting)? (?:leg |ankle |lower[- ]extremity |peripheral |B?LE |pedal )?edema"
+                     r"|\bno (?:peripheral |leg |ankle |B?LE |pedal |lower[- ]extremity )?edema"
+                     r"|(?P<pos>(?:orthopnea|congestion), edema\b|swollen (?:ankles|legs)|(?:ankle|leg) swelling|\+ ?edema\b"
+                     r"|(?-i:\bB?LE\b) edema|pedal edema)", re.I)
+P_EDEMA_NEG_LIST = re.compile(r"\b(?:denies|no) (?:[A-Za-z]+, )*[A-Za-z]+,? or (?:new |peripheral |leg |ankle )?edema\b", re.I)
 P_NYHA = re.compile(r"NYHA(?: functional)?(?: class)?\s*(?P<c>IV|III|II|I|[1-4])\b", re.I)
 P_WALK = re.compile(r"(?P<m>\d{1,5}) (?:metres|meters|m) (?:reported )?(?:walked )?before rest(?:ing)?\b|\bWalked (?P<m2>\d{1,5}) ?(?:metres|meters|m)\b", re.I)
 
@@ -189,10 +244,15 @@ P_SOCIAL = [
     (re.compile(r"\b(?:homeless|housing (?:instability|insecurity|insecure|concern)|unstably housed|evict)", re.I), 'housing'),
     (re.compile(r"\b(?:food insecurity|not enough (?:food|to eat)|skipping meals because)", re.I), 'food'),
     (re.compile(r"\blives alone\b", re.I), 'social_isolation'),
+    (re.compile(r"\btransportation (?:barriers?|insecurity|difficult(?:y|ies)|problems?|issues?)\b|\b(?:difficulty|trouble) getting "
+                r"(?:rides?|transportation)\b|\btransportation (?:benefit|assistance) (?:information|referral)", re.I), 'transport'),
+    (re.compile(r"\b(?:trouble|difficulty) affording (?:groceries|food)|referred to (?:community )?food (?:resources|bank|pantry)", re.I), 'food'),
+    (re.compile(r"\b(?:trouble|difficulty) affording\b|\bcost has made it hard\b", re.I), 'financial'),
 ]
-P_SMOKE = [(re.compile(r"\b(?:Smokes tobacco daily|current(?:ly)? smok\w*|(?<!non-)(?<!ex-)\bsmoker\b(?! \(finding\))|smokes \d+|active smoker)", re.I), 'current'),
+SCREEN_NEGATIVE = re.compile(r"\s*(?:screen(?:ing)?\s*)?(?::\s*)?(?:negative|denied|absent)\b", re.I)
+P_SMOKE = [(re.compile(r"\b(?:Smokes tobacco daily|current(?:ly)? smok\w*|(?<!non-)(?<!non )(?<!ex-)(?<!never )(?<!former )(?<!ex )\bsmoker\b(?! \(finding\))|smokes \d+|active smoker)", re.I), 'current'),
            (re.compile(r"\b(?:Ex-smoker|former smoker|quit smoking|stopped smoking|quit \d+ years ago|history of smoking)", re.I), 'former'),
-           (re.compile(r"\b(?:never smoked|non-?smoker|never a smoker|denies (?:tobacco|smoking))", re.I), 'never')]
+           (re.compile(r"\b(?:never smoked|non-?smoker|never a smoker|never smoker|denies (?:tobacco|smoking))", re.I), 'never')]
 P_GOC = [(re.compile(r"\b(?:enrolled in|referred to|elects?|chose|accepted|transition(?:ed)? to|discharged? to) hospice|hospice (?:care|enrollment|referral)", re.I), 'hospice'),
          (re.compile(r"\bcomfort(?:-focused| focused)? (?:care|measures|focus)\b|\bto CMO\b", re.I), 'comfort_care'),
          (re.compile(r"\bpalliative care (?:consult|referral|team|involved|follow)|Encounter for palliative care", re.I), 'palliative_care'),
@@ -208,7 +268,12 @@ P_FU = re.compile(r"(?P<what>[A-Za-z][A-Za-z /-]{0,40}?)?\b(?:reassessment|follo
                   r"(?: [a-z]+){0,4}? (?:is requested )?(?:within|in(?: about)?|after) (?P<n>\d+(?:\s*[-–]\s*\d+)?|one|two|three|four|five|six|seven|eight|ten|twelve|fourteen|a|an) "
                   r"(?P<u>day|week|month|year)s?\b", re.I)
 P_FU2 = re.compile(r"\b(?:repeat|recheck|obtain|check) (?P<what>[A-Za-z0-9 ]{2,30}?) in (?:about )?(?P<n>\d+|one|two|three|four|six|eight|twelve) (?P<u>day|week|month)s?", re.I)
-P_IMG = [(re.compile(r"\b(?:no|without) (?:acute |displaced )?fracture(?: or dislocation)?", re.I), 'fracture', True),
+P_FU_LAB = re.compile(r"\b(?P<what>BMP|CMP|CBC|labs|lipid panel|INR|TSH|BNP|A1c) in (?:about )?(?P<n>\d+|one|two|three|four|six|eight|twelve) (?P<u>day|week|month)s?\b", re.I)
+# 'Follow-up: PCP within 7 days; surgeon in 2 weeks.' (HIE summaries): each clause of the follow-up section is one target + interval
+P_FU_SECTION = re.compile(r"^\s*(?:follow[- ]?up:\s*)?(?P<what>[A-Za-z][A-Za-z /-]{1,30}?) (?:within|in) (?:about )?"
+                          r"(?P<n>\d+(?:\s*[-–]\s*\d+)?|one|two|three|four|six|eight|twelve) (?P<u>day|week|month)s?\b", re.I)
+P_IMG = [(re.compile(r"\b(?:no|without) (?:acute |displaced )?fracture(?: or dislocation)?|negative for (?:acute |displaced )?fracture|"
+                     r"(?:fracture|Salter-Harris (?:injury|fracture)) (?:not seen|not identified|ruled out)", re.I), 'fracture', True),
          (re.compile(r"(?P<site>(?:[a-z-]+ ){0,4})fracture\b(?! or dislocation)", re.I), 'fracture', False),
          (re.compile(r"\bno (?:acute )?(?:fracture or )?dislocation", re.I), 'dislocation', True),
          (re.compile(r"\bno (?:large )?pericardial effusion", re.I), 'pericardial_effusion', True),
@@ -223,12 +288,15 @@ P_IMG = [(re.compile(r"\b(?:no|without) (?:acute |displaced )?fracture(?: or dis
          (re.compile(r"\b(?:normal|preserved) (?:left ventricular )?systolic function", re.I), 'normal_systolic_function', False),
          (re.compile(r"(?:no (?:large |severe )?|without )(?:severe )?valvular (?:lesion|disease)", re.I), 'valvular_disease', True),
          (re.compile(r"\b(?:two|three|single|one|multi)-vessel (?:coronary )?disease", re.I), 'coronary_disease', False)]
+MODALITY = re.compile(r"\b(?:x-?rays?|CXR|CT|MRI|ultrasound|radiographs?|films?|echo\w*|imaging|scan)\b", re.I)
+ENCOUNTER_REASON = re.compile(r"presented to the ED with|seen in the (?:emergency department|hospital) on|principal diagnosis", re.I)
 IMAGING_STREAMS = {'imaging_reports', 'imaging_report_fragments', 'diagnostic_test_reports', 'received_diagnostic_reports',
                    'inpatient_cardiac_reports', 'received_procedure_reports'}
-P_SYM = [('chest_pain', r'chest (?:pain|discomfort)'), ('syncope', r'syncope|fainting|passed out'), ('palpitations', r'palpitations'),
-         ('bleeding', r'(?:visible |new )?bleeding|blood (?:in (?:the )?stool|on toilet paper|reported)|visible blood|melena'),
-         ('pain', r'(?<!chest )\bpain(?: now)? \d+/10|\b(?:ankle|wrist|knee|hip|back|flank|dental|acute|localized|abdominal) pain'), ('cough', r'\bcough(?:ing)?\b'),
-         ('fever', r'\bfever|(?<!a)febrile'), ('nausea_vomiting', r'nausea|vomiting'), ('diarrhea', r'diarrh?oea|diarrhea|loose stools'),
+P_SYM = [('chest_pain', r'chest (?:pain|discomfort)|(?-i:\bCP\b)'), ('syncope', r'syncop(?:e|al)|fainting|passed out'), ('palpitations', r'palpitations'),
+         ('bleeding', r'(?:visible |new )?bleeding|blood (?:in (?:the )?stool|on toilet paper|reported)|visible blood|melena|\bGI bleed\b'),
+         ('pain', r'(?<!chest )\bpain(?: now)? \d+/10|\b(?:ankle|wrist|knee|hip|back|flank|dental|acute|localized|abdominal|ear|neck|shoulder|joint|pelvic) pain'
+                  r'|\bepigastric (?:pain|discomfort)|\b(?:with|w/) pain\b'), ('cough', r'\bcough(?:ing)?\b'),
+         ('fever', r'\bfevers?\b|(?<!a)febrile'), ('nausea_vomiting', r'nausea|vomiting|(?-i:\bN/V\b)'), ('diarrhea', r'diarrh?oea|diarrhea|loose stools|(?-i:\bN/V/D\b)'),
          ('constipation', r'constipation'), ('dizziness', r'dizz|lightheaded'), ('wheeze', r'wheez'), ('fatigue', r'fatigue|tiredness'),
          ('reduced_oral_intake', r'reduced food and fluid intake|poor oral intake|less oral intake|reduced intake|oral intake remains inadequate|not eating'),
          ('muscle_symptoms', r'muscle (?:symptoms|pain|aches|weakness)|\bmyalgia')]
@@ -244,10 +312,12 @@ def _negated_before(sentence, idx):
 
 
 def extract(text, stream=None, field=None):
-    """Deterministic facts from one text unit. Returns list of dicts with character spans into `text`."""
+    """Deterministic facts from one text unit. Returns list of dicts with character spans into `text` (plus `section`, the
+    note-level section of the sentence, and `context`, the sentence itself, which the loader uses for copy-forward)."""
+    orig, text = text, _repair_typos(text)
     facts = []
     carry = False  # a historical cue carries across ';' clauses of the same sentence
-    for s0, s1, sent, section in _sentences(text):
+    for s0, s1, sent, section, major in _sentences(text, majors=True):
         hypo = bool(HYPOTHETICAL.search(sent))
         hist = carry or bool(HISTORICAL.search(sent)) or section in ('history on file', 'prior evidence')
         carry = hist and sent.rstrip().endswith(';')
@@ -256,7 +326,9 @@ def extract(text, stream=None, field=None):
         def add(ft, value, m, **kw):
             st, en = s0 + m.start(), s0 + m.end()
             kw.setdefault('temporality', temporal)
-            facts.append(_fact(ft, value, st, en, text, **kw))
+            f = _fact(ft, value, st, en, orig, **kw)
+            f['section'], f['label'], f['context'] = major, section, orig[s0:s1].strip()
+            facts.append(f)
 
         # Medication adherence (statements are never hypothetical in this corpus' phrasing)
         for m in (m for rx in P_DAYS for m in rx.finditer(sent)):
@@ -281,6 +353,12 @@ def extract(text, stream=None, field=None):
             add('medication_nonadherence', 'unspecified', m, qualifier=_drug(m.group('med')), confidence=0.8)
         if P_INCONSISTENT.search(sent):
             add('medication_nonadherence', 'unspecified', P_INCONSISTENT.search(sent), confidence=0.8)
+        for m in P_MISSED.finditer(sent):
+            if not _negated_before(sent, m.start()): add('medication_nonadherence', 'unspecified', m, confidence=0.8)
+        for m in P_RANOUT.finditer(sent):
+            if not _negated_before(sent, m.start()): add('medication_nonadherence', 'supply_access', m, confidence=0.8)
+        for m in P_COST_REFILLS.finditer(sent):
+            add('medication_nonadherence', 'cost', m, confidence=0.8)
         if hypo:
             continue
         # Ejection fraction
@@ -294,12 +372,20 @@ def extract(text, stream=None, field=None):
         m = P_EF_NQ.search(sent)
         if m: add('ejection_fraction', 'not_quantifiable', m, qualifier='echocardiogram')
         # Dyspnea
-        seen = set()
+        seen, used = set(), []
         for rx, val, neg in P_DYS:
             for m in rx.finditer(sent):
-                if (val, neg) in seen: continue
-                if not neg and _negated_before(sent, m.start()): neg_ = True
+                if (val, neg) in seen or any(a < m.end() and m.start() < b for a, b in used): continue
+                if neg is None:  # bare mention: list item after a cue only (the SOB abbreviation is always clinical)
+                    pre = sent[:m.start()]
+                    if m.group(0) == 'SOB': neg_ = _negated_before(sent, m.start())
+                    elif LIST_NEG.search(pre): neg_ = True
+                    elif LIST_POS.search(pre): neg_ = False
+                    else: continue
+                elif not neg and _negated_before(sent, m.start()): neg_ = True
                 else: neg_ = neg
+                used.append(m.span())
+                if (val, neg_) in seen: continue
                 seen.add((val, neg_)); add('dyspnea', val, m, negated=neg_)
         # Edema (exclude imaging soft-tissue / pulmonary edema)
         for m in P_EDEMA.finditer(sent):
@@ -311,6 +397,8 @@ def extract(text, stream=None, field=None):
             sev = {'1+': 'mild', '2+': 'moderate', '3+': 'severe', '4+': 'severe', 'pitting': 'present', 'ankle': 'present',
                    'leg': 'present', 'bilateral': 'present'}.get(sev, sev or 'present')
             add('edema', sev, m)
+        for m in P_EDEMA_NEG_LIST.finditer(sent):
+            add('edema', 'none', m, negated=True)
         for m in P_NYHA.finditer(sent):
             c = m.group('c').upper(); c = {'1': 'I', '2': 'II', '3': 'III', '4': 'IV'}.get(c, c)
             add('nyha_class', c, m)
@@ -327,7 +415,10 @@ def extract(text, stream=None, field=None):
                 elif need == 'financial' and any(f['fact_type'] == 'social_need' and f['value'] == 'financial' and
                                                  f['span_start'] <= s0 + m.start() <= f['span_end'] for f in facts):
                     continue
-                else: add('social_need', need, m, negated=_negated_before(sent, m.start()))
+                elif need == 'financial' and any(f['fact_type'] == 'social_need' and f['value'] == 'financial' for f in facts
+                                                 if s0 <= f['span_start'] < s1):
+                    continue
+                else: add('social_need', need, m, negated=_negated_before(sent, m.start()) or bool(SCREEN_NEGATIVE.match(sent, m.end())))
         # Smoking
         for rx, val in P_SMOKE:
             m = rx.search(sent)
@@ -337,7 +428,8 @@ def extract(text, stream=None, field=None):
             m = rx.search(sent)
             if m: add('goals_of_care', val, m, negated=_negated_before(sent, m.start()) and val not in ('dnr', 'dni'))
         # Follow-up intervals
-        for rx in (P_FU, P_FU2):
+        fu_rx = (P_FU, P_FU2, P_FU_LAB) + ((P_FU_SECTION,) if major == 'follow-up' else ())
+        for rx in fu_rx:
             for m in rx.finditer(sent):
                 n = m.group('n').lower()
                 n = int(re.split(r'\s*[-–]\s*', n)[-1]) if n[0].isdigit() else NUMWORDS[n]
@@ -349,27 +441,33 @@ def extract(text, stream=None, field=None):
                     continue
                 add('follow_up', days, m, unit='days', qualifier=what, temporality='current', confidence=0.8)
         # Imaging findings (report streams + radiology documents only)
-        if not re.search(r'\((?:disorder|finding)\)', sent):  # imaging phrasing is specific enough to read in clinical notes that quote study results
+        # encounter reasons ('presented to the ED with a hip fracture', 'Principal diagnosis: ...') are not study findings
+        # unless the sentence names the study ('X-ray negative for fracture', 'CXR with vascular congestion')
+        reason_only = (stream == 'hie_documents' or ENCOUNTER_REASON.search(sent) or major == 'principal diagnosis') and not MODALITY.search(sent)
+        if not reason_only and not re.search(r'\((?:disorder|finding)\)', sent):  # imaging phrasing is specific enough to read in clinical notes that quote study results
             done = set()
             for rx, val, neg in P_IMG:
                 for m in rx.finditer(sent):
                     if val in done: continue
                     site = None
                     if val == 'fracture' and not neg:
-                        if _negated_before(sent, m.start()): continue
+                        if _negated_before(sent, m.start() + m.group(0).lower().rfind('fracture')): continue
                         words = re.findall(r'[a-z]+', (m.group('site') or '').lower())
                         words = [w for w in words if w not in ('nondisplaced', 'displaced', 'extra', 'articular', 'acute', 'a', 'the', 'minimally', 'of')]
                         site = ' '.join(words[-2:]) or None
                     neg_ = neg or (not neg and val not in ('fracture',) and _negated_before(sent, m.start()))
                     done.add(val); add('imaging_finding', val, m, negated=neg_, qualifier=site)
-        # Other symptoms (not in imaging reports)
-        if stream not in IMAGING_STREAMS:
+        # Other symptoms (not in imaging reports, not reactions in allergy lists, not medication lists)
+        if stream not in IMAGING_STREAMS and major not in ('allergies', 'medications', 'current medications', 'discharge medications') \
+                and not re.match(r'\s*allerg', sent, re.I):
             m = re.search(r'\bafebrile\b', sent, re.I)
             if m: add('symptom', 'fever', m, negated=True, confidence=0.75)
             for val, rx in P_SYM:
                 m = rx.search(sent)
                 if not m: continue
-                if re.search(r'(?:chronic|history of|intractable)[a-z ]{0,12}$', sent[:m.start()], re.I): continue  # problem-list diagnosis
+                if major != 'basis' and re.search(r'(?:chronic|history of|intractable)[a-z ]{0,12}$', sent[:m.start()], re.I): continue  # problem-list diagnosis
+                if sent[max(0, m.start() - 1):m.start()] == '(' and re.search(r'allerg|intoleran', text[max(0, s0 - 200):s0 + m.start()], re.I):
+                    continue  # 'lisinopril (cough)' reaction in an allergy list
                 if val == 'bleeding' and re.search(r'bleeding evaluation|evaluation for bleeding|cause', sent, re.I): continue
                 add('symptom', val, m, negated=_negated_before(sent, m.start()), confidence=0.75)
     seen, out = set(), []
@@ -391,13 +489,48 @@ def admitted(evaluation=None):
     return set(data['admitted']), data
 
 
-def rows(source_db, admit):
+def copy_forward_slot(f):
+    """(fact_type, section, line label) of a fact from a copy-forward section, else None. 'Ext: no edema' -> (edema, exam, ext)."""
+    if f.get('section') not in COPY_FORWARD_SECTIONS: return None
+    return f['fact_type'], f['section'], f.get('label')
+
+
+def copy_forward_key(f):
+    """The fact plus its sentence text (typos repaired, punctuation folded): identical keys = identical evidence text."""
+    return (str(f['value']), bool(f['negated']), f['qualifier'],
+            re.sub(r'\W+', ' ', _repair_typos(f.get('context') or '').lower()).strip())
+
+
+def without_copy_forward(facts, last):
+    """Drop a note's copy-forward facts whose line repeats, word for word, what the patient's previous note with that line
+    said (`last`: slot -> keys, updated in place). A changed line ('no edema' -> '2+ edema' -> 'no edema') is new evidence
+    each time; an unchanged copied line counts once, at its first note date. Returns (kept facts, dropped count)."""
+    by = {}
+    for f in facts:
+        s = copy_forward_slot(f)
+        if s is not None: by.setdefault(s, set()).add(copy_forward_key(f))
+    drop = {s for s, keys in by.items() if last.get(s) == keys}
+    last.update(by)
+    kept = [f for f in facts if copy_forward_slot(f) not in drop]
+    return kept, len(facts) - len(kept)
+
+
+def rows(source_db, admit, stats=None):
+    """note_fact rows. Records are read per patient in note-date order; facts from copy-forward sections (PMH, exam, ROS,
+    social, allergies, medications) that repeat the previous note's line are copied text, not new evidence, and are dropped
+    (stats['copy_forward_dropped'])."""
+    stats = stats if stats is not None else {}
+    stats.setdefault('copy_forward_dropped', 0)
+    cur, last = None, {}
     for rid, pid, stream, ev, rec, payload in source_db.execute(
             f"SELECT record_id, patient_id, stream, event_date, recorded_date, payload FROM record WHERE stream IN "
-            f"({','.join('?' * len(TEXT_SOURCES))})", list(TEXT_SOURCES)):
+            f"({','.join('?' * len(TEXT_SOURCES))}) ORDER BY patient_id, coalesce(event_date, recorded_date), record_id",
+            list(TEXT_SOURCES)):
+        if pid != cur: cur, last = pid, {}
         for field, text in units((rid, stream, payload)):
-            for f in extract(text, stream, field):
-                if f['fact_type'] not in admit: continue
+            facts, dropped = without_copy_forward([f for f in extract(text, stream, field) if f['fact_type'] in admit], last)
+            stats['copy_forward_dropped'] += dropped
+            for f in facts:
                 yield (pid, rid, stream, f['fact_type'], f['value'], f['unit'], int(f['negated']), f['temporality'], ev or rec,
                        f['evidence_text'], EXTRACTOR, f['confidence'], f['qualifier'], f['experiencer'], field,
                        f['span_start'], f['span_end'])
@@ -415,7 +548,8 @@ def build(path, target=None, evaluation=None):
     out = sqlite3.connect(target, timeout=60)
     src = out if same else sqlite3.connect(f'file:{src_path}?mode=ro', uri=True)
     try:
-        batch = list(rows(src, admit))
+        stats = {}
+        batch = list(rows(src, admit, stats))
         with out:
             out.execute('DROP TABLE IF EXISTS note_fact')
             for stmt in DDL.split(';'):
@@ -424,9 +558,10 @@ def build(path, target=None, evaluation=None):
             out.execute('CREATE TABLE IF NOT EXISTS meta(key TEXT PRIMARY KEY, value TEXT)')
             out.execute('INSERT OR REPLACE INTO meta VALUES (?,?)', ('note_fact_version',
                         json.dumps({'version': VERSION, 'extractor': EXTRACTOR, 'admitted': sorted(admit),
-                                    'precision_bar': data.get('precision_bar'), 'rows': len(batch)})))
+                                    'precision_bar': data.get('precision_bar'), 'rows': len(batch),
+                                    'copy_forward_dropped': stats['copy_forward_dropped']})))
     finally:
         if not same: src.close()
         out.close()
-    return {'path': str(target), 'rows': len(batch), 'admitted': sorted(admit),
+    return {'path': str(target), 'rows': len(batch), 'admitted': sorted(admit), 'copy_forward_dropped': stats['copy_forward_dropped'],
             'elapsed_seconds': round(time.perf_counter() - started, 1)}

@@ -1,6 +1,6 @@
 {
- "schema": "agere-note-facts-admission/1",
- "extractor": "rules/1",
+ "schema": "agere-note-facts-admission/2",
+ "extractor": "rules/2",
  "precision_bar": 0.9,
  "min_extractor_facts": 10,
  "admitted": [
@@ -17,6 +17,21 @@
   "symptom",
   "walk_distance"
  ],
+ "admission_basis": {
+  "ejection_fraction": "not stated in v2.2 test text; earlier adjudicated held-out",
+  "dyspnea": "v2.2 test precision + held-out no regression",
+  "edema": "v2.2 test precision + held-out no regression",
+  "nyha_class": "not stated in v2.2 test text; earlier adjudicated held-out",
+  "walk_distance": "not stated in v2.2 test text; earlier adjudicated held-out",
+  "medication_nonadherence": "v2.2 test precision + held-out no regression",
+  "medication_days_used": "not stated in v2.2 test text; earlier adjudicated held-out",
+  "social_need": "v2.2 test precision + held-out no regression",
+  "smoking_status": "v2.2 test precision + held-out no regression",
+  "goals_of_care": "not stated in v2.2 test text; earlier adjudicated held-out",
+  "follow_up": "v2.2 test precision + held-out no regression",
+  "imaging_finding": "v2.2 test precision + held-out no regression",
+  "symptom": "v2.2 test precision + held-out no regression"
+ },
  "held_out_units": 519,
  "unadjudicated_disagreements": 0,
  "label_model": "claude-sonnet-5-5",
@@ -264,5 +279,140 @@
    "temporality_agreement": 1.0
   }
  },
- "basis": "precision = extractor facts judged correct / extractor facts on held-out units; reference = facts both agreed on + disputed facts the judge model accepted (not clinician reviewed); synthetic notes only."
+ "basis": "precision = extractor facts judged correct / extractor facts on held-out units; reference = facts both agreed on + disputed facts the judge model accepted (not clinician reviewed); synthetic notes only.",
+ "held_out_unadjudicated_extractor_facts": 0,
+ "v22_test": {
+  "units": 210,
+  "labels": "tools/notes_extraction/v22_test_labels.txt (hand labels written before rule changes; split = sha256(unit_id) odd, original development sample excluded)",
+  "after": {
+   "dyspnea": {
+    "extractor_facts": 50,
+    "reference_facts": 50,
+    "true_positive": 50,
+    "precision": 1.0,
+    "recall": 1.0
+   },
+   "edema": {
+    "extractor_facts": 103,
+    "reference_facts": 103,
+    "true_positive": 103,
+    "precision": 1.0,
+    "recall": 1.0
+   },
+   "follow_up": {
+    "extractor_facts": 194,
+    "reference_facts": 194,
+    "true_positive": 194,
+    "precision": 1.0,
+    "recall": 1.0
+   },
+   "imaging_finding": {
+    "extractor_facts": 7,
+    "reference_facts": 8,
+    "true_positive": 7,
+    "precision": 1.0,
+    "recall": 0.875
+   },
+   "medication_nonadherence": {
+    "extractor_facts": 6,
+    "reference_facts": 6,
+    "true_positive": 6,
+    "precision": 1.0,
+    "recall": 1.0
+   },
+   "smoking_status": {
+    "extractor_facts": 85,
+    "reference_facts": 85,
+    "true_positive": 85,
+    "precision": 1.0,
+    "recall": 1.0
+   },
+   "social_need": {
+    "extractor_facts": 26,
+    "reference_facts": 26,
+    "true_positive": 26,
+    "precision": 1.0,
+    "recall": 1.0
+   },
+   "symptom": {
+    "extractor_facts": 188,
+    "reference_facts": 188,
+    "true_positive": 188,
+    "precision": 1.0,
+    "recall": 1.0
+   },
+   "_overall": {
+    "extractor_facts": 659,
+    "reference_facts": 660,
+    "true_positive": 659,
+    "precision": 1.0,
+    "recall": 0.998
+   }
+  },
+  "before": {
+   "dyspnea": {
+    "extractor_facts": 7,
+    "reference_facts": 50,
+    "true_positive": 7,
+    "precision": 1.0,
+    "recall": 0.14
+   },
+   "edema": {
+    "extractor_facts": 102,
+    "reference_facts": 103,
+    "true_positive": 102,
+    "precision": 1.0,
+    "recall": 0.99
+   },
+   "follow_up": {
+    "extractor_facts": 166,
+    "reference_facts": 194,
+    "true_positive": 166,
+    "precision": 1.0,
+    "recall": 0.856
+   },
+   "imaging_finding": {
+    "extractor_facts": 7,
+    "reference_facts": 8,
+    "true_positive": 5,
+    "precision": 0.714,
+    "recall": 0.625
+   },
+   "medication_nonadherence": {
+    "extractor_facts": 0,
+    "reference_facts": 6,
+    "true_positive": 0,
+    "precision": null,
+    "recall": 0.0
+   },
+   "smoking_status": {
+    "extractor_facts": 99,
+    "reference_facts": 85,
+    "true_positive": 28,
+    "precision": 0.283,
+    "recall": 0.329
+   },
+   "social_need": {
+    "extractor_facts": 6,
+    "reference_facts": 26,
+    "true_positive": 6,
+    "precision": 1.0,
+    "recall": 0.231
+   },
+   "symptom": {
+    "extractor_facts": 136,
+    "reference_facts": 188,
+    "true_positive": 116,
+    "precision": 0.853,
+    "recall": 0.617
+   },
+   "_overall": {
+    "extractor_facts": 523,
+    "reference_facts": 660,
+    "true_positive": 430,
+    "precision": 0.822,
+    "recall": 0.652
+   }
+  }
+ }
 }
