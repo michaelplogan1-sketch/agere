@@ -74,7 +74,7 @@ Buckets: **answered locally** = compiles to the expected engine; **needs router*
 | revenue_cycle | revenue_cycle | 51 | 10 | 23 | 0 | 1 | 2 | 2 | 13 | coding_workflow (3), charge_capture (2), cost_accounting (2), denial_appeals (1) |
 | payer_utilization_management | payer_utilization_management | 46 | 4 | 20 | 0 | 0 | 1 | 2 | 19 | prior_auth (10), provider_directory_geo (4), premiums (2), stop_loss_terms (1) |
 | pharmacy | pharmacy | 48 | 4 | 23 | 0 | 0 | 0 | 2 | 19 | flags_340b (4), drug_cost (2), mme_reference (2), bed_census (2) |
-| quality_patient_safety | quality_patient_safety | 48 | 2 | 18 | 0 | 1 | 2 | 3 | 22 | death_records (4), hai_events (4), device_days (4), safety_events (4) |
+| quality_patient_safety | quality_patient_safety | 48 | 4 | 18 | 0 | 1 | 0 | 3 | 22 | death_records (4), hai_events (4), device_days (4), safety_events (4) |
 | behavioral_health | behavioral_health | 42 | 1 | 29 | 0 | 0 | 0 | 2 | 10 | psych_unit_stays (3), bh_provider_types (2), crisis_services (2), sud_treatment (1) |
 | post_acute_home_health | post_acute_home_health | 41 | 1 | 13 | 0 | 0 | 0 | 2 | 25 | snf_stays (17), hospice_elections (4), death_records (3), staff_schedules (2) |
 | workforce_productivity | workforce_productivity | 41 | 2 | 9 | 0 | 0 | 0 | 2 | 28 | staff_schedules (12), hr_roster (9), payroll (5), provider_fte (4) |
@@ -116,10 +116,10 @@ Buckets: **answered locally** = compiles to the expected engine; **needs router*
 | HQ-RX-001 | unsupported (data missing) (ndc) | needs router | What are our top 25 drugs by total spend this year, and how fast is each growing? |
 | HQ-RX-003 | unsupported (data missing) (ndc) | needs router | What share of pharmacy spend is specialty drugs, and which therapeutic classes drive it? |
 | HQ-RX-008 | unsupported (data missing) (ndc) | needs router | What is our generic dispensing rate by therapeutic class? |
-| HQ-QS-001 | unsupported (data missing) (claim_dx) | needs new engine | What is our expected excess readmission ratio for heart failure, pneumonia and COPD under HRRP? |
+| HQ-QS-001 | unsupported (data missing) (claim_dx) | answered locally | What is our expected excess readmission ratio for heart failure, pneumonia and COPD under HRRP? |
 | HQ-QS-003 | unsupported (data missing) (claim_dx) | needs router | What is our 30-day all-cause readmission rate for Medicare AMI, HF, pneumonia, COPD, CABG and hip/knee patients? |
 | HQ-QS-004 | unsupported (data missing) (claim_dx) | needs router | How many readmissions in the HRRP cohorts were planned versus unplanned? |
-| HQ-QS-008 | unsupported (data missing) (drg) | needs new engine | What is our observed-to-expected length of stay by DRG family? |
+| HQ-QS-008 | unsupported (data missing) (drg) | answered locally | What is our observed-to-expected length of stay by DRG family? |
 | HQ-QS-009 | unsupported (data missing) (drg) | needs router | What is our Medicare spending per beneficiary for episodes around admission compared with expected? |
 | HQ-QS-034 | unsupported (data missing) (claim_dx) | needs router | How many patients developed a hospital-acquired VTE without prophylaxis before diagnosis? |
 | HQ-QS-037 | unsupported (data missing) (claim_dx) | needs router | What is our cesarean rate for low-risk first births (NTSV) by obstetrician? |
@@ -153,7 +153,7 @@ Buckets: **answered locally** = compiles to the expected engine; **needs router*
 | HQ-PH-028 | unsupported (data missing) (geography) | needs router | Which ZIP codes have unexpectedly high rates of asthma ED visits? |
 | HQ-PH-029 | unsupported (data missing) (geography) | needs router | What share of screened patients reported food insecurity or housing instability, by ZIP code? |
 | HQ-PH-034 | unsupported (data missing) (geography) | needs router | Which social and geographic factors are most associated with avoidable ED use in our community? |
-| HQ-CDS-006 | unsupported (data missing) (cancer_screening) | needs router | What share of abnormal screening mammograms (BI-RADS 0, 4, 5) had diagnostic follow-up within 30 days? |
+| HQ-CDS-006 | unsupported (data missing) (cancer_screening) | answered locally | What share of abnormal screening mammograms (BI-RADS 0, 4, 5) had diagnostic follow-up within 30 days? |
 | HQ-CDS-034 | unsupported (data missing) (cancer_screening) | needs router | What share of patients who decided against cancer screening had a documented shared decision? |
 
 ## Correctness backlog on `v1.23`: wrong engine or declined locally (15)
@@ -191,6 +191,7 @@ Buckets: **answered locally** = compiles to the expected engine; **needs router*
 | HQ-PAY-026 | unsupported (data missing) | literal_lookup | network | What share of specialist claims were paid to out-of-network providers, by specialty? |
 | HQ-PAY-033 | needs new engine | new_engine:provider_network_graph | network | Are there clusters of providers that refer patients among themselves at unusual rates, suggesting kickback arrangements? |
 | HQ-PAY-046 | knowledge | knowledge | knowledge | How is the medical loss ratio calculated and what counts as quality improvement expense? |
+| HQ-QS-001 | unsupported (data missing) | risk_outcomes | risk_outcomes | What is our expected excess readmission ratio for heart failure, pneumonia and COPD under HRRP? |
 | HQ-BH-042 | knowledge | knowledge | knowledge | What does the evidence say about retention and mortality on buprenorphine versus methadone? |
 | HQ-WF-022 | unsupported (data missing) | literal_lookup | knowledge | What is compensation per wRVU by physician, and who is far from the benchmark? |
 | HQ-WF-038 | unsupported (data missing) | literal_lookup | cohort | How many workplace violence incidents against staff were reported by unit? |
@@ -280,6 +281,14 @@ Buckets: **answered locally** = compiles to the expected engine; **needs router*
 | HQ-LS-018 | target_trial | Among new users, do SGLT2 inhibitors reduce heart failure hospitalization compared with DPP-4 inhibitors? |
 | HQ-LS-020 | target_trial | Does starting a GLP-1 agonist slow eGFR decline compared with starting an SGLT2 inhibitor? |
 | HQ-LS-021 | program_effect | Did starting an SGLT2 inhibitor reduce heart-failure admissions in our patients with HFrEF? |
+| HQ-CDS-001 | loop_closure | Which abnormal lab results have no documented acknowledgement or follow-up action after 14 days? |
+| HQ-CDS-002 | loop_closure | Which patients with an incidental lung nodule needing follow-up imaging have not had it done on schedule? |
+| HQ-CDS-003 | loop_closure | How many imaging reports in the last year recommended follow-up imaging, and how many were completed? |
+| HQ-CDS-004 | loop_closure | What is the median time from an abnormal result to a documented clinician review? |
+| HQ-CDS-007 | loop_closure | What share of specialist referrals have a consult note returned to the referring clinician? |
+| HQ-CDS-008 | loop_closure | How many ordered labs were never collected or never resulted, by ordering practice? |
+| HQ-CDS-009 | diagnostic_delay | How many patients discharged from the ED with dizziness were admitted for stroke within 30 days? |
+| HQ-CDS-010 | diagnostic_delay | Among new colorectal cancer diagnoses, how many had iron-deficiency anemia or rectal bleeding recorded more than 6 months earlier? |
 | HQ-CDS-011 | sql | How many patients have two eGFR values below 60 at least 90 days apart but no CKD diagnosis? |
 | HQ-CDS-012 | sql | How many patients have an A1c of 6.5% or more on two occasions without a diabetes diagnosis? |
 | HQ-CDS-019 | sql | What share of patients with diabetes or hypertension had a urine albumin-to-creatinine ratio test in the last year? |
@@ -314,6 +323,8 @@ Buckets: **answered locally** = compiles to the expected engine; **needs router*
 | HQ-RX-039 | sql | How many patients 65 and older are on a Beers-list medication, by drug? |
 | HQ-RX-041 | sql | Which patients on metformin have an eGFR below 30? |
 | HQ-RX-045 | sql | What share of ordered inpatient doses were documented as not given, and what were the reasons? |
+| HQ-QS-001 | risk_outcomes | What is our expected excess readmission ratio for heart failure, pneumonia and COPD under HRRP? |
+| HQ-QS-008 | risk_outcomes | What is our observed-to-expected length of stay by DRG family? |
 | HQ-QS-022 | early_signal | Which current inpatients show the vital-sign and lab pattern that usually precedes septic shock? |
 | HQ-QS-031 | early_signal | Which ward patients show early signs of deterioration that preceded past rapid-response calls? |
 | HQ-BH-008 | program_effect | Did starting MOUD reduce ED visits and admissions for patients with opioid use disorder? |
@@ -329,6 +340,15 @@ Buckets: **answered locally** = compiles to the expected engine; **needs router*
 | HQ-LS-018 | target_trial | Among new users, do SGLT2 inhibitors reduce heart failure hospitalization compared with DPP-4 inhibitors? |
 | HQ-LS-020 | target_trial | Does starting a GLP-1 agonist slow eGFR decline compared with starting an SGLT2 inhibitor? |
 | HQ-LS-021 | program_effect | Did starting an SGLT2 inhibitor reduce heart-failure admissions in our patients with HFrEF? |
+| HQ-CDS-001 | loop_closure | Which abnormal lab results have no documented acknowledgement or follow-up action after 14 days? |
+| HQ-CDS-002 | loop_closure | Which patients with an incidental lung nodule needing follow-up imaging have not had it done on schedule? |
+| HQ-CDS-003 | loop_closure | How many imaging reports in the last year recommended follow-up imaging, and how many were completed? |
+| HQ-CDS-004 | loop_closure | What is the median time from an abnormal result to a documented clinician review? |
+| HQ-CDS-006 | loop_closure | What share of abnormal screening mammograms (BI-RADS 0, 4, 5) had diagnostic follow-up within 30 days? |
+| HQ-CDS-007 | loop_closure | What share of specialist referrals have a consult note returned to the referring clinician? |
+| HQ-CDS-008 | loop_closure | How many ordered labs were never collected or never resulted, by ordering practice? |
+| HQ-CDS-009 | diagnostic_delay | How many patients discharged from the ED with dizziness were admitted for stroke within 30 days? |
+| HQ-CDS-010 | diagnostic_delay | Among new colorectal cancer diagnoses, how many had iron-deficiency anemia or rectal bleeding recorded more than 6 months earlier? |
 | HQ-CDS-011 | sql | How many patients have two eGFR values below 60 at least 90 days apart but no CKD diagnosis? |
 | HQ-CDS-012 | sql | How many patients have an A1c of 6.5% or more on two occasions without a diabetes diagnosis? |
 | HQ-CDS-019 | sql | What share of patients with diabetes or hypertension had a urine albumin-to-creatinine ratio test in the last year? |
@@ -411,7 +431,7 @@ Buckets: **answered locally** = compiles to the expected engine; **needs router*
 
 | Engine | Questions |
 |---|---:|
-| literal_lookup | 344 |
+| literal_lookup | 338 |
 | knowledge | 26 |
 | explain | 18 |
 | demand | 17 |
@@ -420,6 +440,7 @@ Buckets: **answered locally** = compiles to the expected engine; **needs router*
 | program_effect | 10 |
 | claims_review | 9 |
 | outreach | 9 |
+| loop_closure | 8 |
 | profile | 7 |
 | discover | 6 |
 | early_signal | 6 |

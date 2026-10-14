@@ -300,9 +300,21 @@
   "domain": "pharmacy"
  },
  {
+  "question": "What is our expected excess readmission ratio for heart failure, pneumonia and COPD under HRRP?",
+  "expect_operation": "risk_outcomes",
+  "id": "HQ-QS-001",
+  "domain": "quality_patient_safety"
+ },
+ {
   "question": "Which attending physicians have high readmission rates after adjusting for case mix and volume?",
   "expect_operation": "profile",
   "id": "HQ-QS-005",
+  "domain": "quality_patient_safety"
+ },
+ {
+  "question": "What is our observed-to-expected length of stay by DRG family?",
+  "expect_operation": "risk_outcomes",
+  "id": "HQ-QS-008",
   "domain": "quality_patient_safety"
  },
  {
@@ -714,9 +726,63 @@
   "domain": "life_sciences_rwe"
  },
  {
+  "question": "Which abnormal lab results have no documented acknowledgement or follow-up action after 14 days?",
+  "expect_operation": "loop_closure",
+  "id": "HQ-CDS-001",
+  "domain": "clinical_decision_support"
+ },
+ {
+  "question": "Which patients with an incidental lung nodule needing follow-up imaging have not had it done on schedule?",
+  "expect_operation": "loop_closure",
+  "id": "HQ-CDS-002",
+  "domain": "clinical_decision_support"
+ },
+ {
+  "question": "How many imaging reports in the last year recommended follow-up imaging, and how many were completed?",
+  "expect_operation": "loop_closure",
+  "id": "HQ-CDS-003",
+  "domain": "clinical_decision_support"
+ },
+ {
+  "question": "What is the median time from an abnormal result to a documented clinician review?",
+  "expect_operation": "loop_closure",
+  "id": "HQ-CDS-004",
+  "domain": "clinical_decision_support"
+ },
+ {
   "question": "How long after a positive fecal immunochemical test do patients get a colonoscopy, and what share wait more than 6 months?",
   "expect_operation": "survival",
   "id": "HQ-CDS-005",
+  "domain": "clinical_decision_support"
+ },
+ {
+  "question": "What share of abnormal screening mammograms (BI-RADS 0, 4, 5) had diagnostic follow-up within 30 days?",
+  "expect_operation": "loop_closure",
+  "id": "HQ-CDS-006",
+  "domain": "clinical_decision_support"
+ },
+ {
+  "question": "What share of specialist referrals have a consult note returned to the referring clinician?",
+  "expect_operation": "loop_closure",
+  "id": "HQ-CDS-007",
+  "domain": "clinical_decision_support"
+ },
+ {
+  "question": "How many ordered labs were never collected or never resulted, by ordering practice?",
+  "expect_operation": "loop_closure",
+  "id": "HQ-CDS-008",
+  "domain": "clinical_decision_support"
+ },
+ {
+  "question": "How many patients discharged from the ED with dizziness were admitted for stroke within 30 days?",
+  "expect_operation": "diagnostic_delay",
+  "id": "HQ-CDS-009",
+  "domain": "clinical_decision_support"
+ },
+ {
+  "question": "Among new colorectal cancer diagnoses, how many had iron-deficiency anemia or rectal bleeding recorded more than 6 months earlier?",
+  "expect_operation": "diagnostic_delay",
+  "id": "HQ-CDS-010",
   "domain": "clinical_decision_support"
  },
  {

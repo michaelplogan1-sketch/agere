@@ -17,6 +17,7 @@
   "vbc": 61,
   "network": 71,
   "scheduling": 25,
+  "loop_closure": 89,
   "monitor": 40,
   "outreach": 56,
   "survival": 101,
@@ -32,7 +33,7 @@
   "pathway": 36,
   "line_of_therapy": 92,
   "briefing": 10,
-  "early_signal": 27,
+  "early_signal": 35,
   "claims_review": 14,
   "risk_adjustment": 11,
   "contract_strategy": 100,
@@ -613,6 +614,86 @@
    "paid_router_logged": null
   },
   {
+   "question": "How long was the diagnosis of CKD delayed after eGFR first met the criteria?",
+   "expect": "diagnostic_delay",
+   "predicted": "diagnostic_delay",
+   "probability": 0.9266,
+   "covered": true,
+   "correct": true,
+   "compiler_handles": true,
+   "paid_router_logged": null
+  },
+  {
+   "question": "Which patients meet diabetes criteria but have no diabetes diagnosis?",
+   "expect": "diagnostic_delay",
+   "predicted": "literal_lookup",
+   "probability": 0.4518,
+   "covered": false,
+   "correct": false,
+   "compiler_handles": true,
+   "paid_router_logged": null
+  },
+  {
+   "question": "Missed opportunities before heart failure diagnoses: how many visits were there?",
+   "expect": "diagnostic_delay",
+   "predicted": "diagnostic_delay",
+   "probability": 0.9698,
+   "covered": true,
+   "correct": true,
+   "compiler_handles": true,
+   "paid_router_logged": null
+  },
+  {
+   "question": "Do a look-back for delayed colorectal cancer diagnoses",
+   "expect": "diagnostic_delay",
+   "predicted": "diagnostic_delay",
+   "probability": 0.7539,
+   "covered": false,
+   "correct": true,
+   "compiler_handles": true,
+   "paid_router_logged": null
+  },
+  {
+   "question": "Which patients look like undiagnosed hypertension?",
+   "expect": "diagnostic_delay",
+   "predicted": "trajectory",
+   "probability": 0.6222,
+   "covered": false,
+   "correct": false,
+   "compiler_handles": true,
+   "paid_router_logged": null
+  },
+  {
+   "question": "How many patients discharged from the ED with chest pain were admitted for a heart attack within 30 days?",
+   "expect": "diagnostic_delay",
+   "predicted": "literal_lookup",
+   "probability": 0.5748,
+   "covered": false,
+   "correct": false,
+   "compiler_handles": true,
+   "paid_router_logged": null
+  },
+  {
+   "question": "Diagnostic safety review: missed diagnosis of CKD by practice",
+   "expect": "diagnostic_delay",
+   "predicted": "diagnostic_delay",
+   "probability": 0.9727,
+   "covered": true,
+   "correct": true,
+   "compiler_handles": true,
+   "paid_router_logged": null
+  },
+  {
+   "question": "What signals were present before patients were diagnosed with heart failure?",
+   "expect": "diagnostic_delay",
+   "predicted": "diagnostic_delay",
+   "probability": 0.9208,
+   "covered": true,
+   "correct": true,
+   "compiler_handles": true,
+   "paid_router_logged": null
+  },
+  {
    "question": "Are there pockets of the population where uncontrolled diabetes clusters?",
    "expect": "discover",
    "predicted": "discover",
@@ -658,7 +739,7 @@
    "predicted": "discover",
    "probability": 0.3237,
    "covered": false,
-   "correct": true,
+   "correct": false,
    "compiler_handles": false,
    "paid_router_logged": null
   },
@@ -1178,7 +1259,7 @@
    "predicted": "monitor",
    "probability": 0.2944,
    "covered": false,
-   "correct": true,
+   "correct": false,
    "compiler_handles": false,
    "paid_router_logged": null
   },
@@ -1353,6 +1434,16 @@
    "paid_router_logged": null
   },
   {
+   "question": "What is our expected excess readmission ratio for heart failure, pneumonia and COPD under HRRP?",
+   "expect": "risk_outcomes",
+   "predicted": "explain",
+   "probability": 0.4073,
+   "covered": false,
+   "correct": false,
+   "compiler_handles": true,
+   "paid_router_logged": null
+  },
+  {
    "question": "Which attending physicians have high readmission rates after adjusting for case mix and volume?",
    "expect": "profile",
    "predicted": "profile",
@@ -1360,6 +1451,16 @@
    "covered": false,
    "correct": true,
    "compiler_handles": false,
+   "paid_router_logged": null
+  },
+  {
+   "question": "What is our observed-to-expected length of stay by DRG family?",
+   "expect": "risk_outcomes",
+   "predicted": "survival",
+   "probability": 0.285,
+   "covered": false,
+   "correct": false,
+   "compiler_handles": true,
    "paid_router_logged": null
   },
   {
@@ -1928,7 +2029,7 @@
    "predicted": "survival",
    "probability": 0.3733,
    "covered": false,
-   "correct": true,
+   "correct": false,
    "compiler_handles": false,
    "paid_router_logged": null
   },
@@ -2043,6 +2144,46 @@
    "paid_router_logged": null
   },
   {
+   "question": "Which abnormal lab results have no documented acknowledgement or follow-up action after 14 days?",
+   "expect": "loop_closure",
+   "predicted": "loop_closure",
+   "probability": 0.967,
+   "covered": true,
+   "correct": true,
+   "compiler_handles": true,
+   "paid_router_logged": null
+  },
+  {
+   "question": "Which patients with an incidental lung nodule needing follow-up imaging have not had it done on schedule?",
+   "expect": "loop_closure",
+   "predicted": "outreach",
+   "probability": 0.6057,
+   "covered": false,
+   "correct": false,
+   "compiler_handles": true,
+   "paid_router_logged": null
+  },
+  {
+   "question": "How many imaging reports in the last year recommended follow-up imaging, and how many were completed?",
+   "expect": "loop_closure",
+   "predicted": "literal_lookup",
+   "probability": 0.7404,
+   "covered": false,
+   "correct": false,
+   "compiler_handles": true,
+   "paid_router_logged": null
+  },
+  {
+   "question": "What is the median time from an abnormal result to a documented clinician review?",
+   "expect": "loop_closure",
+   "predicted": "survival",
+   "probability": 0.6402,
+   "covered": false,
+   "correct": false,
+   "compiler_handles": true,
+   "paid_router_logged": null
+  },
+  {
    "question": "How long after a positive fecal immunochemical test do patients get a colonoscopy, and what share wait more than 6 months?",
    "expect": "survival",
    "predicted": "survival",
@@ -2050,6 +2191,56 @@
    "covered": true,
    "correct": true,
    "compiler_handles": false,
+   "paid_router_logged": null
+  },
+  {
+   "question": "What share of abnormal screening mammograms (BI-RADS 0, 4, 5) had diagnostic follow-up within 30 days?",
+   "expect": "loop_closure",
+   "predicted": "loop_closure",
+   "probability": 0.9344,
+   "covered": true,
+   "correct": true,
+   "compiler_handles": true,
+   "paid_router_logged": null
+  },
+  {
+   "question": "What share of specialist referrals have a consult note returned to the referring clinician?",
+   "expect": "loop_closure",
+   "predicted": "network",
+   "probability": 0.5148,
+   "covered": false,
+   "correct": false,
+   "compiler_handles": true,
+   "paid_router_logged": null
+  },
+  {
+   "question": "How many ordered labs were never collected or never resulted, by ordering practice?",
+   "expect": "loop_closure",
+   "predicted": "literal_lookup",
+   "probability": 0.8789,
+   "covered": false,
+   "correct": false,
+   "compiler_handles": true,
+   "paid_router_logged": null
+  },
+  {
+   "question": "How many patients discharged from the ED with dizziness were admitted for stroke within 30 days?",
+   "expect": "diagnostic_delay",
+   "predicted": "literal_lookup",
+   "probability": 0.5095,
+   "covered": false,
+   "correct": false,
+   "compiler_handles": true,
+   "paid_router_logged": null
+  },
+  {
+   "question": "Among new colorectal cancer diagnoses, how many had iron-deficiency anemia or rectal bleeding recorded more than 6 months earlier?",
+   "expect": "diagnostic_delay",
+   "predicted": "diagnostic_delay",
+   "probability": 0.6093,
+   "covered": false,
+   "correct": true,
+   "compiler_handles": true,
    "paid_router_logged": null
   },
   {
@@ -2358,7 +2549,7 @@
    "predicted": "monitor",
    "probability": 0.3351,
    "covered": false,
-   "correct": false,
+   "correct": true,
    "compiler_handles": true,
    "paid_router_logged": null
   },
@@ -2988,7 +3179,7 @@
    "predicted": "early_signal",
    "probability": 0.2933,
    "covered": false,
-   "correct": false,
+   "correct": true,
    "compiler_handles": false,
    "paid_router_logged": null
   },
@@ -3040,6 +3231,86 @@
    "covered": false,
    "correct": true,
    "compiler_handles": false,
+   "paid_router_logged": null
+  },
+  {
+   "question": "What is the risk-standardized readmission rate by hospital?",
+   "expect": "risk_outcomes",
+   "predicted": "risk_outcomes",
+   "probability": 0.9426,
+   "covered": true,
+   "correct": true,
+   "compiler_handles": true,
+   "paid_router_logged": null
+  },
+  {
+   "question": "Show observed-to-expected 30-day readmissions by practice",
+   "expect": "risk_outcomes",
+   "predicted": "risk_outcomes",
+   "probability": 0.8793,
+   "covered": false,
+   "correct": true,
+   "compiler_handles": true,
+   "paid_router_logged": null
+  },
+  {
+   "question": "Funnel plot of readmission rates across our hospitals",
+   "expect": "risk_outcomes",
+   "predicted": "risk_outcomes",
+   "probability": 0.9307,
+   "covered": true,
+   "correct": true,
+   "compiler_handles": true,
+   "paid_router_logged": null
+  },
+  {
+   "question": "Which hospitals have risk-adjusted ED revisit rates worse than the network?",
+   "expect": "risk_outcomes",
+   "predicted": "profile",
+   "probability": 0.7995,
+   "covered": false,
+   "correct": false,
+   "compiler_handles": true,
+   "paid_router_logged": null
+  },
+  {
+   "question": "What is our excess readmission ratio for heart failure patients?",
+   "expect": "risk_outcomes",
+   "predicted": "explain",
+   "probability": 0.3534,
+   "covered": false,
+   "correct": false,
+   "compiler_handles": true,
+   "paid_router_logged": null
+  },
+  {
+   "question": "Risk-standardized 7-day ED returns by hospital",
+   "expect": "risk_outcomes",
+   "predicted": "risk_outcomes",
+   "probability": 0.9817,
+   "covered": true,
+   "correct": true,
+   "compiler_handles": true,
+   "paid_router_logged": null
+  },
+  {
+   "question": "O/E length of stay by hospital",
+   "expect": "risk_outcomes",
+   "predicted": "risk_outcomes",
+   "probability": 0.9441,
+   "covered": true,
+   "correct": true,
+   "compiler_handles": true,
+   "paid_router_logged": null
+  },
+  {
+   "question": "RSRR for our PCPs with confidence intervals",
+   "expect": "risk_outcomes",
+   "predicted": "risk_outcomes",
+   "probability": 0.7191,
+   "covered": false,
+   "correct": true,
+   "compiler_handles": true,
    "paid_router_logged": null
   },
   {
@@ -3898,7 +4169,7 @@
    "predicted": "vbc",
    "probability": 0.2716,
    "covered": false,
-   "correct": true,
+   "correct": false,
    "compiler_handles": false,
    "paid_router_logged": null
   },
@@ -3958,7 +4229,7 @@
    "predicted": "discover",
    "probability": 0.2835,
    "covered": false,
-   "correct": false,
+   "correct": true,
    "compiler_handles": true,
    "paid_router_logged": null
   },
@@ -4208,7 +4479,7 @@
    "predicted": "program_effect",
    "probability": 0.2083,
    "covered": false,
-   "correct": true,
+   "correct": false,
    "compiler_handles": false,
    "paid_router_logged": null
   },

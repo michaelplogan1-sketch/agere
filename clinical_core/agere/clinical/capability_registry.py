@@ -107,6 +107,20 @@ PRODUCT['trial_feasibility'] = {'population': 'optional', 'view': 'funnel',
                                        'patients, eligible patients by site (practice) and investigator (PCP), diversity of the eligible population by '
                                        'race, ethnicity, sex, age and language against stated goals, and expected newly eligible patients (enrolment) per '
                                        'month. A plain count with no trial framing is a literal lookup.'}
+PRODUCT['loop_closure'] = {'population': 'optional', 'view': 'loops',
+                           'use': 'Closing the loop (diagnostic safety): abnormal or critical results with no follow-up or acknowledgement, '
+                                  'referrals never completed, report / imaging recommendations not acted on, positive screens without a diagnostic '
+                                  'work-up, orders never resulted; open loops with age and owner, close rates by practice or clinician.'}
+
+PRODUCT['diagnostic_delay'] = {'population': 'optional', 'view': 'lookback',
+                               'use': 'Missed or delayed diagnoses (SPADE / look-back): how long before a CKD, diabetes, hypertension, heart-failure or '
+                                      'colorectal-cancer diagnosis the signals appeared, missed-opportunity visits, patients with diagnostic signals but '
+                                      'no diagnosis (review prompts), ED discharges later admitted with a missed diagnosis. HCC coding gaps are risk_adjustment.'}
+
+PRODUCT['risk_outcomes'] = {'population': 'optional', 'view': 'funnel',
+                            'use': 'CMS-style risk-standardized outcome rates (RSRR, observed-to-expected, excess readmission ratio, funnel plot) for '
+                                   'readmission, ED revisits, post-discharge ED visits, length of stay or mortality by hospital, practice or PCP. '
+                                   'Plain "fair comparison" of PCPs/practices is profile.'}
 
 # Questions a SQL query over the semantic tables answers exactly are handed to the verified SQL ladder.
 LITERAL = ('Literal data questions: counts, lists, sums, averages, maxima, record filters, date arithmetic, simple breakdowns '

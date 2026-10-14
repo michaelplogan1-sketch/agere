@@ -777,7 +777,86 @@ function funnelChart(f){const W=CW(),lh=34,T=6,H=T+f.length*lh+6,mx=Math.max(1,.
   s+='<text x="'+(cx+half+10)+'" y="'+(y+lh/2-3)+'" style="fill:var(--fg)">'+esc((r.criterion.length>44?r.criterion.slice(0,43)+'…':r.criterion))+'</text>';
   if(i)s+='<text x="'+(cx+half+10)+'" y="'+(y+lh/2+11)+'">'+(rm?'−'+fmt(rm)+(r.removed_missing_data?' ('+fmt(r.removed_missing_data)+' no data)':''):r.kind==='not applied'?'not applied':'none removed')+'</text>'});
  return s+'</svg>'}
+/* quality & safety: loop closure (status bars per item type, time-to-closure curves), diagnostic delay (delay histogram, prompts), risk-standardized outcomes (funnel) */
+const kpiT=(l,v)=>'<div class="kpi"><div class="l">'+esc(l)+'</div><div class="v">'+esc(v)+'</div></div>';
+const LOOP_ST=[['closed_on_time','var(--good)','closed on time'],['closed_late','var(--s2)','closed late'],['declined','var(--muted)','declined'],['open_overdue','var(--bad)','open past due'],['pending','var(--s3)','not yet due']];
+function loopBars(rows){if(!rows.length)return '';const W=CW(),lh=26,L=Math.min(Math.round(W*.34),12+7*Math.max(...rows.map(r=>label(r.group).length))),R=56,T=8,H=T+rows.length*lh+24;
+ let s=svgOpen(W,H,'Loop status by item type (share of items)');const X=v=>L+v*(W-L-R);
+ [0,.25,.5,.75,1].forEach(t=>{s+='<line class="gridl" x1="'+X(t)+'" x2="'+X(t)+'" y1="'+T+'" y2="'+(H-20)+'"/><text x="'+X(t)+'" y="'+(H-6)+'" text-anchor="middle">'+pct(t,0)+'</text>'});
+ rows.forEach((r,i)=>{const y=T+i*lh;let x0=0;s+='<text x="'+(L-6)+'" y="'+(y+lh/2+4)+'" text-anchor="end" style="fill:var(--fg)">'+esc(label(r.group))+'</text>';
+  LOOP_ST.forEach(([k,c,n])=>{const v=r.items?(r[k]||0)/r.items:0;if(v<=0)return;s+='<rect x="'+X(x0).toFixed(1)+'" y="'+(y+4)+'" width="'+Math.max(1,X(x0+v)-X(x0)).toFixed(1)+'" height="'+(lh-8)+'" style="fill:'+c+'"><title>'+esc(label(r.group)+': '+n+' '+r[k]+' of '+r.items)+'</title></rect>';x0+=v});
+  s+='<text x="'+(W-R+4)+'" y="'+(y+lh/2+4)+'">'+esc(isNum(r.close_rate)?pct(r.close_rate,0):'—')+'</text>'});
+ return s+'</svg><div class="legend">'+LOOP_ST.map(([k,c,n])=>'<span><span class="sw" style="background:'+c+'"></span>'+n+'</span>').join('')+'<span>right: close rate (on time / due)</span></div>'}
+function vizLoops(a){const o=(a.overall||{}).loop_closure||{},c=o.status_counts||{},p=o.parameters||{},bt=o.by_type||[],due=(o.items_total||0)-(c.pending||0);
+ const crit=((o.by_tier||{}).critical||{}).open_overdue||0;
+ let h='<section class="sec" data-focus="loops"><h3>Closing the loop — '+fmt(o.items_total)+' items opened '+esc((o.period||{}).start||'')+' to '+esc((o.period||{}).end||'')+'</h3><div class="kpis">'+
+  kpiT('Open past due',fmt(c.open_overdue||0))+kpiT('Critical open',fmt(crit))+kpiT('Close rate (on time)',due?pct((c.closed_on_time||0)/due,1):'—')+
+  kpiT('Closed late',fmt(c.closed_late||0))+kpiT('Declined',fmt(c.declined||0))+kpiT('Not yet due',fmt(c.pending||0))+'</div>'+loopBars(bt);
+ const tc=o.time_to_closure||{},names=Object.keys(tc);
+ if(names.length){const series=names.map(n=>({name:label(n)+' (median '+(isNum(tc[n].median_days)?fmt(tc[n].median_days,0)+'d':'—')+')',step:true,pts:tc[n].points||[]}));
+  h+='<h3 style="margin-top:12px">Time to closure (Kaplan-Meier, open items censored at the snapshot)</h3>'+legend(series,'loopkm')+
+   lines(series,{title:'Share of items closed by days since the item opened',y0:0,y1:1,ytick:v=>pct(v,0),xlabel:'days since result / order / referral',ylabel:'closed'})}
+ h+='</section>';
+ const rows=a.table||[];if(rows.length)h+='<section class="sec"><h3>Open loops past due ('+fmt(o.open_loops_total)+')</h3>'+tableHTML(rows,{name:'open-loops',
+  cols:['tier','item_type','item','patient_id','item_date','due_date','days_overdue','owner','practice','activity','expected_action'],render:{tier:v=>'<span class="'+(v==='critical'?'bad':'')+'">'+esc(v)+'</span>',item_type:v=>esc(label(v))}})+'</section>';
+ const g=o.by_group||[];if(g.length)h+='<details open><summary>Close rates by '+esc(label(o.group_by||'group'))+' ('+g.length+')</summary>'+tableHTML(g,{name:'loop-close-rates',
+  cols:['group','items','due','closed_on_time','closed_late','open_overdue','critical_open','pending','close_rate','close_rate_ci95','median_days_to_close'],render:{close_rate:v=>esc(pct(v,1)),close_rate_ci95:v=>esc(v?pct(v[0],0)+'–'+pct(v[1],0):'—')}})+'</details>';
+ const ev=o.closure_evidence||[];if(ev.length)h+='<details><summary>Closure evidence types ('+ev.length+')</summary>'+tableHTML(ev,{name:'loop-evidence'})+'</details>';
+ if((o.data_gaps||[]).length)h+='<details><summary>Data limits ('+o.data_gaps.length+')</summary><ul>'+o.data_gaps.map(x=>'<li>'+esc(x)+'</li>').join('')+'</ul></details>';
+ if((o.assumptions||[]).length)h+='<p class="hint"><b>Assumptions.</b> '+esc(o.assumptions.join(' '))+'</p>';
+ return h}
+function delayHist(bins){if(!bins||!bins.length)return '';const W=CW(),L=46,R=12,T=10,B=40,H=200,n=bins.length,hi=Math.max(1,...bins.map(b=>b.patients)),bw=(W-L-R)/n,Y=v=>T+(H-T-B)*(1-v/hi);
+ let s=svgOpen(W,H,'Diagnostic delay distribution (days from criterion to diagnosis)');ticks(0,hi,4).forEach(t=>{s+='<line class="gridl" x1="'+L+'" x2="'+(W-R)+'" y1="'+Y(t)+'" y2="'+Y(t)+'"/><text x="'+(L-6)+'" y="'+(Y(t)+4)+'" text-anchor="end">'+esc(fmt(t))+'</text>'});
+ bins.forEach((b,i)=>{const x=L+i*bw,lab=b.to==null?'>'+(b.from-1)+'d':b.from+'–'+b.to+'d',c=b.from>180?'var(--bad)':b.from>90?'var(--s2)':'var(--s1)';
+  s+='<rect x="'+(x+bw*.1).toFixed(1)+'" y="'+Y(b.patients).toFixed(1)+'" width="'+(bw*.8).toFixed(1)+'" height="'+Math.max(1,H-B-Y(b.patients)).toFixed(1)+'" rx="2" style="fill:'+c+'"><title>'+esc(lab+': '+b.patients+' patients')+'</title></rect><text x="'+(x+bw/2).toFixed(1)+'" y="'+(H-B+14)+'" text-anchor="middle">'+esc(lab)+'</text>'});
+ return s+'<text x="'+((L+W-R)/2)+'" y="'+(H-6)+'" text-anchor="middle">days from first meeting the criterion to the recorded diagnosis</text></svg>'}
+function vizDelay(a){const o=(a.overall||{}).diagnostic_delay||{},p=o.parameters||{},lb=o.lookback,ud=o.undiagnosed,lf=o.look_forward,t=o.target_label||label(p.target||'');
+ let h='<section class="sec" data-focus="delay"><h3>Diagnostic delay — '+esc(t)+' ('+esc(label(p.mode||''))+'). Review prompts, not diagnoses.</h3>';
+ if(lf){h+='<div class="kpis">'+kpiT('ED treat-and-release visits',fmt(lf.index_visits))+kpiT('With a related symptom code',fmt(lf.symptom_index_visits))+
+   kpiT('Admitted with '+t+' within '+p.horizon_days+'d',fmt(lf.returns_with_target))+kpiT('Rate after symptom visits',isNum(lf.symptom_rate)?pct(lf.symptom_rate,2):'—')+
+   kpiT('Rate after other ED visits',isNum(lf.other_rate)?pct(lf.other_rate,2):'—')+kpiT('Risk ratio',isNum(lf.risk_ratio)?fmt(lf.risk_ratio,2):'—')+'</div>';
+  if(isNum(lf.symptom_rate)||isNum(lf.other_rate))h+=hbars([{label:'symptom-coded ED visits',value:lf.symptom_rate},{label:'other ED visits',value:lf.other_rate}],{title:'Share admitted with the target diagnosis',fmt:v=>pct(v,2),tick:v=>pct(v,1)})}
+ if(lb){const d=lb.delay||{};h+='<div class="kpis">'+kpiT('Incident diagnoses',fmt(lb.incident))+kpiT('Prevalent (excluded)',fmt(lb.prevalent_excluded))+
+   kpiT('Criterion met before diagnosis',fmt(lb.with_prior_criterion))+kpiT('Median delay',isNum(d.median_days)?fmt(d.median_days,0)+' days':'—')+
+   kpiT('Delayed > 180 days',isNum(d.share_over_180)?pct(d.share_over_180,0):'—')+kpiT('Missed-opportunity visits',fmt(lb.missed_opportunity_visits))+'</div>'+delayHist(d.histogram);
+  const g=lb.by_group||[];if(g.length)h+='<details><summary>Delay by '+esc(label(p.group_by||'group'))+' ('+g.length+')</summary>'+tableHTML(g,{name:'delay-by-group'})+'</details>';
+  const cs=o.lookback_cases||[];if(cs.length)h+='<details><summary>Incident cases ('+cs.length+' shown)</summary>'+tableHTML(cs,{name:'delay-cases',cols:['patient_id','diagnosis_date','criterion_date','delay_days','criterion','missed_opportunity_visits','related_visits_in_lookback','practice','pcp','diagnosis_source']})+'</details>'}
+ if(ud){h+='<div class="kpis">'+kpiT('Criterion met, no diagnosis',fmt(ud.criterion_met))+kpiT('Seen since',fmt(ud.with_visit_since))+kpiT('One value never repeated',fmt(ud.unconfirmed_signal))+'</div>';
+  const g=ud.by_group||[];if(g.length)h+=hbars(g.slice(0,12).map(r=>({label:r.group,value:r.criterion_met})),{title:'Patients meeting the criterion without a diagnosis'})}
+ h+='</section>';const rows=a.table||[];
+ if(rows.length)h+='<section class="sec"><h3>'+(lf?'ED visits later admitted with '+esc(t):ud?'Review prompts':'Cases')+'</h3>'+tableHTML(rows,{name:'diagnostic-delay',caption:'Each row is a review prompt for a clinician, never a diagnosis.'})+'</section>';
+ if((o.data_gaps||[]).length)h+='<details><summary>Data limits ('+o.data_gaps.length+')</summary><ul>'+o.data_gaps.map(x=>'<li>'+esc(x)+'</li>').join('')+'</ul></details>';
+ if((o.assumptions||[]).length)h+='<p class="hint"><b>Assumptions.</b> '+esc(o.assumptions.join(' '))+'</p>';
+ return h}
+function funnelChart(f,net){const lim=(f||{}).limits||[],pts=(f||{}).points||[];if(!lim.length||!pts.length)return '';const W=CW(),H=W<480?240:300,L=52,R=16,T=12,B=42;
+ const ex=lim.map(r=>r.expected),lx=v=>Math.log10(v),x0=lx(Math.min(...ex)),x1=lx(Math.max(...ex));
+ const ys=pts.map(p=>p.oe_ratio).filter(isNum).concat(lim.map(r=>r['upper_0.998']).filter(isNum),[0]);let y1=Math.min(Math.max(2,...ys),6);
+ const X=v=>L+(lx(v)-x0)/((x1-x0)||1)*(W-L-R),Y=v=>T+(1-Math.min(v,y1)/y1)*(H-T-B);let s=svgOpen(W,H,'Funnel plot: observed / expected by expected events');
+ ticks(0,y1,5).forEach(t=>{s+='<line class="gridl" x1="'+L+'" x2="'+(W-R)+'" y1="'+Y(t)+'" y2="'+Y(t)+'"/><text x="'+(L-6)+'" y="'+(Y(t)+4)+'" text-anchor="end">'+esc(fmt(t,2))+'</text>'});
+ [Math.min(...ex),Math.sqrt(Math.min(...ex)*Math.max(...ex)),Math.max(...ex)].forEach(v=>{s+='<text x="'+X(v).toFixed(1)+'" y="'+(H-B+16)+'" text-anchor="middle">'+esc(fmt(v,1))+'</text>'});
+ [['0.95','var(--s2)','4 3'],['0.998','var(--bad)','2 3']].forEach(([lv,c,d])=>['lower_','upper_'].forEach(k=>{s+='<path d="'+lim.map((r,i)=>(i?'L':'M')+X(r.expected).toFixed(1)+','+Y(r[k+lv]).toFixed(1)).join('')+'" style="fill:none;stroke:'+c+';stroke-dasharray:'+d+';stroke-width:1.5"/>'}));
+ s+='<line x1="'+L+'" x2="'+(W-R)+'" y1="'+Y(1)+'" y2="'+Y(1)+'" style="stroke:var(--fg);stroke-dasharray:4 3"/>';
+ pts.forEach(p=>{if(!isNum(p.oe_ratio))return;const c=p.outside_998?'var(--bad)':p.outside_95?'var(--s2)':'var(--s1)';
+  s+='<circle cx="'+X(p.expected).toFixed(1)+'" cy="'+Y(p.oe_ratio).toFixed(1)+'" r="5" style="fill:'+c+';stroke:var(--card);stroke-width:1.5"><title>'+esc(p.unit+': O/E '+fmt(p.oe_ratio,2)+' on '+fmt(p.expected,1)+' expected')+'</title></circle>'});
+ return s+'<text x="'+((L+W-R)/2)+'" y="'+(H-6)+'" text-anchor="middle">expected events (log scale)</text></svg><div class="legend"><span>┄ O/E = 1 (network)</span><span><span class="sw" style="background:var(--s2);height:3px"></span>95% limits</span>'+
+  '<span><span class="sw" style="background:var(--bad);height:3px"></span>99.8% limits</span><span>dots: units (orange/red = outside the limits)</span></div>'}
+function vizFunnel(a){const o=(a.overall||{}).risk_outcomes||{},p=o.parameters||{},m=o.model||{},c=o.counts||{},rows=a.table||[],los=p.outcome==='length_of_stay',f=v=>los?fmt(v,2)+' d':pct(v,1);
+ let h='<section class="sec" data-focus="funnel"><h3>Risk-standardized '+esc(o.outcome_label||label(p.outcome||''))+(los?'':' ('+esc(p.window_days)+'-day)')+' by '+esc(p.unit||'unit')+'</h3><div class="kpis">'+
+  kpiT('Network rate',isNum(o.network_rate)?f(o.network_rate):'—')+kpiT('Index cases',fmt(m.cases))+kpiT(los?'Bed days':'Events',fmt(m.events))+kpiT('Worse than network',fmt(c.worse_than_network||0))+
+  kpiT('Better than network',fmt(c.better_than_network||0))+kpiT('Model c-statistic',isNum(m.c_statistic)?fmt(m.c_statistic,2):'—')+'</div>'+funnelChart(o.funnel,o.network_rate);
+ const iv=rows.filter(r=>isNum(r.rsr)).slice(0,25).map(r=>({label:String(r.unit),est:r.rsr,lo:(r.rsr_ci95||[])[0],hi:(r.rsr_ci95||[])[1],main:r.flag!=='no_different',note:r.flag==='no_different'?'':label(r.flag)}));
+ if(iv.length)h+='<h3 style="margin-top:12px">Risk-standardized rate with 95% interval (network '+esc(isNum(o.network_rate)?f(o.network_rate):'—')+')</h3>'+intervals(iv,{title:'Risk-standardized rate per unit',tick:f});
+ h+='</section>';
+ if(rows.length)h+='<section class="sec"><h3>Units</h3>'+tableHTML(rows,{name:'risk-standardized-outcomes',cols:['unit','flag','index_cases','observed','expected','oe_ratio','srr','srr_ci95','rsr','rsr_ci95','p_worse_than_network','rank','small_unit'],
+  head:{srr:'SRR (shrunk O/E)',rsr:'risk-standardized rate',p_worse_than_network:'P(worse)'},render:{flag:v=>esc(label(v||'')),rsr:v=>esc(isNum(v)?f(v):'—'),rsr_ci95:v=>esc(v?f(v[0])+'–'+f(v[1]):'—'),srr_ci95:v=>esc(v?fmt(v[0],2)+'–'+fmt(v[1],2):'—')}})+'</section>';
+ if((m.coefficients||[]).length)h+='<details><summary>Case-mix model ('+esc(m.family||'')+', '+fmt(m.coefficients.length)+' terms)</summary>'+tableHTML(m.coefficients,{name:'case-mix-model'})+'</details>';
+ if((o.notes||[]).length)h+='<ul class="hint">'+o.notes.map(x=>'<li>'+esc(x)+'</li>').join('')+'</ul>';
+ if((o.data_gaps||[]).length)h+='<details><summary>Data limits ('+o.data_gaps.length+')</summary><ul>'+o.data_gaps.map(x=>'<li>'+esc(x)+'</li>').join('')+'</ul></details>';
+ return h}
 function visual0(a){if(!a||a.answer_type==='unsupported')return '';const o=a.overall||{};
+  if(o.loop_closure)return vizLoops(a);
+  if(o.diagnostic_delay)return vizDelay(a);
+  if(o.risk_outcomes)return vizFunnel(a);
   if(o.target_trial)return vizTargetTrial(a);
   if(o.line_of_therapy)return vizLines(a);
   if(o.trial_feasibility)return vizFunnel(a);

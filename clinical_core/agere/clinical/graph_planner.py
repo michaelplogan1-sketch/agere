@@ -251,6 +251,37 @@ CONTRACTS['trial_feasibility'] = {'inputs':['optional earlier_set'],'parameters'
               'each criterion removes on its own, eligible patients by practice (site) and PCP (investigator), diversity of the eligible population '
               '(race, ethnicity, sex, age band, language) vs the source population and stated goals, expected newly eligible patients per month '
               '(trailing 12 months, Poisson interval). Criteria come only from the question; uncomputable ones are listed as not applied.'}
+CONTRACTS['loop_closure'] = {'inputs':['optional earlier_set'],'parameters':{'focus':'all|results|critical|screening|recommendations|orders|referrals|reports',
+    'period':{'start':'','end':''},'window_days':365,'windows':{},'group_by':'practice|owner|item_type|none','evidence':'any|specific',
+    'abnormal_basis':'actionable|reference_range','concept':'','owner':'','practice':'','top':50},
+    'meaning':'Closing the loop on results, orders, recommendations and referrals: each item (critical / abnormal lab result, positive mammogram or FIT, '
+              'report or note follow-up recommendation, test order, referral, abnormal report) has an expected follow-up action and window; closure '
+              'evidence is the earliest of a structured review citing the item (link table), the expected study / procedure / specialist visit / '
+              'service, a repeat test, a medication change, a visit or call, or note text naming the test (evidence type stated). Open loops with '
+              'age, days overdue, owner (ordering clinician, else PCP) and risk tier; close rates (on time / due, Wilson CI) by practice, owner or '
+              'type; Kaplan-Meier time to closure. Use for abnormal-results-without-follow-up, unacknowledged critical labs, incomplete referrals, '
+              'recommendations not acted on, orders never resulted.'}
+
+CONTRACTS['diagnostic_delay'] = {'inputs':['optional earlier_set'],'parameters':{'target':'ckd|diabetes|hypertension|heart_failure|colorectal_cancer|stroke|myocardial_infarction|sepsis',
+    'mode':'all|lookback|undiagnosed|look_forward','lookback_days':730,'washout_days':365,'horizon_days':30,'period':{'start':'','end':''},
+    'group_by':'practice|pcp|none','symptom_only':False,'top':50},
+    'meaning':'Diagnostic-delay look-back (Look-Back / SPADE): first diagnosis date across condition, incident-diagnosis, encounter and claim '
+              'records (incident cases after a washout); the earliest date labs / vitals / reports / note facts met a diagnostic criterion (KDIGO '
+              'eGFR/uACR, ADA A1c/glucose, 3 elevated BP days, EF <= 40 or NT-proBNP with dyspnea/edema, colorectal red flags); delay distribution, '
+              'missed-opportunity visits, related-symptom visits; patients meeting the criterion with no diagnosis as review prompts (never '
+              'diagnoses); look-forward from ED treat-and-release visits to admissions with the target. Use for missed / delayed diagnosis and '
+              'undiagnosed-with-signals questions framed as diagnostic safety; HCC coding gaps are risk_adjustment.'}
+
+CONTRACTS['risk_outcomes'] = {'inputs':['optional earlier_set'],'parameters':{'outcome':'readmission|post_discharge_ed|ed_revisit|mortality|length_of_stay',
+    'unit':'hospital|practice|pcp','window_days':30,'period':{'start':'','end':''},'period_days':1095,'include_observation':False,
+    'adjust':'age_sex_conditions|age_sex|none','focus':'','top':100},
+    'meaning':'CMS-style risk-standardized outcome rates: index stays or ED treat-and-release visits with complete follow-up; patient-level '
+              'logistic (Poisson for length of stay) case-mix model for expected events (age, sex, chronic conditions by the index date, prior '
+              'stays, observation); unit effects via the profile operator\'s hierarchical Poisson-gamma model on O/E (shrinkage, intervals, ranks); '
+              'SRR (ERR analogue), RSR = SRR x network rate, worse/better than network, funnel plot with Poisson limits. Mortality needs death '
+              'records (refused, naming them, when absent). Use for RSRR / O/E / excess readmission ratio / funnel / risk-standardized questions; '
+              'fair comparison of PCPs on plain rates is profile.'}
+
 CONTRACTS['claims_review'] = {'inputs':['optional earlier_set'],'parameters':{'focus':'all|providers|benford|duplicates|underpayment|denials|leakage',
     'by':'payer|provider|setting|service','period':{'start':'','end':''},'fdr':0.05,'min_claims':30,'window_days':3,'writeoff_days':120,'payer':'','provider':'','rework_cost':None},
     'meaning':'Payment integrity and revenue leakage over medical claims, every flag ranked by expected dollars (dollars x probability): provider peer outliers '

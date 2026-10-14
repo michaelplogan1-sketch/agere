@@ -1,0 +1,10 @@
+[
+ {"question": "Which abnormal lab results have no documented follow-up after 30 days?", "expect_operation": "loop_closure"},
+ {"question": "Which critical lab values were never acknowledged?", "expect_operation": "loop_closure"},
+ {"question": "Show referrals that were never completed", "expect_operation": "loop_closure"},
+ {"question": "Which imaging recommendations have not been acted on?", "expect_operation": "loop_closure"},
+ {"question": "What is our loop closure rate by practice?", "expect_operation": "loop_closure"},
+ {"question": "Positive FIT results without a colonoscopy: which ones are still open?", "expect_operation": "loop_closure"},
+ {"question": "Which ordered labs were never resulted, by ordering clinician?", "expect_operation": "loop_closure"},
+ {"question": "Which open referrals and abnormal results fell through the cracks this year?", "expect_operation": "loop_closure"}
+]

@@ -37,6 +37,7 @@ OPERATIONS |= {'risk_adjustment'}  # CMS-HCC RAF, coding gaps, recapture, suspec
 OPERATIONS |= {'network'}  # provider patient-sharing network: hubs, communities, cohesion, leakage, steering, spread (network.py)
 OPERATIONS |= {'contract_strategy'}  # risk contracts as options, track selection, Nash negotiation (contract_strategy.py)
 OPERATIONS |= {'target_trial', 'line_of_therapy', 'trial_feasibility'}  # life-sciences / RWE engines (target_trial.py, line_of_therapy.py, trial_feasibility.py)
+OPERATIONS |= {'loop_closure', 'diagnostic_delay', 'risk_outcomes'}  # quality & safety: open loops, diagnostic delay look-back, risk-standardized outcomes
 NODE_FIELDS = {'id', 'operation', 'inputs', 'parameters', 'purpose'}
 LIMITS = [
     'Membership means observed predicate matches, not confirmed disease or absent care.',
@@ -142,6 +143,7 @@ NO_BENCHMARK_OPERATIONS += ('risk_adjustment',)
 NO_BENCHMARK_OPERATIONS += ('network',)
 NO_BENCHMARK_OPERATIONS += ('contract_strategy',)
 NO_BENCHMARK_OPERATIONS += ('target_trial', 'line_of_therapy', 'trial_feasibility')
+NO_BENCHMARK_OPERATIONS += ('loop_closure', 'diagnostic_delay', 'risk_outcomes')
 
 
 def benchmark_references(answer, question=None, operation=None):
@@ -502,6 +504,48 @@ def build_answer(plan, results, memberships, question):
                                                                                'sites', 'pcps', 'diversity', 'forecast')}})
         if unapplied: answer['missing'] += [f'Criterion not computable from received data: {x}' for x in unapplied]
         return answer
+    if last['operation'] == 'loop_closure':
+        from .loop_closure import summarize as lc_summary
+        report = results[-1]['result']
+        partial = plan.get('coverage') != 'supported_observation' or plan.get('unmet_requirements')
+        value, table = lc_summary(report)
+        ok = report.get('status') == 'answered'
+        answer.update(status=('partial' if partial else 'answered') if ok else 'unsupported', answer_type='table' if ok else 'unsupported',
+                      value=value, table=table, count=report.get('open_loops_total'), method=report['method'], limitations=report['limitations'],
+                      overall={'loop_closure': {k: report.get(k) for k in ('parameters', 'period', 'as_of', 'items_total', 'status_counts', 'by_type', 'by_tier',
+                                                                         'by_group', 'group_by', 'closure_evidence', 'open_loops_total', 'time_to_closure',
+                                                                         'data_gaps', 'assumptions', 'capability')}})
+        if not ok: answer['missing'].append(value)
+        return answer
+    if last['operation'] == 'diagnostic_delay':
+        from .diagnostic_delay import summarize as dd_summary
+        report = results[-1]['result']
+        partial = plan.get('coverage') != 'supported_observation' or plan.get('unmet_requirements')
+        value, table = dd_summary(report)
+        ok = report.get('status') == 'answered'
+        lb, ud = report.get('lookback') or {}, report.get('undiagnosed') or {}
+        answer.update(status=('partial' if partial else 'answered') if ok else 'unsupported', answer_type='table' if ok else 'unsupported',
+                      value=value, table=table, count=ud.get('patients') if ud else lb.get('incident'), method=report['method'],
+                      limitations=report['limitations'],
+                      overall={'diagnostic_delay': {**{k: report.get(k) for k in ('parameters', 'as_of', 'target_label', 'data_gaps', 'assumptions', 'capability')},
+                                                    'lookback': {k: v for k, v in lb.items() if k != 'cases'} or None,
+                                                    'lookback_cases': (lb.get('cases') or [])[:50],
+                                                    'undiagnosed': {k: v for k, v in ud.items() if k != 'prompts'} or None,
+                                                    'look_forward': report.get('look_forward')}})
+        if not ok: answer['missing'].append(value)
+        return answer
+    if last['operation'] == 'risk_outcomes':
+        from .risk_outcomes import summarize as ro_summary
+        report = results[-1]['result']
+        partial = plan.get('coverage') != 'supported_observation' or plan.get('unmet_requirements')
+        value, table = ro_summary(report)
+        ok = report.get('status') == 'answered'
+        answer.update(status=('partial' if partial else 'answered') if ok else 'unsupported', answer_type='table' if ok else 'unsupported',
+                      value=value, table=table, count=report.get('units_total'), method=report['method'], limitations=report['limitations'],
+                      overall={'risk_outcomes': {k: report.get(k) for k in ('parameters', 'as_of', 'period', 'outcome_label', 'network_rate', 'counts', 'model',
+                                                                          'funnel', 'focus', 'small_units', 'notes', 'data_gaps', 'missing', 'capability')}})
+        if not ok: answer['missing'] += report.get('missing') or [value]
+        return answer
     if last['operation'] == 'contract_strategy':
         from .contract_strategy import summarize as cs_summary
         report = results[-1]['result']
@@ -716,6 +760,11 @@ def validate(plan, as_of):
             p = network.validate(p)
             if any(v > str(as_of)[:10] for v in p['period'].values() if v):
                 raise ValueError('Network period exceeds snapshot cutoff')
+        elif op in ('loop_closure', 'diagnostic_delay', 'risk_outcomes'):
+            from . import loop_closure, diagnostic_delay, risk_outcomes
+            p = {'loop_closure': loop_closure, 'diagnostic_delay': diagnostic_delay, 'risk_outcomes': risk_outcomes}[op].validate(p)
+            if any(v > str(as_of)[:10] for v in p['period'].values() if v):
+                raise ValueError(f'{op} period exceeds snapshot cutoff')
         elif op == 'risk_adjustment':
             from . import risk_adjustment
             p = risk_adjustment.validate(p)
@@ -1041,6 +1090,8 @@ def code_identity():
                       Path(__file__).with_name('risk_adjustment.py'), Path(__file__).parents[3] / 'config' / 'agere' / 'risk_adjustment' / 'manifest.json',
                       Path(__file__).parents[3] / 'config' / 'agere' / 'risk_adjustment' / 'payment_parameters.json',
                       Path(__file__).with_name('network.py'),
+                      Path(__file__).with_name('loop_closure.py'), Path(__file__).with_name('diagnostic_delay.py'),
+                      Path(__file__).with_name('risk_outcomes.py'), Path(__file__).with_name('safety_data.py'),
                       Path(__file__).with_name('market.py'),
                       Path(__file__).with_name('contract_strategy.py'), Path(__file__).with_name('programs.py'), Path(__file__).with_name('vbc.py'),
                       *[Path(__file__).with_name(n) for n in ('target_trial.py', 'line_of_therapy.py', 'trial_feasibility.py')],
@@ -1457,6 +1508,12 @@ def execute(stack, plan, *, question=None):
                 from . import network
                 chosen = memberships[node['inputs'][0]] if node['inputs'] else None
                 detail = network.execute(path, sorted(chosen.yes) if chosen else None, params, meta['snapshot']['as_of'])
+                if chosen: detail['input_membership'] = membership_receipt(chosen)
+            elif op in ('loop_closure', 'diagnostic_delay', 'risk_outcomes'):
+                from . import loop_closure, diagnostic_delay, risk_outcomes
+                engine = {'loop_closure': loop_closure, 'diagnostic_delay': diagnostic_delay, 'risk_outcomes': risk_outcomes}[op]
+                chosen = memberships[node['inputs'][0]] if node['inputs'] else None
+                detail = engine.execute(path, sorted(chosen.yes) if chosen else None, params, meta['snapshot']['as_of'])
                 if chosen: detail['input_membership'] = membership_receipt(chosen)
             elif op == 'risk_adjustment':
                 from . import risk_adjustment
