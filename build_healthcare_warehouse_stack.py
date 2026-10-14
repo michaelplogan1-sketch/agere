@@ -3,6 +3,7 @@ import argparse
 import json
 import sqlite3
 import time
+from collections import Counter
 from pathlib import Path
 from clinical_core.agere.warehouse import Warehouse
 from clinical_core.agere import healthcare_warehouse, healthcare_warehouse_v2, healthcare_warehouse_v3, healthcare_warehouse_v4
@@ -98,14 +99,21 @@ def main():
             searchable=db.execute("SELECT count(DISTINCT json_extract(source,'$.record_id')) FROM passages").fetchone()[0]
         finally:db.close()
         assert len(roster)==source['counts']['patients']
-        assert coverage=={k:v for k,v in source['counts'].items() if k!='patients'}
+        # Every ingested row is accounted for: current (in the stack) + superseded (history, hidden from the current
+        # view) + not visible at the cutoff + quarantined (ambiguous correction links), per stream.
+        snap=meta['snapshot'];accounted=Counter(coverage);not_current={}
+        for key in ('superseded_by_stream','not_visible_by_stream','correction_conflict_by_stream'):
+            accounted.update(snap.get(key,{}))
+            if snap.get(key):not_current[key[:-len('_by_stream')]]=sum(snap[key].values())
+        assert {k:v for k,v in accounted.items() if v}=={k:v for k,v in source['counts'].items() if k!='patients'},'ingested rows not reconciled'
         assert searchable==sum(coverage.values())
         result={'synthetic':True,'release':str(a.release.resolve()),'patients':len(roster),
                 'records':sum(coverage.values()),'source_categories':len(coverage),'searchable_records':searchable,
                 'snapshot':meta['snapshot'],'new_paid_api_calls':0,'new_model_weights':False,
                 'old_patient_results_reused':False,'old_forecasts_attached':False,
                 'semantic_students':{'attached':False,'reason':'Narrative source contract changed; separate requalification required.'},
-                'source_coverage':coverage,'elapsed_seconds_this_invocation':time.perf_counter()-started,
+                'source_coverage':coverage,**({'received_rows_not_current':not_current} if not_current else {}),
+                'elapsed_seconds_this_invocation':time.perf_counter()-started,
                 'status':'connected','limits':['Full transport and lexical coverage is not complete clinical interpretation.',
                     'Existing bounded reader vocabulary and clinical mappings need evaluation on this new source release.',
                     'Old source-specific forecasts and learning queues are not valid on the new population.']}

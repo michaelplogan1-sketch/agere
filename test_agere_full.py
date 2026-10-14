@@ -34,9 +34,12 @@ class WarehouseTest(unittest.TestCase):
     def test_identity_and_future_quarantine(self):
         rid=self.load([record(identity_status='mismatched'),record(record_id='b',event_date='2026-10-01')])
         p,s=self.w.snapshot(rid,'2026-09-30');self.assertEqual(s['visible_records'],0)
-    def test_competing_corrections_quarantine(self):
+    def test_multiple_corrections_supersede_parent_and_stay_current(self):
+        # v2.8 decision: several children of one parent (e.g. a claim void plus its replacement) are all current; the
+        # parent is superseded; downstream version logic interprets them. Only cycles / cross-patient links quarantine.
         rid=self.load([record(),record(record_id='b',supersedes_record_id='a'),record(record_id='c',supersedes_record_id='a')])
-        p,s=self.w.snapshot(rid,'2026-09-30');self.assertEqual(s['visible_records'],0)
+        p,s=self.w.snapshot(rid,'2026-09-30');self.assertEqual(sorted(r['record_id'] for r in p['p']['records']),['b','c'])
+        self.assertEqual(s['excluded'],{'superseded':1})
     def test_hash_mutation_rejected(self):
         self.load([record()]);(self.root/'observed/notes.jsonl').write_text('{}')
         with self.assertRaises(ValueError):self.w.ingest(self.root)

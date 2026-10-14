@@ -35,7 +35,11 @@ def exercise(stack):
     with patch.object(G,'send',side_effect=wire):
         graph,receipt=G.propose(question,None,None,snapshot=meta['snapshot'],graph_catalog=catalog,observed_values=observed)
     assert graph==A.validate(ex['graph'],meta['snapshot']['as_of'])
-    assert len(calls)==2 and receipt['new_paid_api_calls']==0
+    # Two-stage (capability selection, then planning) when the direct request exceeds REQUEST_MAX_BYTES; one direct
+    # planning call when it fits (128 KB bound). Each request is held to the bound inside wire().
+    stages=[c['stage'] for c in calls]
+    assert stages in (['planning'],['selection','planning']),stages
+    assert receipt['new_paid_api_calls']==0 if len(calls)==2 else (receipt.get('simulation') is True and receipt.get('new_paid_api_calls',0)==0)
     result={'synthetic':True,'passed':True,'question_characters':len(question),'calls':calls,'receipt':receipt,
         'provider_called':False,'semantic_model_quality_tested':False,'new_paid_api_calls':0}
     return result

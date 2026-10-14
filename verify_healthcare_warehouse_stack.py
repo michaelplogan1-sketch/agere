@@ -1,4 +1,5 @@
 """Exercise the connected original cohort; never reuse old-population results."""
+from collections import Counter
 import argparse
 import hashlib
 import json
@@ -15,6 +16,21 @@ from clinical_core.agere.clinical.context_student import REQUEST_MAX_BYTES  # sh
 def write(path,value):path.write_text(json.dumps(value,indent=2,allow_nan=False)+'\n')
 
 
+def current_source_counts(src,as_of):
+    """Rows current at as_of per stream, from the raw source alone: visible at the cutoff (event and arrival on or before
+    it), minus parents named by a visible same-patient, same-stream superseding row, minus superseding rows that point
+    across patients or streams (quarantined)."""
+    vis=lambda t:f'({t}.event_date IS NULL OR {t}.event_date<=:d) AND {t}.available_date<=:d'
+    counts=Counter(dict(src.execute(f"SELECT source_table,count(*) FROM source_records s WHERE {vis('s')} GROUP BY 1",{'d':as_of})))
+    if 'supersedes_record_id' in {r[1] for r in src.execute('PRAGMA table_info(source_records)')}:
+        link=f"FROM source_records n JOIN source_records o ON o.record_id=n.supersedes_record_id WHERE {vis('n')} AND {vis('o')}"
+        counts.subtract(dict(src.execute(f'SELECT o.source_table,count(DISTINCT o.record_id) {link} '
+                                         'AND o.patient_id=n.patient_id AND o.source_table=n.source_table GROUP BY 1',{'d':as_of})))
+        counts.subtract(dict(src.execute(f'SELECT n.source_table,count(*) {link} '
+                                         'AND (o.patient_id!=n.patient_id OR o.source_table!=n.source_table) GROUP BY 1',{'d':as_of})))
+    return {k:v for k,v in counts.items() if v}
+
+
 def main():
     p=argparse.ArgumentParser();p.add_argument('--build',type=Path,required=True);a=p.parse_args()
     out=a.build.resolve();root=Path(__file__).resolve().parent;connection=json.loads((out/'connection.json').read_text())
@@ -27,7 +43,7 @@ def main():
         expected={p[0] for p in src.execute('SELECT patient_id FROM patients')}
         actual={p[0] for p in db.execute('SELECT id FROM patients')}
         assert actual==expected
-        source_counts=dict(src.execute('SELECT source_table,count(*) FROM source_records GROUP BY source_table'))
+        source_counts=current_source_counts(src,connection['snapshot']['as_of'])
         counts=dict(db.execute('SELECT stream,count(*) FROM records GROUP BY stream'))
         assert counts==source_counts
         indexed=db.execute("SELECT count(DISTINCT json_extract(source,'$.record_id')) FROM passages").fetchone()[0]

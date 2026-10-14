@@ -11,4 +11,9 @@ if __name__=='__main__':
                    'Combine with --restatement when prior rows also changed')
     p.add_argument('--retraction',action='store_true',help='The new release drops prior rows (v2.6+: care dated after a death); requires a '
                    'retraction audit explaining every missing row by the declared post-death rule. Combines with the flags above')
-    a=p.parse_args();print(json.dumps(activate(a.build,a.config,restatement=a.restatement,expansion=a.expansion,retraction=a.retraction),indent=2))
+    p.add_argument('--rebaseline',action='store_true',help='Fresh baseline load (the release regenerates the population; not a continuation of the '
+                   'prior release). Every non-migration receipt must pass; the prior-release migration audit must exist and is recorded as '
+                   'an informational diff, not gated. Mutually exclusive with --restatement/--expansion/--retraction')
+    a=p.parse_args()
+    if a.rebaseline and (a.restatement or a.expansion or a.retraction):p.error('--rebaseline cannot be combined with --restatement, --expansion or --retraction')
+    print(json.dumps(activate(a.build,a.config,restatement=a.restatement,expansion=a.expansion,retraction=a.retraction,rebaseline=a.rebaseline),indent=2))

@@ -47,6 +47,29 @@ def validate_extension(connection,receipt,*,current_code,catalog_hash,categories
     return True
 
 
+REBASELINE_BASIS='Rebaselined release (fresh load; prior-release diff recorded, not gated)'
+DIFF_KEYS=('prior_release','new_release','kind','identical_roster','patients','prior_patients','new_patients','prior_patients_missing',
+           'prior_received_rows','new_received_rows','prior_rows_missing','prior_rows_changed','changed_by_table',
+           'prior_rows_reassigned','reassigned_by_table','retraction_rule','prior_rows_retracted','retracted_by_table','retracted_patients',
+           'prior_rows_unexplained','unexplained_by_table','unexplained_by_reason','unexplained_examples',
+           'deceased_patients_in_new_release','death_date_basis','rows_for_new_patients')
+
+
+def validate_rebaseline(migration,connection,prior,client_checks):
+    """--rebaseline: a fresh baseline load (like a new client's warehouse). The prior-release migration audit must exist
+    and belong to this build, but its diff is informational and never gates; the cutoff still may not roll back.
+    Client-data checks must have passed on this build's cutoff. Returns the informational diff."""
+    snapshot=connection['snapshot'];dataset=snapshot['source_dataset']
+    if (migration.get('new_received_rows')!=connection['records'] or migration.get('patient_id_digest')!=dataset['original_patient_id_digest'] or
+        migration.get('manifest_source_sha256')!=dataset['source_sha256']):raise ValueError('Rebaseline needs the prior-release audit of this build')
+    if not all(type(migration.get(k)) is int for k in ('prior_received_rows','prior_rows_missing','prior_rows_changed')) or not migration.get('prior_release'):
+        raise ValueError('Rebaseline needs the prior-release migration audit (recorded as an informational diff)')
+    if prior and prior['snapshot']['as_of']>snapshot['as_of']:raise ValueError('Activation would roll back the cutoff')
+    if (not isinstance(client_checks,dict) or client_checks.get('synthetic') is not True or client_checks.get('as_of')!=snapshot['as_of']):
+        raise ValueError('Rebaseline needs passing client-data checks for this build')
+    return {**{k:migration[k] for k in DIFF_KEYS if k in migration},'gated':False}
+
+
 def validate_migration(migration,connection,prior,*,restatement=False,expansion=False,retraction=False):
     """Migration gate. Returns 'identical' | 'restated' | 'expanded' | 'expanded_restated' or raises.
 
@@ -96,7 +119,9 @@ BASIS={'identical':'','restated':'Restated release: ','expanded':'Expanded relea
 BASIS.update({k+'_retracted':(v[:-2] if v else 'Release')+' with post-death retractions: ' for k,v in BASIS.items()})
 
 
-def activate(build,config,restatement=False,expansion=False,retraction=False):
+def activate(build,config,restatement=False,expansion=False,retraction=False,rebaseline=False):
+    if rebaseline and (restatement or expansion or retraction):
+        raise ValueError('--rebaseline is a fresh load; it cannot be combined with --restatement, --expansion or --retraction')
     from .healthcare_warehouse import checksum
     from .clinical import clinical_state,longitudinal
     build=Path(build).resolve();config=Path(config).resolve()
@@ -110,15 +135,21 @@ def activate(build,config,restatement=False,expansion=False,retraction=False):
                            catalog_hash=catalog_identity(),categories=DEFINITIONS)
     migration=read(build/'migration-audit.json');snapshot=connection['snapshot'];dataset=snapshot['source_dataset']
     prior=read(config) if config.exists() else None
-    kind=validate_migration(migration,connection,prior,restatement=restatement,expansion=expansion,retraction=retraction)
+    if rebaseline:
+        diff=validate_rebaseline(migration,connection,prior,read(build/'client-checks.json') if (build/'client-checks.json').exists() else None)
+        kind='rebaselined'
+    else:
+        kind=validate_migration(migration,connection,prior,restatement=restatement,expansion=expansion,retraction=retraction)
     restated=kind.startswith('restated')
     if checksum(dataset['source'])!=dataset['source_sha256']:raise ValueError('Pinned source content changed')
     clinical_state.attached(build/'stack');db,_=longitudinal.connect(build/'stack');db.close()
-    policy=('Original healthcare-warehouse roster; no expanded benchmark variants' if not kind.startswith('expanded') else
+    policy=(f"Rebaselined healthcare-warehouse roster: {connection['patients']} received patients loaded fresh; prior roster not carried forward" if rebaseline else
+            'Original healthcare-warehouse roster; no expanded benchmark variants' if not kind.startswith('expanded') else
             f"Expanded healthcare-warehouse roster: all {migration['prior_patients']} prior patients retained, {migration['new_patients']} received patients added")
     value={'schema':'active-healthcare-warehouse/1','build':str(build),'source_release':connection['release'],
            'snapshot':snapshot,'synthetic':True,'population_policy':policy,
-           'activation_basis':BASIS[kind]+'Qualified received-source migration, full-population contracts and diagnostic review; prior connection retained'}
+           'activation_basis':(REBASELINE_BASIS+'; full-population contracts, diagnostic review and client-data checks; prior connection retained' if rebaseline else
+                               BASIS[kind]+'Qualified received-source migration, full-population contracts and diagnostic review; prior connection retained')}
     config.parent.mkdir(parents=True,exist_ok=True)
     if prior:
         history=config.parent/'activation-history';history.mkdir(exist_ok=True)
@@ -135,6 +166,7 @@ def activate(build,config,restatement=False,expansion=False,retraction=False):
              'expansion':{k:migration[k] for k in ('prior_patients','new_patients','prior_patient_id_digest','prior_rows_changed','changed_by_table',
                                                    'prior_release') if k in migration} if kind.startswith('expanded') else None,
              'retraction':{k:migration[k] for k in ('retraction_rule','prior_rows_retracted','retracted_by_table','retracted_patients',
-                                                    'deceased_patients_in_new_release','prior_release') if k in migration} if kind.endswith('_retracted') else None}
+                                                    'deceased_patients_in_new_release','prior_release') if k in migration} if kind.endswith('_retracted') else None,
+             'rebaseline':{'basis':REBASELINE_BASIS,'prior_release_diff':diff} if rebaseline else None}
     (build/'activation.json').write_text(json.dumps(receipt,indent=2)+'\n')
     return receipt

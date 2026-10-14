@@ -80,41 +80,45 @@ class Warehouse:
         date.fromisoformat(cutoff)
         patients={r[0]:{'patient':json.loads(r[1]),'records':[]} for r in self.db.execute(
             'SELECT id,payload FROM patients WHERE release=? ORDER BY id',(release,))}
-        visible={}; excluded=Counter()
-        for rid,pid,event,arrival,identity,payload in self.db.execute(
-                'SELECT id,patient,event,arrival,identity,payload FROM records WHERE release=? ORDER BY event,id',(release,)):
-            if event is not None and event>cutoff: excluded['future']+=1;continue
-            if arrival>cutoff: excluded['late_arrival']+=1;continue
-            if identity!='matched': excluded['identity_quarantine']+=1;continue
-            visible[rid]=json.loads(payload)
+        # Supersession (warehouse v2.8+ supersedes_record_id; observed-release corrections): a record named in a VISIBLE
+        # record's supersedes_record_id is no longer current; every superseding child stays current, including several
+        # children of one parent (a claim void plus its replacement: the claim-version logic downstream decides what a
+        # void means). Superseded parents stay in the record store, so a cutoff before the child's arrival still sees
+        # them. Only cross-patient/cross-stream links and cycles are ambiguous: those records are quarantined.
+        visible={}; excluded=Counter(); hidden=Counter(); stream_of={}
+        for rid,pid,stream,event,arrival,identity,payload in self.db.execute(
+                'SELECT id,patient,stream,event,arrival,identity,payload FROM records WHERE release=? ORDER BY event,id',(release,)):
+            if event is not None and event>cutoff: excluded['future']+=1;hidden[stream]+=1;continue
+            if arrival>cutoff: excluded['late_arrival']+=1;hidden[stream]+=1;continue
+            if identity!='matched': excluded['identity_quarantine']+=1;hidden[stream]+=1;continue
+            visible[rid]=json.loads(payload);stream_of[rid]=stream
         superseded=set(); conflicts=[]
         for r in visible.values():
             prev=r.get('supersedes_record_id')
             if prev and prev in visible:
                 old=visible[prev]
-                if old['patient_id']!=r['patient_id'] or old['source_table']!=r['source_table'] or old['available_date']>r['available_date']:
+                if old['patient_id']!=r['patient_id'] or old['source_table']!=r['source_table']:
                     conflicts.append(r['record_id'])
                 else: superseded.add(prev)
-        # A correction cycle or competing correction is ambiguous: retain provenance, quarantine chain.
-        children={}
-        for r in visible.values():
-            if r.get('supersedes_record_id'): children.setdefault(r['supersedes_record_id'],[]).append(r['record_id'])
-        for parent,kids in children.items():
-            if len(kids)>1: conflicts.extend([parent,*kids])
+        # A correction cycle is ambiguous: retain provenance, quarantine the chain.
         for rid in visible:
             seen=set();current=rid
             while current in visible and visible[current].get('supersedes_record_id'):
                 if current in seen: conflicts.extend(seen);break
                 seen.add(current);current=visible[current]['supersedes_record_id']
-        blocked=set(conflicts)
+        blocked=set(conflicts); by_stream={'superseded':Counter(),'correction_conflict':Counter()}
         for rid,r in visible.items():
-            if rid in blocked: excluded['correction_conflict']+=1;continue
-            if rid in superseded: excluded['superseded']+=1;continue
+            if rid in blocked: excluded['correction_conflict']+=1;by_stream['correction_conflict'][stream_of[rid]]+=1;continue
+            if rid in superseded: excluded['superseded']+=1;by_stream['superseded'][stream_of[rid]]+=1;continue
             patients[r['patient_id']]['records'].append(r)
+        # Per-stream reconciliation (current + superseded + not visible at the cutoff + quarantined = ingested); only
+        # recorded when non-empty, so snapshots of releases without supersession or late rows are unchanged.
+        reconciliation={k:dict(v) for k,v in (('superseded_by_stream',by_stream['superseded']),('not_visible_by_stream',hidden),
+                        ('correction_conflict_by_stream',by_stream['correction_conflict'])) if v}
         source_meta=json.loads(self.db.execute('SELECT manifest FROM releases WHERE id=?',(release,)).fetchone()[0])
         extra={'source_dataset':{k:source_meta[k] for k in ('adapter','source','source_sha256','original_patient_id_digest')},
                'records_with_unknown_event_date':sum(r.get('event_date') is None for p in patients.values() for r in p['records'])} if source_meta.get('adapter') else {}
-        return patients,{**extra,'release':release,'as_of':cutoff,'excluded':dict(excluded),
+        return patients,{**extra,**reconciliation,'release':release,'as_of':cutoff,'excluded':dict(excluded),
                          'visible_records':sum(len(p['records']) for p in patients.values()),
                          'identity_method':'Explicit source crosswalk; no inferred fuzzy merge',
                          'coverage':'Unknown outside the observed contributing sources'}
