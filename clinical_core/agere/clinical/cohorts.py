@@ -118,7 +118,7 @@ def validate(spec, as_of=None):
                     raise ValueError('Diagnosis lists require exact membership or explicit code prefix')
         elif atom.get('kind') == 'concept':
             if set(atom) - {'system', 'status'} != {'kind', 'concept', 'window'} or not concepts.is_concept(atom['concept']) \
-                    or atom.get('system', 'any') not in ('any', 'icd10', 'snomed', 'label') \
+                    or atom.get('system', 'any') not in ('any', 'icd10', 'snomed', 'coded', 'label') \
                     or atom.get('status', 'completed') != 'completed' or ('status' in atom and atom['concept'] not in concepts.ENCOUNTERS):
                 raise ValueError('Concept predicate needs a library concept id (optional system any/icd10/snomed/label; '
                                  'optional status "completed" for encounter concepts)')
@@ -284,6 +284,7 @@ def evaluate_concept(atom, records, as_of):
         if system == 'icd10' and not (r.get('icd10') or r.get('problem_code')): continue
         if system == 'snomed' and not r.get('snomed'): continue
         if system == 'label' and (r.get('icd10') or r.get('snomed')): continue
+        if system == 'coded' and not (r.get('icd10') or r.get('snomed') or r.get('problem_code')): continue
         if atom['kind'] == 'measurement' and _unreported(r.get(binding['value_field'])):
             # Cancelled/unreported results (e.g. hemolysed specimen) carry no measurement.
             unreported += 1

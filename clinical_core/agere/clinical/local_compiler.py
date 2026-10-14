@@ -529,6 +529,9 @@ def _value_pattern(value):
     return r'(?<![a-z0-9])' + r'[\s_-]+'.join(stem(t) for t in parts) + r'(?![a-z0-9])'
 
 
+CODED_BOTH = r'\b(?:icd-?10 (?:and|or) snomed|snomed (?:and|or) icd-?10|coded (?:diagnos[ie]s|conditions?))\b'
+
+
 def _alias_pattern(alias):
     return r'(?<![a-z0-9])' + re.escape(alias) + r'(?![a-z0-9])'
 
@@ -1351,6 +1354,8 @@ def _population_question(q, r, profile, as_of, info):
         if system:
             atom['system'] = 'snomed' if system.group(1) == 'snomed' else 'icd10'
             r.take(r'\b' + re.escape(system.group(1)) + r'\b', 'coding system', overlap=True)
+        elif re.search(CODED_BOTH, low):  # "across ICD-10 and SNOMED": coded diagnoses only, not free-text mentions
+            atom['system'] = 'coded'
         target = anyp if start in in_or else excl if _negated(low, start) else allp
         if atom not in target: target.append(atom)
     r.take(r'\beither\b', None)
