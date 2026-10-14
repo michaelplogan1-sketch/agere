@@ -1,0 +1,879 @@
+[
+ {
+  "id": "Q01",
+  "question": "How many emergency department visits did we have in 2029?",
+  "category": "hospital_operations",
+  "as_of": "2030-05-27",
+  "interpretation": "Original 1,614-person roster; identity-matched records received on or before the as-of date (2030-05-27) only. No inferred diagnoses, hidden truth or future events. ED visit = encounters row with type 'emergency', 'ED' or 'ED stroke alert' (hospital ED encounters arrive as an in_progress row and a completed row with the same encounter_id; those versions collapse to ONE visit by encounter_id; visit date = earliest event_date across its versions). Calendar 2029 = 2029-01-01 through 2029-12-31 inclusive. Counting unit: distinct ED encounter_id. Legacy practice-recorded ED history rows are included only if dated in 2029 (none are).",
+  "answer_type": "count",
+  "reference_sql": "sql/heldout9/Q01.sql",
+  "split": "heldout9",
+  "tolerance": 0
+ },
+ {
+  "id": "Q02",
+  "question": "Which patients had two or more ED visits in 2029?",
+  "category": "hospital_operations",
+  "as_of": "2030-05-27",
+  "interpretation": "Original 1,614-person roster; identity-matched records received on or before the as-of date (2030-05-27) only. No inferred diagnoses, hidden truth or future events. ED visit = encounters row with type 'emergency', 'ED' or 'ED stroke alert' (hospital ED encounters arrive as an in_progress row and a completed row with the same encounter_id; those versions collapse to ONE visit by encounter_id; visit date = earliest event_date across its versions). Calendar 2029 = 2029-01-01 through 2029-12-31 inclusive. Per patient count distinct ED encounter_ids dated in 2029; return patient IDs with >= 2. The in_progress/completed version pair of one visit is not two visits.",
+  "answer_type": "patient_set",
+  "reference_sql": "sql/heldout9/Q02.sql",
+  "split": "heldout9",
+  "tolerance": 0
+ },
+ {
+  "id": "Q03",
+  "question": "What was the average inpatient length of stay, in days, for stays discharged in 2029?",
+  "category": "hospital_operations",
+  "as_of": "2030-05-27",
+  "interpretation": "Original 1,614-person roster; identity-matched records received on or before the as-of date (2030-05-27) only. No inferred diagnoses, hidden truth or future events. Inpatient stay = encounters type 'inpatient', one per encounter_id (in_progress + completed version rows collapse; use the completed version, which carries start_time and end_time). Discharge date = date of end_time, in 2029-01-01..2029-12-31. LOS = (end_time - start_time) in fractional days (elapsed time, not midnights). Unit: mean days over stays, rounded to 4 dp; tolerance 0.01.",
+  "answer_type": "value",
+  "reference_sql": "sql/heldout9/Q03.sql",
+  "split": "heldout9",
+  "tolerance": 0.01
+ },
+ {
+  "id": "Q04",
+  "question": "What share of inpatient discharges in 2029 were followed by another inpatient admission within 180 days?",
+  "category": "hospital_operations",
+  "as_of": "2030-05-27",
+  "interpretation": "Original 1,614-person roster; identity-matched records received on or before the as-of date (2030-05-27) only. No inferred diagnoses, hidden truth or future events. Index = inpatient encounters (type 'inpatient', versions collapsed by encounter_id) with discharge date (date of end_time) in 2029. Readmission = a different inpatient encounter for the same patient whose admission date (earliest event_date) is after the index discharge date and <= 180 days later (any hospital). Rate = 100 x indexes with a readmission / indexes, %, 2 dp. (The 30-day version of this rate is 0.)",
+  "answer_type": "value",
+  "reference_sql": "sql/heldout9/Q04.sql",
+  "split": "heldout9",
+  "tolerance": 0.01
+ },
+ {
+  "id": "Q05",
+  "question": "How many hospital observation stays were there in 2029?",
+  "category": "hospital_operations",
+  "as_of": "2030-05-27",
+  "interpretation": "Original 1,614-person roster; identity-matched records received on or before the as-of date (2030-05-27) only. No inferred diagnoses, hidden truth or future events. Observation stay = encounters type 'observation' (POS 22), versions collapsed by encounter_id; stay date = earliest event_date across versions, in 2029. ADT observation_start/transfer events describe the same stays and are not added. Unit: distinct encounter_id.",
+  "answer_type": "count",
+  "reference_sql": "sql/heldout9/Q05.sql",
+  "split": "heldout9",
+  "tolerance": 0
+ },
+ {
+  "id": "Q06",
+  "question": "Break down 2029 ED visits by hospital.",
+  "category": "hospital_operations",
+  "as_of": "2030-05-27",
+  "interpretation": "Original 1,614-person roster; identity-matched records received on or before the as-of date (2030-05-27) only. No inferred diagnoses, hidden truth or future events. ED visit = encounters row with type 'emergency', 'ED' or 'ED stroke alert' (hospital ED encounters arrive as an in_progress row and a completed row with the same encounter_id; those versions collapse to ONE visit by encounter_id; visit date = earliest event_date across its versions). Calendar 2029 = 2029-01-01 through 2029-12-31 inclusive. Group distinct ED encounter_ids by the encounter organization_id. Columns organization_id, ed_visits.",
+  "answer_type": "table",
+  "reference_sql": "sql/heldout9/Q06.sql",
+  "split": "heldout9",
+  "tolerance": 0
+ },
+ {
+  "id": "Q07",
+  "question": "What was our ED visit rate per 1,000 patients in 2029?",
+  "category": "hospital_operations",
+  "as_of": "2030-05-27",
+  "interpretation": "Original 1,614-person roster; identity-matched records received on or before the as-of date (2030-05-27) only. No inferred diagnoses, hidden truth or future events. ED visit = encounters row with type 'emergency', 'ED' or 'ED stroke alert' (hospital ED encounters arrive as an in_progress row and a completed row with the same encounter_id; those versions collapse to ONE visit by encounter_id; visit date = earliest event_date across its versions). Calendar 2029 = 2029-01-01 through 2029-12-31 inclusive. Numerator = distinct ED encounter_ids dated 2029; denominator = all 1,614 roster patients (patients view). Rate x 1000, 2 dp.",
+  "answer_type": "value",
+  "reference_sql": "sql/heldout9/Q07.sql",
+  "split": "heldout9",
+  "tolerance": 0.01
+ },
+ {
+  "id": "Q08",
+  "question": "What percentage of billed dollars were denied on first submission for claims first adjudicated in 2029?",
+  "category": "revenue_cycle",
+  "as_of": "2030-05-27",
+  "interpretation": "Original 1,614-person roster; identity-matched records received on or before the as-of date (2030-05-27) only. No inferred diagnoses, hidden truth or future events. Medical claims: each adjudication is a medical_claims row (event_date = adjudication date, service_date = date of service); a repriced claim arrives as original paid row + 'reversed' row (negative financial_deltas_cents, original_adjudication_record_id points at the original) + replacement paid row; a denied claim may be corrected and later paid under the same claim_id. Dollar sums use financial_deltas_cents so reversals net out; claim counts use distinct claim_id. Per claim_id take the earliest adjudication row (event_date, non-reversal before reversal, then record_id). Population = claims whose first adjudication date is in 2029. Rate = 100 x billed_cents of claims whose first adjudication status is 'denied' / billed_cents of all such claims, 2 dp. A later paid re-adjudication does not undo the initial denial.",
+  "answer_type": "value",
+  "reference_sql": "sql/heldout9/Q08.sql",
+  "split": "heldout9",
+  "tolerance": 0.01
+ },
+ {
+  "id": "Q09",
+  "question": "How much did payers pay, net of reversals, on medical claims adjudicated in 2029?",
+  "category": "revenue_cycle",
+  "as_of": "2030-05-27",
+  "interpretation": "Original 1,614-person roster; identity-matched records received on or before the as-of date (2030-05-27) only. No inferred diagnoses, hidden truth or future events. Medical claims: each adjudication is a medical_claims row (event_date = adjudication date, service_date = date of service); a repriced claim arrives as original paid row + 'reversed' row (negative financial_deltas_cents, original_adjudication_record_id points at the original) + replacement paid row; a denied claim may be corrected and later paid under the same claim_id. Dollar sums use financial_deltas_cents so reversals net out; claim counts use distinct claim_id. Time anchor = adjudication event_date in 2029 (not service date). Sum financial_deltas_cents.payer over all medical_claims rows dated in 2029 (reversal rows negative, replacement rows positive, denied rows 0), dollars 2 dp.",
+  "answer_type": "value",
+  "reference_sql": "sql/heldout9/Q09.sql",
+  "split": "heldout9",
+  "tolerance": 0.01
+ },
+ {
+  "id": "Q10",
+  "question": "For claims first paid in 2029, what was the average number of days from date of service to payment?",
+  "category": "revenue_cycle",
+  "as_of": "2030-05-27",
+  "interpretation": "Original 1,614-person roster; identity-matched records received on or before the as-of date (2030-05-27) only. No inferred diagnoses, hidden truth or future events. Medical claims: each adjudication is a medical_claims row (event_date = adjudication date, service_date = date of service); a repriced claim arrives as original paid row + 'reversed' row (negative financial_deltas_cents, original_adjudication_record_id points at the original) + replacement paid row; a denied claim may be corrected and later paid under the same claim_id. Dollar sums use financial_deltas_cents so reversals net out; claim counts use distinct claim_id. Per claim_id, payment date = earliest event_date among its 'paid' adjudication rows (denied-then-paid claims use the paid date); lag = payment date - service_date. Population = claims whose first paid date is in 2029. Mean days, 2 dp.",
+  "answer_type": "value",
+  "reference_sql": "sql/heldout9/Q10.sql",
+  "split": "heldout9",
+  "tolerance": 0.01
+ },
+ {
+  "id": "Q11",
+  "question": "How many medical claims were reversed and reprocessed by the payer in 2029?",
+  "category": "revenue_cycle",
+  "as_of": "2030-05-27",
+  "interpretation": "Original 1,614-person roster; identity-matched records received on or before the as-of date (2030-05-27) only. No inferred diagnoses, hidden truth or future events. Medical claims: each adjudication is a medical_claims row (event_date = adjudication date, service_date = date of service); a repriced claim arrives as original paid row + 'reversed' row (negative financial_deltas_cents, original_adjudication_record_id points at the original) + replacement paid row; a denied claim may be corrected and later paid under the same claim_id. Dollar sums use financial_deltas_cents so reversals net out; claim counts use distinct claim_id. Count distinct claim_id with a medical_claims row of status 'reversed' whose event_date is in 2029 (each repricing = reversal of the original + replacement adjudication).",
+  "answer_type": "count",
+  "reference_sql": "sql/heldout9/Q11.sql",
+  "split": "heldout9",
+  "tolerance": 0
+ },
+ {
+  "id": "Q12",
+  "question": "How many claims were rejected at the clearinghouse in 2029 for a member ID problem?",
+  "category": "revenue_cycle",
+  "as_of": "2030-05-27",
+  "interpretation": "Original 1,614-person roster; identity-matched records received on or before the as-of date (2030-05-27) only. No inferred diagnoses, hidden truth or future events. claim_acknowledgements rows (source WH-CLEARINGHOUSE) with status 'rejected_for_member_identifier' and event_date in 2029. Counting unit: distinct claim_id (a claim rejected, corrected and resubmitted counts once; accepted acknowledgements excluded).",
+  "answer_type": "count",
+  "reference_sql": "sql/heldout9/Q12.sql",
+  "split": "heldout9",
+  "tolerance": 0
+ },
+ {
+  "id": "Q13",
+  "question": "Show net payer payments on medical claims adjudicated in 2029, by payer.",
+  "category": "revenue_cycle",
+  "as_of": "2030-05-27",
+  "interpretation": "Original 1,614-person roster; identity-matched records received on or before the as-of date (2030-05-27) only. No inferred diagnoses, hidden truth or future events. Medical claims: each adjudication is a medical_claims row (event_date = adjudication date, service_date = date of service); a repriced claim arrives as original paid row + 'reversed' row (negative financial_deltas_cents, original_adjudication_record_id points at the original) + replacement paid row; a denied claim may be corrected and later paid under the same claim_id. Dollar sums use financial_deltas_cents so reversals net out; claim counts use distinct claim_id. Adjudication event_date in 2029; group by the adjudicating payer organization_id (WH-PAYER-0/1/2). Columns payer, net_paid_usd (dollars, 2 dp; tolerance 0.01).",
+  "answer_type": "table",
+  "reference_sql": "sql/heldout9/Q13.sql",
+  "split": "heldout9",
+  "tolerance": 0.01
+ },
+ {
+  "id": "Q14",
+  "question": "What was our net pharmacy claim payer spend in 2029?",
+  "category": "revenue_cycle",
+  "as_of": "2030-05-27",
+  "interpretation": "Original 1,614-person roster; identity-matched records received on or before the as-of date (2030-05-27) only. No inferred diagnoses, hidden truth or future events. pharmacy_claim_transactions with event_date in 2029: sum payer_paid_delta_cents (paid transactions positive, 'reversed' transactions carry the negative of the original payment, 'rejected' transactions 0). Dollars, 2 dp. Pharmacy dispense rows are not claims.",
+  "answer_type": "value",
+  "reference_sql": "sql/heldout9/Q14.sql",
+  "split": "heldout9",
+  "tolerance": 0.01
+ },
+ {
+  "id": "Q15",
+  "question": "How many pharmacy claims were rejected as refill too soon in 2029?",
+  "category": "revenue_cycle",
+  "as_of": "2030-05-27",
+  "interpretation": "Original 1,614-person roster; identity-matched records received on or before the as-of date (2030-05-27) only. No inferred diagnoses, hidden truth or future events. pharmacy_claim_transactions with transaction_status 'rejected' and reject_code 'REFILL_TOO_SOON', event_date in 2029. Unit: distinct claim_id.",
+  "answer_type": "count",
+  "reference_sql": "sql/heldout9/Q15.sql",
+  "split": "heldout9",
+  "tolerance": 0
+ },
+ {
+  "id": "Q16",
+  "question": "How many patients picked up a statin in 2029?",
+  "category": "pharmacy",
+  "as_of": "2030-05-27",
+  "interpretation": "Original 1,614-person roster; identity-matched records received on or before the as-of date (2030-05-27) only. No inferred diagnoses, hidden truth or future events. Statin = lower(medication_name) containing simvastatin, atorvastatin, rosuvastatin, pravastatin, lovastatin, pitavastatin or fluvastatin (both '... mg tablet' and RxNorm-style '... oral tablet' spellings; nystatin is not a statin). Only pharmacy_dispenses rows with status 'dispensed' are pickups; 'prepared' and 'returned_to_stock' rows of the same fill_id, and medication orders/lists, are not. Calendar 2029 = 2029-01-01 through 2029-12-31 inclusive. Anchor = pharmacy_dispenses event_date. Unit: distinct patients.",
+  "answer_type": "count",
+  "reference_sql": "sql/heldout9/Q16.sql",
+  "split": "heldout9",
+  "tolerance": 0
+ },
+ {
+  "id": "Q17",
+  "question": "How many fills did we dispense in 2029 for each major cardiometabolic drug class?",
+  "category": "pharmacy",
+  "as_of": "2030-05-27",
+  "interpretation": "Original 1,614-person roster; identity-matched records received on or before the as-of date (2030-05-27) only. No inferred diagnoses, hidden truth or future events. Only pharmacy_dispenses rows with status 'dispensed' are pickups; 'prepared' and 'returned_to_stock' rows of the same fill_id, and medication orders/lists, are not. Calendar 2029 = 2029-01-01 through 2029-12-31 inclusive. One fill per fill_id (legacy rows without fill_id count by record_id). Class from lower(medication_name), first match in this order: statin (simva/atorva/rosuva/prava/lova/pitava/fluvastatin); ace_inhibitor (lisinopril, enalapril, benazepril, quinapril, ramipril; lisinopril/HCTZ combos count here); arb (losartan, valsartan, irbesartan; sacubitril/valsartan counts as arb); loop_diuretic (furosemide, bumetanide, torsemide); beta_blocker (carvedilol, metoprolol, atenolol, bisoprolol, propranolol, labetalol); p2y12_inhibitor (clopidogrel, prasugrel, ticagrelor); metformin. Other drugs excluded. Columns drug_class, fills.",
+  "answer_type": "table",
+  "reference_sql": "sql/heldout9/Q17.sql",
+  "split": "heldout9",
+  "tolerance": 0
+ },
+ {
+  "id": "Q18",
+  "question": "Which statin patients picked up at least 180 days' supply of statin in 2029?",
+  "category": "pharmacy",
+  "as_of": "2030-05-27",
+  "interpretation": "Original 1,614-person roster; identity-matched records received on or before the as-of date (2030-05-27) only. No inferred diagnoses, hidden truth or future events. Statin = lower(medication_name) containing simvastatin, atorvastatin, rosuvastatin, pravastatin, lovastatin, pitavastatin or fluvastatin (both '... mg tablet' and RxNorm-style '... oral tablet' spellings; nystatin is not a statin). Only pharmacy_dispenses rows with status 'dispensed' are pickups; 'prepared' and 'returned_to_stock' rows of the same fill_id, and medication orders/lists, are not. Calendar 2029 = 2029-01-01 through 2029-12-31 inclusive. Per patient sum days_supply_reported over distinct dispensed statin fills (one row per fill_id) dated in 2029; return patient IDs with total >= 180 days. Adherence proxy, not PDC.",
+  "answer_type": "patient_set",
+  "reference_sql": "sql/heldout9/Q18.sql",
+  "split": "heldout9",
+  "tolerance": 0
+ },
+ {
+  "id": "Q19",
+  "question": "How many prescriptions were prepared at the pharmacy in 2029 but never picked up?",
+  "category": "pharmacy",
+  "as_of": "2030-05-27",
+  "interpretation": "Original 1,614-person roster; identity-matched records received on or before the as-of date (2030-05-27) only. No inferred diagnoses, hidden truth or future events. pharmacy_dispenses rows with status 'returned_to_stock' (reasons: not collected after hold, patient declined, prescriber hold) dated in 2029. Unit: distinct fill_id. 'prepared' rows alone are not unclaimed fills.",
+  "answer_type": "count",
+  "reference_sql": "sql/heldout9/Q19.sql",
+  "split": "heldout9",
+  "tolerance": 0
+ },
+ {
+  "id": "Q20",
+  "question": "How many of our diabetics had poor glycemic control (latest 2029 A1c above 9%)?",
+  "category": "quality",
+  "as_of": "2030-05-27",
+  "interpretation": "Original 1,614-person roster; identity-matched records received on or before the as-of date (2030-05-27) only. No inferred diagnoses, hidden truth or future events. Diabetes = conditions icd10 beginning E10, E11 or E13 (includes 'Disorder of kidney due to diabetes mellitus' E11.21, 'Microalbuminuria/Proteinuria due to type 2 diabetes' E11.29); 'Prediabetes' R73.03 and 'Family history of diabetes' Z83.3 are NOT diabetes. HbA1c = labs named 'HbA1c' or 'Hemoglobin A1c' (unit %) with an event_date and numeric value; the undated legacy 'Hemoglobin A1c/Hemoglobin.total' rows and cancelled/non-numeric results are skipped. Latest = most recent 2029 result (event_date 2029-01-01..2029-12-31; ties by event_time, record_id). Poor control = latest value > 9.0 (strict). Diabetics with no 2029 A1c are NOT counted here (not 'missing = uncontrolled'). Unit: distinct patients.",
+  "answer_type": "count",
+  "reference_sql": "sql/heldout9/Q20.sql",
+  "split": "heldout9",
+  "tolerance": 0
+ },
+ {
+  "id": "Q21",
+  "question": "How many hypertensive patients had their blood pressure controlled at their last 2029 reading?",
+  "category": "quality",
+  "as_of": "2030-05-27",
+  "interpretation": "Original 1,614-person roster; identity-matched records received on or before the as-of date (2030-05-27) only. No inferred diagnoses, hidden truth or future events. Hypertension = conditions icd10 I10-I13/I15/I16 or description containing 'hypertension' or 'HTN', excluding pulmonary hypertension (I27.x). BP reading = vitals row carrying both blood_pressure_systolic and blood_pressure_diastolic with an event_date; the undated legacy chart-import rows (measurement 'bp_systolic'/'bp_diastolic', one value per row, no event_date) are not used. Latest = max event_date, then event_time, then record_id. Calendar 2029 = 2029-01-01 through 2029-12-31 inclusive. Controlled = latest 2029 reading systolic < 140 AND diastolic < 90. Hypertensives with no dated 2029 reading excluded. Unit: distinct patients.",
+  "answer_type": "count",
+  "reference_sql": "sql/heldout9/Q21.sql",
+  "split": "heldout9",
+  "tolerance": 0
+ },
+ {
+  "id": "Q22",
+  "question": "How many patients got a flu shot for the 2029-2030 season?",
+  "category": "quality",
+  "as_of": "2030-05-27",
+  "interpretation": "Original 1,614-person roster; identity-matched records received on or before the as-of date (2030-05-27) only. No inferred diagnoses, hidden truth or future events. immunizations rows with vaccine 'influenza', administration_status 'completed', season '2029-2030' (Fluarix/Fluad). Immunization orders, decisions, outreach, consent and history streams are not administrations. Unit: distinct patients (second pediatric doses do not double count).",
+  "answer_type": "count",
+  "reference_sql": "sql/heldout9/Q22.sql",
+  "split": "heldout9",
+  "tolerance": 0
+ },
+ {
+  "id": "Q23",
+  "question": "How many patients had a screening mammogram resulted in 2029?",
+  "category": "quality",
+  "as_of": "2030-05-27",
+  "interpretation": "Original 1,614-person roster; identity-matched records received on or before the as-of date (2030-05-27) only. No inferred diagnoses, hidden truth or future events. cancer_screening_results rows with test 'bilateral_screening_mammography', result_status 'final', performed_date in 2029. Orders, received_screening_orders and patient-recalled screening history are not completed screens. Unit: distinct patients.",
+  "answer_type": "count",
+  "reference_sql": "sql/heldout9/Q23.sql",
+  "split": "heldout9",
+  "tolerance": 0
+ },
+ {
+  "id": "Q24",
+  "question": "How many diabetics had a urine albumin-to-creatinine ratio test in 2029?",
+  "category": "quality",
+  "as_of": "2030-05-27",
+  "interpretation": "Original 1,614-person roster; identity-matched records received on or before the as-of date (2030-05-27) only. No inferred diagnoses, hidden truth or future events. Diabetes = conditions icd10 beginning E10, E11 or E13 (includes 'Disorder of kidney due to diabetes mellitus' E11.21, 'Microalbuminuria/Proteinuria due to type 2 diabetes' E11.29); 'Prediabetes' R73.03 and 'Family history of diabetes' Z83.3 are NOT diabetes. uACR = labs named 'Urine albumin/creatinine ratio' or 'Microalbumin/Creatinine' (mg/g) with an event_date in 2029 and numeric value (undated legacy 'Microalbumin/Creatinine' rows excluded; urine albumin alone does not count). Unit: distinct patients.",
+  "answer_type": "count",
+  "reference_sql": "sql/heldout9/Q24.sql",
+  "split": "heldout9",
+  "tolerance": 0
+ },
+ {
+  "id": "Q25",
+  "question": "Which diabetic patients did not have an A1c test in 2029?",
+  "category": "quality",
+  "as_of": "2030-05-27",
+  "interpretation": "Original 1,614-person roster; identity-matched records received on or before the as-of date (2030-05-27) only. No inferred diagnoses, hidden truth or future events. Diabetes = conditions icd10 beginning E10, E11 or E13 (includes 'Disorder of kidney due to diabetes mellitus' E11.21, 'Microalbuminuria/Proteinuria due to type 2 diabetes' E11.29); 'Prediabetes' R73.03 and 'Family history of diabetes' Z83.3 are NOT diabetes. HbA1c = labs named 'HbA1c' or 'Hemoglobin A1c' (unit %) with an event_date and numeric value; the undated legacy 'Hemoglobin A1c/Hemoglobin.total' rows and cancelled/non-numeric results are skipped. Calendar 2029 = 2029-01-01 through 2029-12-31 inclusive. Return patient IDs of diabetics with no dated numeric HbA1c in 2029 (undated legacy A1c rows do not close the gap).",
+  "answer_type": "patient_set",
+  "reference_sql": "sql/heldout9/Q25.sql",
+  "split": "heldout9",
+  "tolerance": 0
+ },
+ {
+  "id": "Q26",
+  "question": "How many diabetics picked up a statin in 2029?",
+  "category": "quality",
+  "as_of": "2030-05-27",
+  "interpretation": "Original 1,614-person roster; identity-matched records received on or before the as-of date (2030-05-27) only. No inferred diagnoses, hidden truth or future events. Diabetes = conditions icd10 beginning E10, E11 or E13 (includes 'Disorder of kidney due to diabetes mellitus' E11.21, 'Microalbuminuria/Proteinuria due to type 2 diabetes' E11.29); 'Prediabetes' R73.03 and 'Family history of diabetes' Z83.3 are NOT diabetes. Statin = lower(medication_name) containing simvastatin, atorvastatin, rosuvastatin, pravastatin, lovastatin, pitavastatin or fluvastatin (both '... mg tablet' and RxNorm-style '... oral tablet' spellings; nystatin is not a statin). Only pharmacy_dispenses rows with status 'dispensed' are pickups; 'prepared' and 'returned_to_stock' rows of the same fill_id, and medication orders/lists, are not. Calendar 2029 = 2029-01-01 through 2029-12-31 inclusive. Unit: distinct diabetic patients with >= 1 dispensed statin fill dated 2029.",
+  "answer_type": "count",
+  "reference_sql": "sql/heldout9/Q26.sql",
+  "split": "heldout9",
+  "tolerance": 0
+ },
+ {
+  "id": "Q27",
+  "question": "What was our inpatient admission rate per 1,000 patients in 2029?",
+  "category": "population_health",
+  "as_of": "2030-05-27",
+  "interpretation": "Original 1,614-person roster; identity-matched records received on or before the as-of date (2030-05-27) only. No inferred diagnoses, hidden truth or future events. Admission = encounters type 'inpatient', versions collapsed by encounter_id, admission date = earliest event_date in 2029. Denominator = 1,614 roster patients. Admissions x 1000 / patients, 2 dp. Observation stays are not admissions.",
+  "answer_type": "value",
+  "reference_sql": "sql/heldout9/Q27.sql",
+  "split": "heldout9",
+  "tolerance": 0.01
+ },
+ {
+  "id": "Q28",
+  "question": "What was our medical PMPM on an allowed-amount basis for 2029?",
+  "category": "population_health",
+  "as_of": "2030-05-27",
+  "interpretation": "Original 1,614-person roster; identity-matched records received on or before the as-of date (2030-05-27) only. No inferred diagnoses, hidden truth or future events. Medical claims: each adjudication is a medical_claims row (event_date = adjudication date, service_date = date of service); a repriced claim arrives as original paid row + 'reversed' row (negative financial_deltas_cents, original_adjudication_record_id points at the original) + replacement paid row; a denied claim may be corrected and later paid under the same claim_id. Dollar sums use financial_deltas_cents so reversals net out; claim counts use distinct claim_id. Method: numerator = sum of financial_deltas_cents.allowed (dollars) over medical_claims rows whose service_date is in 2029 (incurred basis; reversals net out, denied rows add 0). Denominator = member-months = 12 x patients whose coverage row status is 'active' (1,475; coverage effective 2026-08-28 with no end date; 139 'no_active_plan_reported' uninsured excluded). PMPM = numerator / member-months, dollars 2 dp. Pharmacy claims excluded.",
+  "answer_type": "value",
+  "reference_sql": "sql/heldout9/Q28.sql",
+  "split": "heldout9",
+  "tolerance": 0.01
+ },
+ {
+  "id": "Q29",
+  "question": "How many of our patients are on each type of coverage?",
+  "category": "population_health",
+  "as_of": "2030-05-27",
+  "interpretation": "Original 1,614-person roster; identity-matched records received on or before the as-of date (2030-05-27) only. No inferred diagnoses, hidden truth or future events. coverage stream: one registration row per patient (effective 2026-08-28/29; no later coverage changes received). Group distinct patients by coverage_type (commercial, medicaid, medicare, uninsured). Columns coverage_type, patients.",
+  "answer_type": "table",
+  "reference_sql": "sql/heldout9/Q29.sql",
+  "split": "heldout9",
+  "tolerance": 0
+ },
+ {
+  "id": "Q30",
+  "question": "How many patients had a Medicare annual wellness visit in 2029?",
+  "category": "population_health",
+  "as_of": "2030-05-27",
+  "interpretation": "Original 1,614-person roster; identity-matched records received on or before the as-of date (2030-05-27) only. No inferred diagnoses, hidden truth or future events. wellness_visit_services rows with visit_type 'medicare_annual_wellness' (HCPCS G0438), status 'completed', event_date in 2029. Generic 'preventive_review' wellness visits are not AWVs. Unit: distinct patients.",
+  "answer_type": "count",
+  "reference_sql": "sql/heldout9/Q30.sql",
+  "split": "heldout9",
+  "tolerance": 0
+ },
+ {
+  "id": "Q31",
+  "question": "What were our 2029 inpatient discharges by DRG, based on facility claims?",
+  "category": "population_health",
+  "as_of": "2030-05-27",
+  "interpretation": "Original 1,614-person roster; identity-matched records received on or before the as-of date (2030-05-27) only. No inferred diagnoses, hidden truth or future events. Medical claims: each adjudication is a medical_claims row (event_date = adjudication date, service_date = date of service); a repriced claim arrives as original paid row + 'reversed' row (negative financial_deltas_cents, original_adjudication_record_id points at the original) + replacement paid row; a denied claim may be corrected and later paid under the same claim_id. Dollar sums use financial_deltas_cents so reversals net out; claim counts use distinct claim_id. Facility claims = medical_claims rows carrying ms_drg; discharge_date in 2029; exclude 'reversed' rows and count distinct claim_id so a repriced claim counts once. Group by DRG title. Columns drg_title, claims.",
+  "answer_type": "table",
+  "reference_sql": "sql/heldout9/Q31.sql",
+  "split": "heldout9",
+  "tolerance": 0
+ },
+ {
+  "id": "Q32",
+  "question": "How many patients reported food insecurity on a social needs screen in 2029?",
+  "category": "social_needs",
+  "as_of": "2030-05-27",
+  "interpretation": "Original 1,614-person roster; identity-matched records received on or before the as-of date (2030-05-27) only. No inferred diagnoses, hidden truth or future events. social_screens rows (brief_clinical_needs_interview) with food_difficulty_reported = true and event_date in 2029. Unit: distinct patients (repeat screens count once).",
+  "answer_type": "count",
+  "reference_sql": "sql/heldout9/Q32.sql",
+  "split": "heldout9",
+  "tolerance": 0
+ },
+ {
+  "id": "Q33",
+  "question": "Which patients screened positive for food insecurity in 2029 but have no food resource referral on record?",
+  "category": "social_needs",
+  "as_of": "2030-05-27",
+  "interpretation": "Original 1,614-person roster; identity-matched records received on or before the as-of date (2030-05-27) only. No inferred diagnoses, hidden truth or future events. Positive = social_screens food_difficulty_reported true, event_date in 2029. Food referral = referrals row referral_type 'food_resource_contact' OR community_service_referrals row service_requested 'food_access', event_date on or after 2029-01-01 (through as-of). Return patient IDs positive without any such referral.",
+  "answer_type": "patient_set",
+  "reference_sql": "sql/heldout9/Q33.sql",
+  "split": "heldout9",
+  "tolerance": 0
+ },
+ {
+  "id": "Q34",
+  "question": "How many patients had a transportation barrier documented in 2029?",
+  "category": "social_needs",
+  "as_of": "2030-05-27",
+  "interpretation": "Original 1,614-person roster; identity-matched records received on or before the as-of date (2030-05-27) only. No inferred diagnoses, hidden truth or future events. social_screens rows dated 2029 where transport_difficulty_reported = true (brief_clinical_needs_interview) or the older form's transport = 'unreliable' ('family_ride' is not a barrier). Unit: distinct patients.",
+  "answer_type": "count",
+  "reference_sql": "sql/heldout9/Q34.sql",
+  "split": "heldout9",
+  "tolerance": 0
+ },
+ {
+  "id": "Q35",
+  "question": "What was our appointment no-show rate for visits scheduled in 2029, excluding cancellations?",
+  "category": "access",
+  "as_of": "2030-05-27",
+  "interpretation": "Original 1,614-person roster; identity-matched records received on or before the as-of date (2030-05-27) only. No inferred diagnoses, hidden truth or future events. Appointments arrive as versioned rows per appointment_id (a 'booked' row then outcome rows: fulfilled/attended/arrived = kept, no_show, cancelled, rescheduled, unassigned_requires_review). One outcome per appointment_id; scheduled date = scheduled_date on the latest row (event_date, record_id) that carries one. Scheduled date in 2029. Kept = any fulfilled/attended/arrived row; no-show = a no_show row and never kept. Rate = 100 x no-shows / (kept + no-shows); cancelled, rescheduled-only, still-booked and unassigned appointments are excluded. 2 dp.",
+  "answer_type": "value",
+  "reference_sql": "sql/heldout9/Q35.sql",
+  "split": "heldout9",
+  "tolerance": 0.01
+ },
+ {
+  "id": "Q36",
+  "question": "For kept appointments scheduled in 2029, what was the average lead time from booking to the appointment date?",
+  "category": "access",
+  "as_of": "2030-05-27",
+  "interpretation": "Original 1,614-person roster; identity-matched records received on or before the as-of date (2030-05-27) only. No inferred diagnoses, hidden truth or future events. Appointments arrive as versioned rows per appointment_id (a 'booked' row then outcome rows: fulfilled/attended/arrived = kept, no_show, cancelled, rescheduled, unassigned_requires_review). One outcome per appointment_id; scheduled date = scheduled_date on the latest row (event_date, record_id) that carries one. Booking date = earliest event_date of the appointment's 'booked' row; lead time = scheduled date - booking date in days; population = appointments with scheduled date in 2029 that were kept (fulfilled/attended/arrived). Mean days, 2 dp.",
+  "answer_type": "value",
+  "reference_sql": "sql/heldout9/Q36.sql",
+  "split": "heldout9",
+  "tolerance": 0.01
+ },
+ {
+  "id": "Q37",
+  "question": "How many appointments were cancelled in 2029, and through which channel?",
+  "category": "access",
+  "as_of": "2030-05-27",
+  "interpretation": "Original 1,614-person roster; identity-matched records received on or before the as-of date (2030-05-27) only. No inferred diagnoses, hidden truth or future events. Appointments arrive as versioned rows per appointment_id (a 'booked' row then outcome rows: fulfilled/attended/arrived = kept, no_show, cancelled, rescheduled, unassigned_requires_review). One outcome per appointment_id; scheduled date = scheduled_date on the latest row (event_date, record_id) that carries one. Cancellation = a 'cancelled' status row with event_date in 2029; unit = distinct appointment_id; grouped by cancellation_channel on that row (null channel kept as its own group). Columns cancellation_channel, cancellations.",
+  "answer_type": "table",
+  "reference_sql": "sql/heldout9/Q37.sql",
+  "split": "heldout9",
+  "tolerance": 0
+ },
+ {
+  "id": "Q38",
+  "question": "How many patients have moderate or worse depression symptoms on their most recent PHQ-9 in the past year?",
+  "category": "behavioral_health",
+  "as_of": "2030-05-27",
+  "interpretation": "Original 1,614-person roster; identity-matched records received on or before the as-of date (2030-05-27) only. No inferred diagnoses, hidden truth or future events. PHQ-9 = mood_questionnaires rows with instrument 'PHQ-9' (one row per administration; repeat administrations per patient are separate rows; latest = max event_date, event_time, record_id). Past year = event_date 2029-05-28..2030-05-27 (12 months to as-of). Per patient take the latest PHQ-9 in that window; qualifies when total >= 10. Unit: distinct patients.",
+  "answer_type": "count",
+  "reference_sql": "sql/heldout9/Q38.sql",
+  "split": "heldout9",
+  "tolerance": 0
+ },
+ {
+  "id": "Q39",
+  "question": "Which patients have a PHQ-9 score that has worsened by at least 5 points since their first one?",
+  "category": "behavioral_health",
+  "as_of": "2030-05-27",
+  "interpretation": "Original 1,614-person roster; identity-matched records received on or before the as-of date (2030-05-27) only. No inferred diagnoses, hidden truth or future events. PHQ-9 = mood_questionnaires rows with instrument 'PHQ-9' (one row per administration; repeat administrations per patient are separate rows; latest = max event_date, event_time, record_id). All PHQ-9s through as-of; patients with >= 2 administrations; worsened = latest total - first total >= 5 (first = earliest event_date, event_time, record_id). Return patient IDs.",
+  "answer_type": "patient_set",
+  "reference_sql": "sql/heldout9/Q39.sql",
+  "split": "heldout9",
+  "tolerance": 0
+ },
+ {
+  "id": "Q40",
+  "question": "How many patients were referred for a behavioral health assessment?",
+  "category": "behavioral_health",
+  "as_of": "2030-05-27",
+  "interpretation": "Original 1,614-person roster; identity-matched records received on or before the as-of date (2030-05-27) only. No inferred diagnoses, hidden truth or future events. referrals rows with referral_type 'positive_depression_screen_assessment' or 'behavioral_health_assessment', any date through as-of. Unit: distinct patients.",
+  "answer_type": "count",
+  "reference_sql": "sql/heldout9/Q40.sql",
+  "split": "heldout9",
+  "tolerance": 0
+ },
+ {
+  "id": "Q41",
+  "question": "How many lab result rows have no result date?",
+  "category": "data_quality",
+  "as_of": "2030-05-27",
+  "interpretation": "Original 1,614-person roster; identity-matched records received on or before the as-of date (2030-05-27) only. No inferred diagnoses, hidden truth or future events. labs stream rows whose event_date is null (undated legacy chart-import results such as 'Hemoglobin A1c/Hemoglobin.total', 'Glomerular filtration rate', 'Cholesterol in LDL'). Unit: rows (not patients, not distinct tests).",
+  "answer_type": "count",
+  "reference_sql": "sql/heldout9/Q41.sql",
+  "split": "heldout9",
+  "tolerance": 0
+ },
+ {
+  "id": "Q42",
+  "question": "How many patients are missing race in their demographics?",
+  "category": "data_quality",
+  "as_of": "2030-05-27",
+  "interpretation": "Original 1,614-person roster; identity-matched records received on or before the as-of date (2030-05-27) only. No inferred diagnoses, hidden truth or future events. patients view (1,614 roster patients): race null or empty. Ethnicity is not race. Unit: patients.",
+  "answer_type": "count",
+  "reference_sql": "sql/heldout9/Q42.sql",
+  "split": "heldout9",
+  "tolerance": 0
+ },
+ {
+  "id": "Q43",
+  "question": "How many lab results were corrected in 2029?",
+  "category": "data_quality",
+  "as_of": "2030-05-27",
+  "interpretation": "Original 1,614-person roster; identity-matched records received on or before the as-of date (2030-05-27) only. No inferred diagnoses, hidden truth or future events. labs rows with result_status 'corrected' (each replaces an earlier result via replaces_result_record_id, e.g. eGFR recalculated after an age/demographic amendment) and event_date in 2029. Unit: corrected result rows.",
+  "answer_type": "count",
+  "reference_sql": "sql/heldout9/Q43.sql",
+  "split": "heldout9",
+  "tolerance": 0
+ },
+ {
+  "id": "Q44",
+  "question": "How many potassium results were reported in a unit other than mmol/L?",
+  "category": "data_quality",
+  "as_of": "2030-05-27",
+  "interpretation": "Original 1,614-person roster; identity-matched records received on or before the as-of date (2030-05-27) only. No inferred diagnoses, hidden truth or future events. labs rows named exactly 'Potassium' whose unit is not 'mmol/L' (all are 'mEq/L', numerically equivalent for potassium), dated or undated, any time through as-of. Unit: rows.",
+  "answer_type": "count",
+  "reference_sql": "sql/heldout9/Q44.sql",
+  "split": "heldout9",
+  "tolerance": 0
+ },
+ {
+  "id": "Q45",
+  "question": "How many 2029 encounters arrived as more than one version row?",
+  "category": "data_quality",
+  "as_of": "2030-05-27",
+  "interpretation": "Original 1,614-person roster; identity-matched records received on or before the as-of date (2030-05-27) only. No inferred diagnoses, hidden truth or future events. encounters stream: group rows by encounter_id (any type); encounter date = earliest event_date across its rows, in 2029; count encounter_ids with >= 2 rows (e.g. in_progress then completed).",
+  "answer_type": "count",
+  "reference_sql": "sql/heldout9/Q45.sql",
+  "split": "heldout9",
+  "tolerance": 0
+ },
+ {
+  "id": "Q46",
+  "question": "How many patients are on a statin?",
+  "category": "pharmacy",
+  "as_of": "2030-05-27",
+  "interpretation": "Original 1,614-person roster; identity-matched records received on or before the as-of date (2030-05-27) only. No inferred diagnoses, hidden truth or future events. Statin = lower(medication_name) containing simvastatin, atorvastatin, rosuvastatin, pravastatin, lovastatin, pitavastatin or fluvastatin (both '... mg tablet' and RxNorm-style '... oral tablet' spellings; nystatin is not a statin). Population: roster patients. AMBIGUOUS: two reasonable definitions give different answers; the expected behaviour is to state the definition used (or ask). Reference = reading A. Reading A: statin pickup (pharmacy_dispenses status 'dispensed') dated in the 12 months to as-of, 2029-05-28..2030-05-27; distinct patients -> 40. Reading B: statin named on the undated legacy medication_lists snapshot (received 2026); distinct patients -> 347.",
+  "answer_type": "count",
+  "reference_sql": "sql/heldout9/Q46.sql",
+  "split": "heldout9",
+  "tolerance": 0,
+  "ambiguity": {
+   "is_ambiguous": true,
+   "readings": [
+    {
+     "reading": "A",
+     "definition": "statin pickup (pharmacy_dispenses status 'dispensed') dated in the 12 months to as-of, 2029-05-28..2030-05-27; distinct patients",
+     "answer": 40
+    },
+    {
+     "reading": "B",
+     "definition": "statin named on the undated legacy medication_lists snapshot (received 2026); distinct patients",
+     "answer": 347
+    }
+   ],
+   "expected_behavior": "state the definition used or ask which is meant; either stated reading is defensible"
+  }
+ },
+ {
+  "id": "Q47",
+  "question": "How much did payers pay us for 2029?",
+  "category": "revenue_cycle",
+  "as_of": "2030-05-27",
+  "interpretation": "Original 1,614-person roster; identity-matched records received on or before the as-of date (2030-05-27) only. No inferred diagnoses, hidden truth or future events. Medical claims: each adjudication is a medical_claims row (event_date = adjudication date, service_date = date of service); a repriced claim arrives as original paid row + 'reversed' row (negative financial_deltas_cents, original_adjudication_record_id points at the original) + replacement paid row; a denied claim may be corrected and later paid under the same claim_id. Dollar sums use financial_deltas_cents so reversals net out; claim counts use distinct claim_id. Net of reversals via financial_deltas_cents.payer, dollars 2 dp. AMBIGUOUS: two reasonable definitions give different answers; the expected behaviour is to state the definition used (or ask). Reference = reading A. Reading A: medical_claims rows whose service_date is in 2029 (incurred basis) -> 1262103.41. Reading B: medical_claims rows whose adjudication event_date is in 2029 (paid basis) -> 1269427.18.",
+  "answer_type": "value",
+  "reference_sql": "sql/heldout9/Q47.sql",
+  "split": "heldout9",
+  "tolerance": 0.01,
+  "ambiguity": {
+   "is_ambiguous": true,
+   "readings": [
+    {
+     "reading": "A",
+     "definition": "medical_claims rows whose service_date is in 2029 (incurred basis)",
+     "answer": 1262103.41
+    },
+    {
+     "reading": "B",
+     "definition": "medical_claims rows whose adjudication event_date is in 2029 (paid basis)",
+     "answer": 1269427.18
+    }
+   ],
+   "expected_behavior": "state the definition used or ask which is meant; either stated reading is defensible"
+  }
+ },
+ {
+  "id": "Q48",
+  "question": "What was our no-show rate in 2029?",
+  "category": "access",
+  "as_of": "2030-05-27",
+  "interpretation": "Original 1,614-person roster; identity-matched records received on or before the as-of date (2030-05-27) only. No inferred diagnoses, hidden truth or future events. Appointments arrive as versioned rows per appointment_id (a 'booked' row then outcome rows: fulfilled/attended/arrived = kept, no_show, cancelled, rescheduled, unassigned_requires_review). One outcome per appointment_id; scheduled date = scheduled_date on the latest row (event_date, record_id) that carries one. Scheduled date in 2029; kept = fulfilled/attended/arrived; no-show = no_show and never kept; %, 2 dp. AMBIGUOUS: two reasonable definitions give different answers; the expected behaviour is to state the definition used (or ask). Reference = reading A. Reading A: no-shows / (kept + no-shows + cancelled) - cancellations in the denominator -> 4.68. Reading B: no-shows / (kept + no-shows) - cancellations excluded -> 4.86.",
+  "answer_type": "value",
+  "reference_sql": "sql/heldout9/Q48.sql",
+  "split": "heldout9",
+  "tolerance": 0.01,
+  "ambiguity": {
+   "is_ambiguous": true,
+   "readings": [
+    {
+     "reading": "A",
+     "definition": "no-shows / (kept + no-shows + cancelled) - cancellations in the denominator",
+     "answer": 4.68
+    },
+    {
+     "reading": "B",
+     "definition": "no-shows / (kept + no-shows) - cancellations excluded",
+     "answer": 4.86
+    }
+   ],
+   "expected_behavior": "state the definition used or ask which is meant; either stated reading is defensible"
+  }
+ },
+ {
+  "id": "Q49",
+  "question": "How many patients did we see last year?",
+  "category": "population_health",
+  "as_of": "2030-05-27",
+  "interpretation": "Original 1,614-person roster; identity-matched records received on or before the as-of date (2030-05-27) only. No inferred diagnoses, hidden truth or future events. Seen = any encounters row (any type incl. telephone; versions of one encounter collapse) for the patient; unit = distinct patients. AMBIGUOUS: two reasonable definitions give different answers; the expected behaviour is to state the definition used (or ask). Reference = reading A. Reading A: calendar 2029 (event_date 2029-01-01..2029-12-31) -> 1411. Reading B: trailing 12 months to as-of (event_date 2029-05-28..2030-05-27) -> 1491.",
+  "answer_type": "count",
+  "reference_sql": "sql/heldout9/Q49.sql",
+  "split": "heldout9",
+  "tolerance": 0,
+  "ambiguity": {
+   "is_ambiguous": true,
+   "readings": [
+    {
+     "reading": "A",
+     "definition": "calendar 2029 (event_date 2029-01-01..2029-12-31)",
+     "answer": 1411
+    },
+    {
+     "reading": "B",
+     "definition": "trailing 12 months to as-of (event_date 2029-05-28..2030-05-27)",
+     "answer": 1491
+    }
+   ],
+   "expected_behavior": "state the definition used or ask which is meant; either stated reading is defensible"
+  }
+ },
+ {
+  "id": "Q50",
+  "question": "What is our average length of stay for 2029?",
+  "category": "hospital_operations",
+  "as_of": "2030-05-27",
+  "interpretation": "Original 1,614-person roster; identity-matched records received on or before the as-of date (2030-05-27) only. No inferred diagnoses, hidden truth or future events. Inpatient encounters (type 'inpatient', completed version, one per encounter_id) discharged (date of end_time) in 2029; observation stays excluded. Mean, 4 dp. AMBIGUOUS: two reasonable definitions give different answers; the expected behaviour is to state the definition used (or ask). Reference = reading A. Reading A: midnights: date(end_time) - date(start_time) -> 3.5125. Reading B: elapsed fractional days: end_time - start_time -> 3.719.",
+  "answer_type": "value",
+  "reference_sql": "sql/heldout9/Q50.sql",
+  "split": "heldout9",
+  "tolerance": 0.01,
+  "ambiguity": {
+   "is_ambiguous": true,
+   "readings": [
+    {
+     "reading": "A",
+     "definition": "midnights: date(end_time) - date(start_time)",
+     "answer": 3.5125
+    },
+    {
+     "reading": "B",
+     "definition": "elapsed fractional days: end_time - start_time",
+     "answer": 3.719
+    }
+   ],
+   "expected_behavior": "state the definition used or ask which is meant; either stated reading is defensible"
+  }
+ },
+ {
+  "id": "Q51",
+  "question": "What is our claim denial rate for 2029?",
+  "category": "revenue_cycle",
+  "as_of": "2030-05-27",
+  "interpretation": "Original 1,614-person roster; identity-matched records received on or before the as-of date (2030-05-27) only. No inferred diagnoses, hidden truth or future events. Medical claims: each adjudication is a medical_claims row (event_date = adjudication date, service_date = date of service); a repriced claim arrives as original paid row + 'reversed' row (negative financial_deltas_cents, original_adjudication_record_id points at the original) + replacement paid row; a denied claim may be corrected and later paid under the same claim_id. Dollar sums use financial_deltas_cents so reversals net out; claim counts use distinct claim_id. Population = distinct claim_id first adjudicated in 2029; %, 2 dp. AMBIGUOUS: two reasonable definitions give different answers; the expected behaviour is to state the definition used (or ask). Reference = reading A. Reading A: initial denial: first adjudication status 'denied' -> 4.91. Reading B: final denial: denied and never subsequently paid as of 2030-05-27 -> 1.0.",
+  "answer_type": "value",
+  "reference_sql": "sql/heldout9/Q51.sql",
+  "split": "heldout9",
+  "tolerance": 0.01,
+  "ambiguity": {
+   "is_ambiguous": true,
+   "readings": [
+    {
+     "reading": "A",
+     "definition": "initial denial: first adjudication status 'denied'",
+     "answer": 4.91
+    },
+    {
+     "reading": "B",
+     "definition": "final denial: denied and never subsequently paid as of 2030-05-27",
+     "answer": 1.0
+    }
+   ],
+   "expected_behavior": "state the definition used or ask which is meant; either stated reading is defensible"
+  }
+ },
+ {
+  "id": "Q52",
+  "question": "How many of our hypertensive patients are uncontrolled?",
+  "category": "quality",
+  "as_of": "2030-05-27",
+  "interpretation": "Original 1,614-person roster; identity-matched records received on or before the as-of date (2030-05-27) only. No inferred diagnoses, hidden truth or future events. Hypertension = conditions icd10 I10-I13/I15/I16 or description containing 'hypertension' or 'HTN', excluding pulmonary hypertension (I27.x). BP reading = vitals row carrying both blood_pressure_systolic and blood_pressure_diastolic with an event_date; the undated legacy chart-import rows (measurement 'bp_systolic'/'bp_diastolic', one value per row, no event_date) are not used. Latest = max event_date, then event_time, then record_id. Latest dated reading in 2029; hypertensives without a 2029 reading excluded; distinct patients. AMBIGUOUS: two reasonable definitions give different answers; the expected behaviour is to state the definition used (or ask). Reference = reading A. Reading A: uncontrolled = systolic >= 140 or diastolic >= 90 (HEDIS CBP threshold) -> 56. Reading B: uncontrolled = systolic >= 130 or diastolic >= 80 (2017 ACC/AHA target) -> 195.",
+  "answer_type": "count",
+  "reference_sql": "sql/heldout9/Q52.sql",
+  "split": "heldout9",
+  "tolerance": 0,
+  "ambiguity": {
+   "is_ambiguous": true,
+   "readings": [
+    {
+     "reading": "A",
+     "definition": "uncontrolled = systolic >= 140 or diastolic >= 90 (HEDIS CBP threshold)",
+     "answer": 56
+    },
+    {
+     "reading": "B",
+     "definition": "uncontrolled = systolic >= 130 or diastolic >= 80 (2017 ACC/AHA target)",
+     "answer": 195
+    }
+   ],
+   "expected_behavior": "state the definition used or ask which is meant; either stated reading is defensible"
+  }
+ },
+ {
+  "id": "Q53",
+  "question": "How much did we pay out in medical malpractice claims and settlements in 2029?",
+  "category": "finance",
+  "as_of": "2030-05-27",
+  "interpretation": "Identity-matched records received on or before the as-of date (2030-05-27) only. No inferred diagnoses, hidden truth or future events. Requires professional-liability / risk-management data (malpractice claims, settlements, legal payouts). No malpractice, liability, litigation, settlement, incident, legal or risk-management stream has been received; medical and pharmacy claims are payer adjudications of care, not liability payouts. Verified absent by the diagnostic SQL (prerequisite_available = 0). Correct behaviour: decline and name the missing data; do not proxy it. (Replaces the draft question on 30-day post-discharge mortality, whose premise became false when the v2.3 warehouse added a death_records stream.)",
+  "answer_type": "unsupported",
+  "reference_sql": "sql/heldout9/Q53.sql",
+  "split": "heldout9",
+  "expected_behavior": {
+   "required_missing": [
+    {
+     "id": "liability",
+     "description": "malpractice / professional liability claims and settlement data not received",
+     "any_of": [
+      "malpractice",
+      "liability",
+      "settlement",
+      "litigation",
+      "risk management"
+     ]
+    }
+   ]
+  }
+ },
+ {
+  "id": "Q54",
+  "question": "How many work RVUs did each of our physicians generate in 2029?",
+  "category": "revenue_cycle",
+  "as_of": "2030-05-27",
+  "interpretation": "Original 1,614-person roster; identity-matched records received on or before the as-of date (2030-05-27) only. No inferred diagnoses, hidden truth or future events. Requires RVU values (CMS fee schedule / productivity feed). Claims carry CPT codes and dollar amounts only; no RVU or fee-schedule stream exists. Verified absent by the diagnostic SQL (prerequisite_available = 0). Correct behaviour: decline and name the missing data; do not proxy it.",
+  "answer_type": "unsupported",
+  "reference_sql": "sql/heldout9/Q54.sql",
+  "split": "heldout9",
+  "expected_behavior": {
+   "required_missing": [
+    {
+     "id": "rvu",
+     "description": "work RVU / relative value unit data not received",
+     "any_of": [
+      "rvu",
+      "relative value"
+     ]
+    }
+   ]
+  }
+ },
+ {
+  "id": "Q55",
+  "question": "What is our HCAHPS top-box score for nurse communication?",
+  "category": "quality",
+  "as_of": "2030-05-27",
+  "interpretation": "Original 1,614-person roster; identity-matched records received on or before the as-of date (2030-05-27) only. No inferred diagnoses, hidden truth or future events. Requires HCAHPS / patient experience survey responses. No survey, HCAHPS or satisfaction stream has been received. Verified absent by the diagnostic SQL (prerequisite_available = 0). Correct behaviour: decline and name the missing data; do not proxy it.",
+  "answer_type": "unsupported",
+  "reference_sql": "sql/heldout9/Q55.sql",
+  "split": "heldout9",
+  "expected_behavior": {
+   "required_missing": [
+    {
+     "id": "hcahps",
+     "description": "HCAHPS / patient experience survey data not received",
+     "any_of": [
+      "hcahps",
+      "survey",
+      "patient experience",
+      "satisfaction"
+     ]
+    }
+   ]
+  }
+ },
+ {
+  "id": "Q56",
+  "question": "What were our nursing hours per patient day on the medical ward in 2029?",
+  "category": "hospital_operations",
+  "as_of": "2030-05-27",
+  "interpretation": "Original 1,614-person roster; identity-matched records received on or before the as-of date (2030-05-27) only. No inferred diagnoses, hidden truth or future events. Requires staffing/timekeeping data (nurse shifts, worked hours). No staffing, shift, timecard or payroll stream has been received. Verified absent by the diagnostic SQL (prerequisite_available = 0). Correct behaviour: decline and name the missing data; do not proxy it.",
+  "answer_type": "unsupported",
+  "reference_sql": "sql/heldout9/Q56.sql",
+  "split": "heldout9",
+  "expected_behavior": {
+   "required_missing": [
+    {
+     "id": "staffing",
+     "description": "nurse staffing / worked-hours data not received",
+     "any_of": [
+      "staff",
+      "nursing hours",
+      "timecard",
+      "shift",
+      "payroll"
+     ]
+    }
+   ]
+  }
+ },
+ {
+  "id": "Q57",
+  "question": "What was our average bed occupancy rate in 2029?",
+  "category": "hospital_operations",
+  "as_of": "2030-05-27",
+  "interpretation": "Original 1,614-person roster; identity-matched records received on or before the as-of date (2030-05-27) only. No inferred diagnoses, hidden truth or future events. Requires licensed/staffed bed counts (and a census). No bed, census or capacity stream exists and organization entities carry no bed counts; ADT events alone cannot give a denominator. Verified absent by the diagnostic SQL (prerequisite_available = 0). Correct behaviour: decline and name the missing data; do not proxy it.",
+  "answer_type": "unsupported",
+  "reference_sql": "sql/heldout9/Q57.sql",
+  "split": "heldout9",
+  "expected_behavior": {
+   "required_missing": [
+    {
+     "id": "bed_capacity",
+     "description": "bed capacity / staffed beds / census data not received",
+     "any_of": [
+      "bed",
+      "capacity",
+      "census"
+     ]
+    }
+   ]
+  }
+ },
+ {
+  "id": "Q58",
+  "question": "What was our actual cost per inpatient case in 2029?",
+  "category": "revenue_cycle",
+  "as_of": "2030-05-27",
+  "interpretation": "Original 1,614-person roster; identity-matched records received on or before the as-of date (2030-05-27) only. No inferred diagnoses, hidden truth or future events. Requires hospital cost accounting (direct/indirect cost, cost-to-charge ratios). Only charges (billed), allowed and paid amounts exist; no cost-accounting or general-ledger stream. Verified absent by the diagnostic SQL (prerequisite_available = 0). Correct behaviour: decline and name the missing data; do not proxy it.",
+  "answer_type": "unsupported",
+  "reference_sql": "sql/heldout9/Q58.sql",
+  "split": "heldout9",
+  "expected_behavior": {
+   "required_missing": [
+    {
+     "id": "cost_accounting",
+     "description": "cost accounting / actual cost data not received (charges and payments are not cost)",
+     "any_of": [
+      "cost accounting",
+      "actual cost",
+      "cost-to-charge",
+      "cost to charge",
+      "general ledger",
+      "cost data"
+     ]
+    }
+   ]
+  }
+ },
+ {
+  "id": "Q59",
+  "question": "How much did we save through 340B drug purchasing in 2029?",
+  "category": "pharmacy",
+  "as_of": "2030-05-27",
+  "interpretation": "Original 1,614-person roster; identity-matched records received on or before the as-of date (2030-05-27) only. No inferred diagnoses, hidden truth or future events. Requires drug acquisition cost / 340B purchasing and wholesaler invoice data. Pharmacy claims carry only allowed, payer and patient amounts; no acquisition-cost, invoice or 340B stream. Verified absent by the diagnostic SQL (prerequisite_available = 0). Correct behaviour: decline and name the missing data; do not proxy it.",
+  "answer_type": "unsupported",
+  "reference_sql": "sql/heldout9/Q59.sql",
+  "split": "heldout9",
+  "expected_behavior": {
+   "required_missing": [
+    {
+     "id": "acquisition_cost",
+     "description": "drug acquisition cost / 340B purchasing data not received",
+     "any_of": [
+      "340b",
+      "acquisition",
+      "invoice",
+      "wholesal",
+      "purchas"
+     ]
+    }
+   ]
+  }
+ },
+ {
+  "id": "Q60",
+  "question": "What is the average salary of our primary care physicians?",
+  "category": "revenue_cycle",
+  "as_of": "2030-05-27",
+  "interpretation": "Original 1,614-person roster; identity-matched records received on or before the as-of date (2030-05-27) only. No inferred diagnoses, hidden truth or future events. Requires payroll/compensation (HR) data. Clinician entities carry only id, name, NPI, specialty and organization; no payroll, compensation or HR stream. Verified absent by the diagnostic SQL (prerequisite_available = 0). Correct behaviour: decline and name the missing data; do not proxy it.",
+  "answer_type": "unsupported",
+  "reference_sql": "sql/heldout9/Q60.sql",
+  "split": "heldout9",
+  "expected_behavior": {
+   "required_missing": [
+    {
+     "id": "compensation",
+     "description": "clinician compensation / payroll data not received",
+     "any_of": [
+      "salary",
+      "compensation",
+      "payroll"
+     ]
+    }
+   ]
+  }
+ }
+]

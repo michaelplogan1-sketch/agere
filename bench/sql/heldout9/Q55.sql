@@ -1,0 +1,2 @@
+-- UNSUPPORTED: HCAHPS / patient experience survey results (no survey, HCAHPS or satisfaction stream). Diagnostic returns prerequisite_available = 0 when no such stream (and no such field) has been received.
+SELECT CASE WHEN EXISTS (SELECT 1 FROM records WHERE stream LIKE '%hcahps%' OR stream LIKE '%survey%' OR stream LIKE '%satisfaction%' OR stream LIKE '%experience%' OR stream LIKE '%press_ganey%') THEN 1 ELSE 0 END AS prerequisite_available;

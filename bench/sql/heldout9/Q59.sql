@@ -1,0 +1,2 @@
+-- UNSUPPORTED: drug acquisition cost / 340B purchasing data (no wholesaler invoice, acquisition-cost or 340B stream; pharmacy claims carry only allowed/payer/patient amounts). Diagnostic returns prerequisite_available = 0 when no such stream (and no such field) has been received.
+SELECT CASE WHEN EXISTS (SELECT 1 FROM records WHERE stream LIKE '%340b%' OR stream LIKE '%acquisition%' OR stream LIKE '%wholesal%' OR stream LIKE '%invoice%' OR stream LIKE '%purchase%') THEN 1 ELSE 0 END AS prerequisite_available;

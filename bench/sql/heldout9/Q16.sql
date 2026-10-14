@@ -1,0 +1,5 @@
+-- Patients with at least one statin pickup in 2029: pharmacy_dispenses rows with status 'dispensed' (prepared / returned_to_stock rows are not pickups) dated 2029-01-01..2029-12-31 whose lower(medication_name) contains simvastatin, atorvastatin, rosuvastatin, pravastatin, lovastatin, pitavastatin or fluvastatin. Distinct patients.
+SELECT COUNT(DISTINCT patient) AS count FROM records
+WHERE stream='pharmacy_dispenses' AND json_extract(payload,'$.status')='dispensed' AND json_extract(payload,'$.event_date') BETWEEN '2029-01-01' AND '2029-12-31'
+  AND (lower(json_extract(payload,'$.medication_name')) LIKE '%simvastatin%' OR lower(json_extract(payload,'$.medication_name')) LIKE '%atorvastatin%' OR lower(json_extract(payload,'$.medication_name')) LIKE '%rosuvastatin%'
+    OR lower(json_extract(payload,'$.medication_name')) LIKE '%pravastatin%' OR lower(json_extract(payload,'$.medication_name')) LIKE '%lovastatin%' OR lower(json_extract(payload,'$.medication_name')) LIKE '%pitavastatin%' OR lower(json_extract(payload,'$.medication_name')) LIKE '%fluvastatin%');

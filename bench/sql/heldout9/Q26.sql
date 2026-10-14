@@ -1,0 +1,6 @@
+-- Diabetic patients (conditions icd10 E10/E11/E13) with a statin pickup in 2029: pharmacy_dispenses status 'dispensed', event_date 2029-01-01..2029-12-31, lower(medication_name) containing simva/atorva/rosuva/prava/lova/pitava/fluvastatin. Distinct patients.
+WITH r AS MATERIALIZED (SELECT patient, stream, payload FROM records WHERE stream IN ('conditions','pharmacy_dispenses'))
+SELECT COUNT(DISTINCT patient) AS count FROM r WHERE stream='pharmacy_dispenses' AND json_extract(payload,'$.status')='dispensed' AND json_extract(payload,'$.event_date') BETWEEN '2029-01-01' AND '2029-12-31'
+  AND (lower(json_extract(payload,'$.medication_name')) LIKE '%simvastatin%' OR lower(json_extract(payload,'$.medication_name')) LIKE '%atorvastatin%' OR lower(json_extract(payload,'$.medication_name')) LIKE '%rosuvastatin%'
+    OR lower(json_extract(payload,'$.medication_name')) LIKE '%pravastatin%' OR lower(json_extract(payload,'$.medication_name')) LIKE '%lovastatin%' OR lower(json_extract(payload,'$.medication_name')) LIKE '%pitavastatin%' OR lower(json_extract(payload,'$.medication_name')) LIKE '%fluvastatin%')
+  AND patient IN (SELECT patient FROM r WHERE stream='conditions' AND substr(json_extract(payload,'$.icd10'),1,3) IN ('E10','E11','E13'));

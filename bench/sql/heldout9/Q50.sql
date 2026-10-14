@@ -1,0 +1,4 @@
+-- AMBIGUOUS (reading A): average length of stay for 2029 inpatient discharges counted in midnights = date(end_time) - date(start_time) per inpatient encounter (encounters type 'inpatient', completed version, one per encounter_id, discharge date in 2029). Reading B uses elapsed fractional days (end_time - start_time). 4 dp.
+WITH e AS MATERIALIZED (SELECT json_extract(payload,'$.encounter_id') eid, max(json_extract(payload,'$.start_time')) s, max(json_extract(payload,'$.end_time')) en FROM records
+  WHERE stream='encounters' AND json_extract(payload,'$.type')='inpatient' AND json_extract(payload,'$.status')='completed' GROUP BY 1)
+SELECT ROUND(AVG(julianday(substr(en,1,10))-julianday(substr(s,1,10))),4) AS value FROM e WHERE en IS NOT NULL AND s IS NOT NULL AND substr(en,1,10) BETWEEN '2029-01-01' AND '2029-12-31';

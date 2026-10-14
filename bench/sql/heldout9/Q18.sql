@@ -1,0 +1,6 @@
+-- Statin users with >= 180 days' supply picked up in 2029 (adherence proxy): per patient, sum days_supply_reported over distinct dispensed fills (pharmacy_dispenses status 'dispensed', one row per fill_id) of any statin (simva/atorva/rosuva/prava/lova/pitava/fluvastatin) dated 2029-01-01..2029-12-31. Returns patient_id.
+WITH d AS MATERIALIZED (SELECT DISTINCT patient, coalesce(json_extract(payload,'$.fill_id'),json_extract(payload,'$.record_id')) fid, json_extract(payload,'$.days_supply_reported') ds FROM records
+  WHERE stream='pharmacy_dispenses' AND json_extract(payload,'$.status')='dispensed' AND json_extract(payload,'$.event_date') BETWEEN '2029-01-01' AND '2029-12-31'
+  AND (lower(json_extract(payload,'$.medication_name')) LIKE '%simvastatin%' OR lower(json_extract(payload,'$.medication_name')) LIKE '%atorvastatin%' OR lower(json_extract(payload,'$.medication_name')) LIKE '%rosuvastatin%'
+    OR lower(json_extract(payload,'$.medication_name')) LIKE '%pravastatin%' OR lower(json_extract(payload,'$.medication_name')) LIKE '%lovastatin%' OR lower(json_extract(payload,'$.medication_name')) LIKE '%pitavastatin%' OR lower(json_extract(payload,'$.medication_name')) LIKE '%fluvastatin%'))
+SELECT patient AS patient_id FROM d GROUP BY patient HAVING SUM(ds)>=180 ORDER BY 1;

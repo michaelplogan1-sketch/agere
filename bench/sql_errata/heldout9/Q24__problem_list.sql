@@ -1,0 +1,4 @@
+-- Problem-list diabetes only; case-insensitive uACR names as in Q24__population.
+WITH r AS MATERIALIZED (SELECT patient, stream, payload FROM records WHERE stream IN ('conditions','labs')),
+dm AS MATERIALIZED (SELECT DISTINCT patient FROM r WHERE stream='conditions' AND substr(json_extract(payload,'$.icd10'),1,3) IN ('E10','E11','E13'))
+SELECT COUNT(DISTINCT patient) AS count FROM r WHERE stream='labs' AND (lower(json_extract(payload,'$.name')) IN ('urine albumin/creatinine ratio','microalbumin/creatinine','microalb/creat ratio, random urine','microalbumin/creatinine [mass ratio] in urine') OR json_extract(payload,'$.loinc')='9318-7') AND json_extract(payload,'$.event_date') BETWEEN '2029-01-01' AND '2029-12-31' AND json_type(payload,'$.value') IN ('integer','real') AND patient IN (SELECT patient FROM dm);

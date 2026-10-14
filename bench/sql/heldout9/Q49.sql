@@ -1,0 +1,2 @@
+-- AMBIGUOUS (reading A): patients seen "last year" = distinct patients with any encounters row (any type, any version) whose event_date is in calendar 2029 (2029-01-01..2029-12-31). Reading B uses the trailing 12 months to the as-of date (2029-05-28..2030-05-27).
+SELECT COUNT(DISTINCT patient) AS count FROM records WHERE stream='encounters' AND json_extract(payload,'$.event_date') BETWEEN '2029-01-01' AND '2029-12-31';

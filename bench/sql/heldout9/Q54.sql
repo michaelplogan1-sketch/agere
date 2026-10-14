@@ -1,0 +1,2 @@
+-- UNSUPPORTED: work RVUs / relative value units for clinician productivity (no RVU or fee-schedule stream; claims carry CPT codes and dollars but no RVU values). Diagnostic returns prerequisite_available = 0 when no such stream (and no such field) has been received.
+SELECT CASE WHEN EXISTS (SELECT 1 FROM records WHERE stream LIKE '%rvu%' OR stream LIKE '%relative_value%' OR stream LIKE '%fee_schedule%' OR stream LIKE '%productivity%') THEN 1 ELSE 0 END AS prerequisite_available;
