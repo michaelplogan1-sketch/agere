@@ -5,15 +5,16 @@ import sqlite3
 import time
 from pathlib import Path
 from clinical_core.agere.warehouse import Warehouse
-from clinical_core.agere import healthcare_warehouse, healthcare_warehouse_v2, healthcare_warehouse_v3
+from clinical_core.agere import healthcare_warehouse, healthcare_warehouse_v2, healthcare_warehouse_v3, healthcare_warehouse_v4
 
 
 def ingest(warehouse, release):
     """v1 manifests keep adapter/1 (reproducible release identity); standards-coded v2 manifests use adapter/2;
-    v2 manifests with broader-population feeds (v2.2+) use adapter/3."""
+    v2 manifests with broader-population feeds (v2.2) use adapter/3; client-realism releases (v2.3+, outside PDFs) use adapter/4."""
     manifest=json.loads((Path(release)/'manifest.json').read_text())
     module={healthcare_warehouse.VERSION:healthcare_warehouse,healthcare_warehouse_v2.VERSION:healthcare_warehouse_v2,
-            healthcare_warehouse_v3.VERSION:healthcare_warehouse_v3}[healthcare_warehouse_v3.adapter_for(manifest)]
+            healthcare_warehouse_v3.VERSION:healthcare_warehouse_v3,
+            healthcare_warehouse_v4.VERSION:healthcare_warehouse_v4}[healthcare_warehouse_v4.adapter_for(manifest)]
     return module.ingest(warehouse,release)
 
 

@@ -11,9 +11,9 @@ from collections import defaultdict
 from pathlib import Path
 import json, re, sqlite3, time
 
-from . import aggregate, concepts, population_feeds, source_profile
+from . import aggregate, client_data, concepts, population_feeds, source_profile
 
-VERSION = 'semantic-layer/14'
+VERSION = 'semantic-layer/15'
 GFR_UNNORMALIZED = 'gfr_unnormalized'  # 'glomerular filtration rate' results in a unit that is not per 1.73 m2 (mL/min)
 
 # Source contract: streams whose records are successive snapshots of one business entity (key field).
@@ -85,15 +85,21 @@ SCHEMA_DOC = {
     'measurement': 'Labs and vitals, one row per (record, concept); concept NULL when unmapped. value/unit as received; '
                    'value_canonical in unit_canonical when the unit converts (else NULL). Cancelled results have value NULL. '
                    'concept egfr = BSA-normalised eGFR only (mL/min/1.73m2 or no unit); GFR results reported in another unit (mL/min, '
-                   'measured GFR / clearance) are concept gfr_unnormalized and never count as eGFR.',
-    'encounter': 'Encounter records plus ADT notifications (source_table adt, type = ADT event). type_concept = library encounter concept.',
+                   'measured GFR / clearance) are concept gfr_unnormalized and never count as eGFR. Use only result_current = 1 AND '
+                   'excluded_reason IS NULL rows for values; value_censor marks censored strings (eGFR ">60" -> 60 with value_censor ">"); '
+                   'see measurement_quality.',
+    'encounter': 'Encounter records plus ADT notifications (source_table adt, type = ADT event). type_concept = library encounter concept. '
+                 'ED visits that only ADT messages or payer claims carry (claims-only members) are added once each, deduplicated against '
+                 'the EHR (source_table adt_messages | payer_medical_claims, type_concept emergency_visit); see utilization_event.',
     'visit': 'One row per encounter (encounter records repeat once per status version; use visit, not encounter, to count visits). '
              'Latest version wins; versions = number of received versions.',
     'stay': 'Distinct hospital stays (inpatient/observation encounters collapsed by admit day and overlap) with 30-day readmission flag. '
             'discharge_date and los_days are NULL when no discharge time was received (discharge_known = 0); never treat those as 0 days. '
             'discharge_date is the ADT discharge (A03) date of the stay\'s encounter when one was received (discharge_date_source = adt), '
             'else the date part of the encounter end_time (encounter_end_time_utc); discharge_time_utc keeps the UTC end timestamp. '
-            'Readmission gaps use discharge_date.',
+            'Readmission gaps use discharge_date. stay_source = encounters, or adt | payer_claim for admissions found only in ADT '
+            'visits or inpatient (TOB 011x) / observation (revenue 0762) payer claims, so admission rates cover claims-only members; '
+            'readmission flags of a patient with such stays are recomputed over all of the patient\'s stays.',
     'concept_patient': 'Patients having each library concept (condition, measurement, encounter), with record counts and first/last dates.',
     'link': 'Every record-to-record reference (fields ending _record_id/_record_ids): record_id/stream of the referring record, '
             'field name, target_record_id. Indexed on target_record_id - use it for linkage questions (e.g. orders without dispenses).',
@@ -154,6 +160,7 @@ SCHEMA_DOC = {
                           'releases), patient.line_of_business/payer_id (latest member_month). condition.diagnosis_basis, '
                           'diagnosing_encounter_id, diagnosis_date (onset, else event date) on conditions records.',
     **population_feeds.SCHEMA_DOC,
+    **client_data.SCHEMA_DOC,
 }
 
 
@@ -755,7 +762,7 @@ def build(path):
         _claim_codes(out)
         _entities(out, path)
         meta = json.loads((path / 'run.json').read_text())
-        feeds = population_feeds.build(out, people, meta['snapshot']['as_of'])  # after claims/entities: reads claim NPIs, organization
+        feeds = population_feeds.build(out, people, meta['snapshot']['as_of'], path)  # after claims/entities: reads claim NPIs, organization
         out.executemany('INSERT INTO meta VALUES (?,?)', [('version', VERSION), ('source_digest', meta['source_digest']),
                                                           ('as_of', meta['snapshot']['as_of']),
                                                           ('standards', json.dumps(_standards_summary(out))),

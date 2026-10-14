@@ -303,7 +303,7 @@ class SemanticPopulationTables(unittest.TestCase):
         db = sqlite3.connect(self.path / 'semantic.sqlite3')
         try: meta = dict(db.execute('SELECT key, value FROM meta'))
         finally: db.close()
-        self.assertEqual(meta['version'], 'semantic-layer/14')
+        self.assertEqual(meta['version'], semantic_layer.VERSION)
         feeds = json.loads(meta['population_feeds'])
         self.assertEqual(feeds['enrollment']['spans'], 4); self.assertEqual(feeds['incident']['incident_diagnoses'], 1)
         described = semantic_layer.describe(self.path)['tables']

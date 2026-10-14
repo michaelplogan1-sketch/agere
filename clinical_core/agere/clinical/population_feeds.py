@@ -55,9 +55,10 @@ CREATE TABLE prescription(record_id TEXT PRIMARY KEY, patient_id TEXT, order_cla
   rxcui TEXT, ordered_date TEXT, quantity REAL, days_supply INTEGER, refills_authorized INTEGER, indication TEXT,
   ordering_clinician_id TEXT, pharmacy TEXT, organization_id TEXT, encounter_id TEXT, available_date TEXT,
   declared_fill_ids INTEGER, fills_received INTEGER, first_fill_date TEXT, last_fill_date TEXT, fill_expected INTEGER,
-  fill_status TEXT, filled INTEGER, prescribed_not_filled INTEGER, fill_basis TEXT);
+  fill_status TEXT, filled INTEGER, prescribed_not_filled INTEGER, fill_basis TEXT, script_message_id TEXT, match_confidence REAL,
+  match_components TEXT, matched_chain TEXT);
 CREATE TABLE prescription_fill(order_record_id TEXT, fill_record_id TEXT, fill_stream TEXT, fill_date TEXT, basis TEXT,
-  fill_event_id TEXT);
+  fill_event_id TEXT, match_confidence REAL);
 CREATE TABLE hie_document(record_id TEXT PRIMARY KEY, patient_id TEXT, document_id TEXT, document_type TEXT, loinc TEXT,
   encounter_id TEXT, author_organization_id TEXT, delivery_channel TEXT, format TEXT, event_date TEXT, available_date TEXT,
   text_chars INTEGER);
@@ -110,15 +111,21 @@ SCHEMA_DOC = {
     'payer_pharmacy_claim': 'Payer pharmacy claims (NCPDP): fill_date, ndc, drug_name, days_supply, quantity, pharmacy NPI/name/type, '
                             'BIN/PCN/group routing, prescriber_npi, claim_status (paid | rejected), plan/patient paid cents.',
     'prescription': 'One row per medication order (e-prescriptions with order_class e-prescribe, incident-diagnosis '
-                    'outpatient_prescription orders, legacy orders) with its fills. fills_received = matched paid fills '
-                    'received by the snapshot: e-prescriptions by linked_fill_event_ids (fill date + same patient + same drug '
-                    'name on a paid payer pharmacy claim or dispense); legacy orders by the dispense medication_order_record_id; '
-                    'orders without any link field by the first same-patient, same-drug fill within 30 days. fill_expected = 1 '
-                    'for e-prescribe and outpatient_prescription orders. fill_status: filled | declared_unreceived (the order '
-                    'lists fill ids but no paid fill was received) | not_filled. prescribed_not_filled = 1 only for '
-                    'not_filled with fill_expected (NULL when unknown).',
+                    'outpatient_prescription orders, legacy orders) with its fills. fills_received = matched paid, unreversed '
+                    'fills received by the snapshot: e-prescriptions by linked_fill_event_ids when the release declares them '
+                    '(v2.2); dispenses naming the order (medication_order_record_id); e-prescriptions without a link (v2.3: '
+                    'only the NCPDP SCRIPT message id) by fuzzy matching to a pharmacy prescription chain (patient + pharmacy '
+                    'NPI + Rx number) on drug (RxCUI via NDC, else ingredient + strength), prescriber NPI, days from order to '
+                    'first fill, new-prescription fill number, pharmacy and days supply: match_confidence (0-1, linked at '
+                    '>= 0.5), match_components (score per signal), matched_chain; other outpatient orders by the first same-'
+                    'patient, same-drug fill within 30 days. fill_expected = 1 for e-prescribe and outpatient_prescription '
+                    'orders. fill_status: filled | declared_unreceived (the order lists fill ids but no paid fill was received) '
+                    '| not_filled. prescribed_not_filled = 1 only for not_filled with fill_expected (NULL when unknown); for '
+                    'fuzzy-linked orders it means no chain matched with confidence >= 0.5 (cash fills and other pharmacies are '
+                    'not in the payer feed).',
     'prescription_fill': 'Order-to-fill links behind prescription: order_record_id, fill_record_id, fill_stream, fill_date, '
-                         'basis (linked_fill_event_id | medication_order_record_id | patient_drug_window_30d), fill_event_id.',
+                         'basis (linked_fill_event_id | medication_order_record_id | fuzzy_prescription_chain | '
+                         'patient_drug_window_30d), fill_event_id, match_confidence (fuzzy links). Reversed (B2) fills never link.',
     'hie_document': 'HIE-pushed documents: ED summaries (LOINC 34111-5) and discharge summaries (18842-5) with encounter_id and '
                     'authoring organization. Text stays in record.payload ($.text).',
     'sdoh_vendor': 'Purchased consumer/SDOH file rows per delivery: match status/confidence, county_fips and CDC/ATSDR SVI 2022 '
@@ -216,12 +223,14 @@ def _name(v):
 
 
 def _prescriptions(out):
-    """Orders and their fills. Only paid/dispensed fill records received by the snapshot count as fills."""
+    """Orders and their fills. Only paid/dispensed, unreversed fill records received by the snapshot count as fills."""
+    from . import client_data
+    reversed_ids = client_data.reversed_fill_ids(out)
     fills_by_day = defaultdict(list); fills_by_patient = defaultdict(list)
     for stream in FILL_STREAMS:
         for rid, pid, r, d, av in _rows(out, stream):
             status = r.get('claim_status') if stream == 'payer_pharmacy_claims' else r.get('status')
-            if status not in ('paid', 'dispensed', None) or not d: continue
+            if status not in ('paid', 'dispensed', None) or not d or rid in reversed_ids: continue
             fill = (rid, stream, d, _name(r.get('drug_name') or r.get('medication_name')), str(r.get('rxcui') or ''))
             fills_by_day[(pid, d)].append(fill); fills_by_patient[pid].append(fill)
     linked = defaultdict(list)  # legacy dispenses name their order
@@ -233,9 +242,19 @@ def _prescriptions(out):
                                   "('pharmacy_dispenses', 'pharmacy_claim_transactions', 'pharmacy_claims')"):
         fill_dates[fid] = (d, st)
     orders, links, stats = [], [], Counter()
-    for rid, pid, r, d, av in _rows(out, 'medication_orders'):
+    received = list(_rows(out, 'medication_orders'))
+    # e-prescriptions without any link field: fuzzy order -> pharmacy prescription chain matching (client_data.link_prescriptions)
+    fuzzy = {rid: {'patient': pid, 'date': (d or '')[:10], 'key': client_data.drug_key(r.get('medication_name')),
+                   'rxcui': str(r.get('rxcui')) if r.get('rxcui') else None, 'clinician': r.get('ordering_clinician_id'),
+                   'pharmacy': _name(r.get('pharmacy')) or None, 'days_supply': r.get('days_supply'), 'refills': r.get('refills_authorized')}
+             for rid, pid, r, d, av in received
+             if r.get('order_class') == 'e-prescribe' and not isinstance(r.get('linked_fill_event_ids'), list) and not linked.get(rid) and d}
+    chains = client_data.fill_chains(out, reversed_ids) if fuzzy else {}
+    npi_of = dict(out.execute('SELECT clinician_id, npi FROM clinician WHERE npi IS NOT NULL')) if fuzzy else {}
+    fuzzy_links = client_data.link_prescriptions(fuzzy, chains, npi_of) if fuzzy else {}
+    for rid, pid, r, d, av in received:
         cls = r.get('order_class'); name = _name(r.get('medication_name')); rxcui = str(r.get('rxcui') or '')
-        declared = r.get('linked_fill_event_ids'); matched = []
+        declared = r.get('linked_fill_event_ids'); matched = []; conf = comp = chain_id = None
         if isinstance(declared, list):
             basis = 'linked_fill_event_id'
             for event in declared:
@@ -249,6 +268,13 @@ def _prescriptions(out):
             for fid in linked[rid]:
                 fd, st = fill_dates.get(fid, (None, None))
                 matched.append(((fid, st, fd, None, None), None))
+        elif rid in fuzzy:
+            basis = 'fuzzy_prescription_chain'
+            if rid in fuzzy_links:
+                chain_id, conf, comp, chain_fills = fuzzy_links[rid]
+                matched = [((frid, chains[chain_id]['stream'], fd, None, None), None) for fd, n, frid, key, frx, ds in chain_fills]
+                stats['fuzzy_linked'] += 1
+            else: stats['fuzzy_unlinked'] += 1
         elif cls == 'outpatient_prescription' and d:
             basis = 'patient_drug_window_30d'
             last = (date.fromisoformat(d[:10]) + timedelta(days=FILL_WINDOW_DAYS)).isoformat()
@@ -262,7 +288,7 @@ def _prescriptions(out):
         for f, event in matched:
             if f[0] in seen: continue
             seen.add(f[0]); kept.append((f, event))
-            links.append((rid, f[0], f[1], f[2], basis, event))
+            links.append((rid, f[0], f[1], f[2], basis, event, conf))
         expected = 1 if cls in ('e-prescribe', 'outpatient_prescription') else None
         dates = sorted(f[2] for f, _ in kept if f[2])
         status = 'filled' if kept else ('declared_unreceived' if isinstance(declared, list) and declared else 'not_filled')
@@ -272,9 +298,10 @@ def _prescriptions(out):
                        r.get('days_supply'), r.get('refills_authorized'), r.get('indication'), r.get('ordering_clinician_id'),
                        r.get('pharmacy'), r.get('organization_id'), r.get('encounter_id'), av,
                        len(declared) if isinstance(declared, list) else None, len(kept), dates[0] if dates else None,
-                       dates[-1] if dates else None, expected, status, int(bool(kept)), not_filled, basis))
-    out.executemany('INSERT INTO prescription VALUES (' + ','.join('?' * 25) + ')', orders)
-    out.executemany('INSERT INTO prescription_fill VALUES (?,?,?,?,?,?)', links)
+                       dates[-1] if dates else None, expected, status, int(bool(kept)), not_filled, basis, r.get('script_message_id'),
+                       conf, json.dumps(comp, sort_keys=True) if comp else None, chain_id))
+    out.executemany('INSERT INTO prescription VALUES (' + ','.join('?' * 29) + ')', orders)
+    out.executemany('INSERT INTO prescription_fill VALUES (?,?,?,?,?,?,?)', links)
     return dict(stats)
 
 
@@ -393,13 +420,18 @@ def _patient_columns(out, people):
                      WHERE m.patient_id = patient.patient_id ORDER BY m.month DESC LIMIT 1)""")
 
 
-def build(out, people, as_of):
-    """Create and fill the population-feed tables; returns a summary stored in meta.population_feeds."""
+def build(out, people, as_of, path=None):
+    """Create and fill the population-feed tables; returns a summary stored in meta.population_feeds.
+    Client-feed artifacts (claim versions, pharmacy reversals, lab quirks, list rot, ADT gaps, utilization from every source,
+    outside documents) are resolved by client_data: claims and reversals before order-to-fill linkage, the rest after."""
+    from . import client_data
     out.executescript(DDL)
-    summary = {'enrollment': _enrollment(out, as_of), 'payer_claims': _payer_claims(out), 'prescriptions': _prescriptions(out),
-               'documents': _documents(out), 'sdoh': _sdoh(out), 'ahc_social_need_rows': _ahc_needs(out)}
+    summary = {'enrollment': _enrollment(out, as_of), 'payer_claims': _payer_claims(out)}
+    summary['client_claims'] = client_data.build_claims(out)
+    summary.update(prescriptions=_prescriptions(out), documents=_documents(out), sdoh=_sdoh(out), ahc_social_need_rows=_ahc_needs(out))
     _directory(out)
     summary['incident'] = _incident(out)
     _patient_columns(out, people)
     out.executescript(INDEXES)
+    summary['client_data'] = client_data.build(out, as_of, path)
     return summary

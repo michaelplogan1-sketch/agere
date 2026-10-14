@@ -1,0 +1,84 @@
+{
+ "schema": "agere-metric-file/1",
+ "domain": "payer_feed",
+ "metrics": [
+  {
+   "id": "payer_claim_denial_rate",
+   "version": 1,
+   "name": "Payer-feed claim denial rate (current claim versions)",
+   "status": "internal",
+   "internal_reason": "Denial rate over the payer claim feed: one current version per service (frequency-7 replacements supersede originals, voids end them) and CARC 18 exact-duplicate submissions excluded, the claims-version convention payers and CCLF users apply; Agere convention stated in full.",
+   "summary": "Percent of payer-feed medical claims with service_from in the period whose final adjudication is a denial (denied or denied_upheld), counting only the current, non-duplicate version of each claim (payer_claim.counts_in_metrics = 1): replaced originals, voids and CARC 18 duplicate submissions never count.",
+   "match": {
+    "all": ["denial|denied", "payer[- ](?:feed|claims?)"],
+    "any": ["rate|percent|%|share"],
+    "none": ["first[- ]pass|overturn|eventually|later paid"]
+   },
+   "grain": {"entity": "claim", "key": "payer_claim_id", "table": "payer_claim"},
+   "population": {"summary": "Payer-feed medical claims with service_from in the period."},
+   "denominator": {"summary": "Current, non-duplicate payer claims (counts_in_metrics = 1)."},
+   "numerator": {"summary": "Of those, claims whose final_status is denied or denied_upheld."},
+   "time_anchor": {"field": "payer_claim.service_from", "mode": "period", "default": "as_of_year",
+                   "forbid_fields": ["first_available_date", "last_available_date"]},
+   "value_sets": {},
+   "unit": "percent",
+   "expected_range": [0, 100],
+   "versioning": {"rule": "distinct_key", "stream": "payer_medical_claims", "key": "payer_claim_id"},
+   "checks": [{"rule": "ML-VERSION", "requires": "counts_in_metrics",
+               "why": "replacement claims supersede their originals, voids end them and CARC 18 duplicate submissions are not claims; count only payer_claim.counts_in_metrics = 1"}],
+   "output": {"returns": "value"},
+   "sql_template": "SELECT round(100.0 * sum(final_status IN ('denied','denied_upheld')) / count(*), 1) AS payer_claim_denial_rate FROM payer_claim WHERE counts_in_metrics = 1 AND service_from BETWEEN '{period_start}' AND '{period_end}'"
+  },
+  {
+   "id": "payer_allowed_pmpm",
+   "version": 1,
+   "name": "Payer-feed allowed cost per member per month (enrollment months)",
+   "status": "internal",
+   "internal_reason": "PMPM over the payer feed: allowed dollars on the current version of each paid medical claim plus paid, unreversed pharmacy claims, over member months from enrollment spans (ACO REACH/MSSP expenditure convention without risk adjustment or completion).",
+   "summary": "Allowed dollars on payer-feed medical claims (current version, final status paid; replaced, voided and CARC 18 duplicate claims excluded) plus allowed dollars on paid pharmacy claims not reversed by a B2 return to stock, with service/fill dates in the period, divided by member months from enrollment spans in the period.",
+   "match": {
+    "all": ["pmpm|per member per month", "payer[- ](?:feed|claims?)|enrollment months|member months"]
+   },
+   "grain": {"entity": "member_month", "key": "patient_id+month", "table": "member_month"},
+   "population": {"summary": "Members with enrollment-span member months in the period."},
+   "denominator": {"summary": "member_month rows with month in the period."},
+   "numerator": {"summary": "Allowed dollars: payer_claim (counts_in_metrics = 1, final_status paid) + payer_pharmacy_claim (counts_as_fill = 1)."},
+   "time_anchor": {"field": "payer_claim.service_from", "mode": "period", "default": "as_of_year",
+                   "forbid_fields": ["first_available_date", "last_available_date", "available_date"]},
+   "value_sets": {},
+   "unit": "dollars per member per month",
+   "expected_range": [0, 100000],
+   "versioning": {"rule": "latest_version_table", "stream": "payer_medical_claims", "key": "payer_claim_id"},
+   "checks": [{"rule": "ML-VERSION", "requires": "counts_in_metrics",
+               "why": "only the current, non-duplicate version of each medical claim is spend (payer_claim.counts_in_metrics = 1)"},
+              {"rule": "ML-SOURCE", "requires": "counts_as_fill",
+               "why": "pharmacy claims reversed by a B2 return to stock were never picked up and are not spend (payer_pharmacy_claim.counts_as_fill = 1)"}],
+   "output": {"returns": "value"},
+   "sql_template": "SELECT round(((SELECT coalesce(sum(allowed_cents), 0) FROM payer_claim WHERE counts_in_metrics = 1 AND final_status = 'paid' AND service_from BETWEEN '{period_start}' AND '{period_end}') + (SELECT coalesce(sum(coalesce(plan_paid_cents, 0) + coalesce(patient_pay_cents, 0)), 0) FROM payer_pharmacy_claim WHERE counts_as_fill = 1 AND fill_date BETWEEN '{period_start}' AND '{period_end}')) / 100.0 / nullif((SELECT count(*) FROM member_month WHERE month BETWEEN substr('{period_start}', 1, 7) AND substr('{period_end}', 1, 7)), 0), 2) AS payer_allowed_pmpm"
+  },
+  {
+   "id": "all_source_ed_visits_per_1000",
+   "version": 1,
+   "name": "ED visits per 1,000 member-years, all sources (EHR, ADT, payer claims)",
+   "status": "cited",
+   "definitions": ["emergency_visit", "utilization_per_1000"],
+   "summary": "ED visits from every source (EHR encounters, ADT registrations, payer claims with POS 23 or revenue 045x/0981; one per real visit, utilization_event) in the period per 1,000 member-years from enrollment-span member months; claims-only members have no EHR encounter, so visit-table counts miss them.",
+   "match": {
+    "all": ["\\b(?:ed|er|emergency)\\b", "per (?:1,?000|thousand)", "all sources|claims[- ]only|payer[- ](?:feed|claims?)|member months"]
+   },
+   "grain": {"entity": "member_month", "key": "patient_id+month", "table": "member_month"},
+   "population": {"summary": "Members with enrollment-span member months in the period."},
+   "denominator": {"summary": "member_month rows in the period / 12, divided by 1,000."},
+   "numerator": {"summary": "utilization_event rows with kind ed_visit dated in the period (one per real visit across sources)."},
+   "time_anchor": {"field": "utilization_event.event_date", "mode": "period", "default": "as_of_year"},
+   "value_sets": {},
+   "unit": "per 1,000 member-years",
+   "expected_range": [0, 5000],
+   "versioning": {"rule": "distinct_key", "stream": "utilization_event", "key": "patient_id+event_date"},
+   "checks": [{"rule": "ML-SOURCE", "requires": "utilization_event",
+               "why": "ED visits of claims-only members exist only in ADT and payer claims; utilization_event merges every source into one row per visit"}],
+   "output": {"returns": "value"},
+   "sql_template": "SELECT round(1000.0 * (SELECT count(*) FROM utilization_event WHERE kind = 'ed_visit' AND event_date BETWEEN '{period_start}' AND '{period_end}') / nullif((SELECT count(*) FROM member_month WHERE month BETWEEN substr('{period_start}', 1, 7) AND substr('{period_end}', 1, 7)) / 12.0, 0), 1) AS ed_per_1000_member_years"
+  }
+ ]
+}

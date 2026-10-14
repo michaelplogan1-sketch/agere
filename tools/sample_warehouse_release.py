@@ -8,8 +8,10 @@ source_records for the sampled patients, organizations, clinicians, data_diction
 private/ files and no evaluation tables. Patients are picked deterministically per data_segment (sha256 of the
 patient id), so repeated runs give the same sample. The manifest is the release manifest with the sample
 file checksum and a `sample` block (source release, source sha256, per-segment sizes, record counts).
+Outside PDFs (v2.3+: documents/ files named by the sampled patients' scanned_documents records) are copied with their
+checksums; other release files (private/ included) are not listed in the sample manifest.
 """
-import argparse, hashlib, json, math, sqlite3
+import argparse, hashlib, json, math, shutil, sqlite3
 from collections import Counter
 from pathlib import Path
 
@@ -52,15 +54,25 @@ def sample(release, output, per_segment=None, panel=None, fraction=None):
                 out.execute(f'INSERT INTO main.{t} SELECT * FROM src.{t}')
         out.commit()
         counts = dict(out.execute('SELECT source_table, count(*) FROM main.source_records GROUP BY 1'))
+        documents = sorted({p for (p,) in out.execute("SELECT json_extract(facts, '$.relative_path') FROM main.source_records "
+                                                       "WHERE source_table = 'scanned_documents'") if isinstance(p, str)})
         picked = set(chosen); segments = Counter(s for s, ids in by_segment.items() for p in ids if p in picked)
         out.execute('DETACH DATABASE src'); out.close()
     finally:
         src.close()
     source_sha = manifest['files'].get('warehouse.sqlite')  # pinned by the release manifest
-    manifest['files'] = {'warehouse.sqlite': sha256(output/'warehouse.sqlite')}
+    files = {'warehouse.sqlite': sha256(output/'warehouse.sqlite')}
+    copied = 0
+    for rel in documents:  # outside PDFs stay byte-identical; never anything under private/
+        src_file = (release/rel).resolve()
+        if not rel.startswith('documents/') or (release/'private') in src_file.parents or not src_file.is_file(): continue
+        (output/rel).parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(src_file, output/rel)
+        files[rel] = sha256(output/rel); copied += 1
+    manifest['files'] = files
     manifest['sample'] = {'source_release': str(release), 'source_sha256': source_sha,
                           'per_segment': per_segment, 'fraction_of_population_segments': fraction, 'segments': dict(segments), 'patients': len(chosen),
-                          'records': sum(counts.values()), 'source_tables': counts, 'synthetic': True}
+                          'records': sum(counts.values()), 'source_tables': counts, 'documents_copied': copied, 'synthetic': True}
     (output/'manifest.json').write_text(json.dumps(manifest, indent=2) + '\n')
     return manifest['sample']
 

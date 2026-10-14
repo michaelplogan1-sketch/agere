@@ -201,12 +201,14 @@ def _rows(ctx, c):
                                              "WHERE concept IN ('systolic_bp','diastolic_bp') AND value_canonical IS NOT NULL AND event_date IS NOT NULL"):
             out[pid].append((d[:10], v, concept))
     elif t in ('medication', 'pdc'):
-        evidence = c.get('evidence') or (['dispensed', 'claim'] if t == 'pdc' else ['dispensed', 'claim', 'administered'])
+        # Fills: pharmacy dispenses, provider-side pharmacy claims and payer pharmacy claims (claims-only members).
+        evidence = c.get('evidence') or (['dispensed', 'claim', 'payer_claim'] if t == 'pdc' else ['dispensed', 'claim', 'payer_claim', 'administered'])
         statuses = c.get('statuses', list(DISPENSE_STATUSES) + ['completed', 'given', 'administered'])
         q1, q2 = ','.join('?' * len(c['classes'])), ','.join('?' * len(evidence))
         sql = (f'SELECT m.patient_id, m.event_date, m.drug_class, m.status, m.drug_name, json_extract(r.payload, "$.days_supply_reported"), '
                f'json_extract(r.payload, "$.days_supply") FROM medication m LEFT JOIN record r ON r.record_id = m.record_id '
-               f'WHERE m.drug_class IN ({q1}) AND m.evidence IN ({q2})')
+               f'WHERE m.drug_class IN ({q1}) AND m.evidence IN ({q2})' +
+               (' AND coalesce(m.fill_reversed, 0) = 0' if ctx.has('medication', 'fill_reversed') else ''))  # B2 return-to-stock: never a fill
         exclude = re.compile(c['exclude_names'], re.I) if c.get('exclude_names') else None
         for pid, d, cls, status, name, ds1, ds2 in db.execute(sql, [*c['classes'], *evidence]):
             if statuses and status not in statuses: continue
@@ -336,7 +338,12 @@ def _pdc(rows, c, anchors):
     """Proportion of days covered (PQA): from the first fill in the period to period end; overlapping supply shifts forward.
     Eligible only with >= min_fills fills on distinct dates. Per class group (any listed class counts)."""
     lo, hi = anchors['period_start'], anchors['period_end']
-    fills = sorted({(d, int(float(s)) if _num(s) else c.get('default_days_supply', 30)) for d, s, _ in rows if _in(d, lo, hi)})
+    by_day = {}  # PQA: several fills of the class on one date of service count once, with the longest days supply
+    for d, s, _ in rows:
+        if not _in(d, lo, hi): continue
+        days = int(float(s)) if _num(s) else c.get('default_days_supply', 30)
+        by_day[d] = max(by_day.get(d, 0), days)
+    fills = sorted(by_day.items())
     if len({d for d, _ in fills}) < c.get('min_fills', 2):
         return None, f"{c['label']}: fewer than {c.get('min_fills', 2)} fills"
     start = date.fromisoformat(fills[0][0]); end = date.fromisoformat(hi)

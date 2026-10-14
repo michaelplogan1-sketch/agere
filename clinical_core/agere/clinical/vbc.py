@@ -326,7 +326,8 @@ def _utilization(db, people, attr, p, start, end):
             r['admits_per_1000_roster'] = round(1000 * r['admissions_roster'] / len(pids), 1) if pids else None
     return rows, (('Rates per 1,000 roster patients (headcount, not annualised) as requested; ' if p.get('denominator') == 'roster' else
                    'Rates per 1,000 member-years (NCQA/ACO REACH convention); ') +
-                  'Members with enrolled months in the period; ED visits = distinct ED days; admissions = distinct hospital stays; '
+                  'Members with enrolled months in the period; ED visits = distinct ED days and admissions = distinct hospital stays '
+                  'from every source (EHR encounters, ADT visits, payer claims; one event per real visit, see utilization_event); '
                   '7-day follow-up = clinic/specialist/telehealth contact within 7 days after discharge. ' +
                   (f'By {p["group_by"]}: member-years, ED days and stays (by admit month) fall in their own calendar period, counted in '
                    'enrolled months. ' if timed else '') +
@@ -355,16 +356,22 @@ def _claims(db, start, end):
 
 def _payer_claims(db, start, end):
     """Paid payer-feed claims (semantic payer_claim at its final adjudication, payer_pharmacy_claim) in the window:
-    (patients with any payer claim, rows). None when the release has no payer feed."""
+    (patients with any payer claim, rows). None when the release has no payer feed. Only the current version of each
+    claim counts (replacement over original, voids and CARC 18 duplicates excluded: counts_in_metrics), and pharmacy
+    claims reversed by a B2 return to stock are not spend (counts_as_fill)."""
     if not _has_table(db, 'payer_claim'): return None
     covered = {pid for (pid,) in db.execute('SELECT patient_id FROM payer_claim UNION SELECT patient_id FROM payer_pharmacy_claim')}
     if not covered: return None
+    claim_cols = {r[1] for r in db.execute('PRAGMA table_info(payer_claim)')}
+    rx_cols = {r[1] for r in db.execute('PRAGMA table_info(payer_pharmacy_claim)')}
+    current = ' AND counts_in_metrics = 1' if 'counts_in_metrics' in claim_cols else ''
+    filled = ' AND counts_as_fill = 1' if 'counts_as_fill' in rx_cols else ''
     rows = [(pid, svc[:7], allowed or 0, paid or 0, 'medical', available) for pid, svc, allowed, paid, available in db.execute(
         "SELECT patient_id, service_from, allowed_cents, paid_cents, last_available_date FROM payer_claim "
-        "WHERE final_status = 'paid' AND service_from IS NOT NULL AND substr(service_from, 1, 10) BETWEEN ? AND ?", (start, end))]
+        "WHERE final_status = 'paid' AND service_from IS NOT NULL AND substr(service_from, 1, 10) BETWEEN ? AND ?" + current, (start, end))]
     rows += [(pid, d[:7], (plan or 0) + (patient or 0), plan or 0, 'pharmacy', available) for pid, d, plan, patient, available in db.execute(
         "SELECT patient_id, fill_date, plan_paid_cents, patient_pay_cents, available_date FROM payer_pharmacy_claim "
-        "WHERE claim_status = 'paid' AND fill_date BETWEEN ? AND ?", (start, end))]
+        "WHERE claim_status = 'paid' AND fill_date BETWEEN ? AND ?" + filled, (start, end))]
     return covered, rows
 
 

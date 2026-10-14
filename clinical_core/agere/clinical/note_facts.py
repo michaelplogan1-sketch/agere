@@ -25,6 +25,9 @@ TEXT_SOURCES = {
     'outside_followup_contacts': ['text'], 'transported_handoffs': ['text'], 'endoscopy_reports': ['text'],
     'referral_status_updates': ['text'], 'community_service_outcomes': ['text'], 'diagnostic_access_contacts': ['text'],
     'hie_documents': ['text'],  # v2.2 HIE-pushed ED / discharge summaries (sectioned: Principal diagnosis, Hospital course, ...)
+    # v2.3 outside PDFs: readable text only (semantic scanned_document_text: PDF text layer, else front-office OCR text with OCR errors);
+    # image-only scans without OCR are present but unreadable and yield nothing. field = text_source.
+    'scanned_documents': ['pdf_text_layer', 'front_office_ocr'],
 }
 # Sections a documentation persona copies forward from the prior note (PMH/exam/ROS/social/allergies/medications). The loader
 # drops facts from a line of these sections that repeats the patient's previous note word for word (without_copy_forward).
@@ -87,10 +90,12 @@ SCHEMA_DOC = ('One row per clinical fact found only in free text (notes, importe
               'source span. Only fact types with held-out precision >= the admission bar are present.')
 
 
-def units(record_row):
-    """(field, text) text units of one record (record_id, stream, payload json)."""
+def units(record_row, extra=None):
+    """(field, text) text units of one record (record_id, stream, payload json). extra = {record_id: {field: text}} for text that
+    is not in the payload (outside-PDF text layers)."""
     stream, payload = record_row[1], record_row[2]
     d = json.loads(payload) if isinstance(payload, str) else payload
+    if extra and record_row[0] in extra: d = {**d, **extra[record_row[0]]}
     for f in TEXT_SOURCES.get(stream, ()):
         t = d.get(f)
         if isinstance(t, str) and len(t.strip()) >= 3:
@@ -522,12 +527,16 @@ def rows(source_db, admit, stats=None):
     stats = stats if stats is not None else {}
     stats.setdefault('copy_forward_dropped', 0)
     cur, last = None, {}
+    extra = {}
+    if source_db.execute("SELECT 1 FROM sqlite_master WHERE name = 'scanned_document_text'").fetchone():
+        for rid, src, text in source_db.execute('SELECT record_id, text_source, text FROM scanned_document_text'):
+            extra[rid] = {src: text}
     for rid, pid, stream, ev, rec, payload in source_db.execute(
             f"SELECT record_id, patient_id, stream, event_date, recorded_date, payload FROM record WHERE stream IN "
             f"({','.join('?' * len(TEXT_SOURCES))}) ORDER BY patient_id, coalesce(event_date, recorded_date), record_id",
             list(TEXT_SOURCES)):
         if pid != cur: cur, last = pid, {}
-        for field, text in units((rid, stream, payload)):
+        for field, text in units((rid, stream, payload), extra):
             facts, dropped = without_copy_forward([f for f in extract(text, stream, field) if f['fact_type'] in admit], last)
             stats['copy_forward_dropped'] += dropped
             for f in facts:

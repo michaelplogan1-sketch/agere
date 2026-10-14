@@ -3,7 +3,7 @@
  "domain": "healthcare",
  "derived_from": {
   "module": "clinical_core/agere/clinical/semantic_layer.py",
-  "semantic_layer_version": "semantic-layer/14",
+  "semantic_layer_version": "semantic-layer/15",
   "versioned_streams": {
    "patient_billing_accounts": "account_id",
    "medical_claims": "claim_id",
@@ -700,7 +700,7 @@
   },
   "measurement": {
    "table": "measurement",
-   "meaning": "Labs and vitals, one row per (record, concept); concept NULL when unmapped. value/unit as received; value_canonical in unit_canonical when the unit converts (else NULL). Cancelled results have value NULL. concept egfr = BSA-normalised eGFR only (mL/min/1.73m2 or no unit); GFR results reported in another unit (mL/min, measured GFR / clearance) are concept gfr_unnormalized and never count as eGFR.",
+   "meaning": "Labs and vitals, one row per (record, concept); concept NULL when unmapped. value/unit as received; value_canonical in unit_canonical when the unit converts (else NULL). Cancelled results have value NULL. concept egfr = BSA-normalised eGFR only (mL/min/1.73m2 or no unit); GFR results reported in another unit (mL/min, measured GFR / clearance) are concept gfr_unnormalized and never count as eGFR. Use only result_current = 1 AND excluded_reason IS NULL rows for values; value_censor marks censored strings (eGFR \">60\" -> 60 with value_censor \">\"); see measurement_quality.",
    "grain": "one row per received lab or vital result",
    "keys": [
     "record_id"
@@ -1805,7 +1805,7 @@
   },
   "stay": {
    "table": "stay",
-   "meaning": "Distinct hospital stays (inpatient/observation encounters collapsed by admit day and overlap) with 30-day readmission flag. discharge_date and los_days are NULL when no discharge time was received (discharge_known = 0); never treat those as 0 days. discharge_date is the ADT discharge (A03) date of the stay's encounter when one was received (discharge_date_source = adt), else the date part of the encounter end_time (encounter_end_time_utc); discharge_time_utc keeps the UTC end timestamp. Readmission gaps use discharge_date.",
+   "meaning": "Distinct hospital stays (inpatient/observation encounters collapsed by admit day and overlap) with 30-day readmission flag. discharge_date and los_days are NULL when no discharge time was received (discharge_known = 0); never treat those as 0 days. discharge_date is the ADT discharge (A03) date of the stay's encounter when one was received (discharge_date_source = adt), else the date part of the encounter end_time (encounter_end_time_utc); discharge_time_utc keeps the UTC end timestamp. Readmission gaps use discharge_date. stay_source = encounters, or adt | payer_claim for admissions found only in ADT visits or inpatient (TOB 011x) / observation (revenue 0762) payer claims, so admission rates cover claims-only members; readmission flags of a patient with such stays are recomputed over all of the patient's stays.",
    "derivation": "Collapsed inpatient/observation stays from visits (aggregate._stays).",
    "columns": {
     "patient_id": "text",
@@ -1884,7 +1884,7 @@
   },
   "note_fact": {
    "table": "note_fact",
-   "meaning": "Facts found only in free text (EF, symptoms, edema, dyspnea, medication non-adherence and reasons, social needs, imaging findings, follow-up instructions, goals of care) with negation, temporality and evidence spans; rule extractor admitted per fact type at >= 0.90 measured precision.",
+   "meaning": "Facts found only in free text (EF, symptoms, edema, dyspnea, medication non-adherence and reasons, social needs, imaging findings, follow-up instructions, goals of care, smoking status) in notes, documents and HIE ED/discharge summaries, with negation, temporality and evidence spans; copied-forward note lines count once per patient; rule extractor admitted per fact type at >= 0.90 measured precision.",
    "derivation": "Facts extracted from free text by the note-fact rules.",
    "columns": {},
    "onboarding_target": false
@@ -1945,7 +1945,7 @@
   },
   "encounter": {
    "table": "encounter",
-   "meaning": "Encounter records plus ADT notifications (source_table adt, type = ADT event). type_concept = library encounter concept.",
+   "meaning": "Encounter records plus ADT notifications (source_table adt, type = ADT event). type_concept = library encounter concept. ED visits that only ADT messages or payer claims carry (claims-only members) are added once each, deduplicated against the EHR (source_table adt_messages | payer_medical_claims, type_concept emergency_visit); see utilization_event.",
    "derivation": "Encounter + ADT rows (visit is the onboarding target).",
    "columns": {
     "record_id": "text",
