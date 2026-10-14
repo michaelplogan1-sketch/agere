@@ -1,0 +1,111 @@
+{
+ "schema": "compiler-growth-gate/1",
+ "rule_id": "population.count",
+ "version": 1,
+ "rule_digest": "6a7e4137049c3ad013e37bbc6005998a2a221b56f4983d60a9df6ee4a984bf18",
+ "engine": "literal_lookup",
+ "status": "accepted",
+ "reasons": [],
+ "profiles": {
+  "v1.23": {
+   "source_digest": "0d15e2da55c9a7f8b2e9f0a7bc1525eca99f7607db277836a0eca477c79de52f",
+   "stack": "/Users/mikel/clinical-insights-local/artifacts/agere-healthcare-v123/stack"
+  },
+  "v2.0": {
+   "source_digest": "66db165d755b7fd951c364ac440b8f07a065961d0988dbeb49c9bfb3aac8d8d5",
+   "stack": "/Users/mikel/clinical-insights-local/artifacts/agere-healthcare-v20/stack"
+  }
+ },
+ "captured_counts": {
+  "v1.23": {
+   "library": 1
+  },
+  "v2.0": {
+   "library": 1
+  }
+ },
+ "detail": {
+  "v1.23": {
+   "positives": [
+    {
+     "question": "How many patients on metformin have an eGFR below 30?",
+     "ok": true
+    },
+    {
+     "question": "How many adults with type 2 diabetes have an A1c between 7.5% and 10.5% and an eGFR of 30 or more?",
+     "ok": true
+    },
+    {
+     "question": "How many women 65 and older with osteoporosis are there?",
+     "ok": true
+    }
+   ],
+   "negatives": [
+    {
+     "question": "How many patients on metformin have an eGFR below 30 by practice?",
+     "ok": true
+    },
+    {
+     "question": "How many patients had an ED visit?",
+     "ok": true
+    },
+    {
+     "question": "How many patients with diabetes are trending up on A1c?",
+     "ok": true
+    }
+   ],
+   "captured": [
+    {
+     "kind": "library",
+     "id": "HQ-LS-002",
+     "operation": "sql",
+     "bucket": "answered locally",
+     "expected": "literal_lookup"
+    }
+   ]
+  },
+  "v2.0": {
+   "positives": [
+    {
+     "question": "How many patients on metformin have an eGFR below 30?",
+     "ok": true
+    },
+    {
+     "question": "How many adults with type 2 diabetes have an A1c between 7.5% and 10.5% and an eGFR of 30 or more?",
+     "ok": true
+    },
+    {
+     "question": "How many women 65 and older with osteoporosis are there?",
+     "ok": true
+    }
+   ],
+   "negatives": [
+    {
+     "question": "How many patients on metformin have an eGFR below 30 by practice?",
+     "ok": true
+    },
+    {
+     "question": "How many patients had an ED visit?",
+     "ok": true
+    },
+    {
+     "question": "How many patients with diabetes are trending up on A1c?",
+     "ok": true
+    }
+   ],
+   "captured": [
+    {
+     "kind": "library",
+     "id": "HQ-LS-002",
+     "operation": "sql",
+     "bucket": "answered locally",
+     "expected": "literal_lookup"
+    }
+   ]
+  }
+ },
+ "code_identity": "c274c91bafb09d3c8b89af4dc32d728c6e4539b50139c1e1778ff31c224c0562",
+ "interpreter": "compiler-rules/1",
+ "created": "2026-10-14T02:44:01Z",
+ "sequence": 1
+}

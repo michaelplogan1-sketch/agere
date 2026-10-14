@@ -1,0 +1,64 @@
+{
+ "schema": "compiler-growth-gate/1",
+ "rule_id": "coding.revenue_codes_without_cpt",
+ "version": 1,
+ "rule_digest": "f3ac3b82ff338ae332c089c3b190d213a3a1e85f973eb5398ddcaeefc76483da",
+ "engine": "literal_lookup",
+ "status": "accepted",
+ "reasons": [],
+ "profiles": {
+  "v1.23": {
+   "source_digest": "0d15e2da55c9a7f8b2e9f0a7bc1525eca99f7607db277836a0eca477c79de52f",
+   "stack": "/Users/mikel/clinical-insights-local/artifacts/agere-healthcare-v123/stack"
+  },
+  "v2.0": {
+   "source_digest": "66db165d755b7fd951c364ac440b8f07a065961d0988dbeb49c9bfb3aac8d8d5",
+   "stack": "/Users/mikel/clinical-insights-local/artifacts/agere-healthcare-v20/stack"
+  }
+ },
+ "captured_counts": {
+  "v1.23": {},
+  "v2.0": {
+   "library": 1
+  }
+ },
+ "detail": {
+  "v1.23": {
+   "positives": [],
+   "negatives": [],
+   "captured": [],
+   "skipped": "requires not met on this profile"
+  },
+  "v2.0": {
+   "positives": [
+    {
+     "question": "Which revenue codes show up on claims without a CPT/HCPCS code, and how much is billed on them?",
+     "ok": true
+    }
+   ],
+   "negatives": [
+    {
+     "question": "Which revenue codes show up on claims without a CPT/HCPCS code, and why?",
+     "ok": true
+    },
+    {
+     "question": "Which revenue codes are billed most?",
+     "ok": true
+    }
+   ],
+   "captured": [
+    {
+     "kind": "library",
+     "id": "HQ-RCM-036",
+     "operation": "sql",
+     "bucket": "answered locally",
+     "expected": "literal_lookup"
+    }
+   ]
+  }
+ },
+ "code_identity": "c274c91bafb09d3c8b89af4dc32d728c6e4539b50139c1e1778ff31c224c0562",
+ "interpreter": "compiler-rules/1",
+ "created": "2026-10-14T02:45:10Z",
+ "sequence": 28
+}

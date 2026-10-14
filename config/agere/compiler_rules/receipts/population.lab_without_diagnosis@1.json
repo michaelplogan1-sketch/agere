@@ -1,0 +1,109 @@
+{
+ "schema": "compiler-growth-gate/1",
+ "rule_id": "population.lab_without_diagnosis",
+ "version": 1,
+ "rule_digest": "d5b7dbbd9bfef0f11c17f7204e96362d990666630287f09034b03cfabcd5441e",
+ "engine": "literal_lookup",
+ "status": "accepted",
+ "reasons": [],
+ "profiles": {
+  "v1.23": {
+   "source_digest": "0d15e2da55c9a7f8b2e9f0a7bc1525eca99f7607db277836a0eca477c79de52f",
+   "stack": "/Users/mikel/clinical-insights-local/artifacts/agere-healthcare-v123/stack"
+  },
+  "v2.0": {
+   "source_digest": "66db165d755b7fd951c364ac440b8f07a065961d0988dbeb49c9bfb3aac8d8d5",
+   "stack": "/Users/mikel/clinical-insights-local/artifacts/agere-healthcare-v20/stack"
+  }
+ },
+ "captured_counts": {
+  "v1.23": {
+   "library": 2
+  },
+  "v2.0": {
+   "library": 2
+  }
+ },
+ "detail": {
+  "v1.23": {
+   "positives": [
+    {
+     "question": "How many patients have an A1c of 6.5% or more on two occasions without a diabetes diagnosis?",
+     "ok": true
+    },
+    {
+     "question": "How many patients have two eGFR values below 60 at least 90 days apart but no CKD diagnosis?",
+     "ok": true
+    }
+   ],
+   "negatives": [
+    {
+     "question": "How many patients have an A1c of 6.5% or more on two occasions without a diabetes diagnosis by practice?",
+     "ok": true
+    },
+    {
+     "question": "How many adults have three or more elevated blood pressure readings without a hypertension diagnosis?",
+     "ok": true
+    }
+   ],
+   "captured": [
+    {
+     "kind": "library",
+     "id": "HQ-CDS-011",
+     "operation": "sql",
+     "bucket": "answered locally",
+     "expected": "literal_lookup"
+    },
+    {
+     "kind": "library",
+     "id": "HQ-CDS-012",
+     "operation": "sql",
+     "bucket": "answered locally",
+     "expected": "literal_lookup"
+    }
+   ]
+  },
+  "v2.0": {
+   "positives": [
+    {
+     "question": "How many patients have an A1c of 6.5% or more on two occasions without a diabetes diagnosis?",
+     "ok": true
+    },
+    {
+     "question": "How many patients have two eGFR values below 60 at least 90 days apart but no CKD diagnosis?",
+     "ok": true
+    }
+   ],
+   "negatives": [
+    {
+     "question": "How many patients have an A1c of 6.5% or more on two occasions without a diabetes diagnosis by practice?",
+     "ok": true
+    },
+    {
+     "question": "How many adults have three or more elevated blood pressure readings without a hypertension diagnosis?",
+     "ok": true
+    }
+   ],
+   "captured": [
+    {
+     "kind": "library",
+     "id": "HQ-CDS-011",
+     "operation": "sql",
+     "bucket": "answered locally",
+     "expected": "literal_lookup"
+    },
+    {
+     "kind": "library",
+     "id": "HQ-CDS-012",
+     "operation": "sql",
+     "bucket": "answered locally",
+     "expected": "literal_lookup"
+    }
+   ]
+  }
+ },
+ "code_identity": "c274c91bafb09d3c8b89af4dc32d728c6e4539b50139c1e1778ff31c224c0562",
+ "interpreter": "compiler-rules/1",
+ "created": "2026-10-14T02:44:05Z",
+ "sequence": 6
+}

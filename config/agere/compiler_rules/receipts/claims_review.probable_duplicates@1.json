@@ -1,0 +1,101 @@
+{
+ "schema": "compiler-growth-gate/1",
+ "rule_id": "claims_review.probable_duplicates",
+ "version": 1,
+ "rule_digest": "340d1c75a1169165ff506949a32e45ffdd7e187ee8a99c53386f85bd2e8117f6",
+ "engine": "claims_review",
+ "status": "accepted",
+ "reasons": [],
+ "profiles": {
+  "v1.23": {
+   "source_digest": "0d15e2da55c9a7f8b2e9f0a7bc1525eca99f7607db277836a0eca477c79de52f",
+   "stack": "/Users/mikel/clinical-insights-local/artifacts/agere-healthcare-v123/stack"
+  },
+  "v2.0": {
+   "source_digest": "66db165d755b7fd951c364ac440b8f07a065961d0988dbeb49c9bfb3aac8d8d5",
+   "stack": "/Users/mikel/clinical-insights-local/artifacts/agere-healthcare-v20/stack"
+  }
+ },
+ "captured_counts": {
+  "v1.23": {
+   "acceptance": 1,
+   "library": 1
+  },
+  "v2.0": {
+   "acceptance": 1,
+   "library": 1
+  }
+ },
+ "detail": {
+  "v1.23": {
+   "positives": [
+    {
+     "question": "Which claims are probable duplicates billed by the same or different providers?",
+     "ok": true
+    }
+   ],
+   "negatives": [
+    {
+     "question": "Which claims are probable duplicates and should be voided?",
+     "ok": true
+    },
+    {
+     "question": "Which claims are probable unbundling?",
+     "ok": true
+    }
+   ],
+   "captured": [
+    {
+     "kind": "acceptance",
+     "id": "healthcare_library#30",
+     "operation": "claims_review",
+     "expected": "claims_review"
+    },
+    {
+     "kind": "library",
+     "id": "HQ-PAY-031",
+     "operation": "claims_review",
+     "bucket": "answered locally",
+     "expected": "claims_review"
+    }
+   ]
+  },
+  "v2.0": {
+   "positives": [
+    {
+     "question": "Which claims are probable duplicates billed by the same or different providers?",
+     "ok": true
+    }
+   ],
+   "negatives": [
+    {
+     "question": "Which claims are probable duplicates and should be voided?",
+     "ok": true
+    },
+    {
+     "question": "Which claims are probable unbundling?",
+     "ok": true
+    }
+   ],
+   "captured": [
+    {
+     "kind": "acceptance",
+     "id": "healthcare_library#30",
+     "operation": "claims_review",
+     "expected": "claims_review"
+    },
+    {
+     "kind": "library",
+     "id": "HQ-PAY-031",
+     "operation": "claims_review",
+     "bucket": "answered locally",
+     "expected": "claims_review"
+    }
+   ]
+  }
+ },
+ "code_identity": "c274c91bafb09d3c8b89af4dc32d728c6e4539b50139c1e1778ff31c224c0562",
+ "interpreter": "compiler-rules/1",
+ "created": "2026-10-14T02:45:16Z",
+ "sequence": 37
+}

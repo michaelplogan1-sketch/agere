@@ -93,36 +93,39 @@ Ranked by questions blocked. "Sole blocker" = questions that become answerable (
 | 50 | `biosimilar_reference` | reference | Reference-product to biosimilar mapping (FDA Purple Book) | 1 | 1 | pharmacy (1) |
 | 51 | `case_cancellations` | warehouse | Surgical/procedure case cancellations with reason and timing | 1 | 1 | hospital_operations (1) |
 | 52 | `cocm_registry` | warehouse | Collaborative-care registry: monthly care-manager minutes, psychiatric consultant review | 1 | 1 | behavioral_health (1) |
-| 53 | `complaints` | warehouse | Patient complaints and grievances with category | 1 | 1 | patient_experience_access (1) |
-| 54 | `critical_result_calls` | warehouse | Critical-result call logs (time called, recipient, read-back) | 1 | 1 | quality_patient_safety (1) |
-| 55 | `ddi_reference` | reference | Drug-drug interaction knowledge base with severity | 1 | 0 | pharmacy (1) |
-| 56 | `denial_appeals` | warehouse | Denial appeals: filed date, level, outcome (overturned/upheld), recovered amount | 1 | 1 | revenue_cycle (1) |
-| 57 | `drug_rebates` | warehouse | Manufacturer rebates by NDC/period | 1 | 1 | pharmacy (1) |
-| 58 | `drug_shortages` | warehouse | Drug shortage and substitution log | 1 | 1 | pharmacy (1) |
-| 59 | `ehr_audit_logs` | warehouse | EHR audit logs: time in EHR, after-hours time, inbox volume per clinician | 1 | 1 | workforce_productivity (1) |
-| 60 | `environmental_data` | reference | Daily temperature/heat index and air quality by county | 1 | 1 | public_population_health (1) |
-| 61 | `exclusion_lists` | reference | OIG LEIE / state Medicaid exclusion lists | 1 | 1 | payer_utilization_management (1) |
-| 62 | `financial_assistance` | warehouse | Financial-assistance (charity) applications and determinations; bad-debt write-offs | 1 | 1 | revenue_cycle (1) |
-| 63 | `formulary` | warehouse | Formulary tiers, PA/step-therapy flags, preferred products | 1 | 1 | pharmacy (1) |
-| 64 | `general_ledger` | warehouse | General ledger: operating revenue/expense, cash, days cash on hand | 1 | 1 | revenue_cycle (1) |
-| 65 | `genomics` | warehouse | Germline/somatic genomic test results | 1 | 1 | life_sciences_rwe (1) |
-| 66 | `infusion_chairs` | warehouse | Infusion chair schedule and chair-time usage | 1 | 1 | hospital_operations (1) |
-| 67 | `iv_fluids` | warehouse | IV fluid volumes and start times | 1 | 0 | quality_patient_safety (1) |
-| 68 | `member_appeals_grievances` | warehouse | Member appeals and grievances with category and resolution time | 1 | 1 | payer_utilization_management (1) |
-| 69 | `network_standards` | reference | CMS/state network-adequacy time-distance and ratio standards by county type | 1 | 0 | payer_utilization_management (1) |
-| 70 | `oasis` | warehouse | OASIS start-of-care/discharge assessments | 1 | 1 | post_acute_home_health (1) |
-| 71 | `oncology_regimens` | warehouse | Antineoplastic administrations/regimens (infusion and oral) with dates | 1 | 0 | life_sciences_rwe (1) |
-| 72 | `payer_contracts` | warehouse | Payer contract terms: fee schedules, case rates, carve-outs, timely-filing limits | 1 | 0 | revenue_cycle (1) |
-| 73 | `pdmp` | warehouse | Prescription drug monitoring program fills (all payers, controlled substances) | 1 | 1 | pharmacy (1) |
-| 74 | `poa_flags` | warehouse | Present-on-admission indicators on inpatient diagnoses | 1 | 1 | quality_patient_safety (1) |
-| 75 | `post_acute_quality_reference` | reference | CMS star ratings / quality files for SNF, HHA, hospice | 1 | 0 | post_acute_home_health (1) |
-| 76 | `price_transparency_mrf` | reference | Hospital and payer machine-readable price files (negotiated rates) | 1 | 0 | revenue_cycle (1) |
-| 77 | `pro_measures` | warehouse | Patient-reported outcome measures (PROMIS, symptom scores) beyond PHQ | 1 | 1 | life_sciences_rwe (1) |
-| 78 | `reportable_conditions` | warehouse | Reportable disease case reports and lab-based surveillance | 1 | 1 | public_population_health (1) |
-| 79 | `schedule_templates` | warehouse | Provider schedule templates and open slot supply (for third-next-available) | 1 | 1 | patient_experience_access (1) |
-| 80 | `site_directory` | warehouse | Research site/investigator directory and past enrollment | 1 | 1 | life_sciences_rwe (1) |
-| 81 | `stop_loss_terms` | warehouse | Stop-loss / reinsurance attachment points and recoveries | 1 | 1 | payer_utilization_management (1) |
-| 82 | `sud_treatment` | warehouse | SUD treatment program episodes (OTP methadone, ASAM level), 42 CFR Part 2 consent | 1 | 1 | behavioral_health (1) |
+| 53 | `collaborative_care_enrollment` | warehouse | Collaborative care (CoCM) enrollment and disenrollment dates per patient | 1 | 1 | behavioral_health (1) |
+| 54 | `complaints` | warehouse | Patient complaints and grievances with category | 1 | 1 | patient_experience_access (1) |
+| 55 | `critical_result_calls` | warehouse | Critical-result call logs (time called, recipient, read-back) | 1 | 1 | quality_patient_safety (1) |
+| 56 | `ddi_reference` | reference | Drug-drug interaction knowledge base with severity | 1 | 0 | pharmacy (1) |
+| 57 | `denial_appeals` | warehouse | Denial appeals: filed date, level, outcome (overturned/upheld), recovered amount | 1 | 1 | revenue_cycle (1) |
+| 58 | `drug_rebates` | warehouse | Manufacturer rebates by NDC/period | 1 | 1 | pharmacy (1) |
+| 59 | `drug_shortages` | warehouse | Drug shortage and substitution log | 1 | 1 | pharmacy (1) |
+| 60 | `ehr_audit_logs` | warehouse | EHR audit logs: time in EHR, after-hours time, inbox volume per clinician | 1 | 1 | workforce_productivity (1) |
+| 61 | `environmental_data` | reference | Daily temperature/heat index and air quality by county | 1 | 1 | public_population_health (1) |
+| 62 | `exclusion_lists` | reference | OIG LEIE / state Medicaid exclusion lists | 1 | 1 | payer_utilization_management (1) |
+| 63 | `financial_assistance` | warehouse | Financial-assistance (charity) applications and determinations; bad-debt write-offs | 1 | 1 | revenue_cycle (1) |
+| 64 | `formulary` | warehouse | Formulary tiers, PA/step-therapy flags, preferred products | 1 | 1 | pharmacy (1) |
+| 65 | `general_ledger` | warehouse | General ledger: operating revenue/expense, cash, days cash on hand | 1 | 1 | revenue_cycle (1) |
+| 66 | `genomics` | warehouse | Germline/somatic genomic test results | 1 | 1 | life_sciences_rwe (1) |
+| 67 | `hf_discharge_bundle_exposure` | warehouse | Per-patient dates of heart-failure discharge bundle delivery (program exposure) | 1 | 1 | quality_patient_safety (1) |
+| 68 | `infusion_chairs` | warehouse | Infusion chair schedule and chair-time usage | 1 | 1 | hospital_operations (1) |
+| 69 | `iv_fluids` | warehouse | IV fluid volumes and start times | 1 | 0 | quality_patient_safety (1) |
+| 70 | `member_appeals_grievances` | warehouse | Member appeals and grievances with category and resolution time | 1 | 1 | payer_utilization_management (1) |
+| 71 | `network_standards` | reference | CMS/state network-adequacy time-distance and ratio standards by county type | 1 | 0 | payer_utilization_management (1) |
+| 72 | `oasis` | warehouse | OASIS start-of-care/discharge assessments | 1 | 1 | post_acute_home_health (1) |
+| 73 | `oncology_regimens` | warehouse | Antineoplastic administrations/regimens (infusion and oral) with dates | 1 | 0 | life_sciences_rwe (1) |
+| 74 | `payer_contracts` | warehouse | Payer contract terms: fee schedules, case rates, carve-outs, timely-filing limits | 1 | 0 | revenue_cycle (1) |
+| 75 | `pdmp` | warehouse | Prescription drug monitoring program fills (all payers, controlled substances) | 1 | 1 | pharmacy (1) |
+| 76 | `poa_flags` | warehouse | Present-on-admission indicators on inpatient diagnoses | 1 | 1 | quality_patient_safety (1) |
+| 77 | `post_acute_quality_reference` | reference | CMS star ratings / quality files for SNF, HHA, hospice | 1 | 0 | post_acute_home_health (1) |
+| 78 | `price_transparency_mrf` | reference | Hospital and payer machine-readable price files (negotiated rates) | 1 | 0 | revenue_cycle (1) |
+| 79 | `pro_measures` | warehouse | Patient-reported outcome measures (PROMIS, symptom scores) beyond PHQ | 1 | 1 | life_sciences_rwe (1) |
+| 80 | `reportable_conditions` | warehouse | Reportable disease case reports and lab-based surveillance | 1 | 1 | public_population_health (1) |
+| 81 | `schedule_templates` | warehouse | Provider schedule templates and open slot supply (for third-next-available) | 1 | 1 | patient_experience_access (1) |
+| 82 | `site_directory` | warehouse | Research site/investigator directory and past enrollment | 1 | 1 | life_sciences_rwe (1) |
+| 83 | `stewardship_feedback_exposure` | warehouse | Dates each prescriber received antibiotic-stewardship feedback reports | 1 | 1 | pharmacy (1) |
+| 84 | `stop_loss_terms` | warehouse | Stop-loss / reinsurance attachment points and recoveries | 1 | 1 | payer_utilization_management (1) |
+| 85 | `sud_treatment` | warehouse | SUD treatment program episodes (OTP methadone, ASAM level), 42 CFR Part 2 consent | 1 | 1 | behavioral_health (1) |
 
 ### Elements present in only some profiles
 

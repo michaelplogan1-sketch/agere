@@ -1,0 +1,101 @@
+{
+ "schema": "compiler-growth-gate/1",
+ "rule_id": "trajectory.decline_to_stage",
+ "version": 1,
+ "rule_digest": "56bf6b56c02a31446834260b58dbe9274915aa6ee6100f0c2a9cdfea463bfbb2",
+ "engine": "trajectory",
+ "status": "accepted",
+ "reasons": [],
+ "profiles": {
+  "v1.23": {
+   "source_digest": "0d15e2da55c9a7f8b2e9f0a7bc1525eca99f7607db277836a0eca477c79de52f",
+   "stack": "/Users/mikel/clinical-insights-local/artifacts/agere-healthcare-v123/stack"
+  },
+  "v2.0": {
+   "source_digest": "66db165d755b7fd951c364ac440b8f07a065961d0988dbeb49c9bfb3aac8d8d5",
+   "stack": "/Users/mikel/clinical-insights-local/artifacts/agere-healthcare-v20/stack"
+  }
+ },
+ "captured_counts": {
+  "v1.23": {
+   "acceptance": 1,
+   "library": 1
+  },
+  "v2.0": {
+   "acceptance": 1,
+   "library": 1
+  }
+ },
+ "detail": {
+  "v1.23": {
+   "positives": [
+    {
+     "question": "Which patients with CKD have eGFR declining fast enough to reach stage 4 within two years?",
+     "ok": true
+    }
+   ],
+   "negatives": [
+    {
+     "question": "Which patients with CKD have eGFR declining fast enough to reach stage 4 within two years and why?",
+     "ok": true
+    },
+    {
+     "question": "Which patients with CKD have eGFR declining fast enough to need dialysis?",
+     "ok": true
+    }
+   ],
+   "captured": [
+    {
+     "kind": "acceptance",
+     "id": "healthcare_library#116",
+     "operation": "trajectory",
+     "expected": "trajectory"
+    },
+    {
+     "kind": "library",
+     "id": "HQ-CDS-027",
+     "operation": "trajectory",
+     "bucket": "answered locally",
+     "expected": "trajectory"
+    }
+   ]
+  },
+  "v2.0": {
+   "positives": [
+    {
+     "question": "Which patients with CKD have eGFR declining fast enough to reach stage 4 within two years?",
+     "ok": true
+    }
+   ],
+   "negatives": [
+    {
+     "question": "Which patients with CKD have eGFR declining fast enough to reach stage 4 within two years and why?",
+     "ok": true
+    },
+    {
+     "question": "Which patients with CKD have eGFR declining fast enough to need dialysis?",
+     "ok": true
+    }
+   ],
+   "captured": [
+    {
+     "kind": "acceptance",
+     "id": "healthcare_library#116",
+     "operation": "trajectory",
+     "expected": "trajectory"
+    },
+    {
+     "kind": "library",
+     "id": "HQ-CDS-027",
+     "operation": "trajectory",
+     "bucket": "answered locally",
+     "expected": "trajectory"
+    }
+   ]
+  }
+ },
+ "code_identity": "c274c91bafb09d3c8b89af4dc32d728c6e4539b50139c1e1778ff31c224c0562",
+ "interpreter": "compiler-rules/1",
+ "created": "2026-10-14T02:45:18Z",
+ "sequence": 41
+}

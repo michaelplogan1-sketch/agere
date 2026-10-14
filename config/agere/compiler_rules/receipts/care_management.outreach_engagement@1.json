@@ -1,0 +1,87 @@
+{
+ "schema": "compiler-growth-gate/1",
+ "rule_id": "care_management.outreach_engagement",
+ "version": 1,
+ "rule_digest": "57903af8b0d3793615f3cbe2e3ad0c315fa4fa3d09ba42a319c712b8e14aa694",
+ "engine": "literal_lookup",
+ "status": "accepted",
+ "reasons": [],
+ "profiles": {
+  "v1.23": {
+   "source_digest": "0d15e2da55c9a7f8b2e9f0a7bc1525eca99f7607db277836a0eca477c79de52f",
+   "stack": "/Users/mikel/clinical-insights-local/artifacts/agere-healthcare-v123/stack"
+  },
+  "v2.0": {
+   "source_digest": "66db165d755b7fd951c364ac440b8f07a065961d0988dbeb49c9bfb3aac8d8d5",
+   "stack": "/Users/mikel/clinical-insights-local/artifacts/agere-healthcare-v20/stack"
+  }
+ },
+ "captured_counts": {
+  "v1.23": {
+   "library": 1
+  },
+  "v2.0": {
+   "library": 1
+  }
+ },
+ "detail": {
+  "v1.23": {
+   "positives": [
+    {
+     "question": "What percent of members we tried to reach in care management outreach actually engaged?",
+     "ok": true
+    }
+   ],
+   "negatives": [
+    {
+     "question": "What percent of members we tried to reach in care management outreach actually engaged, by risk tier?",
+     "ok": true
+    },
+    {
+     "question": "What percent of members we tried to reach in care management outreach reduced their ED visits?",
+     "ok": true
+    }
+   ],
+   "captured": [
+    {
+     "kind": "library",
+     "id": "VQ-125",
+     "operation": "sql",
+     "bucket": "answered locally",
+     "expected": "literal_lookup"
+    }
+   ]
+  },
+  "v2.0": {
+   "positives": [
+    {
+     "question": "What percent of members we tried to reach in care management outreach actually engaged?",
+     "ok": true
+    }
+   ],
+   "negatives": [
+    {
+     "question": "What percent of members we tried to reach in care management outreach actually engaged, by risk tier?",
+     "ok": true
+    },
+    {
+     "question": "What percent of members we tried to reach in care management outreach reduced their ED visits?",
+     "ok": true
+    }
+   ],
+   "captured": [
+    {
+     "kind": "library",
+     "id": "VQ-125",
+     "operation": "sql",
+     "bucket": "answered locally",
+     "expected": "literal_lookup"
+    }
+   ]
+  }
+ },
+ "code_identity": "c274c91bafb09d3c8b89af4dc32d728c6e4539b50139c1e1778ff31c224c0562",
+ "interpreter": "compiler-rules/1",
+ "created": "2026-10-14T02:45:19Z",
+ "sequence": 43
+}

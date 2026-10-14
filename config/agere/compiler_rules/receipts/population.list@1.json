@@ -1,0 +1,103 @@
+{
+ "schema": "compiler-growth-gate/1",
+ "rule_id": "population.list",
+ "version": 1,
+ "rule_digest": "679306c5feafbdfcf2875e9eb65482e9fb878ba740f0fc7776b6e79d867641a3",
+ "engine": "literal_lookup",
+ "status": "accepted",
+ "reasons": [],
+ "profiles": {
+  "v1.23": {
+   "source_digest": "0d15e2da55c9a7f8b2e9f0a7bc1525eca99f7607db277836a0eca477c79de52f",
+   "stack": "/Users/mikel/clinical-insights-local/artifacts/agere-healthcare-v123/stack"
+  },
+  "v2.0": {
+   "source_digest": "66db165d755b7fd951c364ac440b8f07a065961d0988dbeb49c9bfb3aac8d8d5",
+   "stack": "/Users/mikel/clinical-insights-local/artifacts/agere-healthcare-v20/stack"
+  }
+ },
+ "captured_counts": {
+  "v1.23": {
+   "library": 1
+  },
+  "v2.0": {
+   "library": 1
+  }
+ },
+ "detail": {
+  "v1.23": {
+   "positives": [
+    {
+     "question": "Which patients on metformin have an eGFR below 30?",
+     "ok": true
+    },
+    {
+     "question": "List patients with heart failure on an SGLT2 inhibitor",
+     "ok": true
+    }
+   ],
+   "negatives": [
+    {
+     "question": "Which patients on metformin should we call first?",
+     "ok": true
+    },
+    {
+     "question": "Which patients with CKD are declining fastest?",
+     "ok": true
+    },
+    {
+     "question": "Which practices have the most patients with diabetes?",
+     "ok": true
+    }
+   ],
+   "captured": [
+    {
+     "kind": "library",
+     "id": "HQ-RX-041",
+     "operation": "sql",
+     "bucket": "answered locally",
+     "expected": "literal_lookup"
+    }
+   ]
+  },
+  "v2.0": {
+   "positives": [
+    {
+     "question": "Which patients on metformin have an eGFR below 30?",
+     "ok": true
+    },
+    {
+     "question": "List patients with heart failure on an SGLT2 inhibitor",
+     "ok": true
+    }
+   ],
+   "negatives": [
+    {
+     "question": "Which patients on metformin should we call first?",
+     "ok": true
+    },
+    {
+     "question": "Which patients with CKD are declining fastest?",
+     "ok": true
+    },
+    {
+     "question": "Which practices have the most patients with diabetes?",
+     "ok": true
+    }
+   ],
+   "captured": [
+    {
+     "kind": "library",
+     "id": "HQ-RX-041",
+     "operation": "sql",
+     "bucket": "answered locally",
+     "expected": "literal_lookup"
+    }
+   ]
+  }
+ },
+ "code_identity": "c274c91bafb09d3c8b89af4dc32d728c6e4539b50139c1e1778ff31c224c0562",
+ "interpreter": "compiler-rules/1",
+ "created": "2026-10-14T02:44:01Z",
+ "sequence": 2
+}
