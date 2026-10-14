@@ -184,6 +184,8 @@ T = {
         'Average HCC RAF score', 'RAF scores by PCP', 'Which HCCs have not been recaptured this year?', 'Open HCC recapture gaps',
         'Suspect conditions for {conds} without a diagnosis code', 'What is our coding completeness?', 'CMS-HCC risk score by practice',
         'documentation gaps worth reviewing', 'V24 versus V28 risk scores', 'coding gaps in dollars at our Medicare Advantage base rate',
+        'patients whose labs suggest an HCC that was never coded', 'HCC suspects to review for documentation', 'uncoded suspected conditions by PCP',
+        'which {conds} have evidence of a condition not yet coded this year', 'suspect list for {cond} coding review',
     ],
     # risk-contract strategy (options valuation, track selection, negotiation); one settlement amount stays vbc
     'contract_strategy': [
@@ -195,6 +197,31 @@ T = {
         'How much loss can we absorb at 90% confidence under BASIC level {level} with a ${bench} benchmark?',
         'compare offer A: 50% sharing upside only; offer B: 70% sharing two-sided, with a ${bench} PMPM benchmark', 'which ACO REACH risk corridor is right for us at a ${bench} benchmark',
         'Should we step up from level {level} to two-sided risk given a ${bench} benchmark?', 'sensitivity of our payout to the benchmark under REACH Professional with a ${bench} benchmark',
+    ],
+    'loop_closure': [
+        'abnormal {lab} results nobody followed up on', 'which {lab} results are still waiting on a clinician response',
+        'Open loops for {conds}', 'unacknowledged critical values in the last {days} days', 'referrals that never got completed for {conds}',
+        'Which specialist consults never came back?', 'lab orders that were never resulted at each {group}', 'pending results older than {days} days with no action',
+        'incidental findings with no follow-up imaging', 'positive stool tests without a colonoscopy', 'BI-RADS 0 mammograms lacking a diagnostic work-up',
+        'how well does each {group} close the loop on abnormal results', 'Which recommendations from radiology reports were ignored?',
+        'results that slipped through the cracks for {conds}', 'track closure of referrals by ordering doctor', 'what share of abnormal tests got a documented response',
+    ],
+    'diagnostic_delay': [
+        'How late are we diagnosing {cond}?', 'missed chances to diagnose {cond} at earlier visits', 'look back before new {cond} diagnoses for warning signs',
+        'patients with labs pointing to {cond} who were never diagnosed', 'possible undiagnosed {cond} in our panel', 'diagnostic safety: delayed {cond} detection by {group}',
+        'How many visits happened between the first abnormal {lab} and the {cond} diagnosis?', 'time from first qualifying {lab} to a {cond} diagnosis',
+        'SPADE analysis for missed stroke after ED discharge', 'ED patients sent home who came back with a heart attack within {days} days',
+        'signs of colon cancer that were there before the diagnosis', 'diagnostic safety review: {cond} criteria met but the diagnosis was missed',
+        'were there red flags before our new colorectal cancer cases', 'diagnostic delay distribution for {cond}',
+    ],
+    'risk_outcomes': [
+        'risk standardized {events} by hospital', 'RSRR by {group}', 'observed versus expected readmissions for each hospital',
+        'O/E ratio for {events} across our facilities', 'excess readmission ratio for {conds}', 'HRRP style readmission ratio by hospital',
+        'funnel chart of {events} by {group}', 'Which hospitals are statistically worse than our network on 30-day readmissions after risk adjustment?',
+        'case-mix adjusted ED revisit rate per hospital', 'risk-adjusted length of stay by facility', 'standardized readmission ratio with confidence intervals',
+        'expected vs observed ED returns within {days} days by hospital', 'CMS-style readmission measure for our hospitals',
+        'which facility has the highest risk-standardized readmission rate', 'ED bounce-back rates by hospital after case-mix adjustment',
+        'facility comparison of emergency returns adjusted for risk', 'hospital-level risk-adjusted revisits within 72 hours',
     ],
     'not_answerable': [
         'How many patients died last year?', 'Mortality rate for {conds}', 'Breakdown of patients by race and ethnicity',

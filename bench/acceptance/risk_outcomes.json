@@ -1,0 +1,10 @@
+[
+ {"question": "What is the risk-standardized readmission rate by hospital?", "expect_operation": "risk_outcomes"},
+ {"question": "Show observed-to-expected 30-day readmissions by practice", "expect_operation": "risk_outcomes"},
+ {"question": "Funnel plot of readmission rates across our hospitals", "expect_operation": "risk_outcomes"},
+ {"question": "Which hospitals have risk-adjusted ED revisit rates worse than the network?", "expect_operation": "risk_outcomes"},
+ {"question": "What is our excess readmission ratio for heart failure patients?", "expect_operation": "risk_outcomes"},
+ {"question": "Risk-standardized 7-day ED returns by hospital", "expect_operation": "risk_outcomes"},
+ {"question": "O/E length of stay by hospital", "expect_operation": "risk_outcomes"},
+ {"question": "RSRR for our PCPs with confidence intervals", "expect_operation": "risk_outcomes"}
+]

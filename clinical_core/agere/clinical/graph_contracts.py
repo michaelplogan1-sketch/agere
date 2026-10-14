@@ -33,6 +33,8 @@ TYPED |= {'network'}  # provider patient-sharing network (network.py)
 OPTIONAL_POPULATION += ('network',)
 TYPED |= {'contract_strategy'}  # risk contracts as options, track selection, Nash negotiation (contract_strategy.py)
 OPTIONAL_POPULATION += ('contract_strategy',)
+TYPED |= {'loop_closure', 'diagnostic_delay', 'risk_outcomes'}  # quality & safety engines (loop_closure.py, diagnostic_delay.py, risk_outcomes.py)
+OPTIONAL_POPULATION += ('loop_closure', 'diagnostic_delay', 'risk_outcomes')
 
 
 def _library_measures():
@@ -233,6 +235,30 @@ def parameter_schema(op, catalog):
                     'spread_model': string(nw.SPREAD_MODELS), 'seeds': {'type': 'integer', 'minimum': 1, 'maximum': 10},
                     'transmission': {'type': 'number', 'minimum': 0.001, 'maximum': 1}, 'steps': {'type': 'integer', 'minimum': 1, 'maximum': 20},
                     'top': {'type': 'integer', 'minimum': 1, 'maximum': 200}})
+    if op == 'loop_closure':
+        from . import loop_closure as lc
+        return obj({'focus': string(lc.FOCUS, 'results: abnormal + critical labs; critical; screening: positive mammogram/FIT; recommendations: report or '
+                                              'note follow-up recommendations; orders: ordered tests never resulted; referrals; reports: abnormal reports; all'),
+                    'period': obj({'start': {'type': 'string'}, 'end': {'type': 'string'}}),
+                    'window_days': {'type': 'integer', 'minimum': 30, 'maximum': 3650, 'description': 'Look-back for item start dates (default 365)'},
+                    'windows': {'type': 'object', 'description': 'Follow-up window override in days per item type, e.g. {"abnormal_result": 14}'},
+                    'group_by': string(lc.GROUP_BY), 'evidence': string(lc.EVIDENCE, 'specific = visits/calls that do not cite the item do not close it'),
+                    'abnormal_basis': string(lc.BASIS), 'concept': string(['', *sorted(lc.ACTIONABLE)], 'One lab, else empty'),
+                    'owner': {'type': 'string'}, 'practice': {'type': 'string'}, 'top': {'type': 'integer', 'minimum': 1, 'maximum': 1000}})
+    if op == 'diagnostic_delay':
+        from . import diagnostic_delay as dd
+        return obj({'target': string(sorted(dd.TARGETS)), 'mode': string(dd.MODES, 'lookback: delays before diagnosis; undiagnosed: signals without a '
+                                                                                  'diagnosis (review prompts); look_forward: ED discharge -> admission; all'),
+                    'lookback_days': {'type': 'integer', 'minimum': 90, 'maximum': 3650}, 'washout_days': {'type': 'integer', 'minimum': 0, 'maximum': 1825},
+                    'horizon_days': {'type': 'integer', 'minimum': 1, 'maximum': 365}, 'period': obj({'start': {'type': 'string'}, 'end': {'type': 'string'}}),
+                    'group_by': string(dd.GROUP_BY), 'symptom_only': {'type': 'boolean'}, 'top': {'type': 'integer', 'minimum': 1, 'maximum': 1000}})
+    if op == 'risk_outcomes':
+        from . import risk_outcomes as ro
+        return obj({'outcome': string(ro.OUTCOMES, 'mortality needs death records'), 'unit': string(ro.UNITS),
+                    'window_days': {'type': 'integer', 'minimum': 1, 'maximum': 365}, 'period': obj({'start': {'type': 'string'}, 'end': {'type': 'string'}}),
+                    'period_days': {'type': 'integer', 'minimum': 90, 'maximum': 3650}, 'include_observation': {'type': 'boolean'},
+                    'adjust': string(ro.ADJUST), 'focus': {'type': 'string', 'description': 'One unit id, else empty'},
+                    'top': {'type': 'integer', 'minimum': 1, 'maximum': 500}})
     if op == 'risk_adjustment':
         from . import risk_adjustment as ra
         return obj({'focus': string(ra.FOCUS, 'raf: patient RAF/HCCs; recapture: HCCs coded last year not yet this year; suspects: evidence without a '

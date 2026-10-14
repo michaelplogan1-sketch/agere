@@ -1,0 +1,10 @@
+[
+ {"question": "How long was the diagnosis of CKD delayed after eGFR first met the criteria?", "expect_operation": "diagnostic_delay"},
+ {"question": "Which patients meet diabetes criteria but have no diabetes diagnosis?", "expect_operation": "diagnostic_delay"},
+ {"question": "Missed opportunities before heart failure diagnoses: how many visits were there?", "expect_operation": "diagnostic_delay"},
+ {"question": "Do a look-back for delayed colorectal cancer diagnoses", "expect_operation": "diagnostic_delay"},
+ {"question": "Which patients look like undiagnosed hypertension?", "expect_operation": "diagnostic_delay"},
+ {"question": "How many patients discharged from the ED with chest pain were admitted for a heart attack within 30 days?", "expect_operation": "diagnostic_delay"},
+ {"question": "Diagnostic safety review: missed diagnosis of CKD by practice", "expect_operation": "diagnostic_delay"},
+ {"question": "What signals were present before patients were diagnosed with heart failure?", "expect_operation": "diagnostic_delay"}
+]

@@ -658,7 +658,16 @@ def _compile(question, profile, as_of):
     plan = _outreach_question(q, profile, as_of)  # before paraphrase: it rewrites "<x> outreach list" for plain patient lists
     if plan is not None:
         return plan
+    plan = _loop_closure_question(q, profile, as_of)  # results / referrals / recommendations / orders without follow-up; time-to-event stays survival
+    if plan is not None:
+        return plan
     plan = _measure_question(q, profile, as_of)  # named library quality measures (HEDIS/Stars/eCQM/PQI approximations)
+    if plan is not None:
+        return plan
+    plan = _risk_outcomes_question(q, profile, as_of)  # RSRR / O/E / ERR / funnel / HRRP; plain fair PCP comparison stays profile
+    if plan is not None:
+        return plan
+    plan = _diagnostic_delay_question(q, profile, as_of)  # missed / delayed diagnosis look-back, undiagnosed review prompts; HCC suspects stay risk_adjustment
     if plan is not None:
         return plan
     plan = _network_question(q, profile, as_of)  # provider network (hubs, shared patients, leakage by specialty, steering, spread); journeys stay pathway
@@ -3427,3 +3436,241 @@ def _network_question(q, profile, as_of):
                   'purpose': f"Provider network: {params['focus']}" + (' (model)' if params['focus'] in ('steering', 'spread') else '')})
     info = {'compiler': VERSION, 'recognised': recognised, 'paraphrased': [], 'route': 'local_compiler', 'unexplained': []}
     return {'interpretation': q, 'coverage': 'supported_observation', 'unmet_requirements': [], 'nodes': nodes}, info
+
+
+# ---- quality & safety: loop closure, diagnostic delay look-back, risk-standardized outcomes -----------------------------
+def _safety_conditions(low, skip=()):
+    out = []
+    for c, aliases in CONDITION_ALIASES.items():
+        if c in skip: continue
+        for alias in sorted(aliases, key=len, reverse=True):
+            if re.search(_alias_pattern(alias), low): out.append(c); break
+    return out
+
+
+def _safety_plan(q, op, params, conditions, purpose, recognised, combine='all', coverage='supported_observation', unmet=()):
+    nodes = []
+    if conditions:
+        nodes.append({'id': 'population', 'operation': 'cohort', 'inputs': [],
+                      'parameters': {'specification': {'all': [{'kind': 'concept', 'concept': c, 'window': W} for c in conditions][:20] if combine == 'all' else [],
+                                                       'any': [{'kind': 'concept', 'concept': c, 'window': W} for c in conditions][:20] if combine == 'any' else [],
+                                                       'exclude': []}},
+                      'purpose': 'Population named in the question'})
+    nodes.append({'id': 'answer', 'operation': op, 'inputs': ['population'] if conditions else [], 'parameters': params, 'purpose': purpose})
+    info = {'compiler': VERSION, 'recognised': recognised, 'paraphrased': [], 'route': 'local_compiler', 'unexplained': []}
+    return {'interpretation': q, 'coverage': coverage, 'unmet_requirements': list(unmet), 'nodes': nodes}, info
+
+
+LOOP_ITEMS = (r"\b(?:lab(?:oratory)?|test|critical|abnormal|panic|imaging|screening|diagnostic)? ?(?:results?|values?|labs?)\b|\breferrals?\b|\bconsults?\b|"
+              r"\b(?:lab|imaging|diagnostic|test|radiology) orders?\b|\bordered (?:labs?|tests?|imaging|studies)\b|\brecommendations?\b|\bincidental (?:findings?|nodules?)\b|"
+              r"\bnodules?\b|\bmammogra\w+\b|\bbi-?rads\b|\bfit\b|\bfecal immunochemical\b|\bpositive (?:screens?|fit|stool)\b|\breports?\b|\bfollow[- ]?up imaging\b")
+LOOP_FAIL = (r"\bno (?:documented |recorded )?(?:follow[- ]?up|acknowledg\w+|action|review|response|work[- ]?up)\b|\bwithout (?:a |any )?(?:documented |recorded )?"
+             r"(?:follow[- ]?up|acknowledg\w+|action|review|response|work[- ]?up|diagnostic follow[- ]?up)\b|\bnot (?:been )?(?:followed[- ]up|acted (?:up)?on|acknowledged|"
+             r"completed|resulted(?! in)|reviewed|addressed|closed|done|performed|collected)\b|\bnever (?:been )?(?:completed|resulted(?! in)|collected|acknowledged|"
+             r"reviewed|closed|done|followed up|acted on|returned)\b|\bunacknowledged\b|\bunreviewed\b|\buncompleted\b|\bincomplete (?:referrals?|work[- ]?ups?)\b|"
+             r"\bopen (?:loops?|referrals?|results?|orders?)\b|\b(?:clos(?:e|ed|ing)|clos(?:ure|ed)) (?:the |of )?loops?\b|\bloop[- ]closure\b|\bfell through the cracks\b|"
+             r"\blost to follow[- ]?up\b|\boverdue (?:follow[- ]?ups?|referrals?|results?|work[- ]?ups?)\b|\bstill (?:open|pending|outstanding)\b|\boutstanding (?:referrals?|results?|orders?)\b|"
+             r"\b(?:close|closure|completion|follow[- ]?up|acknowledg\w+) rates?\b|\bdropped (?:the )?ball\b|\bhad (?:it|them) done\b|\bhave not had (?:it|them) done\b|"
+             r"\b(?:time|days?) (?:from|between) (?:an? )?(?:abnormal|critical|positive)? ?(?:results?|labs?) (?:to|and) (?:a )?(?:documented )?(?:clinician )?"
+             r"(?:review|acknowledg\w+|action)\b|\bconsult (?:notes?|reports?|letters?) (?:returned|received|sent back)\b|\b(?:returned|received) (?:a )?consult (?:notes?|reports?)\b|"
+             r"\bhow many (?:were|got|have been) (?:completed|done|performed)\b|\bnever had (?:a |an |the |any )?(?:\w+ ){0,2}(?:colonoscop\w*|follow[- ]?up|"
+             r"work[- ]?up|diagnostic \w+|repeat \w+|imaging|visit)\b|\bwithout (?:a |an |any )?(?:colonoscop\w*|diagnostic (?:mammogra\w*|imaging|work[- ]?up))\b|"
+             r"\bno (?:colonoscop\w*|diagnostic (?:mammogra\w*|imaging|work[- ]?up))\b|\bwere completed\b|\bdiagnostic follow[- ]?up within\b|\bcommunicated\b")
+LOOP_LABS = [('potassium', r'potassium|\bk\+'), ('sodium', r'sodium'), ('glucose', r'glucose|blood sugar'), ('hba1c', r'\ba1c|hemoglobin a1c'),
+             ('hemoglobin', r'hemoglobin(?! a1c)|\bhgb\b'), ('platelets', r'platelets?'), ('wbc', r'\bwbc\b|white (?:blood )?cell'),
+             ('egfr', r'\begfr\b'), ('creatinine', r'creatinine'), ('uacr', r'\buacr\b|albumin'), ('ferritin', r'ferritin'), ('tsh', r'\btsh\b'),
+             ('troponin', r'troponin'), ('ldl', r'\bldl\b')]
+
+
+def _loop_closure_question(q, profile, as_of):
+    """Results / referrals / recommendations / orders without follow-up -> loop_closure. Needs a loop item AND a failure-to-close or
+    closure-rate phrase; time-to-event wording ('how long until', 'Kaplan-Meier') stays survival, HCC wording risk_adjustment."""
+    low = _strip_framing(q.lower())
+    generic = re.search(r'\bloop[- ]closure\b|\bopen loops?\b|\bclos(?:e|ing) (?:the )?loops?\b', low)
+    if not (generic or (re.search(LOOP_ITEMS, low) and re.search(LOOP_FAIL, low))): return None
+    if re.search(r'\bkaplan|\bhazard\b|\bhow (?:quickly|long)\b|\bhcc\b|\braf\b|\bsuspect|\bdenials?\b|\bclaims?\b|\bcontrol charts?\b', low): return None
+    if re.search(r'\bcall (?:first|list)\b|\bshould (?:we |our |the )?(?:schedulers?|staff|nurses?|care managers?|team )?(?:call|contact|reach)\b|\bworklist\b|'
+                 r'\bprioriti[sz]\w*\b|\bschedulers?\b|\boutreach\b', low): return None  # who-to-call lists are outreach
+    if re.search(r'\bhow many\b', low) and re.search(r'\bbooked\b|\bappointments?\b|\bscheduled\b', low): return None  # booking-status counts are literal
+    if re.search(r'\b\d+ minutes?\b|\bwithin (?:an? |one |\d+ )?hours?\b|\bread[- ]?back\b|\bcommunicated\b|\bcalled (?:to|in)\b', low) and re.search(r'\bcritical\b', low):
+        info = {'compiler': VERSION, 'recognised': ['critical-result communication timing'], 'paraphrased': [], 'route': 'local_unsupported', 'unexplained': []}
+        return {'interpretation': f'Unsupported by received data: {q}', 'coverage': 'unsupported', 'nodes': [],
+                'unmet_requirements': ['Missing input: critical-result call log (time called, recipient, read-back) - not received; loop_closure shows '
+                                       'critical results without any acknowledgement or action evidence, in days']}, info
+    if re.search(r'\bafter (?:an? |the |their )?(?:ed|er|emergency|hospital|inpatient)? ?(?:visits?|discharges?|stays?|admissions?)\b', low) and not re.search(
+            r'\breferrals?\b|\bresults?\b|\brecommendations?\b|\borders?\b', low): return None  # post-discharge follow-up is pathway / measures
+    params, recognised = {}, ['loop closure question']
+    focus = ('critical' if re.search(r'\bcritical (?:\w+ ){0,2}(?:labs?|results?|values?)\b|\bpanic values?\b', low) else
+             'screening' if re.search(r'\bmammogra\w+\b|\bbi-?rads\b|\bfit\b|\bfecal\b|\bpositive (?:screens?|stool)\b|\bcolonoscop\w+\b', low) else
+             'referrals' if re.search(r'\breferrals?\b|\bconsults?\b|\breferred\b', low) else
+             'recommendations' if re.search(r'\brecommend\w*\b|\bincidental\b|\bnodules?\b|\bfollow[- ]?up imaging\b', low) else
+             'orders' if re.search(r'\borders?\b|\bordered\b|\bnever (?:collected|resulted)\b|\bnot (?:collected|resulted)\b', low) else
+             'reports' if re.search(r'\breports?\b', low) and not re.search(r'\blabs?\b|\bresults?\b', low) else
+             'results' if re.search(r'\bresults?\b|\blabs?\b|\bvalues?\b', low) else 'all')
+    if re.search(r'\bopen loops?\b|\bloop[- ]closure\b|\bclos\w* (?:the |of )?loops?\b', low) and not re.search(r'\breferrals?\b|\bresults?\b|\blabs?\b|\borders?\b', low):
+        focus = 'all'
+    params['focus'] = focus
+    streams = set((profile or {}).get('streams') or {})
+    if focus == 'screening' and streams and not streams & {'cancer_screening_results', 'received_screening_reports'}:
+        return None, {'compiler': VERSION, 'recognised': recognised + ['positive screens'], 'paraphrased': [], 'route': 'fallback',
+                      'reason': 'missing input: cancer screening results (mammography BI-RADS, FIT results) are not received in this release'}
+    lab = next((name for name, rx in LOOP_LABS if re.search(rx, low)), '')
+    if lab and focus in ('results', 'critical'): params['concept'] = lab
+    m = re.search(r'\b(?:after|within|in|over|more than|longer than|past|beyond|at least) (\d{1,3}) (days?|weeks?|months?)\b', low)
+    if m:
+        days = int(m.group(1)) * {'d': 1, 'w': 7, 'm': 30}[m.group(2)[0]]
+        if 1 <= days <= 730:
+            from .loop_closure import FOCUS_TYPES
+            params['windows'] = {t: days for t in FOCUS_TYPES[focus]}
+    if re.search(r'\bby (?:ordering |referring |responsible )?(?:clinicians?|providers?|physicians?|doctors?|owners?|pcps?)\b|\bwhich (?:clinicians?|providers?|physicians?|doctors?)\b|\bper (?:clinician|provider|physician)\b', low):
+        params['group_by'] = 'owner'
+    elif re.search(r'\bby (?:item )?type\b|\bby kind\b', low):
+        params['group_by'] = 'item_type'
+    if re.search(r'\bspecific (?:evidence|follow[- ]?up)\b|\bdocumented (?:acknowledg\w+|review)\b', low): params['evidence'] = 'specific'
+    if re.search(r'\breference ranges?\b|\bflagged (?:high|low|abnormal)\b|\bout of range\b', low): params['abnormal_basis'] = 'reference_range'
+    pm = re.search(r'\b(wh-practice-[a-z0-9-]+)\b', low)
+    if pm: params['practice'] = pm.group(1).upper()
+    cm = re.search(r'\b(wh-clin-[a-z0-9-]+)\b', low)
+    if cm: params['owner'] = cm.group(1).upper()
+    pr = re.search(r'\b(?:in|for|during) (20\d\d)\b', low)
+    if pr and pr.group(1) <= as_of[:4]:
+        params['period'] = {'start': f'{pr.group(1)}-01-01', 'end': min(f'{pr.group(1)}-12-31', as_of[:10])}
+    else:
+        lm = re.search(r'\b(?:last|past|previous) (\d{1,2}) (months?|years?)\b|\b(?:last|past|previous) (year|12 months)\b', low)
+        if lm:
+            days = 365 if lm.group(3) else int(lm.group(1)) * (30 if lm.group(2).startswith('month') else 365)
+            if 30 <= days <= 3650: params['window_days'] = days
+    conditions = _safety_conditions(low)
+    from .loop_closure import validate
+    try:
+        params = validate(params)
+    except ValueError as exc:
+        return None, {'compiler': VERSION, 'recognised': recognised, 'paraphrased': [], 'route': 'fallback', 'reason': f'loop_closure parameters: {exc}'}
+    recognised.append(f"focus {params['focus']}" + (f" ({params['concept']})" if params['concept'] else ''))
+    return _safety_plan(q, 'loop_closure', params, conditions, f"Open loops and close rates: {params['focus']}", recognised)
+
+
+DELAY_TARGETS = [('colorectal_cancer', r'\b(?:colorectal|colon|bowel|rectal) cancers?\b|\bcrc\b'), ('ckd', r'\bckd\b|\bchronic kidney disease\b|\bkidney disease\b'),
+                 ('heart_failure', r'\bheart failure\b|\bchf\b|\bhfref\b'), ('stroke', r'\bstrokes?\b|\btias?\b'),
+                 ('myocardial_infarction', r'\bmyocardial infarctions?\b|\bheart attacks?\b|\bstemi\b|\bnstemi\b'), ('sepsis', r'\bsepsis\b|\bseptic\b'),
+                 ('diabetes', r'\bdiabet\w*\b|\bt2dm\b'), ('hypertension', r'\bhypertension\b|\bhigh blood pressure\b|\bhtn\b')]
+DELAY_WORDS = (r"\bmissed (?:or delayed )?diagnos\w*\b|\bdelay(?:ed|s)? (?:in )?diagnos\w*\b|\bdiagnostic (?:delays?|errors?|safety|look-?backs?)\b|"
+               r"\blook-?backs?\b|\bspade\b|\bmissed (?:diagnostic )?opportunit\w+\b|\bmissed (?:an? )?(?:\w+ ){0,2}(?:cases?|diagnos\w*)\b|"
+               r"\bbefore (?:their |the |a |being )?(?:\w+ ){0,3}diagnos\w*\b|\bprior to (?:their |the )?(?:\w+ ){0,3}diagnos\w*\b|"
+               r"\b(?:recorded|documented|present|appeared|flagged) (?:more than |at least )?(?:\d+ (?:days?|weeks?|months?|years?) )?(?:earlier|before)\b|"
+               r"\bhow long (?:before|until) (?:\w+ ){0,4}diagnos\w*\b|\bhow late\b|\bdiagnosed late\b|\blate diagnos\w*\b|"
+               r"\bdiagnos\w* (?:of )?(?:\w+ ){0,3}(?:was |were |is |are |been |get |got )?delayed\b")
+UNDIAGNOSED_WORDS = (r"\bundiagnosed\b|\bnot (?:yet )?diagnosed\b|\b(?:signals?|signs?|evidence|criteria) (?:of|for) (?:\w+ ){0,3}(?:but|without|with no)\b|"
+                     r"\bmeets? (?:the )?(?:\w+ ){0,3}criteria\b|\bmeeting (?:the )?(?:\w+ ){0,3}criteria\b|\b(?:but|without|with no|and no) (?:a |any )?(?:\w+ ){0,3}diagnosis\b|\bnever diagnosed\b")
+
+
+def _diagnostic_delay_question(q, profile, as_of):
+    """Missed / delayed diagnosis questions -> diagnostic_delay (look-back, undiagnosed review prompts, ED look-forward). Coding and HCC
+    'suspect' wording stays risk_adjustment; plain 'how many patients have X but no Y diagnosis' counts stay literal SQL."""
+    low = _strip_framing(q.lower())
+    if re.search(r'\bhccs?\b|\braf\b|\bsuspect\w*\b|\bcod(?:e|es|ed|ing)\b|\bdocumentation gaps?\b|\brecapture\b', low): return None
+    target = next((t for t, rx in DELAY_TARGETS if re.search(rx, low)), None)
+    ed_index = re.search(r'\b(?:discharged|released|sent home) from the (?:ed|er|emergency (?:department|room))\b|\btreat[- ]and[- ]release\b|\bed discharges?\b|'
+                         r'\b(?:ed|er|emergency) (?:visits? )?(?:with|for) (?:\w+ ){0,3}(?:and|then|but) (?:were |was )?(?:sent home|discharged)\b', low)
+    forward = bool(ed_index and re.search(r'\badmitted (?:for|with)\b|\badmissions? (?:for|with)\b|\breturned (?:with|for)\b', low))
+    delay = re.search(DELAY_WORDS, low) or re.search(r'\b(?:new|incident|newly diagnosed|recent) (?:\w+ ){0,3}(?:diagnos\w*|cases?)\b.*\b(?:earlier|before|prior|preceding)\b', low)
+    undiagnosed = re.search(UNDIAGNOSED_WORDS, low)
+    if not (forward or delay or undiagnosed) or not target: return None
+    if undiagnosed and not delay and not forward and re.match(r'^how many\b', low) and not re.search(r'\bundiagnosed\b|\bmissed\b|\bdelay', low):
+        return None  # a count with a 'but no X diagnosis' clause is a literal lookup
+    if undiagnosed and not delay and not forward and re.search(r'\b(?:under|below|above|over|less than|more than|greater than|at least)\s*\d|[<>]=?\s*\d|'
+                                                               r'\blatest\b|\bmost recent\b|\bproblem lists?\b', low):
+        return None  # the user's own lab predicate ('latest eGFR under 60', 'not on the problem list') is a literal lookup, not the criterion
+    params, recognised = {'target': target}, ['diagnostic delay question']
+    from .diagnostic_delay import CRITERION_TARGETS
+    if forward:
+        params['mode'] = 'look_forward'
+    elif target not in CRITERION_TARGETS:
+        params['mode'] = 'lookback'
+    else:
+        params['mode'] = 'all' if (delay and undiagnosed) else 'lookback' if delay else 'undiagnosed'
+    m = re.search(r'\bwithin (\d{1,3}) (days?|weeks?|months?)\b', low)
+    if m and forward:
+        params['horizon_days'] = min(365, int(m.group(1)) * {'d': 1, 'w': 7, 'm': 30}[m.group(2)[0]])
+    m = re.search(r'\b(?:look[- ]?back|window) of (\d{1,2}) (months?|years?)\b|\b(?:in|over) the (\d{1,2}) (months?|years?) before\b', low)
+    if m:
+        n, u = (m.group(1), m.group(2)) if m.group(1) else (m.group(3), m.group(4))
+        params['lookback_days'] = max(90, min(3650, int(n) * (30 if u.startswith('month') else 365)))
+    if re.search(r'\bby (?:pcp|provider|physician|clinician|doctor)s?\b', low): params['group_by'] = 'pcp'
+    if forward and re.search(r'\bwith (?:dizziness|vertigo|chest pain|fever|headache|syncope|fainting)\b', low): params['symptom_only'] = True
+    from .diagnostic_delay import validate
+    try:
+        params = validate(params)
+    except ValueError as exc:
+        return None, {'compiler': VERSION, 'recognised': recognised, 'paraphrased': [], 'route': 'fallback', 'reason': f'diagnostic_delay parameters: {exc}'}
+    recognised.append(f"target {target}, mode {params['mode']}")
+    target_concepts = {'ckd': 'chronic_kidney_disease', 'diabetes': 'diabetes', 'hypertension': 'hypertension', 'heart_failure': 'heart_failure', 'stroke': 'stroke',
+                       'myocardial_infarction': 'myocardial_infarction', 'sepsis': 'sepsis'}
+    skip = {target_concepts.get(target), 'type_2_diabetes', 'type_1_diabetes', 'heart_failure_reduced_ef'} if target in ('diabetes', 'heart_failure') else {target_concepts.get(target)}
+    conditions = [c for c in _safety_conditions(low, skip) if not (target == 'colorectal_cancer' and c == 'cancer')]
+    if params['mode'] in ('undiagnosed', 'all'): conditions = []  # the population IS the undiagnosed signal carriers
+    return _safety_plan(q, 'diagnostic_delay', params, conditions, f"Diagnostic delay ({params['mode']}) for {target.replace('_', ' ')}: review prompts", recognised)
+
+
+OUTCOME_STRONG = (r"\brisk[- ]standardi[sz]ed\b|\brsrr\b|\brsmr\b|\bsrr\b|\bexcess readmission ratios?\b|\berr\b|\bobserved[- ](?:to[- ])?expected\b|\bo/e\b|"
+                  r"\bo:e\b|\bfunnel plots?\b|\bhrrp\b|\bhospital readmissions? reduction\b|\bstandardi[sz]ed\b")
+OUTCOME_WORDS = (r"\breadmi(?:ssions?|ts?|tted)\b|\b(?:ed|er|emergency (?:department|room)) (?:revisits?|returns?|bounce[- ]?backs?)\b|\breturns? to the (?:ed|er)\b|"
+                 r"\brevisits?\b|\blength of stay\b|\blos\b|\bmortality\b|\bdeaths?\b|\bed visits? after (?:hospital )?discharge\b|\bpost[- ]discharge ed\b|\bedac\b")
+
+
+def _risk_outcomes_question(q, profile, as_of):
+    """CMS-style risk-standardized outcomes (RSRR, O/E, ERR, funnel, HRRP) -> risk_outcomes. Plain fair comparison of PCPs / practices
+    ('adjusting for case mix', 'truly high') stays profile unless the unit is a hospital or the CMS vocabulary is used."""
+    low = _strip_framing(q.lower())
+    if not re.search(OUTCOME_WORDS + r'|\brsrr\b|\brsmr\b|\bexcess readmission ratios?\b|\bhrrp\b', low): return None
+    if re.search(r'\bplanned\b', low): return None  # planned vs unplanned needs a planned-readmission flag: literal lookup / unsupported
+    strong = re.search(OUTCOME_STRONG, low)
+    if re.match(r'^how many\b', low) and not re.search(r'\bratios?\b|\bo/e\b|\bstandardi[sz]ed\b|\brsrr\b|\bexpected\b', low): return None
+    adjusted = re.search(r"\b(?:risk|case[- ]mix)[- ]adjusted\b|\badjust\w* for (?:case[- ]mix|risk|acuity|severity)\b|\bafter (?:case[- ]mix|risk) adjustment\b", low)
+    hospital = re.search(r'\bhospitals?\b|\bfacilit(?:y|ies)\b|\bsites?\b', low)
+    if not (strong or (adjusted and hospital)): return None
+    if re.search(r'\bmoved?\b|\bmovers?\b|\btrend\w*\b|\bthis month\b|\btickers?\b|\bkaplan\b|\bhazard\b|\bhow (?:quickly|long)\b|\bwhy\b|\bdrivers?\b', low) and not strong:
+        return None
+    params, recognised = {}, ['risk-standardized outcome question']
+    outcome = ('length_of_stay' if re.search(r'\blength of stay\b|\blos\b', low) else
+               'mortality' if re.search(r'\bmortality\b|\bdeaths?\b|\brsmr\b', low) else
+               'post_discharge_ed' if re.search(r'\bed visits? after (?:hospital )?discharge\b|\bpost[- ]discharge ed\b|\bedac\b', low) else
+               'ed_revisit' if re.search(r'\b(?:ed|er|emergency (?:department|room)) (?:revisits?|returns?|bounce[- ]?backs?)\b|\breturns? to the (?:ed|er)\b|\brevisits?\b', low) else
+               'readmission')
+    params['outcome'] = outcome
+    if re.search(r'\bpenalt\w*\b|\bpayment (?:reduction|adjustment)s?\b|\bat risk\b', low) and re.search(r'\bhrrp\b|\breadmi', low):
+        info = {'compiler': VERSION, 'recognised': recognised + ['HRRP payment reduction'], 'paraphrased': [], 'route': 'local_unsupported', 'unexplained': []}
+        return {'interpretation': f'Unsupported by received data: {q}', 'coverage': 'unsupported', 'nodes': [],
+                'unmet_requirements': ['Missing input: CMS HRRP inputs (base-operating DRG payments by condition, the peer-group median excess readmission '
+                                       'ratio and dual-eligible share from CMS files) - not received; the excess readmission ratio itself is computable']}, info
+    unit = ('pcp' if re.search(r'\b(?:by|each|per|every) (?:pcp|attending|physician|provider|doctor|clinician)s?\b|\b(?:pcps|attendings|physicians|providers|doctors|clinicians)\b', low) else
+            'practice' if re.search(r'\bpractices?\b|\bclinics?\b', low) else 'hospital')
+    params['unit'] = unit
+    m = re.search(r'\b(\d{1,3})[- ]day\b', low) or re.search(r'\bwithin (\d{1,3}) days?\b', low)
+    h = re.search(r'\b(\d{1,3})[- ]hours?\b', low)
+    if m and outcome != 'length_of_stay': params['window_days'] = max(1, min(365, int(m.group(1))))
+    elif h and outcome != 'length_of_stay': params['window_days'] = max(1, round(int(h.group(1)) / 24))
+    if re.search(r'\bobservation\b', low): params['include_observation'] = True
+    if re.search(r'\bage and sex\b|\bage/sex\b|\bdemographics? only\b', low): params['adjust'] = 'age_sex'
+    elif re.search(r'\bunadjusted\b|\bcrude\b', low): params['adjust'] = 'none'
+    fm = re.search(r'\b(wh-(?:hospital|practice|clin)-[a-z0-9-]+)\b', low)
+    if fm: params['focus'] = fm.group(1).upper()
+    pr = re.search(r'\b(?:in|for|during) (20\d\d)\b', low)
+    if pr and pr.group(1) <= as_of[:4]:
+        params['period'] = {'start': f'{pr.group(1)}-01-01', 'end': min(f'{pr.group(1)}-12-31', as_of[:10])}
+    conditions = _safety_conditions(low)
+    from .risk_outcomes import validate
+    try:
+        params = validate(params)
+    except ValueError as exc:
+        return None, {'compiler': VERSION, 'recognised': recognised, 'paraphrased': [], 'route': 'fallback', 'reason': f'risk_outcomes parameters: {exc}'}
+    recognised.append(f"{outcome} by {unit}")
+    unmet, coverage = [], 'supported_observation'
+    if re.search(r'\bdrg\b|\bservice lines?\b|\bdiagnosis[- ]related group', low):
+        claims = (((profile or {}).get('streams') or {}).get('medical_claims') or {}).get('fields') or {}
+        if not ({'ms_drg', 'drg'} & set(claims)):
+            return None, {'compiler': VERSION, 'recognised': recognised + ['DRG grouping'], 'paraphrased': [], 'route': 'fallback',
+                          'reason': 'missing input: MS-DRG on inpatient claims or stays is not received in this release'}
+        unmet, coverage = [f"Grouping by DRG family / service line needs a DRG or service line on each index stay (DRGs arrive on claims only); shown by {unit} instead"], 'partial'
+    return _safety_plan(q, 'risk_outcomes', params, conditions, f"Risk-standardized {outcome.replace('_', ' ')} by {unit}", recognised,
+                        combine='any', coverage=coverage, unmet=unmet)
