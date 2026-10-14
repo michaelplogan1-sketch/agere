@@ -60,7 +60,8 @@
     ],
     "evidence": [
      "dispensed",
-     "claim"
+     "claim",
+     "payer_claim"
     ],
     "window": {
      "start": "period_start",
@@ -130,7 +131,8 @@
     ],
     "evidence": [
      "dispensed",
-     "claim"
+     "claim",
+     "payer_claim"
     ],
     "window": {
      "start": "period_start",

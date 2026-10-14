@@ -29,7 +29,7 @@ LIBRARY_DIR = Path(__file__).resolve().parents[3] / 'config' / 'agere' / 'measur
 UNITS = ('patient', 'index_event', 'admission_rate')
 TYPES = ('condition', 'measurement', 'blood_pressure', 'medication', 'service', 'encounter', 'stay', 'pdc')
 GROUP_BY = ('none', 'pcp', 'practice', 'coverage_type', 'payer', 'age_band', 'sex', 'race', 'ethnicity', 'race_ethnicity', 'language', 'interpreter')
-OUTPUTS = ('rates', 'gaps')
+OUTPUTS = ('rates', 'gaps', 'patients')  # patients: one row per denominator patient (eligible, excluded, met, pdc)
 DISPENSE_STATUSES = ('dispensed', 'paid')
 INACTIVE_VISIT = ('cancelled', 'canceled', 'entered-in-error', 'entered_in_error', 'no_show', 'noshow')
 _EXPR = re.compile(r'^(period_start|period_end|index_end|index)(?:([+-])(\d+)([dmy]))?$')
@@ -182,6 +182,13 @@ def _rows(ctx, c):
                 for pid, d, code in db.execute(f'SELECT d.patient_id, v.event_date, d.icd10 FROM encounter_diagnosis d JOIN visit v ON v.encounter_id = d.encounter_id '
                                                f'WHERE {clause}', args):
                     out[pid].append((d[:10] if d else None, None, code)); found = True
+            if ctx.has('payer_claim_diagnosis') and ctx.has('payer_claim', 'final_status'):
+                # Payer claims (warehouse v2.3+): the only diagnosis source for claims-only members. Paid, current versions only.
+                clause, args = _icd_clause('d.icd10', c['icd10_prefixes'])
+                for pid, d, code in db.execute(f"SELECT d.patient_id, coalesce(d.service_from, p.service_from), d.icd10 FROM payer_claim_diagnosis d JOIN payer_claim p "
+                                               f"ON p.payer_claim_id = d.payer_claim_id WHERE p.final_status = 'paid' AND coalesce(d.counts_in_metrics, 1) = 1 "
+                                               f"AND {clause}", args):
+                    out[pid].append((d[:10] if d else None, None, code)); found = True
             if not found and not c.get('concepts') and not ctx.has('condition', 'icd10'):
                 missing.append(f"{c['label']}: ICD-10-CM diagnosis codes (not in this release)")
     elif t == 'measurement':
@@ -224,6 +231,12 @@ def _rows(ctx, c):
                 q = ','.join('?' * len(codes))
                 for pid, d, code in db.execute(f'SELECT patient_id, service_date, {system} FROM claim_line WHERE {system} IN ({q})', codes):
                     out[pid].append((d[:10] if d else None, None, f'{system.upper()} {code}'))
+                if ctx.has('payer_claim_line', system) and ctx.has('payer_claim', 'final_status'):
+                    # payer claim lines (claims-only members; care outside the client's billing), paid current versions only
+                    for pid, d, code in db.execute(f"SELECT l.patient_id, coalesce(l.service_date, p.service_from), l.{system} FROM payer_claim_line l JOIN payer_claim p "
+                                                   f"ON p.payer_claim_id = l.payer_claim_id WHERE l.{system} IN ({q}) AND p.final_status = 'paid' "
+                                                   f"AND coalesce(l.counts_in_metrics, 1) = 1", codes):
+                        out[pid].append((d[:10] if d else None, None, f'{system.upper()} {code} (payer claim)'))
             else:
                 missing.append(f"{c['label']}: {system.upper()} claim lines (not in this release)")
         if c.get('loinc') and ctx.has('measurement', 'loinc'):
@@ -337,6 +350,12 @@ def _num(v):
 def _pdc(rows, c, anchors):
     """Proportion of days covered (PQA): from the first fill in the period to period end; overlapping supply shifts forward.
     Eligible only with >= min_fills fills on distinct dates. Per class group (any listed class counts)."""
+    met, text, _ = pdc_detail(rows, c, anchors)
+    return met, text
+
+
+def pdc_detail(rows, c, anchors):
+    """(met or None when not eligible, evidence text, PDC value or None)."""
     lo, hi = anchors['period_start'], anchors['period_end']
     by_day = {}  # PQA: several fills of the class on one date of service count once, with the longest days supply
     for d, s, _ in rows:
@@ -345,7 +364,7 @@ def _pdc(rows, c, anchors):
         by_day[d] = max(by_day.get(d, 0), days)
     fills = sorted(by_day.items())
     if len({d for d, _ in fills}) < c.get('min_fills', 2):
-        return None, f"{c['label']}: fewer than {c.get('min_fills', 2)} fills"
+        return None, f"{c['label']}: fewer than {c.get('min_fills', 2)} fills", None
     start = date.fromisoformat(fills[0][0]); end = date.fromisoformat(hi)
     covered, cursor = set(), start
     for d, days in fills:
@@ -357,9 +376,9 @@ def _pdc(rows, c, anchors):
         cursor = cursor + timedelta(days=days)
     span = (end - start).days + 1
     if span < c.get('min_treatment_days', 1):
-        return None, f"{c['label']}: treatment period {span} days (< {c['min_treatment_days']})"
+        return None, f"{c['label']}: treatment period {span} days (< {c['min_treatment_days']})", None
     pdc = len(covered) / span if span > 0 else 0.0
-    return pdc >= c.get('threshold', 0.8), f"{c['label']}: PDC {pdc:.2f} over {span} days from {fills[0][0]} ({len(fills)} fills)"
+    return pdc >= c.get('threshold', 0.8), f"{c['label']}: PDC {pdc:.2f} over {span} days from {fills[0][0]} ({len(fills)} fills)", round(pdc, 4)
 
 
 # ---- availability (declines) -----------------------------------------------------------
@@ -441,11 +460,12 @@ def _enrolled(info, start, end, allowed_gap_months):
 
 
 # ---- evaluation ------------------------------------------------------------------------
-def evaluate_db(db, m, start, end, as_of, group_by='none', keep=None, people=None, attr=None, output='rates', top=500):
-    """Evaluate one measure dict on an open semantic-layer connection."""
+def evaluate_db(db, m, start, end, as_of, group_by='none', keep=None, people=None, attr=None, output='rates', top=500, ctx=None):
+    """Evaluate one measure dict on an open semantic-layer connection. ctx: a Context to reuse evidence across periods
+    (its cache is keyed on criteria without windows, so one Context serves every measurement year)."""
     from . import vbc
     vbc.require_demographics(db, group_by)  # health-equity stratification only where race/language are received
-    ctx = Context(db)
+    ctx = ctx or Context(db)
     missing, warnings = availability(ctx, m, start, end)
     base = {'schema': VERSION, 'measure': m['id'], 'name': m['name'], 'status_of_definition': m['status'],
             'certification': m.get('certification', ''), 'spec_year': m['spec_year'], 'steward': m.get('steward'),
@@ -470,6 +490,7 @@ def evaluate_db(db, m, start, end, as_of, group_by='none', keep=None, people=Non
     anchors0 = {'period_start': start, 'period_end': end}
     groups = defaultdict(lambda: {'eligible': 0, 'excluded': 0, 'denominator': 0, 'numerator': 0})
     gaps = []
+    patient_rows = []
 
     def demographic(pid, info, day):
         if sex and (info.get('sex') or '')[:1].upper() != sex[:1].upper(): return False
@@ -488,10 +509,14 @@ def evaluate_db(db, m, start, end, as_of, group_by='none', keep=None, people=Non
             g = groups[_group(group_by, pid, people, attr)]
             g['eligible'] += 1
             excl = next((t for ok, t in (_evaluate(ctx, c, pid, anchors0) for c in m.get('exclusions', [])) if ok), None)
-            if excl: g['excluded'] += 1; continue
-            g['denominator'] += 1
             combine = any if m['numerator'].get('combine', 'all') == 'any' else all
             met = combine(ok for ok, _ in num_results)
+            if output == 'patients':
+                pdcs = [pdc_detail(_rows(ctx, c)[0].get(pid, []), c, anchors0)[2] for c in m['numerator']['criteria'] if c['type'] == 'pdc']
+                patient_rows.append({'patient_id': pid, 'measure': m['id'], 'excluded': bool(excl), 'exclusion': excl, 'met': bool(met) and not excl,
+                                     'evidence': '; '.join(t for _, t in num_results), **({'pdc': pdcs[0]} if pdcs else {})})
+            if excl: g['excluded'] += 1; continue
+            g['denominator'] += 1
             g['numerator'] += bool(met)
             if bool(met) == lower:  # gap: lower-is-better measures flag numerator hits, others flag misses
                 gaps.append({'patient_id': pid, 'group': _group(group_by, pid, people, attr), 'practice': attr.get(pid, {}).get('practice'),
@@ -570,6 +595,10 @@ def evaluate_db(db, m, start, end, as_of, group_by='none', keep=None, people=Non
         overall = {'member_years': round(total_my, 2), 'admissions': total_n, f'rate_per_{per}': round(per * total_n / total_my, 1) if total_my else None}
         return _finish(base, m, rows, overall, gaps, output, top, start, end)
     rows = []
+    if output == 'patients':
+        groups_out = _finish(base, m, [], {k: sum(v[k] for v in groups.values()) for k in ('eligible', 'excluded', 'denominator', 'numerator')}
+                             | {'rate': None}, gaps, 'rates', top, start, end)
+        return {**groups_out, 'patient_rows': patient_rows}
     for gk, v in sorted(groups.items(), key=lambda kv: str(kv[0])):
         rows.append({'measure': m['id'], 'definition': m['name'], 'group': gk, **v,
                      'rate': round(v['numerator'] / v['denominator'], 4) if v['denominator'] else None})
@@ -616,6 +645,15 @@ def _finish(base, m, rows, overall, gaps, output, top, start, end):
     if output == 'gaps':
         out['rows'] = out['care_gaps']
     return out
+
+
+def patient_status(db, m, start, end, as_of, ctx=None, people=None):
+    """Every denominator patient of a patient-unit measure: [{'patient_id', 'measure', 'excluded', 'met', 'pdc'?, 'evidence'}].
+    Declined measures (an input absent from the received data) return (None, missing inputs)."""
+    if m['unit'] != 'patient': raise ValueError('patient_status needs a patient-unit measure')
+    rep = evaluate_db(db, m, start, end, as_of, output='patients', ctx=ctx, people=people, top=0)
+    if rep['declined']: return None, rep['missing_inputs']
+    return rep['patient_rows'], rep['warnings']
 
 
 # ---- entry points -----------------------------------------------------------------------
