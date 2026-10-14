@@ -233,7 +233,8 @@ def concept_line(profile):
     from .drug_classes import CLASSES, GROUPS
     concept_line += ('; medication.drug_class ids: ' + ', '.join(sorted(CLASSES)) + ' (groups: ' +
                      '; '.join(f"{g} = {'/'.join(v)}" for g, v in GROUPS.items()) + '); medication.therapeutic_category covers other drugs '
-                     '(e.g. nsaid, bisphosphonate, antihistamine, iron supplement, nitrate) - match it with LIKE \'%nsaid%\' when no drug_class fits')
+                     '(e.g. nsaid, bisphosphonate, iron supplement, nitrate) - use it only when no drug_class id fits; first- vs '
+                     'second-generation antihistamines and beta-blockers vs beta-agonists ARE drug_class ids: never match those with LIKE')
     enc = (profile['streams'].get('encounters') or {}).get('fields', {}).get('type', {}).get('values') or {}
     if enc: concept_line += '; visit.type raw values (labels and codes not in type_concept are still queryable): ' + ', '.join(sorted(enc, key=lambda v: -enc[v])[:30])
     concept_line += ('; condition labels outside the concept list are queryable via condition.label/icd10 '
