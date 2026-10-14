@@ -101,6 +101,40 @@ class Route(unittest.TestCase):
             graph, info = router.route('Split the savings fairly across practices', AS_OF, None, None, validate)
         self.assertIsNone(graph); self.assertIn('contract terms', info['requires_input'])
 
+    def _route_with(self, chosen, question):
+        calls = []
+        def fake(q, as_of, ledger, out, op=None, feedback=None, model=None):
+            calls.append(op)
+            return ({'name': chosen, 'input': {}} if op is None else {'name': chosen, 'input': {'parameters': {}}}), {'api_usd': 0.001}
+        with mock.patch.object(router, '_ask', side_effect=fake):
+            graph, info = router.route(question, AS_OF, None, None, validate)
+        return graph, info, calls
+
+    def test_plain_dollar_total_overrides_claims_review(self):
+        graph, info, calls = self._route_with('claims_review', 'What did the plans pay us in total, net of take-backs, for 2028 claims?')
+        self.assertIsNone(graph); self.assertEqual(info['decision'], 'literal_lookup')
+        self.assertEqual(info['overridden']['chosen'], 'claims_review'); self.assertEqual(calls, [None])  # no fill call
+
+    def test_leakage_question_keeps_claims_review(self):
+        self.assertIsNone(router.literal_required('How much money are we losing to take-backs by payer?', 'claims_review'))
+        self.assertIsNone(router.literal_required('Which claims were underpaid versus similar claims?', 'claims_review'))
+
+    def test_single_event_share_overrides_survival(self):
+        graph, info, _ = self._route_with('survival', 'What percentage of 2028 ED visits had a return ED visit within 7 days?')
+        self.assertIsNone(graph); self.assertEqual(info['decision'], 'literal_lookup')
+
+    def test_time_to_event_keeps_survival(self):
+        for q in ('How long after discharge until heart failure patients are readmitted?',
+                  'What fraction of CKD patients reach an eGFR under 30 within two years?',
+                  'Show the Kaplan-Meier curve of readmission after discharge; what share are readmitted by day 30?'):
+            self.assertIsNone(router.literal_required(q, 'survival'), q)
+
+    def test_learned_choice_is_overridden_too(self):
+        with mock.patch.object(router, '_ask', side_effect=AssertionError('no paid call expected')), \
+                mock.patch('clinical_core.agere.clinical.learned_router.decide', return_value=('claims_review', {'used': True})):
+            graph, info = router.route('How much did insurers pay net of recoupments in 2028?', AS_OF, None, None, validate, encoder=object())
+        self.assertIsNone(graph); self.assertEqual(info['decision'], 'literal_lookup'); self.assertEqual(info['calls'], [])
+
     def test_two_invalid_plans_fall_through(self):
         bad = {'name': 'trajectory', 'input': {'parameters': {'concept': 'not_a_lab'}}}
         with mock.patch.object(router, '_ask', side_effect=lambda *a, op=None, **k: (({'name': 'trajectory', 'input': {}} if op is None else bad), {'api_usd': 0.0})):

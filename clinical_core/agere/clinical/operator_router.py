@@ -204,6 +204,31 @@ def _ask(question, as_of, ledger, out, op=None, feedback=None, model=MODEL):
     return choice, {'model': model, 'api_usd': usd, 'cache_hit': bool(receipt.get('cache_hit')), 'step': 'choose' if op is None else 'fill'}
 
 
+# Requires-literal rules: a chosen engine whose method the question never asks for is replaced by the SQL ladder.
+# Each rule: (engines it overrides, the literal ask, words that DO ask for that engine's method).
+MONEY_TOTAL = (r"\bhow much (?:did|do|does|have|has|was|were)\b|\bwhat (?:did|do|does) (?:\w+ ){0,3}pay\b|\btotal (?:net )?(?:paid|payments?|allowed|billed|"
+               r"payer paid|dollars|amount)\b|\bsum of\b|\bnet of (?:reversals|take[- ]?backs|recoupments|clawbacks)\b|\bnet (?:payer[- ]?)?paid\b")
+REVIEW_INTENT = (r"\b(?:leak\w*|under[- ]?pa\w*|short[- ]?pa\w*|losing|lost|left on the table|write[- ]?offs?|at stake|patterns?|pareto|reasons?|why|"
+                 r"flags?|review|suspicious|fraud\w*|integrity|outliers?|unusual\w*|peers?|duplicates?|rework|resubmi\w*|recover\w*|which (?:providers?|payers?|claims?))\b")
+SINGLE_RATE = (r"\b(?:share|percent(?:age)?|proportion|fraction|%) of (?:(?:our|the|all|\w+) ){0,3}(?:discharges|admissions|stays|visits|encounters|claims)\b|"
+               r"\b(?:readmission|return|revisit) rate\b|\bhow many (?:(?:of )?(?:our|the|those|these|\w+) ){0,3}(?:discharges|admissions|stays|visits|encounters)\b")
+TIME_TO_EVENT = (r"\b(?:how (?:quickly|soon|long|fast)|time (?:to|until)|days? (?:to|until)|median (?:days?|time)|kaplan|meier|survival|"
+                 r"cumulative incidence|curves?|hazards?|cox|log[- ]rank|censor\w*|by day \d+|over time|when do)\b")
+LITERAL_RULES = [
+    ({'claims_review', 'monitor', 'market'}, MONEY_TOTAL, REVIEW_INTENT, 'a plain dollar total, not a review of leakage or flags'),
+    ({'survival'}, SINGLE_RATE, TIME_TO_EVENT, 'a single observed share or count, not a time-to-event curve'),
+]
+
+
+def literal_required(question, op):
+    """Reason the question must be answered literally although `op` was chosen, else None."""
+    low = ' '.join(str(question).lower().split())
+    for engines, ask, method, reason in LITERAL_RULES:
+        if op in engines and re.search(ask, low) and not re.search(method, low):
+            return reason
+    return None
+
+
 def route(question, as_of, ledger, out, validate, encoder=None):
     """-> (graph | None, info). info['decision'] is an operator, 'literal_lookup' or 'not_answerable'.
 
@@ -224,6 +249,11 @@ def route(question, as_of, ledger, out, validate, encoder=None):
         else:
             info.setdefault('chosen_by', 'learned_router')
         info['decision'] = picked['name']
+        forced = literal_required(question, picked['name'])
+        if forced:  # deterministic override of the learned or paid choice: the SQL ladder answers it exactly
+            info['overridden'] = {'chosen': picked['name'], 'reason': forced}
+            picked = {'name': 'literal_lookup', 'input': {}}
+            info['decision'] = 'literal_lookup'
         if picked['name'] not in PRODUCT:
             info['missing'] = (picked['input'] or {}).get('missing')
             info['seconds'] = round(time.perf_counter() - start, 2)

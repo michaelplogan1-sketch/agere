@@ -55,12 +55,15 @@ MEASUREMENT_ALIASES = {
     'egfr': ['egfr', 'gfr', 'estimated gfr'], 'creatinine': ['creatinine'], 'potassium': ['potassium'],
     'sodium': ['sodium'], 'bun': ['bun', 'urea nitrogen'], 'hemoglobin': ['hemoglobin', 'hgb'],
     'platelets': ['platelets', 'platelet count'], 'wbc': ['wbc', 'white blood cell', 'white count'],
-    'uacr': ['uacr', 'albumin/creatinine', 'urine albumin'], 'nt_probnp': ['nt-probnp', 'ntprobnp', 'bnp'],
+    'uacr': ['uacr', 'albumin/creatinine', 'urine albumin', 'albumin-to-creatinine ratio', 'albumin to creatinine ratio',
+             'urine albumin-to-creatinine ratio', 'urine albumin to creatinine ratio', 'albumin/creatinine ratio', 'urine albumin/creatinine ratio'], 'nt_probnp': ['nt-probnp', 'ntprobnp', 'bnp'],
     'troponin': ['troponin'], 'tsh': ['tsh'], 'ferritin': ['ferritin'], 'phq9': ['phq-9', 'phq9'],
     'systolic_bp': ['systolic', 'systolic blood pressure', 'systolic bp'],
     'diastolic_bp': ['diastolic', 'diastolic blood pressure', 'diastolic bp'],
     'heart_rate': ['heart rate', 'pulse'], 'weight': ['weight'], 'spo2': ['spo2', 'oxygen saturation'],
 }
+MEASUREMENT_ALIAS_ORDER = [(c, [a]) for c, a in sorted(((c, a) for c, al in MEASUREMENT_ALIASES.items() for a in al), key=lambda ca: -len(ca[1]))]
+MEASUREMENT_RANK = {c: i for i, c in enumerate(MEASUREMENT_ALIASES)}
 ENCOUNTER_ALIASES = {
     'emergency_visit': ['emergency department visits', 'emergency department visit', 'emergency department',
                         'ed visits', 'ed visit', 'er visits', 'er visit', 'emergency visits', 'emergency visit', 'ed use', 'ed utilization'],
@@ -877,6 +880,10 @@ CLAIMS_FILLER = (r"\b(?:which|what|where|who|whose|why|how|is|are|was|were|do|do
                  r"where are we|could|should|can|would|happening|happen|problems?|issues?|amounts?|charges?|charged|by how much|recently|lately)\b")
 
 
+LITERAL_MONEY_TOTAL = (r"\bhow much (?:did|do|does|have|has|was|were)\b|\bwhat (?:did|do|does) (?:\w+ ){0,3}pay\b|\btotal (?:net )?(?:paid|payments?|allowed|billed|"
+                       r"payer paid|dollars|amount)\b|\bsum of\b|\bnet of (?:reversals|take[- ]?backs|recoupments|clawbacks)\b|\bnet (?:payer[- ]?)?paid\b")
+
+
 def _claims_review_question(q, r, profile, as_of, info):
     low = r.low
     if not re.search(CLAIMS_TRIGGER, low): return None
@@ -886,6 +893,11 @@ def _claims_review_question(q, r, profile, as_of, info):
     # Plain counts of received events ("how many reversals / overturned denials") stay literal: no estimation method needed.
     if re.search(r'^\s*(?:how many|count (?:of |the )?|number of|what (?:is|was) the (?:number|count|total) of)\b', low) and \
             not (under or leak or peers or integrity) and not re.search(r'\b(?:patterns?|reasons?|pareto|why)\b', low):
+        return None
+    # Plain money totals ("how much did payers pay, net of reversals") are literal sums: reversals there define the
+    # amount, they do not ask for a review of rework or duplicates.
+    if re.search(LITERAL_MONEY_TOTAL, low) and not (under or leak or peers or integrity or deny) and \
+            not re.search(r'\b(?:patterns?|reasons?|pareto|why|flags?|review|at stake|duplicates?|suspicious)\b', low):
         return None
     if leak or (under and (deny or churn)) or (deny and churn):
         focus = 'leakage' if not (peers or integrity) else 'all'
@@ -1150,12 +1162,16 @@ def _population_question(q, r, profile, as_of, info):
     rate = r.take(r'\b(?:rates?|per 1,?000|utili[sz]ation)\b', 'rate')
     count = r.take(r'\b(?:how many|number of|count)\b', 'count')
     which = r.take(r'\b(?:which|list|who are the|identify)\b', 'patient list') or info.get('output') == 'patient_set'
-    latest = r.take(r'\b(?:latest|most recent|last)\b', 'latest value')
+    # "latest 2029 A1c", "their last 2029 reading": the latest value within that year
+    latest_year = next(iter(r.take(r'\b(?:latest|most recent|last|final) ((?:19|20)\d{2})\b', 'latest value in year')), None)
+    latest = r.take(r'\b(?:latest|most recent|last)\b', 'latest value') or ([latest_year] if latest_year else [])
     adjust = r.take(r'\b(?:risk[- ]adjusted|case[- ]mix(?: adjusted)?|adjusted(?: for case mix)?|fair(?:ly)? compar\w+)\b', 'case-mix adjustment')
     readmit = r.take(r'\b(?:30[- ]day )?readmi(?:ssions?|tted|t)\b(?: within 30 days)?', 'readmission')
     r.take(r'\bwithin 30 days\b')
     highest = r.take(r'\b(?:highest|lowest|top|worst|best|most|fewest)\b', 'ranking')
     period = _take_period(r, as_of)
+    if latest_year and not period:
+        y = latest_year.group(1); period = (f'{y}-01-01', min(f'{y}-12-31', as_of))
     group = None
     for pattern, g in GROUPS + _demographic_groups(profile):
         if r.take(pattern, f'group by {g}'): group = g; break
@@ -1269,9 +1285,9 @@ def _population_question(q, r, profile, as_of, info):
         allp.append({'kind': 'measurement', 'concept': concept, 'names': names, 'op': cmp[0] if cmp else 'gt',
                      'value': cmp[1] if cmp else -1e12, 'aggregate': 'latest' if latest else 'any', 'window': W})
     r.take(r'\bpercent-unit\b', None)
-    # measurements with comparisons
-    for concept, aliases in MEASUREMENT_ALIASES.items():
-        for alias in sorted(aliases, key=len, reverse=True):
+    # measurements with comparisons. Longest alias first across concepts: 'albumin-to-creatinine ratio' is uacr, not creatinine.
+    for concept, aliases in MEASUREMENT_ALIAS_ORDER:
+        for alias in aliases:
             for m in r.take(_alias_pattern(alias), f'measurement {concept}'):
                 tail = low[m.end():m.end() + 60]
                 cmp = None
@@ -1289,6 +1305,7 @@ def _population_question(q, r, profile, as_of, info):
                         cmp = ('ge' if re.search(r'higher|more|above|greater|over|\+', mm.group(2)) else 'le', float(mm.group(1)))
                         for i in range(m.end(), m.end() + mm.end()): r.used[i] = True
                 measured.append((concept, cmp, m.start()))
+    measured.sort(key=lambda x: MEASUREMENT_RANK[x[0]])  # stable: keep the concept order atoms always had
     position = {}  # where each atom is mentioned: the last-mentioned subject of a share is its outcome
     for concept, cmp, start in measured:
         if cmp:
@@ -1367,9 +1384,35 @@ def _population_question(q, r, profile, as_of, info):
                 or re.search(r'(?:icd-?10|snomed|codes?|labels?|text|description|written|coded) $', low[max(0, m.start() - 14):m.start()]):
             continue
         info.update(route='fallback', reason='"or" joins terms that were not combined as either/or'); return None, info
-    r.take(r'\b(?:no|not|without|but no|lack|lacking|excluding|exclude|except|but|have|has|had|with|and|or)\b')
+    # "poor glycemic control (latest 2029 A1c above 9%)": a parenthetical whose words were all interpreted and that
+    # carries a threshold defines the label right before it; the label words restate it and add no constraint.
+    for pm in re.finditer(r'\(([^()]*\d[^()]*)\)', low):
+        inner_words = list(re.finditer(r"[a-z0-9][a-z0-9'_.-]*", low[pm.start(1):pm.end(1)]))
+        if not inner_words or any(not any(r.used[pm.start(1) + w.start():pm.start(1) + w.end()]) and w.group(0) not in FILLER
+                                  for w in inner_words):
+            continue
+        label = []
+        for w in reversed(list(re.finditer(r"[a-z][a-z'-]*", low[:pm.start()]))):
+            if len(label) == 4 or any(r.used[w.start():w.end()]) or w.group(0) in (
+                    'had', 'have', 'has', 'with', 'who', 'are', 'is', 'were', 'was', 'of', 'among', 'and', 'or', 'in', 'patients', 'people'):
+                break
+            if low[w.end():(label[-1].start() if label else pm.start())].strip(): break  # only whitespace between label words
+            label.append(w)
+        if label:
+            for w in label:
+                for i in range(w.start(), w.end()): r.used[i] = True
+            r.notes.append('label defined in parentheses: ' + ' '.join(w.group(0) for w in reversed(label)))
+    # Negation words are explained only by an exclusion built from them; otherwise they stay unexplained so the
+    # compiler declines ("rows that have no result date" must never become the whole roster).
+    if excl:
+        r.take(r'\b(?:no|not|without|but no|lack|lacking|excluding|exclude|except)\b')
+    r.take(r'\b(?:but|have|has|had|with|and|or)\b')
     info['unexplained'] = r.blocking(profile)
-    info['ignored_words'] = getattr(r, 'ignored', [])
+    # Counting rows/entries/line items is a record count, never a patient count from this cohort path.
+    for w in getattr(r, 'ignored', []):
+        if w in ('row', 'rows', 'entry', 'entries'):
+            info['unexplained'].append(w)
+    info['ignored_words'] = [w for w in getattr(r, 'ignored', []) if w not in info['unexplained']]
     if info['unexplained']:
         info['route'] = 'fallback'
         info['reason'] = 'words not interpreted locally: ' + ', '.join(info['unexplained'][:12])
@@ -1421,11 +1464,12 @@ def _population_question(q, r, profile, as_of, info):
             {'id': 'patterns', 'operation': 'discover', 'inputs': ['population'], 'parameters': params,
              'purpose': 'Segments where the outcome is concentrated'}]}, info
 
-    if period:  # periods bound events, measurements and records; chronic conditions keep full history
+    if period:  # periods bound events, measurements, tests and records (incl. either/or atoms); chronic conditions keep full history
         timed = {'basis': 'source_event', 'start': period[0], 'end': period[1]}
-        for atom in allp + excl:
+        for atom in allp + anyp + excl:
             if atom['kind'] == 'record' and atom.get('stream') == 'coverage': continue  # payer membership describes who, not when
-            if atom['kind'] in ('measurement', 'record') or (atom['kind'] == 'concept' and atom['concept'] in concepts.ENCOUNTERS):
+            if atom['kind'] in ('measurement', 'record') or (atom['kind'] == 'concept' and (
+                    atom['concept'] in concepts.ENCOUNTERS or atom['concept'] in concepts.MEASUREMENTS)):  # "an A1c test in 2029"
                 atom['window'] = dict(timed)
 
     contradictory = [a for a in allp if a in excl]
@@ -1522,7 +1566,7 @@ def _literal_stream_question(q, r, profile, as_of, info):
     stream, span = None, None
     for s, forms in sorted(vocab.items(), key=lambda kv: -max(map(len, kv[1]))):
         for f in forms:
-            m = re.search(_alias_pattern(f) + r'(?:\s+(?:records?|rows?|notifications?|entries|entry))?', low)
+            m = re.search(_alias_pattern(f) + r'(?:\s+results?(?=\s+(?:records?|rows?|entries|entry)\b))?(?:\s+(?:records?|rows?|notifications?|entries|entry))?', low)
             named_field = any(re.search(_alias_pattern(x), low) for x in profile['streams'][s]['fields'] if '_' in x and len(x) > 6)
             subject = m and len(f) >= 5 and s not in NATURAL_STREAM_EXCLUDE and profile['streams'][s]['records'] >= 20 and (
                 re.search(r'\b(?:how many|count|number of|total(?: up)?|sum of|list|which|each|on|of|for)\b(?:\s+[\w-]+){0,4}\s+' + _alias_pattern(f), low)
@@ -1538,6 +1582,7 @@ def _literal_stream_question(q, r, profile, as_of, info):
     for token in stream.split('_'):  # words of the stream's own name are explained by it
         r.take(r'\b' + re.escape(token.rstrip('s')) + r's?\b', None, overlap=True)
     conds, sql_where, named_fields = [], [], []
+    named_at = []  # (field, match) for every field named in the question
     group_field = None
     forms = _field_forms(fields)
     forms.setdefault('organization_id', []).extend(['organization', 'site', 'facility'])
@@ -1573,6 +1618,7 @@ def _literal_stream_question(q, r, profile, as_of, info):
         pattern = _alias_pattern(form) if ('_' in form or ' ' in form) else r'(?<![a-z0-9_])' + re.escape(form) + r'(?![a-z0-9_])'
         for m in r.take(pattern, f'field {f}'):
             named_fields.append(f)
+            named_at.append((f, m))
     sum_m = r.take(r'\b(?:gross |raw |total )?sum(?: in usd)?(?: of)?\b', 'sum', overlap=True)
     # observed values mentioned (for low-cardinality fields)
     candidates = [(f, v) for f, spec in fields.items() for v in (spec.get('values') or {})
@@ -1595,6 +1641,14 @@ def _literal_stream_question(q, r, profile, as_of, info):
     if lack and lack.group(1) in fields:
         sql_where.append(f"json_extract(payload,'$.{lack.group(1)}') IS NULL")
         named_fields = [x for x in named_fields if x != lack.group(1)]
+    # "no/without/missing (a) <field>" -> the field is absent on the record
+    for f, m in list(named_at):
+        if f not in named_fields: continue
+        neg = re.search(r'\b(?:no|without(?: an?| any)?|missing(?: an?| any)?|lacks? (?:a |an |any )?|lacking (?:a |an |any )?)\s*$', low[:m.start()])
+        if neg:
+            r.take(re.escape(neg.group(0).strip()) + r'(?=\s*' + re.escape(low[m.start():m.end()]) + ')', 'field absent', overlap=True)
+            sql_where.append(f"json_extract(payload,'$.{f}') IS NULL")
+            named_fields = [x for x in named_fields if x != f]
     date_field = next((f for f in named_fields if f.endswith('_date')), 'event_date')
     span_period = _take_period(r, as_of, year_words=r'(?!x)x')  # quarters, halves, ranges, since, YTD, months; plain years below
     if span_period:
@@ -1644,6 +1698,18 @@ def _literal_stream_question(q, r, profile, as_of, info):
                 ([r'allowed'] if 'allowed' in low else []) + ([r'billed|charge'] if re.search(r'billed|charges?', low) else []) + [r'amount_cents', r'paid_cents', r'_cents']
         amount = next((f for pat in prefs for f in fields if f.endswith('_cents') and re.search(pat, f)), None)
         r.take(r'\bpayers?\b|\bpaid\b|\bpay\b|\ballowed\b|\bbilled\b|\bdollars?\b|\bcents\b|\banswer in\b', None, overlap=True)
+    # "through which channel", "what modality": a named field asked as the answer's dimension is a grouping, never dropped
+    if not group_field and not sum_m:
+        asked = [f for f, m in named_at if f in named_fields and f != amount and not f.endswith(('_date', '_time', '_cents', '_id'))
+                 and re.search(r'\b(?:which|what|whose|through which|via which|by which)\s+(?:\w+\s+){0,2}$', low[:m.start()])]
+        if len(set(asked)) == 1:
+            group_field = asked[0]
+            group_fields = [group_field]
+            r.notes.append(f'group by {group_field}')
+            r.take(r'\b(?:through|via|by) which\b|\bwhich\b|\bwhat\b', None)
+        elif len(set(asked)) > 1:
+            info.update(route='fallback', reason='several fields asked as the answer dimension: ' + ', '.join(sorted(set(asked))))
+            return None, info
     info['unexplained'] = [w for w in r.blocking(profile) if w not in {'usd', 'gross', 'raw', 'rows', 'net', 'refunds', 'subtract', 'infer',
                                                                 'balances', 'corrections', 'realized', 'savings', 'treat', 'cents', 'table',
                                                                 'organization_id', 'encounter_count', 'claim_record_count', 'clinician_id'}]
@@ -1710,7 +1776,7 @@ OPS_METRICS = [
      'First-pass denial rate = claims whose first adjudication was a denial / claims, by service date'),
     (r'\b(?:overturned denials|denials? (?:that were |later )?(?:overturned|paid)|denied,? (?:and |then |but )*(?:later |eventually |subsequently )?(?:got )?paid)\b',
      'claim', 'service_date', "sum(denied_then_paid)", 'Claims with a denial later followed by payment'),
-    (r'\bnet (?:payer[- ]?)?paid\b|\bnet (?:payer )?payments?\b|\bpaid after reversals\b',
+    (r'\bnet (?:payer[- ]?)?paid\b|\bnet (?:payer )?payments?\b|\bpaid after reversals\b|\bpa(?:y|id),? net of (?:reversals|take[- ]?backs|recoupments)\b',
      'claim', 'service_date', "round(sum(net_payer_paid_cents) / 100.0, 2)", 'Net payer paid (USD) = paid minus reversed, per claim, by service date'),
     (r'\b(?:average|mean|avg) (?:inpatient )?(?:length of stay|los)\b|\balos\b',
      'stay', 'admit_date', "round(avg(los_days), 2)", 'Average length of stay (days) over inpatient stays with a received discharge time, by admit date'),
@@ -1728,6 +1794,17 @@ DRUG_ALIASES = {
     'anticoagulant': r'anticoagulants?|blood thinners?|doacs?', 'opioid': r'opioids?|narcotics?', 'benzodiazepine': r'benzodiazepines?|benzos?',
     'inhaled_corticosteroid': r'inhaled (?:cortico)?steroids?|ics', 'loop_diuretic': r'loop diuretics?', 'antiplatelet': r'antiplatelets?',
 }
+# Medication evidence values that mean a fill happened (pharmacy dispense, pharmacy claim, payer pharmacy claim).
+# One place in this file; read from the shared concepts definition when present (it MUST match the semantic layer).
+FILL_EVIDENCE = getattr(concepts, 'FILL_EVIDENCE', ('dispensed', 'claim', 'payer_claim'))
+FILL_EVIDENCE_SQL = getattr(concepts, 'FILL_EVIDENCE_SQL', '(' + ','.join(repr(e) for e in FILL_EVIDENCE) + ')')
+
+
+def _picked_up_sql():
+    """Predicate for a picked-up fill: the shared concepts.picked_up_sql (excludes prepared, returned and reversed
+    fills) when available, else the fill-evidence filter."""
+    shared = getattr(concepts, 'picked_up_sql', None)
+    return shared() if shared else f'evidence IN {FILL_EVIDENCE_SQL}'
 DRUG_GROUP_ALIASES = {'raas_inhibitor': r'(?:ace|acei)/arb(?:/arni)?|raas inhibitors?', 'diabetes_medication': r'diabetes (?:meds|medications?)'}
 
 
@@ -1739,7 +1816,7 @@ def _medication_question(q, r, profile, as_of, info):
     for cls, rx in sorted({**DRUG_ALIASES, **DRUG_GROUP_ALIASES}.items(), key=lambda kv: -len(kv[1])):
         m = re.search(r'\b(?:' + rx + r')\b', low)
         if m: found = (cls, m); break
-    if not found or not re.search(r'\b(?:on|taking|take|filled|fill|dispensed|prescribed|ordered|using|receiving|got)\b', low): return None
+    if not found or not re.search(r'\b(?:on|taking|take|filled|fill|dispensed|prescribed|ordered|using|receiving|got|picked up|pick up|picks up|picking up)\b', low): return None
     cls, m = found
     # This path has no encounter grammar: "diabetics not on insulin who had an ED visit in 2028" would
     # silently drop the visit and apply the year to dispensing. Decline so a verified planner handles it.
@@ -1749,11 +1826,11 @@ def _medication_question(q, r, profile, as_of, info):
         return None, info
     classes = GROUPS.get(cls, [cls])
     r.take(r'\b(?:' + ({**DRUG_ALIASES, **DRUG_GROUP_ALIASES}[cls]) + r')\b', f'drug class {cls}')
-    evidence = "('dispensed','claim')"
+    evidence = FILL_EVIDENCE_SQL  # default: a picked-up fill
     if r.take(r'\b(?:prescribed|ordered|on an order)\b', 'evidence ordered'): evidence = "('ordered')"
     elif r.take(r'\b(?:on (?:their|the) med(?:ication)? lists?|listed)\b', 'evidence listed'): evidence = "('listed')"
     elif r.take(r'\b(?:any (?:source|evidence)|any record)\b', 'evidence any'): evidence = None
-    r.take(r'\b(?:on|taking|take|filled|fill|dispensed|using|receiving|got|a|an|any|of|currently|active)\b', None, overlap=True)
+    r.take(r'\b(?:on|taking|take|filled|fill|dispensed|using|receiving|got|picked up|pick up|picks up|picking up|a|an|any|of|currently|active)\b', None, overlap=True)
     negated = bool(re.search(r'\b(?:not|no|without|never|lacking|missing)\b(?:\s+\w+){0,4}\s+(?:' + ({**DRUG_ALIASES, **DRUG_GROUP_ALIASES}[cls]) + r')', low))
     r.take(r'\b(?:not|no|without|never|lacking|missing|but)\b', None)
     period = _take_period(r, as_of)
@@ -1765,7 +1842,7 @@ def _medication_question(q, r, profile, as_of, info):
     share = r.take(r'(?:\bwhat (?:share|percent(?:age)?|proportion|fraction)\b|\bwhat ?%|\bpercent(?:age)? of\b)', 'share')
     r.take(r'\b(?:how many|number of|count|patients?|members?|people|have|has|had|with|and|our|the|are|is|were|was|been)\b', None, overlap=True)
     med = f"SELECT DISTINCT patient_id FROM medication WHERE drug_class IN ({', '.join(repr(c) for c in classes)})" + \
-          (f" AND evidence IN {evidence}" if evidence else '') + (f" AND event_date BETWEEN '{period[0]}' AND '{period[1]}'" if period else '')
+          (f" AND {_picked_up_sql()}" if evidence == FILL_EVIDENCE_SQL else f" AND evidence IN {evidence}" if evidence else '') + (f" AND event_date BETWEEN '{period[0]}' AND '{period[1]}'" if period else '')
     base = 'SELECT patient_id FROM patient' + ''.join(f" WHERE patient_id IN (SELECT patient_id FROM concept_patient WHERE concept = '{c}')" if i == 0 else
                                                       f" AND patient_id IN (SELECT patient_id FROM concept_patient WHERE concept = '{c}')" for i, c in enumerate(conds))
     cohort = f"{base} {'AND' if conds else 'WHERE'} patient_id {'NOT IN' if negated else 'IN'} ({med})"
@@ -1792,7 +1869,7 @@ def _ops_question(q, r, profile, as_of, info):
     group = None
     for word, col in OPS_GROUPS.get(table, {}).items():
         if r.take(r'\b(?:by|per|for each|each|split by|broken down by) (?:the )?' + word + r's?\b', f'group by {col}'): group = col; break
-    r.take(r'\b(?:appointments?|appts?|claims?|medical claims?|inpatient|stays?|admissions?|scheduled|our|the|what|was|were|is|in days)\b', None, overlap=True)
+    r.take(r'\b(?:appointments?|appts?|claims?|medical claims?|inpatient|stays?|admissions?|scheduled|payers?|our|the|what|was|were|is|in days)\b', None, overlap=True)
     sql_where = (' WHERE ' + ' AND '.join(where)) if where else ''
     if group:
         sql = f"SELECT {group} AS {group.replace('_id', '')}, {expr} AS value FROM {table}{sql_where} GROUP BY 1 ORDER BY 1"
@@ -2237,9 +2314,23 @@ MEASURE_FRAMING = (r'\b(?:rate|rates|performance|compliance|compliant|score|scor
                    r'gaps?|me|had|had a|been|get|got|received|look|looks?|this|that|what|how|year|period|network|overall|total|open|outstanding)\b')
 
 
+MEASURE_ASKED = (r'\b(?:rates?|percent(?:age)?s?|%|share|proportion|fraction|compliance|compliant|non[- ]?compliant|performance|score|scores|'
+                 r'measures?|hedis|stars?|star ratings?|ecqm|eqcm|quality|numerator|denominator|gaps?|due|overdue|missing|adherence|adherent|pdc|'
+                 r'how (?:are|is|did|do) we (?:doing|perform))\b')
+PLAIN_COUNT = r"^(?:how many|what (?:is|was) the (?:number|count) of|count (?:the |our )?|number of)\b"
+
+
+def _plain_count_question(low):
+    """'How many diabetics had ...' asks for a cohort count; a measure answers only when the question names a
+    measure, a rate/percentage, compliance/performance or gaps."""
+    return bool(re.search(PLAIN_COUNT, low.strip())) and not re.search(MEASURE_ASKED, low)
+
+
 def _measure_question(q, profile, as_of):
     from . import measures
     low = _strip_framing(q.lower())
+    if _plain_count_question(low):
+        return None
     try:
         mid, alias = measures.match(low)
     except (OSError, ValueError):
