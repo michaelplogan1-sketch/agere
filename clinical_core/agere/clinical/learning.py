@@ -89,7 +89,8 @@ def record_routing(path, question, info, executed):
 
 # Answer-level controls that, replayed over past blind runs, fired only on wrong answers (docs/agere/FMEA.md), plus the
 # deterministic oracles (oracles.py) whose warnings carry the same weight for capture.
-QUARANTINE_CONTROLS = {'QC-PERIOD', 'QC-UNITS', 'QC-NUMBERS', 'QC-PARTS', 'QC-CLOCK', 'QC-PERTURB', 'QC-PARTITION'}
+QUARANTINE_CONTROLS = {'QC-PERIOD', 'QC-UNITS', 'QC-NUMBERS', 'QC-PARTS', 'QC-CLOCK', 'QC-PERTURB', 'QC-PARTITION',
+                       'QC-METRIC'}  # QC-METRIC: query departs from the governed metric (metrics.py); its 'computed as' note is info
 
 
 def capture_verified(path, question, planner_receipt, answer):

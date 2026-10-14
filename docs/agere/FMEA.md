@@ -143,6 +143,63 @@ control on M/N/O, counted as fired on wrong / fired on right, is:
 | QC-PARTITION, info only | 1/4 |
 | QC-PERTURB | 0/0 after the `= 1` flag fix |
 
+## Metric layer (FM-05, FM-06, FM-07, FM-08), 2026-10-13
+
+`config/agere/metrics/*.json` and `clinical_core/agere/clinical/metrics.py` hold typed metric definitions. Each one states
+its grain, population (age band, attribution), denominator, numerator, time anchor (date field, period, trailing window,
+snapshot, follow-up days), value sets with provenance, versioning rule, unit and expected range, citations, and a
+canonical SQL template over the semantic layer. There are 35 templated metrics: utilization 14, revenue cycle 10,
+clinical quality 6 and operations 5. Each of the 25 measures in `config/agere/measures` also becomes a metric backed by
+the measure engine. Every metric either cites a source (definitions.json, a measure, or a direct citation) or is marked
+internal and states why.
+
+- **Prompt pins.** When a question matches a metric, `nl2sql.metric_context` puts the metric's definition and its
+  rendered SQL template into the hosted prompt. Matching uses deterministic rules first, then the local encoder.
+- **Lint rules ML-\*.** `verify.metric_lint` runs a deterministic match only. It checks grain, anchor, window, value set,
+  population, source and versioning. Value-set membership is judged against the received values in the semantic layer.
+  - The ladder sends a failing query back for one repair. Findings that survive the repair are delivered as warnings
+    (`AGERE_METRIC_LINT=repair|warn|off`).
+  - A trailing window that starts one day early is healed mechanically before the lint runs.
+- **Answer annotation.** `answer_checks` adds `computed_as` (metric id and version) and QC-METRIC findings. QC-METRIC
+  quarantines capture.
+- **Resolution API.** `metrics.resolve(slots)` is the entry point for the compiler-rules layer and the engines.
+
+Replay over saved receipts (`tools/quality/metric_layer_replay.py` → `metric_layer_replay.json`): the same 24 wrong and
+59 right hosted answers as Verification v2. The SQL was re-executed read-only and no model was called. These numbers are
+in-sample, because the metrics were written after reading these failures.
+
+| | Count |
+|---|---:|
+| v2-uncaught errors that resolve to a metric | 16 / 16 |
+| … flagged by metric lint or heal | 14 / 16 (13 by lint after heal, 1 by heal alone: M20) |
+| … where the metric template reproduces the reference | 14 / 16 (O11 and O31 differ only in which age field is used) |
+| All wrong answers caught (v2 + metric layer) | 22 / 24 |
+| Right answers flagged | 3 / 59. All three are the healed trailing-window start (M14, N15, O13); the result is unchanged and nothing blocks |
+
+The two errors that are not flagged:
+
+- M05: the delivered query returned a table where a patient list was expected; this is a shape problem.
+- N09: re-executed today, the delivered SQL returns the reference answer. The original error came from the layer as it
+  was then.
+
+The first replay also mismatched N43 to `community_referral_delivery`. Its match rule was tightened after that replay
+(in-sample).
+
+Value-set and anchor findings, all review items and nothing auto-added:
+
+- `stay.discharge_date` is the UTC date of the discharge time. For 31 of 53 discharges in the trailing year it is one
+  day later than the ADT discharge event date, and that shifts follow-up windows. N14 reproduces only when the ADT date
+  is used. This belongs to the semantic layer's owner.
+- Library concept `egfr` includes "Glomerular filtration rate": 568 rows, undated, mL/min, no LOINC.
+- `therapeutic_category LIKE '%antihistamine%'` sweeps in 2,209 second-generation antihistamine rows.
+- `drug_class LIKE '%beta%'` sweeps in 607 beta-agonist rows.
+- The normalization dictionary maps "youth_health_supervision" (396) and "Adolescent med" to primary care, but they are
+  not in `primary_care_visit`. This is a possible undercount.
+- Condition concepts miss no ICD-10-coded row. Most condition rows are label- or SNOMED-only (201 of 6,929 carry a
+  source ICD-10).
+- The benchmark references disagree on which age field to use: O11, O31 and N07 use roster `age_reported`, while M33
+  uses the latest age. The metrics pin `age_latest`, following the nl2sql rules; the owner decides.
+
 ## Remaining gaps (not closed here)
 
 - **FM-13 / FM-23, correlated errors and learning from them.** Every adjudicated hosted-route engine error passed lint,
