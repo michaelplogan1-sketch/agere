@@ -24,7 +24,7 @@ TABLES = {
     'measurement': 'record_id,patient_id,source_table,concept,name,value,unit,value_canonical,unit_canonical,result_status,event_date,'
                    'available_date,loinc,component,event_time',
     'measurement_latest': 'patient_id,concept,event_date,value_canonical,unit_canonical,record_id',
-    'medication': 'record_id,patient_id,source_stream,evidence,drug_name,drug_class,status,event_date,ingredients,therapeutic_category',
+    'medication': 'record_id,patient_id,source_stream,evidence,picked_up,drug_name,drug_class,status,event_date,ingredients,therapeutic_category',
     'condition': 'record_id,patient_id,concept,label,icd10,snomed,event_date',
     'concept_patient': 'concept,kind,patient_id,records,first_date,last_date',
     'social_need': 'patient_id,need,positive,instrument,event_date,record_id',
@@ -112,7 +112,7 @@ def build_fixture(path):
                              value_canonical=90, unit_canonical='kg', result_status=None, event_date='2029-01-01', available_date='2029-01-01',
                              loinc=None, component=None, event_time=None)])
     ins('measurement_latest', [dict(patient_id='P0', concept='weight', event_date='2029-01-01', value_canonical=90, unit_canonical='kg', record_id='M6')])
-    med = lambda rid, pid, name, cls, ing, cat: dict(record_id=rid, patient_id=pid, source_stream='pharmacy_dispenses', evidence='dispensed',
+    med = lambda rid, pid, name, cls, ing, cat: dict(record_id=rid, patient_id=pid, source_stream='pharmacy_dispenses', evidence='dispensed', picked_up=1,
                                                      drug_name=name, drug_class=cls, status='dispensed', event_date='2029-01-01', ingredients=ing,
                                                      therapeutic_category=cat)
     ins('medication', [med('D1', 'P7', 'Diphenhydramine 25 MG', 'first_generation_antihistamine', 'diphenhydramine', 'antihistamine'),

@@ -234,6 +234,48 @@ class MissingClaims(Fixture):
         self.assertEqual(receipt['missing_check']['contradicted'][0]['name'], 'patient.race')
 
 
+class PlainCounts(Fixture):
+    def test_word_rule(self):
+        self.assertTrue(MR.plain_count_question('How many hypertensive members had their BP under control at the most recent 2028 reading?'))
+        self.assertTrue(MR.plain_count_question('Quick one - how many patients with high blood pressure were uncontrolled last year?'))
+        self.assertTrue(MR.plain_count_question('Number of diabetics with an A1c over 9'))
+        self.assertFalse(MR.plain_count_question('What share of hypertensive patients had controlled BP in 2028?'))
+        self.assertFalse(MR.plain_count_question('How many patients are in the CBP measure denominator?'))
+        self.assertFalse(MR.plain_count_question('How many diabetics have a care gap for eye exams?'))
+
+    def test_a_measure_rate_never_answers_a_plain_count(self):
+        q = 'How many hypertensive members had their BP under control at the most recent 2028 reading?'
+        ask = Script(MR_choose('measure.cbp'))
+        graph, info = MR.route(q, AS_OF, ask=ask, path=self.root)
+        self.assertIsNone(graph); self.assertEqual(info['decision'], MR.NO_METRIC)
+        self.assertEqual(len(ask.calls), 1)                                   # no fill call is spent on the measure
+        self.assertIn('plain count', info['declined'][0]['reason'])
+        # two readings offered (measure + cohort): the cohort count answers
+        amb = (MR.AMBIGUOUS, {'metrics': [MR.tool_name('measure.cbp'), MR.tool_name('patient_cohort')], 'difference': 'rate vs count'})
+        ask = Script(amb, (MR.tool_name('patient_cohort'), {'population': [{'kind': 'condition', 'concepts': ['diabetes']}]}))
+        graph, info = MR.route('How many diabetics do we have?', AS_OF, ask=ask, path=self.root)
+        self.assertEqual((info['decision'], info['metric']), ('metric', 'patient_cohort'))
+        # a rate question still reaches the measure
+        ask = Script(MR_choose('measure.cbp'), (MR.tool_name('measure.cbp'), {'period': {'preset': 'year', 'year': 2028}}))
+        graph, info = MR.route('What share of hypertensive patients had controlled BP in 2028?', AS_OF, ask=ask, path=self.root)
+        self.assertEqual(info['metric'], 'measure.cbp')
+
+    def test_fill_templates_count_picked_up_fills_only(self):
+        db = sqlite3.connect(self.root / 'semantic.sqlite3')
+        db.execute("INSERT INTO medication(record_id, patient_id, source_stream, evidence, picked_up, drug_name, drug_class, status, event_date) "
+                   "VALUES ('D9', 'P6', 'pharmacy_dispenses', 'dispensed', 0, 'Diazepam 5 MG', 'benzodiazepine', 'returned_to_stock', '2029-02-01')")
+        db.commit()
+        try:
+            sql = metrics.render_sql(metrics.get('beers_high_risk_medications_65'), metrics.parameters(metrics.get('beers_high_risk_medications_65'), '', AS_OF))
+            self.assertIn('picked_up = 1', sql); self.assertNotIn("evidence IN", sql)
+            self.assertEqual(db.execute(sql).fetchall(), [(1,)])                 # P6's returned-to-stock diazepam is not a fill
+        finally:
+            db.execute("DELETE FROM medication WHERE record_id = 'D9'"); db.commit(); db.close()
+
+
+def MR_choose(mid): return (MR.tool_name(mid), {})
+
+
 class RateLabels(unittest.TestCase):
     def test_per_1000_label_states_the_arithmetic_used(self):
         row = {'group': 'all', 'members': 4139, 'member_years': 4014.0008, 'ed_visits': 1508, 'ed_per_1000': 375.7}

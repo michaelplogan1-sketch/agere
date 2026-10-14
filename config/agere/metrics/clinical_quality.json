@@ -271,7 +271,7 @@
      "url": "https://doi.org/10.1111/jgs.18372"
     }
    ],
-   "summary": "Patients aged 65+ with at least one pharmacy dispense (status 'dispensed' or paid claim) of a first-generation antihistamine, benzodiazepine, meperidine or skeletal muscle relaxant, at any date. Second-generation antihistamines (loratadine, cetirizine, fexofenadine) are not Beers-list drugs.",
+   "summary": "Patients aged 65+ with at least one picked-up fill (medication.picked_up = 1: dispensed, pharmacy claim or payer pharmacy claim; prepared, returned-to-stock and reversed fills excluded) of a first-generation antihistamine, benzodiazepine, meperidine or skeletal muscle relaxant, at any date. Second-generation antihistamines (loratadine, cetirizine, fexofenadine) are not Beers-list drugs.",
    "match": {
     "all": [
      "beers|high[- ]risk med|potentially inappropriate",
@@ -349,7 +349,7 @@
    "output": {
     "returns": "count"
    },
-   "sql_template": "SELECT count(DISTINCT p.patient_id) AS patients FROM patient p JOIN medication m ON m.patient_id = p.patient_id WHERE p.age_latest >= 65 AND m.evidence IN ('dispensed','claim') AND (m.drug_class IN ('first_generation_antihistamine','benzodiazepine','skeletal_muscle_relaxant') OR lower(m.drug_name) LIKE '%meperidine%')"
+   "sql_template": "SELECT count(DISTINCT p.patient_id) AS patients FROM patient p JOIN medication m ON m.patient_id = p.patient_id WHERE p.age_latest >= 65 AND m.picked_up = 1 AND (m.drug_class IN ('first_generation_antihistamine','benzodiazepine','skeletal_muscle_relaxant') OR lower(m.drug_name) LIKE '%meperidine%')"
   },
   {
    "id": "hf_no_beta_blocker",

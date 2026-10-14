@@ -42,6 +42,23 @@ SYSTEM = (
 )
 
 
+# Plain count questions vs measure questions. Shared word lists (local_compiler._plain_count_question uses the same rule):
+# 'How many hypertensive patients had controlled BP ...' asks for a cohort count, never a measure RATE; a quality measure
+# answers only when the question names a measure, a rate/percentage, compliance/performance, gaps or adherence.
+MEASURE_ASKED = (r'\b(?:rates?|percent(?:age)?s?|%|share|proportion|fraction|compliance|compliant|non[- ]?compliant|performance|score|scores|'
+                 r'measures?|hedis|stars?|star ratings?|ecqm|eqcm|quality|numerator|denominator|gaps?|due|overdue|missing|adherence|adherent|pdc|'
+                 r'how (?:are|is|did|do) we (?:doing|perform))\b')
+PLAIN_COUNT = r"^(?:how many|what (?:is|was) the (?:number|count) of|count (?:the |our )?|number of)\b"
+
+
+def plain_count_question(question):
+    """True for 'how many ...' / 'number of ...' questions that name no measure, rate, compliance or gap wording."""
+    low = (question or '').lower().strip()
+    # short framing before the question ('quick one - how many ...', 'so, how many ...') is not part of it
+    low = re.sub(r'^[^?]{0,40}?(?:[-:,]|\bso|\bok(?:ay)?)\s+(?=how many\b|number of\b|count\b|what (?:is|was) the (?:number|count)\b)', '', low)
+    return bool(re.search(PLAIN_COUNT, low)) and not re.search(MEASURE_ASKED, low)
+
+
 # ------------------------------------------------------------------------------------------------ library + schema
 def library(directory=None):
     from . import metrics
@@ -389,6 +406,11 @@ def route(question, as_of, ledger=None, out=None, path=None, ask=None, directory
         info.update(decision=NO_METRIC, reason='ambiguous choice named no known metric'); done()
         return None, info
     filled = []
+    if plain_count_question(question):  # a measure RATE never answers a plain count question; it falls through instead
+        for mid in [x for x in chosen if kind(lib[x]) == 'measure']:
+            info.setdefault('declined', []).append({'metric': mid, 'reason': 'plain count question: a quality-measure rate answers a '
+                                                    'different question (count the cohort instead)'})
+        chosen = [x for x in chosen if kind(lib[x]) != 'measure']
     for mid in dict.fromkeys(chosen):
         try:
             slots, node = _fill(question, as_of, mid, lib[mid], call, info)
