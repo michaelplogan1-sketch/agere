@@ -135,7 +135,7 @@ ENCOUNTERS = {
                    'adt': {'event': r'^(observation_start|transfer_to_observation)$', 'patient_class': r'observation'}}},
     'urgent_care_visit': {'label': 'Urgent care visit', 'fields': {'encounters': {'type': r'^urgent ?_?care$'}}},
     'primary_care_visit': {'label': 'Primary care / office visit (incl. wellness and pediatric office)',
-        'fields': {'encounters': {'type': r'^(primary[_ ]care|office|office visit|pcp|wellness|annual physical|pediatric_office|peds|geri primary care|ambulatory)$'}}},
+        'fields': {'encounters': {'type': r'^(primary[_ ]care|office|office visit|pcp|wellness|annual physical|pediatric_office|peds|geri primary care|ambulatory|youth_health_supervision|adolescent med(icine)?)$'}}},
     'specialist_visit': {'label': 'Specialist visit',
         'fields': {'encounters': {'type': r'^(specialty_followup|specialist_office|cardiology.*|nephrology|pulm.*|endo.*|neuro|ortho.*|med onc|hf clinic|.* clinic)$'}}},
     'telehealth_contact': {'label': 'Telephone or virtual encounter', 'fields': {'encounters': {'type': r'^(telephone|virtual)$'}}},

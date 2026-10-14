@@ -3,7 +3,7 @@
  "domain": "healthcare",
  "derived_from": {
   "module": "clinical_core/agere/clinical/semantic_layer.py",
-  "semantic_layer_version": "semantic-layer/13",
+  "semantic_layer_version": "semantic-layer/14",
   "versioned_streams": {
    "patient_billing_accounts": "account_id",
    "medical_claims": "claim_id",
@@ -700,7 +700,7 @@
   },
   "measurement": {
    "table": "measurement",
-   "meaning": "Labs and vitals, one row per (record, concept); concept NULL when unmapped. value/unit as received; value_canonical in unit_canonical when the unit converts (else NULL). Cancelled results have value NULL.",
+   "meaning": "Labs and vitals, one row per (record, concept); concept NULL when unmapped. value/unit as received; value_canonical in unit_canonical when the unit converts (else NULL). Cancelled results have value NULL. concept egfr = BSA-normalised eGFR only (mL/min/1.73m2 or no unit); GFR results reported in another unit (mL/min, measured GFR / clearance) are concept gfr_unnormalized and never count as eGFR.",
    "grain": "one row per received lab or vital result",
    "keys": [
     "record_id"
@@ -926,7 +926,7 @@
   },
   "medication": {
    "table": "medication",
-   "meaning": "Every medication mention, one row per (record, drug_class): source_stream and evidence (dispensed, claim, ordered, listed, administered, reported, pharmacy_history), drug_name as received, status. drug_class from the active ingredient (statin, beta_blocker, hf_evidence_based_beta_blocker, ace_inhibitor, arb, arni, mra, sglt2_inhibitor, glp1_agonist, metformin, insulin, anticoagulant, opioid, ...); NULL when unclassified.",
+   "meaning": "Every medication mention, one row per (record, drug_class): source_stream and evidence (dispensed, claim, ordered, listed, administered, reported, pharmacy_history, payer_claim = payer pharmacy claim), drug_name as received, status. drug_class from the active ingredient (statin, beta_blocker, hf_evidence_based_beta_blocker, ace_inhibitor, arb, arni, mra, sglt2_inhibitor, glp1_agonist, metformin, insulin, anticoagulant, opioid, ...); NULL when unclassified. drug_class values are exact ids (full list and groups in drug_class_vocabulary): compare with = or IN, never LIKE - '%beta%' also matches short_acting_beta_agonist and '%antihistamine%' matches both generations. Use beta_blocker, first_generation_antihistamine (Beers), second_generation_antihistamine, short_acting_beta_agonist.",
    "grain": "one row per received medication mention (order, dispense, claim, list, administration, report)",
    "keys": [
     "record_id"
@@ -990,7 +990,7 @@
      "required": false,
      "role": "mapped",
      "column": true,
-     "description": "What kind of evidence the row is: dispensed, claim, ordered, listed, administered, reported, pharmacy_history.",
+     "description": "What kind of evidence the row is: dispensed, claim, ordered, listed, administered, reported, pharmacy_history, payer_claim.",
      "aliases": [
       "evidence",
       "drug type",
@@ -1004,6 +1004,7 @@
       "dispensed",
       "listed",
       "ordered",
+      "payer_claim",
       "pharmacy_history",
       "reported"
      ]
@@ -1101,7 +1102,7 @@
   },
   "claim": {
    "table": "claim",
-   "meaning": "One row per medical claim_id (adjudications arrive as successive records: denied, paid, reversed, re-paid). first_status by arrival order; final_status follows the adjudication chain (each reversal paired with the payment it reverses; final = last unreversed adjudication by event time), received_final_status = last-arrival status, live_payer_paid_cents = payer paid on unreversed payments; denied_then_paid = a denial later followed by payment; net_payer_paid_cents = paid minus reversed. Legacy rows without claim_id are excluded.",
+   "meaning": "One row per medical claim_id (adjudications arrive as successive records: denied, paid, reversed, re-paid). first_status by arrival order; final_status follows the adjudication chain (each reversal paired with the payment it reverses; final = last unreversed adjudication by event time), received_final_status = last-arrival status, live_payer_paid_cents = payer paid on unreversed payments; denied_then_paid = a denial later followed by payment; net_payer_paid_cents = paid minus reversed. Legacy rows without claim_id are excluded. Provider-side claims only; payer-feed claims are in payer_claim.",
    "grain": "one row per received claim adjudication record (denied, paid, reversed, re-paid)",
    "keys": [
     "claim_id"
@@ -1670,7 +1671,7 @@
   },
   "organization": {
    "table": "organization",
-   "meaning": "Organization reference rows: organization_type, npi, taxonomy_code, tin, city/state/postal_code.",
+   "meaning": "Organization reference rows: organization_type, npi, taxonomy_code, tin, city/state/postal_code; facility_class (hospital, ambulatory_surgery_center, imaging_idtf, urgent_care, dialysis, skilled_nursing, home_health, hospice, ambulance, dme, pharmacy, laboratory, primary_care, outpatient_practice, payer, other) from the directory type; place_of_service = most frequent CMS POS on claims billed under the organization NPI (place_of_service_claims = n).",
    "grain": "one row per organization / care site",
    "keys": [
     "organization_id"
@@ -1804,7 +1805,7 @@
   },
   "stay": {
    "table": "stay",
-   "meaning": "Distinct hospital stays (inpatient/observation encounters collapsed by admit day and overlap) with 30-day readmission flag. discharge_date and los_days are NULL when no discharge time was received (discharge_known = 0); never treat those as 0 days.",
+   "meaning": "Distinct hospital stays (inpatient/observation encounters collapsed by admit day and overlap) with 30-day readmission flag. discharge_date and los_days are NULL when no discharge time was received (discharge_known = 0); never treat those as 0 days. discharge_date is the ADT discharge (A03) date of the stay's encounter when one was received (discharge_date_source = adt), else the date part of the encounter end_time (encounter_end_time_utc); discharge_time_utc keeps the UTC end timestamp. Readmission gaps use discharge_date.",
    "derivation": "Collapsed inpatient/observation stays from visits (aggregate._stays).",
    "columns": {
     "patient_id": "text",
@@ -1815,6 +1816,8 @@
     "readmitted_30d": "integer",
     "days_to_readmission": "integer",
     "discharge_known": "integer",
+    "discharge_date_source": "text",
+    "discharge_time_utc": "text",
     "los_days": "integer"
    },
    "onboarding_target": false
@@ -1888,7 +1891,7 @@
   },
   "social_need": {
    "table": "social_need",
-   "meaning": "Social-needs screening answers normalised across instruments: one row per (screen record, need) with positive 0/1. need = food | transport | cost_of_care. transport positive = transport_difficulty_reported or transport unreliable (family_ride/reliable = negative); cost_of_care = difficulty paying for care (social screen) or medical bills (financial screen). Screened = has a row for that need.",
+   "meaning": "Social-needs screening answers normalised across instruments: one row per (screen record, need) with positive 0/1. need = food | transport | cost_of_care, plus housing | utilities | safety from AHC HRSN screens (instrument AHC_HRSN; positive when any item for the need is answered yes; source_field = items:<item names>). transport positive = transport_difficulty_reported or transport unreliable (family_ride/reliable = negative); cost_of_care = difficulty paying for care (social screen) or medical bills (financial screen). Screened = has a row for that need.",
    "derivation": "Normalised social-needs answers from social/financial screens.",
    "columns": {
     "patient_id": "text",

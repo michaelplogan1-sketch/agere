@@ -311,6 +311,57 @@ class SemanticPopulationTables(unittest.TestCase):
             self.assertTrue(described[t]['meaning'], t)
 
 
+class MetricLayerFindings(unittest.TestCase):
+    """Regressions for the metric-layer review: local discharge dates, unnormalised GFR, exact drug classes, primary-care types."""
+    @classmethod
+    def setUpClass(cls):
+        recs = [('h1', 'p1', 'encounters', {'type': 'inpatient', 'encounter_id': 'H9', 'event_date': '2028-03-01',
+                                            'end_time': '2028-03-05T02:00:00+00:00'}),
+                ('h1a', 'p1', 'adt', {'event': 'discharge', 'encounter_id': 'H9', 'event_date': '2028-03-04'}),
+                # local gap 2028-03-04 -> 2028-04-04 = 31 days (no readmission); the UTC date would give 30
+                ('h2', 'p1', 'encounters', {'type': 'inpatient', 'encounter_id': 'H10', 'event_date': '2028-04-04',
+                                            'end_time': '2028-04-06T15:00:00+00:00'}),
+                ('g1', 'p1', 'labs', {'test': 'Glomerular filtration rate', 'value': 55, 'unit': 'mL/min'}),
+                ('g2', 'p1', 'labs', {'test': 'eGFR', 'value': 60, 'unit': 'mL/min/1.73m2', 'event_date': '2028-02-01'}),
+                ('m1', 'p1', 'medication_lists', {'name': 'diphenhydramine 25 mg capsule', 'event_date': '2028-01-01'}),
+                ('m2', 'p1', 'medication_lists', {'name': 'loratadine 10 mg tablet', 'event_date': '2028-01-01'}),
+                ('m3', 'p1', 'medication_lists', {'name': 'albuterol 90 mcg inhaler', 'event_date': '2028-01-01'}),
+                ('m4', 'p1', 'medication_lists', {'name': 'metoprolol tartrate 25 mg', 'event_date': '2028-01-01'}),
+                ('y1', 'p1', 'encounters', {'type': 'youth_health_supervision', 'encounter_id': 'Y1', 'event_date': '2028-05-01'}),
+                ('y2', 'p1', 'encounters', {'type': 'Adolescent med', 'encounter_id': 'Y2', 'event_date': '2028-06-01'})]
+        cls.path = stack_fixture(recs, {'p1': {'age_reported': 15, 'sex_reported': 'F'}})
+        semantic_layer.build(cls.path)
+
+    def q(self, sql):
+        return sql_query.execute(self.path, {'query': sql, 'returns': 'table'}, None)['rows']
+
+    def test_stay_discharge_uses_adt_local_date(self):
+        stays = self.q('SELECT * FROM stay ORDER BY admit_date')
+        self.assertEqual((stays[0]['discharge_date'], stays[0]['discharge_date_source'], stays[0]['discharge_time_utc']),
+                         ('2028-03-04', 'adt', '2028-03-05T02:00:00+00:00'))
+        self.assertEqual((stays[0]['readmitted_30d'], stays[0]['los_days']), (0, 3))
+        self.assertEqual((stays[1]['discharge_date'], stays[1]['discharge_date_source']), ('2028-04-06', 'encounter_end_time_utc'))
+
+    def test_unnormalised_gfr_is_not_egfr(self):
+        rows = {r['record_id']: r for r in self.q("SELECT record_id, concept, loinc, value_canonical FROM measurement WHERE source_table='labs'")}
+        self.assertEqual(rows['g1']['concept'], 'gfr_unnormalized'); self.assertIsNone(rows['g1']['value_canonical'])
+        self.assertNotEqual(rows['g1']['loinc'], '33914-3')
+        self.assertEqual((rows['g2']['concept'], rows['g2']['value_canonical']), ('egfr', 60))
+        self.assertEqual([r['record_id'] for r in self.q("SELECT record_id FROM measurement_latest WHERE concept='egfr'")], ['g2'])
+
+    def test_exact_drug_classes_and_vocabulary(self):
+        cls = {r['record_id']: r['drug_class'] for r in self.q('SELECT record_id, drug_class FROM medication')}
+        self.assertEqual(cls, {'m1': 'first_generation_antihistamine', 'm2': 'second_generation_antihistamine',
+                               'm3': 'short_acting_beta_agonist', 'm4': 'beta_blocker'})
+        beers = {r['drug_class'] for r in self.q("SELECT drug_class FROM drug_class_vocabulary WHERE class_group='beers_high_risk'")}
+        self.assertIn('first_generation_antihistamine', beers); self.assertNotIn('second_generation_antihistamine', beers)
+        self.assertIn('never LIKE', semantic_layer.describe(self.path)['tables']['medication']['meaning'])
+
+    def test_youth_and_adolescent_visits_are_primary_care(self):
+        rows = {r['encounter_id']: r['type_concept'] for r in self.q("SELECT encounter_id, type_concept FROM visit WHERE encounter_id IN ('Y1','Y2')")}
+        self.assertEqual(rows, {'Y1': 'primary_care_visit', 'Y2': 'primary_care_visit'})
+
+
 class SpanMemberMonthsInVBC(unittest.TestCase):
     @classmethod
     def setUpClass(cls):

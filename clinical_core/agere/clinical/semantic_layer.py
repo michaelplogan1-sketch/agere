@@ -14,6 +14,7 @@ import json, re, sqlite3, time
 from . import aggregate, concepts, population_feeds, source_profile
 
 VERSION = 'semantic-layer/14'
+GFR_UNNORMALIZED = 'gfr_unnormalized'  # 'glomerular filtration rate' results in a unit that is not per 1.73 m2 (mL/min)
 
 # Source contract: streams whose records are successive snapshots of one business entity (key field).
 # Other repeated ids (payments per account, lines per claim, fills per prescription) are separate events, not versions.
@@ -37,7 +38,7 @@ CREATE TABLE encounter(record_id TEXT, patient_id TEXT, source_table TEXT, encou
 CREATE TABLE visit(encounter_id TEXT, patient_id TEXT, type TEXT, type_concept TEXT, status TEXT, event_date TEXT,
   end_date TEXT, available_date TEXT, organization_id TEXT, attending_clinician_id TEXT, disposition TEXT, versions INTEGER);
 CREATE TABLE stay(patient_id TEXT, admit_date TEXT, discharge_date TEXT, type TEXT, organization_id TEXT,
-  readmitted_30d INTEGER, days_to_readmission INTEGER, discharge_known INTEGER);
+  readmitted_30d INTEGER, days_to_readmission INTEGER, discharge_known INTEGER, discharge_date_source TEXT, discharge_time_utc TEXT);
 CREATE TABLE link(record_id TEXT, stream TEXT, field TEXT, target_record_id TEXT);
 CREATE TABLE concept_patient(concept TEXT, kind TEXT, patient_id TEXT, records INTEGER, first_date TEXT, last_date TEXT,
   PRIMARY KEY(concept, patient_id));
@@ -82,12 +83,17 @@ SCHEMA_DOC = {
     'condition': 'One row per (condition record, matching library concept); concept NULL when no library concept matches. '
                  'Sources: conditions, condition_assessments, problem_lists. label = received description.',
     'measurement': 'Labs and vitals, one row per (record, concept); concept NULL when unmapped. value/unit as received; '
-                   'value_canonical in unit_canonical when the unit converts (else NULL). Cancelled results have value NULL.',
+                   'value_canonical in unit_canonical when the unit converts (else NULL). Cancelled results have value NULL. '
+                   'concept egfr = BSA-normalised eGFR only (mL/min/1.73m2 or no unit); GFR results reported in another unit (mL/min, '
+                   'measured GFR / clearance) are concept gfr_unnormalized and never count as eGFR.',
     'encounter': 'Encounter records plus ADT notifications (source_table adt, type = ADT event). type_concept = library encounter concept.',
     'visit': 'One row per encounter (encounter records repeat once per status version; use visit, not encounter, to count visits). '
              'Latest version wins; versions = number of received versions.',
     'stay': 'Distinct hospital stays (inpatient/observation encounters collapsed by admit day and overlap) with 30-day readmission flag. '
-            'discharge_date and los_days are NULL when no discharge time was received (discharge_known = 0); never treat those as 0 days.',
+            'discharge_date and los_days are NULL when no discharge time was received (discharge_known = 0); never treat those as 0 days. '
+            'discharge_date is the ADT discharge (A03) date of the stay\'s encounter when one was received (discharge_date_source = adt), '
+            'else the date part of the encounter end_time (encounter_end_time_utc); discharge_time_utc keeps the UTC end timestamp. '
+            'Readmission gaps use discharge_date.',
     'concept_patient': 'Patients having each library concept (condition, measurement, encounter), with record counts and first/last dates.',
     'link': 'Every record-to-record reference (fields ending _record_id/_record_ids): record_id/stream of the referring record, '
             'field name, target_record_id. Indexed on target_record_id - use it for linkage questions (e.g. orders without dispenses).',
@@ -103,7 +109,12 @@ SCHEMA_DOC = {
     'medication': 'Every medication mention, one row per (record, drug_class): source_stream and evidence (dispensed, claim, ordered, '
                   'listed, administered, reported, pharmacy_history, payer_claim = payer pharmacy claim), drug_name as received, status. drug_class from the active '
                   'ingredient (statin, beta_blocker, hf_evidence_based_beta_blocker, ace_inhibitor, arb, arni, mra, sglt2_inhibitor, '
-                  'glp1_agonist, metformin, insulin, anticoagulant, opioid, ...); NULL when unclassified.',
+                  'glp1_agonist, metformin, insulin, anticoagulant, opioid, ...); NULL when unclassified. drug_class values are exact ids '
+                  '(full list and groups in drug_class_vocabulary): compare with = or IN, never LIKE - \'%beta%\' also matches '
+                  'short_acting_beta_agonist and \'%antihistamine%\' matches both generations. Use beta_blocker, '
+                  'first_generation_antihistamine (Beers), second_generation_antihistamine, short_acting_beta_agonist.',
+    'drug_class_vocabulary': 'Every medication.drug_class id with its groups (class_group: antihypertensive, raas_inhibitor, '
+                             'diabetes_medication, beers_high_risk; NULL row = ungrouped class). Join on drug_class for group questions.',
     'normalization': 'measurement.loinc/component/lab_category, condition.is_diagnosis/icd10_category/chapter/chronic/'
                      'normalized_label, medication.ingredients/therapeutic_category, visit.setting come from the normalization '
                      'dictionary (each source string mapped once to standard terminology).',
@@ -563,6 +574,38 @@ def _derived(out):
     out.execute("UPDATE stay SET los_days = CAST(julianday(discharge_date) - julianday(admit_date) AS INTEGER) WHERE discharge_date IS NOT NULL")
     out.executescript("CREATE INDEX appointment_patient ON appointment(patient_id); CREATE INDEX claim_patient ON claim(patient_id);")
     _normalize(out)  # last: fills columns added above (visit.in_person, measurement concept)
+    # The dictionary maps the 'glomerular filtration rate' name to an eGFR LOINC; that code is wrong for unnormalised GFR rows.
+    out.execute("UPDATE measurement SET loinc = NULL, loinc_source = NULL WHERE concept = ? AND loinc_source = 'dictionary'", (GFR_UNNORMALIZED,))
+
+
+def _drug_class_vocabulary(out):
+    from .drug_classes import CLASSES, GROUPS
+    out.execute('CREATE TABLE drug_class_vocabulary(drug_class TEXT, class_group TEXT)')
+    rows = [(c, g) for g, members in GROUPS.items() for c in members]
+    rows += [(c, None) for c in CLASSES if not any(c in m for m in GROUPS.values())]
+    out.executemany('INSERT INTO drug_class_vocabulary VALUES (?,?)', sorted(rows, key=lambda r: (r[0], r[1] or '')))
+
+
+def _local_discharges(rows):
+    """Encounter records with end_time replaced by the ADT discharge date of the same encounter (the UTC end timestamp can
+    fall on the next calendar day), for stay construction. Returns (rows, {discharge date: (source, UTC end time)})."""
+    adt = {}
+    for r in rows:
+        if not r.get('encounter_id') or not r.get('event_date'): continue
+        if (r.get('source_table') == 'adt' and r.get('event') == 'discharge') or \
+           (r.get('source_table') == 'adt_messages' and r.get('trigger_event') == 'A03'):
+            adt[r['encounter_id']] = r['event_date'][:10]
+    out, utc = [], {}
+    for r in rows:
+        if r.get('source_table') == 'encounters' and r.get('end_time'):
+            local = adt.get(r.get('encounter_id'))
+            day = local or str(r['end_time'])[:10]
+            prior = utc.get(day)
+            if not prior or (prior[0] != 'adt' and local) or (prior[0] == ('adt' if local else 'encounter_end_time_utc') and str(r['end_time']) > prior[1]):
+                utc[day] = ('adt' if local else 'encounter_end_time_utc', str(r['end_time']))
+            if local: r = {**r, 'end_time': local + 'T12:00:00'}
+        out.append(r)
+    return out, utc
 
 
 def build(path):
@@ -642,9 +685,13 @@ def build(path):
                                 series.append((col, r.get(col), concepts.MEASUREMENTS[next(iter(cs))]['unit'], cs))
                     for name, value, unit, cs in series:
                         value = value if type(value) in (int, float) else None
+                        if 'egfr' in cs and unit not in (None, '') and unit not in concepts.MEASUREMENTS['egfr']['units']:
+                            cs = (cs - {'egfr'}) | {GFR_UNNORMALIZED}  # mL/min GFR / clearance: not a BSA-normalised eGFR
                         for c in sorted(cs) or [None]:
                             canon, cunit = None, None
-                            if c:
+                            if c == GFR_UNNORMALIZED:
+                                note(c, 'measurement', pid, d)
+                            elif c:
                                 factor = concepts.MEASUREMENTS[c]['units'].get(unit)
                                 cunit = concepts.MEASUREMENTS[c]['unit']
                                 canon = value * factor if value is not None and factor is not None else None
@@ -663,10 +710,14 @@ def build(path):
                                      (r.get('end_time') or '')[:10] or None, (r.get('available_date') or '')[:10] or None,
                                      r.get('organization_id'), r.get('attending_clinician_id'), r.get('disposition')))
                         if c: note(c, 'encounter', pid, d)
-            for s in aggregate._stays(rows, {'start': '', 'end': ''}, '9999-12-31'):
-                out.execute('INSERT INTO stay VALUES (?,?,?,?,?,?,?,?)', (pid, s['admit'], s['discharge'] if s['discharge_known'] else None,
+            stay_rows, utc_end = _local_discharges(rows)
+            for s in aggregate._stays(stay_rows, {'start': '', 'end': ''}, '9999-12-31'):
+                known = s['discharge_known']; src = utc_end.get(s['discharge']) if known else None
+                out.execute('INSERT INTO stay VALUES (?,?,?,?,?,?,?,?,?,?)', (pid, s['admit'], s['discharge'] if known else None,
                                                                           s['type'], s['organization'], int(s['readmitted']),
-                                                                          s['days_to_readmission'], int(s['discharge_known'])))
+                                                                          s['days_to_readmission'], int(known),
+                                                                          (src[0] if src else 'encounter_end_time_utc') if known else None,
+                                                                          src[1] if src else None))
             # Patient attributes (same rules as aggregate).
             person = people.get(pid, {})
             pcp = [r for r in rows if r.get('source_table') == 'care_team_relationships' and r.get('role') in aggregate.PCP_ROLES
@@ -699,6 +750,7 @@ def build(path):
         _standards(out, people)  # source standard codes first: the dictionary in _normalize only fills their gaps
         _derived(out)  # after indexes: derived entities read the record table by stream and patient
         settlement = _settle_claims(out)
+        _drug_class_vocabulary(out)
         _claim_codes(out)
         _entities(out, path)
         meta = json.loads((path / 'run.json').read_text())
