@@ -691,7 +691,96 @@ function vizContract(a){const cs=(a.overall||{}).contract_strategy||{},rows=a.ta
  if((cs.assumptions||[]).length)h+='<p class="hint"><b>Assumptions.</b> '+esc(cs.assumptions.join(' '))+'</p>';
  const src=cs.sources||[];if(src.length)h+='<details><summary>Program sources ('+src.length+')</summary><ol class="hint">'+src.map(c=>'<li>'+kbLink(c)+(c.section?' · '+esc(c.section):'')+'</li>').join('')+'</ol></details>';
  return h}
+/* target trial emulation: protocol table, effect intervals (ITT, per-protocol, negative control), weighted risk curves,
+   propensity overlap (mirrored histogram), covariate balance (Love plot), eligibility attrition */
+function vizTargetTrial(a){const t=(a.overall||{}).target_trial||{},an=t.analyses||{},itt=an.intention_to_treat||{},pp=an.per_protocol||{},nc=an.negative_control||{};
+ const L=t.arm_labels||['treatment','comparator'],hr=itt.scale==='hazard_ratio',kp=(l,v)=>'<div class="kpi"><div class="l">'+l+'</div><div class="v">'+v+'</div></div>';
+ const inf=t.inference||'',cls=inf==='supported_under_assumptions'?'answered':inf==='limited'?'partial':'unsupported',n=t.sample||{},arms=t.arms||[];
+ const est=v=>!isNum(v)?'—':hr?fmt(v,3):(v>0?'+':'')+fmt(v,3),ci=x=>x&&isNum(x[0])?est(x[0])+' to '+est(x[1]):'—';
+ let h='<section class="sec" data-focus="trial"><h3>Target trial emulation — '+esc(L[0])+' vs '+esc(L[1])+'</h3><p class="hint">'+esc(t.outcome_label||'')+'; new users, active comparator, '+esc((t.parameters||{}).adjustment||'overlap')+' propensity weighting.</p><div class="kpis">'+
+  kp('ITT '+(hr?'hazard ratio':'difference in change'),esc(est(itt.estimate)))+kp('95% interval',esc(ci(itt.ci95)))+kp('Per-protocol',esc(est(pp.estimate)))+
+  kp('E-value (CI)',esc(isNum(itt.e_value)?fmt(itt.e_value,2)+(isNum(itt.e_value_ci)?' ('+fmt(itt.e_value_ci,2)+')':''):'—'))+
+  kp('New users',esc(fmt(n[arms[0]])+' / '+fmt(n[arms[1]])))+kp('Inference','<span class="badge '+cls+'" style="font-size:14px">'+esc(label(inf||'unknown'))+'</span>')+'</div>';
+ const rows=[];const tr=v=>!isNum(v)?null:hr?Math.log(Math.max(v,1e-6)):v;
+ [['Intention-to-treat',itt,true],['Per-protocol',pp,false],['Negative control (should be null)',nc,false]].forEach(([nm,x,m])=>{if(x&&x.status==='estimated')rows.push({label:nm,est:tr(x.estimate),lo:tr((x.ci95||[])[0]),hi:tr((x.ci95||[])[1]),main:m,note:est(x.estimate)})});
+ if(rows.length)h+=intervals(rows,{title:'Effect estimates with 95% bootstrap intervals',tick:v=>hr?fmt(Math.exp(v),2):fmt(v,2)})+'<p class="hint">Dots are estimates, bars 95% intervals; the dashed line is no difference'+(hr?' (hazard ratio 1, log scale)':'')+'.</p>';
+ const cv=itt.curves;if(cv&&cv.treated){const S=[{name:L[0],pts:cv.treated.map(p=>[p[0],1-p[1]]),step:true},{name:L[1],pts:cv.comparator.map(p=>[p[0],1-p[1]]),step:true,dash:true}];
+  h+='<h3 style="margin-top:14px">Weighted cumulative incidence</h3>'+legend(S,'tt')+lines(S,{title:'Weighted Kaplan-Meier cumulative incidence by arm',y0:0,ytick:v=>pct(v,0),xlabel:'days after time zero',ylabel:'cumulative incidence'})}
+ const ps=(t.propensity||{}).histogram;if(ps&&ps.edges)h+='<h3 style="margin-top:14px">Propensity-score overlap</h3>'+psMirror(ps,L)+'<p class="hint">'+esc(fmt(100*((t.propensity||{})['share_outside_0.05_0.95']||0),1))+'% of patients outside 0.05-0.95; effective sample size '+
+  esc(Object.entries((t.propensity||{}).effective_sample_size||{}).map(([k,v])=>label(k)+' '+fmt(v,0)).join(', '))+'.</p>';
+ const bal=t.balance||[];if(bal.length)h+='<h3 style="margin-top:14px">Covariate balance</h3>'+lovePlot(bal)+'<p class="hint">Hollow = before weighting, filled = after; the band is |SMD| &lt; 0.1.</p>';
+ h+='</section><section class="sec"><h3>Target trial protocol and its emulation</h3>'+tableHTML(t.protocol||[],{name:'target-trial-protocol'});
+ const f=t.eligibility_funnel||{};const fr=Object.entries(f).filter(([k,v])=>k!=='eligible'&&isNum(v)).map(([k,v])=>({label:label(k),value:v}));
+ if(fr.length)h+='<h4>Eligibility</h4>'+hbars(fr.concat([{label:'eligible',value:f.eligible,color:'var(--s2)'}]),{title:'Eligibility counts'});
+ h+='<details><summary>Analyses ('+Object.keys(an).length+')</summary>'+tableHTML(Object.entries(an).map(([k,v])=>Object.assign({analysis:k},Object.fromEntries(Object.entries(v).filter(([kk])=>kk!=='curves')))),{name:'target-trial-analyses'})+'</details>';
+ if(a.assumptions&&a.assumptions.length)h+='<details><summary>Assumptions ('+a.assumptions.length+')</summary><ul>'+a.assumptions.map(x=>'<li>'+esc(x)+'</li>').join('')+'</ul></details>';
+ return h+'</section>'}
+function psMirror(ps,L){const W=CW(),H=200,P=34,mid=H/2,e=ps.edges,n=e.length-1,mx=Math.max(1,...ps.treated,...ps.comparator),bw=(W-2*P)/n;let s=svgOpen(W,H,'Propensity score distribution by arm');
+ for(let i=0;i<n;i++){const x=P+i*bw,u=(ps.treated[i]||0)/mx*(mid-18),d=(ps.comparator[i]||0)/mx*(mid-18);
+  s+='<rect x="'+(x+1)+'" y="'+(mid-u)+'" width="'+Math.max(1,bw-2)+'" height="'+u+'" style="fill:var(--s1)"><title>'+esc(L[0]+': '+ps.treated[i])+'</title></rect>';
+  s+='<rect x="'+(x+1)+'" y="'+mid+'" width="'+Math.max(1,bw-2)+'" height="'+d+'" style="fill:var(--s3)"><title>'+esc(L[1]+': '+ps.comparator[i])+'</title></rect>'}
+ s+='<line class="axis" x1="'+P+'" x2="'+(W-P)+'" y1="'+mid+'" y2="'+mid+'"/>';[0,0.25,0.5,0.75,1].forEach(v=>{s+='<text x="'+(P+v*(W-2*P))+'" y="'+(H-4)+'" text-anchor="middle">'+v+'</text>'});
+ return s+'</svg><div class="legend"><span><span class="sw" style="background:var(--s1)"></span>'+esc(L[0])+' (above the axis)</span><span><span class="sw" style="background:var(--s3)"></span>'+esc(L[1])+' (below)</span><span>x = propensity score</span></div>'}
+function lovePlot(bal){const W=CW(),lh=20,Lp=Math.min(Math.round(W*.42),12+6.6*Math.max(...bal.map(b=>String(b.covariate).length))),R=20,T=8,H=T+bal.length*lh+26;
+ const vs=bal.flatMap(b=>[b.smd_before,b.smd_after]).filter(isNum).map(Math.abs).concat([0.25]);const hi=Math.max(...vs)*1.08,X=v=>Lp+v/hi*(W-Lp-R);
+ let s=svgOpen(W,H,'Absolute standardised mean differences before and after weighting');s+='<rect x="'+X(0)+'" y="'+T+'" width="'+(X(0.1)-X(0))+'" height="'+(H-T-24)+'" style="fill:var(--band)"/>';
+ ticks(0,hi,4).forEach(v=>{s+='<text x="'+X(v)+'" y="'+(H-8)+'" text-anchor="middle">'+fmt(v,2)+'</text>'});
+ bal.forEach((b,i)=>{const y=T+i*lh+lh/2;s+='<text x="'+(Lp-6)+'" y="'+(y+4)+'" text-anchor="end" style="fill:var(--fg)">'+esc(label(b.covariate))+'</text><line class="gridl" x1="'+Lp+'" x2="'+(W-R)+'" y1="'+y+'" y2="'+y+'"/>';
+  if(isNum(b.smd_before))s+='<circle cx="'+X(Math.abs(b.smd_before))+'" cy="'+y+'" r="5" style="fill:none;stroke:var(--s4);stroke-width:2"><title>before '+fmt(b.smd_before,3)+'</title></circle>';
+  if(isNum(b.smd_after))s+='<circle cx="'+X(Math.abs(b.smd_after))+'" cy="'+y+'" r="4.5" style="fill:var(--s1)"><title>after '+fmt(b.smd_after,3)+'</title></circle>'});
+ return s+'</svg>'}
+/* lines of therapy: KPI tiles, Sankey of regimens across lines, per-line table, persistence curves, switching matrix */
+function vizLines(a){const o=(a.overall||{}).line_of_therapy||{},c=o.counts||{},ls=o.lines||[],per=o.persistence||[],sq=o.sequences||[];const kp=(l,v)=>'<div class="kpi"><div class="l">'+l+'</div><div class="v">'+esc(v)+'</div></div>';
+ let h='<section class="sec" data-focus="lines"><h3>Lines of therapy — '+esc(o.area_label||(o.parameters||{}).components||'')+'</h3><div class="kpis">'+kp('New users lined up',fmt(c.analysed_new_users))+
+  kp('Reached line 2',ls[1]?fmt(ls[1].patients)+' ('+pct(ls[1].share_of_new_users,0)+')':'0')+kp('Top first line',(ls[0]||{}).top_regimen||'—')+
+  kp('1-year persistence',per[0]&&isNum(per[0].persistent_day_365)?pct(per[0].persistent_day_365,0)+' '+per[0].component:'—')+kp('Prevalent excluded',fmt(c.excluded_possible_prevalent_users||0))+'</div>';
+ if((o.sankey||[]).length)h+='<h3 style="margin-top:14px">Treatment sequences</h3>'+sankey(o.sankey);
+ if(ls.length)h+=tableHTML(ls,{name:'lines-of-therapy',caption:'Per line: patients, how they arrived (switch / add-on), Kaplan-Meier time on treatment and time to next treatment'});
+ const P=per.filter(r=>(r.curve||[]).length).slice(0,5);if(P.length){const S=P.map((r,i)=>({name:label(r.component),color:SER[i%SER.length],step:true,pts:[[0,1]].concat(r.curve.map(p=>[p.day,p.survival]))}));
+  h+='<h3 style="margin-top:14px">Persistence on first-line components</h3>'+legend(S,'lot')+lines(S,{title:'Share still on the first-line component (Kaplan-Meier)',y0:0,y1:1,ytick:v=>pct(v,0),xlabel:'days since first fill',ylabel:'still on therapy'})}
+ if((o.switch_matrix||[]).length)h+='<h4>Switches between components</h4>'+tableHTML(o.switch_matrix,{name:'switch-matrix'});
+ if(sq.length)h+='<details><summary>Sequences ('+sq.length+')</summary>'+tableHTML(sq,{name:'sequences'})+'</details>';
+ const r=o.rules||{};h+='<p class="hint"><b>Rules.</b> gap '+esc(r.gap_days)+' days ends an episode; components within '+esc(r.regimen_window_days)+' days form a regimen; a component ending within '+esc(r.switch_window_days)+
+  ' days of a new start is a switch, otherwise an add-on'+(r.add_on_new_line?' (new line)':' (same line)')+'; washout '+esc(r.washout_days)+' days; '+esc(r.fill_definition||'')+'.</p>';
+ return h+'</section>'}
+function sankey(links){const W=CW(),H=Math.max(220,24*Math.min(14,links.length)+40),P=8,nw=12;const col=n=>n==='discontinued'?3:(+((/^L(\d)/.exec(n)||[])[1])||1)-1;
+ const nodes={};links.forEach(l=>{[l.source,l.target].forEach(n=>{nodes[n]=nodes[n]||{name:n,col:col(n),in:0,out:0}});nodes[l.source].out+=l.patients;nodes[l.target].in+=l.patients});
+ const cols=[0,1,2,3].map(k=>Object.values(nodes).filter(n=>n.col===k).sort((a,b)=>Math.max(b.in,b.out)-Math.max(a.in,a.out))),used=cols.filter(c=>c.length);
+ const tot=Math.max(...cols.map(c=>c.reduce((s,n)=>s+Math.max(n.in,n.out),0))),gap=8,maxN=Math.max(...cols.map(c=>c.length)),k=(H-2*P-gap*(maxN-1))/Math.max(1,tot);
+ const xs=k2=>P+k2*((W-2*P-nw-150)/Math.max(1,used.length-1));let s=svgOpen(W,H,'Treatment sequences across lines of therapy');
+ cols.forEach((c,ci)=>{let y=P;const ui=used.indexOf(c);c.forEach(n=>{n.x=xs(Math.max(0,ui));n.y=y;n.h=Math.max(2,Math.max(n.in,n.out)*k);n.oy=n.y;n.iy=n.y;y+=n.h+gap})});
+ links.slice().sort((a,b)=>b.patients-a.patients).forEach((l,i)=>{const a=nodes[l.source],b=nodes[l.target],w=Math.max(1,l.patients*k),y0=a.oy+w/2,y1=b.iy+w/2;a.oy+=w;b.iy+=w;
+  const x0=a.x+nw,x1=b.x,mx=(x0+x1)/2;s+='<path d="M'+x0+' '+y0+'C'+mx+' '+y0+' '+mx+' '+y1+' '+x1+' '+y1+'" fill="none" style="stroke:'+(l.target==='discontinued'?'var(--muted)':SER[i%SER.length])+';stroke-opacity:.45;stroke-width:'+w+'"><title>'+esc(l.source+' → '+l.target+': '+l.patients)+'</title></path>'});
+ Object.values(nodes).forEach(n=>{s+='<rect x="'+n.x+'" y="'+n.y+'" width="'+nw+'" height="'+n.h+'" style="fill:var(--fg)"/><text x="'+(n.x+nw+4)+'" y="'+(n.y+Math.min(n.h,14)/2+4)+'" style="fill:var(--fg);paint-order:stroke;stroke:var(--card);stroke-width:4px;stroke-linejoin:round">'+esc((n.name.length>34?n.name.slice(0,33)+'…':n.name)+' ('+Math.max(n.in,n.out)+')')+'</text>'});
+ return s+'</svg>'}
+/* trial feasibility: attrition funnel, criterion impact, sites, diversity vs source population, expected enrolment */
+function vizFunnel(a){const o=(a.overall||{}).trial_feasibility||{},f=o.funnel||[],fc=o.forecast||{},kp=(l,v)=>'<div class="kpi"><div class="l">'+l+'</div><div class="v">'+esc(v)+'</div></div>';
+ let h='<section class="sec" data-focus="funnel"><h3>Trial feasibility'+((o.parameters||{}).trial?' — '+esc(o.parameters.trial):'')+'</h3><div class="kpis">'+kp('Eligible',fmt(o.eligible)+' of '+fmt(o.population))+
+  kp('Removes most alone',((o.criterion_impact||[])[0]||{}).criterion||'—')+kp('Newly eligible / month',isNum(fc.expected_per_month)?fmt(fc.expected_per_month,1)+' ('+fmt((fc.ci95_per_month||[])[0],1)+'–'+fmt((fc.ci95_per_month||[])[1],1)+')':'—')+
+  (isNum(fc.expected_enrolled_per_month)?kp('Enrolled / month',fmt(fc.expected_enrolled_per_month,1)):'')+'</div>';
+ if(f.length)h+=funnelChart(f);
+ const im=(o.criterion_impact||[]).filter(r=>r.fails_overall);if(im.length)h+='<h4>Patients each criterion removes on its own</h4>'+hbars(im.map(r=>({label:r.criterion,value:r.removes_alone,value2:r.fails_overall})),{title:'Removed alone vs failing overall',value2:1,name1:'removes alone (would join if dropped)',name2:'fails overall'});
+ h+='</section>';
+ const st=(o.sites||[]).filter(r=>r.eligible);if(st.length)h+='<section class="sec"><h3>Sites (PCP practices)</h3>'+hbars(st.slice(0,12).map(r=>({label:r.site,value:r.eligible,note:fmt(r.eligible_per_1000,1)+' per 1,000'})),{title:'Eligible patients by practice'})+
+  ((o.pcps||[]).length?'<details><summary>Investigators (PCPs)</summary>'+tableHTML(o.pcps,{name:'eligible-by-pcp'})+'</details>':'')+'</section>';
+ const dv=o.diversity||[];if(dv.length){h+='<section class="sec"><h3>Diversity of the eligible population</h3>';
+  ['race','ethnicity','sex','age_band','language'].forEach(d=>{const rows=dv.filter(r=>r.dimension===d&&(r.source_patients||r.goal_share!=null));if(!rows.length)return;
+   h+='<h4>'+esc(label(d))+'</h4>'+hbars(rows.slice(0,8).map(r=>({label:r.group,value:r.eligible_share,value2:r.source_share})),{title:'Eligible vs source population share by '+label(d),value2:1,fmt:v=>pct(v,0),tick:v=>pct(v,0),name1:'eligible',name2:'source population'});
+   const g=rows.filter(r=>r.goal_share!=null);if(g.length)h+='<p class="hint">Goals: '+g.map(r=>esc(r.group)+' '+pct(r.goal_share,0)+' — '+(r.goal_met?'met':'not met')+' ('+pct(r.eligible_share,0)+')').join('; ')+'</p>'});
+  h+='</section>'}
+ const hs=fc.history||[];if(hs.length)h+='<section class="sec"><h3>Newly eligible patients per month</h3>'+lines([{name:'newly eligible',pts:hs.map((p,i)=>[i,p.newly_eligible])},{name:'expected rate',pts:hs.map((p,i)=>[i,fc.expected_per_month]),dash:true}],
+  {title:'Patients who became eligible each month',cats:hs.map(p=>p.month),y0:0,ylabel:'patients'})+'<p class="hint">'+esc(fc.basis||'')+'; next 12 months ≈ '+fmt(fc.expected_next_12_months,1)+'.</p></section>';
+ return h}
+function funnelChart(f){const W=CW(),lh=34,T=6,H=T+f.length*lh+6,mx=Math.max(1,...f.map(r=>r.entering)),cx=W*0.36,half=W*0.3;let s=svgOpen(W,H,'Eligibility attrition funnel');
+ f.forEach((r,i)=>{const y=T+i*lh,w=Math.max(2,r.remaining/mx*2*half),rm=r.removed||0;s+='<rect x="'+(cx-w/2)+'" y="'+y+'" width="'+w+'" height="'+(lh-8)+'" rx="3" style="fill:'+(r.kind==='not applied'?'var(--band)':'var(--s1)')+'"><title>'+esc(r.criterion+': '+r.remaining+' remain')+'</title></rect>';
+  s+='<text x="'+cx+'" y="'+(y+lh/2)+'" text-anchor="middle" style="fill:var(--card);font-weight:700">'+fmt(r.remaining)+'</text>';
+  s+='<text x="'+(cx+half+10)+'" y="'+(y+lh/2-3)+'" style="fill:var(--fg)">'+esc((r.criterion.length>44?r.criterion.slice(0,43)+'…':r.criterion))+'</text>';
+  if(i)s+='<text x="'+(cx+half+10)+'" y="'+(y+lh/2+11)+'">'+(rm?'−'+fmt(rm)+(r.removed_missing_data?' ('+fmt(r.removed_missing_data)+' no data)':''):r.kind==='not applied'?'not applied':'none removed')+'</text>'});
+ return s+'</svg>'}
 function visual0(a){if(!a||a.answer_type==='unsupported')return '';const o=a.overall||{};
+  if(o.target_trial)return vizTargetTrial(a);
+  if(o.line_of_therapy)return vizLines(a);
+  if(o.trial_feasibility)return vizFunnel(a);
   if(o.contract_strategy)return vizContract(a);
   if(o.knowledge)return vizKnowledge(a);
   if(o.early_signal)return vizEarlySignal(a);

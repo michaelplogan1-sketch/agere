@@ -25,6 +25,9 @@ SYSTEM = (
     'how companies compare, what the evidence says) that do not ask about this population\'s data. '
     'Choose contract_strategy for decisions about OUR risk contracts (should we switch tracks, which option is best for us, compare offers, '
     'what to negotiate, what the contract is worth, how much downside we can take); one settlement amount under stated terms is vbc. '
+    'Choose target_trial for drug A versus drug B comparative effectiveness (new users, active comparator); a single drug or program '
+    'start with no comparator is program_effect. Choose line_of_therapy for treatment patterns, lines, switching, sequences and persistence. '
+    'Choose trial_feasibility for counts of patients meeting trial inclusion/exclusion criteria, eligibility funnels, sites, diversity and enrolment. '
     'Snapshot date: {as_of}.'
 )
 

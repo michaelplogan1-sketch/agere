@@ -32,6 +32,11 @@ FILL = {
     'bench': ['950', '1,020', '1,100', '880', '1,240', '760', '1,005', '1,150'],
     'spend': ['4', '6.50', '9', '12', '3.25'],
     'level': ['A', 'B', 'C', 'D', 'E'],
+    'arm': ['SGLT2 inhibitors', 'GLP-1 agonists', 'DPP-4 inhibitors', 'metformin', 'sulfonylureas', 'ACE inhibitors', 'ARBs', 'thiazides',
+            'calcium channel blockers', 'empagliflozin', 'semaglutide', 'sitagliptin', 'insulin', 'MRAs'],
+    'tlab': ['eGFR', 'A1c', 'LDL', 'systolic blood pressure', 'kidney function', 'HbA1c'],
+    'area': ['type 2 diabetes', 'heart failure', 'hypertension', 'depression', 'CKD', 'rheumatoid arthritis', 'diabetes', 'HFrEF GDMT'],
+    'tcond': ['heart failure', 'type 2 diabetes', 'CKD', 'COPD', 'hypertension', 'atrial fibrillation', 'obesity', 'asthma'],
 }
 
 T = {
@@ -195,6 +200,33 @@ T = {
         'How much loss can we absorb at 90% confidence under BASIC level {level} with a ${bench} benchmark?',
         'compare offer A: 50% sharing upside only; offer B: 70% sharing two-sided, with a ${bench} PMPM benchmark', 'which ACO REACH risk corridor is right for us at a ${bench} benchmark',
         'Should we step up from level {level} to two-sided risk given a ${bench} benchmark?', 'sensitivity of our payout to the benchmark under REACH Professional with a ${bench} benchmark',
+    ],
+    # comparative effectiveness of two drug strategies (target trial emulation); one drug start with no comparator stays program_effect
+    'target_trial': [
+        'Do {arm} slow {tlab} decline compared with {arm}?', '{arm} versus {arm}: which works better on {tlab}?',
+        'Comparative effectiveness of {arm} vs {arm} for {events}', 'Emulate a target trial of {arm} compared with {arm} on {tlab}',
+        'new users of {arm} or {arm}: who has fewer {events}?', 'Is starting {arm} rather than {arm} associated with lower {tlab}?',
+        'head-to-head {arm} vs {arm} on the risk of {event}', 'active comparator new-user analysis of {arm} and {arm} on {tlab}',
+        'high-intensity versus moderate-intensity statins and LDL', 'does statin intensity change LDL in new users',
+        'are patients started on {arm} less likely to have {events} than those started on {arm}?',
+        'effect of {arm} compared to {arm} on {tlab} among {conds}',
+    ],
+    # treatment patterns from fills
+    'line_of_therapy': [
+        'Lines of therapy for {area}', 'What are the first- and second-line regimens in {area}?', 'Treatment patterns for {area} patients',
+        'How often do patients switch from {arm} to another class in {area}?', 'Most common treatment sequences in {area}',
+        'Persistence on first-line {area} therapy', 'Switching matrix between drug classes for {area}', 'Sankey of {area} treatment sequences',
+        'Time on treatment for each line of {area} therapy', 'Do {area} regimens get add-on drugs or switches?',
+        'discontinuation of first-line {area} medications', 'what regimen do {area} patients move to after first line',
+    ],
+    # trial eligibility funnels over stated criteria
+    'trial_feasibility': [
+        'How many patients are eligible for a {tcond} trial with {lab} above {n}?', 'Eligibility funnel for our {tcond} study requiring {lab} below {n}',
+        'Trial feasibility: adults with {tcond} and {lab} between {n} and 200', 'Which criteria remove the most patients for a {tcond} trial with {lab} over {n}?',
+        'Which sites see the most eligible patients for a {tcond} trial?', 'Expected enrollment per month for a {tcond} study of adults on {arm}',
+        'Diversity by race and ethnicity of patients eligible for our {tcond} trial with {lab} above {n}',
+        'how many {conds} qualify for the study if we exclude patients on {arm}', 'Recruitment funnel for a {tcond} trial: age 40 to 75, {lab} under {n}',
+        'screening counts for a {tcond} trial requiring {lab} of at least {n} in the last 6 months',
     ],
     'not_answerable': [
         'How many patients died last year?', 'Mortality rate for {conds}', 'Breakdown of patients by race and ethnicity',

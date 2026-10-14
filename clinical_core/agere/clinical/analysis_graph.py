@@ -36,6 +36,7 @@ OPERATIONS |= {'knowledge'}  # cited VBC knowledge base: explanation / strategy 
 OPERATIONS |= {'risk_adjustment'}  # CMS-HCC RAF, coding gaps, recapture, suspects (risk_adjustment.py)
 OPERATIONS |= {'network'}  # provider patient-sharing network: hubs, communities, cohesion, leakage, steering, spread (network.py)
 OPERATIONS |= {'contract_strategy'}  # risk contracts as options, track selection, Nash negotiation (contract_strategy.py)
+OPERATIONS |= {'target_trial', 'line_of_therapy', 'trial_feasibility'}  # life-sciences / RWE engines (target_trial.py, line_of_therapy.py, trial_feasibility.py)
 NODE_FIELDS = {'id', 'operation', 'inputs', 'parameters', 'purpose'}
 LIMITS = [
     'Membership means observed predicate matches, not confirmed disease or absent care.',
@@ -140,6 +141,7 @@ NO_BENCHMARK_OPERATIONS += ('knowledge',)
 NO_BENCHMARK_OPERATIONS += ('risk_adjustment',)
 NO_BENCHMARK_OPERATIONS += ('network',)
 NO_BENCHMARK_OPERATIONS += ('contract_strategy',)
+NO_BENCHMARK_OPERATIONS += ('target_trial', 'line_of_therapy', 'trial_feasibility')
 
 
 def benchmark_references(answer, question=None, operation=None):
@@ -462,6 +464,44 @@ def build_answer(plan, results, memberships, question):
                                                     'pcp_sharing': {k: v for k, v in (report.get('pcp_sharing') or {}).items() if k != 'pairs'},
                                                     'usage': (report.get('usage') or [])[:25], 'visual': network_visual(report)}})
         return answer
+    if last['operation'] == 'target_trial':
+        from .target_trial import summarize as tt_summary
+        report = results[-1]['result']
+        partial = (plan.get('coverage') != 'supported_observation' or plan.get('unmet_requirements')
+                   or report['inference'] != 'supported_under_assumptions')
+        value, table = tt_summary(report)
+        answer.update(status='partial' if partial else 'answered', answer_type='table', table=table, value=value, method=report['method'],
+                      warnings=report['warnings'], assumptions=report['assumptions'], count=sum(report['sample'].values()),
+                      overall={'target_trial': {k: report.get(k) for k in ('parameters', 'arms', 'arm_labels', 'outcome_label', 'protocol',
+                                                                          'eligibility_funnel', 'sample', 'propensity', 'balance', 'analyses',
+                                                                          'negative_control_definition', 'inference', 'cautions', 'fill_feed_start')}})
+        answer['missing'] += report['blocking_warnings']
+        return answer
+    if last['operation'] == 'line_of_therapy':
+        from .line_of_therapy import summarize as lot_summary
+        report = results[-1]['result']
+        partial = plan.get('coverage') != 'supported_observation' or plan.get('unmet_requirements')
+        value, table = lot_summary(report)
+        ok = report.get('status') == 'answered'
+        answer.update(status=('partial' if partial else 'answered') if ok else 'unsupported', answer_type='table' if ok else 'unsupported',
+                      value=value, table=table, method=report['method'], warnings=report['warnings'], count=report['counts'].get('analysed_new_users'),
+                      overall={'line_of_therapy': {k: report.get(k) for k in ('parameters', 'area', 'area_label', 'fill_feed_start', 'counts', 'rules',
+                                                                             'lines', 'regimens', 'transitions', 'switch_matrix', 'sequences',
+                                                                             'sankey', 'persistence', 'examples')}})
+        if not ok: answer['missing'].append(value)
+        return answer
+    if last['operation'] == 'trial_feasibility':
+        from .trial_feasibility import summarize as tf_summary
+        report = results[-1]['result']
+        unapplied = [c['label'] for c in report['parameters']['criteria'] if c['type'] == 'unevaluated']
+        partial = plan.get('coverage') != 'supported_observation' or plan.get('unmet_requirements') or unapplied
+        value, table = tf_summary(report)
+        answer.update(status='partial' if partial else 'answered', answer_type='table', value=value, table=table, method=report['method'],
+                      warnings=report['warnings'], count=report['eligible'], patient_ids=report['eligible_patient_ids'],
+                      overall={'trial_feasibility': {k: report.get(k) for k in ('parameters', 'population', 'eligible', 'funnel', 'criterion_impact',
+                                                                               'sites', 'pcps', 'diversity', 'forecast')}})
+        if unapplied: answer['missing'] += [f'Criterion not computable from received data: {x}' for x in unapplied]
+        return answer
     if last['operation'] == 'contract_strategy':
         from .contract_strategy import summarize as cs_summary
         report = results[-1]['result']
@@ -681,6 +721,14 @@ def validate(plan, as_of):
             p = risk_adjustment.validate(p)
             if p['year'] is not None and p['year'] > int(str(as_of)[:4]):
                 raise ValueError('Risk adjustment collection year exceeds snapshot cutoff')
+        elif op in ('target_trial', 'line_of_therapy'):
+            import importlib
+            p = importlib.import_module(f'.{op}', __package__).validate(p)
+            if any(v and v > str(as_of)[:10] for v in p['period'].values()):
+                raise ValueError(f'{op} period exceeds snapshot cutoff')
+        elif op == 'trial_feasibility':
+            from . import trial_feasibility
+            p = trial_feasibility.validate(p)
         elif op == 'contract_strategy':
             from . import contract_strategy
             p = contract_strategy.validate(p)
@@ -995,6 +1043,7 @@ def code_identity():
                       Path(__file__).with_name('network.py'),
                       Path(__file__).with_name('market.py'),
                       Path(__file__).with_name('contract_strategy.py'), Path(__file__).with_name('programs.py'), Path(__file__).with_name('vbc.py'),
+                      *[Path(__file__).with_name(n) for n in ('target_trial.py', 'line_of_therapy.py', 'trial_feasibility.py')],
                       Path(__file__).with_name('briefing.py'), Path(__file__).with_name('briefing_rank.py'),
                       Path(__file__).with_name('demand.py'),
                       Path(__file__).with_name('profile.py'),
@@ -1413,6 +1462,12 @@ def execute(stack, plan, *, question=None):
                 from . import risk_adjustment
                 chosen = memberships[node['inputs'][0]] if node['inputs'] else None
                 detail = risk_adjustment.execute(path, sorted(chosen.yes) if chosen else None, params, meta['snapshot']['as_of'])
+                if chosen: detail['input_membership'] = membership_receipt(chosen)
+            elif op in ('target_trial', 'line_of_therapy', 'trial_feasibility'):
+                import importlib
+                engine = importlib.import_module(f'.{op}', __package__)
+                chosen = memberships[node['inputs'][0]] if node['inputs'] else None
+                detail = engine.execute(path, sorted(chosen.yes) if chosen else None, params, meta['snapshot']['as_of'])
                 if chosen: detail['input_membership'] = membership_receipt(chosen)
             elif op == 'contract_strategy':
                 from . import contract_strategy

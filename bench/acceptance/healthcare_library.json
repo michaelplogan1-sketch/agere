@@ -612,6 +612,12 @@
   "domain": "public_population_health"
  },
  {
+  "question": "How many patients meet the inclusion and exclusion criteria for a HFrEF trial (EF 40% or less, NT-proBNP elevated, eGFR above 30, on stable GDMT)?",
+  "expect_operation": "trial_feasibility",
+  "id": "HQ-LS-001",
+  "domain": "life_sciences_rwe"
+ },
+ {
   "question": "How many newly diagnosed heart failure patients per month should we expect to screen over the next year?",
   "expect_operation": "demand",
   "id": "HQ-LS-007",
@@ -619,8 +625,14 @@
  },
  {
   "question": "What are the most common treatment sequences for patients newly diagnosed with type 2 diabetes?",
-  "expect_operation": "pathway",
+  "expect_operation": "line_of_therapy",
   "id": "HQ-LS-009",
+  "domain": "life_sciences_rwe"
+ },
+ {
+  "question": "For rheumatoid arthritis, what share of patients switch from a first biologic to a second, and to which class?",
+  "expect_operation": "line_of_therapy",
+  "id": "HQ-LS-012",
   "domain": "life_sciences_rwe"
  },
  {
@@ -639,6 +651,18 @@
   "question": "What is time to insulin initiation after metformin start for type 2 diabetes?",
   "expect_operation": "survival",
   "id": "HQ-LS-015",
+  "domain": "life_sciences_rwe"
+ },
+ {
+  "question": "Among new users, do SGLT2 inhibitors reduce heart failure hospitalization compared with DPP-4 inhibitors?",
+  "expect_operation": "target_trial",
+  "id": "HQ-LS-018",
+  "domain": "life_sciences_rwe"
+ },
+ {
+  "question": "Does starting a GLP-1 agonist slow eGFR decline compared with starting an SGLT2 inhibitor?",
+  "expect_operation": "target_trial",
+  "id": "HQ-LS-020",
   "domain": "life_sciences_rwe"
  },
  {
@@ -675,6 +699,12 @@
   "question": "Is the rate of a monitored adverse event among new users rising beyond expected?",
   "expect_operation": "monitor",
   "id": "HQ-LS-039",
+  "domain": "life_sciences_rwe"
+ },
+ {
+  "question": "Is a newly approved drug associated with more hospitalizations for pancreatitis than its active comparator?",
+  "expect_operation": "target_trial",
+  "id": "HQ-LS-041",
   "domain": "life_sciences_rwe"
  },
  {

@@ -1,0 +1,34 @@
+[
+ {
+  "question": "GLP-1 agonists versus SGLT2 inhibitors: which slows eGFR decline more in new users?",
+  "expect_operation": "target_trial"
+ },
+ {
+  "question": "Among new users, do SGLT2 inhibitors reduce hospitalizations compared with DPP-4 inhibitors?",
+  "expect_operation": "target_trial"
+ },
+ {
+  "question": "Emulate a target trial of metformin vs sulfonylurea initiation on A1c at one year",
+  "expect_operation": "target_trial"
+ },
+ {
+  "question": "Do high-intensity statins lower LDL more than moderate-intensity statins?",
+  "expect_operation": "target_trial"
+ },
+ {
+  "question": "Comparative effectiveness of ARBs versus ACE inhibitors on systolic blood pressure",
+  "expect_operation": "target_trial"
+ },
+ {
+  "question": "Are new users of an SGLT2 inhibitor less likely to have an ED visit than new users of a GLP-1 agonist?",
+  "expect_operation": "target_trial"
+ },
+ {
+  "question": "Head-to-head: dapagliflozin vs sitagliptin and the risk of admission within 2 years",
+  "expect_operation": "target_trial"
+ },
+ {
+  "question": "Using a new-user active-comparator design, compare ACE inhibitors with ARBs on eGFR change in patients with CKD",
+  "expect_operation": "target_trial"
+ }
+]

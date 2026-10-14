@@ -10279,18 +10279,12 @@
    "question": "How many patients meet the inclusion and exclusion criteria for a HFrEF trial (EF 40% or less, NT-proBNP elevated, eGFR above 30, on stable GDMT)?",
    "persona": "clinical trial feasibility lead",
    "domain": "life_sciences_rwe",
-   "expected_engine": "unsupported",
+   "expected_engine": "trial_feasibility",
    "required_data": [
-    "trial_criteria",
     "diagnoses",
     "labs",
     "pharmacy_dispenses",
     "demographics"
-   ],
-   "engine_when_data_arrives": "new_engine:trial_feasibility",
-   "missing_data": "Structured trial protocol inclusion/exclusion criteria (not received)",
-   "missing_elements": [
-    "trial_criteria"
    ],
    "source": {
     "title": "EHR-based clinical trial feasibility and eligibility screening (peer-reviewed literature)",
@@ -10349,7 +10343,7 @@
     "diagnoses",
     "labs"
    ],
-   "engine_when_data_arrives": "new_engine:trial_feasibility",
+   "engine_when_data_arrives": "trial_feasibility",
    "missing_data": "Structured trial protocol inclusion/exclusion criteria (not received)",
    "missing_elements": [
     "trial_criteria"
@@ -10375,7 +10369,7 @@
     "race_ethnicity_language",
     "geography"
    ],
-   "engine_when_data_arrives": "new_engine:trial_feasibility",
+   "engine_when_data_arrives": "trial_feasibility",
    "missing_data": "Structured trial protocol inclusion/exclusion criteria (not received)",
    "missing_elements": [
     "trial_criteria"
@@ -10457,7 +10451,7 @@
    "question": "What are the most common treatment sequences for patients newly diagnosed with type 2 diabetes?",
    "persona": "RWE scientist (life sciences)",
    "domain": "life_sciences_rwe",
-   "expected_engine": "pathway",
+   "expected_engine": "line_of_therapy",
    "required_data": [
     "pharmacy_dispenses",
     "diagnoses"
@@ -10498,7 +10492,7 @@
     "oncology_regimens",
     "oncology_detail"
    ],
-   "engine_when_data_arrives": "new_engine:line_of_therapy",
+   "engine_when_data_arrives": "line_of_therapy",
    "missing_data": "Antineoplastic administrations/regimens (infusion and oral) with dates; Cancer stage, histology, biomarkers and performance status (ECOG) (not received)",
    "missing_elements": [
     "oncology_regimens",
@@ -10517,7 +10511,7 @@
    "question": "For rheumatoid arthritis, what share of patients switch from a first biologic to a second, and to which class?",
    "persona": "RWE scientist (life sciences)",
    "domain": "life_sciences_rwe",
-   "expected_engine": "new_engine:line_of_therapy",
+   "expected_engine": "line_of_therapy",
    "required_data": [
     "pharmacy_dispenses",
     "diagnoses"
@@ -10627,7 +10621,7 @@
    "question": "Among new users, do SGLT2 inhibitors reduce heart failure hospitalization compared with DPP-4 inhibitors?",
    "persona": "RWE scientist (life sciences)",
    "domain": "life_sciences_rwe",
-   "expected_engine": "new_engine:target_trial_emulation",
+   "expected_engine": "target_trial",
    "required_data": [
     "pharmacy_dispenses",
     "diagnoses",
@@ -10654,7 +10648,7 @@
     "labs",
     "death_records"
    ],
-   "engine_when_data_arrives": "new_engine:target_trial_emulation",
+   "engine_when_data_arrives": "target_trial",
    "missing_data": "Date, place and cause of death (in-hospital and post-discharge, linked death index) (not received)",
    "missing_elements": [
     "death_records"
@@ -10672,7 +10666,7 @@
    "question": "Does starting a GLP-1 agonist slow eGFR decline compared with starting an SGLT2 inhibitor?",
    "persona": "RWE scientist (life sciences)",
    "domain": "life_sciences_rwe",
-   "expected_engine": "new_engine:target_trial_emulation",
+   "expected_engine": "target_trial",
    "required_data": [
     "pharmacy_dispenses",
     "labs",
@@ -11061,7 +11055,7 @@
    "question": "Is a newly approved drug associated with more hospitalizations for pancreatitis than its active comparator?",
    "persona": "pharmacovigilance scientist",
    "domain": "life_sciences_rwe",
-   "expected_engine": "new_engine:target_trial_emulation",
+   "expected_engine": "target_trial",
    "required_data": [
     "pharmacy_dispenses",
     "diagnoses",

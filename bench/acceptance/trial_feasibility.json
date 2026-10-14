@@ -1,0 +1,34 @@
+[
+ {
+  "question": "How many patients are eligible for a type 2 diabetes trial requiring A1c between 7.5 and 10.5 and eGFR of 30 or more?",
+  "expect_operation": "trial_feasibility"
+ },
+ {
+  "question": "Trial feasibility: adults aged 40-75 with CKD and UACR above 200, not on an SGLT2 inhibitor",
+  "expect_operation": "trial_feasibility"
+ },
+ {
+  "question": "Build the eligibility funnel for our heart failure study: NT-proBNP above 400 in the last 6 months, eGFR above 25, on stable GDMT",
+  "expect_operation": "trial_feasibility"
+ },
+ {
+  "question": "Which inclusion criteria remove the most patients for a hypertension trial requiring systolic blood pressure of 150 or higher and age 50 to 80?",
+  "expect_operation": "trial_feasibility"
+ },
+ {
+  "question": "How many women aged 45-70 with obesity qualify for our weight-loss trial, excluding diabetes?",
+  "expect_operation": "trial_feasibility"
+ },
+ {
+  "question": "Expected enrollment per month for a COPD study of adults with an ED visit",
+  "expect_operation": "trial_feasibility"
+ },
+ {
+  "question": "Which sites have the most eligible patients for an atrial fibrillation trial with eGFR above 30?",
+  "expect_operation": "trial_feasibility"
+ },
+ {
+  "question": "Show the diversity of the eligible population by race and ethnicity for our CKD trial with eGFR between 25 and 60",
+  "expect_operation": "trial_feasibility"
+ }
+]

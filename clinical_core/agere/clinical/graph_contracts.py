@@ -33,6 +33,8 @@ TYPED |= {'network'}  # provider patient-sharing network (network.py)
 OPTIONAL_POPULATION += ('network',)
 TYPED |= {'contract_strategy'}  # risk contracts as options, track selection, Nash negotiation (contract_strategy.py)
 OPTIONAL_POPULATION += ('contract_strategy',)
+TYPED |= {'target_trial', 'line_of_therapy', 'trial_feasibility'}  # life-sciences / RWE engines
+OPTIONAL_POPULATION += ('target_trial', 'line_of_therapy', 'trial_feasibility')
 
 
 def _library_measures():
@@ -242,6 +244,41 @@ def parameter_schema(op, catalog):
                     'coverage': string(ra.COVERAGE, 'medicare (default; CMS-HCC is a Medicare model) or all'),
                     'base_rate_pmpm': {'type': ['number', 'null'], 'description': 'User-stated $ PMPM for 1.0 RAF; null if not stated (never invent)'},
                     'patient': {'type': 'string', 'description': 'One patient id, else empty'}, 'top': {'type': 'integer', 'minimum': 1, 'maximum': 500}})
+    if op == 'target_trial':
+        from . import target_trial as tt, concepts as library
+        outcome = obj({'type': string(tt.OUTCOME_TYPES, 'lab_change: change in a lab at the horizon; lab_threshold / lab_decline_pct: time to '
+                                                        'crossing; admission / ed_visit / condition / encounter: time to the event'),
+                       'lab': string(['', *library.MEASUREMENTS], 'lab outcomes only'), 'op': string(['', *tt.OPS], 'lab_threshold only'),
+                       'value': {'type': ['number', 'null']}, 'pct': {'type': ['number', 'null'], 'description': 'lab_decline_pct only, e.g. 0.4'},
+                       'concept': string(['', *library.CONDITIONS, *library.ENCOUNTERS], 'condition / encounter outcomes only'),
+                       'horizon_days': {'type': 'integer', 'minimum': 30, 'maximum': 1825}})
+        return obj({'arms': array(string(tt.STRATEGIES), 'Exactly two strategies as named: [treatment, active comparator]; never invent a comparator'),
+                    'outcome': outcome,
+                    'population_conditions': array(string(library.CONDITIONS), 'Conditions required by time zero, e.g. type_2_diabetes'),
+                    'exclude_conditions': array(string(library.CONDITIONS), 'Conditions that exclude when documented before time zero'),
+                    'min_age': {'type': 'integer', 'minimum': 0, 'maximum': 120},
+                    'adjustment': string(tt.ADJUSTMENTS, 'overlap weights (default), iptw or matching'),
+                    'washout_days': {'type': 'integer', 'minimum': 90, 'maximum': 1095}})
+    if op == 'line_of_therapy':
+        from . import line_of_therapy as lot
+        return obj({'area': string(['', *lot.AREAS], 'Therapy area named in the question'),
+                    'components': array(string(lot.COMPONENTS), 'Override the area\'s drug classes / ingredient groups; [] for the area default'),
+                    'focus': string(lot.FOCUS, 'lines: per-line regimens and durations; switching: switch matrix; persistence; sequences'),
+                    'gap_days': {'type': 'integer', 'minimum': 7, 'maximum': 365}, 'require_new_user': {'type': 'boolean'},
+                    'add_on_new_line': {'type': 'boolean'}})
+    if op == 'trial_feasibility':
+        from . import trial_feasibility as tf, concepts as library
+        from .drug_classes import CLASSES, GROUPS
+        criterion = obj({'type': string(tf.TYPES), 'kind': string(['inclusion', 'exclusion']),
+                         'concept': string(['', *library.CONDITIONS, *library.MEASUREMENTS, *library.ENCOUNTERS], 'condition / lab / encounter concept'),
+                         'min': {'type': ['integer', 'null']}, 'max': {'type': ['integer', 'null']}, 'value': {'type': ['number', 'string', 'null']},
+                         'low': {'type': ['number', 'null']}, 'high': {'type': ['number', 'null']}, 'op': string(['', *tf.OPS]),
+                         'classes': array(string([*CLASSES, *GROUPS])), 'recency_days': {'type': ['integer', 'null']},
+                         'min_fills': {'type': ['integer', 'null']}, 'text': {'type': 'string', 'description': 'unevaluated criteria: the stated words'}})
+        return obj({'criteria': array(criterion, 'Every stated inclusion/exclusion criterion, in order; a stated criterion the data cannot compute '
+                                                 'is type unevaluated; never invent criteria'),
+                    'trial': {'type': 'string'}, 'group_by': string(tf.GROUP_BY),
+                    'consent_rate': {'type': ['number', 'null'], 'description': 'Stated consent/enrolment rate 0..1; null if not stated'}})
     if op == 'contract_strategy':
         from . import contract_strategy as cs
         rate = lambda d: {'type': ['number', 'null'], 'minimum': 0, 'maximum': 1, 'description': d}
