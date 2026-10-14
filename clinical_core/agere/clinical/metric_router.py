@@ -239,8 +239,10 @@ def compile_metric(mid, m, slots, as_of, question=''):
         params = mf.build(m, slots, as_of)
         return {'operation': 'sql', 'parameters': params}
     if k == 'template':
+        # A filled period slot is authoritative: all_time means every observed date up to the snapshot, never the
+        # metric's default window (the computed-as statement would otherwise say all_time over a year-to-date number).
         period = None
-        if slots.get('period') and slots['period'].get('preset') != 'all_time':
+        if slots.get('period'):
             start, end = mf.period_bounds(slots['period'], as_of)
             period = (start or '1900-01-01', end or as_of)
         params = metrics.parameters(m, question if period is None else '', as_of, period)

@@ -31,6 +31,8 @@ Existing-engine gaps found while assigning engines (not new methods): the VBC me
 
 Found on v2.3 acceptance (2026-10-14): `discover` only takes a patient-cohort outcome, so claim-grain questions ("where are denials unexpectedly concentrated across service lines, payers and billing providers?") fail the router fill and fall to the frontier planner (~$0.41). Needed: a claim-grain outcome (denied / paid / adjusted claim line) and claim segments (service line, payer, billing provider) in `discover`.
 
+Hosted-rung judgment errors found on v2.3 dev/challenge (2026-10-14): C11 — the hosted missing-data route says `use_statement='reports_taking'` does not exist (1,758 rows do); D21 — hosted SQL marks a complete answer `partial`; C10 — the metric router picks `readmission_30d` (stay table) for an ADT-discharge question. Fix direction: put observed low-cardinality values of the named field in the hosted schema prompt, and make missing-data claims checkable against the source profile before they are returned. Latent: the v2.3 `adt_messages` HL7 feed (A01/A03) is read by neither the references nor Agere.
+
 ## (b) Data the warehouse lacks (request to the synthetic-warehouse generator)
 
 Ranked by questions blocked. "Sole blocker" = questions that become answerable (by an existing engine or SQL) once only this element arrives. Reference elements are public files (CMS, CDC, FDA) the warehouse could ship as lookup tables.

@@ -191,6 +191,9 @@ class FixtureCompute(unittest.TestCase):
         node = MR.compile_metric('ed_visits', self.lib['ed_visits'], {'period': {'preset': 'year', 'year': 2029}}, AS_OF)
         self.assertIn("BETWEEN '2029-01-01' AND '2029-12-31'", node['parameters']['query'])
         self.assertEqual(self.db.execute(node['parameters']['query']).fetchall(), [(2,)])
+        # all_time is every observed date to the snapshot, not the metric's default year-to-date window
+        node = MR.compile_metric('ed_visits', self.lib['ed_visits'], {'period': {'preset': 'all_time'}}, AS_OF)
+        self.assertIn(f"BETWEEN '1900-01-01' AND '{AS_OF}'", node['parameters']['query'])
         node = MR.compile_metric('measure.cbp', self.lib['measure.cbp'], {'period': {'preset': 'year', 'year': 2028}, 'group_by': 'none'}, AS_OF)
         self.assertEqual((node['operation'], node['parameters']['measure'], node['parameters']['period']),
                          ('vbc', 'cbp', {'start': '2028-01-01', 'end': '2028-12-31'}))

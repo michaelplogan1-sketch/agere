@@ -256,6 +256,13 @@ SETTLEMENT_ASK = ['program or contract terms: name the program and track (for ex
                   'benchmark_pmpm (always contract-specific; a placeholder such as $X is not a value)']
 
 
+# Settlement under the payer's ACTUAL contract also needs that contract's assigned-beneficiary list; our computed
+# attribution is an estimate of it, not the roster the payer settles on.
+ACTUAL_CONTRACT = r'\b(?:actual|executed|signed|real) (?:payer |aco |value-based )?contracts?\b'
+ACTUAL_CONTRACT_ROSTER = ("attribution roster under the contract (the payer's assigned-beneficiary list; Agere's computed "
+                          "attribution estimates it but is not the list the contract settles on)")
+
+
 SETTLEMENT_ASK_INTENT = (r'\b(?:earn\w*|payments?|pay(?:s|out)? us|paid|owe\w*|savings|losses|settle\w*|bonus|receive|net|sensitiv\w*|'
                          r'distribut\w*|probability|msr|loss threshold|contract performance|projected)\b')
 
@@ -312,7 +319,9 @@ def _refusal(q, low, profile, timed, terms, info):
             # program mechanics asked as an explanation, answered from the cited knowledge base, never as a number
             return _knowledge_graph(q)
         if missing[0] == SETTLEMENT_RULE and re.search(SETTLEMENT_ASK_INTENT, low) and _settlement_suppliable(low):
-            return _requires_input(q, _settlement_missing(low, SETTLEMENT_ASK), info)
+            asks = _settlement_missing(low, SETTLEMENT_ASK)
+            if re.search(ACTUAL_CONTRACT, low): asks = [*asks, ACTUAL_CONTRACT_ROSTER]
+            return _requires_input(q, asks, info)
         if missing[0] == SETTLEMENT_RULE: missing = _settlement_missing(low, missing)  # reference material / no settlement asked
         info.update(route='local_unsupported', unexplained=[])
         return {'interpretation': f'Unsupported by received data: {q}', 'coverage': 'unsupported', 'nodes': [],
@@ -1553,10 +1562,12 @@ def _literal_stream_question(q, r, profile, as_of, info):
         sql_where.append("event_date IS NOT NULL AND available_date IS NOT NULL AND substr(available_date,1,4) > substr(event_date,1,4)")
     for m in r.take(r'\barrived more than (\d+) (?:calendar )?days after (?:their )?source event dates?\b', 'arrival lag'):
         sql_where.append(f"event_date IS NOT NULL AND available_date IS NOT NULL AND julianday(available_date) - julianday(event_date) > {m.group(1)}")
-    # field names mentioned (exact or natural)
-    for f, fs in sorted(forms.items(), key=lambda kv: -max(map(len, kv[1]))):
-        for form in fs:
-            for m in r.take(_alias_pattern(form), f'field {f}'): named_fields.append(f)
+    # field names mentioned (exact or natural). Longest FORM first across all fields, and a one-word tail form never
+    # matches inside a snake_case name: place_of_service's tail 'service' must not consume 'service_date'.
+    for form, f in sorted(((form, f) for f, fs in forms.items() for form in fs), key=lambda x: -len(x[0])):
+        pattern = _alias_pattern(form) if ('_' in form or ' ' in form) else r'(?<![a-z0-9_])' + re.escape(form) + r'(?![a-z0-9_])'
+        for m in r.take(pattern, f'field {f}'):
+            named_fields.append(f)
     sum_m = r.take(r'\b(?:gross |raw |total )?sum(?: in usd)?(?: of)?\b', 'sum', overlap=True)
     # observed values mentioned (for low-cardinality fields)
     candidates = [(f, v) for f, spec in fields.items() for v in (spec.get('values') or {})

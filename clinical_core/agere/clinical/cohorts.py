@@ -219,13 +219,49 @@ def _concept_matches(binding, r):
     return r.get(binding['value_field']) is not None
 
 
+CENSORED = re.compile(r'^\s*(>=|<=|≥|≤|>|<)\s*(\d+(?:\.\d+)?)\s*$')
+CENSOR_OPS = {'>': 'gt', '>=': 'ge', '≥': 'ge', '<': 'lt', '<=': 'le', '≤': 'le'}
+
+
+def _unreported(raw):
+    """A result that carries no measurement: missing, or a non-numeric sentinel (TNP, QNS, cancelled) that is not a
+    censored value like '>60'."""
+    if raw is None: return True
+    if isinstance(raw, str):
+        if CENSORED.match(raw): return False
+        try: float(raw.strip())
+        except ValueError: return True
+    return False
+
+
 def _measurement_value(binding, r, units):
-    """Value converted to the concept's canonical unit, or None if not interpretable."""
+    """Value converted to the concept's canonical unit, or None if not interpretable. A censored result ('>60') becomes
+    {'op': 'gt', 'bound': 60.0} in the canonical unit; _compare_measurement decides it when the bound settles the predicate."""
     raw = r.get(binding['value_field'])
-    if type(raw) not in (int, float) or not math.isfinite(raw): return None
     unit = binding.get('fixed_unit') or r.get(binding['unit_field'])
     factor = units.get(unit)
-    return None if factor is None else raw * factor
+    if factor is None: return None
+    if isinstance(raw, str):
+        m = CENSORED.match(raw)
+        if m: return {'op': CENSOR_OPS[m.group(1)], 'bound': float(m.group(2)) * factor}
+        try: raw = float(raw.strip())
+        except ValueError: return None
+    if type(raw) not in (int, float) or not math.isfinite(raw): return None
+    return raw * factor
+
+
+def _compare_measurement(value, op, want):
+    """compare() for a point value; for a censored value, True/False only when every value the bound allows agrees."""
+    if not isinstance(value, dict): return compare(value, op, want)
+    if op not in ('lt', 'le', 'gt', 'ge') or type(want) not in (int, float): return None
+    b, above = value['bound'], value['op'] in ('gt', 'ge')
+    strict = value['op'] in ('gt', 'lt')
+    if above:   # true value in (b, inf) or [b, inf)
+        if op in ('gt', 'ge'): return True if (b > want or (b == want and (strict or op == 'ge'))) else None
+        return False if (b > want or (b == want and (strict or op == 'lt'))) else None
+    # true value in (-inf, b) or (-inf, b]
+    if op in ('lt', 'le'): return True if (b < want or (b == want and (strict or op == 'le'))) else None
+    return False if (b < want or (b == want and (strict or op == 'gt'))) else None
 
 
 def evaluate_concept(atom, records, as_of):
@@ -248,7 +284,7 @@ def evaluate_concept(atom, records, as_of):
         if system == 'icd10' and not (r.get('icd10') or r.get('problem_code')): continue
         if system == 'snomed' and not r.get('snomed'): continue
         if system == 'label' and (r.get('icd10') or r.get('snomed')): continue
-        if atom['kind'] == 'measurement' and r.get(binding['value_field']) is None:
+        if atom['kind'] == 'measurement' and _unreported(r.get(binding['value_field'])):
             # Cancelled/unreported results (e.g. hemolysed specimen) carry no measurement.
             unreported += 1
             continue
@@ -260,7 +296,7 @@ def evaluate_concept(atom, records, as_of):
         if atom['aggregate'] == 'latest' and hits:
             dated = [h for h in hits if h[2] is True and h[3] is not None]
             hits = [max(dated, key=lambda h: _record_date(h[0]))] if dated else hits
-        states = [truth_all([h[2], compare(h[3], atom['op'], atom['value'])]) for h in hits]
+        states = [truth_all([h[2], _compare_measurement(h[3], atom['op'], atom['value'])]) for h in hits]
     else:
         states = [h[2] for h in hits]
     support = [{'record_id': h[0].get('record_id'), 'stream': h[0]['source_table'], 'date': _record_date(h[0]),

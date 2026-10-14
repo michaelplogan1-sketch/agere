@@ -23,7 +23,7 @@ CONDITIONS = {
         'exclude': r'prediabet|family history'},
     'type_1_diabetes': {'label': 'Type 1 diabetes mellitus',
         'icd10': ['E10'], 'text': r'type 1 diabet|\bt1dm\b|diabetes mellitus type 1|\biddm\b', 'exclude': r'family history'},
-    'prediabetes': {'label': 'Prediabetes', 'icd10': ['R73.0'], 'text': r'prediabet|pre-diabet'},
+    'prediabetes': {'label': 'Prediabetes (IFG, IGT, prediabetes; not R73.09 elevated A1c)', 'icd10': ['R73.01', 'R73.02', 'R73.03'], 'text': r'prediabet|pre-diabet'},
     'hypertension': {'label': 'Hypertension (essential/secondary; excludes pulmonary and pregnancy-specific)',
         'icd10': ['I10', 'I11', 'I12', 'I13', 'I15', 'I16'],
         'text': r'hypertension|\bhtn\b', 'exclude': r'pulmonary hypertension|preeclampsia|gestational|history of'},

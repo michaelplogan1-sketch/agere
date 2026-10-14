@@ -10,7 +10,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 URL = os.environ.get('AGERE_URL', 'http://127.0.0.1:8885')
-# question -> (expected route prefix, {snapshot as_of: expected count/value}); a value of None checks the route only.
+# question -> (expected route prefix or tuple of prefixes (metric-first may answer before hosted SQL), {snapshot as_of: expected count/value}); a value of None checks the route only.
 # A new warehouse release starts with no baseline: probes then check the route and print BASELINE NEEDED until
 # values verified against independent SQL are added here. 2030-05-27 (v2.3): undated labs verified by direct SQL over
 # records (16,543; no lab supersessions); the other probes check the route until their SQL is written.
@@ -20,10 +20,10 @@ PROBES = [
     ('Which diabetics are not on a statin?', 'local_compiler', {'2029-08-15': 119, '2030-05-27': None}),
     ('What % of our heart failure patients are on an evidence-based beta blocker?', 'local_compiler', {'2029-08-15': 45.79, '2030-05-27': None}),
     ('Which CKD patients are likely to drop below an eGFR of 30 in the next year?', 'local_compiler', {'2029-08-15': None, '2030-05-27': None}),
-    ('How many lab results came in without any collection date?', 'hosted_verified_sql', {'2029-08-15': 16543, '2030-05-27': 16543}),
-    ('Average days from service date to first payer cash for 2028 medical claims?', 'hosted_verified_sql', {'2029-08-15': None, '2030-05-27': None}),
+    ('How many lab results came in without any collection date?', ('metric_router', 'hosted_verified_sql'), {'2029-08-15': 16543, '2030-05-27': 16543}),
+    ('Average days from service date to first payer cash for 2028 medical claims?', ('metric_router', 'hosted_verified_sql'), {'2029-08-15': None, '2030-05-27': None}),
     ('How many patients filled a first-generation antihistamine in 2028?', 'hosted_verified_sql', {'2029-08-15': None, '2030-05-27': None}),
-    ('What is the race breakdown of our diabetic patients?', 'local_unsupported', {'2029-08-15': None, '2030-05-27': None}),  # v2.0 adds race
+    ('What is the race breakdown of our diabetic patients?', 'local_compiler', {'2030-05-27': None}),  # race arrived in v2.0
 ]
 
 
@@ -55,14 +55,17 @@ def main():
         a = d.get('answer') or {}
         got = a.get('count') if a.get('count') is not None else a.get('value')
         if a.get('patient_ids') and expected is not None and a.get('answer_type') == 'patient_set': got = len(a['patient_ids'])
-        ok_route = (pr.get('route') or '').startswith(route)
+        ok_route = (pr.get('route') or '').startswith(route if isinstance(route, tuple) else (route,))
         ok_value = expected is None or (isinstance(got, (int, float)) and abs(got - expected) <= max(0.01, abs(expected) * 0.001))
         print(f"{'PASS' if ok_route and ok_value else 'FAIL'}  {q[:70]:70s} route={pr.get('route')} got={got} {d.get('error', '')[:120]}")
         if not (ok_route and ok_value): failures.append(q)
-    run = subprocess.run([str(ROOT / '.venv/bin/python'), str(ROOT / 'bench/run.py'), '--system', 'agere', '--jobs', '2', '--url', URL, *(['--as-of', as_of] if as_of != '2029-08-15' else []), '--ids',
+    run = subprocess.run([str(ROOT / '.venv/bin/python'), str(ROOT / 'bench/run.py'), '--system', 'agere', '--jobs', '2', '--url', URL, '--sql-timeout', '900', *(['--as-of', as_of] if as_of != '2029-08-15' else []), '--ids',
                           *[f'D{i:02d}' for i in range(1, 31)], *[f'C{i:02d}' for i in range(1, 21)]], capture_output=True, text=True, cwd=ROOT)
     latest = max((ROOT / 'bench/results/agere').glob('*.jsonl'), key=lambda p: p.stat().st_mtime)
-    correct = sum(1 for l in latest.open() if json.loads(l)['score'].get('correct'))
+    rows = [json.loads(l) for l in latest.open()]
+    correct = sum(1 for r in rows if (r.get('score') or {}).get('correct'))
+    for r in rows:
+        if r.get('reference_error'): print(f"REFERENCE ERROR  {r['id']}: {r['reference_error'][:120]}")
     print(f"{'PASS' if correct >= 49 else 'FAIL'}  development+challenge {correct}/50")
     if correct < 49: failures.append('development+challenge')
     print('SMOKE', 'PASSED' if not failures else f'FAILED ({len(failures)})')
