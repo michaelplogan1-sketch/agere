@@ -53,7 +53,8 @@ def lint(profile, sql):
                 if missing:
                     problems.append(f"value(s) {missing} never occur in '{field}'; observed: {sorted(values)[:15]}")
     from .drug_classes import CLASSES
-    for m in re.finditer(r"drug_class\s*(?:=\s*'([a-z0-9_]+)'|in\s*\(([^)]*)\)|like\s*'([^']*)')", sql, re.I):
+    # lower(m.drug_class) LIKE '%beta%' is the same fuzzy match as drug_class LIKE (it sweeps in beta-agonists).
+    for m in re.finditer(r"drug_class\s*\)?\s*(?:=\s*'([a-z0-9_]+)'|in\s*\(([^)]*)\)|like\s*'([^']*)')", sql, re.I):
         if m.group(3) is not None:
             problems.append(f"drug_class must be compared exactly (= or IN); valid classes: {', '.join(sorted(CLASSES))}")
         for c in _names(m.group(1), m.group(2)):

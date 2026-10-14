@@ -3,7 +3,8 @@
 Features: the stack's installed sentence encoder (stack.retriever.encoder; no new model) plus a few lexical cues
 taken from the deterministic compiler's own intent patterns. A multinomial logistic head, temperature-calibrated,
 predicts one of the PRODUCT operators, literal_lookup or not_answerable. It decides only when its calibrated
-top probability reaches the threshold at which held-out (non-benchmark) accuracy was >= 98%; otherwise the
+top probability reaches the threshold (a Learn-then-Test value from calibrated_thresholds.json when one is certified for
+these weights, else the training-time cut at which held-out non-benchmark accuracy was >= 98%); otherwise the
 Haiku choose step runs as before. Weights are trained by tools/learned_routing/train.py from non-benchmark
 labels and bound to the encoder identity they were trained with: a different encoder disables the router.
 """
@@ -97,14 +98,29 @@ def probabilities(model, X):
     return softmax((X @ model['W'].T + model['b']) / model['temperature'])
 
 
+def model_identity(model):
+    """Binds a calibration record to these exact weights (a retrained router needs a new calibration)."""
+    import hashlib
+    return hashlib.sha256(json.dumps([model['weights'], model['bias'], model['temperature']]).encode()).hexdigest()[:16]
+
+
+def gate_threshold(model):
+    """Learn-then-Test threshold for this model (calibrated_thresholds 'learned_router'), else the value saved with it."""
+    from .calibrated_thresholds import get
+    if 'weights' not in model: return {'threshold': model['threshold'], 'calibrated': False}
+    if '_identity' not in model: model['_identity'] = model_identity(model)
+    return get('learned_router', model['threshold'], bind=model['_identity'])
+
+
 def predict(question, encoder, model=None):
     model = model or load()
     if model is None: raise ValueError('No learned router model for the current capability list')
     if getattr(encoder, 'identity', None) != model['encoder_identity']: raise ValueError('Encoder differs from the one the router was trained with')
     p = probabilities(model, features([question], encoder))[0]
     best = int(p.argmax())
-    return {'label': LABELS[best], 'probability': float(p[best]), 'threshold': model['threshold'],
-            'confident': bool(p[best] >= model['threshold'] and LABELS[best] in SHORTCUT),
+    gate = gate_threshold(model)
+    return {'label': LABELS[best], 'probability': float(p[best]), 'threshold': gate['threshold'], 'threshold_calibrated': gate['calibrated'],
+            'confident': bool(p[best] >= gate['threshold'] and LABELS[best] in SHORTCUT),
             'top': sorted(((LABELS[i], round(float(p[i]), 4)) for i in range(len(LABELS))), key=lambda x: -x[1])[:3]}
 
 

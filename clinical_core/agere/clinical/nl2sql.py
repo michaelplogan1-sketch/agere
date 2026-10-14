@@ -474,27 +474,33 @@ def harvested_examples(question, k=4):
     return [(q, sql) for score, q, sql in scored[:k] if score >= 0.2]
 
 
-def verified_answer(path, question, as_of, primary, second, judge, decider=None, extra_streams=()):
+def verified_answer(path, question, as_of, primary, second, judge, decider=None, extra_streams=(), independent=None, oracle=None):
     """Run the ladder; a 'missing data' claim is checked against the full data dictionary first: when other
-    received streams match what was called missing, the question is re-asked with those streams in view."""
+    received streams match what was called missing, the question is re-asked with those streams in view.
+    independent: free candidate sources (verification_v2.default_sources); oracle: candidate -> findings
+    (verification_v2.oracle_for). Both None keeps the earlier two-model ladder (hosted-only agreement accepted)."""
     try:
-        return _verified_answer(path, question, as_of, primary, second, judge, decider, extra_streams)
+        return _verified_answer(path, question, as_of, primary, second, judge, decider, extra_streams, independent, oracle)
     except MissingData as exc:
         if extra_streams: raise
         profile = source_profile.load(path)
         shown = retrieve_streams(question, profile, k=6)
         found = [x for x in retrieve_streams(str(exc) + ' ' + question, profile, k=10) if x not in shown][:4]
         if not found: raise
-        params, result, receipt = _verified_answer(path, question, as_of, primary, second, judge, decider, tuple(found))
+        params, result, receipt = _verified_answer(path, question, as_of, primary, second, judge, decider, tuple(found), independent, oracle)
         receipt['missing_claim_rechecked'] = {'claim': str(exc)[:300], 'streams_added': found}
         return params, result, receipt
 
 
-def _verified_answer(path, question, as_of, primary, second, judge, decider=None, extra_streams=()):
-    """Hosted ladder: primary writes SQL (lint + sanity, one repair), an independent second model writes its own;
-    agreement is accepted, disagreement goes to the judge, whose query must pass the same checks.
+def _verified_answer(path, question, as_of, primary, second, judge, decider=None, extra_streams=(), independent=None, oracle=None):
+    """Hosted ladder with independent candidates (verification_v2): free sources (deterministic compiler, local model)
+    first; the primary hosted model writes SQL (lint + sanity, one repair); when it matches a free independent candidate
+    the answer is accepted without the second hosted call. Otherwise a second hosted model writes its own; hosted-only
+    agreement is accepted when the deterministic oracles find nothing; disagreement, an independent dissent or an oracle
+    finding goes to the decider/judge, whose query must pass the same checks. A definitional disagreement between the
+    two best-supported answers is returned as two readings (receipt['readings']).
     Returns (params, result, receipt) or raises ValueError (the planner then escalates)."""
-    from . import verify
+    from . import verify, verification_v2 as v2
     profile = source_profile.load(path)
     streams, schema = schema_for(question, profile, extra_streams, path=path)
     qt = set(_tokens(question))
@@ -559,6 +565,8 @@ def _verified_answer(path, question, as_of, primary, second, judge, decider=None
                 return None
 
     from concurrent.futures import ThreadPoolExecutor
+    if independent is not None or oracle is not None:
+        return _independent_ladder(question, receipt, attempt, check, primary, second, judge, decider, independent or [], oracle)
     with ThreadPoolExecutor(max_workers=1) as pool:  # independent analysts work at the same time (separate ledger connections)
         f2 = pool.submit(attempt, second, 'second')
         first = attempt(primary, 'primary')
@@ -598,13 +606,111 @@ def _verified_answer(path, question, as_of, primary, second, judge, decider=None
     raise ValueError('Verified SQL ladder declined: ' + (notes or 'no candidate passed verification')[:300])
 
 
+def _independent_ladder(question, receipt, attempt, check, primary, second, judge, decider, independent, oracle):
+    """verification_v2 acceptance over hosted and free independent candidates (see verification_v2 docstring)."""
+    from . import verification_v2 as v2
+    from concurrent.futures import ThreadPoolExecutor
+    ver = receipt['verification'] = {'version': v2.VERSION, 'independent': [], 'second_skipped': False}
+    free = []
+
+    def produce(source):
+        try:
+            return source(question)
+        except Exception as exc:  # noqa: BLE001 - a free source failing never blocks the hosted ladder
+            return {'_error': f'{type(exc).__name__}: {exc}'[:200]}
+    # Free sources (compiler, local model) run while the primary hosted model writes its query.
+    pool = ThreadPoolExecutor(max_workers=1)
+    pending = pool.submit(lambda: [produce(s) for s in independent]) if independent else None
+    first = attempt(primary, 'primary') if independent else None
+    produced = pending.result() if pending else []
+    pool.shutdown(wait=False)
+    for c in produced:
+        if c and c.get('_error'):
+            ver['independent'].append({'error': c['_error']}); continue
+        if not c: continue
+        entry = {'label': c['label'], 'family': v2.family(c['label']), **({'compile': c['compile']} if c.get('compile') else {})}
+        if c.get('sql'):
+            entry['sql'] = c['sql'][:2000]
+            try:
+                params, result, warn = check(c['sql'])
+            except ValueError as exc:
+                entry['error'] = str(exc)[:300]; ver['independent'].append(entry); continue
+        else:
+            params, result, warn = c.get('params'), c['result'], []
+        entry['result_signature'] = json.dumps(v2.signature(result), default=str)[:300]
+        ver['independent'].append(entry)
+        free.append({'label': c['label'], 'family': entry['family'], 'params': params, 'result': result, 'warnings': warn,
+                     'definition': c.get('definition'), 'order': 10 + len(free)})
+
+    def missing():
+        raise MissingData('; '.join(a['missing'] for a in receipt['attempts'] if a.get('missing')))
+    if independent:  # the primary already ran; a matching free independent candidate makes the second hosted call unnecessary
+        if first == 'missing': missing()
+        if first and any(v2.same_answer(first[1], f['result']) for f in free):
+            other, ver['second_skipped'] = None, True
+        else:
+            other = attempt(second, 'second')
+    else:
+        with ThreadPoolExecutor(max_workers=1) as pool:
+            f2 = pool.submit(attempt, second, 'second')
+            first = attempt(primary, 'primary')
+            other = f2.result()
+    if 'missing' in (first, other): missing()
+    hosted = lambda c, label, order: {'label': label, 'family': 'hosted', 'params': c[0], 'result': c[1], 'warnings': c[2], 'order': order}
+    cands = ([hosted(first, 'primary', 0)] if first else []) + ([hosted(other, 'second', 1)] if other else []) + free
+    decision = v2.decide(cands, oracle)
+    ver.update(status=decision['status'], basis=decision['basis'], clusters=decision['clusters'], dissent=decision.get('dissent') or [],
+               findings=[{k: f.get(k) for k in ('control', 'fmea', 'message')} for f in decision['findings']])
+
+    def finish(chosen, agreement):
+        receipt['agreement'] = agreement
+        alt, diff = v2.alternative_reading(chosen, cands)
+        if alt: receipt['readings'] = v2.readings(chosen, alt, diff)
+        return chosen['params'], chosen['result'], receipt
+    if decision['status'] == 'accepted':
+        return finish(decision['winner'], decision['agreement'] if decision['basis'] == 'independent' else 'primary=second')
+    # Disputed. Tier 1: the cheap typed decider, only when the two hosted analysts disagree with each other.
+    if first and other and not v2.same_answer(first[1], other[1]) and decider is not None:
+        try:
+            pick = decider(question, first, other)
+            receipt['decider'] = pick
+            if pick.get('accepted'):
+                return finish(cands[0] if pick['choice'] == 'A' else cands[1], f"decider={pick['choice']}")
+        except (ValueError, RuntimeError, OSError) as exc:
+            receipt['decider'] = {'error': str(exc)[:200]}
+
+    def show(c, label):
+        res = c['result'] or {}
+        preview = res.get('value', res.get('patient_ids', (res.get('rows') or [])[:12]))
+        if isinstance(preview, list) and len(preview) > 40: preview = {'patients': len(preview), 'first': preview[:20]}
+        query = (c.get('params') or {}).get('query') or f"(deterministic compiler plan: {c.get('definition') or 'patient selection'})"
+        return f'{label} ({c["label"]}) SQL:\n{query}\n{label} result: {json.dumps(preview, default=str)[:900]}\nwarnings: {c.get("warnings")}'
+    notes = '\n'.join(f'- {a["role"]}: {a["error"]}' for a in receipt['attempts'] if a.get('error'))
+    shown = '\n\n'.join(show(c, 'ABCDEFG'[i]) for i, c in enumerate(cands[:6])) or 'No analyst produced a valid query.'
+    findings = '\n'.join(f'- {f["control"]}: {f["message"]}' for f in decision['findings'])
+    brief = (f'\n\nIndependent answers to this question ({decision["basis"]}).\n{shown}\n'
+             + (f'Deterministic checks on the agreed answer:\n{findings}\n' if findings else '')
+             + f'Rejections:\n{notes or "- none"}\n\nDecide what the question actually asks, then write the single correct query. '
+             'You may reuse one of the queries above if it is right.')
+    final = attempt(judge, 'judge', brief)
+    if final:
+        chosen = hosted(final, 'judge', 2)
+        cands.append(chosen)
+        same = [c['label'] for c in cands[:-1] if v2.same_answer(c['result'], final[1])]
+        if oracle is not None:
+            ver['judge_findings'] = [{k: f.get(k) for k in ('control', 'fmea', 'message')} for f in v2.blocking_findings(oracle(chosen))]
+        ver['dissent'] = [f['label'] for f in free if not v2.same_answer(f['result'], final[1])]
+        return finish(chosen, 'judge' + ('=' + '='.join(same) if same else '_own'))
+    raise ValueError('Verified SQL ladder declined: ' + (notes or 'no candidate passed verification')[:300])
+
+
 class MissingData(ValueError):
     """A hosted analyst reports that the question needs data the release does not contain."""
 
 
 class Decider:
     """Perplexity Decisions (typed choice classifier, ~$0.02/M input): A, B or neither, with probabilities."""
-    THRESHOLD = 0.8
+    THRESHOLD = 0.8  # hand-set fallback; calibrated_thresholds 'nl2sql.decider' replaces it when certified
 
     def __init__(self, ledger, out):
         self.ledger, self.out = ledger, out
@@ -632,7 +738,10 @@ class Decider:
             if choice not in ('A', 'B', 'neither'): raise ValueError('Unregistered decider choice')
             total = sum(v for v in probs.values() if isinstance(v, (int, float))) or 1.0
             p = (probs.get(choice) or 0) / total
-            return {'choice': choice, 'probability': round(p, 3), 'accepted': choice in ('A', 'B') and p >= self.THRESHOLD}
+            from .calibrated_thresholds import get as gate
+            g = gate('nl2sql.decider', self.THRESHOLD)
+            return {'choice': choice, 'probability': round(p, 3), 'accepted': choice in ('A', 'B') and p >= g['threshold'],
+                    'threshold': g['threshold'], 'threshold_calibrated': g['calibrated']}
         pick, receipt = send(body, 'perplexity', self.ledger, self.out, parse=parse)
         self.cost += ((receipt.get('cost_estimate') or {}).get('estimated_usd') or 0.0) if not receipt.get('cache_hit') else 0.0
         return pick

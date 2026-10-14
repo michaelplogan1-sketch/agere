@@ -15,6 +15,15 @@ Controls (ids are referenced from fmea.json 'controls_added'):
   QC-NUMBERS  a number or date in the question that the query never uses                     (FM-01, FM-12)
   QC-PARTS    'how many ... and how much' answered with only one of the two                   (FM-01)
   QC-CLOCK    a timing question measured to the record's arrival date, not the event         (FM-07)
+  QC-PERTURB  a question slot (threshold, comparator, look-back window, year) the SQL would not track if it changed,
+              or would track backwards (oracles.perturbation; text only)                       (FM-01, FM-12)
+  QC-PARTITION ternary partition of a count/sum query's filter: the identity, undated rows a time window drops (info),
+              rows vs distinct business keys of versioned streams / fanned-out joins (oracles.partition; needs a
+              read-only executor, so it runs only when annotate() is given one)              (FM-08, FM-09)
+  QC-SHAPE    a rate/percent/share question answered with a patient list or an undivided count (oracles.shape) (FM-02)
+  QC-EMPTY    a count/list question answered with zero or nothing, absence not asked (oracles.empty)         (FM-09)
+  QC-READINGS two candidate answers differ by a stated definitional choice: both readings are attached
+              (answer['readings']) with one clarifying question (verification_v2.attach_readings) (FM-19)
 """
 import calendar
 import datetime as dt
@@ -268,8 +277,9 @@ def clock_finding(answer, question):
                     f"check that arrival time is what the question means.")
 
 
-def annotate(answer, question, as_of=None):
-    """Run every control on a finished answer; adds warnings and quality_checks in place and returns the answer."""
+def annotate(answer, question, as_of=None, execute=None):
+    """Run every control on a finished answer; adds warnings and quality_checks in place and returns the answer.
+    execute: optional read-only scalar executor (oracles.readonly_executor) for the partition oracle."""
     if not isinstance(answer, dict) or answer.get('answer_type') == 'unsupported': return answer
     try:
         found = partial_period(answer.get('table'), as_of)
@@ -298,6 +308,12 @@ def annotate(answer, question, as_of=None):
         clock = clock_finding(answer, question)
         if clock:
             _add(answer, 'QC-CLOCK', 'FM-07', clock[1], clocks=clock[0])
+        if answer.get('query') and isinstance(answer.get('query'), str):
+            from . import oracles
+            for f in oracles.check(question, answer['query'], as_of, execute, answer=answer):
+                if f.get('control') == 'error': continue
+                detail = {k: v for k, v in f.items() if k not in ('control', 'fmea', 'severity', 'message')}
+                _add(answer, f['control'], f['fmea'], f['message'], f.get('severity', 'warning'), **detail)
     except Exception as exc:  # noqa: BLE001 - controls annotate; they must never take an answer down
         answer.setdefault('quality_checks', []).append({'control': 'error', 'fmea': None, 'message': f'{type(exc).__name__}: {exc}'[:200]})
     return answer
