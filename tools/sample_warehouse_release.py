@@ -2,6 +2,9 @@
 
 Usage: .venv/bin/python tools/sample_warehouse_release.py --release <release dir> --output <new dir> --per-segment 8
        .venv/bin/python tools/sample_warehouse_release.py --release <release dir> --output <new dir> --fraction 0.35
+       .venv/bin/python tools/sample_warehouse_release.py --release <release dir> --output <new dir> --patient-ids ids.txt
+       (--patient-ids: exactly these patients, one id per line, those present in the release; use it to cut the same
+       patients from two releases for a migration smoke, e.g. a v2.3 previous and a v2.8 new sample)
 
 The source release is opened read-only. The sample keeps the public tables the adapters read (patients,
 source_records for the sampled patients, organizations, clinicians, data_dictionary) and nothing else: no
@@ -22,7 +25,7 @@ def sha256(path):
     with open(path, 'rb') as f: return hashlib.file_digest(f, 'sha256').hexdigest()
 
 
-def sample(release, output, per_segment=None, panel=None, fraction=None):
+def sample(release, output, per_segment=None, panel=None, fraction=None, patient_ids=None):
     release, output = Path(release).resolve(), Path(output).resolve()
     output.mkdir(parents=True, exist_ok=False)
     manifest = json.loads((release/'manifest.json').read_text())
@@ -34,11 +37,14 @@ def sample(release, output, per_segment=None, panel=None, fraction=None):
         for pid, s in src.execute(f'SELECT patient_id, {seg} FROM patients'):
             by_segment.setdefault(s or 'deep_chart', []).append(pid)
         chosen = []
-        for s, ids in sorted(by_segment.items()):
+        for s, ids in sorted(by_segment.items()) if patient_ids is None else ():
             if s == 'deep_chart' and panel is not None: n = panel
             elif fraction is not None: n = len(ids) if s == 'deep_chart' else math.ceil(fraction * len(ids))
             else: n = per_segment
             chosen += sorted(ids, key=lambda p: hashlib.sha256(p.encode()).hexdigest())[:n]
+        if patient_ids is not None:
+            present = {p for ids in by_segment.values() for p in ids}
+            chosen = sorted(set(patient_ids) & present)
         out = sqlite3.connect(f'file:{output/"warehouse.sqlite"}', uri=True)  # uri=True so ATTACH accepts a read-only URI
         for (sql,) in src.execute("SELECT sql FROM sqlite_master WHERE type='table' AND name IN (%s)" % ','.join('?' * (len(PUBLIC) + 1)),
                                   (*PUBLIC, 'source_records')):
@@ -71,7 +77,8 @@ def sample(release, output, per_segment=None, panel=None, fraction=None):
         files[rel] = sha256(output/rel); copied += 1
     manifest['files'] = files
     manifest['sample'] = {'source_release': str(release), 'source_sha256': source_sha,
-                          'per_segment': per_segment, 'fraction_of_population_segments': fraction, 'segments': dict(segments), 'patients': len(chosen),
+                          'per_segment': per_segment, 'fraction_of_population_segments': fraction,
+                          'patient_ids_requested': None if patient_ids is None else len(set(patient_ids)), 'segments': dict(segments), 'patients': len(chosen),
                           'records': sum(counts.values()), 'source_tables': counts, 'documents_copied': copied, 'synthetic': True}
     (output/'manifest.json').write_text(json.dumps(manifest, indent=2) + '\n')
     return manifest['sample']
@@ -81,6 +88,8 @@ if __name__ == '__main__':
     p = argparse.ArgumentParser(); p.add_argument('--release', type=Path, required=True); p.add_argument('--output', type=Path, required=True)
     p.add_argument('--per-segment', type=int, default=8); p.add_argument('--panel', type=int, help='deep-chart patients (default --per-segment)')
     p.add_argument('--fraction', type=float, help='keep every deep-chart patient and this fraction of each other segment (overrides --per-segment)')
+    p.add_argument('--patient-ids', type=Path, help='file of patient ids (one per line): sample exactly these (overrides the other options)')
     a = p.parse_args()
-    s = sample(a.release, a.output, a.per_segment, a.panel, a.fraction)
+    ids = [l.strip() for l in a.patient_ids.read_text().splitlines() if l.strip()] if a.patient_ids else None
+    s = sample(a.release, a.output, a.per_segment, a.panel, a.fraction, ids)
     print(json.dumps({k: s[k] for k in ('patients', 'records', 'segments')}, indent=2))

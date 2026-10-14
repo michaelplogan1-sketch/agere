@@ -34,7 +34,8 @@ def main():
     out=args.build;path=out/'stack';folder=out/'source-extension';folder.mkdir(exist_ok=True)
     meta=json.loads((path/'run.json').read_text());cutoff=meta['snapshot']['as_of'];inventory=json.loads((args.inventory/'inventory.json').read_text())
     assert inventory['source_sha256']==meta['snapshot']['source_dataset']['source_sha256']
-    assert inventory['prior_rows_changed_or_missing']==0 or (inventory.get('restatement') and inventory.get('prior_rows_missing')==0)
+    missing=inventory.get('prior_rows_missing',0);explained=inventory.get('prior_rows_retracted',0) if inventory.get('retraction') else 0
+    assert missing==explained and (inventory['prior_rows_changed_or_missing']==missing or inventory.get('restatement'))
     assert inventory['roster_digest']==meta['snapshot']['source_dataset']['original_patient_id_digest']
     src=sqlite3.connect(Path(meta['snapshot']['source_dataset']['source']).as_uri()+'?mode=ro',uri=True)
     db=sqlite3.connect((path/'stack.sqlite3').resolve().as_uri()+'?mode=ro',uri=True)
