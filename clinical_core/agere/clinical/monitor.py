@@ -328,7 +328,12 @@ def windows(p, as_of):
     first_report = (p['period'].get('start') or f'{_shift(last, -(CHART_MONTHS - 1))}-01')[:7]
     first_chart = min(first_report, _shift(last, -(CHART_MONTHS - 1)))
     chart = vbc._months(f'{first_chart}-01', f'{last}-01') if first_chart <= last else []
-    return chart, [m for m in chart if m >= first_report]
+    report = [m for m in chart if m >= first_report]
+    if chart and not report:
+        # "this week" / a period inside the incomplete current month: report the latest COMPLETE month and say so
+        report = chart[-1:]
+        p.setdefault('notes', []).append(f'Requested period has no complete month yet; reporting the latest complete month ({chart[-1]}).')
+    return chart, report
 
 
 class Population:

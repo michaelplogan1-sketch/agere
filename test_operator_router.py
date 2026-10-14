@@ -66,6 +66,11 @@ class Graphs(unittest.TestCase):
                                  'parameters': {'index': {'type': 'discharge'}, 'event': {'type': 'readmission'}}})
         self.assertEqual(len(g['nodes'][0]['parameters']['specification']['any']), 2)  # both transport instruments
 
+    def test_dated_population_atoms_use_event_date_basis(self):
+        g = self.ok('trajectory', {'population': [{'kind': 'concept', 'concept': 'depression', 'window': {'start': '2029-01-01', 'end': ''}}],
+                                   'parameters': {'concept': 'egfr', 'direction': 'worse'}})
+        self.assertEqual(g['nodes'][0]['parameters']['specification']['all'][0]['window']['basis'], 'source_event')
+
     def test_unregistered_operator_refused(self):
         with self.assertRaises(ValueError):
             router.to_graph('q', {'name': 'sql', 'input': {'parameters': {}}})

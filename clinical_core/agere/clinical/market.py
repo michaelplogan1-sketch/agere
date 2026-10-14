@@ -78,6 +78,10 @@ LIMITATIONS = [
 
 
 # ---- parameters ------------------------------------------------------------------------
+
+def _share(x):
+    return f'{x:.0%}' if isinstance(x, (int, float)) else 'an unmeasured share'
+
 def validate(p):
     if p is None: p = {}
     if not isinstance(p, dict) or set(p) - FIELDS:
@@ -508,9 +512,9 @@ def execute(path, patient_ids, params, as_of=None):
         info.update(salient=t['salient'], change_baseline_pct=t['change_baseline_pct'], direction=t['direction'], month=t['month'],
                     idiosyncratic_units=solo,
                     statement=(f"{SHORT[metric]}: network-wide move in {t['month']} ({_pct(t['change_baseline_pct'])} vs baseline, "
-                               f"{info['breadth']:.0%} of {info['units']} units moved the same way)" if t['move_type'] == 'network-wide' else
+                               f"{_share(info.get('breadth'))} of {info['units']} units moved the same way)" if t['move_type'] == 'network-wide' else
                                f"{SHORT[metric]}: the network moved in {t['month']} ({_pct(t['change_baseline_pct'])} vs baseline) but only "
-                               f"{info['breadth']:.0%} of units moved with it" if t['salient'] else
+                                                  f"{_share(info.get('breadth'))} of units moved with it" if t['salient'] else
                                f"{SHORT[metric]}: " + (f"no network move; {', '.join(solo[:4])} moved on {'its' if len(solo) == 1 else 'their'} own"
                                                        if solo else 'no network move and no idiosyncratic mover')))
     # Low-volume tickers rank after every adequately sized one: shrunk and marked, never headlined over real panels.

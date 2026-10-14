@@ -407,7 +407,10 @@ def _extract_sql(text):
     m = re.search(r'```(?:sql)?\s*(.+?)```', text, re.S | re.I)
     sql = (m.group(1) if m else text).strip()
     definition = re.search(r'--\s*DEFINITION:\s*(.+)', sql)
-    m = re.search(r'(?is)\b(with|select)\b.*', re.sub(r'--[^\n]*', '', sql))
+    # The query starts on a line beginning with WITH/SELECT: a definition that wraps onto an uncommented line
+    # ("... patients with two or more fills") must not be mistaken for SQL.
+    stripped = re.sub(r'--[^\n]*', '', sql)
+    m = re.search(r'(?ims)^\s*(with|select)\b.*', stripped) or re.search(r'(?is)\b(with|select)\b.*', stripped)
     body = m.group(0).strip().rstrip(';').strip() if m else ''
     if definition and body:
         stated = re.sub(r'[;\r\n]+', ' ', definition.group(1)).strip()[:600]  # one safe comment line

@@ -66,3 +66,9 @@ class StatedDefinition(unittest.TestCase):
         from clinical_core.agere.clinical import sql_query
         with self.assertRaises(ValueError):
             sql_query.validate({'query': "SELECT 1; DELETE FROM patient", 'returns': 'count'})
+
+
+class WrappedDefinition(unittest.TestCase):
+    def test_definition_wrapping_onto_an_uncommented_line_is_not_sql(self):
+        text = "```sql\n-- DEFINITION: PDC for members\nwith two or more fills in the period\nSELECT count(*) FROM patient\n```"
+        self.assertTrue(nl2sql._extract_sql(text).split('\n')[-1].startswith('SELECT count(*)'))

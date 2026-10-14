@@ -74,7 +74,10 @@ def _social_atoms(need):
 
 def normalize_atom(atom):
     kind = atom.get('kind')
-    window = {'basis': 'all_observed', 'start': (atom.get('window') or {}).get('start', ''), 'end': (atom.get('window') or {}).get('end', '')}
+    w = atom.get('window') or {}
+    start, end = w.get('start') or '', w.get('end') or ''
+    # dated bounds use the source event date; all_observed means "any time" and cannot carry dates
+    window = {'basis': 'source_event' if (start or end) else 'all_observed', 'start': start, 'end': end}
     if kind == 'patient':
         return {k: atom.get(k) for k in ('kind', 'field', 'op', 'value')}
     if kind == 'measurement':
