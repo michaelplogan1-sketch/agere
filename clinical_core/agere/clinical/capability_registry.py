@@ -19,10 +19,13 @@ PRODUCT = {
                           'Population-level "what fraction reach X within T" is survival.'},
     'survival': {'population': 'required', 'view': 'curve',
                  'use': 'Time-to-event: HOW QUICKLY / HOW LONG UNTIL / median days until / what fraction reach an event within a time: readmission or follow-up '
-                        'after discharge, time from diagnosis to an event or lab threshold (e.g. eGFR < 30 within 2 years); Kaplan-Meier by group, log-rank, Cox hazard ratios.'},
+                        'after discharge, time from diagnosis to an event or lab threshold (e.g. eGFR < 30 within 2 years); Kaplan-Meier by group, log-rank, Cox hazard ratios. '
+                        'A single observed share (e.g. what share of discharges were followed by another admission within N days) with no curve, '
+                        'censoring or time-until wording is literal_lookup.'},
     'vbc': {'population': 'optional', 'view': 'table',
             'use': 'Value-based care: member months, attribution, utilization per 1,000, PMPM cost, risk score, quality measures (measure library: HEDIS/Stars/eCQM approximations such as GSD, CBP, KED, breast and colorectal screening, depression screening, FMC, TRC, PCR, AHRQ PQI 90/91/92, Part D PDC adherence, the MSSP APP Plus set, with care-gap patient lists), shared-savings settlement and its risk (VaR), fair (Shapley) split of savings, cost change decomposition.'
-                   ' Settlement under a named program (MSSP BASIC A-E / ENHANCED, ACO REACH, LEAD) uses the cited program rulebook terms.'},
+                   ' Settlement under a named program (MSSP BASIC A-E / ENHANCED, ACO REACH, LEAD) uses the cited program rulebook terms.'
+                   ' PMPM is reported as observed allowed PMPM; the IBNR-completed figure leads only when completion or IBNR is asked.'},
     'program_effect': {'population': 'optional', 'view': 'effect',
                        'use': 'Did a program or medication start work: care management, transitions of care, community services, care coordination, starting a drug class; effect on ED visits, admissions, PMPM or a lab.'},
     'outreach': {'population': 'optional', 'view': 'worklist',
@@ -62,7 +65,8 @@ PRODUCT['claims_review'] = {'population': 'optional', 'view': 'pareto',
                             'use': 'Payment integrity and revenue leakage in DOLLARS: which providers bill unusually vs peers, suspicious billing patterns, '
                                    'where we leak money (denial write-offs, underpayments, take-backs, rework), which claims were underpaid vs comparable claims, '
                                    'denial patterns by payer and reason; review flags ranked by expected dollars. '
-                                   'Is-it-out-of-control charts, denial-rate shifts over time and feed health are monitor.'}
+                                   'Is-it-out-of-control charts, denial-rate shifts over time and feed health are monitor. '
+                                   'A plain dollar total (how much payers paid, net of reversals; total allowed or billed) is literal_lookup.'}
 
 PRODUCT['knowledge'] = {'population': 'none', 'view': 'passages',
                         'use': 'EXPLANATION / STRATEGY questions about value-based care itself, not this population\'s data: how does X work, what is X, '
@@ -124,7 +128,8 @@ PRODUCT['risk_outcomes'] = {'population': 'optional', 'view': 'funnel',
 
 # Questions a SQL query over the semantic tables answers exactly are handed to the verified SQL ladder.
 LITERAL = ('Literal data questions: counts, lists, sums, averages, maxima, record filters, date arithmetic, simple breakdowns '
-           'by a field, shares, rates per 1,000 without case-mix adjustment.')
+           'by a field, shares, rates per 1,000 without case-mix adjustment, dollar totals (paid, allowed, billed, net of reversals), '
+           'and single observed rates such as the share of discharges followed by a readmission within N days.')
 
 
 def operations():
