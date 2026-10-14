@@ -1,0 +1,71 @@
+{
+ "schema": "compiler-growth-gate/1",
+ "rule_id": "claims_review.providers_vs_specialty_peers",
+ "version": 2,
+ "rule_digest": "897e17f2503bc4d05a9528aadfab46e503743886d7bab33e24aaff845ed0cac6",
+ "engine": "claims_review",
+ "status": "accepted",
+ "reasons": [],
+ "profiles": {
+  "v1.23": {
+   "source_digest": "0d15e2da55c9a7f8b2e9f0a7bc1525eca99f7607db277836a0eca477c79de52f",
+   "stack": "/Users/mikel/clinical-insights-local/artifacts/agere-healthcare-v123/stack"
+  },
+  "v2.0": {
+   "source_digest": "66db165d755b7fd951c364ac440b8f07a065961d0988dbeb49c9bfb3aac8d8d5",
+   "stack": "/Users/mikel/clinical-insights-local/artifacts/agere-healthcare-v20/stack"
+  }
+ },
+ "captured_counts": {
+  "v1.23": {},
+  "v2.0": {
+   "acceptance": 1,
+   "library": 1
+  }
+ },
+ "detail": {
+  "v1.23": {
+   "positives": [],
+   "negatives": [],
+   "captured": [],
+   "skipped": "requires not met on this profile"
+  },
+  "v2.0": {
+   "positives": [
+    {
+     "question": "Which providers bill unusually high units or codes compared with their specialty peers?",
+     "ok": true
+    }
+   ],
+   "negatives": [
+    {
+     "question": "Which providers bill unusually high units or codes compared with their specialty peers after adjusting for case mix?",
+     "ok": true
+    },
+    {
+     "question": "Which providers bill E/M level 5 visits far more often than their peers?",
+     "ok": true
+    }
+   ],
+   "captured": [
+    {
+     "kind": "acceptance",
+     "id": "healthcare_library#28",
+     "operation": "claims_review",
+     "expected": "claims_review"
+    },
+    {
+     "kind": "library",
+     "id": "HQ-PAY-029",
+     "operation": "claims_review",
+     "bucket": "answered locally",
+     "expected": "claims_review"
+    }
+   ]
+  }
+ },
+ "code_identity": "c274c91bafb09d3c8b89af4dc32d728c6e4539b50139c1e1778ff31c224c0562",
+ "interpreter": "compiler-rules/1",
+ "created": "2026-10-14T02:45:16Z",
+ "sequence": 39
+}

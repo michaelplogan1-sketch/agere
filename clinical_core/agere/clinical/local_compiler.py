@@ -591,7 +591,10 @@ def compile(question, profile, as_of):
     A plan made only of counting/listing operations is declined when the question asks for an analytic
     method (why, trend, ...): the operator router then picks the engine instead of a count answering it."""
     graph, info = _compile(question, profile, as_of)
-    unread = _unread_demographics(question, profile, graph, info)
+    if graph is None:  # hand-written routes declined: accepted declarative rules (config/agere/compiler_rules) before the router
+        from . import compiler_rules
+        graph, info = compiler_rules.apply(question, profile, as_of, info)
+    unread =_unread_demographics(question, profile, graph, info)
     if unread:  # the release has the field, but this plan does not use it: never answer as if the words were not there
         return None, {**info, 'route': 'fallback', 'reason': f'{unread} wording not interpreted locally'}
     if graph and graph.get('nodes') and {n['operation'] for n in graph['nodes']} <= PLAIN_OPS \

@@ -1,0 +1,95 @@
+{
+ "schema": "compiler-growth-gate/1",
+ "rule_id": "utilization.visit_completion_by_unit",
+ "version": 1,
+ "rule_digest": "64fd36ee53600120e02c72cefdb2cc85aef10243ccb4643885d42f29df80ce86",
+ "engine": "literal_lookup",
+ "status": "accepted",
+ "reasons": [],
+ "profiles": {
+  "v1.23": {
+   "source_digest": "0d15e2da55c9a7f8b2e9f0a7bc1525eca99f7607db277836a0eca477c79de52f",
+   "stack": "/Users/mikel/clinical-insights-local/artifacts/agere-healthcare-v123/stack"
+  },
+  "v2.0": {
+   "source_digest": "66db165d755b7fd951c364ac440b8f07a065961d0988dbeb49c9bfb3aac8d8d5",
+   "stack": "/Users/mikel/clinical-insights-local/artifacts/agere-healthcare-v20/stack"
+  }
+ },
+ "captured_counts": {
+  "v1.23": {
+   "library": 1
+  },
+  "v2.0": {
+   "library": 1
+  }
+ },
+ "detail": {
+  "v1.23": {
+   "positives": [
+    {
+     "question": "Which providers have the lowest AWV completion rate among their attributed patients?",
+     "ok": true
+    },
+    {
+     "question": "Which practices have the highest wellness visit rates among their patients in 2028?",
+     "ok": true
+    }
+   ],
+   "negatives": [
+    {
+     "question": "Which providers have the lowest AWV completion rate among their attributed patients after adjusting for case mix?",
+     "ok": true
+    },
+    {
+     "question": "Which providers have the lowest TCM visit completion rate after discharge?",
+     "ok": true
+    }
+   ],
+   "captured": [
+    {
+     "kind": "library",
+     "id": "VQ-285",
+     "operation": "sql",
+     "bucket": "answered locally",
+     "expected": "literal_lookup"
+    }
+   ]
+  },
+  "v2.0": {
+   "positives": [
+    {
+     "question": "Which providers have the lowest AWV completion rate among their attributed patients?",
+     "ok": true
+    },
+    {
+     "question": "Which practices have the highest wellness visit rates among their patients in 2028?",
+     "ok": true
+    }
+   ],
+   "negatives": [
+    {
+     "question": "Which providers have the lowest AWV completion rate among their attributed patients after adjusting for case mix?",
+     "ok": true
+    },
+    {
+     "question": "Which providers have the lowest TCM visit completion rate after discharge?",
+     "ok": true
+    }
+   ],
+   "captured": [
+    {
+     "kind": "library",
+     "id": "VQ-285",
+     "operation": "sql",
+     "bucket": "answered locally",
+     "expected": "literal_lookup"
+    }
+   ]
+  }
+ },
+ "code_identity": "c274c91bafb09d3c8b89af4dc32d728c6e4539b50139c1e1778ff31c224c0562",
+ "interpreter": "compiler-rules/1",
+ "created": "2026-10-14T02:44:59Z",
+ "sequence": 11
+}

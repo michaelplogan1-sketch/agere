@@ -1,0 +1,51 @@
+{
+ "schema": "agere-compiler-rules/1",
+ "family": "care_delivery_lookups",
+ "note": "Medication administration and care-management contact lookups over received records.",
+ "rules": [
+  {
+   "id": "administration.not_given_share_and_reasons",
+   "version": 1,
+   "engine": "literal_lookup",
+   "description": "Share of ordered doses documented as not given, with the documented reasons",
+   "requires": {"streams": ["medication_administrations"], "fields": {"medication_administrations": ["administration_status"]}},
+   "pattern": "^what (?:share|percent(?:age)?|proportion|%) of (?:ordered )?{setting} (?:medication )?(?:doses|administrations) (?:were|was) (?:documented|recorded|charted) as not given,? and what were the (?:reasons|documented reasons) {period?}$",
+   "slots": {"setting": {"type": "option", "options": {"inpatient": {"value": "inpatient", "pred": "json_extract(payload, '$.encounter_id') IN (SELECT encounter_id FROM visit WHERE type_concept IN ('inpatient_admission', 'observation_stay'))"},
+                                                        "hospital": {"value": "hospital", "pred": "organization_id IN (SELECT organization_id FROM organization WHERE organization_type = 'hospital')"}}},
+             "period": {"type": "period", "default": "all"}},
+   "plan": {"kind": "sql", "returns": "table",
+            "query": "WITH a AS (SELECT json_extract(payload, '$.administration_status') AS status, json_extract(payload, '$.not_given_reason') AS reason FROM record WHERE stream = 'medication_administrations' AND {setting.pred} AND {period.where:event_date}) SELECT coalesce(reason, 'reason not documented') AS not_given_reason, count(*) AS doses_not_given, round(100.0 * count(*) / (SELECT count(*) FROM a), 2) AS pct_of_all_documented_doses FROM a WHERE status = 'not_given' GROUP BY 1 ORDER BY 2 DESC",
+            "purpose": "{setting.value} medication administration records documented not given, by documented reason, as a share of all documented administrations"},
+   "positives": [{"question": "What share of ordered inpatient doses were documented as not given, and what were the reasons?", "expect": {"operation": "sql", "returns": "table"}}],
+   "negatives": ["What share of ordered inpatient doses were documented as not given, and what were the reasons, by unit?", "What share of ordered inpatient doses were given late?"]
+  },
+  {
+   "id": "care_management.outreach_engagement",
+   "version": 1,
+   "engine": "literal_lookup",
+   "description": "Of members contacted for care management, the share who engaged (agreed) at least once",
+   "requires": {"streams": ["care_management_contacts"], "fields": {"care_management_contacts": ["status"]}},
+   "pattern": "^what (?:share|percent(?:age)?|proportion|%) of (?:members|patients) (?:we )?(?:tried to reach|reached out to|contacted|attempted to contact) (?:in|for|through) care management(?: outreach)? (?:actually )?(?:engaged|enrolled|agreed(?: to participate)?) {period?}$",
+   "slots": {"period": {"type": "period", "default": "all"}},
+   "plan": {"kind": "sql", "returns": "table",
+            "query": "WITH c AS (SELECT patient_id, json_extract(payload, '$.status') AS status FROM record WHERE stream = 'care_management_contacts' AND {period.where:event_date}) SELECT count(DISTINCT patient_id) AS members_contacted, count(DISTINCT CASE WHEN status = 'agrees' THEN patient_id END) AS members_engaged, count(DISTINCT CASE WHEN status = 'unreachable' THEN patient_id END) AS members_ever_unreachable, round(100.0 * count(DISTINCT CASE WHEN status = 'agrees' THEN patient_id END) / nullif(count(DISTINCT patient_id), 0), 2) AS engaged_pct FROM c",
+            "purpose": "Members with any care-management contact record, and the share with at least one contact where the member agreed (engaged)"},
+   "positives": [{"question": "What percent of members we tried to reach in care management outreach actually engaged?", "expect": {"operation": "sql", "returns": "table"}}],
+   "negatives": ["What percent of members we tried to reach in care management outreach actually engaged, by risk tier?", "What percent of members we tried to reach in care management outreach reduced their ED visits?"]
+  },
+  {
+   "id": "care_management.touches_per_member_month",
+   "version": 1,
+   "engine": "literal_lookup",
+   "description": "Care-management contacts per contacted member, month by month",
+   "requires": {"streams": ["care_management_contacts"]},
+   "pattern": "^how many care management (?:touches|contacts|encounters|calls) per (?:enrolled |engaged )?(?:member|patient) per month (?:are we delivering|do we deliver|did we deliver|are we making) {period?}$",
+   "slots": {"period": {"type": "period", "default": "all"}},
+   "plan": {"kind": "sql", "returns": "table",
+            "query": "SELECT substr(event_date, 1, 7) AS month, count(*) AS touches, count(DISTINCT patient_id) AS members_touched, round(1.0 * count(*) / count(DISTINCT patient_id), 2) AS touches_per_member FROM record WHERE stream = 'care_management_contacts' AND event_date IS NOT NULL AND {period.where:event_date} GROUP BY 1 ORDER BY 1",
+            "purpose": "Care-management contact records per month and per member with at least one contact that month (enrolment itself is not received; a contacted member stands in for an enrolled one)"},
+   "positives": [{"question": "How many care management touches per enrolled member per month are we delivering?", "expect": {"operation": "sql", "returns": "table"}}],
+   "negatives": ["How many care management touches per enrolled member per month are we delivering, by risk tier?", "How many care management touches per enrolled member per month should we deliver?"]
+  }
+ ]
+}

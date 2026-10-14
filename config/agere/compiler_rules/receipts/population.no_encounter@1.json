@@ -1,0 +1,95 @@
+{
+ "schema": "compiler-growth-gate/1",
+ "rule_id": "population.no_encounter",
+ "version": 1,
+ "rule_digest": "74b93001bfb4c8d3a84e31b24707fc27ae367b7e959f5fa3e8a5f84b98d7d9d1",
+ "engine": "literal_lookup",
+ "status": "accepted",
+ "reasons": [],
+ "profiles": {
+  "v1.23": {
+   "source_digest": "0d15e2da55c9a7f8b2e9f0a7bc1525eca99f7607db277836a0eca477c79de52f",
+   "stack": "/Users/mikel/clinical-insights-local/artifacts/agere-healthcare-v123/stack"
+  },
+  "v2.0": {
+   "source_digest": "66db165d755b7fd951c364ac440b8f07a065961d0988dbeb49c9bfb3aac8d8d5",
+   "stack": "/Users/mikel/clinical-insights-local/artifacts/agere-healthcare-v20/stack"
+  }
+ },
+ "captured_counts": {
+  "v1.23": {
+   "library": 1
+  },
+  "v2.0": {
+   "library": 1
+  }
+ },
+ "detail": {
+  "v1.23": {
+   "positives": [
+    {
+     "question": "How many attributed members have not had a PCP visit this year?",
+     "ok": true
+    },
+    {
+     "question": "Which patients with heart failure have not had a primary care visit in the last 6 months?",
+     "ok": true
+    }
+   ],
+   "negatives": [
+    {
+     "question": "How many attributed members have not had a PCP visit this year by practice?",
+     "ok": true
+    },
+    {
+     "question": "Which members have not had a PCP visit and should be called?",
+     "ok": true
+    }
+   ],
+   "captured": [
+    {
+     "kind": "library",
+     "id": "VQ-009",
+     "operation": "sql",
+     "bucket": "answered locally",
+     "expected": "literal_lookup"
+    }
+   ]
+  },
+  "v2.0": {
+   "positives": [
+    {
+     "question": "How many attributed members have not had a PCP visit this year?",
+     "ok": true
+    },
+    {
+     "question": "Which patients with heart failure have not had a primary care visit in the last 6 months?",
+     "ok": true
+    }
+   ],
+   "negatives": [
+    {
+     "question": "How many attributed members have not had a PCP visit this year by practice?",
+     "ok": true
+    },
+    {
+     "question": "Which members have not had a PCP visit and should be called?",
+     "ok": true
+    }
+   ],
+   "captured": [
+    {
+     "kind": "library",
+     "id": "VQ-009",
+     "operation": "sql",
+     "bucket": "answered locally",
+     "expected": "literal_lookup"
+    }
+   ]
+  }
+ },
+ "code_identity": "c274c91bafb09d3c8b89af4dc32d728c6e4539b50139c1e1778ff31c224c0562",
+ "interpreter": "compiler-rules/1",
+ "created": "2026-10-14T02:44:05Z",
+ "sequence": 7
+}

@@ -1,0 +1,108 @@
+{
+ "schema": "compiler-growth-gate/1",
+ "rule_id": "utilization.frequent_users",
+ "version": 1,
+ "rule_digest": "f66495d6403c476edd0231bfa7c75403d69d33d4b1a740f62f598773ebaf4d4f",
+ "engine": "literal_lookup",
+ "status": "accepted",
+ "reasons": [],
+ "profiles": {
+  "v1.23": {
+   "source_digest": "0d15e2da55c9a7f8b2e9f0a7bc1525eca99f7607db277836a0eca477c79de52f",
+   "stack": "/Users/mikel/clinical-insights-local/artifacts/agere-healthcare-v123/stack"
+  },
+  "v2.0": {
+   "source_digest": "66db165d755b7fd951c364ac440b8f07a065961d0988dbeb49c9bfb3aac8d8d5",
+   "stack": "/Users/mikel/clinical-insights-local/artifacts/agere-healthcare-v20/stack"
+  }
+ },
+ "captured_counts": {
+  "v1.23": {
+   "bench": 1,
+   "library": 1
+  },
+  "v2.0": {
+   "bench": 1,
+   "library": 1
+  }
+ },
+ "detail": {
+  "v1.23": {
+   "positives": [
+    {
+     "question": "Which members had 3 or more ED visits in the last 6 months?",
+     "ok": true
+    },
+    {
+     "question": "How many patients with heart failure had 2 or more admissions in 2028?",
+     "ok": true
+    }
+   ],
+   "negatives": [
+    {
+     "question": "Which members had 3 or more ED visits in the last 6 months by practice?",
+     "ok": true
+    },
+    {
+     "question": "Which members will have 3 or more ED visits next quarter?",
+     "ok": true
+    }
+   ],
+   "captured": [
+    {
+     "kind": "bench",
+     "id": "O13",
+     "operation": "sql",
+     "reproduces": true
+    },
+    {
+     "kind": "library",
+     "id": "VQ-029",
+     "operation": "sql",
+     "bucket": "answered locally",
+     "expected": "literal_lookup"
+    }
+   ]
+  },
+  "v2.0": {
+   "positives": [
+    {
+     "question": "Which members had 3 or more ED visits in the last 6 months?",
+     "ok": true
+    },
+    {
+     "question": "How many patients with heart failure had 2 or more admissions in 2028?",
+     "ok": true
+    }
+   ],
+   "negatives": [
+    {
+     "question": "Which members had 3 or more ED visits in the last 6 months by practice?",
+     "ok": true
+    },
+    {
+     "question": "Which members will have 3 or more ED visits next quarter?",
+     "ok": true
+    }
+   ],
+   "captured": [
+    {
+     "kind": "bench",
+     "id": "O13",
+     "operation": "sql"
+    },
+    {
+     "kind": "library",
+     "id": "VQ-029",
+     "operation": "sql",
+     "bucket": "answered locally",
+     "expected": "literal_lookup"
+    }
+   ]
+  }
+ },
+ "code_identity": "c274c91bafb09d3c8b89af4dc32d728c6e4539b50139c1e1778ff31c224c0562",
+ "interpreter": "compiler-rules/1",
+ "created": "2026-10-14T02:44:58Z",
+ "sequence": 8
+}

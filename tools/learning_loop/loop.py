@@ -442,8 +442,9 @@ def proposals(clusters, verified, router, *, min_support=2, consistency=0.8, gro
                         'verified_outcomes': [{'question': r[2], **({'operator': r[3]['operator'], 'parameters': r[3]['parameters']} if kind == 'operator'
                                                                   else {'agreement': r[3]['agreement'], 'models': r[3]['models'], 'returns': r[3]['returns']})}
                                               for r in support[:8]],
-                        'review_note': 'Proposal only. A reviewer adds the phrasing to clinical_core/agere/clinical/local_compiler.py '
-                                       'if the target is the right local plan; nothing is edited automatically.'})
+                        'review_note': 'Proposal only. tools/compiler_growth/propose.py drafts it into a declarative rule '
+                                       '(config/agere/compiler_rules) that reaches the compiler only through the acceptance gate '
+                                       '(tools/compiler_growth/accept.py); local_compiler.py is never edited automatically.'})
     return out
 
 

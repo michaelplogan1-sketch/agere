@@ -8,103 +8,105 @@ Buckets: **answered locally** = compiles to the expected engine; **needs router*
 
 | Bucket | v1.23 | v2.0 |
 |---|---:|---:|
-| answered locally | 22 (2%) | 22 (2%) |
-| needs router | 359 (37%) | 411 (43%) |
-| wrong engine | 5 (1%) | 5 (1%) |
-| declined locally | 18 (2%) | 26 (3%) |
+| answered locally | 76 (8%) | 82 (9%) |
+| needs router | 313 (33%) | 366 (38%) |
+| wrong engine | 2 (0%) | 2 (0%) |
+| declined locally | 13 (1%) | 13 (1%) |
 | needs new engine | 9 (1%) | 15 (2%) |
 | knowledge | 61 (6%) | 61 (6%) |
-| unsupported (data missing) | 487 (51%) | 421 (44%) |
+| unsupported (data missing) | 487 (51%) | 422 (44%) |
 | total | 961 | 961 |
 
-**VBC library only:** `v1.23`: unsupported (data missing) 213, needs router 145, knowledge 35, declined locally 13, answered locally 12, wrong engine 5; `v2.0`: unsupported (data missing) 213, needs router 146, knowledge 35, declined locally 13, answered locally 12, wrong engine 4
+**VBC library only:** `v1.23`: unsupported (data missing) 211, needs router 122, answered locally 41, knowledge 35, declined locally 12, wrong engine 2; `v2.0`: unsupported (data missing) 211, needs router 121, answered locally 43, knowledge 35, declined locally 11, wrong engine 2
 
-**healthcare library only:** `v1.23`: unsupported (data missing) 274, needs router 214, knowledge 26, answered locally 10, needs new engine 9, declined locally 5; `v2.0`: needs router 265, unsupported (data missing) 208, knowledge 26, needs new engine 15, declined locally 13, answered locally 10, wrong engine 1
+**healthcare library only:** `v1.23`: unsupported (data missing) 276, needs router 191, answered locally 35, knowledge 26, needs new engine 9, declined locally 1; `v2.0`: needs router 245, unsupported (data missing) 211, answered locally 39, knowledge 26, needs new engine 15, declined locally 2
 
 ## By domain: `v1.23`
 
 | Group | Domain | Total | Local | Router | Wrong engine | Declined locally | New engine | Knowledge | Unsupported | Top missing elements |
 |---|---|---:|---:|---:|---:|---:|---:|---:|---:|---|
-| value_based_care | attribution | 25 | 0 | 5 | 0 | 0 | 0 | 1 | 19 | see VBC_QUESTION_COVERAGE.md |
-| value_based_care | utilization | 24 | 1 | 17 | 0 | 0 | 0 | 0 | 6 | see VBC_QUESTION_COVERAGE.md |
-| value_based_care | cost_pmpm | 24 | 1 | 8 | 2 | 0 | 0 | 1 | 12 | see VBC_QUESTION_COVERAGE.md |
+| value_based_care | attribution | 25 | 1 | 4 | 0 | 0 | 0 | 1 | 19 | see VBC_QUESTION_COVERAGE.md |
+| value_based_care | utilization | 24 | 8 | 10 | 0 | 0 | 0 | 0 | 6 | see VBC_QUESTION_COVERAGE.md |
+| value_based_care | cost_pmpm | 24 | 2 | 8 | 0 | 1 | 0 | 1 | 12 | see VBC_QUESTION_COVERAGE.md |
 | value_based_care | risk_adjustment_coding | 24 | 0 | 3 | 0 | 0 | 0 | 2 | 19 | see VBC_QUESTION_COVERAGE.md |
-| value_based_care | quality_stars | 30 | 3 | 11 | 0 | 0 | 0 | 6 | 10 | see VBC_QUESTION_COVERAGE.md |
-| value_based_care | care_management | 47 | 0 | 12 | 0 | 1 | 0 | 0 | 34 | see VBC_QUESTION_COVERAGE.md |
-| value_based_care | transitions | 29 | 0 | 21 | 0 | 1 | 0 | 0 | 7 | see VBC_QUESTION_COVERAGE.md |
-| value_based_care | sdoh | 33 | 0 | 15 | 0 | 2 | 0 | 2 | 14 | see VBC_QUESTION_COVERAGE.md |
-| value_based_care | network_leakage | 22 | 0 | 13 | 0 | 0 | 0 | 0 | 9 | see VBC_QUESTION_COVERAGE.md |
-| value_based_care | contract_settlement | 37 | 0 | 2 | 0 | 4 | 0 | 12 | 19 | see VBC_QUESTION_COVERAGE.md |
-| value_based_care | forecasting | 23 | 0 | 10 | 0 | 1 | 0 | 2 | 10 | see VBC_QUESTION_COVERAGE.md |
-| value_based_care | program_evaluation | 41 | 2 | 6 | 0 | 2 | 0 | 5 | 26 | see VBC_QUESTION_COVERAGE.md |
-| value_based_care | provider_performance | 29 | 5 | 12 | 3 | 0 | 0 | 1 | 8 | see VBC_QUESTION_COVERAGE.md |
-| value_based_care | data_quality | 35 | 0 | 10 | 0 | 2 | 0 | 3 | 20 | see VBC_QUESTION_COVERAGE.md |
-| hospital_operations | hospital_operations | 51 | 1 | 14 | 0 | 0 | 0 | 2 | 34 | ed_timestamps (8), bed_census (7), or_case_times (6), ed_lwbs (3) |
-| revenue_cycle | revenue_cycle | 51 | 0 | 23 | 0 | 1 | 0 | 2 | 25 | claim_lines (10), drg (5), coding_workflow (3), charge_capture (2) |
-| payer_utilization_management | payer_utilization_management | 46 | 1 | 13 | 0 | 0 | 1 | 2 | 29 | prior_auth (10), claim_lines (8), provider_directory_geo (4), premiums (2) |
-| pharmacy | pharmacy | 48 | 0 | 24 | 0 | 1 | 0 | 2 | 21 | flags_340b (4), ndc (3), drug_cost (2), mme_reference (2) |
-| quality_patient_safety | quality_patient_safety | 48 | 2 | 10 | 0 | 1 | 0 | 3 | 32 | claim_dx (10), death_records (4), hai_events (4), device_days (4) |
+| value_based_care | quality_stars | 30 | 5 | 9 | 0 | 0 | 0 | 6 | 10 | see VBC_QUESTION_COVERAGE.md |
+| value_based_care | care_management | 47 | 2 | 11 | 0 | 0 | 0 | 0 | 34 | see VBC_QUESTION_COVERAGE.md |
+| value_based_care | transitions | 29 | 5 | 17 | 0 | 0 | 0 | 0 | 7 | see VBC_QUESTION_COVERAGE.md |
+| value_based_care | sdoh | 33 | 2 | 14 | 0 | 1 | 0 | 2 | 14 | see VBC_QUESTION_COVERAGE.md |
+| value_based_care | network_leakage | 22 | 2 | 11 | 2 | 0 | 0 | 0 | 7 | see VBC_QUESTION_COVERAGE.md |
+| value_based_care | contract_settlement | 37 | 0 | 0 | 0 | 6 | 0 | 12 | 19 | see VBC_QUESTION_COVERAGE.md |
+| value_based_care | forecasting | 23 | 2 | 7 | 0 | 2 | 0 | 2 | 10 | see VBC_QUESTION_COVERAGE.md |
+| value_based_care | program_evaluation | 41 | 2 | 7 | 0 | 1 | 0 | 5 | 26 | see VBC_QUESTION_COVERAGE.md |
+| value_based_care | provider_performance | 29 | 9 | 10 | 0 | 1 | 0 | 1 | 8 | see VBC_QUESTION_COVERAGE.md |
+| value_based_care | data_quality | 35 | 1 | 11 | 0 | 0 | 0 | 3 | 20 | see VBC_QUESTION_COVERAGE.md |
+| hospital_operations | hospital_operations | 51 | 2 | 13 | 0 | 0 | 0 | 2 | 34 | ed_timestamps (8), bed_census (7), or_case_times (6), ed_lwbs (3) |
+| revenue_cycle | revenue_cycle | 51 | 7 | 16 | 0 | 1 | 0 | 2 | 25 | claim_lines (10), drg (5), coding_workflow (3), charge_capture (2) |
+| payer_utilization_management | payer_utilization_management | 46 | 3 | 11 | 0 | 0 | 1 | 2 | 29 | prior_auth (10), claim_lines (8), provider_directory_geo (4), premiums (2) |
+| pharmacy | pharmacy | 48 | 4 | 20 | 0 | 0 | 0 | 2 | 22 | flags_340b (4), ndc (3), drug_cost (2), mme_reference (2) |
+| quality_patient_safety | quality_patient_safety | 48 | 2 | 10 | 0 | 0 | 0 | 3 | 33 | claim_dx (10), death_records (4), hai_events (4), device_days (4) |
 | behavioral_health | behavioral_health | 42 | 1 | 20 | 0 | 0 | 0 | 2 | 19 | mood_screens (6), behavioral_care (4), psych_unit_stays (3), bh_provider_types (2) |
-| post_acute_home_health | post_acute_home_health | 41 | 1 | 12 | 0 | 1 | 0 | 2 | 25 | snf_stays (17), hospice_elections (4), death_records (3), staff_schedules (2) |
-| workforce_productivity | workforce_productivity | 41 | 0 | 7 | 0 | 0 | 0 | 2 | 32 | staff_schedules (12), hr_roster (9), payroll (5), provider_fte (4) |
-| patient_experience_access | patient_experience_access | 40 | 1 | 12 | 0 | 0 | 0 | 2 | 25 | hcahps (7), portal_activity (5), race_ethnicity_language (5), cgcahps (2) |
+| post_acute_home_health | post_acute_home_health | 41 | 1 | 13 | 0 | 0 | 0 | 2 | 25 | snf_stays (17), hospice_elections (4), death_records (3), staff_schedules (2) |
+| workforce_productivity | workforce_productivity | 41 | 2 | 5 | 0 | 0 | 0 | 2 | 32 | staff_schedules (12), hr_roster (9), payroll (5), provider_fte (4) |
+| patient_experience_access | patient_experience_access | 40 | 2 | 11 | 0 | 0 | 0 | 2 | 25 | hcahps (7), portal_activity (5), race_ethnicity_language (5), cgcahps (2) |
 | public_population_health | public_population_health | 41 | 0 | 23 | 0 | 0 | 0 | 2 | 16 | geography (11), vaccine_outreach (2), population_denominators (2), svi_reference (2) |
-| life_sciences_rwe | life_sciences_rwe | 43 | 1 | 25 | 0 | 1 | 4 | 3 | 9 | trial_criteria (3), oncology_detail (2), race_ethnicity_language (1), geography (1) |
-| clinical_decision_support | clinical_decision_support | 46 | 2 | 31 | 0 | 0 | 4 | 2 | 7 | cds_alert_logs (3), cancer_screening (2), guideline_rules (2) |
+| life_sciences_rwe | life_sciences_rwe | 43 | 2 | 25 | 0 | 0 | 4 | 3 | 9 | trial_criteria (3), oncology_detail (2), race_ethnicity_language (1), geography (1) |
+| clinical_decision_support | clinical_decision_support | 46 | 9 | 24 | 0 | 0 | 4 | 2 | 7 | cds_alert_logs (3), cancer_screening (2), guideline_rules (2) |
 
 ## By domain: `v2.0`
 
 | Group | Domain | Total | Local | Router | Wrong engine | Declined locally | New engine | Knowledge | Unsupported | Top missing elements |
 |---|---|---:|---:|---:|---:|---:|---:|---:|---:|---|
-| value_based_care | attribution | 25 | 0 | 5 | 0 | 0 | 0 | 1 | 19 | see VBC_QUESTION_COVERAGE.md |
-| value_based_care | utilization | 24 | 1 | 17 | 0 | 0 | 0 | 0 | 6 | see VBC_QUESTION_COVERAGE.md |
-| value_based_care | cost_pmpm | 24 | 1 | 8 | 2 | 0 | 0 | 1 | 12 | see VBC_QUESTION_COVERAGE.md |
+| value_based_care | attribution | 25 | 1 | 4 | 0 | 0 | 0 | 1 | 19 | see VBC_QUESTION_COVERAGE.md |
+| value_based_care | utilization | 24 | 9 | 9 | 0 | 0 | 0 | 0 | 6 | see VBC_QUESTION_COVERAGE.md |
+| value_based_care | cost_pmpm | 24 | 2 | 8 | 0 | 1 | 0 | 1 | 12 | see VBC_QUESTION_COVERAGE.md |
 | value_based_care | risk_adjustment_coding | 24 | 0 | 3 | 0 | 0 | 0 | 2 | 19 | see VBC_QUESTION_COVERAGE.md |
-| value_based_care | quality_stars | 30 | 3 | 11 | 0 | 0 | 0 | 6 | 10 | see VBC_QUESTION_COVERAGE.md |
-| value_based_care | care_management | 47 | 0 | 12 | 0 | 1 | 0 | 0 | 34 | see VBC_QUESTION_COVERAGE.md |
-| value_based_care | transitions | 29 | 0 | 21 | 0 | 1 | 0 | 0 | 7 | see VBC_QUESTION_COVERAGE.md |
-| value_based_care | sdoh | 33 | 0 | 15 | 0 | 2 | 0 | 2 | 14 | see VBC_QUESTION_COVERAGE.md |
-| value_based_care | network_leakage | 22 | 0 | 13 | 0 | 0 | 0 | 0 | 9 | see VBC_QUESTION_COVERAGE.md |
-| value_based_care | contract_settlement | 37 | 0 | 2 | 0 | 4 | 0 | 12 | 19 | see VBC_QUESTION_COVERAGE.md |
-| value_based_care | forecasting | 23 | 0 | 10 | 0 | 1 | 0 | 2 | 10 | see VBC_QUESTION_COVERAGE.md |
-| value_based_care | program_evaluation | 41 | 2 | 6 | 0 | 2 | 0 | 5 | 26 | see VBC_QUESTION_COVERAGE.md |
-| value_based_care | provider_performance | 29 | 5 | 13 | 2 | 0 | 0 | 1 | 8 | see VBC_QUESTION_COVERAGE.md |
-| value_based_care | data_quality | 35 | 0 | 10 | 0 | 2 | 0 | 3 | 20 | see VBC_QUESTION_COVERAGE.md |
-| hospital_operations | hospital_operations | 51 | 1 | 15 | 0 | 0 | 0 | 2 | 33 | ed_timestamps (8), bed_census (7), or_case_times (6), ed_lwbs (3) |
-| revenue_cycle | revenue_cycle | 51 | 0 | 31 | 0 | 3 | 2 | 2 | 13 | coding_workflow (3), charge_capture (2), cost_accounting (2), denial_appeals (1) |
-| payer_utilization_management | payer_utilization_management | 46 | 1 | 23 | 0 | 0 | 1 | 2 | 19 | prior_auth (10), provider_directory_geo (4), premiums (2), stop_loss_terms (1) |
-| pharmacy | pharmacy | 48 | 0 | 27 | 0 | 1 | 0 | 2 | 18 | flags_340b (4), drug_cost (2), mme_reference (2), bed_census (2) |
-| quality_patient_safety | quality_patient_safety | 48 | 2 | 18 | 0 | 2 | 2 | 3 | 21 | death_records (4), hai_events (4), device_days (4), safety_events (4) |
-| behavioral_health | behavioral_health | 42 | 1 | 29 | 0 | 1 | 0 | 2 | 9 | psych_unit_stays (3), bh_provider_types (2), crisis_services (2), sud_treatment (1) |
-| post_acute_home_health | post_acute_home_health | 41 | 1 | 12 | 0 | 1 | 0 | 2 | 25 | snf_stays (17), hospice_elections (4), death_records (3), staff_schedules (2) |
-| workforce_productivity | workforce_productivity | 41 | 0 | 11 | 0 | 0 | 0 | 2 | 28 | staff_schedules (12), hr_roster (9), payroll (5), provider_fte (4) |
-| patient_experience_access | patient_experience_access | 40 | 1 | 13 | 1 | 3 | 0 | 2 | 20 | hcahps (7), portal_activity (5), cgcahps (2), call_center (2) |
-| public_population_health | public_population_health | 41 | 0 | 28 | 0 | 1 | 2 | 2 | 8 | population_denominators (2), svi_reference (2), death_records (2), environmental_data (1) |
-| life_sciences_rwe | life_sciences_rwe | 43 | 1 | 25 | 0 | 1 | 4 | 3 | 9 | trial_criteria (3), oncology_detail (2), site_directory (1), oncology_regimens (1) |
-| clinical_decision_support | clinical_decision_support | 46 | 2 | 33 | 0 | 0 | 4 | 2 | 5 | cds_alert_logs (3), guideline_rules (2) |
+| value_based_care | quality_stars | 30 | 5 | 9 | 0 | 0 | 0 | 6 | 10 | see VBC_QUESTION_COVERAGE.md |
+| value_based_care | care_management | 47 | 2 | 11 | 0 | 0 | 0 | 0 | 34 | see VBC_QUESTION_COVERAGE.md |
+| value_based_care | transitions | 29 | 5 | 17 | 0 | 0 | 0 | 0 | 7 | see VBC_QUESTION_COVERAGE.md |
+| value_based_care | sdoh | 33 | 3 | 14 | 0 | 0 | 0 | 2 | 14 | see VBC_QUESTION_COVERAGE.md |
+| value_based_care | network_leakage | 22 | 2 | 11 | 2 | 0 | 0 | 0 | 7 | see VBC_QUESTION_COVERAGE.md |
+| value_based_care | contract_settlement | 37 | 0 | 0 | 0 | 6 | 0 | 12 | 19 | see VBC_QUESTION_COVERAGE.md |
+| value_based_care | forecasting | 23 | 2 | 7 | 0 | 2 | 0 | 2 | 10 | see VBC_QUESTION_COVERAGE.md |
+| value_based_care | program_evaluation | 41 | 2 | 7 | 0 | 1 | 0 | 5 | 26 | see VBC_QUESTION_COVERAGE.md |
+| value_based_care | provider_performance | 29 | 9 | 10 | 0 | 1 | 0 | 1 | 8 | see VBC_QUESTION_COVERAGE.md |
+| value_based_care | data_quality | 35 | 1 | 11 | 0 | 0 | 0 | 3 | 20 | see VBC_QUESTION_COVERAGE.md |
+| hospital_operations | hospital_operations | 51 | 2 | 14 | 0 | 0 | 0 | 2 | 33 | ed_timestamps (8), bed_census (7), or_case_times (6), ed_lwbs (3) |
+| revenue_cycle | revenue_cycle | 51 | 10 | 23 | 0 | 1 | 2 | 2 | 13 | coding_workflow (3), charge_capture (2), cost_accounting (2), denial_appeals (1) |
+| payer_utilization_management | payer_utilization_management | 46 | 4 | 20 | 0 | 0 | 1 | 2 | 19 | prior_auth (10), provider_directory_geo (4), premiums (2), stop_loss_terms (1) |
+| pharmacy | pharmacy | 48 | 4 | 23 | 0 | 0 | 0 | 2 | 19 | flags_340b (4), drug_cost (2), mme_reference (2), bed_census (2) |
+| quality_patient_safety | quality_patient_safety | 48 | 2 | 18 | 0 | 1 | 2 | 3 | 22 | death_records (4), hai_events (4), device_days (4), safety_events (4) |
+| behavioral_health | behavioral_health | 42 | 1 | 29 | 0 | 0 | 0 | 2 | 10 | psych_unit_stays (3), bh_provider_types (2), crisis_services (2), sud_treatment (1) |
+| post_acute_home_health | post_acute_home_health | 41 | 1 | 13 | 0 | 0 | 0 | 2 | 25 | snf_stays (17), hospice_elections (4), death_records (3), staff_schedules (2) |
+| workforce_productivity | workforce_productivity | 41 | 2 | 9 | 0 | 0 | 0 | 2 | 28 | staff_schedules (12), hr_roster (9), payroll (5), provider_fte (4) |
+| patient_experience_access | patient_experience_access | 40 | 2 | 16 | 0 | 0 | 0 | 2 | 20 | hcahps (7), portal_activity (5), cgcahps (2), call_center (2) |
+| public_population_health | public_population_health | 41 | 0 | 29 | 0 | 0 | 2 | 2 | 8 | population_denominators (2), svi_reference (2), death_records (2), environmental_data (1) |
+| life_sciences_rwe | life_sciences_rwe | 43 | 2 | 25 | 0 | 0 | 4 | 3 | 9 | trial_criteria (3), oncology_detail (2), site_directory (1), oncology_regimens (1) |
+| clinical_decision_support | clinical_decision_support | 46 | 9 | 26 | 0 | 0 | 4 | 2 | 5 | cds_alert_logs (3), guideline_rules (2) |
 
-## Questions whose bucket differs between `v1.23` and `v2.0` (67)
+## Questions whose bucket differs between `v1.23` and `v2.0` (68)
 
 | ID | v1.23 | v2.0 | Question |
 |---|---|---|---|
-| VQ-286 | wrong engine | needs router | Which PCPs have the highest avoidable ED rate per 1,000 among their panel? |
+| VQ-030 | needs router | answered locally | What were the top 10 diagnoses for ED visits that did not result in admission? |
+| VQ-170 | needs router | answered locally | How many members have any Z55-Z65 code on a claim this year, by practice? |
+| VQ-185 | declined locally | needs router | How many members have a preferred language other than English, and do they have lower AWV completion? |
 | HQ-OPS-016 | unsupported (data missing) (drg) | needs router | Which DRGs have the largest gap between our actual length of stay and the geometric mean LOS? |
 | HQ-RCM-004 | unsupported (data missing) (claim_lines) | needs router | Where are denials unexpectedly concentrated across service lines, payers and billing providers? |
 | HQ-RCM-005 | unsupported (data missing) (claim_lines) | needs router | What claim characteristics are most associated with being denied (eligibility, coding, service type, payer)? |
 | HQ-RCM-006 | unsupported (data missing) (claim_lines) | needs new engine | Which claims waiting to be submitted today are most likely to be denied, and why? |
-| HQ-RCM-019 | unsupported (data missing) (claim_lines) | needs router | Which claims were paid below comparable claims for the same service and payer (possible underpayments)? |
-| HQ-RCM-021 | unsupported (data missing) (claim_lines) | declined locally | What is our average allowed amount per CPT for the top 20 outpatient procedures, by payer? |
+| HQ-RCM-019 | unsupported (data missing) (claim_lines) | answered locally | Which claims were paid below comparable claims for the same service and payer (possible underpayments)? |
+| HQ-RCM-021 | unsupported (data missing) (claim_lines) | needs router | What is our average allowed amount per CPT for the top 20 outpatient procedures, by payer? |
 | HQ-RCM-027 | unsupported (data missing) (drg) | needs router | What is our Medicare case mix index by month and by service line? |
 | HQ-RCM-028 | unsupported (data missing) (drg) | needs router | Did our case mix index drop unexpectedly this quarter? |
 | HQ-RCM-029 | unsupported (data missing) (drg, claim_dx) | needs new engine | Which inpatient accounts likely have an undocumented CC or MCC that a CDI query could clarify? |
 | HQ-RCM-030 | unsupported (data missing) (drg) | needs router | What share of our heart failure and sepsis DRGs are coded with an MCC compared with without? |
 | HQ-RCM-031 | unsupported (data missing) (claim_lines) | needs router | Which providers bill E/M level 5 visits far more often than their peers? |
-| HQ-RCM-032 | unsupported (data missing) (claim_lines) | needs router | What is the distribution of office E/M levels (99212-99215) by clinician? |
-| HQ-RCM-036 | unsupported (data missing) (claim_lines) | declined locally | Which revenue codes show up on claims without a CPT/HCPCS code, and how much is billed on them? |
+| HQ-RCM-032 | unsupported (data missing) (claim_lines) | answered locally | What is the distribution of office E/M levels (99212-99215) by clinician? |
+| HQ-RCM-036 | unsupported (data missing) (claim_lines) | answered locally | Which revenue codes show up on claims without a CPT/HCPCS code, and how much is billed on them? |
 | HQ-PAY-012 | unsupported (data missing) (drg) | needs router | Which inpatient stays had a length of stay more than double the DRG geometric mean? |
 | HQ-PAY-013 | unsupported (data missing) (claim_lines) | needs router | What are advanced imaging (CT/MRI/PET) units per 1,000 members by ordering provider? |
 | HQ-PAY-027 | unsupported (data missing) (claim_lines) | needs router | Which specialists deliver lower episode cost after adjusting for patient mix? |
-| HQ-PAY-029 | unsupported (data missing) (claim_lines) | needs router | Which providers bill unusually high units or codes compared with their specialty peers? |
+| HQ-PAY-029 | unsupported (data missing) (claim_lines) | answered locally | Which providers bill unusually high units or codes compared with their specialty peers? |
 | HQ-PAY-030 | unsupported (data missing) (claim_lines) | needs router | Which claims show likely unbundling of procedures that should be billed together? |
 | HQ-PAY-034 | unsupported (data missing) (claim_lines) | needs router | Which providers billed more hours of service in a day than is physically possible? |
 | HQ-PAY-035 | unsupported (data missing) (claim_lines) | needs router | Did any provider's billing volume for a code spike abruptly this quarter? |
@@ -130,7 +132,6 @@ Buckets: **answered locally** = compiles to the expected engine; **needs router*
 | HQ-BH-014 | unsupported (data missing) (mood_screens) | needs router | Which patients in treatment for depression are not improving on their PHQ-9 scores over time? |
 | HQ-BH-015 | unsupported (data missing) (mood_screens, behavioral_care) | needs router | What share of collaborative care patients reached a 50% reduction in PHQ-9 within 24 weeks? |
 | HQ-BH-017 | unsupported (data missing) (mood_screens, behavioral_care) | needs router | Which registry patients are overdue for a PHQ-9 or care-manager contact and should be called this week? |
-| HQ-BH-018 | unsupported (data missing) (mood_screens) | declined locally | Did enrollment in collaborative care improve depression scores compared with usual care? |
 | HQ-BH-023 | unsupported (data missing) (place_of_service) | needs router | What share of behavioral health visits were delivered by telehealth by month? |
 | HQ-BH-024 | unsupported (data missing) (behavioral_care) | needs router | What share of patients screened positive for suicide risk received a same-day safety assessment? |
 | HQ-BH-025 | unsupported (data missing) (behavioral_care) | needs router | How many patients with a positive suicide screen had a follow-up contact within 72 hours? |
@@ -140,11 +141,11 @@ Buckets: **answered locally** = compiles to the expected engine; **needs router*
 | HQ-WF-030 | unsupported (data missing) (telephone_messages) | needs router | What is the median time to close a patient telephone message, by practice? |
 | HQ-WF-031 | unsupported (data missing) (telephone_messages) | needs router | Has the volume of patient messages per clinician shifted outside its usual range? |
 | HQ-PX-028 | unsupported (data missing) (place_of_service) | needs router | What share of visits were video or telephone telehealth by department and month? |
-| HQ-PX-029 | unsupported (data missing) (place_of_service) | declined locally | Do telehealth visits have lower no-show rates than in-person visits for the same clinics? |
-| HQ-PX-033 | unsupported (data missing) (race_ethnicity_language) | declined locally | How many visits involved patients needing an interpreter, by language and department? |
-| HQ-PX-034 | unsupported (data missing) (race_ethnicity_language) | declined locally | Do patients with limited English proficiency have higher no-show or longer lead times? |
-| HQ-PX-036 | unsupported (data missing) (geography, race_ethnicity_language) | wrong engine | Where are long appointment lead times unexpectedly concentrated across ZIP codes, payers, ages and languages? |
-| HQ-PH-006 | unsupported (data missing) (geography, race_ethnicity_language) | declined locally | How does flu vaccine coverage differ by ZIP code, race and ethnicity? |
+| HQ-PX-029 | unsupported (data missing) (place_of_service) | needs router | Do telehealth visits have lower no-show rates than in-person visits for the same clinics? |
+| HQ-PX-033 | unsupported (data missing) (race_ethnicity_language) | needs router | How many visits involved patients needing an interpreter, by language and department? |
+| HQ-PX-034 | unsupported (data missing) (race_ethnicity_language) | needs router | Do patients with limited English proficiency have higher no-show or longer lead times? |
+| HQ-PX-036 | unsupported (data missing) (geography, race_ethnicity_language) | needs router | Where are long appointment lead times unexpectedly concentrated across ZIP codes, payers, ages and languages? |
+| HQ-PH-006 | unsupported (data missing) (geography, race_ethnicity_language) | needs router | How does flu vaccine coverage differ by ZIP code, race and ethnicity? |
 | HQ-PH-008 | unsupported (data missing) (vaccine_outreach) | needs router | What share of patients reached by vaccination outreach were vaccinated within 30 days? |
 | HQ-PH-009 | unsupported (data missing) (vaccine_outreach) | needs router | Did our vaccination outreach calls raise flu vaccination compared with patients not called? |
 | HQ-PH-015 | unsupported (data missing) (geography) | needs new engine | Is there a geographic cluster of gastrointestinal illness ED visits in the last 7 days? |
@@ -155,144 +156,180 @@ Buckets: **answered locally** = compiles to the expected engine; **needs router*
 | HQ-CDS-006 | unsupported (data missing) (cancer_screening) | needs router | What share of abnormal screening mammograms (BI-RADS 0, 4, 5) had diagnostic follow-up within 30 days? |
 | HQ-CDS-034 | unsupported (data missing) (cancer_screening) | needs router | What share of patients who decided against cancer screening had a documented shared decision? |
 
-## Correctness backlog on `v1.23`: wrong engine or declined locally (23)
+## Correctness backlog on `v1.23`: wrong engine or declined locally (15)
 
 | ID | Bucket | Expected | Compiled | Question | Compiler note |
 |---|---|---|---|---|---|
-| VQ-053 | wrong engine | profile | vbc | What is PMPM by practice, risk-adjusted? |  |
-| VQ-065 | wrong engine | literal_lookup | knowledge | What is home health spend PMPM by agency, and which agencies are outliers? |  |
-| VQ-134 | declined locally | literal_lookup | - | Which members flagged as rising-risk have had a significant cost increase in the last quarter? |  |
-| VQ-156 | declined locally | program_effect | - | Do members who receive a TCM visit have lower 30-day readmission and cost than those who do not? |  |
+| VQ-050 | declined locally | vbc | - | What is our total cost of care PMPM year to date, and how does it compare to benchmark? |  |
 | VQ-185 | declined locally | literal_lookup | - | How many members have a preferred language other than English, and do they have lower AWV completion? |  |
+| VQ-191 | wrong engine | pathway | network | Which specialties have the highest leakage rate, and to which outside groups? |  |
+| VQ-200 | wrong engine | literal_lookup | network | Which hospitals do our members use for elective procedures, and how does cost per case compare across them? |  |
 | VQ-212 | declined locally | vbc | - | What is our projected shared-savings payment if the benchmark is $X PMPM? |  |
 | VQ-226 | declined locally | vbc | - | What portion of our shared savings will be distributed to each practice under our distribution methodology? |  |
 | VQ-227 | declined locally | vbc | - | What is the sensitivity of our settlement to a 1% change in national trend? |  |
-| VQ-246 | declined locally | demand | - | How does claims seasonality affect our mid-year projection of savings? |  |
+| VQ-232 | declined locally | vbc | - | Which track and level of risk should we choose next agreement period based on our historical variance? |  |
+| VQ-234 | declined locally | vbc | - | Do we owe any shared losses this year, and how close are we to the loss threshold? |  |
+| VQ-240 | declined locally | vbc | - | What is our projected savings rate for the performance year with a range of flat, +3% and -3% trend scenarios? |  |
+| VQ-249 | declined locally | vbc | - | What is the probability that we exceed the MSR this year? |  |
 | VQ-273 | declined locally | program_effect | - | Did the SDOH screening program change downstream utilization for those referred to community resources? |  |
-| VQ-283 | wrong engine | profile | vbc | Which PCPs have the highest risk-adjusted cost per attributed patient? |  |
-| VQ-286 | wrong engine | profile | vbc | Which PCPs have the highest avoidable ED rate per 1,000 among their panel? |  |
-| VQ-290 | wrong engine | profile | vbc | How do PCPs compare on admissions per 1,000 patients? |  |
-| VQ-325 | declined locally | literal_lookup | - | How many claims have missing or invalid place of service, which affects primary care assignment? |  |
-| VQ-328 | declined locally | monitor | - | How do we interpret a sudden drop in claim counts for a provider - billing issue or real change? |  |
+| VQ-288 | declined locally | vbc | - | What is each practice's share of the savings we earned, under our distribution model? |  |
 | R-ECON-04 | declined locally | vbc | - | How sensitive is projected contract performance to claim runout, attribution changes and high-cost outliers? |  |
-| R-BEHAV-01 | declined locally | literal_lookup | - | Where has improved social-needs screening failed to produce treatment engagement or need resolution? |  |
-| R-DISCOVERY-04 | declined locally | profile | - | Which apparent provider success survives shrinkage, uncertainty estimates and validation in a later cohort? |  |
 | HQ-RCM-045 | declined locally | literal_lookup | - | How many denials were caused by eligibility or registration errors, by registration area? |  |
-| HQ-RX-036 | declined locally | program_effect | - | Did our outpatient stewardship feedback reports reduce inappropriate antibiotic prescribing? |  |
-| HQ-QS-044 | declined locally | program_effect | - | Did our heart failure discharge bundle reduce 30-day readmissions? |  |
-| HQ-PAC-021 | declined locally | literal_lookup | - | How did timed mobility scores change from the first to the latest home health assessment? |  |
-| HQ-LS-029 | declined locally | literal_lookup | - | How do total costs change in the year after starting a biologic for asthma compared with the year before? |  |
 
-### Compiled into a data graph although unsupported, knowledge or needing a new engine on `v1.23` (17)
+### Compiled into a data graph although unsupported, knowledge or needing a new engine on `v1.23` (20)
 
 | ID | Bucket | Expected | Compiled | Question |
 |---|---|---|---|---|
 | VQ-002 | knowledge | knowledge | knowledge | How does MSSP decide which ACO a beneficiary is assigned to, including the new third assignment step? |
-| VQ-051 | unsupported (data missing) | unsupported | knowledge | What is PMPM by enrollment type (ESRD, disabled, aged/dual, aged/non-dual)? |
-| VQ-095 | unsupported (data missing) | unsupported | knowledge | How does demographic vs HCC-driven risk differ between new and continuing beneficiaries? |
-| VQ-175 | unsupported (data missing) | unsupported | vbc | How many attributed members live in high-deprivation neighborhoods, by practice? |
+| VQ-063 | knowledge | knowledge | knowledge | Which expenditures are excluded from MSSP benchmark and performance-year spending (e.g., IME, DSH, uncompensated care)? |
+| VQ-110 | knowledge | knowledge | knowledge | How does the quality score scale our shared savings rate under the alternative quality standard? |
+| VQ-224 | knowledge | knowledge | knowledge | What is the effect of the regional adjustment cap on our benchmark? |
+| VQ-235 | knowledge | knowledge | knowledge | What is the difference between gross savings and the shared savings payment we actually receive? |
 | VQ-281 | knowledge | knowledge | knowledge | Why do CMS evaluators say REACH increased net spending cumulatively even though many ACOs beat their benchmarks? |
 | VQ-282 | knowledge | knowledge | knowledge | How did practices change care delivery under Primary Care First and did spending follow? |
-| VQ-312 | unsupported (data missing) | unsupported | vbc | Why does our internal PMPM differ from the PMPM in CMS's quarterly report? |
-| VQ-324 | unsupported (data missing) | unsupported | knowledge | What is the payer roster vs claims attribution mismatch for each MA plan? |
 | HQ-RCM-008 | unsupported (data missing) | literal_lookup | claims_review | What is our appeal overturn rate by payer and denial category? |
+| HQ-PAY-026 | unsupported (data missing) | literal_lookup | network | What share of specialist claims were paid to out-of-network providers, by specialty? |
+| HQ-PAY-033 | needs new engine | new_engine:provider_network_graph | network | Are there clusters of providers that refer patients among themselves at unusual rates, suggesting kickback arrangements? |
 | HQ-PAY-046 | knowledge | knowledge | knowledge | How is the medical loss ratio calculated and what counts as quality improvement expense? |
+| HQ-BH-042 | knowledge | knowledge | knowledge | What does the evidence say about retention and mortality on buprenorphine versus methadone? |
 | HQ-WF-022 | unsupported (data missing) | literal_lookup | knowledge | What is compensation per wRVU by physician, and who is far from the benchmark? |
 | HQ-WF-038 | unsupported (data missing) | literal_lookup | cohort | How many workplace violence incidents against staff were reported by unit? |
-| HQ-PX-010 | unsupported (data missing) | literal_lookup | scheduling | What is the third next available appointment for new and established patients by department? |
-| HQ-PX-036 | unsupported (data missing) | discover | scheduling | Where are long appointment lead times unexpectedly concentrated across ZIP codes, payers, ages and languages? |
-| HQ-PX-040 | knowledge | knowledge | scheduling | Why is third next available appointment preferred over first available as an access measure? |
+| HQ-WF-040 | knowledge | knowledge | knowledge | What does the research show about nurse staffing ratios and patient mortality? |
+| HQ-WF-041 | knowledge | knowledge | knowledge | How are work RVUs set in the physician fee schedule and why do they matter for productivity pay? |
+| HQ-PX-032 | unsupported (data missing) | program_effect | scheduling | Did text appointment reminders reduce no-shows? |
+| HQ-PH-040 | knowledge | knowledge | knowledge | What does the CDC Social Vulnerability Index measure and how should it be used for planning? |
 | HQ-LS-018 | needs new engine | new_engine:target_trial_emulation | program_effect | Among new users, do SGLT2 inhibitors reduce heart failure hospitalization compared with DPP-4 inhibitors? |
 | HQ-LS-020 | needs new engine | new_engine:target_trial_emulation | program_effect | Does starting a GLP-1 agonist slow eGFR decline compared with starting an SGLT2 inhibitor? |
 
-## Correctness backlog on `v2.0`: wrong engine or declined locally (31)
+## Correctness backlog on `v2.0`: wrong engine or declined locally (15)
 
 | ID | Bucket | Expected | Compiled | Question | Compiler note |
 |---|---|---|---|---|---|
-| VQ-053 | wrong engine | profile | vbc | What is PMPM by practice, risk-adjusted? |  |
-| VQ-065 | wrong engine | literal_lookup | knowledge | What is home health spend PMPM by agency, and which agencies are outliers? |  |
-| VQ-134 | declined locally | literal_lookup | - | Which members flagged as rising-risk have had a significant cost increase in the last quarter? |  |
-| VQ-156 | declined locally | program_effect | - | Do members who receive a TCM visit have lower 30-day readmission and cost than those who do not? |  |
-| VQ-185 | declined locally | literal_lookup | - | How many members have a preferred language other than English, and do they have lower AWV completion? |  |
+| VQ-050 | declined locally | vbc | - | What is our total cost of care PMPM year to date, and how does it compare to benchmark? |  |
+| VQ-191 | wrong engine | pathway | network | Which specialties have the highest leakage rate, and to which outside groups? |  |
+| VQ-200 | wrong engine | literal_lookup | network | Which hospitals do our members use for elective procedures, and how does cost per case compare across them? |  |
 | VQ-212 | declined locally | vbc | - | What is our projected shared-savings payment if the benchmark is $X PMPM? |  |
 | VQ-226 | declined locally | vbc | - | What portion of our shared savings will be distributed to each practice under our distribution methodology? |  |
 | VQ-227 | declined locally | vbc | - | What is the sensitivity of our settlement to a 1% change in national trend? |  |
-| VQ-246 | declined locally | demand | - | How does claims seasonality affect our mid-year projection of savings? |  |
+| VQ-232 | declined locally | vbc | - | Which track and level of risk should we choose next agreement period based on our historical variance? |  |
+| VQ-234 | declined locally | vbc | - | Do we owe any shared losses this year, and how close are we to the loss threshold? |  |
+| VQ-240 | declined locally | vbc | - | What is our projected savings rate for the performance year with a range of flat, +3% and -3% trend scenarios? |  |
+| VQ-249 | declined locally | vbc | - | What is the probability that we exceed the MSR this year? |  |
 | VQ-273 | declined locally | program_effect | - | Did the SDOH screening program change downstream utilization for those referred to community resources? |  |
-| VQ-283 | wrong engine | profile | vbc | Which PCPs have the highest risk-adjusted cost per attributed patient? |  |
-| VQ-290 | wrong engine | profile | vbc | How do PCPs compare on admissions per 1,000 patients? |  |
-| VQ-325 | declined locally | literal_lookup | - | How many claims have missing or invalid place of service, which affects primary care assignment? |  |
-| VQ-328 | declined locally | monitor | - | How do we interpret a sudden drop in claim counts for a provider - billing issue or real change? |  |
+| VQ-288 | declined locally | vbc | - | What is each practice's share of the savings we earned, under our distribution model? |  |
 | R-ECON-04 | declined locally | vbc | - | How sensitive is projected contract performance to claim runout, attribution changes and high-cost outliers? |  |
-| R-BEHAV-01 | declined locally | literal_lookup | - | Where has improved social-needs screening failed to produce treatment engagement or need resolution? |  |
-| R-DISCOVERY-04 | declined locally | profile | - | Which apparent provider success survives shrinkage, uncertainty estimates and validation in a later cohort? |  |
-| HQ-RCM-021 | declined locally | literal_lookup | - | What is our average allowed amount per CPT for the top 20 outpatient procedures, by payer? |  |
-| HQ-RCM-036 | declined locally | literal_lookup | - | Which revenue codes show up on claims without a CPT/HCPCS code, and how much is billed on them? |  |
 | HQ-RCM-045 | declined locally | literal_lookup | - | How many denials were caused by eligibility or registration errors, by registration area? |  |
-| HQ-RX-036 | declined locally | program_effect | - | Did our outpatient stewardship feedback reports reduce inappropriate antibiotic prescribing? |  |
-| HQ-QS-044 | declined locally | program_effect | - | Did our heart failure discharge bundle reduce 30-day readmissions? |  |
 | HQ-QS-046 | declined locally | literal_lookup | - | Do readmission rates differ by race, ethnicity, language or dual-eligible status? |  |
-| HQ-BH-018 | declined locally | program_effect | - | Did enrollment in collaborative care improve depression scores compared with usual care? |  |
-| HQ-PAC-021 | declined locally | literal_lookup | - | How did timed mobility scores change from the first to the latest home health assessment? |  |
-| HQ-PX-029 | declined locally | literal_lookup | - | Do telehealth visits have lower no-show rates than in-person visits for the same clinics? |  |
-| HQ-PX-033 | declined locally | literal_lookup | - | How many visits involved patients needing an interpreter, by language and department? |  |
-| HQ-PX-034 | declined locally | literal_lookup | - | Do patients with limited English proficiency have higher no-show or longer lead times? |  |
-| HQ-PX-036 | wrong engine | discover | scheduling | Where are long appointment lead times unexpectedly concentrated across ZIP codes, payers, ages and languages? |  |
-| HQ-PH-006 | declined locally | literal_lookup | - | How does flu vaccine coverage differ by ZIP code, race and ethnicity? |  |
-| HQ-LS-029 | declined locally | literal_lookup | - | How do total costs change in the year after starting a biologic for asthma compared with the year before? |  |
 
-### Compiled into a data graph although unsupported, knowledge or needing a new engine on `v2.0` (18)
+### Compiled into a data graph although unsupported, knowledge or needing a new engine on `v2.0` (21)
 
 | ID | Bucket | Expected | Compiled | Question |
 |---|---|---|---|---|
 | VQ-002 | knowledge | knowledge | knowledge | How does MSSP decide which ACO a beneficiary is assigned to, including the new third assignment step? |
-| VQ-051 | unsupported (data missing) | unsupported | knowledge | What is PMPM by enrollment type (ESRD, disabled, aged/dual, aged/non-dual)? |
+| VQ-063 | knowledge | knowledge | knowledge | Which expenditures are excluded from MSSP benchmark and performance-year spending (e.g., IME, DSH, uncompensated care)? |
 | VQ-074 | unsupported (data missing) | unsupported | risk_adjustment | What is our HCC recapture rate year to date? |
-| VQ-090 | unsupported (data missing) | unsupported | risk_adjustment | What is the average RAF of patients who had an AWV vs those who did not? |
-| VQ-095 | unsupported (data missing) | unsupported | knowledge | How does demographic vs HCC-driven risk differ between new and continuing beneficiaries? |
-| VQ-175 | unsupported (data missing) | unsupported | vbc | How many attributed members live in high-deprivation neighborhoods, by practice? |
+| VQ-110 | knowledge | knowledge | knowledge | How does the quality score scale our shared savings rate under the alternative quality standard? |
+| VQ-224 | knowledge | knowledge | knowledge | What is the effect of the regional adjustment cap on our benchmark? |
+| VQ-235 | knowledge | knowledge | knowledge | What is the difference between gross savings and the shared savings payment we actually receive? |
 | VQ-281 | knowledge | knowledge | knowledge | Why do CMS evaluators say REACH increased net spending cumulatively even though many ACOs beat their benchmarks? |
 | VQ-282 | knowledge | knowledge | knowledge | How did practices change care delivery under Primary Care First and did spending follow? |
-| VQ-312 | unsupported (data missing) | unsupported | vbc | Why does our internal PMPM differ from the PMPM in CMS's quarterly report? |
-| VQ-324 | unsupported (data missing) | unsupported | knowledge | What is the payer roster vs claims attribution mismatch for each MA plan? |
 | HQ-RCM-008 | unsupported (data missing) | literal_lookup | claims_review | What is our appeal overturn rate by payer and denial category? |
+| HQ-PAY-026 | unsupported (data missing) | literal_lookup | network | What share of specialist claims were paid to out-of-network providers, by specialty? |
+| HQ-PAY-033 | needs new engine | new_engine:provider_network_graph | network | Are there clusters of providers that refer patients among themselves at unusual rates, suggesting kickback arrangements? |
 | HQ-PAY-046 | knowledge | knowledge | knowledge | How is the medical loss ratio calculated and what counts as quality improvement expense? |
+| HQ-BH-042 | knowledge | knowledge | knowledge | What does the evidence say about retention and mortality on buprenorphine versus methadone? |
 | HQ-WF-022 | unsupported (data missing) | literal_lookup | knowledge | What is compensation per wRVU by physician, and who is far from the benchmark? |
 | HQ-WF-038 | unsupported (data missing) | literal_lookup | cohort | How many workplace violence incidents against staff were reported by unit? |
-| HQ-PX-010 | unsupported (data missing) | literal_lookup | scheduling | What is the third next available appointment for new and established patients by department? |
-| HQ-PX-040 | knowledge | knowledge | scheduling | Why is third next available appointment preferred over first available as an access measure? |
+| HQ-WF-040 | knowledge | knowledge | knowledge | What does the research show about nurse staffing ratios and patient mortality? |
+| HQ-WF-041 | knowledge | knowledge | knowledge | How are work RVUs set in the physician fee schedule and why do they matter for productivity pay? |
+| HQ-PX-032 | unsupported (data missing) | program_effect | scheduling | Did text appointment reminders reduce no-shows? |
+| HQ-PH-040 | knowledge | knowledge | knowledge | What does the CDC Social Vulnerability Index measure and how should it be used for planning? |
 | HQ-LS-018 | needs new engine | new_engine:target_trial_emulation | program_effect | Among new users, do SGLT2 inhibitors reduce heart failure hospitalization compared with DPP-4 inhibitors? |
 | HQ-LS-020 | needs new engine | new_engine:target_trial_emulation | program_effect | Does starting a GLP-1 agonist slow eGFR decline compared with starting an SGLT2 inhibitor? |
 
-## Healthcare-library questions answered locally on `v1.23` (10)
+## Healthcare-library questions answered locally on `v1.23` (35)
 
 | ID | Engine | Question |
 |---|---|---|
 | HQ-OPS-010 | demand | How many ED arrivals should we expect per day over the next four weeks, with a peak-day estimate? |
+| HQ-OPS-012 | sql | What percent of ED visits end in an admission (admit rate) by month, and is it rising? |
+| HQ-RCM-001 | sql | What is our initial denial rate by payer for the last six months? |
+| HQ-RCM-002 | claims_review | Which denial reasons cost us the most dollars this year, by payer? |
+| HQ-RCM-003 | monitor | Did the denial rate for any payer jump out of its normal range in the last month? |
+| HQ-RCM-007 | sql | What share of denied claims were eventually paid, and how long did that take? |
+| HQ-RCM-016 | sql | What is our payer mix by gross charges and by visits (commercial, Medicare, Medicaid, self-pay)? |
+| HQ-RCM-023 | sql | Which payers take longest from claim submission to payment? |
+| HQ-RCM-024 | claims_review | How much revenue did we lose to payer take-backs and reprocessed claims this year? |
+| HQ-PAY-014 | sql | Who are our high-cost claimants over $250,000 this year and what share of total spend do they account for? |
+| HQ-PAY-031 | claims_review | Which claims are probable duplicates billed by the same or different providers? |
 | HQ-PAY-040 | program_effect | Did our complex case management program reduce inpatient admissions among enrolled members? |
+| HQ-RX-022 | sql | What is the average patient out-of-pocket cost per fill for insulin, by plan? |
+| HQ-RX-039 | sql | How many patients 65 and older are on a Beers-list medication, by drug? |
+| HQ-RX-041 | sql | Which patients on metformin have an eGFR below 30? |
+| HQ-RX-045 | sql | What share of ordered inpatient doses were documented as not given, and what were the reasons? |
 | HQ-QS-022 | early_signal | Which current inpatients show the vital-sign and lab pattern that usually precedes septic shock? |
 | HQ-QS-031 | early_signal | Which ward patients show early signs of deterioration that preceded past rapid-response calls? |
 | HQ-BH-008 | program_effect | Did starting MOUD reduce ED visits and admissions for patients with opioid use disorder? |
 | HQ-PAC-020 | early_signal | Which current home health patients show the pattern that usually precedes a hospitalization? |
+| HQ-WF-023 | sql | How many patient visits per clinical day does each clinician see, by specialty? |
+| HQ-WF-032 | sql | What is the median time from visit to signed note, by clinician? |
+| HQ-PX-011 | sql | What is the median lead time from booking to appointment by specialty? |
 | HQ-PX-016 | scheduling | Which appointments next week are most likely to be no-shows, and how many extra slots can each clinic safely book? |
+| HQ-LS-002 | sql | How many adults with type 2 diabetes have an A1c between 7.5% and 10.5% and an eGFR of 30 or more? |
 | HQ-LS-021 | program_effect | Did starting an SGLT2 inhibitor reduce heart-failure admissions in our patients with HFrEF? |
+| HQ-CDS-011 | sql | How many patients have two eGFR values below 60 at least 90 days apart but no CKD diagnosis? |
+| HQ-CDS-012 | sql | How many patients have an A1c of 6.5% or more on two occasions without a diabetes diagnosis? |
+| HQ-CDS-019 | sql | What share of patients with diabetes or hypertension had a urine albumin-to-creatinine ratio test in the last year? |
+| HQ-CDS-027 | trajectory | Which patients with CKD have eGFR declining fast enough to reach stage 4 within two years? |
 | HQ-CDS-028 | early_signal | Which heart failure patients show the weight, symptom and lab pattern that preceded past decompensations? |
 | HQ-CDS-029 | calibration | How well calibrated is our readmission risk score across risk deciles? |
+| HQ-CDS-036 | sql | Which patients on ACE inhibitors, ARBs or MRAs have not had potassium and creatinine checked in 12 months? |
+| HQ-CDS-037 | sql | Which patients on levothyroxine have not had a TSH in the last year? |
+| HQ-CDS-040 | sql | How many patients with eGFR under 30 have never been referred to nephrology? |
 
-## Healthcare-library questions answered locally on `v2.0` (10)
+## Healthcare-library questions answered locally on `v2.0` (39)
 
 | ID | Engine | Question |
 |---|---|---|
 | HQ-OPS-010 | demand | How many ED arrivals should we expect per day over the next four weeks, with a peak-day estimate? |
+| HQ-OPS-012 | sql | What percent of ED visits end in an admission (admit rate) by month, and is it rising? |
+| HQ-RCM-001 | sql | What is our initial denial rate by payer for the last six months? |
+| HQ-RCM-002 | claims_review | Which denial reasons cost us the most dollars this year, by payer? |
+| HQ-RCM-003 | monitor | Did the denial rate for any payer jump out of its normal range in the last month? |
+| HQ-RCM-007 | sql | What share of denied claims were eventually paid, and how long did that take? |
+| HQ-RCM-016 | sql | What is our payer mix by gross charges and by visits (commercial, Medicare, Medicaid, self-pay)? |
+| HQ-RCM-019 | claims_review | Which claims were paid below comparable claims for the same service and payer (possible underpayments)? |
+| HQ-RCM-023 | sql | Which payers take longest from claim submission to payment? |
+| HQ-RCM-024 | claims_review | How much revenue did we lose to payer take-backs and reprocessed claims this year? |
+| HQ-RCM-032 | sql | What is the distribution of office E/M levels (99212-99215) by clinician? |
+| HQ-RCM-036 | sql | Which revenue codes show up on claims without a CPT/HCPCS code, and how much is billed on them? |
+| HQ-PAY-014 | sql | Who are our high-cost claimants over $250,000 this year and what share of total spend do they account for? |
+| HQ-PAY-029 | claims_review | Which providers bill unusually high units or codes compared with their specialty peers? |
+| HQ-PAY-031 | claims_review | Which claims are probable duplicates billed by the same or different providers? |
 | HQ-PAY-040 | program_effect | Did our complex case management program reduce inpatient admissions among enrolled members? |
+| HQ-RX-022 | sql | What is the average patient out-of-pocket cost per fill for insulin, by plan? |
+| HQ-RX-039 | sql | How many patients 65 and older are on a Beers-list medication, by drug? |
+| HQ-RX-041 | sql | Which patients on metformin have an eGFR below 30? |
+| HQ-RX-045 | sql | What share of ordered inpatient doses were documented as not given, and what were the reasons? |
 | HQ-QS-022 | early_signal | Which current inpatients show the vital-sign and lab pattern that usually precedes septic shock? |
 | HQ-QS-031 | early_signal | Which ward patients show early signs of deterioration that preceded past rapid-response calls? |
 | HQ-BH-008 | program_effect | Did starting MOUD reduce ED visits and admissions for patients with opioid use disorder? |
 | HQ-PAC-020 | early_signal | Which current home health patients show the pattern that usually precedes a hospitalization? |
+| HQ-WF-023 | sql | How many patient visits per clinical day does each clinician see, by specialty? |
+| HQ-WF-032 | sql | What is the median time from visit to signed note, by clinician? |
+| HQ-PX-011 | sql | What is the median lead time from booking to appointment by specialty? |
 | HQ-PX-016 | scheduling | Which appointments next week are most likely to be no-shows, and how many extra slots can each clinic safely book? |
+| HQ-LS-002 | sql | How many adults with type 2 diabetes have an A1c between 7.5% and 10.5% and an eGFR of 30 or more? |
 | HQ-LS-021 | program_effect | Did starting an SGLT2 inhibitor reduce heart-failure admissions in our patients with HFrEF? |
+| HQ-CDS-011 | sql | How many patients have two eGFR values below 60 at least 90 days apart but no CKD diagnosis? |
+| HQ-CDS-012 | sql | How many patients have an A1c of 6.5% or more on two occasions without a diabetes diagnosis? |
+| HQ-CDS-019 | sql | What share of patients with diabetes or hypertension had a urine albumin-to-creatinine ratio test in the last year? |
+| HQ-CDS-027 | trajectory | Which patients with CKD have eGFR declining fast enough to reach stage 4 within two years? |
 | HQ-CDS-028 | early_signal | Which heart failure patients show the weight, symptom and lab pattern that preceded past decompensations? |
 | HQ-CDS-029 | calibration | How well calibrated is our readmission risk score across risk deciles? |
+| HQ-CDS-036 | sql | Which patients on ACE inhibitors, ARBs or MRAs have not had potassium and creatinine checked in 12 months? |
+| HQ-CDS-037 | sql | Which patients on levothyroxine have not had a TSH in the last year? |
+| HQ-CDS-040 | sql | How many patients with eGFR under 30 have never been referred to nephrology? |
 
 ## Healthcare library by persona
 

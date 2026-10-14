@@ -1,0 +1,101 @@
+{
+ "schema": "compiler-growth-gate/1",
+ "rule_id": "claims_review.takebacks_lost_revenue",
+ "version": 1,
+ "rule_digest": "4806aa751fcef63c00a92e1bc6e599a741ea6c80ad249d746556f0beaa827e2a",
+ "engine": "claims_review",
+ "status": "accepted",
+ "reasons": [],
+ "profiles": {
+  "v1.23": {
+   "source_digest": "0d15e2da55c9a7f8b2e9f0a7bc1525eca99f7607db277836a0eca477c79de52f",
+   "stack": "/Users/mikel/clinical-insights-local/artifacts/agere-healthcare-v123/stack"
+  },
+  "v2.0": {
+   "source_digest": "66db165d755b7fd951c364ac440b8f07a065961d0988dbeb49c9bfb3aac8d8d5",
+   "stack": "/Users/mikel/clinical-insights-local/artifacts/agere-healthcare-v20/stack"
+  }
+ },
+ "captured_counts": {
+  "v1.23": {
+   "acceptance": 1,
+   "library": 1
+  },
+  "v2.0": {
+   "acceptance": 1,
+   "library": 1
+  }
+ },
+ "detail": {
+  "v1.23": {
+   "positives": [
+    {
+     "question": "How much revenue did we lose to payer take-backs and reprocessed claims this year?",
+     "ok": true
+    }
+   ],
+   "negatives": [
+    {
+     "question": "How much revenue did we lose to payer take-backs and reprocessed claims this year compared with last year?",
+     "ok": true
+    },
+    {
+     "question": "How much revenue did we lose to no-shows this year?",
+     "ok": true
+    }
+   ],
+   "captured": [
+    {
+     "kind": "acceptance",
+     "id": "healthcare_library#16",
+     "operation": "claims_review",
+     "expected": "claims_review"
+    },
+    {
+     "kind": "library",
+     "id": "HQ-RCM-024",
+     "operation": "claims_review",
+     "bucket": "answered locally",
+     "expected": "claims_review"
+    }
+   ]
+  },
+  "v2.0": {
+   "positives": [
+    {
+     "question": "How much revenue did we lose to payer take-backs and reprocessed claims this year?",
+     "ok": true
+    }
+   ],
+   "negatives": [
+    {
+     "question": "How much revenue did we lose to payer take-backs and reprocessed claims this year compared with last year?",
+     "ok": true
+    },
+    {
+     "question": "How much revenue did we lose to no-shows this year?",
+     "ok": true
+    }
+   ],
+   "captured": [
+    {
+     "kind": "acceptance",
+     "id": "healthcare_library#16",
+     "operation": "claims_review",
+     "expected": "claims_review"
+    },
+    {
+     "kind": "library",
+     "id": "HQ-RCM-024",
+     "operation": "claims_review",
+     "bucket": "answered locally",
+     "expected": "claims_review"
+    }
+   ]
+  }
+ },
+ "code_identity": "c274c91bafb09d3c8b89af4dc32d728c6e4539b50139c1e1778ff31c224c0562",
+ "interpreter": "compiler-rules/1",
+ "created": "2026-10-14T02:45:16Z",
+ "sequence": 36
+}

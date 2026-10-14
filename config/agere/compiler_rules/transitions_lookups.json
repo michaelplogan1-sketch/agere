@@ -1,0 +1,73 @@
+{
+ "schema": "agere-compiler-rules/1",
+ "family": "transitions_lookups",
+ "note": "Care-transition, feed-timeliness, year-over-year volume and coded-diagnosis lookups.",
+ "rules": [
+  {
+   "id": "transitions.adt_notification_lag",
+   "version": 1,
+   "engine": "literal_lookup",
+   "description": "Hours from an ADT event to our receipt of its notification (median and mean)",
+   "requires": {"streams": ["adt"], "fields": {"adt": ["event_time", "available_time"]}},
+   "pattern": "^how (?:long|many hours|many days) after (?:an? |the )?{event} do we (?:typically |usually |normally )?(?:receive|get) the adt (?:notification|message|feed|alert)s? {period?}$",
+   "slots": {"event": {"type": "option", "options": {"(?:hospital |inpatient )?discharges?": {"value": "discharge"}, "(?:hospital |inpatient )?admissions?": {"value": "admission"},
+                                                      "(?:ed|er|emergency(?: department)?) (?:registrations?|visits?|arrivals?)": {"value": "emergency_registration"}}},
+             "period": {"type": "period", "default": "all"}},
+   "plan": {"kind": "sql", "returns": "table",
+            "query": "WITH x AS (SELECT 24.0 * (julianday(json_extract(payload, '$.available_time')) - julianday(json_extract(payload, '$.event_time'))) AS v FROM record WHERE stream = 'adt' AND json_extract(payload, '$.event') = '{event.value}' AND json_extract(payload, '$.event_time') IS NOT NULL AND json_extract(payload, '$.available_time') IS NOT NULL AND {period.where:event_date}), r AS (SELECT v, row_number() OVER (ORDER BY v) AS rn, count(*) OVER () AS n FROM x) SELECT '{event.value}' AS adt_event, max(n) AS notifications, round(avg(CASE WHEN rn IN ((n + 1) / 2, (n + 2) / 2) THEN v END), 2) AS median_hours, round(avg(v), 2) AS mean_hours, round(max(v), 2) AS max_hours FROM r",
+            "purpose": "Hours from the ADT {event.value} event time to the time the notification was available to us (median, mean, max)"},
+   "positives": [{"question": "How long after discharge do we typically receive the ADT notification?", "expect": {"operation": "sql", "returns": "table"}},
+                 {"question": "How many hours after an admission do we get the ADT notification in 2029?", "expect": {"operation": "sql", "returns": "table"}}],
+   "negatives": ["How long after discharge do we typically receive the ADT notification, by hospital, and is it getting worse?", "How long after discharge do patients get a follow-up visit?"]
+  },
+  {
+   "id": "transitions.followup_call_share",
+   "version": 1,
+   "engine": "literal_lookup",
+   "description": "Share of ED visits or discharges followed by an outgoing phone contact with the patient within N days",
+   "requires": {"streams": ["telephone_messages", "encounters"], "fields": {"telephone_messages": ["direction"]}},
+   "pattern": "^what (?:share|percent(?:age)?|proportion|%) of {index} (?:get|got|receive|received|had|have) an? (?:follow[- ]?up |outreach |post[- ]discharge )?(?:phone |telephone )?call within {n} (?:calendar )?days? {period?}$",
+   "slots": {"index": {"type": "option", "options": {"(?:ed|er|emergency(?: department| room)?) visits": {"value": "emergency visits", "pred": "type_concept = 'emergency_visit'"},
+                                                      "(?:inpatient )?(?:discharges|admissions|hospitali[sz]ations)": {"value": "inpatient stays", "pred": "type_concept = 'inpatient_admission'"}}},
+             "n": {"type": "number"}, "period": {"type": "period", "default": "all"}},
+   "plan": {"kind": "sql", "returns": "value",
+            "query": "WITH e AS (SELECT encounter_id, patient_id, coalesce(end_date, event_date) AS d FROM visit WHERE {index.pred} AND event_date IS NOT NULL AND {period.where:event_date}), c AS (SELECT DISTINCT patient_id, event_date FROM record WHERE stream = 'telephone_messages' AND json_extract(payload, '$.direction') = 'outgoing') SELECT round(100.0 * count(DISTINCT CASE WHEN c.patient_id IS NOT NULL THEN e.encounter_id END) / nullif(count(DISTINCT e.encounter_id), 0), 2) FROM e LEFT JOIN c ON c.patient_id = e.patient_id AND c.event_date BETWEEN substr(e.d, 1, 10) AND date(substr(e.d, 1, 10), '+{n.value} days')",
+            "purpose": "Percent of {index.value} with an outgoing telephone contact to the same patient from the visit (or discharge) date through {n.value} days after"},
+   "positives": [{"question": "What share of ED visits get a follow-up call within 2 days?", "expect": {"operation": "sql", "returns": "value"}},
+                 {"question": "What percent of discharges got a phone call within 3 days in 2029?", "expect": {"operation": "sql", "returns": "value"}}],
+   "negatives": ["What share of ED visits get a follow-up call within 2 days, by practice?", "What share of ED visits get a follow-up visit within 7 days?"]
+  },
+  {
+   "id": "volume.per_1000_vs_last_year",
+   "version": 1,
+   "engine": "literal_lookup",
+   "description": "Received records of a service per 1,000 roster patients, this year to date vs the same span last year and all of last year",
+   "requires": {"streams": ["durable_medical_equipment", "imaging_orders", "referrals"]},
+   "pattern": "^(?:what (?:are|is|were) (?:our )?)?{service} per 1000(?: (?:members|patients))? (?:vs\\.?|versus|compared (?:with|to)) (?:last|the prior|prior|the previous) year$",
+   "slots": {"service": {"type": "option", "options": {
+               "(?:durable medical equipment|dme) (?:claims|orders|records|items)": {"value": "durable medical equipment records", "stream": "durable_medical_equipment"},
+               "(?:imaging|radiology|x-ray) orders": {"value": "imaging orders", "stream": "imaging_orders"},
+               "(?:specialty )?referrals": {"value": "referrals", "stream": "referrals"}}}},
+   "plan": {"kind": "sql", "returns": "table",
+            "query": "WITH n AS (SELECT count(*) AS roster FROM patient), y AS (SELECT CAST(substr(date('{as_of}'), 1, 4) AS integer) AS cur) SELECT label AS period, records, round(1000.0 * records / (SELECT roster FROM n), 1) AS per_1000 FROM (SELECT 'last year (full)' AS label, 1 AS k, count(*) AS records FROM record WHERE stream = '{service.stream}' AND substr(event_date, 1, 4) = CAST((SELECT cur FROM y) - 1 AS text) UNION ALL SELECT 'last year to same date', 2, count(*) FROM record WHERE stream = '{service.stream}' AND event_date BETWEEN CAST((SELECT cur FROM y) - 1 AS text) || '-01-01' AND date('{as_of}', '-1 year') UNION ALL SELECT 'this year to date', 3, count(*) FROM record WHERE stream = '{service.stream}' AND event_date BETWEEN substr('{as_of}', 1, 4) || '-01-01' AND '{as_of}') ORDER BY k",
+            "purpose": "{service.value} per 1,000 roster patients: all of last year, last year through the same date, and this year to date (not annualised)"},
+   "positives": [{"question": "What are our durable medical equipment claims per 1,000 vs last year?", "expect": {"operation": "sql", "returns": "table"}},
+                 {"question": "Imaging orders per 1,000 members compared with last year", "expect": {"operation": "sql", "returns": "table"}}],
+   "negatives": ["What are our durable medical equipment claims per 1,000 vs last year by practice?", "What are our durable medical equipment costs per 1,000 vs last year?"]
+  },
+  {
+   "id": "coding.claim_diagnosis_range_by_practice",
+   "version": 1,
+   "engine": "literal_lookup",
+   "description": "Patients with an ICD-10 code (or category range) on any claim, by attributed practice",
+   "requires": {"streams": ["medical_claims"], "fields": {"medical_claims": ["diagnosis_codes"]}},
+   "pattern": "^how many (?:members|patients) (?:have|had) (?:any |an? )?{code} codes? on (?:a|any) claims? {period?},? (?:by|per|for each) (?:practice|clinic)$",
+   "slots": {"code": {"type": "icd_range"}, "period": {"type": "period", "default": "all"}},
+   "plan": {"kind": "sql", "returns": "table",
+            "query": "WITH dx AS (SELECT DISTINCT c.patient_id FROM claim c, json_each(c.diagnosis_codes) j WHERE c.diagnosis_codes IS NOT NULL AND {code.pred:j.value} AND {period.where:c.service_date}) SELECT pcp_practice_id AS practice, count(*) AS members, sum(patient_id IN (SELECT patient_id FROM dx)) AS members_with_code, round(100.0 * sum(patient_id IN (SELECT patient_id FROM dx)) / count(*), 2) AS pct FROM patient GROUP BY 1 ORDER BY 1",
+            "purpose": "Patients with any claim diagnosis code in {code.low}..{code.high} (service dates {period.start}..{period.end}), by assigned practice"},
+   "positives": [{"question": "How many members have any Z55-Z65 code on a claim this year, by practice?", "expect": {"operation": "sql", "returns": "table"}}],
+   "negatives": ["How many members have any Z55-Z65 code on a claim this year, by practice, compared with positive screens?", "How many members have any Z55-A65 code on a claim this year, by practice?"]
+  }
+ ]
+}

@@ -1,0 +1,87 @@
+{
+ "schema": "compiler-growth-gate/1",
+ "rule_id": "cost.high_cost_claimants",
+ "version": 1,
+ "rule_digest": "4c77c1357abf6930b578f6fe93d6aa1196359d0f5c0807100c61de2471c8056d",
+ "engine": "literal_lookup",
+ "status": "accepted",
+ "reasons": [],
+ "profiles": {
+  "v1.23": {
+   "source_digest": "0d15e2da55c9a7f8b2e9f0a7bc1525eca99f7607db277836a0eca477c79de52f",
+   "stack": "/Users/mikel/clinical-insights-local/artifacts/agere-healthcare-v123/stack"
+  },
+  "v2.0": {
+   "source_digest": "66db165d755b7fd951c364ac440b8f07a065961d0988dbeb49c9bfb3aac8d8d5",
+   "stack": "/Users/mikel/clinical-insights-local/artifacts/agere-healthcare-v20/stack"
+  }
+ },
+ "captured_counts": {
+  "v1.23": {
+   "library": 1
+  },
+  "v2.0": {
+   "library": 1
+  }
+ },
+ "detail": {
+  "v1.23": {
+   "positives": [
+    {
+     "question": "Who are our high-cost claimants over $250,000 this year and what share of total spend do they account for?",
+     "ok": true
+    }
+   ],
+   "negatives": [
+    {
+     "question": "Who are our high-cost claimants over $250,000 this year and what share of total spend do they account for, by practice?",
+     "ok": true
+    },
+    {
+     "question": "Who are our high-cost claimants over $250,000 next year?",
+     "ok": true
+    }
+   ],
+   "captured": [
+    {
+     "kind": "library",
+     "id": "HQ-PAY-014",
+     "operation": "sql",
+     "bucket": "answered locally",
+     "expected": "literal_lookup"
+    }
+   ]
+  },
+  "v2.0": {
+   "positives": [
+    {
+     "question": "Who are our high-cost claimants over $250,000 this year and what share of total spend do they account for?",
+     "ok": true
+    }
+   ],
+   "negatives": [
+    {
+     "question": "Who are our high-cost claimants over $250,000 this year and what share of total spend do they account for, by practice?",
+     "ok": true
+    },
+    {
+     "question": "Who are our high-cost claimants over $250,000 next year?",
+     "ok": true
+    }
+   ],
+   "captured": [
+    {
+     "kind": "library",
+     "id": "HQ-PAY-014",
+     "operation": "sql",
+     "bucket": "answered locally",
+     "expected": "literal_lookup"
+    }
+   ]
+  }
+ },
+ "code_identity": "c274c91bafb09d3c8b89af4dc32d728c6e4539b50139c1e1778ff31c224c0562",
+ "interpreter": "compiler-rules/1",
+ "created": "2026-10-14T02:45:20Z",
+ "sequence": 46
+}
