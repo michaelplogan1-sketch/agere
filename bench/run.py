@@ -15,7 +15,7 @@ if __package__ in (None, ''):
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from bench.common import DEFAULT_DB, ROOT, Warehouse, load_questions, reference_answer
 from bench.adapters import MODEL, agere, frontier_sql
-from bench.score import score_answer
+from bench.score import by_confidence, confidence_of, score_answer
 from bench.errata import ERRATA_PATH, compute_expected, load_errata, score_with_errata
 
 
@@ -167,14 +167,21 @@ def main(argv=None):
         commit = None
     print(f'Results: {destination}', flush=True)
     failed_references = 0
+    finished = []
     with destination.open('a') as output, ThreadPoolExecutor(max_workers=args.jobs) as pool:
         futures = [pool.submit(run_one, question, args, identity, attempt) for question, attempt in pending]
         for future in as_completed(futures):
             row = future.result(); row['benchmark_commit'] = commit
             output.write(json.dumps(row, allow_nan=False) + '\n'); output.flush()
             failed_references += int(row['reference_error'] is not None)
+            finished.append(row)
             status = row.get('reference_error') or row.get('error') or row['score']['reason']
-            print(f'{row["id"]}: {status}; {row["latency_s"]} s; USD {row["estimated_cost_usd"]}', flush=True)
+            confidence = confidence_of(row.get('answer'))
+            print(f'{row["id"]}: {status}{f" [confidence {confidence}]" if confidence else ""}; {row["latency_s"]} s; '
+                  f'USD {row["estimated_cost_usd"]}', flush=True)
+    for label, group in by_confidence(finished).items():
+        if group['asserted']:
+            print(f'confidence {label}: {group["value_matches"]}/{group["asserted"]} value matches, {group["correct"]} correct', flush=True)
     return 1 if failed_references else 0
 
 

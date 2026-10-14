@@ -225,6 +225,7 @@ def apply_variant(m, name):
     out = {**m, 'variant': name, 'summary': v['summary']}
     if v.get('drop_value_sets'): out['value_sets'] = {k: s for k, s in m['value_sets'].items() if k not in v['drop_value_sets']}
     if v.get('drop_checks'): out['checks'] = [c for c in m.get('checks') or [] if c['rule'] not in v['drop_checks']]
+    if v.get('time_anchor'): out['time_anchor'] = {**m['time_anchor'], **v['time_anchor']}  # an anchor variant moves the clock
     if 'sql_template' in v: out['sql_template'] = v['sql_template']
     if not v.get('sql_template') and not v.get('drop_value_sets'): out['sql_template'] = None  # the variant changes meaning; no template
     return out

@@ -19,8 +19,28 @@ def same_value(a, b, tolerance=0):
     return type(a) is type(b) and a == b
 
 
+CONFIDENCE_LEVELS = ('verified', 'low')
+_LEGACY_LEVELS = {'verified': 'verified', 'governed': 'verified', 'low': 'low'}
+
+
+def confidence_of(answer):
+    """'verified' | 'low' | None. Reads the answer contract's confidence field, and the earlier dict form
+    ({'level': 'governed'|'verified'|'low'}) of preserved answers."""
+    if not isinstance(answer, dict):
+        return None
+    c = answer.get('confidence')
+    if isinstance(c, dict):
+        return _LEGACY_LEVELS.get(c.get('level'))
+    return c if c in CONFIDENCE_LEVELS else None
+
+
 def valid_answer(answer):
     if not isinstance(answer, dict):
+        return False
+    # confidence is optional; when present it is 'verified' | 'low' (or the earlier {'level': ...} form). It never
+    # changes how correctness is scored.
+    c = answer.get('confidence')
+    if c is not None and not (c in CONFIDENCE_LEVELS or (isinstance(c, dict) and c.get('level') in _LEGACY_LEVELS)):
         return False
     if answer.get('status') not in {'answered', 'partial', 'unsupported', 'grounding_failed'}:
         return False
@@ -133,6 +153,21 @@ def recorded_cost(row):
     return None
 
 
+def by_confidence(rows):
+    """Precision of asserted answers split by the answer's confidence flag (verified | low | unlabelled).
+
+    asserted = a scored, non-abstaining answer with a comparable value; precision = value matches / asserted (a correct value
+    marked partial by an older contract still counts as a correct value here); correct uses the unchanged strict rule."""
+    out = {}
+    for label in CONFIDENCE_LEVELS + ('unlabelled',):
+        group = [r for r in rows if r.get('score') is not None and (confidence_of(r.get('answer')) or 'unlabelled') == label
+                 and isinstance(r.get('answer'), dict) and r['answer'].get('answer_type') != 'unsupported']
+        matches = sum(r['score']['value_match'] for r in group)
+        out[label] = {'asserted': len(group), 'value_matches': matches, 'correct': sum(r['score']['correct'] for r in group),
+                      'precision': matches / len(group) if group else None}
+    return out
+
+
 def summarize(rows, total_questions):
     rows = list(rows)
     scored = [r for r in rows if r.get('score') is not None]
@@ -153,7 +188,8 @@ def summarize(rows, total_questions):
             'latency_p95_s': percentile(latency, .95),
             'known_cost_usd': sum(known), 'cost_complete': complete,
             'cost_per_correct_usd': sum(known) / correct if complete and correct else None,
-            'token_rows_known': sum(type(r.get('input_tokens')) is int and type(r.get('output_tokens')) is int for r in rows)}
+            'token_rows_known': sum(type(r.get('input_tokens')) is int and type(r.get('output_tokens')) is int for r in rows),
+            'by_confidence': by_confidence(scored)}
 
 
 def read_latest(results):
@@ -261,6 +297,16 @@ def write_scorecard(results=ROOT / 'results', destination=ROOT / 'SCORECARD.md',
             s = summarize([latest[(system, i)] for i in shared], len(shared))
             lines.append(f'| {system} | {s["correct"]} / {len(shared)} | {s["coverage"]} | '
                          f'{fmt(s["known_cost_usd"])} | {fmt(s["cost_per_correct_usd"])} |')
+    lines += ['', '## Precision by confidence', '',
+              'Answers carry confidence verified (governed metric, independent agreement, lint-clean governed SQL) or low '
+              '(unverified free-form SQL). Precision = value matches / asserted answers in each group; correctness scoring is unchanged.', '',
+              '| System | Verified: matches / asserted | Verified precision | Low: matches / asserted | Low precision | Unlabelled: matches / asserted |',
+              '|---|---:|---:|---:|---:|---:|']
+    for system in systems:
+        bc = summaries[system]['by_confidence']
+        lines.append(f'| {system} | {bc["verified"]["value_matches"]} / {bc["verified"]["asserted"]} | {fmt(bc["verified"]["precision"])} | '
+                     f'{bc["low"]["value_matches"]} / {bc["low"]["asserted"]} | {fmt(bc["low"]["precision"])} | '
+                     f'{bc["unlabelled"]["value_matches"]} / {bc["unlabelled"]["asserted"]} |')
     lines += ['', f'## Reliability (pass^{k})', '',
               f'A question passes^{k} only if its latest {k} scored attempts are all correct (`run.py --repeat {k}`). '
               f'Questions with fewer than {k} attempts are not measured.', '',

@@ -61,7 +61,7 @@
      "summary": "(no-shows + day-of/day-before cancellations) / (that + completed)."
     }
    },
-   "sql_template": "SELECT round(100.0 * sum(ever_no_show) / count(*), 1) AS no_show_rate FROM appointment WHERE scheduled_date BETWEEN '{period_start}' AND '{period_end}' AND (kept = 1 OR ever_no_show = 1)"
+   "sql_template": "SELECT 100.0 * sum(ever_no_show) / count(*) AS no_show_rate FROM appointment WHERE scheduled_date BETWEEN '{period_start}' AND '{period_end}' AND (kept = 1 OR ever_no_show = 1)"
   },
   {
    "id": "stale_booked_appointments",
@@ -295,7 +295,7 @@
    "output": {
     "returns": "value"
    },
-   "sql_template": "SELECT round(100.0 * count(DISTINCT CASE WHEN positive = 1 THEN patient_id END) / count(DISTINCT patient_id), 1) AS food_insecurity_pct FROM social_need WHERE need = 'food'"
+   "sql_template": "SELECT 100.0 * count(DISTINCT CASE WHEN positive = 1 THEN patient_id END) / count(DISTINCT patient_id) AS food_insecurity_pct FROM social_need WHERE need = 'food'"
   }
  ]
 }

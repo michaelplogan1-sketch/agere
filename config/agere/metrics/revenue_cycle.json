@@ -66,7 +66,7 @@
    "output": {
     "returns": "value"
    },
-   "sql_template": "SELECT round(sum(balance_cents) / 100.0, 2) AS patient_ar_usd FROM (SELECT json_extract(payload,'$.balance_cents') AS balance_cents, row_number() OVER (PARTITION BY json_extract(payload,'$.account_id') ORDER BY json_extract(payload,'$.event_time') DESC, record_id DESC) AS rn FROM record WHERE stream = 'patient_billing_accounts') WHERE rn = 1 AND balance_cents > 0"
+   "sql_template": "SELECT sum(balance_cents) / 100.0 AS patient_ar_usd FROM (SELECT json_extract(payload,'$.balance_cents') AS balance_cents, row_number() OVER (PARTITION BY json_extract(payload,'$.account_id') ORDER BY json_extract(payload,'$.event_time') DESC, record_id DESC) AS rn FROM record WHERE stream = 'patient_billing_accounts') WHERE rn = 1 AND balance_cents > 0"
   },
   {
    "id": "claim_financials_current_state",
@@ -137,7 +137,7 @@
      "paid"
     ]
    },
-   "sql_template": "SELECT sc AS service_code, count(*) AS claims, round(sum(b) / 100.0, 2) AS billed, round(sum(CASE WHEN st IN ('reversed','denied') THEN 0 ELSE al END) / 100.0, 2) AS allowed, round(sum(CASE WHEN st IN ('reversed','denied') THEN 0 ELSE pd END) / 100.0, 2) AS paid FROM (SELECT json_extract(payload,'$.service_code') AS sc, json_extract(payload,'$.service_date') AS sd, json_extract(payload,'$.status') AS st, json_extract(payload,'$.billed_cents') AS b, json_extract(payload,'$.allowed_cents') AS al, json_extract(payload,'$.payer_paid_cents') AS pd, row_number() OVER (PARTITION BY json_extract(payload,'$.claim_id') ORDER BY json_extract(payload,'$.event_time') DESC, record_id DESC) AS rn FROM record WHERE stream = 'medical_claims' AND json_extract(payload,'$.claim_id') IS NOT NULL) WHERE rn = 1 AND sd BETWEEN '{period_start}' AND '{period_end}' GROUP BY sc ORDER BY sc"
+   "sql_template": "SELECT sc AS service_code, count(*) AS claims, sum(b) / 100.0 AS billed, sum(CASE WHEN st IN ('reversed','denied') THEN 0 ELSE al END) / 100.0 AS allowed, sum(CASE WHEN st IN ('reversed','denied') THEN 0 ELSE pd END) / 100.0 AS paid FROM (SELECT json_extract(payload,'$.service_code') AS sc, json_extract(payload,'$.service_date') AS sd, json_extract(payload,'$.status') AS st, json_extract(payload,'$.billed_cents') AS b, json_extract(payload,'$.allowed_cents') AS al, json_extract(payload,'$.payer_paid_cents') AS pd, row_number() OVER (PARTITION BY json_extract(payload,'$.claim_id') ORDER BY json_extract(payload,'$.event_time') DESC, record_id DESC) AS rn FROM record WHERE stream = 'medical_claims' AND json_extract(payload,'$.claim_id') IS NOT NULL) WHERE rn = 1 AND sd BETWEEN '{period_start}' AND '{period_end}' GROUP BY sc ORDER BY sc"
   },
   {
    "id": "net_payer_paid",
@@ -193,7 +193,27 @@
    "output": {
     "returns": "value"
    },
-   "sql_template": "SELECT round(sum(net_payer_paid_cents) / 100.0, 2) AS net_payer_paid_usd FROM claim WHERE service_date BETWEEN '{period_start}' AND '{period_end}'"
+   "sql_template": "SELECT sum(net_payer_paid_cents) / 100.0 AS net_payer_paid_usd FROM claim WHERE service_date BETWEEN '{period_start}' AND '{period_end}'",
+   "variants": {
+    "adjudicated": {
+     "when": "\\badjudicated (?:in|during|between|from)\\b|\\bprocessed (?:in|during)\\b|\\b(?:first )?adjudication (?:date )?(?:in|during)\\b",
+     "anchor": "first_adjudication_date",
+     "time_anchor": {
+      "field": "claim.first_adjudication_date"
+     },
+     "summary": "Net payer paid (every adjudication delta; reversals net out) on medical claims first adjudicated in the period. Dollars.",
+     "sql_template": "SELECT sum(net_payer_paid_cents) / 100.0 AS net_payer_paid_usd FROM claim WHERE first_adjudication_date BETWEEN '{period_start}' AND '{period_end}'"
+    },
+    "first_paid": {
+     "when": "^(?!.*\\b(?:cash|received|posted|deposit)).*\\b(?:first )?paid (?:in|during|between|from)\\b(?! full)",
+     "anchor": "first_paid_date",
+     "time_anchor": {
+      "field": "claim.first_paid_date"
+     },
+     "summary": "Net payer paid on medical claims whose first PAID adjudication falls in the period. Dollars.",
+     "sql_template": "SELECT sum(c.net_payer_paid_cents) / 100.0 AS net_payer_paid_usd FROM claim c JOIN (SELECT json_extract(payload,'$.claim_id') AS claim_id, min(event_date) AS first_paid_date FROM record WHERE stream = 'medical_claims' AND json_extract(payload,'$.status') = 'paid' GROUP BY 1) p ON p.claim_id = c.claim_id WHERE p.first_paid_date BETWEEN '{period_start}' AND '{period_end}'"
+    }
+   }
   },
   {
    "id": "contractual_writeoffs",
@@ -246,7 +266,7 @@
    "output": {
     "returns": "value"
    },
-   "sql_template": "SELECT round(sum(json_extract(payload,'$.financial_deltas_cents.contractual')) / 100.0, 2) AS contractual_usd FROM record WHERE stream = 'medical_claims' AND json_extract(payload,'$.claim_id') IS NOT NULL AND json_extract(payload,'$.service_date') BETWEEN '{period_start}' AND '{period_end}'"
+   "sql_template": "SELECT sum(json_extract(payload,'$.financial_deltas_cents.contractual')) / 100.0 AS contractual_usd FROM record WHERE stream = 'medical_claims' AND json_extract(payload,'$.claim_id') IS NOT NULL AND json_extract(payload,'$.service_date') BETWEEN '{period_start}' AND '{period_end}'"
   },
   {
    "id": "payer_cash_net",
@@ -317,7 +337,7 @@
      "net_cash_dollars"
     ]
    },
-   "sql_template": "SELECT c.payer AS payer, count(*) AS allocations, round(sum(json_extract(r.payload,'$.allocated_cents')) / 100.0, 2) AS net_cash_dollars FROM record r JOIN claim c ON c.claim_id = json_extract(r.payload,'$.claim_id') WHERE r.stream = 'payer_cash_allocations' AND r.event_date BETWEEN '{period_start}' AND '{period_end}' GROUP BY c.payer ORDER BY c.payer"
+   "sql_template": "SELECT c.payer AS payer, count(*) AS allocations, sum(json_extract(r.payload,'$.allocated_cents')) / 100.0 AS net_cash_dollars FROM record r JOIN claim c ON c.claim_id = json_extract(r.payload,'$.claim_id') WHERE r.stream = 'payer_cash_allocations' AND r.event_date BETWEEN '{period_start}' AND '{period_end}' GROUP BY c.payer ORDER BY c.payer"
   },
   {
    "id": "first_pass_denial_rate",
@@ -370,7 +390,32 @@
    "output": {
     "returns": "value"
    },
-   "sql_template": "SELECT round(100.0 * sum(first_status = 'denied') / count(*), 1) AS first_pass_denial_rate FROM claim WHERE service_date BETWEEN '{period_start}' AND '{period_end}'"
+   "sql_template": "SELECT 100.0 * sum(first_status = 'denied') / count(*) AS first_pass_denial_rate FROM claim WHERE service_date BETWEEN '{period_start}' AND '{period_end}'",
+   "variants": {
+    "billed_dollars_adjudicated": {
+     "when": "(?=.*\\b(?:billed|charge[sd]?|dollars?|\\$))(?=.*(?:\\badjudicated (?:in|during|between|from)\\b|\\bprocessed (?:in|during)\\b|\\b(?:first )?adjudication (?:date )?(?:in|during)\\b))",
+     "anchor": "first_adjudication_date",
+     "time_anchor": {
+      "field": "claim.first_adjudication_date"
+     },
+     "summary": "Percent of billed dollars (billed_cents) on medical claims first adjudicated in the period that belong to claims whose first adjudication (claim.first_status) was a denial.",
+     "sql_template": "SELECT 100.0 * sum(CASE WHEN first_status = 'denied' THEN billed_cents ELSE 0 END) / sum(billed_cents) AS first_pass_denied_billed_pct FROM claim WHERE first_adjudication_date BETWEEN '{period_start}' AND '{period_end}'"
+    },
+    "adjudicated": {
+     "when": "\\badjudicated (?:in|during|between|from)\\b|\\bprocessed (?:in|during)\\b|\\b(?:first )?adjudication (?:date )?(?:in|during)\\b",
+     "anchor": "first_adjudication_date",
+     "time_anchor": {
+      "field": "claim.first_adjudication_date"
+     },
+     "summary": "Percent of medical claims first adjudicated in the period whose first adjudication (claim.first_status) was a denial.",
+     "sql_template": "SELECT 100.0 * sum(first_status = 'denied') / count(*) AS first_pass_denial_rate FROM claim WHERE first_adjudication_date BETWEEN '{period_start}' AND '{period_end}'"
+    },
+    "billed_dollars": {
+     "when": "\\b(?:billed|charge[sd]?) (?:dollars?|amounts?)\\b|\\bdollars? (?:billed|denied)\\b|\\bpercent(?:age)? of (?:billed |the )?dollars\\b",
+     "summary": "Percent of billed dollars (billed_cents) on medical claims with service_date in the period that belong to claims whose first adjudication was a denial.",
+     "sql_template": "SELECT 100.0 * sum(CASE WHEN first_status = 'denied' THEN billed_cents ELSE 0 END) / sum(billed_cents) AS first_pass_denied_billed_pct FROM claim WHERE service_date BETWEEN '{period_start}' AND '{period_end}'"
+    }
+   }
   },
   {
    "id": "claim_lag_days",
@@ -428,7 +473,7 @@
    "output": {
     "returns": "value"
    },
-   "sql_template": "SELECT round(avg(julianday(first_submitted_date) - julianday(service_date)), 2) AS avg_claim_lag_days FROM claim WHERE first_submitted_date IS NOT NULL AND service_date BETWEEN '{period_start}' AND '{period_end}'"
+   "sql_template": "SELECT avg(julianday(first_submitted_date) - julianday(service_date)) AS avg_claim_lag_days FROM claim WHERE first_submitted_date IS NOT NULL AND service_date BETWEEN '{period_start}' AND '{period_end}'"
   },
   {
    "id": "days_to_payer_cash",
@@ -442,7 +487,8 @@
      "days?|how long|time to|lag"
     ],
     "any": [
-     "cash|money (?:first )?lands?|payment (?:first )?(?:arrives|lands|received)|get paid"
+     "cash|money (?:first )?lands?|payment (?:first )?(?:arrives|lands|received)|get paid",
+     "\\bto (?:the )?(?:first )?payment\\b|\\bfirst paid\\b"
     ],
     "none": [
      "arriv(?:e|al) in the warehouse|feed"
@@ -486,7 +532,27 @@
    "output": {
     "returns": "value"
    },
-   "sql_template": "SELECT round(avg(julianday(first_payer_cash_date) - julianday(service_date)), 2) AS avg_days_to_cash FROM claim WHERE first_payer_cash_date IS NOT NULL AND service_date BETWEEN '{period_start}' AND '{period_end}'"
+   "sql_template": "SELECT avg(julianday(first_payer_cash_date) - julianday(service_date)) AS avg_days_to_cash FROM claim WHERE first_payer_cash_date IS NOT NULL AND service_date BETWEEN '{period_start}' AND '{period_end}'",
+   "variants": {
+    "first_paid": {
+     "when": "^(?!.*\\b(?:cash|received|posted|deposit)).*\\b(?:first )?paid (?:in|during|between|from)\\b(?! full)",
+     "anchor": "first_paid_date",
+     "time_anchor": {
+      "field": "claim.first_paid_date"
+     },
+     "summary": "Mean days from service_date to the claim's first PAID adjudication (the payer's payment decision), for medical claims whose first paid adjudication date falls in the period. 'First paid in' anchors on the paid adjudication date, not the cash date (say 'cash received' for the cash clock).",
+     "sql_template": "SELECT avg(julianday(p.first_paid_date) - julianday(c.service_date)) AS avg_days_to_first_paid FROM claim c JOIN (SELECT json_extract(payload,'$.claim_id') AS claim_id, min(event_date) AS first_paid_date FROM record WHERE stream = 'medical_claims' AND json_extract(payload,'$.status') = 'paid' GROUP BY 1) p ON p.claim_id = c.claim_id WHERE p.first_paid_date BETWEEN '{period_start}' AND '{period_end}'"
+    },
+    "cash_received": {
+     "when": "\\b(?:cash|payment|money) (?:was |were )?(?:received|posted|deposited|landed) (?:in|during)\\b|\\breceived (?:in|during)\\b",
+     "anchor": "first_payer_cash_date",
+     "time_anchor": {
+      "field": "claim.first_payer_cash_date"
+     },
+     "summary": "Mean days from service_date to first_payer_cash_date for medical claims whose first payer cash posted in the period.",
+     "sql_template": "SELECT avg(julianday(first_payer_cash_date) - julianday(service_date)) AS avg_days_to_cash FROM claim WHERE first_payer_cash_date BETWEEN '{period_start}' AND '{period_end}'"
+    }
+   }
   },
   {
    "id": "days_to_first_adjudication",
@@ -544,7 +610,18 @@
    "output": {
     "returns": "value"
    },
-   "sql_template": "SELECT round(avg(julianday(first_adjudication_date) - julianday(service_date)), 2) AS avg_days_to_adjudication FROM claim WHERE first_adjudication_date IS NOT NULL AND service_date BETWEEN '{period_start}' AND '{period_end}'"
+   "sql_template": "SELECT avg(julianday(first_adjudication_date) - julianday(service_date)) AS avg_days_to_adjudication FROM claim WHERE first_adjudication_date IS NOT NULL AND service_date BETWEEN '{period_start}' AND '{period_end}'",
+   "variants": {
+    "adjudicated": {
+     "when": "\\badjudicated (?:in|during|between|from)\\b|\\bprocessed (?:in|during)\\b|\\b(?:first )?adjudication (?:date )?(?:in|during)\\b",
+     "anchor": "first_adjudication_date",
+     "time_anchor": {
+      "field": "claim.first_adjudication_date"
+     },
+     "summary": "Mean days from service_date to first_adjudication_date for medical claims first adjudicated in the period.",
+     "sql_template": "SELECT avg(julianday(first_adjudication_date) - julianday(service_date)) AS avg_days_to_adjudication FROM claim WHERE first_adjudication_date BETWEEN '{period_start}' AND '{period_end}'"
+    }
+   }
   },
   {
    "id": "allowed_pmpm",
@@ -594,8 +671,72 @@
    "output": {
     "returns": "value"
    },
-   "sql_template": "SELECT round((SELECT sum(CASE WHEN final_status IN ('reversed','denied') THEN 0 ELSE allowed_cents END) FROM claim WHERE service_date BETWEEN '{period_start}' AND '{period_end}') / 100.0 / ((SELECT count(*) FROM patient) * ((julianday('{period_end}') - julianday('{period_start}') + 1) / 30.4375)), 2) AS allowed_pmpm",
+   "sql_template": "SELECT (SELECT sum(CASE WHEN final_status IN ('reversed','denied') THEN 0 ELSE allowed_cents END) FROM claim WHERE service_date BETWEEN '{period_start}' AND '{period_end}') / 100.0 / ((SELECT count(*) FROM patient) * ((julianday('{period_end}') - julianday('{period_start}') + 1) / 30.4375)) AS allowed_pmpm",
    "internal_reason": "Agere PMPM convention: allowed dollars on current adjudications over roster member-months (no enrollment spans received); ACO REACH/MSSP expenditure PMPM uses enrollment months."
+  },
+  {
+   "id": "claims_reversed",
+   "version": 1,
+   "name": "Medical claims reversed by the payer",
+   "status": "internal",
+   "internal_reason": "Revenue-cycle convention over the adjudication chain: a reversal is an adjudication record with status reversed (the payer takes back a payment, usually before reprocessing the claim).",
+   "summary": "Distinct medical claims (claim_id) with at least one reversal adjudication record (status 'reversed') whose event date falls in the period - anchored on the reversal event date, not the service date.",
+   "match": {
+    "all": [
+     "\\brevers(?:ed|al|als)\\b"
+    ],
+    "any": [
+     "\\bclaims?\\b"
+    ],
+    "none": [
+     "pharmacy|fills?|\\brx\\b|dollars?|amount|\\$|net\\b|cash"
+    ]
+   },
+   "grain": {
+    "entity": "claim",
+    "key": "claim_id",
+    "table": "claim"
+   },
+   "population": {
+    "summary": "Medical claims with a reversal adjudication in the period."
+   },
+   "denominator": {
+    "summary": "None (count)."
+   },
+   "numerator": {
+    "summary": "Distinct claim_ids with a reversal adjudication record dated in the period."
+   },
+   "time_anchor": {
+    "field": "medical_claims.event_date",
+    "mode": "period",
+    "default": "as_of_year"
+   },
+   "value_sets": {},
+   "unit": "claims",
+   "expected_range": [
+    0,
+    10000000
+   ],
+   "versioning": {
+    "rule": "any_version",
+    "stream": "medical_claims",
+    "key": "claim_id"
+   },
+   "output": {
+    "returns": "count"
+   },
+   "variants": {
+    "service_date": {
+     "when": "\\bservice dates?\\b|\\bdates? of service\\b|\\bserviced? in\\b",
+     "anchor": "service_date",
+     "time_anchor": {
+      "field": "claim.service_date"
+     },
+     "summary": "Distinct medical claims with service_date in the period that have any reversal adjudication record.",
+     "sql_template": "SELECT count(*) AS claims_reversed FROM claim WHERE service_date BETWEEN '{period_start}' AND '{period_end}' AND claim_id IN (SELECT json_extract(payload,'$.claim_id') FROM record WHERE stream = 'medical_claims' AND json_extract(payload,'$.status') = 'reversed')"
+    }
+   },
+   "sql_template": "SELECT count(DISTINCT json_extract(payload,'$.claim_id')) AS claims_reversed FROM record WHERE stream = 'medical_claims' AND json_extract(payload,'$.status') = 'reversed' AND json_extract(payload,'$.claim_id') IS NOT NULL AND event_date BETWEEN '{period_start}' AND '{period_end}'"
   }
  ]
 }

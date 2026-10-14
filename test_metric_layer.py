@@ -24,7 +24,7 @@ TABLES = {
     'measurement': 'record_id,patient_id,source_table,concept,name,value,unit,value_canonical,unit_canonical,result_status,event_date,'
                    'available_date,loinc,component,event_time',
     'measurement_latest': 'patient_id,concept,event_date,value_canonical,unit_canonical,record_id',
-    'medication': 'record_id,patient_id,source_stream,evidence,drug_name,drug_class,status,event_date,ingredients,therapeutic_category',
+    'medication': 'record_id,patient_id,source_stream,evidence,picked_up,drug_name,drug_class,status,event_date,ingredients,therapeutic_category',
     'condition': 'record_id,patient_id,concept,label,icd10,snomed,event_date',
     'concept_patient': 'concept,kind,patient_id,records,first_date,last_date',
     'social_need': 'patient_id,need,positive,instrument,event_date,record_id',
@@ -112,7 +112,7 @@ def build_fixture(path):
                              value_canonical=90, unit_canonical='kg', result_status=None, event_date='2029-01-01', available_date='2029-01-01',
                              loinc=None, component=None, event_time=None)])
     ins('measurement_latest', [dict(patient_id='P0', concept='weight', event_date='2029-01-01', value_canonical=90, unit_canonical='kg', record_id='M6')])
-    med = lambda rid, pid, name, cls, ing, cat: dict(record_id=rid, patient_id=pid, source_stream='pharmacy_dispenses', evidence='dispensed',
+    med = lambda rid, pid, name, cls, ing, cat: dict(record_id=rid, patient_id=pid, source_stream='pharmacy_dispenses', evidence='dispensed', picked_up=1,
                                                      drug_name=name, drug_class=cls, status='dispensed', event_date='2029-01-01', ingredients=ing,
                                                      therapeutic_category=cat)
     ins('medication', [med('D1', 'P7', 'Diphenhydramine 25 MG', 'first_generation_antihistamine', 'diphenhydramine', 'antihistamine'),
@@ -226,8 +226,8 @@ class TemplateTests(Fixture):
         self.assertEqual(val('ed_admit_obs_share', 'this year'), [(50.0,)])            # E1 admitted / E1+E2 (E3 is 2028)
         self.assertEqual(val('stale_booked_appointments'), [(1,)])                     # A8 only booked; A9 later fulfilled
         # payer feed: CARC 18 duplicate and superseded original never count; B2-reversed fill is not spend
-        self.assertEqual(val('payer_claim_denial_rate', 'in 2029'), [(33.3,)])         # X2 of X1, X2, X4-R
-        self.assertEqual(val('payer_allowed_pmpm', 'in 2029'), [(round((10000 + 6000 + 1000) / 100 / 4, 2),)])
+        self.assertAlmostEqual(val('payer_claim_denial_rate', 'in 2029')[0][0], 100 / 3)  # X2 of X1, X2, X4-R; full precision
+        self.assertAlmostEqual(val('payer_allowed_pmpm', 'in 2029')[0][0], (10000 + 6000 + 1000) / 100 / 4)
         self.assertEqual(val('all_source_ed_visits_per_1000', 'in 2029'), [(3000.0,)])  # 1 ED visit / (4 member months / 12)
         self.assertEqual(val('patient_ar_outstanding'), [(30.0,)])                     # latest AC1 = 3000c, AC2 credit not netted
         self.assertEqual(val('contractual_writeoffs', 'in 2028'), [(0.0,)])            # reversal nets out

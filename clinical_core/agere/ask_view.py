@@ -253,9 +253,11 @@ function downloadCSV(id){const t=state.csv[id];if(!t)return;const cs=cols(t.rows
 /* ---------- drill-down wording ---------- */
 const PAYER=/^(medicare|medicaid|commercial|uninsured)$/i;
 function drill(g){g=String(g);if(PAYER.test(g))return 'only '+g[0].toUpperCase()+g.slice(1).toLowerCase();if(/^\d{4}$/.test(g))return 'in '+g;return 'show the patients in '+g}
-const GROUP_KEYS=['group','segment','practice','pcp','payer','coverage_type','facility','age_band','sex','label','factor','month','quarter','year'];
-const METRICS=['allowed_pmpm_completed','oe_ratio','ed_per_1000_shrunk','shrunk_rate','rate','readmission_rate','risk_ratio','probability','mean_risk_score','value','change','members','patient_count','patients','total_cents','count'];
-function pickMetric(rows){const f=rows[0]||{};const m=METRICS.find(k=>isNum(f[k]));if(m)return m;
+const GROUP_KEYS=['group','segment','practice','pcp','payer','coverage_type','facility','organization_id','drg_title','age_band','sex','label','factor','month','quarter','year'];
+/* observed allowed PMPM leads; the completed (IBNR) figure only when the question asks for completion */
+const COMPLETION=/complet|ibnr|run[- ]?out|incurred but not|lag[- ]adjust/i;
+const METRICS=['allowed_pmpm','allowed_pmpm_completed','oe_ratio','ed_per_1000_shrunk','shrunk_rate','rate','readmission_rate','risk_ratio','probability','mean_risk_score','value','change','members','patient_count','patients','total_cents','count'];
+function pickMetric(rows,question){const f=rows[0]||{};const order=COMPLETION.test(question||'')?['allowed_pmpm_completed',...METRICS]:METRICS;const m=order.find(k=>isNum(f[k]));if(m)return m;
  const meas=Object.keys(f).filter(k=>isNum(f[k])&&/avg|average|mean|median|rate|pct|percent|share|per_1000|days|usd|dollars|_cents|ratio/.test(k));return meas.length?meas[meas.length-1]:Object.keys(f).find(k=>isNum(f[k]))}
 const isTime=v=>/^\d{4}(-\d{2}|-Q[1-4]|Q[1-4])?$/.test(String(v));
 
@@ -377,8 +379,8 @@ function vizTrajectory(a){const rows=a.table||[];if(!rows.length||!('patient_id'
   hbars(top.map(r=>({label:r.patient_id,value:r[metric]})),{fmt:v=>metric==='probability'?pct(v,0):fmt(v),title:label(metric)+' by patient'})}
  return h+tableHTML(rows,{name:'trajectory-patients'})+'</section>'}
 function vizTable(a){const rows=a.table||[];if(!rows.length)return '';const f=rows[0];const key=GROUP_KEYS.find(k=>k in f&&typeof f[k]!=='object')||Object.keys(f).find(k=>typeof f[k]==='string');
- const metric=pickMetric(rows);let h='<section class="sec">';
- if(key&&metric&&rows.length>1&&rows.length<=60){const drillable=['group','segment','practice','pcp','payer','coverage_type','facility','month','year','quarter'].includes(key);
+ const metric=pickMetric(rows,a.question||a.interpretation);let h='<section class="sec">';
+ if(key&&metric&&rows.length>1&&rows.length<=60){const drillable=['group','segment','practice','pcp','payer','coverage_type','facility','organization_id','month','year','quarter'].includes(key);
   if(rows.every(r=>isTime(r[key]))){const cats=rows.map(r=>String(r[key]));h+='<h3>'+esc(label(metric))+' by '+esc(label(key))+'</h3>'+lines([{name:label(metric),pts:rows.map((r,i)=>[i,r[metric]])}],{title:label(metric)+' over time',cats,ylabel:label(metric)})}
   else{const sorted=rows.slice().sort((x,y)=>(y[metric]||0)-(x[metric]||0));h+='<h3>'+esc(label(metric))+' by '+esc(label(key))+'</h3>'+hbars(sorted.slice(0,30).map(r=>({label:r[key],value:r[metric],ask:drillable?drill(r[key]):null})),{title:label(metric)+' by '+label(key),ref:/ratio/.test(metric)?1:null,refLabel:'no difference (1.0)'})+
    (drillable?'<p class="hint">Select a bar to ask a follow-up about that '+esc(label(key))+'.</p>':'')}}

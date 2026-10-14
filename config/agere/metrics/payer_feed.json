@@ -27,7 +27,7 @@
    "checks": [{"rule": "ML-VERSION", "requires": "counts_in_metrics",
                "why": "replacement claims supersede their originals, voids end them and CARC 18 duplicate submissions are not claims; count only payer_claim.counts_in_metrics = 1"}],
    "output": {"returns": "value"},
-   "sql_template": "SELECT round(100.0 * sum(final_status IN ('denied','denied_upheld')) / count(*), 1) AS payer_claim_denial_rate FROM payer_claim WHERE counts_in_metrics = 1 AND service_from BETWEEN '{period_start}' AND '{period_end}'"
+   "sql_template": "SELECT 100.0 * sum(final_status IN ('denied','denied_upheld')) / count(*) AS payer_claim_denial_rate FROM payer_claim WHERE counts_in_metrics = 1 AND service_from BETWEEN '{period_start}' AND '{period_end}'"
   },
   {
    "id": "payer_allowed_pmpm",
@@ -54,7 +54,7 @@
               {"rule": "ML-SOURCE", "requires": "counts_as_fill",
                "why": "pharmacy claims reversed by a B2 return to stock were never picked up and are not spend (payer_pharmacy_claim.counts_as_fill = 1)"}],
    "output": {"returns": "value"},
-   "sql_template": "SELECT round(((SELECT coalesce(sum(allowed_cents), 0) FROM payer_claim WHERE counts_in_metrics = 1 AND final_status = 'paid' AND service_from BETWEEN '{period_start}' AND '{period_end}') + (SELECT coalesce(sum(coalesce(plan_paid_cents, 0) + coalesce(patient_pay_cents, 0)), 0) FROM payer_pharmacy_claim WHERE counts_as_fill = 1 AND fill_date BETWEEN '{period_start}' AND '{period_end}')) / 100.0 / nullif((SELECT count(*) FROM member_month WHERE month BETWEEN substr('{period_start}', 1, 7) AND substr('{period_end}', 1, 7)), 0), 2) AS payer_allowed_pmpm"
+   "sql_template": "SELECT ((SELECT coalesce(sum(allowed_cents), 0) FROM payer_claim WHERE counts_in_metrics = 1 AND final_status = 'paid' AND service_from BETWEEN '{period_start}' AND '{period_end}') + (SELECT coalesce(sum(coalesce(plan_paid_cents, 0) + coalesce(patient_pay_cents, 0)), 0) FROM payer_pharmacy_claim WHERE counts_as_fill = 1 AND fill_date BETWEEN '{period_start}' AND '{period_end}')) / 100.0 / nullif((SELECT count(*) FROM member_month WHERE month BETWEEN substr('{period_start}', 1, 7) AND substr('{period_end}', 1, 7)), 0) AS payer_allowed_pmpm"
   },
   {
    "id": "all_source_ed_visits_per_1000",
@@ -78,7 +78,7 @@
    "checks": [{"rule": "ML-SOURCE", "requires": "utilization_event",
                "why": "ED visits of claims-only members exist only in ADT and payer claims; utilization_event merges every source into one row per visit"}],
    "output": {"returns": "value"},
-   "sql_template": "SELECT round(1000.0 * (SELECT count(*) FROM utilization_event WHERE kind = 'ed_visit' AND event_date BETWEEN '{period_start}' AND '{period_end}') / nullif((SELECT count(*) FROM member_month WHERE month BETWEEN substr('{period_start}', 1, 7) AND substr('{period_end}', 1, 7)) / 12.0, 0), 1) AS ed_per_1000_member_years"
+   "sql_template": "SELECT 1000.0 * (SELECT count(*) FROM utilization_event WHERE kind = 'ed_visit' AND event_date BETWEEN '{period_start}' AND '{period_end}') / nullif((SELECT count(*) FROM member_month WHERE month BETWEEN substr('{period_start}', 1, 7) AND substr('{period_end}', 1, 7)) / 12.0, 0) AS ed_per_1000_member_years"
   }
  ]
 }

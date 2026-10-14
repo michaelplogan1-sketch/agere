@@ -356,7 +356,7 @@ class ClientDataRules(unittest.TestCase):
         r = metrics.resolve({'question': 'payer claim denial rate this year', 'as_of': AS_OF})
         self.assertEqual(r['id'], 'payer_claim_denial_rate')
         # 2029: counted = O1-R, O3 (denied), E1, E2, I1, E4, H1 -> 1 of 7; O1 (superseded), O2-D and E3-D (CARC 18) never count
-        self.assertEqual(db.execute(r['sql']).fetchone()[0], round(100 / 7, 1))
+        self.assertAlmostEqual(db.execute(r["sql"]).fetchone()[0], 100 / 7)  # governed SQL returns full precision
         self.assertEqual(metrics.lint('payer claim denial rate this year', "SELECT 100.0 * sum(final_status = 'denied') / count(*) FROM payer_claim",
                                       AS_OF)[0]['rule'], 'ML-VERSION')
         cost = vbc.execute(self.path, ['m1'], {'metric': 'cost', 'period': {'start': '2029-01-01', 'end': AS_OF}}, AS_OF)['rows'][0]

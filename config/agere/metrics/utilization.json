@@ -157,10 +157,11 @@
    "variants": {
     "per_headcount": {
      "when": "per 1,?000 (?:patients|members)\\b(?! ?-?years)",
-     "summary": "Per 1,000 roster patients, not annualised."
+     "summary": "Per 1,000 roster patients, not annualised: 1,000 x distinct ED encounters dated in the period / roster headcount (count of patients).",
+     "sql_template": "SELECT 1000.0 * (SELECT count(DISTINCT encounter_id) FROM visit WHERE type_concept = 'emergency_visit' AND event_date BETWEEN '{period_start}' AND '{period_end}') / (SELECT count(*) FROM patient) AS ed_per_1000_patients"
     }
    },
-   "sql_template": "SELECT round(1000.0 * (SELECT count(DISTINCT encounter_id) FROM visit WHERE type_concept = 'emergency_visit' AND event_date BETWEEN '{period_start}' AND '{period_end}') / ((SELECT count(*) FROM patient) * (julianday('{period_end}') - julianday('{period_start}') + 1) / 365.25), 1) AS ed_per_1000_member_years"
+   "sql_template": "SELECT 1000.0 * (SELECT count(DISTINCT encounter_id) FROM visit WHERE type_concept = 'emergency_visit' AND event_date BETWEEN '{period_start}' AND '{period_end}') / ((SELECT count(*) FROM patient) * (julianday('{period_end}') - julianday('{period_start}') + 1) / 365.25) AS ed_per_1000_member_years"
   },
   {
    "id": "repeat_ed_users_12m",
@@ -338,10 +339,10 @@
      "drop_checks": [
       "ML-SOURCE"
      ],
-     "sql_template": "SELECT round(100.0 * count(DISTINCT CASE WHEN EXISTS (SELECT 1 FROM stay s WHERE s.patient_id = v.patient_id AND s.admit_date BETWEEN v.event_date AND date(v.event_date, '+1 day')) THEN v.encounter_id END) / count(DISTINCT v.encounter_id), 1) AS pct_converted FROM visit v WHERE v.type_concept = 'emergency_visit' AND v.event_date BETWEEN '{period_start}' AND '{period_end}'"
+     "sql_template": "SELECT 100.0 * count(DISTINCT CASE WHEN EXISTS (SELECT 1 FROM stay s WHERE s.patient_id = v.patient_id AND s.admit_date BETWEEN v.event_date AND date(v.event_date, '+1 day')) THEN v.encounter_id END) / count(DISTINCT v.encounter_id) AS pct_converted FROM visit v WHERE v.type_concept = 'emergency_visit' AND v.event_date BETWEEN '{period_start}' AND '{period_end}'"
     }
    },
-   "sql_template": "SELECT round(100.0 * sum(disposition IN ('admitted','inpatient_admission','observation','hospital_observation','observation_for_mobility')) / count(*), 1) AS pct_admit_or_obs FROM visit WHERE type_concept = 'emergency_visit' AND status = 'completed' AND event_date BETWEEN '{period_start}' AND '{period_end}'"
+   "sql_template": "SELECT 100.0 * sum(disposition IN ('admitted','inpatient_admission','observation','hospital_observation','observation_for_mobility')) / count(*) AS pct_admit_or_obs FROM visit WHERE type_concept = 'emergency_visit' AND status = 'completed' AND event_date BETWEEN '{period_start}' AND '{period_end}'"
   },
   {
    "id": "pcp_visit_gap_12m",
@@ -609,7 +610,7 @@
      "per_1000"
     ]
    },
-   "sql_template": "SELECT p.pcp_practice_id AS practice, count(DISTINCT p.patient_id) AS attributed_patients, count(DISTINCT v.encounter_id) AS visits, round(1000.0 * count(DISTINCT v.encounter_id) / count(DISTINCT p.patient_id), 1) AS per_1000 FROM patient p LEFT JOIN visit v ON v.patient_id = p.patient_id AND v.type_concept = 'primary_care_visit' AND v.in_person = 1 AND v.is_practice = 1 AND v.event_date BETWEEN '{period_start}' AND '{period_end}' WHERE p.pcp_practice_id IS NOT NULL GROUP BY p.pcp_practice_id ORDER BY p.pcp_practice_id"
+   "sql_template": "SELECT p.pcp_practice_id AS practice, count(DISTINCT p.patient_id) AS attributed_patients, count(DISTINCT v.encounter_id) AS visits, 1000.0 * count(DISTINCT v.encounter_id) / count(DISTINCT p.patient_id) AS per_1000 FROM patient p LEFT JOIN visit v ON v.patient_id = p.patient_id AND v.type_concept = 'primary_care_visit' AND v.in_person = 1 AND v.is_practice = 1 AND v.event_date BETWEEN '{period_start}' AND '{period_end}' WHERE p.pcp_practice_id IS NOT NULL GROUP BY p.pcp_practice_id ORDER BY p.pcp_practice_id"
   },
   {
    "id": "inpatient_admissions_per_1000",
@@ -663,7 +664,7 @@
    "output": {
     "returns": "value"
    },
-   "sql_template": "SELECT round(1000.0 * (SELECT count(*) FROM stay WHERE type = 'inpatient' AND admit_date BETWEEN '{period_start}' AND '{period_end}') / ((SELECT count(*) FROM patient) * (julianday('{period_end}') - julianday('{period_start}') + 1) / 365.25), 1) AS admits_per_1000_member_years"
+   "sql_template": "SELECT 1000.0 * (SELECT count(*) FROM stay WHERE type = 'inpatient' AND admit_date BETWEEN '{period_start}' AND '{period_end}') / ((SELECT count(*) FROM patient) * (julianday('{period_end}') - julianday('{period_start}') + 1) / 365.25) AS admits_per_1000_member_years"
   },
   {
    "id": "observation_stays",
@@ -777,7 +778,18 @@
    "output": {
     "returns": "value"
    },
-   "sql_template": "SELECT round(avg(los_days), 2) AS avg_los_days FROM stay WHERE type = 'inpatient' AND los_days IS NOT NULL AND admit_date BETWEEN '{period_start}' AND '{period_end}'"
+   "sql_template": "SELECT avg(los_days) AS avg_los_days FROM stay WHERE type = 'inpatient' AND los_days IS NOT NULL AND admit_date BETWEEN '{period_start}' AND '{period_end}'",
+   "variants": {
+    "discharged": {
+     "when": "\\bdischarged? (?:in|during|between|from)\\b|\\bdischarges? (?:in|during)\\b|\\bby discharge date\\b",
+     "anchor": "discharge_date",
+     "time_anchor": {
+      "field": "stay.discharge_date"
+     },
+     "summary": "Mean stay.los_days of inpatient stays with a received discharge (discharge_known = 1), anchored on discharge_date in the period; stays with unknown discharge are excluded, never counted as 0 days.",
+     "sql_template": "SELECT avg(los_days) AS average_length_of_stay FROM stay WHERE type = 'inpatient' AND discharge_known = 1 AND los_days IS NOT NULL AND discharge_date BETWEEN '{period_start}' AND '{period_end}'"
+    }
+   }
   },
   {
    "id": "observation_stay_hours",
@@ -835,7 +847,7 @@
    "output": {
     "returns": "value"
    },
-   "sql_template": "SELECT round(avg((julianday(end_time) - julianday(start_time)) * 24), 1) AS avg_obs_hours FROM visit WHERE type_concept = 'observation_stay' AND start_time IS NOT NULL AND end_time IS NOT NULL AND event_date BETWEEN '{period_start}' AND '{period_end}'"
+   "sql_template": "SELECT avg((julianday(end_time) - julianday(start_time)) * 24) AS avg_obs_hours FROM visit WHERE type_concept = 'observation_stay' AND start_time IS NOT NULL AND end_time IS NOT NULL AND event_date BETWEEN '{period_start}' AND '{period_end}'"
   },
   {
    "id": "readmission_30d",
@@ -896,7 +908,7 @@
      "summary": "Exclude planned readmissions and pregnancy/perinatal index stays (needs procedure/diagnosis detail)."
     }
    },
-   "sql_template": "SELECT round(100.0 * sum(readmitted_30d) / count(*), 1) AS readmission_rate FROM stay WHERE discharge_date BETWEEN '{period_start}' AND '{period_end}'"
+   "sql_template": "SELECT 100.0 * sum(readmitted_30d) / count(*) AS readmission_rate FROM stay WHERE discharge_date BETWEEN '{period_start}' AND '{period_end}'"
   },
   {
    "id": "post_discharge_followup_7d",
@@ -995,7 +1007,7 @@
    "output": {
     "returns": "value"
    },
-   "sql_template": "WITH dc AS (SELECT a.record_id, a.patient_id, a.event_date AS discharge_day FROM record a JOIN visit e ON e.encounter_id = json_extract(a.payload,'$.encounter_id') WHERE a.stream = 'adt' AND json_extract(a.payload,'$.event') = 'discharge' AND e.type_concept IN ('inpatient_admission','observation_stay') AND a.event_date BETWEEN '{window_start}' AND '{index_end}') SELECT round(100.0 * sum(EXISTS (SELECT 1 FROM visit v WHERE v.patient_id = dc.patient_id AND v.in_person = 1 AND v.type_concept IN ('primary_care_visit','specialist_visit') AND julianday(v.event_date) - julianday(dc.discharge_day) BETWEEN 1 AND 7)) / count(*), 1) AS pct_followup_7d FROM dc",
+   "sql_template": "WITH dc AS (SELECT a.record_id, a.patient_id, a.event_date AS discharge_day FROM record a JOIN visit e ON e.encounter_id = json_extract(a.payload,'$.encounter_id') WHERE a.stream = 'adt' AND json_extract(a.payload,'$.event') = 'discharge' AND e.type_concept IN ('inpatient_admission','observation_stay') AND a.event_date BETWEEN '{window_start}' AND '{index_end}') SELECT 100.0 * sum(EXISTS (SELECT 1 FROM visit v WHERE v.patient_id = dc.patient_id AND v.in_person = 1 AND v.type_concept IN ('primary_care_visit','specialist_visit') AND julianday(v.event_date) - julianday(dc.discharge_day) BETWEEN 1 AND 7)) / count(*) AS pct_followup_7d FROM dc",
    "checks": [
     {
      "rule": "ML-ANCHOR",
@@ -1104,7 +1116,7 @@
    "output": {
     "returns": "value"
    },
-   "sql_template": "SELECT round(100.0 * count(DISTINCT CASE WHEN EXISTS (SELECT 1 FROM visit b WHERE b.patient_id = e.patient_id AND b.encounter_id <> e.encounter_id AND b.type_concept IN ('primary_care_visit','specialist_visit','telehealth_contact') AND julianday(b.event_date) - julianday(e.event_date) BETWEEN 0 AND 7) THEN e.encounter_id END) / count(DISTINCT e.encounter_id), 1) AS pct_followup_7d FROM visit e WHERE e.type_concept = 'emergency_visit' AND e.event_date BETWEEN '{period_start}' AND '{period_end}'"
+   "sql_template": "SELECT 100.0 * count(DISTINCT CASE WHEN EXISTS (SELECT 1 FROM visit b WHERE b.patient_id = e.patient_id AND b.encounter_id <> e.encounter_id AND b.type_concept IN ('primary_care_visit','specialist_visit','telehealth_contact') AND julianday(b.event_date) - julianday(e.event_date) BETWEEN 0 AND 7) THEN e.encounter_id END) / count(DISTINCT e.encounter_id) AS pct_followup_7d FROM visit e WHERE e.type_concept = 'emergency_visit' AND e.event_date BETWEEN '{period_start}' AND '{period_end}'"
   }
  ]
 }
