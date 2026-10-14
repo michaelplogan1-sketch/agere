@@ -5,7 +5,8 @@ executed (sqlite mode=ro) and sanity-checked, and its result signature compared 
 `summary` then scores every acceptance rule (first k' candidates, m agreeing) for precision / coverage.
 
 Usage:
-  .venv/bin/python tools/bottling/evaluate.py run <test.jsonl> <stack> <model_dir> <adapter_dir|none> <out.jsonl> [k]
+  .venv/bin/python tools/bottling/evaluate.py run <test.jsonl> <stack> <model_dir> <adapter_dir|none> <out.jsonl> [k] [bottled|ladder]
+  .venv/bin/python tools/bottling/evaluate.py bench <stack> <model_dir> <adapter_dir|none> <out.jsonl> [k]
   .venv/bin/python tools/bottling/evaluate.py summary <out.jsonl>...
 """
 import json, sqlite3, sys, time
@@ -16,11 +17,26 @@ sys.path.insert(0, str(ROOT))
 from clinical_core.agere.clinical import bottled, nl2sql, source_profile
 
 
-def run(test, stack, model_dir, adapter, out, k=5):
-    profile = source_profile.load(stack)
-    as_of = json.loads((Path(stack) / 'run.json').read_text()).get('as_of') or '2029-08-15'
+def prompt_for(style, question, profile, as_of):
+    """'bottled' = the rung's compact prompt; 'ladder' = the pilot's training prompt (full ladder rules + schema slice)."""
+    msgs = bottled.messages(question, profile, as_of)
+    if style == 'ladder': msgs[0]['content'] = nl2sql.RULES + nl2sql.VERIFY_RULES + f'\nThe data snapshot is as of {as_of}.'
+    return msgs
+
+
+def stack_facts(stack):
     db = sqlite3.connect(f'file:{Path(stack) / "semantic.sqlite3"}?mode=ro', uri=True)
-    roster = db.execute('SELECT count(*) FROM patient').fetchone()[0]; db.close()
+    try:
+        meta = dict(db.execute('SELECT key, value FROM meta').fetchall())
+        roster = db.execute('SELECT count(*) FROM patient').fetchone()[0]
+    finally:
+        db.close()
+    return json.loads((Path(stack) / 'run.json').read_text()).get('as_of') or meta.get('as_of') or '2029-08-15', roster
+
+
+def run(test, stack, model_dir, adapter, out, k=5, style='bottled'):
+    profile = source_profile.load(stack)
+    as_of, roster = stack_facts(stack)
     t0 = time.perf_counter()
     model = bottled.BottledModel(model_dir, None if adapter == 'none' else adapter)
     print(f'loaded {model.identity} in {time.perf_counter() - t0:.1f}s', flush=True)
@@ -29,13 +45,17 @@ def run(test, stack, model_dir, adapter, out, k=5):
     with open(out, 'a') as f:
         for i, r in enumerate(rows):
             if r['question'] in done: continue
-            texts, seconds = model(bottled.messages(r['question'], profile, as_of), k=k)
+            try:  # the verified query re-executed READ ONLY on THIS stack is the reference (v1.23 and v2.0 differ)
+                ref = bottled.signature(bottled.execute_ro(stack, r['sql'])[1])
+            except ValueError as exc:
+                print(f'{i + 1}/{len(rows)} reference query fails on this stack: {exc}', flush=True); continue
+            texts, seconds = model(prompt_for(style, r['question'], profile, as_of), k=k)
             start = time.perf_counter()
             cands = [bottled.check(stack, profile, r['question'], nl2sql._extract_sql(t), roster) for t in texts]
-            rec = {'question': r['question'], 'model': model.identity, 'decode_seconds': round(seconds, 2),
+            rec = {'question': r['question'], 'model': model.identity, 'prompt': style, 'decode_seconds': round(seconds, 2),
                    'check_seconds': round(time.perf_counter() - start, 2),
                    'candidates': [{'ok': c['ok'], 'rejected': c.get('rejected'), 'signature': c.get('signature'),
-                                   'correct': bool(c['ok'] and c['signature'] == r['reference_signature']), 'sql': c['sql']} for c in cands]}
+                                   'correct': bool(c['ok'] and c['signature'] == ref), 'sql': c['sql']} for c in cands]}
             f.write(json.dumps(rec) + '\n'); f.flush()
             print(f"{i + 1}/{len(rows)} {seconds:.1f}s greedy={'ok' if cands[0]['ok'] else 'rej'} correct={rec['candidates'][0]['correct']}", flush=True)
 
@@ -133,7 +153,7 @@ def summary(files):
 if __name__ == '__main__':
     if sys.argv[1] == 'run':
         a = sys.argv[2:]
-        run(a[0], a[1], a[2], a[3], a[4], int(a[5]) if len(a) > 5 else 5)
+        run(a[0], a[1], a[2], a[3], a[4], int(a[5]) if len(a) > 5 else 5, a[6] if len(a) > 6 else 'bottled')
     elif sys.argv[1] == 'bench':
         a = sys.argv[2:]
         bench(a[0], a[1], a[2], a[3], int(a[4]) if len(a) > 4 else 5)

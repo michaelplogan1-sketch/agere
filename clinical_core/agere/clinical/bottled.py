@@ -243,3 +243,22 @@ def answer(stack_path, question, as_of, profile, model=None, k=None, agree=None)
     receipt['agreement'] = why if chosen else None
     if chosen is None: raise decline(why)
     return params_for(question, chosen), receipt
+
+
+def candidate(stack_path, question, as_of, profile=None, model=None):
+    """One greedy bottled decode as an independent 'local' candidate for verification v2 (same dict shape as
+    verification_v2.local_model_candidate). None when the bottled model is absent or its query fails lint/sanity."""
+    if model is None:
+        if os.environ.get('AGERE_LOCAL_CANDIDATE', 'on') == 'off' or not BottledModel.available(): return None
+        model = BottledModel.get()
+    if profile is None:
+        from . import source_profile
+        profile = source_profile.load(stack_path)
+    texts, _ = model(messages(question, profile, as_of), k=1)
+    db = sqlite3.connect(f'file:{Path(stack_path) / "semantic.sqlite3"}?mode=ro', uri=True)
+    try: roster = db.execute('SELECT count(*) FROM patient').fetchone()[0]
+    finally: db.close()
+    cand = check(stack_path, profile, question, nl2sql._extract_sql(texts[0]), roster)
+    if not cand['ok']: return None
+    params = params_for(question, cand)
+    return {'label': 'local_model', 'sql': params['query'], 'returns': params['returns'], 'model': getattr(model, 'identity', None)}

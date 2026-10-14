@@ -1,0 +1,29 @@
+# MLX LoRA for the bottled SQL rung (Qwen3-4B 4-bit). Data from tools/bottling/prepare.py (verified pairs, clustered split).
+#   .venv/bin/python -m mlx_lm lora -c tools/bottling/lora-v2-resume.yaml
+# Paths are the main checkout's artifacts (gitignored). Compact prompt (~3.4k tokens) ~11.5 s/iter on an M5.
+# Resumed from the iter-200 checkpoint of adapters-v2 after a machine restart: 800 more iters (1000 total, ~1.9 epochs),
+# cosine continued from where the first run stopped (step 100 of 550 updates, lr ~9.4e-5) down to 1e-5.
+model: /Users/mikel/clinical-insights-local/models/qwen3-4b
+train: true
+data: /Users/mikel/clinical-insights-local/artifacts/bottling/data-v2
+adapter_path: /Users/mikel/clinical-insights-local/artifacts/bottling/adapters-v2b
+fine_tune_type: lora
+num_layers: 16
+batch_size: 1
+grad_accumulation_steps: 2
+iters: 800
+resume_adapter_file: /Users/mikel/clinical-insights-local/artifacts/bottling/adapters-v2/0000200_adapters.safetensors
+learning_rate: 9.4e-5
+lr_schedule:
+  name: cosine_decay
+  warmup: 0
+  warmup_init: 1.0e-6
+  arguments: [9.4e-5, 400, 1.0e-5]
+mask_prompt: true          # learn the SQL, not the schema
+max_seq_length: 4608
+grad_checkpoint: true
+steps_per_report: 10
+steps_per_eval: 200
+val_batches: 21
+save_every: 100
+seed: 8                    # new data order for the resumed run

@@ -86,6 +86,15 @@ class Answer(unittest.TestCase):
         self.assertIn('sanity', str(ctx.exception))
         with self.assertRaises(ValueError): self.run_model(['I cannot answer that.'] * 3)
 
+    def test_verification_candidate_shape(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp); fixture(root)
+            model = FakeModel([GOOD]); model.question = self.Q
+            c = bottled.candidate(root, self.Q, '2029-08-15', PROFILE, model=model)
+            self.assertEqual((c['label'], c['returns'], c['model']), ('local_model', 'count', 'fake-bottled'))
+            model = FakeModel([LINT_BAD]); model.question = self.Q
+            self.assertIsNone(bottled.candidate(root, self.Q, '2029-08-15', PROFILE, model=model))
+
     def test_never_answers_a_benchmark_question(self):
         root = Path(bottled.__file__).resolve().parents[3]
         bench = json.loads(next((root / 'bench' / 'questions').glob('*.json')).read_text())[0]
