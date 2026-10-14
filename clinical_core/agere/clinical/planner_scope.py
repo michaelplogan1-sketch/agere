@@ -105,8 +105,9 @@ def coverage(graph,rows,scope,*,inherited_unmet=False):
                     visit(parent)
             for key in refs:visit(key)
             # Selected operators are candidate capabilities, not mandatory steps: a
-            # segment is delivered when actual nodes answer it, even by fewer operators.
-            if not ancestors:raise ValueError('A selected requirement has no delivering graph node')
+            # segment is delivered when actual nodes answer it, even by fewer operators,
+            # but at least one of its own operators must be reachable from them.
+            if not set(s['operations'])&{nodes[k]['operation'] for k in ancestors}:raise ValueError('A selected requirement has no delivering graph node')
     if gaps and (graph['coverage']=='supported_observation' or any(g not in graph['unmet_requirements'] for g in gaps)):raise ValueError('Unmet scoped requirements must remain visible in the answer')
     return rows
 

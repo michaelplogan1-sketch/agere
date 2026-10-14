@@ -3,6 +3,7 @@ from unittest.mock import patch
 import test_analysis_graph as F
 from clinical_core.agere.clinical import cardiometabolic_review as C, program_work as W, cardiometabolic_options as O, cardiometabolic_components as K
 from clinical_core.agere.clinical import option_evidence_registry as Registry,option_component_registry
+from clinical_core.agere.clinical import reference_applicability as R,reference_lifecycle as L,care_option_comparison as Comparison,care_option_delivery as D
 
 class CardiometabolicReview(unittest.TestCase):
  def setUp(self):
@@ -60,6 +61,9 @@ class CardiometabolicReview(unittest.TestCase):
  def test_prepare_rejects_injected_authority(self):
   with self.assertRaises(ValueError):C.prepare(self.root,{'patient_id':'p0','diagnosis':'hypertension'})
  def test_prior_bundles_unchanged_and_current_component_mapping(self):
+  # The installs below wrap shared modules process-wide; restore them so later tests see their own catalog.
+  for module,names in [(R,['inspect','references','snapshot']),(L,['_BASE_REFERENCES']),(Comparison,['choices','evidence','snapshot']),(Registry,['bundles']),(D,['identity','inputs','snapshot'])]:
+   for name in names:self.addCleanup(setattr,module,name,getattr(module,name))
   option_component_registry.install();before=Registry.bundles();K.install();after=Registry.bundles();option_component_registry.install();K.install();self.assertEqual(after,Registry.bundles());self.assertTrue(all(x in after for x in before));self.assertEqual(len(after),len(before)+1)
   b=O.bundles()[0];c={'option_evidence':b['evidence'],'reference':b['reference'],'alternatives':b['evidence']['alternatives']};m=K.mapping(c);self.assertEqual(len(m['alternatives']['home_team_review']),3);self.assertEqual(b['evidence']['estimates'],[]);self.assertEqual(len(b['reference']['questions']),7)
   bad=copy.deepcopy(c);bad['option_evidence']['registry_entry']['bundle_hash']='changed'

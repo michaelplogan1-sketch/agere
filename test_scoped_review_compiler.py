@@ -84,10 +84,10 @@ class ScopedCompiler(unittest.TestCase):
                 db.execute('CREATE TABLE patients(id TEXT)');db.execute("INSERT INTO patients VALUES ('P-1002')")
             stack=object.__new__(Stack);stack.path=path
             stack.retriever=SimpleNamespace(meta={'snapshot':{'as_of':'2029-08-15'}})
-            stack.run_graph=lambda graph:{'graph':graph,'new_paid_api_calls':0}
+            asked=[];stack.run_graph=lambda graph,*,question=None:asked.append(question) or {'graph':graph,'new_paid_api_calls':0}
             with patch('clinical_core.agere.clinical.stack_runtime.BudgetLedger',side_effect=AssertionError('Provider ledger opened')):
                 row=stack.compose(SUPPORTED[0][0],planning='scoped_local_candidate')
-                self.assertEqual(row['new_paid_api_calls'],0)
+                self.assertEqual(row['new_paid_api_calls'],0);self.assertEqual(asked,[SUPPORTED[0][0]])
                 with self.assertRaises(ValueError):stack.compose(UNSUPPORTED[5],planning='scoped_local_candidate')
 
     def test_decision_connection_rejects_stale_or_rewritten_compiler_contract(self):

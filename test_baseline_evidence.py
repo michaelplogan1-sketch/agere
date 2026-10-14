@@ -5,6 +5,7 @@ from pathlib import Path
 import sqlite3
 import tempfile
 import unittest
+import zlib
 from unittest.mock import patch
 
 from clinical_core.contracts import digest
@@ -211,8 +212,20 @@ class GraphConnection(unittest.TestCase):
 
     def test_full_selected_set_and_unknown_input_accounting(self):
         g=baseline_examples()[0]['graph']
+        def outcome(path,patient_ids,parameters,*,prepared):
+            # Store member receipts as the real engine does; the graph binds them to the report.
+            db=O.storage(path)
+            try:
+                with db:
+                    for pid in patient_ids:
+                        label=None if pid=='p2' else pid in ('p0','p1')
+                        row={'id':O.receipt_id(prepared,pid),'patient_id':pid,'status':'unresolved' if label is None else 'event' if label else 'no_event',
+                             'recorded_label':label,'indexed':True,'calendar_mature':True}
+                        db.execute('INSERT OR REPLACE INTO receipts VALUES(?,?,?)',(row['id'],pid,zlib.compress(json.dumps(row).encode())))
+            finally:db.close()
+            return {'p0','p1'},{'p2'},{}
         with patch.object(O,'prepare',return_value={'identity':'outcome'}), \
-             patch.object(O,'execute',return_value=({'p0','p1'},{'p2'},{})), \
+             patch.object(O,'execute',side_effect=outcome), \
              patch.object(B,'prepare',return_value={'identity':'baseline'}), \
              patch.object(B,'execute',return_value={'patients_evaluated':2}) as build:
             r=execute(self.stack,g)

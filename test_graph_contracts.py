@@ -147,8 +147,14 @@ class Contracts(unittest.TestCase):
             {'id':'p','operation':'cohort','inputs':[]}, {'id':'r','operation':'domain_review','inputs':['p']}]}
         rows=[{'segment':0,'node_ids':['r'],'unmet':''}]
         S.coverage(graph,rows,scope)
-        graph['nodes'][1]['inputs']=[]
+        # Selected operators are candidates: the review alone still delivers its segment.
+        graph['nodes'][1]['inputs']=[];S.coverage(graph,rows,scope)
+        # A cohort segment is covered through the review only while the cohort feeds it.
+        scope={'segments':[{'operations':['cohort'],'unmet':''},{'operations':['domain_review'],'unmet':''}]}
+        rows=[{'segment':0,'node_ids':['r'],'unmet':''},{'segment':1,'node_ids':['r'],'unmet':''}]
         with self.assertRaisesRegex(ValueError,'delivering'):S.coverage(graph,rows,scope)
+        graph['nodes'][1]['inputs']=['p'];S.coverage(graph,rows,scope)
+        with self.assertRaisesRegex(ValueError,'delivering'):S.coverage(graph,[{**rows[0],'node_ids':[]},rows[1]],scope)
 
 
 if __name__=='__main__':unittest.main()
