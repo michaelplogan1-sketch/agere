@@ -394,7 +394,8 @@ def plan(stack,question,ledger,frontier):
                                                     source=oracles.readonly_executor(stack.path))
             except (ValueError,RuntimeError,OSError,sqlite3.Error) as exc:
                 acceptance={'status':'low_confidence','basis':f'acceptance check failed: {exc}'[:300]}
-            return graph,{'route':'hosted_verified_sql','model':hosted.model,'new_paid_api_calls':len(receipt['attempts']),
+            paid_calls=sum(1 for a in list(receipt.get('prior_attempts') or [])+receipt['attempts'] if not a.get('cache_hit'))
+            return graph,{'route':'hosted_verified_sql','model':hosted.model,'new_paid_api_calls':paid_calls,
                           'frontier_called':False,'local_compiler_declined':local_decline,'hosted_sql':receipt,'acceptance':acceptance,
                           'steps':[{'stage':'hosted_verified_sql','receipt':{'cost_estimate':{'estimated_usd':hosted.cost}}}],
                           'elapsed_seconds':time.perf_counter()-start}
@@ -403,8 +404,19 @@ def plan(stack,question,ledger,frontier):
             if isinstance(exc,MissingData):  # an analyst says the needed data does not exist: answer unsupported, never substitute
                 graph=validate({'interpretation':f'Unsupported by received data: {question}','coverage':'unsupported','nodes':[],
                                 'unmet_requirements':['Missing input: '+str(exc)[:400]]},meta['snapshot']['as_of'])
-                return graph,{'route':'hosted_missing_data','model':hosted.model,'new_paid_api_calls':2,'frontier_called':False,
-                              'local_compiler_declined':local_decline,'steps':[],'elapsed_seconds':time.perf_counter()-start}
+                # The hosted calls that produced the claim are paid: account for them (they were recorded as $0 before).
+                spent=sum(getattr(m,'cost',0.0) or 0.0 for m in (locals().get('hosted'),locals().get('second'),locals().get('judge'),locals().get('decider')) if m is not None)
+                spent+=sum(c.get('api_usd') or 0 for c in local_decline.get('operator_router',{}).get('calls',[]))
+                spent+=metric_router.cost(local_decline.get('metric_router') or {})
+                ladder=exc.receipt or {}
+                attempts=list(ladder.get('prior_attempts') or [])+list(ladder.get('attempts') or [])
+                paid_calls=sum(1 for a in attempts if not a.get('cache_hit')) if attempts else 2
+                model=getattr(locals().get('hosted'),'model',None)
+                return graph,{'route':'hosted_missing_data','model':model,'new_paid_api_calls':paid_calls,'frontier_called':False,
+                              'local_compiler_declined':local_decline,'hosted_sql':ladder,
+                              'missing_check':{'claim':str(exc)[:300],'contradicted':list(exc.contradicted or [])},
+                              'steps':[{'stage':'hosted_missing_data','receipt':{'cost_estimate':{'estimated_usd':spent}}}],
+                              'elapsed_seconds':time.perf_counter()-start}
             local_decline={**local_decline,'hosted_sql_error':str(exc)[:300]}
     from .analysis_graph import catalog,code_identity
     # Catalog identity covers source/attached model/policy capability changes.

@@ -279,12 +279,12 @@ def build_cohort(slots, as_of, m=None):
     if by != 'none':
         g = PATIENT_GROUPS[by]
         cols = f"{g} AS {by}, count(*) AS patients"
-        if nsql: cols += f", sum(CASE WHEN {nsql} THEN 1 ELSE 0 END) AS numerator, round(100.0 * sum(CASE WHEN {nsql} THEN 1 ELSE 0 END) / count(*), 1) AS percent"
+        if nsql: cols += f", sum(CASE WHEN {nsql} THEN 1 ELSE 0 END) AS numerator, 100.0 * sum(CASE WHEN {nsql} THEN 1 ELSE 0 END) / count(*) AS percent"
         return {'query': f"SELECT {cols} FROM patient p WHERE {where} GROUP BY 1 ORDER BY 1", 'returns': 'table'}
     if returns == 'patient_set':
         return {'query': f"SELECT p.patient_id FROM patient p WHERE {where} ORDER BY 1", 'returns': 'patient_set'}
     if returns == 'percent':
-        return {'query': f"SELECT round(100.0 * sum(CASE WHEN {nsql} THEN 1 ELSE 0 END) / count(*), 1) AS percent FROM patient p WHERE {where}",
+        return {'query': f"SELECT 100.0 * sum(CASE WHEN {nsql} THEN 1 ELSE 0 END) / count(*) AS percent FROM patient p WHERE {where}",
                 'returns': 'value'}
     if returns == 'count':
         return {'query': f"SELECT count(*) AS patients FROM patient p WHERE {where}", 'returns': 'count'}
@@ -299,28 +299,30 @@ def build_encounter_volume(slots, as_of, m=None):
     pop = slots.get('population') or []
     vwhere = _and([f"v.type IN {qlist(types)}", date_clause('v.event_date', bounds)])
     pwhere = population_sql(pop, as_of) if pop else '1=1'
+    classes = slots.get('visit_classes') or []
+    vcol = f'{classes[0]}_visits' if len(classes) == 1 and re.fullmatch(r'[a-z_]+', classes[0]) else 'visits'  # measure-named column
     if measure not in ('visits', 'patients', 'per_1000_roster'): raise ValueError('measure visits|patients|per_1000_roster')
     if by in PATIENT_GROUPS and by != 'none':
         g = PATIENT_GROUPS[by]
         if measure == 'per_1000_roster':
-            return {'query': f"SELECT {g} AS {by}, count(DISTINCT p.patient_id) AS patients, count(DISTINCT v.encounter_id) AS visits, "
-                             f"round(1000.0 * count(DISTINCT v.encounter_id) / count(DISTINCT p.patient_id), 1) AS per_1000 "
+            return {'query': f"SELECT {g} AS {by}, count(DISTINCT p.patient_id) AS patients, count(DISTINCT v.encounter_id) AS {vcol}, "
+                             f"1000.0 * count(DISTINCT v.encounter_id) / count(DISTINCT p.patient_id) AS per_1000 "
                              f"FROM patient p LEFT JOIN visit v ON v.patient_id = p.patient_id AND {vwhere} WHERE {pwhere} GROUP BY 1 ORDER BY 1",
                     'returns': 'table'}
-        agg = 'count(DISTINCT v.encounter_id) AS visits' if measure == 'visits' else 'count(DISTINCT v.patient_id) AS patients'
+        agg = f'count(DISTINCT v.encounter_id) AS {vcol}' if measure == 'visits' else 'count(DISTINCT v.patient_id) AS patients'
         return {'query': f"SELECT {g} AS {by}, {agg} FROM visit v JOIN patient p ON p.patient_id = v.patient_id "
                          f"WHERE {vwhere} AND {pwhere} GROUP BY 1 ORDER BY 1", 'returns': 'table'}
     if by == 'facility':
-        agg = 'count(DISTINCT v.encounter_id) AS visits' if measure != 'patients' else 'count(DISTINCT v.patient_id) AS patients'
-        return {'query': f"SELECT v.organization_id AS facility, {agg} FROM visit v JOIN patient p ON p.patient_id = v.patient_id "
+        agg = f'count(DISTINCT v.encounter_id) AS {vcol}' if measure != 'patients' else 'count(DISTINCT v.patient_id) AS patients'
+        return {'query': f"SELECT v.organization_id AS organization_id, {agg} FROM visit v JOIN patient p ON p.patient_id = v.patient_id "
                          f"WHERE {vwhere} AND {pwhere} GROUP BY 1 ORDER BY 1", 'returns': 'table'}
     ge = _group_expr('v.event_date', by)
     if by != 'none' and not ge: raise ValueError('group_by must be none|month|quarter|half_year|year|facility|coverage_type|sex|age_band|attributed_practice')
     if measure == 'per_1000_roster':
         if ge: raise ValueError('per_1000_roster by a time period is not defined here; use visits')
-        return {'query': f"SELECT round(1000.0 * (SELECT count(DISTINCT v.encounter_id) FROM visit v JOIN patient p ON p.patient_id = v.patient_id "
-                         f"WHERE {vwhere} AND {pwhere}) / (SELECT count(*) FROM patient p WHERE {pwhere}), 1) AS per_1000", 'returns': 'value'}
-    agg = 'count(DISTINCT v.encounter_id) AS visits' if measure == 'visits' else 'count(DISTINCT v.patient_id) AS patients'
+        return {'query': f"SELECT 1000.0 * (SELECT count(DISTINCT v.encounter_id) FROM visit v JOIN patient p ON p.patient_id = v.patient_id "
+                         f"WHERE {vwhere} AND {pwhere}) / (SELECT count(*) FROM patient p WHERE {pwhere}) AS per_1000", 'returns': 'value'}
+    agg = f'count(DISTINCT v.encounter_id) AS {vcol}' if measure == 'visits' else 'count(DISTINCT v.patient_id) AS patients'
     if ge:
         return {'query': f"SELECT {ge} AS {by}, {agg} FROM visit v JOIN patient p ON p.patient_id = v.patient_id "
                          f"WHERE {vwhere} AND {pwhere} GROUP BY 1 ORDER BY 1", 'returns': 'table'}
@@ -345,7 +347,7 @@ def build_visit_followup(slots, as_of, m=None):
     if returns == 'count':
         return {'query': f"SELECT count(DISTINCT e.encounter_id) AS index_visits_followed_up FROM visit e WHERE {where} AND {hit}", 'returns': 'count'}
     if returns == 'percent':
-        return {'query': f"SELECT round(100.0 * count(DISTINCT CASE WHEN {hit} THEN e.encounter_id END) / count(DISTINCT e.encounter_id), 1) "
+        return {'query': f"SELECT 100.0 * count(DISTINCT CASE WHEN {hit} THEN e.encounter_id END) / count(DISTINCT e.encounter_id) "
                          f"AS pct_followed_up FROM visit e WHERE {where}", 'returns': 'value'}
     raise ValueError('returns count|percent')
 
@@ -363,9 +365,9 @@ def build_length_of_stay(slots, as_of, m=None):
     where = _and([f"type IN {qlist(types)}", "status = 'completed'", "start_time IS NOT NULL", "end_time IS NOT NULL", date_clause(col, bounds)])
     los = f"(julianday(end_time) - julianday(start_time)) * {factor}"
     if stat == 'mean':
-        return {'query': f"SELECT round(avg({los}), {2 if unit == 'days' else 1}) AS average_length_of_stay FROM visit WHERE {where}", 'returns': 'value'}
+        return {'query': f"SELECT avg({los}) AS average_length_of_stay FROM visit WHERE {where}", 'returns': 'value'}
     if stat == 'median':
-        return {'query': f"SELECT round(avg(x), 2) AS median_length_of_stay FROM (SELECT {los} AS x, row_number() OVER (ORDER BY {los}) AS rn, "
+        return {'query': f"SELECT avg(x) AS median_length_of_stay FROM (SELECT {los} AS x, row_number() OVER (ORDER BY {los}) AS rn, "
                          f"count(*) OVER () AS n FROM visit WHERE {where}) WHERE rn IN ((n + 1) / 2, (n + 2) / 2)", 'returns': 'value'}
     raise ValueError('statistic mean|median')
 
@@ -373,22 +375,52 @@ def build_length_of_stay(slots, as_of, m=None):
 CLAIM_MEASURES = {
     'claims': ('count(*)', 'claims'),
     'first_pass_denied': ("sum(first_status = 'denied')", 'first_pass_denied'),
-    'first_pass_denial_rate': ("round(100.0 * sum(first_status = 'denied') / count(*), 1)", 'first_pass_denial_rate'),
+    'first_pass_denial_rate': ("100.0 * sum(first_status = 'denied') / count(*)", 'first_pass_denial_rate'),
     'ever_denied': ('sum(ever_denied)', 'ever_denied'),
-    'ever_denied_rate': ('round(100.0 * sum(ever_denied) / count(*), 1)', 'ever_denied_rate'),
+    'ever_denied_rate': ('100.0 * sum(ever_denied) / count(*)', 'ever_denied_rate'),
     'denied_then_paid': ('sum(denied_then_paid)', 'denied_then_paid'),
     'first_pass_denied_then_paid': ("sum(first_status = 'denied' AND denied_then_paid = 1)", 'first_pass_denied_then_paid'),
-    'overturn_rate': ('round(100.0 * sum(denied_then_paid) / nullif(sum(ever_denied), 0), 1)', 'overturn_rate'),
-    'first_pass_overturn_rate': ("round(100.0 * sum(first_status = 'denied' AND denied_then_paid = 1) / nullif(sum(first_status = 'denied'), 0), 1)", 'first_pass_overturn_rate'),
-    'net_payer_paid_usd': ('round(sum(net_payer_paid_cents) / 100.0, 2)', 'net_payer_paid_usd'),
-    'billed_usd': ('round(sum(billed_cents) / 100.0, 2)', 'billed_usd'),
-    'allowed_usd': ('round(sum(allowed_cents) / 100.0, 2)', 'allowed_usd'),
-    'avg_days_to_first_submission': ('round(avg(julianday(first_submitted_date) - julianday(service_date)), 2)', 'avg_days_to_first_submission'),
-    'avg_days_to_first_payer_cash': ('round(avg(julianday(first_payer_cash_date) - julianday(service_date)), 2)', 'avg_days_to_first_payer_cash'),
-    'avg_days_to_first_adjudication': ('round(avg(julianday(first_adjudication_date) - julianday(service_date)), 2)', 'avg_days_to_first_adjudication'),
+    'overturn_rate': ('100.0 * sum(denied_then_paid) / nullif(sum(ever_denied), 0)', 'overturn_rate'),
+    'first_pass_overturn_rate': ("100.0 * sum(first_status = 'denied' AND denied_then_paid = 1) / nullif(sum(first_status = 'denied'), 0)", 'first_pass_overturn_rate'),
+    'net_payer_paid_usd': ('sum(net_payer_paid_cents) / 100.0', 'net_payer_paid_usd'),
+    'billed_usd': ('sum(billed_cents) / 100.0', 'billed_usd'),
+    'allowed_usd': ('sum(allowed_cents) / 100.0', 'allowed_usd'),
+    'avg_days_to_first_submission': ('avg(julianday(first_submitted_date) - julianday(service_date))', 'avg_days_to_first_submission'),
+    'avg_days_to_first_payer_cash': ('avg(julianday(first_payer_cash_date) - julianday(service_date))', 'avg_days_to_first_payer_cash'),
+    'avg_days_to_first_adjudication': ('avg(julianday(first_adjudication_date) - julianday(service_date))', 'avg_days_to_first_adjudication'),
 }
+CLAIM_MEASURES['avg_days_to_first_paid'] = ('avg(julianday(first_paid_date) - julianday(service_date))', 'avg_days_to_first_paid')
 _CLAIM_DAYS = {'avg_days_to_first_submission': 'first_submitted_date', 'avg_days_to_first_payer_cash': 'first_payer_cash_date',
-               'avg_days_to_first_adjudication': 'first_adjudication_date', 'median_days_to_first_payer_cash': 'first_payer_cash_date'}
+               'avg_days_to_first_adjudication': 'first_adjudication_date', 'median_days_to_first_payer_cash': 'first_payer_cash_date',
+               'avg_days_to_first_paid': 'first_paid_date'}
+# Claim clocks a question can name. 'first paid in' is the first PAID adjudication (the payer's payment decision), not the
+# cash date; cash/received questions use first_payer_cash_date; 'reversed in' is the date of a reversal adjudication event.
+_ADJ = "json_extract(payload, '$.claim_id')"
+FIRST_PAID = (f"SELECT {_ADJ} AS claim_id, min(event_date) AS first_paid_date FROM record WHERE stream = 'medical_claims' "
+              "AND json_extract(payload, '$.status') = 'paid' GROUP BY 1")
+CLAIM_ANCHORS = {
+    'service_date': 'the date of service',
+    'benefit_year': 'the benefit year (one calendar year)',
+    'first_adjudication_date': "the claim's first adjudication date ('adjudicated in', 'first adjudicated in', 'processed in')",
+    'first_paid_date': "the claim's first PAID adjudication date ('first paid in', 'paid in'; not the cash date)",
+    'first_payer_cash_date': "the first payer cash posting date ('cash received in', 'payment received in', 'cash posted in')",
+    'reversal_date': "the date of a reversal adjudication event ('reversed in', 'reversed and reprocessed in')",
+}
+
+
+def claim_anchor_clause(anchor, bounds):
+    """WHERE clause for the claim clock a question names (see CLAIM_ANCHORS)."""
+    if anchor == 'service_date': return date_clause('service_date', bounds)
+    if anchor == 'benefit_year':
+        if not bounds[0] or bounds[0][5:] != '01-01' or not bounds[1] or bounds[1][:4] != bounds[0][:4]: raise ValueError('benefit_year anchor needs a period of one calendar year')
+        return f"benefit_year = {q(bounds[0][:4])}"
+    if anchor in ('first_adjudication_date', 'first_payer_cash_date', 'first_paid_date'):
+        return _and([f'{anchor} IS NOT NULL', date_clause(anchor, bounds)])
+    if anchor == 'reversal_date':
+        when = date_clause('event_date', bounds)
+        return (f"claim_id IN (SELECT {_ADJ} FROM record WHERE stream = 'medical_claims' AND json_extract(payload, '$.status') = 'reversed'"
+                + (f" AND {when}" if when else '') + ')')
+    raise ValueError(f'anchor must be one of {sorted(CLAIM_ANCHORS)}')
 
 
 def build_medical_claims(slots, as_of, m=None):
@@ -397,25 +429,24 @@ def build_medical_claims(slots, as_of, m=None):
     if not measures or any(x not in allowed for x in measures): raise ValueError(f'measures from {sorted(allowed)}')
     anchor = slots.get('anchor') or 'service_date'
     bounds = period_bounds(slots.get('period'), as_of)
-    if anchor == 'service_date': dclause = date_clause('service_date', bounds)
-    elif anchor == 'benefit_year':
-        if not bounds[0] or bounds[0][5:] != '01-01' or not bounds[1] or bounds[1][:4] != bounds[0][:4]: raise ValueError('benefit_year anchor needs a period of one calendar year')
-        dclause = f"benefit_year = {q(bounds[0][:4])}"
-    else: raise ValueError('anchor service_date|benefit_year')
+    dclause = claim_anchor_clause(anchor, bounds)
     where = _and([dclause, *[f"{_CLAIM_DAYS[x]} IS NOT NULL" for x in measures if x in _CLAIM_DAYS]])
+    source = ('(SELECT c.*, fp.first_paid_date FROM claim c LEFT JOIN (' + FIRST_PAID + ') fp ON fp.claim_id = c.claim_id)'
+              if anchor == 'first_paid_date' or 'avg_days_to_first_paid' in measures else 'claim')
     by = slots.get('group_by') or 'none'
-    gexpr = {'none': None, 'payer': 'payer'}.get(by) or _group_expr('service_date', by)
+    clock = anchor if anchor not in ('benefit_year', 'reversal_date') else 'service_date'
+    gexpr = {'none': None, 'payer': 'payer'}.get(by) or _group_expr(clock, by)
     if by != 'none' and not gexpr: raise ValueError('group_by none|payer|month|quarter|year')
     if 'median_days_to_first_payer_cash' in measures:
         if len(measures) > 1 or gexpr: raise ValueError('median is a single ungrouped measure')
         x = 'julianday(first_payer_cash_date) - julianday(service_date)'
         return {'query': f"SELECT avg(x) AS median_days_to_first_payer_cash FROM (SELECT {x} AS x, row_number() OVER (ORDER BY {x}) AS rn, "
-                         f"count(*) OVER () AS n FROM claim WHERE {where}) WHERE rn IN ((n + 1) / 2, (n + 2) / 2)", 'returns': 'value'}
+                         f"count(*) OVER () AS n FROM {source} WHERE {where}) WHERE rn IN ((n + 1) / 2, (n + 2) / 2)", 'returns': 'value'}
     cols = ', '.join(f'{CLAIM_MEASURES[x][0]} AS {CLAIM_MEASURES[x][1]}' for x in measures)
     if gexpr:
-        return {'query': f"SELECT {gexpr} AS {by}, {cols} FROM claim WHERE {where} GROUP BY 1 ORDER BY 1", 'returns': 'table'}
+        return {'query': f"SELECT {gexpr} AS {by}, {cols} FROM {source} WHERE {where} GROUP BY 1 ORDER BY 1", 'returns': 'table'}
     returns = 'table' if len(measures) > 1 else ('count' if measures[0] in ('claims', 'first_pass_denied', 'ever_denied', 'denied_then_paid', 'first_pass_denied_then_paid') else 'value')
-    return {'query': f"SELECT {cols} FROM claim WHERE {where}", 'returns': returns}
+    return {'query': f"SELECT {cols} FROM {source} WHERE {where}", 'returns': returns}
 
 
 def _payload(field, alias='r'): return f"json_extract({alias}.payload, '$.{field}')"
@@ -466,10 +497,10 @@ def build_feed_quality(slots, as_of, m=None):
                 f"FROM record WHERE stream = {q(stream)}")
     lag = 'julianday(a) - julianday(d)'
     cmp = OPS[lag_op]
-    M = {'rows': 'count(*)', 'undated_rows': 'sum(d IS NULL)', 'pct_undated': 'round(100.0 * sum(d IS NULL) / count(*), 1)',
-         'avg_lag_days': f'round(avg(CASE WHEN d IS NOT NULL THEN {lag} END), 2)',
+    M = {'rows': 'count(*)', 'undated_rows': 'sum(d IS NULL)', 'pct_undated': '100.0 * sum(d IS NULL) / count(*)',
+         'avg_lag_days': f'avg(CASE WHEN d IS NOT NULL THEN {lag} END)',
          'late_rows': f'sum(d IS NOT NULL AND {lag} {cmp} {lag_days})',
-         'pct_late': f'round(100.0 * sum(d IS NOT NULL AND {lag} {cmp} {lag_days}) / sum(d IS NOT NULL), 1)'}
+         'pct_late': f'100.0 * sum(d IS NOT NULL AND {lag} {cmp} {lag_days}) / sum(d IS NOT NULL)'}
     if any(x not in M for x in measures): raise ValueError(f'measures from {sorted(M)}')
     dclause = date_clause('d' if basis == 'event_date' else 'a', bounds)
     by = slots.get('group_by') or 'none'

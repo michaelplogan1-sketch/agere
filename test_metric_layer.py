@@ -226,8 +226,8 @@ class TemplateTests(Fixture):
         self.assertEqual(val('ed_admit_obs_share', 'this year'), [(50.0,)])            # E1 admitted / E1+E2 (E3 is 2028)
         self.assertEqual(val('stale_booked_appointments'), [(1,)])                     # A8 only booked; A9 later fulfilled
         # payer feed: CARC 18 duplicate and superseded original never count; B2-reversed fill is not spend
-        self.assertEqual(val('payer_claim_denial_rate', 'in 2029'), [(33.3,)])         # X2 of X1, X2, X4-R
-        self.assertEqual(val('payer_allowed_pmpm', 'in 2029'), [(round((10000 + 6000 + 1000) / 100 / 4, 2),)])
+        self.assertAlmostEqual(val('payer_claim_denial_rate', 'in 2029')[0][0], 100 / 3)  # X2 of X1, X2, X4-R; full precision
+        self.assertAlmostEqual(val('payer_allowed_pmpm', 'in 2029')[0][0], (10000 + 6000 + 1000) / 100 / 4)
         self.assertEqual(val('all_source_ed_visits_per_1000', 'in 2029'), [(3000.0,)])  # 1 ED visit / (4 member months / 12)
         self.assertEqual(val('patient_ar_outstanding'), [(30.0,)])                     # latest AC1 = 3000c, AC2 credit not netted
         self.assertEqual(val('contractual_writeoffs', 'in 2028'), [(0.0,)])            # reversal nets out

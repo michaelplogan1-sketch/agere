@@ -16,7 +16,8 @@ metric's template / builder / measure engine computes the answer. Answers state 
 
 acceptance() is the stricter policy for the free-form SQL rung that follows: an answer counts as verified only with
 verification v2's independent agreement or a lint-clean governed-metric match; otherwise it is 'low_confidence'
-(finalize_answer marks it partial, or withholds the number under AGERE_FREEFORM_POLICY=abstain).
+(finalize_answer keeps the status and value but sets confidence 'low' with the reason, or withholds the number under
+AGERE_FREEFORM_POLICY=abstain). Confidence is not completeness: status 'partial' is reserved for incomplete answers.
 Synthetic data only. Tests inject the model call (ask=); nothing here spends money without a ledger.
 """
 from __future__ import annotations
@@ -34,7 +35,10 @@ SYSTEM = (
     'If two metrics are equally defensible readings of the question (e.g. different date anchors or populations), call '
     'ambiguous_metrics with both ids and the difference. When filling slots use only what the question says plus the slot defaults; '
     'every number in the question must land in a slot. Periods: "last/past 12 months" = trailing_months 12; "this year"/"so far" = ytd; '
-    '"in 2028" = year 2028; no date mentioned = all_time. Snapshot date: {as_of}.'
+    '"in 2028" = year 2028; no date mentioned = all_time. Snapshot date: {as_of}. '
+    'Date anchors: keep the clock the question names - "adjudicated in" (first adjudication date), "first paid in" (paid '
+    'adjudication date, not cash), "cash received in" (cash date), "reversed in" (reversal event date), "discharged in" '
+    '(discharge date); otherwise the metric default (service/admission/event date). Set the anchor slot when a metric has one.'
 )
 
 
@@ -105,9 +109,34 @@ def slots_of(m):
         return {'period': {'type': 'period', 'description': 'Measurement period (default: the 12 months ending at the snapshot date).'},
                 'group_by': {'type': 'enum', 'values': list(GROUP_BY), 'default': 'none'}}
     if k == 'template' and m['time_anchor']['mode'] == 'period':
-        return {'period': {'type': 'period', 'description': f"Period on {m['time_anchor']['field']} (default: the metric's "
-                                                            f"{m['time_anchor'].get('default', 'all')} window)."}}
+        out = {'period': {'type': 'period', 'description': f"Period on {m['time_anchor']['field']} (default: the metric's "
+                                                           f"{m['time_anchor'].get('default', 'all')} window)."}}
+        av = anchor_variants(m)
+        if av:
+            out['anchor'] = {'type': 'enum', 'values': ['default', *av], 'default': 'default',
+                             'description': ('Which date the period applies to, as the question names it. default = '
+                                             f"{m['time_anchor']['field']}; " +
+                                             '; '.join(f"{n} = {(v.get('time_anchor') or {}).get('field') or v['anchor']}: {v['summary'][:160]}"
+                                                       for n, v in av.items()))[:1200]}
+        return out
     return {}
+
+
+def anchor_variants(m):
+    """Template variants that move the metric's clock (variant 'anchor' + its own sql_template), e.g. claims 'first paid in'
+    (paid adjudication date), 'adjudicated in', 'reversed in', stays 'discharged in'."""
+    return {n: v for n, v in (m.get('variants') or {}).items() if v.get('anchor') and v.get('sql_template')}
+
+
+def chosen_variant(m, slots, question=''):
+    """The template variant to compute: a variant the question's words name (deterministic, wins), else the anchor slot.
+    Only variants carrying their own sql_template are computable; others change meaning and stay unrouted."""
+    from . import metrics
+    name, v = metrics._variant(m, question or '')
+    if name and v.get('sql_template'): return name
+    a = (slots or {}).get('anchor')
+    if a and a != 'default' and a in anchor_variants(m): return a
+    return None
 
 
 def _vocab_values(decl):
@@ -239,6 +268,9 @@ def compile_metric(mid, m, slots, as_of, question=''):
         params = mf.build(m, slots, as_of)
         return {'operation': 'sql', 'parameters': params}
     if k == 'template':
+        # The clock the question names (anchor variant) replaces the template; the period then applies to that clock.
+        vname = chosen_variant(m, slots, question)
+        if vname: m = metrics.apply_variant(m, vname)
         # A filled period slot is authoritative: all_time means every observed date up to the snapshot, never the
         # metric's default window (the computed-as statement would otherwise say all_time over a year-to-date number).
         period = None
@@ -248,7 +280,9 @@ def compile_metric(mid, m, slots, as_of, question=''):
         params = metrics.parameters(m, question if period is None else '', as_of, period)
         sql = metrics.render_sql(m, params)
         returns = {'count': 'count', 'value': 'value', 'patient_set': 'patient_set', 'table': 'table'}[m['output']['returns']]
-        return {'operation': 'sql', 'parameters': {'query': sql, 'returns': returns}, 'period': params}
+        node = {'operation': 'sql', 'parameters': {'query': sql, 'returns': returns}, 'period': params}
+        if vname: node.update(variant=vname, definition=m['summary'], anchor=m['time_anchor']['field'])
+        return node
     if k == 'measure':
         start, end = mf.period_bounds(slots.get('period'), as_of) if slots.get('period') else (None, None)
         if not start or not end:
@@ -261,13 +295,16 @@ def compile_metric(mid, m, slots, as_of, question=''):
     raise ValueError(f'metric {mid} has no template, builder or measure engine')
 
 
-def computed_as(mid, m, slots):
-    shown = {k: v for k, v in slots.items() if v not in (None, [], {}, 'none')}
-    return f"computed as metric {mid}@v{m['version']}: {m['summary'][:400]}" + (f" Slots: {json.dumps(shown, sort_keys=True)[:600]}" if shown else '')
+def computed_as(mid, m, slots, node=None):
+    shown = {k: v for k, v in slots.items() if v not in (None, [], {}, 'none', 'default')}
+    variant = (node or {}).get('variant')
+    summary = (node or {}).get('definition') or m['summary']
+    return (f"computed as metric {mid}@v{m['version']}" + (f" ({variant} variant, anchored on {node.get('anchor')})" if variant else '')
+            + f": {summary[:400]}" + (f" Slots: {json.dumps(shown, sort_keys=True)[:600]}" if shown else ''))
 
 
 def to_graph(question, mid, m, node, slots):
-    statement = computed_as(mid, m, slots)
+    statement = computed_as(mid, m, slots, node)
     return {'interpretation': statement, 'coverage': 'supported_observation', 'unmet_requirements': [],
             'nodes': [{'id': 'answer', 'operation': node['operation'], 'inputs': [], 'parameters': node['parameters'],
                        'purpose': f"Governed metric {mid}@v{m['version']}"}]}
@@ -276,7 +313,8 @@ def to_graph(question, mid, m, node, slots):
 def resolution(mid, m, slots, node):
     return {'metric': mid, 'version': m['version'], 'slots': slots, 'operation': node['operation'],
             'query': (node['parameters'] or {}).get('query'), 'returns': (node['parameters'] or {}).get('returns'),
-            'statement': computed_as(mid, m, slots), 'definition': m['summary'], 'layer': VERSION}
+            'statement': computed_as(mid, m, slots, node), 'definition': node.get('definition') or m['summary'], 'layer': VERSION,
+            **({'variant': node['variant'], 'anchor': node.get('anchor')} if node.get('variant') else {})}
 
 
 def execute(path, node):
@@ -385,7 +423,7 @@ def readings(question, lib, filled, path, difference=None):
         except (ValueError, OSError) as exc:
             res = {'error': str(exc)[:200]}
         results.append({'label': f"metric {mid}@v{lib[mid]['version']}", 'params': node['parameters'] if node['operation'] == 'sql' else None,
-                        'definition': computed_as(mid, lib[mid], slots), 'result': res})
+                        'definition': computed_as(mid, lib[mid], slots, node), 'result': res})
     a, b = results
     if a['result'] is not None and b['result'] is not None and not a['result'].get('error') and not b['result'].get('error') \
             and v2.same_answer(a['result'], b['result']):
@@ -437,9 +475,24 @@ def policy():
     return p if p in ('low_confidence', 'abstain', 'off') else 'low_confidence'
 
 
+CONFIDENCE = ('verified', 'low')
+
+
+def set_confidence(answer, level, reason, **detail):
+    """Answer contract: confidence ('verified' | 'low') is separate from status. Status says whether the answer is
+    complete (partial only with unresolved members or a genuinely incomplete answer); confidence says whether the number
+    was checked (governed metric, independent agreement, lint-clean governed SQL) or not."""
+    if level not in CONFIDENCE: raise ValueError(f'confidence must be one of {CONFIDENCE}')
+    answer['confidence'] = level
+    answer['confidence_reason'] = str(reason or '')[:500]
+    answer['confidence_detail'] = {'level': level, 'basis': reason, **detail}
+    return answer
+
+
 def finalize_answer(answer, receipt):
     """Answer contract for the metric-first routes: governed answers state their metric; ambiguous ones carry both readings;
-    unverified free-form SQL is marked low-confidence (status partial) or withheld (policy abstain)."""
+    unverified free-form SQL keeps its status and exact value but carries confidence 'low' with the reason (policy
+    'abstain' withholds the number instead). Every answer from these routes carries confidence 'verified' | 'low'."""
     if not isinstance(answer, dict) or not isinstance(receipt, dict): return answer
     from .answer_checks import _add
     out = dict(answer)
@@ -447,18 +500,26 @@ def finalize_answer(answer, receipt):
     if receipt.get('route') == 'metric_router' and mr.get('resolution'):
         res = mr['resolution']
         out['computed_as'] = {'metric': res['metric'], 'version': res['version'], 'layer': VERSION, 'definition': res['definition'],
-                              'slots': res['slots'], 'statement': res['statement'], 'conforms': True}
+                              'slots': res['slots'], 'statement': res['statement'], 'conforms': True,
+                              **({'anchor': res['anchor']} if res.get('anchor') else {})}
         out['computed'] = res['statement']
-        out['confidence'] = {'level': 'governed', 'basis': f"computed deterministically as metric {res['metric']}@v{res['version']}"}
+        set_confidence(out, 'verified', f"computed deterministically as metric {res['metric']}@v{res['version']}", source='governed_metric')
         _add(out, 'QC-METRIC', 'FM-05', res['statement'][:300].capitalize(), 'info', metric=res['metric'], metric_version=res['version'])
         if mr.get('readings'):
             from .verification_v2 import attach_readings
             out = attach_readings(out, mr['readings'])
         return out
+    if receipt.get('route') == 'hosted_missing_data':
+        check = receipt.get('missing_check') or {}
+        if check.get('contradicted'):
+            names = ', '.join(c['name'] for c in check['contradicted'])[:300]
+            set_confidence(out, 'low', f"the analyst said the data is missing, but the warehouse has {names}; "
+                                       'the retry with that field named did not produce an answer', source='missing_data_check')
+            _add(out, 'QC-CONFIDENCE', 'FM-13', f"Low confidence abstention: the claimed-missing element exists ({names}).")
+        return out
     acc = receipt.get('acceptance') or {}
     if receipt.get('route') == 'hosted_verified_sql' and acc.get('status') == 'low_confidence' and policy() != 'off':
-        out['confidence'] = {'level': 'low', 'basis': acc.get('basis'), 'policy': policy()}
-        if out.get('status') == 'answered': out['status'] = 'partial'
+        set_confidence(out, 'low', acc.get('basis'), policy=policy(), source='free_form_sql')
         message = ('Low confidence: this number comes from free-form SQL that no independent source or governed metric confirmed '
                    f"({acc.get('basis')}). Treat it as a draft until it is checked.")
         if policy() == 'abstain':
@@ -468,5 +529,5 @@ def finalize_answer(answer, receipt):
         _add(out, 'QC-CONFIDENCE', 'FM-13', message[:500])
         return out
     if acc.get('status') == 'verified':
-        out['confidence'] = {'level': 'verified', 'basis': acc.get('basis')}
+        set_confidence(out, 'verified', acc.get('basis'), source='free_form_sql')
     return out

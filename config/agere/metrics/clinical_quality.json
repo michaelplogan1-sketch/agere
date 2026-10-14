@@ -99,7 +99,7 @@
    "engine": {
     "measures": "ked"
    },
-   "sql_template": "SELECT round(100.0 * count(DISTINCT CASE WHEN EXISTS (SELECT 1 FROM measurement m WHERE m.patient_id = p.patient_id AND m.concept = 'egfr' AND m.value_canonical IS NOT NULL AND m.event_date BETWEEN '{period_start}' AND '{period_end}') AND EXISTS (SELECT 1 FROM measurement m WHERE m.patient_id = p.patient_id AND m.concept = 'uacr' AND m.value_canonical IS NOT NULL AND m.event_date BETWEEN '{period_start}' AND '{period_end}') THEN p.patient_id END) / count(DISTINCT p.patient_id), 1) AS pct_kidney_health_evaluation FROM patient p JOIN concept_patient cp ON cp.patient_id = p.patient_id AND cp.concept = 'diabetes' WHERE p.age_latest BETWEEN 18 AND 85"
+   "sql_template": "SELECT 100.0 * count(DISTINCT CASE WHEN EXISTS (SELECT 1 FROM measurement m WHERE m.patient_id = p.patient_id AND m.concept = 'egfr' AND m.value_canonical IS NOT NULL AND m.event_date BETWEEN '{period_start}' AND '{period_end}') AND EXISTS (SELECT 1 FROM measurement m WHERE m.patient_id = p.patient_id AND m.concept = 'uacr' AND m.value_canonical IS NOT NULL AND m.event_date BETWEEN '{period_start}' AND '{period_end}') THEN p.patient_id END) / count(DISTINCT p.patient_id) AS pct_kidney_health_evaluation FROM patient p JOIN concept_patient cp ON cp.patient_id = p.patient_id AND cp.concept = 'diabetes' WHERE p.age_latest BETWEEN 18 AND 85"
   },
   {
    "id": "respiratory_registry",

@@ -16,20 +16,30 @@ from . import concepts, source_profile, sql_query
 
 VERSION = 'local-nl2sql/1'
 MODEL_DIR = Path(__file__).resolve().parents[3] / 'models' / 'qwen3-4b'
-TABLES = """patient(patient_id, age_reported, age_latest, sex_reported ['F','M'], coverage_type ['commercial','medicare','medicaid','uninsured'], coverage_status, pcp_clinician_id, pcp_practice_id)  -- use age_latest (latest reported age)
+TABLES = """patient(patient_id, age_reported, age_latest, sex_reported ['F','M'], coverage_type ['commercial','medicare','medicaid','uninsured'], coverage_source, coverage_status, pcp_clinician_id, pcp_practice_id, birth_date, race, ethnicity, preferred_language, interpreter_needed, marital_status, zip, county, state, line_of_business, payer_id)  -- use age_latest (latest reported age); demographics: race/ethnicity/preferred_language (NULL or '' = missing); coverage_source says where coverage_type came from
 condition(record_id, patient_id, concept, label, icd10, snomed, event_date, available_date, organization_id, is_diagnosis, icd10_category, chapter, chronic, normalized_label)  -- is_diagnosis=0 for assessment topics/tolerability/review rows  -- one row per (record, concept)
-measurement(record_id, patient_id, source_table ['labs','vitals'], concept, name, value, unit, value_canonical, unit_canonical, result_status, event_date, available_date, organization_id, loinc, component, lab_category, event_time)  -- labs AND vitals: 'lab results' = source_table='labs', vital signs = source_table='vitals'; concept for governed labs, loinc/component for every other test  -- labs and vitals; compare value_canonical
-visit(encounter_id, patient_id, type, type_concept, setting, start_time, end_time, status, event_date, end_date, available_date, first_available_date, organization_id, attending_clinician_id, disposition, in_person, is_practice)  -- one row per encounter; count visits here
-stay(patient_id, admit_date, discharge_date, type, organization_id, readmitted_30d, days_to_readmission, los_days, discharge_known)  -- distinct hospital stays; los_days/discharge_date NULL when discharge unknown
-appointment(appointment_id, patient_id, scheduled_date, booked_date, final_status, ever_no_show, ever_cancelled, ever_rescheduled, kept, organization_id, clinician_id, purpose)  -- one row per appointment (statuses resolved); use for no-show/cancellation/kept questions
-medication(record_id, patient_id, source_stream, evidence ['dispensed','claim','ordered','listed','administered','reported','pharmacy_history'], drug_name, drug_class, status, event_date, available_date, ingredients, therapeutic_category)  -- every medication mention with drug_class by ingredient; use for any drug/class question
+measurement(record_id, patient_id, source_table ['labs','vitals',...], concept, name, value, unit, value_canonical, unit_canonical, result_status, event_date, available_date, organization_id, loinc, component, lab_category, event_time)  -- labs AND vitals: 'lab results' = source_table='labs', vital signs = source_table='vitals'; concept for governed labs, loinc/component for every other test  -- labs and vitals (plus PHQ-9 / PHQ-2 scores from mood questionnaires); compare value_canonical
+visit(encounter_id, patient_id, type, type_concept, setting, start_time, end_time, status, event_date, end_date, available_date, first_available_date, organization_id, attending_clinician_id, disposition, in_person, is_practice, awv)  -- one row per encounter; count visits here; awv = 1 for an annual wellness visit
+-- wellness_visit is a separate table of annual wellness visits (one row each); visit.awv = 1 marks the same visits
+stay(patient_id, admit_date, discharge_date, type, organization_id, readmitted_30d, days_to_readmission, los_days, los_days_elapsed, discharge_known)  -- distinct hospital stays; los_days/discharge_date NULL when discharge unknown; los_days counts UTC midnights, los_days_elapsed the elapsed time
+-- stay dates: "admitted in" -> admit_date; "discharged in" / "discharges in" -> discharge_date (with discharge_known = 1)
+appointment(appointment_id, patient_id, scheduled_date, booked_date, final_status, outcome, lead_time_days, ever_no_show, ever_cancelled, ever_rescheduled, kept, organization_id, clinician_id, purpose)  -- one row per appointment (statuses resolved); use for no-show/cancellation/kept questions; lead_time_days = scheduled_date - booked_date
+medication(record_id, patient_id, source_stream, evidence ['dispensed','claim','ordered','listed','administered','reported','pharmacy_history'], picked_up, drug_name, drug_class, status, event_date, available_date, ingredients, therapeutic_category)  -- every medication mention with drug_class by ingredient; use for any drug/class question; picked_up = 1 for a fill the patient picked up (dispensed, claim or payer claim; prepared, returned-to-stock and reversed fills excluded)
 measurement_latest(patient_id, concept, event_date, value_canonical, unit_canonical, same_day_values, same_day_min, record_id)  -- latest DATED value per patient+concept; use for "latest/most recent" questions
 current_record(stream, key_field, business_id, record_id, patient_id, versions, first_available_date, available_date, event_date, payload)  -- LATEST version of each entity in versioned streams; use json_extract(payload,'$.field') for current state
 social_need(patient_id, need ['food','transport','cost_of_care'], positive, instrument, source_stream, source_field, event_date, record_id)  -- social-needs screens normalised across instruments; use for any food/transport/cost-of-care question
 note_fact(patient_id, record_id, stream, fact_type ['ejection_fraction','dyspnea','edema','symptom','medication_nonadherence','medication_days_used','social_need','smoking_status','goals_of_care','follow_up','imaging_finding','walk_distance'], value, unit, negated, temporality ['current','historical'], event_date, evidence_text, qualifier, confidence)  -- facts found only in note/document/report TEXT; negated = 0 for presence; value numeric for ejection_fraction (%), medication_days_used (fraction), follow_up (days); qualifier = drug/site/modality
-claim(claim_id, patient_id, payer, service_date, benefit_year, first_status, final_status, ever_denied, denied_then_paid, net_payer_paid_cents, billed_cents, allowed_cents, first_available_date, last_available_date, first_submitted_date, first_payer_cash_date, net_payer_cash_cents, first_adjudication_date)  -- claim lag = first_submitted_date - service_date; days to payment = first_payer_cash_date - service_date
+claim(claim_id, patient_id, payer, service_date, benefit_year, first_status, final_status, ever_denied, denied_then_paid, net_payer_paid_cents, billed_cents, allowed_cents, first_available_date, last_available_date, first_submitted_date, first_payer_cash_date, net_payer_cash_cents, first_adjudication_date, service_organization_id, drg, admission_date, discharge_date, type_of_bill, place_of_service, principal_diagnosis)  -- claim lag = first_submitted_date - service_date; days to cash = first_payer_cash_date - service_date
+-- claim DRG: drg is the MS-DRG code; its title is json_extract(payload,'$.title') on the record WHERE stream = 'medical_claims' AND json_extract(payload,'$.claim_id') = claim.claim_id (group by the title as drg_title when the question names DRGs).
 -- claim money: net_payer_paid_cents already nets EVERY adjudication version (paid minus reversed); use it for totals.
 -- claim timing: first_adjudication_date (first decision), first_payer_cash_date (money received), first_submitted_date.
+-- claim clocks - anchor the period on the date the question NAMES (default service_date only when it names none):
+--   "adjudicated in" / "first adjudicated in" / "processed in" -> claim.first_adjudication_date
+--   "first paid in" / "paid in" -> the first PAID adjudication: min(event_date) of record WHERE stream = 'medical_claims' AND
+--       json_extract(payload,'$.status') = 'paid', per json_extract(payload,'$.claim_id'); "payment" = that date, NOT the cash date
+--   "cash received/posted in" -> claim.first_payer_cash_date
+--   "reversed in" / "reversed and reprocessed in" -> event_date of a medical_claims record with status 'reversed' (count distinct claim_id)
+--   "service in" / "dates of service in" -> claim.service_date
 claim_adjustment(claim_id, record_id, patient_id, adjudication_status, group_code, reason_code, category ['deductible','coinsurance','copay','contractual_adjustment',...], amount_cents, current_version)  -- adjustment lines (patient responsibility split)  -- one row per medical claim (adjudication sequence resolved; net paid = paid minus reversed)
 concept_patient(concept, kind, patient_id, records, first_date, last_date)  -- who has each concept
 link(record_id, stream, field, target_record_id)  -- every *_record_id reference between records
@@ -110,7 +120,7 @@ EXAMPLES = [  # generic semantic-layer patterns; retrieved per question (not ben
     ("Net payer-paid dollars on medical claims with 2027 service dates, after reversals?",
      "SELECT sum(net_payer_paid_cents) / 100.0 FROM claim WHERE substr(service_date,1,4) = '2027'"),
     ("Share of 2027 claims denied on first adjudication, by payer.",
-     "SELECT payer, count(*) AS claims, sum(first_status = 'denied') AS first_pass_denied, round(100.0 * sum(first_status = 'denied') / count(*), 1) AS denial_rate_pct FROM claim WHERE substr(service_date,1,4) = '2027' GROUP BY payer"),
+     "SELECT payer, count(*) AS claims, sum(first_status = 'denied') AS first_pass_denied, 100.0 * sum(first_status = 'denied') / count(*) AS denial_rate_pct FROM claim WHERE substr(service_date,1,4) = '2027' GROUP BY payer"),
     ("Average inpatient length of stay in 2027?",
      "SELECT avg(los_days) FROM stay WHERE type = 'inpatient' AND substr(admit_date,1,4) = '2027' AND los_days IS NOT NULL"),
     ("How many men aged 40 to 64 are commercially insured?",
@@ -488,6 +498,25 @@ def verified_answer(path, question, as_of, primary, second, judge, decider=None,
     except MissingData as exc:
         if extra_streams: raise
         profile = source_profile.load(path)
+        # The claim names a field or value: check it against the semantic layer and the received data dictionary. When the
+        # claimed-missing element exists, the writer gets one retry with feedback naming it, never a silent abstention.
+        found = missing_claim_check(path, str(exc), profile)
+        if found:
+            note = (f'\n\nNOTE: an earlier answer said "{str(exc)[:200]}", but the warehouse HAS: '
+                    + '; '.join(f"{f['name']} ({f['kind']}, {f['rows']} rows)" for f in found)
+                    + '. Use it to answer the question; do not answer MISSING for it.')
+            streams = tuple(dict.fromkeys(f['stream'] for f in found if f.get('stream')))
+            prior = (exc.receipt or {}).get('attempts') or []
+            try:
+                params, result, receipt = _verified_answer(path, question, as_of, primary, second, judge, decider, streams,
+                                                           independent, oracle, feedback=note)
+            except MissingData as again:
+                again.contradicted = found
+                again.receipt = {**(again.receipt or {}), 'prior_attempts': prior}
+                raise
+            receipt['missing_claim_contradicted'] = {'claim': str(exc)[:300], 'found': found}
+            receipt['prior_attempts'] = prior
+            return params, result, receipt
         shown = retrieve_streams(question, profile, k=6)
         found = [x for x in retrieve_streams(str(exc) + ' ' + question, profile, k=10) if x not in shown][:4]
         if not found: raise
@@ -496,7 +525,8 @@ def verified_answer(path, question, as_of, primary, second, judge, decider=None,
         return params, result, receipt
 
 
-def _verified_answer(path, question, as_of, primary, second, judge, decider=None, extra_streams=(), independent=None, oracle=None):
+def _verified_answer(path, question, as_of, primary, second, judge, decider=None, extra_streams=(), independent=None, oracle=None,
+                     feedback=''):
     """Hosted ladder with independent candidates (verification_v2): free sources (deterministic compiler, local model)
     first; the primary hosted model writes SQL (lint + sanity, one repair); when it matches a free independent candidate
     the answer is accepted without the second hosted call. Otherwise a second hosted model writes its own; hosted-only
@@ -512,7 +542,7 @@ def _verified_answer(path, question, as_of, primary, second, judge, decider=None
     ranked = similar + sorted(EXAMPLES, key=lambda e: -len(qt & set(_tokens(e[0] + ' ' + e[1]))))[:7 - min(len(similar), 3)]
     shots = '\n\n'.join(f'Q: {q}\n```sql\n{sq}\n```' for q, sq in ranked)
     system = RULES + VERIFY_RULES + f'\nThe data snapshot is as of {as_of}.'
-    user = f'{schema}\n\nEXAMPLES\n{shots}\n\nQ: {question}'
+    user = f'{schema}\n\nEXAMPLES\n{shots}\n\nQ: {question}{feedback}'
     metric_pin, metric_receipt = metric_context(question, as_of)  # governed metric definition + canonical SQL (metrics.py)
     if metric_pin: user = user.replace('\n\nEXAMPLES\n', f'\n\n{metric_pin}\n\nEXAMPLES\n', 1)
     import sqlite3
@@ -586,7 +616,7 @@ def _verified_answer(path, question, as_of, primary, second, judge, decider=None
         other = f2.result()
     if 'missing' in (first, other):  # either analyst says the data does not exist: refuse rather than substitute
         reasons = [a['missing'] for a in receipt['attempts'] if a.get('missing')]
-        raise MissingData('; '.join(reasons))
+        raise MissingData('; '.join(reasons), receipt=receipt)
     if first and other and verify.signature(first[1]) == verify.signature(other[1]):
         receipt['agreement'] = 'primary=second'
         return first[0], first[1], receipt
@@ -656,7 +686,7 @@ def _independent_ladder(question, receipt, attempt, check, primary, second, judg
                      'definition': c.get('definition'), 'order': 10 + len(free)})
 
     def missing():
-        raise MissingData('; '.join(a['missing'] for a in receipt['attempts'] if a.get('missing')))
+        raise MissingData('; '.join(a['missing'] for a in receipt['attempts'] if a.get('missing')), receipt=receipt)
     if independent:  # the primary already ran; a matching free independent candidate makes the second hosted call unnecessary
         if first == 'missing': missing()
         if first and any(v2.same_answer(first[1], f['result']) for f in free):
@@ -732,7 +762,67 @@ def metric_context(question, as_of):
 
 
 class MissingData(ValueError):
-    """A hosted analyst reports that the question needs data the release does not contain."""
+    """A hosted analyst reports that the question needs data the release does not contain.
+    receipt: the ladder receipt (attempts, for cost accounting); contradicted: claimed-missing elements that do exist."""
+
+    def __init__(self, message='', receipt=None, contradicted=None):
+        super().__init__(message)
+        self.receipt, self.contradicted = receipt, contradicted or []
+
+
+_CLAIM_STOP = {'patient', 'patients', 'data', 'field', 'fields', 'column', 'columns', 'record', 'records', 'table', 'tables',
+               'stored', 'store', 'information', 'info', 'value', 'values', 'date', 'dates', 'not', 'the', 'and', 'for', 'any',
+               'available', 'missing', 'there', 'this', 'that', 'with', 'without', 'are', 'was', 'were', 'has', 'have', 'from',
+               'type', 'status', 'name', 'names', 'source', 'event', 'level', 'number', 'count', 'flag', 'stream', 'streams',
+               'warehouse', 'release', 'dataset', 'schema', 'substitute', 'only', 'nor', 'its', 'their', 'whether', 'per', 'all'}
+
+
+def missing_claim_check(path, claim, profile=None, limit=5):
+    """Elements a MISSING claim names that exist: semantic-layer columns with non-empty rows, received stream fields that
+    are populated, and observed field values. -> [{'name', 'kind', 'rows', 'stream'?}] (empty when the claim holds)."""
+    import sqlite3
+    text = re.sub(r'\([^()]*\)', ' ', re.sub(r'(?i)\bMISSING:\s*', ' ', claim or ''))  # explanations in parentheses are not the claim
+    heads = [re.split(r'\(|\s-\s|:|;|,', part.strip(), maxsplit=1)[0] for part in re.split(r';|\n', text) if part.strip()]
+    tokens = []
+    for h in heads:
+        h = h.strip().lower()
+        if not h: continue
+        tokens += re.findall(r'[a-z][a-z0-9_]*\.[a-z][a-z0-9_]*', h)
+        words = [w for w in re.findall(r'[a-z][a-z0-9_]+', h) if w not in _CLAIM_STOP and len(w) >= 3]
+        tokens += words
+        if 1 < len(words) <= 4: tokens.append('_'.join(words))
+    tokens = list(dict.fromkeys(tokens))
+    if not tokens: return []
+    found = []
+    try:
+        db = sqlite3.connect(f'file:{sql_query.semantic_layer.ensure(path)}?mode=ro', uri=True)
+    except Exception:  # noqa: BLE001 - no semantic layer: only the data dictionary is checked
+        db = None
+    try:
+        if db is not None:
+            tables = [r[0] for r in db.execute("SELECT name FROM sqlite_master WHERE type IN ('table','view') AND name <> 'meta'")]
+            cols = {t: [r[1] for r in db.execute(f'PRAGMA table_info("{t}")')] for t in tables}
+            for tok in tokens:
+                t_want, _, c_want = tok.rpartition('.')
+                for t, cs in cols.items():
+                    if t_want and t != t_want: continue
+                    if c_want in cs and c_want not in ('payload', 'record_id', 'patient_id'):
+                        n = db.execute(f'SELECT count(*) FROM "{t}" WHERE "{c_want}" IS NOT NULL AND "{c_want}" <> \'\'').fetchone()[0]
+                        if n: found.append({'name': f'{t}.{c_want}', 'kind': 'semantic-layer column', 'rows': n})
+    finally:
+        if db is not None: db.close()
+    for s_name, spec in ((profile or {}).get('streams') or {}).items():
+        for f, fs in (spec.get('fields') or {}).items():
+            if not fs.get('populated'): continue
+            if f.lower() in tokens or f'{s_name}.{f}'.lower() in tokens:
+                found.append({'name': f'{s_name}.{f}', 'kind': 'received stream field', 'rows': fs['populated'], 'stream': s_name})
+            for v, n in (fs.get('values') or {}).items():
+                if isinstance(v, str) and len(v) >= 4 and v.lower() in tokens and n:
+                    found.append({'name': f"{s_name}.{f} = '{v}'", 'kind': 'observed value', 'rows': n, 'stream': s_name})
+    out, seen = [], set()
+    for f in sorted(found, key=lambda f: -(f['rows'] or 0)):
+        if f['name'] not in seen: seen.add(f['name']); out.append(f)
+    return out[:limit]
 
 
 class Decider:
@@ -779,10 +869,16 @@ VERIFY_RULES = """
 - Percentages: 100.0 * part / whole (0-100 scale).
 - Missing dates: a record "with no date" means event_date IS NULL on the typed table or record row. A lab's collection/draw
   date, a visit's date and a claim's service event are event_date; sparsely filled payload date fields are not the record date.
-- Never invent streams, fields or values, and never substitute a different attribute for a missing one (e.g. sex for race).
-  If the question needs data that is not listed (race, death, income, language, risk-adjustment scores, ...), output
-  exactly one line: MISSING: <what is missing> - and no SQL.
-- Name output columns plainly (e.g. month, practice, visits, patients, total_usd).
+- Never invent streams, fields or values, and never substitute a different attribute for a missing one (e.g. sex for income).
+  Check the TABLES columns (patient demographics include race, ethnicity, preferred_language) and the streams shown first.
+  If the question needs data that is truly not listed (death, income, risk-adjustment scores, ...), output exactly one
+  line: MISSING: <table.field or stream.field that is missing> - and no SQL.
+- Name output columns plainly: the group column after the field it groups by (organization_id, payer, practice, month,
+  drg_title) and the measure after what it measures (ed_visits, claims, patients, net_paid_usd); never generic names like
+  group, value, count or n. When a code has a title/label in the data (DRG title, diagnosis label), return the label.
+- Never round: return full precision (no round(), no CAST to integer of a rate); presentation rounds.
+- Date anchors: apply the period to the date the question names ("adjudicated in", "first paid in", "cash received in",
+  "reversed in", "discharged in", "scheduled in"); see the claim clock notes in TABLES.
 - Start the SQL with one comment line: -- DEFINITION: <population, counting unit (patients/visits/claims/records), date field
   and window, inclusions/exclusions, as a buyer would read it>.
 - Versioned streams: records that repeat per business id (account_id, claim_id, appointment_id, prescription_id,
@@ -792,7 +888,7 @@ VERIFY_RULES = """
 - Lab results: exclude only rows with value_canonical NULL (cancelled/hemolysed); do not filter result_status = 'final' unless asked.
   "Latest/most recent" means the latest dated value (measurement_latest); undated rows never count as latest.
 - drug_class and concept values are exact ids from the lists shown: compare with = or IN, never LIKE '%...%'.
-- Medications: use the medication table and drug_class; "on X" / "filled X" = evidence 'dispensed' or 'claim' unless the question
+- Medications: use the medication table and drug_class; "on X" / "filled X" / "picked up X" = picked_up = 1 unless the question
   says ordered/prescribed/listed.
 - Answer every part asked: "how many and how much" -> both a count and an amount column; "rate"/"share"/"%" -> a percentage,
   not a count. Times: use visit.start_time/end_time or measurement.event_time when hours or draw times matter.

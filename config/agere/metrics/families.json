@@ -333,7 +333,7 @@
    "name": "Medical claim outcomes",
    "status": "internal",
    "internal_reason": "Revenue-cycle conventions (first-pass denial, overturn, net of reversals) encoded on the claim grain.",
-   "summary": "One row per medical claim (adjudication versions settled in the claim table): first-pass status, ever denied, denied then paid, net payer paid (every adjudication delta, reversals net out), billed/allowed, and days from service to first submission, first adjudication and first payer cash. The period applies to the service date, or the benefit year.",
+   "summary": "One row per medical claim (adjudication versions settled in the claim table): first-pass status, ever denied, denied then paid, net payer paid (every adjudication delta, reversals net out), billed/allowed, and days from service to first submission, first adjudication and first payer cash. The period applies to the claim clock the question names: service date (default), first adjudication date, first paid adjudication date, first payer cash date, reversal event date, or the benefit year; days to first paid adjudication are available too.",
    "grain": {
     "entity": "claim",
     "key": "claim_id"
@@ -386,7 +386,8 @@
       "avg_days_to_first_submission",
       "avg_days_to_first_payer_cash",
       "avg_days_to_first_adjudication",
-      "median_days_to_first_payer_cash"
+      "median_days_to_first_payer_cash",
+      "avg_days_to_first_paid"
      ],
      "required": true
     },
@@ -394,9 +395,14 @@
      "type": "enum",
      "values": [
       "service_date",
-      "benefit_year"
+      "benefit_year",
+      "first_adjudication_date",
+      "first_paid_date",
+      "first_payer_cash_date",
+      "reversal_date"
      ],
-     "default": "service_date"
+     "default": "service_date",
+     "description": "Which claim clock the period applies to, as the question names it: service_date (default, 'service in', 'dates of service'); first_adjudication_date ('adjudicated in', 'first adjudicated in'); first_paid_date ('first paid in', 'paid in' - the paid adjudication, NOT the cash date); first_payer_cash_date ('cash received/posted in'); reversal_date ('reversed in', 'reversed and reprocessed in'); benefit_year."
     },
     "period": {
      "type": "period",
@@ -569,7 +575,7 @@
     "stream": "patient_payments",
     "where": null,
     "measures": {
-     "amount_usd": "round(sum(json_extract(r.payload, '$.amount_cents')) / 100.0, 2)",
+     "amount_usd": "sum(json_extract(r.payload, '$.amount_cents')) / 100.0",
      "payments": "count(*)"
     },
     "returns": {
@@ -648,7 +654,7 @@
     "stream": "patient_refunds",
     "where": "json_extract(r.payload, '$.status') = 'issued'",
     "measures": {
-     "amount_usd": "round(sum(json_extract(r.payload, '$.amount_cents')) / 100.0, 2)",
+     "amount_usd": "sum(json_extract(r.payload, '$.amount_cents')) / 100.0",
      "refunds": "count(*)"
     },
     "returns": {
@@ -879,7 +885,7 @@
     "stream": "pharmacy_claim_transactions",
     "where": null,
     "measures": {
-     "net_payer_paid_usd": "round(sum(json_extract(r.payload, '$.payer_paid_delta_cents')) / 100.0, 2)",
+     "net_payer_paid_usd": "sum(json_extract(r.payload, '$.payer_paid_delta_cents')) / 100.0",
      "transactions": "count(*)"
     },
     "returns": {
@@ -958,7 +964,7 @@
     "stream": "payer_cash_allocations",
     "where": null,
     "measures": {
-     "net_cash_usd": "round(sum(json_extract(r.payload, '$.allocated_cents')) / 100.0, 2)",
+     "net_cash_usd": "sum(json_extract(r.payload, '$.allocated_cents')) / 100.0",
      "allocations": "count(*)"
     },
     "returns": {

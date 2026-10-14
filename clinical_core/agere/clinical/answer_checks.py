@@ -281,6 +281,29 @@ def clock_finding(answer, question):
 
 
 # ---- QC-METRIC: the governed metric the answer was computed as (metrics.py) -----------------------------------
+_RATE_NUMERATORS = {'ed': 'ed_visits', 'admits': 'admissions', 'admissions': 'admissions', 'pcp': 'pcp_visits', 'visits': 'visits'}
+
+
+def rate_arithmetic(answer):
+    """The arithmetic actually behind a per-1,000 answer, read from the engine's own row: {'statement', 'denominator'}
+    ('member_years' | 'headcount') or None. A label must never claim a headcount rate over a member-year computation."""
+    if answer.get('answer_type') != 'value' or not isinstance(answer.get('value'), (int, float)): return None
+    rows = answer.get('table') if isinstance(answer.get('table'), list) else []
+    row = answer.get('overall') if isinstance(answer.get('overall'), dict) else (rows[0] if len(rows) == 1 and isinstance(rows[0], dict) else None)
+    if not row: return None
+    for key, v in row.items():
+        if not key.endswith('_per_1000') or not isinstance(v, (int, float)) or abs(v - answer['value']) > 1e-6: continue
+        num_key = _RATE_NUMERATORS.get(key[:-len('_per_1000')], key[:-len('_per_1000')])
+        num = row.get(num_key)
+        for den_key, kind, unit in (('member_years', 'member_years', 'member-years'), ('members', 'headcount', 'roster patients'),
+                                    ('patients', 'headcount', 'roster patients')):
+            den = row.get(den_key)
+            if isinstance(num, (int, float)) and isinstance(den, (int, float)) and den and abs(1000.0 * num / den - v) <= max(0.06, abs(v) * 1e-3):
+                return {'denominator': kind, 'numerator': num_key,
+                        'statement': f"1,000 x {num:,} {num_key.replace('_', ' ')} / {den:,.1f} {unit} = {v}"}
+    return None
+
+
 def metric_findings(answer, question, as_of=None, execute=None):
     """State the metric id/version the question resolves to (answer['computed_as']) and, on the SQL route, warn where the
     query departs from it (grain, time anchor, window, value set, population, versioning) or the value leaves the
@@ -295,6 +318,21 @@ def metric_findings(answer, question, as_of=None, execute=None):
     answer['computed_as'] = {'metric': r['id'], 'version': r['version'], 'variant': r.get('variant'), 'layer': metrics.VERSION,
                              'definition': r['metric']['summary'], 'conforms': not found if query else None,
                              'citations': [c['url'] for c in r.get('citations') or []][:3]}
+    arith = rate_arithmetic(answer)
+    if arith:  # state the arithmetic that produced the number; a definition naming another denominator does not conform
+        answer['computed_as']['arithmetic'] = arith['statement']
+        said = r['metric']['summary'].lower()
+        claims_headcount = bool(re.search(r'roster patients|headcount|not annuali[sz]ed', said)) and 'member-year' not in said
+        claims_years = 'member-year' in said or 'member years' in said
+        if (arith['denominator'] == 'member_years' and claims_headcount) or (arith['denominator'] == 'headcount' and claims_years):
+            unit = 'member-years' if arith['denominator'] == 'member_years' else 'roster patients'
+            answer['computed_as']['definition'] = f"Computed per 1,000 {unit}: {arith['statement']}"
+            answer['computed_as']['conforms'] = False
+            _add(answer, 'QC-METRIC', 'FM-05', f"The rate was computed as {arith['statement']} (per 1,000 {unit}), not as metric "
+                 f"{r['id']}" + (f" ({r['variant']})" if r.get('variant') else '') + f": {r['metric']['summary'][:160]}",
+                 metric=r['id'], metric_version=r['version'])
+            answer['computed'] = f"{arith['statement']} (per 1,000 {unit})"
+            return r
     _add(answer, 'QC-METRIC', 'FM-05', f"Computed as {metrics.computed_as(r)}", 'info', metric=r['id'], metric_version=r['version'])
     tag = f"metric {r['id']} v{r['version']}" + (f" ({r['variant']})" if r.get('variant') else '')
     if tag not in str(answer.get('computed') or ''):  # the headline's "Computed as:" names the governed metric

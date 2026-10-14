@@ -180,9 +180,10 @@ class FixtureCompute(unittest.TestCase):
         self.assertEqual(pct, [(50.0,)])
         self.assertEqual(self.run_metric('encounter_volume', visit_classes=['ed'], period={'preset': 'ytd'}, group_by='month')[0],
                          [('2029-02', 1), ('2029-03', 1)])
-        self.assertEqual(self.run_metric('medical_claims', measures=['first_pass_denial_rate'], period={'preset': 'year', 'year': 2028})[0], [(33.3,)])
-        self.assertEqual(self.run_metric('medical_claims', measures=['ever_denied_rate'], anchor='benefit_year',
-                                         period={'preset': 'year', 'year': 2028})[0], [(33.3,)])
+        # governed SQL returns full precision; presentation rounds (a scorer comparing at 2 dp must not see 33.3)
+        self.assertAlmostEqual(self.run_metric('medical_claims', measures=['first_pass_denial_rate'], period={'preset': 'year', 'year': 2028})[0][0][0], 100 / 3)
+        self.assertAlmostEqual(self.run_metric('medical_claims', measures=['ever_denied_rate'], anchor='benefit_year',
+                                               period={'preset': 'year', 'year': 2028})[0][0][0], 100 / 3)
         self.assertEqual(self.run_metric('feed_quality', stream='labs', measures=['rows'])[0], [(0,)])
         self.assertEqual(self.run_metric('visit_followup', index_classes=['ed'], followup_classes=['primary_care'], days_max=7,
                                          period={'preset': 'year', 'year': 2029}, returns='count')[0], [(1,)])  # E1 -> V1 four days later
@@ -264,14 +265,21 @@ class FreeFormAcceptance(unittest.TestCase):
         answer = {'status': 'answered', 'answer_type': 'count', 'count': 41, 'missing': [], 'grounding': [], 'unknown_count': 0}
         receipt = {'route': 'hosted_verified_sql', 'acceptance': {'status': 'low_confidence', 'basis': 'hosted-only agreement'}}
         out = MR.finalize_answer(answer, receipt)
-        self.assertEqual((out['status'], out['confidence']['level'], out['count']), ('partial', 'low', 41))
+        # confidence is not completeness: the exact value stays answered, flagged low with the reason
+        self.assertEqual((out['status'], out['confidence'], out['count']), ('answered', 'low', 41))
+        self.assertIn('hosted-only agreement', out['confidence_reason'])
         self.assertTrue(any(c['control'] == 'QC-CONFIDENCE' for c in out['quality_checks']))
         with mock.patch.dict(os.environ, {'AGERE_FREEFORM_POLICY': 'abstain'}):
             out = MR.finalize_answer(answer, receipt)
         self.assertEqual((out['status'], out['answer_type'], out['count']), ('partial', 'unsupported', None))
         self.assertTrue(out['missing'][0].startswith('Withheld'))
         verified = MR.finalize_answer(answer, {'route': 'hosted_verified_sql', 'acceptance': {'status': 'verified', 'basis': 'independent'}})
-        self.assertEqual((verified['status'], verified['confidence']['level']), ('answered', 'verified'))
+        self.assertEqual((verified['status'], verified['confidence']), ('answered', 'verified'))
+        # an answer that is genuinely incomplete keeps its partial status
+        incomplete = MR.finalize_answer({**answer, 'status': 'partial', 'unknown_count': 3}, receipt)
+        self.assertEqual((incomplete['status'], incomplete['confidence']), ('partial', 'low'))
+        with mock.patch.dict(os.environ, {'AGERE_FREEFORM_POLICY': 'off'}):
+            self.assertNotIn('confidence', MR.finalize_answer(answer, receipt))
 
     def test_low_confidence_pairs_are_never_learned(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -385,8 +393,15 @@ class ReproducesReferences(unittest.TestCase):
                 elif kind == 'patient_set':
                     self.assertEqual(sorted(r[0] for r in rows), exp['patient_ids'], qid)
                 else:
-                    norm = lambda rs: sorted(sorted(json.dumps(round(v, 4) if isinstance(v, float) else v) for v in r) for r in rs)
-                    self.assertEqual(norm(rows), norm([list(t.values()) for t in exp['table']]), qid)
+                    # governed SQL returns full precision: compare numbers within the reference tolerance (column order free)
+                    tol = max(ref['tolerance'], 1e-6)
+                    num = lambda v: isinstance(v, (int, float)) and not isinstance(v, bool)
+                    norm = lambda r: (sorted(json.dumps(v) for v in r if not num(v)), sorted(float(v) for v in r if num(v)))
+                    got, want = sorted(map(norm, rows)), sorted(norm(list(t.values())) for t in exp['table'])
+                    self.assertEqual([g[0] for g in got], [w[0] for w in want], qid)
+                    for (_, g), (_, w) in zip(got, want):
+                        self.assertEqual(len(g), len(w), qid)
+                        for a, b in zip(g, w): self.assertAlmostEqual(a, b, delta=tol, msg=qid)
                 checked.append((qid, mid))
         finally:
             db.close()
