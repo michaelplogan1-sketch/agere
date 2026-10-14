@@ -16,7 +16,7 @@ from . import nl2sql, verify
 
 VERSION = 'bottled-sql/1'
 ROOT = Path(__file__).resolve().parents[3]
-ADAPTER_DIR = ROOT / 'artifacts' / 'bottling' / 'adapters-v2'
+ADAPTER_DIR = ROOT / 'artifacts' / 'bottling' / 'adapters-v2b'  # iter 500 (200 + 300 resumed)
 SAMPLE_TEMPERATURE = 0.7
 MAX_TOKENS = 700
 TIME_LIMIT_SECONDS = 30
@@ -25,7 +25,10 @@ NEAR_DUPLICATE = 0.6  # token Jaccard at or above which a question counts as a b
 BENCH_FILES = ('bench/questions/*.json', 'bench/capability/questions.json', 'bench/acceptance/*.json')
 
 
-DEFAULT_ENABLED = 'off'  # set from the held-out precision bar (tools/bottling/evaluate.py); AGERE_BOTTLED=on|off overrides
+# Default OFF. Held-out (102 clustered questions, v1.23, adapters-v2b iter 500): greedy exact-result accuracy 22/102, greedy
+# lint/exec rejection 26/102, precision of lint-passing answers 22/76 = 0.29; best agreement rule k=3/m=3 reaches 7/10 = 0.70 at
+# 10% coverage (n too small to clear the hosted ladder's 0.60-0.69 truth precision). See tools/bottling/evaluate.py.
+DEFAULT_ENABLED = 'off'  # AGERE_BOTTLED=on overrides
 
 
 def enabled():
@@ -246,8 +249,10 @@ def answer(stack_path, question, as_of, profile, model=None, k=None, agree=None)
 
 
 def candidate(stack_path, question, as_of, profile=None, model=None):
-    """One greedy bottled decode as an independent 'local' candidate for verification v2 (same dict shape as
-    verification_v2.local_model_candidate). None when the bottled model is absent or its query fails lint/sanity."""
+    """One greedy bottled decode as a candidate for verification v2 (same dict shape as
+    verification_v2.local_model_candidate). None when the bottled model is absent or its query fails lint/sanity.
+    The bottle is distilled FROM hosted-ladder answers, so its errors correlate with the hosted family: use it as a
+    dissent signal only, never as the second family that accepts a hosted answer (independent=False says so)."""
     if model is None:
         if os.environ.get('AGERE_LOCAL_CANDIDATE', 'on') == 'off' or not BottledModel.available(): return None
         model = BottledModel.get()
@@ -261,4 +266,5 @@ def candidate(stack_path, question, as_of, profile=None, model=None):
     cand = check(stack_path, profile, question, nl2sql._extract_sql(texts[0]), roster)
     if not cand['ok']: return None
     params = params_for(question, cand)
-    return {'label': 'local_model', 'sql': params['query'], 'returns': params['returns'], 'model': getattr(model, 'identity', None)}
+    return {'label': 'local_model', 'sql': params['query'], 'returns': params['returns'], 'model': getattr(model, 'identity', None),
+            'independent': False}
