@@ -8,18 +8,18 @@ Buckets: **answered locally** = compiles to the expected engine; **needs router*
 
 | Bucket | v1.23 | v2.0 |
 |---|---:|---:|
-| answered locally | 81 (8%) | 87 (9%) |
-| needs router | 313 (33%) | 366 (38%) |
+| answered locally | 89 (9%) | 98 (10%) |
+| needs router | 309 (32%) | 361 (38%) |
 | wrong engine | 2 (0%) | 2 (0%) |
 | declined locally | 13 (1%) | 13 (1%) |
-| needs new engine | 5 (1%) | 11 (1%) |
+| needs new engine | 1 (0%) | 5 (1%) |
 | knowledge | 61 (6%) | 61 (6%) |
 | unsupported (data missing) | 486 (51%) | 421 (44%) |
 | total | 961 | 961 |
 
 **VBC library only:** `v1.23`: unsupported (data missing) 211, needs router 122, answered locally 41, knowledge 35, declined locally 12, wrong engine 2; `v2.0`: unsupported (data missing) 211, needs router 121, answered locally 43, knowledge 35, declined locally 11, wrong engine 2
 
-**healthcare library only:** `v1.23`: unsupported (data missing) 275, needs router 191, answered locally 40, knowledge 26, needs new engine 5, declined locally 1; `v2.0`: needs router 245, unsupported (data missing) 210, answered locally 44, knowledge 26, needs new engine 11, declined locally 2
+**healthcare library only:** `v1.23`: unsupported (data missing) 275, needs router 187, answered locally 48, knowledge 26, declined locally 1, needs new engine 1; `v2.0`: needs router 240, unsupported (data missing) 210, answered locally 55, knowledge 26, needs new engine 5, declined locally 2
 
 ## By domain: `v1.23`
 
@@ -50,7 +50,7 @@ Buckets: **answered locally** = compiles to the expected engine; **needs router*
 | patient_experience_access | patient_experience_access | 40 | 2 | 11 | 0 | 0 | 0 | 2 | 25 | hcahps (7), portal_activity (5), race_ethnicity_language (5), cgcahps (2) |
 | public_population_health | public_population_health | 41 | 0 | 23 | 0 | 0 | 0 | 2 | 16 | geography (11), vaccine_outreach (2), population_denominators (2), svi_reference (2) |
 | life_sciences_rwe | life_sciences_rwe | 43 | 7 | 25 | 0 | 0 | 0 | 3 | 8 | trial_criteria (2), oncology_detail (2), race_ethnicity_language (1), geography (1) |
-| clinical_decision_support | clinical_decision_support | 46 | 9 | 24 | 0 | 0 | 4 | 2 | 7 | cds_alert_logs (3), cancer_screening (2), guideline_rules (2) |
+| clinical_decision_support | clinical_decision_support | 46 | 17 | 20 | 0 | 0 | 0 | 2 | 7 | cds_alert_logs (3), cancer_screening (2), guideline_rules (2) |
 
 ## By domain: `v2.0`
 
@@ -81,7 +81,7 @@ Buckets: **answered locally** = compiles to the expected engine; **needs router*
 | patient_experience_access | patient_experience_access | 40 | 2 | 16 | 0 | 0 | 0 | 2 | 20 | hcahps (7), portal_activity (5), cgcahps (2), call_center (2) |
 | public_population_health | public_population_health | 41 | 0 | 29 | 0 | 0 | 2 | 2 | 8 | population_denominators (2), svi_reference (2), death_records (2), environmental_data (1) |
 | life_sciences_rwe | life_sciences_rwe | 43 | 7 | 25 | 0 | 0 | 0 | 3 | 8 | trial_criteria (2), oncology_detail (2), site_directory (1), oncology_regimens (1) |
-| clinical_decision_support | clinical_decision_support | 46 | 9 | 26 | 0 | 0 | 4 | 2 | 5 | cds_alert_logs (3), guideline_rules (2) |
+| clinical_decision_support | clinical_decision_support | 46 | 18 | 21 | 0 | 0 | 0 | 2 | 5 | cds_alert_logs (3), guideline_rules (2) |
 
 ## Questions whose bucket differs between `v1.23` and `v2.0` (68)
 
@@ -176,7 +176,7 @@ Buckets: **answered locally** = compiles to the expected engine; **needs router*
 | R-ECON-04 | declined locally | vbc | - | How sensitive is projected contract performance to claim runout, attribution changes and high-cost outliers? |  |
 | HQ-RCM-045 | declined locally | literal_lookup | - | How many denials were caused by eligibility or registration errors, by registration area? |  |
 
-### Compiled into a data graph although unsupported, knowledge or needing a new engine on `v1.23` (19)
+### Compiled into a data graph although unsupported, knowledge or needing a new engine on `v1.23` (20)
 
 | ID | Bucket | Expected | Compiled | Question |
 |---|---|---|---|---|
@@ -246,7 +246,7 @@ Buckets: **answered locally** = compiles to the expected engine; **needs router*
 | HQ-PH-040 | knowledge | knowledge | knowledge | What does the CDC Social Vulnerability Index measure and how should it be used for planning? |
 | HQ-LS-006 | unsupported (data missing) | literal_lookup | trial_feasibility | Which sites and investigators see the most eligible patients for an atrial fibrillation trial? |
 
-## Healthcare-library questions answered locally on `v1.23` (40)
+## Healthcare-library questions answered locally on `v1.23` (48)
 
 | ID | Engine | Question |
 |---|---|---|
@@ -299,7 +299,7 @@ Buckets: **answered locally** = compiles to the expected engine; **needs router*
 | HQ-CDS-037 | sql | Which patients on levothyroxine have not had a TSH in the last year? |
 | HQ-CDS-040 | sql | How many patients with eGFR under 30 have never been referred to nephrology? |
 
-## Healthcare-library questions answered locally on `v2.0` (44)
+## Healthcare-library questions answered locally on `v2.0` (55)
 
 | ID | Engine | Question |
 |---|---|---|
@@ -445,7 +445,7 @@ Buckets: **answered locally** = compiles to the expected engine; **needs router*
 | discover | 6 |
 | early_signal | 6 |
 | vbc | 5 |
-| new_engine:risk_standardized_outcomes | 4 |
+| risk_outcomes | 4 |
 | target_trial | 4 |
 | market | 3 |
 | trajectory | 3 |
@@ -460,8 +460,7 @@ Buckets: **answered locally** = compiles to the expected engine; **needs router*
 | new_engine:bundle_compliance | 2 |
 | new_engine:survey_adjustment | 2 |
 | new_engine:spatiotemporal_cluster | 2 |
-| new_engine:loop_closure | 2 |
-| new_engine:diagnostic_delay_lookback | 2 |
+| diagnostic_delay | 2 |
 | new_engine:cql_rule_engine | 2 |
 | new_engine:flow_decomposition | 1 |
 | new_engine:or_block_optimization | 1 |

@@ -19,7 +19,7 @@ class Registry(unittest.TestCase):
             self.assertIn(op, graph_contracts.TYPED, op)
 
     def test_each_request_fits_the_request_bound(self):
-        self.assertLess(len(json.dumps(router.menu())), 12000)
+        self.assertLess(len(json.dumps(router.menu())), 20000)  # one prompt-cached choose call beats a second paid call for a two-level menu
         for op in PRODUCT: self.assertLess(len(json.dumps(router.tool(op))), 20000, op)
         self.assertEqual({t['name'] for t in router.menu()}, {*PRODUCT, 'literal_lookup', 'not_answerable'})
 

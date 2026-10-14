@@ -204,7 +204,7 @@ class Compile(unittest.TestCase):
 
     def test_refusals_name_missing_inputs(self):
         for q, needle in [('Did our program reduce ED visits?', 'named program'),
-                          ('Did the randomized trial of care management reduce ED visits?', 'randomised'),
+                          ('Did our randomized trial of care management reduce ED visits?', 'randomised'),
                           ('Did care management reduce happiness?', 'outcome'),
                           ('Did our care management outreach calls actually cause fewer ED visits? I want the causal effect, not just a before/after.', 'causal'),
                           ('Board wants a number: how many ED visits did the care management outreach program prevent this year?', 'counterfactual'),
