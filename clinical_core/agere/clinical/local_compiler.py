@@ -578,6 +578,34 @@ FIELD_SYNONYMS = {'anatomic_site': ['body site', 'body part', 'anatomic site'], 
                   'requested_specialty': ['specialty'], 'vaccine': ['vaccine type'], 'impression': ['impression', 'read', 'finding']}
 
 
+def stream_field_forms(fields):
+    """Every natural form a question may use for each field of one received stream (the literal-stream reader's
+    vocabulary). Shared with tools/release_diff_guard.py, which checks each form still binds to its own field."""
+    forms = _field_forms(fields)
+    forms.setdefault('organization_id', []).extend(['organization', 'site', 'facility'])
+    for f, words in FIELD_SYNONYMS.items():
+        if f in forms: forms[f] = sorted(set(forms[f]) | set(words), key=len, reverse=True)
+    if 'source_system' in forms and any('PRACTICE' in v for v in (fields['source_system'].get('values') or {})):
+        forms['source_system'] = sorted(set(forms['source_system']) | {'practice', 'clinic'}, key=len, reverse=True)
+    return forms
+
+
+def _take_named_fields(r, forms):
+    """Field names mentioned (exact or natural), as (field, match) in take order. Longest FORM first across all fields,
+    and a one-word tail form never matches inside a snake_case name: place_of_service's tail 'service' must not consume
+    'service_date'."""
+    out = []
+    for form, f in sorted(((form, f) for f, fs in forms.items() for form in fs), key=lambda x: -len(x[0])):
+        pattern = _alias_pattern(form) if ('_' in form or ' ' in form) else r'(?<![a-z0-9_])' + re.escape(form) + r'(?![a-z0-9_])'
+        out.extend((f, m) for m in r.take(pattern, f'field {f}'))
+    return out
+
+
+def resolve_field_mentions(text, forms):
+    """Fields the literal-stream reader binds when a question says `text` (the same take order as a question)."""
+    return [f for f, _ in _take_named_fields(Reader(text), forms)]
+
+
 # Everyday analyst nouns for received streams (used only when the stream exists in this release).
 STREAM_SYNONYMS = {
     'medical_claims': ['medical claim rows', 'medical claim', 'medical claims', 'claim rows', 'professional claims', 'claims'],
@@ -1584,12 +1612,7 @@ def _literal_stream_question(q, r, profile, as_of, info):
     conds, sql_where, named_fields = [], [], []
     named_at = []  # (field, match) for every field named in the question
     group_field = None
-    forms = _field_forms(fields)
-    forms.setdefault('organization_id', []).extend(['organization', 'site', 'facility'])
-    for f, words in FIELD_SYNONYMS.items():
-        if f in forms: forms[f] = sorted(set(forms[f]) | set(words), key=len, reverse=True)
-    if 'source_system' in forms and any('PRACTICE' in v for v in (fields['source_system'].get('values') or {})):
-        forms['source_system'] = sorted(set(forms['source_system']) | {'practice', 'clinic'}, key=len, reverse=True)
+    forms = stream_field_forms(fields)
     g_lead = r'\b(?:by|for each|per|split by|broken down by|break(?:s)? down by|went to each|to each|each)\s+(?:the |their |claim |patient\'s )?(?:recording |source |service )?'
     hit = None
     for f, fs in sorted(forms.items(), key=lambda kv: -max(map(len, kv[1]))):
@@ -1612,13 +1635,9 @@ def _literal_stream_question(q, r, profile, as_of, info):
         sql_where.append("event_date IS NOT NULL AND available_date IS NOT NULL AND substr(available_date,1,4) > substr(event_date,1,4)")
     for m in r.take(r'\barrived more than (\d+) (?:calendar )?days after (?:their )?source event dates?\b', 'arrival lag'):
         sql_where.append(f"event_date IS NOT NULL AND available_date IS NOT NULL AND julianday(available_date) - julianday(event_date) > {m.group(1)}")
-    # field names mentioned (exact or natural). Longest FORM first across all fields, and a one-word tail form never
-    # matches inside a snake_case name: place_of_service's tail 'service' must not consume 'service_date'.
-    for form, f in sorted(((form, f) for f, fs in forms.items() for form in fs), key=lambda x: -len(x[0])):
-        pattern = _alias_pattern(form) if ('_' in form or ' ' in form) else r'(?<![a-z0-9_])' + re.escape(form) + r'(?![a-z0-9_])'
-        for m in r.take(pattern, f'field {f}'):
-            named_fields.append(f)
-            named_at.append((f, m))
+    for f, m in _take_named_fields(r, forms):
+        named_fields.append(f)
+        named_at.append((f, m))
     sum_m = r.take(r'\b(?:gross |raw |total )?sum(?: in usd)?(?: of)?\b', 'sum', overlap=True)
     # observed values mentioned (for low-cardinality fields)
     candidates = [(f, v) for f, spec in fields.items() for v in (spec.get('values') or {})

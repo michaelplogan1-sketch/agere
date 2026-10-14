@@ -54,6 +54,12 @@ step readers   $PY build_healthcare_warehouse_stack.py --release $REL --output $
 step finish    $PY build_healthcare_warehouse_stack.py --release $REL --output $B --stage finish
 step semantic  $PY -c "import sys; from clinical_core.agere.clinical import semantic_layer; print(semantic_layer.ensure(sys.argv[1]))" $B/stack
 step client-checks $PY tools/v23_client_checks.py --build $B --out $B/client-checks.json
+# Release-diff guard vs the prior build (concept scope, evidence sources, code families, field bindings, lab name variants,
+# governed metric value sets): writes $B/release-diff.json + .md. Informational; V28_RELEASE_DIFF_GATE=1 makes unacknowledged
+# flags stop the chain (acknowledge reviewed ones in V28_RELEASE_DIFF_ACCEPT, JSON {"accepted": [ids or kinds]}). v2.8
+# regenerates the population, so whole rosters are compared (--segments roster).
+step release-diff $PY tools/release_diff_guard.py --candidate $B --prior $PREV --segments roster \
+     ${V28_RELEASE_DIFF_GATE:+--gate} ${V28_RELEASE_DIFF_ACCEPT:+--accept $V28_RELEASE_DIFF_ACCEPT}
 
 # Verification chain (receipts that warehouse_activation.activate reads)
 [[ -d $B/inventory ]] || step inventory $PY inventory_received_warehouse.py --release $REL --previous $PREV_REL --output $B/inventory --rebaseline
@@ -66,4 +72,6 @@ step audit       $PY tools/restatement_audit.py --build $B --previous $PREV_REL 
 echo "== chain complete $(date '+%F %T'); disk $(du -sh $B | cut -f1)" | tee -a $LOG
 grep -E '"(identical_roster|prior_patients|new_patients|prior_patients_missing|prior_rows_missing|prior_rows_changed|prior_rows_retracted|retracted_patients|prior_rows_unexplained|prior_rows_reassigned)"' $B/migration-audit.json | tee -a $LOG
 echo "Not activated. To activate (service on 8885 stopped first):"
-echo "  $PY activate_healthcare_warehouse.py --build $B --rebaseline"
+echo "  $PY activate_healthcare_warehouse.py --build $B --rebaseline --carry-forward-verified [--require-release-diff --accept-release-diff FILE]"
+echo "  (--carry-forward-verified replays the active stack's verified pairs on $B; the v1.23 store can be replayed too:"
+echo "   $PY tools/carry_forward_verified.py --from artifacts/agere-healthcare-v123 --to $B)"

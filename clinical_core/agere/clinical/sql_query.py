@@ -36,9 +36,10 @@ def _authorizer(action, *_):
     return sqlite3.SQLITE_OK if action in _ALLOWED else sqlite3.SQLITE_DENY
 
 
-def execute(path, params, patient_ids=None):
+def execute(path, params, patient_ids=None, target=None, time_limit=None):
+    """target: an existing semantic.sqlite3 to read as-is (never rebuilt; used to replay against a read-only build)."""
     p = validate(params)
-    target = semantic_layer.ensure(path)
+    target = target or semantic_layer.ensure(path)
     query, args = p['query'], {}
     if re.search(r'\bpopulation\b', query, re.I):
         if patient_ids is None: raise ValueError('Query references population but no population input was given')
@@ -46,7 +47,7 @@ def execute(path, params, patient_ids=None):
         query = (f'WITH {cte}, ' + query[4:].lstrip()) if re.match(r'(?is)^with\b', query) else f'WITH {cte} {query}'
         args['population'] = json.dumps(sorted(patient_ids))
     db = sqlite3.connect(f'file:{target}?mode=ro', uri=True)
-    deadline = time.perf_counter() + TIME_LIMIT_SECONDS
+    deadline = time.perf_counter() + (time_limit or TIME_LIMIT_SECONDS)
     db.set_progress_handler(lambda: 1 if time.perf_counter() > deadline else 0, 10000)
     db.set_authorizer(_authorizer)
     started = time.perf_counter()

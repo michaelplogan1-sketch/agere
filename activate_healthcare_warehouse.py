@@ -14,6 +14,14 @@ if __name__=='__main__':
     p.add_argument('--rebaseline',action='store_true',help='Fresh baseline load (the release regenerates the population; not a continuation of the '
                    'prior release). Every non-migration receipt must pass; the prior-release migration audit must exist and is recorded as '
                    'an informational diff, not gated. Mutually exclusive with --restatement/--expansion/--retraction')
+    p.add_argument('--carry-forward-verified',action='store_true',help='After activation, replay the prior stack\'s verified '
+                   'question->SQL pairs on this build: passing pairs are carried with provenance, the rest quarantined with reasons')
+    p.add_argument('--require-release-diff',action='store_true',help='Refuse activation unless BUILD/release-diff.json '
+                   '(tools/release_diff_guard.py) exists for this build and has no unacknowledged flags')
+    p.add_argument('--accept-release-diff',type=Path,help='JSON {"accepted": [finding ids or kinds]} acknowledged by a reviewer')
     a=p.parse_args()
     if a.rebaseline and (a.restatement or a.expansion or a.retraction):p.error('--rebaseline cannot be combined with --restatement, --expansion or --retraction')
-    print(json.dumps(activate(a.build,a.config,restatement=a.restatement,expansion=a.expansion,retraction=a.retraction,rebaseline=a.rebaseline),indent=2))
+    accepted=json.loads(a.accept_release_diff.read_text()).get('accepted',[]) if a.accept_release_diff else []
+    print(json.dumps(activate(a.build,a.config,restatement=a.restatement,expansion=a.expansion,retraction=a.retraction,rebaseline=a.rebaseline,
+                              carry_forward=a.carry_forward_verified,require_release_diff=a.require_release_diff,
+                              release_diff_accepted=accepted),indent=2))

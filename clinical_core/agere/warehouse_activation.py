@@ -119,7 +119,32 @@ BASIS={'identical':'','restated':'Restated release: ','expanded':'Expanded relea
 BASIS.update({k+'_retracted':(v[:-2] if v else 'Release')+' with post-death retractions: ' for k,v in BASIS.items()})
 
 
-def activate(build,config,restatement=False,expansion=False,retraction=False,rebaseline=False):
+def release_diff_gate(build,accepted=()):
+    """--require-release-diff: the candidate's release-diff report (tools/release_diff_guard.py) must exist for this build's
+    source digest and carry no unacknowledged flag. Returns the gate result."""
+    from . import release_diff
+    build=Path(build);report_path=build/'release-diff.json'
+    if not report_path.exists():raise ValueError('Release-diff report missing: run tools/release_diff_guard.py --candidate BUILD first')
+    report=json.loads(report_path.read_text());run=json.loads((build/'stack'/'run.json').read_text())
+    if report.get('candidate',{}).get('digest')!=run.get('source_digest'):raise ValueError('Release-diff report belongs to another source digest')
+    result=release_diff.gate(report,accepted)
+    if not result['passed']:raise ValueError(f"Release-diff gate: {len(result['open_flags'])} unacknowledged flags (see release-diff.md)")
+    return result
+
+
+def carry_forward_verified(prior_build,build,out=None):
+    """Activation hook: replay the prior stack's verified question->SQL pairs on the new build; passing pairs are carried
+    into the new stack's learning store with provenance, the rest quarantined with reasons (verified_carry_forward.py).
+    Returns the summary without per-pair outcomes (those go to <stack or out>/carry-forward.json)."""
+    from .verified_carry_forward import carry_forward,_stack
+    summary=carry_forward(prior_build,build,out)
+    target=Path(out) if out else _stack(build)
+    (target/'carry-forward.json').write_text(json.dumps(summary,indent=1,default=str)+'\n')
+    return {k:v for k,v in summary.items() if k!='outcomes'}
+
+
+def activate(build,config,restatement=False,expansion=False,retraction=False,rebaseline=False,carry_forward=False,
+             require_release_diff=False,release_diff_accepted=()):
     if rebaseline and (restatement or expansion or retraction):
         raise ValueError('--rebaseline is a fresh load; it cannot be combined with --restatement, --expansion or --retraction')
     from .healthcare_warehouse import checksum
@@ -141,6 +166,7 @@ def activate(build,config,restatement=False,expansion=False,retraction=False,reb
     else:
         kind=validate_migration(migration,connection,prior,restatement=restatement,expansion=expansion,retraction=retraction)
     restated=kind.startswith('restated')
+    diff_gate=release_diff_gate(build,release_diff_accepted) if require_release_diff else None
     if checksum(dataset['source'])!=dataset['source_sha256']:raise ValueError('Pinned source content changed')
     clinical_state.attached(build/'stack');db,_=longitudinal.connect(build/'stack');db.close()
     policy=(f"Rebaselined healthcare-warehouse roster: {connection['patients']} received patients loaded fresh; prior roster not carried forward" if rebaseline else
@@ -168,5 +194,10 @@ def activate(build,config,restatement=False,expansion=False,retraction=False,reb
              'retraction':{k:migration[k] for k in ('retraction_rule','prior_rows_retracted','retracted_by_table','retracted_patients',
                                                     'deceased_patients_in_new_release','prior_release') if k in migration} if kind.endswith('_retracted') else None,
              'rebaseline':{'basis':REBASELINE_BASIS,'prior_release_diff':diff} if rebaseline else None}
+    if diff_gate is not None:receipt['release_diff_gate']=diff_gate
+    if carry_forward and prior:
+        try:receipt['verified_carry_forward']=carry_forward_verified(prior['build'],build)
+        except Exception as exc:  # noqa: BLE001 - the activation stands; the store starts empty and the receipt says why
+            receipt['verified_carry_forward']={'error':f'{type(exc).__name__}: {exc}'[:300]}
     (build/'activation.json').write_text(json.dumps(receipt,indent=2)+'\n')
     return receipt
