@@ -2314,16 +2314,11 @@ MEASURE_FRAMING = (r'\b(?:rate|rates|performance|compliance|compliant|score|scor
                    r'gaps?|me|had|had a|been|get|got|received|look|looks?|this|that|what|how|year|period|network|overall|total|open|outstanding)\b')
 
 
-MEASURE_ASKED = (r'\b(?:rates?|percent(?:age)?s?|%|share|proportion|fraction|compliance|compliant|non[- ]?compliant|performance|score|scores|'
-                 r'measures?|hedis|stars?|star ratings?|ecqm|eqcm|quality|numerator|denominator|gaps?|due|overdue|missing|adherence|adherent|pdc|'
-                 r'how (?:are|is|did|do) we (?:doing|perform))\b')
-PLAIN_COUNT = r"^(?:how many|what (?:is|was) the (?:number|count) of|count (?:the |our )?|number of)\b"
-
-
 def _plain_count_question(low):
     """'How many diabetics had ...' asks for a cohort count; a measure answers only when the question names a
-    measure, a rate/percentage, compliance/performance or gaps."""
-    return bool(re.search(PLAIN_COUNT, low.strip())) and not re.search(MEASURE_ASKED, low)
+    measure, a rate/percentage, compliance/performance or gaps. One word list, shared with the metric router."""
+    from .metric_router import plain_count_question
+    return plain_count_question(low)
 
 
 def _measure_question(q, profile, as_of):
