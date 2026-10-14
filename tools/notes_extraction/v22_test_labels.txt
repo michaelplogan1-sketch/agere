@@ -1,0 +1,211 @@
+# test-half gold labels, written by reading each unit BEFORE any rule tuning. idx|fact_type=value[-negated]; ...
+0|imaging_finding=consolidation; symptom=fever-; follow_up=7
+1|follow_up=7; follow_up=14
+2|follow_up=7
+3|follow_up=7; follow_up=14
+4|follow_up=7
+5|follow_up=7; follow_up=14
+6|follow_up=7; follow_up=14
+7|follow_up=7
+8|follow_up=7
+9|imaging_finding=consolidation; symptom=fever-; follow_up=7
+10|follow_up=7
+11|follow_up=7
+12|follow_up=7
+13|dyspnea=unspecified; follow_up=7; follow_up=14
+14|follow_up=7; follow_up=14
+15|follow_up=7
+16|symptom=chest_pain; follow_up=7
+17|follow_up=7
+18|follow_up=7
+19|follow_up=7
+20|dyspnea=unspecified; edema=present; imaging_finding=pulmonary_edema; follow_up=3
+21|follow_up=3
+22|symptom=pain; follow_up=3
+23|
+24|symptom=fever; follow_up=3
+25|follow_up=3
+26|symptom=cough; symptom=fever; follow_up=3
+27|dyspnea=unspecified; edema=present; imaging_finding=pulmonary_edema; follow_up=3
+28|follow_up=3
+29|symptom=pain; follow_up=3
+30|dyspnea=unspecified; edema=present; imaging_finding=pulmonary_edema; follow_up=3
+31|imaging_finding=fracture-; follow_up=3
+32|
+33|imaging_finding=fracture-; follow_up=3
+34|
+35|symptom=cough; symptom=fever; follow_up=3
+36|follow_up=3
+37|follow_up=3
+38|imaging_finding=fracture-; follow_up=3
+39|symptom=cough; symptom=fever; follow_up=3
+40|symptom=fever-; smoking_status=never; edema=none-; follow_up=90; follow_up=14
+41|symptom=pain-; symptom=fever-; symptom=chest_pain-; dyspnea=unspecified-; symptom=nausea_vomiting-; symptom=diarrhea-; smoking_status=never; edema=none-; follow_up=30
+42|symptom=cough; symptom=fever-; dyspnea=unspecified-; symptom=chest_pain-; smoking_status=current; edema=none-; follow_up=28; follow_up=180
+43|symptom=fever-; symptom=cough-; smoking_status=never; edema=none-; follow_up=14
+44|smoking_status=never; edema=none-; follow_up=14
+45|symptom=cough; symptom=fever; dyspnea=unspecified-; symptom=chest_pain-; smoking_status=former; social_need=transport; edema=none-; follow_up=180
+46|smoking_status=never; edema=none-; follow_up=14
+47|edema=none-; follow_up=30
+48|symptom=chest_pain-; dyspnea=unspecified-; symptom=nausea_vomiting-; symptom=diarrhea-; smoking_status=never; social_need=transport; edema=none-; follow_up=90
+49|edema=none-; follow_up=14
+50|symptom=chest_pain-; dyspnea=unspecified-; symptom=nausea_vomiting-; symptom=diarrhea-; smoking_status=current; social_need=food; edema=none-; follow_up=30
+51|symptom=chest_pain-; dyspnea=unspecified-; symptom=nausea_vomiting-; symptom=diarrhea-; smoking_status=never; edema=none-; follow_up=28; follow_up=30
+52|smoking_status=former; edema=none-; follow_up=14
+53|symptom=chest_pain-; dyspnea=unspecified-; symptom=nausea_vomiting-; symptom=diarrhea-; smoking_status=former; edema=none-; follow_up=90
+54|follow_up=14
+55|medication_nonadherence=cost; social_need=financial; social_need=transport; smoking_status=never; edema=none-; follow_up=28; follow_up=180
+56|medication_nonadherence=cost; social_need=financial; symptom=chest_pain-; dyspnea=unspecified-; symptom=nausea_vomiting-; symptom=diarrhea-; smoking_status=never; edema=none-; follow_up=90
+57|edema=none-; follow_up=90
+58|symptom=pain; symptom=nausea_vomiting-; symptom=bleeding-; symptom=chest_pain-; dyspnea=unspecified-; symptom=diarrhea-; smoking_status=never; follow_up=14
+59|symptom=chest_pain-; dyspnea=unspecified-; symptom=nausea_vomiting-; symptom=diarrhea-; smoking_status=never; follow_up=90; follow_up=180
+60|symptom=chest_pain-; dyspnea=unspecified-; symptom=nausea_vomiting-; symptom=diarrhea-; smoking_status=never; follow_up=180
+61|smoking_status=never; follow_up=90
+62|follow_up=14
+63|symptom=cough; symptom=fever; dyspnea=unspecified-; symptom=chest_pain-; smoking_status=never; follow_up=90
+64|
+65|smoking_status=never
+66|
+67|
+68|
+69|
+70|symptom=pain
+71|symptom=pain
+72|follow_up=90
+73|follow_up=90
+74|symptom=pain
+75|
+76|follow_up=90
+77|symptom=bleeding-
+78|follow_up=90
+79|
+80|
+81|follow_up=28
+82|follow_up=14; follow_up=28
+83|follow_up=28
+84|dyspnea=exertional; symptom=cough
+85|follow_up=28
+86|follow_up=14; follow_up=28
+87|
+88|
+89|follow_up=28
+90|symptom=chest_pain-; dyspnea=unspecified-; symptom=nausea_vomiting-; symptom=diarrhea-; smoking_status=never; edema=none-; follow_up=28; follow_up=30
+91|symptom=pain-; symptom=fever-; smoking_status=never; edema=none-; follow_up=180
+92|symptom=chest_pain-; symptom=cough; symptom=nausea_vomiting-; symptom=diarrhea-; smoking_status=never; edema=none-; follow_up=90
+93|smoking_status=never; edema=none-; follow_up=180
+94|symptom=cough; symptom=fever; dyspnea=unspecified-; symptom=chest_pain-; edema=none-; follow_up=30
+95|symptom=cough; symptom=fever; dyspnea=unspecified-; symptom=chest_pain-; smoking_status=never; edema=none-; follow_up=14
+96|symptom=chest_pain-; dyspnea=unspecified-; symptom=nausea_vomiting-; symptom=diarrhea-; smoking_status=never; edema=none-; follow_up=180
+97|symptom=chest_pain-; dyspnea=unspecified-; symptom=nausea_vomiting-; symptom=diarrhea-; smoking_status=never; edema=none-; follow_up=30
+98|edema=none-; follow_up=90; follow_up=14
+99|symptom=chest_pain-; dyspnea=unspecified-; symptom=nausea_vomiting-; symptom=diarrhea-; smoking_status=never; edema=none-; follow_up=28; follow_up=90
+100|symptom=fatigue; smoking_status=current; edema=none-; follow_up=14
+101|symptom=chest_pain-; dyspnea=unspecified-; symptom=nausea_vomiting-; symptom=diarrhea-; smoking_status=never; edema=none-; follow_up=180
+102|social_need=food; social_need=financial; social_need=transport; smoking_status=current; edema=none-; follow_up=90
+103|smoking_status=never; edema=none-; follow_up=30
+104|smoking_status=never; edema=none-; follow_up=90
+105|symptom=chest_pain-; dyspnea=unspecified-; symptom=nausea_vomiting-; symptom=diarrhea-; smoking_status=never; edema=none-; follow_up=14
+106|medication_nonadherence=unspecified; smoking_status=never; edema=none-; follow_up=180
+107|edema=none-; follow_up=28; follow_up=180
+108|smoking_status=never; edema=none-; follow_up=14
+109|symptom=pain; smoking_status=never; follow_up=30
+110|smoking_status=former; follow_up=30
+111|symptom=pain-; symptom=fever-; symptom=chest_pain-; dyspnea=unspecified-; symptom=nausea_vomiting-; symptom=diarrhea-; smoking_status=never; follow_up=30
+112|symptom=chest_pain-; dyspnea=unspecified-; symptom=nausea_vomiting-; symptom=diarrhea-; smoking_status=former; edema=none-; follow_up=90
+113|symptom=chest_pain-; dyspnea=unspecified-; symptom=nausea_vomiting-; symptom=diarrhea-; smoking_status=never; follow_up=180
+114|
+115|
+116|
+117|
+118|smoking_status=never
+119|
+120|symptom=pain; symptom=fever; smoking_status=never; edema=none-; follow_up=180
+121|symptom=pain; smoking_status=never; social_need=food; edema=none-; follow_up=14
+122|symptom=cough; symptom=fever; dyspnea=unspecified-; symptom=chest_pain-; symptom=nausea_vomiting-; symptom=diarrhea-; smoking_status=never; edema=none-; follow_up=180
+123|symptom=cough; symptom=fever-; dyspnea=unspecified-; symptom=chest_pain-; smoking_status=never; edema=none-; follow_up=180
+124|symptom=cough; symptom=fever; dyspnea=unspecified-; symptom=chest_pain-; smoking_status=never; social_need=food; edema=none-; follow_up=28; follow_up=90; follow_up=14
+125|symptom=pain; symptom=chest_pain-; dyspnea=unspecified-; symptom=nausea_vomiting-; symptom=diarrhea-; smoking_status=current; edema=none-; follow_up=180
+126|edema=none-; follow_up=180
+127|smoking_status=former; edema=none-; follow_up=30
+128|edema=none-; follow_up=180
+129|symptom=fatigue; symptom=chest_pain-; dyspnea=unspecified-; symptom=nausea_vomiting-; symptom=diarrhea-; smoking_status=former; symptom=wheeze; edema=none-; follow_up=90
+130|smoking_status=former; edema=none-; follow_up=28; follow_up=180
+131|smoking_status=never; edema=none-; follow_up=14
+132|smoking_status=never; edema=none-; follow_up=90
+133|smoking_status=never; edema=none-; follow_up=14
+134|smoking_status=former; edema=none-; follow_up=30
+135|symptom=chest_pain-; dyspnea=unspecified-; symptom=nausea_vomiting-; symptom=diarrhea-; smoking_status=never; edema=none-; follow_up=90
+136|smoking_status=never; edema=none-; follow_up=28; follow_up=30
+137|symptom=chest_pain-; dyspnea=unspecified-; symptom=nausea_vomiting-; symptom=diarrhea-; smoking_status=former; edema=none-; follow_up=180
+138|medication_nonadherence=supply_access; follow_up=14
+139|follow_up=90
+140|symptom=pain; smoking_status=former; social_need=food; edema=none-; follow_up=90
+141|symptom=chest_pain-; dyspnea=unspecified-; symptom=nausea_vomiting-; symptom=diarrhea-; smoking_status=never; follow_up=180
+142|symptom=chest_pain-; dyspnea=unspecified-; symptom=nausea_vomiting-; symptom=diarrhea-; smoking_status=never; follow_up=180
+143|symptom=pain; symptom=nausea_vomiting-; symptom=bleeding-; smoking_status=never; edema=none-; follow_up=180
+144|
+145|smoking_status=never
+146|
+147|
+148|smoking_status=never
+149|
+150|symptom=cough; symptom=fever; dyspnea=unspecified-; symptom=chest_pain-; edema=none-; follow_up=90
+151|symptom=pain; symptom=chest_pain-; dyspnea=unspecified-; symptom=nausea_vomiting-; symptom=diarrhea-; smoking_status=never; edema=none-; follow_up=30
+152|symptom=pain-; symptom=fever-; smoking_status=former; social_need=transport; edema=none-; follow_up=180
+153|symptom=cough; symptom=fever-; dyspnea=unspecified-; symptom=chest_pain-; smoking_status=never; edema=none-; follow_up=14
+154|symptom=fever-; symptom=cough-; smoking_status=never; edema=none-; follow_up=30
+155|symptom=pain; symptom=nausea_vomiting-; symptom=bleeding-; smoking_status=never; edema=none-; follow_up=30
+156|symptom=chest_pain-; dyspnea=unspecified-; symptom=nausea_vomiting-; symptom=diarrhea-; smoking_status=never; edema=none-; follow_up=180
+157|smoking_status=never; edema=none-; follow_up=14
+158|symptom=chest_pain-; dyspnea=unspecified-; symptom=nausea_vomiting-; symptom=diarrhea-; smoking_status=former; edema=none-; follow_up=90
+159|symptom=fatigue; edema=present; dyspnea=unspecified-; symptom=nausea_vomiting-; symptom=diarrhea-; smoking_status=never; edema=moderate; follow_up=90
+160|edema=none-; social_need=food; follow_up=28; follow_up=14
+161|smoking_status=never; edema=none-; follow_up=90
+162|edema=none-; follow_up=14
+163|symptom=chest_pain-; dyspnea=unspecified-; symptom=nausea_vomiting-; symptom=diarrhea-; smoking_status=never; edema=none-; follow_up=14
+164|smoking_status=never; edema=none-; follow_up=14
+165|smoking_status=never; edema=none-; follow_up=90
+166|edema=none-; follow_up=28; follow_up=90
+167|smoking_status=current; edema=none-; follow_up=180
+168|social_need=food; social_need=financial; smoking_status=former; edema=none-; follow_up=14
+169|medication_nonadherence=cost; social_need=financial; social_need=food; edema=none-; follow_up=90
+170|symptom=fever; smoking_status=never; follow_up=90
+171|symptom=cough; symptom=fever; dyspnea=unspecified-; symptom=chest_pain-; edema=none-; follow_up=90
+172|follow_up=180
+173|symptom=chest_pain-; dyspnea=unspecified-; symptom=nausea_vomiting-; symptom=diarrhea-; smoking_status=never; edema=none-; follow_up=14
+174|
+175|smoking_status=never
+176|
+177|
+178|smoking_status=never
+179|
+180|symptom=cough; symptom=fever; dyspnea=unspecified-; symptom=chest_pain-; edema=none-; follow_up=14
+181|symptom=cough; symptom=fever; dyspnea=unspecified-; symptom=chest_pain-; edema=moderate; follow_up=28; follow_up=14
+182|social_need=transport; edema=none-; follow_up=90
+183|symptom=pain; edema=none-; follow_up=180
+184|edema=none-; follow_up=90
+185|symptom=pain; edema=none-; follow_up=90; follow_up=30
+186|social_need=food; edema=none-; follow_up=30
+187|edema=none-; follow_up=180
+188|edema=none-; follow_up=90
+189|social_need=food; edema=none-; follow_up=28; follow_up=90
+190|edema=none-; follow_up=180
+191|edema=none-; follow_up=90
+192|dyspnea=exertional; dyspnea=unspecified; edema=present; edema=moderate; follow_up=14
+193|edema=none-; follow_up=90
+194|edema=none-; follow_up=14
+195|edema=none-; follow_up=180
+196|social_need=food; social_need=financial; edema=none-; follow_up=14
+197|medication_nonadherence=supply_access; edema=none-; follow_up=90
+198|follow_up=180
+199|social_need=food; social_need=financial; follow_up=90
+200|follow_up=90; follow_up=30
+201|symptom=pain; follow_up=180
+202|social_need=transport; edema=none-; follow_up=90
+203|symptom=fever; follow_up=180
+204|smoking_status=never
+205|
+206|
+207|smoking_status=never
+208|
+209|
