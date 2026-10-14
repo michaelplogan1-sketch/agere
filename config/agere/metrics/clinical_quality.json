@@ -1,0 +1,491 @@
+{
+ "schema": "agere-metric-file/1",
+ "domain": "clinical_quality",
+ "metrics": [
+  {
+   "id": "kidney_health_evaluation_diabetes",
+   "version": 1,
+   "name": "Kidney health evaluation for patients with diabetes (eGFR and uACR)",
+   "status": "cited",
+   "measures": [
+    "ked"
+   ],
+   "summary": "Denominator: diabetics aged 18-85. Numerator: at least one dated eGFR and at least one dated urine albumin-creatinine ratio, both with event_date in the measurement year. Percent.",
+   "match": {
+    "all": [
+     "egfr|kidney health|\\bked\\b",
+     "uacr|albumin|kidney health|\\bked\\b"
+    ],
+    "any": [
+     "diabet"
+    ],
+    "none": [
+     "latest|most recent|under \\d|below \\d|missing"
+    ]
+   },
+   "grain": {
+    "entity": "patient",
+    "key": "patient_id",
+    "table": "patient"
+   },
+   "population": {
+    "summary": "Patients with diabetes (library concept 'diabetes') aged 18-85.",
+    "age": {
+     "min": 18,
+     "max": 85,
+     "field": "age_latest",
+     "note": "age_latest per nl2sql RULES; benchmark references disagree (O31 roster age_reported, M33 latest age)"
+    }
+   },
+   "denominator": {
+    "summary": "Diabetics aged 18-85."
+   },
+   "numerator": {
+    "summary": "Both an eGFR and a uACR dated in the year."
+   },
+   "time_anchor": {
+    "field": "measurement.event_date",
+    "mode": "period",
+    "default": "as_of_year"
+   },
+   "value_sets": {
+    "egfr": {
+     "dimension": "measurement.name",
+     "concept": "egfr",
+     "standard": {
+      "loinc": [
+       "33914-3",
+       "48642-3",
+       "48643-1",
+       "62238-1",
+       "98979-8"
+      ]
+     },
+     "label_patterns": [
+      "egfr|glomerular filtration"
+     ],
+     "provenance": "concepts.MEASUREMENTS egfr LOINC list (public LOINC codes; licensed KED value sets not used)"
+    },
+    "uacr": {
+     "dimension": "measurement.name",
+     "concept": "uacr",
+     "standard": {
+      "loinc": [
+       "9318-7",
+       "14959-1",
+       "32294-1"
+      ]
+     },
+     "label_patterns": [
+      "albumin/creatinine|microalbumin|uacr"
+     ],
+     "exclude": [
+      "Urine albumin"
+     ],
+     "provenance": "concepts.MEASUREMENTS uacr LOINC list; urine albumin alone is not a ratio"
+    }
+   },
+   "unit": "percent",
+   "expected_range": [
+    0,
+    100
+   ],
+   "versioning": {
+    "rule": "none"
+   },
+   "output": {
+    "returns": "value"
+   },
+   "engine": {
+    "measures": "ked"
+   },
+   "sql_template": "SELECT round(100.0 * count(DISTINCT CASE WHEN EXISTS (SELECT 1 FROM measurement m WHERE m.patient_id = p.patient_id AND m.concept = 'egfr' AND m.value_canonical IS NOT NULL AND m.event_date BETWEEN '{period_start}' AND '{period_end}') AND EXISTS (SELECT 1 FROM measurement m WHERE m.patient_id = p.patient_id AND m.concept = 'uacr' AND m.value_canonical IS NOT NULL AND m.event_date BETWEEN '{period_start}' AND '{period_end}') THEN p.patient_id END) / count(DISTINCT p.patient_id), 1) AS pct_kidney_health_evaluation FROM patient p JOIN concept_patient cp ON cp.patient_id = p.patient_id AND cp.concept = 'diabetes' WHERE p.age_latest BETWEEN 18 AND 85"
+  },
+  {
+   "id": "respiratory_registry",
+   "version": 1,
+   "name": "Respiratory registry (asthma or COPD)",
+   "status": "internal",
+   "internal_reason": "Registry phenotype from the Agere concept library (ICD-10-CM J43/J44/J45 prefixes plus source labels); documentation-level, not a certified value set.",
+   "summary": "Distinct patients with an asthma or COPD condition record (COPD includes emphysema and chronic obstructive bronchitis). All ages. Patient list.",
+   "match": {
+    "all": [
+     "asthma|copd|emphysema|chronic obstructive"
+    ],
+    "any": [
+     "registry|list|pull|who|which|roster|pts\\b|patients"
+    ],
+    "none": [
+     "how many|number of|spo2|saturation|spirometry|inhaler|medication|%|percent"
+    ]
+   },
+   "grain": {
+    "entity": "patient",
+    "key": "patient_id",
+    "table": "patient"
+   },
+   "population": {
+    "summary": "All roster patients."
+   },
+   "denominator": {
+    "summary": "None (patient list)."
+   },
+   "numerator": {
+    "summary": "Patients with condition concept asthma or copd."
+   },
+   "time_anchor": {
+    "field": "condition.event_date",
+    "mode": "any_time",
+    "default": "all"
+   },
+   "value_sets": {
+    "respiratory": {
+     "dimension": "condition.label",
+     "standard": {
+      "icd10_prefixes": [
+       "J43",
+       "J44",
+       "J45"
+      ],
+      "snomed": [
+       "195967001",
+       "233678006",
+       "87433001",
+       "185086009"
+      ]
+     },
+     "label_patterns": [
+      "asthma|copd|chronic obstructive|emphysema"
+     ],
+     "provenance": "concepts.CONDITIONS asthma + copd (ICD-10-CM J43/J44/J45)"
+    }
+   },
+   "unit": "patients",
+   "expected_range": [
+    0,
+    1000000
+   ],
+   "versioning": {
+    "rule": "none"
+   },
+   "output": {
+    "returns": "patient_set"
+   },
+   "sql_template": "SELECT DISTINCT patient_id FROM concept_patient WHERE concept IN ('asthma','copd') ORDER BY 1"
+  },
+  {
+   "id": "ldl_190_ever",
+   "version": 1,
+   "name": "Patients with any LDL cholesterol >= 190 mg/dL (possible familial hypercholesterolemia)",
+   "status": "cited",
+   "citations": [
+    {
+     "title": "2018 AHA/ACC/AACVPR/AAPA/ABC/ACPM/ADA/AGS/APhA/ASPC/NLA/PCNA Guideline on the Management of Blood Cholesterol (Grundy et al., Circulation 2019;139:e1082-e1143)",
+     "url": "https://doi.org/10.1161/CIR.0000000000000625"
+    }
+   ],
+   "summary": "Distinct patients with any numeric, non-cancelled LDL cholesterol result >= 190 mg/dL, dated or undated (timing does not matter for an FH screen).",
+   "match": {
+    "all": [
+     "\\bldl\\b",
+     "190"
+    ],
+    "none": [
+     "latest|most recent|last"
+    ]
+   },
+   "grain": {
+    "entity": "patient",
+    "key": "patient_id",
+    "table": "patient"
+   },
+   "population": {
+    "summary": "All roster patients."
+   },
+   "denominator": {
+    "summary": "None (patients)."
+   },
+   "numerator": {
+    "summary": "Any LDL value_canonical >= 190."
+   },
+   "time_anchor": {
+    "field": "measurement.event_date",
+    "mode": "any_time",
+    "default": "all"
+   },
+   "value_sets": {
+    "ldl": {
+     "dimension": "measurement.name",
+     "concept": "ldl",
+     "standard": {
+      "loinc": [
+       "13457-7",
+       "18262-6",
+       "2089-1"
+      ]
+     },
+     "members": [
+      "LDL cholesterol",
+      "LDL"
+     ],
+     "exclude": [
+      "Non-HDL cholesterol",
+      "Total cholesterol",
+      "Cholesterol"
+     ],
+     "label_patterns": [
+      "ldl"
+     ],
+     "provenance": "concepts.MEASUREMENTS ldl LOINC list + received labels"
+    }
+   },
+   "checks": [
+    {
+     "rule": "ML-ANCHOR",
+     "forbids": "measurement_latest|event_date\\s+is\\s+not\\s+null|event_date\\s*(?:>=|>|between)",
+     "why": "any result counts, dated or undated (most LDL results are undated)",
+     "unless": "latest|most recent|last|in 20\\d\\d|past|since"
+    }
+   ],
+   "unit": "patients",
+   "expected_range": [
+    0,
+    1000000
+   ],
+   "versioning": {
+    "rule": "none"
+   },
+   "output": {
+    "returns": "patient_set"
+   },
+   "sql_template": "SELECT DISTINCT patient_id FROM measurement WHERE concept = 'ldl' AND value_canonical >= 190 ORDER BY 1"
+  },
+  {
+   "id": "beers_high_risk_medications_65",
+   "version": 1,
+   "name": "Older adults dispensed a Beers-list high-risk medication",
+   "status": "cited",
+   "citations": [
+    {
+     "title": "American Geriatrics Society 2023 updated AGS Beers Criteria for potentially inappropriate medication use in older adults (J Am Geriatr Soc 2023;71(7):2052-2081)",
+     "url": "https://doi.org/10.1111/jgs.18372"
+    }
+   ],
+   "summary": "Patients aged 65+ with at least one pharmacy dispense (status 'dispensed' or paid claim) of a first-generation antihistamine, benzodiazepine, meperidine or skeletal muscle relaxant, at any date. Second-generation antihistamines (loratadine, cetirizine, fexofenadine) are not Beers-list drugs.",
+   "match": {
+    "all": [
+     "beers|high[- ]risk med|potentially inappropriate",
+     "65|older|elderly|senior"
+    ]
+   },
+   "grain": {
+    "entity": "patient",
+    "key": "patient_id",
+    "table": "patient"
+   },
+   "population": {
+    "summary": "Patients aged 65 or older.",
+    "age": {
+     "min": 65,
+     "field": "age_latest",
+     "note": "age_latest per nl2sql RULES; the O11 reference uses roster age_reported"
+    }
+   },
+   "denominator": {
+    "summary": "None (patients)."
+   },
+   "numerator": {
+    "summary": "Patients with a dispensed Beers-list drug."
+   },
+   "time_anchor": {
+    "field": "medication.event_date",
+    "mode": "any_time",
+    "default": "all"
+   },
+   "value_sets": {
+    "beers_drugs": {
+     "dimension": "medication.ingredient",
+     "standard": {
+      "ingredients": [
+       "diphenhydramine",
+       "chlorpheniramine",
+       "doxylamine",
+       "hydroxyzine",
+       "promethazine",
+       "diazepam",
+       "lorazepam",
+       "clonazepam",
+       "alprazolam",
+       "temazepam",
+       "meperidine",
+       "cyclobenzaprine",
+       "methocarbamol",
+       "carisoprodol"
+      ],
+      "drug_classes": [
+       "first_generation_antihistamine",
+       "benzodiazepine",
+       "skeletal_muscle_relaxant"
+      ]
+     },
+     "exclude": [
+      "loratadine",
+      "cetirizine",
+      "fexofenadine",
+      "levocetirizine",
+      "desloratadine"
+     ],
+     "provenance": "AGS Beers Criteria 2023 (first-generation antihistamines, benzodiazepines, meperidine, skeletal muscle relaxants); RxNorm ingredients via the normalization dictionary"
+    }
+   },
+   "unit": "patients",
+   "expected_range": [
+    0,
+    1000000
+   ],
+   "versioning": {
+    "rule": "none"
+   },
+   "output": {
+    "returns": "count"
+   },
+   "sql_template": "SELECT count(DISTINCT p.patient_id) AS patients FROM patient p JOIN medication m ON m.patient_id = p.patient_id WHERE p.age_latest >= 65 AND m.evidence IN ('dispensed','claim') AND (m.drug_class IN ('first_generation_antihistamine','benzodiazepine','skeletal_muscle_relaxant') OR lower(m.drug_name) LIKE '%meperidine%')"
+  },
+  {
+   "id": "hf_no_beta_blocker",
+   "version": 1,
+   "name": "Heart failure patients with no beta-blocker on record",
+   "status": "cited",
+   "definitions": [
+    "heart_failure"
+   ],
+   "summary": "Patients with heart failure (library concept) with no beta-blocker (drug_class beta_blocker, any evidence: dispensed, claim, ordered, listed, administered, reported) anywhere in their medication records.",
+   "match": {
+    "all": [
+     "heart failure|\\bhf\\b|\\bchf\\b",
+     "beta[- ]?blocker"
+    ],
+    "any": [
+     "no |without|not on|missing|gap"
+    ],
+    "none": [
+     "evidence[- ]based|percent|%|share|rate|fills? in the past"
+    ]
+   },
+   "grain": {
+    "entity": "patient",
+    "key": "patient_id",
+    "table": "patient"
+   },
+   "population": {
+    "summary": "Heart failure patients."
+   },
+   "denominator": {
+    "summary": "None (patient list)."
+   },
+   "numerator": {
+    "summary": "HF patients with no beta_blocker medication row."
+   },
+   "time_anchor": {
+    "field": "medication.event_date",
+    "mode": "any_time",
+    "default": "all"
+   },
+   "value_sets": {
+    "beta_blocker": {
+     "dimension": "medication.ingredient",
+     "standard": {
+      "drug_classes": [
+       "beta_blocker",
+       "hf_evidence_based_beta_blocker"
+      ]
+     },
+     "exclude": [
+      "albuterol",
+      "salmeterol",
+      "formoterol",
+      "levalbuterol"
+     ],
+     "provenance": "drug_classes.CLASSES beta_blocker (ingredient-based)"
+    }
+   },
+   "unit": "patients",
+   "expected_range": [
+    0,
+    1000000
+   ],
+   "versioning": {
+    "rule": "none"
+   },
+   "output": {
+    "returns": "patient_set"
+   },
+   "sql_template": "SELECT DISTINCT cp.patient_id FROM concept_patient cp WHERE cp.concept = 'heart_failure' AND NOT EXISTS (SELECT 1 FROM medication m WHERE m.patient_id = cp.patient_id AND m.drug_class = 'beta_blocker') ORDER BY 1"
+  },
+  {
+   "id": "adult_obesity_computed_bmi",
+   "version": 1,
+   "name": "Adults with BMI >= 30 computed from latest weight and height",
+   "status": "internal",
+   "internal_reason": "Computed phenotype (BMI = kg / m^2 from the latest weight and a height); CDC adult BMI cut-off 30 is the convention.",
+   "summary": "Adults (18+) whose BMI = weight kg / (height m)^2 is >= 30, with height from the vitals height measurement (an undated baseline) and weight = the latest dated weight, else the undated baseline weight. The obesity diagnosis is not used.",
+   "match": {
+    "all": [
+     "\\bbmi\\b|body mass",
+     "30"
+    ],
+    "any": [
+     "compute|calculat|height|weight"
+    ]
+   },
+   "grain": {
+    "entity": "patient",
+    "key": "patient_id",
+    "table": "patient"
+   },
+   "population": {
+    "summary": "Adults 18+.",
+    "age": {
+     "min": 18,
+     "field": "age_latest"
+    }
+   },
+   "denominator": {
+    "summary": "None (count)."
+   },
+   "numerator": {
+    "summary": "Adults with computed BMI >= 30."
+   },
+   "time_anchor": {
+    "field": "measurement.event_date",
+    "mode": "snapshot",
+    "default": "as_of"
+   },
+   "value_sets": {},
+   "checks": [
+    {
+     "rule": "ML-SOURCE",
+     "forbids": "concept\\s*=\\s*'obesity'|concept_patient[^;]*'obesity'",
+     "why": "the question asks for a BMI computed from height and weight, not the obesity diagnosis"
+    },
+    {
+     "rule": "ML-ANCHOR",
+     "forbids": "height[^;]*event_date\\s+is\\s+not\\s+null",
+     "why": "height is an undated baseline measurement; requiring a dated height drops every patient"
+    }
+   ],
+   "unit": "patients",
+   "expected_range": [
+    0,
+    1000000
+   ],
+   "versioning": {
+    "rule": "none"
+   },
+   "output": {
+    "returns": "count"
+   },
+   "sql_template": "WITH h AS (SELECT patient_id, max(value) / 100.0 AS m FROM measurement WHERE source_table = 'vitals' AND name = 'height_cm' AND value > 0 GROUP BY patient_id), w AS (SELECT p.patient_id, coalesce((SELECT value_canonical FROM measurement_latest l WHERE l.patient_id = p.patient_id AND l.concept = 'weight'), (SELECT max(value_canonical) FROM measurement m WHERE m.patient_id = p.patient_id AND m.concept = 'weight' AND m.event_date IS NULL)) AS kg FROM patient p WHERE p.age_latest >= 18) SELECT count(*) AS adults_bmi_30_plus FROM w JOIN h ON h.patient_id = w.patient_id WHERE w.kg / (h.m * h.m) >= 30"
+  }
+ ]
+}

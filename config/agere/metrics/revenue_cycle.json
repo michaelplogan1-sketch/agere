@@ -1,0 +1,601 @@
+{
+ "schema": "agere-metric-file/1",
+ "domain": "revenue_cycle",
+ "metrics": [
+  {
+   "id": "patient_ar_outstanding",
+   "version": 1,
+   "name": "Outstanding patient A/R (current)",
+   "status": "internal",
+   "internal_reason": "Snapshot balance convention (HFMA defines A/R days, not this sum); Agere convention stated in full.",
+   "summary": "Sum of positive balance_cents on the latest snapshot (max event_time, record_id tiebreak) of each patient billing account (account_id). Patient credits are not netted; payer-pending amounts (provider_pending_cents) are not patient A/R. Dollars.",
+   "match": {
+    "all": [
+     "\\ba/?r\\b|accounts? receivable|outstanding (?:patient )?balances?|open (?:patient )?balances?|patient balances?"
+    ],
+    "any": [
+     "total|outstanding|how much|sum|right now|current|open"
+    ],
+    "none": [
+     "\\bdays\\b|aging|bucket|struggle|told us|screen"
+    ]
+   },
+   "grain": {
+    "entity": "account",
+    "key": "account_id",
+    "table": "current_record"
+   },
+   "population": {
+    "summary": "Patient billing accounts."
+   },
+   "denominator": {
+    "summary": "None (dollar total)."
+   },
+   "numerator": {
+    "summary": "Sum of positive latest balances."
+   },
+   "time_anchor": {
+    "field": "patient_billing_accounts.event_time",
+    "mode": "snapshot",
+    "default": "as_of"
+   },
+   "value_sets": {},
+   "checks": [
+    {
+     "rule": "ML-SOURCE",
+     "requires": "balance_cents\\W*(?:>|>=)\\s*0|max\\s*\\(\\s*\\w*\\.?balance_cents\\s*,\\s*0\\s*\\)|case\\s+when\\s+\\w*\\.?balance_cents\\s*>\\s*0",
+     "why": "open A/R sums positive balances only; credit balances are not netted against what patients owe"
+    },
+    {
+     "rule": "ML-SOURCE",
+     "forbids": "provider_pending_cents",
+     "why": "payer-pending amounts are not patient A/R"
+    }
+   ],
+   "unit": "dollars",
+   "expected_range": [
+    0,
+    1000000000
+   ],
+   "versioning": {
+    "rule": "latest_per_key",
+    "stream": "patient_billing_accounts",
+    "key": "account_id",
+    "order_by": "event_time"
+   },
+   "output": {
+    "returns": "value"
+   },
+   "sql_template": "SELECT round(sum(balance_cents) / 100.0, 2) AS patient_ar_usd FROM (SELECT json_extract(payload,'$.balance_cents') AS balance_cents, row_number() OVER (PARTITION BY json_extract(payload,'$.account_id') ORDER BY json_extract(payload,'$.event_time') DESC, record_id DESC) AS rn FROM record WHERE stream = 'patient_billing_accounts') WHERE rn = 1 AND balance_cents > 0"
+  },
+  {
+   "id": "claim_financials_current_state",
+   "version": 1,
+   "name": "Billed, allowed and paid by service type (current claim state)",
+   "status": "internal",
+   "internal_reason": "Revenue-cycle reporting convention over the received adjudication chain; no published standard.",
+   "summary": "Medical claims (claim_id) with service_date in the period and at least one adjudication: the latest medical_claims record per claim by event_time (record_id tiebreak) is the current state. Billed = its billed_cents; allowed/paid = its allowed_cents/payer_paid_cents, except denied claims and claims whose latest record is a reversal awaiting replacement count 0 allowed and 0 paid. Grouped by service_code; dollars.",
+   "match": {
+    "all": [
+     "billed|allowed"
+    ],
+    "any": [
+     "paid|allowed"
+    ],
+    "none": [
+     "pmpm|per member"
+    ]
+   },
+   "grain": {
+    "entity": "claim",
+    "key": "claim_id",
+    "table": "current_record"
+   },
+   "population": {
+    "summary": "Adjudicated medical claims with service_date in the period."
+   },
+   "denominator": {
+    "summary": "None (dollar totals by service code)."
+   },
+   "numerator": {
+    "summary": "Billed, allowed and paid from each claim's current adjudication."
+   },
+   "time_anchor": {
+    "field": "claim.service_date",
+    "mode": "period",
+    "default": "as_of_year",
+    "forbid_fields": [
+     "available_date"
+    ]
+   },
+   "value_sets": {},
+   "checks": [
+    {
+     "rule": "ML-VERSION",
+     "requires": "'reversed'|'denied'|final_status|received_final_status",
+     "why": "a claim whose current state is a reversal awaiting replacement (or a denial) has 0 allowed and 0 paid; summing the latest record's amounts without the status rule inflates allowed"
+    }
+   ],
+   "unit": "dollars",
+   "expected_range": [
+    0,
+    1000000000
+   ],
+   "versioning": {
+    "rule": "latest_per_key",
+    "stream": "medical_claims",
+    "key": "claim_id",
+    "order_by": "event_time"
+   },
+   "output": {
+    "returns": "table",
+    "columns": [
+     "service_code",
+     "claims",
+     "billed",
+     "allowed",
+     "paid"
+    ]
+   },
+   "sql_template": "SELECT sc AS service_code, count(*) AS claims, round(sum(b) / 100.0, 2) AS billed, round(sum(CASE WHEN st IN ('reversed','denied') THEN 0 ELSE al END) / 100.0, 2) AS allowed, round(sum(CASE WHEN st IN ('reversed','denied') THEN 0 ELSE pd END) / 100.0, 2) AS paid FROM (SELECT json_extract(payload,'$.service_code') AS sc, json_extract(payload,'$.service_date') AS sd, json_extract(payload,'$.status') AS st, json_extract(payload,'$.billed_cents') AS b, json_extract(payload,'$.allowed_cents') AS al, json_extract(payload,'$.payer_paid_cents') AS pd, row_number() OVER (PARTITION BY json_extract(payload,'$.claim_id') ORDER BY json_extract(payload,'$.event_time') DESC, record_id DESC) AS rn FROM record WHERE stream = 'medical_claims' AND json_extract(payload,'$.claim_id') IS NOT NULL) WHERE rn = 1 AND sd BETWEEN '{period_start}' AND '{period_end}' GROUP BY sc ORDER BY sc"
+  },
+  {
+   "id": "net_payer_paid",
+   "version": 1,
+   "name": "Net payer paid on medical claims (after reversals)",
+   "status": "internal",
+   "internal_reason": "Revenue-cycle convention over the adjudication chain (net = payments minus takebacks across every adjudication record).",
+   "summary": "Sum over medical claims with service_date in the period of payer-paid deltas across EVERY adjudication record (original payments, reversals, replacement payments; denials 0) = claim.net_payer_paid_cents. Dollars.",
+   "match": {
+    "all": [
+     "payers?|insurers?"
+    ],
+    "any": [
+     "(?:actually )?pa(?:id|y)\\b.*net|net .*pa(?:id|y)|takebacks?|after reversals"
+    ],
+    "none": [
+     "pharmacy|fills?|rx\\b|cash|posted|allocation|by payer|lag|days"
+    ]
+   },
+   "grain": {
+    "entity": "claim",
+    "key": "claim_id",
+    "table": "claim"
+   },
+   "population": {
+    "summary": "Medical claims (claim_id) with service_date in the period."
+   },
+   "denominator": {
+    "summary": "None (dollar total)."
+   },
+   "numerator": {
+    "summary": "Net payer paid across all adjudication versions."
+   },
+   "time_anchor": {
+    "field": "claim.service_date",
+    "mode": "period",
+    "default": "as_of_year",
+    "forbid_fields": [
+     "available_date"
+    ]
+   },
+   "value_sets": {},
+   "unit": "dollars",
+   "expected_range": [
+    -1000000000,
+    1000000000
+   ],
+   "versioning": {
+    "rule": "net_all_versions",
+    "stream": "medical_claims",
+    "key": "claim_id"
+   },
+   "output": {
+    "returns": "value"
+   },
+   "sql_template": "SELECT round(sum(net_payer_paid_cents) / 100.0, 2) AS net_payer_paid_usd FROM claim WHERE service_date BETWEEN '{period_start}' AND '{period_end}'"
+  },
+  {
+   "id": "contractual_writeoffs",
+   "version": 1,
+   "name": "Contractual write-offs (net)",
+   "status": "internal",
+   "internal_reason": "Contractual adjustment (CARC group CO, contractual) netted across the adjudication chain; Agere convention.",
+   "summary": "Sum of financial_deltas_cents.contractual across ALL adjudication records of medical claims with service_date in the period (reversal records carry negative contractual amounts and net out). Patient responsibility and denials are not contractual adjustments. Dollars.",
+   "match": {
+    "all": [
+     "contractual|write[- ]?offs?|writeoffs?"
+    ],
+    "none": [
+     "patient responsib|deductible|copay|coinsur"
+    ]
+   },
+   "grain": {
+    "entity": "adjudication",
+    "key": "record_id",
+    "table": "record"
+   },
+   "population": {
+    "summary": "Medical claims (claim_id) with service_date in the period."
+   },
+   "denominator": {
+    "summary": "None (dollar total)."
+   },
+   "numerator": {
+    "summary": "Net contractual adjustment across every adjudication version."
+   },
+   "time_anchor": {
+    "field": "claim.service_date",
+    "mode": "period",
+    "default": "as_of_year",
+    "forbid_fields": [
+     "available_date"
+    ]
+   },
+   "value_sets": {},
+   "unit": "dollars",
+   "expected_range": [
+    -1000000000,
+    1000000000
+   ],
+   "versioning": {
+    "rule": "net_all_versions",
+    "stream": "medical_claims",
+    "key": "claim_id"
+   },
+   "output": {
+    "returns": "value"
+   },
+   "sql_template": "SELECT round(sum(json_extract(payload,'$.financial_deltas_cents.contractual')) / 100.0, 2) AS contractual_usd FROM record WHERE stream = 'medical_claims' AND json_extract(payload,'$.claim_id') IS NOT NULL AND json_extract(payload,'$.service_date') BETWEEN '{period_start}' AND '{period_end}'"
+  },
+  {
+   "id": "payer_cash_net",
+   "version": 1,
+   "name": "Payer cash posted, net of take-backs, by payer",
+   "status": "internal",
+   "internal_reason": "Cash-posting convention: provider-recorded EFT allocations, recoupments netted; payer attributed from the claim.",
+   "summary": "payer_cash_allocations with event_date (posting date) in the period, negative allocations (recoupments) netted in. Allocations do not name the payer: payer = the medical claim's payer organization (claim.payer). Columns: payer, allocations, net_cash_dollars.",
+   "match": {
+    "all": [
+     "cash|posted|eft|deposits?"
+    ],
+    "any": [
+     "payers?|insurers?"
+    ],
+    "none": [
+     "days|lag|until|first lands?|time to|how long"
+    ]
+   },
+   "grain": {
+    "entity": "allocation",
+    "key": "record_id",
+    "table": "record"
+   },
+   "population": {
+    "summary": "Payer cash allocation records."
+   },
+   "denominator": {
+    "summary": "None (dollar totals by payer)."
+   },
+   "numerator": {
+    "summary": "Sum of allocated_cents by payer."
+   },
+   "time_anchor": {
+    "field": "payer_cash_allocations.event_date",
+    "mode": "period",
+    "default": "as_of_year"
+   },
+   "value_sets": {},
+   "attribution": {
+    "payer": "claim.payer (medical_claims.organization_id)"
+   },
+   "checks": [
+    {
+     "rule": "ML-POP",
+     "requires": "\\bclaim\\b|medical_claims|organization_id",
+     "why": "allocations do not carry the payer; attribute each allocation to the payer on its medical claim"
+    },
+    {
+     "rule": "ML-POP",
+     "forbids": "provider_remittance_advice",
+     "why": "payer comes from the medical claim; joining remittance-advice versions fans out allocations"
+    }
+   ],
+   "unit": "dollars",
+   "expected_range": [
+    -1000000000,
+    1000000000
+   ],
+   "versioning": {
+    "rule": "none"
+   },
+   "output": {
+    "returns": "table",
+    "columns": [
+     "payer",
+     "allocations",
+     "net_cash_dollars"
+    ]
+   },
+   "sql_template": "SELECT c.payer AS payer, count(*) AS allocations, round(sum(json_extract(r.payload,'$.allocated_cents')) / 100.0, 2) AS net_cash_dollars FROM record r JOIN claim c ON c.claim_id = json_extract(r.payload,'$.claim_id') WHERE r.stream = 'payer_cash_allocations' AND r.event_date BETWEEN '{period_start}' AND '{period_end}' GROUP BY c.payer ORDER BY c.payer"
+  },
+  {
+   "id": "first_pass_denial_rate",
+   "version": 1,
+   "name": "First-pass denial rate",
+   "status": "internal",
+   "internal_reason": "HFMA MAP keys name initial denial rate; Agere computes it per claim from the first adjudication by arrival order.",
+   "summary": "Percent of medical claims with service_date in the period whose first adjudication (claim.first_status) was a denial.",
+   "match": {
+    "all": [
+     "denial|denied"
+    ],
+    "any": [
+     "rate|percent|%|share"
+    ],
+    "none": [
+     "overturn|eventually|later paid|since been|clearinghouse|rejected"
+    ]
+   },
+   "grain": {
+    "entity": "claim",
+    "key": "claim_id",
+    "table": "claim"
+   },
+   "population": {
+    "summary": "Medical claims with service_date in the period."
+   },
+   "denominator": {
+    "summary": "Distinct claims."
+   },
+   "numerator": {
+    "summary": "Claims with first_status = 'denied'."
+   },
+   "time_anchor": {
+    "field": "claim.service_date",
+    "mode": "period",
+    "default": "as_of_year"
+   },
+   "value_sets": {},
+   "unit": "percent",
+   "expected_range": [
+    0,
+    100
+   ],
+   "versioning": {
+    "rule": "distinct_key",
+    "stream": "medical_claims",
+    "key": "claim_id"
+   },
+   "output": {
+    "returns": "value"
+   },
+   "sql_template": "SELECT round(100.0 * sum(first_status = 'denied') / count(*), 1) AS first_pass_denial_rate FROM claim WHERE service_date BETWEEN '{period_start}' AND '{period_end}'"
+  },
+  {
+   "id": "claim_lag_days",
+   "version": 1,
+   "name": "Claim lag (date of service to first submission)",
+   "status": "internal",
+   "internal_reason": "Revenue-cycle timing convention: business clocks (service date, submission date), never warehouse arrival dates.",
+   "summary": "Mean days from service_date to first_submitted_date for medical claims with service_date in the period.",
+   "match": {
+    "all": [
+     "lag|days? from|how many days|how long|time to"
+    ],
+    "any": [
+     "submi"
+    ],
+    "none": [
+     "arriv|warehouse|feed|received by us"
+    ]
+   },
+   "grain": {
+    "entity": "claim",
+    "key": "claim_id",
+    "table": "claim"
+   },
+   "population": {
+    "summary": "Medical claims with a submission."
+   },
+   "denominator": {
+    "summary": "Claims with first_submitted_date."
+   },
+   "numerator": {
+    "summary": "Sum of day differences."
+   },
+   "time_anchor": {
+    "field": "claim.service_date",
+    "mode": "period",
+    "default": "as_of_year",
+    "forbid_fields": [
+     "available_date",
+     "first_available_date",
+     "last_available_date"
+    ]
+   },
+   "value_sets": {},
+   "unit": "days",
+   "expected_range": [
+    0,
+    730
+   ],
+   "versioning": {
+    "rule": "distinct_key",
+    "stream": "medical_claims",
+    "key": "claim_id"
+   },
+   "output": {
+    "returns": "value"
+   },
+   "sql_template": "SELECT round(avg(julianday(first_submitted_date) - julianday(service_date)), 2) AS avg_claim_lag_days FROM claim WHERE first_submitted_date IS NOT NULL AND service_date BETWEEN '{period_start}' AND '{period_end}'"
+  },
+  {
+   "id": "days_to_payer_cash",
+   "version": 1,
+   "name": "Days from date of service to first payer cash",
+   "status": "internal",
+   "internal_reason": "Revenue-cycle timing convention on business clocks.",
+   "summary": "Mean (or median when asked) days from service_date to first_payer_cash_date for medical claims with service_date in the period that have received payer cash.",
+   "match": {
+    "all": [
+     "days?|how long|time to|lag"
+    ],
+    "any": [
+     "cash|money (?:first )?lands?|payment (?:first )?(?:arrives|lands|received)|get paid"
+    ],
+    "none": [
+     "arriv(?:e|al) in the warehouse|feed"
+    ]
+   },
+   "grain": {
+    "entity": "claim",
+    "key": "claim_id",
+    "table": "claim"
+   },
+   "population": {
+    "summary": "Medical claims with payer cash."
+   },
+   "denominator": {
+    "summary": "Claims with first_payer_cash_date."
+   },
+   "numerator": {
+    "summary": "Day differences."
+   },
+   "time_anchor": {
+    "field": "claim.service_date",
+    "mode": "period",
+    "default": "as_of_year",
+    "forbid_fields": [
+     "available_date",
+     "first_available_date",
+     "last_available_date"
+    ]
+   },
+   "value_sets": {},
+   "unit": "days",
+   "expected_range": [
+    0,
+    730
+   ],
+   "versioning": {
+    "rule": "distinct_key",
+    "stream": "medical_claims",
+    "key": "claim_id"
+   },
+   "output": {
+    "returns": "value"
+   },
+   "sql_template": "SELECT round(avg(julianday(first_payer_cash_date) - julianday(service_date)), 2) AS avg_days_to_cash FROM claim WHERE first_payer_cash_date IS NOT NULL AND service_date BETWEEN '{period_start}' AND '{period_end}'"
+  },
+  {
+   "id": "days_to_first_adjudication",
+   "version": 1,
+   "name": "Days from date of service to first payer adjudication",
+   "status": "internal",
+   "internal_reason": "Revenue-cycle timing convention on business clocks.",
+   "summary": "Mean days from service_date to first_adjudication_date for medical claims with service_date in the period.",
+   "match": {
+    "all": [
+     "days?|how long|time to|lag"
+    ],
+    "any": [
+     "adjudicat|payer decision|first decision"
+    ],
+    "none": [
+     "arriv(?:e|al) in the warehouse|feed"
+    ]
+   },
+   "grain": {
+    "entity": "claim",
+    "key": "claim_id",
+    "table": "claim"
+   },
+   "population": {
+    "summary": "Adjudicated medical claims."
+   },
+   "denominator": {
+    "summary": "Claims with first_adjudication_date."
+   },
+   "numerator": {
+    "summary": "Day differences."
+   },
+   "time_anchor": {
+    "field": "claim.service_date",
+    "mode": "period",
+    "default": "as_of_year",
+    "forbid_fields": [
+     "available_date",
+     "first_available_date",
+     "last_available_date"
+    ]
+   },
+   "value_sets": {},
+   "unit": "days",
+   "expected_range": [
+    0,
+    730
+   ],
+   "versioning": {
+    "rule": "distinct_key",
+    "stream": "medical_claims",
+    "key": "claim_id"
+   },
+   "output": {
+    "returns": "value"
+   },
+   "sql_template": "SELECT round(avg(julianday(first_adjudication_date) - julianday(service_date)), 2) AS avg_days_to_adjudication FROM claim WHERE first_adjudication_date IS NOT NULL AND service_date BETWEEN '{period_start}' AND '{period_end}'"
+  },
+  {
+   "id": "allowed_pmpm",
+   "version": 1,
+   "name": "Allowed cost per member per month (PMPM)",
+   "status": "internal",
+   "summary": "Allowed dollars on medical claims with service_date in the period (current adjudication; reversed/denied = 0) divided by member-months (roster headcount x months in period; no enrollment spans received).",
+   "match": {
+    "all": [
+     "pmpm|per member per month"
+    ]
+   },
+   "grain": {
+    "entity": "member_month",
+    "key": "patient_id+month",
+    "table": "patient"
+   },
+   "population": {
+    "summary": "Roster patients; member-months approximated from headcount."
+   },
+   "denominator": {
+    "summary": "Roster headcount x months in the period."
+   },
+   "numerator": {
+    "summary": "Allowed dollars on current claim adjudications."
+   },
+   "time_anchor": {
+    "field": "claim.service_date",
+    "mode": "period",
+    "default": "as_of_year",
+    "forbid_fields": [
+     "available_date"
+    ]
+   },
+   "value_sets": {},
+   "unit": "dollars per member per month",
+   "expected_range": [
+    0,
+    100000
+   ],
+   "versioning": {
+    "rule": "latest_per_key",
+    "stream": "medical_claims",
+    "key": "claim_id",
+    "order_by": "event_time"
+   },
+   "output": {
+    "returns": "value"
+   },
+   "sql_template": "SELECT round((SELECT sum(CASE WHEN final_status IN ('reversed','denied') THEN 0 ELSE allowed_cents END) FROM claim WHERE service_date BETWEEN '{period_start}' AND '{period_end}') / 100.0 / ((SELECT count(*) FROM patient) * ((julianday('{period_end}') - julianday('{period_start}') + 1) / 30.4375)), 2) AS allowed_pmpm",
+   "internal_reason": "Agere PMPM convention: allowed dollars on current adjudications over roster member-months (no enrollment spans received); ACO REACH/MSSP expenditure PMPM uses enrollment months."
+  }
+ ]
+}

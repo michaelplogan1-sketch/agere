@@ -1,0 +1,1110 @@
+{
+ "schema": "agere-metric-file/1",
+ "domain": "utilization",
+ "metrics": [
+  {
+   "id": "ed_visits",
+   "version": 1,
+   "name": "Emergency department visits",
+   "status": "cited",
+   "definitions": [
+    "emergency_visit"
+   ],
+   "summary": "Distinct ED encounters (encounter versions de-duplicated) dated in the period.",
+   "match": {
+    "all": [
+     "\\b(?:ed|er|emergency(?: department| room)?)\\b"
+    ],
+    "any": [
+     "\\bhow many (?:ed|er|emergency)\\b.*\\bvisits\\b",
+     "\\b(?:ed|er|emergency) visits?\\b.*\\b(?:count|how many|number|total)\\b"
+    ],
+    "none": [
+     "per 1,?000",
+     "\\btwo or more\\b|\\brepeat\\b|\\b2\\+",
+     "follow",
+     "admit|admission|observation|obs\\b|conver",
+     "\\bshare\\b|\\bpercent|%|\\brate\\b",
+     "urgent care"
+    ]
+   },
+   "grain": {
+    "entity": "visit",
+    "key": "encounter_id",
+    "table": "visit"
+   },
+   "population": {
+    "summary": "All roster patients."
+   },
+   "denominator": {
+    "summary": "None (count)."
+   },
+   "numerator": {
+    "summary": "Distinct ED encounter_ids (visit.type_concept = 'emergency_visit') with event_date in the period."
+   },
+   "time_anchor": {
+    "field": "visit.event_date",
+    "mode": "period",
+    "default": "as_of_year"
+   },
+   "value_sets": {
+    "ed_visit": {
+     "dimension": "visit.type",
+     "concept": "emergency_visit",
+     "members": [
+      "emergency",
+      "ED",
+      "ED stroke alert"
+     ],
+     "exclude": [
+      "urgent_care",
+      "urgentcare",
+      "observation",
+      "inpatient"
+     ],
+     "provenance": "definitions.json emergency_visit; concepts.ENCOUNTERS emergency_visit"
+    }
+   },
+   "exclusions": [],
+   "unit": "visits",
+   "expected_range": [
+    0,
+    1000000
+   ],
+   "versioning": {
+    "rule": "latest_version_table",
+    "stream": "encounters",
+    "key": "encounter_id"
+   },
+   "output": {
+    "returns": "count"
+   },
+   "variants": {
+    "hedis_edu": {
+     "when": "\\bhedis\\b|\\bone per day\\b|same[- ]day",
+     "summary": "One per patient per date; ED visits ending in inpatient admission excluded (HEDIS EDU)."
+    }
+   },
+   "sql_template": "SELECT count(DISTINCT encounter_id) AS ed_visits FROM visit WHERE type_concept = 'emergency_visit' AND event_date BETWEEN '{period_start}' AND '{period_end}'"
+  },
+  {
+   "id": "ed_visits_per_1000",
+   "version": 1,
+   "name": "ED visits per 1,000 member-years",
+   "status": "cited",
+   "definitions": [
+    "emergency_visit",
+    "utilization_per_1000"
+   ],
+   "summary": "Distinct ED encounters in the period per 1,000 roster member-years (roster headcount x period length in years).",
+   "match": {
+    "all": [
+     "\\b(?:ed|er|emergency)\\b",
+     "per (?:1,?000|thousand)"
+    ],
+    "none": [
+     "primary care|pcp|office"
+    ]
+   },
+   "grain": {
+    "entity": "member_month",
+    "key": "patient_id",
+    "table": "patient"
+   },
+   "population": {
+    "summary": "Roster patients; member-years approximated from roster headcount and period length (no enrollment spans received)."
+   },
+   "denominator": {
+    "summary": "Roster patients x days in period / 365.25, divided by 1,000."
+   },
+   "numerator": {
+    "summary": "Distinct ED encounter_ids dated in the period."
+   },
+   "time_anchor": {
+    "field": "visit.event_date",
+    "mode": "period",
+    "default": "as_of_year"
+   },
+   "value_sets": {
+    "ed_visit": {
+     "dimension": "visit.type",
+     "concept": "emergency_visit",
+     "members": [
+      "emergency",
+      "ED",
+      "ED stroke alert"
+     ],
+     "exclude": [
+      "urgent_care",
+      "urgentcare"
+     ],
+     "provenance": "definitions.json emergency_visit"
+    }
+   },
+   "unit": "per 1,000 member-years",
+   "expected_range": [
+    0,
+    5000
+   ],
+   "versioning": {
+    "rule": "latest_version_table",
+    "stream": "encounters",
+    "key": "encounter_id"
+   },
+   "output": {
+    "returns": "value"
+   },
+   "variants": {
+    "per_headcount": {
+     "when": "per 1,?000 (?:patients|members)\\b(?! ?-?years)",
+     "summary": "Per 1,000 roster patients, not annualised."
+    }
+   },
+   "sql_template": "SELECT round(1000.0 * (SELECT count(DISTINCT encounter_id) FROM visit WHERE type_concept = 'emergency_visit' AND event_date BETWEEN '{period_start}' AND '{period_end}') / ((SELECT count(*) FROM patient) * (julianday('{period_end}') - julianday('{period_start}') + 1) / 365.25), 1) AS ed_per_1000_member_years"
+  },
+  {
+   "id": "repeat_ed_users_12m",
+   "version": 1,
+   "name": "Repeat ED users (2+ ED visits, trailing 12 months)",
+   "status": "cited",
+   "definitions": [
+    "emergency_visit"
+   ],
+   "summary": "Patients with two or more distinct ED encounters dated in the trailing 12 months ending at the as-of date (inclusive, 365 days).",
+   "match": {
+    "all": [
+     "\\b(?:ed|er|emergency)\\b",
+     "two or more|2 or more|2\\+|repeat|frequent|multiple"
+    ],
+    "none": [
+     "admission|inpatient|stays?\\b"
+    ]
+   },
+   "grain": {
+    "entity": "patient",
+    "key": "patient_id",
+    "table": "patient"
+   },
+   "population": {
+    "summary": "All roster patients."
+   },
+   "denominator": {
+    "summary": "None (patient count or list)."
+   },
+   "numerator": {
+    "summary": "Patients with >= 2 distinct ED encounter_ids with event_date in the window."
+   },
+   "time_anchor": {
+    "field": "visit.event_date",
+    "mode": "trailing",
+    "months": 12,
+    "default": "trailing"
+   },
+   "value_sets": {
+    "ed_visit": {
+     "dimension": "visit.type",
+     "concept": "emergency_visit",
+     "members": [
+      "emergency",
+      "ED",
+      "ED stroke alert"
+     ],
+     "exclude": [
+      "urgent_care",
+      "urgentcare"
+     ],
+     "provenance": "definitions.json emergency_visit"
+    }
+   },
+   "unit": "patients",
+   "expected_range": [
+    0,
+    1000000
+   ],
+   "versioning": {
+    "rule": "latest_version_table",
+    "stream": "encounters",
+    "key": "encounter_id"
+   },
+   "output": {
+    "returns": "count"
+   },
+   "sql_template": "SELECT count(*) AS patients FROM (SELECT patient_id FROM visit WHERE type_concept = 'emergency_visit' AND event_date BETWEEN '{window_start}' AND '{as_of}' GROUP BY patient_id HAVING count(DISTINCT encounter_id) >= 2)"
+  },
+  {
+   "id": "ed_admit_obs_share",
+   "version": 1,
+   "name": "Share of ED visits ending in admission or observation",
+   "status": "cited",
+   "definitions": [
+    "emergency_visit",
+    "inpatient_admission"
+   ],
+   "summary": "Percent of completed ED encounters dated in the period whose ED disposition is an inpatient admission or observation placement; denominator = distinct completed ED encounters (disposition known).",
+   "match": {
+    "all": [
+     "\\b(?:ed|er|emergency)\\b",
+     "admi|\\bobs\\b|observation|hospitali"
+    ],
+    "any": [
+     "share|percent|%|rate|proportion|what fraction|how often"
+    ],
+    "none": [
+     "per 1,?000",
+     "follow-?up|within \\d+ days after",
+     "readmi",
+     "urgent care"
+    ]
+   },
+   "grain": {
+    "entity": "visit",
+    "key": "encounter_id",
+    "table": "visit"
+   },
+   "population": {
+    "summary": "All roster patients."
+   },
+   "denominator": {
+    "summary": "Distinct ED encounter_ids whose latest version is completed (carries the disposition), dated in the period."
+   },
+   "numerator": {
+    "summary": "Denominator encounters with disposition admitted, inpatient_admission, observation, hospital_observation or observation_for_mobility."
+   },
+   "time_anchor": {
+    "field": "visit.event_date",
+    "mode": "period",
+    "default": "as_of_year"
+   },
+   "value_sets": {
+    "ed_visit": {
+     "dimension": "visit.type",
+     "concept": "emergency_visit",
+     "members": [
+      "emergency",
+      "ED",
+      "ED stroke alert"
+     ],
+     "exclude": [
+      "urgent_care",
+      "urgentcare"
+     ],
+     "provenance": "definitions.json emergency_visit"
+    },
+    "admit_obs_disposition": {
+     "dimension": "visit.disposition",
+     "required": true,
+     "members": [
+      "admitted",
+      "inpatient_admission",
+      "observation",
+      "hospital_observation",
+      "observation_for_mobility"
+     ],
+     "exclude": [
+      "home",
+      "home_with_followup",
+      "home_with_guardian"
+     ],
+     "provenance": "received encounters.disposition vocabulary; admission/observation dispositions per definitions.json inpatient_admission (AHU counts observation)"
+    }
+   },
+   "checks": [
+    {
+     "rule": "ML-SOURCE",
+     "forbids": "stream\\s*=\\s*'adt'|stream\\s+in\\s*\\([^)]*'adt'",
+     "why": "the ED visit's outcome is the disposition on its completed encounter version; ADT linkage events describe a different (downstream-stay) reading"
+    }
+   ],
+   "unit": "percent",
+   "expected_range": [
+    0,
+    100
+   ],
+   "versioning": {
+    "rule": "latest_version_table",
+    "stream": "encounters",
+    "key": "encounter_id"
+   },
+   "output": {
+    "returns": "value"
+   },
+   "variants": {
+    "linked_conversion": {
+     "when": "conver|turned into|went on to|led to an? (?:admission|stay)|resulted in a (?:hospital )?stay",
+     "summary": "ED-to-hospital conversion: ED encounter linked to a downstream inpatient/observation stay (referring/transferred-from ids or ADT transfer_to_observation).",
+     "drop_value_sets": [
+      "admit_obs_disposition"
+     ],
+     "drop_checks": [
+      "ML-SOURCE"
+     ],
+     "sql_template": "SELECT round(100.0 * count(DISTINCT CASE WHEN EXISTS (SELECT 1 FROM stay s WHERE s.patient_id = v.patient_id AND s.admit_date BETWEEN v.event_date AND date(v.event_date, '+1 day')) THEN v.encounter_id END) / count(DISTINCT v.encounter_id), 1) AS pct_converted FROM visit v WHERE v.type_concept = 'emergency_visit' AND v.event_date BETWEEN '{period_start}' AND '{period_end}'"
+    }
+   },
+   "sql_template": "SELECT round(100.0 * sum(disposition IN ('admitted','inpatient_admission','observation','hospital_observation','observation_for_mobility')) / count(*), 1) AS pct_admit_or_obs FROM visit WHERE type_concept = 'emergency_visit' AND status = 'completed' AND event_date BETWEEN '{period_start}' AND '{period_end}'"
+  },
+  {
+   "id": "pcp_visit_gap_12m",
+   "version": 1,
+   "name": "Patients without a primary care visit in the trailing 12 months",
+   "status": "cited",
+   "definitions": [
+    "primary_care_visit"
+   ],
+   "summary": "Roster patients with no in-person primary care encounter (primary care, office, wellness, pediatric office, ambulatory, annual physical) dated in the trailing 12 months ending at the as-of date (inclusive, 365 days). Telephone/virtual, specialty, urgent care and ED contacts do not count.",
+   "match": {
+    "all": [
+     "primary care|\\bpcp\\b|wellness|office visit",
+     "haven'?t|hasn'?t|have not|has not|no (?:primary|pcp|office|in-person|visit)|without|not (?:been )?seen|gone|lapsed"
+    ],
+    "any": [
+     "12 months|year|twelve months"
+    ],
+    "none": [
+     "attributed",
+     "per 1,?000"
+    ]
+   },
+   "grain": {
+    "entity": "patient",
+    "key": "patient_id",
+    "table": "patient"
+   },
+   "population": {
+    "summary": "All roster patients."
+   },
+   "denominator": {
+    "summary": "Roster patients (count of those without a visit)."
+   },
+   "numerator": {
+    "summary": "Patients with no qualifying visit in the window."
+   },
+   "time_anchor": {
+    "field": "visit.event_date",
+    "mode": "trailing",
+    "months": 12,
+    "default": "trailing"
+   },
+   "value_sets": {
+    "pcp_visit": {
+     "dimension": "visit.type",
+     "concept": "primary_care_visit",
+     "members": [
+      "primary_care",
+      "office",
+      "Office visit",
+      "pediatric_office",
+      "wellness",
+      "Annual physical",
+      "ambulatory",
+      "PCP",
+      "Geri primary care"
+     ],
+     "exclude": [
+      "telephone",
+      "virtual",
+      "urgent_care",
+      "urgentcare",
+      "emergency",
+      "specialty_followup",
+      "specialist_office"
+     ],
+     "provenance": "definitions.json primary_care_visit (agere_default: primary care, office, wellness, pediatric office and ambulatory types)"
+    }
+   },
+   "unit": "patients",
+   "expected_range": [
+    0,
+    1000000
+   ],
+   "versioning": {
+    "rule": "latest_version_table",
+    "stream": "encounters",
+    "key": "encounter_id"
+   },
+   "output": {
+    "returns": "count"
+   },
+   "sql_template": "SELECT count(*) AS patients FROM patient p WHERE NOT EXISTS (SELECT 1 FROM visit v WHERE v.patient_id = p.patient_id AND v.type_concept = 'primary_care_visit' AND v.in_person = 1 AND v.event_date BETWEEN '{window_start}' AND '{as_of}')"
+  },
+  {
+   "id": "attributed_pcp_visit_gap_12m",
+   "version": 1,
+   "name": "Attributed patients without an in-person primary care visit at an attributed practice, trailing 12 months",
+   "status": "cited",
+   "definitions": [
+    "primary_care_visit"
+   ],
+   "summary": "Attributed patients (latest assigned primary-care relationship) with no in-person primary care encounter held at one of our practices (visit.is_practice = 1) in the trailing 12 months ending at the as-of date (inclusive, 365 days).",
+   "match": {
+    "all": [
+     "attributed",
+     "primary care|\\bpcp\\b|office",
+     "haven'?t|hasn'?t|have not|has not|no (?:primary|pcp|office|in-person|visit)|without|not (?:been )?seen"
+    ],
+    "none": [
+     "per 1,?000"
+    ]
+   },
+   "grain": {
+    "entity": "patient",
+    "key": "patient_id",
+    "table": "patient"
+   },
+   "population": {
+    "summary": "Attributed patients: care_team_relationships role primary_care/pediatric_primary_care, status assigned (patient.pcp_practice_id).",
+    "attribution": {
+     "requires": "pcp_practice_id|pcp_clinician_id|care_team_relationships",
+     "why": "attribution is the assigned primary-care relationship"
+    }
+   },
+   "denominator": {
+    "summary": "Attributed patients."
+   },
+   "numerator": {
+    "summary": "Attributed patients with no qualifying practice visit in the window."
+   },
+   "time_anchor": {
+    "field": "visit.event_date",
+    "mode": "trailing",
+    "months": 12,
+    "default": "trailing"
+   },
+   "value_sets": {
+    "pcp_visit": {
+     "dimension": "visit.type",
+     "concept": "primary_care_visit",
+     "members": [
+      "primary_care",
+      "office",
+      "Office visit",
+      "pediatric_office",
+      "wellness",
+      "Annual physical",
+      "ambulatory",
+      "PCP",
+      "Geri primary care"
+     ],
+     "exclude": [
+      "telephone",
+      "virtual",
+      "urgent_care",
+      "urgentcare",
+      "emergency",
+      "specialty_followup",
+      "specialist_office"
+     ],
+     "qualifiers": [
+      {
+       "requires": "is_practice\\s*=\\s*1|organization_id\\s+like\\s+'[^']*practice",
+       "why": "only visits held at our practices count for attributed primary care (outside dental/optometry/specialty sites do not)"
+      }
+     ],
+     "provenance": "definitions.json primary_care_visit; attribution convention: visits at the attributed network's practices"
+    }
+   },
+   "unit": "patients",
+   "expected_range": [
+    0,
+    1000000
+   ],
+   "versioning": {
+    "rule": "latest_version_table",
+    "stream": "encounters",
+    "key": "encounter_id"
+   },
+   "output": {
+    "returns": "count"
+   },
+   "sql_template": "SELECT count(*) AS patients FROM patient p WHERE p.pcp_practice_id IS NOT NULL AND NOT EXISTS (SELECT 1 FROM visit v WHERE v.patient_id = p.patient_id AND v.type_concept = 'primary_care_visit' AND v.in_person = 1 AND v.is_practice = 1 AND v.event_date BETWEEN '{window_start}' AND '{as_of}')"
+  },
+  {
+   "id": "pcp_visits_per_1000_attributed",
+   "version": 1,
+   "name": "In-person primary care visits per 1,000 attributed patients, by attributed practice",
+   "status": "cited",
+   "definitions": [
+    "primary_care_visit",
+    "utilization_per_1000"
+   ],
+   "summary": "By attributed practice: distinct in-person primary care encounters held at our practices in the period, for patients attributed to that practice, per 1,000 attributed patients (headcount).",
+   "match": {
+    "all": [
+     "primary care|\\bpcp\\b|office visits?",
+     "per (?:1,?000|thousand)"
+    ]
+   },
+   "grain": {
+    "entity": "visit",
+    "key": "encounter_id",
+    "table": "visit"
+   },
+   "population": {
+    "summary": "Attributed patients grouped by patient.pcp_practice_id.",
+    "attribution": {
+     "requires": "pcp_practice_id|care_team_relationships",
+     "why": "attribution is the assigned primary-care relationship's practice"
+    }
+   },
+   "denominator": {
+    "summary": "Patients attributed to the practice (headcount)."
+   },
+   "numerator": {
+    "summary": "Distinct qualifying encounters of those patients in the period (counted for the attributed practice even when seen at another of our practices)."
+   },
+   "time_anchor": {
+    "field": "visit.event_date",
+    "mode": "period",
+    "default": "as_of_year"
+   },
+   "value_sets": {
+    "pcp_visit": {
+     "dimension": "visit.type",
+     "concept": "primary_care_visit",
+     "members": [
+      "primary_care",
+      "office",
+      "Office visit",
+      "pediatric_office",
+      "wellness",
+      "Annual physical",
+      "ambulatory",
+      "PCP",
+      "Geri primary care"
+     ],
+     "exclude": [
+      "telephone",
+      "virtual",
+      "urgent_care",
+      "urgentcare",
+      "emergency",
+      "specialty_followup",
+      "specialist_office"
+     ],
+     "qualifiers": [
+      {
+       "requires": "is_practice\\s*=\\s*1|organization_id\\s+like\\s+'[^']*practice",
+       "why": "only visits held at our practices count (outside specialty/dental/optometry sites do not)"
+      }
+     ],
+     "provenance": "definitions.json primary_care_visit"
+    }
+   },
+   "unit": "per 1,000 attributed patients",
+   "expected_range": [
+    0,
+    20000
+   ],
+   "versioning": {
+    "rule": "latest_version_table",
+    "stream": "encounters",
+    "key": "encounter_id"
+   },
+   "output": {
+    "returns": "table",
+    "columns": [
+     "practice",
+     "attributed_patients",
+     "visits",
+     "per_1000"
+    ]
+   },
+   "sql_template": "SELECT p.pcp_practice_id AS practice, count(DISTINCT p.patient_id) AS attributed_patients, count(DISTINCT v.encounter_id) AS visits, round(1000.0 * count(DISTINCT v.encounter_id) / count(DISTINCT p.patient_id), 1) AS per_1000 FROM patient p LEFT JOIN visit v ON v.patient_id = p.patient_id AND v.type_concept = 'primary_care_visit' AND v.in_person = 1 AND v.is_practice = 1 AND v.event_date BETWEEN '{period_start}' AND '{period_end}' WHERE p.pcp_practice_id IS NOT NULL GROUP BY p.pcp_practice_id ORDER BY p.pcp_practice_id"
+  },
+  {
+   "id": "inpatient_admissions_per_1000",
+   "version": 1,
+   "name": "Acute inpatient stays per 1,000 member-years",
+   "status": "cited",
+   "definitions": [
+    "inpatient_admission",
+    "utilization_per_1000"
+   ],
+   "summary": "Distinct inpatient stays (stay.type = 'inpatient', collapsed by admit day and overlap) admitted in the period per 1,000 roster member-years.",
+   "match": {
+    "all": [
+     "admi|inpatient|hospitali",
+     "per (?:1,?000|thousand)"
+    ],
+    "none": [
+     "\\b(?:ed|er|emergency)\\b"
+    ]
+   },
+   "grain": {
+    "entity": "stay",
+    "key": "patient_id+admit_date",
+    "table": "stay"
+   },
+   "population": {
+    "summary": "Roster patients; member-years from roster headcount x period length."
+   },
+   "denominator": {
+    "summary": "Roster member-years / 1,000."
+   },
+   "numerator": {
+    "summary": "Inpatient stays with admit_date in the period."
+   },
+   "time_anchor": {
+    "field": "stay.admit_date",
+    "mode": "period",
+    "default": "as_of_year"
+   },
+   "value_sets": {},
+   "unit": "per 1,000 member-years",
+   "expected_range": [
+    0,
+    2000
+   ],
+   "versioning": {
+    "rule": "latest_version_table",
+    "stream": "encounters",
+    "key": "encounter_id"
+   },
+   "output": {
+    "returns": "value"
+   },
+   "sql_template": "SELECT round(1000.0 * (SELECT count(*) FROM stay WHERE type = 'inpatient' AND admit_date BETWEEN '{period_start}' AND '{period_end}') / ((SELECT count(*) FROM patient) * (julianday('{period_end}') - julianday('{period_start}') + 1) / 365.25), 1) AS admits_per_1000_member_years"
+  },
+  {
+   "id": "observation_stays",
+   "version": 1,
+   "name": "Observation stays",
+   "status": "cited",
+   "definitions": [
+    "inpatient_admission"
+   ],
+   "summary": "Distinct hospital observation stays (stay.type = 'observation'; encounter and ADT versions collapsed) admitted in the period.",
+   "match": {
+    "all": [
+     "observation stays?|obs stays?"
+    ],
+    "any": [
+     "how many|count|number"
+    ],
+    "none": [
+     "hours|length|average|avg|mean|per 1,?000|followed by|readmi"
+    ]
+   },
+   "grain": {
+    "entity": "stay",
+    "key": "patient_id+admit_date",
+    "table": "stay"
+   },
+   "population": {
+    "summary": "All roster patients."
+   },
+   "denominator": {
+    "summary": "None (count)."
+   },
+   "numerator": {
+    "summary": "Observation stays with admit_date in the period."
+   },
+   "time_anchor": {
+    "field": "stay.admit_date",
+    "mode": "period",
+    "default": "as_of_year"
+   },
+   "value_sets": {},
+   "unit": "stays",
+   "expected_range": [
+    0,
+    1000000
+   ],
+   "versioning": {
+    "rule": "distinct_key",
+    "stream": "encounters",
+    "key": "encounter_id"
+   },
+   "output": {
+    "returns": "count"
+   },
+   "sql_template": "SELECT count(*) AS observation_stays FROM stay WHERE type = 'observation' AND admit_date BETWEEN '{period_start}' AND '{period_end}'"
+  },
+  {
+   "id": "average_length_of_stay",
+   "version": 1,
+   "name": "Average inpatient length of stay (days)",
+   "status": "cited",
+   "definitions": [
+    "inpatient_admission"
+   ],
+   "summary": "Mean stay.los_days of inpatient stays with a received discharge (discharge_known = 1), anchored on admit_date in the period; stays with unknown discharge are excluded, never counted as 0 days.",
+   "match": {
+    "all": [
+     "length of stay|\\blos\\b|days in (?:the )?hospital"
+    ],
+    "none": [
+     "observation|\\bobs\\b|hours"
+    ]
+   },
+   "grain": {
+    "entity": "stay",
+    "key": "patient_id+admit_date",
+    "table": "stay"
+   },
+   "population": {
+    "summary": "Inpatient stays with a known discharge."
+   },
+   "denominator": {
+    "summary": "Inpatient stays with los_days not null."
+   },
+   "numerator": {
+    "summary": "Sum of los_days."
+   },
+   "time_anchor": {
+    "field": "stay.admit_date",
+    "mode": "period",
+    "default": "as_of_year"
+   },
+   "value_sets": {},
+   "checks": [
+    {
+     "rule": "ML-GRAIN",
+     "requires": "los_days|discharge_date",
+     "why": "length of stay comes from the collapsed stay (stay.los_days), not encounter rows"
+    }
+   ],
+   "unit": "days",
+   "expected_range": [
+    0,
+    120
+   ],
+   "versioning": {
+    "rule": "distinct_key",
+    "stream": "encounters",
+    "key": "encounter_id"
+   },
+   "output": {
+    "returns": "value"
+   },
+   "sql_template": "SELECT round(avg(los_days), 2) AS avg_los_days FROM stay WHERE type = 'inpatient' AND los_days IS NOT NULL AND admit_date BETWEEN '{period_start}' AND '{period_end}'"
+  },
+  {
+   "id": "observation_stay_hours",
+   "version": 1,
+   "name": "Average observation stay length (hours)",
+   "status": "internal",
+   "internal_reason": "Operational timing metric; no published standard fixes the clock (start_time to end_time of the observation encounter is the Agere convention).",
+   "summary": "Mean hours from start_time to end_time of observation encounters (one per encounter_id) dated in the period; encounters without both times are excluded.",
+   "match": {
+    "all": [
+     "observation|\\bobs\\b",
+     "hours?"
+    ],
+    "any": [
+     "average|avg|mean|median|how long|length"
+    ]
+   },
+   "grain": {
+    "entity": "visit",
+    "key": "encounter_id",
+    "table": "visit"
+   },
+   "population": {
+    "summary": "Observation encounters with start and end times."
+   },
+   "denominator": {
+    "summary": "Observation encounters with both times."
+   },
+   "numerator": {
+    "summary": "Sum of (end_time - start_time) in hours."
+   },
+   "time_anchor": {
+    "field": "visit.event_date",
+    "mode": "period",
+    "default": "as_of_year"
+   },
+   "value_sets": {},
+   "checks": [
+    {
+     "rule": "ML-ANCHOR",
+     "requires": "start_time|end_time|\\*\\s*24",
+     "why": "hours need the encounter clock times (start_time/end_time), not day counts"
+    }
+   ],
+   "unit": "hours",
+   "expected_range": [
+    0,
+    240
+   ],
+   "versioning": {
+    "rule": "latest_version_table",
+    "stream": "encounters",
+    "key": "encounter_id"
+   },
+   "output": {
+    "returns": "value"
+   },
+   "sql_template": "SELECT round(avg((julianday(end_time) - julianday(start_time)) * 24), 1) AS avg_obs_hours FROM visit WHERE type_concept = 'observation_stay' AND start_time IS NOT NULL AND end_time IS NOT NULL AND event_date BETWEEN '{period_start}' AND '{period_end}'"
+  },
+  {
+   "id": "readmission_30d",
+   "version": 1,
+   "name": "30-day all-cause readmission rate",
+   "status": "cited",
+   "definitions": [
+    "readmission_30d"
+   ],
+   "measures": [
+    "pcr_readmissions"
+   ],
+   "summary": "Percent of hospital stays discharged in the period followed by a new stay starting within 30 days of discharge (all-cause; planned readmissions not excluded).",
+   "match": {
+    "all": [
+     "readmi"
+    ],
+    "any": [
+     "rate|percent|%|share|how many|count"
+    ]
+   },
+   "grain": {
+    "entity": "stay",
+    "key": "patient_id+admit_date",
+    "table": "stay"
+   },
+   "population": {
+    "summary": "Stays with a known discharge in the period."
+   },
+   "denominator": {
+    "summary": "Stays with discharge_date in the period."
+   },
+   "numerator": {
+    "summary": "Denominator stays with readmitted_30d = 1."
+   },
+   "time_anchor": {
+    "field": "stay.discharge_date",
+    "mode": "period",
+    "default": "as_of_year"
+   },
+   "value_sets": {},
+   "unit": "percent",
+   "expected_range": [
+    0,
+    100
+   ],
+   "versioning": {
+    "rule": "distinct_key",
+    "stream": "encounters",
+    "key": "encounter_id"
+   },
+   "output": {
+    "returns": "value"
+   },
+   "variants": {
+    "hedis_pcr": {
+     "when": "\\bpcr\\b|hedis|planned",
+     "summary": "Exclude planned readmissions and pregnancy/perinatal index stays (needs procedure/diagnosis detail)."
+    }
+   },
+   "sql_template": "SELECT round(100.0 * sum(readmitted_30d) / count(*), 1) AS readmission_rate FROM stay WHERE discharge_date BETWEEN '{period_start}' AND '{period_end}'"
+  },
+  {
+   "id": "post_discharge_followup_7d",
+   "version": 1,
+   "name": "Outpatient follow-up within 7 days of hospital discharge",
+   "status": "cited",
+   "definitions": [
+    "inpatient_admission",
+    "primary_care_visit"
+   ],
+   "measures": [
+    "trc_patient_engagement"
+   ],
+   "summary": "Percent of hospital discharges (ADT discharge events of inpatient/observation encounters, each event once) whose patient has an in-person outpatient visit (primary care types or specialist office/follow-up) 1-7 days after the discharge date; same-day, telephone/virtual, urgent care, ED and home-health contacts do not count. Discharge date = the ADT discharge event's local business date (stay.discharge_date is the UTC date of the discharge time, one day later for evening discharges). Discharges in the trailing 12 months, ending 7 days before the as-of date so every follow-up window is fully observed.",
+   "match": {
+    "all": [
+     "discharg",
+     "follow|outpatient visit|seen|visit within"
+    ],
+    "any": [
+     "7 days|seven days|7-day|within a week"
+    ],
+    "none": [
+     "\\b(?:ed|er|emergency) (?:visit|discharge)"
+    ]
+   },
+   "grain": {
+    "entity": "discharge",
+    "key": "adt record_id",
+    "table": "record"
+   },
+   "population": {
+    "summary": "Inpatient and observation encounters with an ADT discharge event."
+   },
+   "denominator": {
+    "summary": "ADT discharge events (inpatient/observation encounters) dated from the window start through as-of minus 7 days."
+   },
+   "numerator": {
+    "summary": "Denominator discharges with a qualifying visit 1-7 days after discharge."
+   },
+   "time_anchor": {
+    "field": "adt.event_date",
+    "mode": "trailing",
+    "months": 12,
+    "default": "trailing",
+    "forbid_fields": [
+     "admit_date"
+    ],
+    "followup_days": {
+     "min": [
+      1
+     ],
+     "max": 7
+    },
+    "index_end_offset_days": 7
+   },
+   "value_sets": {
+    "followup_visit": {
+     "dimension": "visit.type",
+     "concept": "primary_care_visit",
+     "members": [
+      "primary_care",
+      "office",
+      "Office visit",
+      "pediatric_office",
+      "wellness",
+      "Annual physical",
+      "ambulatory",
+      "PCP",
+      "Geri primary care",
+      "specialty_followup",
+      "specialist_office"
+     ],
+     "exclude": [
+      "telephone",
+      "virtual",
+      "urgent_care",
+      "urgentcare",
+      "emergency",
+      "home_health"
+     ],
+     "question_overrides": "phone|telephone|virtual|telehealth|urgent care",
+     "provenance": "definitions.json primary_care_visit + specialist office visits; HEDIS-style in-person follow-up"
+    }
+   },
+   "unit": "percent",
+   "expected_range": [
+    0,
+    100
+   ],
+   "versioning": {
+    "rule": "distinct_key",
+    "stream": "encounters",
+    "key": "encounter_id"
+   },
+   "output": {
+    "returns": "value"
+   },
+   "sql_template": "WITH dc AS (SELECT a.record_id, a.patient_id, a.event_date AS discharge_day FROM record a JOIN visit e ON e.encounter_id = json_extract(a.payload,'$.encounter_id') WHERE a.stream = 'adt' AND json_extract(a.payload,'$.event') = 'discharge' AND e.type_concept IN ('inpatient_admission','observation_stay') AND a.event_date BETWEEN '{window_start}' AND '{index_end}') SELECT round(100.0 * sum(EXISTS (SELECT 1 FROM visit v WHERE v.patient_id = dc.patient_id AND v.in_person = 1 AND v.type_concept IN ('primary_care_visit','specialist_visit') AND julianday(v.event_date) - julianday(dc.discharge_day) BETWEEN 1 AND 7)) / count(*), 1) AS pct_followup_7d FROM dc",
+   "checks": [
+    {
+     "rule": "ML-ANCHOR",
+     "forbids": "\\bdischarge_date\\b",
+     "why": "the discharge date is the ADT discharge event date (local business date); stay.discharge_date is the UTC date of the discharge time and runs one day late for evening discharges, which shifts the 1-7 day follow-up window"
+    }
+   ]
+  },
+  {
+   "id": "ed_followup_7d",
+   "version": 1,
+   "name": "Follow-up within 7 days of an ED visit",
+   "status": "cited",
+   "definitions": [
+    "follow_up_after_ed",
+    "emergency_visit"
+   ],
+   "measures": [
+    "fmc_ed_followup"
+   ],
+   "summary": "Percent of distinct ED encounters in the period followed by a primary care, specialist or telehealth contact on the ED date or within 7 days after (HEDIS FMC 8-day window; 1-7 days when the question says 'after').",
+   "match": {
+    "all": [
+     "\\b(?:ed|er|emergency)\\b",
+     "follow|touch|seen|visit within|contact"
+    ],
+    "any": [
+     "7 days|seven days|7-day|within a week"
+    ],
+    "none": [
+     "discharg"
+    ]
+   },
+   "grain": {
+    "entity": "visit",
+    "key": "encounter_id",
+    "table": "visit"
+   },
+   "population": {
+    "summary": "All roster patients' ED encounters."
+   },
+   "denominator": {
+    "summary": "Distinct ED encounter_ids dated in the period."
+   },
+   "numerator": {
+    "summary": "ED encounters with a qualifying follow-up contact 0-7 days later."
+   },
+   "time_anchor": {
+    "field": "visit.event_date",
+    "mode": "period",
+    "default": "as_of_year",
+    "followup_days": {
+     "min": [
+      0,
+      1
+     ],
+     "max": 7
+    }
+   },
+   "value_sets": {
+    "ed_visit": {
+     "dimension": "visit.type",
+     "concept": "emergency_visit",
+     "members": [
+      "emergency",
+      "ED",
+      "ED stroke alert"
+     ],
+     "provenance": "definitions.json emergency_visit"
+    },
+    "followup_contact": {
+     "dimension": "visit.type",
+     "members": [
+      "primary_care",
+      "office",
+      "Office visit",
+      "pediatric_office",
+      "wellness",
+      "Annual physical",
+      "ambulatory",
+      "PCP",
+      "Geri primary care",
+      "specialty_followup",
+      "specialist_office",
+      "telephone",
+      "virtual"
+     ],
+     "exclude": [
+      "urgent_care",
+      "urgentcare"
+     ],
+     "question_overrides": "phone|telephone|office|pcp|specialist|in-person|in person",
+     "provenance": "definitions.json follow_up_after_ed (outpatient, telehealth, telephone count)"
+    }
+   },
+   "unit": "percent",
+   "expected_range": [
+    0,
+    100
+   ],
+   "versioning": {
+    "rule": "latest_version_table",
+    "stream": "encounters",
+    "key": "encounter_id"
+   },
+   "output": {
+    "returns": "value"
+   },
+   "sql_template": "SELECT round(100.0 * count(DISTINCT CASE WHEN EXISTS (SELECT 1 FROM visit b WHERE b.patient_id = e.patient_id AND b.encounter_id <> e.encounter_id AND b.type_concept IN ('primary_care_visit','specialist_visit','telehealth_contact') AND julianday(b.event_date) - julianday(e.event_date) BETWEEN 0 AND 7) THEN e.encounter_id END) / count(DISTINCT e.encounter_id), 1) AS pct_followup_7d FROM visit e WHERE e.type_concept = 'emergency_visit' AND e.event_date BETWEEN '{period_start}' AND '{period_end}'"
+  }
+ ]
+}

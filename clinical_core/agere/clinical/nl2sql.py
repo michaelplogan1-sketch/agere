@@ -509,20 +509,29 @@ def _verified_answer(path, question, as_of, primary, second, judge, decider=None
     shots = '\n\n'.join(f'Q: {q}\n```sql\n{sq}\n```' for q, sq in ranked)
     system = RULES + VERIFY_RULES + f'\nThe data snapshot is as of {as_of}.'
     user = f'{schema}\n\nEXAMPLES\n{shots}\n\nQ: {question}'
+    metric_pin, metric_receipt = metric_context(question, as_of)  # governed metric definition + canonical SQL (metrics.py)
+    if metric_pin: user = user.replace('\n\nEXAMPLES\n', f'\n\n{metric_pin}\n\nEXAMPLES\n', 1)
     import sqlite3
     db = sqlite3.connect(f'file:{sql_query.semantic_layer.ensure(path)}?mode=ro', uri=True)
     try: roster = db.execute('SELECT count(*) FROM patient').fetchone()[0]
     finally: db.close()
     receipt = {'version': VERSION + '+verified', 'streams_retrieved': streams, 'attempts': [], 'agreement': None}
+    if metric_receipt: receipt['metric'] = metric_receipt
 
-    def check(sql):
-        """Execute and verify; returns (params, result, warnings) or raises ValueError with the reasons."""
+    def check(sql, final=False):
+        """Execute and verify; returns (params, result, warnings) or raises ValueError with the reasons.
+        final: the query is already a repair; metric-layer findings are then delivered as warnings (heal, never block)."""
+        sql, healed = verify.metric_heal(question, sql, as_of)  # mechanical metric repairs (trailing-window start)
         problems = verify.lint(profile, sql)
         if problems: raise ValueError('lint: ' + '; '.join(problems))
+        metric_findings = verify.metric_lint(question, sql, as_of, path)
+        if metric_findings and verify.metric_mode() == 'repair' and not final:
+            raise ValueError('metric: ' + '; '.join(metric_findings))
         probe = sql_query.execute(path, {'query': sql, 'returns': 'table'})
         _plausible(path, question, sql, probe)
         fatal, warn = verify.sanity(question, sql, probe, roster)
         if fatal: raise ValueError('sanity: ' + '; '.join(fatal))
+        warn = list(warn) + [f"metric healed: {h['message']}" for h in healed] + metric_findings
         returns = returns_for(question, probe['columns'], probe.get('rows'))
         wants_list = re.search(r'\b(?:which|who|list|names?|ids?|pull|roster of|registry|worklist|outreach list)\b', question.lower()) and \
             not re.search(r'\b(?:how many|count|number of|by|per|breakdown|break down|what (?:%|percent|share))\b', question.lower())
@@ -555,7 +564,7 @@ def _verified_answer(path, question, as_of, primary, second, judge, decider=None
                                         'Write a corrected query using only streams, fields and values shown above.')
             sql = _extract_sql(text); entry = {'role': label, 'repair': True, 'sql': sql, **stats}
             try:
-                params, result, warn = check(sql)
+                params, result, warn = check(sql, final=True)
                 entry['warnings'] = warn
                 receipt['attempts'].append(entry)
                 return params, result, warn
@@ -704,6 +713,20 @@ def _independent_ladder(question, receipt, attempt, check, primary, second, judg
     raise ValueError('Verified SQL ladder declined: ' + (notes or 'no candidate passed verification')[:300])
 
 
+def metric_context(question, as_of):
+    """(prompt pin, receipt) for the governed metric the question matches ('' and None when none applies).
+    Deterministic match rules first, then the local sentence encoder (metrics.resolve(allow_encoder=True))."""
+    if os.environ.get('AGERE_METRIC_PINS', 'on') == 'off': return '', None
+    try:
+        from . import metrics
+        r = metrics.resolve({'question': question, 'as_of': as_of}, allow_encoder=True)
+    except Exception:  # noqa: BLE001 - a missing or invalid metric library never blocks the ladder
+        return '', None
+    if not r: return '', None
+    return metrics.describe(r), {'id': r['id'], 'version': r['version'], 'variant': r.get('variant'), 'matched_by': r['matched_by'],
+                                 'score': r['score'], 'layer': metrics.VERSION}
+
+
 class MissingData(ValueError):
     """A hosted analyst reports that the question needs data the release does not contain."""
 
@@ -785,7 +808,10 @@ def answer(path, question, as_of, model=None):
     shots = '\n\n'.join(f'Q: {q}\n```sql\n{sq}\n```' for q, sq in ranked)
     system = RULES + f'\nThe data snapshot is as of {as_of}.'
     user = f'{schema}\n\nEXAMPLES\n{shots}\n\nQ: {question}'
+    metric_pin, metric_receipt = metric_context(question, as_of)
+    if metric_pin: user = user.replace('\n\nEXAMPLES\n', f'\n\n{metric_pin}\n\nEXAMPLES\n', 1)
     receipt = {'version': VERSION, 'streams_retrieved': streams, 'attempts': [], 'agreement': None}
+    if metric_receipt: receipt['metric'] = metric_receipt
 
     def run(sql):
         probe = sql_query.execute(path, {'query': sql, 'returns': 'table'})

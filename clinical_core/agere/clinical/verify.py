@@ -11,7 +11,7 @@
               and writes the final query, which must pass 1 and 2 again.
 Every verified answer is captured for learning (see learning.py).
 """
-import json, re
+import json, os, re
 
 from . import concepts
 
@@ -99,3 +99,32 @@ def signature(result):
     if 'patient_ids' in result: return ('p', tuple(result['patient_ids']))
     rows = [list(r.values()) if isinstance(r, dict) else list(r) for r in (result.get('rows') or [])]
     return ('t', tuple(sorted((tuple(sorted((json.dumps(norm(v), default=str) for v in r), key=str)) for r in rows), key=str)))
+
+
+# ---- metric layer (metrics.py): grain / time anchor / window / value set / population / versioning ----------
+def metric_mode():
+    """AGERE_METRIC_LINT: 'repair' (default: first findings send the query back for one repair; findings that survive
+    the repair are delivered as warnings - heal, never block), 'warn' (warnings only) or 'off'."""
+    mode = os.environ.get('AGERE_METRIC_LINT', 'repair')
+    return mode if mode in ('repair', 'warn', 'off') else 'repair'
+
+
+def metric_lint(question, sql, as_of=None, source=None):
+    """Where the SQL departs from the governed metric the question resolves to: ['ML-RULE: message', ...]
+    (empty when no metric applies or the query conforms). source: stack path / scalar executor for value-set universes."""
+    if metric_mode() == 'off': return []
+    try:
+        from . import metrics
+        return [f"{f['rule']}: {f['message']}" for f in metrics.lint(question, sql, as_of, source=source)]
+    except Exception:  # noqa: BLE001 - the metric layer never takes the ladder down
+        return []
+
+
+def metric_heal(question, sql, as_of=None):
+    """(sql, repairs): mechanical metric repairs (trailing-window start) applied before lint."""
+    if metric_mode() == 'off': return sql, []
+    try:
+        from . import metrics
+        return metrics.heal(question, sql, as_of)
+    except Exception:  # noqa: BLE001
+        return sql, []
