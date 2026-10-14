@@ -3,7 +3,7 @@
  "domain": "healthcare",
  "derived_from": {
   "module": "clinical_core/agere/clinical/semantic_layer.py",
-  "semantic_layer_version": "semantic-layer/15",
+  "semantic_layer_version": "semantic-layer/16",
   "versioned_streams": {
    "patient_billing_accounts": "account_id",
    "medical_claims": "claim_id",
@@ -29,7 +29,7 @@
  "entities": {
   "patient": {
    "table": "patient",
-   "meaning": "One row per roster patient. age_reported/sex_reported as received; coverage_type/status from latest coverage record; pcp_* = latest assigned primary-care relationship.",
+   "meaning": "One row per roster patient. age_reported/sex_reported as received; coverage_type/status from latest coverage record, else (population-feed members without one) coverage_type = line_of_business of the latest enrollment month and coverage_status active | inactive by whether a span covers the as-of date; coverage_source = coverage_record | enrollment_span (NULL = no coverage received). pcp_* = latest assigned primary-care relationship.",
    "grain": "one row per roster patient",
    "keys": [
     "patient_id"
@@ -191,6 +191,7 @@
    },
    "semantic_layer_columns_derived_elsewhere": [
     "age_latest",
+    "coverage_source",
     "pcp_clinician_id",
     "pcp_practice_id"
    ],
@@ -508,12 +509,14 @@
     }
    },
    "semantic_layer_columns_derived_elsewhere": [
+    "awv",
     "first_available_date",
     "in_person",
     "is_practice",
     "principal_icd10",
     "setting",
-    "type_concept"
+    "type_concept",
+    "wellness_visit_type"
    ],
    "onboarding_target": true
   },
@@ -700,7 +703,7 @@
   },
   "measurement": {
    "table": "measurement",
-   "meaning": "Labs and vitals, one row per (record, concept); concept NULL when unmapped. value/unit as received; value_canonical in unit_canonical when the unit converts (else NULL). Cancelled results have value NULL. concept egfr = BSA-normalised eGFR only (mL/min/1.73m2 or no unit); GFR results reported in another unit (mL/min, measured GFR / clearance) are concept gfr_unnormalized and never count as eGFR. Use only result_current = 1 AND excluded_reason IS NULL rows for values; value_censor marks censored strings (eGFR \">60\" -> 60 with value_censor \">\"); see measurement_quality.",
+   "meaning": "Labs and vitals, one row per (record, concept); concept NULL when unmapped. value/unit as received; value_canonical in unit_canonical when the unit converts (else NULL). Cancelled results have value NULL. concept egfr = BSA-normalised eGFR only (mL/min/1.73m2 or no unit); GFR results reported in another unit (mL/min, measured GFR / clearance) are concept gfr_unnormalized and never count as eGFR. Use only result_current = 1 AND excluded_reason IS NULL rows for values; value_censor marks censored strings (eGFR \">60\" -> 60 with value_censor \">\"); see measurement_quality. Questionnaire totals are measurements too: mood_questionnaires rows (source_table mood_questionnaires, one row per administration, name = instrument) carry concept phq9 (PHQ-9 total 0-27) or phq2 (PHQ-2 total 0-6), value = total in points; event_time orders same-day administrations.",
    "grain": "one row per received lab or vital result",
    "keys": [
     "record_id"
@@ -926,7 +929,7 @@
   },
   "medication": {
    "table": "medication",
-   "meaning": "Every medication mention, one row per (record, drug_class): source_stream and evidence (dispensed, claim, ordered, listed, administered, reported, pharmacy_history, payer_claim = payer pharmacy claim), drug_name as received, status. drug_class from the active ingredient (statin, beta_blocker, hf_evidence_based_beta_blocker, ace_inhibitor, arb, arni, mra, sglt2_inhibitor, glp1_agonist, metformin, insulin, anticoagulant, opioid, ...); NULL when unclassified. drug_class values are exact ids (full list and groups in drug_class_vocabulary): compare with = or IN, never LIKE - '%beta%' also matches short_acting_beta_agonist and '%antihistamine%' matches both generations. Use beta_blocker, first_generation_antihistamine (Beers), second_generation_antihistamine, short_acting_beta_agonist.",
+   "meaning": "Every medication mention, one row per (record, drug_class): source_stream and evidence (dispensed, claim, ordered, listed, administered, reported, pharmacy_history, payer_claim = payer pharmacy claim), drug_name as received, status. drug_class from the active ingredient (statin, beta_blocker, hf_evidence_based_beta_blocker, ace_inhibitor, arb, arni, mra, sglt2_inhibitor, glp1_agonist, metformin, insulin, anticoagulant, opioid, ...); NULL when unclassified. drug_class values are exact ids (full list and groups in drug_class_vocabulary): compare with = or IN, never LIKE - '%beta%' also matches short_acting_beta_agonist and '%antihistamine%' matches both generations. Use beta_blocker, first_generation_antihistamine (Beers), second_generation_antihistamine, short_acting_beta_agonist. picked_up = 1 on fills that left the pharmacy (evidence dispensed | claim | payer_claim with status dispensed | paid | completed, not reversed / returned to stock; prepared-only dispenses never count): use picked_up = 1 for any fill, pickup or dispensing count.",
    "grain": "one row per received medication mention (order, dispense, claim, list, administration, report)",
    "keys": [
     "record_id"
@@ -1094,6 +1097,7 @@
     }
    },
    "semantic_layer_columns_derived_elsewhere": [
+    "picked_up",
     "rxnorm_ingredient",
     "rxnorm_source",
     "source_stream"
@@ -1805,7 +1809,7 @@
   },
   "stay": {
    "table": "stay",
-   "meaning": "Distinct hospital stays (inpatient/observation encounters collapsed by admit day and overlap) with 30-day readmission flag. discharge_date and los_days are NULL when no discharge time was received (discharge_known = 0); never treat those as 0 days. discharge_date is the ADT discharge (A03) date of the stay's encounter when one was received (discharge_date_source = adt), else the date part of the encounter end_time (encounter_end_time_utc); discharge_time_utc keeps the UTC end timestamp. Readmission gaps use discharge_date. stay_source = encounters, or adt | payer_claim for admissions found only in ADT visits or inpatient (TOB 011x) / observation (revenue 0762) payer claims, so admission rates cover claims-only members; readmission flags of a patient with such stays are recomputed over all of the patient's stays.",
+   "meaning": "Distinct hospital stays (inpatient/observation encounters collapsed by admit day and overlap) with 30-day readmission flag. discharge_date and los_days are NULL when no discharge time was received (discharge_known = 0); never treat those as 0 days. discharge_date is the ADT discharge (A03) date of the stay's encounter when one was received (discharge_date_source = adt), else the date part of the encounter end_time (encounter_end_time_utc); discharge_time_utc keeps the UTC end timestamp. Readmission gaps use discharge_date. LOS uses one clock: admit_time_utc = UTC start of the admitting encounter; los_days = midnights between the UTC dates of admit_time_utc and discharge_time_utc, los_days_elapsed = fractional days between the two timestamps (state which one an answer uses); ADT/claims-only stays count local admit to local discharge dates. stay_source = encounters, or adt | payer_claim for admissions found only in ADT visits or inpatient (TOB 011x) / observation (revenue 0762) payer claims, so admission rates cover claims-only members; readmission flags of a patient with such stays are recomputed over all of the patient's stays.",
    "derivation": "Collapsed inpatient/observation stays from visits (aggregate._stays).",
    "columns": {
     "patient_id": "text",
@@ -1818,7 +1822,9 @@
     "discharge_known": "integer",
     "discharge_date_source": "text",
     "discharge_time_utc": "text",
-    "los_days": "integer"
+    "admit_time_utc": "text",
+    "los_days": "integer",
+    "los_days_elapsed": "real"
    },
    "onboarding_target": false
   },
@@ -1907,7 +1913,7 @@
   },
   "appointment": {
    "table": "appointment",
-   "meaning": "One row per appointment_id (appointments arrive as a booked record plus later status records). scheduled_date from the booking; final_status = latest status received; ever_* flags over all versions; kept = arrived or fulfilled.",
+   "meaning": "One row per appointment_id (appointments arrive as a booked record plus later status records). scheduled_date from the latest version carrying a scheduled_date (a reschedule moves it), else the date of slot_start (population-feed bookings send booked_at + slot_start); booked_date = earliest booked version; lead_time_days = scheduled_date - booked_date, NULL when either is unknown. final_status = latest status received; ever_* flags over all versions; kept = any arrived, attended or fulfilled version. outcome = kept | no_show (never kept) | cancelled (never kept or no-show) | rescheduled | scheduled (still booked) | unassigned (unassigned_requires_review) | unknown. No-show rate = no_show / (kept + no_show), or with cancelled in the denominator - state which.",
    "derivation": "Appointment entity from booked + status records (not yet an onboarding target).",
    "columns": {
     "appointment_id": "text",
@@ -1922,7 +1928,9 @@
     "organization_id": "text",
     "clinician_id": "text",
     "purpose": "text",
-    "versions": "integer"
+    "versions": "integer",
+    "lead_time_days": "integer",
+    "outcome": "text"
    },
    "onboarding_target": false
   },
