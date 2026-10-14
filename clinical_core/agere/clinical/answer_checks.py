@@ -24,6 +24,9 @@ Controls (ids are referenced from fmea.json 'controls_added'):
   QC-EMPTY    a count/list question answered with zero or nothing, absence not asked (oracles.empty)         (FM-09)
   QC-READINGS two candidate answers differ by a stated definitional choice: both readings are attached
               (answer['readings']) with one clarifying question (verification_v2.attach_readings) (FM-19)
+  QC-METRIC   the governed metric the question resolves to (metrics.py): answer['computed_as'] states its id/version;
+              warnings where the query departs from its grain, time anchor, window, value set, population or
+              versioning (rules ML-*), or the value leaves its expected range (FM-05/06/07/08/12/14)
 """
 import calendar
 import datetime as dt
@@ -277,6 +280,36 @@ def clock_finding(answer, question):
                     f"check that arrival time is what the question means.")
 
 
+# ---- QC-METRIC: the governed metric the answer was computed as (metrics.py) -----------------------------------
+def metric_findings(answer, question, as_of=None, execute=None):
+    """State the metric id/version the question resolves to (answer['computed_as']) and, on the SQL route, warn where the
+    query departs from it (grain, time anchor, window, value set, population, versioning) or the value leaves the
+    metric's expected range. Heal-not-block: nothing is changed but the annotations."""
+    import os
+    if os.environ.get('AGERE_METRIC_LINT', 'repair') == 'off': return None
+    from . import metrics
+    r = metrics.resolve({'question': question, 'as_of': as_of})
+    if not r: return None
+    query = answer.get('query') if isinstance(answer.get('query'), str) else None
+    found = metrics.lint(question, query, as_of, source=execute, resolution=r) if query else []
+    answer['computed_as'] = {'metric': r['id'], 'version': r['version'], 'variant': r.get('variant'), 'layer': metrics.VERSION,
+                             'definition': r['metric']['summary'], 'conforms': not found if query else None,
+                             'citations': [c['url'] for c in r.get('citations') or []][:3]}
+    _add(answer, 'QC-METRIC', 'FM-05', f"Computed as {metrics.computed_as(r)}", 'info', metric=r['id'], metric_version=r['version'])
+    tag = f"metric {r['id']} v{r['version']}" + (f" ({r['variant']})" if r.get('variant') else '')
+    if tag not in str(answer.get('computed') or ''):  # the headline's "Computed as:" names the governed metric
+        answer['computed'] = (f"{str(answer['computed']).rstrip('.')} [{tag}]" if answer.get('computed')
+                              else metrics.computed_as(r))
+    for f in found:
+        _add(answer, 'QC-METRIC', {'ML-VALUESET': 'FM-06', 'ML-POP': 'FM-05', 'ML-ANCHOR': 'FM-07', 'ML-WINDOW': 'FM-12',
+                                   'ML-VERSION': 'FM-08', 'ML-GRAIN': 'FM-08'}.get(f['rule'], 'FM-05'),
+             f['message'], rule=f['rule'], metric=r['id'], metric_version=r['version'])
+    value = answer.get('value') if answer.get('answer_type') == 'value' else answer.get('count') if answer.get('answer_type') == 'count' else None
+    out_of_range = metrics.check_result(r, value)
+    if out_of_range: _add(answer, 'QC-METRIC', 'FM-14', out_of_range, rule='range', metric=r['id'], metric_version=r['version'])
+    return r
+
+
 def annotate(answer, question, as_of=None, execute=None):
     """Run every control on a finished answer; adds warnings and quality_checks in place and returns the answer.
     execute: optional read-only scalar executor (oracles.readonly_executor) for the partition oracle."""
@@ -314,6 +347,7 @@ def annotate(answer, question, as_of=None, execute=None):
                 if f.get('control') == 'error': continue
                 detail = {k: v for k, v in f.items() if k not in ('control', 'fmea', 'severity', 'message')}
                 _add(answer, f['control'], f['fmea'], f['message'], f.get('severity', 'warning'), **detail)
+        metric_findings(answer, question, as_of, execute)
     except Exception as exc:  # noqa: BLE001 - controls annotate; they must never take an answer down
         answer.setdefault('quality_checks', []).append({'control': 'error', 'fmea': None, 'message': f'{type(exc).__name__}: {exc}'[:200]})
     return answer

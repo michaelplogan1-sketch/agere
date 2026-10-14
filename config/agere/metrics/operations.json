@@ -1,0 +1,301 @@
+{
+ "schema": "agere-metric-file/1",
+ "domain": "operations",
+ "metrics": [
+  {
+   "id": "no_show_rate",
+   "version": 1,
+   "name": "Appointment no-show rate",
+   "status": "cited",
+   "definitions": [
+    "no_show_rate"
+   ],
+   "summary": "No-shows / (kept + no-shows) among distinct appointments scheduled in the period; cancelled and rescheduled appointments are outside the denominator. Statuses resolved per appointment_id across all versions.",
+   "match": {
+    "all": [
+     "no[- ]?shows?|missed appointments?"
+    ],
+    "any": [
+     "rate|percent|%|share|proportion"
+    ]
+   },
+   "grain": {
+    "entity": "appointment",
+    "key": "appointment_id",
+    "table": "appointment"
+   },
+   "population": {
+    "summary": "Appointments scheduled in the period."
+   },
+   "denominator": {
+    "summary": "Distinct appointment_ids that were kept (arrived/fulfilled) or no-show."
+   },
+   "numerator": {
+    "summary": "Denominator appointments with any no_show version."
+   },
+   "time_anchor": {
+    "field": "appointment.scheduled_date",
+    "mode": "period",
+    "default": "as_of_year",
+    "forbid_fields": [
+     "booked_date"
+    ]
+   },
+   "value_sets": {},
+   "unit": "percent",
+   "expected_range": [
+    0,
+    100
+   ],
+   "versioning": {
+    "rule": "distinct_key",
+    "stream": "appointments",
+    "key": "appointment_id"
+   },
+   "output": {
+    "returns": "value"
+   },
+   "variants": {
+    "aamc_vizient": {
+     "when": "late cancel|day[- ]of|same[- ]day cancel|vizient|aamc",
+     "summary": "(no-shows + day-of/day-before cancellations) / (that + completed)."
+    }
+   },
+   "sql_template": "SELECT round(100.0 * sum(ever_no_show) / count(*), 1) AS no_show_rate FROM appointment WHERE scheduled_date BETWEEN '{period_start}' AND '{period_end}' AND (kept = 1 OR ever_no_show = 1)"
+  },
+  {
+   "id": "stale_booked_appointments",
+   "version": 1,
+   "name": "Stale booked appointments",
+   "status": "internal",
+   "internal_reason": "Scheduling data-quality worklist; no published standard.",
+   "summary": "Distinct appointment_ids whose only received status in any version is 'booked' and whose scheduled_date is before the as-of date (statuses can arrive out of order, so the latest-arrival status is not used). Appointments without a scheduled date are excluded.",
+   "match": {
+    "all": [
+     "appointments?",
+     "booked"
+    ],
+    "any": [
+     "passed|past|stale|overdue|already|before today|in the past|still"
+    ]
+   },
+   "grain": {
+    "entity": "appointment",
+    "key": "appointment_id",
+    "table": "record"
+   },
+   "population": {
+    "summary": "Received appointments."
+   },
+   "denominator": {
+    "summary": "None (count)."
+   },
+   "numerator": {
+    "summary": "appointment_ids with no non-booked version and scheduled_date < as-of."
+   },
+   "time_anchor": {
+    "field": "appointment.scheduled_date",
+    "mode": "snapshot",
+    "default": "all"
+   },
+   "value_sets": {},
+   "checks": [
+    {
+     "rule": "ML-VERSION",
+     "forbids": "final_status\\s*=\\s*'booked'|final_status\\s+in\\s*\\(\\s*'booked'\\s*\\)",
+     "why": "final_status is the latest-arriving status; statuses arrive out of order, so 'still booked' means no other status in ANY version"
+    }
+   ],
+   "unit": "appointments",
+   "expected_range": [
+    0,
+    1000000
+   ],
+   "versioning": {
+    "rule": "any_version",
+    "stream": "appointments",
+    "key": "appointment_id"
+   },
+   "output": {
+    "returns": "count"
+   },
+   "sql_template": "SELECT count(*) AS stale_booked FROM (SELECT json_extract(payload,'$.appointment_id') AS appointment_id, max(json_extract(payload,'$.scheduled_date')) AS scheduled_date, sum(json_extract(payload,'$.status') <> 'booked') AS other_statuses FROM record WHERE stream = 'appointments' GROUP BY 1) WHERE other_statuses = 0 AND scheduled_date < '{as_of}'"
+  },
+  {
+   "id": "community_referral_delivery",
+   "version": 1,
+   "name": "Community service referrals sent and delivered, by service",
+   "status": "internal",
+   "internal_reason": "Social-care referral closed-loop metric; Gravity Project / CMS AHC conventions name the concept but fix no counting rule.",
+   "summary": "By service requested: community_service_referrals records (by record_id) and how many have ANY community_service_outcomes record (linked by referral_record_id) with service_delivered = true. Scheduled, waitlisted, declined and unable-to-reach outcomes are not delivered. Clinic-internal referrals are not community referrals.",
+   "match": {
+    "all": [
+     "referr"
+    ],
+    "any": [
+     "community",
+     "deliver",
+     "by service",
+     "sent .* got"
+    ],
+    "none": [
+     "what percent|percent of|share of|told us|screen|problem"
+    ]
+   },
+   "grain": {
+    "entity": "referral",
+    "key": "record_id",
+    "table": "record"
+   },
+   "population": {
+    "summary": "Community service referrals received."
+   },
+   "denominator": {
+    "summary": "Referrals by service."
+   },
+   "numerator": {
+    "summary": "Referrals with a delivered outcome."
+   },
+   "time_anchor": {
+    "field": "record.event_date",
+    "mode": "any_time",
+    "default": "all"
+   },
+   "value_sets": {},
+   "checks": [
+    {
+     "rule": "ML-SOURCE",
+     "requires": "community_service_outcomes",
+     "why": "delivery is recorded on community_service_outcomes (linked by referral_record_id), not on the referral record",
+     "when": "deliver|received|completed|got (?:the )?service|closed"
+    },
+    {
+     "rule": "ML-SOURCE",
+     "forbids": "stream\\s*=\\s*'referrals'",
+     "why": "clinic-internal referrals (referrals stream) are not community referrals"
+    }
+   ],
+   "unit": "referrals",
+   "expected_range": [
+    0,
+    1000000
+   ],
+   "versioning": {
+    "rule": "any_version",
+    "stream": "community_service_outcomes",
+    "key": "referral_record_id"
+   },
+   "output": {
+    "returns": "table",
+    "columns": [
+     "service",
+     "referrals",
+     "delivered"
+    ]
+   },
+   "sql_template": "SELECT json_extract(r.payload,'$.service_requested') AS service, count(*) AS referrals, sum(EXISTS (SELECT 1 FROM record o WHERE o.stream = 'community_service_outcomes' AND json_extract(o.payload,'$.referral_record_id') = r.record_id AND json_extract(o.payload,'$.service_delivered') = 1)) AS delivered FROM record r WHERE r.stream = 'community_service_referrals' GROUP BY 1 ORDER BY 1"
+  },
+  {
+   "id": "duplicate_lab_rows",
+   "version": 1,
+   "name": "Duplicate lab rows",
+   "status": "internal",
+   "internal_reason": "Data-quality metric; no published standard.",
+   "summary": "Among lab rows with a draw time, extra copies sharing patient, test, draw time (event_time) and value: sum over groups of (rows - 1). Rows differing only by record_id are duplicates; same-day draws at different times are not.",
+   "match": {
+    "all": [
+     "duplicat"
+    ],
+    "any": [
+     "labs?\\b|lab rows|results?"
+    ]
+   },
+   "grain": {
+    "entity": "lab_row",
+    "key": "patient_id+test+event_time+value",
+    "table": "measurement"
+   },
+   "population": {
+    "summary": "Lab rows (measurement.source_table = 'labs') with event_time."
+   },
+   "denominator": {
+    "summary": "None (count)."
+   },
+   "numerator": {
+    "summary": "Rows beyond the first in each (patient, test, event_time, value) group."
+   },
+   "time_anchor": {
+    "field": "measurement.event_time",
+    "mode": "any_time",
+    "default": "all",
+    "forbid_fields": [
+     "event_date"
+    ]
+   },
+   "value_sets": {},
+   "unit": "rows",
+   "expected_range": [
+    0,
+    10000000
+   ],
+   "versioning": {
+    "rule": "none"
+   },
+   "output": {
+    "returns": "count"
+   },
+   "sql_template": "SELECT coalesce(sum(n - 1), 0) AS duplicate_lab_rows FROM (SELECT count(*) AS n FROM measurement WHERE source_table = 'labs' AND event_time IS NOT NULL GROUP BY patient_id, name, event_time, value)"
+  },
+  {
+   "id": "food_insecurity_rate",
+   "version": 1,
+   "name": "Food insecurity rate among screened patients",
+   "status": "internal",
+   "internal_reason": "Screening-positive rate over social_need (instruments normalised by Agere); AHC HRSN names the domain but the rate convention is ours.",
+   "summary": "Percent of patients screened for food need (any social_need row with need = 'food') with a positive food screen.",
+   "match": {
+    "all": [
+     "food"
+    ],
+    "any": [
+     "insecur|need|difficult"
+    ],
+    "none": [
+     "referr|deliver"
+    ]
+   },
+   "grain": {
+    "entity": "patient",
+    "key": "patient_id",
+    "table": "social_need"
+   },
+   "population": {
+    "summary": "Patients with a food-need screening answer."
+   },
+   "denominator": {
+    "summary": "Distinct patients screened for food need."
+   },
+   "numerator": {
+    "summary": "Of those, distinct patients with any positive food screen."
+   },
+   "time_anchor": {
+    "field": "social_need.event_date",
+    "mode": "any_time",
+    "default": "all"
+   },
+   "value_sets": {},
+   "unit": "percent",
+   "expected_range": [
+    0,
+    100
+   ],
+   "versioning": {
+    "rule": "none"
+   },
+   "output": {
+    "returns": "value"
+   },
+   "sql_template": "SELECT round(100.0 * count(DISTINCT CASE WHEN positive = 1 THEN patient_id END) / count(DISTINCT patient_id), 1) AS food_insecurity_pct FROM social_need WHERE need = 'food'"
+  }
+ ]
+}

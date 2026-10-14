@@ -1,0 +1,1657 @@
+{
+ "schema": "metric-layer-replay/1",
+ "generated_at": "2026-10-14T02:31:06Z",
+ "seconds": 15.1,
+ "metric_layer": "agere-metric-layer/1",
+ "scope": "latest adjudicated full run of blind sets M, N, O; hosted_verified_sql route; delivered SQL linted against the resolved metric (deterministic match, value-set universes from the live semantic layer, read-only); metric template SQL executed read-only for wrong answers and compared with the saved reference; no model called",
+ "caveat": "in-sample: the metrics behind these failures were authored after inspecting them; false alarms on the 59 right answers and reproduction of the reference are the informative numbers",
+ "metrics": {
+  "total": 60,
+  "templated": 35,
+  "by_domain": {
+   "clinical_quality": 6,
+   "operations": 5,
+   "revenue_cycle": 10,
+   "utilization": 14,
+   "quality_measures": 25
+  },
+  "cited": 43,
+  "internal": 17
+ },
+ "summary": {
+  "wrong": 24,
+  "right": 59,
+  "uncaught_by_v2": 16,
+  "uncaught_resolved_to_metric": 16,
+  "uncaught_flagged_by_metric_lint": 14,
+  "uncaught_template_reproduces_reference": 14,
+  "all_wrong_flagged": 19,
+  "right_resolved_to_metric": 12,
+  "right_false_alarms": 3,
+  "right_false_alarms_lint_after_heal": 0,
+  "right_healed_result_unchanged": 3,
+  "uncaught_flagged_lint_after_heal": 13,
+  "uncaught_healed_to_reference": 1,
+  "caught_after_v2_plus_metric_lint": 22,
+  "flagged_by_rule_on_uncaught": {
+   "ML-WINDOW (healed)": 2,
+   "ML-SOURCE": 3,
+   "ML-VALUESET": 5,
+   "ML-ANCHOR": 3,
+   "ML-VERSION": 3,
+   "ML-WINDOW": 1,
+   "ML-POP": 2
+  },
+  "false_alarm_by_rule": {
+   "ML-WINDOW (healed)": 3
+  }
+ },
+ "items": [
+  {
+   "set": "M",
+   "id": "M03",
+   "label": "right",
+   "question": "For the women's health program: how many women 65 and older have both diabetes and hypertension?",
+   "v2_caught": false,
+   "metric": null,
+   "variant": null,
+   "lint": [],
+   "healed": []
+  },
+  {
+   "set": "M",
+   "id": "M04",
+   "label": "right",
+   "question": "Possible missed diabetes: prediabetes on the problem list, no diabetes diagnosis, but latest A1c at 6.5 or higher. How many?",
+   "v2_caught": false,
+   "metric": null,
+   "variant": null,
+   "lint": [],
+   "healed": []
+  },
+  {
+   "set": "M",
+   "id": "M05",
+   "label": "wrong",
+   "question": "pull resp registry \u2014 asthma or COPD pts (count emphysema + chronic obstructive bronchitis as COPD)",
+   "v2_caught": false,
+   "metric": "respiratory_registry",
+   "variant": null,
+   "healed": [],
+   "lint": [],
+   "template_reproduces_reference": true,
+   "template_result": 124,
+   "reference": 124
+  },
+  {
+   "set": "M",
+   "id": "M06",
+   "label": "right",
+   "question": "How many patients have a potassium above 5.0 on their most recent check?",
+   "v2_caught": false,
+   "metric": null,
+   "variant": null,
+   "lint": [],
+   "healed": []
+  },
+  {
+   "set": "M",
+   "id": "M08",
+   "label": "right",
+   "question": "Lipid clinic screen: men aged 50 to 75 who have ever had an LDL of 190 or more. Count please.",
+   "v2_caught": false,
+   "metric": "ldl_190_ever",
+   "variant": null,
+   "healed": [],
+   "lint": []
+  },
+  {
+   "set": "M",
+   "id": "M09",
+   "label": "right",
+   "question": "BH integration sizing: how many patients have depression, anxiety, PTSD, bipolar, or schizophrenia documented?",
+   "v2_caught": false,
+   "metric": null,
+   "variant": null,
+   "lint": [],
+   "healed": []
+  },
+  {
+   "set": "M",
+   "id": "M10",
+   "label": "right",
+   "question": "Of our anemia patients, how many are still running a hemoglobin under 11 on their latest draw?",
+   "v2_caught": false,
+   "metric": null,
+   "variant": null,
+   "lint": [],
+   "healed": []
+  },
+  {
+   "set": "M",
+   "id": "M11",
+   "label": "right",
+   "question": "Give me the diabetics who are missing a urine albumin-to-creatinine ratio in the last 12 months.",
+   "v2_caught": false,
+   "metric": null,
+   "variant": null,
+   "lint": [],
+   "healed": []
+  },
+  {
+   "set": "M",
+   "id": "M12",
+   "label": "right",
+   "question": "Break the whole panel out by age band: 0-17, 18-44, 45-64, 65+.",
+   "v2_caught": false,
+   "metric": null,
+   "variant": null,
+   "lint": [],
+   "healed": []
+  },
+  {
+   "set": "M",
+   "id": "M13",
+   "label": "right",
+   "question": "How many observation stays have we had so far in 2029? Don't double-count the hospital feed versions.",
+   "v2_caught": false,
+   "metric": "observation_stays",
+   "variant": null,
+   "healed": [],
+   "lint": []
+  },
+  {
+   "set": "M",
+   "id": "M14",
+   "label": "right",
+   "question": "Who are our repeat ED users \u2014 two or more ED visits in the past 12 months?",
+   "v2_caught": false,
+   "metric": "repeat_ed_users_12m",
+   "variant": null,
+   "healed": [
+    "window start moved from 2028-08-15 to 2028-08-16: metric repeat_ed_users_12m counts the trailing 12 months ending 2029-08-15 inclusive (365 days)"
+   ],
+   "lint": [],
+   "heal_changes_result": false,
+   "healed_reproduces_reference": true
+  },
+  {
+   "set": "M",
+   "id": "M17",
+   "label": "right",
+   "question": "For ED visits this year, what percent got any outpatient touch \u2014 office, PCP, specialist or a phone call \u2014 within 7 days after?",
+   "v2_caught": false,
+   "metric": "ed_followup_7d",
+   "variant": null,
+   "healed": [],
+   "lint": []
+  },
+  {
+   "set": "M",
+   "id": "M20",
+   "label": "wrong",
+   "question": "How many patients haven't had a primary care visit in the last 12 months?",
+   "v2_caught": false,
+   "metric": "pcp_visit_gap_12m",
+   "variant": null,
+   "healed": [
+    "window start moved from 2028-08-15 to 2028-08-16: metric pcp_visit_gap_12m counts the trailing 12 months ending 2029-08-15 inclusive (365 days)"
+   ],
+   "lint": [],
+   "heal_changes_result": true,
+   "healed_reproduces_reference": true,
+   "template_reproduces_reference": true,
+   "template_result": 381,
+   "reference": 381
+  },
+  {
+   "set": "M",
+   "id": "M21",
+   "label": "right",
+   "question": "When we referred people to endo in 2026, what percent actually got seen by endocrinology within 90 days?",
+   "v2_caught": false,
+   "metric": null,
+   "variant": null,
+   "lint": [],
+   "healed": []
+  },
+  {
+   "set": "M",
+   "id": "M22",
+   "label": "wrong",
+   "question": "What share of this year's ED visits ended in an admit or obs placement?",
+   "v2_caught": false,
+   "metric": "ed_admit_obs_share",
+   "variant": null,
+   "healed": [],
+   "lint": [
+    {
+     "rule": "ML-SOURCE",
+     "message": "metric ed_admit_obs_share: the ED visit's outcome is the disposition on its completed encounter version; ADT linkage events describe a different (downstream-stay) reading"
+    },
+    {
+     "rule": "ML-VALUESET",
+     "message": "metric ed_admit_obs_share defines the numerator by admit_obs_disposition (visit.disposition: admitted, inpatient_admission, observation, hospital_observation, observation_for_mobility); the query never applies it"
+    }
+   ],
+   "template_reproduces_reference": true,
+   "template_result": 47.9,
+   "reference": 47.9
+  },
+  {
+   "set": "M",
+   "id": "M23",
+   "label": "right",
+   "question": "Of claims for 2028 dates of service that were denied on first pass, how many have since been overturned and paid?",
+   "v2_caught": false,
+   "metric": null,
+   "variant": null,
+   "lint": [],
+   "healed": []
+  },
+  {
+   "set": "M",
+   "id": "M24",
+   "label": "right",
+   "question": "How much did payers actually pay on 2028 dates of service, net of any takebacks?",
+   "v2_caught": false,
+   "metric": "net_payer_paid",
+   "variant": null,
+   "healed": [],
+   "lint": []
+  },
+  {
+   "set": "M",
+   "id": "M26",
+   "label": "right",
+   "question": "What % of our original claim submissions in 2028 bounced at the clearinghouse?",
+   "v2_caught": false,
+   "metric": null,
+   "variant": null,
+   "lint": [],
+   "healed": []
+  },
+  {
+   "set": "M",
+   "id": "M27",
+   "label": "wrong",
+   "question": "Billed vs allowed vs paid by service type for 2029 dates of service \u2014 current state of each claim, please.",
+   "v2_caught": false,
+   "metric": "claim_financials_current_state",
+   "variant": null,
+   "healed": [],
+   "lint": [
+    {
+     "rule": "ML-ANCHOR",
+     "message": "metric claim_financials_current_state anchors time on claim.service_date; the query uses available_date"
+    },
+    {
+     "rule": "ML-VERSION",
+     "message": "metric claim_financials_current_state: a claim whose current state is a reversal awaiting replacement (or a denial) has 0 allowed and 0 paid; summing the latest record's amounts without the status rule inflates allowed"
+    }
+   ],
+   "template_reproduces_reference": true,
+   "template_result": "12 rows",
+   "reference": "12 rows"
+  },
+  {
+   "set": "M",
+   "id": "M28",
+   "label": "right",
+   "question": "Median days from date of service to first payer cash for 2028 services?",
+   "v2_caught": false,
+   "metric": "days_to_payer_cash",
+   "variant": null,
+   "healed": [],
+   "lint": []
+  },
+  {
+   "set": "M",
+   "id": "M29",
+   "label": "wrong",
+   "question": "What's our total outstanding patient A/R right now?",
+   "v2_caught": false,
+   "metric": "patient_ar_outstanding",
+   "variant": null,
+   "healed": [],
+   "lint": [
+    {
+     "rule": "ML-SOURCE",
+     "message": "metric patient_ar_outstanding: open A/R sums positive balances only; credit balances are not netted against what patients owe"
+    }
+   ],
+   "template_reproduces_reference": true,
+   "template_result": 234593.7,
+   "reference": 234593.7
+  },
+  {
+   "set": "M",
+   "id": "M31",
+   "label": "right",
+   "question": "Diabetes control measure for 2029: percent of diabetics 18-75 with their most recent A1c this year under 8.",
+   "v2_caught": false,
+   "metric": null,
+   "variant": null,
+   "lint": [],
+   "healed": []
+  },
+  {
+   "set": "M",
+   "id": "M32",
+   "label": "right",
+   "question": "Controlling high blood pressure, 2029 YTD: % of hypertensives 18-85 whose latest BP is under 140/90.",
+   "v2_caught": false,
+   "metric": "measure.cbp",
+   "variant": null,
+   "healed": [],
+   "lint": []
+  },
+  {
+   "set": "M",
+   "id": "M33",
+   "label": "right",
+   "question": "Kidney health evaluation for diabetes, 2028: what % of diabetics 18-85 got both an eGFR and a uACR during the year?",
+   "v2_caught": false,
+   "metric": "kidney_health_evaluation_diabetes",
+   "variant": null,
+   "healed": [],
+   "lint": []
+  },
+  {
+   "set": "M",
+   "id": "M34",
+   "label": "right",
+   "question": "Tdap catch-up: of patients who either couldn't remember a tetanus shot or said it was over 10 years ago, what % actually got a documented Tdap afterward?",
+   "v2_caught": false,
+   "metric": null,
+   "variant": null,
+   "lint": [],
+   "healed": []
+  },
+  {
+   "set": "M",
+   "id": "M35",
+   "label": "right",
+   "question": "Peds vision screening rate for 2028 \u2014 kids under 18 with a completed acuity screen?",
+   "v2_caught": false,
+   "metric": null,
+   "variant": null,
+   "lint": [],
+   "healed": []
+  },
+  {
+   "set": "M",
+   "id": "M39",
+   "label": "right",
+   "question": "Reconciliation check: how many claims have a remittance advice on file but no adjudication record in the claims feed?",
+   "v2_caught": false,
+   "metric": null,
+   "variant": null,
+   "lint": [],
+   "healed": []
+  },
+  {
+   "set": "M",
+   "id": "M40",
+   "label": "wrong",
+   "question": "How many appointments are sitting in 'booked' with a date that's already passed?",
+   "v2_caught": false,
+   "metric": "stale_booked_appointments",
+   "variant": null,
+   "healed": [],
+   "lint": [
+    {
+     "rule": "ML-VERSION",
+     "message": "metric stale_booked_appointments: final_status is the latest-arriving status; statuses arrive out of order, so 'still booked' means no other status in ANY version"
+    }
+   ],
+   "template_reproduces_reference": true,
+   "template_result": 538,
+   "reference": 538
+  },
+  {
+   "set": "M",
+   "id": "M42",
+   "label": "right",
+   "question": "How many patients have flagged a transportation problem on any social needs screen?",
+   "v2_caught": false,
+   "metric": null,
+   "variant": null,
+   "lint": [],
+   "healed": []
+  },
+  {
+   "set": "M",
+   "id": "M43",
+   "label": "right",
+   "question": "Patients who told us they struggle to pay for care \u2014 how many of them are currently carrying an open balance with us?",
+   "v2_caught": false,
+   "metric": null,
+   "variant": null,
+   "lint": [],
+   "healed": []
+  },
+  {
+   "set": "M",
+   "id": "M44",
+   "label": "wrong",
+   "question": "Community referrals: by service type, how many did we send and how many actually got delivered?",
+   "v2_caught": false,
+   "metric": "community_referral_delivery",
+   "variant": null,
+   "healed": [],
+   "lint": [
+    {
+     "rule": "ML-SOURCE",
+     "message": "metric community_referral_delivery: delivery is recorded on community_service_outcomes (linked by referral_record_id), not on the referral record"
+    }
+   ],
+   "template_reproduces_reference": true,
+   "template_result": "2 rows",
+   "reference": "2 rows"
+  },
+  {
+   "set": "N",
+   "id": "N01",
+   "label": "right",
+   "question": "How many diabetics are on our books? Type 1 or type 2, and count anyone coded with a diabetic complication (kidney disease, neuropathy, microalbuminuria). Don't count prediabetes or gestational diabet",
+   "v2_caught": false,
+   "metric": null,
+   "variant": null,
+   "lint": [],
+   "healed": []
+  },
+  {
+   "set": "N",
+   "id": "N02",
+   "label": "right",
+   "question": "Give me the list of patients whose latest eGFR is under 45 and whose latest urine albumin/creatinine ratio is 30 or above. Those are the ones nephrology wants to see first.",
+   "v2_caught": false,
+   "metric": null,
+   "variant": null,
+   "lint": [],
+   "healed": []
+  },
+  {
+   "set": "N",
+   "id": "N04",
+   "label": "right",
+   "question": "How many patients are on insulin of any kind? Check the med list, orders and pharmacy side.",
+   "v2_caught": true,
+   "metric": null,
+   "variant": null,
+   "lint": [],
+   "healed": []
+  },
+  {
+   "set": "N",
+   "id": "N05",
+   "label": "wrong",
+   "question": "Which heart failure patients have no beta-blocker anywhere in their medication records? I want names to review for GDMT gaps.",
+   "v2_caught": true,
+   "metric": "hf_no_beta_blocker",
+   "variant": null,
+   "healed": [],
+   "lint": [
+    {
+     "rule": "ML-VALUESET",
+     "message": "metric hf_no_beta_blocker value set beta_blocker excludes albuterol, albuterol, ipratropium; the query's filter includes them"
+    }
+   ],
+   "template_reproduces_reference": true,
+   "template_result": 105,
+   "reference": 105
+  },
+  {
+   "set": "N",
+   "id": "N06",
+   "label": "right",
+   "question": "Using sex-specific cutoffs \u2014 hemoglobin under 12 for women, under 13 for men \u2014 how many patients are anemic on their most recent hemoglobin?",
+   "v2_caught": false,
+   "metric": null,
+   "variant": null,
+   "lint": [],
+   "healed": []
+  },
+  {
+   "set": "N",
+   "id": "N07",
+   "label": "wrong",
+   "question": "How many adults have a BMI of 30 or more based on their latest weight? Compute it from height and weight, don't rely on the obesity diagnosis.",
+   "v2_caught": true,
+   "metric": "adult_obesity_computed_bmi",
+   "variant": null,
+   "healed": [],
+   "lint": [
+    {
+     "rule": "ML-ANCHOR",
+     "message": "metric adult_obesity_computed_bmi: height is an undated baseline measurement; requiring a dated height drops every patient"
+    }
+   ],
+   "template_reproduces_reference": false,
+   "template_result": 785,
+   "reference": 784
+  },
+  {
+   "set": "N",
+   "id": "N08",
+   "label": "right",
+   "question": "Possible undiagnosed diabetes for HCC/outreach review: patients whose most recent A1c is 6.5 or higher but who have no diabetes diagnosis on their problem list.",
+   "v2_caught": false,
+   "metric": null,
+   "variant": null,
+   "lint": [],
+   "healed": []
+  },
+  {
+   "set": "N",
+   "id": "N09",
+   "label": "wrong",
+   "question": "Anyone with an LDL of 190 or higher on file? Doesn't matter when it was drawn \u2014 I'm looking for possible FH.",
+   "v2_caught": false,
+   "metric": "ldl_190_ever",
+   "variant": null,
+   "healed": [],
+   "lint": [],
+   "template_reproduces_reference": true,
+   "template_result": 45,
+   "reference": 45
+  },
+  {
+   "set": "N",
+   "id": "N11",
+   "label": "wrong",
+   "question": "Bleeding-risk check: which afib patients have both an anticoagulant and an antiplatelet on record?",
+   "v2_caught": true,
+   "metric": null,
+   "variant": null,
+   "lint": [],
+   "healed": []
+  },
+  {
+   "set": "N",
+   "id": "N14",
+   "label": "wrong",
+   "question": "What share of our hospital discharges in the last 12 months got an outpatient visit within 7 days? Inpatient and observation stays both count.",
+   "v2_caught": false,
+   "metric": "post_discharge_followup_7d",
+   "variant": null,
+   "healed": [],
+   "lint": [
+    {
+     "rule": "ML-WINDOW",
+     "message": "metric post_discharge_followup_7d: follow-up counts 1-7 days after the index date; the query uses 0-7"
+    },
+    {
+     "rule": "ML-WINDOW",
+     "message": "metric post_discharge_followup_7d: index events must end 7 days before the as-of date (2029-08-08) so every follow-up window is fully observed; the query runs them to 2029-08-15"
+    },
+    {
+     "rule": "ML-ANCHOR",
+     "message": "metric post_discharge_followup_7d: the discharge date is the ADT discharge event date (local business date); stay.discharge_date is the UTC date of the discharge time and runs one day late for evening discharges, which shifts the 1-7 day follow-up window"
+    },
+    {
+     "rule": "ML-VALUESET",
+     "message": "metric post_discharge_followup_7d value set followup_visit excludes telephone, urgent_care, urgentcare, virtual; the query's filter includes them"
+    }
+   ],
+   "template_reproduces_reference": true,
+   "template_result": 47.2,
+   "reference": 47.2
+  },
+  {
+   "set": "N",
+   "id": "N15",
+   "label": "right",
+   "question": "Who are our repeat ED users \u2014 two or more ER visits in the last 12 months?",
+   "v2_caught": false,
+   "metric": "repeat_ed_users_12m",
+   "variant": null,
+   "healed": [
+    "window start moved from 2028-08-15 to 2028-08-16: metric repeat_ed_users_12m counts the trailing 12 months ending 2029-08-15 inclusive (365 days)"
+   ],
+   "lint": [],
+   "heal_changes_result": false,
+   "healed_reproduces_reference": true
+  },
+  {
+   "set": "N",
+   "id": "N17",
+   "label": "wrong",
+   "question": "By attributed practice: how many in-person primary care visits did our attributed patients have in 2028, per 1,000 attributed patients?",
+   "v2_caught": false,
+   "metric": "pcp_visits_per_1000_attributed",
+   "variant": null,
+   "healed": [],
+   "lint": [
+    {
+     "rule": "ML-VALUESET",
+     "message": "metric pcp_visits_per_1000_attributed value set pcp_visit: only visits held at our practices count (outside specialty/dental/optometry sites do not); the query does not restrict it"
+    }
+   ],
+   "template_reproduces_reference": true,
+   "template_result": "8 rows",
+   "reference": "8 rows"
+  },
+  {
+   "set": "N",
+   "id": "N18",
+   "label": "wrong",
+   "question": "How many of our attributed patients haven't had an in-person primary care visit in the past 12 months?",
+   "v2_caught": false,
+   "metric": "attributed_pcp_visit_gap_12m",
+   "variant": null,
+   "healed": [
+    "window start moved from 2028-08-15 to 2028-08-16: metric attributed_pcp_visit_gap_12m counts the trailing 12 months ending 2029-08-15 inclusive (365 days)"
+   ],
+   "lint": [
+    {
+     "rule": "ML-VALUESET",
+     "message": "metric attributed_pcp_visit_gap_12m value set pcp_visit: only visits held at our practices count for attributed primary care (outside dental/optometry/specialty sites do not); the query does not restrict it"
+    }
+   ],
+   "heal_changes_result": true,
+   "healed_reproduces_reference": false,
+   "template_reproduces_reference": true,
+   "template_result": 424,
+   "reference": 424
+  },
+  {
+   "set": "N",
+   "id": "N19",
+   "label": "right",
+   "question": "Specialty referrals we sent in 2027, broken out by specialty.",
+   "v2_caught": false,
+   "metric": null,
+   "variant": null,
+   "lint": [],
+   "healed": []
+  },
+  {
+   "set": "N",
+   "id": "N20",
+   "label": "right",
+   "question": "ED-to-hospital conversion: of our hospital ED visits since we started receiving hospital feeds (Sept 2026), what percent turned into an observation stay or an admission?",
+   "v2_caught": false,
+   "metric": "ed_admit_obs_share",
+   "variant": "linked_conversion",
+   "healed": [],
+   "lint": []
+  },
+  {
+   "set": "N",
+   "id": "N21",
+   "label": "right",
+   "question": "Number of patients who used urgent care in the last 12 months but never went to the ED in that same period.",
+   "v2_caught": false,
+   "metric": null,
+   "variant": null,
+   "lint": [],
+   "healed": []
+  },
+  {
+   "set": "N",
+   "id": "N23",
+   "label": "right",
+   "question": "Denial overturn rate: of claims that got denied at least once, what percent did we eventually get paid?",
+   "v2_caught": false,
+   "metric": null,
+   "variant": null,
+   "lint": [],
+   "healed": []
+  },
+  {
+   "set": "N",
+   "id": "N24",
+   "label": "right",
+   "question": "How much did we refund to patients in 2028, in dollars?",
+   "v2_caught": false,
+   "metric": null,
+   "variant": null,
+   "lint": [],
+   "healed": []
+  },
+  {
+   "set": "N",
+   "id": "N25",
+   "label": "wrong",
+   "question": "Payer cash posted in 2028 by payer \u2014 net of any take-backs.",
+   "v2_caught": false,
+   "metric": "payer_cash_net",
+   "variant": null,
+   "healed": [],
+   "lint": [
+    {
+     "rule": "ML-POP",
+     "message": "metric payer_cash_net: payer comes from the medical claim; joining remittance-advice versions fans out allocations"
+    }
+   ],
+   "template_reproduces_reference": true,
+   "template_result": "3 rows",
+   "reference": "3 rows"
+  },
+  {
+   "set": "N",
+   "id": "N26",
+   "label": "wrong",
+   "question": "What's our average claim lag \u2014 days from date of service to first submission \u2014 for 2028 dates of service?",
+   "v2_caught": true,
+   "metric": "claim_lag_days",
+   "variant": null,
+   "healed": [],
+   "lint": [
+    {
+     "rule": "ML-ANCHOR",
+     "message": "metric claim_lag_days anchors time on claim.service_date; the query uses first_available_date"
+    }
+   ],
+   "template_reproduces_reference": true,
+   "template_result": 1.73,
+   "reference": 1.74
+  },
+  {
+   "set": "N",
+   "id": "N27",
+   "label": "right",
+   "question": "Net pharmacy claim dollars the payers paid us for 2028 fills, after reversals.",
+   "v2_caught": false,
+   "metric": null,
+   "variant": null,
+   "lint": [],
+   "healed": []
+  },
+  {
+   "set": "N",
+   "id": "N29",
+   "label": "wrong",
+   "question": "On average, how many days does it take from date of service until the payer's money first lands, for 2028 services?",
+   "v2_caught": true,
+   "metric": "days_to_payer_cash",
+   "variant": null,
+   "healed": [],
+   "lint": [
+    {
+     "rule": "ML-ANCHOR",
+     "message": "metric days_to_payer_cash anchors time on claim.service_date; the query uses available_date"
+    }
+   ],
+   "template_reproduces_reference": true,
+   "template_result": 25.16,
+   "reference": 25.16
+  },
+  {
+   "set": "N",
+   "id": "N30",
+   "label": "right",
+   "question": "How many claims bounced at the clearinghouse in 2027 because of a bad member ID?",
+   "v2_caught": false,
+   "metric": null,
+   "variant": null,
+   "lint": [],
+   "healed": []
+  },
+  {
+   "set": "N",
+   "id": "N32",
+   "label": "right",
+   "question": "What percent of our diabetics had an A1c drawn in the last 12 months?",
+   "v2_caught": false,
+   "metric": null,
+   "variant": null,
+   "lint": [],
+   "healed": []
+  },
+  {
+   "set": "N",
+   "id": "N35",
+   "label": "right",
+   "question": "Tdap catch-up: among adults who told us they either couldn't remember their last tetanus shot or it was over ten years ago, what share actually got a Tdap from us afterward?",
+   "v2_caught": false,
+   "metric": null,
+   "variant": null,
+   "lint": [],
+   "healed": []
+  },
+  {
+   "set": "N",
+   "id": "N38",
+   "label": "right",
+   "question": "How many encounters are stuck open \u2014 we got an in-progress message but never a completed one?",
+   "v2_caught": false,
+   "metric": null,
+   "variant": null,
+   "lint": [],
+   "healed": []
+  },
+  {
+   "set": "N",
+   "id": "N39",
+   "label": "right",
+   "question": "Average lag in days between a lab's result date and when it became available to us, for 2029 results.",
+   "v2_caught": false,
+   "metric": null,
+   "variant": null,
+   "lint": [],
+   "healed": []
+  },
+  {
+   "set": "N",
+   "id": "N40",
+   "label": "right",
+   "question": "How many original claims did we send out with no member ID on them?",
+   "v2_caught": false,
+   "metric": null,
+   "variant": null,
+   "lint": [],
+   "healed": []
+  },
+  {
+   "set": "N",
+   "id": "N41",
+   "label": "right",
+   "question": "For 2029 encounters, what percent reached the warehouse three or more days after the visit date?",
+   "v2_caught": false,
+   "metric": null,
+   "variant": null,
+   "lint": [],
+   "healed": []
+  },
+  {
+   "set": "N",
+   "id": "N43",
+   "label": "right",
+   "question": "Of patients who told us transportation is a problem, what percent got any kind of transportation referral?",
+   "v2_caught": false,
+   "metric": null,
+   "variant": null,
+   "lint": [],
+   "healed": []
+  },
+  {
+   "set": "N",
+   "id": "N44",
+   "label": "right",
+   "question": "How many patients have two or more social needs at once (food, transportation, cost of care)?",
+   "v2_caught": false,
+   "metric": "food_insecurity_rate",
+   "variant": null,
+   "healed": [],
+   "lint": []
+  },
+  {
+   "set": "O",
+   "id": "O02",
+   "label": "right",
+   "question": "Pull the patients whose most recent potassium is above 5.0 and who are still filling an ACE inhibitor, ARB/ARNI or spironolactone (anything picked up in the last 180 days).",
+   "v2_caught": false,
+   "metric": null,
+   "variant": null,
+   "lint": [],
+   "healed": []
+  },
+  {
+   "set": "O",
+   "id": "O01",
+   "label": "right",
+   "question": "How many of our heart failure patients actually picked up furosemide in the last six months?",
+   "v2_caught": false,
+   "metric": null,
+   "variant": null,
+   "lint": [],
+   "healed": []
+  },
+  {
+   "set": "O",
+   "id": "O05",
+   "label": "right",
+   "question": "Which CKD stage 3 or 4 patients have had an NSAID dispensed? Pharmacy wants to review them.",
+   "v2_caught": false,
+   "metric": null,
+   "variant": null,
+   "lint": [],
+   "healed": []
+  },
+  {
+   "set": "O",
+   "id": "O06",
+   "label": "right",
+   "question": "Count the coronary disease patients - ischemic heart disease, prior MI, CAD - with no antiplatelet picked up in the past year.",
+   "v2_caught": false,
+   "metric": null,
+   "variant": null,
+   "lint": [],
+   "healed": []
+  },
+  {
+   "set": "O",
+   "id": "O07",
+   "label": "right",
+   "question": "Safety check: who has a documented allergy to lisinopril, aspirin or ibuprofen but has had that same drug dispensed anyway?",
+   "v2_caught": false,
+   "metric": null,
+   "variant": null,
+   "lint": [],
+   "healed": []
+  },
+  {
+   "set": "O",
+   "id": "O11",
+   "label": "wrong",
+   "question": "Beers list check - how many patients 65+ have been dispensed a first-generation antihistamine, a benzo, meperidine or a muscle relaxant?",
+   "v2_caught": false,
+   "metric": "beers_high_risk_medications_65",
+   "variant": null,
+   "healed": [],
+   "lint": [
+    {
+     "rule": "ML-VALUESET",
+     "message": "metric beers_high_risk_medications_65 value set beers_drugs excludes cetirizine, fexofenadine, loratadine; the query's filter includes them"
+    }
+   ],
+   "template_reproduces_reference": false,
+   "template_result": 11,
+   "reference": 10
+  },
+  {
+   "set": "O",
+   "id": "O13",
+   "label": "right",
+   "question": "How many patients had two or more ED visits in the last 12 months?",
+   "v2_caught": false,
+   "metric": "repeat_ed_users_12m",
+   "variant": null,
+   "healed": [
+    "window start moved from 2028-08-15 to 2028-08-16: metric repeat_ed_users_12m counts the trailing 12 months ending 2029-08-15 inclusive (365 days)"
+   ],
+   "lint": [],
+   "heal_changes_result": false,
+   "healed_reproduces_reference": true
+  },
+  {
+   "set": "O",
+   "id": "O15",
+   "label": "wrong",
+   "question": "Average length of an observation stay in hours, 2029 year to date?",
+   "v2_caught": true,
+   "metric": "observation_stay_hours",
+   "variant": null,
+   "healed": [],
+   "lint": [],
+   "template_reproduces_reference": true,
+   "template_result": 9.9,
+   "reference": 9.9
+  },
+  {
+   "set": "O",
+   "id": "O20",
+   "label": "right",
+   "question": "How many urgent care visits got sent on to the ED?",
+   "v2_caught": false,
+   "metric": null,
+   "variant": null,
+   "lint": [],
+   "healed": []
+  },
+  {
+   "set": "O",
+   "id": "O24",
+   "label": "right",
+   "question": "Net pharmacy payer reimbursement for 2028 - after reversals?",
+   "v2_caught": false,
+   "metric": null,
+   "variant": null,
+   "lint": [],
+   "healed": []
+  },
+  {
+   "set": "O",
+   "id": "O25",
+   "label": "right",
+   "question": "How much did we refund to patients in 2028?",
+   "v2_caught": false,
+   "metric": null,
+   "variant": null,
+   "lint": [],
+   "healed": []
+  },
+  {
+   "set": "O",
+   "id": "O27",
+   "label": "wrong",
+   "question": "On average, how many days from date of service until the payer's first adjudication, for 2028 services?",
+   "v2_caught": true,
+   "metric": "days_to_first_adjudication",
+   "variant": null,
+   "healed": [],
+   "lint": [
+    {
+     "rule": "ML-ANCHOR",
+     "message": "metric days_to_first_adjudication anchors time on claim.service_date; the query uses first_available_date"
+    }
+   ],
+   "template_reproduces_reference": true,
+   "template_result": 16.39,
+   "reference": 16.4
+  },
+  {
+   "set": "O",
+   "id": "O30",
+   "label": "wrong",
+   "question": "Total contractual write-offs on 2028 dates of service?",
+   "v2_caught": false,
+   "metric": "contractual_writeoffs",
+   "variant": null,
+   "healed": [],
+   "lint": [
+    {
+     "rule": "ML-VERSION",
+     "message": "metric contractual_writeoffs nets amounts across EVERY adjudication version (reversals net out); the query keeps only the current version"
+    }
+   ],
+   "template_reproduces_reference": true,
+   "template_result": 467367.46,
+   "reference": 467367.46
+  },
+  {
+   "set": "O",
+   "id": "O31",
+   "label": "wrong",
+   "question": "Kidney health evaluation for diabetes in 2028: what percent of our diabetics got both an eGFR and a urine albumin-creatinine ratio?",
+   "v2_caught": false,
+   "metric": "kidney_health_evaluation_diabetes",
+   "variant": null,
+   "healed": [],
+   "lint": [
+    {
+     "rule": "ML-POP",
+     "message": "metric kidney_health_evaluation_diabetes restricts the population to ages 18-85; the query applies no age band"
+    }
+   ],
+   "template_reproduces_reference": false,
+   "template_result": 91.0,
+   "reference": 90.7
+  },
+  {
+   "set": "O",
+   "id": "O34",
+   "label": "right",
+   "question": "What percent of heart failure patients are on an evidence-based beta-blocker, based on fills in the past year?",
+   "v2_caught": false,
+   "metric": null,
+   "variant": null,
+   "lint": [],
+   "healed": []
+  },
+  {
+   "set": "O",
+   "id": "O36",
+   "label": "right",
+   "question": "Pediatric vision screening: among kids we successfully screened, what percent failed (20/40 or worse in either eye)?",
+   "v2_caught": false,
+   "metric": null,
+   "variant": null,
+   "lint": [],
+   "healed": []
+  },
+  {
+   "set": "O",
+   "id": "O37",
+   "label": "right",
+   "question": "What percent of our lab results come in with no collection date?",
+   "v2_caught": false,
+   "metric": null,
+   "variant": null,
+   "lint": [],
+   "healed": []
+  },
+  {
+   "set": "O",
+   "id": "O39",
+   "label": "right",
+   "question": "How many encounters are stuck open - started but never closed out?",
+   "v2_caught": false,
+   "metric": null,
+   "variant": null,
+   "lint": [],
+   "healed": []
+  },
+  {
+   "set": "O",
+   "id": "O40",
+   "label": "wrong",
+   "question": "How many duplicate lab rows do we have - same patient, same test, same draw time, same value?",
+   "v2_caught": false,
+   "metric": "duplicate_lab_rows",
+   "variant": null,
+   "healed": [],
+   "lint": [
+    {
+     "rule": "ML-ANCHOR",
+     "message": "metric duplicate_lab_rows anchors time on measurement.event_time; the query uses event_date"
+    }
+   ],
+   "template_reproduces_reference": true,
+   "template_result": 31,
+   "reference": 31
+  },
+  {
+   "set": "O",
+   "id": "O41",
+   "label": "right",
+   "question": "How many patients have no dated blood pressure on file at all?",
+   "v2_caught": false,
+   "metric": null,
+   "variant": null,
+   "lint": [],
+   "healed": []
+  },
+  {
+   "set": "O",
+   "id": "O42",
+   "label": "wrong",
+   "question": "Food insecurity rate among patients who got the needs interview?",
+   "v2_caught": true,
+   "metric": "food_insecurity_rate",
+   "variant": null,
+   "healed": [],
+   "lint": [],
+   "template_reproduces_reference": true,
+   "template_result": 14.4,
+   "reference": 14.4
+  }
+ ],
+ "value_set_coverage": {
+  "kidney_health_evaluation_diabetes.egfr": {
+   "dimension": "measurement.name",
+   "members": {
+    "eGFR": 5733
+   },
+   "review": {
+    "Glomerular filtration rate": {
+     "rows": 568,
+     "basis": "label pattern only"
+    }
+   },
+   "excluded": {},
+   "concept_coverage": {
+    "concept": "egfr",
+    "missed_members": [],
+    "missed_member_rows": 0,
+    "non_member_labels": [
+     "Glomerular filtration rate"
+    ],
+    "non_member_rows": 568
+   },
+   "provenance": "concepts.MEASUREMENTS egfr LOINC list (public LOINC codes; licensed KED value sets not used)"
+  },
+  "kidney_health_evaluation_diabetes.uacr": {
+   "dimension": "measurement.name",
+   "members": {
+    "Microalbumin/Creatinine": 117,
+    "UACR": 2,
+    "Urine albumin/creatinine ratio": 3230
+   },
+   "review": {},
+   "excluded": {
+    "Urine albumin": 3234
+   },
+   "concept_coverage": {
+    "concept": "uacr",
+    "missed_members": [],
+    "missed_member_rows": 0,
+    "non_member_labels": [],
+    "non_member_rows": 0
+   },
+   "provenance": "concepts.MEASUREMENTS uacr LOINC list; urine albumin alone is not a ratio"
+  },
+  "respiratory_registry.respiratory": {
+   "dimension": "condition.label",
+   "members": {
+    "Asthma": 66,
+    "Asthma, unspecified with (acute) exacerbation": 1,
+    "COPD, unspecified (GOLD III)": 1,
+    "Childhood asthma": 23,
+    "Chronic obstructive bronchitis": 8,
+    "Moderate persistent asthma": 1,
+    "Moderate persistent asthma, uncomplicated": 1,
+    "Pulmonary emphysema": 25
+   },
+   "review": {
+    "asthma": {
+     "rows": 726,
+     "basis": "label pattern only"
+    }
+   },
+   "excluded": {},
+   "concept_coverage": null,
+   "provenance": "concepts.CONDITIONS asthma + copd (ICD-10-CM J43/J44/J45)"
+  },
+  "ldl_190_ever.ldl": {
+   "dimension": "measurement.name",
+   "members": {
+    "LDL": 15,
+    "LDL cholesterol": 1474
+   },
+   "review": {
+    "Cholesterol in LDL": {
+     "rows": 602,
+     "basis": "normalization dictionary maps to ldl (confidence 0.85)"
+    }
+   },
+   "excluded": {
+    "Cholesterol": 1204,
+    "Non-HDL cholesterol": 454,
+    "Total cholesterol": 454
+   },
+   "concept_coverage": {
+    "concept": "ldl",
+    "missed_members": [],
+    "missed_member_rows": 0,
+    "non_member_labels": [],
+    "non_member_rows": 0
+   },
+   "provenance": "concepts.MEASUREMENTS ldl LOINC list + received labels"
+  },
+  "beers_high_risk_medications_65.beers_drugs": {
+   "dimension": "medication.ingredient",
+   "members": {
+    "acetaminophen, dextromethorphan, doxylamine": 4,
+    "alprazolam": 1,
+    "chlorpheniramine": 80,
+    "cyclobenzaprine": 3,
+    "diazepam": 20,
+    "diphenhydramine": 112,
+    "lorazepam": 9,
+    "meperidine": 34,
+    "clonazepam": 13
+   },
+   "review": {},
+   "excluded": {
+    "fexofenadine": 153,
+    "loratadine": 1995,
+    "cetirizine": 61
+   },
+   "concept_coverage": null,
+   "provenance": "AGS Beers Criteria 2023 (first-generation antihistamines, benzodiazepines, meperidine, skeletal muscle relaxants); RxNorm ingredients via the normalization dictionary"
+  },
+  "hf_no_beta_blocker.beta_blocker": {
+   "dimension": "medication.ingredient",
+   "members": {
+    "carvedilol": 10636,
+    "metoprolol": 1461,
+    "atenolol": 24,
+    "labetalol": 20,
+    "bisoprolol": 6,
+    "bisoprolol, hydrochlorothiazide": 8,
+    "propranolol": 5
+   },
+   "review": {},
+   "excluded": {
+    "fluticasone, salmeterol": 100,
+    "albuterol": 506,
+    "albuterol, ipratropium": 1
+   },
+   "concept_coverage": null,
+   "provenance": "drug_classes.CLASSES beta_blocker (ingredient-based)"
+  },
+  "ed_visits.ed_visit": {
+   "dimension": "visit.type",
+   "members": {
+    "ED": 7,
+    "ED stroke alert": 1,
+    "emergency": 381
+   },
+   "review": {},
+   "excluded": {
+    "inpatient": 100,
+    "observation": 68,
+    "urgent_care": 234,
+    "urgentcare": 66
+   },
+   "concept_coverage": {
+    "concept": "emergency_visit",
+    "missed_members": [],
+    "missed_member_rows": 0,
+    "non_member_labels": [],
+    "non_member_rows": 0
+   },
+   "provenance": "definitions.json emergency_visit; concepts.ENCOUNTERS emergency_visit"
+  },
+  "ed_visits_per_1000.ed_visit": {
+   "dimension": "visit.type",
+   "members": {
+    "ED": 7,
+    "ED stroke alert": 1,
+    "emergency": 381
+   },
+   "review": {},
+   "excluded": {
+    "urgent_care": 234,
+    "urgentcare": 66
+   },
+   "concept_coverage": {
+    "concept": "emergency_visit",
+    "missed_members": [],
+    "missed_member_rows": 0,
+    "non_member_labels": [],
+    "non_member_rows": 0
+   },
+   "provenance": "definitions.json emergency_visit"
+  },
+  "repeat_ed_users_12m.ed_visit": {
+   "dimension": "visit.type",
+   "members": {
+    "ED": 7,
+    "ED stroke alert": 1,
+    "emergency": 381
+   },
+   "review": {},
+   "excluded": {
+    "urgent_care": 234,
+    "urgentcare": 66
+   },
+   "concept_coverage": {
+    "concept": "emergency_visit",
+    "missed_members": [],
+    "missed_member_rows": 0,
+    "non_member_labels": [],
+    "non_member_rows": 0
+   },
+   "provenance": "definitions.json emergency_visit"
+  },
+  "ed_admit_obs_share.ed_visit": {
+   "dimension": "visit.type",
+   "members": {
+    "ED": 7,
+    "ED stroke alert": 1,
+    "emergency": 381
+   },
+   "review": {},
+   "excluded": {
+    "urgent_care": 234,
+    "urgentcare": 66
+   },
+   "concept_coverage": {
+    "concept": "emergency_visit",
+    "missed_members": [],
+    "missed_member_rows": 0,
+    "non_member_labels": [],
+    "non_member_rows": 0
+   },
+   "provenance": "definitions.json emergency_visit"
+  },
+  "ed_admit_obs_share.admit_obs_disposition": {
+   "dimension": "visit.disposition",
+   "members": {
+    "admitted": 19,
+    "hospital_observation": 24,
+    "inpatient_admission": 9,
+    "observation": 23,
+    "observation_for_mobility": 20
+   },
+   "review": {},
+   "excluded": {
+    "home": 14419,
+    "home_with_followup": 154,
+    "home_with_guardian": 179
+   },
+   "concept_coverage": null,
+   "provenance": "received encounters.disposition vocabulary; admission/observation dispositions per definitions.json inpatient_admission (AHU counts observation)"
+  },
+  "pcp_visit_gap_12m.pcp_visit": {
+   "dimension": "visit.type",
+   "members": {
+    "Annual physical": 8,
+    "Geri primary care": 1,
+    "Office visit": 31,
+    "PCP": 2,
+    "ambulatory": 2320,
+    "office": 4267,
+    "pediatric_office": 446,
+    "primary_care": 13270,
+    "wellness": 1327
+   },
+   "review": {
+    "Peds": {
+     "rows": 1,
+     "basis": "library concept, not in the adopted set"
+    },
+    "Primary care": {
+     "rows": 1,
+     "basis": "library concept, not in the adopted set"
+    },
+    "Adolescent med": {
+     "rows": 1,
+     "basis": "normalization dictionary maps to primary_care_visit (confidence 0.7)"
+    },
+    "youth_health_supervision": {
+     "rows": 396,
+     "basis": "normalization dictionary maps to primary_care_visit (confidence 0.85)"
+    }
+   },
+   "excluded": {
+    "emergency": 381,
+    "specialist_office": 201,
+    "specialty_followup": 1394,
+    "telephone": 14499,
+    "urgent_care": 234,
+    "urgentcare": 66,
+    "virtual": 27
+   },
+   "concept_coverage": {
+    "concept": "primary_care_visit",
+    "missed_members": [],
+    "missed_member_rows": 0,
+    "non_member_labels": [
+     "Peds",
+     "Primary care"
+    ],
+    "non_member_rows": 2
+   },
+   "provenance": "definitions.json primary_care_visit (agere_default: primary care, office, wellness, pediatric office and ambulatory types)"
+  },
+  "attributed_pcp_visit_gap_12m.pcp_visit": {
+   "dimension": "visit.type",
+   "members": {
+    "Annual physical": 8,
+    "Geri primary care": 1,
+    "Office visit": 31,
+    "PCP": 2,
+    "ambulatory": 2320,
+    "office": 4267,
+    "pediatric_office": 446,
+    "primary_care": 13270,
+    "wellness": 1327
+   },
+   "review": {
+    "Peds": {
+     "rows": 1,
+     "basis": "library concept, not in the adopted set"
+    },
+    "Primary care": {
+     "rows": 1,
+     "basis": "library concept, not in the adopted set"
+    },
+    "Adolescent med": {
+     "rows": 1,
+     "basis": "normalization dictionary maps to primary_care_visit (confidence 0.7)"
+    },
+    "youth_health_supervision": {
+     "rows": 396,
+     "basis": "normalization dictionary maps to primary_care_visit (confidence 0.85)"
+    }
+   },
+   "excluded": {
+    "emergency": 381,
+    "specialist_office": 201,
+    "specialty_followup": 1394,
+    "telephone": 14499,
+    "urgent_care": 234,
+    "urgentcare": 66,
+    "virtual": 27
+   },
+   "concept_coverage": {
+    "concept": "primary_care_visit",
+    "missed_members": [],
+    "missed_member_rows": 0,
+    "non_member_labels": [
+     "Peds",
+     "Primary care"
+    ],
+    "non_member_rows": 2
+   },
+   "provenance": "definitions.json primary_care_visit; attribution convention: visits at the attributed network's practices"
+  },
+  "pcp_visits_per_1000_attributed.pcp_visit": {
+   "dimension": "visit.type",
+   "members": {
+    "Annual physical": 8,
+    "Geri primary care": 1,
+    "Office visit": 31,
+    "PCP": 2,
+    "ambulatory": 2320,
+    "office": 4267,
+    "pediatric_office": 446,
+    "primary_care": 13270,
+    "wellness": 1327
+   },
+   "review": {
+    "Peds": {
+     "rows": 1,
+     "basis": "library concept, not in the adopted set"
+    },
+    "Primary care": {
+     "rows": 1,
+     "basis": "library concept, not in the adopted set"
+    },
+    "Adolescent med": {
+     "rows": 1,
+     "basis": "normalization dictionary maps to primary_care_visit (confidence 0.7)"
+    },
+    "youth_health_supervision": {
+     "rows": 396,
+     "basis": "normalization dictionary maps to primary_care_visit (confidence 0.85)"
+    }
+   },
+   "excluded": {
+    "emergency": 381,
+    "specialist_office": 201,
+    "specialty_followup": 1394,
+    "telephone": 14499,
+    "urgent_care": 234,
+    "urgentcare": 66,
+    "virtual": 27
+   },
+   "concept_coverage": {
+    "concept": "primary_care_visit",
+    "missed_members": [],
+    "missed_member_rows": 0,
+    "non_member_labels": [
+     "Peds",
+     "Primary care"
+    ],
+    "non_member_rows": 2
+   },
+   "provenance": "definitions.json primary_care_visit"
+  },
+  "post_discharge_followup_7d.followup_visit": {
+   "dimension": "visit.type",
+   "members": {
+    "Annual physical": 8,
+    "Geri primary care": 1,
+    "Office visit": 31,
+    "PCP": 2,
+    "ambulatory": 2320,
+    "office": 4267,
+    "pediatric_office": 446,
+    "primary_care": 13270,
+    "specialist_office": 201,
+    "specialty_followup": 1394,
+    "wellness": 1327
+   },
+   "review": {
+    "Peds": {
+     "rows": 1,
+     "basis": "library concept, not in the adopted set"
+    },
+    "Primary care": {
+     "rows": 1,
+     "basis": "library concept, not in the adopted set"
+    },
+    "Adolescent med": {
+     "rows": 1,
+     "basis": "normalization dictionary maps to primary_care_visit (confidence 0.7)"
+    },
+    "youth_health_supervision": {
+     "rows": 396,
+     "basis": "normalization dictionary maps to primary_care_visit (confidence 0.85)"
+    }
+   },
+   "excluded": {
+    "emergency": 381,
+    "home_health": 96,
+    "telephone": 14499,
+    "urgent_care": 234,
+    "urgentcare": 66,
+    "virtual": 27
+   },
+   "concept_coverage": {
+    "concept": "primary_care_visit",
+    "missed_members": [
+     "specialist_office",
+     "specialty_followup"
+    ],
+    "missed_member_rows": 1595,
+    "non_member_labels": [
+     "Peds",
+     "Primary care"
+    ],
+    "non_member_rows": 2
+   },
+   "provenance": "definitions.json primary_care_visit + specialist office visits; HEDIS-style in-person follow-up"
+  },
+  "ed_followup_7d.ed_visit": {
+   "dimension": "visit.type",
+   "members": {
+    "ED": 7,
+    "ED stroke alert": 1,
+    "emergency": 381
+   },
+   "review": {},
+   "excluded": {},
+   "concept_coverage": {
+    "concept": "emergency_visit",
+    "missed_members": [],
+    "missed_member_rows": 0,
+    "non_member_labels": [],
+    "non_member_rows": 0
+   },
+   "provenance": "definitions.json emergency_visit"
+  },
+  "ed_followup_7d.followup_contact": {
+   "dimension": "visit.type",
+   "members": {
+    "Annual physical": 8,
+    "Geri primary care": 1,
+    "Office visit": 31,
+    "PCP": 2,
+    "ambulatory": 2320,
+    "office": 4267,
+    "pediatric_office": 446,
+    "primary_care": 13270,
+    "specialist_office": 201,
+    "specialty_followup": 1394,
+    "telephone": 14499,
+    "virtual": 27,
+    "wellness": 1327
+   },
+   "review": {},
+   "excluded": {
+    "urgent_care": 234,
+    "urgentcare": 66
+   },
+   "concept_coverage": null,
+   "provenance": "definitions.json follow_up_after_ed (outpatient, telehealth, telephone count)"
+  }
+ }
+}
