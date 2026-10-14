@@ -1,0 +1,2012 @@
+{
+ "schema": "agere-semantic-model/1",
+ "domain": "healthcare",
+ "derived_from": {
+  "module": "clinical_core/agere/clinical/semantic_layer.py",
+  "semantic_layer_version": "semantic-layer/13",
+  "versioned_streams": {
+   "patient_billing_accounts": "account_id",
+   "medical_claims": "claim_id",
+   "pharmacy_claim_transactions": "claim_id",
+   "appointments": "appointment_id",
+   "provider_remittance_advice": "claim_id",
+   "advance_care_document_status": "document_id"
+  },
+  "carc_categories": {
+   "PR-1": "deductible",
+   "PR-2": "coinsurance",
+   "PR-3": "copay",
+   "CO-45": "contractual_adjustment"
+  }
+ },
+ "conventions": {
+  "money": "integer USD cents",
+  "dates": "ISO YYYY-MM-DD text; NULL when unknown (never substituted by receipt date)",
+  "codes": "ICD-10-CM dotted upper case; LOINC with check digit; NDC 11-digit; NPI 10-digit Luhn",
+  "lineage": "every mapped row keeps the source row identifier in record_id",
+  "approval": "a mapping is applied only when approval.approved is true and only fields with accept: true"
+ },
+ "entities": {
+  "patient": {
+   "table": "patient",
+   "meaning": "One row per roster patient. age_reported/sex_reported as received; coverage_type/status from latest coverage record; pcp_* = latest assigned primary-care relationship.",
+   "grain": "one row per roster patient",
+   "keys": [
+    "patient_id"
+   ],
+   "versioning": null,
+   "fields": {
+    "patient_id": {
+     "type": "text",
+     "semantic": "identifier",
+     "required": true,
+     "role": "mapped",
+     "column": true,
+     "description": "Source patient identifier; prefer the source/human identifier over integer surrogates.",
+     "key": true,
+     "aliases": [
+      "patient id",
+      "person source value",
+      "person id",
+      "member id",
+      "mrn",
+      "subject id"
+     ]
+    },
+    "sex_reported": {
+     "type": "text",
+     "semantic": "categorical",
+     "required": false,
+     "role": "mapped",
+     "column": true,
+     "description": "Reported sex as F/M/U.",
+     "aliases": [
+      "sex",
+      "gender",
+      "administrative gender"
+     ],
+     "allowed_values": [
+      "F",
+      "M",
+      "U"
+     ]
+    },
+    "age_reported": {
+     "type": "integer",
+     "semantic": "integer",
+     "required": false,
+     "role": "mapped",
+     "column": true,
+     "description": "Reported age at profile capture (not advanced).",
+     "aliases": [
+      "age",
+      "age reported",
+      "age at capture"
+     ]
+    },
+    "birth_date": {
+     "type": "text",
+     "semantic": "date",
+     "required": false,
+     "role": "mapped",
+     "column": false,
+     "description": "Date of birth.",
+     "aliases": [
+      "birth date",
+      "date of birth",
+      "dob",
+      "birth datetime"
+     ]
+    },
+    "race": {
+     "type": "text",
+     "semantic": "categorical",
+     "required": false,
+     "role": "mapped",
+     "column": false,
+     "description": "Reported race.",
+     "aliases": [
+      "race"
+     ]
+    },
+    "ethnicity": {
+     "type": "text",
+     "semantic": "categorical",
+     "required": false,
+     "role": "mapped",
+     "column": false,
+     "description": "Reported ethnicity.",
+     "aliases": [
+      "ethnicity",
+      "ethnic group"
+     ]
+    },
+    "preferred_language": {
+     "type": "text",
+     "semantic": "categorical",
+     "required": false,
+     "role": "mapped",
+     "column": false,
+     "description": "Preferred language.",
+     "aliases": [
+      "language",
+      "preferred language"
+     ]
+    },
+    "zip": {
+     "type": "text",
+     "semantic": "categorical",
+     "required": false,
+     "role": "mapped",
+     "column": false,
+     "description": "Residence ZIP.",
+     "code_system": "ZIP",
+     "aliases": [
+      "zip",
+      "postal code",
+      "zip code"
+     ]
+    },
+    "state": {
+     "type": "text",
+     "semantic": "categorical",
+     "required": false,
+     "role": "mapped",
+     "column": false,
+     "description": "Residence state.",
+     "aliases": [
+      "state",
+      "province"
+     ]
+    },
+    "county": {
+     "type": "text",
+     "semantic": "categorical",
+     "required": false,
+     "role": "mapped",
+     "column": false,
+     "description": "Residence county FIPS.",
+     "aliases": [
+      "county",
+      "county fips",
+      "fips"
+     ]
+    },
+    "coverage_type": {
+     "type": "text",
+     "semantic": "derived",
+     "required": false,
+     "role": "derived",
+     "column": true,
+     "description": "Latest coverage record coverage_type (from the coverage entity)."
+    },
+    "coverage_status": {
+     "type": "text",
+     "semantic": "derived",
+     "required": false,
+     "role": "derived",
+     "column": true,
+     "description": "Latest coverage record status (from the coverage entity)."
+    }
+   },
+   "semantic_layer_columns_derived_elsewhere": [
+    "age_latest",
+    "pcp_clinician_id",
+    "pcp_practice_id"
+   ],
+   "onboarding_target": true
+  },
+  "coverage": {
+   "table": null,
+   "meaning": "",
+   "grain": "one row per received coverage / enrollment period record",
+   "keys": [],
+   "versioning": {
+    "rule": "latest_by",
+    "partition": [
+     "patient_id"
+    ],
+    "order": [
+     [
+      "event_date",
+      "desc"
+     ]
+    ],
+    "feeds": {
+     "patient.coverage_type": "coverage_type",
+     "patient.coverage_status": "status"
+    }
+   },
+   "fields": {
+    "patient_id": {
+     "type": "text",
+     "semantic": "identifier",
+     "required": true,
+     "role": "mapped",
+     "column": false,
+     "description": "Patient the row belongs to (the source patient identifier, not a warehouse surrogate).",
+     "foreign_key": "patient.patient_id",
+     "aliases": [
+      "patient id",
+      "person id",
+      "member id",
+      "subject",
+      "mrn",
+      "pat id",
+      "beneficiary id"
+     ]
+    },
+    "coverage_type": {
+     "type": "text",
+     "semantic": "categorical",
+     "required": true,
+     "role": "mapped",
+     "column": false,
+     "description": "Coverage category (commercial, medicare, medicaid, uninsured, ...).",
+     "aliases": [
+      "coverage type",
+      "payer",
+      "plan type",
+      "line of business",
+      "insurance type",
+      "financial class"
+     ]
+    },
+    "status": {
+     "type": "text",
+     "semantic": "categorical",
+     "required": false,
+     "role": "mapped",
+     "column": false,
+     "description": "Coverage status.",
+     "aliases": [
+      "status",
+      "coverage status",
+      "enrollment status"
+     ]
+    },
+    "event_date": {
+     "type": "text",
+     "semantic": "date",
+     "required": false,
+     "role": "mapped",
+     "column": false,
+     "description": "Coverage effective date.",
+     "aliases": [
+      "start date",
+      "effective date",
+      "period start",
+      "enrollment date"
+     ]
+    }
+   },
+   "semantic_layer_columns_derived_elsewhere": [],
+   "onboarding_target": true
+  },
+  "visit": {
+   "table": "visit",
+   "meaning": "One row per encounter (encounter records repeat once per status version; use visit, not encounter, to count visits). Latest version wins; versions = number of received versions.",
+   "grain": "one row per received encounter record (status versions repeat the encounter)",
+   "keys": [
+    "encounter_id"
+   ],
+   "versioning": {
+    "rule": "latest_version",
+    "key": "encounter_id",
+    "null_key": "own_entity",
+    "order": [
+     [
+      "status = 'completed'",
+      "desc"
+     ],
+     [
+      "available_date",
+      "desc"
+     ],
+     [
+      "record_id",
+      "desc"
+     ]
+    ],
+    "count_field": "versions",
+    "source": "semantic_layer.build(): visit = row_number() over coalesce(encounter_id, record_id) order by (status='completed') desc, available_date desc, record_id desc"
+   },
+   "fields": {
+    "record_id": {
+     "type": "text",
+     "semantic": "identifier",
+     "required": false,
+     "role": "mapped",
+     "column": false,
+     "description": "Unique identifier of the received source row (lineage; every semantic row keeps it). When the source has none, apply synthesizes <table>#<row number>.",
+     "name_required": true,
+     "key": true,
+     "aliases": [
+      "record id",
+      "source row id",
+      "row id",
+      "source record",
+      "line id",
+      "source key"
+     ]
+    },
+    "encounter_id": {
+     "type": "text",
+     "semantic": "identifier",
+     "required": false,
+     "role": "mapped",
+     "column": true,
+     "description": "Business encounter identifier shared by all versions of one encounter.",
+     "aliases": [
+      "encounter id",
+      "encounter number",
+      "visit number",
+      "csn",
+      "encounter key",
+      "visit id"
+     ]
+    },
+    "patient_id": {
+     "type": "text",
+     "semantic": "identifier",
+     "required": true,
+     "role": "mapped",
+     "column": true,
+     "description": "Patient the row belongs to (the source patient identifier, not a warehouse surrogate).",
+     "foreign_key": "patient.patient_id",
+     "aliases": [
+      "patient id",
+      "person id",
+      "member id",
+      "subject",
+      "mrn",
+      "pat id",
+      "beneficiary id"
+     ]
+    },
+    "type": {
+     "type": "text",
+     "semantic": "categorical",
+     "required": true,
+     "role": "mapped",
+     "column": true,
+     "description": "Encounter type as received (office, telephone, emergency, inpatient, ...).",
+     "aliases": [
+      "type",
+      "encounter type",
+      "visit type",
+      "visit source",
+      "class"
+     ]
+    },
+    "status": {
+     "type": "text",
+     "semantic": "categorical",
+     "required": false,
+     "role": "mapped",
+     "column": true,
+     "description": "Encounter status (completed, in_progress, ...).",
+     "aliases": [
+      "status",
+      "encounter status",
+      "visit status"
+     ]
+    },
+    "event_date": {
+     "type": "text",
+     "semantic": "date",
+     "required": false,
+     "role": "mapped",
+     "column": true,
+     "description": "Encounter start date.",
+     "aliases": [
+      "visit start date",
+      "start date",
+      "admit date",
+      "event date",
+      "encounter date",
+      "contact date"
+     ]
+    },
+    "end_date": {
+     "type": "text",
+     "semantic": "date",
+     "required": false,
+     "role": "mapped",
+     "column": true,
+     "description": "Encounter end date.",
+     "aliases": [
+      "end date",
+      "discharge date",
+      "visit end date",
+      "discharge time"
+     ]
+    },
+    "available_date": {
+     "type": "text",
+     "semantic": "date",
+     "required": false,
+     "role": "mapped",
+     "column": true,
+     "description": "Date the row became available to the warehouse (receipt clock, not the clinical event clock).",
+     "name_required": true,
+     "aliases": [
+      "available date",
+      "received date",
+      "load date",
+      "etl date",
+      "arrival date",
+      "ingest date"
+     ]
+    },
+    "organization_id": {
+     "type": "text",
+     "semantic": "identifier",
+     "required": false,
+     "role": "mapped",
+     "column": true,
+     "description": "Organization / care site where the event happened.",
+     "foreign_key": "organization.organization_id",
+     "aliases": [
+      "organization id",
+      "care site",
+      "facility",
+      "location",
+      "department",
+      "site id"
+     ]
+    },
+    "attending_clinician_id": {
+     "type": "text",
+     "semantic": "identifier",
+     "required": false,
+     "role": "mapped",
+     "column": true,
+     "description": "Attending clinician.",
+     "foreign_key": "clinician.clinician_id",
+     "aliases": [
+      "attending clinician",
+      "provider id",
+      "attending provider",
+      "clinician id",
+      "practitioner"
+     ]
+    },
+    "disposition": {
+     "type": "text",
+     "semantic": "categorical",
+     "required": false,
+     "role": "mapped",
+     "column": true,
+     "description": "Disposition.",
+     "aliases": [
+      "disposition",
+      "discharged to",
+      "discharge disposition"
+     ]
+    },
+    "place_of_service": {
+     "type": "text",
+     "semantic": "categorical",
+     "required": false,
+     "role": "mapped",
+     "column": true,
+     "description": "CMS place-of-service code.",
+     "code_system": "CMS place of service",
+     "aliases": [
+      "place of service",
+      "pos"
+     ]
+    },
+    "versions": {
+     "type": "integer",
+     "semantic": "derived",
+     "required": false,
+     "role": "derived",
+     "column": true,
+     "description": "Number of received versions of the encounter."
+    }
+   },
+   "semantic_layer_columns_derived_elsewhere": [
+    "first_available_date",
+    "in_person",
+    "is_practice",
+    "principal_icd10",
+    "setting",
+    "type_concept"
+   ],
+   "onboarding_target": true
+  },
+  "condition": {
+   "table": "condition",
+   "meaning": "One row per (condition record, matching library concept); concept NULL when no library concept matches. Sources: conditions, condition_assessments, problem_lists. label = received description.",
+   "grain": "one row per received condition record",
+   "keys": [
+    "record_id"
+   ],
+   "versioning": null,
+   "fields": {
+    "record_id": {
+     "type": "text",
+     "semantic": "identifier",
+     "required": false,
+     "role": "mapped",
+     "column": true,
+     "description": "Unique identifier of the received source row (lineage; every semantic row keeps it). When the source has none, apply synthesizes <table>#<row number>.",
+     "name_required": true,
+     "key": true,
+     "aliases": [
+      "record id",
+      "source row id",
+      "row id",
+      "source record",
+      "line id",
+      "source key"
+     ]
+    },
+    "patient_id": {
+     "type": "text",
+     "semantic": "identifier",
+     "required": true,
+     "role": "mapped",
+     "column": true,
+     "description": "Patient the row belongs to (the source patient identifier, not a warehouse surrogate).",
+     "foreign_key": "patient.patient_id",
+     "aliases": [
+      "patient id",
+      "person id",
+      "member id",
+      "subject",
+      "mrn",
+      "pat id",
+      "beneficiary id"
+     ]
+    },
+    "label": {
+     "type": "text",
+     "semantic": "text",
+     "required": false,
+     "role": "mapped",
+     "column": true,
+     "description": "Received condition description.",
+     "aliases": [
+      "description",
+      "condition name",
+      "diagnosis name",
+      "diagnosis description",
+      "problem",
+      "label",
+      "display"
+     ]
+    },
+    "icd10": {
+     "type": "text",
+     "semantic": "code",
+     "required": false,
+     "role": "mapped",
+     "column": true,
+     "description": "ICD-10-CM code, dotted canonical form.",
+     "code_system": "ICD-10-CM",
+     "aliases": [
+      "icd10",
+      "diagnosis code",
+      "dx code",
+      "condition code",
+      "condition source value"
+     ]
+    },
+    "snomed": {
+     "type": "text",
+     "semantic": "code",
+     "required": false,
+     "role": "mapped",
+     "column": true,
+     "description": "SNOMED CT code.",
+     "code_system": "SNOMED CT",
+     "aliases": [
+      "snomed",
+      "concept code"
+     ]
+    },
+    "onset": {
+     "type": "text",
+     "semantic": "text",
+     "required": false,
+     "role": "mapped",
+     "column": true,
+     "description": "Onset as received.",
+     "aliases": [
+      "onset",
+      "onset date",
+      "onset text"
+     ]
+    },
+    "event_date": {
+     "type": "text",
+     "semantic": "date",
+     "required": false,
+     "role": "mapped",
+     "column": true,
+     "description": "Condition date.",
+     "aliases": [
+      "condition start date",
+      "start date",
+      "diagnosis date",
+      "event date",
+      "contact date"
+     ]
+    },
+    "recorded_date": {
+     "type": "text",
+     "semantic": "date",
+     "required": false,
+     "role": "mapped",
+     "column": true,
+     "description": "Recorded date.",
+     "aliases": [
+      "recorded date",
+      "entered date",
+      "noted date"
+     ]
+    },
+    "available_date": {
+     "type": "text",
+     "semantic": "date",
+     "required": false,
+     "role": "mapped",
+     "column": true,
+     "description": "Date the row became available to the warehouse (receipt clock, not the clinical event clock).",
+     "name_required": true,
+     "aliases": [
+      "available date",
+      "received date",
+      "load date",
+      "etl date",
+      "arrival date",
+      "ingest date"
+     ]
+    },
+    "organization_id": {
+     "type": "text",
+     "semantic": "identifier",
+     "required": false,
+     "role": "mapped",
+     "column": true,
+     "description": "Organization / care site where the event happened.",
+     "foreign_key": "organization.organization_id",
+     "aliases": [
+      "organization id",
+      "care site",
+      "facility",
+      "location",
+      "department",
+      "site id"
+     ]
+    },
+    "concept": {
+     "type": "text",
+     "semantic": "derived",
+     "required": false,
+     "role": "derived",
+     "column": true,
+     "description": "Agere concept from ICD-10 prefix / label (concepts.concept_for_code)."
+    }
+   },
+   "semantic_layer_columns_derived_elsewhere": [
+    "icd10_source",
+    "source_table"
+   ],
+   "onboarding_target": true
+  },
+  "measurement": {
+   "table": "measurement",
+   "meaning": "Labs and vitals, one row per (record, concept); concept NULL when unmapped. value/unit as received; value_canonical in unit_canonical when the unit converts (else NULL). Cancelled results have value NULL.",
+   "grain": "one row per received lab or vital result",
+   "keys": [
+    "record_id"
+   ],
+   "versioning": null,
+   "fields": {
+    "record_id": {
+     "type": "text",
+     "semantic": "identifier",
+     "required": false,
+     "role": "mapped",
+     "column": true,
+     "description": "Unique identifier of the received source row (lineage; every semantic row keeps it). When the source has none, apply synthesizes <table>#<row number>.",
+     "name_required": true,
+     "key": true,
+     "aliases": [
+      "record id",
+      "source row id",
+      "row id",
+      "source record",
+      "line id",
+      "source key"
+     ]
+    },
+    "patient_id": {
+     "type": "text",
+     "semantic": "identifier",
+     "required": true,
+     "role": "mapped",
+     "column": true,
+     "description": "Patient the row belongs to (the source patient identifier, not a warehouse surrogate).",
+     "foreign_key": "patient.patient_id",
+     "aliases": [
+      "patient id",
+      "person id",
+      "member id",
+      "subject",
+      "mrn",
+      "pat id",
+      "beneficiary id"
+     ]
+    },
+    "name": {
+     "type": "text",
+     "semantic": "categorical",
+     "required": true,
+     "role": "mapped",
+     "column": true,
+     "description": "Local test / measurement name.",
+     "aliases": [
+      "test name",
+      "measurement name",
+      "lab name",
+      "component",
+      "measurement source",
+      "observation name"
+     ]
+    },
+    "loinc": {
+     "type": "text",
+     "semantic": "code",
+     "required": false,
+     "role": "mapped",
+     "column": true,
+     "description": "LOINC code when received.",
+     "code_system": "LOINC",
+     "aliases": [
+      "loinc",
+      "test code",
+      "measurement code",
+      "observation code",
+      "source code"
+     ]
+    },
+    "value": {
+     "type": "real",
+     "semantic": "decimal",
+     "required": true,
+     "role": "mapped",
+     "column": true,
+     "description": "Numeric result as received.",
+     "aliases": [
+      "value",
+      "result",
+      "value as number",
+      "numeric value",
+      "result value"
+     ]
+    },
+    "unit": {
+     "type": "text",
+     "semantic": "categorical",
+     "required": false,
+     "role": "mapped",
+     "column": true,
+     "description": "Unit as received (UCUM-like text).",
+     "aliases": [
+      "unit",
+      "units",
+      "unit source",
+      "uom"
+     ]
+    },
+    "result_status": {
+     "type": "text",
+     "semantic": "categorical",
+     "required": false,
+     "role": "mapped",
+     "column": true,
+     "description": "Result status (final, cancelled, ...).",
+     "aliases": [
+      "result status",
+      "status"
+     ]
+    },
+    "event_date": {
+     "type": "text",
+     "semantic": "date",
+     "required": false,
+     "role": "mapped",
+     "column": true,
+     "description": "Collection/event date; NULL when unknown.",
+     "aliases": [
+      "measurement date",
+      "collection date",
+      "result date",
+      "event date"
+     ]
+    },
+    "available_date": {
+     "type": "text",
+     "semantic": "date",
+     "required": false,
+     "role": "mapped",
+     "column": true,
+     "description": "Date the row became available to the warehouse (receipt clock, not the clinical event clock).",
+     "name_required": true,
+     "aliases": [
+      "available date",
+      "received date",
+      "load date",
+      "etl date",
+      "arrival date",
+      "ingest date"
+     ]
+    },
+    "reference_range": {
+     "type": "text",
+     "semantic": "text",
+     "required": false,
+     "role": "mapped",
+     "column": true,
+     "description": "Reference range text.",
+     "aliases": [
+      "reference range",
+      "range",
+      "normal range"
+     ]
+    },
+    "abnormal_flag": {
+     "type": "text",
+     "semantic": "categorical",
+     "required": false,
+     "role": "mapped",
+     "column": true,
+     "description": "Abnormal flag.",
+     "aliases": [
+      "abnormal flag",
+      "flag",
+      "interpretation"
+     ]
+    },
+    "organization_id": {
+     "type": "text",
+     "semantic": "identifier",
+     "required": false,
+     "role": "mapped",
+     "column": true,
+     "description": "Organization / care site where the event happened.",
+     "foreign_key": "organization.organization_id",
+     "aliases": [
+      "organization id",
+      "care site",
+      "facility",
+      "location",
+      "department",
+      "site id"
+     ]
+    },
+    "concept": {
+     "type": "text",
+     "semantic": "derived",
+     "required": false,
+     "role": "derived",
+     "column": true,
+     "description": "Agere measurement concept (name pattern, then LOINC; concepts.MEASUREMENTS)."
+    },
+    "value_canonical": {
+     "type": "real",
+     "semantic": "derived",
+     "required": false,
+     "role": "derived",
+     "column": true,
+     "description": "value converted to the concept canonical unit (concepts.MEASUREMENTS[c].units)."
+    },
+    "unit_canonical": {
+     "type": "text",
+     "semantic": "derived",
+     "required": false,
+     "role": "derived",
+     "column": true,
+     "description": "Canonical unit of the concept."
+    }
+   },
+   "semantic_layer_columns_derived_elsewhere": [
+    "event_time",
+    "loinc_dictionary",
+    "loinc_source",
+    "recorded_date",
+    "source_table"
+   ],
+   "onboarding_target": true
+  },
+  "medication": {
+   "table": "medication",
+   "meaning": "Every medication mention, one row per (record, drug_class): source_stream and evidence (dispensed, claim, ordered, listed, administered, reported, pharmacy_history), drug_name as received, status. drug_class from the active ingredient (statin, beta_blocker, hf_evidence_based_beta_blocker, ace_inhibitor, arb, arni, mra, sglt2_inhibitor, glp1_agonist, metformin, insulin, anticoagulant, opioid, ...); NULL when unclassified.",
+   "grain": "one row per received medication mention (order, dispense, claim, list, administration, report)",
+   "keys": [
+    "record_id"
+   ],
+   "versioning": null,
+   "fields": {
+    "record_id": {
+     "type": "text",
+     "semantic": "identifier",
+     "required": false,
+     "role": "mapped",
+     "column": true,
+     "description": "Unique identifier of the received source row (lineage; every semantic row keeps it). When the source has none, apply synthesizes <table>#<row number>.",
+     "name_required": true,
+     "key": true,
+     "aliases": [
+      "record id",
+      "source row id",
+      "row id",
+      "source record",
+      "line id",
+      "source key"
+     ]
+    },
+    "patient_id": {
+     "type": "text",
+     "semantic": "identifier",
+     "required": true,
+     "role": "mapped",
+     "column": true,
+     "description": "Patient the row belongs to (the source patient identifier, not a warehouse surrogate).",
+     "foreign_key": "patient.patient_id",
+     "aliases": [
+      "patient id",
+      "person id",
+      "member id",
+      "subject",
+      "mrn",
+      "pat id",
+      "beneficiary id"
+     ]
+    },
+    "drug_name": {
+     "type": "text",
+     "semantic": "text",
+     "required": true,
+     "role": "mapped",
+     "column": true,
+     "description": "Medication name as received.",
+     "aliases": [
+      "drug name",
+      "medication name",
+      "drug source value",
+      "medication",
+      "product name"
+     ]
+    },
+    "evidence": {
+     "type": "text",
+     "semantic": "categorical",
+     "required": false,
+     "role": "mapped",
+     "column": true,
+     "description": "What kind of evidence the row is: dispensed, claim, ordered, listed, administered, reported, pharmacy_history.",
+     "aliases": [
+      "evidence",
+      "drug type",
+      "source type",
+      "record type",
+      "exposure type"
+     ],
+     "allowed_values": [
+      "administered",
+      "claim",
+      "dispensed",
+      "listed",
+      "ordered",
+      "pharmacy_history",
+      "reported"
+     ]
+    },
+    "status": {
+     "type": "text",
+     "semantic": "categorical",
+     "required": false,
+     "role": "mapped",
+     "column": true,
+     "description": "Status as received.",
+     "aliases": [
+      "status",
+      "drug status",
+      "order status"
+     ]
+    },
+    "rxnorm": {
+     "type": "text",
+     "semantic": "code",
+     "required": false,
+     "role": "mapped",
+     "column": true,
+     "description": "RxNorm CUI as received.",
+     "code_system": "RxNorm",
+     "aliases": [
+      "rxnorm",
+      "rxcui",
+      "drug code",
+      "drug concept code",
+      "drug source code"
+     ]
+    },
+    "ndc": {
+     "type": "text",
+     "semantic": "code",
+     "required": false,
+     "role": "mapped",
+     "column": true,
+     "description": "NDC as received.",
+     "code_system": "NDC",
+     "aliases": [
+      "ndc",
+      "national drug code",
+      "drug ndc"
+     ]
+    },
+    "event_date": {
+     "type": "text",
+     "semantic": "date",
+     "required": false,
+     "role": "mapped",
+     "column": true,
+     "description": "Event date.",
+     "aliases": [
+      "start date",
+      "exposure start",
+      "order date",
+      "fill date",
+      "event date"
+     ]
+    },
+    "available_date": {
+     "type": "text",
+     "semantic": "date",
+     "required": false,
+     "role": "mapped",
+     "column": true,
+     "description": "Date the row became available to the warehouse (receipt clock, not the clinical event clock).",
+     "name_required": true,
+     "aliases": [
+      "available date",
+      "received date",
+      "load date",
+      "etl date",
+      "arrival date",
+      "ingest date"
+     ]
+    },
+    "drug_class": {
+     "type": "text",
+     "semantic": "derived",
+     "required": false,
+     "role": "derived",
+     "column": true,
+     "description": "Drug class from the active ingredient (drug_classes.classify)."
+    }
+   },
+   "semantic_layer_columns_derived_elsewhere": [
+    "rxnorm_ingredient",
+    "rxnorm_source",
+    "source_stream"
+   ],
+   "onboarding_target": true
+  },
+  "claim": {
+   "table": "claim",
+   "meaning": "One row per medical claim_id (adjudications arrive as successive records: denied, paid, reversed, re-paid). first_status by arrival order; final_status follows the adjudication chain (each reversal paired with the payment it reverses; final = last unreversed adjudication by event time), received_final_status = last-arrival status, live_payer_paid_cents = payer paid on unreversed payments; denied_then_paid = a denial later followed by payment; net_payer_paid_cents = paid minus reversed. Legacy rows without claim_id are excluded.",
+   "grain": "one row per received claim adjudication record (denied, paid, reversed, re-paid)",
+   "keys": [
+    "claim_id"
+   ],
+   "versioning": {
+    "rule": "claim_settlement",
+    "key": "claim_id",
+    "null_key": "exclude",
+    "order": [
+     [
+      "available_date",
+      "asc"
+     ],
+     [
+      "available_time",
+      "asc"
+     ],
+     [
+      "record_id",
+      "asc"
+     ]
+    ],
+    "source": "semantic_layer._derived() claim aggregate + semantic_layer.settle_history() adjudication chain"
+   },
+   "fields": {
+    "record_id": {
+     "type": "text",
+     "semantic": "identifier",
+     "required": false,
+     "role": "mapped",
+     "column": false,
+     "description": "Unique identifier of the received source row (lineage; every semantic row keeps it). When the source has none, apply synthesizes <table>#<row number>.",
+     "name_required": true,
+     "key": true,
+     "aliases": [
+      "record id",
+      "source row id",
+      "row id",
+      "source record",
+      "line id",
+      "source key"
+     ]
+    },
+    "claim_id": {
+     "type": "text",
+     "semantic": "identifier",
+     "required": true,
+     "role": "mapped",
+     "column": true,
+     "description": "Business claim identifier shared by every adjudication of the claim.",
+     "aliases": [
+      "claim id",
+      "claim number",
+      "claim source value",
+      "icn",
+      "claim key"
+     ]
+    },
+    "patient_id": {
+     "type": "text",
+     "semantic": "identifier",
+     "required": true,
+     "role": "mapped",
+     "column": true,
+     "description": "Patient the row belongs to (the source patient identifier, not a warehouse surrogate).",
+     "foreign_key": "patient.patient_id",
+     "aliases": [
+      "patient id",
+      "person id",
+      "member id",
+      "subject",
+      "mrn",
+      "pat id",
+      "beneficiary id"
+     ]
+    },
+    "payer": {
+     "type": "text",
+     "semantic": "categorical",
+     "required": false,
+     "role": "mapped",
+     "column": true,
+     "description": "Payer.",
+     "aliases": [
+      "payer",
+      "payer source",
+      "payer id",
+      "source system",
+      "plan"
+     ]
+    },
+    "service_date": {
+     "type": "text",
+     "semantic": "date",
+     "required": false,
+     "role": "mapped",
+     "column": true,
+     "description": "Service date.",
+     "aliases": [
+      "service date",
+      "date of service",
+      "from date"
+     ]
+    },
+    "status": {
+     "type": "text",
+     "semantic": "categorical",
+     "required": true,
+     "role": "mapped",
+     "column": false,
+     "description": "Adjudication status.",
+     "aliases": [
+      "status",
+      "adjudication status",
+      "claim status"
+     ],
+     "allowed_values": [
+      "paid",
+      "denied",
+      "reversed",
+      "pending"
+     ]
+    },
+    "payer_paid_cents": {
+     "type": "integer",
+     "semantic": "money_cents",
+     "required": false,
+     "role": "mapped",
+     "column": false,
+     "description": "Amount the payer paid on this adjudication.",
+     "unit": "USD cents",
+     "aliases": [
+      "payer paid",
+      "paid by payer",
+      "plan paid",
+      "paid amount"
+     ]
+    },
+    "billed_cents": {
+     "type": "integer",
+     "semantic": "money_cents",
+     "required": false,
+     "role": "mapped",
+     "column": true,
+     "description": "Billed charge.",
+     "unit": "USD cents",
+     "aliases": [
+      "billed",
+      "charge",
+      "total charge",
+      "billed amount",
+      "submitted charge"
+     ]
+    },
+    "allowed_cents": {
+     "type": "integer",
+     "semantic": "money_cents",
+     "required": false,
+     "role": "mapped",
+     "column": true,
+     "description": "Allowed amount.",
+     "unit": "USD cents",
+     "aliases": [
+      "allowed",
+      "allowed amount",
+      "total allowed"
+     ]
+    },
+    "patient_responsibility_cents": {
+     "type": "integer",
+     "semantic": "money_cents",
+     "required": false,
+     "role": "mapped",
+     "column": false,
+     "description": "Patient responsibility.",
+     "unit": "USD cents",
+     "aliases": [
+      "patient responsibility",
+      "paid by patient",
+      "member liability",
+      "patient paid"
+     ]
+    },
+    "event_date": {
+     "type": "text",
+     "semantic": "date",
+     "required": false,
+     "role": "mapped",
+     "column": false,
+     "description": "Adjudication date.",
+     "aliases": [
+      "adjudication date",
+      "adjudicated date",
+      "processed date",
+      "paid date"
+     ]
+    },
+    "available_date": {
+     "type": "text",
+     "semantic": "date",
+     "required": false,
+     "role": "mapped",
+     "column": false,
+     "description": "Date the row became available to the warehouse (receipt clock, not the clinical event clock).",
+     "name_required": true,
+     "aliases": [
+      "available date",
+      "received date",
+      "load date",
+      "etl date",
+      "arrival date",
+      "ingest date"
+     ]
+    },
+    "available_time": {
+     "type": "text",
+     "semantic": "datetime",
+     "required": false,
+     "role": "mapped",
+     "column": false,
+     "description": "Receipt timestamp.",
+     "name_required": true,
+     "aliases": [
+      "received datetime",
+      "available time",
+      "load timestamp"
+     ]
+    },
+    "service_organization_id": {
+     "type": "text",
+     "semantic": "identifier",
+     "required": false,
+     "role": "mapped",
+     "column": true,
+     "description": "Servicing organization.",
+     "foreign_key": "organization.organization_id",
+     "aliases": [
+      "service organization",
+      "care site",
+      "billing facility",
+      "facility"
+     ]
+    },
+    "reverses_record_id": {
+     "type": "text",
+     "semantic": "identifier",
+     "required": false,
+     "role": "mapped",
+     "column": false,
+     "description": "For reversals, the record_id of the adjudication being reversed.",
+     "name_required": true,
+     "aliases": [
+      "reverses",
+      "original adjudication",
+      "reversal of",
+      "reverses source row"
+     ]
+    },
+    "first_status": {
+     "type": "text",
+     "semantic": "derived",
+     "required": false,
+     "role": "derived",
+     "column": true,
+     "description": "Status of the first-arriving adjudication."
+    },
+    "final_status": {
+     "type": "text",
+     "semantic": "derived",
+     "required": false,
+     "role": "derived",
+     "column": true,
+     "description": "Status after the adjudication chain (settle_history)."
+    },
+    "net_payer_paid_cents": {
+     "type": "integer",
+     "semantic": "derived",
+     "required": false,
+     "role": "derived",
+     "column": true,
+     "description": "Sum paid minus sum reversed."
+    },
+    "versions": {
+     "type": "integer",
+     "semantic": "derived",
+     "required": false,
+     "role": "derived",
+     "column": true,
+     "description": "Adjudication records received for the claim."
+    }
+   },
+   "semantic_layer_columns_derived_elsewhere": [
+    "benefit_year",
+    "cpt",
+    "denied_then_paid",
+    "ever_denied",
+    "first_available_date",
+    "hcpcs",
+    "last_available_date",
+    "live_payer_paid_cents",
+    "received_final_status"
+   ],
+   "onboarding_target": true
+  },
+  "claim_line": {
+   "table": "claim_line",
+   "meaning": "One row per medical claim line: cpt or hcpcs (CPT/HCPCS service code), local_charge_code (the local charge code, kept across releases), revenue_code (UB-04 lines), units, charge_cents.",
+   "grain": "one row per received claim line",
+   "keys": [
+    "record_id"
+   ],
+   "versioning": null,
+   "fields": {
+    "record_id": {
+     "type": "text",
+     "semantic": "identifier",
+     "required": false,
+     "role": "mapped",
+     "column": true,
+     "description": "Unique identifier of the received source row (lineage; every semantic row keeps it). When the source has none, apply synthesizes <table>#<row number>.",
+     "name_required": true,
+     "key": true,
+     "aliases": [
+      "record id",
+      "source row id",
+      "row id",
+      "source record",
+      "line id",
+      "source key"
+     ]
+    },
+    "claim_id": {
+     "type": "text",
+     "semantic": "identifier",
+     "required": true,
+     "role": "mapped",
+     "column": true,
+     "description": "Claim of the line.",
+     "foreign_key": "claim.claim_id",
+     "aliases": [
+      "claim id",
+      "claim number",
+      "claim source value",
+      "claim key"
+     ]
+    },
+    "patient_id": {
+     "type": "text",
+     "semantic": "identifier",
+     "required": false,
+     "role": "mapped",
+     "column": true,
+     "description": "Patient the row belongs to (the source patient identifier, not a warehouse surrogate). Optional for lines: derived through claim_id when absent.",
+     "foreign_key": "patient.patient_id",
+     "aliases": [
+      "patient id",
+      "person id",
+      "member id",
+      "subject",
+      "mrn",
+      "pat id",
+      "beneficiary id"
+     ]
+    },
+    "line_number": {
+     "type": "integer",
+     "semantic": "integer",
+     "required": false,
+     "role": "mapped",
+     "column": true,
+     "description": "Line number.",
+     "aliases": [
+      "line number",
+      "line",
+      "line seq"
+     ]
+    },
+    "service_date": {
+     "type": "text",
+     "semantic": "date",
+     "required": false,
+     "role": "mapped",
+     "column": true,
+     "description": "Line service date.",
+     "aliases": [
+      "service date",
+      "procedure date",
+      "line date"
+     ]
+    },
+    "service_code": {
+     "type": "text",
+     "semantic": "code",
+     "required": true,
+     "role": "mapped",
+     "column": false,
+     "description": "CPT or HCPCS code (split into cpt/hcpcs columns).",
+     "code_system": "CPT/HCPCS",
+     "aliases": [
+      "procedure code",
+      "service code",
+      "cpt",
+      "hcpcs",
+      "procedure source value"
+     ]
+    },
+    "code_system": {
+     "type": "text",
+     "semantic": "categorical",
+     "required": false,
+     "role": "mapped",
+     "column": true,
+     "description": "Code system of service_code.",
+     "aliases": [
+      "code system",
+      "vocabulary",
+      "procedure source vocabulary",
+      "coding system"
+     ]
+    },
+    "revenue_code": {
+     "type": "text",
+     "semantic": "categorical",
+     "required": false,
+     "role": "mapped",
+     "column": true,
+     "description": "UB-04 revenue code.",
+     "code_system": "NUBC revenue code",
+     "aliases": [
+      "revenue code",
+      "rev code"
+     ]
+    },
+    "units": {
+     "type": "real",
+     "semantic": "decimal",
+     "required": false,
+     "role": "mapped",
+     "column": true,
+     "description": "Units.",
+     "aliases": [
+      "units",
+      "quantity",
+      "service units"
+     ]
+    },
+    "charge_cents": {
+     "type": "integer",
+     "semantic": "money_cents",
+     "required": false,
+     "role": "mapped",
+     "column": true,
+     "description": "Line charge.",
+     "unit": "USD cents",
+     "aliases": [
+      "line charge",
+      "charge",
+      "charge amount"
+     ]
+    },
+    "service_organization_id": {
+     "type": "text",
+     "semantic": "identifier",
+     "required": false,
+     "role": "mapped",
+     "column": true,
+     "description": "Servicing org.",
+     "foreign_key": "organization.organization_id",
+     "aliases": [
+      "care site",
+      "facility",
+      "service organization"
+     ]
+    }
+   },
+   "semantic_layer_columns_derived_elsewhere": [
+    "cpt",
+    "hcpcs",
+    "local_charge_code"
+   ],
+   "onboarding_target": true
+  },
+  "clinician": {
+   "table": "clinician",
+   "meaning": "Clinician reference rows: specialty, synthetic npi, NUCC taxonomy_code, organization_id.",
+   "grain": "one row per clinician",
+   "keys": [
+    "clinician_id"
+   ],
+   "versioning": null,
+   "fields": {
+    "clinician_id": {
+     "type": "text",
+     "semantic": "identifier",
+     "required": true,
+     "role": "mapped",
+     "column": true,
+     "description": "Clinician identifier.",
+     "key": true,
+     "aliases": [
+      "clinician id",
+      "provider source value",
+      "provider id",
+      "practitioner id",
+      "prov id"
+     ]
+    },
+    "organization_id": {
+     "type": "text",
+     "semantic": "identifier",
+     "required": false,
+     "role": "mapped",
+     "column": true,
+     "description": "Organization / care site where the event happened.",
+     "foreign_key": "organization.organization_id",
+     "aliases": [
+      "organization id",
+      "care site",
+      "facility",
+      "location",
+      "department",
+      "site id"
+     ]
+    },
+    "specialty": {
+     "type": "text",
+     "semantic": "categorical",
+     "required": false,
+     "role": "mapped",
+     "column": true,
+     "description": "Specialty.",
+     "aliases": [
+      "specialty",
+      "specialty source value"
+     ]
+    },
+    "npi": {
+     "type": "text",
+     "semantic": "code",
+     "required": false,
+     "role": "mapped",
+     "column": true,
+     "description": "NPI.",
+     "code_system": "NPI",
+     "aliases": [
+      "npi",
+      "national provider identifier"
+     ]
+    },
+    "taxonomy_code": {
+     "type": "text",
+     "semantic": "code",
+     "required": false,
+     "role": "mapped",
+     "column": true,
+     "description": "NUCC taxonomy.",
+     "code_system": "NUCC taxonomy",
+     "aliases": [
+      "taxonomy",
+      "taxonomy code"
+     ]
+    }
+   },
+   "semantic_layer_columns_derived_elsewhere": [],
+   "onboarding_target": true
+  },
+  "organization": {
+   "table": "organization",
+   "meaning": "Organization reference rows: organization_type, npi, taxonomy_code, tin, city/state/postal_code.",
+   "grain": "one row per organization / care site",
+   "keys": [
+    "organization_id"
+   ],
+   "versioning": null,
+   "fields": {
+    "organization_id": {
+     "type": "text",
+     "semantic": "identifier",
+     "required": true,
+     "role": "mapped",
+     "column": true,
+     "description": "Organization identifier (department, care site, facility).",
+     "key": true,
+     "aliases": [
+      "organization id",
+      "care site source value",
+      "facility id",
+      "site id",
+      "org id",
+      "department id",
+      "location id"
+     ]
+    },
+    "organization_type": {
+     "type": "text",
+     "semantic": "categorical",
+     "required": false,
+     "role": "mapped",
+     "column": true,
+     "description": "Organization type.",
+     "aliases": [
+      "organization type",
+      "facility type",
+      "site type",
+      "place of service"
+     ]
+    },
+    "display_name": {
+     "type": "text",
+     "semantic": "text",
+     "required": false,
+     "role": "mapped",
+     "column": true,
+     "description": "Name.",
+     "aliases": [
+      "name",
+      "display name",
+      "organization name",
+      "care site name"
+     ]
+    },
+    "npi": {
+     "type": "text",
+     "semantic": "code",
+     "required": false,
+     "role": "mapped",
+     "column": true,
+     "description": "Organization NPI.",
+     "code_system": "NPI",
+     "aliases": [
+      "npi"
+     ]
+    },
+    "taxonomy_code": {
+     "type": "text",
+     "semantic": "code",
+     "required": false,
+     "role": "mapped",
+     "column": true,
+     "description": "NUCC taxonomy.",
+     "code_system": "NUCC taxonomy",
+     "aliases": [
+      "taxonomy",
+      "taxonomy code"
+     ]
+    },
+    "tin": {
+     "type": "text",
+     "semantic": "code",
+     "required": false,
+     "role": "mapped",
+     "column": true,
+     "description": "Tax identification number.",
+     "code_system": "TIN",
+     "aliases": [
+      "tin",
+      "tax id",
+      "ein",
+      "tax identification number"
+     ]
+    },
+    "city": {
+     "type": "text",
+     "semantic": "categorical",
+     "required": false,
+     "role": "mapped",
+     "column": true,
+     "description": "City.",
+     "aliases": [
+      "city"
+     ]
+    },
+    "state": {
+     "type": "text",
+     "semantic": "categorical",
+     "required": false,
+     "role": "mapped",
+     "column": true,
+     "description": "State.",
+     "aliases": [
+      "state"
+     ]
+    },
+    "postal_code": {
+     "type": "text",
+     "semantic": "categorical",
+     "required": false,
+     "role": "mapped",
+     "column": true,
+     "description": "ZIP.",
+     "code_system": "ZIP",
+     "aliases": [
+      "zip",
+      "postal code"
+     ]
+    }
+   },
+   "semantic_layer_columns_derived_elsewhere": [],
+   "onboarding_target": true
+  },
+  "stay": {
+   "table": "stay",
+   "meaning": "Distinct hospital stays (inpatient/observation encounters collapsed by admit day and overlap) with 30-day readmission flag. discharge_date and los_days are NULL when no discharge time was received (discharge_known = 0); never treat those as 0 days.",
+   "derivation": "Collapsed inpatient/observation stays from visits (aggregate._stays).",
+   "columns": {
+    "patient_id": "text",
+    "admit_date": "text",
+    "discharge_date": "text",
+    "type": "text",
+    "organization_id": "text",
+    "readmitted_30d": "integer",
+    "days_to_readmission": "integer",
+    "discharge_known": "integer",
+    "los_days": "integer"
+   },
+   "onboarding_target": false
+  },
+  "concept_patient": {
+   "table": "concept_patient",
+   "meaning": "Patients having each library concept (condition, measurement, encounter), with record counts and first/last dates.",
+   "derivation": "Patients per library concept from condition/measurement/encounter rows.",
+   "columns": {
+    "concept": "text",
+    "kind": "text",
+    "patient_id": "text",
+    "records": "integer",
+    "first_date": "text",
+    "last_date": "text"
+   },
+   "onboarding_target": false
+  },
+  "measurement_latest": {
+   "table": "measurement_latest",
+   "meaning": "Latest DATED value per patient and measurement concept (undated rows never count as latest); same_day_values/same_day_min for same-date ties (HEDIS uses the lowest).",
+   "derivation": "Latest dated measurement per patient and concept.",
+   "columns": {
+    "patient_id": "text",
+    "concept": "text",
+    "event_date": "text",
+    "value_canonical": "real",
+    "unit_canonical": "text",
+    "same_day_values": "integer",
+    "same_day_min": "real",
+    "record_id": "text"
+   },
+   "onboarding_target": false
+  },
+  "current_record": {
+   "table": "current_record",
+   "meaning": "Latest version of each business entity in versioned (snapshot) streams: stream, key_field, business_id, versions, payload of the latest version. Use it for current state (current balance, current claim status).",
+   "derivation": "Latest version per business id in versioned streams (VERSIONED_STREAMS).",
+   "columns": {
+    "stream": "text",
+    "key_field": "text",
+    "business_id": "text",
+    "record_id": "text",
+    "patient_id": "text",
+    "versions": "integer",
+    "first_available_date": "text",
+    "available_date": "text",
+    "event_date": "text",
+    "payload": "text"
+   },
+   "onboarding_target": false
+  },
+  "link": {
+   "table": "link",
+   "meaning": "Every record-to-record reference (fields ending _record_id/_record_ids): record_id/stream of the referring record, field name, target_record_id. Indexed on target_record_id - use it for linkage questions (e.g. orders without dispenses).",
+   "derivation": "Record-to-record references (fields ending _record_id/_record_ids).",
+   "columns": {
+    "record_id": "text",
+    "stream": "text",
+    "field": "text",
+    "target_record_id": "text"
+   },
+   "onboarding_target": false
+  },
+  "note_fact": {
+   "table": "note_fact",
+   "meaning": "Facts found only in free text (EF, symptoms, edema, dyspnea, medication non-adherence and reasons, social needs, imaging findings, follow-up instructions, goals of care) with negation, temporality and evidence spans; rule extractor admitted per fact type at >= 0.90 measured precision.",
+   "derivation": "Facts extracted from free text by the note-fact rules.",
+   "columns": {},
+   "onboarding_target": false
+  },
+  "social_need": {
+   "table": "social_need",
+   "meaning": "Social-needs screening answers normalised across instruments: one row per (screen record, need) with positive 0/1. need = food | transport | cost_of_care. transport positive = transport_difficulty_reported or transport unreliable (family_ride/reliable = negative); cost_of_care = difficulty paying for care (social screen) or medical bills (financial screen). Screened = has a row for that need.",
+   "derivation": "Normalised social-needs answers from social/financial screens.",
+   "columns": {
+    "patient_id": "text",
+    "need": "text",
+    "positive": "integer",
+    "instrument": "text",
+    "source_stream": "text",
+    "source_field": "text",
+    "event_date": "text",
+    "record_id": "text"
+   },
+   "onboarding_target": false
+  },
+  "appointment": {
+   "table": "appointment",
+   "meaning": "One row per appointment_id (appointments arrive as a booked record plus later status records). scheduled_date from the booking; final_status = latest status received; ever_* flags over all versions; kept = arrived or fulfilled.",
+   "derivation": "Appointment entity from booked + status records (not yet an onboarding target).",
+   "columns": {
+    "appointment_id": "text",
+    "patient_id": "text",
+    "scheduled_date": "text",
+    "booked_date": "text",
+    "final_status": "text",
+    "ever_no_show": "integer",
+    "ever_cancelled": "integer",
+    "ever_rescheduled": "integer",
+    "kept": "integer",
+    "organization_id": "text",
+    "clinician_id": "text",
+    "purpose": "text",
+    "versions": "integer"
+   },
+   "onboarding_target": false
+  },
+  "claim_adjustment": {
+   "table": "claim_adjustment",
+   "meaning": "One row per adjustment line on each medical claim adjudication record: group_code (CO/PR/OA), reason_code (X12 CARC), category (deductible, coinsurance, copay, contractual_adjustment, else group-code), amount_cents; current_version = 1 on the claim's latest version.",
+   "derivation": "X12 CARC adjustment lines (not yet an onboarding target; needs 835 adjustment segments).",
+   "columns": {
+    "claim_id": "text",
+    "record_id": "text",
+    "patient_id": "text",
+    "adjudication_status": "text",
+    "group_code": "text",
+    "reason_code": "text",
+    "category": "text",
+    "amount_cents": "integer",
+    "current_version": "integer"
+   },
+   "onboarding_target": false
+  },
+  "encounter": {
+   "table": "encounter",
+   "meaning": "Encounter records plus ADT notifications (source_table adt, type = ADT event). type_concept = library encounter concept.",
+   "derivation": "Encounter + ADT rows (visit is the onboarding target).",
+   "columns": {
+    "record_id": "text",
+    "patient_id": "text",
+    "source_table": "text",
+    "encounter_id": "text",
+    "type": "text",
+    "type_concept": "text",
+    "status": "text",
+    "event_date": "text",
+    "end_date": "text",
+    "available_date": "text",
+    "organization_id": "text",
+    "attending_clinician_id": "text",
+    "disposition": "text"
+   },
+   "onboarding_target": false
+  },
+  "encounter_diagnosis": {
+   "table": "encounter_diagnosis",
+   "meaning": "ICD-10-CM diagnoses coded on encounters: one row per (encounter_id, rank, icd10, type); type principal/primary/secondary. Administrative contacts are uncoded by design.",
+   "derivation": "Encounter-coded ICD-10 diagnoses (not yet an onboarding target).",
+   "columns": {
+    "encounter_id": "text",
+    "patient_id": "text",
+    "rank": "integer",
+    "icd10": "text",
+    "type": "text",
+    "record_id": "text"
+   },
+   "onboarding_target": false
+  },
+  "immunization": {
+   "table": "immunization",
+   "meaning": "One row per immunization record: vaccine, product, cvx, mvx, status (administration_status).",
+   "derivation": "Immunization rows (not yet an onboarding target).",
+   "columns": {
+    "record_id": "text",
+    "patient_id": "text",
+    "vaccine": "text",
+    "product": "text",
+    "cvx": "text",
+    "mvx": "text",
+    "status": "text",
+    "event_date": "text",
+    "available_date": "text"
+   },
+   "onboarding_target": false
+  },
+  "record": {
+   "table": "record",
+   "meaning": "Every received record (all streams). Use json_extract(payload, '$.field') for fields of streams not modelled above.",
+   "derivation": "Every received record (the onboarding lineage table plays this role).",
+   "columns": {
+    "record_id": "text",
+    "patient_id": "text",
+    "stream": "text",
+    "event_date": "text",
+    "recorded_date": "text",
+    "available_date": "text",
+    "organization_id": "text",
+    "payload": "text"
+   },
+   "onboarding_target": false
+  }
+ }
+}
