@@ -143,8 +143,20 @@ def carry_forward_verified(prior_build,build,out=None):
     return {k:v for k,v in summary.items() if k!='outcomes'}
 
 
+def source_coverage_check(build,enforce=None):
+    """Every received stream mapped, read by an engine or declared unused (source_coverage.py). Raises when enforced
+    (config/agere/unmapped_streams.json enforce, or enforce=True) and a stream is in none; informational otherwise."""
+    from . import source_coverage
+    build=Path(build)
+    if not (build/'stack'/'source-profile.json').exists():
+        if enforce:raise ValueError('Source coverage gate needs the build source profile')
+        return {'status':'unavailable','reason':'no stack/source-profile.json'}
+    report=source_coverage.gate(build,enforce=enforce)
+    return {k:report[k] for k in ('schema','enforce','passed','counts','unread','unread_records','invalid_declarations')}
+
+
 def activate(build,config,restatement=False,expansion=False,retraction=False,rebaseline=False,carry_forward=False,
-             require_release_diff=False,release_diff_accepted=()):
+             require_release_diff=False,release_diff_accepted=(),source_coverage_enforce=None):
     if rebaseline and (restatement or expansion or retraction):
         raise ValueError('--rebaseline is a fresh load; it cannot be combined with --restatement, --expansion or --retraction')
     from .healthcare_warehouse import checksum
@@ -167,6 +179,7 @@ def activate(build,config,restatement=False,expansion=False,retraction=False,reb
         kind=validate_migration(migration,connection,prior,restatement=restatement,expansion=expansion,retraction=retraction)
     restated=kind.startswith('restated')
     diff_gate=release_diff_gate(build,release_diff_accepted) if require_release_diff else None
+    coverage=source_coverage_check(build,source_coverage_enforce)
     if checksum(dataset['source'])!=dataset['source_sha256']:raise ValueError('Pinned source content changed')
     clinical_state.attached(build/'stack');db,_=longitudinal.connect(build/'stack');db.close()
     policy=(f"Rebaselined healthcare-warehouse roster: {connection['patients']} received patients loaded fresh; prior roster not carried forward" if rebaseline else
@@ -195,6 +208,7 @@ def activate(build,config,restatement=False,expansion=False,retraction=False,reb
                                                     'deceased_patients_in_new_release','prior_release') if k in migration} if kind.endswith('_retracted') else None,
              'rebaseline':{'basis':REBASELINE_BASIS,'prior_release_diff':diff} if rebaseline else None}
     if diff_gate is not None:receipt['release_diff_gate']=diff_gate
+    receipt['source_coverage']=coverage
     if carry_forward and prior:
         try:receipt['verified_carry_forward']=carry_forward_verified(prior['build'],build)
         except Exception as exc:  # noqa: BLE001 - the activation stands; the store starts empty and the receipt says why

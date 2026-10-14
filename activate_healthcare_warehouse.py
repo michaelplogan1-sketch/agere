@@ -19,9 +19,12 @@ if __name__=='__main__':
     p.add_argument('--require-release-diff',action='store_true',help='Refuse activation unless BUILD/release-diff.json '
                    '(tools/release_diff_guard.py) exists for this build and has no unacknowledged flags')
     p.add_argument('--accept-release-diff',type=Path,help='JSON {"accepted": [finding ids or kinds]} acknowledged by a reviewer')
+    p.add_argument('--require-source-coverage',action='store_true',help='Refuse activation when any received stream is neither '
+                   'mapped, read by an engine nor declared in config/agere/unmapped_streams.json (default: that file\'s enforce flag)')
     a=p.parse_args()
     if a.rebaseline and (a.restatement or a.expansion or a.retraction):p.error('--rebaseline cannot be combined with --restatement, --expansion or --retraction')
     accepted=json.loads(a.accept_release_diff.read_text()).get('accepted',[]) if a.accept_release_diff else []
     print(json.dumps(activate(a.build,a.config,restatement=a.restatement,expansion=a.expansion,retraction=a.retraction,rebaseline=a.rebaseline,
                               carry_forward=a.carry_forward_verified,require_release_diff=a.require_release_diff,
-                              release_diff_accepted=accepted),indent=2))
+                              release_diff_accepted=accepted,
+                              source_coverage_enforce=True if a.require_source_coverage else None),indent=2))

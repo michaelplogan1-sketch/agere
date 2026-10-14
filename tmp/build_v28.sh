@@ -60,6 +60,9 @@ step client-checks $PY tools/v23_client_checks.py --build $B --out $B/client-che
 # regenerates the population, so whole rosters are compared (--segments roster).
 step release-diff $PY tools/release_diff_guard.py --candidate $B --prior $PREV --segments roster \
      ${V28_RELEASE_DIFF_GATE:+--gate} ${V28_RELEASE_DIFF_ACCEPT:+--accept $V28_RELEASE_DIFF_ACCEPT}
+# Source coverage: every received stream mapped, read by an engine, or declared in config/agere/unmapped_streams.json.
+# Informational while that file has enforce=false (V28_SOURCE_COVERAGE_GATE=1 forces it); writes $B/source-coverage.json.
+step source-coverage $PY tools/source_coverage_gate.py --build $B ${V28_SOURCE_COVERAGE_GATE:+--gate}
 
 # Verification chain (receipts that warehouse_activation.activate reads)
 [[ -d $B/inventory ]] || step inventory $PY inventory_received_warehouse.py --release $REL --previous $PREV_REL --output $B/inventory --rebaseline
@@ -72,6 +75,6 @@ step audit       $PY tools/restatement_audit.py --build $B --previous $PREV_REL 
 echo "== chain complete $(date '+%F %T'); disk $(du -sh $B | cut -f1)" | tee -a $LOG
 grep -E '"(identical_roster|prior_patients|new_patients|prior_patients_missing|prior_rows_missing|prior_rows_changed|prior_rows_retracted|retracted_patients|prior_rows_unexplained|prior_rows_reassigned)"' $B/migration-audit.json | tee -a $LOG
 echo "Not activated. To activate (service on 8885 stopped first):"
-echo "  $PY activate_healthcare_warehouse.py --build $B --rebaseline --carry-forward-verified [--require-release-diff --accept-release-diff FILE]"
+echo "  $PY activate_healthcare_warehouse.py --build $B --rebaseline --carry-forward-verified [--require-release-diff --accept-release-diff FILE] [--require-source-coverage]"
 echo "  (--carry-forward-verified replays the active stack's verified pairs on $B; the v1.23 store can be replayed too:"
 echo "   $PY tools/carry_forward_verified.py --from artifacts/agere-healthcare-v123 --to $B)"
