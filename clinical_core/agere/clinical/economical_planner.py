@@ -14,7 +14,13 @@ from .cohorts import empty
 from .analysis_graph import validate
 
 VERSION='economical-question-planner/1'
-DECISION_THRESHOLD=.95  # Conservative engineering cutoff; not clinical calibration.
+DECISION_THRESHOLD=.95  # Hand-set fallback; a Learn-then-Test value from calibrated_thresholds.json replaces it when certified.
+
+
+def decision_threshold():
+    """Typed-router acceptance cutoff: certified (calibrated_thresholds 'economical_planner.decision') or the hand-set value."""
+    from .calibrated_thresholds import get
+    return get('economical_planner.decision',DECISION_THRESHOLD)
 
 
 GENERIC_NOTES={'count','sum','year','contains','lacks field'}
@@ -145,14 +151,16 @@ def parse_decision(raw,body):
     total=sum(p.values())
     if abs(total-1)>len(p)*.005+1e-9 or total<=0 or p[a['choice']]<max(p.values()):raise ValueError('Invalid routing distribution')
     probabilities={k:v/total for k,v in p.items()}
+    gate=decision_threshold()
     return {'choice':a['choice'],'probabilities':probabilities,
-            'accepted':a['choice']!='frontier' and probabilities[a['choice']]>=DECISION_THRESHOLD,
-            'threshold':DECISION_THRESHOLD,'calibrated_semantic_accuracy':False}
+            'accepted':a['choice']!='frontier' and probabilities[a['choice']]>=gate['threshold'],
+            'threshold':gate['threshold'],'calibrated_semantic_accuracy':False,'threshold_calibrated':gate['calibrated'],
+            **({'threshold_guarantee':gate['guarantee']} if gate.get('guarantee') else {})}
 
 
 def policy_identity():
     from . import graph_planner,graph_workbench,planner_scope,planner_catalog,domain_question_plans,evidence_portfolio,graph_contracts
-    return digest([VERSION,DECISION_THRESHOLD,recipes(),PersistentGateway.MODELS,
+    return digest([VERSION,decision_threshold()['threshold'],recipes(),PersistentGateway.MODELS,
       *[hashlib.sha256(Path(p).read_bytes()).hexdigest() for p in (__file__,graph_planner.__file__,graph_workbench.__file__,planner_scope.__file__,planner_catalog.__file__,graph_contracts.__file__,domain_question_plans.__file__,evidence_portfolio.__file__)]])
 
 
@@ -295,10 +303,21 @@ def plan(stack,question,ledger,frontier):
             judge=HostedModel(ledger,stack.receipts,model=os.environ.get('AGERE_JUDGE_MODEL','claude-opus-5-5'))
             from .nl2sql import Decider
             decider=Decider(ledger,stack.receipts) if os.environ.get('AGERE_DECIDER_JUDGE','on')!='off' else None
-            params,result,receipt=verified_answer(stack.path,question,meta['snapshot']['as_of'],hosted,second,judge,decider)
-            from . import learning, verify
-            learning.record_verified(stack.path,question,'sql',params,verify.signature(result),'hosted_verified_sql',
-                                     [a.get('model') for a in receipt['attempts']],receipt['agreement'])
+            # Independent candidates (deterministic compiler, bottled local model) and deterministic oracles decide whether
+            # model agreement counts as verification (verification_v2; AGERE_VERIFICATION_V2=off restores the two-model ladder).
+            # The verified pair is NOT captured here: conversation.handle_compose records it after the answer and its checks.
+            independent=oracle=None
+            if os.environ.get('AGERE_VERIFICATION_V2','on')!='off':
+                from . import verification_v2,oracles
+                as_of=meta['snapshot']['as_of']
+                independent=verification_v2.default_sources(stack.path,as_of,profile)
+                oracle=verification_v2.oracle_for(stack.path,question,as_of,
+                                                  oracles.readonly_executor(stack.path) if os.environ.get('AGERE_PARTITION_ORACLE','on')!='off' else None)
+            params,result,receipt=verified_answer(stack.path,question,meta['snapshot']['as_of'],hosted,second,judge,decider,
+                                                  independent=independent,oracle=oracle)
+            from . import verify
+            receipt['capture']={'plan':params,'signature':json.dumps(verify.signature(result),default=str)[:4000],
+                                'models':[a.get('model') for a in receipt['attempts']],'agreement':receipt['agreement']}
             graph=validate({'interpretation':question,'coverage':'supported_observation','unmet_requirements':[],
                             'nodes':[{'id':'answer','operation':'sql','inputs':[],'parameters':params,
                                       'purpose':'Hosted small-model query over the semantic layer'}]},meta['snapshot']['as_of'])

@@ -15,6 +15,8 @@ CREATE TABLE IF NOT EXISTS outcomes(question TEXT, route TEXT, status TEXT, reas
                                     usd REAL, created REAL);
 CREATE TABLE IF NOT EXISTS corrections(question TEXT, note TEXT, expected TEXT, created REAL);
 CREATE TABLE IF NOT EXISTS routing(question TEXT, decision TEXT, operator TEXT, parameters TEXT, chooser TEXT, executed INTEGER, created REAL);
+CREATE TABLE IF NOT EXISTS quarantined(question TEXT, plan_kind TEXT, plan TEXT, signature TEXT, route TEXT, agreement TEXT,
+                                       controls TEXT, created REAL, context TEXT);
 """
 
 
@@ -85,8 +87,45 @@ def record_routing(path, question, info, executed):
         db.close()
 
 
-# Answer-level controls that, replayed over past blind runs, fired only on wrong answers (docs/agere/FMEA.md).
-QUARANTINE_CONTROLS = {'QC-PERIOD', 'QC-UNITS', 'QC-NUMBERS', 'QC-PARTS', 'QC-CLOCK'}
+# Answer-level controls that, replayed over past blind runs, fired only on wrong answers (docs/agere/FMEA.md), plus the
+# deterministic oracles (oracles.py) whose warnings carry the same weight for capture.
+QUARANTINE_CONTROLS = {'QC-PERIOD', 'QC-UNITS', 'QC-NUMBERS', 'QC-PARTS', 'QC-CLOCK', 'QC-PERTURB', 'QC-PARTITION'}
+
+
+def capture_verified(path, question, planner_receipt, answer):
+    """FMEA FM-23 at the source: record a hosted verified pair only AFTER the answer was built and its checks ran.
+
+    Called once per answered question (conversation.handle_compose). The planner leaves the candidate pair in
+    planner_receipt['hosted_sql']['capture']; it becomes a verified training pair only when the answer is answered, carries
+    no high-precision warning (QUARANTINE_CONTROLS), the judge's query raised no oracle finding, and the candidates did
+    not split into two defensible readings (FM-19: an ambiguous question has no single verified plan). Anything else is
+    written to the 'quarantined' table with the reasons, for audit, and never reused or trained on.
+    Returns {'recorded': bool, 'reasons': [...]}."""
+    pr = planner_receipt or {}
+    hosted = pr.get('hosted_sql') or {}
+    cap = hosted.get('capture') or pr.get('capture')
+    if pr.get('route') != 'hosted_verified_sql' or not cap: return {'recorded': False, 'reasons': ['not a hosted verified answer']}
+    answer = answer or {}
+    reasons = sorted({c['control'] for c in answer.get('quality_checks') or []
+                      if c.get('severity') == 'warning' and c.get('control') in QUARANTINE_CONTROLS})
+    if answer.get('status') not in ('answered', 'partial'): reasons.append(f"answer status {answer.get('status')}")
+    if (hosted.get('verification') or {}).get('judge_findings'): reasons.append('judge query failed a deterministic check')
+    if (hosted.get('verification') or {}).get('dissent'): reasons.append('an independent candidate disagrees')
+    if hosted.get('readings') or answer.get('readings'): reasons.append('two defensible readings')
+    db = _db(path)
+    try:
+        if reasons:
+            db.execute('INSERT INTO quarantined VALUES (?,?,?,?,?,?,?,?,?)',
+                       (question.strip(), 'sql', json.dumps(cap['plan'], sort_keys=True), str(cap.get('signature'))[:4000], pr.get('route'),
+                        cap.get('agreement'), json.dumps(reasons), time.time(), context(path)))
+            db.commit()
+            return {'recorded': False, 'reasons': reasons}
+    finally:
+        db.close()
+    try: signature = json.loads(cap.get('signature')) if isinstance(cap.get('signature'), str) else cap.get('signature')
+    except ValueError: signature = cap.get('signature')
+    record_verified(path, question, 'sql', cap['plan'], signature, 'hosted_verified_sql', cap.get('models') or [], cap.get('agreement'))
+    return {'recorded': True, 'reasons': []}
 
 
 def quarantine(path, question, answer):

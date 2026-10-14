@@ -211,6 +211,50 @@ def risk_control_threshold(cal_p, cal_y, alpha=0.1, grid=None):
     return best
 
 
+def binomial_cdf(k, n, p):
+    """P(Bin(n, p) <= k), exact (log-space sum; n is a calibration-set size, so this is cheap)."""
+    if n <= 0 or k >= n: return 1.0
+    if k < 0: return 0.0
+    if p <= 0: return 1.0
+    if p >= 1: return 0.0
+    lp, lq = math.log(p), math.log1p(-p)
+    terms = [math.lgamma(n + 1) - math.lgamma(i + 1) - math.lgamma(n - i + 1) + i * lp + (n - i) * lq for i in range(k + 1)]
+    m = max(terms)
+    return min(1.0, math.exp(m) * sum(math.exp(t - m) for t in terms))
+
+
+def ltt_threshold(score_values, errors, alpha=0.02, delta=0.1, grid=None):
+    """Learn-then-Test (Angelopoulos, Bates, Candes, Jordan & Lei 2021) for an 'accept when score >= lambda' gate.
+
+    For each candidate lambda, H0(lambda): the error rate among accepted cases exceeds alpha. Its p-value is the exact
+    binomial tail P(Bin(n_lambda, alpha) <= k_lambda), with n_lambda accepted calibration cases of which k_lambda were wrong
+    (valid conditionally on the calibration scores, given exchangeability).
+    Hypotheses are tested in a fixed sequence from the strictest testable lambda down (fixed-sequence testing controls the
+    family-wise error at delta), stopping at the first that is not rejected. The returned lambda is the most permissive
+    certified one: with probability >= 1 - delta over the calibration draw, accepted cases at that lambda are wrong at a
+    rate <= alpha, provided future cases are exchangeable with the calibration cases.
+    Returns a dict; 'threshold' is None when no lambda can be certified (too little data or too many errors)."""
+    s = np.asarray(score_values, dtype=float)
+    e = np.asarray(errors, dtype=bool)
+    if len(s) != len(e): raise ValueError('scores and errors must align')
+    grid = np.unique(s) if grid is None else np.unique(np.asarray(grid, dtype=float))
+    out = {'alpha': alpha, 'delta': delta, 'n_calibration': int(len(s)), 'threshold': None, 'tested': 0}
+    for lam in sorted(grid, reverse=True):
+        accepted = s >= lam
+        n, k = int(accepted.sum()), int(e[accepted].sum())
+        # A lambda that accepts too few cases to reject even with zero errors is not tested. Which lambdas those are depends
+        # only on the scores, not the labels, so (conditioning on the scores) the test sequence stays fixed in advance.
+        if n == 0 or binomial_cdf(0, n, alpha) > delta: continue
+        p_value = binomial_cdf(k, n, alpha)
+        out['tested'] += 1
+        if p_value > delta: break
+        out.update(threshold=float(lam), n_accepted=n, errors_accepted=k, coverage=round(n / len(s), 4), p_value=p_value,
+                   empirical_error=round(k / n, 4))
+    if out['threshold'] is None:
+        out['min_accepted_for_zero_errors'] = math.ceil(math.log(delta) / math.log1p(-alpha))
+    return out
+
+
 def brier(p, y):
     p, y = np.asarray(p, dtype=float), np.asarray(y, dtype=float)
     return float(np.mean((p - y) ** 2)) if len(p) else None

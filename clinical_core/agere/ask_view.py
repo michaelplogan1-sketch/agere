@@ -91,7 +91,7 @@ form.askf{display:flex;gap:8px}form.askf input{flex:1;min-width:0;padding:11px 1
 .badge.answered{color:var(--good);background:var(--good-bg);border-color:transparent}.badge.partial{color:var(--warn);background:var(--warn-bg);border-color:transparent}
 .badge.unsupported,.badge.error{color:var(--bad);background:var(--bad-bg);border-color:transparent}
 .alert{border-radius:10px;padding:10px 12px;margin:12px 0;font-size:14px}.alert ul{margin:4px 0 0;padding-left:18px}
-.alert.warn{background:var(--warn-bg);color:var(--fg);border-left:4px solid var(--warn)}.alert.bad{background:var(--bad-bg);border-left:4px solid var(--bad)}
+.alert.warn{background:var(--warn-bg);color:var(--fg);border-left:4px solid var(--warn)}.readings{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr));gap:12px;margin:10px 0}.reading{border:1px solid var(--line,#ccc);border-radius:8px;padding:10px;min-width:0}.reading.default{border-color:var(--accent,#2a6)}.reading .val{font-size:1.3em;font-weight:600;overflow-wrap:anywhere}.reading pre{white-space:pre-wrap;overflow-wrap:anywhere;font-size:.8em;max-height:9em;overflow:auto}.alert.bad{background:var(--bad-bg);border-left:4px solid var(--bad)}
 .alert h3{margin:0;font-size:14px}
 .sec{margin-top:16px}.sec>h3{font-size:14px;margin:0 0 8px}
 .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px}
@@ -643,6 +643,7 @@ function headlineHTML(a){let hl=String(a.headline||a.status||'');const cut=hl.in
 function warnBox(a){const w=(a.warnings||[]),m=(a.missing||[]);let h='';
  if(w.length)h+='<div class="alert warn" role="note"><h3>Warnings ('+w.length+')</h3><ul>'+w.map(x=>'<li>'+esc(x)+'</li>').join('')+'</ul></div>';
  if(m.length)h+='<div class="alert '+(a.status==='unsupported'?'bad':'warn')+'" role="note"><h3>Not covered</h3><ul>'+m.map(x=>'<li>'+esc(x)+'</li>').join('')+'</ul></div>';return h}
+function readingsBox(a,q){const r=a.readings||[];if(r.length<2)return '';const show=v=>typeof v==='number'?fmt(v):v&&v.patients!=null?fmt(v.patients)+' patients':v&&v.rows?v.rows.length+' rows':esc(JSON.stringify(v));let h='<div class="sec" data-readings><h3>Two defensible readings</h3>'+(a.clarifying_question?'<p class="hint">'+esc(a.clarifying_question)+'</p>':'')+'<div class="readings">';r.forEach((x,i)=>{h+='<div class="reading'+(x.default?' default':'')+'"><div class="muted">'+(x.default?'Shown (default)':'Alternative')+'</div>'+'<div class="val">'+show(x.result)+'</div><p>'+esc(x.definition||'')+'</p>'+(x.query?'<details><summary>Query</summary><pre>'+esc(x.query)+'</pre></details>':'')+(q&&x.definition?'<button type="button" class="btn small" data-ask="'+esc(q+' (definition: '+x.definition+')')+'">Use this reading</button>':'')+'</div>'});return h+'</div></div>'}
 function renderTurn(i){const t=state.turns[i];const box=$('#answer');state.active=i;renderThread();if(!t){box.innerHTML='';return}
  if(t.pending){box.innerHTML='<div class="q">'+esc(t.question)+'</div><p class="skeleton">Planning and computing…</p>';return}
  if(t.error){box.innerHTML='<div class="q">'+esc(t.question)+'</div>'+resolvedLine(t)+'<div class="headline badc">Not answered</div>'+badges(t)+'<div class="alert bad">'+esc(t.error)+'</div>'+
@@ -650,7 +651,7 @@ function renderTurn(i){const t=state.turns[i];const box=$('#answer');state.activ
  if(!t.data){box.innerHTML='<div class="q">'+esc(t.question)+'</div>'+resolvedLine(t)+'<div class="headline">'+esc(t.summary||'')+'</div><p class="hint">Earlier turn: ask it again to see the full answer.</p>'+
    '<div class="tools"><button type="button" class="btn small" data-ask-standalone="'+esc(t.resolved||t.question)+'">Ask again</button></div>';return}
  const a=t.data.answer||{};state.csv={};
- let h='<div class="q">'+esc(t.question)+'</div>'+resolvedLine(t)+headlineHTML(a)+badges(t)+warnBox(a);
+ let h='<div class="q">'+esc(t.question)+'</div>'+resolvedLine(t)+headlineHTML(a)+badges(t)+warnBox(a)+readingsBox(a,t.resolved||t.question);
  try{h+=visual(a)}catch(err){h+='<div class="alert warn">Visual unavailable: '+esc(err.message)+'</div>'+tableHTML(a.table||[],{name:'agere-answer'})}
  const sg=suggestions(a);if(sg.length)h+='<div class="chips" aria-label="Follow-ups">'+sg.map(s=>'<button type="button" class="chip" data-ask="'+esc(s)+'">'+esc(s)+'</button>').join('')+'</div>';
  h+=details(a);

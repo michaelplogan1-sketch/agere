@@ -600,6 +600,12 @@ def handle_compose(stack, body, hosted_factory=None):
                             local.get('reason') if isinstance(local, dict) else None,
                             result.get('new_paid_api_calls') or 0, (result.get('planning_economics') or {}).get('known_api_estimate_usd') or 0)
     if pr.get('route') == 'hosted_verified_sql':
+        # FM-23: the verified pair is captured only now, after the answer was built and its checks ran; quarantine stays as a
+        # backstop for pairs captured earlier (or by older code) that a later check flags.
+        try:
+            learning.capture_verified(stack.path, logged, pr, result.get('answer'))
+        except (OSError, ValueError, KeyError, sqlite3.Error):
+            pass  # capture is learning bookkeeping; it never fails an answer
         learning.quarantine(stack.path, logged, result.get('answer'))
     if isinstance(local, dict) and local.get('operator_router'):
         learning.record_routing(stack.path, logged, local['operator_router'], executed=pr.get('route') == 'operator_router')

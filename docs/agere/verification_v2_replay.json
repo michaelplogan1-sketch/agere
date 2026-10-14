@@ -1,0 +1,4977 @@
+{
+ "schema": "verification-v2-replay/1",
+ "generated_at": "2026-10-13T22:48:25Z",
+ "seconds": 123.3,
+ "scope": "latest adjudicated full run of blind sets M, N, O; hosted_verified_sql route only; saved receipts re-executed read-only; no model called; bottled local model not run",
+ "hosted_answers": 118,
+ "wrong_engine_errors": 24,
+ "right": 59,
+ "other_failures": 35,
+ "caught_wrong": 8,
+ "false_alarms_right": 1,
+ "coverage_lost": 0.0169,
+ "escape_rate_before": 1.0,
+ "escape_rate_after": 0.6667,
+ "caught_by": {
+  "lint": 2,
+  "oracle QC-EMPTY": 1,
+  "same-family agreement failed a deterministic check: QC-CLOCK": 3,
+  "same-family agreement failed a deterministic check: QC-UNITS": 1,
+  "oracle QC-SHAPE": 1
+ },
+ "false_alarm_by": {
+  "lint": 1
+ },
+ "extra_judge_calls": 4,
+ "second_calls_saved": 3,
+ "compiler_candidates": 19,
+ "capture": {
+  "wrong_recorded_before": 24,
+  "wrong_recorded_after": 12,
+  "right_recorded_before": 59,
+  "right_recorded_after": 51
+ },
+ "readings": {
+  "on_defensible_definition": 0,
+  "defensible_definition_total": 1,
+  "on_wrong": 2,
+  "on_right": 1
+ },
+ "policies": {
+  "default": {
+   "caught_wrong": 8,
+   "wrong": 24,
+   "false_alarms_right": 1,
+   "right": 59,
+   "coverage_lost": 0.0169,
+   "caught_by": {
+    "lint": 2,
+    "oracle QC-EMPTY": 1,
+    "same-family agreement failed a deterministic check: QC-CLOCK": 3,
+    "same-family agreement failed a deterministic check: QC-UNITS": 1,
+    "oracle QC-SHAPE": 1
+   },
+   "false_alarm_by": {
+    "lint": 1
+   },
+   "caught_or_readings_wrong": 9,
+   "caught_or_readings_right": 2,
+   "extra_judge_calls": 4,
+   "second_calls_saved": 3
+  },
+  "compiler_dissent_routes": {
+   "caught_wrong": 11,
+   "wrong": 24,
+   "false_alarms_right": 7,
+   "right": 59,
+   "coverage_lost": 0.1186,
+   "caught_by": {
+    "compiler dissent": 1,
+    "independent source disagrees: compiler": 2,
+    "lint": 2,
+    "oracle QC-EMPTY": 1,
+    "same-family agreement failed a deterministic check: QC-CLOCK": 3,
+    "same-family agreement failed a deterministic check: QC-UNITS": 1,
+    "oracle QC-SHAPE": 1
+   },
+   "false_alarm_by": {
+    "compiler dissent": 3,
+    "lint": 1,
+    "independent source disagrees: compiler": 3
+   },
+   "caught_or_readings_wrong": 12,
+   "caught_or_readings_right": 8,
+   "extra_judge_calls": 13,
+   "second_calls_saved": 3
+  }
+ },
+ "lint_now_rejects": {
+  "wrong": 2,
+  "right": 1
+ },
+ "controls": {
+  "QC-CLOCK": {
+   "wrong": 3,
+   "right": 0,
+   "other": 0,
+   "precision_wrong_vs_right": 1.0,
+   "recall_of_wrong": 0.125,
+   "false_alarm_rate_on_right": 0.0
+  },
+  "QC-DENOM:info": {
+   "wrong": 2,
+   "right": 15,
+   "other": 10,
+   "precision_wrong_vs_right": 0.118,
+   "recall_of_wrong": 0.083,
+   "false_alarm_rate_on_right": 0.254
+  },
+  "QC-EMPTY": {
+   "wrong": 1,
+   "right": 0,
+   "other": 0,
+   "precision_wrong_vs_right": 1.0,
+   "recall_of_wrong": 0.042,
+   "false_alarm_rate_on_right": 0.0
+  },
+  "QC-PARTITION:info": {
+   "wrong": 1,
+   "right": 4,
+   "other": 2,
+   "precision_wrong_vs_right": 0.2,
+   "recall_of_wrong": 0.042,
+   "false_alarm_rate_on_right": 0.068
+  },
+  "QC-PERIOD": {
+   "wrong": 0,
+   "right": 0,
+   "other": 2,
+   "precision_wrong_vs_right": null,
+   "recall_of_wrong": 0.0,
+   "false_alarm_rate_on_right": 0.0
+  },
+  "QC-SHAPE": {
+   "wrong": 1,
+   "right": 0,
+   "other": 0,
+   "precision_wrong_vs_right": 1.0,
+   "recall_of_wrong": 0.042,
+   "false_alarm_rate_on_right": 0.0
+  },
+  "QC-UNITS": {
+   "wrong": 1,
+   "right": 0,
+   "other": 0,
+   "precision_wrong_vs_right": 1.0,
+   "recall_of_wrong": 0.042,
+   "false_alarm_rate_on_right": 0.0
+  }
+ },
+ "items": [
+  {
+   "set": "M",
+   "id": "M02",
+   "label": "defensible_definition",
+   "agreement": "judge=second",
+   "question": "Nephrology wants a list: everyone whose most recent eGFR is under 60.",
+   "compiler_candidate": false,
+   "controls": [],
+   "blocking": [],
+   "lint": [],
+   "policy": {
+    "default": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "judged",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    },
+    "compiler_dissent_routes": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "judged",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    }
+   },
+   "extra_judge_call": false,
+   "second_call_saved": false,
+   "v2": "judged",
+   "caught": false,
+   "caught_by": null,
+   "dissent": [],
+   "visible": false,
+   "capture": "recorded"
+  },
+  {
+   "set": "M",
+   "id": "M03",
+   "label": "right",
+   "agreement": "primary=second",
+   "question": "For the women's health program: how many women 65 and older have both diabetes and hypertension?",
+   "compiler_error": "field_unavailable: patients.age_latest",
+   "compiler_candidate": false,
+   "controls": [],
+   "blocking": [],
+   "lint": [],
+   "policy": {
+    "default": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "accepted:same_family_with_oracles",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    },
+    "compiler_dissent_routes": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "accepted:same_family_with_oracles",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    }
+   },
+   "extra_judge_call": false,
+   "second_call_saved": false,
+   "v2": "accepted:same_family_with_oracles",
+   "caught": false,
+   "caught_by": null,
+   "dissent": [],
+   "visible": false,
+   "capture": "recorded"
+  },
+  {
+   "set": "M",
+   "id": "M04",
+   "label": "right",
+   "agreement": "judge=second",
+   "question": "Possible missed diabetes: prediabetes on the problem list, no diabetes diagnosis, but latest A1c at 6.5 or higher. How many?",
+   "compiler_candidate": false,
+   "controls": [],
+   "blocking": [],
+   "lint": [],
+   "policy": {
+    "default": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "judged",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    },
+    "compiler_dissent_routes": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "judged",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    }
+   },
+   "extra_judge_call": false,
+   "second_call_saved": false,
+   "v2": "judged",
+   "caught": false,
+   "caught_by": null,
+   "dissent": [],
+   "visible": false,
+   "capture": "recorded"
+  },
+  {
+   "set": "M",
+   "id": "M05",
+   "label": "wrong",
+   "agreement": "judge=second",
+   "question": "pull resp registry \u2014 asthma or COPD pts (count emphysema + chronic obstructive bronchitis as COPD)",
+   "compiler_candidate": true,
+   "controls": [],
+   "blocking": [],
+   "lint": [],
+   "policy": {
+    "default": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "judged:independent_dissent",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [
+      "compiler"
+     ],
+     "visible": false
+    },
+    "compiler_dissent_routes": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "judged:independent_dissent",
+     "caught": true,
+     "caught_by": "compiler dissent",
+     "dissent": [
+      "compiler"
+     ],
+     "visible": true
+    }
+   },
+   "extra_judge_call": false,
+   "second_call_saved": false,
+   "v2": "judged:independent_dissent",
+   "caught": false,
+   "caught_by": null,
+   "dissent": [
+    "compiler"
+   ],
+   "visible": false,
+   "capture": "quarantined"
+  },
+  {
+   "set": "M",
+   "id": "M06",
+   "label": "right",
+   "agreement": "judge_own",
+   "question": "How many patients have a potassium above 5.0 on their most recent check?",
+   "compiler_candidate": true,
+   "controls": [],
+   "blocking": [],
+   "lint": [],
+   "policy": {
+    "default": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "judged:independent_dissent",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [
+      "compiler"
+     ],
+     "visible": false
+    },
+    "compiler_dissent_routes": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "judged:independent_dissent",
+     "caught": true,
+     "caught_by": "compiler dissent",
+     "dissent": [
+      "compiler"
+     ],
+     "visible": true
+    }
+   },
+   "extra_judge_call": false,
+   "second_call_saved": false,
+   "v2": "judged:independent_dissent",
+   "caught": false,
+   "caught_by": null,
+   "dissent": [
+    "compiler"
+   ],
+   "visible": false,
+   "capture": "quarantined"
+  },
+  {
+   "set": "M",
+   "id": "M08",
+   "label": "right",
+   "agreement": "judge=second",
+   "question": "Lipid clinic screen: men aged 50 to 75 who have ever had an LDL of 190 or more. Count please.",
+   "compiler_error": "field_unavailable: patients.age_latest; field_unavailable: patients.age_latest",
+   "compiler_candidate": false,
+   "controls": [],
+   "blocking": [],
+   "lint": [],
+   "policy": {
+    "default": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "judged",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    },
+    "compiler_dissent_routes": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "judged",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    }
+   },
+   "extra_judge_call": false,
+   "second_call_saved": false,
+   "v2": "judged",
+   "caught": false,
+   "caught_by": null,
+   "dissent": [],
+   "visible": false,
+   "capture": "recorded"
+  },
+  {
+   "set": "M",
+   "id": "M09",
+   "label": "right",
+   "agreement": "primary=second",
+   "question": "BH integration sizing: how many patients have depression, anxiety, PTSD, bipolar, or schizophrenia documented?",
+   "compiler_candidate": false,
+   "controls": [],
+   "blocking": [],
+   "lint": [],
+   "policy": {
+    "default": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "accepted:same_family_with_oracles",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    },
+    "compiler_dissent_routes": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "accepted:same_family_with_oracles",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    }
+   },
+   "extra_judge_call": false,
+   "second_call_saved": false,
+   "v2": "accepted:same_family_with_oracles",
+   "caught": false,
+   "caught_by": null,
+   "dissent": [],
+   "visible": false,
+   "capture": "recorded"
+  },
+  {
+   "set": "M",
+   "id": "M10",
+   "label": "right",
+   "agreement": "primary=second",
+   "question": "Of our anemia patients, how many are still running a hemoglobin under 11 on their latest draw?",
+   "compiler_candidate": true,
+   "controls": [],
+   "blocking": [],
+   "lint": [],
+   "policy": {
+    "default": {
+     "extra_judge_call": false,
+     "second_call_saved": true,
+     "v2": "accepted:independent",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    },
+    "compiler_dissent_routes": {
+     "extra_judge_call": false,
+     "second_call_saved": true,
+     "v2": "accepted:independent",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    }
+   },
+   "extra_judge_call": false,
+   "second_call_saved": true,
+   "v2": "accepted:independent",
+   "caught": false,
+   "caught_by": null,
+   "dissent": [],
+   "visible": false,
+   "capture": "recorded"
+  },
+  {
+   "set": "M",
+   "id": "M11",
+   "label": "right",
+   "agreement": "primary=second",
+   "question": "Give me the diabetics who are missing a urine albumin-to-creatinine ratio in the last 12 months.",
+   "compiler_candidate": false,
+   "controls": [],
+   "blocking": [],
+   "lint": [],
+   "policy": {
+    "default": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "accepted:same_family_with_oracles",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    },
+    "compiler_dissent_routes": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "accepted:same_family_with_oracles",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    }
+   },
+   "extra_judge_call": false,
+   "second_call_saved": false,
+   "v2": "accepted:same_family_with_oracles",
+   "caught": false,
+   "caught_by": null,
+   "dissent": [],
+   "visible": false,
+   "capture": "recorded"
+  },
+  {
+   "set": "M",
+   "id": "M12",
+   "label": "right",
+   "agreement": "primary=second",
+   "question": "Break the whole panel out by age band: 0-17, 18-44, 45-64, 65+.",
+   "compiler_candidate": false,
+   "controls": [],
+   "blocking": [],
+   "lint": [],
+   "policy": {
+    "default": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "accepted:same_family_with_oracles",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    },
+    "compiler_dissent_routes": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "accepted:same_family_with_oracles",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    }
+   },
+   "extra_judge_call": false,
+   "second_call_saved": false,
+   "v2": "accepted:same_family_with_oracles",
+   "caught": false,
+   "caught_by": null,
+   "dissent": [],
+   "visible": false,
+   "capture": "recorded"
+  },
+  {
+   "set": "M",
+   "id": "M13",
+   "label": "right",
+   "agreement": "primary=second",
+   "question": "How many observation stays have we had so far in 2029? Don't double-count the hospital feed versions.",
+   "compiler_candidate": false,
+   "controls": [],
+   "blocking": [],
+   "lint": [],
+   "policy": {
+    "default": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "accepted:same_family_with_oracles",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    },
+    "compiler_dissent_routes": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "accepted:same_family_with_oracles",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    }
+   },
+   "extra_judge_call": false,
+   "second_call_saved": false,
+   "v2": "accepted:same_family_with_oracles",
+   "caught": false,
+   "caught_by": null,
+   "dissent": [],
+   "visible": false,
+   "capture": "recorded"
+  },
+  {
+   "set": "M",
+   "id": "M14",
+   "label": "right",
+   "agreement": "primary=second",
+   "question": "Who are our repeat ED users \u2014 two or more ED visits in the past 12 months?",
+   "compiler_candidate": false,
+   "controls": [],
+   "blocking": [],
+   "lint": [],
+   "policy": {
+    "default": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "accepted:same_family_with_oracles",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    },
+    "compiler_dissent_routes": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "accepted:same_family_with_oracles",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    }
+   },
+   "extra_judge_call": false,
+   "second_call_saved": false,
+   "v2": "accepted:same_family_with_oracles",
+   "caught": false,
+   "caught_by": null,
+   "dissent": [],
+   "visible": false,
+   "capture": "recorded"
+  },
+  {
+   "set": "M",
+   "id": "M15",
+   "label": "unparsed",
+   "agreement": "primary=second",
+   "question": "What's our average length of stay for inpatient admissions discharged this year?",
+   "compiler_candidate": true,
+   "controls": [],
+   "blocking": [],
+   "lint": [],
+   "policy": {
+    "default": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "accepted:same_family_with_oracles",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [
+      "compiler"
+     ],
+     "visible": false
+    },
+    "compiler_dissent_routes": {
+     "extra_judge_call": true,
+     "second_call_saved": false,
+     "v2": "disputed:independent source disagrees: compiler",
+     "caught": true,
+     "caught_by": "independent source disagrees: compiler",
+     "dissent": [],
+     "visible": true
+    }
+   },
+   "extra_judge_call": false,
+   "second_call_saved": false,
+   "v2": "accepted:same_family_with_oracles",
+   "caught": false,
+   "caught_by": null,
+   "dissent": [
+    "compiler"
+   ],
+   "visible": false,
+   "capture": "quarantined"
+  },
+  {
+   "set": "M",
+   "id": "M16",
+   "label": "format_only",
+   "agreement": "judge=second",
+   "question": "ED visits per 1,000 by payer type for the trailing twelve months. Use everyone enrolled as the denominator, not just people who went to the ED.",
+   "compiler_candidate": false,
+   "controls": [],
+   "blocking": [],
+   "lint": [],
+   "policy": {
+    "default": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "judged",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    },
+    "compiler_dissent_routes": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "judged",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    }
+   },
+   "extra_judge_call": false,
+   "second_call_saved": false,
+   "v2": "judged",
+   "caught": false,
+   "caught_by": null,
+   "dissent": [],
+   "visible": false,
+   "capture": "recorded"
+  },
+  {
+   "set": "M",
+   "id": "M17",
+   "label": "right",
+   "agreement": "judge=second",
+   "question": "For ED visits this year, what percent got any outpatient touch \u2014 office, PCP, specialist or a phone call \u2014 within 7 days after?",
+   "compiler_candidate": false,
+   "controls": [
+    "QC-DENOM:info",
+    "QC-PARTITION:info"
+   ],
+   "blocking": [],
+   "lint": [],
+   "policy": {
+    "default": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "judged",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    },
+    "compiler_dissent_routes": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "judged",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    }
+   },
+   "extra_judge_call": false,
+   "second_call_saved": false,
+   "v2": "judged",
+   "caught": false,
+   "caught_by": null,
+   "dissent": [],
+   "visible": false,
+   "capture": "recorded"
+  },
+  {
+   "set": "M",
+   "id": "M18",
+   "label": "format_only",
+   "agreement": "primary=second",
+   "question": "Phone encounter volume by quarter for 2028?",
+   "compiler_candidate": false,
+   "controls": [],
+   "blocking": [],
+   "lint": [],
+   "policy": {
+    "default": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "accepted:same_family_with_oracles",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    },
+    "compiler_dissent_routes": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "accepted:same_family_with_oracles",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    }
+   },
+   "extra_judge_call": false,
+   "second_call_saved": false,
+   "v2": "accepted:same_family_with_oracles",
+   "caught": false,
+   "caught_by": null,
+   "dissent": [],
+   "visible": false,
+   "capture": "recorded"
+  },
+  {
+   "set": "M",
+   "id": "M19",
+   "label": "format_only",
+   "agreement": "primary=second",
+   "question": "Primary care visits in 2028 broken out by each patient's attributed practice.",
+   "compiler_candidate": false,
+   "controls": [],
+   "blocking": [],
+   "lint": [],
+   "policy": {
+    "default": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "accepted:same_family_with_oracles",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    },
+    "compiler_dissent_routes": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "accepted:same_family_with_oracles",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    }
+   },
+   "extra_judge_call": false,
+   "second_call_saved": false,
+   "v2": "accepted:same_family_with_oracles",
+   "caught": false,
+   "caught_by": null,
+   "dissent": [],
+   "visible": false,
+   "capture": "recorded"
+  },
+  {
+   "set": "M",
+   "id": "M20",
+   "label": "wrong",
+   "agreement": "primary=second",
+   "question": "How many patients haven't had a primary care visit in the last 12 months?",
+   "compiler_candidate": false,
+   "controls": [],
+   "blocking": [],
+   "lint": [],
+   "policy": {
+    "default": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "accepted:same_family_with_oracles",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    },
+    "compiler_dissent_routes": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "accepted:same_family_with_oracles",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    }
+   },
+   "extra_judge_call": false,
+   "second_call_saved": false,
+   "v2": "accepted:same_family_with_oracles",
+   "caught": false,
+   "caught_by": null,
+   "dissent": [],
+   "visible": false,
+   "capture": "recorded"
+  },
+  {
+   "set": "M",
+   "id": "M21",
+   "label": "right",
+   "agreement": "judge_own",
+   "question": "When we referred people to endo in 2026, what percent actually got seen by endocrinology within 90 days?",
+   "compiler_candidate": false,
+   "controls": [
+    "QC-DENOM:info"
+   ],
+   "blocking": [],
+   "lint": [],
+   "policy": {
+    "default": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "judged",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    },
+    "compiler_dissent_routes": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "judged",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    }
+   },
+   "extra_judge_call": false,
+   "second_call_saved": false,
+   "v2": "judged",
+   "caught": false,
+   "caught_by": null,
+   "dissent": [],
+   "visible": false,
+   "capture": "recorded"
+  },
+  {
+   "set": "M",
+   "id": "M22",
+   "label": "wrong",
+   "agreement": "judge=second",
+   "question": "What share of this year's ED visits ended in an admit or obs placement?",
+   "compiler_candidate": false,
+   "controls": [
+    "QC-DENOM:info",
+    "QC-PARTITION:info"
+   ],
+   "blocking": [],
+   "lint": [],
+   "policy": {
+    "default": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "judged",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    },
+    "compiler_dissent_routes": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "judged",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    }
+   },
+   "extra_judge_call": false,
+   "second_call_saved": false,
+   "v2": "judged",
+   "caught": false,
+   "caught_by": null,
+   "dissent": [],
+   "visible": false,
+   "capture": "recorded"
+  },
+  {
+   "set": "M",
+   "id": "M23",
+   "label": "right",
+   "agreement": "primary=second",
+   "question": "Of claims for 2028 dates of service that were denied on first pass, how many have since been overturned and paid?",
+   "compiler_candidate": false,
+   "controls": [],
+   "blocking": [],
+   "lint": [],
+   "policy": {
+    "default": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "accepted:same_family_with_oracles",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    },
+    "compiler_dissent_routes": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "accepted:same_family_with_oracles",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    }
+   },
+   "extra_judge_call": false,
+   "second_call_saved": false,
+   "v2": "accepted:same_family_with_oracles",
+   "caught": false,
+   "caught_by": null,
+   "dissent": [],
+   "visible": false,
+   "capture": "recorded"
+  },
+  {
+   "set": "M",
+   "id": "M24",
+   "label": "right",
+   "agreement": "primary=second",
+   "question": "How much did payers actually pay on 2028 dates of service, net of any takebacks?",
+   "compiler_candidate": false,
+   "controls": [],
+   "blocking": [],
+   "lint": [],
+   "policy": {
+    "default": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "accepted:same_family_with_oracles",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    },
+    "compiler_dissent_routes": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "accepted:same_family_with_oracles",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    }
+   },
+   "extra_judge_call": false,
+   "second_call_saved": false,
+   "v2": "accepted:same_family_with_oracles",
+   "caught": false,
+   "caught_by": null,
+   "dissent": [],
+   "visible": false,
+   "capture": "recorded"
+  },
+  {
+   "set": "M",
+   "id": "M25",
+   "label": "format_only",
+   "agreement": "judge_own",
+   "question": "Payer repricing check: by payer, how many claims got reprocessed and what did that do to allowed amounts in total?",
+   "compiler_candidate": false,
+   "controls": [],
+   "blocking": [],
+   "lint": [],
+   "policy": {
+    "default": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "judged",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    },
+    "compiler_dissent_routes": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "judged",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    }
+   },
+   "extra_judge_call": false,
+   "second_call_saved": false,
+   "v2": "judged",
+   "caught": false,
+   "caught_by": null,
+   "dissent": [],
+   "visible": false,
+   "capture": "recorded"
+  },
+  {
+   "set": "M",
+   "id": "M26",
+   "label": "right",
+   "agreement": "judge_own",
+   "question": "What % of our original claim submissions in 2028 bounced at the clearinghouse?",
+   "compiler_candidate": false,
+   "controls": [
+    "QC-DENOM:info"
+   ],
+   "blocking": [],
+   "lint": [],
+   "policy": {
+    "default": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "judged",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    },
+    "compiler_dissent_routes": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "judged",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    }
+   },
+   "extra_judge_call": false,
+   "second_call_saved": false,
+   "v2": "judged",
+   "caught": false,
+   "caught_by": null,
+   "dissent": [],
+   "visible": false,
+   "capture": "recorded"
+  },
+  {
+   "set": "M",
+   "id": "M27",
+   "label": "wrong",
+   "agreement": "judge=second",
+   "question": "Billed vs allowed vs paid by service type for 2029 dates of service \u2014 current state of each claim, please.",
+   "compiler_candidate": false,
+   "controls": [],
+   "blocking": [],
+   "lint": [],
+   "policy": {
+    "default": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "judged",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    },
+    "compiler_dissent_routes": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "judged",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    }
+   },
+   "extra_judge_call": false,
+   "second_call_saved": false,
+   "v2": "judged",
+   "caught": false,
+   "caught_by": null,
+   "dissent": [],
+   "visible": false,
+   "capture": "recorded"
+  },
+  {
+   "set": "M",
+   "id": "M28",
+   "label": "right",
+   "agreement": "judge=second",
+   "question": "Median days from date of service to first payer cash for 2028 services?",
+   "compiler_candidate": false,
+   "controls": [],
+   "blocking": [],
+   "lint": [],
+   "policy": {
+    "default": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "judged",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    },
+    "compiler_dissent_routes": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "judged",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    }
+   },
+   "extra_judge_call": false,
+   "second_call_saved": false,
+   "v2": "judged",
+   "caught": false,
+   "caught_by": null,
+   "dissent": [],
+   "visible": false,
+   "capture": "recorded"
+  },
+  {
+   "set": "M",
+   "id": "M29",
+   "label": "wrong",
+   "agreement": "judge=second",
+   "question": "What's our total outstanding patient A/R right now?",
+   "compiler_candidate": false,
+   "controls": [],
+   "blocking": [],
+   "lint": [],
+   "policy": {
+    "default": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "judged",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    },
+    "compiler_dissent_routes": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "judged",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    }
+   },
+   "extra_judge_call": false,
+   "second_call_saved": false,
+   "v2": "judged",
+   "caught": false,
+   "caught_by": null,
+   "dissent": [],
+   "visible": false,
+   "capture": "recorded"
+  },
+  {
+   "set": "M",
+   "id": "M30",
+   "label": "format_only",
+   "agreement": "judge=second",
+   "question": "Pharmacy side: for fills first paid in 2028, by payer \u2014 how many fills, how many got reversed, and net payer paid after reversals?",
+   "compiler_candidate": false,
+   "controls": [],
+   "blocking": [],
+   "lint": [],
+   "policy": {
+    "default": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "judged",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    },
+    "compiler_dissent_routes": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "judged",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    }
+   },
+   "extra_judge_call": false,
+   "second_call_saved": false,
+   "v2": "judged",
+   "caught": false,
+   "caught_by": null,
+   "dissent": [],
+   "visible": false,
+   "capture": "recorded"
+  },
+  {
+   "set": "M",
+   "id": "M31",
+   "label": "right",
+   "agreement": "judge=second",
+   "question": "Diabetes control measure for 2029: percent of diabetics 18-75 with their most recent A1c this year under 8.",
+   "compiler_candidate": false,
+   "controls": [
+    "QC-DENOM:info"
+   ],
+   "blocking": [],
+   "lint": [],
+   "policy": {
+    "default": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "judged",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    },
+    "compiler_dissent_routes": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "judged",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    }
+   },
+   "extra_judge_call": false,
+   "second_call_saved": false,
+   "v2": "judged",
+   "caught": false,
+   "caught_by": null,
+   "dissent": [],
+   "visible": false,
+   "capture": "recorded"
+  },
+  {
+   "set": "M",
+   "id": "M32",
+   "label": "right",
+   "agreement": "judge_own",
+   "question": "Controlling high blood pressure, 2029 YTD: % of hypertensives 18-85 whose latest BP is under 140/90.",
+   "compiler_candidate": false,
+   "controls": [
+    "QC-DENOM:info"
+   ],
+   "blocking": [],
+   "lint": [],
+   "policy": {
+    "default": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "judged",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    },
+    "compiler_dissent_routes": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "judged",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    }
+   },
+   "extra_judge_call": false,
+   "second_call_saved": false,
+   "v2": "judged",
+   "caught": false,
+   "caught_by": null,
+   "dissent": [],
+   "visible": false,
+   "capture": "recorded"
+  },
+  {
+   "set": "M",
+   "id": "M33",
+   "label": "right",
+   "agreement": "judge=second",
+   "question": "Kidney health evaluation for diabetes, 2028: what % of diabetics 18-85 got both an eGFR and a uACR during the year?",
+   "compiler_candidate": false,
+   "controls": [
+    "QC-DENOM:info"
+   ],
+   "blocking": [],
+   "lint": [],
+   "policy": {
+    "default": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "judged",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    },
+    "compiler_dissent_routes": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "judged",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    }
+   },
+   "extra_judge_call": false,
+   "second_call_saved": false,
+   "v2": "judged",
+   "caught": false,
+   "caught_by": null,
+   "dissent": [],
+   "visible": false,
+   "capture": "recorded"
+  },
+  {
+   "set": "M",
+   "id": "M34",
+   "label": "right",
+   "agreement": "judge=second",
+   "question": "Tdap catch-up: of patients who either couldn't remember a tetanus shot or said it was over 10 years ago, what % actually got a documented Tdap afterward?",
+   "compiler_candidate": false,
+   "controls": [
+    "QC-DENOM:info"
+   ],
+   "blocking": [],
+   "lint": [],
+   "policy": {
+    "default": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "judged",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    },
+    "compiler_dissent_routes": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "judged",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    }
+   },
+   "extra_judge_call": false,
+   "second_call_saved": false,
+   "v2": "judged",
+   "caught": false,
+   "caught_by": null,
+   "dissent": [],
+   "visible": false,
+   "capture": "recorded"
+  },
+  {
+   "set": "M",
+   "id": "M35",
+   "label": "right",
+   "agreement": "judge=second",
+   "question": "Peds vision screening rate for 2028 \u2014 kids under 18 with a completed acuity screen?",
+   "compiler_candidate": false,
+   "controls": [
+    "QC-DENOM:info"
+   ],
+   "blocking": [],
+   "lint": [],
+   "policy": {
+    "default": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "judged",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    },
+    "compiler_dissent_routes": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "judged",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    }
+   },
+   "extra_judge_call": false,
+   "second_call_saved": false,
+   "v2": "judged",
+   "caught": false,
+   "caught_by": null,
+   "dissent": [],
+   "visible": false,
+   "capture": "recorded"
+  },
+  {
+   "set": "M",
+   "id": "M36",
+   "label": "format_only",
+   "agreement": "judge=second",
+   "question": "Transitions of care: when a discharge plan told the patient to follow up within X days, how often did an in-person visit actually happen inside that window?",
+   "compiler_candidate": false,
+   "controls": [],
+   "blocking": [],
+   "lint": [],
+   "policy": {
+    "default": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "judged",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    },
+    "compiler_dissent_routes": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "judged",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    }
+   },
+   "extra_judge_call": false,
+   "second_call_saved": false,
+   "v2": "judged",
+   "caught": false,
+   "caught_by": null,
+   "dissent": [],
+   "visible": false,
+   "capture": "recorded"
+  },
+  {
+   "set": "M",
+   "id": "M37",
+   "label": "format_only",
+   "agreement": "judge_own",
+   "question": "Data quality: for each lab source system, how many lab rows came in without a collection date and what % is that?",
+   "compiler_candidate": false,
+   "controls": [
+    "QC-DENOM:info"
+   ],
+   "blocking": [],
+   "lint": [],
+   "policy": {
+    "default": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "judged",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    },
+    "compiler_dissent_routes": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "judged",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    }
+   },
+   "extra_judge_call": false,
+   "second_call_saved": false,
+   "v2": "judged",
+   "caught": false,
+   "caught_by": null,
+   "dissent": [],
+   "visible": false,
+   "capture": "recorded"
+  },
+  {
+   "set": "M",
+   "id": "M38",
+   "label": "format_only",
+   "agreement": "judge=primary",
+   "question": "How timely is the lab feed this year \u2014 what share of 2029 results landed more than 3 days after the event date?",
+   "compiler_candidate": false,
+   "controls": [
+    "QC-DENOM:info"
+   ],
+   "blocking": [],
+   "lint": [],
+   "policy": {
+    "default": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "judged",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    },
+    "compiler_dissent_routes": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "judged",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    }
+   },
+   "extra_judge_call": false,
+   "second_call_saved": false,
+   "v2": "judged",
+   "caught": false,
+   "caught_by": null,
+   "dissent": [],
+   "visible": false,
+   "capture": "recorded"
+  },
+  {
+   "set": "M",
+   "id": "M39",
+   "label": "right",
+   "agreement": "primary=second",
+   "question": "Reconciliation check: how many claims have a remittance advice on file but no adjudication record in the claims feed?",
+   "compiler_candidate": false,
+   "controls": [],
+   "blocking": [],
+   "lint": [],
+   "policy": {
+    "default": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "accepted:same_family_with_oracles",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    },
+    "compiler_dissent_routes": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "accepted:same_family_with_oracles",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    }
+   },
+   "extra_judge_call": false,
+   "second_call_saved": false,
+   "v2": "accepted:same_family_with_oracles",
+   "caught": false,
+   "caught_by": null,
+   "dissent": [],
+   "visible": false,
+   "capture": "recorded"
+  },
+  {
+   "set": "M",
+   "id": "M40",
+   "label": "wrong",
+   "agreement": "primary=second",
+   "question": "How many appointments are sitting in 'booked' with a date that's already passed?",
+   "compiler_candidate": true,
+   "controls": [],
+   "blocking": [],
+   "lint": [],
+   "policy": {
+    "default": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "accepted:same_family_with_oracles",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [
+      "compiler"
+     ],
+     "visible": false
+    },
+    "compiler_dissent_routes": {
+     "extra_judge_call": true,
+     "second_call_saved": false,
+     "v2": "disputed:independent source disagrees: compiler",
+     "caught": true,
+     "caught_by": "independent source disagrees: compiler",
+     "dissent": [],
+     "visible": true
+    }
+   },
+   "extra_judge_call": false,
+   "second_call_saved": false,
+   "v2": "accepted:same_family_with_oracles",
+   "caught": false,
+   "caught_by": null,
+   "dissent": [
+    "compiler"
+   ],
+   "visible": false,
+   "capture": "quarantined"
+  },
+  {
+   "set": "M",
+   "id": "M41",
+   "label": "unparsed",
+   "agreement": "judge_own",
+   "question": "Which lab tests are being reported under more than one unit? List the test and how many units.",
+   "compiler_candidate": false,
+   "controls": [],
+   "blocking": [],
+   "lint": [],
+   "policy": {
+    "default": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "judged",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    },
+    "compiler_dissent_routes": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "judged",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    }
+   },
+   "extra_judge_call": false,
+   "second_call_saved": false,
+   "v2": "judged",
+   "caught": false,
+   "caught_by": null,
+   "dissent": [],
+   "visible": false,
+   "capture": "recorded"
+  },
+  {
+   "set": "M",
+   "id": "M42",
+   "label": "right",
+   "agreement": "primary=second",
+   "question": "How many patients have flagged a transportation problem on any social needs screen?",
+   "compiler_candidate": true,
+   "controls": [],
+   "blocking": [],
+   "lint": [],
+   "policy": {
+    "default": {
+     "extra_judge_call": false,
+     "second_call_saved": true,
+     "v2": "accepted:independent",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    },
+    "compiler_dissent_routes": {
+     "extra_judge_call": false,
+     "second_call_saved": true,
+     "v2": "accepted:independent",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    }
+   },
+   "extra_judge_call": false,
+   "second_call_saved": true,
+   "v2": "accepted:independent",
+   "caught": false,
+   "caught_by": null,
+   "dissent": [],
+   "visible": false,
+   "capture": "recorded"
+  },
+  {
+   "set": "M",
+   "id": "M43",
+   "label": "right",
+   "agreement": "judge_own",
+   "question": "Patients who told us they struggle to pay for care \u2014 how many of them are currently carrying an open balance with us?",
+   "compiler_candidate": true,
+   "controls": [],
+   "blocking": [],
+   "lint": [],
+   "policy": {
+    "default": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "judged:independent_dissent",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [
+      "compiler"
+     ],
+     "visible": false
+    },
+    "compiler_dissent_routes": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "judged:independent_dissent",
+     "caught": true,
+     "caught_by": "compiler dissent",
+     "dissent": [
+      "compiler"
+     ],
+     "visible": true
+    }
+   },
+   "extra_judge_call": false,
+   "second_call_saved": false,
+   "v2": "judged:independent_dissent",
+   "caught": false,
+   "caught_by": null,
+   "dissent": [
+    "compiler"
+   ],
+   "visible": false,
+   "capture": "quarantined"
+  },
+  {
+   "set": "M",
+   "id": "M44",
+   "label": "wrong",
+   "agreement": "primary=second",
+   "question": "Community referrals: by service type, how many did we send and how many actually got delivered?",
+   "compiler_candidate": true,
+   "controls": [],
+   "blocking": [],
+   "lint": [],
+   "policy": {
+    "default": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "accepted:same_family_with_oracles",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [
+      "compiler"
+     ],
+     "visible": false
+    },
+    "compiler_dissent_routes": {
+     "extra_judge_call": true,
+     "second_call_saved": false,
+     "v2": "disputed:independent source disagrees: compiler",
+     "caught": true,
+     "caught_by": "independent source disagrees: compiler",
+     "dissent": [],
+     "visible": true
+    }
+   },
+   "extra_judge_call": false,
+   "second_call_saved": false,
+   "v2": "accepted:same_family_with_oracles",
+   "caught": false,
+   "caught_by": null,
+   "dissent": [
+    "compiler"
+   ],
+   "visible": false,
+   "capture": "quarantined"
+  },
+  {
+   "set": "N",
+   "id": "N01",
+   "label": "right",
+   "agreement": "judge=second",
+   "question": "How many diabetics are on our books? Type 1 or type 2, and count anyone coded with a diabetic complication (kidney disease, neuropathy, microalbuminuria). Don't count prediabetes or gestational diabet",
+   "compiler_candidate": false,
+   "controls": [],
+   "blocking": [],
+   "lint": [],
+   "policy": {
+    "default": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "judged",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    },
+    "compiler_dissent_routes": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "judged",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    }
+   },
+   "extra_judge_call": false,
+   "second_call_saved": false,
+   "v2": "judged",
+   "caught": false,
+   "caught_by": null,
+   "dissent": [],
+   "visible": false,
+   "capture": "recorded"
+  },
+  {
+   "set": "N",
+   "id": "N02",
+   "label": "right",
+   "agreement": "primary=second",
+   "question": "Give me the list of patients whose latest eGFR is under 45 and whose latest urine albumin/creatinine ratio is 30 or above. Those are the ones nephrology wants to see first.",
+   "compiler_candidate": false,
+   "controls": [],
+   "blocking": [],
+   "lint": [],
+   "policy": {
+    "default": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "accepted:same_family_with_oracles",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    },
+    "compiler_dissent_routes": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "accepted:same_family_with_oracles",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    }
+   },
+   "extra_judge_call": false,
+   "second_call_saved": false,
+   "v2": "accepted:same_family_with_oracles",
+   "caught": false,
+   "caught_by": null,
+   "dissent": [],
+   "visible": false,
+   "capture": "recorded"
+  },
+  {
+   "set": "N",
+   "id": "N04",
+   "label": "right",
+   "agreement": "decider=A",
+   "question": "How many patients are on insulin of any kind? Check the med list, orders and pharmacy side.",
+   "compiler_candidate": true,
+   "controls": [],
+   "blocking": [],
+   "lint": [
+    "drug_class must be compared exactly (= or IN); valid classes: ace_inhibitor, anticoagulant, antiplatelet, antipsychotic, arb, arni, benzodiazepine, beta_blocker, bisphosphonate, calcium_channel_blocker, dpp4_inhibitor, first_generation_antihistamine, glp1_agonist, hf_evidence_based_beta_blocker, inhaled_corticosteroid, insulin, iron_supplement, levothyroxine, loop_diuretic, metformin, mra, nitrate, nsaid, opioid, proton_pump_inhibitor, second_generation_antihistamine, sedative_hypnotic, sglt2_inhibitor, short_acting_beta_agonist, skeletal_muscle_relaxant, ssri, statin, sulfonylurea, thiazide_diuretic"
+   ],
+   "policy": {
+    "default": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "judged:independent_dissent",
+     "caught": true,
+     "caught_by": "lint",
+     "dissent": [
+      "compiler"
+     ],
+     "visible": true
+    },
+    "compiler_dissent_routes": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "judged:independent_dissent",
+     "caught": true,
+     "caught_by": "lint",
+     "dissent": [
+      "compiler"
+     ],
+     "visible": true
+    }
+   },
+   "extra_judge_call": false,
+   "second_call_saved": false,
+   "v2": "judged:independent_dissent",
+   "caught": true,
+   "caught_by": "lint",
+   "dissent": [
+    "compiler"
+   ],
+   "visible": true,
+   "capture": "quarantined"
+  },
+  {
+   "set": "N",
+   "id": "N05",
+   "label": "wrong",
+   "agreement": "judge=second",
+   "question": "Which heart failure patients have no beta-blocker anywhere in their medication records? I want names to review for GDMT gaps.",
+   "compiler_candidate": true,
+   "controls": [],
+   "blocking": [],
+   "lint": [
+    "drug_class must be compared exactly (= or IN); valid classes: ace_inhibitor, anticoagulant, antiplatelet, antipsychotic, arb, arni, benzodiazepine, beta_blocker, bisphosphonate, calcium_channel_blocker, dpp4_inhibitor, first_generation_antihistamine, glp1_agonist, hf_evidence_based_beta_blocker, inhaled_corticosteroid, insulin, iron_supplement, levothyroxine, loop_diuretic, metformin, mra, nitrate, nsaid, opioid, proton_pump_inhibitor, second_generation_antihistamine, sedative_hypnotic, sglt2_inhibitor, short_acting_beta_agonist, skeletal_muscle_relaxant, ssri, statin, sulfonylurea, thiazide_diuretic"
+   ],
+   "policy": {
+    "default": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "judged:independent_dissent",
+     "caught": true,
+     "caught_by": "lint",
+     "dissent": [
+      "compiler"
+     ],
+     "visible": true
+    },
+    "compiler_dissent_routes": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "judged:independent_dissent",
+     "caught": true,
+     "caught_by": "lint",
+     "dissent": [
+      "compiler"
+     ],
+     "visible": true
+    }
+   },
+   "extra_judge_call": false,
+   "second_call_saved": false,
+   "v2": "judged:independent_dissent",
+   "caught": true,
+   "caught_by": "lint",
+   "dissent": [
+    "compiler"
+   ],
+   "visible": true,
+   "capture": "quarantined"
+  },
+  {
+   "set": "N",
+   "id": "N06",
+   "label": "right",
+   "agreement": "primary=second",
+   "question": "Using sex-specific cutoffs \u2014 hemoglobin under 12 for women, under 13 for men \u2014 how many patients are anemic on their most recent hemoglobin?",
+   "compiler_candidate": false,
+   "controls": [],
+   "blocking": [],
+   "lint": [],
+   "policy": {
+    "default": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "accepted:same_family_with_oracles",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    },
+    "compiler_dissent_routes": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "accepted:same_family_with_oracles",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    }
+   },
+   "extra_judge_call": false,
+   "second_call_saved": false,
+   "v2": "accepted:same_family_with_oracles",
+   "caught": false,
+   "caught_by": null,
+   "dissent": [],
+   "visible": false,
+   "capture": "recorded"
+  },
+  {
+   "set": "N",
+   "id": "N07",
+   "label": "wrong",
+   "agreement": "judge=second",
+   "question": "How many adults have a BMI of 30 or more based on their latest weight? Compute it from height and weight, don't rely on the obesity diagnosis.",
+   "compiler_candidate": false,
+   "controls": [
+    "QC-EMPTY"
+   ],
+   "blocking": [
+    "QC-EMPTY"
+   ],
+   "lint": [],
+   "policy": {
+    "default": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "judged:flagged",
+     "caught": true,
+     "caught_by": "oracle QC-EMPTY",
+     "dissent": [],
+     "visible": true
+    },
+    "compiler_dissent_routes": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "judged:flagged",
+     "caught": true,
+     "caught_by": "oracle QC-EMPTY",
+     "dissent": [],
+     "visible": true
+    }
+   },
+   "extra_judge_call": false,
+   "second_call_saved": false,
+   "v2": "judged:flagged",
+   "caught": true,
+   "caught_by": "oracle QC-EMPTY",
+   "dissent": [],
+   "visible": true,
+   "capture": "quarantined"
+  },
+  {
+   "set": "N",
+   "id": "N08",
+   "label": "right",
+   "agreement": "primary=second",
+   "question": "Possible undiagnosed diabetes for HCC/outreach review: patients whose most recent A1c is 6.5 or higher but who have no diabetes diagnosis on their problem list.",
+   "compiler_candidate": false,
+   "controls": [],
+   "blocking": [],
+   "lint": [],
+   "policy": {
+    "default": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "accepted:same_family_with_oracles",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    },
+    "compiler_dissent_routes": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "accepted:same_family_with_oracles",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    }
+   },
+   "extra_judge_call": false,
+   "second_call_saved": false,
+   "v2": "accepted:same_family_with_oracles",
+   "caught": false,
+   "caught_by": null,
+   "dissent": [],
+   "visible": false,
+   "capture": "recorded"
+  },
+  {
+   "set": "N",
+   "id": "N09",
+   "label": "wrong",
+   "agreement": "primary=second",
+   "question": "Anyone with an LDL of 190 or higher on file? Doesn't matter when it was drawn \u2014 I'm looking for possible FH.",
+   "compiler_candidate": true,
+   "controls": [],
+   "blocking": [],
+   "lint": [],
+   "policy": {
+    "default": {
+     "extra_judge_call": false,
+     "second_call_saved": true,
+     "v2": "accepted:independent",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    },
+    "compiler_dissent_routes": {
+     "extra_judge_call": false,
+     "second_call_saved": true,
+     "v2": "accepted:independent",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    }
+   },
+   "extra_judge_call": false,
+   "second_call_saved": true,
+   "v2": "accepted:independent",
+   "caught": false,
+   "caught_by": null,
+   "dissent": [],
+   "visible": false,
+   "capture": "recorded"
+  },
+  {
+   "set": "N",
+   "id": "N11",
+   "label": "wrong",
+   "agreement": "primary=second",
+   "question": "Bleeding-risk check: which afib patients have both an anticoagulant and an antiplatelet on record?",
+   "compiler_candidate": true,
+   "controls": [],
+   "blocking": [],
+   "lint": [
+    "drug_class must be compared exactly (= or IN); valid classes: ace_inhibitor, anticoagulant, antiplatelet, antipsychotic, arb, arni, benzodiazepine, beta_blocker, bisphosphonate, calcium_channel_blocker, dpp4_inhibitor, first_generation_antihistamine, glp1_agonist, hf_evidence_based_beta_blocker, inhaled_corticosteroid, insulin, iron_supplement, levothyroxine, loop_diuretic, metformin, mra, nitrate, nsaid, opioid, proton_pump_inhibitor, second_generation_antihistamine, sedative_hypnotic, sglt2_inhibitor, short_acting_beta_agonist, skeletal_muscle_relaxant, ssri, statin, sulfonylurea, thiazide_diuretic",
+    "drug_class must be compared exactly (= or IN); valid classes: ace_inhibitor, anticoagulant, antiplatelet, antipsychotic, arb, arni, benzodiazepine, beta_blocker, bisphosphonate, calcium_channel_blocker, dpp4_inhibitor, first_generation_antihistamine, glp1_agonist, hf_evidence_based_beta_blocker, inhaled_corticosteroid, insulin, iron_supplement, levothyroxine, loop_diuretic, metformin, mra, nitrate, nsaid, opioid, proton_pump_inhibitor, second_generation_antihistamine, sedative_hypnotic, sglt2_inhibitor, short_acting_beta_agonist, skeletal_muscle_relaxant, ssri, statin, sulfonylurea, thiazide_diuretic"
+   ],
+   "policy": {
+    "default": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "accepted:same_family_with_oracles",
+     "caught": true,
+     "caught_by": "lint",
+     "dissent": [
+      "compiler"
+     ],
+     "visible": true
+    },
+    "compiler_dissent_routes": {
+     "extra_judge_call": true,
+     "second_call_saved": false,
+     "v2": "disputed:independent source disagrees: compiler",
+     "caught": true,
+     "caught_by": "lint",
+     "dissent": [],
+     "visible": true
+    }
+   },
+   "extra_judge_call": false,
+   "second_call_saved": false,
+   "v2": "accepted:same_family_with_oracles",
+   "caught": true,
+   "caught_by": "lint",
+   "dissent": [
+    "compiler"
+   ],
+   "visible": true,
+   "capture": "quarantined"
+  },
+  {
+   "set": "N",
+   "id": "N12",
+   "label": "unadjudicated",
+   "agreement": "primary=second",
+   "question": "Commercial members aged 40 to 64 with a potassium of 5.0 or higher in the past year \u2014 send me the list.",
+   "compiler_error": "field_unavailable: patients.age_latest; field_unavailable: patients.age_latest",
+   "compiler_candidate": false,
+   "controls": [],
+   "blocking": [],
+   "lint": [],
+   "policy": {
+    "default": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "accepted:same_family_with_oracles",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    },
+    "compiler_dissent_routes": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "accepted:same_family_with_oracles",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    }
+   },
+   "extra_judge_call": false,
+   "second_call_saved": false,
+   "v2": "accepted:same_family_with_oracles",
+   "caught": false,
+   "caught_by": null,
+   "dissent": [],
+   "visible": false,
+   "capture": "recorded"
+  },
+  {
+   "set": "N",
+   "id": "N13",
+   "label": "unadjudicated",
+   "agreement": "primary=second",
+   "question": "Specialist visits per 1,000 patients by coverage type for calendar 2027 \u2014 commercial, Medicare, Medicaid, uninsured.",
+   "compiler_candidate": false,
+   "controls": [
+    "QC-DENOM:info"
+   ],
+   "blocking": [],
+   "lint": [],
+   "policy": {
+    "default": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "accepted:same_family_with_oracles",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    },
+    "compiler_dissent_routes": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "accepted:same_family_with_oracles",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    }
+   },
+   "extra_judge_call": false,
+   "second_call_saved": false,
+   "v2": "accepted:same_family_with_oracles",
+   "caught": false,
+   "caught_by": null,
+   "dissent": [],
+   "visible": false,
+   "capture": "recorded"
+  },
+  {
+   "set": "N",
+   "id": "N14",
+   "label": "wrong",
+   "agreement": "judge=second",
+   "question": "What share of our hospital discharges in the last 12 months got an outpatient visit within 7 days? Inpatient and observation stays both count.",
+   "compiler_candidate": false,
+   "controls": [
+    "QC-DENOM:info"
+   ],
+   "blocking": [],
+   "lint": [],
+   "policy": {
+    "default": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "judged",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    },
+    "compiler_dissent_routes": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "judged",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    }
+   },
+   "extra_judge_call": false,
+   "second_call_saved": false,
+   "v2": "judged",
+   "caught": false,
+   "caught_by": null,
+   "dissent": [],
+   "visible": false,
+   "capture": "recorded"
+  },
+  {
+   "set": "N",
+   "id": "N15",
+   "label": "right",
+   "agreement": "primary=second",
+   "question": "Who are our repeat ED users \u2014 two or more ER visits in the last 12 months?",
+   "compiler_candidate": false,
+   "controls": [],
+   "blocking": [],
+   "lint": [],
+   "policy": {
+    "default": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "accepted:same_family_with_oracles",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    },
+    "compiler_dissent_routes": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "accepted:same_family_with_oracles",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    }
+   },
+   "extra_judge_call": false,
+   "second_call_saved": false,
+   "v2": "accepted:same_family_with_oracles",
+   "caught": false,
+   "caught_by": null,
+   "dissent": [],
+   "visible": false,
+   "capture": "recorded"
+  },
+  {
+   "set": "N",
+   "id": "N16",
+   "label": "unadjudicated",
+   "agreement": "judge=primary",
+   "question": "Observation vs inpatient: how many stays of each did we have per year, 2026 through 2029?",
+   "compiler_candidate": false,
+   "controls": [
+    "QC-PERIOD"
+   ],
+   "blocking": [],
+   "lint": [],
+   "policy": {
+    "default": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "judged",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    },
+    "compiler_dissent_routes": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "judged",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    }
+   },
+   "extra_judge_call": false,
+   "second_call_saved": false,
+   "v2": "judged",
+   "caught": false,
+   "caught_by": null,
+   "dissent": [],
+   "visible": false,
+   "capture": "quarantined"
+  },
+  {
+   "set": "N",
+   "id": "N17",
+   "label": "wrong",
+   "agreement": "judge=second",
+   "question": "By attributed practice: how many in-person primary care visits did our attributed patients have in 2028, per 1,000 attributed patients?",
+   "compiler_candidate": false,
+   "controls": [],
+   "blocking": [],
+   "lint": [],
+   "policy": {
+    "default": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "judged",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    },
+    "compiler_dissent_routes": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "judged",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    }
+   },
+   "extra_judge_call": false,
+   "second_call_saved": false,
+   "v2": "judged",
+   "caught": false,
+   "caught_by": null,
+   "dissent": [],
+   "visible": false,
+   "capture": "recorded"
+  },
+  {
+   "set": "N",
+   "id": "N18",
+   "label": "wrong",
+   "agreement": "judge=primary",
+   "question": "How many of our attributed patients haven't had an in-person primary care visit in the past 12 months?",
+   "compiler_candidate": false,
+   "controls": [],
+   "blocking": [],
+   "lint": [],
+   "policy": {
+    "default": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "judged",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    },
+    "compiler_dissent_routes": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "judged",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    }
+   },
+   "extra_judge_call": false,
+   "second_call_saved": false,
+   "v2": "judged",
+   "caught": false,
+   "caught_by": null,
+   "dissent": [],
+   "visible": false,
+   "capture": "recorded"
+  },
+  {
+   "set": "N",
+   "id": "N19",
+   "label": "right",
+   "agreement": "judge_own",
+   "question": "Specialty referrals we sent in 2027, broken out by specialty.",
+   "compiler_candidate": false,
+   "controls": [],
+   "blocking": [],
+   "lint": [],
+   "policy": {
+    "default": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "judged",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    },
+    "compiler_dissent_routes": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "judged",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    }
+   },
+   "extra_judge_call": false,
+   "second_call_saved": false,
+   "v2": "judged",
+   "caught": false,
+   "caught_by": null,
+   "dissent": [],
+   "visible": false,
+   "capture": "recorded"
+  },
+  {
+   "set": "N",
+   "id": "N20",
+   "label": "right",
+   "agreement": "judge=second",
+   "question": "ED-to-hospital conversion: of our hospital ED visits since we started receiving hospital feeds (Sept 2026), what percent turned into an observation stay or an admission?",
+   "compiler_candidate": false,
+   "controls": [
+    "QC-DENOM:info",
+    "QC-PARTITION:info"
+   ],
+   "blocking": [],
+   "lint": [],
+   "policy": {
+    "default": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "judged",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    },
+    "compiler_dissent_routes": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "judged",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    }
+   },
+   "extra_judge_call": false,
+   "second_call_saved": false,
+   "v2": "judged",
+   "caught": false,
+   "caught_by": null,
+   "dissent": [],
+   "visible": false,
+   "capture": "recorded"
+  },
+  {
+   "set": "N",
+   "id": "N21",
+   "label": "right",
+   "agreement": "primary=second",
+   "question": "Number of patients who used urgent care in the last 12 months but never went to the ED in that same period.",
+   "compiler_candidate": false,
+   "controls": [],
+   "blocking": [],
+   "lint": [],
+   "policy": {
+    "default": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "accepted:same_family_with_oracles",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    },
+    "compiler_dissent_routes": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "accepted:same_family_with_oracles",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    }
+   },
+   "extra_judge_call": false,
+   "second_call_saved": false,
+   "v2": "accepted:same_family_with_oracles",
+   "caught": false,
+   "caught_by": null,
+   "dissent": [],
+   "visible": false,
+   "capture": "recorded"
+  },
+  {
+   "set": "N",
+   "id": "N22",
+   "label": "unadjudicated",
+   "agreement": "judge=primary",
+   "question": "Telehealth share by practice for 2028: what percent of each practice's patient contacts were by phone or video?",
+   "compiler_candidate": false,
+   "controls": [
+    "QC-DENOM:info",
+    "QC-PARTITION:info"
+   ],
+   "blocking": [],
+   "lint": [],
+   "policy": {
+    "default": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "judged",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    },
+    "compiler_dissent_routes": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "judged",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    }
+   },
+   "extra_judge_call": false,
+   "second_call_saved": false,
+   "v2": "judged",
+   "caught": false,
+   "caught_by": null,
+   "dissent": [],
+   "visible": false,
+   "capture": "recorded"
+  },
+  {
+   "set": "N",
+   "id": "N23",
+   "label": "right",
+   "agreement": "primary=second",
+   "question": "Denial overturn rate: of claims that got denied at least once, what percent did we eventually get paid?",
+   "compiler_candidate": false,
+   "controls": [
+    "QC-DENOM:info"
+   ],
+   "blocking": [],
+   "lint": [],
+   "policy": {
+    "default": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "accepted:same_family_with_oracles",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    },
+    "compiler_dissent_routes": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "accepted:same_family_with_oracles",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    }
+   },
+   "extra_judge_call": false,
+   "second_call_saved": false,
+   "v2": "accepted:same_family_with_oracles",
+   "caught": false,
+   "caught_by": null,
+   "dissent": [],
+   "visible": false,
+   "capture": "recorded"
+  },
+  {
+   "set": "N",
+   "id": "N24",
+   "label": "right",
+   "agreement": "primary=second",
+   "question": "How much did we refund to patients in 2028, in dollars?",
+   "compiler_candidate": false,
+   "controls": [],
+   "blocking": [],
+   "lint": [],
+   "policy": {
+    "default": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "accepted:same_family_with_oracles",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    },
+    "compiler_dissent_routes": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "accepted:same_family_with_oracles",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    }
+   },
+   "extra_judge_call": false,
+   "second_call_saved": false,
+   "v2": "accepted:same_family_with_oracles",
+   "caught": false,
+   "caught_by": null,
+   "dissent": [],
+   "visible": false,
+   "capture": "recorded"
+  },
+  {
+   "set": "N",
+   "id": "N25",
+   "label": "wrong",
+   "agreement": "judge=second",
+   "question": "Payer cash posted in 2028 by payer \u2014 net of any take-backs.",
+   "compiler_candidate": false,
+   "controls": [],
+   "blocking": [],
+   "lint": [],
+   "policy": {
+    "default": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "judged",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    },
+    "compiler_dissent_routes": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "judged",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    }
+   },
+   "extra_judge_call": false,
+   "second_call_saved": false,
+   "v2": "judged",
+   "caught": false,
+   "caught_by": null,
+   "dissent": [],
+   "visible": false,
+   "capture": "recorded"
+  },
+  {
+   "set": "N",
+   "id": "N26",
+   "label": "wrong",
+   "agreement": "primary=second",
+   "question": "What's our average claim lag \u2014 days from date of service to first submission \u2014 for 2028 dates of service?",
+   "compiler_candidate": false,
+   "controls": [
+    "QC-CLOCK"
+   ],
+   "blocking": [
+    "QC-CLOCK"
+   ],
+   "lint": [],
+   "policy": {
+    "default": {
+     "extra_judge_call": true,
+     "second_call_saved": false,
+     "v2": "disputed:same-family agreement failed a deterministic check: QC-CLOCK",
+     "caught": true,
+     "caught_by": "same-family agreement failed a deterministic check: QC-CLOCK",
+     "dissent": [],
+     "visible": true
+    },
+    "compiler_dissent_routes": {
+     "extra_judge_call": true,
+     "second_call_saved": false,
+     "v2": "disputed:same-family agreement failed a deterministic check: QC-CLOCK",
+     "caught": true,
+     "caught_by": "same-family agreement failed a deterministic check: QC-CLOCK",
+     "dissent": [],
+     "visible": true
+    }
+   },
+   "extra_judge_call": true,
+   "second_call_saved": false,
+   "v2": "disputed:same-family agreement failed a deterministic check: QC-CLOCK",
+   "caught": true,
+   "caught_by": "same-family agreement failed a deterministic check: QC-CLOCK",
+   "dissent": [],
+   "visible": true,
+   "capture": "quarantined"
+  },
+  {
+   "set": "N",
+   "id": "N27",
+   "label": "right",
+   "agreement": "judge=second",
+   "question": "Net pharmacy claim dollars the payers paid us for 2028 fills, after reversals.",
+   "compiler_candidate": false,
+   "controls": [
+    "QC-PARTITION:info"
+   ],
+   "blocking": [],
+   "lint": [],
+   "policy": {
+    "default": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "judged",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    },
+    "compiler_dissent_routes": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "judged",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    }
+   },
+   "extra_judge_call": false,
+   "second_call_saved": false,
+   "v2": "judged",
+   "caught": false,
+   "caught_by": null,
+   "dissent": [],
+   "visible": false,
+   "capture": "recorded"
+  },
+  {
+   "set": "N",
+   "id": "N29",
+   "label": "wrong",
+   "agreement": "primary=second",
+   "question": "On average, how many days does it take from date of service until the payer's money first lands, for 2028 services?",
+   "compiler_candidate": false,
+   "controls": [
+    "QC-CLOCK"
+   ],
+   "blocking": [
+    "QC-CLOCK"
+   ],
+   "lint": [],
+   "policy": {
+    "default": {
+     "extra_judge_call": true,
+     "second_call_saved": false,
+     "v2": "disputed:same-family agreement failed a deterministic check: QC-CLOCK",
+     "caught": true,
+     "caught_by": "same-family agreement failed a deterministic check: QC-CLOCK",
+     "dissent": [],
+     "visible": true
+    },
+    "compiler_dissent_routes": {
+     "extra_judge_call": true,
+     "second_call_saved": false,
+     "v2": "disputed:same-family agreement failed a deterministic check: QC-CLOCK",
+     "caught": true,
+     "caught_by": "same-family agreement failed a deterministic check: QC-CLOCK",
+     "dissent": [],
+     "visible": true
+    }
+   },
+   "extra_judge_call": true,
+   "second_call_saved": false,
+   "v2": "disputed:same-family agreement failed a deterministic check: QC-CLOCK",
+   "caught": true,
+   "caught_by": "same-family agreement failed a deterministic check: QC-CLOCK",
+   "dissent": [],
+   "visible": true,
+   "capture": "quarantined"
+  },
+  {
+   "set": "N",
+   "id": "N30",
+   "label": "right",
+   "agreement": "primary=second",
+   "question": "How many claims bounced at the clearinghouse in 2027 because of a bad member ID?",
+   "compiler_candidate": true,
+   "controls": [],
+   "blocking": [],
+   "lint": [],
+   "policy": {
+    "default": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "accepted:same_family_with_oracles",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [
+      "compiler"
+     ],
+     "visible": false
+    },
+    "compiler_dissent_routes": {
+     "extra_judge_call": true,
+     "second_call_saved": false,
+     "v2": "disputed:independent source disagrees: compiler",
+     "caught": true,
+     "caught_by": "independent source disagrees: compiler",
+     "dissent": [],
+     "visible": true
+    }
+   },
+   "extra_judge_call": false,
+   "second_call_saved": false,
+   "v2": "accepted:same_family_with_oracles",
+   "caught": false,
+   "caught_by": null,
+   "dissent": [
+    "compiler"
+   ],
+   "visible": false,
+   "capture": "quarantined"
+  },
+  {
+   "set": "N",
+   "id": "N31",
+   "label": "unadjudicated",
+   "agreement": "judge=second",
+   "question": "Controlling high blood pressure: among hypertensive patients 18 to 85, what percent have their most recent BP under 140/90 in the last 12 months?",
+   "compiler_candidate": false,
+   "controls": [
+    "QC-DENOM:info"
+   ],
+   "blocking": [],
+   "lint": [],
+   "policy": {
+    "default": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "judged",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    },
+    "compiler_dissent_routes": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "judged",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    }
+   },
+   "extra_judge_call": false,
+   "second_call_saved": false,
+   "v2": "judged",
+   "caught": false,
+   "caught_by": null,
+   "dissent": [],
+   "visible": false,
+   "capture": "recorded"
+  },
+  {
+   "set": "N",
+   "id": "N32",
+   "label": "right",
+   "agreement": "primary=second",
+   "question": "What percent of our diabetics had an A1c drawn in the last 12 months?",
+   "compiler_candidate": false,
+   "controls": [
+    "QC-DENOM:info"
+   ],
+   "blocking": [],
+   "lint": [],
+   "policy": {
+    "default": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "accepted:same_family_with_oracles",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    },
+    "compiler_dissent_routes": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "accepted:same_family_with_oracles",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    }
+   },
+   "extra_judge_call": false,
+   "second_call_saved": false,
+   "v2": "accepted:same_family_with_oracles",
+   "caught": false,
+   "caught_by": null,
+   "dissent": [],
+   "visible": false,
+   "capture": "recorded"
+  },
+  {
+   "set": "N",
+   "id": "N33",
+   "label": "unadjudicated",
+   "agreement": "judge=second",
+   "question": "Statin use in diabetes: of our diabetics aged 40 to 75, what percent have a statin on record?",
+   "compiler_candidate": false,
+   "controls": [
+    "QC-DENOM:info"
+   ],
+   "blocking": [],
+   "lint": [],
+   "policy": {
+    "default": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "judged",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    },
+    "compiler_dissent_routes": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "judged",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    }
+   },
+   "extra_judge_call": false,
+   "second_call_saved": false,
+   "v2": "judged",
+   "caught": false,
+   "caught_by": null,
+   "dissent": [],
+   "visible": false,
+   "capture": "recorded"
+  },
+  {
+   "set": "N",
+   "id": "N34",
+   "label": "unadjudicated",
+   "agreement": "judge=second",
+   "question": "Kidney health evaluation for diabetics in 2028 \u2014 both an eGFR and a urine albumin-creatinine ratio in the same calendar year. What's our rate?",
+   "compiler_candidate": false,
+   "controls": [
+    "QC-DENOM:info"
+   ],
+   "blocking": [],
+   "lint": [],
+   "policy": {
+    "default": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "judged",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    },
+    "compiler_dissent_routes": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "judged",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    }
+   },
+   "extra_judge_call": false,
+   "second_call_saved": false,
+   "v2": "judged",
+   "caught": false,
+   "caught_by": null,
+   "dissent": [],
+   "visible": false,
+   "capture": "recorded"
+  },
+  {
+   "set": "N",
+   "id": "N35",
+   "label": "right",
+   "agreement": "judge=second",
+   "question": "Tdap catch-up: among adults who told us they either couldn't remember their last tetanus shot or it was over ten years ago, what share actually got a Tdap from us afterward?",
+   "compiler_candidate": false,
+   "controls": [
+    "QC-DENOM:info"
+   ],
+   "blocking": [],
+   "lint": [],
+   "policy": {
+    "default": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "judged",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    },
+    "compiler_dissent_routes": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "judged",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    }
+   },
+   "extra_judge_call": false,
+   "second_call_saved": false,
+   "v2": "judged",
+   "caught": false,
+   "caught_by": null,
+   "dissent": [],
+   "visible": false,
+   "capture": "recorded"
+  },
+  {
+   "set": "N",
+   "id": "N36",
+   "label": "unadjudicated",
+   "agreement": "judge=second",
+   "question": "When urgent care or the hospital tells a patient to follow up with their PCP within 14 days, how often does that visit actually happen in time?",
+   "compiler_candidate": false,
+   "controls": [],
+   "blocking": [],
+   "lint": [],
+   "policy": {
+    "default": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "judged",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    },
+    "compiler_dissent_routes": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "judged",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    }
+   },
+   "extra_judge_call": false,
+   "second_call_saved": false,
+   "v2": "judged",
+   "caught": false,
+   "caught_by": null,
+   "dissent": [],
+   "visible": false,
+   "capture": "recorded"
+  },
+  {
+   "set": "N",
+   "id": "N38",
+   "label": "right",
+   "agreement": "primary=second",
+   "question": "How many encounters are stuck open \u2014 we got an in-progress message but never a completed one?",
+   "compiler_candidate": false,
+   "controls": [],
+   "blocking": [],
+   "lint": [],
+   "policy": {
+    "default": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "accepted:same_family_with_oracles",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    },
+    "compiler_dissent_routes": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "accepted:same_family_with_oracles",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    }
+   },
+   "extra_judge_call": false,
+   "second_call_saved": false,
+   "v2": "accepted:same_family_with_oracles",
+   "caught": false,
+   "caught_by": null,
+   "dissent": [],
+   "visible": false,
+   "capture": "recorded"
+  },
+  {
+   "set": "N",
+   "id": "N39",
+   "label": "right",
+   "agreement": "decider=A",
+   "question": "Average lag in days between a lab's result date and when it became available to us, for 2029 results.",
+   "compiler_candidate": false,
+   "controls": [],
+   "blocking": [],
+   "lint": [],
+   "policy": {
+    "default": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "judged",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    },
+    "compiler_dissent_routes": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "judged",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    }
+   },
+   "extra_judge_call": false,
+   "second_call_saved": false,
+   "v2": "judged",
+   "caught": false,
+   "caught_by": null,
+   "dissent": [],
+   "visible": false,
+   "capture": "recorded"
+  },
+  {
+   "set": "N",
+   "id": "N40",
+   "label": "right",
+   "agreement": "primary=second",
+   "question": "How many original claims did we send out with no member ID on them?",
+   "compiler_candidate": false,
+   "controls": [],
+   "blocking": [],
+   "lint": [],
+   "policy": {
+    "default": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "accepted:same_family_with_oracles",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    },
+    "compiler_dissent_routes": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "accepted:same_family_with_oracles",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    }
+   },
+   "extra_judge_call": false,
+   "second_call_saved": false,
+   "v2": "accepted:same_family_with_oracles",
+   "caught": false,
+   "caught_by": null,
+   "dissent": [],
+   "visible": false,
+   "capture": "recorded"
+  },
+  {
+   "set": "N",
+   "id": "N41",
+   "label": "right",
+   "agreement": "primary=second",
+   "question": "For 2029 encounters, what percent reached the warehouse three or more days after the visit date?",
+   "compiler_candidate": false,
+   "controls": [
+    "QC-DENOM:info"
+   ],
+   "blocking": [],
+   "lint": [],
+   "policy": {
+    "default": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "accepted:same_family_with_oracles",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    },
+    "compiler_dissent_routes": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "accepted:same_family_with_oracles",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    }
+   },
+   "extra_judge_call": false,
+   "second_call_saved": false,
+   "v2": "accepted:same_family_with_oracles",
+   "caught": false,
+   "caught_by": null,
+   "dissent": [],
+   "visible": false,
+   "capture": "recorded"
+  },
+  {
+   "set": "N",
+   "id": "N42",
+   "label": "unadjudicated",
+   "agreement": "primary=second",
+   "question": "How many patients screened positive for each social need \u2014 food, transportation, and trouble paying for care?",
+   "compiler_candidate": true,
+   "controls": [],
+   "blocking": [],
+   "lint": [],
+   "policy": {
+    "default": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "accepted:same_family_with_oracles",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [
+      "compiler"
+     ],
+     "visible": false
+    },
+    "compiler_dissent_routes": {
+     "extra_judge_call": true,
+     "second_call_saved": false,
+     "v2": "disputed:independent source disagrees: compiler",
+     "caught": true,
+     "caught_by": "independent source disagrees: compiler",
+     "dissent": [],
+     "visible": true
+    }
+   },
+   "extra_judge_call": false,
+   "second_call_saved": false,
+   "v2": "accepted:same_family_with_oracles",
+   "caught": false,
+   "caught_by": null,
+   "dissent": [
+    "compiler"
+   ],
+   "visible": false,
+   "capture": "quarantined"
+  },
+  {
+   "set": "N",
+   "id": "N43",
+   "label": "right",
+   "agreement": "judge=second",
+   "question": "Of patients who told us transportation is a problem, what percent got any kind of transportation referral?",
+   "compiler_candidate": true,
+   "controls": [
+    "QC-DENOM:info"
+   ],
+   "blocking": [],
+   "lint": [],
+   "policy": {
+    "default": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "judged:independent_dissent",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [
+      "compiler"
+     ],
+     "visible": false
+    },
+    "compiler_dissent_routes": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "judged:independent_dissent",
+     "caught": true,
+     "caught_by": "compiler dissent",
+     "dissent": [
+      "compiler"
+     ],
+     "visible": true
+    }
+   },
+   "extra_judge_call": false,
+   "second_call_saved": false,
+   "v2": "judged:independent_dissent",
+   "caught": false,
+   "caught_by": null,
+   "dissent": [
+    "compiler"
+   ],
+   "visible": false,
+   "capture": "quarantined"
+  },
+  {
+   "set": "N",
+   "id": "N44",
+   "label": "right",
+   "agreement": "primary=second",
+   "question": "How many patients have two or more social needs at once (food, transportation, cost of care)?",
+   "compiler_candidate": false,
+   "controls": [],
+   "blocking": [],
+   "lint": [],
+   "policy": {
+    "default": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "accepted:same_family_with_oracles",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    },
+    "compiler_dissent_routes": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "accepted:same_family_with_oracles",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    }
+   },
+   "extra_judge_call": false,
+   "second_call_saved": false,
+   "v2": "accepted:same_family_with_oracles",
+   "caught": false,
+   "caught_by": null,
+   "dissent": [],
+   "visible": false,
+   "capture": "recorded"
+  },
+  {
+   "set": "O",
+   "id": "O02",
+   "label": "right",
+   "agreement": "judge=second",
+   "question": "Pull the patients whose most recent potassium is above 5.0 and who are still filling an ACE inhibitor, ARB/ARNI or spironolactone (anything picked up in the last 180 days).",
+   "compiler_candidate": false,
+   "controls": [],
+   "blocking": [],
+   "lint": [],
+   "policy": {
+    "default": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "judged",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    },
+    "compiler_dissent_routes": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "judged",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    }
+   },
+   "extra_judge_call": false,
+   "second_call_saved": false,
+   "v2": "judged",
+   "caught": false,
+   "caught_by": null,
+   "dissent": [],
+   "visible": false,
+   "capture": "recorded"
+  },
+  {
+   "set": "O",
+   "id": "O01",
+   "label": "right",
+   "agreement": "judge=second",
+   "question": "How many of our heart failure patients actually picked up furosemide in the last six months?",
+   "compiler_candidate": false,
+   "controls": [],
+   "blocking": [],
+   "lint": [],
+   "policy": {
+    "default": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "judged",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    },
+    "compiler_dissent_routes": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "judged",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    }
+   },
+   "extra_judge_call": false,
+   "second_call_saved": false,
+   "v2": "judged",
+   "caught": false,
+   "caught_by": null,
+   "dissent": [],
+   "visible": false,
+   "capture": "recorded"
+  },
+  {
+   "set": "O",
+   "id": "O03",
+   "label": "unadjudicated",
+   "agreement": "primary=second",
+   "question": "Women 65 and older with osteoporosis who have never filled a bisphosphonate - how many?",
+   "compiler_candidate": false,
+   "controls": [],
+   "blocking": [],
+   "lint": [],
+   "policy": {
+    "default": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "accepted:same_family_with_oracles",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    },
+    "compiler_dissent_routes": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "accepted:same_family_with_oracles",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    }
+   },
+   "extra_judge_call": false,
+   "second_call_saved": false,
+   "v2": "accepted:same_family_with_oracles",
+   "caught": false,
+   "caught_by": null,
+   "dissent": [],
+   "visible": false,
+   "capture": "recorded"
+  },
+  {
+   "set": "O",
+   "id": "O04",
+   "label": "unadjudicated",
+   "agreement": "primary=second",
+   "question": "How many working-age diabetics (18 to 64) are on Medicaid or have no insurance?",
+   "compiler_candidate": false,
+   "controls": [],
+   "blocking": [],
+   "lint": [],
+   "policy": {
+    "default": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "accepted:same_family_with_oracles",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    },
+    "compiler_dissent_routes": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "accepted:same_family_with_oracles",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    }
+   },
+   "extra_judge_call": false,
+   "second_call_saved": false,
+   "v2": "accepted:same_family_with_oracles",
+   "caught": false,
+   "caught_by": null,
+   "dissent": [],
+   "visible": false,
+   "capture": "recorded"
+  },
+  {
+   "set": "O",
+   "id": "O05",
+   "label": "right",
+   "agreement": "judge=second",
+   "question": "Which CKD stage 3 or 4 patients have had an NSAID dispensed? Pharmacy wants to review them.",
+   "compiler_candidate": false,
+   "controls": [],
+   "blocking": [],
+   "lint": [],
+   "policy": {
+    "default": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "judged",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    },
+    "compiler_dissent_routes": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "judged",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    }
+   },
+   "extra_judge_call": false,
+   "second_call_saved": false,
+   "v2": "judged",
+   "caught": false,
+   "caught_by": null,
+   "dissent": [],
+   "visible": false,
+   "capture": "recorded"
+  },
+  {
+   "set": "O",
+   "id": "O06",
+   "label": "right",
+   "agreement": "primary=second",
+   "question": "Count the coronary disease patients - ischemic heart disease, prior MI, CAD - with no antiplatelet picked up in the past year.",
+   "compiler_candidate": false,
+   "controls": [],
+   "blocking": [],
+   "lint": [],
+   "policy": {
+    "default": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "accepted:same_family_with_oracles",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    },
+    "compiler_dissent_routes": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "accepted:same_family_with_oracles",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    }
+   },
+   "extra_judge_call": false,
+   "second_call_saved": false,
+   "v2": "accepted:same_family_with_oracles",
+   "caught": false,
+   "caught_by": null,
+   "dissent": [],
+   "visible": false,
+   "capture": "recorded"
+  },
+  {
+   "set": "O",
+   "id": "O07",
+   "label": "right",
+   "agreement": "judge=second",
+   "question": "Safety check: who has a documented allergy to lisinopril, aspirin or ibuprofen but has had that same drug dispensed anyway?",
+   "compiler_candidate": false,
+   "controls": [],
+   "blocking": [],
+   "lint": [],
+   "policy": {
+    "default": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "judged",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    },
+    "compiler_dissent_routes": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "judged",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    }
+   },
+   "extra_judge_call": false,
+   "second_call_saved": false,
+   "v2": "judged",
+   "caught": false,
+   "caught_by": null,
+   "dissent": [],
+   "visible": false,
+   "capture": "recorded"
+  },
+  {
+   "set": "O",
+   "id": "O08",
+   "label": "unadjudicated",
+   "agreement": "judge=second",
+   "question": "Men 40 to 75 with diabetes who haven't picked up a statin since the start of 2028 - give me the number.",
+   "compiler_candidate": false,
+   "controls": [],
+   "blocking": [],
+   "lint": [],
+   "policy": {
+    "default": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "judged",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    },
+    "compiler_dissent_routes": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "judged",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    }
+   },
+   "extra_judge_call": false,
+   "second_call_saved": false,
+   "v2": "judged",
+   "caught": false,
+   "caught_by": null,
+   "dissent": [],
+   "visible": false,
+   "capture": "recorded"
+  },
+  {
+   "set": "O",
+   "id": "O11",
+   "label": "wrong",
+   "agreement": "judge=second",
+   "question": "Beers list check - how many patients 65+ have been dispensed a first-generation antihistamine, a benzo, meperidine or a muscle relaxant?",
+   "compiler_candidate": false,
+   "controls": [],
+   "blocking": [],
+   "lint": [],
+   "policy": {
+    "default": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "judged",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    },
+    "compiler_dissent_routes": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "judged",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    }
+   },
+   "extra_judge_call": false,
+   "second_call_saved": false,
+   "v2": "judged",
+   "caught": false,
+   "caught_by": null,
+   "dissent": [],
+   "visible": false,
+   "capture": "recorded"
+  },
+  {
+   "set": "O",
+   "id": "O12",
+   "label": "unadjudicated",
+   "agreement": "primary=second",
+   "question": "Patients whose last LDL was 160 or higher and who haven't had a statin dispensed in the past 12 months?",
+   "compiler_candidate": false,
+   "controls": [],
+   "blocking": [],
+   "lint": [],
+   "policy": {
+    "default": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "accepted:same_family_with_oracles",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    },
+    "compiler_dissent_routes": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "accepted:same_family_with_oracles",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    }
+   },
+   "extra_judge_call": false,
+   "second_call_saved": false,
+   "v2": "accepted:same_family_with_oracles",
+   "caught": false,
+   "caught_by": null,
+   "dissent": [],
+   "visible": false,
+   "capture": "recorded"
+  },
+  {
+   "set": "O",
+   "id": "O13",
+   "label": "right",
+   "agreement": "primary=second",
+   "question": "How many patients had two or more ED visits in the last 12 months?",
+   "compiler_candidate": false,
+   "controls": [],
+   "blocking": [],
+   "lint": [],
+   "policy": {
+    "default": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "accepted:same_family_with_oracles",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    },
+    "compiler_dissent_routes": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "accepted:same_family_with_oracles",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    }
+   },
+   "extra_judge_call": false,
+   "second_call_saved": false,
+   "v2": "accepted:same_family_with_oracles",
+   "caught": false,
+   "caught_by": null,
+   "dissent": [],
+   "visible": false,
+   "capture": "recorded"
+  },
+  {
+   "set": "O",
+   "id": "O14",
+   "label": "unadjudicated",
+   "agreement": "judge=second",
+   "question": "What share of ED visits this year ended up as an admission or observation stay?",
+   "compiler_candidate": false,
+   "controls": [
+    "QC-DENOM:info",
+    "QC-PARTITION:info"
+   ],
+   "blocking": [],
+   "lint": [],
+   "policy": {
+    "default": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "judged",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    },
+    "compiler_dissent_routes": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "judged",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    }
+   },
+   "extra_judge_call": false,
+   "second_call_saved": false,
+   "v2": "judged",
+   "caught": false,
+   "caught_by": null,
+   "dissent": [],
+   "visible": false,
+   "capture": "recorded"
+  },
+  {
+   "set": "O",
+   "id": "O15",
+   "label": "wrong",
+   "agreement": "primary=second",
+   "question": "Average length of an observation stay in hours, 2029 year to date?",
+   "compiler_candidate": false,
+   "controls": [
+    "QC-UNITS"
+   ],
+   "blocking": [
+    "QC-UNITS"
+   ],
+   "lint": [],
+   "policy": {
+    "default": {
+     "extra_judge_call": true,
+     "second_call_saved": false,
+     "v2": "disputed:same-family agreement failed a deterministic check: QC-UNITS",
+     "caught": true,
+     "caught_by": "same-family agreement failed a deterministic check: QC-UNITS",
+     "dissent": [],
+     "visible": true
+    },
+    "compiler_dissent_routes": {
+     "extra_judge_call": true,
+     "second_call_saved": false,
+     "v2": "disputed:same-family agreement failed a deterministic check: QC-UNITS",
+     "caught": true,
+     "caught_by": "same-family agreement failed a deterministic check: QC-UNITS",
+     "dissent": [],
+     "visible": true
+    }
+   },
+   "extra_judge_call": true,
+   "second_call_saved": false,
+   "v2": "disputed:same-family agreement failed a deterministic check: QC-UNITS",
+   "caught": true,
+   "caught_by": "same-family agreement failed a deterministic check: QC-UNITS",
+   "dissent": [],
+   "visible": true,
+   "capture": "quarantined"
+  },
+  {
+   "set": "O",
+   "id": "O16",
+   "label": "unadjudicated",
+   "agreement": "judge=primary",
+   "question": "For patients on home health, how many home health visits does each one average?",
+   "compiler_candidate": false,
+   "controls": [],
+   "blocking": [],
+   "lint": [],
+   "policy": {
+    "default": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "judged",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    },
+    "compiler_dissent_routes": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "judged",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    }
+   },
+   "extra_judge_call": false,
+   "second_call_saved": false,
+   "v2": "judged",
+   "caught": false,
+   "caught_by": null,
+   "dissent": [],
+   "visible": false,
+   "capture": "recorded"
+  },
+  {
+   "set": "O",
+   "id": "O18",
+   "label": "unadjudicated",
+   "agreement": "judge=second",
+   "question": "When we send someone home from the ED, how often do they get seen by their practice within a week? Use 2028 through last week.",
+   "compiler_candidate": false,
+   "controls": [],
+   "blocking": [],
+   "lint": [],
+   "policy": {
+    "default": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "judged",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    },
+    "compiler_dissent_routes": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "judged",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    }
+   },
+   "extra_judge_call": false,
+   "second_call_saved": false,
+   "v2": "judged",
+   "caught": false,
+   "caught_by": null,
+   "dissent": [],
+   "visible": false,
+   "capture": "recorded"
+  },
+  {
+   "set": "O",
+   "id": "O19",
+   "label": "unadjudicated",
+   "agreement": "judge=primary",
+   "question": "How many adults on the roster haven't had an in-person practice visit in the last year?",
+   "compiler_candidate": true,
+   "controls": [],
+   "blocking": [],
+   "lint": [],
+   "policy": {
+    "default": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "judged:independent_dissent",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [
+      "compiler"
+     ],
+     "visible": true
+    },
+    "compiler_dissent_routes": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "judged:independent_dissent",
+     "caught": true,
+     "caught_by": "compiler dissent",
+     "dissent": [
+      "compiler"
+     ],
+     "visible": true
+    }
+   },
+   "extra_judge_call": false,
+   "second_call_saved": false,
+   "v2": "judged:independent_dissent",
+   "caught": false,
+   "caught_by": null,
+   "dissent": [
+    "compiler"
+   ],
+   "readings": {
+    "differs_by": [
+     "date field",
+     "window"
+    ],
+    "alt": [
+     "second"
+    ]
+   },
+   "visible": true,
+   "capture": "quarantined"
+  },
+  {
+   "set": "O",
+   "id": "O20",
+   "label": "right",
+   "agreement": "primary=second",
+   "question": "How many urgent care visits got sent on to the ED?",
+   "compiler_candidate": false,
+   "controls": [],
+   "blocking": [],
+   "lint": [],
+   "policy": {
+    "default": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "accepted:same_family_with_oracles",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    },
+    "compiler_dissent_routes": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "accepted:same_family_with_oracles",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    }
+   },
+   "extra_judge_call": false,
+   "second_call_saved": false,
+   "v2": "accepted:same_family_with_oracles",
+   "caught": false,
+   "caught_by": null,
+   "dissent": [],
+   "visible": false,
+   "capture": "recorded"
+  },
+  {
+   "set": "O",
+   "id": "O21",
+   "label": "unadjudicated",
+   "agreement": "judge=second",
+   "question": "Break out the last 12 months of hospital volume by facility: ED visits, observation stays and inpatient stays.",
+   "compiler_candidate": false,
+   "controls": [],
+   "blocking": [],
+   "lint": [],
+   "policy": {
+    "default": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "judged",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    },
+    "compiler_dissent_routes": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "judged",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    }
+   },
+   "extra_judge_call": false,
+   "second_call_saved": false,
+   "v2": "judged",
+   "caught": false,
+   "caught_by": null,
+   "dissent": [],
+   "visible": false,
+   "capture": "recorded"
+  },
+  {
+   "set": "O",
+   "id": "O22",
+   "label": "unadjudicated",
+   "agreement": "primary=second",
+   "question": "How many echos, renal ultrasounds and spirometry tests have we done, and how many came back limited quality?",
+   "compiler_candidate": true,
+   "controls": [],
+   "blocking": [],
+   "lint": [],
+   "policy": {
+    "default": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "accepted:same_family_with_oracles",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [
+      "compiler"
+     ],
+     "visible": false
+    },
+    "compiler_dissent_routes": {
+     "extra_judge_call": true,
+     "second_call_saved": false,
+     "v2": "disputed:independent source disagrees: compiler",
+     "caught": true,
+     "caught_by": "independent source disagrees: compiler",
+     "dissent": [],
+     "visible": true
+    }
+   },
+   "extra_judge_call": false,
+   "second_call_saved": false,
+   "v2": "accepted:same_family_with_oracles",
+   "caught": false,
+   "caught_by": null,
+   "dissent": [
+    "compiler"
+   ],
+   "visible": false,
+   "capture": "quarantined"
+  },
+  {
+   "set": "O",
+   "id": "O23",
+   "label": "unadjudicated",
+   "agreement": "primary=second",
+   "question": "What did each payer actually pay us for 2028 dates of service, net of reversals?",
+   "compiler_candidate": false,
+   "controls": [],
+   "blocking": [],
+   "lint": [],
+   "policy": {
+    "default": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "accepted:same_family_with_oracles",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    },
+    "compiler_dissent_routes": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "accepted:same_family_with_oracles",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    }
+   },
+   "extra_judge_call": false,
+   "second_call_saved": false,
+   "v2": "accepted:same_family_with_oracles",
+   "caught": false,
+   "caught_by": null,
+   "dissent": [],
+   "visible": false,
+   "capture": "recorded"
+  },
+  {
+   "set": "O",
+   "id": "O24",
+   "label": "right",
+   "agreement": "judge=second",
+   "question": "Net pharmacy payer reimbursement for 2028 - after reversals?",
+   "compiler_candidate": false,
+   "controls": [
+    "QC-PARTITION:info"
+   ],
+   "blocking": [],
+   "lint": [],
+   "policy": {
+    "default": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "judged",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    },
+    "compiler_dissent_routes": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "judged",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    }
+   },
+   "extra_judge_call": false,
+   "second_call_saved": false,
+   "v2": "judged",
+   "caught": false,
+   "caught_by": null,
+   "dissent": [],
+   "visible": false,
+   "capture": "recorded"
+  },
+  {
+   "set": "O",
+   "id": "O25",
+   "label": "right",
+   "agreement": "primary=second",
+   "question": "How much did we refund to patients in 2028?",
+   "compiler_candidate": false,
+   "controls": [],
+   "blocking": [],
+   "lint": [],
+   "policy": {
+    "default": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "accepted:same_family_with_oracles",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    },
+    "compiler_dissent_routes": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "accepted:same_family_with_oracles",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    }
+   },
+   "extra_judge_call": false,
+   "second_call_saved": false,
+   "v2": "accepted:same_family_with_oracles",
+   "caught": false,
+   "caught_by": null,
+   "dissent": [],
+   "visible": false,
+   "capture": "recorded"
+  },
+  {
+   "set": "O",
+   "id": "O27",
+   "label": "wrong",
+   "agreement": "primary=second",
+   "question": "On average, how many days from date of service until the payer's first adjudication, for 2028 services?",
+   "compiler_candidate": false,
+   "controls": [
+    "QC-CLOCK"
+   ],
+   "blocking": [
+    "QC-CLOCK"
+   ],
+   "lint": [],
+   "policy": {
+    "default": {
+     "extra_judge_call": true,
+     "second_call_saved": false,
+     "v2": "disputed:same-family agreement failed a deterministic check: QC-CLOCK",
+     "caught": true,
+     "caught_by": "same-family agreement failed a deterministic check: QC-CLOCK",
+     "dissent": [],
+     "visible": true
+    },
+    "compiler_dissent_routes": {
+     "extra_judge_call": true,
+     "second_call_saved": false,
+     "v2": "disputed:same-family agreement failed a deterministic check: QC-CLOCK",
+     "caught": true,
+     "caught_by": "same-family agreement failed a deterministic check: QC-CLOCK",
+     "dissent": [],
+     "visible": true
+    }
+   },
+   "extra_judge_call": true,
+   "second_call_saved": false,
+   "v2": "disputed:same-family agreement failed a deterministic check: QC-CLOCK",
+   "caught": true,
+   "caught_by": "same-family agreement failed a deterministic check: QC-CLOCK",
+   "dissent": [],
+   "visible": true,
+   "capture": "quarantined"
+  },
+  {
+   "set": "O",
+   "id": "O29",
+   "label": "unadjudicated",
+   "agreement": "judge=primary",
+   "question": "Of the claims that got denied the first time through, what percent did we eventually get paid?",
+   "compiler_candidate": false,
+   "controls": [],
+   "blocking": [],
+   "lint": [],
+   "policy": {
+    "default": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "judged",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    },
+    "compiler_dissent_routes": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "judged",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    }
+   },
+   "extra_judge_call": false,
+   "second_call_saved": false,
+   "v2": "judged",
+   "caught": false,
+   "caught_by": null,
+   "dissent": [],
+   "visible": false,
+   "capture": "recorded"
+  },
+  {
+   "set": "O",
+   "id": "O30",
+   "label": "wrong",
+   "agreement": "primary=second",
+   "question": "Total contractual write-offs on 2028 dates of service?",
+   "compiler_candidate": false,
+   "controls": [],
+   "blocking": [],
+   "lint": [],
+   "policy": {
+    "default": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "accepted:same_family_with_oracles",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    },
+    "compiler_dissent_routes": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "accepted:same_family_with_oracles",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    }
+   },
+   "extra_judge_call": false,
+   "second_call_saved": false,
+   "v2": "accepted:same_family_with_oracles",
+   "caught": false,
+   "caught_by": null,
+   "dissent": [],
+   "visible": false,
+   "capture": "recorded"
+  },
+  {
+   "set": "O",
+   "id": "O31",
+   "label": "wrong",
+   "agreement": "judge=second",
+   "question": "Kidney health evaluation for diabetes in 2028: what percent of our diabetics got both an eGFR and a urine albumin-creatinine ratio?",
+   "compiler_candidate": false,
+   "controls": [],
+   "blocking": [],
+   "lint": [],
+   "policy": {
+    "default": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "judged",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    },
+    "compiler_dissent_routes": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "judged",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    }
+   },
+   "extra_judge_call": false,
+   "second_call_saved": false,
+   "v2": "judged",
+   "caught": false,
+   "caught_by": null,
+   "dissent": [],
+   "visible": false,
+   "capture": "recorded"
+  },
+  {
+   "set": "O",
+   "id": "O33",
+   "label": "unadjudicated",
+   "agreement": "judge=second",
+   "question": "Statin therapy for diabetics 40-75: what percent picked up a statin in 2028?",
+   "compiler_candidate": false,
+   "controls": [
+    "QC-DENOM:info"
+   ],
+   "blocking": [],
+   "lint": [],
+   "policy": {
+    "default": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "judged",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    },
+    "compiler_dissent_routes": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "judged",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    }
+   },
+   "extra_judge_call": false,
+   "second_call_saved": false,
+   "v2": "judged",
+   "caught": false,
+   "caught_by": null,
+   "dissent": [],
+   "visible": false,
+   "capture": "recorded"
+  },
+  {
+   "set": "O",
+   "id": "O34",
+   "label": "right",
+   "agreement": "primary=second",
+   "question": "What percent of heart failure patients are on an evidence-based beta-blocker, based on fills in the past year?",
+   "compiler_candidate": true,
+   "controls": [],
+   "blocking": [],
+   "lint": [],
+   "policy": {
+    "default": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "accepted:same_family_with_oracles",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [
+      "compiler"
+     ],
+     "visible": false
+    },
+    "compiler_dissent_routes": {
+     "extra_judge_call": true,
+     "second_call_saved": false,
+     "v2": "disputed:independent source disagrees: compiler",
+     "caught": true,
+     "caught_by": "independent source disagrees: compiler",
+     "dissent": [],
+     "visible": true
+    }
+   },
+   "extra_judge_call": false,
+   "second_call_saved": false,
+   "v2": "accepted:same_family_with_oracles",
+   "caught": false,
+   "caught_by": null,
+   "dissent": [
+    "compiler"
+   ],
+   "visible": false,
+   "capture": "quarantined"
+  },
+  {
+   "set": "O",
+   "id": "O35",
+   "label": "unadjudicated",
+   "agreement": "judge=second",
+   "question": "Of the adults whose tetanus history we reviewed, what percent actually got a Tdap from us?",
+   "compiler_candidate": false,
+   "controls": [
+    "QC-DENOM:info"
+   ],
+   "blocking": [],
+   "lint": [],
+   "policy": {
+    "default": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "judged",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    },
+    "compiler_dissent_routes": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "judged",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    }
+   },
+   "extra_judge_call": false,
+   "second_call_saved": false,
+   "v2": "judged",
+   "caught": false,
+   "caught_by": null,
+   "dissent": [],
+   "visible": false,
+   "capture": "recorded"
+  },
+  {
+   "set": "O",
+   "id": "O36",
+   "label": "right",
+   "agreement": "judge=second",
+   "question": "Pediatric vision screening: among kids we successfully screened, what percent failed (20/40 or worse in either eye)?",
+   "compiler_candidate": false,
+   "controls": [],
+   "blocking": [],
+   "lint": [],
+   "policy": {
+    "default": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "judged",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    },
+    "compiler_dissent_routes": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "judged",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    }
+   },
+   "extra_judge_call": false,
+   "second_call_saved": false,
+   "v2": "judged",
+   "caught": false,
+   "caught_by": null,
+   "dissent": [],
+   "visible": false,
+   "capture": "recorded"
+  },
+  {
+   "set": "O",
+   "id": "O37",
+   "label": "right",
+   "agreement": "judge=second",
+   "question": "What percent of our lab results come in with no collection date?",
+   "compiler_candidate": false,
+   "controls": [
+    "QC-DENOM:info"
+   ],
+   "blocking": [],
+   "lint": [],
+   "policy": {
+    "default": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "judged",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": true
+    },
+    "compiler_dissent_routes": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "judged",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": true
+    }
+   },
+   "extra_judge_call": false,
+   "second_call_saved": false,
+   "v2": "judged",
+   "caught": false,
+   "caught_by": null,
+   "dissent": [],
+   "readings": {
+    "differs_by": [
+     "counting unit",
+     "window"
+    ],
+    "alt": [
+     "primary"
+    ]
+   },
+   "visible": true,
+   "capture": "quarantined"
+  },
+  {
+   "set": "O",
+   "id": "O38",
+   "label": "unadjudicated",
+   "agreement": "judge_own",
+   "question": "How timely is the claims adjudication feed? By year: records, how many showed up more than 30 days late, and the average lag.",
+   "compiler_candidate": false,
+   "controls": [
+    "QC-PERIOD"
+   ],
+   "blocking": [],
+   "lint": [],
+   "policy": {
+    "default": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "judged",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": true
+    },
+    "compiler_dissent_routes": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "judged",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": true
+    }
+   },
+   "extra_judge_call": false,
+   "second_call_saved": false,
+   "v2": "judged",
+   "caught": false,
+   "caught_by": null,
+   "dissent": [],
+   "readings": {
+    "differs_by": [
+     "date field",
+     "counting unit"
+    ],
+    "alt": [
+     "primary"
+    ]
+   },
+   "visible": true,
+   "capture": "quarantined"
+  },
+  {
+   "set": "O",
+   "id": "O39",
+   "label": "right",
+   "agreement": "judge=second",
+   "question": "How many encounters are stuck open - started but never closed out?",
+   "compiler_candidate": false,
+   "controls": [],
+   "blocking": [],
+   "lint": [],
+   "policy": {
+    "default": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "judged",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    },
+    "compiler_dissent_routes": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "judged",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": false
+    }
+   },
+   "extra_judge_call": false,
+   "second_call_saved": false,
+   "v2": "judged",
+   "caught": false,
+   "caught_by": null,
+   "dissent": [],
+   "visible": false,
+   "capture": "recorded"
+  },
+  {
+   "set": "O",
+   "id": "O40",
+   "label": "wrong",
+   "agreement": "judge_own",
+   "question": "How many duplicate lab rows do we have - same patient, same test, same draw time, same value?",
+   "compiler_candidate": false,
+   "controls": [],
+   "blocking": [],
+   "lint": [],
+   "policy": {
+    "default": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "judged",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": true
+    },
+    "compiler_dissent_routes": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "judged",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [],
+     "visible": true
+    }
+   },
+   "extra_judge_call": false,
+   "second_call_saved": false,
+   "v2": "judged",
+   "caught": false,
+   "caught_by": null,
+   "dissent": [],
+   "readings": {
+    "differs_by": [
+     "status"
+    ],
+    "alt": [
+     "second"
+    ]
+   },
+   "visible": true,
+   "capture": "quarantined"
+  },
+  {
+   "set": "O",
+   "id": "O41",
+   "label": "right",
+   "agreement": "primary=second",
+   "question": "How many patients have no dated blood pressure on file at all?",
+   "compiler_candidate": true,
+   "controls": [],
+   "blocking": [],
+   "lint": [],
+   "policy": {
+    "default": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "accepted:same_family_with_oracles",
+     "caught": false,
+     "caught_by": null,
+     "dissent": [
+      "compiler"
+     ],
+     "visible": false
+    },
+    "compiler_dissent_routes": {
+     "extra_judge_call": true,
+     "second_call_saved": false,
+     "v2": "disputed:independent source disagrees: compiler",
+     "caught": true,
+     "caught_by": "independent source disagrees: compiler",
+     "dissent": [],
+     "visible": true
+    }
+   },
+   "extra_judge_call": false,
+   "second_call_saved": false,
+   "v2": "accepted:same_family_with_oracles",
+   "caught": false,
+   "caught_by": null,
+   "dissent": [
+    "compiler"
+   ],
+   "visible": false,
+   "capture": "quarantined"
+  },
+  {
+   "set": "O",
+   "id": "O42",
+   "label": "wrong",
+   "agreement": "judge=second",
+   "question": "Food insecurity rate among patients who got the needs interview?",
+   "compiler_candidate": false,
+   "controls": [
+    "QC-SHAPE"
+   ],
+   "blocking": [
+    "QC-SHAPE"
+   ],
+   "lint": [],
+   "policy": {
+    "default": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "judged:flagged",
+     "caught": true,
+     "caught_by": "oracle QC-SHAPE",
+     "dissent": [],
+     "visible": true
+    },
+    "compiler_dissent_routes": {
+     "extra_judge_call": false,
+     "second_call_saved": false,
+     "v2": "judged:flagged",
+     "caught": true,
+     "caught_by": "oracle QC-SHAPE",
+     "dissent": [],
+     "visible": true
+    }
+   },
+   "extra_judge_call": false,
+   "second_call_saved": false,
+   "v2": "judged:flagged",
+   "caught": true,
+   "caught_by": "oracle QC-SHAPE",
+   "dissent": [],
+   "readings": {
+    "differs_by": [
+     "counting unit",
+     "population"
+    ],
+    "alt": [
+     "primary"
+    ]
+   },
+   "visible": true,
+   "capture": "quarantined"
+  }
+ ]
+}

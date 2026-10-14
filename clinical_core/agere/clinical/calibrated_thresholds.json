@@ -1,0 +1,93 @@
+{
+ "version": "calibrated-thresholds/1",
+ "target": {
+  "alpha": 0.02,
+  "delta": 0.1
+ },
+ "written_at": "2026-10-13T22:50:18Z",
+ "method": "Learn-then-Test, fixed-sequence binomial tests (conformal.ltt_threshold)",
+ "gates": {
+  "learned_router": {
+   "alpha": 0.02,
+   "delta": 0.1,
+   "n_calibration": 264,
+   "threshold": null,
+   "tested": 1,
+   "min_accepted_for_zero_errors": 114,
+   "name": "learned_router",
+   "fallback": 0.9590243531848531,
+   "data": {
+    "heldout_rows": 264,
+    "eligible": 248,
+    "source": "learned-router training rows, heldout split (non-benchmark)"
+   },
+   "fitted_at": "2026-10-13T22:50:15Z",
+   "search_floor": null,
+   "bind": "52d9e25accef0d58",
+   "calibrated": false,
+   "reason": "not certifiable at alpha=2%, delta=10% from 264 labelled cases (needs >= 114 accepted with zero errors); hand-set 0.9590243531848531 kept"
+  },
+  "semantic_cache.similarity": {
+   "alpha": 0.02,
+   "delta": 0.1,
+   "n_calibration": 1003,
+   "threshold": 0.8102,
+   "tested": 156,
+   "n_accepted": 295,
+   "errors_accepted": 0,
+   "coverage": 0.2941,
+   "p_value": 0.002580431467235632,
+   "empirical_error": 0.0,
+   "name": "semantic_cache.similarity",
+   "fallback": 0.85,
+   "data": {
+    "cases": 1003,
+    "negatives": 698,
+    "source": "semantic_cache_eval cases (adversarial + minimal differences + paraphrases; benchmarks excluded)"
+   },
+   "fitted_at": "2026-10-13T22:50:17Z",
+   "search_floor": 0.8,
+   "bind": "6263ab4c36a37a48513bcea76c43a48b4e1dba807cd4ff746ddb2905c4dd05ad",
+   "calibrated": true,
+   "guarantee": "error among accepted <= 2% with probability >= 90% (Learn-then-Test on 1003 labelled cases; 295 accepted, 0 wrong; exchangeability assumed)"
+  },
+  "nl2sql.decider": {
+   "alpha": 0.02,
+   "delta": 0.1,
+   "n_calibration": 6,
+   "threshold": null,
+   "tested": 0,
+   "min_accepted_for_zero_errors": 114,
+   "name": "nl2sql.decider",
+   "fallback": 0.8,
+   "data": {
+    "cases": 6,
+    "source": "saved bench receipts (decider picks that were delivered); benchmark-derived"
+   },
+   "fitted_at": "2026-10-13T22:50:17Z",
+   "search_floor": null,
+   "bind": null,
+   "calibrated": false,
+   "reason": "not certifiable at alpha=2%, delta=10% from 6 labelled cases (needs >= 114 accepted with zero errors); hand-set 0.8 kept"
+  },
+  "economical_planner.decision": {
+   "alpha": 0.02,
+   "delta": 0.1,
+   "n_calibration": 0,
+   "threshold": null,
+   "tested": 0,
+   "min_accepted_for_zero_errors": 114,
+   "name": "economical_planner.decision",
+   "fallback": 0.95,
+   "data": {
+    "cases": 0,
+    "source": "saved bench receipts (decision picks that were delivered); benchmark-derived"
+   },
+   "fitted_at": "2026-10-13T22:50:18Z",
+   "search_floor": null,
+   "bind": null,
+   "calibrated": false,
+   "reason": "not certifiable at alpha=2%, delta=10% from 0 labelled cases (needs >= 114 accepted with zero errors); hand-set 0.95 kept"
+  }
+ }
+}

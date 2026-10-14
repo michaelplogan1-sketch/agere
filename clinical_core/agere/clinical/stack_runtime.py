@@ -169,6 +169,10 @@ class Stack:
                         saved=json.loads(payload)
                         if saved.get('question')==question:
                             plans.execute('UPDATE plans SET payload=? WHERE id=?',(json.dumps({**saved,'graph':graph,'receipt':receipt}),key))
+            readings=(receipt.get('hosted_sql') or {}).get('readings') if planning=='auto' and isinstance(receipt,dict) else None
+            if readings and isinstance(result.get('answer'),dict):  # FM-19: both defensible readings, never a silent pick
+                from .verification_v2 import attach_readings
+                result={**result,'answer':attach_readings(result['answer'],readings)}
             from .economical_planner import economics
             costing=economics(receipt if planning=='auto' else {'steps':[{'receipt':receipt}]})
             return {**result,'question':question,'route':'economical_composition_local_execution' if planning=='auto' else 'frontier_composition_local_execution',

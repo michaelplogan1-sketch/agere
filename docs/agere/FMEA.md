@@ -93,6 +93,56 @@ A finding is added to `answer.quality_checks` (control id, FMEA id, severity, me
 Replay counts every full blind run, so a question re-run several times counts each time. The counts are printed by `tools/quality/defects.py` and recorded per mode in
 `fmea.json` (`evidence.control_replay`). They are associations with failure, not proof that the flagged issue caused it.
 
+## Verification v2 (FM-13, FM-23, FM-08/09, FM-19), 2026-10-13
+
+- **Capture after checks (FM-23).** The planner no longer records verified pairs. It leaves the candidate pair in
+  `planner_receipt.hosted_sql.capture`, and `conversation.handle_compose` calls `learning.capture_verified` after the
+  answer has been built and annotated. A pair is recorded only when it carries no warning from `QUARANTINE_CONTROLS`,
+  the judge's query raised no oracle finding, no independent candidate disagrees, and there are not two defensible
+  readings. Anything else goes to the `quarantined` table with its reasons. `learning.quarantine` remains as a backstop.
+- **Independent candidates (FM-13).** See `verification_v2.py`. Candidates come from the hosted family, the bottled local
+  model (when `MODEL_DIR` is present) and the relaxed compiler. They are executed, then clustered by result. Two agreeing
+  families are accepted. When only hosted models agree, the answer is accepted only if no blocking oracle or answer check
+  fires; otherwise it goes to the judge, which sees the findings. A relaxed-compiler dissent blocks capture but does not
+  route by default (`AGERE_COMPILER_DISSENT=route`). When the primary matches a free candidate, the second hosted call is
+  skipped. `AGERE_VERIFICATION_V2=off` restores the two-model ladder.
+- **Oracles (`oracles.py`, also run by `answer_checks.annotate`).**
+  - QC-PERTURB covers slot/operator binding, look-back windows and stray years.
+  - QC-PARTITION covers the TLP identity, plus undated rows a window drops and rows compared with distinct business keys.
+    Both of those findings are info only.
+  - QC-SHAPE flags a rate answered as a list or count.
+  - QC-EMPTY flags a zero or empty answer to a count or list question.
+- **Readings (FM-19).** When two candidates differ by a stated DEFINITION dimension and their result shape and magnitude
+  are comparable, `answer.readings` holds both readings with the default first, plus one clarifying question. A
+  QC-READINGS warning is added, and `/ask` shows the two readings side by side.
+- **Calibrated gates.** `calibrated_thresholds.py` and `tools/calibration/fit_thresholds.py` use Learn-then-Test. The target
+  is error among accepted ≤ 2% with 90% confidence. `semantic_cache.similarity` was certified at 0.810 on 1,003
+  non-benchmark eval cases (295 accepted, 0 wrong), with the search floor at 0.80. The learned router (264 held-out cases),
+  the decider (6 delivered picks) and the typed route (0) could not be certified. Their hand-set values remain in force,
+  and each record states why.
+
+Replay over saved receipts (`tools/quality/verification_replay.py` → `verification_v2_replay.json`). The scope is the
+hosted route only, in the latest adjudicated M/N/O runs: 24 engine errors and 59 right answers. No model is called, and
+the local model is not run.
+
+| Policy | Wrong caught (routed or warned) | Right flagged | Extra judge calls | Second calls saved |
+|---|---:|---:|---:|---:|
+| default | 8 / 24 (+1 via readings) | 1 / 59 (1.7%) | 4 | 3 |
+| compiler dissent routes | 11 / 24 | 7 / 59 (11.9%) | 13 | 3 |
+
+Capture: wrong pairs recorded as verified fall from 24 to 12, and right pairs from 59 to 51. The precision of each
+control on M/N/O, counted as fired on wrong / fired on right, is:
+
+| Control | Wrong / right |
+|---|---|
+| QC-CLOCK | 3/0 |
+| QC-UNITS | 1/0 |
+| QC-SHAPE | 1/0 |
+| QC-EMPTY | 1/0 (8/0 over all full blind runs) |
+| lint (`lower(drug_class) LIKE`) | 2/1 |
+| QC-PARTITION, info only | 1/4 |
+| QC-PERTURB | 0/0 after the `= 1` flag fix |
+
 ## Remaining gaps (not closed here)
 
 - **FM-13 / FM-23, correlated errors and learning from them.** Every adjudicated hosted-route engine error passed lint,

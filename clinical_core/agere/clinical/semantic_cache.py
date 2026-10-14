@@ -19,7 +19,7 @@ from pathlib import Path
 import numpy as np
 
 VERSION = 'semantic-cache/1'
-SIMILARITY = 0.85  # chosen on tools/learned_routing/semantic_cache_eval.py: 0 false reuses; slot check is the guard
+SIMILARITY = 0.85  # hand-set fallback (semantic_cache_eval.py: 0 false reuses); a certified LTT value replaces it
 ROOT = Path(__file__).resolve().parents[3]
 
 NUMBER_WORDS = {'zero': 0, 'one': 1, 'two': 2, 'three': 3, 'four': 4, 'five': 5, 'six': 6, 'seven': 7, 'eight': 8, 'nine': 9,
@@ -182,10 +182,19 @@ def _verified(path, ctx):
         db.close()
 
 
-def lookup(path, question, encoder, *, threshold=SIMILARITY):
+def similarity_gate(encoder=None):
+    """Learn-then-Test similarity cut for slot-identical paraphrases (calibrated_thresholds 'semantic_cache.similarity',
+    bound to the encoder identity it was fitted with), else the hand-set SIMILARITY."""
+    from .calibrated_thresholds import get
+    return get('semantic_cache.similarity', SIMILARITY, bind=getattr(encoder, 'identity', None))
+
+
+def lookup(path, question, encoder, *, threshold=None):
     """-> (hit | None, receipt). hit = {plan_kind, plan, agreement, matched_question}."""
     from . import learning
-    receipt = {'cache': VERSION, 'threshold': threshold}
+    gate = similarity_gate(encoder) if threshold is None else {'threshold': threshold, 'calibrated': False}
+    threshold = gate['threshold']
+    receipt = {'cache': VERSION, 'threshold': threshold, 'threshold_calibrated': gate['calibrated']}
     if os.environ.get('AGERE_SEMANTIC_CACHE', 'on') == 'off': return None, {**receipt, 'reason': 'disabled'}
     if encoder is None: return None, {**receipt, 'reason': 'no local encoder'}
     if not (Path(path) / 'learning.sqlite3').exists(): return None, {**receipt, 'reason': 'no verified store'}
