@@ -109,6 +109,7 @@ MEASUREMENTS = {
         'units': {'mIU/L': _SAME, 'µIU/mL': _SAME, 'uIU/mL': _SAME, 'm[IU]/L': _SAME}},
     'ferritin': {'label': 'Ferritin', 'unit': 'ng/mL', 'loinc': ['2276-4'], 'names': r'ferritin', 'units': {'ng/mL': _SAME}},
     'phq9': {'label': 'PHQ-9 depression score', 'unit': 'points', 'loinc': ['44261-6'], 'names': r'phq-?9', 'units': {'points': _SAME}},
+    'phq2': {'label': 'PHQ-2 depression screen score', 'unit': 'points', 'loinc': ['55758-7'], 'names': r'phq-?2', 'units': {'points': _SAME}},
     'systolic_bp': {'label': 'Systolic blood pressure', 'unit': 'mmHg', 'names': r'bp_systolic|systolic.*',
         'units': {'mmHg': _SAME}, 'wide': ['blood_pressure_systolic', 'systolic_bp']},
     'diastolic_bp': {'label': 'Diastolic blood pressure', 'unit': 'mmHg', 'names': r'bp_diastolic|diastolic.*',
@@ -120,6 +121,24 @@ MEASUREMENTS = {
     'spo2': {'label': 'Oxygen saturation', 'unit': '%', 'names': r'spo2|oxygen saturation',
         'units': {'%': _SAME}, 'wide': ['oxygen_saturation_percent']},
 }
+
+# --- Pharmacy fills ----------------------------------------------------------------
+# One shared definition of a picked-up fill, for every caller that counts fills from the semantic layer's medication table.
+# Evidence: provider pharmacy dispenses, provider pharmacy claims and payer (NCPDP) pharmacy claims. Status: only rows whose
+# status says the drug left the pharmacy ('prepared' and 'returned_to_stock' dispenses, 'rejected'/'reversed' claims are not fills).
+# medication.fill_reversed = 1 marks a dispense later returned to stock (same fill_id) or a paid claim reversed by a B2.
+FILL_EVIDENCE = ('dispensed', 'claim', 'payer_claim')
+FILL_STATUSES = ('dispensed', 'paid', 'completed')
+FILL_EVIDENCE_SQL = "('dispensed','claim','payer_claim')"
+
+
+def picked_up_sql(alias='', reversed_column=True):
+    """SQL predicate over the medication table: the row is a picked-up fill (see FILL_EVIDENCE / FILL_STATUSES)."""
+    a = f'{alias}.' if alias else ''
+    ev = ','.join(repr(e) for e in FILL_EVIDENCE); st = ','.join(repr(s) for s in FILL_STATUSES)
+    return (f"({a}evidence IN ({ev}) AND ({a}status IN ({st}) OR ({a}status IS NULL AND {a}evidence <> 'dispensed'))"
+            + (f" AND coalesce({a}fill_reversed, 0) = 0" if reversed_column else '') + ')')
+
 
 # --- Encounter / utilisation concepts -------------------------------------------
 # fields: stream -> {field: label pattern}. Patterns run over observed values only.

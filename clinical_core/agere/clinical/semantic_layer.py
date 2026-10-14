@@ -13,7 +13,7 @@ import json, re, sqlite3, time
 
 from . import aggregate, client_data, concepts, population_feeds, source_profile
 
-VERSION = 'semantic-layer/15'
+VERSION = 'semantic-layer/16'
 GFR_UNNORMALIZED = 'gfr_unnormalized'  # 'glomerular filtration rate' results in a unit that is not per 1.73 m2 (mL/min)
 
 # Source contract: streams whose records are successive snapshots of one business entity (key field).
@@ -38,7 +38,8 @@ CREATE TABLE encounter(record_id TEXT, patient_id TEXT, source_table TEXT, encou
 CREATE TABLE visit(encounter_id TEXT, patient_id TEXT, type TEXT, type_concept TEXT, status TEXT, event_date TEXT,
   end_date TEXT, available_date TEXT, organization_id TEXT, attending_clinician_id TEXT, disposition TEXT, versions INTEGER);
 CREATE TABLE stay(patient_id TEXT, admit_date TEXT, discharge_date TEXT, type TEXT, organization_id TEXT,
-  readmitted_30d INTEGER, days_to_readmission INTEGER, discharge_known INTEGER, discharge_date_source TEXT, discharge_time_utc TEXT);
+  readmitted_30d INTEGER, days_to_readmission INTEGER, discharge_known INTEGER, discharge_date_source TEXT, discharge_time_utc TEXT,
+  admit_time_utc TEXT);
 CREATE TABLE link(record_id TEXT, stream TEXT, field TEXT, target_record_id TEXT);
 CREATE TABLE concept_patient(concept TEXT, kind TEXT, patient_id TEXT, records INTEGER, first_date TEXT, last_date TEXT,
   PRIMARY KEY(concept, patient_id));
@@ -78,8 +79,10 @@ CREATE INDEX link_source ON link(record_id);
 """
 
 SCHEMA_DOC = {
-    'patient': 'One row per roster patient. age_reported/sex_reported as received; coverage_type/status from latest coverage record; '
-               'pcp_* = latest assigned primary-care relationship.',
+    'patient': 'One row per roster patient. age_reported/sex_reported as received; coverage_type/status from latest coverage record, '
+               'else (population-feed members without one) coverage_type = line_of_business of the latest enrollment month and '
+               'coverage_status active | inactive by whether a span covers the as-of date; coverage_source = coverage_record | '
+               'enrollment_span (NULL = no coverage received). pcp_* = latest assigned primary-care relationship.',
     'condition': 'One row per (condition record, matching library concept); concept NULL when no library concept matches. '
                  'Sources: conditions, condition_assessments, problem_lists. label = received description.',
     'measurement': 'Labs and vitals, one row per (record, concept); concept NULL when unmapped. value/unit as received; '
@@ -87,7 +90,9 @@ SCHEMA_DOC = {
                    'concept egfr = BSA-normalised eGFR only (mL/min/1.73m2 or no unit); GFR results reported in another unit (mL/min, '
                    'measured GFR / clearance) are concept gfr_unnormalized and never count as eGFR. Use only result_current = 1 AND '
                    'excluded_reason IS NULL rows for values; value_censor marks censored strings (eGFR ">60" -> 60 with value_censor ">"); '
-                   'see measurement_quality.',
+                   'see measurement_quality. Questionnaire totals are measurements too: mood_questionnaires rows (source_table '
+                   'mood_questionnaires, one row per administration, name = instrument) carry concept phq9 (PHQ-9 total 0-27) or phq2 '
+                   '(PHQ-2 total 0-6), value = total in points; event_time orders same-day administrations.',
     'encounter': 'Encounter records plus ADT notifications (source_table adt, type = ADT event). type_concept = library encounter concept. '
                  'ED visits that only ADT messages or payer claims carry (claims-only members) are added once each, deduplicated against '
                  'the EHR (source_table adt_messages | payer_medical_claims, type_concept emergency_visit); see utilization_event.',
@@ -97,7 +102,10 @@ SCHEMA_DOC = {
             'discharge_date and los_days are NULL when no discharge time was received (discharge_known = 0); never treat those as 0 days. '
             'discharge_date is the ADT discharge (A03) date of the stay\'s encounter when one was received (discharge_date_source = adt), '
             'else the date part of the encounter end_time (encounter_end_time_utc); discharge_time_utc keeps the UTC end timestamp. '
-            'Readmission gaps use discharge_date. stay_source = encounters, or adt | payer_claim for admissions found only in ADT '
+            'Readmission gaps use discharge_date. LOS uses one clock: admit_time_utc = UTC start of the admitting encounter; '
+            'los_days = midnights between the UTC dates of admit_time_utc and discharge_time_utc, los_days_elapsed = fractional days '
+            'between the two timestamps (state which one an answer uses); ADT/claims-only stays count local admit to local '
+            'discharge dates. stay_source = encounters, or adt | payer_claim for admissions found only in ADT '
             'visits or inpatient (TOB 011x) / observation (revenue 0762) payer claims, so admission rates cover claims-only members; '
             'readmission flags of a patient with such stays are recomputed over all of the patient\'s stays.',
     'concept_patient': 'Patients having each library concept (condition, measurement, encounter), with record counts and first/last dates.',
@@ -105,7 +113,12 @@ SCHEMA_DOC = {
             'field name, target_record_id. Indexed on target_record_id - use it for linkage questions (e.g. orders without dispenses).',
     'record': 'Every received record (all streams). Use json_extract(payload, \'$.field\') for fields of streams not modelled above.',
     'appointment': 'One row per appointment_id (appointments arrive as a booked record plus later status records). scheduled_date from '
-                   'the booking; final_status = latest status received; ever_* flags over all versions; kept = arrived or fulfilled.',
+                   'the latest version carrying a scheduled_date (a reschedule moves it), else the date of slot_start (population-feed '
+                   'bookings send booked_at + slot_start); booked_date = earliest booked version; lead_time_days = scheduled_date - '
+                   'booked_date, NULL when either is unknown. final_status = latest status received; ever_* flags over all versions; '
+                   'kept = any arrived, attended or fulfilled version. outcome = kept | no_show (never kept) | cancelled (never kept '
+                   'or no-show) | rescheduled | scheduled (still booked) | unassigned (unassigned_requires_review) | unknown. '
+                   'No-show rate = no_show / (kept + no_show), or with cancelled in the denominator - state which.',
     'claim_adjustment': 'One row per adjustment line on each medical claim adjudication record: group_code (CO/PR/OA), reason_code '
                         '(X12 CARC), category (deductible, coinsurance, copay, contractual_adjustment, else group-code), amount_cents; '
                         'current_version = 1 on the claim\'s latest version.',
@@ -119,7 +132,14 @@ SCHEMA_DOC = {
                   'glp1_agonist, metformin, insulin, anticoagulant, opioid, ...); NULL when unclassified. drug_class values are exact ids '
                   '(full list and groups in drug_class_vocabulary): compare with = or IN, never LIKE - \'%beta%\' also matches '
                   'short_acting_beta_agonist and \'%antihistamine%\' matches both generations. Use beta_blocker, '
-                  'first_generation_antihistamine (Beers), second_generation_antihistamine, short_acting_beta_agonist.',
+                  'first_generation_antihistamine (Beers), second_generation_antihistamine, short_acting_beta_agonist. '
+                  'picked_up = 1 on fills that left the pharmacy (evidence dispensed | claim | payer_claim with status dispensed | '
+                  'paid | completed, not reversed / returned to stock; prepared-only dispenses never count): use picked_up = 1 for '
+                  'any fill, pickup or dispensing count.',
+    'wellness_visit': 'One row per wellness_visit_services record: visit_type (medicare_annual_wellness, preventive_review, ...), '
+                      'hcpcs_code, awv = 1 for a Medicare annual wellness visit (G0438 initial / G0439 subsequent, awv_kind), status '
+                      '(count completed), coding_status, event_date, encounter_id. visit.wellness_visit_type / visit.awv mark the '
+                      'encounter. Generic preventive reviews are not AWVs.',
     'drug_class_vocabulary': 'Every medication.drug_class id with its groups (class_group: antihypertensive, raas_inhibitor, '
                              'diabetes_medication, beers_high_risk; NULL row = ungrouped class). Join on drug_class for group questions.',
     'normalization': 'measurement.loinc/component/lab_category, condition.is_diagnosis/icd10_category/chapter/chronic/'
@@ -174,6 +194,28 @@ MED_SOURCES = [  # stream, name field, status field, evidence label
     ('reported_medication_entries', 'medication_name_reported', 'use_statement', 'reported'),
     ('pharmacy_history', 'medication_name', 'reported_status', 'pharmacy_history'),
     ('payer_pharmacy_claims', 'drug_name', 'claim_status', 'payer_claim')]
+
+
+# Scored questionnaires whose totals are measurements (one row per administration; concept from the instrument name).
+QUESTIONNAIRE_STREAMS = ('mood_questionnaires',)
+QUESTIONNAIRE_CONCEPTS = ('phq9', 'phq2')
+
+
+def _questionnaire_concept(instrument):
+    name = str(instrument or '').strip()
+    return next((c for c in QUESTIONNAIRE_CONCEPTS
+                 if re.fullmatch(concepts.MEASUREMENTS[c]['names'], name, re.I)), None)
+
+
+# Appointment status values received (v2.3 warehouse: arrived 403, attended 1,671, booked 38,677, cancelled 1,532,
+# fulfilled 31,886, no_show 2,219, rescheduled 347, unassigned_requires_review 25 records), each mapped deliberately:
+APPOINTMENT_KEPT = ('arrived', 'attended', 'fulfilled')          # patient seen: kept
+APPOINTMENT_NO_SHOW = ('no_show',)                              # no-show (only when never kept)
+APPOINTMENT_CANCELLED = ('cancelled',)                          # cancelled (only when never kept / no-show)
+APPOINTMENT_SCHEDULED = ('booked',)                             # still scheduled, no outcome yet
+# 'rescheduled' supersedes the slot: the appointment's outcome comes from later versions (outcome 'rescheduled' when none came).
+APPOINTMENT_REVIEW = ('unassigned_requires_review',)            # scheduling contact unresolved: outcome 'unassigned'
+# Any other status value: outcome 'unknown'.
 
 
 # X12 claim adjustment reason codes most used in patient-responsibility questions.
@@ -489,22 +531,90 @@ def _standards_summary(out):
     return s
 
 
-def _derived(out):
-    """Entity tables that resolve each stream's versioning, so queries count things, not records."""
-    out.executescript("""
+def _sql_in(values): return '(' + ','.join(repr(v) for v in values) + ')'
+
+
+def _appointments(out):
+    """One row per appointment_id. scheduled_date = scheduled_date of the latest version carrying one (a reschedule moves it),
+    else the date of the latest received slot_start (population-feed bookings carry booked_at + slot_start instead); never the
+    booking record's own date. booked_date = earliest 'booked' version date; lead_time_days is NULL when either date is unknown."""
+    kept, no_show, cancelled = _sql_in(APPOINTMENT_KEPT), _sql_in(APPOINTMENT_NO_SHOW), _sql_in(APPOINTMENT_CANCELLED)
+    out.execute(f"""
     INSERT INTO appointment
     SELECT appointment_id, max(patient_id),
-      max(CASE WHEN status = 'booked' THEN scheduled_date END), min(CASE WHEN status = 'booked' THEN event_date END),
+      coalesce(max(CASE WHEN rn_sched = 1 THEN scheduled_date END), max(CASE WHEN rn_slot = 1 THEN slot_date END)),
+      min(CASE WHEN status = 'booked' THEN event_date END),
       max(CASE WHEN rn_last = 1 THEN status END),
-      max(status = 'no_show'), max(status = 'cancelled'), max(status = 'rescheduled'), max(status IN ('arrived','fulfilled')),
+      max(status IN {no_show}), max(status IN {cancelled}), max(status = 'rescheduled'), max(status IN {kept}),
       max(organization_id), max(clinician_id), max(purpose), count(*)
-    FROM (SELECT json_extract(payload,'$.appointment_id') AS appointment_id, patient_id, json_extract(payload,'$.status') AS status,
-                 coalesce(json_extract(payload,'$.scheduled_date'), event_date) AS scheduled_date, event_date, organization_id,
+    FROM (SELECT *, row_number() OVER (PARTITION BY appointment_id ORDER BY scheduled_date IS NULL, event_date DESC, record_id DESC) AS rn_sched,
+                 row_number() OVER (PARTITION BY appointment_id ORDER BY slot_date IS NULL, event_date DESC, record_id DESC) AS rn_slot
+          FROM (SELECT json_extract(payload,'$.appointment_id') AS appointment_id, patient_id, json_extract(payload,'$.status') AS status,
+                 substr(json_extract(payload,'$.scheduled_date'), 1, 10) AS scheduled_date,
+                 substr(json_extract(payload,'$.slot_start'), 1, 10) AS slot_date, event_date, organization_id, record_id,
                  json_extract(payload,'$.clinician_id') AS clinician_id, json_extract(payload,'$.purpose') AS purpose,
                  row_number() OVER (PARTITION BY json_extract(payload,'$.appointment_id')
                                     ORDER BY available_date DESC, json_extract(payload,'$.available_time') DESC, record_id DESC) AS rn_last
-          FROM record WHERE stream = 'appointments' AND json_extract(payload,'$.appointment_id') IS NOT NULL)
-    GROUP BY appointment_id;
+                FROM record WHERE stream = 'appointments' AND json_extract(payload,'$.appointment_id') IS NOT NULL))
+    GROUP BY appointment_id""")
+    out.execute('ALTER TABLE appointment ADD COLUMN lead_time_days INTEGER')
+    out.execute('ALTER TABLE appointment ADD COLUMN outcome TEXT')
+    out.execute("""UPDATE appointment SET lead_time_days = CASE WHEN scheduled_date IS NOT NULL AND booked_date IS NOT NULL
+                     THEN CAST(julianday(scheduled_date) - julianday(booked_date) AS INTEGER) END,
+                   outcome = CASE WHEN kept = 1 THEN 'kept' WHEN ever_no_show = 1 THEN 'no_show' WHEN ever_cancelled = 1 THEN 'cancelled'
+                     WHEN final_status = 'rescheduled' THEN 'rescheduled' WHEN final_status IN """ + _sql_in(APPOINTMENT_SCHEDULED) + """ THEN 'scheduled'
+                     WHEN final_status IN """ + _sql_in(APPOINTMENT_REVIEW) + """ THEN 'unassigned' ELSE 'unknown' END""")
+
+
+# Medicare annual wellness visit HCPCS: G0438 initial, G0439 subsequent. (G0402 = IPPE 'Welcome to Medicare', not an AWV.)
+AWV_HCPCS = {'G0438': 'initial', 'G0439': 'subsequent'}
+
+
+def _wellness_visits(out):
+    """wellness_visit: one row per wellness_visit_services record; awv = 1 for a Medicare annual wellness visit (HCPCS G0438/G0439,
+    or visit_type medicare_annual_wellness when no code was sent). visit.wellness_visit_type / visit.awv mark the encounter."""
+    out.execute("""CREATE TABLE wellness_visit(record_id TEXT PRIMARY KEY, patient_id TEXT, encounter_id TEXT, visit_type TEXT,
+        hcpcs_code TEXT, awv INTEGER, awv_kind TEXT, status TEXT, coding_status TEXT, event_date TEXT, available_date TEXT,
+        organization_id TEXT)""")
+    rows = []
+    for rid, pid, payload, d, av, org in out.execute("SELECT record_id, patient_id, payload, event_date, available_date, organization_id "
+                                                     "FROM record WHERE stream = 'wellness_visit_services'").fetchall():
+        r = json.loads(payload)
+        code = str(r.get('hcpcs_code') or r.get('hcpcs') or '').strip().upper() or None
+        vtype = r.get('visit_type')
+        awv = code in AWV_HCPCS or (code is None and bool(re.search(r'annual[ _]wellness', str(vtype or ''), re.I)))
+        rows.append((rid, pid, r.get('encounter_id'), vtype, code, int(awv), AWV_HCPCS.get(code) if awv else None, r.get('status'),
+                     r.get('coding_status'), d, av, org))
+    out.executemany('INSERT INTO wellness_visit VALUES (' + ','.join('?' * 12) + ')', rows)
+    out.execute('CREATE INDEX wellness_visit_patient ON wellness_visit(patient_id, event_date)')
+    out.execute('ALTER TABLE visit ADD COLUMN wellness_visit_type TEXT')
+    out.execute('ALTER TABLE visit ADD COLUMN awv INTEGER')
+    out.execute("""UPDATE visit SET (wellness_visit_type, awv) = (SELECT w.visit_type, max(w.awv) FROM wellness_visit w
+                     WHERE w.encounter_id = visit.encounter_id) WHERE encounter_id IN (SELECT encounter_id FROM wellness_visit)""")
+
+
+def _coverage_and_fills(out, as_of):
+    """After the population feeds: (1) patients with no coverage record take coverage from their enrollment spans
+    (patient.line_of_business, latest member month), coverage_status active when a span covers the as-of date, else inactive;
+    patient.coverage_source says which. (2) medication.picked_up = 1 on rows that are picked-up fills (concepts.picked_up_sql)."""
+    out.execute('ALTER TABLE patient ADD COLUMN coverage_source TEXT')
+    out.execute("UPDATE patient SET coverage_source = 'coverage_record' WHERE coverage_type IS NOT NULL")
+    if 'line_of_business' in _columns(out, 'patient'):
+        out.execute("""UPDATE patient SET coverage_type = line_of_business, coverage_source = 'enrollment_span',
+            coverage_status = CASE WHEN EXISTS (SELECT 1 FROM enrollment_span e WHERE e.patient_id = patient.patient_id
+                AND e.coverage_start <= :d AND (e.coverage_end IS NULL OR e.coverage_end >= :d))
+              THEN 'active' ELSE 'inactive' END
+            WHERE coverage_type IS NULL AND line_of_business IS NOT NULL""", {'d': as_of})
+    out.execute('ALTER TABLE medication ADD COLUMN picked_up INTEGER')
+    out.execute('UPDATE medication SET picked_up = CASE WHEN ' +
+                concepts.picked_up_sql(reversed_column='fill_reversed' in _columns(out, 'medication')) + ' THEN 1 ELSE 0 END')
+
+
+def _derived(out):
+    """Entity tables that resolve each stream's versioning, so queries count things, not records."""
+    _appointments(out)
+    _wellness_visits(out)
+    out.executescript("""
     INSERT INTO claim
     SELECT claim_id, max(patient_id), max(payer), max(service_date), max(benefit_year),
       max(CASE WHEN rn_first = 1 THEN status END), max(CASE WHEN rn_last = 1 THEN status END),
@@ -578,8 +688,18 @@ def _derived(out):
                      WHERE r.stream = 'demographic_updates' AND r.patient_id = patient.patient_id
                        AND json_extract(r.payload,'$.age_reported') IS NOT NULL
                      ORDER BY r.event_date DESC, r.available_date DESC LIMIT 1), age_reported)""")
+    # LOS in one clock: admit_date is the local encounter date while discharge_time_utc is UTC, so midnights are counted between
+    # the UTC dates of the admit and discharge timestamps (los_days) and elapsed time between the timestamps (los_days_elapsed).
+    # Without both timestamps: local admit and local (ADT) discharge dates when the discharge date is local, else NULL.
     out.execute("ALTER TABLE stay ADD COLUMN los_days INTEGER")
-    out.execute("UPDATE stay SET los_days = CAST(julianday(discharge_date) - julianday(admit_date) AS INTEGER) WHERE discharge_date IS NOT NULL")
+    out.execute("ALTER TABLE stay ADD COLUMN los_days_elapsed REAL")
+    out.execute("""UPDATE stay SET
+        los_days = CASE WHEN admit_time_utc IS NOT NULL AND discharge_time_utc IS NOT NULL
+                          THEN CAST(julianday(substr(discharge_time_utc,1,10)) - julianday(substr(admit_time_utc,1,10)) AS INTEGER)
+                        WHEN discharge_date_source = 'adt' THEN CAST(julianday(discharge_date) - julianday(admit_date) AS INTEGER) END,
+        los_days_elapsed = CASE WHEN admit_time_utc IS NOT NULL AND discharge_time_utc IS NOT NULL
+                          THEN round(julianday(discharge_time_utc) - julianday(admit_time_utc), 4) END
+        WHERE discharge_date IS NOT NULL""")
     out.executescript("CREATE INDEX appointment_patient ON appointment(patient_id); CREATE INDEX claim_patient ON claim(patient_id);")
     _normalize(out)  # last: fills columns added above (visit.in_person, measurement concept)
     # The dictionary maps the 'glomerular filtration rate' name to an eGFR LOINC; that code is wrong for unnormalised GFR rows.
@@ -707,6 +827,16 @@ def build(path):
                             out.execute('INSERT INTO measurement VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
                                         (rid, pid, st, c, name, value, unit, canon, cunit, r.get('result_status'), d,
                                          (r.get('recorded_date') or '')[:10] or None, (r.get('available_date') or '')[:10] or None, r.get('organization_id')))
+                if st in QUESTIONNAIRE_STREAMS:
+                    c = _questionnaire_concept(r.get('instrument'))
+                    total = r.get('total') if r.get('total') is not None else r.get('score')
+                    total = total if type(total) in (int, float) else None
+                    if c or r.get('instrument'):
+                        out.execute('INSERT INTO measurement VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
+                                    (rid, pid, st, c, r.get('instrument'), total, 'points', total if c else None, 'points' if c else None,
+                                     r.get('result_status') or r.get('status') or 'final', d, (r.get('recorded_date') or '')[:10] or None,
+                                     (r.get('available_date') or '')[:10] or None, r.get('organization_id')))
+                        if c: note(c, 'measurement', pid, d)
                 if st in ('encounters', 'adt'):
                     field = 'type' if st == 'encounters' else 'event'
                     cs = set()
@@ -719,13 +849,18 @@ def build(path):
                                      r.get('organization_id'), r.get('attending_clinician_id'), r.get('disposition')))
                         if c: note(c, 'encounter', pid, d)
             stay_rows, utc_end = _local_discharges(rows)
+            utc_start = {}  # local admit day -> earliest UTC start timestamp of a stay encounter that day (same clock as discharge_time_utc)
+            for r in rows:
+                if r.get('source_table') != 'encounters' or not stay_type.match(str(r.get('type') or '').strip()): continue
+                day, t = (r.get('event_date') or '')[:10], r.get('start_time') or r.get('event_time')
+                if day and t and (day not in utc_start or str(t) < utc_start[day]): utc_start[day] = str(t)
             for s in aggregate._stays(stay_rows, {'start': '', 'end': ''}, '9999-12-31'):
                 known = s['discharge_known']; src = utc_end.get(s['discharge']) if known else None
-                out.execute('INSERT INTO stay VALUES (?,?,?,?,?,?,?,?,?,?)', (pid, s['admit'], s['discharge'] if known else None,
+                out.execute('INSERT INTO stay VALUES (?,?,?,?,?,?,?,?,?,?,?)', (pid, s['admit'], s['discharge'] if known else None,
                                                                           s['type'], s['organization'], int(s['readmitted']),
                                                                           s['days_to_readmission'], int(known),
                                                                           (src[0] if src else 'encounter_end_time_utc') if known else None,
-                                                                          src[1] if src else None))
+                                                                          src[1] if src else None, utc_start.get(s['admit'])))
             # Patient attributes (same rules as aggregate).
             person = people.get(pid, {})
             pcp = [r for r in rows if r.get('source_table') == 'care_team_relationships' and r.get('role') in aggregate.PCP_ROLES
@@ -763,6 +898,7 @@ def build(path):
         _entities(out, path)
         meta = json.loads((path / 'run.json').read_text())
         feeds = population_feeds.build(out, people, meta['snapshot']['as_of'], path)  # after claims/entities: reads claim NPIs, organization
+        _coverage_and_fills(out, meta['snapshot']['as_of'])  # after feeds: enrollment spans, fill reversals
         out.executemany('INSERT INTO meta VALUES (?,?)', [('version', VERSION), ('source_digest', meta['source_digest']),
                                                           ('as_of', meta['snapshot']['as_of']),
                                                           ('standards', json.dumps(_standards_summary(out))),
