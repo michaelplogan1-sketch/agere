@@ -156,7 +156,7 @@ def main():
             'new_paid_api_calls':0,'clinical_accuracy_measured':False,'complete_interpretation_claimed':False}
         write(out/'source-extension-verification.json',receipt)
         audit={'synthetic':True,'prior_release':inventory['previous'],'new_release':inventory['release'],'as_of':cutoff,'patients':len(ids),
-            'patient_id_digest':inventory['roster_digest'],'identical_roster':True,'prior_received_rows':inventory['previous_records'],
+            'patient_id_digest':inventory['roster_digest'],'identical_roster':not inventory.get('new_patients'),'new_patients':inventory.get('new_patients',0),'prior_received_rows':inventory['previous_records'],
             'new_received_rows':inventory['records'],'added_received_rows':inventory['records']-inventory['previous_records'],
             'source_categories':inventory['source_categories'],'prior_rows_missing_or_changed':inventory['prior_rows_changed_or_missing'],
             'manifest_source_sha256':inventory['source_sha256'],'public_inventory_hash':digest(inventory),'private_files_read':False}

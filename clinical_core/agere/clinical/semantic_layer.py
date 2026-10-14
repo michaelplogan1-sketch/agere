@@ -11,9 +11,9 @@ from collections import defaultdict
 from pathlib import Path
 import json, re, sqlite3, time
 
-from . import aggregate, concepts, source_profile
+from . import aggregate, concepts, population_feeds, source_profile
 
-VERSION = 'semantic-layer/13'
+VERSION = 'semantic-layer/14'
 
 # Source contract: streams whose records are successive snapshots of one business entity (key field).
 # Other repeated ids (payments per account, lines per claim, fills per prescription) are separate events, not versions.
@@ -101,7 +101,7 @@ SCHEMA_DOC = {
                  'imaging findings, follow-up instructions, goals of care) with negation, temporality and evidence spans; rule '
                  'extractor admitted per fact type at >= 0.90 measured precision.',
     'medication': 'Every medication mention, one row per (record, drug_class): source_stream and evidence (dispensed, claim, ordered, '
-                  'listed, administered, reported, pharmacy_history), drug_name as received, status. drug_class from the active '
+                  'listed, administered, reported, pharmacy_history, payer_claim = payer pharmacy claim), drug_name as received, status. drug_class from the active '
                   'ingredient (statin, beta_blocker, hf_evidence_based_beta_blocker, ace_inhibitor, arb, arni, mra, sglt2_inhibitor, '
                   'glp1_agonist, metformin, insulin, anticoagulant, opioid, ...); NULL when unclassified.',
     'normalization': 'measurement.loinc/component/lab_category, condition.is_diagnosis/icd10_category/chapter/chronic/'
@@ -112,7 +112,8 @@ SCHEMA_DOC = {
     'current_record': 'Latest version of each business entity in versioned (snapshot) streams: stream, key_field, business_id, '
                       'versions, payload of the latest version. Use it for current state (current balance, current claim status).',
     'social_need': 'Social-needs screening answers normalised across instruments: one row per (screen record, need) with positive 0/1. '
-                   'need = food | transport | cost_of_care. transport positive = transport_difficulty_reported or transport unreliable '
+                   'need = food | transport | cost_of_care, plus housing | utilities | safety from AHC HRSN screens (instrument '
+                   'AHC_HRSN; positive when any item for the need is answered yes; source_field = items:<item names>). transport positive = transport_difficulty_reported or transport unreliable '
                    '(family_ride/reliable = negative); cost_of_care = difficulty paying for care (social screen) or medical bills '
                    '(financial screen). Screened = has a row for that need.',
     'standards': 'Standard codes received from the source sit beside the local values (NULL when a release has none): '
@@ -128,12 +129,19 @@ SCHEMA_DOC = {
                   'code, kept across releases), revenue_code (UB-04 lines), units, charge_cents.',
     'immunization': 'One row per immunization record: vaccine, product, cvx, mvx, status (administration_status).',
     'clinician': 'Clinician reference rows: specialty, synthetic npi, NUCC taxonomy_code, organization_id.',
-    'organization': 'Organization reference rows: organization_type, npi, taxonomy_code, tin, city/state/postal_code.',
+    'organization': 'Organization reference rows: organization_type, npi, taxonomy_code, tin, city/state/postal_code; facility_class '
+                    '(hospital, ambulatory_surgery_center, imaging_idtf, urgent_care, dialysis, skilled_nursing, home_health, hospice, '
+                    'ambulance, dme, pharmacy, laboratory, primary_care, outpatient_practice, payer, other) from the directory type; '
+                    'place_of_service = most frequent CMS POS on claims billed under the organization NPI (place_of_service_claims = n).',
     'claim': 'One row per medical claim_id (adjudications arrive as successive records: denied, paid, reversed, re-paid). first_status '
              'by arrival order; final_status follows the adjudication chain (each reversal paired with the payment it reverses; '
              'final = last unreversed adjudication by event time), received_final_status = last-arrival status, '
              'live_payer_paid_cents = payer paid on unreversed payments; denied_then_paid = a denial later followed by payment; net_payer_paid_cents = paid minus reversed. '
-             'Legacy rows without claim_id are excluded.',
+             'Legacy rows without claim_id are excluded. Provider-side claims only; payer-feed claims are in payer_claim.',
+    'patient_population': 'patient.data_segment (deep_chart | claims_plus_ehr | claims_only | duplicate_chart; NULL in panel-only '
+                          'releases), patient.line_of_business/payer_id (latest member_month). condition.diagnosis_basis, '
+                          'diagnosing_encounter_id, diagnosis_date (onset, else event date) on conditions records.',
+    **population_feeds.SCHEMA_DOC,
 }
 
 
@@ -145,7 +153,8 @@ MED_SOURCES = [  # stream, name field, status field, evidence label
     ('medication_orders', 'medication_name', 'status', 'ordered'), ('medication_lists', 'name', None, 'listed'),
     ('medication_administrations', 'medication_name', 'administration_status', 'administered'),
     ('reported_medication_entries', 'medication_name_reported', 'use_statement', 'reported'),
-    ('pharmacy_history', 'medication_name', 'reported_status', 'pharmacy_history')]
+    ('pharmacy_history', 'medication_name', 'reported_status', 'pharmacy_history'),
+    ('payer_pharmacy_claims', 'drug_name', 'claim_status', 'payer_claim')]
 
 
 # X12 claim adjustment reason codes most used in patient-responsibility questions.
@@ -693,10 +702,12 @@ def build(path):
         _claim_codes(out)
         _entities(out, path)
         meta = json.loads((path / 'run.json').read_text())
+        feeds = population_feeds.build(out, people, meta['snapshot']['as_of'])  # after claims/entities: reads claim NPIs, organization
         out.executemany('INSERT INTO meta VALUES (?,?)', [('version', VERSION), ('source_digest', meta['source_digest']),
                                                           ('as_of', meta['snapshot']['as_of']),
                                                           ('standards', json.dumps(_standards_summary(out))),
-                                                          ('claim_settlement', json.dumps(settlement))])
+                                                          ('claim_settlement', json.dumps(settlement)),
+                                                          ('population_feeds', json.dumps(feeds))])
         out.commit()
     finally:
         src.close(); out.close()

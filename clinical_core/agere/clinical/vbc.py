@@ -96,9 +96,30 @@ def _denominator(d):
 
 
 # ---- building blocks -------------------------------------------------------------
+def _has_table(db, name):
+    return db.execute("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = ?", (name,)).fetchone() is not None
+
+
+def span_months(db, start, end):
+    """Member months from payer enrollment spans (semantic member_month), for every patient with any span:
+    {pid: {'months': [...in window], 'line_of_business': latest in window (else latest overall)}}. {} when the
+    release has no spans (v1.x, v2.0)."""
+    if not _has_table(db, 'member_month'): return {}
+    out = {pid: {'months': [], 'line_of_business': None} for (pid,) in db.execute('SELECT DISTINCT patient_id FROM enrollment_span')}
+    latest = {}
+    for pid, month, lob in db.execute('SELECT patient_id, month, line_of_business FROM member_month ORDER BY patient_id, month'):
+        if pid not in out: continue
+        latest[pid] = lob
+        if start[:7] <= month <= end[:7]: out[pid]['months'].append(month); out[pid]['line_of_business'] = lob
+    for pid, info in out.items():
+        info['line_of_business'] = info['line_of_business'] or latest.get(pid)
+    return out
+
+
 def eligibility(db, as_of, start, end):
-    """Enrolled months per patient: active coverage from its effective start, open-ended to the snapshot
-    (the warehouse records no termination dates), confirmed by any benefit verification in the period."""
+    """Enrolled months per patient. Patients with payer enrollment spans: the months their spans cover (member_month,
+    terminations respected). Others: active coverage from its effective start, open-ended to the snapshot (the coverage
+    record carries no termination date), confirmed by any benefit verification in the period."""
     people = {pid: {'age': a, 'sex': s, 'coverage_type': ct, 'status': st}
               for pid, a, s, ct, st in db.execute('SELECT patient_id, age_reported, sex_reported, coverage_type, coverage_status FROM patient')}
     for pid, values in demographics(db).items():
@@ -106,16 +127,36 @@ def eligibility(db, as_of, start, end):
     starts = {pid: d for pid, d in db.execute("SELECT patient_id, min(coalesce(json_extract(payload,'$.effective_start'), event_date)) "
                                               "FROM record WHERE stream='coverage' GROUP BY 1")}
     window = _months(start, end)
+    spans = span_months(db, start, end)
     for pid, info in people.items():
+        if pid in spans:  # enrollment spans present: member months come from the spans, not a static roster
+            info['months'] = [m for m in spans[pid]['months'] if m in window]
+            info['coverage_type'] = info['coverage_type'] or spans[pid]['line_of_business']
+            info['enrollment_basis'] = 'enrollment_span'
+            continue
         eff = starts.get(pid)
         enrolled = info['status'] == 'active' and info['coverage_type'] not in (None, 'uninsured') and eff
         info['months'] = [m for m in window if enrolled and m >= eff[:7]] if enrolled else []
+        info['enrollment_basis'] = 'coverage_record'
     return people
 
 
+def payer_attribution(db, end):
+    """Payer-attributed practice/NPI per patient from the latest member month at or before `end` that carries one."""
+    if not _has_table(db, 'member_month'): return {}
+    out = {}
+    for pid, practice, npi in db.execute('SELECT patient_id, attribution_practice_id, attribution_npi FROM member_month '
+                                         'WHERE month <= ? AND (attribution_practice_id IS NOT NULL OR attribution_npi IS NOT NULL) '
+                                         'ORDER BY patient_id, month', (end[:7],)):
+        out[pid] = (practice, npi)
+    return out
+
+
 def attribution(db, people, start, end, method='hybrid'):
-    """PCP attribution. prospective = latest assigned primary-care relationship; plurality = clinician with
-    most primary-care visits in the period (ties -> most recent visit); hybrid = prospective, else plurality."""
+    """PCP attribution. prospective = payer attribution from the enrollment span when present (practice; PCP = the
+    attributed NPI's clinician, else the assigned PCP or visit-plurality PCP at that practice), else the latest assigned
+    primary-care relationship; plurality = clinician with most primary-care visits in the period (ties -> most recent
+    visit); hybrid = prospective, else plurality."""
     assigned = {}
     for pid, payload in db.execute("SELECT patient_id, payload FROM record WHERE stream='care_team_relationships'"):
         r = json.loads(payload)
@@ -129,11 +170,19 @@ def attribution(db, people, start, end, method='hybrid'):
             "WHERE type_concept IN ('primary_care_visit') AND attending_clinician_id IS NOT NULL AND event_date BETWEEN ? AND ?",
             (start, end)):
         v = visits[pid][clin]; v[0] += 1; v[1] = max(v[1], d or ''); v[2] = org
+    payer = payer_attribution(db, end) if method in ('prospective', 'hybrid') else {}
+    by_npi = {npi: cid for cid, npi in db.execute('SELECT clinician_id, npi FROM clinician WHERE npi IS NOT NULL')} if payer else {}
     out = {}
     for pid in people:
         plural = max(visits[pid].items(), key=lambda kv: (kv[1][0], kv[1][1]))[0] if visits[pid] else None
         pros = assigned.get(pid)
-        if method == 'prospective' or (method == 'hybrid' and pros):
+        if pid in payer:
+            practice, npi = payer[pid]
+            pcp = by_npi.get(npi) or (pros[1] if pros and pros[2] == practice else None) or \
+                  (plural if plural and visits[pid][plural][2] == practice else None)
+            out[pid] = {'pcp': pcp or 'unattributed', 'practice': practice or 'unattributed', 'method': 'payer_attribution',
+                        'visits_with_pcp': visits[pid].get(pcp, [0])[0] if pcp else 0}
+        elif method == 'prospective' or (method == 'hybrid' and pros):
             out[pid] = {'pcp': pros[1], 'practice': pros[2], 'method': 'assigned_pcp', 'visits_with_pcp': visits[pid].get(pros[1], [0])[0]} if pros else \
                        {'pcp': 'unattributed', 'practice': 'unattributed', 'method': 'none'}
         elif plural:
@@ -297,7 +346,26 @@ def _claims(db, start, end):
         if r.get('transaction_status') != 'paid' or not d or not (start <= d <= end): continue
         paid = (r.get('payer_paid_cents') or 0)
         rows.append((pid, d[:7], paid + (r.get('patient_paid_cents') or 0), paid, 'pharmacy', available))
+    payer = _payer_claims(db, start, end)
+    if payer is not None:  # payer feed present: it is the cost source for every patient it covers
+        covered = payer[0]
+        rows = [r for r in rows if r[0] not in covered] + payer[1]
     return rows
+
+
+def _payer_claims(db, start, end):
+    """Paid payer-feed claims (semantic payer_claim at its final adjudication, payer_pharmacy_claim) in the window:
+    (patients with any payer claim, rows). None when the release has no payer feed."""
+    if not _has_table(db, 'payer_claim'): return None
+    covered = {pid for (pid,) in db.execute('SELECT patient_id FROM payer_claim UNION SELECT patient_id FROM payer_pharmacy_claim')}
+    if not covered: return None
+    rows = [(pid, svc[:7], allowed or 0, paid or 0, 'medical', available) for pid, svc, allowed, paid, available in db.execute(
+        "SELECT patient_id, service_from, allowed_cents, paid_cents, last_available_date FROM payer_claim "
+        "WHERE final_status = 'paid' AND service_from IS NOT NULL AND substr(service_from, 1, 10) BETWEEN ? AND ?", (start, end))]
+    rows += [(pid, d[:7], (plan or 0) + (patient or 0), plan or 0, 'pharmacy', available) for pid, d, plan, patient, available in db.execute(
+        "SELECT patient_id, fill_date, plan_paid_cents, patient_pay_cents, available_date FROM payer_pharmacy_claim "
+        "WHERE claim_status = 'paid' AND fill_date BETWEEN ? AND ?", (start, end))]
+    return covered, rows
 
 
 def _completion(claims, end):
@@ -808,14 +876,20 @@ def execute(path, patient_ids, params, as_of=None):
                     g = groups[_group_key(p['group_by'], pid, people, attr)]; g['members'] += 1; g['member_months'] += len(info['months'])
             rows = [{'group': k, **v} for k, v in sorted(groups.items())]
             method = 'Active, insured coverage from effective start through the period end (no termination dates are received).'
+            if any(i.get('enrollment_basis') == 'enrollment_span' for i in people.values()):
+                method = ('Member months from payer enrollment spans (any covered day in the month; terminations respected) for '
+                          'patients with spans; others: ' + method[0].lower() + method[1:])
         elif metric == 'attribution':
             groups = defaultdict(lambda: {'members': 0, 'assigned_pcp': 0, 'visit_plurality': 0, 'unattributed': 0, 'agrees_with_plurality': 0})
             for pid, a in attr.items():
                 if not people[pid]['months']: continue
                 g = groups[_group_key(p['group_by'] if p['group_by'] != 'none' else 'practice', pid, people, attr)]
-                g['members'] += 1; g[a['method'] if a['method'] != 'none' else 'unattributed'] += 1; g['agrees_with_plurality'] += a['agrees_with_plurality']
+                k = a['method'] if a['method'] != 'none' else 'unattributed'
+                g['members'] += 1; g[k] = g.get(k, 0) + 1; g['agrees_with_plurality'] += a['agrees_with_plurality']
             rows = sorted(({'group': k, **v} for k, v in groups.items()), key=lambda r: -r['members'])
             method = f"{p['attribution']} attribution: assigned PCP relationship, else plurality of primary-care visits in the period."
+            if any(a['method'] == 'payer_attribution' for a in attr.values()):
+                method = method[:-1] + '; payer attribution from the enrollment span takes precedence where received.'
         elif metric == 'utilization':
             rows, method = _utilization(db, people, attr, p, start, end)
         elif metric == 'cost':

@@ -46,7 +46,48 @@ def validate_extension(connection,receipt,*,current_code,catalog_hash,categories
     return True
 
 
-def activate(build,config,restatement=False):
+def validate_migration(migration,connection,prior,*,restatement=False,expansion=False):
+    """Migration gate. Returns 'identical' | 'restated' | 'expanded' | 'expanded_restated' or raises.
+
+    identical: same roster, no prior row changed or missing (default).
+    restated (--restatement): same roster, nothing dropped, every changed prior row counted per table.
+    expanded (--expansion): every prior patient present (prior roster digest = the active roster), prior rows not
+    dropped, new patients counted; prior rows may change only with --restatement too, counted per table.
+    Results keyed to the old source digest (learned answers, plan caches) stop matching automatically."""
+    snapshot=connection['snapshot'];dataset=snapshot['source_dataset']
+    if (migration.get('new_received_rows')!=connection['records'] or migration.get('patient_id_digest')!=dataset['original_patient_id_digest'] or
+        migration.get('manifest_source_sha256')!=dataset['source_sha256']):raise ValueError('Unverified original-cohort migration')
+    if prior and prior['snapshot']['as_of']>snapshot['as_of']:raise ValueError('Activation would change the roster or roll back the cutoff')
+    if expansion:
+        if migration.get('kind')!='expansion':raise ValueError('Expansion activation needs an expansion migration audit')
+        counts=[migration.get(k) for k in ('prior_patients','new_patients','patients','prior_patients_missing','prior_rows_missing','prior_rows_changed')]
+        if not all(type(v) is int and v>=0 for v in counts):raise ValueError('Expansion audit must count prior, new and missing patients and rows')
+        prior_n,new_n,total,missing_patients,missing_rows,changed=counts
+        if missing_patients!=0:raise ValueError('Expansion would drop prior patients')
+        if missing_rows!=0:raise ValueError('Expansion would drop prior rows')
+        if total!=prior_n+new_n or total!=connection['patients']:raise ValueError('Expansion patient counts do not reconcile with the build')
+        by_table=migration.get('changed_by_table')
+        if not isinstance(by_table,dict) or sum(by_table.values())!=changed:raise ValueError('Changed prior rows must be counted per table')
+        if changed and not restatement:raise ValueError('Expansion changes prior rows; activation needs --restatement as well')
+        if prior and prior['snapshot']['source_dataset']['original_patient_id_digest']!=migration.get('prior_patient_id_digest'):
+            raise ValueError('Expansion audit was not taken against the active roster')
+        return 'expanded_restated' if changed else 'expanded'
+    # A restated release (the source re-delivers history with corrections) is allowed only when asked for explicitly:
+    # same roster, nothing dropped, every changed row counted per table in the audit.
+    restated=(restatement and migration.get('kind')=='restatement' and migration.get('prior_rows_missing')==0
+              and isinstance(migration.get('prior_rows_changed'),int) and isinstance(migration.get('changed_by_table'),dict))
+    if restatement and not restated:raise ValueError('Restatement activation needs a restatement migration audit (no missing rows, changes counted per table)')
+    if migration.get('identical_roster') is not True or (not restated and migration.get('prior_rows_missing_or_changed')!=0):
+        raise ValueError('Unverified original-cohort migration')
+    if prior and prior['snapshot']['source_dataset']['original_patient_id_digest']!=dataset['original_patient_id_digest']:
+        raise ValueError('Activation would change the roster or roll back the cutoff')
+    return 'restated' if restated else 'identical'
+
+
+BASIS={'identical':'','restated':'Restated release: ','expanded':'Expanded release: ','expanded_restated':'Expanded and restated release: '}
+
+
+def activate(build,config,restatement=False,expansion=False):
     from .healthcare_warehouse import checksum
     from .clinical import clinical_state,longitudinal
     build=Path(build).resolve();config=Path(config).resolve()
@@ -59,23 +100,16 @@ def activate(build,config,restatement=False):
         validate_extension(connection,read(build/'source-extension-verification.json'),current_code=code_identity(),
                            catalog_hash=catalog_identity(),categories=DEFINITIONS)
     migration=read(build/'migration-audit.json');snapshot=connection['snapshot'];dataset=snapshot['source_dataset']
-    # A restated release (the source re-delivers history with corrections) is allowed only when asked for explicitly:
-    # same roster, nothing dropped, every changed row counted per table in the audit. Results keyed to the old
-    # source digest (learned answers, plan caches) stop matching automatically.
-    restated=(restatement and migration.get('kind')=='restatement' and migration.get('prior_rows_missing')==0
-              and isinstance(migration.get('prior_rows_changed'),int) and isinstance(migration.get('changed_by_table'),dict))
-    if restatement and not restated:raise ValueError('Restatement activation needs a restatement migration audit (no missing rows, changes counted per table)')
-    if (migration.get('identical_roster') is not True or (not restated and migration.get('prior_rows_missing_or_changed')!=0) or
-        migration.get('new_received_rows')!=connection['records'] or migration.get('patient_id_digest')!=dataset['original_patient_id_digest'] or
-        migration.get('manifest_source_sha256')!=dataset['source_sha256']):raise ValueError('Unverified original-cohort migration')
+    prior=read(config) if config.exists() else None
+    kind=validate_migration(migration,connection,prior,restatement=restatement,expansion=expansion)
+    restated=kind=='restated'
     if checksum(dataset['source'])!=dataset['source_sha256']:raise ValueError('Pinned source content changed')
     clinical_state.attached(build/'stack');db,_=longitudinal.connect(build/'stack');db.close()
-    prior=read(config) if config.exists() else None
-    if prior and (prior['snapshot']['source_dataset']['original_patient_id_digest']!=dataset['original_patient_id_digest'] or
-                  prior['snapshot']['as_of']>snapshot['as_of']):raise ValueError('Activation would change the roster or roll back the cutoff')
+    policy=('Original healthcare-warehouse roster; no expanded benchmark variants' if not kind.startswith('expanded') else
+            f"Expanded healthcare-warehouse roster: all {migration['prior_patients']} prior patients retained, {migration['new_patients']} received patients added")
     value={'schema':'active-healthcare-warehouse/1','build':str(build),'source_release':connection['release'],
-           'snapshot':snapshot,'synthetic':True,'population_policy':'Original healthcare-warehouse roster; no expanded benchmark variants',
-           'activation_basis':('Restated release: ' if restated else '')+'Qualified received-source migration, full-population contracts and diagnostic review; prior connection retained'}
+           'snapshot':snapshot,'synthetic':True,'population_policy':policy,
+           'activation_basis':BASIS[kind]+'Qualified received-source migration, full-population contracts and diagnostic review; prior connection retained'}
     config.parent.mkdir(parents=True,exist_ok=True)
     if prior:
         history=config.parent/'activation-history';history.mkdir(exist_ok=True)
@@ -88,6 +122,8 @@ def activate(build,config,restatement=False):
     os.replace(temporary,config)
     receipt={'synthetic':True,'active_build':str(build),'source_snapshot':snapshot,'prior_build':prior['build'] if prior else None,
              'qualification_code_identity':code_identity(),'configuration':str(config),'clinical_validation_claimed':False,
-             'restatement':{k:migration[k] for k in ('prior_rows_changed','changed_by_table','prior_release') if k in migration} if restated else None}
+             'restatement':{k:migration[k] for k in ('prior_rows_changed','changed_by_table','prior_release') if k in migration} if restated else None,
+             'expansion':{k:migration[k] for k in ('prior_patients','new_patients','prior_patient_id_digest','prior_rows_changed','changed_by_table',
+                                                   'prior_release') if k in migration} if kind.startswith('expanded') else None}
     (build/'activation.json').write_text(json.dumps(receipt,indent=2)+'\n')
     return receipt

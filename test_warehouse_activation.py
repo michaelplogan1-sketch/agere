@@ -1,5 +1,6 @@
 import copy,unittest
 from clinical_core.agere.warehouse_activation import validate_receipts,validate_extension
+from clinical_core.agere.clinical.context_student import REQUEST_MAX_BYTES
 
 
 def fixture():
@@ -35,7 +36,7 @@ class WarehouseActivation(unittest.TestCase):
         with self.assertRaises(ValueError):validate_receipts(*rows,current_code='code')
 
     def test_failed_request_size_or_missing_bound_cannot_activate(self):
-        for value in (None,True,20001,0):
+        for value in (None,True,REQUEST_MAX_BYTES+1,0):
             rows=fixture();rows[1]['frontier_request_bytes_1500_char_question']=value
             with self.assertRaises(ValueError):validate_receipts(*rows,current_code='code')
 
