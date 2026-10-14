@@ -1,0 +1,2 @@
+-- Errata reading for G31: Same-day contact included (0-7 days after discharge).
+WITH dis AS MATERIALIZED ( SELECT id, patient, event AS d FROM records WHERE stream='adt' AND json_extract(payload,'$.event')='discharge' AND json_extract(payload,'$.destination') IN ('home','home_with_arranged_assistance','home_with_guardian') ) SELECT COUNT(*) AS count FROM dis WHERE EXISTS ( SELECT 1 FROM records t WHERE t.stream='telephone_messages' AND t.patient=dis.patient AND julianday(t.event)-julianday(dis.d) BETWEEN 0 AND 7);

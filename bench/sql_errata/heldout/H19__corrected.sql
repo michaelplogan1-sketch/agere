@@ -1,0 +1,2 @@
+-- Errata reading for H19: Specialty referrals = referrals with a specialty in either shape: 'specialty' (older) or 'requested_specialty' (newer consult orders), as N19/M21 combine them.
+SELECT coalesce(json_extract(payload,'$.specialty'), json_extract(payload,'$.requested_specialty')) AS specialty, COUNT(*) AS referral_count FROM records WHERE stream='referrals' AND coalesce(json_extract(payload,'$.specialty'), json_extract(payload,'$.requested_specialty')) IS NOT NULL GROUP BY 1 ORDER BY 1;

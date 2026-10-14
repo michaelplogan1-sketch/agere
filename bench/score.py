@@ -173,23 +173,76 @@ def read_latest(results):
     return latest
 
 
-def write_scorecard(results=ROOT / 'results', destination=ROOT / 'SCORECARD.md'):
+def read_attempts(results):
+    """Every attempt per (system, id), oldest first (for pass^k)."""
+    attempts = {}
+    for path in sorted(Path(results).glob('*/*.jsonl')):
+        for number, line in enumerate(path.read_text().splitlines(), 1):
+            if not line.strip():
+                continue
+            try:
+                row = json.loads(line)
+            except json.JSONDecodeError as exc:
+                raise ValueError(f'Invalid result row {path}:{number}') from exc
+            attempts.setdefault((row['system'], row['id']), []).append(row)
+    for rows in attempts.values():
+        rows.sort(key=lambda r: r['started_at'])
+    return attempts
+
+
+def pass_k(attempt_lists, k=3):
+    """pass^k: a question passes only if its latest k scored attempts are ALL correct.
+
+    Questions with fewer than k scored attempts are reported as not measured, never as passes or failures.
+    """
+    measured = passed = 0
+    for rows in attempt_lists:
+        scored = [r for r in rows if r.get('score') is not None and not r.get('reference_error')]
+        if len(scored) < k:
+            continue
+        measured += 1
+        passed += all(r['score']['correct'] for r in scored[-k:])
+    return {'k': k, 'questions_measured': measured, 'pass_k': passed,
+            'pass_k_rate': passed / measured if measured else None}
+
+
+def rescore(row, question, errata=None):
+    """Current explicit scorer on a preserved answer; errata scoring only when an errata file is given."""
+    if errata is None:
+        return score_answer(question, row['expected'], row.get('answer'))
+    from bench.errata import score_with_errata
+    return score_with_errata(question, row['expected'], row.get('answer'), errata['questions'].get(question['id']),
+                             row.get('release'), row.get('errata_expected'))
+
+
+def write_scorecard(results=ROOT / 'results', destination=ROOT / 'SCORECARD.md', errata=None, k=3):
     questions = {q['id']: q for q in load_questions()}
     latest = read_latest(results)
     # Keep raw result rows intact while applying the current explicit scorer.
     for (_, ident), row in latest.items():
         if ident in questions and row.get('expected') is not None and not row.get('reference_error'):
-            row['score'] = score_answer(questions[ident], row['expected'], row.get('answer'))
+            row['score'] = rescore(row, questions[ident], errata)
+    attempts = read_attempts(results)
+    for (_, ident), rows in attempts.items():
+        for row in rows:
+            if ident in questions and row.get('expected') is not None and not row.get('reference_error'):
+                row['score'] = rescore(row, questions[ident], errata)
     systems = sorted({s for s, _ in latest})
-    lines = ['# Independent answer benchmark', '',
-             'Latest attempt per question, rescored from preserved answers with the current scorer; unrun questions are not passes. Reference results are SQL self-checks, not product accuracy.', '',
+    lines = ['# Independent answer benchmark' + (' (errata scoring)' if errata else ''), '',
+             'Latest attempt per question, rescored from preserved answers with the current scorer; unrun questions are not passes. Reference results are SQL self-checks, not product accuracy.', '']
+    if errata:
+        lines += ['Errata scoring (bench/errata.json): an answer is correct if it matches the canonical reading, or an accepted '
+                  'alternative reading whose definition the answer states. Default scoring (no --errata) is unchanged.', '']
+    lines += [
              '| System | Attempted / suite | Correct | Value matches | Coverage | Correct abstentions | False assertions | Execution errors | Response p50 / p95 seconds | Known API USD | Cost complete | USD / correct |',
              '|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---|---:|']
     fmt = lambda v: 'unknown' if v is None else f'{v:.4f}'
     summaries = {}
     for system in systems:
         rows = [r for (s, i), r in latest.items() if s == system and i in questions]
-        summary = summarize(rows, len(questions)); summaries[system] = summary
+        summary = summarize(rows, len(questions))
+        summary['pass_k'] = pass_k([r for (s, i), r in attempts.items() if s == system and i in questions], k)
+        summaries[system] = summary
         lines.append(f'| {system} | {summary["attempted"]} / {len(questions)} | {summary["correct"]} | {summary["value_matches"]} | {summary["coverage"]} | '
                      f'{summary["correct_abstentions"]} | {summary["false_assertions"]} | {summary["errors"]} | '
                      f'{fmt(summary["latency_p50_s"])} / {fmt(summary["latency_p95_s"])} | '
@@ -208,6 +261,13 @@ def write_scorecard(results=ROOT / 'results', destination=ROOT / 'SCORECARD.md')
             s = summarize([latest[(system, i)] for i in shared], len(shared))
             lines.append(f'| {system} | {s["correct"]} / {len(shared)} | {s["coverage"]} | '
                          f'{fmt(s["known_cost_usd"])} | {fmt(s["cost_per_correct_usd"])} |')
+    lines += ['', f'## Reliability (pass^{k})', '',
+              f'A question passes^{k} only if its latest {k} scored attempts are all correct (`run.py --repeat {k}`). '
+              f'Questions with fewer than {k} attempts are not measured.', '',
+              f'| System | Questions with {k}+ attempts | pass^{k} | Rate |', '|---|---:|---:|---:|']
+    for system in systems:
+        pk = summaries[system]['pass_k']
+        lines.append(f'| {system} | {pk["questions_measured"]} | {pk["pass_k"]} | {fmt(pk["pass_k_rate"])} |')
     lines += ['', '## Recorded spend across all attempts', '',
               'These totals include prior failed/replaced attempts; the tables above use only the latest attempt per question.', '',
               '| System | Attempts | Known API USD | Attempts with unknown cost |', '|---|---:|---:|---:|']
@@ -254,6 +314,14 @@ def write_scorecard(results=ROOT / 'results', destination=ROOT / 'SCORECARD.md')
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--results', type=Path, default=ROOT / 'results')
-    parser.add_argument('--output', type=Path, default=ROOT / 'SCORECARD.md')
+    parser.add_argument('--output', type=Path, help='Default SCORECARD.md, or SCORECARD-errata.md with --errata')
+    parser.add_argument('--errata', nargs='?', const=ROOT / 'errata.json', type=Path,
+                        help='Score against bench/errata.json (canonical readings + stated alternatives); off by default')
+    parser.add_argument('--pass-k', type=int, default=3)
     args = parser.parse_args()
-    print(json.dumps(write_scorecard(args.results, args.output), indent=2))
+    errata = None
+    if args.errata:
+        from bench.errata import load_errata
+        errata = load_errata(args.errata, {q['id']: q for q in load_questions()})
+    output = args.output or ROOT / ('SCORECARD-errata.md' if errata else 'SCORECARD.md')
+    print(json.dumps(write_scorecard(args.results, output, errata, args.pass_k), indent=2))

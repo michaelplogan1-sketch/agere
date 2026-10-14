@@ -16,6 +16,7 @@ if __package__ in (None, ''):
 from bench.common import DEFAULT_DB, ROOT, Warehouse, load_questions, reference_answer
 from bench.adapters import MODEL, agere, frontier_sql
 from bench.score import score_answer
+from bench.errata import ERRATA_PATH, compute_expected, load_errata, score_with_errata
 
 
 def redate(question, as_of):
@@ -29,8 +30,26 @@ def suite_digest(questions):
     return hashlib.sha256(json.dumps(payload, sort_keys=True).encode()).hexdigest()
 
 
-def run_one(question, args, identity):
-    row = {'id': question['id'], 'system': args.system, 'question': question['question'],
+def errata_expected(question, entry, warehouse, cache_dir):
+    """Run-time expected answers for a question's errata readings (canonical + alternatives with SQL), cached."""
+    sql = {p['sql']: (ROOT / p['sql']).read_text() for p in [entry['canonical']] + entry.get('alternatives', []) if p.get('sql')}
+    digest = hashlib.sha256(json.dumps([entry, sql], sort_keys=True).encode()).hexdigest()[:12]
+    cache = cache_dir / f"{question['id']}.errata-{digest}.json"
+    if cache.exists():
+        return json.loads(cache.read_text())
+    computed = {}
+    for key, part in [('canonical', entry['canonical'])] + [(a['id'], a) for a in entry.get('alternatives', [])]:
+        answer = compute_expected(question, part, warehouse)
+        if answer is not None:
+            computed[key] = answer
+    cache.parent.mkdir(parents=True, exist_ok=True)
+    tmp = cache.with_suffix('.tmp'); tmp.write_text(json.dumps(computed)); tmp.replace(cache)
+    return computed
+
+
+def run_one(question, args, identity, attempt=1):
+    errata = getattr(args, 'errata_data', None)
+    row = {'id': question['id'], 'system': args.system, 'question': question['question'], 'attempt': attempt,
            'category': question['category'], 'split': question['split'], 'as_of': question['as_of'],
            'started_at': datetime.now(timezone.utc).isoformat(), 'suite_sha256': identity,
            'concurrency': args.jobs, 'answer': None, 'score': None, 'error': None, 'reference_error': None,
@@ -54,6 +73,9 @@ def run_one(question, args, identity):
                 tmp = cache.with_suffix('.tmp'); tmp.write_text(json.dumps({'expected': expected, 'evidence': evidence})); tmp.replace(cache)
             row.update(expected=expected, reference_evidence=evidence,
                        reference_latency_s=time.perf_counter() - reference_start)
+            entry = errata['questions'].get(question['id']) if errata else None
+            if entry is not None:
+                row['errata_expected'] = errata_expected(question, entry, warehouse, cache.parent)
         except Exception as exc:
             row['reference_error'] = type(exc).__name__ + ': ' + str(exc)
             return row
@@ -69,6 +91,10 @@ def run_one(question, args, identity):
         finally:
             row['latency_s'] = row['reference_latency_s'] if args.system == 'reference' else time.perf_counter() - start
         row['score'] = score_answer(question, expected, row['answer'])
+        if errata:
+            row['errata_score'] = score_with_errata(question, expected, row['answer'],
+                                                    errata['questions'].get(question['id']),
+                                                    row.get('release'), row.get('errata_expected'))
     except Exception as exc:
         row['error'] = type(exc).__name__ + ': ' + str(exc)
         if row.get('expected') is not None:
@@ -93,10 +119,15 @@ def main(argv=None):
     parser.add_argument('--sql-timeout', type=float, default=180)
     parser.add_argument('--jobs', type=int, default=1)
     parser.add_argument('--resume', type=Path, help='Append only unanswered IDs to this prior JSONL; never silently retry a paid attempt')
+    parser.add_argument('--repeat', type=int, default=1,
+                        help='Independent attempts per question (e.g. 3 for pass^3 reporting in score.py); default 1')
+    parser.add_argument('--errata', nargs='?', const=ERRATA_PATH, type=Path,
+                        help='Also compute errata readings and an errata_score per row (row score stays the default scorer)')
     args = parser.parse_args(argv)
-    if not 1 <= args.jobs <= 4 or not 1 <= args.max_tools <= 20 or args.sql_timeout <= 0:
-        parser.error('jobs must be 1..4, max-tools 1..20 and SQL timeout positive')
+    if not 1 <= args.jobs <= 4 or not 1 <= args.max_tools <= 20 or args.sql_timeout <= 0 or not 1 <= args.repeat <= 5:
+        parser.error('jobs must be 1..4, max-tools 1..20, repeat 1..5 and SQL timeout positive')
     all_questions = load_questions(); identity = suite_digest(all_questions)
+    args.errata_data = load_errata(args.errata, {q['id']: q for q in all_questions}) if args.errata else None
     if args.as_of:
         all_questions = [redate(q, args.as_of) for q in all_questions]
     questions = all_questions
@@ -121,10 +152,14 @@ def main(argv=None):
                 parser.error('Resume file source mismatch')
         finally:
             warehouse.close()
-        done = {r['id'] for r in existing}; questions = [q for q in questions if q['id'] not in done]
+        done = {}
+        for r in existing:
+            done[r['id']] = done.get(r['id'], 0) + 1
+        pending = [(q, n) for q in questions for n in range(done.get(q['id'], 0) + 1, args.repeat + 1)]
     else:
         timestamp = datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S.%fZ')
         destination = ROOT / 'results' / args.system / (timestamp + '.jsonl')
+        pending = [(q, n) for q in questions for n in range(1, args.repeat + 1)]
     destination.parent.mkdir(parents=True, exist_ok=True)
     try:
         commit = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip()
@@ -133,7 +168,7 @@ def main(argv=None):
     print(f'Results: {destination}', flush=True)
     failed_references = 0
     with destination.open('a') as output, ThreadPoolExecutor(max_workers=args.jobs) as pool:
-        futures = [pool.submit(run_one, question, args, identity) for question in questions]
+        futures = [pool.submit(run_one, question, args, identity, attempt) for question, attempt in pending]
         for future in as_completed(futures):
             row = future.result(); row['benchmark_commit'] = commit
             output.write(json.dumps(row, allow_nan=False) + '\n'); output.flush()

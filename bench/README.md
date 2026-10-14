@@ -83,3 +83,20 @@ assertions alongside cost per correct answer; abstaining on everything must not
 look like a cheap high-quality system. The reference arm measures query execution,
 not natural-language understanding. A fair comparative claim additionally needs
 the same completed cases, equivalent evidence access and controlled timing.
+
+## Errata and reliability (opt-in)
+
+`bench/errata.json` audits every non-capability question: category a (reference correct), b (question
+under-specifies a definition; accepted alternative readings with their own expected answers), c (reference
+contradicts the question or another split's convention, e.g. roster vs latest reported age) or d (reference
+bug, corrected SQL in `bench/sql_errata/`). The canonical conventions (age, windows, CKD, latest-lab ties,
+obesity, follow-up day 0, ED visit, precision) are listed in its `conventions` block. Originals in
+`questions/` and `sql/` are never edited.
+
+- `score.py --errata` writes `SCORECARD-errata.md`: correct = canonical answer, or an accepted alternative
+  whose definition the answer states (interpretation / definition / computed_as / readings). Without
+  `--errata` scoring is unchanged.
+- `run.py --errata` also computes the errata readings for the run's own release and stores `errata_score`
+  next to the default `score`. `run.py --repeat 3` records three attempts per question; the scorecard reports
+  pass^3 (latest three attempts all correct).
+- `errata_replay.py` re-scores saved Agere receipts (ladder and governed-metric oracle) with and without errata.
