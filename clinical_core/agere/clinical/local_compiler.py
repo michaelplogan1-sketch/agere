@@ -633,6 +633,9 @@ def _compile(question, profile, as_of):
     q = _norm(question, as_of)
     low = q.lower()
     timed = survival_intent(low) and not re.search(DEATH_WORDS, low)  # "readmission-free survival" is not mortality
+    if (plan := _target_trial_question(q, profile)) is not None: return plan  # drug A vs drug B (new-user active comparator); single starts stay program_effect
+    if (plan := _line_of_therapy_question(q, profile)) is not None: return plan  # lines of therapy, switching, sequences, persistence from fills
+    if (plan := _trial_feasibility_question(q, profile, as_of)) is not None: return plan  # trial eligibility funnel over stated criteria
     effect = _program_effect_question(q, profile)
     if effect is not None:
         return effect
@@ -2975,6 +2978,337 @@ def _contract_strategy_question(question, profile, as_of):
     return {'interpretation': ' '.join(str(question).split())[:2000], 'coverage': 'supported_observation', 'unmet_requirements': [],
             'nodes': [{'id': 'answer', 'operation': 'contract_strategy', 'inputs': [], 'parameters': params,
                        'purpose': f"Contract strategy ({params['focus']}): {names or 'negotiated terms'}"[:1000]}]}, info
+
+
+# ---- life-sciences / real-world evidence: target trials, lines of therapy, trial feasibility ----------------
+RWE_MED_STREAMS = ('pharmacy_dispenses', 'pharmacy_claims', 'payer_pharmacy_claims')
+RWE_DRUGS = {  # strategy -> regex over the question (class names, common abbreviations, ingredients)
+    'sglt2_inhibitor': r'sglt-?2(?: inhibitors?|is?)?|gliflozins?|empagliflozin|dapagliflozin|canagliflozin|ertugliflozin',
+    'glp1_agonist': r'glp-?1(?: (?:receptor )?agonists?| ras?)?|semaglutide|liraglutide|dulaglutide|exenatide|tirzepatide',
+    'dpp4_inhibitor': r'dpp-?4(?: inhibitors?|is?)?|gliptins?|sitagliptin|linagliptin|saxagliptin|alogliptin',
+    'sulfonylurea': r'sulfonylureas?|glipizide|glyburide|glimepiride', 'metformin': r'metformin', 'insulin': r'insulins?',
+    'ace_inhibitor': r'ace[- ]?(?:inhibitors?|is?)\b|lisinopril|enalapril|ramipril', 'arb': r'arbs?|angiotensin receptor blockers?|losartan|valsartan|irbesartan',
+    'arni': r'arnis?|entresto|sacubitril', 'mra': r'mras?|mineralocorticoid (?:receptor )?antagonists?|spironolactone|eplerenone|finerenone',
+    'beta_blocker': r'beta[- ]?blockers?', 'calcium_channel_blocker': r'calcium channel blockers?|ccbs?|amlodipine',
+    'thiazide_diuretic': r'thiazides?(?: diuretics?)?|chlorthalidone|hydrochlorothiazide', 'loop_diuretic': r'loop diuretics?|furosemide|torsemide',
+    'statin': r'statins?|atorvastatin|rosuvastatin|simvastatin|pravastatin', 'anticoagulant': r'anticoagulants?|doacs?',
+    'antiplatelet': r'antiplatelets?|clopidogrel|ticagrelor', 'ssri': r'ssris?|sertraline|fluoxetine|escitalopram|citalopram',
+    'proton_pump_inhibitor': r'proton pump inhibitors?|ppis?|omeprazole|pantoprazole', 'opioid': r'opioids?',
+}
+
+
+def _target_trial_question(q, profile):
+    """Drug A versus drug B comparative effectiveness -> target_trial (new-user active-comparator emulation). Needs two named
+    strategies plus comparator wording and an outcome, or explicit target-trial wording (then missing pieces are asked for).
+    A single drug or program start ('did starting X reduce Y') stays program_effect; time-to-event wording with no second
+    strategy stays survival; 'what is target trial emulation' stays knowledge."""
+    low = ' '.join(str(q).lower().replace('’', "'").split())
+    explicit = re.search(r'\btarget[- ]trials?\b|\bemulat\w*\b|\bcomparative effectiveness\b|\bactive[- ]comparator\b|\bhead[- ]to[- ]head\b', low)
+    if explicit and re.search(r"^(?:what|why|how|explain|describe)\b(?: is| are| does| do|'s)?\b", low) and not re.search(r'\b(?:our|we|us)\b', low):
+        return None  # an explanation of the method itself is knowledge
+    found = []
+    intensity = re.search(r'\bstatin (?:dose )?intensit(?:y|ies)\b|\b(?:high|moderate|low|lower)[- ]intensity\b', low)
+    if intensity and re.search(r'\bstatins?\b|\batorvastatin\b|\brosuvastatin\b', low):
+        hi = re.search(r'\bhigh[- ]intensity\b', low)
+        mod = re.search(r'\bmoderate[- ]intensity\b', low)
+        lowi = re.search(r'\blow[- ]intensity\b', low)
+        lower = re.search(r'\blower[- ]intensity\b|\blow[- ]to[- ]moderate\b|\bless intens\w*\b|\bnon[- ]high\b', low)
+        if hi and (mod or lowi) and not lower and not (mod and lowi):
+            second = 'moderate_intensity_statin' if mod else 'low_intensity_statin'
+        else:
+            second = 'lower_intensity_statin'
+        found = [(0, 'moderate_intensity_statin'), (1, 'low_intensity_statin')] if not hi and mod and lowi else [(0, 'high_intensity_statin'), (1, second)]
+    else:
+        for arm, rx in RWE_DRUGS.items():
+            m = re.search(r'(?<![a-z0-9-])(?:' + rx + r')(?![a-z0-9])', low)
+            if m: found.append((m.start(), arm))
+        found.sort()
+        if 'statin' in [a for _, a in found] and len(found) > 2: found = [x for x in found if x[1] != 'statin']
+    arms = [a for _, a in found][:2]
+    comparator = re.search(r'\bvs\.?(?=\s)|\bversus\b|\bcompared (?:with|to)\b|\bcomparison\b|\bcompare[sd]?\b|\bthan\b|\brather than\b|\binstead of\b|'
+                           r'\bstatin (?:dose )?intensit(?:y|ies)\b', low) or explicit or (re.search(r'\bor\b', low) and re.search(r'\b(?:better|worse|safer|more effective)\b', low))
+    if (len(arms) < 2 and not explicit) or not arms: return None  # no named strategy at all: the router (or the user) must name them
+    if len(arms) == 2 and not comparator: return None
+    info = {'compiler': VERSION, 'recognised': ['target trial emulation question'], 'paraphrased': [], 'route': 'local_compiler', 'unexplained': []}
+    asks = []
+    if len(arms) < 2:
+        asks.append('two treatment strategies to compare: the treatment and its active comparator (drug classes such as SGLT2 inhibitor vs '
+                    'DPP-4 inhibitor, or high- vs moderate-intensity statins); a single drug start with no comparator is a program-effect question')
+    # outcome
+    outcome, opos = None, None
+    if re.search(DEATH_WORDS, low):
+        info.update(route='local_unsupported', operation='target_trial')
+        return {'interpretation': f'Unsupported by received data: {q}', 'coverage': 'unsupported', 'nodes': [],
+                'unmet_requirements': ['Missing input: death or mortality records (none are received)']}, info
+    labs = {**MEASUREMENT_ALIASES, 'egfr': MEASUREMENT_ALIASES['egfr'] + ['kidney function', 'renal function'],
+            'hba1c': MEASUREMENT_ALIASES['hba1c'] + ['glycemic control', 'glycaemic control'],
+            'systolic_bp': MEASUREMENT_ALIASES['systolic_bp'] + ['blood pressure', 'bp control']}
+    lab_hits = sorted((m.start(), c) for c, al in labs.items() for a in al for m in [re.search(_alias_pattern(a), low)] if m)
+    event = None
+    for kind, rx in (('admission', r'\b(?:re)?admi(?:ssions?|tted|ts?)\b|\bhospitali[sz](?:ations?|ed)\b|\binpatient (?:stays?|admissions?)\b'),
+                     ('ed_visit', r'\b(?:ed|er|emergency(?: department| room)?) (?:visits?|use|utili[sz]ation)\b|\bemergency visits?\b')):
+        m = re.search(rx, low)
+        if m and (event is None or m.start() < event[0]): event = (m.start(), kind)
+    incident = None
+    for concept, aliases in CONDITION_ALIASES.items():
+        for a in aliases:
+            m = re.search(r'\b(?:incident|new(?:ly diagnosed)?|new[- ]onset|develop(?:ing|s|ed)?|onset of)\s+' + re.escape(a) + r'\b', low)
+            if m: incident = (m.start(), concept)
+    if event:
+        outcome, opos = {'type': event[1]}, event[0]
+    elif incident:
+        outcome, opos = {'type': 'condition', 'concept': incident[1]}, incident[0]
+    elif lab_hits:
+        opos, lab = lab_hits[0]
+        outcome = {'type': 'lab_change', 'lab': lab}
+        pct = re.search(r'\b(\d{2})\s*%\s*(?:decline|drop|reduction|fall|decrease)\b', low)
+        thr = re.search(r'\b(?:fall(?:ing|s)? below|drop(?:ping|s)? below|reach(?:ing|es)?|below|under|above|over|less than|greater than)\s+(\d+(?:\.\d+)?)\b', low[opos:])
+        if pct:
+            outcome = {'type': 'lab_decline_pct', 'lab': lab, 'pct': int(pct.group(1)) / 100}
+        elif thr and re.search(r'\btime to\b|\brisk of\b|\breach|\bfall|\bdrop|\bprogress', low):
+            word = thr.group(0).split()[0]
+            outcome = {'type': 'lab_threshold', 'lab': lab, 'op': 'lt' if word in ('fall', 'falling', 'falls', 'drop', 'dropping', 'drops', 'below', 'under', 'less') else 'gt',
+                       'value': float(thr.group(1))}
+    if outcome is None:
+        asks.append('an outcome: a lab change (eGFR, A1c, LDL, systolic blood pressure) or an event (admissions, ED visits, an incident condition)')
+    effect = re.search(r'\beffect|\bimpact|\breduc\w*|\blower\w*|\bslow\w*|\bimprov\w*|\bbetter\b|\bworse\b|\bbenefit\w*|\bprotect\w*|\bassociated\b|'
+                       r'\bless likely\b|\bmore likely\b|\bfewer\b|\bmore\b|\bgreater\b|\brisk\b|\bdeclin\w*|\boutcomes?\b|\bwork\w*\b|\bdifference\b|'
+                       r'\bcontrol\b|\bstatin (?:dose )?intensit', low) or explicit
+    if outcome and not effect and not re.search(r'\b(?:on|for|in terms of)\s+(?:\w+\s+){0,2}$', low[:opos]): return None  # a plain comparison of averages
+    if not explicit and outcome is None: return None  # 'how many patients are on an ACE inhibitor vs an ARB' is a literal count
+    if asks:
+        info.update(route='local_requires_input', operation='target_trial', requires_input=asks)
+        return {'interpretation': f'Needs inputs not in the data: {q}'[:2000], 'coverage': 'unsupported', 'nodes': [],
+                'unmet_requirements': [f'Missing input: {m}' for m in asks]}, info
+    streams = (profile or {}).get('streams', {})
+    if profile is not None and not any(s in streams for s in RWE_MED_STREAMS):
+        info.update(route='local_unsupported', operation='target_trial')
+        return {'interpretation': f'Unsupported by received data: {q}', 'coverage': 'unsupported', 'nodes': [],
+                'unmet_requirements': ['Missing input: received dispense or pharmacy claim records (treatment initiation is identified from fills)']}, info
+    params = {'arms': arms, 'outcome': outcome}
+    horizon = re.search(r'\b(?:within|over|at|after|in)\s+(?:the first\s+)?(\d{1,3}|one|two|three)\s+(day|month|year)s?\b', low)
+    if horizon:
+        n = {'one': 1, 'two': 2, 'three': 3}.get(horizon.group(1)) or int(horizon.group(1))
+        days = n * {'day': 1, 'month': 30, 'year': 365}[horizon.group(2)]
+        if 30 <= days <= 1825: outcome['horizon_days'] = days
+    conds = []
+    for concept, aliases in CONDITION_ALIASES.items():
+        for a in sorted(aliases, key=len, reverse=True):
+            if re.search(r'\b(?:among|in|with|for|having)\s+(?:our\s+|the\s+|new(?:ly diagnosed)?\s+)?(?:patients\s+with\s+|adults\s+with\s+)?' + re.escape(a) + r'\b', low) \
+                    or re.search(r'\b' + re.escape(a) + r'\s+(?:patients|adults|members)\b', low):
+                if incident and incident[1] == concept: continue
+                conds.append(concept); break
+    if 'type_2_diabetes' in conds and 'diabetes' in conds: conds.remove('diabetes')
+    if conds: params['population_conditions'] = conds[:6]
+    if re.search(r'\bmatch(?:ed|ing)\b', low): params['adjustment'] = 'matching'
+    elif re.search(r'\biptw\b|\binverse probability\b', low): params['adjustment'] = 'iptw'
+    from .target_trial import validate
+    try:
+        validate(params)
+    except ValueError as exc:
+        info.update(route='fallback', reason=f'target_trial parameters: {exc}')
+        return None, info
+    info['recognised'] += [f"arms {arms[0]} vs {arms[1]}", f"outcome {outcome['type']}" + (f" {outcome.get('lab') or outcome.get('concept') or ''}".rstrip())]
+    if conds: info['recognised'].append('population ' + ', '.join(conds))
+    return {'interpretation': ' '.join(str(q).split())[:2000], 'coverage': 'supported_observation', 'unmet_requirements': [],
+            'nodes': [{'id': 'answer', 'operation': 'target_trial', 'inputs': [], 'parameters': params,
+                       'purpose': f"Target trial emulation: initiating {arms[0]} vs {arms[1]} (new users, active comparator)"[:1000]}]}, info
+
+
+def _line_of_therapy_question(q, profile):
+    """Treatment patterns -> line_of_therapy: lines of therapy, add-on vs switch, sequences, switching, persistence from fills.
+    Needs pattern wording AND a therapy area or named drug classes. 'Time to X after Y' with no regimen wording stays survival;
+    care-setting journeys stay pathway; 'did starting X reduce Y' stays program_effect."""
+    low = ' '.join(str(q).lower().replace('’', "'").split())
+    strong = (r'\blines? of (?:therapy|treatment)\b|\b(?:first|second|third|fourth|1st|2nd|3rd|later|subsequent)[- ,]+(?:(?:second|third|and)[- ,]+)*line\b|'
+              r'\b(?:treatment|therapy|drug|medication|prescribing) (?:patterns?|sequenc\w*|pathways?|lines?|switch\w*|regimens?|escalation|intensification)\b|'
+              r'\bregimens?\b|\bswitch(?:es|ed|ing)?\b[^.?]{0,60}\b(?:to|from|between|class)\b|\badd[- ]on\b|\bsankey\b|\bsequences?\b')
+    weak = r'\bpersisten(?:ce|t)\b|\bdiscontinu\w+\b|\btime on (?:treatment|therapy)\b|\bstay on\b|\bstep(?:ped)?[- ]up\b|\bintensif\w+\b'
+    if not re.search(strong, low): return None  # persistence / discontinuation of one drug start with no regimen wording is survival
+    from .line_of_therapy import AREAS
+    areas = [('rheumatoid_arthritis', r'\brheumatoid arthritis\b|\b(?:ra)\b(?= (?:patients|biologics?|therapy|treatment))|\bbiologic (?:dmards?|therap\w+)\b|\bdmards?\b|\bbiologics?\b'),
+             ('heart_failure', r'\bheart failure\b|\bhfref\b|\bchf\b|\bgdmt\b|\bguideline[- ]directed medical therapy\b'),
+             ('chronic_kidney_disease', r'\bchronic kidney disease\b|\bckd\b'),
+             ('depression', r'\bdepression\b|\bdepressive\b|\bantidepressants?\b|\bmdd\b'),
+             ('hypertension', r'\bhypertension\b|\bhtn\b|\bhigh blood pressure\b|\bantihypertensives?\b'),
+             ('diabetes', r'\bdiabet\w*\b|\bt2dm\b|\bglucose[- ]lowering\b|\bantidiabetic\b')]
+    area = next((a for a, rx in areas if re.search(rx, low)), None)
+    named = [arm for arm, rx in RWE_DRUGS.items() if re.search(r'(?<![a-z0-9-])(?:' + rx + r')(?![a-z0-9])', low)]
+    info = {'compiler': VERSION, 'recognised': ['line-of-therapy / treatment-pattern question'], 'paraphrased': [], 'route': 'local_compiler', 'unexplained': []}
+    if area is None and not named:
+        if re.search(r'\bcancer\b|\boncolog\w*\b|\bchemo\w*\b|\btumou?r\b|\bmetastatic\b|\bimmunotherap\w*\b', low):
+            info.update(route='local_unsupported', operation='line_of_therapy')
+            return {'interpretation': f'Unsupported by received data: {q}', 'coverage': 'unsupported', 'nodes': [],
+                    'unmet_requirements': ['Missing input: antineoplastic regimens / administrations and oncology detail (stage, histology) are not received']}, info
+        return None
+    streams = (profile or {}).get('streams', {})
+    if profile is not None and not any(s in streams for s in RWE_MED_STREAMS):
+        info.update(route='local_unsupported', operation='line_of_therapy')
+        return {'interpretation': f'Unsupported by received data: {q}', 'coverage': 'unsupported', 'nodes': [],
+                'unmet_requirements': ['Missing input: received dispense or pharmacy claim records (lines of therapy are derived from fills)']}, info
+    params = {}
+    if area: params['area'] = area
+    comps = [c for c in named if not area or c in AREAS[area]['components']]
+    if not area: params['components'] = comps
+    elif len(comps) >= 2 and re.search(r'\bonly\b|\bbetween\b', low): params['components'] = comps
+    params['focus'] = ('switching' if re.search(r'\bswitch\w*\b', low) else 'persistence' if re.search(weak, low)
+                       else 'sequences' if re.search(r'\bsequenc\w*\b|\bsankey\b|\bpathways?\b', low) else 'lines' if re.search(r'\blines?\b', low) else 'all')
+    gap = re.search(r'\b(\d{1,3})[- ]day (?:gap|grace)\b|\bgap (?:of |tolerance (?:of )?)?(\d{1,3}) days\b', low)
+    if gap: params['gap_days'] = int(gap.group(1) or gap.group(2))
+    if re.search(r'\badd[- ]ons? (?:stay|are|count as) (?:in )?the same line\b', low): params['add_on_new_line'] = False
+    if re.search(r'\b(?:prevalent|existing|all) users\b|\bincluding prevalent\b', low): params['require_new_user'] = False
+    from .line_of_therapy import validate
+    try:
+        validate(params)
+    except ValueError as exc:
+        info.update(route='fallback', reason=f'line_of_therapy parameters: {exc}')
+        return None, info
+    info['recognised'] += [f'area {area}' if area else 'components ' + ', '.join(comps), f"focus {params['focus']}"]
+    return {'interpretation': ' '.join(str(q).split())[:2000], 'coverage': 'supported_observation', 'unmet_requirements': [],
+            'nodes': [{'id': 'answer', 'operation': 'line_of_therapy', 'inputs': [], 'parameters': params,
+                       'purpose': f"Lines of therapy ({area or ', '.join(comps)}): regimens, switches, persistence from fills"[:1000]}]}, info
+
+
+def _trial_feasibility_question(q, profile, as_of):
+    """Clinical-trial feasibility -> trial_feasibility: eligibility funnel over criteria STATED in the question (conditions, labs
+    with thresholds and recency, medications, age, sex), sites, diversity, expected enrolment. Needs trial/study wording AND an
+    eligibility / feasibility / enrolment word; a plain count without trial framing stays a literal lookup. Criteria the data cannot
+    compute (EF, ECOG, stage, mutations) become 'not applied' criteria; no stated criteria -> requires input."""
+    low = ' '.join(str(q).lower().replace('’', "'").replace('≥', '>=').replace('≤', '<=').split())
+    if re.search(r'\btarget[- ]trials?\b|\bemulat\w*\b|\brandomi[sz]ed\b', low): return None
+    if not (re.search(r'\btrials?\b|\bstud(?:y|ies)\b|\bprotocol\b', low) and
+            re.search(r'\beligib\w*|\binclusion\b|\bexclusion\b|\bcriteri(?:a|on)\b|\bfeasib\w*|\benrol\w*|\brecruit\w*|\bscreen(?:ed|ing)? for\b|'
+                      r'\bfunnel\b|\bdiversity\b|\bsites?\b|\binvestigators?\b|\bqualify\b|\bcandidates?\b|\battrition\b', low)):
+        return None
+    info = {'compiler': VERSION, 'recognised': ['trial feasibility question'], 'paraphrased': [], 'route': 'local_compiler', 'unexplained': []}
+    crit, taken = [], []
+
+    def free(a, b): return all(b <= x or a >= y for x, y in taken)
+
+    def negated(start):
+        return bool(re.search(r'\b(?:no|not|without|never|excluding|exclude|exclusions?:?|free of|no history of|not on|not taking)\b(?:\s+\S+){0,3}\s*$',
+                              low[max(0, start - 40):start]))
+
+    def recency(end):
+        m = re.match(r'[^,;()]{0,30}?\b(?:in|within|over) the (?:last|past|prior|previous) (\d{1,3}) (day|week|month|year)s?\b|[^,;()]{0,30}?\bwithin (\d{1,3}) (day|week|month|year)s?\b', low[end:])
+        if not m: return None
+        n, unit = (m.group(1), m.group(2)) if m.group(1) else (m.group(3), m.group(4))
+        return min(3650, int(n) * {'day': 1, 'week': 7, 'month': 30, 'year': 365}[unit])
+    # criteria the warehouse cannot compute (structured EF, performance status, staging, genomics, NYHA, pregnancy)
+    for rx in (r'\b(?:lv)?ef\b[^,;()]*|\bejection fraction\b[^,;()]*', r'\becog\b[^,;()]*', r'\bstage (?:iv|iii|ii|i|[1-4])\b[^,;()]*',
+               r'\b\w+ mutation\b|\bbiomarker\w*\b[^,;()]*', r'\bnyha\b[^,;()]*', r'\bpregnan\w*\b', r'\bbmi\b[^,;()]*'):
+        for m in re.finditer(rx, low):
+            if free(m.start(), m.end()):
+                taken.append((m.start(), m.end()))
+                crit.append({'type': 'unevaluated', 'kind': 'exclusion' if negated(m.start()) else 'inclusion', 'text': m.group(0).strip()[:200]})
+    # age and sex
+    m = re.search(r'\b(?:aged?|ages?)\s*(\d{1,3})\s*(?:-|–|to|and)\s*(\d{1,3})\b|\b(\d{1,3})\s*(?:-|–|to)\s*(\d{1,3})\s*(?:years?|y/?o|yrs?)\b', low)
+    if m:
+        lo_, hi_ = (m.group(1), m.group(2)) if m.group(1) else (m.group(3), m.group(4))
+        crit.append({'type': 'age', 'min': int(lo_), 'max': int(hi_)}); taken.append((m.start(), m.end()))
+    else:
+        m = re.search(r'\b(?:aged?\s*)(\d{1,3})\s*(?:\+|or older|and older|years? (?:and|or) older)|\b(\d{1,3})\s*(?:\+ years|years? (?:and|or) older|years? or over)\b|'
+                      r'\b(?:aged?|ages?) (?:over|above|older than) (\d{1,3})\b|\b(?:over|older than|above) (?:the )?age (?:of )?(\d{1,3})\b|'
+                      r'\b(?:over|older than|above) (\d{1,3}) ?(?:years|yrs|y/?o)\b', low)
+        if m and free(m.start(), m.end()):
+            crit.append({'type': 'age', 'min': int(m.group(1) or m.group(2)) if (m.group(1) or m.group(2)) else int(m.group(3) or m.group(4) or m.group(5)) + 1})
+            taken.append((m.start(), m.end()))
+        elif re.search(r'\badults?\b', low): crit.append({'type': 'age', 'min': 18})
+    if re.search(r'\bwomen\b|\bfemales?\b', low) and not re.search(r'\bmen\b|\bmales?\b', low): crit.append({'type': 'sex', 'value': 'F'})
+    elif re.search(r'\bmen\b|\bmales?\b', low) and not re.search(r'\bwomen\b|\bfemales?\b', low): crit.append({'type': 'sex', 'value': 'M'})
+    # labs with thresholds
+    elevated = {'nt_probnp': ('gt', 125.0), 'uacr': ('gt', 30.0), 'hba1c': ('ge', 6.5), 'ldl': ('ge', 160.0), 'tsh': ('gt', 4.5), 'systolic_bp': ('ge', 140.0)}
+    num = r'(\d+(?:\.\d+)?)\s*(?:%|mg/dl|ml/min(?:/1\.73 ?m2)?|pg/ml|mmhg|mg/g)?'
+    lab_aliases = sorted(((a, c) for c, al in MEASUREMENT_ALIASES.items() for a in al), key=lambda x: -len(x[0]))
+    for alias, concept in lab_aliases:
+        for m in re.finditer(_alias_pattern(alias), low):
+            if not free(m.start(), m.end()): continue
+            tail = low[m.end():m.end() + 60]
+            c = {'type': 'lab', 'concept': concept, 'kind': 'exclusion' if negated(m.start()) else 'inclusion'}
+            spec = (re.match(r'\s*(?:of |is |level )?(?:between|from)\s+' + num + r'\s*(?:and|to|-)\s*' + num, tail) or
+                    re.match(r'\s*(?:of |is )?' + num + r'\s*(?:-|–|to)\s*' + num, tail))
+            if spec: c.update(low=float(spec.group(1)), high=float(spec.group(2)))
+            else:
+                spec = re.match(r'\s*(?:of |is |level |value )?(above|over|greater than|more than|higher than|>=|>|at least|exceeding|under|below|less than|lower than|<=|<|at most)\s+' + num, tail)
+                if spec:
+                    w = spec.group(1)
+                    c.update(op={'>=': 'ge', 'at least': 'ge', '<=': 'le', 'at most': 'le'}.get(w, 'gt' if w in ('above', 'over', 'greater than', 'more than', 'higher than', '>', 'exceeding') else 'lt'),
+                             value=float(spec.group(2)))
+                else:
+                    spec = re.match(r'\s*(?:of |is )?' + num + r'\s*(?:or|and) (more|higher|above|greater|over|less|lower|below|under)\b', tail)
+                    if spec: c.update(op='ge' if spec.group(2) in ('more', 'higher', 'above', 'greater', 'over') else 'le', value=float(spec.group(1)))
+                    elif re.search(r'\belevated\b|\bhigh\b|\braised\b', low[max(0, m.start() - 12):m.end() + 12]) and concept in elevated:
+                        c.update(op=elevated[concept][0], value=elevated[concept][1], label=f'elevated {concept} ({OPERATOR_SIGNS[elevated[concept][0]]} '
+                                                                                        f'{elevated[concept][1]:g}, Agere default threshold; state a value to override)')
+                    else: continue
+            end = m.end() + (spec.end() if spec else 0)
+            r = recency(end)
+            if r: c['recency_days'] = r
+            crit.append(c); taken.append((m.start(), end))
+    # medications ('on stable GDMT', 'not on an SGLT2 inhibitor')
+    for m in re.finditer(r'\b(?:stable )?(?:gdmt|guideline[- ]directed medical therapy)\b', low):
+        crit.append({'type': 'medication', 'classes': ['ace_inhibitor', 'arb', 'arni', 'hf_evidence_based_beta_blocker', 'mra', 'sglt2_inhibitor'],
+                     'kind': 'exclusion' if negated(m.start()) else 'inclusion', 'min_fills': 2 if 'stable' in low[max(0, m.start() - 8):m.end()] else 1})
+        taken.append((m.start(), m.end()))
+    for arm, rx in RWE_DRUGS.items():
+        m = re.search(r'(?<![a-z0-9-])(?:' + rx + r')(?![a-z0-9])', low)
+        if m and free(m.start(), m.end()):
+            c = {'type': 'medication', 'classes': [arm], 'kind': 'exclusion' if negated(m.start()) else 'inclusion',
+                 'min_fills': 2 if re.search(r'\bstable\b', low[max(0, m.start() - 20):m.start()]) else 1}
+            r = recency(m.end())
+            if r: c['recency_days'] = r
+            crit.append(c); taken.append((m.start(), m.end()))
+    for concept, alias in sorted(((c, a) for c, al in ENCOUNTER_ALIASES.items() for a in al), key=lambda x: -len(x[1])):
+        for m in re.finditer(_alias_pattern(alias), low):
+            if not free(m.start(), m.end()): continue
+            c = {'type': 'encounter', 'concept': concept, 'kind': 'exclusion' if negated(m.start()) else 'inclusion'}
+            r = recency(m.end())
+            if r: c['recency_days'] = r
+            crit.append(c); taken.append((m.start(), m.end()))
+    for m in re.finditer(r'\ban? (?:ed|er|emergency(?: department| room)?) visit\b|\ban? (?:hospital )?admission\b', low):
+        if free(m.start(), m.end()):
+            crit.append({'type': 'encounter', 'concept': 'emergency_visit' if 'admission' not in m.group(0) else 'inpatient_admission',
+                         'kind': 'exclusion' if negated(m.start()) else 'inclusion'})
+            taken.append((m.start(), m.end()))
+    # conditions (longest aliases first; 'newly diagnosed' = documented in the last year)
+    for concept, alias in sorted(((c, a) for c, al in CONDITION_ALIASES.items() for a in al), key=lambda x: -len(x[1])):
+        for m in re.finditer(_alias_pattern(alias), low):
+            if not free(m.start(), m.end()): continue
+            if concept in ('diabetes',) and any(x['type'] == 'condition' and x['concept'] in ('type_2_diabetes', 'type_1_diabetes') for x in crit): continue
+            c = {'type': 'condition', 'concept': concept, 'kind': 'exclusion' if negated(m.start()) else 'inclusion'}
+            if re.search(r'\b(?:new(?:ly)?(?: diagnosed)?|recently diagnosed|incident)\s+$', low[max(0, m.start() - 22):m.start()]): c['recency_days'] = 365
+            crit.append(c); taken.append((m.start(), m.end()))
+    if re.search(r'\bckd stage (?:3|4|3-4|iii|iv)\b|\bstage (?:3|4|3-4) ckd\b', low):
+        crit = [c for c in crit if not (c['type'] == 'unevaluated' and c['text'].startswith('stage'))]
+    computable = [c for c in crit if c['type'] not in ('unevaluated', 'age', 'sex')]
+    if not computable:
+        info.update(route='local_requires_input', operation='trial_feasibility',
+                    requires_input=['trial inclusion/exclusion criteria'])
+        return {'interpretation': f'Needs inputs not in the data: {q}'[:2000], 'coverage': 'unsupported', 'nodes': [],
+                'unmet_requirements': ['Missing input: trial inclusion/exclusion criteria (no structured trial protocol is received): state the '
+                                       'conditions, labs with thresholds and recency, medications and age range'] +
+                                      [f"Missing input: {c['text']} (not computable from received data)" for c in crit if c['type'] == 'unevaluated']}, info
+    params = {'criteria': crit}
+    t = re.search(r'\b(?:our|the|a|an)\s+([a-z0-9][a-z0-9 /-]{0,30}?)\s+(?:trial|study)\b', low)
+    if t: params['trial'] = (t.group(1) + ' trial').strip()
+    if re.search(RACE_WORDS, low) or re.search(r'\bdiversity\b', low): params['group_by'] = 'race_ethnicity'
+    elif re.search(LANGUAGE_WORDS, low): params['group_by'] = 'language'
+    elif re.search(r'\bsites?\b|\binvestigators?\b|\bpractices?\b|\bclinics?\b', low): params['group_by'] = 'practice' if not re.search(r'\binvestigators?\b', low) else 'pcp'
+    cr = re.search(r'\b(\d{1,2}(?:\.\d+)?)\s*% (?:consent|enrol\w*|enroll\w*|screen[- ]pass|conversion)', low)
+    if cr: params['consent_rate'] = float(cr.group(1)) / 100
+    from .trial_feasibility import validate
+    try:
+        validate(params)
+    except ValueError as exc:
+        info.update(route='fallback', reason=f'trial_feasibility parameters: {exc}')
+        return None, info
+    info['recognised'] += [f"{len(crit)} criteria ({len([c for c in crit if c['type'] == 'unevaluated'])} not computable)"]
+    return {'interpretation': ' '.join(str(q).split())[:2000], 'coverage': 'supported_observation', 'unmet_requirements': [],
+            'nodes': [{'id': 'answer', 'operation': 'trial_feasibility', 'inputs': [], 'parameters': params,
+                       'purpose': f"Trial feasibility funnel over {len(crit)} stated criteria"[:1000]}]}, info
+
+
+OPERATOR_SIGNS = {'gt': '>', 'ge': '>=', 'lt': '<', 'le': '<='}
 
 
 def _briefing_question(q):

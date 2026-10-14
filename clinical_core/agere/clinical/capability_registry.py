@@ -90,6 +90,24 @@ PRODUCT['contract_strategy'] = {'population': 'optional', 'view': 'options',
                                        'how much downside risk we can take at a confidence level. The settlement amount under ONE stated contract '
                                        '("what would we earn under X") is vbc.'}
 
+PRODUCT['target_trial'] = {'population': 'optional', 'view': 'trial',
+                           'use': 'COMPARATIVE EFFECTIVENESS of two drug strategies by target trial emulation (new-user active-comparator design): '
+                                  'drug A versus drug B (or high- vs moderate-intensity statins) on a lab change (eGFR decline, A1c, LDL, BP) or time to '
+                                  'admission / ED visit / incident condition; explicit protocol, propensity overlap weights or matching, balance, ITT and '
+                                  'per-protocol, E-value, negative control. A single drug or program start with no comparator ("did starting X reduce Y") '
+                                  'is program_effect; time-to-event curves with no treatment comparison are survival.'}
+PRODUCT['line_of_therapy'] = {'population': 'optional', 'view': 'lines',
+                              'use': 'TREATMENT PATTERNS from fills: lines of therapy (first-, second-, third-line regimens), add-on vs switch, '
+                                     'treatment sequences (Sankey), switching matrices, time on treatment, persistence / discontinuation and PDC for '
+                                     'diabetes, heart-failure GDMT, hypertension, depression, CKD or rheumatoid arthritis. Time to one event after a '
+                                     'start with no regimen logic is survival; journeys through care settings are pathway.'}
+PRODUCT['trial_feasibility'] = {'population': 'optional', 'view': 'funnel',
+                                'use': 'CLINICAL TRIAL FEASIBILITY: how many patients meet stated inclusion/exclusion criteria (conditions, labs with '
+                                       'recency, medications, age, sex), the step-by-step eligibility / attrition funnel, which criteria remove the most '
+                                       'patients, eligible patients by site (practice) and investigator (PCP), diversity of the eligible population by '
+                                       'race, ethnicity, sex, age and language against stated goals, and expected newly eligible patients (enrolment) per '
+                                       'month. A plain count with no trial framing is a literal lookup.'}
+
 # Questions a SQL query over the semantic tables answers exactly are handed to the verified SQL ladder.
 LITERAL = ('Literal data questions: counts, lists, sums, averages, maxima, record filters, date arithmetic, simple breakdowns '
            'by a field, shares, rates per 1,000 without case-mix adjustment.')

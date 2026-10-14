@@ -230,6 +230,27 @@ CONTRACTS['contract_strategy'] = {'inputs':['optional earlier_set'],'parameters'
               'care-management spend, equal-value frontier. The benchmark, offers and spend must be stated (never invented). Use for should-we / '
               'which-track / compare-offers / negotiate / option-value / downside-capacity questions; one settlement amount is vbc.'}
 
+CONTRACTS['target_trial'] = {'inputs':['optional earlier_set'],'parameters':{'arms':['sglt2_inhibitor','dpp4_inhibitor'],
+    'outcome':{'type':'lab_change|lab_threshold|lab_decline_pct|admission|ed_visit|condition|encounter','lab':'egfr','horizon_days':365},
+    'population_conditions':[],'exclude_conditions':[],'min_age':18,'washout_days':365,'grace_days':60,'adjustment':'overlap|iptw|matching','bootstrap':400},
+    'meaning':'Target trial emulation (Hernan & Robins) of initiating strategy A vs active comparator B among new users: explicit protocol table '
+              '(eligibility, strategies, assignment, time zero = first fill so no immortal time, follow-up, outcome, ITT / per-protocol contrasts, '
+              'analysis), ridge-logistic propensity score with overlap weights / IPTW / caliper matching, SMD balance, weighted mean difference of a lab '
+              'change or weighted Kaplan-Meier risks + weighted Cox HR, bootstrap CIs, E-value, assumed-null negative-control outcome, loud data-support '
+              'warnings. Use for drug-vs-drug comparative effectiveness; one drug or program start with no comparator is program_effect.'}
+CONTRACTS['line_of_therapy'] = {'inputs':['optional earlier_set'],'parameters':{'area':'diabetes|heart_failure|hypertension|depression|chronic_kidney_disease|rheumatoid_arthritis',
+    'components':[],'focus':'all|lines|switching|persistence|sequences','gap_days':60,'regimen_window_days':30,'switch_window_days':30,'washout_days':180,
+    'require_new_user':True,'add_on_new_line':True},
+    'meaning':'Rule-based lines of therapy from received fills (reversals excluded): episodes with gap tolerance, line 1 = components started '
+              'within the regimen window, add-on vs switch rules, restarts and drops; per-line regimens, time on treatment and time to next treatment '
+              '(Kaplan-Meier), switching matrix, sequences (Sankey), first-line persistence and PDC. Use for treatment pattern / line of therapy / '
+              'switching / sequence / persistence questions.'}
+CONTRACTS['trial_feasibility'] = {'inputs':['optional earlier_set'],'parameters':{'criteria':[{'type':'condition','kind':'inclusion','concept':'type_2_diabetes'},
+    {'type':'lab','concept':'hba1c','low':7.5,'high':10.5,'recency_days':365},{'type':'age','min':18,'max':75}],'trial':'','group_by':'none','consent_rate':None},
+    'meaning':'Computable trial eligibility over received data: ordered attrition funnel (removed, removed for missing data, remaining), the count '
+              'each criterion removes on its own, eligible patients by practice (site) and PCP (investigator), diversity of the eligible population '
+              '(race, ethnicity, sex, age band, language) vs the source population and stated goals, expected newly eligible patients per month '
+              '(trailing 12 months, Poisson interval). Criteria come only from the question; uncomputable ones are listed as not applied.'}
 CONTRACTS['claims_review'] = {'inputs':['optional earlier_set'],'parameters':{'focus':'all|providers|benford|duplicates|underpayment|denials|leakage',
     'by':'payer|provider|setting|service','period':{'start':'','end':''},'fdr':0.05,'min_claims':30,'window_days':3,'writeoff_days':120,'payer':'','provider':'','rework_cost':None},
     'meaning':'Payment integrity and revenue leakage over medical claims, every flag ranked by expected dollars (dollars x probability): provider peer outliers '

@@ -8,18 +8,18 @@ Buckets: **answered locally** = compiles to the expected engine; **needs router*
 
 | Bucket | v1.23 | v2.0 |
 |---|---:|---:|
-| answered locally | 76 (8%) | 82 (9%) |
+| answered locally | 81 (8%) | 87 (9%) |
 | needs router | 313 (33%) | 366 (38%) |
 | wrong engine | 2 (0%) | 2 (0%) |
 | declined locally | 13 (1%) | 13 (1%) |
-| needs new engine | 9 (1%) | 15 (2%) |
+| needs new engine | 5 (1%) | 11 (1%) |
 | knowledge | 61 (6%) | 61 (6%) |
-| unsupported (data missing) | 487 (51%) | 422 (44%) |
+| unsupported (data missing) | 486 (51%) | 421 (44%) |
 | total | 961 | 961 |
 
 **VBC library only:** `v1.23`: unsupported (data missing) 211, needs router 122, answered locally 41, knowledge 35, declined locally 12, wrong engine 2; `v2.0`: unsupported (data missing) 211, needs router 121, answered locally 43, knowledge 35, declined locally 11, wrong engine 2
 
-**healthcare library only:** `v1.23`: unsupported (data missing) 276, needs router 191, answered locally 35, knowledge 26, needs new engine 9, declined locally 1; `v2.0`: needs router 245, unsupported (data missing) 211, answered locally 39, knowledge 26, needs new engine 15, declined locally 2
+**healthcare library only:** `v1.23`: unsupported (data missing) 275, needs router 191, answered locally 40, knowledge 26, needs new engine 5, declined locally 1; `v2.0`: needs router 245, unsupported (data missing) 210, answered locally 44, knowledge 26, needs new engine 11, declined locally 2
 
 ## By domain: `v1.23`
 
@@ -49,7 +49,7 @@ Buckets: **answered locally** = compiles to the expected engine; **needs router*
 | workforce_productivity | workforce_productivity | 41 | 2 | 5 | 0 | 0 | 0 | 2 | 32 | staff_schedules (12), hr_roster (9), payroll (5), provider_fte (4) |
 | patient_experience_access | patient_experience_access | 40 | 2 | 11 | 0 | 0 | 0 | 2 | 25 | hcahps (7), portal_activity (5), race_ethnicity_language (5), cgcahps (2) |
 | public_population_health | public_population_health | 41 | 0 | 23 | 0 | 0 | 0 | 2 | 16 | geography (11), vaccine_outreach (2), population_denominators (2), svi_reference (2) |
-| life_sciences_rwe | life_sciences_rwe | 43 | 2 | 25 | 0 | 0 | 4 | 3 | 9 | trial_criteria (3), oncology_detail (2), race_ethnicity_language (1), geography (1) |
+| life_sciences_rwe | life_sciences_rwe | 43 | 7 | 25 | 0 | 0 | 0 | 3 | 8 | trial_criteria (2), oncology_detail (2), race_ethnicity_language (1), geography (1) |
 | clinical_decision_support | clinical_decision_support | 46 | 9 | 24 | 0 | 0 | 4 | 2 | 7 | cds_alert_logs (3), cancer_screening (2), guideline_rules (2) |
 
 ## By domain: `v2.0`
@@ -80,7 +80,7 @@ Buckets: **answered locally** = compiles to the expected engine; **needs router*
 | workforce_productivity | workforce_productivity | 41 | 2 | 9 | 0 | 0 | 0 | 2 | 28 | staff_schedules (12), hr_roster (9), payroll (5), provider_fte (4) |
 | patient_experience_access | patient_experience_access | 40 | 2 | 16 | 0 | 0 | 0 | 2 | 20 | hcahps (7), portal_activity (5), cgcahps (2), call_center (2) |
 | public_population_health | public_population_health | 41 | 0 | 29 | 0 | 0 | 2 | 2 | 8 | population_denominators (2), svi_reference (2), death_records (2), environmental_data (1) |
-| life_sciences_rwe | life_sciences_rwe | 43 | 2 | 25 | 0 | 0 | 4 | 3 | 9 | trial_criteria (3), oncology_detail (2), site_directory (1), oncology_regimens (1) |
+| life_sciences_rwe | life_sciences_rwe | 43 | 7 | 25 | 0 | 0 | 0 | 3 | 8 | trial_criteria (2), oncology_detail (2), site_directory (1), oncology_regimens (1) |
 | clinical_decision_support | clinical_decision_support | 46 | 9 | 26 | 0 | 0 | 4 | 2 | 5 | cds_alert_logs (3), guideline_rules (2) |
 
 ## Questions whose bucket differs between `v1.23` and `v2.0` (68)
@@ -176,7 +176,7 @@ Buckets: **answered locally** = compiles to the expected engine; **needs router*
 | R-ECON-04 | declined locally | vbc | - | How sensitive is projected contract performance to claim runout, attribution changes and high-cost outliers? |  |
 | HQ-RCM-045 | declined locally | literal_lookup | - | How many denials were caused by eligibility or registration errors, by registration area? |  |
 
-### Compiled into a data graph although unsupported, knowledge or needing a new engine on `v1.23` (20)
+### Compiled into a data graph although unsupported, knowledge or needing a new engine on `v1.23` (19)
 
 | ID | Bucket | Expected | Compiled | Question |
 |---|---|---|---|---|
@@ -198,8 +198,7 @@ Buckets: **answered locally** = compiles to the expected engine; **needs router*
 | HQ-WF-041 | knowledge | knowledge | knowledge | How are work RVUs set in the physician fee schedule and why do they matter for productivity pay? |
 | HQ-PX-032 | unsupported (data missing) | program_effect | scheduling | Did text appointment reminders reduce no-shows? |
 | HQ-PH-040 | knowledge | knowledge | knowledge | What does the CDC Social Vulnerability Index measure and how should it be used for planning? |
-| HQ-LS-018 | needs new engine | new_engine:target_trial_emulation | program_effect | Among new users, do SGLT2 inhibitors reduce heart failure hospitalization compared with DPP-4 inhibitors? |
-| HQ-LS-020 | needs new engine | new_engine:target_trial_emulation | program_effect | Does starting a GLP-1 agonist slow eGFR decline compared with starting an SGLT2 inhibitor? |
+| HQ-LS-006 | unsupported (data missing) | literal_lookup | trial_feasibility | Which sites and investigators see the most eligible patients for an atrial fibrillation trial? |
 
 ## Correctness backlog on `v2.0`: wrong engine or declined locally (15)
 
@@ -221,7 +220,7 @@ Buckets: **answered locally** = compiles to the expected engine; **needs router*
 | HQ-RCM-045 | declined locally | literal_lookup | - | How many denials were caused by eligibility or registration errors, by registration area? |  |
 | HQ-QS-046 | declined locally | literal_lookup | - | Do readmission rates differ by race, ethnicity, language or dual-eligible status? |  |
 
-### Compiled into a data graph although unsupported, knowledge or needing a new engine on `v2.0` (21)
+### Compiled into a data graph although unsupported, knowledge or needing a new engine on `v2.0` (20)
 
 | ID | Bucket | Expected | Compiled | Question |
 |---|---|---|---|---|
@@ -244,10 +243,9 @@ Buckets: **answered locally** = compiles to the expected engine; **needs router*
 | HQ-WF-041 | knowledge | knowledge | knowledge | How are work RVUs set in the physician fee schedule and why do they matter for productivity pay? |
 | HQ-PX-032 | unsupported (data missing) | program_effect | scheduling | Did text appointment reminders reduce no-shows? |
 | HQ-PH-040 | knowledge | knowledge | knowledge | What does the CDC Social Vulnerability Index measure and how should it be used for planning? |
-| HQ-LS-018 | needs new engine | new_engine:target_trial_emulation | program_effect | Among new users, do SGLT2 inhibitors reduce heart failure hospitalization compared with DPP-4 inhibitors? |
-| HQ-LS-020 | needs new engine | new_engine:target_trial_emulation | program_effect | Does starting a GLP-1 agonist slow eGFR decline compared with starting an SGLT2 inhibitor? |
+| HQ-LS-006 | unsupported (data missing) | literal_lookup | trial_feasibility | Which sites and investigators see the most eligible patients for an atrial fibrillation trial? |
 
-## Healthcare-library questions answered locally on `v1.23` (35)
+## Healthcare-library questions answered locally on `v1.23` (40)
 
 | ID | Engine | Question |
 |---|---|---|
@@ -275,7 +273,12 @@ Buckets: **answered locally** = compiles to the expected engine; **needs router*
 | HQ-WF-032 | sql | What is the median time from visit to signed note, by clinician? |
 | HQ-PX-011 | sql | What is the median lead time from booking to appointment by specialty? |
 | HQ-PX-016 | scheduling | Which appointments next week are most likely to be no-shows, and how many extra slots can each clinic safely book? |
+| HQ-LS-001 | trial_feasibility | How many patients meet the inclusion and exclusion criteria for a HFrEF trial (EF 40% or less, NT-proBNP elevated, eGFR above 30, on stable GDMT)? |
 | HQ-LS-002 | sql | How many adults with type 2 diabetes have an A1c between 7.5% and 10.5% and an eGFR of 30 or more? |
+| HQ-LS-009 | line_of_therapy | What are the most common treatment sequences for patients newly diagnosed with type 2 diabetes? |
+| HQ-LS-012 | line_of_therapy | For rheumatoid arthritis, what share of patients switch from a first biologic to a second, and to which class? |
+| HQ-LS-018 | target_trial | Among new users, do SGLT2 inhibitors reduce heart failure hospitalization compared with DPP-4 inhibitors? |
+| HQ-LS-020 | target_trial | Does starting a GLP-1 agonist slow eGFR decline compared with starting an SGLT2 inhibitor? |
 | HQ-LS-021 | program_effect | Did starting an SGLT2 inhibitor reduce heart-failure admissions in our patients with HFrEF? |
 | HQ-CDS-011 | sql | How many patients have two eGFR values below 60 at least 90 days apart but no CKD diagnosis? |
 | HQ-CDS-012 | sql | How many patients have an A1c of 6.5% or more on two occasions without a diabetes diagnosis? |
@@ -287,7 +290,7 @@ Buckets: **answered locally** = compiles to the expected engine; **needs router*
 | HQ-CDS-037 | sql | Which patients on levothyroxine have not had a TSH in the last year? |
 | HQ-CDS-040 | sql | How many patients with eGFR under 30 have never been referred to nephrology? |
 
-## Healthcare-library questions answered locally on `v2.0` (39)
+## Healthcare-library questions answered locally on `v2.0` (44)
 
 | ID | Engine | Question |
 |---|---|---|
@@ -319,7 +322,12 @@ Buckets: **answered locally** = compiles to the expected engine; **needs router*
 | HQ-WF-032 | sql | What is the median time from visit to signed note, by clinician? |
 | HQ-PX-011 | sql | What is the median lead time from booking to appointment by specialty? |
 | HQ-PX-016 | scheduling | Which appointments next week are most likely to be no-shows, and how many extra slots can each clinic safely book? |
+| HQ-LS-001 | trial_feasibility | How many patients meet the inclusion and exclusion criteria for a HFrEF trial (EF 40% or less, NT-proBNP elevated, eGFR above 30, on stable GDMT)? |
 | HQ-LS-002 | sql | How many adults with type 2 diabetes have an A1c between 7.5% and 10.5% and an eGFR of 30 or more? |
+| HQ-LS-009 | line_of_therapy | What are the most common treatment sequences for patients newly diagnosed with type 2 diabetes? |
+| HQ-LS-012 | line_of_therapy | For rheumatoid arthritis, what share of patients switch from a first biologic to a second, and to which class? |
+| HQ-LS-018 | target_trial | Among new users, do SGLT2 inhibitors reduce heart failure hospitalization compared with DPP-4 inhibitors? |
+| HQ-LS-020 | target_trial | Does starting a GLP-1 agonist slow eGFR decline compared with starting an SGLT2 inhibitor? |
 | HQ-LS-021 | program_effect | Did starting an SGLT2 inhibitor reduce heart-failure admissions in our patients with HFrEF? |
 | HQ-CDS-011 | sql | How many patients have two eGFR values below 60 at least 90 days apart but no CKD diagnosis? |
 | HQ-CDS-012 | sql | How many patients have an A1c of 6.5% or more on two occasions without a diabetes diagnosis? |
@@ -417,20 +425,20 @@ Buckets: **answered locally** = compiles to the expected engine; **needs router*
 | early_signal | 6 |
 | vbc | 5 |
 | new_engine:risk_standardized_outcomes | 4 |
-| new_engine:target_trial_emulation | 4 |
-| pathway | 3 |
+| target_trial | 4 |
 | market | 3 |
 | trajectory | 3 |
 | new_engine:hai_surveillance | 3 |
-| new_engine:trial_feasibility | 3 |
+| trial_feasibility | 3 |
+| line_of_therapy | 3 |
 | new_engine:capacity_simulation | 2 |
+| pathway | 2 |
 | briefing | 2 |
 | new_engine:prior_auth_rules | 2 |
 | new_engine:antimicrobial_use_metrics | 2 |
 | new_engine:bundle_compliance | 2 |
 | new_engine:survey_adjustment | 2 |
 | new_engine:spatiotemporal_cluster | 2 |
-| new_engine:line_of_therapy | 2 |
 | new_engine:loop_closure | 2 |
 | new_engine:diagnostic_delay_lookback | 2 |
 | new_engine:cql_rule_engine | 2 |
