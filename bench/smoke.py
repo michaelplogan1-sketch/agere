@@ -12,17 +12,18 @@ ROOT = Path(__file__).resolve().parents[1]
 URL = os.environ.get('AGERE_URL', 'http://127.0.0.1:8885')
 # question -> (expected route prefix, {snapshot as_of: expected count/value}); a value of None checks the route only.
 # A new warehouse release starts with no baseline: probes then check the route and print BASELINE NEEDED until
-# values verified against independent SQL are added here.
+# values verified against independent SQL are added here. 2030-05-27 (v2.3): undated labs verified by direct SQL over
+# records (16,543; no lab supersessions); the other probes check the route until their SQL is written.
 PROBES = [
-    ('How many claims were denied and then paid?', 'local_compiler', {'2029-08-15': 959}),
-    ('What was our no-show rate for appointments scheduled in 2027?', 'local_compiler', {'2029-08-15': 8.98}),
-    ('Which diabetics are not on a statin?', 'local_compiler', {'2029-08-15': 119}),
-    ('What % of our heart failure patients are on an evidence-based beta blocker?', 'local_compiler', {'2029-08-15': 45.79}),
-    ('Which CKD patients are likely to drop below an eGFR of 30 in the next year?', 'local_compiler', {'2029-08-15': None}),
-    ('How many lab results came in without any collection date?', 'hosted_verified_sql', {'2029-08-15': 16543}),
-    ('Average days from service date to first payer cash for 2028 medical claims?', 'hosted_verified_sql', {'2029-08-15': None}),
-    ('How many patients filled a first-generation antihistamine in 2028?', 'hosted_verified_sql', {'2029-08-15': None}),
-    ('What is the race breakdown of our diabetic patients?', 'local_unsupported', {'2029-08-15': None}),  # v2.0 adds race
+    ('How many claims were denied and then paid?', 'local_compiler', {'2029-08-15': 959, '2030-05-27': None}),
+    ('What was our no-show rate for appointments scheduled in 2027?', 'local_compiler', {'2029-08-15': 8.98, '2030-05-27': None}),
+    ('Which diabetics are not on a statin?', 'local_compiler', {'2029-08-15': 119, '2030-05-27': None}),
+    ('What % of our heart failure patients are on an evidence-based beta blocker?', 'local_compiler', {'2029-08-15': 45.79, '2030-05-27': None}),
+    ('Which CKD patients are likely to drop below an eGFR of 30 in the next year?', 'local_compiler', {'2029-08-15': None, '2030-05-27': None}),
+    ('How many lab results came in without any collection date?', 'hosted_verified_sql', {'2029-08-15': 16543, '2030-05-27': 16543}),
+    ('Average days from service date to first payer cash for 2028 medical claims?', 'hosted_verified_sql', {'2029-08-15': None, '2030-05-27': None}),
+    ('How many patients filled a first-generation antihistamine in 2028?', 'hosted_verified_sql', {'2029-08-15': None, '2030-05-27': None}),
+    ('What is the race breakdown of our diabetic patients?', 'local_unsupported', {'2029-08-15': None, '2030-05-27': None}),  # v2.0 adds race
 ]
 
 

@@ -28,7 +28,8 @@ FAMILIES=[
 
 
 # Grounded planning carries observed field vocabularies and the concept library.
-REQUEST_MAX_BYTES=64000
+# 128 KB: the v2.3 warehouse (4,499 patients, 234 source streams) needs ~70 KB for a fully deferred capability index.
+REQUEST_MAX_BYTES=128000
 
 
 def send(body,provider,ledger,out,*,parse,allow_failed_response_revalidation=False,

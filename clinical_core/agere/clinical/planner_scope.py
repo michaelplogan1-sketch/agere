@@ -258,7 +258,7 @@ def dispatch(body,catalog,send,*,parse):
         index['dependency_contract']={'identity':digest(catalog['dependency_contract']),
             'loading':'Exact graph input/output rules load in planning; all operator meanings remain above.'}
         selector['messages']=[{'role':'user','content':content(index,lambda d:serialize_index(d,all_streams))}]
-    if not bounded(selector):raise ValueError('Complete capability index exceeds bound; no vocabulary was silently removed')
+    if not bounded(selector):raise ValueError(f'Complete capability index exceeds bound ({len(json.dumps(selector).encode())} > {MAX_BYTES} bytes); no vocabulary was silently removed')
     scope,first=send(selector,parse=lambda raw:selection(raw,catalog['question'],catalog['node_contracts'],all_streams,all_references))
     ops={o for s in scope['segments'] for o in s['operations']}
     selected=copy.deepcopy(catalog);selected['node_contracts']={o:c for o,c in catalog['node_contracts'].items() if o in ops}

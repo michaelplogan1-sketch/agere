@@ -87,7 +87,7 @@ class ReferenceScope(unittest.TestCase):
    with self.subTest(delta=delta),self.assertRaises(ValueError):S.selection(raw({**good,**delta}),good['text'],['reference_review','cohort'],[],['a'*64])
  def test_provider_and_planning_bound_agree(self):
   from clinical_core.agere.clinical import planner_scope as S
-  self.assertEqual(S.PLAN_MAX_BYTES,64000)
-  self.assertFalse(S.bounded({"text":"x"*64000},S.PLAN_MAX_BYTES))
+  self.assertEqual(S.PLAN_MAX_BYTES,128000)
+  self.assertFalse(S.bounded({"text":"x"*128000},S.PLAN_MAX_BYTES))
 
 if __name__=='__main__':unittest.main()

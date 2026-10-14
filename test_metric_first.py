@@ -79,7 +79,7 @@ class SchemaTests(unittest.TestCase):
         self.assertEqual(len(names), len(set(names)))
         self.assertTrue(all(re.fullmatch(r'[A-Za-z0-9_-]{1,64}', n) for n in names))
         self.assertGreaterEqual(len(lib), 70)
-        self.assertLess(len(json.dumps(menu)), 40000)                            # well under the 64 KB request bound
+        self.assertLess(len(json.dumps(menu)), 40000)                            # well under the 128 KB request bound
         self.assertTrue(all(len(json.dumps(MR.fill_tool(k, m))) < 20000 for k, m in lib.items()))
 
     def test_family_metrics_validate_in_the_metric_layer(self):
@@ -336,6 +336,23 @@ class RungOrdering(unittest.TestCase):
             with mock.patch.dict(os.environ, {'AGERE_METRIC_ROUTER': 'off'}):
                 graph, receipt = self.plan(root, 'How many diabetics do we have?', Script(), order)
             self.assertEqual(order, ['operator_router', 'hosted_sql'])
+
+    def test_engine_lean_puts_operator_router_before_metric_rung(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = fixture_stack(Path(tmp))
+            lean = {'label': 'monitor', 'probability': 0.75, 'threshold': planner.ENGINE_LEAN, 'lean': True}
+            order = []
+            with mock.patch.object(planner, '_engine_lean', return_value=lean):
+                graph, receipt = self.plan(root, 'Has the denial rate shifted recently?', Script(choose('patient_cohort'), fill('patient_cohort', population=DIABETES)), order)
+            # the operator router declined (literal lookup) here, so the metric rung still answers
+            self.assertEqual(order[0], 'operator_router'); self.assertIn('metric_router', order)
+            self.assertEqual(receipt['route'], 'metric_router')
+            self.assertEqual(receipt['local_compiler_declined']['engine_lean'], lean)
+            # a literal lean keeps the default order
+            order = []
+            with mock.patch.object(planner, '_engine_lean', return_value={**lean, 'label': 'literal_lookup', 'lean': False}):
+                self.plan(root, 'How many diabetics do we have?', Script(choose('patient_cohort'), fill('patient_cohort', population=DIABETES)), order)
+            self.assertEqual(order[0], 'metric_router')
 
 
 @unittest.skipUnless((STACK / 'semantic.sqlite3').exists() and REFERENCES.exists(), 'v1.23 stack not present')

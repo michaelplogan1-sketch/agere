@@ -164,6 +164,23 @@ def policy_identity():
       *[hashlib.sha256(Path(p).read_bytes()).hexdigest() for p in (__file__,graph_planner.__file__,graph_workbench.__file__,planner_scope.__file__,planner_catalog.__file__,graph_contracts.__file__,domain_question_plans.__file__,evidence_portfolio.__file__)]])
 
 
+ENGINE_LEAN=0.5  # learned-router probability above which an engine label puts the operator router ahead of the metric rung
+
+
+def _engine_lean(stack,question):
+    """-> learned-router top label receipt with 'lean' True when it names an analytic engine at >= ENGINE_LEAN; None if unavailable."""
+    encoder=getattr(getattr(stack,'retriever',None),'encoder',None)
+    if encoder is None or os.environ.get('AGERE_ENGINE_LEAN','on')=='off': return None
+    try:
+        from . import learned_router
+        from .capability_registry import PRODUCT
+        p=learned_router.predict(question,encoder)
+    except (ValueError,RuntimeError,OSError,KeyError,ImportError):
+        return None
+    return {'label':p['label'],'probability':round(p['probability'],4),'threshold':ENGINE_LEAN,
+            'lean':bool(p['label'] in PRODUCT and p['label']!='knowledge' and p['probability']>=ENGINE_LEAN)}
+
+
 def plan(stack,question,ledger,frontier):
     """frontier is a callback; no hosted call occurs for an exact local plan/cache."""
     normalize(question);start=time.perf_counter();meta=stack.retriever.meta
@@ -290,47 +307,55 @@ def plan(stack,question,ledger,frontier):
     # its typed slots; the metric's template / builder / measure engine computes deterministically ("computed as metric
     # <id>@<version>"). no_metric falls through to the operator router and, last, free-form SQL (metric_router.py).
     metric_steps=[]
-    from . import metric_router
-    if profile is not None and stack.allow_live and ledger is not None and metric_router.enabled():
-        try:
-            routed,metric_info=metric_router.route(question,meta['snapshot']['as_of'],ledger,stack.receipts,path=stack.path)
-        except (ValueError,RuntimeError,OSError,KeyError,TypeError,sqlite3.Error) as exc:  # the rung never blocks the ladder
-            routed,metric_info=None,{'router_error':str(exc)[:300],'calls':[]}
-        metric_steps=[{'stage':'metric_router','receipt':{'cost_estimate':{'estimated_usd':metric_router.cost(metric_info)}}}]
-        if routed is not None:
+    # Engine lean: when the zero-cost learned router's top label is an analytic engine (>= ENGINE_LEAN), the operator
+    # router goes before the metric rung so a change / subgroup / survival question is not answered with one scalar.
+    # The metric rung still runs if the operator router declines.
+    lean=_engine_lean(stack,question)
+    if lean: local_decline={**local_decline,'engine_lean':lean}
+    for rung in (('operator','metric') if lean and lean['lean'] else ('metric','operator')):
+      if rung=='metric':
+        from . import metric_router
+        if profile is not None and stack.allow_live and ledger is not None and metric_router.enabled():
             try:
-                graph=validate(routed,meta['snapshot']['as_of'])
-            except ValueError as exc:  # a governed plan the runtime validator refuses falls through, recorded
-                graph,metric_info=None,{**metric_info,'decision':'validation_failed','validation_error':str(exc)[:300]}
-        if routed is not None and graph is not None:
-            return graph,{'route':'metric_router','model':metric_router.MODEL,'metric':metric_info.get('metric'),
-                          'metric_router':metric_info,'new_paid_api_calls':sum(0 if c.get('cache_hit') else 1 for c in metric_info['calls']),
-                          'frontier_called':False,'local_compiler_declined':local_decline,'steps':metric_steps,
-                          'elapsed_seconds':time.perf_counter()-start}
-        local_decline={**local_decline,'metric_router':metric_info}
-    # Operator router: any phrasing reaches the right analytic engine. One small-model call picks the operator
-    # and fills its typed parameters; the runtime validators decide; literal questions go on to verified SQL.
-    if profile is not None and stack.allow_live and os.environ.get('AGERE_ROUTER','on')!='off':
-        from . import operator_router
-        try:
-            routed,route_info=operator_router.route(question,meta['snapshot']['as_of'],ledger,stack.receipts,validate,
-                                                    encoder=getattr(stack.retriever,'encoder',None))
-        except (ValueError,RuntimeError,OSError) as exc:
-            routed,route_info=None,{'router_error':str(exc)[:300],'calls':[]}
-        local_decline={**local_decline,'operator_router':route_info}
-        if routed is None and route_info.get('requires_input'):
-            graph=validate({'interpretation':f'Needs inputs not in the data: {question}','coverage':'unsupported','nodes':[],
-                            'unmet_requirements':['Missing input: '+route_info['requires_input'][:400]]},meta['snapshot']['as_of'])
-            return graph,{'route':'operator_router_requires_input','model':operator_router.MODEL,'operator':route_info.get('decision'),
-                          'new_paid_api_calls':sum(0 if c.get('cache_hit') else 1 for c in route_info['calls']),'frontier_called':False,
-                          'local_compiler_declined':local_decline,'steps':metric_steps+[{'stage':'operator_router','receipt':{'cost_estimate':{'estimated_usd':operator_router.cost(route_info)}}}],
-                          'elapsed_seconds':time.perf_counter()-start}
-        if routed is not None:
-            return routed,{'route':'operator_router','model':operator_router.MODEL,'new_paid_api_calls':
-                           sum(0 if c.get('cache_hit') else 1 for c in route_info['calls']),'frontier_called':False,
-                           'operator':route_info['decision'],'local_compiler_declined':local_decline,
-                           'steps':metric_steps+[{'stage':'operator_router','receipt':{'cost_estimate':{'estimated_usd':operator_router.cost(route_info)}}}],
-                           'elapsed_seconds':time.perf_counter()-start}
+                routed,metric_info=metric_router.route(question,meta['snapshot']['as_of'],ledger,stack.receipts,path=stack.path)
+            except (ValueError,RuntimeError,OSError,KeyError,TypeError,sqlite3.Error) as exc:  # the rung never blocks the ladder
+                routed,metric_info=None,{'router_error':str(exc)[:300],'calls':[]}
+            metric_steps=[{'stage':'metric_router','receipt':{'cost_estimate':{'estimated_usd':metric_router.cost(metric_info)}}}]
+            if routed is not None:
+                try:
+                    graph=validate(routed,meta['snapshot']['as_of'])
+                except ValueError as exc:  # a governed plan the runtime validator refuses falls through, recorded
+                    graph,metric_info=None,{**metric_info,'decision':'validation_failed','validation_error':str(exc)[:300]}
+            if routed is not None and graph is not None:
+                return graph,{'route':'metric_router','model':metric_router.MODEL,'metric':metric_info.get('metric'),
+                              'metric_router':metric_info,'new_paid_api_calls':sum(0 if c.get('cache_hit') else 1 for c in metric_info['calls']),
+                              'frontier_called':False,'local_compiler_declined':local_decline,'steps':metric_steps,
+                              'elapsed_seconds':time.perf_counter()-start}
+            local_decline={**local_decline,'metric_router':metric_info}
+      else:
+        # Operator router: any phrasing reaches the right analytic engine. One small-model call picks the operator
+        # and fills its typed parameters; the runtime validators decide; literal questions go on to verified SQL.
+        if profile is not None and stack.allow_live and os.environ.get('AGERE_ROUTER','on')!='off':
+            from . import operator_router
+            try:
+                routed,route_info=operator_router.route(question,meta['snapshot']['as_of'],ledger,stack.receipts,validate,
+                                                        encoder=getattr(stack.retriever,'encoder',None))
+            except (ValueError,RuntimeError,OSError) as exc:
+                routed,route_info=None,{'router_error':str(exc)[:300],'calls':[]}
+            local_decline={**local_decline,'operator_router':route_info}
+            if routed is None and route_info.get('requires_input'):
+                graph=validate({'interpretation':f'Needs inputs not in the data: {question}','coverage':'unsupported','nodes':[],
+                                'unmet_requirements':['Missing input: '+route_info['requires_input'][:400]]},meta['snapshot']['as_of'])
+                return graph,{'route':'operator_router_requires_input','model':operator_router.MODEL,'operator':route_info.get('decision'),
+                              'new_paid_api_calls':sum(0 if c.get('cache_hit') else 1 for c in route_info['calls']),'frontier_called':False,
+                              'local_compiler_declined':local_decline,'steps':metric_steps+[{'stage':'operator_router','receipt':{'cost_estimate':{'estimated_usd':operator_router.cost(route_info)}}}],
+                              'elapsed_seconds':time.perf_counter()-start}
+            if routed is not None:
+                return routed,{'route':'operator_router','model':operator_router.MODEL,'new_paid_api_calls':
+                               sum(0 if c.get('cache_hit') else 1 for c in route_info['calls']),'frontier_called':False,
+                               'operator':route_info['decision'],'local_compiler_declined':local_decline,
+                               'steps':metric_steps+[{'stage':'operator_router','receipt':{'cost_estimate':{'estimated_usd':operator_router.cost(route_info)}}}],
+                               'elapsed_seconds':time.perf_counter()-start}
     # Cheapest hosted rung: one Haiku call writing governed SQL over the cached schema (~$0.001).
     if profile is not None and stack.allow_live and os.environ.get('AGERE_HOSTED_SQL','on')!='off':
         try:
