@@ -1,0 +1,2544 @@
+{
+ "schema": "agere-metric-first-oracle/1",
+ "summary": "For each benchmark question with a saved hosted-ladder receipt: the governed metric and slots the metric router should choose (metric null = no governed metric fits; the question stays on the free-form route). Authored by reading the question only; slots carry only what the question states.",
+ "oracle": {
+  "K01": {
+   "metric": "patient_cohort",
+   "slots": {
+    "population": [
+     {
+      "kind": "condition",
+      "concepts": [
+       "heart_failure",
+       "heart_failure_reduced_ef"
+      ]
+     }
+    ],
+    "returns": "count"
+   }
+  },
+  "K02": {
+   "metric": "patient_cohort",
+   "slots": {
+    "population": [
+     {
+      "kind": "condition",
+      "concepts": [
+       "diabetes"
+      ]
+     },
+     {
+      "kind": "condition",
+      "concepts": [
+       "chronic_kidney_disease"
+      ]
+     }
+    ],
+    "returns": "patient_set"
+   }
+  },
+  "K03": {
+   "metric": "patient_cohort",
+   "slots": {
+    "population": [
+     {
+      "kind": "lab",
+      "concept": "hba1c",
+      "op": "ge",
+      "aggregate": "any",
+      "value": 6.5
+     }
+    ],
+    "returns": "count"
+   }
+  },
+  "K04": {
+   "metric": "patient_cohort",
+   "slots": {
+    "population": [
+     {
+      "kind": "condition",
+      "concepts": [
+       "hypertension"
+      ]
+     },
+     {
+      "kind": "lab",
+      "concept": "ldl",
+      "op": "exists",
+      "aggregate": "any",
+      "role": "exclude"
+     }
+    ],
+    "returns": "count"
+   }
+  },
+  "K05": {
+   "metric": "patient_cohort",
+   "slots": {
+    "population": [
+     {
+      "kind": "lab",
+      "concept": "egfr",
+      "op": "lt",
+      "aggregate": "any",
+      "value": 30
+     }
+    ],
+    "returns": "patient_set"
+   }
+  },
+  "K06": {
+   "metric": "patient_cohort",
+   "slots": {
+    "population": [
+     {
+      "kind": "condition",
+      "concepts": [
+       "obesity"
+      ]
+     }
+    ],
+    "returns": "count"
+   }
+  },
+  "K09": {
+   "metric": "patient_cohort",
+   "slots": {
+    "population": [
+     {
+      "kind": "lab",
+      "concept": "ldl",
+      "op": "ge",
+      "aggregate": "any",
+      "value": 190
+     }
+    ],
+    "returns": "count"
+   }
+  },
+  "K10": {
+   "metric": "patient_cohort",
+   "slots": {
+    "population": [
+     {
+      "kind": "lab",
+      "concept": "potassium",
+      "op": "gt",
+      "aggregate": "any",
+      "value": 5.0,
+      "period": {
+       "preset": "ytd"
+      }
+     }
+    ],
+    "returns": "count"
+   }
+  },
+  "L01": {
+   "metric": "patient_cohort",
+   "slots": {
+    "population": [
+     {
+      "kind": "condition",
+      "concepts": [
+       "hypertension"
+      ]
+     }
+    ],
+    "returns": "count"
+   }
+  },
+  "L02": {
+   "metric": "patient_cohort",
+   "slots": {
+    "population": [
+     {
+      "kind": "condition",
+      "concepts": [
+       "diabetes"
+      ]
+     },
+     {
+      "kind": "lab",
+      "concept": "hba1c",
+      "op": "ge",
+      "aggregate": "latest",
+      "value": 8
+     }
+    ],
+    "returns": "patient_set"
+   }
+  },
+  "L03": {
+   "metric": "patient_cohort",
+   "slots": {
+    "population": [
+     {
+      "kind": "demographic",
+      "field": "sex",
+      "values": [
+       "F"
+      ]
+     },
+     {
+      "kind": "demographic",
+      "field": "age",
+      "min": 50,
+      "max": 74
+     },
+     {
+      "kind": "demographic",
+      "field": "coverage_type",
+      "values": [
+       "medicare",
+       "medicaid"
+      ]
+     }
+    ],
+    "returns": "count"
+   }
+  },
+  "L05": {
+   "metric": "patient_cohort",
+   "slots": {
+    "population": [
+     {
+      "kind": "lab",
+      "concept": "egfr",
+      "op": "lt",
+      "aggregate": "latest",
+      "value": 60
+     },
+     {
+      "kind": "condition",
+      "concepts": [
+       "chronic_kidney_disease"
+      ],
+      "role": "exclude"
+     }
+    ],
+    "returns": "patient_set"
+   }
+  },
+  "L06": {
+   "metric": "patient_cohort",
+   "slots": {
+    "population": [
+     {
+      "kind": "lab",
+      "concept": "ldl",
+      "op": "ge",
+      "aggregate": "any",
+      "value": 190
+     }
+    ],
+    "returns": "count"
+   }
+  },
+  "L07": {
+   "metric": "patient_cohort",
+   "slots": {
+    "population": [
+     {
+      "kind": "condition",
+      "concepts": [
+       "obesity"
+      ]
+     },
+     {
+      "kind": "condition",
+      "concepts": [
+       "prediabetes"
+      ]
+     },
+     {
+      "kind": "condition",
+      "concepts": [
+       "diabetes"
+      ],
+      "role": "exclude"
+     }
+    ],
+    "returns": "count"
+   }
+  },
+  "L08": {
+   "metric": "patient_cohort",
+   "slots": {
+    "population": [
+     {
+      "kind": "condition",
+      "concepts": [
+       "asthma"
+      ]
+     },
+     {
+      "kind": "demographic",
+      "field": "age",
+      "max": 17
+     }
+    ],
+    "returns": "count"
+   }
+  },
+  "L09": {
+   "metric": "patient_cohort",
+   "slots": {
+    "population": [
+     {
+      "kind": "condition",
+      "concepts": [
+       "coronary_artery_disease",
+       "myocardial_infarction"
+      ]
+     },
+     {
+      "kind": "condition",
+      "concepts": [
+       "heart_failure",
+       "heart_failure_reduced_ef"
+      ],
+      "role": "exclude"
+     }
+    ],
+    "returns": "count"
+   }
+  },
+  "L10": {
+   "metric": "patient_cohort",
+   "slots": {
+    "population": [
+     {
+      "kind": "lab",
+      "concept": "potassium",
+      "op": "gt",
+      "aggregate": "any",
+      "value": 5.0,
+      "period": {
+       "preset": "ytd"
+      }
+     }
+    ],
+    "returns": "count"
+   }
+  },
+  "L11": {
+   "metric": "patient_cohort",
+   "slots": {
+    "population": [
+     {
+      "kind": "demographic",
+      "field": "sex",
+      "values": [
+       "F"
+      ]
+     },
+     {
+      "kind": "lab",
+      "concept": "hemoglobin",
+      "op": "lt",
+      "aggregate": "any",
+      "value": 10,
+      "period": {
+       "preset": "trailing_months",
+       "months": 12
+      }
+     }
+    ],
+    "returns": "count"
+   }
+  },
+  "M02": {
+   "metric": "patient_cohort",
+   "slots": {
+    "population": [
+     {
+      "kind": "lab",
+      "concept": "egfr",
+      "op": "lt",
+      "aggregate": "latest",
+      "value": 60
+     }
+    ],
+    "returns": "patient_set"
+   }
+  },
+  "M03": {
+   "metric": "patient_cohort",
+   "slots": {
+    "population": [
+     {
+      "kind": "demographic",
+      "field": "sex",
+      "values": [
+       "F"
+      ]
+     },
+     {
+      "kind": "demographic",
+      "field": "age",
+      "min": 65
+     },
+     {
+      "kind": "condition",
+      "concepts": [
+       "diabetes"
+      ]
+     },
+     {
+      "kind": "condition",
+      "concepts": [
+       "hypertension"
+      ]
+     }
+    ],
+    "returns": "count"
+   }
+  },
+  "M04": {
+   "metric": "patient_cohort",
+   "slots": {
+    "population": [
+     {
+      "kind": "condition",
+      "concepts": [
+       "prediabetes"
+      ]
+     },
+     {
+      "kind": "condition",
+      "concepts": [
+       "diabetes"
+      ],
+      "role": "exclude"
+     },
+     {
+      "kind": "lab",
+      "concept": "hba1c",
+      "op": "ge",
+      "aggregate": "latest",
+      "value": 6.5
+     }
+    ],
+    "returns": "count"
+   }
+  },
+  "M05": {
+   "metric": "patient_cohort",
+   "slots": {
+    "population": [
+     {
+      "kind": "condition",
+      "concepts": [
+       "asthma",
+       "copd"
+      ]
+     }
+    ],
+    "returns": "patient_set"
+   }
+  },
+  "M06": {
+   "metric": "patient_cohort",
+   "slots": {
+    "population": [
+     {
+      "kind": "lab",
+      "concept": "potassium",
+      "op": "gt",
+      "aggregate": "latest",
+      "value": 5.0
+     }
+    ],
+    "returns": "count"
+   }
+  },
+  "M08": {
+   "metric": "patient_cohort",
+   "slots": {
+    "population": [
+     {
+      "kind": "demographic",
+      "field": "sex",
+      "values": [
+       "M"
+      ]
+     },
+     {
+      "kind": "demographic",
+      "field": "age",
+      "min": 50,
+      "max": 75
+     },
+     {
+      "kind": "lab",
+      "concept": "ldl",
+      "op": "ge",
+      "aggregate": "any",
+      "value": 190
+     }
+    ],
+    "returns": "count"
+   }
+  },
+  "M09": {
+   "metric": null,
+   "why": "PTSD, bipolar disorder and schizophrenia are not in the governed concept library"
+  },
+  "M10": {
+   "metric": "patient_cohort",
+   "slots": {
+    "population": [
+     {
+      "kind": "condition",
+      "concepts": [
+       "anemia"
+      ]
+     },
+     {
+      "kind": "lab",
+      "concept": "hemoglobin",
+      "op": "lt",
+      "aggregate": "latest",
+      "value": 11
+     }
+    ],
+    "returns": "count"
+   }
+  },
+  "M11": {
+   "metric": "patient_cohort",
+   "slots": {
+    "population": [
+     {
+      "kind": "condition",
+      "concepts": [
+       "diabetes"
+      ]
+     },
+     {
+      "kind": "lab",
+      "concept": "uacr",
+      "op": "exists",
+      "aggregate": "any",
+      "period": {
+       "preset": "trailing_months",
+       "months": 12
+      },
+      "role": "exclude"
+     }
+    ],
+    "returns": "patient_set"
+   }
+  },
+  "M12": {
+   "metric": "patient_cohort",
+   "slots": {
+    "population": [],
+    "returns": "count",
+    "group_by": "age_band"
+   }
+  },
+  "N01": {
+   "metric": "patient_cohort",
+   "slots": {
+    "population": [
+     {
+      "kind": "condition",
+      "concepts": [
+       "diabetes"
+      ]
+     }
+    ],
+    "returns": "count"
+   }
+  },
+  "N02": {
+   "metric": "patient_cohort",
+   "slots": {
+    "population": [
+     {
+      "kind": "lab",
+      "concept": "egfr",
+      "op": "lt",
+      "aggregate": "latest",
+      "value": 45
+     },
+     {
+      "kind": "lab",
+      "concept": "uacr",
+      "op": "ge",
+      "aggregate": "latest",
+      "value": 30
+     }
+    ],
+    "returns": "patient_set"
+   }
+  },
+  "N06": {
+   "metric": null,
+   "why": "sex-specific thresholds (two populations with different cutoffs) are not one atom set"
+  },
+  "N07": {
+   "metric": "adult_obesity_computed_bmi",
+   "slots": {}
+  },
+  "N08": {
+   "metric": "patient_cohort",
+   "slots": {
+    "population": [
+     {
+      "kind": "lab",
+      "concept": "hba1c",
+      "op": "ge",
+      "aggregate": "latest",
+      "value": 6.5
+     },
+     {
+      "kind": "condition",
+      "concepts": [
+       "diabetes"
+      ],
+      "role": "exclude"
+     }
+    ],
+    "returns": "patient_set"
+   }
+  },
+  "N09": {
+   "metric": "patient_cohort",
+   "slots": {
+    "population": [
+     {
+      "kind": "lab",
+      "concept": "ldl",
+      "op": "ge",
+      "aggregate": "any",
+      "value": 190
+     }
+    ],
+    "returns": "count"
+   }
+  },
+  "N11": {
+   "metric": "patient_cohort",
+   "slots": {
+    "population": [
+     {
+      "kind": "condition",
+      "concepts": [
+       "atrial_fibrillation"
+      ]
+     },
+     {
+      "kind": "medication",
+      "groups": [
+       "anticoagulant"
+      ],
+      "evidence": "any_record"
+     },
+     {
+      "kind": "medication",
+      "groups": [
+       "antiplatelet"
+      ],
+      "evidence": "any_record"
+     }
+    ],
+    "returns": "patient_set"
+   }
+  },
+  "N12": {
+   "metric": "patient_cohort",
+   "slots": {
+    "population": [
+     {
+      "kind": "demographic",
+      "field": "coverage_type",
+      "values": [
+       "commercial"
+      ]
+     },
+     {
+      "kind": "demographic",
+      "field": "age",
+      "min": 40,
+      "max": 64
+     },
+     {
+      "kind": "lab",
+      "concept": "potassium",
+      "op": "ge",
+      "aggregate": "any",
+      "value": 5.0,
+      "period": {
+       "preset": "trailing_months",
+       "months": 12
+      }
+     }
+    ],
+    "returns": "patient_set"
+   }
+  },
+  "O01": {
+   "metric": "patient_cohort",
+   "slots": {
+    "population": [
+     {
+      "kind": "condition",
+      "concepts": [
+       "heart_failure",
+       "heart_failure_reduced_ef"
+      ]
+     },
+     {
+      "kind": "medication",
+      "groups": [],
+      "evidence": "dispensed",
+      "ingredients": [
+       "furosemide"
+      ],
+      "period": {
+       "preset": "trailing_months",
+       "months": 6
+      }
+     }
+    ],
+    "returns": "count"
+   }
+  },
+  "O02": {
+   "metric": "patient_cohort",
+   "slots": {
+    "population": [
+     {
+      "kind": "lab",
+      "concept": "potassium",
+      "op": "gt",
+      "aggregate": "latest",
+      "value": 5.0
+     },
+     {
+      "kind": "medication",
+      "groups": [
+       "ace_inhibitor",
+       "arb",
+       "arni",
+       "mra"
+      ],
+      "evidence": "dispensed",
+      "period": {
+       "preset": "trailing_days",
+       "days": 180
+      }
+     }
+    ],
+    "returns": "patient_set"
+   }
+  },
+  "O03": {
+   "metric": "patient_cohort",
+   "slots": {
+    "population": [
+     {
+      "kind": "demographic",
+      "field": "sex",
+      "values": [
+       "F"
+      ]
+     },
+     {
+      "kind": "demographic",
+      "field": "age",
+      "min": 65
+     },
+     {
+      "kind": "condition",
+      "concepts": [
+       "osteoporosis"
+      ]
+     },
+     {
+      "kind": "medication",
+      "groups": [
+       "bisphosphonate"
+      ],
+      "evidence": "dispensed",
+      "role": "exclude"
+     }
+    ],
+    "returns": "count"
+   }
+  },
+  "O04": {
+   "metric": "patient_cohort",
+   "slots": {
+    "population": [
+     {
+      "kind": "demographic",
+      "field": "age",
+      "min": 18,
+      "max": 64
+     },
+     {
+      "kind": "demographic",
+      "field": "coverage_type",
+      "values": [
+       "medicaid",
+       "uninsured"
+      ]
+     },
+     {
+      "kind": "condition",
+      "concepts": [
+       "diabetes"
+      ]
+     }
+    ],
+    "returns": "count"
+   }
+  },
+  "O05": {
+   "metric": null,
+   "why": "CKD stage is not a governed concept (the concept library has CKD, not stages 3-4)"
+  },
+  "O06": {
+   "metric": "patient_cohort",
+   "slots": {
+    "population": [
+     {
+      "kind": "condition",
+      "concepts": [
+       "coronary_artery_disease",
+       "myocardial_infarction"
+      ]
+     },
+     {
+      "kind": "medication",
+      "groups": [
+       "antiplatelet"
+      ],
+      "evidence": "dispensed",
+      "period": {
+       "preset": "trailing_months",
+       "months": 12
+      },
+      "role": "exclude"
+     }
+    ],
+    "returns": "count"
+   }
+  },
+  "O07": {
+   "metric": null,
+   "why": "allergy records are not in any governed metric"
+  },
+  "O08": {
+   "metric": "patient_cohort",
+   "slots": {
+    "population": [
+     {
+      "kind": "demographic",
+      "field": "sex",
+      "values": [
+       "M"
+      ]
+     },
+     {
+      "kind": "demographic",
+      "field": "age",
+      "min": 40,
+      "max": 75
+     },
+     {
+      "kind": "condition",
+      "concepts": [
+       "diabetes"
+      ]
+     },
+     {
+      "kind": "medication",
+      "groups": [
+       "statin"
+      ],
+      "evidence": "dispensed",
+      "period": {
+       "preset": "custom",
+       "start": "2028-01-01"
+      },
+      "role": "exclude"
+     }
+    ],
+    "returns": "count"
+   }
+  },
+  "O11": {
+   "metric": "beers_high_risk_medications_65",
+   "slots": {}
+  },
+  "O12": {
+   "metric": "patient_cohort",
+   "slots": {
+    "population": [
+     {
+      "kind": "lab",
+      "concept": "ldl",
+      "op": "ge",
+      "aggregate": "latest",
+      "value": 160
+     },
+     {
+      "kind": "medication",
+      "groups": [
+       "statin"
+      ],
+      "evidence": "dispensed",
+      "period": {
+       "preset": "trailing_months",
+       "months": 12
+      },
+      "role": "exclude"
+     }
+    ],
+    "returns": "count"
+   }
+  },
+  "K33": {
+   "metric": "patient_cohort",
+   "slots": {
+    "population": [
+     {
+      "kind": "condition",
+      "concepts": [
+       "heart_failure",
+       "heart_failure_reduced_ef"
+      ]
+     },
+     {
+      "kind": "social_need",
+      "needs": [
+       "food"
+      ]
+     }
+    ],
+    "returns": "count"
+   }
+  },
+  "K35": {
+   "metric": "patient_cohort",
+   "slots": {
+    "population": [
+     {
+      "kind": "social_need",
+      "needs": [
+       "cost_of_care"
+      ]
+     }
+    ],
+    "returns": "count",
+    "group_by": "coverage_type"
+   }
+  },
+  "L43": {
+   "metric": "patient_cohort",
+   "slots": {
+    "population": [
+     {
+      "kind": "social_need",
+      "needs": [
+       "transportation"
+      ]
+     },
+     {
+      "kind": "appointment",
+      "status": "no_show"
+     }
+    ],
+    "returns": "count"
+   }
+  },
+  "L44": {
+   "metric": "patient_cohort",
+   "slots": {
+    "population": [
+     {
+      "kind": "social_need",
+      "needs": [
+       "cost_of_care"
+      ],
+      "screened_only": true
+     }
+    ],
+    "returns": "count",
+    "numerator": [
+     {
+      "kind": "social_need",
+      "needs": [
+       "cost_of_care"
+      ]
+     }
+    ],
+    "group_by": "coverage_type"
+   }
+  },
+  "M42": {
+   "metric": "patient_cohort",
+   "slots": {
+    "population": [
+     {
+      "kind": "social_need",
+      "needs": [
+       "transportation"
+      ]
+     }
+    ],
+    "returns": "count"
+   }
+  },
+  "M43": {
+   "metric": null,
+   "why": "open patient balances are not a governed population atom"
+  },
+  "M44": {
+   "metric": "community_referral_delivery",
+   "slots": {}
+  },
+  "N42": {
+   "metric": null,
+   "why": "a table by social need is not a governed grouping"
+  },
+  "N43": {
+   "metric": null,
+   "why": "transportation referrals are not a governed atom"
+  },
+  "N44": {
+   "metric": "patient_cohort",
+   "slots": {
+    "population": [
+     {
+      "kind": "social_need",
+      "needs": [
+       "food",
+       "transportation",
+       "cost_of_care"
+      ],
+      "min_count": 2
+     }
+    ],
+    "returns": "count"
+   }
+  },
+  "O42": {
+   "metric": "patient_cohort",
+   "slots": {
+    "population": [
+     {
+      "kind": "social_need",
+      "needs": [
+       "food"
+      ],
+      "screened_only": true
+     }
+    ],
+    "returns": "percent",
+    "numerator": [
+     {
+      "kind": "social_need",
+      "needs": [
+       "food"
+      ]
+     }
+    ]
+   }
+  },
+  "K34": {
+   "metric": null,
+   "why": "community referral delivery rate (percent) is not a governed metric; the table metric is"
+  },
+  "L32": {
+   "metric": "patient_cohort",
+   "slots": {
+    "population": [
+     {
+      "kind": "condition",
+      "concepts": [
+       "hypertension"
+      ]
+     },
+     {
+      "kind": "lab",
+      "concept": "systolic_bp",
+      "op": "exists",
+      "aggregate": "any",
+      "dated_only": true
+     }
+    ],
+    "returns": "percent",
+    "numerator": [
+     {
+      "kind": "blood_pressure",
+      "aggregate": "latest",
+      "systolic_below": 140,
+      "diastolic_below": 90
+     }
+    ]
+   }
+  },
+  "M32": {
+   "metric": "patient_cohort",
+   "slots": {
+    "population": [
+     {
+      "kind": "condition",
+      "concepts": [
+       "hypertension"
+      ]
+     },
+     {
+      "kind": "demographic",
+      "field": "age",
+      "min": 18,
+      "max": 85
+     }
+    ],
+    "returns": "percent",
+    "numerator": [
+     {
+      "kind": "blood_pressure",
+      "aggregate": "latest",
+      "systolic_below": 140,
+      "diastolic_below": 90,
+      "period": {
+       "preset": "ytd"
+      }
+     }
+    ]
+   }
+  },
+  "N31": {
+   "metric": "patient_cohort",
+   "slots": {
+    "population": [
+     {
+      "kind": "condition",
+      "concepts": [
+       "hypertension"
+      ]
+     },
+     {
+      "kind": "demographic",
+      "field": "age",
+      "min": 18,
+      "max": 85
+     }
+    ],
+    "returns": "percent",
+    "numerator": [
+     {
+      "kind": "blood_pressure",
+      "aggregate": "latest",
+      "systolic_below": 140,
+      "diastolic_below": 90,
+      "period": {
+       "preset": "trailing_months",
+       "months": 12
+      }
+     }
+    ]
+   }
+  },
+  "L33": {
+   "metric": "patient_cohort",
+   "slots": {
+    "population": [
+     {
+      "kind": "condition",
+      "concepts": [
+       "coronary_artery_disease",
+       "myocardial_infarction"
+      ]
+     }
+    ],
+    "returns": "percent",
+    "numerator": [
+     {
+      "kind": "medication",
+      "groups": [
+       "statin"
+      ],
+      "evidence": "dispensed",
+      "period": {
+       "preset": "trailing_months",
+       "months": 12
+      }
+     }
+    ]
+   }
+  },
+  "L35": {
+   "metric": "patient_cohort",
+   "slots": {
+    "population": [
+     {
+      "kind": "condition",
+      "concepts": [
+       "heart_failure",
+       "heart_failure_reduced_ef"
+      ]
+     }
+    ],
+    "returns": "percent",
+    "numerator": [
+     {
+      "kind": "medication",
+      "groups": [
+       "hf_evidence_based_beta_blocker"
+      ],
+      "evidence": "dispensed",
+      "period": {
+       "preset": "trailing_months",
+       "months": 12
+      }
+     }
+    ]
+   }
+  },
+  "O34": {
+   "metric": "patient_cohort",
+   "slots": {
+    "population": [
+     {
+      "kind": "condition",
+      "concepts": [
+       "heart_failure",
+       "heart_failure_reduced_ef"
+      ]
+     }
+    ],
+    "returns": "percent",
+    "numerator": [
+     {
+      "kind": "medication",
+      "groups": [
+       "hf_evidence_based_beta_blocker"
+      ],
+      "evidence": "dispensed",
+      "period": {
+       "preset": "trailing_months",
+       "months": 12
+      }
+     }
+    ]
+   }
+  },
+  "L36": {
+   "metric": "patient_cohort",
+   "slots": {
+    "population": [
+     {
+      "kind": "condition",
+      "concepts": [
+       "diabetes"
+      ]
+     },
+     {
+      "kind": "demographic",
+      "field": "age",
+      "min": 40,
+      "max": 75
+     }
+    ],
+    "returns": "percent",
+    "numerator": [
+     {
+      "kind": "medication",
+      "groups": [
+       "statin"
+      ],
+      "evidence": "dispensed",
+      "period": {
+       "preset": "year",
+       "year": 2028
+      }
+     }
+    ]
+   }
+  },
+  "O33": {
+   "metric": "patient_cohort",
+   "slots": {
+    "population": [
+     {
+      "kind": "condition",
+      "concepts": [
+       "diabetes"
+      ]
+     },
+     {
+      "kind": "demographic",
+      "field": "age",
+      "min": 40,
+      "max": 75
+     }
+    ],
+    "returns": "percent",
+    "numerator": [
+     {
+      "kind": "medication",
+      "groups": [
+       "statin"
+      ],
+      "evidence": "dispensed",
+      "period": {
+       "preset": "year",
+       "year": 2028
+      }
+     }
+    ]
+   }
+  },
+  "N33": {
+   "metric": "patient_cohort",
+   "slots": {
+    "population": [
+     {
+      "kind": "condition",
+      "concepts": [
+       "diabetes"
+      ]
+     },
+     {
+      "kind": "demographic",
+      "field": "age",
+      "min": 40,
+      "max": 75
+     }
+    ],
+    "returns": "percent",
+    "numerator": [
+     {
+      "kind": "medication",
+      "groups": [
+       "statin"
+      ],
+      "evidence": "any_record"
+     }
+    ]
+   }
+  },
+  "M31": {
+   "metric": "patient_cohort",
+   "slots": {
+    "population": [
+     {
+      "kind": "condition",
+      "concepts": [
+       "diabetes"
+      ]
+     },
+     {
+      "kind": "demographic",
+      "field": "age",
+      "min": 18,
+      "max": 75
+     }
+    ],
+    "returns": "percent",
+    "numerator": [
+     {
+      "kind": "lab",
+      "concept": "hba1c",
+      "op": "lt",
+      "aggregate": "latest",
+      "value": 8,
+      "period": {
+       "preset": "ytd"
+      }
+     }
+    ]
+   }
+  },
+  "N32": {
+   "metric": "patient_cohort",
+   "slots": {
+    "population": [
+     {
+      "kind": "condition",
+      "concepts": [
+       "diabetes"
+      ]
+     }
+    ],
+    "returns": "percent",
+    "numerator": [
+     {
+      "kind": "lab",
+      "concept": "hba1c",
+      "op": "exists",
+      "aggregate": "any",
+      "period": {
+       "preset": "trailing_months",
+       "months": 12
+      }
+     }
+    ]
+   }
+  },
+  "L34": {
+   "metric": "kidney_health_evaluation_diabetes",
+   "slots": {
+    "period": {
+     "preset": "year",
+     "year": 2028
+    }
+   }
+  },
+  "M33": {
+   "metric": "kidney_health_evaluation_diabetes",
+   "slots": {
+    "period": {
+     "preset": "year",
+     "year": 2028
+    }
+   }
+  },
+  "N34": {
+   "metric": "kidney_health_evaluation_diabetes",
+   "slots": {
+    "period": {
+     "preset": "year",
+     "year": 2028
+    }
+   }
+  },
+  "O31": {
+   "metric": "kidney_health_evaluation_diabetes",
+   "slots": {
+    "period": {
+     "preset": "year",
+     "year": 2028
+    }
+   }
+  },
+  "M34": {
+   "metric": null,
+   "why": "Tdap catch-up after a reported tetanus history is not a governed metric"
+  },
+  "N35": {
+   "metric": null,
+   "why": "Tdap catch-up after a reported tetanus history is not a governed metric"
+  },
+  "O35": {
+   "metric": null,
+   "why": "Tdap after tetanus-history review is not a governed metric"
+  },
+  "M35": {
+   "metric": null,
+   "why": "pediatric vision screening is not a governed metric"
+  },
+  "O36": {
+   "metric": null,
+   "why": "pediatric vision screening is not a governed metric"
+  },
+  "M36": {
+   "metric": null,
+   "why": "discharge-plan follow-up windows are not a governed metric"
+  },
+  "N36": {
+   "metric": null,
+   "why": "discharge-plan follow-up windows are not a governed metric"
+  },
+  "O41": {
+   "metric": "patient_cohort",
+   "slots": {
+    "population": [
+     {
+      "kind": "lab",
+      "concept": "systolic_bp",
+      "op": "exists",
+      "aggregate": "any",
+      "dated_only": true,
+      "role": "exclude"
+     }
+    ],
+    "returns": "count"
+   }
+  },
+  "K13": {
+   "metric": "encounter_volume",
+   "slots": {
+    "visit_classes": [
+     "ed"
+    ],
+    "period": {
+     "preset": "year",
+     "year": 2026
+    },
+    "measure": "per_1000_roster"
+   }
+  },
+  "K14": {
+   "metric": "encounter_volume",
+   "slots": {
+    "visit_classes": [
+     "inpatient"
+    ],
+    "period": {
+     "preset": "year",
+     "year": 2026
+    },
+    "group_by": "half_year"
+   }
+  },
+  "K15": {
+   "metric": "encounter_volume",
+   "slots": {
+    "visit_classes": [
+     "ed"
+    ],
+    "period": {
+     "preset": "ytd"
+    },
+    "group_by": "attributed_practice"
+   }
+  },
+  "K16": {
+   "metric": "visit_followup",
+   "slots": {
+    "index_classes": [
+     "ed"
+    ],
+    "followup_classes": [
+     "primary_care",
+     "specialist",
+     "ambulatory",
+     "outpatient"
+    ],
+    "days_min": 0,
+    "days_max": 7,
+    "period": {
+     "preset": "year",
+     "year": 2026
+    },
+    "returns": "count"
+   }
+  },
+  "K17": {
+   "metric": "patient_cohort",
+   "slots": {
+    "population": [
+     {
+      "kind": "visit",
+      "classes": [
+       "ed"
+      ],
+      "min_count": 2,
+      "period": {
+       "preset": "trailing_months",
+       "months": 12
+      }
+     }
+    ],
+    "returns": "count"
+   }
+  },
+  "K18": {
+   "metric": "encounter_volume",
+   "slots": {
+    "visit_classes": [
+     "urgent_care"
+    ],
+    "period": {
+     "preset": "custom",
+     "start": "2029-01-01",
+     "end": "2029-06-30"
+    },
+    "group_by": "month"
+   }
+  },
+  "L13": {
+   "metric": "encounter_volume",
+   "slots": {
+    "visit_classes": [
+     "ed"
+    ],
+    "period": {
+     "preset": "custom",
+     "start": "2029-01-01",
+     "end": "2029-07-31"
+    },
+    "group_by": "month"
+   }
+  },
+  "L14": {
+   "metric": "encounter_volume",
+   "slots": {
+    "visit_classes": [
+     "ed"
+    ],
+    "period": {
+     "preset": "trailing_months",
+     "months": 12
+    },
+    "measure": "per_1000_roster",
+    "group_by": "coverage_type"
+   }
+  },
+  "M16": {
+   "metric": "encounter_volume",
+   "slots": {
+    "visit_classes": [
+     "ed"
+    ],
+    "period": {
+     "preset": "trailing_months",
+     "months": 12
+    },
+    "measure": "per_1000_roster",
+    "group_by": "coverage_type"
+   }
+  },
+  "L15": {
+   "metric": "encounter_volume",
+   "slots": {
+    "visit_classes": [
+     "urgent_care"
+    ],
+    "period": {
+     "preset": "custom",
+     "start": "2028-10-01"
+    },
+    "group_by": "quarter"
+   }
+  },
+  "L16": {
+   "metric": "encounter_volume",
+   "slots": {
+    "visit_classes": [
+     "inpatient",
+     "observation"
+    ],
+    "period": {
+     "preset": "trailing_months",
+     "months": 12
+    }
+   }
+  },
+  "L17": {
+   "metric": "patient_cohort",
+   "slots": {
+    "population": [
+     {
+      "kind": "visit",
+      "classes": [
+       "ed"
+      ],
+      "min_count": 2,
+      "period": {
+       "preset": "trailing_months",
+       "months": 12
+      }
+     }
+    ],
+    "returns": "patient_set"
+   }
+  },
+  "L19": {
+   "metric": "encounter_volume",
+   "slots": {
+    "visit_classes": [
+     "ed"
+    ],
+    "period": {
+     "preset": "trailing_months",
+     "months": 12
+    },
+    "measure": "per_1000_roster",
+    "group_by": "attributed_practice"
+   }
+  },
+  "L21": {
+   "metric": "length_of_stay",
+   "slots": {
+    "classes": [
+     "inpatient"
+    ]
+   }
+  },
+  "L22": {
+   "metric": "patient_cohort",
+   "slots": {
+    "population": [
+     {
+      "kind": "visit",
+      "classes": [
+       "ed",
+       "urgent_care"
+      ],
+      "min_count": 1,
+      "period": {
+       "preset": "trailing_months",
+       "months": 12
+      }
+     }
+    ],
+    "returns": "count"
+   }
+  },
+  "M13": {
+   "metric": "encounter_volume",
+   "slots": {
+    "visit_classes": [
+     "observation"
+    ],
+    "period": {
+     "preset": "ytd"
+    }
+   }
+  },
+  "M14": {
+   "metric": "patient_cohort",
+   "slots": {
+    "population": [
+     {
+      "kind": "visit",
+      "classes": [
+       "ed"
+      ],
+      "min_count": 2,
+      "period": {
+       "preset": "trailing_months",
+       "months": 12
+      }
+     }
+    ],
+    "returns": "patient_set"
+   }
+  },
+  "N15": {
+   "metric": "patient_cohort",
+   "slots": {
+    "population": [
+     {
+      "kind": "visit",
+      "classes": [
+       "ed"
+      ],
+      "min_count": 2,
+      "period": {
+       "preset": "trailing_months",
+       "months": 12
+      }
+     }
+    ],
+    "returns": "patient_set"
+   }
+  },
+  "O13": {
+   "metric": "patient_cohort",
+   "slots": {
+    "population": [
+     {
+      "kind": "visit",
+      "classes": [
+       "ed"
+      ],
+      "min_count": 2,
+      "period": {
+       "preset": "trailing_months",
+       "months": 12
+      }
+     }
+    ],
+    "returns": "count"
+   }
+  },
+  "M15": {
+   "metric": "length_of_stay",
+   "slots": {
+    "classes": [
+     "inpatient"
+    ],
+    "anchor": "discharge",
+    "period": {
+     "preset": "ytd"
+    }
+   }
+  },
+  "M18": {
+   "metric": "encounter_volume",
+   "slots": {
+    "visit_classes": [
+     "telephone"
+    ],
+    "period": {
+     "preset": "year",
+     "year": 2028
+    },
+    "group_by": "quarter"
+   }
+  },
+  "M19": {
+   "metric": "encounter_volume",
+   "slots": {
+    "visit_classes": [
+     "primary_care"
+    ],
+    "period": {
+     "preset": "year",
+     "year": 2028
+    },
+    "group_by": "attributed_practice"
+   }
+  },
+  "M20": {
+   "metric": "patient_cohort",
+   "slots": {
+    "population": [
+     {
+      "kind": "visit",
+      "classes": [
+       "primary_care",
+       "annual_physical"
+      ],
+      "min_count": 1,
+      "period": {
+       "preset": "trailing_months",
+       "months": 12
+      },
+      "role": "exclude"
+     }
+    ],
+    "returns": "count"
+   }
+  },
+  "M22": {
+   "metric": "ed_admit_obs_share",
+   "slots": {
+    "period": {
+     "preset": "ytd"
+    }
+   }
+  },
+  "O14": {
+   "metric": "ed_admit_obs_share",
+   "slots": {
+    "period": {
+     "preset": "ytd"
+    }
+   }
+  },
+  "N18": {
+   "metric": "attributed_pcp_visit_gap_12m",
+   "slots": {}
+  },
+  "N21": {
+   "metric": "patient_cohort",
+   "slots": {
+    "population": [
+     {
+      "kind": "visit",
+      "classes": [
+       "urgent_care"
+      ],
+      "min_count": 1,
+      "period": {
+       "preset": "trailing_months",
+       "months": 12
+      }
+     },
+     {
+      "kind": "visit",
+      "classes": [
+       "ed"
+      ],
+      "min_count": 1,
+      "period": {
+       "preset": "trailing_months",
+       "months": 12
+      },
+      "role": "exclude"
+     }
+    ],
+    "returns": "count"
+   }
+  },
+  "O15": {
+   "metric": "length_of_stay",
+   "slots": {
+    "classes": [
+     "observation"
+    ],
+    "unit": "hours",
+    "period": {
+     "preset": "ytd"
+    }
+   }
+  },
+  "N16": {
+   "metric": null,
+   "why": "a table by stay type and year needs two group-bys"
+  },
+  "O21": {
+   "metric": null,
+   "why": "three visit classes side by side by facility is not one governed table"
+  },
+  "O22": {
+   "metric": null,
+   "why": "diagnostic test quality is not a governed metric"
+  },
+  "O16": {
+   "metric": null,
+   "why": "visits per home-health patient is not a governed metric"
+  },
+  "O20": {
+   "metric": null,
+   "why": "urgent care transfers to the ED are not a governed metric"
+  },
+  "M21": {
+   "metric": null,
+   "why": "referral completion within 90 days is not a governed metric"
+  },
+  "N22": {
+   "metric": null,
+   "why": "telehealth share by practice is not a governed metric"
+  },
+  "K19": {
+   "metric": "medical_claims",
+   "slots": {
+    "measures": [
+     "ever_denied_rate"
+    ],
+    "period": {
+     "preset": "year",
+     "year": 2028
+    },
+    "anchor": "benefit_year"
+   }
+  },
+  "K21": {
+   "metric": "medical_claims",
+   "slots": {
+    "measures": [
+     "net_payer_paid_usd"
+    ],
+    "period": {
+     "preset": "year",
+     "year": 2028
+    },
+    "group_by": "payer",
+    "anchor": "benefit_year"
+   }
+  },
+  "K22": {
+   "metric": "patient_payments",
+   "slots": {
+    "period": {
+     "preset": "year",
+     "year": 2028
+    },
+    "group_by": "payment_channel"
+   }
+  },
+  "K23": {
+   "metric": "pharmacy_returns_to_stock",
+   "slots": {
+    "period": {
+     "preset": "year",
+     "year": 2028
+    },
+    "group_by": "return_reason"
+   }
+  },
+  "L23": {
+   "metric": "medical_claims",
+   "slots": {
+    "measures": [
+     "net_payer_paid_usd"
+    ],
+    "period": {
+     "preset": "year",
+     "year": 2028
+    }
+   }
+  },
+  "M24": {
+   "metric": "medical_claims",
+   "slots": {
+    "measures": [
+     "net_payer_paid_usd"
+    ],
+    "period": {
+     "preset": "year",
+     "year": 2028
+    }
+   }
+  },
+  "L24": {
+   "metric": "medical_claims",
+   "slots": {
+    "measures": [
+     "claims",
+     "first_pass_denied",
+     "first_pass_denial_rate"
+    ],
+    "period": {
+     "preset": "year",
+     "year": 2028
+    },
+    "group_by": "payer"
+   }
+  },
+  "L25": {
+   "metric": "medical_claims",
+   "slots": {
+    "measures": [
+     "denied_then_paid"
+    ]
+   }
+  },
+  "L26": {
+   "metric": "pharmacy_returns_to_stock",
+   "slots": {
+    "period": {
+     "preset": "ytd"
+    },
+    "group_by": "return_reason"
+   }
+  },
+  "K24": {
+   "metric": "no_show_rate",
+   "slots": {
+    "period": {
+     "preset": "year",
+     "year": 2028
+    }
+   }
+  },
+  "L27": {
+   "metric": "no_show_rate",
+   "slots": {
+    "period": {
+     "preset": "year",
+     "year": 2028
+    }
+   }
+  },
+  "L28": {
+   "metric": null,
+   "why": "referral leakage by specialty is not a governed metric"
+  },
+  "L29": {
+   "metric": null,
+   "why": "net collections (payments minus refunds) is not one governed metric"
+  },
+  "L30": {
+   "metric": "clearinghouse_member_id_rejections",
+   "slots": {
+    "period": {
+     "preset": "year",
+     "year": 2028
+    }
+   }
+  },
+  "N30": {
+   "metric": "clearinghouse_member_id_rejections",
+   "slots": {
+    "period": {
+     "preset": "year",
+     "year": 2027
+    }
+   }
+  },
+  "M23": {
+   "metric": "medical_claims",
+   "slots": {
+    "measures": [
+     "first_pass_denied_then_paid"
+    ],
+    "period": {
+     "preset": "year",
+     "year": 2028
+    }
+   }
+  },
+  "M25": {
+   "metric": null,
+   "why": "repricing is not a governed metric"
+  },
+  "M26": {
+   "metric": null,
+   "why": "clearinghouse rejection rate of original submissions is not a governed metric"
+  },
+  "M27": {
+   "metric": "claim_financials_current_state",
+   "slots": {
+    "period": {
+     "preset": "year",
+     "year": 2029
+    }
+   }
+  },
+  "M28": {
+   "metric": "medical_claims",
+   "slots": {
+    "measures": [
+     "median_days_to_first_payer_cash"
+    ],
+    "period": {
+     "preset": "year",
+     "year": 2028
+    }
+   }
+  },
+  "M29": {
+   "metric": "patient_ar_outstanding",
+   "slots": {}
+  },
+  "M30": {
+   "metric": null,
+   "why": "pharmacy claims by first-paid year with reversals is not a governed metric"
+  },
+  "N23": {
+   "metric": "medical_claims",
+   "slots": {
+    "measures": [
+     "overturn_rate"
+    ]
+   }
+  },
+  "N24": {
+   "metric": "patient_refunds",
+   "slots": {
+    "period": {
+     "preset": "year",
+     "year": 2028
+    }
+   }
+  },
+  "O25": {
+   "metric": "patient_refunds",
+   "slots": {
+    "period": {
+     "preset": "year",
+     "year": 2028
+    }
+   }
+  },
+  "N25": {
+   "metric": "payer_cash_net",
+   "slots": {
+    "period": {
+     "preset": "year",
+     "year": 2028
+    }
+   }
+  },
+  "N26": {
+   "metric": "medical_claims",
+   "slots": {
+    "measures": [
+     "avg_days_to_first_submission"
+    ],
+    "period": {
+     "preset": "year",
+     "year": 2028
+    }
+   }
+  },
+  "N27": {
+   "metric": "pharmacy_claim_net_paid",
+   "slots": {
+    "period": {
+     "preset": "year",
+     "year": 2028
+    }
+   }
+  },
+  "O24": {
+   "metric": "pharmacy_claim_net_paid",
+   "slots": {
+    "period": {
+     "preset": "year",
+     "year": 2028
+    }
+   }
+  },
+  "N29": {
+   "metric": "medical_claims",
+   "slots": {
+    "measures": [
+     "avg_days_to_first_payer_cash"
+    ],
+    "period": {
+     "preset": "year",
+     "year": 2028
+    }
+   }
+  },
+  "O27": {
+   "metric": "medical_claims",
+   "slots": {
+    "measures": [
+     "avg_days_to_first_adjudication"
+    ],
+    "period": {
+     "preset": "year",
+     "year": 2028
+    }
+   }
+  },
+  "O23": {
+   "metric": "medical_claims",
+   "slots": {
+    "measures": [
+     "claims",
+     "net_payer_paid_usd"
+    ],
+    "period": {
+     "preset": "year",
+     "year": 2028
+    },
+    "group_by": "payer"
+   }
+  },
+  "O29": {
+   "metric": "medical_claims",
+   "slots": {
+    "measures": [
+     "first_pass_overturn_rate"
+    ]
+   }
+  },
+  "O30": {
+   "metric": "contractual_writeoffs",
+   "slots": {
+    "period": {
+     "preset": "year",
+     "year": 2028
+    }
+   }
+  },
+  "K26": {
+   "metric": "feed_quality",
+   "slots": {
+    "stream": "labs",
+    "measures": [
+     "undated_rows"
+    ]
+   }
+  },
+  "L37": {
+   "metric": "feed_quality",
+   "slots": {
+    "stream": "labs",
+    "measures": [
+     "undated_rows"
+    ]
+   }
+  },
+  "O37": {
+   "metric": "feed_quality",
+   "slots": {
+    "stream": "labs",
+    "measures": [
+     "pct_undated"
+    ]
+   }
+  },
+  "K27": {
+   "metric": "feed_quality",
+   "slots": {
+    "stream": "labs",
+    "measures": [
+     "avg_lag_days"
+    ],
+    "period": {
+     "preset": "year",
+     "year": 2028
+    },
+    "period_basis": "arrival_date"
+   }
+  },
+  "K29": {
+   "metric": "feed_quality",
+   "slots": {
+    "stream": "encounters",
+    "unit": "encounters",
+    "measures": [
+     "undated_rows"
+    ]
+   }
+  },
+  "M37": {
+   "metric": "feed_quality",
+   "slots": {
+    "stream": "labs",
+    "measures": [
+     "rows",
+     "undated_rows",
+     "pct_undated"
+    ],
+    "group_by": "source_system"
+   }
+  },
+  "M38": {
+   "metric": "feed_quality",
+   "slots": {
+    "stream": "labs",
+    "measures": [
+     "pct_late"
+    ],
+    "lag_days": 3,
+    "lag_op": "gt",
+    "period": {
+     "preset": "ytd"
+    }
+   }
+  },
+  "N39": {
+   "metric": "feed_quality",
+   "slots": {
+    "stream": "labs",
+    "measures": [
+     "avg_lag_days"
+    ],
+    "period": {
+     "preset": "ytd"
+    }
+   }
+  },
+  "N41": {
+   "metric": "feed_quality",
+   "slots": {
+    "stream": "encounters",
+    "unit": "encounters",
+    "measures": [
+     "pct_late"
+    ],
+    "lag_days": 3,
+    "lag_op": "ge",
+    "period": {
+     "preset": "ytd"
+    }
+   }
+  },
+  "O38": {
+   "metric": "feed_quality",
+   "slots": {
+    "stream": "medical_claims",
+    "measures": [
+     "rows",
+     "late_rows",
+     "avg_lag_days"
+    ],
+    "lag_days": 30,
+    "group_by": "year"
+   }
+  },
+  "M40": {
+   "metric": "stale_booked_appointments",
+   "slots": {}
+  },
+  "O40": {
+   "metric": "duplicate_lab_rows",
+   "slots": {}
+  },
+  "N40": {
+   "metric": "original_claims_missing_member_id",
+   "slots": {}
+  },
+  "K28": {
+   "metric": null,
+   "why": "open lab orders without a result are not a governed metric"
+  },
+  "L40": {
+   "metric": null,
+   "why": "open lab orders without a result are not a governed metric"
+  },
+  "K30": {
+   "metric": null,
+   "why": "late encounters by practice is not a governed grouping"
+  },
+  "K31": {
+   "metric": null,
+   "why": "partial onset dates are not a governed metric"
+  },
+  "L38": {
+   "metric": null,
+   "why": "claim arrival lag measured from the service date is not a governed metric"
+  },
+  "L39": {
+   "metric": null,
+   "why": "orphan lab results are not a governed metric"
+  },
+  "L41": {
+   "metric": null,
+   "why": "duplicate encounter ids are not a governed metric"
+  },
+  "M39": {
+   "metric": null,
+   "why": "remittance without adjudication is not a governed metric"
+  },
+  "M41": {
+   "metric": null,
+   "why": "lab tests with several units is not a governed metric"
+  },
+  "N38": {
+   "metric": null,
+   "why": "stuck-open encounters are not a governed metric"
+  },
+  "O39": {
+   "metric": null,
+   "why": "stuck-open encounters are not a governed metric"
+  },
+  "C10": {
+   "metric": null,
+   "why": "ADT readmission percentage on raw discharge records is not a governed metric"
+  },
+  "L46": {
+   "metric": null,
+   "why": "race/ethnicity comparisons need data the warehouse does not hold"
+  },
+  "L49": {
+   "metric": null,
+   "why": "RAF scores are not in the data"
+  },
+  "K25": {
+   "metric": null,
+   "why": "referral loop closure (booked status updates) is not a governed metric"
+  },
+  "L18": {
+   "metric": "visit_followup",
+   "slots": {
+    "index_classes": [
+     "inpatient",
+     "observation"
+    ],
+    "index_anchor": "discharge_date",
+    "period": {
+     "preset": "trailing_months",
+     "months": 12
+    },
+    "followup_classes": [
+     "primary_care",
+     "specialist",
+     "home_health"
+    ],
+    "days_min": 1,
+    "days_max": 7
+   }
+  },
+  "M17": {
+   "metric": "visit_followup",
+   "slots": {
+    "index_classes": [
+     "ed"
+    ],
+    "period": {
+     "preset": "ytd"
+    },
+    "followup_classes": [
+     "primary_care",
+     "specialist",
+     "telephone"
+    ],
+    "days_min": 1,
+    "days_max": 7
+   }
+  },
+  "N04": {
+   "metric": "patient_cohort",
+   "slots": {
+    "population": [
+     {
+      "kind": "medication",
+      "groups": [
+       "insulin"
+      ],
+      "evidence": "any_record"
+     }
+    ],
+    "returns": "count"
+   }
+  },
+  "N05": {
+   "metric": "patient_cohort",
+   "slots": {
+    "population": [
+     {
+      "kind": "condition",
+      "concepts": [
+       "heart_failure",
+       "heart_failure_reduced_ef"
+      ]
+     },
+     {
+      "kind": "medication",
+      "groups": [
+       "beta_blocker"
+      ],
+      "evidence": "any_record",
+      "role": "exclude"
+     }
+    ],
+    "returns": "patient_set"
+   }
+  },
+  "N13": {
+   "metric": null,
+   "why": "specialist visits identified by specialty organization are not a governed visit class"
+  },
+  "N14": {
+   "metric": "post_discharge_followup_7d",
+   "slots": {}
+  },
+  "N17": {
+   "metric": "pcp_visits_per_1000_attributed",
+   "slots": {
+    "period": {
+     "preset": "year",
+     "year": 2028
+    }
+   }
+  },
+  "N19": {
+   "metric": null,
+   "why": "referrals by requested specialty is not a governed grouping"
+  },
+  "N20": {
+   "metric": null,
+   "why": "ED-to-hospital conversion through encounter links is not a governed metric"
+  },
+  "O18": {
+   "metric": null,
+   "why": "ED discharges home with practice follow-up is not a governed metric"
+  },
+  "O19": {
+   "metric": "patient_cohort",
+   "slots": {
+    "population": [
+     {
+      "kind": "demographic",
+      "field": "age",
+      "min": 18
+     },
+     {
+      "kind": "visit",
+      "classes": [
+       "primary_care"
+      ],
+      "min_count": 1,
+      "period": {
+       "preset": "trailing_months",
+       "months": 12
+      },
+      "role": "exclude"
+     }
+    ],
+    "returns": "count"
+   }
+  }
+ }
+}

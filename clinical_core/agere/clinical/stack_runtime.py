@@ -173,6 +173,9 @@ class Stack:
             if readings and isinstance(result.get('answer'),dict):  # FM-19: both defensible readings, never a silent pick
                 from .verification_v2 import attach_readings
                 result={**result,'answer':attach_readings(result['answer'],readings)}
+            if planning=='auto' and isinstance(receipt,dict) and isinstance(result.get('answer'),dict):  # metric-first answer contract
+                from .metric_router import finalize_answer
+                result={**result,'answer':finalize_answer(result['answer'],receipt)}
             from .economical_planner import economics
             costing=economics(receipt if planning=='auto' else {'steps':[{'receipt':receipt}]})
             return {**result,'question':question,'route':'economical_composition_local_execution' if planning=='auto' else 'frontier_composition_local_execution',

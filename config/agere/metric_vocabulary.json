@@ -1,0 +1,56 @@
+{
+  "schema": "agere-metric-vocabulary/1",
+  "summary": "Governed value sets shared by the metric families (metric_families.py). Each class names the received source values that are members; nothing outside these lists is counted, nothing is inferred. Synthetic data only.",
+  "visit_classes": {
+    "ed": {"types": ["emergency", "ED", "ED stroke alert"], "summary": "Emergency department visits (definitions.json emergency_visit)."},
+    "urgent_care": {"types": ["urgent_care", "urgentcare"], "summary": "Urgent care visits."},
+    "inpatient": {"types": ["inpatient", "Inpatient POD3", "Inpatient HD3", "L&D admission"], "summary": "Inpatient admissions (observation, SNF and ED excluded; definitions.json inpatient_admission)."},
+    "observation": {"types": ["observation"], "summary": "Observation stays."},
+    "primary_care": {"types": ["primary_care", "office", "pediatric_office", "wellness"], "summary": "In-person primary care visits (primary care, office, pediatric office, wellness; definitions.json primary_care_visit)."},
+    "annual_physical": {"types": ["Annual physical"], "summary": "Annual physical visits (named separately in the source)."},
+    "ambulatory": {"types": ["ambulatory"], "summary": "Ambulatory visits (source type 'ambulatory')."},
+    "outpatient": {"types": ["outpatient"], "summary": "Outpatient visits (source type 'outpatient')."},
+    "specialist": {"types": ["specialist_office", "specialty_followup"], "summary": "Specialist office and specialty follow-up visits."},
+    "telephone": {"types": ["telephone"], "summary": "Telephone encounters."},
+    "video": {"types": ["virtual"], "summary": "Video (virtual) visits."},
+    "home_health": {"types": ["home_health"], "summary": "Home health visits."},
+    "snf": {"types": ["snf"], "summary": "Skilled nursing facility stays."},
+    "hospice": {"types": ["hospice"], "summary": "Hospice encounters."}
+  },
+  "drug_groups": {
+    "statin": {"classes": ["statin"], "summary": "Any statin (atorvastatin, simvastatin, rosuvastatin, pravastatin, lovastatin, pitavastatin, fluvastatin)."},
+    "beta_blocker": {"classes": ["beta_blocker", "hf_evidence_based_beta_blocker"], "summary": "Any beta-blocker."},
+    "hf_evidence_based_beta_blocker": {"classes": ["hf_evidence_based_beta_blocker"], "ingredients_like": ["carvedilol", "bisoprolol", "metoprolol succinate"], "summary": "Evidence-based HF beta-blockers: carvedilol, bisoprolol, metoprolol succinate."},
+    "ace_inhibitor": {"classes": ["ace_inhibitor"], "summary": "ACE inhibitors."},
+    "arb": {"classes": ["arb"], "summary": "Angiotensin receptor blockers."},
+    "arni": {"classes": ["arni"], "summary": "ARNI (sacubitril/valsartan)."},
+    "mra": {"classes": ["mra"], "summary": "Mineralocorticoid receptor antagonists (spironolactone, eplerenone)."},
+    "loop_diuretic": {"classes": ["loop_diuretic"], "summary": "Loop diuretics."},
+    "thiazide_diuretic": {"classes": ["thiazide_diuretic"], "summary": "Thiazide diuretics."},
+    "antiplatelet": {"classes": ["antiplatelet"], "summary": "Antiplatelets (aspirin, clopidogrel, prasugrel, ticagrelor)."},
+    "anticoagulant": {"classes": ["anticoagulant"], "summary": "Anticoagulants."},
+    "insulin": {"classes": ["insulin"], "names_like": ["insulin", "humulin"], "summary": "Any insulin."},
+    "metformin": {"classes": ["metformin"], "summary": "Metformin."},
+    "sglt2_inhibitor": {"classes": ["sglt2_inhibitor"], "summary": "SGLT2 inhibitors."},
+    "glp1_agonist": {"classes": ["glp1_agonist"], "summary": "GLP-1 receptor agonists."},
+    "bisphosphonate": {"classes": ["bisphosphonate"], "summary": "Bisphosphonates (alendronate, risedronate, ibandronate, zoledronate)."},
+    "nsaid": {"classes": ["nsaid"], "summary": "NSAIDs."},
+    "opioid": {"classes": ["opioid"], "summary": "Opioids."},
+    "benzodiazepine": {"classes": ["benzodiazepine"], "summary": "Benzodiazepines."},
+    "ssri": {"classes": ["ssri"], "summary": "SSRIs."},
+    "inhaled_corticosteroid": {"classes": ["inhaled_corticosteroid"], "summary": "Inhaled corticosteroids."},
+    "levothyroxine": {"classes": ["levothyroxine"], "summary": "Levothyroxine."},
+    "calcium_channel_blocker": {"classes": ["calcium_channel_blocker"], "summary": "Calcium channel blockers."},
+    "first_generation_antihistamine": {"classes": ["first_generation_antihistamine"], "summary": "First-generation antihistamines."},
+    "skeletal_muscle_relaxant": {"classes": ["skeletal_muscle_relaxant"], "summary": "Skeletal muscle relaxants."}
+  },
+  "medication_evidence": {
+    "dispensed": {"where": "m.source_stream = 'pharmacy_dispenses' AND m.status = 'dispensed'", "summary": "Picked up: pharmacy dispense records with status 'dispensed' (prepared and returned-to-stock rows are not pickups)."},
+    "any_record": {"where": "m.source_stream IN ('medication_lists','medication_orders','pharmacy_dispenses','pharmacy_claims','pharmacy_history')", "summary": "On record anywhere: medication list, orders, dispenses, pharmacy claims or pharmacy history."}
+  },
+  "social_needs": {
+    "food": {"needs": ["food"], "summary": "Food insecurity reported on a social needs screen."},
+    "transportation": {"needs": ["transport"], "summary": "A transportation problem reported on any social needs screen."},
+    "cost_of_care": {"needs": ["cost_of_care"], "summary": "Trouble paying for care or medical bills (social or financial screen)."}
+  }
+}

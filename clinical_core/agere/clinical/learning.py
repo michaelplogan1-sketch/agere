@@ -113,6 +113,7 @@ def capture_verified(path, question, planner_receipt, answer):
     if (hosted.get('verification') or {}).get('judge_findings'): reasons.append('judge query failed a deterministic check')
     if (hosted.get('verification') or {}).get('dissent'): reasons.append('an independent candidate disagrees')
     if hosted.get('readings') or answer.get('readings'): reasons.append('two defensible readings')
+    if (pr.get('acceptance') or {}).get('status') == 'low_confidence': reasons.append('low-confidence free-form SQL (metric_router.acceptance)')
     db = _db(path)
     try:
         if reasons:
