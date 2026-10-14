@@ -1,0 +1,3026 @@
+{
+ "schema": "agere-metric-first-replay/1",
+ "stack": "artifacts/agere-healthcare-v123/stack",
+ "summary": {
+  "questions": 189,
+  "ladder_correct": 113,
+  "ladder_precision": 0.598,
+  "covered_by_governed_metric": 143,
+  "coverage": 0.757,
+  "oracle_metric_correct_on_covered": 124,
+  "oracle_precision_on_covered": 0.867,
+  "ladder_precision_on_covered": 0.615,
+  "uncovered": 46,
+  "ladder_precision_on_uncovered": 0.543,
+  "uncovered_ladder_verified_by_lint": 2,
+  "verified_correct": 1,
+  "uncovered_ladder_low_confidence": 44,
+  "low_confidence_correct": 24,
+  "confident_answers": 145,
+  "confident_precision": 0.862,
+  "confident_coverage": 0.767
+ },
+ "rows": [
+  {
+   "id": "C10",
+   "answer_type": "value",
+   "ladder_correct": false,
+   "ladder_agreement": "judge_own",
+   "covered": false,
+   "reason": "ADT readmission percentage on raw discharge records is not a governed metric",
+   "acceptance": {
+    "status": "low_confidence",
+    "basis": "free-form SQL without independent agreement or a governed metric to check it against (agreement: judge_own)"
+   }
+  },
+  {
+   "id": "K01",
+   "answer_type": "count",
+   "ladder_correct": true,
+   "ladder_agreement": "primary=second",
+   "covered": true,
+   "metric_correct": true,
+   "metric": "patient_cohort",
+   "version": 1,
+   "unaccounted_numbers": [],
+   "query": "SELECT count(*) AS patients FROM patient p WHERE (p.patient_id IN (SELECT c.patient_id FROM concept_patient c WHERE c.kind = 'condition' AND c.concept IN ('heart_failure', 'heart_failure_reduced_ef')))",
+   "metric_result": "[[297]]",
+   "acceptance": {
+    "status": "low_confidence",
+    "basis": "free-form SQL without independent agreement or a governed metric to check it against (agreement: primary=second)"
+   }
+  },
+  {
+   "id": "K02",
+   "answer_type": "patient_set",
+   "ladder_correct": true,
+   "ladder_agreement": "judge_own",
+   "covered": true,
+   "metric_correct": false,
+   "metric": "patient_cohort",
+   "version": 1,
+   "unaccounted_numbers": [],
+   "query": "SELECT p.patient_id FROM patient p WHERE (p.patient_id IN (SELECT c.patient_id FROM concept_patient c WHERE c.kind = 'condition' AND c.concept IN ('diabetes'))) AND (p.patient_id IN (SELECT c.patient_id FROM concept_patient c WHERE c.kind = 'condition' AND c.concept IN ('chronic_kidney_disease'))) ORDER BY 1",
+   "metric_result": "[[\"P-1005\"], [\"P-5002\"], [\"SYN-0215A28F-EE8\"], [\"SYN-0345CC60-B65\"], [\"SYN-057279DA-203\"], [\"SYN-0762C810-EA2\"]]",
+   "acceptance": {
+    "status": "low_confidence",
+    "basis": "free-form SQL without independent agreement or a governed metric to check it against (agreement: judge_own)"
+   }
+  },
+  {
+   "id": "K03",
+   "answer_type": "count",
+   "ladder_correct": true,
+   "ladder_agreement": "primary=second",
+   "covered": true,
+   "metric_correct": true,
+   "metric": "patient_cohort",
+   "version": 1,
+   "unaccounted_numbers": [],
+   "query": "SELECT count(*) AS patients FROM patient p WHERE (p.patient_id IN (SELECT m.patient_id FROM measurement m WHERE (m.concept = 'hba1c') AND (m.value_canonical IS NOT NULL AND coalesce(m.result_status, '') <> 'cancelled') AND (m.value_canonical >= 6.5)))",
+   "metric_result": "[[700]]",
+   "acceptance": {
+    "status": "low_confidence",
+    "basis": "free-form SQL without independent agreement or a governed metric to check it against (agreement: primary=second)"
+   }
+  },
+  {
+   "id": "K04",
+   "answer_type": "count",
+   "ladder_correct": true,
+   "ladder_agreement": "judge=second",
+   "covered": true,
+   "metric_correct": true,
+   "metric": "patient_cohort",
+   "version": 1,
+   "unaccounted_numbers": [],
+   "query": "SELECT count(*) AS patients FROM patient p WHERE (p.patient_id IN (SELECT c.patient_id FROM concept_patient c WHERE c.kind = 'condition' AND c.concept IN ('hypertension'))) AND (NOT (p.patient_id IN (SELECT m.patient_id FROM measurement m WHERE (m.concept = 'ldl') AND (m.value_canonical IS NOT NULL AND coalesce(m.result_status, '') <> 'cancelled'))))",
+   "metric_result": "[[111]]",
+   "acceptance": {
+    "status": "low_confidence",
+    "basis": "free-form SQL without independent agreement or a governed metric to check it against (agreement: judge=second)"
+   }
+  },
+  {
+   "id": "K05",
+   "answer_type": "patient_set",
+   "ladder_correct": true,
+   "ladder_agreement": "primary=second",
+   "covered": true,
+   "metric_correct": true,
+   "metric": "patient_cohort",
+   "version": 1,
+   "unaccounted_numbers": [
+    1.0
+   ],
+   "query": "SELECT p.patient_id FROM patient p WHERE (p.patient_id IN (SELECT m.patient_id FROM measurement m WHERE (m.concept = 'egfr') AND (m.value_canonical IS NOT NULL AND coalesce(m.result_status, '') <> 'cancelled') AND (m.value_canonical < 30))) ORDER BY 1",
+   "metric_result": "[[\"P-1003\"], [\"P-1005\"], [\"P-5002\"], [\"SYN-001C49DB-BE3\"], [\"SYN-020834F4-B9E\"], [\"SYN-0215A28F-EE8\"]]",
+   "acceptance": {
+    "status": "low_confidence",
+    "basis": "free-form SQL without independent agreement or a governed metric to check it against (agreement: primary=second)"
+   }
+  },
+  {
+   "id": "K06",
+   "answer_type": "count",
+   "ladder_correct": true,
+   "ladder_agreement": "judge=second",
+   "covered": true,
+   "metric_correct": true,
+   "metric": "patient_cohort",
+   "version": 1,
+   "unaccounted_numbers": [
+    30.0,
+    40.0
+   ],
+   "query": "SELECT count(*) AS patients FROM patient p WHERE (p.patient_id IN (SELECT c.patient_id FROM concept_patient c WHERE c.kind = 'condition' AND c.concept IN ('obesity')))",
+   "metric_result": "[[771]]",
+   "acceptance": {
+    "status": "low_confidence",
+    "basis": "departs from governed metric adult_obesity_computed_bmi: metric adult_obesity_computed_bmi restricts the population to ages 18+; the query applies no age band; metric adult_obesity_computed_bmi: the question asks for a BMI computed from height and weight, not the obesity diagnosis"
+   }
+  },
+  {
+   "id": "K09",
+   "answer_type": "count",
+   "ladder_correct": true,
+   "ladder_agreement": "primary=second",
+   "covered": true,
+   "metric_correct": true,
+   "metric": "patient_cohort",
+   "version": 1,
+   "unaccounted_numbers": [],
+   "query": "SELECT count(*) AS patients FROM patient p WHERE (p.patient_id IN (SELECT m.patient_id FROM measurement m WHERE (m.concept = 'ldl') AND (m.value_canonical IS NOT NULL AND coalesce(m.result_status, '') <> 'cancelled') AND (m.value_canonical >= 190)))",
+   "metric_result": "[[45]]",
+   "acceptance": {
+    "status": "verified",
+    "basis": "lint-clean against governed metric ldl_190_ever@v1"
+   }
+  },
+  {
+   "id": "K10",
+   "answer_type": "count",
+   "ladder_correct": false,
+   "ladder_agreement": "primary=second",
+   "covered": true,
+   "metric_correct": true,
+   "metric": "patient_cohort",
+   "version": 1,
+   "unaccounted_numbers": [],
+   "query": "SELECT count(*) AS patients FROM patient p WHERE (p.patient_id IN (SELECT m.patient_id FROM measurement m WHERE (m.concept = 'potassium') AND (m.value_canonical IS NOT NULL AND coalesce(m.result_status, '') <> 'cancelled') AND (m.value_canonical > 5) AND (m.event_date BETWEEN '2029-01-01' AND '2029-06-30')))",
+   "metric_result": "[[46]]",
+   "acceptance": {
+    "status": "low_confidence",
+    "basis": "free-form SQL without independent agreement or a governed metric to check it against (agreement: primary=second)"
+   }
+  },
+  {
+   "id": "K13",
+   "answer_type": "value",
+   "ladder_correct": true,
+   "ladder_agreement": "primary=second",
+   "covered": true,
+   "metric_correct": true,
+   "metric": "encounter_volume",
+   "version": 1,
+   "unaccounted_numbers": [],
+   "query": "SELECT round(1000.0 * (SELECT count(DISTINCT v.encounter_id) FROM visit v JOIN patient p ON p.patient_id = v.patient_id WHERE (v.type IN ('emergency', 'ED', 'ED stroke alert')) AND (v.event_date BETWEEN '2026-01-01' AND '2026-12-31') AND 1=1) / (SELECT count(*) FROM patient p WHERE 1=1), 1) AS per_1000",
+   "metric_result": "[[126.4]]",
+   "acceptance": {
+    "status": "verified",
+    "basis": "lint-clean against governed metric ed_visits_per_1000@v1"
+   }
+  },
+  {
+   "id": "K14",
+   "answer_type": "table",
+   "ladder_correct": false,
+   "ladder_agreement": "primary=second",
+   "covered": true,
+   "metric_correct": true,
+   "metric": "encounter_volume",
+   "version": 1,
+   "unaccounted_numbers": [],
+   "query": "SELECT substr(v.event_date, 1, 4) || '-H' || CASE WHEN substr(v.event_date, 6, 2) <= '06' THEN '1' ELSE '2' END AS half_year, count(DISTINCT v.encounter_id) AS visits FROM visit v JOIN patient p ON p.patient_id = v.patient_id WHERE (v.type IN ('inpatient', 'Inpatient POD3', 'Inpatient HD3', 'L&D admission')) AND (v.event_date BETWEEN '2026-01-01' AND '2026-12-31') AND 1=1 GROUP BY 1 ORDER BY 1",
+   "metric_result": "[[\"2026-H1\", 37], [\"2026-H2\", 33]]",
+   "acceptance": {
+    "status": "verified",
+    "basis": "lint-clean against governed metric observation_stays@v1"
+   }
+  },
+  {
+   "id": "K15",
+   "answer_type": "table",
+   "ladder_correct": true,
+   "ladder_agreement": "primary=second",
+   "covered": true,
+   "metric_correct": true,
+   "metric": "encounter_volume",
+   "version": 1,
+   "unaccounted_numbers": [],
+   "query": "SELECT p.pcp_practice_id AS attributed_practice, count(DISTINCT v.encounter_id) AS visits FROM visit v JOIN patient p ON p.patient_id = v.patient_id WHERE (v.type IN ('emergency', 'ED', 'ED stroke alert')) AND (v.event_date BETWEEN '2029-01-01' AND '2029-08-15') AND 1=1 GROUP BY 1 ORDER BY 1",
+   "metric_result": "[[\"WH-PRACTICE-0\", 9], [\"WH-PRACTICE-1\", 11], [\"WH-PRACTICE-2\", 13], [\"WH-PRACTICE-3\", 13], [\"WH-PRACTICE-4\", 11], [\"WH-PRACTICE-5\", 15]]",
+   "acceptance": {
+    "status": "low_confidence",
+    "basis": "free-form SQL without independent agreement or a governed metric to check it against (agreement: primary=second)"
+   }
+  },
+  {
+   "id": "K16",
+   "answer_type": "count",
+   "ladder_correct": false,
+   "ladder_agreement": "judge_own",
+   "covered": true,
+   "metric_correct": true,
+   "metric": "visit_followup",
+   "version": 1,
+   "unaccounted_numbers": [],
+   "query": "SELECT count(DISTINCT e.encounter_id) AS index_visits_followed_up FROM visit e WHERE (e.type IN ('emergency', 'ED', 'ED stroke alert')) AND (e.event_date BETWEEN '2026-01-01' AND '2026-12-31') AND EXISTS (SELECT 1 FROM visit f WHERE f.patient_id = e.patient_id AND f.encounter_id <> e.encounter_id AND f.type IN ('primary_care', 'office', 'pediatric_office', 'wellness', 'specialist_office', 'specialty_followup', 'ambulatory', 'outpatient') AND julianday(f.event_date) - julianday(e.event_date) BETWEEN 0 AND 7)",
+   "metric_result": "[[81]]",
+   "acceptance": {
+    "status": "verified",
+    "basis": "lint-clean against governed metric ed_followup_7d@v1"
+   }
+  },
+  {
+   "id": "K17",
+   "answer_type": "count",
+   "ladder_correct": true,
+   "ladder_agreement": "primary=second",
+   "covered": true,
+   "metric_correct": true,
+   "metric": "patient_cohort",
+   "version": 1,
+   "unaccounted_numbers": [],
+   "query": "SELECT count(*) AS patients FROM patient p WHERE (p.patient_id IN (SELECT v.patient_id FROM visit v WHERE (v.type IN ('emergency', 'ED', 'ED stroke alert')) AND (v.event_date BETWEEN '2028-08-16' AND '2029-08-15') GROUP BY v.patient_id HAVING count(DISTINCT v.encounter_id) >= 2))",
+   "metric_result": "[[9]]",
+   "acceptance": {
+    "status": "verified",
+    "basis": "lint-clean against governed metric repeat_ed_users_12m@v1"
+   }
+  },
+  {
+   "id": "K18",
+   "answer_type": "table",
+   "ladder_correct": true,
+   "ladder_agreement": "primary=second",
+   "covered": true,
+   "metric_correct": true,
+   "metric": "encounter_volume",
+   "version": 1,
+   "unaccounted_numbers": [],
+   "query": "SELECT substr(v.event_date, 1, 7) AS month, count(DISTINCT v.encounter_id) AS visits FROM visit v JOIN patient p ON p.patient_id = v.patient_id WHERE (v.type IN ('urgent_care', 'urgentcare')) AND (v.event_date BETWEEN '2029-01-01' AND '2029-06-30') AND 1=1 GROUP BY 1 ORDER BY 1",
+   "metric_result": "[[\"2029-01\", 11], [\"2029-02\", 13], [\"2029-03\", 14], [\"2029-04\", 12], [\"2029-05\", 6], [\"2029-06\", 11]]",
+   "acceptance": {
+    "status": "low_confidence",
+    "basis": "free-form SQL without independent agreement or a governed metric to check it against (agreement: primary=second)"
+   }
+  },
+  {
+   "id": "K19",
+   "answer_type": "value",
+   "ladder_correct": true,
+   "ladder_agreement": "primary=second",
+   "covered": true,
+   "metric_correct": true,
+   "metric": "medical_claims",
+   "version": 1,
+   "unaccounted_numbers": [],
+   "query": "SELECT round(100.0 * sum(ever_denied) / count(*), 1) AS ever_denied_rate FROM claim WHERE (benefit_year = '2028')",
+   "metric_result": "[[4.8]]",
+   "acceptance": {
+    "status": "verified",
+    "basis": "lint-clean against governed metric first_pass_denial_rate@v1"
+   }
+  },
+  {
+   "id": "K21",
+   "answer_type": "table",
+   "ladder_correct": true,
+   "ladder_agreement": "judge=second",
+   "covered": true,
+   "metric_correct": true,
+   "metric": "medical_claims",
+   "version": 1,
+   "unaccounted_numbers": [],
+   "query": "SELECT payer AS payer, round(sum(net_payer_paid_cents) / 100.0, 2) AS net_payer_paid_usd FROM claim WHERE (benefit_year = '2028') GROUP BY 1 ORDER BY 1",
+   "metric_result": "[[\"WH-PAYER-0\", 132844.83], [\"WH-PAYER-1\", 168208.22], [\"WH-PAYER-2\", 107167.84]]",
+   "acceptance": {
+    "status": "low_confidence",
+    "basis": "free-form SQL without independent agreement or a governed metric to check it against (agreement: judge=second)"
+   }
+  },
+  {
+   "id": "K22",
+   "answer_type": "table",
+   "ladder_correct": true,
+   "ladder_agreement": "primary=second",
+   "covered": true,
+   "metric_correct": true,
+   "metric": "patient_payments",
+   "version": 1,
+   "unaccounted_numbers": [],
+   "query": "SELECT json_extract(r.payload, '$.payment_channel') AS payment_channel, round(sum(json_extract(r.payload, '$.amount_cents')) / 100.0, 2) AS amount_usd FROM record r WHERE (r.stream = 'patient_payments') AND (r.event_date BETWEEN '2028-01-01' AND '2028-12-31') GROUP BY 1 ORDER BY 1",
+   "metric_result": "[[\"ACH\", 216681.88], [\"card\", 218759.97], [\"cash\", 223487.36]]",
+   "acceptance": {
+    "status": "low_confidence",
+    "basis": "free-form SQL without independent agreement or a governed metric to check it against (agreement: primary=second)"
+   }
+  },
+  {
+   "id": "K23",
+   "answer_type": "table",
+   "ladder_correct": true,
+   "ladder_agreement": "judge=second",
+   "covered": true,
+   "metric_correct": true,
+   "metric": "pharmacy_returns_to_stock",
+   "version": 1,
+   "unaccounted_numbers": [],
+   "query": "SELECT json_extract(r.payload, '$.return_reason') AS return_reason, count(DISTINCT json_extract(r.payload, '$.fill_id')) AS fills FROM record r WHERE (r.stream = 'pharmacy_dispenses') AND (json_extract(r.payload, '$.status') = 'returned_to_stock') AND (r.event_date BETWEEN '2028-01-01' AND '2028-12-31') GROUP BY 1 ORDER BY 1",
+   "metric_result": "[[\"not_collected_after_pharmacy_hold\", 692], [\"patient_declined_collection\", 643]]",
+   "acceptance": {
+    "status": "low_confidence",
+    "basis": "free-form SQL without independent agreement or a governed metric to check it against (agreement: judge=second)"
+   }
+  },
+  {
+   "id": "K24",
+   "answer_type": "value",
+   "ladder_correct": true,
+   "ladder_agreement": "primary=second",
+   "covered": true,
+   "metric_correct": true,
+   "metric": "no_show_rate",
+   "version": 1,
+   "unaccounted_numbers": [],
+   "query": "SELECT round(100.0 * sum(ever_no_show) / count(*), 1) AS no_show_rate FROM appointment WHERE scheduled_date BETWEEN '2028-01-01' AND '2028-12-31' AND (kept = 1 OR ever_no_show = 1)",
+   "metric_result": "[[8.6]]",
+   "acceptance": {
+    "status": "low_confidence",
+    "basis": "departs from governed metric no_show_rate: metric no_show_rate counts one appointment per appointment_id; the query counts raw appointments versions"
+   }
+  },
+  {
+   "id": "K25",
+   "answer_type": "table",
+   "ladder_correct": false,
+   "ladder_agreement": "judge=second",
+   "covered": false,
+   "reason": "referral loop closure (booked status updates) is not a governed metric",
+   "acceptance": {
+    "status": "low_confidence",
+    "basis": "free-form SQL without independent agreement or a governed metric to check it against (agreement: judge=second)"
+   }
+  },
+  {
+   "id": "K26",
+   "answer_type": "count",
+   "ladder_correct": true,
+   "ladder_agreement": "judge=second",
+   "covered": true,
+   "metric_correct": true,
+   "metric": "feed_quality",
+   "version": 1,
+   "unaccounted_numbers": [],
+   "query": "SELECT sum(d IS NULL) AS undated_rows FROM (SELECT record_id AS k, event_date AS d, available_date AS a, json_extract(payload, '$.source_system') AS src FROM record WHERE stream = 'labs')",
+   "metric_result": "[[16543]]",
+   "acceptance": {
+    "status": "low_confidence",
+    "basis": "free-form SQL without independent agreement or a governed metric to check it against (agreement: judge=second)"
+   }
+  },
+  {
+   "id": "K27",
+   "answer_type": "value",
+   "ladder_correct": false,
+   "ladder_agreement": "primary=second",
+   "covered": true,
+   "metric_correct": true,
+   "metric": "feed_quality",
+   "version": 1,
+   "unaccounted_numbers": [],
+   "query": "SELECT round(avg(CASE WHEN d IS NOT NULL THEN julianday(a) - julianday(d) END), 2) AS avg_lag_days FROM (SELECT record_id AS k, event_date AS d, available_date AS a, json_extract(payload, '$.source_system') AS src FROM record WHERE stream = 'labs') WHERE a BETWEEN '2028-01-01' AND '2028-12-31'",
+   "metric_result": "[[1.59]]",
+   "acceptance": {
+    "status": "low_confidence",
+    "basis": "free-form SQL without independent agreement or a governed metric to check it against (agreement: primary=second)"
+   }
+  },
+  {
+   "id": "K28",
+   "answer_type": "count",
+   "ladder_correct": false,
+   "ladder_agreement": "judge=second",
+   "covered": false,
+   "reason": "open lab orders without a result are not a governed metric",
+   "acceptance": {
+    "status": "low_confidence",
+    "basis": "free-form SQL without independent agreement or a governed metric to check it against (agreement: judge=second)"
+   }
+  },
+  {
+   "id": "K29",
+   "answer_type": "count",
+   "ladder_correct": true,
+   "ladder_agreement": "primary=second",
+   "covered": true,
+   "metric_correct": true,
+   "metric": "feed_quality",
+   "version": 1,
+   "unaccounted_numbers": [],
+   "query": "SELECT sum(d IS NULL) AS undated_rows FROM (SELECT json_extract(payload, '$.encounter_id') AS k, min(event_date) AS d, min(available_date) AS a, min(json_extract(payload, '$.source_system')) AS src FROM record WHERE stream = 'encounters' GROUP BY 1)",
+   "metric_result": "[[9]]",
+   "acceptance": {
+    "status": "low_confidence",
+    "basis": "free-form SQL without independent agreement or a governed metric to check it against (agreement: primary=second)"
+   }
+  },
+  {
+   "id": "K30",
+   "answer_type": "table",
+   "ladder_correct": true,
+   "ladder_agreement": "judge=second",
+   "covered": false,
+   "reason": "late encounters by practice is not a governed grouping",
+   "acceptance": {
+    "status": "low_confidence",
+    "basis": "free-form SQL without independent agreement or a governed metric to check it against (agreement: judge=second)"
+   }
+  },
+  {
+   "id": "K31",
+   "answer_type": "count",
+   "ladder_correct": false,
+   "ladder_agreement": "primary=second",
+   "covered": false,
+   "reason": "partial onset dates are not a governed metric",
+   "acceptance": {
+    "status": "low_confidence",
+    "basis": "free-form SQL without independent agreement or a governed metric to check it against (agreement: primary=second)"
+   }
+  },
+  {
+   "id": "K33",
+   "answer_type": "count",
+   "ladder_correct": true,
+   "ladder_agreement": "primary=second",
+   "covered": true,
+   "metric_correct": true,
+   "metric": "patient_cohort",
+   "version": 1,
+   "unaccounted_numbers": [],
+   "query": "SELECT count(*) AS patients FROM patient p WHERE (p.patient_id IN (SELECT c.patient_id FROM concept_patient c WHERE c.kind = 'condition' AND c.concept IN ('heart_failure', 'heart_failure_reduced_ef'))) AND (p.patient_id IN (SELECT s.patient_id FROM social_need s WHERE (s.need IN ('food')) AND (s.positive = 1)))",
+   "metric_result": "[[40]]",
+   "acceptance": {
+    "status": "verified",
+    "basis": "lint-clean against governed metric food_insecurity_rate@v1"
+   }
+  },
+  {
+   "id": "K34",
+   "answer_type": "value",
+   "ladder_correct": false,
+   "ladder_agreement": "judge=second",
+   "covered": false,
+   "reason": "community referral delivery rate (percent) is not a governed metric; the table metric is",
+   "acceptance": {
+    "status": "low_confidence",
+    "basis": "departs from governed metric community_referral_delivery: metric community_referral_delivery: clinic-internal referrals (referrals stream) are not community referrals"
+   }
+  },
+  {
+   "id": "K35",
+   "answer_type": "table",
+   "ladder_correct": false,
+   "ladder_agreement": "primary=second",
+   "covered": true,
+   "metric_correct": true,
+   "metric": "patient_cohort",
+   "version": 1,
+   "unaccounted_numbers": [],
+   "query": "SELECT p.coverage_type AS coverage_type, count(*) AS patients FROM patient p WHERE (p.patient_id IN (SELECT s.patient_id FROM social_need s WHERE (s.need IN ('cost_of_care')) AND (s.positive = 1))) GROUP BY 1 ORDER BY 1",
+   "metric_result": "[[\"commercial\", 57], [\"medicaid\", 13], [\"medicare\", 12], [\"uninsured\", 108]]",
+   "acceptance": {
+    "status": "low_confidence",
+    "basis": "free-form SQL without independent agreement or a governed metric to check it against (agreement: primary=second)"
+   }
+  },
+  {
+   "id": "L01",
+   "answer_type": "count",
+   "ladder_correct": true,
+   "ladder_agreement": "primary=second",
+   "covered": true,
+   "metric_correct": true,
+   "metric": "patient_cohort",
+   "version": 1,
+   "unaccounted_numbers": [],
+   "query": "SELECT count(*) AS patients FROM patient p WHERE (p.patient_id IN (SELECT c.patient_id FROM concept_patient c WHERE c.kind = 'condition' AND c.concept IN ('hypertension')))",
+   "metric_result": "[[359]]",
+   "acceptance": {
+    "status": "low_confidence",
+    "basis": "free-form SQL without independent agreement or a governed metric to check it against (agreement: primary=second)"
+   }
+  },
+  {
+   "id": "L02",
+   "answer_type": "patient_set",
+   "ladder_correct": true,
+   "ladder_agreement": "judge=second",
+   "covered": true,
+   "metric_correct": true,
+   "metric": "patient_cohort",
+   "version": 1,
+   "unaccounted_numbers": [],
+   "query": "SELECT p.patient_id FROM patient p WHERE (p.patient_id IN (SELECT c.patient_id FROM concept_patient c WHERE c.kind = 'condition' AND c.concept IN ('diabetes'))) AND (p.patient_id IN (SELECT m.patient_id FROM measurement m JOIN (SELECT m.patient_id AS pid, max(m.event_date) AS d FROM measurement m WHERE (m.concept = 'hba1c') AND (m.value_canonical IS NOT NULL AND coalesce(m.result_status, '') <> 'cancelled') AND (m.event_date IS NOT NULL) GROUP BY m.patient_id) l ON l.pid = m.patient_id AND l.d = m.event_date WHERE (m.concept = 'hba1c') AND (m.value_canonical IS NOT NULL AND coalesce(m.result_status, '') <> 'cancelled') AND (m.event_date IS NOT NULL) GROUP BY m.patient_id HAVING max(m.value_canonical) >= 8)) ORDER BY 1",
+   "metric_result": "[[\"P-1008\"], [\"P-4821\"], [\"P-6007\"], [\"SYN-0762C810-EA2\"], [\"SYN-173B14CB-B6B\"], [\"SYN-23B7B7F4-576\"]]",
+   "acceptance": {
+    "status": "low_confidence",
+    "basis": "free-form SQL without independent agreement or a governed metric to check it against (agreement: judge=second)"
+   }
+  },
+  {
+   "id": "L03",
+   "answer_type": "count",
+   "ladder_correct": true,
+   "ladder_agreement": "primary=second",
+   "covered": true,
+   "metric_correct": true,
+   "metric": "patient_cohort",
+   "version": 1,
+   "unaccounted_numbers": [],
+   "query": "SELECT count(*) AS patients FROM patient p WHERE (p.sex_reported IN ('F')) AND ((p.age_latest >= 50) AND (p.age_latest <= 74)) AND (p.coverage_type IN ('medicare', 'medicaid'))",
+   "metric_result": "[[117]]",
+   "acceptance": {
+    "status": "low_confidence",
+    "basis": "free-form SQL without independent agreement or a governed metric to check it against (agreement: primary=second)"
+   }
+  },
+  {
+   "id": "L05",
+   "answer_type": "patient_set",
+   "ladder_correct": false,
+   "ladder_agreement": "primary=second",
+   "covered": true,
+   "metric_correct": false,
+   "metric": "patient_cohort",
+   "version": 1,
+   "unaccounted_numbers": [],
+   "query": "SELECT p.patient_id FROM patient p WHERE (p.patient_id IN (SELECT m.patient_id FROM measurement m JOIN (SELECT m.patient_id AS pid, max(m.event_date) AS d FROM measurement m WHERE (m.concept = 'egfr') AND (m.value_canonical IS NOT NULL AND coalesce(m.result_status, '') <> 'cancelled') AND (m.event_date IS NOT NULL) GROUP BY m.patient_id) l ON l.pid = m.patient_id AND l.d = m.event_date WHERE (m.concept = 'egfr') AND (m.value_canonical IS NOT NULL AND coalesce(m.result_status, '') <> 'cancelled') AND (m.event_date IS NOT NULL) GROUP BY m.patient_id HAVING min(m.value_canonical) < 60)) AND (NOT (p.patient_id IN (SELECT c.patient_id FROM concept_patient c WHERE c.kind = 'condition' AND c.concept IN ('chronic_kidney_disease')))) ORDER BY 1",
+   "metric_result": "[[\"P-1001\"], [\"P-1007\"], [\"P-4821\"], [\"P-5007\"], [\"P-HF02\"], [\"P-HF04\"]]",
+   "acceptance": {
+    "status": "low_confidence",
+    "basis": "free-form SQL without independent agreement or a governed metric to check it against (agreement: primary=second)"
+   }
+  },
+  {
+   "id": "L06",
+   "answer_type": "count",
+   "ladder_correct": true,
+   "ladder_agreement": "primary=second",
+   "covered": true,
+   "metric_correct": true,
+   "metric": "patient_cohort",
+   "version": 1,
+   "unaccounted_numbers": [],
+   "query": "SELECT count(*) AS patients FROM patient p WHERE (p.patient_id IN (SELECT m.patient_id FROM measurement m WHERE (m.concept = 'ldl') AND (m.value_canonical IS NOT NULL AND coalesce(m.result_status, '') <> 'cancelled') AND (m.value_canonical >= 190)))",
+   "metric_result": "[[45]]",
+   "acceptance": {
+    "status": "verified",
+    "basis": "lint-clean against governed metric ldl_190_ever@v1"
+   }
+  },
+  {
+   "id": "L07",
+   "answer_type": "count",
+   "ladder_correct": false,
+   "ladder_agreement": "primary=second",
+   "covered": true,
+   "metric_correct": false,
+   "metric": "patient_cohort",
+   "version": 1,
+   "unaccounted_numbers": [],
+   "query": "SELECT count(*) AS patients FROM patient p WHERE (p.patient_id IN (SELECT c.patient_id FROM concept_patient c WHERE c.kind = 'condition' AND c.concept IN ('obesity'))) AND (p.patient_id IN (SELECT c.patient_id FROM concept_patient c WHERE c.kind = 'condition' AND c.concept IN ('prediabetes'))) AND (NOT (p.patient_id IN (SELECT c.patient_id FROM concept_patient c WHERE c.kind = 'condition' AND c.concept IN ('diabetes'))))",
+   "metric_result": "[[334]]",
+   "acceptance": {
+    "status": "low_confidence",
+    "basis": "free-form SQL without independent agreement or a governed metric to check it against (agreement: primary=second)"
+   }
+  },
+  {
+   "id": "L08",
+   "answer_type": "count",
+   "ladder_correct": true,
+   "ladder_agreement": "primary=second",
+   "covered": true,
+   "metric_correct": true,
+   "metric": "patient_cohort",
+   "version": 1,
+   "unaccounted_numbers": [
+    18.0
+   ],
+   "query": "SELECT count(*) AS patients FROM patient p WHERE (p.patient_id IN (SELECT c.patient_id FROM concept_patient c WHERE c.kind = 'condition' AND c.concept IN ('asthma'))) AND ((p.age_latest <= 17))",
+   "metric_result": "[[23]]",
+   "acceptance": {
+    "status": "low_confidence",
+    "basis": "free-form SQL without independent agreement or a governed metric to check it against (agreement: primary=second)"
+   }
+  },
+  {
+   "id": "L09",
+   "answer_type": "count",
+   "ladder_correct": true,
+   "ladder_agreement": "primary=second",
+   "covered": true,
+   "metric_correct": true,
+   "metric": "patient_cohort",
+   "version": 1,
+   "unaccounted_numbers": [],
+   "query": "SELECT count(*) AS patients FROM patient p WHERE (p.patient_id IN (SELECT c.patient_id FROM concept_patient c WHERE c.kind = 'condition' AND c.concept IN ('coronary_artery_disease', 'myocardial_infarction'))) AND (NOT (p.patient_id IN (SELECT c.patient_id FROM concept_patient c WHERE c.kind = 'condition' AND c.concept IN ('heart_failure', 'heart_failure_reduced_ef'))))",
+   "metric_result": "[[163]]",
+   "acceptance": {
+    "status": "low_confidence",
+    "basis": "free-form SQL without independent agreement or a governed metric to check it against (agreement: primary=second)"
+   }
+  },
+  {
+   "id": "L10",
+   "answer_type": "count",
+   "ladder_correct": true,
+   "ladder_agreement": "primary=second",
+   "covered": true,
+   "metric_correct": true,
+   "metric": "patient_cohort",
+   "version": 1,
+   "unaccounted_numbers": [],
+   "query": "SELECT count(*) AS patients FROM patient p WHERE (p.patient_id IN (SELECT m.patient_id FROM measurement m WHERE (m.concept = 'potassium') AND (m.value_canonical IS NOT NULL AND coalesce(m.result_status, '') <> 'cancelled') AND (m.value_canonical > 5) AND (m.event_date BETWEEN '2029-01-01' AND '2029-08-15')))",
+   "metric_result": "[[56]]",
+   "acceptance": {
+    "status": "low_confidence",
+    "basis": "free-form SQL without independent agreement or a governed metric to check it against (agreement: primary=second)"
+   }
+  },
+  {
+   "id": "L11",
+   "answer_type": "count",
+   "ladder_correct": true,
+   "ladder_agreement": "primary=second",
+   "covered": true,
+   "metric_correct": true,
+   "metric": "patient_cohort",
+   "version": 1,
+   "unaccounted_numbers": [],
+   "query": "SELECT count(*) AS patients FROM patient p WHERE (p.sex_reported IN ('F')) AND (p.patient_id IN (SELECT m.patient_id FROM measurement m WHERE (m.concept = 'hemoglobin') AND (m.value_canonical IS NOT NULL AND coalesce(m.result_status, '') <> 'cancelled') AND (m.value_canonical < 10) AND (m.event_date BETWEEN '2028-08-16' AND '2029-08-15')))",
+   "metric_result": "[[51]]",
+   "acceptance": {
+    "status": "low_confidence",
+    "basis": "free-form SQL without independent agreement or a governed metric to check it against (agreement: primary=second)"
+   }
+  },
+  {
+   "id": "L13",
+   "answer_type": "table",
+   "ladder_correct": true,
+   "ladder_agreement": "primary=second",
+   "covered": true,
+   "metric_correct": true,
+   "metric": "encounter_volume",
+   "version": 1,
+   "unaccounted_numbers": [],
+   "query": "SELECT substr(v.event_date, 1, 7) AS month, count(DISTINCT v.encounter_id) AS visits FROM visit v JOIN patient p ON p.patient_id = v.patient_id WHERE (v.type IN ('emergency', 'ED', 'ED stroke alert')) AND (v.event_date BETWEEN '2029-01-01' AND '2029-07-31') AND 1=1 GROUP BY 1 ORDER BY 1",
+   "metric_result": "[[\"2029-01\", 3], [\"2029-02\", 13], [\"2029-03\", 9], [\"2029-04\", 11], [\"2029-05\", 23], [\"2029-06\", 17]]",
+   "acceptance": {
+    "status": "low_confidence",
+    "basis": "free-form SQL without independent agreement or a governed metric to check it against (agreement: primary=second)"
+   }
+  },
+  {
+   "id": "L14",
+   "answer_type": "table",
+   "ladder_correct": false,
+   "ladder_agreement": "judge=second",
+   "covered": true,
+   "metric_correct": true,
+   "metric": "encounter_volume",
+   "version": 1,
+   "unaccounted_numbers": [],
+   "query": "SELECT p.coverage_type AS coverage_type, count(DISTINCT p.patient_id) AS patients, count(DISTINCT v.encounter_id) AS visits, round(1000.0 * count(DISTINCT v.encounter_id) / count(DISTINCT p.patient_id), 1) AS per_1000 FROM patient p LEFT JOIN visit v ON v.patient_id = p.patient_id AND (v.type IN ('emergency', 'ED', 'ED stroke alert')) AND (v.event_date BETWEEN '2028-08-16' AND '2029-08-15') WHERE 1=1 GROUP BY 1 ORDER BY 1",
+   "metric_result": "[[\"commercial\", 949, 60, 63.2], [\"medicaid\", 239, 19, 79.5], [\"medicare\", 287, 26, 90.6], [\"uninsured\", 139, 10, 71.9]]",
+   "acceptance": {
+    "status": "verified",
+    "basis": "lint-clean against governed metric ed_visits_per_1000@v1"
+   }
+  },
+  {
+   "id": "L15",
+   "answer_type": "table",
+   "ladder_correct": true,
+   "ladder_agreement": "primary=second",
+   "covered": true,
+   "metric_correct": true,
+   "metric": "encounter_volume",
+   "version": 1,
+   "unaccounted_numbers": [],
+   "query": "SELECT substr(v.event_date, 1, 4) || '-Q' || ((CAST(substr(v.event_date, 6, 2) AS INTEGER) + 2) / 3) AS quarter, count(DISTINCT v.encounter_id) AS visits FROM visit v JOIN patient p ON p.patient_id = v.patient_id WHERE (v.type IN ('urgent_care', 'urgentcare')) AND (v.event_date >= '2028-10-01') AND 1=1 GROUP BY 1 ORDER BY 1",
+   "metric_result": "[[\"2028-Q4\", 32], [\"2029-Q1\", 38], [\"2029-Q2\", 29], [\"2029-Q3\", 17]]",
+   "acceptance": {
+    "status": "low_confidence",
+    "basis": "free-form SQL without independent agreement or a governed metric to check it against (agreement: primary=second)"
+   }
+  },
+  {
+   "id": "L16",
+   "answer_type": "count",
+   "ladder_correct": true,
+   "ladder_agreement": "primary=second",
+   "covered": true,
+   "metric_correct": true,
+   "metric": "encounter_volume",
+   "version": 1,
+   "unaccounted_numbers": [],
+   "query": "SELECT count(DISTINCT v.encounter_id) AS visits FROM visit v JOIN patient p ON p.patient_id = v.patient_id WHERE (v.type IN ('inpatient', 'Inpatient POD3', 'Inpatient HD3', 'L&D admission', 'observation')) AND (v.event_date BETWEEN '2028-08-16' AND '2029-08-15') AND 1=1",
+   "metric_result": "[[55]]",
+   "acceptance": {
+    "status": "verified",
+    "basis": "lint-clean against governed metric observation_stays@v1"
+   }
+  },
+  {
+   "id": "L17",
+   "answer_type": "patient_set",
+   "ladder_correct": true,
+   "ladder_agreement": "primary=second",
+   "covered": true,
+   "metric_correct": true,
+   "metric": "patient_cohort",
+   "version": 1,
+   "unaccounted_numbers": [],
+   "query": "SELECT p.patient_id FROM patient p WHERE (p.patient_id IN (SELECT v.patient_id FROM visit v WHERE (v.type IN ('emergency', 'ED', 'ED stroke alert')) AND (v.event_date BETWEEN '2028-08-16' AND '2029-08-15') GROUP BY v.patient_id HAVING count(DISTINCT v.encounter_id) >= 2)) ORDER BY 1",
+   "metric_result": "[[\"SYN-0F1D6508-8F9\"], [\"SYN-21D743BD-A1B\"], [\"SYN-366F21E2-52F\"], [\"SYN-67F2F871-F14\"], [\"SYN-68B8B2D2-968\"], [\"SYN-7ABDFBCA-A81\"]]",
+   "acceptance": {
+    "status": "low_confidence",
+    "basis": "departs from governed metric repeat_ed_users_12m: metric repeat_ed_users_12m: the trailing 12-month window runs 2028-08-16..2029-08-15 (inclusive, 365 days); the query starts on 2028-08-15, one day early"
+   }
+  },
+  {
+   "id": "L18",
+   "answer_type": "value",
+   "ladder_correct": true,
+   "ladder_agreement": "judge=second",
+   "covered": true,
+   "metric_correct": true,
+   "metric": "visit_followup",
+   "version": 1,
+   "unaccounted_numbers": [],
+   "query": "SELECT round(100.0 * count(DISTINCT CASE WHEN EXISTS (SELECT 1 FROM visit f WHERE f.patient_id = e.patient_id AND f.encounter_id <> e.encounter_id AND f.type IN ('primary_care', 'office', 'pediatric_office', 'wellness', 'specialist_office', 'specialty_followup', 'home_health') AND julianday(f.event_date) - julianday(e.end_date) BETWEEN 1 AND 7) THEN e.encounter_id END) / count(DISTINCT e.encounter_id), 1) AS pct_followed_up FROM visit e WHERE (e.type IN ('inpatient', 'Inpatient POD3', 'Inpatient HD3', 'L&D admission', 'observation')) AND (e.end_date BETWEEN '2028-08-16' AND '2029-08-15')",
+   "metric_result": "[[55.6]]",
+   "acceptance": {
+    "status": "low_confidence",
+    "basis": "departs from governed metric post_discharge_followup_7d: metric post_discharge_followup_7d: follow-up counts 1-7 days after the index date; the query uses 0-7; metric post_discharge_followup_7d: index events must end 7 days before the as-of date (2029-08-08) so every follow-up window is fully observed; the query runs them to 2029-08-15; metric post_discharge_followup_7d: the discharge date is the ADT discharge event date (local business date); stay.disc"
+   }
+  },
+  {
+   "id": "L19",
+   "answer_type": "table",
+   "ladder_correct": false,
+   "ladder_agreement": "judge=second",
+   "covered": true,
+   "metric_correct": true,
+   "metric": "encounter_volume",
+   "version": 1,
+   "unaccounted_numbers": [],
+   "query": "SELECT p.pcp_practice_id AS attributed_practice, count(DISTINCT p.patient_id) AS patients, count(DISTINCT v.encounter_id) AS visits, round(1000.0 * count(DISTINCT v.encounter_id) / count(DISTINCT p.patient_id), 1) AS per_1000 FROM patient p LEFT JOIN visit v ON v.patient_id = p.patient_id AND (v.type IN ('emergency', 'ED', 'ED stroke alert')) AND (v.event_date BETWEEN '2028-08-16' AND '2029-08-15') WHERE 1=1 GROUP BY 1 ORDER BY 1",
+   "metric_result": "[[\"WH-PRACTICE-0\", 181, 13, 71.8], [\"WH-PRACTICE-1\", 212, 12, 56.6], [\"WH-PRACTICE-2\", 180, 15, 83.3], [\"WH-PRACTICE-3\", 209, 15, 71.8], [\"WH-PRACTICE-4\", 201, 14, 69.7], [\"WH-PRACTICE-5\", 211, 15, 71.1]]",
+   "acceptance": {
+    "status": "low_confidence",
+    "basis": "departs from governed metric pcp_visits_per_1000_attributed: metric pcp_visits_per_1000_attributed value set pcp_visit: only visits held at our practices count (outside specialty/dental/optometry sites do not); the query does not restrict it; metric pcp_visits_per_1000_attributed value set pcp_visit excludes emergency; the query's filter includes them; metric pcp_visits_per_1000_attributed value set pcp_visit includes Annual physical, Geri primary care, Off"
+   }
+  },
+  {
+   "id": "L21",
+   "answer_type": "value",
+   "ladder_correct": false,
+   "ladder_agreement": "primary=second",
+   "covered": true,
+   "metric_correct": true,
+   "metric": "length_of_stay",
+   "version": 1,
+   "unaccounted_numbers": [],
+   "query": "SELECT round(avg((julianday(end_time) - julianday(start_time)) * 1.0), 2) AS average_length_of_stay FROM visit WHERE (type IN ('inpatient', 'Inpatient POD3', 'Inpatient HD3', 'L&D admission')) AND (status = 'completed') AND (start_time IS NOT NULL) AND (end_time IS NOT NULL)",
+   "metric_result": "[[1.84]]",
+   "acceptance": {
+    "status": "verified",
+    "basis": "lint-clean against governed metric average_length_of_stay@v1"
+   }
+  },
+  {
+   "id": "L22",
+   "answer_type": "count",
+   "ladder_correct": true,
+   "ladder_agreement": "primary=second",
+   "covered": true,
+   "metric_correct": true,
+   "metric": "patient_cohort",
+   "version": 1,
+   "unaccounted_numbers": [],
+   "query": "SELECT count(*) AS patients FROM patient p WHERE (p.patient_id IN (SELECT v.patient_id FROM visit v WHERE (v.type IN ('emergency', 'ED', 'ED stroke alert', 'urgent_care', 'urgentcare')) AND (v.event_date BETWEEN '2028-08-16' AND '2029-08-15')))",
+   "metric_result": "[[211]]",
+   "acceptance": {
+    "status": "low_confidence",
+    "basis": "free-form SQL without independent agreement or a governed metric to check it against (agreement: primary=second)"
+   }
+  },
+  {
+   "id": "L23",
+   "answer_type": "value",
+   "ladder_correct": true,
+   "ladder_agreement": "primary=second",
+   "covered": true,
+   "metric_correct": true,
+   "metric": "medical_claims",
+   "version": 1,
+   "unaccounted_numbers": [],
+   "query": "SELECT round(sum(net_payer_paid_cents) / 100.0, 2) AS net_payer_paid_usd FROM claim WHERE (service_date BETWEEN '2028-01-01' AND '2028-12-31')",
+   "metric_result": "[[408220.89]]",
+   "acceptance": {
+    "status": "verified",
+    "basis": "lint-clean against governed metric net_payer_paid@v1"
+   }
+  },
+  {
+   "id": "L24",
+   "answer_type": "table",
+   "ladder_correct": true,
+   "ladder_agreement": "primary=second",
+   "covered": true,
+   "metric_correct": true,
+   "metric": "medical_claims",
+   "version": 1,
+   "unaccounted_numbers": [],
+   "query": "SELECT payer AS payer, count(*) AS claims, sum(first_status = 'denied') AS first_pass_denied, round(100.0 * sum(first_status = 'denied') / count(*), 1) AS first_pass_denial_rate FROM claim WHERE (service_date BETWEEN '2028-01-01' AND '2028-12-31') GROUP BY 1 ORDER BY 1",
+   "metric_result": "[[\"WH-PAYER-0\", 2536, 121, 4.8], [\"WH-PAYER-1\", 3147, 155, 4.9], [\"WH-PAYER-2\", 1920, 86, 4.5]]",
+   "acceptance": {
+    "status": "verified",
+    "basis": "lint-clean against governed metric first_pass_denial_rate@v1"
+   }
+  },
+  {
+   "id": "L25",
+   "answer_type": "count",
+   "ladder_correct": true,
+   "ladder_agreement": "primary=second",
+   "covered": true,
+   "metric_correct": true,
+   "metric": "medical_claims",
+   "version": 1,
+   "unaccounted_numbers": [],
+   "query": "SELECT sum(denied_then_paid) AS denied_then_paid FROM claim WHERE 1=1",
+   "metric_result": "[[959]]",
+   "acceptance": {
+    "status": "low_confidence",
+    "basis": "free-form SQL without independent agreement or a governed metric to check it against (agreement: primary=second)"
+   }
+  },
+  {
+   "id": "L26",
+   "answer_type": "table",
+   "ladder_correct": true,
+   "ladder_agreement": "primary=second",
+   "covered": true,
+   "metric_correct": true,
+   "metric": "pharmacy_returns_to_stock",
+   "version": 1,
+   "unaccounted_numbers": [],
+   "query": "SELECT json_extract(r.payload, '$.return_reason') AS return_reason, count(DISTINCT json_extract(r.payload, '$.fill_id')) AS fills FROM record r WHERE (r.stream = 'pharmacy_dispenses') AND (json_extract(r.payload, '$.status') = 'returned_to_stock') AND (r.event_date BETWEEN '2029-01-01' AND '2029-08-15') GROUP BY 1 ORDER BY 1",
+   "metric_result": "[[\"not_collected_after_pharmacy_hold\", 265], [\"patient_declined_collection\", 207]]",
+   "acceptance": {
+    "status": "low_confidence",
+    "basis": "free-form SQL without independent agreement or a governed metric to check it against (agreement: primary=second)"
+   }
+  },
+  {
+   "id": "L27",
+   "answer_type": "value",
+   "ladder_correct": true,
+   "ladder_agreement": "judge=primary",
+   "covered": true,
+   "metric_correct": true,
+   "metric": "no_show_rate",
+   "version": 1,
+   "unaccounted_numbers": [],
+   "query": "SELECT round(100.0 * sum(ever_no_show) / count(*), 1) AS no_show_rate FROM appointment WHERE scheduled_date BETWEEN '2028-01-01' AND '2028-12-31' AND (kept = 1 OR ever_no_show = 1)",
+   "metric_result": "[[8.6]]",
+   "acceptance": {
+    "status": "verified",
+    "basis": "lint-clean against governed metric no_show_rate@v1"
+   }
+  },
+  {
+   "id": "L28",
+   "answer_type": "table",
+   "ladder_correct": false,
+   "ladder_agreement": "judge_own",
+   "covered": false,
+   "reason": "referral leakage by specialty is not a governed metric",
+   "acceptance": {
+    "status": "low_confidence",
+    "basis": "free-form SQL without independent agreement or a governed metric to check it against (agreement: judge_own)"
+   }
+  },
+  {
+   "id": "L29",
+   "answer_type": "value",
+   "ladder_correct": false,
+   "ladder_agreement": "primary=second",
+   "covered": false,
+   "reason": "net collections (payments minus refunds) is not one governed metric",
+   "acceptance": {
+    "status": "low_confidence",
+    "basis": "free-form SQL without independent agreement or a governed metric to check it against (agreement: primary=second)"
+   }
+  },
+  {
+   "id": "L30",
+   "answer_type": "count",
+   "ladder_correct": true,
+   "ladder_agreement": "primary=second",
+   "covered": true,
+   "metric_correct": true,
+   "metric": "clearinghouse_member_id_rejections",
+   "version": 1,
+   "unaccounted_numbers": [],
+   "query": "SELECT count(DISTINCT json_extract(r.payload, '$.claim_id')) AS claims FROM record r WHERE (r.stream = 'claim_acknowledgements') AND (json_extract(r.payload, '$.status') = 'rejected_for_member_identifier') AND (r.event_date BETWEEN '2028-01-01' AND '2028-12-31')",
+   "metric_result": "[[300]]",
+   "acceptance": {
+    "status": "low_confidence",
+    "basis": "free-form SQL without independent agreement or a governed metric to check it against (agreement: primary=second)"
+   }
+  },
+  {
+   "id": "L32",
+   "answer_type": "value",
+   "ladder_correct": true,
+   "ladder_agreement": "judge=second",
+   "covered": true,
+   "metric_correct": true,
+   "metric": "patient_cohort",
+   "version": 1,
+   "unaccounted_numbers": [],
+   "query": "SELECT round(100.0 * sum(CASE WHEN ((p.patient_id IN (SELECT m.patient_id FROM measurement m JOIN (SELECT m.patient_id AS pid, max(m.event_date) AS d FROM measurement m WHERE (m.concept = 'systolic_bp') AND (m.value_canonical IS NOT NULL AND coalesce(m.result_status, '') <> 'cancelled') AND (m.event_date IS NOT NULL) GROUP BY m.patient_id) l ON l.pid = m.patient_id AND l.d = m.event_date WHERE (m.concept = 'systolic_bp') AND (m.value_canonical IS NOT NULL AND coalesce(m.result_status, '') <> 'cancelled') AND (m.event_date IS NOT NULL) GROUP BY m.patient_id HAVING min(m.value_canonical) < 140)) AND (p.patient_id IN (SELECT m.patient_id FROM measurement m JOIN (SELECT m.patient_id AS pid, max(m.event_date) AS d FROM measurement m WHERE (m.concept = 'diastolic_bp') AND (m.value_canonical IS NOT NULL AND coalesce(m.result_status, '') <> 'cancelled') AND (m.event_date IS NOT NULL) GROUP BY m.patient_id) l ON l.pid = m.patient_id AND l.d = m.event_date WHERE (m.concept = 'diastolic_bp') AND (m.value_canonical IS NOT NULL AND coalesce(m.result_status, '') <> 'cancelled') AND (m.event_date IS NOT NULL) GROUP BY m.patient_id HAVING min(m.value_canonical) < 90))) THEN 1 ELSE 0 END) / count(*), 1) AS percent FROM patient p WHERE (p.patient_id IN (SELECT c.patient_id FROM concept_patient c WHERE c.kind = 'condition' AND c.concept IN ('hypertension'))) AND (p.patient_id IN (SELECT m.patient_id FROM measurement m WHERE (m.concept = 'systolic_bp') AND (m.value_canonical IS NOT NULL AND coalesce(m.result_status, '') <> 'cancelled') AND (m.event_date IS NOT NULL)))",
+   "metric_result": "[[74.9]]",
+   "acceptance": {
+    "status": "low_confidence",
+    "basis": "free-form SQL without independent agreement or a governed metric to check it against (agreement: judge=second)"
+   }
+  },
+  {
+   "id": "L33",
+   "answer_type": "value",
+   "ladder_correct": false,
+   "ladder_agreement": "judge=second",
+   "covered": true,
+   "metric_correct": true,
+   "metric": "patient_cohort",
+   "version": 1,
+   "unaccounted_numbers": [],
+   "query": "SELECT round(100.0 * sum(CASE WHEN (p.patient_id IN (SELECT m.patient_id FROM medication m WHERE (((m.drug_class IN ('statin')))) AND (m.source_stream = 'pharmacy_dispenses' AND m.status = 'dispensed') AND (m.event_date BETWEEN '2028-08-16' AND '2029-08-15'))) THEN 1 ELSE 0 END) / count(*), 1) AS percent FROM patient p WHERE (p.patient_id IN (SELECT c.patient_id FROM concept_patient c WHERE c.kind = 'condition' AND c.concept IN ('coronary_artery_disease', 'myocardial_infarction')))",
+   "metric_result": "[[56.6]]",
+   "acceptance": {
+    "status": "low_confidence",
+    "basis": "free-form SQL without independent agreement or a governed metric to check it against (agreement: judge=second)"
+   }
+  },
+  {
+   "id": "L34",
+   "answer_type": "value",
+   "ladder_correct": true,
+   "ladder_agreement": "judge=second",
+   "covered": true,
+   "metric_correct": true,
+   "metric": "kidney_health_evaluation_diabetes",
+   "version": 1,
+   "unaccounted_numbers": [],
+   "query": "SELECT round(100.0 * count(DISTINCT CASE WHEN EXISTS (SELECT 1 FROM measurement m WHERE m.patient_id = p.patient_id AND m.concept = 'egfr' AND m.value_canonical IS NOT NULL AND m.event_date BETWEEN '2028-01-01' AND '2028-12-31') AND EXISTS (SELECT 1 FROM measurement m WHERE m.patient_id = p.patient_id AND m.concept = 'uacr' AND m.value_canonical IS NOT NULL AND m.event_date BETWEEN '2028-01-01' AND '2028-12-31') THEN p.patient_id END) / count(DISTINCT p.patient_id), 1) AS pct_kidney_health_evaluation FROM patient p JOIN concept_patient cp ON cp.patient_id = p.patient_id AND cp.concept = 'diabetes' WHERE p.age_latest BETWEEN 18 AND 85",
+   "metric_result": "[[91.0]]",
+   "acceptance": {
+    "status": "verified",
+    "basis": "lint-clean against governed metric kidney_health_evaluation_diabetes@v1"
+   }
+  },
+  {
+   "id": "L35",
+   "answer_type": "value",
+   "ladder_correct": false,
+   "ladder_agreement": "primary=second",
+   "covered": true,
+   "metric_correct": true,
+   "metric": "patient_cohort",
+   "version": 1,
+   "unaccounted_numbers": [],
+   "query": "SELECT round(100.0 * sum(CASE WHEN (p.patient_id IN (SELECT m.patient_id FROM medication m WHERE (((m.drug_class IN ('hf_evidence_based_beta_blocker') OR lower(m.drug_name) LIKE '%bisoprolol%' OR lower(m.drug_name) LIKE '%carvedilol%' OR lower(m.drug_name) LIKE '%metoprolol succinate%'))) AND (m.source_stream = 'pharmacy_dispenses' AND m.status = 'dispensed') AND (m.event_date BETWEEN '2028-08-16' AND '2029-08-15'))) THEN 1 ELSE 0 END) / count(*), 1) AS percent FROM patient p WHERE (p.patient_id IN (SELECT c.patient_id FROM concept_patient c WHERE c.kind = 'condition' AND c.concept IN ('heart_failure', 'heart_failure_reduced_ef')))",
+   "metric_result": "[[14.5]]",
+   "acceptance": {
+    "status": "low_confidence",
+    "basis": "free-form SQL without independent agreement or a governed metric to check it against (agreement: primary=second)"
+   }
+  },
+  {
+   "id": "L36",
+   "answer_type": "value",
+   "ladder_correct": false,
+   "ladder_agreement": "judge_own",
+   "covered": true,
+   "metric_correct": true,
+   "metric": "patient_cohort",
+   "version": 1,
+   "unaccounted_numbers": [],
+   "query": "SELECT round(100.0 * sum(CASE WHEN (p.patient_id IN (SELECT m.patient_id FROM medication m WHERE (((m.drug_class IN ('statin')))) AND (m.source_stream = 'pharmacy_dispenses' AND m.status = 'dispensed') AND (m.event_date BETWEEN '2028-01-01' AND '2028-12-31'))) THEN 1 ELSE 0 END) / count(*), 1) AS percent FROM patient p WHERE (p.patient_id IN (SELECT c.patient_id FROM concept_patient c WHERE c.kind = 'condition' AND c.concept IN ('diabetes'))) AND ((p.age_latest >= 40) AND (p.age_latest <= 75))",
+   "metric_result": "[[38.0]]",
+   "acceptance": {
+    "status": "low_confidence",
+    "basis": "free-form SQL without independent agreement or a governed metric to check it against (agreement: judge_own)"
+   }
+  },
+  {
+   "id": "L37",
+   "answer_type": "count",
+   "ladder_correct": true,
+   "ladder_agreement": "primary=second",
+   "covered": true,
+   "metric_correct": true,
+   "metric": "feed_quality",
+   "version": 1,
+   "unaccounted_numbers": [],
+   "query": "SELECT sum(d IS NULL) AS undated_rows FROM (SELECT record_id AS k, event_date AS d, available_date AS a, json_extract(payload, '$.source_system') AS src FROM record WHERE stream = 'labs')",
+   "metric_result": "[[16543]]",
+   "acceptance": {
+    "status": "low_confidence",
+    "basis": "free-form SQL without independent agreement or a governed metric to check it against (agreement: primary=second)"
+   }
+  },
+  {
+   "id": "L38",
+   "answer_type": "value",
+   "ladder_correct": true,
+   "ladder_agreement": "primary=second",
+   "covered": false,
+   "reason": "claim arrival lag measured from the service date is not a governed metric",
+   "acceptance": {
+    "status": "low_confidence",
+    "basis": "departs from governed metric days_to_first_adjudication: metric days_to_first_adjudication counts one claim per claim_id; the query counts raw medical_claims versions"
+   }
+  },
+  {
+   "id": "L39",
+   "answer_type": "patient_set",
+   "ladder_correct": true,
+   "ladder_agreement": "primary=second",
+   "covered": false,
+   "reason": "orphan lab results are not a governed metric",
+   "acceptance": {
+    "status": "low_confidence",
+    "basis": "free-form SQL without independent agreement or a governed metric to check it against (agreement: primary=second)"
+   }
+  },
+  {
+   "id": "L40",
+   "answer_type": "count",
+   "ladder_correct": false,
+   "ladder_agreement": "judge=second",
+   "covered": false,
+   "reason": "open lab orders without a result are not a governed metric",
+   "acceptance": {
+    "status": "low_confidence",
+    "basis": "free-form SQL without independent agreement or a governed metric to check it against (agreement: judge=second)"
+   }
+  },
+  {
+   "id": "L41",
+   "answer_type": "count",
+   "ladder_correct": true,
+   "ladder_agreement": "primary=second",
+   "covered": false,
+   "reason": "duplicate encounter ids are not a governed metric",
+   "acceptance": {
+    "status": "low_confidence",
+    "basis": "free-form SQL without independent agreement or a governed metric to check it against (agreement: primary=second)"
+   }
+  },
+  {
+   "id": "L43",
+   "answer_type": "count",
+   "ladder_correct": false,
+   "ladder_agreement": "primary=second",
+   "covered": true,
+   "metric_correct": true,
+   "metric": "patient_cohort",
+   "version": 1,
+   "unaccounted_numbers": [],
+   "query": "SELECT count(*) AS patients FROM patient p WHERE (p.patient_id IN (SELECT s.patient_id FROM social_need s WHERE (s.need IN ('transport')) AND (s.positive = 1))) AND (p.patient_id IN (SELECT a.patient_id FROM appointment a WHERE (a.ever_no_show = 1)))",
+   "metric_result": "[[131]]",
+   "acceptance": {
+    "status": "low_confidence",
+    "basis": "free-form SQL without independent agreement or a governed metric to check it against (agreement: primary=second)"
+   }
+  },
+  {
+   "id": "L44",
+   "answer_type": "table",
+   "ladder_correct": false,
+   "ladder_agreement": "judge=second",
+   "covered": true,
+   "metric_correct": true,
+   "metric": "patient_cohort",
+   "version": 1,
+   "unaccounted_numbers": [],
+   "query": "SELECT p.coverage_type AS coverage_type, count(*) AS patients, sum(CASE WHEN (p.patient_id IN (SELECT s.patient_id FROM social_need s WHERE (s.need IN ('cost_of_care')) AND (s.positive = 1))) THEN 1 ELSE 0 END) AS numerator, round(100.0 * sum(CASE WHEN (p.patient_id IN (SELECT s.patient_id FROM social_need s WHERE (s.need IN ('cost_of_care')) AND (s.positive = 1))) THEN 1 ELSE 0 END) / count(*), 1) AS percent FROM patient p WHERE (p.patient_id IN (SELECT s.patient_id FROM social_need s WHERE (s.need IN ('cost_of_care')))) GROUP BY 1 ORDER BY 1",
+   "metric_result": "[[\"commercial\", 840, 57, 6.8], [\"medicaid\", 217, 13, 6.0], [\"medicare\", 258, 12, 4.7], [\"uninsured\", 108, 108, 100.0]]",
+   "acceptance": {
+    "status": "low_confidence",
+    "basis": "free-form SQL without independent agreement or a governed metric to check it against (agreement: judge=second)"
+   }
+  },
+  {
+   "id": "L46",
+   "answer_type": "unsupported",
+   "ladder_correct": false,
+   "ladder_agreement": "judge_own",
+   "covered": false,
+   "reason": "race/ethnicity comparisons need data the warehouse does not hold",
+   "acceptance": {
+    "status": "low_confidence",
+    "basis": "free-form SQL without independent agreement or a governed metric to check it against (agreement: judge_own)"
+   }
+  },
+  {
+   "id": "L49",
+   "answer_type": "unsupported",
+   "ladder_correct": false,
+   "ladder_agreement": "primary=second",
+   "covered": false,
+   "reason": "RAF scores are not in the data",
+   "acceptance": {
+    "status": "low_confidence",
+    "basis": "free-form SQL without independent agreement or a governed metric to check it against (agreement: primary=second)"
+   }
+  },
+  {
+   "id": "M02",
+   "answer_type": "patient_set",
+   "ladder_correct": false,
+   "ladder_agreement": "judge=second",
+   "covered": true,
+   "metric_correct": true,
+   "metric": "patient_cohort",
+   "version": 1,
+   "unaccounted_numbers": [],
+   "query": "SELECT p.patient_id FROM patient p WHERE (p.patient_id IN (SELECT m.patient_id FROM measurement m JOIN (SELECT m.patient_id AS pid, max(m.event_date) AS d FROM measurement m WHERE (m.concept = 'egfr') AND (m.value_canonical IS NOT NULL AND coalesce(m.result_status, '') <> 'cancelled') AND (m.event_date IS NOT NULL) GROUP BY m.patient_id) l ON l.pid = m.patient_id AND l.d = m.event_date WHERE (m.concept = 'egfr') AND (m.value_canonical IS NOT NULL AND coalesce(m.result_status, '') <> 'cancelled') AND (m.event_date IS NOT NULL) GROUP BY m.patient_id HAVING min(m.value_canonical) < 60)) ORDER BY 1",
+   "metric_result": "[[\"P-1001\"], [\"P-1003\"], [\"P-1005\"], [\"P-1007\"], [\"P-4821\"], [\"P-5002\"]]",
+   "acceptance": {
+    "status": "low_confidence",
+    "basis": "free-form SQL without independent agreement or a governed metric to check it against (agreement: judge=second)"
+   }
+  },
+  {
+   "id": "M03",
+   "answer_type": "count",
+   "ladder_correct": true,
+   "ladder_agreement": "primary=second",
+   "covered": true,
+   "metric_correct": true,
+   "metric": "patient_cohort",
+   "version": 1,
+   "unaccounted_numbers": [],
+   "query": "SELECT count(*) AS patients FROM patient p WHERE (p.sex_reported IN ('F')) AND ((p.age_latest >= 65)) AND (p.patient_id IN (SELECT c.patient_id FROM concept_patient c WHERE c.kind = 'condition' AND c.concept IN ('diabetes'))) AND (p.patient_id IN (SELECT c.patient_id FROM concept_patient c WHERE c.kind = 'condition' AND c.concept IN ('hypertension')))",
+   "metric_result": "[[44]]",
+   "acceptance": {
+    "status": "low_confidence",
+    "basis": "free-form SQL without independent agreement or a governed metric to check it against (agreement: primary=second)"
+   }
+  },
+  {
+   "id": "M04",
+   "answer_type": "count",
+   "ladder_correct": true,
+   "ladder_agreement": "judge=second",
+   "covered": true,
+   "metric_correct": true,
+   "metric": "patient_cohort",
+   "version": 1,
+   "unaccounted_numbers": [],
+   "query": "SELECT count(*) AS patients FROM patient p WHERE (p.patient_id IN (SELECT c.patient_id FROM concept_patient c WHERE c.kind = 'condition' AND c.concept IN ('prediabetes'))) AND (p.patient_id IN (SELECT m.patient_id FROM measurement m JOIN (SELECT m.patient_id AS pid, max(m.event_date) AS d FROM measurement m WHERE (m.concept = 'hba1c') AND (m.value_canonical IS NOT NULL AND coalesce(m.result_status, '') <> 'cancelled') AND (m.event_date IS NOT NULL) GROUP BY m.patient_id) l ON l.pid = m.patient_id AND l.d = m.event_date WHERE (m.concept = 'hba1c') AND (m.value_canonical IS NOT NULL AND coalesce(m.result_status, '') <> 'cancelled') AND (m.event_date IS NOT NULL) GROUP BY m.patient_id HAVING max(m.value_canonical) >= 6.5)) AND (NOT (p.patient_id IN (SELECT c.patient_id FROM concept_patient c WHERE c.kind = 'condition' AND c.concept IN ('diabetes'))))",
+   "metric_result": "[[473]]",
+   "acceptance": {
+    "status": "low_confidence",
+    "basis": "free-form SQL without independent agreement or a governed metric to check it against (agreement: judge=second)"
+   }
+  },
+  {
+   "id": "M05",
+   "answer_type": "patient_set",
+   "ladder_correct": true,
+   "ladder_agreement": "judge=second",
+   "covered": true,
+   "metric_correct": true,
+   "metric": "patient_cohort",
+   "version": 1,
+   "unaccounted_numbers": [],
+   "query": "SELECT p.patient_id FROM patient p WHERE (p.patient_id IN (SELECT c.patient_id FROM concept_patient c WHERE c.kind = 'condition' AND c.concept IN ('asthma', 'copd'))) ORDER BY 1",
+   "metric_result": "[[\"P-1004\"], [\"P-3356\"], [\"P-4004\"], [\"P-7301\"], [\"SYN-0039FCF3-30E\"], [\"SYN-01844040-DB3\"]]",
+   "acceptance": {
+    "status": "verified",
+    "basis": "lint-clean against governed metric respiratory_registry@v1"
+   }
+  },
+  {
+   "id": "M06",
+   "answer_type": "count",
+   "ladder_correct": true,
+   "ladder_agreement": "judge_own",
+   "covered": true,
+   "metric_correct": true,
+   "metric": "patient_cohort",
+   "version": 1,
+   "unaccounted_numbers": [],
+   "query": "SELECT count(*) AS patients FROM patient p WHERE (p.patient_id IN (SELECT m.patient_id FROM measurement m JOIN (SELECT m.patient_id AS pid, max(m.event_date) AS d FROM measurement m WHERE (m.concept = 'potassium') AND (m.value_canonical IS NOT NULL AND coalesce(m.result_status, '') <> 'cancelled') AND (m.event_date IS NOT NULL) GROUP BY m.patient_id) l ON l.pid = m.patient_id AND l.d = m.event_date WHERE (m.concept = 'potassium') AND (m.value_canonical IS NOT NULL AND coalesce(m.result_status, '') <> 'cancelled') AND (m.event_date IS NOT NULL) GROUP BY m.patient_id HAVING max(m.value_canonical) > 5))",
+   "metric_result": "[[90]]",
+   "acceptance": {
+    "status": "low_confidence",
+    "basis": "free-form SQL without independent agreement or a governed metric to check it against (agreement: judge_own)"
+   }
+  },
+  {
+   "id": "M08",
+   "answer_type": "count",
+   "ladder_correct": true,
+   "ladder_agreement": "judge=second",
+   "covered": true,
+   "metric_correct": true,
+   "metric": "patient_cohort",
+   "version": 1,
+   "unaccounted_numbers": [],
+   "query": "SELECT count(*) AS patients FROM patient p WHERE (p.sex_reported IN ('M')) AND ((p.age_latest >= 50) AND (p.age_latest <= 75)) AND (p.patient_id IN (SELECT m.patient_id FROM measurement m WHERE (m.concept = 'ldl') AND (m.value_canonical IS NOT NULL AND coalesce(m.result_status, '') <> 'cancelled') AND (m.value_canonical >= 190)))",
+   "metric_result": "[[14]]",
+   "acceptance": {
+    "status": "verified",
+    "basis": "lint-clean against governed metric ldl_190_ever@v1"
+   }
+  },
+  {
+   "id": "M09",
+   "answer_type": "count",
+   "ladder_correct": true,
+   "ladder_agreement": "primary=second",
+   "covered": false,
+   "reason": "PTSD, bipolar disorder and schizophrenia are not in the governed concept library",
+   "acceptance": {
+    "status": "low_confidence",
+    "basis": "free-form SQL without independent agreement or a governed metric to check it against (agreement: primary=second)"
+   }
+  },
+  {
+   "id": "M10",
+   "answer_type": "count",
+   "ladder_correct": true,
+   "ladder_agreement": "primary=second",
+   "covered": true,
+   "metric_correct": true,
+   "metric": "patient_cohort",
+   "version": 1,
+   "unaccounted_numbers": [],
+   "query": "SELECT count(*) AS patients FROM patient p WHERE (p.patient_id IN (SELECT c.patient_id FROM concept_patient c WHERE c.kind = 'condition' AND c.concept IN ('anemia'))) AND (p.patient_id IN (SELECT m.patient_id FROM measurement m JOIN (SELECT m.patient_id AS pid, max(m.event_date) AS d FROM measurement m WHERE (m.concept = 'hemoglobin') AND (m.value_canonical IS NOT NULL AND coalesce(m.result_status, '') <> 'cancelled') AND (m.event_date IS NOT NULL) GROUP BY m.patient_id) l ON l.pid = m.patient_id AND l.d = m.event_date WHERE (m.concept = 'hemoglobin') AND (m.value_canonical IS NOT NULL AND coalesce(m.result_status, '') <> 'cancelled') AND (m.event_date IS NOT NULL) GROUP BY m.patient_id HAVING min(m.value_canonical) < 11))",
+   "metric_result": "[[284]]",
+   "acceptance": {
+    "status": "low_confidence",
+    "basis": "free-form SQL without independent agreement or a governed metric to check it against (agreement: primary=second)"
+   }
+  },
+  {
+   "id": "M11",
+   "answer_type": "patient_set",
+   "ladder_correct": true,
+   "ladder_agreement": "primary=second",
+   "covered": true,
+   "metric_correct": true,
+   "metric": "patient_cohort",
+   "version": 1,
+   "unaccounted_numbers": [],
+   "query": "SELECT p.patient_id FROM patient p WHERE (p.patient_id IN (SELECT c.patient_id FROM concept_patient c WHERE c.kind = 'condition' AND c.concept IN ('diabetes'))) AND (NOT (p.patient_id IN (SELECT m.patient_id FROM measurement m WHERE (m.concept = 'uacr') AND (m.value_canonical IS NOT NULL AND coalesce(m.result_status, '') <> 'cancelled') AND (m.event_date BETWEEN '2028-08-16' AND '2029-08-15')))) ORDER BY 1",
+   "metric_result": "[[\"P-4007\"], [\"P-6001\"], [\"P-HF08\"], [\"SYN-01DBEFBF-341\"], [\"SYN-0762C810-EA2\"], [\"SYN-119141A2-9FF\"]]",
+   "acceptance": {
+    "status": "low_confidence",
+    "basis": "free-form SQL without independent agreement or a governed metric to check it against (agreement: primary=second)"
+   }
+  },
+  {
+   "id": "M12",
+   "answer_type": "table",
+   "ladder_correct": true,
+   "ladder_agreement": "primary=second",
+   "covered": true,
+   "metric_correct": true,
+   "metric": "patient_cohort",
+   "version": 1,
+   "unaccounted_numbers": [
+    0.0,
+    17.0,
+    18.0,
+    44.0,
+    45.0,
+    64.0,
+    65.0
+   ],
+   "query": "SELECT CASE WHEN p.age_latest < 18 THEN '0-17' WHEN p.age_latest < 45 THEN '18-44' WHEN p.age_latest < 65 THEN '45-64' ELSE '65+' END AS age_band, count(*) AS patients FROM patient p WHERE 1=1 GROUP BY 1 ORDER BY 1",
+   "metric_result": "[[\"0-17\", 231], [\"18-44\", 532], [\"45-64\", 523], [\"65+\", 328]]",
+   "acceptance": {
+    "status": "low_confidence",
+    "basis": "free-form SQL without independent agreement or a governed metric to check it against (agreement: primary=second)"
+   }
+  },
+  {
+   "id": "M13",
+   "answer_type": "count",
+   "ladder_correct": true,
+   "ladder_agreement": "primary=second",
+   "covered": true,
+   "metric_correct": true,
+   "metric": "encounter_volume",
+   "version": 1,
+   "unaccounted_numbers": [],
+   "query": "SELECT count(DISTINCT v.encounter_id) AS visits FROM visit v JOIN patient p ON p.patient_id = v.patient_id WHERE (v.type IN ('observation')) AND (v.event_date BETWEEN '2029-01-01' AND '2029-08-15') AND 1=1",
+   "metric_result": "[[38]]",
+   "acceptance": {
+    "status": "verified",
+    "basis": "lint-clean against governed metric observation_stays@v1"
+   }
+  },
+  {
+   "id": "M14",
+   "answer_type": "patient_set",
+   "ladder_correct": true,
+   "ladder_agreement": "primary=second",
+   "covered": true,
+   "metric_correct": true,
+   "metric": "patient_cohort",
+   "version": 1,
+   "unaccounted_numbers": [],
+   "query": "SELECT p.patient_id FROM patient p WHERE (p.patient_id IN (SELECT v.patient_id FROM visit v WHERE (v.type IN ('emergency', 'ED', 'ED stroke alert')) AND (v.event_date BETWEEN '2028-08-16' AND '2029-08-15') GROUP BY v.patient_id HAVING count(DISTINCT v.encounter_id) >= 2)) ORDER BY 1",
+   "metric_result": "[[\"SYN-0F1D6508-8F9\"], [\"SYN-21D743BD-A1B\"], [\"SYN-366F21E2-52F\"], [\"SYN-67F2F871-F14\"], [\"SYN-68B8B2D2-968\"], [\"SYN-7ABDFBCA-A81\"]]",
+   "acceptance": {
+    "status": "low_confidence",
+    "basis": "departs from governed metric repeat_ed_users_12m: metric repeat_ed_users_12m: the trailing 12-month window runs 2028-08-16..2029-08-15 (inclusive, 365 days); the query starts on 2028-08-15, one day early"
+   }
+  },
+  {
+   "id": "M15",
+   "answer_type": "value",
+   "ladder_correct": false,
+   "ladder_agreement": "primary=second",
+   "covered": true,
+   "metric_correct": true,
+   "metric": "length_of_stay",
+   "version": 1,
+   "unaccounted_numbers": [],
+   "query": "SELECT round(avg((julianday(end_time) - julianday(start_time)) * 1.0), 2) AS average_length_of_stay FROM visit WHERE (type IN ('inpatient', 'Inpatient POD3', 'Inpatient HD3', 'L&D admission')) AND (status = 'completed') AND (start_time IS NOT NULL) AND (end_time IS NOT NULL) AND (substr(end_time, 1, 10) BETWEEN '2029-01-01' AND '2029-08-15')",
+   "metric_result": "[[3.04]]",
+   "acceptance": {
+    "status": "verified",
+    "basis": "lint-clean against governed metric average_length_of_stay@v1"
+   }
+  },
+  {
+   "id": "M16",
+   "answer_type": "table",
+   "ladder_correct": false,
+   "ladder_agreement": "judge=second",
+   "covered": true,
+   "metric_correct": true,
+   "metric": "encounter_volume",
+   "version": 1,
+   "unaccounted_numbers": [],
+   "query": "SELECT p.coverage_type AS coverage_type, count(DISTINCT p.patient_id) AS patients, count(DISTINCT v.encounter_id) AS visits, round(1000.0 * count(DISTINCT v.encounter_id) / count(DISTINCT p.patient_id), 1) AS per_1000 FROM patient p LEFT JOIN visit v ON v.patient_id = p.patient_id AND (v.type IN ('emergency', 'ED', 'ED stroke alert')) AND (v.event_date BETWEEN '2028-08-16' AND '2029-08-15') WHERE 1=1 GROUP BY 1 ORDER BY 1",
+   "metric_result": "[[\"commercial\", 949, 60, 63.2], [\"medicaid\", 239, 19, 79.5], [\"medicare\", 287, 26, 90.6], [\"uninsured\", 139, 10, 71.9]]",
+   "acceptance": {
+    "status": "verified",
+    "basis": "lint-clean against governed metric ed_visits_per_1000@v1"
+   }
+  },
+  {
+   "id": "M17",
+   "answer_type": "value",
+   "ladder_correct": true,
+   "ladder_agreement": "judge=second",
+   "covered": true,
+   "metric_correct": true,
+   "metric": "visit_followup",
+   "version": 1,
+   "unaccounted_numbers": [],
+   "query": "SELECT round(100.0 * count(DISTINCT CASE WHEN EXISTS (SELECT 1 FROM visit f WHERE f.patient_id = e.patient_id AND f.encounter_id <> e.encounter_id AND f.type IN ('primary_care', 'office', 'pediatric_office', 'wellness', 'specialist_office', 'specialty_followup', 'telephone') AND julianday(f.event_date) - julianday(e.event_date) BETWEEN 1 AND 7) THEN e.encounter_id END) / count(DISTINCT e.encounter_id), 1) AS pct_followed_up FROM visit e WHERE (e.type IN ('emergency', 'ED', 'ED stroke alert')) AND (e.event_date BETWEEN '2029-01-01' AND '2029-08-15')",
+   "metric_result": "[[29.9]]",
+   "acceptance": {
+    "status": "verified",
+    "basis": "lint-clean against governed metric ed_followup_7d@v1"
+   }
+  },
+  {
+   "id": "M18",
+   "answer_type": "table",
+   "ladder_correct": true,
+   "ladder_agreement": "primary=second",
+   "covered": true,
+   "metric_correct": true,
+   "metric": "encounter_volume",
+   "version": 1,
+   "unaccounted_numbers": [],
+   "query": "SELECT substr(v.event_date, 1, 4) || '-Q' || ((CAST(substr(v.event_date, 6, 2) AS INTEGER) + 2) / 3) AS quarter, count(DISTINCT v.encounter_id) AS visits FROM visit v JOIN patient p ON p.patient_id = v.patient_id WHERE (v.type IN ('telephone')) AND (v.event_date BETWEEN '2028-01-01' AND '2028-12-31') AND 1=1 GROUP BY 1 ORDER BY 1",
+   "metric_result": "[[\"2028-Q1\", 1045], [\"2028-Q2\", 963], [\"2028-Q3\", 952], [\"2028-Q4\", 1304]]",
+   "acceptance": {
+    "status": "low_confidence",
+    "basis": "free-form SQL without independent agreement or a governed metric to check it against (agreement: primary=second)"
+   }
+  },
+  {
+   "id": "M19",
+   "answer_type": "table",
+   "ladder_correct": true,
+   "ladder_agreement": "primary=second",
+   "covered": true,
+   "metric_correct": true,
+   "metric": "encounter_volume",
+   "version": 1,
+   "unaccounted_numbers": [],
+   "query": "SELECT p.pcp_practice_id AS attributed_practice, count(DISTINCT v.encounter_id) AS visits FROM visit v JOIN patient p ON p.patient_id = v.patient_id WHERE (v.type IN ('primary_care', 'office', 'pediatric_office', 'wellness')) AND (v.event_date BETWEEN '2028-01-01' AND '2028-12-31') AND 1=1 GROUP BY 1 ORDER BY 1",
+   "metric_result": "[[\"WH-PRACTICE-0\", 609], [\"WH-PRACTICE-1\", 810], [\"WH-PRACTICE-2\", 593], [\"WH-PRACTICE-3\", 715], [\"WH-PRACTICE-4\", 558], [\"WH-PRACTICE-5\", 763]]",
+   "acceptance": {
+    "status": "low_confidence",
+    "basis": "free-form SQL without independent agreement or a governed metric to check it against (agreement: primary=second)"
+   }
+  },
+  {
+   "id": "M20",
+   "answer_type": "count",
+   "ladder_correct": false,
+   "ladder_agreement": "primary=second",
+   "covered": true,
+   "metric_correct": true,
+   "metric": "patient_cohort",
+   "version": 1,
+   "unaccounted_numbers": [],
+   "query": "SELECT count(*) AS patients FROM patient p WHERE (NOT (p.patient_id IN (SELECT v.patient_id FROM visit v WHERE (v.type IN ('primary_care', 'office', 'pediatric_office', 'wellness', 'Annual physical')) AND (v.event_date BETWEEN '2028-08-16' AND '2029-08-15'))))",
+   "metric_result": "[[381]]",
+   "acceptance": {
+    "status": "low_confidence",
+    "basis": "departs from governed metric pcp_visit_gap_12m: metric pcp_visit_gap_12m: the trailing 12-month window runs 2028-08-16..2029-08-15 (inclusive, 365 days); the query starts on 2028-08-15, one day early"
+   }
+  },
+  {
+   "id": "M21",
+   "answer_type": "value",
+   "ladder_correct": true,
+   "ladder_agreement": "judge_own",
+   "covered": false,
+   "reason": "referral completion within 90 days is not a governed metric",
+   "acceptance": {
+    "status": "low_confidence",
+    "basis": "free-form SQL without independent agreement or a governed metric to check it against (agreement: judge_own)"
+   }
+  },
+  {
+   "id": "M22",
+   "answer_type": "value",
+   "ladder_correct": false,
+   "ladder_agreement": "judge=second",
+   "covered": true,
+   "metric_correct": true,
+   "metric": "ed_admit_obs_share",
+   "version": 1,
+   "unaccounted_numbers": [],
+   "query": "SELECT round(100.0 * sum(disposition IN ('admitted','inpatient_admission','observation','hospital_observation','observation_for_mobility')) / count(*), 1) AS pct_admit_or_obs FROM visit WHERE type_concept = 'emergency_visit' AND status = 'completed' AND event_date BETWEEN '2029-01-01' AND '2029-08-15'",
+   "metric_result": "[[47.9]]",
+   "acceptance": {
+    "status": "low_confidence",
+    "basis": "departs from governed metric ed_admit_obs_share: metric ed_admit_obs_share: the ED visit's outcome is the disposition on its completed encounter version; ADT linkage events describe a different (downstream-stay) reading; metric ed_admit_obs_share defines the numerator by admit_obs_disposition (visit.disposition: admitted, inpatient_admission, observation, hospital_observation, observation_for_mobility); the query never applies it"
+   }
+  },
+  {
+   "id": "M23",
+   "answer_type": "count",
+   "ladder_correct": true,
+   "ladder_agreement": "primary=second",
+   "covered": true,
+   "metric_correct": true,
+   "metric": "medical_claims",
+   "version": 1,
+   "unaccounted_numbers": [],
+   "query": "SELECT sum(first_status = 'denied' AND denied_then_paid = 1) AS first_pass_denied_then_paid FROM claim WHERE (service_date BETWEEN '2028-01-01' AND '2028-12-31')",
+   "metric_result": "[[280]]",
+   "acceptance": {
+    "status": "low_confidence",
+    "basis": "free-form SQL without independent agreement or a governed metric to check it against (agreement: primary=second)"
+   }
+  },
+  {
+   "id": "M24",
+   "answer_type": "value",
+   "ladder_correct": true,
+   "ladder_agreement": "primary=second",
+   "covered": true,
+   "metric_correct": true,
+   "metric": "medical_claims",
+   "version": 1,
+   "unaccounted_numbers": [],
+   "query": "SELECT round(sum(net_payer_paid_cents) / 100.0, 2) AS net_payer_paid_usd FROM claim WHERE (service_date BETWEEN '2028-01-01' AND '2028-12-31')",
+   "metric_result": "[[408220.89]]",
+   "acceptance": {
+    "status": "verified",
+    "basis": "lint-clean against governed metric net_payer_paid@v1"
+   }
+  },
+  {
+   "id": "M25",
+   "answer_type": "table",
+   "ladder_correct": true,
+   "ladder_agreement": "judge_own",
+   "covered": false,
+   "reason": "repricing is not a governed metric",
+   "acceptance": {
+    "status": "low_confidence",
+    "basis": "departs from governed metric claim_financials_current_state: metric claim_financials_current_state reads the latest version per claim_id; the query combines all versions; metric claim_financials_current_state: a claim whose current state is a reversal awaiting replacement (or a denial) has 0 allowed and 0 paid; summing the latest record's amounts without the status rule inflates allowed"
+   }
+  },
+  {
+   "id": "M26",
+   "answer_type": "value",
+   "ladder_correct": true,
+   "ladder_agreement": "judge_own",
+   "covered": false,
+   "reason": "clearinghouse rejection rate of original submissions is not a governed metric",
+   "acceptance": {
+    "status": "low_confidence",
+    "basis": "free-form SQL without independent agreement or a governed metric to check it against (agreement: judge_own)"
+   }
+  },
+  {
+   "id": "M27",
+   "answer_type": "table",
+   "ladder_correct": false,
+   "ladder_agreement": "judge=second",
+   "covered": true,
+   "metric_correct": true,
+   "metric": "claim_financials_current_state",
+   "version": 1,
+   "unaccounted_numbers": [],
+   "query": "SELECT sc AS service_code, count(*) AS claims, round(sum(b) / 100.0, 2) AS billed, round(sum(CASE WHEN st IN ('reversed','denied') THEN 0 ELSE al END) / 100.0, 2) AS allowed, round(sum(CASE WHEN st IN ('reversed','denied') THEN 0 ELSE pd END) / 100.0, 2) AS paid FROM (SELECT json_extract(payload,'$.service_code') AS sc, json_extract(payload,'$.service_date') AS sd, json_extract(payload,'$.status') AS st, json_extract(payload,'$.billed_cents') AS b, json_extract(payload,'$.allowed_cents') AS al, json_extract(payload,'$.payer_paid_cents') AS pd, row_number() OVER (PARTITION BY json_extract(payload,'$.claim_id') ORDER BY json_extract(payload,'$.event_time') DESC, record_id DESC) AS rn FROM record WHERE stream = 'medical_claims' AND json_extract(payload,'$.claim_id') IS NOT NULL) WHERE rn = 1 AND sd BETWEEN '2029-01-01' AND '2029-12-31' GROUP BY sc ORDER BY sc",
+   "metric_result": "[[\"anatomic_pathology\", 3, 540.0, 376.2, 218.52], [\"diagnostic_echocardiogram\", 51, 20910.0, 14255.7, 6732.28], [\"diagnostic_renal_ultrasound\", 34, 6460.0, 4297.8, 1120.18], [\"diagnostic_spirometry\", 7, 665.0, 427.5, 249.02], [\"endoscopy_facility\", 9, 16200.0, 10008.0, 8463.56], [\"endoscopy_professi",
+   "acceptance": {
+    "status": "low_confidence",
+    "basis": "departs from governed metric claim_financials_current_state: metric claim_financials_current_state anchors time on claim.service_date; the query uses available_date; metric claim_financials_current_state: a claim whose current state is a reversal awaiting replacement (or a denial) has 0 allowed and 0 paid; summing the latest record's amounts without the status rule inflates allowed"
+   }
+  },
+  {
+   "id": "M28",
+   "answer_type": "value",
+   "ladder_correct": true,
+   "ladder_agreement": "judge=second",
+   "covered": true,
+   "metric_correct": true,
+   "metric": "medical_claims",
+   "version": 1,
+   "unaccounted_numbers": [],
+   "query": "SELECT avg(x) AS median_days_to_first_payer_cash FROM (SELECT julianday(first_payer_cash_date) - julianday(service_date) AS x, row_number() OVER (ORDER BY julianday(first_payer_cash_date) - julianday(service_date)) AS rn, count(*) OVER () AS n FROM claim WHERE (service_date BETWEEN '2028-01-01' AND '2028-12-31') AND (first_payer_cash_date IS NOT NULL)) WHERE rn IN ((n + 1) / 2, (n + 2) / 2)",
+   "metric_result": "[[24.0]]",
+   "acceptance": {
+    "status": "verified",
+    "basis": "lint-clean against governed metric days_to_payer_cash@v1"
+   }
+  },
+  {
+   "id": "M29",
+   "answer_type": "value",
+   "ladder_correct": false,
+   "ladder_agreement": "judge=second",
+   "covered": true,
+   "metric_correct": true,
+   "metric": "patient_ar_outstanding",
+   "version": 1,
+   "unaccounted_numbers": [],
+   "query": "SELECT round(sum(balance_cents) / 100.0, 2) AS patient_ar_usd FROM (SELECT json_extract(payload,'$.balance_cents') AS balance_cents, row_number() OVER (PARTITION BY json_extract(payload,'$.account_id') ORDER BY json_extract(payload,'$.event_time') DESC, record_id DESC) AS rn FROM record WHERE stream = 'patient_billing_accounts') WHERE rn = 1 AND balance_cents > 0",
+   "metric_result": "[[234593.7]]",
+   "acceptance": {
+    "status": "low_confidence",
+    "basis": "departs from governed metric patient_ar_outstanding: metric patient_ar_outstanding: open A/R sums positive balances only; credit balances are not netted against what patients owe"
+   }
+  },
+  {
+   "id": "M30",
+   "answer_type": "table",
+   "ladder_correct": true,
+   "ladder_agreement": "judge=second",
+   "covered": false,
+   "reason": "pharmacy claims by first-paid year with reversals is not a governed metric",
+   "acceptance": {
+    "status": "low_confidence",
+    "basis": "free-form SQL without independent agreement or a governed metric to check it against (agreement: judge=second)"
+   }
+  },
+  {
+   "id": "M31",
+   "answer_type": "value",
+   "ladder_correct": true,
+   "ladder_agreement": "judge=second",
+   "covered": true,
+   "metric_correct": true,
+   "metric": "patient_cohort",
+   "version": 1,
+   "unaccounted_numbers": [],
+   "query": "SELECT round(100.0 * sum(CASE WHEN (p.patient_id IN (SELECT m.patient_id FROM measurement m JOIN (SELECT m.patient_id AS pid, max(m.event_date) AS d FROM measurement m WHERE (m.concept = 'hba1c') AND (m.value_canonical IS NOT NULL AND coalesce(m.result_status, '') <> 'cancelled') AND (m.event_date IS NOT NULL) AND (m.event_date BETWEEN '2029-01-01' AND '2029-08-15') GROUP BY m.patient_id) l ON l.pid = m.patient_id AND l.d = m.event_date WHERE (m.concept = 'hba1c') AND (m.value_canonical IS NOT NULL AND coalesce(m.result_status, '') <> 'cancelled') AND (m.event_date IS NOT NULL) AND (m.event_date BETWEEN '2029-01-01' AND '2029-08-15') GROUP BY m.patient_id HAVING min(m.value_canonical) < 8)) THEN 1 ELSE 0 END) / count(*), 1) AS percent FROM patient p WHERE (p.patient_id IN (SELECT c.patient_id FROM concept_patient c WHERE c.kind = 'condition' AND c.concept IN ('diabetes'))) AND ((p.age_latest >= 18) AND (p.age_latest <= 75))",
+   "metric_result": "[[73.3]]",
+   "acceptance": {
+    "status": "low_confidence",
+    "basis": "free-form SQL without independent agreement or a governed metric to check it against (agreement: judge=second)"
+   }
+  },
+  {
+   "id": "M32",
+   "answer_type": "value",
+   "ladder_correct": true,
+   "ladder_agreement": "judge_own",
+   "covered": true,
+   "metric_correct": true,
+   "metric": "patient_cohort",
+   "version": 1,
+   "unaccounted_numbers": [],
+   "query": "SELECT round(100.0 * sum(CASE WHEN ((p.patient_id IN (SELECT m.patient_id FROM measurement m JOIN (SELECT m.patient_id AS pid, max(m.event_date) AS d FROM measurement m WHERE (m.concept = 'systolic_bp') AND (m.value_canonical IS NOT NULL AND coalesce(m.result_status, '') <> 'cancelled') AND (m.event_date IS NOT NULL) AND (m.event_date BETWEEN '2029-01-01' AND '2029-08-15') GROUP BY m.patient_id) l ON l.pid = m.patient_id AND l.d = m.event_date WHERE (m.concept = 'systolic_bp') AND (m.value_canonical IS NOT NULL AND coalesce(m.result_status, '') <> 'cancelled') AND (m.event_date IS NOT NULL) AND (m.event_date BETWEEN '2029-01-01' AND '2029-08-15') GROUP BY m.patient_id HAVING min(m.value_canonical) < 140)) AND (p.patient_id IN (SELECT m.patient_id FROM measurement m JOIN (SELECT m.patient_id AS pid, max(m.event_date) AS d FROM measurement m WHERE (m.concept = 'diastolic_bp') AND (m.value_canonical IS NOT NULL AND coalesce(m.result_status, '') <> 'cancelled') AND (m.event_date IS NOT NULL) AND (m.event_date BETWEEN '2029-01-01' AND '2029-08-15') GROUP BY m.patient_id) l ON l.pid = m.patient_id AND l.d = m.event_date WHERE (m.concept = 'diastolic_bp') AND (m.value_canonical IS NOT NULL AND coalesce(m.result_status, '') <> 'cancelled') AND (m.event_date IS NOT NULL) AND (m.event_date BETWEEN '2029-01-01' AND '2029-08-15') GROUP BY m.patient_id HAVING min(m.value_canonical) < 90))) THEN 1 ELSE 0 END) / count(*), 1) AS percent FROM patient p WHERE (p.patient_id IN (SELECT c.patient_id FROM concept_patient c WHERE c.kind = 'condition' AND c.concept IN ('hypertension'))) AND ((p.age_latest >= 18) AND (p.age_latest <= 85))",
+   "metric_result": "[[74.2]]",
+   "acceptance": {
+    "status": "verified",
+    "basis": "lint-clean against governed metric measure.cbp@v1"
+   }
+  },
+  {
+   "id": "M33",
+   "answer_type": "value",
+   "ladder_correct": true,
+   "ladder_agreement": "judge=second",
+   "covered": true,
+   "metric_correct": true,
+   "metric": "kidney_health_evaluation_diabetes",
+   "version": 1,
+   "unaccounted_numbers": [],
+   "query": "SELECT round(100.0 * count(DISTINCT CASE WHEN EXISTS (SELECT 1 FROM measurement m WHERE m.patient_id = p.patient_id AND m.concept = 'egfr' AND m.value_canonical IS NOT NULL AND m.event_date BETWEEN '2028-01-01' AND '2028-12-31') AND EXISTS (SELECT 1 FROM measurement m WHERE m.patient_id = p.patient_id AND m.concept = 'uacr' AND m.value_canonical IS NOT NULL AND m.event_date BETWEEN '2028-01-01' AND '2028-12-31') THEN p.patient_id END) / count(DISTINCT p.patient_id), 1) AS pct_kidney_health_evaluation FROM patient p JOIN concept_patient cp ON cp.patient_id = p.patient_id AND cp.concept = 'diabetes' WHERE p.age_latest BETWEEN 18 AND 85",
+   "metric_result": "[[91.0]]",
+   "acceptance": {
+    "status": "verified",
+    "basis": "lint-clean against governed metric kidney_health_evaluation_diabetes@v1"
+   }
+  },
+  {
+   "id": "M34",
+   "answer_type": "value",
+   "ladder_correct": true,
+   "ladder_agreement": "judge=second",
+   "covered": false,
+   "reason": "Tdap catch-up after a reported tetanus history is not a governed metric",
+   "acceptance": {
+    "status": "low_confidence",
+    "basis": "free-form SQL without independent agreement or a governed metric to check it against (agreement: judge=second)"
+   }
+  },
+  {
+   "id": "M35",
+   "answer_type": "value",
+   "ladder_correct": true,
+   "ladder_agreement": "judge=second",
+   "covered": false,
+   "reason": "pediatric vision screening is not a governed metric",
+   "acceptance": {
+    "status": "low_confidence",
+    "basis": "free-form SQL without independent agreement or a governed metric to check it against (agreement: judge=second)"
+   }
+  },
+  {
+   "id": "M36",
+   "answer_type": "value",
+   "ladder_correct": false,
+   "ladder_agreement": "judge=second",
+   "covered": false,
+   "reason": "discharge-plan follow-up windows are not a governed metric",
+   "acceptance": {
+    "status": "low_confidence",
+    "basis": "free-form SQL without independent agreement or a governed metric to check it against (agreement: judge=second)"
+   }
+  },
+  {
+   "id": "M37",
+   "answer_type": "table",
+   "ladder_correct": true,
+   "ladder_agreement": "judge_own",
+   "covered": true,
+   "metric_correct": true,
+   "metric": "feed_quality",
+   "version": 1,
+   "unaccounted_numbers": [],
+   "query": "SELECT src AS source_system, count(*) AS rows, sum(d IS NULL) AS undated_rows, round(100.0 * sum(d IS NULL) / count(*), 1) AS pct_undated FROM (SELECT record_id AS k, event_date AS d, available_date AS a, json_extract(payload, '$.source_system') AS src FROM record WHERE stream = 'labs') GROUP BY 1 ORDER BY 1",
+   "metric_result": "[[\"WH-HOSPITAL-0\", 180, 0, 0.0], [\"WH-HOSPITAL-1\", 242, 0, 0.0], [\"WH-HOSPITAL-2\", 176, 0, 0.0], [\"WH-HOSPITAL-3\", 326, 0, 0.0], [\"WH-LAB-0\", 24284, 0, 0.0], [\"WH-LAB-1\", 32413, 0, 0.0]]",
+   "acceptance": {
+    "status": "low_confidence",
+    "basis": "free-form SQL without independent agreement or a governed metric to check it against (agreement: judge_own)"
+   }
+  },
+  {
+   "id": "M38",
+   "answer_type": "value",
+   "ladder_correct": false,
+   "ladder_agreement": "judge=primary",
+   "covered": true,
+   "metric_correct": true,
+   "metric": "feed_quality",
+   "version": 1,
+   "unaccounted_numbers": [],
+   "query": "SELECT round(100.0 * sum(d IS NOT NULL AND julianday(a) - julianday(d) > 3) / sum(d IS NOT NULL), 1) AS pct_late FROM (SELECT record_id AS k, event_date AS d, available_date AS a, json_extract(payload, '$.source_system') AS src FROM record WHERE stream = 'labs') WHERE d BETWEEN '2029-01-01' AND '2029-08-15'",
+   "metric_result": "[[20.5]]",
+   "acceptance": {
+    "status": "low_confidence",
+    "basis": "free-form SQL without independent agreement or a governed metric to check it against (agreement: judge=primary)"
+   }
+  },
+  {
+   "id": "M39",
+   "answer_type": "count",
+   "ladder_correct": true,
+   "ladder_agreement": "primary=second",
+   "covered": false,
+   "reason": "remittance without adjudication is not a governed metric",
+   "acceptance": {
+    "status": "low_confidence",
+    "basis": "free-form SQL without independent agreement or a governed metric to check it against (agreement: primary=second)"
+   }
+  },
+  {
+   "id": "M40",
+   "answer_type": "count",
+   "ladder_correct": false,
+   "ladder_agreement": "primary=second",
+   "covered": true,
+   "metric_correct": true,
+   "metric": "stale_booked_appointments",
+   "version": 1,
+   "unaccounted_numbers": [],
+   "query": "SELECT count(*) AS stale_booked FROM (SELECT json_extract(payload,'$.appointment_id') AS appointment_id, max(json_extract(payload,'$.scheduled_date')) AS scheduled_date, sum(json_extract(payload,'$.status') <> 'booked') AS other_statuses FROM record WHERE stream = 'appointments' GROUP BY 1) WHERE other_statuses = 0 AND scheduled_date < '2029-08-15'",
+   "metric_result": "[[538]]",
+   "acceptance": {
+    "status": "low_confidence",
+    "basis": "departs from governed metric stale_booked_appointments: metric stale_booked_appointments: final_status is the latest-arriving status; statuses arrive out of order, so 'still booked' means no other status in ANY version"
+   }
+  },
+  {
+   "id": "M41",
+   "answer_type": "table",
+   "ladder_correct": false,
+   "ladder_agreement": "judge_own",
+   "covered": false,
+   "reason": "lab tests with several units is not a governed metric",
+   "acceptance": {
+    "status": "low_confidence",
+    "basis": "free-form SQL without independent agreement or a governed metric to check it against (agreement: judge_own)"
+   }
+  },
+  {
+   "id": "M42",
+   "answer_type": "count",
+   "ladder_correct": true,
+   "ladder_agreement": "primary=second",
+   "covered": true,
+   "metric_correct": true,
+   "metric": "patient_cohort",
+   "version": 1,
+   "unaccounted_numbers": [],
+   "query": "SELECT count(*) AS patients FROM patient p WHERE (p.patient_id IN (SELECT s.patient_id FROM social_need s WHERE (s.need IN ('transport')) AND (s.positive = 1)))",
+   "metric_result": "[[149]]",
+   "acceptance": {
+    "status": "low_confidence",
+    "basis": "free-form SQL without independent agreement or a governed metric to check it against (agreement: primary=second)"
+   }
+  },
+  {
+   "id": "M43",
+   "answer_type": "count",
+   "ladder_correct": true,
+   "ladder_agreement": "judge_own",
+   "covered": false,
+   "reason": "open patient balances are not a governed population atom",
+   "acceptance": {
+    "status": "low_confidence",
+    "basis": "free-form SQL without independent agreement or a governed metric to check it against (agreement: judge_own)"
+   }
+  },
+  {
+   "id": "M44",
+   "answer_type": "table",
+   "ladder_correct": false,
+   "ladder_agreement": "primary=second",
+   "covered": true,
+   "metric_correct": true,
+   "metric": "community_referral_delivery",
+   "version": 1,
+   "unaccounted_numbers": [],
+   "query": "SELECT json_extract(r.payload,'$.service_requested') AS service, count(*) AS referrals, sum(EXISTS (SELECT 1 FROM record o WHERE o.stream = 'community_service_outcomes' AND json_extract(o.payload,'$.referral_record_id') = r.record_id AND json_extract(o.payload,'$.service_delivered') = 1)) AS delivered FROM record r WHERE r.stream = 'community_service_referrals' GROUP BY 1 ORDER BY 1",
+   "metric_result": "[[\"food_access\", 23, 9], [\"transport\", 51, 21]]",
+   "acceptance": {
+    "status": "low_confidence",
+    "basis": "departs from governed metric community_referral_delivery: metric community_referral_delivery: delivery is recorded on community_service_outcomes (linked by referral_record_id), not on the referral record"
+   }
+  },
+  {
+   "id": "N01",
+   "answer_type": "count",
+   "ladder_correct": true,
+   "ladder_agreement": "judge=second",
+   "covered": true,
+   "metric_correct": true,
+   "metric": "patient_cohort",
+   "version": 1,
+   "unaccounted_numbers": [
+    1.0,
+    2.0
+   ],
+   "query": "SELECT count(*) AS patients FROM patient p WHERE (p.patient_id IN (SELECT c.patient_id FROM concept_patient c WHERE c.kind = 'condition' AND c.concept IN ('diabetes')))",
+   "metric_result": "[[230]]",
+   "acceptance": {
+    "status": "low_confidence",
+    "basis": "free-form SQL without independent agreement or a governed metric to check it against (agreement: judge=second)"
+   }
+  },
+  {
+   "id": "N02",
+   "answer_type": "patient_set",
+   "ladder_correct": true,
+   "ladder_agreement": "primary=second",
+   "covered": true,
+   "metric_correct": true,
+   "metric": "patient_cohort",
+   "version": 1,
+   "unaccounted_numbers": [],
+   "query": "SELECT p.patient_id FROM patient p WHERE (p.patient_id IN (SELECT m.patient_id FROM measurement m JOIN (SELECT m.patient_id AS pid, max(m.event_date) AS d FROM measurement m WHERE (m.concept = 'egfr') AND (m.value_canonical IS NOT NULL AND coalesce(m.result_status, '') <> 'cancelled') AND (m.event_date IS NOT NULL) GROUP BY m.patient_id) l ON l.pid = m.patient_id AND l.d = m.event_date WHERE (m.concept = 'egfr') AND (m.value_canonical IS NOT NULL AND coalesce(m.result_status, '') <> 'cancelled') AND (m.event_date IS NOT NULL) GROUP BY m.patient_id HAVING min(m.value_canonical) < 45)) AND (p.patient_id IN (SELECT m.patient_id FROM measurement m JOIN (SELECT m.patient_id AS pid, max(m.event_date) AS d FROM measurement m WHERE (m.concept = 'uacr') AND (m.value_canonical IS NOT NULL AND coalesce(m.result_status, '') <> 'cancelled') AND (m.event_date IS NOT NULL) GROUP BY m.patient_id) l ON l.pid = m.patient_id AND l.d = m.event_date WHERE (m.concept = 'uacr') AND (m.value_canonical IS NOT NULL AND coalesce(m.result_status, '') <> 'cancelled') AND (m.event_date IS NOT NULL) GROUP BY m.patient_id HAVING max(m.value_canonical) >= 30)) ORDER BY 1",
+   "metric_result": "[[\"P-1003\"], [\"P-1005\"], [\"P-5002\"], [\"P-9047\"], [\"P-HF07\"], [\"SYN-020834F4-B9E\"]]",
+   "acceptance": {
+    "status": "low_confidence",
+    "basis": "free-form SQL without independent agreement or a governed metric to check it against (agreement: primary=second)"
+   }
+  },
+  {
+   "id": "N04",
+   "answer_type": "count",
+   "ladder_correct": true,
+   "ladder_agreement": "decider=A",
+   "covered": true,
+   "metric_correct": true,
+   "metric": "patient_cohort",
+   "version": 1,
+   "unaccounted_numbers": [],
+   "query": "SELECT count(*) AS patients FROM patient p WHERE (p.patient_id IN (SELECT m.patient_id FROM medication m WHERE (((m.drug_class IN ('insulin') OR lower(m.drug_name) LIKE '%humulin%' OR lower(m.drug_name) LIKE '%insulin%'))) AND (m.source_stream IN ('medication_lists','medication_orders','pharmacy_dispenses','pharmacy_claims','pharmacy_history'))))",
+   "metric_result": "[[105]]",
+   "acceptance": {
+    "status": "low_confidence",
+    "basis": "free-form SQL without independent agreement or a governed metric to check it against (agreement: decider=A)"
+   }
+  },
+  {
+   "id": "N05",
+   "answer_type": "patient_set",
+   "ladder_correct": false,
+   "ladder_agreement": "judge=second",
+   "covered": true,
+   "metric_correct": true,
+   "metric": "patient_cohort",
+   "version": 1,
+   "unaccounted_numbers": [],
+   "query": "SELECT p.patient_id FROM patient p WHERE (p.patient_id IN (SELECT c.patient_id FROM concept_patient c WHERE c.kind = 'condition' AND c.concept IN ('heart_failure', 'heart_failure_reduced_ef'))) AND (NOT (p.patient_id IN (SELECT m.patient_id FROM medication m WHERE (((m.drug_class IN ('beta_blocker', 'hf_evidence_based_beta_blocker')))) AND (m.source_stream IN ('medication_lists','medication_orders','pharmacy_dispenses','pharmacy_claims','pharmacy_history'))))) ORDER BY 1",
+   "metric_result": "[[\"P-1001\"], [\"P-5007\"], [\"P-HF11\"], [\"P-HF12\"], [\"P-WM10\"], [\"SYN-01DBEFBF-341\"]]",
+   "acceptance": {
+    "status": "low_confidence",
+    "basis": "departs from governed metric hf_no_beta_blocker: metric hf_no_beta_blocker value set beta_blocker excludes albuterol, albuterol, ipratropium; the query's filter includes them"
+   }
+  },
+  {
+   "id": "N06",
+   "answer_type": "count",
+   "ladder_correct": true,
+   "ladder_agreement": "primary=second",
+   "covered": false,
+   "reason": "sex-specific thresholds (two populations with different cutoffs) are not one atom set",
+   "acceptance": {
+    "status": "low_confidence",
+    "basis": "free-form SQL without independent agreement or a governed metric to check it against (agreement: primary=second)"
+   }
+  },
+  {
+   "id": "N07",
+   "answer_type": "count",
+   "ladder_correct": false,
+   "ladder_agreement": "judge=second",
+   "covered": true,
+   "metric_correct": false,
+   "metric": "adult_obesity_computed_bmi",
+   "version": 1,
+   "unaccounted_numbers": [],
+   "query": "WITH h AS (SELECT patient_id, max(value) / 100.0 AS m FROM measurement WHERE source_table = 'vitals' AND name = 'height_cm' AND value > 0 GROUP BY patient_id), w AS (SELECT p.patient_id, coalesce((SELECT value_canonical FROM measurement_latest l WHERE l.patient_id = p.patient_id AND l.concept = 'weight'), (SELECT max(value_canonical) FROM measurement m WHERE m.patient_id = p.patient_id AND m.concept = 'weight' AND m.event_date IS NULL)) AS kg FROM patient p WHERE p.age_latest >= 18) SELECT count(*) AS adults_bmi_30_plus FROM w JOIN h ON h.patient_id = w.patient_id WHERE w.kg / (h.m * h.m) >= 30",
+   "metric_result": "[[785]]",
+   "acceptance": {
+    "status": "low_confidence",
+    "basis": "departs from governed metric adult_obesity_computed_bmi: metric adult_obesity_computed_bmi: height is an undated baseline measurement; requiring a dated height drops every patient"
+   }
+  },
+  {
+   "id": "N08",
+   "answer_type": "patient_set",
+   "ladder_correct": true,
+   "ladder_agreement": "primary=second",
+   "covered": true,
+   "metric_correct": true,
+   "metric": "patient_cohort",
+   "version": 1,
+   "unaccounted_numbers": [],
+   "query": "SELECT p.patient_id FROM patient p WHERE (p.patient_id IN (SELECT m.patient_id FROM measurement m JOIN (SELECT m.patient_id AS pid, max(m.event_date) AS d FROM measurement m WHERE (m.concept = 'hba1c') AND (m.value_canonical IS NOT NULL AND coalesce(m.result_status, '') <> 'cancelled') AND (m.event_date IS NOT NULL) GROUP BY m.patient_id) l ON l.pid = m.patient_id AND l.d = m.event_date WHERE (m.concept = 'hba1c') AND (m.value_canonical IS NOT NULL AND coalesce(m.result_status, '') <> 'cancelled') AND (m.event_date IS NOT NULL) GROUP BY m.patient_id HAVING max(m.value_canonical) >= 6.5)) AND (NOT (p.patient_id IN (SELECT c.patient_id FROM concept_patient c WHERE c.kind = 'condition' AND c.concept IN ('diabetes')))) ORDER BY 1",
+   "metric_result": "[[\"P-MR03\"], [\"P-MR05\"], [\"P-MR06\"], [\"P-MR08\"], [\"SYN-00B5AC3D-AF4\"], [\"SYN-020834F4-B9E\"]]",
+   "acceptance": {
+    "status": "low_confidence",
+    "basis": "free-form SQL without independent agreement or a governed metric to check it against (agreement: primary=second)"
+   }
+  },
+  {
+   "id": "N09",
+   "answer_type": "count",
+   "ladder_correct": false,
+   "ladder_agreement": "primary=second",
+   "covered": true,
+   "metric_correct": true,
+   "metric": "patient_cohort",
+   "version": 1,
+   "unaccounted_numbers": [],
+   "query": "SELECT count(*) AS patients FROM patient p WHERE (p.patient_id IN (SELECT m.patient_id FROM measurement m WHERE (m.concept = 'ldl') AND (m.value_canonical IS NOT NULL AND coalesce(m.result_status, '') <> 'cancelled') AND (m.value_canonical >= 190)))",
+   "metric_result": "[[45]]",
+   "acceptance": {
+    "status": "verified",
+    "basis": "lint-clean against governed metric ldl_190_ever@v1"
+   }
+  },
+  {
+   "id": "N11",
+   "answer_type": "patient_set",
+   "ladder_correct": false,
+   "ladder_agreement": "primary=second",
+   "covered": true,
+   "metric_correct": true,
+   "metric": "patient_cohort",
+   "version": 1,
+   "unaccounted_numbers": [],
+   "query": "SELECT p.patient_id FROM patient p WHERE (p.patient_id IN (SELECT c.patient_id FROM concept_patient c WHERE c.kind = 'condition' AND c.concept IN ('atrial_fibrillation'))) AND (p.patient_id IN (SELECT m.patient_id FROM medication m WHERE (((m.drug_class IN ('anticoagulant')))) AND (m.source_stream IN ('medication_lists','medication_orders','pharmacy_dispenses','pharmacy_claims','pharmacy_history')))) AND (p.patient_id IN (SELECT m.patient_id FROM medication m WHERE (((m.drug_class IN ('antiplatelet')))) AND (m.source_stream IN ('medication_lists','medication_orders','pharmacy_dispenses','pharmacy_claims','pharmacy_history')))) ORDER BY 1",
+   "metric_result": "[[\"P-5002\"], [\"SYN-7E6C3FD6-AC2\"], [\"SYN-89C03FD5-029\"], [\"SYN-A49EE148-F19\"], [\"SYN-FC2070C0-455\"]]",
+   "acceptance": {
+    "status": "low_confidence",
+    "basis": "free-form SQL without independent agreement or a governed metric to check it against (agreement: primary=second)"
+   }
+  },
+  {
+   "id": "N12",
+   "answer_type": "patient_set",
+   "ladder_correct": false,
+   "ladder_agreement": "primary=second",
+   "covered": true,
+   "metric_correct": false,
+   "metric": "patient_cohort",
+   "version": 1,
+   "unaccounted_numbers": [],
+   "query": "SELECT p.patient_id FROM patient p WHERE (p.coverage_type IN ('commercial')) AND ((p.age_latest >= 40) AND (p.age_latest <= 64)) AND (p.patient_id IN (SELECT m.patient_id FROM measurement m WHERE (m.concept = 'potassium') AND (m.value_canonical IS NOT NULL AND coalesce(m.result_status, '') <> 'cancelled') AND (m.value_canonical >= 5) AND (m.event_date BETWEEN '2028-08-16' AND '2029-08-15'))) ORDER BY 1",
+   "metric_result": "[[\"SYN-08AE4C50-8B0\"], [\"SYN-32DE2BDF-F92\"], [\"SYN-38905DA8-BD8\"], [\"SYN-3C3DB608-46F\"], [\"SYN-4E83793B-826\"], [\"SYN-526D378A-B90\"]]",
+   "acceptance": {
+    "status": "low_confidence",
+    "basis": "free-form SQL without independent agreement or a governed metric to check it against (agreement: primary=second)"
+   }
+  },
+  {
+   "id": "N13",
+   "answer_type": "table",
+   "ladder_correct": false,
+   "ladder_agreement": "primary=second",
+   "covered": false,
+   "reason": "specialist visits identified by specialty organization are not a governed visit class",
+   "acceptance": {
+    "status": "low_confidence",
+    "basis": "free-form SQL without independent agreement or a governed metric to check it against (agreement: primary=second)"
+   }
+  },
+  {
+   "id": "N14",
+   "answer_type": "value",
+   "ladder_correct": false,
+   "ladder_agreement": "judge=second",
+   "covered": true,
+   "metric_correct": true,
+   "metric": "post_discharge_followup_7d",
+   "version": 1,
+   "unaccounted_numbers": [],
+   "query": "WITH dc AS (SELECT a.record_id, a.patient_id, a.event_date AS discharge_day FROM record a JOIN visit e ON e.encounter_id = json_extract(a.payload,'$.encounter_id') WHERE a.stream = 'adt' AND json_extract(a.payload,'$.event') = 'discharge' AND e.type_concept IN ('inpatient_admission','observation_stay') AND a.event_date BETWEEN '2028-08-16' AND '2029-08-08') SELECT round(100.0 * sum(EXISTS (SELECT 1 FROM visit v WHERE v.patient_id = dc.patient_id AND v.in_person = 1 AND v.type_concept IN ('primary_care_visit','specialist_visit') AND julianday(v.event_date) - julianday(dc.discharge_day) BETWEEN 1 AND 7)) / count(*), 1) AS pct_followup_7d FROM dc",
+   "metric_result": "[[47.2]]",
+   "acceptance": {
+    "status": "low_confidence",
+    "basis": "departs from governed metric post_discharge_followup_7d: metric post_discharge_followup_7d: follow-up counts 1-7 days after the index date; the query uses 0-7; metric post_discharge_followup_7d: index events must end 7 days before the as-of date (2029-08-08) so every follow-up window is fully observed; the query runs them to 2029-08-15; metric post_discharge_followup_7d: the discharge date is the ADT discharge event date (local business date); stay.disc"
+   }
+  },
+  {
+   "id": "N15",
+   "answer_type": "patient_set",
+   "ladder_correct": true,
+   "ladder_agreement": "primary=second",
+   "covered": true,
+   "metric_correct": true,
+   "metric": "patient_cohort",
+   "version": 1,
+   "unaccounted_numbers": [],
+   "query": "SELECT p.patient_id FROM patient p WHERE (p.patient_id IN (SELECT v.patient_id FROM visit v WHERE (v.type IN ('emergency', 'ED', 'ED stroke alert')) AND (v.event_date BETWEEN '2028-08-16' AND '2029-08-15') GROUP BY v.patient_id HAVING count(DISTINCT v.encounter_id) >= 2)) ORDER BY 1",
+   "metric_result": "[[\"SYN-0F1D6508-8F9\"], [\"SYN-21D743BD-A1B\"], [\"SYN-366F21E2-52F\"], [\"SYN-67F2F871-F14\"], [\"SYN-68B8B2D2-968\"], [\"SYN-7ABDFBCA-A81\"]]",
+   "acceptance": {
+    "status": "low_confidence",
+    "basis": "departs from governed metric repeat_ed_users_12m: metric repeat_ed_users_12m: the trailing 12-month window runs 2028-08-16..2029-08-15 (inclusive, 365 days); the query starts on 2028-08-15, one day early"
+   }
+  },
+  {
+   "id": "N16",
+   "answer_type": "table",
+   "ladder_correct": false,
+   "ladder_agreement": "judge=primary",
+   "covered": false,
+   "reason": "a table by stay type and year needs two group-bys",
+   "acceptance": {
+    "status": "low_confidence",
+    "basis": "free-form SQL without independent agreement or a governed metric to check it against (agreement: judge=primary)"
+   }
+  },
+  {
+   "id": "N17",
+   "answer_type": "table",
+   "ladder_correct": false,
+   "ladder_agreement": "judge=second",
+   "covered": true,
+   "metric_correct": true,
+   "metric": "pcp_visits_per_1000_attributed",
+   "version": 1,
+   "unaccounted_numbers": [],
+   "query": "SELECT p.pcp_practice_id AS practice, count(DISTINCT p.patient_id) AS attributed_patients, count(DISTINCT v.encounter_id) AS visits, round(1000.0 * count(DISTINCT v.encounter_id) / count(DISTINCT p.patient_id), 1) AS per_1000 FROM patient p LEFT JOIN visit v ON v.patient_id = p.patient_id AND v.type_concept = 'primary_care_visit' AND v.in_person = 1 AND v.is_practice = 1 AND v.event_date BETWEEN '2028-01-01' AND '2028-12-31' WHERE p.pcp_practice_id IS NOT NULL GROUP BY p.pcp_practice_id ORDER BY p.pcp_practice_id",
+   "metric_result": "[[\"WH-PRACTICE-0\", 181, 594, 3281.8], [\"WH-PRACTICE-1\", 212, 792, 3735.8], [\"WH-PRACTICE-2\", 180, 576, 3200.0], [\"WH-PRACTICE-3\", 209, 702, 3358.9], [\"WH-PRACTICE-4\", 201, 530, 2636.8], [\"WH-PRACTICE-5\", 211, 744, 3526.1]]",
+   "acceptance": {
+    "status": "low_confidence",
+    "basis": "departs from governed metric pcp_visits_per_1000_attributed: metric pcp_visits_per_1000_attributed value set pcp_visit: only visits held at our practices count (outside specialty/dental/optometry sites do not); the query does not restrict it"
+   }
+  },
+  {
+   "id": "N18",
+   "answer_type": "count",
+   "ladder_correct": false,
+   "ladder_agreement": "judge=primary",
+   "covered": true,
+   "metric_correct": true,
+   "metric": "attributed_pcp_visit_gap_12m",
+   "version": 1,
+   "unaccounted_numbers": [],
+   "query": "SELECT count(*) AS patients FROM patient p WHERE p.pcp_practice_id IS NOT NULL AND NOT EXISTS (SELECT 1 FROM visit v WHERE v.patient_id = p.patient_id AND v.type_concept = 'primary_care_visit' AND v.in_person = 1 AND v.is_practice = 1 AND v.event_date BETWEEN '2028-08-16' AND '2029-08-15')",
+   "metric_result": "[[424]]",
+   "acceptance": {
+    "status": "low_confidence",
+    "basis": "departs from governed metric attributed_pcp_visit_gap_12m: metric attributed_pcp_visit_gap_12m: the trailing 12-month window runs 2028-08-16..2029-08-15 (inclusive, 365 days); the query starts on 2028-08-15, one day early; metric attributed_pcp_visit_gap_12m value set pcp_visit: only visits held at our practices count for attributed primary care (outside dental/optometry/specialty sites do not); the query does not restrict it"
+   }
+  },
+  {
+   "id": "N19",
+   "answer_type": "table",
+   "ladder_correct": true,
+   "ladder_agreement": "judge_own",
+   "covered": false,
+   "reason": "referrals by requested specialty is not a governed grouping",
+   "acceptance": {
+    "status": "low_confidence",
+    "basis": "free-form SQL without independent agreement or a governed metric to check it against (agreement: judge_own)"
+   }
+  },
+  {
+   "id": "N20",
+   "answer_type": "value",
+   "ladder_correct": true,
+   "ladder_agreement": "judge=second",
+   "covered": false,
+   "reason": "ED-to-hospital conversion through encounter links is not a governed metric",
+   "acceptance": {
+    "status": "verified",
+    "basis": "lint-clean against governed metric ed_admit_obs_share@v1"
+   }
+  },
+  {
+   "id": "N21",
+   "answer_type": "count",
+   "ladder_correct": true,
+   "ladder_agreement": "primary=second",
+   "covered": true,
+   "metric_correct": true,
+   "metric": "patient_cohort",
+   "version": 1,
+   "unaccounted_numbers": [],
+   "query": "SELECT count(*) AS patients FROM patient p WHERE (p.patient_id IN (SELECT v.patient_id FROM visit v WHERE (v.type IN ('urgent_care', 'urgentcare')) AND (v.event_date BETWEEN '2028-08-16' AND '2029-08-15'))) AND (NOT (p.patient_id IN (SELECT v.patient_id FROM visit v WHERE (v.type IN ('emergency', 'ED', 'ED stroke alert')) AND (v.event_date BETWEEN '2028-08-16' AND '2029-08-15'))))",
+   "metric_result": "[[105]]",
+   "acceptance": {
+    "status": "low_confidence",
+    "basis": "free-form SQL without independent agreement or a governed metric to check it against (agreement: primary=second)"
+   }
+  },
+  {
+   "id": "N22",
+   "answer_type": "table",
+   "ladder_correct": false,
+   "ladder_agreement": "judge=primary",
+   "covered": false,
+   "reason": "telehealth share by practice is not a governed metric",
+   "acceptance": {
+    "status": "low_confidence",
+    "basis": "free-form SQL without independent agreement or a governed metric to check it against (agreement: judge=primary)"
+   }
+  },
+  {
+   "id": "N23",
+   "answer_type": "value",
+   "ladder_correct": true,
+   "ladder_agreement": "primary=second",
+   "covered": true,
+   "metric_correct": true,
+   "metric": "medical_claims",
+   "version": 1,
+   "unaccounted_numbers": [],
+   "query": "SELECT round(100.0 * sum(denied_then_paid) / nullif(sum(ever_denied), 0), 1) AS overturn_rate FROM claim WHERE 1=1",
+   "metric_result": "[[76.5]]",
+   "acceptance": {
+    "status": "low_confidence",
+    "basis": "free-form SQL without independent agreement or a governed metric to check it against (agreement: primary=second)"
+   }
+  },
+  {
+   "id": "N24",
+   "answer_type": "value",
+   "ladder_correct": true,
+   "ladder_agreement": "primary=second",
+   "covered": true,
+   "metric_correct": true,
+   "metric": "patient_refunds",
+   "version": 1,
+   "unaccounted_numbers": [],
+   "query": "SELECT round(sum(json_extract(r.payload, '$.amount_cents')) / 100.0, 2) AS amount_usd FROM record r WHERE (r.stream = 'patient_refunds') AND (json_extract(r.payload, '$.status') = 'issued') AND (r.event_date BETWEEN '2028-01-01' AND '2028-12-31')",
+   "metric_result": "[[460.5]]",
+   "acceptance": {
+    "status": "low_confidence",
+    "basis": "free-form SQL without independent agreement or a governed metric to check it against (agreement: primary=second)"
+   }
+  },
+  {
+   "id": "N25",
+   "answer_type": "table",
+   "ladder_correct": false,
+   "ladder_agreement": "judge=second",
+   "covered": true,
+   "metric_correct": true,
+   "metric": "payer_cash_net",
+   "version": 1,
+   "unaccounted_numbers": [],
+   "query": "SELECT c.payer AS payer, count(*) AS allocations, round(sum(json_extract(r.payload,'$.allocated_cents')) / 100.0, 2) AS net_cash_dollars FROM record r JOIN claim c ON c.claim_id = json_extract(r.payload,'$.claim_id') WHERE r.stream = 'payer_cash_allocations' AND r.event_date BETWEEN '2028-01-01' AND '2028-12-31' GROUP BY c.payer ORDER BY c.payer",
+   "metric_result": "[[\"WH-PAYER-0\", 1219, 116516.0], [\"WH-PAYER-1\", 1718, 152494.05], [\"WH-PAYER-2\", 1037, 97840.99]]",
+   "acceptance": {
+    "status": "low_confidence",
+    "basis": "departs from governed metric payer_cash_net: metric payer_cash_net: payer comes from the medical claim; joining remittance-advice versions fans out allocations"
+   }
+  },
+  {
+   "id": "N26",
+   "answer_type": "value",
+   "ladder_correct": false,
+   "ladder_agreement": "primary=second",
+   "covered": true,
+   "metric_correct": false,
+   "metric": "medical_claims",
+   "version": 1,
+   "unaccounted_numbers": [],
+   "query": "SELECT round(avg(julianday(first_submitted_date) - julianday(service_date)), 2) AS avg_days_to_first_submission FROM claim WHERE (service_date BETWEEN '2028-01-01' AND '2028-12-31') AND (first_submitted_date IS NOT NULL)",
+   "metric_result": "[[1.73]]",
+   "acceptance": {
+    "status": "low_confidence",
+    "basis": "departs from governed metric claim_lag_days: metric claim_lag_days anchors time on claim.service_date; the query uses first_available_date"
+   }
+  },
+  {
+   "id": "N27",
+   "answer_type": "value",
+   "ladder_correct": true,
+   "ladder_agreement": "judge=second",
+   "covered": true,
+   "metric_correct": true,
+   "metric": "pharmacy_claim_net_paid",
+   "version": 1,
+   "unaccounted_numbers": [],
+   "query": "SELECT round(sum(json_extract(r.payload, '$.payer_paid_delta_cents')) / 100.0, 2) AS net_payer_paid_usd FROM record r WHERE (r.stream = 'pharmacy_claim_transactions') AND (r.event_date BETWEEN '2028-01-01' AND '2028-12-31')",
+   "metric_result": "[[299451.0]]",
+   "acceptance": {
+    "status": "low_confidence",
+    "basis": "free-form SQL without independent agreement or a governed metric to check it against (agreement: judge=second)"
+   }
+  },
+  {
+   "id": "N29",
+   "answer_type": "value",
+   "ladder_correct": false,
+   "ladder_agreement": "primary=second",
+   "covered": true,
+   "metric_correct": true,
+   "metric": "medical_claims",
+   "version": 1,
+   "unaccounted_numbers": [],
+   "query": "SELECT round(avg(julianday(first_payer_cash_date) - julianday(service_date)), 2) AS avg_days_to_first_payer_cash FROM claim WHERE (service_date BETWEEN '2028-01-01' AND '2028-12-31') AND (first_payer_cash_date IS NOT NULL)",
+   "metric_result": "[[25.16]]",
+   "acceptance": {
+    "status": "low_confidence",
+    "basis": "departs from governed metric days_to_payer_cash: metric days_to_payer_cash anchors time on claim.service_date; the query uses available_date"
+   }
+  },
+  {
+   "id": "N30",
+   "answer_type": "count",
+   "ladder_correct": true,
+   "ladder_agreement": "primary=second",
+   "covered": true,
+   "metric_correct": true,
+   "metric": "clearinghouse_member_id_rejections",
+   "version": 1,
+   "unaccounted_numbers": [],
+   "query": "SELECT count(DISTINCT json_extract(r.payload, '$.claim_id')) AS claims FROM record r WHERE (r.stream = 'claim_acknowledgements') AND (json_extract(r.payload, '$.status') = 'rejected_for_member_identifier') AND (r.event_date BETWEEN '2027-01-01' AND '2027-12-31')",
+   "metric_result": "[[280]]",
+   "acceptance": {
+    "status": "low_confidence",
+    "basis": "free-form SQL without independent agreement or a governed metric to check it against (agreement: primary=second)"
+   }
+  },
+  {
+   "id": "N31",
+   "answer_type": "value",
+   "ladder_correct": false,
+   "ladder_agreement": "judge=second",
+   "covered": true,
+   "metric_correct": false,
+   "metric": "patient_cohort",
+   "version": 1,
+   "unaccounted_numbers": [],
+   "query": "SELECT round(100.0 * sum(CASE WHEN ((p.patient_id IN (SELECT m.patient_id FROM measurement m JOIN (SELECT m.patient_id AS pid, max(m.event_date) AS d FROM measurement m WHERE (m.concept = 'systolic_bp') AND (m.value_canonical IS NOT NULL AND coalesce(m.result_status, '') <> 'cancelled') AND (m.event_date IS NOT NULL) AND (m.event_date BETWEEN '2028-08-16' AND '2029-08-15') GROUP BY m.patient_id) l ON l.pid = m.patient_id AND l.d = m.event_date WHERE (m.concept = 'systolic_bp') AND (m.value_canonical IS NOT NULL AND coalesce(m.result_status, '') <> 'cancelled') AND (m.event_date IS NOT NULL) AND (m.event_date BETWEEN '2028-08-16' AND '2029-08-15') GROUP BY m.patient_id HAVING min(m.value_canonical) < 140)) AND (p.patient_id IN (SELECT m.patient_id FROM measurement m JOIN (SELECT m.patient_id AS pid, max(m.event_date) AS d FROM measurement m WHERE (m.concept = 'diastolic_bp') AND (m.value_canonical IS NOT NULL AND coalesce(m.result_status, '') <> 'cancelled') AND (m.event_date IS NOT NULL) AND (m.event_date BETWEEN '2028-08-16' AND '2029-08-15') GROUP BY m.patient_id) l ON l.pid = m.patient_id AND l.d = m.event_date WHERE (m.concept = 'diastolic_bp') AND (m.value_canonical IS NOT NULL AND coalesce(m.result_status, '') <> 'cancelled') AND (m.event_date IS NOT NULL) AND (m.event_date BETWEEN '2028-08-16' AND '2029-08-15') GROUP BY m.patient_id HAVING min(m.value_canonical) < 90))) THEN 1 ELSE 0 END) / count(*), 1) AS percent FROM patient p WHERE (p.patient_id IN (SELECT c.patient_id FROM concept_patient c WHERE c.kind = 'condition' AND c.concept IN ('hypertension'))) AND ((p.age_latest >= 18) AND (p.age_latest <= 85))",
+   "metric_result": "[[74.2]]",
+   "acceptance": {
+    "status": "verified",
+    "basis": "lint-clean against governed metric measure.cbp@v1"
+   }
+  },
+  {
+   "id": "N32",
+   "answer_type": "value",
+   "ladder_correct": true,
+   "ladder_agreement": "primary=second",
+   "covered": true,
+   "metric_correct": true,
+   "metric": "patient_cohort",
+   "version": 1,
+   "unaccounted_numbers": [],
+   "query": "SELECT round(100.0 * sum(CASE WHEN (p.patient_id IN (SELECT m.patient_id FROM measurement m WHERE (m.concept = 'hba1c') AND (m.value_canonical IS NOT NULL AND coalesce(m.result_status, '') <> 'cancelled') AND (m.event_date BETWEEN '2028-08-16' AND '2029-08-15'))) THEN 1 ELSE 0 END) / count(*), 1) AS percent FROM patient p WHERE (p.patient_id IN (SELECT c.patient_id FROM concept_patient c WHERE c.kind = 'condition' AND c.concept IN ('diabetes')))",
+   "metric_result": "[[86.5]]",
+   "acceptance": {
+    "status": "low_confidence",
+    "basis": "free-form SQL without independent agreement or a governed metric to check it against (agreement: primary=second)"
+   }
+  },
+  {
+   "id": "N33",
+   "answer_type": "value",
+   "ladder_correct": false,
+   "ladder_agreement": "judge=second",
+   "covered": true,
+   "metric_correct": false,
+   "metric": "patient_cohort",
+   "version": 1,
+   "unaccounted_numbers": [],
+   "query": "SELECT round(100.0 * sum(CASE WHEN (p.patient_id IN (SELECT m.patient_id FROM medication m WHERE (((m.drug_class IN ('statin')))) AND (m.source_stream IN ('medication_lists','medication_orders','pharmacy_dispenses','pharmacy_claims','pharmacy_history')))) THEN 1 ELSE 0 END) / count(*), 1) AS percent FROM patient p WHERE (p.patient_id IN (SELECT c.patient_id FROM concept_patient c WHERE c.kind = 'condition' AND c.concept IN ('diabetes'))) AND ((p.age_latest >= 40) AND (p.age_latest <= 75))",
+   "metric_result": "[[49.1]]",
+   "acceptance": {
+    "status": "low_confidence",
+    "basis": "free-form SQL without independent agreement or a governed metric to check it against (agreement: judge=second)"
+   }
+  },
+  {
+   "id": "N34",
+   "answer_type": "value",
+   "ladder_correct": false,
+   "ladder_agreement": "judge=second",
+   "covered": true,
+   "metric_correct": false,
+   "metric": "kidney_health_evaluation_diabetes",
+   "version": 1,
+   "unaccounted_numbers": [],
+   "query": "SELECT round(100.0 * count(DISTINCT CASE WHEN EXISTS (SELECT 1 FROM measurement m WHERE m.patient_id = p.patient_id AND m.concept = 'egfr' AND m.value_canonical IS NOT NULL AND m.event_date BETWEEN '2028-01-01' AND '2028-12-31') AND EXISTS (SELECT 1 FROM measurement m WHERE m.patient_id = p.patient_id AND m.concept = 'uacr' AND m.value_canonical IS NOT NULL AND m.event_date BETWEEN '2028-01-01' AND '2028-12-31') THEN p.patient_id END) / count(DISTINCT p.patient_id), 1) AS pct_kidney_health_evaluation FROM patient p JOIN concept_patient cp ON cp.patient_id = p.patient_id AND cp.concept = 'diabetes' WHERE p.age_latest BETWEEN 18 AND 85",
+   "metric_result": "[[91.0]]",
+   "acceptance": {
+    "status": "low_confidence",
+    "basis": "departs from governed metric kidney_health_evaluation_diabetes: metric kidney_health_evaluation_diabetes restricts the population to ages 18-85; the query applies no age band"
+   }
+  },
+  {
+   "id": "N35",
+   "answer_type": "value",
+   "ladder_correct": true,
+   "ladder_agreement": "judge=second",
+   "covered": false,
+   "reason": "Tdap catch-up after a reported tetanus history is not a governed metric",
+   "acceptance": {
+    "status": "low_confidence",
+    "basis": "free-form SQL without independent agreement or a governed metric to check it against (agreement: judge=second)"
+   }
+  },
+  {
+   "id": "N36",
+   "answer_type": "value",
+   "ladder_correct": false,
+   "ladder_agreement": "judge=second",
+   "covered": false,
+   "reason": "discharge-plan follow-up windows are not a governed metric",
+   "acceptance": {
+    "status": "low_confidence",
+    "basis": "free-form SQL without independent agreement or a governed metric to check it against (agreement: judge=second)"
+   }
+  },
+  {
+   "id": "N38",
+   "answer_type": "count",
+   "ladder_correct": true,
+   "ladder_agreement": "primary=second",
+   "covered": false,
+   "reason": "stuck-open encounters are not a governed metric",
+   "acceptance": {
+    "status": "low_confidence",
+    "basis": "free-form SQL without independent agreement or a governed metric to check it against (agreement: primary=second)"
+   }
+  },
+  {
+   "id": "N39",
+   "answer_type": "value",
+   "ladder_correct": true,
+   "ladder_agreement": "decider=A",
+   "covered": true,
+   "metric_correct": true,
+   "metric": "feed_quality",
+   "version": 1,
+   "unaccounted_numbers": [],
+   "query": "SELECT round(avg(CASE WHEN d IS NOT NULL THEN julianday(a) - julianday(d) END), 2) AS avg_lag_days FROM (SELECT record_id AS k, event_date AS d, available_date AS a, json_extract(payload, '$.source_system') AS src FROM record WHERE stream = 'labs') WHERE d BETWEEN '2029-01-01' AND '2029-08-15'",
+   "metric_result": "[[1.62]]",
+   "acceptance": {
+    "status": "low_confidence",
+    "basis": "free-form SQL without independent agreement or a governed metric to check it against (agreement: decider=A)"
+   }
+  },
+  {
+   "id": "N40",
+   "answer_type": "count",
+   "ladder_correct": true,
+   "ladder_agreement": "primary=second",
+   "covered": true,
+   "metric_correct": true,
+   "metric": "original_claims_missing_member_id",
+   "version": 1,
+   "unaccounted_numbers": [],
+   "query": "SELECT count(DISTINCT json_extract(r.payload, '$.claim_id')) AS claims FROM record r WHERE (r.stream = 'medical_claim_submissions') AND (json_extract(r.payload, '$.submission_kind') = 'original' AND json_extract(r.payload, '$.member_identifier_submitted') IS NULL)",
+   "metric_result": "[[936]]",
+   "acceptance": {
+    "status": "low_confidence",
+    "basis": "free-form SQL without independent agreement or a governed metric to check it against (agreement: primary=second)"
+   }
+  },
+  {
+   "id": "N41",
+   "answer_type": "value",
+   "ladder_correct": true,
+   "ladder_agreement": "primary=second",
+   "covered": true,
+   "metric_correct": true,
+   "metric": "feed_quality",
+   "version": 1,
+   "unaccounted_numbers": [],
+   "query": "SELECT round(100.0 * sum(d IS NOT NULL AND julianday(a) - julianday(d) >= 3) / sum(d IS NOT NULL), 1) AS pct_late FROM (SELECT json_extract(payload, '$.encounter_id') AS k, min(event_date) AS d, min(available_date) AS a, min(json_extract(payload, '$.source_system')) AS src FROM record WHERE stream = 'encounters' GROUP BY 1) WHERE d BETWEEN '2029-01-01' AND '2029-08-15'",
+   "metric_result": "[[19.2]]",
+   "acceptance": {
+    "status": "low_confidence",
+    "basis": "free-form SQL without independent agreement or a governed metric to check it against (agreement: primary=second)"
+   }
+  },
+  {
+   "id": "N42",
+   "answer_type": "table",
+   "ladder_correct": false,
+   "ladder_agreement": "primary=second",
+   "covered": false,
+   "reason": "a table by social need is not a governed grouping",
+   "acceptance": {
+    "status": "verified",
+    "basis": "lint-clean against governed metric food_insecurity_rate@v1"
+   }
+  },
+  {
+   "id": "N43",
+   "answer_type": "value",
+   "ladder_correct": true,
+   "ladder_agreement": "judge=second",
+   "covered": false,
+   "reason": "transportation referrals are not a governed atom",
+   "acceptance": {
+    "status": "low_confidence",
+    "basis": "free-form SQL without independent agreement or a governed metric to check it against (agreement: judge=second)"
+   }
+  },
+  {
+   "id": "N44",
+   "answer_type": "count",
+   "ladder_correct": true,
+   "ladder_agreement": "primary=second",
+   "covered": true,
+   "metric_correct": true,
+   "metric": "patient_cohort",
+   "version": 1,
+   "unaccounted_numbers": [],
+   "query": "SELECT count(*) AS patients FROM patient p WHERE (p.patient_id IN (SELECT s.patient_id FROM social_need s WHERE (s.need IN ('food', 'transport', 'cost_of_care')) AND (s.positive = 1) GROUP BY s.patient_id HAVING count(DISTINCT s.need) >= 2))",
+   "metric_result": "[[62]]",
+   "acceptance": {
+    "status": "verified",
+    "basis": "lint-clean against governed metric food_insecurity_rate@v1"
+   }
+  },
+  {
+   "id": "O01",
+   "answer_type": "count",
+   "ladder_correct": true,
+   "ladder_agreement": "judge=second",
+   "covered": true,
+   "metric_correct": false,
+   "metric": "patient_cohort",
+   "version": 1,
+   "unaccounted_numbers": [],
+   "query": "SELECT count(*) AS patients FROM patient p WHERE (p.patient_id IN (SELECT c.patient_id FROM concept_patient c WHERE c.kind = 'condition' AND c.concept IN ('heart_failure', 'heart_failure_reduced_ef'))) AND (p.patient_id IN (SELECT m.patient_id FROM medication m WHERE (((',' || replace(lower(m.ingredients), ' ', '') || ',') LIKE '%,furosemide,%')) AND (m.source_stream = 'pharmacy_dispenses' AND m.status = 'dispensed') AND (m.event_date BETWEEN '2029-02-16' AND '2029-08-15')))",
+   "metric_result": "[[72]]",
+   "acceptance": {
+    "status": "low_confidence",
+    "basis": "free-form SQL without independent agreement or a governed metric to check it against (agreement: judge=second)"
+   }
+  },
+  {
+   "id": "O02",
+   "answer_type": "patient_set",
+   "ladder_correct": true,
+   "ladder_agreement": "judge=second",
+   "covered": true,
+   "metric_correct": true,
+   "metric": "patient_cohort",
+   "version": 1,
+   "unaccounted_numbers": [],
+   "query": "SELECT p.patient_id FROM patient p WHERE (p.patient_id IN (SELECT m.patient_id FROM measurement m JOIN (SELECT m.patient_id AS pid, max(m.event_date) AS d FROM measurement m WHERE (m.concept = 'potassium') AND (m.value_canonical IS NOT NULL AND coalesce(m.result_status, '') <> 'cancelled') AND (m.event_date IS NOT NULL) GROUP BY m.patient_id) l ON l.pid = m.patient_id AND l.d = m.event_date WHERE (m.concept = 'potassium') AND (m.value_canonical IS NOT NULL AND coalesce(m.result_status, '') <> 'cancelled') AND (m.event_date IS NOT NULL) GROUP BY m.patient_id HAVING max(m.value_canonical) > 5)) AND (p.patient_id IN (SELECT m.patient_id FROM medication m WHERE (((m.drug_class IN ('ace_inhibitor', 'arb', 'arni', 'mra')))) AND (m.source_stream = 'pharmacy_dispenses' AND m.status = 'dispensed') AND (m.event_date BETWEEN '2029-02-16' AND '2029-08-15'))) ORDER BY 1",
+   "metric_result": "[[\"P-1005\"], [\"SYN-0215A28F-EE8\"], [\"SYN-123E19A8-7CC\"], [\"SYN-32DE2BDF-F92\"], [\"SYN-340EFC7B-89F\"], [\"SYN-3F7FF341-A78\"]]",
+   "acceptance": {
+    "status": "low_confidence",
+    "basis": "free-form SQL without independent agreement or a governed metric to check it against (agreement: judge=second)"
+   }
+  },
+  {
+   "id": "O03",
+   "answer_type": "count",
+   "ladder_correct": false,
+   "ladder_agreement": "primary=second",
+   "covered": true,
+   "metric_correct": false,
+   "metric": "patient_cohort",
+   "version": 1,
+   "unaccounted_numbers": [],
+   "query": "SELECT count(*) AS patients FROM patient p WHERE (p.sex_reported IN ('F')) AND ((p.age_latest >= 65)) AND (p.patient_id IN (SELECT c.patient_id FROM concept_patient c WHERE c.kind = 'condition' AND c.concept IN ('osteoporosis'))) AND (NOT (p.patient_id IN (SELECT m.patient_id FROM medication m WHERE (((m.drug_class IN ('bisphosphonate')))) AND (m.source_stream = 'pharmacy_dispenses' AND m.status = 'dispensed'))))",
+   "metric_result": "[[11]]",
+   "acceptance": {
+    "status": "low_confidence",
+    "basis": "free-form SQL without independent agreement or a governed metric to check it against (agreement: primary=second)"
+   }
+  },
+  {
+   "id": "O04",
+   "answer_type": "count",
+   "ladder_correct": false,
+   "ladder_agreement": "primary=second",
+   "covered": true,
+   "metric_correct": false,
+   "metric": "patient_cohort",
+   "version": 1,
+   "unaccounted_numbers": [],
+   "query": "SELECT count(*) AS patients FROM patient p WHERE ((p.age_latest >= 18) AND (p.age_latest <= 64)) AND (p.coverage_type IN ('medicaid', 'uninsured')) AND (p.patient_id IN (SELECT c.patient_id FROM concept_patient c WHERE c.kind = 'condition' AND c.concept IN ('diabetes')))",
+   "metric_result": "[[33]]",
+   "acceptance": {
+    "status": "low_confidence",
+    "basis": "free-form SQL without independent agreement or a governed metric to check it against (agreement: primary=second)"
+   }
+  },
+  {
+   "id": "O05",
+   "answer_type": "patient_set",
+   "ladder_correct": true,
+   "ladder_agreement": "judge=second",
+   "covered": false,
+   "reason": "CKD stage is not a governed concept (the concept library has CKD, not stages 3-4)",
+   "acceptance": {
+    "status": "low_confidence",
+    "basis": "free-form SQL without independent agreement or a governed metric to check it against (agreement: judge=second)"
+   }
+  },
+  {
+   "id": "O06",
+   "answer_type": "count",
+   "ladder_correct": true,
+   "ladder_agreement": "primary=second",
+   "covered": true,
+   "metric_correct": true,
+   "metric": "patient_cohort",
+   "version": 1,
+   "unaccounted_numbers": [],
+   "query": "SELECT count(*) AS patients FROM patient p WHERE (p.patient_id IN (SELECT c.patient_id FROM concept_patient c WHERE c.kind = 'condition' AND c.concept IN ('coronary_artery_disease', 'myocardial_infarction'))) AND (NOT (p.patient_id IN (SELECT m.patient_id FROM medication m WHERE (((m.drug_class IN ('antiplatelet')))) AND (m.source_stream = 'pharmacy_dispenses' AND m.status = 'dispensed') AND (m.event_date BETWEEN '2028-08-16' AND '2029-08-15'))))",
+   "metric_result": "[[137]]",
+   "acceptance": {
+    "status": "low_confidence",
+    "basis": "free-form SQL without independent agreement or a governed metric to check it against (agreement: primary=second)"
+   }
+  },
+  {
+   "id": "O07",
+   "answer_type": "patient_set",
+   "ladder_correct": true,
+   "ladder_agreement": "judge=second",
+   "covered": false,
+   "reason": "allergy records are not in any governed metric",
+   "acceptance": {
+    "status": "low_confidence",
+    "basis": "free-form SQL without independent agreement or a governed metric to check it against (agreement: judge=second)"
+   }
+  },
+  {
+   "id": "O08",
+   "answer_type": "count",
+   "ladder_correct": false,
+   "ladder_agreement": "judge=second",
+   "covered": true,
+   "metric_correct": false,
+   "metric": "patient_cohort",
+   "version": 1,
+   "unaccounted_numbers": [],
+   "query": "SELECT count(*) AS patients FROM patient p WHERE (p.sex_reported IN ('M')) AND ((p.age_latest >= 40) AND (p.age_latest <= 75)) AND (p.patient_id IN (SELECT c.patient_id FROM concept_patient c WHERE c.kind = 'condition' AND c.concept IN ('diabetes'))) AND (NOT (p.patient_id IN (SELECT m.patient_id FROM medication m WHERE (((m.drug_class IN ('statin')))) AND (m.source_stream = 'pharmacy_dispenses' AND m.status = 'dispensed') AND (m.event_date >= '2028-01-01'))))",
+   "metric_result": "[[48]]",
+   "acceptance": {
+    "status": "low_confidence",
+    "basis": "free-form SQL without independent agreement or a governed metric to check it against (agreement: judge=second)"
+   }
+  },
+  {
+   "id": "O11",
+   "answer_type": "count",
+   "ladder_correct": false,
+   "ladder_agreement": "judge=second",
+   "covered": true,
+   "metric_correct": false,
+   "metric": "beers_high_risk_medications_65",
+   "version": 1,
+   "unaccounted_numbers": [],
+   "query": "SELECT count(DISTINCT p.patient_id) AS patients FROM patient p JOIN medication m ON m.patient_id = p.patient_id WHERE p.age_latest >= 65 AND m.evidence IN ('dispensed','claim') AND (m.drug_class IN ('first_generation_antihistamine','benzodiazepine','skeletal_muscle_relaxant') OR lower(m.drug_name) LIKE '%meperidine%')",
+   "metric_result": "[[11]]",
+   "acceptance": {
+    "status": "low_confidence",
+    "basis": "departs from governed metric beers_high_risk_medications_65: metric beers_high_risk_medications_65 value set beers_drugs excludes cetirizine, fexofenadine, loratadine; the query's filter includes them"
+   }
+  },
+  {
+   "id": "O12",
+   "answer_type": "count",
+   "ladder_correct": false,
+   "ladder_agreement": "primary=second",
+   "covered": true,
+   "metric_correct": true,
+   "metric": "patient_cohort",
+   "version": 1,
+   "unaccounted_numbers": [],
+   "query": "SELECT count(*) AS patients FROM patient p WHERE (p.patient_id IN (SELECT m.patient_id FROM measurement m JOIN (SELECT m.patient_id AS pid, max(m.event_date) AS d FROM measurement m WHERE (m.concept = 'ldl') AND (m.value_canonical IS NOT NULL AND coalesce(m.result_status, '') <> 'cancelled') AND (m.event_date IS NOT NULL) GROUP BY m.patient_id) l ON l.pid = m.patient_id AND l.d = m.event_date WHERE (m.concept = 'ldl') AND (m.value_canonical IS NOT NULL AND coalesce(m.result_status, '') <> 'cancelled') AND (m.event_date IS NOT NULL) GROUP BY m.patient_id HAVING max(m.value_canonical) >= 160)) AND (NOT (p.patient_id IN (SELECT m.patient_id FROM medication m WHERE (((m.drug_class IN ('statin')))) AND (m.source_stream = 'pharmacy_dispenses' AND m.status = 'dispensed') AND (m.event_date BETWEEN '2028-08-16' AND '2029-08-15'))))",
+   "metric_result": "[[28]]",
+   "acceptance": {
+    "status": "low_confidence",
+    "basis": "free-form SQL without independent agreement or a governed metric to check it against (agreement: primary=second)"
+   }
+  },
+  {
+   "id": "O13",
+   "answer_type": "count",
+   "ladder_correct": true,
+   "ladder_agreement": "primary=second",
+   "covered": true,
+   "metric_correct": true,
+   "metric": "patient_cohort",
+   "version": 1,
+   "unaccounted_numbers": [],
+   "query": "SELECT count(*) AS patients FROM patient p WHERE (p.patient_id IN (SELECT v.patient_id FROM visit v WHERE (v.type IN ('emergency', 'ED', 'ED stroke alert')) AND (v.event_date BETWEEN '2028-08-16' AND '2029-08-15') GROUP BY v.patient_id HAVING count(DISTINCT v.encounter_id) >= 2))",
+   "metric_result": "[[9]]",
+   "acceptance": {
+    "status": "low_confidence",
+    "basis": "departs from governed metric repeat_ed_users_12m: metric repeat_ed_users_12m: the trailing 12-month window runs 2028-08-16..2029-08-15 (inclusive, 365 days); the query starts on 2028-08-15, one day early"
+   }
+  },
+  {
+   "id": "O14",
+   "answer_type": "value",
+   "ladder_correct": false,
+   "ladder_agreement": "judge=second",
+   "covered": true,
+   "metric_correct": false,
+   "metric": "ed_admit_obs_share",
+   "version": 1,
+   "unaccounted_numbers": [],
+   "query": "SELECT round(100.0 * sum(disposition IN ('admitted','inpatient_admission','observation','hospital_observation','observation_for_mobility')) / count(*), 1) AS pct_admit_or_obs FROM visit WHERE type_concept = 'emergency_visit' AND status = 'completed' AND event_date BETWEEN '2029-01-01' AND '2029-08-15'",
+   "metric_result": "[[47.9]]",
+   "acceptance": {
+    "status": "low_confidence",
+    "basis": "departs from governed metric ed_admit_obs_share: metric ed_admit_obs_share defines the numerator by admit_obs_disposition (visit.disposition: admitted, inpatient_admission, observation, hospital_observation, observation_for_mobility); the query never applies it"
+   }
+  },
+  {
+   "id": "O15",
+   "answer_type": "value",
+   "ladder_correct": false,
+   "ladder_agreement": "primary=second",
+   "covered": true,
+   "metric_correct": true,
+   "metric": "length_of_stay",
+   "version": 1,
+   "unaccounted_numbers": [],
+   "query": "SELECT round(avg((julianday(end_time) - julianday(start_time)) * 24.0), 1) AS average_length_of_stay FROM visit WHERE (type IN ('observation')) AND (status = 'completed') AND (start_time IS NOT NULL) AND (end_time IS NOT NULL) AND (substr(start_time, 1, 10) BETWEEN '2029-01-01' AND '2029-08-15')",
+   "metric_result": "[[9.9]]",
+   "acceptance": {
+    "status": "verified",
+    "basis": "lint-clean against governed metric observation_stay_hours@v1"
+   }
+  },
+  {
+   "id": "O16",
+   "answer_type": "value",
+   "ladder_correct": false,
+   "ladder_agreement": "judge=primary",
+   "covered": false,
+   "reason": "visits per home-health patient is not a governed metric",
+   "acceptance": {
+    "status": "low_confidence",
+    "basis": "free-form SQL without independent agreement or a governed metric to check it against (agreement: judge=primary)"
+   }
+  },
+  {
+   "id": "O18",
+   "answer_type": "value",
+   "ladder_correct": false,
+   "ladder_agreement": "judge=second",
+   "covered": false,
+   "reason": "ED discharges home with practice follow-up is not a governed metric",
+   "acceptance": {
+    "status": "low_confidence",
+    "basis": "departs from governed metric ed_followup_7d: metric ed_followup_7d value set followup_contact includes Annual physical, Geri primary care, Office visit, PCP, ambulatory, office; the query's filter misses them"
+   }
+  },
+  {
+   "id": "O19",
+   "answer_type": "count",
+   "ladder_correct": false,
+   "ladder_agreement": "judge=primary",
+   "covered": true,
+   "metric_correct": false,
+   "metric": "patient_cohort",
+   "version": 1,
+   "unaccounted_numbers": [],
+   "query": "SELECT count(*) AS patients FROM patient p WHERE ((p.age_latest >= 18)) AND (NOT (p.patient_id IN (SELECT v.patient_id FROM visit v WHERE (v.type IN ('primary_care', 'office', 'pediatric_office', 'wellness')) AND (v.event_date BETWEEN '2028-08-16' AND '2029-08-15'))))",
+   "metric_result": "[[220]]",
+   "acceptance": {
+    "status": "low_confidence",
+    "basis": "free-form SQL without independent agreement or a governed metric to check it against (agreement: judge=primary)"
+   }
+  },
+  {
+   "id": "O20",
+   "answer_type": "count",
+   "ladder_correct": true,
+   "ladder_agreement": "primary=second",
+   "covered": false,
+   "reason": "urgent care transfers to the ED are not a governed metric",
+   "acceptance": {
+    "status": "low_confidence",
+    "basis": "free-form SQL without independent agreement or a governed metric to check it against (agreement: primary=second)"
+   }
+  },
+  {
+   "id": "O21",
+   "answer_type": "table",
+   "ladder_correct": true,
+   "ladder_agreement": "judge=second",
+   "covered": false,
+   "reason": "three visit classes side by side by facility is not one governed table",
+   "acceptance": {
+    "status": "low_confidence",
+    "basis": "free-form SQL without independent agreement or a governed metric to check it against (agreement: judge=second)"
+   }
+  },
+  {
+   "id": "O22",
+   "answer_type": "table",
+   "ladder_correct": false,
+   "ladder_agreement": "primary=second",
+   "covered": false,
+   "reason": "diagnostic test quality is not a governed metric",
+   "acceptance": {
+    "status": "low_confidence",
+    "basis": "free-form SQL without independent agreement or a governed metric to check it against (agreement: primary=second)"
+   }
+  },
+  {
+   "id": "O23",
+   "answer_type": "table",
+   "ladder_correct": true,
+   "ladder_agreement": "primary=second",
+   "covered": true,
+   "metric_correct": true,
+   "metric": "medical_claims",
+   "version": 1,
+   "unaccounted_numbers": [],
+   "query": "SELECT payer AS payer, count(*) AS claims, round(sum(net_payer_paid_cents) / 100.0, 2) AS net_payer_paid_usd FROM claim WHERE (service_date BETWEEN '2028-01-01' AND '2028-12-31') GROUP BY 1 ORDER BY 1",
+   "metric_result": "[[\"WH-PAYER-0\", 2536, 132844.83], [\"WH-PAYER-1\", 3147, 168208.22], [\"WH-PAYER-2\", 1920, 107167.84]]",
+   "acceptance": {
+    "status": "verified",
+    "basis": "lint-clean against governed metric net_payer_paid@v1"
+   }
+  },
+  {
+   "id": "O24",
+   "answer_type": "value",
+   "ladder_correct": true,
+   "ladder_agreement": "judge=second",
+   "covered": true,
+   "metric_correct": true,
+   "metric": "pharmacy_claim_net_paid",
+   "version": 1,
+   "unaccounted_numbers": [],
+   "query": "SELECT round(sum(json_extract(r.payload, '$.payer_paid_delta_cents')) / 100.0, 2) AS net_payer_paid_usd FROM record r WHERE (r.stream = 'pharmacy_claim_transactions') AND (r.event_date BETWEEN '2028-01-01' AND '2028-12-31')",
+   "metric_result": "[[299451.0]]",
+   "acceptance": {
+    "status": "low_confidence",
+    "basis": "free-form SQL without independent agreement or a governed metric to check it against (agreement: judge=second)"
+   }
+  },
+  {
+   "id": "O25",
+   "answer_type": "value",
+   "ladder_correct": true,
+   "ladder_agreement": "primary=second",
+   "covered": true,
+   "metric_correct": true,
+   "metric": "patient_refunds",
+   "version": 1,
+   "unaccounted_numbers": [],
+   "query": "SELECT round(sum(json_extract(r.payload, '$.amount_cents')) / 100.0, 2) AS amount_usd FROM record r WHERE (r.stream = 'patient_refunds') AND (json_extract(r.payload, '$.status') = 'issued') AND (r.event_date BETWEEN '2028-01-01' AND '2028-12-31')",
+   "metric_result": "[[460.5]]",
+   "acceptance": {
+    "status": "low_confidence",
+    "basis": "free-form SQL without independent agreement or a governed metric to check it against (agreement: primary=second)"
+   }
+  },
+  {
+   "id": "O27",
+   "answer_type": "value",
+   "ladder_correct": false,
+   "ladder_agreement": "primary=second",
+   "covered": true,
+   "metric_correct": true,
+   "metric": "medical_claims",
+   "version": 1,
+   "unaccounted_numbers": [],
+   "query": "SELECT round(avg(julianday(first_adjudication_date) - julianday(service_date)), 2) AS avg_days_to_first_adjudication FROM claim WHERE (service_date BETWEEN '2028-01-01' AND '2028-12-31') AND (first_adjudication_date IS NOT NULL)",
+   "metric_result": "[[16.39]]",
+   "acceptance": {
+    "status": "low_confidence",
+    "basis": "departs from governed metric days_to_first_adjudication: metric days_to_first_adjudication anchors time on claim.service_date; the query uses available_date"
+   }
+  },
+  {
+   "id": "O29",
+   "answer_type": "value",
+   "ladder_correct": false,
+   "ladder_agreement": "judge=primary",
+   "covered": true,
+   "metric_correct": true,
+   "metric": "medical_claims",
+   "version": 1,
+   "unaccounted_numbers": [],
+   "query": "SELECT round(100.0 * sum(first_status = 'denied' AND denied_then_paid = 1) / nullif(sum(first_status = 'denied'), 0), 1) AS first_pass_overturn_rate FROM claim WHERE 1=1",
+   "metric_result": "[[76.6]]",
+   "acceptance": {
+    "status": "low_confidence",
+    "basis": "free-form SQL without independent agreement or a governed metric to check it against (agreement: judge=primary)"
+   }
+  },
+  {
+   "id": "O30",
+   "answer_type": "value",
+   "ladder_correct": false,
+   "ladder_agreement": "primary=second",
+   "covered": true,
+   "metric_correct": true,
+   "metric": "contractual_writeoffs",
+   "version": 1,
+   "unaccounted_numbers": [],
+   "query": "SELECT round(sum(json_extract(payload,'$.financial_deltas_cents.contractual')) / 100.0, 2) AS contractual_usd FROM record WHERE stream = 'medical_claims' AND json_extract(payload,'$.claim_id') IS NOT NULL AND json_extract(payload,'$.service_date') BETWEEN '2028-01-01' AND '2028-12-31'",
+   "metric_result": "[[467367.46]]",
+   "acceptance": {
+    "status": "low_confidence",
+    "basis": "departs from governed metric contractual_writeoffs: metric contractual_writeoffs nets amounts across EVERY adjudication version (reversals net out); the query keeps only the current version"
+   }
+  },
+  {
+   "id": "O31",
+   "answer_type": "value",
+   "ladder_correct": false,
+   "ladder_agreement": "judge=second",
+   "covered": true,
+   "metric_correct": false,
+   "metric": "kidney_health_evaluation_diabetes",
+   "version": 1,
+   "unaccounted_numbers": [],
+   "query": "SELECT round(100.0 * count(DISTINCT CASE WHEN EXISTS (SELECT 1 FROM measurement m WHERE m.patient_id = p.patient_id AND m.concept = 'egfr' AND m.value_canonical IS NOT NULL AND m.event_date BETWEEN '2028-01-01' AND '2028-12-31') AND EXISTS (SELECT 1 FROM measurement m WHERE m.patient_id = p.patient_id AND m.concept = 'uacr' AND m.value_canonical IS NOT NULL AND m.event_date BETWEEN '2028-01-01' AND '2028-12-31') THEN p.patient_id END) / count(DISTINCT p.patient_id), 1) AS pct_kidney_health_evaluation FROM patient p JOIN concept_patient cp ON cp.patient_id = p.patient_id AND cp.concept = 'diabetes' WHERE p.age_latest BETWEEN 18 AND 85",
+   "metric_result": "[[91.0]]",
+   "acceptance": {
+    "status": "low_confidence",
+    "basis": "departs from governed metric kidney_health_evaluation_diabetes: metric kidney_health_evaluation_diabetes restricts the population to ages 18-85; the query applies no age band"
+   }
+  },
+  {
+   "id": "O33",
+   "answer_type": "value",
+   "ladder_correct": false,
+   "ladder_agreement": "judge=second",
+   "covered": true,
+   "metric_correct": false,
+   "metric": "patient_cohort",
+   "version": 1,
+   "unaccounted_numbers": [],
+   "query": "SELECT round(100.0 * sum(CASE WHEN (p.patient_id IN (SELECT m.patient_id FROM medication m WHERE (((m.drug_class IN ('statin')))) AND (m.source_stream = 'pharmacy_dispenses' AND m.status = 'dispensed') AND (m.event_date BETWEEN '2028-01-01' AND '2028-12-31'))) THEN 1 ELSE 0 END) / count(*), 1) AS percent FROM patient p WHERE (p.patient_id IN (SELECT c.patient_id FROM concept_patient c WHERE c.kind = 'condition' AND c.concept IN ('diabetes'))) AND ((p.age_latest >= 40) AND (p.age_latest <= 75))",
+   "metric_result": "[[38.0]]",
+   "acceptance": {
+    "status": "low_confidence",
+    "basis": "free-form SQL without independent agreement or a governed metric to check it against (agreement: judge=second)"
+   }
+  },
+  {
+   "id": "O34",
+   "answer_type": "value",
+   "ladder_correct": true,
+   "ladder_agreement": "primary=second",
+   "covered": true,
+   "metric_correct": true,
+   "metric": "patient_cohort",
+   "version": 1,
+   "unaccounted_numbers": [],
+   "query": "SELECT round(100.0 * sum(CASE WHEN (p.patient_id IN (SELECT m.patient_id FROM medication m WHERE (((m.drug_class IN ('hf_evidence_based_beta_blocker') OR lower(m.drug_name) LIKE '%bisoprolol%' OR lower(m.drug_name) LIKE '%carvedilol%' OR lower(m.drug_name) LIKE '%metoprolol succinate%'))) AND (m.source_stream = 'pharmacy_dispenses' AND m.status = 'dispensed') AND (m.event_date BETWEEN '2028-08-16' AND '2029-08-15'))) THEN 1 ELSE 0 END) / count(*), 1) AS percent FROM patient p WHERE (p.patient_id IN (SELECT c.patient_id FROM concept_patient c WHERE c.kind = 'condition' AND c.concept IN ('heart_failure', 'heart_failure_reduced_ef')))",
+   "metric_result": "[[14.5]]",
+   "acceptance": {
+    "status": "low_confidence",
+    "basis": "free-form SQL without independent agreement or a governed metric to check it against (agreement: primary=second)"
+   }
+  },
+  {
+   "id": "O35",
+   "answer_type": "value",
+   "ladder_correct": false,
+   "ladder_agreement": "judge=second",
+   "covered": false,
+   "reason": "Tdap after tetanus-history review is not a governed metric",
+   "acceptance": {
+    "status": "low_confidence",
+    "basis": "free-form SQL without independent agreement or a governed metric to check it against (agreement: judge=second)"
+   }
+  },
+  {
+   "id": "O36",
+   "answer_type": "value",
+   "ladder_correct": true,
+   "ladder_agreement": "judge=second",
+   "covered": false,
+   "reason": "pediatric vision screening is not a governed metric",
+   "acceptance": {
+    "status": "low_confidence",
+    "basis": "free-form SQL without independent agreement or a governed metric to check it against (agreement: judge=second)"
+   }
+  },
+  {
+   "id": "O37",
+   "answer_type": "value",
+   "ladder_correct": true,
+   "ladder_agreement": "judge=second",
+   "covered": true,
+   "metric_correct": true,
+   "metric": "feed_quality",
+   "version": 1,
+   "unaccounted_numbers": [],
+   "query": "SELECT round(100.0 * sum(d IS NULL) / count(*), 1) AS pct_undated FROM (SELECT record_id AS k, event_date AS d, available_date AS a, json_extract(payload, '$.source_system') AS src FROM record WHERE stream = 'labs')",
+   "metric_result": "[[12.9]]",
+   "acceptance": {
+    "status": "low_confidence",
+    "basis": "free-form SQL without independent agreement or a governed metric to check it against (agreement: judge=second)"
+   }
+  },
+  {
+   "id": "O38",
+   "answer_type": "table",
+   "ladder_correct": false,
+   "ladder_agreement": "judge_own",
+   "covered": true,
+   "metric_correct": false,
+   "metric": "feed_quality",
+   "version": 1,
+   "unaccounted_numbers": [],
+   "query": "SELECT CAST(substr(d, 1, 4) AS INTEGER) AS year, count(*) AS rows, sum(d IS NOT NULL AND julianday(a) - julianday(d) > 30) AS late_rows, round(avg(CASE WHEN d IS NOT NULL THEN julianday(a) - julianday(d) END), 2) AS avg_lag_days FROM (SELECT record_id AS k, event_date AS d, available_date AS a, json_extract(payload, '$.source_system') AS src FROM record WHERE stream = 'medical_claims') GROUP BY 1 ORDER BY 1",
+   "metric_result": "[[2026, 7626, 2591, 24.44], [2027, 7564, 0, 1.65], [2028, 8115, 0, 1.6], [2029, 6060, 0, 1.57]]",
+   "acceptance": {
+    "status": "low_confidence",
+    "basis": "free-form SQL without independent agreement or a governed metric to check it against (agreement: judge_own)"
+   }
+  },
+  {
+   "id": "O39",
+   "answer_type": "count",
+   "ladder_correct": true,
+   "ladder_agreement": "judge=second",
+   "covered": false,
+   "reason": "stuck-open encounters are not a governed metric",
+   "acceptance": {
+    "status": "low_confidence",
+    "basis": "free-form SQL without independent agreement or a governed metric to check it against (agreement: judge=second)"
+   }
+  },
+  {
+   "id": "O40",
+   "answer_type": "count",
+   "ladder_correct": false,
+   "ladder_agreement": "judge_own",
+   "covered": true,
+   "metric_correct": true,
+   "metric": "duplicate_lab_rows",
+   "version": 1,
+   "unaccounted_numbers": [],
+   "query": "SELECT coalesce(sum(n - 1), 0) AS duplicate_lab_rows FROM (SELECT count(*) AS n FROM measurement WHERE source_table = 'labs' AND event_time IS NOT NULL GROUP BY patient_id, name, event_time, value)",
+   "metric_result": "[[31]]",
+   "acceptance": {
+    "status": "low_confidence",
+    "basis": "departs from governed metric duplicate_lab_rows: metric duplicate_lab_rows anchors time on measurement.event_time; the query uses event_date"
+   }
+  },
+  {
+   "id": "O41",
+   "answer_type": "count",
+   "ladder_correct": true,
+   "ladder_agreement": "primary=second",
+   "covered": true,
+   "metric_correct": true,
+   "metric": "patient_cohort",
+   "version": 1,
+   "unaccounted_numbers": [],
+   "query": "SELECT count(*) AS patients FROM patient p WHERE (NOT (p.patient_id IN (SELECT m.patient_id FROM measurement m WHERE (m.concept = 'systolic_bp') AND (m.value_canonical IS NOT NULL AND coalesce(m.result_status, '') <> 'cancelled') AND (m.event_date IS NOT NULL))))",
+   "metric_result": "[[582]]",
+   "acceptance": {
+    "status": "low_confidence",
+    "basis": "free-form SQL without independent agreement or a governed metric to check it against (agreement: primary=second)"
+   }
+  },
+  {
+   "id": "O42",
+   "answer_type": "value",
+   "ladder_correct": false,
+   "ladder_agreement": "judge=second",
+   "covered": true,
+   "metric_correct": true,
+   "metric": "patient_cohort",
+   "version": 1,
+   "unaccounted_numbers": [],
+   "query": "SELECT round(100.0 * sum(CASE WHEN (p.patient_id IN (SELECT s.patient_id FROM social_need s WHERE (s.need IN ('food')) AND (s.positive = 1))) THEN 1 ELSE 0 END) / count(*), 1) AS percent FROM patient p WHERE (p.patient_id IN (SELECT s.patient_id FROM social_need s WHERE (s.need IN ('food'))))",
+   "metric_result": "[[14.4]]",
+   "acceptance": {
+    "status": "verified",
+    "basis": "lint-clean against governed metric food_insecurity_rate@v1"
+   }
+  }
+ ]
+}

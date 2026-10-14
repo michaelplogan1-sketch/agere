@@ -38,6 +38,7 @@ ANCHOR_MODES = ('period', 'trailing', 'snapshot', 'any_time')
 DEFAULT_WINDOWS = ('as_of_year', 'trailing', 'as_of', 'all', 'measure_year')
 VERSIONING = ('latest_version_table', 'latest_per_key', 'net_all_versions', 'distinct_key', 'any_version', 'none')
 RETURNS = ('count', 'value', 'patient_set', 'table')
+SLOT_TYPES = ('enum', 'enum_list', 'integer', 'number', 'boolean', 'period', 'population')  # metric_router typed slots
 RULES = {
     'ML-GRAIN': 'counting unit differs from the metric grain',
     'ML-ANCHOR': 'date field differs from the metric time anchor',
@@ -121,6 +122,16 @@ def validate_metric(m, where='metric'):
         if not v.get('when') or not v.get('summary'): raise ValueError(f'{where}: variant {vname} needs when and summary')
     if m.get('sql_template') is not None and not re.match(r'(?is)^\s*(select|with)\b', m['sql_template']):
         raise ValueError(f'{where}: sql_template must be one SELECT')
+    if m.get('builder') is not None:  # parameterised family (metric_families.py): typed slots in, deterministic SQL out
+        from .metric_families import BUILDERS
+        if m['builder'] not in BUILDERS: raise ValueError(f'{where}: builder must be one of {sorted(BUILDERS)}')
+        if m.get('sql_template'): raise ValueError(f'{where}: a builder metric has no sql_template')
+    for name, s in (m.get('slots') or {}).items():
+        if not re.fullmatch(r'[a-z_]+', name) or s.get('type') not in SLOT_TYPES:
+            raise ValueError(f'{where}: slot {name} needs a type in {SLOT_TYPES}')
+        if s['type'] in ('enum', 'enum_list') and not (s.get('values') or s.get('vocabulary')):
+            raise ValueError(f'{where}: slot {name} needs values or a vocabulary')
+    if m.get('slots') and not m.get('builder'): raise ValueError(f'{where}: declared slots need a builder')
     return m
 
 

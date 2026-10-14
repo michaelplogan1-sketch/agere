@@ -286,6 +286,28 @@ def plan(stack,question,ledger,frontier):
         except (ValueError,ImportError,OSError,RuntimeError) as exc:
             local_decline={**local_decline,'bottled_declined':str(exc)[:300],
                            **({'bottled':exc.receipt} if hasattr(exc,'receipt') else {})}
+    # Metric-first rung: one small-model tool call chooses a GOVERNED metric (metric layer + families + measures) and fills
+    # its typed slots; the metric's template / builder / measure engine computes deterministically ("computed as metric
+    # <id>@<version>"). no_metric falls through to the operator router and, last, free-form SQL (metric_router.py).
+    metric_steps=[]
+    from . import metric_router
+    if profile is not None and stack.allow_live and ledger is not None and metric_router.enabled():
+        try:
+            routed,metric_info=metric_router.route(question,meta['snapshot']['as_of'],ledger,stack.receipts,path=stack.path)
+        except (ValueError,RuntimeError,OSError,KeyError,TypeError,sqlite3.Error) as exc:  # the rung never blocks the ladder
+            routed,metric_info=None,{'router_error':str(exc)[:300],'calls':[]}
+        metric_steps=[{'stage':'metric_router','receipt':{'cost_estimate':{'estimated_usd':metric_router.cost(metric_info)}}}]
+        if routed is not None:
+            try:
+                graph=validate(routed,meta['snapshot']['as_of'])
+            except ValueError as exc:  # a governed plan the runtime validator refuses falls through, recorded
+                graph,metric_info=None,{**metric_info,'decision':'validation_failed','validation_error':str(exc)[:300]}
+        if routed is not None and graph is not None:
+            return graph,{'route':'metric_router','model':metric_router.MODEL,'metric':metric_info.get('metric'),
+                          'metric_router':metric_info,'new_paid_api_calls':sum(0 if c.get('cache_hit') else 1 for c in metric_info['calls']),
+                          'frontier_called':False,'local_compiler_declined':local_decline,'steps':metric_steps,
+                          'elapsed_seconds':time.perf_counter()-start}
+        local_decline={**local_decline,'metric_router':metric_info}
     # Operator router: any phrasing reaches the right analytic engine. One small-model call picks the operator
     # and fills its typed parameters; the runtime validators decide; literal questions go on to verified SQL.
     if profile is not None and stack.allow_live and os.environ.get('AGERE_ROUTER','on')!='off':
@@ -301,13 +323,13 @@ def plan(stack,question,ledger,frontier):
                             'unmet_requirements':['Missing input: '+route_info['requires_input'][:400]]},meta['snapshot']['as_of'])
             return graph,{'route':'operator_router_requires_input','model':operator_router.MODEL,'operator':route_info.get('decision'),
                           'new_paid_api_calls':sum(0 if c.get('cache_hit') else 1 for c in route_info['calls']),'frontier_called':False,
-                          'local_compiler_declined':local_decline,'steps':[{'stage':'operator_router','receipt':{'cost_estimate':{'estimated_usd':operator_router.cost(route_info)}}}],
+                          'local_compiler_declined':local_decline,'steps':metric_steps+[{'stage':'operator_router','receipt':{'cost_estimate':{'estimated_usd':operator_router.cost(route_info)}}}],
                           'elapsed_seconds':time.perf_counter()-start}
         if routed is not None:
             return routed,{'route':'operator_router','model':operator_router.MODEL,'new_paid_api_calls':
                            sum(0 if c.get('cache_hit') else 1 for c in route_info['calls']),'frontier_called':False,
                            'operator':route_info['decision'],'local_compiler_declined':local_decline,
-                           'steps':[{'stage':'operator_router','receipt':{'cost_estimate':{'estimated_usd':operator_router.cost(route_info)}}}],
+                           'steps':metric_steps+[{'stage':'operator_router','receipt':{'cost_estimate':{'estimated_usd':operator_router.cost(route_info)}}}],
                            'elapsed_seconds':time.perf_counter()-start}
     # Cheapest hosted rung: one Haiku call writing governed SQL over the cached schema (~$0.001).
     if profile is not None and stack.allow_live and os.environ.get('AGERE_HOSTED_SQL','on')!='off':
@@ -338,8 +360,17 @@ def plan(stack,question,ledger,frontier):
                             'nodes':[{'id':'answer','operation':'sql','inputs':[],'parameters':params,
                                       'purpose':'Hosted small-model query over the semantic layer'}]},meta['snapshot']['as_of'])
             hosted.cost+=second.cost+judge.cost+(decider.cost if decider else 0)+sum(c.get('api_usd') or 0 for c in local_decline.get('operator_router',{}).get('calls',[]))
+            hosted.cost+=metric_router.cost(local_decline.get('metric_router') or {})
+            # Free-form SQL is the last resort: verified only with independent agreement (v2) or a lint-clean governed metric;
+            # otherwise the answer is marked low-confidence (or withheld) by metric_router.finalize_answer.
+            try:
+                from . import oracles
+                acceptance=metric_router.acceptance(question,params.get('query'),receipt,meta['snapshot']['as_of'],
+                                                    source=oracles.readonly_executor(stack.path))
+            except (ValueError,RuntimeError,OSError,sqlite3.Error) as exc:
+                acceptance={'status':'low_confidence','basis':f'acceptance check failed: {exc}'[:300]}
             return graph,{'route':'hosted_verified_sql','model':hosted.model,'new_paid_api_calls':len(receipt['attempts']),
-                          'frontier_called':False,'local_compiler_declined':local_decline,'hosted_sql':receipt,
+                          'frontier_called':False,'local_compiler_declined':local_decline,'hosted_sql':receipt,'acceptance':acceptance,
                           'steps':[{'stage':'hosted_verified_sql','receipt':{'cost_estimate':{'estimated_usd':hosted.cost}}}],
                           'elapsed_seconds':time.perf_counter()-start}
         except (ValueError,RuntimeError,OSError) as exc:

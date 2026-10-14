@@ -1,0 +1,1147 @@
+{
+ "schema": "agere-metric-file/1",
+ "domain": "families",
+ "summary": "Parameterised governed metric families for the metric router: typed slots in, deterministic SQL out (metric_families.py). Vocabulary: config/agere/metric_vocabulary.json.",
+ "metrics": [
+  {
+   "id": "patient_cohort",
+   "version": 1,
+   "name": "Patients matching a governed population",
+   "status": "internal",
+   "internal_reason": "Composes governed concept, lab, medication, visit and roster definitions; each atom cites its own value set.",
+   "summary": "Distinct roster patients whose records satisfy every population atom: conditions from the concept library (concept_patient: ICD-10-CM, SNOMED CT and adopted labels), lab results by concept (canonical units; \"latest\" = the lowest value on the most recent dated result, cancelled results excluded), latest paired blood pressure, age/sex/coverage from the roster, medications by governed drug group (picked up = pharmacy dispense with status dispensed; any_record = list, orders, dispenses, pharmacy claims or history), visits by governed visit class, positive social-needs screens, appointment outcomes. Returns the count, the list, a percent with numerator atoms, or a table by roster group.",
+   "grain": {
+    "entity": "patient",
+    "key": "patient_id"
+   },
+   "population": {
+    "summary": "Roster patients (synthetic); the population slot narrows it."
+   },
+   "denominator": {
+    "summary": "With returns=percent: the patients matching the population atoms."
+   },
+   "numerator": {
+    "summary": "With returns=percent: those who also match the numerator atoms."
+   },
+   "time_anchor": {
+    "field": "patient",
+    "mode": "period",
+    "default": "all"
+   },
+   "value_sets": {},
+   "unit": "patients or percent",
+   "expected_range": [
+    0,
+    1000000
+   ],
+   "versioning": {
+    "rule": "none"
+   },
+   "output": {
+    "returns": "count"
+   },
+   "sql_template": null,
+   "builder": "cohort",
+   "slots": {
+    "population": {
+     "type": "population",
+     "description": "Who is counted, as predicate atoms (role all = must match, any = at least one of the any-atoms, exclude = must not match). Omit for the whole roster.",
+     "required": true
+    },
+    "numerator": {
+     "type": "population",
+     "description": "returns=percent (or a grouped table) only: atoms the population patients must ALSO match to count in the numerator (e.g. a lab result, a medication pickup, a visit)."
+    },
+    "returns": {
+     "type": "enum",
+     "values": [
+      "count",
+      "patient_set",
+      "percent"
+     ],
+     "default": "count",
+     "description": "count = how many patients; patient_set = who (a list); percent = share of the population matching numerator."
+    },
+    "group_by": {
+     "type": "enum",
+     "values": [
+      "none",
+      "coverage_type",
+      "sex",
+      "age_band",
+      "attributed_practice"
+     ],
+     "default": "none",
+     "description": "Break the patients out by a roster attribute (age_band = 0-17, 18-44, 45-64, 65+). Grouped answers are tables."
+    }
+   }
+  },
+  {
+   "id": "encounter_volume",
+   "version": 1,
+   "name": "Encounter volume by governed visit class",
+   "status": "internal",
+   "internal_reason": "Volume counts over the governed visit-class value sets (metric_vocabulary.json); utilization_per_1000 conventions.",
+   "summary": "Distinct encounters (encounter versions de-duplicated by encounter_id) whose received type belongs to the chosen visit classes, dated (event_date) in the period; optionally distinct patients, or visits per 1,000 roster patients (the whole roster of each group is the denominator, visit or not). Grouped by month, quarter, half-year, year, facility or a roster attribute.",
+   "grain": {
+    "entity": "visit",
+    "key": "encounter_id"
+   },
+   "population": {
+    "summary": "Roster patients (synthetic); the population slot narrows it."
+   },
+   "denominator": {
+    "summary": "None (count) unless the slots ask for a rate."
+   },
+   "numerator": {
+    "summary": "Distinct encounters (encounter versions de-duplicated by encounter_id) whose received type belongs to the chosen visit classes, dated (event_date) in the period; optionally distinct patients, or visits per 1,000 roster patients (the whole roster of each group is the denominator, visit or not). Grouped by month, quarter, half-year, year, facility or a roster attribute."
+   },
+   "time_anchor": {
+    "field": "visit.event_date",
+    "mode": "period",
+    "default": "all"
+   },
+   "value_sets": {},
+   "unit": "visits",
+   "expected_range": [
+    0,
+    10000000
+   ],
+   "versioning": {
+    "rule": "distinct_key",
+    "key": "encounter_id"
+   },
+   "output": {
+    "returns": "count"
+   },
+   "sql_template": null,
+   "builder": "encounter_volume",
+   "slots": {
+    "visit_classes": {
+     "type": "enum_list",
+     "vocabulary": "visit_classes",
+     "required": true,
+     "description": "Which visits count."
+    },
+    "period": {
+     "type": "period",
+     "description": "Date window the metric counts. preset: all_time (default for any-time questions; undated records count), year (+year), ytd, trailing_months (+months, ending at the snapshot date inclusive), trailing_days (+days), before_days (+days: only records dated at least that many days before the snapshot), custom (+start, +end ISO dates)."
+    },
+    "measure": {
+     "type": "enum",
+     "values": [
+      "visits",
+      "patients",
+      "per_1000_roster"
+     ],
+     "default": "visits",
+     "description": "visits = distinct encounters; patients = distinct patients with one; per_1000_roster = visits x 1000 / roster patients."
+    },
+    "group_by": {
+     "type": "enum",
+     "values": [
+      "none",
+      "month",
+      "quarter",
+      "half_year",
+      "year",
+      "facility",
+      "coverage_type",
+      "sex",
+      "age_band",
+      "attributed_practice"
+     ],
+     "default": "none",
+     "description": "facility = the organization where the visit happened; attributed_practice = the patient's assigned PCP practice."
+    },
+    "population": {
+     "type": "population",
+     "description": "Who is counted, as predicate atoms (role all = must match, any = at least one of the any-atoms, exclude = must not match). Omit for the whole roster."
+    }
+   }
+  },
+  {
+   "id": "visit_followup",
+   "version": 1,
+   "name": "Follow-up after an index visit",
+   "status": "internal",
+   "internal_reason": "Follow-up windows follow definitions.json follow_up_after_ed conventions; the visit classes are governed value sets.",
+   "summary": "Index encounters of the chosen classes dated in the period; an index visit is followed up when the same patient has a different encounter of the follow-up classes dated days_min..days_max days after the index date (visit date, or discharge date for stays). Returns the number or the percent of index visits followed up.",
+   "grain": {
+    "entity": "visit",
+    "key": "encounter_id"
+   },
+   "population": {
+    "summary": "Roster patients (synthetic); the population slot narrows it."
+   },
+   "denominator": {
+    "summary": "None (count) unless the slots ask for a rate."
+   },
+   "numerator": {
+    "summary": "Index encounters of the chosen classes dated in the period; an index visit is followed up when the same patient has a different encounter of the follow-up classes dated days_min..days_max days after the index date (visit date, or discharge date for stays). Returns the number or the percent of index visits followed up."
+   },
+   "time_anchor": {
+    "field": "visit.event_date",
+    "mode": "period",
+    "default": "all"
+   },
+   "value_sets": {},
+   "unit": "percent of index visits",
+   "expected_range": [
+    0,
+    1000000
+   ],
+   "versioning": {
+    "rule": "none"
+   },
+   "output": {
+    "returns": "value"
+   },
+   "sql_template": null,
+   "builder": "visit_followup",
+   "slots": {
+    "index_classes": {
+     "type": "enum_list",
+     "vocabulary": "visit_classes",
+     "required": true
+    },
+    "followup_classes": {
+     "type": "enum_list",
+     "vocabulary": "visit_classes",
+     "required": true
+    },
+    "days_min": {
+     "type": "integer",
+     "min": 0,
+     "max": 365,
+     "default": 0,
+     "description": "0 = same day counts; 1 = from the next day."
+    },
+    "days_max": {
+     "type": "integer",
+     "min": 0,
+     "max": 365,
+     "required": true
+    },
+    "index_anchor": {
+     "type": "enum",
+     "values": [
+      "visit_date",
+      "discharge_date"
+     ],
+     "default": "visit_date"
+    },
+    "fully_observed": {
+     "type": "boolean",
+     "default": false,
+     "description": "Only index visits whose whole follow-up window ends by the snapshot date."
+    },
+    "period": {
+     "type": "period",
+     "description": "Date window the metric counts. preset: all_time (default for any-time questions; undated records count), year (+year), ytd, trailing_months (+months, ending at the snapshot date inclusive), trailing_days (+days), before_days (+days: only records dated at least that many days before the snapshot), custom (+start, +end ISO dates)."
+    },
+    "returns": {
+     "type": "enum",
+     "values": [
+      "percent",
+      "count"
+     ],
+     "default": "percent"
+    }
+   }
+  },
+  {
+   "id": "length_of_stay",
+   "version": 1,
+   "name": "Length of stay",
+   "status": "internal",
+   "internal_reason": "Length of stay from received start/end timestamps of completed encounters.",
+   "summary": "Mean (or median) of end_time - start_time over completed stays of the chosen classes, in days or hours; the period applies to the admission or the discharge date.",
+   "grain": {
+    "entity": "stay",
+    "key": "encounter_id"
+   },
+   "population": {
+    "summary": "Roster patients (synthetic); the population slot narrows it."
+   },
+   "denominator": {
+    "summary": "None (count) unless the slots ask for a rate."
+   },
+   "numerator": {
+    "summary": "Mean (or median) of end_time - start_time over completed stays of the chosen classes, in days or hours; the period applies to the admission or the discharge date."
+   },
+   "time_anchor": {
+    "field": "visit.start_time",
+    "mode": "period",
+    "default": "all"
+   },
+   "value_sets": {},
+   "unit": "days",
+   "expected_range": [
+    0,
+    365
+   ],
+   "versioning": {
+    "rule": "none"
+   },
+   "output": {
+    "returns": "value"
+   },
+   "sql_template": null,
+   "builder": "length_of_stay",
+   "slots": {
+    "classes": {
+     "type": "enum_list",
+     "vocabulary": "visit_classes",
+     "default": [
+      "inpatient"
+     ]
+    },
+    "anchor": {
+     "type": "enum",
+     "values": [
+      "admission",
+      "discharge"
+     ],
+     "default": "admission"
+    },
+    "unit": {
+     "type": "enum",
+     "values": [
+      "days",
+      "hours"
+     ],
+     "default": "days"
+    },
+    "statistic": {
+     "type": "enum",
+     "values": [
+      "mean",
+      "median"
+     ],
+     "default": "mean"
+    },
+    "period": {
+     "type": "period",
+     "description": "Date window the metric counts. preset: all_time (default for any-time questions; undated records count), year (+year), ytd, trailing_months (+months, ending at the snapshot date inclusive), trailing_days (+days), before_days (+days: only records dated at least that many days before the snapshot), custom (+start, +end ISO dates)."
+    }
+   }
+  },
+  {
+   "id": "medical_claims",
+   "version": 1,
+   "name": "Medical claim outcomes",
+   "status": "internal",
+   "internal_reason": "Revenue-cycle conventions (first-pass denial, overturn, net of reversals) encoded on the claim grain.",
+   "summary": "One row per medical claim (adjudication versions settled in the claim table): first-pass status, ever denied, denied then paid, net payer paid (every adjudication delta, reversals net out), billed/allowed, and days from service to first submission, first adjudication and first payer cash. The period applies to the service date, or the benefit year.",
+   "grain": {
+    "entity": "claim",
+    "key": "claim_id"
+   },
+   "population": {
+    "summary": "Roster patients (synthetic); the population slot narrows it."
+   },
+   "denominator": {
+    "summary": "None (count) unless the slots ask for a rate."
+   },
+   "numerator": {
+    "summary": "One row per medical claim (adjudication versions settled in the claim table): first-pass status, ever denied, denied then paid, net payer paid (every adjudication delta, reversals net out), billed/allowed, and days from service to first submission, first adjudication and first payer cash. The period applies to the service date, or the benefit year."
+   },
+   "time_anchor": {
+    "field": "claim.service_date",
+    "mode": "period",
+    "default": "all"
+   },
+   "value_sets": {},
+   "unit": "claims, percent, dollars or days",
+   "expected_range": [
+    -100000000,
+    100000000
+   ],
+   "versioning": {
+    "rule": "latest_per_key",
+    "key": "claim_id"
+   },
+   "output": {
+    "returns": "value"
+   },
+   "sql_template": null,
+   "builder": "medical_claims",
+   "slots": {
+    "measures": {
+     "type": "enum_list",
+     "values": [
+      "claims",
+      "first_pass_denied",
+      "first_pass_denial_rate",
+      "ever_denied",
+      "ever_denied_rate",
+      "denied_then_paid",
+      "first_pass_denied_then_paid",
+      "overturn_rate",
+      "first_pass_overturn_rate",
+      "net_payer_paid_usd",
+      "billed_usd",
+      "allowed_usd",
+      "avg_days_to_first_submission",
+      "avg_days_to_first_payer_cash",
+      "avg_days_to_first_adjudication",
+      "median_days_to_first_payer_cash"
+     ],
+     "required": true
+    },
+    "anchor": {
+     "type": "enum",
+     "values": [
+      "service_date",
+      "benefit_year"
+     ],
+     "default": "service_date"
+    },
+    "period": {
+     "type": "period",
+     "description": "Date window the metric counts. preset: all_time (default for any-time questions; undated records count), year (+year), ytd, trailing_months (+months, ending at the snapshot date inclusive), trailing_days (+days), before_days (+days: only records dated at least that many days before the snapshot), custom (+start, +end ISO dates)."
+    },
+    "group_by": {
+     "type": "enum",
+     "values": [
+      "none",
+      "payer",
+      "month",
+      "quarter",
+      "year"
+     ],
+     "default": "none"
+    }
+   }
+  },
+  {
+   "id": "feed_quality",
+   "version": 1,
+   "name": "Received feed quality",
+   "status": "internal",
+   "internal_reason": "Data-quality observations on the received feeds; no clinical meaning.",
+   "summary": "Per received stream: rows, rows with no event date, percent undated, mean arrival lag (available_date - event_date) and rows arriving more than N days after the event; encounters can be counted once per encounter_id (first arrival, earliest date).",
+   "grain": {
+    "entity": "lab_row",
+    "key": "record_id"
+   },
+   "population": {
+    "summary": "Roster patients (synthetic); the population slot narrows it."
+   },
+   "denominator": {
+    "summary": "None (count) unless the slots ask for a rate."
+   },
+   "numerator": {
+    "summary": "Per received stream: rows, rows with no event date, percent undated, mean arrival lag (available_date - event_date) and rows arriving more than N days after the event; encounters can be counted once per encounter_id (first arrival, earliest date)."
+   },
+   "time_anchor": {
+    "field": "record.event_date",
+    "mode": "period",
+    "default": "all"
+   },
+   "value_sets": {},
+   "unit": "rows, percent or days",
+   "expected_range": [
+    0,
+    10000000
+   ],
+   "versioning": {
+    "rule": "none"
+   },
+   "output": {
+    "returns": "value"
+   },
+   "sql_template": null,
+   "builder": "feed_quality",
+   "slots": {
+    "stream": {
+     "type": "enum",
+     "values": [
+      "labs",
+      "encounters",
+      "medical_claims",
+      "conditions",
+      "vitals",
+      "pharmacy_dispenses",
+      "appointments"
+     ],
+     "required": true
+    },
+    "unit": {
+     "type": "enum",
+     "values": [
+      "rows",
+      "encounters"
+     ],
+     "default": "rows"
+    },
+    "measures": {
+     "type": "enum_list",
+     "values": [
+      "rows",
+      "undated_rows",
+      "pct_undated",
+      "avg_lag_days",
+      "late_rows",
+      "pct_late"
+     ],
+     "required": true
+    },
+    "lag_days": {
+     "type": "integer",
+     "min": 0,
+     "max": 365,
+     "default": 30
+    },
+    "lag_op": {
+     "type": "enum",
+     "values": [
+      "gt",
+      "ge"
+     ],
+     "default": "gt",
+     "description": "gt = more than lag_days; ge = lag_days or more."
+    },
+    "period": {
+     "type": "period",
+     "description": "Date window the metric counts. preset: all_time (default for any-time questions; undated records count), year (+year), ytd, trailing_months (+months, ending at the snapshot date inclusive), trailing_days (+days), before_days (+days: only records dated at least that many days before the snapshot), custom (+start, +end ISO dates)."
+    },
+    "period_basis": {
+     "type": "enum",
+     "values": [
+      "event_date",
+      "arrival_date"
+     ],
+     "default": "event_date"
+    },
+    "group_by": {
+     "type": "enum",
+     "values": [
+      "none",
+      "source_system",
+      "year"
+     ],
+     "default": "none"
+    }
+   }
+  },
+  {
+   "id": "patient_payments",
+   "version": 1,
+   "name": "Patient payments received",
+   "status": "internal",
+   "internal_reason": "Literal received-record event with a fixed filter; the definition is the stream and filter stated here.",
+   "summary": "Patient payments received (patient_payments records), dated by the payment event date; dollars or count.",
+   "grain": {
+    "entity": "account",
+    "key": "record_id"
+   },
+   "population": {
+    "summary": "Roster patients (synthetic); the population slot narrows it."
+   },
+   "denominator": {
+    "summary": "None (count) unless the slots ask for a rate."
+   },
+   "numerator": {
+    "summary": "Patient payments received (patient_payments records), dated by the payment event date; dollars or count."
+   },
+   "time_anchor": {
+    "field": "patient_payments.event_date",
+    "mode": "period",
+    "default": "all"
+   },
+   "value_sets": {},
+   "unit": "dollars",
+   "expected_range": [
+    -100000000,
+    100000000
+   ],
+   "versioning": {
+    "rule": "none"
+   },
+   "output": {
+    "returns": "value"
+   },
+   "sql_template": null,
+   "builder": "record_event",
+   "event": {
+    "stream": "patient_payments",
+    "where": null,
+    "measures": {
+     "amount_usd": "round(sum(json_extract(r.payload, '$.amount_cents')) / 100.0, 2)",
+     "payments": "count(*)"
+    },
+    "returns": {
+     "amount_usd": "value",
+     "payments": "count"
+    },
+    "group_by": {
+     "payment_channel": "json_extract(r.payload, '$.payment_channel')"
+    },
+    "date": "r.event_date",
+    "default_measure": "amount_usd"
+   },
+   "slots": {
+    "period": {
+     "type": "period",
+     "description": "Date window the metric counts. preset: all_time (default for any-time questions; undated records count), year (+year), ytd, trailing_months (+months, ending at the snapshot date inclusive), trailing_days (+days), before_days (+days: only records dated at least that many days before the snapshot), custom (+start, +end ISO dates)."
+    },
+    "measure": {
+     "type": "enum",
+     "values": [
+      "amount_usd",
+      "payments"
+     ],
+     "default": "amount_usd"
+    },
+    "group_by": {
+     "type": "enum",
+     "values": [
+      "none",
+      "payment_channel"
+     ],
+     "default": "none"
+    }
+   }
+  },
+  {
+   "id": "patient_refunds",
+   "version": 1,
+   "name": "Patient refunds issued",
+   "status": "internal",
+   "internal_reason": "Literal received-record event with a fixed filter; the definition is the stream and filter stated here.",
+   "summary": "Refunds issued to patients (patient_refunds, status issued), dated by the refund event date.",
+   "grain": {
+    "entity": "account",
+    "key": "record_id"
+   },
+   "population": {
+    "summary": "Roster patients (synthetic); the population slot narrows it."
+   },
+   "denominator": {
+    "summary": "None (count) unless the slots ask for a rate."
+   },
+   "numerator": {
+    "summary": "Refunds issued to patients (patient_refunds, status issued), dated by the refund event date."
+   },
+   "time_anchor": {
+    "field": "patient_refunds.event_date",
+    "mode": "period",
+    "default": "all"
+   },
+   "value_sets": {},
+   "unit": "dollars",
+   "expected_range": [
+    -100000000,
+    100000000
+   ],
+   "versioning": {
+    "rule": "none"
+   },
+   "output": {
+    "returns": "value"
+   },
+   "sql_template": null,
+   "builder": "record_event",
+   "event": {
+    "stream": "patient_refunds",
+    "where": "json_extract(r.payload, '$.status') = 'issued'",
+    "measures": {
+     "amount_usd": "round(sum(json_extract(r.payload, '$.amount_cents')) / 100.0, 2)",
+     "refunds": "count(*)"
+    },
+    "returns": {
+     "amount_usd": "value",
+     "refunds": "count"
+    },
+    "group_by": {
+     "reason": "json_extract(r.payload, '$.reason')"
+    },
+    "date": "r.event_date",
+    "default_measure": "amount_usd"
+   },
+   "slots": {
+    "period": {
+     "type": "period",
+     "description": "Date window the metric counts. preset: all_time (default for any-time questions; undated records count), year (+year), ytd, trailing_months (+months, ending at the snapshot date inclusive), trailing_days (+days), before_days (+days: only records dated at least that many days before the snapshot), custom (+start, +end ISO dates)."
+    },
+    "measure": {
+     "type": "enum",
+     "values": [
+      "amount_usd",
+      "refunds"
+     ],
+     "default": "amount_usd"
+    },
+    "group_by": {
+     "type": "enum",
+     "values": [
+      "none",
+      "reason"
+     ],
+     "default": "none"
+    }
+   }
+  },
+  {
+   "id": "pharmacy_returns_to_stock",
+   "version": 1,
+   "name": "Prepared fills returned to stock",
+   "status": "internal",
+   "internal_reason": "Literal received-record event with a fixed filter; the definition is the stream and filter stated here.",
+   "summary": "Prepared pharmacy fills never picked up and returned to stock (pharmacy_dispenses status returned_to_stock), distinct fills, dated by the return.",
+   "grain": {
+    "entity": "account",
+    "key": "record_id"
+   },
+   "population": {
+    "summary": "Roster patients (synthetic); the population slot narrows it."
+   },
+   "denominator": {
+    "summary": "None (count) unless the slots ask for a rate."
+   },
+   "numerator": {
+    "summary": "Prepared pharmacy fills never picked up and returned to stock (pharmacy_dispenses status returned_to_stock), distinct fills, dated by the return."
+   },
+   "time_anchor": {
+    "field": "pharmacy_dispenses.event_date",
+    "mode": "period",
+    "default": "all"
+   },
+   "value_sets": {},
+   "unit": "count",
+   "expected_range": [
+    -100000000,
+    100000000
+   ],
+   "versioning": {
+    "rule": "none"
+   },
+   "output": {
+    "returns": "value"
+   },
+   "sql_template": null,
+   "builder": "record_event",
+   "event": {
+    "stream": "pharmacy_dispenses",
+    "where": "json_extract(r.payload, '$.status') = 'returned_to_stock'",
+    "measures": {
+     "fills": "count(DISTINCT json_extract(r.payload, '$.fill_id'))"
+    },
+    "returns": {
+     "fills": "count"
+    },
+    "group_by": {
+     "return_reason": "json_extract(r.payload, '$.return_reason')"
+    },
+    "date": "r.event_date",
+    "default_measure": "fills"
+   },
+   "slots": {
+    "period": {
+     "type": "period",
+     "description": "Date window the metric counts. preset: all_time (default for any-time questions; undated records count), year (+year), ytd, trailing_months (+months, ending at the snapshot date inclusive), trailing_days (+days), before_days (+days: only records dated at least that many days before the snapshot), custom (+start, +end ISO dates)."
+    },
+    "measure": {
+     "type": "enum",
+     "values": [
+      "fills"
+     ],
+     "default": "fills"
+    },
+    "group_by": {
+     "type": "enum",
+     "values": [
+      "none",
+      "return_reason"
+     ],
+     "default": "none"
+    }
+   }
+  },
+  {
+   "id": "clearinghouse_member_id_rejections",
+   "version": 1,
+   "name": "Clearinghouse member-ID rejections",
+   "status": "internal",
+   "internal_reason": "Literal received-record event with a fixed filter; the definition is the stream and filter stated here.",
+   "summary": "Distinct claims with a clearinghouse acknowledgement rejecting the member identifier, dated by the acknowledgement.",
+   "grain": {
+    "entity": "account",
+    "key": "record_id"
+   },
+   "population": {
+    "summary": "Roster patients (synthetic); the population slot narrows it."
+   },
+   "denominator": {
+    "summary": "None (count) unless the slots ask for a rate."
+   },
+   "numerator": {
+    "summary": "Distinct claims with a clearinghouse acknowledgement rejecting the member identifier, dated by the acknowledgement."
+   },
+   "time_anchor": {
+    "field": "claim_acknowledgements.event_date",
+    "mode": "period",
+    "default": "all"
+   },
+   "value_sets": {},
+   "unit": "count",
+   "expected_range": [
+    -100000000,
+    100000000
+   ],
+   "versioning": {
+    "rule": "none"
+   },
+   "output": {
+    "returns": "value"
+   },
+   "sql_template": null,
+   "builder": "record_event",
+   "event": {
+    "stream": "claim_acknowledgements",
+    "where": "json_extract(r.payload, '$.status') = 'rejected_for_member_identifier'",
+    "measures": {
+     "claims": "count(DISTINCT json_extract(r.payload, '$.claim_id'))"
+    },
+    "returns": {
+     "claims": "count"
+    },
+    "group_by": {
+     "payer": "json_extract(r.payload, '$.payer_organization_id')"
+    },
+    "date": "r.event_date",
+    "default_measure": "claims"
+   },
+   "slots": {
+    "period": {
+     "type": "period",
+     "description": "Date window the metric counts. preset: all_time (default for any-time questions; undated records count), year (+year), ytd, trailing_months (+months, ending at the snapshot date inclusive), trailing_days (+days), before_days (+days: only records dated at least that many days before the snapshot), custom (+start, +end ISO dates)."
+    },
+    "measure": {
+     "type": "enum",
+     "values": [
+      "claims"
+     ],
+     "default": "claims"
+    },
+    "group_by": {
+     "type": "enum",
+     "values": [
+      "none",
+      "payer"
+     ],
+     "default": "none"
+    }
+   }
+  },
+  {
+   "id": "pharmacy_claim_net_paid",
+   "version": 1,
+   "name": "Net pharmacy payer payments",
+   "status": "internal",
+   "internal_reason": "Literal received-record event with a fixed filter; the definition is the stream and filter stated here.",
+   "summary": "Net payer payments on pharmacy claims: payer_paid_delta_cents over every pharmacy claim transaction dated in the period (paid positive, reversals negative, rejections zero), dollars.",
+   "grain": {
+    "entity": "account",
+    "key": "record_id"
+   },
+   "population": {
+    "summary": "Roster patients (synthetic); the population slot narrows it."
+   },
+   "denominator": {
+    "summary": "None (count) unless the slots ask for a rate."
+   },
+   "numerator": {
+    "summary": "Net payer payments on pharmacy claims: payer_paid_delta_cents over every pharmacy claim transaction dated in the period (paid positive, reversals negative, rejections zero), dollars."
+   },
+   "time_anchor": {
+    "field": "pharmacy_claim_transactions.event_date",
+    "mode": "period",
+    "default": "all"
+   },
+   "value_sets": {},
+   "unit": "dollars",
+   "expected_range": [
+    -100000000,
+    100000000
+   ],
+   "versioning": {
+    "rule": "none"
+   },
+   "output": {
+    "returns": "value"
+   },
+   "sql_template": null,
+   "builder": "record_event",
+   "event": {
+    "stream": "pharmacy_claim_transactions",
+    "where": null,
+    "measures": {
+     "net_payer_paid_usd": "round(sum(json_extract(r.payload, '$.payer_paid_delta_cents')) / 100.0, 2)",
+     "transactions": "count(*)"
+    },
+    "returns": {
+     "net_payer_paid_usd": "value",
+     "transactions": "count"
+    },
+    "group_by": {
+     "payer": "json_extract(r.payload, '$.source_system')"
+    },
+    "date": "r.event_date",
+    "default_measure": "net_payer_paid_usd"
+   },
+   "slots": {
+    "period": {
+     "type": "period",
+     "description": "Date window the metric counts. preset: all_time (default for any-time questions; undated records count), year (+year), ytd, trailing_months (+months, ending at the snapshot date inclusive), trailing_days (+days), before_days (+days: only records dated at least that many days before the snapshot), custom (+start, +end ISO dates)."
+    },
+    "measure": {
+     "type": "enum",
+     "values": [
+      "net_payer_paid_usd",
+      "transactions"
+     ],
+     "default": "net_payer_paid_usd"
+    },
+    "group_by": {
+     "type": "enum",
+     "values": [
+      "none",
+      "payer"
+     ],
+     "default": "none"
+    }
+   }
+  },
+  {
+   "id": "payer_cash_posted",
+   "version": 1,
+   "name": "Payer cash posted",
+   "status": "internal",
+   "internal_reason": "Literal received-record event with a fixed filter; the definition is the stream and filter stated here.",
+   "summary": "Payer cash allocations posted to claims (negatives are recoupments), dated by the allocation; net dollars.",
+   "grain": {
+    "entity": "account",
+    "key": "record_id"
+   },
+   "population": {
+    "summary": "Roster patients (synthetic); the population slot narrows it."
+   },
+   "denominator": {
+    "summary": "None (count) unless the slots ask for a rate."
+   },
+   "numerator": {
+    "summary": "Payer cash allocations posted to claims (negatives are recoupments), dated by the allocation; net dollars."
+   },
+   "time_anchor": {
+    "field": "payer_cash_allocations.event_date",
+    "mode": "period",
+    "default": "all"
+   },
+   "value_sets": {},
+   "unit": "dollars",
+   "expected_range": [
+    -100000000,
+    100000000
+   ],
+   "versioning": {
+    "rule": "none"
+   },
+   "output": {
+    "returns": "value"
+   },
+   "sql_template": null,
+   "builder": "record_event",
+   "event": {
+    "stream": "payer_cash_allocations",
+    "where": null,
+    "measures": {
+     "net_cash_usd": "round(sum(json_extract(r.payload, '$.allocated_cents')) / 100.0, 2)",
+     "allocations": "count(*)"
+    },
+    "returns": {
+     "net_cash_usd": "value",
+     "allocations": "count"
+    },
+    "group_by": {
+     "payer": "(SELECT c.payer FROM claim c WHERE c.claim_id = json_extract(r.payload, '$.claim_id'))"
+    },
+    "date": "r.event_date",
+    "default_measure": "net_cash_usd"
+   },
+   "slots": {
+    "period": {
+     "type": "period",
+     "description": "Date window the metric counts. preset: all_time (default for any-time questions; undated records count), year (+year), ytd, trailing_months (+months, ending at the snapshot date inclusive), trailing_days (+days), before_days (+days: only records dated at least that many days before the snapshot), custom (+start, +end ISO dates)."
+    },
+    "measure": {
+     "type": "enum",
+     "values": [
+      "net_cash_usd",
+      "allocations"
+     ],
+     "default": "net_cash_usd"
+    },
+    "group_by": {
+     "type": "enum",
+     "values": [
+      "none",
+      "payer"
+     ],
+     "default": "none"
+    }
+   }
+  },
+  {
+   "id": "specialty_referrals_sent",
+   "version": 1,
+   "name": "Referrals sent",
+   "status": "internal",
+   "internal_reason": "Literal received-record event with a fixed filter; the definition is the stream and filter stated here.",
+   "summary": "Referral orders sent (referrals stream), dated by the referral; by referral type.",
+   "grain": {
+    "entity": "account",
+    "key": "record_id"
+   },
+   "population": {
+    "summary": "Roster patients (synthetic); the population slot narrows it."
+   },
+   "denominator": {
+    "summary": "None (count) unless the slots ask for a rate."
+   },
+   "numerator": {
+    "summary": "Referral orders sent (referrals stream), dated by the referral; by referral type."
+   },
+   "time_anchor": {
+    "field": "referrals.event_date",
+    "mode": "period",
+    "default": "all"
+   },
+   "value_sets": {},
+   "unit": "count",
+   "expected_range": [
+    -100000000,
+    100000000
+   ],
+   "versioning": {
+    "rule": "none"
+   },
+   "output": {
+    "returns": "value"
+   },
+   "sql_template": null,
+   "builder": "record_event",
+   "event": {
+    "stream": "referrals",
+    "where": null,
+    "measures": {
+     "referrals": "count(*)"
+    },
+    "returns": {
+     "referrals": "count"
+    },
+    "group_by": {
+     "referral_type": "json_extract(r.payload, '$.referral_type')"
+    },
+    "date": "r.event_date",
+    "default_measure": "referrals"
+   },
+   "slots": {
+    "period": {
+     "type": "period",
+     "description": "Date window the metric counts. preset: all_time (default for any-time questions; undated records count), year (+year), ytd, trailing_months (+months, ending at the snapshot date inclusive), trailing_days (+days), before_days (+days: only records dated at least that many days before the snapshot), custom (+start, +end ISO dates)."
+    },
+    "measure": {
+     "type": "enum",
+     "values": [
+      "referrals"
+     ],
+     "default": "referrals"
+    },
+    "group_by": {
+     "type": "enum",
+     "values": [
+      "none",
+      "referral_type"
+     ],
+     "default": "none"
+    }
+   }
+  },
+  {
+   "id": "original_claims_missing_member_id",
+   "version": 1,
+   "name": "Original claims submitted without a member ID",
+   "status": "internal",
+   "internal_reason": "Literal received-record event with a fixed filter; the definition is the stream and filter stated here.",
+   "summary": "Distinct claims whose original submission carried no member identifier.",
+   "grain": {
+    "entity": "account",
+    "key": "record_id"
+   },
+   "population": {
+    "summary": "Roster patients (synthetic); the population slot narrows it."
+   },
+   "denominator": {
+    "summary": "None (count) unless the slots ask for a rate."
+   },
+   "numerator": {
+    "summary": "Distinct claims whose original submission carried no member identifier."
+   },
+   "time_anchor": {
+    "field": "medical_claim_submissions.event_date",
+    "mode": "period",
+    "default": "all"
+   },
+   "value_sets": {},
+   "unit": "count",
+   "expected_range": [
+    -100000000,
+    100000000
+   ],
+   "versioning": {
+    "rule": "none"
+   },
+   "output": {
+    "returns": "value"
+   },
+   "sql_template": null,
+   "builder": "record_event",
+   "event": {
+    "stream": "medical_claim_submissions",
+    "where": "json_extract(r.payload, '$.submission_kind') = 'original' AND json_extract(r.payload, '$.member_identifier_submitted') IS NULL",
+    "measures": {
+     "claims": "count(DISTINCT json_extract(r.payload, '$.claim_id'))"
+    },
+    "returns": {
+     "claims": "count"
+    },
+    "group_by": {},
+    "date": "r.event_date",
+    "default_measure": "claims"
+   },
+   "slots": {
+    "period": {
+     "type": "period",
+     "description": "Date window the metric counts. preset: all_time (default for any-time questions; undated records count), year (+year), ytd, trailing_months (+months, ending at the snapshot date inclusive), trailing_days (+days), before_days (+days: only records dated at least that many days before the snapshot), custom (+start, +end ISO dates)."
+    },
+    "measure": {
+     "type": "enum",
+     "values": [
+      "claims"
+     ],
+     "default": "claims"
+    },
+    "group_by": {
+     "type": "enum",
+     "values": [
+      "none"
+     ],
+     "default": "none"
+    }
+   }
+  }
+ ]
+}
