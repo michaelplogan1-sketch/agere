@@ -1,0 +1,13 @@
+default:
+  target: dev
+  outputs:
+    dev:
+      type: duckdb
+      path: /Users/mikel/clinical-insights-local/artifacts/test-warehouse/tuva.duckdb
+      threads: 4
+      extensions: [sqlite, json]
+      attach:
+        - path: /Users/mikel/clinical-insights-local/artifacts/bench-db/v28-sample-indexed.sqlite3
+          alias: raw_warehouse
+          type: sqlite
+          read_only: true

@@ -1,0 +1,14 @@
+source_value,discharge_disposition_code,note
+home,01,UB-04 01 discharged to home or self care
+home_with_followup_plan,01,
+home_with_arranged_assistance,01,
+home_with_guardian,01,
+home_health,06,UB-04 06 home under care of home health
+snf,03,UB-04 03 skilled nursing facility
+skilled_nursing_facility,03,
+irf,62,UB-04 62 inpatient rehabilitation facility
+expired,20,UB-04 20 expired
+hospital_observation,09,UB-04 09 admitted as an inpatient to this hospital (used for ED->observation hand-off)
+transfer_acute,02,UB-04 02 short-term general hospital
+ama,07,UB-04 07 left against medical advice
+hospice,50,UB-04 50 hospice - home

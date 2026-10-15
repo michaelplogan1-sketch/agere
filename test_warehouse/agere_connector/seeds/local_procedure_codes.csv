@@ -1,0 +1,19 @@
+source_procedure,code_system,code,description
+venipuncture,hcpcs,36415,Collection of venous blood by venipuncture
+short_arm_splint,hcpcs,29125,Application of short arm splint (forearm to hand); static
+ankle_support,hcpcs,29540,Strapping; ankle and/or foot
+limited_oral_evaluation,hcpcs,D0140,Limited oral evaluation - problem focused
+visual_acuity_and_refraction,hcpcs,92015,Determination of refractive state
+diagnostic_audiometry_and_tympanometry,hcpcs,92550,Tympanometry and reflex threshold measurements
+12_lead_ecg,hcpcs,93000,Electrocardiogram routine ECG with at least 12 leads; with interpretation and report
+periodontal_charting,hcpcs,D0180,Comprehensive periodontal evaluation - new or established patient
+fecal_immunochemical_test,hcpcs,82274,Blood occult by fecal hemoglobin determination by immunoassay
+screening_mammography,hcpcs,77067,Screening mammography bilateral including CAD
+colonoscopy,hcpcs,45378,Colonoscopy flexible; diagnostic
+colonoscopy_with_cold_snare_polypectomy,hcpcs,45385,Colonoscopy flexible; with removal of lesion by snare technique
+incomplete_colonoscopy,hcpcs,45378,Colonoscopy flexible; diagnostic (incomplete; modifier 53 applies)
+esophagogastroduodenoscopy,hcpcs,43235,Esophagogastroduodenoscopy flexible transoral; diagnostic
+xr_wrist,hcpcs,73110,Radiologic examination wrist; complete minimum of 3 views
+xr_ankle,hcpcs,73610,Radiologic examination ankle; complete minimum of 3 views
+xr_chest,hcpcs,71046,Radiologic examination chest; 2 views
+medicare_annual_wellness,hcpcs,G0438,Annual wellness visit; includes a personalized prevention plan of service (initial)

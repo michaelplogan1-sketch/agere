@@ -1,0 +1,15 @@
+place_of_service_code,encounter_type,note
+02,telehealth,CMS POS 02 telehealth other than home
+10,telehealth,CMS POS 10 telehealth in patient home
+11,office visit,CMS POS 11 office
+12,home health,CMS POS 12 home
+13,office visit - other,CMS POS 13 assisted living facility
+19,outpatient hospital or clinic,CMS POS 19 off-campus outpatient hospital
+20,urgent care,CMS POS 20 urgent care facility
+21,acute inpatient,CMS POS 21 inpatient hospital
+22,outpatient hospital or clinic,CMS POS 22 on-campus outpatient hospital
+23,emergency department,CMS POS 23 emergency room - hospital
+24,ambulatory surgery center,CMS POS 24 ambulatory surgical center
+31,inpatient skilled nursing,CMS POS 31 skilled nursing facility
+32,inpatient skilled nursing,CMS POS 32 nursing facility
+34,inpatient hospice,CMS POS 34 hospice

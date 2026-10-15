@@ -1,0 +1,85 @@
+name: agere_connector
+version: "1.0.0"
+config-version: 2
+require-dbt-version: ">=1.10.5,<3.0.0"
+
+profile: default
+
+flags:
+  require_ref_searches_node_package_before_root: true
+
+models:
+  agere_connector:
+    +schema: input_layer
+    +tags: [input_layer]
+    staging:
+      +schema: connector_staging
+      +materialized: view
+    intermediate:
+      +schema: connector_intermediate
+      +materialized: table
+      mapped:
+        +materialized: view
+    final:
+      +materialized: table
+    tuva_overrides:
+      +tags: [tuva_override]
+      +schema: claims_preprocessing
+    gap_fill:
+      +schema: connector_gap_fill
+      +materialized: table
+      +tags: [gap_fill]
+
+  the_tuva_project:
+    normalized_layer:
+      intermediate:
+        # replaced by models/tuva_overrides/ (DuckDB join-planning workaround)
+        normalized_input__int_medical_npi_normalize:
+          +enabled: false
+
+seeds:
+  agere_connector:
+    +schema: connector_seeds
+    +tags: [input_layer]
+    stream_map:
+      +column_types:
+        stream: varchar
+        status: varchar
+        input_tables: varchar
+        reason: varchar
+    pos_encounter_type:
+      +column_types:
+        place_of_service_code: varchar
+    discharge_disposition_map:
+      +column_types:
+        discharge_disposition_code: varchar
+    admit_source_map:
+      +column_types:
+        admit_source_code: varchar
+    local_procedure_codes:
+      +column_types:
+        code: varchar
+
+vars:
+  claims_enabled: true
+  clinical_enabled: true
+  provider_attribution_enabled: true
+  data_quality_enabled: false
+
+  # Raw warehouse release and as-of date. The release id selects one load in
+  # raw_warehouse.records; the period end anchors the quality measures to the
+  # last full calendar year of data instead of the wall-clock year.
+  raw_release: d212c960d1e55a8663a5afe165741458ee429c7c15df200fb5c3cf2de65c22c4
+  # The release manifest's as_of date. Tuva caps open enrollment spans at
+  # tuva_last_run and computes ages from it, so it is pinned to the data's
+  # as-of date rather than the wall-clock run time (the data runs past today).
+  tuva_last_run: "2030-05-27 00:00:00"
+  quality_measures_period_end: "2029-12-31"
+  # CMS-HCC: the package's normalization factors / adjustment rates end at
+  # payment year 2027 (published CMS rates), so 2027 (2026 dates of service) is
+  # the latest scoreable year. Monthly risk factors still cover 2027-2031.
+  cms_hcc_payment_year: 2027
+
+  passthrough:
+    prefix: "x_"
+    strip: false

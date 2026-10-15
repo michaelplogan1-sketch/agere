@@ -1,0 +1,15 @@
+source_stream,source_item,observation_type,code_type,code,description
+mood_questionnaires,PHQ-9 total,survey,loinc,44261-6,Patient Health Questionnaire 9 item (PHQ-9) total score [Reported]
+health_risk_assessments,phq2_total,survey,loinc,55758-7,Patient Health Questionnaire 2 item (PHQ-2) total score [Reported]
+health_risk_assessments,falls_past_year_reported,survey,loinc,52552-0,Falls in the past year [#]
+health_risk_assessments,general_health_reported,survey,loinc,71969-0,Overall health in general [PROMIS]
+health_risk_assessments,stress_reported,survey,local,hra_stress,HRA self-reported stress level
+health_risk_assessments,loneliness_reported,survey,local,hra_loneliness,HRA loneliness reported
+health_risk_assessments,memory_concern_reported,survey,local,hra_memory_concern,HRA memory concern reported
+health_risk_assessments,hearing_concern_reported,survey,local,hra_hearing_concern,HRA hearing concern reported
+health_risk_assessments,vision_concern_reported,survey,local,hra_vision_concern,HRA vision concern reported
+health_risk_assessments,food_access_difficulty_reported,social-history,local,hra_food_access_difficulty,HRA food access difficulty reported
+social_screens,AHC_HRSN panel,survey,loinc,96777-8,Accountable health communities (AHC) health-related social needs screening (HRSN) tool
+social_screens,food_difficulty_reported,social-history,local,brief_needs_food_difficulty,Brief clinical needs interview: food difficulty reported
+social_screens,transport_difficulty_reported,social-history,local,brief_needs_transport_difficulty,Brief clinical needs interview: transportation difficulty reported
+social_screens,difficulty_paying_for_care_reported,social-history,local,brief_needs_cost_of_care,Brief clinical needs interview: difficulty paying for care reported

@@ -1,0 +1,238 @@
+stream,status,input_tables,reason
+adt,mapped,encounter,"Owned-hospital ADT events; same encounter_id as the EHR encounter, used for admit source, discharge disposition and admit/discharge dates"
+adt_messages,mapped,encounter;condition,HL7 v2 ADT (A01/A03/A04/A06/A08) from outside hospitals; one clinical encounter per visit_number (data_source hl7_adt); DG1 admit/discharge diagnoses to condition
+advance_care_document_status,unused,,Clinical document / free text; the Tuva Input Layer has no document table
+advance_care_documents,unused,,Clinical document / free text; the Tuva Input Layer has no document table
+allergies,unused,,Allergies; the Tuva Input Layer has no allergy table
+allergy_history_reviews,unused,,Allergies; the Tuva Input Layer has no allergy table
+appointment_scheduling_contacts,unused,,Appointment workflow (contacts/outreach) around appointments; the appointments themselves are mapped
+appointments,mapped,appointment,Latest status per appointment_id
+audiology_evaluations,unused,,Screening instrument without a standard code or score Tuva measures use; no mapping
+behavioral_assessments,unused,,Screening instrument without a standard code or score Tuva measures use; no mapping
+behavioral_care_contacts,unused,,Care-management workflow; no Tuva Input Layer table
+behavioral_care_plans,unused,,Care-management workflow; no Tuva Input Layer table
+behavioral_followup_reports,unused,,Workflow or contact event without a coded clinical fact Tuva can use; no Tuva Input Layer table
+billing_authorizations,unused,,"Revenue-cycle payment-basis authorizations per account; workflow state, not a claim, payment or coverage fact. Plan money comes from medical_claim/claim_payment."
+billing_documents,unused,,"Clinical document / free text; the Tuva Input Layer has no document table; Revenue-cycle account state; Tuva claims use adjudicated claim amounts, not account balances"
+billing_service_dispositions,unused,,Bill/no-bill disposition of care records inside the practice revenue cycle; the resulting submissions are in medical_claim.
+breast_diagnostic_orders,unused,,Order (request) without a performed or resulted fact; Tuva has no order table and performed services/results are mapped from their own streams
+breast_diagnostic_reports,unused,,Report/specimen detail of a procedure already captured elsewhere (claims or performed-procedure streams) or without a codeable performed service; Clinical document / free text; the Tuva Input Layer has no document table
+breast_diagnostic_sessions,unused,,Report/specimen detail of a procedure already captured elsewhere (claims or performed-procedure streams) or without a codeable performed service
+cancer_screening_decisions,unused,,Workflow or contact event without a coded clinical fact Tuva can use; no Tuva Input Layer table
+cancer_screening_history,unused,,Workflow or contact event without a coded clinical fact Tuva can use; no Tuva Input Layer table
+cancer_screening_orders,unused,,Order (request) without a performed or resulted fact; Tuva has no order table and performed services/results are mapped from their own streams
+cancer_screening_results,mapped,procedure,"Performed screening tests (FIT, mammography) as HCPCS via seeds/local_procedure_codes.csv"
+care_coordination_contacts,unused,,Care-management workflow; no Tuva Input Layer table
+care_intake,unused,,Workflow or contact event without a coded clinical fact Tuva can use; no Tuva Input Layer table
+care_management_contacts,unused,,Care-management workflow; no Tuva Input Layer table
+care_management_enrollments,unused,,Care-management workflow; no Tuva Input Layer table
+care_support_interviews,unused,,Workflow or contact event without a coded clinical fact Tuva can use; no Tuva Input Layer table
+care_team_relationships,unused,,"Care-team relationships; not payer attribution, Tuva provider_attribution uses enrollment_spans.attribution_practice_id"
+caregiver_contacts,unused,,Care-management workflow; no Tuva Input Layer table
+chart_summaries,unused,,Clinical document / free text; the Tuva Input Layer has no document table
+claim_acknowledgements,unused,,Claim workflow history; adjudication outcome already captured from the adjudication records mapped to medical_claim
+claim_corrections,unused,,"Provider claim correction log. Replacement adjudications already carry the claim_id in medical_claims and their financial deltas are summed per claim, so the correction is applied without this stream (kept for audit questions)"
+clinical_document_requests,unused,,Clinical document / free text; the Tuva Input Layer has no document table
+code_status_orders,unused,,Workflow or contact event without a coded clinical fact Tuva can use; no Tuva Input Layer table
+community_service_outcomes,unused,,Referral workflow; the Tuva Input Layer has no referral table
+community_service_referrals,unused,,Referral workflow; the Tuva Input Layer has no referral table
+condition_assessments,mapped,condition,"Coded (ICD-10-CM) condition assessments, condition_type condition_assessment"
+conditions,mapped,condition,"Problem list and coded conditions (ICD-10-CM, else SNOMED CT); current versions"
+coverage,unused,,"EHR registration coverage (the practice view of insurance, not payer enrollment); Tuva eligibility uses payer enrollment_spans"
+coverage_verifications,unused,,"EHR registration coverage (the practice view, not the payer); Tuva eligibility uses payer enrollment_spans"
+critical_result_notifications,unused,,Workflow or contact event without a coded clinical fact Tuva can use; no Tuva Input Layer table
+current_medication_container_reviews,unused,,"Medication history, reconciliation or communication without an order, administration or dispense fact; Tuva medication is populated from orders, administrations and dispenses"
+death_records,mapped,patient;eligibility,Date of death (death index / payer death indicator) for patient and eligibility
+demographic_updates,mapped,patient,Deceased updates supply a death date when no death record exists
+dental_evaluations,unused,,Report/specimen detail of a procedure already captured elsewhere (claims or performed-procedure streams) or without a codeable performed service; Workflow or contact event without a coded clinical fact Tuva can use; no Tuva Input Layer table
+developmental_screens,unused,,Screening instrument without a standard code or score Tuva measures use; no mapping
+diagnostic_access_contacts,unused,,Referral workflow; the Tuva Input Layer has no referral table
+diagnostic_orders,unused,,Order (request) without a performed or resulted fact; Tuva has no order table and performed services/results are mapped from their own streams
+diagnostic_referral_packets,unused,,Referral workflow; the Tuva Input Layer has no referral table
+diagnostic_result_reviews,unused,,Workflow or contact event without a coded clinical fact Tuva can use; no Tuva Input Layer table
+diagnostic_review_interviews,unused,,Workflow or contact event without a coded clinical fact Tuva can use; no Tuva Input Layer table
+diagnostic_test_reports,unused,,Report/specimen detail of a procedure already captured elsewhere (claims or performed-procedure streams) or without a codeable performed service; Clinical document / free text; the Tuva Input Layer has no document table
+diagnostic_test_sessions,unused,,Report/specimen detail of a procedure already captured elsewhere (claims or performed-procedure streams) or without a codeable performed service
+discharge_plans,unused,,"Encounter-adjacent document or workflow; the visits themselves come from encounters, adt and adt_messages"
+durable_medical_equipment,unused,,Report/specimen detail of a procedure already captured elsewhere (claims or performed-procedure streams) or without a codeable performed service
+encounter_text_fragments,unused,,"Clinical document / free text; the Tuva Input Layer has no document table; Encounter-adjacent document or workflow; the visits themselves come from encounters, adt and adt_messages"
+encounters,mapped,encounter;condition,"EHR encounters, latest version per encounter_id; ranked encounter diagnoses to condition"
+endoscopy_reports,mapped,procedure,Performed endoscopic procedures as HCPCS via seeds/local_procedure_codes.csv
+enrollment_spans,mapped,eligibility;provider_attribution,Payer enrollment spans (current versions; retro-terminations replace the prior span); attribution_practice_id to provider_attribution
+facility_medication_supply,unused,,"Medication history, reconciliation or communication without an order, administration or dispense fact; Tuva medication is populated from orders, administrations and dispenses"
+financial_screens,unused,,Screening instrument without a standard code or score Tuva measures use; no mapping
+functional_assessments,unused,,Screening instrument without a standard code or score Tuva measures use; no mapping
+functional_mobility_exams,unused,,Workflow or contact event without a coded clinical fact Tuva can use; no Tuva Input Layer table
+gi_diagnostic_plan_reviews,unused,,Workflow or contact event without a coded clinical fact Tuva can use; no Tuva Input Layer table
+gi_diagnostic_plans,unused,,Workflow or contact event without a coded clinical fact Tuva can use; no Tuva Input Layer table
+gi_laboratory_report_transmissions,unused,,"Lab workflow (specimen, transmission, notification, acknowledgement) around results; the results themselves are mapped from labs"
+growth_observations,mapped,observation,Pediatric height/weight/BMI measurements as vital-sign observations
+guardian_relationships,unused,,Workflow or contact event without a coded clinical fact Tuva can use; no Tuva Input Layer table
+health_risk_assessments,mapped,observation,"HRA: PHQ-2 total, falls, self-rated health and need items as survey observations"
+healthcare_agent_designations,unused,,Clinical document / free text; the Tuva Input Layer has no document table
+hie_documents,unused,,"Clinical document / free text; the Tuva Input Layer has no document table; Diagnosis evidence inside unstructured documents; coded diagnoses come from conditions, encounters, ADT and claims"
+home_health_assessments,unused,,Workflow or contact event without a coded clinical fact Tuva can use; no Tuva Input Layer table
+home_health_billing_periods,unused,,"Encounter-adjacent document or workflow; the visits themselves come from encounters, adt and adt_messages"
+home_health_case_summaries,unused,,Clinical document / free text; the Tuva Input Layer has no document table
+home_health_intake,unused,,Referral workflow; the Tuva Input Layer has no referral table
+home_health_orders,unused,,Order (request) without a performed or resulted fact; Tuva has no order table and performed services/results are mapped from their own streams
+home_health_plan_responses,unused,,Workflow or contact event without a coded clinical fact Tuva can use; no Tuva Input Layer table
+home_health_plans,unused,,Workflow or contact event without a coded clinical fact Tuva can use; no Tuva Input Layer table
+home_health_referral_packets,unused,,Referral workflow; the Tuva Input Layer has no referral table
+home_health_treatments,unused,,Report/specimen detail of a procedure already captured elsewhere (claims or performed-procedure streams) or without a codeable performed service
+home_medication_questions,unused,,"Medication history, reconciliation or communication without an order, administration or dispense fact; Tuva medication is populated from orders, administrations and dispenses"
+hospice_elections,unused,,"Encounter-adjacent document or workflow; the visits themselves come from encounters, adt and adt_messages; Diagnosis evidence inside unstructured documents; coded diagnoses come from conditions, encounters, ADT and claims"
+hospital_care_transitions,unused,,"Encounter-adjacent document or workflow; the visits themselves come from encounters, adt and adt_messages"
+hospital_fluid_balance,unused,,Inpatient fluid/nursing charting without a standard vital-sign code
+hospital_followup_assessments,unused,,Workflow or contact event without a coded clinical fact Tuva can use; no Tuva Input Layer table
+hospital_illness_assessments,unused,,Workflow or contact event without a coded clinical fact Tuva can use; no Tuva Input Layer table
+imaging_orders,unused,,Order (request) without a performed or resulted fact; Tuva has no order table and performed services/results are mapped from their own streams
+imaging_report_fragments,unused,,"Lab workflow (specimen, transmission, notification, acknowledgement) around results; the results themselves are mapped from labs"
+imaging_reports,unused,,Report/specimen detail of a procedure already captured elsewhere (claims or performed-procedure streams) or without a codeable performed service; Clinical document / free text; the Tuva Input Layer has no document table
+imaging_studies,mapped,procedure,Plain-film studies as HCPCS via seeds/local_procedure_codes.csv
+immunization_decisions,unused,,Workflow or contact event without a coded clinical fact Tuva can use; no Tuva Input Layer table
+immunization_history,unused,,Vaccine history/consent/decision without an administered dose; administered doses come from immunizations
+immunization_orders,unused,,Order (request) without a performed or resulted fact; Tuva has no order table and performed services/results are mapped from their own streams
+immunization_record_requests,unused,,Workflow or contact event without a coded clinical fact Tuva can use; no Tuva Input Layer table
+immunization_screening,unused,,Screening instrument without a standard code or score Tuva measures use; no mapping
+immunizations,mapped,immunization,Administered vaccines (CVX)
+imported_documents,unused,,Clinical document / free text; the Tuva Input Layer has no document table
+injury_examinations,unused,,Workflow or contact event without a coded clinical fact Tuva can use; no Tuva Input Layer table
+injury_followup_reports,unused,,Workflow or contact event without a coded clinical fact Tuva can use; no Tuva Input Layer table
+inpatient_cardiac_reports,unused,,"Report/specimen detail of a procedure already captured elsewhere (claims or performed-procedure streams) or without a codeable performed service; Lab workflow (specimen, transmission, notification, acknowledgement) around results; the results themselves are mapped from labs"
+inpatient_discharge_reconciliation,unused,,"Medication history, reconciliation or communication without an order, administration or dispense fact; Tuva medication is populated from orders, administrations and dispenses"
+inpatient_fluid_charts,unused,,Inpatient fluid/nursing charting without a standard vital-sign code
+inpatient_medication_histories,unused,,"Medication history, reconciliation or communication without an order, administration or dispense fact; Tuva medication is populated from orders, administrations and dispenses"
+inpatient_volume_assessments,unused,,Workflow or contact event without a coded clinical fact Tuva can use; no Tuva Input Layer table
+laboratory_collection_attempts,unused,,Order (request) without a performed or resulted fact; Tuva has no order table and performed services/results are mapped from their own streams
+laboratory_collection_bookings,unused,,Order (request) without a performed or resulted fact; Tuva has no order table and performed services/results are mapped from their own streams
+laboratory_demographic_amendments,unused,,"Lab workflow (specimen, transmission, notification, acknowledgement) around results; the results themselves are mapped from labs"
+laboratory_followup_contacts,unused,,Order (request) without a performed or resulted fact; Tuva has no order table and performed services/results are mapped from their own streams
+laboratory_orders,unused,,Order (request) without a performed or resulted fact; Tuva has no order table and performed services/results are mapped from their own streams
+laboratory_report_transmissions,unused,,"Lab workflow (specimen, transmission, notification, acknowledgement) around results; the results themselves are mapped from labs"
+laboratory_result_notifications,unused,,"Lab workflow (specimen, transmission, notification, acknowledgement) around results; the results themselves are mapped from labs"
+laboratory_specimens,unused,,"Lab workflow (specimen, transmission, notification, acknowledgement) around results; the results themselves are mapped from labs"
+laboratory_status_requests,unused,,Order (request) without a performed or resulted fact; Tuva has no order table and performed services/results are mapped from their own streams
+laboratory_status_responses,unused,,"Lab workflow (specimen, transmission, notification, acknowledgement) around results; the results themselves are mapped from labs; Order (request) without a performed or resulted fact; Tuva has no order table and performed services/results are mapped from their own streams"
+labs,mapped,lab_result,"Lab results, current versions (supersedes_record_id and replaces_result_record_id); LOINC where present, local code otherwise"
+medical_claim_lines,mapped,medical_claim,Provider billing service lines of the current submission
+medical_claim_submissions,mapped,medical_claim,Provider billing claim headers (837); current (corrected) submission per claim_id
+medical_claims,mapped,medical_claim,Provider-side adjudications (835-style); financial_deltas_cents summed per claim for net paid/allowed
+medical_payment_attempts,unused,,"Revenue-cycle account state; Tuva claims use adjudicated claim amounts, not account balances"
+medical_payment_plans,unused,,"Revenue-cycle account state; Tuva claims use adjudicated claim amounts, not account balances"
+medication_administrations,mapped,medication,Facility medication administrations with status given
+medication_clarification_contacts,unused,,"Medication history, reconciliation or communication without an order, administration or dispense fact; Tuva medication is populated from orders, administrations and dispenses"
+medication_followup_reports,unused,,"Medication history, reconciliation or communication without an order, administration or dispense fact; Tuva medication is populated from orders, administrations and dispenses"
+medication_history_interviews,unused,,"Medication history, reconciliation or communication without an order, administration or dispense fact; Tuva medication is populated from orders, administrations and dispenses"
+medication_information_requests,unused,,"Medication history, reconciliation or communication without an order, administration or dispense fact; Tuva medication is populated from orders, administrations and dispenses"
+medication_intent_changes,unused,,"Medication history, reconciliation or communication without an order, administration or dispense fact; Tuva medication is populated from orders, administrations and dispenses"
+medication_label_evidence,unused,,"Medication history, reconciliation or communication without an order, administration or dispense fact; Tuva medication is populated from orders, administrations and dispenses"
+medication_lists,unused,,"Medication history, reconciliation or communication without an order, administration or dispense fact; Tuva medication is populated from orders, administrations and dispenses"
+medication_orders,mapped,medication,"Prescriptions/orders (RxNorm), current versions (replaces_order_record_id)"
+medication_reconciliation,unused,,"Medication history, reconciliation or communication without an order, administration or dispense fact; Tuva medication is populated from orders, administrations and dispenses"
+medication_record_transfers,unused,,Clinical document / free text; the Tuva Input Layer has no document table
+medication_review_decisions,unused,,"Medication history, reconciliation or communication without an order, administration or dispense fact; Tuva medication is populated from orders, administrations and dispenses"
+medication_shared_decisions,unused,,"Medication history, reconciliation or communication without an order, administration or dispense fact; Tuva medication is populated from orders, administrations and dispenses"
+medication_symptom_assessments,unused,,Workflow or contact event without a coded clinical fact Tuva can use; no Tuva Input Layer table
+mood_questionnaires,mapped,observation,PHQ-9 totals (LOINC 44261-6)
+notes,unused,,Clinical document / free text; the Tuva Input Layer has no document table
+nursing_observations,unused,,Inpatient fluid/nursing charting without a standard vital-sign code
+optical_prescriptions,unused,,Workflow or contact event without a coded clinical fact Tuva can use; no Tuva Input Layer table
+original_regimen_decisions,unused,,"Medication history, reconciliation or communication without an order, administration or dispense fact; Tuva medication is populated from orders, administrations and dispenses"
+outreach_attempts,unused,,Care-management workflow; no Tuva Input Layer table; Appointment workflow (contacts/outreach) around appointments; the appointments themselves are mapped
+outside_access_updates,unused,,Referral workflow; the Tuva Input Layer has no referral table
+outside_followup_confirmations,unused,,Referral workflow; the Tuva Input Layer has no referral table
+outside_followup_contacts,unused,,Referral workflow; the Tuva Input Layer has no referral table
+outside_record_permissions,unused,,Clinical document / free text; the Tuva Input Layer has no document table
+outside_report_status,unused,,Referral workflow; the Tuva Input Layer has no referral table
+pathology_accessions,unused,,Report/specimen detail of a procedure already captured elsewhere (claims or performed-procedure streams) or without a codeable performed service
+pathology_reports,unused,,"Report/specimen detail of a procedure already captured elsewhere (claims or performed-procedure streams) or without a codeable performed service; Clinical document / free text; the Tuva Input Layer has no document table; Diagnosis evidence inside unstructured documents; coded diagnoses come from conditions, encounters, ADT and claims"
+pathology_specimens,unused,,Report/specimen detail of a procedure already captured elsewhere (claims or performed-procedure streams) or without a codeable performed service
+patient_billing_accounts,unused,,"Revenue-cycle account state; Tuva claims use adjudicated claim amounts, not account balances"
+patient_payments,unused,,Patient cash/payment-plan activity; outside the Tuva claims model
+patient_refunds,unused,,Patient refund cash activity; outside the Tuva claims model
+payer_cash_allocations,unused,,"Cash posting of payer payments; Tuva paid amounts come from adjudication records, so mapping cash would double count"
+payer_medical_claim_lines,mapped,medical_claim,"Payer claim service lines (CPT/HCPCS, revenue codes)"
+payer_medical_claims,mapped,medical_claim,Payer adjudicated medical claims (plan view); adjudication chain resolved to final net; payer copies of provider claims dropped
+payer_pharmacy_claims,mapped,pharmacy_claim,Payer pharmacy claims with paid/reversed/recouped handling; amount-less payer copies of owned-pharmacy fills dropped when the provider billing record exists
+periodontal_evaluations,unused,,Report/specimen detail of a procedure already captured elsewhere (claims or performed-procedure streams) or without a codeable performed service
+personalized_prevention_plans,unused,,Workflow or contact event without a coded clinical fact Tuva can use; no Tuva Input Layer table
+pharmacy_claim_transactions,mapped,pharmacy_claim,Owned-pharmacy billing transactions (signed cents deltas) per fill
+pharmacy_claims,mapped,pharmacy_claim,Owned-pharmacy claims feed (insurance-paid prescriptions)
+pharmacy_dispenses,mapped,medication,Owned-pharmacy dispenses with status dispensed (prepared and returned_to_stock excluded)
+pharmacy_history,unused,,"Pharmacy fill history; each row links to a dispense through original_dispense_record_id and duplicates pharmacy_dispenses, which are mapped directly"
+pharmacy_information_responses,unused,,"Medication history, reconciliation or communication without an order, administration or dispense fact; Tuva medication is populated from orders, administrations and dispenses"
+pharmacy_payments,unused,,Patient cash/payment-plan activity; outside the Tuva claims model
+pharmacy_prescriber_responses,unused,,"Medication history, reconciliation or communication without an order, administration or dispense fact; Tuva medication is populated from orders, administrations and dispenses"
+pharmacy_renewal_requests,unused,,"Medication history, reconciliation or communication without an order, administration or dispense fact; Tuva medication is populated from orders, administrations and dispenses"
+post_immunization_observations,unused,,Vaccine history/consent/decision without an administered dose; administered doses come from immunizations
+preprocedure_assessments,unused,,Workflow or contact event without a coded clinical fact Tuva can use; no Tuva Input Layer table
+prescription_followthrough_reviews,unused,,"Medication history, reconciliation or communication without an order, administration or dispense fact; Tuva medication is populated from orders, administrations and dispenses"
+prescription_reassessment_decisions,unused,,"Medication history, reconciliation or communication without an order, administration or dispense fact; Tuva medication is populated from orders, administrations and dispenses"
+prescription_request_responses,unused,,"Medication history, reconciliation or communication without an order, administration or dispense fact; Tuva medication is populated from orders, administrations and dispenses"
+prescription_restart_interviews,unused,,"Medication history, reconciliation or communication without an order, administration or dispense fact; Tuva medication is populated from orders, administrations and dispenses"
+preventive_care_reviews,unused,,Workflow or contact event without a coded clinical fact Tuva can use; no Tuva Input Layer table
+preventive_record_requests,unused,,Workflow or contact event without a coded clinical fact Tuva can use; no Tuva Input Layer table
+preventive_screening,unused,,Screening instrument without a standard code or score Tuva measures use; no mapping; Report/specimen detail of a procedure already captured elsewhere (claims or performed-procedure streams) or without a codeable performed service
+procedure_access_contacts,unused,,Referral workflow; the Tuva Input Layer has no referral table
+procedure_orders,unused,,Order (request) without a performed or resulted fact; Tuva has no order table and performed services/results are mapped from their own streams
+procedure_preparation_contacts,unused,,Workflow or contact event without a coded clinical fact Tuva can use; no Tuva Input Layer table
+procedure_recovery_notes,unused,,Clinical document / free text; the Tuva Input Layer has no document table
+procedure_referral_packets,unused,,Referral workflow; the Tuva Input Layer has no referral table
+procedure_result_communications,unused,,Workflow or contact event without a coded clinical fact Tuva can use; no Tuva Input Layer table
+procedures,mapped,procedure,EHR performed procedures; local names to HCPCS via seeds/local_procedure_codes.csv
+provider_remittance_advice,mapped,medical_claim,Remittance (835) dates and status for provider claims (paid_date)
+received_breast_diagnostic_reports,unused,,Report/specimen detail of a procedure already captured elsewhere (claims or performed-procedure streams) or without a codeable performed service; Clinical document / free text; the Tuva Input Layer has no document table
+received_diagnostic_reports,unused,,Report/specimen detail of a procedure already captured elsewhere (claims or performed-procedure streams) or without a codeable performed service; Clinical document / free text; the Tuva Input Layer has no document table
+received_document_requests,unused,,Clinical document / free text; the Tuva Input Layer has no document table
+received_home_health_documents,unused,,Clinical document / free text; the Tuva Input Layer has no document table
+received_hospital_summaries,unused,,"Clinical document / free text; the Tuva Input Layer has no document table; Encounter-adjacent document or workflow; the visits themselves come from encounters, adt and adt_messages"
+received_laboratory_status,unused,,Order (request) without a performed or resulted fact; Tuva has no order table and performed services/results are mapped from their own streams
+received_medication_records,unused,,"Medication history, reconciliation or communication without an order, administration or dispense fact; Tuva medication is populated from orders, administrations and dispenses"
+received_pharmacy_information,unused,,"Medication history, reconciliation or communication without an order, administration or dispense fact; Tuva medication is populated from orders, administrations and dispenses"
+received_prescription_requests,unused,,"Medication history, reconciliation or communication without an order, administration or dispense fact; Tuva medication is populated from orders, administrations and dispenses"
+received_procedure_reports,unused,,Report/specimen detail of a procedure already captured elsewhere (claims or performed-procedure streams) or without a codeable performed service; Clinical document / free text; the Tuva Input Layer has no document table
+received_screening_orders,unused,,Order (request) without a performed or resulted fact; Tuva has no order table and performed services/results are mapped from their own streams
+received_screening_reports,unused,,Report/specimen detail of a procedure already captured elsewhere (claims or performed-procedure streams) or without a codeable performed service; Screening instrument without a standard code or score Tuva measures use; no mapping
+received_specialty_records,unused,,Clinical document / free text; the Tuva Input Layer has no document table
+referral_documents,unused,,Referral workflow; the Tuva Input Layer has no referral table; Clinical document / free text; the Tuva Input Layer has no document table
+referral_status_updates,unused,,Referral workflow; the Tuva Input Layer has no referral table
+referrals,unused,,Referral workflow; the Tuva Input Layer has no referral table
+regimen_followup_contacts,unused,,"Medication history, reconciliation or communication without an order, administration or dispense fact; Tuva medication is populated from orders, administrations and dispenses"
+rehabilitation_access_contacts,unused,,Referral workflow; the Tuva Input Layer has no referral table
+rehabilitation_observations,unused,,Workflow or contact event without a coded clinical fact Tuva can use; no Tuva Input Layer table
+rehabilitation_treatments,unused,,Report/specimen detail of a procedure already captured elsewhere (claims or performed-procedure streams) or without a codeable performed service
+reported_medication_entries,unused,,"Medication history, reconciliation or communication without an order, administration or dispense fact; Tuva medication is populated from orders, administrations and dispenses"
+result_acknowledgements,unused,,"Lab workflow (specimen, transmission, notification, acknowledgement) around results; the results themselves are mapped from labs"
+scanned_documents,unused,,Clinical document / free text; the Tuva Input Layer has no document table
+school_function_reports,unused,,Workflow or contact event without a coded clinical fact Tuva can use; no Tuva Input Layer table
+screening_referral_packets,unused,,Referral workflow; the Tuva Input Layer has no referral table
+screening_specimens,unused,,Report/specimen detail of a procedure already captured elsewhere (claims or performed-procedure streams) or without a codeable performed service
+screening_status_notifications,unused,,Order (request) without a performed or resulted fact; Tuva has no order table and performed services/results are mapped from their own streams
+screening_test_attempts,unused,,Report/specimen detail of a procedure already captured elsewhere (claims or performed-procedure streams) or without a codeable performed service
+screening_workup_contacts,unused,,Referral workflow; the Tuva Input Layer has no referral table
+screening_workup_reviews,unused,,Workflow or contact event without a coded clinical fact Tuva can use; no Tuva Input Layer table
+sdoh_vendor_attributes,unused,,Vendor SDOH indices; Tuva has no person-attribute table (county SVI comes from Tuva terminology); Demographic workflow; demographics come from the raw patients table
+seasonal_vaccine_assessments,unused,,Workflow or contact event without a coded clinical fact Tuva can use; no Tuva Input Layer table
+seasonal_vaccine_histories,unused,,Vaccine history/consent/decision without an administered dose; administered doses come from immunizations
+social_history,unused,,Workflow or contact event without a coded clinical fact Tuva can use; no Tuva Input Layer table
+social_screens,mapped,observation,AHC-HRSN item answers (LOINC per item) and brief needs interview answers
+specialty_record_requests,unused,,Clinical document / free text; the Tuva Input Layer has no document table
+specialty_record_responses,unused,,Clinical document / free text; the Tuva Input Layer has no document table
+specialty_record_reviews,unused,,Workflow or contact event without a coded clinical fact Tuva can use; no Tuva Input Layer table
+telephone_messages,unused,,Clinical document / free text; the Tuva Input Layer has no document table
+transition_of_care_contacts,unused,,Care-management workflow; no Tuva Input Layer table
+transported_handoffs,unused,,"Clinical document / free text; the Tuva Input Layer has no document table; Encounter-adjacent document or workflow; the visits themselves come from encounters, adt and adt_messages"
+uploaded_cash_receipts,unused,,Patient cash/payment-plan activity; outside the Tuva claims model
+vaccination_outreach,unused,,Care-management workflow; no Tuva Input Layer table
+vaccine_consent_records,unused,,Vaccine history/consent/decision without an administered dose; administered doses come from immunizations
+vision_evaluations,unused,,Screening instrument without a standard code or score Tuva measures use; no mapping; Report/specimen detail of a procedure already captured elsewhere (claims or performed-procedure streams) or without a codeable performed service
+vitals,mapped,observation,Vital signs (wide and long layouts unpivoted) with LOINC via seeds/vital_sign_codes.csv
+wellness_benefit_responses,unused,,"EHR registration coverage (the practice view, not the payer); Tuva eligibility uses payer enrollment_spans"
+wellness_history_reviews,unused,,Workflow or contact event without a coded clinical fact Tuva can use; no Tuva Input Layer table
+wellness_visit_services,mapped,procedure,Medicare annual wellness visit HCPCS codes (G0438/G0439) when coded
+youth_health_histories,unused,,Workflow or contact event without a coded clinical fact Tuva can use; no Tuva Input Layer table
+youth_interval_reports,unused,,Workflow or contact event without a coded clinical fact Tuva can use; no Tuva Input Layer table
+youth_prevention_plans,unused,,Workflow or contact event without a coded clinical fact Tuva can use; no Tuva Input Layer table
+youth_preventive_contacts,unused,,Care-management workflow; no Tuva Input Layer table
+youth_sensory_screens,unused,,Screening instrument without a standard code or score Tuva measures use; no mapping

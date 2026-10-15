@@ -1,0 +1,10 @@
+product,payer_type,medicare_flag,note
+commercial,commercial,0,
+marketplace,commercial,0,ACA marketplace plans are commercial lines of business
+medicaid,medicaid,0,
+medicare_ffs,medicare,1,
+medicare_advantage,medicare,1,
+dual_ma,medicare,1,Dual-eligible Medicare Advantage (D-SNP)
+dual_ffs,medicare,1,
+medigap,medicare,1,Medicare supplement
+cob_secondary,commercial,0,

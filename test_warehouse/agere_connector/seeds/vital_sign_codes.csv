@@ -1,0 +1,19 @@
+source_field,loinc_code,description,unit
+blood_pressure_systolic,8480-6,Systolic blood pressure,mm[Hg]
+bp_systolic,8480-6,Systolic blood pressure,mm[Hg]
+blood_pressure_diastolic,8462-4,Diastolic blood pressure,mm[Hg]
+bp_diastolic,8462-4,Diastolic blood pressure,mm[Hg]
+heart_rate,8867-4,Heart rate,/min
+hr,8867-4,Heart rate,/min
+respiratory_rate,9279-1,Respiratory rate,/min
+rr,9279-1,Respiratory rate,/min
+temperature_C,8310-5,Body temperature,Cel
+temp_c,8310-5,Body temperature,Cel
+oxygen_saturation_percent,59408-5,Oxygen saturation in Arterial blood by Pulse oximetry,%
+spo2,59408-5,Oxygen saturation in Arterial blood by Pulse oximetry,%
+weight_kg,29463-7,Body weight,kg
+height_cm,8302-2,Body height,cm
+bmi_kg_m2,39156-5,Body mass index (BMI) [Ratio],kg/m2
+bmi,39156-5,Body mass index (BMI) [Ratio],kg/m2
+pain_reported_0_to_10,72514-3,Pain severity - 0-10 verbal numeric rating [Score] - Reported,{score}
+capillary_refill_seconds,44971-0,Capillary refill [Time],s

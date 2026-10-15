@@ -1,0 +1,49 @@
+version: 2
+
+# Connector-owned models. Tuva Core owns the Input Layer contract and its tests
+# (dbt_packages/the_tuva_project/models/input_layer); these tests cover the
+# connector's own resolution steps.
+
+models:
+  - name: int_person_match
+    description: Master patient index (patient_id -> person_id).
+    columns:
+      - name: patient_id
+        data_tests: [unique, not_null]
+      - name: person_id
+        data_tests: [not_null]
+  - name: int_payer_medical_claims
+    description: One final adjudicated payer claim per claim family (ledger over int_payer_medical_claim_versions).
+    columns:
+      - name: claim_family_id
+        data_tests: [unique, not_null]
+      - name: final_claim_status
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [paid, denied, denied_upheld, reversed, recouped, voided]
+  - name: int_claim_crosswalk
+    description: Payer copy -> provider claim match (one row per matched payer family).
+    columns:
+      - name: claim_family_id
+        data_tests: [unique, not_null]
+  - name: int_provider_medical_claims
+    description: One provider billing claim per claim_id.
+    columns:
+      - name: claim_id
+        data_tests: [unique, not_null]
+  - name: int_payer_pharmacy_claims
+    description: One payer pharmacy claim per rx_claim_id with final status and net plan paid.
+    columns:
+      - name: rx_claim_id
+        data_tests: [unique, not_null]
+  - name: int_hl7_adt_visits
+    description: One row per HL7 ADT visit_number.
+    columns:
+      - name: visit_number
+        data_tests: [unique, not_null]
+  - name: claims_clinical_encounter_link
+    description: Gap filler linking Tuva claims-derived encounters to the clinical encounter of the same visit.
+    columns:
+      - name: claims_encounter_id
+        data_tests: [unique, not_null]

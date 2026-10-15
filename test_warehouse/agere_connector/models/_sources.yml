@@ -1,0 +1,19 @@
+version: 2
+
+sources:
+  - name: raw_warehouse
+    description: >-
+      The client's native warehouse (SQLite, attached read-only by profiles.yml).
+      `records` holds every delivered row of every feed as a JSON payload with
+      the warehouse envelope (release, id, patient, stream, event, arrival,
+      identity, supersedes, hash). `patients` is the person roster and
+      `source_entities` the clinician and organization roster.
+    database: raw_warehouse
+    schema: main
+    tables:
+      - name: records
+        description: One row per delivered source record. `stream` names the feed; native fields live in `payload`.
+      - name: patients
+        description: Person roster (one row per source patient id) with demographics.
+      - name: source_entities
+        description: Clinician and organization rosters (kind = clinicians | organizations).
