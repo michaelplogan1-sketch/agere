@@ -48,6 +48,25 @@ question permits at most 20 executed SQL calls, including failed queries. All
 returned token usage and tool results are recorded. There are no automatic paid
 retries. Provider failures retain known usage and mark unavailable cost unknown.
 
+`frontier_semantic` is the fair commercial-product baseline ("LLM + semantic layer", the shape of Databricks
+Genie or Snowflake Cortex Analyst). The same model gets the documented semantic model as a cached system block:
+the semantic tables with their column docs (`SCHEMA_DOC`, parsed as text with `ast`), the concept library code
+sets, adopted definitions, governed metric and quality-measure definitions (`config/agere/metrics`, `measures`)
+and 18 verified question-to-SQL examples (`semantic_examples.json`, development/challenge only, each checked
+against its reference). Its one tool is read-only `query_sql` over `<build>/stack/semantic.sqlite3` (max 8
+calls; `bench.common.SemanticWarehouse`: mode=ro, query_only, authorizer, time limit, explicit truncation).
+No planner, compiler, router, engine, verifier or cache is called. Rows record cache read/write tokens and mark
+`prompt_example` questions, which must be excluded from accuracy claims. The semantic layer is one snapshot
+(`meta.as_of`) with superseded corrections removed, so run it with `--as-of` set to that snapshot, e.g.
+
+```sh
+.venv/bin/python bench/run.py --system frontier_semantic --as-of 2030-05-27 \
+  --database artifacts/bench-db/v28-sample-indexed.sqlite3 \
+  --semantic-database artifacts/agere-healthcare-v28-sample-0.30/stack/semantic.sqlite3 --ids D09 D14
+```
+
+The runner refuses a semantic layer whose build release differs from the scored warehouse release.
+
 Use `--ids D01 D05 C18` for a selected run. `--jobs 1` is the default; up to four
 concurrent cases are supported and recorded, so these timings must not be called
 controlled single-request latency. `--resume bench/results/<system>/<run>.jsonl`

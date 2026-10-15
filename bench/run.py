@@ -13,8 +13,8 @@ import time
 
 if __package__ in (None, ''):
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from bench.common import DEFAULT_DB, ROOT, Warehouse, load_questions, reference_answer
-from bench.adapters import MODEL, agere, frontier_sql
+from bench.common import DEFAULT_DB, DEFAULT_SEMANTIC_DB, ROOT, SemanticWarehouse, Warehouse, load_questions, reference_answer
+from bench.adapters import MODEL, agere, frontier_semantic, frontier_sql
 from bench.score import by_confidence, confidence_of, score_answer
 from bench.errata import ERRATA_PATH, compute_expected, load_errata, score_with_errata
 
@@ -45,6 +45,14 @@ def errata_expected(question, entry, warehouse, cache_dir):
     cache.parent.mkdir(parents=True, exist_ok=True)
     tmp = cache.with_suffix('.tmp'); tmp.write_text(json.dumps(computed)); tmp.replace(cache)
     return computed
+
+
+def semantic_release(path):
+    """Release ID the semantic layer was built from (its build's stack/run.json), or None when not recorded."""
+    try:
+        return json.loads((Path(path).parent / 'run.json').read_text())['snapshot']['release']
+    except (OSError, ValueError, KeyError, TypeError):
+        return None
 
 
 def run_one(question, args, identity, attempt=1):
@@ -86,6 +94,16 @@ def run_one(question, args, identity, attempt=1):
                            new_paid_api_calls=0, cost_scope='no_model_calls', model=None)
             elif args.system == 'agere':
                 row.update(agere(question, args.url))
+            elif args.system == 'frontier_semantic':
+                semantic = SemanticWarehouse(args.semantic_database, timeout_s=args.sql_timeout)
+                try:
+                    # The semantic layer must be built from the same release the references read.
+                    row['semantic_release'] = semantic_release(args.semantic_database)
+                    if row['semantic_release'] not in (None, warehouse.release):
+                        raise ValueError(f"Semantic layer release {row['semantic_release']} != warehouse release {warehouse.release}")
+                    row.update(frontier_semantic(question, semantic, model=args.model, max_tools=args.max_tools))
+                finally:
+                    semantic.close()
             else:
                 row.update(frontier_sql(question, warehouse, model=args.model, max_tools=args.max_tools))
         finally:
@@ -107,15 +125,17 @@ def run_one(question, args, identity, attempt=1):
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--system', choices=['reference', 'agere', 'frontier_sql'], required=True)
+    parser.add_argument('--system', choices=['reference', 'agere', 'frontier_sql', 'frontier_semantic'], required=True)
     parser.add_argument('--database', type=Path, default=DEFAULT_DB)
+    parser.add_argument('--semantic-database', type=Path, default=DEFAULT_SEMANTIC_DB,
+                        help='frontier_semantic: the semantic layer (<build>/stack/semantic.sqlite3) of the same release')
     parser.add_argument('--release')
     parser.add_argument('--as-of', help='Re-date every question to this snapshot (YYYY-MM-DD), e.g. a newer warehouse cutoff; '
                                         'the date in the question text and the reference cutoff both change')
     parser.add_argument('--ids', nargs='+', help='Space- or comma-separated question IDs')
     parser.add_argument('--url', default='http://127.0.0.1:8885')
     parser.add_argument('--model', default=MODEL)
-    parser.add_argument('--max-tools', type=int, default=20)
+    parser.add_argument('--max-tools', type=int, help='SQL calls per question (default 20 frontier_sql, 8 frontier_semantic)')
     parser.add_argument('--sql-timeout', type=float, default=180)
     parser.add_argument('--jobs', type=int, default=1)
     parser.add_argument('--resume', type=Path, help='Append only unanswered IDs to this prior JSONL; never silently retry a paid attempt')
@@ -124,6 +144,8 @@ def main(argv=None):
     parser.add_argument('--errata', nargs='?', const=ERRATA_PATH, type=Path,
                         help='Also compute errata readings and an errata_score per row (row score stays the default scorer)')
     args = parser.parse_args(argv)
+    if args.max_tools is None:
+        args.max_tools = 8 if args.system == 'frontier_semantic' else 20
     if not 1 <= args.jobs <= 4 or not 1 <= args.max_tools <= 20 or args.sql_timeout <= 0 or not 1 <= args.repeat <= 5:
         parser.error('jobs must be 1..4, max-tools 1..20, repeat 1..5 and SQL timeout positive')
     all_questions = load_questions(); identity = suite_digest(all_questions)
@@ -142,7 +164,7 @@ def main(argv=None):
         existing = [json.loads(line) for line in destination.read_text().splitlines() if line.strip()]
         if any(r['system'] != args.system or r['suite_sha256'] != identity for r in existing):
             parser.error('Resume file system/suite mismatch')
-        if args.system == 'frontier_sql' and any(r.get('model') != args.model for r in existing):
+        if args.system in ('frontier_sql', 'frontier_semantic') and any(r.get('model') != args.model for r in existing):
             parser.error('Resume file model mismatch')
         warehouse = Warehouse(args.database, release=args.release)
         try:
@@ -165,6 +187,15 @@ def main(argv=None):
         commit = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip()
     except (OSError, subprocess.CalledProcessError):
         commit = None
+    if args.system == 'frontier_semantic':
+        snapshot = SemanticWarehouse(args.semantic_database)
+        try:
+            off = sorted({q['as_of'] for q, _ in pending} - {snapshot.as_of})
+        finally:
+            snapshot.close()
+        if off:
+            print(f'Note: semantic snapshot is {snapshot.as_of}; questions dated {off} rely on available_date filtering '
+                  f'(use --as-of {snapshot.as_of} to align references with the snapshot)', flush=True)
     print(f'Results: {destination}', flush=True)
     failed_references = 0
     finished = []

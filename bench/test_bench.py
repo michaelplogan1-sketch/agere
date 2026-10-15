@@ -354,5 +354,151 @@ class AdapterTests(Fixture):
             self.assertEqual(adapters.api_key(p),'fake-value')
 
 
+class SemanticBaselineTests(unittest.TestCase):
+    """frontier_semantic: read-only semantic connection, documentation context, caching and accounting (fake transport)."""
+
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory()
+        stack = Path(self.temp.name) / 'stack'; stack.mkdir()
+        self.path = stack / 'semantic.sqlite3'
+        db = sqlite3.connect(self.path)
+        db.executescript('''CREATE TABLE meta(key TEXT PRIMARY KEY, value TEXT);
+            CREATE TABLE patient(patient_id TEXT PRIMARY KEY, age_reported INTEGER, sex_reported TEXT);
+            CREATE TABLE record(record_id TEXT PRIMARY KEY, patient_id TEXT, stream TEXT, event_date TEXT, recorded_date TEXT,
+              available_date TEXT, organization_id TEXT, payload TEXT);
+            CREATE TABLE measurement(record_id TEXT, patient_id TEXT, source_table TEXT, concept TEXT, name TEXT, value REAL,
+              unit TEXT, event_date TEXT, available_date TEXT);
+            CREATE TABLE drug_class_vocabulary(drug_class TEXT, class_group TEXT);''')
+        db.executemany('INSERT INTO meta VALUES (?,?)', [('version', 'semantic-layer/16'), ('source_digest', 'd1'),
+                                                          ('as_of', '2030-05-27')])
+        db.executemany('INSERT INTO patient VALUES (?,?,?)', [('P-1', 70, 'F'), ('P-2', 40, 'M')])
+        db.executemany('INSERT INTO record VALUES (?,?,?,?,?,?,?,?)', [
+            ('l1', 'P-1', 'labs', '2028-01-01', None, '2028-01-02', 'O1', '{"name": "HbA1c", "value": 9.5}'),
+            ('l2', 'P-2', 'labs', '2030-01-01', None, '2030-05-01', 'O1', '{"name": "HbA1c", "value": 7.0}')])
+        db.executemany('INSERT INTO measurement VALUES (?,?,?,?,?,?,?,?,?)', [
+            ('l1', 'P-1', 'labs', 'hba1c', 'HbA1c', 9.5, '%', '2028-01-01', '2028-01-02'),
+            ('l2', 'P-2', 'labs', 'hba1c', 'HbA1c', 7.0, '%', '2030-01-01', '2030-05-01')])
+        db.executemany('INSERT INTO drug_class_vocabulary VALUES (?,?)', [('statin', None), ('arb', 'raas_inhibitor')])
+        db.commit(); db.close()
+        (stack / 'run.json').write_text(json.dumps({'snapshot': {'release': 'r1', 'as_of': '2030-05-27'}}))
+        self.before = hashlib.sha256(self.path.read_bytes()).hexdigest()
+        from bench.common import SemanticWarehouse
+        self.semantic = SemanticWarehouse(self.path, timeout_s=2)
+
+    def tearDown(self):
+        self.semantic.close()
+        self.assertEqual(hashlib.sha256(self.path.read_bytes()).hexdigest(), self.before)
+        self.temp.cleanup()
+
+    def test_reads_modeled_tables_and_binds_question_as_of(self):
+        self.assertEqual(self.semantic.as_of, '2030-05-27')
+        rows = self.semantic.query('SELECT COUNT(*) AS n FROM record WHERE available_date <= :as_of', as_of='2029-08-15')['rows']
+        self.assertEqual(rows, [{'n': 1}])
+        self.assertEqual(self.semantic.query('SELECT :as_of AS d')['rows'], [{'d': '2030-05-27'}])
+        self.assertEqual(self.semantic.query("SELECT json_extract(payload,'$.value') AS v FROM record WHERE record_id='l1'")['rows'], [{'v': 9.5}])
+
+    def test_mutations_attach_pragmas_temp_and_extensions_rejected(self):
+        for sql in ["DELETE FROM record", "UPDATE patient SET sex_reported='X'", "ATTACH ':memory:' AS other",
+                    'PRAGMA query_only=OFF', 'PRAGMA table_info(patient)', 'CREATE TABLE nope(x)', 'CREATE TEMP VIEW v AS SELECT 1',
+                    "SELECT load_extension('nope')", "SELECT 1; DELETE FROM record", 'SELECT * FROM sqlite_temp_master']:
+            with self.subTest(sql=sql), self.assertRaises((sqlite3.Error, ValueError)):
+                self.semantic.query(sql)
+
+    def test_truncation_and_timeout_are_explicit(self):
+        result = self.semantic.query('SELECT record_id FROM record', max_rows=1)
+        self.assertTrue(result['truncated']); self.assertEqual(len(result['rows']), 1)
+        self.semantic.timeout_s = .001
+        with self.assertRaises(sqlite3.OperationalError):
+            self.semantic.query('WITH RECURSIVE x(n) AS (SELECT 1 UNION ALL SELECT n+1 FROM x) SELECT SUM(n) FROM x')
+
+    def test_context_is_documentation_from_text_not_product_imports(self):
+        import sys
+        before = {m for m in sys.modules if m.startswith('clinical_core')}
+        adapters._SEMANTIC_CONTEXT.clear()
+        docs, example_ids = adapters.semantic_context(self.semantic)
+        self.assertEqual({m for m in sys.modules if m.startswith('clinical_core')}, before)
+        for expected in ('### measurement(record_id, patient_id', 'Labs and vitals, one row per (record, concept)',  # SCHEMA_DOC
+                         "diabetes: Diabetes mellitus", 'E08,E09,E10,E11,E13',  # concept library code sets
+                         'SQL template: SELECT', 'gsd_poor_control', 'labs (2)', 'arb (raas_inhibitor)',
+                         'Verified example queries', 'Snapshot: semantic layer semantic-layer/16 built from the received store as of 2030-05-27'):
+            self.assertIn(expected, docs)
+        self.assertNotIn('heldout', docs.lower())
+        self.assertIn('D04', example_ids)
+
+    def test_examples_come_only_from_development_or_challenge(self):
+        from bench import semantic_context
+        visible = {q['id']: q for q in load_questions() if q['split'] in ('development', 'challenge')}
+        examples = semantic_context.load_examples()
+        self.assertTrue(10 <= len(examples) <= 20)
+        for e in examples:
+            self.assertIn(e['source_id'], visible)
+            self.assertEqual(e['source_split'], visible[e['source_id']]['split'])
+            self.assertTrue(e.get('sql') or e.get('answer'))
+        bad = Path(self.temp.name) / 'bad.json'
+        bad.write_text(json.dumps({'examples': [{'source_id': 'H01', 'source_split': 'heldout3', 'sql': 'SELECT 1'}]}))
+        with self.assertRaises(ValueError):
+            semantic_context.load_examples(bad)
+
+    def test_frontier_semantic_caches_docs_executes_and_accounts_cache_tokens(self):
+        responses = [{'content': [{'type': 'tool_use', 'id': 't1', 'name': 'query_sql', 'input': {
+                          'sql': "SELECT COUNT(DISTINCT patient_id) AS count FROM measurement WHERE concept='hba1c' AND value > 9"}}],
+                      'usage': {'input_tokens': 100, 'output_tokens': 50, 'cache_creation_input_tokens': 1000,
+                                'cache_read_input_tokens': 0}},
+                     {'content': [{'type': 'text', 'text': json.dumps({**empty_answer('count'), 'count': 1})}],
+                      'usage': {'input_tokens': 20, 'output_tokens': 10, 'cache_creation_input_tokens': 100,
+                                'cache_read_input_tokens': 1000}, 'stop_reason': 'end_turn'}]
+        sent = []
+        def transport(url, body, headers):
+            sent.append(json.loads(json.dumps(body))); return responses.pop(0)
+        q = {'id': 'D06', 'question': 'How many patients have HbA1c above 9?', 'as_of': '2030-05-27'}
+        result = adapters.frontier_semantic(q, self.semantic, key='fake', transport=transport)
+        self.assertIsNone(result['error']); self.assertEqual(result['answer']['count'], 1)
+        self.assertEqual(result['tool_calls'][0]['result']['rows'], [{'count': 1}])
+        first = sent[0]
+        self.assertEqual(first['cache_control'], {'type': 'ephemeral'})
+        self.assertEqual(first['system'][-1]['cache_control'], {'type': 'ephemeral'})
+        self.assertNotIn('cache_control', first['system'][0])
+        self.assertEqual(first['system'], sent[1]['system'])  # byte-identical cached prefix across turns
+        self.assertEqual(json.loads(first['messages'][0]['content']),
+                         {'question': q['question'], 'as_of': '2030-05-27', 'semantic_snapshot_as_of': '2030-05-27'})
+        self.assertNotIn('reference_sql', json.dumps(first))
+        # $4 in, $20 out, $5 5-minute write, $0.20 read per million tokens (config/agere/pricing.json).
+        self.assertAlmostEqual(result['estimated_cost_usd'], (120 * 4 + 60 * 20 + 1100 * 5 + 1000 * .2) / 1e6)
+        self.assertEqual((result['cache_read_input_tokens'], result['cache_creation_input_tokens']), (1000, 1100))
+        self.assertEqual(result['tool_call_count'], 1); self.assertFalse(result['prompt_example'])
+        self.assertTrue(adapters.frontier_semantic({**q, 'id': 'D04'}, self.semantic, key='fake',
+            transport=lambda *a: {'content': [{'type': 'text', 'text': json.dumps(empty_answer('count'))}],
+                                  'usage': {'input_tokens': 1, 'output_tokens': 1}})['prompt_example'])
+
+    def test_default_tool_cap_is_eight_and_errors_count(self):
+        uses = [{'type': 'tool_use', 'id': str(i), 'name': 'query_sql', 'input': {'sql': 'DELETE FROM record' if i == 0 else 'SELECT 1 AS n'}}
+                for i in range(10)]
+        responses = [{'content': uses, 'usage': {'input_tokens': 1, 'output_tokens': 1}},
+                     {'content': [{'type': 'text', 'text': json.dumps(empty_answer('count'))}], 'usage': {'input_tokens': 1, 'output_tokens': 1}}]
+        sent = []
+        result = adapters.frontier_semantic({'id': 'X', 'question': 'q', 'as_of': '2030-05-27'}, self.semantic, key='fake',
+                                            transport=lambda u, b, h: (sent.append(b['tool_choice']), responses.pop(0))[1])
+        self.assertEqual(sum('rows' in c['result'] for c in result['tool_calls']), 7)
+        self.assertEqual(sum('error' in c['result'] for c in result['tool_calls']), 3)
+        self.assertEqual(sent[-1], {'type': 'none'})
+
+    def test_runner_rejects_semantic_layer_of_another_release(self):
+        from unittest.mock import patch
+        warehouse_fixture = Fixture('setUp'); warehouse_fixture.setUp()
+        try:
+            q = next(q for q in load_questions() if q['id'] == 'D01')
+            args = argparse.Namespace(system='frontier_semantic', jobs=1, database=warehouse_fixture.path, release=None,
+                                      sql_timeout=2, semantic_database=self.path, model='m', max_tools=8)
+            with patch('bench.run.frontier_semantic', return_value={'answer': {**empty_answer('count'), 'count': 2}}) as fake:
+                row = run_one(q, args, suite_digest([q]))
+            self.assertTrue(fake.called); self.assertEqual(row['semantic_release'], 'r1'); self.assertTrue(row['score']['correct'])
+            (self.path.parent / 'run.json').write_text(json.dumps({'snapshot': {'release': 'other'}}))
+            with patch('bench.run.frontier_semantic') as fake:
+                row = run_one(q, args, suite_digest([q]))
+            self.assertFalse(fake.called); self.assertIn('release', row['error'])
+        finally:
+            warehouse_fixture.tearDown()
+
+
 if __name__=='__main__':
     unittest.main()

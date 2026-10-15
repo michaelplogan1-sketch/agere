@@ -131,28 +131,91 @@ class Warehouse:
         if not isinstance(sql, str) or not sql.strip() or len(sql) > 30000:
             raise ValueError('A bounded SQL statement is required')
         validate_sql_scope(sql)
-        start = time.perf_counter()
-        self.db.set_progress_handler(lambda: int(time.perf_counter() - start > self.timeout_s), 10000)
-        try:
-            cursor = self.db.execute(sql, {'as_of': self.as_of, 'release': self.release})
-            if cursor.description is None:
-                raise ValueError('Query must return rows')
-            columns = [d[0] for d in cursor.description]
-            if len(columns) != len(set(columns)):
-                raise ValueError('Query needs unique output column names')
-            rows, chars, truncated = [], 0, False
-            for row in cursor:
-                item = dict(row)
-                size = len(json.dumps(item, allow_nan=False))
-                if len(rows) >= max_rows or chars + size > max_chars:
-                    truncated = True
-                    break
-                rows.append(item)
-                chars += size
-            return {'columns': columns, 'rows': rows, 'truncated': truncated,
-                    'elapsed_s': time.perf_counter() - start}
-        finally:
-            self.db.set_progress_handler(None, 0)
+        return bounded_query(self.db, sql, {'as_of': self.as_of, 'release': self.release},
+                             self.timeout_s, max_rows, max_chars)
+
+    def close(self):
+        self.db.close()
+
+
+def bounded_query(db, sql, params, timeout_s, max_rows, max_chars):
+    """Execute one read under a time limit; explicit truncation by rows and serialized size."""
+    start = time.perf_counter()
+    db.set_progress_handler(lambda: int(time.perf_counter() - start > timeout_s), 10000)
+    try:
+        cursor = db.execute(sql, params)
+        if cursor.description is None:
+            raise ValueError('Query must return rows')
+        columns = [d[0] for d in cursor.description]
+        if len(columns) != len(set(columns)):
+            raise ValueError('Query needs unique output column names')
+        rows, chars, truncated = [], 0, False
+        for row in cursor:
+            item = dict(row)
+            size = len(json.dumps(item, allow_nan=False))
+            if len(rows) >= max_rows or chars + size > max_chars:
+                truncated = True
+                break
+            rows.append(item)
+            chars += size
+        return {'columns': columns, 'rows': rows, 'truncated': truncated,
+                'elapsed_s': time.perf_counter() - start}
+    finally:
+        db.set_progress_handler(None, 0)
+
+
+def _active_semantic_db():
+    """The ACTIVE build's semantic layer (<build>/stack/semantic.sqlite3), if the activation names one."""
+    config = ROOT.parent / 'config/agere/active_warehouse.json'
+    try:
+        return Path(json.loads(config.read_text())['build']) / 'stack' / 'semantic.sqlite3'
+    except (OSError, ValueError, KeyError):
+        return None
+
+
+DEFAULT_SEMANTIC_DB = _active_semantic_db()
+
+
+class SemanticWarehouse:
+    """Read-only access to a build's semantic layer, as a customer's modeled tables would be exposed.
+
+    Same safety approach as Warehouse: mode=ro, query_only, extension loading off, an authorizer that admits only
+    SELECT/READ/RECURSIVE and non-file functions (no writes, ATTACH, PRAGMA or schema changes), a time limit and
+    explicit truncation. Unlike Warehouse there are no scoping views: the semantic layer is ONE snapshot (meta.as_of)
+    built by the product from the received store, with superseded corrections already removed. Every table is readable.
+    """
+    DENIED_FUNCTIONS = {'load_extension', 'readfile', 'writefile', 'eval', 'fts3_tokenizer'}
+
+    def __init__(self, path=DEFAULT_SEMANTIC_DB, timeout_s=30):
+        if path is None or not Path(path).is_file():
+            raise ValueError(f'Semantic layer not found: {path}')
+        self.path = Path(path).resolve()
+        self.db = sqlite3.connect(self.path.as_uri() + '?mode=ro', uri=True, check_same_thread=False)
+        self.db.row_factory = sqlite3.Row
+        self.timeout_s = timeout_s
+        self.db.execute('PRAGMA query_only=ON')
+        self.meta = {k: v for k, v in self.db.execute('SELECT key, value FROM meta')}
+        self.as_of = self.meta.get('as_of')
+        names = [r[0] for r in self.db.execute("SELECT name FROM sqlite_master WHERE type IN ('table','view') ORDER BY name")]
+        self.columns = {n: [r[1] for r in self.db.execute(f'PRAGMA table_info("{n}")')] for n in names}
+        self.db.enable_load_extension(False)
+        self.db.set_authorizer(self._authorize)
+
+    @classmethod
+    def _authorize(cls, action, arg1, arg2, database, source):
+        if action in (sqlite3.SQLITE_SELECT, sqlite3.SQLITE_RECURSIVE):
+            return sqlite3.SQLITE_OK
+        if action == sqlite3.SQLITE_READ:
+            # Reads of main tables, CTEs/subqueries (database None) and json_each/json_tree; never the temp schema.
+            return sqlite3.SQLITE_OK if database in (None, 'main') else sqlite3.SQLITE_DENY
+        if action == sqlite3.SQLITE_FUNCTION:
+            return sqlite3.SQLITE_DENY if str(arg2).lower() in cls.DENIED_FUNCTIONS else sqlite3.SQLITE_OK
+        return sqlite3.SQLITE_DENY
+
+    def query(self, sql, *, as_of=None, max_rows=2000, max_chars=60000):
+        if not isinstance(sql, str) or not sql.strip() or len(sql) > 30000:
+            raise ValueError('A bounded SQL statement is required')
+        return bounded_query(self.db, sql, {'as_of': as_of or self.as_of}, self.timeout_s, max_rows, max_chars)
 
     def close(self):
         self.db.close()
