@@ -25,8 +25,10 @@ def main(argv=None):
     p.add_argument('--out', type=Path, help='directory for the resulting learning.sqlite3 (scratch); default: the new stack')
     p.add_argument('--replay-only', action='store_true', help='replay and report; write no store')
     p.add_argument('--limit', type=int, help='replay only the first N pairs (oldest first)')
+    p.add_argument('--shard', help='I/N: replay question slice I of N (run N processes, each with its own --out)')
     a = p.parse_args(argv)
     summary = cf.carry_forward(a.prior, a.new, a.out, limit=a.limit, dry_run=a.replay_only,
+                               shard=tuple(map(int, a.shard.split('/'))) if a.shard else None,
                                progress=lambda i, n: print(f'  {i}/{n}', file=sys.stderr, flush=True))
     target = a.out or cf._stack(a.new)
     if not a.replay_only:

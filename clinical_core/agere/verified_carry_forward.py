@@ -240,7 +240,7 @@ def _rows(store, table, cols):
 VERIFIED_COLS = ('question', 'plan_kind', 'plan', 'signature', 'route', 'models', 'agreement', 'created', 'context', 'provenance')
 
 
-def carry_forward(prior, new, out=None, *, limit=None, progress=None, dry_run=False):
+def carry_forward(prior, new, out=None, *, limit=None, progress=None, dry_run=False, shard=None):
     """Replay the prior stack's verified pairs on the new build.
 
     prior, new: build (or stack) directories. out: directory whose learning.sqlite3 receives the carried and quarantined
@@ -261,6 +261,10 @@ def carry_forward(prior, new, out=None, *, limit=None, progress=None, dry_run=Fa
     new_context = build.context()
     existing = {((r['question'] or '').strip(), r['plan']) for r in _rows(target_store, 'verified', VERIFIED_COLS) if r['context'] == new_context}
     pairs.sort(key=lambda r: (r['created'] or 0))
+    if shard:  # (i, n): this process replays the questions whose hash falls in slice i of n (a question never splits)
+        import hashlib
+        i, n = shard
+        pairs = [p for p in pairs if int(hashlib.sha256((p['question'] or '').strip().lower().encode()).hexdigest(), 16) % n == i]
     if limit: pairs = pairs[:limit]
     outcomes = []
     for i, pair in enumerate(pairs):
