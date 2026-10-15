@@ -6,9 +6,11 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timezone
 import hashlib
 import json
+import os
 from pathlib import Path
 import subprocess
 import sys
+import threading
 import time
 
 if __package__ in (None, ''):
@@ -17,6 +19,18 @@ from bench.common import DEFAULT_DB, DEFAULT_SEMANTIC_DB, ROOT, SemanticWarehous
 from bench.adapters import MODEL, agere, frontier_semantic, frontier_sql
 from bench.score import by_confidence, confidence_of, score_answer
 from bench.errata import ERRATA_PATH, compute_expected, load_errata, score_with_errata
+
+
+def atomic_write(path, text):
+    """Write `path` atomically. The temporary name is unique per process and thread: two runs sharing the reference cache
+    (an Agere run and a baseline run started together) used the same <id>.tmp, so one run's rename moved the other's file
+    away and that question was lost with FileNotFoundError (heldout10 H10-03 and R44)."""
+    path = Path(path)
+    tmp = path.with_name(f'{path.stem}.{os.getpid()}.{threading.get_ident()}.tmp')
+    try:
+        tmp.write_text(text); tmp.replace(path)
+    finally:
+        tmp.unlink(missing_ok=True)
 
 
 def redate(question, as_of):
@@ -43,7 +57,7 @@ def errata_expected(question, entry, warehouse, cache_dir):
         if answer is not None:
             computed[key] = answer
     cache.parent.mkdir(parents=True, exist_ok=True)
-    tmp = cache.with_suffix('.tmp'); tmp.write_text(json.dumps(computed)); tmp.replace(cache)
+    atomic_write(cache, json.dumps(computed))
     return computed
 
 
@@ -78,7 +92,7 @@ def run_one(question, args, identity, attempt=1):
             else:
                 expected, evidence = reference_answer(question, warehouse)
                 cache.parent.mkdir(parents=True, exist_ok=True)
-                tmp = cache.with_suffix('.tmp'); tmp.write_text(json.dumps({'expected': expected, 'evidence': evidence})); tmp.replace(cache)
+                atomic_write(cache, json.dumps({'expected': expected, 'evidence': evidence}))
             row.update(expected=expected, reference_evidence=evidence,
                        reference_latency_s=time.perf_counter() - reference_start)
             entry = errata['questions'].get(question['id']) if errata else None

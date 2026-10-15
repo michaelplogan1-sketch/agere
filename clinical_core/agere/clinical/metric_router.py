@@ -389,6 +389,33 @@ def _fill(question, as_of, mid, m, call, info):
     raise ValueError(info['rejected'][-1]['error'])
 
 
+def shape_misfit(question, mid, node, slots=None):
+    """Why metric `mid`'s output cannot be the answer shape the question asks for (answer_shape.requested), or None.
+    A rate per 1,000 never answers "how many"; a single count or value never answers "for each ... / one row per";
+    a measure engine's rate table never answers a count. The rung declines and the ladder falls through."""
+    from .answer_shape import requested
+    from .capability_registry import answers
+    want = requested(question)
+    shape = want['shape']
+    if shape is None: return None
+    grouped = (slots or {}).get('group_by') not in (None, 'none')
+    if node.get('operation') == 'sql':
+        returns = (node.get('parameters') or {}).get('returns')
+        bad = ((shape == 'count' and returns == 'value') or
+               (shape == 'table' and returns in ('value', 'count', 'patient_set') and not grouped) or
+               (shape == 'value' and returns == 'count' and want['cue'] != 'total') or
+               (shape == 'patient_set' and returns in ('value', 'count')))
+        return f'the question asks for a {shape}; metric {mid} returns a {returns}' if bad else None
+    served = answers(node.get('operation'))
+    if served is not None and shape not in served:
+        return f"the question asks for a {shape}; metric {mid} runs the {node.get('operation')} engine, which answers {' / '.join(served)}"
+    from .answer_shape import _LITERAL
+    if served is not None and shape == 'count' and _LITERAL.search(question or ''):
+        # a defined count ("count each covered day once", "use data received as of") is not the engine's measure rate
+        return f"the question defines a count; metric {mid} runs the {node.get('operation')} engine, which reports its own measure"
+    return None
+
+
 def route(question, as_of, ledger=None, out=None, path=None, ask=None, directory=None):
     """-> (graph | None, info). info['decision'] is 'metric', 'readings', 'no_metric' or 'fill_failed'.
 
@@ -427,6 +454,8 @@ def route(question, as_of, ledger=None, out=None, path=None, ask=None, directory
             if breakdown and returns in ('value', 'count') and (slots.get('group_by') in (None, 'none')):
                 # "... by payer": one total answers a different question; the next rung keeps the grouping
                 raise LookupError(f'the question asks for a breakdown ("by ..."); metric {mid} returns a single {returns}')
+            misfit = shape_misfit(question, mid, node, slots)
+            if misfit: raise LookupError(misfit)
             filled.append((mid, slots, node))
         except LookupError as exc:
             info.setdefault('declined', []).append({'metric': mid, 'reason': str(exc)[:300]})

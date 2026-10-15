@@ -134,3 +134,26 @@ LITERAL = ('Literal data questions: counts, lists, sums, averages, maxima, recor
 
 def operations():
     return list(PRODUCT)
+
+
+# Answer-shape contract per engine (answer_shape.conform reads it): the requested shapes (answer_shape.requested) an
+# engine's analysis natively answers. Every engine reports its view as a table, and a "which patients" question is served
+# when that table has one row per patient. A count or value question is native only where the engine's analysis IS that
+# quantity (a forecast of beds, a survival fraction, trial eligibility, a quality-measure rate, member months); its table is
+# then the answer's evidence. Elsewhere (a lines-of-therapy table for "how many moved to second line", a monitor table for a
+# count) the engine answered a different question and the rung is declined. answer_shape never reads a scalar out of an
+# engine table: it holds many numbers, and picking one would answer a question the engine was not asked.
+DEFAULT_ANSWERS = ('table', 'patient_set')
+NATIVE_SCALARS = {
+    'survival': ('value',), 'demand': ('count', 'value'), 'scheduling': ('count', 'value'), 'trial_feasibility': ('count',),
+    'diagnostic_delay': ('count', 'value'), 'pathway': ('count', 'value'), 'contract_strategy': ('value',), 'network': ('value',),
+    'profile': ('value',), 'risk_outcomes': ('value',), 'risk_adjustment': ('value',), 'program_effect': ('value',),
+    'market': ('value',), 'monitor': ('value',), 'claims_review': ('value',), 'vbc': ('count', 'value'), 'calibration': ('value',),
+    'line_of_therapy': ('value',), 'target_trial': ('value',), 'loop_closure': ('count', 'value'), 'explain': ('value',),
+}
+
+
+def answers(operation):
+    """Requested shapes an engine natively answers; None for operations that are not engines (sql, aggregate, cohorts)."""
+    if operation not in PRODUCT: return None
+    return DEFAULT_ANSWERS + NATIVE_SCALARS.get(operation, ())

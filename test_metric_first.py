@@ -356,7 +356,8 @@ class RungOrdering(unittest.TestCase):
             lean = {'label': 'monitor', 'probability': 0.75, 'threshold': planner.ENGINE_LEAN, 'lean': True}
             order = []
             with mock.patch.object(planner, '_engine_lean', return_value=lean):
-                graph, receipt = self.plan(root, 'Has the denial rate shifted recently?', Script(choose('patient_cohort'), fill('patient_cohort', population=DIABETES)), order)
+                # (a count question: the scripted cohort metric must fit the requested shape, or metric_router.shape_misfit declines it)
+                graph, receipt = self.plan(root, 'Has the number of diabetics shifted recently?', Script(choose('patient_cohort'), fill('patient_cohort', population=DIABETES)), order)
             # the operator router declined (literal lookup) here, so the metric rung still answers
             self.assertEqual(order[0], 'operator_router'); self.assertIn('metric_router', order)
             self.assertEqual(receipt['route'], 'metric_router')
