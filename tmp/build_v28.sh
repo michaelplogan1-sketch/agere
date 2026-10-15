@@ -35,8 +35,12 @@ PREV=${V28_PREV_BUILD:-artifacts/agere-healthcare-v23-sample-0.35}      # read o
 MODE=${1:-full}
 case $MODE in
   full) NEED_GB=110; B=${V28_BUILD:-artifacts/agere-healthcare-v28} ;;
+  sample) FRAC=${2:-0.30}; NEED_GB=80; B=${V28_BUILD:-artifacts/agere-healthcare-v28-sample-$FRAC}
+          SRC=artifacts/healthcare-warehouse-v2.8-sample-$FRAC          # all deep charts + FRAC of each population segment
+          [[ -f $SRC/manifest.json ]] || $PY tools/sample_warehouse_release.py --release $REL --output $SRC --fraction $FRAC
+          REL=$SRC ;;
   release) REL=${2:?release dir}; NEED_GB=10; B=${V28_BUILD:?V28_BUILD required for release mode} ;;
-  *) echo "usage: $0 [full | release DIR]"; exit 2 ;;
+  *) echo "usage: $0 [full | sample [FRACTION] | release DIR]"; exit 2 ;;
 esac
 FREE_GB=$(df -g $ROOT | awk 'NR==2 {print $4}')
 if (( FREE_GB < NEED_GB )); then echo "only ${FREE_GB} GB free; this mode needs ~${NEED_GB} GB (build + temporary files)"; exit 3; fi
