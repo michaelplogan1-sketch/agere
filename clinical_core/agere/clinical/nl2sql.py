@@ -537,6 +537,10 @@ def _verified_answer(path, question, as_of, primary, second, judge, decider=None
     from . import verify, verification_v2 as v2
     profile = source_profile.load(path)
     streams, schema = schema_for(question, profile, extra_streams, path=path)
+    # Raw-catalog retrieval: received streams the full-catalog probe matches (fields + exact values), beyond the slice above.
+    from .answer_guard import raw_catalog_slice
+    raw, raw_receipt = raw_catalog_slice(question, profile, path=path, shown=streams)
+    schema += raw
     qt = set(_tokens(question))
     similar = harvested_examples(question) if os.environ.get('AGERE_HARVEST_SHOTS', 'on') != 'off' else []
     ranked = similar + sorted(EXAMPLES, key=lambda e: -len(qt & set(_tokens(e[0] + ' ' + e[1]))))[:7 - min(len(similar), 3)]
@@ -551,6 +555,7 @@ def _verified_answer(path, question, as_of, primary, second, judge, decider=None
     finally: db.close()
     receipt = {'version': VERSION + '+verified', 'streams_retrieved': streams, 'attempts': [], 'agreement': None}
     if metric_receipt: receipt['metric'] = metric_receipt
+    if raw_receipt: receipt['raw_catalog'] = raw_receipt
 
     def check(sql, final=False):
         """Execute and verify; returns (params, result, warnings) or raises ValueError with the reasons.
