@@ -1,14 +1,25 @@
--- Inpatient stay (population-wide), deduplicated across sources:
+-- Population = every patient in the patients view (original deep-chart roster + population members).
+-- Current records only: a record named in a visible same-stream record's supersedes link is replaced by it (releases with
+-- supersession, e.g. v2.8), except adjudication chains, where the parent stays (payer_medical_claims child with another
+-- adjudication_sequence or claim_id; payer_pharmacy_claims 'reversed'/'recouped' child; medical_claims 'reversed' child).
+-- Inpatient stay, deduplicated across sources:
 --  (1) EHR encounters type 'inpatient' (versions collapse by encounter_id; admit = earliest event_date; discharge = date of end_time;
 --      timestamps start_time/end_time from the completed version);
---  (2) hospital ADT adt_messages patient_class 'I' per encounter_id (admit = A01 date, discharge = A03 date; timestamps = A01/A03 event_time);
+--  (2) hospital ADT adt_messages patient_class 'I' per encounter_id (admit = A01 date, discharge = A03 date; times = A01/A03 event_time);
 --  (3) payer_medical_claims inpatient facility claims (type_of_bill 011x, admission_date/discharge_date), voided claim_ids excluded,
---      one claim stay per patient+admission_date (latest discharge_date), claims nested inside an earlier claim stay dropped.
---  Dedupe rule: a claim stay is the same stay as an EHR/ADT stay of the same patient when admission dates are within 1 day or the
---  date ranges overlap; an EHR/ADT stay with no discharge message takes the matched claim's discharge_date. Unmatched claim stays
---  are stays of their own (dates only, no timestamps).
--- Reading B (elapsed): mean (discharge time - admit time) in fractional days when both timestamps exist, else date difference. 4 dp.
-WITH r AS MATERIALIZED (SELECT patient, stream, payload FROM records WHERE stream IN ('encounters','adt_messages','payer_medical_claims')),
+--      one claim stay per patient+admission_date (latest discharge_date); claim stays nested in an earlier claim stay dropped.
+--  Dedupe: a claim stay is the same stay as an EHR/ADT stay of the same patient when admission dates are within 1 day or the date
+--  ranges overlap; an EHR/ADT stay without a discharge message takes the matched claim's discharge_date. Unmatched claim stays count
+--  on their own (dates only, no timestamps).
+-- Reading B (elapsed): mean (discharge time - admit time) when both timestamps exist, else date difference. 4 dp.
+WITH r0 AS MATERIALIZED (SELECT id, supersedes, patient, stream, payload FROM records WHERE stream IN ('encounters','adt_messages','payer_medical_claims')),
+sc AS MATERIALIZED (SELECT id, supersedes, stream, payload FROM r0 WHERE supersedes IS NOT NULL),
+sup AS MATERIALIZED (SELECT c.supersedes id FROM sc c CROSS JOIN r0 p ON p.id=c.supersedes AND p.stream=c.stream
+  WHERE NOT ((c.stream='payer_medical_claims' AND (json_extract(c.payload,'$.adjudication_sequence') IS NOT json_extract(p.payload,'$.adjudication_sequence')
+               OR json_extract(c.payload,'$.payer_claim_id') IS NOT json_extract(p.payload,'$.payer_claim_id')))
+          OR (c.stream='payer_pharmacy_claims' AND json_extract(c.payload,'$.claim_status') IN ('reversed','recouped'))
+          OR (c.stream='medical_claims' AND json_extract(c.payload,'$.status')='reversed'))),
+r AS MATERIALIZED (SELECT patient, stream, payload FROM r0 WHERE id NOT IN (SELECT id FROM sup)),
 hs AS MATERIALIZED (
   SELECT patient, json_extract(payload,'$.encounter_id') k, min(json_extract(payload,'$.event_date')) ad, max(substr(json_extract(payload,'$.end_time'),1,10)) dd,
     max(CASE WHEN json_extract(payload,'$.status')='completed' THEN json_extract(payload,'$.start_time') END) ts, max(CASE WHEN json_extract(payload,'$.status')='completed' THEN json_extract(payload,'$.end_time') END) te

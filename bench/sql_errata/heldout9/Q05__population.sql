@@ -1,10 +1,19 @@
--- Hospital observation stays in 2029 (population-wide), deduplicated across sources:
---  (1) EHR encounters type 'observation' (versions collapse by encounter_id; date = earliest event_date);
---  (2) hospital ADT adt_messages patient_class 'O' per encounter_id (date = earliest event_date);
---  (3) payer_medical_claims carrying an observation line (revenue code 0762 or HCPCS G0378 in payer_medical_claim_lines), date =
---      service_from, voided claim_ids excluded, one per patient-day.
---  Dedupe rule: a claim observation day within 1 day of an EHR/ADT observation stay of the same patient is that stay.
-WITH r AS MATERIALIZED (SELECT patient, stream, payload FROM records WHERE stream IN ('encounters','adt_messages','payer_medical_claims','payer_medical_claim_lines')),
+-- Population = every patient in the patients view (original deep-chart roster + population members).
+-- Current records only: a record named in a visible same-stream record's supersedes link is replaced by it (releases with
+-- supersession, e.g. v2.8), except adjudication chains, where the parent stays (payer_medical_claims child with another
+-- adjudication_sequence or claim_id; payer_pharmacy_claims 'reversed'/'recouped' child; medical_claims 'reversed' child).
+-- Hospital observation stays in 2029, deduplicated across sources: EHR encounters type 'observation' (versions collapse by
+-- encounter_id); ADT adt_messages patient_class 'O' per encounter_id; payer_medical_claims with an observation line (revenue code 0762
+-- or HCPCS G0378), date = service_from, voided claims excluded, one per patient-day. A claim day within 1 day of an EHR/ADT stay of the
+-- same patient is that stay.
+WITH r0 AS MATERIALIZED (SELECT id, supersedes, patient, stream, payload FROM records WHERE stream IN ('encounters','adt_messages','payer_medical_claims','payer_medical_claim_lines')),
+sc AS MATERIALIZED (SELECT id, supersedes, stream, payload FROM r0 WHERE supersedes IS NOT NULL),
+sup AS MATERIALIZED (SELECT c.supersedes id FROM sc c CROSS JOIN r0 p ON p.id=c.supersedes AND p.stream=c.stream
+  WHERE NOT ((c.stream='payer_medical_claims' AND (json_extract(c.payload,'$.adjudication_sequence') IS NOT json_extract(p.payload,'$.adjudication_sequence')
+               OR json_extract(c.payload,'$.payer_claim_id') IS NOT json_extract(p.payload,'$.payer_claim_id')))
+          OR (c.stream='payer_pharmacy_claims' AND json_extract(c.payload,'$.claim_status') IN ('reversed','recouped'))
+          OR (c.stream='medical_claims' AND json_extract(c.payload,'$.status')='reversed'))),
+r AS MATERIALIZED (SELECT patient, stream, payload FROM r0 WHERE id NOT IN (SELECT id FROM sup)),
 ev AS MATERIALIZED (
   SELECT patient, min(json_extract(payload,'$.event_date')) d FROM r WHERE stream='encounters' AND json_extract(payload,'$.type')='observation' GROUP BY patient, json_extract(payload,'$.encounter_id')
   UNION ALL

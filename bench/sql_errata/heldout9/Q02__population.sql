@@ -1,13 +1,24 @@
--- ED visit (population-wide, all 4,499 patients in the patients view), deduplicated across sources:
+-- Population = every patient in the patients view (original deep-chart roster + population members).
+-- Current records only: a record named in a visible same-stream record's supersedes link is replaced by it (releases with
+-- supersession, e.g. v2.8), except adjudication chains, where the parent stays (payer_medical_claims child with another
+-- adjudication_sequence or claim_id; payer_pharmacy_claims 'reversed'/'recouped' child; medical_claims 'reversed' child).
+-- ED visit, deduplicated across sources:
 --  (1) EHR encounters type 'emergency'/'ED'/'ED stroke alert' (version rows collapse by encounter_id; date = earliest event_date);
---  (2) hospital ADT feed adt_messages patient_class 'E' (A04/A08/A03 collapse by encounter_id; date = earliest event_date);
+--  (2) hospital ADT adt_messages patient_class 'E' (messages collapse by encounter_id; date = earliest event_date);
 --  (3) payer_medical_claims ED claims: professional place_of_service '23', or a claim with an ED revenue line (045x) in
---      payer_medical_claim_lines; date = service_from; a claim_id that was voided is not evidence (its replacement is).
---  Dedupe rule: one visit per patient per date across EHR+ADT; an ED claim day is the same visit as an EHR/ADT ED visit of the same
+--      payer_medical_claim_lines; date = service_from; a voided claim_id is not evidence (its replacement is).
+--  Dedupe: one visit per patient per date across EHR+ADT; an ED claim day is the same visit as an EHR/ADT ED visit of the same
 --  patient on the same date, or 1 day apart when that EHR/ADT visit has no same-day ED claim (ADT clock vs claim service date);
 --  otherwise the claim day is its own visit (claim days collapse per patient-day). Identities = warehouse patient ids (no fuzzy merge).
--- Patients with >= 2 such visits dated in 2029. Returns patient_id.
-WITH r AS MATERIALIZED (SELECT patient, stream, payload FROM records WHERE stream IN ('encounters','adt_messages','payer_medical_claims','payer_medical_claim_lines')),
+-- Patients with >= 2 visits dated 2029. Returns patient_id.
+WITH r0 AS MATERIALIZED (SELECT id, supersedes, patient, stream, payload FROM records WHERE stream IN ('encounters','adt_messages','payer_medical_claims','payer_medical_claim_lines')),
+sc AS MATERIALIZED (SELECT id, supersedes, stream, payload FROM r0 WHERE supersedes IS NOT NULL),
+sup AS MATERIALIZED (SELECT c.supersedes id FROM sc c CROSS JOIN r0 p ON p.id=c.supersedes AND p.stream=c.stream
+  WHERE NOT ((c.stream='payer_medical_claims' AND (json_extract(c.payload,'$.adjudication_sequence') IS NOT json_extract(p.payload,'$.adjudication_sequence')
+               OR json_extract(c.payload,'$.payer_claim_id') IS NOT json_extract(p.payload,'$.payer_claim_id')))
+          OR (c.stream='payer_pharmacy_claims' AND json_extract(c.payload,'$.claim_status') IN ('reversed','recouped'))
+          OR (c.stream='medical_claims' AND json_extract(c.payload,'$.status')='reversed'))),
+r AS MATERIALIZED (SELECT patient, stream, payload FROM r0 WHERE id NOT IN (SELECT id FROM sup)),
 ev AS MATERIALIZED (
   SELECT patient, min(json_extract(payload,'$.event_date')) d, min(json_extract(payload,'$.organization_id')) org FROM r
    WHERE stream='encounters' AND json_extract(payload,'$.type') IN ('emergency','ED','ED stroke alert') GROUP BY patient, json_extract(payload,'$.encounter_id')
