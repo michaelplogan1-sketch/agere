@@ -1,0 +1,509 @@
+[
+ {
+  "id": "H10-01",
+  "question": "How many patients have a most recent HbA1c above 9.0%? Use every dated HbA1c result on file (any lab feed or test naming), ignore results that were corrected or replaced by a later version, and if a patient has several results on their latest date, use the highest. Use data received as of 2030-05-27.",
+  "category": "lab_control",
+  "domain": "clinical care",
+  "as_of": "2030-05-27",
+  "interpretation": "Warehouse v2.8 sample (deep-chart patients plus the 30% population sample); identity-matched records received by 2030-05-27 only. Patients are counted as distinct warehouse patient IDs (duplicate charts are not merged). HbA1c = test named HbA1c / Hemoglobin A1c / Hemoglobin A1c/Hemoglobin.total (case-insensitive) or LOINC 4548-4, deep-chart and population labs. Numeric dated results only; cancelled, superseded (supersedes link) and replaced (replaces_result_record_id) results excluded. Latest date per patient; ties take the maximum value; strictly > 9.0.",
+  "answer_type": "count",
+  "reference_sql": "sql/heldout10/H10-01.sql",
+  "split": "heldout10"
+ },
+ {
+  "id": "H10-02",
+  "question": "Among patients with diabetes who had at least one HbA1c in calendar 2029, what percentage had a last 2029 HbA1c below 8.0%? Define diabetes as any ICD-10 E10 or E11 code on the problem list, an EHR encounter diagnosis, a practice billing claim or a payer claim. If several HbA1c results fall on the last 2029 date, use the highest. Give the percentage to two decimals. Use data received as of 2030-05-27.",
+  "category": "lab_control",
+  "domain": "clinical care",
+  "as_of": "2030-05-27",
+  "interpretation": "Warehouse v2.8 sample (deep-chart patients plus the 30% population sample); identity-matched records received by 2030-05-27 only. Patients are counted as distinct warehouse patient IDs (duplicate charts are not merged). Diabetes cohort: E10*/E11* (dot-insensitive) from conditions, encounter diagnoses, medical_claims and payer_medical_claims diagnosis codes. HbA1c definition as in other questions (current numeric dated results). Percentage = 100 * patients with last-2029 value < 8.0 / diabetic patients with any 2029 HbA1c, rounded to 2 decimals.",
+  "answer_type": "value",
+  "reference_sql": "sql/heldout10/H10-02.sql",
+  "split": "heldout10",
+  "tolerance": 0.01
+ },
+ {
+  "id": "H10-03",
+  "question": "How many patients have laboratory evidence of chronic kidney disease, meaning at least two eGFR results below 60 mL/min/1.73m2 dated at least 90 days apart? Count only the current version of each result (ignore results that were corrected or replaced). Use data received as of 2030-05-27.",
+  "category": "lab_trajectory",
+  "domain": "clinical care",
+  "as_of": "2030-05-27",
+  "interpretation": "Warehouse v2.8 sample (deep-chart patients plus the 30% population sample); identity-matched records received by 2030-05-27 only. Patients are counted as distinct warehouse patient IDs (duplicate charts are not merged). eGFR = names eGFR / EGFR CKD-EPI 2021 / Glomerular filtration rate (case-insensitive) or LOINC 98979-8; numeric, dated, not cancelled, not superseded or replaced. Patient qualifies when max date minus min date among values < 60 is >= 90 days.",
+  "answer_type": "count",
+  "reference_sql": "sql/heldout10/H10-03.sql",
+  "split": "heldout10"
+ },
+ {
+  "id": "H10-04",
+  "question": "For each of these chronic conditions, how many patients have ever had a matching ICD-10 code on the problem list, an EHR encounter diagnosis, a practice billing claim or a payer claim: diabetes (E10, E11), hypertension (I10-I13, I15, I16), heart failure (I50), COPD (J44) and chronic kidney disease (N18)? Return one row per condition with columns condition and patients, using the condition labels diabetes, hypertension, heart_failure, copd, ckd. Use data received as of 2030-05-27.",
+  "category": "chronic_cohorts",
+  "domain": "clinical care",
+  "as_of": "2030-05-27",
+  "interpretation": "Warehouse v2.8 sample (deep-chart patients plus the 30% population sample); identity-matched records received by 2030-05-27 only. Patients are counted as distinct warehouse patient IDs (duplicate charts are not merged). Code-based only: text-only problem-list entries without an ICD-10 code are not counted. Codes compared on the first three characters after removing the dot, case-insensitive. A patient counts once per condition across all sources.",
+  "answer_type": "table",
+  "reference_sql": "sql/heldout10/H10-04.sql",
+  "split": "heldout10"
+ },
+ {
+  "id": "H10-05",
+  "question": "Which patients had a latest potassium result between January 1 and May 27, 2030 that was above 5.0 mmol/L? Use each patient's last potassium dated in that window (if several on that date, the highest), and only the current version of each result. Use data received as of 2030-05-27.",
+  "category": "lab_safety",
+  "domain": "clinical care",
+  "as_of": "2030-05-27",
+  "interpretation": "Warehouse v2.8 sample (deep-chart patients plus the 30% population sample); identity-matched records received by 2030-05-27 only. Patients are counted as distinct warehouse patient IDs (duplicate charts are not merged). Potassium = name 'Potassium' (case-insensitive, includes POTASSIUM) or LOINC 2823-3; numeric dated non-cancelled results, superseded/replaced excluded. Window 2030-01-01..2030-05-27 inclusive; strictly > 5.0.",
+  "answer_type": "patient_set",
+  "reference_sql": "sql/heldout10/H10-05.sql",
+  "split": "heldout10"
+ },
+ {
+  "id": "H10-06",
+  "question": "For patients with hypertension (any ICD-10 I10-I13, I15 or I16 code on the problem list, an encounter diagnosis, a billing claim or a payer claim), what is the average of each patient's most recent systolic blood pressure recorded in 2029? Use dated vital-sign readings only; if a patient has several readings on their last 2029 date, use the lowest systolic. Round to one decimal. Use data received as of 2030-05-27.",
+  "category": "vitals_control",
+  "domain": "clinical care",
+  "as_of": "2030-05-27",
+  "interpretation": "Warehouse v2.8 sample (deep-chart patients plus the 30% population sample); identity-matched records received by 2030-05-27 only. Patients are counted as distinct warehouse patient IDs (duplicate charts are not merged). Vitals stream records carrying both blood_pressure_systolic and blood_pressure_diastolic with an event date in 2029 (deep-chart and population). Undated readings excluded. Mean over patients of their last-date minimum systolic, rounded to 1 decimal.",
+  "answer_type": "value",
+  "reference_sql": "sql/heldout10/H10-06.sql",
+  "split": "heldout10",
+  "tolerance": 0.05
+ },
+ {
+  "id": "H10-07",
+  "question": "How many patients with at least two HbA1c results in 2029 improved by at least 1.0 percentage point, comparing their first 2029 result with their last 2029 result? When several results share the first or last date, use the highest value on that date. Use data received as of 2030-05-27.",
+  "category": "lab_trajectory",
+  "domain": "clinical care",
+  "as_of": "2030-05-27",
+  "interpretation": "Warehouse v2.8 sample (deep-chart patients plus the 30% population sample); identity-matched records received by 2030-05-27 only. Patients are counted as distinct warehouse patient IDs (duplicate charts are not merged). HbA1c definition: names HbA1c / Hemoglobin A1c / Hemoglobin A1c/Hemoglobin.total or LOINC 4548-4; current numeric dated results. Requires at least two results on distinct 2029 dates. Improvement = first - last >= 1.0.",
+  "answer_type": "count",
+  "reference_sql": "sql/heldout10/H10-07.sql",
+  "split": "heldout10"
+ },
+ {
+  "id": "H10-08",
+  "question": "Among patients taking clopidogrel, how many are CYP2C19 poor or intermediate metabolizers according to their pharmacogenomic test results, so we can review switching them to another antiplatelet? Use data received as of 2030-05-27.",
+  "category": "unsupported",
+  "domain": "clinical care",
+  "as_of": "2030-05-27",
+  "interpretation": "Warehouse v2.8 sample (deep-chart patients plus the 30% population sample); identity-matched records received by 2030-05-27 only. Patients are counted as distinct warehouse patient IDs (duplicate charts are not merged). Metabolizer status requires pharmacogenomic (CYP2C19 genotype) test results. Clopidogrel fills exist, but no stream contains genotype, CYP2C19/CYP2D6, pharmacogenomic, germline-variant or HLA results (full-payload scan of every stream found none).",
+  "answer_type": "unsupported",
+  "reference_sql": "sql/heldout10/H10-08.sql",
+  "split": "heldout10",
+  "expected_behavior": {
+   "required_missing": [
+    {
+     "id": "pgx",
+     "description": "No pharmacogenomic (CYP2C19 genotype / metabolizer status) test results exist in the warehouse.",
+     "any_of": [
+      "pharmacogenomic",
+      "genotype",
+      "CYP2C19",
+      "genetic",
+      "metabolizer"
+     ]
+    }
+   ],
+   "scoring": "Exact unsupported status plus all missing-prerequisite phrase groups; mechanical rubric, independent review still required."
+  }
+ },
+ {
+  "id": "H10-09",
+  "question": "How many emergency department visits happened in calendar 2029? Combine EHR emergency encounters, the hospital ADT feeds (ED registrations) and medical claims billed with place of service 23 (emergency room), and count a patient's visits on the same calendar date only once. Use data received as of 2030-05-27.",
+  "category": "ed_volume",
+  "domain": "hospital operations",
+  "as_of": "2030-05-27",
+  "interpretation": "Warehouse v2.8 sample (deep-chart patients plus the 30% population sample); identity-matched records received by 2030-05-27 only. Patients are counted as distinct warehouse patient IDs (duplicate charts are not merged). Sources: encounters with type emergency/ED (date = start_time date, else event date); deep ADT emergency_registration events; population ADT A04 messages with patient class E; payer medical claims and practice billing claims with place_of_service 23 (service date), any adjudication status. De-duplication: one visit per (patient, date).",
+  "answer_type": "count",
+  "reference_sql": "sql/heldout10/H10-09.sql",
+  "split": "heldout10"
+ },
+ {
+  "id": "H10-10",
+  "question": "How many inpatient admissions began in calendar 2029? Combine EHR inpatient encounters, ADT admission messages from both hospital feeds, and institutional inpatient hospital claims (type of bill 011x) from payers, counting one admission per patient per admission date. Use data received as of 2030-05-27.",
+  "category": "inpatient_volume",
+  "domain": "hospital operations",
+  "as_of": "2030-05-27",
+  "interpretation": "Warehouse v2.8 sample (deep-chart patients plus the 30% population sample); identity-matched records received by 2030-05-27 only. Patients are counted as distinct warehouse patient IDs (duplicate charts are not merged). Sources: encounters type inpatient (start date, else event date); deep ADT events admission / inpatient_admission; population ADT A01 with patient class I; payer institutional claims with type_of_bill 011x and an admission_date (admission date). Observation stays excluded. De-duplication: (patient, admission date).",
+  "answer_type": "count",
+  "reference_sql": "sql/heldout10/H10-10.sql",
+  "split": "heldout10"
+ },
+ {
+  "id": "H10-11",
+  "question": "Using the hospital HL7 ADT feed, what was the average inpatient length of stay in days for stays discharged in 2029? Count a stay from its A01 inpatient admit date to its A03 discharge date (calendar days), matching messages on visit number, and round to two decimals. Use data received as of 2030-05-27.",
+  "category": "length_of_stay",
+  "domain": "hospital operations",
+  "as_of": "2030-05-27",
+  "interpretation": "Warehouse v2.8 sample (deep-chart patients plus the 30% population sample); identity-matched records received by 2030-05-27 only. Patients are counted as distinct warehouse patient IDs (duplicate charts are not merged). Population hospital ADT messages (adt_messages): visits with an A01 message of patient class I; admit date = earliest A01 event date; discharge date = latest A03 event date for the same visit_number; discharge in 2029. LOS = julianday(discharge) - julianday(admit). Mean rounded to 2 decimals.",
+  "answer_type": "value",
+  "reference_sql": "sql/heldout10/H10-11.sql",
+  "split": "heldout10",
+  "tolerance": 0.01
+ },
+ {
+  "id": "H10-12",
+  "question": "From the hospital HL7 ADT feed, break down 2029 inpatient discharges (A03 messages for inpatient-class visits) by discharge disposition. Return columns disposition and discharges, one row per disposition, labeling a missing disposition as not_recorded. Count each visit once. Use data received as of 2030-05-27.",
+  "category": "disposition",
+  "domain": "hospital operations",
+  "as_of": "2030-05-27",
+  "interpretation": "Warehouse v2.8 sample (deep-chart patients plus the 30% population sample); identity-matched records received by 2030-05-27 only. Patients are counted as distinct warehouse patient IDs (duplicate charts are not merged). Population adt_messages A03 with patient_class I and event date in 2029, one row per visit_number (latest A03 if repeated). Disposition literal value; null -> 'not_recorded'.",
+  "answer_type": "table",
+  "reference_sql": "sql/heldout10/H10-12.sql",
+  "split": "heldout10"
+ },
+ {
+  "id": "H10-13",
+  "question": "How many hospital observation stays started in calendar 2029? Use EHR observation encounters, ADT observation events from both hospital feeds (observation start or transfer to observation, and A01 admits with outpatient/observation patient class), counting one stay per patient per start date. Use data received as of 2030-05-27.",
+  "category": "observation",
+  "domain": "hospital operations",
+  "as_of": "2030-05-27",
+  "interpretation": "Warehouse v2.8 sample (deep-chart patients plus the 30% population sample); identity-matched records received by 2030-05-27 only. Patients are counted as distinct warehouse patient IDs (duplicate charts are not merged). Sources: encounters type observation (start date, else event); deep ADT events observation_start / transfer_to_observation; population adt_messages A01 with patient_class O. De-duplication: (patient, start date).",
+  "answer_type": "count",
+  "reference_sql": "sql/heldout10/H10-13.sql",
+  "split": "heldout10"
+ },
+ {
+  "id": "H10-14",
+  "question": "Based on the hospital HL7 ADT feed, how many inpatients admitted during 2029 were still in house at midnight at the end of December 31, 2029, meaning they had no A03 discharge dated on or before December 31, 2029? Use data received as of 2030-05-27.",
+  "category": "census",
+  "domain": "hospital operations",
+  "as_of": "2030-05-27",
+  "interpretation": "Warehouse v2.8 sample (deep-chart patients plus the 30% population sample); identity-matched records received by 2030-05-27 only. Patients are counted as distinct warehouse patient IDs (duplicate charts are not merged). Population adt_messages: visits whose earliest A01 inpatient-class (I) admit date falls in 2029 and that have no A03 message dated <= 2029-12-31 for the same visit_number.",
+  "answer_type": "count",
+  "reference_sql": "sql/heldout10/H10-14.sql",
+  "split": "heldout10"
+ },
+ {
+  "id": "H10-15",
+  "question": "Which patients had three or more emergency department visits in the 12 months from May 28, 2029 through May 27, 2030? Count ED visits from EHR emergency encounters, hospital ADT ED registrations and medical claims with place of service 23, with at most one visit per patient per day. Use data received as of 2030-05-27.",
+  "category": "ed_utilization",
+  "domain": "hospital operations",
+  "as_of": "2030-05-27",
+  "interpretation": "Warehouse v2.8 sample (deep-chart patients plus the 30% population sample); identity-matched records received by 2030-05-27 only. Patients are counted as distinct warehouse patient IDs (duplicate charts are not merged). Same ED visit definition as the 2029 ED volume question: encounters type emergency/ED, deep ADT emergency_registration, population ADT A04 class E, payer and practice billing claims POS 23; de-duplicated by (patient, date); window 2029-05-28..2030-05-27.",
+  "answer_type": "patient_set",
+  "reference_sql": "sql/heldout10/H10-15.sql",
+  "split": "heldout10"
+ },
+ {
+  "id": "H10-16",
+  "question": "What was our median emergency department door-to-provider time in 2029, in minutes from patient arrival to the first provider evaluation? Use data received as of 2030-05-27.",
+  "category": "unsupported",
+  "domain": "hospital operations",
+  "as_of": "2030-05-27",
+  "interpretation": "Warehouse v2.8 sample (deep-chart patients plus the 30% population sample); identity-matched records received by 2030-05-27 only. Patients are counted as distinct warehouse patient IDs (duplicate charts are not merged). Door-to-provider needs a provider-evaluation (first provider seen) timestamp per ED visit. ED encounters and ADT messages carry arrival/registration and discharge times only; no stream has a provider-seen, triage-to-provider or door-to-provider field (full-payload scan of every stream found none).",
+  "answer_type": "unsupported",
+  "reference_sql": "sql/heldout10/H10-16.sql",
+  "split": "heldout10",
+  "expected_behavior": {
+   "required_missing": [
+    {
+     "id": "provider_time",
+     "description": "No ED provider-evaluation (first provider seen) timestamp is recorded, so door-to-provider time cannot be computed.",
+     "any_of": [
+      "provider",
+      "door-to-provider",
+      "door to provider",
+      "seen"
+     ]
+    }
+   ],
+   "scoring": "Exact unsupported status plus all missing-prerequisite phrase groups; mechanical rubric, independent review still required."
+  }
+ },
+ {
+  "id": "H10-17",
+  "question": "What was the payer claim denial rate for medical claims with dates of service in 2029? Use each claim's latest adjudication (ignore versions replaced by a later adjudication), count a claim as denied if its latest status is denied or denied with the appeal upheld, and use as the denominator claims whose latest status is paid, denied or denied-upheld. Give the percentage to two decimals. Use data received as of 2030-05-27.",
+  "category": "denials",
+  "domain": "revenue cycle",
+  "as_of": "2030-05-27",
+  "interpretation": "Warehouse v2.8 sample (deep-chart patients plus the 30% population sample); identity-matched records received by 2030-05-27 only. Patients are counted as distinct warehouse patient IDs (duplicate charts are not merged). payer_medical_claims (deep-chart and population). Current = not referenced by any other record's supersedes. service_from in 2029. Reversed, voided and recouped latest versions are excluded from numerator and denominator.",
+  "answer_type": "value",
+  "reference_sql": "sql/heldout10/H10-17.sql",
+  "split": "heldout10",
+  "tolerance": 0.01
+ },
+ {
+  "id": "H10-18",
+  "question": "What were the five most common claim adjustment reason codes on payer claims that ended up denied (latest status denied or denied-upheld) with 2029 dates of service? Return columns carc and claims, with the CARC exactly as reported (for example CO-16). Use data received as of 2030-05-27.",
+  "category": "denials",
+  "domain": "revenue cycle",
+  "as_of": "2030-05-27",
+  "interpretation": "Warehouse v2.8 sample (deep-chart patients plus the 30% population sample); identity-matched records received by 2030-05-27 only. Patients are counted as distinct warehouse patient IDs (duplicate charts are not merged). payer_medical_claims current versions (not superseded), service_from in 2029, claim_status denied or denied_upheld; group by literal carc; top five by count (no ties at the cut-off).",
+  "answer_type": "table",
+  "reference_sql": "sql/heldout10/H10-18.sql",
+  "split": "heldout10"
+ },
+ {
+  "id": "H10-19",
+  "question": "How much did payers pay in total, in dollars, on medical claims with 2029 dates of service, net of reversals, voids, recoupments and re-adjudications? Count only each claim's latest adjudication and only when that latest status is paid. Round to cents. Use data received as of 2030-05-27.",
+  "category": "payments",
+  "domain": "revenue cycle",
+  "as_of": "2030-05-27",
+  "interpretation": "Warehouse v2.8 sample (deep-chart patients plus the 30% population sample); identity-matched records received by 2030-05-27 only. Patients are counted as distinct warehouse patient IDs (duplicate charts are not merged). payer_medical_claims current versions (no later record supersedes them) with claim_status paid and service_from in 2029; sum paid_amount. Claims whose latest version is reversed, voided, recouped or denied contribute $0; superseded earlier payments are excluded.",
+  "answer_type": "value",
+  "reference_sql": "sql/heldout10/H10-19.sql",
+  "split": "heldout10",
+  "tolerance": 0.01
+ },
+ {
+  "id": "H10-20",
+  "question": "For payer medical claims paid in 2029 (latest adjudication paid, with a payment amount above zero and a paid date in 2029), what was the average number of days from the payer receiving the claim to paying it? Round to two decimals. Use data received as of 2030-05-27.",
+  "category": "days_to_payment",
+  "domain": "revenue cycle",
+  "as_of": "2030-05-27",
+  "interpretation": "Warehouse v2.8 sample (deep-chart patients plus the 30% population sample); identity-matched records received by 2030-05-27 only. Patients are counted as distinct warehouse patient IDs (duplicate charts are not merged). payer_medical_claims current versions, claim_status paid, paid_amount > 0, paid_date in 2029; days = julianday(paid_date) - julianday(claim_received_date); mean rounded to 2 decimals.",
+  "answer_type": "value",
+  "reference_sql": "sql/heldout10/H10-20.sql",
+  "split": "heldout10",
+  "tolerance": 0.01
+ },
+ {
+  "id": "H10-21",
+  "question": "How many payer claim denials were overturned and paid in 2029, meaning a denied adjudication was later replaced by a paid adjudication whose paid date is in 2029? Use data received as of 2030-05-27.",
+  "category": "denial_overturn",
+  "domain": "revenue cycle",
+  "as_of": "2030-05-27",
+  "interpretation": "Warehouse v2.8 sample (deep-chart patients plus the 30% population sample); identity-matched records received by 2030-05-27 only. Patients are counted as distinct warehouse patient IDs (duplicate charts are not merged). payer_medical_claims records with claim_status paid whose supersedes link points to a record with claim_status denied, and paid_date in 2029. Counted per overturning adjudication record.",
+  "answer_type": "count",
+  "reference_sql": "sql/heldout10/H10-21.sql",
+  "split": "heldout10"
+ },
+ {
+  "id": "H10-22",
+  "question": "Break down payer medical claims with 2029 dates of service by insurance product: for each product, how many claims were adjudicated and how many ended up denied? Use each claim's latest adjudication, include only claims whose latest status is paid, denied or denied-upheld, and return columns product, claims and denied_claims. Use data received as of 2030-05-27.",
+  "category": "denials_by_product",
+  "domain": "revenue cycle",
+  "as_of": "2030-05-27",
+  "interpretation": "Warehouse v2.8 sample (deep-chart patients plus the 30% population sample); identity-matched records received by 2030-05-27 only. Patients are counted as distinct warehouse patient IDs (duplicate charts are not merged). payer_medical_claims current versions, service_from in 2029, latest claim_status in (paid, denied, denied_upheld); product = literal product field; denied_claims = status denied or denied_upheld.",
+  "answer_type": "table",
+  "reference_sql": "sql/heldout10/H10-22.sql",
+  "split": "heldout10"
+ },
+ {
+  "id": "H10-23",
+  "question": "What were net patient collections in 2029, in dollars: patient payments received during 2029 minus patient refunds issued during 2029? Round to cents. Use data received as of 2030-05-27.",
+  "category": "patient_collections",
+  "domain": "revenue cycle",
+  "as_of": "2030-05-27",
+  "interpretation": "Warehouse v2.8 sample (deep-chart patients plus the 30% population sample); identity-matched records received by 2030-05-27 only. Patients are counted as distinct warehouse patient IDs (duplicate charts are not merged). patient_payments with status received and event date in 2029 (sum amount_cents) minus patient_refunds with status issued and event date in 2029 (sum amount_cents), converted to dollars.",
+  "answer_type": "value",
+  "reference_sql": "sql/heldout10/H10-23.sql",
+  "split": "heldout10",
+  "tolerance": 0.01
+ },
+ {
+  "id": "H10-24",
+  "question": "How many distinct practice billing claims received a remittance in 2029 saying the claim was denied pending more information? Use data received as of 2030-05-27.",
+  "category": "remittance",
+  "domain": "revenue cycle",
+  "as_of": "2030-05-27",
+  "interpretation": "Warehouse v2.8 sample (deep-chart patients plus the 30% population sample); identity-matched records received by 2030-05-27 only. Patients are counted as distinct warehouse patient IDs (duplicate charts are not merged). provider_remittance_advice records with status denied_information_needed and event date in 2029; distinct claim_id.",
+  "answer_type": "count",
+  "reference_sql": "sql/heldout10/H10-24.sql",
+  "split": "heldout10"
+ },
+ {
+  "id": "H10-25",
+  "question": "How many women aged 52 to 74 on December 31, 2029 had a screening mammogram between October 1, 2027 and December 31, 2029? Count mammography from screening results and from claim lines (CPT 77065, 77066 or 77067) on either payer claims or practice billing claims. Use data received as of 2030-05-27.",
+  "category": "cancer_screening",
+  "domain": "quality and safety",
+  "as_of": "2030-05-27",
+  "interpretation": "Warehouse v2.8 sample (deep-chart patients plus the 30% population sample); identity-matched records received by 2030-05-27 only. Patients are counted as distinct warehouse patient IDs (duplicate charts are not merged). Women = sex_reported F; age from birth_date on 2029-12-31. Evidence: cancer_screening_results test bilateral_screening_mammography (performed_date, else event date); payer_medical_claim_lines procedure_code 77065-77067 (service_date); medical_claim_lines service_code 77065-77067 (service_date). Window 2027-10-01..2029-12-31.",
+  "answer_type": "count",
+  "reference_sql": "sql/heldout10/H10-25.sql",
+  "split": "heldout10"
+ },
+ {
+  "id": "H10-26",
+  "question": "Among patients with hypertension (ICD-10 I10-I13, I15 or I16 from the problem list, encounter diagnoses, billing claims or payer claims) who had a blood pressure recorded in 2029, what percentage had their last 2029 reading controlled below 140/90? If there are several readings on the last date, use the lowest systolic and lowest diastolic from that date. Give the percentage to two decimals. Use data received as of 2030-05-27.",
+  "category": "bp_control",
+  "domain": "quality and safety",
+  "as_of": "2030-05-27",
+  "interpretation": "Warehouse v2.8 sample (deep-chart patients plus the 30% population sample); identity-matched records received by 2030-05-27 only. Patients are counted as distinct warehouse patient IDs (duplicate charts are not merged). Dated vitals with both systolic and diastolic in 2029. Controlled = systolic < 140 and diastolic < 90 using the per-date minimums on the last 2029 date. Percentage rounded to 2 decimals.",
+  "answer_type": "value",
+  "reference_sql": "sql/heldout10/H10-26.sql",
+  "split": "heldout10",
+  "tolerance": 0.01
+ },
+ {
+  "id": "H10-27",
+  "question": "Using the hospital ADT feeds, how many inpatient discharges in 2029 were followed by an inpatient readmission within 30 days (1 to 30 days after the discharge date)? Count each index discharge once. Use data received as of 2030-05-27.",
+  "category": "readmissions",
+  "domain": "quality and safety",
+  "as_of": "2030-05-27",
+  "interpretation": "Warehouse v2.8 sample (deep-chart patients plus the 30% population sample); identity-matched records received by 2030-05-27 only. Patients are counted as distinct warehouse patient IDs (duplicate charts are not merged). Index discharges: population adt_messages A03 for visits with an A01 inpatient-class (I) admit, and deep-chart adt discharge events for encounters that have an admission or inpatient_admission event; discharge date in 2029, one per visit. Readmission: any population A01 class I or deep adt admission/inpatient_admission for the same patient on a different visit dated 1-30 days after the discharge date. All-cause; planned readmissions not excluded.",
+  "answer_type": "count",
+  "reference_sql": "sql/heldout10/H10-27.sql",
+  "split": "heldout10"
+ },
+ {
+  "id": "H10-28",
+  "question": "How many patients with diabetes (ICD-10 E10 or E11 from the problem list, encounter diagnoses, billing claims or payer claims) aged 18 to 85 on December 31, 2029 received both an eGFR and a urine albumin-to-creatinine ratio in 2029, the kidney health evaluation for diabetes? Use data received as of 2030-05-27.",
+  "category": "kidney_health",
+  "domain": "quality and safety",
+  "as_of": "2030-05-27",
+  "interpretation": "Warehouse v2.8 sample (deep-chart patients plus the 30% population sample); identity-matched records received by 2030-05-27 only. Patients are counted as distinct warehouse patient IDs (duplicate charts are not merged). eGFR: names eGFR / EGFR CKD-EPI 2021 / Glomerular filtration rate or LOINC 98979-8. uACR: names Urine albumin/creatinine ratio, Microalbumin/Creatinine [Mass Ratio] in Urine, MICROALB/CREAT RATIO, RANDOM URINE or LOINC 9318-7. Numeric, dated 2029, non-cancelled current results. Age from birth_date on 2029-12-31.",
+  "answer_type": "count",
+  "reference_sql": "sql/heldout10/H10-28.sql",
+  "split": "heldout10"
+ },
+ {
+  "id": "H10-29",
+  "question": "Of all critical lab value phone notifications on file, what percentage had read-back verification documented? Round to two decimals. Use data received as of 2030-05-27.",
+  "category": "critical_results",
+  "domain": "quality and safety",
+  "as_of": "2030-05-27",
+  "interpretation": "Warehouse v2.8 sample (deep-chart patients plus the 30% population sample); identity-matched records received by 2030-05-27 only. Patients are counted as distinct warehouse patient IDs (duplicate charts are not merged). critical_result_notifications; read_back_verified true / all notifications * 100, rounded to 2 decimals.",
+  "answer_type": "value",
+  "reference_sql": "sql/heldout10/H10-29.sql",
+  "split": "heldout10",
+  "tolerance": 0.01
+ },
+ {
+  "id": "H10-30",
+  "question": "How many patients aged 65 or older on October 1, 2029 received an influenza vaccine during the 2029-2030 season (August 1, 2029 through March 31, 2030)? Count administered vaccines from immunization records and influenza vaccine CPT codes on claim lines. Use data received as of 2030-05-27.",
+  "category": "immunization",
+  "domain": "quality and safety",
+  "as_of": "2030-05-27",
+  "interpretation": "Warehouse v2.8 sample (deep-chart patients plus the 30% population sample); identity-matched records received by 2030-05-27 only. Patients are counted as distinct warehouse patient IDs (duplicate charts are not merged). Immunizations with vaccine containing 'influenza' (case-insensitive) and administration_status completed, event date in window; plus payer_medical_claim_lines / medical_claim_lines with influenza vaccine CPT 90653, 90656, 90658, 90660, 90661, 90662, 90673, 90674, 90682, 90686, 90688, 90694, 90756 (service_date in window). Age from birth_date.",
+  "answer_type": "count",
+  "reference_sql": "sql/heldout10/H10-30.sql",
+  "split": "heldout10"
+ },
+ {
+  "id": "H10-31",
+  "question": "How many patients aged 46 to 75 on December 31, 2029 have colorectal cancer screening on file: a colonoscopy (CPT 45378, 45380 or 45385 on payer or practice claim lines) between January 1, 2020 and December 31, 2029, or a FIT stool test in 2029 (FIT screening result or CPT 82274 on a claim line)? Use data received as of 2030-05-27.",
+  "category": "cancer_screening",
+  "domain": "quality and safety",
+  "as_of": "2030-05-27",
+  "interpretation": "Warehouse v2.8 sample (deep-chart patients plus the 30% population sample); identity-matched records received by 2030-05-27 only. Patients are counted as distinct warehouse patient IDs (duplicate charts are not merged). Colonoscopy: payer_medical_claim_lines procedure_code / medical_claim_lines service_code in 45378, 45380, 45385, service_date 2020-01-01..2029-12-31. FIT: cancer_screening_results test FIT (performed_date, else event) or claim-line code 82274, dated in 2029. Age from birth_date on 2029-12-31.",
+  "answer_type": "count",
+  "reference_sql": "sql/heldout10/H10-31.sql",
+  "split": "heldout10"
+ },
+ {
+  "id": "H10-32",
+  "question": "What was our central line-associated bloodstream infection (CLABSI) rate per 1,000 central line days across inpatient units in 2029? Use data received as of 2030-05-27.",
+  "category": "unsupported",
+  "domain": "quality and safety",
+  "as_of": "2030-05-27",
+  "interpretation": "Warehouse v2.8 sample (deep-chart patients plus the 30% population sample); identity-matched records received by 2030-05-27 only. Patients are counted as distinct warehouse patient IDs (duplicate charts are not merged). CLABSI rate needs central-line insertion/removal or device-day counts and NHSN infection surveillance events. No stream records central lines, line days or bloodstream-infection surveillance (full-payload scan of every stream found no CLABSI, central line, PICC, line-day or bloodstream infection terms).",
+  "answer_type": "unsupported",
+  "reference_sql": "sql/heldout10/H10-32.sql",
+  "split": "heldout10",
+  "expected_behavior": {
+   "required_missing": [
+    {
+     "id": "line_days",
+     "description": "No central line placement or central-line-day denominator data exists.",
+     "any_of": [
+      "central line",
+      "line day",
+      "line-day",
+      "device day",
+      "device-day"
+     ]
+    },
+    {
+     "id": "infection_events",
+     "description": "No bloodstream infection (CLABSI) surveillance events are recorded.",
+     "any_of": [
+      "infection",
+      "CLABSI",
+      "surveillance",
+      "NHSN"
+     ]
+    }
+   ],
+   "scoring": "Exact unsupported status plus all missing-prerequisite phrase groups; mechanical rubric, independent review still required."
+  }
+ },
+ {
+  "id": "H10-33",
+  "question": "How many patients picked up at least one statin prescription in 2029? Count fills from pharmacy dispensing records (only those actually picked up) and from payer pharmacy claims (paid and not later reversed or recouped). Match drug names case-insensitively on atorvastatin, rosuvastatin, simvastatin, pravastatin, lovastatin, pitavastatin or fluvastatin. Use data received as of 2030-05-27.",
+  "category": "utilization",
+  "domain": "pharmacy",
+  "as_of": "2030-05-27",
+  "interpretation": "Warehouse v2.8 sample (deep-chart patients plus the 30% population sample); identity-matched records received by 2030-05-27 only. Patients are counted as distinct warehouse patient IDs (duplicate charts are not merged). pharmacy_dispenses with status dispensed (prepared and returned-to-stock excluded) and payer_pharmacy_claims with claim_status paid that no reversal/recoupment supersedes; fill date = event date in 2029. Patients de-duplicated across sources.",
+  "answer_type": "count",
+  "reference_sql": "sql/heldout10/H10-33.sql",
+  "split": "heldout10"
+ },
+ {
+  "id": "H10-34",
+  "question": "How many patients with at least two picked-up statin fills on different dates in 2029 had a proportion of days covered of 80% or more for 2029? Measure from each patient's first 2029 statin fill through December 31, 2029; a fill covers its fill date plus days supply minus one; overlapping or duplicate fills (the same fill seen in both pharmacy and payer data) count each covered day once. Use data received as of 2030-05-27.",
+  "category": "adherence",
+  "domain": "pharmacy",
+  "as_of": "2030-05-27",
+  "interpretation": "Warehouse v2.8 sample (deep-chart patients plus the 30% population sample); identity-matched records received by 2030-05-27 only. Patients are counted as distinct warehouse patient IDs (duplicate charts are not merged). Fills = picked-up statin fills as defined for statin utilization (dispensed pharmacy records + paid, non-reversed payer pharmacy claims; names case-insensitive). Days supply missing -> 1. PDC = distinct covered days within [first 2029 fill, 2029-12-31] / days in that period; threshold >= 0.80.",
+  "answer_type": "count",
+  "reference_sql": "sql/heldout10/H10-34.sql",
+  "split": "heldout10"
+ },
+ {
+  "id": "H10-35",
+  "question": "For 2029, how many patients picked up at least one fill in each of these drug classes: statin, metformin, sglt2_inhibitor (empagliflozin, dapagliflozin, canagliflozin, ertugliflozin), glp1_agonist (semaglutide, liraglutide, dulaglutide, exenatide, tirzepatide) and ace_inhibitor_or_arb (lisinopril, enalapril, ramipril, benazepril, quinapril, captopril, fosinopril, perindopril, losartan, valsartan, irbesartan, olmesartan, candesartan, telmisartan)? Include combination products containing any listed ingredient. Return columns drug_class and patients. Use data received as of 2030-05-27.",
+  "category": "drug_classes",
+  "domain": "pharmacy",
+  "as_of": "2030-05-27",
+  "interpretation": "Warehouse v2.8 sample (deep-chart patients plus the 30% population sample); identity-matched records received by 2030-05-27 only. Patients are counted as distinct warehouse patient IDs (duplicate charts are not merged). Picked-up fills: pharmacy_dispenses status dispensed + payer_pharmacy_claims paid and not superseded, fill date in 2029; case-insensitive ingredient substring match on drug name (statins: atorvastatin, rosuvastatin, simvastatin, pravastatin, lovastatin, pitavastatin, fluvastatin). Patients distinct within each class.",
+  "answer_type": "table",
+  "reference_sql": "sql/heldout10/H10-35.sql",
+  "split": "heldout10"
+ },
+ {
+  "id": "H10-36",
+  "question": "What did health plans pay in total, in dollars, for pharmacy claims filled in 2029, counting only paid claims that were not later reversed or recouped and only claims that report a plan-paid amount? Round to cents. Use data received as of 2030-05-27.",
+  "category": "pharmacy_spend",
+  "domain": "pharmacy",
+  "as_of": "2030-05-27",
+  "interpretation": "Warehouse v2.8 sample (deep-chart patients plus the 30% population sample); identity-matched records received by 2030-05-27 only. Patients are counted as distinct warehouse patient IDs (duplicate charts are not merged). payer_pharmacy_claims with claim_status paid, not referenced by any reversal/recoupment supersedes link, event (fill) date in 2029, plan_paid present (population payer feeds report it; deep-chart payer files do not). Sum plan_paid.",
+  "answer_type": "value",
+  "reference_sql": "sql/heldout10/H10-36.sql",
+  "split": "heldout10",
+  "tolerance": 0.01
+ },
+ {
+  "id": "H10-37",
+  "question": "How many prescription fills were abandoned in 2029, meaning they were prepared but returned to stock without being picked up? Count pharmacy records marked returned to stock plus payer pharmacy claims reversed with the reason return to stock. Use data received as of 2030-05-27.",
+  "category": "abandonment",
+  "domain": "pharmacy",
+  "as_of": "2030-05-27",
+  "interpretation": "Warehouse v2.8 sample (deep-chart patients plus the 30% population sample); identity-matched records received by 2030-05-27 only. Patients are counted as distinct warehouse patient IDs (duplicate charts are not merged). pharmacy_dispenses status returned_to_stock with event date in 2029 plus payer_pharmacy_claims claim_status reversed with reversal_reason return_to_stock and event date in 2029. The two sources do not overlap (deep-chart payer pharmacy files carry no reversals); counted as records.",
+  "answer_type": "count",
+  "reference_sql": "sql/heldout10/H10-37.sql",
+  "split": "heldout10"
+ },
+ {
+  "id": "H10-38",
+  "question": "Break down payer pharmacy claims rejected in 2029 by NCPDP reject code. Return columns reject_code and claims. Use data received as of 2030-05-27.",
+  "category": "rejections",
+  "domain": "pharmacy",
+  "as_of": "2030-05-27",
+  "interpretation": "Warehouse v2.8 sample (deep-chart patients plus the 30% population sample); identity-matched records received by 2030-05-27 only. Patients are counted as distinct warehouse patient IDs (duplicate charts are not merged). payer_pharmacy_claims with claim_status rejected and event date in 2029, grouped by literal reject_code.",
+  "answer_type": "table",
+  "reference_sql": "sql/heldout10/H10-38.sql",
+  "split": "heldout10"
+ },
+ {
+  "id": "H10-39",
+  "question": "Which patients had overlapping days supply of an oral anticoagulant (warfarin, apixaban, rivaroxaban, dabigatran or edoxaban) and a P2Y12 antiplatelet (clopidogrel, prasugrel or ticagrelor) from picked-up fills dated in 2029? A fill covers its fill date through fill date plus days supply minus one; an overlap of at least one day counts. Match drug names case-insensitively. Use data received as of 2030-05-27.",
+  "category": "safety",
+  "domain": "pharmacy",
+  "as_of": "2030-05-27",
+  "interpretation": "Warehouse v2.8 sample (deep-chart patients plus the 30% population sample); identity-matched records received by 2030-05-27 only. Patients are counted as distinct warehouse patient IDs (duplicate charts are not merged). Picked-up fills: pharmacy_dispenses status dispensed + payer_pharmacy_claims paid and not superseded by a reversal/recoupment; both fills dated in 2029; missing days supply treated as 1 day. Aspirin not included.",
+  "answer_type": "patient_set",
+  "reference_sql": "sql/heldout10/H10-39.sql",
+  "split": "heldout10"
+ },
+ {
+  "id": "H10-40",
+  "question": "How many patients picked up a long-acting opioid in 2029, meaning an extended-release or transdermal formulation of an opioid ingredient (hydrocodone, oxycodone, tramadol, fentanyl, morphine, hydromorphone, tapentadol, oxymorphone or methadone)? Use picked-up pharmacy fills and paid, non-reversed payer pharmacy claims. Use data received as of 2030-05-27.",
+  "category": "safety",
+  "domain": "pharmacy",
+  "as_of": "2030-05-27",
+  "interpretation": "Warehouse v2.8 sample (deep-chart patients plus the 30% population sample); identity-matched records received by 2030-05-27 only. Patients are counted as distinct warehouse patient IDs (duplicate charts are not merged). Drug name (case-insensitive) contains 'extended release' or 'transdermal' and an opioid ingredient; methadone counted only if so labeled. Fill date in 2029; patients de-duplicated across sources.",
+  "answer_type": "count",
+  "reference_sql": "sql/heldout10/H10-40.sql",
+  "split": "heldout10"
+ }
+]

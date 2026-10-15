@@ -1,0 +1,2 @@
+SELECT round((coalesce((SELECT sum(json_extract(payload,'$.amount_cents')) FROM records WHERE stream='patient_payments' AND json_extract(payload,'$.status')='received' AND event BETWEEN '2029-01-01' AND '2029-12-31'),0)
+ - coalesce((SELECT sum(json_extract(payload,'$.amount_cents')) FROM records WHERE stream='patient_refunds' AND json_extract(payload,'$.status')='issued' AND event BETWEEN '2029-01-01' AND '2029-12-31'),0)) / 100.0, 2) AS value
