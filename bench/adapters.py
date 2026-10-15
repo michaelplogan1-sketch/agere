@@ -23,8 +23,15 @@ def post_json(url, body, headers=None, timeout=180):
         with urllib.request.urlopen(request, timeout=timeout) as response:
             return json.load(response)
     except urllib.error.HTTPError as exc:
-        # Never print request headers, credentials or an arbitrary response body.
-        raise RuntimeError(f'HTTP {exc.code} from {urllib.parse.urlparse(url).hostname}') from None
+        # Never print request headers, credentials or an arbitrary response body; the provider's structured error
+        # type and message (no credentials) are kept so a failed run says why.
+        detail = ''
+        try:
+            err = json.loads(exc.read().decode('utf-8', 'replace')).get('error') or {}
+            detail = f": {str(err.get('type', ''))[:60]}: {str(err.get('message', ''))[:200]}"
+        except (ValueError, AttributeError, OSError):
+            pass
+        raise RuntimeError(f'HTTP {exc.code} from {urllib.parse.urlparse(url).hostname}{detail}') from None
 
 
 def api_key(path=KEY_FILE):
