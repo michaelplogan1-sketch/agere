@@ -138,21 +138,34 @@ class Stack:
         from .analysis_graph import catalog
         if planning not in ('auto','frontier'):raise ValueError('Unknown planning policy')
         if planning=='frontier' and not self.allow_live:raise ValueError('Live model route disabled on this server')
-        ledger=BudgetLedger(ROOT/'artifacts/agere-full/provider-budget.sqlite3')
+        ledger=BudgetLedger(ROOT/'artifacts/agere-full/provider-budget.sqlite3');pending=None
         try:
             values=json.loads((self.path/'cohort-values.json').read_text()) if (self.path/'cohort-values.json').exists() else None
             from .source_profile import load as load_profile
             from .semantic_layer import describe as describe_semantic
             profile=load_profile(self.path);semantic=describe_semantic(self.path)
-            def frontier(capabilities,feedback=None):
+            def frontier(capabilities,feedback=None,ledger=ledger):  # ledger: a worker thread passes its own connection
                 return propose(question,self.receipts,ledger,snapshot=self.retriever.meta['snapshot'],
                                graph_catalog=capabilities,observed_values=values,profile=profile,semantic=semantic,feedback=feedback)
+            timings={};t0=tick=time.perf_counter()  # per-stage timing receipt (seconds)
+            def lap(stage):
+                nonlocal tick
+                now=time.perf_counter();timings[stage]=round(timings.get(stage,0.0)+now-tick,3);tick=now
             if planning=='auto':
                 from .economical_planner import plan
                 graph,receipt=plan(self,question,ledger,frontier)
                 calls=receipt['new_paid_api_calls']
             else:
                 graph,receipt=frontier(catalog(self.path));calls=0 if receipt.get('cache_hit') else 1
+            lap('planning_s')
+            if planning=='auto' and isinstance(receipt,dict):
+                # The cross-check's independent path starts now, in parallel with the primary execution (answer_guard.start);
+                # the answer waits for it at most until AGERE_CROSS_CHECK_BUDGET_S after the question started.
+                from .answer_guard import start as start_cross_check,budget_s
+                deadline=t0+budget_s()
+                pending=start_cross_check(self,question,graph,receipt,ledger=ledger,profile=profile,deadline=deadline,
+                                          encoder=getattr(getattr(self,'retriever',None),'encoder',None))
+                timings['cross_check_started']='with_plan' if pending is not None else 'not_started'
             try:
                 result=self.run_graph(graph,question=question)
             except ValueError as exc:
@@ -169,12 +182,17 @@ class Stack:
                         saved=json.loads(payload)
                         if saved.get('question')==question:
                             plans.execute('UPDATE plans SET payload=? WHERE id=?',(json.dumps({**saved,'graph':graph,'receipt':receipt}),key))
+            lap('execution_s')
             if planning=='auto' and isinstance(receipt,dict):
                 # Confidently-wrong guard (answer_guard.py): a zero/empty/implausible answer probes the full received catalog and
                 # re-plans once or abstains naming the unused source; an uncertified path is cross-checked by one independent path.
                 from .answer_guard import review as guard_review
-                graph,receipt,result,guard_calls=guard_review(self,question,graph,receipt,result,ledger=ledger,frontier=frontier,profile=profile)
+                graph,receipt,result,guard_calls=guard_review(self,question,graph,receipt,result,ledger=ledger,frontier=frontier,profile=profile,
+                                                              pending=pending,deadline=deadline);pending=None
                 calls+=guard_calls
+                gt=(receipt.get('answer_guard') or {}).get('timings') or {}
+                timings['guard_probe_s']=round(gt.get('guard_probe_s',0.0),3);timings['cross_check_s']=round(gt.get('cross_check_s',0.0),3)
+                tick=time.perf_counter()
             readings=(receipt.get('hosted_sql') or {}).get('readings') if planning=='auto' and isinstance(receipt,dict) else None
             if readings and isinstance(result.get('answer'),dict):  # FM-19: both defensible readings, never a silent pick
                 from .verification_v2 import attach_readings
@@ -187,9 +205,13 @@ class Stack:
             if planning=='auto':  # guard confidence after the answer contract: abstention / disagreement low, agreement cross-checked
                 from .answer_guard import finish as guard_finish
                 result=guard_finish(result,receipt)
+            lap('finish_s');timings['total_s']=round(time.perf_counter()-t0,3)
+            if isinstance(receipt,dict):receipt['timings']=timings
             return {**result,'question':question,'route':'economical_composition_local_execution' if planning=='auto' else 'frontier_composition_local_execution',
                     'planner_receipt':receipt,'planning_economics':costing,'new_paid_api_calls':result['new_paid_api_calls']+calls}
-        finally:ledger.close()
+        finally:
+            if pending is not None:pending.cancel()  # an execution error: the started check is not needed
+            ledger.close()
     def ask(self,question,*,live=False):
         if not live:return {'schema':VERSION,'synthetic':True,'question':question,'route':'local_retrieval',
                             'retrieval':self.retriever.search(question),'new_paid_api_calls':0,

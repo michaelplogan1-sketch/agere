@@ -406,5 +406,113 @@ class WriterSlice(Base):
         self.assertEqual(receipt['route'], 'hosted_verified_sql'); self.assertAlmostEqual(receipt['_cost'], 0.002)
 
 
+class SlowHosted(Hosted):
+    """A hosted ladder that takes `delay` seconds and, like the real ladder, reads the primary answer as a free candidate
+    after its own first model call."""
+    def __init__(self, root, queries=None, delay=0.4):
+        super().__init__(root, queries); self.delay, self.seen = delay, []
+
+    def __call__(self, stack, question, ledger, extra_streams=(), feedback='', independent=None, stage='answer_guard_replan', profile=None):
+        import time
+        time.sleep(self.delay)
+        if independent: self.seen.append(independent[0](question))
+        return super().__call__(stack, question, ledger, extra_streams, feedback, independent, stage, profile)
+
+
+class ConcurrentCrossCheck(Base):
+    """The independent path starts with the primary plan, runs while the primary executes, and is bounded by the budget."""
+    def setUp(self):
+        super().setUp()
+        self.env2 = mock.patch.dict(os.environ, {'AGERE_CROSS_CHECK': 'on', 'AGERE_CROSS_CHECK_FRONTIER': 'off'}); self.env2.start()
+        self.q = 'How many patients had an LDL test in 2029?'
+        self.agree = {'default': ("SELECT count(DISTINCT patient_id) FROM record WHERE stream = 'labs'", 'count')}
+
+    def tearDown(self):
+        self.env2.stop(); super().tearDown()
+
+    def ledger(self): return SimpleNamespace(path=self.root / 'l.sqlite3')
+
+    def test_check_runs_while_the_primary_executes(self):
+        import time
+        stack, hosted = fake_stack(self.root), SlowHosted(self.root, self.agree, delay=0.5)
+        graph, receipt, _ = original(self.root, self.q, "SELECT count(DISTINCT patient_id) FROM measurement WHERE concept = 'ldl'")
+        t = time.perf_counter()
+        pending = G.start(stack, self.q, graph, receipt, ledger=self.ledger(), profile=self.profile, hosted=hosted)
+        self.assertIsNotNone(pending)
+        time.sleep(0.5)  # the primary's own execution
+        result = stack.run_graph(graph, question=self.q)
+        _, receipt, result, _ = G.review(stack, self.q, graph, receipt, result, ledger=self.ledger(), profile=self.profile, hosted=hosted,
+                                         pending=pending)
+        total = time.perf_counter() - t
+        cc = receipt['answer_guard']['cross_check']
+        self.assertEqual((cc['status'], cc['started']), ('agree', 'with the primary plan (concurrent with execution)'))
+        self.assertLess(total, 0.9)  # max(primary, check), not their sum (1.0 s)
+        self.assertEqual(hosted.seen[0]['result'], {'value': 3})  # the executed primary answer reached the ladder as a free candidate
+        self.assertTrue(G.finish(result, receipt)['answer']['confidence_detail']['cross_checked'])
+
+    def test_budget_ships_unverified_and_never_upgrades(self):
+        stack, hosted = fake_stack(self.root), SlowHosted(self.root, self.agree, delay=1.0)
+        orig = original(self.root, self.q, "SELECT count(DISTINCT patient_id) FROM measurement WHERE concept = 'ldl'")
+        with mock.patch.dict(os.environ, {'AGERE_CROSS_CHECK_BUDGET_S': '0.2'}):
+            _, receipt, result, calls = self.review(self.q, *orig, hosted=hosted)
+        cc = receipt['answer_guard']['cross_check']
+        self.assertEqual((cc['status'], cc['reason']), ('timed_out', 'cross-check timed out'))
+        self.assertLess(cc['waited_s'], 0.6); self.assertEqual(calls, 0)
+        answer = dict(result['answer'], confidence='unverified', confidence_detail={'level': 'unverified', 'basis': 'no certificate', 'gates': []})
+        a = G.finish({**result, 'answer': answer}, receipt)['answer']
+        self.assertEqual((a['confidence'], a['confidence_reason']), ('unverified', 'cross-check timed out'))
+        self.assertNotIn('cross_checked', a['confidence_detail']); self.assertEqual(a['count'], 3)
+        low = dict(result['answer'], confidence='low', confidence_detail={'level': 'low', 'basis': 'failed on the answer path'})
+        self.assertEqual(G.finish({**result, 'answer': low}, receipt)['answer']['confidence'], 'low')
+        self.assertEqual(G.finish({**result, 'answer': dict(result['answer'], confidence='verified')}, receipt)['answer']['confidence'], 'unverified')
+
+    def test_nothing_starts_when_the_check_cannot_change_the_decision(self):
+        stack, hosted = fake_stack(self.root), SlowHosted(self.root, self.agree, delay=0.0)
+        graph, receipt, _ = original(self.root, self.q, 'SELECT 1')
+        fake = types.ModuleType('gate_policy')
+        fake.assess = lambda receipt, encoder=None: {'level': 'verified', 'reason': 'certified', 'gates': []}
+        with gate_module(fake):
+            self.assertIsNone(G.start(stack, self.q, graph, receipt, ledger=self.ledger(), profile=self.profile, hosted=hosted))
+        unsupported = {'interpretation': 'q', 'coverage': 'unsupported', 'unmet_requirements': ['x'], 'nodes': []}
+        self.assertIsNone(G.start(stack, self.q, unsupported, receipt, ledger=self.ledger(), hosted=hosted))
+        self.assertIsNone(G.start(stack, 'Count LDL tests in 2029 by practice', graph, receipt, ledger=self.ledger(), hosted=hosted))
+        hosted_table = ({**graph, 'nodes': [{**graph['nodes'][0], 'parameters': {'query': 'SELECT 1', 'returns': 'table'}}]},
+                        {'route': 'hosted_verified_sql', 'steps': [], 'acceptance': {'status': 'verified'}})
+        self.assertIsNone(G.start(stack, self.q, *hosted_table, ledger=self.ledger(), hosted=hosted))
+        with mock.patch.dict(os.environ, {'AGERE_CROSS_CHECK': 'off'}):
+            self.assertIsNone(G.start(stack, self.q, graph, receipt, ledger=self.ledger(), hosted=hosted))
+        self.assertEqual(hosted.calls, [])
+
+    def test_started_check_is_dropped_for_a_table_answer(self):
+        stack, hosted = fake_stack(self.root), SlowHosted(self.root, self.agree, delay=0.1)
+        graph, receipt, _ = original(self.root, self.q, 'SELECT 1')
+        pending = G.start(stack, self.q, graph, receipt, ledger=self.ledger(), profile=self.profile, hosted=hosted)
+        tab = original(self.root, self.q, 'SELECT patient_id, value FROM measurement', returns='table')
+        _, receipt2, _, calls = G.review(stack, self.q, tab[0], receipt, tab[2], ledger=self.ledger(), profile=self.profile, hosted=hosted,
+                                         pending=pending)
+        self.assertEqual(receipt2['answer_guard']['cross_check']['status'], 'skipped'); self.assertEqual(calls, 0)
+        self.assertEqual(pending.future.result(timeout=5)[1], 'cancelled: the primary answer is not comparable')
+        self.assertEqual(hosted.calls, [])  # the ladder stopped at the free candidate: no hosted answer was produced
+
+    def test_independent_path_without_an_answer_is_not_a_disagreement(self):
+        hosted = Hosted(self.root, {'default': ('SELECT 1', 'count')})
+        unsupported = lambda stack, question, ledger, **kw: (
+            {'interpretation': 'q', 'coverage': 'unsupported', 'unmet_requirements': [], 'nodes': []},
+            {'route': 'hosted_verified_sql', 'new_paid_api_calls': 0, 'steps': []},
+            {'answer': {'status': 'unsupported', 'answer_type': 'unsupported'}, 'new_paid_api_calls': 0})
+        orig = original(self.root, self.q, "SELECT count(DISTINCT patient_id) FROM measurement WHERE concept = 'ldl'")
+        _, receipt, result, _ = self.review(self.q, *orig, hosted=unsupported)
+        self.assertEqual(receipt['answer_guard']['cross_check']['status'], 'unavailable')
+        self.assertNotEqual(G.finish(result, receipt)['answer'].get('confidence'), 'low')
+        self.assertEqual(hosted.calls, [])
+
+    def test_catalog_index_is_built_once_per_source(self):
+        first = G._index(self.profile)
+        self.assertIs(G._index(self.profile), first)
+        self.assertIs(G._index(dict(self.profile)), first)  # a reloaded profile with the same digest reuses the index
+        with mock.patch.object(G, '_Index', side_effect=AssertionError('rebuilt')):
+            G.raw_catalog_slice(WELLNESS_Q, self.profile); G.probe(WELLNESS_Q, self.profile, path=self.root)
+
+
 if __name__ == '__main__':
     unittest.main()
