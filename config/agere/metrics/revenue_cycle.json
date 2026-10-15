@@ -141,11 +141,11 @@
   },
   {
    "id": "net_payer_paid",
-   "version": 1,
+   "version": 2,
    "name": "Net payer paid on medical claims (after reversals)",
    "status": "internal",
    "internal_reason": "Revenue-cycle convention over the adjudication chain (net = payments minus takebacks across every adjudication record).",
-   "summary": "Sum over medical claims with service_date in the period of payer-paid deltas across EVERY adjudication record (original payments, reversals, replacement payments; denials 0) = claim.net_payer_paid_cents. Dollars.",
+   "summary": "Sum over medical claims (our provider claims plus payer-feed claims that are not the payer's copy of one of them; claim.claim_source) with service_date in the period of payer-paid deltas across EVERY adjudication record (original payments, reversals, voids, recoupments, replacement payments; denials 0) = claim.net_payer_paid_cents. Dollars.",
    "match": {
     "all": [
      "payers?|insurers?"
@@ -211,7 +211,7 @@
       "field": "claim.first_paid_date"
      },
      "summary": "Net payer paid on medical claims whose first PAID adjudication falls in the period. Dollars.",
-     "sql_template": "SELECT sum(c.net_payer_paid_cents) / 100.0 AS net_payer_paid_usd FROM claim c JOIN (SELECT json_extract(payload,'$.claim_id') AS claim_id, min(event_date) AS first_paid_date FROM record WHERE stream = 'medical_claims' AND json_extract(payload,'$.status') = 'paid' GROUP BY 1) p ON p.claim_id = c.claim_id WHERE p.first_paid_date BETWEEN '{period_start}' AND '{period_end}'"
+     "sql_template": "SELECT sum(c.net_payer_paid_cents) / 100.0 AS net_payer_paid_usd FROM claim c WHERE c.first_paid_date BETWEEN '{period_start}' AND '{period_end}'"
     }
    }
   },
@@ -477,7 +477,7 @@
   },
   {
    "id": "days_to_payer_cash",
-   "version": 1,
+   "version": 2,
    "name": "Days from date of service to first payer cash",
    "status": "internal",
    "internal_reason": "Revenue-cycle timing convention on business clocks.",
@@ -541,7 +541,7 @@
       "field": "claim.first_paid_date"
      },
      "summary": "Mean days from service_date to the claim's first PAID adjudication (the payer's payment decision), for medical claims whose first paid adjudication date falls in the period. 'First paid in' anchors on the paid adjudication date, not the cash date (say 'cash received' for the cash clock).",
-     "sql_template": "SELECT avg(julianday(p.first_paid_date) - julianday(c.service_date)) AS avg_days_to_first_paid FROM claim c JOIN (SELECT json_extract(payload,'$.claim_id') AS claim_id, min(event_date) AS first_paid_date FROM record WHERE stream = 'medical_claims' AND json_extract(payload,'$.status') = 'paid' GROUP BY 1) p ON p.claim_id = c.claim_id WHERE p.first_paid_date BETWEEN '{period_start}' AND '{period_end}'"
+     "sql_template": "SELECT avg(julianday(c.first_paid_date) - julianday(c.service_date)) AS avg_days_to_first_paid FROM claim c WHERE c.first_paid_date BETWEEN '{period_start}' AND '{period_end}'"
     },
     "cash_received": {
      "when": "\\b(?:cash|payment|money) (?:was |were )?(?:received|posted|deposited|landed) (?:in|during)\\b|\\breceived (?:in|during)\\b",
@@ -676,11 +676,11 @@
   },
   {
    "id": "claims_reversed",
-   "version": 1,
+   "version": 2,
    "name": "Medical claims reversed by the payer",
    "status": "internal",
    "internal_reason": "Revenue-cycle convention over the adjudication chain: a reversal is an adjudication record with status reversed (the payer takes back a payment, usually before reprocessing the claim).",
-   "summary": "Distinct medical claims (claim_id) with at least one reversal adjudication record (status 'reversed') whose event date falls in the period - anchored on the reversal event date, not the service date.",
+   "summary": "Distinct medical claims (claim_id; our provider claims and payer-feed claims, claim_adjudication) with at least one payer reversal adjudication (status 'reversed') whose event date falls in the period - anchored on the reversal event date, not the service date. Provider voids/replacements and recoupments are not payer reversals.",
    "match": {
     "all": [
      "\\brevers(?:ed|al|als)\\b"
@@ -707,7 +707,7 @@
     "summary": "Distinct claim_ids with a reversal adjudication record dated in the period."
    },
    "time_anchor": {
-    "field": "medical_claims.event_date",
+    "field": "claim_adjudication.event_date",
     "mode": "period",
     "default": "as_of_year"
    },
@@ -719,7 +719,7 @@
    ],
    "versioning": {
     "rule": "any_version",
-    "stream": "medical_claims",
+    "stream": "claim_adjudication",
     "key": "claim_id"
    },
    "output": {
@@ -733,10 +733,10 @@
       "field": "claim.service_date"
      },
      "summary": "Distinct medical claims with service_date in the period that have any reversal adjudication record.",
-     "sql_template": "SELECT count(*) AS claims_reversed FROM claim WHERE service_date BETWEEN '{period_start}' AND '{period_end}' AND claim_id IN (SELECT json_extract(payload,'$.claim_id') FROM record WHERE stream = 'medical_claims' AND json_extract(payload,'$.status') = 'reversed')"
+     "sql_template": "SELECT count(*) AS claims_reversed FROM claim WHERE service_date BETWEEN '{period_start}' AND '{period_end}' AND claim_id IN (SELECT claim_id FROM claim_adjudication WHERE status = 'reversed')"
     }
    },
-   "sql_template": "SELECT count(DISTINCT json_extract(payload,'$.claim_id')) AS claims_reversed FROM record WHERE stream = 'medical_claims' AND json_extract(payload,'$.status') = 'reversed' AND json_extract(payload,'$.claim_id') IS NOT NULL AND event_date BETWEEN '{period_start}' AND '{period_end}'"
+   "sql_template": "SELECT count(DISTINCT claim_id) AS claims_reversed FROM claim_adjudication WHERE status = 'reversed' AND event_date BETWEEN '{period_start}' AND '{period_end}'"
   }
  ]
 }

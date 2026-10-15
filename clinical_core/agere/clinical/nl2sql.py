@@ -31,16 +31,22 @@ social_need(patient_id, need ['food','transport','cost_of_care'], positive, inst
 note_fact(patient_id, record_id, stream, fact_type ['ejection_fraction','dyspnea','edema','symptom','medication_nonadherence','medication_days_used','social_need','smoking_status','goals_of_care','follow_up','imaging_finding','walk_distance'], value, unit, negated, temporality ['current','historical'], event_date, evidence_text, qualifier, confidence)  -- facts found only in note/document/report TEXT; negated = 0 for presence; value numeric for ejection_fraction (%), medication_days_used (fraction), follow_up (days); qualifier = drug/site/modality
 claim(claim_id, patient_id, payer, service_date, benefit_year, first_status, final_status, ever_denied, denied_then_paid, net_payer_paid_cents, billed_cents, allowed_cents, first_available_date, last_available_date, first_submitted_date, first_payer_cash_date, net_payer_cash_cents, first_adjudication_date, service_organization_id, drg, admission_date, discharge_date, type_of_bill, place_of_service, principal_diagnosis)  -- claim lag = first_submitted_date - service_date; days to cash = first_payer_cash_date - service_date
 -- claim DRG: drg is the MS-DRG code; its title is json_extract(payload,'$.title') on the record WHERE stream = 'medical_claims' AND json_extract(payload,'$.claim_id') = claim.claim_id (group by the title as drg_title when the question names DRGs).
--- claim money: net_payer_paid_cents already nets EVERY adjudication version (paid minus reversed); use it for totals.
+-- claim covers every claim of the population: claim_source = medical_claims (our provider claims) | payer_medical_claims (payer-feed
+--   claims that are not the payer's copy of one of ours); never add payer_claim to claim totals (that double counts the copies).
+-- claim money: net_payer_paid_cents already nets EVERY adjudication version (paid minus reversed, voids, recoupments); use it for totals.
 -- claim timing: first_adjudication_date (first decision), first_payer_cash_date (money received), first_submitted_date.
 -- claim clocks - anchor the period on the date the question NAMES (default service_date only when it names none):
 --   "adjudicated in" / "first adjudicated in" / "processed in" -> claim.first_adjudication_date
---   "first paid in" / "paid in" -> the first PAID adjudication: min(event_date) of record WHERE stream = 'medical_claims' AND
---       json_extract(payload,'$.status') = 'paid', per json_extract(payload,'$.claim_id'); "payment" = that date, NOT the cash date
+--   "first paid in" / "paid in" -> claim.first_paid_date (the first PAID adjudication; "payment" = that date, NOT the cash date)
 --   "cash received/posted in" -> claim.first_payer_cash_date
---   "reversed in" / "reversed and reprocessed in" -> event_date of a medical_claims record with status 'reversed' (count distinct claim_id)
+--   "reversed in" / "reversed and reprocessed in" -> claim_adjudication.event_date WHERE status = 'reversed' (count distinct claim_id)
 --   "service in" / "dates of service in" -> claim.service_date
 claim_adjustment(claim_id, record_id, patient_id, adjudication_status, group_code, reason_code, category ['deductible','coinsurance','copay','contractual_adjustment',...], amount_cents, current_version)  -- adjustment lines (patient responsibility split)  -- one row per medical claim (adjudication sequence resolved; net paid = paid minus reversed)
+claim_adjudication(claim_id, claim_source, record_id, patient_id, sequence, status, frequency_code, event_date, service_date, payer, billed_cents, payer_paid_delta_cents, allowed_delta_cents, replaces_claim_id)  -- one row per adjudication of a claim (both sources); money deltas net by event_date
+pharmacy_claim_event(claim_id, source, record_id, patient_id, status ['paid','rejected','reversed','recouped'], reject_code, reject_reason, event_date, drug_name, ndc, days_supply, payer_paid_delta_cents, return_to_stock, payer)  -- pharmacy claim transactions from our pharmacy AND the payer feed; net pharmacy payer spend = sum(payer_paid_delta_cents); reject_reason REFILL_TOO_SOON = NCPDP 79
+returned_fill(fill_key, source, record_id, patient_id, event_date, drug_name, ndc, reason)  -- prescriptions prepared but never picked up (returned to stock), both pharmacy sources; count distinct source||fill_key
+cancer_screening(record_id, patient_id, test, result_status, event_date, result_date, birads_category, source ['ehr','payer_claim_line'], code)  -- screening results plus screening mammograms billed on payer claim lines
+-- immunization / wellness_visit rows with source = 'payer_claim_line' are services known only from a payer claim line (flu vaccine CPT/G0008, AWV G0438/G0439)
 concept_patient(concept, kind, patient_id, records, first_date, last_date)  -- who has each concept
 link(record_id, stream, field, target_record_id)  -- every *_record_id reference between records
 record(record_id, patient_id, stream, event_date, recorded_date, available_date, organization_id, payload)  -- every received record; other fields via json_extract(payload,'$.field')"""
@@ -163,7 +169,7 @@ GLOSSARY = [
     (r'payer cash|cash posting|posted cash|payer payments?|first (?:payer )?cash|days to (?:payment|cash)|cash receipts?', ['payer_cash_allocations', 'provider_remittance_advice']),
     (r'repric|reprocess|corrected claims?|claim corrections?|re-?adjudicat', ['claim_corrections']),
     (r'claim lines?|service codes?|line items?|charges?\b', ['medical_claim_lines']),
-    (r'pharmacy (?:claims?|fills?|transactions?)|\bfills?\b.*\bpayer|reversed fills?|rx claims?', ['pharmacy_claim_transactions', 'pharmacy_claims']),
+    (r'pharmacy (?:claims?|fills?|transactions?)|\bfills?\b.*\bpayer|reversed fills?|rx claims?', ['pharmacy_claim_transactions', 'pharmacy_claims', 'payer_pharmacy_claims']),
     (r'discharge (?:plans?|instructions?)|follow[- ]?up (?:within|instructions?|recommended)|transitions? of care', ['discharge_plans', 'hospital_followup_assessments']),
     (r'tetanus|immunization history|vaccine screening|contraindicat', ['immunization_screening', 'immunization_history']),
     (r'community (?:referrals?|services?|resources?)|food (?:bank|access|resources?)|transport(?:ation)? assistance', ['community_service_referrals', 'community_service_outcomes']),
@@ -647,6 +653,8 @@ def _verified_answer(path, question, as_of, primary, second, judge, decider=None
              f'Rejections:\n{notes or "- none"}\n\nDecide what the question actually asks, then write the single correct query. '
              'You may reuse A or B if one is right.')
     final = attempt(judge, 'judge', brief)
+    if final == 'missing':  # the judge found the data does not exist: refuse, never read the reason as a query
+        raise MissingData('; '.join(a['missing'] for a in receipt['attempts'] if a.get('missing')), receipt=receipt)
     if final:
         receipt['agreement'] = 'judge' + ('=primary' if first and verify.signature(final[1]) == verify.signature(first[1]) else
                                           '=second' if other and verify.signature(final[1]) == verify.signature(other[1]) else '_own')
@@ -741,6 +749,7 @@ def _independent_ladder(question, receipt, attempt, check, primary, second, judg
              + f'Rejections:\n{notes or "- none"}\n\nDecide what the question actually asks, then write the single correct query. '
              'You may reuse one of the queries above if it is right.')
     final = attempt(judge, 'judge', brief)
+    if final == 'missing': missing()  # the judge found the data does not exist: refuse, never read the reason as a query
     if final:
         chosen = hosted(final, 'judge', 2)
         cands.append(chosen)

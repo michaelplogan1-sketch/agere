@@ -3,7 +3,7 @@
  "domain": "healthcare",
  "derived_from": {
   "module": "clinical_core/agere/clinical/semantic_layer.py",
-  "semantic_layer_version": "semantic-layer/16",
+  "semantic_layer_version": "semantic-layer/17",
   "versioned_streams": {
    "patient_billing_accounts": "account_id",
    "medical_claims": "claim_id",
@@ -929,7 +929,7 @@
   },
   "medication": {
    "table": "medication",
-   "meaning": "Every medication mention, one row per (record, drug_class): source_stream and evidence (dispensed, claim, ordered, listed, administered, reported, pharmacy_history, payer_claim = payer pharmacy claim), drug_name as received, status. drug_class from the active ingredient (statin, beta_blocker, hf_evidence_based_beta_blocker, ace_inhibitor, arb, arni, mra, sglt2_inhibitor, glp1_agonist, metformin, insulin, anticoagulant, opioid, ...); NULL when unclassified. drug_class values are exact ids (full list and groups in drug_class_vocabulary): compare with = or IN, never LIKE - '%beta%' also matches short_acting_beta_agonist and '%antihistamine%' matches both generations. Use beta_blocker, first_generation_antihistamine (Beers), second_generation_antihistamine, short_acting_beta_agonist. picked_up = 1 on fills that left the pharmacy (evidence dispensed | claim | payer_claim with status dispensed | paid | completed, not reversed / returned to stock; prepared-only dispenses never count): use picked_up = 1 for any fill, pickup or dispensing count.",
+   "meaning": "Every medication mention, one row per (record, drug_class): source_stream and evidence (dispensed, claim, ordered, listed, administered, reported, pharmacy_history, payer_claim = payer pharmacy claim), drug_name as received, status. drug_class from the active ingredient (statin, beta_blocker, hf_evidence_based_beta_blocker, ace_inhibitor, arb, arni, mra, sglt2_inhibitor, glp1_agonist, metformin, insulin, anticoagulant, opioid, ...); NULL when unclassified. drug_class values are exact ids (full list and groups in drug_class_vocabulary): compare with = or IN, never LIKE - '%beta%' also matches short_acting_beta_agonist and '%antihistamine%' matches both generations. Use beta_blocker, first_generation_antihistamine (Beers), second_generation_antihistamine, short_acting_beta_agonist. picked_up = 1 on fills that left the pharmacy (evidence dispensed | claim | payer_claim with status dispensed | paid | completed, not reversed / returned to stock; prepared-only dispenses never count): use picked_up = 1 for any fill, pickup or dispensing count. ONE pickup can arrive from two sources: the dispensing pharmacy (pharmacy_dispenses, days in payload days_supply_reported) and the payer's pharmacy claim (payer_pharmacy_claims / pharmacy_claims, days in payload days_supply). For fill counts or days' supply never add the sources together: take one fill per patient, drug class and fill date (e.g. per patient+event_date the larger days supply of the two sources), then sum over dates; counting patients needs no such step.",
    "grain": "one row per received medication mention (order, dispense, claim, list, administration, report)",
    "keys": [
     "record_id"
@@ -1106,7 +1106,7 @@
   },
   "claim": {
    "table": "claim",
-   "meaning": "One row per medical claim_id (adjudications arrive as successive records: denied, paid, reversed, re-paid). first_status by arrival order; final_status follows the adjudication chain (each reversal paired with the payment it reverses; final = last unreversed adjudication by event time), received_final_status = last-arrival status, live_payer_paid_cents = payer paid on unreversed payments; denied_then_paid = a denial later followed by payment; net_payer_paid_cents = paid minus reversed. Legacy rows without claim_id are excluded. Provider-side claims only; payer-feed claims are in payer_claim.",
+   "meaning": "One row per medical claim_id (adjudications arrive as successive records: denied, paid, reversed, re-paid). first_status by arrival order; final_status follows the adjudication chain (each reversal paired with the payment it reverses; final = last unreversed adjudication by event time), received_final_status = last-arrival status, live_payer_paid_cents = payer paid on unreversed payments; denied_then_paid = a denial later followed by payment; net_payer_paid_cents = paid minus reversed. Legacy rows without claim_id are excluded. claim_source = medical_claims (our provider remittances) | payer_medical_claims (payer-feed claims that are not the payer copy of one of our claims; a -R replacement folds into its original): every claim of the population. first_paid_date / first_reversal_date per claim; per-adjudication money in claim_adjudication.",
    "grain": "one row per received claim adjudication record (denied, paid, reversed, re-paid)",
    "keys": [
     "claim_id"
@@ -1860,7 +1860,7 @@
   },
   "current_record": {
    "table": "current_record",
-   "meaning": "Latest version of each business entity in versioned (snapshot) streams: stream, key_field, business_id, versions, payload of the latest version. Use it for current state (current balance, current claim status).",
+   "meaning": "Latest version of each business entity in versioned (snapshot) streams: stream, key_field, business_id, versions, payload of the latest version. Use it for current state (current balance, current claim status). It drops what earlier versions carried: a status-history stream (appointments: booked -> rescheduled -> fulfilled) records a reschedule reason or an interim status on an earlier version, so \"ever\" / \"had to be rescheduled because\" questions read record WHERE stream = ... over all versions (count DISTINCT the key).",
    "derivation": "Latest version per business id in versioned streams (VERSIONED_STREAMS).",
    "columns": {
     "stream": "text",
@@ -1988,7 +1988,7 @@
   },
   "immunization": {
    "table": "immunization",
-   "meaning": "One row per immunization record: vaccine, product, cvx, mvx, status (administration_status).",
+   "meaning": "One row per immunization record: vaccine, product, cvx, mvx, status (administration_status), season (influenza season as recorded, else July-June of the date, e.g. 2029-2030), source = ehr | payer_claim_line (influenza vaccine CPT / G0008 claim lines not within 1 day of an EHR flu shot; code = the billed code).",
    "derivation": "Immunization rows (not yet an onboarding target).",
    "columns": {
     "record_id": "text",
@@ -2005,7 +2005,7 @@
   },
   "record": {
    "table": "record",
-   "meaning": "Every received record (all streams). Use json_extract(payload, '$.field') for fields of streams not modelled above.",
+   "meaning": "Every received record (all streams). Use json_extract(payload, '$.field') for fields of streams not modelled above. payload supersedes_record_id is set on a correction: the record replaces that earlier record of the same stream (corrections per feed = records with it set, by stream; current version = not superseded). event_date_precision = minute | day | month | year | unknown. Fields ending _record_id point at another record (see link).",
    "derivation": "Every received record (the onboarding lineage table plays this role).",
    "columns": {
     "record_id": "text",

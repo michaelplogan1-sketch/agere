@@ -102,6 +102,11 @@ VBC_VALUE_COLUMNS = [(r'\b(?:ed|er|emergency)\b.*\bper 1,?000\b|\bper 1,?000\b.*
                      (r'\b(?:ed|er|emergency)\b.*\bper 1,?000\b|\bper 1,?000\b.*\b(?:ed|er|emergency)\b', 'ed_per_1000'),
                      (r'\badmi\w*\b.*\bper 1,?000\b|\bper 1,?000\b.*\badmi\w*', 'admits_per_1000'),
                      (r'\breadmission rate\b', 'readmission_rate'), (r'\bfollow-?up rate\b|\b7-day follow', 'followup_7d_rate'),
+                     (r'^(?=.*\b(?:medical|non-?pharmacy)\b)(?=.*\bpaid\b)(?!.*\ballowed\b).*(?:\bpmpm\b|\bper member per month\b)', 'medical_paid_pmpm'),
+                     (r'^(?=.*\b(?:medical|non-?pharmacy)\b).*(?:\bpmpm\b|\bper member per month\b)', 'medical_allowed_pmpm'),
+                     (r'^(?=.*\b(?:pharmacy|rx|drug)\b)(?=.*\bpaid\b)(?!.*\ballowed\b).*(?:\bpmpm\b|\bper member per month\b)', 'pharmacy_paid_pmpm'),
+                     (r'^(?=.*\b(?:pharmacy|rx|drug)\b).*(?:\bpmpm\b|\bper member per month\b)', 'pharmacy_allowed_pmpm'),
+                     (r'^(?=.*\bpaid\b)(?!.*\ballowed\b).*(?:\bpmpm\b|\bper member per month\b)', 'paid_pmpm'),
                      (r'\bpmpm\b|\bper member per month\b', 'allowed_pmpm'),
                      (r'control(?:led)?|compliance|adheren|measure|rate|%|percent', 'rate')]
 
@@ -160,14 +165,23 @@ def benchmark_references(answer, question=None, operation=None):
 def requested_shape(question):
     """What kind of answer the question asks for, from its wording."""
     q = (question or '').lower()
-    if re.search(r'\b(?:by|per|for each|each|break(?:s)? ?(?:it )?(?:down|out)|split|tabulate|monthly|quarterly|weekly|trend)\b(?! 1,?000\b)', q) and \
+    if re.search(r'\b(?:by|per|for each|each|break(?:s)? ?(?:it )?(?:down|out)|split|tabulate|monthly|quarterly|weekly|trend)\b'
+                 r'(?! 1,?000\b)(?! (?:at least|at most|more than|less than|over|under|about|around|up to|\$?\d))', q) and \
             not re.search(r'\bper 1,?000\b(?!.*\bby\b)', q):
         return 'table'
-    if '%' in q or re.search(r'\b(?:percent(?:age)?|share|proportion|fraction|rate|per 1,?000|average|mean|median|sum|total|how much)\b', q):
+    if '%' in q or re.search(r'\b(?:percent(?:age)?|share|proportion|fraction|rate|per 1,?000|average|mean|median|sum|total|how much|'
+                             r'pmpm|per member per month|ratio)\b', q):
         return 'value'
     if re.search(r'\b(?:which|list|who)\b', q): return 'patient_set'
     if re.search(r'\b(?:how many|number of|count)\b', q): return 'count'
     return None
+
+
+def patient_list_question(question):
+    """'Which patients ...', 'list the members who ...': the answer is the patients themselves."""
+    q = (question or '').lower()
+    return bool(re.search(r'\b(?:which|list|who are|show(?: me)?|identify|find)\b(?:\s+(?:the|our|all|of|of the|of our))*(?:\s+[\w-]+){0,2}\s+'
+                          r'(?:patients?|members?|people|individuals)\b|^\s*who\b', q)) and not re.search(r'\bhow many\b|\bnumber of\b', q)
 
 
 def _tidy(v):
@@ -673,6 +687,14 @@ def build_answer_core(plan, results, memberships, question):
         stated = re.search(r'--\s*DEFINITION:\s*(.+)', report['query'] or '')
         purpose = plan['nodes'][-1].get('purpose') if plan.get('nodes') else None
         answer['computed'] = stated.group(1).strip() if stated else purpose
+        rows = report.get('rows') or []
+        if kind == 'table' and patient_list_question(question) and rows and all(isinstance(r, dict) and r.get('patient_id') for r in rows) \
+                and len({r['patient_id'] for r in rows}) == len(rows) and not report['truncated']:
+            # "Which patients ...": one row per patient is a patient list; the columns stay as supporting detail
+            kind = 'patient_set'
+            answer.update(answer_type=kind, patient_ids=sorted(r['patient_id'] for r in rows), count=len(rows),
+                          table=[{k: _tidy(v) for k, v in r.items()} for r in rows])
+            return answer
         if kind == 'count': answer['count'] = report['value']
         elif kind == 'value': answer['value'] = _tidy(report['value'])
         elif kind == 'patient_set': answer.update(patient_ids=report['patient_ids'], count=len(report['patient_ids']))

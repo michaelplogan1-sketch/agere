@@ -2,7 +2,7 @@
 from collections import Counter
 from datetime import date
 from pathlib import Path
-import hashlib, json, sqlite3
+import hashlib, json, re, sqlite3
 from ...contracts import digest
 
 VERSION = 'clinical-event-bindings/1'
@@ -17,6 +17,8 @@ CLINICAL_FIELDS = {
     'adt': ('admission_date', 'discharge_date'),
     'vitals': ('measurement_date',),
 }
+# Streams whose records can describe a planned event that happens after the record arrives.
+PLANNED_SOURCES = re.compile(r'appointment|order|referral|plan|schedul|recall|reminder|task|outreach', re.I)
 WINDOW_SCHEMA = {'type': 'object', 'properties': {
     'basis': {'type': 'string', 'enum': ['all_observed', 'source_event', 'arrival', 'clinical']},
     'start': {'type': 'string'}, 'end': {'type': 'string'}},
@@ -79,7 +81,14 @@ def window_state(record, window, as_of, related=None):
     event = bind_event(record, as_of, related)
     value = {'source_event': event['source_event_date'], 'arrival': event['arrival_date'],
              'clinical': event['clinical_date']}[window['basis']]
-    if not iso(value): return None
+    if not iso(value):
+        # An undated observation cannot have happened after the record was received: when it arrived before the window
+        # opened it is definitely outside the window (a legacy chart import received in 2026 is no 2029 test), not unknown.
+        # Records that describe planned events (bookings, orders, referrals) may arrive before their event and stay unknown.
+        received = iso(event['arrival_date'][:10]) if isinstance(event['arrival_date'], str) else None
+        if window['start'] and received and received < window['start'] and not PLANNED_SOURCES.search(record.get('source_table') or ''):
+            return False
+        return None
     if window['basis'] == 'clinical' and event['clinical_date_status'] not in ('explicit_date', 'explicit_future_date'):
         return None
     return (not window['start'] or value >= window['start']) and value <= (window['end'] or as_of)

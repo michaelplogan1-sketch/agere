@@ -18,7 +18,13 @@ TABLES = {
     'appointment': 'appointment_id,patient_id,scheduled_date,booked_date,final_status,ever_no_show,ever_cancelled,ever_rescheduled,kept,'
                    'organization_id,clinician_id,purpose,versions',
     'claim': 'claim_id,patient_id,payer,service_date,first_status,final_status,ever_denied,net_payer_paid_cents,billed_cents,allowed_cents,'
-             'first_available_date,first_submitted_date,first_payer_cash_date,first_adjudication_date',
+             'first_available_date,first_submitted_date,first_payer_cash_date,first_adjudication_date,first_paid_date,first_reversal_date,claim_source',
+    # semantic-layer/17: adjudications of provider and payer-feed claims; pharmacy claim events and returned fills from both sources
+    'claim_adjudication': 'claim_id,claim_source,record_id,patient_id,sequence,status,event_date,service_date,payer,billed_cents,'
+                          'payer_paid_delta_cents,allowed_delta_cents',
+    'pharmacy_claim_event': 'claim_id,source,record_id,patient_id,status,reject_code,reject_reason,event_date,drug_name,ndc,days_supply,'
+                            'payer_paid_delta_cents,return_to_stock,payer',
+    'returned_fill': 'fill_key,source,record_id,patient_id,event_date,drug_name,ndc,reason',
     'claim_adjustment': 'claim_id,record_id,patient_id,category,amount_cents,current_version',
     'record': 'record_id,patient_id,stream,event_date,recorded_date,available_date,organization_id,payload',
     'measurement': 'record_id,patient_id,source_table,concept,name,value,unit,value_canonical,unit_canonical,result_status,event_date,'
@@ -71,7 +77,13 @@ def build_fixture(path):
     ins('claim', [dict(claim_id=f'CL{i}', patient_id=f'P{i}', payer='WH-PAYER-0', service_date='2028-03-0' + str(i + 1), first_status=s,
                        final_status='paid', ever_denied=int(s == 'denied'), net_payer_paid_cents=10000, billed_cents=20000, allowed_cents=15000,
                        first_available_date='2028-03-20', first_submitted_date='2028-03-05', first_payer_cash_date='2028-04-01',
-                       first_adjudication_date='2028-03-20') for i, s in enumerate(['paid', 'denied', 'paid'])])
+                       first_adjudication_date='2028-03-20', first_paid_date='2028-03-20' if i == 0 else None,
+                       first_reversal_date='2028-04-20' if i == 0 else None, claim_source='medical_claims')
+                  for i, s in enumerate(['paid', 'denied', 'paid'])])
+    adj = lambda rid, st, d, paid: dict(claim_id='CL0', claim_source='medical_claims', record_id=rid, patient_id='P0', sequence=1 + (rid == 'R8'),
+                                        status=st, event_date=d, service_date='2028-03-01', payer='WH-PAYER-0', billed_cents=20000,
+                                        payer_paid_delta_cents=paid, allowed_delta_cents=paid)
+    ins('claim_adjudication', [adj('R7', 'paid', '2028-03-20', 10000), adj('R8', 'reversed', '2028-04-20', -10000)])
     rec = lambda rid, pid, stream, d, payload: dict(record_id=rid, patient_id=pid, stream=stream, event_date=d, recorded_date=d, available_date=d,
                                                     organization_id='WH-PRACTICE-0', payload=json.dumps(payload))
     ins('record', [
@@ -388,7 +400,7 @@ class ResolveTests(Fixture):
         self.assertEqual(r['id'], 'kidney_health_evaluation_diabetes')
         r = metrics.resolve({'measure': 'cbp'})
         self.assertEqual((r['id'], r['engine']), ('measure.cbp', {'measures': 'cbp'}))
-        self.assertIn('metric no_show_rate v1', metrics.resolve('no-show rate in 2028?')['computed_as'])
+        self.assertIn('metric no_show_rate v2', metrics.resolve('no-show rate in 2028?')['computed_as'])
 
     def test_variant(self):
         r = metrics.resolve('ED-to-hospital conversion: of our ED visits since 2026, what percent turned into an observation stay or an admission?', as_of=AS_OF)

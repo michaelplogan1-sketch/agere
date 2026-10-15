@@ -338,6 +338,38 @@ def resolve_condition(concept, profile, evidence=None):
     return out
 
 
+def _measurement_codes(concept, stream, profile):
+    """Code fields that identify the analyte whatever the local name ('MICROALB/CREAT RATIO, RANDOM URINE' with LOINC
+    14959-1 or local code MALB/CR is a uACR): the library LOINCs plus the normalization dictionary's confident LOINCs, and
+    the local lab codes the semantic layer maps to the concept. Only fields the stream actually carries. -> {field: [codes]}"""
+    fields = (profile.get('streams', {}).get(stream) or {}).get('fields') or {}
+    out = {}
+    if (fields.get('loinc') or {}).get('populated'):
+        loincs = set(MEASUREMENTS[concept].get('loinc') or [])
+        try:
+            from pathlib import Path
+            import json
+            entries = json.loads((Path(__file__).resolve().parents[3] / 'config/agere/normalization/labs.json').read_text())['entries']
+            loincs |= {v['loinc'] for v in entries.values() if v.get('agere_concept') == concept and v.get('loinc')
+                       and (v.get('confidence') or 0) >= 0.8}
+        except (OSError, ValueError, KeyError):
+            pass
+        if loincs: out['loinc'] = sorted(loincs)
+    if (fields.get('local_code') or {}).get('populated'):
+        from .client_data import LOCAL_LAB_CODES
+        local = sorted(code for code, (_, c) in LOCAL_LAB_CODES.items() if c == concept)
+        if local: out['local_code'] = local
+    return out
+
+
+def code_match(binding, r):
+    """True when a measurement record's code field identifies the binding's analyte (see _measurement_codes)."""
+    for field, codes in (binding.get('codes') or {}).items():
+        got = r.get(field)
+        if isinstance(got, str) and (got.strip().upper() if field == 'local_code' else got.strip()) in codes: return True
+    return False
+
+
 def resolve_measurement(concept, profile):
     d = MEASUREMENTS[concept]
     pattern = re.compile(r'^(?:' + d['names'] + r')$', re.I)
@@ -347,15 +379,25 @@ def resolve_measurement(concept, profile):
         names = sorted({m['name'] for m in rows})
         for m in rows:
             (units_seen if m['unit'] in d['units'] else unconvertible)[f"{m['name']} [{m['unit']}]"] = m['records']
-        if names:
+        codes = _measurement_codes(concept, stream, profile)
+        if names or codes:
             bindings.append({'stream': stream, 'name_fields': [spec['name'], *spec['alt_names']], 'names': names,
-                             'unit_field': spec['unit'], 'value_field': spec['value']})
+                             'unit_field': spec['unit'], 'value_field': spec['value'], **({'codes': codes} if codes else {})})
         if stream == 'vitals':
             fields = profile['streams'].get('vitals', {}).get('fields', {})
             for column in d.get('wide', []):
                 if fields.get(column, {}).get('populated'):
                     bindings.append({'stream': 'vitals', 'value_field': column, 'fixed_unit': d['unit']})
                     units_seen[f"{column} [{d['unit']}]"] = fields[column]['populated']
+    # Instrument totals carried as a named numeric field on another feed (health_risk_assessments.phq2_total): the concept is
+    # observed there too, not only where a measurement row names it. Field name = the concept's name pattern + total/score.
+    total = re.compile(r'^(?:' + d['names'] + r')_?(?:total|score|total_score)$', re.I)
+    for stream, spec in sorted((profile.get('streams') or {}).items()):
+        if stream in MEASUREMENT_STREAMS: continue
+        for column, f in sorted((spec.get('fields') or {}).items()):
+            if f.get('populated') and 'numeric_range' in f and total.match(column):
+                bindings.append({'stream': stream, 'value_field': column, 'fixed_unit': d['unit']})
+                units_seen[f"{stream}.{column} [{d['unit']}]"] = f['populated']
     return {'concept': concept, 'kind': 'measurement', 'label': d['label'], 'unit': d['unit'], 'units': d['units'],
             'bindings': bindings, 'included_series': units_seen, 'unconvertible_series': unconvertible}
 

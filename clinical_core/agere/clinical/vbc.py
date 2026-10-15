@@ -396,7 +396,7 @@ def _cost(db, people, attr, p, start, end):
     # quarter) estimates them on the 12 months ending at the period end, not on its own immature months (factors of 1.0).
     twelve = f'{int(end[:4]) - 1}{end[4:7]}-01'
     completion, factors = _completion(_claims(db, twelve, end) if start > twelve else claims, end)
-    groups = defaultdict(lambda: {'members': 0, 'member_months': 0, 'allowed': 0.0, 'paid': 0.0, 'allowed_completed': 0.0, 'pharmacy_allowed': 0.0})
+    groups = defaultdict(lambda: {'members': 0, 'member_months': 0, 'allowed': 0.0, 'paid': 0.0, 'allowed_completed': 0.0, 'pharmacy_allowed': 0.0, 'pharmacy_paid': 0.0})
     member_months = {pid: set(info['months']) for pid, info in people.items()}
     timed = p['group_by'] in TIME_GROUPS
     key = (lambda pid, month: _time_key(month, p['group_by'])) if timed else (lambda pid, month: _group_key(p['group_by'], pid, people, attr))
@@ -413,7 +413,7 @@ def _cost(db, people, attr, p, start, end):
         g = groups[key(pid, month)]
         g['allowed'] += allowed / 100; g['paid'] += paid / 100
         g['allowed_completed'] += allowed / 100 * completion.get(month, 1.0)
-        if kind == 'pharmacy': g['pharmacy_allowed'] += allowed / 100
+        if kind == 'pharmacy': g['pharmacy_allowed'] += allowed / 100; g['pharmacy_paid'] += paid / 100
     rows = []
     for k, g in groups.items():
         mm = g['member_months'] or 1
@@ -421,7 +421,12 @@ def _cost(db, people, attr, p, start, end):
                      'allowed_pmpm': round(g['allowed'] / mm, 2), 'paid_pmpm': round(g['paid'] / mm, 2),
                      'allowed_pmpm_completed': round(g['allowed_completed'] / mm, 2),
                      'ibnr_estimate': round(g['allowed_completed'] - g['allowed'], 2),
-                     'pharmacy_share': round(g['pharmacy_allowed'] / g['allowed'], 4) if g['allowed'] else None})
+                     'pharmacy_share': round(g['pharmacy_allowed'] / g['allowed'], 4) if g['allowed'] else None,
+                     # medical (non-pharmacy) and pharmacy components, so 'medical PMPM' / 'pharmacy PMPM' answer exactly
+                     'medical_allowed_pmpm': round((g['allowed'] - g['pharmacy_allowed']) / mm, 2),
+                     'medical_paid_pmpm': round((g['paid'] - g['pharmacy_paid']) / mm, 2),
+                     'pharmacy_allowed_pmpm': round(g['pharmacy_allowed'] / mm, 2),
+                     'pharmacy_paid_pmpm': round(g['pharmacy_paid'] / mm, 2)})
     rows.sort(key=(lambda r: r['group']) if timed else (lambda r: -r['allowed_pmpm_completed']))
     return rows, ('Paid medical claims by service month plus paid pharmacy claims, for enrolled member-months. '
                   f'Completion via chain-ladder on arrival lag (factors by months of runout: { {k: round(v, 3) for k, v in factors.items()} }).')

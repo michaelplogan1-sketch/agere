@@ -395,9 +395,8 @@ _CLAIM_DAYS = {'avg_days_to_first_submission': 'first_submitted_date', 'avg_days
                'avg_days_to_first_paid': 'first_paid_date'}
 # Claim clocks a question can name. 'first paid in' is the first PAID adjudication (the payer's payment decision), not the
 # cash date; cash/received questions use first_payer_cash_date; 'reversed in' is the date of a reversal adjudication event.
-_ADJ = "json_extract(payload, '$.claim_id')"
-FIRST_PAID = (f"SELECT {_ADJ} AS claim_id, min(event_date) AS first_paid_date FROM record WHERE stream = 'medical_claims' "
-              "AND json_extract(payload, '$.status') = 'paid' GROUP BY 1")
+# claim covers our provider claims and payer-feed claims (claim_source); claim.first_paid_date and claim_adjudication carry the
+# adjudication history of both (semantic-layer/17).
 CLAIM_ANCHORS = {
     'service_date': 'the date of service',
     'benefit_year': 'the benefit year (one calendar year)',
@@ -418,8 +417,7 @@ def claim_anchor_clause(anchor, bounds):
         return _and([f'{anchor} IS NOT NULL', date_clause(anchor, bounds)])
     if anchor == 'reversal_date':
         when = date_clause('event_date', bounds)
-        return (f"claim_id IN (SELECT {_ADJ} FROM record WHERE stream = 'medical_claims' AND json_extract(payload, '$.status') = 'reversed'"
-                + (f" AND {when}" if when else '') + ')')
+        return ("claim_id IN (SELECT claim_id FROM claim_adjudication WHERE status = 'reversed'" + (f" AND {when}" if when else '') + ')')
     raise ValueError(f'anchor must be one of {sorted(CLAIM_ANCHORS)}')
 
 
@@ -431,8 +429,7 @@ def build_medical_claims(slots, as_of, m=None):
     bounds = period_bounds(slots.get('period'), as_of)
     dclause = claim_anchor_clause(anchor, bounds)
     where = _and([dclause, *[f"{_CLAIM_DAYS[x]} IS NOT NULL" for x in measures if x in _CLAIM_DAYS]])
-    source = ('(SELECT c.*, fp.first_paid_date FROM claim c LEFT JOIN (' + FIRST_PAID + ') fp ON fp.claim_id = c.claim_id)'
-              if anchor == 'first_paid_date' or 'avg_days_to_first_paid' in measures else 'claim')
+    source = 'claim'
     by = slots.get('group_by') or 'none'
     clock = anchor if anchor not in ('benefit_year', 'reversal_date') else 'service_date'
     gexpr = {'none': None, 'payer': 'payer'}.get(by) or _group_expr(clock, by)
@@ -453,13 +450,16 @@ def _payload(field, alias='r'): return f"json_extract({alias}.payload, '$.{field
 
 
 def build_record_event(slots, as_of, m=None):
-    """A governed record event (metric JSON 'event'): one stream, a fixed filter, a counting key or an amount, a date field,
-    named group-by fields. The model fills only period / group_by / measure."""
+    """A governed record event (metric JSON 'event'): one stream (or one semantic table, event.table, when the event is
+    resolved across sources there), a fixed filter, a counting key or an amount, a date field, named group-by fields.
+    The model fills only period / group_by / measure."""
     ev = (m or {}).get('event') or {}
-    if not ev.get('stream'): raise ValueError('record_event metric needs an event definition')
+    if not (ev.get('stream') or ev.get('table')): raise ValueError('record_event metric needs an event definition')
+    if ev.get('table') and not re.fullmatch(r'[a-z_]+', ev['table']): raise ValueError('event.table must be a semantic table name')
     bounds = period_bounds(slots.get('period'), as_of)
     date_col = ev.get('date', 'r.event_date')
-    where = _and([f"r.stream = {q(ev['stream'])}", ev.get('where'), date_clause(date_col, bounds)])
+    source = f"{ev['table']} r" if ev.get('table') else 'record r'
+    where = _and([None if ev.get('table') else f"r.stream = {q(ev['stream'])}", ev.get('where'), date_clause(date_col, bounds)])
     measure = slots.get('measure') or ev.get('default_measure', 'count')
     exprs = ev.get('measures') or {}
     if measure not in exprs: raise ValueError(f'measure must be one of {sorted(exprs)}')
@@ -468,17 +468,22 @@ def build_record_event(slots, as_of, m=None):
     if by != 'none' and by not in groups: raise ValueError(f"group_by must be none or one of {sorted(groups)}")
     agg = exprs[measure]
     if by != 'none':
-        return {'query': f"SELECT {groups[by]} AS {by}, {agg} AS {measure} FROM record r WHERE {where} GROUP BY 1 ORDER BY 1", 'returns': 'table'}
-    return {'query': f"SELECT {agg} AS {measure} FROM record r WHERE {where}", 'returns': ev.get('returns', {}).get(measure, 'value')}
+        return {'query': f"SELECT {groups[by]} AS {by}, {agg} AS {measure} FROM {source} WHERE {where} GROUP BY 1 ORDER BY 1", 'returns': 'table'}
+    return {'query': f"SELECT {agg} AS {measure} FROM {source} WHERE {where}", 'returns': ev.get('returns', {}).get(measure, 'value')}
 
 
 FEED_STREAMS = ('labs', 'encounters', 'medical_claims', 'conditions', 'vitals', 'pharmacy_dispenses', 'appointments')
 
 
+IMPRECISE_PRECISIONS = ('month', 'year', 'unknown')
+
+
 def build_feed_quality(slots, as_of, m=None):
-    """Received-feed quality per stream: rows, undated rows, arrival lag (available_date - event_date)."""
+    """Received-feed quality per stream: rows, undated rows, arrival lag (available_date - event_date), corrections (records
+    that supersede an earlier record of the same stream: payload supersedes_record_id) and current records whose event date
+    is imprecise (event_date_precision month | year | unknown). stream 'all' covers every received stream (group_by stream)."""
     stream = slots.get('stream')
-    if stream not in FEED_STREAMS: raise ValueError(f'stream must be one of {FEED_STREAMS}')
+    if stream not in FEED_STREAMS + ('all',): raise ValueError(f"stream must be one of {FEED_STREAMS + ('all',)}")
     unit = slots.get('unit') or 'rows'
     if unit not in ('rows', 'encounters'): raise ValueError('unit rows|encounters')
     if unit == 'encounters' and stream != 'encounters': raise ValueError('unit encounters applies to the encounters stream')
@@ -489,28 +494,43 @@ def build_feed_quality(slots, as_of, m=None):
     lag_days = slots.get('lag_days', 30)
     lag_op = slots.get('lag_op') or 'gt'
     if lag_op not in ('gt', 'ge') or not isinstance(lag_days, int): raise ValueError('lag_op gt|ge and integer lag_days')
+    sup = "json_extract(payload, '$.supersedes_record_id')"
+    stream_where = '' if stream == 'all' else f"WHERE stream = {q(stream)}"
+    by = slots.get('group_by') or 'none'
+    replaced = (f"record_id IN (SELECT {sup} FROM record WHERE {'' if stream == 'all' else f'stream = {q(stream)} AND '}{sup} IS NOT NULL)"
+                if 'imprecise_date_rows' in measures or by == 'date_precision' else '0')  # current versions only where it matters
     if unit == 'encounters':
         base = (f"SELECT json_extract(payload, '$.encounter_id') AS k, min(event_date) AS d, min(available_date) AS a, "
-                f"min(json_extract(payload, '$.source_system')) AS src FROM record WHERE stream = 'encounters' GROUP BY 1")
+                f"min(json_extract(payload, '$.source_system')) AS src, 'encounters' AS st, NULL AS p, NULL AS sup, 0 AS replaced "
+                f"FROM record WHERE stream = 'encounters' GROUP BY 1")
     else:
-        base = (f"SELECT record_id AS k, event_date AS d, available_date AS a, json_extract(payload, '$.source_system') AS src "
-                f"FROM record WHERE stream = {q(stream)}")
+        base = (f"SELECT record_id AS k, event_date AS d, available_date AS a, json_extract(payload, '$.source_system') AS src, "
+                f"stream AS st, json_extract(payload, '$.event_date_precision') AS p, {sup} AS sup, {replaced} AS replaced "
+                f"FROM record {stream_where}")
     lag = 'julianday(a) - julianday(d)'
     cmp = OPS[lag_op]
+    imprecise = 'p IN (' + ', '.join(q(x) for x in IMPRECISE_PRECISIONS) + ')'
     M = {'rows': 'count(*)', 'undated_rows': 'sum(d IS NULL)', 'pct_undated': '100.0 * sum(d IS NULL) / count(*)',
          'avg_lag_days': f'avg(CASE WHEN d IS NOT NULL THEN {lag} END)',
          'late_rows': f'sum(d IS NOT NULL AND {lag} {cmp} {lag_days})',
-         'pct_late': f'100.0 * sum(d IS NOT NULL AND {lag} {cmp} {lag_days}) / sum(d IS NOT NULL)'}
+         'pct_late': f'100.0 * sum(d IS NOT NULL AND {lag} {cmp} {lag_days}) / sum(d IS NOT NULL)',
+         'correction_rows': 'sum(sup IS NOT NULL)',
+         'imprecise_date_rows': f'sum(NOT replaced AND {imprecise})'}
     if any(x not in M for x in measures): raise ValueError(f'measures from {sorted(M)}')
     dclause = date_clause('d' if basis == 'event_date' else 'a', bounds)
-    by = slots.get('group_by') or 'none'
-    gexpr = {'none': None, 'source_system': 'src', 'year': "CAST(substr(d, 1, 4) AS INTEGER)"}.get(by, 'x')
-    if gexpr == 'x': raise ValueError('group_by none|source_system|year')
+    gexpr = {'none': None, 'source_system': 'src', 'year': "CAST(substr(d, 1, 4) AS INTEGER)", 'stream': 'st',
+             'date_precision': 'p'}.get(by, 'x')
+    if gexpr == 'x': raise ValueError('group_by none|source_system|year|stream|date_precision')
+    if stream == 'all' and by not in ('stream',) and not set(measures) <= {'correction_rows'}:
+        raise ValueError("stream 'all' needs group_by stream (one row per feed)")
     cols = ', '.join(f'{M[x]} AS {x}' for x in measures)
-    where = f" WHERE {dclause}" if dclause else ''
+    conds = [c for c in (dclause, f'NOT replaced AND {imprecise}' if by == 'date_precision' else None) if c]
+    if gexpr and set(measures) <= {'correction_rows'}: conds.append('sup IS NOT NULL')  # list only feeds that send corrections
+    where = f" WHERE {' AND '.join(conds)}" if conds else ''
     if gexpr:
         return {'query': f"SELECT {gexpr} AS {by}, {cols} FROM ({base}){where} GROUP BY 1 ORDER BY 1", 'returns': 'table'}
-    returns = 'table' if len(measures) > 1 else ('count' if measures[0] in ('rows', 'undated_rows', 'late_rows') else 'value')
+    returns = 'table' if len(measures) > 1 else ('count' if measures[0] in ('rows', 'undated_rows', 'late_rows', 'correction_rows',
+                                                                           'imprecise_date_rows') else 'value')
     return {'query': f"SELECT {cols} FROM ({base}){where}", 'returns': returns}
 
 
