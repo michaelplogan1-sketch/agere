@@ -127,8 +127,14 @@ def prepare(spec, profile):
                     report += [i for i in issues if i['severity'] != 'error']
                 grounded[group].append(atom)
             elif atom['kind'] in ('concept', 'measurement'):
-                bound = concepts.resolve(atom['concept'], profile)
-                if not bound['bindings']:
+                bound = concepts.resolve(atom['concept'], profile, atom.get('evidence') if atom['kind'] == 'concept' else None)
+                if atom.get('evidence') and bound['bindings'] and not bound['evidence']['available']:
+                    bound = {**bound, 'bindings': []}
+                if atom.get('evidence') and not bound['bindings']:
+                    errors.append({'issue': 'evidence_not_observed', 'concept': atom['concept'], 'severity': 'error',
+                                   'detail': f"No received {atom['concept']} evidence of the requested kind "
+                                             f"({', '.join(atom['evidence'])}); the sources that carry it are not received."})
+                elif not bound['bindings']:
                     errors.append({'issue': 'concept_not_observed', 'concept': atom['concept'], 'severity': 'error',
                                    'detail': f"No received records match concept {atom['concept']}."})
                 if atom.get('names'):
@@ -153,14 +159,16 @@ def interpretation(grounded):
     for atom in sum(grounded.values(), []):
         r = atom.get('_resolved')
         if not r: continue
-        signature = (r['concept'], atom['kind'], atom.get('op'), atom.get('value'), atom.get('aggregate'))
+        signature = (r['concept'], atom['kind'], atom.get('op'), atom.get('value'), atom.get('aggregate'), tuple(atom.get('evidence') or ()))
         if signature in seen: continue
         seen.add(signature)
         item = {'concept': r['concept'], 'label': r['label']}
         if r['kind'] in ('condition', 'encounter'):
             item['included_labels'] = sorted(r['included_labels'])
             item['excluded_labels'] = sorted(r['excluded_labels'])
-            item['codes'] = sorted({v for b in r['bindings'] if b['system'] == 'ICD-10-CM' for v in b['values']})
+            item['codes'] = sorted({v for b in r['bindings'] if b['system'] == 'ICD-10-CM' for v in b.get('values', [])})
+            if r.get('evidence'):
+                item['evidence'] = r['evidence']
         else:
             item['unit'] = r['unit']
             item['included_series'] = sorted(r['included_series'])

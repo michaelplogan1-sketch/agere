@@ -856,7 +856,8 @@ class Decider:
             total = sum(v for v in probs.values() if isinstance(v, (int, float))) or 1.0
             p = (probs.get(choice) or 0) / total
             from .calibrated_thresholds import get as gate
-            g = gate('nl2sql.decider', self.THRESHOLD)
+            from .gate_policy import identity
+            g = gate('nl2sql.decider', self.THRESHOLD, bind=identity('nl2sql.decider'))
             return {'choice': choice, 'probability': round(p, 3), 'accepted': choice in ('A', 'B') and p >= g['threshold'],
                     'threshold': g['threshold'], 'threshold_calibrated': g['calibrated']}
         pick, receipt = send(body, 'perplexity', self.ledger, self.out, parse=parse)

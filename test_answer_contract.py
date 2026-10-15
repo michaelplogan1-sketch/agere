@@ -50,11 +50,27 @@ class ConfidenceContract(unittest.TestCase):
         self.assertEqual(out['confidence_detail']['policy'], 'low_confidence')
         self.assertTrue(valid_answer(out))
 
-    def test_governed_and_independent_answers_are_verified(self):
+    def test_governed_answers_are_verified_only_with_a_certified_path(self):
+        from clinical_core.agere.clinical import calibrated_thresholds as CT, gate_policy as GP
         info = {'resolution': {'metric': 'm', 'version': 1, 'definition': 'd', 'slots': {}, 'statement': 'computed as metric m@v1: d'}}
-        gov = MR.finalize_answer(self.ANSWER, {'route': 'metric_router', 'metric_router': info})
-        self.assertEqual((gov['confidence'], gov['status']), ('verified', 'answered'))
-        self.assertIn('m@v1', gov['confidence_reason'])
+        receipt = {'route': 'metric_router', 'metric_router': info}
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / 't.json'
+            CT.write([], target)
+            with mock.patch.dict(os.environ, {'AGERE_THRESHOLDS_FILE': str(target)}):
+                gov = MR.finalize_answer(self.ANSWER, receipt)
+            # a governed metric is deterministic, but its end-to-end error rate is not certified: unverified, not verified
+            self.assertEqual((gov['confidence'], gov['status']), ('unverified', 'answered'))
+            self.assertIn('m@v1', gov['confidence_reason']); self.assertIn('metric_router.answer', gov['confidence_reason'])
+            self.assertTrue(valid_answer(gov))
+            CT.write([CT.fit('metric_router.answer', [1.0] * 200, [False] * 200, 1.0, {'source': 'fixture'}, grid=[1.0],
+                             bind=GP.identity('metric_router.answer'))], target)
+            with mock.patch.dict(os.environ, {'AGERE_THRESHOLDS_FILE': str(target)}):
+                gov = MR.finalize_answer(self.ANSWER, receipt)
+            self.assertEqual(gov['confidence'], 'verified')
+            self.assertIn('Learn-then-Test on 200', gov['confidence_reason'])
+        with mock.patch.dict(os.environ, {'AGERE_CONFIDENCE_RULE': 'legacy'}):
+            self.assertEqual(MR.finalize_answer(self.ANSWER, receipt)['confidence'], 'verified')
 
     def test_abstain_policy_still_withholds(self):
         with mock.patch.dict(os.environ, {'AGERE_FREEFORM_POLICY': 'abstain'}):

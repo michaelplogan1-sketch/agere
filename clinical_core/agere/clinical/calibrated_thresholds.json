@@ -4,71 +4,113 @@
   "alpha": 0.02,
   "delta": 0.1
  },
- "written_at": "2026-10-13T22:50:18Z",
+ "written_at": "2026-10-14T21:00:46Z",
  "method": "Learn-then-Test, fixed-sequence binomial tests (conformal.ltt_threshold)",
  "gates": {
   "learned_router": {
    "alpha": 0.02,
    "delta": 0.1,
-   "n_calibration": 264,
+   "n_calibration": 322,
    "threshold": null,
    "tested": 1,
    "min_accepted_for_zero_errors": 114,
    "name": "learned_router",
-   "fallback": 0.9590243531848531,
+   "fallback": 0.9053889977621657,
    "data": {
-    "heldout_rows": 264,
-    "eligible": 248,
-    "source": "learned-router training rows, heldout split (non-benchmark)"
+    "source": "router_report.json acceptance_rows (model trained 2026-10-14T08:09:43); report matches the committed model",
+    "labelled": 460,
+    "calibration": 322,
+    "test": 138,
+    "blind_test": 0
    },
-   "fitted_at": "2026-10-13T22:50:15Z",
+   "fitted_at": "2026-10-14T21:00:46Z",
    "search_floor": null,
-   "bind": "52d9e25accef0d58",
+   "bind": "d933c5b7af3c357c",
    "calibrated": false,
-   "reason": "not certifiable at alpha=2%, delta=10% from 264 labelled cases (needs >= 114 accepted with zero errors); hand-set 0.9590243531848531 kept"
+   "reason": "not certifiable at alpha=2%, delta=10% from 322 calibration cases; hand-set 0.9053889977621657 kept; needs >= 114 accepted calibration cases at the observed 0.0% error at threshold 0.9939 (~1499 labelled cases in all at 11% acceptance with the 70/30 split; have 460); at the hand-set threshold 0.9053889977621657 the test shows 7/55 wrong",
+   "kind": "score",
+   "error_definition": "the engine the local router picked was not the expected engine",
+   "certifier": "certify-gates/1",
+   "split": {
+    "calibration_share": 0.7,
+    "blind_sets": "heldout* splits: first (blind) run only, test-only; never calibration"
+   },
+   "test": {
+    "n": 138,
+    "n_accepted": 55,
+    "errors_accepted": 7,
+    "error_rate": 0.1273,
+    "error_upper_bound": 0.2047,
+    "refutes_alpha": true
+   },
+   "blind_test": {
+    "n": 0,
+    "n_accepted": 0,
+    "errors_accepted": 0,
+    "error_rate": null,
+    "error_upper_bound": null,
+    "refutes_alpha": false
+   },
+   "observed": {
+    "threshold": 0.9939,
+    "n_accepted": 50,
+    "error_rate": 0.0,
+    "acceptance_rate": 0.1087,
+    "accepted_needed": 114,
+    "labelled_needed": 1499
+   },
+   "accepted_needed": 114,
+   "labelled_needed": 1499,
+   "needs": "needs >= 114 accepted calibration cases at the observed 0.0% error at threshold 0.9939 (~1499 labelled cases in all at 11% acceptance with the 70/30 split; have 460); at the hand-set threshold 0.9053889977621657 the test shows 7/55 wrong"
   },
   "semantic_cache.similarity": {
    "alpha": 0.02,
    "delta": 0.1,
-   "n_calibration": 1003,
+   "n_calibration": 662,
    "threshold": 0.8102,
-   "tested": 156,
-   "n_accepted": 295,
+   "tested": 85,
+   "n_accepted": 201,
    "errors_accepted": 0,
-   "coverage": 0.2941,
-   "p_value": 0.002580431467235632,
+   "coverage": 0.3036,
+   "p_value": 0.017236187673607132,
    "empirical_error": 0.0,
    "name": "semantic_cache.similarity",
    "fallback": 0.85,
    "data": {
-    "cases": 1003,
-    "negatives": 698,
-    "source": "semantic_cache_eval cases (adversarial + minimal differences + paraphrases; benchmarks excluded)"
+    "source": "tools/calibration/data/semantic_cache_cases.json (semantic_cache_eval cases; benchmarks excluded)",
+    "labelled": 1003,
+    "calibration": 662,
+    "test": 341,
+    "blind_test": 0
    },
-   "fitted_at": "2026-10-13T22:50:17Z",
+   "fitted_at": "2026-10-14T21:00:46Z",
    "search_floor": 0.8,
    "bind": "6263ab4c36a37a48513bcea76c43a48b4e1dba807cd4ff746ddb2905c4dd05ad",
    "calibrated": true,
-   "guarantee": "error among accepted <= 2% with probability >= 90% (Learn-then-Test on 1003 labelled cases; 295 accepted, 0 wrong; exchangeability assumed)"
-  },
-  "nl2sql.decider": {
-   "alpha": 0.02,
-   "delta": 0.1,
-   "n_calibration": 6,
-   "threshold": null,
-   "tested": 0,
-   "min_accepted_for_zero_errors": 114,
-   "name": "nl2sql.decider",
-   "fallback": 0.8,
-   "data": {
-    "cases": 6,
-    "source": "saved bench receipts (decider picks that were delivered); benchmark-derived"
+   "guarantee": "error among accepted <= 2% with probability >= 90% (Learn-then-Test on 662 labelled cases; 201 accepted, 0 wrong; exchangeability assumed); held-out test 0/94 wrong (upper bound 0.0242)",
+   "kind": "score",
+   "error_definition": "a verified query was reused for a question that is not equivalent",
+   "certifier": "certify-gates/1",
+   "split": {
+    "calibration_share": 0.7,
+    "blind_sets": "heldout* splits: first (blind) run only, test-only; never calibration"
    },
-   "fitted_at": "2026-10-13T22:50:17Z",
-   "search_floor": null,
-   "bind": null,
-   "calibrated": false,
-   "reason": "not certifiable at alpha=2%, delta=10% from 6 labelled cases (needs >= 114 accepted with zero errors); hand-set 0.8 kept"
+   "test": {
+    "n": 341,
+    "n_accepted": 94,
+    "errors_accepted": 0,
+    "error_rate": 0.0,
+    "error_upper_bound": 0.0242,
+    "refutes_alpha": false
+   },
+   "blind_test": {
+    "n": 0,
+    "n_accepted": 0,
+    "errors_accepted": 0,
+    "error_rate": null,
+    "error_upper_bound": null,
+    "refutes_alpha": false
+   }
   },
   "economical_planner.decision": {
    "alpha": 0.02,
@@ -80,14 +122,716 @@
    "name": "economical_planner.decision",
    "fallback": 0.95,
    "data": {
-    "cases": 0,
-    "source": "saved bench receipts (decision picks that were delivered); benchmark-derived"
+    "source": "bench receipts of delivered picks, non-blind runs (latest per question); error = delivered answer wrong",
+    "labelled": 0,
+    "calibration": 0,
+    "test": 0,
+    "blind_test": 0
    },
-   "fitted_at": "2026-10-13T22:50:18Z",
+   "fitted_at": "2026-10-14T21:00:46Z",
    "search_floor": null,
-   "bind": null,
+   "bind": "da76aa4c429d36be",
    "calibrated": false,
-   "reason": "not certifiable at alpha=2%, delta=10% from 0 labelled cases (needs >= 114 accepted with zero errors); hand-set 0.95 kept"
+   "reason": "not certifiable at alpha=2%, delta=10% from 0 calibration cases; hand-set 0.95 kept; only 0 accepted labelled case(s) (0 wrong); needs >= 114 accepted calibration cases with zero errors (~163 labelled cases with the 70/30 split), more if any are wrong",
+   "kind": "score",
+   "error_definition": "the typed route choice it accepted led to a wrong answer",
+   "certifier": "certify-gates/1",
+   "split": {
+    "calibration_share": 0.7,
+    "blind_sets": "heldout* splits: first (blind) run only, test-only; never calibration"
+   },
+   "test": {
+    "n": 0,
+    "n_accepted": 0,
+    "errors_accepted": 0,
+    "error_rate": null,
+    "error_upper_bound": null,
+    "refutes_alpha": false
+   },
+   "blind_test": {
+    "n": 0,
+    "n_accepted": 0,
+    "errors_accepted": 0,
+    "error_rate": null,
+    "error_upper_bound": null,
+    "refutes_alpha": false
+   },
+   "observed": {
+    "threshold": 0.95,
+    "n_accepted": 0,
+    "error_rate": 0.0,
+    "acceptance_rate": null,
+    "accepted_needed": 114,
+    "labelled_needed": null
+   },
+   "accepted_needed": 114,
+   "labelled_needed": 163,
+   "needs": "only 0 accepted labelled case(s) (0 wrong); needs >= 114 accepted calibration cases with zero errors (~163 labelled cases with the 70/30 split), more if any are wrong"
+  },
+  "nl2sql.decider": {
+   "alpha": 0.02,
+   "delta": 0.1,
+   "n_calibration": 0,
+   "threshold": null,
+   "tested": 0,
+   "min_accepted_for_zero_errors": 114,
+   "name": "nl2sql.decider",
+   "fallback": 0.8,
+   "data": {
+    "source": "bench receipts of delivered picks, non-blind runs (latest per question); error = delivered answer wrong",
+    "labelled": 0,
+    "calibration": 0,
+    "test": 0,
+    "blind_test": 6
+   },
+   "fitted_at": "2026-10-14T21:00:46Z",
+   "search_floor": null,
+   "bind": "81096e18b93c6caf",
+   "calibrated": false,
+   "reason": "not certifiable at alpha=2%, delta=10% from 0 calibration cases; hand-set 0.8 kept; only 0 accepted labelled case(s) (0 wrong); needs >= 114 accepted calibration cases with zero errors (~163 labelled cases with the 70/30 split), more if any are wrong; at the hand-set threshold 0.8 the blind test shows 4/6 wrong",
+   "kind": "score",
+   "error_definition": "the SQL candidate the decider picked was the wrong answer",
+   "certifier": "certify-gates/1",
+   "split": {
+    "calibration_share": 0.7,
+    "blind_sets": "heldout* splits: first (blind) run only, test-only; never calibration"
+   },
+   "test": {
+    "n": 0,
+    "n_accepted": 0,
+    "errors_accepted": 0,
+    "error_rate": null,
+    "error_upper_bound": null,
+    "refutes_alpha": false
+   },
+   "blind_test": {
+    "n": 6,
+    "n_accepted": 6,
+    "errors_accepted": 4,
+    "error_rate": 0.6667,
+    "error_upper_bound": 0.9074,
+    "refutes_alpha": true
+   },
+   "observed": {
+    "threshold": 0.8,
+    "n_accepted": 0,
+    "error_rate": 0.0,
+    "acceptance_rate": null,
+    "accepted_needed": 114,
+    "labelled_needed": null
+   },
+   "accepted_needed": 114,
+   "labelled_needed": 163,
+   "needs": "only 0 accepted labelled case(s) (0 wrong); needs >= 114 accepted calibration cases with zero errors (~163 labelled cases with the 70/30 split), more if any are wrong; at the hand-set threshold 0.8 the blind test shows 4/6 wrong"
+  },
+  "local_compiler.operation": {
+   "alpha": 0.02,
+   "delta": 0.1,
+   "n_calibration": 176,
+   "threshold": 1.0,
+   "tested": 1,
+   "n_accepted": 176,
+   "errors_accepted": 0,
+   "coverage": 1.0,
+   "p_value": 0.028562046500915286,
+   "empirical_error": 0.0,
+   "name": "local_compiler.operation",
+   "fallback": 1.0,
+   "data": {
+    "source": "acceptance runs (bench/results/acceptance, latest per question); error = wrong operation",
+    "labelled": 250,
+    "calibration": 176,
+    "test": 74,
+    "blind_test": 0
+   },
+   "fitted_at": "2026-10-14T21:00:46Z",
+   "search_floor": null,
+   "bind": "a55cbac830706eb5",
+   "calibrated": true,
+   "guarantee": "error among accepted <= 2% with probability >= 90% (Learn-then-Test on 176 labelled cases; 176 accepted, 0 wrong; exchangeability assumed); held-out test 0/74 wrong (upper bound 0.0306)",
+   "kind": "route",
+   "error_definition": "the deterministic compiler planned a different operation than expected",
+   "certifier": "certify-gates/1",
+   "split": {
+    "calibration_share": 0.7,
+    "blind_sets": "heldout* splits: first (blind) run only, test-only; never calibration"
+   },
+   "test": {
+    "n": 74,
+    "n_accepted": 74,
+    "errors_accepted": 0,
+    "error_rate": 0.0,
+    "error_upper_bound": 0.0306,
+    "refutes_alpha": false
+   },
+   "blind_test": {
+    "n": 0,
+    "n_accepted": 0,
+    "errors_accepted": 0,
+    "error_rate": null,
+    "error_upper_bound": null,
+    "refutes_alpha": false
+   }
+  },
+  "operator_router.choice": {
+   "alpha": 0.02,
+   "delta": 0.1,
+   "n_calibration": 113,
+   "threshold": null,
+   "tested": 0,
+   "min_accepted_for_zero_errors": 114,
+   "name": "operator_router.choice",
+   "fallback": 1.0,
+   "data": {
+    "source": "acceptance runs (bench/results/acceptance, latest per question); error = wrong operation",
+    "labelled": 162,
+    "calibration": 113,
+    "test": 49,
+    "blind_test": 0
+   },
+   "fitted_at": "2026-10-14T21:00:46Z",
+   "search_floor": null,
+   "bind": "1666e8ec57931813",
+   "calibrated": false,
+   "reason": "not certifiable at alpha=2%, delta=10% from 113 calibration cases; hand-set 1.0 kept; the test shows 7/49 wrong (14%, significantly above 2%); more calibration data cannot certify this gate until its error rate falls (non-blind estimate: observed error among accepted 14.8% >= alpha 2% at every threshold with >= 10 accepted: more data alone cannot certify this gate; its error rate must fall below 2%)",
+   "kind": "route",
+   "error_definition": "the analytic engine the operator router chose was not the expected operation",
+   "certifier": "certify-gates/1",
+   "split": {
+    "calibration_share": 0.7,
+    "blind_sets": "heldout* splits: first (blind) run only, test-only; never calibration"
+   },
+   "test": {
+    "n": 49,
+    "n_accepted": 49,
+    "errors_accepted": 7,
+    "error_rate": 0.1429,
+    "error_upper_bound": 0.2285,
+    "refutes_alpha": true
+   },
+   "blind_test": {
+    "n": 0,
+    "n_accepted": 0,
+    "errors_accepted": 0,
+    "error_rate": null,
+    "error_upper_bound": null,
+    "refutes_alpha": false
+   },
+   "observed": {
+    "threshold": 1.0,
+    "n_accepted": 162,
+    "error_rate": 0.1481,
+    "acceptance_rate": 1.0,
+    "accepted_needed": null,
+    "labelled_needed": null
+   },
+   "accepted_needed": null,
+   "labelled_needed": null,
+   "needs": "the test shows 7/49 wrong (14%, significantly above 2%); more calibration data cannot certify this gate until its error rate falls (non-blind estimate: observed error among accepted 14.8% >= alpha 2% at every threshold with >= 10 accepted: more data alone cannot certify this gate; its error rate must fall below 2%)"
+  },
+  "local_compiler.answer": {
+   "alpha": 0.02,
+   "delta": 0.1,
+   "n_calibration": 56,
+   "threshold": null,
+   "tested": 0,
+   "min_accepted_for_zero_errors": 114,
+   "name": "local_compiler.answer",
+   "fallback": 1.0,
+   "data": {
+    "source": "bench rows, development/challenge runs (latest per question); error = delivered answer wrong (adjudicated where available)",
+    "labelled": 86,
+    "calibration": 56,
+    "test": 30,
+    "blind_test": 37
+   },
+   "fitted_at": "2026-10-14T21:00:46Z",
+   "search_floor": null,
+   "bind": "d255873b13c0c88e",
+   "calibrated": false,
+   "reason": "not certifiable at alpha=2%, delta=10% from 56 calibration cases; hand-set 1.0 kept; the blind test shows 24/37 wrong (65%, significantly above 2%); more calibration data cannot certify this gate until its error rate falls (non-blind estimate: needs >= 587 accepted calibration cases at the observed 1.2% error (~839 labelled cases in all at 100% acceptance with the 70/30 split; have 86))",
+   "kind": "route",
+   "error_definition": "the delivered answer was wrong",
+   "certifier": "certify-gates/1",
+   "split": {
+    "calibration_share": 0.7,
+    "blind_sets": "heldout* splits: first (blind) run only, test-only; never calibration"
+   },
+   "test": {
+    "n": 30,
+    "n_accepted": 30,
+    "errors_accepted": 0,
+    "error_rate": 0.0,
+    "error_upper_bound": 0.0739,
+    "refutes_alpha": false
+   },
+   "blind_test": {
+    "n": 37,
+    "n_accepted": 37,
+    "errors_accepted": 24,
+    "error_rate": 0.6486,
+    "error_upper_bound": 0.7541,
+    "refutes_alpha": true
+   },
+   "observed": {
+    "threshold": 1.0,
+    "n_accepted": 86,
+    "error_rate": 0.0116,
+    "acceptance_rate": 1.0,
+    "accepted_needed": 587,
+    "labelled_needed": 839
+   },
+   "accepted_needed": 587,
+   "labelled_needed": null,
+   "needs": "the blind test shows 24/37 wrong (65%, significantly above 2%); more calibration data cannot certify this gate until its error rate falls (non-blind estimate: needs >= 587 accepted calibration cases at the observed 1.2% error (~839 labelled cases in all at 100% acceptance with the 70/30 split; have 86))"
+  },
+  "local_rewrite.answer": {
+   "alpha": 0.02,
+   "delta": 0.1,
+   "n_calibration": 0,
+   "threshold": null,
+   "tested": 0,
+   "min_accepted_for_zero_errors": 114,
+   "name": "local_rewrite.answer",
+   "fallback": 1.0,
+   "data": {
+    "source": "bench rows, development/challenge runs (latest per question); error = delivered answer wrong (adjudicated where available)",
+    "labelled": 0,
+    "calibration": 0,
+    "test": 0,
+    "blind_test": 13
+   },
+   "fitted_at": "2026-10-14T21:00:46Z",
+   "search_floor": null,
+   "bind": "f901460d506182ab",
+   "calibrated": false,
+   "reason": "not certifiable at alpha=2%, delta=10% from 0 calibration cases; hand-set 1.0 kept; the blind test shows 9/13 wrong (69%, significantly above 2%); more calibration data cannot certify this gate until its error rate falls (non-blind estimate: only 0 accepted labelled case(s) (0 wrong); needs >= 114 accepted calibration cases with zero errors (~163 labelled cases with the 70/30 split), more if any are wrong)",
+   "kind": "route",
+   "error_definition": "the delivered answer was wrong",
+   "certifier": "certify-gates/1",
+   "split": {
+    "calibration_share": 0.7,
+    "blind_sets": "heldout* splits: first (blind) run only, test-only; never calibration"
+   },
+   "test": {
+    "n": 0,
+    "n_accepted": 0,
+    "errors_accepted": 0,
+    "error_rate": null,
+    "error_upper_bound": null,
+    "refutes_alpha": false
+   },
+   "blind_test": {
+    "n": 13,
+    "n_accepted": 13,
+    "errors_accepted": 9,
+    "error_rate": 0.6923,
+    "error_upper_bound": 0.8584,
+    "refutes_alpha": true
+   },
+   "observed": {
+    "threshold": 1.0,
+    "n_accepted": 0,
+    "error_rate": 0.0,
+    "acceptance_rate": null,
+    "accepted_needed": 114,
+    "labelled_needed": null
+   },
+   "accepted_needed": 114,
+   "labelled_needed": null,
+   "needs": "the blind test shows 9/13 wrong (69%, significantly above 2%); more calibration data cannot certify this gate until its error rate falls (non-blind estimate: only 0 accepted labelled case(s) (0 wrong); needs >= 114 accepted calibration cases with zero errors (~163 labelled cases with the 70/30 split), more if any are wrong)"
+  },
+  "learned_reuse.answer": {
+   "alpha": 0.02,
+   "delta": 0.1,
+   "n_calibration": 0,
+   "threshold": null,
+   "tested": 0,
+   "min_accepted_for_zero_errors": 114,
+   "name": "learned_reuse.answer",
+   "fallback": 1.0,
+   "data": {
+    "source": "bench rows, development/challenge runs (latest per question); error = delivered answer wrong (adjudicated where available)",
+    "labelled": 0,
+    "calibration": 0,
+    "test": 0,
+    "blind_test": 0
+   },
+   "fitted_at": "2026-10-14T21:00:46Z",
+   "search_floor": null,
+   "bind": "b96472b71a7c6880",
+   "calibrated": false,
+   "reason": "not certifiable at alpha=2%, delta=10% from 0 calibration cases; hand-set 1.0 kept; only 0 accepted labelled case(s) (0 wrong); needs >= 114 accepted calibration cases with zero errors (~163 labelled cases with the 70/30 split), more if any are wrong",
+   "kind": "route",
+   "error_definition": "the delivered answer was wrong",
+   "certifier": "certify-gates/1",
+   "split": {
+    "calibration_share": 0.7,
+    "blind_sets": "heldout* splits: first (blind) run only, test-only; never calibration"
+   },
+   "test": {
+    "n": 0,
+    "n_accepted": 0,
+    "errors_accepted": 0,
+    "error_rate": null,
+    "error_upper_bound": null,
+    "refutes_alpha": false
+   },
+   "blind_test": {
+    "n": 0,
+    "n_accepted": 0,
+    "errors_accepted": 0,
+    "error_rate": null,
+    "error_upper_bound": null,
+    "refutes_alpha": false
+   },
+   "observed": {
+    "threshold": 1.0,
+    "n_accepted": 0,
+    "error_rate": 0.0,
+    "acceptance_rate": null,
+    "accepted_needed": 114,
+    "labelled_needed": null
+   },
+   "accepted_needed": 114,
+   "labelled_needed": 163,
+   "needs": "only 0 accepted labelled case(s) (0 wrong); needs >= 114 accepted calibration cases with zero errors (~163 labelled cases with the 70/30 split), more if any are wrong"
+  },
+  "bottled.answer": {
+   "alpha": 0.02,
+   "delta": 0.1,
+   "n_calibration": 0,
+   "threshold": null,
+   "tested": 0,
+   "min_accepted_for_zero_errors": 114,
+   "name": "bottled.answer",
+   "fallback": 1.0,
+   "data": {
+    "source": "bench rows, development/challenge runs (latest per question); error = delivered answer wrong (adjudicated where available)",
+    "labelled": 0,
+    "calibration": 0,
+    "test": 0,
+    "blind_test": 0
+   },
+   "fitted_at": "2026-10-14T21:00:46Z",
+   "search_floor": null,
+   "bind": "b280d239902d45ce",
+   "calibrated": false,
+   "reason": "not certifiable at alpha=2%, delta=10% from 0 calibration cases; hand-set 1.0 kept; only 0 accepted labelled case(s) (0 wrong); needs >= 114 accepted calibration cases with zero errors (~163 labelled cases with the 70/30 split), more if any are wrong",
+   "kind": "route",
+   "error_definition": "the delivered answer was wrong",
+   "certifier": "certify-gates/1",
+   "split": {
+    "calibration_share": 0.7,
+    "blind_sets": "heldout* splits: first (blind) run only, test-only; never calibration"
+   },
+   "test": {
+    "n": 0,
+    "n_accepted": 0,
+    "errors_accepted": 0,
+    "error_rate": null,
+    "error_upper_bound": null,
+    "refutes_alpha": false
+   },
+   "blind_test": {
+    "n": 0,
+    "n_accepted": 0,
+    "errors_accepted": 0,
+    "error_rate": null,
+    "error_upper_bound": null,
+    "refutes_alpha": false
+   },
+   "observed": {
+    "threshold": 1.0,
+    "n_accepted": 0,
+    "error_rate": 0.0,
+    "acceptance_rate": null,
+    "accepted_needed": 114,
+    "labelled_needed": null
+   },
+   "accepted_needed": 114,
+   "labelled_needed": 163,
+   "needs": "only 0 accepted labelled case(s) (0 wrong); needs >= 114 accepted calibration cases with zero errors (~163 labelled cases with the 70/30 split), more if any are wrong"
+  },
+  "metric_router.answer": {
+   "alpha": 0.02,
+   "delta": 0.1,
+   "n_calibration": 0,
+   "threshold": null,
+   "tested": 0,
+   "min_accepted_for_zero_errors": 114,
+   "name": "metric_router.answer",
+   "fallback": 1.0,
+   "data": {
+    "source": "bench rows, development/challenge runs (latest per question); error = delivered answer wrong (adjudicated where available)",
+    "labelled": 1,
+    "calibration": 0,
+    "test": 1,
+    "blind_test": 14
+   },
+   "fitted_at": "2026-10-14T21:00:46Z",
+   "search_floor": null,
+   "bind": "6d4ca72729827058",
+   "calibrated": false,
+   "reason": "not certifiable at alpha=2%, delta=10% from 0 calibration cases; hand-set 1.0 kept; the blind test shows 11/14 wrong (79%, significantly above 2%); more calibration data cannot certify this gate until its error rate falls (non-blind estimate: only 1 accepted labelled case(s) (1 wrong); needs >= 114 accepted calibration cases with zero errors (~163 labelled cases with the 70/30 split), more if any are wrong)",
+   "kind": "route",
+   "error_definition": "the delivered answer was wrong",
+   "certifier": "certify-gates/1",
+   "split": {
+    "calibration_share": 0.7,
+    "blind_sets": "heldout* splits: first (blind) run only, test-only; never calibration"
+   },
+   "test": {
+    "n": 1,
+    "n_accepted": 1,
+    "errors_accepted": 1,
+    "error_rate": 1.0,
+    "error_upper_bound": 1.0,
+    "refutes_alpha": true
+   },
+   "blind_test": {
+    "n": 14,
+    "n_accepted": 14,
+    "errors_accepted": 11,
+    "error_rate": 0.7857,
+    "error_upper_bound": 0.9185,
+    "refutes_alpha": true
+   },
+   "observed": {
+    "threshold": 1.0,
+    "n_accepted": 1,
+    "error_rate": 1.0,
+    "acceptance_rate": 1.0,
+    "accepted_needed": null,
+    "labelled_needed": null
+   },
+   "accepted_needed": 114,
+   "labelled_needed": null,
+   "needs": "the blind test shows 11/14 wrong (79%, significantly above 2%); more calibration data cannot certify this gate until its error rate falls (non-blind estimate: only 1 accepted labelled case(s) (1 wrong); needs >= 114 accepted calibration cases with zero errors (~163 labelled cases with the 70/30 split), more if any are wrong)"
+  },
+  "operator_router.answer": {
+   "alpha": 0.02,
+   "delta": 0.1,
+   "n_calibration": 1,
+   "threshold": null,
+   "tested": 0,
+   "min_accepted_for_zero_errors": 114,
+   "name": "operator_router.answer",
+   "fallback": 1.0,
+   "data": {
+    "source": "bench rows, development/challenge runs (latest per question); error = delivered answer wrong (adjudicated where available)",
+    "labelled": 1,
+    "calibration": 1,
+    "test": 0,
+    "blind_test": 3
+   },
+   "fitted_at": "2026-10-14T21:00:46Z",
+   "search_floor": null,
+   "bind": "fd35ff213bd5a865",
+   "calibrated": false,
+   "reason": "not certifiable at alpha=2%, delta=10% from 1 calibration cases; hand-set 1.0 kept; the blind test shows 3/3 wrong (100%, significantly above 2%); more calibration data cannot certify this gate until its error rate falls (non-blind estimate: only 1 accepted labelled case(s) (1 wrong); needs >= 114 accepted calibration cases with zero errors (~163 labelled cases with the 70/30 split), more if any are wrong)",
+   "kind": "route",
+   "error_definition": "the delivered answer was wrong",
+   "certifier": "certify-gates/1",
+   "split": {
+    "calibration_share": 0.7,
+    "blind_sets": "heldout* splits: first (blind) run only, test-only; never calibration"
+   },
+   "test": {
+    "n": 0,
+    "n_accepted": 0,
+    "errors_accepted": 0,
+    "error_rate": null,
+    "error_upper_bound": null,
+    "refutes_alpha": false
+   },
+   "blind_test": {
+    "n": 3,
+    "n_accepted": 3,
+    "errors_accepted": 3,
+    "error_rate": 1.0,
+    "error_upper_bound": 1.0,
+    "refutes_alpha": true
+   },
+   "observed": {
+    "threshold": 1.0,
+    "n_accepted": 1,
+    "error_rate": 1.0,
+    "acceptance_rate": 1.0,
+    "accepted_needed": null,
+    "labelled_needed": null
+   },
+   "accepted_needed": 114,
+   "labelled_needed": null,
+   "needs": "the blind test shows 3/3 wrong (100%, significantly above 2%); more calibration data cannot certify this gate until its error rate falls (non-blind estimate: only 1 accepted labelled case(s) (1 wrong); needs >= 114 accepted calibration cases with zero errors (~163 labelled cases with the 70/30 split), more if any are wrong)"
+  },
+  "freeform_sql.verified": {
+   "alpha": 0.02,
+   "delta": 0.1,
+   "n_calibration": 1,
+   "threshold": null,
+   "tested": 0,
+   "min_accepted_for_zero_errors": 114,
+   "name": "freeform_sql.verified",
+   "fallback": 1.0,
+   "data": {
+    "source": "bench rows, development/challenge runs (latest per question); error = delivered answer wrong (adjudicated where available)",
+    "labelled": 1,
+    "calibration": 1,
+    "test": 0,
+    "blind_test": 184
+   },
+   "fitted_at": "2026-10-14T21:00:46Z",
+   "search_floor": null,
+   "bind": "c7bd4c287eef3f2e",
+   "calibrated": false,
+   "reason": "not certifiable at alpha=2%, delta=10% from 1 calibration cases; hand-set 1.0 kept; the blind test shows 6/8 wrong (75%, significantly above 2%); more calibration data cannot certify this gate until its error rate falls (non-blind estimate: only 0 accepted labelled case(s) (0 wrong); needs >= 114 accepted calibration cases with zero errors (~163 labelled cases with the 70/30 split), more if any are wrong)",
+   "kind": "flag",
+   "error_definition": "an answer the free-form acceptance check marked verified was wrong",
+   "certifier": "certify-gates/1",
+   "split": {
+    "calibration_share": 0.7,
+    "blind_sets": "heldout* splits: first (blind) run only, test-only; never calibration"
+   },
+   "test": {
+    "n": 0,
+    "n_accepted": 0,
+    "errors_accepted": 0,
+    "error_rate": null,
+    "error_upper_bound": null,
+    "refutes_alpha": false
+   },
+   "blind_test": {
+    "n": 184,
+    "n_accepted": 8,
+    "errors_accepted": 6,
+    "error_rate": 0.75,
+    "error_upper_bound": 0.9314,
+    "refutes_alpha": true
+   },
+   "observed": {
+    "threshold": 1.0,
+    "n_accepted": 0,
+    "error_rate": 0.0,
+    "acceptance_rate": 0.0,
+    "accepted_needed": 114,
+    "labelled_needed": null
+   },
+   "accepted_needed": 114,
+   "labelled_needed": null,
+   "needs": "the blind test shows 6/8 wrong (75%, significantly above 2%); more calibration data cannot certify this gate until its error rate falls (non-blind estimate: only 0 accepted labelled case(s) (0 wrong); needs >= 114 accepted calibration cases with zero errors (~163 labelled cases with the 70/30 split), more if any are wrong)"
+  },
+  "typed_route.answer": {
+   "alpha": 0.02,
+   "delta": 0.1,
+   "n_calibration": 0,
+   "threshold": null,
+   "tested": 0,
+   "min_accepted_for_zero_errors": 114,
+   "name": "typed_route.answer",
+   "fallback": 1.0,
+   "data": {
+    "source": "bench rows, development/challenge runs (latest per question); error = delivered answer wrong (adjudicated where available)",
+    "labelled": 0,
+    "calibration": 0,
+    "test": 0,
+    "blind_test": 0
+   },
+   "fitted_at": "2026-10-14T21:00:46Z",
+   "search_floor": null,
+   "bind": "c79511b898e02f0f",
+   "calibrated": false,
+   "reason": "not certifiable at alpha=2%, delta=10% from 0 calibration cases; hand-set 1.0 kept; only 0 accepted labelled case(s) (0 wrong); needs >= 114 accepted calibration cases with zero errors (~163 labelled cases with the 70/30 split), more if any are wrong",
+   "kind": "route",
+   "error_definition": "the delivered answer was wrong",
+   "certifier": "certify-gates/1",
+   "split": {
+    "calibration_share": 0.7,
+    "blind_sets": "heldout* splits: first (blind) run only, test-only; never calibration"
+   },
+   "test": {
+    "n": 0,
+    "n_accepted": 0,
+    "errors_accepted": 0,
+    "error_rate": null,
+    "error_upper_bound": null,
+    "refutes_alpha": false
+   },
+   "blind_test": {
+    "n": 0,
+    "n_accepted": 0,
+    "errors_accepted": 0,
+    "error_rate": null,
+    "error_upper_bound": null,
+    "refutes_alpha": false
+   },
+   "observed": {
+    "threshold": 1.0,
+    "n_accepted": 0,
+    "error_rate": 0.0,
+    "acceptance_rate": null,
+    "accepted_needed": 114,
+    "labelled_needed": null
+   },
+   "accepted_needed": 114,
+   "labelled_needed": 163,
+   "needs": "only 0 accepted labelled case(s) (0 wrong); needs >= 114 accepted calibration cases with zero errors (~163 labelled cases with the 70/30 split), more if any are wrong"
+  },
+  "frontier_planner.answer": {
+   "alpha": 0.02,
+   "delta": 0.1,
+   "n_calibration": 0,
+   "threshold": null,
+   "tested": 0,
+   "min_accepted_for_zero_errors": 114,
+   "name": "frontier_planner.answer",
+   "fallback": 1.0,
+   "data": {
+    "source": "bench rows, development/challenge runs (latest per question); error = delivered answer wrong (adjudicated where available)",
+    "labelled": 0,
+    "calibration": 0,
+    "test": 0,
+    "blind_test": 13
+   },
+   "fitted_at": "2026-10-14T21:00:46Z",
+   "search_floor": null,
+   "bind": "c79511b898e02f0f",
+   "calibrated": false,
+   "reason": "not certifiable at alpha=2%, delta=10% from 0 calibration cases; hand-set 1.0 kept; the blind test shows 10/13 wrong (77%, significantly above 2%); more calibration data cannot certify this gate until its error rate falls (non-blind estimate: only 0 accepted labelled case(s) (0 wrong); needs >= 114 accepted calibration cases with zero errors (~163 labelled cases with the 70/30 split), more if any are wrong)",
+   "kind": "route",
+   "error_definition": "the delivered answer was wrong",
+   "certifier": "certify-gates/1",
+   "split": {
+    "calibration_share": 0.7,
+    "blind_sets": "heldout* splits: first (blind) run only, test-only; never calibration"
+   },
+   "test": {
+    "n": 0,
+    "n_accepted": 0,
+    "errors_accepted": 0,
+    "error_rate": null,
+    "error_upper_bound": null,
+    "refutes_alpha": false
+   },
+   "blind_test": {
+    "n": 13,
+    "n_accepted": 13,
+    "errors_accepted": 10,
+    "error_rate": 0.7692,
+    "error_upper_bound": 0.912,
+    "refutes_alpha": true
+   },
+   "observed": {
+    "threshold": 1.0,
+    "n_accepted": 0,
+    "error_rate": 0.0,
+    "acceptance_rate": null,
+    "accepted_needed": 114,
+    "labelled_needed": null
+   },
+   "accepted_needed": 114,
+   "labelled_needed": null,
+   "needs": "the blind test shows 10/13 wrong (77%, significantly above 2%); more calibration data cannot certify this gate until its error rate falls (non-blind estimate: only 0 accepted labelled case(s) (0 wrong); needs >= 114 accepted calibration cases with zero errors (~163 labelled cases with the 70/30 split), more if any are wrong)"
   }
  }
 }

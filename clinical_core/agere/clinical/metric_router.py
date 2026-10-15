@@ -497,13 +497,14 @@ def policy():
     return p if p in ('low_confidence', 'abstain', 'off') else 'low_confidence'
 
 
-CONFIDENCE = ('verified', 'low')
+CONFIDENCE = ('verified', 'unverified', 'low')
 
 
 def set_confidence(answer, level, reason, **detail):
-    """Answer contract: confidence ('verified' | 'low') is separate from status. Status says whether the answer is
-    complete (partial only with unresolved members or a genuinely incomplete answer); confidence says whether the number
-    was checked (governed metric, independent agreement, lint-clean governed SQL) or not."""
+    """Answer contract: confidence ('verified' | 'unverified' | 'low') is separate from status. Status says whether the
+    answer is complete; confidence says whether its error rate is certified (gate_policy): 'verified' only when every gate
+    on the answer's path has a Learn-then-Test certificate and passed, 'low' when a check on the path failed,
+    'unverified' otherwise."""
     if level not in CONFIDENCE: raise ValueError(f'confidence must be one of {CONFIDENCE}')
     answer['confidence'] = level
     answer['confidence_reason'] = str(reason or '')[:500]
@@ -511,21 +512,45 @@ def set_confidence(answer, level, reason, **detail):
     return answer
 
 
-def finalize_answer(answer, receipt):
-    """Answer contract for the metric-first routes: governed answers state their metric; ambiguous ones carry both readings;
-    unverified free-form SQL keeps its status and exact value but carries confidence 'low' with the reason (policy
-    'abstain' withholds the number instead). Every answer from these routes carries confidence 'verified' | 'low'."""
+def _asserted(answer):
+    return answer.get('answer_type') not in (None, 'unsupported') and answer.get('status') in ('answered', 'partial')
+
+
+def _certified_confidence(out, receipt, encoder=None, basis=None, **detail):
+    """Set the gate-policy confidence; basis is the route's own reason (governed metric, acceptance basis)."""
+    from . import gate_policy
+    from .answer_checks import _add
+    verdict = gate_policy.assess(receipt, encoder)
+    reason = verdict['reason'] + (f' [{basis}]' if basis else '')
+    set_confidence(out, verdict['level'], reason, gates=verdict['gates'], rule=verdict['rule'], **detail)
+    if verdict['level'] == 'unverified':
+        _add(out, 'QC-CONFIDENCE', 'FM-13', ('Unverified: ' + verdict['reason'])[:500], 'info')
+    return out
+
+
+def finalize_answer(answer, receipt, encoder=None):
+    """Answer contract for every auto-planned answer: governed answers state their metric; ambiguous ones carry both
+    readings; unverified free-form SQL keeps its status and exact value but carries confidence 'low' with the reason
+    (policy 'abstain' withholds the number instead). Every asserted answer carries confidence verified | unverified | low
+    under gate_policy's rule (verified = every gate on the path certified and passed); abstentions carry none, except a
+    contradicted missing-data claim (low). AGERE_CONFIDENCE_RULE=legacy restores the earlier labels."""
     if not isinstance(answer, dict) or not isinstance(receipt, dict): return answer
     from .answer_checks import _add
+    from . import gate_policy
+    legacy = gate_policy.legacy()
     out = dict(answer)
     mr = receipt.get('metric_router') or {}
     if receipt.get('route') == 'metric_router' and mr.get('resolution'):
         res = mr['resolution']
         out['computed_as'] = {'metric': res['metric'], 'version': res['version'], 'layer': VERSION, 'definition': res['definition'],
                               'slots': res['slots'], 'statement': res['statement'], 'conforms': True,
-                              **({'anchor': res['anchor']} if res.get('anchor') else {})}
+                              **({'anchor': res['anchor']} if res.get('anchor') else {}),
+                              **({'evidence': out['computed_as']['evidence']} if isinstance(out.get('computed_as'), dict)
+                                 and out['computed_as'].get('evidence') else {})}
         out['computed'] = res['statement']
-        set_confidence(out, 'verified', f"computed deterministically as metric {res['metric']}@v{res['version']}", source='governed_metric')
+        basis = f"computed deterministically as metric {res['metric']}@v{res['version']}"
+        if legacy: set_confidence(out, 'verified', basis, source='governed_metric')
+        else: _certified_confidence(out, receipt, encoder, basis, source='governed_metric')
         _add(out, 'QC-METRIC', 'FM-05', res['statement'][:300].capitalize(), 'info', metric=res['metric'], metric_version=res['version'])
         if mr.get('readings'):
             from .verification_v2 import attach_readings
@@ -540,8 +565,10 @@ def finalize_answer(answer, receipt):
             _add(out, 'QC-CONFIDENCE', 'FM-13', f"Low confidence abstention: the claimed-missing element exists ({names}).")
         return out
     acc = receipt.get('acceptance') or {}
-    if receipt.get('route') == 'hosted_verified_sql' and acc.get('status') == 'low_confidence' and policy() != 'off':
-        set_confidence(out, 'low', acc.get('basis'), policy=policy(), source='free_form_sql')
+    if receipt.get('route') == 'hosted_verified_sql' and acc.get('status') == 'low_confidence':
+        if policy() == 'off': return out
+        set_confidence(out, 'low', acc.get('basis'), policy=policy(), source='free_form_sql',
+                       **({} if legacy else {'gates': gate_policy.assess(receipt, encoder)['gates'], 'rule': gate_policy.VERSION}))
         message = ('Low confidence: this number comes from free-form SQL that no independent source or governed metric confirmed '
                    f"({acc.get('basis')}). Treat it as a draft until it is checked.")
         if policy() == 'abstain':
@@ -550,6 +577,11 @@ def finalize_answer(answer, receipt):
                                                                f"({acc.get('basis')})"]
         _add(out, 'QC-CONFIDENCE', 'FM-13', message[:500])
         return out
-    if acc.get('status') == 'verified':
-        set_confidence(out, 'verified', acc.get('basis'), source='free_form_sql')
+    if legacy:
+        if acc.get('status') == 'verified':
+            set_confidence(out, 'verified', acc.get('basis'), source='free_form_sql')
+        return out
+    if _asserted(out):
+        _certified_confidence(out, receipt, encoder, acc.get('basis') if acc else None,
+                              source='free_form_sql' if receipt.get('route') == 'hosted_verified_sql' else receipt.get('route'))
     return out

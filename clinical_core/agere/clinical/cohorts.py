@@ -117,11 +117,14 @@ def validate(spec, as_of=None):
                 if c['field'] in ('dx', 'problem_code') and c['op'] not in ('contains', 'prefix'):
                     raise ValueError('Diagnosis lists require exact membership or explicit code prefix')
         elif atom.get('kind') == 'concept':
-            if set(atom) - {'system', 'status'} != {'kind', 'concept', 'window'} or not concepts.is_concept(atom['concept']) \
+            if set(atom) - {'system', 'status', 'evidence'} != {'kind', 'concept', 'window'} or not concepts.is_concept(atom['concept']) \
                     or atom.get('system', 'any') not in ('any', 'icd10', 'snomed', 'coded', 'label') \
                     or atom.get('status', 'completed') != 'completed' or ('status' in atom and atom['concept'] not in concepts.ENCOUNTERS):
                 raise ValueError('Concept predicate needs a library concept id (optional system any/icd10/snomed/label; '
                                  'optional status "completed" for encounter concepts)')
+            if 'evidence' in atom:
+                if atom['concept'] not in concepts.CONDITIONS: raise ValueError('evidence types apply to condition concepts only')
+                concepts.validate_evidence(atom['evidence'])
             validate_window(atom['window'], as_of)
         elif atom.get('kind') == 'measurement':
             if set(atom) - {'names'} != {'kind', 'concept', 'op', 'value', 'aggregate', 'window'} or atom['concept'] not in concepts.MEASUREMENTS \
@@ -209,6 +212,17 @@ def _record_date(r):
 
 
 def _concept_matches(binding, r):
+    if 'prefixes' in binding:  # claim diagnosis codes (a single code or a list of codes per field)
+        for f in binding['code_fields']:
+            got = r.get(f)
+            for code in (got if isinstance(got, list) else [got]):
+                if isinstance(code, str) and any(code.strip().upper().startswith(p) for p in binding['prefixes']): return True
+        return False
+    if 'pattern' in binding:  # free text / indication text: affirmed (or historical) mentions only for note text
+        text = r.get(binding['text_field'])
+        if binding.get('negation'):
+            return concepts.mention_state(text, binding['pattern'], binding.get('exclude')) in ('affirmed', 'historical')
+        return concepts.mention_state(text, binding['pattern'], binding.get('exclude')) is not None
     if 'values' in binding:
         got = r.get(binding['field'])
         values = set(binding['values'])
@@ -281,10 +295,13 @@ def evaluate_concept(atom, records, as_of):
                                          for f in binding.get('name_fields', [])): continue
         if atom.get('status') and r.get('status') != atom['status']: continue
         system = atom.get('system', 'any')
-        if system == 'icd10' and not (r.get('icd10') or r.get('problem_code')): continue
+        claim_code = 'prefixes' in binding
+        if system == 'icd10' and not (r.get('icd10') or r.get('problem_code') or claim_code): continue
         if system == 'snomed' and not r.get('snomed'): continue
-        if system == 'label' and (r.get('icd10') or r.get('snomed')): continue
-        if system == 'coded' and not (r.get('icd10') or r.get('snomed') or r.get('problem_code')): continue
+        if system == 'label' and (r.get('icd10') or r.get('snomed') or claim_code): continue
+        if system == 'coded' and not (r.get('icd10') or r.get('snomed') or r.get('problem_code') or claim_code): continue
+        kind = concepts.evidence_type(r, binding) if resolved.get('kind') == 'condition' else None
+        if atom.get('evidence') and kind not in atom['evidence']: continue
         if atom['kind'] == 'measurement' and _unreported(r.get(binding['value_field'])):
             # Cancelled/unreported results (e.g. hemolysed specimen) carry no measurement.
             unreported += 1
@@ -292,7 +309,7 @@ def evaluate_concept(atom, records, as_of):
         in_window = window_state(r, atom['window'], as_of, related)
         if in_window is False: continue
         value = _measurement_value(binding, r, resolved['units']) if atom['kind'] == 'measurement' else None
-        hits.append((r, binding, in_window, value))
+        hits.append((r, binding, in_window, value, kind))
     if atom['kind'] == 'measurement':
         if atom['aggregate'] == 'latest' and hits:
             dated = [h for h in hits if h[2] is True and h[3] is not None]
@@ -302,12 +319,41 @@ def evaluate_concept(atom, records, as_of):
         states = [h[2] for h in hits]
     support = [{'record_id': h[0].get('record_id'), 'stream': h[0]['source_table'], 'date': _record_date(h[0]),
                 'label': next((h[0].get(f) for f in ('description', 'test', 'measurement', 'icd10') if h[0].get(f)), None),
-                **({'value': h[3], 'unit': resolved['unit']} if atom['kind'] == 'measurement' else {})}
+                **({'value': h[3], 'unit': resolved['unit']} if atom['kind'] == 'measurement' else {}),
+                **({'evidence_type': h[4]} if h[4] else {})}
                for h, s in zip(hits, states) if s is True]
+    evidence_types = Counter(h[4] for h, s in zip(hits, states) if s is True and h[4])
     return truth_any(states), {'predicate': {k: v for k, v in atom.items() if k != '_resolved'},
             'records_evaluated': len(hits), 'records_without_reported_value': unreported, 'support_count': len(support),
             'unknown_record_count': sum(s is None for s in states), 'support': support[:8],
+            **({'evidence_types': dict(evidence_types)} if resolved.get('kind') == 'condition' else {}),
             'nonmatch_meaning': 'No matching observed record, not absence of disease/care.'}
+
+
+class EvidenceMix:
+    """Per condition-concept atom: how many matched patients were supported by each evidence type (a patient supported by
+    two kinds counts under both) and how many matching records of each type there were. Tallied as patients are evaluated."""
+    def __init__(self, spec):
+        self.atoms = [(g, i, a) for g in ('all', 'any', 'exclude') for i, a in enumerate(spec[g])
+                      if a.get('kind') == 'concept' and (a.get('_resolved') or {}).get('kind') == 'condition']
+        self.patients = [Counter() for _ in self.atoms]
+        self.records = [Counter() for _ in self.atoms]
+
+    def add(self, state, traces):
+        if state is not True or not self.atoms: return
+        for k, (g, i, _a) in enumerate(self.atoms):
+            t = [x for x in traces if x['group'] == g][i]
+            if t['state'] is not True: continue
+            for kind, n in (t.get('evidence_types') or {}).items():
+                self.patients[k][kind] += 1; self.records[k][kind] += n
+
+    def result(self):
+        order = lambda c: {k: c[k] for k in concepts.EVIDENCE_TYPES if c.get(k)}
+        return [{'concept': a['concept'], 'group': g,
+                 'evidence': list(a.get('evidence') or []) or 'default',
+                 'default_evidence': list((a['_resolved'] or {}).get('default_evidence') or []),
+                 'patients_by_type': order(p), 'records_by_type': order(r)}
+                for (g, i, a), p, r in zip(self.atoms, self.patients, self.records)]
 
 
 def evaluate_patient(spec, patient, records, as_of):
@@ -367,8 +413,10 @@ def select(path, spec=None, *, patient=None, limit=10, patient_ids=None):
         # Same rows and per-patient order as `... WHERE stream IN (...) [AND patient=?] ORDER BY id` (record_store).
         records = record_store.load(path, streams, patient=patient or None, order='id')
         membership = {'matched': [], 'not_matched': [], 'unknown': []}; previews = {k: [] for k in membership}
+        mix = EvidenceMix(grounded)
         for pid, p in roster:
             state, traces = evaluate_patient(grounded, p, records[pid], as_of)
+            mix.add(state, traces)
             status = 'matched' if state is True else 'not_matched' if state is False else 'unknown'
             membership[status].append(pid)
             if len(previews[status]) < limit: previews[status].append({'patient_id': pid, 'status': status, 'predicates': traces})
@@ -379,6 +427,7 @@ def select(path, spec=None, *, patient=None, limit=10, patient_ids=None):
                   'input_membership_digest': digest(patient_ids) if patient_ids is not None else None,
                   'examples': previews, 'cache_hit': False, 'new_paid_api_calls': 0,
                   'grounding': grounding_report, 'interpretation': grounding.interpretation(grounded),
+                  'evidence_mix': mix.result(),
                   'scope': 'Complete selection over the observed snapshot. Unknowns are separate; no inferred clinical phenotype or provider attribution.'}
         if caching:
             with db: db.execute('INSERT OR REPLACE INTO result_cache VALUES (?,?)', (key, json.dumps(result, allow_nan=False)))
