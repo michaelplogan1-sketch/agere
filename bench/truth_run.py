@@ -77,6 +77,19 @@ def contract(q, answer):
     return out
 
 
+_TUVA = {}
+_TUVA_LOCK = __import__('threading').Lock()
+
+
+def _tuva(args):
+    # One shared read-only DuckDB connection; each query takes its own cursor.
+    with _TUVA_LOCK:
+        if 'w' not in _TUVA:
+            from bench.tuva import TuvaWarehouse
+            _TUVA['w'] = TuvaWarehouse(timeout_s=args.sql_timeout)
+    return _TUVA['w']
+
+
 def run_one(q, args):
     item = {'id': q['id'], 'question': prompt(q, args.mode, args.as_of), 'as_of': args.as_of}
     start = time.perf_counter()
@@ -89,6 +102,9 @@ def run_one(q, args):
                 row = frontier_semantic(item, semantic, model=args.model, max_tools=8)
             finally:
                 semantic.close()
+        elif args.system == 'frontier_tuva':
+            from bench.tuva import frontier_tuva
+            row = frontier_tuva(item, _tuva(args), model=args.model, max_tools=8)
         else:
             from bench.adapters import frontier_canonical
             from bench.common import CanonicalWarehouse
@@ -115,7 +131,7 @@ def score(release, path, per_question=False):
 def main(argv=None):
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument('--release', default='healthcare-warehouse-v2.8')
-    p.add_argument('--system', choices=['agere', 'frontier_semantic', 'frontier_canonical'], required=True)
+    p.add_argument('--system', choices=['agere', 'frontier_semantic', 'frontier_canonical', 'frontier_tuva'], required=True)
     p.add_argument('--model', default=MODEL)
     p.add_argument('--mode', choices=['plain', 'defined'], default='defined')
     p.add_argument('--as-of', default='2030-05-27')
