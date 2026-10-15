@@ -127,7 +127,8 @@
      "sulfonylurea",
      "dpp4_inhibitor",
      "sglt2_inhibitor",
-     "glp1_agonist"
+     "glp1_agonist",
+     "thiazolidinedione"
     ],
     "threshold": 0.8,
     "min_fills": 2,

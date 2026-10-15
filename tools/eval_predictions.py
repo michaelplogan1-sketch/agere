@@ -9,10 +9,11 @@ Deterministic and local: no network, no model calls.
   hcc.jsonl               hcc_capture (risk_adjustment V28 crosswalk + hierarchies; chronic recapture; suspects)
   quality_measures.jsonl  measures library engine (config/agere/measures: bcs, col, ked, spd_statin_diabetes,
                           gsd_control_lt8, cbp, pdc_diabetes, pdc_rasa, pdc_statins), per patient and calendar year
-  acute_events.jsonl      acute_episodes (semantic utilization_event + CMS Planned Readmission Algorithm structure)
+  acute_events.jsonl      acute_episodes (semantic utilization_event + CMS Planned Readmission Algorithm structure), every event
+                          from the population feed start to as_of (dated facts, not year-keyed rows)
   medications.jsonl       therapy_courses (line_of_therapy fills, episodes, PQA PDC, regimen events)
   deaths.jsonl            death records + payer enrollment terminations for death (semantic record / enrollment_span)
-  duplicates.jsonl        person_linkage (deterministic member-ID + Fellegi-Sunter demographic linkage)
+  duplicates.jsonl        person_linkage (deterministic member-ID / facility-MRN + Fellegi-Sunter demographic linkage)
   sdoh.jsonl              sdoh_needs (corroborated: Z code, screens, notes, vendor)
 plus provenance.json (module, version and source sha256 per file; parameters; build identity; row counts; runtimes)
 and validation.json (contract check of the written files).
@@ -44,7 +45,7 @@ DEFAULTS = {
     'conditions': dict(chronic_conditions.DEFAULTS),
     'suspects': dict(condition_suspects.SUSPECT_DEFAULTS),
     'hcc': dict(hcc_capture.DEFAULTS),
-    'acute': {'orientation': 'readmission'},
+    'acute': {'orientation': 'readmission', 'window': 'feed'},  # window: 'feed' (feed_start..as_of) or 'years'
     'therapy': dict(therapy_courses.DEFAULTS),
     'deaths': {'sources': ['death_records', 'enrollment_death']},
     'linkage': dict(person_linkage.DEFAULTS),
@@ -161,7 +162,12 @@ def quality_rows(ctx):
 
 def acute_rows(ctx):
     cfg = ctx['cfg']
-    lo, hi = f"{min(cfg['years'])}-01-01", f"{max(cfg['years'])}-12-31"
+    # Acute events are dated facts matched by date, not year-keyed rows: report every event in the received window (population
+    # feed start to as_of) unless the year window is asked for. Year-keyed tasks (hcc, quality, medications) keep cfg['years'].
+    if cfg['acute'].get('window', 'feed') == 'feed':
+        lo, hi = cfg['feed_start'], ctx['as_of']
+    else:
+        lo, hi = f"{min(cfg['years'])}-01-01", f"{max(cfg['years'])}-12-31"
     out = []
     for e in acute_episodes.episodes(ctx['db'], lo, hi, cfg['acute']['orientation']):
         if not ctx['in_scope']('acute_events', e['patient_id']): continue
@@ -250,7 +256,9 @@ def export(build, out, as_of=None, only=None, cfg=None, log=print):
     if set(wanted) & {'conditions', 'hcc', 'sdoh'}:
         ctx['dx'] = list(chronic_conditions.diagnosis_rows(db, '0000-01-01', as_of[:10]))
         ctx['documented'] = chronic_conditions.documented(ctx['dx'], cfg['conditions']['min_claim_dates'])
-        any_code = chronic_conditions.documented(ctx['dx'], 1)  # suspects are suppressed by ANY documented code, confirmed or not
+        any_code = defaultdict(set)  # suspects are suppressed by ANY received code in the category, confirmed or not
+        for pid, code, _, _ in ctx['dx']:
+            if len(code) >= 3: any_code[pid].add(code[:3])
         ages = {}
         for pid, info in people.items():
             ages[pid] = hcc_capture._age(info['birth_date'], date.fromisoformat(as_of[:10])) if info['birth_date'] else (info['age'] or 70)

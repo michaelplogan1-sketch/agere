@@ -43,6 +43,12 @@
    "url": "https://www.cms.gov/files/document/2027-tech-notes-2026-09-30.pdf",
    "publisher": "CMS",
    "accessed": "2026-10-13"
+  },
+  {
+   "title": "NCQA HEDIS MY2025: Kidney Health Evaluation for Patients With Diabetes (KED), administrative specification",
+   "url": "https://www.ncqa.org/hedis/measures/kidney-health-evaluation-for-patients-with-diabetes/",
+   "publisher": "NCQA",
+   "accessed": "2026-10-14"
   }
  ],
  "direction": "higher_is_better",
@@ -139,7 +145,7 @@
   }
  ],
  "numerator": {
-  "summary": "Both an eGFR and a urine albumin-creatinine ratio (uACR) in the period.",
+  "summary": "Both an eGFR and a urine albumin-creatinine ratio (uACR) in the period: a result (LOINC) or the billed test (HEDIS KED administrative codes: eGFR via CPT 80047/80048/80050/80053/80069/82565; uACR via quantitative urine albumin CPT 82043 with urine creatinine CPT 82570 or a urine-creatinine result within 4 days).",
   "criteria": [
    {
     "type": "measurement",
@@ -166,7 +172,18 @@
     "window": {
      "start": "period_start",
      "end": "period_end"
-    }
+    },
+    "claim_codes": {
+     "cpt": [
+      "80047",
+      "80048",
+      "80050",
+      "80053",
+      "80069",
+      "82565"
+     ]
+    },
+    "note": "HEDIS KED Estimated Glomerular Filtration Rate Lab Test: basic/comprehensive metabolic panels and serum creatinine are reported with an eGFR (CKD-EPI 2021), so the billed panel stands for the eGFR result."
    },
    {
     "type": "measurement",
@@ -186,7 +203,22 @@
     "window": {
      "start": "period_start",
      "end": "period_end"
-    }
+    },
+    "claim_codes": {
+     "cpt": [
+      "82043"
+     ],
+     "with": {
+      "cpt": [
+       "82570"
+      ],
+      "loinc": [
+       "2161-8"
+      ],
+      "days": 4
+     }
+    },
+    "note": "HEDIS KED uACR: Quantitative Urine Albumin Lab Test (82043) and Urine Creatinine Lab Test (82570) with service dates 4 or fewer days apart. Where a claim source never itemizes 82570, the quantitative albumin claim stands alone (the ratio is reported from the same specimen)."
    }
   ]
  },

@@ -7,7 +7,7 @@ keys, and the chart's data_segment label is never read.
 Method (Fellegi & Sunter, "A Theory for Record Linkage", JASA 1969; frequency-based u-probabilities as in Winkler,
 "String Comparator Metrics and Enhanced Decision Rules in the Fellegi-Sunter Model of Record Linkage", 1990):
   1. Blocking: candidate pairs share at least one blocking key (birth date; phone; Soundex(last name) + birth year;
-     Soundex(first name) + postal code; normalised address + postal code; a payer member ID). Blocks larger than
+     Soundex(first name) + postal code; normalised address + postal code; a payer member ID; a facility MRN). Blocks larger than
      max_block are skipped (a key that common carries no identity).
   2. Comparison: each field agrees, partially agrees or disagrees. Names use Jaro-Winkler (>= 0.92 partial) and a
      nickname table; birth dates partially agree on a single-component difference or a month/day transposition;
@@ -17,7 +17,9 @@ Method (Fellegi & Sunter, "A Theory for Record Linkage", JASA 1969; frequency-ba
      (value-specific for exact name and birth-date agreement: a rare surname is more informative than a common one),
      or stated through u_override when the population is too small to estimate them.
   4. Decision: link when the summed weight >= threshold (default 15 bits), or deterministically when two charts carry the
-     same payer member ID and their birth dates agree at least partially. Links are closed transitively (union-find);
+     same payer member ID, or the same facility medical record number (source system + source patient ID: an MRN is
+     unique within its assigning authority, HL7 v2 PID-3 / CX.4), and their birth dates agree at least partially.
+     Links are closed transitively (union-find);
      a cluster's enterprise person id is 'AGP-' + its smallest chart id.
 
 Precision/recall: threshold is the lever (higher = fewer, surer links). link_report() returns the pair weights so the
@@ -27,8 +29,8 @@ from collections import Counter, defaultdict
 from pathlib import Path
 import json, math, re, sqlite3
 
-VERSION = 'person-linkage/1'
-DEFAULTS = {'threshold': 15.0, 'max_block': 60, 'partial_jw': 0.92, 'member_id_link': True, 'value_specific': True, 'u_override': {}}
+VERSION = 'person-linkage/2'
+DEFAULTS = {'threshold': 15.0, 'max_block': 60, 'partial_jw': 0.92, 'member_id_link': True, 'mrn_link': True, 'value_specific': True, 'u_override': {}}
 # m-probabilities: probability a field agrees for a true match (stated assumptions; typical registry values).
 M = {'first': 0.92, 'last': 0.93, 'birth_date': 0.98, 'sex': 0.98, 'address': 0.75, 'postal': 0.85, 'phone': 0.75}
 NICKNAMES = [('WILLIAM', 'BILL', 'WILL', 'BILLY', 'LIAM'), ('ROBERT', 'BOB', 'ROB', 'BOBBY', 'BOBBIE'), ('RICHARD', 'RICK', 'DICK', 'RICH'),
@@ -136,7 +138,7 @@ def identity(pid, payload):
     return {'patient_id': pid, 'first': first, 'last': last, 'birth_date': str(payload.get('birth_date') or '')[:10],
             'sex': str(payload.get('sex_reported') or payload.get('sex') or '')[:1].upper(), 'address': norm_address(payload.get('address_line')),
             'postal': str(payload.get('postal_code') or payload.get('zip') or '')[:5], 'phone': norm_phone(payload.get('phone')),
-            'member_ids': set()}
+            'member_ids': set(), 'mrns': set()}
 
 
 def load_identities(stack_dir, semantic_db=None):
@@ -155,6 +157,11 @@ def load_identities(stack_dir, semantic_db=None):
             if table not in tables: continue
             for pid, payer, mid in semantic_db.execute(f'SELECT DISTINCT patient_id, {payer_col}, member_id FROM {table} WHERE member_id IS NOT NULL'):
                 if pid in ids and mid: ids[pid]['member_ids'].add(f'{payer}|{mid}')
+        if 'record' in tables:  # facility MRNs bound to each chart by the received source records
+            for pid, system, mrn in semantic_db.execute("SELECT DISTINCT patient_id, json_extract(payload,'$.source_system'), "
+                                                        "json_extract(payload,'$.source_patient_id') FROM record "
+                                                        "WHERE json_extract(payload,'$.source_patient_id') IS NOT NULL"):
+                if pid in ids and mrn: ids[pid]['mrns'].add(f'{system or ""}|{mrn}')
     return list(ids.values())
 
 
@@ -230,7 +237,8 @@ class Model:
             levels['first'] = levels['last'] = 'partial'
         w = {f: round(self.weight(f, lv, a[f] if lv == 'agree' else None), 3) for f, lv in levels.items()}
         shared_member = bool(a['member_ids'] & b['member_ids'])
-        return {'levels': levels, 'weights': w, 'total': round(sum(w.values()), 3), 'shared_member_id': shared_member}
+        shared_mrn = bool(a.get('mrns', set()) & b.get('mrns', set()))
+        return {'levels': levels, 'weights': w, 'total': round(sum(w.values()), 3), 'shared_member_id': shared_member, 'shared_mrn': shared_mrn}
 
 
 # ---- blocking and decision ----------------------------------------------------------------------------------------------------
@@ -243,6 +251,7 @@ def _blocks(x):
     if x['address'] and x['postal']: keys.append(('addr', x['address'], x['postal']))
     if x['first'] and x['last']: keys.append(('names', soundex(x['first']), soundex(x['last'])))
     keys += [('member', m) for m in x['member_ids']]
+    keys += [('mrn', m) for m in x.get('mrns', ())]
     return keys
 
 
@@ -274,10 +283,13 @@ def link(people, params=None):
     for i, j in sorted(pairs):
         c = model.compare(people[i], people[j])
         scored += 1
-        deterministic = p['member_id_link'] and c['shared_member_id'] and c['levels']['birth_date'] in ('agree', 'partial')
+        dob_ok = c['levels']['birth_date'] in ('agree', 'partial')
+        by_member = p['member_id_link'] and c['shared_member_id'] and dob_ok
+        by_mrn = p['mrn_link'] and c['shared_mrn'] and dob_ok
+        deterministic = by_member or by_mrn
         if c['total'] >= p['threshold'] or deterministic:
-            links.append({'a': people[i]['patient_id'], 'b': people[j]['patient_id'], 'weight': c['total'],
-                          'rule': 'member_id' if deterministic and c['total'] < p['threshold'] else 'fellegi_sunter'})
+            rule = 'fellegi_sunter' if c['total'] >= p['threshold'] else 'member_id' if by_member else 'mrn'
+            links.append({'a': people[i]['patient_id'], 'b': people[j]['patient_id'], 'weight': c['total'], 'rule': rule})
             parent[find(i)] = find(j)
     clusters = defaultdict(list)
     for i in range(len(people)): clusters[find(i)].append(people[i]['patient_id'])

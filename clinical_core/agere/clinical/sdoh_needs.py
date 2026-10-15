@@ -9,7 +9,8 @@ min_score (default 2) from these independent sources (points are parameters, POI
                 housing  Z59.0x homelessness, Z59.1 inadequate housing, Z59.81x housing instability
                 food     Z59.4x lack of adequate food / food insecurity
                 transport Z59.82 transportation insecurity
-                work_schedule_constraint Z56.3 stressful work schedule (Z56.9 unspecified employment problem: 1 point)
+                work_schedule_constraint Z56.3 stressful work schedule (Z56.9 unspecified employment problem: 1 point per
+                distinct encounter date, at most 2: the same clinician-coded problem on two separate dates is corroborated)
   screen      positive answer on a validated screen (CMS AHC HRSN, PRAPARE-style brief needs interview, social_need
               table) or a care-support interview: 1 point per distinct date, at most 2.
   note        affirmed (non-negated, patient-experienced) social need stated in clinical note text (note_fact): 1 point.
@@ -25,7 +26,7 @@ import json
 
 from .risk_adjustment import icd_key
 
-VERSION = 'sdoh-needs/1'
+VERSION = 'sdoh-needs/2'
 NEEDS = ('transport', 'food', 'housing', 'work_schedule_constraint')
 DEFAULTS = {'min_score': 2, 'vendor_score': 4}
 POINTS = {'z_code': 2, 'z_code_weak': 1, 'screen': 1, 'screen_cap': 2, 'note': 1, 'vendor': 1, 'work_answer': 2}
@@ -78,7 +79,7 @@ def evidence(db, diagnosis_rows=(), vendor_score=4):
 def score(sources):
     s = 0
     if sources.get('z_code'): s += POINTS['z_code']
-    elif sources.get('z_code_weak'): s += POINTS['z_code_weak']
+    elif sources.get('z_code_weak'): s += min(len(sources['z_code_weak']), 2) * POINTS['z_code_weak']
     s += min(len(sources.get('screen', ())), POINTS['screen_cap']) * POINTS['screen']
     if sources.get('note'): s += POINTS['note']
     if sources.get('vendor'): s += POINTS['vendor']

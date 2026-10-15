@@ -203,6 +203,11 @@ def _rows(ctx, c):
             for pid, d, v, raw in db.execute(f"SELECT patient_id, event_date, value_canonical, value FROM measurement WHERE ({' OR '.join(terms)}) "
                                              "AND (value_canonical IS NOT NULL OR value IS NOT NULL)", args):
                 out[pid].append((d[:10] if d else None, v if v is not None else raw, None))
+        if c.get('claim_codes') and not c.get('value'):
+            # The test performed, from claim lines (claims-only members have no results feed): HEDIS administrative
+            # specifications accept the lab CPT in place of the result when no value is needed.
+            for pid, d, detail in _claim_code_rows(ctx, c['claim_codes']):
+                out[pid].append((d, None, detail))
     elif t == 'blood_pressure':
         for pid, concept, d, v in db.execute("SELECT patient_id, concept, event_date, value_canonical FROM measurement "
                                              "WHERE concept IN ('systolic_bp','diastolic_bp') AND value_canonical IS NOT NULL AND event_date IS NOT NULL"):
@@ -217,7 +222,16 @@ def _rows(ctx, c):
                f'WHERE m.drug_class IN ({q1}) AND m.evidence IN ({q2})' +
                (' AND coalesce(m.fill_reversed, 0) = 0' if ctx.has('medication', 'fill_reversed') else ''))  # B2 return-to-stock: never a fill
         exclude = re.compile(c['exclude_names'], re.I) if c.get('exclude_names') else None
-        for pid, d, cls, status, name, ds1, ds2 in db.execute(sql, [*c['classes'], *evidence]):
+        rows = list(db.execute(sql, [*c['classes'], *evidence]))
+        # Fills the semantic layer left without a class (e.g. pioglitazone): classified by ingredient name with the shared
+        # line-of-therapy component patterns (drug_classes registry + ingredient groups), never overriding a stated class.
+        from .line_of_therapy import COMPONENTS
+        named = {k: re.compile(COMPONENTS[k], re.I) for k in c['classes'] if k in COMPONENTS}
+        if named:
+            for pid, d, _, status, name, ds1, ds2 in db.execute(sql.replace(f'm.drug_class IN ({q1})', "coalesce(m.drug_class, '') = ''"), evidence):
+                cls = next((k for k, rx in named.items() if rx.search(name or '')), None)
+                if cls: rows.append((pid, d, cls, status, name, ds1, ds2))
+        for pid, d, cls, status, name, ds1, ds2 in rows:
             if statuses and status not in statuses: continue
             if exclude and exclude.search(name or ''): continue
             out[pid].append((d[:10] if d else None, ds1 or ds2, cls))
@@ -278,6 +292,52 @@ def _rows(ctx, c):
         missing.append(f"{c['label']}: no such records in the received data")
     ctx._cache[key] = (dict(out), missing)
     return ctx._cache[key]
+
+
+def _claim_lines(ctx, codes):
+    """[(source, patient_id, date, cpt)] for paid claim lines with these CPT codes: the client's billing claim lines and the
+    payer claim lines (paid, current versions)."""
+    out, q = [], ','.join('?' * len(codes))
+    if not codes: return out
+    if ctx.has('claim_line', 'cpt'):
+        for pid, d, code in ctx.db.execute(f'SELECT patient_id, service_date, cpt FROM claim_line WHERE cpt IN ({q})', list(codes)):
+            out.append(('claim_line', pid, d[:10] if d else None, code))
+    if ctx.has('payer_claim_line', 'cpt') and ctx.has('payer_claim', 'final_status'):
+        for pid, d, code in ctx.db.execute(f"SELECT l.patient_id, coalesce(l.service_date, p.service_from), l.cpt FROM payer_claim_line l JOIN payer_claim p "
+                                           f"ON p.payer_claim_id = l.payer_claim_id WHERE l.cpt IN ({q}) AND p.final_status = 'paid' "
+                                           f"AND coalesce(l.counts_in_metrics, 1) = 1", list(codes)):
+            out.append(('payer_claim_line', pid, d[:10] if d else None, code))
+    return out
+
+
+def _claim_code_rows(ctx, spec):
+    """Claim-line evidence for a measurement criterion: [(patient_id, date, detail)].
+    spec = {"cpt": [...], "with": {"cpt": [...], "loinc": [...], "days": N}}. 'with' is a companion test that must be billed
+    within N days (HEDIS KED: quantitative urine albumin 82043 with urine creatinine 82570 within 4 days = uACR). A source
+    that never itemizes the companion code cannot show it; there the primary code stands alone and the detail says so."""
+    rows = _claim_lines(ctx, spec.get('cpt') or [])
+    w = spec.get('with') or {}
+    if not w: return [(pid, d, f'CPT {code} ({src})') for src, pid, d, code in rows if d]
+    comp = _claim_lines(ctx, w.get('cpt') or [])
+    itemized = {src for src, *_ in comp}
+    near = defaultdict(set)
+    for src, pid, d, _ in comp:
+        if d: near[pid].add(d)
+    if w.get('loinc') and ctx.has('measurement', 'loinc'):
+        q = ','.join('?' * len(w['loinc']))
+        for pid, d in ctx.db.execute(f'SELECT patient_id, event_date FROM measurement WHERE loinc IN ({q})', list(w['loinc'])):
+            if d: near[pid].add(d[:10])
+    days = int(w.get('days', 4))
+    out = []
+    for src, pid, d, code in rows:
+        if not d: continue
+        if src not in itemized:
+            out.append((pid, d, f'CPT {code} ({src}; companion {"/".join(w.get("cpt") or [])} not itemized by this source)'))
+            continue
+        day = date.fromisoformat(d)
+        if any(abs((date.fromisoformat(x) - day).days) <= days for x in near.get(pid, ())):
+            out.append((pid, d, f'CPT {code} + companion within {days} days ({src})'))
+    return out
 
 
 def _in(d, lo, hi): return d is not None and lo <= d <= hi

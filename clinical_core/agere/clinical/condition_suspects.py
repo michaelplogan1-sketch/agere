@@ -14,8 +14,11 @@ documentation prompt with cited evidence rows, never a diagnosis. Every rule is 
                         or result (risk_adjustment).
   obesity (E66)         WHO / CDC adult BMI classes: BMI >= 30 kg/m2 on >= min_readings dates (BMI measured or computed from
                         weight and median height). BMI >= 40 is reported as morbid obesity (E66.01) with the same rule.
-  hypertension (I10)    2017 ACC/AHA BP guideline: elevated readings on >= 2 occasions; here >= min_days distinct days whose
-                        lowest reading is >= 140 systolic or >= 90 diastolic (stage 2, avoiding single white-coat days).
+  hypertension (I10)    2017 ACC/AHA BP guideline (section 4.1, Table 7: 'use an average of >= 2 readings obtained on >= 2
+                        occasions to estimate the individual's level of BP'): >= min_days distinct days whose lowest reading is
+                        >= 140 systolic or >= 90 diastolic (stage 2, avoiding single white-coat days) AND the average of the
+                        day readings over every measured day is >= 140/90 (hypertension_average). A few high days among many
+                        normal ones (pain, acute illness, white-coat) are not the patient's BP level.
   hyperlipidemia (E78)  NCEP ATP III / 2018 AHA/ACC cholesterol guideline: LDL-C >= 190 mg/dL once (severe primary
                         hypercholesterolaemia) or >= 160 mg/dL on >= 2 dates.
   hypothyroidism (E03)  ATA 2014 hypothyroidism guideline: TSH >= 10 mIU/L on >= 2 dates, or >= min_fills levothyroxine fills
@@ -31,9 +34,9 @@ import statistics
 
 from . import risk_adjustment as ra
 
-VERSION = 'condition-suspects/1'
+VERSION = 'condition-suspects/2'
 SUSPECT_DEFAULTS = {'diabetes_confirmations': 2, 'diabetes_min_fills': 2, 'obesity_bmi': 30.0, 'obesity_min_readings': 2,
-                    'hypertension_min_days': 2, 'ldl_single': 190.0, 'ldl_repeat': 160.0, 'tsh_threshold': 10.0, 'thyroid_min_fills': 2,
+                    'hypertension_min_days': 2, 'hypertension_average': True, 'ldl_single': 190.0, 'ldl_repeat': 160.0, 'tsh_threshold': 10.0, 'thyroid_min_fills': 2,
                     'depression_min_screens': 0, 'ckd': True, 'heart_failure': True}
 DIABETES_SPECIFIC = ('insulin', 'sulfonylurea', 'dpp4_inhibitor')
 FILL_EVIDENCE = ('dispensed', 'claim', 'payer_claim', 'pharmacy_history')
@@ -73,6 +76,24 @@ def extra_evidence(db, pids, start, end):
 
 def _dates(rows, pred):
     return sorted({d for d, v, _ in rows if d and v is not None and pred(float(v))})
+
+
+def hypertension_days(systolic, diastolic, params=None):
+    """Stage-2 elevated days supporting a hypertension suspect, or [] (see the module docstring).
+    systolic / diastolic: [(date, value, record_id)]. A day's reading is its lowest (representative) value."""
+    p = {**SUSPECT_DEFAULTS, **(params or {})}
+    day_bp = defaultdict(dict)
+    for concept, rows in (('systolic_bp', systolic), ('diastolic_bp', diastolic)):
+        for d, v, _ in rows:
+            cur = day_bp[d].get(concept)
+            day_bp[d][concept] = float(v) if cur is None else min(cur, float(v))
+    both = {d: r for d, r in day_bp.items() if 'systolic_bp' in r and 'diastolic_bp' in r}
+    high = sorted(d for d, r in both.items() if r['systolic_bp'] >= 140 or r['diastolic_bp'] >= 90)
+    if not p['hypertension_min_days'] or len(high) < p['hypertension_min_days']: return []
+    if p['hypertension_average']:  # the patient's BP level is the average over all measured occasions
+        if not (statistics.mean(r['systolic_bp'] for r in both.values()) >= 140 or
+                statistics.mean(r['diastolic_bp'] for r in both.values()) >= 90): return []
+    return high
 
 
 def suspects(db, pids, documented, start, end, params=None, ages=None, sexes=None):
@@ -123,14 +144,9 @@ def suspects(db, pids, documented, start, end, params=None, ages=None, sexes=Non
         if len(obese) >= p['obesity_min_readings']:
             morbid = len({d for d, v in bmis if v >= 40}) >= p['obesity_min_readings']
             add('obesity', obese[p['obesity_min_readings'] - 1], [f'BMI>={p["obesity_bmi"]:g} {d}' for d in obese], 'E6601' if morbid else 'E669')
-        # hypertension: distinct days whose lowest reading is stage-2 elevated
-        day_bp = defaultdict(dict)
-        for concept in ('systolic_bp', 'diastolic_bp'):
-            for d, v, _ in x.get(concept, []):
-                cur = day_bp[d].get(concept)
-                day_bp[d][concept] = float(v) if cur is None else min(cur, float(v))
-        high = sorted(d for d, r in day_bp.items() if 'systolic_bp' in r and 'diastolic_bp' in r and (r['systolic_bp'] >= 140 or r['diastolic_bp'] >= 90))
-        if p['hypertension_min_days'] and len(high) >= p['hypertension_min_days']:
+        # hypertension: stage-2 days, sustained on average
+        high = hypertension_days(x.get('systolic_bp', []), x.get('diastolic_bp', []), p)
+        if high:
             add('hypertension', high[p['hypertension_min_days'] - 1], [f'BP>=140/90 {d}' for d in high], 'I10')
         # hyperlipidemia
         ldl = x.get('ldl', [])
