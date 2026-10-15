@@ -70,7 +70,7 @@ def contract(q, answer):
             keys = [k for k, v in r.items() if not _number(v)]
             vals = [v for v in r.values() if _number(v)]
             if vals:
-                rows.append({'key': str(r[keys[0]]) if keys else str(list(r.values())[0]), 'value': vals[-1]})
+                rows.append({'key': str(r[keys[-1]]) if keys else str(list(r.values())[0]), 'value': vals[-1]})  # innermost label = the grouping
         out['table'] = rows
     if out['status'] == 'answered' and all(out.get(k) in (None, [], {}) for k in ('count', 'value', 'patient_ids', 'table')):
         out['status'] = 'abstain'
@@ -126,7 +126,22 @@ def main(argv=None):
     p.add_argument('--jobs', type=int, default=3)
     p.add_argument('--ids', nargs='+')
     p.add_argument('--label', default='')
+    p.add_argument('--rescore', type=Path, help='Re-derive the contract from a saved run directory and re-score (no model calls)')
     args = p.parse_args(argv)
+    if args.rescore:
+        args.rescore = args.rescore.resolve()
+        qs = {json.loads(l)['id']: json.loads(l) for l in open(ECOSYSTEM / 'releases' / args.release / 'questions/questions.jsonl')}
+        rows = [json.loads(l) for l in open(args.rescore / 'rows.jsonl')]
+        with open(args.rescore / 'question_answers.jsonl', 'w') as f:
+            for r in rows:
+                r['contract'] = contract(qs[r['id']], r['answer'])
+                f.write(json.dumps(r['contract'], default=str) + '\n')
+        result = score(args.release, args.rescore / 'question_answers.jsonl')
+        (args.rescore / 'score.txt').write_text(result.stdout + result.stderr)
+        per = score(args.release, args.rescore / 'question_answers.jsonl', per_question=True)
+        (args.rescore / 'per_question.txt').write_text(per.stdout + per.stderr)
+        print(args.rescore)
+        return
     questions = [json.loads(l) for l in open(ECOSYSTEM / 'releases' / args.release / 'questions/questions.jsonl')]
     if args.ids:
         ids = {i for a in args.ids for i in a.split(',')}
