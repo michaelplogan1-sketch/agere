@@ -1,0 +1,2 @@
+SELECT (SELECT COUNT(*) FROM records WHERE stream='pharmacy_dispenses' AND json_extract(payload,'$.status')='returned_to_stock' AND event BETWEEN '2029-01-01' AND '2029-12-31')
+ + (SELECT COUNT(*) FROM records WHERE stream='payer_pharmacy_claims' AND json_extract(payload,'$.claim_status')='reversed' AND json_extract(payload,'$.reversal_reason')='return_to_stock' AND event BETWEEN '2029-01-01' AND '2029-12-31') AS count

@@ -1,0 +1,5 @@
+WITH flu AS (
+  SELECT patient, event d FROM records WHERE stream='immunizations' AND lower(json_extract(payload,'$.vaccine')) LIKE '%influenza%' AND json_extract(payload,'$.administration_status')='completed'
+  UNION SELECT patient, json_extract(payload,'$.service_date') FROM records WHERE stream='payer_medical_claim_lines' AND json_extract(payload,'$.procedure_code') IN ('90653','90656','90658','90660','90661','90662','90673','90674','90682','90686','90688','90694','90756')
+  UNION SELECT patient, json_extract(payload,'$.service_date') FROM records WHERE stream='medical_claim_lines' AND json_extract(payload,'$.service_code') IN ('90653','90656','90658','90660','90661','90662','90673','90674','90682','90686','90688','90694','90756'))
+SELECT COUNT(*) AS count FROM patients p WHERE (CAST(strftime('%Y','2029-10-01') AS INTEGER) - CAST(strftime('%Y',json_extract(p.payload,'$.birth_date')) AS INTEGER) - (strftime('%m-%d','2029-10-01') < strftime('%m-%d',json_extract(p.payload,'$.birth_date')))) >= 65 AND p.id IN (SELECT patient FROM flu WHERE d BETWEEN '2029-08-01' AND '2030-03-31')
