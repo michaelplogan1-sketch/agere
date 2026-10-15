@@ -274,3 +274,67 @@ def frontier_semantic(question, semantic, *, key=None, model=MODEL, max_tools=8,
                   cache_read_input_tokens=sum(u.get('cache_read_input_tokens') or 0 for u in usage),
                   cache_creation_input_tokens=sum(u.get('cache_creation_input_tokens') or 0 for u in usage))
     return result
+
+
+# --- frontier_canonical: LLM + canonical model (clinical_core/agere/canonical) ----------------------------------------
+# Same tool loop and answer contract as frontier_semantic; the documentation is generated from the canonical database by
+# clinical_core.agere.canonical.docs_gen (tables, columns, version rules, value sets, stream lineage, verified examples
+# that are never drawn from heldout sets or bench/capability) and the one tool is read-only SQL over that database.
+
+CANONICAL_SQL_TOOL = {'name': 'query_sql', 'description': 'Read-only SQLite SELECT/WITH over the canonical model tables '
+                      'documented in the system prompt. :as_of is bound to the question\'s as-of date. Results are capped '
+                      '(2000 rows / 60K characters) and truncation is explicit: aggregate in SQL for complete results.',
+                      'input_schema': {'type': 'object', 'properties': {'sql': {'type': 'string'}},
+                                       'required': ['sql'], 'additionalProperties': False}}
+
+CANONICAL_RULES = '''You are a data analyst answering questions over a canonical analytic model of synthetic healthcare data
+(SQLite), like a text-to-SQL assistant working from a published data model. The documentation below is the model:
+tables with column descriptions and row counts, the version-resolution rules already applied (current versions,
+claim replacements and voids, final adjudication, picked-up fills), value sets with citations, the raw-stream lineage
+of each table, and verified example queries. Plan from the documentation and the examples; do not explore tables
+blindly. Query only to compute the answer or to check a value you cannot get from the documentation.
+Answer the question as asked: follow its literal scope (records vs patients vs visits vs claims, named fields, units,
+date clocks, inclusions/exclusions). Deduplicate patients. Distinguish service/event dates from arrival
+(available_date). Read money from one perspective only. Do arithmetic in SQL. You have at most 8 query_sql calls;
+tools may return explicit errors or truncation, never treat either as zero.
+Snapshot semantics: the canonical model is ONE snapshot (see the Snapshot line). If the question's as_of is earlier,
+restrict to rows with available_date <= :as_of where a table has that column, and say in grounding that settled
+per-entity rows reflect the snapshot.
+'''
+_CANONICAL_CONTEXT = {}
+
+
+def canonical_context(canonical):
+    """(documentation text, verified example IDs) for one canonical database; deterministic, cached per database."""
+    from clinical_core.agere.canonical import docs_gen
+    key = (str(canonical.path), canonical.meta.get('release'), canonical.meta.get('built_at'))
+    cached = _CANONICAL_CONTEXT.get(key)
+    if cached is None:
+        text, ids, _rejected = docs_gen.build_docs(
+            canonical.columns, lambda sql: canonical.query(sql, max_rows=5000, max_chars=10**6)['rows'], canonical.meta)
+        cached = _CANONICAL_CONTEXT[key] = (text, ids)
+    return cached
+
+
+def frontier_canonical(question, canonical, *, key=None, model=MODEL, max_tools=8, transport=post_json):
+    if not 1 <= max_tools <= 20:
+        raise ValueError('Tool limit must be 1..20')
+    docs, example_ids = canonical_context(canonical)
+    system = [{'type': 'text', 'text': CANONICAL_RULES + CONTRACT},
+              {'type': 'text', 'text': docs, 'cache_control': {'type': 'ephemeral'}}]
+    user = json.dumps({'question': question['question'], 'as_of': question['as_of'],
+                       'canonical_snapshot_as_of': canonical.as_of})
+
+    def execute(use):
+        if use.get('name') != 'query_sql' or set(use.get('input', {})) != {'sql'}:
+            raise ValueError('Only query_sql with one sql string is supported')
+        return canonical.query(use['input']['sql'], as_of=question['as_of'], max_rows=2000, max_chars=60000)
+
+    result = _tool_loop(user, system, [CANONICAL_SQL_TOOL], execute, key=key, model=model, max_tools=max_tools,
+                        transport=transport, extra={'cache_control': {'type': 'ephemeral'}})
+    usage = result['usage']
+    result.update(canonical_snapshot_as_of=canonical.as_of, prompt_example=question['id'] in example_ids,
+                  context_chars=len(docs), tool_call_count=len(result['tool_calls']),
+                  cache_read_input_tokens=sum(u.get('cache_read_input_tokens') or 0 for u in usage),
+                  cache_creation_input_tokens=sum(u.get('cache_creation_input_tokens') or 0 for u in usage))
+    return result

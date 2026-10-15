@@ -1,0 +1,1466 @@
+{
+ "version": "canonical/1",
+ "release_inventory": "v28-sample (237 streams); tmp/stream_inventory.txt",
+ "note": "Every raw stream maps to canonical table(s) or declares unused with a reason. The coverage gate (clinical_core.agere.canonical.coverage) fails a build on any stream absent here or mapped to an unknown table. Tables marked all_streams read every stream (delivery dates, supersessions) and are not listed per stream. 'tuva' names the Tuva Project input-layer table (or core table) each canonical table feeds.",
+ "tables": {
+  "person": {
+   "tuva": "patient",
+   "omop": "person",
+   "status": "planned",
+   "doc": "One row per person (MPI-resolved)."
+  },
+  "person_source": {
+   "tuva": null,
+   "omop": null,
+   "status": "planned",
+   "doc": "MPI crosswalk person_id <-> (source_system, source_patient_id)."
+  },
+  "death": {
+   "tuva": "patient.death_date",
+   "omop": "death",
+   "status": "planned",
+   "doc": "Date and source of death."
+  },
+  "enrollment_span": {
+   "tuva": "eligibility",
+   "omop": "payer_plan_period",
+   "status": "planned",
+   "doc": "Payer coverage spans, current versions only."
+  },
+  "member_month": {
+   "tuva": "core.member_months",
+   "omop": null,
+   "status": "planned",
+   "doc": "Derived from enrollment_span."
+  },
+  "registration_coverage": {
+   "tuva": null,
+   "omop": null,
+   "status": "planned",
+   "doc": "EHR registration's coverage view (not the payer's)."
+  },
+  "encounter": {
+   "tuva": "encounter",
+   "omop": "visit_occurrence",
+   "status": "planned",
+   "doc": "One row per real visit or stay (encounter grouper)."
+  },
+  "condition": {
+   "tuva": "condition",
+   "omop": "condition_occurrence",
+   "status": "planned",
+   "doc": "Diagnosis evidence by source."
+  },
+  "procedure": {
+   "tuva": "procedure",
+   "omop": "procedure_occurrence",
+   "status": "planned",
+   "doc": "Procedures and performed services."
+  },
+  "service_order": {
+   "tuva": null,
+   "omop": null,
+   "status": "planned",
+   "doc": "Orders (lab, imaging, procedure, screening, diagnostic, home health) with status."
+  },
+  "medication": {
+   "tuva": "medication",
+   "omop": "drug_exposure",
+   "status": "planned",
+   "doc": "Prescriptions, administrations, medication lists and reconciliations."
+  },
+  "medication_fill": {
+   "tuva": "pharmacy_claim + medication (dispensed)",
+   "omop": "drug_exposure (dispensed)",
+   "status": "planned",
+   "doc": "One row per picked-up fill."
+  },
+  "pharmacy_claim": {
+   "tuva": "pharmacy_claim",
+   "omop": "cost",
+   "status": "planned",
+   "doc": "One row per pharmacy claim with final status."
+  },
+  "lab_result": {
+   "tuva": "lab_result",
+   "omop": "measurement",
+   "status": "planned",
+   "doc": "Current lab results; history in lab_result_history."
+  },
+  "vital_sign": {
+   "tuva": "observation",
+   "omop": "measurement",
+   "status": "planned",
+   "doc": "Vitals and bedside measurements."
+  },
+  "screening": {
+   "tuva": "observation",
+   "omop": "observation",
+   "status": "planned",
+   "doc": "Completed screening instruments and screening results."
+  },
+  "sdoh_attribute": {
+   "tuva": "observation",
+   "omop": "observation",
+   "status": "planned",
+   "doc": "Vendor SDOH indices, latest delivery per person."
+  },
+  "allergy": {
+   "tuva": "observation",
+   "omop": "observation",
+   "status": "planned",
+   "doc": "Allergies and intolerances."
+  },
+  "immunization": {
+   "tuva": "immunization",
+   "omop": "drug_exposure",
+   "status": "planned",
+   "doc": "Administered immunizations (CVX)."
+  },
+  "medical_claim": {
+   "tuva": "medical_claim",
+   "omop": "cost",
+   "status": "planned",
+   "doc": "Medical claims, payer and provider perspectives."
+  },
+  "claim_line": {
+   "tuva": "medical_claim (line grain)",
+   "omop": "cost",
+   "status": "planned",
+   "doc": "Claim lines."
+  },
+  "claim_adjudication_history": {
+   "tuva": null,
+   "omop": null,
+   "status": "planned",
+   "doc": "Every adjudication version, in order."
+  },
+  "claim_crosswalk": {
+   "tuva": null,
+   "omop": null,
+   "status": "planned",
+   "doc": "Payer copy <-> provider claim match with rule and confidence."
+  },
+  "claim_payment": {
+   "tuva": null,
+   "omop": "cost",
+   "status": "planned",
+   "doc": "Provider-perspective payer payments, remittances and cash postings."
+  },
+  "patient_payment": {
+   "tuva": null,
+   "omop": null,
+   "status": "planned",
+   "doc": "Patient payments (provider perspective)."
+  },
+  "patient_refund": {
+   "tuva": null,
+   "omop": null,
+   "status": "planned",
+   "doc": "Patient refunds (provider perspective)."
+  },
+  "billing_account": {
+   "tuva": null,
+   "omop": null,
+   "status": "planned",
+   "doc": "Patient billing accounts, balances and payment plans."
+  },
+  "provider": {
+   "tuva": "practitioner",
+   "omop": "provider",
+   "status": "planned",
+   "doc": "Clinicians with NPI and owned flag."
+  },
+  "organization": {
+   "tuva": "location",
+   "omop": "care_site",
+   "status": "planned",
+   "doc": "Organizations with NPI/TIN and owned flag."
+  },
+  "care_team": {
+   "tuva": null,
+   "omop": null,
+   "status": "planned",
+   "doc": "Person-clinician relationships (attribution, PCP)."
+  },
+  "appointment": {
+   "tuva": "appointment",
+   "omop": null,
+   "status": "planned",
+   "doc": "One row per appointment, latest version."
+  },
+  "referral": {
+   "tuva": null,
+   "omop": null,
+   "status": "planned",
+   "doc": "Referrals and their status history."
+  },
+  "care_management": {
+   "tuva": null,
+   "omop": null,
+   "status": "planned",
+   "doc": "Care management enrollments, outreach and contacts."
+  },
+  "document": {
+   "tuva": null,
+   "omop": "note",
+   "status": "planned",
+   "doc": "Notes, HIE, scanned, C-CDA and messages, with a pointer to text."
+  },
+  "clinical_event": {
+   "tuva": "observation",
+   "omop": "observation",
+   "status": "planned",
+   "doc": "Typed workflow/assessment facts with no dedicated table (decisions, histories, structured assessments, contacts): person, date, type, status, record pointer."
+  },
+  "data_delivery": {
+   "tuva": null,
+   "omop": null,
+   "status": "planned",
+   "all_streams": true,
+   "doc": "Per source-system delivery dates (every stream)."
+  },
+  "record_correction": {
+   "tuva": null,
+   "omop": null,
+   "status": "planned",
+   "all_streams": true,
+   "doc": "Per-stream supersessions (every stream), from versions.py."
+  }
+ },
+ "streams": {
+  "adt": {
+   "tables": [
+    "encounter"
+   ]
+  },
+  "adt_messages": {
+   "tables": [
+    "encounter",
+    "condition"
+   ]
+  },
+  "advance_care_document_status": {
+   "tables": [
+    "document"
+   ]
+  },
+  "advance_care_documents": {
+   "tables": [
+    "document"
+   ]
+  },
+  "allergies": {
+   "tables": [
+    "allergy"
+   ]
+  },
+  "allergy_history_reviews": {
+   "tables": [
+    "allergy"
+   ]
+  },
+  "appointment_scheduling_contacts": {
+   "tables": [
+    "appointment"
+   ]
+  },
+  "appointments": {
+   "tables": [
+    "appointment"
+   ]
+  },
+  "audiology_evaluations": {
+   "tables": [
+    "screening"
+   ]
+  },
+  "behavioral_assessments": {
+   "tables": [
+    "screening"
+   ]
+  },
+  "behavioral_care_contacts": {
+   "tables": [
+    "care_management"
+   ]
+  },
+  "behavioral_care_plans": {
+   "tables": [
+    "care_management"
+   ]
+  },
+  "behavioral_followup_reports": {
+   "tables": [
+    "clinical_event"
+   ]
+  },
+  "billing_authorizations": {
+   "unused": "Revenue-cycle payment-basis authorizations per account; workflow state, not a claim, payment or coverage fact. Plan money comes from medical_claim/claim_payment."
+  },
+  "billing_documents": {
+   "tables": [
+    "document",
+    "billing_account"
+   ]
+  },
+  "billing_service_dispositions": {
+   "unused": "Bill/no-bill disposition of care records inside the practice revenue cycle; the resulting submissions are in medical_claim."
+  },
+  "breast_diagnostic_orders": {
+   "tables": [
+    "service_order"
+   ]
+  },
+  "breast_diagnostic_reports": {
+   "tables": [
+    "procedure",
+    "document"
+   ]
+  },
+  "breast_diagnostic_sessions": {
+   "tables": [
+    "procedure"
+   ]
+  },
+  "cancer_screening_decisions": {
+   "tables": [
+    "clinical_event"
+   ]
+  },
+  "cancer_screening_history": {
+   "tables": [
+    "clinical_event"
+   ]
+  },
+  "cancer_screening_orders": {
+   "tables": [
+    "service_order"
+   ]
+  },
+  "cancer_screening_results": {
+   "tables": [
+    "procedure",
+    "screening"
+   ]
+  },
+  "care_coordination_contacts": {
+   "tables": [
+    "care_management"
+   ]
+  },
+  "care_intake": {
+   "tables": [
+    "clinical_event"
+   ]
+  },
+  "care_management_contacts": {
+   "tables": [
+    "care_management"
+   ]
+  },
+  "care_management_enrollments": {
+   "tables": [
+    "care_management"
+   ]
+  },
+  "care_support_interviews": {
+   "tables": [
+    "clinical_event"
+   ]
+  },
+  "care_team_relationships": {
+   "tables": [
+    "care_team"
+   ]
+  },
+  "caregiver_contacts": {
+   "tables": [
+    "care_management"
+   ]
+  },
+  "chart_summaries": {
+   "tables": [
+    "document"
+   ]
+  },
+  "claim_acknowledgements": {
+   "tables": [
+    "claim_adjudication_history"
+   ]
+  },
+  "claim_corrections": {
+   "tables": [
+    "medical_claim",
+    "claim_adjudication_history"
+   ]
+  },
+  "clinical_document_requests": {
+   "tables": [
+    "document"
+   ]
+  },
+  "code_status_orders": {
+   "tables": [
+    "clinical_event"
+   ]
+  },
+  "community_service_outcomes": {
+   "tables": [
+    "referral"
+   ]
+  },
+  "community_service_referrals": {
+   "tables": [
+    "referral"
+   ]
+  },
+  "condition_assessments": {
+   "tables": [
+    "condition",
+    "clinical_event"
+   ]
+  },
+  "conditions": {
+   "tables": [
+    "condition"
+   ]
+  },
+  "coverage": {
+   "tables": [
+    "registration_coverage"
+   ]
+  },
+  "coverage_verifications": {
+   "tables": [
+    "registration_coverage"
+   ]
+  },
+  "critical_result_notifications": {
+   "tables": [
+    "clinical_event"
+   ]
+  },
+  "current_medication_container_reviews": {
+   "tables": [
+    "medication"
+   ]
+  },
+  "death_records": {
+   "tables": [
+    "death",
+    "person",
+    "condition"
+   ]
+  },
+  "demographic_updates": {
+   "tables": [
+    "person",
+    "death"
+   ]
+  },
+  "dental_evaluations": {
+   "tables": [
+    "procedure",
+    "clinical_event"
+   ]
+  },
+  "developmental_screens": {
+   "tables": [
+    "screening"
+   ]
+  },
+  "diagnostic_access_contacts": {
+   "tables": [
+    "referral"
+   ]
+  },
+  "diagnostic_orders": {
+   "tables": [
+    "service_order"
+   ]
+  },
+  "diagnostic_referral_packets": {
+   "tables": [
+    "referral"
+   ]
+  },
+  "diagnostic_result_reviews": {
+   "tables": [
+    "clinical_event"
+   ]
+  },
+  "diagnostic_review_interviews": {
+   "tables": [
+    "clinical_event"
+   ]
+  },
+  "diagnostic_test_reports": {
+   "tables": [
+    "procedure",
+    "document"
+   ]
+  },
+  "diagnostic_test_sessions": {
+   "tables": [
+    "procedure"
+   ]
+  },
+  "discharge_plans": {
+   "tables": [
+    "encounter"
+   ]
+  },
+  "durable_medical_equipment": {
+   "tables": [
+    "procedure"
+   ]
+  },
+  "encounter_text_fragments": {
+   "tables": [
+    "document",
+    "encounter"
+   ]
+  },
+  "encounters": {
+   "tables": [
+    "encounter",
+    "condition"
+   ]
+  },
+  "endoscopy_reports": {
+   "tables": [
+    "procedure",
+    "document"
+   ]
+  },
+  "enrollment_spans": {
+   "tables": [
+    "enrollment_span",
+    "member_month",
+    "person_source"
+   ]
+  },
+  "facility_medication_supply": {
+   "tables": [
+    "medication"
+   ]
+  },
+  "financial_screens": {
+   "tables": [
+    "screening"
+   ]
+  },
+  "functional_assessments": {
+   "tables": [
+    "screening"
+   ]
+  },
+  "functional_mobility_exams": {
+   "tables": [
+    "clinical_event"
+   ]
+  },
+  "gi_diagnostic_plan_reviews": {
+   "tables": [
+    "clinical_event"
+   ]
+  },
+  "gi_diagnostic_plans": {
+   "tables": [
+    "clinical_event"
+   ]
+  },
+  "gi_laboratory_report_transmissions": {
+   "tables": [
+    "lab_result"
+   ]
+  },
+  "growth_observations": {
+   "tables": [
+    "vital_sign"
+   ]
+  },
+  "guardian_relationships": {
+   "tables": [
+    "clinical_event"
+   ]
+  },
+  "health_risk_assessments": {
+   "tables": [
+    "screening"
+   ]
+  },
+  "healthcare_agent_designations": {
+   "tables": [
+    "document"
+   ]
+  },
+  "hie_documents": {
+   "tables": [
+    "document",
+    "condition"
+   ]
+  },
+  "home_health_assessments": {
+   "tables": [
+    "clinical_event"
+   ]
+  },
+  "home_health_billing_periods": {
+   "tables": [
+    "encounter"
+   ]
+  },
+  "home_health_case_summaries": {
+   "tables": [
+    "document"
+   ]
+  },
+  "home_health_intake": {
+   "tables": [
+    "referral"
+   ]
+  },
+  "home_health_orders": {
+   "tables": [
+    "service_order"
+   ]
+  },
+  "home_health_plan_responses": {
+   "tables": [
+    "clinical_event"
+   ]
+  },
+  "home_health_plans": {
+   "tables": [
+    "clinical_event"
+   ]
+  },
+  "home_health_referral_packets": {
+   "tables": [
+    "referral"
+   ]
+  },
+  "home_health_treatments": {
+   "tables": [
+    "procedure"
+   ]
+  },
+  "home_medication_questions": {
+   "tables": [
+    "medication"
+   ]
+  },
+  "hospice_elections": {
+   "tables": [
+    "encounter",
+    "condition"
+   ]
+  },
+  "hospital_care_transitions": {
+   "tables": [
+    "encounter"
+   ]
+  },
+  "hospital_fluid_balance": {
+   "tables": [
+    "vital_sign"
+   ]
+  },
+  "hospital_followup_assessments": {
+   "tables": [
+    "clinical_event"
+   ]
+  },
+  "hospital_illness_assessments": {
+   "tables": [
+    "clinical_event"
+   ]
+  },
+  "imaging_orders": {
+   "tables": [
+    "service_order"
+   ]
+  },
+  "imaging_report_fragments": {
+   "tables": [
+    "lab_result"
+   ]
+  },
+  "imaging_reports": {
+   "tables": [
+    "procedure",
+    "document"
+   ]
+  },
+  "imaging_studies": {
+   "tables": [
+    "procedure"
+   ]
+  },
+  "immunization_decisions": {
+   "tables": [
+    "clinical_event"
+   ]
+  },
+  "immunization_history": {
+   "tables": [
+    "immunization"
+   ]
+  },
+  "immunization_orders": {
+   "tables": [
+    "service_order"
+   ]
+  },
+  "immunization_record_requests": {
+   "tables": [
+    "clinical_event"
+   ]
+  },
+  "immunization_screening": {
+   "tables": [
+    "screening"
+   ]
+  },
+  "immunizations": {
+   "tables": [
+    "immunization",
+    "procedure"
+   ]
+  },
+  "imported_documents": {
+   "tables": [
+    "document"
+   ]
+  },
+  "injury_examinations": {
+   "tables": [
+    "clinical_event"
+   ]
+  },
+  "injury_followup_reports": {
+   "tables": [
+    "clinical_event"
+   ]
+  },
+  "inpatient_cardiac_reports": {
+   "tables": [
+    "procedure",
+    "lab_result"
+   ]
+  },
+  "inpatient_discharge_reconciliation": {
+   "tables": [
+    "medication"
+   ]
+  },
+  "inpatient_fluid_charts": {
+   "tables": [
+    "vital_sign"
+   ]
+  },
+  "inpatient_medication_histories": {
+   "tables": [
+    "medication"
+   ]
+  },
+  "inpatient_volume_assessments": {
+   "tables": [
+    "clinical_event"
+   ]
+  },
+  "laboratory_collection_attempts": {
+   "tables": [
+    "service_order"
+   ]
+  },
+  "laboratory_collection_bookings": {
+   "tables": [
+    "service_order"
+   ]
+  },
+  "laboratory_demographic_amendments": {
+   "tables": [
+    "lab_result"
+   ]
+  },
+  "laboratory_followup_contacts": {
+   "tables": [
+    "service_order"
+   ]
+  },
+  "laboratory_orders": {
+   "tables": [
+    "service_order"
+   ]
+  },
+  "laboratory_report_transmissions": {
+   "tables": [
+    "lab_result"
+   ]
+  },
+  "laboratory_result_notifications": {
+   "tables": [
+    "lab_result"
+   ]
+  },
+  "laboratory_specimens": {
+   "tables": [
+    "lab_result"
+   ]
+  },
+  "laboratory_status_requests": {
+   "tables": [
+    "service_order"
+   ]
+  },
+  "laboratory_status_responses": {
+   "tables": [
+    "lab_result",
+    "service_order"
+   ]
+  },
+  "labs": {
+   "tables": [
+    "lab_result"
+   ]
+  },
+  "medical_claim_lines": {
+   "tables": [
+    "claim_line",
+    "procedure"
+   ]
+  },
+  "medical_claim_submissions": {
+   "tables": [
+    "medical_claim",
+    "claim_adjudication_history",
+    "claim_crosswalk",
+    "encounter",
+    "condition"
+   ]
+  },
+  "medical_claims": {
+   "tables": [
+    "claim_payment"
+   ]
+  },
+  "medical_payment_attempts": {
+   "tables": [
+    "billing_account"
+   ]
+  },
+  "medical_payment_plans": {
+   "tables": [
+    "billing_account"
+   ]
+  },
+  "medication_administrations": {
+   "tables": [
+    "medication"
+   ]
+  },
+  "medication_clarification_contacts": {
+   "tables": [
+    "medication"
+   ]
+  },
+  "medication_followup_reports": {
+   "tables": [
+    "medication"
+   ]
+  },
+  "medication_history_interviews": {
+   "tables": [
+    "medication"
+   ]
+  },
+  "medication_information_requests": {
+   "tables": [
+    "medication"
+   ]
+  },
+  "medication_intent_changes": {
+   "tables": [
+    "medication"
+   ]
+  },
+  "medication_label_evidence": {
+   "tables": [
+    "medication"
+   ]
+  },
+  "medication_lists": {
+   "tables": [
+    "medication"
+   ]
+  },
+  "medication_orders": {
+   "tables": [
+    "medication"
+   ]
+  },
+  "medication_reconciliation": {
+   "tables": [
+    "medication"
+   ]
+  },
+  "medication_record_transfers": {
+   "tables": [
+    "document"
+   ]
+  },
+  "medication_review_decisions": {
+   "tables": [
+    "medication"
+   ]
+  },
+  "medication_shared_decisions": {
+   "tables": [
+    "medication"
+   ]
+  },
+  "medication_symptom_assessments": {
+   "tables": [
+    "clinical_event"
+   ]
+  },
+  "mood_questionnaires": {
+   "tables": [
+    "screening"
+   ]
+  },
+  "notes": {
+   "tables": [
+    "document"
+   ]
+  },
+  "nursing_observations": {
+   "tables": [
+    "vital_sign"
+   ]
+  },
+  "optical_prescriptions": {
+   "tables": [
+    "clinical_event"
+   ]
+  },
+  "original_regimen_decisions": {
+   "tables": [
+    "medication"
+   ]
+  },
+  "outreach_attempts": {
+   "tables": [
+    "care_management",
+    "appointment"
+   ]
+  },
+  "outside_access_updates": {
+   "tables": [
+    "referral"
+   ]
+  },
+  "outside_followup_confirmations": {
+   "tables": [
+    "referral"
+   ]
+  },
+  "outside_followup_contacts": {
+   "tables": [
+    "referral"
+   ]
+  },
+  "outside_record_permissions": {
+   "tables": [
+    "document"
+   ]
+  },
+  "outside_report_status": {
+   "tables": [
+    "referral"
+   ]
+  },
+  "pathology_accessions": {
+   "tables": [
+    "procedure"
+   ]
+  },
+  "pathology_reports": {
+   "tables": [
+    "procedure",
+    "document",
+    "condition"
+   ]
+  },
+  "pathology_specimens": {
+   "tables": [
+    "procedure"
+   ]
+  },
+  "patient_billing_accounts": {
+   "tables": [
+    "billing_account"
+   ]
+  },
+  "patient_payments": {
+   "tables": [
+    "patient_payment"
+   ]
+  },
+  "patient_refunds": {
+   "tables": [
+    "patient_refund"
+   ]
+  },
+  "payer_cash_allocations": {
+   "tables": [
+    "claim_payment"
+   ]
+  },
+  "payer_medical_claim_lines": {
+   "tables": [
+    "claim_line",
+    "procedure",
+    "encounter"
+   ]
+  },
+  "payer_medical_claims": {
+   "tables": [
+    "medical_claim",
+    "claim_adjudication_history",
+    "claim_crosswalk",
+    "encounter",
+    "condition",
+    "person_source"
+   ]
+  },
+  "payer_pharmacy_claims": {
+   "tables": [
+    "pharmacy_claim",
+    "medication_fill"
+   ]
+  },
+  "periodontal_evaluations": {
+   "tables": [
+    "procedure"
+   ]
+  },
+  "personalized_prevention_plans": {
+   "tables": [
+    "clinical_event"
+   ]
+  },
+  "pharmacy_claim_transactions": {
+   "tables": [
+    "pharmacy_claim",
+    "medication_fill"
+   ]
+  },
+  "pharmacy_claims": {
+   "tables": [
+    "pharmacy_claim",
+    "medication_fill"
+   ]
+  },
+  "pharmacy_dispenses": {
+   "tables": [
+    "medication_fill"
+   ]
+  },
+  "pharmacy_history": {
+   "tables": [
+    "medication_fill"
+   ]
+  },
+  "pharmacy_information_responses": {
+   "tables": [
+    "medication"
+   ]
+  },
+  "pharmacy_payments": {
+   "tables": [
+    "patient_payment"
+   ]
+  },
+  "pharmacy_prescriber_responses": {
+   "tables": [
+    "medication"
+   ]
+  },
+  "pharmacy_renewal_requests": {
+   "tables": [
+    "medication"
+   ]
+  },
+  "post_immunization_observations": {
+   "tables": [
+    "immunization"
+   ]
+  },
+  "preprocedure_assessments": {
+   "tables": [
+    "clinical_event"
+   ]
+  },
+  "prescription_followthrough_reviews": {
+   "tables": [
+    "medication"
+   ]
+  },
+  "prescription_reassessment_decisions": {
+   "tables": [
+    "medication"
+   ]
+  },
+  "prescription_request_responses": {
+   "tables": [
+    "medication"
+   ]
+  },
+  "prescription_restart_interviews": {
+   "tables": [
+    "medication"
+   ]
+  },
+  "preventive_care_reviews": {
+   "tables": [
+    "clinical_event"
+   ]
+  },
+  "preventive_record_requests": {
+   "tables": [
+    "clinical_event"
+   ]
+  },
+  "preventive_screening": {
+   "tables": [
+    "screening",
+    "procedure"
+   ]
+  },
+  "procedure_access_contacts": {
+   "tables": [
+    "referral"
+   ]
+  },
+  "procedure_orders": {
+   "tables": [
+    "service_order"
+   ]
+  },
+  "procedure_preparation_contacts": {
+   "tables": [
+    "clinical_event"
+   ]
+  },
+  "procedure_recovery_notes": {
+   "tables": [
+    "document"
+   ]
+  },
+  "procedure_referral_packets": {
+   "tables": [
+    "referral"
+   ]
+  },
+  "procedure_result_communications": {
+   "tables": [
+    "clinical_event"
+   ]
+  },
+  "procedures": {
+   "tables": [
+    "procedure"
+   ]
+  },
+  "provider_remittance_advice": {
+   "tables": [
+    "claim_payment",
+    "claim_adjudication_history"
+   ]
+  },
+  "received_breast_diagnostic_reports": {
+   "tables": [
+    "procedure",
+    "document"
+   ]
+  },
+  "received_diagnostic_reports": {
+   "tables": [
+    "procedure",
+    "document"
+   ]
+  },
+  "received_document_requests": {
+   "tables": [
+    "document"
+   ]
+  },
+  "received_home_health_documents": {
+   "tables": [
+    "document"
+   ]
+  },
+  "received_hospital_summaries": {
+   "tables": [
+    "document",
+    "encounter"
+   ]
+  },
+  "received_laboratory_status": {
+   "tables": [
+    "service_order"
+   ]
+  },
+  "received_medication_records": {
+   "tables": [
+    "medication"
+   ]
+  },
+  "received_pharmacy_information": {
+   "tables": [
+    "medication"
+   ]
+  },
+  "received_prescription_requests": {
+   "tables": [
+    "medication"
+   ]
+  },
+  "received_procedure_reports": {
+   "tables": [
+    "procedure",
+    "document"
+   ]
+  },
+  "received_screening_orders": {
+   "tables": [
+    "service_order"
+   ]
+  },
+  "received_screening_reports": {
+   "tables": [
+    "procedure",
+    "screening"
+   ]
+  },
+  "received_specialty_records": {
+   "tables": [
+    "document"
+   ]
+  },
+  "referral_documents": {
+   "tables": [
+    "referral",
+    "document"
+   ]
+  },
+  "referral_status_updates": {
+   "tables": [
+    "referral"
+   ]
+  },
+  "referrals": {
+   "tables": [
+    "referral"
+   ]
+  },
+  "regimen_followup_contacts": {
+   "tables": [
+    "medication"
+   ]
+  },
+  "rehabilitation_access_contacts": {
+   "tables": [
+    "referral"
+   ]
+  },
+  "rehabilitation_observations": {
+   "tables": [
+    "clinical_event"
+   ]
+  },
+  "rehabilitation_treatments": {
+   "tables": [
+    "procedure"
+   ]
+  },
+  "reported_medication_entries": {
+   "tables": [
+    "medication"
+   ]
+  },
+  "result_acknowledgements": {
+   "tables": [
+    "lab_result"
+   ]
+  },
+  "scanned_documents": {
+   "tables": [
+    "document"
+   ]
+  },
+  "school_function_reports": {
+   "tables": [
+    "clinical_event"
+   ]
+  },
+  "screening_referral_packets": {
+   "tables": [
+    "referral"
+   ]
+  },
+  "screening_specimens": {
+   "tables": [
+    "procedure"
+   ]
+  },
+  "screening_status_notifications": {
+   "tables": [
+    "service_order"
+   ]
+  },
+  "screening_test_attempts": {
+   "tables": [
+    "procedure"
+   ]
+  },
+  "screening_workup_contacts": {
+   "tables": [
+    "referral"
+   ]
+  },
+  "screening_workup_reviews": {
+   "tables": [
+    "clinical_event"
+   ]
+  },
+  "sdoh_vendor_attributes": {
+   "tables": [
+    "sdoh_attribute",
+    "person"
+   ]
+  },
+  "seasonal_vaccine_assessments": {
+   "tables": [
+    "clinical_event"
+   ]
+  },
+  "seasonal_vaccine_histories": {
+   "tables": [
+    "immunization"
+   ]
+  },
+  "social_history": {
+   "tables": [
+    "clinical_event"
+   ]
+  },
+  "social_screens": {
+   "tables": [
+    "screening"
+   ]
+  },
+  "specialty_record_requests": {
+   "tables": [
+    "document"
+   ]
+  },
+  "specialty_record_responses": {
+   "tables": [
+    "document"
+   ]
+  },
+  "specialty_record_reviews": {
+   "tables": [
+    "clinical_event"
+   ]
+  },
+  "telephone_messages": {
+   "tables": [
+    "document"
+   ]
+  },
+  "transition_of_care_contacts": {
+   "tables": [
+    "care_management"
+   ]
+  },
+  "transported_handoffs": {
+   "tables": [
+    "document",
+    "encounter"
+   ]
+  },
+  "uploaded_cash_receipts": {
+   "tables": [
+    "patient_payment"
+   ]
+  },
+  "vaccination_outreach": {
+   "tables": [
+    "care_management"
+   ]
+  },
+  "vaccine_consent_records": {
+   "tables": [
+    "immunization"
+   ]
+  },
+  "vision_evaluations": {
+   "tables": [
+    "screening",
+    "procedure"
+   ]
+  },
+  "vitals": {
+   "tables": [
+    "vital_sign"
+   ]
+  },
+  "wellness_benefit_responses": {
+   "tables": [
+    "registration_coverage"
+   ]
+  },
+  "wellness_history_reviews": {
+   "tables": [
+    "clinical_event"
+   ]
+  },
+  "wellness_visit_services": {
+   "tables": [
+    "procedure",
+    "encounter"
+   ]
+  },
+  "youth_health_histories": {
+   "tables": [
+    "clinical_event"
+   ]
+  },
+  "youth_interval_reports": {
+   "tables": [
+    "clinical_event"
+   ]
+  },
+  "youth_prevention_plans": {
+   "tables": [
+    "clinical_event"
+   ]
+  },
+  "youth_preventive_contacts": {
+   "tables": [
+    "care_management"
+   ]
+  },
+  "youth_sensory_screens": {
+   "tables": [
+    "screening"
+   ]
+  }
+ }
+}

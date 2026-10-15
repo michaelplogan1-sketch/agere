@@ -2,6 +2,47 @@
 
 Status: design, 2026-10-15. Keep this file current with the code.
 
+## Implementation status (2026-10-15)
+
+**Decision:** the canonical tables are produced by the open-source Tuva Project (dbt + DuckDB) from an input layer, not by
+from-scratch Agere table builders. The table specs below remain the requirements that the Tuva input mapping and marts
+must meet. Agere owns the parts around Tuva:
+
+| Part | Where | State |
+|---|---|---|
+| Source-coverage gate | `clinical_core/agere/canonical/coverage.py`, `config/agere/canonical/stream_map.json` | Built. All 237 v28 streams accounted for: 235 mapped to canonical tables (each table names its Tuva input target), 2 unused with reasons (`billing_authorizations`, `billing_service_dispositions`). |
+| Version resolution | `clinical_core/agere/canonical/versions.py` | Built. Writes `superseded_record` + `entity_version` (feeds the Tuva input layer) with a receipt and raw reconciliation. |
+| Value sets | `config/agere/canonical/value_sets.json` | Built (mammography, colonoscopy, FIT, sDNA-FIT, AWV, A1c, flu vaccine, ED revenue/E&M, observation, TOB families, POS groups, claim statuses), with citations. |
+| LLM docs | `clinical_core/agere/canonical/docs_gen.py`, `config/agere/canonical/examples.json` | Built. Reads dbt `manifest.json` docs when given; examples run against the DB and are dropped on mismatch; heldout and bench/capability sources refused. |
+| Bench | `frontier_canonical` in `bench/adapters.py`, `bench/run.py --canonical-database` | Built (SQLite canonical DB; a DuckDB file is refused until a reader is added). |
+| Tuva input mapping, person/MPI, enrollment, claims, fills, encounter grouper, marts | Tuva project | Not started here. |
+
+**Version facts measured on v28-sample (differ from or sharpen the design below):**
+- Payer medical claims: 199,410 records, 180,883 `payer_claim_id`s. Versions chain by `supersedes_record_id` within a claim
+  (denied→paid, denied→denied_upheld, paid→reversed→paid, paid→recouped, paid→voided freq 8). A frequency-7 replacement
+  arrives under a NEW claim id (`<id>-R`) and supersedes the original record; the original claim normally also gets a
+  freq-8 void version, so its final status is `voided` (2,323) and the replacement is a separate paid claim (2,433).
+  A claim whose versions are all superseded by another claim settles as `replaced`.
+- Final status counts: paid 163,499; denied 9,157; denied_upheld 4,880; voided 2,323; reversed 939; recouped 85.
+- Recoupment rows carry the negative recovered amount; reversal rows carry negative amounts on paid_amount/allowed.
+  16 recoupments have no paid version in the release (net is negative).
+- Data finding: 109 secondary-payer replacements (`<id>-R-X`, freq 7) point their `supersedes_record_id` at the PRIMARY
+  payer's original instead of the secondary copy (`<id>-X`), so the secondary original stays current and both count as
+  paid ($3,202.59 total, $838.63 with 2029 service dates). Reported in the receipt, not corrected.
+- Payer pharmacy claims: 133,951 records, 131,736 `rx_claim_id`s; reversals/recoupments supersede the paid record
+  (2,172 reversed, 44 recouped, 4,032 rejected with NCPDP 70/75/79). One rx_claim_id has two current records (latest wins).
+- `pharmacy_claim_transactions.claim_id` is the dispense `fill_id` (WHM-FILL-…); reversals point back through
+  `original_transaction_record_id`, amounts are signed deltas in cents.
+- `pharmacy_dispenses` has no supersedes; each `fill_id` is prepared→dispensed (picked up) or prepared→returned_to_stock.
+  33,933 picked-up fills of 37,868.
+- Labs: 1,743 corrections via `replaces_result_record_id` (not mirrored in `records.supersedes`) plus 123 supersedes.
+- Provider side: `medical_claim_submissions` corrected submissions point to the original through
+  `original_submission_record_id` (2,651); `claim_corrections` replaces `medical_claims` adjudications through
+  `original_/replacement_adjudication_record_id` (840). `medical_claims` (provider-side adjudication lines from the payer)
+  has no claim key; `provider_remittance_advice` links to it by `original_adjudication_record_id`.
+- Reconciliation (receipt in `artifacts/canonical/v28-sample/versions.receipt.json`): final paid on payer medical claims
+  with 2029 service dates = 13,192,436.59 raw and settled; distinct claims and every final-status count match.
+
 ## Why
 
 Agere and the LLM baseline both failed heldout10 on the same questions: ED visits, admissions, readmissions, payer paid dollars, statin fills, screening from claim lines and condition prevalence. Each of those concepts lives in 3–4 raw streams with different keys, versioning and duplicate copies. Today every question rebuilds the concept from the 237 raw streams plus a partial semantic layer, so every answer re-derives the dedupe rules. Commercial stacks (Innovaccer, Arcadia, Epic Caboodle, Databricks healthcare accelerators, the Tuva Project) put a canonical model between the feeds and the questions. This is ours.
