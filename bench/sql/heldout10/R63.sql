@@ -1,0 +1,3 @@
+SELECT CASE WHEN EXISTS (
+  SELECT 1 FROM records WHERE instr(lower(payload), 'cahps') > 0 OR instr(lower(payload), 'satisfaction') > 0 OR instr(lower(payload), 'survey') > 0 OR instr(lower(payload), 'press ganey') > 0 OR instr(lower(payload), 'press_ganey') > 0 OR instr(lower(payload), 'net promoter') > 0 OR instr(lower(payload), 'star rating') > 0
+) OR EXISTS (SELECT 1 FROM source_entities WHERE instr(lower(payload), 'cahps') > 0 OR instr(lower(payload), 'satisfaction') > 0 OR instr(lower(payload), 'survey') > 0 OR instr(lower(payload), 'press ganey') > 0 OR instr(lower(payload), 'press_ganey') > 0 OR instr(lower(payload), 'net promoter') > 0 OR instr(lower(payload), 'star rating') > 0) THEN 1 ELSE 0 END AS prerequisite_available

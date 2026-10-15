@@ -1,0 +1,5 @@
+WITH g AS (
+  SELECT patient, event AS d, json_extract(payload,'$.claim_status') AS st FROM (SELECT * FROM records WHERE stream='payer_pharmacy_claims' AND id NOT IN (SELECT supersedes FROM records WHERE stream='payer_pharmacy_claims' AND supersedes IS NOT NULL))
+  WHERE lower(json_extract(payload,'$.drug_name')) LIKE '%semaglutide%' OR lower(json_extract(payload,'$.drug_name')) LIKE '%ozempic%' OR lower(json_extract(payload,'$.drug_name')) LIKE '%wegovy%' OR lower(json_extract(payload,'$.drug_name')) LIKE '%rybelsus%' OR lower(json_extract(payload,'$.drug_name')) LIKE '%dulaglutide%' OR lower(json_extract(payload,'$.drug_name')) LIKE '%trulicity%' OR lower(json_extract(payload,'$.drug_name')) LIKE '%liraglutide%' OR lower(json_extract(payload,'$.drug_name')) LIKE '%victoza%' OR lower(json_extract(payload,'$.drug_name')) LIKE '%saxenda%' OR lower(json_extract(payload,'$.drug_name')) LIKE '%tirzepatide%' OR lower(json_extract(payload,'$.drug_name')) LIKE '%mounjaro%' OR lower(json_extract(payload,'$.drug_name')) LIKE '%zepbound%'
+)
+SELECT DISTINCT patient AS patient_id FROM g WHERE st = 'rejected'

@@ -1,0 +1,3 @@
+SELECT CASE WHEN EXISTS (
+  SELECT 1 FROM records WHERE instr(lower(payload), 'benchmark') > 0 OR instr(lower(payload), 'shared_saving') > 0 OR instr(lower(payload), 'shared saving') > 0 OR instr(lower(payload), 'settlement') > 0 OR instr(lower(payload), 'capitation') > 0 OR instr(lower(payload), 'savings') > 0
+) OR EXISTS (SELECT 1 FROM source_entities WHERE instr(lower(payload), 'benchmark') > 0 OR instr(lower(payload), 'shared_saving') > 0 OR instr(lower(payload), 'shared saving') > 0 OR instr(lower(payload), 'settlement') > 0 OR instr(lower(payload), 'capitation') > 0 OR instr(lower(payload), 'savings') > 0) THEN 1 ELSE 0 END AS prerequisite_available
