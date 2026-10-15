@@ -61,6 +61,19 @@ class Linkage(unittest.TestCase):
         self.assertNotIn('M1', assign2)
 
 
+    def test_shared_facility_mrn_links_with_compatible_birth_date(self):
+        a = ident('R1', 'Steven Gonzalez', '1947-03-17', addr='4014 Elm St', zip_='92602', phone='7275550179')
+        b = ident('R2', 'Steven Allen', '1947-03-17', addr='1345 River St', zip_='92602', phone='2365550124')
+        c = ident('R3', 'Maria Lopez', '1990-01-01', addr='1 Bay Rd', zip_='92602', phone='7275550111')
+        a['mrns'] = {'HOSP-1|L-123'}; b['mrns'] = {'HOSP-1|L-123'}; c['mrns'] = {'HOSP-1|L-123'}
+        assign, _, links = pl.link(self.crowd() + [a, b, c], {'threshold': 40})
+        self.assertEqual(assign['R1'], assign['R2'])
+        self.assertNotIn('R3', assign)                                 # same MRN, different birth date: not linked
+        self.assertEqual({l['rule'] for l in links}, {'mrn'})
+        assign2, _, _ = pl.link(self.crowd() + [a, b], {'threshold': 40, 'mrn_link': False})
+        self.assertNotIn('R1', assign2)
+
+
 class Conditions(unittest.TestCase):
     def test_claims_confirmation_rule(self):
         rows = [('p', 'E119', '2027-01-05', 'claim'), ('p', 'E119', '2027-04-05', 'claim'),  # two claim dates -> E11
@@ -70,6 +83,50 @@ class Conditions(unittest.TestCase):
         doc = chronic_conditions.documented(rows, 2)
         self.assertEqual(sorted(doc['p']), ['E11', 'J44', 'M17'])
         self.assertIn('I10', chronic_conditions.documented(rows, 1)['p'])
+
+    def test_visit_diagnoses_count_as_encounters(self):
+        # an EHR visit diagnosis is an encounter fact like a claim line, not problem-list confirmation (CCW two dates)
+        rows = [('p', 'K0510', '2027-03-01', 'visit'),                                  # one dental visit -> not K05
+                ('p', 'I10', '2027-01-05', 'visit'), ('p', 'I10', '2027-01-05', 'claim'),  # visit + its claim: one date
+                ('p', 'E785', '2027-01-05', 'visit'), ('p', 'E785', '2027-06-05', 'claim'),  # two dates across sources
+                ('p', 'J449', '2027-02-01', 'visit_inpatient'),                         # EHR admission -> J44
+                ('q', 'K0510', '2027-03-01', 'ehr')]                                    # problem list -> K05
+        doc = chronic_conditions.documented(rows, 2)
+        self.assertEqual(sorted(doc['p']), ['E78', 'J44'])
+        self.assertEqual(sorted(doc['q']), ['K05'])
+
+    def test_acute_and_symptom_codes_never_chronic_from_encounters(self):
+        rows = [('p', 'S069XAA', '2027-01-01', 'claim'), ('p', 'S069XAA', '2027-02-01', 'visit'), ('p', 'S069XAA', '2027-01-01', 'claim_inpatient'),
+                ('p', 'A419', '2027-03-01', 'claim_inpatient'), ('p', 'M79609', '2027-01-01', 'visit'), ('p', 'M79609', '2027-05-01', 'visit'),
+                ('p', 'M797', '2027-01-01', 'visit'), ('p', 'M797', '2027-05-01', 'claim'),     # fibromyalgia is chronic: two dates -> M79
+                ('q', 'S069XAA', '2027-01-01', 'ehr'), ('q', 'M79609', '2027-01-01', 'ehr')]  # a problem-list entry still documents
+        doc = chronic_conditions.documented(rows, 2)
+        self.assertEqual(sorted(doc['p']), ['M79'])
+        self.assertEqual(doc['p']['M79']['codes'], {'M797', 'M79609'})
+        self.assertEqual(sorted(doc['q']), ['M79', 'S06'])
+
+    def test_osteoarthritis_needs_two_dates(self):
+        # CCW RA/OA: two claims at least a day apart; an elective arthroplasty admission alone does not qualify
+        rows = [('p', 'M1711', '2027-04-01', 'claim_inpatient'), ('p', 'M1711', '2027-04-01', 'claim'),
+                ('q', 'M170', '2027-04-01', 'claim_inpatient'), ('q', 'M170', '2027-09-01', 'claim'),
+                ('r', 'I5021', '2027-04-01', 'claim_inpatient')]                                # other categories: one stay confirms
+        doc = chronic_conditions.documented(rows, 2)
+        self.assertNotIn('p', doc)
+        self.assertEqual(sorted(doc['q']), ['M17'])
+        self.assertEqual(sorted(doc['r']), ['I50'])
+
+
+class Suspects(unittest.TestCase):
+    def test_hypertension_is_the_average_level(self):
+        def bp(days):
+            return ([(d, s, 'r') for d, s, _ in days], [(d, di, 'r') for d, _, di in days])
+        normal = [(f'2027-{m:02d}-10', 124, 78) for m in range(1, 11)]
+        spikes = [('2027-11-10', 152, 88), ('2027-12-10', 146, 92)]          # two high days among ten normal ones
+        self.assertEqual(condition_suspects.hypertension_days(*bp(normal + spikes)), [])
+        self.assertEqual(condition_suspects.hypertension_days(*bp(normal + spikes), {'hypertension_average': False}), ['2027-11-10', '2027-12-10'])
+        high = [('2027-01-10', 150, 94), ('2027-03-10', 146, 92), ('2027-05-10', 136, 86)]
+        self.assertEqual(condition_suspects.hypertension_days(*bp(high)), ['2027-01-10', '2027-03-10'])
+        self.assertEqual(condition_suspects.hypertension_days(*bp(high[:1])), [])  # one occasion is not enough
 
 
 class HCC(unittest.TestCase):
@@ -124,6 +181,8 @@ class SDOH(unittest.TestCase):
         self.assertEqual(sdoh_needs.score({'screen': {'a', 'b', 'c'}}), 2)
         self.assertEqual(sdoh_needs.score({'screen': {'a'}, 'vendor': {'x'}}), 2)
         self.assertEqual(sdoh_needs.score({'work_answer': {'a'}}), 2)
+        self.assertEqual(sdoh_needs.score({'z_code_weak': {'2028-01-01'}}), 1)              # Z56.9 once
+        self.assertEqual(sdoh_needs.score({'z_code_weak': {'2028-01-01', '2028-05-01', '2029-01-01'}}), 2)  # on separate dates
 
 
 class Contract(unittest.TestCase):
@@ -186,6 +245,8 @@ class EndToEnd(unittest.TestCase):
                  ('e1', 'labs', {'test': 'HbA1c', 'value': 7.1, 'unit': '%', 'event_date': '2027-10-01', 'loinc': '4548-4'}),
                  ('e1', 'labs', {'test': 'HbA1c', 'value': 7.0, 'unit': '%', 'event_date': '2028-10-01', 'loinc': '4548-4'}),
                  ('e1', 'encounters', {'type': 'emergency', 'event_date': '2028-08-08', 'organization_id': 'H1'}),
+                 ('e1', 'encounters', {'type': 'emergency', 'event_date': '2026-11-03', 'organization_id': 'H1'}),
+                 ('e1', 'encounters', {'type': 'emergency', 'event_date': '2030-02-10', 'organization_id': 'H1'}),
                  ('e1', 'social_screens', {'instrument': 'AHC_HRSN', 'transport_difficulty_reported': True, 'event_date': '2028-01-01'})]
         recs += _monthly('e1', 'Atorvastatin 20 mg tablet', '2027-06-01', 10)
         recs += [('d1', 'death_records', {'date_of_death': '2029-02-03', 'source': 'payer_enrollment_death_indicator', 'event_date': '2029-02-03'}),
@@ -231,6 +292,8 @@ class EndToEnd(unittest.TestCase):
     def test_acute_events_and_readmission(self):
         a = {(r['patient_id'], r['kind'], r['start']): r for r in self.files['acute_events']}
         self.assertIn(('e1', 'ed', '2028-08-08'), a)
+        self.assertIn(('e1', 'ed', '2026-11-03'), a)                  # every event from the feed start to as_of ...
+        self.assertIn(('e1', 'ed', '2030-02-10'), a)                  # ... not only the 2027-2029 quality years
         self.assertFalse(a[('c1', 'inpatient', '2028-03-01')]['unplanned_readmission_30d'])
         self.assertTrue(a[('c1', 'inpatient', '2028-03-20')]['unplanned_readmission_30d'])
 
@@ -264,6 +327,112 @@ class MeasurePatientStatus(unittest.TestCase):
         self.assertEqual(len(rows), 1)
         self.assertTrue(rows[0]['met']); self.assertAlmostEqual(rows[0]['pdc'], 360 / 366, places=3)
         shutil.rmtree(path, ignore_errors=True)
+
+
+
+def _fills_db(fills, stops=(), listed=()):
+    """In-memory store with received fills [(pid, day, name, cls, supply)], note stops [(pid, day, cls, target)] and
+    discontinued medication-list entries [(pid, day, name)]."""
+    db = sqlite3.connect(':memory:')
+    db.execute('CREATE TABLE medication(record_id, patient_id, event_date, drug_name, drug_class, evidence, status, fill_reversed)')
+    db.execute('CREATE TABLE record(record_id, payload)')
+    for i, (pid, day, name, cls, supply) in enumerate(fills):
+        db.execute('INSERT INTO medication VALUES (?,?,?,?,?,?,?,0)', (f'R{i}', pid, day, name, cls, 'payer_claim', 'paid'))
+        db.execute('INSERT INTO record VALUES (?,?)', (f'R{i}', json.dumps({'days_supply': supply})))
+    db.execute('CREATE TABLE note_therapy_change(patient_id, event_date, action, drug_class, target)')
+    db.executemany("INSERT INTO note_therapy_change VALUES (?,?,'stop',?,?)", stops)
+    db.execute('CREATE TABLE medication_list_entry(patient_id, last_listed, name, list_status)')
+    db.executemany("INSERT INTO medication_list_entry VALUES (?,?,?,'discontinued')", listed)
+    return db
+
+
+def _every(pid, name, cls, start, n, step=30, supply=30):
+    d0 = date.fromisoformat(start)
+    return [(pid, (d0 + timedelta(days=step * i)).isoformat(), name, cls, supply) for i in range(n)]
+
+
+class TherapyEvents(unittest.TestCase):
+    YEARS, AS_OF, FEED = [2027, 2028, 2029], '2030-05-27', '2026-09-01'
+
+    def events(self, db):
+        return {(r['patient_id'], r['drug_class'], r['therapy_event']): r['first_fill']
+                for r in therapy_courses.courses(db, self.YEARS, self.AS_OF, self.FEED) if r.get('therapy_event')}
+
+    def test_washout_course_gap_and_first_fill(self):
+        fills = (_every('n', 'atorvastatin 20 mg tablet', 'statin', '2027-06-01', 6)            # new user: initiation
+                 + _every('n', 'atorvastatin 20 mg tablet', 'statin', '2028-01-20', 6)          # 2-month lapse: same course
+                 + _every('v', 'lisinopril 10 mg tablet', 'ace_inhibitor', '2026-09-05', 30)    # under way at the data start
+                 + _every('v', 'amlodipine 5 mg tablet', 'calcium_channel_blocker', '2026-10-01', 30)  # prevalent too: no add-on
+                 + _every('v', 'hydrochlorothiazide 25 mg tablet', '', '2028-04-11', 10)         # a real add-on, class from the name
+                 + _every('b', 'sertraline 50 mg tablet', 'ssri', '2027-05-01', 3)
+                 + _every('b', '24 HR bupropion hydrochloride 150 MG', '', '2027-05-20', 6))     # joins within the regimen window
+        ev = self.events(_fills_db(fills))
+        self.assertEqual(ev[('n', 'statin', 'initiation')], '2027-06-01')
+        self.assertNotIn(('n', 'statin', 'restart'), ev)                                   # a refill lapse is not a restart
+        self.assertFalse(any(k[0] == 'v' and k[1] in ('ace_inhibitor', 'calcium_channel_blocker') for k in ev))
+        self.assertEqual(ev[('v', 'thiazide_diuretic', 'add_on')], '2028-04-11')
+        self.assertEqual(ev[('b', 'NDRI', 'initiation')], '2027-05-20')                    # own first fill; canonical class name
+        self.assertEqual(ev[('b', 'ssri', 'initiation')], '2027-05-01')
+
+    def test_restart_needs_a_documented_stop(self):
+        fills = (_every('s', 'metformin 500 mg tablet', 'metformin', '2027-04-01', 5)
+                 + _every('s', 'metformin 500 mg tablet', 'metformin', '2028-02-15', 6)         # resumes after a noted stop
+                 + _every('g', 'metformin 500 mg tablet', 'metformin', '2027-04-01', 5)
+                 + _every('g', 'metformin 500 mg tablet', 'metformin', '2028-02-15', 6))        # same pattern, no documented stop
+        ev = self.events(_fills_db(fills, stops=[('s', '2027-09-02', 'metformin', 'metformin')]))
+        self.assertEqual(ev[('s', 'metformin', 'restart')], '2028-02-15')
+        self.assertNotIn(('g', 'metformin', 'restart'), ev)
+        ev2 = self.events(_fills_db(fills, listed=[('g', '2027-08-30', 'metformin 500 mg tablet daily')]))
+        self.assertEqual(ev2[('g', 'metformin', 'restart')], '2028-02-15')                 # discontinued list entry is a stop
+
+    def test_course_episodes_split_only_at_stops_in_a_lapse(self):
+        days = {date(2027, 1, 1).toordinal() + 30 * i: 30 for i in range(4)}
+        days[date(2027, 7, 1).toordinal()] = 30
+        stop_inside = [date(2027, 3, 10).toordinal()]                                     # while still supplied: no split
+        stop_lapse = [date(2027, 5, 15).toordinal()]
+        self.assertEqual(len(therapy_courses.course_episodes(days, 180, stop_inside)), 1)
+        self.assertEqual(len(therapy_courses.course_episodes(days, 180, stop_lapse)), 2)
+
+
+class KedClaimEvidence(unittest.TestCase):
+    def db(self, payer_lines, client_lines=(), results=()):
+        db = sqlite3.connect(':memory:')
+        db.execute('CREATE TABLE payer_claim(payer_claim_id, final_status, service_from)')
+        db.execute('CREATE TABLE payer_claim_line(payer_claim_id, patient_id, service_date, cpt, hcpcs, counts_in_metrics)')
+        db.execute('CREATE TABLE claim_line(patient_id, service_date, cpt, hcpcs)')
+        db.execute('CREATE TABLE measurement(patient_id, event_date, loinc, concept, value_canonical, value)')
+        for i, (pid, day, cpt, status) in enumerate(payer_lines):
+            db.execute('INSERT INTO payer_claim VALUES (?,?,?)', (f'C{i}', status, day))
+            db.execute('INSERT INTO payer_claim_line VALUES (?,?,?,?,NULL,1)', (f'C{i}', pid, day, cpt))
+        db.executemany('INSERT INTO claim_line VALUES (?,?,?,NULL)', client_lines)
+        db.executemany('INSERT INTO measurement VALUES (?,?,?,NULL,NULL,NULL)', results)
+        return measures.Context(db)
+
+    def test_hedis_codes_and_pairing(self):
+        ked = measures.library()['ked']
+        egfr, uacr = (next(c for c in ked['numerator']['criteria'] if c['concept'] == k) for k in ('egfr', 'uacr'))
+        ctx = self.db([('a', '2028-03-01', '80048', 'paid'), ('a', '2028-03-01', '82043', 'paid'),   # payer never bills 82570
+                       ('d', '2028-03-01', '82043', 'denied')],
+                      client_lines=[('b', '2028-04-01', '82043'), ('b', '2028-04-03', '82570'),          # billing itemizes 82570
+                                    ('c', '2028-04-01', '82043'), ('e', '2028-06-01', '82043')],
+                      results=[('e', '2028-06-02', '2161-8')])                                          # urine creatinine result
+        rows = {k: measures._rows(ctx, c)[0] for k, c in (('egfr', egfr), ('uacr', uacr))}
+        self.assertIn('a', rows['egfr'])                                    # basic metabolic panel reports an eGFR
+        self.assertEqual({p for p in rows['uacr']}, {'a', 'b', 'e'})        # c: 82043 without its creatinine; d: denied
+        self.assertIn('not itemized', rows['uacr']['a'][0][2])
+        anchors = {'period_start': '2028-01-01', 'period_end': '2028-12-31'}
+        self.assertTrue(measures._evaluate(ctx, uacr, 'b', anchors)[0])
+        self.assertFalse(measures._evaluate(ctx, uacr, 'c', anchors)[0])
+
+
+class PdcClassFromName(unittest.TestCase):
+    def test_unclassed_pioglitazone_counts_in_pdc_dr(self):
+        db = _fills_db(_every('t', 'pioglitazone 30 MG Oral Tablet', '', '2028-01-05', 12) + _every('u', 'pioglitazone 30 MG Oral Tablet', 'statin', '2028-01-05', 3))
+        c = next(c for c in measures.library()['pdc_diabetes']['numerator']['criteria'] if c['type'] == 'pdc')
+        self.assertIn('thiazolidinedione', c['classes'])                    # PQA PDC-DR includes TZDs
+        rows, _ = measures._rows(measures.Context(db), c)
+        self.assertEqual(len(rows['t']), 12)
+        self.assertNotIn('u', rows)                                         # a stated class is never overridden
 
 
 if __name__ == '__main__':
