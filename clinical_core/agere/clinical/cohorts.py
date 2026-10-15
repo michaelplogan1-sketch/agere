@@ -229,7 +229,7 @@ def _concept_matches(binding, r):
         if isinstance(got, list): return any(isinstance(x, str) and x in values for x in got)
         return isinstance(got, str) and got in values
     if 'names' in binding:
-        return any(r.get(f) in binding['names'] for f in binding['name_fields'])
+        return any(r.get(f) in binding['names'] for f in binding['name_fields']) or concepts.code_match(binding, r)
     return r.get(binding['value_field']) is not None
 
 

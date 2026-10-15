@@ -51,6 +51,14 @@ MEASURE_ASKED = (r'\b(?:rates?|percent(?:age)?s?|%|share|proportion|fraction|com
 PLAIN_COUNT = r"^(?:how many|what (?:is|was) the (?:number|count) of|count (?:the |our )?|number of)\b"
 
 
+# "by payer", "for each practice", "broken down by month", "through which channel": the answer is a table of groups.
+BREAKDOWN = (r'\b(?:by|for each|each|per|across|broken down by|break(?:s|ing)? (?:it |this |that )?(?:down|out) by|split by|grouped by)\s+'
+             r'(?:the\s+|our\s+|their\s+|its\s+)?(?:payers?|payors?|plans?|insurers?|practices?|clinics?|providers?|pcps?|clinicians?|physicians?|'
+             r'hospitals?|facilit(?:y|ies)|sites?|locations?|months?|quarters?|weeks?|age(?: band| group)?s?|sex|gender|race|ethnicit(?:y|ies)|'
+             r'languages?|channels?|departments?|specialt(?:y|ies)|regions?|count(?:y|ies)|lines? of business|products?|programs?|measures?)\b|'
+             r'\b(?:through|via|by|in) which\b|\bbreak(?:s|ing)? (?:it |this |that )?(?:down|out)\b')
+
+
 def plain_count_question(question):
     """True for 'how many ...' / 'number of ...' questions that name no measure, rate, compliance or gap wording."""
     low = (question or '').lower().strip()
@@ -411,9 +419,14 @@ def route(question, as_of, ledger=None, out=None, path=None, ask=None, directory
             info.setdefault('declined', []).append({'metric': mid, 'reason': 'plain count question: a quality-measure rate answers a '
                                                     'different question (count the cohort instead)'})
         chosen = [x for x in chosen if kind(lib[x]) != 'measure']
+    breakdown = bool(re.search(BREAKDOWN, re.sub(r'\bper (?:member|patient) per (?:month|year)\b|\bper 1,?000\b', ' ', (question or '').lower())))
     for mid in dict.fromkeys(chosen):
         try:
             slots, node = _fill(question, as_of, mid, lib[mid], call, info)
+            returns = (node.get('parameters') or {}).get('returns') if node.get('operation') == 'sql' else None
+            if breakdown and returns in ('value', 'count') and (slots.get('group_by') in (None, 'none')):
+                # "... by payer": one total answers a different question; the next rung keeps the grouping
+                raise LookupError(f'the question asks for a breakdown ("by ..."); metric {mid} returns a single {returns}')
             filled.append((mid, slots, node))
         except LookupError as exc:
             info.setdefault('declined', []).append({'metric': mid, 'reason': str(exc)[:300]})

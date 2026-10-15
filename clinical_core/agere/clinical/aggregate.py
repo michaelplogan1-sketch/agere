@@ -104,7 +104,7 @@ def _matches(resolved, r):
             if isinstance(got, list) and any(x in b['values'] for x in got): return b
             if isinstance(got, str) and got in b['values']: return b
         elif 'names' in b:
-            if any(r.get(f) in b['names'] for f in b['name_fields']): return b
+            if any(r.get(f) in b['names'] for f in b['name_fields']) or concepts.code_match(b, r): return b
         elif r.get(b['value_field']) is not None:
             return b
     return None
@@ -193,10 +193,17 @@ def execute(path, patient_ids, params):
         from . import semantic_layer
         sdb = sqlite3.connect(f'file:{semantic_layer.ensure(path)}?mode=ro', uri=True)
         try:
+            # Claims-only events carry the billing provider NPI, not an organization id: name the organization that owns the NPI
+            # (a hospital billing the facility claim) so a facility breakdown groups by organization, never by raw NPI.
+            try:
+                npi_org = {n: o for n, o in sdb.execute('SELECT npi, min(organization_id) FROM organization WHERE npi IS NOT NULL GROUP BY 1')}
+            except sqlite3.Error:
+                npi_org = {}
             for pid, st, d, rd, ad, org, status, rid in sdb.execute(
                     'SELECT e.patient_id, e.source_table, e.event_date, r.recorded_date, r.available_date, e.organization_id, e.status, e.record_id '
                     'FROM encounter e JOIN record r ON r.record_id = e.record_id WHERE e.type_concept = ?', (p['concept'],)):
                 if pid in members:
+                    if org and org.isdigit() and len(org) == 10: org = npi_org.get(org)  # unknown when no organization owns the NPI
                     records[pid].append({'source_table': st, 'event_date': d, 'recorded_date': rd, 'available_date': ad,
                                          'organization_id': org, 'status': status, 'record_id': rid, '_concept': p['concept']})
         finally:
