@@ -7,6 +7,7 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest import mock
 
+from clinical_core.agere import clinical as PKG
 from clinical_core.agere.clinical import answer_guard as G, semantic_layer, sql_query, source_profile, nl2sql
 from clinical_core.agere.clinical.analysis_graph import build_answer
 from clinical_core.agere.clinical.economical_planner import economics
@@ -283,6 +284,15 @@ class LegitimateZero(Base):
         self.assertEqual(result['answer']['count'], 0); self.assertNotIn('triggers', receipt['answer_guard'])
 
 
+def gate_module(mod):
+    """Stand in for clinical.gate_policy whether or not the real module (main after d195b42) is already imported."""
+    from contextlib import ExitStack
+    stack = ExitStack()
+    stack.enter_context(mock.patch.dict(sys.modules, {'clinical_core.agere.clinical.gate_policy': mod}))
+    stack.enter_context(mock.patch.object(PKG, 'gate_policy', mod, create=True))
+    return stack
+
+
 class CrossCheck(Base):
     def setUp(self):
         super().setUp()
@@ -336,12 +346,12 @@ class CrossCheck(Base):
         fake = types.ModuleType('gate_policy')
         fake.assess = lambda receipt, encoder=None: {'level': 'verified', 'reason': 'certified', 'gates': []}
         hosted = Hosted(self.root, {'default': ('SELECT 1', 'count')})
-        with mock.patch.dict(sys.modules, {'clinical_core.agere.clinical.gate_policy': fake}):
+        with gate_module(fake):
             _, receipt, _, _ = self.review(self.q, *self.orig, hosted=hosted)
         self.assertEqual(receipt['answer_guard']['cross_check']['status'], 'skipped')
         self.assertEqual(receipt['answer_guard']['cross_check']['certification']['source'], 'gate_policy')
         fake.assess = lambda receipt, encoder=None: {'level': 'unverified', 'reason': 'no certificate', 'gates': []}
-        with mock.patch.dict(sys.modules, {'clinical_core.agere.clinical.gate_policy': fake}):
+        with gate_module(fake):
             self.assertFalse(G.certification({'route': 'local_compiler'})['certified'])
         tab = original(self.root, self.q, 'SELECT patient_id, value FROM measurement', returns='table')
         _, receipt, _, _ = self.review(self.q, *tab, hosted=hosted)
@@ -351,7 +361,7 @@ class CrossCheck(Base):
         self.assertEqual(receipt['answer_guard']['cross_check']['status'], 'off'); self.assertEqual(hosted.calls, [])
 
     def test_fallback_certification_without_gate_policy(self):
-        with mock.patch.dict(sys.modules, {'clinical_core.agere.clinical.gate_policy': None}):
+        with gate_module(None):
             c = G.certification({'route': 'local_compiler'})
         self.assertEqual((c['certified'], c['source']), (False, 'fallback'))
 
