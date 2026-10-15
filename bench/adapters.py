@@ -68,7 +68,9 @@ def usage_cost(usage, model=MODEL):
 
 
 def agere(question, url='http://127.0.0.1:8885', transport=post_json):
-    response = transport(url.rstrip('/') + '/api/stack/compose', {'question': question['question']})
+    # A slow answer is reported as latency, never scored as a failure: allow up to 15 minutes per question.
+    response = transport(url.rstrip('/') + '/api/stack/compose', {'question': question['question']},
+                         **({'timeout': 900} if transport is post_json else {}))
     economics = response.get('planning_economics') or {}
     # Planning usage alone is insufficient if graph execution also invokes models.
     planner = response.get('planner_receipt') or {}
