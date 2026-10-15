@@ -81,7 +81,11 @@ SOCIAL_PHRASES = [  # regex -> (stream, field)
     (r'(?:trouble|difficulty) affording (?:care|food)', ('social_screens', 'difficulty_paying_for_care_reported')),
 ]
 # The same need recorded by another instrument (plain-language questions match either).
-NEED_INSTRUMENTS = {'transport_difficulty_reported': [('social_screens', 'transport', 'unreliable')],
+# (stream, field, value[, op]): 'contains' reads a list field, e.g. the AHC HRSN screen's positive_domains.
+NEED_INSTRUMENTS = {'transport_difficulty_reported': [('social_screens', 'transport', 'unreliable'),
+                                                      ('social_screens', 'positive_domains', 'transportation_barrier', 'contains')],
+                    'food_difficulty_reported': [('social_screens', 'positive_domains', 'food_worry', 'contains'),
+                                                 ('social_screens', 'positive_domains', 'food_ran_out', 'contains')],
                     'difficulty_paying_for_care_reported': [('financial_screens', 'difficulty_paying_medical_bills', True)],
                     'difficulty_paying_medical_bills': [('social_screens', 'difficulty_paying_for_care_reported', True)]}
 SOCIAL_FLAGS = {  # phrase -> (stream, field)
@@ -790,6 +794,7 @@ def _compile(question, profile, as_of):
         columns = [table_with.group(1), table_with.group(2)]
     r = Reader(q)
     r.profile = profile
+    r.original = ' '.join(str(question).lower().split())  # the user's own words (paraphrase drops 'did we have', 'our')
     info = {'compiler': VERSION, 'recognised': r.notes, 'paraphrased': paraphrased, **({'columns': columns} if columns else {})}
     # 0. Requests the received data cannot support: answer unsupported locally, naming the missing inputs.
     terms = _contract_terms(r.low)
@@ -1329,8 +1334,9 @@ def _population_question(q, r, profile, as_of, info):
     def need_atoms(stream, field, value, start, literal):
         atom = {'kind': 'record', 'stream': stream, 'conditions': [{'field': field, 'op': 'eq', 'value': value}], 'window': W}
         extra = [] if literal or value is not True else [
-            {'kind': 'record', 'stream': s2, 'conditions': [{'field': f2, 'op': 'eq', 'value': v2}], 'window': W}
-            for s2, f2, v2 in NEED_INSTRUMENTS.get(field, []) if s2 in profile['streams'] and f2 in profile['streams'][s2]['fields']]
+            {'kind': 'record', 'stream': alt[0], 'conditions': [{'field': alt[1], 'op': alt[3] if len(alt) > 3 else 'eq', 'value': alt[2]}], 'window': W}
+            for alt in NEED_INSTRUMENTS.get(field, []) if alt[0] in profile['streams'] and alt[1] in profile['streams'][alt[0]]['fields']
+            and (len(alt) < 4 or alt[2] in (profile['streams'][alt[0]]['fields'][alt[1]].get('element_values') or {}))]
         if _negated(low, start) or not extra: (excl if _negated(low, start) else allp).append(atom)
         else: need_groups.append([atom] + extra)
 
@@ -1344,6 +1350,26 @@ def _population_question(q, r, profile, as_of, info):
     for pattern, (stream, field) in SOCIAL_PHRASES:
         for m in r.take(pattern, field):
             need_atoms(stream, field, True, m.start(), False)
+    # "no food resource referral on record": a referral for the need, in any referral stream whose type/service value names
+    # it (received vocabulary, e.g. referral_type food_resource_contact, service_requested food_access). Negated -> excluded.
+    for m in r.take(r'\b(food|nutrition|transport(?:ation)?|housing|utilit(?:y|ies)|financial|social (?:work|services?))'
+                    r'(?: (?:resources?|assistance|support|access|services?|program|bank))? referrals?\b', 'need referral'):
+        stem = {'nutrition': 'food', 'transportation': 'transport', 'utility': 'utilit', 'utilities': 'utilit'}.get(m.group(1), m.group(1).split()[0])
+        found = [(s, f, v) for s, spec in profile['streams'].items() if 'referral' in s
+                 for f, fs in spec['fields'].items() if f in ('referral_type', 'service_requested', 'service_type', 'specialty', 'need')
+                 for v in (fs.get('values') or {}) if isinstance(v, str) and stem in v.lower()]
+        if not found:
+            info.update(route='fallback', reason=f'no received referral type names {m.group(1)}'); return None, info
+        whole = {'basis': 'all_observed', 'start': '', 'end': ''}  # "on record": any time (a period in the question binds later)
+        negated = bool(re.search(r'\b(?:no|without|never|lacking|missing|not)\b(?:\s+(?:a|an|any|had|have|has|got|received|been|given))*\s*$',
+                                 low[:m.start()]))
+        alts = [{'kind': 'record', 'stream': s, 'conditions': [{'field': f, 'op': 'eq', 'value': v}], 'window': dict(whole)} for s, f, v in found]
+        if re.search(r'\b(?:on record|on file|ever)\b', low[m.end():m.end() + 25] + ' ' + low[max(0, m.start() - 25):m.start()]):
+            r.keep_window = getattr(r, 'keep_window', set()) | {id(a) for a in alts}  # "on record": any time, not the screen's period
+        if negated: excl.extend(alts)
+        elif len(alts) == 1: allp.append(alts[0])
+        else: need_groups.append(alts)
+        r.take(r'\b(?:no|without|never|lacking|missing|not|have|has|had|any|a|an|but)\b', None, overlap=True)
     for m in r.take(r'\b(?:missed|no[- ]showed?(?: for)?|skipped) (?:any |an |a )?(?:appointments?|appts?|visits?)\b|\bno[- ]shows?\b', 'missed appointment'):
         if 'appointments' in profile['streams'] and 'no_show' in (profile['streams']['appointments']['fields'].get('status', {}).get('values') or {}):
             atom = {'kind': 'record', 'stream': 'appointments', 'conditions': [{'field': 'status', 'op': 'eq', 'value': 'no_show'}], 'window': W}
@@ -1557,6 +1583,7 @@ def _population_question(q, r, profile, as_of, info):
         timed = {'basis': 'source_event', 'start': period[0], 'end': period[1]}
         for atom in allp + anyp + excl:
             if atom['kind'] == 'record' and atom.get('stream') == 'coverage': continue  # payer membership describes who, not when
+            if id(atom) in getattr(r, 'keep_window', ()): continue  # "no referral on record": any time
             if atom['kind'] in ('measurement', 'record') or (atom['kind'] == 'concept' and (
                     atom['concept'] in concepts.ENCOUNTERS or atom['concept'] in concepts.MEASUREMENTS)):  # "an A1c test in 2029"
                 atom['window'] = dict(timed)
@@ -1637,7 +1664,7 @@ def _population_question(q, r, profile, as_of, info):
         nodes = [cohort(base_all, excl), {'id': 'answer', 'operation': 'aggregate', 'inputs': ['population'],
                                           'parameters': params, 'purpose': 'Requested statistic'}]
     else:
-        if not allp and not excl and not count:
+        if not allp and not excl and not anyp and not count:
             info.update(route='fallback', reason='no population or statistic recognised'); return None, info
         nodes = [cohort(allp, excl)]
     info['route'] = 'local_compiler'
@@ -1651,6 +1678,8 @@ def _literal_stream_question(q, r, profile, as_of, info):
     clinical = [a for al in (*CONDITION_ALIASES.values(), *MEASUREMENT_ALIASES.values()) for a in al if len(a) > 3]
     if any(re.search(_alias_pattern(a), low) for a in clinical) and not re.search(r'\brecords?\b', low):
         return None
+    if any(re.search(_alias_pattern(p), low) for p in SOCIAL_FLAGS) and not re.search(r'\brecords?\b|\brows?\b', low):
+        return None  # a social need (food insecurity, transportation barrier) is a population question, not a literal stream count
     vocab = _stream_vocabulary(profile)
     stream, span = None, None
     for s, forms in sorted(vocab.items(), key=lambda kv: -max(map(len, kv[1]))):
@@ -1790,6 +1819,11 @@ def _literal_stream_question(q, r, profile, as_of, info):
         elif len(set(asked)) > 1:
             info.update(route='fallback', reason='several fields asked as the answer dimension: ' + ', '.join(sorted(set(asked))))
             return None, info
+    drop_missing = bool(re.search(r'\bexclud\w* (?:the )?(?:missing|unknown|null|blank|empty)\b|\bwithout (?:the )?(?:missing|unknown)\b', low))
+    if drop_missing:
+        r.take(r'\bexclud\w* (?:the )?(?:missing|unknown|null|blank|empty)(?: (?:values?|groups?|ones|entries|channels?|types?|categories|statuses))?\b|'
+               r'\bwithout (?:the )?(?:missing|unknown)(?: (?:values?|groups?|ones|entries))?\b', 'exclude missing group')
+        r.take(r'(?<=missing |unknown )(?:values?|groups?|ones|entries|channels?|types?|categories|statuses)\b', None)
     info['unexplained'] = [w for w in r.blocking(profile) if w not in {'usd', 'gross', 'raw', 'rows', 'net', 'refunds', 'subtract', 'infer',
                                                                 'balances', 'corrections', 'realized', 'savings', 'treat', 'cents', 'table',
                                                                 'organization_id', 'encounter_count', 'claim_record_count', 'clinician_id'}]
@@ -1805,22 +1839,33 @@ def _literal_stream_question(q, r, profile, as_of, info):
         return None, info
     if sum_m and not amount:
         info.update(route='fallback', reason='a money total was asked for but no amount field was identified'); return None, info
+    # A record without the grouped field is its own 'unknown' group, never silently dropped (unless the question excludes it).
+    def gexpr(f):
+        return f"json_extract(payload,'$.{f}')" if drop_missing else f"coalesce(json_extract(payload,'$.{f}'), 'unknown')"
+    def gnot_null(*fs):
+        return ''.join(f"AND json_extract(payload,'$.{f}') IS NOT NULL " for f in fs) if drop_missing else ''
+    # Versioned streams send one row per version of a business entity (an appointment's booked + outcome rows): count the
+    # entity (distinct key), not the rows, unless the question counts records/rows.
+    from .semantic_layer import VERSIONED_STREAMS
+    key = VERSIONED_STREAMS.get(stream)
+    unit = (f"count(DISTINCT json_extract(payload,'$.{key}'))" if key and key in fields and not re.search(r'\b(?:records?|rows?|entries|versions?)\b', low)
+            else 'count(*)')
     if group_field and sum_m and amount:
         key_name = cols.group(1) if cols else info['columns'][0] if info.get('columns') else group_field
         dollars = bool(re.search(r'\busd\b|\bdollars?\b|\$', low)) and amount.endswith('_cents')
         total_name = cols.group(2) if cols else info['columns'][1] if info.get('columns') else ('total_usd' if dollars else 'total_cents')
         total = f"round(sum(json_extract(payload,'$.{amount}'))/100.0, 2)" if dollars else f"sum(json_extract(payload,'$.{amount}'))"
-        sql = (f"SELECT json_extract(payload,'$.{group_field}') AS {key_name}, {total} AS {total_name} "
-               f"FROM record WHERE {where} AND json_extract(payload,'$.{group_field}') IS NOT NULL GROUP BY 1 ORDER BY 2 DESC")
+        sql = (f"SELECT {gexpr(group_field)} AS {key_name}, {total} AS {total_name} "
+               f"FROM record WHERE {where} {gnot_null(group_field)}GROUP BY 1 ORDER BY 2 DESC")
         returns = 'table'
     elif len(group_fields) == 2:
         a, b = group_fields
-        sql = (f"SELECT json_extract(payload,'$.{a}') AS {a}, json_extract(payload,'$.{b}') AS {b}, count(*) AS count FROM record WHERE {where} "
-               f"AND json_extract(payload,'$.{a}') IS NOT NULL AND json_extract(payload,'$.{b}') IS NOT NULL GROUP BY 1, 2 ORDER BY 1, 2")
+        sql = (f"SELECT {gexpr(a)} AS {a}, {gexpr(b)} AS {b}, {unit} AS count FROM record WHERE {where} "
+               f"{gnot_null(a, b)}GROUP BY 1, 2 ORDER BY 1, 2")
         returns = 'table'
     elif group_field:
-        sql = (f"SELECT json_extract(payload,'$.{group_field}') AS {key_name}, count(*) AS {count_name} FROM record WHERE {where} "
-               f"AND json_extract(payload,'$.{group_field}') IS NOT NULL GROUP BY 1 ORDER BY 2 DESC")
+        sql = (f"SELECT {gexpr(group_field)} AS {key_name}, {unit} AS {count_name} FROM record WHERE {where} "
+               f"{gnot_null(group_field)}GROUP BY 1 ORDER BY 2 DESC")
         returns = 'table'
     elif sum_m and amount:
         sql = f"SELECT sum(json_extract(payload,'$.{amount}')) FROM record WHERE {where}"
@@ -1831,7 +1876,7 @@ def _literal_stream_question(q, r, profile, as_of, info):
         returns = 'patient_set' if (re.search(r'\b(?:which|list)\b', low) or info.get('output') == 'patient_set') else 'count'
         if returns == 'patient_set': sql = f"SELECT DISTINCT patient_id FROM record WHERE {where}"
     else:
-        sql = f"SELECT count(*) FROM record WHERE {where}"
+        sql = f"SELECT {unit} FROM record WHERE {where}"
         returns = 'count'
     info['route'] = 'local_compiler'
     return {'interpretation': q, 'coverage': 'supported_observation', 'unmet_requirements': [],
@@ -1846,8 +1891,8 @@ SQL_OPS = {'gt': '>', 'ge': '>=', 'lt': '<', 'le': '<=', 'eq': '='}
 # Governed operations metrics over the semantic entity tables (formula stated in the purpose).
 OPS_METRICS = [
     (r'\bno[- ]?show rates?\b|\bno[- ]?show (?:percentage|share|%)|(?:rate|share|percent(?:age)?|%) of (?:appointments|appts) (?:that )?(?:were |ended (?:as|in) )?(?:a )?no[- ]?shows?',
-     'appointment', 'scheduled_date', "round(100.0 * sum(ever_no_show) / nullif(sum(kept) + sum(ever_no_show), 0), 2)",
-     'No-show rate = no-shows / (kept + no-shows), per appointment, by scheduled date'),
+     'appointment', 'scheduled_date', "round(100.0 * sum(ever_no_show = 1 AND kept = 0) / nullif(sum(kept = 1 OR ever_no_show = 1), 0), 2)",
+     'No-show rate = no-shows (never kept) / (kept + no-shows), per appointment, by scheduled date; cancelled, rescheduled and still-booked appointments are outside the denominator'),
     (r'\bcancell?ation rates?\b|(?:rate|share|percent(?:age)?|%) of (?:appointments|appts) (?:that )?(?:were |got )?cancell?ed',
      'appointment', 'scheduled_date', "round(100.0 * sum(ever_cancelled) / count(*), 2)",
      'Cancellation rate = appointments ever cancelled / all appointments, by scheduled date'),
@@ -1859,7 +1904,8 @@ OPS_METRICS = [
     (r'\bnet (?:payer[- ]?)?paid\b|\bnet (?:payer )?payments?\b|\bpaid after reversals\b|\bpa(?:y|id),? net of (?:reversals|take[- ]?backs|recoupments)\b',
      'claim', 'service_date', "round(sum(net_payer_paid_cents) / 100.0, 2)", 'Net payer paid (USD) = paid minus reversed, per claim, by service date'),
     (r'\b(?:average|mean|avg) (?:inpatient )?(?:length of stay|los)\b|\balos\b',
-     'stay', 'admit_date', "round(avg(los_days), 2)", 'Average length of stay (days) over inpatient stays with a received discharge time, by admit date'),
+     'stay', 'discharge_date', "round(avg(los_days), 2)", 'Average length of stay (days = midnights between admission and discharge) over '
+     'inpatient stays with a received discharge, by discharge date in the period'),
 ]
 OPS_GROUPS = {'appointment': {'practice': 'organization_id', 'clinic': 'organization_id', 'clinician': 'clinician_id', 'provider': 'clinician_id'},
               'claim': {'payer': 'payer', 'insurer': 'payer', 'plan': 'payer'},
@@ -1914,20 +1960,54 @@ def _medication_question(q, r, profile, as_of, info):
     negated = bool(re.search(r'\b(?:not|no|without|never|lacking|missing)\b(?:\s+\w+){0,4}\s+(?:' + ({**DRUG_ALIASES, **DRUG_GROUP_ALIASES}[cls]) + r')', low))
     r.take(r'\b(?:not|no|without|never|lacking|missing|but)\b', None)
     period = _take_period(r, as_of)
+    current = None
+    if not period and re.search(r'\b(?:are|is|currently|now|still)\s+(?:\w+\s+){0,2}(?:on|taking|using|receiving)\b|\bcurrently\b|\bactive\b', low) \
+            and not re.search(r'\bever\b|\bhistory\b|\bpreviously\b|\b(?:were|was|has been|have been|had)\b', low):
+        # Present tense ("are on a statin") is current therapy, not any fill ever received: a fill in the 12 months to the
+        # snapshot date (stated in the purpose; ask with a period or "ever" for another reading).
+        from datetime import date, timedelta
+        start = (date.fromisoformat(as_of) - timedelta(days=364)).isoformat()
+        period = current = (start, as_of)
     conds = []
     for concept, aliases in sorted(CONDITION_ALIASES.items(), key=lambda kv: -max(map(len, kv[1]))):
         for alias in sorted(aliases, key=len, reverse=True):
             if r.take(_alias_pattern(alias), f'condition {concept}'): conds.append(concept)
+    supply = next(iter(r.take(r"\b(?:at least|a minimum of|min(?:imum)?|>=|over|more than) (\d{1,4}) days?'? ?(?:of |worth of )?(?:supply|supplied)\b|"
+                              r"\b(\d{1,4})\+? days?'? ?(?:of |worth of )?(?:supply|supplied)\b", 'days supply threshold')), None)
     which = r.take(r'\b(?:which|list|who|names?|ids?|pull)\b', 'patient list')
     share = r.take(r'(?:\bwhat (?:share|percent(?:age)?|proportion|fraction)\b|\bwhat ?%|\bpercent(?:age)? of\b)', 'share')
     r.take(r'\b(?:how many|number of|count|patients?|members?|people|have|has|had|with|and|our|the|are|is|were|was|been)\b', None, overlap=True)
+    if supply:
+        if negated or evidence != FILL_EVIDENCE_SQL or share:
+            info.update(route='fallback', reason='days-supply thresholds are compiled for picked-up fills only'); return None, info
+        n = int(supply.group(1) or supply.group(2))
+        strict = bool(re.match(r'(?:over|more than)', supply.group(0)))
+        # One pickup can be reported by the pharmacy (dispense) and by the payer (pharmacy claim): per patient and fill date take
+        # the larger of the sources' days supply (fills from one source on one day add up), then sum over the period.
+        fills = (f"SELECT m.patient_id, m.event_date, m.source_stream, coalesce(json_extract(r.payload,'$.days_supply_reported'), "
+                 f"json_extract(r.payload,'$.days_supply')) AS days FROM (SELECT record_id, patient_id, event_date, source_stream FROM medication "
+                 f"WHERE drug_class IN ({', '.join(repr(c) for c in classes)}) AND {_picked_up_sql()}"
+                 + (f" AND event_date BETWEEN '{period[0]}' AND '{period[1]}'" if period else '') + ") m JOIN record r ON r.record_id = m.record_id")
+        per_day = (f"SELECT patient_id, event_date, max(days) AS days FROM (SELECT patient_id, event_date, source_stream, sum(days) AS days "
+                   f"FROM ({fills}) GROUP BY 1, 2, 3) GROUP BY 1, 2")
+        cohort_ids = f"SELECT patient_id FROM ({per_day}) GROUP BY 1 HAVING sum(days) {'>' if strict else '>='} {n}"
+        base_ids = ' '.join(f"AND patient_id IN (SELECT patient_id FROM concept_patient WHERE concept = '{c}')" for c in conds)
+        sql_ids = f"SELECT patient_id FROM ({cohort_ids}) WHERE 1 = 1 {base_ids}".strip()
+        purpose = (f"Patients whose picked-up {cls} fills{f' in {period[0]}..{period[1]}' if period else ''} add up to "
+                   f"{'more than' if strict else 'at least'} {n} days' supply (days_supply_reported / days_supply per fill; a pickup "
+                   f"reported by both the pharmacy and the payer counts once)" + (f" among {', '.join(conds)}" if conds else ''))
+        r.take(r'\b(?:patients?|members?|people|picked up|pick up|picks up|filled|of|in|the|our|have|had|has|with|who|that|a|an|total|worth)\b', None, overlap=True)
+        if which or not re.search(r'\bhow many\b|\bnumber of\b|\bcount\b', low):
+            return _finish(q, r, info, f"{sql_ids} ORDER BY 1", 'patient_set', purpose)
+        return _finish(q, r, info, f"SELECT count(*) FROM ({sql_ids})", 'count', purpose)
     med = f"SELECT DISTINCT patient_id FROM medication WHERE drug_class IN ({', '.join(repr(c) for c in classes)})" + \
           (f" AND {_picked_up_sql()}" if evidence == FILL_EVIDENCE_SQL else f" AND evidence IN {evidence}" if evidence else '') + (f" AND event_date BETWEEN '{period[0]}' AND '{period[1]}'" if period else '')
     base = 'SELECT patient_id FROM patient' + ''.join(f" WHERE patient_id IN (SELECT patient_id FROM concept_patient WHERE concept = '{c}')" if i == 0 else
                                                       f" AND patient_id IN (SELECT patient_id FROM concept_patient WHERE concept = '{c}')" for i, c in enumerate(conds))
     cohort = f"{base} {'AND' if conds else 'WHERE'} patient_id {'NOT IN' if negated else 'IN'} ({med})"
     purpose = (f"Patients {'not ' if negated else ''}with {cls} ({', '.join(classes)}) evidence {evidence or 'any source'}"
-               + (f" in {period[0]}..{period[1]}" if period else '') + (f" among {', '.join(conds)}" if conds else ''))
+               + (f" in {period[0]}..{period[1]}" if period else '') + (f" among {', '.join(conds)}" if conds else '')
+               + (' (currently on = a fill in the 12 months to the snapshot date)' if current else ''))
     if share:
         if not conds:
             info.update(route='fallback', reason='share of a medication needs a population'); return None, info
@@ -1937,6 +2017,9 @@ def _medication_question(q, r, profile, as_of, info):
     return _finish(q, r, info, f"SELECT count(*) FROM ({cohort})", 'count', purpose)
 
 
+OWN_ORG_PAYER_SQL = "(SELECT organization_id FROM organization WHERE organization_type = 'payer')"
+
+
 def _ops_question(q, r, profile, as_of, info):
     low = r.low
     hit = next(((rx, table, date_col, expr, purpose) for rx, table, date_col, expr, purpose in OPS_METRICS if re.search(rx, low)), None)
@@ -1944,6 +2027,29 @@ def _ops_question(q, r, profile, as_of, info):
     rx, table, date_col, expr, purpose = hit
     r.take(rx, f'ops {table}')
     where = ["type = 'inpatient' AND los_days IS NOT NULL"] if table == 'stay' else []
+    # The clock the question names: claims "adjudicated in 2029" are anchored on their first adjudication (as the governed
+    # net_payer_paid 'adjudicated' variant), stays "discharged in 2029" on discharge. ALOS defaults to discharges in the period
+    # (the convention for a period's length of stay, and the governed metric's discharged variant).
+    if table == 'appointment' and 'no-show' in purpose.lower():
+        # the default already leaves cancellations out of the denominator; "including cancellations" puts them in (stated)
+        r.take(r'\b(?:excluding|excludes?|not counting|without|leaving out|net of) (?:the )?cancell?(?:ation|ed appointment)s?\b', 'cancellations excluded')
+        if r.take(r'\b(?:including|includes?|counting|with) (?:the )?cancell?(?:ation|ed appointment)s?(?: in the denominator)?\b|'
+                  r'\bcancell?ations in the denominator\b', 'cancellations in the denominator'):
+            expr = "round(100.0 * sum(ever_no_show = 1 AND kept = 0) / nullif(sum(kept = 1 OR ever_no_show = 1 OR outcome = 'cancelled'), 0), 2)"
+            purpose = ('No-show rate = no-shows (never kept) / (kept + no-shows + cancelled), per appointment, by scheduled date; '
+                       'rescheduled and still-booked appointments are outside the denominator')
+        r.take(r'\b(?:visits|appointments)(?= scheduled\b)', None)
+    if table == 'claim' and r.take(r'\b(?:first )?(?:adjudicated|processed)\b|\badjudication dates?\b', 'anchor first_adjudication_date'):
+        date_col = 'first_adjudication_date'
+        purpose = purpose.replace('by service date', 'claims first adjudicated in the period')
+    if table == 'claim' and re.search(r'\bby (?:the )?(?:payers?|insurers?|plans?)\b', getattr(r, 'original', '') or r.low):
+        purpose += "; payer = the adjudicating payer organization ('unknown' when the adjudication came from a non-payer source)"
+    if table == 'stay':
+        date_col = 'discharge_date'
+        where = ["type = 'inpatient' AND discharge_known = 1 AND los_days IS NOT NULL"]
+        if r.take(r'\badmitted\b|\badmissions?\b(?= (?:in|during))|\bby admi(?:t|ssion) date\b', 'anchor admit_date'): date_col = 'admit_date'
+        r.take(r'\b(?:for )?(?:stays |patients )?discharged\b|\bdischarges?\b|\bby discharge date\b', 'anchor discharge_date')
+        if date_col == 'admit_date': purpose = purpose.replace('by discharge date in the period', 'by admission date in the period')
     period = _take_period(r, as_of, year_words=r'in|during|for|with service dates? in|scheduled (?:for|in)|scheduled during')
     if period: where.append(f"{date_col} BETWEEN '{period[0]}' AND '{period[1]}'")
     group = None
@@ -1952,7 +2058,11 @@ def _ops_question(q, r, profile, as_of, info):
     r.take(r'\b(?:appointments?|appts?|claims?|medical claims?|inpatient|stays?|admissions?|scheduled|payers?|our|the|what|was|were|is|in days)\b', None, overlap=True)
     sql_where = (' WHERE ' + ' AND '.join(where)) if where else ''
     if group:
-        sql = f"SELECT {group} AS {group.replace('_id', '')}, {expr} AS value FROM {table}{sql_where} GROUP BY 1 ORDER BY 1"
+        # Rows without the grouped value are their own 'unknown' group. A claim's payer column is the organization that sent
+        # the adjudication; when that is not a payer (a hospital's own copy of a remittance) the paying plan is unknown.
+        label = (f"CASE WHEN {group} IN {OWN_ORG_PAYER_SQL} THEN {group} ELSE 'unknown' END" if table == 'claim' and group == 'payer'
+                 else f"coalesce({group}, 'unknown')")
+        sql = f"SELECT {label} AS {group.replace('_id', '')}, {expr} AS value FROM {table}{sql_where} GROUP BY 1 ORDER BY 1"
         return _finish(q, r, info, sql, 'table', purpose)
     returns = 'count' if expr.startswith('sum(denied') else 'value'
     return _finish(q, r, info, f"SELECT {expr} FROM {table}{sql_where}", returns, purpose)
@@ -2333,6 +2443,8 @@ def _vbc_question(q, r, profile, as_of, info, terms):
                r'\b(?:after|following) (?:a |their |hospital )*discharges?\b|\bpost[- ]discharge\b|\bdischarges?\b|\bhad\b|\bgot\b', None)
     if metric == 'cost':
         r.take(r'\b(?:should we|do we|would we|to) (?:apply|use|book|hold)\b|\bto estimate\b|\bestimate\b|\bof claims\b|\bclaims\b', None)
+        # 'on an allowed-amount basis' / 'on a paid basis': the basis picks the PMPM column (analysis_graph.VBC_VALUE_COLUMNS)
+        r.take(r'\b(?:on |using )?(?:an? |the )?(?:allowed|paid)(?:[- ](?:amounts?|dollars?))? basis\b', 'cost basis')
         months = next(iter(r.take(r'\b(?:for |over |in )?(?:the )?(?:last|past|most recent|latest) (\d{1,2}) months\b', 'recent months')), None)
         if months:
             n = int(months.group(1)); y, m = int(as_of[:4]), int(as_of[5:7]) - n + 1

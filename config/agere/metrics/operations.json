@@ -4,13 +4,13 @@
  "metrics": [
   {
    "id": "no_show_rate",
-   "version": 1,
+   "version": 2,
    "name": "Appointment no-show rate",
    "status": "cited",
    "definitions": [
     "no_show_rate"
    ],
-   "summary": "No-shows / (kept + no-shows) among distinct appointments scheduled in the period; cancelled and rescheduled appointments are outside the denominator. Statuses resolved per appointment_id across all versions.",
+   "summary": "No-shows (a no_show version and never kept) / (kept + no-shows) among distinct appointments scheduled in the period; cancelled and rescheduled appointments are outside the denominator. Statuses resolved per appointment_id across all versions.",
    "match": {
     "all": [
      "no[- ]?shows?|missed appointments?"
@@ -31,7 +31,7 @@
     "summary": "Distinct appointment_ids that were kept (arrived/fulfilled) or no-show."
    },
    "numerator": {
-    "summary": "Denominator appointments with any no_show version."
+    "summary": "Denominator appointments with a no_show version and never kept (a no-show later arrived/attended is kept, v2)."
    },
    "time_anchor": {
     "field": "appointment.scheduled_date",
@@ -61,7 +61,7 @@
      "summary": "(no-shows + day-of/day-before cancellations) / (that + completed)."
     }
    },
-   "sql_template": "SELECT 100.0 * sum(ever_no_show) / count(*) AS no_show_rate FROM appointment WHERE scheduled_date BETWEEN '{period_start}' AND '{period_end}' AND (kept = 1 OR ever_no_show = 1)"
+   "sql_template": "SELECT 100.0 * sum(ever_no_show = 1 AND kept = 0) / count(*) AS no_show_rate FROM appointment WHERE scheduled_date BETWEEN '{period_start}' AND '{period_end}' AND (kept = 1 OR ever_no_show = 1)"
   },
   {
    "id": "stale_booked_appointments",

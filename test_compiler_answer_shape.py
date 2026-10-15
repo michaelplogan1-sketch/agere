@@ -67,7 +67,7 @@ class Grouping(unittest.TestCase):
     def test_what_modality_groups(self):
         g, info = compile_('What modality did the no-show appointments in 2029 use?')
         self.assertIsNotNone(g, info)
-        self.assertIn("json_extract(payload,'$.modality') AS modality", g['nodes'][-1]['parameters']['query'])
+        self.assertIn("coalesce(json_extract(payload,'$.modality'), 'unknown') AS modality", g['nodes'][-1]['parameters']['query'])
 
 
 class UnreadWordsDecline(unittest.TestCase):
