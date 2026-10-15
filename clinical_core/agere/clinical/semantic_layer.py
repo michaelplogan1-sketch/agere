@@ -11,9 +11,9 @@ from collections import defaultdict
 from pathlib import Path
 import json, re, sqlite3, time
 
-from . import aggregate, client_data, concepts, population_feeds, source_profile
+from . import aggregate, client_data, concepts, population_events, population_feeds, source_profile
 
-VERSION = 'semantic-layer/16'
+VERSION = 'semantic-layer/17'  # 17: population_events (payer claim services, unified claims, pharmacy events)
 GFR_UNNORMALIZED = 'gfr_unnormalized'  # 'glomerular filtration rate' results in a unit that is not per 1.73 m2 (mL/min)
 
 # Source contract: streams whose records are successive snapshots of one business entity (key field).
@@ -143,7 +143,8 @@ SCHEMA_DOC = {
     'wellness_visit': 'One row per wellness_visit_services record: visit_type (medicare_annual_wellness, preventive_review, ...), '
                       'hcpcs_code, awv = 1 for a Medicare annual wellness visit (G0438 initial / G0439 subsequent, awv_kind), status '
                       '(count completed), coding_status, event_date, encounter_id. visit.wellness_visit_type / visit.awv mark the '
-                      'encounter. Generic preventive reviews are not AWVs.',
+                      'encounter. Generic preventive reviews are not AWVs. source = ehr | payer_claim_line: AWVs known only from a '
+                      'payer claim line G0438/G0439 (not within 1 day of an EHR AWV) are rows too, so count AWVs here, not on visit.',
     'drug_class_vocabulary': 'Every medication.drug_class id with its groups (class_group: antihypertensive, raas_inhibitor, '
                              'diabetes_medication, beers_high_risk; NULL row = ungrouped class). Join on drug_class for group questions.',
     'normalization': 'measurement.loinc/component/lab_category, condition.is_diagnosis/icd10_category/chapter/chronic/'
@@ -169,7 +170,9 @@ SCHEMA_DOC = {
                            'type principal/primary/secondary. Administrative contacts are uncoded by design.',
     'claim_line': 'One row per medical claim line: cpt or hcpcs (CPT/HCPCS service code), local_charge_code (the local charge '
                   'code, kept across releases), revenue_code (UB-04 lines), units, charge_cents.',
-    'immunization': 'One row per immunization record: vaccine, product, cvx, mvx, status (administration_status).',
+    'immunization': 'One row per immunization record: vaccine, product, cvx, mvx, status (administration_status), season (influenza '
+                    'season as recorded, else July-June of the date, e.g. 2029-2030), source = ehr | payer_claim_line (influenza '
+                    'vaccine CPT / G0008 claim lines not within 1 day of an EHR flu shot; code = the billed code).',
     'clinician': 'Clinician reference rows: specialty, synthetic npi, NUCC taxonomy_code, organization_id.',
     'organization': 'Organization reference rows: organization_type, npi, taxonomy_code, tin, city/state/postal_code; facility_class '
                     '(hospital, ambulatory_surgery_center, imaging_idtf, urgent_care, dialysis, skilled_nursing, home_health, hospice, '
@@ -179,11 +182,14 @@ SCHEMA_DOC = {
              'by arrival order; final_status follows the adjudication chain (each reversal paired with the payment it reverses; '
              'final = last unreversed adjudication by event time), received_final_status = last-arrival status, '
              'live_payer_paid_cents = payer paid on unreversed payments; denied_then_paid = a denial later followed by payment; net_payer_paid_cents = paid minus reversed. '
-             'Legacy rows without claim_id are excluded. Provider-side claims only; payer-feed claims are in payer_claim.',
+             'Legacy rows without claim_id are excluded. claim_source = medical_claims (our provider remittances) | payer_medical_claims (payer-feed claims '
+             'that are not the payer copy of one of our claims; a -R replacement folds into its original): every claim of the population. '
+             'first_paid_date / first_reversal_date per claim; per-adjudication money in claim_adjudication.',
     'patient_population': 'patient.data_segment (deep_chart | claims_plus_ehr | claims_only | duplicate_chart; NULL in panel-only '
                           'releases), patient.line_of_business/payer_id (latest member_month). condition.diagnosis_basis, '
                           'diagnosing_encounter_id, diagnosis_date (onset, else event date) on conditions records.',
     **population_feeds.SCHEMA_DOC,
+    **population_events.SCHEMA_DOC,
     **client_data.SCHEMA_DOC,
 }
 
@@ -903,6 +909,8 @@ def build(path):
         meta = json.loads((path / 'run.json').read_text())
         feeds = population_feeds.build(out, people, meta['snapshot']['as_of'], path)  # after claims/entities: reads claim NPIs, organization
         _coverage_and_fills(out, meta['snapshot']['as_of'])  # after feeds: enrollment spans, fill reversals
+        from . import population_events
+        feeds['population_events'] = population_events.build(out)  # last: payer evidence folded into the entity tables
         out.executemany('INSERT INTO meta VALUES (?,?)', [('version', VERSION), ('source_digest', meta['source_digest']),
                                                           ('as_of', meta['snapshot']['as_of']),
                                                           ('standards', json.dumps(_standards_summary(out))),

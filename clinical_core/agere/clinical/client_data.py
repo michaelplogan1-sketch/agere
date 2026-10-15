@@ -130,7 +130,8 @@ SCHEMA_DOC = {
                             'normalised; *_received keep the literal); rendering_npi NULL when not sent (rendering_npi_missing).',
     'payer_claim_diagnosis': 'One row per (payer claim, diagnosis position): dotted icd10, icd10_received, counts_in_metrics.',
     'payer_pharmacy_reversal': 'payer_pharmacy_claim.transaction_code B2 = reversal (return to stock: filled, never picked up); '
-                               'reversal_of_record_id / reversed_by_record_id pair it with the paid claim it reverses; '
+                               'reversal_of_record_id / reversed_by_record_id pair it with the paid claim it reverses (the claim a reversal or '
+                               'recoupment names in supersedes_record_id, else the same prescription chain within 30 days); '
                                'counts_as_fill = 1 only for paid, unreversed claims. medication.fill_reversed = 1 on reversed '
                                'fills (PDC and fill linkage ignore them).',
     'adt_visit': 'One row per ADT visit number: patient_class at admission (E/I/O) and after updates, admit_date (A01/A04), '
@@ -383,8 +384,17 @@ def pharmacy(out):
     for rid, pid, rx, n, ndc, ph, d, status, code in rows:
         if status == 'paid' and code != 'B2': paid[(pid, rx, n, ndc, ph)].append((d, rid))
     pairs, used, unpaired = [], set(), 0
+    # Exact links first: a reversal or recoupment that names the paid claim it takes back (supersedes_record_id; the snapshot
+    # keeps that paid adjudication current as a step of the claim's chain) pairs with it; the rest pair by prescription chain.
+    status_of = {rid: (status, code) for rid, pid, rx, n, ndc, ph, d, status, code in rows}
+    for rid, prev in out.execute("""SELECT record_id, json_extract(payload,'$.supersedes_record_id') FROM record
+                                    WHERE stream = 'payer_pharmacy_claims' AND json_extract(payload,'$.supersedes_record_id') IS NOT NULL"""):
+        st, code = status_of.get(rid, (None, None))
+        if (st in ('reversed', 'recouped') or code == 'B2') and status_of.get(prev, (None,))[0] == 'paid' and prev not in used:
+            used.add(prev); pairs.append((rid, prev))
+    linked = {r for r, _ in pairs}
     for rid, pid, rx, n, ndc, ph, d, status, code in rows:
-        if code != 'B2' and status != 'reversed': continue
+        if code != 'B2' and status != 'reversed' or rid in linked: continue
         cand = [(fd, frid) for fd, frid in paid.get((pid, rx, n, ndc, ph), []) if frid not in used and fd and d and fd <= d
                 and _days(fd, d) is not None and _days(fd, d) <= 30]
         if not cand: unpaired += 1; continue

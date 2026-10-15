@@ -395,9 +395,8 @@ _CLAIM_DAYS = {'avg_days_to_first_submission': 'first_submitted_date', 'avg_days
                'avg_days_to_first_paid': 'first_paid_date'}
 # Claim clocks a question can name. 'first paid in' is the first PAID adjudication (the payer's payment decision), not the
 # cash date; cash/received questions use first_payer_cash_date; 'reversed in' is the date of a reversal adjudication event.
-_ADJ = "json_extract(payload, '$.claim_id')"
-FIRST_PAID = (f"SELECT {_ADJ} AS claim_id, min(event_date) AS first_paid_date FROM record WHERE stream = 'medical_claims' "
-              "AND json_extract(payload, '$.status') = 'paid' GROUP BY 1")
+# claim covers our provider claims and payer-feed claims (claim_source); claim.first_paid_date and claim_adjudication carry the
+# adjudication history of both (semantic-layer/17).
 CLAIM_ANCHORS = {
     'service_date': 'the date of service',
     'benefit_year': 'the benefit year (one calendar year)',
@@ -418,8 +417,7 @@ def claim_anchor_clause(anchor, bounds):
         return _and([f'{anchor} IS NOT NULL', date_clause(anchor, bounds)])
     if anchor == 'reversal_date':
         when = date_clause('event_date', bounds)
-        return (f"claim_id IN (SELECT {_ADJ} FROM record WHERE stream = 'medical_claims' AND json_extract(payload, '$.status') = 'reversed'"
-                + (f" AND {when}" if when else '') + ')')
+        return ("claim_id IN (SELECT claim_id FROM claim_adjudication WHERE status = 'reversed'" + (f" AND {when}" if when else '') + ')')
     raise ValueError(f'anchor must be one of {sorted(CLAIM_ANCHORS)}')
 
 
@@ -431,8 +429,7 @@ def build_medical_claims(slots, as_of, m=None):
     bounds = period_bounds(slots.get('period'), as_of)
     dclause = claim_anchor_clause(anchor, bounds)
     where = _and([dclause, *[f"{_CLAIM_DAYS[x]} IS NOT NULL" for x in measures if x in _CLAIM_DAYS]])
-    source = ('(SELECT c.*, fp.first_paid_date FROM claim c LEFT JOIN (' + FIRST_PAID + ') fp ON fp.claim_id = c.claim_id)'
-              if anchor == 'first_paid_date' or 'avg_days_to_first_paid' in measures else 'claim')
+    source = 'claim'
     by = slots.get('group_by') or 'none'
     clock = anchor if anchor not in ('benefit_year', 'reversal_date') else 'service_date'
     gexpr = {'none': None, 'payer': 'payer'}.get(by) or _group_expr(clock, by)
@@ -453,13 +450,16 @@ def _payload(field, alias='r'): return f"json_extract({alias}.payload, '$.{field
 
 
 def build_record_event(slots, as_of, m=None):
-    """A governed record event (metric JSON 'event'): one stream, a fixed filter, a counting key or an amount, a date field,
-    named group-by fields. The model fills only period / group_by / measure."""
+    """A governed record event (metric JSON 'event'): one stream (or one semantic table, event.table, when the event is
+    resolved across sources there), a fixed filter, a counting key or an amount, a date field, named group-by fields.
+    The model fills only period / group_by / measure."""
     ev = (m or {}).get('event') or {}
-    if not ev.get('stream'): raise ValueError('record_event metric needs an event definition')
+    if not (ev.get('stream') or ev.get('table')): raise ValueError('record_event metric needs an event definition')
+    if ev.get('table') and not re.fullmatch(r'[a-z_]+', ev['table']): raise ValueError('event.table must be a semantic table name')
     bounds = period_bounds(slots.get('period'), as_of)
     date_col = ev.get('date', 'r.event_date')
-    where = _and([f"r.stream = {q(ev['stream'])}", ev.get('where'), date_clause(date_col, bounds)])
+    source = f"{ev['table']} r" if ev.get('table') else 'record r'
+    where = _and([None if ev.get('table') else f"r.stream = {q(ev['stream'])}", ev.get('where'), date_clause(date_col, bounds)])
     measure = slots.get('measure') or ev.get('default_measure', 'count')
     exprs = ev.get('measures') or {}
     if measure not in exprs: raise ValueError(f'measure must be one of {sorted(exprs)}')
@@ -468,8 +468,8 @@ def build_record_event(slots, as_of, m=None):
     if by != 'none' and by not in groups: raise ValueError(f"group_by must be none or one of {sorted(groups)}")
     agg = exprs[measure]
     if by != 'none':
-        return {'query': f"SELECT {groups[by]} AS {by}, {agg} AS {measure} FROM record r WHERE {where} GROUP BY 1 ORDER BY 1", 'returns': 'table'}
-    return {'query': f"SELECT {agg} AS {measure} FROM record r WHERE {where}", 'returns': ev.get('returns', {}).get(measure, 'value')}
+        return {'query': f"SELECT {groups[by]} AS {by}, {agg} AS {measure} FROM {source} WHERE {where} GROUP BY 1 ORDER BY 1", 'returns': 'table'}
+    return {'query': f"SELECT {agg} AS {measure} FROM {source} WHERE {where}", 'returns': ev.get('returns', {}).get(measure, 'value')}
 
 
 FEED_STREAMS = ('labs', 'encounters', 'medical_claims', 'conditions', 'vitals', 'pharmacy_dispenses', 'appointments')

@@ -25,6 +25,20 @@ def text_of(r):
         return r.get('extracted_text') or ''
     return r.get('text') or ''
 
+def adjudication_step(parent,child):
+    """True when a supersedes link is the next step of a claim's adjudication chain, not a correction of the record: the
+    parent adjudication stays current (a reversal, recoupment or later adjudication sequence is an additional money event;
+    a void plus its '-R' replacement keep the original payment that they reverse). Payer medical claims: another
+    adjudication_sequence or payer_claim_id; payer pharmacy claims: a 'reversed' / 'recouped' child; provider medical
+    claims: a 'reversed' child."""
+    table=child.get('source_table')
+    if table=='payer_medical_claims':
+        return child.get('adjudication_sequence')!=parent.get('adjudication_sequence') or child.get('payer_claim_id')!=parent.get('payer_claim_id')
+    if table=='payer_pharmacy_claims': return child.get('claim_status') in ('reversed','recouped')
+    if table=='medical_claims': return child.get('status')=='reversed'
+    return False
+
+
 class Warehouse:
     def __init__(self, path):
         Path(path).parent.mkdir(parents=True, exist_ok=True)
@@ -99,7 +113,7 @@ class Warehouse:
                 old=visible[prev]
                 if old['patient_id']!=r['patient_id'] or old['source_table']!=r['source_table']:
                     conflicts.append(r['record_id'])
-                else: superseded.add(prev)
+                elif not adjudication_step(old,r): superseded.add(prev)
         # A correction cycle is ambiguous: retain provenance, quarantine the chain.
         for rid in visible:
             seen=set();current=rid

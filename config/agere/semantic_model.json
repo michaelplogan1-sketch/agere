@@ -3,7 +3,7 @@
  "domain": "healthcare",
  "derived_from": {
   "module": "clinical_core/agere/clinical/semantic_layer.py",
-  "semantic_layer_version": "semantic-layer/16",
+  "semantic_layer_version": "semantic-layer/17",
   "versioned_streams": {
    "patient_billing_accounts": "account_id",
    "medical_claims": "claim_id",
@@ -1106,7 +1106,7 @@
   },
   "claim": {
    "table": "claim",
-   "meaning": "One row per medical claim_id (adjudications arrive as successive records: denied, paid, reversed, re-paid). first_status by arrival order; final_status follows the adjudication chain (each reversal paired with the payment it reverses; final = last unreversed adjudication by event time), received_final_status = last-arrival status, live_payer_paid_cents = payer paid on unreversed payments; denied_then_paid = a denial later followed by payment; net_payer_paid_cents = paid minus reversed. Legacy rows without claim_id are excluded. Provider-side claims only; payer-feed claims are in payer_claim.",
+   "meaning": "One row per medical claim_id (adjudications arrive as successive records: denied, paid, reversed, re-paid). first_status by arrival order; final_status follows the adjudication chain (each reversal paired with the payment it reverses; final = last unreversed adjudication by event time), received_final_status = last-arrival status, live_payer_paid_cents = payer paid on unreversed payments; denied_then_paid = a denial later followed by payment; net_payer_paid_cents = paid minus reversed. Legacy rows without claim_id are excluded. claim_source = medical_claims (our provider remittances) | payer_medical_claims (payer-feed claims that are not the payer copy of one of our claims; a -R replacement folds into its original): every claim of the population. first_paid_date / first_reversal_date per claim; per-adjudication money in claim_adjudication.",
    "grain": "one row per received claim adjudication record (denied, paid, reversed, re-paid)",
    "keys": [
     "claim_id"
@@ -1988,7 +1988,7 @@
   },
   "immunization": {
    "table": "immunization",
-   "meaning": "One row per immunization record: vaccine, product, cvx, mvx, status (administration_status).",
+   "meaning": "One row per immunization record: vaccine, product, cvx, mvx, status (administration_status), season (influenza season as recorded, else July-June of the date, e.g. 2029-2030), source = ehr | payer_claim_line (influenza vaccine CPT / G0008 claim lines not within 1 day of an EHR flu shot; code = the billed code).",
    "derivation": "Immunization rows (not yet an onboarding target).",
    "columns": {
     "record_id": "text",

@@ -400,13 +400,13 @@ def raw_catalog_slice(question, profile, path=None, shown=(), k=4, budget=RAW_SL
 TABLE_STREAMS = {
     'visit': ('encounters',), 'encounter': ('encounters',), 'encounter_diagnosis': ('encounters',), 'adt_visit': ('adt', 'adt_messages'),
     'stay': ('encounters', 'adt'), 'utilization_event': ('encounters', 'adt'),
-    'claim': ('medical_claims', 'medical_claim_submissions', 'payer_cash_allocations', 'provider_remittance_advice'),
+    'claim': ('medical_claims', 'medical_claim_submissions', 'payer_cash_allocations', 'provider_remittance_advice', 'payer_medical_claims'),
     'claim_adjustment': ('medical_claims', 'provider_remittance_advice'), 'claim_line': ('medical_claim_lines',),
     'payer_claim': ('payer_medical_claims',), 'payer_claim_line': ('payer_medical_claim_lines',), 'payer_claim_diagnosis': ('payer_medical_claims',),
     'payer_pharmacy_claim': ('payer_pharmacy_claims',),
     'measurement': ('labs', 'vitals', 'mood_questionnaires'), 'measurement_latest': ('labs', 'vitals', 'mood_questionnaires'),
     'condition': ('conditions', 'condition_assessments'), 'problem_list_entry': ('conditions',),
-    'appointment': ('appointments',), 'immunization': ('immunizations',), 'enrollment_span': ('enrollment_spans',),
+    'appointment': ('appointments',), 'immunization': ('immunizations', 'payer_medical_claim_lines'), 'enrollment_span': ('enrollment_spans',),
     'member_month': ('enrollment_spans', 'coverage'), 'patient': ('coverage', 'demographic_updates'),
     'medication': ('pharmacy_dispenses', 'medication_orders', 'medication_lists', 'pharmacy_claims', 'pharmacy_claim_transactions',
                    'medication_administrations', 'reported_medication_entries', 'pharmacy_history'),
@@ -414,7 +414,11 @@ TABLE_STREAMS = {
     'social_need': ('social_screens', 'financial_screens'), 'smoking_status': ('social_history',), 'sdoh_vendor': ('sdoh_vendor_attributes',),
     'note_fact': ('notes', 'imported_documents', 'hie_documents', 'scanned_documents'), 'clinical_note': ('notes',),
     'hie_document': ('hie_documents',), 'scanned_document': ('scanned_documents',), 'scanned_document_text': ('scanned_documents',),
-    'wellness_visit': ('wellness_visit_services',), 'allergy_entry': ('allergies',),
+    'wellness_visit': ('wellness_visit_services', 'payer_medical_claim_lines'),
+    'cancer_screening': ('cancer_screening_results', 'payer_medical_claim_lines'),
+    'claim_adjudication': ('medical_claims', 'payer_medical_claims'),
+    'pharmacy_claim_event': ('pharmacy_claim_transactions', 'payer_pharmacy_claims'),
+    'returned_fill': ('pharmacy_dispenses', 'payer_pharmacy_claims'), 'allergy_entry': ('allergies',),
 }
 COLUMN_STREAMS = {'awv': ('wellness_visit_services',), 'wellness_visit_type': ('wellness_visit_services',)}
 
