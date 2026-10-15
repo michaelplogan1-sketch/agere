@@ -1,0 +1,2 @@
+-- UNSUPPORTED: clinician compensation / salary data (no payroll, compensation or HR stream). Diagnostic returns prerequisite_available = 0 when no such stream (and no such field) has been received.
+SELECT CASE WHEN EXISTS (SELECT 1 FROM records WHERE stream LIKE '%payroll%' OR stream LIKE '%compensation%' OR stream LIKE '%salary%' OR stream LIKE '%human_resource%' OR stream LIKE '%employee%') THEN 1 ELSE 0 END AS prerequisite_available;

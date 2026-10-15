@@ -1,0 +1,2 @@
+-- UNSUPPORTED: hospital cost accounting / actual cost per case (no cost-accounting, general-ledger or cost-to-charge stream; only charges, allowed and paid amounts exist). Diagnostic returns prerequisite_available = 0 when no such stream (and no such field) has been received.
+SELECT CASE WHEN EXISTS (SELECT 1 FROM records WHERE stream LIKE '%cost_account%' OR stream LIKE '%general_ledger%' OR stream LIKE '%cost_to_charge%' OR stream LIKE '%case_cost%' OR stream LIKE '%cost_report%') THEN 1 ELSE 0 END AS prerequisite_available;

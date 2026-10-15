@@ -1,0 +1,2 @@
+-- Behavioral health referrals after a positive depression screen: distinct patients with a referrals row referral_type 'positive_depression_screen_assessment' or 'behavioral_health_assessment', any date through the as-of date.
+SELECT COUNT(DISTINCT patient) AS count FROM records WHERE stream='referrals' AND json_extract(payload,'$.referral_type') IN ('positive_depression_screen_assessment','behavioral_health_assessment');

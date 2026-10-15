@@ -1,0 +1,4 @@
+-- Medical allowed-amount PMPM for 2029 (net of reversals): numerator = sum of financial_deltas_cents.allowed over medical_claims rows whose claim service_date is 2029-01-01..2029-12-31 (all adjudication rows, so reversal rows cancel originals and replacements count once; denied rows add 0), in dollars; denominator = member-months = 12 x patients whose coverage row status is 'active' (all active coverage starts 2026-08-28 and has no end date; 'no_active_plan_reported'/uninsured excluded). 2 dp.
+WITH r AS MATERIALIZED (SELECT patient, stream, payload FROM records WHERE stream IN ('medical_claims','coverage'))
+SELECT ROUND((SELECT SUM(json_extract(payload,'$.financial_deltas_cents.allowed'))/100.0 FROM r WHERE stream='medical_claims' AND json_extract(payload,'$.service_date') BETWEEN '2029-01-01' AND '2029-12-31')
+  / (12.0*(SELECT COUNT(DISTINCT patient) FROM r WHERE stream='coverage' AND json_extract(payload,'$.status')='active')),2) AS value;

@@ -1,0 +1,5 @@
+-- Patients screening positive for food difficulty in 2029 (social_screens food_difficulty_reported true, event_date in 2029) with NO food referral: no referrals row referral_type 'food_resource_contact' and no community_service_referrals row service_requested 'food_access', any date on or after 2029-01-01. Returns patient_id.
+WITH r AS MATERIALIZED (SELECT patient, stream, payload FROM records WHERE stream IN ('social_screens','referrals','community_service_referrals')),
+pos AS (SELECT DISTINCT patient FROM r WHERE stream='social_screens' AND json_extract(payload,'$.food_difficulty_reported')=1 AND json_extract(payload,'$.event_date') BETWEEN '2029-01-01' AND '2029-12-31'),
+ref AS (SELECT DISTINCT patient FROM r WHERE json_extract(payload,'$.event_date')>='2029-01-01' AND ((stream='referrals' AND json_extract(payload,'$.referral_type')='food_resource_contact') OR (stream='community_service_referrals' AND json_extract(payload,'$.service_requested')='food_access')))
+SELECT patient AS patient_id FROM pos WHERE patient NOT IN (SELECT patient FROM ref) ORDER BY 1;

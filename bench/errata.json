@@ -4867,6 +4867,6269 @@
    },
    "alternatives": [],
    "evidence": "Unsupported case: the diagnostic SQL confirms the prerequisite is absent (0 rows); the missing-prerequisite rubric is unchanged."
+  },
+  "Q01": {
+   "category": "d",
+   "canonical": {
+    "reading": "ED visits for all 4,499 patients in the patients view (1,614 original deep-chart + 2,885 population): EHR encounters (emergency/ED/ED stroke alert) + ADT adt_messages patient_class E + payer_medical_claims ED claims (POS 23 or 045x revenue line), one visit per patient-date across EHR+ADT, ED claim days folded into an EHR/ADT visit of the same patient on the same date (or 1 day apart when that visit has no same-day claim), voided claims excluded.",
+    "source": "errata",
+    "sql": "sql_errata/heldout9/Q01__population.sql",
+    "expected": {
+     "9ef6ea79297af818f4eabab0b629a32ea5684d92f921ed46a72b82838e7189e8": {
+      "count": 1563
+     },
+     "d212c960d1e55a8663a5afe165741458ee429c7c15df200fb5c3cf2de65c22c4": {
+      "count": 1492
+     }
+    }
+   },
+   "alternatives": [
+    {
+     "id": "original_ehr",
+     "reading": "Original-roster EHR encounters only (reference SQL).",
+     "source": "reference",
+     "stated_any_of": [
+      [
+       "original 1,614",
+       "1,614-person",
+       "1,614 patients",
+       "original roster",
+       "original cohort",
+       "deep-chart",
+       "deep chart",
+       "ehr encounters only",
+       "encounters stream only",
+       "medical_claims only",
+       "excluding the population",
+       "excludes payer",
+       "without payer"
+      ]
+     ]
+    }
+   ],
+   "evidence": "Reference reads only the EHR encounters stream, which carries ED visits for the 1,614 original patients only (population EHR encounters are office/telehealth). The population's ED activity arrives as ADT (adt_messages class E: 917 visits/911 patient-days in 2029) and payer claims (1,284 ED claim patient-days in 2029; 886 same-day + 5 adjacent-day matches with ADT). 25 ADT-only days: 18 on duplicate_chart identities (kept as separate warehouse patients; no fuzzy merge), 7 with no claim. Streams: encounters, adt_messages, payer_medical_claims, payer_medical_claim_lines (+ source_entities for hospital NPI). Before 259 -> after 1563. | v2.8 (release d212c960, 4,115 patients): reference 264 -> canonical 1492."
+  },
+  "Q02": {
+   "category": "d",
+   "canonical": {
+    "reading": "ED visits for all 4,499 patients in the patients view (1,614 original deep-chart + 2,885 population): EHR encounters (emergency/ED/ED stroke alert) + ADT adt_messages patient_class E + payer_medical_claims ED claims (POS 23 or 045x revenue line), one visit per patient-date across EHR+ADT, ED claim days folded into an EHR/ADT visit of the same patient on the same date (or 1 day apart when that visit has no same-day claim), voided claims excluded. Patients with >= 2 visits dated 2029.",
+    "source": "errata",
+    "sql": "sql_errata/heldout9/Q02__population.sql",
+    "expected": {
+     "9ef6ea79297af818f4eabab0b629a32ea5684d92f921ed46a72b82838e7189e8": {
+      "patient_ids": [
+       "P-2005",
+       "P-9047",
+       "P-WM01",
+       "SYN-043004B6-FCB",
+       "SYN-08CE801B-C37",
+       "SYN-09D2C26A-B61",
+       "SYN-0C430D42-5DE",
+       "SYN-1DC41623-1D7",
+       "SYN-21D743BD-A1B",
+       "SYN-3976D812-FAD",
+       "SYN-3DB8BCA4-3D4",
+       "SYN-4BCDA4D7-A99",
+       "SYN-5DC8CF48-C7D",
+       "SYN-68B8B2D2-968",
+       "SYN-69C65890-E9A",
+       "SYN-7ABDFBCA-A81",
+       "SYN-82B4900B-C19",
+       "SYN-8C71A396-84C",
+       "SYN-98409E3C-324",
+       "SYN-ABC9D9FD-5FE",
+       "SYN-AF0CF7E7-AFA",
+       "SYN-D6327493-D55",
+       "SYN-D9886E78-849",
+       "SYN-F34B24A9-E38",
+       "SYN-F9436900-932",
+       "WHP-01113B4EAB2E",
+       "WHP-015A0D04A4BE",
+       "WHP-0374A32F6EE0",
+       "WHP-0560EB360114",
+       "WHP-05A7E92C34B1",
+       "WHP-070CD43270E9",
+       "WHP-07E0A96C540A",
+       "WHP-087E2CD45060",
+       "WHP-0B96131959BD",
+       "WHP-0C5C4287726B",
+       "WHP-0D4A246B9FF9",
+       "WHP-0DD04550449E",
+       "WHP-0F451F4FDB2B",
+       "WHP-10689C9D3769",
+       "WHP-123AC77DD06C",
+       "WHP-125F20920118",
+       "WHP-12FD942D336F",
+       "WHP-1430A60D5E8F",
+       "WHP-155447BD2126",
+       "WHP-1586DF632A1D",
+       "WHP-159F984A45CA",
+       "WHP-1619906DE77E",
+       "WHP-179B64961DE8",
+       "WHP-1862763A4287",
+       "WHP-19BB9F507D47",
+       "WHP-19E392DB7E41",
+       "WHP-1B994CB8878B",
+       "WHP-1CB4001029D2",
+       "WHP-1D09E959D6C3",
+       "WHP-20B68F5BB3E3",
+       "WHP-22015FE92AC2",
+       "WHP-22230925919A",
+       "WHP-22A412F8C014",
+       "WHP-25E8B97FE5AF",
+       "WHP-269A5DAAF795",
+       "WHP-282A0F7FE85B",
+       "WHP-284C24A66BBF",
+       "WHP-2854E490CD31",
+       "WHP-28B7A70C0C56",
+       "WHP-2905E93455C7",
+       "WHP-2A64FAE31DBA",
+       "WHP-2B1724812CFE",
+       "WHP-2B6559776176",
+       "WHP-2BA5854B0E3B",
+       "WHP-2BE85E8C9017",
+       "WHP-2C600E7352D7",
+       "WHP-2CAAEF070959",
+       "WHP-3107692D611E",
+       "WHP-31251782CFF0",
+       "WHP-31EB9DD99024",
+       "WHP-34AE37688C7A",
+       "WHP-357EB28B1BB3",
+       "WHP-35C0963EEAB8",
+       "WHP-3624E0B2E701",
+       "WHP-36ABD5DC63CF",
+       "WHP-3738A215A4DF",
+       "WHP-37A877729AF5",
+       "WHP-38868BF40555",
+       "WHP-391E6F757C58",
+       "WHP-3CD58FB10FBE",
+       "WHP-3D07D3FD0DFB",
+       "WHP-3E96C9A864A2",
+       "WHP-3F767B34E695",
+       "WHP-40196D3996E8",
+       "WHP-40B18BA44B75",
+       "WHP-40FE85B56507",
+       "WHP-42243B7F5D68",
+       "WHP-42E96756699B",
+       "WHP-4514C9AA87B9",
+       "WHP-4557916D93EA",
+       "WHP-4565087AC37F",
+       "WHP-45F1F91514BC",
+       "WHP-45F26FE02DF2",
+       "WHP-475A93FFBEF6",
+       "WHP-47CC37BA4AEC",
+       "WHP-491D8DC4A850",
+       "WHP-4A56CE1F4555",
+       "WHP-4DBEEE18201D",
+       "WHP-4E482870950B",
+       "WHP-4EC4F1B658A5",
+       "WHP-4FFC3BD03F68",
+       "WHP-501404714350",
+       "WHP-50CAA4CE0560",
+       "WHP-50D4CA9B27BA",
+       "WHP-5151583E3FBE",
+       "WHP-52B7BA575134",
+       "WHP-5313212D3504",
+       "WHP-54232BE15D91",
+       "WHP-55015F6E9D31",
+       "WHP-56A6AA6F2654",
+       "WHP-57AD7FDDD211",
+       "WHP-57CE5780C7E4",
+       "WHP-5B0047E528CC",
+       "WHP-5D581A38F3D6",
+       "WHP-5E13AFF8D7FC",
+       "WHP-5FB847ABE17C",
+       "WHP-6367DCEEBBAD",
+       "WHP-63DD8D4A51A5",
+       "WHP-65B7B4E76915",
+       "WHP-668797AD0391",
+       "WHP-682EBD97787E",
+       "WHP-68617A0CF723",
+       "WHP-68EAE4EA18B0",
+       "WHP-6D38C37A5F1A",
+       "WHP-6D5F222D5261",
+       "WHP-72BF2B771BF5",
+       "WHP-739B50486C17",
+       "WHP-73AC2D0E4112",
+       "WHP-76C1F1BEE062",
+       "WHP-7D7E1D9EBE31",
+       "WHP-7E70E457E5D6",
+       "WHP-7FADC8A13525",
+       "WHP-800C487EEF6D",
+       "WHP-81210AEE9E01",
+       "WHP-857CAEF8CC5F",
+       "WHP-85CDD2BD2D55",
+       "WHP-85D78D3616CC",
+       "WHP-865618C80DF8",
+       "WHP-86F1772815B3",
+       "WHP-8813687BA602",
+       "WHP-8A4AA5687CB5",
+       "WHP-8A7DC1B2CA46",
+       "WHP-8A96B71BB02B",
+       "WHP-8AB17E2A011E",
+       "WHP-8E367EF84843",
+       "WHP-8E9D4BE4BCA8",
+       "WHP-8F66079B3D4A",
+       "WHP-903E886B2573",
+       "WHP-907E55D8B8A0",
+       "WHP-92850AAEA9EA",
+       "WHP-988829DF2D02",
+       "WHP-99862FE3827E",
+       "WHP-9992B93E6416",
+       "WHP-9A0CBA7E4BAD",
+       "WHP-9B3635E83C27",
+       "WHP-9EB2EB89F30B",
+       "WHP-A1777FF38133",
+       "WHP-A3323126CC33",
+       "WHP-A437159E49D1",
+       "WHP-A952CAEBC439",
+       "WHP-AA31AFA6AF51",
+       "WHP-AADD149AF4D3",
+       "WHP-AB06960F68D5",
+       "WHP-AB4BEF157500",
+       "WHP-AB7B0528B167",
+       "WHP-AC03F4CEE8DF",
+       "WHP-AC6F18E4E42F",
+       "WHP-ACD9888CA58B",
+       "WHP-AD5C37A7B851",
+       "WHP-AD828171FF20",
+       "WHP-AE6F1D2DA9B3",
+       "WHP-AFE226C99F90",
+       "WHP-B0738F37BBB5",
+       "WHP-B18CB6BEEF58",
+       "WHP-B1CCE11E8660",
+       "WHP-B217E4358EB5",
+       "WHP-B229294F7DDA",
+       "WHP-B4E976A6BC06",
+       "WHP-B63C84DFA377",
+       "WHP-B667D794E2D4",
+       "WHP-B7245DAFF9BD",
+       "WHP-B79B02F06561",
+       "WHP-B7C08FC36591",
+       "WHP-B7EFB25CD59C",
+       "WHP-BA1E5EE05B17",
+       "WHP-BD9C8A9BA8FD",
+       "WHP-BFBF04D843D1",
+       "WHP-C16B10F61895",
+       "WHP-C2EA3794B5BE",
+       "WHP-C3E34B9E36E9",
+       "WHP-C6079A267706",
+       "WHP-C62F80F65046",
+       "WHP-C93B3991D079",
+       "WHP-C93D38D08944",
+       "WHP-CA9FD0C3C6B9",
+       "WHP-CB53BA8A82A9",
+       "WHP-CB63B61585B2",
+       "WHP-CE3F67A64DCE",
+       "WHP-CF1731617FA0",
+       "WHP-D0F69DA9461B",
+       "WHP-D1C2C3AA0DE6",
+       "WHP-D5E4F2929E6F",
+       "WHP-D62353598BCC",
+       "WHP-D70554F792AD",
+       "WHP-D85664BB6F6E",
+       "WHP-D8BBC37E72AA",
+       "WHP-D8D13E3EE095",
+       "WHP-D90748C17498",
+       "WHP-DA81CC702A89",
+       "WHP-DAF386B2A638",
+       "WHP-DB1977B44100",
+       "WHP-DCCB6429CBA1",
+       "WHP-DDCAFC2F1788",
+       "WHP-E28CE1B642EB",
+       "WHP-E3E289FF8D65",
+       "WHP-E6DB55DE6BEA",
+       "WHP-E70C44C35C28",
+       "WHP-E7932781FE05",
+       "WHP-EC4C1E291C33",
+       "WHP-ED7A62CB6862",
+       "WHP-EFE6F0A8D1F6",
+       "WHP-F1DA98DF32D8",
+       "WHP-F2421D471707",
+       "WHP-F25BB53283B1",
+       "WHP-F491EB818886",
+       "WHP-F8BE1B187FFF",
+       "WHP-F9464621D7A5",
+       "WHP-F9B00FBC9DB8",
+       "WHP-FB212BFEFDF4",
+       "WHP-FD39E4FEC65A",
+       "WHP-FDF0A6557881",
+       "WHP-FE9F62460B07",
+       "WHP-FEBA322831FD",
+       "WHP-FEC572943AD3",
+       "WHP-FF7C8354E9EB"
+      ]
+     },
+     "d212c960d1e55a8663a5afe165741458ee429c7c15df200fb5c3cf2de65c22c4": {
+      "patient_ids": [
+       "P-2005",
+       "P-9047",
+       "P-BH08",
+       "P-WM01",
+       "SYN-021B8A30-724",
+       "SYN-043004B6-FCB",
+       "SYN-07948F79-7DB",
+       "SYN-082AF373-348",
+       "SYN-09D2C26A-B61",
+       "SYN-0C430D42-5DE",
+       "SYN-0CB5619B-D89",
+       "SYN-0D7DEA97-BF5",
+       "SYN-1A973802-BFF",
+       "SYN-1BFB50AC-B5E",
+       "SYN-1DC41623-1D7",
+       "SYN-21D743BD-A1B",
+       "SYN-2B095EED-B5A",
+       "SYN-35DCCED5-C11",
+       "SYN-3976D812-FAD",
+       "SYN-3DB8BCA4-3D4",
+       "SYN-433BD21A-D36",
+       "SYN-4B964E7F-757",
+       "SYN-4BCDA4D7-A99",
+       "SYN-5DC8CF48-C7D",
+       "SYN-5E1729A8-4CA",
+       "SYN-67436663-A0F",
+       "SYN-67F7534A-600",
+       "SYN-68B8B2D2-968",
+       "SYN-69C65890-E9A",
+       "SYN-7530D7F2-75A",
+       "SYN-75CDA6FA-E6C",
+       "SYN-7ABDFBCA-A81",
+       "SYN-7C6D358D-7A8",
+       "SYN-82B4900B-C19",
+       "SYN-89BDB7E5-BE3",
+       "SYN-8B593591-3BE",
+       "SYN-8C71A396-84C",
+       "SYN-9581B1D5-964",
+       "SYN-98409E3C-324",
+       "SYN-A5DCCDF2-DF7",
+       "SYN-A83BD76F-CBD",
+       "SYN-ABC9D9FD-5FE",
+       "SYN-AFFFA8A4-861",
+       "SYN-B5358542-8BA",
+       "SYN-B762EAFD-3AC",
+       "SYN-CA6452D3-60B",
+       "SYN-D0D61607-9CE",
+       "SYN-D6327493-D55",
+       "SYN-D9886E78-849",
+       "SYN-DB07F136-B5D",
+       "SYN-F34B24A9-E38",
+       "SYN-F9436900-932",
+       "WHP-01113B4EAB2E",
+       "WHP-015A0D04A4BE",
+       "WHP-019891D6C47B",
+       "WHP-0374A32F6EE0",
+       "WHP-042A306020A0",
+       "WHP-049608139C10",
+       "WHP-0560EB360114",
+       "WHP-05A7E92C34B1",
+       "WHP-06CF213C538A",
+       "WHP-070CD43270E9",
+       "WHP-077EB9253BB3",
+       "WHP-087E2CD45060",
+       "WHP-088CAB9AF9A8",
+       "WHP-08FCB35F3AF3",
+       "WHP-095130D4A8B9",
+       "WHP-0BFE67862043",
+       "WHP-0D4A246B9FF9",
+       "WHP-0F451F4FDB2B",
+       "WHP-12FD942D336F",
+       "WHP-131BF688DB62",
+       "WHP-1430A60D5E8F",
+       "WHP-147C9A4311D6",
+       "WHP-147F1C7EB3AE",
+       "WHP-159F984A45CA",
+       "WHP-179B64961DE8",
+       "WHP-1862763A4287",
+       "WHP-19E392DB7E41",
+       "WHP-1A03593F4C32",
+       "WHP-1D09E959D6C3",
+       "WHP-20BC580B73BB",
+       "WHP-22C30A8904CB",
+       "WHP-251C16ACDE20",
+       "WHP-27E555CF2F3B",
+       "WHP-284C24A66BBF",
+       "WHP-2854E490CD31",
+       "WHP-2AA19191960E",
+       "WHP-2AB7AAA15105",
+       "WHP-2B1724812CFE",
+       "WHP-2E762CE8A947",
+       "WHP-30FCF9B1C8CA",
+       "WHP-3105A48104F5",
+       "WHP-3107692D611E",
+       "WHP-31251782CFF0",
+       "WHP-32D8E6C0B6D5",
+       "WHP-3493E329BFEC",
+       "WHP-37B06A5B72A6",
+       "WHP-37FAED0E48EB",
+       "WHP-391E6F757C58",
+       "WHP-39BC8DB8A07E",
+       "WHP-3BB6E0EA0219",
+       "WHP-3CD58FB10FBE",
+       "WHP-3DEE11D6A205",
+       "WHP-3F767B34E695",
+       "WHP-40B18BA44B75",
+       "WHP-42243B7F5D68",
+       "WHP-4514C9AA87B9",
+       "WHP-47CC37BA4AEC",
+       "WHP-47E42B976FF3",
+       "WHP-491D8DC4A850",
+       "WHP-4D244E95905A",
+       "WHP-4EC7CBFC30A7",
+       "WHP-4FD16F1EA0E9",
+       "WHP-545EA7941E96",
+       "WHP-55015F6E9D31",
+       "WHP-563D88FE4916",
+       "WHP-5B0047E528CC",
+       "WHP-5C621194761C",
+       "WHP-5E13AFF8D7FC",
+       "WHP-60707C556019",
+       "WHP-61F3B36DC96D",
+       "WHP-63DD8D4A51A5",
+       "WHP-668BAEFABAD5",
+       "WHP-66B8EC6410DC",
+       "WHP-66F733628EC7",
+       "WHP-67108B6DA261",
+       "WHP-695B5CC70217",
+       "WHP-6B251B6BB566",
+       "WHP-6D5F222D5261",
+       "WHP-6F2ED194EBD3",
+       "WHP-72BF2B771BF5",
+       "WHP-739B50486C17",
+       "WHP-752774940B25",
+       "WHP-76B7EA2B8CE9",
+       "WHP-76C1F1BEE062",
+       "WHP-77551208DB9D",
+       "WHP-799F556AD5F8",
+       "WHP-7A2C9A5E6AB1",
+       "WHP-7E70E457E5D6",
+       "WHP-7FADC8A13525",
+       "WHP-857CAEF8CC5F",
+       "WHP-85D78D3616CC",
+       "WHP-86F1772815B3",
+       "WHP-88D9D524343B",
+       "WHP-8A4AA5687CB5",
+       "WHP-8A96B71BB02B",
+       "WHP-8B61F288EF96",
+       "WHP-8E367EF84843",
+       "WHP-8E44D529F3FA",
+       "WHP-907E55D8B8A0",
+       "WHP-90A1F7047375",
+       "WHP-9233E6DCD1E9",
+       "WHP-9438A80C87DE",
+       "WHP-9992B93E6416",
+       "WHP-9EB2EB89F30B",
+       "WHP-A10F247BC24B",
+       "WHP-A203280BD574",
+       "WHP-A4B82BA9DE02",
+       "WHP-A53F114E03F8",
+       "WHP-A6ED1A391E3C",
+       "WHP-AA31AFA6AF51",
+       "WHP-AB06960F68D5",
+       "WHP-AD5C37A7B851",
+       "WHP-ADCE6D507799",
+       "WHP-AE6F1D2DA9B3",
+       "WHP-AFBFF8240FA4",
+       "WHP-B0738F37BBB5",
+       "WHP-B18CB6BEEF58",
+       "WHP-B1E24C72F8CD",
+       "WHP-B39B10E58E02",
+       "WHP-B40523CB1719",
+       "WHP-B4E976A6BC06",
+       "WHP-B57ABC00A1AF",
+       "WHP-B667D794E2D4",
+       "WHP-B7C08FC36591",
+       "WHP-B89F2ED22235",
+       "WHP-B937D8C2514A",
+       "WHP-BA1E5EE05B17",
+       "WHP-BA5F6EE784DD",
+       "WHP-BBA6807EB4FB",
+       "WHP-BC5158DAF4DF",
+       "WHP-BD9C08F5581E",
+       "WHP-BD9C8A9BA8FD",
+       "WHP-BEE34E2A064D",
+       "WHP-C16B10F61895",
+       "WHP-C23FC39A9124",
+       "WHP-C3E34B9E36E9",
+       "WHP-C42D5A2EC7F5",
+       "WHP-C44E2E2713DD",
+       "WHP-C6079A267706",
+       "WHP-C6DECCEAB48D",
+       "WHP-C7FB70852457",
+       "WHP-C93B3991D079",
+       "WHP-CB53BA8A82A9",
+       "WHP-CCFC25AAD1FA",
+       "WHP-CE95232B1EF1",
+       "WHP-D12DC1BE528A",
+       "WHP-D38E9A5E44D1",
+       "WHP-D5B2AF1F49D0",
+       "WHP-D5E4F2929E6F",
+       "WHP-D85664BB6F6E",
+       "WHP-D8BBC37E72AA",
+       "WHP-D8D13E3EE095",
+       "WHP-D97A6B126CFD",
+       "WHP-DAB42314A78A",
+       "WHP-DAF386B2A638",
+       "WHP-DB55A411E846",
+       "WHP-DB999257E482",
+       "WHP-DCAC30BF3905",
+       "WHP-DDCAAE54BB9C",
+       "WHP-DDCAFC2F1788",
+       "WHP-E246DBFD7792",
+       "WHP-E28CE1B642EB",
+       "WHP-E310A7041188",
+       "WHP-E31B022E637A",
+       "WHP-E3E289FF8D65",
+       "WHP-E42DD7A0B3C1",
+       "WHP-E4C4FF8F33A5",
+       "WHP-E6DB55DE6BEA",
+       "WHP-E799086C5C77",
+       "WHP-EB310D1226C8",
+       "WHP-EB817FBB8DFF",
+       "WHP-EC4C1E291C33",
+       "WHP-ED9C8816D77E",
+       "WHP-EFABD7A0B67A",
+       "WHP-F1597A877D90",
+       "WHP-F1DA98DF32D8",
+       "WHP-F2421D471707",
+       "WHP-F3C65BDC5A86",
+       "WHP-F53BD5DCB8E8",
+       "WHP-F870E3E4975F",
+       "WHP-F8BE1B187FFF",
+       "WHP-F9B00FBC9DB8",
+       "WHP-FEC572943AD3"
+      ]
+     }
+    }
+   },
+   "alternatives": [
+    {
+     "id": "original_ehr",
+     "reading": "Original-roster EHR encounters only (reference SQL).",
+     "source": "reference",
+     "stated_any_of": [
+      [
+       "original 1,614",
+       "1,614-person",
+       "1,614 patients",
+       "original roster",
+       "original cohort",
+       "deep-chart",
+       "deep chart",
+       "ehr encounters only",
+       "encounters stream only",
+       "medical_claims only",
+       "excluding the population",
+       "excludes payer",
+       "without payer"
+      ]
+     ]
+    }
+   ],
+   "evidence": "Reference reads only the EHR encounters stream, which carries ED visits for the 1,614 original patients only (population EHR encounters are office/telehealth). The population's ED activity arrives as ADT (adt_messages class E: 917 visits/911 patient-days in 2029) and payer claims (1,284 ED claim patient-days in 2029; 886 same-day + 5 adjacent-day matches with ADT). 25 ADT-only days: 18 on duplicate_chart identities (kept as separate warehouse patients; no fuzzy merge), 7 with no claim. Streams: encounters, adt_messages, payer_medical_claims, payer_medical_claim_lines (+ source_entities for hospital NPI). Before 25 patients -> after 240. | v2.8 (release d212c960, 4,115 patients): reference 36 -> canonical 235."
+  },
+  "Q03": {
+   "category": "d",
+   "canonical": {
+    "reading": "Inpatient stays for all 4,499 patients in the patients view (1,614 original deep-chart + 2,885 population): EHR inpatient encounters + ADT class I (A01 admit/A03 discharge) + payer inpatient facility claims (TOB 011x); a claim stay is the same stay when admission dates are within 1 day or date ranges overlap; ADT stays lacking an A03 take the claim discharge date. LOS = elapsed (discharge time - admit time) when both timestamps exist, else discharge_date - admission_date.",
+    "source": "errata",
+    "sql": "sql_errata/heldout9/Q03__population.sql",
+    "expected": {
+     "9ef6ea79297af818f4eabab0b629a32ea5684d92f921ed46a72b82838e7189e8": {
+      "value": 4.2548
+     },
+     "d212c960d1e55a8663a5afe165741458ee429c7c15df200fb5c3cf2de65c22c4": {
+      "value": 4.6288
+     }
+    }
+   },
+   "alternatives": [
+    {
+     "id": "original_ehr",
+     "reading": "Original-roster EHR inpatient encounters only (reference SQL).",
+     "source": "reference",
+     "stated_any_of": [
+      [
+       "original 1,614",
+       "1,614-person",
+       "1,614 patients",
+       "original roster",
+       "original cohort",
+       "deep-chart",
+       "deep chart",
+       "ehr encounters only",
+       "encounters stream only",
+       "medical_claims only",
+       "excluding the population",
+       "excludes payer",
+       "without payer"
+      ]
+     ]
+    }
+   ],
+   "evidence": "Reference reads EHR encounters only (original roster). Population stays arrive via adt_messages (class I; 287 discharges in 2029, 14 missing A03 completed from claims) and payer_medical_claims TOB 011x (407 claim discharges in 2029; 260 exact / 272 overlapping ADT); 103 claim-only stays. 2029 discharges after merge: 484 (80 original + 404 population); admissions 489. Streams: encounters, adt_messages, payer_medical_claims. Before 3.719 -> after 4.2548. | v2.8 (release d212c960, 4,115 patients): reference 3.9229 -> canonical 4.6288."
+  },
+  "Q04": {
+   "category": "d",
+   "canonical": {
+    "reading": "Inpatient stays for all 4,499 patients in the patients view (1,614 original deep-chart + 2,885 population): EHR inpatient encounters + ADT class I (A01 admit/A03 discharge) + payer inpatient facility claims (TOB 011x); a claim stay is the same stay when admission dates are within 1 day or date ranges overlap; ADT stays lacking an A03 take the claim discharge date. 180-day readmission among stays discharged 2029.",
+    "source": "errata",
+    "sql": "sql_errata/heldout9/Q04__population.sql",
+    "expected": {
+     "9ef6ea79297af818f4eabab0b629a32ea5684d92f921ed46a72b82838e7189e8": {
+      "value": 27.48
+     },
+     "d212c960d1e55a8663a5afe165741458ee429c7c15df200fb5c3cf2de65c22c4": {
+      "value": 31.7
+     }
+    }
+   },
+   "alternatives": [
+    {
+     "id": "original_ehr",
+     "reading": "Original-roster EHR inpatient encounters only (reference SQL).",
+     "source": "reference",
+     "stated_any_of": [
+      [
+       "original 1,614",
+       "1,614-person",
+       "1,614 patients",
+       "original roster",
+       "original cohort",
+       "deep-chart",
+       "deep chart",
+       "ehr encounters only",
+       "encounters stream only",
+       "medical_claims only",
+       "excluding the population",
+       "excludes payer",
+       "without payer"
+      ]
+     ]
+    }
+   ],
+   "evidence": "Reference reads EHR encounters only (original roster). Population stays arrive via adt_messages (class I; 287 discharges in 2029, 14 missing A03 completed from claims) and payer_medical_claims TOB 011x (407 claim discharges in 2029; 260 exact / 272 overlapping ADT); 103 claim-only stays. 2029 discharges after merge: 484 (80 original + 404 population); admissions 489. Streams: encounters, adt_messages, payer_medical_claims. Before 10.0 -> after 27.48. | v2.8 (release d212c960, 4,115 patients): reference 23.47 -> canonical 31.7."
+  },
+  "Q05": {
+   "category": "d",
+   "canonical": {
+    "reading": "Observation stays for all 4,499 patients in the patients view (1,614 original deep-chart + 2,885 population): EHR type observation + ADT class O + payer claims with an observation line (rev 0762 or G0378), claim days within 1 day of an EHR/ADT stay folded into it.",
+    "source": "errata",
+    "sql": "sql_errata/heldout9/Q05__population.sql",
+    "expected": {
+     "9ef6ea79297af818f4eabab0b629a32ea5684d92f921ed46a72b82838e7189e8": {
+      "count": 104
+     },
+     "d212c960d1e55a8663a5afe165741458ee429c7c15df200fb5c3cf2de65c22c4": {
+      "count": 102
+     }
+    }
+   },
+   "alternatives": [
+    {
+     "id": "original_ehr",
+     "reading": "Original-roster EHR observation encounters only (reference SQL).",
+     "source": "reference",
+     "stated_any_of": [
+      [
+       "original 1,614",
+       "1,614-person",
+       "1,614 patients",
+       "original roster",
+       "original cohort",
+       "deep-chart",
+       "deep chart",
+       "ehr encounters only",
+       "encounters stream only",
+       "medical_claims only",
+       "excluding the population",
+       "excludes payer",
+       "without payer"
+      ]
+     ]
+    }
+   ],
+   "evidence": "Reference reads EHR encounters only. Population observation stays: adt_messages class O (23 in 2029) and claims with rev 0762/G0378. Streams: encounters, adt_messages, payer_medical_claims, payer_medical_claim_lines. Before 73 -> after 104. | v2.8 (release d212c960, 4,115 patients): reference 69 -> canonical 102."
+  },
+  "Q06": {
+   "category": "d",
+   "canonical": {
+    "reading": "ED visits for all 4,499 patients in the patients view (1,614 original deep-chart + 2,885 population): EHR encounters (emergency/ED/ED stroke alert) + ADT adt_messages patient_class E + payer_medical_claims ED claims (POS 23 or 045x revenue line), one visit per patient-date across EHR+ADT, ED claim days folded into an EHR/ADT visit of the same patient on the same date (or 1 day apart when that visit has no same-day claim), voided claims excluded. Grouped by hospital: EHR/ADT organization_id; claim-only visits by the hospital whose NPI bills the institutional ED claim (source_entities hospital), NULL when only a professional claim exists.",
+    "source": "errata",
+    "sql": "sql_errata/heldout9/Q06__population.sql",
+    "expected": {
+     "9ef6ea79297af818f4eabab0b629a32ea5684d92f921ed46a72b82838e7189e8": {
+      "table": [
+       {
+        "organization_id": null,
+        "ed_visits": 97
+       },
+       {
+        "organization_id": "WH-HOSPITAL-0",
+        "ed_visits": 58
+       },
+       {
+        "organization_id": "WH-HOSPITAL-1",
+        "ed_visits": 59
+       },
+       {
+        "organization_id": "WH-HOSPITAL-2",
+        "ed_visits": 71
+       },
+       {
+        "organization_id": "WH-HOSPITAL-3",
+        "ed_visits": 71
+       },
+       {
+        "organization_id": "WHN-HOSPITAL-AK-0",
+        "ed_visits": 4
+       },
+       {
+        "organization_id": "WHN-HOSPITAL-AL-0",
+        "ed_visits": 10
+       },
+       {
+        "organization_id": "WHN-HOSPITAL-AR-0",
+        "ed_visits": 15
+       },
+       {
+        "organization_id": "WHN-HOSPITAL-AZ-0",
+        "ed_visits": 26
+       },
+       {
+        "organization_id": "WHN-HOSPITAL-CA-0",
+        "ed_visits": 17
+       },
+       {
+        "organization_id": "WHN-HOSPITAL-CA-1",
+        "ed_visits": 21
+       },
+       {
+        "organization_id": "WHN-HOSPITAL-CA-2",
+        "ed_visits": 23
+       },
+       {
+        "organization_id": "WHN-HOSPITAL-CA-3",
+        "ed_visits": 16
+       },
+       {
+        "organization_id": "WHN-HOSPITAL-CA-4",
+        "ed_visits": 14
+       },
+       {
+        "organization_id": "WHN-HOSPITAL-CA-5",
+        "ed_visits": 30
+       },
+       {
+        "organization_id": "WHN-HOSPITAL-CA-6",
+        "ed_visits": 30
+       },
+       {
+        "organization_id": "WHN-HOSPITAL-CA-7",
+        "ed_visits": 30
+       },
+       {
+        "organization_id": "WHN-HOSPITAL-CO-0",
+        "ed_visits": 16
+       },
+       {
+        "organization_id": "WHN-HOSPITAL-CT-0",
+        "ed_visits": 6
+       },
+       {
+        "organization_id": "WHN-HOSPITAL-DC-0",
+        "ed_visits": 1
+       },
+       {
+        "organization_id": "WHN-HOSPITAL-FL-0",
+        "ed_visits": 15
+       },
+       {
+        "organization_id": "WHN-HOSPITAL-FL-1",
+        "ed_visits": 21
+       },
+       {
+        "organization_id": "WHN-HOSPITAL-FL-2",
+        "ed_visits": 9
+       },
+       {
+        "organization_id": "WHN-HOSPITAL-FL-3",
+        "ed_visits": 7
+       },
+       {
+        "organization_id": "WHN-HOSPITAL-FL-4",
+        "ed_visits": 13
+       },
+       {
+        "organization_id": "WHN-HOSPITAL-GA-0",
+        "ed_visits": 26
+       },
+       {
+        "organization_id": "WHN-HOSPITAL-GA-1",
+        "ed_visits": 23
+       },
+       {
+        "organization_id": "WHN-HOSPITAL-IA-0",
+        "ed_visits": 14
+       },
+       {
+        "organization_id": "WHN-HOSPITAL-ID-0",
+        "ed_visits": 4
+       },
+       {
+        "organization_id": "WHN-HOSPITAL-IL-0",
+        "ed_visits": 5
+       },
+       {
+        "organization_id": "WHN-HOSPITAL-IL-1",
+        "ed_visits": 15
+       },
+       {
+        "organization_id": "WHN-HOSPITAL-IL-2",
+        "ed_visits": 11
+       },
+       {
+        "organization_id": "WHN-HOSPITAL-IN-0",
+        "ed_visits": 20
+       },
+       {
+        "organization_id": "WHN-HOSPITAL-KS-0",
+        "ed_visits": 4
+       },
+       {
+        "organization_id": "WHN-HOSPITAL-KY-0",
+        "ed_visits": 11
+       },
+       {
+        "organization_id": "WHN-HOSPITAL-LA-0",
+        "ed_visits": 23
+       },
+       {
+        "organization_id": "WHN-HOSPITAL-MA-0",
+        "ed_visits": 29
+       },
+       {
+        "organization_id": "WHN-HOSPITAL-MD-0",
+        "ed_visits": 14
+       },
+       {
+        "organization_id": "WHN-HOSPITAL-ME-0",
+        "ed_visits": 12
+       },
+       {
+        "organization_id": "WHN-HOSPITAL-MI-0",
+        "ed_visits": 19
+       },
+       {
+        "organization_id": "WHN-HOSPITAL-MI-1",
+        "ed_visits": 23
+       },
+       {
+        "organization_id": "WHN-HOSPITAL-MN-0",
+        "ed_visits": 30
+       },
+       {
+        "organization_id": "WHN-HOSPITAL-MO-0",
+        "ed_visits": 26
+       },
+       {
+        "organization_id": "WHN-HOSPITAL-MS-0",
+        "ed_visits": 11
+       },
+       {
+        "organization_id": "WHN-HOSPITAL-NC-0",
+        "ed_visits": 18
+       },
+       {
+        "organization_id": "WHN-HOSPITAL-NC-1",
+        "ed_visits": 26
+       },
+       {
+        "organization_id": "WHN-HOSPITAL-ND-0",
+        "ed_visits": 1
+       },
+       {
+        "organization_id": "WHN-HOSPITAL-NE-0",
+        "ed_visits": 6
+       },
+       {
+        "organization_id": "WHN-HOSPITAL-NH-0",
+        "ed_visits": 4
+       },
+       {
+        "organization_id": "WHN-HOSPITAL-NJ-0",
+        "ed_visits": 21
+       },
+       {
+        "organization_id": "WHN-HOSPITAL-NJ-1",
+        "ed_visits": 16
+       },
+       {
+        "organization_id": "WHN-HOSPITAL-NM-0",
+        "ed_visits": 5
+       },
+       {
+        "organization_id": "WHN-HOSPITAL-NV-0",
+        "ed_visits": 4
+       },
+       {
+        "organization_id": "WHN-HOSPITAL-NY-0",
+        "ed_visits": 16
+       },
+       {
+        "organization_id": "WHN-HOSPITAL-NY-1",
+        "ed_visits": 19
+       },
+       {
+        "organization_id": "WHN-HOSPITAL-NY-2",
+        "ed_visits": 26
+       },
+       {
+        "organization_id": "WHN-HOSPITAL-NY-3",
+        "ed_visits": 21
+       },
+       {
+        "organization_id": "WHN-HOSPITAL-OH-0",
+        "ed_visits": 13
+       },
+       {
+        "organization_id": "WHN-HOSPITAL-OH-1",
+        "ed_visits": 19
+       },
+       {
+        "organization_id": "WHN-HOSPITAL-OK-0",
+        "ed_visits": 5
+       },
+       {
+        "organization_id": "WHN-HOSPITAL-OR-0",
+        "ed_visits": 8
+       },
+       {
+        "organization_id": "WHN-HOSPITAL-PA-0",
+        "ed_visits": 8
+       },
+       {
+        "organization_id": "WHN-HOSPITAL-PA-1",
+        "ed_visits": 11
+       },
+       {
+        "organization_id": "WHN-HOSPITAL-PA-2",
+        "ed_visits": 13
+       },
+       {
+        "organization_id": "WHN-HOSPITAL-RI-0",
+        "ed_visits": 8
+       },
+       {
+        "organization_id": "WHN-HOSPITAL-SC-0",
+        "ed_visits": 11
+       },
+       {
+        "organization_id": "WHN-HOSPITAL-SD-0",
+        "ed_visits": 2
+       },
+       {
+        "organization_id": "WHN-HOSPITAL-TN-0",
+        "ed_visits": 33
+       },
+       {
+        "organization_id": "WHN-HOSPITAL-TX-0",
+        "ed_visits": 22
+       },
+       {
+        "organization_id": "WHN-HOSPITAL-TX-1",
+        "ed_visits": 25
+       },
+       {
+        "organization_id": "WHN-HOSPITAL-TX-2",
+        "ed_visits": 13
+       },
+       {
+        "organization_id": "WHN-HOSPITAL-TX-3",
+        "ed_visits": 12
+       },
+       {
+        "organization_id": "WHN-HOSPITAL-TX-4",
+        "ed_visits": 12
+       },
+       {
+        "organization_id": "WHN-HOSPITAL-TX-5",
+        "ed_visits": 18
+       },
+       {
+        "organization_id": "WHN-HOSPITAL-UT-0",
+        "ed_visits": 11
+       },
+       {
+        "organization_id": "WHN-HOSPITAL-VA-0",
+        "ed_visits": 47
+       },
+       {
+        "organization_id": "WHN-HOSPITAL-VA-1",
+        "ed_visits": 45
+       },
+       {
+        "organization_id": "WHN-HOSPITAL-VT-0",
+        "ed_visits": 1
+       },
+       {
+        "organization_id": "WHN-HOSPITAL-WA-0",
+        "ed_visits": 12
+       },
+       {
+        "organization_id": "WHN-HOSPITAL-WA-1",
+        "ed_visits": 14
+       },
+       {
+        "organization_id": "WHN-HOSPITAL-WI-0",
+        "ed_visits": 10
+       },
+       {
+        "organization_id": "WHN-HOSPITAL-WV-0",
+        "ed_visits": 5
+       },
+       {
+        "organization_id": "WHN-HOSPITAL-WY-0",
+        "ed_visits": 2
+       }
+      ]
+     },
+     "d212c960d1e55a8663a5afe165741458ee429c7c15df200fb5c3cf2de65c22c4": {
+      "table": [
+       {
+        "organization_id": null,
+        "ed_visits": 197
+       },
+       {
+        "organization_id": "WH-HOSPITAL-0",
+        "ed_visits": 60
+       },
+       {
+        "organization_id": "WH-HOSPITAL-1",
+        "ed_visits": 56
+       },
+       {
+        "organization_id": "WH-HOSPITAL-2",
+        "ed_visits": 75
+       },
+       {
+        "organization_id": "WH-HOSPITAL-3",
+        "ed_visits": 73
+       },
+       {
+        "organization_id": "WHN-HOSPITAL-AK-0",
+        "ed_visits": 2
+       },
+       {
+        "organization_id": "WHN-HOSPITAL-AL-0",
+        "ed_visits": 5
+       },
+       {
+        "organization_id": "WHN-HOSPITAL-AR-0",
+        "ed_visits": 9
+       },
+       {
+        "organization_id": "WHN-HOSPITAL-AZ-0",
+        "ed_visits": 24
+       },
+       {
+        "organization_id": "WHN-HOSPITAL-CA-0",
+        "ed_visits": 14
+       },
+       {
+        "organization_id": "WHN-HOSPITAL-CA-1",
+        "ed_visits": 15
+       },
+       {
+        "organization_id": "WHN-HOSPITAL-CA-2",
+        "ed_visits": 17
+       },
+       {
+        "organization_id": "WHN-HOSPITAL-CA-3",
+        "ed_visits": 11
+       },
+       {
+        "organization_id": "WHN-HOSPITAL-CA-4",
+        "ed_visits": 7
+       },
+       {
+        "organization_id": "WHN-HOSPITAL-CA-5",
+        "ed_visits": 21
+       },
+       {
+        "organization_id": "WHN-HOSPITAL-CA-6",
+        "ed_visits": 23
+       },
+       {
+        "organization_id": "WHN-HOSPITAL-CA-7",
+        "ed_visits": 18
+       },
+       {
+        "organization_id": "WHN-HOSPITAL-CO-0",
+        "ed_visits": 17
+       },
+       {
+        "organization_id": "WHN-HOSPITAL-CT-0",
+        "ed_visits": 5
+       },
+       {
+        "organization_id": "WHN-HOSPITAL-FL-0",
+        "ed_visits": 17
+       },
+       {
+        "organization_id": "WHN-HOSPITAL-FL-1",
+        "ed_visits": 21
+       },
+       {
+        "organization_id": "WHN-HOSPITAL-FL-2",
+        "ed_visits": 11
+       },
+       {
+        "organization_id": "WHN-HOSPITAL-FL-3",
+        "ed_visits": 13
+       },
+       {
+        "organization_id": "WHN-HOSPITAL-FL-4",
+        "ed_visits": 19
+       },
+       {
+        "organization_id": "WHN-HOSPITAL-GA-0",
+        "ed_visits": 14
+       },
+       {
+        "organization_id": "WHN-HOSPITAL-GA-1",
+        "ed_visits": 13
+       },
+       {
+        "organization_id": "WHN-HOSPITAL-IA-0",
+        "ed_visits": 22
+       },
+       {
+        "organization_id": "WHN-HOSPITAL-ID-0",
+        "ed_visits": 2
+       },
+       {
+        "organization_id": "WHN-HOSPITAL-IL-0",
+        "ed_visits": 6
+       },
+       {
+        "organization_id": "WHN-HOSPITAL-IL-1",
+        "ed_visits": 13
+       },
+       {
+        "organization_id": "WHN-HOSPITAL-IL-2",
+        "ed_visits": 11
+       },
+       {
+        "organization_id": "WHN-HOSPITAL-IN-0",
+        "ed_visits": 14
+       },
+       {
+        "organization_id": "WHN-HOSPITAL-KS-0",
+        "ed_visits": 1
+       },
+       {
+        "organization_id": "WHN-HOSPITAL-KY-0",
+        "ed_visits": 11
+       },
+       {
+        "organization_id": "WHN-HOSPITAL-LA-0",
+        "ed_visits": 13
+       },
+       {
+        "organization_id": "WHN-HOSPITAL-MA-0",
+        "ed_visits": 30
+       },
+       {
+        "organization_id": "WHN-HOSPITAL-MD-0",
+        "ed_visits": 16
+       },
+       {
+        "organization_id": "WHN-HOSPITAL-ME-0",
+        "ed_visits": 7
+       },
+       {
+        "organization_id": "WHN-HOSPITAL-MI-0",
+        "ed_visits": 15
+       },
+       {
+        "organization_id": "WHN-HOSPITAL-MI-1",
+        "ed_visits": 13
+       },
+       {
+        "organization_id": "WHN-HOSPITAL-MN-0",
+        "ed_visits": 30
+       },
+       {
+        "organization_id": "WHN-HOSPITAL-MO-0",
+        "ed_visits": 20
+       },
+       {
+        "organization_id": "WHN-HOSPITAL-MS-0",
+        "ed_visits": 10
+       },
+       {
+        "organization_id": "WHN-HOSPITAL-MT-0",
+        "ed_visits": 2
+       },
+       {
+        "organization_id": "WHN-HOSPITAL-NC-0",
+        "ed_visits": 22
+       },
+       {
+        "organization_id": "WHN-HOSPITAL-NC-1",
+        "ed_visits": 19
+       },
+       {
+        "organization_id": "WHN-HOSPITAL-ND-0",
+        "ed_visits": 5
+       },
+       {
+        "organization_id": "WHN-HOSPITAL-NE-0",
+        "ed_visits": 2
+       },
+       {
+        "organization_id": "WHN-HOSPITAL-NH-0",
+        "ed_visits": 4
+       },
+       {
+        "organization_id": "WHN-HOSPITAL-NJ-0",
+        "ed_visits": 14
+       },
+       {
+        "organization_id": "WHN-HOSPITAL-NJ-1",
+        "ed_visits": 7
+       },
+       {
+        "organization_id": "WHN-HOSPITAL-NM-0",
+        "ed_visits": 2
+       },
+       {
+        "organization_id": "WHN-HOSPITAL-NV-0",
+        "ed_visits": 6
+       },
+       {
+        "organization_id": "WHN-HOSPITAL-NY-0",
+        "ed_visits": 17
+       },
+       {
+        "organization_id": "WHN-HOSPITAL-NY-1",
+        "ed_visits": 19
+       },
+       {
+        "organization_id": "WHN-HOSPITAL-NY-2",
+        "ed_visits": 27
+       },
+       {
+        "organization_id": "WHN-HOSPITAL-NY-3",
+        "ed_visits": 23
+       },
+       {
+        "organization_id": "WHN-HOSPITAL-OH-0",
+        "ed_visits": 9
+       },
+       {
+        "organization_id": "WHN-HOSPITAL-OH-1",
+        "ed_visits": 8
+       },
+       {
+        "organization_id": "WHN-HOSPITAL-OK-0",
+        "ed_visits": 1
+       },
+       {
+        "organization_id": "WHN-HOSPITAL-OR-0",
+        "ed_visits": 8
+       },
+       {
+        "organization_id": "WHN-HOSPITAL-PA-0",
+        "ed_visits": 16
+       },
+       {
+        "organization_id": "WHN-HOSPITAL-PA-1",
+        "ed_visits": 16
+       },
+       {
+        "organization_id": "WHN-HOSPITAL-PA-2",
+        "ed_visits": 9
+       },
+       {
+        "organization_id": "WHN-HOSPITAL-RI-0",
+        "ed_visits": 3
+       },
+       {
+        "organization_id": "WHN-HOSPITAL-SC-0",
+        "ed_visits": 7
+       },
+       {
+        "organization_id": "WHN-HOSPITAL-SD-0",
+        "ed_visits": 2
+       },
+       {
+        "organization_id": "WHN-HOSPITAL-TN-0",
+        "ed_visits": 22
+       },
+       {
+        "organization_id": "WHN-HOSPITAL-TX-0",
+        "ed_visits": 15
+       },
+       {
+        "organization_id": "WHN-HOSPITAL-TX-1",
+        "ed_visits": 24
+       },
+       {
+        "organization_id": "WHN-HOSPITAL-TX-2",
+        "ed_visits": 11
+       },
+       {
+        "organization_id": "WHN-HOSPITAL-TX-3",
+        "ed_visits": 14
+       },
+       {
+        "organization_id": "WHN-HOSPITAL-TX-4",
+        "ed_visits": 16
+       },
+       {
+        "organization_id": "WHN-HOSPITAL-TX-5",
+        "ed_visits": 22
+       },
+       {
+        "organization_id": "WHN-HOSPITAL-UT-0",
+        "ed_visits": 13
+       },
+       {
+        "organization_id": "WHN-HOSPITAL-VA-0",
+        "ed_visits": 44
+       },
+       {
+        "organization_id": "WHN-HOSPITAL-VA-1",
+        "ed_visits": 42
+       },
+       {
+        "organization_id": "WHN-HOSPITAL-VT-0",
+        "ed_visits": 1
+       },
+       {
+        "organization_id": "WHN-HOSPITAL-WA-0",
+        "ed_visits": 7
+       },
+       {
+        "organization_id": "WHN-HOSPITAL-WA-1",
+        "ed_visits": 5
+       },
+       {
+        "organization_id": "WHN-HOSPITAL-WI-0",
+        "ed_visits": 11
+       },
+       {
+        "organization_id": "WHN-HOSPITAL-WV-0",
+        "ed_visits": 5
+       },
+       {
+        "organization_id": "WHN-HOSPITAL-WY-0",
+        "ed_visits": 1
+       }
+      ]
+     }
+    }
+   },
+   "alternatives": [
+    {
+     "id": "original_ehr",
+     "reading": "Original-roster EHR encounters only, 4 WH-HOSPITAL rows (reference SQL).",
+     "source": "reference",
+     "stated_any_of": [
+      [
+       "original 1,614",
+       "1,614-person",
+       "1,614 patients",
+       "original roster",
+       "original cohort",
+       "deep-chart",
+       "deep chart",
+       "ehr encounters only",
+       "encounters stream only",
+       "medical_claims only",
+       "excluding the population",
+       "excludes payer",
+       "without payer"
+      ]
+     ]
+    }
+   ],
+   "evidence": "Reference reads only the EHR encounters stream, which carries ED visits for the 1,614 original patients only (population EHR encounters are office/telehealth). The population's ED activity arrives as ADT (adt_messages class E: 917 visits/911 patient-days in 2029) and payer claims (1,284 ED claim patient-days in 2029; 886 same-day + 5 adjacent-day matches with ADT). 25 ADT-only days: 18 on duplicate_chart identities (kept as separate warehouse patients; no fuzzy merge), 7 with no claim. Streams: encounters, adt_messages, payer_medical_claims, payer_medical_claim_lines (+ source_entities for hospital NPI). Before 4 hospitals -> after 83 rows (NULL row = 97 professional-claim-only visits). | v2.8 (release d212c960, 4,115 patients): reference 4 rows -> canonical 83 rows."
+  },
+  "Q07": {
+   "category": "d",
+   "canonical": {
+    "reading": "ED visits for all 4,499 patients in the patients view (1,614 original deep-chart + 2,885 population): EHR encounters (emergency/ED/ED stroke alert) + ADT adt_messages patient_class E + payer_medical_claims ED claims (POS 23 or 045x revenue line), one visit per patient-date across EHR+ADT, ED claim days folded into an EHR/ADT visit of the same patient on the same date (or 1 day apart when that visit has no same-day claim), voided claims excluded. Rate = visits x 1000 / 4,499.",
+    "source": "errata",
+    "sql": "sql_errata/heldout9/Q07__population.sql",
+    "expected": {
+     "9ef6ea79297af818f4eabab0b629a32ea5684d92f921ed46a72b82838e7189e8": {
+      "value": 347.41
+     },
+     "d212c960d1e55a8663a5afe165741458ee429c7c15df200fb5c3cf2de65c22c4": {
+      "value": 362.58
+     }
+    }
+   },
+   "alternatives": [
+    {
+     "id": "mixed_scope_reference",
+     "reading": "Reference: original-roster ED encounters / all 4,499 patients (mixed scope).",
+     "source": "reference",
+     "stated_any_of": [
+      [
+       "original 1,614",
+       "1,614-person",
+       "1,614 patients",
+       "original roster",
+       "original cohort",
+       "deep-chart",
+       "deep chart",
+       "ehr encounters only",
+       "encounters stream only",
+       "medical_claims only",
+       "excluding the population",
+       "excludes payer",
+       "without payer"
+      ]
+     ]
+    }
+   ],
+   "evidence": "Reference reads only the EHR encounters stream, which carries ED visits for the 1,614 original patients only (population EHR encounters are office/telehealth). The population's ED activity arrives as ADT (adt_messages class E: 917 visits/911 patient-days in 2029) and payer claims (1,284 ED claim patient-days in 2029; 886 same-day + 5 adjacent-day matches with ADT). 25 ADT-only days: 18 on duplicate_chart identities (kept as separate warehouse patients; no fuzzy merge), 7 with no claim. Streams: encounters, adt_messages, payer_medical_claims, payer_medical_claim_lines (+ source_entities for hospital NPI). The reference divides original-roster visits by the 4,499-patient view (numerator and denominator in different scopes). Before 57.57 -> after 347.41. | v2.8 (release d212c960, 4,115 patients): reference 64.16 -> canonical 362.58."
+  },
+  "Q08": {
+   "category": "d",
+   "canonical": {
+    "reading": "Dollar-weighted initial denial rate, population-wide. Claim = medical_claims claim_id or an original payer_medical_claims submission (frequency 1 at sequence 1; '-R' replacements are corrections, not new claims).",
+    "source": "errata",
+    "sql": "sql_errata/heldout9/Q08__population.sql",
+    "expected": {
+     "9ef6ea79297af818f4eabab0b629a32ea5684d92f921ed46a72b82838e7189e8": {
+      "value": 15.72
+     },
+     "d212c960d1e55a8663a5afe165741458ee429c7c15df200fb5c3cf2de65c22c4": {
+      "value": 13.32
+     }
+    }
+   },
+   "alternatives": [
+    {
+     "id": "original",
+     "reading": "Original-roster medical_claims only (reference SQL).",
+     "source": "reference",
+     "stated_any_of": [
+      [
+       "original 1,614",
+       "1,614-person",
+       "1,614 patients",
+       "original roster",
+       "original cohort",
+       "deep-chart",
+       "deep chart",
+       "ehr encounters only",
+       "encounters stream only",
+       "medical_claims only",
+       "excluding the population",
+       "excludes payer",
+       "without payer"
+      ]
+     ]
+    }
+   ],
+   "evidence": "medical_claims (original roster) + payer_medical_claims (population, 166,671 rows). medical_claims facility DRG rows from WH-HOSPITAL-0..3 (88 claims, 'paid' only) carry payer_paid_cents/allowed_cents but no financial_deltas_cents, so delta sums drop them (2029 adjudications: 27 rows, $154,828; 2029 services: 22 rows, $140,443.67). payer_medical_claims: reversed rows carry negative amounts; voids (frequency 8, amount 0) cancel the claim and a '-R' frequency-7 replacement carries the payment. Before 4.94 -> after 15.72. | v2.8 (release d212c960, 4,115 patients): reference 4.95 -> canonical 13.32."
+  },
+  "Q09": {
+   "category": "d",
+   "canonical": {
+    "reading": "Net payer paid on 2029 adjudications, population-wide: medical_claims payer deltas (facility rows payer_paid_cents) + payer_medical_claims paid_amount (reversals negative, voids negate the voided claim's prior payment).",
+    "source": "errata",
+    "sql": "sql_errata/heldout9/Q09__population.sql",
+    "expected": {
+     "9ef6ea79297af818f4eabab0b629a32ea5684d92f921ed46a72b82838e7189e8": {
+      "value": 14754519.86
+     },
+     "d212c960d1e55a8663a5afe165741458ee429c7c15df200fb5c3cf2de65c22c4": {
+      "value": 13022449.61
+     }
+    }
+   },
+   "alternatives": [
+    {
+     "id": "original_with_facility",
+     "reading": "Original-roster medical_claims only, facility DRG payments included.",
+     "source": "errata",
+     "sql": "sql_errata/heldout9/Q09__original_facility.sql",
+     "expected": {
+      "9ef6ea79297af818f4eabab0b629a32ea5684d92f921ed46a72b82838e7189e8": {
+       "value": 1424254.83
+      },
+      "d212c960d1e55a8663a5afe165741458ee429c7c15df200fb5c3cf2de65c22c4": {
+       "value": 1311863.14
+      }
+     },
+     "stated_any_of": [
+      [
+       "original 1,614",
+       "1,614-person",
+       "1,614 patients",
+       "original roster",
+       "original cohort",
+       "deep-chart",
+       "deep chart",
+       "ehr encounters only",
+       "encounters stream only",
+       "medical_claims only",
+       "excluding the population",
+       "excludes payer",
+       "without payer"
+      ]
+     ]
+    },
+    {
+     "id": "original_deltas_only",
+     "reading": "Reference: medical_claims financial_deltas only (drops facility DRG payments).",
+     "source": "reference",
+     "stated_any_of": [
+      [
+       "financial_deltas",
+       "excluding facility",
+       "without facility"
+      ]
+     ]
+    }
+   ],
+   "evidence": "medical_claims (original roster) + payer_medical_claims (population, 166,671 rows). medical_claims facility DRG rows from WH-HOSPITAL-0..3 (88 claims, 'paid' only) carry payer_paid_cents/allowed_cents but no financial_deltas_cents, so delta sums drop them (2029 adjudications: 27 rows, $154,828; 2029 services: 22 rows, $140,443.67). payer_medical_claims: reversed rows carry negative amounts; voids (frequency 8, amount 0) cancel the claim and a '-R' frequency-7 replacement carries the payment. Before 1269427.18 -> original+facility 1424254.83 -> population 14754519.86. | v2.8 (release d212c960, 4,115 patients): reference 1159959.98 -> canonical 13022449.61."
+  },
+  "Q10": {
+   "category": "d",
+   "canonical": {
+    "reading": "Mean service-to-first-payment days for claims first paid in 2029, population-wide. Claim = medical_claims claim_id or an original payer_medical_claims submission (frequency 1 at sequence 1; '-R' replacements are corrections, not new claims).",
+    "source": "errata",
+    "sql": "sql_errata/heldout9/Q10__population.sql",
+    "expected": {
+     "9ef6ea79297af818f4eabab0b629a32ea5684d92f921ed46a72b82838e7189e8": {
+      "value": 34.98
+     },
+     "d212c960d1e55a8663a5afe165741458ee429c7c15df200fb5c3cf2de65c22c4": {
+      "value": 35.65
+     }
+    }
+   },
+   "alternatives": [
+    {
+     "id": "original",
+     "reading": "Original-roster medical_claims only (reference SQL).",
+     "source": "reference",
+     "stated_any_of": [
+      [
+       "original 1,614",
+       "1,614-person",
+       "1,614 patients",
+       "original roster",
+       "original cohort",
+       "deep-chart",
+       "deep chart",
+       "ehr encounters only",
+       "encounters stream only",
+       "medical_claims only",
+       "excluding the population",
+       "excludes payer",
+       "without payer"
+      ]
+     ]
+    }
+   ],
+   "evidence": "medical_claims (original roster) + payer_medical_claims (population, 166,671 rows). medical_claims facility DRG rows from WH-HOSPITAL-0..3 (88 claims, 'paid' only) carry payer_paid_cents/allowed_cents but no financial_deltas_cents, so delta sums drop them (2029 adjudications: 27 rows, $154,828; 2029 services: 22 rows, $140,443.67). payer_medical_claims: reversed rows carry negative amounts; voids (frequency 8, amount 0) cancel the claim and a '-R' frequency-7 replacement carries the payment. Before 17.63 -> after 34.98. | v2.8 (release d212c960, 4,115 patients): reference 17.64 -> canonical 35.65."
+  },
+  "Q11": {
+   "category": "d",
+   "canonical": {
+    "reading": "Distinct claims with a payer 'reversed' adjudication dated 2029 in medical_claims or payer_medical_claims (provider voids/replacements excluded).",
+    "source": "errata",
+    "sql": "sql_errata/heldout9/Q11__population.sql",
+    "expected": {
+     "9ef6ea79297af818f4eabab0b629a32ea5684d92f921ed46a72b82838e7189e8": {
+      "count": 801
+     },
+     "d212c960d1e55a8663a5afe165741458ee429c7c15df200fb5c3cf2de65c22c4": {
+      "count": 709
+     }
+    }
+   },
+   "alternatives": [
+    {
+     "id": "original",
+     "reading": "Original-roster medical_claims only (reference SQL).",
+     "source": "reference",
+     "stated_any_of": [
+      [
+       "original 1,614",
+       "1,614-person",
+       "1,614 patients",
+       "original roster",
+       "original cohort",
+       "deep-chart",
+       "deep chart",
+       "ehr encounters only",
+       "encounters stream only",
+       "medical_claims only",
+       "excluding the population",
+       "excludes payer",
+       "without payer"
+      ]
+     ]
+    }
+   ],
+   "evidence": "medical_claims (original roster) + payer_medical_claims (population, 166,671 rows). medical_claims facility DRG rows from WH-HOSPITAL-0..3 (88 claims, 'paid' only) carry payer_paid_cents/allowed_cents but no financial_deltas_cents, so delta sums drop them (2029 adjudications: 27 rows, $154,828; 2029 services: 22 rows, $140,443.67). payer_medical_claims: reversed rows carry negative amounts; voids (frequency 8, amount 0) cancel the claim and a '-R' frequency-7 replacement carries the payment. Before 262 -> after 801. | v2.8 (release d212c960, 4,115 patients): reference 241 -> canonical 709."
+  },
+  "Q12": {
+   "category": "a",
+   "canonical": {
+    "reading": "Reference reading (stated in the question interpretation).",
+    "source": "reference"
+   },
+   "alternatives": [],
+   "evidence": "claim_acknowledgements (clearinghouse) exists for the original roster only and the population has no clearinghouse stream; the reference (454) is the complete answer on this warehouse. | v2.8: reference 417."
+  },
+  "Q13": {
+   "category": "d",
+   "canonical": {
+    "reading": "Net payer paid by payer on 2029 adjudications, population-wide (medical_claims by organization_id incl. facility WH-HOSPITAL rows via payer_paid_cents; payer_medical_claims by payer_id).",
+    "source": "errata",
+    "sql": "sql_errata/heldout9/Q13__population.sql",
+    "expected": {
+     "9ef6ea79297af818f4eabab0b629a32ea5684d92f921ed46a72b82838e7189e8": {
+      "table": [
+       {
+        "payer": "WH-HOSPITAL-0",
+        "net_paid_usd": 62488.41
+       },
+       {
+        "payer": "WH-HOSPITAL-1",
+        "net_paid_usd": 16270.76
+       },
+       {
+        "payer": "WH-HOSPITAL-2",
+        "net_paid_usd": 54432.21
+       },
+       {
+        "payer": "WH-HOSPITAL-3",
+        "net_paid_usd": 21636.27
+       },
+       {
+        "payer": "WH-PAYER-0",
+        "net_paid_usd": 451769.89
+       },
+       {
+        "payer": "WH-PAYER-1",
+        "net_paid_usd": 512898.04
+       },
+       {
+        "payer": "WH-PAYER-2",
+        "net_paid_usd": 304759.25
+       },
+       {
+        "payer": "WH-PAYER-C1",
+        "net_paid_usd": 1393611.66
+       },
+       {
+        "payer": "WH-PAYER-C2",
+        "net_paid_usd": 2104050.83
+       },
+       {
+        "payer": "WH-PAYER-C3",
+        "net_paid_usd": 1378464.41
+       },
+       {
+        "payer": "WH-PAYER-DSNP1",
+        "net_paid_usd": 998607.9
+       },
+       {
+        "payer": "WH-PAYER-MA1",
+        "net_paid_usd": 1323785.17
+       },
+       {
+        "payer": "WH-PAYER-MA2",
+        "net_paid_usd": 975803.27
+       },
+       {
+        "payer": "WH-PAYER-MA3",
+        "net_paid_usd": 1292952.98
+       },
+       {
+        "payer": "WH-PAYER-MCD1",
+        "net_paid_usd": 611793.52
+       },
+       {
+        "payer": "WH-PAYER-MCD2",
+        "net_paid_usd": 536588.62
+       },
+       {
+        "payer": "WH-PAYER-MSSP",
+        "net_paid_usd": 2184116.05
+       },
+       {
+        "payer": "WH-PAYER-X1",
+        "net_paid_usd": 530490.62
+       }
+      ]
+     },
+     "d212c960d1e55a8663a5afe165741458ee429c7c15df200fb5c3cf2de65c22c4": {
+      "table": [
+       {
+        "payer": "WH-HOSPITAL-0",
+        "net_paid_usd": 62488.41
+       },
+       {
+        "payer": "WH-HOSPITAL-1",
+        "net_paid_usd": 13346.27
+       },
+       {
+        "payer": "WH-HOSPITAL-2",
+        "net_paid_usd": 54432.21
+       },
+       {
+        "payer": "WH-HOSPITAL-3",
+        "net_paid_usd": 21636.27
+       },
+       {
+        "payer": "WH-PAYER-0",
+        "net_paid_usd": 514143.6
+       },
+       {
+        "payer": "WH-PAYER-1",
+        "net_paid_usd": 575389.02
+       },
+       {
+        "payer": "WH-PAYER-2",
+        "net_paid_usd": 344771.35
+       },
+       {
+        "payer": "WH-PAYER-C1",
+        "net_paid_usd": 1169791.99
+       },
+       {
+        "payer": "WH-PAYER-C2",
+        "net_paid_usd": 1540087.62
+       },
+       {
+        "payer": "WH-PAYER-C3",
+        "net_paid_usd": 1339210.75
+       },
+       {
+        "payer": "WH-PAYER-DSNP1",
+        "net_paid_usd": 666559.0
+       },
+       {
+        "payer": "WH-PAYER-MA1",
+        "net_paid_usd": 1013206.88
+       },
+       {
+        "payer": "WH-PAYER-MA2",
+        "net_paid_usd": 718620.16
+       },
+       {
+        "payer": "WH-PAYER-MA3",
+        "net_paid_usd": 1034306.2
+       },
+       {
+        "payer": "WH-PAYER-MCD1",
+        "net_paid_usd": 637072.44
+       },
+       {
+        "payer": "WH-PAYER-MCD2",
+        "net_paid_usd": 505326.62
+       },
+       {
+        "payer": "WH-PAYER-MSSP",
+        "net_paid_usd": 2378326.36
+       },
+       {
+        "payer": "WH-PAYER-SUP1",
+        "net_paid_usd": 49898.27
+       },
+       {
+        "payer": "WH-PAYER-SUP2",
+        "net_paid_usd": 67004.96
+       },
+       {
+        "payer": "WH-PAYER-X1",
+        "net_paid_usd": 316831.23
+       }
+      ]
+     }
+    }
+   },
+   "alternatives": [],
+   "evidence": "medical_claims (original roster) + payer_medical_claims (population, 166,671 rows). medical_claims facility DRG rows from WH-HOSPITAL-0..3 (88 claims, 'paid' only) carry payer_paid_cents/allowed_cents but no financial_deltas_cents, so delta sums drop them (2029 adjudications: 27 rows, $154,828; 2029 services: 22 rows, $140,443.67). payer_medical_claims: reversed rows carry negative amounts; voids (frequency 8, amount 0) cancel the claim and a '-R' frequency-7 replacement carries the payment. Reference rows WH-HOSPITAL-0..3 come back NULL (no deltas). Before 7 rows with 4 NULL amounts -> after 18 rows. | v2.8 (release d212c960, 4,115 patients): reference 7 rows -> canonical 20 rows."
+  },
+  "Q14": {
+   "category": "d",
+   "canonical": {
+    "reading": "Net pharmacy payer spend 2029 (claim transactions + payer pharmacy claims net of return-to-stock reversals), population-wide.",
+    "source": "errata",
+    "sql": "sql_errata/heldout9/Q14__population.sql",
+    "expected": {
+     "9ef6ea79297af818f4eabab0b629a32ea5684d92f921ed46a72b82838e7189e8": {
+      "value": 3403671.07
+     },
+     "d212c960d1e55a8663a5afe165741458ee429c7c15df200fb5c3cf2de65c22c4": {
+      "value": 3804574.61
+     }
+    }
+   },
+   "alternatives": [
+    {
+     "id": "original",
+     "reading": "Original-roster pharmacy streams only (reference SQL).",
+     "source": "reference",
+     "stated_any_of": [
+      [
+       "original 1,614",
+       "1,614-person",
+       "1,614 patients",
+       "original roster",
+       "original cohort",
+       "deep-chart",
+       "deep chart",
+       "ehr encounters only",
+       "encounters stream only",
+       "medical_claims only",
+       "excluding the population",
+       "excludes payer",
+       "without payer"
+      ]
+     ]
+    }
+   ],
+   "evidence": "pharmacy_dispenses covers the original roster only; payer_pharmacy_claims (89,602 visible rows) is the population fill source: 'paid' = dispensed claim, a later 'reversed' row (B2, return_to_stock, plan_paid 0) means the fill was prepared but returned to stock, i.e. not picked up; 'rejected' rows carry NCPDP codes (79 refill too soon, 70, 75). Before 785679.26 -> after 3403671.07. | v2.8 (release d212c960, 4,115 patients): reference 691142.25 -> canonical 3804574.61."
+  },
+  "Q15": {
+   "category": "d",
+   "canonical": {
+    "reading": "Pharmacy claims rejected refill-too-soon in 2029 (REFILL_TOO_SOON + NCPDP 79), population-wide.",
+    "source": "errata",
+    "sql": "sql_errata/heldout9/Q15__population.sql",
+    "expected": {
+     "9ef6ea79297af818f4eabab0b629a32ea5684d92f921ed46a72b82838e7189e8": {
+      "count": 371
+     },
+     "d212c960d1e55a8663a5afe165741458ee429c7c15df200fb5c3cf2de65c22c4": {
+      "count": 431
+     }
+    }
+   },
+   "alternatives": [
+    {
+     "id": "original",
+     "reading": "Original-roster pharmacy streams only (reference SQL).",
+     "source": "reference",
+     "stated_any_of": [
+      [
+       "original 1,614",
+       "1,614-person",
+       "1,614 patients",
+       "original roster",
+       "original cohort",
+       "deep-chart",
+       "deep chart",
+       "ehr encounters only",
+       "encounters stream only",
+       "medical_claims only",
+       "excluding the population",
+       "excludes payer",
+       "without payer"
+      ]
+     ]
+    }
+   ],
+   "evidence": "pharmacy_dispenses covers the original roster only; payer_pharmacy_claims (89,602 visible rows) is the population fill source: 'paid' = dispensed claim, a later 'reversed' row (B2, return_to_stock, plan_paid 0) means the fill was prepared but returned to stock, i.e. not picked up; 'rejected' rows carry NCPDP codes (79 refill too soon, 70, 75). Before 8 -> after 371. | v2.8 (release d212c960, 4,115 patients): reference 8 -> canonical 431."
+  },
+  "Q16": {
+   "category": "d",
+   "canonical": {
+    "reading": "Patients with a statin pickup in 2029, population-wide.",
+    "source": "errata",
+    "sql": "sql_errata/heldout9/Q16__population.sql",
+    "expected": {
+     "9ef6ea79297af818f4eabab0b629a32ea5684d92f921ed46a72b82838e7189e8": {
+      "count": 669
+     },
+     "d212c960d1e55a8663a5afe165741458ee429c7c15df200fb5c3cf2de65c22c4": {
+      "count": 665
+     }
+    }
+   },
+   "alternatives": [
+    {
+     "id": "original",
+     "reading": "Original-roster pharmacy streams only (reference SQL).",
+     "source": "reference",
+     "stated_any_of": [
+      [
+       "original 1,614",
+       "1,614-person",
+       "1,614 patients",
+       "original roster",
+       "original cohort",
+       "deep-chart",
+       "deep chart",
+       "ehr encounters only",
+       "encounters stream only",
+       "medical_claims only",
+       "excluding the population",
+       "excludes payer",
+       "without payer"
+      ]
+     ]
+    }
+   ],
+   "evidence": "pharmacy_dispenses covers the original roster only; payer_pharmacy_claims (89,602 visible rows) is the population fill source: 'paid' = dispensed claim, a later 'reversed' row (B2, return_to_stock, plan_paid 0) means the fill was prepared but returned to stock, i.e. not picked up; 'rejected' rows carry NCPDP codes (79 refill too soon, 70, 75). Before 207 -> after 669. | v2.8 (release d212c960, 4,115 patients): reference 182 -> canonical 665."
+  },
+  "Q17": {
+   "category": "d",
+   "canonical": {
+    "reading": "Picked-up fills by drug class in 2029, population-wide.",
+    "source": "errata",
+    "sql": "sql_errata/heldout9/Q17__population.sql",
+    "expected": {
+     "9ef6ea79297af818f4eabab0b629a32ea5684d92f921ed46a72b82838e7189e8": {
+      "table": [
+       {
+        "drug_class": "ace_inhibitor",
+        "fills": 1619
+       },
+       {
+        "drug_class": "arb",
+        "fills": 1000
+       },
+       {
+        "drug_class": "beta_blocker",
+        "fills": 820
+       },
+       {
+        "drug_class": "loop_diuretic",
+        "fills": 581
+       },
+       {
+        "drug_class": "metformin",
+        "fills": 1063
+       },
+       {
+        "drug_class": "p2y12_inhibitor",
+        "fills": 551
+       },
+       {
+        "drug_class": "statin",
+        "fills": 3009
+       }
+      ]
+     },
+     "d212c960d1e55a8663a5afe165741458ee429c7c15df200fb5c3cf2de65c22c4": {
+      "table": [
+       {
+        "drug_class": "ace_inhibitor",
+        "fills": 1914
+       },
+       {
+        "drug_class": "arb",
+        "fills": 1355
+       },
+       {
+        "drug_class": "beta_blocker",
+        "fills": 848
+       },
+       {
+        "drug_class": "loop_diuretic",
+        "fills": 706
+       },
+       {
+        "drug_class": "metformin",
+        "fills": 1300
+       },
+       {
+        "drug_class": "p2y12_inhibitor",
+        "fills": 563
+       },
+       {
+        "drug_class": "statin",
+        "fills": 3380
+       }
+      ]
+     }
+    }
+   },
+   "alternatives": [
+    {
+     "id": "original",
+     "reading": "Original-roster pharmacy streams only (reference SQL).",
+     "source": "reference",
+     "stated_any_of": [
+      [
+       "original 1,614",
+       "1,614-person",
+       "1,614 patients",
+       "original roster",
+       "original cohort",
+       "deep-chart",
+       "deep chart",
+       "ehr encounters only",
+       "encounters stream only",
+       "medical_claims only",
+       "excluding the population",
+       "excludes payer",
+       "without payer"
+      ]
+     ]
+    }
+   ],
+   "evidence": "pharmacy_dispenses covers the original roster only; payer_pharmacy_claims (89,602 visible rows) is the population fill source: 'paid' = dispensed claim, a later 'reversed' row (B2, return_to_stock, plan_paid 0) means the fill was prepared but returned to stock, i.e. not picked up; 'rejected' rows carry NCPDP codes (79 refill too soon, 70, 75). Before 7 rows -> after 7 rows. | v2.8 (release d212c960, 4,115 patients): reference 7 rows -> canonical 7 rows."
+  },
+  "Q18": {
+   "category": "d",
+   "canonical": {
+    "reading": "Patients with >= 180 days' statin supply picked up in 2029, population-wide.",
+    "source": "errata",
+    "sql": "sql_errata/heldout9/Q18__population.sql",
+    "expected": {
+     "9ef6ea79297af818f4eabab0b629a32ea5684d92f921ed46a72b82838e7189e8": {
+      "patient_ids": [
+       "SYN-11286C95-21C",
+       "SYN-2107BF4D-57A",
+       "SYN-33416DF4-F42",
+       "SYN-5468ADEA-5AC",
+       "SYN-5CAFE373-600",
+       "SYN-5D8D2F90-87D",
+       "SYN-5F2D46DE-1CE",
+       "SYN-7ACE370F-5C6",
+       "SYN-865F044D-C25",
+       "SYN-8F898A73-A41",
+       "SYN-9A500E00-73E",
+       "SYN-BB66B2D8-7A0",
+       "SYN-CACDEA1A-A29",
+       "SYN-CE8F18E3-C8D",
+       "WHP-01113B4EAB2E",
+       "WHP-01B71F3C160B",
+       "WHP-022FE29094D4",
+       "WHP-02A5A1FDC9BA",
+       "WHP-0374A32F6EE0",
+       "WHP-03C1823963C2",
+       "WHP-03EEB96EDE16",
+       "WHP-0556E8165542",
+       "WHP-0560EB360114",
+       "WHP-058AC77850C3",
+       "WHP-05A7E92C34B1",
+       "WHP-062A2CC44142",
+       "WHP-0644D010D449",
+       "WHP-0673FB99AB0E",
+       "WHP-081C2AD8951B",
+       "WHP-085676515127",
+       "WHP-087E2CD45060",
+       "WHP-08A73CF61D17",
+       "WHP-08E807C556B4",
+       "WHP-0903FFDCD4A2",
+       "WHP-09622B0395C2",
+       "WHP-0AEFFE4E6B27",
+       "WHP-0B8706FAA96F",
+       "WHP-0BFE67862043",
+       "WHP-0C1CE1744045",
+       "WHP-0CFE8F4AF13B",
+       "WHP-0D24DDF541AD",
+       "WHP-0D7C3FB7EF2D",
+       "WHP-0E189DC57939",
+       "WHP-0F451F4FDB2B",
+       "WHP-0FF1B990425A",
+       "WHP-1042E0D6C297",
+       "WHP-11B4725278EF",
+       "WHP-11F10C78B5B8",
+       "WHP-125F20920118",
+       "WHP-13D2166E38F6",
+       "WHP-13E268A3233D",
+       "WHP-1586DF632A1D",
+       "WHP-1592544B50BF",
+       "WHP-165DD25D9D48",
+       "WHP-17B0166B958A",
+       "WHP-181ADE193CA9",
+       "WHP-1931B2C32F20",
+       "WHP-1AA3FC60385A",
+       "WHP-1B08E08A2330",
+       "WHP-1C9D6D436F37",
+       "WHP-1D5B032912E4",
+       "WHP-1FE972457BB2",
+       "WHP-20625CD9D456",
+       "WHP-20BC580B73BB",
+       "WHP-2149DA934C4C",
+       "WHP-21999DE007C8",
+       "WHP-222AE3F0A481",
+       "WHP-26DD7312DBC3",
+       "WHP-2704C437AA1D",
+       "WHP-27C07E68F5D5",
+       "WHP-287299CDF8C1",
+       "WHP-2AA19191960E",
+       "WHP-2B7CA50AAC7B",
+       "WHP-2B9742AD60F5",
+       "WHP-2C657A4E01DD",
+       "WHP-2CAAEF070959",
+       "WHP-2D3CD9A17576",
+       "WHP-2DD32CC05A25",
+       "WHP-2EF9F7FDD03C",
+       "WHP-2F1F96DB241D",
+       "WHP-30010B5C9DB4",
+       "WHP-30C9095102A2",
+       "WHP-319DA2E05FD1",
+       "WHP-31B88A25F84F",
+       "WHP-3232EB89CA51",
+       "WHP-32737C194C8D",
+       "WHP-33A180AE8D5C",
+       "WHP-340D22695377",
+       "WHP-3422E576C9C5",
+       "WHP-345586B571F8",
+       "WHP-35266C5BB72C",
+       "WHP-359560BC3E64",
+       "WHP-35B9FF92065B",
+       "WHP-35C0963EEAB8",
+       "WHP-35DC5636ED10",
+       "WHP-371E813B5E59",
+       "WHP-3843AB081E8B",
+       "WHP-3A46D2EF0B8D",
+       "WHP-3BC3FA2F84DC",
+       "WHP-3BFBE3E901AD",
+       "WHP-3C3F6025A060",
+       "WHP-3D3C79FB8F2A",
+       "WHP-3DB964C75AA1",
+       "WHP-3E7E646903DE",
+       "WHP-3F8574147B33",
+       "WHP-3FCC2A8BD797",
+       "WHP-4154E90242BB",
+       "WHP-416043E5895C",
+       "WHP-41828DDEE3EB",
+       "WHP-41A518352928",
+       "WHP-42243B7F5D68",
+       "WHP-423B4C6E610B",
+       "WHP-428268688D2E",
+       "WHP-439DB47B2B6E",
+       "WHP-44058010957C",
+       "WHP-4455BB05F981",
+       "WHP-4476A8AB35E2",
+       "WHP-44F5C4919CCF",
+       "WHP-4589A91B7DE8",
+       "WHP-4611F3A9E332",
+       "WHP-461F3B779972",
+       "WHP-464BC1E7C897",
+       "WHP-475A93FFBEF6",
+       "WHP-48E14EFF37B2",
+       "WHP-491D8DC4A850",
+       "WHP-4935AF298594",
+       "WHP-494A4CA0215F",
+       "WHP-498534D9742E",
+       "WHP-4B39EF0A8909",
+       "WHP-4E924EDE4A0B",
+       "WHP-4EBF186B7CC4",
+       "WHP-4F14E4589B08",
+       "WHP-500D6F95BEAC",
+       "WHP-50AE8DC8ADFF",
+       "WHP-51C07368ACAA",
+       "WHP-525EAF630D54",
+       "WHP-5438F5478953",
+       "WHP-545C0ABF9FF6",
+       "WHP-54E6E5470E6E",
+       "WHP-553FA4DEB1B8",
+       "WHP-5697EFED0B0D",
+       "WHP-56A6AA6F2654",
+       "WHP-576CF2AAC1FA",
+       "WHP-57AD7FDDD211",
+       "WHP-57CE5780C7E4",
+       "WHP-5828C9656350",
+       "WHP-5845077BCFEC",
+       "WHP-5848D4D58889",
+       "WHP-58C003715183",
+       "WHP-58E6C172CC3A",
+       "WHP-59B52A7ED8E9",
+       "WHP-5AAB628B4AB7",
+       "WHP-5B41FD800EB7",
+       "WHP-5B489AB66419",
+       "WHP-5C50C28B8900",
+       "WHP-5C621194761C",
+       "WHP-5CA045D63EA4",
+       "WHP-5EE5A66E9DB3",
+       "WHP-61F3B36DC96D",
+       "WHP-63DD8D4A51A5",
+       "WHP-646C3A709197",
+       "WHP-647A80C7179D",
+       "WHP-64A59F543BC0",
+       "WHP-64FE356C66EB",
+       "WHP-65A58C86A675",
+       "WHP-66150CC4227D",
+       "WHP-6618975C30A9",
+       "WHP-67F7A4114E67",
+       "WHP-68032F1CD6DC",
+       "WHP-682EBD97787E",
+       "WHP-68A4223E9721",
+       "WHP-68EAE4EA18B0",
+       "WHP-69B9C76154EF",
+       "WHP-69FA49DF077B",
+       "WHP-6A02F4E5948F",
+       "WHP-6B4C6A870244",
+       "WHP-6C12059ACF57",
+       "WHP-6D5F222D5261",
+       "WHP-6E019D693296",
+       "WHP-6E450228372D",
+       "WHP-6EB7E6184877",
+       "WHP-702EC6E728F2",
+       "WHP-70396FAF9341",
+       "WHP-71835C7A3A01",
+       "WHP-71D52F56B903",
+       "WHP-72BF2B771BF5",
+       "WHP-7481F715C8D4",
+       "WHP-74AA47951CFC",
+       "WHP-759B0FDD5371",
+       "WHP-75A91720FF81",
+       "WHP-75D21A584DB6",
+       "WHP-766F84566768",
+       "WHP-76B7EA2B8CE9",
+       "WHP-76C6ECCA95B2",
+       "WHP-779A2366B5F4",
+       "WHP-77ED8B53A1E4",
+       "WHP-78169FCF874E",
+       "WHP-78224158B415",
+       "WHP-786269564712",
+       "WHP-79593D7D18BA",
+       "WHP-7A2C9A5E6AB1",
+       "WHP-7A7B58476691",
+       "WHP-7B0BE5552EEE",
+       "WHP-7C5E09E2C299",
+       "WHP-7C93DF218202",
+       "WHP-7CC6CF2F08DC",
+       "WHP-7D2372677974",
+       "WHP-7DC120CAEC39",
+       "WHP-7EDD2485B983",
+       "WHP-7F239BE9DB42",
+       "WHP-7F4B740DA0A0",
+       "WHP-81210AEE9E01",
+       "WHP-81801B906E05",
+       "WHP-82033BC069C6",
+       "WHP-825D6F184712",
+       "WHP-8278C30F878C",
+       "WHP-846BFC9478F8",
+       "WHP-85FB356F0546",
+       "WHP-864EA8C809FA",
+       "WHP-86D0D5DE4814",
+       "WHP-87A1B5BEEA28",
+       "WHP-87A5BABA8CAE",
+       "WHP-8814D2E065A8",
+       "WHP-8AB17E2A011E",
+       "WHP-8B1E915292D7",
+       "WHP-8B25D8ABF634",
+       "WHP-8C3CD2586DC5",
+       "WHP-8DE3F6B6275D",
+       "WHP-8E367EF84843",
+       "WHP-8E9D4BE4BCA8",
+       "WHP-8F96250CB864",
+       "WHP-8FBBCB100591",
+       "WHP-8FC590DB7808",
+       "WHP-90E361CF9A6E",
+       "WHP-91AADA9551A9",
+       "WHP-9280A113DEAF",
+       "WHP-94479DF79B67",
+       "WHP-94EB96DFE594",
+       "WHP-951D5B296BA8",
+       "WHP-95B878035BB7",
+       "WHP-9984B3B19A44",
+       "WHP-99D4073E4F57",
+       "WHP-9A0B7074E5DA",
+       "WHP-9A2FC586635B",
+       "WHP-9C3AD238EF29",
+       "WHP-9CA0403C4B02",
+       "WHP-9EB2EB89F30B",
+       "WHP-9EE96E4B2F55",
+       "WHP-A0614B465510",
+       "WHP-A093C2C23033",
+       "WHP-A10F247BC24B",
+       "WHP-A11285DC7025",
+       "WHP-A26A0C962612",
+       "WHP-A2CE893A083A",
+       "WHP-A3323126CC33",
+       "WHP-A3B3357DF35A",
+       "WHP-A42CF48549F1",
+       "WHP-A451AC52FB8C",
+       "WHP-A4F8360F24E9",
+       "WHP-A51D59DD245C",
+       "WHP-A5E5DD718EB0",
+       "WHP-A622EAC2913B",
+       "WHP-A865AA8C2456",
+       "WHP-A8C363B4E6AF",
+       "WHP-A96861D19603",
+       "WHP-A9DAFD9A27F4",
+       "WHP-AA2C3D19E237",
+       "WHP-AA3E5DC43279",
+       "WHP-AA87C3365269",
+       "WHP-AAE8D0A0D160",
+       "WHP-AB0ECACD7459",
+       "WHP-AB4BEF157500",
+       "WHP-AB6524A0E23A",
+       "WHP-AC7F1FD2D390",
+       "WHP-AD0457068F67",
+       "WHP-ADCE6D507799",
+       "WHP-AE2079B13050",
+       "WHP-AEC6BDE5886D",
+       "WHP-AF043EB51E5A",
+       "WHP-AF0DF4B3E86C",
+       "WHP-AF34BCFCE572",
+       "WHP-AF8D0BF5334D",
+       "WHP-AFCD2764C38A",
+       "WHP-B0300330803F",
+       "WHP-B0A77FB44A6F",
+       "WHP-B1CAC8981278",
+       "WHP-B1EE111D782A",
+       "WHP-B217E4358EB5",
+       "WHP-B26A111A09B3",
+       "WHP-B396B503A1A2",
+       "WHP-B3FCB579D4EB",
+       "WHP-B505BAEF6322",
+       "WHP-B79B3D0E9C0A",
+       "WHP-B7EFB25CD59C",
+       "WHP-B88F08CBC6B5",
+       "WHP-B8CFAA7200E0",
+       "WHP-BA4071DC9717",
+       "WHP-BB10216B3D6A",
+       "WHP-BB78EF30CC2F",
+       "WHP-BC55A7F4C907",
+       "WHP-BCC57896186B",
+       "WHP-BD2E5410DD7F",
+       "WHP-C0CBB0433D39",
+       "WHP-C17DC8A2395F",
+       "WHP-C3DC75F3E38F",
+       "WHP-C3E26010C215",
+       "WHP-C42D5A2EC7F5",
+       "WHP-C4ED1C83D623",
+       "WHP-C56DF56DBD5D",
+       "WHP-C5E9894BCF7B",
+       "WHP-C6079A267706",
+       "WHP-C69C72888072",
+       "WHP-C7EF3ADB2A1E",
+       "WHP-C8621A3C0062",
+       "WHP-C93B3991D079",
+       "WHP-CB308585D778",
+       "WHP-CB53BA8A82A9",
+       "WHP-CBA2B3CABECE",
+       "WHP-CC4812E15C66",
+       "WHP-CCFC25AAD1FA",
+       "WHP-CE95232B1EF1",
+       "WHP-CF00EEA4E9A7",
+       "WHP-D18B276EC4D2",
+       "WHP-D1C2C3AA0DE6",
+       "WHP-D1D3CDCD356B",
+       "WHP-D3F986D2AA51",
+       "WHP-D6887F830794",
+       "WHP-D70554F792AD",
+       "WHP-D754078085FD",
+       "WHP-D847DE1F8A1A",
+       "WHP-D87D9B5B10D5",
+       "WHP-D8AEE3072CC1",
+       "WHP-DCAC30BF3905",
+       "WHP-DCF7BC1800DB",
+       "WHP-DD4E36DDF94C",
+       "WHP-DF345C365089",
+       "WHP-DF50C91D9735",
+       "WHP-E0549CFBCCAF",
+       "WHP-E1236DAC8196",
+       "WHP-E28CE1B642EB",
+       "WHP-E3E289FF8D65",
+       "WHP-E3EA84601EE8",
+       "WHP-E4C712C9D298",
+       "WHP-E52177A39053",
+       "WHP-E67C4A227C42",
+       "WHP-E6DB55DE6BEA",
+       "WHP-E776CF62FB6C",
+       "WHP-E7932781FE05",
+       "WHP-E7981C5A8ADF",
+       "WHP-E96A352E7FEE",
+       "WHP-E9A959E6126E",
+       "WHP-EB5055CE89B1",
+       "WHP-EB877C8A7B3B",
+       "WHP-EC30FB676831",
+       "WHP-EC6D5203C607",
+       "WHP-EC7800867983",
+       "WHP-ECB2A89384B9",
+       "WHP-ED0718619CAA",
+       "WHP-ED9C8816D77E",
+       "WHP-EE774C735CC6",
+       "WHP-EEB57305E7AA",
+       "WHP-EEF7070750B0",
+       "WHP-F00F345D03F9",
+       "WHP-F0D8EC80A1DA",
+       "WHP-F0FC17AB1B00",
+       "WHP-F1054D7EC80C",
+       "WHP-F19FC3E7BEDC",
+       "WHP-F1D3356D61FB",
+       "WHP-F25BB53283B1",
+       "WHP-F2E58299026D",
+       "WHP-F367130675FA",
+       "WHP-F3AA04F569AA",
+       "WHP-F64696513202",
+       "WHP-F9B1939F68C1",
+       "WHP-F9EFFF2F6671",
+       "WHP-FC90D59FF7C9",
+       "WHP-FD39E4FEC65A",
+       "WHP-FD8D97E8F687",
+       "WHP-FDA8D24EFC82",
+       "WHP-FDCADCF7038E",
+       "WHP-FDDA12768564",
+       "WHP-FE9725717727",
+       "WHP-FEBA322831FD",
+       "WHP-FFF6454CEACC"
+      ]
+     },
+     "d212c960d1e55a8663a5afe165741458ee429c7c15df200fb5c3cf2de65c22c4": {
+      "patient_ids": [
+       "SYN-2107BF4D-57A",
+       "SYN-2D162D80-140",
+       "SYN-33416DF4-F42",
+       "SYN-5C2C858E-68F",
+       "SYN-5CAFE373-600",
+       "SYN-5D8D2F90-87D",
+       "SYN-5F2D46DE-1CE",
+       "SYN-5F695A58-E5F",
+       "SYN-7ACE370F-5C6",
+       "SYN-836D955F-895",
+       "SYN-8F898A73-A41",
+       "SYN-907D97FF-3C6",
+       "SYN-A93EEF68-416",
+       "SYN-B2BFA989-E2D",
+       "SYN-BB66B2D8-7A0",
+       "SYN-CACDEA1A-A29",
+       "SYN-CE8F18E3-C8D",
+       "SYN-F30C7316-DA4",
+       "SYN-FCA839F8-D0D",
+       "WHP-015A0D04A4BE",
+       "WHP-019891D6C47B",
+       "WHP-01B71F3C160B",
+       "WHP-022FE29094D4",
+       "WHP-03171F9E03F5",
+       "WHP-0374A32F6EE0",
+       "WHP-048B69AF8E9A",
+       "WHP-0560EB360114",
+       "WHP-05A7E92C34B1",
+       "WHP-062A2CC44142",
+       "WHP-064A749BE1AA",
+       "WHP-0662A23D01F8",
+       "WHP-06CF213C538A",
+       "WHP-087E2CD45060",
+       "WHP-088CAB9AF9A8",
+       "WHP-08A73CF61D17",
+       "WHP-08E807C556B4",
+       "WHP-097B980F0F0E",
+       "WHP-09E31C3A4CAA",
+       "WHP-0ADD985337AE",
+       "WHP-0AE147E343DF",
+       "WHP-0AEFFE4E6B27",
+       "WHP-0B8128BA8F25",
+       "WHP-0BDA609F30D2",
+       "WHP-0D4A246B9FF9",
+       "WHP-0F73380A5C7B",
+       "WHP-0FF07B3FED94",
+       "WHP-0FF1B990425A",
+       "WHP-11875991D8CC",
+       "WHP-11B4725278EF",
+       "WHP-13D2166E38F6",
+       "WHP-13E11F1EF9D0",
+       "WHP-1430A60D5E8F",
+       "WHP-147F1C7EB3AE",
+       "WHP-1623DCEF345F",
+       "WHP-166178D889D3",
+       "WHP-17B0166B958A",
+       "WHP-181ADE193CA9",
+       "WHP-188F843C6D10",
+       "WHP-19FA31EF4526",
+       "WHP-1A03593F4C32",
+       "WHP-1AA3FC60385A",
+       "WHP-1B08E08A2330",
+       "WHP-1C4C30706F73",
+       "WHP-1C70F0F9BCA1",
+       "WHP-1DCE1CC6B1A3",
+       "WHP-1E94FE6E6777",
+       "WHP-1FD74B00DF52",
+       "WHP-2075CAD91147",
+       "WHP-20B8BFCB1746",
+       "WHP-20BC580B73BB",
+       "WHP-211501F56A35",
+       "WHP-2149DA934C4C",
+       "WHP-219027CAEDF4",
+       "WHP-249EA0275F49",
+       "WHP-25830CB723FD",
+       "WHP-26DD7312DBC3",
+       "WHP-2704C437AA1D",
+       "WHP-279B0032B10E",
+       "WHP-2A9B654EFF6C",
+       "WHP-2B7B6C7ACA31",
+       "WHP-2B7CA50AAC7B",
+       "WHP-2D3CD9A17576",
+       "WHP-2D6AE47E48FA",
+       "WHP-2E99E8C998EA",
+       "WHP-2EC12324AFE2",
+       "WHP-30010B5C9DB4",
+       "WHP-302A00780D9C",
+       "WHP-30F2D5E7943B",
+       "WHP-3105A48104F5",
+       "WHP-319DA2E05FD1",
+       "WHP-32737C194C8D",
+       "WHP-32D8E6C0B6D5",
+       "WHP-33A180AE8D5C",
+       "WHP-345586B571F8",
+       "WHP-345A1A54581A",
+       "WHP-3493E329BFEC",
+       "WHP-34ADE407B816",
+       "WHP-359560BC3E64",
+       "WHP-35DC5636ED10",
+       "WHP-37B53B966C3A",
+       "WHP-3907E0CCF47C",
+       "WHP-39136FE35CB1",
+       "WHP-394E3EC1624E",
+       "WHP-3A29E50111F9",
+       "WHP-3A46D2EF0B8D",
+       "WHP-3C7C6583D71D",
+       "WHP-3CECCE0F0D5D",
+       "WHP-3D07D3FD0DFB",
+       "WHP-3D37D20D9097",
+       "WHP-3D3C79FB8F2A",
+       "WHP-3E96C9A864A2",
+       "WHP-3EC763C7BB53",
+       "WHP-407F69897D4E",
+       "WHP-41A518352928",
+       "WHP-4230B9D69CE7",
+       "WHP-428268688D2E",
+       "WHP-428B2B0F6F48",
+       "WHP-439DB47B2B6E",
+       "WHP-43F782C9136D",
+       "WHP-4455BB05F981",
+       "WHP-447FC3638C4B",
+       "WHP-44B6EB78AF30",
+       "WHP-44DA4BE54F9F",
+       "WHP-44F5DE44ED67",
+       "WHP-4514C9AA87B9",
+       "WHP-4607AD88022E",
+       "WHP-4616AB97E0D1",
+       "WHP-46489570D260",
+       "WHP-47CC37BA4AEC",
+       "WHP-4890D3BBB734",
+       "WHP-491D8DC4A850",
+       "WHP-4935AF298594",
+       "WHP-499083DE17A7",
+       "WHP-4A17F64BD779",
+       "WHP-4A56CE1F4555",
+       "WHP-4B39EF0A8909",
+       "WHP-4D244E95905A",
+       "WHP-4E482870950B",
+       "WHP-4E49C326DC42",
+       "WHP-4E924EDE4A0B",
+       "WHP-4EADF2F39A8C",
+       "WHP-4F5F9E083366",
+       "WHP-4F9C5B987F3A",
+       "WHP-5151583E3FBE",
+       "WHP-537E2309691B",
+       "WHP-54139E8BC21E",
+       "WHP-54E6E5470E6E",
+       "WHP-54FCF13A6C97",
+       "WHP-558D39BD6429",
+       "WHP-55964DA46D23",
+       "WHP-563D88FE4916",
+       "WHP-56455A379E18",
+       "WHP-56D35DDABAE6",
+       "WHP-57A18624F740",
+       "WHP-5828C9656350",
+       "WHP-5848D4D58889",
+       "WHP-58C003715183",
+       "WHP-5AAB628B4AB7",
+       "WHP-5C106E9BDFCC",
+       "WHP-5C37BE96DB4A",
+       "WHP-5C50C28B8900",
+       "WHP-5C73E100D1FE",
+       "WHP-5CA045D63EA4",
+       "WHP-5D65677AA9BB",
+       "WHP-5E13AFF8D7FC",
+       "WHP-5FCBD543C547",
+       "WHP-610916E9E539",
+       "WHP-626160AF6A7C",
+       "WHP-62E1AF6D76A3",
+       "WHP-63B17F5A4726",
+       "WHP-63BB3DE1694F",
+       "WHP-63DD8D4A51A5",
+       "WHP-646C3A709197",
+       "WHP-64F22A47A075",
+       "WHP-65D7DFAAC400",
+       "WHP-66605EB7DEE9",
+       "WHP-668797AD0391",
+       "WHP-668BAEFABAD5",
+       "WHP-66F4B476DECF",
+       "WHP-66F733628EC7",
+       "WHP-67D4CC6550B9",
+       "WHP-67F7A4114E67",
+       "WHP-689F6742FDD7",
+       "WHP-69FA49DF077B",
+       "WHP-6BAFCEF2DE5E",
+       "WHP-6C12059ACF57",
+       "WHP-6C40E525625C",
+       "WHP-6CE8BCD0CD8F",
+       "WHP-6D5F222D5261",
+       "WHP-6EC92CE8AF2C",
+       "WHP-6EE2E7E141ED",
+       "WHP-6EF1480B2674",
+       "WHP-6F5CF21C4826",
+       "WHP-6F7AA2578CC9",
+       "WHP-70A658853071",
+       "WHP-70DB6C00E2EF",
+       "WHP-719B4EDDE479",
+       "WHP-71D52F56B903",
+       "WHP-7275C07F59A5",
+       "WHP-72BF2B771BF5",
+       "WHP-72C4BA995DDE",
+       "WHP-7393851E8D34",
+       "WHP-73B791E15F8F",
+       "WHP-7481F715C8D4",
+       "WHP-759B0FDD5371",
+       "WHP-766F84566768",
+       "WHP-76C1F1BEE062",
+       "WHP-76C6ECCA95B2",
+       "WHP-76EAE99D7CEC",
+       "WHP-7B7D5F4D6587",
+       "WHP-7C1AD8D2DF97",
+       "WHP-7C93DF218202",
+       "WHP-7D2372677974",
+       "WHP-7ED75F4557FB",
+       "WHP-80F6CAD7A1C6",
+       "WHP-81210AEE9E01",
+       "WHP-817B6F925346",
+       "WHP-81C6062258AF",
+       "WHP-846BFC9478F8",
+       "WHP-84C8367AABB3",
+       "WHP-85359587C9F8",
+       "WHP-85D78D3616CC",
+       "WHP-87A1B5BEEA28",
+       "WHP-88D9D524343B",
+       "WHP-891F828233A5",
+       "WHP-89604D8E94E7",
+       "WHP-8E30909490FA",
+       "WHP-8E367EF84843",
+       "WHP-8E44D529F3FA",
+       "WHP-8F66079B3D4A",
+       "WHP-8FC590DB7808",
+       "WHP-90C571ACE4F1",
+       "WHP-90E361CF9A6E",
+       "WHP-9233E6DCD1E9",
+       "WHP-94CA732050B7",
+       "WHP-94EB96DFE594",
+       "WHP-94EFDEC2FC91",
+       "WHP-9554651A5C5F",
+       "WHP-95B878035BB7",
+       "WHP-973E119F8F60",
+       "WHP-98E81C28FFBB",
+       "WHP-9984B3B19A44",
+       "WHP-99D4073E4F57",
+       "WHP-9A18EDC1054A",
+       "WHP-9AF16C5E772F",
+       "WHP-9C3AD238EF29",
+       "WHP-9D62ADE27C69",
+       "WHP-9DA35F162910",
+       "WHP-9DBF3BE9BBBF",
+       "WHP-9EB2EB89F30B",
+       "WHP-A0EBAABE04A1",
+       "WHP-A23B279C2C00",
+       "WHP-A437159E49D1",
+       "WHP-A48E118CA915",
+       "WHP-A559462EC5BA",
+       "WHP-A8C363B4E6AF",
+       "WHP-A8E7D1407E20",
+       "WHP-A96861D19603",
+       "WHP-AABD32C97FD9",
+       "WHP-AAE8D0A0D160",
+       "WHP-AB422FBA2CA7",
+       "WHP-AB6524A0E23A",
+       "WHP-AB7B721E0015",
+       "WHP-AB8EA67CCE91",
+       "WHP-AC6716D473A8",
+       "WHP-AC6F18E4E42F",
+       "WHP-AC8091D56D41",
+       "WHP-ACE6ADEC2A85",
+       "WHP-AD184792B310",
+       "WHP-AD2B8C0F0B67",
+       "WHP-ADAECC8086E2",
+       "WHP-AE2079B13050",
+       "WHP-AE6F1D2DA9B3",
+       "WHP-AF043EB51E5A",
+       "WHP-AF0DF4B3E86C",
+       "WHP-B0300330803F",
+       "WHP-B0738F37BBB5",
+       "WHP-B1CAC8981278",
+       "WHP-B1CCE11E8660",
+       "WHP-B1EE111D782A",
+       "WHP-B217E4358EB5",
+       "WHP-B3250FB59C10",
+       "WHP-B35B2074B162",
+       "WHP-B396B503A1A2",
+       "WHP-B505BAEF6322",
+       "WHP-B6F8C3E6BCF4",
+       "WHP-B79B02F06561",
+       "WHP-B7EFB25CD59C",
+       "WHP-B88F08CBC6B5",
+       "WHP-B8CFAA7200E0",
+       "WHP-B8FC818D87D9",
+       "WHP-B937D8C2514A",
+       "WHP-BA1E5EE05B17",
+       "WHP-BA5F6EE784DD",
+       "WHP-BBACC0B33000",
+       "WHP-BC55A7F4C907",
+       "WHP-BCC57896186B",
+       "WHP-BD2E5410DD7F",
+       "WHP-BD81E2167C9E",
+       "WHP-BD9C08F5581E",
+       "WHP-BD9C8A9BA8FD",
+       "WHP-BDC701F2867D",
+       "WHP-BE1BF12D3BE8",
+       "WHP-BE595D4B0BE2",
+       "WHP-BFFCF99B39DC",
+       "WHP-C2EBAFA69308",
+       "WHP-C36DB94DF4DC",
+       "WHP-C3DC75F3E38F",
+       "WHP-C3E26010C215",
+       "WHP-C3E34B9E36E9",
+       "WHP-C5E9894BCF7B",
+       "WHP-C6079A267706",
+       "WHP-C7EF3ADB2A1E",
+       "WHP-C85318F7342C",
+       "WHP-C8621A3C0062",
+       "WHP-C863540A2E66",
+       "WHP-C93B3991D079",
+       "WHP-CA29DEC65740",
+       "WHP-CB308585D778",
+       "WHP-CC7E7717B484",
+       "WHP-CDDBE26F74E0",
+       "WHP-CE1135CB4C88",
+       "WHP-CF00EEA4E9A7",
+       "WHP-CF0AACD0DA5C",
+       "WHP-D12DB1546E15",
+       "WHP-D2601CED5CF4",
+       "WHP-D595BE01B163",
+       "WHP-D6005FF04DC2",
+       "WHP-D62353598BCC",
+       "WHP-D635B846F755",
+       "WHP-D6887F830794",
+       "WHP-D754078085FD",
+       "WHP-D7E8756F28A2",
+       "WHP-D81EBFF95089",
+       "WHP-D847DE1F8A1A",
+       "WHP-DAB42314A78A",
+       "WHP-DB94541A843E",
+       "WHP-DC9C30198ED4",
+       "WHP-DCAC30BF3905",
+       "WHP-DE20ABC4DEA2",
+       "WHP-DF0845E84B4F",
+       "WHP-DF345C365089",
+       "WHP-E018E8569363",
+       "WHP-E0AFFC22BA59",
+       "WHP-E17552674F0C",
+       "WHP-E28CE1B642EB",
+       "WHP-E29E34AE2042",
+       "WHP-E2A5B7833DC6",
+       "WHP-E2DBD1E15E2A",
+       "WHP-E3E289FF8D65",
+       "WHP-E406DCF1CC5A",
+       "WHP-E41193D538D9",
+       "WHP-E417F926F7C9",
+       "WHP-E42DD7A0B3C1",
+       "WHP-E467286303D3",
+       "WHP-E4C098FC51DB",
+       "WHP-E4C17887A184",
+       "WHP-E63ACC01B0D6",
+       "WHP-E721C38D697E",
+       "WHP-E776CF62FB6C",
+       "WHP-EC6D5203C607",
+       "WHP-EC7800867983",
+       "WHP-EC7B66D9F87E",
+       "WHP-ECA84F8C0EF7",
+       "WHP-ECB2A89384B9",
+       "WHP-ED0718619CAA",
+       "WHP-ED222CD712E4",
+       "WHP-ED7A62CB6862",
+       "WHP-ED9C8816D77E",
+       "WHP-EE000506D495",
+       "WHP-EFBBE54F5920",
+       "WHP-F035B0B9D9F4",
+       "WHP-F09E0FCF83E5",
+       "WHP-F0F0A0DFBA3A",
+       "WHP-F0FC17AB1B00",
+       "WHP-F0FD1067A6D3",
+       "WHP-F1B81876467F",
+       "WHP-F1F299A569AC",
+       "WHP-F226EFAFD5A5",
+       "WHP-F25BB53283B1",
+       "WHP-F336AA98B180",
+       "WHP-F367130675FA",
+       "WHP-F3C65BDC5A86",
+       "WHP-F3D9B79AD0E9",
+       "WHP-F614B7E488D9",
+       "WHP-F75A68CC00C3",
+       "WHP-F7B731E65DD6",
+       "WHP-F9B00FBC9DB8",
+       "WHP-F9B1939F68C1",
+       "WHP-F9EFFF2F6671",
+       "WHP-FAB4928A500D",
+       "WHP-FBCB404F6954",
+       "WHP-FD4A95188EAC",
+       "WHP-FE9F62460B07",
+       "WHP-FFC70A411AFF"
+      ]
+     }
+    }
+   },
+   "alternatives": [
+    {
+     "id": "original",
+     "reading": "Original-roster pharmacy streams only (reference SQL).",
+     "source": "reference",
+     "stated_any_of": [
+      [
+       "original 1,614",
+       "1,614-person",
+       "1,614 patients",
+       "original roster",
+       "original cohort",
+       "deep-chart",
+       "deep chart",
+       "ehr encounters only",
+       "encounters stream only",
+       "medical_claims only",
+       "excluding the population",
+       "excludes payer",
+       "without payer"
+      ]
+     ]
+    }
+   ],
+   "evidence": "pharmacy_dispenses covers the original roster only; payer_pharmacy_claims (89,602 visible rows) is the population fill source: 'paid' = dispensed claim, a later 'reversed' row (B2, return_to_stock, plan_paid 0) means the fill was prepared but returned to stock, i.e. not picked up; 'rejected' rows carry NCPDP codes (79 refill too soon, 70, 75). Before 14 -> after 384. | v2.8 (release d212c960, 4,115 patients): reference 10 -> canonical 395."
+  },
+  "Q19": {
+   "category": "d",
+   "canonical": {
+    "reading": "Fills prepared but never picked up in 2029 (returned_to_stock dispenses + return_to_stock reversals), population-wide.",
+    "source": "errata",
+    "sql": "sql_errata/heldout9/Q19__population.sql",
+    "expected": {
+     "9ef6ea79297af818f4eabab0b629a32ea5684d92f921ed46a72b82838e7189e8": {
+      "count": 1057
+     },
+     "d212c960d1e55a8663a5afe165741458ee429c7c15df200fb5c3cf2de65c22c4": {
+      "count": 1022
+     }
+    }
+   },
+   "alternatives": [
+    {
+     "id": "original",
+     "reading": "Original-roster pharmacy streams only (reference SQL).",
+     "source": "reference",
+     "stated_any_of": [
+      [
+       "original 1,614",
+       "1,614-person",
+       "1,614 patients",
+       "original roster",
+       "original cohort",
+       "deep-chart",
+       "deep chart",
+       "ehr encounters only",
+       "encounters stream only",
+       "medical_claims only",
+       "excluding the population",
+       "excludes payer",
+       "without payer"
+      ]
+     ]
+    }
+   ],
+   "evidence": "pharmacy_dispenses covers the original roster only; payer_pharmacy_claims (89,602 visible rows) is the population fill source: 'paid' = dispensed claim, a later 'reversed' row (B2, return_to_stock, plan_paid 0) means the fill was prepared but returned to stock, i.e. not picked up; 'rejected' rows carry NCPDP codes (79 refill too soon, 70, 75). Before 576 -> after 1057. | v2.8 (release d212c960, 4,115 patients): reference 512 -> canonical 1022."
+  },
+  "Q20": {
+   "category": "d",
+   "canonical": {
+    "reading": "Diabetics (problem list or claim diagnosis) whose latest dated 2029 A1c (case-insensitive names / LOINC 4548-4) > 9.",
+    "source": "errata",
+    "sql": "sql_errata/heldout9/Q20__population.sql",
+    "expected": {
+     "9ef6ea79297af818f4eabab0b629a32ea5684d92f921ed46a72b82838e7189e8": {
+      "count": 111
+     },
+     "d212c960d1e55a8663a5afe165741458ee429c7c15df200fb5c3cf2de65c22c4": {
+      "count": 98
+     }
+    }
+   },
+   "alternatives": [
+    {
+     "id": "problem_list",
+     "reading": "Problem-list diabetics only, case-insensitive A1c names.",
+     "source": "errata",
+     "sql": "sql_errata/heldout9/Q20__problem_list.sql",
+     "expected": {
+      "9ef6ea79297af818f4eabab0b629a32ea5684d92f921ed46a72b82838e7189e8": {
+       "count": 108
+      },
+      "d212c960d1e55a8663a5afe165741458ee429c7c15df200fb5c3cf2de65c22c4": {
+       "count": 96
+      }
+     },
+     "stated_any_of": [
+      [
+       "problem list only",
+       "problem-list only",
+       "conditions stream only",
+       "conditions only",
+       "without claims diagnoses",
+       "excluding claim diagnoses",
+       "not claims diagnoses",
+       "problem list (conditions)"
+      ]
+     ]
+    },
+    {
+     "id": "case_sensitive_names",
+     "reading": "Reference: problem-list diabetics, A1c names 'HbA1c'/'Hemoglobin A1c' only.",
+     "source": "reference",
+     "stated_any_of": [
+      [
+       "problem list only",
+       "problem-list only",
+       "conditions stream only",
+       "conditions only",
+       "without claims diagnoses",
+       "excluding claim diagnoses",
+       "not claims diagnoses",
+       "problem list (conditions)"
+      ]
+     ]
+    }
+   ],
+   "evidence": "Diabetes cohort: problem list covers the original roster and claims_plus_ehr members only; 1,945 claims_only members have diagnoses only on payer_medical_claims (E10/E11/E13 on claims: 308 patients, 229 not on any problem list). Lab names are case-sensitive in the reference: the population reports 'HEMOGLOBIN A1C' (228), 'MICROALB/CREAT RATIO, RANDOM URINE' (189), 'Microalbumin/Creatinine [Mass Ratio] in Urine' (939); inventory of A1c names: HbA1c, Hemoglobin A1c, HEMOGLOBIN A1C, undated 'Hemoglobin A1c/Hemoglobin.total' (LOINC 4548-4); uACR names: Urine albumin/creatinine ratio, Microalbumin/Creatinine (undated legacy), MICROALB/CREAT RATIO, RANDOM URINE, Microalbumin/Creatinine [Mass Ratio] in Urine (LOINC 9318-7). Before 107 -> problem list 108 -> after 111. | v2.8 (release d212c960, 4,115 patients): reference 95 -> canonical 98."
+  },
+  "Q21": {
+   "category": "c",
+   "canonical": {
+    "reading": "Hypertensives (problem list or claim diagnosis) whose latest dated 2029 BP is < 140/90.",
+    "source": "errata",
+    "sql": "sql_errata/heldout9/Q21__population.sql",
+    "expected": {
+     "9ef6ea79297af818f4eabab0b629a32ea5684d92f921ed46a72b82838e7189e8": {
+      "count": 597
+     },
+     "d212c960d1e55a8663a5afe165741458ee429c7c15df200fb5c3cf2de65c22c4": {
+      "count": 550
+     }
+    }
+   },
+   "alternatives": [
+    {
+     "id": "problem_list",
+     "reading": "Problem-list hypertension only (reference SQL).",
+     "source": "reference",
+     "stated_any_of": [
+      [
+       "problem list only",
+       "problem-list only",
+       "conditions stream only",
+       "conditions only",
+       "without claims diagnoses",
+       "excluding claim diagnoses",
+       "not claims diagnoses",
+       "problem list (conditions)"
+      ]
+     ]
+    }
+   ],
+   "evidence": "Hypertension cohort extended with I10-I13/I15/I16 codes on payer_medical_claims (claims_plus_ehr members have vitals but some hypertension only on claims); vitals already include population BP rows (same fields), so the reference SQL is population-wide for readings. Before 569 -> after 597. | v2.8 (release d212c960, 4,115 patients): reference 531 -> canonical 550."
+  },
+  "Q22": {
+   "category": "d",
+   "canonical": {
+    "reading": "Influenza vaccination for the 2029-2030 season, population-wide: season-tagged immunizations, population immunizations (vaccine influenza*, completed) dated 2029-07-01..2030-06-30, or a flu vaccine CPT / G0008 claim line in that window.",
+    "source": "errata",
+    "sql": "sql_errata/heldout9/Q22__population.sql",
+    "expected": {
+     "9ef6ea79297af818f4eabab0b629a32ea5684d92f921ed46a72b82838e7189e8": {
+      "count": 1728
+     },
+     "d212c960d1e55a8663a5afe165741458ee429c7c15df200fb5c3cf2de65c22c4": {
+      "count": 1509
+     }
+    }
+   },
+   "alternatives": [
+    {
+     "id": "original",
+     "reading": "Original roster season-tagged immunizations only (reference SQL).",
+     "source": "reference",
+     "stated_any_of": [
+      [
+       "original 1,614",
+       "1,614-person",
+       "1,614 patients",
+       "original roster",
+       "original cohort",
+       "deep-chart",
+       "deep chart",
+       "ehr encounters only",
+       "encounters stream only",
+       "medical_claims only",
+       "excluding the population",
+       "excludes payer",
+       "without payer"
+      ]
+     ]
+    }
+   ],
+   "evidence": "Population immunizations carry no season field and name high-dose vaccine 'influenza high-dose'; claims-only members' flu shots exist only as claim lines (90656, 90662, G0008). Before 661 -> after 1728. | v2.8 (release d212c960, 4,115 patients): reference 617 -> canonical 1509."
+  },
+  "Q23": {
+   "category": "d",
+   "canonical": {
+    "reading": "Screening mammogram in 2029: final cancer_screening_results or a 77067/G0202 claim line dated 2029 (voided claims excluded).",
+    "source": "errata",
+    "sql": "sql_errata/heldout9/Q23__population.sql",
+    "expected": {
+     "9ef6ea79297af818f4eabab0b629a32ea5684d92f921ed46a72b82838e7189e8": {
+      "count": 456
+     },
+     "d212c960d1e55a8663a5afe165741458ee429c7c15df200fb5c3cf2de65c22c4": {
+      "count": 395
+     }
+    }
+   },
+   "alternatives": [
+    {
+     "id": "original",
+     "reading": "Original-roster cancer_screening_results only (reference SQL).",
+     "source": "reference",
+     "stated_any_of": [
+      [
+       "original 1,614",
+       "1,614-person",
+       "1,614 patients",
+       "original roster",
+       "original cohort",
+       "deep-chart",
+       "deep chart",
+       "ehr encounters only",
+       "encounters stream only",
+       "medical_claims only",
+       "excluding the population",
+       "excludes payer",
+       "without payer"
+      ]
+     ]
+    }
+   ],
+   "evidence": "cancer_screening_results covers the original roster only; the population's screening mammograms are claim lines CPT 77067 (1,756 lines; the code includes the interpretation). Before 118 -> after 456. | v2.8 (release d212c960, 4,115 patients): reference 113 -> canonical 395."
+  },
+  "Q24": {
+   "category": "d",
+   "canonical": {
+    "reading": "Diabetics (problem list or claim diagnosis) with a dated numeric 2029 uACR (all uACR names, case-insensitive, LOINC 9318-7).",
+    "source": "errata",
+    "sql": "sql_errata/heldout9/Q24__population.sql",
+    "expected": {
+     "9ef6ea79297af818f4eabab0b629a32ea5684d92f921ed46a72b82838e7189e8": {
+      "count": 293
+     },
+     "d212c960d1e55a8663a5afe165741458ee429c7c15df200fb5c3cf2de65c22c4": {
+      "count": 233
+     }
+    }
+   },
+   "alternatives": [
+    {
+     "id": "problem_list",
+     "reading": "Problem-list diabetics only, all uACR names.",
+     "source": "errata",
+     "sql": "sql_errata/heldout9/Q24__problem_list.sql",
+     "expected": {
+      "9ef6ea79297af818f4eabab0b629a32ea5684d92f921ed46a72b82838e7189e8": {
+       "count": 282
+      },
+      "d212c960d1e55a8663a5afe165741458ee429c7c15df200fb5c3cf2de65c22c4": {
+       "count": 221
+      }
+     },
+     "stated_any_of": [
+      [
+       "problem list only",
+       "problem-list only",
+       "conditions stream only",
+       "conditions only",
+       "without claims diagnoses",
+       "excluding claim diagnoses",
+       "not claims diagnoses",
+       "problem list (conditions)"
+      ]
+     ]
+    }
+   ],
+   "evidence": "Diabetes cohort: problem list covers the original roster and claims_plus_ehr members only; 1,945 claims_only members have diagnoses only on payer_medical_claims (E10/E11/E13 on claims: 308 patients, 229 not on any problem list). Lab names are case-sensitive in the reference: the population reports 'HEMOGLOBIN A1C' (228), 'MICROALB/CREAT RATIO, RANDOM URINE' (189), 'Microalbumin/Creatinine [Mass Ratio] in Urine' (939); inventory of A1c names: HbA1c, Hemoglobin A1c, HEMOGLOBIN A1C, undated 'Hemoglobin A1c/Hemoglobin.total' (LOINC 4548-4); uACR names: Urine albumin/creatinine ratio, Microalbumin/Creatinine (undated legacy), MICROALB/CREAT RATIO, RANDOM URINE, Microalbumin/Creatinine [Mass Ratio] in Urine (LOINC 9318-7). Claims carry 82043 (urine albumin) without 82570, so claims cannot evidence a ratio. Before 219 -> problem list 282 -> after 293. | v2.8 (release d212c960, 4,115 patients): reference 193 -> canonical 233."
+  },
+  "Q25": {
+   "category": "d",
+   "canonical": {
+    "reading": "Diabetics (problem list or claim diagnosis) with no 2029 A1c test: no dated numeric A1c lab (all names) and no payer claim line CPT 83036 dated 2029.",
+    "source": "errata",
+    "sql": "sql_errata/heldout9/Q25__population.sql",
+    "expected": {
+     "9ef6ea79297af818f4eabab0b629a32ea5684d92f921ed46a72b82838e7189e8": {
+      "patient_ids": [
+       "P-4007",
+       "P-6001",
+       "SYN-01DBEFBF-341",
+       "SYN-19B9F868-50D",
+       "SYN-1FE0CAE0-8BC",
+       "SYN-263128FE-ED1",
+       "SYN-2EB7F1AE-787",
+       "SYN-332A22B5-AFF",
+       "SYN-33D5F526-8C0",
+       "SYN-350A16F5-AE0",
+       "SYN-44A34CD6-FDC",
+       "SYN-4758EDE1-65E",
+       "SYN-50B00626-B44",
+       "SYN-526D378A-B90",
+       "SYN-5E1729A8-4CA",
+       "SYN-67A05FD0-726",
+       "SYN-68B8B2D2-968",
+       "SYN-71FA934C-E2C",
+       "SYN-7C425B3D-DA9",
+       "SYN-7E575948-3F6",
+       "SYN-9128B4AA-2B5",
+       "SYN-94C38E29-706",
+       "SYN-A8993458-56D",
+       "SYN-B988BF22-9EC",
+       "SYN-C65BCB50-26D",
+       "SYN-D581AEEC-0B1",
+       "SYN-E2047D7B-9E1",
+       "SYN-E64B2C58-796",
+       "SYN-FE18A93A-327",
+       "WHP-0897D23C7279",
+       "WHP-0EFCB308B275",
+       "WHP-1B2BDE2197FC",
+       "WHP-25CA948D8512",
+       "WHP-2779E37553DB",
+       "WHP-27C29D1DE585",
+       "WHP-28223C461F01",
+       "WHP-2AA71C9F2ACD",
+       "WHP-2C600E7352D7",
+       "WHP-30FCF9B1C8CA",
+       "WHP-35E48DD91D16",
+       "WHP-3BCC6859B1F9",
+       "WHP-428B2B0F6F48",
+       "WHP-437CA9287199",
+       "WHP-4616AB97E0D1",
+       "WHP-4B204CA400FC",
+       "WHP-4FA3DB3CB25D",
+       "WHP-52C143F8C8E2",
+       "WHP-5BF7CD39576E",
+       "WHP-776AFE5849F4",
+       "WHP-79502427588A",
+       "WHP-7D8841B98A26",
+       "WHP-840BCF77A089",
+       "WHP-87960922249D",
+       "WHP-8DD10DEB44E4",
+       "WHP-93D451A4ABD4",
+       "WHP-A5DD073BADDE",
+       "WHP-A98C600AE1F0",
+       "WHP-AF7591A28F69",
+       "WHP-BFC6224C8BD3",
+       "WHP-CB88FC8822FF",
+       "WHP-CC8E407D921E",
+       "WHP-CFF0474C07A3",
+       "WHP-D1C8BF91CE46",
+       "WHP-DA93F5CBDC70",
+       "WHP-E310A7041188",
+       "WHP-E472365828DC",
+       "WHP-EA1216088913",
+       "WHP-EA82F7D33CCE",
+       "WHP-EAB8CCC84448",
+       "WHP-EFB6CD0E1D74",
+       "WHP-F7C955606E32",
+       "WHP-FFC62562E997"
+      ]
+     },
+     "d212c960d1e55a8663a5afe165741458ee429c7c15df200fb5c3cf2de65c22c4": {
+      "patient_ids": [
+       "P-4007",
+       "P-6001",
+       "P-7102",
+       "P-7401",
+       "SYN-01DBEFBF-341",
+       "SYN-070460C9-CF4",
+       "SYN-0842B74B-970",
+       "SYN-08CE801B-C37",
+       "SYN-11286C95-21C",
+       "SYN-119141A2-9FF",
+       "SYN-123E19A8-7CC",
+       "SYN-125B8972-F72",
+       "SYN-12EC3659-EE6",
+       "SYN-146B018B-D97",
+       "SYN-19B9F868-50D",
+       "SYN-1DD53203-1EE",
+       "SYN-1FE0CAE0-8BC",
+       "SYN-25A71D3C-B5D",
+       "SYN-263128FE-ED1",
+       "SYN-2EB7F1AE-787",
+       "SYN-2ECA6A8F-EC5",
+       "SYN-326DA250-852",
+       "SYN-332A22B5-AFF",
+       "SYN-33D5F526-8C0",
+       "SYN-350A16F5-AE0",
+       "SYN-387FED1A-3CF",
+       "SYN-3CB2C6E1-7B0",
+       "SYN-44A34CD6-FDC",
+       "SYN-44B17420-707",
+       "SYN-4758EDE1-65E",
+       "SYN-494F8933-550",
+       "SYN-4B660E7D-F60",
+       "SYN-4EAF7680-1A4",
+       "SYN-4FEAF0FB-0E3",
+       "SYN-50B00626-B44",
+       "SYN-526D378A-B90",
+       "SYN-535D1A57-5FB",
+       "SYN-5468ADEA-5AC",
+       "SYN-5A64C9F6-63D",
+       "SYN-5A88AEBB-E7C",
+       "SYN-5E1729A8-4CA",
+       "SYN-5FAD056D-BC7",
+       "SYN-67A05FD0-726",
+       "SYN-67F2F871-F14",
+       "SYN-70388854-86C",
+       "SYN-71796AAE-EAE",
+       "SYN-71FA934C-E2C",
+       "SYN-7E575948-3F6",
+       "SYN-7E6C3FD6-AC2",
+       "SYN-865F044D-C25",
+       "SYN-8E2B615F-7B3",
+       "SYN-9128B4AA-2B5",
+       "SYN-94C38E29-706",
+       "SYN-960CD858-5C8",
+       "SYN-9A500E00-73E",
+       "SYN-9AA4FDF2-C25",
+       "SYN-9C3CCB37-C16",
+       "SYN-A49EE148-F19",
+       "SYN-A8993458-56D",
+       "SYN-AF0CF7E7-AFA",
+       "SYN-B988BF22-9EC",
+       "SYN-B99E1AFA-09C",
+       "SYN-BB1E58E9-F71",
+       "SYN-BB2575E2-C62",
+       "SYN-C65BCB50-26D",
+       "SYN-C7E62D5A-CEA",
+       "SYN-D581AEEC-0B1",
+       "SYN-D99F3E0C-468",
+       "SYN-E2047D7B-9E1",
+       "SYN-E5C8F7F6-60D",
+       "SYN-E64B2C58-796",
+       "SYN-E8FB40DC-76D",
+       "SYN-F08A0DD3-A37",
+       "SYN-F2638231-740",
+       "SYN-FE18A93A-327",
+       "SYN-FE4FDDB5-954",
+       "WHP-0897D23C7279",
+       "WHP-090DC3149FCA",
+       "WHP-0E5FCFAF97E8",
+       "WHP-13929020C884",
+       "WHP-188F843C6D10",
+       "WHP-1F5B11085FAF",
+       "WHP-2760772A225E",
+       "WHP-2779E37553DB",
+       "WHP-35E48DD91D16",
+       "WHP-3BC3FA2F84DC",
+       "WHP-3E82595A5D23",
+       "WHP-41C1E48CDF55",
+       "WHP-4B204CA400FC",
+       "WHP-4FA3DB3CB25D",
+       "WHP-661660EF9DCE",
+       "WHP-6B5E4EFDE76A",
+       "WHP-78560E12D344",
+       "WHP-79502427588A",
+       "WHP-7AD37FC2AB43",
+       "WHP-7E6D1D9389D3",
+       "WHP-840BCF77A089",
+       "WHP-8665E6259BB8",
+       "WHP-8B520D2A7FD2",
+       "WHP-8E22B7C72C64",
+       "WHP-A5DD073BADDE",
+       "WHP-CBAB9C0292B3",
+       "WHP-CC8E407D921E",
+       "WHP-CFF0474C07A3",
+       "WHP-D867EF1BE546",
+       "WHP-DB0B21C0B4E1",
+       "WHP-DB0F19FDF668",
+       "WHP-DC466AAACD46",
+       "WHP-EA1216088913",
+       "WHP-EA82F7D33CCE",
+       "WHP-EFE6F0A8D1F6",
+       "WHP-F7C955606E32",
+       "WHP-F98ECCEC547E",
+       "WHP-FB212BFEFDF4",
+       "WHP-FFC62562E997"
+      ]
+     }
+    }
+   },
+   "alternatives": [
+    {
+     "id": "problem_list",
+     "reading": "Problem-list diabetics, labs only (all A1c names).",
+     "source": "errata",
+     "sql": "sql_errata/heldout9/Q25__problem_list_labs.sql",
+     "expected": {
+      "9ef6ea79297af818f4eabab0b629a32ea5684d92f921ed46a72b82838e7189e8": {
+       "patient_ids": [
+        "P-4007",
+        "P-6001",
+        "SYN-01DBEFBF-341",
+        "SYN-19B9F868-50D",
+        "SYN-1FE0CAE0-8BC",
+        "SYN-263128FE-ED1",
+        "SYN-2EB7F1AE-787",
+        "SYN-332A22B5-AFF",
+        "SYN-33D5F526-8C0",
+        "SYN-350A16F5-AE0",
+        "SYN-44A34CD6-FDC",
+        "SYN-4758EDE1-65E",
+        "SYN-50B00626-B44",
+        "SYN-526D378A-B90",
+        "SYN-5E1729A8-4CA",
+        "SYN-67A05FD0-726",
+        "SYN-68B8B2D2-968",
+        "SYN-71FA934C-E2C",
+        "SYN-7C425B3D-DA9",
+        "SYN-7E575948-3F6",
+        "SYN-9128B4AA-2B5",
+        "SYN-94C38E29-706",
+        "SYN-A8993458-56D",
+        "SYN-B988BF22-9EC",
+        "SYN-C65BCB50-26D",
+        "SYN-D581AEEC-0B1",
+        "SYN-E2047D7B-9E1",
+        "SYN-E64B2C58-796",
+        "SYN-FE18A93A-327",
+        "WHP-1B2BDE2197FC",
+        "WHP-2149DA934C4C",
+        "WHP-2AA71C9F2ACD",
+        "WHP-30FCF9B1C8CA",
+        "WHP-428B2B0F6F48",
+        "WHP-4616AB97E0D1",
+        "WHP-47209F974A64",
+        "WHP-4FA3DB3CB25D",
+        "WHP-52C143F8C8E2",
+        "WHP-6F7E566B664B",
+        "WHP-930BC4E4EDE2",
+        "WHP-CC4812E15C66",
+        "WHP-CFF0474C07A3",
+        "WHP-EA1216088913"
+       ]
+      },
+      "d212c960d1e55a8663a5afe165741458ee429c7c15df200fb5c3cf2de65c22c4": {
+       "patient_ids": [
+        "P-4007",
+        "P-6001",
+        "P-7401",
+        "SYN-01DBEFBF-341",
+        "SYN-070460C9-CF4",
+        "SYN-0842B74B-970",
+        "SYN-08CE801B-C37",
+        "SYN-11286C95-21C",
+        "SYN-119141A2-9FF",
+        "SYN-123E19A8-7CC",
+        "SYN-125B8972-F72",
+        "SYN-12EC3659-EE6",
+        "SYN-146B018B-D97",
+        "SYN-19B9F868-50D",
+        "SYN-1DD53203-1EE",
+        "SYN-1FE0CAE0-8BC",
+        "SYN-25A71D3C-B5D",
+        "SYN-263128FE-ED1",
+        "SYN-2EB7F1AE-787",
+        "SYN-2ECA6A8F-EC5",
+        "SYN-326DA250-852",
+        "SYN-332A22B5-AFF",
+        "SYN-33D5F526-8C0",
+        "SYN-350A16F5-AE0",
+        "SYN-387FED1A-3CF",
+        "SYN-3CB2C6E1-7B0",
+        "SYN-44A34CD6-FDC",
+        "SYN-44B17420-707",
+        "SYN-4758EDE1-65E",
+        "SYN-494F8933-550",
+        "SYN-4B660E7D-F60",
+        "SYN-4EAF7680-1A4",
+        "SYN-4FEAF0FB-0E3",
+        "SYN-50B00626-B44",
+        "SYN-526D378A-B90",
+        "SYN-535D1A57-5FB",
+        "SYN-5468ADEA-5AC",
+        "SYN-5A64C9F6-63D",
+        "SYN-5A88AEBB-E7C",
+        "SYN-5E1729A8-4CA",
+        "SYN-5FAD056D-BC7",
+        "SYN-67A05FD0-726",
+        "SYN-67F2F871-F14",
+        "SYN-68B8B2D2-968",
+        "SYN-70388854-86C",
+        "SYN-71796AAE-EAE",
+        "SYN-71FA934C-E2C",
+        "SYN-7C425B3D-DA9",
+        "SYN-7E575948-3F6",
+        "SYN-7E6C3FD6-AC2",
+        "SYN-865F044D-C25",
+        "SYN-8E2B615F-7B3",
+        "SYN-9128B4AA-2B5",
+        "SYN-94C38E29-706",
+        "SYN-960CD858-5C8",
+        "SYN-9A500E00-73E",
+        "SYN-9AA4FDF2-C25",
+        "SYN-9C3CCB37-C16",
+        "SYN-A49EE148-F19",
+        "SYN-A8993458-56D",
+        "SYN-AF0CF7E7-AFA",
+        "SYN-B988BF22-9EC",
+        "SYN-B99E1AFA-09C",
+        "SYN-BB1E58E9-F71",
+        "SYN-BB2575E2-C62",
+        "SYN-C65BCB50-26D",
+        "SYN-C7E62D5A-CEA",
+        "SYN-D581AEEC-0B1",
+        "SYN-D99F3E0C-468",
+        "SYN-E2047D7B-9E1",
+        "SYN-E5C8F7F6-60D",
+        "SYN-E64B2C58-796",
+        "SYN-E8FB40DC-76D",
+        "SYN-F08A0DD3-A37",
+        "SYN-F2638231-740",
+        "SYN-FE18A93A-327",
+        "SYN-FE4FDDB5-954",
+        "WHP-188F843C6D10",
+        "WHP-1F5B11085FAF",
+        "WHP-27C29D1DE585",
+        "WHP-3E82595A5D23",
+        "WHP-41C1E48CDF55",
+        "WHP-48E14EFF37B2",
+        "WHP-4FA3DB3CB25D",
+        "WHP-8C3CD2586DC5",
+        "WHP-CFF0474C07A3",
+        "WHP-EA1216088913"
+       ]
+      }
+     },
+     "stated_any_of": [
+      [
+       "problem list only",
+       "problem-list only",
+       "conditions stream only",
+       "conditions only",
+       "without claims diagnoses",
+       "excluding claim diagnoses",
+       "not claims diagnoses",
+       "problem list (conditions)"
+      ]
+     ]
+    }
+   ],
+   "evidence": "Diabetes cohort: problem list covers the original roster and claims_plus_ehr members only; 1,945 claims_only members have diagnoses only on payer_medical_claims (E10/E11/E13 on claims: 308 patients, 229 not on any problem list). Lab names are case-sensitive in the reference: the population reports 'HEMOGLOBIN A1C' (228), 'MICROALB/CREAT RATIO, RANDOM URINE' (189), 'Microalbumin/Creatinine [Mass Ratio] in Urine' (939); inventory of A1c names: HbA1c, Hemoglobin A1c, HEMOGLOBIN A1C, undated 'Hemoglobin A1c/Hemoglobin.total' (LOINC 4548-4); uACR names: Urine albumin/creatinine ratio, Microalbumin/Creatinine (undated legacy), MICROALB/CREAT RATIO, RANDOM URINE, Microalbumin/Creatinine [Mass Ratio] in Urine (LOINC 9318-7). Before 55 patients (population A1c results under 'HEMOGLOBIN A1C' were missed, leaving false gaps) -> problem list 43 -> after 72. | v2.8 (release d212c960, 4,115 patients): reference 95 -> canonical 115."
+  },
+  "Q26": {
+   "category": "d",
+   "canonical": {
+    "reading": "Diabetics (problem list or claim diagnosis) with a statin pickup in 2029 (dispensed fills + payer pharmacy claims not reversed).",
+    "source": "errata",
+    "sql": "sql_errata/heldout9/Q26__population.sql",
+    "expected": {
+     "9ef6ea79297af818f4eabab0b629a32ea5684d92f921ed46a72b82838e7189e8": {
+      "count": 330
+     },
+     "d212c960d1e55a8663a5afe165741458ee429c7c15df200fb5c3cf2de65c22c4": {
+      "count": 313
+     }
+    }
+   },
+   "alternatives": [
+    {
+     "id": "problem_list",
+     "reading": "Problem-list diabetics, population pickups.",
+     "source": "errata",
+     "sql": "sql_errata/heldout9/Q26__problem_list.sql",
+     "expected": {
+      "9ef6ea79297af818f4eabab0b629a32ea5684d92f921ed46a72b82838e7189e8": {
+       "count": 224
+      },
+      "d212c960d1e55a8663a5afe165741458ee429c7c15df200fb5c3cf2de65c22c4": {
+       "count": 199
+      }
+     },
+     "stated_any_of": [
+      [
+       "problem list only",
+       "problem-list only",
+       "conditions stream only",
+       "conditions only",
+       "without claims diagnoses",
+       "excluding claim diagnoses",
+       "not claims diagnoses",
+       "problem list (conditions)"
+      ]
+     ]
+    },
+    {
+     "id": "original",
+     "reading": "Original-roster pharmacy_dispenses only (reference SQL).",
+     "source": "reference",
+     "stated_any_of": [
+      [
+       "original 1,614",
+       "1,614-person",
+       "1,614 patients",
+       "original roster",
+       "original cohort",
+       "deep-chart",
+       "deep chart",
+       "ehr encounters only",
+       "encounters stream only",
+       "medical_claims only",
+       "excluding the population",
+       "excludes payer",
+       "without payer"
+      ]
+     ]
+    }
+   ],
+   "evidence": "Diabetes cohort: problem list covers the original roster and claims_plus_ehr members only; 1,945 claims_only members have diagnoses only on payer_medical_claims (E10/E11/E13 on claims: 308 patients, 229 not on any problem list). Lab names are case-sensitive in the reference: the population reports 'HEMOGLOBIN A1C' (228), 'MICROALB/CREAT RATIO, RANDOM URINE' (189), 'Microalbumin/Creatinine [Mass Ratio] in Urine' (939); inventory of A1c names: HbA1c, Hemoglobin A1c, HEMOGLOBIN A1C, undated 'Hemoglobin A1c/Hemoglobin.total' (LOINC 4548-4); uACR names: Urine albumin/creatinine ratio, Microalbumin/Creatinine (undated legacy), MICROALB/CREAT RATIO, RANDOM URINE, Microalbumin/Creatinine [Mass Ratio] in Urine (LOINC 9318-7). pharmacy_dispenses covers the original roster only; payer_pharmacy_claims (89,602 visible rows) is the population fill source: 'paid' = dispensed claim, a later 'reversed' row (B2, return_to_stock, plan_paid 0) means the fill was prepared but returned to stock, i.e. not picked up; 'rejected' rows carry NCPDP codes (79 refill too soon, 70, 75). Before 181 -> problem list 224 -> after 330. | v2.8 (release d212c960, 4,115 patients): reference 157 -> canonical 313."
+  },
+  "Q27": {
+   "category": "d",
+   "canonical": {
+    "reading": "Inpatient stays for all 4,499 patients in the patients view (1,614 original deep-chart + 2,885 population): EHR inpatient encounters + ADT class I (A01 admit/A03 discharge) + payer inpatient facility claims (TOB 011x); a claim stay is the same stay when admission dates are within 1 day or date ranges overlap; ADT stays lacking an A03 take the claim discharge date. Admissions in 2029 x 1000 / 4,499.",
+    "source": "errata",
+    "sql": "sql_errata/heldout9/Q27__population.sql",
+    "expected": {
+     "9ef6ea79297af818f4eabab0b629a32ea5684d92f921ed46a72b82838e7189e8": {
+      "value": 108.69
+     },
+     "d212c960d1e55a8663a5afe165741458ee429c7c15df200fb5c3cf2de65c22c4": {
+      "value": 130.01
+     }
+    }
+   },
+   "alternatives": [
+    {
+     "id": "mixed_scope_reference",
+     "reading": "Reference: original-roster admissions / all 4,499 patients (mixed scope).",
+     "source": "reference",
+     "stated_any_of": [
+      [
+       "original 1,614",
+       "1,614-person",
+       "1,614 patients",
+       "original roster",
+       "original cohort",
+       "deep-chart",
+       "deep chart",
+       "ehr encounters only",
+       "encounters stream only",
+       "medical_claims only",
+       "excluding the population",
+       "excludes payer",
+       "without payer"
+      ]
+     ]
+    }
+   ],
+   "evidence": "Reference reads EHR encounters only (original roster). Population stays arrive via adt_messages (class I; 287 discharges in 2029, 14 missing A03 completed from claims) and payer_medical_claims TOB 011x (407 claim discharges in 2029; 260 exact / 272 overlapping ADT); 103 claim-only stays. 2029 discharges after merge: 484 (80 original + 404 population); admissions 489. Streams: encounters, adt_messages, payer_medical_claims. Reference divides original-roster admissions by the 4,499 view. Before 18.0 -> after 108.69. | v2.8 (release d212c960, 4,115 patients): reference 23.82 -> canonical 130.01."
+  },
+  "Q28": {
+   "category": "d",
+   "canonical": {
+    "reading": "Allowed PMPM 2029, population-wide: medical_claims allowed (facility rows allowed_cents) + payer_medical_claims allowed (voided claims excluded) for services in 2029 / member-months from enrollment_spans (patient-months whose span covers any day of the month).",
+    "source": "errata",
+    "sql": "sql_errata/heldout9/Q28__population.sql",
+    "expected": {
+     "9ef6ea79297af818f4eabab0b629a32ea5684d92f921ed46a72b82838e7189e8": {
+      "value": 358.22
+     },
+     "d212c960d1e55a8663a5afe165741458ee429c7c15df200fb5c3cf2de65c22c4": {
+      "value": 379.27
+     }
+    }
+   },
+   "alternatives": [
+    {
+     "id": "original_with_facility",
+     "reading": "Original roster: medical_claims allowed incl. facility allowed_cents / 12 x active coverage rows.",
+     "source": "errata",
+     "sql": "sql_errata/heldout9/Q28__original_facility.sql",
+     "expected": {
+      "9ef6ea79297af818f4eabab0b629a32ea5684d92f921ed46a72b82838e7189e8": {
+       "value": 124.26
+      },
+      "d212c960d1e55a8663a5afe165741458ee429c7c15df200fb5c3cf2de65c22c4": {
+       "value": 114.29
+      }
+     },
+     "stated_any_of": [
+      [
+       "original 1,614",
+       "1,614-person",
+       "1,614 patients",
+       "original roster",
+       "original cohort",
+       "deep-chart",
+       "deep chart",
+       "ehr encounters only",
+       "encounters stream only",
+       "medical_claims only",
+       "excluding the population",
+       "excludes payer",
+       "without payer"
+      ]
+     ]
+    },
+    {
+     "id": "original_deltas_only",
+     "reading": "Reference: original-roster financial_deltas only (drops facility allowed).",
+     "source": "reference",
+     "stated_any_of": [
+      [
+       "financial_deltas",
+       "excluding facility",
+       "without facility"
+      ]
+     ]
+    }
+   ],
+   "evidence": "Coverage stream holds only the 1,614 originals; population plans are in enrollment_spans (4,252 population spans, 1,475 original spans identical to coverage 'active'). medical_claims (original roster) + payer_medical_claims (population, 166,671 rows). medical_claims facility DRG rows from WH-HOSPITAL-0..3 (88 claims, 'paid' only) carry payer_paid_cents/allowed_cents but no financial_deltas_cents, so delta sums drop them (2029 adjudications: 27 rows, $154,828; 2029 services: 22 rows, $140,443.67). payer_medical_claims: reversed rows carry negative amounts; voids (frequency 8, amount 0) cancel the claim and a '-R' frequency-7 replacement carries the payment. Before 114.88 -> original+facility 124.26 -> population 358.22. | v2.8 (release d212c960, 4,115 patients): reference 105.18 -> canonical 379.27."
+  },
+  "Q29": {
+   "category": "d",
+   "canonical": {
+    "reading": "Patients by coverage as of 2030-05-27, all 4,499: product of the enrollment_spans row active on the as-of date (latest start when several); no active span = 'no_active_coverage'. Columns coverage_type, patients.",
+    "source": "errata",
+    "sql": "sql_errata/heldout9/Q29__population.sql",
+    "expected": {
+     "9ef6ea79297af818f4eabab0b629a32ea5684d92f921ed46a72b82838e7189e8": {
+      "table": [
+       {
+        "coverage_type": "commercial",
+        "patients": 2107
+       },
+       {
+        "coverage_type": "dual_ffs",
+        "patients": 48
+       },
+       {
+        "coverage_type": "dual_ma",
+        "patients": 68
+       },
+       {
+        "coverage_type": "marketplace",
+        "patients": 149
+       },
+       {
+        "coverage_type": "medicaid",
+        "patients": 726
+       },
+       {
+        "coverage_type": "medicare_advantage",
+        "patients": 311
+       },
+       {
+        "coverage_type": "medicare_ffs",
+        "patients": 503
+       },
+       {
+        "coverage_type": "no_active_coverage",
+        "patients": 587
+       }
+      ]
+     },
+     "d212c960d1e55a8663a5afe165741458ee429c7c15df200fb5c3cf2de65c22c4": {
+      "table": [
+       {
+        "coverage_type": "cob_secondary",
+        "patients": 19
+       },
+       {
+        "coverage_type": "commercial",
+        "patients": 1880
+       },
+       {
+        "coverage_type": "dual_ffs",
+        "patients": 41
+       },
+       {
+        "coverage_type": "dual_ma",
+        "patients": 65
+       },
+       {
+        "coverage_type": "marketplace",
+        "patients": 105
+       },
+       {
+        "coverage_type": "medicaid",
+        "patients": 662
+       },
+       {
+        "coverage_type": "medicare_advantage",
+        "patients": 265
+       },
+       {
+        "coverage_type": "medicare_ffs",
+        "patients": 386
+       },
+       {
+        "coverage_type": "medigap",
+        "patients": 20
+       },
+       {
+        "coverage_type": "no_active_coverage",
+        "patients": 672
+       }
+      ]
+     }
+    }
+   },
+   "alternatives": [
+    {
+     "id": "original_registration",
+     "reading": "Original-roster coverage registration snapshot (reference SQL).",
+     "source": "reference",
+     "stated_any_of": [
+      [
+       "original 1,614",
+       "1,614-person",
+       "1,614 patients",
+       "original roster",
+       "original cohort",
+       "deep-chart",
+       "deep chart",
+       "ehr encounters only",
+       "encounters stream only",
+       "medical_claims only",
+       "excluding the population",
+       "excludes payer",
+       "without payer"
+      ]
+     ]
+    }
+   ],
+   "evidence": "coverage has one 2026 registration row for each original patient only; population plans are enrollment_spans (multiple spans, start/end dates, products incl. marketplace, medicare_advantage, dual_ffs/dual_ma). Original spans reproduce coverage (commercial 949, medicaid 239, medicare_ffs 287; 139 uninsured have none). Before 4 rows (1,614 patients) -> after 8 rows: [{\"coverage_type\": \"commercial\", \"patients\": 2107}, {\"coverage_type\": \"dual_ffs\", \"patients\": 48}, {\"coverage_type\": \"dual_ma\", \"patients\": 68}, {\"coverage_type\": \"marketplace\", \"patients\": 149}, {\"coverage_type\": \"medicaid\", \"patients\": 726}, {\"coverage_type\": \"medicare_advantage\", \"patients\": 311}, {\"coverage_type\": \"medicare_ffs\", \"patients\": 503}, {\"coverage_type\": \"no_active_coverage\", \"patients\": 587}] | v2.8 (release d212c960, 4,115 patients): reference 4 rows -> canonical 10 rows."
+  },
+  "Q30": {
+   "category": "d",
+   "canonical": {
+    "reading": "Medicare AWV in 2029: wellness_visit_services medicare_annual_wellness completed, or a G0438/G0439 claim line dated 2029.",
+    "source": "errata",
+    "sql": "sql_errata/heldout9/Q30__population.sql",
+    "expected": {
+     "9ef6ea79297af818f4eabab0b629a32ea5684d92f921ed46a72b82838e7189e8": {
+      "count": 426
+     },
+     "d212c960d1e55a8663a5afe165741458ee429c7c15df200fb5c3cf2de65c22c4": {
+      "count": 352
+     }
+    }
+   },
+   "alternatives": [
+    {
+     "id": "original",
+     "reading": "Original-roster wellness_visit_services only (reference SQL).",
+     "source": "reference",
+     "stated_any_of": [
+      [
+       "original 1,614",
+       "1,614-person",
+       "1,614 patients",
+       "original roster",
+       "original cohort",
+       "deep-chart",
+       "deep chart",
+       "ehr encounters only",
+       "encounters stream only",
+       "medical_claims only",
+       "excluding the population",
+       "excludes payer",
+       "without payer"
+      ]
+     ]
+    }
+   ],
+   "evidence": "wellness_visit_services covers the original roster only; population AWVs are claim lines G0439 (808 lines). Before 202 -> after 426. | v2.8 (release d212c960, 4,115 patients): reference 164 -> canonical 352."
+  },
+  "Q31": {
+   "category": "d",
+   "canonical": {
+    "reading": "Facility-claim discharges in 2029 by MS-DRG code, population-wide (medical_claims + payer_medical_claims carrying ms_drg, non-reversed, voided payer claims excluded, distinct claim_id). Columns ms_drg, claims.",
+    "source": "errata",
+    "sql": "sql_errata/heldout9/Q31__population.sql",
+    "expected": {
+     "9ef6ea79297af818f4eabab0b629a32ea5684d92f921ed46a72b82838e7189e8": {
+      "table": [
+       {
+        "ms_drg": "064",
+        "claims": 1
+       },
+       {
+        "ms_drg": "190",
+        "claims": 1
+       },
+       {
+        "ms_drg": "191",
+        "claims": 9
+       },
+       {
+        "ms_drg": "192",
+        "claims": 5
+       },
+       {
+        "ms_drg": "193",
+        "claims": 9
+       },
+       {
+        "ms_drg": "194",
+        "claims": 8
+       },
+       {
+        "ms_drg": "195",
+        "claims": 8
+       },
+       {
+        "ms_drg": "202",
+        "claims": 1
+       },
+       {
+        "ms_drg": "203",
+        "claims": 8
+       },
+       {
+        "ms_drg": "219",
+        "claims": 1
+       },
+       {
+        "ms_drg": "221",
+        "claims": 1
+       },
+       {
+        "ms_drg": "236",
+        "claims": 3
+       },
+       {
+        "ms_drg": "291",
+        "claims": 28
+       },
+       {
+        "ms_drg": "292",
+        "claims": 24
+       },
+       {
+        "ms_drg": "293",
+        "claims": 20
+       },
+       {
+        "ms_drg": "305",
+        "claims": 1
+       },
+       {
+        "ms_drg": "308",
+        "claims": 1
+       },
+       {
+        "ms_drg": "309",
+        "claims": 3
+       },
+       {
+        "ms_drg": "312",
+        "claims": 4
+       },
+       {
+        "ms_drg": "313",
+        "claims": 7
+       },
+       {
+        "ms_drg": "321",
+        "claims": 1
+       },
+       {
+        "ms_drg": "322",
+        "claims": 5
+       },
+       {
+        "ms_drg": "329",
+        "claims": 2
+       },
+       {
+        "ms_drg": "330",
+        "claims": 2
+       },
+       {
+        "ms_drg": "331",
+        "claims": 1
+       },
+       {
+        "ms_drg": "377",
+        "claims": 5
+       },
+       {
+        "ms_drg": "378",
+        "claims": 5
+       },
+       {
+        "ms_drg": "379",
+        "claims": 1
+       },
+       {
+        "ms_drg": "397",
+        "claims": 1
+       },
+       {
+        "ms_drg": "398",
+        "claims": 2
+       },
+       {
+        "ms_drg": "402",
+        "claims": 4
+       },
+       {
+        "ms_drg": "417",
+        "claims": 6
+       },
+       {
+        "ms_drg": "418",
+        "claims": 7
+       },
+       {
+        "ms_drg": "419",
+        "claims": 8
+       },
+       {
+        "ms_drg": "433",
+        "claims": 1
+       },
+       {
+        "ms_drg": "438",
+        "claims": 2
+       },
+       {
+        "ms_drg": "439",
+        "claims": 3
+       },
+       {
+        "ms_drg": "469",
+        "claims": 12
+       },
+       {
+        "ms_drg": "470",
+        "claims": 31
+       },
+       {
+        "ms_drg": "521",
+        "claims": 3
+       },
+       {
+        "ms_drg": "522",
+        "claims": 11
+       },
+       {
+        "ms_drg": "602",
+        "claims": 1
+       },
+       {
+        "ms_drg": "637",
+        "claims": 8
+       },
+       {
+        "ms_drg": "638",
+        "claims": 9
+       },
+       {
+        "ms_drg": "682",
+        "claims": 3
+       },
+       {
+        "ms_drg": "683",
+        "claims": 4
+       },
+       {
+        "ms_drg": "689",
+        "claims": 6
+       },
+       {
+        "ms_drg": "690",
+        "claims": 8
+       },
+       {
+        "ms_drg": "787",
+        "claims": 10
+       },
+       {
+        "ms_drg": "788",
+        "claims": 3
+       },
+       {
+        "ms_drg": "791",
+        "claims": 4
+       },
+       {
+        "ms_drg": "793",
+        "claims": 1
+       },
+       {
+        "ms_drg": "794",
+        "claims": 1
+       },
+       {
+        "ms_drg": "795",
+        "claims": 18
+       },
+       {
+        "ms_drg": "806",
+        "claims": 6
+       },
+       {
+        "ms_drg": "807",
+        "claims": 19
+       },
+       {
+        "ms_drg": "871",
+        "claims": 4
+       },
+       {
+        "ms_drg": "872",
+        "claims": 9
+       },
+       {
+        "ms_drg": "885",
+        "claims": 15
+       },
+       {
+        "ms_drg": "897",
+        "claims": 1
+       },
+       {
+        "ms_drg": "918",
+        "claims": 1
+       },
+       {
+        "ms_drg": "948",
+        "claims": 79
+       }
+      ]
+     },
+     "d212c960d1e55a8663a5afe165741458ee429c7c15df200fb5c3cf2de65c22c4": {
+      "table": [
+       {
+        "ms_drg": "064",
+        "claims": 3
+       },
+       {
+        "ms_drg": "190",
+        "claims": 9
+       },
+       {
+        "ms_drg": "191",
+        "claims": 7
+       },
+       {
+        "ms_drg": "192",
+        "claims": 5
+       },
+       {
+        "ms_drg": "193",
+        "claims": 7
+       },
+       {
+        "ms_drg": "194",
+        "claims": 7
+       },
+       {
+        "ms_drg": "195",
+        "claims": 9
+       },
+       {
+        "ms_drg": "202",
+        "claims": 1
+       },
+       {
+        "ms_drg": "203",
+        "claims": 8
+       },
+       {
+        "ms_drg": "221",
+        "claims": 1
+       },
+       {
+        "ms_drg": "235",
+        "claims": 1
+       },
+       {
+        "ms_drg": "236",
+        "claims": 4
+       },
+       {
+        "ms_drg": "291",
+        "claims": 21
+       },
+       {
+        "ms_drg": "292",
+        "claims": 17
+       },
+       {
+        "ms_drg": "293",
+        "claims": 18
+       },
+       {
+        "ms_drg": "305",
+        "claims": 1
+       },
+       {
+        "ms_drg": "308",
+        "claims": 5
+       },
+       {
+        "ms_drg": "309",
+        "claims": 1
+       },
+       {
+        "ms_drg": "312",
+        "claims": 2
+       },
+       {
+        "ms_drg": "313",
+        "claims": 8
+       },
+       {
+        "ms_drg": "321",
+        "claims": 3
+       },
+       {
+        "ms_drg": "322",
+        "claims": 1
+       },
+       {
+        "ms_drg": "329",
+        "claims": 4
+       },
+       {
+        "ms_drg": "331",
+        "claims": 1
+       },
+       {
+        "ms_drg": "377",
+        "claims": 2
+       },
+       {
+        "ms_drg": "398",
+        "claims": 2
+       },
+       {
+        "ms_drg": "399",
+        "claims": 1
+       },
+       {
+        "ms_drg": "402",
+        "claims": 9
+       },
+       {
+        "ms_drg": "417",
+        "claims": 7
+       },
+       {
+        "ms_drg": "418",
+        "claims": 8
+       },
+       {
+        "ms_drg": "419",
+        "claims": 4
+       },
+       {
+        "ms_drg": "432",
+        "claims": 3
+       },
+       {
+        "ms_drg": "438",
+        "claims": 2
+       },
+       {
+        "ms_drg": "439",
+        "claims": 2
+       },
+       {
+        "ms_drg": "469",
+        "claims": 15
+       },
+       {
+        "ms_drg": "470",
+        "claims": 26
+       },
+       {
+        "ms_drg": "521",
+        "claims": 5
+       },
+       {
+        "ms_drg": "522",
+        "claims": 9
+       },
+       {
+        "ms_drg": "602",
+        "claims": 5
+       },
+       {
+        "ms_drg": "603",
+        "claims": 4
+       },
+       {
+        "ms_drg": "637",
+        "claims": 8
+       },
+       {
+        "ms_drg": "638",
+        "claims": 10
+       },
+       {
+        "ms_drg": "639",
+        "claims": 1
+       },
+       {
+        "ms_drg": "682",
+        "claims": 2
+       },
+       {
+        "ms_drg": "683",
+        "claims": 4
+       },
+       {
+        "ms_drg": "684",
+        "claims": 1
+       },
+       {
+        "ms_drg": "689",
+        "claims": 8
+       },
+       {
+        "ms_drg": "690",
+        "claims": 8
+       },
+       {
+        "ms_drg": "787",
+        "claims": 9
+       },
+       {
+        "ms_drg": "791",
+        "claims": 2
+       },
+       {
+        "ms_drg": "792",
+        "claims": 1
+       },
+       {
+        "ms_drg": "794",
+        "claims": 1
+       },
+       {
+        "ms_drg": "795",
+        "claims": 14
+       },
+       {
+        "ms_drg": "806",
+        "claims": 8
+       },
+       {
+        "ms_drg": "807",
+        "claims": 18
+       },
+       {
+        "ms_drg": "871",
+        "claims": 5
+       },
+       {
+        "ms_drg": "872",
+        "claims": 7
+       },
+       {
+        "ms_drg": "885",
+        "claims": 10
+       },
+       {
+        "ms_drg": "897",
+        "claims": 1
+       },
+       {
+        "ms_drg": "948",
+        "claims": 60
+       }
+      ]
+     }
+    }
+   },
+   "alternatives": [
+    {
+     "id": "original_by_code",
+     "reading": "Original-roster medical_claims only, grouped by MS-DRG code.",
+     "source": "errata",
+     "sql": "sql_errata/heldout9/Q31__original_by_code.sql",
+     "expected": {
+      "9ef6ea79297af818f4eabab0b629a32ea5684d92f921ed46a72b82838e7189e8": {
+       "table": [
+        {
+         "ms_drg": "190",
+         "claims": 1
+        },
+        {
+         "ms_drg": "191",
+         "claims": 1
+        },
+        {
+         "ms_drg": "192",
+         "claims": 1
+        },
+        {
+         "ms_drg": "193",
+         "claims": 2
+        },
+        {
+         "ms_drg": "194",
+         "claims": 3
+        },
+        {
+         "ms_drg": "195",
+         "claims": 6
+        },
+        {
+         "ms_drg": "202",
+         "claims": 1
+        },
+        {
+         "ms_drg": "203",
+         "claims": 2
+        },
+        {
+         "ms_drg": "291",
+         "claims": 9
+        },
+        {
+         "ms_drg": "292",
+         "claims": 11
+        },
+        {
+         "ms_drg": "293",
+         "claims": 19
+        },
+        {
+         "ms_drg": "305",
+         "claims": 1
+        },
+        {
+         "ms_drg": "948",
+         "claims": 2
+        }
+       ]
+      },
+      "d212c960d1e55a8663a5afe165741458ee429c7c15df200fb5c3cf2de65c22c4": {
+       "table": [
+        {
+         "ms_drg": "190",
+         "claims": 1
+        },
+        {
+         "ms_drg": "191",
+         "claims": 1
+        },
+        {
+         "ms_drg": "192",
+         "claims": 1
+        },
+        {
+         "ms_drg": "193",
+         "claims": 1
+        },
+        {
+         "ms_drg": "194",
+         "claims": 3
+        },
+        {
+         "ms_drg": "195",
+         "claims": 5
+        },
+        {
+         "ms_drg": "202",
+         "claims": 1
+        },
+        {
+         "ms_drg": "203",
+         "claims": 2
+        },
+        {
+         "ms_drg": "291",
+         "claims": 9
+        },
+        {
+         "ms_drg": "292",
+         "claims": 11
+        },
+        {
+         "ms_drg": "293",
+         "claims": 17
+        },
+        {
+         "ms_drg": "305",
+         "claims": 1
+        },
+        {
+         "ms_drg": "948",
+         "claims": 2
+        }
+       ]
+      }
+     },
+     "stated_any_of": [
+      [
+       "original 1,614",
+       "1,614-person",
+       "1,614 patients",
+       "original roster",
+       "original cohort",
+       "deep-chart",
+       "deep chart",
+       "ehr encounters only",
+       "encounters stream only",
+       "medical_claims only",
+       "excluding the population",
+       "excludes payer",
+       "without payer"
+      ]
+     ]
+    },
+    {
+     "id": "original_by_title",
+     "reading": "Reference: original-roster medical_claims grouped by DRG title.",
+     "source": "reference",
+     "stated_any_of": [
+      [
+       "original 1,614",
+       "1,614-person",
+       "1,614 patients",
+       "original roster",
+       "original cohort",
+       "deep-chart",
+       "deep chart",
+       "ehr encounters only",
+       "encounters stream only",
+       "medical_claims only",
+       "excluding the population",
+       "excludes payer",
+       "without payer"
+      ]
+     ]
+    }
+   ],
+   "evidence": "payer_medical_claims carry ms_drg (TOB 0111) for population stays but no DRG title; only 13 codes have titles (on medical_claims), so grouping is by code. Before 13 title rows -> after 62 rows. | v2.8 (release d212c960, 4,115 patients): reference 13 rows -> canonical 60 rows."
+  },
+  "Q32": {
+   "category": "d",
+   "canonical": {
+    "reading": "Food insecurity positive in 2029: food_difficulty_reported or AHC-HRSN positive domain food_worry/food_ran_out.",
+    "source": "errata",
+    "sql": "sql_errata/heldout9/Q32__population.sql",
+    "expected": {
+     "9ef6ea79297af818f4eabab0b629a32ea5684d92f921ed46a72b82838e7189e8": {
+      "count": 221
+     },
+     "d212c960d1e55a8663a5afe165741458ee429c7c15df200fb5c3cf2de65c22c4": {
+      "count": 203
+     }
+    }
+   },
+   "alternatives": [
+    {
+     "id": "original",
+     "reading": "Brief interview food_difficulty_reported only (reference SQL).",
+     "source": "reference",
+     "stated_any_of": [
+      [
+       "original 1,614",
+       "1,614-person",
+       "1,614 patients",
+       "original roster",
+       "original cohort",
+       "deep-chart",
+       "deep chart",
+       "ehr encounters only",
+       "encounters stream only",
+       "medical_claims only",
+       "excluding the population",
+       "excludes payer",
+       "without payer"
+      ]
+     ]
+    }
+   ],
+   "evidence": "Population social screens are AHC-HRSN (instrument AHC_HRSN, items + positive_domains) without food_difficulty_reported / transport_difficulty_reported, so the reference misses them. Before 192 -> after 221. | v2.8 (release d212c960, 4,115 patients): reference 184 -> canonical 203."
+  },
+  "Q33": {
+   "category": "d",
+   "canonical": {
+    "reading": "Food-positive in 2029 (incl. AHC-HRSN) without a food referral: referrals food_resource_contact, community_service_referrals food_access, or an AHC-HRSN food-positive screen with referral_offered (the population's only referral record).",
+    "source": "errata",
+    "sql": "sql_errata/heldout9/Q33__population.sql",
+    "expected": {
+     "9ef6ea79297af818f4eabab0b629a32ea5684d92f921ed46a72b82838e7189e8": {
+      "patient_ids": [
+       "P-2004",
+       "P-3001",
+       "P-3006",
+       "P-6006",
+       "P-7101",
+       "P-7401",
+       "P-HF11",
+       "P-WM02",
+       "P-WM05",
+       "SYN-00B5AC3D-AF4",
+       "SYN-01DBEFBF-341",
+       "SYN-02F1CADF-26B",
+       "SYN-03699844-059",
+       "SYN-043004B6-FCB",
+       "SYN-0762C810-EA2",
+       "SYN-08205F2B-81B",
+       "SYN-0982D37B-63F",
+       "SYN-0BBF58D8-5C9",
+       "SYN-0E8D77DD-610",
+       "SYN-102E82B4-4B9",
+       "SYN-123E19A8-7CC",
+       "SYN-157099FA-7E6",
+       "SYN-17481723-2A1",
+       "SYN-17CC983D-7CD",
+       "SYN-193398FE-BF0",
+       "SYN-1AF8B16E-D15",
+       "SYN-1BF632DF-794",
+       "SYN-1BFB50AC-B5E",
+       "SYN-1CF8DC45-2DF",
+       "SYN-1DCCA442-E3D",
+       "SYN-1E65D874-B1D",
+       "SYN-1E72CDD8-4ED",
+       "SYN-206DEA1A-963",
+       "SYN-2194EF16-98C",
+       "SYN-222CBD82-248",
+       "SYN-22A1A5C5-A09",
+       "SYN-24CDB8F8-FC4",
+       "SYN-26F53512-128",
+       "SYN-2907F892-61A",
+       "SYN-2AAED1F0-8F6",
+       "SYN-2D7BA9AA-5F4",
+       "SYN-2E07973A-B06",
+       "SYN-2FA72246-E7C",
+       "SYN-300F588E-996",
+       "SYN-33657EB4-23C",
+       "SYN-3391BFF3-420",
+       "SYN-33EAB0A7-10C",
+       "SYN-350A16F5-AE0",
+       "SYN-35DCCED5-C11",
+       "SYN-36FDCAFC-ACE",
+       "SYN-383A953E-E4A",
+       "SYN-38905DA8-BD8",
+       "SYN-3BE21BFC-3DB",
+       "SYN-3C114EFC-C0C",
+       "SYN-3D3107EF-224",
+       "SYN-3DF02D33-CEC",
+       "SYN-3E2436C1-BCA",
+       "SYN-3F7FF341-A78",
+       "SYN-41870DF4-BC4",
+       "SYN-435BB9A9-97C",
+       "SYN-4360A159-C60",
+       "SYN-45090470-238",
+       "SYN-456F934A-826",
+       "SYN-4ACE845B-5A5",
+       "SYN-4C2C6495-18E",
+       "SYN-4DEA52C8-87A",
+       "SYN-4E76CC35-956",
+       "SYN-4E83793B-826",
+       "SYN-5061D4BF-0F3",
+       "SYN-5071BCAF-263",
+       "SYN-513D73CF-BDF",
+       "SYN-526D22BA-FBD",
+       "SYN-5359CA7A-DAE",
+       "SYN-5468ADEA-5AC",
+       "SYN-57A9145D-014",
+       "SYN-5B232920-E43",
+       "SYN-5D8D2F90-87D",
+       "SYN-5DC8CF48-C7D",
+       "SYN-5EA6D02A-236",
+       "SYN-5EE6A590-EB0",
+       "SYN-5F3F14EE-0D3",
+       "SYN-6234F614-F4C",
+       "SYN-6259B519-FEA",
+       "SYN-633F4B38-F1B",
+       "SYN-64E461E4-D19",
+       "SYN-65BDB56A-819",
+       "SYN-6CC4A20D-516",
+       "SYN-6FA1F1E9-3D0",
+       "SYN-6FF260B1-A47",
+       "SYN-72F81BB1-E09",
+       "SYN-7301AECF-6AC",
+       "SYN-74591EFB-37C",
+       "SYN-747333F6-025",
+       "SYN-7503B6FD-794",
+       "SYN-7530D7F2-75A",
+       "SYN-759C8EE4-BF1",
+       "SYN-7622DFDC-D3C",
+       "SYN-78E01023-4A7",
+       "SYN-7ACE370F-5C6",
+       "SYN-7ADA5074-EB8",
+       "SYN-7DAF876F-A0F",
+       "SYN-8048C625-73F",
+       "SYN-8161B601-7C4",
+       "SYN-82E93DA8-B3E",
+       "SYN-837D7557-CEE",
+       "SYN-83BF9388-6BC",
+       "SYN-83D2D585-A10",
+       "SYN-85D00996-985",
+       "SYN-86691B3A-34E",
+       "SYN-88462828-5E8",
+       "SYN-8CCFC448-506",
+       "SYN-8D576F58-16C",
+       "SYN-8E43998D-003",
+       "SYN-8F5931F3-EC4",
+       "SYN-92546899-587",
+       "SYN-92964F70-FDB",
+       "SYN-92AF56E4-443",
+       "SYN-932C002D-CE0",
+       "SYN-94759790-D80",
+       "SYN-9557CCFE-A68",
+       "SYN-957615F7-408",
+       "SYN-9581B1D5-964",
+       "SYN-96CE89DC-DEA",
+       "SYN-96F48E5B-112",
+       "SYN-96FC11C2-E36",
+       "SYN-989E3398-DC2",
+       "SYN-9FFFF63A-6EF",
+       "SYN-A1DE3B86-9B9",
+       "SYN-A4058AC7-B70",
+       "SYN-A655C55C-5C1",
+       "SYN-A81AAA74-2AC",
+       "SYN-A8993458-56D",
+       "SYN-A8F73613-994",
+       "SYN-B0973DAE-3A1",
+       "SYN-B0CDBD95-3F7",
+       "SYN-B0EEA484-185",
+       "SYN-B1BDDC7E-E20",
+       "SYN-B2064C3E-566",
+       "SYN-B373EACE-38D",
+       "SYN-B46E6BC1-785",
+       "SYN-B4FDBD5C-A9B",
+       "SYN-B6F4654C-3CF",
+       "SYN-B6FBB7FC-CCB",
+       "SYN-B7EA77A9-7E7",
+       "SYN-B8598C11-89F",
+       "SYN-B8891612-7DF",
+       "SYN-B89708F6-256",
+       "SYN-B98BF1DB-379",
+       "SYN-B9FCABE6-5E4",
+       "SYN-BB31FB8F-DA9",
+       "SYN-BEA2E6F3-9B1",
+       "SYN-C65BCB50-26D",
+       "SYN-C78FB190-771",
+       "SYN-C7C0E0A3-86D",
+       "SYN-C9FFF058-BA3",
+       "SYN-CA31A181-59D",
+       "SYN-CB705287-D47",
+       "SYN-CBA6658B-3D0",
+       "SYN-CC44A443-F59",
+       "SYN-CC900A6C-AEE",
+       "SYN-CFA7DA1C-BD1",
+       "SYN-D12F2785-A18",
+       "SYN-D246F11D-7C5",
+       "SYN-D45F444E-1C9",
+       "SYN-D46F2088-8F2",
+       "SYN-D67AEB0F-811",
+       "SYN-D706DCAC-F08",
+       "SYN-D92B46F3-E85",
+       "SYN-D99F3E0C-468",
+       "SYN-DA06CECC-0F8",
+       "SYN-DB652F8C-040",
+       "SYN-DFA9EBE2-AF4",
+       "SYN-E038F5E6-15F",
+       "SYN-E140B4EB-086",
+       "SYN-E2047D7B-9E1",
+       "SYN-E415665B-B79",
+       "SYN-ED27104B-54E",
+       "SYN-EE790AAA-F2E",
+       "SYN-F26D2577-B44",
+       "SYN-F277266E-05F",
+       "SYN-F29612A7-A02",
+       "SYN-F34B24A9-E38",
+       "SYN-F86090A4-5EB",
+       "SYN-F915ACD2-357",
+       "SYN-F927AA4F-99C",
+       "SYN-FA78F449-B97",
+       "SYN-FB40A1A6-9E5",
+       "SYN-FD5690D0-284",
+       "SYN-FE1ADCCC-D5B",
+       "WHP-572BDEC174A2",
+       "WHP-68186186A4E8",
+       "WHP-6945E20E2471",
+       "WHP-929309639433",
+       "WHP-D1C2C3AA0DE6"
+      ]
+     },
+     "d212c960d1e55a8663a5afe165741458ee429c7c15df200fb5c3cf2de65c22c4": {
+      "patient_ids": [
+       "P-2004",
+       "P-3001",
+       "P-3006",
+       "P-6006",
+       "P-7101",
+       "P-HF11",
+       "P-WM02",
+       "P-WM05",
+       "SYN-00B5AC3D-AF4",
+       "SYN-02F1CADF-26B",
+       "SYN-03699844-059",
+       "SYN-043004B6-FCB",
+       "SYN-0762C810-EA2",
+       "SYN-08205F2B-81B",
+       "SYN-0982D37B-63F",
+       "SYN-0BBF58D8-5C9",
+       "SYN-0E8D77DD-610",
+       "SYN-102E82B4-4B9",
+       "SYN-157099FA-7E6",
+       "SYN-17481723-2A1",
+       "SYN-17CC983D-7CD",
+       "SYN-193398FE-BF0",
+       "SYN-1AF8B16E-D15",
+       "SYN-1BF632DF-794",
+       "SYN-1BFB50AC-B5E",
+       "SYN-1CF8DC45-2DF",
+       "SYN-1DCCA442-E3D",
+       "SYN-1E65D874-B1D",
+       "SYN-1E72CDD8-4ED",
+       "SYN-206DEA1A-963",
+       "SYN-2194EF16-98C",
+       "SYN-222CBD82-248",
+       "SYN-22A1A5C5-A09",
+       "SYN-24CDB8F8-FC4",
+       "SYN-26F53512-128",
+       "SYN-2907F892-61A",
+       "SYN-2AAED1F0-8F6",
+       "SYN-2D7BA9AA-5F4",
+       "SYN-2E07973A-B06",
+       "SYN-2FA72246-E7C",
+       "SYN-300F588E-996",
+       "SYN-33657EB4-23C",
+       "SYN-3391BFF3-420",
+       "SYN-33EAB0A7-10C",
+       "SYN-350A16F5-AE0",
+       "SYN-35DCCED5-C11",
+       "SYN-36FDCAFC-ACE",
+       "SYN-383A953E-E4A",
+       "SYN-38905DA8-BD8",
+       "SYN-3BE21BFC-3DB",
+       "SYN-3C114EFC-C0C",
+       "SYN-3D3107EF-224",
+       "SYN-3DF02D33-CEC",
+       "SYN-3E2436C1-BCA",
+       "SYN-3F7FF341-A78",
+       "SYN-41870DF4-BC4",
+       "SYN-435BB9A9-97C",
+       "SYN-4360A159-C60",
+       "SYN-45090470-238",
+       "SYN-456F934A-826",
+       "SYN-4ACE845B-5A5",
+       "SYN-4C2C6495-18E",
+       "SYN-4DEA52C8-87A",
+       "SYN-4E76CC35-956",
+       "SYN-4E83793B-826",
+       "SYN-5061D4BF-0F3",
+       "SYN-5071BCAF-263",
+       "SYN-513D73CF-BDF",
+       "SYN-526D22BA-FBD",
+       "SYN-5359CA7A-DAE",
+       "SYN-57A9145D-014",
+       "SYN-5B232920-E43",
+       "SYN-5D8D2F90-87D",
+       "SYN-5DC8CF48-C7D",
+       "SYN-5EA6D02A-236",
+       "SYN-5EE6A590-EB0",
+       "SYN-5F3F14EE-0D3",
+       "SYN-6234F614-F4C",
+       "SYN-6259B519-FEA",
+       "SYN-633F4B38-F1B",
+       "SYN-64E461E4-D19",
+       "SYN-65BDB56A-819",
+       "SYN-6CC4A20D-516",
+       "SYN-6FA1F1E9-3D0",
+       "SYN-6FF260B1-A47",
+       "SYN-72F81BB1-E09",
+       "SYN-7301AECF-6AC",
+       "SYN-74591EFB-37C",
+       "SYN-747333F6-025",
+       "SYN-7503B6FD-794",
+       "SYN-7530D7F2-75A",
+       "SYN-759C8EE4-BF1",
+       "SYN-7622DFDC-D3C",
+       "SYN-78E01023-4A7",
+       "SYN-7ACE370F-5C6",
+       "SYN-7ADA5074-EB8",
+       "SYN-7DAF876F-A0F",
+       "SYN-8048C625-73F",
+       "SYN-8161B601-7C4",
+       "SYN-82E93DA8-B3E",
+       "SYN-837D7557-CEE",
+       "SYN-83BF9388-6BC",
+       "SYN-83D2D585-A10",
+       "SYN-85D00996-985",
+       "SYN-86691B3A-34E",
+       "SYN-88462828-5E8",
+       "SYN-8CCFC448-506",
+       "SYN-8D576F58-16C",
+       "SYN-8F5931F3-EC4",
+       "SYN-92546899-587",
+       "SYN-92964F70-FDB",
+       "SYN-92AF56E4-443",
+       "SYN-932C002D-CE0",
+       "SYN-94759790-D80",
+       "SYN-9557CCFE-A68",
+       "SYN-957615F7-408",
+       "SYN-9581B1D5-964",
+       "SYN-96CE89DC-DEA",
+       "SYN-96F48E5B-112",
+       "SYN-96FC11C2-E36",
+       "SYN-989E3398-DC2",
+       "SYN-9FFFF63A-6EF",
+       "SYN-A1DE3B86-9B9",
+       "SYN-A4058AC7-B70",
+       "SYN-A655C55C-5C1",
+       "SYN-A81AAA74-2AC",
+       "SYN-A8993458-56D",
+       "SYN-A8F73613-994",
+       "SYN-B0973DAE-3A1",
+       "SYN-B0CDBD95-3F7",
+       "SYN-B0EEA484-185",
+       "SYN-B1BDDC7E-E20",
+       "SYN-B2064C3E-566",
+       "SYN-B373EACE-38D",
+       "SYN-B46E6BC1-785",
+       "SYN-B6F4654C-3CF",
+       "SYN-B6FBB7FC-CCB",
+       "SYN-B7EA77A9-7E7",
+       "SYN-B8598C11-89F",
+       "SYN-B8891612-7DF",
+       "SYN-B89708F6-256",
+       "SYN-B98BF1DB-379",
+       "SYN-B9FCABE6-5E4",
+       "SYN-BB31FB8F-DA9",
+       "SYN-BEA2E6F3-9B1",
+       "SYN-C65BCB50-26D",
+       "SYN-C78FB190-771",
+       "SYN-C7C0E0A3-86D",
+       "SYN-C9FFF058-BA3",
+       "SYN-CA31A181-59D",
+       "SYN-CB705287-D47",
+       "SYN-CBA6658B-3D0",
+       "SYN-CC44A443-F59",
+       "SYN-CC900A6C-AEE",
+       "SYN-CFA7DA1C-BD1",
+       "SYN-D12F2785-A18",
+       "SYN-D246F11D-7C5",
+       "SYN-D45F444E-1C9",
+       "SYN-D46F2088-8F2",
+       "SYN-D67AEB0F-811",
+       "SYN-D706DCAC-F08",
+       "SYN-D92B46F3-E85",
+       "SYN-DA06CECC-0F8",
+       "SYN-DB652F8C-040",
+       "SYN-DFA9EBE2-AF4",
+       "SYN-E038F5E6-15F",
+       "SYN-E140B4EB-086",
+       "SYN-E2047D7B-9E1",
+       "SYN-E415665B-B79",
+       "SYN-ED27104B-54E",
+       "SYN-EE790AAA-F2E",
+       "SYN-F26D2577-B44",
+       "SYN-F277266E-05F",
+       "SYN-F29612A7-A02",
+       "SYN-F34B24A9-E38",
+       "SYN-F86090A4-5EB",
+       "SYN-F915ACD2-357",
+       "SYN-F927AA4F-99C",
+       "SYN-FA78F449-B97",
+       "SYN-FB40A1A6-9E5",
+       "SYN-FD5690D0-284",
+       "SYN-FE1ADCCC-D5B",
+       "WHP-2473C61C63DA",
+       "WHP-2B1298298927",
+       "WHP-70A658853071",
+       "WHP-71E980A5A3CF",
+       "WHP-76EAE99D7CEC",
+       "WHP-929309639433",
+       "WHP-D97A6B126CFD"
+      ]
+     }
+    }
+   },
+   "alternatives": [
+    {
+     "id": "offer_not_referral",
+     "reading": "As canonical, but a screen's referral_offered flag is not a referral record.",
+     "source": "errata",
+     "sql": "sql_errata/heldout9/Q33__population_no_offer.sql",
+     "expected": {
+      "9ef6ea79297af818f4eabab0b629a32ea5684d92f921ed46a72b82838e7189e8": {
+       "patient_ids": [
+        "P-2004",
+        "P-3001",
+        "P-3006",
+        "P-6006",
+        "P-7101",
+        "P-7401",
+        "P-HF11",
+        "P-WM02",
+        "P-WM05",
+        "SYN-00B5AC3D-AF4",
+        "SYN-01DBEFBF-341",
+        "SYN-02F1CADF-26B",
+        "SYN-03699844-059",
+        "SYN-043004B6-FCB",
+        "SYN-0762C810-EA2",
+        "SYN-08205F2B-81B",
+        "SYN-0982D37B-63F",
+        "SYN-0BBF58D8-5C9",
+        "SYN-0E8D77DD-610",
+        "SYN-102E82B4-4B9",
+        "SYN-123E19A8-7CC",
+        "SYN-157099FA-7E6",
+        "SYN-17481723-2A1",
+        "SYN-17CC983D-7CD",
+        "SYN-193398FE-BF0",
+        "SYN-1AF8B16E-D15",
+        "SYN-1BF632DF-794",
+        "SYN-1BFB50AC-B5E",
+        "SYN-1CF8DC45-2DF",
+        "SYN-1DCCA442-E3D",
+        "SYN-1E65D874-B1D",
+        "SYN-1E72CDD8-4ED",
+        "SYN-206DEA1A-963",
+        "SYN-2194EF16-98C",
+        "SYN-222CBD82-248",
+        "SYN-22A1A5C5-A09",
+        "SYN-24CDB8F8-FC4",
+        "SYN-26F53512-128",
+        "SYN-2907F892-61A",
+        "SYN-2AAED1F0-8F6",
+        "SYN-2D7BA9AA-5F4",
+        "SYN-2E07973A-B06",
+        "SYN-2FA72246-E7C",
+        "SYN-300F588E-996",
+        "SYN-33657EB4-23C",
+        "SYN-3391BFF3-420",
+        "SYN-33EAB0A7-10C",
+        "SYN-350A16F5-AE0",
+        "SYN-35DCCED5-C11",
+        "SYN-36FDCAFC-ACE",
+        "SYN-383A953E-E4A",
+        "SYN-38905DA8-BD8",
+        "SYN-3BE21BFC-3DB",
+        "SYN-3C114EFC-C0C",
+        "SYN-3D3107EF-224",
+        "SYN-3DF02D33-CEC",
+        "SYN-3E2436C1-BCA",
+        "SYN-3F7FF341-A78",
+        "SYN-41870DF4-BC4",
+        "SYN-435BB9A9-97C",
+        "SYN-4360A159-C60",
+        "SYN-45090470-238",
+        "SYN-456F934A-826",
+        "SYN-4ACE845B-5A5",
+        "SYN-4C2C6495-18E",
+        "SYN-4DEA52C8-87A",
+        "SYN-4E76CC35-956",
+        "SYN-4E83793B-826",
+        "SYN-5061D4BF-0F3",
+        "SYN-5071BCAF-263",
+        "SYN-513D73CF-BDF",
+        "SYN-526D22BA-FBD",
+        "SYN-5359CA7A-DAE",
+        "SYN-5468ADEA-5AC",
+        "SYN-57A9145D-014",
+        "SYN-5B232920-E43",
+        "SYN-5D8D2F90-87D",
+        "SYN-5DC8CF48-C7D",
+        "SYN-5EA6D02A-236",
+        "SYN-5EE6A590-EB0",
+        "SYN-5F3F14EE-0D3",
+        "SYN-6234F614-F4C",
+        "SYN-6259B519-FEA",
+        "SYN-633F4B38-F1B",
+        "SYN-64E461E4-D19",
+        "SYN-65BDB56A-819",
+        "SYN-6CC4A20D-516",
+        "SYN-6FA1F1E9-3D0",
+        "SYN-6FF260B1-A47",
+        "SYN-72F81BB1-E09",
+        "SYN-7301AECF-6AC",
+        "SYN-74591EFB-37C",
+        "SYN-747333F6-025",
+        "SYN-7503B6FD-794",
+        "SYN-7530D7F2-75A",
+        "SYN-759C8EE4-BF1",
+        "SYN-7622DFDC-D3C",
+        "SYN-78E01023-4A7",
+        "SYN-7ACE370F-5C6",
+        "SYN-7ADA5074-EB8",
+        "SYN-7DAF876F-A0F",
+        "SYN-8048C625-73F",
+        "SYN-8161B601-7C4",
+        "SYN-82E93DA8-B3E",
+        "SYN-837D7557-CEE",
+        "SYN-83BF9388-6BC",
+        "SYN-83D2D585-A10",
+        "SYN-85D00996-985",
+        "SYN-86691B3A-34E",
+        "SYN-88462828-5E8",
+        "SYN-8CCFC448-506",
+        "SYN-8D576F58-16C",
+        "SYN-8E43998D-003",
+        "SYN-8F5931F3-EC4",
+        "SYN-92546899-587",
+        "SYN-92964F70-FDB",
+        "SYN-92AF56E4-443",
+        "SYN-932C002D-CE0",
+        "SYN-94759790-D80",
+        "SYN-9557CCFE-A68",
+        "SYN-957615F7-408",
+        "SYN-9581B1D5-964",
+        "SYN-96CE89DC-DEA",
+        "SYN-96F48E5B-112",
+        "SYN-96FC11C2-E36",
+        "SYN-989E3398-DC2",
+        "SYN-9FFFF63A-6EF",
+        "SYN-A1DE3B86-9B9",
+        "SYN-A4058AC7-B70",
+        "SYN-A655C55C-5C1",
+        "SYN-A81AAA74-2AC",
+        "SYN-A8993458-56D",
+        "SYN-A8F73613-994",
+        "SYN-B0973DAE-3A1",
+        "SYN-B0CDBD95-3F7",
+        "SYN-B0EEA484-185",
+        "SYN-B1BDDC7E-E20",
+        "SYN-B2064C3E-566",
+        "SYN-B373EACE-38D",
+        "SYN-B46E6BC1-785",
+        "SYN-B4FDBD5C-A9B",
+        "SYN-B6F4654C-3CF",
+        "SYN-B6FBB7FC-CCB",
+        "SYN-B7EA77A9-7E7",
+        "SYN-B8598C11-89F",
+        "SYN-B8891612-7DF",
+        "SYN-B89708F6-256",
+        "SYN-B98BF1DB-379",
+        "SYN-B9FCABE6-5E4",
+        "SYN-BB31FB8F-DA9",
+        "SYN-BEA2E6F3-9B1",
+        "SYN-C65BCB50-26D",
+        "SYN-C78FB190-771",
+        "SYN-C7C0E0A3-86D",
+        "SYN-C9FFF058-BA3",
+        "SYN-CA31A181-59D",
+        "SYN-CB705287-D47",
+        "SYN-CBA6658B-3D0",
+        "SYN-CC44A443-F59",
+        "SYN-CC900A6C-AEE",
+        "SYN-CFA7DA1C-BD1",
+        "SYN-D12F2785-A18",
+        "SYN-D246F11D-7C5",
+        "SYN-D45F444E-1C9",
+        "SYN-D46F2088-8F2",
+        "SYN-D67AEB0F-811",
+        "SYN-D706DCAC-F08",
+        "SYN-D92B46F3-E85",
+        "SYN-D99F3E0C-468",
+        "SYN-DA06CECC-0F8",
+        "SYN-DB652F8C-040",
+        "SYN-DFA9EBE2-AF4",
+        "SYN-E038F5E6-15F",
+        "SYN-E140B4EB-086",
+        "SYN-E2047D7B-9E1",
+        "SYN-E415665B-B79",
+        "SYN-ED27104B-54E",
+        "SYN-EE790AAA-F2E",
+        "SYN-F26D2577-B44",
+        "SYN-F277266E-05F",
+        "SYN-F29612A7-A02",
+        "SYN-F34B24A9-E38",
+        "SYN-F86090A4-5EB",
+        "SYN-F915ACD2-357",
+        "SYN-F927AA4F-99C",
+        "SYN-FA78F449-B97",
+        "SYN-FB40A1A6-9E5",
+        "SYN-FD5690D0-284",
+        "SYN-FE1ADCCC-D5B",
+        "WHP-049608139C10",
+        "WHP-08E807C556B4",
+        "WHP-1ADC6C9EDA52",
+        "WHP-1B08E08A2330",
+        "WHP-20B8BFCB1746",
+        "WHP-3493E329BFEC",
+        "WHP-34AE37688C7A",
+        "WHP-423B4C6E610B",
+        "WHP-466A4159226B",
+        "WHP-4C46D5BB7310",
+        "WHP-572BDEC174A2",
+        "WHP-64935F25705D",
+        "WHP-66F4B476DECF",
+        "WHP-68186186A4E8",
+        "WHP-6945E20E2471",
+        "WHP-6BA619AC65F0",
+        "WHP-70396FAF9341",
+        "WHP-70A658853071",
+        "WHP-7A0193F03065",
+        "WHP-929309639433",
+        "WHP-9AF16C5E772F",
+        "WHP-9EE9C0004393",
+        "WHP-A95D62225A69",
+        "WHP-AB422FBA2CA7",
+        "WHP-BD74343F77E2",
+        "WHP-D1C2C3AA0DE6",
+        "WHP-E952706B500F",
+        "WHP-F2E58299026D",
+        "WHP-FD9F6FC04FB0"
+       ]
+      },
+      "d212c960d1e55a8663a5afe165741458ee429c7c15df200fb5c3cf2de65c22c4": {
+       "patient_ids": [
+        "P-2004",
+        "P-3001",
+        "P-3006",
+        "P-6006",
+        "P-7101",
+        "P-HF11",
+        "P-WM02",
+        "P-WM05",
+        "SYN-00B5AC3D-AF4",
+        "SYN-02F1CADF-26B",
+        "SYN-03699844-059",
+        "SYN-043004B6-FCB",
+        "SYN-0762C810-EA2",
+        "SYN-08205F2B-81B",
+        "SYN-0982D37B-63F",
+        "SYN-0BBF58D8-5C9",
+        "SYN-0E8D77DD-610",
+        "SYN-102E82B4-4B9",
+        "SYN-157099FA-7E6",
+        "SYN-17481723-2A1",
+        "SYN-17CC983D-7CD",
+        "SYN-193398FE-BF0",
+        "SYN-1AF8B16E-D15",
+        "SYN-1BF632DF-794",
+        "SYN-1BFB50AC-B5E",
+        "SYN-1CF8DC45-2DF",
+        "SYN-1DCCA442-E3D",
+        "SYN-1E65D874-B1D",
+        "SYN-1E72CDD8-4ED",
+        "SYN-206DEA1A-963",
+        "SYN-2194EF16-98C",
+        "SYN-222CBD82-248",
+        "SYN-22A1A5C5-A09",
+        "SYN-24CDB8F8-FC4",
+        "SYN-26F53512-128",
+        "SYN-2907F892-61A",
+        "SYN-2AAED1F0-8F6",
+        "SYN-2D7BA9AA-5F4",
+        "SYN-2E07973A-B06",
+        "SYN-2FA72246-E7C",
+        "SYN-300F588E-996",
+        "SYN-33657EB4-23C",
+        "SYN-3391BFF3-420",
+        "SYN-33EAB0A7-10C",
+        "SYN-350A16F5-AE0",
+        "SYN-35DCCED5-C11",
+        "SYN-36FDCAFC-ACE",
+        "SYN-383A953E-E4A",
+        "SYN-38905DA8-BD8",
+        "SYN-3BE21BFC-3DB",
+        "SYN-3C114EFC-C0C",
+        "SYN-3D3107EF-224",
+        "SYN-3DF02D33-CEC",
+        "SYN-3E2436C1-BCA",
+        "SYN-3F7FF341-A78",
+        "SYN-41870DF4-BC4",
+        "SYN-435BB9A9-97C",
+        "SYN-4360A159-C60",
+        "SYN-45090470-238",
+        "SYN-456F934A-826",
+        "SYN-4ACE845B-5A5",
+        "SYN-4C2C6495-18E",
+        "SYN-4DEA52C8-87A",
+        "SYN-4E76CC35-956",
+        "SYN-4E83793B-826",
+        "SYN-5061D4BF-0F3",
+        "SYN-5071BCAF-263",
+        "SYN-513D73CF-BDF",
+        "SYN-526D22BA-FBD",
+        "SYN-5359CA7A-DAE",
+        "SYN-57A9145D-014",
+        "SYN-5B232920-E43",
+        "SYN-5D8D2F90-87D",
+        "SYN-5DC8CF48-C7D",
+        "SYN-5EA6D02A-236",
+        "SYN-5EE6A590-EB0",
+        "SYN-5F3F14EE-0D3",
+        "SYN-6234F614-F4C",
+        "SYN-6259B519-FEA",
+        "SYN-633F4B38-F1B",
+        "SYN-64E461E4-D19",
+        "SYN-65BDB56A-819",
+        "SYN-6CC4A20D-516",
+        "SYN-6FA1F1E9-3D0",
+        "SYN-6FF260B1-A47",
+        "SYN-72F81BB1-E09",
+        "SYN-7301AECF-6AC",
+        "SYN-74591EFB-37C",
+        "SYN-747333F6-025",
+        "SYN-7503B6FD-794",
+        "SYN-7530D7F2-75A",
+        "SYN-759C8EE4-BF1",
+        "SYN-7622DFDC-D3C",
+        "SYN-78E01023-4A7",
+        "SYN-7ACE370F-5C6",
+        "SYN-7ADA5074-EB8",
+        "SYN-7DAF876F-A0F",
+        "SYN-8048C625-73F",
+        "SYN-8161B601-7C4",
+        "SYN-82E93DA8-B3E",
+        "SYN-837D7557-CEE",
+        "SYN-83BF9388-6BC",
+        "SYN-83D2D585-A10",
+        "SYN-85D00996-985",
+        "SYN-86691B3A-34E",
+        "SYN-88462828-5E8",
+        "SYN-8CCFC448-506",
+        "SYN-8D576F58-16C",
+        "SYN-8F5931F3-EC4",
+        "SYN-92546899-587",
+        "SYN-92964F70-FDB",
+        "SYN-92AF56E4-443",
+        "SYN-932C002D-CE0",
+        "SYN-94759790-D80",
+        "SYN-9557CCFE-A68",
+        "SYN-957615F7-408",
+        "SYN-9581B1D5-964",
+        "SYN-96CE89DC-DEA",
+        "SYN-96F48E5B-112",
+        "SYN-96FC11C2-E36",
+        "SYN-989E3398-DC2",
+        "SYN-9FFFF63A-6EF",
+        "SYN-A1DE3B86-9B9",
+        "SYN-A4058AC7-B70",
+        "SYN-A655C55C-5C1",
+        "SYN-A81AAA74-2AC",
+        "SYN-A8993458-56D",
+        "SYN-A8F73613-994",
+        "SYN-B0973DAE-3A1",
+        "SYN-B0CDBD95-3F7",
+        "SYN-B0EEA484-185",
+        "SYN-B1BDDC7E-E20",
+        "SYN-B2064C3E-566",
+        "SYN-B373EACE-38D",
+        "SYN-B46E6BC1-785",
+        "SYN-B6F4654C-3CF",
+        "SYN-B6FBB7FC-CCB",
+        "SYN-B7EA77A9-7E7",
+        "SYN-B8598C11-89F",
+        "SYN-B8891612-7DF",
+        "SYN-B89708F6-256",
+        "SYN-B98BF1DB-379",
+        "SYN-B9FCABE6-5E4",
+        "SYN-BB31FB8F-DA9",
+        "SYN-BEA2E6F3-9B1",
+        "SYN-C65BCB50-26D",
+        "SYN-C78FB190-771",
+        "SYN-C7C0E0A3-86D",
+        "SYN-C9FFF058-BA3",
+        "SYN-CA31A181-59D",
+        "SYN-CB705287-D47",
+        "SYN-CBA6658B-3D0",
+        "SYN-CC44A443-F59",
+        "SYN-CC900A6C-AEE",
+        "SYN-CFA7DA1C-BD1",
+        "SYN-D12F2785-A18",
+        "SYN-D246F11D-7C5",
+        "SYN-D45F444E-1C9",
+        "SYN-D46F2088-8F2",
+        "SYN-D67AEB0F-811",
+        "SYN-D706DCAC-F08",
+        "SYN-D92B46F3-E85",
+        "SYN-DA06CECC-0F8",
+        "SYN-DB652F8C-040",
+        "SYN-DFA9EBE2-AF4",
+        "SYN-E038F5E6-15F",
+        "SYN-E140B4EB-086",
+        "SYN-E2047D7B-9E1",
+        "SYN-E415665B-B79",
+        "SYN-ED27104B-54E",
+        "SYN-EE790AAA-F2E",
+        "SYN-F26D2577-B44",
+        "SYN-F277266E-05F",
+        "SYN-F29612A7-A02",
+        "SYN-F34B24A9-E38",
+        "SYN-F86090A4-5EB",
+        "SYN-F915ACD2-357",
+        "SYN-F927AA4F-99C",
+        "SYN-FA78F449-B97",
+        "SYN-FB40A1A6-9E5",
+        "SYN-FD5690D0-284",
+        "SYN-FE1ADCCC-D5B",
+        "WHP-049608139C10",
+        "WHP-123AC77DD06C",
+        "WHP-1B08E08A2330",
+        "WHP-2473C61C63DA",
+        "WHP-2B1298298927",
+        "WHP-4C46D5BB7310",
+        "WHP-64935F25705D",
+        "WHP-66F4B476DECF",
+        "WHP-6BA619AC65F0",
+        "WHP-70A658853071",
+        "WHP-71E980A5A3CF",
+        "WHP-76EAE99D7CEC",
+        "WHP-7A0193F03065",
+        "WHP-805FB4D44AA5",
+        "WHP-929309639433",
+        "WHP-A95D62225A69",
+        "WHP-BF645C091722",
+        "WHP-D97A6B126CFD",
+        "WHP-F2E58299026D"
+       ]
+      }
+     },
+     "stated_any_of": [
+      [
+       "referral_offered",
+       "offer is not",
+       "offered is not",
+       "offers do not",
+       "not a referral record"
+      ]
+     ]
+    },
+    {
+     "id": "original",
+     "reading": "Brief interview positives only (reference SQL).",
+     "source": "reference",
+     "stated_any_of": [
+      [
+       "original 1,614",
+       "1,614-person",
+       "1,614 patients",
+       "original roster",
+       "original cohort",
+       "deep-chart",
+       "deep chart",
+       "ehr encounters only",
+       "encounters stream only",
+       "medical_claims only",
+       "excluding the population",
+       "excludes payer",
+       "without payer"
+      ]
+     ]
+    }
+   ],
+   "evidence": "Population social screens are AHC-HRSN (instrument AHC_HRSN, items + positive_domains) without food_difficulty_reported / transport_difficulty_reported, so the reference misses them. 2029 population food positives: 29 screens, 23 with referral_offered; the population has no referrals stream. Before 189 -> after 194 (no-offer reading 218). | v2.8 (release d212c960, 4,115 patients): reference 182 -> canonical 189."
+  },
+  "Q34": {
+   "category": "d",
+   "canonical": {
+    "reading": "Transportation barrier in 2029: transport_difficulty_reported, legacy transport unreliable, or AHC-HRSN transportation_barrier.",
+    "source": "errata",
+    "sql": "sql_errata/heldout9/Q34__population.sql",
+    "expected": {
+     "9ef6ea79297af818f4eabab0b629a32ea5684d92f921ed46a72b82838e7189e8": {
+      "count": 167
+     },
+     "d212c960d1e55a8663a5afe165741458ee429c7c15df200fb5c3cf2de65c22c4": {
+      "count": 149
+     }
+    }
+   },
+   "alternatives": [
+    {
+     "id": "original",
+     "reading": "Brief interview / legacy form only (reference SQL).",
+     "source": "reference",
+     "stated_any_of": [
+      [
+       "original 1,614",
+       "1,614-person",
+       "1,614 patients",
+       "original roster",
+       "original cohort",
+       "deep-chart",
+       "deep chart",
+       "ehr encounters only",
+       "encounters stream only",
+       "medical_claims only",
+       "excluding the population",
+       "excludes payer",
+       "without payer"
+      ]
+     ]
+    }
+   ],
+   "evidence": "Population social screens are AHC-HRSN (instrument AHC_HRSN, items + positive_domains) without food_difficulty_reported / transport_difficulty_reported, so the reference misses them. Before 144 -> after 167. | v2.8 (release d212c960, 4,115 patients): reference 130 -> canonical 149."
+  },
+  "Q35": {
+   "category": "d",
+   "canonical": {
+    "reading": "No-show rate, cancellations excluded, scheduled date = scheduled_date or date(slot_start).",
+    "source": "errata",
+    "sql": "sql_errata/heldout9/Q35__population.sql",
+    "expected": {
+     "9ef6ea79297af818f4eabab0b629a32ea5684d92f921ed46a72b82838e7189e8": {
+      "value": 5.62
+     },
+     "d212c960d1e55a8663a5afe165741458ee429c7c15df200fb5c3cf2de65c22c4": {
+      "value": 5.52
+     }
+    }
+   },
+   "alternatives": [
+    {
+     "id": "original",
+     "reading": "Original-roster appointments only (reference SQL).",
+     "source": "reference",
+     "stated_any_of": [
+      [
+       "original 1,614",
+       "1,614-person",
+       "1,614 patients",
+       "original roster",
+       "original cohort",
+       "deep-chart",
+       "deep chart",
+       "ehr encounters only",
+       "encounters stream only",
+       "medical_claims only",
+       "excluding the population",
+       "excludes payer",
+       "without payer"
+      ]
+     ]
+    }
+   ],
+   "evidence": "Population appointments (12,114 rows) carry slot_start/booked_at instead of scheduled_date, so the reference drops them from the scheduled-date filter (they do enter Q37's cancellation count, which has no scheduled-date filter). Before 4.86 -> after 5.62. | v2.8 (release d212c960, 4,115 patients): reference 4.85 -> canonical 5.52."
+  },
+  "Q36": {
+   "category": "d",
+   "canonical": {
+    "reading": "Mean booking lead time for kept appointments scheduled in 2029, scheduled date = scheduled_date or date(slot_start).",
+    "source": "errata",
+    "sql": "sql_errata/heldout9/Q36__population.sql",
+    "expected": {
+     "9ef6ea79297af818f4eabab0b629a32ea5684d92f921ed46a72b82838e7189e8": {
+      "value": 14.52
+     },
+     "d212c960d1e55a8663a5afe165741458ee429c7c15df200fb5c3cf2de65c22c4": {
+      "value": 14.36
+     }
+    }
+   },
+   "alternatives": [
+    {
+     "id": "original",
+     "reading": "Original-roster appointments only (reference SQL).",
+     "source": "reference",
+     "stated_any_of": [
+      [
+       "original 1,614",
+       "1,614-person",
+       "1,614 patients",
+       "original roster",
+       "original cohort",
+       "deep-chart",
+       "deep chart",
+       "ehr encounters only",
+       "encounters stream only",
+       "medical_claims only",
+       "excluding the population",
+       "excludes payer",
+       "without payer"
+      ]
+     ]
+    }
+   ],
+   "evidence": "Population appointments (12,114 rows) carry slot_start/booked_at instead of scheduled_date, so the reference drops them from the scheduled-date filter (they do enter Q37's cancellation count, which has no scheduled-date filter). Before 13.38 -> after 14.52. | v2.8 (release d212c960, 4,115 patients): reference 13.31 -> canonical 14.36."
+  },
+  "Q37": {
+   "category": "a",
+   "canonical": {
+    "reading": "Reference reading (stated in the question interpretation).",
+    "source": "reference"
+   },
+   "alternatives": [],
+   "evidence": "Reference has no scheduled-date filter, so population cancellations (no cancellation_channel) already land in the NULL channel group; value 4 rows. | v2.8: reference 4 rows."
+  },
+  "Q38": {
+   "category": "a",
+   "canonical": {
+    "reading": "Reference reading (stated in the question interpretation).",
+    "source": "reference"
+   },
+   "alternatives": [],
+   "evidence": "mood_questionnaires (PHQ-9 scores) exist for the original roster only; population claims carry 96127 screening codes without scores, so there is no equivalent data. Reference 70. | v2.8: reference 67."
+  },
+  "Q39": {
+   "category": "a",
+   "canonical": {
+    "reading": "Reference reading (stated in the question interpretation).",
+    "source": "reference"
+   },
+   "alternatives": [],
+   "evidence": "mood_questionnaires (PHQ-9 scores) exist for the original roster only; population claims carry 96127 screening codes without scores, so there is no equivalent data. Reference 26. | v2.8: reference 26."
+  },
+  "Q40": {
+   "category": "d",
+   "canonical": {
+    "reading": "Referral for behavioral health assessment: referral_type positive_depression_screen_assessment / behavioral_health_assessment, or a specialty referral (no referral_type) to psychiatry / behavioral health / psychology.",
+    "source": "errata",
+    "sql": "sql_errata/heldout9/Q40__population.sql",
+    "expected": {
+     "9ef6ea79297af818f4eabab0b629a32ea5684d92f921ed46a72b82838e7189e8": {
+      "count": 106
+     },
+     "d212c960d1e55a8663a5afe165741458ee429c7c15df200fb5c3cf2de65c22c4": {
+      "count": 180
+     }
+    }
+   },
+   "alternatives": [
+    {
+     "id": "referral_type_only",
+     "reading": "referral_type values only (reference SQL).",
+     "source": "reference",
+     "stated_any_of": [
+      [
+       "referral_type",
+       "original 1,614",
+       "original roster",
+       "excluding specialty",
+       "excluding psychiatry"
+      ]
+     ]
+    }
+   ],
+   "evidence": "v2.3: population has no referrals stream; reference = canonical = 106. v2.8 adds population referrals coded by specialty (Psychiatry, reasons depression/anxiety/bipolar) without referral_type: reference 98 -> canonical 180."
+  },
+  "Q41": {
+   "category": "a",
+   "canonical": {
+    "reading": "Reference reading (stated in the question interpretation).",
+    "source": "reference"
+   },
+   "alternatives": [],
+   "evidence": "Population labs are all dated; reference already counts all labs rows (16543). | v2.8: reference 16543."
+  },
+  "Q42": {
+   "category": "a",
+   "canonical": {
+    "reading": "Reference reading (stated in the question interpretation).",
+    "source": "reference"
+   },
+   "alternatives": [],
+   "evidence": "Reference reads the patients view, which holds all 4,499 patients (77). | v2.8: reference 76."
+  },
+  "Q43": {
+   "category": "a",
+   "canonical": {
+    "reading": "Reference reading (stated in the question interpretation).",
+    "source": "reference"
+   },
+   "alternatives": [],
+   "evidence": "Reference has no roster filter; population 'corrected' results (155 rows overall) are included (367). | v2.8: reference 317."
+  },
+  "Q44": {
+   "category": "a",
+   "canonical": {
+    "reading": "Reference reading (stated in the question interpretation).",
+    "source": "reference"
+   },
+   "alternatives": [],
+   "evidence": "Population potassium is named 'POTASSIUM' (case differs) but always in mmol/L, so a case-insensitive match gives the same 52 (sql_errata/heldout9/Q44__case_insensitive.sql = 52). | v2.8: reference 52."
+  },
+  "Q45": {
+   "category": "a",
+   "canonical": {
+    "reading": "Reference reading (stated in the question interpretation).",
+    "source": "reference"
+   },
+   "alternatives": [],
+   "evidence": "Reference counts encounters-stream version rows for all patients (population encounters arrive as in_progress + completed); ADT messages are not encounter version rows. Value 17074. | v2.8: reference 15698."
+  },
+  "Q46": {
+   "category": "d",
+   "canonical": {
+    "reading": "Reading A (statin pickup in the 12 months to as-of), population-wide incl. payer pharmacy claims not reversed.",
+    "source": "errata",
+    "sql": "sql_errata/heldout9/Q46__population_pickup.sql",
+    "expected": {
+     "9ef6ea79297af818f4eabab0b629a32ea5684d92f921ed46a72b82838e7189e8": {
+      "count": 480
+     },
+     "d212c960d1e55a8663a5afe165741458ee429c7c15df200fb5c3cf2de65c22c4": {
+      "count": 497
+     }
+    }
+   },
+   "alternatives": [
+    {
+     "id": "med_list",
+     "reading": "Reading B: statin on a medication list (not discontinued/historical), population-wide.",
+     "source": "errata",
+     "sql": "sql_errata/heldout9/Q46__population_medlist.sql",
+     "expected": {
+      "9ef6ea79297af818f4eabab0b629a32ea5684d92f921ed46a72b82838e7189e8": {
+       "count": 565
+      },
+      "d212c960d1e55a8663a5afe165741458ee429c7c15df200fb5c3cf2de65c22c4": {
+       "count": 514
+      }
+     },
+     "stated_any_of": [
+      [
+       "medication list",
+       "medication_lists",
+       "med list",
+       "medication record"
+      ]
+     ]
+    },
+    {
+     "id": "legacy_med_list",
+     "reading": "Reading B as written: undated legacy medication_lists snapshot.",
+     "source": "errata",
+     "sql": "sql_errata/heldout9/Q46__original_medlist.sql",
+     "expected": {
+      "9ef6ea79297af818f4eabab0b629a32ea5684d92f921ed46a72b82838e7189e8": {
+       "count": 347
+      },
+      "d212c960d1e55a8663a5afe165741458ee429c7c15df200fb5c3cf2de65c22c4": {
+       "count": 347
+      }
+     },
+     "stated_any_of": [
+      [
+       "legacy",
+       "snapshot",
+       "undated"
+      ]
+     ]
+    },
+    {
+     "id": "original_pickup",
+     "reading": "Reading A on original-roster pharmacy_dispenses only (reference SQL).",
+     "source": "reference",
+     "stated_any_of": [
+      [
+       "original 1,614",
+       "1,614-person",
+       "1,614 patients",
+       "original roster",
+       "original cohort",
+       "deep-chart",
+       "deep chart",
+       "ehr encounters only",
+       "encounters stream only",
+       "medical_claims only",
+       "excluding the population",
+       "excludes payer",
+       "without payer"
+      ]
+     ]
+    }
+   ],
+   "evidence": "pharmacy_dispenses covers the original roster only; payer_pharmacy_claims (89,602 visible rows) is the population fill source: 'paid' = dispensed claim, a later 'reversed' row (B2, return_to_stock, plan_paid 0) means the fill was prepared but returned to stock, i.e. not picked up; 'rejected' rows carry NCPDP codes (79 refill too soon, 70, 75). Before A 41 (stated 40) / B 347 -> after A 480 / B population med lists 565. | v2.8 (release d212c960, 4,115 patients): reference 33 -> canonical 497."
+  },
+  "Q47": {
+   "category": "d",
+   "canonical": {
+    "reading": "Reading A (incurred, service date 2029), population-wide incl. facility DRG payments; voided payer claims excluded (replacements count).",
+    "source": "errata",
+    "sql": "sql_errata/heldout9/Q47__population_incurred.sql",
+    "expected": {
+     "9ef6ea79297af818f4eabab0b629a32ea5684d92f921ed46a72b82838e7189e8": {
+      "value": 14656490.06
+     },
+     "d212c960d1e55a8663a5afe165741458ee429c7c15df200fb5c3cf2de65c22c4": {
+      "value": 13261099.0
+     }
+    }
+   },
+   "alternatives": [
+    {
+     "id": "paid_basis",
+     "reading": "Reading B (paid basis: adjudication date 2029), population-wide.",
+     "source": "errata",
+     "sql": "sql_errata/heldout9/Q47__population_paid.sql",
+     "expected": {
+      "9ef6ea79297af818f4eabab0b629a32ea5684d92f921ed46a72b82838e7189e8": {
+       "value": 14754519.86
+      },
+      "d212c960d1e55a8663a5afe165741458ee429c7c15df200fb5c3cf2de65c22c4": {
+       "value": 13022449.61
+      }
+     },
+     "stated_any_of": [
+      [
+       "adjudicat",
+       "paid basis",
+       "paid date",
+       "payment date",
+       "cash basis"
+      ]
+     ]
+    },
+    {
+     "id": "original_incurred",
+     "reading": "Reading A on original-roster medical_claims with facility payments.",
+     "source": "errata",
+     "sql": "sql_errata/heldout9/Q47__original_incurred.sql",
+     "expected": {
+      "9ef6ea79297af818f4eabab0b629a32ea5684d92f921ed46a72b82838e7189e8": {
+       "value": 1402547.08
+      },
+      "d212c960d1e55a8663a5afe165741458ee429c7c15df200fb5c3cf2de65c22c4": {
+       "value": 1287474.47
+      }
+     },
+     "stated_any_of": [
+      [
+       "original 1,614",
+       "1,614-person",
+       "1,614 patients",
+       "original roster",
+       "original cohort",
+       "deep-chart",
+       "deep chart",
+       "ehr encounters only",
+       "encounters stream only",
+       "medical_claims only",
+       "excluding the population",
+       "excludes payer",
+       "without payer"
+      ]
+     ]
+    },
+    {
+     "id": "original_paid",
+     "reading": "Reading B on original-roster medical_claims with facility payments.",
+     "source": "errata",
+     "sql": "sql_errata/heldout9/Q47__original_paid.sql",
+     "expected": {
+      "9ef6ea79297af818f4eabab0b629a32ea5684d92f921ed46a72b82838e7189e8": {
+       "value": 1424254.83
+      },
+      "d212c960d1e55a8663a5afe165741458ee429c7c15df200fb5c3cf2de65c22c4": {
+       "value": 1311863.14
+      }
+     },
+     "stated_any_of": [
+      [
+       "original 1,614",
+       "1,614-person",
+       "1,614 patients",
+       "original roster",
+       "original cohort",
+       "deep-chart",
+       "deep chart",
+       "ehr encounters only",
+       "encounters stream only",
+       "medical_claims only",
+       "excluding the population",
+       "excludes payer",
+       "without payer"
+      ],
+      [
+       "adjudicat",
+       "paid basis",
+       "paid date",
+       "payment date",
+       "cash basis"
+      ]
+     ]
+    }
+   ],
+   "evidence": "medical_claims (original roster) + payer_medical_claims (population, 166,671 rows). medical_claims facility DRG rows from WH-HOSPITAL-0..3 (88 claims, 'paid' only) carry payer_paid_cents/allowed_cents but no financial_deltas_cents, so delta sums drop them (2029 adjudications: 27 rows, $154,828; 2029 services: 22 rows, $140,443.67). payer_medical_claims: reversed rows carry negative amounts; voids (frequency 8, amount 0) cancel the claim and a '-R' frequency-7 replacement carries the payment. Before A 1262103.41 (B 1269427.18) -> original+facility A 1402547.08 / B 1424254.83 -> population A 14656490.06 / B 14754519.86. | v2.8 (release d212c960, 4,115 patients): reference 1149955.29 -> canonical 13261099.0."
+  },
+  "Q48": {
+   "category": "d",
+   "canonical": {
+    "reading": "Reading A (cancellations in the denominator), population-wide appointments.",
+    "source": "errata",
+    "sql": "sql_errata/heldout9/Q48__population_with_cancel.sql",
+    "expected": {
+     "9ef6ea79297af818f4eabab0b629a32ea5684d92f921ed46a72b82838e7189e8": {
+      "value": 5.38
+     },
+     "d212c960d1e55a8663a5afe165741458ee429c7c15df200fb5c3cf2de65c22c4": {
+      "value": 5.27
+     }
+    }
+   },
+   "alternatives": [
+    {
+     "id": "no_cancel",
+     "reading": "Reading B (cancellations excluded), population-wide.",
+     "source": "errata",
+     "sql": "sql_errata/heldout9/Q48__population_no_cancel.sql",
+     "expected": {
+      "9ef6ea79297af818f4eabab0b629a32ea5684d92f921ed46a72b82838e7189e8": {
+       "value": 5.62
+      },
+      "d212c960d1e55a8663a5afe165741458ee429c7c15df200fb5c3cf2de65c22c4": {
+       "value": 5.52
+      }
+     },
+     "stated_any_of": [
+      [
+       "excluding cancel",
+       "cancellations excluded",
+       "excludes cancel",
+       "kept + no-show",
+       "kept and no-show",
+       "without cancel"
+      ]
+     ]
+    },
+    {
+     "id": "original_with_cancel",
+     "reading": "Reading A on original-roster appointments (reference SQL).",
+     "source": "reference",
+     "stated_any_of": [
+      [
+       "original 1,614",
+       "1,614-person",
+       "1,614 patients",
+       "original roster",
+       "original cohort",
+       "deep-chart",
+       "deep chart",
+       "ehr encounters only",
+       "encounters stream only",
+       "medical_claims only",
+       "excluding the population",
+       "excludes payer",
+       "without payer"
+      ]
+     ]
+    },
+    {
+     "id": "original_no_cancel",
+     "reading": "Reading B on original-roster appointments.",
+     "source": "errata",
+     "sql": "sql_errata/heldout9/Q48__original_no_cancel.sql",
+     "expected": {
+      "9ef6ea79297af818f4eabab0b629a32ea5684d92f921ed46a72b82838e7189e8": {
+       "value": 4.86
+      },
+      "d212c960d1e55a8663a5afe165741458ee429c7c15df200fb5c3cf2de65c22c4": {
+       "value": 4.85
+      }
+     },
+     "stated_any_of": [
+      [
+       "original 1,614",
+       "1,614-person",
+       "1,614 patients",
+       "original roster",
+       "original cohort",
+       "deep-chart",
+       "deep chart",
+       "ehr encounters only",
+       "encounters stream only",
+       "medical_claims only",
+       "excluding the population",
+       "excludes payer",
+       "without payer"
+      ],
+      [
+       "excluding cancel",
+       "cancellations excluded",
+       "excludes cancel",
+       "kept + no-show",
+       "kept and no-show",
+       "without cancel"
+      ]
+     ]
+    }
+   ],
+   "evidence": "Population appointments (12,114 rows) carry slot_start/booked_at instead of scheduled_date, so the reference drops them from the scheduled-date filter (they do enter Q37's cancellation count, which has no scheduled-date filter). Before A 4.68 / B 4.86 -> after A 5.38 / B 5.62. | v2.8 (release d212c960, 4,115 patients): reference 4.66 -> canonical 5.27."
+  },
+  "Q49": {
+   "category": "b",
+   "canonical": {
+    "reading": "Reading A: calendar 2029, any encounters row (reference SQL; population EHR encounters are already included).",
+    "source": "reference"
+   },
+   "alternatives": [
+    {
+     "id": "trailing_12",
+     "reading": "Reading B: trailing 12 months to as-of.",
+     "source": "errata",
+     "sql": "sql_errata/heldout9/Q49__trailing12.sql",
+     "expected": {
+      "9ef6ea79297af818f4eabab0b629a32ea5684d92f921ed46a72b82838e7189e8": {
+       "count": 2166
+      },
+      "d212c960d1e55a8663a5afe165741458ee429c7c15df200fb5c3cf2de65c22c4": {
+       "count": 1975
+      }
+     },
+     "stated_any_of": [
+      [
+       "trailing",
+       "12 months",
+       "2029-05-28",
+       "past year",
+       "last 12"
+      ]
+     ]
+    }
+   ],
+   "evidence": "Reference reads encounters without a roster filter, so it already counts population EHR encounters (2087; the question's stated readings 1411/1491 predate the v2.3 population). 'See' = an encounter in our EHR; ADT/claims visits at other facilities are not visits we saw. B now 2166. | v2.8: reference 1922."
+  },
+  "Q50": {
+   "category": "d",
+   "canonical": {
+    "reading": "Reading A (midnights) over population-wide stays: Inpatient stays for all 4,499 patients in the patients view (1,614 original deep-chart + 2,885 population): EHR inpatient encounters + ADT class I (A01 admit/A03 discharge) + payer inpatient facility claims (TOB 011x); a claim stay is the same stay when admission dates are within 1 day or date ranges overlap; ADT stays lacking an A03 take the claim discharge date.",
+    "source": "errata",
+    "sql": "sql_errata/heldout9/Q50__population_midnights.sql",
+    "expected": {
+     "9ef6ea79297af818f4eabab0b629a32ea5684d92f921ed46a72b82838e7189e8": {
+      "value": 4.219
+     },
+     "d212c960d1e55a8663a5afe165741458ee429c7c15df200fb5c3cf2de65c22c4": {
+      "value": 4.5906
+     }
+    }
+   },
+   "alternatives": [
+    {
+     "id": "elapsed",
+     "reading": "Reading B (elapsed fractional days) over population-wide stays.",
+     "source": "errata",
+     "sql": "sql_errata/heldout9/Q50__population_elapsed.sql",
+     "expected": {
+      "9ef6ea79297af818f4eabab0b629a32ea5684d92f921ed46a72b82838e7189e8": {
+       "value": 4.2548
+      },
+      "d212c960d1e55a8663a5afe165741458ee429c7c15df200fb5c3cf2de65c22c4": {
+       "value": 4.6288
+      }
+     },
+     "stated_any_of": [
+      [
+       "elapsed",
+       "fractional",
+       "end_time - start_time",
+       "hours"
+      ]
+     ]
+    },
+    {
+     "id": "original_midnights",
+     "reading": "Reading A on the original roster only (reference SQL).",
+     "source": "reference",
+     "stated_any_of": [
+      [
+       "original 1,614",
+       "1,614-person",
+       "1,614 patients",
+       "original roster",
+       "original cohort",
+       "deep-chart",
+       "deep chart",
+       "ehr encounters only",
+       "encounters stream only",
+       "medical_claims only",
+       "excluding the population",
+       "excludes payer",
+       "without payer"
+      ]
+     ]
+    }
+   ],
+   "evidence": "Reference reads EHR encounters only (original roster). Population stays arrive via adt_messages (class I; 287 discharges in 2029, 14 missing A03 completed from claims) and payer_medical_claims TOB 011x (407 claim discharges in 2029; 260 exact / 272 overlapping ADT); 103 claim-only stays. 2029 discharges after merge: 484 (80 original + 404 population); admissions 489. Streams: encounters, adt_messages, payer_medical_claims. Ambiguity kept (A midnights canonical, B elapsed accepted when stated). Before A 3.5125 / B 3.719 (original roster) -> after A 4.219 / B 4.2548. | v2.8 (release d212c960, 4,115 patients): reference 3.7551 -> canonical 4.5906."
+  },
+  "Q51": {
+   "category": "d",
+   "canonical": {
+    "reading": "Reading A (initial denial), population-wide. Claim = medical_claims claim_id or an original payer_medical_claims submission (frequency 1 at sequence 1; '-R' replacements are corrections, not new claims).",
+    "source": "errata",
+    "sql": "sql_errata/heldout9/Q51__population_initial.sql",
+    "expected": {
+     "9ef6ea79297af818f4eabab0b629a32ea5684d92f921ed46a72b82838e7189e8": {
+      "value": 13.06
+     },
+     "d212c960d1e55a8663a5afe165741458ee429c7c15df200fb5c3cf2de65c22c4": {
+      "value": 11.83
+     }
+    }
+   },
+   "alternatives": [
+    {
+     "id": "final_denial",
+     "reading": "Reading B (final denial: denied and never paid by as-of), population-wide.",
+     "source": "errata",
+     "sql": "sql_errata/heldout9/Q51__population_final.sql",
+     "expected": {
+      "9ef6ea79297af818f4eabab0b629a32ea5684d92f921ed46a72b82838e7189e8": {
+       "value": 8.31
+      },
+      "d212c960d1e55a8663a5afe165741458ee429c7c15df200fb5c3cf2de65c22c4": {
+       "value": 7.34
+      }
+     },
+     "stated_any_of": [
+      [
+       "final",
+       "never paid",
+       "never subsequently paid",
+       "not overturned",
+       "upheld"
+      ]
+     ]
+    },
+    {
+     "id": "original_initial",
+     "reading": "Reading A on original-roster medical_claims (reference SQL).",
+     "source": "reference",
+     "stated_any_of": [
+      [
+       "original 1,614",
+       "1,614-person",
+       "1,614 patients",
+       "original roster",
+       "original cohort",
+       "deep-chart",
+       "deep chart",
+       "ehr encounters only",
+       "encounters stream only",
+       "medical_claims only",
+       "excluding the population",
+       "excludes payer",
+       "without payer"
+      ]
+     ]
+    },
+    {
+     "id": "original_final",
+     "reading": "Reading B on original-roster medical_claims.",
+     "source": "errata",
+     "sql": "sql_errata/heldout9/Q51__original_final.sql",
+     "expected": {
+      "9ef6ea79297af818f4eabab0b629a32ea5684d92f921ed46a72b82838e7189e8": {
+       "value": 0.99
+      },
+      "d212c960d1e55a8663a5afe165741458ee429c7c15df200fb5c3cf2de65c22c4": {
+       "value": 1.01
+      }
+     },
+     "stated_any_of": [
+      [
+       "original 1,614",
+       "1,614-person",
+       "1,614 patients",
+       "original roster",
+       "original cohort",
+       "deep-chart",
+       "deep chart",
+       "ehr encounters only",
+       "encounters stream only",
+       "medical_claims only",
+       "excluding the population",
+       "excludes payer",
+       "without payer"
+      ],
+      [
+       "final",
+       "never paid",
+       "never subsequently paid",
+       "not overturned",
+       "upheld"
+      ]
+     ]
+    }
+   ],
+   "evidence": "medical_claims (original roster) + payer_medical_claims (population, 166,671 rows). medical_claims facility DRG rows from WH-HOSPITAL-0..3 (88 claims, 'paid' only) carry payer_paid_cents/allowed_cents but no financial_deltas_cents, so delta sums drop them (2029 adjudications: 27 rows, $154,828; 2029 services: 22 rows, $140,443.67). payer_medical_claims: reversed rows carry negative amounts; voids (frequency 8, amount 0) cancel the claim and a '-R' frequency-7 replacement carries the payment. Before A 4.9 / B 0.99 -> after A 13.06 / B 8.31. | v2.8 (release d212c960, 4,115 patients): reference 4.88 -> canonical 11.83."
+  },
+  "Q52": {
+   "category": "c",
+   "canonical": {
+    "reading": "Reading A (>= 140/90), hypertensives incl. claim diagnoses.",
+    "source": "errata",
+    "sql": "sql_errata/heldout9/Q52__population_140.sql",
+    "expected": {
+     "9ef6ea79297af818f4eabab0b629a32ea5684d92f921ed46a72b82838e7189e8": {
+      "count": 192
+     },
+     "d212c960d1e55a8663a5afe165741458ee429c7c15df200fb5c3cf2de65c22c4": {
+      "count": 163
+     }
+    }
+   },
+   "alternatives": [
+    {
+     "id": "acc_aha_130",
+     "reading": "Reading B (>= 130/80), hypertensives incl. claim diagnoses.",
+     "source": "errata",
+     "sql": "sql_errata/heldout9/Q52__population_130.sql",
+     "expected": {
+      "9ef6ea79297af818f4eabab0b629a32ea5684d92f921ed46a72b82838e7189e8": {
+       "count": 492
+      },
+      "d212c960d1e55a8663a5afe165741458ee429c7c15df200fb5c3cf2de65c22c4": {
+       "count": 448
+      }
+     },
+     "stated_any_of": [
+      [
+       "130/80",
+       "130",
+       "acc/aha"
+      ]
+     ]
+    },
+    {
+     "id": "problem_list_140",
+     "reading": "Reading A on problem-list hypertensives (reference SQL).",
+     "source": "reference",
+     "stated_any_of": [
+      [
+       "problem list only",
+       "problem-list only",
+       "conditions stream only",
+       "conditions only",
+       "without claims diagnoses",
+       "excluding claim diagnoses",
+       "not claims diagnoses",
+       "problem list (conditions)"
+      ]
+     ]
+    },
+    {
+     "id": "problem_list_130",
+     "reading": "Reading B on problem-list hypertensives.",
+     "source": "errata",
+     "sql": "sql_errata/heldout9/Q52__problem_list_130.sql",
+     "expected": {
+      "9ef6ea79297af818f4eabab0b629a32ea5684d92f921ed46a72b82838e7189e8": {
+       "count": 452
+      },
+      "d212c960d1e55a8663a5afe165741458ee429c7c15df200fb5c3cf2de65c22c4": {
+       "count": 428
+      }
+     },
+     "stated_any_of": [
+      [
+       "problem list only",
+       "problem-list only",
+       "conditions stream only",
+       "conditions only",
+       "without claims diagnoses",
+       "excluding claim diagnoses",
+       "not claims diagnoses",
+       "problem list (conditions)"
+      ],
+      [
+       "130/80",
+       "130",
+       "acc/aha"
+      ]
+     ]
+    }
+   ],
+   "evidence": "Hypertension cohort extended with I10-I13/I15/I16 codes on payer_medical_claims (claims_plus_ehr members have vitals but some hypertension only on claims); vitals already include population BP rows (same fields), so the reference SQL is population-wide for readings. The question's stated reading answers (56 / 195) predate the v2.3 population; the reference SQL now returns 168. After A 192 / B 492. | v2.8 (release d212c960, 4,115 patients): reference 154 -> canonical 163."
+  },
+  "Q53": {
+   "category": "a",
+   "canonical": {
+    "reading": "Reference reading (stated in the question interpretation).",
+    "source": "reference"
+   },
+   "alternatives": [],
+   "evidence": "Question replaced (premise false since v2.3 added death_records: 114 payer death indicators, population only). New question asks for malpractice/liability payouts; diagnostic SQL verifies no malpractice/liability/litigation/settlement/incident/legal/risk-management stream (prerequisite_available = 0). | v2.8: reference unsupported."
+  },
+  "Q54": {
+   "category": "a",
+   "canonical": {
+    "reading": "Reference reading (stated in the question interpretation).",
+    "source": "reference"
+   },
+   "alternatives": [],
+   "evidence": "Unsupported: diagnostic SQL re-run on the v2.3 warehouse returns prerequisite_available = 0 (no stream added by the population release supplies it). | v2.8: reference unsupported."
+  },
+  "Q55": {
+   "category": "a",
+   "canonical": {
+    "reading": "Reference reading (stated in the question interpretation).",
+    "source": "reference"
+   },
+   "alternatives": [],
+   "evidence": "Unsupported: diagnostic SQL re-run on the v2.3 warehouse returns prerequisite_available = 0 (no stream added by the population release supplies it). | v2.8: reference unsupported."
+  },
+  "Q56": {
+   "category": "a",
+   "canonical": {
+    "reading": "Reference reading (stated in the question interpretation).",
+    "source": "reference"
+   },
+   "alternatives": [],
+   "evidence": "Unsupported: diagnostic SQL re-run on the v2.3 warehouse returns prerequisite_available = 0 (no stream added by the population release supplies it). | v2.8: reference unsupported."
+  },
+  "Q57": {
+   "category": "a",
+   "canonical": {
+    "reading": "Reference reading (stated in the question interpretation).",
+    "source": "reference"
+   },
+   "alternatives": [],
+   "evidence": "Unsupported: diagnostic SQL re-run on the v2.3 warehouse returns prerequisite_available = 0 (no stream added by the population release supplies it). | v2.8: reference unsupported."
+  },
+  "Q58": {
+   "category": "a",
+   "canonical": {
+    "reading": "Reference reading (stated in the question interpretation).",
+    "source": "reference"
+   },
+   "alternatives": [],
+   "evidence": "Unsupported: diagnostic SQL re-run on the v2.3 warehouse returns prerequisite_available = 0 (no stream added by the population release supplies it). | v2.8: reference unsupported."
+  },
+  "Q59": {
+   "category": "a",
+   "canonical": {
+    "reading": "Reference reading (stated in the question interpretation).",
+    "source": "reference"
+   },
+   "alternatives": [],
+   "evidence": "Unsupported: diagnostic SQL re-run on the v2.3 warehouse returns prerequisite_available = 0 (no stream added by the population release supplies it). | v2.8: reference unsupported."
+  },
+  "Q60": {
+   "category": "a",
+   "canonical": {
+    "reading": "Reference reading (stated in the question interpretation).",
+    "source": "reference"
+   },
+   "alternatives": [],
+   "evidence": "Unsupported: diagnostic SQL re-run on the v2.3 warehouse returns prerequisite_available = 0 (no stream added by the population release supplies it). | v2.8: reference unsupported."
   }
- }
+ },
+ "heldout9_note": "heldout9 (Q01-Q60, as_of 2030-05-27) expected answers are stored for releases 9ef6ea79... (v2.3 sample, 4,499 patients) and d212c960... (v2.8 sample, 4,115 patients). The errata SQL is release-agnostic: current records only (v2.8 supersession; adjudication chains keep their parents), case-insensitive lab names, population sources (ADT, payer medical and pharmacy claims, AHC-HRSN screens, enrollment_spans), facility DRG payments, and payer copies of medical_claims claims / dispensed fills dropped. \"we/our\" = the whole patients view."
 }
