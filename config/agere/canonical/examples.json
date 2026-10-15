@@ -1,0 +1,37 @@
+{
+ "note": "Verified example queries for the canonical model docs (clinical_core.agere.canonical.docs_gen). Each expected answer comes from an independent raw-warehouse computation recorded as a reconciliation check in the versions build receipt (v28-sample), never from heldout questions or bench/capability. docs_gen executes every example against the database it documents and drops any example whose result differs.",
+ "examples": [
+  {
+   "id": "canon-ex-001",
+   "source": "canonical-reconciliation/payer_medical_paid_2029_final_paid_status (v28-sample)",
+   "question": "What is the total plan-paid amount on payer medical claims with a 2029 service-from date, counting only claims whose final adjudication is paid?",
+   "answer_type": "value",
+   "sql": "SELECT ROUND(SUM(net_amount), 2) AS value FROM entity_version WHERE stream = 'payer_medical_claims' AND final_status = 'paid' AND substr(service_date, 1, 4) = '2029'",
+   "expected": 13192436.59
+  },
+  {
+   "id": "canon-ex-002",
+   "source": "canonical-reconciliation/payer_pharmacy_claims_final_status:rejected (v28-sample)",
+   "question": "How many payer pharmacy claims ended rejected?",
+   "answer_type": "count",
+   "sql": "SELECT COUNT(*) AS count FROM entity_version WHERE stream = 'payer_pharmacy_claims' AND final_status = 'rejected'",
+   "expected": 4032
+  },
+  {
+   "id": "canon-ex-003",
+   "source": "canonical-reconciliation/pharmacy_dispenses_picked_up_fills (v28-sample)",
+   "question": "How many pharmacy dispense fills were actually picked up (excluding prepared-only and returned-to-stock fills)?",
+   "answer_type": "count",
+   "sql": "SELECT COUNT(*) AS count FROM entity_version WHERE stream = 'pharmacy_dispenses' AND picked_up = 1",
+   "expected": 33933
+  },
+  {
+   "id": "canon-ex-004",
+   "source": "canonical-reconciliation/payer_pharmacy_claims_distinct_claims (v28-sample)",
+   "question": "How many distinct payer pharmacy claims (rx_claim_id) were received?",
+   "answer_type": "count",
+   "sql": "SELECT COUNT(*) AS count FROM entity_version WHERE stream = 'payer_pharmacy_claims'",
+   "expected": 131736
+  }
+ ]
+}

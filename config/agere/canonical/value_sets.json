@@ -1,0 +1,108 @@
+{
+ "version": "canonical/1",
+ "note": "Code families used by canonical tables and marts. Codes live here, never in transform code. Each family cites its public source; HEDIS value-set names are given for alignment, but these lists are documentation-level code families, not licensed NCQA value sets. Codes marked retired are kept so historical claims still classify.",
+ "families": {
+  "mammography": {
+   "label": "Screening and diagnostic mammography (incl. DBT)",
+   "codes": {"cpt": ["77061", "77062", "77063", "77065", "77066", "77067"],
+             "hcpcs": ["G0202", "G0204", "G0206", "G0279"]},
+   "retired": {"hcpcs": ["G0202", "G0204", "G0206"]},
+   "citations": ["NCQA HEDIS MY2025 Breast Cancer Screening (BCS-E), value set 'Mammography'",
+                 "AMA CPT 2017 code changes: 77065-77067 replaced G0202/G0204/G0206 (CMS MLN MM9862)"]
+  },
+  "colonoscopy": {
+   "label": "Colonoscopy (screening and diagnostic)",
+   "codes": {"cpt": ["44388", "44389", "44390", "44391", "44392", "44394", "44401", "44402", "44403", "44404", "44405", "44406", "44407", "44408",
+                     "45378", "45379", "45380", "45381", "45382", "45384", "45385", "45386", "45388", "45389", "45390", "45391", "45392", "45393", "45398"],
+             "hcpcs": ["G0105", "G0121"]},
+   "citations": ["NCQA HEDIS MY2025 Colorectal Cancer Screening (COL-E), value set 'Colonoscopy'",
+                 "CMS Medicare Claims Processing Manual ch.18 sec.60 (G0105 high risk, G0121 average risk)"]
+  },
+  "fit": {
+   "label": "Fecal occult blood / fecal immunochemical test",
+   "codes": {"cpt": ["82270", "82274"], "hcpcs": ["G0328"],
+             "loinc": ["2335-8", "27396-1", "27401-9", "27925-7", "27926-5", "29771-3", "56490-6", "56491-4", "57905-2", "58453-2", "80372-6"]},
+   "citations": ["NCQA HEDIS MY2025 COL-E, value set 'FOBT Lab Test' / 'FOBT Test Result or Finding'",
+                 "CMS Medicare Claims Processing Manual ch.18 sec.60 (G0328 immunoassay FOBT)"]
+  },
+  "fit_dna": {
+   "label": "Stool DNA with FIT (sDNA-FIT)",
+   "codes": {"cpt": ["81528"], "hcpcs": ["G0464"], "loinc": ["77353-1", "77354-9"]},
+   "retired": {"hcpcs": ["G0464"]},
+   "citations": ["NCQA HEDIS MY2025 COL-E, value set 'sFIT-DNA Lab Test'", "CMS NCD 210.3 Colorectal Cancer Screening Tests"]
+  },
+  "awv": {
+   "label": "Medicare Annual Wellness Visit and Welcome to Medicare (IPPE)",
+   "codes": {"hcpcs": ["G0438", "G0439", "G0402"]},
+   "members": {"awv_initial": ["G0438"], "awv_subsequent": ["G0439"], "ippe": ["G0402"]},
+   "citations": ["CMS MLN6775421 Medicare Wellness Visits (G0402 IPPE, G0438 initial AWV, G0439 subsequent AWV)", "42 CFR 410.15"]
+  },
+  "a1c": {
+   "label": "Hemoglobin A1c test",
+   "codes": {"cpt": ["83036", "83037"], "cpt_ii": ["3044F", "3046F", "3051F", "3052F"],
+             "loinc": ["4548-4", "4549-2", "17856-6", "96595-4"]},
+   "citations": ["NCQA HEDIS MY2025 Glycemic Status Assessment for Patients With Diabetes (GSD), value sets 'HbA1c Lab Test' and 'HbA1c Level' CPT II",
+                 "LOINC 4548-4 Hemoglobin A1c/Hemoglobin.total in Blood"]
+  },
+  "flu_vaccine": {
+   "label": "Influenza vaccine product and administration",
+   "codes": {"cpt": ["90630", "90653", "90654", "90655", "90656", "90657", "90658", "90660", "90661", "90662", "90664", "90666", "90667", "90668",
+                     "90672", "90673", "90674", "90682", "90685", "90686", "90687", "90688", "90689", "90694", "90756"],
+             "hcpcs_admin": ["G0008"],
+             "hcpcs_product": ["Q2035", "Q2036", "Q2037", "Q2038", "Q2039"],
+             "cvx": ["88", "111", "135", "140", "141", "144", "149", "150", "151", "153", "155", "158", "161", "166", "168", "171", "185", "186", "197", "200", "201", "205", "231", "320"]},
+   "citations": ["CDC CVX code set (https://www2a.cdc.gov/vaccines/iis/iisstandards/vaccines.asp?rpt=cvx)",
+                 "NCQA HEDIS MY2025 Adult Immunization Status (AIS-E), value sets 'Adult Influenza Immunization' / 'Adult Influenza Vaccine Procedure'",
+                 "CMS MLN Influenza vaccine payment allowances (G0008 administration)"]
+  },
+  "ed_revenue": {
+   "label": "Emergency department revenue codes",
+   "codes": {"revenue": ["0450", "0451", "0452", "0456", "0459", "0981"]},
+   "citations": ["NUBC UB-04 Data Specifications Manual, FL 42 revenue codes 045X Emergency Room, 0981 Professional fees-ER",
+                 "NCQA HEDIS MY2025 'ED' value set (UBREV 0450-0452, 0456, 0459, 0981)"]
+  },
+  "ed_em": {
+   "label": "Emergency department E/M and critical care",
+   "codes": {"cpt": ["99281", "99282", "99283", "99284", "99285", "99291", "99292"], "pos": ["23"]},
+   "citations": ["AMA CPT Emergency Department Services 99281-99285", "CMS Place of Service code set: 23 Emergency Room - Hospital"]
+  },
+  "observation": {
+   "label": "Hospital observation stay",
+   "codes": {"revenue": ["0760", "0761", "0762", "0769"], "hcpcs": ["G0378", "G0379"],
+             "cpt": ["99218", "99219", "99220", "99224", "99225", "99226", "99234", "99235", "99236"]},
+   "retired": {"cpt": ["99217", "99218", "99219", "99220", "99224", "99225", "99226"]},
+   "citations": ["NUBC UB-04 revenue code 076X Specialty Services (0762 Observation Hours)",
+                 "CMS Medicare Claims Processing Manual ch.4 sec.290 Outpatient Observation Services (G0378, G0379)",
+                 "AMA CPT 2023: observation codes 99217-99220, 99224-99226 deleted and merged into 99221-99239"]
+  },
+  "tob_families": {
+   "label": "Type of bill families (first three digits; fourth digit = frequency)",
+   "families": {
+    "inpatient_hospital": ["011"], "inpatient_hospital_part_b": ["012"], "outpatient_hospital": ["013"],
+    "hospital_other": ["014"], "swing_bed": ["018"], "snf_inpatient": ["021"], "snf_part_b": ["022"], "snf_outpatient": ["023"],
+    "home_health": ["032", "033", "034"], "rural_health_clinic": ["071"], "esrd": ["072"], "fqhc": ["073", "077"],
+    "cmhc": ["076"], "hospice": ["081", "082"], "asc": ["083"], "cah": ["085"]
+   },
+   "frequency_codes": {"1": "admit through discharge / original", "7": "replacement of prior claim", "8": "void/cancel of prior claim"},
+   "citations": ["NUBC UB-04 Data Specifications Manual, FL 04 Type of Bill", "CMS Medicare Claims Processing Manual ch.25 sec.75.1 (TOB)",
+                 "X12 837 CLM05-3 claim frequency type codes 1/7/8"]
+  },
+  "pos_groups": {
+   "label": "Place of service groups (professional claims)",
+   "families": {
+    "telehealth": ["02", "10"], "office": ["11"], "home": ["12"], "assisted_living": ["13"], "urgent_care": ["20"],
+    "inpatient_hospital": ["21"], "outpatient_hospital": ["19", "22"], "emergency": ["23"], "asc": ["24"],
+    "snf": ["31"], "nursing_facility": ["32"], "hospice": ["34"], "inpatient_psych": ["51"], "community_mental_health": ["53"],
+    "esrd": ["65"], "irf": ["61"], "comprehensive_outpatient_rehab": ["62"], "independent_lab": ["81"], "fqhc": ["50"], "rhc": ["72"]
+   },
+   "citations": ["CMS Place of Service Code Set (https://www.cms.gov/medicare/coding-billing/place-of-service-codes/code-sets)"]
+  },
+  "claim_status": {
+   "label": "Final adjudication statuses (payer perspective) and how versions.py derives them",
+   "families": {"payer_medical": ["paid", "denied", "denied_upheld", "voided", "reversed", "recouped", "replaced"],
+                "payer_pharmacy": ["paid", "rejected", "reversed", "recouped"]},
+   "ncpdp_reject_codes": {"70": "Product/service not covered", "75": "Prior authorization required", "79": "Refill too soon"},
+   "citations": ["NCPDP Telecommunication Standard reject codes (511-FB)", "X12 835 CARC code list (CO-27, CO-45, CO-50, CO-129, CO-197)"]
+  }
+ }
+}

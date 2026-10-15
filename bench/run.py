@@ -15,8 +15,11 @@ import time
 
 if __package__ in (None, ''):
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from bench.common import DEFAULT_DB, DEFAULT_SEMANTIC_DB, ROOT, SemanticWarehouse, Warehouse, load_questions, reference_answer
-from bench.adapters import MODEL, agere, frontier_semantic, frontier_sql
+from bench.common import (DEFAULT_DB, DEFAULT_SEMANTIC_DB, ROOT, CanonicalWarehouse, SemanticWarehouse, Warehouse,
+                          load_questions, reference_answer)
+from bench.adapters import MODEL, agere, frontier_canonical, frontier_semantic, frontier_sql
+
+DEFAULT_CANONICAL_DB = ROOT.parent / 'artifacts/canonical/v28-sample/versions.sqlite3'
 from bench.score import by_confidence, confidence_of, score_answer
 from bench.errata import ERRATA_PATH, compute_expected, load_errata, score_with_errata
 
@@ -118,6 +121,16 @@ def run_one(question, args, identity, attempt=1):
                     row.update(frontier_semantic(question, semantic, model=args.model, max_tools=args.max_tools))
                 finally:
                     semantic.close()
+            elif args.system == 'frontier_canonical':
+                canonical = CanonicalWarehouse(args.canonical_database, timeout_s=args.sql_timeout)
+                try:
+                    # The canonical model must be built from the same release the references read.
+                    row['canonical_release'] = canonical.meta.get('release')
+                    if row['canonical_release'] not in (None, warehouse.release):
+                        raise ValueError(f"Canonical release {row['canonical_release']} != warehouse release {warehouse.release}")
+                    row.update(frontier_canonical(question, canonical, model=args.model, max_tools=args.max_tools))
+                finally:
+                    canonical.close()
             else:
                 row.update(frontier_sql(question, warehouse, model=args.model, max_tools=args.max_tools))
         finally:
@@ -139,17 +152,20 @@ def run_one(question, args, identity, attempt=1):
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--system', choices=['reference', 'agere', 'frontier_sql', 'frontier_semantic'], required=True)
+    parser.add_argument('--system', choices=['reference', 'agere', 'frontier_sql', 'frontier_semantic', 'frontier_canonical'],
+                        required=True)
     parser.add_argument('--database', type=Path, default=DEFAULT_DB)
     parser.add_argument('--semantic-database', type=Path, default=DEFAULT_SEMANTIC_DB,
                         help='frontier_semantic: the semantic layer (<build>/stack/semantic.sqlite3) of the same release')
+    parser.add_argument('--canonical-database', type=Path, default=DEFAULT_CANONICAL_DB,
+                        help='frontier_canonical: the canonical model database (SQLite) built from the same release')
     parser.add_argument('--release')
     parser.add_argument('--as-of', help='Re-date every question to this snapshot (YYYY-MM-DD), e.g. a newer warehouse cutoff; '
                                         'the date in the question text and the reference cutoff both change')
     parser.add_argument('--ids', nargs='+', help='Space- or comma-separated question IDs')
     parser.add_argument('--url', default='http://127.0.0.1:8885')
     parser.add_argument('--model', default=MODEL)
-    parser.add_argument('--max-tools', type=int, help='SQL calls per question (default 20 frontier_sql, 8 frontier_semantic)')
+    parser.add_argument('--max-tools', type=int, help='SQL calls per question (default 20 frontier_sql, 8 frontier_semantic/frontier_canonical)')
     parser.add_argument('--sql-timeout', type=float, default=180)
     parser.add_argument('--jobs', type=int, default=1)
     parser.add_argument('--resume', type=Path, help='Append only unanswered IDs to this prior JSONL; never silently retry a paid attempt')
@@ -159,7 +175,7 @@ def main(argv=None):
                         help='Also compute errata readings and an errata_score per row (row score stays the default scorer)')
     args = parser.parse_args(argv)
     if args.max_tools is None:
-        args.max_tools = 8 if args.system == 'frontier_semantic' else 20
+        args.max_tools = 8 if args.system in ('frontier_semantic', 'frontier_canonical') else 20
     if not 1 <= args.jobs <= 4 or not 1 <= args.max_tools <= 20 or args.sql_timeout <= 0 or not 1 <= args.repeat <= 5:
         parser.error('jobs must be 1..4, max-tools 1..20, repeat 1..5 and SQL timeout positive')
     all_questions = load_questions(); identity = suite_digest(all_questions)
@@ -178,7 +194,7 @@ def main(argv=None):
         existing = [json.loads(line) for line in destination.read_text().splitlines() if line.strip()]
         if any(r['system'] != args.system or r['suite_sha256'] != identity for r in existing):
             parser.error('Resume file system/suite mismatch')
-        if args.system in ('frontier_sql', 'frontier_semantic') and any(r.get('model') != args.model for r in existing):
+        if args.system in ('frontier_sql', 'frontier_semantic', 'frontier_canonical') and any(r.get('model') != args.model for r in existing):
             parser.error('Resume file model mismatch')
         warehouse = Warehouse(args.database, release=args.release)
         try:
@@ -201,14 +217,15 @@ def main(argv=None):
         commit = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip()
     except (OSError, subprocess.CalledProcessError):
         commit = None
-    if args.system == 'frontier_semantic':
-        snapshot = SemanticWarehouse(args.semantic_database)
+    if args.system in ('frontier_semantic', 'frontier_canonical'):
+        snapshot = (SemanticWarehouse(args.semantic_database) if args.system == 'frontier_semantic'
+                    else CanonicalWarehouse(args.canonical_database))
         try:
             off = sorted({q['as_of'] for q, _ in pending} - {snapshot.as_of})
         finally:
             snapshot.close()
         if off:
-            print(f'Note: semantic snapshot is {snapshot.as_of}; questions dated {off} rely on available_date filtering '
+            print(f'Note: {args.system} snapshot is {snapshot.as_of}; questions dated {off} rely on available_date filtering '
                   f'(use --as-of {snapshot.as_of} to align references with the snapshot)', flush=True)
     print(f'Results: {destination}', flush=True)
     failed_references = 0

@@ -221,6 +221,33 @@ class SemanticWarehouse:
         self.db.close()
 
 
+class CanonicalWarehouse(SemanticWarehouse):
+    """Read-only access to a canonical model database (clinical_core/agere/canonical; Tuva marts exported to SQLite).
+
+    Same guard as SemanticWarehouse (mode=ro, query_only, no extensions, SELECT/READ-only authorizer, time limit,
+    explicit truncation). The `meta` table is optional: a database without one has no recorded snapshot date."""
+
+    def __init__(self, path, timeout_s=30):
+        if path is None or not Path(path).is_file():
+            raise ValueError(f'Canonical database not found: {path}')
+        if Path(path).suffix.lower() == '.duckdb':
+            raise ValueError('DuckDB canonical databases are not readable here yet (the duckdb package is not '
+                             'installed); export the canonical tables to SQLite')
+        self.path = Path(path).resolve()
+        self.db = sqlite3.connect(self.path.as_uri() + '?mode=ro', uri=True, check_same_thread=False)
+        self.db.row_factory = sqlite3.Row
+        self.timeout_s = timeout_s
+        self.db.execute('PRAGMA query_only=ON')
+        names = [r[0] for r in self.db.execute("SELECT name FROM sqlite_master WHERE type IN ('table','view') "
+                                               "AND name NOT LIKE 'sqlite_%' ORDER BY name")]
+        self.meta = ({k: v for k, v in self.db.execute('SELECT key, value FROM meta') if k != 'receipt'}
+                     if 'meta' in names else {})
+        self.as_of = self.meta.get('as_of')
+        self.columns = {n: [r[1] for r in self.db.execute(f'PRAGMA table_info("{n}")')] for n in names}
+        self.db.enable_load_extension(False)
+        self.db.set_authorizer(self._authorize)
+
+
 def reference_answer(question, warehouse):
     evidence = warehouse.query((ROOT / question['reference_sql']).read_text())
     if evidence['truncated']:
