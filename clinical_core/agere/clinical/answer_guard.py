@@ -27,11 +27,21 @@ metric router, operator router, hosted SQL, typed router, frontier, exact-questi
    the relaxed compiler or the metric router for hosted SQL and its caches - and is compared under verification_v2's
    agreement rules. Agree -> confidence detail 'cross_checked'. Disagree -> the frontier planner breaks the tie when
    available; otherwise both readings are returned at low confidence with the reason. AGERE_CROSS_CHECK=on|off.
+   Latency: `start` launches the independent path in a worker thread as soon as the primary plan is known, so it runs while
+   the primary executes (the hosted ladder reads the executed primary answer as its free candidate after its own first model
+   call). Nothing starts when the check cannot change the decision: switch off, a certified-and-passed path, an unsupported
+   plan, or a breakdown / list question on a non-hosted route (a table; it is checked after execution if it turns out
+   comparable). An abstention, requires_input or table answer drops a started check. The answer waits for the check at most
+   until AGERE_CROSS_CHECK_BUDGET_S (default 45) after the question started; past that it ships with confidence
+   'unverified' and the reason 'cross-check timed out' (never upgraded without the check), and the worker finishes in the
+   background so its model calls land in the ledger cache for the next ask. An independent path that gives no answer is
+   'unavailable', not a disagreement.
 
 Every extra call is recorded as a planner step (economical_planner.economics prices it) and in receipt['answer_guard'].
 Synthetic data only. AGERE_ANSWER_GUARD=off disables 1-3.
 """
-import json, math, os, re, sqlite3, time
+import inspect, json, math, os, re, sqlite3, threading, time
+from concurrent.futures import Future, ThreadPoolExecutor, TimeoutError as FutureTimeout
 from collections import defaultdict
 
 VERSION = 'answer-guard/1'
@@ -165,12 +175,24 @@ class _Index:
         self.df = {t: len({e[0] for e in lst}) for t, lst in self.inv.items()}
 
 
+_INDEX_LOCK = threading.Lock()
+_COUNTS = {}  # (path, source_digest, stream, period, field, value, kind) -> period record count (read-only warehouse)
+
+
 def _index(profile):
-    key = (profile.get('source_digest'), id(profile))
-    if key not in _INDEX:
-        if len(_INDEX) > 4: _INDEX.clear()
-        _INDEX[key] = _Index(profile)
-    return _INDEX[key]
+    """The catalog's inverted index, built once per process per source digest (the probe and the writer's raw-catalog slice
+    run on every guarded / hosted question). A profile without a digest is keyed by identity and kept alive with its index so
+    the id cannot be reused."""
+    digest = profile.get('source_digest')
+    key = ('digest', digest) if isinstance(digest, str) and digest else ('id', id(profile))
+    hit = _INDEX.get(key)
+    if hit is not None and (key[0] == 'digest' or hit[0] is profile): return hit[1]
+    with _INDEX_LOCK:
+        hit = _INDEX.get(key)
+        if hit is None or (key[0] == 'id' and hit[0] is not profile):
+            if len(_INDEX) > 4: _INDEX.clear()
+            hit = _INDEX[key] = (profile, _Index(profile))
+        return hit[1]
 
 
 def _code_fields(spec, limit=3):
@@ -194,12 +216,15 @@ def _connect_ro(path):
     return db
 
 
-def _period_counts(db, cand, period):
-    """Rows of the stream (and of its best matching values) in the period, from the read-only record table."""
+def _period_counts(db, cand, period, memo=None):
+    """Rows of the stream (and of its best matching values) in the period, from the read-only record table. memo(key, query)
+    caches counts per process (the warehouse is read-only for a source digest)."""
     s = cand['stream']
     lo, hi = period if period else ('0000-00-00', '9999-12-31')
     cand['period'] = list(period) if period else None
-    cand['period_records'] = db.execute('SELECT count(*) FROM record WHERE stream = ? AND event_date BETWEEN ? AND ?', (s, lo, hi)).fetchone()[0]
+    count = memo or (lambda key, run: run())
+    cand['period_records'] = count((s, lo, hi), lambda: db.execute('SELECT count(*) FROM record WHERE stream = ? AND event_date BETWEEN ? AND ?',
+                                                                    (s, lo, hi)).fetchone()[0])
     for ev in cand['evidence'][:3]:
         if ev.get('value') is None: continue
         f = ev['field']
@@ -209,7 +234,7 @@ def _period_counts(db, cand, period):
                    f"(SELECT 1 FROM json_each(json_extract(payload,'$.{f}')) WHERE value = ?)")
         else:
             sql = f"SELECT count(*) FROM record WHERE stream = ? AND event_date BETWEEN ? AND ? AND json_extract(payload,'$.{f}') = ?"
-        ev['period_records'] = db.execute(sql, (s, lo, hi, ev['value'])).fetchone()[0]
+        ev['period_records'] = count((s, lo, hi, f, ev['kind'], ev['value']), lambda: db.execute(sql, (s, lo, hi, ev['value'])).fetchone()[0])
 
 
 def _encoder_scores(encoder, question, streams, idx):
@@ -287,10 +312,19 @@ def probe(question, profile, *, path=None, k=3, encoder=None, used=()):
         except (OSError, ValueError, KeyError, sqlite3.Error):
             db = None
         if db is not None:
+            base = (str(path), profile.get('source_digest'))
+
+            def memo(key, run):
+                key = base + key
+                if key not in _COUNTS:
+                    if len(_COUNTS) > 4096: _COUNTS.clear()
+                    _COUNTS[key] = run()
+                return _COUNTS[key]
+            if not (isinstance(base[1], str) and base[1]): memo = None  # no digest: the store may change under the same path
             try:
                 for c in top[:k + 1]:
                     try:
-                        _period_counts(db, c, period)
+                        _period_counts(db, c, period, memo)
                     except sqlite3.Error:
                         continue
                     best = next((ev for ev in c['evidence'] if ev.get('period_records') is not None), None)
@@ -331,13 +365,14 @@ def raw_catalog_slice(question, profile, path=None, shown=(), k=4, budget=RAW_SL
     the fields and exact values that matched, for the hosted SQL writer; bounded by `budget` characters. Raw streams are
     queried through the read-only `record` table (json_extract on payload), under the semantic SQL guard."""
     if os.environ.get('AGERE_RAW_CATALOG', 'on') == 'off': return '', None
+    t0 = time.perf_counter()
     try:
         # profile counts only: per-period warehouse counts cost seconds on large streams and the writer runs on every hosted ask
         found = probe(question, profile, path=None, k=k + len(shown), encoder=encoder)
     except Exception as exc:  # noqa: BLE001 - retrieval is an aid, never a blocker
         return '', {'error': f'{type(exc).__name__}: {exc}'[:200]}
     picks = [c for c in found['candidates'] if c['stream'] not in set(shown) and (c['likely'] or c['item_coverage'] >= 0.5)][:k]
-    if not picks: return '', {'streams': [], 'version': VERSION}
+    if not picks: return '', {'streams': [], 'version': VERSION, 'seconds': round(time.perf_counter() - t0, 3)}
     head = ('\n\nRECEIVED STREAMS MATCHING THE QUESTION (raw records, full catalog; query them as record WHERE stream = \'<stream>\' '
             "with json_extract(payload,'$.<field>'); values are exact spellings)")
     lines, used = [], []
@@ -355,7 +390,8 @@ def raw_catalog_slice(question, profile, path=None, shown=(), k=4, budget=RAW_SL
             line = line[:max(0, budget - len(head) - sum(map(len, lines)) - 4)].rstrip(', ') + '...'
             if len(line) < 40: break
         lines.append(line); used.append(c['stream'])
-    return head + '\n' + '\n'.join(lines), {'streams': used, 'version': VERSION, 'period': found['period']}
+    return head + '\n' + '\n'.join(lines), {'streams': used, 'version': VERSION, 'period': found['period'],
+                                             'seconds': round(time.perf_counter() - t0, 3)}
 
 
 # ---------------------------------------------------------------------------------------------------- sources an answer read
@@ -486,13 +522,17 @@ def abstain(answer, reason, names):
     return out
 
 
-def review(stack, question, graph, receipt, result, *, ledger=None, frontier=None, profile=None, hosted=None, encoder=None):
+def review(stack, question, graph, receipt, result, *, ledger=None, frontier=None, profile=None, hosted=None, encoder=None,
+           pending=None, deadline=None):
     """Guard and cross-check one executed answer. -> (graph, receipt, result, new_paid_calls).
     hosted(stack, question, ledger, extra_streams=..., feedback=..., independent=..., stage=...) -> (graph, receipt, result) replaces
-    hosted_sql (tests); frontier is the compose() frontier callback."""
+    hosted_sql (tests); frontier is the compose() frontier callback. pending: the cross-check start() began with the primary
+    plan; deadline: the question's cross-check deadline (perf_counter time)."""
     hosted = hosted or hosted_sql
     if not isinstance(receipt, dict) or not isinstance(result, dict) or not isinstance(result.get('answer'), dict):
+        if pending is not None: pending.cancel()
         return graph, receipt, result, 0
+    t0 = time.perf_counter()
     encoder = encoder if encoder is not None else getattr(getattr(stack, 'retriever', None), 'encoder', None)
     if profile is None:
         try:
@@ -584,9 +624,13 @@ def review(stack, question, graph, receipt, result, *, ledger=None, frontier=Non
     elif found:
         guard['triggers'] = found; guard['decision'] = 'no_profile'
     receipt['answer_guard'] = guard
+    t1 = time.perf_counter()
     if guard.get('decision') != 'abstained':
         graph, receipt, result = cross_check(stack, question, graph, receipt, result, ledger=ledger, frontier=frontier, profile=profile,
-                                             hosted=hosted, encoder=encoder)
+                                             hosted=hosted, encoder=encoder, pending=pending, deadline=deadline)
+    elif pending is not None:
+        pending.cancel()
+    receipt.setdefault('answer_guard', guard)['timings'] = {'guard_probe_s': round(t1 - t0, 3), 'cross_check_s': round(time.perf_counter() - t1, 3)}
     return graph, receipt, result, (receipt.get('new_paid_api_calls') or 0) - calls0
 
 
@@ -651,8 +695,20 @@ def _same(a, b):
         return False
 
 
-def _independent(stack, question, receipt, answer, *, ledger, profile, hosted, live):
-    """One independent path -> (label, graph, receipt-or-None, result, usd, paid_calls) or (None, reason)."""
+def comparable(answer):
+    """An asserted count / value / patient set: the only shapes the cross-check can compare (tables, abstentions and
+    requires_input answers are never cross-checked)."""
+    return _asserted(answer) and answer.get('answer_type') in COMPARABLE
+
+
+def _mine(answer, route):
+    return {'label': route or 'route', 'result': as_result(answer), 'definition': answer.get('computed') or answer.get('interpretation')}
+
+
+def _independent(stack, question, receipt, primary, *, ledger, profile, hosted, live):
+    """One independent path -> (label, graph, receipt-or-None, result, usd, paid_calls) or (None, reason, usd, paid_calls).
+    primary() returns the primary answer (it may block until the primary path has executed; the hosted ladder only reads it as
+    a free candidate after its own first model call, so the two run at the same time)."""
     route = effective_route(receipt)
     as_of = stack.retriever.meta['snapshot']['as_of']
     if route in HOSTED_ROUTES:
@@ -687,14 +743,141 @@ def _independent(stack, question, receipt, answer, *, ledger, profile, hosted, l
                 return (None, f"no independent path: compiler declined, metric router {info.get('decision') or info.get('router_error')}", usd, n)
         return (None, 'no independent path: compiler declined and hosted answering is off', 0.0, 0)
     if not live: return (None, 'hosted answering is off', 0.0, 0)
-    mine = {'label': route or 'route', 'result': as_result(answer), 'definition': answer.get('computed') or answer.get('interpretation')}
     try:
-        g, r, res = hosted(stack, question, ledger, independent=[lambda q: mine], stage='cross_check')
+        g, r, res = hosted(stack, question, ledger, independent=[lambda q: _mine(primary(), route)], stage='cross_check')
     except (ValueError, RuntimeError, OSError, sqlite3.Error) as exc:
         return (None, f'hosted SQL declined: {exc}'[:200], getattr(exc, 'guard_cost', 0.0), getattr(exc, 'guard_calls', 0))
     usd = r.pop('_cost', None)
     if usd is None: usd = sum((s.get('receipt') or {}).get('cost_estimate', {}).get('estimated_usd') or 0 for s in r.get('steps') or [])
     return ('hosted_verified_sql', g, r, res, usd, r.get('new_paid_api_calls', 0))
+
+
+# ---- concurrency and the latency budget
+# The independent path starts as soon as the primary plan is known (stack_runtime.compose, before the primary executes) and
+# runs in a worker thread; the answer waits for it at most until the per-question deadline (AGERE_CROSS_CHECK_BUDGET_S from
+# the question's start, default 45 s). A check that is not back by then leaves the answer 'unverified' with the reason
+# 'cross-check timed out' (finish); the worker finishes in the background and its model calls land in the ledger cache, so
+# the next ask of the same question reuses them.
+DEFAULT_BUDGET_S = 45.0
+_POOL = None
+_POOL_LOCK = threading.Lock()
+
+
+def budget_s():
+    try:
+        v = float(os.environ.get('AGERE_CROSS_CHECK_BUDGET_S', DEFAULT_BUDGET_S))
+    except ValueError:
+        v = DEFAULT_BUDGET_S
+    return v if math.isfinite(v) and v >= 0 else DEFAULT_BUDGET_S
+
+
+def _pool():
+    global _POOL
+    with _POOL_LOCK:
+        if _POOL is None:
+            _POOL = ThreadPoolExecutor(max_workers=8, thread_name_prefix='agere-cross-check')
+        return _POOL
+
+
+def _own_ledger(ledger):
+    """A separate BudgetLedger connection on the same file for a worker thread (a BudgetLedger is never shared
+    concurrently); None for anything else (test doubles are used as given)."""
+    from ..gateway import BudgetLedger
+    return BudgetLedger(ledger.path) if isinstance(ledger, BudgetLedger) else None
+
+
+class _NotComparable(BaseException):
+    """Raised inside a hosted cross-check when the primary answer turned out not comparable (table, abstention, error): it
+    is a BaseException so the ladder's free-source wrapper (which absorbs Exception) lets it abort the ladder before the
+    second / judge calls."""
+
+
+class PendingCheck:
+    """One independent path running in a worker thread. provide(answer) hands it the primary answer; result() waits for it
+    until the deadline."""
+
+    def __init__(self, stack, question, receipt, *, ledger, profile, hosted, deadline):
+        self.receipt, self.deadline, self.started = receipt, deadline, time.perf_counter()
+        self.route = effective_route(receipt)
+        self._answer = Future()
+        live = bool(getattr(stack, 'allow_live', False)) and ledger is not None
+        self.future = _pool().submit(self._run, stack, question, receipt, ledger, profile, hosted or hosted_sql, live)
+
+    def _primary(self):
+        try:  # never wait for a primary answer that would arrive after the deadline anyway
+            answer = self._answer.result(timeout=max(0.0, self.deadline - time.perf_counter()) + 5.0)
+        except FutureTimeout:
+            answer = None
+        if answer is None: raise _NotComparable()
+        return answer
+
+    def _run(self, stack, question, receipt, ledger, profile, hosted, live):
+        own = _own_ledger(ledger)
+        if own is not None: ledger = own
+        try:
+            return _independent(stack, question, receipt, self._primary, ledger=ledger, profile=profile, hosted=hosted, live=live)
+        except _NotComparable:
+            return (None, 'cancelled: the primary answer is not comparable', 0.0, 0)
+        finally:
+            if own is not None: own.close()
+
+    def provide(self, answer):
+        if not self._answer.done(): self._answer.set_result(dict(answer) if comparable(answer) else None)
+
+    def cancel(self):
+        self.provide(None)
+        self.future.cancel()
+
+    def result(self):
+        """-> the _independent tuple, or None when the deadline passed first."""
+        try:
+            return self.future.result(timeout=max(0.0, self.deadline - time.perf_counter()))
+        except FutureTimeout:
+            return None
+        except Exception as exc:  # noqa: BLE001 - a failed check never fails the answer; it is reported as unavailable
+            return (None, f'cross-check failed: {type(exc).__name__}: {exc}'[:200], 0.0, 0)
+
+
+# analysis_graph.build_answer_core: a plan ending in one of these engines answers with a table (or unsupported), never a
+# count / value / patient set ('vbc', 'aggregate', 'sql' and population nodes can, so they are not listed)
+_TABLE_OPERATIONS = {'trajectory', 'calibration', 'scheduling', 'survival', 'briefing', 'pathway', 'discover', 'outreach', 'knowledge',
+                     'early_signal', 'profile', 'monitor', 'claims_review', 'risk_adjustment', 'network', 'target_trial', 'line_of_therapy',
+                     'trial_feasibility', 'loop_closure', 'diagnostic_delay', 'risk_outcomes', 'contract_strategy', 'market', 'demand',
+                     'program_effect', 'explain'}
+
+
+def _predicted_table(question, route, graph=None):
+    """Before execution: the plan itself returns a table (a final SQL node with returns 'table', or an operation that always
+    answers with one), or a non-hosted route answers a breakdown / list question. A table is never compared, so a check
+    started now would be wasted; the executed answer decides instead (cross_check starts one then if it is comparable)."""
+    nodes = (graph or {}).get('nodes') or []
+    last = nodes[-1] if nodes and isinstance(nodes[-1], dict) else {}
+    if last.get('operation') == 'sql' and (last.get('parameters') or {}).get('returns') == 'table': return True
+    if last.get('operation') in _TABLE_OPERATIONS: return True
+    return route not in HOSTED_ROUTES and bool(_TABLE_Q.search(question or '')) and not re.search(r'^\s*(?:which|who)\b', question or '', re.I)
+
+
+def start(stack, question, graph, receipt, *, ledger=None, profile=None, hosted=None, encoder=None, deadline=None):
+    """Start the cross-check as soon as the primary plan is known (before it executes). -> PendingCheck or None when the
+    answer cannot need one (switch off, certified path, unsupported plan, predicted table); cross_check then decides on the
+    executed answer as before."""
+    if not cross_check_enabled() or not isinstance(receipt, dict): return None
+    if (graph or {}).get('coverage') == 'unsupported' or not (graph or {}).get('nodes') or receipt.get('route') == 'hosted_missing_data':
+        return None
+    if _predicted_table(question, effective_route(receipt), graph): return None
+    if certification(receipt, encoder)['certified']: return None
+    return PendingCheck(stack, question, receipt, ledger=ledger, profile=profile, hosted=hosted,
+                        deadline=deadline if deadline is not None else time.perf_counter() + budget_s())
+
+
+def _bounded(fn, deadline):
+    """Run fn() in the worker pool; -> (done, value). Never waits past the deadline (and starts nothing once it has passed)."""
+    if deadline - time.perf_counter() <= 0: return False, None
+    fut = _pool().submit(fn)
+    try:
+        return True, fut.result(timeout=max(0.0, deadline - time.perf_counter()))
+    except FutureTimeout:
+        return False, None
 
 
 def _readings(answer, other, label, route):
@@ -706,21 +889,43 @@ def _readings(answer, other, label, route):
             'clarifying_question': None, 'version': VERSION}
 
 
-def cross_check(stack, question, graph, receipt, result, *, ledger=None, frontier=None, profile=None, hosted=None, encoder=None):
-    """One independent path for an answer whose path is not certified; see the module docstring. -> (graph, receipt, result)."""
+def cross_check(stack, question, graph, receipt, result, *, ledger=None, frontier=None, profile=None, hosted=None, encoder=None,
+                pending=None, deadline=None):
+    """One independent path for an answer whose path is not certified; see the module docstring. -> (graph, receipt, result).
+    pending: the PendingCheck started before the primary executed (start); a check started for a different receipt (the guard
+    re-planned) is dropped and a new one runs. deadline: perf_counter time after which the answer ships without the check."""
     hosted = hosted or hosted_sql
     answer = result.get('answer') if isinstance(result, dict) else None
     info = {'version': VERSION}
     receipt.setdefault('answer_guard', {'version': VERSION})['cross_check'] = info
-    if not cross_check_enabled(): info['status'] = 'off'; return graph, receipt, result
-    if not _asserted(answer) or answer.get('answer_type') not in COMPARABLE:
-        info.update(status='skipped', reason='answer shape is not comparable across paths'); return graph, receipt, result
+
+    def drop(): pending is not None and pending.cancel()
+    if not cross_check_enabled(): drop(); info['status'] = 'off'; return graph, receipt, result
+    if not comparable(answer):
+        drop(); info.update(status='skipped', reason='answer shape is not comparable across paths'); return graph, receipt, result
     cert = certification(receipt, encoder)
     info['certification'] = cert
     if cert['certified']:
-        info.update(status='skipped', reason='every gate on the path is certified'); return graph, receipt, result
+        drop(); info.update(status='skipped', reason='every gate on the path is certified'); return graph, receipt, result
     live = bool(getattr(stack, 'allow_live', False)) and ledger is not None
-    out = _independent(stack, question, receipt, answer, ledger=ledger, profile=profile, hosted=hosted, live=live)
+    if pending is not None and pending.receipt is not receipt:
+        info['restarted'] = 'the guard replaced the primary answer'; drop(); pending = None
+    if deadline is None: deadline = pending.deadline if pending is not None else time.perf_counter() + budget_s()
+    if pending is None:
+        pending = PendingCheck(stack, question, receipt, ledger=ledger, profile=profile, hosted=hosted, deadline=deadline)
+        info['started'] = 'after execution'
+    else:
+        info['started'] = 'with the primary plan (concurrent with execution)'
+    pending.provide(answer)
+    t = time.perf_counter()
+    out = pending.result()
+    info.update(budget_s=budget_s(), waited_s=round(time.perf_counter() - t, 3))
+    if out is None:
+        # Never block past the budget and never upgrade without the check: the answer ships as the gate policy rates it,
+        # 'unverified' with this reason (finish); the worker completes in the background and its calls stay in the ledger cache.
+        info.update(status='timed_out', reason='cross-check timed out', background=True,
+                    elapsed_s=round(time.perf_counter() - pending.started, 3))
+        return graph, receipt, result
     if out[0] is None:
         _, why, usd, n = out
         if n or usd: _add_step(receipt, 'cross_check', usd, n)
@@ -734,13 +939,30 @@ def cross_check(stack, question, graph, receipt, result, *, ledger=None, frontie
     info['independent_answer'] = _summary(other)
     if _asserted(other) and _same(answer, other):
         info['status'] = 'agree'; return graph, receipt, result
+    if not _asserted(other):
+        # The independent path declined (unsupported / no answer): there is nothing to compare, so it neither confirms nor
+        # contradicts the primary answer - no tie-break, no 'low'; the answer keeps its gate-policy confidence.
+        info.update(status='unavailable', reason=f"the independent path ({label}) gave no answer "
+                                                 f"({other.get('status') or other.get('answer_type') or 'none'})")
+        return graph, receipt, result
     # Disagreement: the frontier planner breaks the tie when available.
     route = effective_route(receipt)
     if live and frontier is not None and os.environ.get('AGERE_CROSS_CHECK_FRONTIER', 'on') != 'off':
         try:
             from .analysis_graph import catalog
-            fg, fr = frontier(catalog(stack.path))
-            fres = stack.run_graph(fg, question=question)
+
+            def tiebreak():
+                # its own ledger connection: on a timeout the request moves on (and closes its ledger) while this finishes
+                own = _own_ledger(ledger)
+                try:
+                    takes = own is not None and 'ledger' in inspect.signature(frontier).parameters
+                    fg, fr = frontier(catalog(stack.path), ledger=own) if takes else frontier(catalog(stack.path))
+                finally:
+                    if own is not None: own.close()
+                return fg, fr, stack.run_graph(fg, question=question)
+            done, value = _bounded(tiebreak, deadline)
+            if not done: raise TimeoutError('frontier tie-break timed out (cross-check budget)')
+            fg, fr, fres = value
             fusd = ((fr or {}).get('cost_estimate') or {}).get('estimated_usd') or 0.0
             _add_step(receipt, 'cross_check_frontier', fusd, 0 if (fr or {}).get('cache_hit') else 1)
             third = (fres or {}).get('answer') or {}
@@ -756,7 +978,7 @@ def cross_check(stack, question, graph, receipt, result, *, ledger=None, frontie
                     return g, r, res
                 receipt['replaced_by_cross_check'] = label
                 return g, receipt, res
-        except (ValueError, RuntimeError, OSError, KeyError, sqlite3.Error) as exc:
+        except (ValueError, RuntimeError, OSError, KeyError, sqlite3.Error) as exc:  # TimeoutError is an OSError
             info['frontier_error'] = str(exc)[:200]
     info.update(status='disagree', reason=f'{route} answered {json.dumps(_summary(answer), default=str)[:160]}; '
                                           f'{label} answered {json.dumps(_summary(other), default=str)[:160]}')
@@ -794,6 +1016,14 @@ def finish(result, receipt):
         out['confidence_detail'] = detail
         _add(out, 'QC-CROSSCHECK', 'FM-13', f"Cross-checked: an independent path ({cc.get('path')}) "
              + ('gives the same answer.' if cc['status'] == 'agree' else f"disagreed; {cc.get('basis')}."), 'info')
+    elif cc.get('status') == 'timed_out':
+        # Never upgraded without the check: a gate-policy 'low' stays low; anything else ships 'unverified' with the reason.
+        prior = dict(out.get('confidence_detail') or {})
+        if out.get('confidence') != 'low':
+            set_confidence(out, 'unverified', 'cross-check timed out', source='cross_check', guard=VERSION,
+                           **{k: prior[k] for k in ('gates', 'rule') if k in prior}, gate_basis=prior.get('basis'))
+        _add(out, 'QC-CROSSCHECK', 'FM-13', f"Unverified: the independent cross-check did not finish within the {cc.get('budget_s')} s "
+             'budget; the answer is not cross-checked.', 'info')
     elif cc.get('status') == 'disagree':
         set_confidence(out, 'low', 'cross-check disagreement: ' + str(cc.get('reason')), source='cross_check', guard=VERSION)
         _add(out, 'QC-CROSSCHECK', 'FM-13', 'Low confidence: an independent path disagrees (' + str(cc.get('reason'))[:300] + ').')
