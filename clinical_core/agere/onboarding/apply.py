@@ -162,6 +162,19 @@ def _measurement_concept(name, loinc, labs_dictionary, by_loinc):
     return None, False
 
 
+def _label_fallback(label, kind, memo, stats):
+    """Second-encoder terminology fallback for a label that code, alias and dictionary left unresolved (one encoding per
+    distinct label); accepted proposals are counted in stats, below-threshold candidates only counted as proposed."""
+    if label is None or not str(label).strip(): return None
+    if (kind, label) not in memo:
+        m = concepts.match_label(label, kind)
+        memo[(kind, label)] = m
+        if m and m['method'] == 'encoder':
+            stats[f'{kind}:encoder_fallback_' + ('accepted' if m['accepted'] else 'below_threshold')] += 1
+    m = memo[(kind, label)]
+    return m.get('concept') if m else None
+
+
 def apply(mapping, conn, out_path, model=None):
     check_approved(mapping)
     model = model or contract_mod.load_model()
@@ -215,10 +228,13 @@ def apply(mapping, conn, out_path, model=None):
 
     # Conditions with library concepts (ICD-10 prefix, then label pattern).
     rows = []
+    term_memo = {}
     for r in g('condition'):
         c = concepts.concept_for_code(r['icd10']) if r.get('icd10') else None
         if c not in concepts.CONDITIONS:
             c = None
+        if c is None and not r.get('icd10'):  # never second-guess a received ICD-10 code: label alias, then encoder fallback
+            c = _label_fallback(r.get('label'), 'condition', term_memo, stats)
         rows.append({**r, 'source_table': 'conditions', 'concept': c})
     _insert(out, 'condition', rows)
 
@@ -230,6 +246,12 @@ def apply(mapping, conn, out_path, model=None):
     rows = []
     for r in g('measurement'):
         c, _ = _measurement_concept(r.get('name'), r.get('loinc'), labs, by_loinc)
+        # a received LOINC outside the library, or a confident dictionary entry mapping the name to no concept, is an exact
+        # "not one of ours": no fallback
+        entry = labs.get(r.get('name')) or {}
+        known = max([entry.get('confidence') or 0] + [v.get('confidence') or 0 for v in (entry.get('variants_by_unit') or {}).values()]) >= 0.8
+        if c is None and not r.get('loinc') and not known:
+            c = _label_fallback(r.get('name'), 'lab', term_memo, stats)
         canon = cunit = None
         if c:
             factor = concepts.MEASUREMENTS[c]['units'].get(r.get('unit'))

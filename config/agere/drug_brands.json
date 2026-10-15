@@ -1,0 +1,2546 @@
+{
+ "version": "drug-brands/1",
+ "naming_standard": "RxNorm (U.S. National Library of Medicine): brand names correspond to RxNorm Brand Name (TTY=BN) concepts and ingredients to RxNorm Ingredient (TTY=IN) names; classes are clinical_core/agere/clinical/drug_classes.py ids (the semantic layer drug_class_vocabulary).",
+ "scope": "Widely known U.S. brand names of drugs in every drug_classes class (statins, ACE inhibitors, ARBs, ARNI, MRAs, SGLT2, GLP-1, DPP-4, metformin, sulfonylureas, insulin, anticoagulants incl. DOACs, P2Y12/antiplatelets, diuretics, CCBs, beta blockers, opioids, benzodiazepines, inhaled steroids, SABA, SSRIs, levothyroxine, NSAIDs, bisphosphonates, PPIs, muscle relaxants, antihistamines, antipsychotics, nitrates, iron, sedative-hypnotics). Combination products list every ingredient and every registered class. Brand lookup is a fallback: a name whose ingredient already classifies is never re-classified by brand. Not a formulary, not an NDC map, no clinical claims.",
+ "brands": {
+  "Abilify": {
+   "ingredients": [
+    "aripiprazole"
+   ],
+   "classes": [
+    "antipsychotic"
+   ]
+  },
+  "Accupril": {
+   "ingredients": [
+    "quinapril"
+   ],
+   "classes": [
+    "ace_inhibitor"
+   ]
+  },
+  "Accuretic": {
+   "ingredients": [
+    "quinapril",
+    "hydrochlorothiazide"
+   ],
+   "classes": [
+    "ace_inhibitor",
+    "thiazide_diuretic"
+   ]
+  },
+  "Aceon": {
+   "ingredients": [
+    "perindopril"
+   ],
+   "classes": [
+    "ace_inhibitor"
+   ]
+  },
+  "Aciphex": {
+   "ingredients": [
+    "rabeprazole"
+   ],
+   "classes": [
+    "proton_pump_inhibitor"
+   ]
+  },
+  "Actonel": {
+   "ingredients": [
+    "risedronate"
+   ],
+   "classes": [
+    "bisphosphonate"
+   ]
+  },
+  "Adalat CC": {
+   "ingredients": [
+    "nifedipine"
+   ],
+   "classes": [
+    "calcium_channel_blocker"
+   ]
+  },
+  "Adlyxin": {
+   "ingredients": [
+    "lixisenatide"
+   ],
+   "classes": [
+    "glp1_agonist"
+   ]
+  },
+  "Admelog": {
+   "ingredients": [
+    "insulin lispro"
+   ],
+   "classes": [
+    "insulin"
+   ]
+  },
+  "Advair": {
+   "ingredients": [
+    "fluticasone propionate",
+    "salmeterol"
+   ],
+   "classes": [
+    "inhaled_corticosteroid"
+   ]
+  },
+  "Advil": {
+   "ingredients": [
+    "ibuprofen"
+   ],
+   "classes": [
+    "nsaid"
+   ]
+  },
+  "Afrezza": {
+   "ingredients": [
+    "insulin human"
+   ],
+   "classes": [
+    "insulin"
+   ]
+  },
+  "Aggrenox": {
+   "ingredients": [
+    "aspirin",
+    "dipyridamole"
+   ],
+   "classes": [
+    "antiplatelet"
+   ]
+  },
+  "Aldactazide": {
+   "ingredients": [
+    "spironolactone",
+    "hydrochlorothiazide"
+   ],
+   "classes": [
+    "mra",
+    "thiazide_diuretic"
+   ]
+  },
+  "Aldactone": {
+   "ingredients": [
+    "spironolactone"
+   ],
+   "classes": [
+    "mra"
+   ]
+  },
+  "Aleve": {
+   "ingredients": [
+    "naproxen"
+   ],
+   "classes": [
+    "nsaid"
+   ]
+  },
+  "Allegra": {
+   "ingredients": [
+    "fexofenadine"
+   ],
+   "classes": [
+    "second_generation_antihistamine"
+   ]
+  },
+  "Altace": {
+   "ingredients": [
+    "ramipril"
+   ],
+   "classes": [
+    "ace_inhibitor"
+   ]
+  },
+  "Altoprev": {
+   "ingredients": [
+    "lovastatin"
+   ],
+   "classes": [
+    "statin"
+   ]
+  },
+  "Alvesco": {
+   "ingredients": [
+    "ciclesonide"
+   ],
+   "classes": [
+    "inhaled_corticosteroid"
+   ]
+  },
+  "Amaryl": {
+   "ingredients": [
+    "glimepiride"
+   ],
+   "classes": [
+    "sulfonylurea"
+   ]
+  },
+  "Ambien": {
+   "ingredients": [
+    "zolpidem"
+   ],
+   "classes": [
+    "sedative_hypnotic"
+   ]
+  },
+  "Ambien CR": {
+   "ingredients": [
+    "zolpidem"
+   ],
+   "classes": [
+    "sedative_hypnotic"
+   ]
+  },
+  "Amrix": {
+   "ingredients": [
+    "cyclobenzaprine"
+   ],
+   "classes": [
+    "skeletal_muscle_relaxant"
+   ]
+  },
+  "Anaprox": {
+   "ingredients": [
+    "naproxen"
+   ],
+   "classes": [
+    "nsaid"
+   ]
+  },
+  "Antivert": {
+   "ingredients": [
+    "meclizine"
+   ],
+   "classes": [
+    "first_generation_antihistamine"
+   ]
+  },
+  "Apidra": {
+   "ingredients": [
+    "insulin glulisine"
+   ],
+   "classes": [
+    "insulin"
+   ]
+  },
+  "Arnuity Ellipta": {
+   "ingredients": [
+    "fluticasone furoate"
+   ],
+   "classes": [
+    "inhaled_corticosteroid"
+   ]
+  },
+  "Asmanex": {
+   "ingredients": [
+    "mometasone"
+   ],
+   "classes": [
+    "inhaled_corticosteroid"
+   ]
+  },
+  "Atacand": {
+   "ingredients": [
+    "candesartan"
+   ],
+   "classes": [
+    "arb"
+   ]
+  },
+  "Atacand HCT": {
+   "ingredients": [
+    "candesartan",
+    "hydrochlorothiazide"
+   ],
+   "classes": [
+    "arb",
+    "thiazide_diuretic"
+   ]
+  },
+  "Atarax": {
+   "ingredients": [
+    "hydroxyzine"
+   ],
+   "classes": [
+    "first_generation_antihistamine"
+   ]
+  },
+  "Atelvia": {
+   "ingredients": [
+    "risedronate"
+   ],
+   "classes": [
+    "bisphosphonate"
+   ]
+  },
+  "Ativan": {
+   "ingredients": [
+    "lorazepam"
+   ],
+   "classes": [
+    "benzodiazepine"
+   ]
+  },
+  "Avalide": {
+   "ingredients": [
+    "irbesartan",
+    "hydrochlorothiazide"
+   ],
+   "classes": [
+    "arb",
+    "thiazide_diuretic"
+   ]
+  },
+  "Avapro": {
+   "ingredients": [
+    "irbesartan"
+   ],
+   "classes": [
+    "arb"
+   ]
+  },
+  "Azor": {
+   "ingredients": [
+    "amlodipine",
+    "olmesartan"
+   ],
+   "classes": [
+    "arb",
+    "calcium_channel_blocker"
+   ]
+  },
+  "Basaglar": {
+   "ingredients": [
+    "insulin glargine"
+   ],
+   "classes": [
+    "insulin"
+   ]
+  },
+  "Benadryl": {
+   "ingredients": [
+    "diphenhydramine"
+   ],
+   "classes": [
+    "first_generation_antihistamine"
+   ]
+  },
+  "Benicar": {
+   "ingredients": [
+    "olmesartan"
+   ],
+   "classes": [
+    "arb"
+   ]
+  },
+  "Benicar HCT": {
+   "ingredients": [
+    "olmesartan",
+    "hydrochlorothiazide"
+   ],
+   "classes": [
+    "arb",
+    "thiazide_diuretic"
+   ]
+  },
+  "Betapace": {
+   "ingredients": [
+    "sotalol"
+   ],
+   "classes": [
+    "beta_blocker"
+   ]
+  },
+  "BiDil": {
+   "ingredients": [
+    "isosorbide dinitrate",
+    "hydralazine"
+   ],
+   "classes": [
+    "nitrate"
+   ]
+  },
+  "Binosto": {
+   "ingredients": [
+    "alendronate"
+   ],
+   "classes": [
+    "bisphosphonate"
+   ]
+  },
+  "Boniva": {
+   "ingredients": [
+    "ibandronate"
+   ],
+   "classes": [
+    "bisphosphonate"
+   ]
+  },
+  "Breo Ellipta": {
+   "ingredients": [
+    "fluticasone furoate",
+    "vilanterol"
+   ],
+   "classes": [
+    "inhaled_corticosteroid"
+   ]
+  },
+  "Breyna": {
+   "ingredients": [
+    "budesonide",
+    "formoterol"
+   ],
+   "classes": [
+    "inhaled_corticosteroid"
+   ]
+  },
+  "Breztri": {
+   "ingredients": [
+    "budesonide",
+    "glycopyrrolate",
+    "formoterol"
+   ],
+   "classes": [
+    "inhaled_corticosteroid"
+   ]
+  },
+  "Brilinta": {
+   "ingredients": [
+    "ticagrelor"
+   ],
+   "classes": [
+    "antiplatelet"
+   ]
+  },
+  "Bumex": {
+   "ingredients": [
+    "bumetanide"
+   ],
+   "classes": [
+    "loop_diuretic"
+   ]
+  },
+  "Butrans": {
+   "ingredients": [
+    "buprenorphine"
+   ],
+   "classes": [
+    "opioid"
+   ]
+  },
+  "Bydureon": {
+   "ingredients": [
+    "exenatide"
+   ],
+   "classes": [
+    "glp1_agonist"
+   ]
+  },
+  "Bydureon BCise": {
+   "ingredients": [
+    "exenatide"
+   ],
+   "classes": [
+    "glp1_agonist"
+   ]
+  },
+  "Byetta": {
+   "ingredients": [
+    "exenatide"
+   ],
+   "classes": [
+    "glp1_agonist"
+   ]
+  },
+  "Bystolic": {
+   "ingredients": [
+    "nebivolol"
+   ],
+   "classes": [
+    "beta_blocker"
+   ]
+  },
+  "Caduet": {
+   "ingredients": [
+    "amlodipine",
+    "atorvastatin"
+   ],
+   "classes": [
+    "statin",
+    "calcium_channel_blocker"
+   ]
+  },
+  "Calan": {
+   "ingredients": [
+    "verapamil"
+   ],
+   "classes": [
+    "calcium_channel_blocker"
+   ]
+  },
+  "Calan SR": {
+   "ingredients": [
+    "verapamil"
+   ],
+   "classes": [
+    "calcium_channel_blocker"
+   ]
+  },
+  "Cambia": {
+   "ingredients": [
+    "diclofenac"
+   ],
+   "classes": [
+    "nsaid"
+   ]
+  },
+  "Capoten": {
+   "ingredients": [
+    "captopril"
+   ],
+   "classes": [
+    "ace_inhibitor"
+   ]
+  },
+  "Cardizem": {
+   "ingredients": [
+    "diltiazem"
+   ],
+   "classes": [
+    "calcium_channel_blocker"
+   ]
+  },
+  "Cardizem CD": {
+   "ingredients": [
+    "diltiazem"
+   ],
+   "classes": [
+    "calcium_channel_blocker"
+   ]
+  },
+  "Cardizem LA": {
+   "ingredients": [
+    "diltiazem"
+   ],
+   "classes": [
+    "calcium_channel_blocker"
+   ]
+  },
+  "CaroSpir": {
+   "ingredients": [
+    "spironolactone"
+   ],
+   "classes": [
+    "mra"
+   ]
+  },
+  "Cartia XT": {
+   "ingredients": [
+    "diltiazem"
+   ],
+   "classes": [
+    "calcium_channel_blocker"
+   ]
+  },
+  "Celebrex": {
+   "ingredients": [
+    "celecoxib"
+   ],
+   "classes": [
+    "nsaid"
+   ]
+  },
+  "Celexa": {
+   "ingredients": [
+    "citalopram"
+   ],
+   "classes": [
+    "ssri"
+   ]
+  },
+  "Chlor-Trimeton": {
+   "ingredients": [
+    "chlorpheniramine"
+   ],
+   "classes": [
+    "first_generation_antihistamine"
+   ]
+  },
+  "Clarinex": {
+   "ingredients": [
+    "desloratadine"
+   ],
+   "classes": [
+    "second_generation_antihistamine"
+   ]
+  },
+  "Claritin": {
+   "ingredients": [
+    "loratadine"
+   ],
+   "classes": [
+    "second_generation_antihistamine"
+   ]
+  },
+  "Clinoril": {
+   "ingredients": [
+    "sulindac"
+   ],
+   "classes": [
+    "nsaid"
+   ]
+  },
+  "Clozaril": {
+   "ingredients": [
+    "clozapine"
+   ],
+   "classes": [
+    "antipsychotic"
+   ]
+  },
+  "Coreg": {
+   "ingredients": [
+    "carvedilol"
+   ],
+   "classes": [
+    "beta_blocker",
+    "hf_evidence_based_beta_blocker"
+   ]
+  },
+  "Coreg CR": {
+   "ingredients": [
+    "carvedilol"
+   ],
+   "classes": [
+    "beta_blocker",
+    "hf_evidence_based_beta_blocker"
+   ]
+  },
+  "Corgard": {
+   "ingredients": [
+    "nadolol"
+   ],
+   "classes": [
+    "beta_blocker"
+   ]
+  },
+  "Coumadin": {
+   "ingredients": [
+    "warfarin"
+   ],
+   "classes": [
+    "anticoagulant"
+   ]
+  },
+  "Cozaar": {
+   "ingredients": [
+    "losartan"
+   ],
+   "classes": [
+    "arb"
+   ]
+  },
+  "Crestor": {
+   "ingredients": [
+    "rosuvastatin"
+   ],
+   "classes": [
+    "statin"
+   ]
+  },
+  "Demadex": {
+   "ingredients": [
+    "torsemide"
+   ],
+   "classes": [
+    "loop_diuretic"
+   ]
+  },
+  "Dexilant": {
+   "ingredients": [
+    "dexlansoprazole"
+   ],
+   "classes": [
+    "proton_pump_inhibitor"
+   ]
+  },
+  "DiaBeta": {
+   "ingredients": [
+    "glyburide"
+   ],
+   "classes": [
+    "sulfonylurea"
+   ]
+  },
+  "Dilaudid": {
+   "ingredients": [
+    "hydromorphone"
+   ],
+   "classes": [
+    "opioid"
+   ]
+  },
+  "Diovan": {
+   "ingredients": [
+    "valsartan"
+   ],
+   "classes": [
+    "arb"
+   ]
+  },
+  "Diovan HCT": {
+   "ingredients": [
+    "valsartan",
+    "hydrochlorothiazide"
+   ],
+   "classes": [
+    "arb",
+    "thiazide_diuretic"
+   ]
+  },
+  "Dolophine": {
+   "ingredients": [
+    "methadone"
+   ],
+   "classes": [
+    "opioid"
+   ]
+  },
+  "Dramamine": {
+   "ingredients": [
+    "dimenhydrinate"
+   ],
+   "classes": [
+    "first_generation_antihistamine"
+   ]
+  },
+  "Dulera": {
+   "ingredients": [
+    "mometasone",
+    "formoterol"
+   ],
+   "classes": [
+    "inhaled_corticosteroid"
+   ]
+  },
+  "Duragesic": {
+   "ingredients": [
+    "fentanyl"
+   ],
+   "classes": [
+    "opioid"
+   ]
+  },
+  "Durlaza": {
+   "ingredients": [
+    "aspirin"
+   ],
+   "classes": [
+    "antiplatelet"
+   ]
+  },
+  "Ecotrin": {
+   "ingredients": [
+    "aspirin"
+   ],
+   "classes": [
+    "antiplatelet"
+   ]
+  },
+  "Edarbi": {
+   "ingredients": [
+    "azilsartan"
+   ],
+   "classes": [
+    "arb"
+   ]
+  },
+  "Edarbyclor": {
+   "ingredients": [
+    "azilsartan",
+    "chlorthalidone"
+   ],
+   "classes": [
+    "arb",
+    "thiazide_diuretic"
+   ]
+  },
+  "Effient": {
+   "ingredients": [
+    "prasugrel"
+   ],
+   "classes": [
+    "antiplatelet"
+   ]
+  },
+  "Eliquis": {
+   "ingredients": [
+    "apixaban"
+   ],
+   "classes": [
+    "anticoagulant"
+   ]
+  },
+  "Entresto": {
+   "ingredients": [
+    "sacubitril",
+    "valsartan"
+   ],
+   "classes": [
+    "arni"
+   ]
+  },
+  "Epaned": {
+   "ingredients": [
+    "enalapril"
+   ],
+   "classes": [
+    "ace_inhibitor"
+   ]
+  },
+  "Euthyrox": {
+   "ingredients": [
+    "levothyroxine"
+   ],
+   "classes": [
+    "levothyroxine"
+   ]
+  },
+  "Exforge": {
+   "ingredients": [
+    "amlodipine",
+    "valsartan"
+   ],
+   "classes": [
+    "arb",
+    "calcium_channel_blocker"
+   ]
+  },
+  "Exforge HCT": {
+   "ingredients": [
+    "amlodipine",
+    "valsartan",
+    "hydrochlorothiazide"
+   ],
+   "classes": [
+    "arb",
+    "calcium_channel_blocker",
+    "thiazide_diuretic"
+   ]
+  },
+  "Ezallor": {
+   "ingredients": [
+    "rosuvastatin"
+   ],
+   "classes": [
+    "statin"
+   ]
+  },
+  "Farxiga": {
+   "ingredients": [
+    "dapagliflozin"
+   ],
+   "classes": [
+    "sglt2_inhibitor"
+   ]
+  },
+  "Feldene": {
+   "ingredients": [
+    "piroxicam"
+   ],
+   "classes": [
+    "nsaid"
+   ]
+  },
+  "Ferrlecit": {
+   "ingredients": [
+    "sodium ferric gluconate complex"
+   ],
+   "classes": [
+    "iron_supplement"
+   ]
+  },
+  "Fiasp": {
+   "ingredients": [
+    "insulin aspart"
+   ],
+   "classes": [
+    "insulin"
+   ]
+  },
+  "Flexeril": {
+   "ingredients": [
+    "cyclobenzaprine"
+   ],
+   "classes": [
+    "skeletal_muscle_relaxant"
+   ]
+  },
+  "Flovent": {
+   "ingredients": [
+    "fluticasone propionate"
+   ],
+   "classes": [
+    "inhaled_corticosteroid"
+   ]
+  },
+  "Fortamet": {
+   "ingredients": [
+    "metformin"
+   ],
+   "classes": [
+    "metformin"
+   ]
+  },
+  "Fosamax": {
+   "ingredients": [
+    "alendronate"
+   ],
+   "classes": [
+    "bisphosphonate"
+   ]
+  },
+  "Furoscix": {
+   "ingredients": [
+    "furosemide"
+   ],
+   "classes": [
+    "loop_diuretic"
+   ]
+  },
+  "Geodon": {
+   "ingredients": [
+    "ziprasidone"
+   ],
+   "classes": [
+    "antipsychotic"
+   ]
+  },
+  "Glucophage": {
+   "ingredients": [
+    "metformin"
+   ],
+   "classes": [
+    "metformin"
+   ]
+  },
+  "Glucophage XR": {
+   "ingredients": [
+    "metformin"
+   ],
+   "classes": [
+    "metformin"
+   ]
+  },
+  "Glucotrol": {
+   "ingredients": [
+    "glipizide"
+   ],
+   "classes": [
+    "sulfonylurea"
+   ]
+  },
+  "Glucotrol XL": {
+   "ingredients": [
+    "glipizide"
+   ],
+   "classes": [
+    "sulfonylurea"
+   ]
+  },
+  "Glucovance": {
+   "ingredients": [
+    "glyburide",
+    "metformin"
+   ],
+   "classes": [
+    "sulfonylurea",
+    "metformin"
+   ]
+  },
+  "Glumetza": {
+   "ingredients": [
+    "metformin"
+   ],
+   "classes": [
+    "metformin"
+   ]
+  },
+  "Glynase": {
+   "ingredients": [
+    "glyburide"
+   ],
+   "classes": [
+    "sulfonylurea"
+   ]
+  },
+  "Glyxambi": {
+   "ingredients": [
+    "empagliflozin",
+    "linagliptin"
+   ],
+   "classes": [
+    "sglt2_inhibitor",
+    "dpp4_inhibitor"
+   ]
+  },
+  "Haldol": {
+   "ingredients": [
+    "haloperidol"
+   ],
+   "classes": [
+    "antipsychotic"
+   ]
+  },
+  "Humalog": {
+   "ingredients": [
+    "insulin lispro"
+   ],
+   "classes": [
+    "insulin"
+   ]
+  },
+  "Humulin": {
+   "ingredients": [
+    "insulin human"
+   ],
+   "classes": [
+    "insulin"
+   ]
+  },
+  "Hysingla ER": {
+   "ingredients": [
+    "hydrocodone"
+   ],
+   "classes": [
+    "opioid"
+   ]
+  },
+  "Hyzaar": {
+   "ingredients": [
+    "losartan",
+    "hydrochlorothiazide"
+   ],
+   "classes": [
+    "arb",
+    "thiazide_diuretic"
+   ]
+  },
+  "Imdur": {
+   "ingredients": [
+    "isosorbide mononitrate"
+   ],
+   "classes": [
+    "nitrate"
+   ]
+  },
+  "Inderal": {
+   "ingredients": [
+    "propranolol"
+   ],
+   "classes": [
+    "beta_blocker"
+   ]
+  },
+  "Inderal LA": {
+   "ingredients": [
+    "propranolol"
+   ],
+   "classes": [
+    "beta_blocker"
+   ]
+  },
+  "Indocin": {
+   "ingredients": [
+    "indomethacin"
+   ],
+   "classes": [
+    "nsaid"
+   ]
+  },
+  "InnoPran XL": {
+   "ingredients": [
+    "propranolol"
+   ],
+   "classes": [
+    "beta_blocker"
+   ]
+  },
+  "Inpefa": {
+   "ingredients": [
+    "sotagliflozin"
+   ],
+   "classes": [
+    "sglt2_inhibitor"
+   ]
+  },
+  "Inspra": {
+   "ingredients": [
+    "eplerenone"
+   ],
+   "classes": [
+    "mra"
+   ]
+  },
+  "Invega": {
+   "ingredients": [
+    "paliperidone"
+   ],
+   "classes": [
+    "antipsychotic"
+   ]
+  },
+  "Invokamet": {
+   "ingredients": [
+    "canagliflozin",
+    "metformin"
+   ],
+   "classes": [
+    "sglt2_inhibitor",
+    "metformin"
+   ]
+  },
+  "Invokana": {
+   "ingredients": [
+    "canagliflozin"
+   ],
+   "classes": [
+    "sglt2_inhibitor"
+   ]
+  },
+  "Isordil": {
+   "ingredients": [
+    "isosorbide dinitrate"
+   ],
+   "classes": [
+    "nitrate"
+   ]
+  },
+  "Jantoven": {
+   "ingredients": [
+    "warfarin"
+   ],
+   "classes": [
+    "anticoagulant"
+   ]
+  },
+  "Janumet": {
+   "ingredients": [
+    "sitagliptin",
+    "metformin"
+   ],
+   "classes": [
+    "dpp4_inhibitor",
+    "metformin"
+   ]
+  },
+  "Janumet XR": {
+   "ingredients": [
+    "sitagliptin",
+    "metformin"
+   ],
+   "classes": [
+    "dpp4_inhibitor",
+    "metformin"
+   ]
+  },
+  "Januvia": {
+   "ingredients": [
+    "sitagliptin"
+   ],
+   "classes": [
+    "dpp4_inhibitor"
+   ]
+  },
+  "Jardiance": {
+   "ingredients": [
+    "empagliflozin"
+   ],
+   "classes": [
+    "sglt2_inhibitor"
+   ]
+  },
+  "Jentadueto": {
+   "ingredients": [
+    "linagliptin",
+    "metformin"
+   ],
+   "classes": [
+    "dpp4_inhibitor",
+    "metformin"
+   ]
+  },
+  "Kapspargo": {
+   "ingredients": [
+    "metoprolol succinate"
+   ],
+   "classes": [
+    "beta_blocker",
+    "hf_evidence_based_beta_blocker"
+   ]
+  },
+  "Katerzia": {
+   "ingredients": [
+    "amlodipine"
+   ],
+   "classes": [
+    "calcium_channel_blocker"
+   ]
+  },
+  "Kazano": {
+   "ingredients": [
+    "alogliptin",
+    "metformin"
+   ],
+   "classes": [
+    "dpp4_inhibitor",
+    "metformin"
+   ]
+  },
+  "Kerendia": {
+   "ingredients": [
+    "finerenone"
+   ],
+   "classes": [
+    "mra"
+   ]
+  },
+  "Klonopin": {
+   "ingredients": [
+    "clonazepam"
+   ],
+   "classes": [
+    "benzodiazepine"
+   ]
+  },
+  "Kombiglyze XR": {
+   "ingredients": [
+    "saxagliptin",
+    "metformin"
+   ],
+   "classes": [
+    "dpp4_inhibitor",
+    "metformin"
+   ]
+  },
+  "Lantus": {
+   "ingredients": [
+    "insulin glargine"
+   ],
+   "classes": [
+    "insulin"
+   ]
+  },
+  "Lasix": {
+   "ingredients": [
+    "furosemide"
+   ],
+   "classes": [
+    "loop_diuretic"
+   ]
+  },
+  "Latuda": {
+   "ingredients": [
+    "lurasidone"
+   ],
+   "classes": [
+    "antipsychotic"
+   ]
+  },
+  "Lescol": {
+   "ingredients": [
+    "fluvastatin"
+   ],
+   "classes": [
+    "statin"
+   ]
+  },
+  "Levemir": {
+   "ingredients": [
+    "insulin detemir"
+   ],
+   "classes": [
+    "insulin"
+   ]
+  },
+  "Levoxyl": {
+   "ingredients": [
+    "levothyroxine"
+   ],
+   "classes": [
+    "levothyroxine"
+   ]
+  },
+  "Lexapro": {
+   "ingredients": [
+    "escitalopram"
+   ],
+   "classes": [
+    "ssri"
+   ]
+  },
+  "Librium": {
+   "ingredients": [
+    "chlordiazepoxide"
+   ],
+   "classes": [
+    "benzodiazepine"
+   ]
+  },
+  "Lioresal": {
+   "ingredients": [
+    "baclofen"
+   ],
+   "classes": [
+    "skeletal_muscle_relaxant"
+   ]
+  },
+  "Lipitor": {
+   "ingredients": [
+    "atorvastatin"
+   ],
+   "classes": [
+    "statin"
+   ]
+  },
+  "Livalo": {
+   "ingredients": [
+    "pitavastatin"
+   ],
+   "classes": [
+    "statin"
+   ]
+  },
+  "Lodine": {
+   "ingredients": [
+    "etodolac"
+   ],
+   "classes": [
+    "nsaid"
+   ]
+  },
+  "Lopressor": {
+   "ingredients": [
+    "metoprolol tartrate"
+   ],
+   "classes": [
+    "beta_blocker"
+   ]
+  },
+  "Lotensin": {
+   "ingredients": [
+    "benazepril"
+   ],
+   "classes": [
+    "ace_inhibitor"
+   ]
+  },
+  "Lotensin HCT": {
+   "ingredients": [
+    "benazepril",
+    "hydrochlorothiazide"
+   ],
+   "classes": [
+    "ace_inhibitor",
+    "thiazide_diuretic"
+   ]
+  },
+  "Lotrel": {
+   "ingredients": [
+    "amlodipine",
+    "benazepril"
+   ],
+   "classes": [
+    "ace_inhibitor",
+    "calcium_channel_blocker"
+   ]
+  },
+  "Lovenox": {
+   "ingredients": [
+    "enoxaparin"
+   ],
+   "classes": [
+    "anticoagulant"
+   ]
+  },
+  "Lozol": {
+   "ingredients": [
+    "indapamide"
+   ],
+   "classes": [
+    "thiazide_diuretic"
+   ]
+  },
+  "Lunesta": {
+   "ingredients": [
+    "eszopiclone"
+   ],
+   "classes": [
+    "sedative_hypnotic"
+   ]
+  },
+  "Luvox": {
+   "ingredients": [
+    "fluvoxamine"
+   ],
+   "classes": [
+    "ssri"
+   ]
+  },
+  "Lyumjev": {
+   "ingredients": [
+    "insulin lispro"
+   ],
+   "classes": [
+    "insulin"
+   ]
+  },
+  "Mavik": {
+   "ingredients": [
+    "trandolapril"
+   ],
+   "classes": [
+    "ace_inhibitor"
+   ]
+  },
+  "Mevacor": {
+   "ingredients": [
+    "lovastatin"
+   ],
+   "classes": [
+    "statin"
+   ]
+  },
+  "Micardis": {
+   "ingredients": [
+    "telmisartan"
+   ],
+   "classes": [
+    "arb"
+   ]
+  },
+  "Micardis HCT": {
+   "ingredients": [
+    "telmisartan",
+    "hydrochlorothiazide"
+   ],
+   "classes": [
+    "arb",
+    "thiazide_diuretic"
+   ]
+  },
+  "Micronase": {
+   "ingredients": [
+    "glyburide"
+   ],
+   "classes": [
+    "sulfonylurea"
+   ]
+  },
+  "Microzide": {
+   "ingredients": [
+    "hydrochlorothiazide"
+   ],
+   "classes": [
+    "thiazide_diuretic"
+   ]
+  },
+  "Mobic": {
+   "ingredients": [
+    "meloxicam"
+   ],
+   "classes": [
+    "nsaid"
+   ]
+  },
+  "Monopril": {
+   "ingredients": [
+    "fosinopril"
+   ],
+   "classes": [
+    "ace_inhibitor"
+   ]
+  },
+  "Motrin": {
+   "ingredients": [
+    "ibuprofen"
+   ],
+   "classes": [
+    "nsaid"
+   ]
+  },
+  "Mounjaro": {
+   "ingredients": [
+    "tirzepatide"
+   ],
+   "classes": [
+    "glp1_agonist"
+   ]
+  },
+  "MS Contin": {
+   "ingredients": [
+    "morphine"
+   ],
+   "classes": [
+    "opioid"
+   ]
+  },
+  "Naprosyn": {
+   "ingredients": [
+    "naproxen"
+   ],
+   "classes": [
+    "nsaid"
+   ]
+  },
+  "Nesina": {
+   "ingredients": [
+    "alogliptin"
+   ],
+   "classes": [
+    "dpp4_inhibitor"
+   ]
+  },
+  "Nexium": {
+   "ingredients": [
+    "esomeprazole"
+   ],
+   "classes": [
+    "proton_pump_inhibitor"
+   ]
+  },
+  "Nitro-Dur": {
+   "ingredients": [
+    "nitroglycerin"
+   ],
+   "classes": [
+    "nitrate"
+   ]
+  },
+  "Nitrostat": {
+   "ingredients": [
+    "nitroglycerin"
+   ],
+   "classes": [
+    "nitrate"
+   ]
+  },
+  "Norco": {
+   "ingredients": [
+    "hydrocodone",
+    "acetaminophen"
+   ],
+   "classes": [
+    "opioid"
+   ]
+  },
+  "Norflex": {
+   "ingredients": [
+    "orphenadrine"
+   ],
+   "classes": [
+    "skeletal_muscle_relaxant"
+   ]
+  },
+  "Norliqva": {
+   "ingredients": [
+    "amlodipine"
+   ],
+   "classes": [
+    "calcium_channel_blocker"
+   ]
+  },
+  "Norvasc": {
+   "ingredients": [
+    "amlodipine"
+   ],
+   "classes": [
+    "calcium_channel_blocker"
+   ]
+  },
+  "Novolin": {
+   "ingredients": [
+    "insulin human"
+   ],
+   "classes": [
+    "insulin"
+   ]
+  },
+  "NovoLog": {
+   "ingredients": [
+    "insulin aspart"
+   ],
+   "classes": [
+    "insulin"
+   ]
+  },
+  "Nucynta": {
+   "ingredients": [
+    "tapentadol"
+   ],
+   "classes": [
+    "opioid"
+   ]
+  },
+  "Onglyza": {
+   "ingredients": [
+    "saxagliptin"
+   ],
+   "classes": [
+    "dpp4_inhibitor"
+   ]
+  },
+  "Opana": {
+   "ingredients": [
+    "oxymorphone"
+   ],
+   "classes": [
+    "opioid"
+   ]
+  },
+  "Oseni": {
+   "ingredients": [
+    "alogliptin",
+    "pioglitazone"
+   ],
+   "classes": [
+    "dpp4_inhibitor"
+   ]
+  },
+  "OxyContin": {
+   "ingredients": [
+    "oxycodone"
+   ],
+   "classes": [
+    "opioid"
+   ]
+  },
+  "Ozempic": {
+   "ingredients": [
+    "semaglutide"
+   ],
+   "classes": [
+    "glp1_agonist"
+   ]
+  },
+  "Ozobax": {
+   "ingredients": [
+    "baclofen"
+   ],
+   "classes": [
+    "skeletal_muscle_relaxant"
+   ]
+  },
+  "Parafon Forte": {
+   "ingredients": [
+    "chlorzoxazone"
+   ],
+   "classes": [
+    "skeletal_muscle_relaxant"
+   ]
+  },
+  "Paxil": {
+   "ingredients": [
+    "paroxetine"
+   ],
+   "classes": [
+    "ssri"
+   ]
+  },
+  "Percocet": {
+   "ingredients": [
+    "oxycodone",
+    "acetaminophen"
+   ],
+   "classes": [
+    "opioid"
+   ]
+  },
+  "Periactin": {
+   "ingredients": [
+    "cyproheptadine"
+   ],
+   "classes": [
+    "first_generation_antihistamine"
+   ]
+  },
+  "Pexeva": {
+   "ingredients": [
+    "paroxetine"
+   ],
+   "classes": [
+    "ssri"
+   ]
+  },
+  "Phenergan": {
+   "ingredients": [
+    "promethazine"
+   ],
+   "classes": [
+    "first_generation_antihistamine"
+   ]
+  },
+  "Plavix": {
+   "ingredients": [
+    "clopidogrel"
+   ],
+   "classes": [
+    "antiplatelet"
+   ]
+  },
+  "Plendil": {
+   "ingredients": [
+    "felodipine"
+   ],
+   "classes": [
+    "calcium_channel_blocker"
+   ]
+  },
+  "Pradaxa": {
+   "ingredients": [
+    "dabigatran"
+   ],
+   "classes": [
+    "anticoagulant"
+   ]
+  },
+  "Pravachol": {
+   "ingredients": [
+    "pravastatin"
+   ],
+   "classes": [
+    "statin"
+   ]
+  },
+  "Prevacid": {
+   "ingredients": [
+    "lansoprazole"
+   ],
+   "classes": [
+    "proton_pump_inhibitor"
+   ]
+  },
+  "Prilosec": {
+   "ingredients": [
+    "omeprazole"
+   ],
+   "classes": [
+    "proton_pump_inhibitor"
+   ]
+  },
+  "Prinivil": {
+   "ingredients": [
+    "lisinopril"
+   ],
+   "classes": [
+    "ace_inhibitor"
+   ]
+  },
+  "ProAir": {
+   "ingredients": [
+    "albuterol"
+   ],
+   "classes": [
+    "short_acting_beta_agonist"
+   ]
+  },
+  "Procardia": {
+   "ingredients": [
+    "nifedipine"
+   ],
+   "classes": [
+    "calcium_channel_blocker"
+   ]
+  },
+  "Procardia XL": {
+   "ingredients": [
+    "nifedipine"
+   ],
+   "classes": [
+    "calcium_channel_blocker"
+   ]
+  },
+  "Protonix": {
+   "ingredients": [
+    "pantoprazole"
+   ],
+   "classes": [
+    "proton_pump_inhibitor"
+   ]
+  },
+  "Proventil": {
+   "ingredients": [
+    "albuterol"
+   ],
+   "classes": [
+    "short_acting_beta_agonist"
+   ]
+  },
+  "Prozac": {
+   "ingredients": [
+    "fluoxetine"
+   ],
+   "classes": [
+    "ssri"
+   ]
+  },
+  "Pulmicort": {
+   "ingredients": [
+    "budesonide"
+   ],
+   "classes": [
+    "inhaled_corticosteroid"
+   ]
+  },
+  "Qbrelis": {
+   "ingredients": [
+    "lisinopril"
+   ],
+   "classes": [
+    "ace_inhibitor"
+   ]
+  },
+  "Qtern": {
+   "ingredients": [
+    "dapagliflozin",
+    "saxagliptin"
+   ],
+   "classes": [
+    "sglt2_inhibitor",
+    "dpp4_inhibitor"
+   ]
+  },
+  "QVAR": {
+   "ingredients": [
+    "beclomethasone"
+   ],
+   "classes": [
+    "inhaled_corticosteroid"
+   ]
+  },
+  "Reclast": {
+   "ingredients": [
+    "zoledronic acid"
+   ],
+   "classes": [
+    "bisphosphonate"
+   ]
+  },
+  "Relafen": {
+   "ingredients": [
+    "nabumetone"
+   ],
+   "classes": [
+    "nsaid"
+   ]
+  },
+  "Restoril": {
+   "ingredients": [
+    "temazepam"
+   ],
+   "classes": [
+    "benzodiazepine"
+   ]
+  },
+  "Rezvoglar": {
+   "ingredients": [
+    "insulin glargine"
+   ],
+   "classes": [
+    "insulin"
+   ]
+  },
+  "Riomet": {
+   "ingredients": [
+    "metformin"
+   ],
+   "classes": [
+    "metformin"
+   ]
+  },
+  "Risperdal": {
+   "ingredients": [
+    "risperidone"
+   ],
+   "classes": [
+    "antipsychotic"
+   ]
+  },
+  "Robaxin": {
+   "ingredients": [
+    "methocarbamol"
+   ],
+   "classes": [
+    "skeletal_muscle_relaxant"
+   ]
+  },
+  "Roxicodone": {
+   "ingredients": [
+    "oxycodone"
+   ],
+   "classes": [
+    "opioid"
+   ]
+  },
+  "Rybelsus": {
+   "ingredients": [
+    "semaglutide"
+   ],
+   "classes": [
+    "glp1_agonist"
+   ]
+  },
+  "Savaysa": {
+   "ingredients": [
+    "edoxaban"
+   ],
+   "classes": [
+    "anticoagulant"
+   ]
+  },
+  "Saxenda": {
+   "ingredients": [
+    "liraglutide"
+   ],
+   "classes": [
+    "glp1_agonist"
+   ]
+  },
+  "Segluromet": {
+   "ingredients": [
+    "ertugliflozin",
+    "metformin"
+   ],
+   "classes": [
+    "sglt2_inhibitor",
+    "metformin"
+   ]
+  },
+  "Semglee": {
+   "ingredients": [
+    "insulin glargine"
+   ],
+   "classes": [
+    "insulin"
+   ]
+  },
+  "Seroquel": {
+   "ingredients": [
+    "quetiapine"
+   ],
+   "classes": [
+    "antipsychotic"
+   ]
+  },
+  "Seroquel XR": {
+   "ingredients": [
+    "quetiapine"
+   ],
+   "classes": [
+    "antipsychotic"
+   ]
+  },
+  "Skelaxin": {
+   "ingredients": [
+    "metaxalone"
+   ],
+   "classes": [
+    "skeletal_muscle_relaxant"
+   ]
+  },
+  "Slow Fe": {
+   "ingredients": [
+    "ferrous sulfate"
+   ],
+   "classes": [
+    "iron_supplement"
+   ]
+  },
+  "Soaanz": {
+   "ingredients": [
+    "torsemide"
+   ],
+   "classes": [
+    "loop_diuretic"
+   ]
+  },
+  "Soliqua": {
+   "ingredients": [
+    "insulin glargine",
+    "lixisenatide"
+   ],
+   "classes": [
+    "glp1_agonist",
+    "insulin"
+   ]
+  },
+  "Soma": {
+   "ingredients": [
+    "carisoprodol"
+   ],
+   "classes": [
+    "skeletal_muscle_relaxant"
+   ]
+  },
+  "Sonata": {
+   "ingredients": [
+    "zaleplon"
+   ],
+   "classes": [
+    "sedative_hypnotic"
+   ]
+  },
+  "Sotylize": {
+   "ingredients": [
+    "sotalol"
+   ],
+   "classes": [
+    "beta_blocker"
+   ]
+  },
+  "Steglatro": {
+   "ingredients": [
+    "ertugliflozin"
+   ],
+   "classes": [
+    "sglt2_inhibitor"
+   ]
+  },
+  "Steglujan": {
+   "ingredients": [
+    "ertugliflozin",
+    "sitagliptin"
+   ],
+   "classes": [
+    "sglt2_inhibitor",
+    "dpp4_inhibitor"
+   ]
+  },
+  "Suboxone": {
+   "ingredients": [
+    "buprenorphine",
+    "naloxone"
+   ],
+   "classes": [
+    "opioid"
+   ]
+  },
+  "Subutex": {
+   "ingredients": [
+    "buprenorphine"
+   ],
+   "classes": [
+    "opioid"
+   ]
+  },
+  "Symbicort": {
+   "ingredients": [
+    "budesonide",
+    "formoterol"
+   ],
+   "classes": [
+    "inhaled_corticosteroid"
+   ]
+  },
+  "Synjardy": {
+   "ingredients": [
+    "empagliflozin",
+    "metformin"
+   ],
+   "classes": [
+    "sglt2_inhibitor",
+    "metformin"
+   ]
+  },
+  "Synthroid": {
+   "ingredients": [
+    "levothyroxine"
+   ],
+   "classes": [
+    "levothyroxine"
+   ]
+  },
+  "Tavist": {
+   "ingredients": [
+    "clemastine"
+   ],
+   "classes": [
+    "first_generation_antihistamine"
+   ]
+  },
+  "Tenoretic": {
+   "ingredients": [
+    "atenolol",
+    "chlorthalidone"
+   ],
+   "classes": [
+    "beta_blocker",
+    "thiazide_diuretic"
+   ]
+  },
+  "Tenormin": {
+   "ingredients": [
+    "atenolol"
+   ],
+   "classes": [
+    "beta_blocker"
+   ]
+  },
+  "Teveten": {
+   "ingredients": [
+    "eprosartan"
+   ],
+   "classes": [
+    "arb"
+   ]
+  },
+  "Thalitone": {
+   "ingredients": [
+    "chlorthalidone"
+   ],
+   "classes": [
+    "thiazide_diuretic"
+   ]
+  },
+  "Tiazac": {
+   "ingredients": [
+    "diltiazem"
+   ],
+   "classes": [
+    "calcium_channel_blocker"
+   ]
+  },
+  "Tirosint": {
+   "ingredients": [
+    "levothyroxine"
+   ],
+   "classes": [
+    "levothyroxine"
+   ]
+  },
+  "Toprol XL": {
+   "ingredients": [
+    "metoprolol succinate"
+   ],
+   "classes": [
+    "beta_blocker",
+    "hf_evidence_based_beta_blocker"
+   ]
+  },
+  "Toprol-XL": {
+   "ingredients": [
+    "metoprolol succinate"
+   ],
+   "classes": [
+    "beta_blocker",
+    "hf_evidence_based_beta_blocker"
+   ]
+  },
+  "Toradol": {
+   "ingredients": [
+    "ketorolac"
+   ],
+   "classes": [
+    "nsaid"
+   ]
+  },
+  "Toujeo": {
+   "ingredients": [
+    "insulin glargine"
+   ],
+   "classes": [
+    "insulin"
+   ]
+  },
+  "Tradjenta": {
+   "ingredients": [
+    "linagliptin"
+   ],
+   "classes": [
+    "dpp4_inhibitor"
+   ]
+  },
+  "Trandate": {
+   "ingredients": [
+    "labetalol"
+   ],
+   "classes": [
+    "beta_blocker"
+   ]
+  },
+  "Trelegy Ellipta": {
+   "ingredients": [
+    "fluticasone furoate",
+    "umeclidinium",
+    "vilanterol"
+   ],
+   "classes": [
+    "inhaled_corticosteroid"
+   ]
+  },
+  "Tresiba": {
+   "ingredients": [
+    "insulin degludec"
+   ],
+   "classes": [
+    "insulin"
+   ]
+  },
+  "Tribenzor": {
+   "ingredients": [
+    "olmesartan",
+    "amlodipine",
+    "hydrochlorothiazide"
+   ],
+   "classes": [
+    "arb",
+    "calcium_channel_blocker",
+    "thiazide_diuretic"
+   ]
+  },
+  "Trijardy XR": {
+   "ingredients": [
+    "empagliflozin",
+    "linagliptin",
+    "metformin"
+   ],
+   "classes": [
+    "sglt2_inhibitor",
+    "dpp4_inhibitor",
+    "metformin"
+   ]
+  },
+  "Trulicity": {
+   "ingredients": [
+    "dulaglutide"
+   ],
+   "classes": [
+    "glp1_agonist"
+   ]
+  },
+  "Twynsta": {
+   "ingredients": [
+    "telmisartan",
+    "amlodipine"
+   ],
+   "classes": [
+    "arb",
+    "calcium_channel_blocker"
+   ]
+  },
+  "Ultram": {
+   "ingredients": [
+    "tramadol"
+   ],
+   "classes": [
+    "opioid"
+   ]
+  },
+  "Unithroid": {
+   "ingredients": [
+    "levothyroxine"
+   ],
+   "classes": [
+    "levothyroxine"
+   ]
+  },
+  "Univasc": {
+   "ingredients": [
+    "moexipril"
+   ],
+   "classes": [
+    "ace_inhibitor"
+   ]
+  },
+  "Valium": {
+   "ingredients": [
+    "diazepam"
+   ],
+   "classes": [
+    "benzodiazepine"
+   ]
+  },
+  "Vaseretic": {
+   "ingredients": [
+    "enalapril",
+    "hydrochlorothiazide"
+   ],
+   "classes": [
+    "ace_inhibitor",
+    "thiazide_diuretic"
+   ]
+  },
+  "Vasotec": {
+   "ingredients": [
+    "enalapril"
+   ],
+   "classes": [
+    "ace_inhibitor"
+   ]
+  },
+  "Venofer": {
+   "ingredients": [
+    "iron sucrose"
+   ],
+   "classes": [
+    "iron_supplement"
+   ]
+  },
+  "Ventolin": {
+   "ingredients": [
+    "albuterol"
+   ],
+   "classes": [
+    "short_acting_beta_agonist"
+   ]
+  },
+  "Verelan": {
+   "ingredients": [
+    "verapamil"
+   ],
+   "classes": [
+    "calcium_channel_blocker"
+   ]
+  },
+  "Vicodin": {
+   "ingredients": [
+    "hydrocodone",
+    "acetaminophen"
+   ],
+   "classes": [
+    "opioid"
+   ]
+  },
+  "Victoza": {
+   "ingredients": [
+    "liraglutide"
+   ],
+   "classes": [
+    "glp1_agonist"
+   ]
+  },
+  "Vistaril": {
+   "ingredients": [
+    "hydroxyzine"
+   ],
+   "classes": [
+    "first_generation_antihistamine"
+   ]
+  },
+  "Voltaren": {
+   "ingredients": [
+    "diclofenac"
+   ],
+   "classes": [
+    "nsaid"
+   ]
+  },
+  "Vytorin": {
+   "ingredients": [
+    "ezetimibe",
+    "simvastatin"
+   ],
+   "classes": [
+    "statin"
+   ]
+  },
+  "Wegovy": {
+   "ingredients": [
+    "semaglutide"
+   ],
+   "classes": [
+    "glp1_agonist"
+   ]
+  },
+  "Wixela": {
+   "ingredients": [
+    "fluticasone propionate",
+    "salmeterol"
+   ],
+   "classes": [
+    "inhaled_corticosteroid"
+   ]
+  },
+  "Xanax": {
+   "ingredients": [
+    "alprazolam"
+   ],
+   "classes": [
+    "benzodiazepine"
+   ]
+  },
+  "Xarelto": {
+   "ingredients": [
+    "rivaroxaban"
+   ],
+   "classes": [
+    "anticoagulant"
+   ]
+  },
+  "Xigduo XR": {
+   "ingredients": [
+    "dapagliflozin",
+    "metformin"
+   ],
+   "classes": [
+    "sglt2_inhibitor",
+    "metformin"
+   ]
+  },
+  "Xopenex": {
+   "ingredients": [
+    "levalbuterol"
+   ],
+   "classes": [
+    "short_acting_beta_agonist"
+   ]
+  },
+  "Xultophy": {
+   "ingredients": [
+    "insulin degludec",
+    "liraglutide"
+   ],
+   "classes": [
+    "glp1_agonist",
+    "insulin"
+   ]
+  },
+  "Xyzal": {
+   "ingredients": [
+    "levocetirizine"
+   ],
+   "classes": [
+    "second_generation_antihistamine"
+   ]
+  },
+  "Zanaflex": {
+   "ingredients": [
+    "tizanidine"
+   ],
+   "classes": [
+    "skeletal_muscle_relaxant"
+   ]
+  },
+  "Zaroxolyn": {
+   "ingredients": [
+    "metolazone"
+   ],
+   "classes": [
+    "thiazide_diuretic"
+   ]
+  },
+  "Zebeta": {
+   "ingredients": [
+    "bisoprolol"
+   ],
+   "classes": [
+    "beta_blocker",
+    "hf_evidence_based_beta_blocker"
+   ]
+  },
+  "Zepbound": {
+   "ingredients": [
+    "tirzepatide"
+   ],
+   "classes": [
+    "glp1_agonist"
+   ]
+  },
+  "Zestoretic": {
+   "ingredients": [
+    "lisinopril",
+    "hydrochlorothiazide"
+   ],
+   "classes": [
+    "ace_inhibitor",
+    "thiazide_diuretic"
+   ]
+  },
+  "Zestril": {
+   "ingredients": [
+    "lisinopril"
+   ],
+   "classes": [
+    "ace_inhibitor"
+   ]
+  },
+  "Ziac": {
+   "ingredients": [
+    "bisoprolol",
+    "hydrochlorothiazide"
+   ],
+   "classes": [
+    "beta_blocker",
+    "hf_evidence_based_beta_blocker",
+    "thiazide_diuretic"
+   ]
+  },
+  "Zituvio": {
+   "ingredients": [
+    "sitagliptin"
+   ],
+   "classes": [
+    "dpp4_inhibitor"
+   ]
+  },
+  "Zocor": {
+   "ingredients": [
+    "simvastatin"
+   ],
+   "classes": [
+    "statin"
+   ]
+  },
+  "Zoloft": {
+   "ingredients": [
+    "sertraline"
+   ],
+   "classes": [
+    "ssri"
+   ]
+  },
+  "Zometa": {
+   "ingredients": [
+    "zoledronic acid"
+   ],
+   "classes": [
+    "bisphosphonate"
+   ]
+  },
+  "Zubsolv": {
+   "ingredients": [
+    "buprenorphine",
+    "naloxone"
+   ],
+   "classes": [
+    "opioid"
+   ]
+  },
+  "Zypitamag": {
+   "ingredients": [
+    "pitavastatin"
+   ],
+   "classes": [
+    "statin"
+   ]
+  },
+  "Zyprexa": {
+   "ingredients": [
+    "olanzapine"
+   ],
+   "classes": [
+    "antipsychotic"
+   ]
+  },
+  "Zyrtec": {
+   "ingredients": [
+    "cetirizine"
+   ],
+   "classes": [
+    "second_generation_antihistamine"
+   ]
+  }
+ }
+}

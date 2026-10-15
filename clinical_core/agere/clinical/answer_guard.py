@@ -254,10 +254,80 @@ def _encoder_scores(encoder, question, streams, idx):
         return {}
 
 
-def probe(question, profile, *, path=None, k=3, encoder=None, used=()):
+# Dense re-ranking with the second pinned encoder (local_encoders.PinnedSentenceEncoder, UltraBERT-Embed-150M). One document
+# per received stream (name, populated non-bookkeeping fields, up to 3 values of each low-cardinality text field - the format
+# measured in tools/encoder_bakeoff), embedded once per (encoder identity, source digest) and held in memory; the vectors
+# also persist in the encoder's content-addressed cache, so a restart re-reads them instead of re-encoding. A question costs
+# one query encoding (with the model's query prompt) and one matrix product over all streams.
+DENSE_VERSION = 'catalog-dense/1'
+DENSE_POOL = 10     # dense top-N streams join the lexical top 15 as candidates
+RRF_K = 60          # reciprocal-rank fusion constant (Cormack et al. 2009 default; not tuned on the evaluation cases)
+_DENSE_SKIP = {'available_date', 'available_time', 'encounter_id', 'event_date', 'event_date_precision', 'event_time',
+               'identity_link_basis', 'identity_status', 'organization_id', 'patient_id', 'record_id', 'recorded_date',
+               'recorded_time', 'signed_time', 'source_patient_id', 'source_system', 'source_table', 'supersedes_record_id', 'synthetic'}
+_DENSE = {}
+_DENSE_LOCK = threading.Lock()
+
+
+def catalog_document(stream, spec, max_chars=1200):
+    fields = [f for f in sorted(spec.get('fields') or {}) if f not in _DENSE_SKIP]
+    vals = []
+    for f in fields:
+        d = spec['fields'][f] or {}
+        if d.get('values') and d.get('distinct', 99) <= 12:
+            vals += [str(v).replace('_', ' ') for v in list(d['values'])[:3] if isinstance(v, str) and len(v) <= 60]
+    text = f"{stream.replace('_', ' ')}. fields: {', '.join(f.replace('_', ' ') for f in fields)}. values: {', '.join(vals)}"
+    return text[:max_chars]
+
+
+def dense_encoder():
+    """The second pinned encoder for catalog retrieval, or None (AGERE_CATALOG_DENSE=off, AGERE_SECOND_ENCODER=off, weights
+    absent or refused) - the probe then keeps its lexical ranking and the optional stack-encoder re-rank."""
+    if os.environ.get('AGERE_CATALOG_DENSE', 'on') == 'off': return None
+    try:
+        from ...local_encoders import second_encoder
+        return second_encoder()
+    except Exception:  # noqa: BLE001 - retrieval aid only
+        return None
+
+
+def _dense_catalog(dense, profile, idx):
+    digest = profile.get('source_digest')
+    # the stream set is part of the key: two profiles sharing a digest label (fixtures) must not share vectors
+    key = (dense.identity, ('digest', digest, tuple(sorted(idx.streams))) if isinstance(digest, str) and digest else ('id', id(profile)))
+    hit = _DENSE.get(key)
+    if hit is not None and (key[1][0] == 'digest' or hit[0] is profile): return hit[1], hit[2]
+    with _DENSE_LOCK:
+        hit = _DENSE.get(key)
+        if hit is None or (key[1][0] == 'id' and hit[0] is not profile):
+            names = sorted(idx.streams)
+            matrix = dense.encode_documents([catalog_document(s, idx.streams[s] or {}) for s in names])
+            if len(_DENSE) > 4: _DENSE.clear()
+            hit = _DENSE[key] = (profile, names, matrix)
+        return hit[1], hit[2]
+
+
+def _dense_scores(dense, question, profile, idx):
+    """{stream: cosine} over the full catalog, or {} when the encoder fails (lexical ranking stands)."""
+    if dense is None or not idx.streams: return {}
+    try:
+        names, matrix = _dense_catalog(dense, profile, idx)
+        q = dense.encode_queries([question])[0]
+        return {s: float(x) for s, x in zip(names, matrix @ q) if s in idx.streams}
+    except Exception:  # noqa: BLE001 - the dense stage only re-ranks
+        return {}
+
+
+def probe(question, profile, *, path=None, k=3, encoder=None, used=(), dense='auto'):
     """Search the full received catalog for sources matching the question's key terms.
+    Ranking: lexical (inverted index, IDF-weighted, exact code/value bonuses) is the first stage. With the second pinned
+    encoder available (dense='auto' -> dense_encoder(); pass None to disable or an encoder to inject), its dense top 10
+    join the lexical top 15 and candidates are ordered lexically-'likely' first, then by reciprocal-rank fusion of the
+    lexical and dense ranks; 'likely' itself (the guard's re-plan / abstain trigger) stays purely lexical and
+    warehouse-checked. Without it, the stack encoder (when given) re-ranks as before.
     -> {'terms', 'unmatched_terms', 'period', 'streams_searched', 'candidates': [{'stream', 'score', 'coverage', 'matched_terms',
-       'evidence': [{'field', 'value', 'kind', 'records', 'period_records'?}], 'records', 'period_records'?, 'likely', 'used'}]}"""
+       'evidence': [{'field', 'value', 'kind', 'records', 'period_records'?}], 'records', 'period_records'?, 'likely', 'used',
+       'dense_similarity'?, 'dense_rank'?, 'fused'?}], 'dense'?: {...}}"""
     idx = _index(profile)
     n = max(len(idx.streams), 1)
     qterms = terms(question)
@@ -299,11 +369,33 @@ def probe(question, profile, *, path=None, k=3, encoder=None, used=()):
                       'codes': _code_fields(idx.streams[s]), 'item_coverage': round(item_cov, 3), 'likely': code_hit or (item_cov >= 0.6 and bool(distinctive)), 'used': s in set(used)})
     cands.sort(key=lambda c: (-c['score'], c['stream']))
     top = cands[:15]
-    sims = _encoder_scores(encoder, question, [c['stream'] for c in top], idx)
-    for c in top:
-        if c['stream'] in sims:
-            c['encoder_similarity'] = round(sims[c['stream']], 4); c['score'] = round(c['score'] + 0.5 * sims[c['stream']], 4)
-    top.sort(key=lambda c: (-c['likely'], -round(c['item_coverage'], 2), -c['score'], c['stream']))
+    dense = dense_encoder() if dense == 'auto' else dense
+    t_dense = time.perf_counter()
+    dsims = _dense_scores(dense, question, profile, idx)
+    dense_receipt = None
+    if dsims:
+        top.sort(key=lambda c: (-c['likely'], -round(c['item_coverage'], 2), -c['score'], c['stream']))
+        lrank = {c['stream']: i + 1 for i, c in enumerate(top)}
+        dorder = sorted(dsims, key=lambda s: (-dsims[s], s))
+        drank = {s: i + 1 for i, s in enumerate(dorder)}
+        for s in dorder[:DENSE_POOL]:
+            if s in lrank: continue
+            top.append({'stream': s, 'score': 0.0, 'coverage': 0.0, 'matched_terms': [], 'code_match': False,
+                        'records': (idx.streams[s] or {}).get('records'), 'evidence': [], 'codes': _code_fields(idx.streams[s]),
+                        'item_coverage': 0.0, 'likely': False, 'used': s in set(used), 'dense_only': True})
+        for c in top:
+            s = c['stream']
+            c['dense_similarity'] = round(dsims[s], 4); c['dense_rank'] = drank[s]
+            c['fused'] = round((1 / (RRF_K + lrank[s]) if s in lrank else 0.0) + 1 / (RRF_K + drank[s]), 6)
+        top.sort(key=lambda c: (-c['likely'], -c['fused'], c['stream']))
+        dense_receipt = {'version': DENSE_VERSION, 'encoder': dense.identity[:16], 'fusion': f'rrf{RRF_K}',
+                         'seconds': round(time.perf_counter() - t_dense, 4)}
+    else:
+        sims = _encoder_scores(encoder, question, [c['stream'] for c in top], idx)
+        for c in top:
+            if c['stream'] in sims:
+                c['encoder_similarity'] = round(sims[c['stream']], 4); c['score'] = round(c['score'] + 0.5 * sims[c['stream']], 4)
+        top.sort(key=lambda c: (-c['likely'], -round(c['item_coverage'], 2), -c['score'], c['stream']))
     top = top[:max(k, 1) * 2]
     period = period_of(question)
     if path is not None:
@@ -334,9 +426,11 @@ def probe(question, profile, *, path=None, k=3, encoder=None, used=()):
                         c['why_not_likely'] = 'no matching records in the period' if period else 'no matching records'
             finally:
                 db.close()
-    return {'version': VERSION, 'terms': qterms, 'unmatched_terms': [t for t in qterms if t not in idx.df], 'period': period,
-            'streams_searched': len(idx.streams), 'fields_and_values_indexed': sum(len(v) for v in idx.inv.values()),
-            'candidates': top[:k + 1]}
+    out = {'version': VERSION, 'terms': qterms, 'unmatched_terms': [t for t in qterms if t not in idx.df], 'period': period,
+           'streams_searched': len(idx.streams), 'fields_and_values_indexed': sum(len(v) for v in idx.inv.values()),
+           'candidates': top[:k + 1]}
+    if dense_receipt: out['dense'] = dense_receipt
+    return out
 
 
 def describe_source(c):
@@ -360,7 +454,10 @@ def describe_source(c):
 RAW_SLICE_BYTES = 1800
 
 
-def raw_catalog_slice(question, profile, path=None, shown=(), k=4, budget=RAW_SLICE_BYTES, encoder=None):
+DENSE_SLICE_RANK = 2  # a stream the dense stage ranks in its top 2 is shown to the writer even without lexical evidence
+
+
+def raw_catalog_slice(question, profile, path=None, shown=(), k=4, budget=RAW_SLICE_BYTES, encoder=None, dense='auto'):
     """-> (text, receipt): the received streams the catalog probe ranks for the question (not already shown in full) with
     the fields and exact values that matched, for the hosted SQL writer; bounded by `budget` characters. Raw streams are
     queried through the read-only `record` table (json_extract on payload), under the semantic SQL guard."""
@@ -368,11 +465,13 @@ def raw_catalog_slice(question, profile, path=None, shown=(), k=4, budget=RAW_SL
     t0 = time.perf_counter()
     try:
         # profile counts only: per-period warehouse counts cost seconds on large streams and the writer runs on every hosted ask
-        found = probe(question, profile, path=None, k=k + len(shown), encoder=encoder)
+        found = probe(question, profile, path=None, k=k + len(shown), encoder=encoder, dense=dense)
     except Exception as exc:  # noqa: BLE001 - retrieval is an aid, never a blocker
         return '', {'error': f'{type(exc).__name__}: {exc}'[:200]}
-    picks = [c for c in found['candidates'] if c['stream'] not in set(shown) and (c['likely'] or c['item_coverage'] >= 0.5)][:k]
-    if not picks: return '', {'streams': [], 'version': VERSION, 'seconds': round(time.perf_counter() - t0, 3)}
+    picks = [c for c in found['candidates'] if c['stream'] not in set(shown) and c['stream'] in profile['streams']
+             and (c['likely'] or c['item_coverage'] >= 0.5 or (c.get('dense_rank') or 10 ** 6) <= DENSE_SLICE_RANK)][:k]
+    extra = {'dense': found['dense']} if found.get('dense') else {}
+    if not picks: return '', {'streams': [], 'version': VERSION, 'seconds': round(time.perf_counter() - t0, 3), **extra}
     head = ('\n\nRECEIVED STREAMS MATCHING THE QUESTION (raw records, full catalog; query them as record WHERE stream = \'<stream>\' '
             "with json_extract(payload,'$.<field>'); values are exact spellings)")
     lines, used = [], []
@@ -391,7 +490,7 @@ def raw_catalog_slice(question, profile, path=None, shown=(), k=4, budget=RAW_SL
             if len(line) < 40: break
         lines.append(line); used.append(c['stream'])
     return head + '\n' + '\n'.join(lines), {'streams': used, 'version': VERSION, 'period': found['period'],
-                                             'seconds': round(time.perf_counter() - t0, 3)}
+                                             'seconds': round(time.perf_counter() - t0, 3), **extra}
 
 
 # ---------------------------------------------------------------------------------------------------- sources an answer read

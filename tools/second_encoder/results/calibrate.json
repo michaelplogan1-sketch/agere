@@ -1,0 +1,260 @@
+{
+ "lab": {
+  "labels": 117,
+  "mapped": 35,
+  "mapped_to_none": 82,
+  "reach_fallback": 85,
+  "shipped_threshold": 0.55,
+  "table": [
+   {
+    "threshold": 0.3,
+    "accepted": 47,
+    "correct": 34,
+    "wrong_or_none": 13,
+    "of_which_reach_fallback": {
+     "correct": 3,
+     "wrong_or_none": 13
+    }
+   },
+   {
+    "threshold": 0.35,
+    "accepted": 42,
+    "correct": 33,
+    "wrong_or_none": 9,
+    "of_which_reach_fallback": {
+     "correct": 3,
+     "wrong_or_none": 9
+    }
+   },
+   {
+    "threshold": 0.4,
+    "accepted": 37,
+    "correct": 31,
+    "wrong_or_none": 6,
+    "of_which_reach_fallback": {
+     "correct": 3,
+     "wrong_or_none": 6
+    }
+   },
+   {
+    "threshold": 0.45,
+    "accepted": 31,
+    "correct": 27,
+    "wrong_or_none": 4,
+    "of_which_reach_fallback": {
+     "correct": 2,
+     "wrong_or_none": 4
+    }
+   },
+   {
+    "threshold": 0.5,
+    "accepted": 25,
+    "correct": 22,
+    "wrong_or_none": 3,
+    "of_which_reach_fallback": {
+     "correct": 2,
+     "wrong_or_none": 3
+    }
+   },
+   {
+    "threshold": 0.55,
+    "accepted": 19,
+    "correct": 19,
+    "wrong_or_none": 0,
+    "of_which_reach_fallback": {
+     "correct": 2,
+     "wrong_or_none": 0
+    }
+   },
+   {
+    "threshold": 0.6,
+    "accepted": 13,
+    "correct": 13,
+    "wrong_or_none": 0,
+    "of_which_reach_fallback": {
+     "correct": 2,
+     "wrong_or_none": 0
+    }
+   },
+   {
+    "threshold": 0.65,
+    "accepted": 5,
+    "correct": 5,
+    "wrong_or_none": 0,
+    "of_which_reach_fallback": {
+     "correct": 1,
+     "wrong_or_none": 0
+    }
+   },
+   {
+    "threshold": 0.7,
+    "accepted": 0,
+    "correct": 0,
+    "wrong_or_none": 0,
+    "of_which_reach_fallback": {
+     "correct": 0,
+     "wrong_or_none": 0
+    }
+   },
+   {
+    "threshold": 0.75,
+    "accepted": 0,
+    "correct": 0,
+    "wrong_or_none": 0,
+    "of_which_reach_fallback": {
+     "correct": 0,
+     "wrong_or_none": 0
+    }
+   },
+   {
+    "threshold": 0.8,
+    "accepted": 0,
+    "correct": 0,
+    "wrong_or_none": 0,
+    "of_which_reach_fallback": {
+     "correct": 0,
+     "wrong_or_none": 0
+    }
+   },
+   {
+    "threshold": 0.85,
+    "accepted": 0,
+    "correct": 0,
+    "wrong_or_none": 0,
+    "of_which_reach_fallback": {
+     "correct": 0,
+     "wrong_or_none": 0
+    }
+   }
+  ]
+ },
+ "condition": {
+  "labels": 237,
+  "mapped": 94,
+  "mapped_to_none": 143,
+  "reach_fallback": 140,
+  "shipped_threshold": 0.45,
+  "table": [
+   {
+    "threshold": 0.3,
+    "accepted": 98,
+    "correct": 80,
+    "wrong_or_none": 18,
+    "of_which_reach_fallback": {
+     "correct": 0,
+     "wrong_or_none": 14
+    }
+   },
+   {
+    "threshold": 0.35,
+    "accepted": 78,
+    "correct": 71,
+    "wrong_or_none": 7,
+    "of_which_reach_fallback": {
+     "correct": 0,
+     "wrong_or_none": 4
+    }
+   },
+   {
+    "threshold": 0.4,
+    "accepted": 60,
+    "correct": 56,
+    "wrong_or_none": 4,
+    "of_which_reach_fallback": {
+     "correct": 0,
+     "wrong_or_none": 2
+    }
+   },
+   {
+    "threshold": 0.45,
+    "accepted": 38,
+    "correct": 38,
+    "wrong_or_none": 0,
+    "of_which_reach_fallback": {
+     "correct": 0,
+     "wrong_or_none": 0
+    }
+   },
+   {
+    "threshold": 0.5,
+    "accepted": 18,
+    "correct": 18,
+    "wrong_or_none": 0,
+    "of_which_reach_fallback": {
+     "correct": 0,
+     "wrong_or_none": 0
+    }
+   },
+   {
+    "threshold": 0.55,
+    "accepted": 12,
+    "correct": 12,
+    "wrong_or_none": 0,
+    "of_which_reach_fallback": {
+     "correct": 0,
+     "wrong_or_none": 0
+    }
+   },
+   {
+    "threshold": 0.6,
+    "accepted": 0,
+    "correct": 0,
+    "wrong_or_none": 0,
+    "of_which_reach_fallback": {
+     "correct": 0,
+     "wrong_or_none": 0
+    }
+   },
+   {
+    "threshold": 0.65,
+    "accepted": 0,
+    "correct": 0,
+    "wrong_or_none": 0,
+    "of_which_reach_fallback": {
+     "correct": 0,
+     "wrong_or_none": 0
+    }
+   },
+   {
+    "threshold": 0.7,
+    "accepted": 0,
+    "correct": 0,
+    "wrong_or_none": 0,
+    "of_which_reach_fallback": {
+     "correct": 0,
+     "wrong_or_none": 0
+    }
+   },
+   {
+    "threshold": 0.75,
+    "accepted": 0,
+    "correct": 0,
+    "wrong_or_none": 0,
+    "of_which_reach_fallback": {
+     "correct": 0,
+     "wrong_or_none": 0
+    }
+   },
+   {
+    "threshold": 0.8,
+    "accepted": 0,
+    "correct": 0,
+    "wrong_or_none": 0,
+    "of_which_reach_fallback": {
+     "correct": 0,
+     "wrong_or_none": 0
+    }
+   },
+   {
+    "threshold": 0.85,
+    "accepted": 0,
+    "correct": 0,
+    "wrong_or_none": 0,
+    "of_which_reach_fallback": {
+     "correct": 0,
+     "wrong_or_none": 0
+    }
+   }
+  ]
+ }
+}
