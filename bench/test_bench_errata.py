@@ -43,8 +43,8 @@ class ErrataFileTests(unittest.TestCase):
 
     def test_every_question_has_one_entry_and_valid_category(self):
         # Splits written after the audit (e.g. later blind sets) are not yet audited: only audited splits must match.
-        audited = {q[0] for q in self.errata['questions']}
-        self.assertEqual(set(self.errata['questions']), {q for q in self.questions if q[0] in audited})
+        audited = {self.questions[q].get('split') for q in self.errata['questions'] if q in self.questions}
+        self.assertEqual(set(self.errata['questions']), {q for q, v in self.questions.items() if v.get('split') in audited})
         self.assertTrue(all(e['category'] in CATEGORIES for e in self.errata['questions'].values()))
 
     def test_capability_split_not_included(self):
