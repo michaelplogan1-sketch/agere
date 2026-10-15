@@ -169,6 +169,12 @@ class Stack:
                         saved=json.loads(payload)
                         if saved.get('question')==question:
                             plans.execute('UPDATE plans SET payload=? WHERE id=?',(json.dumps({**saved,'graph':graph,'receipt':receipt}),key))
+            if planning=='auto' and isinstance(receipt,dict):
+                # Confidently-wrong guard (answer_guard.py): a zero/empty/implausible answer probes the full received catalog and
+                # re-plans once or abstains naming the unused source; an uncertified path is cross-checked by one independent path.
+                from .answer_guard import review as guard_review
+                graph,receipt,result,guard_calls=guard_review(self,question,graph,receipt,result,ledger=ledger,frontier=frontier,profile=profile)
+                calls+=guard_calls
             readings=(receipt.get('hosted_sql') or {}).get('readings') if planning=='auto' and isinstance(receipt,dict) else None
             if readings and isinstance(result.get('answer'),dict):  # FM-19: both defensible readings, never a silent pick
                 from .verification_v2 import attach_readings
@@ -178,6 +184,9 @@ class Stack:
                 result={**result,'answer':finalize_answer(result['answer'],receipt)}
             from .economical_planner import economics
             costing=economics(receipt if planning=='auto' else {'steps':[{'receipt':receipt}]})
+            if planning=='auto':  # guard confidence after the answer contract: abstention / disagreement low, agreement cross-checked
+                from .answer_guard import finish as guard_finish
+                result=guard_finish(result,receipt)
             return {**result,'question':question,'route':'economical_composition_local_execution' if planning=='auto' else 'frontier_composition_local_execution',
                     'planner_receipt':receipt,'planning_economics':costing,'new_paid_api_calls':result['new_paid_api_calls']+calls}
         finally:ledger.close()
