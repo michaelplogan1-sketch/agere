@@ -276,6 +276,27 @@ def unaccounted_numbers(question, m, slots, as_of, extra_text=''):
     return sorted(n for n in _numbers(question) if n not in have)
 
 
+# A question that subtracts a component ("payments minus refunds", "net of write-offs", "after deducting adjustments") asks
+# for a quantity the metric must define; a metric whose definition never mentions that component answers a different question.
+_SUBTRACT = re.compile(r"\b(?:minus|less|net of|after (?:subtracting|deducting|removing|netting out)|subtracting|deducting|netting out)\s+"
+                       r"(?:the\s+|any\s+|all\s+|their\s+|our\s+)?([a-z][a-z \-]{2,60}?)"
+                       r"(?=\s+(?:issued|received|paid|made|posted|during|in|for|from|on|of|by|and|that|which|to)\b|[,.;?)]|$)", re.I)
+
+
+def unaccounted_components(question, m):
+    """Components the question subtracts that the metric's definition never names (-> ['patient refunds'])."""
+    from .answer_guard import terms
+    text = json.dumps({k: m.get(k) for k in ('id', 'name', 'summary', 'numerator', 'denominator', 'population', 'event',
+                                            'value_sets', 'sql_template', 'slots', 'engine')}, default=str).lower()
+    have = set(terms(text.replace('\\n', ' ')))
+    out = []
+    for hit in _SUBTRACT.finditer(question or ''):
+        words = [t for t in terms(hit.group(1)) if not re.fullmatch(r'\d+', t)]
+        if words and not any(t in have for t in words):
+            out.append(hit.group(1).strip())
+    return out
+
+
 # ------------------------------------------------------------------------------------------------ compute
 def compile_metric(mid, m, slots, as_of, question=''):
     """Validated slots -> an executable node: {'operation': 'sql', 'parameters': {query, returns}} or a measure-engine node."""
@@ -371,6 +392,9 @@ def _fill(question, as_of, mid, m, call, info):
             slots = validate_slots(m, choice.get('input') or {})
             missing = unaccounted_numbers(question, m, slots, as_of)
             if missing: raise ValueError(f"numbers in the question are not in any slot: {', '.join(f'{x:g}' for x in missing)}")
+            parts = unaccounted_components(question, m)
+            if parts: raise ValueError(f"the question subtracts {', '.join(parts)}, which metric {mid} does not define; "
+                                       'call no_metric unless a slot covers it')
             node = compile_metric(mid, m, slots, as_of, question)
             return slots, node
         except LookupError:

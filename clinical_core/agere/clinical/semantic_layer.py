@@ -111,7 +111,11 @@ SCHEMA_DOC = {
     'concept_patient': 'Patients having each library concept (condition, measurement, encounter), with record counts and first/last dates.',
     'link': 'Every record-to-record reference (fields ending _record_id/_record_ids): record_id/stream of the referring record, '
             'field name, target_record_id. Indexed on target_record_id - use it for linkage questions (e.g. orders without dispenses).',
-    'record': 'Every received record (all streams). Use json_extract(payload, \'$.field\') for fields of streams not modelled above.',
+    'record': 'Every received record (all streams). Use json_extract(payload, \'$.field\') for fields of streams not modelled above. '
+              'payload supersedes_record_id is set on a correction: the record replaces that earlier record of the same stream '
+              '(corrections per feed = records with it set, by stream; current version = not superseded). '
+              'event_date_precision = minute | day | month | year | unknown. Fields ending _record_id point at another '
+              'record (see link).',
     'appointment': 'One row per appointment_id (appointments arrive as a booked record plus later status records). scheduled_date from '
                    'the latest version carrying a scheduled_date (a reschedule moves it), else the date of slot_start (population-feed '
                    'bookings send booked_at + slot_start); booked_date = earliest booked version; lead_time_days = scheduled_date - '
@@ -148,7 +152,10 @@ SCHEMA_DOC = {
     'measurement_latest': 'Latest DATED value per patient and measurement concept (undated rows never count as latest); '
                           'same_day_values/same_day_min for same-date ties (HEDIS uses the lowest).',
     'current_record': 'Latest version of each business entity in versioned (snapshot) streams: stream, key_field, business_id, '
-                      'versions, payload of the latest version. Use it for current state (current balance, current claim status).',
+                      'versions, payload of the latest version. Use it for current state (current balance, current claim status). '
+                      'It drops what earlier versions carried: a status-history stream (appointments: booked -> rescheduled -> '
+                      'fulfilled) records a reschedule reason or an interim status on an earlier version, so "ever" / "had to be '
+                      'rescheduled because" questions read record WHERE stream = ... over all versions (count DISTINCT the key).',
     'social_need': 'Social-needs screening answers normalised across instruments: one row per (screen record, need) with positive 0/1. '
                    'need = food | transport | cost_of_care, plus housing | utilities | safety from AHC HRSN screens (instrument '
                    'AHC_HRSN; positive when any item for the need is answered yes; source_field = items:<item names>). transport positive = transport_difficulty_reported or transport unreliable '

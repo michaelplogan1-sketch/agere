@@ -356,6 +356,15 @@ def resolve_measurement(concept, profile):
                 if fields.get(column, {}).get('populated'):
                     bindings.append({'stream': 'vitals', 'value_field': column, 'fixed_unit': d['unit']})
                     units_seen[f"{column} [{d['unit']}]"] = fields[column]['populated']
+    # Instrument totals carried as a named numeric field on another feed (health_risk_assessments.phq2_total): the concept is
+    # observed there too, not only where a measurement row names it. Field name = the concept's name pattern + total/score.
+    total = re.compile(r'^(?:' + d['names'] + r')_?(?:total|score|total_score)$', re.I)
+    for stream, spec in sorted((profile.get('streams') or {}).items()):
+        if stream in MEASUREMENT_STREAMS: continue
+        for column, f in sorted((spec.get('fields') or {}).items()):
+            if f.get('populated') and 'numeric_range' in f and total.match(column):
+                bindings.append({'stream': stream, 'value_field': column, 'fixed_unit': d['unit']})
+                units_seen[f"{stream}.{column} [{d['unit']}]"] = f['populated']
     return {'concept': concept, 'kind': 'measurement', 'label': d['label'], 'unit': d['unit'], 'units': d['units'],
             'bindings': bindings, 'included_series': units_seen, 'unconvertible_series': unconvertible}
 

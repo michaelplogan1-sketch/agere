@@ -423,11 +423,11 @@
   },
   {
    "id": "feed_quality",
-   "version": 1,
+   "version": 2,
    "name": "Received feed quality",
    "status": "internal",
    "internal_reason": "Data-quality observations on the received feeds; no clinical meaning.",
-   "summary": "Per received stream: rows, rows with no event date, percent undated, mean arrival lag (available_date - event_date) and rows arriving more than N days after the event; encounters can be counted once per encounter_id (first arrival, earliest date).",
+   "summary": "Per received stream: rows, rows with no event date, percent undated, mean arrival lag (available_date - event_date), rows arriving more than N days after the event, correction records (records that supersede an earlier record of the same stream, payload supersedes_record_id; stream all + group_by stream = corrections per feed) and current records with an imprecise event date (event_date_precision month, year or unknown; group_by date_precision breaks them down); encounters can be counted once per encounter_id (first arrival, earliest date).",
    "grain": {
     "entity": "lab_row",
     "key": "record_id"
@@ -439,7 +439,7 @@
     "summary": "None (count) unless the slots ask for a rate."
    },
    "numerator": {
-    "summary": "Per received stream: rows, rows with no event date, percent undated, mean arrival lag (available_date - event_date) and rows arriving more than N days after the event; encounters can be counted once per encounter_id (first arrival, earliest date)."
+    "summary": "Per received stream: rows, rows with no event date, percent undated, mean arrival lag (available_date - event_date), rows arriving more than N days after the event, correction records (records that supersede an earlier record of the same stream, payload supersedes_record_id; stream all + group_by stream = corrections per feed) and current records with an imprecise event date (event_date_precision month, year or unknown; group_by date_precision breaks them down); encounters can be counted once per encounter_id (first arrival, earliest date)."
    },
    "time_anchor": {
     "field": "record.event_date",
@@ -470,9 +470,11 @@
       "conditions",
       "vitals",
       "pharmacy_dispenses",
-      "appointments"
+      "appointments",
+      "all"
      ],
-     "required": true
+     "required": true,
+     "description": "One received stream, or all = every received stream (needs group_by stream unless the only measure is correction_rows)."
     },
     "unit": {
      "type": "enum",
@@ -490,7 +492,9 @@
       "pct_undated",
       "avg_lag_days",
       "late_rows",
-      "pct_late"
+      "pct_late",
+      "correction_rows",
+      "imprecise_date_rows"
      ],
      "required": true
     },
@@ -526,7 +530,9 @@
      "values": [
       "none",
       "source_system",
-      "year"
+      "year",
+      "stream",
+      "date_precision"
      ],
      "default": "none"
     }
