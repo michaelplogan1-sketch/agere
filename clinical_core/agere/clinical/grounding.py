@@ -16,6 +16,7 @@ from . import concepts, source_profile
 CODE_FIELDS = {('conditions', 'icd10'), ('conditions', 'snomed'), ('condition_assessments', 'icd10'),
                ('problem_lists', 'problem_code'), ('medical_claims', 'dx')}
 MEASUREMENT_LABEL_FIELDS = {('labs', 'code'), ('labs', 'test'), ('labs', 'name'), ('vitals', 'measurement')}
+CONDITION_LABEL_FIELDS = {(s, f) for s, spec in concepts.CONDITION_STREAMS.items() for f in spec['labels']}
 NUMERIC_OPS = ('lt', 'le', 'gt', 'ge', 'eq', 'ne')
 REPORTED_PATIENT_FIELDS = {'age': 'age_reported', 'sex': 'sex_reported'}
 PARTIAL_COVERAGE = 0.9
@@ -73,26 +74,46 @@ def check_patient(atom, profile):
 def _repair_record(atom, profile):
     """Rewrite a raw code/label predicate into a concept/measurement atom, or None."""
     stream, window = atom['stream'], atom['window']
-    key_conditions = [c for c in atom['conditions'] if (stream, c['field']) in CODE_FIELDS | MEASUREMENT_LABEL_FIELDS
+    key_conditions = [c for c in atom['conditions'] if (stream, c['field']) in CODE_FIELDS | MEASUREMENT_LABEL_FIELDS | CONDITION_LABEL_FIELDS
                       and c['op'] in ('eq', 'prefix', 'contains') and isinstance(c['value'], str)]
     if len(key_conditions) != 1: return None
     key = key_conditions[0]
     others = [c for c in atom['conditions'] if c is not key]
     if (stream, key['field']) in MEASUREMENT_LABEL_FIELDS:
-        concept = concepts.concept_for_code(key['value']) if key['field'] == 'code' else concepts.concept_for_label(key['value'])
+        term = None
+        if key['field'] == 'code':
+            concept = concepts.concept_for_code(key['value'])
+        else:
+            concept = concepts.concept_for_label(key['value'])
+            if concept is None and key['op'] == 'eq':  # exact code and alias found nothing: second-encoder fallback
+                term = concepts.match_label(key['value'], 'lab')
+                concept = (term or {}).get('concept')
         if concept not in concepts.MEASUREMENTS: return None
         unit = next((c['value'] for c in others if c['field'] == 'unit' and c['op'] == 'eq'), None)
         values = [c for c in others if c['field'] == 'value' and c['op'] in NUMERIC_OPS and type(c['value']) in (int, float)]
         if len(others) != len(values) + (unit is not None) or len(values) > 1: return None
         d = concepts.MEASUREMENTS[concept]
         if unit is not None and unit not in d['units']: return None
-        if not values: return {'kind': 'concept', 'concept': concept, 'window': window}
+        extra = {'_terminology': _term(term)} if term else {}
+        if not values: return {'kind': 'concept', 'concept': concept, 'window': window, **extra}
         factor = d['units'][unit] if unit is not None else 1.0
         return {'kind': 'measurement', 'concept': concept, 'op': values[0]['op'],
-                'value': values[0]['value'] * factor, 'aggregate': 'any', 'window': window}
+                'value': values[0]['value'] * factor, 'aggregate': 'any', 'window': window, **extra}
+    if (stream, key['field']) in CONDITION_LABEL_FIELDS:
+        # a condition label: the library's label pattern (alias), then the second-encoder fallback
+        if others or key['op'] != 'eq': return None
+        term = concepts.match_label(key['value'], 'condition')
+        concept = (term or {}).get('concept')
+        if concept not in concepts.CONDITIONS: return None
+        return {'kind': 'concept', 'concept': concept, 'window': window,
+                **({'_terminology': _term(term)} if term['method'] == 'encoder' else {})}
     concept = concepts.concept_for_code(key['value'])
     if concept is None or others: return None
     return {'kind': 'concept', 'concept': concept, 'window': window}
+
+
+def _term(m):
+    return {k: m.get(k) for k in ('method', 'candidate', 'score', 'threshold', 'runner_up', 'version', 'encoder')}
 
 
 def prepare(spec, profile):
@@ -116,10 +137,14 @@ def prepare(spec, profile):
                 if issues:
                     repaired = _repair_record(atom, profile)
                     if repaired:
+                        term = repaired.pop('_terminology', None)
                         bound = concepts.resolve(repaired['concept'], profile)
                         if bound['bindings']:
+                            how = (f" (label matched by the terminology encoder, cosine {term['score']} >= {term['threshold']})"
+                                   if term else '')
                             report.extend({**i, 'severity': 'repaired',
-                                           'repair': f"rewrote to {repaired['kind']} '{repaired['concept']}' covering all coding systems present"}
+                                           'repair': f"rewrote to {repaired['kind']} '{repaired['concept']}' covering all coding systems present{how}",
+                                           **({'terminology': term} if term else {})}
                                           for i in issues)
                             grounded[group].append({**repaired, '_resolved': bound})
                             continue

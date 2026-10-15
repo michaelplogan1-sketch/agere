@@ -1,0 +1,59 @@
+{
+ "repo": "dmis-lab/UltraBERT-Embed-150M",
+ "revision": "367d5343b5a0164d57b810cedf5de4b8983d5984",
+ "license": "apache-2.0 per model card (base_model dmis-lab/UltraBERT-150M)",
+ "role": "second pinned local encoder: raw-catalog retrieval (answer_guard catalog probe + the SQL writer's raw-catalog slice) and lab/condition terminology fallback only. Not the stack encoder, learned router, semantic cache or dense index.",
+ "remote_code": {
+  "files": [
+   "modeling_ultrabert.py",
+   "configuration_ultrabert.py"
+  ],
+  "review": "coordinator security review 2026-10-14: plain torch/transformers modules, safetensors weights. Loaded with trust_remote_code only after every pinned hash verifies; the imported module files are re-hashed after load. The optional `kernels` hub package is not installed, so the use_kernel_forward_from_hub decorators are no-ops."
+ },
+ "pooling": "cls",
+ "normalize": true,
+ "query_prompt": "Instruct: Given a question, retrieve passages that answer the question\nQuery: ",
+ "document_prompt": "",
+ "files": {
+  "model.safetensors": {
+   "sha256": "da8be29564b69e4f90fc8f2683e1f369c3d3575e75f7fe798643e28de02e2b9c",
+   "bytes": 604153320
+  },
+  "modeling_ultrabert.py": {
+   "sha256": "bfca1bd08af72cd170e58b5a048c67b52bc9d06a2a42847c7a387751f527f333",
+   "bytes": 30581
+  },
+  "configuration_ultrabert.py": {
+   "sha256": "823d10bda19f5164da4f79f8f9c01e5ebd7a75569abce78c0a26b7674fc78cd9",
+   "bytes": 2209
+  },
+  "config.json": {
+   "sha256": "4ff3a6cde7f81bca25f687371c809d8109076d71ac9c4882888ba36935a3cbd1",
+   "bytes": 1734
+  },
+  "tokenizer.json": {
+   "sha256": "cec6e1c25c319d4de7d15e94cc69e95c68d75fee2e20c86c1bdac23b2db4d624",
+   "bytes": 3523570
+  },
+  "tokenizer_config.json": {
+   "sha256": "3752ebf4874dca142ab86b273d7c167b5c77aefa444f5ca7ab598592202af97f",
+   "bytes": 844
+  },
+  "config_sentence_transformers.json": {
+   "sha256": "1cde78bdb171eaca67f333808a2117a307d43b4e49b28c0706a50980e9606787",
+   "bytes": 364
+  },
+  "modules.json": {
+   "sha256": "e4068aab8a95663636c4c28044a95eafdb6492387397ec8283d8f8b31078d645",
+   "bytes": 277
+  },
+  "sentence_bert_config.json": {
+   "sha256": "3084164002c0bca01b0259c5327123803fce32e660a57feb93184ffead186fc8",
+   "bytes": 241
+  },
+  "1_Pooling/config.json": {
+   "sha256": "b7703fedc62cbe2d1e4fd47338d5ba9ee5b2107d49fc42e85ae848484fdd08bc",
+   "bytes": 89
+  }
+ }
+}

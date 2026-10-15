@@ -47,12 +47,93 @@ _COMPILED = {k: re.compile(v, re.I) for k, v in CLASSES.items()}
 
 
 def classify(name):
-    """Drug classes for a received medication name (possibly several for combination products)."""
+    """Drug classes for a received medication name (possibly several for combination products). Ingredient words decide;
+    a name with no classifiable ingredient falls back to its brand (config/agere/drug_brands.json: 'Jardiance' ->
+    sglt2_inhibitor), and a brand never adds to or replaces an ingredient classification."""
     if not name: return []
     found = [k for k, rx in _COMPILED.items() if rx.search(str(name))]
     if 'arni' in found and 'arb' in found and not _OTHER_ARB.search(_VALSARTAN.sub('', str(name))):
         found.remove('arb')  # sacubitril/valsartan (Entresto) is an ARNI; its valsartan component does not make it an ARB
+    if not found:
+        found = brand_classes(name)
     return found
+
+
+# --- Brand -> generic (RxNorm naming: brand = BN, ingredient = IN) ---------------------------------------------------------
+import json as _json
+from functools import lru_cache as _lru_cache
+from pathlib import Path as _Path
+
+BRANDS_PATH = _Path(__file__).resolve().parents[3] / 'config' / 'agere' / 'drug_brands.json'
+_BRANDS = []
+
+
+def brands():
+    """{brand: {'ingredients': [...], 'classes': [...]}} from config/agere/drug_brands.json (empty when absent)."""
+    if not _BRANDS:
+        table = _json.loads(BRANDS_PATH.read_text())['brands'] if BRANDS_PATH.is_file() else {}
+        bad = sorted({c for v in table.values() for c in v['classes'] if c not in CLASSES})
+        if bad: raise ValueError(f'drug_brands.json names unknown drug classes: {bad}')
+        names = sorted(table, key=lambda b: (-len(b), b))
+        rx = re.compile(r'(?<![A-Za-z0-9])(?:' + '|'.join(r'[\s\-]?'.join(re.escape(p) for p in re.split(r'[\s\-]+', b)) for b in names)
+                        + r')(?![A-Za-z0-9])', re.I) if names else None
+        key = {re.sub(r'[\s\-]+', '', b).lower(): b for b in names}
+        _BRANDS.append((table, rx, key))
+    return _BRANDS[0][0]
+
+
+def brand_lookup(name):
+    """Brands named in a medication string, longest first: [{'brand', 'ingredients', 'classes'}]. 'JARDIANCE 10 MG' and
+    '[Jardiance]' both find Jardiance; 'Toprol XL' and 'Toprol-XL' are the same brand."""
+    if not name: return []
+    table = brands()
+    _, rx, key = _BRANDS[0]
+    if rx is None: return []
+    out, seen = [], set()
+    for m in rx.finditer(str(name)):
+        b = key.get(re.sub(r'[\s\-]+', '', m.group(0)).lower())
+        if b and b not in seen:
+            seen.add(b); out.append({'brand': b, **table[b]})
+    return out
+
+
+def brand_classes(name):
+    """Classes of the brands a name mentions, in CLASSES order (empty when it names none)."""
+    return list(_brand_classes(str(name))) if name else []
+
+
+@_lru_cache(maxsize=65536)
+def _brand_classes(name):  # medication names repeat across every fill/order/list row
+    hit = {c for b in brand_lookup(name) for c in b['classes']}
+    return tuple(k for k in CLASSES if k in hit)
+
+
+_INGREDIENT_SKIP = {'hf_evidence_based_beta_blocker'}  # a sub-class of beta_blocker whose pattern spans dose-form words
+_STEM_FORM = re.compile(r'^(alendron|risedron|ibandron|zoledron)\w*$')  # 'alendronic acid' / 'alendronate sodium' -> alendronate
+
+
+def ingredients(name):
+    """Registered ingredient words a medication string names, in order of appearance ('losartan potassium 100 MG' ->
+    ['losartan']); brand names are not resolved here (generic_name)."""
+    if not name: return []
+    spans = []
+    for k, rx in _COMPILED.items():
+        if k in _INGREDIENT_SKIP: continue
+        for m in rx.finditer(str(name)):
+            word = re.match(r'[A-Za-z]+', m.group(0))
+            if word: spans.append((m.start(), _STEM_FORM.sub(r'\1ate', word.group(0).lower())))
+    out = []
+    for _, w in sorted(spans):
+        if w not in out: out.append(w)
+    return out
+
+
+def generic_name(name):
+    """Ingredient names for a brand-named medication ('Entresto' -> ['sacubitril', 'valsartan']), or [] when no brand matches."""
+    out = []
+    for b in brand_lookup(name):
+        out += [i for i in b['ingredients'] if i not in out]
+    return out
 
 
 _VALSARTAN = re.compile(r'\bvalsartan\b', re.I)

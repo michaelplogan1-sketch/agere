@@ -405,3 +405,117 @@ def concept_for_label(label):
     for concept, d in MEASUREMENTS.items():
         if re.match(r'^(?:' + d['names'] + r')$', str(label).strip(), re.I): return concept
     return None
+
+
+def conditions_for_label(label):
+    """Condition concepts whose label pattern matches a literal label (and whose exclude pattern does not), most specific
+    first: the longest matched span wins ('kidney due to diabet' over 'diabet', 'type 2 diabet' over 'diabet'), ties go to
+    the concept with fewer ICD-10 prefixes (myocardial_infarction before coronary_artery_disease)."""
+    readable = str(label).replace('_', ' ').strip()
+    hits = {}
+    for c, d in CONDITIONS.items():
+        if d.get('exclude') and re.search(d['exclude'], readable, re.I): continue
+        spans = [m.end() - m.start() for m in re.finditer(d['text'], readable, re.I)]
+        if spans: hits[c] = max(spans)
+    return sorted(hits, key=lambda c: (-hits[c], len(CONDITIONS[c]['icd10']), c))
+
+
+def condition_for_label(label):
+    """The most specific condition concept for a literal label (conditions_for_label), or None."""
+    hits = conditions_for_label(label)
+    return hits[0] if hits else None
+
+
+# --- Terminology fallback (second pinned encoder) ---------------------------------------------------------------------------
+# For lab/vital and condition source labels that neither a code (LOINC / ICD-10) nor the concept library's label patterns
+# (the aliases above) resolve, the second pinned encoder (local_encoders.PinnedSentenceEncoder, UltraBERT-Embed-150M, query
+# prompt on the label side) proposes the nearest concept. Concept documents are '<concept id as words>: <library label>'.
+# A proposal is accepted only at or above TERMINOLOGY_THRESHOLDS[kind]; below it the candidate and score are returned with
+# concept None. A code or alias match is always returned first and is never replaced by the encoder.
+# Calibration (tools/second_encoder/measure_integrated.py calibrate): the normalization dictionary's confident (>= 0.8)
+# single-concept entries that no alias resolves, bake-off labels excluded - labs 35 mapped / 82 mapped-to-none, conditions
+# 94 / 143. Each threshold is the lowest 0.05 step with zero accepted none-entries and zero wrong concepts: labs 0.55
+# (accepts 19/35 mapped), conditions 0.45 (38/94). Cosines of right and wrong proposals overlap below that, so the
+# fallback is conservative by design: below threshold it reports the candidate for review instead of binding it.
+TERMINOLOGY_VERSION = 'terminology-fallback/1'
+TERMINOLOGY_THRESHOLDS = {'lab': 0.55, 'condition': 0.45}
+TERMINOLOGY_KINDS = ('lab', 'condition')
+_TERM_VECTORS = {}
+
+
+def terminology_targets(kind):
+    if kind == 'lab': return {k: f"{k.replace('_', ' ')}: {v['label']}" for k, v in MEASUREMENTS.items()}
+    if kind == 'condition': return {k: f"{k.replace('_', ' ')}: {v['label']}" for k, v in CONDITIONS.items()}
+    raise ValueError(f'Unknown terminology kind: {kind}')
+
+
+def terminology_encoder():
+    """The second pinned encoder, or None (AGERE_TERMINOLOGY_ENCODER=off / AGERE_SECOND_ENCODER=off / absent / refused)."""
+    import os
+    if os.environ.get('AGERE_TERMINOLOGY_ENCODER', 'on') == 'off': return None
+    try:
+        from ...local_encoders import second_encoder
+        return second_encoder()
+    except Exception:  # noqa: BLE001 - fallback matcher only
+        return None
+
+
+def _target_vectors(encoder, kind):
+    key = (encoder.identity, kind)
+    if key not in _TERM_VECTORS:
+        targets = terminology_targets(kind)
+        names = list(targets)
+        _TERM_VECTORS[key] = (names, encoder.encode_documents([targets[n] for n in names]))
+    return _TERM_VECTORS[key]
+
+
+def encoder_candidates(labels, kind, encoder, top=2):
+    """[[(concept, cosine), ...top]] per label, nearest first."""
+    names, matrix = _target_vectors(encoder, kind)
+    sims = encoder.encode_queries([str(x) for x in labels]) @ matrix.T
+    return [[(names[j], float(row[j])) for j in sorted(range(len(names)), key=lambda j: -row[j])[:top]] for row in sims]
+
+
+def match_label(label, kind, *, code=None, encoder='auto', threshold=None):
+    """Concept for one source label: exact code -> alias (library label pattern) -> encoder fallback.
+    -> {'concept', 'method': 'code'|'alias'|'encoder', 'score', ...} or None when nothing matched and no encoder ran.
+    An encoder proposal below threshold is returned with concept None and accepted False (candidate + score kept).
+    kind='medication': ingredient words (drug_classes patterns) -> brand table (config/agere/drug_brands.json, RxNorm brand
+    -> ingredient naming); the encoder is not used for medications (every measured encoder failed brand names)."""
+    if kind == 'medication': return _match_medication(label)
+    if kind not in TERMINOLOGY_KINDS: raise ValueError(f'Unknown terminology kind: {kind}')
+    family = MEASUREMENTS if kind == 'lab' else CONDITIONS
+    if code:
+        c = concept_for_code(code)
+        if c in family: return {'concept': c, 'method': 'code', 'score': 1.0, 'code': str(code)}
+    if label is None or not str(label).strip(): return None
+    if kind == 'lab':
+        c = concept_for_label(label)
+        if c: return {'concept': c, 'method': 'alias', 'score': 1.0}
+    else:
+        hits = conditions_for_label(label)
+        if hits: return {'concept': hits[0], 'method': 'alias', 'score': 1.0, **({'also': hits[1:]} if hits[1:] else {})}
+    encoder = terminology_encoder() if encoder == 'auto' else encoder
+    if encoder is None: return None
+    try:
+        (best, score), *rest = encoder_candidates([label], kind, encoder)[0]
+    except Exception:  # noqa: BLE001 - the fallback never blocks
+        return None
+    t = TERMINOLOGY_THRESHOLDS[kind] if threshold is None else threshold
+    ok = score >= t
+    return {'concept': best if ok else None, 'candidate': best, 'method': 'encoder', 'score': round(score, 4), 'threshold': t,
+            'accepted': ok, 'runner_up': [rest[0][0], round(rest[0][1], 4)] if rest else None, 'version': TERMINOLOGY_VERSION,
+            'encoder': encoder.identity[:16]}
+
+
+def _match_medication(label):
+    from . import drug_classes
+    if label is None or not str(label).strip(): return None
+    found = drug_classes.ingredients(label)
+    if found:
+        return {'concept': found[0], 'ingredients': found, 'classes': drug_classes.classify(label), 'method': 'ingredient', 'score': 1.0}
+    hits = drug_classes.brand_lookup(label)
+    if not hits: return None
+    names = drug_classes.generic_name(label)
+    return {'concept': names[0], 'ingredients': names, 'classes': drug_classes.brand_classes(label), 'brands': [h['brand'] for h in hits],
+            'method': 'brand', 'score': 1.0, 'naming_standard': 'RxNorm (brand BN -> ingredient IN)'}

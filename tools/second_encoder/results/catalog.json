@@ -1,0 +1,678 @@
+{
+ "cases": 32,
+ "streams": 237,
+ "profile": "/Users/mikel/clinical-insights-local/artifacts/agere-healthcare-v28-sample-0.30/stack/source-profile.json",
+ "path": "answer_guard.probe(k=4) / raw_catalog_slice(k=4)",
+ "lexical": {
+  "top1": 0.6875,
+  "top3": 0.7812,
+  "top5": 0.9375,
+  "mrr": 0.7719,
+  "slice_recall": 0.4062,
+  "ms_per_question_median": 1.0
+ },
+ "fused_ultrabert": {
+  "top1": 0.9062,
+  "top3": 0.9688,
+  "top5": 0.9688,
+  "mrr": 0.9375,
+  "slice_recall": 0.9375,
+  "ms_per_question_median": 19.1,
+  "ms_per_question_p90": 21.1,
+  "catalog_embed_seconds_cold": 5.73
+ },
+ "memory": {
+  "load_seconds": 3.13,
+  "rss_before_mb": 64.4,
+  "rss_after_load_mb": 458.0,
+  "added_rss_mb": 393.6,
+  "identity": "d8e8030c15b7af4de45c1f7cc567e81045e904abdb188a85c7369bd19ec2f7ec",
+  "rss_after_catalog_mb": 1048.5,
+  "peak_rss_mb": 1048.5
+ },
+ "bakeoff_reference": {
+  "Bq_dense_only": {
+   "top1": 0.8438,
+   "top5": 1.0
+  },
+  "A_minilm": {
+   "top1": 0.75,
+   "top5": 0.875
+  }
+ },
+ "per_case": [
+  {
+   "q": "How many Medicare annual wellness visits in 2029?",
+   "expect": [
+    "wellness_visit_services"
+   ],
+   "lexical_rank": 1,
+   "fused_rank": 1,
+   "top5": [
+    "wellness_visit_services",
+    "notes",
+    "wellness_benefit_responses",
+    "personalized_prevention_plans",
+    "enrollment_spans"
+   ],
+   "slice_streams": [
+    "wellness_visit_services",
+    "notes",
+    "wellness_benefit_responses"
+   ]
+  },
+  {
+   "q": "patients with a PHQ-9 score above 10",
+   "expect": [
+    "mood_questionnaires"
+   ],
+   "lexical_rank": 4,
+   "fused_rank": 1,
+   "top5": [
+    "mood_questionnaires",
+    "encounters",
+    "labs",
+    "encounter_text_fragments",
+    "care_management_enrollments"
+   ],
+   "slice_streams": [
+    "mood_questionnaires",
+    "encounters",
+    "labs",
+    "encounter_text_fragments"
+   ]
+  },
+  {
+   "q": "payer pharmacy claims for statins",
+   "expect": [
+    "payer_pharmacy_claims"
+   ],
+   "lexical_rank": 2,
+   "fused_rank": 1,
+   "top5": [
+    "payer_pharmacy_claims",
+    "pharmacy_history",
+    "pharmacy_claims",
+    "pharmacy_claim_transactions",
+    "payer_medical_claim_lines"
+   ],
+   "slice_streams": [
+    "payer_pharmacy_claims",
+    "pharmacy_history",
+    "pharmacy_claims"
+   ]
+  },
+  {
+   "q": "ED visits from HL7 feeds",
+   "expect": [
+    "adt_messages"
+   ],
+   "lexical_rank": null,
+   "fused_rank": null,
+   "top5": [
+    "encounters",
+    "personalized_prevention_plans",
+    "imported_documents",
+    "home_health_billing_periods",
+    "youth_prevention_plans"
+   ],
+   "slice_streams": [
+    "encounters"
+   ]
+  },
+  {
+   "q": "food insecurity screening",
+   "expect": [
+    "social_screens",
+    "sdoh_vendor_attributes",
+    "health_risk_assessments"
+   ],
+   "lexical_rank": 1,
+   "fused_rank": 1,
+   "top5": [
+    "social_screens",
+    "community_service_referrals",
+    "cancer_screening_decisions",
+    "community_service_outcomes",
+    "care_coordination_contacts"
+   ],
+   "slice_streams": [
+    "social_screens",
+    "community_service_referrals",
+    "community_service_outcomes",
+    "care_coordination_contacts"
+   ]
+  },
+  {
+   "q": "Average hemoglobin A1c result for diabetic patients in 2029",
+   "expect": [
+    "labs"
+   ],
+   "lexical_rank": 1,
+   "fused_rank": 1,
+   "top5": [
+    "labs",
+    "social_history",
+    "vision_evaluations",
+    "personalized_prevention_plans",
+    "result_acknowledgements"
+   ],
+   "slice_streams": [
+    "labs"
+   ]
+  },
+  {
+   "q": "Patients with systolic blood pressure over 160 at their last visit",
+   "expect": [
+    "vitals"
+   ],
+   "lexical_rank": 4,
+   "fused_rank": 1,
+   "top5": [
+    "vitals",
+    "care_intake",
+    "encounters",
+    "conditions",
+    "original_regimen_decisions"
+   ],
+   "slice_streams": [
+    "original_regimen_decisions"
+   ]
+  },
+  {
+   "q": "How many appointments were no-shows last month?",
+   "expect": [
+    "appointments"
+   ],
+   "lexical_rank": null,
+   "fused_rank": 2,
+   "top5": [
+    "appointment_scheduling_contacts",
+    "appointments",
+    "social_history",
+    "vaccination_outreach",
+    "diagnostic_access_contacts"
+   ],
+   "slice_streams": [
+    "appointment_scheduling_contacts",
+    "appointments",
+    "social_history",
+    "vaccination_outreach"
+   ]
+  },
+  {
+   "q": "Claims denied on the remittance advice, by payer",
+   "expect": [
+    "provider_remittance_advice"
+   ],
+   "lexical_rank": 1,
+   "fused_rank": 1,
+   "top5": [
+    "provider_remittance_advice",
+    "payer_medical_claims",
+    "medical_claims",
+    "payer_pharmacy_claims",
+    "payer_medical_claim_lines"
+   ],
+   "slice_streams": [
+    "provider_remittance_advice",
+    "payer_medical_claims"
+   ]
+  },
+  {
+   "q": "Claims rejected at acknowledgement for an invalid member identifier",
+   "expect": [
+    "claim_acknowledgements"
+   ],
+   "lexical_rank": 1,
+   "fused_rank": 1,
+   "top5": [
+    "claim_acknowledgements",
+    "claim_corrections",
+    "payer_pharmacy_claims",
+    "pharmacy_claim_transactions",
+    "medical_claim_submissions"
+   ],
+   "slice_streams": [
+    "claim_acknowledgements",
+    "claim_corrections"
+   ]
+  },
+  {
+   "q": "Which referrals required prior authorization?",
+   "expect": [
+    "referrals"
+   ],
+   "lexical_rank": 2,
+   "fused_rank": 1,
+   "top5": [
+    "referrals",
+    "preprocedure_assessments",
+    "laboratory_orders",
+    "gi_diagnostic_plans",
+    "imported_documents"
+   ],
+   "slice_streams": [
+    "referrals"
+   ]
+  },
+  {
+   "q": "Urgent referrals to nephrology that have been sent but not completed",
+   "expect": [
+    "referrals",
+    "referral_status_updates"
+   ],
+   "lexical_rank": 1,
+   "fused_rank": 1,
+   "top5": [
+    "referrals",
+    "encounters",
+    "referral_status_updates",
+    "care_team_relationships",
+    "community_service_referrals"
+   ],
+   "slice_streams": [
+    "referrals"
+   ]
+  },
+  {
+   "q": "Chest x-ray reports with a fracture finding",
+   "expect": [
+    "imaging_reports",
+    "imaging_report_fragments",
+    "imaging_studies"
+   ],
+   "lexical_rank": 1,
+   "fused_rank": 1,
+   "top5": [
+    "imaging_reports",
+    "imaging_orders",
+    "care_intake",
+    "received_screening_reports",
+    "vitals"
+   ],
+   "slice_streams": [
+    "imaging_reports",
+    "imaging_orders"
+   ]
+  },
+  {
+   "q": "Flu shots given this season",
+   "expect": [
+    "immunizations",
+    "seasonal_vaccine_histories",
+    "immunization_history"
+   ],
+   "lexical_rank": 4,
+   "fused_rank": 1,
+   "top5": [
+    "immunizations",
+    "medication_administrations",
+    "seasonal_vaccine_histories",
+    "seasonal_vaccine_assessments",
+    "immunization_decisions"
+   ],
+   "slice_streams": [
+    "immunizations",
+    "medication_administrations"
+   ]
+  },
+  {
+   "q": "Progress notes that mention chest pain",
+   "expect": [
+    "notes",
+    "encounter_text_fragments"
+   ],
+   "lexical_rank": 1,
+   "fused_rank": 1,
+   "top5": [
+    "notes",
+    "vitals",
+    "procedure_recovery_notes",
+    "encounters",
+    "condition_assessments"
+   ],
+   "slice_streams": [
+    "notes",
+    "vitals"
+   ]
+  },
+  {
+   "q": "Patients who died in 2029 and their underlying cause of death",
+   "expect": [
+    "death_records"
+   ],
+   "lexical_rank": 1,
+   "fused_rank": 1,
+   "top5": [
+    "death_records",
+    "enrollment_spans",
+    "encounters",
+    "procedure_result_communications",
+    "referrals"
+   ],
+   "slice_streams": [
+    "death_records"
+   ]
+  },
+  {
+   "q": "Members who disenrolled from their health plan coverage span",
+   "expect": [
+    "enrollment_spans"
+   ],
+   "lexical_rank": 1,
+   "fused_rank": 1,
+   "top5": [
+    "enrollment_spans",
+    "coverage_verifications",
+    "coverage",
+    "social_history",
+    "home_health_plans"
+   ],
+   "slice_streams": [
+    "enrollment_spans",
+    "coverage"
+   ]
+  },
+  {
+   "q": "Which clinician is each patient's assigned primary physician or consulting specialist?",
+   "expect": [
+    "care_team_relationships"
+   ],
+   "lexical_rank": 1,
+   "fused_rank": 1,
+   "top5": [
+    "care_team_relationships",
+    "appointments",
+    "referrals",
+    "encounters",
+    "referral_status_updates"
+   ],
+   "slice_streams": [
+    "care_team_relationships",
+    "referrals"
+   ]
+  },
+  {
+   "q": "Appointments rescheduled because of a clinician schedule change",
+   "expect": [
+    "appointments"
+   ],
+   "lexical_rank": 1,
+   "fused_rank": 1,
+   "top5": [
+    "appointments",
+    "prescription_restart_interviews",
+    "appointment_scheduling_contacts",
+    "encounters",
+    "diagnostic_access_contacts"
+   ],
+   "slice_streams": [
+    "appointments",
+    "appointment_scheduling_contacts"
+   ]
+  },
+  {
+   "q": "Prescriptions dispensed at the pharmacy but returned to stock because they were never picked up",
+   "expect": [
+    "pharmacy_dispenses"
+   ],
+   "lexical_rank": 1,
+   "fused_rank": 1,
+   "top5": [
+    "pharmacy_dispenses",
+    "payer_pharmacy_claims",
+    "pharmacy_history",
+    "inpatient_discharge_reconciliation",
+    "received_pharmacy_information"
+   ],
+   "slice_streams": [
+    "pharmacy_dispenses",
+    "payer_pharmacy_claims"
+   ]
+  },
+  {
+   "q": "Claim line charges by CPT code and revenue code",
+   "expect": [
+    "medical_claim_lines",
+    "payer_medical_claim_lines"
+   ],
+   "lexical_rank": 1,
+   "fused_rank": 1,
+   "top5": [
+    "medical_claim_lines",
+    "payer_medical_claim_lines",
+    "medical_claims",
+    "medical_claim_submissions",
+    "payer_medical_claims"
+   ],
+   "slice_streams": [
+    "medical_claim_lines",
+    "payer_medical_claim_lines"
+   ]
+  },
+  {
+   "q": "Inpatient discharges to a skilled nursing facility",
+   "expect": [
+    "adt_messages",
+    "adt",
+    "encounters",
+    "discharge_plans"
+   ],
+   "lexical_rank": 1,
+   "fused_rank": 1,
+   "top5": [
+    "discharge_plans",
+    "adt",
+    "encounters",
+    "social_history",
+    "encounter_text_fragments"
+   ],
+   "slice_streams": [
+    "discharge_plans",
+    "adt",
+    "encounters",
+    "social_history"
+   ]
+  },
+  {
+   "q": "Lab specimens collected and specimen collection attempts that failed",
+   "expect": [
+    "laboratory_specimens",
+    "laboratory_collection_attempts"
+   ],
+   "lexical_rank": 5,
+   "fused_rank": 2,
+   "top5": [
+    "received_laboratory_status",
+    "laboratory_collection_attempts",
+    "laboratory_status_responses",
+    "laboratory_specimens",
+    "screening_test_attempts"
+   ],
+   "slice_streams": [
+    "received_laboratory_status",
+    "laboratory_collection_attempts"
+   ]
+  },
+  {
+   "q": "Patients allergic to penicillin",
+   "expect": [
+    "allergies"
+   ],
+   "lexical_rank": 1,
+   "fused_rank": 1,
+   "top5": [
+    "allergies",
+    "allergy_history_reviews",
+    "care_intake",
+    "conditions",
+    "preprocedure_assessments"
+   ],
+   "slice_streams": [
+    "allergies",
+    "allergy_history_reviews",
+    "care_intake"
+   ]
+  },
+  {
+   "q": "Active medications on the patient's home medication list",
+   "expect": [
+    "medication_lists",
+    "reported_medication_entries"
+   ],
+   "lexical_rank": 1,
+   "fused_rank": 1,
+   "top5": [
+    "medication_lists",
+    "medication_history_interviews",
+    "medication_orders",
+    "medication_followup_reports",
+    "received_home_health_documents"
+   ],
+   "slice_streams": [
+    "medication_lists",
+    "medication_history_interviews",
+    "medication_orders",
+    "medication_followup_reports"
+   ]
+  },
+  {
+   "q": "Insurance eligibility checks returning copay and remaining deductible",
+   "expect": [
+    "coverage_verifications"
+   ],
+   "lexical_rank": 1,
+   "fused_rank": 1,
+   "top5": [
+    "coverage_verifications",
+    "pharmacy_payments",
+    "wellness_benefit_responses",
+    "pharmacy_claim_transactions",
+    "pharmacy_dispenses"
+   ],
+   "slice_streams": [
+    "coverage_verifications",
+    "wellness_benefit_responses"
+   ]
+  },
+  {
+   "q": "Patient payments and refunds on self-pay billing accounts",
+   "expect": [
+    "patient_payments",
+    "patient_refunds",
+    "patient_billing_accounts"
+   ],
+   "lexical_rank": 2,
+   "fused_rank": 1,
+   "top5": [
+    "patient_billing_accounts",
+    "billing_authorizations",
+    "patient_refunds",
+    "patient_payments",
+    "outside_access_updates"
+   ],
+   "slice_streams": [
+    "patient_billing_accounts",
+    "billing_authorizations",
+    "patient_refunds"
+   ]
+  },
+  {
+   "q": "Current smokers and tobacco use status",
+   "expect": [
+    "social_history"
+   ],
+   "lexical_rank": 1,
+   "fused_rank": 1,
+   "top5": [
+    "social_history",
+    "cancer_screening_history",
+    "reported_medication_entries",
+    "current_medication_container_reviews",
+    "original_regimen_decisions"
+   ],
+   "slice_streams": [
+    "social_history",
+    "cancer_screening_history"
+   ]
+  },
+  {
+   "q": "Colonoscopy and other procedures performed",
+   "expect": [
+    "procedures",
+    "endoscopy_reports"
+   ],
+   "lexical_rank": 4,
+   "fused_rank": 1,
+   "top5": [
+    "endoscopy_reports",
+    "gi_diagnostic_plans",
+    "procedure_access_contacts",
+    "procedure_result_communications",
+    "procedures"
+   ],
+   "slice_streams": [
+    "endoscopy_reports",
+    "gi_diagnostic_plans"
+   ]
+  },
+  {
+   "q": "New medication orders written by the prescriber",
+   "expect": [
+    "medication_orders"
+   ],
+   "lexical_rank": 1,
+   "fused_rank": 1,
+   "top5": [
+    "medication_orders",
+    "original_regimen_decisions",
+    "home_medication_questions",
+    "regimen_followup_contacts",
+    "reported_medication_entries"
+   ],
+   "slice_streams": [
+    "medication_orders",
+    "original_regimen_decisions"
+   ]
+  },
+  {
+   "q": "Patients with a depression diagnosis on their problem list",
+   "expect": [
+    "conditions",
+    "condition_assessments"
+   ],
+   "lexical_rank": 1,
+   "fused_rank": 1,
+   "top5": [
+    "conditions",
+    "behavioral_assessments",
+    "encounters",
+    "behavioral_care_plans",
+    "medication_lists"
+   ],
+   "slice_streams": [
+    "conditions",
+    "behavioral_assessments"
+   ]
+  },
+  {
+   "q": "Hospice elections for patients near end of life",
+   "expect": [
+    "hospice_elections"
+   ],
+   "lexical_rank": 1,
+   "fused_rank": 1,
+   "top5": [
+    "hospice_elections",
+    "death_records",
+    "social_history",
+    "endoscopy_reports",
+    "enrollment_spans"
+   ],
+   "slice_streams": [
+    "hospice_elections"
+   ]
+  }
+ ]
+}

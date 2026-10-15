@@ -1,0 +1,897 @@
+{
+ "path": "concepts.match_label (code -> alias -> encoder fallback; medication: ingredient -> brand table)",
+ "memory": {
+  "load_seconds": 3.35,
+  "rss_before_mb": 35.6,
+  "rss_after_load_mb": 438.9,
+  "added_rss_mb": 403.3,
+  "identity": "d8e8030c15b7af4de45c1f7cc567e81045e904abdb188a85c7369bd19ec2f7ec"
+ },
+ "ms_per_label_mean": 17.2,
+ "lab": {
+  "n": 20,
+  "alias_only_resolved_correct": 0.55,
+  "integrated_top1_threshold0": 1.0,
+  "integrated_accepted_correct": 0.65,
+  "integrated_accepted_wrong": 0,
+  "reached_encoder": 9,
+  "encoder_only_top1 (bake-off Bq comparable)": 1.0,
+  "threshold": 0.55
+ },
+ "condition": {
+  "n": 20,
+  "alias_only_resolved_correct": 0.95,
+  "integrated_top1_threshold0": 1.0,
+  "integrated_accepted_correct": 0.95,
+  "integrated_accepted_wrong": 0,
+  "reached_encoder": 1,
+  "encoder_only_top1 (bake-off Bq comparable)": 0.95,
+  "threshold": 0.45
+ },
+ "labs_and_conditions": {
+  "n": 40,
+  "integrated_top1_threshold0": 1.0,
+  "encoder_only_top1": 0.975,
+  "alias_only": 0.75,
+  "bakeoff_reference": {
+   "Bq": 0.975,
+   "A_minilm": 0.8
+  }
+ },
+ "medication": {
+  "n": 20,
+  "correct": 1.0,
+  "brand_only": {
+   "n": 10,
+   "correct": 1.0
+  },
+  "full_label": 1.0,
+  "bakeoff_reference": {
+   "Bq_brand_only": 0.1,
+   "A_brand_only": 0.2
+  }
+ },
+ "per_case": [
+  {
+   "kind": "lab",
+   "label": "HEMOGLOBIN A1C",
+   "expect": "hba1c",
+   "alias": "hba1c",
+   "alias_correct": true,
+   "method": "alias",
+   "top1": "hba1c",
+   "top1_correct": true,
+   "score": 1.0,
+   "accepted": "hba1c",
+   "accepted_correct": true,
+   "accepted_wrong": false,
+   "encoder_only_top1": "hba1c",
+   "encoder_only_correct": true
+  },
+  {
+   "kind": "lab",
+   "label": "HbA1c",
+   "expect": "hba1c",
+   "alias": "hba1c",
+   "alias_correct": true,
+   "method": "alias",
+   "top1": "hba1c",
+   "top1_correct": true,
+   "score": 1.0,
+   "accepted": "hba1c",
+   "accepted_correct": true,
+   "accepted_wrong": false,
+   "encoder_only_top1": "hba1c",
+   "encoder_only_correct": true
+  },
+  {
+   "kind": "lab",
+   "label": "Hemoglobin A1c/Hemoglobin.total",
+   "expect": "hba1c",
+   "alias": "hba1c",
+   "alias_correct": true,
+   "method": "alias",
+   "top1": "hba1c",
+   "top1_correct": true,
+   "score": 1.0,
+   "accepted": "hba1c",
+   "accepted_correct": true,
+   "accepted_wrong": false,
+   "encoder_only_top1": "hba1c",
+   "encoder_only_correct": true
+  },
+  {
+   "kind": "lab",
+   "label": "MICROALB/CREAT RATIO, RANDOM URINE",
+   "expect": "uacr",
+   "alias": null,
+   "alias_correct": false,
+   "method": "encoder",
+   "top1": "uacr",
+   "top1_correct": true,
+   "score": 0.3764,
+   "accepted": null,
+   "accepted_correct": false,
+   "accepted_wrong": false,
+   "encoder_only_top1": "uacr",
+   "encoder_only_correct": true
+  },
+  {
+   "kind": "lab",
+   "label": "Microalbumin/Creatinine [Mass Ratio] in Urine",
+   "expect": "uacr",
+   "alias": null,
+   "alias_correct": false,
+   "method": "encoder",
+   "top1": "uacr",
+   "top1_correct": true,
+   "score": 0.5084,
+   "accepted": null,
+   "accepted_correct": false,
+   "accepted_wrong": false,
+   "encoder_only_top1": "uacr",
+   "encoder_only_correct": true
+  },
+  {
+   "kind": "lab",
+   "label": "UACR",
+   "expect": "uacr",
+   "alias": "uacr",
+   "alias_correct": true,
+   "method": "alias",
+   "top1": "uacr",
+   "top1_correct": true,
+   "score": 1.0,
+   "accepted": "uacr",
+   "accepted_correct": true,
+   "accepted_wrong": false,
+   "encoder_only_top1": "uacr",
+   "encoder_only_correct": true
+  },
+  {
+   "kind": "lab",
+   "label": "EGFR CKD-EPI 2021",
+   "expect": "egfr",
+   "alias": null,
+   "alias_correct": false,
+   "method": "encoder",
+   "top1": "egfr",
+   "top1_correct": true,
+   "score": 0.4346,
+   "accepted": null,
+   "accepted_correct": false,
+   "accepted_wrong": false,
+   "encoder_only_top1": "egfr",
+   "encoder_only_correct": true
+  },
+  {
+   "kind": "lab",
+   "label": "Glomerular filtration rate",
+   "expect": "egfr",
+   "alias": "egfr",
+   "alias_correct": true,
+   "method": "alias",
+   "top1": "egfr",
+   "top1_correct": true,
+   "score": 1.0,
+   "accepted": "egfr",
+   "accepted_correct": true,
+   "accepted_wrong": false,
+   "encoder_only_top1": "egfr",
+   "encoder_only_correct": true
+  },
+  {
+   "kind": "lab",
+   "label": "CREATININE, SERUM",
+   "expect": "creatinine",
+   "alias": null,
+   "alias_correct": false,
+   "method": "encoder",
+   "top1": "creatinine",
+   "top1_correct": true,
+   "score": 0.4442,
+   "accepted": null,
+   "accepted_correct": false,
+   "accepted_wrong": false,
+   "encoder_only_top1": "creatinine",
+   "encoder_only_correct": true
+  },
+  {
+   "kind": "lab",
+   "label": "Urea nitrogen",
+   "expect": "bun",
+   "alias": "bun",
+   "alias_correct": true,
+   "method": "alias",
+   "top1": "bun",
+   "top1_correct": true,
+   "score": 1.0,
+   "accepted": "bun",
+   "accepted_correct": true,
+   "accepted_wrong": false,
+   "encoder_only_top1": "bun",
+   "encoder_only_correct": true
+  },
+  {
+   "kind": "lab",
+   "label": "LDL CHOL CALC (NIH)",
+   "expect": "ldl",
+   "alias": null,
+   "alias_correct": false,
+   "method": "encoder",
+   "top1": "ldl",
+   "top1_correct": true,
+   "score": 0.4363,
+   "accepted": null,
+   "accepted_correct": false,
+   "accepted_wrong": false,
+   "encoder_only_top1": "ldl",
+   "encoder_only_correct": true
+  },
+  {
+   "kind": "lab",
+   "label": "Cholesterol in LDL",
+   "expect": "ldl",
+   "alias": null,
+   "alias_correct": false,
+   "method": "encoder",
+   "top1": "ldl",
+   "top1_correct": true,
+   "score": 0.5746,
+   "accepted": "ldl",
+   "accepted_correct": true,
+   "accepted_wrong": false,
+   "encoder_only_top1": "ldl",
+   "encoder_only_correct": true
+  },
+  {
+   "kind": "lab",
+   "label": "Cholesterol in HDL",
+   "expect": "hdl",
+   "alias": null,
+   "alias_correct": false,
+   "method": "encoder",
+   "top1": "hdl",
+   "top1_correct": true,
+   "score": 0.5759,
+   "accepted": "hdl",
+   "accepted_correct": true,
+   "accepted_wrong": false,
+   "encoder_only_top1": "hdl",
+   "encoder_only_correct": true
+  },
+  {
+   "kind": "lab",
+   "label": "Triglyceride",
+   "expect": "triglycerides",
+   "alias": "triglycerides",
+   "alias_correct": true,
+   "method": "alias",
+   "top1": "triglycerides",
+   "top1_correct": true,
+   "score": 1.0,
+   "accepted": "triglycerides",
+   "accepted_correct": true,
+   "accepted_wrong": false,
+   "encoder_only_top1": "triglycerides",
+   "encoder_only_correct": true
+  },
+  {
+   "kind": "lab",
+   "label": "Hgb",
+   "expect": "hemoglobin",
+   "alias": "hemoglobin",
+   "alias_correct": true,
+   "method": "alias",
+   "top1": "hemoglobin",
+   "top1_correct": true,
+   "score": 1.0,
+   "accepted": "hemoglobin",
+   "accepted_correct": true,
+   "accepted_wrong": false,
+   "encoder_only_top1": "hemoglobin",
+   "encoder_only_correct": true
+  },
+  {
+   "kind": "lab",
+   "label": "Leukocytes",
+   "expect": "wbc",
+   "alias": "wbc",
+   "alias_correct": true,
+   "method": "alias",
+   "top1": "wbc",
+   "top1_correct": true,
+   "score": 1.0,
+   "accepted": "wbc",
+   "accepted_correct": true,
+   "accepted_wrong": false,
+   "encoder_only_top1": "wbc",
+   "encoder_only_correct": true
+  },
+  {
+   "kind": "lab",
+   "label": "high_sensitivity_troponin_I",
+   "expect": "troponin",
+   "alias": "troponin",
+   "alias_correct": true,
+   "method": "alias",
+   "top1": "troponin",
+   "top1_correct": true,
+   "score": 1.0,
+   "accepted": "troponin",
+   "accepted_correct": true,
+   "accepted_wrong": false,
+   "encoder_only_top1": "troponin",
+   "encoder_only_correct": true
+  },
+  {
+   "kind": "lab",
+   "label": "TSH 3RD GENERATION",
+   "expect": "tsh",
+   "alias": null,
+   "alias_correct": false,
+   "method": "encoder",
+   "top1": "tsh",
+   "top1_correct": true,
+   "score": 0.4267,
+   "accepted": null,
+   "accepted_correct": false,
+   "accepted_wrong": false,
+   "encoder_only_top1": "tsh",
+   "encoder_only_correct": true
+  },
+  {
+   "kind": "lab",
+   "label": "Thyrotropin",
+   "expect": "tsh",
+   "alias": "tsh",
+   "alias_correct": true,
+   "method": "alias",
+   "top1": "tsh",
+   "top1_correct": true,
+   "score": 1.0,
+   "accepted": "tsh",
+   "accepted_correct": true,
+   "accepted_wrong": false,
+   "encoder_only_top1": "tsh",
+   "encoder_only_correct": true
+  },
+  {
+   "kind": "lab",
+   "label": "GLUCOSE, FASTING",
+   "expect": "glucose",
+   "alias": null,
+   "alias_correct": false,
+   "method": "encoder",
+   "top1": "glucose",
+   "top1_correct": true,
+   "score": 0.3736,
+   "accepted": null,
+   "accepted_correct": false,
+   "accepted_wrong": false,
+   "encoder_only_top1": "glucose",
+   "encoder_only_correct": true
+  },
+  {
+   "kind": "condition",
+   "label": "DM2",
+   "expect": "type_2_diabetes",
+   "alias": null,
+   "alias_correct": false,
+   "method": "encoder",
+   "top1": "type_2_diabetes",
+   "top1_correct": true,
+   "score": 0.1772,
+   "accepted": null,
+   "accepted_correct": false,
+   "accepted_wrong": false,
+   "encoder_only_top1": "type_2_diabetes",
+   "encoder_only_correct": true
+  },
+  {
+   "kind": "condition",
+   "label": "IDDM",
+   "expect": "type_1_diabetes",
+   "alias": "type_1_diabetes",
+   "alias_correct": true,
+   "method": "alias",
+   "top1": "type_1_diabetes",
+   "top1_correct": true,
+   "score": 1.0,
+   "accepted": "type_1_diabetes",
+   "accepted_correct": true,
+   "accepted_wrong": false,
+   "encoder_only_top1": "type_1_diabetes",
+   "encoder_only_correct": true
+  },
+  {
+   "kind": "condition",
+   "label": "HTN",
+   "expect": "hypertension",
+   "alias": "hypertension",
+   "alias_correct": true,
+   "method": "alias",
+   "top1": "hypertension",
+   "top1_correct": true,
+   "score": 1.0,
+   "accepted": "hypertension",
+   "accepted_correct": true,
+   "accepted_wrong": false,
+   "encoder_only_top1": "hypertension",
+   "encoder_only_correct": true
+  },
+  {
+   "kind": "condition",
+   "label": "Benign essential hypertension",
+   "expect": "hypertension",
+   "alias": "hypertension",
+   "alias_correct": true,
+   "method": "alias",
+   "top1": "hypertension",
+   "top1_correct": true,
+   "score": 1.0,
+   "accepted": "hypertension",
+   "accepted_correct": true,
+   "accepted_wrong": false,
+   "encoder_only_top1": "hypertension",
+   "encoder_only_correct": true
+  },
+  {
+   "kind": "condition",
+   "label": "Chronic congestive heart failure",
+   "expect": "heart_failure",
+   "alias": "heart_failure",
+   "alias_correct": true,
+   "method": "alias",
+   "top1": "heart_failure",
+   "top1_correct": true,
+   "score": 1.0,
+   "accepted": "heart_failure",
+   "accepted_correct": true,
+   "accepted_wrong": false,
+   "encoder_only_top1": "heart_failure",
+   "encoder_only_correct": true
+  },
+  {
+   "kind": "condition",
+   "label": "Chronic systolic (congestive) heart failure",
+   "expect": "heart_failure_reduced_ef",
+   "alias": "heart_failure_reduced_ef",
+   "alias_correct": true,
+   "method": "alias",
+   "top1": "heart_failure_reduced_ef",
+   "top1_correct": true,
+   "score": 1.0,
+   "accepted": "heart_failure_reduced_ef",
+   "accepted_correct": true,
+   "accepted_wrong": false,
+   "encoder_only_top1": "heart_failure_reduced_ef",
+   "encoder_only_correct": true
+  },
+  {
+   "kind": "condition",
+   "label": "Disorder of kidney due to diabetes mellitus",
+   "expect": "chronic_kidney_disease",
+   "alias": "chronic_kidney_disease",
+   "alias_correct": true,
+   "method": "alias",
+   "top1": "chronic_kidney_disease",
+   "top1_correct": true,
+   "score": 1.0,
+   "accepted": "chronic_kidney_disease",
+   "accepted_correct": true,
+   "accepted_wrong": false,
+   "encoder_only_top1": "chronic_kidney_disease",
+   "encoder_only_correct": true
+  },
+  {
+   "kind": "condition",
+   "label": "CKD stage 3b",
+   "expect": "chronic_kidney_disease",
+   "alias": "chronic_kidney_disease",
+   "alias_correct": true,
+   "method": "alias",
+   "top1": "chronic_kidney_disease",
+   "top1_correct": true,
+   "score": 1.0,
+   "accepted": "chronic_kidney_disease",
+   "accepted_correct": true,
+   "accepted_wrong": false,
+   "encoder_only_top1": "chronic_kidney_disease",
+   "encoder_only_correct": true
+  },
+  {
+   "kind": "condition",
+   "label": "Pulmonary emphysema",
+   "expect": "copd",
+   "alias": "copd",
+   "alias_correct": true,
+   "method": "alias",
+   "top1": "copd",
+   "top1_correct": true,
+   "score": 1.0,
+   "accepted": "copd",
+   "accepted_correct": true,
+   "accepted_wrong": false,
+   "encoder_only_top1": "copd",
+   "encoder_only_correct": true
+  },
+  {
+   "kind": "condition",
+   "label": "Afib",
+   "expect": "atrial_fibrillation",
+   "alias": "atrial_fibrillation",
+   "alias_correct": true,
+   "method": "alias",
+   "top1": "atrial_fibrillation",
+   "top1_correct": true,
+   "score": 1.0,
+   "accepted": "atrial_fibrillation",
+   "accepted_correct": true,
+   "accepted_wrong": false,
+   "encoder_only_top1": "atrial_fibrillation",
+   "encoder_only_correct": true
+  },
+  {
+   "kind": "condition",
+   "label": "Acute non-ST segment elevation myocardial infarction",
+   "expect": "myocardial_infarction",
+   "alias": "myocardial_infarction",
+   "alias_correct": true,
+   "method": "alias",
+   "top1": "myocardial_infarction",
+   "top1_correct": true,
+   "score": 1.0,
+   "accepted": "myocardial_infarction",
+   "accepted_correct": true,
+   "accepted_wrong": false,
+   "encoder_only_top1": "myocardial_infarction",
+   "encoder_only_correct": true
+  },
+  {
+   "kind": "condition",
+   "label": "ASCVD",
+   "expect": "coronary_artery_disease",
+   "alias": "coronary_artery_disease",
+   "alias_correct": true,
+   "method": "alias",
+   "top1": "coronary_artery_disease",
+   "top1_correct": true,
+   "score": 1.0,
+   "accepted": "coronary_artery_disease",
+   "accepted_correct": true,
+   "accepted_wrong": false,
+   "encoder_only_top1": "copd",
+   "encoder_only_correct": false
+  },
+  {
+   "kind": "condition",
+   "label": "Pure hypercholesterolemia",
+   "expect": "hyperlipidemia",
+   "alias": "hyperlipidemia",
+   "alias_correct": true,
+   "method": "alias",
+   "top1": "hyperlipidemia",
+   "top1_correct": true,
+   "score": 1.0,
+   "accepted": "hyperlipidemia",
+   "accepted_correct": true,
+   "accepted_wrong": false,
+   "encoder_only_top1": "hyperlipidemia",
+   "encoder_only_correct": true
+  },
+  {
+   "kind": "condition",
+   "label": "MDD, recurrent, severe",
+   "expect": "depression",
+   "alias": "depression",
+   "alias_correct": true,
+   "method": "alias",
+   "top1": "depression",
+   "top1_correct": true,
+   "score": 1.0,
+   "accepted": "depression",
+   "accepted_correct": true,
+   "accepted_wrong": false,
+   "encoder_only_top1": "depression",
+   "encoder_only_correct": true
+  },
+  {
+   "kind": "condition",
+   "label": "GAD",
+   "expect": "anxiety",
+   "alias": "anxiety",
+   "alias_correct": true,
+   "method": "alias",
+   "top1": "anxiety",
+   "top1_correct": true,
+   "score": 1.0,
+   "accepted": "anxiety",
+   "accepted_correct": true,
+   "accepted_wrong": false,
+   "encoder_only_top1": "anxiety",
+   "encoder_only_correct": true
+  },
+  {
+   "kind": "condition",
+   "label": "AUD, severe",
+   "expect": "substance_use_disorder",
+   "alias": "substance_use_disorder",
+   "alias_correct": true,
+   "method": "alias",
+   "top1": "substance_use_disorder",
+   "top1_correct": true,
+   "score": 1.0,
+   "accepted": "substance_use_disorder",
+   "accepted_correct": true,
+   "accepted_wrong": false,
+   "encoder_only_top1": "substance_use_disorder",
+   "encoder_only_correct": true
+  },
+  {
+   "kind": "condition",
+   "label": "Alzheimer's disease",
+   "expect": "dementia",
+   "alias": "dementia",
+   "alias_correct": true,
+   "method": "alias",
+   "top1": "dementia",
+   "top1_correct": true,
+   "score": 1.0,
+   "accepted": "dementia",
+   "accepted_correct": true,
+   "accepted_wrong": false,
+   "encoder_only_top1": "dementia",
+   "encoder_only_correct": true
+  },
+  {
+   "kind": "condition",
+   "label": "Septic shock",
+   "expect": "sepsis",
+   "alias": "sepsis",
+   "alias_correct": true,
+   "method": "alias",
+   "top1": "sepsis",
+   "top1_correct": true,
+   "score": 1.0,
+   "accepted": "sepsis",
+   "accepted_correct": true,
+   "accepted_wrong": false,
+   "encoder_only_top1": "sepsis",
+   "encoder_only_correct": true
+  },
+  {
+   "kind": "condition",
+   "label": "Obstructive sleep apnea syndrome",
+   "expect": "sleep_apnea",
+   "alias": "sleep_apnea",
+   "alias_correct": true,
+   "method": "alias",
+   "top1": "sleep_apnea",
+   "top1_correct": true,
+   "score": 1.0,
+   "accepted": "sleep_apnea",
+   "accepted_correct": true,
+   "accepted_wrong": false,
+   "encoder_only_top1": "sleep_apnea",
+   "encoder_only_correct": true
+  },
+  {
+   "kind": "condition",
+   "label": "Malignant neoplasm of breast",
+   "expect": "cancer",
+   "alias": "cancer",
+   "alias_correct": true,
+   "method": "alias",
+   "top1": "cancer",
+   "top1_correct": true,
+   "score": 1.0,
+   "accepted": "cancer",
+   "accepted_correct": true,
+   "accepted_wrong": false,
+   "encoder_only_top1": "cancer",
+   "encoder_only_correct": true
+  },
+  {
+   "kind": "medication",
+   "label": "Jardiance",
+   "brand_only": true,
+   "method": "brand",
+   "correct": true,
+   "got": [
+    "empagliflozin"
+   ]
+  },
+  {
+   "kind": "medication",
+   "label": "Farxiga",
+   "brand_only": true,
+   "method": "brand",
+   "correct": true,
+   "got": [
+    "dapagliflozin"
+   ]
+  },
+  {
+   "kind": "medication",
+   "label": "Ozempic",
+   "brand_only": true,
+   "method": "brand",
+   "correct": true,
+   "got": [
+    "semaglutide"
+   ]
+  },
+  {
+   "kind": "medication",
+   "label": "Trulicity",
+   "brand_only": true,
+   "method": "brand",
+   "correct": true,
+   "got": [
+    "dulaglutide"
+   ]
+  },
+  {
+   "kind": "medication",
+   "label": "Mounjaro",
+   "brand_only": true,
+   "method": "brand",
+   "correct": true,
+   "got": [
+    "tirzepatide"
+   ]
+  },
+  {
+   "kind": "medication",
+   "label": "Eliquis",
+   "brand_only": true,
+   "method": "brand",
+   "correct": true,
+   "got": [
+    "apixaban"
+   ]
+  },
+  {
+   "kind": "medication",
+   "label": "Xarelto",
+   "brand_only": true,
+   "method": "brand",
+   "correct": true,
+   "got": [
+    "rivaroxaban"
+   ]
+  },
+  {
+   "kind": "medication",
+   "label": "Entresto",
+   "brand_only": true,
+   "method": "brand",
+   "correct": true,
+   "got": [
+    "sacubitril",
+    "valsartan"
+   ]
+  },
+  {
+   "kind": "medication",
+   "label": "Januvia",
+   "brand_only": true,
+   "method": "brand",
+   "correct": true,
+   "got": [
+    "sitagliptin"
+   ]
+  },
+  {
+   "kind": "medication",
+   "label": "Coreg",
+   "brand_only": true,
+   "method": "brand",
+   "correct": true,
+   "got": [
+    "carvedilol"
+   ]
+  },
+  {
+   "kind": "medication",
+   "label": "24 HR metformin hydrochloride 500 MG Extended Release Oral Tablet",
+   "brand_only": false,
+   "method": "ingredient",
+   "correct": true,
+   "got": [
+    "metformin"
+   ]
+  },
+  {
+   "kind": "medication",
+   "label": "losartan potassium 100 MG Oral Tablet",
+   "brand_only": false,
+   "method": "ingredient",
+   "correct": true,
+   "got": [
+    "losartan"
+   ]
+  },
+  {
+   "kind": "medication",
+   "label": "rosuvastatin calcium 10 MG Oral Tablet",
+   "brand_only": false,
+   "method": "ingredient",
+   "correct": true,
+   "got": [
+    "rosuvastatin"
+   ]
+  },
+  {
+   "kind": "medication",
+   "label": "amLODIPine 2.5 MG Oral Tablet",
+   "brand_only": false,
+   "method": "ingredient",
+   "correct": true,
+   "got": [
+    "amlodipine"
+   ]
+  },
+  {
+   "kind": "medication",
+   "label": "24 HR metoprolol succinate 50 MG Extended Release Oral Tablet",
+   "brand_only": false,
+   "method": "ingredient",
+   "correct": true,
+   "got": [
+    "metoprolol"
+   ]
+  },
+  {
+   "kind": "medication",
+   "label": "Acetaminophen 325 MG / Oxycodone Hydrochloride 10 MG Oral Tablet [Percocet]",
+   "brand_only": false,
+   "method": "ingredient",
+   "correct": true,
+   "got": [
+    "oxycodone"
+   ]
+  },
+  {
+   "kind": "medication",
+   "label": "diphenhydrAMINE Hydrochloride 25 MG Oral Tablet",
+   "brand_only": false,
+   "method": "ingredient",
+   "correct": true,
+   "got": [
+    "diphenhydramine"
+   ]
+  },
+  {
+   "kind": "medication",
+   "label": "levothyroxine sodium 0.075 MG Oral Tablet",
+   "brand_only": false,
+   "method": "ingredient",
+   "correct": true,
+   "got": [
+    "levothyroxine"
+   ]
+  },
+  {
+   "kind": "medication",
+   "label": "alendronic acid 10 MG Oral Tablet",
+   "brand_only": false,
+   "method": "ingredient",
+   "correct": true,
+   "got": [
+    "alendronate"
+   ]
+  },
+  {
+   "kind": "medication",
+   "label": "120 ACTUAT fluticasone propionate 0.11 MG/ACTUAT Metered Dose Inhaler [Flovent]",
+   "brand_only": false,
+   "method": "ingredient",
+   "correct": true,
+   "got": [
+    "fluticasone"
+   ]
+  }
+ ]
+}
