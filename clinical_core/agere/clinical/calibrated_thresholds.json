@@ -4,7 +4,7 @@
   "alpha": 0.02,
   "delta": 0.1
  },
- "written_at": "2026-10-15T01:10:23Z",
+ "written_at": "2026-10-15T01:14:26Z",
  "method": "Learn-then-Test, fixed-sequence binomial tests (conformal.ltt_threshold)",
  "gates": {
   "learned_router": {
@@ -23,7 +23,7 @@
     "test": 138,
     "blind_test": 0
    },
-   "fitted_at": "2026-10-15T01:10:22Z",
+   "fitted_at": "2026-10-15T01:14:26Z",
    "search_floor": null,
    "bind": "d933c5b7af3c357c",
    "calibrated": false,
@@ -83,7 +83,7 @@
     "test": 341,
     "blind_test": 0
    },
-   "fitted_at": "2026-10-15T01:10:22Z",
+   "fitted_at": "2026-10-15T01:14:26Z",
    "search_floor": 0.8,
    "bind": "6263ab4c36a37a48513bcea76c43a48b4e1dba807cd4ff746ddb2905c4dd05ad",
    "calibrated": true,
@@ -128,7 +128,7 @@
     "test": 0,
     "blind_test": 0
    },
-   "fitted_at": "2026-10-15T01:10:23Z",
+   "fitted_at": "2026-10-15T01:14:26Z",
    "search_floor": null,
    "bind": "da76aa4c429d36be",
    "calibrated": false,
@@ -184,7 +184,7 @@
     "test": 0,
     "blind_test": 6
    },
-   "fitted_at": "2026-10-15T01:10:23Z",
+   "fitted_at": "2026-10-15T01:14:26Z",
    "search_floor": null,
    "bind": "81096e18b93c6caf",
    "calibrated": false,
@@ -244,7 +244,7 @@
     "test": 74,
     "blind_test": 0
    },
-   "fitted_at": "2026-10-15T01:10:23Z",
+   "fitted_at": "2026-10-15T01:14:26Z",
    "search_floor": null,
    "bind": "0f1f881724a15a1f",
    "calibrated": true,
@@ -289,7 +289,7 @@
     "test": 49,
     "blind_test": 0
    },
-   "fitted_at": "2026-10-15T01:10:23Z",
+   "fitted_at": "2026-10-15T01:14:26Z",
    "search_floor": null,
    "bind": "1666e8ec57931813",
    "calibrated": false,
@@ -345,7 +345,7 @@
     "test": 30,
     "blind_test": 37
    },
-   "fitted_at": "2026-10-15T01:10:23Z",
+   "fitted_at": "2026-10-15T01:14:26Z",
    "search_floor": null,
    "bind": "2b4590e2d42df56c",
    "calibrated": false,
@@ -401,9 +401,9 @@
     "test": 0,
     "blind_test": 13
    },
-   "fitted_at": "2026-10-15T01:10:23Z",
+   "fitted_at": "2026-10-15T01:14:26Z",
    "search_floor": null,
-   "bind": "fd771ffa0b8d519a",
+   "bind": "88be37cdb5cdbe93",
    "calibrated": false,
    "reason": "not certifiable at alpha=2%, delta=10% from 0 calibration cases; hand-set 1.0 kept; the blind test shows 9/13 wrong (69%, significantly above 2%); more calibration data cannot certify this gate until its error rate falls (non-blind estimate: only 0 accepted labelled case(s) (0 wrong); needs >= 114 accepted calibration cases with zero errors (~163 labelled cases with the 70/30 split), more if any are wrong)",
    "kind": "route",
@@ -457,9 +457,9 @@
     "test": 0,
     "blind_test": 0
    },
-   "fitted_at": "2026-10-15T01:10:23Z",
+   "fitted_at": "2026-10-15T01:14:26Z",
    "search_floor": null,
-   "bind": "b327f0944b9a2496",
+   "bind": "1908f4e5bb6a6fd2",
    "calibrated": false,
    "reason": "not certifiable at alpha=2%, delta=10% from 0 calibration cases; hand-set 1.0 kept; only 0 accepted labelled case(s) (0 wrong); needs >= 114 accepted calibration cases with zero errors (~163 labelled cases with the 70/30 split), more if any are wrong",
    "kind": "route",
@@ -513,7 +513,7 @@
     "test": 0,
     "blind_test": 0
    },
-   "fitted_at": "2026-10-15T01:10:23Z",
+   "fitted_at": "2026-10-15T01:14:26Z",
    "search_floor": null,
    "bind": "b280d239902d45ce",
    "calibrated": false,
@@ -569,7 +569,7 @@
     "test": 1,
     "blind_test": 14
    },
-   "fitted_at": "2026-10-15T01:10:23Z",
+   "fitted_at": "2026-10-15T01:14:26Z",
    "search_floor": null,
    "bind": "6d4ca72729827058",
    "calibrated": false,
@@ -625,7 +625,7 @@
     "test": 0,
     "blind_test": 3
    },
-   "fitted_at": "2026-10-15T01:10:23Z",
+   "fitted_at": "2026-10-15T01:14:26Z",
    "search_floor": null,
    "bind": "fd35ff213bd5a865",
    "calibrated": false,
@@ -681,9 +681,9 @@
     "test": 0,
     "blind_test": 184
    },
-   "fitted_at": "2026-10-15T01:10:23Z",
+   "fitted_at": "2026-10-15T01:14:26Z",
    "search_floor": null,
-   "bind": "c7bd4c287eef3f2e",
+   "bind": "2a58f82c2a681ebf",
    "calibrated": false,
    "reason": "not certifiable at alpha=2%, delta=10% from 1 calibration cases; hand-set 1.0 kept; the blind test shows 6/8 wrong (75%, significantly above 2%); more calibration data cannot certify this gate until its error rate falls (non-blind estimate: only 0 accepted labelled case(s) (0 wrong); needs >= 114 accepted calibration cases with zero errors (~163 labelled cases with the 70/30 split), more if any are wrong)",
    "kind": "flag",
@@ -737,7 +737,7 @@
     "test": 0,
     "blind_test": 0
    },
-   "fitted_at": "2026-10-15T01:10:23Z",
+   "fitted_at": "2026-10-15T01:14:26Z",
    "search_floor": null,
    "bind": "c79511b898e02f0f",
    "calibrated": false,
@@ -793,7 +793,7 @@
     "test": 0,
     "blind_test": 13
    },
-   "fitted_at": "2026-10-15T01:10:23Z",
+   "fitted_at": "2026-10-15T01:14:26Z",
    "search_floor": null,
    "bind": "c79511b898e02f0f",
    "calibrated": false,
