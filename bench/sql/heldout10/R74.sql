@@ -1,0 +1,1 @@
+SELECT COUNT(*) AS count FROM (SELECT * FROM records WHERE stream='labs' AND id NOT IN (SELECT supersedes FROM records WHERE stream='labs' AND supersedes IS NOT NULL)) WHERE event IS NULL OR event = ''

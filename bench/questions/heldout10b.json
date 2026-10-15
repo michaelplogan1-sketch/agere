@@ -1,0 +1,503 @@
+[
+ {
+  "id": "R41",
+  "domain": "population_health",
+  "question": "How many members are actively enrolled with a health plan today (May 27, 2030) and attributed to a primary care practice?",
+  "category": "attribution",
+  "as_of": "2030-05-27",
+  "interpretation": "All 4,115 roster identities (deep-chart and population segments); identity-matched records received on or before 2030-05-27 only. Superseded records (any record named in another record's supersedes) are excluded so only current versions count. Use payer enrollment spans (current versions). Active = coverage_start on or before 2030-05-27 and coverage_end null, 9999-12-31 or on/after 2030-05-27. Attributed = attribution_practice_id present. Count distinct patients.",
+  "answer_type": "count",
+  "reference_sql": "sql/heldout10/R41.sql",
+  "split": "heldout10"
+ },
+ {
+  "id": "R42",
+  "domain": "population_health",
+  "question": "Break down our enrolled membership on January 1, 2030 by insurance product. How many members did each product have?",
+  "category": "attribution",
+  "as_of": "2030-05-27",
+  "interpretation": "All 4,115 roster identities (deep-chart and population segments); identity-matched records received on or before 2030-05-27 only. Superseded records (any record named in another record's supersedes) are excluded so only current versions count. Payer enrollment spans (current versions) covering 2030-01-01 (coverage_start <= 2030-01-01 and coverage_end null or >= 2030-01-01). Group by the span's product value as recorded (e.g. commercial, medicaid, medicare_advantage, dual_ma); count distinct patients per product. A member with spans in two products counts once in each. Columns: product, members.",
+  "answer_type": "table",
+  "reference_sql": "sql/heldout10/R42.sql",
+  "split": "heldout10"
+ },
+ {
+  "id": "R43",
+  "domain": "population_health",
+  "question": "What was the medical PMPM (plan paid dollars per member per month) for our Medicare Advantage members in calendar year 2029?",
+  "category": "cost",
+  "as_of": "2030-05-27",
+  "interpretation": "All 4,115 roster identities (deep-chart and population segments); identity-matched records received on or before 2030-05-27 only. Superseded records (any record named in another record's supersedes) are excluded so only current versions count. Numerator: sum of paid_amount on current-version payer medical claims with product 'medicare_advantage' (not dual_ma), claim_status 'paid' on that current version, and service_from in 2029; a claim whose current version is reversed, voided, recouped or denied contributes $0. Denominator: member months = distinct (patient, month) pairs where a current medicare_advantage enrollment span covers the first day of the month, January-December 2029 (null coverage_end = open). Rounded to cents.",
+  "answer_type": "value",
+  "reference_sql": "sql/heldout10/R43.sql",
+  "split": "heldout10",
+  "tolerance": 0.01
+ },
+ {
+  "id": "R44",
+  "domain": "population_health",
+  "question": "Which patients are frequent ED users, meaning 4 or more emergency department visits in the last 12 months (May 28, 2029 through May 27, 2030)? Count visits from every source we receive: hospital ADT feeds, our EHR encounters, and claims.",
+  "category": "utilization",
+  "as_of": "2030-05-27",
+  "interpretation": "All 4,115 roster identities (deep-chart and population segments); identity-matched records received on or before 2030-05-27 only. Superseded records (any record named in another record's supersedes) are excluded so only current versions count. ED visit sources: ADT messages with patient_class 'E' (one visit per visit_number, dated by its earliest message); deep-chart ADT events 'emergency_registration' or patient_class 'emergency' (one per encounter_id, earliest date); EHR encounters whose type is 'emergency' or 'ED\u2026' case-insensitively (one per encounter_id, earliest date); current-version payer medical claims with place_of_service '23' (service_from date, any claim status); provider claim lines with revenue code 0450 or CPT 99281-99285 (service_date). De-duplicate across sources by patient + calendar date: one visit per patient per day.",
+  "answer_type": "patient_set",
+  "reference_sql": "sql/heldout10/R44.sql",
+  "split": "heldout10"
+ },
+ {
+  "id": "R45",
+  "domain": "population_health",
+  "question": "How many patients enrolled in complex care management had an eligibility risk score of 3.0 or higher?",
+  "category": "risk",
+  "as_of": "2030-05-27",
+  "interpretation": "All 4,115 roster identities (deep-chart and population segments); identity-matched records received on or before 2030-05-27 only. Superseded records (any record named in another record's supersedes) are excluded so only current versions count. care_management_enrollments records (program complex_care_management, status enrolled) with eligibility_risk_score >= 3.0. Count distinct patients.",
+  "answer_type": "count",
+  "reference_sql": "sql/heldout10/R45.sql",
+  "split": "heldout10"
+ },
+ {
+  "id": "R46",
+  "domain": "population_health",
+  "question": "From the most recent SDOH vendor file, what is the average overall Social Vulnerability Index percentile for members the vendor matched exactly?",
+  "category": "risk",
+  "as_of": "2030-05-27",
+  "interpretation": "All 4,115 roster identities (deep-chart and population segments); identity-matched records received on or before 2030-05-27 only. Superseded records (any record named in another record's supersedes) are excluded so only current versions count. sdoh_vendor_attributes with the latest delivery_date (2030-01-15) and member_match_status 'exact'; mean of svi_overall_percentile across those records (one record per matched member in that delivery), rounded to 2 decimals.",
+  "answer_type": "value",
+  "reference_sql": "sql/heldout10/R46.sql",
+  "split": "heldout10",
+  "tolerance": 0.01
+ },
+ {
+  "id": "R47",
+  "domain": "population_health",
+  "question": "Using payer claims, how many 2029 inpatient discharges were followed by another inpatient admission within 30 days?",
+  "category": "utilization",
+  "as_of": "2030-05-27",
+  "interpretation": "All 4,115 roster identities (deep-chart and population segments); identity-matched records received on or before 2030-05-27 only. Superseded records (any record named in another record's supersedes) are excluded so only current versions count. Inpatient stays = current-version payer medical claims with type_of_bill '0111' and claim_status 'paid', de-duplicated to distinct (patient, admission_date, discharge_date). Index stays: discharge_date in 2029. Readmission: another stay for the same patient with admission_date after the index discharge_date and no more than 30 days after it. Count index stays with at least one readmission.",
+  "answer_type": "count",
+  "reference_sql": "sql/heldout10/R47.sql",
+  "split": "heldout10"
+ },
+ {
+  "id": "R48",
+  "domain": "population_health",
+  "question": "Did our MSSP ACO earn shared savings for performance year 2029, and how far were we under the CMS financial benchmark?",
+  "category": "unsupported",
+  "as_of": "2030-05-27",
+  "interpretation": "All 4,115 roster identities (deep-chart and population segments); identity-matched records received on or before 2030-05-27 only. Superseded records (any record named in another record's supersedes) are excluded so only current versions count. Requires an ACO financial reconciliation / settlement report (benchmark expenditure, shared savings or losses, quality score). Claims and enrollment alone cannot produce the CMS benchmark or settlement. Checked every stream payload and source entity for benchmark/shared-savings/settlement/reconciliation-report/capitation terms: none exist.",
+  "answer_type": "unsupported",
+  "reference_sql": "sql/heldout10/R48.sql",
+  "split": "heldout10",
+  "expected_behavior": {
+   "required_missing": [
+    {
+     "id": "benchmark",
+     "description": "ACO financial benchmark / expenditure target",
+     "any_of": [
+      "benchmark",
+      "expenditure target",
+      "target expenditure"
+     ]
+    },
+    {
+     "id": "settlement",
+     "description": "shared savings settlement / reconciliation results",
+     "any_of": [
+      "shared savings",
+      "settlement",
+      "reconciliation",
+      "shared-savings"
+     ]
+    }
+   ]
+  }
+ },
+ {
+  "id": "R49",
+  "domain": "behavioral_health",
+  "question": "How many patients have ever scored 10 or more (moderate depression or worse) on a PHQ-9?",
+  "category": "depression_screening",
+  "as_of": "2030-05-27",
+  "interpretation": "All 4,115 roster identities (deep-chart and population segments); identity-matched records received on or before 2030-05-27 only. Superseded records (any record named in another record's supersedes) are excluded so only current versions count. PHQ-9 scores from mood questionnaires (instrument PHQ-9, total) and from lab/flowsheet results named 'PHQ-9' (case-insensitive, numeric value; dated or undated). PHQ-A and PHQ-2 are not PHQ-9. Count distinct patients with any score >= 10.",
+  "answer_type": "count",
+  "reference_sql": "sql/heldout10/R49.sql",
+  "split": "heldout10"
+ },
+ {
+  "id": "R50",
+  "domain": "behavioral_health",
+  "question": "What's the average PHQ-9 score across every PHQ-9 we have on file?",
+  "category": "depression_screening",
+  "as_of": "2030-05-27",
+  "interpretation": "All 4,115 roster identities (deep-chart and population segments); identity-matched records received on or before 2030-05-27 only. Superseded records (any record named in another record's supersedes) are excluded so only current versions count. Mean over all PHQ-9 administrations: mood questionnaire totals (instrument PHQ-9) plus lab/flowsheet results named 'PHQ-9' (case-insensitive) with a numeric value. Each administration counts once (no per-patient averaging). PHQ-A excluded. Rounded to 2 decimals.",
+  "answer_type": "value",
+  "reference_sql": "sql/heldout10/R50.sql",
+  "split": "heldout10",
+  "tolerance": 0.01
+ },
+ {
+  "id": "R51",
+  "domain": "behavioral_health",
+  "question": "How many patients screened positive for depression on the PHQ-2 during their health risk assessment?",
+  "category": "depression_screening",
+  "as_of": "2030-05-27",
+  "interpretation": "All 4,115 roster identities (deep-chart and population segments); identity-matched records received on or before 2030-05-27 only. Superseded records (any record named in another record's supersedes) are excluded so only current versions count. health_risk_assessments with phq2_total >= 3 (standard PHQ-2 positive cut point). Count distinct patients.",
+  "answer_type": "count",
+  "reference_sql": "sql/heldout10/R51.sql",
+  "split": "heldout10"
+ },
+ {
+  "id": "R52",
+  "domain": "behavioral_health",
+  "question": "Which patients had a positive PHQ-2 on their health risk assessment but never got a follow-up PHQ-9 for that screen?",
+  "category": "followup",
+  "as_of": "2030-05-27",
+  "interpretation": "All 4,115 roster identities (deep-chart and population segments); identity-matched records received on or before 2030-05-27 only. Superseded records (any record named in another record's supersedes) are excluded so only current versions count. Positive = health_risk_assessments phq2_total >= 3. Follow-up PHQ-9 = a mood_questionnaires record (instrument PHQ-9) whose screen_record_id points to that HRA record. Return patients with at least one positive HRA that has no linked PHQ-9.",
+  "answer_type": "patient_set",
+  "reference_sql": "sql/heldout10/R52.sql",
+  "split": "heldout10"
+ },
+ {
+  "id": "R53",
+  "domain": "behavioral_health",
+  "question": "When staff called patients back after a positive mood screen, how did those outreach calls turn out? Give me the number of calls by result.",
+  "category": "followup",
+  "as_of": "2030-05-27",
+  "interpretation": "All 4,115 roster identities (deep-chart and population segments); identity-matched records received on or before 2030-05-27 only. Superseded records (any record named in another record's supersedes) are excluded so only current versions count. behavioral_care_contacts with purpose 'positive_mood_screen_followthrough'; group by contact_result; count contact records. Columns: contact_result, contacts.",
+  "answer_type": "table",
+  "reference_sql": "sql/heldout10/R53.sql",
+  "split": "heldout10"
+ },
+ {
+  "id": "R54",
+  "domain": "behavioral_health",
+  "question": "Among patients with at least two PHQ-9 questionnaires, how many got worse by 5 or more points between their first and their most recent one?",
+  "category": "outcomes",
+  "as_of": "2030-05-27",
+  "interpretation": "All 4,115 roster identities (deep-chart and population segments); identity-matched records received on or before 2030-05-27 only. Superseded records (any record named in another record's supersedes) are excluded so only current versions count. Dated PHQ-9 mood questionnaires only (instrument PHQ-9). Order each patient's questionnaires by event_time (then record id); first vs last total; worsened = last total minus first total >= 5. Patients with fewer than two questionnaires excluded.",
+  "answer_type": "count",
+  "reference_sql": "sql/heldout10/R54.sql",
+  "split": "heldout10"
+ },
+ {
+  "id": "R55",
+  "domain": "behavioral_health",
+  "question": "Of the behavioral health care plans we created, what percentage had a documented follow-up within the 14 days the clinician asked for?",
+  "category": "followup",
+  "as_of": "2030-05-27",
+  "interpretation": "All 4,115 roster identities (deep-chart and population segments); identity-matched records received on or before 2030-05-27 only. Superseded records (any record named in another record's supersedes) are excluded so only current versions count. Denominator: behavioral_care_plans records. Numerator: plans with at least one behavioral_followup_reports record whose plan_record_id is that plan and whose event date is on or after the plan date and no more than followup_requested_days (14) days later. Percentage rounded to 1 decimal.",
+  "answer_type": "value",
+  "reference_sql": "sql/heldout10/R55.sql",
+  "split": "heldout10",
+  "tolerance": 0.05
+ },
+ {
+  "id": "R56",
+  "domain": "behavioral_health",
+  "question": "How many patients have a depression diagnosis anywhere in their record: problem list, visit diagnoses, hospital ADT diagnoses, or payer claims?",
+  "category": "prevalence",
+  "as_of": "2030-05-27",
+  "interpretation": "All 4,115 roster identities (deep-chart and population segments); identity-matched records received on or before 2030-05-27 only. Superseded records (any record named in another record's supersedes) are excluded so only current versions count. Depression = ICD-10 F32.* or F33.* (dotted or undotted, case-insensitive) in: conditions icd10 (current versions), EHR encounter diagnoses, ADT admit/discharge diagnosis codes, or current-version payer medical claim diagnosis_codes; plus uncoded problem-list conditions whose description contains 'depress' (case-insensitive) excluding postpartum and bipolar descriptions. F31 bipolar and F53 postpartum depression are not counted. Count distinct patients.",
+  "answer_type": "count",
+  "reference_sql": "sql/heldout10/R56.sql",
+  "split": "heldout10"
+ },
+ {
+  "id": "R57",
+  "domain": "access",
+  "question": "What was our appointment no-show rate in 2029?",
+  "category": "no_shows",
+  "as_of": "2030-05-27",
+  "interpretation": "All 4,115 roster identities (deep-chart and population segments); identity-matched records received on or before 2030-05-27 only. Superseded records (any record named in another record's supersedes) are excluded so only current versions count. Appointments are tracked as status records per appointment_id. An appointment's outcome is taken from its outcome records (status fulfilled, attended, arrived or no_show); its date is the outcome record's event date. Denominator: appointments with an outcome dated in 2029; numerator: those whose outcome is no_show. Cancelled, rescheduled, booked-only and unassigned appointments are excluded. Percentage rounded to 2 decimals.",
+  "answer_type": "value",
+  "reference_sql": "sql/heldout10/R57.sql",
+  "split": "heldout10",
+  "tolerance": 0.01
+ },
+ {
+  "id": "R58",
+  "domain": "access",
+  "question": "For each visit type, how many appointments were booked and what was the average lead time in days between booking and the visit?",
+  "category": "lead_time",
+  "as_of": "2030-05-27",
+  "interpretation": "All 4,115 roster identities (deep-chart and population segments); identity-matched records received on or before 2030-05-27 only. Superseded records (any record named in another record's supersedes) are excluded so only current versions count. Booking records = appointments records with status 'booked' that report lead_time_days and visit_type (the scheduling feed that captures lead time). Group by visit_type; bookings = count of distinct appointment_id; avg_lead_days = mean lead_time_days rounded to 1 decimal. Columns: visit_type, bookings, avg_lead_days.",
+  "answer_type": "table",
+  "reference_sql": "sql/heldout10/R58.sql",
+  "split": "heldout10",
+  "tolerance": 0.05
+ },
+ {
+  "id": "R59",
+  "domain": "access",
+  "question": "How many patients had a Medicare Annual Wellness Visit in 2029? Check both our wellness visit documentation and the claims.",
+  "category": "wellness_visits",
+  "as_of": "2030-05-27",
+  "interpretation": "All 4,115 roster identities (deep-chart and population segments); identity-matched records received on or before 2030-05-27 only. Superseded records (any record named in another record's supersedes) are excluded so only current versions count. AWV evidence: wellness_visit_services with visit_type 'medicare_annual_wellness' or hcpcs_code G0438/G0439; payer medical claim lines with procedure_code G0438 or G0439; provider claim lines with service_code G0438 or G0439. Service/visit date in 2029 (wellness services event date; claim line service_date). Codes matched case-insensitively. Count distinct patients across sources.",
+  "answer_type": "count",
+  "reference_sql": "sql/heldout10/R59.sql",
+  "split": "heldout10"
+ },
+ {
+  "id": "R60",
+  "domain": "access",
+  "question": "How are patients cancelling their appointments? Show the number of cancelled appointments by cancellation channel.",
+  "category": "cancellations",
+  "as_of": "2030-05-27",
+  "interpretation": "All 4,115 roster identities (deep-chart and population segments); identity-matched records received on or before 2030-05-27 only. Superseded records (any record named in another record's supersedes) are excluded so only current versions count. appointments records with status 'cancelled' that report a cancellation_channel; count distinct appointment_id per channel. Columns: cancellation_channel, cancelled_appointments.",
+  "answer_type": "table",
+  "reference_sql": "sql/heldout10/R60.sql",
+  "split": "heldout10"
+ },
+ {
+  "id": "R61",
+  "domain": "access",
+  "question": "Which patients have no-showed to five or more different appointments?",
+  "category": "no_shows",
+  "as_of": "2030-05-27",
+  "interpretation": "All 4,115 roster identities (deep-chart and population segments); identity-matched records received on or before 2030-05-27 only. Superseded records (any record named in another record's supersedes) are excluded so only current versions count. Distinct appointment_id values with any appointments record of status 'no_show' per patient, all dates through 2030-05-27; return patients with >= 5.",
+  "answer_type": "patient_set",
+  "reference_sql": "sql/heldout10/R61.sql",
+  "split": "heldout10"
+ },
+ {
+  "id": "R62",
+  "domain": "access",
+  "question": "How many appointments had to be rescheduled or changed because the patient had a transportation problem?",
+  "category": "reschedules",
+  "as_of": "2030-05-27",
+  "interpretation": "All 4,115 roster identities (deep-chart and population segments); identity-matched records received on or before 2030-05-27 only. Superseded records (any record named in another record's supersedes) are excluded so only current versions count. appointments records whose reason is 'transportation' (case-insensitive); count distinct appointment_id.",
+  "answer_type": "count",
+  "reference_sql": "sql/heldout10/R62.sql",
+  "split": "heldout10"
+ },
+ {
+  "id": "R63",
+  "domain": "access",
+  "question": "What were our CAHPS patient satisfaction scores for provider communication last year, by practice?",
+  "category": "unsupported",
+  "as_of": "2030-05-27",
+  "interpretation": "All 4,115 roster identities (deep-chart and population segments); identity-matched records received on or before 2030-05-27 only. Superseded records (any record named in another record's supersedes) are excluded so only current versions count. Requires patient experience survey responses (CG-CAHPS / Press Ganey style). Checked every stream payload and source entity for CAHPS, satisfaction, survey, Press Ganey, net promoter and star-rating terms: none exist.",
+  "answer_type": "unsupported",
+  "reference_sql": "sql/heldout10/R63.sql",
+  "split": "heldout10",
+  "expected_behavior": {
+   "required_missing": [
+    {
+     "id": "survey",
+     "description": "patient experience / CAHPS survey responses",
+     "any_of": [
+      "cahps",
+      "survey",
+      "satisfaction",
+      "patient experience"
+     ]
+    }
+   ]
+  }
+ },
+ {
+  "id": "R64",
+  "domain": "access",
+  "question": "How many patient visits did we have in March 2030 if you combine every source: EHR encounters, hospital ADT, and claims? Count each patient once per day.",
+  "category": "utilization",
+  "as_of": "2030-05-27",
+  "interpretation": "All 4,115 roster identities (deep-chart and population segments); identity-matched records received on or before 2030-05-27 only. Superseded records (any record named in another record's supersedes) are excluded so only current versions count. Visit evidence dated 2030-03-01..2030-03-31: EHR encounters (any type, event date), ADT messages (event date), deep-chart ADT events (event date), current-version payer medical claims (service_from, any status), and provider medical claims (event date). De-duplicate to distinct (patient, date) pairs and count them.",
+  "answer_type": "count",
+  "reference_sql": "sql/heldout10/R64.sql",
+  "split": "heldout10"
+ },
+ {
+  "id": "R65",
+  "domain": "access",
+  "question": "Of the completed preventive and wellness visits documented in our wellness visit workflow, what share were billable Medicare Annual Wellness Visits?",
+  "category": "wellness_visits",
+  "as_of": "2030-05-27",
+  "interpretation": "All 4,115 roster identities (deep-chart and population segments); identity-matched records received on or before 2030-05-27 only. Superseded records (any record named in another record's supersedes) are excluded so only current versions count. wellness_visit_services with status 'completed'; share with visit_type 'medicare_annual_wellness' (HCPCS G0438). Percentage rounded to 2 decimals.",
+  "answer_type": "value",
+  "reference_sql": "sql/heldout10/R65.sql",
+  "split": "heldout10",
+  "tolerance": 0.01
+ },
+ {
+  "id": "R66",
+  "domain": "life_sciences",
+  "question": "How many patients were new users of semaglutide in 2027, meaning their first-ever semaglutide fill happened in 2027?",
+  "category": "new_users",
+  "as_of": "2030-05-27",
+  "interpretation": "All 4,115 roster identities (deep-chart and population segments); identity-matched records received on or before 2030-05-27 only. Superseded records (any record named in another record's supersedes) are excluded so only current versions count. Fills = current-version payer pharmacy claims with claim_status 'paid' (fill date = record event date) plus pharmacy dispense records with status 'dispensed' (event date); prepared, returned-to-stock, rejected and reversed transactions are not fills. Drug names matched case-insensitively on generic or brand name. Semaglutide = name contains semaglutide, Ozempic, Wegovy or Rybelsus. New user = earliest fill across both sources falls in 2027 (no earlier fill anywhere in the received history).",
+  "answer_type": "count",
+  "reference_sql": "sql/heldout10/R66.sql",
+  "split": "heldout10"
+ },
+ {
+  "id": "R67",
+  "domain": "life_sciences",
+  "question": "For patients who started empagliflozin in 2027, what percentage were still filling it a year later, i.e. at least 365 days after their first fill?",
+  "category": "persistence",
+  "as_of": "2030-05-27",
+  "interpretation": "All 4,115 roster identities (deep-chart and population segments); identity-matched records received on or before 2030-05-27 only. Superseded records (any record named in another record's supersedes) are excluded so only current versions count. Fills = current-version payer pharmacy claims with claim_status 'paid' (fill date = record event date) plus pharmacy dispense records with status 'dispensed' (event date); prepared, returned-to-stock, rejected and reversed transactions are not fills. Drug names matched case-insensitively on generic or brand name. Empagliflozin = name contains empagliflozin or Jardiance. Index = earliest fill across sources; cohort = index in 2027. Persistent = any fill on or after index + 365 days. Percentage rounded to 1 decimal.",
+  "answer_type": "value",
+  "reference_sql": "sql/heldout10/R67.sql",
+  "split": "heldout10",
+  "tolerance": 0.05
+ },
+ {
+  "id": "R68",
+  "domain": "life_sciences",
+  "question": "What were the five most commonly used drugs in 2029 by number of patients, based on payer pharmacy claims?",
+  "category": "utilization",
+  "as_of": "2030-05-27",
+  "interpretation": "All 4,115 roster identities (deep-chart and population segments); identity-matched records received on or before 2030-05-27 only. Superseded records (any record named in another record's supersedes) are excluded so only current versions count. Current-version payer pharmacy claims with claim_status 'paid' and event date in 2029. Drug = drug_name lower-cased and trimmed (no further normalization; different strengths are different drugs). Rank by distinct patients; top 5. Columns: drug, patients.",
+  "answer_type": "table",
+  "reference_sql": "sql/heldout10/R68.sql",
+  "split": "heldout10"
+ },
+ {
+  "id": "R69",
+  "domain": "life_sciences",
+  "question": "How many patients started on metformin and later moved to a second-line diabetes drug?",
+  "category": "lines_of_therapy",
+  "as_of": "2030-05-27",
+  "interpretation": "All 4,115 roster identities (deep-chart and population segments); identity-matched records received on or before 2030-05-27 only. Superseded records (any record named in another record's supersedes) are excluded so only current versions count. Fills = current-version payer pharmacy claims with claim_status 'paid' (fill date = record event date) plus pharmacy dispense records with status 'dispensed' (event date); prepared, returned-to-stock, rejected and reversed transactions are not fills. Drug names matched case-insensitively on generic or brand name. Antidiabetic agents: metformin (any formulation) is first line; second-line agents = GLP-1 RAs (semaglutide/Ozempic/Wegovy/Rybelsus, dulaglutide/Trulicity, liraglutide/Victoza, tirzepatide/Mounjaro), SGLT2 inhibitors (empagliflozin/Jardiance, dapagliflozin/Farxiga, canagliflozin), DPP-4 inhibitors (sitagliptin/Januvia, linagliptin), sulfonylureas (glipizide, glimepiride, glyburide), pioglitazone and any insulin. A patient advanced to second line when their first-ever metformin fill is strictly earlier than their first-ever second-line fill (patients who started a second-line agent on or before metformin are excluded). Count distinct patients.",
+  "answer_type": "count",
+  "reference_sql": "sql/heldout10/R69.sql",
+  "split": "heldout10"
+ },
+ {
+  "id": "R70",
+  "domain": "life_sciences",
+  "question": "For patients who went from metformin to a second-line diabetes drug, how many days on average passed between their first metformin fill and their first second-line fill?",
+  "category": "lines_of_therapy",
+  "as_of": "2030-05-27",
+  "interpretation": "All 4,115 roster identities (deep-chart and population segments); identity-matched records received on or before 2030-05-27 only. Superseded records (any record named in another record's supersedes) are excluded so only current versions count. Fills = current-version payer pharmacy claims with claim_status 'paid' (fill date = record event date) plus pharmacy dispense records with status 'dispensed' (event date); prepared, returned-to-stock, rejected and reversed transactions are not fills. Drug names matched case-insensitively on generic or brand name. Antidiabetic agents: metformin (any formulation) is first line; second-line agents = GLP-1 RAs (semaglutide/Ozempic/Wegovy/Rybelsus, dulaglutide/Trulicity, liraglutide/Victoza, tirzepatide/Mounjaro), SGLT2 inhibitors (empagliflozin/Jardiance, dapagliflozin/Farxiga, canagliflozin), DPP-4 inhibitors (sitagliptin/Januvia, linagliptin), sulfonylureas (glipizide, glimepiride, glyburide), pioglitazone and any insulin. A patient advanced to second line when their first-ever metformin fill is strictly earlier than their first-ever second-line fill (patients who started a second-line agent on or before metformin are excluded). Mean of (first second-line fill date - first metformin fill date) in days, rounded to 1 decimal.",
+  "answer_type": "value",
+  "reference_sql": "sql/heldout10/R70.sql",
+  "split": "heldout10",
+  "tolerance": 0.05
+ },
+ {
+  "id": "R71",
+  "domain": "life_sciences",
+  "question": "Which patients have had a GLP-1 prescription claim rejected by their health plan?",
+  "category": "access_barriers",
+  "as_of": "2030-05-27",
+  "interpretation": "All 4,115 roster identities (deep-chart and population segments); identity-matched records received on or before 2030-05-27 only. Superseded records (any record named in another record's supersedes) are excluded so only current versions count. Payer pharmacy claims (current versions). GLP-1 RA = drug_name contains semaglutide, Ozempic, Wegovy, Rybelsus, dulaglutide, Trulicity, liraglutide, Victoza, Saxenda, tirzepatide, Mounjaro or Zepbound (case-insensitive). Rejected = claim_status 'rejected'. Return distinct patients with at least one rejected GLP-1 claim.",
+  "answer_type": "patient_set",
+  "reference_sql": "sql/heldout10/R71.sql",
+  "split": "heldout10"
+ },
+ {
+  "id": "R72",
+  "domain": "life_sciences",
+  "question": "How many patients who started an SGLT2 inhibitor in 2027 or 2028 already had a heart failure diagnosis on or before the day they started?",
+  "category": "new_users",
+  "as_of": "2030-05-27",
+  "interpretation": "All 4,115 roster identities (deep-chart and population segments); identity-matched records received on or before 2030-05-27 only. Superseded records (any record named in another record's supersedes) are excluded so only current versions count. Fills = current-version payer pharmacy claims with claim_status 'paid' (fill date = record event date) plus pharmacy dispense records with status 'dispensed' (event date); prepared, returned-to-stock, rejected and reversed transactions are not fills. Drug names matched case-insensitively on generic or brand name. SGLT2 inhibitors = empagliflozin/Jardiance, dapagliflozin/Farxiga, canagliflozin/Invokana, ertugliflozin. New user = first-ever SGLT2 fill (any agent, either source) between 2027-01-01 and 2028-12-31. Heart failure = ICD-10 I50.* (dotted or undotted) dated on or before that first fill in: conditions (current versions; onset or event date), EHR encounter diagnoses (event date), or current-version payer medical claim diagnosis_codes (service_from). Undated diagnoses are not counted. Count distinct patients.",
+  "answer_type": "count",
+  "reference_sql": "sql/heldout10/R72.sql",
+  "split": "heldout10"
+ },
+ {
+  "id": "R73",
+  "domain": "life_sciences",
+  "question": "What was our net cost for GLP-1 drugs in 2029 after manufacturer rebates?",
+  "category": "unsupported",
+  "as_of": "2030-05-27",
+  "interpretation": "All 4,115 roster identities (deep-chart and population segments); identity-matched records received on or before 2030-05-27 only. Superseded records (any record named in another record's supersedes) are excluded so only current versions count. Requires manufacturer rebate / price-concession data (rebate amounts, WAC, DIR fees). Pharmacy claims carry gross ingredient cost, dispensing fee, plan paid and patient pay only. Checked every stream payload and source entity for rebate, wholesale/WAC, acquisition cost, price concession and DIR fee terms: none exist.",
+  "answer_type": "unsupported",
+  "reference_sql": "sql/heldout10/R73.sql",
+  "split": "heldout10",
+  "expected_behavior": {
+   "required_missing": [
+    {
+     "id": "rebate",
+     "description": "manufacturer rebate / price concession amounts",
+     "any_of": [
+      "rebate",
+      "price concession",
+      "net price",
+      "manufacturer"
+     ]
+    }
+   ]
+  }
+ },
+ {
+  "id": "R74",
+  "domain": "data_quality",
+  "question": "How many lab results did we receive without any result date?",
+  "category": "undated_records",
+  "as_of": "2030-05-27",
+  "interpretation": "All 4,115 roster identities (deep-chart and population segments); identity-matched records received on or before 2030-05-27 only. Superseded records (any record named in another record's supersedes) are excluded so only current versions count. Lab result records (labs stream, current versions) whose event date is missing (event_date null; precision 'unknown'). Count records, not patients.",
+  "answer_type": "count",
+  "reference_sql": "sql/heldout10/R74.sql",
+  "split": "heldout10"
+ },
+ {
+  "id": "R75",
+  "domain": "data_quality",
+  "question": "Which feeds send us corrections, and how many correction records has each one sent?",
+  "category": "corrections",
+  "as_of": "2030-05-27",
+  "interpretation": "All 4,115 roster identities (deep-chart and population segments); identity-matched records received on or before 2030-05-27 only. Superseded records (any record named in another record's supersedes) are excluded so only current versions count. A correction = any record that supersedes another record (supersedes populated). Group by stream; count records. Only streams with at least one correction. Columns: stream, corrections.",
+  "answer_type": "table",
+  "reference_sql": "sql/heldout10/R75.sql",
+  "split": "heldout10"
+ },
+ {
+  "id": "R76",
+  "domain": "data_quality",
+  "question": "What percentage of payer medical claims reached us more than 30 days after the date of service?",
+  "category": "late_records",
+  "as_of": "2030-05-27",
+  "interpretation": "All 4,115 roster identities (deep-chart and population segments); identity-matched records received on or before 2030-05-27 only. Superseded records (any record named in another record's supersedes) are excluded so only current versions count. Current-version payer medical claims (any status). Late = arrival date more than 30 days after service_from (julianday(arrival) - julianday(service_from) > 30, using the date part of arrival). Percentage of claims, rounded to 2 decimals.",
+  "answer_type": "value",
+  "reference_sql": "sql/heldout10/R76.sql",
+  "split": "heldout10",
+  "tolerance": 0.01
+ },
+ {
+  "id": "R77",
+  "domain": "data_quality",
+  "question": "How many duplicate lab results are sitting in the warehouse, meaning extra copies of a result we already have?",
+  "category": "duplicates",
+  "as_of": "2030-05-27",
+  "interpretation": "All 4,115 roster identities (deep-chart and population segments); identity-matched records received on or before 2030-05-27 only. Superseded records (any record named in another record's supersedes) are excluded so only current versions count. Current-version lab records with a result time. A duplicate group = same patient, same test name (case-insensitive, trimmed), same event_time and same value text. Extra copies = records in each group beyond the first; sum across groups.",
+  "answer_type": "count",
+  "reference_sql": "sql/heldout10/R77.sql",
+  "split": "heldout10"
+ },
+ {
+  "id": "R78",
+  "domain": "data_quality",
+  "question": "For each reference lab feed, what was the longest gap in days between deliveries during 2029?",
+  "category": "feed_gaps",
+  "as_of": "2030-05-27",
+  "interpretation": "All 4,115 roster identities (deep-chart and population segments); identity-matched records received on or before 2030-05-27 only. Superseded records (any record named in another record's supersedes) are excluded so only current versions count. Lab feeds = labs records whose source_system starts with 'WH-LAB-'. Delivery days = distinct arrival dates (date part) in 2029 per source_system. Longest gap = max difference in days between consecutive delivery days. Columns: source_system, longest_gap_days.",
+  "answer_type": "table",
+  "reference_sql": "sql/heldout10/R78.sql",
+  "split": "heldout10"
+ },
+ {
+  "id": "R79",
+  "domain": "data_quality",
+  "question": "How many members had their enrollment span corrected or replaced by the health plan after it was first sent?",
+  "category": "corrections",
+  "as_of": "2030-05-27",
+  "interpretation": "All 4,115 roster identities (deep-chart and population segments); identity-matched records received on or before 2030-05-27 only. Superseded records (any record named in another record's supersedes) are excluded so only current versions count. Enrollment spans that were superseded (their record id appears in another enrollment_spans record's supersedes). Count distinct patients owning a superseded span.",
+  "answer_type": "count",
+  "reference_sql": "sql/heldout10/R79.sql",
+  "split": "heldout10"
+ },
+ {
+  "id": "R80",
+  "domain": "data_quality",
+  "question": "On the problem list and condition feeds, how many condition records have only an imprecise date (month, year, or unknown precision)?",
+  "category": "date_precision",
+  "as_of": "2030-05-27",
+  "interpretation": "All 4,115 roster identities (deep-chart and population segments); identity-matched records received on or before 2030-05-27 only. Superseded records (any record named in another record's supersedes) are excluded so only current versions count. conditions records (current versions) grouped by event_date_precision for precision values 'month', 'year' and 'unknown'. Columns: precision, records.",
+  "answer_type": "table",
+  "reference_sql": "sql/heldout10/R80.sql",
+  "split": "heldout10"
+ }
+]

@@ -1,0 +1,3 @@
+SELECT CASE WHEN EXISTS (
+  SELECT 1 FROM records WHERE instr(lower(payload), 'rebate') > 0 OR instr(lower(payload), 'wholesale') > 0 OR instr(lower(payload), 'acquisition_cost') > 0 OR instr(lower(payload), 'price_concession') > 0 OR instr(lower(payload), 'dir_fee') > 0 OR instr(lower(payload), 'price concession') > 0
+) OR EXISTS (SELECT 1 FROM source_entities WHERE instr(lower(payload), 'rebate') > 0 OR instr(lower(payload), 'wholesale') > 0 OR instr(lower(payload), 'acquisition_cost') > 0 OR instr(lower(payload), 'price_concession') > 0 OR instr(lower(payload), 'dir_fee') > 0 OR instr(lower(payload), 'price concession') > 0) THEN 1 ELSE 0 END AS prerequisite_available
