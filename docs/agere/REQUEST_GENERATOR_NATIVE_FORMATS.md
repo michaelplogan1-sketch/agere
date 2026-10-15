@@ -18,7 +18,7 @@ Today's 237 custom JSON streams don't match how any real buyer's data arrives, a
 | Eligibility | **X12 834** (adds, terms, retro-terms) + a flat monthly roster per payer | |
 | Pharmacy | **NCPDP D.0** claims (paid / rejected with reject codes / reversed) + pharmacy dispense extract | |
 | Hospitals | **HL7 v2 ADT** (A01/A03/A04/A06/A08, PV1 class, DG1) | Raw message files, multiple sending facilities |
-| EHR clinical | **FHIR R4 bundles** (Patient, Encounter, Condition, Procedure, Observation, MedicationRequest, Immunization, Appointment) and/or **C-CDA** | Tuva's `fhir_preprocessing` reads FHIR |
+| EHR clinical | **FHIR R4 bundles** (Patient, Encounter, Condition, Procedure, Observation, MedicationRequest, Immunization, Appointment) and/or **C-CDA** | Bulk-export ndjson, ingested via tuva-health/FHIR_inferno + a FHIR connector (`fhir_preprocessing` is output-side only) |
 | Labs | **HL7 v2 ORU** with LOINC/UCUM, corrections (result status C) | |
 | SDOH vendor | flat CSV with SVI/ADI | |
 
@@ -40,3 +40,8 @@ Agere and the competitor baselines never see the answers.
    - Agere, through its normal onboarding;
    - Agere and the LLM combined.
 3. Paired scoring on the sealed questions, 3 repeats each: correct, precision on answered, abstentions, $/question and latency, per domain.
+
+## Update 2026-10-15 (generator findings from Tuva's official repos)
+- `medicare_cclf_connector` / `cms_alr_connector` read loaded tables, not fixed-width files. v2.11 ships CSVs with exactly their source table/column names (incl. file_name/file_date, `enrollment`, ALR aalr1/2/4/5/6/9) next to the fixed-width originals.
+- EHR extracts are reshaped to the official `epic_connector`, `athenahealth_connector` and `ecw_connector` source schemas.
+- Tuva has no official X12 (837/835/834), NCPDP or HL7 v2 connector. The test warehouse parses these ONCE, with open-source parsers, in the shared warehouse layer (test_warehouse/), before any contestant sees the data. Every contestant reads the same parsed tables, so the glue is identical for all.
