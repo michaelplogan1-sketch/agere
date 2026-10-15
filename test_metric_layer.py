@@ -388,7 +388,7 @@ class ResolveTests(Fixture):
         self.assertEqual(r['id'], 'kidney_health_evaluation_diabetes')
         r = metrics.resolve({'measure': 'cbp'})
         self.assertEqual((r['id'], r['engine']), ('measure.cbp', {'measures': 'cbp'}))
-        self.assertIn('metric no_show_rate v1', metrics.resolve('no-show rate in 2028?')['computed_as'])
+        self.assertIn('metric no_show_rate v2', metrics.resolve('no-show rate in 2028?')['computed_as'])
 
     def test_variant(self):
         r = metrics.resolve('ED-to-hospital conversion: of our ED visits since 2026, what percent turned into an observation stay or an admission?', as_of=AS_OF)

@@ -135,7 +135,11 @@ SCHEMA_DOC = {
                   'first_generation_antihistamine (Beers), second_generation_antihistamine, short_acting_beta_agonist. '
                   'picked_up = 1 on fills that left the pharmacy (evidence dispensed | claim | payer_claim with status dispensed | '
                   'paid | completed, not reversed / returned to stock; prepared-only dispenses never count): use picked_up = 1 for '
-                  'any fill, pickup or dispensing count.',
+                  'any fill, pickup or dispensing count. ONE pickup can arrive from two sources: the dispensing pharmacy '
+                  '(pharmacy_dispenses, days in payload days_supply_reported) and the payer\'s pharmacy claim (payer_pharmacy_claims / '
+                  'pharmacy_claims, days in payload days_supply). For fill counts or days\' supply never add the sources together: '
+                  'take one fill per patient, drug class and fill date (e.g. per patient+event_date the larger days supply of the two '
+                  'sources), then sum over dates; counting patients needs no such step.',
     'wellness_visit': 'One row per wellness_visit_services record: visit_type (medicare_annual_wellness, preventive_review, ...), '
                       'hcpcs_code, awv = 1 for a Medicare annual wellness visit (G0438 initial / G0439 subsequent, awv_kind), status '
                       '(count completed), coding_status, event_date, encounter_id. visit.wellness_visit_type / visit.awv mark the '

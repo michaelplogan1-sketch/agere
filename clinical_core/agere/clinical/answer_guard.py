@@ -1044,6 +1044,14 @@ def cross_check(stack, question, graph, receipt, result, *, ledger=None, frontie
         info.update(status='unavailable', reason=f"the independent path ({label}) gave no answer "
                                                  f"({other.get('status') or other.get('answer_type') or 'none'})")
         return graph, receipt, result
+    if label.endswith('(relaxed)'):
+        # The relaxed compile answered a different question (it dropped words it could not read, e.g. 'uncontrolled'):
+        # its agreement is a weak confirmation, but its different answer is no evidence against the primary answer and
+        # must never replace it (nor become an alternative reading).
+        info.update(status='unavailable', reason=f"the independent path ({label}) dropped words of the question "
+                                                 f"({', '.join((receipt.get('local_compiler_declined') or {}).get('unexplained') or []) or 'unread words'}); "
+                                                 'a different answer from it is not comparable')
+        return graph, receipt, result
     # Disagreement: the frontier planner breaks the tie when available.
     route = effective_route(receipt)
     if live and frontier is not None and os.environ.get('AGERE_CROSS_CHECK_FRONTIER', 'on') != 'off':

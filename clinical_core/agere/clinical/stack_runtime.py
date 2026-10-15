@@ -184,6 +184,15 @@ class Stack:
                             plans.execute('UPDATE plans SET payload=? WHERE id=?',(json.dumps({**saved,'graph':graph,'receipt':receipt}),key))
             lap('execution_s')
             if planning=='auto' and isinstance(receipt,dict):
+                # Answer shape / engine fit (answer_shape.py): reshape when unambiguous (one-row table -> its column, the
+                # any_source row, one row per patient -> patient set, stated rounding); a route whose output does not hold
+                # the quantity in the requested shape is declined and the question re-planned once through verified SQL.
+                from .answer_shape import review as fit_review
+                graph,receipt,result,fit_calls,replaced=fit_review(self,question,graph,receipt,result,ledger=ledger,profile=profile)
+                calls+=fit_calls
+                if replaced and pending is not None:pending.cancel();pending=None  # the started cross-check checked the declined rung
+                lap('fit_s')
+            if planning=='auto' and isinstance(receipt,dict):
                 # Confidently-wrong guard (answer_guard.py): a zero/empty/implausible answer probes the full received catalog and
                 # re-plans once or abstains naming the unused source; an uncertified path is cross-checked by one independent path.
                 from .answer_guard import review as guard_review
@@ -205,6 +214,8 @@ class Stack:
             if planning=='auto':  # guard confidence after the answer contract: abstention / disagreement low, agreement cross-checked
                 from .answer_guard import finish as guard_finish
                 result=guard_finish(result,receipt)
+                from .answer_shape import final as fit_final  # the shipped answer: requested shape and stated rounding
+                result=fit_final(question,graph,receipt,result)
             lap('finish_s');timings['total_s']=round(time.perf_counter()-t0,3)
             if isinstance(receipt,dict):receipt['timings']=timings
             return {**result,'question':question,'route':'economical_composition_local_execution' if planning=='auto' else 'frontier_composition_local_execution',

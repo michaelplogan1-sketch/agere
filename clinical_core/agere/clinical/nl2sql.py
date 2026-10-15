@@ -647,6 +647,8 @@ def _verified_answer(path, question, as_of, primary, second, judge, decider=None
              f'Rejections:\n{notes or "- none"}\n\nDecide what the question actually asks, then write the single correct query. '
              'You may reuse A or B if one is right.')
     final = attempt(judge, 'judge', brief)
+    if final == 'missing':  # the judge found the data does not exist: refuse, never read the reason as a query
+        raise MissingData('; '.join(a['missing'] for a in receipt['attempts'] if a.get('missing')), receipt=receipt)
     if final:
         receipt['agreement'] = 'judge' + ('=primary' if first and verify.signature(final[1]) == verify.signature(first[1]) else
                                           '=second' if other and verify.signature(final[1]) == verify.signature(other[1]) else '_own')
@@ -741,6 +743,7 @@ def _independent_ladder(question, receipt, attempt, check, primary, second, judg
              + f'Rejections:\n{notes or "- none"}\n\nDecide what the question actually asks, then write the single correct query. '
              'You may reuse one of the queries above if it is right.')
     final = attempt(judge, 'judge', brief)
+    if final == 'missing': missing()  # the judge found the data does not exist: refuse, never read the reason as a query
     if final:
         chosen = hosted(final, 'judge', 2)
         cands.append(chosen)
