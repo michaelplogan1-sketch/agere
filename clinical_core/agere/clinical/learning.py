@@ -25,6 +25,10 @@ def _db(path):
     db.executescript(SCHEMA)
     if 'context' not in [r[1] for r in db.execute('PRAGMA table_info(verified)')]:
         db.execute('ALTER TABLE verified ADD COLUMN context TEXT')
+    # provenance: JSON for pairs carried forward from an earlier release (verified_carry_forward.py); NULL when captured here
+    for table in ('verified', 'quarantined'):
+        if 'provenance' not in [r[1] for r in db.execute(f'PRAGMA table_info({table})')]:
+            db.execute(f'ALTER TABLE {table} ADD COLUMN provenance TEXT')
     return db
 
 
@@ -38,7 +42,8 @@ def context(path):
 def record_verified(path, question, plan_kind, plan, signature, route, models, agreement):
     db = _db(path)
     try:
-        db.execute('INSERT OR REPLACE INTO verified VALUES (?,?,?,?,?,?,?,?,?)',
+        db.execute('INSERT OR REPLACE INTO verified(question, plan_kind, plan, signature, route, models, agreement, created, context) '
+                   'VALUES (?,?,?,?,?,?,?,?,?)',
                    (question.strip(), plan_kind, json.dumps(plan, sort_keys=True), json.dumps(signature, default=str)[:4000],
                     route, json.dumps(models), agreement, time.time(), context(path)))
         db.commit()
@@ -117,7 +122,8 @@ def capture_verified(path, question, planner_receipt, answer):
     db = _db(path)
     try:
         if reasons:
-            db.execute('INSERT INTO quarantined VALUES (?,?,?,?,?,?,?,?,?)',
+            db.execute('INSERT INTO quarantined(question, plan_kind, plan, signature, route, agreement, controls, created, context) '
+                       'VALUES (?,?,?,?,?,?,?,?,?)',
                        (question.strip(), 'sql', json.dumps(cap['plan'], sort_keys=True), str(cap.get('signature'))[:4000], pr.get('route'),
                         cap.get('agreement'), json.dumps(reasons), time.time(), context(path)))
             db.commit()

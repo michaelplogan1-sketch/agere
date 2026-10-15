@@ -1,0 +1,6 @@
+{
+ "schema": "agere-unmapped-streams/1",
+ "purpose": "Received streams reviewed and declared unused by Agere (source coverage gate, clinical_core/agere/source_coverage.py). Each entry needs reason, reviewer and reviewed_on (YYYY-MM-DD). While enforce is false the gate is informational; set it true once every stream in state none is mapped, read by an engine or declared here.",
+ "enforce": false,
+ "streams": {}
+}
