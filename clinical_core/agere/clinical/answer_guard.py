@@ -37,6 +37,17 @@ metric router, operator router, hosted SQL, typed router, frontier, exact-questi
    background so its model calls land in the ledger cache for the next ask. An independent path that gives no answer is
    'unavailable', not a disagreement.
 
+5. Declines (`decline_claim`, `_review_decline`): a route that declines because data "is not received / never populated / not
+   observed" (local refusal, operator-router grounding failure, hosted MissingData) gets the same full-catalog probe; likely
+   sources -> one hosted re-plan with them exposed (an answer replaces the decline), none -> the decline ships with the
+   catalog check stated. Requests for user input (contract terms) are left alone.
+6. Zero vs. the data it filtered (`zero_contradictions`): a zero whose SQL filtered a value the stream holds, read through
+   current_record (latest version only) of a status-history stream or spelled differently, re-plans naming the stored value.
+The probe also matches acronyms the catalog holds (Social Vulnerability Index -> svi_*), drug classes through member drug
+names, a stream the question names outright, the stream name with values of two fields of one record, and bookkeeping
+fields by meaning (corrections -> supersedes_record_id, date precision -> event_date_precision); the raw-catalog slice adds
+inbound record links, small coded vocabularies and cross-feed bookkeeping lines.
+
 Every extra call is recorded as a planner step (economical_planner.economics prices it) and in receipt['answer_guard'].
 Synthetic data only. AGERE_ANSWER_GUARD=off disables 1-3.
 """
@@ -60,6 +71,7 @@ _ISO = re.compile(r'\b(\d{4}-\d{2}-\d{2})\b')
 
 def _stem(t):
     if len(t) > 3 and t.endswith('s') and not t.endswith('ss'): t = t[:-1]
+    if len(t) >= 7 and t.endswith('ly'): t = t[:-2]  # 'exactly' -> 'exact', 'monthly' -> 'month' ('family' stays)
     for suf in ('ation', 'ion', 'ing', 'ed', 'al'):
         if t.endswith(suf) and len(t) - len(suf) >= 4:
             t = t[:-len(suf)]; break
@@ -79,6 +91,25 @@ def terms(text):
         out.append(w if re.search(r'\d', w) else _stem(w))
     out += sorted(_code_forms(text))
     return list(dict.fromkeys(out))
+
+
+_TITLE_RUN = re.compile(r"\b[A-Z][a-z]+(?:\s+(?:of\s+|and\s+)?[A-Z][a-z]+){1,3}\b")
+
+
+def acronyms(text, lower_phrase=False):
+    """{acronym: [stemmed component terms]} for multi-word names a source may abbreviate: 'Social Vulnerability Index' ->
+    {'svi': ['soci', 'vulnera', 'index']}. Title-case runs of 2-4 words (every contiguous sub-run), or, with lower_phrase,
+    the whole text as one phrase. Only acronyms of 3+ letters; the caller keeps those the catalog actually holds."""
+    out = {}
+    runs = [str(text or '')] if lower_phrase else [m.group(0) for m in _TITLE_RUN.finditer(str(text or ''))]
+    for run in runs:
+        words = [w for w in re.findall(r'[A-Za-z]+', run) if w.lower() not in ('of', 'and', 'the')]
+        for i in range(len(words)):
+            for j in range(i + 2, min(len(words), i + 4) + 1):
+                part = words[i:j]
+                acr = ''.join(w[0] for w in part).lower()
+                if len(acr) >= 3: out.setdefault(acr, [t for t in terms(' '.join(part)) if t != acr])
+    return out
 
 
 def period_of(question):
@@ -157,6 +188,34 @@ ZERO_KINDS = {'zero', 'empty'}
 _SKIP_FIELDS = {'synthetic', 'source_table', 'identity_link_basis', 'identity_status', 'event_date_precision', 'source_patient_id',
                 'patient_id', 'source_system', 'organization_id'}
 _INDEX = {}
+# Bookkeeping fields every feed may carry, and the words a question uses for what they mean. They are skipped as plain
+# fields (they name no subject), but a question about corrections or date precision is ABOUT them.
+FIELD_ALIASES = {
+    'supersedes_record_id': 'correction corrected replacement replaced amendment amended revision revised supersedes superseded',
+    'event_date_precision': 'date precision imprecise approximate partial date',
+}
+FIELD_MEANING = {
+    'supersedes_record_id': 'set on a correction: the id of the earlier record of the same stream it replaces',
+    'event_date_precision': 'how precise event_date is (minute | day | month | year | unknown)',
+}
+_DRUG_FIELD = re.compile(r'(?:^|_)(?:drug|medication|med|name|product|ingredient|rx|generic|brand)(?:_|$)')
+
+
+def drug_class_terms(value):
+    """Question words that name the drug class of a medication string ('Semaglutide' -> glp1, glp, agonist): a question says
+    'GLP-1' or 'statin', a claim row says 'semaglutide' / 'Ozempic'. Ingredient and brand tables in drug_classes."""
+    try:
+        from .drug_classes import classify
+        classes = classify(value)
+    except Exception:  # noqa: BLE001 - an aid to retrieval only
+        return []
+    out = []
+    for c in classes:
+        for t in terms(c.replace('_', ' ')):
+            out.append(t)
+            m = re.fullmatch(r'([a-z]{2,})\d+', t)
+            if m: out.append(m.group(1))  # 'glp1' also answers to 'glp' ('GLP-1' tokenises as glp + code glp1)
+    return list(dict.fromkeys(out))
 
 
 class _Index:
@@ -166,12 +225,20 @@ class _Index:
         for s, spec in self.streams.items():
             for t in terms(s): self.inv[t].append((s, 'name', None, None, spec.get('records') or 0))
             for f, fs in (spec.get('fields') or {}).items():
+                if fs.get('populated') and f in FIELD_ALIASES:
+                    for t in terms(FIELD_ALIASES[f]): self.inv[t].append((s, 'alias', f, None, fs['populated']))
                 if not fs.get('populated') or f in _SKIP_FIELDS or f.endswith(('_id', '_ids')): continue
                 for t in terms(f): self.inv[t].append((s, 'field', f, None, fs['populated']))
+                drug = bool(_DRUG_FIELD.search(f))
                 for src in ('values', 'element_values'):
                     for v, n in (fs.get(src) or {}).items():
                         if not isinstance(v, str) or not v or len(v) > 80: continue
-                        for t in terms(v): self.inv[t].append((s, 'value' if src == 'values' else 'element', f, v, n))
+                        kind = 'value' if src == 'values' else 'element'
+                        vt = terms(v)
+                        for t in vt: self.inv[t].append((s, kind, f, v, n))
+                        if drug:
+                            for t in drug_class_terms(v):
+                                if t not in vt: self.inv[t].append((s, kind, f, v, n))
         self.df = {t: len({e[0] for e in lst}) for t, lst in self.inv.items()}
 
 
@@ -331,19 +398,31 @@ def probe(question, profile, *, path=None, k=3, encoder=None, used=(), dense='au
     idx = _index(profile)
     n = max(len(idx.streams), 1)
     qterms = terms(question)
+    # Multi-word names a source abbreviates ('Social Vulnerability Index' -> svi_* fields): an acronym the catalog holds
+    # stands for its words, so a stream matching it is credited with them.
+    acr = {a: parts for a, parts in acronyms(question).items() if a in idx.df and a not in qterms and parts}
+    qterms = qterms + [a for a in acr if a not in qterms]
     known = [t for t in qterms if t in idx.df]
     idf = {t: math.log(1 + n / idx.df[t]) for t in known}
-    total = sum(idf.values())
+    for parts in acr.values():
+        for t in parts: idf.setdefault(t, math.log(1 + n / idx.df[t]) if t in idx.df else math.log(1 + n))
+    weighted = [t for t in idf if t not in acr]
+    total = sum(idf[t] for t in weighted)
     codes = _code_forms(question)
     per = defaultdict(lambda: {'terms': {}, 'evidence': {}})
     for t in known:
+        credit = [t] if t not in acr else acr[t]
         for s, kind, f, v, cnt in idx.inv[t]:
             e = per[s]
-            e['terms'][t] = max(e['terms'].get(t, 0), {'name': 1.0, 'value': 1.0, 'element': 1.0, 'field': 0.6}[kind])
+            for c in credit:
+                e['terms'][c] = max(e['terms'].get(c, 0), {'name': 1.0, 'value': 1.0, 'element': 1.0, 'alias': 1.0, 'field': 0.6}[kind])
             if kind != 'name':
                 ev = e['evidence'].setdefault((f, v), {'field': f, 'value': v, 'kind': kind, 'records': cnt, 'terms': set()})
-                ev['terms'].add(t)
+                ev['terms'].update(credit)
+            else:
+                e.setdefault('name_hits', set()).update(credit)
     distinct_cut = max(3, n * 0.03)
+    df = lambda t: idx.df.get(t, 1)
     cands = []
     for s, e in per.items():
         matched = e['terms']
@@ -352,21 +431,35 @@ def probe(question, profile, *, path=None, k=3, encoder=None, used=(), dense='au
         evidence = sorted(e['evidence'].values(), key=lambda x: (-(x['value'] is not None), -sum(idf[t] for t in x['terms']), -x['records']))
         for ev in evidence:  # a single value naming several of the question's terms is strong evidence
             if ev['value'] is not None and len(ev['terms']) >= 2: score += 0.5 * sum(idf[t] for t in ev['terms'])
-        code_hit = bool(codes & set(matched))
+        # a named code counts when a field / stream name carries it or a stored value repeats; one free-text mention
+        # ('PHQ-9 12, sleep poor' once in a chief complaint) is not a source for the code
+        code_terms = codes & set(matched)
+        code_hit = bool(code_terms) and (bool(code_terms & e.get('name_hits', set())) or any(
+            code_terms & ev['terms'] and (ev['value'] is None or ev['records'] >= 3) for ev in evidence))
         exact = [ev for ev in evidence if ev['value'] is not None and re.sub(r'[^a-z0-9]', '', ev['value'].lower()) in codes]
         if exact: score += 2.0 + 0.5 * math.log10(1 + max(ev['records'] for ev in exact))  # a stored value that IS the named code
         best_value = max((ev['records'] for ev in (exact or [ev for ev in evidence if ev['value'] is not None])), default=0)
         score += 0.2 * math.log10(1 + best_value)  # among equal matches, the source holding more of it
-        distinctive = [t for t in matched if idx.df[t] <= distinct_cut and matched[t] >= 1.0]
-        # one item (the stream's name, or one stored value) must carry most of the question: terms scattered over unrelated
-        # values ('hip_fracture', 'joint_replacement') are not a source for 'hip replacement'
-        name_terms = {t for t in matched if t in set(terms(s))}
-        items = [name_terms] + [set(ev['terms']) | name_terms for ev in evidence if ev['value'] is not None]
-        item_cov = max((sum(idf[t] for t in it) / total for it in items if it), default=0.0) if total else 0.0
+        distinctive = [t for t in matched if df(t) <= distinct_cut and matched[t] >= 1.0]
+        # one item must carry most of the question: the stream's name, one stored value or field, or the name with values of
+        # two different fields of the same record ('appointments' + status 'rescheduled' + reason 'transportation'). Terms
+        # scattered over unrelated values of ONE field ('hip_fracture', 'joint_replacement') are not a source for 'hip replacement'.
+        stream_terms = set(terms(s))
+        name_terms = {t for t in matched if t in stream_terms or t in e.get('name_hits', set())}
+        name_match = len(stream_terms) >= 2 and stream_terms <= set(qterms)  # the question names the stream outright
+        if name_match: score += 0.5 * sum(idf.get(t, 0) for t in stream_terms)
+        items = [name_terms] + [set(ev['terms']) | name_terms for ev in evidence]
+        top_ev = sorted(evidence, key=lambda x: -sum(idf[t] for t in x['terms']))[:12]
+        for i, a in enumerate(top_ev):
+            for b in top_ev[i + 1:]:
+                if a['field'] != b['field'] and (a['value'] is not None or b['value'] is not None or name_terms):
+                    items.append(set(a['terms']) | set(b['terms']) | name_terms)
+        item_cov = max((sum(idf[t] for t in it if t in weighted) / total for it in items if it), default=0.0) if total else 0.0
+        likely = code_hit or name_match or (item_cov >= 0.6 and bool(distinctive))
         cands.append({'stream': s, 'score': round(score + (3.0 if code_hit else 0.0), 4), 'coverage': round(coverage, 3),
-                      'matched_terms': sorted(matched), 'code_match': code_hit, 'records': (idx.streams[s] or {}).get('records'),
+                      'matched_terms': sorted(matched), 'code_match': code_hit, 'name_match': name_match, 'records': (idx.streams[s] or {}).get('records'),
                       'evidence': [{**{k: v for k, v in ev.items() if k != 'terms'}, 'terms': sorted(ev['terms'])} for ev in evidence[:4]],
-                      'codes': _code_fields(idx.streams[s]), 'item_coverage': round(item_cov, 3), 'likely': code_hit or (item_cov >= 0.6 and bool(distinctive)), 'used': s in set(used)})
+                      'codes': _code_fields(idx.streams[s]), 'item_coverage': round(item_cov, 3), 'likely': likely, 'used': s in set(used)})
     cands.sort(key=lambda c: (-c['score'], c['stream']))
     top = cands[:15]
     dense = dense_encoder() if dense == 'auto' else dense
@@ -445,9 +538,164 @@ def describe_source(c):
         bits = [f"{ev['field']} {ev['value']!r}" for ev in vals[:2]] + [f"{f} " + '/'.join(repr(v) for v in vs) for f, vs in (c.get('codes') or {}).items()
                                                               if not any(ev['field'] == f for ev in vals[:2])][:2]
         n = vals[0].get('period_records') if vals[0].get('period_records') is not None else vals[0].get('records')
-        return f"{c['stream']} has {n} records{when} with " + ' / '.join(bits)
+        return f"{c['stream']} has {n} records{when} with " + ' / '.join(bits) + (c.get('contradiction_note') or '')
     n = c.get('period_records') if c.get('period_records') is not None else c.get('records')
     return f"{c['stream']} has {n} records{when} matching {', '.join(c.get('matched_terms') or [])}"
+
+
+# ---------------------------------------------------------------------------------------------------- zero vs. the data it filtered
+_LITERAL = re.compile(r"'((?:[^']|'')*)'")
+
+
+def _norm_value(v): return re.sub(r'[\s_\-]+', '', str(v).strip().lower())
+
+
+def zero_contradictions(answer, profile, used, period=None, path=None):
+    """A zero / empty answer whose own SQL filters a stream it read on a value the catalog holds, in a way that cannot see it:
+      - 'version': the SQL reads current_record (latest version per business id) of a versioned stream, and the value sits
+        on that stream's records - status-history feeds (appointments: booked -> rescheduled -> fulfilled) carry a reason or
+        status on an EARLIER version, so the latest-version view drops it;
+      - 'spelling': the literal differs from a stored value only by case / spaces / underscores ('Transportation' vs
+        'transportation').
+    -> probe-style candidates (likely, used) naming the stream, field, stored value and its record count. Deterministic, local."""
+    sql = str((answer or {}).get('query') or '')
+    if not sql or not profile: return []
+    code = re.sub(r'--[^\n]*', '', sql)
+    literals = {m.replace("''", "'") for m in _LITERAL.findall(code)}
+    streams = profile.get('streams') or {}
+    literals -= set(streams)
+    if not literals: return []
+    from .semantic_layer import VERSIONED_STREAMS
+    latest_view = bool(re.search(r'\bcurrent_record\b', code, re.I))
+    out = []
+    for s in sorted(used):
+        spec = streams.get(s) or {}
+        for f, fs in (spec.get('fields') or {}).items():
+            vals = fs.get('values') or {}
+            if not vals or f"$.{f}'" not in code.replace('"', "'"): continue
+            for lit in literals:
+                kind, stored = None, None
+                if lit in vals and latest_view and s in VERSIONED_STREAMS:
+                    kind, stored = 'version', lit
+                elif lit not in vals:
+                    stored = next((v for v in vals if isinstance(v, str) and _norm_value(v) == _norm_value(lit)), None)
+                    kind = 'spelling' if stored is not None else None
+                if not kind: continue
+                ev = {'field': f, 'value': stored, 'kind': 'value', 'records': vals[stored], 'terms': []}
+                c = {'stream': s, 'score': 99.0, 'coverage': 1.0, 'matched_terms': [], 'code_match': False, 'records': spec.get('records'),
+                     'evidence': [ev], 'codes': {}, 'item_coverage': 1.0, 'likely': True, 'used': True, 'contradiction': kind}
+                if kind == 'version':
+                    c['contradiction_note'] = (f" on its record versions, but current_record keeps only the latest version per "
+                                               f"{VERSIONED_STREAMS[s]} and drops values carried by earlier versions (read record WHERE stream = "
+                                               f"'{s}' over all versions)")
+                else:
+                    c['contradiction_note'] = f" (the query filtered on {lit!r}, a spelling no record uses)"
+                if path is not None and period:
+                    try:
+                        db = _connect_ro(path)
+                        try: _period_counts(db, c, period)
+                        finally: db.close()
+                    except (OSError, ValueError, KeyError, sqlite3.Error):
+                        pass
+                    if ev.get('period_records') == 0: continue
+                out.append(c)
+    return out
+
+
+# ---------------------------------------------------------------------------------------------------- declines
+# A route that declines because the data "is not received / never populated / not observed" must have looked everywhere:
+# the modeled layer and a route's own bindings are a fast path, never the boundary of what was received.
+_ABSENT = re.compile(r"not received|never populated|not observed|no received|none (?:is|are) received|not in the (?:received )?data|"
+                     r"not disclosed|is not received|are not received|does not exist|no received records|none received|not available in",
+                     re.I)
+_ABSENT_ISSUES = {'stream_unavailable', 'field_unavailable', 'concept_not_observed', 'value_not_observed', 'evidence_not_observed'}
+
+
+def catalog_holds(phrase, profile):
+    """[(stream, field|None)] whose NAME carries the phrase - every content word as a whole name token (plural-insensitive),
+    or its acronym ('social vulnerability index' -> svi_overall_percentile, 'deaths' -> death_records). A refusal that says
+    such data "is not received" is wrong for this release. Names only (stream and populated field names), never free-text
+    values, and whole tokens only: 'interpreter' is not 'interpreting_clinician_id'."""
+    if not profile or not phrase: return []
+    idx = _index(profile)
+    sing = lambda w: w[:-1] if len(w) > 3 and w.endswith('s') and not w.endswith('ss') else w
+    words = {sing(w) for w in re.findall(r'[a-z0-9]+', phrase.lower()) if len(w) > 2 and w not in _STOP}
+    short = phrase.strip().lower()
+    acr = set(acronyms(phrase, lower_phrase=True)) | ({short} if re.fullmatch(r'[a-z]{3,6}', short) else set())
+    tokens = lambda name: {sing(t) for t in name.lower().split('_') if t}
+    hits = set()
+    for s, spec in idx.streams.items():
+        if words and words <= tokens(s): hits.add((s, None))
+        for f, fs in (spec.get('fields') or {}).items():
+            if not fs.get('populated') or f in _SKIP_FIELDS: continue
+            ft = tokens(f)
+            if (words and words <= ft) or (acr & ft): hits.add((s, f))
+    return sorted(hits, key=lambda x: (x[0], x[1] or ''))
+
+
+def decline_claim(answer, receipt=None):
+    """The data-absence claim of a declined answer ('Patient coverage is never populated.'), or None (an answer, a decline
+    for another reason, or a request for user input such as contract terms)."""
+    if not isinstance(answer, dict) or answer.get('status') not in ('unsupported', 'grounding_failed'): return None
+    if 'requires_input' in str((receipt or {}).get('route') or ''): return None
+    issues = [g for g in answer.get('grounding') or [] if isinstance(g, dict) and g.get('severity') == 'error']
+    texts = [str(m) for m in answer.get('missing') or []] + [str(g.get('detail') or '') for g in issues]
+    hit = next((t for t in texts if _ABSENT.search(t)), None)
+    if hit is None and any(g.get('issue') in _ABSENT_ISSUES for g in issues): hit = next((t for t in texts if t), 'data not observed')
+    return hit
+
+
+def _review_decline(stack, question, graph, receipt, result, claim, *, ledger, profile, hosted, encoder, guard, live, calls0):
+    """Full-catalog probe for a declined answer. Likely sources -> one hosted re-plan with them exposed (an answer replaces
+    the decline); none -> the decline stands with the catalog check stated (QC-CATALOG)."""
+    from .answer_checks import _add
+    p = probe(question, profile, path=stack.path, encoder=encoder)
+    likely = [c for c in p['candidates'] if c['likely']]
+    guard['triggers'] = [{'kind': 'declined', 'message': f'the answer declined: {claim}'[:300]}]
+    guard['probe'] = {k: p[k] for k in ('terms', 'unmatched_terms', 'period', 'streams_searched')} | {
+        'candidates': [{k: c.get(k) for k in ('stream', 'score', 'likely', 'matched_terms', 'period_records')} for c in p['candidates']]}
+    what = ', '.join(p['terms'][:6]) or 'the question terms'
+    if not likely:
+        result = {**result, 'answer': dict(result['answer'])}
+        _add(result['answer'], 'QC-CATALOG', 'FM-09', f"Catalog check: searched all {p['streams_searched']} received streams (names, fields, "
+             f"values and codes) for {what}; none holds what the question asks for, so the decline stands.", 'info',
+             streams_searched=p['streams_searched'])
+        guard['decision'] = 'decline_confirmed_by_catalog'
+        return graph, receipt, result
+    names = [c['stream'] for c in likely[:3]]
+    found_text = '; '.join(describe_source(c) for c in likely[:3])
+    guard['reason'] = f'{found_text} (an earlier route declined: {claim})'[:600]
+    if live and os.environ.get('AGERE_GUARD_REPLAN', 'on') != 'off':
+        note = (f'\n\nNOTE: an earlier route declined with "{claim[:300]}". A full-catalog check found received data that may answer '
+                f'this: {found_text}. Answer from these sources (raw streams via record WHERE stream = ...; json_extract on payload).')
+        try:
+            g2, r2, res2 = hosted(stack, question, ledger, extra_streams=tuple(names), feedback=note, stage='answer_guard_decline_replan')
+            usd = r2.pop('_cost', None)
+            if usd is None: usd = sum((s.get('receipt') or {}).get('cost_estimate', {}).get('estimated_usd') or 0 for s in r2.get('steps') or [])
+            ans2 = res2.get('answer') if isinstance(res2, dict) else None
+            guard['replan'] = {'route': r2.get('route'), 'answer': _summary(ans2), 'cost_usd': round(usd, 6),
+                               'paid_calls': r2.get('new_paid_api_calls', 0), 'streams_forced': names}
+            if _asserted(ans2) and not suspicion(question, ans2):
+                r2['steps'] = list(receipt.get('steps') or []) + list(r2.get('steps') or [])
+                r2['new_paid_api_calls'] = calls0 + (r2.get('new_paid_api_calls') or 0)
+                r2['replaced_route'] = {'route': receipt.get('route'), 'answer': _summary(result['answer']), 'declined': claim[:300]}
+                r2['local_compiler_declined'] = receipt.get('local_compiler_declined')
+                guard['decision'] = 'replanned_after_decline'
+                guard['original'] = _summary(result['answer'])
+                res2 = {**res2, 'answer': dict(ans2)}
+                _add(res2['answer'], 'QC-CATALOG', 'FM-09', f"Catalog check: an earlier route declined ({claim[:200]}); the full catalog holds "
+                     f"{found_text}, and this answer reads it.", 'info', sources=names)
+                return g2, r2, res2
+            _add_step(receipt, 'answer_guard_decline_replan', usd, r2.get('new_paid_api_calls', 0))
+        except (ValueError, RuntimeError, OSError, sqlite3.Error) as exc:
+            usd, n = getattr(exc, 'guard_cost', 0.0), getattr(exc, 'guard_calls', 0)
+            guard['replan'] = {'error': str(exc)[:300], 'cost_usd': round(usd or 0.0, 6), 'paid_calls': n, 'streams_forced': names}
+            _add_step(receipt, 'answer_guard_decline_replan', usd, n, error=str(exc)[:200])
+    guard['decision'] = 'decline_contradicted_by_catalog'
+    result = {**result, 'answer': dict(result['answer'])}
+    _add(result['answer'], 'QC-CATALOG', 'FM-09', f"Catalog check: the decline says {claim[:200]!r}, but the full catalog holds {found_text}; "
+         + ('a re-plan reading it gave no answer.' if live else 'hosted answering is off, so it was not re-read.'), 'warning', sources=names)
+    return graph, receipt, result
 
 
 # ---------------------------------------------------------------------------------------------------- raw-catalog slice
@@ -455,6 +703,53 @@ RAW_SLICE_BYTES = 1800
 
 
 DENSE_SLICE_RANK = 2  # a stream the dense stage ranks in its top 2 is shown to the writer even without lexical evidence
+
+
+def bookkeeping_lines(question, profile):
+    """Cross-feed facts for a question about a bookkeeping meaning (corrections, date precision): every stream that populates
+    the field, with counts - such a question spans feeds, so one stream's slice line is not enough."""
+    idx = _index(profile)
+    qt = set(terms(question))
+    out = []
+    for f, words in FIELD_ALIASES.items():
+        if not qt & set(terms(words)): continue
+        carried = sorted(((s, (spec.get('fields') or {}).get(f, {}).get('populated') or 0) for s, spec in idx.streams.items()), key=lambda x: -x[1])
+        carried = [(s, n) for s, n in carried if n]
+        if not carried: continue
+        vals = (profile['streams'][carried[0][0]]['fields'][f].get('values') or {}) if f == 'event_date_precision' else {}
+        out.append(f"- across feeds: {f} ({FIELD_MEANING[f]}) is populated on {len(carried)} streams: "
+                   + ', '.join(f'{s} ({n})' for s, n in carried[:12]) + (' ...' if len(carried) > 12 else '')
+                   + ('; count non-null per stream (record table, json_extract(payload,\'$.' + f + '\'))'))
+    return out
+
+
+_INBOUND = {}
+
+
+def inbound_links(path, profile, stream, sample=300):
+    """'behavioral_followup_reports.plan_record_id': streams whose records point AT this stream's records (read from the
+    semantic layer's link table on a sample of the stream's record ids; indexed on target_record_id). [] without a store."""
+    if path is None: return []
+    key = (str(path), profile.get('source_digest'), stream)
+    if key in _INBOUND: return _INBOUND[key]
+    out = []
+    try:
+        db = _connect_ro(path)
+        try:
+            ids = [r[0] for r in db.execute('SELECT record_id FROM record WHERE stream = ? LIMIT ?', (stream, sample))]
+            if ids:
+                marks = ','.join('?' * len(ids))
+                out = [f'{s}.{f}' for s, f in db.execute(f'SELECT DISTINCT stream, field FROM link WHERE target_record_id IN ({marks}) '
+                                                         'AND stream <> ? AND field <> \'supersedes_record_id\' ORDER BY 1, 2 LIMIT 6',
+                                                         (*ids, stream))]
+        finally:
+            db.close()
+    except (OSError, ValueError, KeyError, sqlite3.Error):
+        out = []
+    if isinstance(profile.get('source_digest'), str):
+        if len(_INBOUND) > 2048: _INBOUND.clear()
+        _INBOUND[key] = out
+    return out
 
 
 def raw_catalog_slice(question, profile, path=None, shown=(), k=4, budget=RAW_SLICE_BYTES, encoder=None, dense='auto'):
@@ -468,10 +763,17 @@ def raw_catalog_slice(question, profile, path=None, shown=(), k=4, budget=RAW_SL
         found = probe(question, profile, path=None, k=k + len(shown), encoder=encoder, dense=dense)
     except Exception as exc:  # noqa: BLE001 - retrieval is an aid, never a blocker
         return '', {'error': f'{type(exc).__name__}: {exc}'[:200]}
-    picks = [c for c in found['candidates'] if c['stream'] not in set(shown) and c['stream'] in profile['streams']
-             and (c['likely'] or c['item_coverage'] >= 0.5 or (c.get('dense_rank') or 10 ** 6) <= DENSE_SLICE_RANK)][:k]
+    picks, alias_pick = [], False
+    for c in found['candidates']:
+        if c['stream'] in set(shown) or c['stream'] not in profile['streams']: continue
+        if c['likely'] or c['item_coverage'] >= 0.5 or (c.get('dense_rank') or 10 ** 6) <= DENSE_SLICE_RANK:
+            picks.append(c)
+        elif not alias_pick and any(ev.get('kind') == 'alias' for ev in c['evidence']):
+            picks.append(c); alias_pick = True  # the best-ranked stream whose bookkeeping field the question is about
+    picks = picks[:k]
     extra = {'dense': found['dense']} if found.get('dense') else {}
-    if not picks: return '', {'streams': [], 'version': VERSION, 'seconds': round(time.perf_counter() - t0, 3), **extra}
+    across = bookkeeping_lines(question, profile)
+    if not picks and not across: return '', {'streams': [], 'version': VERSION, 'seconds': round(time.perf_counter() - t0, 3), **extra}
     head = ('\n\nRECEIVED STREAMS MATCHING THE QUESTION (raw records, full catalog; query them as record WHERE stream = \'<stream>\' '
             "with json_extract(payload,'$.<field>'); values are exact spellings)")
     lines, used = [], []
@@ -482,14 +784,34 @@ def raw_catalog_slice(question, profile, path=None, shown=(), k=4, budget=RAW_SL
                          for ev in [e for e in c['evidence'] if e.get('value') is not None][:2])
         fields = [f for f, fs in sorted(spec['fields'].items()) if fs.get('populated') and f not in _SKIP_FIELDS
                   and not f.endswith(('_time', '_record_id', '_record_ids'))][:20]
+        # meaning the bare field list hides: bookkeeping fields the question is about (corrections, date precision), the
+        # record-to-record links a follow-through question needs, and the vocabulary of small coded fields
+        aliased = [ev['field'] for ev in c['evidence'] if ev.get('kind') == 'alias']
+        meaning = [f"{f} ({FIELD_MEANING.get(f, 'see field name')})" for f in dict.fromkeys(aliased)]
+        links = [f for f, fs in sorted(spec['fields'].items()) if fs.get('populated') and f.endswith(('_record_id', '_record_ids'))
+                 and f != 'supersedes_record_id'][:6]
+        shown_vals = {ev['field'] for ev in c['evidence'] if ev.get('value') is not None}
+        vocab = []
+        for f, fs in sorted(spec['fields'].items(), key=lambda kv: -(kv[1].get('populated') or 0)):
+            v = fs.get('values') or {}
+            if f in _SKIP_FIELDS or f in shown_vals or not (2 <= len(v) <= 8) or any(len(str(x)) > 32 for x in v): continue
+            vocab.append(f"{f}: {'|'.join(str(x) for x in sorted(v, key=lambda x: -v[x]))}")
+            if len(vocab) >= 3: break
         line = (f"- {c['stream']} ({spec.get('records')} records"
                 + (f", {c['period_records']} in {found['period'][0][:4]}" if c.get('period_records') is not None and found['period'] else '')
-                + f"): {vals + '; ' if vals else ''}fields: {', '.join(fields)}")
+                + f"): {vals + '; ' if vals else ''}fields: {', '.join(fields)}"
+                + (f"; {'; '.join(meaning)}" if meaning else '')
+                + (f"; links (record_id of another record): {', '.join(links)}" if links else '')
+                + (f"; linked from: {', '.join(inbound)}" if (inbound := inbound_links(path, profile, c['stream'])) else '')
+                + (f"; values: {'; '.join(vocab)}" if vocab else ''))
         if len(head) + sum(map(len, lines)) + len(line) + 1 > budget:
             line = line[:max(0, budget - len(head) - sum(map(len, lines)) - 4)].rstrip(', ') + '...'
             if len(line) < 40: break
         lines.append(line); used.append(c['stream'])
-    return head + '\n' + '\n'.join(lines), {'streams': used, 'version': VERSION, 'period': found['period'],
+    for line in across:
+        if len(head) + sum(map(len, lines)) + len(line) + 1 > budget + 400: break  # cross-feed facts get a small reserve
+        lines.append(line)
+    return head + '\n' + '\n'.join(lines), {'streams': used, 'bookkeeping': [l[:60] for l in across], 'version': VERSION, 'period': found['period'],
                                              'seconds': round(time.perf_counter() - t0, 3), **extra}
 
 
@@ -647,12 +969,20 @@ def review(stack, question, graph, receipt, result, *, ledger=None, frontier=Non
     guard = {'version': VERSION, 'route': receipt.get('route')}
     live = bool(getattr(stack, 'allow_live', False)) and ledger is not None
     found = suspicion(question, result['answer']) if enabled() else []
-    if found and profile is not None:
+    claim = decline_claim(result['answer'], receipt) if enabled() and not found else None
+    if claim and profile is not None:
+        graph, receipt, result = _review_decline(stack, question, graph, receipt, result, claim, ledger=ledger, profile=profile,
+                                                 hosted=hosted, encoder=encoder, guard=guard, live=live, calls0=calls0)
+    elif found and profile is not None:
         guard['triggers'] = found
         kinds = {f['kind'] for f in found}
         p = probe(question, profile, path=stack.path, encoder=encoder)
         used = used_sources(graph, result['answer'], profile['streams'])
         for c in p['candidates']: c['used'] = c['stream'] in used
+        contra = zero_contradictions(result['answer'], profile, used, p['period'], stack.path) if kinds <= ZERO_KINDS else []
+        if contra:
+            guard['contradictions'] = [{k: c.get(k) for k in ('stream', 'contradiction', 'evidence')} for c in contra]
+            p['candidates'] = contra + [c for c in p['candidates'] if c['stream'] not in {x['stream'] for x in contra}]
         likely = [c for c in p['candidates'] if c['likely']]
         guard['probe'] = {k: p[k] for k in ('terms', 'unmatched_terms', 'period', 'streams_searched')} | {
             'candidates': [{k: c.get(k) for k in ('stream', 'score', 'coverage', 'likely', 'used', 'matched_terms', 'period_records',
@@ -670,7 +1000,7 @@ def review(stack, question, graph, receipt, result, *, ledger=None, frontier=Non
         elif kinds == {'money_small'} and not likely:
             guard['decision'] = 'no_catalog_evidence'
         else:
-            targets = [c for c in likely if not c['used']] or likely
+            targets = contra or [c for c in likely if not c['used']] or likely
             names = [c['stream'] for c in targets[:3]]
             reason = (('; '.join(describe_source(c) for c in targets[:2]) + " that this answer didn't read") if targets and not targets[0]['used']
                       else ('; '.join(describe_source(c) for c in targets[:2]) + ', yet the answer is ' + found[0]['message'][len('the answer is '):])
@@ -698,7 +1028,8 @@ def review(stack, question, graph, receipt, result, *, ledger=None, frontier=Non
                 g2, r2, res2, usd = replanned
                 still = suspicion(question, res2.get('answer'))
                 read = used_sources(g2, res2.get('answer'), profile['streams'])
-                confirms_zero = still and {f['kind'] for f in still} <= ZERO_KINDS and zero_only and any(c in read for c in names)
+                confirms_zero = still and {f['kind'] for f in still} <= ZERO_KINDS and zero_only and any(c in read for c in names) \
+                    and not (contra and zero_contradictions(res2.get('answer'), profile, read))
                 if not still or confirms_zero:
                     # the re-planned answer replaces the original; the original route and its spend stay in the receipt
                     prior = {k: v for k, v in receipt.items() if k not in ('steps',)}

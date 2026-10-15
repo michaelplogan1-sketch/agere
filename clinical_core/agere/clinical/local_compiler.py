@@ -299,7 +299,21 @@ def _received_for(missing, profile):
     if head.startswith('race/ethnicity'): return _race_received(profile)
     if head.startswith('preferred language'): return _language_received(profile)
     if head.startswith('CPT/HCPCS'): return _cpt_received(profile)
+    if head.startswith('death or mortality'):  # 'died' / 'mortality' name no field; the death feed is named for death
+        from .answer_guard import catalog_holds
+        return bool(catalog_holds('death', profile))
     return False
+
+
+def _catalog_received(phrase, missing, profile):
+    """A data-absence refusal ('... (not received)') whose subject a received stream or field is NAMED for (full-catalog
+    check, answer_guard.catalog_holds): the modeled layer is a fast path, never the boundary of what was received."""
+    from .answer_guard import _ABSENT, catalog_holds
+    if not any(_ABSENT.search(m) for m in missing): return False
+    try:
+        return bool(catalog_holds(phrase, profile))
+    except Exception:  # noqa: BLE001 - the check only ever lifts a refusal
+        return False
 
 
 def _refusal_text(missing, profile):
@@ -320,7 +334,10 @@ def _refusal(q, low, profile, timed, terms, info):
     for pattern, missing in UNSUPPORTED:
         if timed and 'surviv' in pattern: continue
         if missing[0] == SETTLEMENT_RULE and terms: continue  # settlement is computable once terms are supplied
-        if _received_for(missing, profile) or not re.search(pattern, low): continue
+        if _received_for(missing, profile): continue
+        hit = re.search(pattern, low)
+        if not hit: continue
+        if _catalog_received(hit.group(0), missing, profile): continue  # the release does receive it: other routes answer
         if (missing[0] in (SETTLEMENT_RULE, CAUSAL_RULE) and _explanation_only(low)) or _research_only(low):
             # "how does the quality score scale our sharing rate?", "effect of the regional adjustment cap on our benchmark":
             # program mechanics asked as an explanation, answered from the cited knowledge base, never as a number
