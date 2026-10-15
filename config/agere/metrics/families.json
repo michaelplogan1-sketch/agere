@@ -692,11 +692,11 @@
   },
   {
    "id": "pharmacy_returns_to_stock",
-   "version": 1,
+   "version": 2,
    "name": "Prepared fills returned to stock",
    "status": "internal",
-   "internal_reason": "Literal received-record event with a fixed filter; the definition is the stream and filter stated here.",
-   "summary": "Prepared pharmacy fills never picked up and returned to stock (pharmacy_dispenses status returned_to_stock), distinct fills, dated by the return.",
+   "internal_reason": "Returned fills from both pharmacy sources, resolved in the semantic table returned_fill; the definition is the table and key stated here.",
+   "summary": "Prescriptions prepared at the pharmacy but never picked up (returned to stock), from every source (returned_fill): pharmacy_dispenses status returned_to_stock (one per fill_id) and payer pharmacy claim return-to-stock reversals (one per rx_claim_id); distinct fills, dated by the return.",
    "grain": {
     "entity": "account",
     "key": "record_id"
@@ -708,10 +708,10 @@
     "summary": "None (count) unless the slots ask for a rate."
    },
    "numerator": {
-    "summary": "Prepared pharmacy fills never picked up and returned to stock (pharmacy_dispenses status returned_to_stock), distinct fills, dated by the return."
+    "summary": "Prescriptions prepared at the pharmacy but never picked up (returned to stock), from every source (returned_fill): pharmacy_dispenses status returned_to_stock (one per fill_id) and payer pharmacy claim return-to-stock reversals (one per rx_claim_id); distinct fills, dated by the return."
    },
    "time_anchor": {
-    "field": "pharmacy_dispenses.event_date",
+    "field": "returned_fill.event_date",
     "mode": "period",
     "default": "all"
    },
@@ -730,16 +730,17 @@
    "sql_template": null,
    "builder": "record_event",
    "event": {
-    "stream": "pharmacy_dispenses",
-    "where": "json_extract(r.payload, '$.status') = 'returned_to_stock'",
+    "table": "returned_fill",
+    "where": null,
     "measures": {
-     "fills": "count(DISTINCT json_extract(r.payload, '$.fill_id'))"
+     "fills": "count(DISTINCT r.source || '|' || r.fill_key)"
     },
     "returns": {
      "fills": "count"
     },
     "group_by": {
-     "return_reason": "json_extract(r.payload, '$.return_reason')"
+     "return_reason": "r.reason",
+     "source": "r.source"
     },
     "date": "r.event_date",
     "default_measure": "fills"
@@ -760,7 +761,8 @@
      "type": "enum",
      "values": [
       "none",
-      "return_reason"
+      "return_reason",
+      "source"
      ],
      "default": "none"
     }
@@ -844,11 +846,11 @@
   },
   {
    "id": "pharmacy_claim_net_paid",
-   "version": 1,
+   "version": 2,
    "name": "Net pharmacy payer payments",
    "status": "internal",
-   "internal_reason": "Literal received-record event with a fixed filter; the definition is the stream and filter stated here.",
-   "summary": "Net payer payments on pharmacy claims: payer_paid_delta_cents over every pharmacy claim transaction dated in the period (paid positive, reversals negative, rejections zero), dollars.",
+   "internal_reason": "Pharmacy claim transactions from both sources (our pharmacy's claim transactions and the payer pharmacy feed), resolved in the semantic table pharmacy_claim_event; the definition is the table and filter stated here.",
+   "summary": "Net payer payments on pharmacy claims from every source (pharmacy_claim_event: our pharmacy's claim transactions plus payer pharmacy claims; payer copies of our dispensed fills carry no plan payment): payer_paid_delta_cents over every transaction dated in the period (paid positive, reversals and recoupments negative, rejections zero), dollars. Rejections count distinct claims by NCPDP reject reason (79 = REFILL_TOO_SOON).",
    "grain": {
     "entity": "account",
     "key": "record_id"
@@ -860,10 +862,10 @@
     "summary": "None (count) unless the slots ask for a rate."
    },
    "numerator": {
-    "summary": "Net payer payments on pharmacy claims: payer_paid_delta_cents over every pharmacy claim transaction dated in the period (paid positive, reversals negative, rejections zero), dollars."
+    "summary": "Net payer payments on pharmacy claims from every source (pharmacy_claim_event: our pharmacy's claim transactions plus payer pharmacy claims; payer copies of our dispensed fills carry no plan payment): payer_paid_delta_cents over every transaction dated in the period (paid positive, reversals and recoupments negative, rejections zero), dollars. Rejections count distinct claims by NCPDP reject reason (79 = REFILL_TOO_SOON)."
    },
    "time_anchor": {
-    "field": "pharmacy_claim_transactions.event_date",
+    "field": "pharmacy_claim_event.event_date",
     "mode": "period",
     "default": "all"
    },
@@ -882,18 +884,24 @@
    "sql_template": null,
    "builder": "record_event",
    "event": {
-    "stream": "pharmacy_claim_transactions",
+    "table": "pharmacy_claim_event",
     "where": null,
     "measures": {
-     "net_payer_paid_usd": "sum(json_extract(r.payload, '$.payer_paid_delta_cents')) / 100.0",
-     "transactions": "count(*)"
+     "net_payer_paid_usd": "sum(r.payer_paid_delta_cents) / 100.0",
+     "transactions": "count(*)",
+     "rejected_claims": "count(DISTINCT CASE WHEN r.status = 'rejected' THEN r.source || '|' || r.claim_id END)",
+     "refill_too_soon_rejections": "count(DISTINCT CASE WHEN r.status = 'rejected' AND r.reject_reason = 'REFILL_TOO_SOON' THEN r.source || '|' || r.claim_id END)"
     },
     "returns": {
      "net_payer_paid_usd": "value",
-     "transactions": "count"
+     "transactions": "count",
+     "rejected_claims": "count",
+     "refill_too_soon_rejections": "count"
     },
     "group_by": {
-     "payer": "json_extract(r.payload, '$.source_system')"
+     "payer": "r.payer",
+     "source": "r.source",
+     "reject_reason": "r.reject_reason"
     },
     "date": "r.event_date",
     "default_measure": "net_payer_paid_usd"
@@ -907,15 +915,20 @@
      "type": "enum",
      "values": [
       "net_payer_paid_usd",
-      "transactions"
+      "transactions",
+      "rejected_claims",
+      "refill_too_soon_rejections"
      ],
-     "default": "net_payer_paid_usd"
+     "default": "net_payer_paid_usd",
+     "description": "net_payer_paid_usd = net plan payments; transactions = rows; rejected_claims = distinct rejected claims; refill_too_soon_rejections = distinct claims rejected refill too soon (NCPDP 79)."
     },
     "group_by": {
      "type": "enum",
      "values": [
       "none",
-      "payer"
+      "payer",
+      "source",
+      "reject_reason"
      ],
      "default": "none"
     }
