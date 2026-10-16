@@ -342,7 +342,9 @@ def decide(stack, question, fast, fast_error, analyst, analyst_state, *, as_of=N
     Raises fast_error when the fast path failed and the analyst has no answer."""
     a_answer = _contract((analyst or {}).get('answer')) if analyst_state == 'done' and not (analyst or {}).get('error') else None
     together = {'version': VERSION, 'analyst_state': 'failed' if analyst_state == 'done' and a_answer is None else analyst_state,
-                'budget_s': budget_s(), 'reconcile_budget_s': reconcile_budget_s()}
+                'budget_s': budget_s(), 'reconcile_budget_s': reconcile_budget_s(),
+                # Both component answers, so one run can be scored as fast path alone, analyst alone and together.
+                'fast_answer': (fast or {}).get('answer') if fast_error is None else None, 'analyst_answer': a_answer}
     rec = None
     if fast_error is not None:
         if a_answer is None:
@@ -394,7 +396,13 @@ def decide(stack, question, fast, fast_error, analyst, analyst_state, *, as_of=N
         _note(out, 'Verified: the semantic analyst independently gives the same answer.')
         together.update(decision='agree', winner='both', reason='same canonical answer')
         return {**fast, 'answer': out}, together, rec
-    rec = _reconcile(stack, question, as_of, fast, analyst, semantic_path)
+    if os.environ.get('AGERE_DISAGREE_POLICY', 'reconcile').strip().lower() == 'analyst':
+        # Build log step 6: on the dev set the analyst alone beat the Opus reconcile (14 vs 13 of 22) at a tenth of the
+        # cost, so this policy ships the analyst's answer on disagreement without a reconcile call.
+        rec = {'picked': 'analyst', 'answer': a_answer, 'reason': 'disagreement policy: the semantic analyst answers',
+               'reconcile_cost_usd': 0.0}
+    else:
+        rec = _reconcile(stack, question, as_of, fast, analyst, semantic_path)
     picked = rec.get('picked')
     together['reconcile_choice'] = picked
     if picked == 'fast':

@@ -115,8 +115,14 @@ def run_one(q, args):
                 canonical.close()
     except Exception as exc:
         row = {'answer': None, 'error': f'{type(exc).__name__}: {exc}'}
+    together = (row.get('response') or {}).get('together') if isinstance(row.get('response'), dict) else None
     row.pop('response', None)
-    return {'id': q['id'], 'domain': q['domain'], 'system': args.system, 'model': args.model if args.system != 'agere' else None,
+    extra = {}
+    if together:
+        extra = {'together': {k: together.get(k) for k in ('decision', 'winner', 'reason', 'analyst_state')},
+                 'contract_fast': contract(q, together.get('fast_answer')),
+                 'contract_analyst': contract(q, together.get('analyst_answer'))}
+    return {**extra, 'id': q['id'], 'domain': q['domain'], 'system': args.system, 'model': args.model if args.system != 'agere' else None,
             'mode': args.mode, 'latency_s': time.perf_counter() - start,
             'estimated_cost_usd': row.get('estimated_cost_usd'), 'error': row.get('error'),
             'answer': row.get('answer'), 'contract': contract(q, row.get('answer')), 'tool_calls': row.get('tool_calls')}
@@ -142,6 +148,7 @@ def main(argv=None):
     p.add_argument('--jobs', type=int, default=3)
     p.add_argument('--ids', nargs='+')
     p.add_argument('--label', default='')
+    p.add_argument('--budget-usd', type=float, default=0, help='Stop starting new questions once this much has been spent')
     p.add_argument('--rescore', type=Path, help='Re-derive the contract from a saved run directory and re-score (no model calls)')
     args = p.parse_args(argv)
     if args.rescore:
@@ -167,8 +174,22 @@ def main(argv=None):
                                 args.mode, args.label, stamp] if x)
     out = ROOT / 'results/truth' / args.release / name
     out.mkdir(parents=True, exist_ok=True)
+    spent = [0.0]
+    lock = __import__('threading').Lock()
+
+    def guarded(q):
+        with lock:
+            if args.budget_usd and spent[0] >= args.budget_usd:
+                return {'id': q['id'], 'domain': q['domain'], 'system': args.system, 'mode': args.mode, 'latency_s': 0.0,
+                        'estimated_cost_usd': 0.0, 'error': 'skipped: budget reached', 'answer': None,
+                        'contract': contract(q, None)}
+        r = run_one(q, args)
+        with lock:
+            spent[0] += r.get('estimated_cost_usd') or 0
+        return r
+
     with ThreadPoolExecutor(args.jobs) as pool:
-        rows = list(pool.map(lambda q: run_one(q, args), questions))
+        rows = list(pool.map(guarded, questions))
     with open(out / 'rows.jsonl', 'w') as f:
         for r in rows:
             f.write(json.dumps(r, default=str) + '\n')
@@ -181,6 +202,15 @@ def main(argv=None):
     (out / 'score.txt').write_text(result.stdout + result.stderr)
     per = score(args.release, out / 'question_answers.jsonl', per_question=True)
     (out / 'per_question.txt').write_text(per.stdout + per.stderr)
+    for part in ('fast', 'analyst'):
+        if any(f'contract_{part}' in r for r in rows):
+            with open(out / f'question_answers_{part}.jsonl', 'w') as f:
+                for r in rows:
+                    f.write(json.dumps(r.get(f'contract_{part}') or contract({'id': r['id'], 'answer_type': r['contract']['answer_type']}, None), default=str) + '\n')
+            res = score(args.release, out / f'question_answers_{part}.jsonl')
+            (out / f'score_{part}.txt').write_text(res.stdout + res.stderr)
+            res = score(args.release, out / f'question_answers_{part}.jsonl', per_question=True)
+            (out / f'per_question_{part}.txt').write_text(res.stdout + res.stderr)
     print(out)
     print(f'n={len(rows)} cost=${cost:.2f} (${cost / max(len(rows), 1):.4f}/q) latency median {lat[len(lat) // 2]:.1f}s '
           f'p90 {lat[int(len(lat) * .9)]:.1f}s errors={sum(1 for r in rows if r["error"])}')

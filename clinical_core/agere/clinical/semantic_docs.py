@@ -211,6 +211,49 @@ def _examples_section(examples):
     return '\n'.join(out)
 
 
+# Canonical analytic conventions (docs/agere/CANONICAL_MODEL.md; build log step 7). Standard healthcare-data rules the
+# analyst applies unless the question states its own definition, which always wins.
+CONVENTIONS = """## Canonical conventions (apply unless the question defines otherwise; the question's own definition wins)
+- Scope: plain questions mean every patient in the warehouse (deep-chart panel + population), duplicate charts counted
+  once as their person.
+- Payer medical claims (payer_claim, payer_claim_line, claim_adjudication): a claim's status is its LAST adjudication
+  (final_status; order adjudications by sequence, not arrival). A frequency-7 replacement supersedes the original; a
+  frequency-8 void ends it; reversals and recoupments carry negative paid amounts. Use rows with counts_in_metrics = 1.
+  - Paid dollars in a period: sum paid amounts by paid date, reversals/recoupments netting out.
+  - Initial denial rate: FIRST adjudication of original claims (first_status). Denials "dated" in a year: the denial
+    adjudication's date. An upheld appeal repeats the CARC and is not a second denial; count distinct claims.
+  - Days to payment: final paid adjudication's paid_date minus service_from.
+  - Adjudication HISTORY lives in payer_adjudication: every received adjudication version, superseded ones included
+    (sequence, claim_status, carc, adjudication_date, paid_date, signed paid_cents, is_first, is_last, superseded).
+    payer_claim, claim and record hold only the CURRENT state, so a denial later reworked and paid is visible only in
+    payer_adjudication. Use it for denials or CARCs dated in a period, initial denials (is_first) and overturned denials.
+  - Facility settings come from claim lines: revenue 045x = ED, 0762 or HCPCS G0378/G0379 = observation; TOB 011x =
+    inpatient, 013x = hospital outpatient; POS 23 ED, 21 inpatient, 22 outpatient, 11 office, 02/10 telehealth.
+- Visits: one real visit = one person + setting + calendar date across EHR (visit), ADT (adt_visit) and claims; stays span
+  admission..discharge (stay). An ED visit that leads to admission still counts as an ED visit.
+- Pharmacy fills: a fill counts only when picked up (medication.picked_up = 1, payer_pharmacy_claim.counts_as_fill = 1):
+  paid and not later reversed/recouped, or dispensed and not returned to stock (returned_fill). Class from NDC/RxNorm
+  (medication.drug_class), falling back to the ingredient name. Filter classes by drug_class / therapeutic_category,
+  never by drug-name substrings ('%statin%' also matches nystatin).
+  - New user of a class: a fill with no fill of that class in the prior 180 days AND at least 180 days of data before it.
+  - Restart/gap: days between the end of one fill's supply (fill_date + days_supply - 1) and the next fill of the class.
+  - Switch: class A's last fill followed within 90 days by class B's first-ever fill in the same therapeutic group, no
+    later A. Add-on: a new class's first fill within 90 days of an existing class fill.
+  - PDC: >= 2 fills of the class in the year; covered days from the first fill to period end, overlaps de-duplicated.
+- Conditions (condition, payer_claim_diagnosis, encounter_diagnosis, problem_list_entry): default = any documentation
+  (paid or denied claim, problem list, encounter diagnosis, ADT diagnosis); name another rule if the question asks.
+- Labs and vitals: corrected results replace originals; latest value = latest specimen date (measurement_latest; use the
+  question's tie-break, else the highest); censored strings keep their comparator (value_censor).
+- Corrections and restated records: record_correction has every received record that a later record supersedes, across
+  all streams (stream, superseded_by, link_field = supersedes_record_id or, for lab corrections, replaces_result_record_id, dates). record holds current versions only; current_record.versions counts
+  versions per business id.
+"""
+
+
+def _conventions_section():
+    return CONVENTIONS
+
+
 def build_context(columns, streams, drug_classes, snapshot, examples):
     """The documentation block of the system prompt (stable across questions for one build)."""
     stream_list = ', '.join(f'{s} ({n})' for s, n in streams)
@@ -221,6 +264,7 @@ def build_context(columns, streams, drug_classes, snapshot, examples):
         '## record.stream values (received records per stream in this snapshot)\n' + stream_list,
         _concepts_section(concept_library(), drug_classes),
         _definitions_section(),
+        _conventions_section(),
         _metrics_section(),
         _measures_section(),
         _examples_section(examples),
