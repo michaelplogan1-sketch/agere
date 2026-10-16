@@ -11,7 +11,7 @@ from pathlib import Path
 import re
 import threading
 
-from bench.adapters import CONTRACT, MODEL, SEMANTIC_SQL_TOOL, _tool_loop, post_json
+from bench.adapters import CONTRACT, MODEL, SEMANTIC_SQL_TOOL, _tool_loop, budget_prompt, post_json
 from bench.common import ROOT
 
 TUVA_DB = ROOT.parent / 'artifacts/test-warehouse/tuva.duckdb'
@@ -45,11 +45,13 @@ _CONTEXT = {}
 class TuvaWarehouse:
     """Read-only DuckDB over the Tuva warehouse plus the raw landing zone; SELECT/WITH only, time-limited, capped."""
 
-    def __init__(self, path=TUVA_DB, raw=RAW_DB, timeout_s=180):
+    def __init__(self, path=TUVA_DB, raw=RAW_DB, timeout_s=180, manifest=MANIFEST):
         import duckdb
         self.duckdb = duckdb
+        self.path, self.raw, self.manifest = Path(path), (Path(raw) if raw else None), Path(manifest)
         self.db = duckdb.connect(str(path), read_only=True)
-        self.db.execute(f"ATTACH '{raw}' AS raw (TYPE sqlite, READ_ONLY)")
+        if raw:  # a native warehouse may already carry its raw schema; attach the SQLite landing zone only when given
+            self.db.execute("ATTACH '" + str(raw).replace("'", "''") + "' AS raw (TYPE sqlite, READ_ONLY)")
         self.db.execute('SET enable_external_access = false')
         self.db.execute('SET lock_configuration = true')
         self.timeout_s = timeout_s
@@ -95,10 +97,12 @@ class TuvaWarehouse:
 
 def tuva_context(warehouse):
     """Documentation text, built once per warehouse file: Tuva's manifest descriptions + live table list + raw streams."""
-    key = (str(TUVA_DB), TUVA_DB.stat().st_mtime)
+    path = Path(getattr(warehouse, 'path', TUVA_DB))
+    manifest_path = Path(getattr(warehouse, 'manifest', MANIFEST))
+    key = (str(path), path.stat().st_mtime, str(manifest_path))
     if key in _CONTEXT:
         return _CONTEXT[key]
-    manifest = json.loads(MANIFEST.read_text())
+    manifest = json.loads(manifest_path.read_text())
     live = {(s, t) for s, t in warehouse.db.execute(
         "SELECT schema_name, table_name FROM duckdb_tables() UNION SELECT schema_name, view_name FROM duckdb_views() "
         "WHERE NOT internal").fetchall()}
@@ -141,9 +145,10 @@ def tuva_context(warehouse):
     return text
 
 
-def frontier_tuva(question, warehouse, *, key=None, model=MODEL, max_tools=8, transport=post_json):
+def frontier_tuva(question, warehouse, *, key=None, model=MODEL, max_tools=8, transport=post_json, max_tokens=8192,
+                  deadline=None):
     docs = tuva_context(warehouse)
-    system = [{'type': 'text', 'text': TUVA_RULES + CONTRACT},
+    system = [{'type': 'text', 'text': budget_prompt(TUVA_RULES, max_tools, 8) + CONTRACT},
               {'type': 'text', 'text': docs, 'cache_control': {'type': 'ephemeral'}}]
     user = json.dumps({'question': question['question'], 'as_of': question['as_of']})
 
@@ -153,6 +158,7 @@ def frontier_tuva(question, warehouse, *, key=None, model=MODEL, max_tools=8, tr
         return warehouse.query(use['input']['sql'])
 
     result = _tool_loop(user, system, [TUVA_SQL_TOOL], execute, key=key, model=model, max_tools=max_tools,
-                        transport=transport, extra={'cache_control': {'type': 'ephemeral'}})
+                        transport=transport, extra={'cache_control': {'type': 'ephemeral'}}, max_tokens=max_tokens,
+                        deadline=deadline)
     result.update(context_chars=len(docs), tool_call_count=len(result['tool_calls']))
     return result

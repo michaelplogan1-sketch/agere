@@ -211,19 +211,22 @@ def new_result(model):
             'error': None, 'cost_scope': 'returned_provider_usage'}
 
 
-def tool_loop(user, system, tools, execute, *, send, model, max_tools, extra=None):
+def tool_loop(user, system, tools, execute, *, send, model, max_tools, extra=None, max_tokens=8192, deadline=None):
     """Bounded tool-use loop: every executed call (failed ones included) counts toward max_tools; all returned usage is
     recorded, including cache writes/reads; there are no automatic paid retries.
 
     send(body) -> (response, cost_usd or None, cache_hit). A cache hit (the product ledger replaying a validated identical
-    request) costs nothing and is not a new paid call."""
+    request) costs nothing and is not a new paid call. deadline (time.monotonic() value) bounds wall clock: no provider
+    call or SQL call starts after it (the sender bounds the call itself)."""
     result = new_result(model)
     messages = [{'role': 'user', 'content': user}]
     calls = 0
     try:
         for _ in range(max_tools + 1):
-            body = {'model': model, 'max_tokens': 8192, 'system': system, 'messages': messages,
+            body = {'model': model, 'max_tokens': max_tokens, 'system': system, 'messages': messages,
                     'tools': tools, 'tool_choice': {'type': 'none' if calls >= max_tools else 'auto'}, **(extra or {})}
+            if deadline is not None and deadline - time.monotonic() <= 0:
+                raise TimeoutError('Wall-clock limit reached')
             try:
                 response, cost, cache_hit = send(body)
             except Exception:
@@ -264,6 +267,8 @@ def tool_loop(user, system, tools, execute, *, send, model, max_tools, extra=Non
                 if calls >= max_tools:
                     output = {'error': 'SQL tool budget exhausted. Return the answer or explicit unsupported prerequisites.'}
                     failure = True
+                elif deadline is not None and time.monotonic() >= deadline:
+                    raise TimeoutError('Wall-clock limit reached')
                 else:
                     calls += 1
                     try:
