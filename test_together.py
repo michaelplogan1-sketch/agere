@@ -133,7 +133,10 @@ class TogetherTests(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
         self.env = patch.dict(os.environ, {'ANTHROPIC_API_KEY': 'fake-test-key', 'AGERE_TOGETHER': 'on',
-                                           'AGERE_TOGETHER_BUDGET_S': '20', 'AGERE_RECONCILE_BUDGET_S': '20'})
+                                           'AGERE_TOGETHER_BUDGET_S': '20', 'AGERE_RECONCILE_BUDGET_S': '20',
+                                           # these tests cover the reconcile path; the shipped default (analyst) is
+                                           # tested in DefaultPolicyTests
+                                           'AGERE_DISAGREE_POLICY': 'reconcile'})
         self.env.start()
         for k in ('AGERE_SEMANTIC_MODEL', 'AGERE_RECONCILE_MODEL'):
             os.environ.pop(k, None)
@@ -427,3 +430,27 @@ class ExampleProvenanceTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+class DefaultPolicyTests(unittest.TestCase):
+    """The shipped defaults (build log steps 6 and 10)."""
+
+    def test_default_disagreement_policy_is_analyst_without_a_reconcile_call(self):
+        with patch.dict(os.environ, {}, clear=False):
+            os.environ.pop('AGERE_DISAGREE_POLICY', None)
+            fast = {'answer': {'status': 'answered', 'answer_type': 'count', 'count': 5, 'unknown_count': 0, 'missing': [],
+                               'grounding': []}, 'planner_receipt': {'steps': []}}
+            analyst = {'answer': {'status': 'answered', 'answer_type': 'count', 'count': 7, 'unknown_count': 0,
+                                  'missing': [], 'grounding': []}, 'tool_calls': []}
+            with patch.object(together, '_reconcile', side_effect=AssertionError('no reconcile call by default')):
+                result, receipt, rec = together.decide(None, 'q', fast, None, analyst, 'done')
+            self.assertEqual(result['answer']['count'], 7)
+            self.assertEqual(receipt['winner'], 'analyst')
+
+    def test_unchecked_zero_is_withheld(self):
+        os.environ.pop('AGERE_UNCHECKED_ZERO', None)
+        fast = {'answer': {'status': 'answered', 'answer_type': 'count', 'count': 0, 'unknown_count': 0, 'missing': [],
+                           'grounding': []}, 'planner_receipt': {'steps': []}}
+        result, receipt, _ = together.decide(None, 'q', fast, None, {'error': 'timeout'}, 'timed_out')
+        self.assertEqual(result['answer']['status'], 'partial')
+        self.assertEqual(receipt['decision'], 'unchecked_zero')

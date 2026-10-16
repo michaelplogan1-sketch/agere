@@ -1109,7 +1109,7 @@ def certification(receipt, encoder=None):
 
 
 def cross_check_enabled():
-    return os.environ.get('AGERE_CROSS_CHECK', 'on') != 'off'
+    return os.environ.get('AGERE_CROSS_CHECK', 'off') == 'on'  # default off since build log step 1x: ~$0.14/q for +1 of 22
 
 
 def as_result(answer):

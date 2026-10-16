@@ -297,7 +297,8 @@ def _account(result, analyst, analyst_state, rec):
         # Still running in the background: its calls land in the ledger (and its cache) but are not known here.
         steps.append({'stage': 'together_semantic_analyst', 'receipt': {}, 'cost_unknown': True,
                       'note': 'analyst still running at the deadline'})
-    if rec is not None:
+    if rec is not None and (rec.get('receipts') or rec.get('timed_out') or (rec.get('result') or {}).get('new_paid_api_calls')):
+        # (the analyst disagreement policy makes no reconcile call, so it adds no step)
         r = rec.get('result') or {}
         step = {'stage': 'together_reconcile', 'receipt': {'stages': list(rec.get('receipts') or [])}}
         if rec.get('timed_out') or r.get('estimated_cost_usd') is None:
@@ -421,11 +422,12 @@ def decide(stack, question, fast, fast_error, analyst, analyst_state, *, as_of=N
         _note(out, 'Verified: the semantic analyst independently gives the same answer.')
         together.update(decision='agree', winner='both', reason='same canonical answer')
         return {**fast, 'answer': out}, together, rec
-    if os.environ.get('AGERE_DISAGREE_POLICY', 'reconcile').strip().lower() == 'analyst':
+    if os.environ.get('AGERE_DISAGREE_POLICY', 'analyst').strip().lower() == 'analyst':
         # Build log step 6: on the dev set the analyst alone beat the Opus reconcile (14 vs 13 of 22) at a tenth of the
         # cost, so this policy ships the analyst's answer on disagreement without a reconcile call.
         rec = {'picked': 'analyst', 'answer': a_answer, 'reason': 'disagreement policy: the semantic analyst answers',
-               'reconcile_cost_usd': 0.0}
+               'reconcile_cost_usd': 0.0, 'receipts': [],
+               'result': {'model': None, 'estimated_cost_usd': 0.0, 'new_paid_api_calls': 0, 'tool_calls': []}}
     else:
         rec = _reconcile(stack, question, as_of, fast, analyst, semantic_path)
     picked = rec.get('picked')

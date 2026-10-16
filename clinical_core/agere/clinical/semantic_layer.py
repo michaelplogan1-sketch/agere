@@ -918,6 +918,14 @@ def build(path):
         _coverage_and_fills(out, meta['snapshot']['as_of'])  # after feeds: enrollment spans, fill reversals
         from . import population_events
         feeds['population_events'] = population_events.build(out)  # last: payer evidence folded into the entity tables
+        # Build log steps 8, 9, 11: adjudication history (every version, with CARC), record corrections across streams and
+        # canonical picked-up fills. History needs the build's received warehouse, which keeps superseded versions.
+        from . import adjudication_history, fill_events
+        warehouse = path.parent / 'warehouse.sqlite3'
+        if warehouse.exists():
+            feeds['adjudication_history'] = adjudication_history.build(out, warehouse)
+            feeds['record_correction'] = adjudication_history.build_corrections(out, warehouse)
+        feeds['fill_events'] = fill_events.build(out)
         out.executemany('INSERT INTO meta VALUES (?,?)', [('version', VERSION), ('source_digest', meta['source_digest']),
                                                           ('as_of', meta['snapshot']['as_of']),
                                                           ('standards', json.dumps(_standards_summary(out))),
