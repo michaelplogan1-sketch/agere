@@ -235,6 +235,11 @@ CONVENTIONS = """## Canonical conventions (apply unless the question defines oth
   paid and not later reversed/recouped, or dispensed and not returned to stock (returned_fill). Class from NDC/RxNorm
   (medication.drug_class), falling back to the ingredient name. Filter classes by drug_class / therapeutic_category,
   never by drug-name substrings ('%statin%' also matches nystatin).
+  - The fill table has one row per picked-up fill (payer claim and dispense of the same fill merged; sources says which)
+    with class_key (drug_class, else ingredient), days_supply, supply_end, class_fill_seq, days_since_prev_class_fill,
+    gap_after_prev_supply (days between the previous supply's end and this fill), days_of_data_before (pharmacy data
+    starts 2026-09-01), new_user_180 and last_class_fill. Prefer it for adherence, gaps, restarts, new users and
+    switches; filter sources when a question names one feed.
   - New user of a class: a fill with no fill of that class in the prior 180 days AND at least 180 days of data before it.
   - Restart/gap: days between the end of one fill's supply (fill_date + days_supply - 1) and the next fill of the class.
   - Switch: class A's last fill followed within 90 days by class B's first-ever fill in the same therapeutic group, no

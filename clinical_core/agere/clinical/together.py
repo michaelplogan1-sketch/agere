@@ -337,6 +337,20 @@ def _reconcile(stack, question, as_of, fast, analyst, semantic_path):
             'receipts': []}
 
 
+def _empty_answer(a):
+    """A zero count/value or an empty patient set/table, answered as final."""
+    if not isinstance(a, dict) or a.get('status') != 'answered':
+        return False
+    t = a.get('answer_type')
+    if t in ('count', 'value'):
+        return a.get(t) == 0
+    if t == 'patient_set':
+        return not a.get('patient_ids')
+    if t == 'table':
+        return not a.get('table')
+    return False
+
+
 def decide(stack, question, fast, fast_error, analyst, analyst_state, *, as_of=None, semantic_path=None):
     """Combine the fast result and the analyst result. -> (result, together receipt, reconcile dict or None).
     Raises fast_error when the fast path failed and the analyst has no answer."""
@@ -367,6 +381,17 @@ def decide(stack, question, fast, fast_error, analyst, analyst_state, *, as_of=N
                       together['analyst_state'], 'analyst returned no valid answer')
         if f_answer is None:
             reason = 'fast result has no answer object'
+        elif _empty_answer(f_answer) and os.environ.get('AGERE_UNCHECKED_ZERO', 'abstain') == 'abstain':
+            # Build log step 10: a zero/empty result the analyst could not check would otherwise ship as a confident 0
+            # (dev RX-10). Zero is the answer a missed source produces, so it is withheld unless confirmed.
+            out = dict(f_answer)
+            out['status'] = 'partial'
+            _confidence(out, 'low', 'Unchecked zero: the independent analyst produced no answer to confirm it',
+                        evidence='unchecked_zero')
+            _note(out, 'Withheld as final: the fast path found nothing and the semantic analyst could not confirm it ('
+                  + str(reason) + ').', 'warning')
+            together.update(decision='unchecked_zero', winner='none', reason=str(reason)[:300])
+            return {**fast, 'answer': out}, together, rec
         together.update(decision='fast_unchanged', winner='fast', reason=str(reason)[:300])
         return fast, together, rec
     out = dict(f_answer)

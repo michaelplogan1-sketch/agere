@@ -24,6 +24,8 @@ hurts, write down why and decide what to add next.
 | 7 | + canonical conventions in the analyst's docs | 12 | 21 | 11/21 | 0.02 | 38 | neutral (noise); kept, it is general |
 | 8 | + payer adjudication history table (every version, with CARC) | 15 | 21 | 14/21 | 0.02 | 34 | keep: REV-12 fixed, best so far |
 | 9 | + record_correction table (all streams, with link_field) | 15 | 21 | 14/21 | 0.03 | 50 | keep (general data-quality table; DQ-10 still missed) |
+| 10 | + unchecked-zero guard (an analyst-unconfirmed 0/empty is withheld) | 15 | 21 | 14/21 | 0.02 | 34 | keep as a safety rule; didn't fire on dev |
+| 11 | + canonical fill table (picked-up fills, class windows, new-user flags) | 15 | 21 | 14/21 | 0.02 | 31 | keep (general); neutral, the analyst didn't use it |
 | 1x | step 1 + answer-guard cross-check (Sonnet + Opus judge, on by default) | 4 | 6 | 2/6 | 3.19 | 90 | too costly for +1; revisit last |
 
 ## Step 0: deterministic core only
@@ -148,3 +150,38 @@ hurts, write down why and decide what to add next.
   5. A visit/encounter grouper table (design notes §1) for hospital-ops questions.
   6. Make the in-place passes (adjudication history, corrections) part of the semantic-layer build, so a rebuild
      keeps them.
+
+## Held-out check (step-9 settings), 2026-10-16
+- **Sample:** 10 held-out questions, one per domain, never used while iterating (seed 20261017; tmp/holdout10_ids.txt):
+  ACC-10, BH-10, CLN-06, DQ-08, HOS-01, QUA-04, REV-09, RWE-10, RX-13, VBC-02.
+- **Result:** 7/10 correct, 9 answered, 7/9 right (78%). In line with the dev set (15/22, 14/21), so the gains generalize.
+- **Same 10, earlier baselines (saved runs, same keys):** Haiku + old semantic layer 2/10; Haiku + Tuva 1/10.
+- **Misses:** ACC-10 and VBC-02 (wrong answer), RX-13 (abstained).
+- **Cost:** under $0.01. A 125-question run was started first and stopped at Mike's request (use 10); its partial calls
+  were cached and reused here.
+
+## Step 10: unchecked-zero guard
+- **Change:** when the analyst produced no answer and the fast path's answer is 0 or empty, the answer is withheld
+  (partial, low confidence) instead of shipping a confident 0 (AGERE_UNCHECKED_ZERO=abstain).
+- **Result:** 15/22, unchanged. In this run the analyst answered RX-10 itself (wrongly), so the guard never fired. Kept
+  as a safety rule: a bare unchecked zero is the classic missed-source answer.
+
+## Step 11: canonical fill table (design notes §3)
+- **New:** clinical_core/agere/clinical/fill_events.py builds fill in place: 131,108 picked-up fills from 166,318
+  source rows (35,210 dispense + payer-claim duplicates merged); class_key; supply_end; class sequence; days since the
+  previous fill; gap after the previous supply; days of data before; new_user_180. Nystatin is no longer a statin.
+- **Result:** dev 15/22 and held-out 7/10, both unchanged.
+- **Why neutral:** on RX-10, RWE-02 and RWE-12 the analyst kept joining payer_pharmacy_claim to medication and ignored the
+  fill table, even with it documented. Statin new users in 2029 come out at 115 from the table and from the analyst's own
+  SQL, payer-only or all sources. So the RWE-02 miss is not fill handling. It is either a finer definitional point or a
+  key issue, and isn't chased (no tuning to one key).
+- **Lesson:** a new table helps only when it carries data the analyst can't otherwise reach (step 8). Re-packaging data
+  it can already compute doesn't change its answers.
+
+## Next candidates (re-ranked)
+1. Put the step-9/10 settings (cross-check off, analyst on disagreement, unchecked-zero guard) and the in-place passes
+   into the default build and the live :8885, so the product runs what was measured. That needs Mike's OK, because it
+   changes live defaults.
+2. Retry the analyst once when its reply fails to parse (seen on VBC-04): a cheap fix for a real failure.
+3. Drug-class vocabulary for all of healthcare (about 14k unclassified fills); needed for scope, not for current misses.
+4. Visit grouper table, only if a hospital-ops miss shows the analyst can't reach the data otherwise.
