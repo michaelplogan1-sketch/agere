@@ -33,12 +33,14 @@ REQUEST_MAX_BYTES=128000
 
 
 def send(body,provider,ledger,out,*,parse,allow_failed_response_revalidation=False,
-         revalidation_reason='bounded_probability_rounding/2', timeout=60, transport=None):
+         revalidation_reason='bounded_probability_rounding/2', timeout=60, transport=None, max_bytes=None):
+    # max_bytes: a caller with a larger, deliberately bounded request (the semantic analyst's ~141K-character documented
+    # semantic model plus its tool loop) raises the default REQUEST_MAX_BYTES bound explicitly.
     # Preset-routed providers (Perplexity Agent API) choose the model server-side: the ledger
     # records 'preset:<name>' and the returned model revision is kept, not pinned.
     expected=body.get('model');ledger_model=expected or 'preset:'+str(body.get('preset'))
     payload=json.dumps(body,allow_nan=False).encode()
-    if len(payload)>REQUEST_MAX_BYTES:raise ValueError('Request exceeds synthetic research bound')
+    if len(payload)>(REQUEST_MAX_BYTES if max_bytes is None else max_bytes):raise ValueError('Request exceeds synthetic research bound')
     key=digest({'contract':'context-student/1','provider':provider,'body':body})
     old=ledger.db.execute('SELECT status,response FROM calls WHERE id=?',(key,)).fetchone()
     if old and old[0]=='validated':return parse(json.loads(old[1])),{'cache_hit':True,'request_hash':key}

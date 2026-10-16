@@ -18,75 +18,27 @@ import sys
 
 if __package__ in (None, ''):
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from bench.adapters import CONTRACT, MODEL, SEMANTIC_RULES, SEMANTIC_SQL_TOOL, _tool_loop, semantic_context
+from bench import adapters
 from bench.common import DEFAULT_SEMANTIC_DB, ROOT, SemanticWarehouse
 from bench.score import recorded_cost, score_answer
+# The reconcile rules, comparison key, candidate view and turn are shared with the product's "together" path
+# (clinical_core/agere/clinical/semantic_analyst.py); the bench re-exports them so both send identical prompts.
+from clinical_core.agere.clinical import semantic_analyst as _analyst
+from clinical_core.agere.clinical.semantic_analyst import RECONCILE_RULES, candidate, canonical  # noqa: F401 - re-exports
 
-RECONCILE_RULES = '''You are reconciling two independent analysts who answered the same question over this semantic layer
-and disagree. Decide which answer follows the question's own stated definitions (scope, code sets, sources to combine,
-date windows, tie-breaking, rounding, units, requested answer type). When the question defines a term, its definition
-wins over any governed or default definition. Use query_sql (at most 4 calls) to check the decisive difference, not to
-redo everything. If both are wrong and you can establish the right answer with your checks, return it as "neither".
-If you cannot tell, abstain.
-Return ONLY JSON: {"choice":"1|2|neither|abstain","reason":"one or two sentences","answer":<answer object>}
-where answer is the chosen candidate's answer object copied exactly (choice 1 or 2), your corrected answer object
-(neither), or null (abstain). The answer object follows this contract:
-'''
-
-
-def canonical(answer):
-    if not isinstance(answer, dict) or answer.get('status') != 'answered':
-        return None
-    t = answer.get('answer_type')
-    if t == 'patient_set':
-        v = sorted(answer.get('patient_ids') or [])
-    elif t == 'table':
-        v = sorted(json.dumps({k: (round(x, 2) if isinstance(x, float) else x) for k, x in r.items()}, sort_keys=True)
-                   for r in (answer.get('table') or []))
-    elif t in ('count', 'value'):
-        v = answer.get(t)
-        v = round(v, 2) if isinstance(v, float) else v
-    else:
-        return None
-    return json.dumps([t, v], sort_keys=True, default=str)
-
-
-def candidate(row):
-    answer = row.get('answer')
-    out = {'answer': answer}
-    sql = [c.get('sql') for c in (row.get('tool_calls') or []) if c.get('sql')]
-    if sql:
-        out['sql_run'] = sql[-3:]
-    return out
+MODEL = adapters.MODEL
 
 
 def reconcile(question, a_row, b_row, semantic, *, seed=0, model=MODEL):
-    order = [('agere', a_row), ('llm', b_row)]
-    random.Random(f"{seed}:{question['id']}").shuffle(order)
-    docs, _ = semantic_context(semantic)
-    system = [{'type': 'text', 'text': SEMANTIC_RULES + RECONCILE_RULES + CONTRACT},
-              {'type': 'text', 'text': docs, 'cache_control': {'type': 'ephemeral'}}]
-    user = json.dumps({'question': question['question'], 'as_of': question['as_of'],
-                       'semantic_snapshot_as_of': semantic.as_of,
-                       'candidate_1': candidate(order[0][1]), 'candidate_2': candidate(order[1][1])}, default=str)
-
-    def execute(use):
-        if use.get('name') != 'query_sql' or set(use.get('input', {})) != {'sql'}:
-            raise ValueError('Only query_sql with one sql string is supported')
-        return semantic.query(use['input']['sql'], as_of=question['as_of'], max_rows=500, max_chars=30000)
-
-    result = _tool_loop(user, system, [SEMANTIC_SQL_TOOL], execute, key=None, model=model, max_tools=4,
-                        transport=__import__('bench.adapters', fromlist=['post_json']).post_json,
-                        extra={'cache_control': {'type': 'ephemeral'}})
-    verdict = result.get('answer') or {}
-    choice = str(verdict.get('choice'))
-    picked = {'1': order[0][0], '2': order[1][0]}.get(choice, choice)
-    final = {'agere': a_row.get('answer'), 'llm': b_row.get('answer')}.get(picked)
-    if picked == 'neither':
-        final = verdict.get('answer')
-    return {'picked': picked, 'reason': verdict.get('reason'), 'answer': final,
-            'reconcile_cost_usd': result.get('estimated_cost_usd'), 'reconcile_error': result.get('error'),
-            'reconcile_sql': [c.get('sql') for c in result.get('tool_calls') or []]}
+    try:
+        send = adapters._sender(None, model, adapters.post_json)
+    except Exception as exc:
+        return {'picked': 'None', 'reason': None, 'answer': None, 'reconcile_cost_usd': 0.0,
+                'reconcile_error': type(exc).__name__ + ': ' + str(exc), 'reconcile_sql': []}
+    out = _analyst.reconcile(question['question'], question['as_of'], a_row, b_row, semantic, send=send, model=model,
+                             seed_key=f"{seed}:{question['id']}", labels=('agere', 'llm'))
+    out.pop('result')
+    return out
 
 
 def load(paths):
