@@ -26,6 +26,7 @@ hurts, write down why and decide what to add next.
 | 9 | + record_correction table (all streams, with link_field) | 15 | 21 | 14/21 | 0.03 | 50 | keep (general data-quality table; DQ-10 still missed) |
 | 10 | + unchecked-zero guard (an analyst-unconfirmed 0/empty is withheld) | 15 | 21 | 14/21 | 0.02 | 34 | keep as a safety rule; didn't fire on dev |
 | 11 | + canonical fill table (picked-up fills, class windows, new-user flags) | 15 | 21 | 14/21 | 0.02 | 31 | keep (general); neutral, the analyst didn't use it |
+| 12 | + analyst format repair (extract embedded JSON, else ask once) | 13-14 | 21 | 12-13/21 | 0.08-0.09 | 29 | keep as a safety fix; never fired |
 | 1x | step 1 + answer-guard cross-check (Sonnet + Opus judge, on by default) | 4 | 6 | 2/6 | 3.19 | 90 | too costly for +1; revisit last |
 
 ## Step 0: deterministic core only
@@ -185,3 +186,18 @@ hurts, write down why and decide what to add next.
 2. Retry the analyst once when its reply fails to parse (seen on VBC-04): a cheap fix for a real failure.
 3. Drug-class vocabulary for all of healthcare (about 14k unclassified fills); needed for scope, not for current misses.
 4. Visit grouper table, only if a hospital-ops miss shows the analyst can't reach the data otherwise.
+
+## Live defaults (2026-10-16, Mike approved), commit fd43ca6
+- **Settings:** AGERE_CROSS_CHECK default off; AGERE_DISAGREE_POLICY default analyst; the unchecked-zero guard is on.
+  The semantic-layer build now runs adjudication history, record correction and fill events.
+- **Live :8885** restarted on these defaults. Smoke tests: heart failure, both paths agree (329), $0.009; denial rate,
+  analyst on disagreement, $0.0008.
+- **Fix:** with the analyst policy, no empty reconcile step is recorded, so cost stays priced (it had read as unknown).
+
+## Step 12: analyst format repair
+- **Change:** product-only format_retries=1 in semantic_analyst.tool_loop/analyze (the bench baselines keep 0 and still
+  fail on bad JSON). On a non-JSON final reply it first extracts the embedded JSON object (free), then asks once for only
+  the JSON object.
+- **Result:** dev 13/22 then 14/22 on two runs (step 11: 15; within ±2 noise); held-out 7/10, unchanged. No analyst reply
+  failed to parse in these runs, so the repair never fired.
+- **Kept:** a cheap fix for a real failure seen at step 6 (VBC-04).

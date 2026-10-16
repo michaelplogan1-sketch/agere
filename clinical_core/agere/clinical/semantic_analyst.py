@@ -211,20 +211,25 @@ def new_result(model):
             'error': None, 'cost_scope': 'returned_provider_usage'}
 
 
-def tool_loop(user, system, tools, execute, *, send, model, max_tools, extra=None, max_tokens=8192, deadline=None):
+def tool_loop(user, system, tools, execute, *, send, model, max_tools, extra=None, max_tokens=8192, deadline=None,
+              format_retries=0):
     """Bounded tool-use loop: every executed call (failed ones included) counts toward max_tools; all returned usage is
     recorded, including cache writes/reads; there are no automatic paid retries.
 
     send(body) -> (response, cost_usd or None, cache_hit). A cache hit (the product ledger replaying a validated identical
     request) costs nothing and is not a new paid call. deadline (time.monotonic() value) bounds wall clock: no provider
-    call or SQL call starts after it (the sender bounds the call itself)."""
+    call or SQL call starts after it (the sender bounds the call itself).
+    format_retries (product analyst only; the bench baselines keep 0): when the final reply is not valid JSON, first try
+    the JSON object embedded in the text (free), then ask once more for only the JSON object (build log step 12)."""
     result = new_result(model)
     messages = [{'role': 'user', 'content': user}]
     calls = 0
+    retries_left = format_retries
+    force_text = False
     try:
-        for _ in range(max_tools + 1):
-            body = {'model': model, 'max_tokens': max_tokens, 'system': system, 'messages': messages,
-                    'tools': tools, 'tool_choice': {'type': 'none' if calls >= max_tools else 'auto'}, **(extra or {})}
+        for _ in range(max_tools + 1 + format_retries):
+            body = {'model': model, 'max_tokens': max_tokens, 'system': system, 'messages': messages, 'tools': tools,
+                    'tool_choice': {'type': 'none' if calls >= max_tools or force_text else 'auto'}, **(extra or {})}
             if deadline is not None and deadline - time.monotonic() <= 0:
                 raise TimeoutError('Wall-clock limit reached')
             try:
@@ -258,8 +263,29 @@ def tool_loop(user, system, tools, execute, *, send, model, max_tools, extra=Non
 
                 def reject_constant(value):
                     raise ValueError('Non-finite JSON number: ' + value)
-                result['answer'] = json.loads(text, parse_constant=reject_constant)
-                return result
+                try:
+                    result['answer'] = json.loads(text, parse_constant=reject_constant)
+                    return result
+                except ValueError:
+                    if not format_retries:
+                        raise
+                    start, end = text.find('{'), text.rfind('}')
+                    if 0 <= start < end:
+                        try:
+                            result['answer'] = json.loads(text[start:end + 1], parse_constant=reject_constant)
+                            result['format_repair'] = 'extracted'
+                            return result
+                        except ValueError:
+                            pass
+                    if retries_left <= 0:
+                        raise
+                    retries_left -= 1
+                    result['format_repair'] = 'asked_again'
+                    force_text = True
+                    messages.append({'role': 'assistant', 'content': blocks})
+                    messages.append({'role': 'user', 'content': 'Your reply was not a valid JSON answer object. Reply with '
+                                     'ONLY the JSON answer object in the required contract, no other text.'})
+                    continue
             messages.append({'role': 'assistant', 'content': blocks})
             answers = []
             for use in uses:
@@ -295,7 +321,7 @@ def _sql_executor(semantic, as_of, max_rows, max_chars):
     return execute
 
 
-def analyze(question, as_of, semantic, *, send, model, max_tools=8):
+def analyze(question, as_of, semantic, *, send, model, max_tools=8, format_retries=0):
     """One semantic-analyst answer: cached documentation system block, one read-only SQL tool, the shared answer contract.
     -> the tool-loop result plus semantic_snapshot_as_of, context_chars, tool_call_count, cache token counts and
     example_ids (the verified-example source IDs in the prompt)."""
@@ -308,7 +334,8 @@ def analyze(question, as_of, semantic, *, send, model, max_tools=8):
               {'type': 'text', 'text': docs, 'cache_control': {'type': 'ephemeral'}}]
     user = json.dumps({'question': question, 'as_of': as_of, 'semantic_snapshot_as_of': semantic.as_of})
     result = tool_loop(user, system, [SEMANTIC_SQL_TOOL], _sql_executor(semantic, as_of, 2000, 60000), send=send,
-                       model=model, max_tools=max_tools, extra={'cache_control': {'type': 'ephemeral'}})
+                       model=model, max_tools=max_tools, extra={'cache_control': {'type': 'ephemeral'}},
+                       format_retries=format_retries)
     usage = result['usage']
     result.update(semantic_snapshot_as_of=semantic.as_of, context_chars=len(docs), tool_call_count=len(result['tool_calls']),
                   cache_read_input_tokens=sum(u.get('cache_read_input_tokens') or 0 for u in usage),

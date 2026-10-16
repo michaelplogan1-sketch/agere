@@ -454,3 +454,30 @@ class DefaultPolicyTests(unittest.TestCase):
         result, receipt, _ = together.decide(None, 'q', fast, None, {'error': 'timeout'}, 'timed_out')
         self.assertEqual(result['answer']['status'], 'partial')
         self.assertEqual(receipt['decision'], 'unchecked_zero')
+
+
+class FormatRepairTests(unittest.TestCase):
+    """Build log step 12: the product analyst repairs a non-JSON final reply; the bench default (0) still fails."""
+
+    def _send_seq(self, texts):
+        it = iter(texts)
+        def send(body):
+            return {'content': [{'type': 'text', 'text': next(it)}], 'stop_reason': 'end_turn', 'usage': {}}, 0.0, False
+        return send
+
+    def test_extracts_embedded_json_for_free(self):
+        r = semantic_analyst.tool_loop('q', 's', [], None, send=self._send_seq(['Here you go: {"status": "answered", "answer_type": "count", "count": 3} done']),
+                                       model='m', max_tools=2, format_retries=1)
+        self.assertEqual(r['answer']['count'], 3)
+        self.assertEqual(r['format_repair'], 'extracted')
+
+    def test_asks_again_once(self):
+        r = semantic_analyst.tool_loop('q', 's', [], None, send=self._send_seq(['no json here', '{"status": "answered", "answer_type": "count", "count": 4}']),
+                                       model='m', max_tools=2, format_retries=1)
+        self.assertEqual(r['answer']['count'], 4)
+        self.assertEqual(r['format_repair'], 'asked_again')
+
+    def test_bench_default_does_not_repair(self):
+        r = semantic_analyst.tool_loop('q', 's', [], None, send=self._send_seq(['Here: {"count": 3}']), model='m', max_tools=2)
+        self.assertIsNone(r['answer'])
+        self.assertIn('JSONDecodeError', r['error'])

@@ -172,7 +172,7 @@ def _run_analyst(stack, question, as_of, semantic_path, model):
     wh = warehouse(semantic_path)
     with _own_ledger(stack) as ledger:
         result = semantic_analyst.analyze(question, as_of or wh.as_of, wh, send=_ledgered_send(stack, ledger, receipts),
-                                          model=model)
+                                          model=model, format_retries=1)  # build log step 12
     result.pop('example_ids', None)
     result.update(receipts=receipts, seconds=round(time.perf_counter() - started, 3))
     return result
