@@ -52,10 +52,15 @@ retries. Provider failures retain known usage and mark unavailable cost unknown.
 Genie or Snowflake Cortex Analyst). The same model gets the documented semantic model as a cached system block:
 the semantic tables with their column docs (`SCHEMA_DOC`, parsed as text with `ast`), the concept library code
 sets, adopted definitions, governed metric and quality-measure definitions (`config/agere/metrics`, `measures`)
-and 18 verified question-to-SQL examples (`semantic_examples.json`, development/challenge only, each checked
-against its reference). Its one tool is read-only `query_sql` over `<build>/stack/semantic.sqlite3` (max 8
-calls; `bench.common.SemanticWarehouse`: mode=ro, query_only, authorizer, time limit, explicit truncation).
-No planner, compiler, router, engine, verifier or cache is called. Rows record cache read/write tokens and mark
+and 18 verified question-to-SQL examples (`config/agere/semantic_examples.json`, development/challenge only, each
+checked against its reference). Its one tool is read-only `query_sql` over `<build>/stack/semantic.sqlite3` (max 8
+calls; `bench.common.SemanticWarehouse`: mode=ro, query_only, authorizer, time limit, explicit truncation, one
+connection per thread). No planner, compiler, router, engine, verifier or cache is called. The documentation,
+prompts, tool loop, warehouse and reconcile turn are shared with the product's "together" path
+(`clinical_core/agere/clinical/semantic_docs.py` and `semantic_analyst.py`, stdlib-only; `bench/semantic_context.py`,
+`bench/adapters.py`, `bench/common.py` and `bench/reconcile.py` re-export them), so the bench and the product send
+byte-identical prompts. Those two modules are the only product modules the bench imports
+(`docs/agere/TOGETHER.md`). Rows record cache read/write tokens and mark
 `prompt_example` questions, which must be excluded from accuracy claims. The semantic layer is one snapshot
 (`meta.as_of`) with superseded corrections removed, so run it with `--as-of` set to that snapshot, e.g.
 

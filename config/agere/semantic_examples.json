@@ -1,6 +1,6 @@
 {
   "schema": "bench-semantic-examples/1",
-  "purpose": "Verified example queries for the frontier_semantic baseline (the 'verified queries' of a Genie space / Cortex Analyst semantic model). Each SQL runs against the semantic layer and reproduces the development/challenge reference answer at the semantic snapshot; bench/test_bench.py rejects heldout sources. Questions whose IDs appear here are marked prompt_example in run rows and should be excluded from accuracy claims.",
+  "purpose": "Verified example queries for the semantic analyst: the product's together path and the bench frontier_semantic baseline (the 'verified queries' of a Genie space / Cortex Analyst semantic model). Each SQL runs against the semantic layer and reproduces the development/challenge reference answer at the semantic snapshot; semantic_docs.load_examples, bench/test_bench.py and test_together.py reject heldout, capability and acceptance sources. Questions whose IDs appear here are marked prompt_example in run rows and should be excluded from accuracy claims.",
   "examples": [
     {"source_id": "D01", "source_split": "development", "answer_type": "count",
      "question": "How many patients are in the original warehouse roster?",
