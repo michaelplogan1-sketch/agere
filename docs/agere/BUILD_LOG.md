@@ -27,6 +27,7 @@ hurts, write down why and decide what to add next.
 | 10 | + unchecked-zero guard (an analyst-unconfirmed 0/empty is withheld) | 15 | 21 | 14/21 | 0.02 | 34 | keep as a safety rule; didn't fire on dev |
 | 11 | + canonical fill table (picked-up fills, class windows, new-user flags) | 15 | 21 | 14/21 | 0.02 | 31 | keep (general); neutral, the analyst didn't use it |
 | 12 | + analyst format repair (extract embedded JSON, else ask once) | 13-14 | 21 | 12-13/21 | 0.08-0.09 | 29 | keep as a safety fix; never fired |
+| 13 | + drug-class vocabulary for all of healthcare (+50 classes, 6 groups, 96 brands) | 13 | 21 | 12/21 | 1.46 (cache refill) | 51 | keep: scope/coverage; neutral on score |
 | 1x | step 1 + answer-guard cross-check (Sonnet + Opus judge, on by default) | 4 | 6 | 2/6 | 3.19 | 90 | too costly for +1; revisit last |
 
 ## Step 0: deterministic core only
@@ -201,3 +202,28 @@ hurts, write down why and decide what to add next.
 - **Result:** dev 13/22 then 14/22 on two runs (step 11: 15; within ±2 noise); held-out 7/10, unchanged. No analyst reply
   failed to parse in these runs, so the repair never fired.
 - **Kept:** a cheap fix for a real failure seen at step 6 (VBC-04).
+
+## Step 13: drug-class vocabulary for all of healthcare
+- **Change, drug_classes.py:**
+  - About 50 ingredient-based classes. ADHD (stimulant and non-stimulant). Antidepressants: SNRI, NDRI, SARI,
+    tetracyclic, tricyclic. Lithium, anticonvulsants, gabapentinoids. Alpha-1 blockers, 5-ARIs, bladder
+    antimuscarinics, beta-3 agonists. LAMA, LABA, leukotriene modifiers. Smoking cessation, hormonal contraceptives.
+    Nine antibiotic classes. Antivirals, antiretrovirals, systemic corticosteroids, csDMARDs, TNF inhibitors, dementia
+    drugs, 5-HT3 antiemetics, H2 blockers, triptans, opioid antagonists, vitamins D and B12, acetaminophen,
+    thiazolidinediones (now in the diabetes group), epinephrine auto-injectors.
+  - New groups: antidepressant, adhd_medication, antibiotic, copd_maintenance, dementia_medication, bph_medication.
+  - Meperidine added to opioid.
+  - Oral glycopyrrolate is deliberately not a LAMA. Estrogen hormone therapy is left out, so combined contraceptives
+    aren't double-tagged.
+- **Brands:** config/agere/drug_brands.json gains 96 common US brands (400 total), so every class has brand coverage.
+- **In place:** fill_events.apply_reclassify gives unclassified medication rows their classes, refreshes
+  drug_class_vocabulary and rebuilds fill. Unclassified payer fills: 14,405 → 68.
+  - Rows already classified keep their old single class until the next full semantic rebuild (e.g. hydrocodone/
+    acetaminophen has opioid, not yet acetaminophen). The build runs the same classify(), so a rebuild is consistent.
+- **Result:** dev 13/22 (QUA-01, a breast-screening question unrelated to drugs, flipped; within noise); held-out 7/10,
+  unchanged.
+- **Cost:** $1.46 dev + $0.47 held-out. The vocabulary is part of the prompts, so every call missed the cache once
+  (about $0.03–0.14 per uncached question). Later runs cache again.
+- **Kept:** this layer is about scope. Questions about the 14k fills outside cardiometabolic care (ADHD,
+  antidepressants, antibiotics, contraceptives) can now be answered by class. The dev and held-out sets are
+  cardiometabolic-heavy, so they don't show it.

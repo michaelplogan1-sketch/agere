@@ -110,3 +110,42 @@ def apply(semantic_path):
         return summary
     finally:
         out.close()
+
+
+def reclassify(out):
+    """Give unclassified medication rows the classes the current drug_classes vocabulary assigns (one row per class, as
+    the semantic build does) and refresh drug_class_vocabulary. Build log step 13."""
+    from .drug_classes import CLASSES, GROUPS, classify
+    cols = [r[1] for r in out.execute('PRAGMA table_info(medication)')]
+    ci = cols.index('drug_class')
+    rows = out.execute('SELECT rowid, * FROM medication WHERE drug_class IS NULL').fetchall()
+    updates, inserts = [], []
+    for row in rows:
+        rowid, vals = row[0], list(row[1:])
+        classes = classify(vals[cols.index('drug_name')])
+        if not classes:
+            continue
+        updates.append((classes[0], rowid))
+        for c in classes[1:]:
+            extra = list(vals); extra[ci] = c; inserts.append(extra)
+    out.executemany('UPDATE medication SET drug_class = ? WHERE rowid = ?', updates)
+    out.executemany(f"INSERT INTO medication VALUES ({','.join('?' * len(cols))})", inserts)
+    out.execute('DROP TABLE IF EXISTS drug_class_vocabulary')
+    out.execute('CREATE TABLE drug_class_vocabulary(drug_class TEXT, class_group TEXT)')
+    voc = [(c, g) for g, members in GROUPS.items() for c in members]
+    voc += [(c, None) for c in CLASSES if not any(c in m for m in GROUPS.values())]
+    out.executemany('INSERT INTO drug_class_vocabulary VALUES (?,?)', sorted(voc, key=lambda r: (r[0], r[1] or '')))
+    return {'unclassified_rows_seen': len(rows), 'classified_now': len(updates), 'extra_class_rows': len(inserts)}
+
+
+def apply_reclassify(semantic_path):
+    out = sqlite3.connect(Path(semantic_path))
+    try:
+        summary = reclassify(out)
+        summary['fill'] = build(out)
+        out.execute("DELETE FROM meta WHERE key = 'drug_reclassify'")
+        out.execute("INSERT INTO meta VALUES ('drug_reclassify', ?)", (json.dumps(summary),))
+        out.commit()
+        return summary
+    finally:
+        out.close()
