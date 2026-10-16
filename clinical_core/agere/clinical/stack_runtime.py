@@ -124,6 +124,13 @@ class Stack:
                 'qwen3_4b_active':False,'qwen_status':'Earlier experimental reader; not a current planner or default reader',
                 'scope':'Local models and code handle bounded tasks. Hosted decision routing is not a newly trained local SLM. No universal best model or calibrated end-to-end routing quality is established.'}
     def compose(self,question,*,planning='auto'):
+        # Agere "together" (together.py): the fast path below plus an independent semantic analyst started in parallel,
+        # reconciled into one answer. AGERE_TOGETHER=off (or a server without live models) keeps exactly the fast path.
+        if planning=='auto' and self.allow_live:
+            from . import together
+            if together.enabled():return together.compose_together(self,question,planning=planning)
+        return self._compose(question,planning=planning)
+    def _compose(self,question,*,planning='auto'):
         if planning=='scoped_local_candidate':
             from .scoped_review_compiler import compile_question
             with sqlite3.connect(self.path/'stack.sqlite3') as db:

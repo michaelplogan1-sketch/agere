@@ -56,6 +56,9 @@ def serve(run,port,annotations=None,evidence_queries=None,stack=None,allow_live_
     if stack is not None:
         from .clinical.stack_runtime import Stack
         connected_stack=Stack(stack,allow_live=allow_live_stack)
+        # together.compose_together releases this lock while it only waits on the semantic analyst / reconcile threads,
+        # and re-acquires it before handle_compose's logging and learning writes.
+        connected_stack.answer_lock=stack_lock
         clinical_metadata=json.loads((root/'run.json').read_text())
         if connected_stack.retriever.meta['source_run']!=clinical_metadata.get('cache_key_digest'):
             raise ValueError('Connected stack belongs to another clinical snapshot')

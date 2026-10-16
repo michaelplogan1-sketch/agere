@@ -1,6 +1,6 @@
 """LLM-facing documentation generated from a built canonical database.
 
-Mirrors bench/semantic_context.py: the text a customer would publish as a semantic model for a text-to-SQL assistant.
+Mirrors clinical_core/agere/clinical/semantic_docs.py (re-exported as bench/semantic_context.py): the text a customer would publish as a semantic model for a text-to-SQL assistant.
 Sections (all derived, never hand-written per build):
 
 - snapshot line (meta: version, release, as_of);

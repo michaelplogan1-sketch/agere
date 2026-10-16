@@ -412,11 +412,20 @@ class SemanticBaselineTests(unittest.TestCase):
             self.semantic.query('WITH RECURSIVE x(n) AS (SELECT 1 UNION ALL SELECT n+1 FROM x) SELECT SUM(n) FROM x')
 
     def test_context_is_documentation_from_text_not_product_imports(self):
-        import sys
-        before = {m for m in sys.modules if m.startswith('clinical_core')}
+        import subprocess, sys
+        # The bench may import exactly the two shared semantic-analyst modules (and their packages), nothing else of the
+        # product: checked in a fresh interpreter that imports the bench and builds the documentation context.
+        script = ('import sys, json; from bench import adapters, common, reconcile, semantic_context; '
+                  'from bench.common import SemanticWarehouse; '
+                  f'adapters.semantic_context(SemanticWarehouse({str(self.path)!r})); '
+                  "print(json.dumps(sorted(m for m in sys.modules if m.startswith('clinical_core'))))")
+        out = subprocess.run([sys.executable, '-c', script], cwd=Path(__file__).resolve().parents[1],
+                             capture_output=True, text=True, check=True)
+        self.assertEqual(set(json.loads(out.stdout.strip().splitlines()[-1])),
+                         {'clinical_core', 'clinical_core.agere', 'clinical_core.agere.clinical',
+                          'clinical_core.agere.clinical.semantic_docs', 'clinical_core.agere.clinical.semantic_analyst'})
         adapters._SEMANTIC_CONTEXT.clear()
         docs, example_ids = adapters.semantic_context(self.semantic)
-        self.assertEqual({m for m in sys.modules if m.startswith('clinical_core')}, before)
         for expected in ('### measurement(record_id, patient_id', 'Labs and vitals, one row per (record, concept)',  # SCHEMA_DOC
                          "diabetes: Diabetes mellitus", 'E08,E09,E10,E11,E13',  # concept library code sets
                          'SQL template: SELECT', 'gsd_poor_control', 'labs (2)', 'arb (raas_inhibitor)',
