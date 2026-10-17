@@ -1,0 +1,42 @@
+[
+  {
+    "question": "Who benefits most from care management outreach?",
+    "expect_operation": "uplift"
+  },
+  {
+    "question": "Which members are persuadables for care management?",
+    "expect_operation": "uplift"
+  },
+  {
+    "question": "Show me the uplift of care management on ED visits and admissions",
+    "expect_operation": "uplift"
+  },
+  {
+    "question": "Who would actually benefit from transitions of care calls, with capacity for 40 patients?",
+    "expect_operation": "uplift"
+  },
+  {
+    "question": "Are there heterogeneous effects of care management on admissions within 60 days?",
+    "expect_operation": "uplift"
+  },
+  {
+    "question": "Which patients respond best to community service referrals?",
+    "expect_operation": "uplift"
+  },
+  {
+    "question": "Rank members by predicted benefit from outreach and show the Qini curve",
+    "expect_operation": "uplift"
+  },
+  {
+    "question": "Use an X-learner to find who benefits from care coordination",
+    "expect_operation": "uplift"
+  },
+  {
+    "question": "Who benefits most from care management enrollment, given 25 nurse hours at 30 minutes per contact?",
+    "expect_operation": "uplift"
+  },
+  {
+    "question": "Is targeting care management by uplift better than random? Give me the RATE",
+    "expect_operation": "uplift"
+  }
+]

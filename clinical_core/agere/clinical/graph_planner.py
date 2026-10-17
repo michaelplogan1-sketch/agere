@@ -28,7 +28,9 @@ CONTRACTS = {
         'meaning':'Finds where an outcome is unusually concentrated across segments and segment pairs (two-proportion tests, BH-controlled), labelling documentation-limited cells. Use for where/which-groups/hotspot/pattern questions nobody specified.'},
     'program_effect': {'inputs':['optional earlier_set'],'parameters':{'program':'care_management|transitions_of_care|community_services|care_coordination|medication_start',
         'drug_class':'medication_start only','outcome':'ed_visits|admissions|pmpm|lab','lab':'measurement concept (lab outcome only)',
-        'pre_days':'30..730 (default 180)','post_days':'14..365 (default 90)'},
+        'pre_days':'30..730 (default 180)','post_days':'14..365 (default 90)',
+        'method':'matched_did|sdid|callaway_santanna|auto (sdid = synthetic difference-in-differences; callaway_santanna = staggered adoption; auto picks by adoption spread)',
+        'control_group':'never_treated|not_yet_treated (callaway_santanna)','estimator':'outcome_regression|ipw|doubly_robust (callaway_santanna)','covariates':['age_band','sex','payer','chronic_conditions']},
         'meaning':'Estimated effect of a program or medication start identified from received records: matched difference-in-differences with balance, '
                   'parallel-trends and placebo checks, synthetic control when feasible, and explicit data-support warnings. Never an identified causal '
                   'effect; refuse randomised-trial or counterfactual-count claims, and unnamed programs.'},
@@ -53,7 +55,9 @@ CONTRACTS = {
         'meaning':'Time-to-event over the input population: Kaplan-Meier curves with Greenwood 95% CIs, medians, k-group log-rank and optional Cox hazard ratios. '
                   'Use for readmission/follow-up curves after discharge, time from diagnosis to an event, time to a lab threshold. No mortality (no death records).'},
     'monitor': {'inputs':['none'],'parameters':{'check':'control_chart|feed|claims|claims_integrity|benford|peer_outliers|duplicates|all','series':['ed_rate','admit_rate','pmpm','lab_volume','denial_rate','arrival_lag'],
-        'group_by':'auto|none|practice|payer|facility|source_system','period':{'start':'','end':''}},
+        'group_by':'auto|none|practice|payer|facility|source_system','period':{'start':'','end':''},
+        'chart':'control|ra_cusum|vlad (risk-adjusted CUSUM or VLAD over readmission/mortality cases; check may also be ra_cusum|vlad)','outcome':'readmission|post_discharge_ed|ed_revisit|mortality','unit':'hospital|practice|pcp|none',
+        'or_shift':2.0,'or_improve':None,'arl0':5000,'window_days':30,'adjust':'age_sex_conditions|age_sex|none','min_cases':30},
         'meaning':'Statistical process control and integrity monitoring: Laney p\'/u\' and I-MR control charts with Western Electric rules, CUSUM/EWMA, '
                   'data-feed volume breaks, claims Benford, peer outliers and duplicate flags. Use for is-anything-out-of-control / spikes / feed-problem questions.'},
     'market': {'inputs':['optional earlier_set'],'parameters':{'unit':'practice|pcp|payer','metrics':['ed_rate','admit_rate','pmpm','a1c_poor','bp_control','denial_rate','no_show_rate'],
@@ -64,7 +68,8 @@ CONTRACTS = {
                   'Use for what-moved / market-view / tickers / movers / trending-worse / most-surprising-change questions (not control-chart questions).'},
     'demand': {'inputs':['optional earlier_set'],'parameters':{'measure':'ed_visits|inpatient_admissions|observation_stays|urgent_care_visits|primary_care_visits|specialist_visits|appointments|discharges|bed_days',
         'frequency':'week|month','horizon':6,'group_by':'none|practice|facility|payer','target_occupancy':0.85,'peak_quantile':0.95,'staffing':False,
-        'minutes_per_unit':None,'fte_hours_per_week':None},
+        'minutes_per_unit':None,'fte_hours_per_week':None,
+        'hierarchy':'ordered list of facility|practice|payer levels to forecast together, e.g. ["facility","practice"]','reconcile':'mint_shrink|ols|wls|none (children sum to parents)'},
         'meaning':'Volume forecasting: visits/admissions/appointments/discharges/bed-days per week or month with prediction intervals. Detects feed gaps, spikes and '
                   'level breaks and fits only the usable recent regime; picks ETS/NB-GLM/baselines by rolling-origin backtest (MASE vs naive, interval coverage). '
                   'Beds = bed-days/days/occupancy plus Poisson peak-day beds; staffing only from ratios the user states (else null, reported as missing). '
@@ -167,6 +172,13 @@ CONTRACTS = {
     'medication_identity': {'inputs':['earlier_set'],'parameters':{},
                             'meaning':'Offline RxNorm names, spans, doses/forms and RAAS alternatives. Not use/tolerance.'},
 }
+CONTRACTS['uplift'] = {'inputs':['optional earlier_set'],'parameters':{'program':'care_management|transitions_of_care|community_services|care_coordination','outcome':'ed_visits|admissions|ed_or_admission',
+    'outcome_type':'binary|count','pre_days':'30..730 (default 180)','post_days':'14..365 (default 90)','capacity_patients':50,'capacity_hours':'optional nurse hours','minutes_per_contact':30,
+    'value_per_event_usd':'optional stated $ per avoided event','cost_per_contact_usd':0.0,'learners':'both|x|t','primary_learner':'x|t','top':200},
+    'meaning':'Who benefits from a program (heterogeneous treatment effect): cross-fitted propensity with overlap trimming, T- and X-learners on pre-period covariates, doubly robust average effect, '
+         'RATE/AUTOC and Qini with bootstrap intervals, observed-vs-predicted benefit by decile, and an exact capacity-constrained targeting list of members expected to benefit most. '
+         'Use for who benefits / persuadables / uplift questions. A risk or expected-value worklist is outreach; a single average effect is program_effect. '
+         'A RATE interval that covers 0 means no heterogeneity was detected and targeting by uplift is not supported over random.'}
 CONTRACTS['queueing'] = {'inputs':['none'],'parameters':{'source':'ed|clinic|appointment|beds|manual (default ed; beds = hospital stays)','organization_id':'organisation id or ""',
     'objective':'wait|blocking (default wait; beds = blocking)','wait_threshold_minutes':30,'target_wait_probability':0.10,'target_blocking':0.02,
     'abandonment_rate_per_hour':None,'servers':None,'mean_service_minutes':None,'demand_forecast':False,'arrival_scale':1.0},

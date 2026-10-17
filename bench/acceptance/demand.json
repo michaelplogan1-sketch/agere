@@ -6,5 +6,9 @@
   {"question": "How many nurses do we need for next month's discharges?", "expect_operation": "demand"},
   {"question": "Predict urgent care visits for the next 8 weeks by payer", "expect_operation": "demand"},
   {"question": "What will our observation stay volume look like over the next 3 months?", "expect_operation": "demand"},
-  {"question": "Projected hospital census and beds needed next month at 85% occupancy", "expect_operation": "demand"}
+  {"question": "Projected hospital census and beds needed next month at 85% occupancy", "expect_operation": "demand"},
+  {"question": "Forecast ED visits by facility and practice so that it adds up", "expect_operation": "demand"},
+  {"question": "Give me a reconciled forecast of appointments by practice for the next 3 months", "expect_operation": "demand"},
+  {"question": "Hierarchical forecast of admissions by facility and then practice, MinT reconciled", "expect_operation": "demand"},
+  {"question": "Forecast primary care visits by payer, reconciled so they add up to the total", "expect_operation": "demand"}
 ]

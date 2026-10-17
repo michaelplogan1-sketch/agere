@@ -61,6 +61,11 @@ PRODUCT['queueing'] = {'population': 'none', 'view': 'staffing',
                               'to keep patient waits under a target (e.g. P(wait > 30 min) <= 10%) or bed blocking under a target (e.g. <= 2%), the chance a patient waits more than N minutes, '
                               'utilization, sensitivity to +-10% arrivals. Not demand (volume forecasts; staffing only from user-supplied ratios) and not scheduling (overbooking / no-shows).'}
 
+PRODUCT['uplift'] = {'population': 'optional', 'view': 'uplift',
+                     'use': 'Who BENEFITS from outreach or care management (heterogeneous treatment effects): persuadables, uplift / CATE by member, which patients to enrol because the program changes their outcome most, '
+                            'RATE / AUTOC and Qini curves, benefit by decile, targeting within capacity. Not outreach (a worklist ranked by risk / expected value, no causal effect) and not program_effect '
+                            '(did the program work on average, one pooled estimate).'}
+
 PRODUCT['early_signal'] = {'population': 'optional', 'view': 'signal',
                            'use': 'Early warning: WHICH PATIENTS show the multichannel pattern that usually PRECEDES an admission or ED visit (pre-admission signature, '
                                   'heading toward decompensation), by matched filtering against templates learned from past events. Not one lab trend (trajectory), '

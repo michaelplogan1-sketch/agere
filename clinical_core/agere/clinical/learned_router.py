@@ -36,7 +36,7 @@ def _cues():
         ('claims', rx(lc.CLAIMS_TRIGGER)), ('market', rx(lc.MARKET_TRIGGER)), ('outreach', rx(lc.OUTREACH_INTENT)),
         ('outreach_phrase', rx(lc.OUTREACH_PHRASES)), ('profile', rx(lc.PROFILE_STRONG)), ('profile_weak', rx(lc.PROFILE_WEAK)),
         ('calibration', rx(lc.CALIBRATION_INTENT)), ('briefing', rx(lc.BRIEFING_TRIGGER)), ('pathway', rx(lc.PATHWAY_INTENT)),
-        ('early_signal', rx(lc.EARLY_SIGNAL_INTENT)), ('analytic', rx(lc.ANALYTIC_INTENT)), ('scheduling', rx(scheduling)), ('queueing', rx(lc.QUEUEING_INTENT)),
+        ('early_signal', rx(lc.EARLY_SIGNAL_INTENT)), ('analytic', rx(lc.ANALYTIC_INTENT)), ('scheduling', rx(scheduling)), ('queueing', rx(lc.QUEUEING_INTENT)), ('uplift', rx(lc.UPLIFT_INTENT)),
         ('unsupported', rx(unsupported)), ('death', rx(lc.DEATH_WORDS)),
         ('knowledge', lambda low: lc._knowledge_question(low) is not None),
         ('contract_strategy', lambda low: lc._contract_strategy_question(low, None, None) is not None),

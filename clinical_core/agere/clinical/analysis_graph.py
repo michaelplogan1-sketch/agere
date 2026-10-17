@@ -29,6 +29,7 @@ OPERATIONS |= {'pathway'}  # care pathways (Markov chains, process mining)
 OPERATIONS = OPERATIONS | {'profile'}
 OPERATIONS |= {'calibration'}  # calibration of predictions (conformal.py)
 OPERATIONS |= {'scheduling'}  # no-show model, overbooking, access, reminders (scheduling.py)
+OPERATIONS |= {'uplift'}  # who benefits: heterogeneous treatment effect, RATE/Qini, targeting (uplift.py)
 OPERATIONS |= {'queueing'}  # queueing-theory staffing and bed sizing (queueing.py)
 OPERATIONS |= {'briefing'}  # ranked proactive briefing (briefing.py + briefing_rank.py)
 OPERATIONS |= {'early_signal'}  # matched-filter precursor detection (early_signal.py)
@@ -141,6 +142,7 @@ NO_BENCHMARK_OPERATIONS += ('market',)
 NO_BENCHMARK_OPERATIONS += ('pathway',)
 NO_BENCHMARK_OPERATIONS += ('calibration',)
 NO_BENCHMARK_OPERATIONS += ('scheduling',)
+NO_BENCHMARK_OPERATIONS += ('uplift',)
 NO_BENCHMARK_OPERATIONS += ('queueing',)
 NO_BENCHMARK_OPERATIONS += ('briefing',)
 NO_BENCHMARK_OPERATIONS += ('early_signal',)
@@ -353,6 +355,29 @@ def build_answer_core(plan, results, memberships, question):
                                'assumptions': report['assumptions']})
         if not ok: answer['missing'].append(summary(report))
         return answer
+    if last['operation'] == 'uplift':
+        report = results[-1]['result']
+        partial = plan.get('coverage') != 'supported_observation' or plan.get('unmet_requirements') or report['inference'] != 'estimated_under_assumptions'
+        ans = report.get('answer') or {}
+        work = ans.get('recommended_targeting') or []
+        ok = report.get('inference') != 'not_supported'
+        table = [{k: v for k, v in w.items() if k != 'reasons'} for w in work]
+        prim = report.get('primary_learner')
+        ev = (report.get('learners') or {}).get(prim) or {}
+        answer.update(status=('partial' if partial else 'answered') if ok else 'unsupported', answer_type='table' if ok else 'unsupported',
+                      table=table or None if ok else None, value=report.get('headline') or ans.get('headline'), method=report.get('method'),
+                      limitations=report.get('limitations'), warnings=report.get('warnings'), assumptions=report.get('assumptions'),
+                      count=(report.get('targeting') or {}).get('selected') if ok else None, patient_ids=[w['patient_id'] for w in work] if ok else [],
+                      overall={'uplift': {'heterogeneity': ans.get('heterogeneity'), 'primary_learner': prim, 'ate': report.get('ate'), 'rate_autoc': ans.get('rate_autoc'),
+                                          'qini': ans.get('qini'), 'calibration': ev.get('calibration'), 'calibration_slope': ev.get('calibration_slope'),
+                                          'top_minus_bottom_decile': ev.get('top_minus_bottom_decile'),
+                                          'learners': {l: {k: e.get(k) for k in ('rate_autoc', 'qini', 'calibration_slope')} for l, e in (report.get('learners') or {}).items()},
+                                          'segments': report.get('segments'), 'targeting': report.get('targeting'), 'sample': report.get('sample'), 'overlap': report.get('overlap'),
+                                          'exposure': report.get('exposure'), 'outcome': report.get('outcome'), 'surrogate': report.get('surrogate'),
+                                          'reasons': {w['patient_id']: w.get('reason_detail') for w in work[:50]}},
+                               'inference': report.get('inference'), 'assumptions': report.get('assumptions')})
+        if not ok: answer['missing'].append(report.get('headline') or (ans.get('headline') or 'No uplift estimate.'))
+        return answer
     if last['operation'] == 'queueing':
         from .queueing import summary, table
         report = results[-1]['result']
@@ -474,9 +499,12 @@ def build_answer_core(plan, results, memberships, question):
         value, table = summarize(report)
         answer.update(status='partial' if partial else 'answered', answer_type='table', value=value, table=table,
                       method=report['method'], limitations=report['limitations'],
-                      overall={'period': report['period'], 'members_in_scope': report['members_in_scope'],
+                      overall={'period': report['period'], 'members_in_scope': report.get('members_in_scope'),
                                'tests_examined': report['tests_examined'], 'look_elsewhere_bits': report['look_elsewhere_bits'],
-                               'charts': chart_points(report)})
+                               'charts': [] if report['check'] in ('ra_cusum', 'vlad') else chart_points(report),
+                               **({'risk_adjusted': {'check': report['check'], 'parameters': report['parameters'], 'summary': report.get('summary'),
+                                                     'control_limits': report.get('control_limits'), 'units': report.get('units'),
+                                                     'signals': report.get('signals')}} if report['check'] in ('ra_cusum', 'vlad') else {})})
         return answer
     if last['operation'] == 'claims_review':
         from .claims_review import summarize as claims_summary
@@ -641,7 +669,8 @@ def build_answer_core(plan, results, memberships, question):
                       overall={'measure': report['measure_label'], 'frequency': report['frequency'], 'as_of': report['as_of'],
                                'capacity': report['capacity'], 'notes': report['notes'], 'flags': report['flags'],
                                # display: history (last 3 years of periods) + forecast band per series
-                               'demand': [{k: (v[-156:] if k == 'history' else v) for k, v in s.items()} for s in report['series']]})
+                               'demand': [{k: (v[-156:] if k == 'history' else v) for k, v in s.items()} for s in report['series']],
+                               **({'reconciliation': report['reconciliation']} if report.get('reconciliation') else {})})
         answer['missing'] += report['missing'] + ([] if ok else [summary(report)])
         if report['notes']: answer['warnings'] = report['notes']
         return answer
@@ -692,8 +721,9 @@ def build_answer_core(plan, results, memberships, question):
                    or report['inference'] != 'supported_under_assumptions')
         answer.update(status='partial' if partial else 'answered', answer_type='table', table=report['rows'], value=report['reading'],
                       method=report['method'], warnings=report['warnings'], assumptions=report['assumptions'],
-                      overall={k: report[k] for k in ('exposure', 'outcome', 'sample', 'did', 'balance', 'pre_trend', 'placebo',
-                                                       'synthetic_control', 'feed_checks', 'inference')})
+                      overall={k: report.get(k) for k in ('exposure', 'outcome', 'sample', 'did', 'balance', 'pre_trend', 'placebo',
+                                                           'synthetic_control', 'feed_checks', 'inference', 'estimation_method', 'method_selection',
+                                                           'sdid', 'callaway_santanna') if k in report})
         answer['missing'] += report['blocking_warnings']
         return answer
     if last['operation'] == 'sql':
@@ -872,6 +902,9 @@ def validate(plan, as_of):
         elif op == 'scheduling':
             from . import scheduling
             p = scheduling.validate(p)
+        elif op == 'uplift':
+            from . import uplift
+            p = uplift.validate(p)
         elif op == 'queueing':
             from . import queueing
             p = queueing.validate(p)
@@ -1199,7 +1232,7 @@ def code_identity():
                       Path(__file__).with_name('outreach.py'), Path(__file__).with_name('outreach_bandit.py'),
                       Path(__file__).with_name('pathway.py'),
                       Path(__file__).with_name('conformal.py'), Path(__file__).with_name('calibration.py'),
-                      Path(__file__).with_name('scheduling.py'), Path(__file__).with_name('queueing.py')]]])
+                      Path(__file__).with_name('scheduling.py'), Path(__file__).with_name('queueing.py'), Path(__file__).with_name('uplift.py')]]])
 
 
 def result_cache_enabled():
@@ -1510,6 +1543,11 @@ def execute(stack, plan, *, question=None):
                 chosen = memberships[node['inputs'][0]]
                 detail = survival.execute(path, sorted(chosen.yes), params)
                 detail['input_membership'] = membership_receipt(chosen)
+            elif op == 'uplift':
+                from . import uplift
+                chosen = memberships[node['inputs'][0]] if node['inputs'] else None
+                detail = uplift.execute(path, sorted(chosen.yes) if chosen else None, params, meta['snapshot']['as_of'])
+                if chosen: detail['input_membership'] = membership_receipt(chosen)
             elif op == 'queueing':
                 from . import queueing
                 detail = queueing.engine_execute(path, None, params, meta['snapshot']['as_of'])

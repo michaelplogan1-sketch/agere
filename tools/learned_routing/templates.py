@@ -164,6 +164,13 @@ T = {
         'Overbooking recommendation per session', 'Predict no-shows for {when}', 'which upcoming visits are at risk of being missed',
         'booking lead time and access by practice', 'safe overbooking level for each clinic session',
     ],
+    'uplift': [
+        'Which patients would the care management program actually change outcomes for?', 'Find the persuadables for our {program} program',
+        'uplift model for {program}: who gains the most', 'Where is the treatment effect of {program} concentrated across members?',
+        'Does {program} help some members much more than others?', 'Target {program} at the members who benefit, not the sickest',
+        'Qini and RATE evaluation for who to enroll in {program}', 'conditional average treatment effect of {program} by member',
+        'which members should we prioritise for {program} because it changes their ED use', 'who is most responsive to {program} outreach',
+    ],
     'queueing': [
         'How many nurses do we need each hour to keep ED waits under 30 minutes?', 'What is the chance a patient waits more than 15 minutes at {where}?',
         'How many beds does the unit need so that fewer than 1 in 50 admissions are turned away?', 'Staffing by hour of the week to hold wait times below 20 minutes',

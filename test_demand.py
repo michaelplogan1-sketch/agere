@@ -278,7 +278,7 @@ class Compiler(unittest.TestCase):
 
     def test_acceptance_phrasings(self):
         cases = json.loads((Path(__file__).resolve().parent / 'bench' / 'acceptance' / 'demand.json').read_text())
-        self.assertEqual(len(cases), 8)
+        self.assertGreaterEqual(len(cases), 12)  # 8 original + 4 hierarchy / reconciliation phrasings
         for c in cases:
             g, info = self.compile(c['question'])
             self.assertEqual(c['expect_operation'], 'demand')

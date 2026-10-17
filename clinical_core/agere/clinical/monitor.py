@@ -1100,7 +1100,7 @@ def execute_ra(path, patient_ids, p, as_of=None):
     if small: report['notes'].append(f"{small} unit(s) have fewer than {p['min_cases']} index cases and are not charted.")
     report.update(status='answered', rows=flagged, chart_status=status_rows, units=units, signals=signals[:500], signals_total=len(signals),
                   summary=summary, tests_examined=len(units), look_elsewhere_bits=look,
-                  control_limits={'arl0': p['arl0'], 'upper': sims['up'], 'lower': sims['down'], 'h': limits['up'], 'h_improvement': limits['down']}
+                  control_limits={'arl0': p['arl0'], 'upper': sims.get('up'), 'lower': sims.get('down'), 'h': limits['up'], 'h_improvement': limits['down']}
                   if chart == 'ra_cusum' else None,
                   vlad_limits={'z': list(VLAD_Z), 'levels': ['95%', '99.8%']} if chart == 'vlad' else None)
     return report

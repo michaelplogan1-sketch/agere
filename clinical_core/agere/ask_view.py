@@ -499,6 +499,68 @@ function vizQueueing(a){const o=(a.overall||{}).queueing||{},st=o.staffing||{},s
  if((a.warnings||[]).length)h+='<details open><summary>Assumption warnings ('+a.warnings.length+')</summary><ul>'+a.warnings.map(x=>'<li>'+esc(x)+'</li>').join('')+'</ul></details>';
  if((a.assumptions||[]).length)h+='<p class="hint"><b>Assumptions.</b> '+esc(a.assumptions.join(' '))+'</p>';
  return h+'</section>'}
+/* uplift: who benefits (predicted vs observed benefit by decile) + the capacity-constrained targeting table */
+function vizUplift(a){const o=(a.overall||{}).uplift||{},ate=o.ate||{},ra=o.rate_autoc||{},qi=o.qini||{},tg=o.targeting||{},cal=o.calibration||[],het=o.heterogeneity||'not_assessable';
+ const cls=het==='detected'?'answered':het==='reversed'?'unsupported':'partial';
+ const ci=x=>x&&x.ci95?fmt(x.ci95[0],4)+' to '+fmt(x.ci95[1],4):'—';
+ let h='<section class="sec" data-focus="uplift"><h3>Who benefits · '+esc(label(((o.exposure||{}).program)||'program'))+'</h3><div class="kpis">'+
+  [['Average benefit per member',isNum(ate.estimate)?fmt(ate.estimate,4):'—'],['95% interval',ci(ate)],['RATE (AUTOC)',isNum(ra.estimate)?fmt(ra.estimate,4):'—'],['RATE 95% interval',ci(ra)],
+   ['Qini',isNum(qi.estimate)?fmt(qi.estimate,4):'—'],['Heterogeneity','<span class="badge '+cls+'" style="font-size:14px">'+esc(label(het))+'</span>',true],
+   ['Expected averted (list / random)',isNum(tg.expected_events_averted)?fmt(tg.expected_events_averted,1)+' / '+fmt(tg.random_selection_expected_events_averted,1):'—']
+  ].map(k=>'<div class="kpi"><div class="l">'+esc(k[0])+'</div><div class="v">'+(k[2]?k[1]:esc(k[1]))+'</div></div>').join('')+'</div>';
+ if(cal.length){const W=CW(),L=46,R=10,T=10,B=34,H=210,vals=cal.flatMap(c=>[c.predicted_benefit,c.observed_benefit]).filter(isNum),lo=Math.min(0,...vals),hi=Math.max(0,...vals),sp=(hi-lo)||1,
+   Y=v=>T+(1-(v-lo)/sp)*(H-T-B),bw=(W-L-R)/cal.length;let g='<svg viewBox="0 0 '+W+' '+H+'" width="100%" role="img" aria-label="Predicted and observed benefit by decile">';
+  ticks(lo,hi,4).forEach(t=>{g+='<line class="gridl" x1="'+L+'" x2="'+(W-R)+'" y1="'+Y(t)+'" y2="'+Y(t)+'"/><text x="'+(L-6)+'" y="'+(Y(t)+4)+'" text-anchor="end">'+esc(fmt(t,3))+'</text>'});
+  cal.forEach((c,i)=>{const x=L+i*bw;[[c.predicted_benefit,'var(--s1)',0],[c.observed_benefit,'var(--s4)',1]].forEach(([v,col,k])=>{if(!isNum(v))return;const y0=Y(0),y1=Y(v);
+    g+='<rect x="'+(x+bw*(.12+.38*k))+'" y="'+Math.min(y0,y1)+'" width="'+(bw*.36)+'" height="'+Math.max(1,Math.abs(y1-y0))+'" style="fill:'+col+'"><title>'+esc('Decile '+c.decile+(k?' observed ':' predicted ')+fmt(v,4))+'</title></rect>'});
+   g+='<text x="'+(x+bw/2)+'" y="'+(H-14)+'" text-anchor="middle">'+c.decile+'</text>'});
+  g+='<text x="'+((L+W-R)/2)+'" y="'+(H-2)+'" text-anchor="middle">Decile of predicted benefit (1 = most)</text></svg>';
+  h+='<p class="hint">Predicted vs observed benefit (reduction in the outcome) by decile of predicted benefit, held-out cross-fitted predictions; bars should fall from left to right if the ranking works.</p>'+g+
+   '<div class="legend"><span><span class="sw" style="background:var(--s1)"></span>predicted</span><span><span class="sw" style="background:var(--s4)"></span>observed (doubly robust)</span></div>'}
+ if((a.table||[]).length)h+=tableHTML(a.table,{name:'uplift-targeting',caption:'Recommended members to enrol (predicted benefit, expected value, main drivers)'+(tg.capacity?' within '+tg.capacity.slots+' slots':''),
+  cols:['priority','patient_id','predicted_uplift','baseline_rate','expected_value_usd','minutes','practice','reason_detail'],head:{predicted_uplift:'Predicted benefit',baseline_rate:'Baseline rate',expected_value_usd:'Expected value ($)',reason_detail:'Drivers'}});
+ if((o.segments||[]).length)h+=tableHTML(o.segments,{name:'uplift-deciles',caption:'Deciles of predicted benefit: who they are'});
+ if((a.warnings||[]).length)h+='<details open><summary>Warnings ('+a.warnings.length+')</summary><ul>'+a.warnings.map(x=>'<li>'+esc(x)+'</li>').join('')+'</ul></details>';
+ if((a.assumptions||[]).length)h+='<p class="hint"><b>Assumptions.</b> '+esc(a.assumptions.join(' '))+'</p>';
+ return h+'</section>'}
+/* program_effect via synthetic DiD or Callaway-Sant'Anna: estimate with interval, cohort / event-time effects, checks */
+function vizEffectPanel(a){const o=a.overall||{},sd=o.sdid,cs=o.callaway_santanna,u=(o.outcome||{}).unit||'',inf=o.inference||'';
+ const cls=inf==='supported_under_assumptions'?'answered':inf==='limited'?'partial':'unsupported',r0=(a.table||[])[0]||{};
+ let h='<section class="sec" data-focus="effect"><h3>Estimated effect · '+esc(label(o.estimation_method||''))+'</h3><div class="kpis">'+
+  '<div class="kpi"><div class="l">Effect ('+esc(u)+')</div><div class="v">'+fmt(r0.estimate,4)+'</div></div><div class="kpi"><div class="l">95% interval</div><div class="v">'+(r0.ci95?fmt(r0.ci95[0],4)+' to '+fmt(r0.ci95[1],4):'—')+
+  '</div></div><div class="kpi"><div class="l">Inference</div><div class="v"><span class="badge '+cls+'" style="font-size:14px">'+esc(label(inf||'unknown'))+'</span></div></div><div class="kpi"><div class="l">Exposed / comparison</div><div class="v">'+fmt(r0.exposed)+' / '+fmt(r0.comparison)+'</div></div></div>';
+ const rows=(a.table||[]).filter(r=>isNum(r.estimate)&&r.ci95).map(r=>({label:label(r.analysis)+(r.cohort?' '+r.cohort:''),est:r.estimate,lo:r.ci95[0],hi:r.ci95[1],main:r.analysis===(a.table[0]||{}).analysis&&!r.cohort}));
+ if(rows.length)h+=intervals(rows,{title:'Effect estimates with 95% intervals',tick:v=>fmt(v,3)})+'<p class="hint">Dots are estimates, bars 95% intervals; the dashed line is no effect.</p>';
+ if(cs&&(cs.dynamic||[]).length){const S=[{name:'ATT by event time',pts:cs.dynamic.map(d=>[d.event_time,d.att])},{name:'uniform 95% lower',pts:cs.dynamic.map(d=>[d.event_time,(d.uniform_ci95||d.ci95||[])[0]]),dash:true},{name:'uniform 95% upper',pts:cs.dynamic.map(d=>[d.event_time,(d.uniform_ci95||d.ci95||[])[1]]),dash:true}];
+  h+='<h3 style="margin-top:14px">Event study</h3>'+legend(S,'x')+lines(S,{title:'ATT by months since adoption',xlabel:'months since first qualifying record',ylabel:u.length>26?'effect':u})+
+   '<p class="hint">Pre-trend check: '+esc(label((cs.pretrend||{}).status||'n/a'))+'. '+esc((cs.pretrend||{}).detail||'')+'</p>'}
+ if(cs&&(cs.by_cohort||[]).length)h+=tableHTML(cs.by_cohort.map(c=>({cohort:c.group_label,att:c.att,ci_low:(c.ci95||[])[0],ci_high:(c.ci95||[])[1],units:c.units,post_periods:c.post_periods})),{name:'cs-cohorts',caption:'Effect by adoption-month cohort'});
+ if(sd&&sd.unit_weights)h+=tableHTML(Object.entries(sd.unit_weights).map(([k,v])=>({practice_series:k,unit_weight:v})),{name:'sdid-unit-weights',caption:'Synthetic comparison: weights on unexposed practice series (pre-period RMSE '+fmt(sd.pre_fit_rmse,4)+')'});
+ if(o.method_selection)h+='<p class="hint">Method: '+esc(label(o.estimation_method||''))+' ('+esc(o.method_selection)+').</p>';
+ if((a.warnings||[]).length)h+='<details open><summary>Warnings ('+a.warnings.length+')</summary><ul>'+a.warnings.map(x=>'<li>'+esc(x)+'</li>').join('')+'</ul></details>';
+ if((a.assumptions||[]).length)h+='<details><summary>Assumptions ('+a.assumptions.length+')</summary><ul>'+a.assumptions.map(x=>'<li>'+esc(x)+'</li>').join('')+'</ul></details>';
+ return h+'</section>'}
+/* demand hierarchy: coherence and reconciliation facts + the nodes table */
+function vizReconcile(a){const rc=(a.overall||{}).reconciliation;if(!rc)return '';const rr=rc.reconciliation||{},co=rc.coherence||{},bt=rc.backtest||{};
+ let h='<section class="sec" data-focus="reconciliation"><h3>Hierarchical reconciliation</h3><div class="kpis">'+
+  [['Method',label(rc.applied?(rr.method||rc.method_requested):'not applied')],['Nodes / levels',fmt(rc.nodes)+' / '+fmt(rc.levels)],['Coherent',co.coherent==null?'—':(co.coherent?'children sum to parents':'no')],
+   ['Gap before / after',isNum(co.base_max_abs_gap)?fmt(co.base_max_abs_gap,2)+' / '+fmt(co.max_abs_gap,2):'—'],['Shrinkage',isNum(rr.shrinkage_lambda)?fmt(rr.shrinkage_lambda,2):'—']].map(k=>'<div class="kpi"><div class="l">'+esc(k[0])+'</div><div class="v" style="font-size:16px">'+esc(k[1])+'</div></div>').join('')+'</div>';
+ if(rc.applied===false&&rc.reason)h+='<p class="hint">'+esc(rc.reason)+'</p>';
+ const lv=bt.by_level;if(lv)h+=tableHTML(Object.entries(lv).map(([k,v])=>({level:k,base_mase:v.base_mase,reconciled_mase:v.reconciled_mase})),{name:'reconcile-mase',caption:'Rolling-origin MASE by hierarchy level: unreconciled vs reconciled'});
+ if((a.table||[]).length)h+=tableHTML(a.table,{name:'demand-hierarchy',caption:'Forecast by node'});
+ return h+'</section>'}
+/* risk-adjusted CUSUM / VLAD: path per unit and the signal table */
+function vizRA(a){const o=(a.overall||{}).risk_adjusted||{},p=o.parameters||{},us=(o.units||[]).slice(0,6),cus=o.check==='ra_cusum',lim=o.control_limits||{};
+ let h='<section class="sec" data-focus="ra"><h3>'+(cus?'Risk-adjusted CUSUM':'VLAD')+' · '+esc(label(p.outcome||''))+' by '+esc(p.unit||'')+'</h3><div class="kpis">'+
+  [['Units charted',fmt((o.summary||{}).units_charted)],['Units with signals',fmt((o.summary||{}).units_with_signals)],['Cases',fmt((o.summary||{}).cases)],['Network rate',isNum((o.summary||{}).network_rate)?pct(o.summary.network_rate,1):'—'],
+   [cus?'Control limit h':'Funnel limits',cus?fmt(lim.h,2):'95% / 99.8%']].map(k=>'<div class="kpi"><div class="l">'+esc(k[0])+'</div><div class="v">'+esc(k[1])+'</div></div>').join('')+'</div>';
+ const S=us.map(u=>({name:u.unit,pts:((cus?(u.cusum_up||{}).path:(u.vlad||{}).path)||[]).map(q=>[q[0],q[2]])})).filter(s=>s.pts.length);
+ if(S.length)h+=legend(S,'x')+lines(S,{title:cus?'CUSUM statistic by case number':'Cumulative expected minus observed by case number',xlabel:'cases in date order',ylabel:cus?'CUSUM':'expected - observed',extraY:cus&&isNum(lim.h)?[lim.h]:[],
+  under:cus&&isNum(lim.h)?(X,Y)=>'<line x1="40" x2="9999" y1="'+Y(lim.h)+'" y2="'+Y(lim.h)+'" style="stroke:var(--bad);stroke-dasharray:4 3"/>':null});
+ if((a.table||[]).length)h+=tableHTML(a.table,{name:'ra-units',caption:'Charted units (observed vs expected, signals)'});
+ if((o.signals||[]).length)h+=tableHTML(o.signals.slice(0,50),{name:'ra-signals',caption:'Signals'});
+ if((a.assumptions||[]).length)h+='<p class="hint"><b>Assumptions.</b> '+esc((a.assumptions||[]).join(' '))+'</p>';
+ return h+'</section>'}
 function yieldChart(S){const W=CW(),L=52,R=14,T=10,B=34,H=230;const kmax=Math.max(...S.map(s=>s.curve.length-1));
  const gain=s=>s.curve.map(r=>r.expected_value-s.curve[0].expected_value);const vs=S.flatMap(gain);let lo=Math.min(0,...vs),hi=Math.max(0.05,...vs);const pd=(hi-lo)*.06||.1;lo-=pd;hi+=pd;
  const X=k=>L+k/(kmax||1)*(W-L-R),Y=v=>T+(hi-v)/(hi-lo)*(H-T-B);let s=svgOpen(W,H,'Expected net value versus extra bookings per session');
@@ -887,11 +949,14 @@ function visual0(a){if(!a||a.answer_type==='unsupported')return '';const o=a.ove
   if(o.profile)return vizProfile(a);
   if(o.scheduling)return vizScheduling(a);
   if(o.queueing)return vizQueueing(a);
+  if(o.uplift)return vizUplift(a);
+  if(o.risk_adjusted)return vizRA(a);
+  if((o.sdid||o.callaway_santanna)&&!o.did)return vizEffectPanel(a);
   if(o.provider_network)return vizNetwork(a);
   if(o.matrix&&o.states)return vizPathway(a);
  if(o.network&&o.data_gaps)return vizMarket(a);
  if(o.briefing)return vizBriefing(a);
- if(o.demand)return vizDemand(a);if(o.curves)return vizSurvival(a);if(o.charts||(o.tests_examined!=null&&o.look_elsewhere_bits!=null))return vizMonitor(a);if(o.did)return vizEffect(a);if(o.portfolio&&o.by_group)return vizOutreach(a);
+ if(o.demand)return vizDemand(a)+vizReconcile(a);if(o.curves)return vizSurvival(a);if(o.charts||(o.tests_examined!=null&&o.look_elsewhere_bits!=null))return vizMonitor(a);if(o.did)return vizEffect(a);if(o.portfolio&&o.by_group)return vizOutreach(a);
  const v=vizVBC(a);if(v)return v;if(a.answer_type==='table'){const t=vizTrajectory(a);if(t)return t;return vizTable(a)}return vizScalar(a)}
 
 /* ---------- answer card ---------- */

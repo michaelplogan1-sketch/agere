@@ -21,6 +21,8 @@ TYPED |= {'pathway'}
 TYPED = TYPED | {'profile'}
 TYPED |= {'scheduling'}
 OPTIONAL_POPULATION += ('scheduling',)
+TYPED |= {'uplift'}  # heterogeneous treatment effect / who benefits (uplift.py)
+OPTIONAL_POPULATION += ('uplift',)
 TYPED |= {'queueing'}  # queueing-theory staffing / bed sizing (queueing.py); takes no population
 TYPED |= {'briefing'}
 TYPED |= {'early_signal'}
@@ -173,7 +175,11 @@ def parameter_schema(op, catalog):
         return obj({'program': string([*program_effect.PROGRAMS, 'medication_start'], 'Exposure identified from received records; never an unnamed program'),
                     'drug_class': string(['', *CLASSES], 'medication_start only; "" otherwise'),
                     'outcome': string(program_effect.OUTCOMES), 'lab': string(['', *library.MEASUREMENTS], 'lab outcome only; "" otherwise'),
-                    'pre_days': {'type': 'integer', 'minimum': 30, 'maximum': 730}, 'post_days': {'type': 'integer', 'minimum': 14, 'maximum': 365}})
+                    'pre_days': {'type': 'integer', 'minimum': 30, 'maximum': 730}, 'post_days': {'type': 'integer', 'minimum': 14, 'maximum': 365},
+                    'method': string(program_effect.METHODS, 'matched_did (default); sdid = synthetic difference-in-differences; callaway_santanna = staggered adoption DiD; auto chooses by how spread out adoption dates are'),
+                    'control_group': string(program_effect.CONTROL_GROUPS, 'callaway_santanna comparison units: never_treated (default) or not_yet_treated'),
+                    'estimator': string(program_effect.CS_ESTIMATORS, 'callaway_santanna estimator (default doubly_robust)'),
+                    'covariates': array(string(program_effect.PANEL_COVARIATES), 'callaway_santanna conditional parallel-trends covariates; [] = unconditional')})
     if op == 'outreach':
         from . import outreach
         return obj({'capacity_patients': {'type': ['integer', 'null'], 'minimum': 1, 'maximum': 5000, 'description': 'Outreach slots (patients).'},
@@ -203,6 +209,22 @@ def parameter_schema(op, catalog):
                     'threshold': {'type': ['number', 'null'], 'description': 'Optional stated threshold in display units (per 1,000, share 0..1 or percent, $ PMPM)'},
                     'focus': {'type': 'string', 'description': 'One unit id the question asks about (Dr X / practice X), else empty'},
                     'top': {'type': 'integer', 'minimum': 1, 'maximum': 500}})
+    if op == 'uplift':
+        from . import uplift, program_effect
+        n = lambda lo, hi, d: {'type': ['number', 'null'], 'minimum': lo, 'maximum': hi, 'description': d}
+        return obj({'program': string(list(program_effect.PROGRAMS), 'Program whose benefit is estimated (outreach / care management = care_management)'),
+                    'outcome': string(uplift.OUTCOMES, 'Event the program should reduce; ed_or_admission when not specific'),
+                    'outcome_type': string(uplift.OUTCOME_TYPES, 'binary = any event (default); count = number of events'),
+                    'pre_days': {'type': 'integer', 'minimum': 30, 'maximum': 730, 'description': 'Covariate window before the index date (default 180)'},
+                    'post_days': {'type': 'integer', 'minimum': 14, 'maximum': 365, 'description': 'Outcome window after the index date (default 90)'},
+                    'capacity_patients': {'type': ['integer', 'null'], 'minimum': 1, 'maximum': 5000, 'description': 'Outreach slots (patients), only if stated'},
+                    'capacity_hours': n(0.25, 2000, 'Nurse / care-manager hours, only if stated'),
+                    'minutes_per_contact': {'type': 'integer', 'minimum': 1, 'maximum': 480, 'description': 'Minutes per contact (default 30)'},
+                    'value_per_event_usd': n(0, 1e7, 'Stated value of one avoided event in dollars; null = the outreach planning assumption'),
+                    'cost_per_contact_usd': n(0, 1e6, 'Stated cost of one contact in dollars (default 0)'),
+                    'learners': string(['both', *uplift.LEARNERS], 'Meta-learners to fit; x = X-learner, t = T-learner'),
+                    'primary_learner': string(list(uplift.LEARNERS), 'Learner whose ranking drives targeting (default x)'),
+                    'top': {'type': 'integer', 'minimum': 1, 'maximum': 5000, 'description': 'Members listed (default 200)'}})
     if op == 'queueing':
         from . import queueing
         n = lambda lo, hi, d: {'type': ['number', 'null'], 'minimum': lo, 'maximum': hi, 'description': d}
@@ -367,7 +389,16 @@ def parameter_schema(op, catalog):
                     'group_by': string(monitor.GROUP_BY, 'auto = overall plus each series\' natural grouping'),
                     'method': string(monitor.METHODS), 'amount': string(monitor.AMOUNTS),
                     'stream': {'type': 'string', 'description': 'One source stream for feed checks, or empty'},
-                    'period': obj({'start': {'type': 'string'}, 'end': {'type': 'string'}})})
+                    'period': obj({'start': {'type': 'string'}, 'end': {'type': 'string'}}),
+                    'chart': string(monitor.CHART_OPTIONS, 'control = SPC charts (default); ra_cusum = risk-adjusted CUSUM; vlad = variable life-adjusted display of observed minus expected outcomes'),
+                    'outcome': string(monitor.RA_OUTCOMES, 'ra_cusum / vlad outcome: readmission, post_discharge_ed, ed_revisit or mortality'),
+                    'unit': string(monitor.RA_UNITS, 'ra_cusum / vlad charted unit: hospital, practice, pcp or none (network)'),
+                    'or_shift': {'type': ['number', 'null'], 'minimum': 1.01, 'maximum': 19.99, 'description': 'Odds-ratio deterioration the CUSUM should detect (default 2)'},
+                    'or_improve': {'type': ['number', 'null'], 'minimum': 0.01, 'maximum': 0.99, 'description': 'Odds-ratio improvement to detect, only if stated'},
+                    'arl0': {'type': 'integer', 'minimum': 100, 'maximum': 100000, 'description': 'In-control average run length in cases (default 5000)'},
+                    'window_days': {'type': 'integer', 'minimum': 1, 'maximum': 365, 'description': 'Outcome window in days, e.g. 30-day readmission (default 30)'},
+                    'adjust': string(monitor.RA_ADJUST, 'Expected-risk covariates (default age, sex, conditions)'),
+                    'min_cases': {'type': 'integer', 'minimum': 10, 'maximum': 100000, 'description': 'Smallest unit charted (default 30)'}})
     if op == 'market':
         from . import market
         return obj({'unit': string(market.UNITS, 'Ticker unit: attributed practice, attributed PCP, or payer'),
@@ -386,7 +417,9 @@ def parameter_schema(op, catalog):
                     'peak_quantile': {'type': 'number', 'minimum': 0.5, 'maximum': 0.999, 'description': 'bed_days peak-day coverage; default 0.95'},
                     'staffing': {'type': 'boolean', 'description': 'true when the question asks for staff/FTE needs'},
                     'minutes_per_unit': {'type': ['number', 'null'], 'description': 'User-supplied staff minutes per unit; null if not stated (never invent)'},
-                    'fte_hours_per_week': {'type': ['number', 'null'], 'description': 'User-supplied productive hours per FTE-week; null if not stated'}})
+                    'fte_hours_per_week': {'type': ['number', 'null'], 'description': 'User-supplied productive hours per FTE-week; null if not stated'},
+                    'hierarchy': array(string([g for g in demand.GROUP_BY if g != 'none']), 'Ordered levels (outermost first) forecast together as a hierarchy; [] = none'),
+                    'reconcile': string(demand.RECONCILE, 'Make child forecasts add up to parents: mint_shrink (default with a hierarchy), ols, wls, none')})
     if op == 'knowledge':
         from . import vbc_knowledge
         return obj({'query': {'type': 'string', 'description': 'The explanation question, verbatim'},

@@ -30,5 +30,10 @@
  {
   "question": "did transitions of care reduce ED visits",
   "expect_operation": "program_effect"
- }
+ },
+  {"question": "Using synthetic difference in differences, did care management reduce ED visits?", "expect_operation": "program_effect"},
+  {"question": "Estimate the effect of transitions of care calls on admissions with a staggered rollout", "expect_operation": "program_effect"},
+  {"question": "Callaway Sant'Anna estimate of care management on admissions, using not-yet-treated controls", "expect_operation": "program_effect"},
+  {"question": "Effect of community services on ED visits using synthetic DiD", "expect_operation": "program_effect"},
+  {"question": "Did care coordination lower admissions? Use staggered adoption difference-in-differences with doubly robust estimation", "expect_operation": "program_effect"}
 ]

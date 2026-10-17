@@ -757,6 +757,9 @@ def _compile(question, profile, as_of):
     if (plan := _target_trial_question(q, profile)) is not None: return plan  # drug A vs drug B (new-user active comparator); single starts stay program_effect
     if (plan := _line_of_therapy_question(q, profile)) is not None: return plan  # lines of therapy, switching, sequences, persistence from fills
     if (plan := _trial_feasibility_question(q, profile, as_of)) is not None: return plan  # trial eligibility funnel over stated criteria
+    lifted = _uplift_question(q)  # who benefits from a program (heterogeneous effect): before the average-effect route
+    if lifted is not None:
+        return lifted
     effect = _program_effect_question(q, profile)
     if effect is not None:
         return effect
@@ -870,7 +873,7 @@ def _compile(question, profile, as_of):
 
 
 # ---- monitoring: statistical process control, feed health and claims review flags -------------
-MONITOR_TRIGGER = (r"\bout of (?:statistical )?control\b|\banomal(?:y|ies|ous)\b|\bbenford(?:'s)?\b|\bcontrol charts?\b|\bspc\b|"
+MONITOR_TRIGGER = (r"\bout of (?:statistical )?control\b|\brisk[- ]adjusted (?:cusum|sprt|control chart|chart)s?\b|\bra[- ]?cusum\b|\bvlad\b|\bvariable life[- ]adjusted (?:display|plot)\b|\bcusum\b|\banomal(?:y|ies|ous)\b|\bbenford(?:'s)?\b|\bcontrol charts?\b|\bspc\b|"
                    r"\bstatistical process control\b|\bwestern electric\b|\bnelson rules?\b|\bewma\b|\bbehaving (?:ab)?normally\b|"
                    r"\bbehaving (?:oddly|strangely|unusually)\b|\bduplicate (?:claims?|billing|bills)\b|\bbilling (?:intensity )?outliers?\b|"
                    r"\bunusual billing\b|\bfeeds? (?:gaps?|outages?|drop(?:out)?s?|health)\b|"
@@ -895,6 +898,37 @@ MONITOR_GROUPS = [(r'\b(?:which|what|by|each|per|any|for each) (?:of (?:our|the)
 def _monitor_question(q, r, profile, as_of, info):
     low = r.low
     if not re.search(MONITOR_TRIGGER, low): return None
+    ra = re.search(r'\bvlad\b|\bvariable life[- ]adjusted\b', low) and 'vlad' or (re.search(r'\bra[- ]?cusum\b|\brisk[- ]adjusted (?:cusum|sprt)\b|\bcusum\b', low) and 'ra_cusum')
+    if ra and re.search(r'\breadmi|\bmortality\b|\bdeaths?\b|\bdie[sd]?\b|\bed revisits?\b|\bpost[- ]discharge ed\b|\bhospital\b|\bsurgeons?\b|\bunits?\b', low):
+        params = {'check': ra, 'chart': ra}
+        if re.search(r'\bmortality\b|\bdeaths?\b|\bdie[sd]?\b', low): params['outcome'] = 'mortality'
+        elif re.search(r'\bed revisits?\b|\bemergency (?:department )?revisits?\b', low): params['outcome'] = 'ed_revisit'
+        elif re.search(r'\bpost[- ]discharge (?:ed|emergency)\b|\bed (?:visits? )?(?:within|after) \d+ days? of discharge\b', low): params['outcome'] = 'post_discharge_ed'
+        else: params['outcome'] = 'readmission'
+        if re.search(r'\b(?:by|per|each|for each|across) (?:pcp|physician|provider)s?\b', low): params['unit'] = 'pcp'
+        elif re.search(r'\b(?:by|per|each|for each|across) (?:practice|clinic)s?\b', low): params.update(unit='practice', group_by='practice')
+        elif re.search(r'\b(?:by|per|each|for each|across) (?:hospital|facilit(?:y|ies)|site)s?\b', low): params.update(unit='hospital', group_by='facility')
+        elif re.search(r'\b(?:network|system)[- ]wide\b|\boverall\b|\bacross the (?:network|system)\b', low): params['unit'] = 'none'
+        w = re.search(r'\b(\d{1,3})[- ]day\b', low)
+        if w and 1 <= int(w.group(1)) <= 365: params['window_days'] = int(w.group(1))
+        o = re.search(r'\b(?:odds ratio|or)\s*(?:of|=|:)?\s*(\d+(?:\.\d+)?)\b', low)
+        if o and 1.0 < float(o.group(1)) < 20: params['or_shift'] = float(o.group(1))
+        elif re.search(r'\bdoubl(?:e|ing) (?:of )?(?:the )?(?:odds|risk)\b', low): params['or_shift'] = 2.0
+        oi = re.search(r'\bimprovement\b[^.?]{0,30}\b(?:odds ratio|or)\s*(?:of|=|:)?\s*(0?\.\d+)\b|\bhalv(?:e|ing) (?:of )?(?:the )?(?:odds|risk)\b', low)
+        if oi: params['or_improve'] = float(oi.group(1)) if oi.group(1) else 0.5
+        a = re.search(r'\barl0?\s*(?:of|=|:)?\s*(\d{3,6})\b|\b(?:average run length|run length)\s*(?:of|=|:)?\s*(\d{3,6})\b', low)
+        if a and 100 <= int(a.group(1) or a.group(2)) <= 100000: params['arl0'] = int(a.group(1) or a.group(2))
+        mc = re.search(r'\b(?:at least|min(?:imum)?(?: of)?|with (?:at least )?)\s*(\d{2,5})\s+cases\b', low)
+        if mc and 10 <= int(mc.group(1)) <= 100000: params['min_cases'] = int(mc.group(1))
+        if re.search(r'\bunadjusted\b|\bno (?:risk )?adjustment\b', low): params['adjust'] = 'none'
+        elif re.search(r'\bage and sex(?: only)?\b', low) and not re.search(r'\bconditions?\b', low): params['adjust'] = 'age_sex'
+        from .monitor import validate
+        params = validate(params)
+        info.update(route='local_compiler', unexplained=[])
+        info['recognised'] = list(info.get('recognised') or []) + [f"risk-adjusted {ra}", 'outcome ' + params['outcome']]
+        return {'interpretation': q, 'coverage': 'supported_observation', 'unmet_requirements': [],
+                'nodes': [{'id': 'answer', 'operation': 'monitor', 'inputs': [], 'parameters': params,
+                           'purpose': f"Risk-adjusted {'CUSUM' if ra == 'ra_cusum' else 'VLAD'} of {params['outcome'].replace('_', ' ')} by {params['unit']}"}]}, info
     params = {}
     claims_words = r'\b(?:claims?|billing|bills?|billed amounts?|allowed amounts?)\b'
     # A named feed first ('lab feed' must not be read as a generic 'feed'): received stream names, then common aliases.
@@ -2913,6 +2947,25 @@ def _demand_question(q, profile, as_of):
         if not 1 <= horizon <= (24 if freq == 'month' else 104): return decline(f'forecast horizon beyond {24 if freq == "month" else 104} {freq}s')
         params['horizon'] = horizon
     params['frequency'] = freq
+    # hierarchy: 'by facility and practice', 'facility then practice then payer'; reconciliation wording
+    lv = {'facility': r'(?:facilit(?:y|ies)|hospitals?|sites?|locations?)', 'practice': r'(?:practices?|clinics?)', 'payer': r'(?:payers?|payors?|insurance|plans?)'}
+    levels = r'(?:' + '|'.join(lv.values()) + r')'
+    hier = re.search(r'\b(?:by|per|for each|each|across|at the|down to the)\s+(' + levels + r')(?:\s*(?:,|and|then|and then|within|by)\s*(?:each |every |the )?(' + levels + r'))(?:\s*(?:,|and|then|and then|within|by)\s*(?:each |every |the )?(' + levels + r'))?\b', r.low)
+    if hier:
+        names = []
+        for g in hier.groups():
+            if g:
+                n = next(k for k, rx in lv.items() if re.fullmatch(rx, g))
+                if n not in names: names.append(n)
+        if len(names) >= 2:
+            params['hierarchy'] = names
+            for i in range(hier.start(), hier.end()): r.used[i] = True
+            r.notes.append('hierarchy ' + ' > '.join(names))
+    rec = r.take(r"\b(?:reconcil\w*|coherent|(?:that |which |so (?:that )?|and )?(?:it |they |forecasts? |the forecasts? )?add(?:s|ing)? up|sums? (?:up )?to (?:the )?(?:total|parents?)|consistent across (?:levels|facilit\w+|practices)|mint(?: shrink\w*)?|hierarchical(?:ly)?)\b", 'reconcile')
+    if rec or params.get('hierarchy'):
+        m = re.search(r'\b(ols|wls|mint)\b', r.low)
+        params['reconcile'] = {'ols': 'ols', 'wls': 'wls'}.get(m.group(1) if m else '', 'mint_shrink')
+        if re.search(r'\b(?:unreconciled|not reconciled|no reconciliation)\b', r.low): params['reconcile'] = 'none'
     # groups
     for pattern, g in [(r'\b(?:by|per|for each|each|across) (?:practice|clinic)s?\b', 'practice'),
                        (r'\b(?:by|per|for each|each|across) (?:facilit(?:y|ies)|hospitals?|sites?|locations?)\b', 'facility'),
@@ -2939,6 +2992,8 @@ def _demand_question(q, profile, as_of):
     else:
         info['unexplained'], info['ignored_words'] = [], getattr(r, 'ignored', [])
     from .demand import validate
+    if params.get('reconcile') and params['reconcile'] != 'none' and not params.get('hierarchy') and params.get('group_by', 'none') == 'none':
+        params.pop('reconcile')  # nothing to reconcile without a hierarchy or a grouping
     params = validate(params)
     info['route'] = 'local_compiler'
     restricted = any(spec[k] for k in spec)
@@ -2946,7 +3001,8 @@ def _demand_question(q, profile, as_of):
              if restricted else [])
     nodes.append({'id': 'demand', 'operation': 'demand', 'inputs': ['population'] if restricted else [], 'parameters': params,
                   'purpose': f"Forecast {params['measure'].replace('_', ' ')} per {params['frequency']}, {params['horizon']} ahead"
-                             + (f" by {params['group_by']}" if params['group_by'] != 'none' else '')})
+                             + (f" by {params['group_by']}" if params['group_by'] != 'none' else '')
+                             + (f" (hierarchy {' > '.join(params['hierarchy'])}, {params['reconcile']} reconciliation)" if params.get('hierarchy') else '')})
     return {'interpretation': q, 'coverage': 'supported_observation', 'unmet_requirements': [], 'nodes': nodes}, info
 
 
@@ -3060,6 +3116,9 @@ IDENTIFIED_CAUSAL = (r'\bcausal(?:ly)?\b|\bcause[ds]?\b|\battributable\b|\bident
 RANDOMISED = r'\brandomi[sz](?:ed|ation)\b|\brct\b|\btrial\b'
 INTERVENTION_WORDS = (r'\bprograms?\b|\binterventions?\b|\binitiatives?\b|\bpilots?\b|\bcampaigns?\b|\boutreach\b|\bjoin(?:ing|ed)? (?:the |an |our )?acos?\b|'
                       r'\blaunch(?:ed|ing)?\b|\brolled out\b|\bimplement(?:ed|ing|ation)\b|\bintroduc(?:ed|ing|tion)\b')
+EFFECT_METHOD = (r"\bsynthetic (?:difference[- ]in[- ]differences?|diff(?:erence)?[- ]in[- ]diff(?:erence)?s?|did|control with)\b|\bsdid\b|"
+                 r"\bcallaway[- ]?(?:and |&)?[- ]?sant'?anna\b|\bcs[- ]?did\b|\bstaggered (?:roll-?out|adoption|rollout|did|difference|start|entry|enrolment|enrollment)\b|"
+                 r"\bgroup[- ]time (?:att|effects?)\b|\bevent[- ]study\b|\bstaggered\b")
 EFFECT_PROGRAMS = [  # program -> (pattern, received stream that identifies exposure)
     ('transitions_of_care', r'transitions?[- ]of[- ]care|\btoc\b|\btcm\b|\btransitional care management\b|'
                             r'post[- ]discharge (?:calls?|contacts?|follow[- ]?up calls?)|care transitions? (?:calls?|contacts?|program)',
@@ -3675,6 +3734,47 @@ def _calibration_question(q):
                        'purpose': 'Time-split conformal backtest of Agere predictions: coverage, Brier, ECE, reliability'}]}, info
 
 
+# ---- uplift: who benefits from outreach / care management (heterogeneous treatment effect) --------
+UPLIFT_INTENT = (r"\buplift\b|\bpersuadables?\b|\bheterogeneous (?:treatment )?effects?\b|\btreatment[- ]effect heterogeneity\b|\bheterogeneity (?:of|in) (?:the )?(?:treatment )?effects?\b|"
+                 r"\bcate\b|\bqini\b|\bautoc\b|\bwho (?:(?:would|will|might|actually|really|stands? to|is most likely to|are most likely to) )*benefit(?:s)?(?: the)?(?: most)?(?: from| by)\b|"
+                 r"\bwho (?:responds?|would respond|will respond)(?: the)? (?:best|most)\b|\bmost likely to benefit\b|\bbenefit(?:s|ing)? (?:the )?most from\b|"
+                 r"\bwhich (?:patients|members|people) (?:would|will|should|might) (?:benefit|respond)\b|\bwho should we enrol+\b[^.?]{0,40}\bbenefit\b|\bresponds? best to\b")
+UPLIFT_PROGRAM = r"\boutreach\b|\bcare managers?\b|\bnurse (?:calls?|outreach)\b|\bprograms?\b|\bintervention\b|\bcase management\b"
+
+
+def _uplift_question(q):
+    """'Who benefits most from care management?' / 'which members are persuadables for outreach?' -> uplift (T/X-learners, RATE, Qini).
+    A risk-ranked outreach worklist stays outreach; one average effect stays program_effect; drug-start questions are not programs."""
+    low = q.lower()
+    if not re.search(UPLIFT_INTENT, low): return None
+    program = next((name for name, rx, _ in EFFECT_PROGRAMS if re.search(rx, low)), None)
+    if program is None and re.search(UPLIFT_PROGRAM, low): program = 'care_management'
+    if program is None: return None
+    if re.match(r'(?:why (?:is|are|do|does)|explain|what is)\b', low): return None
+    params = {'program': program}
+    out = next((o for o, rx in EFFECT_OUTCOMES if o != 'pmpm' and re.search(rx, low)), None)
+    if out == 'ed_visits' and re.search(EFFECT_OUTCOMES[0][1], low): out = 'ed_or_admission'
+    params['outcome'] = out or 'ed_or_admission'
+    days = re.search(r'\b(\d{1,3})[- ]day\b', low)
+    if days: params['post_days'] = min(max(int(days.group(1)), 14), 365)
+    cap = re.search(r'\b(\d{1,4})\s+(?:patients?|members?|slots?|people|enrol+ees?)\b', low)
+    if cap and 1 <= int(cap.group(1)) <= 5000: params['capacity_patients'] = int(cap.group(1))
+    hrs = re.search(r'\b(\d{1,4}(?:\.\d+)?)\s+(?:nurse |care[- ]manager |staff )?hours?\b', low)
+    if hrs and 0.25 <= float(hrs.group(1)) <= 2000: params['capacity_hours'] = float(hrs.group(1))
+    mpc = re.search(r'\b(\d{1,3})\s+min(?:ute)?s?\s+(?:per|a|each)\s+(?:contact|call|patient|member|enrol+ee)\b', low)
+    if mpc and 1 <= int(mpc.group(1)) <= 480: params['minutes_per_contact'] = int(mpc.group(1))
+    val = re.search(r'\$\s?(\d[\d,]*)\s+(?:per|for each|for an?|per avoided|saved per)\s+(?:avoided |averted |prevented )?(?:ed visit|er visit|admission|event|hospitali[sz]ation)', low)
+    if val: params['value_per_event_usd'] = float(val.group(1).replace(',', ''))
+    cost = re.search(r'\$\s?(\d[\d,]*)\s+(?:per|a|each)\s+(?:contact|call|outreach|enrol+ment)', low)
+    if cost: params['cost_per_contact_usd'] = float(cost.group(1).replace(',', ''))
+    if re.search(r'\bt[- ]learner\b', low) and not re.search(r'\bx[- ]learner\b', low): params.update(learners='t', primary_learner='t')
+    elif re.search(r'\bx[- ]learner\b', low) and not re.search(r'\bt[- ]learner\b', low): params.update(learners='x', primary_learner='x')
+    info = {'compiler': VERSION, 'recognised': ['uplift question', 'program ' + program], 'paraphrased': [], 'route': 'local_compiler', 'unexplained': []}
+    return {'interpretation': q, 'coverage': 'supported_observation', 'unmet_requirements': [],
+            'nodes': [{'id': 'answer', 'operation': 'uplift', 'inputs': [], 'parameters': params,
+                       'purpose': f"Who benefits from {program.replace('_', ' ')}: cross-fitted T/X-learner uplift, RATE and Qini, capacity-constrained targeting"}]}, info
+
+
 # ---- queueing: staffing / bed sizing for a wait or blocking target ----------------------------
 STAFF_NOUN = r'(?:nurses?|providers?|physicians?|doctors?|clinicians?|staff|techs?|triage (?:nurses?|staff)|registered nurses|rns?|mds?|advanced practice providers|apps?|front desk|registrars?)'
 QUEUEING_INTENT = (r'\berlang\b|\bqueue(?:ing)? (?:theory|model)\b|\bsquare[- ]root staffing\b'
@@ -3795,7 +3895,7 @@ def _program_effect_question(q, profile):
     records and Y a recognised outcome. Declines (unsupported, naming the missing input) otherwise; returns None when the
     question is not effect-shaped or demands an identified causal effect (left to the general refusal)."""
     low = q.lower()
-    if not re.search(EFFECT_QUESTION, low) or re.search(IDENTIFIED_CAUSAL, low): return None
+    if not (re.search(EFFECT_QUESTION, low) or (re.search(EFFECT_METHOD, low) and re.search(INTERVENTION_WORDS + r'|' + EFFECT_PROGRAMS[1][1], low))) or re.search(IDENTIFIED_CAUSAL, low): return None
     info = {'compiler': VERSION, 'recognised': ['program effect question'], 'paraphrased': []}
     if re.search(RANDOMISED, low):
         return _effect_unsupported(q, ['randomised assignment records (none are received; program receipt is observational, so a trial '
@@ -3841,11 +3941,24 @@ def _program_effect_question(q, profile):
     if conds:
         params['population_conditions'] = conds[:5]
         info['recognised'].append('population ' + ', '.join(conds[:5]))
+    if re.search(r"\bsynthetic (?:difference|diff|did|control with)|\bsdid\b", low): params['method'] = 'sdid'
+    elif re.search(r"\bcallaway|\bcs[- ]?did\b|\bstaggered\b|\bgroup[- ]time\b|\bevent[- ]study\b", low): params['method'] = 'callaway_santanna'
+    elif re.search(r'\b(?:best|appropriate|right) (?:did |difference[- ]in[- ]differences? )?(?:method|estimator)\b|\bautomatic(?:ally)? (?:choose|pick|select)\b', low): params['method'] = 'auto'
+    if params.get('method') in ('callaway_santanna', 'auto'):
+        if re.search(r'\bnot[- ]yet[- ]treated\b', low): params['control_group'] = 'not_yet_treated'
+        elif re.search(r'\bnever[- ]treated\b', low): params['control_group'] = 'never_treated'
+        if re.search(r'\bdoubly[- ]robust\b', low): params['estimator'] = 'doubly_robust'
+        elif re.search(r'\binverse[- ]probability(?:[- ]weight\w*)?\b|\bipw\b', low): params['estimator'] = 'ipw'
+        elif re.search(r'\boutcome regression\b', low): params['estimator'] = 'outcome_regression'
+        cov = [c for c, rx in (('age_band', r'\bage\b'), ('sex', r'\b(?:sex|gender)\b'), ('payer', r'\b(?:payer|coverage|insurance)\b'),
+                               ('chronic_conditions', r'\bchronic (?:conditions?|disease)\b|\bcomorbidit\w+\b')) if re.search(rx, low)] if re.search(r'\b(?:adjust(?:ing|ed)?|control(?:ling)?|condition(?:ing)?|covariates?)\b[^.?]{0,25}\b(?:for|on|by|age|sex|payer|chronic)\b', low) else []
+        if cov: params['covariates'] = cov
+    if params.get('method'): info['recognised'].append('method ' + params['method'])
     info.update(route='local_compiler', unexplained=[])
     label = f'{drug} start' if drug else name.replace('_', ' ')
     return {'interpretation': q, 'coverage': 'supported_observation', 'unmet_requirements': [],
             'nodes': [{'id': 'answer', 'operation': 'program_effect', 'inputs': [], 'parameters': params,
-                       'purpose': f'Estimated effect of {label} on {lab or outcome} under stated assumptions (matched DiD, diagnostics)'}]}, info
+                       'purpose': f"Estimated effect of {label} on {lab or outcome} under stated assumptions ({ {'sdid': 'synthetic difference-in-differences', 'callaway_santanna': 'Callaway-Sant' + chr(39) + 'Anna staggered DiD', 'auto': 'DiD method chosen by adoption spread'}.get(params.get('method'), 'matched DiD, diagnostics') })"}]}, info
 
 
 # ---- care pathways: transitions, journeys, leakage ---------------------------------------
@@ -4334,6 +4447,7 @@ def _risk_outcomes_question(q, profile, as_of):
     """CMS-style risk-standardized outcomes (RSRR, O/E, ERR, funnel, HRRP) -> risk_outcomes. Plain fair comparison of PCPs / practices
     ('adjusting for case mix', 'truly high') stays profile unless the unit is a hospital or the CMS vocabulary is used."""
     low = _strip_framing(q.lower())
+    if re.search(r'\bcusum\b|\bvlad\b|\bvariable life[- ]adjusted\b', low): return None  # sequential monitoring charts are monitor (ra_cusum / vlad)
     if not re.search(OUTCOME_WORDS + r'|\brsrr\b|\brsmr\b|\bexcess readmission ratios?\b|\bhrrp\b', low): return None
     if re.search(r'\bplanned\b', low): return None  # planned vs unplanned needs a planned-readmission flag: literal lookup / unsupported
     strong = re.search(OUTCOME_STRONG, low)

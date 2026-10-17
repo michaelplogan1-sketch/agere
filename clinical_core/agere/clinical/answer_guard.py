@@ -1274,7 +1274,7 @@ class PendingCheck:
 
 # analysis_graph.build_answer_core: a plan ending in one of these engines answers with a table (or unsupported), never a
 # count / value / patient set ('vbc', 'aggregate', 'sql' and population nodes can, so they are not listed)
-_TABLE_OPERATIONS = {'trajectory', 'calibration', 'scheduling', 'queueing', 'survival', 'briefing', 'pathway', 'discover', 'outreach', 'knowledge',
+_TABLE_OPERATIONS = {'trajectory', 'calibration', 'scheduling', 'queueing', 'uplift', 'survival', 'briefing', 'pathway', 'discover', 'outreach', 'knowledge',
                      'early_signal', 'profile', 'monitor', 'claims_review', 'risk_adjustment', 'network', 'target_trial', 'line_of_therapy',
                      'trial_feasibility', 'loop_closure', 'diagnostic_delay', 'risk_outcomes', 'contract_strategy', 'market', 'demand',
                      'program_effect', 'explain'}

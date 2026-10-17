@@ -33,5 +33,9 @@
  {
   "question": "Has the denial rate shifted recently?",
   "expect_operation": "monitor"
- }
+ },
+  {"question": "Risk-adjusted CUSUM of readmissions by hospital", "expect_operation": "monitor"},
+  {"question": "VLAD chart for 30-day mortality", "expect_operation": "monitor"},
+  {"question": "Run a risk-adjusted CUSUM for ED revisits by practice detecting an odds ratio of 1.5", "expect_operation": "monitor"},
+  {"question": "VLAD plot of readmissions by facility with at least 50 cases", "expect_operation": "monitor"}
 ]
