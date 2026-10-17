@@ -529,3 +529,30 @@ class DeclineTests(unittest.TestCase):
         self.assertEqual(result['answer']['status'], 'clarify')
         self.assertEqual(result['answer']['readings'], ['a', 'b'])
         self.assertEqual(receipt['decision'], 'clarify')
+
+
+class DeferralTests(unittest.TestCase):
+    """While the analysts answer, the fast path skips the paid hosted ladder; engine questions skip the analysts."""
+
+    def test_deferral_scope_is_per_thread_and_restored(self):
+        from clinical_core.agere.clinical import economical_planner as ep
+        self.assertFalse(ep.deferring())
+        with ep.defer_to_analyst():
+            self.assertTrue(ep.deferring())
+            with ep.defer_to_analyst(False):
+                self.assertFalse(ep.deferring())
+            self.assertTrue(ep.deferring())
+        self.assertFalse(ep.deferring())
+
+    def test_deferred_fast_path_ships_the_analysts_answer(self):
+        fast = {'route': 'deferred_to_analyst', 'answer': {'status': 'unsupported', 'answer_type': 'unsupported', 'unknown_count': 0,
+                'missing': [], 'grounding': []}, 'planner_receipt': {'steps': []}}
+        analyst = {'answer': {'status': 'answered', 'answer_type': 'count', 'count': 7, 'unknown_count': 0, 'missing': [],
+                              'grounding': []}, 'tool_calls': [], 'hybrid': {'interpretation': 'hybrid unanimous; 3/3 agree'}}
+        result, receipt, _ = together.decide(None, 'q', fast, None, analyst, 'done')
+        self.assertEqual((result['answer']['count'], receipt['decision']), (7, 'analysts_answered'))
+
+    def test_usable_requires_an_answer_or_decline(self):
+        self.assertTrue(together._usable({'answer': {'status': 'clarify'}}, 'done'))
+        self.assertFalse(together._usable({'answer': None, 'error': 'hybrid abstained'}, 'done'))
+        self.assertFalse(together._usable(None, 'timed_out'))

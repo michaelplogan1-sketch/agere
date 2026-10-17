@@ -182,6 +182,20 @@ def _engine_lean(stack,question):
             'lean':bool(p['label'] in PRODUCT and p['label']!='knowledge' and p['probability']>=ENGINE_LEAN)}
 
 
+_SCOPE=__import__('threading').local()
+
+
+def deferring():
+    return bool(getattr(_SCOPE,'defer',False))
+
+
+class defer_to_analyst:
+    """with defer_to_analyst(): ... -- this thread's plan() stops before the paid hosted SQL ladder and the frontier."""
+    def __init__(self,on=True):self.on=on
+    def __enter__(self):self.prev=deferring();_SCOPE.defer=self.on;return self
+    def __exit__(self,*exc):_SCOPE.defer=self.prev
+
+
 def plan(stack,question,ledger,frontier):
     """frontier is a callback; no hosted call occurs for an exact local plan/cache."""
     normalize(question);start=time.perf_counter();meta=stack.retriever.meta
@@ -357,6 +371,17 @@ def plan(stack,question,ledger,frontier):
                                'operator':route_info['decision'],'local_compiler_declined':local_decline,
                                'steps':metric_steps+[{'stage':'operator_router','receipt':{'cost_estimate':{'estimated_usd':operator_router.cost(route_info)}}}],
                                'elapsed_seconds':time.perf_counter()-start}
+    # Deferral (together.py): when the independent analysts are already answering this question, the fast path stops
+    # here instead of paying for a second hosted SQL ladder and the frontier planner (it falls back to them only if the
+    # analysts produce no usable answer).
+    if deferring():
+        from .analysis_graph import validate as _validate
+        graph=_validate({'interpretation':f'Deferred to the independent analysts: {question}','coverage':'unsupported','nodes':[],
+                         'unmet_requirements':['answered by the independent analysts (hybrid core)']},meta['snapshot']['as_of'])
+        steps=list(locals().get('metric_steps') or [])  # a declined metric-router call is still paid
+        return graph,{'route':'deferred_to_analyst','model':None,'new_paid_api_calls':len(steps),'frontier_called':False,
+                      'local_compiler_declined':local_decline,'steps':steps,
+                      'elapsed_seconds':time.perf_counter()-start}
     # Cheapest hosted rung: one Haiku call writing governed SQL over the cached schema (~$0.001).
     if profile is not None and stack.allow_live and os.environ.get('AGERE_HOSTED_SQL','on')!='off':
         try:

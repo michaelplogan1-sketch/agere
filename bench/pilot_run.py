@@ -64,7 +64,7 @@ def submission(q, answer):
 
 
 def ask(q, url):
-    text = q['question'] + ' Definition: ' + q['definition']
+    text = q['question'] + (' Definition: ' + q['definition'] if q.get('definition') else '')
     t0 = time.time()
     try:
         resp = post_json(url.rstrip('/') + '/api/stack/compose', {'question': text}, timeout=900)
@@ -84,9 +84,13 @@ def main():
     ap.add_argument('--split', default='all', choices=('dev', 'calibration', 'all'))
     ap.add_argument('--workers', type=int, default=3)
     ap.add_argument('--url', default='http://127.0.0.1:8885')
+    ap.add_argument('--questions', type=Path, help='another question file ({id, question, answer_type}); default: the pilot set')
     a = ap.parse_args()
-    qs = [json.loads(l) for l in PILOT.read_text().splitlines() if l.strip()]
-    qs = [q for q in qs if a.split == 'all' or q.get('split') == a.split]
+    qs = [json.loads(l) for l in (a.questions or PILOT).read_text().splitlines() if l.strip()]
+    for q in qs:
+        q.setdefault('definition', '')
+        q.setdefault('response_format', q.get('answer_type'))
+    qs = [q for q in qs if a.split == 'all' or q.get('split', a.split) == a.split]
     a.out.mkdir(parents=True, exist_ok=True)
     done = {}
     log = a.out / 'responses.jsonl'

@@ -174,6 +174,33 @@ def _released(stack):
 
 # --- the analyst ------------------------------------------------------------------------------------------------------------
 
+def deferral_on():
+    return os.environ.get('AGERE_DEFER_FAST', 'on').strip().lower() != 'off'
+
+
+def _usable(analyst, state):
+    """The analysts returned an answer or a stated decline (clarify / unsupported)."""
+    return state == 'done' and isinstance((analyst or {}).get('answer'), dict) and not (analyst or {}).get('error')
+
+
+def _compiled_engine(stack, question, as_of):
+    """The analytic engine(s) Agere's own compiler routes this question to ($0, milliseconds), else []. An engine answer is
+    never replaced by the analysts, so they are not started for it."""
+    if os.environ.get('AGERE_SKIP_ANALYST_FOR_ENGINES', 'on').strip().lower() == 'off':
+        return []
+    try:
+        from .economical_planner import local_plan
+        from .local_compiler import compile as compile_locally
+        from .source_profile import load as load_profile
+        graph, _ = local_plan(question, as_of)
+        if not graph:
+            graph, _ = compile_locally(question, load_profile(stack.path), as_of)
+        nodes = (graph or {}).get('nodes') or []
+        return sorted({n.get('operation') for n in nodes if isinstance(n, dict)} & ENGINE_OPERATIONS)
+    except Exception:  # noqa: BLE001 - detection never blocks the answer
+        return []
+
+
 def hybrid_on():
     return os.environ.get('AGERE_HYBRID', 'on').strip().lower() != 'off'
 
@@ -441,13 +468,25 @@ def decide(stack, question, fast, fast_error, analyst, analyst_state, *, as_of=N
                         reason=f'fast path error: {type(fast_error).__name__}: {fast_error}'[:300])
         return result, together, rec
     f_answer = fast.get('answer') if isinstance(fast.get('answer'), dict) else None
+    if fast.get('route') == 'deferred_to_analyst' and a_answer is not None:
+        # The fast path deferred (no paid second ladder): the independent analysts' executed answer is the answer.
+        out = dict(a_answer)
+        h = (analyst or {}).get('hybrid') or {}
+        label = 'clarify' if out.get('status') == 'clarify' else 'analysts_answered'
+        _confidence(out, 'low' if label == 'clarify' else 'unverified',
+                    f"Independent analysts ({h.get('interpretation') or 'hybrid core'}); the fast path deferred to them",
+                    evidence='independent_analysts')
+        together.update(decision=label, winner='analyst', reason=h.get('interpretation') or 'fast path deferred')
+        return {**fast, 'answer': out, 'route': 'together_semantic_analyst'}, together, rec
     if a_answer is None or f_answer is None:
         reason = {'timed_out': 'analyst did not finish within the budget', 'unavailable': 'semantic layer not built',
+                  'skipped_engine': 'analytic engine route: the analysts were not started (an engine answer is never replaced)',
                   'failed': (analyst or {}).get('error') or 'analyst returned no valid answer'}.get(
                       together['analyst_state'], 'analyst returned no valid answer')
         if f_answer is None:
             reason = 'fast result has no answer object'
-        elif _empty_answer(f_answer) and os.environ.get('AGERE_UNCHECKED_ZERO', 'abstain') == 'abstain':
+        elif (_empty_answer(f_answer) and together['analyst_state'] != 'skipped_engine'
+              and os.environ.get('AGERE_UNCHECKED_ZERO', 'abstain') == 'abstain'):
             # Build log step 10: a zero/empty result the analyst could not check would otherwise ship as a confident 0
             # (dev RX-10). Zero is the answer a missed source produces, so it is withheld unless confirmed.
             out = dict(f_answer)
@@ -554,24 +593,39 @@ def compose_together(stack, question, *, planning='auto'):
     semantic_path = Path(stack.path) / 'semantic.sqlite3'
     as_of = _snapshot_as_of(stack)
     future, model = None, semantic_model()
-    if semantic_path.is_file():
+    engine = _compiled_engine(stack, question, as_of)
+    if semantic_path.is_file() and not engine:
         future = _pool().submit(_run_analyst, stack, question, as_of, semantic_path, model)
     fast, fast_error = None, None
+    from .economical_planner import defer_to_analyst
     try:
-        fast = stack._compose(question, planning=planning)
+        # While the analysts answer, the fast path keeps its free and governed rungs and skips the paid hosted ladder.
+        with defer_to_analyst(future is not None and deferral_on()):
+            fast = stack._compose(question, planning=planning)
     except Exception as exc:  # noqa: BLE001 - the analyst may still answer; re-raised in decide otherwise
         fast_error = exc
     with _released(stack):
         if future is None:
-            state, analyst = 'unavailable', None
+            state, analyst = ('skipped_engine' if engine else 'unavailable'), None
         else:
             state, analyst = _wait(future, deadline)
             if state == 'failed':
                 analyst = {'error': analyst, 'model': model, 'estimated_cost_usd': None, 'new_paid_api_calls': 0}
         wait_s = round(time.perf_counter() - t0, 3)
+    fallback = None
+    if (fast or {}).get('route') == 'deferred_to_analyst' and not _usable(analyst, state):
+        # The analysts produced nothing usable: run the full fast path (hosted ladder, frontier) after all.
+        deferred = fast
+        try:
+            fast, fast_error = stack._compose(question, planning=planning), None
+        except Exception as exc:  # noqa: BLE001
+            fast, fast_error = deferred, exc
+        fallback = {'reason': 'analysts produced no usable answer', 'route': (fast or {}).get('route')}
+    with _released(stack):
         result, together, rec = decide(stack, question, fast, fast_error, analyst, state,
                                        as_of=as_of, semantic_path=semantic_path)
-    together.update(hybrid={k: v for k, v in ((analyst or {}).get('hybrid') or {}).items() if k != 'runs'} or None,
+    together.update(engine_route=engine or None, fallback=fallback, deferred=(fast or {}).get('route') == 'deferred_to_analyst' or bool(fallback),
+                    hybrid={k: v for k, v in ((analyst or {}).get('hybrid') or {}).items() if k != 'runs'} or None,
                     analyst={**(_part(analyst) or {}), 'model': model, 'state': state,
                              'answer_status': ((analyst or {}).get('answer') or {}).get('status')
                              if isinstance((analyst or {}).get('answer'), dict) else None},

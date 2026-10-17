@@ -165,6 +165,13 @@ class Stack:
             else:
                 graph,receipt=frontier(catalog(self.path));calls=0 if receipt.get('cache_hit') else 1
             lap('planning_s')
+            if isinstance(receipt,dict) and receipt.get('route')=='deferred_to_analyst':
+                result=self.run_graph(graph,question=question)
+                usd=sum(((s.get('receipt') or {}).get('cost_estimate') or {}).get('estimated_usd') or 0 for s in receipt.get('steps') or [])
+                return {**result,'question':question,'route':'deferred_to_analyst','planner_receipt':receipt,
+                        'new_paid_api_calls':receipt.get('new_paid_api_calls',0)+result.get('new_paid_api_calls',0),
+                        'planning_economics':{'new_api_estimate_usd':round(usd,6),'known_api_estimate_usd':round(usd,6),
+                                              'total_cost_known':True,'scope':'Free and governed rungs only; the analysts answer.'}}
             if planning=='auto' and isinstance(receipt,dict):
                 # The cross-check's independent path starts now, in parallel with the primary execution (answer_guard.start);
                 # the answer waits for it at most until AGERE_CROSS_CHECK_BUDGET_S after the question started.
