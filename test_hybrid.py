@@ -173,3 +173,65 @@ class RunIndependenceTests(unittest.TestCase):
         live.answer('How many?', '2030-05-27', FakeWh(), factory, answer_type='count', docs_dir=live.DOCS)
         self.assertEqual(len(bodies), 3)
         self.assertEqual(len(set(bodies)), 3)
+
+
+class ReadingsTests(unittest.TestCase):
+    """Two defensible readings named by a majority of independent analysts -> ask, never ship one as fact."""
+
+    def _run(self, readings_by_run, sqls=None, escalation=None):
+        import sqlite3
+        import tempfile
+        from contextlib import contextmanager
+        from clinical_core.agere.hybrid import live
+        d = tempfile.mkdtemp()
+        db = Path(d) / 'semantic.sqlite3'
+        con = sqlite3.connect(db)
+        con.execute('CREATE TABLE patient(patient_id TEXT)')
+        con.executemany('INSERT INTO patient VALUES (?)', [('a',), ('b',), ('c',)])
+        con.commit(); con.close()
+
+        class Wh:
+            path = db
+
+            def query(self, *a, **k):
+                return {'rows': []}
+
+        calls = {'n': 0}
+        lock = __import__('threading').Lock()
+
+        def contract(readings):
+            return {'answer_type': 'count', 'grain': {'entity': 'person', 'key': 'patient_id'}, 'population': 'all',
+                    'numerator': 'patients', 'denominator': None, 'window': {'start': None, 'end': None, 'anchor': None},
+                    'as_of': '2030-05-27', 'unit': 'count', 'exclusions': [], 'group_by': [], 'row_limit': None,
+                    'unresolved': [], 'readings': readings}
+
+        def send(body):
+            text = body['messages'][0]['content']
+            if 'disagreed' in text and escalation is not None:
+                out = {'contract': contract(escalation), 'sql': None}
+            else:
+                with lock:
+                    k = calls['n']; calls['n'] += 1
+                sql = (sqls or ['SELECT count(*) FROM patient'] * 3)[k]
+                out = {'contract': contract(readings_by_run[k]), 'sql': sql}
+            return {'content': [{'type': 'text', 'text': json.dumps(out)}], 'usage': {}}, 0.0, False
+
+        @contextmanager
+        def factory():
+            yield send
+        return live.answer('How many?', '2030-05-27', Wh(), factory, answer_type='count', docs_dir=live.DOCS)
+
+    def test_majority_readings_ask(self):
+        out = self._run([['by product', 'by line of business'], ['by product', 'by line of business'], []])
+        self.assertIsNone(out['answer'])
+        self.assertEqual(out['decline']['kind'], 'clarify')
+        self.assertEqual(out['decline']['readings'], ['by product', 'by line of business'])
+
+    def test_one_run_flagging_readings_still_answers(self):
+        out = self._run([['x', 'y'], [], []])
+        self.assertEqual(out['answer'], {'count': 3})
+
+    def test_split_traced_to_two_readings_asks(self):
+        out = self._run([[], [], []], sqls=['SELECT 1', 'SELECT 2', 'SELECT 3'], escalation=['calendar 2029', 'rolling 12 months'])
+        self.assertEqual(out['decision'], 'clarify')
+        self.assertEqual(out['decline']['readings'], ['calendar 2029', 'rolling 12 months'])

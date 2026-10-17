@@ -86,9 +86,15 @@ def validate(contract, question):
     if rl is not None and (isinstance(rl, bool) or not isinstance(rl, int) or rl < 1):
         issues.append('row_limit must be a positive integer or null')
     if not isinstance(contract.get('unresolved', []), list) or not isinstance(contract.get('exclusions', []), list) \
-            or not isinstance(contract.get('missing') or [], list):
-        issues.append('unresolved, missing and exclusions must be lists')
+            or not isinstance(contract.get('missing') or [], list) or not isinstance(contract.get('readings') or [], list):
+        issues.append('unresolved, missing, readings and exclusions must be lists')
     return issues
+
+
+def readings(contract):
+    """The defensible readings a run named (two or more = the question is ambiguous as worded)."""
+    r = contract.get('readings') if isinstance(contract, dict) else None
+    return [str(x) for x in r if str(x).strip()] if isinstance(r, list) else []
 
 
 def missing_data(contract):

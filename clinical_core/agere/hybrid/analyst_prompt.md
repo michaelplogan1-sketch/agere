@@ -32,6 +32,12 @@ Contract fields:
   it, also give your own SQL; the system uses the governed SQL only if it matches your contract.
 - unresolved: meanings the question and documentation leave genuinely open (then sql may be null). Do not list things the
   definition or a convention settles. When the wording has two defensible readings, name each reading as one entry.
+- readings: [] unless the question as worded, together with its definition, has two or more defensible readings that
+  would give different answers: two possible denominators or populations, "by line of business" vs "by product", a
+  calendar vs a rolling window, persons vs visits, which of two dates anchors a window, whether a group is included.
+  Then list each reading in one short sentence (at least two entries) and still write the SQL for the reading you
+  would choose. Do not list a reading that the definition or a stated convention rules out; a precise definition
+  usually settles it.
 - missing: data the question needs that this warehouse does not contain at all (then sql is null and the question is
   unsupported), e.g. ["no death records are delivered"]. Never list data that exists under another name, column or
   raw_ table; look first.

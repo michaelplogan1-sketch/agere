@@ -148,10 +148,25 @@ def evaluate(q, item, db):
             'problems': notes + problems, 'sql': sql}
 
 
+def merge_readings(items, names):
+    """{'runs': how many of `names` named two or more readings, 'readings': the distinct readings, at most 6}."""
+    readings, n = [], 0
+    for name in names:
+        r = hc.readings(((items.get(name) or {}).get('contract')))
+        if len(r) >= 2:
+            n += 1
+            for x in r:
+                if x not in readings:
+                    readings.append(x)
+    return {'runs': n, 'readings': readings[:6]}
+
+
 def escalation_prompt(q, per, items):
     parts = ['The analysts below answered this question independently and disagreed or failed checks. Review their '
              'contracts, SQL and the executed outcome, decide what the question means, and write ONE contract and SQL '
-             '(or list unresolved meanings with sql null to abstain).', '', 'Question:', question_text(q),
+             '(or list unresolved meanings with sql null to abstain). If their answers differ because the question '
+             'itself has two or more defensible readings (not because of an error), list each reading in the contract\'s '
+             '"readings" and set sql to null so the user is asked which one they mean.', '', 'Question:', question_text(q),
              f"(as_of {q['as_of']})"]
     for name, r in per.items():
         item = items.get(name) or {}
@@ -189,7 +204,11 @@ def answer(question, as_of, semantic, send_factory, *, qid='Q', answer_type=None
     per = {name: evaluate(q, item, db) for name, item in items.items()}
     decision, ans, agree, passing = hv.decide(q['answer_type'], list(per.values()))
     final = decision
-    if decision == 'escalate':
+    ambiguous = merge_readings(items, [n for n, i in items.items() if len(hc.readings((i or {}).get('contract'))) >= 2])
+    if ambiguous['runs'] * 2 > runs:
+        # A majority of independent analysts found two or more defensible readings: ask which one, never ship one as fact.
+        decision, ans, final = 'clarify', None, 'clarify'
+    elif decision == 'escalate':
         with send_factory() as send:
             item, res = analyst_run(q, semantic, send, escalation_model_name(), user=escalation_prompt(q, per, items),
                                     docs_dir=docs_dir)
@@ -198,8 +217,13 @@ def answer(question, as_of, semantic, send_factory, *, qid='Q', answer_type=None
         per['escalation'] = e
         items['escalation'] = item
         ans, final = (e['answer'], 'escalated') if e['passed'] and not e['clarify'] else (None, 'escalated_abstain')
+        if len(hc.readings((item or {}).get('contract'))) >= 2 and not (item or {}).get('sql'):
+            ambiguous = merge_readings(items, ['escalation'])  # the tie-break traced the split to two readings
+            ans, final = None, 'clarify'
     decline = None
-    if ans is None:
+    if final == 'clarify':
+        decline = {'kind': 'clarify', 'readings': ambiguous['readings']}
+    elif ans is None:
         # Why no answer: a majority saying the data is not delivered -> unsupported (with what is missing); any run that
         # declined because the meaning is open -> clarify (with the readings). Otherwise a plain abstention.
         unsup = [v for v in per.values() if v.get('unsupported')]
