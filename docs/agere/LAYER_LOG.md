@@ -152,3 +152,21 @@ router, operator router and Opus reconcile leave the answer path (BUILD_LOG.md s
   and re-adjudicated fills. Fixing it moves VBC-01, VBC-02, VBC-11 and ACC-10 beyond tolerance; 12 others shift within it.
 - **Tally:** of the 6 misses every run agreed on, 5 were key defects and 1 was our gap-convention bug (fixed). Waiting
   on Mike's approval in the generator session to rewrite the key files; no re-score until confirmed.
+
+## Re-score on the patched keys (2026-10-17; REV-03, RWE-12, RWE-02 wording and RX-10 wording applied; ACC-10 and VBC-02 still pending)
+
+| Layer | Old keys | Patched keys |
+|---|---|---|
+| L1 analyst + full docs | 14/20 | 15/20 |
+| L2 + retrieval index | 15/20 | 16/20 (16/19 answered right) |
+| L3 + convention fixes | 14/20 | 16/20 |
+| L4 majority of 3 | 14/20 | 14/20; unanimous 10/11 |
+| L5 + Sonnet escalation | 15/20 | 17/20 (17/19 answered right, 89%) |
+| L6 held-out 10 | 8/10 | 8/10 (both misses are the pending ACC-10 / VBC-02 key defects) |
+
+- **Remaining dev misses:**
+  - RX-10: answered under our old off-by-one gap convention (now fixed); needs a re-run.
+  - RWE-02: answered before the definition stated first-new-user-per-person; needs a re-run.
+- **Expected once everything is applied:** about 17-19/20 dev and about 10/10 held-out.
+- **Lesson:** most of the "accuracy problem" was the test bed. The case for the frozen, tier-based test design (and the
+  10 clinical workflow tasks) stands.
