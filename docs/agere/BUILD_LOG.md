@@ -295,10 +295,11 @@ hurts, write down why and decide what to add next.
   - The 8th, "How many nurses do we need for next month's discharges?", is partial from the engine itself. It returns
     the discharge forecast table but lists the missing staffing ratios (minutes per unit, FTE hours per week), because
     Agere doesn't invent staffing ratios. That's a supported unknown, so I left it alone.
-- **Dev:** 13/22 (step 13: 13). Six questions (ACC-03, ACC-12, DQ-09, DQ-10, RWE-02, RWE-12) failed with HTTP 502:
-  Anthropic credit ran out partway through the run. On the 16 that ran: 13 correct vs 10 in step 13 and 11 in step
-  12b. The flips (HOS-03, REV-03, QUA-01) are reconciled-by-analyst noise. No dev question takes an engine path (no
-  `engine_*` decision in any row), so this change can't move the dev score. Re-run the six once credit is topped up.
-  Cost $1.89.
+- **Dev:** 18/22, 17/21 right when answered, $0.38, 0 errors (step 13: 13/22, 12/21). A first run hit HTTP 502s on six
+  questions when Anthropic credit ran out. This number is the rerun after the top-up
+  (agere-defined-engine-defer-rerun-20261017T120936Z). No regression. The gain isn't from this step: no dev question
+  takes an engine path (no `engine_*` decision in any row). It comes from the other paths: ACC-03, ACC-12, DQ-09, DQ-10,
+  RWE-02 and RWE-12 are now right, and HOS-08 flipped to wrong. Changes on main since step 13 and analyst variance are
+  possible causes; neither is attributed.
 - **Kept:** engine-only answers (forecasts, monitoring reports, curves) are no longer overruled by an analyst that
   can't compute them.
