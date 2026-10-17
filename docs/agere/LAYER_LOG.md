@@ -182,3 +182,14 @@ router, operator router and Opus reconcile leave the answer path (BUILD_LOG.md s
   - not feasible: anything about reasons (the simulation has no reasons for gaps), 8 (no incident MIs) and 10 (no
     designed conflicts);
   - the generator proposes a v2.13 "clinical decisions" layer and is confirming it with Mike.
+
+## RX-10 key audit, round 3 (2026-10-17)
+- **Key defect.** The key assigned drug classes from the generator's private drug catalog, which the warehouse doesn't
+  ship, so it couldn't be reproduced by anyone. The earlier "key confirmed" was wrong.
+- **New definition:** 16 named chronic classes, matched on drug name; ARNI is not ARB; everything else (antibiotics,
+  unclassified) is ignored; superseded claim versions are replaced.
+- **RX-05 (top drug classes)** probably has the same flaw; treat it as unreliable.
+- **Tally:** all 6 misses that every run agreed on were key defects. Our gap convention was also off by one (fixed).
+- **Waiting on:** Mike's full key regeneration (v2.8-v2.12 + samples) for VBC-02, ACC-10, RX-10 and the
+  supersede handling; then re-score everything. The generator is building the feasible v2.8 clinical task keys
+  (1, 3, 4-7, 9), then v2.13.
