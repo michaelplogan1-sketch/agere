@@ -164,7 +164,7 @@ class Workspace:
                 for step in STEPS:
                     if step in ('ingest', 'stage') and not self.native:
                         continue
-                    if step in ('propose', 'approve') and self.native:
+                    if step in ('profile', 'propose', 'approve') and self.native:
                         continue  # native deliveries are staged into the full canonical model, not mapped field by field
                     getattr(self, '_do_' + step)(conn)
                     if step == 'stage':  # the landing database now exists and holds the staged tables

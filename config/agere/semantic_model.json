@@ -3,7 +3,7 @@
  "domain": "healthcare",
  "derived_from": {
   "module": "clinical_core/agere/clinical/semantic_layer.py",
-  "semantic_layer_version": "semantic-layer/17",
+  "semantic_layer_version": "semantic-layer/18",
   "versioned_streams": {
    "patient_billing_accounts": "account_id",
    "medical_claims": "claim_id",

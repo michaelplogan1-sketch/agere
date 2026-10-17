@@ -55,9 +55,15 @@ def profile_column(name, declared, values, row_count):
     if col['code']['system'] and col['semantic'] in ('identifier', 'categorical', 'integer', 'text'):
         col['semantic'] = 'code'
     if col['semantic'] in ('integer', 'decimal', 'money_cents', 'money_dollars'):
-        nums = [float(v) for v in nonnull]
-        col['numeric'] = {'min': min(nums), 'max': max(nums), 'mean': round(sum(nums) / len(nums), 4),
-                          'max_decimals': max(codes.decimals(v) for v in nonnull)}
+        nums = []
+        for v in nonnull:  # a mostly-numeric column can carry stray text (e.g. 'TSH' in a shifted row): skip, don't fail
+            try:
+                nums.append(float(v))
+            except (TypeError, ValueError):
+                continue
+        if nums:
+            col['numeric'] = {'min': min(nums), 'max': max(nums), 'mean': round(sum(nums) / len(nums), 4),
+                              'max_decimals': max(codes.decimals(v) for v in nonnull), 'non_numeric': len(nonnull) - len(nums)}
     return col
 
 
