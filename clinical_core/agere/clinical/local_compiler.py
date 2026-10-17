@@ -763,6 +763,9 @@ def _compile(question, profile, as_of):
     calibrated = _calibration_question(q)
     if calibrated is not None:
         return calibrated
+    staffed = _queueing_question(q)  # how many nurses/providers/beds per hour for a wait or blocking target
+    if staffed is not None:
+        return staffed
     booked = _scheduling_question(q)  # overbooking / likely no-shows / reminders / access; plain no-show RATES stay literal metrics
     if booked is not None:
         return booked
@@ -3670,6 +3673,70 @@ def _calibration_question(q):
     return {'interpretation': q, 'coverage': 'supported_observation', 'unmet_requirements': [],
             'nodes': [{'id': 'answer', 'operation': 'calibration', 'inputs': [], 'parameters': params,
                        'purpose': 'Time-split conformal backtest of Agere predictions: coverage, Brier, ECE, reliability'}]}, info
+
+
+# ---- queueing: staffing / bed sizing for a wait or blocking target ----------------------------
+STAFF_NOUN = r'(?:nurses?|providers?|physicians?|doctors?|clinicians?|staff|techs?|triage (?:nurses?|staff)|registered nurses|rns?|mds?|advanced practice providers|apps?|front desk|registrars?)'
+QUEUEING_INTENT = (r'\berlang\b|\bqueue(?:ing)? (?:theory|model)\b|\bsquare[- ]root staffing\b'
+                   r'|\b(?:keep|hold|stay|meet|under|below|within|limit)\b[^.?]{0,40}\b(?:waits?|waiting times?|wait times?|blocking|boarding)\b'
+                   r'|\b(?:chance|probability|likelihood|odds|percent(?:age)?|share|proportion)\b[^.?]{0,40}\b(?:wait(?:s|ing)?)\b[^.?]{0,25}\b(?:more|longer|over|beyond|than)\b'
+                   r'|\bwait(?:s|ing)? (?:more|longer|over|beyond) than\b|\bwaits? (?:\w+ )?(?:under|below|less than|within|at most|no (?:more|longer) than)\b'
+                   r'|\b(?:turn(?:ing|ed)? away|turns? away)\b[^.?]{0,30}\b(?:admissions?|patients?|arrivals?)\b'
+                   r'|\bblocking (?:probability|rate)\b|\b(?:probability|chance) of (?:blocking|being blocked|no (?:bed|beds) available)\b'
+                   r'|\bhow many (?:\w+ ){0,3}' + STAFF_NOUN + r' (?:\w+ ){0,6}(?:each|per|every|by) (?:hour|shift block|hour of (?:the )?(?:day|week))'
+                   r'|\bstaffing (?:levels? |schedule |needs? )?(?:by|per|for each|each) hour\b|\bhour[- ]by[- ]hour staffing\b')
+
+
+def _queueing_question(q):
+    """'How many ED nurses do we need each hour to keep waits under 30 minutes?' / 'how many beds to keep blocking under 2%?' -> queueing.
+    Volume forecasts, beds at a target occupancy and staffing from stated ratios stay demand; overbooking and no-shows stay scheduling."""
+    low = q.lower()
+    if not re.search(QUEUEING_INTENT, low): return None
+    if re.match(r'(?:why (?:is|are|do|does)|explain)\b', low): return None
+    if not re.search(STAFF_NOUN + r'|\bbeds?\b|\bservers?\b|\bblocking\b|\berlang\b|\bed\b|\bemergency\b|\burgent care\b|\bclinics?\b|\btriage\b|\bfront desk\b|\b(?:each|per) hour\b', low): return None
+    if re.search(r'\bwait\w*\b[^.?]{0,40}\b(?:days?|weeks?|months?|years?)\b|\bafter (?:a|an|the) \w+ (?:test|screen\w*|referral|diagnosis)\b', low): return None  # long waits for care after an event are access / time-to-event, not capacity sizing
+    params, recognised = {}, ['queueing question']
+    beds = bool(re.search(r'\bbeds?\b|\bwards?\b|\bicu\b|\binpatient (?:unit|capacity)\b|\bboarding\b', low))
+    if beds: params['source'] = 'beds'
+    elif re.search(r'\burgent care\b', low): params.update(source='clinic', visit_types=['urgent_care_visit'])
+    elif re.search(r'\bprimary care\b', low): params.update(source='clinic', visit_types=['primary_care_visit'])
+    elif re.search(r'\bspecialist\b|\bspecialty clinic\b', low): params.update(source='clinic', visit_types=['specialist_visit'])
+    elif re.search(r'\bclinics?\b|\boutpatient\b|\bpractices?\b|\bfront desk\b', low) and not re.search(r'\bed\b|\bemergency\b|\btriage\b', low): params['source'] = 'clinic'
+    else: params['source'] = 'ed'
+    blocking = beds or bool(re.search(r'\bblocking\b|\bblocked\b', low))
+    params['objective'] = 'blocking' if blocking else 'wait'
+    pct_low = re.sub(r'\b\d{1,3} ?(?:%|percent) (?:more|higher|greater|increase in|growth in)\b|\b(?:up|by|increase\w*|rise\w*) \d{1,3} ?(?:%|percent)|\b\d{1,3} ?(?:%|percent) (?:of patients )?(?:leave|walk out|abandon|lwbs)', ' ', low)
+    pct = re.search(r'(\d{1,3}(?:\.\d+)?)\s?(?:%|percent)', pct_low)
+    if pct and 0 < float(pct.group(1)) <= 100:
+        params['target_blocking' if blocking else 'target_wait_probability'] = float(pct.group(1)) / 100
+    if not blocking:
+        m = (re.search(r'\bwait\w*\b[^.?\d]{0,40}?(\d+(?:\.\d+)?)[- ]?(min\w*|hours?|hrs?)\b', low)
+             or re.search(r'(\d+(?:\.\d+)?)[- ]?(min\w*|hours?|hrs?)\b[^.?]{0,20}\bwait', low))
+        words = re.search(r'\bwait\w*\b[^.?\d]{0,40}?\b(half an hour|half hour|30 minutes|an hour|one hour|a hour)\b', low) if not m else None
+        if words: params['wait_threshold_minutes'] = 30.0 if 'half' in words.group(1) else 60.0
+        if m:
+            minutes = float(m.group(1)) * (60 if m.group(2).startswith(('h',)) else 1)
+            if 0 < minutes <= 1440: params['wait_threshold_minutes'] = minutes
+    sv2 = re.search(r'(\d+(?:\.\d+)?)[- ]?(min\w*|hours?|hrs?|days?)\b (?:average |mean |typical |long )?(?:service|visit|treatment|exam|consult|stay\b(?! under))', low)
+    sv = re.search(r'\b(?:service|visit|treatment|exam|consult|length of stay|los)[^.?\d]{0,30}?(\d+(?:\.\d+)?)[- ]?(min\w*|hours?|hrs?|days?)\b', low)
+    sv = sv or sv2
+    if sv:
+        unit = sv.group(2)
+        minutes = float(sv.group(1)) * (1440 if unit.startswith('d') else 60 if unit.startswith('h') else 1)
+        if 0 < minutes <= 100000: params['mean_service_minutes'] = minutes
+    n = re.search(r'\b(?:with|have|has|had|staffing|staffed with) (\d{1,4}) (?:' + STAFF_NOUN + r'|beds?)\b', low)
+    if n: params['servers'] = int(n.group(1))
+    ab = re.search(r'(\d+(?:\.\d+)?)\s?(?:%|percent) (?:of patients )?(?:leave|walk out|abandon|lwbs)', low)
+    if ab: params['abandonment_rate_per_hour'] = round(float(ab.group(1)) / 100 * 2, 6)  # stated share leaving per half hour of waiting -> hourly rate
+    up = re.search(r'\b(\d{1,3}) ?(?:%|percent) (?:more|higher|increase in|growth in) (?:arrivals|volume|patients|visits|demand)\b|\b(?:arrivals|volume|visits|demand) (?:up|grow\w*|rise\w*|increase\w*|(?:are )?(?:higher|greater|more)) (?:by )?(\d{1,3}) ?(?:%|percent)|\b(?:arrivals|volume|visits|demand) (\d{1,3}) ?(?:%|percent) (?:higher|more|greater)', low)
+    if up: params['arrival_scale'] = 1 + int(up.group(1) or up.group(2) or up.group(3)) / 100
+    if re.search(r'\b(?:next|coming) (?:week|month|quarter)\b|\bforecast(?:ed)?\b|\bprojected\b', low): params['demand_forecast'] = True
+    o = re.search(r'\b(?:practice|clinic|site|hospital)\s+(?:#\s*)?(\d{1,3})\b|\b(wh-[a-z]+-\d+)\b', low)
+    if o: params['organization_id'] = (o.group(1) or o.group(2)).upper()
+    info = {'compiler': VERSION, 'recognised': recognised + ['source ' + params['source'], 'objective ' + params['objective']], 'paraphrased': [], 'route': 'local_compiler', 'unexplained': []}
+    return {'interpretation': q, 'coverage': 'supported_observation', 'unmet_requirements': [],
+            'nodes': [{'id': 'answer', 'operation': 'queueing', 'inputs': [], 'parameters': params,
+                       'purpose': 'Queueing-theory staffing / bed sizing (Erlang C/A/B, square-root staffing, SIPP) from received visit and stay timestamps'}]}, info
 
 
 # ---- scheduling: no-show prediction, overbooking, reminders, access ------------------------------

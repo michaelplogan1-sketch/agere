@@ -56,6 +56,11 @@ PRODUCT['scheduling'] = {'population': 'optional', 'view': 'yield',
                                 'WHICH UPCOMING APPOINTMENTS are likely no-shows (tomorrow / next week), who should get a reminder call, access (booking lead time). '
                                 'A past no-show RATE is a literal lookup, not this.'}
 
+PRODUCT['queueing'] = {'population': 'none', 'view': 'staffing',
+                       'use': 'Queueing-theory capacity sizing (Erlang C / A / B, square-root staffing): HOW MANY nurses / providers / beds per hour (by hour of week) are needed '
+                              'to keep patient waits under a target (e.g. P(wait > 30 min) <= 10%) or bed blocking under a target (e.g. <= 2%), the chance a patient waits more than N minutes, '
+                              'utilization, sensitivity to +-10% arrivals. Not demand (volume forecasts; staffing only from user-supplied ratios) and not scheduling (overbooking / no-shows).'}
+
 PRODUCT['early_signal'] = {'population': 'optional', 'view': 'signal',
                            'use': 'Early warning: WHICH PATIENTS show the multichannel pattern that usually PRECEDES an admission or ED visit (pre-admission signature, '
                                   'heading toward decompensation), by matched filtering against templates learned from past events. Not one lab trend (trajectory), '
@@ -145,7 +150,7 @@ def operations():
 # engine table: it holds many numbers, and picking one would answer a question the engine was not asked.
 DEFAULT_ANSWERS = ('table', 'patient_set')
 NATIVE_SCALARS = {
-    'survival': ('value',), 'demand': ('count', 'value'), 'scheduling': ('count', 'value'), 'trial_feasibility': ('count',),
+    'survival': ('value',), 'demand': ('count', 'value'), 'scheduling': ('count', 'value'), 'queueing': ('count', 'value'), 'trial_feasibility': ('count',),
     'diagnostic_delay': ('count', 'value'), 'pathway': ('count', 'value'), 'contract_strategy': ('value',), 'network': ('value',),
     'profile': ('value',), 'risk_outcomes': ('value',), 'risk_adjustment': ('value',), 'program_effect': ('value',),
     'market': ('value',), 'monitor': ('value',), 'claims_review': ('value',), 'vbc': ('count', 'value'), 'calibration': ('value',),

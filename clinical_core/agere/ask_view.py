@@ -482,6 +482,23 @@ function vizScheduling(a){const o=(a.overall||{}).scheduling||{},m=o.model||{},m
  const d=o.data_defects||[];if(d.length)h+='<details><summary>Data limits ('+d.length+')</summary><ul>'+d.map(x=>'<li>'+esc(x.statement)+'</li>').join('')+'</ul></details>';
  if((o.assumptions||[]).length)h+='<p class="hint"><b>Assumptions.</b> '+esc(o.assumptions.join(' '))+'</p>';
  return h+'</section>'}
+/* queueing / staffing: servers (or beds) needed per hour of week for a wait or blocking target + the Erlang table behind the peak */
+function vizQueueing(a){const o=(a.overall||{}).queueing||{},st=o.staffing||{},sp=o.single_point||{},inp=o.inputs||{},rows=a.table||[],blk=o.objective==='blocking';
+ let h='<section class="sec" data-focus="staffing"><h3>'+(blk?'Bed capacity':'Staffing')+' · '+esc(o.source||'')+'</h3><div class="kpis">'+
+  [['Peak '+(blk?'beds':'servers'),fmt(st.peak_servers)+(st.peak_hour?' ('+st.peak_hour+')':'')],[(blk?'Bed':'Server')+'-hours / week',fmt(st.total_server_hours_per_week)],
+   ['Arrivals / week',isNum(inp.weekly_arrivals_planned)?fmt(inp.weekly_arrivals_planned,0):'—'],['Mean service (min)',isNum(inp.mean_service_minutes)?fmt(inp.mean_service_minutes,1):'—'],
+   [blk?'Blocking at mean load':'P(wait) at peak',blk?(isNum(sp.erlang_b_blocking_probability)?pct(sp.erlang_b_blocking_probability,2):'—'):((sp.erlang_c||{}).p_wait!=null?pct(sp.erlang_c.p_wait,0):'—')]
+  ].map(k=>'<div class="kpi"><div class="l">'+esc(k[0])+'</div><div class="v">'+esc(k[1])+'</div></div>').join('')+'</div>';
+ if(rows.length){const W=CW(),L=36,R=8,T=8,B=26,H=170,m=Math.max(1,...rows.map(r=>r.servers||0)),bw=(W-L-R)/rows.length;
+  let s='<svg viewBox="0 0 '+W+' '+H+'" width="100%" role="img" aria-label="Servers needed by hour of week">';
+  rows.forEach((r,i)=>{const v=r.servers||0,y=T+(H-T-B)*(1-v/m);s+='<rect x="'+(L+i*bw)+'" y="'+y+'" width="'+Math.max(1,bw-0.6)+'" height="'+(H-B-y)+'" style="fill:var(--s1)"><title>'+esc(r.day+' '+String(r.hour).padStart(2,'0')+':00 · '+v)+'</title></rect>'});
+  ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].forEach((d,i)=>{s+='<text x="'+(L+i*24*bw+12*bw)+'" y="'+(H-8)+'" text-anchor="middle">'+d+'</text>'});
+  s+='<text x="4" y="'+(T+8)+'">'+m+'</text><text x="4" y="'+(H-B)+'">0</text></svg>';h+='<p class="hint">Minimum '+(blk?'beds':'servers')+' per hour block (Monday 00:00 first) meeting the target.</p>'+s}
+ if(rows.length)h+=tableHTML(rows,{name:'queueing-staffing',caption:'Staffing by hour of week',cols:['day','hour','arrival_rate_per_hour','offered_load','servers',blk?'blocking_probability':'p_wait_gt_t','utilization'],
+  head:{arrival_rate_per_hour:'Arrivals/h',offered_load:'Load',p_wait_gt_t:'P(wait>t)',blocking_probability:'P(block)'},render:{utilization:v=>isNum(v)?pct(v,0):'',p_wait_gt_t:v=>isNum(v)?pct(v,1):'',blocking_probability:v=>isNum(v)?pct(v,2):''}});
+ if((a.warnings||[]).length)h+='<details open><summary>Assumption warnings ('+a.warnings.length+')</summary><ul>'+a.warnings.map(x=>'<li>'+esc(x)+'</li>').join('')+'</ul></details>';
+ if((a.assumptions||[]).length)h+='<p class="hint"><b>Assumptions.</b> '+esc(a.assumptions.join(' '))+'</p>';
+ return h+'</section>'}
 function yieldChart(S){const W=CW(),L=52,R=14,T=10,B=34,H=230;const kmax=Math.max(...S.map(s=>s.curve.length-1));
  const gain=s=>s.curve.map(r=>r.expected_value-s.curve[0].expected_value);const vs=S.flatMap(gain);let lo=Math.min(0,...vs),hi=Math.max(0.05,...vs);const pd=(hi-lo)*.06||.1;lo-=pd;hi+=pd;
  const X=k=>L+k/(kmax||1)*(W-L-R),Y=v=>T+(hi-v)/(hi-lo)*(H-T-B);let s=svgOpen(W,H,'Expected net value versus extra bookings per session');
@@ -869,6 +886,7 @@ function visual0(a){if(!a||a.answer_type==='unsupported')return '';const o=a.ove
   if(o.risk_adjustment)return vizRisk(a);
   if(o.profile)return vizProfile(a);
   if(o.scheduling)return vizScheduling(a);
+  if(o.queueing)return vizQueueing(a);
   if(o.provider_network)return vizNetwork(a);
   if(o.matrix&&o.states)return vizPathway(a);
  if(o.network&&o.data_gaps)return vizMarket(a);

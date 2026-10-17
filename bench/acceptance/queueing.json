@@ -1,0 +1,42 @@
+[
+  {
+    "question": "How many ED nurses do we need each hour to keep waits under 30 minutes?",
+    "expect_operation": "queueing"
+  },
+  {
+    "question": "What's the chance a patient waits more than 15 minutes at the urgent care?",
+    "expect_operation": "queueing"
+  },
+  {
+    "question": "How many beds do we need to keep blocking under 2%?",
+    "expect_operation": "queueing"
+  },
+  {
+    "question": "Staffing by hour of the week so that no more than 10% of emergency patients wait over 30 minutes",
+    "expect_operation": "queueing"
+  },
+  {
+    "question": "How many providers per hour does our primary care clinic need to hold wait times below 20 minutes?",
+    "expect_operation": "queueing"
+  },
+  {
+    "question": "What is the probability of blocking if we have 40 beds?",
+    "expect_operation": "queueing"
+  },
+  {
+    "question": "Erlang C staffing for the emergency department with a 45 minute average visit",
+    "expect_operation": "queueing"
+  },
+  {
+    "question": "Minimum number of triage nurses each hour so that waits stay under 15 minutes, with arrivals 10% higher",
+    "expect_operation": "queueing"
+  },
+  {
+    "question": "How many inpatient beds keep the chance of turning away an admission under 1%?",
+    "expect_operation": "queueing"
+  },
+  {
+    "question": "What percent of ED patients wait longer than an hour with 6 doctors on?",
+    "expect_operation": "queueing"
+  }
+]

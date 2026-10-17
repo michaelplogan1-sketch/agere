@@ -167,6 +167,13 @@ CONTRACTS = {
     'medication_identity': {'inputs':['earlier_set'],'parameters':{},
                             'meaning':'Offline RxNorm names, spans, doses/forms and RAAS alternatives. Not use/tolerance.'},
 }
+CONTRACTS['queueing'] = {'inputs':['none'],'parameters':{'source':'ed|clinic|appointment|beds|manual (default ed; beds = hospital stays)','organization_id':'organisation id or ""',
+    'objective':'wait|blocking (default wait; beds = blocking)','wait_threshold_minutes':30,'target_wait_probability':0.10,'target_blocking':0.02,
+    'abandonment_rate_per_hour':None,'servers':None,'mean_service_minutes':None,'demand_forecast':False,'arrival_scale':1.0},
+    'meaning':'Queueing-theory staffing and capacity: hour-of-week arrival rates from received visit/stay timestamps, service time from start/end times (or a stated mean), '
+         'Erlang C wait probabilities, Erlang A with abandonment, Erlang B / M/M/c/K blocking for beds, square-root staffing, and stationary period-by-period (SIPP) '
+         'minimum servers per hour block meeting a wait or blocking target, with +-10% arrival sensitivity and checks of the Poisson / exponential assumptions. '
+         'Use for how many nurses, providers or beds per hour to keep waits or blocking under a target. Volume forecasts and staffing from user ratios are demand; overbooking and no-shows are scheduling.'}
 CONTRACTS['scheduling'] = {'inputs':['optional earlier_set'],'parameters':{'focus':'all|no_show_risk|overbooking|access|reminders','practice':'organisation id or ""',
     'horizon_days':14,'value_per_visit':1.0,'overflow_cost':2.0,'reminder_effect':0.3,'reminder_capacity':25,'capacity':None,'max_overflow_probability':None},
     'meaning':'Access and yield management: time-split-validated logistic no-show model (vs practice-rate baseline: AUC, Brier, calibration), per-session '

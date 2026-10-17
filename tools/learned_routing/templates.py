@@ -8,6 +8,7 @@ intended label is used only where the compiler declines (exactly the questions t
 import random
 
 FILL = {
+    'where': ['the urgent care', 'the emergency department', 'our primary care clinic', 'the walk-in clinic', 'triage'],
     'cond': ['diabetes', 'heart failure', 'CKD', 'COPD', 'hypertension', 'asthma', 'atrial fibrillation', 'depression',
              'dementia', 'CHF', 'chronic kidney disease', 'type 2 diabetes', 'obesity', 'coronary artery disease'],
     'conds': ['diabetics', 'heart failure patients', 'CKD patients', 'COPD patients', 'hypertensive patients', 'asthmatics',
@@ -162,6 +163,12 @@ T = {
         'Who should get a reminder call before their appointment {when}?', 'How many extra slots can each practice book?',
         'Overbooking recommendation per session', 'Predict no-shows for {when}', 'which upcoming visits are at risk of being missed',
         'booking lead time and access by practice', 'safe overbooking level for each clinic session',
+    ],
+    'queueing': [
+        'How many nurses do we need each hour to keep ED waits under 30 minutes?', 'What is the chance a patient waits more than 15 minutes at {where}?',
+        'How many beds does the unit need so that fewer than 1 in 50 admissions are turned away?', 'Staffing by hour of the week to hold wait times below 20 minutes',
+        'Erlang C staffing for the emergency department', 'how many providers per hour so that fewer than 10% of patients wait over half an hour',
+        'bed blocking probability for the inpatient unit', 'minimum staff per hour to meet a wait-time target',
     ],
     'early_signal': [
         'Which patients show the pattern that usually precedes an admission?', 'Who is heading toward decompensation?',

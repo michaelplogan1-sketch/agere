@@ -29,6 +29,7 @@ OPERATIONS |= {'pathway'}  # care pathways (Markov chains, process mining)
 OPERATIONS = OPERATIONS | {'profile'}
 OPERATIONS |= {'calibration'}  # calibration of predictions (conformal.py)
 OPERATIONS |= {'scheduling'}  # no-show model, overbooking, access, reminders (scheduling.py)
+OPERATIONS |= {'queueing'}  # queueing-theory staffing and bed sizing (queueing.py)
 OPERATIONS |= {'briefing'}  # ranked proactive briefing (briefing.py + briefing_rank.py)
 OPERATIONS |= {'early_signal'}  # matched-filter precursor detection (early_signal.py)
 OPERATIONS |= {'claims_review'}  # payment integrity and revenue leakage (claims_review.py)
@@ -140,6 +141,7 @@ NO_BENCHMARK_OPERATIONS += ('market',)
 NO_BENCHMARK_OPERATIONS += ('pathway',)
 NO_BENCHMARK_OPERATIONS += ('calibration',)
 NO_BENCHMARK_OPERATIONS += ('scheduling',)
+NO_BENCHMARK_OPERATIONS += ('queueing',)
 NO_BENCHMARK_OPERATIONS += ('briefing',)
 NO_BENCHMARK_OPERATIONS += ('early_signal',)
 NO_BENCHMARK_OPERATIONS += ('claims_review',)
@@ -349,6 +351,21 @@ def build_answer_core(plan, results, memberships, question):
                                                                          'appointments', 'reminders', 'access', 'access_unavailable',
                                                                          'data_defects', 'by_year', 'assumptions', 'notes')} | {'focus': focus},
                                'assumptions': report['assumptions']})
+        if not ok: answer['missing'].append(summary(report))
+        return answer
+    if last['operation'] == 'queueing':
+        from .queueing import summary, table
+        report = results[-1]['result']
+        partial = plan.get('coverage') != 'supported_observation' or plan.get('unmet_requirements')
+        rows = table(report)
+        ok = bool(rows)
+        answer.update(status=('partial' if partial else 'answered') if ok else 'unsupported', answer_type='table' if ok else 'unsupported',
+                      table=rows, value=summary(report), method=report['method'], limitations=report['limitations'],
+                      count=(report['answer'].get('staffing') or {}).get('peak_servers'),
+                      warnings=report['warnings'], assumptions=report['assumptions'],
+                      overall={'queueing': {k: v for k, v in report['answer'].items() if k != 'staffing'} | {
+                                   'staffing': {k: v for k, v in (report['answer'].get('staffing') or {}).items() if k != 'by_hour_of_week'}},
+                               'inference_status': report['inference_status'], 'assumptions': report['assumptions']})
         if not ok: answer['missing'].append(summary(report))
         return answer
     if last['operation'] == 'survival':
@@ -855,6 +872,9 @@ def validate(plan, as_of):
         elif op == 'scheduling':
             from . import scheduling
             p = scheduling.validate(p)
+        elif op == 'queueing':
+            from . import queueing
+            p = queueing.validate(p)
         elif op == 'briefing':
             from . import briefing_rank
             p = briefing_rank.validate(p)
@@ -1179,7 +1199,7 @@ def code_identity():
                       Path(__file__).with_name('outreach.py'), Path(__file__).with_name('outreach_bandit.py'),
                       Path(__file__).with_name('pathway.py'),
                       Path(__file__).with_name('conformal.py'), Path(__file__).with_name('calibration.py'),
-                      Path(__file__).with_name('scheduling.py')]]])
+                      Path(__file__).with_name('scheduling.py'), Path(__file__).with_name('queueing.py')]]])
 
 
 def result_cache_enabled():
@@ -1490,6 +1510,9 @@ def execute(stack, plan, *, question=None):
                 chosen = memberships[node['inputs'][0]]
                 detail = survival.execute(path, sorted(chosen.yes), params)
                 detail['input_membership'] = membership_receipt(chosen)
+            elif op == 'queueing':
+                from . import queueing
+                detail = queueing.engine_execute(path, None, params, meta['snapshot']['as_of'])
             elif op == 'briefing':
                 from . import briefing, briefing_rank
                 detail = briefing_rank.serve(path, briefing.cached(path), record=False)
