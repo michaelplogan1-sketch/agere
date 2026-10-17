@@ -40,8 +40,9 @@ def validate(contract, question):
     """Problems with a contract, as short strings (empty = valid). question: {id, answer_type, as_of?}."""
     if not isinstance(contract, dict):
         return ['contract is not an object']
-    issues = [f'missing {k}' for k in REQUIRED if contract.get(k) in (None, '', {}, [])]
     at = contract.get('answer_type')
+    # a median/mean/sum value has no numerator; every other answer type counts something
+    issues = [f'missing {k}' for k in REQUIRED if contract.get(k) in (None, '', {}, []) and not (k == 'numerator' and at == 'value')]
     if at not in ANSWER_TYPES:
         issues.append(f'answer_type {at!r} is not one of {ANSWER_TYPES}')
     elif question.get('answer_type') and at != question['answer_type']:
