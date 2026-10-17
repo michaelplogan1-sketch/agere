@@ -220,3 +220,31 @@ router, operator router and Opus reconcile leave the answer path (BUILD_LOG.md s
 - **Answer keys now pinned** (same day): the scorer reports `answers_sha256`, every run manifest records it, and it is
   part of the ruler. Baselines re-frozen on key `fa34377c…` (v2.8 sample). Mike's pending key regeneration (RX-10,
   VBC-02, ACC-10, supersede handling) will make runs NOT COMPARABLE until the baselines are re-scored and re-frozen.
+
+## H1: hybrid core (plan step 5), 2026-10-17
+- **What it is:** `clinical_core/agere/hybrid` + `bench/hybrid_run.py`. Haiku writes an analysis contract (grain,
+  population, numerator, denominator, window + anchor, perspective, exclusions, group_by, row_limit, unit, governed
+  metric, unresolved) and ONE SQL query; it no longer reports numbers. Code validates the contract, compiles a governed
+  metric only when its grain, output and time anchor match, executes the SQL read-only, builds the typed answer from the
+  rows (table keys = the contract's group_by), checks shape and grain, and votes only among runs that passed. No
+  majority -> one Sonnet pass through the same checks. Nothing is promoted to the library.
+- **Also fixed on the way:** tmp/layers/dev20.jsonl carried the pre-patch text of REV-03, RX-10, RWE-02 and RWE-12;
+  question files are now generated from the release (`bench/question_set.py` -> `bench/questions/`), and the manifest
+  showed NOT COMPARABLE until the baseline was re-frozen on the current text (L7 still 18/20).
+- **Result (dev20, frozen ruler, COMPARABLE with the L7 baseline):**
+
+  | | Correct | Answered | Right when answered |
+  |---|---|---|---|
+  | L7 baseline (analyst answers, agreement, escalation) | 18/20 | 19 | 18/19 |
+  | H1 hybrid core | 18/20 | 20 | 18/20 |
+
+  Agreement: 14 unanimous, 5 majority, 1 escalated (HOS-08, two off-by-one category counts; Sonnet decided). All 66
+  run outputs passed validation and checks after two harness fixes (exact integer votes; the read-only guard rejected
+  replace()).
+- **Misses, both unanimous:** RX-10 (996; key regeneration pending in the generator) and RX-09 (23; "maintenance drug
+  class" and "no discontinued order" are not defined in the published question; sent to the generator as a key
+  definition question). L7 abstained on RX-09.
+- **Governed metrics:** used 0 times. No dev question's definition matched a governed metric exactly (e.g. HOS-03 counts
+  claim lines, the metric counts stays), and the compile check correctly refuses a mismatch.
+- **Tokens:** about 330K per full run of 20 (subagent usage), similar to L1-L3. Cost unmetered ($0 subagents).
+- **Next:** wait for the key regeneration, then re-score and re-freeze; run H1 on ho10 (held-out) before any claim.
