@@ -1,7 +1,7 @@
 """Agreement among the runs whose executed answers passed every check.
 
-Canonical forms compare exactly (sets and tables by key), numbers after rounding to 4 significant digits, so two runs
-that computed the same thing agree and two that computed different things never do.
+Canonical forms compare exactly (sets and tables by key, whole numbers exactly), fractions after rounding to 4
+significant digits, so two runs that computed the same thing agree and two that computed different things never do.
 
     unanimous   every run passed and all agree (>= 2 runs): answered, verified
     majority    more than half of all runs agree: answered, unverified
@@ -15,10 +15,15 @@ from collections import Counter
 
 
 def _round(v):
+    """Whole numbers compare exactly (21256 and 21259 are different counts); fractions to 4 significant digits."""
     try:
-        return float(f'{float(v):.4g}')
+        f = float(v)
     except (TypeError, ValueError):
         return v
+    if f.is_integer():
+        return int(f)
+    r = float(f'{f:.4g}')
+    return int(r) if r.is_integer() else r
 
 
 def canonical(answer_type, answer):

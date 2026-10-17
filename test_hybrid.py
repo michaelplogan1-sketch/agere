@@ -57,6 +57,8 @@ class Execution(Db):
         for sql in ("DELETE FROM stay", "SELECT 1; DROP TABLE stay", "PRAGMA table_info(stay)", None):
             self.assertIsNotNone(hx.run_sql(self.db, sql)[2], sql)
         self.assertIsNone(hx.run_sql(self.db, "SELECT 'delete me' AS x")[2])
+        self.assertIsNone(hx.run_sql(self.db, "SELECT replace('I48.0', '.', '') AS code")[2])
+        self.assertIsNotNone(hx.run_sql(self.db, "WITH x AS (SELECT 1) DELETE FROM stay")[2])  # read-only connection
 
     def test_count_shape_and_checks(self):
         cols, rows, err = hx.run_sql(self.db, "SELECT count(DISTINCT patient_id) n FROM stay")
@@ -80,6 +82,12 @@ class Execution(Db):
         ans, _ = hx.to_answer(c, cols, rows)
         self.assertEqual(ans['table'], [{'keys': ['inpatient'], 'value': 1}, {'keys': ['observation'], 'value': 2}])
         self.assertIsNone(hx.to_answer(contract(answer_type='table', group_by=['month']), cols, rows)[0])
+
+    def test_top_n_row_limit(self):
+        c = contract(answer_type='table', group_by=['type'], row_limit=1)
+        ans = {'table': [{'keys': ['a'], 'value': 2}, {'keys': ['b'], 'value': 1}]}
+        self.assertTrue(any('top-1' in p for p in hx.checks(c, ans)))
+        self.assertTrue(any('row_limit' in i for i in hc.validate(contract(row_limit=0), Q)))
 
     def test_percent_range_check(self):
         c = contract(answer_type='value', unit='percent', denominator='all')
@@ -111,6 +119,10 @@ class Voting(unittest.TestCase):
     def test_failed_runs_do_not_vote(self):
         runs = self.runs(5, 5) + [{'answer': None, 'passed': False, 'clarify': False}]
         self.assertEqual(hv.decide('count', runs)[:2], ('majority', {'count': 5}))
+
+    def test_counts_compare_exactly(self):
+        self.assertNotEqual(hv.canonical('count', {'count': 21256}), hv.canonical('count', {'count': 21259}))
+        self.assertEqual(hv.canonical('value', {'value': 38.12001}), hv.canonical('value', {'value': 38.12}))
 
     def test_canonical_forms(self):
         self.assertEqual(hv.canonical('patient_set', {'patient_ids': ['b', 'a']}), hv.canonical('patient_set', {'patient_ids': ['a', 'b', 'a']}))

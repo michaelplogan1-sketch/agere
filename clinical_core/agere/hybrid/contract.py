@@ -11,6 +11,7 @@
      "perspective": "which sources count (payer claims, EHR, all sources...)",
      "exclusions": ["..."],
      "group_by": ["result column names that key a table answer, in order"],
+     "row_limit": null | N (a "top N" table returns at most N rows),
      "unit": "count|percent|days|usd|ratio|per_1000|...",
      "metric_id": null | "a governed metric whose definition is exactly this contract",
      "unresolved": ["meanings the question and documentation leave open"]}
@@ -74,6 +75,9 @@ def validate(contract, question):
         issues.append(f"as_of {as_of} but the question says {q_as_of}")
     if (start or end) and not window.get('anchor'):
         issues.append('window has dates but no anchor column')
+    rl = contract.get('row_limit')
+    if rl is not None and (isinstance(rl, bool) or not isinstance(rl, int) or rl < 1):
+        issues.append('row_limit must be a positive integer or null')
     if not isinstance(contract.get('unresolved', []), list) or not isinstance(contract.get('exclusions', []), list):
         issues.append('unresolved and exclusions must be lists')
     return issues

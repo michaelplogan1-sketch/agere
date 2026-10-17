@@ -1,5 +1,5 @@
 {
- "questions": "tmp/layers/ho10.jsonl",
+ "questions": "bench/questions/ho10.jsonl",
  "reference_layer": "L6a",
  "scorer_version": {
   "eval_questions.py": "questions-2026-10-17.1"
@@ -8,7 +8,7 @@
   "schema": "agere-run-manifest/1",
   "pinned": {
    "questions_file": {
-    "path": "tmp/layers/ho10.jsonl",
+    "path": "bench/questions/ho10.jsonl",
     "sha256": "b87456a30abcde32cfe576b2ff37b995e48161b3696bd395bad224d91f4f9f94"
    },
    "scorer": {
@@ -66,9 +66,9 @@
    },
    "code": {
     "repo": "/Users/mikel/clinical-insights-local",
-    "head": "a046c62922278da9dc37114e4d19e1431ae48aee",
+    "head": "9870f15997bdaa41898a73a656700ec41c9799ce",
     "dirty": true,
-    "diff_sha256": "a8730455c62b6ba146e84e28b2934e2b4afa9c241526720cb418966f3b7ec6fc"
+    "diff_sha256": "6622282605b4c079ea7bd721f815a40a19d5682649d5f096ece8899d5b335bd4"
    },
    "system": "layer:L6a",
    "answer_key": {
@@ -76,8 +76,8 @@
     "scorer_version": "questions-2026-10-17.1"
    }
   },
-  "pinned_sha256": "4fe46860ab22ee3d45ec0653570ce2852e1794744f3816353652c43c51cfaa82",
-  "created_at": "2026-10-17T11:27:14+00:00"
+  "pinned_sha256": "a2454004ee827ec90d486a0951ce19d534d7ceac02507449104c23fedc1b72b6",
+  "created_at": "2026-10-17T11:54:28+00:00"
  },
  "results": {
   "L6a": {

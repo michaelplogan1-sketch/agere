@@ -47,7 +47,9 @@ def compile_metric(contract, as_of):
     return metrics.render_sql(m, metrics.parameters(m, '', as_of, period)), None
 
 
-_WRITE = re.compile(r'\b(insert|update|delete|drop|alter|create|replace|attach|detach|pragma|vacuum|reindex)\b', re.I)
+# The connection is read-only (mode=ro), so writes fail there; this guard only blocks what read-only mode does not:
+# a second statement, ATTACH (another file) and PRAGMA. Functions such as replace() are fine.
+_WRITE = re.compile(r'\b(attach|detach|pragma)\b', re.I)
 
 
 def run_sql(db_path, sql, timeout_s=120.0):
@@ -134,6 +136,8 @@ def checks(contract, answer, db_path=None):
                 out.append(f'{len(unknown)} ids are not patients (e.g. {unknown[0]})')
     else:
         keys = [tuple(r['keys']) for r in answer['table']]
+        if contract.get('row_limit') and len(keys) > contract['row_limit']:
+            out.append(f"{len(keys)} rows for a top-{contract['row_limit']} table")
         if any(k is None for row in keys for k in row):
             out.append('a table key is null')
         if len(set(keys)) != len(keys):

@@ -3,7 +3,7 @@ write its run manifest first (bench/manifest.py). Replaces tmp/layers/score_laye
 frozen baseline for its question file (bench/baselines/<questions stem>.json): COMPARABLE only when the questions,
 scorer, data, cache policy and pricing match; --freeze makes a run the baseline.
 
-    .venv/bin/python bench/layer_score.py tmp/layers/L7 [--questions tmp/layers/dev20.jsonl] \
+    .venv/bin/python bench/layer_score.py tmp/layers/L7 [--questions bench/questions/dev20.jsonl] \
         [--docs tmp/layers/catalog_index.md tmp/layers/docs] [--model claude-haiku-5-5 --runs 3]
 
 Layer answers come from $0 subagents, so their cost is unmetered: the manifest says so and the cost total is unknown,
@@ -44,7 +44,7 @@ def load_answers(layer):
 def main(argv=None):
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument('layer', type=Path)
-    p.add_argument('--questions', type=Path, default=REPO / 'tmp/layers/dev20.jsonl')
+    p.add_argument('--questions', type=Path, default=REPO / 'bench/questions/dev20.jsonl')
     p.add_argument('--release', default='healthcare-warehouse-v2.8')
     p.add_argument('--semantic-database', type=Path, default=SEMANTIC)
     p.add_argument('--docs', nargs='*', type=Path, help='analyst docs (default: the tmp/layers retrieval docs that exist)')

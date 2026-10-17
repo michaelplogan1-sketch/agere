@@ -24,6 +24,7 @@ Contract fields:
 - perspective: which sources count (payer claims only, EHR, all sources...).
 - exclusions: list.
 - group_by: for a table, the result column names that key each row, in order; else [].
+- row_limit: N for a "top N" table, else null.
 - unit: count | percent | days | usd | ratio | per_1000 | ...  (percent means 12.5 for 12.5%).
 - metric_id: a governed metric id ONLY if its definition is exactly this question's definition; else null. When you set
   it, also give your own SQL; the system uses the governed SQL only if it matches your contract.

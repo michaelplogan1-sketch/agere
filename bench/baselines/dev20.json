@@ -1,5 +1,5 @@
 {
- "questions": "/Users/mikel/clinical-insights-local/tmp/layers/dev20.jsonl",
+ "questions": "/Users/mikel/clinical-insights-local/bench/questions/dev20.jsonl",
  "reference_layer": "L7",
  "scorer_version": {
   "eval_questions.py": "questions-2026-10-17.1"
@@ -8,8 +8,8 @@
   "schema": "agere-run-manifest/1",
   "pinned": {
    "questions_file": {
-    "path": "/Users/mikel/clinical-insights-local/tmp/layers/dev20.jsonl",
-    "sha256": "e4314042c8f979ab837ad81727d26d37c0dd29fce01efc863134699439abe033"
+    "path": "/Users/mikel/clinical-insights-local/bench/questions/dev20.jsonl",
+    "sha256": "fdbf6a5c9a78970465dbbffc72aca544805248f97e6c50341488d5db97852a34"
    },
    "scorer": {
     "files": {
@@ -66,9 +66,9 @@
    },
    "code": {
     "repo": "/Users/mikel/clinical-insights-local",
-    "head": "a046c62922278da9dc37114e4d19e1431ae48aee",
+    "head": "9870f15997bdaa41898a73a656700ec41c9799ce",
     "dirty": true,
-    "diff_sha256": "fcc42046f82fc6b8aa19a74c63226827cf3f3df4445e1d6acdb90ad9f2d88f2d"
+    "diff_sha256": "63a45f03ff9f25b0f1eebc7cbe06febed4a516f4d32d46098e1d78e54bf7f519"
    },
    "system": "layer:L7",
    "answer_key": {
@@ -76,8 +76,8 @@
     "scorer_version": "questions-2026-10-17.1"
    }
   },
-  "pinned_sha256": "4bf3f820f9882bfab4e8997ce7d854278a220a5f6bd299c48ba3a42f8907d1d6",
-  "created_at": "2026-10-17T11:27:13+00:00"
+  "pinned_sha256": "324bba7f3d900545f7faa8912d64c6ce041eefb947644ace13ae521552256d21",
+  "created_at": "2026-10-17T11:54:28+00:00"
  },
  "results": {
   "L7": {

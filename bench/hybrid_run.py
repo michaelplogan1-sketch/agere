@@ -1,10 +1,10 @@
 """Run the hybrid core (clinical_core/agere/hybrid) on a question file.
 
     # 1. prompts for N independent model runs (each run sees the questions in batches; runs never see each other)
-    .venv/bin/python bench/hybrid_run.py prompt tmp/hybrid/H1 --questions tmp/layers/dev20.jsonl --runs 3 --batch 10
+    .venv/bin/python bench/hybrid_run.py prompt tmp/hybrid/H1 --questions bench/questions/dev20.jsonl --runs 3 --batch 10
     # 2. a model answers each prompt file, writing tmp/hybrid/H1/model/<prompt name>.jsonl ({id, contract, sql} lines)
     # 3. validate, compile or execute, check, vote; writes answers_hybrid.jsonl and escalate.md
-    .venv/bin/python bench/hybrid_run.py execute tmp/hybrid/H1 --questions tmp/layers/dev20.jsonl
+    .venv/bin/python bench/hybrid_run.py execute tmp/hybrid/H1 --questions bench/questions/dev20.jsonl
     # 4. (optional) a stronger model answers escalate.md into model/escalation.jsonl; re-run execute
     # 5. score: .venv/bin/python bench/layer_score.py tmp/hybrid/H1
 """
@@ -159,7 +159,7 @@ def main(argv=None):
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument('step', choices=['prompt', 'execute'])
     p.add_argument('run', type=Path)
-    p.add_argument('--questions', type=Path, default=REPO / 'tmp/layers/dev20.jsonl')
+    p.add_argument('--questions', type=Path, default=REPO / 'bench/questions/dev20.jsonl')
     p.add_argument('--db', type=Path, default=DB)
     p.add_argument('--runs', type=int, default=3)
     p.add_argument('--batch', type=int, default=10)
