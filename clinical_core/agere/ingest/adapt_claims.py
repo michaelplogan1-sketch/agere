@@ -23,7 +23,7 @@ payer_medical_claims / payer_medical_claim_lines (diagnoses inside the claim rec
     -D duplicate submissions are dropped (837 loop and 835 events); -X crossover/COB copies are kept as the secondary
     payer's claim (product medigap under SUP1/SUP2, cob_secondary elsewhere). Flat MEDICAL (10 payers) fills network,
     allowed, statuses (denied_upheld, recouped, voided) and header-only lines, and is cross-checked; its C1 quarterly
-    FULL_RESTATEMENT rows only fill events the incrementals lack. Provider-side 837/835 (x12/) are dropped as copies of the
+    FULL_RESTATEMENT rows only fill events the incrementals lack. Provider-side 837/835 (x12/) are kept out of these payer streams as copies of the
     payer claim (their lines fill header-only loops; their bare CLM01 becomes source_billing_claim_id). CCLF Part A/B/DME
     are the Medicare FFS (MSSP) claims: an MSSP X12 claim that matches a CCLF claim (837P: MBI + HCPCS + service date;
     837I: MBI + statement from/thru) is kept once, with CCLF allowed/paid amounts; unmatched CCLF chains (clm_cntl_num tail,
@@ -34,6 +34,15 @@ payer_pharmacy_claims
     PHARMACY on WHN-RXC claim id (drug_name, plan/member paid, recoupments, flat-only claims). MSSP: CCLF7 (Part D) matched
     to MSSP NCPDP on MBI + Rx number + fill number is kept once; unmatched PDE chains become their own claims.
     drug_name falls back to the NDC's name in any flat pharmacy file; pharmacy_type comes from CCLF7 by pharmacy NPI.
+medical_claim_submissions / medical_claim_lines / medical_claims / provider_remittance_advice (practice revenue cycle)
+    Provider-side x12/837p and x12/835 under each WHN-PRACTICE-* folder: the same claims as the payer streams, but the
+    practice's own billing and remittance feed (the payer streams above are unchanged). One submission per CLM
+    (submission_kind original | corrected (CLM05-3 7, original_submission_record_id = the earlier submission of the
+    claim) | void (8)); lines for the current submission of each claim (SV1/SV2); one medical_claims adjudication and
+    one provider_remittance_advice per provider 835 CLP (CLP02 1 paid, 4 denied, 22 reversed as its own event with
+    original_adjudication_record_id = the payment it takes back), with CAS adjustments and financial_deltas_cents in
+    the v2.8 shape. claim_id = the practice CLM01 (bare hex; the payer claim id is WHN-CLM-<claim_id>). These streams
+    are versioned by claim_id in the semantic layer, so they carry no supersedes_record_id.
 sdoh_vendor_attributes
     sdoh_vendor rows (one per member per delivery). Care gaps, risk scores and MSSP assignment have no canonical stream
     (docs/agere/canonical_streams.json); QALR only feeds MSSP enrollment attribution.
@@ -57,7 +66,8 @@ import re
 from . import identity
 
 STREAMS = ('enrollment_spans', 'payer_medical_claims', 'payer_medical_claim_lines', 'payer_pharmacy_claims',
-           'sdoh_vendor_attributes')
+           'sdoh_vendor_attributes', 'medical_claim_submissions', 'medical_claim_lines', 'medical_claims',
+           'provider_remittance_advice')
 
 MBI = re.compile(r'^[1-9][AC-HJKMNP-RT-Y][AC-HJKMNP-RT-Y0-9][0-9][AC-HJKMNP-RT-Y][AC-HJKMNP-RT-Y0-9][0-9]'
                  r'[AC-HJKMNP-RT-Y]{2}[0-9]{2}$')
@@ -351,6 +361,7 @@ def records(db, resolve):
     yield from _medical(ctx)
     yield from _pharmacy(ctx)
     yield from _sdoh(ctx)
+    yield from _provider(ctx)
     ctx.rep['unmapped'] = UNMAPPED
     _REPORT = ctx.rep
 
@@ -368,6 +379,12 @@ UNMAPPED = {
     'payer_pharmacy_claims.pharmacy_type': 'only CCLF7 (clm_phrmcy_srvc_type_cd) carries it; filled by pharmacy NPI',
     'payer_pharmacy_claims.formulary_tier': 'not sent by NCPDP, flat pharmacy or CCLF7',
     'enrollment_spans.attribution_npi (834)': '834 NM1*P3 PCP loop is absent; PCP comes from flat ELIGIBILITY only',
+    'medical_claims.allowed_cents (provider 835)': 'no AMT*AU: paid + patient responsibility (0 for denials)',
+    'medical_claims.encounter_id / account_id / care_record_id': 'the practice 837 carries no encounter, account or EHR '
+                                                                 'record reference (REF*EA / REF*D9 absent)',
+    'claim_corrections / claim_acknowledgements / payer_cash_allocations': 'no 277CA acknowledgements or EFT allocation '
+                                                                           'records in the delivery; frequency-7 '
+                                                                           'resubmissions carry no correction reason',
     'care gaps / risk scores / MSSP assignment': 'no canonical stream in canonical_streams.json; QALR only fills MSSP '
                                                  'attribution_npi',
 }
@@ -802,9 +819,9 @@ def _medical(ctx):
         'statement_from', 'statement_to', 'received_date', 'drg_code', 'patient_status_code', 'remark_codes',
         'rendering_npi'], "WHERE _feed IN ('x12_payer', 'x12')")
     prov835 = [r for r in c835 if r['_feed'] == 'x12']
-    rep['dropped']['provider_side_835_copy'] += len(prov835)
+    rep['dropped']['provider_835_kept_out_of_payer_streams'] += len(prov835)
     rep['dropped_by_table']['x12_835_claim(provider):provider_side_copy'] += len(prov835)
-    rep['dropped']['provider_side_837_copy'] += len(prov837)
+    rep['dropped']['provider_837_kept_out_of_payer_streams'] += len(prov837)
     rep['dropped_by_table']['x12_837_claim(provider):provider_side_copy'] += len(prov837)
     pay835 = [r for r in c835 if r['_feed'] == 'x12_payer']
     pay835 = _isa_filter(rep, 'x12_835_claim', _keep_files(rep, 'x12_835_claim', pay835))
@@ -1781,3 +1798,220 @@ def _sdoh(ctx):
             rec[k] = _s(r[k])
         rec['member_id'] = member
         yield ctx.emit(rec)
+
+
+# ================================================================================ provider revenue cycle (practice X12)
+def _cents(v):
+    n = _num(v)
+    return None if n is None else int(round(n * 100))
+
+
+def _practice(path):
+    parts = (path or '').split('/')
+    return parts[2] if len(parts) > 3 and parts[0] == 'x12' else None
+
+
+def _provider(ctx):
+    """The practice's own claim submissions (x12/837p) and remittances (x12/835): medical_claim_submissions,
+    medical_claim_lines, medical_claims (one per adjudication) and provider_remittance_advice."""
+    rep = ctx.rep
+    db = ctx.db
+    c837 = _rows(db, 'x12_837_claim', [
+        'isa_control_number', 'claim_key', 'transaction_type', 'patient_control_number', 'subscriber_member_id',
+        'patient_member_id', 'payer_id', 'payer_name', 'total_charge', 'facility_code', 'place_of_service',
+        'frequency_code', 'statement_from', 'statement_to', 'admission_date', 'discharge_date', 'drg',
+        'billing_provider_npi', 'rendering_npi', 'attending_npi', 'interchange_date'], "WHERE _feed = 'x12'")
+    # _medical already counted the provider files' resend/ISA drops; count them here only in dropped_by_table
+    tmp = _new_report()
+    c837 = _isa_filter(tmp, 'provider_streams:x12_837_claim', _keep_files(tmp, 'provider_streams:x12_837_claim', c837))
+    files = {r['_file'] for r in c837}
+    dx, lines = defaultdict(list), defaultdict(list)
+    for r in _rows(db, 'x12_837_dx', ['claim_key', 'dx_sequence', 'dx_code'], "WHERE _feed = 'x12'"):
+        if r['_file'] in files:
+            dx[(r['_file'], r['claim_key'])].append(r)
+    for r in _rows(db, 'x12_837_line', ['claim_key', 'line_number', 'line_ordinal', 'procedure_code', 'revenue_code',
+                                        'charge', 'units', 'service_date', 'rendering_npi'], "WHERE _feed = 'x12'"):
+        if r['_file'] in files:
+            lines[(r['_file'], r['claim_key'])].append(r)
+    subs = defaultdict(list)
+    seen = set()
+    for r in sorted(c837, key=lambda r: (_d(r['interchange_date']) or '', r['_file'], r['_row'])):
+        cid = _s(r['patient_control_number'])
+        if not cid:
+            continue
+        freq = _s(r['frequency_code']) or '1'
+        key = (cid, freq, r['total_charge'], tuple((l['procedure_code'], l['service_date'])
+                                                   for l in lines.get((r['_file'], r['claim_key']), [])))
+        if key in seen:
+            rep['dropped']['repeat_provider_837_loop'] += 1
+            continue
+        seen.add(key)
+        subs[cid].append(r)
+    sub_rec = {}   # claim id -> [submission records]
+    first_code = {}  # submission record id -> (first line code, system) for the adjudicated claim's service_code
+    for cid, loops in subs.items():
+        prev_orig = None
+        recs = []
+        for r in loops:
+            freq = _s(r['frequency_code']) or '1'
+            kind = {'7': 'corrected', '8': 'void'}.get(freq, 'original')
+            practice = _practice(r['_file'])
+            payer = _payer_id(r['payer_id'] or r['payer_name'])
+            member = _s(r['subscriber_member_id']) or _s(r['patient_member_id'])
+            ls = sorted(lines.get((r['_file'], r['claim_key']), []), key=lambda l: l['line_ordinal'] or 0)
+            dxs = [d['dx_code'].strip() for d in sorted(dx.get((r['_file'], r['claim_key']), []),
+                                                        key=lambda d: d['dx_sequence'] or 0) if _s(d['dx_code'])]
+            dates = sorted(_d(l['service_date']) for l in ls if _d(l['service_date']))
+            inst = (r['transaction_type'] or '') == '837I'
+            sent = _d(r['interchange_date']) or _file_date(r['_file'])
+            rid = _rid('medical_claim_submissions', practice, cid, freq, r['isa_control_number'])
+            rec = _envelope(ctx, 'medical_claim_submissions', rid, payer, member, sent, sent, sent,
+                            [_lin('x12_837_claim', r)] + [_lin('x12_837_dx', d) for d in dx.get((r['_file'], r['claim_key']), [])],
+                            source_system=practice)
+            rec.update({
+                'claim_id': cid, 'service_organization_id': practice,
+                'service_date': dates[0] if dates else _d(r['statement_from']),
+                'claim_type': 'institutional' if inst else 'professional', 'service_code_system': 'CPT/HCPCS',
+                'billed_cents': _cents(r['total_charge']), 'currency': 'USD', 'submission_kind': kind,
+                'original_submission_record_id': prev_orig if kind != 'original' else None,
+                'member_identifier_submitted': member, 'status': 'submitted', 'diagnosis_codes': dxs,
+                'principal_diagnosis': dxs[0] if dxs else None, 'billing_provider_npi': _s(r['billing_provider_npi']),
+                'rendering_provider_npi': _s(r['rendering_npi']) or _s(r['attending_npi']),
+                'place_of_service': None if inst else (_s(r['place_of_service']) or _s(r['facility_code'])),
+                'payer_organization_id': payer, 'claim_frequency_code': freq,
+                'payer_claim_id': 'WHN-CLM-' + cid if not cid.startswith('WHN-') else cid})
+            if inst:
+                rec.update(type_of_bill='0' + (_s(r['facility_code']) or '') + freq, admission_date=_d(r['admission_date']),
+                           discharge_date=_d(r['discharge_date']), ms_drg=_s(r['drg']))
+            if kind == 'original' and prev_orig is None:
+                prev_orig = rid
+            rec['_lines'] = ls
+            code0 = _s(ls[0]['procedure_code']) if ls else None
+            first_code[rid] = (code0, _proc_system(code0))
+            recs.append(rec)
+        sub_rec[cid] = recs
+    for cid, recs in sub_rec.items():
+        for rec in recs:
+            ls = rec.pop('_lines')
+            yield ctx.emit(rec)
+        cur = recs[-1]
+        for n, l in enumerate(ls, 1):
+            code = _s(l['procedure_code'])
+            ln = _int(l['line_number']) or l['line_ordinal'] or n
+            rid = _rid('medical_claim_lines', cur['service_organization_id'], cid, ln)
+            rec = _envelope(ctx, 'medical_claim_lines', rid, cur['payer_organization_id'], cur['member_identifier_submitted'],
+                            cur['event_date'], cur['event_date'], cur['available_date'], [_lin('x12_837_line', l)],
+                            source_system=cur['service_organization_id'], person=cur['patient_id'])
+            rec.update({'claim_id': cid, 'submission_record_id': cur['record_id'], 'line_number': ln,
+                        'service_date': _d(l['service_date']) or cur['service_date'],
+                        'service_organization_id': cur['service_organization_id'], 'service_code_system': _proc_system(code),
+                        'service_code': code, 'units': _int(l['units']) if _num(l['units']) == _int(l['units']) else _num(l['units']),
+                        'charge_cents': _cents(l['charge']), 'revenue_code': _s(l['revenue_code']),
+                        'rendering_provider_npi': _s(l['rendering_npi'])})
+            yield ctx.emit(rec)
+        superseded = sum(len(lines.get((r['_file'], r['claim_key']), [])) for r in subs[cid][:-1])
+        if superseded:
+            rep['dropped']['lines_of_superseded_provider_submission'] += superseded
+    # ---- remittances
+    c835 = _rows(db, 'x12_835_claim', [
+        'isa_control_number', 'st_control_number', 'claim_key', 'patient_control_number', 'claim_status_code',
+        'total_charge', 'paid_amount', 'patient_responsibility', 'payer_claim_control_number', 'frequency_code',
+        'patient_id', 'patient_id_qualifier', 'insured_id', 'payer_name', 'payee_npi', 'remark_codes'], "WHERE _feed = 'x12'")
+    c835 = _isa_filter(tmp, 'provider_streams:x12_835_claim', _keep_files(tmp, 'provider_streams:x12_835_claim', c835))
+    rep['dropped_by_table'].update(tmp['dropped_by_table'])
+    f835 = {r['_file'] for r in c835}
+    adj = defaultdict(list)
+    for r in _rows(db, 'x12_835_adjustment', ['claim_key', 'level', 'cas_sequence', 'group_code', 'reason_code', 'amount'],
+                   "WHERE _feed = 'x12'"):
+        if r['_file'] in f835:
+            adj[(r['_file'], r['claim_key'])].append(r)
+    pay = {}
+    for r in _rows(db, 'x12_835_payment', ['isa_control_number', 'st_control_number', 'effective_date', 'interchange_date',
+                                           'interchange_sender_id'], "WHERE _feed = 'x12'"):
+        pay[(r['_file'], r['isa_control_number'], r['st_control_number'])] = (_d(r['effective_date']), _d(r['interchange_date']))
+    events = defaultdict(list)
+    seen = set()
+    for r in c835:
+        cid = _s(r['patient_control_number'])
+        if not cid:
+            continue
+        eff, idate = pay.get((r['_file'], r['isa_control_number'], r['st_control_number']), (None, None))
+        r['_date'] = eff or idate or _file_date(r['_file'])
+        r['_available'] = idate or r['_date']
+        key = (cid, _s(r['claim_status_code']), r['paid_amount'], r['patient_responsibility'], r['_date'])
+        if key in seen:
+            rep['dropped']['repeat_provider_835_event'] += 1
+            continue
+        seen.add(key)
+        events[cid].append(r)
+    for cid, evs in events.items():
+        evs.sort(key=lambda r: (r['_date'] or '', 1 if _s(r['claim_status_code']) == '22' else 0, r['_file'], r['_row']))
+        recs = sub_rec.get(cid) or []
+        last_paid = None
+        for e in evs:
+            code = _s(e['claim_status_code'])
+            status = 'reversed' if code == '22' else 'denied' if code == '4' else 'paid'
+            practice = _practice(e['_file'])
+            sub = next((x for x in reversed(recs) if (x['event_date'] or '') <= (e['_date'] or '9999')), recs[-1] if recs else None)
+            prefix = re.match(r'^([A-Z0-9]+)_835_', (e['_file'] or '').rsplit('/', 1)[-1])
+            payer = _payer_id(e['payer_name']) or (sub or {}).get('payer_organization_id') or \
+                (_payer_id(prefix.group(1)) if prefix else None)
+            q = _s(e['patient_id_qualifier'])
+            member = _s(e['patient_id']) or (q if q and len(q) > 3 else None) or _s(e['insured_id'])
+            a = adj.get((e['_file'], e['claim_key']), [])
+            adjustments, cat = [], Counter()
+            for x in sorted(a, key=lambda x: x['cas_sequence'] or 0):
+                g, rc, amt = _s(x['group_code']), _s(x['reason_code']), _cents(x['amount'])
+                item = {'group': g, 'reason_code': rc, 'amount_cents': amt}
+                if _s(e['remark_codes']) and g == 'CO' and rc not in ROUTINE_CARC:
+                    item['remark_codes'] = [c.split(':')[-1] for c in e['remark_codes'].split(',') if c]
+                adjustments.append(item)
+                cat[(g, rc)] += amt or 0
+            charge, paid, resp = _cents(e['total_charge']), _cents(e['paid_amount']) or 0, _cents(e['patient_responsibility']) or 0
+            sign = -1 if status == 'reversed' else 1
+            allowed = 0 if status == 'denied' else abs(paid) + abs(resp)
+            if status == 'denied':
+                deltas = dict.fromkeys(('billed', 'allowed', 'payer', 'responsibility', 'contractual', 'deductible', 'copay',
+                                        'coinsurance'), 0)
+            else:
+                deltas = {'billed': sign * abs(charge or 0), 'allowed': sign * allowed, 'payer': sign * abs(paid),
+                          'responsibility': sign * abs(resp), 'contractual': sign * abs(cat[('CO', '45')]),
+                          'deductible': sign * abs(cat[('PR', '1')]), 'copay': sign * abs(cat[('PR', '3')]),
+                          'coinsurance': sign * abs(cat[('PR', '2')])}
+            rid = _rid('medical_claims', practice, cid, code, e['paid_amount'], e['_date'])
+            lin = [_lin('x12_835_claim', e)] + [_lin('x12_835_adjustment', x) for x in a]
+            rec = _envelope(ctx, 'medical_claims', rid, payer, member, e['_date'], e['_date'], e['_available'], lin,
+                            source_system=payer)
+            rec.update({
+                'claim_id': cid, 'submission_record_id': sub['record_id'] if sub else None,
+                'service_organization_id': practice,
+                'service_date': sub['service_date'] if sub else None,
+                'service_code': None, 'service_code_system': None, 'status': status,
+                'billed_cents': abs(charge) if charge is not None else None, 'allowed_cents': allowed,
+                'payer_paid_cents': abs(paid), 'patient_responsibility_cents': abs(resp),
+                'original_adjudication_record_id': last_paid if status == 'reversed' else None,
+                'adjustments': adjustments, 'financial_deltas_cents': deltas,
+                'carc': _carc(a), 'payer_claim_id': _s(e['payer_claim_control_number']),
+                'claim_frequency_code': _s(e['frequency_code']),
+                'benefit_year': int(sub['service_date'][:4]) if sub and sub.get('service_date') else None})
+            if sub:
+                for k in ('diagnosis_codes', 'principal_diagnosis', 'billing_provider_npi', 'rendering_provider_npi',
+                          'place_of_service', 'type_of_bill', 'admission_date', 'discharge_date', 'ms_drg'):
+                    if sub.get(k) is not None:
+                        rec[k] = sub[k]
+                rec['service_code'], rec['service_code_system'] = first_code.get(sub['record_id'], (None, None))
+            if status == 'paid':
+                last_paid = rid
+            yield ctx.emit(rec)
+            pra = _envelope(ctx, 'provider_remittance_advice', _rid('provider_remittance_advice', practice, cid, code,
+                                                                   e['paid_amount'], e['_date']),
+                            payer, member, e['_date'], e['_date'], e['_available'], lin, source_system=practice,
+                            person=rec['patient_id'])
+            carc = _carc(a)
+            pra.update({'claim_id': cid, 'original_adjudication_record_id': rid, 'payer_organization_id': payer,
+                        'status': ('denied_information_needed' if carc == 'CO-16' else 'denied') if status == 'denied'
+                        else 'adjudicated', 'patient_responsibility_cents': sign * abs(resp) if status != 'denied' else 0,
+                        'payer_paid_cents': sign * abs(paid), 'carc': carc, 'adjudication_status': status})
+            yield ctx.emit(pra)
+        if not recs:
+            rep['cross_check']['provider_835_without_provider_837'] += 1

@@ -148,8 +148,8 @@ class MedicalClaims(unittest.TestCase):
         self.assertEqual(by['payer_medical_claims'][0]['payer_claim_id'], 'WHN-CLM-ccc')
         self.assertEqual(by['payer_medical_claims'][0]['source_billing_claim_id'], 'ccc')
         self.assertEqual(len(by['payer_medical_claim_lines']), 1)
-        self.assertEqual(rep['dropped']['provider_side_837_copy'], 1)
-        self.assertEqual(rep['dropped']['provider_side_835_copy'], 1)
+        self.assertEqual(rep['dropped']['provider_837_kept_out_of_payer_streams'], 1)
+        self.assertEqual(rep['dropped']['provider_835_kept_out_of_payer_streams'], 1)
         self.assertGreaterEqual(rep['dropped']['resend_file'], 1)
 
     def test_duplicate_dropped_and_crossover_kept(self):
@@ -311,6 +311,75 @@ class Enrollment(unittest.TestCase):
         self.assertEqual(len(recs), 1)
         self.assertIsNone(recs[0]['patient_id'])
         self.assertEqual(A.last_report()['emitted']['enrollment_spans'], 1)
+
+
+class ProviderRevenueCycle(unittest.TestCase):
+    """Practice-side x12/837p + x12/835 -> medical_claim_submissions, medical_claim_lines, medical_claims,
+    provider_remittance_advice (the payer streams stay as they are)."""
+
+    def test_submissions_lines_adjudications(self):
+        L = Landing()
+        p837 = 'x12/837p/WHN-PRACTICE-IN-0/2027-04/WHN-PRACTICE-IN-0_837P_202704.x12'
+        L.c837(p837, '800', 'k1', 'abc123', 'C2MEMBER77', lines=[('99213', 90.0, '2027-04-02'), ('81002', 10.0, '2027-04-02')],
+               dx=('I10', 'E119'), charge=100.0, payer_id='WH-PAYER-C2', idate='2027-04-05')
+        L.c837(p837.replace('2027-04', '2027-05').replace('202704', '202705'), '801', 'k1', 'abc123', 'C2MEMBER77', freq='7',
+               lines=[('99214', 120.0, '2027-04-02')], charge=120.0, payer_id='WH-PAYER-C2', idate='2027-05-03')
+        L.c837(p837.replace('.x12', '_resend.x12'), '800', 'k1', 'abc123', 'C2MEMBER77', lines=[('99213', 90.0, '2027-04-02')],
+               payer_id='WH-PAYER-C2', idate='2027-04-05')
+        r835 = 'x12/835/WHN-PRACTICE-IN-0/2027-05/C2_835_202705.x12'
+        L.c835(r835, '900', '0001', 'e1', 'abc123', '1', 60.0, 20.0, eff='2027-05-10', member='C2MEMBER77', charge=120.0,
+               cas=[('CO', '45', 40.0), ('PR', '2', 20.0)])
+        L.add('x12_835_claim', r835, isa_control_number='900', st_control_number='0001', claim_key='e2',
+              patient_control_number='abc123', claim_status_code='22', total_charge=120.0, paid_amount=-60.0,
+              patient_responsibility=-20.0, payer_claim_control_number='WHN-CLM-abc123', patient_id_qualifier='C2MEMBER77',
+              payer_name='WH-PAYER-C2')
+        L.add('x12_835_payment', r835.replace('202705', '202706').replace('2027-05', '2027-06'), isa_control_number='901',
+              st_control_number='0001', effective_date='2027-06-10', interchange_date='2027-06-10')
+        r835b = 'x12/835/WHN-PRACTICE-IN-0/2027-06/C2_835_202706.x12'
+        L.c835(r835b, '902', '0001', 'e1', 'zzz999', '4', 0.0, eff='2027-06-12', member='C2MEMBER77',
+               cas=[('CO', '16', 100.0)])
+        for r in L.db.execute("SELECT rowid FROM x12_835_claim WHERE claim_key = 'e2'"):
+            L.db.execute("UPDATE x12_835_claim SET _file = ?, isa_control_number = '901' WHERE rowid = ?",
+                         (r835.replace('202705', '202706').replace('2027-05', '2027-06'), r[0]))
+        by, rep = run(L)
+        subs = sorted(by['medical_claim_submissions'], key=lambda r: r['event_date'])
+        self.assertEqual([s['submission_kind'] for s in subs], ['original', 'corrected'])
+        self.assertEqual(subs[1]['original_submission_record_id'], subs[0]['record_id'])
+        s0 = subs[0]
+        self.assertEqual((s0['claim_id'], s0['service_organization_id'], s0['claim_type'], s0['billed_cents'], s0['status']),
+                         ('abc123', 'WHN-PRACTICE-IN-0', 'professional', 10000, 'submitted'))
+        self.assertEqual(s0['diagnosis_codes'], ['I10', 'E119'])
+        self.assertEqual(s0['member_identifier_submitted'], 'C2MEMBER77')
+        self.assertEqual(s0['patient_id'], 'P-member:WH-PAYER-C2:C2MEMBER77')
+        self.assertIsNone(s0['supersedes_record_id'])
+        lines = by['medical_claim_lines']
+        self.assertEqual([(l['service_code'], l['service_code_system'], l['charge_cents']) for l in lines],
+                         [('99214', 'CPT', 12000)])  # current submission's lines only
+        self.assertEqual(lines[0]['submission_record_id'], subs[1]['record_id'])
+        mc = sorted(by['medical_claims'], key=lambda r: (r['claim_id'], r['event_date']))
+        paid, rev, den = [r for r in mc if r['claim_id'] == 'abc123'] + [r for r in mc if r['claim_id'] == 'zzz999']
+        self.assertEqual((paid['status'], paid['payer_paid_cents'], paid['allowed_cents'], paid['patient_responsibility_cents']),
+                         ('paid', 6000, 8000, 2000))
+        self.assertEqual(paid['source_system'], 'WH-PAYER-C2')
+        self.assertEqual(paid['service_organization_id'], 'WHN-PRACTICE-IN-0')
+        self.assertEqual(paid['adjustments'], [{'group': 'CO', 'reason_code': '45', 'amount_cents': 4000},
+                                               {'group': 'PR', 'reason_code': '2', 'amount_cents': 2000}])
+        self.assertEqual(paid['financial_deltas_cents'], {'billed': 12000, 'allowed': 8000, 'payer': 6000, 'responsibility': 2000,
+                                                          'contractual': 4000, 'deductible': 0, 'copay': 0, 'coinsurance': 2000})
+        self.assertEqual(paid['submission_record_id'], subs[1]['record_id'])
+        self.assertEqual(paid['service_code'], '99214')
+        self.assertEqual(rev['status'], 'reversed')
+        self.assertEqual(rev['original_adjudication_record_id'], paid['record_id'])
+        self.assertEqual(rev['financial_deltas_cents']['payer'], -6000)
+        self.assertIsNone(rev['supersedes_record_id'])
+        self.assertEqual((den['status'], den['carc'], den['allowed_cents']), ('denied', 'CO-16', 0))
+        pra = {(r['claim_id'], r['adjudication_status']): r for r in by['provider_remittance_advice']}
+        self.assertEqual(pra[('abc123', 'paid')]['status'], 'adjudicated')
+        self.assertEqual(pra[('abc123', 'paid')]['original_adjudication_record_id'], paid['record_id'])
+        self.assertEqual(pra[('abc123', 'paid')]['source_system'], 'WHN-PRACTICE-IN-0')
+        self.assertEqual(pra[('zzz999', 'denied')]['status'], 'denied_information_needed')
+        # the payer streams are untouched by the practice feed
+        self.assertNotIn('payer_medical_claims', by)
 
 
 if __name__ == '__main__':

@@ -107,6 +107,10 @@ def stage(landing_path, *, as_of=None):
         report['adapters'][name] = {'records': n, 'seconds': round(time.time() - t0, 1)}
     if batch:
         out.executemany('INSERT OR REPLACE INTO records VALUES (?,?,?,?)', batch)
+    out.commit()
+    release = 'native:' + hashlib.sha256(str(landing_path).encode()).hexdigest()[:16]
+    entity_counts = _write_received(out_dir.parent / 'warehouse.sqlite3', out, db, release)
+    report['entities'] = entity_counts
     # Versions: a record named by a later record's supersedes_record_id is not current.
     sup = out.execute("""SELECT json_extract(payload, '$.supersedes_record_id'), id, stream FROM records
                          WHERE json_extract(payload, '$.supersedes_record_id') IS NOT NULL""").fetchall()
@@ -122,7 +126,7 @@ def stage(landing_path, *, as_of=None):
     digest = hashlib.sha256(f'{stack_path.stat().st_size}:{total}:{people}:{time.time()}'.encode()).hexdigest()
     as_of = as_of or _max_date(stack_path)
     run = {'schema': 'agere-native-stack/1', 'synthetic': True, 'source_digest': digest, 'patients': people,
-           'visible_records': total, 'snapshot': {'release': 'native:' + digest[:16], 'as_of': as_of,
+           'visible_records': total, 'snapshot': {'release': release, 'as_of': as_of,
                                                    'source_dataset': {'adapter': 'agere-native-ingest/1', 'source': str(landing_path)}}}
     (out_dir / 'run.json').write_text(json.dumps(run, indent=1))
     from ..clinical import semantic_layer
@@ -132,6 +136,47 @@ def stage(landing_path, *, as_of=None):
                   tables=dict(streams), issues=sum(unresolved.values()))
     db.close()
     return report
+
+
+def _write_received(path, stack, landing, release):
+    """The received store next to the build (<dir>/warehouse.sqlite3), as every Agere build has: every record version
+    (superseded ones included, for adjudication history and record corrections) and the source entities (clinicians,
+    organizations) the semantic layer reads."""
+    path = Path(path)
+    tmp = path.with_suffix('.tmp')
+    tmp.unlink(missing_ok=True)
+    w = sqlite3.connect(tmp)
+    try:
+        w.executescript('''CREATE TABLE releases (id TEXT PRIMARY KEY, manifest TEXT);
+            CREATE TABLE patients (release TEXT, id TEXT, payload TEXT, PRIMARY KEY(release,id));
+            CREATE TABLE records (release TEXT, id TEXT, patient TEXT, stream TEXT, event TEXT, arrival TEXT, identity TEXT,
+                                  supersedes TEXT, hash TEXT, payload TEXT, PRIMARY KEY(release,id));
+            CREATE TABLE source_entities(release TEXT, kind TEXT, id TEXT, payload TEXT, PRIMARY KEY(release,kind,id));''')
+        w.execute('INSERT INTO releases VALUES (?, ?)', (release, json.dumps({'adapter': 'agere-native-ingest/1', 'synthetic': True})))
+        w.executemany('INSERT INTO patients VALUES (?,?,?)', ((release, i, p) for i, p in stack.execute('SELECT id, payload FROM patients')))
+        rows = stack.execute("""SELECT id, patient, stream, json_extract(payload,'$.event_date'), json_extract(payload,'$.available_date'),
+                                     json_extract(payload,'$.supersedes_record_id'), payload FROM records""")
+        batch = []
+        for rid, pid, stream, event, arrival, sup, payload in rows:
+            batch.append((release, rid, pid, stream, event, arrival, 'matched', sup, hashlib.sha256(payload.encode()).hexdigest()[:16], payload))
+            if len(batch) >= 5000:
+                w.executemany('INSERT OR REPLACE INTO records VALUES (?,?,?,?,?,?,?,?,?,?)', batch); batch = []
+        if batch:
+            w.executemany('INSERT OR REPLACE INTO records VALUES (?,?,?,?,?,?,?,?,?,?)', batch)
+        counts = Counter()
+        try:
+            from . import adapt_entities
+            for kind, eid, payload in adapt_entities.entities(landing):
+                w.execute('INSERT OR REPLACE INTO source_entities VALUES (?,?,?,?)', (release, kind, eid, json.dumps(payload, default=str)))
+                counts[kind] += 1
+        except ImportError:
+            pass
+        w.execute('CREATE INDEX records_stream ON records(stream)')
+        w.commit()
+    finally:
+        w.close()
+    tmp.replace(path)
+    return dict(counts)
 
 
 def _max_date(stack_path):

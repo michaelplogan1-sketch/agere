@@ -671,7 +671,7 @@ class _Run:
 
     def _epic_clin(self, inst, prov):
         prov = _c(prov)
-        if not prov:
+        if not prov or not prov.isdigit():  # column-shifted rows put dates / text here
             return None
         npi = _c((self.E['ser2'].get((inst, prov)) or {}).get('npi'))
         return npi if npi and re.fullmatch(r'\d{10}', npi) else f'epic:{inst}:{prov}'
@@ -1087,7 +1087,7 @@ class _Run:
         if npi and re.fullmatch(r'\d{10}', npi):
             return npi
         p = _c(provider) or _c(clinical_provider)
-        return f'athena:{ctx}:{p}' if p else None
+        return f'athena:{ctx}:{p}' if p and p.isdigit() else None
 
     @staticmethod
     def _deleted(r):
@@ -1382,7 +1382,7 @@ class _Run:
     def _ecw_clin(self, practice, doc):
         doc = _c(doc)
         npi = self.W['docs'].get((practice, doc)) if doc else None
-        return npi if npi and re.fullmatch(r'\d{10}', npi) else (f'ecw:{practice}:{doc}' if doc else None)
+        return npi if npi and re.fullmatch(r'\d{10}', npi) else (f'ecw:{practice}:{doc}' if doc and doc.isdigit() and doc != '0' else None)
 
     def _ecw_encounters(self):
         dx = defaultdict(list)
