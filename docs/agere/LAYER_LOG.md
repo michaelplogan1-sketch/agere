@@ -248,3 +248,11 @@ router, operator router and Opus reconcile leave the answer path (BUILD_LOG.md s
   claim lines, the metric counts stays), and the compile check correctly refuses a mismatch.
 - **Tokens:** about 330K per full run of 20 (subagent usage), similar to L1-L3. Cost unmetered ($0 subagents).
 - **Next:** wait for the key regeneration, then re-score and re-freeze; run H1 on ho10 (held-out) before any claim.
+- **Held-out (ho10, COMPARABLE with the L6a baseline):** H1 7/10, 10 answered (8 unanimous, 2 majority); L6a 7/10.
+  ACC-10 and VBC-02 are unanimous misses on confirmed key defects (pending regeneration). CLN-06 (eGFR-indicated
+  kidney disease without a diagnosis) is a majority answer with an inexact patient set and no known key defect; L6a
+  missed it too. It is the next real miss to examine after the regeneration.
+- **RX-09 resolved as a key defect (generator):** the key came from simulation truth and counted (person, drug) stop
+  pairs, not members; the corrected definition (delivered notes with the stop phrase, any drug, no list condition) ships
+  with the pending regeneration.
+- **After the regeneration:** re-score H1 and L7 on the new key digest, re-freeze both baselines, then look at CLN-06.
