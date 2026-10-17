@@ -31,7 +31,8 @@ from . import apply as apply_mod, connectors, contract, matcher, profile as prof
 ROOT = Path(__file__).resolve().parents[3]
 WORKSPACES = ROOT / 'artifacts' / 'workspaces'
 LEDGER = ROOT / 'artifacts' / 'agere-full' / 'provider-budget.sqlite3'
-STEPS = ('profile', 'propose', 'approve', 'build', 'raw', 'verify', 'docs')
+STEPS = ('ingest', 'stage', 'profile', 'propose', 'approve', 'build', 'raw', 'verify', 'docs')
+NATIVE = 'native://'
 RAW_BATCH = 5000
 _LOCKS = {}
 _LOCKS_GUARD = threading.Lock()
@@ -125,7 +126,20 @@ class Workspace:
     def docs_dir(self):
         return self.dir / 'analyst_docs'
 
+    @property
+    def native(self):
+        return self.state['source'].startswith(NATIVE)
+
+    @property
+    def landing_path(self):
+        return self.dir / 'landing.sqlite'
+
     def connect(self):
+        """A native delivery is read through its landing database (raw feeds parsed, plus canonical stg_* tables)."""
+        if self.native:
+            if not self.landing_path.is_file():
+                return None  # nothing ingested yet; the ingest step creates it
+            return connectors.SQLiteConnector(self.landing_path)
         return connectors.connect(self.state['source'])
 
     def summary(self):
@@ -148,7 +162,13 @@ class Workspace:
             conn = self.connect()
             try:
                 for step in STEPS:
+                    if step in ('ingest', 'stage') and not self.native:
+                        continue
                     getattr(self, '_do_' + step)(conn)
+                    if step == 'stage':  # the landing database now exists and holds the staged tables
+                        if conn is not None:
+                            conn.close()
+                        conn = self.connect()
                     if step == through:
                         break
                 if through == 'docs':
@@ -158,7 +178,8 @@ class Workspace:
                 self._event('failed', error=f'{type(exc).__name__}: {exc}'[:800])
                 raise
             finally:
-                conn.close()
+                if conn is not None:
+                    conn.close()
         return self.summary()
 
     def rebuild(self):
@@ -176,6 +197,22 @@ class Workspace:
             finally:
                 conn.close()
         return self.summary()
+
+    def _do_ingest(self, conn):
+        from ..ingest import landing
+        self._update(status='ingesting')
+        raw_dir = self.state['source'][len(NATIVE) - 1:] if self.state['source'].startswith(NATIVE + '/') else self.state['source'][len(NATIVE):]
+        stats = landing.ingest(raw_dir, self.landing_path)
+        (self.dir / 'ingest.json').write_text(json.dumps(stats, indent=1, default=str))
+        self._step('ingest', files=stats['files'], skipped=stats['skipped'], unparsed=stats['unparsed'],
+                   errors=stats['errors'], rows=stats['rows'], tables=len(stats.get('tables', {})))
+
+    def _do_stage(self, conn):
+        from ..ingest import canonical
+        self._update(status='staging')
+        report = canonical.stage(self.landing_path)
+        (self.dir / 'stage.json').write_text(json.dumps(report, indent=1, default=str))
+        self._step('stage', tables=report.get('tables'), identity=report.get('identity'), issues=report.get('issues'))
 
     def _do_profile(self, conn):
         self._update(status='profiling')
