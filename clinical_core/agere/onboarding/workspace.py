@@ -57,29 +57,29 @@ def _lock(slug):
         return _LOCKS.setdefault(slug, threading.Lock())
 
 
-def list_workspaces(root=WORKSPACES):
-    root = Path(root)
+def list_workspaces(root=None):
+    root = Path(root or WORKSPACES)
     if not root.is_dir():
         return []
     return [Workspace(p.name, root).summary() for p in sorted(root.iterdir()) if (p / 'workspace.json').is_file()]
 
 
 class Workspace:
-    def __init__(self, slug, root=WORKSPACES):
+    def __init__(self, slug, root=None):
         self.slug = slugify(slug)
-        self.dir = Path(root) / self.slug
+        self.dir = Path(root or WORKSPACES) / self.slug
         if not (self.dir / 'workspace.json').is_file():
             raise FileNotFoundError(f'No workspace {self.slug!r}')
 
     # --- state -----------------------------------------------------------------------------------------------------
 
     @classmethod
-    def create(cls, name, source, *, as_of=None, raw='all', root=WORKSPACES):
+    def create(cls, name, source, *, as_of=None, raw='all', root=None):
         """raw: 'all' copies every source table as raw_<table>, 'unmapped' only tables no entity uses, 'none' skips."""
         if raw not in ('all', 'unmapped', 'none'):
             raise ValueError("raw must be 'all', 'unmapped' or 'none'")
         slug = slugify(name)
-        d = Path(root) / slug
+        d = Path(root or WORKSPACES) / slug
         if (d / 'workspace.json').exists():
             raise FileExistsError(f'Workspace {slug!r} already exists')
         d.mkdir(parents=True, exist_ok=True)

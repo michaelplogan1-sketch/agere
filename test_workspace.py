@@ -94,3 +94,26 @@ class WorkspaceTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+class WorkspaceApiTests(unittest.TestCase):
+    def test_create_build_review_and_errors_through_the_api(self):
+        import time
+        from unittest.mock import patch
+        from clinical_core.agere import workspace_api
+        from clinical_core.agere.onboarding import workspace as wsmod
+        with tempfile.TemporaryDirectory() as tmp, patch.object(wsmod, 'WORKSPACES', Path(tmp) / 'ws'):
+            fixtures.clarity_like(Path(tmp) / 'c.sqlite', n_patients=10)
+            code, w = workspace_api.handle('POST', '/api/workspaces', {'name': 'Beta Clinic', 'source': f"sqlite:///{tmp}/c.sqlite"})
+            self.assertEqual(code, 202)
+            for _ in range(200):
+                if not workspace_api._JOBS['beta-clinic'].is_alive():
+                    break
+                time.sleep(0.05)
+            code, d = workspace_api.handle('GET', '/api/workspaces/beta-clinic')
+            self.assertEqual((code, d['status']), (200, 'ready'))
+            self.assertEqual(workspace_api.handle('GET', '/api/workspaces/beta-clinic/review')[0], 200)
+            self.assertEqual(workspace_api.handle('GET', '/api/workspaces/nope')[0], 404)
+            self.assertEqual(workspace_api.handle('POST', '/api/workspaces', {'name': 'x'})[0], 400)
+            self.assertEqual(workspace_api.handle('POST', '/api/workspaces/beta-clinic/ask', {})[0], 400)
+            self.assertIn('beta-clinic', [x['slug'] for x in workspace_api.handle('GET', '/api/workspaces')[1]['workspaces']])

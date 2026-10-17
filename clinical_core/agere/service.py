@@ -126,10 +126,26 @@ def serve(run,port,annotations=None,evidence_queries=None,stack=None,allow_live_
                 self.send_header('X-Content-Type-Options','nosniff');self.end_headers();self.wfile.write(raw)
                 return
             super().send_error(code,message,explain)
+        def _workspace(self,method,path,body=None):
+            # Customer workspaces (workspace_api.py) run outside the global stack lock: builds take minutes.
+            from . import workspace_api
+            if path=='/workspaces':
+                raw=workspace_api.page().encode();mime='text/html; charset=utf-8';code=200
+            else:
+                code,payload=workspace_api.handle(method,path,body);raw=json.dumps(payload,default=str).encode();mime='application/json'
+            self.send_response(code);self.send_header('Content-Type',mime);self.send_header('Content-Length',str(len(raw)))
+            self.send_header('Cache-Control','no-store');self.send_header('X-Content-Type-Options','nosniff');self.end_headers();self.wfile.write(raw)
         def do_POST(self):
             host=self.headers.get('Host','').split(':')[0]
             origin=self.headers.get('Origin')
             if host not in {'127.0.0.1','localhost'} or (origin and origin not in {f'http://127.0.0.1:{port}',f'http://localhost:{port}'}):self.send_error(403);return
+            if urlsplit(self.path).path.startswith('/api/workspaces') and not recovery:
+                length=int(self.headers.get('Content-Length','0') or 0)
+                if not 0<=length<=32000 or (length and self.headers.get('Content-Type','').split(';')[0]!='application/json'):self.send_error(400,'Bounded JSON body required');return
+                try:body=json.loads(self.rfile.read(length)) if length else {}
+                except ValueError:self.send_error(400,'Invalid JSON');return
+                if not isinstance(body,dict):self.send_error(400,'Object body required');return
+                self._workspace('POST',urlsplit(self.path).path,body);return
             if connected_stack is None:self.send_error(404,'Connected stack unavailable');return
             execution=None
             stack_lock.acquire()
@@ -731,6 +747,8 @@ def serve(run,port,annotations=None,evidence_queries=None,stack=None,allow_live_
             if origin and origin not in {f'http://127.0.0.1:{port}',f'http://localhost:{port}'}:self.send_error(403);return
             if recovery and parsed.path not in recovery_gets:
                 self.send_error(403,'This route is unavailable in installation mode '+recovery.get('mode','inspection_only'));return
+            if (parsed.path=='/workspaces' or parsed.path.startswith('/api/workspaces')) and not recovery:
+                self._workspace('GET',parsed.path);return
             if parsed.path=='/api/stack/meta':
                 if connected_stack is None:self.send_error(404);return
                 raw=json.dumps({**connected_stack.metadata(),'recovery':recovery,'runtime_source_validation':validation_cache.status(),'runtime_vocabulary_index':validation_index}).encode();mime='application/json'
