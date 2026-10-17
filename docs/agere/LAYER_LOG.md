@@ -99,3 +99,33 @@ router, operator router and Opus reconcile leave the answer path (BUILD_LOG.md s
   - key audit of the 4 persistent misses;
   - RX-09 needs a defined "maintenance class" in the layer (a definitions gap, not a model gap);
   - economics layers not built yet: answer cache, and a verified-query library fed by unanimous answers.
+
+## Key audit of the 4 persistent misses (generator, 2026-10-17)
+- **REV-03:** key defect. The key counted adjudication rows (an upheld appeal repeating a CARC was counted twice). The
+  fix is to count distinct claims per CARC; it is written but not yet applied.
+- **RWE-02:** definition defect. The key counts each person once, in the year of their FIRST new-user fill after the
+  lookback; the published text doesn't say so. The wording fix is pending; the key doesn't change.
+- **RWE-12:** label defect. The values are fine, but the key labels are "anticoagulant DOAC" / "warfarin", never stated.
+  Labels to be renamed and stated.
+- **RX-10:** key confirmed. Every drug class counts, including acute classes such as antibiotics. Gap = next fill date
+  minus (fill date + days_supply), with no -1, which conflicts with our convention text (supply_end = fill_date +
+  days_supply - 1). Our convention should follow the confirmed definition.
+- **Takeaway:** 3 of the 4 "misses" that every run and the reviewer agreed on were key or definition defects, which
+  supports the agreement-against-key rule. Applying the generator's fixes needs Mike's direct approval in that session.
+
+## L6: verified-query library (economics), measured on the 10 held-out questions
+- **Library:** 11 entries built from the unanimous dev answers. Each entry is the question plus one SQL query that
+  reproduces the agreed answer (all 11 re-run and confirmed; RWE-02 flagged as under key audit). 12K characters.
+- **Test:** the 10 held-out questions the library never saw, so a gain means the patterns transfer, not that answers
+  are memorized.
+
+  | Run | Correct /10 | Right when answered | Tokens | Queries |
+  |---|---|---|---|---|
+  | L6a: index only | 8 | 8/10 | 156K | 38 |
+  | L6b: index + library | 8 | 8/10 | 145K (-7%) | 18 (-53%) |
+- **Result:** accuracy unchanged on new questions, with less work and fewer tokens. For comparison on the same 10: the
+  old Agere stack got 7, and Haiku over the old semantic layer or Tuva got 2 and 1.
+- **Kept:** it improves economics. Repeat or paraphrased questions would gain much more (direct reuse of a confirmed
+  query).
+- **Also fixed:** the gap convention now says next fill minus (fill_date + days_supply), and every class counts unless the
+  question narrows it (from the RX-10 key confirmation).
