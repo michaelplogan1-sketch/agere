@@ -215,26 +215,10 @@ def answer(question, as_of, semantic, send_factory, *, qid='Q', answer_type=None
     decision, ans, agree, passing = hv.decide(q['answer_type'], list(per.values()))
     final = decision
     ambiguous = merge_readings(items, [n for n, i in items.items() if len(hc.readings((i or {}).get('contract'))) >= 2])
-    if ambiguous['runs'] == runs:
-        # Every independent analyst found two or more defensible readings: ask which one, never ship one as fact.
+    if ambiguous['runs'] * 2 > runs:
+        # A majority of independent analysts found two or more defensible readings: ask which one, never ship one as fact.
+        # (Measured on the pilot dev split: a stronger-model confirmation step suppressed nearly every genuine ambiguity.)
         decision, ans, final = 'clarify', None, 'clarify'
-    elif ambiguous['runs'] * 2 > runs:
-        # A majority (not all) found two or more readings. One stronger-model check confirms the wording really supports
-        # them (ask the user) or names the reading the definition settles (answer that one).
-        with send_factory() as send:
-            item, res = analyst_run(q, semantic, send, escalation_model_name(), user=readings_prompt(q, ambiguous['readings']),
-                                    docs_dir=docs_dir)
-        results.append(res)
-        items['readings_check'] = item
-        if len(hc.readings((item or {}).get('contract'))) >= 2 and not (item or {}).get('sql'):
-            decision, ans, final = 'clarify', None, 'clarify'
-        else:
-            e = evaluate(q, item, db)
-            per['readings_check'] = e
-            if e['passed'] and e['answer'] is not None:
-                ans, final = e['answer'], 'readings_settled'
-            elif ans is None:
-                decision, final = 'abstain', 'readings_unsettled'
     elif decision == 'escalate':
         with send_factory() as send:
             item, res = analyst_run(q, semantic, send, escalation_model_name(), user=escalation_prompt(q, per, items),

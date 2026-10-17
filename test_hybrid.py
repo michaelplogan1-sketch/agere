@@ -231,10 +231,6 @@ class ReadingsTests(unittest.TestCase):
         self.assertEqual(out['decline']['kind'], 'clarify')
         self.assertEqual(out['decline']['readings'], ['by product', 'by line of business'])
 
-    def test_readings_check_can_settle_the_meaning(self):
-        out = self._run([['x', 'y'], ['x', 'y'], []], confirm=None)
-        self.assertEqual((out['answer'], out['decision']), ({'count': 3}, 'readings_settled'))
-
     def test_unanimous_readings_ask_without_a_check(self):
         out = self._run([['p', 'q'], ['p', 'q'], ['p', 'q']])
         self.assertEqual((out['decision'], out['readings_flagged']), ('clarify', 3))
