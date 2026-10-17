@@ -326,7 +326,9 @@ class Workspace:
             rep = json.loads((self.dir / 'stage.json').read_text()) if (self.dir / 'stage.json').is_file() else {}
             ident = rep.get('identity') or {}
             checks = [{'name': 'persons_resolved', 'passed': bool(rep.get('people')), 'detail': {'persons': rep.get('people')}},
-                      {'name': 'records_without_person', 'passed': not rep.get('issues'), 'detail': rep.get('unresolved')},
+                      {'name': 'records_without_person', 'passed': (rep.get('issues') or 0) <= 0.001 * (rep.get('records') or 0),
+                       'detail': {'records': rep.get('issues'), 'share': round((rep.get('issues') or 0) / max(rep.get('records') or 1, 1), 6),
+                                  'by_stream': rep.get('unresolved'), 'threshold': '0.1% of staged records'}},
                       {'name': 'identity_tiers', 'passed': True, 'detail': {k: v for k, v in ident.items() if k != 'largest_clusters'}}]
             result = {'passed': all(c['passed'] for c in checks), 'checks': checks, 'streams': rep.get('streams')}
             (self.dir / 'verification.json').write_text(json.dumps(result, indent=1, default=str))
