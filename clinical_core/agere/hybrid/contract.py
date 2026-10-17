@@ -85,9 +85,14 @@ def validate(contract, question):
     rl = contract.get('row_limit')
     if rl is not None and (isinstance(rl, bool) or not isinstance(rl, int) or rl < 1):
         issues.append('row_limit must be a positive integer or null')
-    if not isinstance(contract.get('unresolved', []), list) or not isinstance(contract.get('exclusions', []), list):
-        issues.append('unresolved and exclusions must be lists')
+    if not isinstance(contract.get('unresolved', []), list) or not isinstance(contract.get('exclusions', []), list) \
+            or not isinstance(contract.get('missing') or [], list):
+        issues.append('unresolved, missing and exclusions must be lists')
     return issues
+
+
+def missing_data(contract):
+    return list(contract.get('missing') or []) if isinstance(contract, dict) else []
 
 
 def needs_clarification(contract):

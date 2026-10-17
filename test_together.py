@@ -507,3 +507,25 @@ class HybridSlotTests(unittest.TestCase):
                                               'answer': {'table': [{'keys': ['medicaid'], 'value': 12}]}})
         self.assertEqual(c['table'], [{'product': 'medicaid', 'value': 12}])
         self.assertIsNone(together._hybrid_contract(base | {'answer_type': 'count', 'answer': None}))
+
+
+class DeclineTests(unittest.TestCase):
+    """The hybrid core says WHY it did not answer: unsupported (what is missing) or clarify (the readings)."""
+
+    def test_declines_map_to_contract_statuses(self):
+        base = {'interpretation': 'hybrid abstain', 'answer': None, 'answer_type': 'count'}
+        u = together._hybrid_contract(base | {'decline': {'kind': 'unsupported', 'missing': ['no death records']}})
+        self.assertEqual((u['status'], u['missing']), ('unsupported', ['no death records']))
+        c = together._hybrid_contract(base | {'decline': {'kind': 'clarify', 'readings': ['by product', 'by line of business']}})
+        self.assertEqual((c['status'], c['readings']), ('clarify', ['by product', 'by line of business']))
+        self.assertIsNone(together._hybrid_contract(base | {'decline': None}))
+
+    def test_clarify_from_analysts_is_asked_not_guessed(self):
+        fast = {'answer': {'status': 'answered', 'answer_type': 'count', 'count': 5, 'unknown_count': 0, 'missing': [],
+                           'grounding': []}, 'planner_receipt': {'steps': []}}
+        analyst = {'answer': {'status': 'clarify', 'answer_type': 'count', 'readings': ['a', 'b'], 'unknown_count': 0,
+                              'missing': [], 'grounding': []}, 'tool_calls': []}
+        result, receipt, _ = together.decide(None, 'q', fast, None, analyst, 'done')
+        self.assertEqual(result['answer']['status'], 'clarify')
+        self.assertEqual(result['answer']['readings'], ['a', 'b'])
+        self.assertEqual(receipt['decision'], 'clarify')

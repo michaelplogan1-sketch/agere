@@ -127,6 +127,9 @@ def evaluate(q, item, db):
     problems = hc.validate(contract, q | ({'keys': spec['keys']} if spec else {}))
     if problems:
         return {'answer': None, 'passed': False, 'clarify': False, 'path': None, 'problems': problems}
+    if hc.missing_data(contract) and not item.get('sql'):
+        return {'answer': None, 'passed': False, 'clarify': False, 'unsupported': True, 'path': None,
+                'missing': hc.missing_data(contract), 'problems': ['missing: ' + '; '.join(hc.missing_data(contract))]}
     if hc.needs_clarification(contract) and not item.get('sql'):
         return {'answer': None, 'passed': False, 'clarify': True, 'path': None, 'problems': ['unresolved: ' + '; '.join(contract['unresolved'])]}
     sql, why = hx.compile_metric(contract, q['as_of'])
@@ -195,7 +198,23 @@ def answer(question, as_of, semantic, send_factory, *, qid='Q', answer_type=None
         per['escalation'] = e
         items['escalation'] = item
         ans, final = (e['answer'], 'escalated') if e['passed'] and not e['clarify'] else (None, 'escalated_abstain')
+    decline = None
+    if ans is None:
+        # Why no answer: a majority saying the data is not delivered -> unsupported (with what is missing); any run that
+        # declined because the meaning is open -> clarify (with the readings). Otherwise a plain abstention.
+        unsup = [v for v in per.values() if v.get('unsupported')]
+        clar = [n for n, v in per.items() if v.get('clarify') and v.get('answer') is None]
+        if len(unsup) * 2 > len(per) - ('escalation' in per):
+            decline = {'kind': 'unsupported', 'missing': sorted({m for v in unsup for m in v.get('missing') or []})}
+        elif clar:
+            readings = []
+            for n in clar:
+                for r in ((items.get(n) or {}).get('contract') or {}).get('unresolved') or []:
+                    if r not in readings:
+                        readings.append(r)
+            decline = {'kind': 'clarify', 'readings': readings[:6]}
     return {'answer': ans, 'answer_type': q['answer_type'], 'decision': final, 'agree': agree, 'passing': passing,
+            'decline': decline,
             'interpretation': f'hybrid {final}; {agree}/{runs} agree; {passing} passed checks',
             'runs': {k: {kk: v.get(kk) for kk in ('passed', 'clarify', 'path', 'problems', 'sql')} for k, v in per.items()},
             'contracts': {k: (i or {}).get('contract') for k, i in items.items()},

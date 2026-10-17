@@ -60,8 +60,8 @@ DEFAULT_RECONCILE_BUDGET_S = 60.0
 SEND_TIMEOUT_S = 180
 # The documented semantic model is ~141K characters; the tool loop adds at most 8 tool results of <= 60K characters.
 REQUEST_MAX_BYTES = 1_200_000
-CONTRACT_KEYS = ('status', 'answer_type', 'count', 'patient_ids', 'value', 'table', 'unknown_count', 'missing', 'grounding')
-STATUSES = ('answered', 'partial', 'unsupported', 'grounding_failed')
+CONTRACT_KEYS = ('status', 'answer_type', 'count', 'patient_ids', 'value', 'table', 'unknown_count', 'missing', 'grounding', 'readings')
+STATUSES = ('answered', 'partial', 'unsupported', 'grounding_failed', 'clarify')
 TRANSPORT = None   # urlopen-compatible transport for context_student.send; tests install a fake (no paid calls)
 
 _POOL = None
@@ -181,6 +181,14 @@ def hybrid_on():
 def _hybrid_contract(h):
     """The hybrid core's executed answer as the shared answer contract (None when it abstained)."""
     ans = h.get('answer')
+    decline = h.get('decline') or {}
+    if ans is None and decline.get('kind') == 'unsupported':
+        return {'status': 'unsupported', 'answer_type': 'unsupported', 'count': None, 'patient_ids': None, 'value': None,
+                'table': None, 'unknown_count': 0, 'missing': decline.get('missing') or [], 'grounding': [h['interpretation']]}
+    if ans is None and decline.get('kind') == 'clarify' and decline.get('readings'):
+        return {'status': 'clarify', 'answer_type': h.get('answer_type'), 'count': None, 'patient_ids': None, 'value': None,
+                'table': None, 'unknown_count': 0, 'missing': [], 'readings': decline['readings'],
+                'grounding': [h['interpretation'], 'The independent analysts found more than one defensible reading.']}
     if ans is None:
         return None
     at = h['answer_type']
@@ -217,7 +225,7 @@ def _run_hybrid(stack, question, as_of, semantic_path):
     return {'answer': answer, 'model': h['models']['analyst'], 'estimated_cost_usd': h['cost_usd'],
             'new_paid_api_calls': h['new_paid_api_calls'], 'tool_calls': tool_calls,
             'error': None if answer is not None else 'hybrid abstained: ' + h['interpretation'],
-            'hybrid': {k: h[k] for k in ('decision', 'agree', 'passing', 'interpretation', 'runs', 'models', 'errors')},
+            'hybrid': {k: h.get(k) for k in ('decision', 'agree', 'passing', 'interpretation', 'runs', 'models', 'errors', 'decline')},
             'receipts': receipts, 'seconds': round(time.perf_counter() - started, 3)}
 
 
@@ -455,7 +463,7 @@ def decide(stack, question, fast, fast_error, analyst, analyst_state, *, as_of=N
     fk, ak = semantic_analyst.canonical(f_answer), semantic_analyst.canonical(a_answer)
     engines = _engine(fast)
     if engines:
-        if a_answer.get('status') == 'unsupported':
+        if a_answer.get('status') in ('unsupported', 'clarify'):
             # The analyst works over the semantic layer only; "no forecasting model" is a capability gap, not a check.
             _note(out, f'Analytic engine ({", ".join(engines)}) answer; the semantic analyst cannot compute this '
                   'from the semantic layer, so it is not cross-checked.')
@@ -468,6 +476,15 @@ def decide(stack, question, fast, fast_error, analyst, analyst_state, *, as_of=N
             together.update(decision='engine_kept_lowered', winner='fast', reason=why)
         else:
             together.update(decision='engine_kept', winner='fast', reason='the semantic analyst gives the same answer')
+        return {**fast, 'answer': out}, together, rec
+    if a_answer.get('status') == 'clarify':
+        # The independent analysts could not settle what the question means: ask, rather than ship one reading as fact.
+        out = dict(a_answer)
+        out['grounding'] = list(out.get('grounding') or []) + [
+            _reading('Agere fast path', f_answer, _fast_sql(f_answer, fast.get('planner_receipt')))]
+        _confidence(out, 'low', 'The question has more than one defensible reading; clarification requested',
+                    evidence='analysts_request_clarification')
+        together.update(decision='clarify', winner='analyst', reason='; '.join(out.get('readings') or [])[:300])
         return {**fast, 'answer': out}, together, rec
     if f_answer.get('status') == 'unsupported' and a_answer.get('status') == 'unsupported':
         missing = list(out.get('missing') or [])

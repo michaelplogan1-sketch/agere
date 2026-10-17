@@ -31,7 +31,10 @@ Contract fields:
 - metric_id: a governed metric id ONLY if its definition is exactly this question's definition; else null. When you set
   it, also give your own SQL; the system uses the governed SQL only if it matches your contract.
 - unresolved: meanings the question and documentation leave genuinely open (then sql may be null). Do not list things the
-  definition or a convention settles.
+  definition or a convention settles. When the wording has two defensible readings, name each reading as one entry.
+- missing: data the question needs that this warehouse does not contain at all (then sql is null and the question is
+  unsupported), e.g. ["no death records are delivered"]. Never list data that exists under another name, column or
+  raw_ table; look first.
 
 SQL result shape (the system reads it literally):
 - count / value: exactly one row with exactly one numeric column.
