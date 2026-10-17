@@ -135,7 +135,7 @@ details pre{white-space:pre-wrap;font-size:12px;color:var(--muted);margin:4px 0;
 .skeleton{color:var(--muted);padding:18px 0}
 </style></head><body>
 <a class="sr" href="#q">Skip to question</a>
-<header class="top"><h1>Agere</h1><span class="tag">Population analytics workspace · synthetic data</span>
+<header class="top"><h1>Agere</h1><span class="tag">Population analytics workspace · synthetic data</span><a class="tag" href="/workspaces">Customer workspaces</a>
 <div class="econ" id="econ" aria-label="Question economics"></div></header>
 <div class="demo" id="demo" hidden></div>
 <div class="layout">
