@@ -117,3 +117,21 @@ class WorkspaceApiTests(unittest.TestCase):
             self.assertEqual(workspace_api.handle('POST', '/api/workspaces', {'name': 'x'})[0], 400)
             self.assertEqual(workspace_api.handle('POST', '/api/workspaces/beta-clinic/ask', {})[0], 400)
             self.assertIn('beta-clinic', [x['slug'] for x in workspace_api.handle('GET', '/api/workspaces')[1]['workspaces']])
+
+
+class BatchTests(unittest.TestCase):
+    def test_ask_many_writes_submission_rows(self):
+        from clinical_core.agere.onboarding import workspace as wsmod
+
+        class FakeWs:
+            dir = Path(tempfile.mkdtemp())
+
+            def ask(self, question, answer_type=None, send_factory=None):
+                if 'fail' in question:
+                    raise RuntimeError('boom')
+                return {'answer': {'count': 7}, 'answer_type': 'count', 'interpretation': 'hybrid unanimous', 'cost_usd': 0.01,
+                        'decision': 'unanimous'}
+        rows = wsmod.ask_many(FakeWs(), [{'id': 'A', 'question': 'how many'}, {'id': 'B', 'question': 'fail please'}])
+        self.assertEqual(rows[0]['count'], 7)
+        self.assertEqual(rows[1]['status'], 'abstain')
+        self.assertTrue(any(p.name.startswith('answers-') for p in FakeWs.dir.iterdir()))

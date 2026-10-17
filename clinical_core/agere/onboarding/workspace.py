@@ -489,6 +489,39 @@ class Workspace:
         return out
 
 
+def _answer_record(qid, out, answer_type=None):
+    """One answers-file row in the shared submission shape: {id, status, answer fields, interpretation, ...}."""
+    a = out.get('answer')
+    row = {'id': qid, 'answer_type': out.get('answer_type') or answer_type, 'status': 'answered' if a else 'abstain',
+           'interpretation': out.get('interpretation'), 'cost_usd': out.get('cost_usd'), 'decision': out.get('decision')}
+    if a:
+        if 'patient_ids' in a:
+            row['patient_ids'] = a['patient_ids']
+        elif 'table' in a:
+            row['table'] = [{'key': ' -> '.join(str(k) for k in r['keys']), 'value': r['value']} for r in a['table']]
+        else:
+            row.update({k: v for k, v in a.items() if k in ('count', 'value', 'rows')})
+    return row
+
+
+def ask_many(ws, questions, *, workers=3, send_factory=None, out_path=None):
+    """Answer a list of {id, question, answer_type?} against one workspace. Writes answers.jsonl (submission shape)
+    and returns the rows. A question that fails records its error instead of stopping the batch."""
+    from concurrent.futures import ThreadPoolExecutor
+
+    def one(q):
+        try:
+            out = ws.ask(q['question'], answer_type=q.get('answer_type'), send_factory=send_factory)
+            return _answer_record(q['id'], out, q.get('answer_type'))
+        except Exception as exc:  # noqa: BLE001
+            return {'id': q['id'], 'status': 'abstain', 'error': f'{type(exc).__name__}: {exc}'[:300]}
+    with ThreadPoolExecutor(max_workers=workers) as pool:
+        rows = list(pool.map(one, questions))
+    out_path = Path(out_path or ws.dir / f"answers-{datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ')}.jsonl")
+    out_path.write_text(''.join(json.dumps(r, default=str) + '\n' for r in rows))
+    return rows
+
+
 def ledgered_send_factory(receipts_dir):
     """The product's metered sender (budget ledger, response cache, receipts), one ledger connection per thread."""
     from ..gateway import BudgetLedger

@@ -11,6 +11,7 @@ Routes (JSON; handled before the service's global stack lock because builds take
   POST /api/workspaces/<slug>/decide        {item, decision}  decision: accept | reject | {source} | {source_table}
   POST /api/workspaces/<slug>/rebuild       re-apply the mapping with decisions (background)
   POST /api/workspaces/<slug>/ask           {question, answer_type?}  -> the hybrid core's answer over this workspace
+  POST /api/workspaces/<slug>/batch         {questions: [{id, question, answer_type?}]} -> answered in the background into answers-<time>.jsonl
 """
 from __future__ import annotations
 
@@ -95,6 +96,14 @@ def handle(method, path, body=None):
             return 202, _detail(ws)
         if action == 'decide':
             return 200, {'items': ws.decide(body['item'], body['decision'], reviewer='person:' + str(body.get('reviewer') or 'reviewer'))}
+        if action == 'batch':
+            qs = body.get('questions')
+            if not isinstance(qs, list) or not qs or len(qs) > 500:
+                raise ValueError('questions must be a list of 1-500 {id, question, answer_type?}')
+            qs = [{'id': str(q.get('id') or f'Q{i + 1}'), 'question': str(q['question']), 'answer_type': q.get('answer_type')}
+                  for i, q in enumerate(qs)]
+            _background(ws.slug + ':batch', lambda: wsmod.ask_many(ws, qs))
+            return 202, {'accepted': len(qs), 'results': 'GET /api/workspaces/' + ws.slug + '/questions'}
         if action == 'ask':
             q = str(body.get('question') or '').strip()
             if not q:
