@@ -236,7 +236,8 @@ CONVENTIONS = """## Canonical conventions (apply unless the question defines oth
 - Pharmacy fills: a fill counts only when picked up (medication.picked_up = 1, payer_pharmacy_claim.counts_as_fill = 1):
   paid and not later reversed/recouped, or dispensed and not returned to stock (returned_fill). Class from NDC/RxNorm
   (medication.drug_class), falling back to the ingredient name. Filter classes by drug_class / therapeutic_category,
-  never by drug-name substrings ('%statin%' also matches nystatin).
+  never by drug-name substrings ('%statin%' also matches nystatin). "Maintenance" drugs = drug_class_vocabulary rows
+  with class_group = 'maintenance' (long-term chronic-condition classes; acute and as-needed classes excluded).
   - The fill table has one row per picked-up fill (payer claim and dispense of the same fill merged; sources says which)
     with class_key (drug_class, else ingredient), days_supply, supply_end, class_fill_seq, days_since_prev_class_fill,
     gap_after_prev_supply (days between the previous supply's end and this fill), days_of_data_before (pharmacy data

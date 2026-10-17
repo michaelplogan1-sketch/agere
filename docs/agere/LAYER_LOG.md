@@ -129,3 +129,16 @@ router, operator router and Opus reconcile leave the answer path (BUILD_LOG.md s
   query).
 - **Also fixed:** the gap convention now says next fill minus (fill_date + days_supply), and every class counts unless the
   question narrows it (from the RX-10 key confirmation).
+
+## Data model: maintenance drug class (2026-10-17)
+- **New:** drug_classes.GROUPS['maintenance']: 49 long-term chronic-condition classes (antihypertensives, statins, every
+  diabetes class, anticoagulants/antiplatelets, thyroid, antidepressants, antipsychotics, anticonvulsants, lithium,
+  COPD/asthma controllers, PPIs/H2, BPH and bladder drugs, bisphosphonates, ADHD, dementia, antiretrovirals, DMARDs, TNF
+  inhibitors, contraceptives, nitrates). This is the sense of PBM maintenance-drug lists.
+- **Excluded:** acute and as-needed classes (antibiotics, antivirals, opioids, benzodiazepines, NSAIDs, SABA, triptans,
+  antiemetics, systemic steroid courses, antihistamines, muscle relaxants, sedatives, smoking cessation, acetaminophen,
+  epinephrine auto-injectors).
+- **Live:** in drug_class_vocabulary (class_group = 'maintenance'), with a conventions line pointing the analyst to it.
+  RX-09 had no definition to use before this.
+- **Audit:** ACC-10 and VBC-02 sent for the same key audit (independent runs agree; the scorer disagrees). ACC-10's
+  January and October spikes are in the raw records too, so the appointment table build isn't the cause.

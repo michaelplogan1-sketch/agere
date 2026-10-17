@@ -95,7 +95,20 @@ GROUPS = {'antihypertensive': ['ace_inhibitor', 'arb', 'arni', 'beta_blocker', '
                          'sulfonamide_antibiotic', 'nitrofuran', 'lincosamide', 'nitroimidazole'],
           'copd_maintenance': ['lama', 'laba', 'inhaled_corticosteroid'],
           'dementia_medication': ['cholinesterase_inhibitor', 'nmda_antagonist'],
-          'bph_medication': ['alpha1_blocker', 'five_alpha_reductase_inhibitor']}
+          'bph_medication': ['alpha1_blocker', 'five_alpha_reductase_inhibitor'],
+          # Maintenance = long-term medication for a chronic condition (the sense of PBM maintenance-drug lists, typically
+          # 90-day fills). Acute and as-needed classes (antibiotics, antivirals, opioids, benzodiazepines, NSAIDs, SABA,
+          # triptans, antiemetics, systemic steroid courses, antihistamines, muscle relaxants, sedatives, smoking cessation,
+          # acetaminophen, epinephrine auto-injectors) are excluded. Build log: RX-09 had no definition to use.
+          'maintenance': ['ace_inhibitor', 'arb', 'arni', 'beta_blocker', 'calcium_channel_blocker', 'thiazide_diuretic', 'mra',
+                          'loop_diuretic', 'statin', 'metformin', 'insulin', 'sulfonylurea', 'dpp4_inhibitor', 'sglt2_inhibitor',
+                          'glp1_agonist', 'thiazolidinedione', 'anticoagulant', 'antiplatelet', 'levothyroxine', 'nitrate',
+                          'ssri', 'snri', 'ndri', 'sari_antidepressant', 'tetracyclic_antidepressant', 'tricyclic_antidepressant',
+                          'antipsychotic', 'anticonvulsant', 'lithium', 'gabapentinoid', 'inhaled_corticosteroid', 'lama', 'laba',
+                          'leukotriene_modifier', 'proton_pump_inhibitor', 'h2_blocker', 'alpha1_blocker',
+                          'five_alpha_reductase_inhibitor', 'urinary_antimuscarinic', 'beta3_agonist', 'bisphosphonate',
+                          'adhd_stimulant', 'adhd_nonstimulant', 'cholinesterase_inhibitor', 'nmda_antagonist', 'antiretroviral',
+                          'csdmard', 'tnf_inhibitor', 'hormonal_contraceptive']}
 _COMPILED = {k: re.compile(v, re.I) for k, v in CLASSES.items()}
 
 
