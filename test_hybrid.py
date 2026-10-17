@@ -235,6 +235,10 @@ class ReadingsTests(unittest.TestCase):
         out = self._run([['x', 'y'], ['x', 'y'], []], confirm=None)
         self.assertEqual((out['answer'], out['decision']), ({'count': 3}, 'readings_settled'))
 
+    def test_unanimous_readings_ask_without_a_check(self):
+        out = self._run([['p', 'q'], ['p', 'q'], ['p', 'q']])
+        self.assertEqual((out['decision'], out['readings_flagged']), ('clarify', 3))
+
     def test_one_run_flagging_readings_still_answers(self):
         out = self._run([['x', 'y'], [], []])
         self.assertEqual(out['answer'], {'count': 3})

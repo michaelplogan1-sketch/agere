@@ -215,9 +215,12 @@ def answer(question, as_of, semantic, send_factory, *, qid='Q', answer_type=None
     decision, ans, agree, passing = hv.decide(q['answer_type'], list(per.values()))
     final = decision
     ambiguous = merge_readings(items, [n for n, i in items.items() if len(hc.readings((i or {}).get('contract'))) >= 2])
-    if ambiguous['runs'] * 2 > runs:
-        # A majority of independent analysts found two or more defensible readings. One stronger-model check confirms the
-        # wording really supports them (ask the user) or names the reading the definition settles (answer that one).
+    if ambiguous['runs'] == runs:
+        # Every independent analyst found two or more defensible readings: ask which one, never ship one as fact.
+        decision, ans, final = 'clarify', None, 'clarify'
+    elif ambiguous['runs'] * 2 > runs:
+        # A majority (not all) found two or more readings. One stronger-model check confirms the wording really supports
+        # them (ask the user) or names the reading the definition settles (answer that one).
         with send_factory() as send:
             item, res = analyst_run(q, semantic, send, escalation_model_name(), user=readings_prompt(q, ambiguous['readings']),
                                     docs_dir=docs_dir)
@@ -262,7 +265,7 @@ def answer(question, as_of, semantic, send_factory, *, qid='Q', answer_type=None
                         readings.append(r)
             decline = {'kind': 'clarify', 'readings': readings[:6]}
     return {'answer': ans, 'answer_type': q['answer_type'], 'decision': final, 'agree': agree, 'passing': passing,
-            'decline': decline,
+            'decline': decline, 'readings_flagged': ambiguous['runs'],
             'interpretation': f'hybrid {final}; {agree}/{runs} agree; {passing} passed checks',
             'runs': {k: {kk: v.get(kk) for kk in ('passed', 'clarify', 'path', 'problems', 'sql')} for k, v in per.items()},
             'contracts': {k: (i or {}).get('contract') for k, i in items.items()},

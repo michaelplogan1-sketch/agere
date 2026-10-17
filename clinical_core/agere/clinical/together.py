@@ -225,7 +225,8 @@ def _run_hybrid(stack, question, as_of, semantic_path):
     return {'answer': answer, 'model': h['models']['analyst'], 'estimated_cost_usd': h['cost_usd'],
             'new_paid_api_calls': h['new_paid_api_calls'], 'tool_calls': tool_calls,
             'error': None if answer is not None else 'hybrid abstained: ' + h['interpretation'],
-            'hybrid': {k: h.get(k) for k in ('decision', 'agree', 'passing', 'interpretation', 'runs', 'models', 'errors', 'decline')},
+            'hybrid': {k: h.get(k) for k in ('decision', 'agree', 'passing', 'interpretation', 'runs', 'models', 'errors', 'decline',
+                                             'readings_flagged')},
             'receipts': receipts, 'seconds': round(time.perf_counter() - started, 3)}
 
 
@@ -570,7 +571,8 @@ def compose_together(stack, question, *, planning='auto'):
         wait_s = round(time.perf_counter() - t0, 3)
         result, together, rec = decide(stack, question, fast, fast_error, analyst, state,
                                        as_of=as_of, semantic_path=semantic_path)
-    together.update(analyst={**(_part(analyst) or {}), 'model': model, 'state': state,
+    together.update(hybrid={k: v for k, v in ((analyst or {}).get('hybrid') or {}).items() if k != 'runs'} or None,
+                    analyst={**(_part(analyst) or {}), 'model': model, 'state': state,
                              'answer_status': ((analyst or {}).get('answer') or {}).get('status')
                              if isinstance((analyst or {}).get('answer'), dict) else None},
                     reconcile=({**(_part(rec.get('result')) or {}), 'picked': rec.get('picked'), 'reason': rec.get('reason'),
