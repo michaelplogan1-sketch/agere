@@ -54,6 +54,13 @@ MIN_ESTIMATE = 10     # matched exposed patients below which no estimate is repo
 MIN_RELIABLE = 30     # below this the estimate is reported with a small-sample warning
 SMD_LIMIT = 0.1
 COVARIATES = ('pre_outcome', 'pre_utilization', 'chronic_conditions')
+METHODS = ('matched_did', 'sdid', 'callaway_santanna', 'auto')
+CONTROL_GROUPS = ('never_treated', 'not_yet_treated')
+CS_ESTIMATORS = ('outcome_regression', 'ipw', 'doubly_robust')
+PANEL_COVARIATES = ('age_band', 'sex', 'payer', 'chronic_conditions')
+MIN_COHORT = 3        # exposed patients per adoption-month cohort below which the cohort is dropped (Callaway-Sant'Anna)
+MIN_DONORS = 5        # practice-level donor series needed for synthetic DiD
+SDID_PLACEBO_REPS = 200
 ASSUMPTIONS = [
     'No unmeasured confounding of program receipt beyond age band, sex, payer, pre-period outcome, pre-period utilization '
     'and chronic-condition count (receipt was not randomised; selection by care teams is not observed).',
@@ -72,7 +79,7 @@ def _int(p, key, default, lo, hi):
 
 def validate(p):
     allowed = {'program', 'drug_class', 'outcome', 'lab', 'pre_days', 'post_days', 'controls_per_exposed', 'min_followup_days',
-               'bootstrap', 'seed', 'caliper', 'population_conditions'}
+               'bootstrap', 'seed', 'caliper', 'population_conditions', 'method', 'control_group', 'covariates', 'estimator'}
     if not isinstance(p, dict) or set(p) - allowed:
         raise ValueError('program_effect parameters: ' + ', '.join(sorted(allowed)))
     program = p.get('program')
@@ -102,6 +109,22 @@ def validate(p):
     if lab: out['lab'] = lab
     if conds: out['population_conditions'] = conds
     if out['min_followup_days'] > out['post_days']: raise ValueError('min_followup_days cannot exceed post_days')
+    method = p.get('method', 'matched_did')
+    if method not in METHODS: raise ValueError(f'method must be one of {METHODS}')
+    if method != 'matched_did': out['method'] = method
+    if 'control_group' in p:
+        if p['control_group'] not in CONTROL_GROUPS: raise ValueError(f'control_group must be one of {CONTROL_GROUPS}')
+        out['control_group'] = p['control_group']
+    if 'estimator' in p:
+        if p['estimator'] not in CS_ESTIMATORS: raise ValueError(f'estimator must be one of {CS_ESTIMATORS}')
+        out['estimator'] = p['estimator']
+    if 'covariates' in p:
+        cv = p['covariates']
+        if not isinstance(cv, list) or len(set(cv)) != len(cv) or any(c not in PANEL_COVARIATES for c in cv):
+            raise ValueError(f'covariates: a list drawn from {PANEL_COVARIATES}')
+        if cv: out['covariates'] = list(cv)
+    if method == 'matched_did' and {'control_group', 'estimator', 'covariates'} & set(p):
+        raise ValueError("control_group, estimator and covariates apply to method 'callaway_santanna' (or 'auto')")
     return out
 
 
@@ -505,6 +528,8 @@ def execute(path, patient_ids, params, as_of=None):
         people, outcome, ed, adm = _load(db, p, as_of_day, keep)
         first, touched, definition, exposure_counts = _exposure(db, p, people, as_of_day)
         rng, rng_np = random.Random(p['seed']), np.random.default_rng(p['seed'])
+        if p.get('method', 'matched_did') != 'matched_did':
+            return _execute_panel(p, people, outcome, first, touched, definition, exposure_counts, as_of_day, as_of)
         excluded = defaultdict(int)
         treated = []
         for pid, t0 in sorted(first.items()):
@@ -650,3 +675,447 @@ def execute(path, patient_ids, params, as_of=None):
 def _r(v): return None if v is None else (round(v, 4) if isinstance(v, float) and math.isfinite(v) else v)
 def _rl(v): return None if v is None else [_r(x) for x in v]
 def _mean(v): return _r(float(np.mean(v))) if v else None
+
+
+# ======================================================================================
+# Panel causal methods: synthetic difference-in-differences and Callaway-Sant'Anna staggered DiD.
+# The cores take plain arrays (units x periods) so they can be validated on simulated panels;
+# _execute_panel builds the panel from the semantic layer (calendar months) the way the other methods do.
+# ======================================================================================
+Z95 = 1.959963984540054
+
+
+def _simplex_ls(A, b, reg):
+    """min_{c, w in simplex} ||b - c - A w||^2 + reg ||w||^2 (c free, not penalised). Returns (w, c)."""
+    from scipy.optimize import minimize
+    n = A.shape[1]
+    if n == 1: return np.ones(1), float(b.mean() - A.mean())
+    Ac, bc = A - A.mean(0), b - b.mean()
+    Q = Ac.T @ Ac + reg * np.eye(n); q = Ac.T @ bc
+    scale = max(float(np.trace(Q)) / n, 1e-12)
+    Qs, qs = Q / scale, q / scale
+    r = minimize(lambda w: float(w @ Qs @ w - 2 * qs @ w), np.full(n, 1.0 / n), jac=lambda w: 2 * (Qs @ w - qs), method='SLSQP',
+                 bounds=[(0, 1)] * n, constraints=[{'type': 'eq', 'fun': lambda w: w.sum() - 1, 'jac': lambda w: np.ones(n)}],
+                 options={'maxiter': 500, 'ftol': 1e-13})
+    w = np.clip(r.x, 0, None); w = w / w.sum()
+    return w, float(b.mean() - A.mean(0) @ w)
+
+
+def _sdid_weights(Yco, ytr, T0, n_tr):
+    """Unit weights omega (ridge-regularised, intercept-shifted) and time weights lambda, both on the simplex (Arkhangelsky et al. 2021)."""
+    N0, T = Yco.shape
+    diffs = np.diff(Yco[:, :T0], axis=1)
+    sigma = float(np.std(diffs, ddof=1)) if diffs.size > 1 else 0.0
+    zeta = (n_tr * (T - T0)) ** 0.25 * sigma
+    omega, omega0 = _simplex_ls(Yco[:, :T0].T, ytr[:T0], zeta ** 2 * T0)
+    lam, lam0 = _simplex_ls(Yco[:, :T0], Yco[:, T0:].mean(1), (1e-6 * sigma) ** 2 * N0)
+    return omega, omega0, lam, lam0, sigma, zeta
+
+
+def _sdid_tau(Yco, ytr, T0, omega, lam):
+    """Weighted double difference; identical to the omega x lambda-weighted two-way fixed-effects coefficient on the treated x post indicator."""
+    tr = ytr[T0:].mean() - lam @ ytr[:T0]
+    co = Yco[:, T0:].mean(1) - Yco[:, :T0] @ lam
+    return float(tr - omega @ co)
+
+
+def sdid(Y, treated, T0, draws=SDID_PLACEBO_REPS, seed=7, names=None, labels=None):
+    """Synthetic difference-in-differences. Y: units x periods; treated: boolean mask over units; periods 0..T0-1 are pre, T0.. post.
+    Variance: placebo (pseudo-treated drawn from controls; weights re-estimated) when one unit is treated, jackknife over units otherwise."""
+    Y = np.asarray(Y, float); treated = np.asarray(treated, bool)
+    n_tr, N0, T = int(treated.sum()), int((~treated).sum()), Y.shape[1]
+    if n_tr < 1 or N0 < 2 or T0 < 2 or T - T0 < 1: raise ValueError('sdid needs >= 1 treated unit, >= 2 controls, >= 2 pre and >= 1 post periods')
+    Yco, ytr = Y[~treated], Y[treated].mean(0)
+    omega, omega0, lam, lam0, sigma, zeta = _sdid_weights(Yco, ytr, T0, n_tr)
+    tau = _sdid_tau(Yco, ytr, T0, omega, lam)
+    did = float(ytr[T0:].mean() - ytr[:T0].mean() - (Yco[:, T0:].mean() - Yco[:, :T0].mean()))
+    # variance
+    taus, se_method = [], None
+    if n_tr == 1:
+        if N0 < 3: raise ValueError('placebo variance needs >= 3 control units')
+        rng = np.random.default_rng(seed)
+        for _ in range(draws):
+            perm = rng.permutation(N0); pt, pc = perm[:1], perm[1:]
+            if len(pc) < 2: continue
+            yp = Yco[pt].mean(0); Yc = Yco[pc]
+            o, _, l, _, _, _ = _sdid_weights(Yc, yp, T0, 1)
+            taus.append(_sdid_tau(Yc, yp, T0, o, l))
+        se_method = 'placebo'
+        se = float(np.std(taus, ddof=1)) if len(taus) > 1 else float('nan')
+    else:
+        idx_tr, idx_co = np.flatnonzero(treated), np.flatnonzero(~treated)
+        for i in range(len(Y)):
+            keep_tr = [j for j in idx_tr if j != i]; keep_co = [k for k, j in enumerate(idx_co) if j != i]
+            if not keep_tr or len(keep_co) < 1: continue
+            w = omega[keep_co]; w = w / w.sum() if w.sum() > 0 else np.full(len(keep_co), 1 / len(keep_co))
+            taus.append(_sdid_tau(Yco[keep_co], Y[keep_tr].mean(0), T0, w, lam))
+        se_method = 'jackknife'
+        n = len(taus)
+        se = float(math.sqrt((n - 1) / n * np.sum((np.array(taus) - np.mean(taus)) ** 2))) if n > 1 else float('nan')
+    pre_fit = ytr[:T0] - (omega0 + Yco[:, :T0].T @ omega)
+    plain = (ytr[:T0] - ytr[:T0].mean()) - (Yco[:, :T0].mean(0) - Yco[:, :T0].mean())
+    names = list(names) if names is not None else [str(i) for i in range(N0)]
+    labels = list(labels) if labels is not None else [str(t) for t in range(T)]
+    ci = [tau - Z95 * se, tau + Z95 * se] if math.isfinite(se) else None
+    return {'effect': tau, 'se': se, 'ci95': ci, 'se_method': se_method, 'variance_draws': len(taus), 'did_unweighted': did,
+            'treated_units': n_tr, 'control_units': N0, 'pre_periods': T0, 'post_periods': T - T0,
+            'unit_weights': {names[i]: float(omega[i]) for i in np.argsort(-omega)[:5] if omega[i] > 0.005},
+            'unit_weights_nonzero': int((omega > 0.005).sum()), 'unit_weight_intercept': omega0,
+            'time_weights': {labels[t]: float(lam[t]) for t in np.argsort(-lam)[:5] if lam[t] > 0.005},
+            'pre_fit_rmse': float(np.sqrt(np.mean(pre_fit ** 2))), 'pre_fit_rmse_unweighted_did': float(np.sqrt(np.mean(plain ** 2))),
+            'treated_pre_sd': float(np.std(ytr[:T0], ddof=1)), 'sigma_hat': sigma, 'zeta': zeta,
+            'unit_weight_vector': omega, 'time_weight_vector': lam}
+
+
+# ---- Callaway & Sant'Anna ----------------------------------------------------------
+def _logit(X, d, iters=60):
+    k = X.shape[1]; b = np.zeros(k)
+    for _ in range(iters):
+        eta = np.clip(X @ b, -30, 30); pi = 1 / (1 + np.exp(-eta))
+        W = pi * (1 - pi)
+        H = (X.T * W) @ X + 1e-8 * np.eye(k)
+        step = np.linalg.solve(H, X.T @ (d - pi) - 1e-8 * b)
+        b = b + step
+        if np.max(np.abs(step)) < 1e-9: break
+    pi = 1 / (1 + np.exp(-np.clip(X @ b, -30, 30)))
+    return b, pi
+
+
+def _prep_X(X, mask):
+    """Add intercept, standardise non-constant columns using the cell's subsample, drop constants."""
+    sub = X[mask]; mu, sd = sub.mean(0), sub.std(0)
+    keep = sd > 1e-12
+    Z = (X[:, keep] - mu[keep]) / sd[keep]
+    return np.hstack([np.ones((len(X), 1)), Z])
+
+
+def _cs_cell(dy, D, X, estimator):
+    """2x2 cell estimator. dy: outcome change over the cell (m,), D: bool treated, X: (m,k) incl. intercept or None.
+    Returns (att, psi) with att_hat - att ~ mean(psi); psi includes the nuisance-estimation term for outcome regression and IPW;
+    for doubly robust the (Neyman-orthogonal) plug-in influence function is used."""
+    m = len(dy); Df = D.astype(float); p = Df.mean(); C = 1 - Df
+    if X is None or X.shape[1] <= 1:
+        a, b = dy[D].mean(), dy[~D].mean()
+        return float(a - b), Df * (dy - a) / p - C * (dy - b) / (1 - p), {}
+    info = {}
+    beta = None
+    if estimator in ('outcome_regression', 'doubly_robust'):
+        Xc = X[~D]
+        beta = np.linalg.lstsq(Xc, dy[~D], rcond=None)[0]
+        e = dy - X @ beta
+    if estimator in ('ipw', 'doubly_robust'):
+        g, pi = _logit(X, Df)
+        pi = np.clip(pi, 1e-4, 1 - 1e-4)
+        info['max_pscore_control'] = float(pi[~D].max()); info['max_pscore'] = float(pi.max())
+        w = pi / (1 - pi); wc = C * w; Ew = wc.sum() / m
+    if estimator == 'outcome_regression':
+        att = float(e[D].mean())
+        G = np.linalg.pinv(Xc.T @ Xc)
+        corr = m * C * ((X[D].mean(0) @ G) @ X.T) * e
+        return att, Df / p * (e - att) - corr, info
+    if estimator == 'ipw':
+        a = dy[D].mean(); b = (wc * dy).sum() / wc.sum(); att = float(a - b)
+        M = ((wc * (dy - b)) @ X) / m / Ew
+        H = (X.T * (pi * (1 - pi))) @ X / m
+        corr = ((M @ np.linalg.pinv(H)) @ X.T) * (Df - pi)
+        return att, Df * (dy - a) / p - wc * (dy - b) / Ew - corr, info
+    att = float((Df * e).mean() / p - (wc * e).mean() / Ew)
+    return att, (Df / p - wc / Ew) * e - att * Df / p, info
+
+
+def callaway_santanna(Y, G, X=None, control_group='never_treated', estimator='doubly_robust', draws=1000, seed=7,
+                      min_cohort=MIN_COHORT, max_pre=None, max_post=None, labels=None):
+    """Callaway & Sant'Anna (2021) group-time ATTs. Y: units x periods (balanced); G: first treated period index per unit (np.inf = never);
+    X: unit covariates (time-invariant) or None. Base period for every (g, t) is g-1. Inference from influence functions;
+    uniform bands for the event-study aggregation by multiplier bootstrap (Mammen weights, sup-t)."""
+    Y = np.asarray(Y, float); G = np.asarray(G, float); n, T = Y.shape
+    X = None if X is None or np.asarray(X).size == 0 else np.asarray(X, float).reshape(n, -1)
+    labels = list(labels) if labels is not None else [str(t) for t in range(T)]
+    never = np.isinf(G)
+    if control_group == 'never_treated' and never.sum() < 2:
+        raise ValueError('never_treated controls need >= 2 never-treated units; use control_group not_yet_treated')
+    dropped = {}
+    cohorts = []
+    for g in sorted(set(G[~never])):
+        cnt = int((G == g).sum())
+        if g < 1: dropped[labels[int(g)]] = 'treated in the first period: no pre-period'; continue
+        if g > T - 1: continue
+        if cnt < min_cohort: dropped[labels[int(g)]] = f'cohort of {cnt} (< {min_cohort})'; continue
+        cohorts.append(int(g))
+    cells, psis, infos = [], [], []
+    for g in cohorts:
+        for t in range(T):
+            e = t - g
+            if t == g - 1 or (max_pre is not None and e < -max_pre) or (max_post is not None and e > max_post): continue
+            ctrl = never | ((G > max(t, g)) if control_group == 'not_yet_treated' else False)
+            D_all = G == g
+            mask = D_all | ctrl
+            nt, nc = int(D_all.sum()), int((ctrl & ~D_all).sum())
+            if nt < 2 or nc < 2: continue
+            Xm = _prep_X(X, mask)[mask] if X is not None else None
+            if Xm is not None and nc <= Xm.shape[1] + 1: continue
+            dy = Y[mask, t] - Y[mask, g - 1]
+            att, psi, info = _cs_cell(dy, D_all[mask], Xm, estimator)
+            full = np.zeros(n); full[mask] = psi * (n / mask.sum())
+            se = float(np.sqrt(np.sum(full ** 2)) / n)
+            cells.append({'group': g, 'time': t, 'event_time': e, 'att': att, 'se': se, 'n_treated': nt, 'n_control': nc})
+            psis.append(full); infos.append(info)
+    if not cells: raise ValueError('no estimable group-time cells (cohorts too small or no valid controls)')
+    Psi = np.array(psis)
+    for c in cells:
+        c['ci95'] = [c['att'] - Z95 * c['se'], c['att'] + Z95 * c['se']]
+        c['group_label'], c['time_label'] = labels[c['group']], labels[c['time']]
+    att = np.array([c['att'] for c in cells]); ng = np.array([float((G == c['group']).sum()) for c in cells])
+    ev = np.array([c['event_time'] for c in cells])
+
+    def agg(w):
+        th = float(w @ att); psi = w @ Psi
+        se = float(np.sqrt(np.sum(psi ** 2)) / n)
+        return th, se, psi
+    out = {'cells': len(cells), 'cohorts_used': [labels[g] for g in cohorts], 'cohorts_dropped': dropped, 'units': n,
+           'never_treated_units': int(never.sum()), 'control_group': control_group, 'estimator': estimator if X is not None else 'unconditional',
+           'max_pscore': max([i['max_pscore'] for i in infos if 'max_pscore' in i], default=None)}
+    post = ev >= 0
+    if post.any():
+        w = np.where(post, ng, 0.0); w = w / w.sum()
+        th, se, _ = agg(w)
+        out['simple'] = {'att': th, 'se': se, 'ci95': [th - Z95 * se, th + Z95 * se], 'cells': int(post.sum())}
+    dyn, dpsi = [], []
+    for e in sorted(set(ev)):
+        sel = ev == e; w = np.where(sel, ng, 0.0); w = w / w.sum()
+        th, se, psi = agg(w)
+        dyn.append({'event_time': int(e), 'att': th, 'se': se, 'ci95': [th - Z95 * se, th + Z95 * se], 'cells': int(sel.sum())}); dpsi.append(psi)
+    rng = np.random.default_rng(seed)
+    pm = (math.sqrt(5) + 1) / (2 * math.sqrt(5))
+    V = np.where(rng.random((draws, n)) < pm, -(math.sqrt(5) - 1) / 2, (math.sqrt(5) + 1) / 2)
+    P = np.array(dpsi); ses = np.array([d['se'] for d in dyn])
+    ok = ses > 0
+    crit = Z95
+    if ok.any():
+        draw = (V @ P[ok].T) / n
+        crit = max(float(np.quantile(np.max(np.abs(draw) / ses[ok], axis=1), 0.95)), Z95)
+    for d in dyn: d['uniform_ci95'] = [d['att'] - crit * d['se'], d['att'] + crit * d['se']]
+    out['dynamic'], out['uniform_critical_value'] = dyn, float(crit)
+    pre = [d for d in dyn if d['event_time'] < 0 and d['se'] > 0]
+    if pre:
+        bad = [d['event_time'] for d in pre if not d['uniform_ci95'][0] <= 0 <= d['uniform_ci95'][1]]
+        out['pretrend'] = {'status': 'failed' if bad else 'passed', 'event_times_outside_band': bad, 'pre_event_times': len(pre),
+                           'detail': 'Pre-treatment ATT(g,t) aggregated by event time; uniform (sup-t) 95% band should cover zero.'}
+    else:
+        out['pretrend'] = {'status': 'not_assessable', 'detail': 'no pre-treatment periods beyond the base period.'}
+    byg = []
+    for g in cohorts:
+        sel = (np.array([c['group'] for c in cells]) == g) & post
+        if not sel.any(): continue
+        w = np.where(sel, 1.0, 0.0); w = w / w.sum()
+        th, se, _ = agg(w)
+        byg.append({'group': g, 'group_label': labels[g], 'att': th, 'se': se, 'ci95': [th - Z95 * se, th + Z95 * se],
+                    'units': int((G == g).sum()), 'post_periods': int(sel.sum())})
+    out['by_cohort'], out['group_time'] = byg, cells
+    return out
+
+
+# ---- panel construction + execute path ----------------------------------------------
+def _month_rates(pids, months, outcome):
+    M = np.full((len(pids), len(months)), np.nan)
+    for i, pid in enumerate(pids):
+        for j, m in enumerate(months):
+            v = outcome.rate(pid, m, _next_month(m))
+            if v is not None: M[i, j] = v
+    return M
+
+
+def _covariate_matrix(pids, people, names):
+    cols = []
+    for nm in names:
+        if nm == 'chronic_conditions': cols.append([float(people[x]['chronic_conditions']) for x in pids])
+        else:
+            key = {'age_band': 'age_band', 'sex': 'sex', 'payer': 'payer'}[nm]
+            vals = sorted({people[x][key] for x in people})
+            for v in vals[1:]: cols.append([1.0 if people[x][key] == v else 0.0 for x in pids])
+    return np.array(cols, float).T if cols else None
+
+
+def _panel_shell(p, first, as_of_day, definition, exposure_counts, outcome_label, unit):
+    return {'schema': VERSION, 'parameters': p, 'exposure': {'program': p['program'], 'definition': definition, **exposure_counts,
+            'index_dates': [_iso(min(first.values())), _iso(max(first.values()))] if first else None},
+            'outcome': {'measure': p['outcome'], 'unit': unit, 'pre_days': p['pre_days'], 'post_days': p['post_days']}}
+
+
+def _execute_panel(p, people, outcome, first, touched, definition, exposure_counts, as_of_day, as_of):
+    unit = (f"{p['lab']} " if p['outcome'] == 'lab' else '') + UNITS[p['outcome']]
+    label = p['drug_class'] + ' start' if p['program'] == 'medication_start' else p['program'].replace('_', ' ')
+    outcome_label = f"{p['lab']} (lab)" if p['outcome'] == 'lab' else p['outcome'].replace('_', ' ')
+    excluded = defaultdict(int)
+    exposed = {}
+    for pid, t0 in sorted(first.items()):
+        if as_of_day - t0 < p['min_followup_days']: excluded['follow_up_shorter_than_minimum'] += 1; continue
+        exposed[pid] = t0
+    pool = sorted(set(people) - touched)
+    warnings, blocking = [], []
+    method, reason = p['method'], None
+    days = sorted(exposed.values())
+    if method == 'auto':
+        if len(days) >= 4:
+            iqr = days[(3 * len(days)) // 4] - days[len(days) // 4]
+            if iqr > 92: method, reason = 'callaway_santanna', f'staggered adoption (index-date IQR {iqr} days > 92)'
+            else: method, reason = 'sdid', f'adoption concentrated in time (index-date IQR {iqr} days <= 92)'
+        else:
+            method, reason = 'sdid', 'too few exposed patients to see staggering'
+    out = _panel_shell(p, first, as_of_day, definition, exposure_counts, outcome_label, unit)
+    out.update(as_of=as_of, estimation_method=method, method_selection=reason or 'requested',
+               sample={'qualifying': len(first), 'eligible_exposed': len(exposed), 'excluded': dict(excluded), 'comparison_pool': len(pool),
+                       'excluded_from_pool_program_records': len(touched - set(first))})
+    months = []
+    if days:
+        m = _month_start(days[0] - p['pre_days'])
+        while m <= as_of_day: months.append(m); m = _next_month(m)
+    res = None
+    if len(exposed) < MIN_ESTIMATE:
+        blocking.append(f'Too few exposed patients ({len(exposed)}; need >= {MIN_ESTIMATE}): no effect is estimated.')
+    elif method == 'sdid':
+        res = _panel_sdid(p, people, outcome, exposed, pool, months, blocking, warnings)
+        out['sdid'] = res
+    else:
+        res = _panel_cs(p, people, outcome, exposed, pool, months, blocking, warnings, as_of_day)
+        out['callaway_santanna'] = res
+    ok = bool(res and res.get('status') == 'estimated')
+    inference = ('limited' if warnings else 'supported_under_assumptions') if ok and not blocking else 'not_supported'
+    rows, name = [], {'sdid': 'synthetic_difference_in_differences', 'callaway_santanna': 'callaway_santanna_staggered_did'}[method]
+    if ok and method == 'sdid':
+        e = res['effect']; rows.append({'analysis': name, 'estimate': _r(e), 'ci95': _rl(res['ci95']), 'se': _r(res['se']), 'unit': unit,
+                                        'exposed': res['treated_patients'], 'comparison': res['control_units'], 'status': inference})
+        reading = (f"Estimated effect of {label} on {outcome_label} under stated assumptions (synthetic difference-in-differences): "
+                   f"{_r(e):+.4g} {unit} (95% CI {_r(res['ci95'][0]):+.4g} to {_r(res['ci95'][1]):+.4g}; {res['treated_patients']} exposed patients vs "
+                   f"{res['control_units']} unexposed practice series)" + ('; the interval includes no change.' if res['ci95'][0] <= 0 <= res['ci95'][1] else '.')
+                   + (f' {len(warnings)} warning(s) limit this estimate.' if warnings else '') + ' Observational design; not an identified causal effect.')
+        rows.append({'analysis': 'sdid_pre_period_fit', 'estimate': _r(res['pre_fit_rmse']), 'ci95': None, 'unit': unit,
+                     'status': res['pre_fit']['status']})
+    elif ok:
+        s = res.get('simple')
+        if s: rows.append({'analysis': name, 'estimate': _r(s['att']), 'ci95': _rl(s['ci95']), 'se': _r(s['se']), 'unit': unit,
+                           'exposed': res['exposed_units'], 'comparison': res['control_units'], 'status': inference})
+        rows += [{'analysis': 'cs_cohort', 'cohort': c['group_label'], 'estimate': _r(c['att']), 'ci95': _rl(c['ci95']), 'unit': unit, 'status': inference} for c in res['by_cohort']]
+        rows.append({'analysis': 'cs_pretrend_uniform_band', 'estimate': None, 'ci95': None, 'unit': unit, 'status': res['pretrend']['status']})
+        s = res['simple']
+        reading = (f"Estimated effect of {label} on {outcome_label} under stated assumptions (Callaway-Sant'Anna staggered difference-in-differences, "
+                   f"{res['control_group'].replace('_', '-')} controls): overall ATT {_r(s['att']):+.4g} {unit} (95% CI {_r(s['ci95'][0]):+.4g} to "
+                   f"{_r(s['ci95'][1]):+.4g}; {res['exposed_units']} exposed in {len(res['cohorts_used'])} adoption-month cohorts vs {res['never_treated_units']} never-treated)"
+                   + ('; the interval includes no change.' if s['ci95'][0] <= 0 <= s['ci95'][1] else '.')
+                   + (f' {len(warnings)} warning(s) limit this estimate.' if warnings else '') + ' Observational design; not an identified causal effect.')
+    else:
+        reading = f"The received data cannot support an effect estimate for {label} on {outcome_label}: {blocking[0] if blocking else 'no estimable panel'}"
+    desc = {'sdid': ('Synthetic difference-in-differences (Arkhangelsky et al. 2021) on calendar months: the exposed patients\' mean series against unexposed '
+                     'practice-level series; unit weights (ridge-regularised, intercept-shifted) and time weights on the simplex; effect = omega x lambda-weighted '
+                     'double difference (= weighted two-way fixed effects); standard error by placebo reassignment of donor units.'),
+            'callaway_santanna': ("Callaway & Sant'Anna (2021) group-time ATT(g,t) on a patient x calendar-month panel; cohort g = month of first qualifying record, "
+                                  f"base period g-1, {p.get('control_group', 'never_treated').replace('_', '-')} controls, "
+                                  f"{(p.get('estimator', 'doubly_robust').replace('_', ' ') + ' with ' + ', '.join(p['covariates'])) if p.get('covariates') else 'unconditional parallel trends (no covariates)'}; "
+                                  'aggregations: simple (cohort-size weighted post-treatment), event-time and by cohort; influence-function standard errors and '
+                                  'multiplier-bootstrap uniform bands.')}[method]
+    out.update(warnings=blocking + warnings, blocking_warnings=blocking, assumptions=_panel_assumptions(method, p), inference=inference,
+               inference_status=inference, reading=reading, rows=rows,
+               method=f"Exposure: {definition}. {desc} Outcome {outcome_label}, {unit}. Estimated effect under stated assumptions, not an identified causal effect.")
+    return out
+
+
+def _panel_assumptions(method, p):
+    common = ['No anticipation and no spillover: outcomes before the index month and outcomes of comparison patients are unaffected by the program.',
+              'Outcomes are captured equally in all units and months (received feeds); exposure = first qualifying received record, so contacts recorded elsewhere bias toward no effect.',
+              'Receipt was not randomised; the first exposed month is partly treated, so the first post effect is attenuated.']
+    if method == 'sdid':
+        return ['Weighted parallel trends: a weighted combination of unexposed practice series (unit weights) with a weighted pre-period reference (time weights) '
+                'tracks what the exposed series would have done without the program; pre-period fit is reported, not assumed.',
+                'The exposed series is the mean of exposed patients; adoption is treated as one date (post window starts at the median exposed month, '
+                'earlier-exposed patients\' months fall in the dropped gap).'] + common
+    cov = bool(p.get('covariates'))
+    return [('Conditional parallel trends given ' + ', '.join(p['covariates']) if cov else 'Unconditional parallel trends')
+            + (': among units with the same covariates, untreated outcome changes are alike for each cohort and its controls.' if cov else
+               ': untreated outcome changes are alike for each adoption cohort and its controls.'),
+            ('Never-treated' if p.get('control_group', 'never_treated') == 'never_treated' else 'Not-yet-treated')
+            + ' patients are valid comparisons (never-treated: unexposed patients with no program record; not-yet-treated also includes patients exposed later than the period analysed).',
+            'Treatment is irreversible: exposed from the index month onward. Effects may differ by cohort and over time; the aggregation weights are stated, not averaged by two-way fixed effects.'] + common
+
+
+def _panel_sdid(p, people, outcome, exposed, pool, months, blocking, warnings):
+    days = sorted(exposed.values())
+    first_month, median_month = _month_start(days[0]), _month_start(days[len(days) // 2])
+    pre = [m for m in months if m < first_month]; post = [m for m in months if m >= median_month]
+    if len(pre) < 3 or not post:
+        blocking.append('Synthetic DiD needs >= 3 pre months before the first exposure and >= 1 post month.'); return {'status': 'not_feasible'}
+    cols = pre + post
+    donors_by = defaultdict(list)
+    for c in pool: donors_by[people[c]['practice']].append(c)
+    donors = {}
+    for k, v in sorted(donors_by.items()):
+        if len(v) < 10: continue
+        M = _month_rates(v, cols, outcome)
+        with np.errstate(all='ignore'): s = np.nanmean(M, axis=0)
+        if np.all(np.isfinite(s)): donors[k] = s
+    E = _month_rates(sorted(exposed), cols, outcome)
+    with np.errstate(all='ignore'): ytr = np.nanmean(E, axis=0)
+    if len(donors) < MIN_DONORS + 0 or not np.all(np.isfinite(ytr)):
+        blocking.append(f'{len(donors)} complete unexposed practice series (need {MIN_DONORS}) or the exposed series has empty months: synthetic DiD is not feasible.')
+        return {'status': 'not_feasible', 'donors': len(donors)}
+    names = sorted(donors)
+    Y = np.vstack([np.array([donors[k] for k in names]), ytr[None, :]])
+    treated = np.zeros(len(Y), bool); treated[-1] = True
+    r = sdid(Y, treated, len(pre), draws=min(p['bootstrap'], SDID_PLACEBO_REPS), seed=p['seed'], names=names, labels=[_iso(m)[:7] for m in cols])
+    late = sum(1 for t in days if _month_start(t) > median_month)
+    if late / len(days) > 0.25:
+        warnings.append(f'{late} of {len(days)} exposed patients start after the post window opens ({_iso(median_month)[:7]}): adoption is not a single date, '
+                        'so post months mix treated and not-yet-treated patients and the effect is attenuated (callaway_santanna handles staggering).')
+    fit_ratio = r['pre_fit_rmse'] / r['treated_pre_sd'] if r['treated_pre_sd'] > 0 else 0.0
+    status = 'good' if fit_ratio <= 0.5 else 'poor'
+    if status == 'poor':
+        warnings.append(f"Synthetic pre-period fit is poor (RMSE {r['pre_fit_rmse']:.4g} vs the exposed pre-period SD {r['treated_pre_sd']:.4g}); the weighted comparison does not track the exposed series.")
+    if not r['ci95']: blocking.append('Placebo variance could not be computed.')
+    if len(donors) < 10: warnings.append(f'Only {len(donors)} unexposed practice series: placebo standard error rests on few donors.')
+    r.update(status='estimated' if r['ci95'] else 'not_feasible', treated_patients=len(exposed), donors=len(donors),
+             pre_months=[_iso(m)[:7] for m in pre], post_months=[_iso(m)[:7] for m in post],
+             pre_fit={'status': status, 'rmse': r['pre_fit_rmse'], 'rmse_unweighted_did': r['pre_fit_rmse_unweighted_did'], 'rmse_over_pre_sd': fit_ratio})
+    del r['unit_weight_vector'], r['time_weight_vector']
+    for k in ('effect', 'se', 'did_unweighted', 'pre_fit_rmse', 'pre_fit_rmse_unweighted_did', 'treated_pre_sd', 'sigma_hat', 'zeta', 'unit_weight_intercept'): r[k] = _r(r[k])
+    r['ci95'] = _rl(r['ci95'])
+    r['unit_weights'] = {k: _r(v) for k, v in r['unit_weights'].items()}; r['time_weights'] = {k: _r(v) for k, v in r['time_weights'].items()}
+    return r
+
+
+def _panel_cs(p, people, outcome, exposed, pool, months, blocking, warnings, as_of_day):
+    cov_names = p.get('covariates', [])
+    ids = sorted(exposed) + list(pool)
+    M = _month_rates(ids, months, outcome)
+    good = np.all(np.isfinite(M), axis=1)
+    dropped = int((~good).sum())
+    if dropped: warnings.append(f'{dropped} of {len(ids)} patients dropped for an unmeasurable outcome in at least one panel month (balanced panel required).')
+    idx = np.flatnonzero(good)
+    ids = [ids[i] for i in idx]; M = M[idx]
+    G = np.array([float(bisect_left(months, _month_start(exposed[x]) + 1) - 1) if x in exposed else np.inf for x in ids])
+    X = _covariate_matrix(ids, people, cov_names) if cov_names else None
+    labels = [_iso(m)[:7] for m in months]
+    cg = p.get('control_group', 'never_treated')
+    if (G < np.inf).sum() < MIN_ESTIMATE:
+        blocking.append(f'Too few exposed patients with a complete panel ({int((G < np.inf).sum())}; need >= {MIN_ESTIMATE}).'); return {'status': 'not_feasible'}
+    try:
+        r = callaway_santanna(M, G, X, cg, p.get('estimator', 'doubly_robust'), draws=p['bootstrap'], seed=p['seed'], min_cohort=MIN_COHORT,
+                              max_pre=math.ceil(p['pre_days'] / 30), max_post=math.ceil(p['post_days'] / 30), labels=labels)
+    except ValueError as ex:
+        blocking.append(str(ex)); return {'status': 'not_feasible', 'reason': str(ex)}
+    for g, why in r['cohorts_dropped'].items(): warnings.append(f'Adoption cohort {g} dropped: {why}.')
+    if 'simple' not in r: blocking.append('No post-treatment group-time effect is estimable.')
+    if r['pretrend']['status'] == 'failed':
+        warnings.append('Pre-treatment event-time effects fall outside the uniform 95% band at event times '
+                        + ', '.join(map(str, r['pretrend']['event_times_outside_band'])) + ': parallel trends is doubtful for this design.')
+    elif r['pretrend']['status'] == 'not_assessable': warnings.append('Parallel trends could not be assessed: no pre-treatment periods beyond the base period.')
+    if r.get('max_pscore') and r['max_pscore'] > 0.99: warnings.append(f"Weak overlap: estimated propensity score reaches {r['max_pscore']:.3f} in some cells (positivity); weights are trimmed at 0.9999.")
+    if cg == 'not_yet_treated' and not int((G == np.inf).sum()): warnings.append('No never-treated patients: identification rests on later-treated cohorts staying untreated until their start.')
+    if p['outcome'] == 'pmpm': warnings.append('Recent months are completion-adjusted (chain-ladder IBNR); post-window cost near the snapshot is partly estimated.')
+    r['exposed_units'] = int((G < np.inf).sum()); r['control_units'] = int(np.isinf(G).sum())
+    r['panel'] = {'periods': len(months), 'first_month': labels[0], 'last_month': labels[-1], 'units': len(ids), 'dropped_units': dropped,
+                  'covariates': cov_names}
+    r['status'] = 'estimated' if 'simple' in r else 'not_feasible'
+    def rd(o):
+        if isinstance(o, dict): return {k: rd(v) for k, v in o.items()}
+        if isinstance(o, list): return [rd(v) for v in o]
+        return _r(o) if isinstance(o, float) else o
+    return rd(r)
