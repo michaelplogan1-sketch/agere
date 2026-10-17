@@ -4,11 +4,13 @@ compile_metric  a governed metric (config/agere/metrics) is used only when its g
                 match the contract; otherwise the model's own SQL runs. The question's definition always wins.
 run_sql         one read-only SELECT/WITH, with a timeout and a row cap; truncation is an error, never a partial answer.
 to_answer       the typed answer (scorer contract) built from the executed rows, with the contract's group_by as the
-                table key columns; no heuristics about which column is a key.
+                table key columns; no heuristics about which column is a key. A rows answer must return exactly the
+                step's declared output columns; list columns arrive as JSON arrays (json_group_array) and are parsed.
 checks          shape and sanity checks; a run whose checks fail does not vote.
 """
 from __future__ import annotations
 
+import json
 import re
 import sqlite3
 import time
@@ -79,9 +81,38 @@ def _num(v):
     return isinstance(v, (int, float)) and not isinstance(v, bool)
 
 
-def to_answer(contract, cols, rows):
-    """The scorer contract for the executed rows, or (None, reason)."""
+def column_types(output):
+    """A step's declared output {column: description} -> {column: str|int|number|list}."""
+    def kind(desc):
+        d = str(desc).strip().lower()
+        return 'list' if d.startswith('list') else 'int' if d == 'int' else 'number' if d == 'number' else 'str'
+    return {c: kind(d) for c, d in (output or {}).items()}
+
+
+def _rows_answer(spec, cols, rows):
+    types = spec['columns']
+    if sorted(cols) != sorted(types) or len(set(cols)) != len(cols):
+        return None, f"rows need exactly the columns {list(types)}, got {cols}"
+    out = []
+    for r in rows:
+        row = {}
+        for c, v in zip(cols, r):
+            if types[c] == 'list' and isinstance(v, str):
+                try:
+                    v = json.loads(v)
+                except ValueError:
+                    return None, f'{c} is not a JSON array: {v[:60]!r}'
+            row[c] = v
+        out.append(row)
+    return {'rows': out}, None
+
+
+def to_answer(contract, cols, rows, spec=None):
+    """The scorer contract for the executed rows, or (None, reason). spec: {'columns': {name: type}, 'keys': [...]}
+    for a rows answer."""
     at = contract['answer_type']
+    if at == 'rows':
+        return _rows_answer(spec, cols, rows)
     if at in ('count', 'value'):
         if len(rows) != 1:
             return None, f'{at} needs exactly one row, got {len(rows)}'
@@ -105,10 +136,39 @@ def to_answer(contract, cols, rows):
     return {'table': [{'keys': [r[i] for i in ki], 'value': r[vi]} for r in rows]}, None
 
 
-def checks(contract, answer, db_path=None):
+def _known_patients(db_path, ids):
+    con = sqlite3.connect(f'file:{db_path}?mode=ro', uri=True)
+    try:
+        known = {r[0] for r in con.execute('SELECT patient_id FROM patient')}
+    finally:
+        con.close()
+    return [x for x in ids if x not in known]
+
+
+def checks(contract, answer, db_path=None, spec=None):
     """Problems with an executed answer (empty = passed)."""
     at, unit = contract['answer_type'], str(contract.get('unit') or '').lower()
     out = []
+    if at == 'rows':
+        types, keys = spec['columns'], spec['keys']
+        ks = [tuple(r[k] for k in keys) for r in answer['rows']]
+        if any(not isinstance(k, str) or not k for kk in ks for k in kk):
+            out.append('row keys must be non-empty strings')
+        elif len(set(ks)) != len(ks):
+            out.append(f'{len(ks) - len(set(ks))} duplicate row keys (the grain is not distinct)')
+        for c, t in types.items():
+            vals = [r[c] for r in answer['rows']]
+            if t == 'int' and any(not _num(v) or float(v) != int(v) for v in vals):
+                out.append(f'{c} must be an integer')
+            elif t == 'number' and any(not _num(v) for v in vals):
+                out.append(f'{c} must be a number')
+            elif t == 'list' and any(not isinstance(v, list) or not v or any(not isinstance(x, str) for x in v) for v in vals):
+                out.append(f'{c} must be a non-empty list of strings')
+        if 'patient_id' in keys and db_path and ks and not out:
+            unknown = _known_patients(db_path, sorted({r['patient_id'] for r in answer['rows']}))
+            if unknown:
+                out.append(f'{len(unknown)} ids are not patients (e.g. {unknown[0]})')
+        return out
     if at in ('count', 'value'):
         v = answer[at]
         if v is None or not _num(v):
@@ -126,12 +186,7 @@ def checks(contract, answer, db_path=None):
         elif len(set(ids)) != len(ids):
             out.append(f'{len(ids) - len(set(ids))} duplicate patient ids (the grain is not distinct)')
         elif db_path and ids:
-            con = sqlite3.connect(f'file:{db_path}?mode=ro', uri=True)
-            try:
-                known = {r[0] for r in con.execute('SELECT patient_id FROM patient')}
-            finally:
-                con.close()
-            unknown = [x for x in ids if x not in known]
+            unknown = _known_patients(db_path, ids)
             if unknown:
                 out.append(f'{len(unknown)} ids are not patients (e.g. {unknown[0]})')
     else:

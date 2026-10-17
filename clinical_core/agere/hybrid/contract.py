@@ -1,6 +1,6 @@
 """The analysis contract a model writes before any SQL, and its deterministic validation.
 
-    {"answer_type": "count|value|patient_set|table",
+    {"answer_type": "count|value|patient_set|table|rows",
      "grain": {"entity": "person|chart|claim|claim_line|stay|visit|fill|appointment|record|measurement|member_month|other",
                "key": "what one counted unit is, e.g. person+service_date"},
      "population": "who is in scope, with its filters",
@@ -10,11 +10,15 @@
      "as_of": "YYYY-MM-DD",
      "perspective": "which sources count (payer claims, EHR, all sources...)",
      "exclusions": ["..."],
-     "group_by": ["result column names that key a table answer, in order"],
+     "group_by": ["result column names that key a table or rows answer, in order"],
      "row_limit": null | N (a "top N" table returns at most N rows),
      "unit": "count|percent|days|usd|ratio|per_1000|...",
      "metric_id": null | "a governed metric whose definition is exactly this contract",
      "unresolved": ["meanings the question and documentation leave open"]}
+
+A `rows` answer (a step of a clinical workflow task) is a list of rows with the step's declared output columns: the
+key columns (strings, e.g. patient_id or patient_id + drug) plus typed attributes (int, number, list). group_by must be
+exactly the step's key columns.
 
 `unresolved` non-empty means the question needs clarification: the run abstains instead of guessing.
 """
@@ -22,7 +26,7 @@ from __future__ import annotations
 
 from datetime import date
 
-ANSWER_TYPES = ('count', 'value', 'patient_set', 'table')
+ANSWER_TYPES = ('count', 'value', 'patient_set', 'table', 'rows')
 ENTITIES = ('person', 'chart', 'claim', 'claim_line', 'stay', 'visit', 'fill', 'appointment', 'record', 'measurement',
             'member_month', 'adjudication', 'prescription', 'referral', 'other')
 RATE_UNITS = ('percent', 'ratio', 'per_1000', 'rate')
@@ -55,7 +59,9 @@ def validate(contract, question):
         issues.append(f'unit {unit} needs a denominator')
     if at == 'table' and not contract.get('group_by'):
         issues.append('a table answer needs group_by (the key columns)')
-    if at != 'table' and contract.get('group_by'):
+    if at == 'rows' and question.get('keys') and list(contract.get('group_by') or []) != list(question['keys']):
+        issues.append(f"group_by must be the step's key columns {question['keys']}")
+    if at not in ('table', 'rows') and contract.get('group_by'):
         issues.append(f'group_by is only for table answers, not {at}')
     window = contract.get('window') or {}
     if not isinstance(window, dict):

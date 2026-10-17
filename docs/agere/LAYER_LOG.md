@@ -281,3 +281,59 @@ router, operator router and Opus reconcile leave the answer path (BUILD_LOG.md s
   run). RX-09 and RX-10 are now correct on the reworded questions.
 - **Note:** the analyst docs live in tmp/layers (gitignored); their hash is pinned in each run manifest, but the files are
   not versioned.
+
+## CT1: clinical workflow tasks through the hybrid core (2026-10-17)
+- **Ruler:** v2.8 published tasks (`questions/clinical_tasks.jsonl`: CT-01, 03, 04, 05, 06, 07; 12 steps), index date
+  2028-12-31, the generator's sealed clinical-task scorer on the v2.8 sample-0.30, key digest `5831842f`. Run manifest
+  `tmp/hybrid/CT1/manifest.json` (`bench/task_score.py`).
+- **Core extension (general, no per-task code):** a `rows` answer type. Each task step becomes one question with its
+  own contract and ONE self-contained SQL, executed read-only and checked by code. The key columns are the step's
+  string output columns (patient_id; patient_id + drug for CT-03). Other columns are typed (int, number, list as a
+  JSON array) and checked. A task's steps are batched together, with the shared definitions printed once.
+  `execute` writes `submission.jsonl` in the scorer's format. Voting covers the whole row set, attributes included.
+  Tests: `bench/test_hybrid_rows.py`.
+- **Runs:** 3 independent Haiku runs ($0 subagents, about 1.2M subagent tokens in total), 3 batches of 2 tasks each.
+  All 36 run outputs passed checks. 5 steps were unanimous and 7 were 2 of 3; no escalation was needed.
+
+  | Step | Rows | Precision | Recall | F1 | Attributes | Agreement |
+  |---|---|---|---|---|---|---|
+  | CT-01.a HFrEF | 43 | 0.977 | 1.0 | 0.988 | | 2/3 |
+  | CT-01.b missing pillars | 43 | 0.977 | 1.0 | 0.988 | missing_pillars 100% | 2/3 |
+  | CT-03.a dose below target | 21 | 1.0 | 1.0 | **1.0** | daily dose 100%, target 100% | 2/3 |
+  | CT-04.a T2D + ASCVD/CKD | 297 | 1.0 | 1.0 | **1.0** | | 2/3 |
+  | CT-04.b no SGLT2i/GLP-1 | 191 | 1.0 | 1.0 | **1.0** | | 2/3 |
+  | CT-05.a AFib, CHA2DS2-VASc >= 2 | 84 | 1.0 | 1.0 | **1.0** | score 100% | 3/3 |
+  | CT-05.b no OAC | 45 | 1.0 | 1.0 | **1.0** | | 3/3 |
+  | CT-06.a CKD 3-5 + UACR >= 30 | 98 | 0.959 | 1.0 | 0.979 | | 3/3 |
+  | CT-06.b no ACEi/ARB/ARNI | 60 | 0.983 | 1.0 | 0.992 | | 3/3 |
+  | CT-06.c no SGLT2i | 87 | 0.966 | 1.0 | 0.982 | | 3/3 |
+  | CT-07.a statin-indicated | 825 | 1.0 | 0.969 | 0.984 | | 2/3 |
+  | CT-07.b no statin | 471 | 1.0 | 0.950 | 0.974 | | 2/3 |
+
+  6 of 12 steps are exact. Every attribute (pillars, doses, targets, CHA2DS2-VASc) is 100% on the shared keys.
+- **Misses by cause:**
+  - **CT-07.a/b (data model; explained exactly).** 26 statin-indicated people are missed (25 in step b). Their only
+    qualifying fact is a delivered LDL-C >= 190 on a lab record with no event_date (historical import, recorded
+    2026-08-28). The semantic layer keeps these 27,569 measurement rows with event_date NULL, and every run filtered
+    `event_date <= index`, which drops them. Dating them by recorded_date gives 851 and 496 people, which are exactly
+    the key sizes implied by the recall. Fix where it lives: the measurement model needs a defined specimen date for
+    undated results (or documentation saying how to date them). The generator should confirm how the key dates a lab
+    with no event_date before we change it. Not re-run; tuning to the key after seeing the score would not be clean.
+  - **CT-06.a/b/c (unresolved; 4, 1 and 3 extra people; the 3 runs agree).** The 3 runs give identical sets, so this
+    is not an analyst slip. Every extra person has a documented N18.3-N18.6 code and a latest dated UACR >= 30 under
+    the published rules. Candidate cause: the same undated labs. 119 UACR rows have no event_date, and 5, 4 and 3
+    people in the three sets have an undated UACR < 30. That count matches step c only. Suspected key or definition
+    question: what is the "specimen date" of an undated result? Sent to the generator together with CT-07.
+  - **CT-01.a/b (1 extra person; 2 of 3 runs agree).** Ruled out: duplicate charts, deaths, and EF in the 4 report
+    streams that note_fact doesn't cover (raw delivered text was checked). The two EF-only patients have a latest
+    report LVEF of 35-40% and 30-35% (lower value 35 and 30), so they qualify under the stated range rule. The one
+    run that differed left out a person whose I50.22 appears only in EHR `conditions` records. The key counts
+    `conditions`-only people in CT-07 (23 people, precision 1.0), so that is not the cause. Unexplained on the
+    aggregates; classed as a possible key question.
+  - Definition reading and analyst error: no misses attributed (all attribute values exact; agreeing runs).
+- **Process notes:** (1) `ecosystem/eval_clinical_tasks.py` holds the key-construction logic (delivered_key) in the
+  same public module as the scorer, so anyone can read it. A grep for the submission contract showed a few of its
+  lines. Nothing from them was used, and the run SQL was written by the analysts before scoring. The generator
+  should move key construction under private/. (2) Another session's commit c41e439 picked up this session's
+  `bench/hybrid_run.py` task changes along with its own; they are intact and tested. (3) One analyst reported an
+  injected "AGERE build continuity" block appended to its prompt-file read (a hook). It ignored the block.

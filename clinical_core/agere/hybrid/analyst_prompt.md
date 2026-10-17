@@ -13,17 +13,19 @@ Explore with `sqlite3 -readonly {db} "<query>"`: at most 8 queries per question,
 spellings and to test your final SQL. Never modify anything.
 
 Contract fields:
-- answer_type: count | value | patient_set | table (use the question's).
+- answer_type: count | value | patient_set | table | rows (use the question's).
 - grain: {{"entity": person|chart|claim|claim_line|stay|visit|fill|appointment|record|measurement|member_month|adjudication|prescription|referral|other,
   "key": "what one counted unit is, e.g. person+service_date"}}. Duplicate charts count as their person unless told otherwise.
 - population: who is in scope, with its filters.
 - numerator: what is counted (for a share: the qualifying subset).
 - denominator: null, or the base of a share/rate (required when unit is percent, ratio, rate or per_1000).
 - window: {{"start": "YYYY-MM-DD" or null, "end": "YYYY-MM-DD" or null, "anchor": "table.column the window applies to"}}.
-- as_of: the question's "data received as of" date.
+- as_of: the question's "data received as of" date (for a clinical task step: its index date; data dated after it is
+  ignored).
 - perspective: which sources count (payer claims only, EHR, all sources...).
 - exclusions: list.
-- group_by: for a table, the result column names that key each row, in order; else [].
+- group_by: for a table, the result column names that key each row, in order; for rows, the step's string output
+  columns (patient_id, or patient_id then drug); else [].
 - row_limit: N for a "top N" table, else null.
 - unit: count | percent | days | usd | ratio | per_1000 | ...  (percent means 12.5 for 12.5%).
 - metric_id: a governed metric id ONLY if its definition is exactly this question's definition; else null. When you set
@@ -36,6 +38,9 @@ SQL result shape (the system reads it literally):
 - patient_set: a column named patient_id, one row per distinct patient (empty result if nobody qualifies).
 - table: the group_by columns plus exactly one numeric measure column; one row per key; only the keys the question
   asks for (top 5 means 5 rows).
+- rows (a clinical task step): exactly the step's output columns, named as given, one row per key (empty result if
+  nobody qualifies). A list column is a JSON array built with json_group_array (e.g. ["MRA","SGLT2i"]). Each step is
+  its own self-contained query: recompute earlier steps inside it (CTEs), do not reference other steps.
 
 Write your results to {out}, one JSON object per line, one line per question, nothing else:
 {{"id": "<question id>", "contract": {{...}}, "sql": "SELECT ..."}}

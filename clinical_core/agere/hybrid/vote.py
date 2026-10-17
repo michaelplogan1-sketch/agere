@@ -31,6 +31,9 @@ def canonical(answer_type, answer):
         return json.dumps(_round(answer[answer_type]))
     if answer_type == 'patient_set':
         return json.dumps(sorted(set(answer['patient_ids'])))
+    if answer_type == 'rows':
+        norm = lambda v: sorted(v) if isinstance(v, list) else _round(v)
+        return json.dumps(sorted(json.dumps({k: norm(v) for k, v in r.items()}, sort_keys=True) for r in answer['rows']))
     return json.dumps(sorted([[str(k) for k in r['keys']], _round(r['value'])] for r in answer['table']))
 
 
