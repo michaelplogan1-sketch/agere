@@ -170,3 +170,15 @@ router, operator router and Opus reconcile leave the answer path (BUILD_LOG.md s
 - **Expected once everything is applied:** about 17-19/20 dev and about 10/10 held-out.
 - **Lesson:** most of the "accuracy problem" was the test bed. The case for the frozen, tier-based test design (and the
   10 clinical workflow tasks) stands.
+
+## RX-10 / RWE-02 re-run with the corrected definitions (3 independent Haiku runs, 2026-10-17)
+- **All three runs agree:** RX-10 = 996, RWE-02 = 74. Unanimous, so no escalation.
+- **Full stack on the 20 dev questions:** 18/20 correct, 18/19 answered right (95%). RWE-02 is now correct. RX-09
+  abstains. The only miss is RX-10, unanimous (996) against the confirmed key; the earlier 1,019 under the old gap
+  formula was also wrong. Flag it for one more key audit (class coverage, or the gap-boundary convention) rather than
+  tune to it.
+- **Generator feasibility for the 10 clinical workflow tasks:**
+  - feasible on v2.8: 1 (HFrEF GDMT gaps), 3 (deep-chart dose vs target), the patient sets for 4-7, and 9;
+  - not feasible: anything about reasons (the simulation has no reasons for gaps), 8 (no incident MIs) and 10 (no
+    designed conflicts);
+  - the generator proposes a v2.13 "clinical decisions" layer and is confirming it with Mike.
