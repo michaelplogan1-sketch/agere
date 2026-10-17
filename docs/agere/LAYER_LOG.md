@@ -142,3 +142,13 @@ router, operator router and Opus reconcile leave the answer path (BUILD_LOG.md s
   RX-09 had no definition to use before this.
 - **Audit:** ACC-10 and VBC-02 sent for the same key audit (independent runs agree; the scorer disagrees). ACC-10's
   January and October spikes are in the raw records too, so the appointment table build isn't the cause.
+
+## Key audit, round 2 (generator, 2026-10-17): ACC-10 and VBC-02
+- **ACC-10:** key defect. The key dropped 1,105 deep-chart appointments whose latest version has only the record's event
+  date (no slot_start or scheduled time). The appointments feed is the only scheduling stream (both schemas).
+- **VBC-02:** key defect. The key counted superseded and retro-terminated enrollment-span versions alongside their
+  replacements. Labels are the delivered product values.
+- **Root cause in the key builder:** supersedes_record_id was ignored, which also affects keys built from corrected labs
+  and re-adjudicated fills. Fixing it moves VBC-01, VBC-02, VBC-11 and ACC-10 beyond tolerance; 12 others shift within it.
+- **Tally:** of the 6 misses every run agreed on, 5 were key defects and 1 was our gap-convention bug (fixed). Waiting
+  on Mike's approval in the generator session to rewrite the key files; no re-score until confirmed.
