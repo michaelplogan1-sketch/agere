@@ -277,3 +277,28 @@ hurts, write down why and decide what to add next.
     the semantic layer) says "no forecasting model" and the analyst policy wins on disagreement. The same happens with
     Timestral off, so this predates the change. It's a routing gap in its own right: forecast questions should defer
     to the demand engine.
+
+## Step 14: engine-only operations defer to the engine
+- **Problem:** forecast questions answered by the demand engine came back partial/unsupported. The analyst (Haiku over
+  the semantic layer) replied "no forecasting model". `demand` wasn't in together.ENGINE_OPERATIONS, so the question
+  went to the disagreement policy, and `AGERE_DISAGREE_POLICY=analyst` let the analyst win. The engine's table
+  survived only as a grounding warning. It happened with `AGERE_DEMAND_TIMESTRAL=off` too.
+- **Change, together.py:**
+  - ENGINE_OPERATIONS gains `demand` and `monitor`. survival and trajectory were already there.
+  - When the analyst says unsupported on an engine answer, the engine answer ships with an info note and its
+    confidence unchanged (decision `engine_only`). The analyst has no engines, so its "unsupported" is a capability
+    gap, not a check.
+  - When the analyst gives a different answer, confidence is still lowered to low (`engine_kept_lowered`).
+  - The analyst prompt is unchanged, so no cache misses and no change on other questions.
+- **Acceptance (bench/acceptance/demand.json, :8886, cross-check off, analyst policy):** 7/8 answered with the demand
+  table. All 8 are `engine_only`, and the analyst said unsupported on every one.
+  - The 8th, "How many nurses do we need for next month's discharges?", is partial from the engine itself. It returns
+    the discharge forecast table but lists the missing staffing ratios (minutes per unit, FTE hours per week), because
+    Agere doesn't invent staffing ratios. That's a supported unknown, so I left it alone.
+- **Dev:** 13/22 (step 13: 13). Six questions (ACC-03, ACC-12, DQ-09, DQ-10, RWE-02, RWE-12) failed with HTTP 502:
+  Anthropic credit ran out partway through the run. On the 16 that ran: 13 correct vs 10 in step 13 and 11 in step
+  12b. The flips (HOS-03, REV-03, QUA-01) are reconciled-by-analyst noise. No dev question takes an engine path (no
+  `engine_*` decision in any row), so this change can't move the dev score. Re-run the six once credit is topped up.
+  Cost $1.89.
+- **Kept:** engine-only answers (forecasts, monitoring reports, curves) are no longer overruled by an analyst that
+  can't compute them.

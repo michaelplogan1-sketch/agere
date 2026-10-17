@@ -17,8 +17,9 @@ Flow (Stack.compose -> compose_together when AGERE_TOGETHER is on (default) and 
 4. Decision:
    - analyst timed out / failed / unavailable -> the fast answer ships unchanged;
    - fast path errored but the analyst answered -> the analyst's answer, confidence unverified;
-   - an analytic engine answer (survival, risk_adjustment, target_trial, forecast, program_effect, trajectory) is never
-     replaced; its confidence is lowered to low only when the analyst says unsupported or differs;
+   - an analytic engine answer (survival, risk_adjustment, target_trial, forecast, program_effect, trajectory, demand,
+     monitor) is never replaced; its confidence is lowered to low only when the analyst gives a different answer. The
+     analyst saying unsupported is only a note: it has no engines, so it cannot compute these;
    - both unsupported -> the abstention ships;
    - same canonical answer -> confidence verified, evidence 'two_independent_paths_agree';
    - different answers -> one reconcile turn (AGERE_RECONCILE_MODEL, default claude-opus-5-5; blind order; both answers
@@ -46,7 +47,11 @@ from pathlib import Path
 from . import semantic_analyst
 
 VERSION = 'agere-together/1'
-ENGINE_OPERATIONS = frozenset({'survival', 'risk_adjustment', 'target_trial', 'forecast', 'program_effect', 'trajectory'})
+# Engines whose output the analyst cannot compute from the semantic layer (models, curves, simulations). 'demand' and
+# 'monitor' joined 2026-10-17: forecast questions answered by the demand engine were lost to an analyst saying
+# "no forecasting model" under the analyst disagreement policy.
+ENGINE_OPERATIONS = frozenset({'survival', 'risk_adjustment', 'target_trial', 'forecast', 'program_effect', 'trajectory',
+                               'demand', 'monitor'})
 DEFAULT_SEMANTIC_MODEL = 'claude-haiku-5-5'   # semantic-analyst bake-off winner
 DEFAULT_RECONCILE_MODEL = 'claude-opus-5-5'
 DEFAULT_BUDGET_S = 90.0
@@ -399,9 +404,13 @@ def decide(stack, question, fast, fast_error, analyst, analyst_state, *, as_of=N
     fk, ak = semantic_analyst.canonical(f_answer), semantic_analyst.canonical(a_answer)
     engines = _engine(fast)
     if engines:
-        if a_answer.get('status') == 'unsupported' or fk != ak:
-            why = 'the semantic analyst says unsupported' if a_answer.get('status') == 'unsupported' \
-                else 'the semantic analyst reads it differently'
+        if a_answer.get('status') == 'unsupported':
+            # The analyst works over the semantic layer only; "no forecasting model" is a capability gap, not a check.
+            _note(out, f'Analytic engine ({", ".join(engines)}) answer; the semantic analyst cannot compute this '
+                  'from the semantic layer, so it is not cross-checked.')
+            together.update(decision='engine_only', winner='fast', reason='the semantic analyst has no engine for this')
+        elif fk != ak:
+            why = 'the semantic analyst reads it differently'
             _confidence(out, 'low', f'Analytic engine answer kept; {why}', evidence='engine_kept_analyst_differs',
                         analyst_answer=_preview(a_answer))
             _note(out, f'Analytic engine ({", ".join(engines)}) answer kept; {why}.', 'warning')
