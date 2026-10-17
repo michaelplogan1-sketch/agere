@@ -74,6 +74,9 @@ class Landing:
             self.columns[t] = [r[1] for r in self.db.execute(f'PRAGMA table_info("{t}")')]
         self.pending = {}
 
+    def seen(self, relpath):
+        return self.db.execute('SELECT 1 FROM ingest_files WHERE relpath = ?', (relpath,)).fetchone() is not None
+
     def done(self, relpath, size, mtime):
         r = self.db.execute('SELECT bytes, mtime, error FROM ingest_files WHERE relpath = ?', (relpath,)).fetchone()
         return r is not None and r[0] == size and abs((r[1] or 0) - mtime) < 1e-6 and r[2] is None
@@ -150,7 +153,9 @@ def ingest(raw_dir, landing_path, *, progress=None, limit=None):
                 land.record(ctx['relpath'], ctx['feed'], None, st.st_size, st.st_mtime, 0, {}, 'no parser', 0)
                 stats['unparsed'] += 1
                 continue
-            land.remove_file_rows(ctx['relpath'])  # a changed file replaces its earlier rows
+            if land.seen(ctx['relpath']):
+                land.flush()
+                land.remove_file_rows(ctx['relpath'])  # a changed or failed file replaces its earlier rows
             t0, n, tables, error = time.time(), 0, {}, None
             try:
                 for table, row in mod.parse(path, ctx):
