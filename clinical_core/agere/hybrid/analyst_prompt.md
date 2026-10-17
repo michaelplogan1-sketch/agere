@@ -37,7 +37,9 @@ Contract fields:
   calendar vs a rolling window, persons vs visits, which of two dates anchors a window, whether a group is included.
   Then list each reading in one short sentence (at least two entries) and still write the SQL for the reading you
   would choose. Do not list a reading that the definition or a stated convention rules out; a precise definition
-  usually settles it.
+  usually settles it. A reading is about what the question MEANS, never about how the data is stored or which table or
+  flag to use (those are your analysis choices: put them in the contract). A specific clause of the definition
+  overrides a general one; that is one reading, not two.
 - missing: data the question needs that this warehouse does not contain at all (then sql is null and the question is
   unsupported), e.g. ["no death records are delivered"]. Never list data that exists under another name, column or
   raw_ table; look first.

@@ -161,6 +161,16 @@ def merge_readings(items, names):
     return {'runs': n, 'readings': readings[:6]}
 
 
+def readings_prompt(q, readings):
+    return '\n'.join([
+        'Independent analysts think this question may have more than one defensible reading:', *[f'- {r}' for r in readings], '',
+        'Decide. If the wording, together with its definition, genuinely supports two or more of these readings and they give '
+        'different answers, list them in the contract\'s "readings" and set sql to null so the user is asked. If the definition '
+        'or a stated convention settles the meaning (a specific clause overrides a general one; data-handling choices are not '
+        'readings), set "readings" to [] and write the contract and SQL for the settled meaning.', '',
+        'Question:', question_text(q), f"(as_of {q['as_of']})"])
+
+
 def escalation_prompt(q, per, items):
     parts = ['The analysts below answered this question independently and disagreed or failed checks. Review their '
              'contracts, SQL and the executed outcome, decide what the question means, and write ONE contract and SQL '
@@ -206,8 +216,22 @@ def answer(question, as_of, semantic, send_factory, *, qid='Q', answer_type=None
     final = decision
     ambiguous = merge_readings(items, [n for n, i in items.items() if len(hc.readings((i or {}).get('contract'))) >= 2])
     if ambiguous['runs'] * 2 > runs:
-        # A majority of independent analysts found two or more defensible readings: ask which one, never ship one as fact.
-        decision, ans, final = 'clarify', None, 'clarify'
+        # A majority of independent analysts found two or more defensible readings. One stronger-model check confirms the
+        # wording really supports them (ask the user) or names the reading the definition settles (answer that one).
+        with send_factory() as send:
+            item, res = analyst_run(q, semantic, send, escalation_model_name(), user=readings_prompt(q, ambiguous['readings']),
+                                    docs_dir=docs_dir)
+        results.append(res)
+        items['readings_check'] = item
+        if len(hc.readings((item or {}).get('contract'))) >= 2 and not (item or {}).get('sql'):
+            decision, ans, final = 'clarify', None, 'clarify'
+        else:
+            e = evaluate(q, item, db)
+            per['readings_check'] = e
+            if e['passed'] and e['answer'] is not None:
+                ans, final = e['answer'], 'readings_settled'
+            elif ans is None:
+                decision, final = 'abstain', 'readings_unsettled'
     elif decision == 'escalate':
         with send_factory() as send:
             item, res = analyst_run(q, semantic, send, escalation_model_name(), user=escalation_prompt(q, per, items),

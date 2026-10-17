@@ -178,7 +178,7 @@ class RunIndependenceTests(unittest.TestCase):
 class ReadingsTests(unittest.TestCase):
     """Two defensible readings named by a majority of independent analysts -> ask, never ship one as fact."""
 
-    def _run(self, readings_by_run, sqls=None, escalation=None):
+    def _run(self, readings_by_run, sqls=None, escalation=None, confirm=None):
         import sqlite3
         import tempfile
         from contextlib import contextmanager
@@ -207,7 +207,10 @@ class ReadingsTests(unittest.TestCase):
 
         def send(body):
             text = body['messages'][0]['content']
-            if 'disagreed' in text and escalation is not None:
+            if 'may have more than one defensible reading' in text:
+                out = ({'contract': contract(confirm), 'sql': None} if confirm else
+                       {'contract': contract([]), 'sql': 'SELECT count(*) FROM patient'})
+            elif 'disagreed' in text and escalation is not None:
                 out = {'contract': contract(escalation), 'sql': None}
             else:
                 with lock:
@@ -222,10 +225,15 @@ class ReadingsTests(unittest.TestCase):
         return live.answer('How many?', '2030-05-27', Wh(), factory, answer_type='count', docs_dir=live.DOCS)
 
     def test_majority_readings_ask(self):
-        out = self._run([['by product', 'by line of business'], ['by product', 'by line of business'], []])
+        out = self._run([['by product', 'by line of business'], ['by product', 'by line of business'], []],
+                        confirm=['by product', 'by line of business'])
         self.assertIsNone(out['answer'])
         self.assertEqual(out['decline']['kind'], 'clarify')
         self.assertEqual(out['decline']['readings'], ['by product', 'by line of business'])
+
+    def test_readings_check_can_settle_the_meaning(self):
+        out = self._run([['x', 'y'], ['x', 'y'], []], confirm=None)
+        self.assertEqual((out['answer'], out['decision']), ({'count': 3}, 'readings_settled'))
 
     def test_one_run_flagging_readings_still_answers(self):
         out = self._run([['x', 'y'], [], []])
