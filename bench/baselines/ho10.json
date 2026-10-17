@@ -1,0 +1,98 @@
+{
+ "questions": "tmp/layers/ho10.jsonl",
+ "reference_layer": "L6a",
+ "scorer_version": {
+  "eval_questions.py": "questions-2026-10-17.1"
+ },
+ "manifest": {
+  "schema": "agere-run-manifest/1",
+  "pinned": {
+   "questions_file": {
+    "path": "tmp/layers/ho10.jsonl",
+    "sha256": "b87456a30abcde32cfe576b2ff37b995e48161b3696bd395bad224d91f4f9f94"
+   },
+   "scorer": {
+    "files": {
+     "/Users/mikel/synthetic-patient-ecosystem/ecosystem/eval_scorer.py": "1b058bba88290aede78b6891b783715d9be85f6278e34cb2137bf2ba51eb0c95",
+     "/Users/mikel/synthetic-patient-ecosystem/ecosystem/eval_questions.py": "f3acccd64e63732d9cbb73dc0bac1ce7ceeb358d8951e49d140f40ff0aae407e"
+    },
+    "declared_version": {
+     "eval_questions.py": "questions-2026-10-17.1"
+    }
+   },
+   "data": [
+    {
+     "path": "/Users/mikel/clinical-insights-local/artifacts/healthcare-warehouse-v2.8-sample-0.30",
+     "hashed": "manifest",
+     "manifest": "/Users/mikel/clinical-insights-local/artifacts/healthcare-warehouse-v2.8-sample-0.30/manifest.json",
+     "sha256": "2315459ba19907f09d86a3c751d5f5ec52e3c2a0958db140f864b66bb7f7318e"
+    },
+    {
+     "path": "/Users/mikel/clinical-insights-local/artifacts/agere-healthcare-v28-sample-0.30/stack/semantic.sqlite3",
+     "hashed": "file",
+     "bytes": 8622514176,
+     "sha256": "29f5685cbd5bf5eb2e951b1693a2ef6945ddddea696683aefa368ddd9aed1af8"
+    }
+   ],
+   "docs": [
+    {
+     "path": "/Users/mikel/clinical-insights-local/tmp/layers/catalog_index.md",
+     "sha256": "452b3bfbf153b27fb7a03c2ab7a95a721b685c316f3bd34c5a9a0180d294273e"
+    },
+    {
+     "path": "/Users/mikel/clinical-insights-local/tmp/layers/docs",
+     "files": 62,
+     "sha256": "81ac5f3c5d190973089b4d34fbb2ea76aeee324c8d20754f4a4d6ea9a76e88c6"
+    },
+    {
+     "path": "/Users/mikel/clinical-insights-local/tmp/layers/analyst_docs.md",
+     "sha256": "065662cddc012551f867752543865d98b6cff1d514b5327a1a16f3d59940d0ef"
+    },
+    {
+     "path": "/Users/mikel/clinical-insights-local/tmp/layers/library_examples.md",
+     "sha256": "98cbcba816929e5c6d7f4f3fd699393681067e488758c7982d791ebc1bcb1adf"
+    }
+   ],
+   "model_settings": {
+    "model": null,
+    "runs": null,
+    "release": "healthcare-warehouse-v2.8",
+    "cost_metering": "unmetered_subagent"
+   },
+   "cache_policy": "off",
+   "pricing": {
+    "path": "/Users/mikel/clinical-insights-local/config/agere/pricing.json",
+    "sha256": "d55095b4916e190b7292a6768c1f20f2fa9cd71f26d3277d6209392e7db026bd"
+   },
+   "code": {
+    "repo": "/Users/mikel/clinical-insights-local",
+    "head": "084d592357f88eaa1a8e7e8d4d2022cc035745a1",
+    "dirty": true,
+    "diff_sha256": "972905d655c3d5d59457a0b392a821dfa506ebece7f6f7011fecc820a00b2e42"
+   },
+   "system": "layer:L6a"
+  },
+  "pinned_sha256": "cd5b294e572030841eb071fdcf970d7520c045efb3a09445577f821652fa7f4f",
+  "created_at": "2026-10-17T11:25:50+00:00"
+ },
+ "results": {
+  "L6a": {
+   "correct": 7,
+   "answered": 10,
+   "correct_ids": [
+    "BH-10",
+    "DQ-08",
+    "HOS-01",
+    "QUA-04",
+    "REV-09",
+    "RWE-10",
+    "RX-13"
+   ],
+   "wrong_ids": [
+    "ACC-10",
+    "CLN-06",
+    "VBC-02"
+   ]
+  }
+ }
+}

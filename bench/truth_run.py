@@ -52,11 +52,11 @@ def _scalar_from_table(table):
 
 # Numeric columns with these names are part of the row's key (a practice id, a year), not its measure.
 _KEY_NAME = re.compile(r'(?:^|_)(?:id|code|key|year|month|quarter|week|date|day|bucket|group|band|rank|label|name)s?$', re.I)
-KEY_SEP = ' | '
+KEY_SEP = ' -> '  # the scorer's multi-column key form (questions-2026-10-17.1)
 
 
 def table_rows(table):
-    """Every row of a table answer with ALL its key columns kept, in column order (key = the labels joined by ' | '),
+    """Every row of a table answer with ALL its key columns kept, in column order (key = the labels joined by ' -> '),
     and every measure column kept; value = the last measure column. Same rule for every contestant. Returns (rows,
     issues) where issues lists duplicate keys, rows without a measure and rows with more than one measure column."""
     rows, issues, seen = [], {'duplicate_keys': [], 'rows_without_value': 0, 'multi_value_rows': 0}, set()

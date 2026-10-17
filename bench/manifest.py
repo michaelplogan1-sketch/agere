@@ -142,6 +142,17 @@ def diff(a, b):
     return sorted(k for k in set(pa) | set(pb) if sha256_json(pa.get(k)) != sha256_json(pb.get(k)))
 
 
+# The ruler: fields that must match for two scores to be comparable. The rest describe the contestant being measured.
+MEASUREMENT_FIELDS = ('questions_file', 'scorer', 'data', 'cache_policy', 'pricing')
+
+
+def compare(baseline, current):
+    """{'comparable': bool, 'measurement_changed': [...], 'contestant_changed': [...]} against a frozen baseline."""
+    changed = diff(baseline, current)
+    ruler = [k for k in changed if k in MEASUREMENT_FIELDS]
+    return {'comparable': not ruler, 'measurement_changed': ruler, 'contestant_changed': [k for k in changed if k not in ruler]}
+
+
 # --- costs ------------------------------------------------------------------------------------------------------------
 
 def _valid_cost(c):

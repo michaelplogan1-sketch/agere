@@ -48,6 +48,16 @@ class ManifestPins(Fixture):
         changed = manifest.diff(base, self.build(model_settings={'model': 'claude-opus-5-5', 'max_tools': 8}, cache_policy='replay_allowed'))
         self.assertEqual(changed, ['cache_policy', 'data', 'docs', 'model_settings', 'scorer'])
 
+    def test_compare_separates_the_ruler_from_the_contestant(self):
+        base = self.build()
+        (self.docs / 'a.md').write_text('beta')
+        c = manifest.compare(base, self.build(model_settings={'model': 'claude-opus-5-5', 'max_tools': 8}))
+        self.assertEqual(c, {'comparable': True, 'measurement_changed': [], 'contestant_changed': ['docs', 'model_settings']})
+        self.scorer.write_text("SCORER_VERSION = 'scorer/4'\n")
+        c = manifest.compare(base, self.build())
+        self.assertFalse(c['comparable'])
+        self.assertEqual(c['measurement_changed'], ['scorer'])
+
     def test_unknown_cache_policy_is_refused(self):
         with self.assertRaises(ValueError):
             self.build(cache_policy='whatever')

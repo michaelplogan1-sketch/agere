@@ -1,5 +1,7 @@
 """Score one layer directory (answers_*.jsonl, already in the scorer contract) with the generator's sealed scorer, and
-write its run manifest first (bench/manifest.py). Replaces tmp/layers/score_layer.py.
+write its run manifest first (bench/manifest.py). Replaces tmp/layers/score_layer.py. Each run is compared with the
+frozen baseline for its question file (bench/baselines/<questions stem>.json): COMPARABLE only when the questions,
+scorer, data, cache policy and pricing match; --freeze makes a run the baseline.
 
     .venv/bin/python bench/layer_score.py tmp/layers/L7 [--questions tmp/layers/dev20.jsonl] \
         [--docs tmp/layers/catalog_index.md tmp/layers/docs] [--model claude-haiku-5-5 --runs 3]
@@ -23,6 +25,7 @@ from bench.truth_run import ECOSYSTEM, HASH_CACHE, SAMPLE, SCORER_FILES
 
 REPO = Path(__file__).resolve().parents[1]
 SEMANTIC = REPO / 'artifacts/agere-healthcare-v28-sample-0.30/stack/semantic.sqlite3'
+BASELINES = REPO / 'bench/baselines'
 DOCS = [REPO / 'tmp/layers/catalog_index.md', REPO / 'tmp/layers/docs', REPO / 'tmp/layers/analyst_docs.md',
         REPO / 'tmp/layers/library_examples.md']
 
@@ -48,6 +51,7 @@ def main(argv=None):
     p.add_argument('--model', help='analyst model the layer used')
     p.add_argument('--runs', type=int, help='agreement runs per question')
     p.add_argument('--cache-policy', choices=run_manifest.CACHE_POLICIES, default='off')
+    p.add_argument('--freeze', action='store_true', help='make this run the frozen baseline for its question file')
     args = p.parse_args(argv)
     layer = args.layer.resolve()
     docs = args.docs if args.docs is not None else [d for d in DOCS if d.exists()]
@@ -58,6 +62,8 @@ def main(argv=None):
                            cache_policy=args.cache_policy, system=f'layer:{layer.name}', cache=cache)
     run_manifest.save_hash_cache(HASH_CACHE, cache)
     run_manifest.write(layer, m)
+    baseline_path = BASELINES / f'{args.questions.stem}.json'
+    frozen = json.loads(baseline_path.read_text()) if baseline_path.exists() else None
 
     qs = {json.loads(l)['id']: json.loads(l) for l in open(args.questions) if l.strip()}
     ans = load_answers(layer)
@@ -80,6 +86,21 @@ def main(argv=None):
     print('correct:', ' '.join(right))
     print('wrong:  ', ' '.join(i for i in answered if per.get(i) != 'true'))
     print(run_manifest.format_cost(costs), '| manifest', m['pinned_sha256'][:12])
+    if frozen:
+        c = run_manifest.compare(frozen['manifest'], m)
+        base = frozen['results'].get(frozen['reference_layer'], {})
+        print(f"vs frozen baseline {baseline_path.name} ({frozen['reference_layer']} {base.get('correct')}/{len(ids)}): "
+              + ('COMPARABLE' if c['comparable'] else f"NOT COMPARABLE, measurement changed: {', '.join(c['measurement_changed'])}")
+              + (f"; contestant changed: {', '.join(c['contestant_changed'])}" if c['contestant_changed'] else ''))
+    if args.freeze:
+        results = json.loads(baseline_path.read_text())['results'] if baseline_path.exists() else {}
+        results[layer.name] = {'correct': len(right), 'answered': len(answered), 'correct_ids': right,
+                               'wrong_ids': [i for i in answered if per.get(i) != 'true']}
+        baseline_path.parent.mkdir(parents=True, exist_ok=True)
+        baseline_path.write_text(json.dumps({'questions': str(args.questions), 'reference_layer': layer.name,
+                                             'scorer_version': (m['pinned']['scorer']['declared_version'] or {}),
+                                             'manifest': m, 'results': results}, indent=1, default=str))
+        print('froze', baseline_path)
 
 
 if __name__ == '__main__':

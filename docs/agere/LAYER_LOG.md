@@ -193,3 +193,27 @@ router, operator router and Opus reconcile leave the answer path (BUILD_LOG.md s
 - **Waiting on:** Mike's full key regeneration (v2.8-v2.12 + samples) for VBC-02, ACC-10, RX-10 and the
   supersede handling; then re-score everything. The generator is building the feasible v2.8 clinical task keys
   (1, 3, 4-7, 9), then v2.13.
+
+## Measurement repaired and frozen (2026-10-17)
+- **Scorer** `questions-2026-10-17.1` (generator): exact sets and tables, empty answers can be correct, malformed is
+  its own count, small-value tolerance bound, multi-column keys. All 24 of Agere's scorer cases pass
+  (`bench/scorer_cases.py`).
+- **Agere side:** same-ingredient fill merge; table adapter keeps every column; every scored run writes a manifest
+  and fail-closed costs (`bench/manifest.py`, `bench/layer_score.py`).
+- **Re-scored under the new scorer** (old → new, correct):
+
+  | Layer | Set | Old | New | Flipped to wrong |
+  |---|---|---|---|---|
+  | L1 | dev20 | 15 | 14 | RWE-12 (extra total/"both" rows) |
+  | L2 | dev20 | 16 | 15 | RWE-12 (extra rows) |
+  | L3 | dev20 | 16 | 16 | |
+  | L4 | dev20 | 14 | 14 | |
+  | L5b | dev20 | 17 | 17 | |
+  | **L7 (full stack)** | dev20 | 18 | **18** | |
+  | L6a / L6b | ho10 | 8 | 7 | CLN-06 (close but not an exact patient set) |
+
+- **Frozen baselines:** `bench/baselines/dev20.json` (L7, 18/20) and `bench/baselines/ho10.json` (L6a, 7/10). Every
+  `layer_score` run now prints COMPARABLE or NOT COMPARABLE against them; only questions, scorer, data, cache policy
+  and pricing count as the ruler.
+- **Not yet pinned:** the answer keys themselves (they are private). The generator is asked to publish a key digest;
+  until then a key regeneration is only visible as a scorer-version or release change.

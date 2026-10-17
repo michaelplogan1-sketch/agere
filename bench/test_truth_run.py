@@ -14,7 +14,7 @@ class TableAdapter(unittest.TestCase):
     def test_all_key_columns_are_kept(self):
         out = contract(TABLE, answered(table=[{'from_class': 'ace_inhibitor', 'to_class': 'arb', 'persons': 12},
                                               {'from_class': 'statin', 'to_class': 'arb', 'persons': 3}]))
-        self.assertEqual([r['key'] for r in out['table']], ['ace_inhibitor | arb', 'statin | arb'])
+        self.assertEqual([r['key'] for r in out['table']], ['ace_inhibitor -> arb', 'statin -> arb'])
         self.assertEqual(out['table'][0]['keys'], {'from_class': 'ace_inhibitor', 'to_class': 'arb'})
         self.assertNotIn('table_issues', out)
 
@@ -33,7 +33,7 @@ class TableAdapter(unittest.TestCase):
 
     def test_numeric_identifier_columns_are_keys(self):
         rows, _ = table_rows([{'year': 2028, 'month': 3, 'stays': 41}])
-        self.assertEqual(rows[0]['key'], '2028 | 3')
+        self.assertEqual(rows[0]['key'], '2028 -> 3')
         self.assertEqual(rows[0]['value'], 41)
 
     def test_duplicate_keys_are_reported_not_collapsed(self):
