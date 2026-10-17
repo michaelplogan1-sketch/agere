@@ -7,6 +7,11 @@
     .venv/bin/python bench/hybrid_run.py execute tmp/hybrid/H1 --questions bench/questions/dev20.jsonl
     # 4. (optional) a stronger model answers escalate.md into model/escalation.jsonl; re-run execute
     # 5. score: .venv/bin/python bench/layer_score.py tmp/hybrid/H1
+
+Clinical workflow tasks (questions/clinical_tasks.jsonl: tasks of steps, each step a list of patient rows) run through
+the same core: --questions <clinical_tasks.jsonl> expands every step into one `rows` question (its own contract and
+SQL, executed and checked like any other; key columns = the step's string output columns), batches whole tasks, prints
+the shared definitions once per batch, and execute also writes submission.jsonl in the scorer's task format.
 """
 from __future__ import annotations
 
@@ -19,16 +24,31 @@ import sys
 
 if __package__ in (None, ''):
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from clinical_core.agere.hybrid import contract as hc, execute as hx, vote as hv
+from clinical_core.agere.hybrid import contract as hc, execute as hx, live as hl, vote as hv
 
 REPO = Path(__file__).resolve().parents[1]
 DB = REPO / 'artifacts/agere-healthcare-v28-sample-0.30/stack/semantic.sqlite3'
-INDEX = REPO / 'tmp/layers/catalog_index.md'
+INDEX = REPO / 'clinical_core/agere/hybrid/docs/catalog_index.md'
 PROMPT = REPO / 'clinical_core/agere/hybrid/analyst_prompt.md'
+
+
+def task_steps(task):
+    """One clinical workflow task -> one `rows` question per step. The task's index date is the evaluation date."""
+    m = re.search(r'(\d{4}-\d{2}-\d{2})', (task.get('definitions') or {}).get('index', ''))
+    out = []
+    for st in task['steps']:
+        types = hx.column_types(st['output'])
+        cols = ', '.join(f'{c} ({d})' for c, d in st['output'].items())
+        out.append({'id': f"{task['id']}.{st['step']}", 'task': task['id'], 'step': st['step'], 'answer_type': 'rows',
+                    'question': f"{task['title']}: {task['task']} Step {st['step']}: {st['definition']} Output columns: {cols}.",
+                    'as_of': m.group(1) if m else None, 'definitions': task.get('definitions') or {},
+                    'spec': {'columns': types, 'keys': [c for c, t in types.items() if t == 'str']}})
+    return out
 
 
 def load_questions(path):
     qs = [json.loads(l) for l in Path(path).read_text().splitlines() if l.strip()]
+    qs = [s for q in qs for s in (task_steps(q) if 'steps' in q else [q])]
     for q in qs:
         m = re.search(r'as of (\d{4}-\d{2}-\d{2})', q['question'])
         q.setdefault('as_of', m.group(1) if m else None)
@@ -41,10 +61,19 @@ def prompt(args):
     (args.run / 'model').mkdir(parents=True, exist_ok=True)
     template = PROMPT.read_text()
     names = []
+    # batch whole tasks (a task's steps stay together); plain questions are their own group
+    groups = list(dict.fromkeys(q.get('task', q['id']) for q in qs))
     for k in range(1, args.runs + 1):
-        for j in range(0, len(qs), args.batch):
+        for j in range(0, len(groups), args.batch):
             name = f'run{k}_b{j // args.batch + 1}'
-            batch = '\n'.join(f"- {q['id']} [{q['answer_type']}] {q['question']}" for q in qs[j:j + args.batch])
+            part = [q for q in qs if q.get('task', q['id']) in groups[j:j + args.batch]]
+            batch = '\n'.join(f"- {q['id']} [{q['answer_type']}] {q['question']}" for q in part)
+            defs = {}
+            for q in part:
+                defs.update(q.get('definitions') or {})
+            if defs:
+                batch = ('Shared definitions (each step uses them):\n' + '\n'.join(f'- {k_}: {v}' for k_, v in defs.items())
+                         + '\n\n' + batch)
             text = template.format(db=args.db, index=INDEX, out=(args.run / 'model' / f'{name}.jsonl').resolve(), questions=batch)
             (args.run / 'prompts' / f'{name}.md').write_text(text)
             names.append(name)
@@ -65,30 +94,7 @@ def read_model(path):
     return out
 
 
-def evaluate(q, item, db):
-    """One model run on one question -> {answer, passed, clarify, path, problems}."""
-    if not item:
-        return {'answer': None, 'passed': False, 'clarify': False, 'path': None, 'problems': ['no output']}
-    contract = item.get('contract')
-    problems = hc.validate(contract, q)
-    if problems:
-        return {'answer': None, 'passed': False, 'clarify': False, 'path': None, 'problems': problems}
-    if hc.needs_clarification(contract) and not item.get('sql'):
-        return {'answer': None, 'passed': False, 'clarify': True, 'path': None, 'problems': ['unresolved: ' + '; '.join(contract['unresolved'])]}
-    sql, why = hx.compile_metric(contract, q['as_of'])
-    path = 'governed' if sql else 'sql'
-    notes = [f'governed metric not used: {why}'] if why else []
-    if not sql:
-        sql = item.get('sql')
-    cols, rows, err = hx.run_sql(db, sql)
-    if err:
-        return {'answer': None, 'passed': False, 'clarify': False, 'path': path, 'problems': notes + [f'execution: {err}'], 'sql': sql}
-    answer, why = hx.to_answer(contract, cols, rows)
-    if answer is None:
-        return {'answer': None, 'passed': False, 'clarify': False, 'path': path, 'problems': notes + [f'shape: {why}'], 'sql': sql}
-    problems = hx.checks(contract, answer, db)
-    return {'answer': answer, 'passed': not problems, 'clarify': hc.needs_clarification(contract), 'path': path,
-            'problems': notes + problems, 'sql': sql}
+evaluate = hl.evaluate
 
 
 def execute(args):
@@ -123,6 +129,8 @@ def execute(args):
         for d in details:
             f.write(json.dumps(d, default=str) + '\n')
     write_escalation(args.run, esc)
+    if any(q.get('task') for q in qs):
+        write_submission(args.run, qs, answers)
     tally = defaultdict(int)
     for d in details:
         tally[d['decision']] += 1
@@ -135,6 +143,18 @@ def execute(args):
             print(' ', d['id'], d['decision'], json.dumps(bad)[:400])
 
 
+def write_submission(run, qs, answers):
+    """submission.jsonl in the scorer's task format; an unanswered step is {"status": "abstain"}."""
+    by_id = {a['id']: a for a in answers}
+    tasks = defaultdict(dict)
+    for q in qs:
+        a = by_id[q['id']]
+        tasks[q['task']][q['step']] = a['rows'] if a['status'] == 'answered' else {'status': 'abstain'}
+    with open(run / 'submission.jsonl', 'w') as f:
+        for t, steps in tasks.items():
+            f.write(json.dumps({'id': t, 'steps': steps}, default=str) + '\n')
+
+
 def write_escalation(run, esc):
     path = run / 'escalate.md'
     if not esc:
@@ -145,6 +165,11 @@ def write_escalation(run, esc):
              'executed outcome, decide what the question means, and write ONE contract and SQL (or unresolved, sql null, '
              f"to abstain). Write to {(run / 'model' / 'escalation.jsonl').resolve()}, one JSON line per question: "
              '{"id", "contract", "sql"}. Then reply "done".\n']
+    defs = {}
+    for q, _, _ in esc:
+        defs.update(q.get('definitions') or {})
+    if defs:
+        parts.append('Shared definitions (each step uses them):\n' + '\n'.join(f'- {k}: {v}' for k, v in defs.items()))
     for q, per, runs in esc:
         parts.append(f"\n## {q['id']} [{q['answer_type']}] {q['question']}")
         for name, r in per.items():

@@ -1,0 +1,2 @@
+### payer_claim_diagnosis(payer_claim_id, patient_id, service_from, rank, icd10, icd10_received, counts_in_metrics)
+One row per (payer claim, diagnosis position): dotted icd10, icd10_received, counts_in_metrics.

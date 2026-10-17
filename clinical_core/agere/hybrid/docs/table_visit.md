@@ -1,0 +1,2 @@
+### visit(encounter_id, patient_id, type, type_concept, status, event_date, end_date, available_date, organization_id, attending_clinician_id, disposition, versions, principal_icd10, place_of_service, wellness_visit_type, awv, start_time, end_time, in_person, is_practice, first_available_date, setting)
+One row per encounter (encounter records repeat once per status version; use visit, not encounter, to count visits). Latest version wins; versions = number of received versions.

@@ -1,0 +1,2 @@
+### record(record_id, patient_id, stream, event_date, recorded_date, available_date, organization_id, payload)
+Every received record (all streams). Use json_extract(payload, '$.field') for fields of streams not modelled above. payload supersedes_record_id is set on a correction: the record replaces that earlier record of the same stream (corrections per feed = records with it set, by stream; current version = not superseded). event_date_precision = minute | day | month | year | unknown. Fields ending _record_id point at another record (see link).

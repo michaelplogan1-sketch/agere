@@ -1,0 +1,2 @@
+### measurement_latest(patient_id, concept, event_date, value_canonical, unit_canonical, same_day_values, same_day_min, record_id, value_censor)
+Latest DATED value per patient and measurement concept (undated rows never count as latest); same_day_values/same_day_min for same-date ties (HEDIS uses the lowest).

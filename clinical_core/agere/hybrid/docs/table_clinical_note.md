@@ -1,0 +1,2 @@
+### clinical_note(record_id, patient_id, note_type, author_id, author_credential, template_style, note_status, signed_date, encounter_id, event_date, available_date, organization_id, text_chars, dictated, dictation_unreviewed)
+Signed notes: note_type (office_followup, acute_visit, annual_preventive, telehealth, well_child, problem_list_update, ...), author_id/author_credential, template_style, note_status, signed_date, text_chars. Text stays in record.payload ($.text).

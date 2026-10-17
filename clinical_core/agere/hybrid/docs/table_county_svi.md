@@ -1,0 +1,2 @@
+### county_svi(county_fips, svi_overall, svi_socioeconomic, svi_household, svi_minority_language, svi_housing_transportation, vendor_rows)
+SVI percentiles per county FIPS as delivered in the vendor file (a county with conflicting values is omitted).

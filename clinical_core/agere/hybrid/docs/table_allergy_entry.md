@@ -1,0 +1,2 @@
+### allergy_entry(patient_id, substance, substance_received, reaction, reaction_missing, free_text, no_known_allergies, status, entries, first_recorded, last_confirmed, days_since_confirmed, record_id)
+Allergies per (patient, substance): substance normalised from free text ("penicillin (rash)", "Sulfa - rash"), reaction parsed or reaction_missing = 1, free_text = 1 when uncoded, last_confirmed.

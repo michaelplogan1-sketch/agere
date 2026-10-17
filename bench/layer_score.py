@@ -26,7 +26,7 @@ from bench.truth_run import ECOSYSTEM, HASH_CACHE, SAMPLE, SCORER_FILES
 REPO = Path(__file__).resolve().parents[1]
 SEMANTIC = REPO / 'artifacts/agere-healthcare-v28-sample-0.30/stack/semantic.sqlite3'
 BASELINES = REPO / 'bench/baselines'
-DOCS = [REPO / 'tmp/layers/catalog_index.md', REPO / 'tmp/layers/docs', REPO / 'tmp/layers/analyst_docs.md',
+DOCS = [REPO / 'clinical_core/agere/hybrid/docs', REPO / 'tmp/layers/analyst_docs.md',
         REPO / 'tmp/layers/library_examples.md']
 
 

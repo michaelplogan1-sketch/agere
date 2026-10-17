@@ -136,7 +136,10 @@ class TogetherTests(unittest.TestCase):
                                            'AGERE_TOGETHER_BUDGET_S': '20', 'AGERE_RECONCILE_BUDGET_S': '20',
                                            # these tests cover the reconcile path; the shipped default (analyst) is
                                            # tested in DefaultPolicyTests
-                                           'AGERE_DISAGREE_POLICY': 'reconcile'})
+                                           'AGERE_DISAGREE_POLICY': 'reconcile',
+                                           # these tests mock the single semantic analyst; HybridSlotTests covers the
+                                           # hybrid core in the analyst slot
+                                           'AGERE_HYBRID': 'off'})
         self.env.start()
         for k in ('AGERE_SEMANTIC_MODEL', 'AGERE_RECONCILE_MODEL'):
             os.environ.pop(k, None)
@@ -481,3 +484,25 @@ class FormatRepairTests(unittest.TestCase):
         r = semantic_analyst.tool_loop('q', 's', [], None, send=self._send_seq(['Here: {"count": 3}']), model='m', max_tools=2)
         self.assertIsNone(r['answer'])
         self.assertIn('JSONDecodeError', r['error'])
+
+
+class HybridSlotTests(unittest.TestCase):
+    """The hybrid core in the analyst slot (AGERE_HYBRID on, the default)."""
+
+    def test_hybrid_is_the_default_analyst_with_a_longer_budget(self):
+        with patch.dict(os.environ, {}, clear=False):
+            for k in ('AGERE_HYBRID', 'AGERE_TOGETHER_BUDGET_S'):
+                os.environ.pop(k, None)
+            self.assertTrue(together.hybrid_on())
+            self.assertEqual(together.budget_s(), together.DEFAULT_HYBRID_BUDGET_S)
+
+    def test_hybrid_answers_map_to_the_shared_contract(self):
+        base = {'interpretation': 'hybrid unanimous; 3/3 agree; 3 passed checks'}
+        c = together._hybrid_contract(base | {'answer_type': 'count', 'answer': {'count': 7}})
+        self.assertEqual((c['status'], c['count']), ('answered', 7))
+        c = together._hybrid_contract(base | {'answer_type': 'patient_set', 'answer': {'patient_ids': ['b', 'a', 'a']}})
+        self.assertEqual((c['patient_ids'], c['count']), (['a', 'b'], 2))
+        c = together._hybrid_contract(base | {'answer_type': 'table', 'contracts': {'run1': {'group_by': ['product']}},
+                                              'answer': {'table': [{'keys': ['medicaid'], 'value': 12}]}})
+        self.assertEqual(c['table'], [{'product': 'medicaid', 'value': 12}])
+        self.assertIsNone(together._hybrid_contract(base | {'answer_type': 'count', 'answer': None}))

@@ -1,0 +1,1 @@
+### fill(fill_id, patient_id, fill_date, days_supply, supply_end, class_key, drug_class, therapeutic_category, rxnorm_ingredient, drug_name, sources, record_ids, class_fill_seq, days_since_prev_class_fill, gap_after_prev_supply, days_of_data_before, new_user_180, last_class_fill)

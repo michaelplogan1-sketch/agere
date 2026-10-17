@@ -1,0 +1,2 @@
+### payer_claim_line(record_id, payer_claim_id, patient_id, line_number, service_date, code_system, cpt, hcpcs, revenue_code, units, charge_cents, allowed_cents, counts_in_metrics)
+Payer medical claim lines: cpt/hcpcs (procedure code by system), revenue_code, units, charge/allowed cents.

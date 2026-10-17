@@ -1,0 +1,2 @@
+### returned_fill(fill_key, source, record_id, patient_id, event_date, drug_name, ndc, reason)
+Prescriptions prepared but never picked up (returned to stock), one row per fill: source pharmacy_dispenses (status returned_to_stock, fill_key = fill_id) or payer_pharmacy_claims (return-to-stock reversal, fill_key = rx_claim_id); event_date = the return. Count distinct (source, fill_key). A returned fill is never a pickup.

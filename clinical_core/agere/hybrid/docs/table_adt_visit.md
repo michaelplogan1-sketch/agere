@@ -1,0 +1,2 @@
+### adt_visit(visit_number, patient_id, organization_id, patient_class, final_patient_class, admit_date, discharge_date, discharge_known, discharge_disposition, admit_reason, messages, a08_updates, out_of_order, discharge_before_admit, admit_message_missing, record_id)
+One row per ADT visit number: patient_class at admission (E/I/O) and after updates, admit_date (A01/A04), discharge_date (A03; NULL with discharge_known = 0 when no discharge was received), a08_updates, out_of_order = messages arrived in a different order than they happened, discharge_before_admit.

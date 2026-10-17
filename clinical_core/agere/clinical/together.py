@@ -52,6 +52,7 @@ VERSION = 'agere-together/1'
 # "no forecasting model" under the analyst disagreement policy.
 ENGINE_OPERATIONS = frozenset({'survival', 'risk_adjustment', 'target_trial', 'forecast', 'program_effect', 'trajectory',
                                'demand', 'monitor'})
+DEFAULT_HYBRID_BUDGET_S = 240
 DEFAULT_SEMANTIC_MODEL = 'claude-haiku-5-5'   # semantic-analyst bake-off winner
 DEFAULT_RECONCILE_MODEL = 'claude-opus-5-5'
 DEFAULT_BUDGET_S = 90.0
@@ -82,7 +83,8 @@ def _seconds(name, default):
 
 
 def budget_s():
-    return _seconds('AGERE_TOGETHER_BUDGET_S', DEFAULT_BUDGET_S)
+    # three runs plus a possible tie-break need longer than one analyst
+    return _seconds('AGERE_TOGETHER_BUDGET_S', DEFAULT_HYBRID_BUDGET_S if hybrid_on() else DEFAULT_BUDGET_S)
 
 
 def reconcile_budget_s():
@@ -172,7 +174,56 @@ def _released(stack):
 
 # --- the analyst ------------------------------------------------------------------------------------------------------------
 
+def hybrid_on():
+    return os.environ.get('AGERE_HYBRID', 'on').strip().lower() != 'off'
+
+
+def _hybrid_contract(h):
+    """The hybrid core's executed answer as the shared answer contract (None when it abstained)."""
+    ans = h.get('answer')
+    if ans is None:
+        return None
+    at = h['answer_type']
+    out = {'status': 'answered', 'answer_type': at, 'count': None, 'patient_ids': None, 'value': None, 'table': None,
+           'unknown_count': 0, 'missing': [], 'grounding': [h['interpretation']]}
+    if at in ('count', 'value'):
+        out[at] = ans[at]
+    elif at == 'patient_set':
+        out['patient_ids'] = sorted({str(p) for p in ans['patient_ids']})
+        out['count'] = len(out['patient_ids'])
+    else:
+        contracts = [c for c in (h.get('contracts') or {}).values() if c]
+        keys = list((contracts[0] if contracts else {}).get('group_by') or [])
+        out['table'] = [{**{(keys[i] if i < len(keys) else f'key{i + 1}'): k for i, k in enumerate(r['keys'])},
+                         'value': r['value']} for r in ans['table']]
+    return out
+
+
+def _run_hybrid(stack, question, as_of, semantic_path):
+    """The hybrid core (clinical_core/agere/hybrid/live.py) in the analyst slot: three independent runs, executed and
+    checked, voted, tie-broken by a stronger model. Same result shape as _run_analyst."""
+    from ..hybrid import live
+    started, receipts = time.perf_counter(), []
+    wh = warehouse(semantic_path)
+
+    @contextmanager
+    def send_factory():
+        with _own_ledger(stack) as ledger:
+            yield _ledgered_send(stack, ledger, receipts)
+
+    h = live.answer(question, as_of or wh.as_of, wh, send_factory)
+    answer = _hybrid_contract(h)
+    tool_calls = [{'sql': r.get('sql')} for r in h['runs'].values() if r.get('sql')]
+    return {'answer': answer, 'model': h['models']['analyst'], 'estimated_cost_usd': h['cost_usd'],
+            'new_paid_api_calls': h['new_paid_api_calls'], 'tool_calls': tool_calls,
+            'error': None if answer is not None else 'hybrid abstained: ' + h['interpretation'],
+            'hybrid': {k: h[k] for k in ('decision', 'agree', 'passing', 'interpretation', 'runs', 'models', 'errors')},
+            'receipts': receipts, 'seconds': round(time.perf_counter() - started, 3)}
+
+
 def _run_analyst(stack, question, as_of, semantic_path, model):
+    if hybrid_on():
+        return _run_hybrid(stack, question, as_of, semantic_path)
     started, receipts = time.perf_counter(), []
     wh = warehouse(semantic_path)
     with _own_ledger(stack) as ledger:

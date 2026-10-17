@@ -1,0 +1,2 @@
+### immunization(record_id, patient_id, vaccine, product, cvx, mvx, status, event_date, available_date, season, source, code)
+One row per immunization record: vaccine, product, cvx, mvx, status (administration_status), season (influenza season as recorded, else July-June of the date, e.g. 2029-2030), source = ehr | payer_claim_line (influenza vaccine CPT / G0008 claim lines not within 1 day of an EHR flu shot; code = the billed code).

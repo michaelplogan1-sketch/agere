@@ -1,0 +1,2 @@
+### link(record_id, stream, field, target_record_id)
+Every record-to-record reference (fields ending _record_id/_record_ids): record_id/stream of the referring record, field name, target_record_id. Indexed on target_record_id - use it for linkage questions (e.g. orders without dispenses).

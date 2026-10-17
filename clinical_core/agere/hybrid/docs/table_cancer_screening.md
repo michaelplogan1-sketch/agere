@@ -1,0 +1,2 @@
+### cancer_screening(record_id, patient_id, test, result_status, event_date, result_date, birads_category, source, code)
+One row per cancer screening result (cancer_screening_results: test e.g. bilateral_screening_mammography, result_status, event_date = performed_date) plus screening mammograms known only from a payer claim line (77067 / G0202; source payer_claim_line, result_status claim_billed). Same patient within 1 day = one screen.

@@ -1,0 +1,2 @@
+### claim_line(record_id, claim_id, patient_id, line_number, service_date, code_system, cpt, hcpcs, local_charge_code, revenue_code, units, charge_cents, service_organization_id)
+One row per medical claim line: cpt or hcpcs (CPT/HCPCS service code), local_charge_code (the local charge code, kept across releases), revenue_code (UB-04 lines), units, charge_cents.

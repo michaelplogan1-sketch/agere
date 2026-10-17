@@ -1,0 +1,2 @@
+### claim_adjustment(claim_id, record_id, patient_id, adjudication_status, group_code, reason_code, category, amount_cents, current_version)
+One row per adjustment line on each medical claim adjudication record: group_code (CO/PR/OA), reason_code (X12 CARC), category (deductible, coinsurance, copay, contractual_adjustment, else group-code), amount_cents; current_version = 1 on the claim's latest version.

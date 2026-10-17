@@ -1,0 +1,2 @@
+### smoking_status(patient_id, status, status_received, snomed, status_date, days_since_status, structured_records, record_id)
+Latest structured smoking status per patient (never | former | current | unknown) with its date; patients without a row have smoking status only in note text (note_fact smoking_status).

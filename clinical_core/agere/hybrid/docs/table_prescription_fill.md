@@ -1,0 +1,2 @@
+### prescription_fill(order_record_id, fill_record_id, fill_stream, fill_date, basis, fill_event_id, match_confidence)
+Order-to-fill links behind prescription: order_record_id, fill_record_id, fill_stream, fill_date, basis (linked_fill_event_id | medication_order_record_id | fuzzy_prescription_chain | patient_drug_window_30d), fill_event_id, match_confidence (fuzzy links). Reversed (B2) fills never link.

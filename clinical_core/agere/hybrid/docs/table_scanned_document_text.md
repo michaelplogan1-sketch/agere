@@ -1,0 +1,1 @@
+### scanned_document_text(record_id, patient_id, text_source, text)

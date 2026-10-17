@@ -1,0 +1,2 @@
+### encounter_diagnosis(encounter_id, patient_id, rank, icd10, type, record_id)
+ICD-10-CM diagnoses coded on encounters: one row per (encounter_id, rank, icd10, type); type principal/primary/secondary. Administrative contacts are uncoded by design.

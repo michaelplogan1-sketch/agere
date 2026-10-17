@@ -1,0 +1,2 @@
+### hie_document(record_id, patient_id, document_id, document_type, loinc, encounter_id, author_organization_id, delivery_channel, format, event_date, available_date, text_chars)
+HIE-pushed documents: ED summaries (LOINC 34111-5) and discharge summaries (18842-5) with encounter_id and authoring organization. Text stays in record.payload ($.text).

@@ -1,0 +1,2 @@
+### member_month(patient_id, month, payer_id, product, line_of_business, plan_id, attribution_practice_id, attribution_npi, spans, record_id)
+One row per (patient, calendar month) covered by any enrollment span on any day of the month, up to the snapshot date. When spans overlap, the span with the latest coverage_start supplies payer/product/line_of_business/plan_id; spans = number of covering spans. Member months come from spans, not a static roster; patients without spans have no rows here (vbc falls back to the coverage record for them).

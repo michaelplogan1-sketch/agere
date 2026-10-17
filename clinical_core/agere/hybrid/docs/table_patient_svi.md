@@ -1,0 +1,2 @@
+### patient_svi(patient_id, county_fips, county_source, svi_overall, svi_socioeconomic, svi_household, svi_minority_language, svi_housing_transportation, svi_source)
+SVI by patient via county: county_fips from patient demographics (county_source = patient_demographics), else the latest matched vendor row (vendor_match); svi_* from county_svi.

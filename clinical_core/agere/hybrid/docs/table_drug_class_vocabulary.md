@@ -1,0 +1,2 @@
+### drug_class_vocabulary(drug_class, class_group)
+Every medication.drug_class id with its groups (class_group: antihypertensive, raas_inhibitor, diabetes_medication, beers_high_risk; NULL row = ungrouped class). Join on drug_class for group questions.

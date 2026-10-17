@@ -1,0 +1,2 @@
+### encounter(record_id, patient_id, source_table, encounter_id, type, type_concept, status, event_date, end_date, available_date, organization_id, attending_clinician_id, disposition)
+Encounter records plus ADT notifications (source_table adt, type = ADT event). type_concept = library encounter concept. ED visits that only ADT messages or payer claims carry (claims-only members) are added once each, deduplicated against the EHR (source_table adt_messages | payer_medical_claims, type_concept emergency_visit); see utilization_event.

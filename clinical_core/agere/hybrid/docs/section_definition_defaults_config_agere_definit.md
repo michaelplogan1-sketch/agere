@@ -1,0 +1,11 @@
+## Definition defaults (config/agere/definitions.json: the organisation's adopted definition per term)
+- emergency_visit: Emergency department visit: One per patient per day across encounter and ADT registration feeds (same-day duplicates merged).
+- utilization_per_1000: Utilization per 1,000: Per 1,000 member-years (enrolled member-months / 12).
+- primary_care_visit: Primary care / ambulatory visit: Primary care, office, wellness, pediatric office and ambulatory encounter types.
+- inpatient_admission: Inpatient stay: Distinct stays: inpatient/observation encounters collapsed by admit day and overlap.
+- chronic_kidney_disease: Chronic kidney disease: N18 stages, diabetic kidney disease (E08-E13 .2x), hypertensive CKD (I12, I13), and labels.
+- heart_failure: Heart failure: I50, I11.0, I13.0, I13.2 and heart-failure labels.
+- diabetes_a1c_poor_control: Diabetes A1c poor control (>9%): Latest A1c in period > 9%, or no A1c in period counts as poor control.
+- readmission_30d: 30-day readmission: Any new stay starting within 30 days of a prior stay discharge (all-cause, planned not excluded).
+- follow_up_after_ed: Follow-up after ED visit: Not a governed metric yet.
+- no_show_rate: Appointment no-show rate: Not a governed metric yet.

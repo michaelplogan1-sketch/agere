@@ -1,0 +1,1 @@
+### payer_adjudication(payer_claim_id, record_id, patient_id, sequence, claim_status, carc, claim_frequency_code, original_payer_claim_id, claim_type, adjudication_date, paid_date, service_from, paid_cents, allowed_cents, superseded, superseded_by, is_first, is_last, available_date)

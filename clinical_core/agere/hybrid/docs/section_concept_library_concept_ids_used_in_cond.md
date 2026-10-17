@@ -1,0 +1,67 @@
+## Concept library (concept ids used in condition.concept, measurement.concept, encounter/visit.type_concept, concept_patient.concept). Documentation-level phenotypes, not certified value sets.
+### Condition concepts: icd10 = code prefixes; text = case-insensitive regex over received labels; exclude = labels removed even if text matches
+- diabetes: Diabetes mellitus (type 1, type 2 or other specified; excludes prediabetes and gestational); icd10 E08,E09,E10,E11,E13; text /diabet|\bt[12]dm\b|\biddm\b|\bniddm\b/; exclude /prediabet|pre-diabet|family history|insipidus|gestational|\bgdm\b|screening/
+- type_2_diabetes: Type 2 diabetes mellitus; icd10 E11; text /type 2 diabet|\bt2dm\b|diabetes mellitus type 2|\bniddm\b/; exclude /prediabet|family history/
+- type_1_diabetes: Type 1 diabetes mellitus; icd10 E10; text /type 1 diabet|\bt1dm\b|diabetes mellitus type 1|\biddm\b/; exclude /family history/
+- prediabetes: Prediabetes (IFG, IGT, prediabetes; not R73.09 elevated A1c); icd10 R73.01,R73.02,R73.03; text /prediabet|pre-diabet/
+- hypertension: Hypertension (essential/secondary; excludes pulmonary and pregnancy-specific); icd10 I10,I11,I12,I13,I15,I16; text /hypertension|\bhtn\b/; exclude /pulmonary hypertension|preeclampsia|gestational|history of/
+- heart_failure: Heart failure (any type); icd10 I50,I11.0,I13.0,I13.2; text /heart failure|\bchf\b/; exclude /family history/
+- heart_failure_reduced_ef: Systolic heart failure / HFrEF; icd10 I50.2,I50.4; text /systolic.*(heart failure|chf)|\bhfref\b|reduced ejection/
+- chronic_kidney_disease: Chronic kidney disease (any stage, incl. diabetic kidney disease and ESRD); icd10 N18,E08.2,E09.2,E10.2,E11.2,E13.2,I12,I13; text /chronic kidney disease|\bckd\b|end-stage renal|kidney due to diabet|diabetic kidney|diabetic nephropathy|t2dm with ckd/
+- copd: COPD / emphysema / chronic obstructive bronchitis; icd10 J43,J44; text /\bcopd\b|chronic obstructive|emphysema/
+- asthma: Asthma; icd10 J45; text /asthma/
+- atrial_fibrillation: Atrial fibrillation; icd10 I48; text /atrial fibrillation|\bafib\b/
+- coronary_artery_disease: Coronary artery / ischemic heart disease incl. prior MI or CABG; icd10 I20,I21,I22,I23,I24,I25; text /ischemic heart|coronary artery|\bascvd\b|myocardial infarction|\bstemi\b|\bnstemi\b|non-st elevation mi|preinfarction|unstable angina/
+- myocardial_infarction: Myocardial infarction (acute or history); icd10 I21,I22,I25.2; text /myocardial infarction|\bstemi\b|\bnstemi\b|non-st elevation mi/
+- stroke: Ischemic stroke / cerebral infarction; icd10 I63; text /cerebral infarction|\bstroke\b/
+- obesity: Obesity (BMI 30+), current; icd10 E66.0,E66.1,E66.2,E66.8,E66.9,E66.01; text /obes|body mass index (30|40)/; exclude /history of|overweight/
+- hyperlipidemia: Hyperlipidemia / dyslipidemia; icd10 E78; text /hyperlipid|hypercholesterol|hypertriglycerid|dyslipid/
+- depression: Depressive disorder; icd10 F32,F33,F34.1,F53; text /depress|\bmdd\b/; exclude /screen/
+- anxiety: Anxiety disorder; icd10 F41; text /anxiety|\bgad\b|panic disorder/
+- substance_use_disorder: Alcohol or drug use disorder; icd10 F10,F11,F12,F13,F14,F15,F16,F18,F19; text /alcoholism|\baud\b|drug abuse|use disorder|dependence/; exclude /tobacco|nicotine/
+- dementia: Dementia incl. Alzheimer disease; icd10 F01,F02,F03,G30; text /alzheimer|dementia/
+- cancer: Malignant neoplasm (active or history as documented); icd10 C; text /malignant|carcinoma|leukemia|lymphoma|myeloma|metastatic/
+- sepsis: Sepsis / septic shock; icd10 A40,A41,R65.2; text /sepsis|septic/
+- anemia: Anemia; icd10 D50,D51,D52,D53,D55,D56,D57,D58,D59,D60,D61,D62,D63,D64; text /anemia|anaemia/
+- hypothyroidism: Hypothyroidism; icd10 E03; text /hypothyroid/
+- osteoporosis: Osteoporosis; icd10 M80,M81; text /osteoporo/
+- sleep_apnea: Sleep apnea; icd10 G47.3; text /sleep apnea/
+- hiv: HIV infection; icd10 B20,Z21; text /\bhiv\b|human immunodeficiency/
+### Measurement concepts: canonical unit; LOINC; name regex over labs.test|name / vitals.measurement; accepted unit -> factor to canonical
+- hba1c: Hemoglobin A1c [%]; loinc 4548-4,17856-6,4549-2,41995-2; names /hb ?a1c|hemoglobin a1c.*|glycated hemoglobin|glycohemoglobin/; units %->1.0
+- glucose: Glucose (any specimen timing) [mg/dL]; loinc 2345-7,2339-0,1558-6; names /glucose|fasting glucose.*|1-h postprandial.*/; units mg/dL->1.0, mmol/L->18.016
+- ldl: LDL cholesterol [mg/dL]; loinc 13457-7,18262-6,2089-1; names /ldl( cholesterol)?/; units mg/dL->1.0, mmol/L->38.67
+- hdl: HDL cholesterol [mg/dL]; loinc 2085-9; names /hdl( cholesterol)?/; units mg/dL->1.0, mmol/L->38.67
+- total_cholesterol: Total cholesterol [mg/dL]; loinc 2093-3; names /(total )?cholesterol/; units mg/dL->1.0, mmol/L->38.67
+- triglycerides: Triglycerides [mg/dL]; loinc 2571-8; names /triglycerides?/; units mg/dL->1.0, mmol/L->88.57
+- egfr: Estimated GFR (BSA-normalised) [mL/min/1.73m2]; loinc 33914-3,48642-3,48643-1,62238-1,98979-8; names /egfr|glomerular filtration rate/; units mL/min/1.73m2->1.0, mL/min/1.73m²->1.0, mL/min/{1.73_m2}->1.0
+- creatinine: Serum creatinine [mg/dL]; loinc 2160-0; names /creatinine/; units mg/dL->1.0, umol/L->0.01131, µmol/L->0.01131
+- potassium: Potassium [mmol/L]; loinc 2823-3,6298-4; names /potassium|\bk\b/; units mmol/L->1.0, mEq/L->1.0
+- sodium: Sodium [mmol/L]; loinc 2951-2; names /sodium|\bna\b/; units mmol/L->1.0, mEq/L->1.0
+- bun: Blood urea nitrogen [mg/dL]; loinc 3094-0; names /bun|urea nitrogen/; units mg/dL->1.0
+- hemoglobin: Hemoglobin [g/dL]; loinc 718-7; names /hemoglobin|hgb|\bhb\b/; units g/dL->1.0, g/L->0.1
+- platelets: Platelet count [10^3/uL]; loinc 777-3; names /platelets?|plt/; units 10^3/uL->1.0, 10*3/uL->1.0, K/µL->1.0, K/uL->1.0
+- wbc: White blood cell count [10^3/uL]; loinc 6690-2; names /wbc|leukocytes|white blood cells?/; units 10^3/uL->1.0, 10*3/uL->1.0, K/µL->1.0, K/uL->1.0
+- uacr: Urine albumin/creatinine ratio [mg/g]; loinc 9318-7,14959-1,32294-1; names /urine albumin/creatinine ratio|microalbumin/creatinine|uacr/; units mg/g->1.0
+- nt_probnp: NT-proBNP [pg/mL]; loinc 33762-6; names /nt-?probnp/; units pg/mL->1.0
+- troponin: Troponin I (conventional and high-sensitivity) [ng/L]; loinc 10839-9,89579-7; names /(high_sensitivity_)?troponin[ _]i.*/; units ng/L->1.0, ng/mL->1000.0
+- tsh: TSH [mIU/L]; loinc 3016-3; names /tsh|thyrotropin/; units mIU/L->1.0, µIU/mL->1.0, uIU/mL->1.0, m[IU]/L->1.0
+- ferritin: Ferritin [ng/mL]; loinc 2276-4; names /ferritin/; units ng/mL->1.0
+- phq9: PHQ-9 depression score [points]; loinc 44261-6; names /phq-?9/; units points->1.0
+- phq2: PHQ-2 depression screen score [points]; loinc 55758-7; names /phq-?2/; units points->1.0
+- systolic_bp: Systolic blood pressure [mmHg]; loinc -; names /bp_systolic|systolic.*/; units mmHg->1.0; vitals columns blood_pressure_systolic,systolic_bp
+- diastolic_bp: Diastolic blood pressure [mmHg]; loinc -; names /bp_diastolic|diastolic.*/; units mmHg->1.0; vitals columns blood_pressure_diastolic,diastolic_bp
+- heart_rate: Heart rate [beats/min]; loinc -; names /hr|heart_rate|pulse/; units beats/min->1.0, bpm->1.0; vitals columns heart_rate
+- weight: Body weight [kg]; loinc -; names /weight_kg|weight/; units kg->1.0, lb->0.453592; vitals columns weight_kg
+- spo2: Oxygen saturation [%]; loinc -; names /spo2|oxygen saturation/; units %->1.0; vitals columns oxygen_saturation_percent
+### Encounter concepts: per-stream field regexes over received values
+- emergency_visit: Emergency department visit or registration; encounters.type /^(emergency|ed|er|ed .*|emergency .*)$/; adt.event /^emergency_registration$/; adt.patient_class /^emergency$/
+- inpatient_admission: Inpatient admission / stay; encounters.type /^(inpatient.*|l&d admission)$/; adt.event /^admission$/; adt.patient_class /^inpatient$/
+- observation_stay: Hospital observation stay; encounters.type /^observation$/; adt.event /^(observation_start|transfer_to_observation)$/; adt.patient_class /observation/
+- urgent_care_visit: Urgent care visit; encounters.type /^urgent ?_?care$/
+- primary_care_visit: Primary care / office visit (incl. wellness and pediatric office); encounters.type /^(primary[_ ]care|office|office visit|pcp|wellness|annual physical|pediatric_office|peds|geri primary care|ambulatory|youth_health_supervision|adolescent med(icine)?)$/
+- specialist_visit: Specialist visit; encounters.type /^(specialty_followup|specialist_office|cardiology.*|nephrology|pulm.*|endo.*|neuro|ortho.*|med onc|hf clinic|.* clinic)$/
+- telehealth_contact: Telephone or virtual encounter; encounters.type /^(telephone|virtual)$/
+- skilled_nursing_or_post_acute: SNF / home health / hospice encounter; encounters.type /^(snf|home_health|hospice)$/
+### Source fields bound to concepts: {"conditions": {"conditions": {"code": "icd10", "labels": ["description"]}, "condition_assessments": {"code": "icd10", "labels": ["description", "condition"]}, "problem_lists": {"code": "problem_code", "labels": ["description"]}}, "measurements": {"labs": {"name": "test", "alt_names": ["name"], "unit": "unit", "value": "value", "code": "code"}, "vitals": {"name": "measurement", "alt_names": [], "unit": "unit", "value": "value", "code": null}}}
+### medication.drug_class ids (groups): ace_inhibitor (antihypertensive, maintenance, raas_inhibitor); acetaminophen; adhd_nonstimulant (adhd_medication, maintenance); adhd_stimulant (adhd_medication, maintenance); alpha1_blocker (bph_medication, maintenance); anticoagulant (maintenance); anticonvulsant (maintenance); antiemetic_5ht3; antiplatelet (maintenance); antipsychotic (beers_high_risk, maintenance); antiretroviral (maintenance); antiviral; arb (antihypertensive, maintenance, raas_inhibitor); arni (antihypertensive, maintenance, raas_inhibitor); benzodiazepine (beers_high_risk); beta3_agonist (maintenance); beta_blocker (antihypertensive, maintenance); bisphosphonate (maintenance); calcium_channel_blocker (antihypertensive, maintenance); cephalosporin (antibiotic); cholinesterase_inhibitor (dementia_medication, maintenance); csdmard (maintenance); dpp4_inhibitor (diabetes_medication, maintenance); epinephrine_autoinjector; first_generation_antihistamine (beers_high_risk); five_alpha_reductase_inhibitor (bph_medication, maintenance); fluoroquinolone (antibiotic); gabapentinoid (maintenance); glp1_agonist (diabetes_medication, maintenance); h2_blocker (maintenance); hf_evidence_based_beta_blocker; hormonal_contraceptive (maintenance); inhaled_corticosteroid (copd_maintenance, maintenance); insulin (diabetes_medication, maintenance); iron_supplement; laba (copd_maintenance, maintenance); lama (copd_maintenance, maintenance); leukotriene_modifier (maintenance); levothyroxine (maintenance); lincosamide (antibiotic); lithium (maintenance); loop_diuretic (maintenance); macrolide (antibiotic); metformin (diabetes_medication, maintenance); mra (antihypertensive, maintenance); ndri (antidepressant, maintenance); nitrate (maintenance); nitrofuran (antibiotic); nitroimidazole (antibiotic); nmda_antagonist (dementia_medication, maintenance); nsaid; opioid; opioid_antagonist; penicillin (antibiotic); proton_pump_inhibitor (maintenance); sari_antidepressant (antidepressant, maintenance); second_generation_antihistamine; sedative_hypnotic (beers_high_risk); sglt2_inhibitor (diabetes_medication, maintenance); short_acting_beta_agonist; skeletal_muscle_relaxant (beers_high_risk); smoking_cessation; snri (antidepressant, maintenance); ssri (antidepressant, maintenance); statin (maintenance); sulfonamide_antibiotic (antibiotic); sulfonylurea (diabetes_medication, maintenance); systemic_corticosteroid; tetracyclic_antidepressant (antidepressant, maintenance); tetracycline_antibiotic (antibiotic); thiazide_diuretic (antihypertensive, maintenance); thiazolidinedione (diabetes_medication, maintenance); tnf_inhibitor (maintenance); tricyclic_antidepressant (antidepressant, maintenance); triptan; urinary_antimuscarinic (maintenance); vitamin_b12; vitamin_d
