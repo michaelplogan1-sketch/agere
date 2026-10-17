@@ -34,13 +34,14 @@ from scipy.stats import chi2, norm
 from . import semantic_layer, vbc
 
 VERSION = 'monitor/1'
-CHECKS = ('all', 'control_chart', 'feed', 'claims', 'claims_integrity', 'benford', 'peer_outliers', 'duplicates')
+CHECKS = ('all', 'control_chart', 'feed', 'claims', 'claims_integrity', 'benford', 'peer_outliers', 'duplicates', 'ra_cusum', 'vlad')
 SERIES = ('ed_rate', 'admit_rate', 'pmpm', 'lab_volume', 'denial_rate', 'arrival_lag')
 CLAIM_SERIES = ('pmpm', 'denial_rate', 'arrival_lag')
 GROUP_BY = ('auto', 'none', 'practice', 'payer', 'facility', 'source_system')
 METHODS = ('both', 'shewhart', 'ewma')
 AMOUNTS = ('billed', 'allowed', 'both')
-FIELDS = {'check', 'series', 'group_by', 'method', 'amount', 'stream', 'period'}
+FIELDS = {'check', 'series', 'group_by', 'method', 'amount', 'stream', 'period'} | {'chart', 'outcome', 'unit', 'or_shift', 'or_improve', 'arl0',
+                                                                                    'window_days', 'adjust', 'min_cases', 'include_observation'}
 NATURAL_GROUP = {'ed_rate': 'practice', 'admit_rate': 'practice', 'pmpm': 'practice', 'lab_volume': 'source_system',
                  'denial_rate': 'payer', 'arrival_lag': 'payer'}
 FEED_STREAM = {'ed_rate': 'encounters', 'admit_rate': 'encounters', 'pmpm': 'medical_claims', 'lab_volume': 'labs',
@@ -90,8 +91,40 @@ def validate(p):
     if not isinstance(period, dict) or set(period) - {'start', 'end'} or \
             any(not re.fullmatch(r'\d{4}-\d{2}-\d{2}', str(v)) for v in period.values() if v):
         raise ValueError('monitor period needs YYYY-MM-DD start/end')
-    return {'check': check, 'series': series, 'group_by': group_by, 'method': method, 'amount': amount, 'stream': stream,
-            'period': {k: v for k, v in period.items() if v}}
+    out = {'check': check, 'series': series, 'group_by': group_by, 'method': method, 'amount': amount, 'stream': stream,
+           'period': {k: v for k, v in period.items() if v}}
+    chart = p.get('chart') or (check if check in ('ra_cusum', 'vlad') else None)
+    if chart is not None:
+        if chart not in CHART_OPTIONS: raise ValueError(f'monitor chart must be one of {CHART_OPTIONS}')
+        if chart != 'control': out.update(_validate_ra(p, chart, group_by))
+        else: out['chart'] = 'control'
+    return out
+
+
+def _validate_ra(p, chart, group_by):
+    def num(name, default, lo, hi, kind=float):
+        v = p.get(name, default)
+        if v is None: return None
+        if isinstance(v, bool) or not isinstance(v, (int, float)) or not lo < v < hi:
+            raise ValueError(f'monitor {name} must be a number between {lo} and {hi} (exclusive)')
+        return kind(v)
+    outcome = p.get('outcome') or 'readmission'
+    if outcome not in RA_OUTCOMES: raise ValueError(f'monitor outcome must be one of {RA_OUTCOMES}')
+    unit = p.get('unit') or {'practice': 'practice', 'facility': 'hospital', 'none': 'none'}.get(group_by, 'hospital')
+    if unit not in RA_UNITS: raise ValueError(f'monitor unit must be one of {RA_UNITS}')
+    adjust = p.get('adjust') or 'age_sex_conditions'
+    if adjust not in RA_ADJUST: raise ValueError(f'monitor adjust must be one of {RA_ADJUST}')
+    window = p.get('window_days', 30)
+    if type(window) is not int or not 1 <= window <= 365: raise ValueError('monitor window_days must be an integer 1..365')
+    arl0 = p.get('arl0', 5000)
+    if type(arl0) is not int or not 100 <= arl0 <= 100000: raise ValueError('monitor arl0 must be an integer 100..100000 (cases)')
+    min_cases = p.get('min_cases', 30)
+    if type(min_cases) is not int or not 10 <= min_cases <= 100000: raise ValueError('monitor min_cases must be an integer 10..100000')
+    obs = p.get('include_observation', False)
+    if type(obs) is not bool: raise ValueError('monitor include_observation must be true or false')
+    return {'chart': chart, 'outcome': outcome, 'unit': unit, 'or_shift': num('or_shift', 2.0, 1.0, 20.0),
+            'or_improve': num('or_improve', None, 0.0, 1.0), 'arl0': arl0, 'window_days': window, 'adjust': adjust,
+            'min_cases': min_cases, 'include_observation': obs}
 
 
 # ---- information ----------------------------------------------------------------------
@@ -756,6 +789,330 @@ def duplicate_claims(claims, group_key=lambda r: r[2] or 'unknown'):
 
 
 # ---- orchestration ----------------------------------------------------------------------
+# ---- risk-adjusted monitoring: RA-CUSUM and VLAD ---------------------------------------------------------------------------
+try:
+    from . import risk_outcomes as _ro
+except Exception:  # risk_outcomes (or its dependencies) unavailable: the in-module logistic model is used
+    _ro = None
+
+RA_CHARTS = ('ra_cusum', 'vlad')
+CHART_OPTIONS = ('control',) + RA_CHARTS
+RA_OUTCOMES = ('readmission', 'post_discharge_ed', 'ed_revisit', 'mortality')
+RA_UNITS = ('hospital', 'practice', 'pcp', 'none')
+RA_ADJUST = ('age_sex_conditions', 'age_sex', 'none')
+RA_FIELDS = {'chart', 'outcome', 'unit', 'or_shift', 'or_improve', 'arl0', 'window_days', 'adjust', 'min_cases', 'include_observation'}
+RA_P_FLOOR, RA_P_CEIL = 1e-4, 1 - 1e-4
+VLAD_Z = (1.96, 3.09)       # 95% and 99.8% two-sided funnel limits
+RA_PATH_POINTS = 120
+RA_ASSUMPTIONS = [
+    'Expected risk per case comes from one patient-level logistic model fitted on all cases in the window (risk_outcomes.fit_glm '
+    'over age band, sex, chronic conditions, prior-year stays, observation status; otherwise an in-module logistic model on age, '
+    'sex, comorbidity count and prior utilization). It has no unit terms, so expected = the network\'s average care; a shift '
+    'that affects every unit equally is absorbed into expected risk.',
+    'Cases are ordered by index date (discharge date, or admission / visit date for mortality and ED revisits), ties by patient id.',
+    'CUSUM weights follow Steiner, Cook, Farewell & Treasure (2000) for a step change of the odds ratio to or_shift (and to '
+    'or_improve for the improvement chart); each chart restarts at zero after a signal.',
+    'The control limit h is one value for all units, found by simulation of in-control outcomes (Bernoulli at the expected risk, '
+    'case mix resampled from the pooled cases of the charted units) so the average run length to a false signal is arl0 cases. '
+    'Units with unusual case mix have a slightly different true ARL0; expected risks are treated as known (model error ignored).',
+    'VLAD is the running sum of expected minus observed events; limits are +-z sqrt(sum p(1-p)) (95% and 99.8%), exact for known '
+    'risks at a fixed look but not corrected for looking at every case, so crossings are prompts to review, not proof of worse care.',
+    'Outcomes are what the warehouse records; follow-up must be complete before the snapshot. No planned-readmission flag exists.',
+]
+
+
+def _ra_weights(p, y, R):
+    """Log-likelihood-ratio score of odds ratio R against 1 for each case with expected risk p and outcome y."""
+    p = np.asarray(p, float)
+    return np.asarray(y, float) * math.log(R) - np.log1p(p * (R - 1.0))
+
+
+def ra_cusum(p, y, R, h):
+    """One CUSUM over cases in order. Returns {'path': S after each case (before reset), 'signals': [case indices], 'max', 'final'}.
+    R > 1 detects deterioration (odds ratio up); R < 1 detects improvement. S restarts at 0 after reaching h."""
+    w = _ra_weights(p, y, R)
+    s, path, signals = 0.0, [], []
+    for i, wi in enumerate(w):
+        s = max(0.0, s + float(wi))
+        path.append(s)
+        if s >= h:
+            signals.append(i); s = 0.0
+    return {'path': path, 'signals': signals, 'max': max(path) if path else 0.0, 'final': s}
+
+
+def simulate_arl(probs, R, h, n_chains=300, length=4000, seed=11):
+    """Average run length (cases) to a signal for an in-control process: chains of cases drawn from the case-mix `probs`, outcomes
+    Bernoulli at the expected risk, CUSUM restarted after each signal. ARL = cases observed / signals."""
+    P = np.asarray(probs, float); D = np.log1p(P * (R - 1.0)); lr = math.log(R)
+    rng = np.random.default_rng(seed)
+    s = np.zeros(n_chains); signals = 0
+    for _ in range(length):
+        idx = rng.integers(0, len(P), n_chains)
+        w = (rng.random(n_chains) < P[idx]) * lr - D[idx]
+        s = np.maximum(0.0, s + w)
+        hit = s >= h
+        signals += int(hit.sum()); s[hit] = 0.0
+    return n_chains * length / signals if signals else math.inf
+
+
+def simulate_control_limit(probs, R, arl0, seed=7, n_chains=None, length=None, step=0.05, h_max=20.0):
+    """Control limit h giving in-control ARL ~ arl0 cases, by simulation over the case-mix distribution `probs`.
+    One simulation of reflected CUSUMs (never reset) gives the first-passage time to every h on a grid at once: the run
+    length to a signal is the first time the reflected path reaches h. ARL(h) is the total cases observed over signals
+    seen (the censored-exponential estimate, exact for a constant signal rate), then h is interpolated on log ARL."""
+    P = np.clip(np.asarray(probs, float), RA_P_FLOOR, RA_P_CEIL)
+    if len(P) == 0 or not (arl0 >= 2): raise ValueError('need case risks and arl0 >= 2')
+    length = int(length or min(max(4 * arl0, 2000), 400000))
+    n_chains = int(n_chains or max(200, min(800, int(2.5e7 // length))))
+    D = np.log1p(P * (R - 1.0)); lr = math.log(R)
+    grid = np.arange(step, h_max + step / 2, step)
+    first = np.full((n_chains, len(grid)), np.inf)
+    rng = np.random.default_rng(seed)
+    s = np.zeros(n_chains); top = np.zeros(n_chains)
+    block, t0 = 500, 0
+    while t0 < length:
+        b = min(block, length - t0)
+        idx = rng.integers(0, len(P), (n_chains, b))
+        w = (rng.random((n_chains, b)) < P[idx]) * lr - D[idx]
+        sb = np.empty((n_chains, b))
+        for j in range(b):
+            s = np.maximum(0.0, s + w[:, j]); sb[:, j] = s
+        run = np.maximum.accumulate(sb, axis=1)
+        new_top = np.maximum(top, run[:, -1])
+        lo = np.searchsorted(grid, top, side='right'); hi = np.searchsorted(grid, new_top, side='right')
+        for c in np.nonzero(hi > lo)[0]:
+            first[c, lo[c]:hi[c]] = t0 + 1 + np.searchsorted(run[c], grid[lo[c]:hi[c]], side='left')
+        top = new_top; t0 += b
+    seen = np.isfinite(first)
+    cases = np.where(seen, first, length).sum(axis=0)
+    hits = seen.sum(axis=0)
+    with np.errstate(divide='ignore', invalid='ignore'):
+        arl = np.where(hits > 0, cases / np.maximum(hits, 1), np.inf)
+    arl = np.maximum.accumulate(np.where(np.isfinite(arl), arl, 1e18))
+    k = int(np.searchsorted(arl, arl0, side='left'))
+    if k >= len(grid):
+        h, est = float(grid[-1]), float(arl[-1])
+    elif k == 0:
+        h, est = float(grid[0]), float(arl[0])
+    else:
+        a0, a1 = math.log(arl[k - 1]), math.log(min(arl[k], 1e17))
+        frac = (math.log(arl0) - a0) / (a1 - a0) if a1 > a0 else 1.0
+        h, est = float(grid[k - 1] + frac * step), float(arl0)
+    return {'h': round(h, 3), 'arl0_target': arl0, 'arl0_simulated': round(est, 1), 'chains': n_chains, 'chain_length': length,
+            'signals_at_h': int(hits[min(k, len(grid) - 1)]), 'odds_ratio': R}
+
+
+def vlad(p, y):
+    """Variable life-adjusted display for cases in order: cumulative expected minus observed events, with 95% / 99.8% funnel limits
+    +-z sqrt(sum p(1-p)) around zero. Below the lower limit = more events than expected."""
+    p = np.asarray(p, float); y = np.asarray(y, float)
+    cum = np.cumsum(p - y)
+    sd_ = np.sqrt(np.maximum(np.cumsum(p * (1 - p)), 1e-12))
+    z = cum / sd_
+    return {'cum': cum, 'sd': sd_, 'z': z, 'limits': {str(k): (k * sd_) for k in VLAD_Z}}
+
+
+def _episodes(mask):
+    out, start = [], None
+    for i, m in enumerate(list(mask) + [False]):
+        if m and start is None: start = i
+        if not m and start is not None: out.append((start, i - 1)); start = None
+    return out
+
+
+def _thin(values, k=RA_PATH_POINTS):
+    n = len(values)
+    if n <= k: return list(range(n))
+    return sorted({int(round(i * (n - 1) / (k - 1))) for i in range(k)})
+
+
+def _design_fallback(covs):
+    """Numeric features for the in-module logistic model: age (centred, scaled, squared), male, comorbidity count, prior utilization."""
+    def age(c):
+        nums = [float(x) for x in re.findall(r'\d+', str(c.get('age_band') or ''))]
+        if not nums: return math.nan
+        return nums[0] + 5 if len(nums) == 1 else sum(nums) / 2
+    a = np.array([age(c) for c in covs], float)
+    a = np.where(np.isfinite(a), a, np.nanmean(a) if np.isfinite(a).any() else 50.0)
+    cols = [(a - a.mean()) / (a.std() or 1.0), ((a - a.mean()) / (a.std() or 1.0)) ** 2,
+            np.array([c.get('sex') == 'M' for c in covs], float),
+            np.array([len(c.get('conditions') or ()) for c in covs], float),
+            np.array([min(int(c.get('prior') or 0), 2) for c in covs], float)]
+    X = [np.ones(len(covs))] + [c for c in cols if c.std() > 0]
+    return np.column_stack(X)
+
+
+def fit_logistic(X, y, ridge=1.0, max_iter=60):
+    """In-module ridge-penalised IRLS logistic regression (used when risk_outcomes is unavailable). Returns fitted risks."""
+    X = np.asarray(X, float); y = np.asarray(y, float)
+    beta = np.zeros(X.shape[1]); m0 = min(max(y.mean(), 1e-6), 1 - 1e-6); beta[0] = math.log(m0 / (1 - m0))
+    pen = np.full(X.shape[1], ridge); pen[0] = 0.0
+    for _ in range(max_iter):
+        mu = 1 / (1 + np.exp(-np.clip(X @ beta, -30, 30))); w = np.maximum(mu * (1 - mu), 1e-10)
+        step = np.linalg.solve((X * w[:, None]).T @ X + np.diag(pen) + 1e-10 * np.eye(len(beta)), X.T @ (y - mu) - pen * beta)
+        beta += step
+        if np.max(np.abs(step)) < 1e-9: break
+    return 1 / (1 + np.exp(-np.clip(X @ beta, -30, 30)))
+
+
+def expected_risks(covs, y, adjust='age_sex_conditions'):
+    """Expected event risk per case. Prefers risk_outcomes' fitted GLM (design + fit_glm); falls back to the in-module logistic
+    model. Returns (risks clipped to [1e-4, 1 - 1e-4], source label)."""
+    y = np.asarray(y, float)
+    if _ro is not None:
+        try:
+            X, names = _ro.design(covs, adjust)
+            _, mu, ok = _ro.fit_glm(X, y, 'binomial')
+            if ok and np.all(np.isfinite(mu)):
+                return np.clip(mu, RA_P_FLOOR, RA_P_CEIL), 'risk_outcomes.fit_glm'
+        except Exception:
+            pass
+    return np.clip(fit_logistic(_design_fallback(covs), y), RA_P_FLOOR, RA_P_CEIL), 'monitor in-module logistic'
+
+
+def ra_chart(unit, cases, p, y, params, limits):
+    """Charts for one unit. cases = [(date, pid)] in order; limits = {'up': h, 'down': h or None}."""
+    n = len(y)
+    dates = [c[0] for c in cases]
+    exp, obs = float(np.sum(p)), float(np.sum(y))
+    out = {'unit': unit, 'cases': n, 'first_date': dates[0], 'last_date': dates[-1], 'observed': obs, 'expected': round(exp, 3),
+           'o_e': round(obs / exp, 3) if exp > 0 else None}
+    signals = []
+    if params['chart'] == 'ra_cusum':
+        up = ra_cusum(p, y, params['or_shift'], limits['up'])
+        for i in up['signals']:
+            signals.append({'unit': unit, 'direction': 'deterioration', 'case_number': i + 1, 'date': dates[i], 'cusum': round(up['path'][i], 3)})
+        keep = _thin(up['path'])
+        out['cusum_up'] = {'h': limits['up'], 'odds_ratio': params['or_shift'], 'max': round(up['max'], 3), 'final': round(up['final'], 3),
+                           'signals': len(up['signals']), 'path': [[i + 1, dates[i], round(up['path'][i], 3)] for i in keep]}
+        if limits.get('down') is not None:
+            dn = ra_cusum(p, y, params['or_improve'], limits['down'])
+            for i in dn['signals']:
+                signals.append({'unit': unit, 'direction': 'improvement', 'case_number': i + 1, 'date': dates[i], 'cusum': round(dn['path'][i], 3)})
+            keep = _thin(dn['path'])
+            out['cusum_down'] = {'h': limits['down'], 'odds_ratio': params['or_improve'], 'max': round(dn['max'], 3), 'final': round(dn['final'], 3),
+                                 'signals': len(dn['signals']), 'path': [[i + 1, dates[i], round(dn['path'][i], 3)] for i in keep]}
+    else:
+        v = vlad(p, y)
+        lo, hi = VLAD_Z[-1], VLAD_Z[0]
+        below, above = v['z'] < -lo, v['z'] > lo
+        for mask, direction in ((below, 'deterioration'), (above, 'improvement')):
+            for s, e in _episodes(mask):
+                signals.append({'unit': unit, 'direction': direction, 'case_number': s + 1, 'date': dates[s], 'last_case_number': e + 1,
+                                'last_date': dates[e], 'vlad': round(float(v['cum'][s]), 3), 'z': round(float(v['z'][s]), 3)})
+        keep = _thin(v['cum'])
+        out['vlad'] = {'final': round(float(v['cum'][-1]), 3), 'final_z': round(float(v['z'][-1]), 3), 'min': round(float(v['cum'].min()), 3),
+                       'max': round(float(v['cum'].max()), 3), 'excess_events': round(-float(v['cum'][-1]), 3),
+                       'outside_95': int((np.abs(v['z']) > VLAD_Z[0]).sum()),
+                       'path': [[i + 1, dates[i], round(float(v['cum'][i]), 3), round(float(v['limits'][str(VLAD_Z[0])][i]), 3),
+                                 round(float(v['limits'][str(VLAD_Z[1])][i]), 3)] for i in keep]}
+    out['signals'] = signals
+    return out
+
+
+def _ra_cases(db, path, patient_ids, p, as_of):
+    ro_p = _ro.validate({'outcome': p['outcome'], 'unit': 'hospital' if p['unit'] == 'none' else p['unit'], 'window_days': p['window_days'],
+                         'period': p['period'], 'include_observation': p['include_observation'], 'adjust': p['adjust']})
+    cap = _ro.capability(db)
+    if p['outcome'] == 'mortality' and not cap['death']:
+        return None, None, 'unsupported', 'Mortality needs death records (date of death), which this warehouse does not carry.'
+    if p['outcome'] == 'ed_revisit' and not cap['visits'] or p['outcome'] != 'ed_revisit' and not cap['stays']:
+        return None, None, 'unsupported', 'The index events are not in this warehouse.'
+    rows, period = _ro.index_cases(db, cap, set(patient_ids) if patient_ids is not None else None, ro_p, as_of)
+    return rows, period, None, None
+
+
+def execute_ra(path, patient_ids, p, as_of=None):
+    if _ro is None: raise RuntimeError('risk-adjusted charts need the risk_outcomes module')
+    from . import safety_data as sd
+    db = sd.connect(path)
+    try:
+        as_of = sd.as_of_of(db, as_of)
+        rows, period, status, reason = _ra_cases(db, path, patient_ids, p, as_of)
+    finally:
+        db.close()
+    chart = p['chart']
+    report = {'schema': VERSION, 'check': chart, 'chart': chart, 'parameters': p, 'as_of': as_of, 'period': period, 'rows': [], 'chart_status': [],
+              'feeds': [], 'event_type_gaps': {}, 'integrity': {}, 'units': [], 'signals': [], 'assumptions': RA_ASSUMPTIONS, 'notes': [],
+              'tests_examined': 0, 'look_elsewhere_bits': 0.0, 'method': RA_METHOD, 'limitations': RA_ASSUMPTIONS}
+    if status:
+        report.update(status=status, reason=reason); return report
+    yv = np.array([r[1] for r in rows], float)
+    if len(rows) < max(10, p['min_cases']) or yv.sum() == 0 or yv.sum() == len(yv):
+        report.update(status='empty', reason=f'{len(rows)} index cases with {int(yv.sum())} {p["outcome"]} events: too few cases, or no outcome variation, to chart.')
+        return report
+    pr, source = expected_risks([r[2] for r in rows], yv, p['adjust'])
+    by_unit = defaultdict(list)
+    for i, r in enumerate(rows):
+        by_unit[r[0] if p['unit'] != 'none' else 'all'].append(i)
+    kept, small = {}, 0
+    for u, ix in by_unit.items():
+        if len(ix) >= p['min_cases']:
+            kept[u] = sorted(ix, key=lambda i: (rows[i][3]['index_date'], str(rows[i][3]['patient_id'])))
+        else: small += 1
+    if not kept:
+        report.update(status='empty', reason=f'No unit has {p["min_cases"]} or more index cases ({len(by_unit)} units).'); return report
+    pooled = np.concatenate([pr[ix] for ix in kept.values()])
+    limits, sims = {'up': None, 'down': None}, {}
+    if chart == 'ra_cusum':
+        sims['up'] = simulate_control_limit(pooled, p['or_shift'], p['arl0']); limits['up'] = sims['up']['h']
+        if p['or_improve'] is not None:
+            sims['down'] = simulate_control_limit(pooled, p['or_improve'], p['arl0'], seed=8); limits['down'] = sims['down']['h']
+    units = []
+    for u, ix in kept.items():
+        units.append(ra_chart(u, [(rows[i][3]['index_date'], rows[i][3]['patient_id']) for i in ix], pr[ix], yv[ix], p, limits))
+    key = (lambda c: (-len(c['signals']), -(c.get('cusum_up') or {}).get('max', 0))) if chart == 'ra_cusum' else \
+          (lambda c: (-len(c['signals']), c['vlad']['final']))
+    units.sort(key=key)
+    signals = sorted((s for c in units for s in c['signals']), key=lambda s: (s['date'], s['unit']))
+    look = round(math.log2(max(len(units), 1)), 2)
+    flagged = []
+    for c in units:
+        det = [s for s in c['signals'] if s['direction'] == 'deterioration']
+        imp = [s for s in c['signals'] if s['direction'] == 'improvement']
+        for sig, direction in ((det, 'deterioration'), (imp, 'improvement')):
+            if not sig: continue
+            first = sig[0]
+            if chart == 'ra_cusum':
+                bits_ = round(math.log2(p['arl0']), 2)
+                head = (f"{c['unit']}: risk-adjusted CUSUM signals {direction} (odds ratio {p['or_shift'] if direction == 'deterioration' else p['or_improve']}) "
+                        f"at case {first['case_number']} ({first['date']}); {len(sig)} signal(s) over {c['cases']} cases, O/E {c['o_e']}")
+            else:
+                z = abs(first['z'])
+                bits_ = z_bits(z)
+                head = (f"{c['unit']}: VLAD outside the 99.8% limits ({direction}) from case {first['case_number']} ({first['date']}); "
+                        f"final expected minus observed {c['vlad']['final']:+.1f} events over {c['cases']} cases")
+            f = {'kind': 'risk_adjusted_signal', 'category': f'{chart}_{direction}', 'series': p['outcome'], 'group_by': p['unit'], 'group': c['unit'],
+                 'months': sorted({s['date'][:7] for s in sig})[:12], 'rules': [chart], 'headline': head, 'surprise_bits': bits_,
+                 'patients': c['cases'], 'dollars': None, 'first_signal_date': first['date'], 'signals': len(sig),
+                 'look_elsewhere_bits': look, 'excess_bits': round(bits_ - look, 2)}
+            f['salient'] = f['excess_bits'] >= 0
+            f['score'] = score(f['excess_bits'], c['cases'])
+            f['follow_up'] = f"Is risk-adjusted {p['outcome'].replace('_', ' ')} at {c['unit']} getting worse?"
+            flagged.append(f)
+    flagged.sort(key=lambda f: (-f['score'], -f['surprise_bits']))
+    status_rows = [{'series': p['outcome'], 'group_by': p['unit'], 'group': c['unit'], 'status': 'rate_signal' if c['signals'] else 'in_control',
+                    'cases': c['cases'], 'signals': len(c['signals']), 'surprise_bits': 0.0} for c in units]
+    summary = {'outcome': p['outcome'], 'unit': p['unit'], 'cases': int(sum(c['cases'] for c in units)), 'units_charted': len(units),
+               'units_below_min_cases': small, 'network_rate': round(float(np.mean(np.concatenate([yv[ix] for ix in kept.values()]))), 4),
+               'expected_risk_source': source, 'expected_risk_range': [round(float(pooled.min()), 4), round(float(pooled.max()), 4)],
+               'units_with_signals': sum(bool(c['signals']) for c in units)}
+    if small: report['notes'].append(f"{small} unit(s) have fewer than {p['min_cases']} index cases and are not charted.")
+    report.update(status='answered', rows=flagged, chart_status=status_rows, units=units, signals=signals[:500], signals_total=len(signals),
+                  summary=summary, tests_examined=len(units), look_elsewhere_bits=look,
+                  control_limits={'arl0': p['arl0'], 'upper': sims['up'], 'lower': sims['down'], 'h': limits['up'], 'h_improvement': limits['down']}
+                  if chart == 'ra_cusum' else None,
+                  vlad_limits={'z': list(VLAD_Z), 'levels': ['95%', '99.8%']} if chart == 'vlad' else None)
+    return report
+
+
+RA_METHOD = ('Risk-adjusted monitoring over index cases in date order, using risk_outcomes\' case definitions (readmission, post-discharge ED, ED '
+             'revisit, mortality) and expected risks from one logistic model without unit terms. ra_cusum: Steiner et al. (2000) CUSUM, '
+             'weight log(R^y / (1 - p + R p)) for odds ratio R (or_shift for deterioration, or_improve for improvement), restart at zero after a '
+             'signal, control limit h by simulation for an in-control average run length of arl0 cases over the data\'s case-mix. vlad: '
+             'cumulative expected minus observed events with funnel limits +-z sqrt(sum p(1 - p)) at 95% and 99.8%.')
+
+
 def _plan(p):
     check = p['check']
     charts = check in ('all', 'control_chart', 'claims', 'feed')
@@ -866,6 +1223,7 @@ def _chart_findings(s, gb, g, spec, months, report_idx, method, inherited, sourc
 
 def execute(path, patient_ids, params, as_of=None):
     p = validate(params)
+    if p.get('chart') in RA_CHARTS: return execute_ra(path, patient_ids, p, as_of)
     db = _connect(path)
     try:
         as_of = as_of or dict(db.execute('SELECT key, value FROM meta')).get('as_of')
@@ -1115,6 +1473,7 @@ def follow_up(f):
 def summarize(report, limit=5):
     """Direct answer for the shared answer contract: (one-paragraph value, table)."""
     check, rows = report['check'], report['rows']
+    if check in RA_CHARTS: return _summarize_ra(report, limit)
     lead = [f for f in rows if not f.get('echo')]
     if check == 'benford':
         table = [{k: t.get(k) for k in ('group_by', 'group', 'amount', 'n', 'status', 'conformity', 'mad', 'chi_square', 'p_value',
@@ -1168,3 +1527,23 @@ def summarize(report, limit=5):
         parts.append(f"duplicates: {d['extra_copies']} exact duplicate claim(s) (${d['billed_in_extra_copies']:,.0f} billed), {d['near_pairs']} near pairs "
                      '(same patient, organization and service within a day)')
     return '. '.join(p.rstrip('.') for p in parts) + '.', table
+
+
+def _summarize_ra(report, limit):
+    if report.get('status') != 'answered': return report.get('reason') or 'No risk-adjusted chart could be built.', []
+    s, p, rows = report['summary'], report['parameters'], report['rows']
+    table = []
+    for c in report['units']:
+        row = {'unit': c['unit'], 'cases': c['cases'], 'observed': c['observed'], 'expected': c['expected'], 'o_e': c['o_e'], 'signals': len(c['signals']),
+               'first_signal': c['signals'][0]['date'] if c['signals'] else None}
+        if 'cusum_up' in c: row.update(cusum_max=c['cusum_up']['max'], cusum_final=c['cusum_up']['final'])
+        if 'vlad' in c: row.update(vlad_final=c['vlad']['final'], vlad_final_z=c['vlad']['final_z'])
+        table.append(row)
+    lim = report.get('control_limits')
+    name = 'Risk-adjusted CUSUM' if report['check'] == 'ra_cusum' else 'VLAD'
+    text = (f"{name} for {p['outcome'].replace('_', ' ')} across {s['units_charted']} {p['unit']} unit(s), {s['cases']} cases "
+            f"(network rate {s['network_rate']:.1%}; expected risks from {s['expected_risk_source']})"
+            + (f", OR {p['or_shift']} detection, h {lim['h']}, ARL0 {p['arl0']} cases" if lim else '')
+            + f": {s['units_with_signals']} unit(s) signal"
+            + (': ' + '; '.join(f['headline'] for f in rows[:limit]) if rows else '') + '.')
+    return text + ' Signals are prompts to review case mix and data, not evidence of worse care.', table
