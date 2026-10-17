@@ -1439,6 +1439,9 @@ def execute(stack, plan, *, question=None):
         if appointment_dependency:
             context_identities.append({'appointment_sources':appointment_dependency,'original_question':question})
         context_identities.append({'original_question': question})
+        if any(n.get('operation') == 'demand' for n in plan.get('nodes', [])):
+            from .demand import default_model
+            context_identities.append({'demand_model': default_model()})  # AGERE_DEMAND_TIMESTRAL changes the forecast
         key = digest([VERSION, code_identity(), meta['source_digest'], evidence_meta['model_identity'],
                       retrieval_identity, program_identity, forecast_identity, review_identity, longitudinal_identity, work_identity, state_identity, medication_identity, context_identities, plan])
         setup_seconds = time.perf_counter() - started

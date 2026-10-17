@@ -24,7 +24,7 @@ coverage measured sequentially (each origin calibrated only on errors observed b
 from collections import Counter, defaultdict
 from datetime import date, timedelta
 from pathlib import Path
-import calendar, json, math, sqlite3
+import calendar, json, math, os, sqlite3
 
 import numpy as np
 from scipy.stats import poisson
@@ -396,6 +396,52 @@ class NegBinGLM(Model):
         return rng.poisson(mu).astype(float)
 
 
+_TIMESTRAL = {}
+
+
+def _timestral_forecaster(size):
+    if size not in _TIMESTRAL:
+        from timestral import TimestralForecaster  # optional dependency, imported only when the candidate is enabled
+        _TIMESTRAL[size] = TimestralForecaster.from_pretrained(f'mistralai/Timestral-{size}')
+    return _TIMESTRAL[size]
+
+
+class Timestral(Model):
+    """Zero-shot Timestral foundation model (Mistral). point = forecast median; simulate draws per-step values from the
+    21 forecast quantiles by inverse-CDF interpolation (steps independent; the conformal step calibrates the spread)."""
+    def __init__(self, y, size):
+        self.name = f'timestral_{size.lower()}'; self.y, self.size = np.asarray(y, float), size
+        self._h, self._q = 0, None
+
+    def _quantiles(self, h):
+        if self._h < h:
+            try:
+                fc = _timestral_forecaster(self.size).forecast(self.y, prediction_length=h)
+            except Exception as e:  # missing package/weights or a runtime failure: the classic candidates take over
+                raise ValueError(f'Timestral-{self.size} unavailable: {e}') from e
+            self._q = np.asarray(fc.quantiles, float).reshape(h, -1); self._levels = np.asarray(fc.quantile_levels, float); self._h = h
+        return self._q[:h]
+
+    def point(self, h): return self._quantiles(h)[:, list(self._levels).index(0.5)]
+
+    def simulate(self, h, n, rng):
+        q = self._quantiles(h); u = rng.uniform(self._levels[0], self._levels[-1], (n, h))
+        return np.stack([np.interp(u[:, k], self._levels, q[k]) for k in range(h)], axis=1)
+
+
+def timestral_sizes():
+    """Timestral sizes from AGERE_DEMAND_TIMESTRAL (default '123M'; e.g. '123M,28M'); 'off' = classic models only.
+    The first size is the default demand model (2026-10-17 build test: ~11% lower out-of-sample MASE than the
+    classic backtest pick at equal conformal coverage, docs/agere/BUILD_LOG.md)."""
+    raw = os.environ.get('AGERE_DEMAND_TIMESTRAL', '123M')
+    return [] if raw.strip().lower() in ('', 'off', '0', 'false') else [s.strip() for s in raw.split(',') if s.strip()]
+
+
+def default_model():
+    sizes = timestral_sizes()
+    return f'timestral_{sizes[0].lower()}' if sizes else None
+
+
 def candidates(n, freq, seasonal):
     """(name, factory) pairs fit-able on a series of length n."""
     m = SEASON[freq]
@@ -408,6 +454,8 @@ def candidates(n, freq, seasonal):
         if m <= 12:
             out.append(('holt_winters_additive_damped', lambda y: ETS(y, 'damped', 'add', m)))
             out.append(('holt_winters_multiplicative_damped', lambda y: ETS(y, 'damped', 'mul', m)))
+    for size in timestral_sizes():
+        out.append((f'timestral_{size.lower()}', lambda y, size=size: Timestral(y, size)))
     return out
 
 
@@ -501,14 +549,26 @@ def forecast_series(periods, y, freq, horizon, partial=None, booked=None, seed=0
     records, origins, seasonal, baseline = backtest(yr, freq, steps, seed)
     if baseline not in records: baseline = 'naive'
     mase = {name: float(np.mean([r['scaled_error'] for r in recs])) for name, recs in records.items()}
-    best = min(mase, key=lambda k: (round(mase[k], 6), list(mase).index(k)))
+    classic = {k: v for k, v in mase.items() if not k.startswith('timestral')}
+    picked = min(classic, key=lambda k: (round(classic[k], 6), list(classic).index(k)))
+    factories = dict(candidates(len(yr), freq, seasonal))
+    rng = np.random.default_rng(seed + 1)
+    best, selection = picked, 'backtest_mase'
+    preferred = default_model()
+    if preferred in mase:
+        try:
+            model = factories[preferred](yr)
+            pt = np.maximum(model.point(steps), 0); sims = np.maximum(model.simulate(steps, SIMS, rng), 0)
+            best, selection = preferred, 'default'
+        except ValueError:
+            pass
+    if selection != 'default':
+        model = factories[picked](yr)
+        pt = np.maximum(model.point(steps), 0); sims = np.maximum(model.simulate(steps, SIMS, rng), 0)
+    sd = sims.std(axis=0)
     recs = records[best]
     floor = 0.5
     scores = [_score(r, floor) for r in recs]
-    factory = dict(candidates(len(yr), freq, seasonal))[best]
-    model = factory(yr)
-    rng = np.random.default_rng(seed + 1)
-    pt = np.maximum(model.point(steps), 0); sims = np.maximum(model.simulate(steps, SIMS, rng), 0); sd = sims.std(axis=0)
     intervals, methods = {}, {}
     for lv in LEVELS:
         q = _conformal_q(scores, lv)
@@ -532,7 +592,7 @@ def forecast_series(periods, y, freq, horizon, partial=None, booked=None, seed=0
         if partial and k == partial['period']: row.update(in_progress=True, observed_so_far=partial['observed_so_far'])
         if booked and booked.get(k): row['already_booked'] = booked[k]
         fc.append(row)
-    out.update(model=best, model_parameters=getattr(model, 'params', None), forecast=fc, interval_method=methods, seasonal_models_considered=seasonal,
+    out.update(model=best, model_selection=selection, backtest_pick=picked, model_parameters=getattr(model, 'params', None), forecast=fc, interval_method=methods, seasonal_models_considered=seasonal,
                backtest={'origins': len(origins), 'errors': len(recs), 'horizon': steps, 'baseline': baseline,
                          'mase': {k: round(v, 3) for k, v in sorted(mase.items(), key=lambda kv: kv[1])},
                          'selected_mase': round(mase[best], 3), 'baseline_mase': round(mase[baseline], 3),
@@ -617,8 +677,11 @@ def execute(path, patient_ids, params, as_of=None):
                'level break when enough periods remain); spikes inside it are replaced by the local median. ')
     method += ('Candidates: naive / seasonal naive, drift, regime mean, ETS (simple, damped trend, damped Holt-Winters additive and '
                'multiplicative when two seasons are available) and negative-binomial log-linear GLMs (level, trend, Fourier seasonality). '
-               'The model with the lowest rolling-origin backtest MASE is used; the naive baseline MASE is always reported (selection '
-               'on the same backtest is mildly optimistic). Intervals: normalised split-conformal on backtest errors (score = |error| / '
+               + (f'Default model: Timestral-{timestral_sizes()[0]} (Mistral time-series foundation model, zero-shot; forecast median as '
+                  'the point, its 21 quantiles as the predictive distribution), scored on the same backtest; the classic model with the '
+                  'lowest backtest MASE is the fallback when it is unavailable. ' if timestral_sizes() else
+                  'The model with the lowest rolling-origin backtest MASE is used. ')
+               + 'The naive baseline MASE is always reported (selection on the same backtest is mildly optimistic). Intervals: normalised split-conformal on backtest errors (score = |error| / '
                'model predictive SD) when enough errors exist, else model simulation; empirical coverage is measured sequentially, each '
                'origin calibrated only on errors observed before it. ')
     if p['measure'] == 'bed_days':
@@ -645,7 +708,8 @@ def summary(report):
             f"about {fc[0]['point']:,.1f} in {fc[0]['period']} (80% interval {fc[0]['lo80']:,.1f}-{fc[0]['hi80']:,.1f})"
             + (f", {total:,.0f} in total" if len(fc) > 1 else '') + '. ')
     sk = bt['skill_vs_baseline']
-    text += (f"Model {main['model'].replace('_', ' ')} chosen by rolling-origin backtest: MASE {bt['selected_mase']:.2f} vs "
+    how = 'default foundation model' if main.get('model_selection') == 'default' else 'chosen by rolling-origin backtest'
+    text += (f"Model {main['model'].replace('_', ' ')} ({how}): MASE {bt['selected_mase']:.2f} vs "
              f"{bt['baseline'].replace('_', ' ')} baseline {bt['baseline_mase']:.2f}"
              + (f" ({sk:+.0%} skill)" if sk is not None else '') + f" over {bt['errors']} forecast errors. ")
     cov = bt['coverage']['80']

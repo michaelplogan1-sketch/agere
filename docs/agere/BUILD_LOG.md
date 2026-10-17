@@ -227,3 +227,53 @@ hurts, write down why and decide what to add next.
 - **Kept:** this layer is about scope. Questions about the 14k fills outside cardiometabolic care (ADHD,
   antidepressants, antibiotics, contraceptives) can now be answered by class. The dev and held-out sets are
   cardiometabolic-heavy, so they don't show it.
+
+## Demand engine: Timestral candidate (2026-10-17)
+- **Change:** demand.py gains a `Timestral` model: Mistral's time-series foundation model, used zero-shot on CPU via
+  the `timestral` package (Apache-2.0 code; weights under Modified MIT, downloaded from the HF Hub). The point forecast
+  is the forecast median. Simulations draw from the 21 forecast quantiles, and the existing split-conformal step sets
+  the intervals. Opt-in with `AGERE_DEMAND_TIMESTRAL=28M,123M`. Default off, so the live path is unchanged.
+  test_demand passes (19/19).
+- **Test:** `tools/demand/timestral_compare.py` on the active v2.8 sample (as-of 2030-05-27). 68 series: 9 measures
+  × week/month × all plus top-3 facilities. Horizon 13 weeks or 6 months, same screen/regime/rolling-origin backtest
+  as forecast_series. Output: tmp/timestral/compare.json. Runtime 115 s for both sizes.
+- **In-sample (misleading):** compared against the best of ~11 classic models picked on the same backtest, Timestral
+  looks even. 123M is 3% better weekly (geo-mean MASE ratio 0.971, 15/31) and 9% worse monthly (1.088, 2/35).
+  That compares one model with a minimum taken over 11, so it favours the classic pick.
+- **Out-of-sample (the real test):** pick on the first half of the origins, score on later origins.
+  | | classic pick | + Timestral in pool | Timestral-123M alone | 123M vs classic (geo) | 123M better |
+  |---|---|---|---|---|---|
+  | week (31) | 0.815 | — | 0.712 | 0.851 | 23/31 |
+  | month (35) | 0.897 | 0.896 | 0.838 | 0.924 | 20/35 |
+  | all (66) | 0.858 | — | 0.779 | 0.889 | 43/66 |
+  Adding Timestral to the selection pool helps weekly (0.765 → 0.704 over 33 series) and leaves monthly flat. Using
+  Timestral directly beats both, because the MASE pick overfits the backtest. 28M is nearly as good (geo 0.897
+  overall, 42/66).
+- **Coverage:** after conformal, Timestral matches the classic winner. 123M: 80% → 0.783 vs 0.796; 95% → 0.928 vs
+  0.930. Its raw quantiles under-cover at 80% (0.82), so keep the conformal step.
+- **Read:** about 11% lower out-of-sample error on demand forecasts at the same interval coverage. The weekly series
+  gain most (obs stays, specialty, inpatient at HOSPITAL-2). Limits: synthetic series, about 20 late origins per
+  series, groups correlated with their totals.
+- **Status (Mike approved 2026-10-17): Timestral-123M is the DEFAULT demand model.**
+  - `AGERE_DEMAND_TIMESTRAL` defaults to `123M`; set `off` to go back to classic MASE selection.
+  - The classic backtest still runs. Its pick is reported as `backtest_pick` and is the fallback when Timestral fails
+    (missing package or weights, runtime error). The naive baseline MASE is still reported.
+  - The output carries `model_selection` (`default` | `backtest_mase`), and the summary and method text say which.
+  - test_demand's seasonal-recovery check now asserts on `backtest_pick`. Timestral itself passes that test's accuracy
+    checks: it beats seasonal naive and tracks the true mean with about 6.8% error.
+  - Tests: 30/30 (test_demand + test_healthcare_questions) with the default and with `off`.
+- **Install:** the package isn't on PyPI. Install it with
+  `uv pip install --python .venv/bin/python --no-deps git+https://github.com/mistralai/timestral` (torch, numpy,
+  safetensors and huggingface_hub are already in the venv). Weights (490 MB) live in the HF cache; the first call per
+  process loads them (~15 s).
+- **Cache fix:** analysis_graph's result_cache key ignored env flags. A :8886 service with `off` wrote a
+  classic-model answer that live :8885 then replayed. The key now includes `demand.default_model()` for any plan with
+  a demand node.
+- **End to end on live :8885** (restarted 2026-10-17, no cache hit):
+  - "Forecast monthly ED visits for the next 6 months": timestral_123m, MASE 0.61 vs seasonal naive 0.87, 80%
+    conformal coverage 0.71.
+  - "Weekly admissions forecast with uncertainty": timestral_123m, MASE 0.69 vs 1.11, coverage 0.78.
+  - The Agere fast path answers both. The final answer status is partial/unsupported because the analyst (LLM over
+    the semantic layer) says "no forecasting model" and the analyst policy wins on disagreement. The same happens with
+    Timestral off, so this predates the change. It's a routing gap in its own right: forecast questions should defer
+    to the demand engine.

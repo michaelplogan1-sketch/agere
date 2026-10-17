@@ -42,7 +42,8 @@ class Methods(unittest.TestCase):
             s = demand.forecast_series(months('2023-01', n), y, 'month', h)
             self.assertEqual(s['status'], 'forecast')
             self.assertTrue(s['seasonal_models_considered'])
-            wins += 'seasonal' in s['model'] or 'winters' in s['model']
+            pick = s['backtest_pick']  # the classic backtest selection (the fallback when the default model is unavailable)
+            wins += 'seasonal' in pick or 'winters' in pick
             bt = s['backtest']
             self.assertEqual(bt['baseline'], 'seasonal_naive')
             self.assertLess(bt['selected_mase'], bt['baseline_mase'])  # beats the seasonal naive baseline
