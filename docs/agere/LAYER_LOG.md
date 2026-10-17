@@ -266,3 +266,18 @@ router, operator router and Opus reconcile leave the answer path (BUILD_LOG.md s
   claims; "<60" = value_canonical < 60 (2,483 ">60" censored results excluded). The 3 runs differed only in dropping
   2 duplicate charts (WHP-1691C78EF591, WHP-D8D13E3EE095), which have no demographic twin, so delivered data can't map
   them to their person. Not a stack miss on the evidence; sent to the generator for audit (person resolution).
+
+## H3: regenerated keys + current question text, fresh runs (2026-10-17)
+- **Ruler:** the generator's key regeneration landed (scorer cases 24/24). 14 of the 30 questions were reworded; the
+  question files were rebuilt from the release (7d143d0). Baselines re-frozen on H3 / H3ho; older runs are NOT COMPARABLE.
+- **Stack changes since H1:**
+  - Analyst docs: EHR problem-list evidence lives in two places, problem_list_entry (problem_lists stream) and condition
+    rows with source_table='conditions'. A "documented" check must union both. The condition doc had wrongly listed
+    problem_lists as a source. This was the CLN-06 miss: 11 of 63 patients had N18 only in `conditions`.
+  - Contract check: a `value` answer (median/mean) needs no numerator.
+  - Vote: a run that notes a caveat and still answers is a vote; abstain only when a run declined to answer.
+- **Held-out 10 (H3ho):** 10/10, 10 answered (8 unanimous, 2 majority). Fresh Haiku runs, $0 subagents.
+- **Dev 20 (H3):** 18/20, 19 answered, 18/19 right when answered. DQ-10 wrong; HOS-08 split 3 ways (no escalation pass
+  run). RX-09 and RX-10 are now correct on the reworded questions.
+- **Note:** the analyst docs live in tmp/layers (gitignored); their hash is pinned in each run manifest, but the files are
+  not versioned.

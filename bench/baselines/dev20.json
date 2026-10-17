@@ -1,6 +1,6 @@
 {
- "questions": "/Users/mikel/clinical-insights-local/bench/questions/dev20.jsonl",
- "reference_layer": "L7",
+ "questions": "bench/questions/dev20.jsonl",
+ "reference_layer": "H3",
  "scorer_version": {
   "eval_questions.py": "questions-2026-10-17.1"
  },
@@ -8,8 +8,8 @@
   "schema": "agere-run-manifest/1",
   "pinned": {
    "questions_file": {
-    "path": "/Users/mikel/clinical-insights-local/bench/questions/dev20.jsonl",
-    "sha256": "fdbf6a5c9a78970465dbbffc72aca544805248f97e6c50341488d5db97852a34"
+    "path": "bench/questions/dev20.jsonl",
+    "sha256": "ef0252ab02897c1581c04e9dc9e8b927a2bc41a3887b3992b8422970809dc13b"
    },
    "scorer": {
     "files": {
@@ -37,12 +37,12 @@
    "docs": [
     {
      "path": "/Users/mikel/clinical-insights-local/tmp/layers/catalog_index.md",
-     "sha256": "452b3bfbf153b27fb7a03c2ab7a95a721b685c316f3bd34c5a9a0180d294273e"
+     "sha256": "c5a849705392dd60c73448fec6e18b4a4fbd0e3ff331ce7c8a26f8ded23a9133"
     },
     {
      "path": "/Users/mikel/clinical-insights-local/tmp/layers/docs",
      "files": 62,
-     "sha256": "81ac5f3c5d190973089b4d34fbb2ea76aeee324c8d20754f4a4d6ea9a76e88c6"
+     "sha256": "250e7e7152f8b728936cee201b858df339ccd2d6c677c8e016e83506a9d02ea8"
     },
     {
      "path": "/Users/mikel/clinical-insights-local/tmp/layers/analyst_docs.md",
@@ -54,8 +54,8 @@
     }
    ],
    "model_settings": {
-    "model": "claude-haiku-5-5",
-    "runs": 3,
+    "model": null,
+    "runs": null,
     "release": "healthcare-warehouse-v2.8",
     "cost_metering": "unmetered_subagent"
    },
@@ -66,18 +66,18 @@
    },
    "code": {
     "repo": "/Users/mikel/clinical-insights-local",
-    "head": "9870f15997bdaa41898a73a656700ec41c9799ce",
+    "head": "7d143d06f94ad61f30610b95b1ce35595521616a",
     "dirty": true,
-    "diff_sha256": "63a45f03ff9f25b0f1eebc7cbe06febed4a516f4d32d46098e1d78e54bf7f519"
+    "diff_sha256": "6ba2221005075213112ef168ce2818d1bbba959d6d8fb8cb87f488544edae9e0"
    },
-   "system": "layer:L7",
+   "system": "layer:H3",
    "answer_key": {
-    "answers_sha256": "fa34377ceadb1ad54825cd512771645946b43ba7973c2646e20ea90d47608259",
+    "answers_sha256": "4bdcd3cf15449f6811df137f5ad9c5429da7faaaf976bc9bc732d3a6bc459543",
     "scorer_version": "questions-2026-10-17.1"
    }
   },
-  "pinned_sha256": "324bba7f3d900545f7faa8912d64c6ce041eefb947644ace13ae521552256d21",
-  "created_at": "2026-10-17T11:54:28+00:00"
+  "pinned_sha256": "fb67aae14c543de3caed9ec0e4af1de97cc15061d8be0e751c41d64ed702afbd",
+  "created_at": "2026-10-17T13:01:26+00:00"
  },
  "results": {
   "L7": {
@@ -105,6 +105,33 @@
    ],
    "wrong_ids": [
     "RX-10"
+   ]
+  },
+  "H3": {
+   "correct": 18,
+   "answered": 19,
+   "correct_ids": [
+    "CLN-13",
+    "CLN-15",
+    "HOS-03",
+    "REV-03",
+    "REV-12",
+    "QUA-01",
+    "QUA-05",
+    "RX-09",
+    "RX-10",
+    "VBC-04",
+    "VBC-10",
+    "BH-11",
+    "BH-14",
+    "ACC-03",
+    "ACC-12",
+    "RWE-02",
+    "RWE-12",
+    "DQ-09"
+   ],
+   "wrong_ids": [
+    "DQ-10"
    ]
   }
  }

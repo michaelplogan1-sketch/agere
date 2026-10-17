@@ -1,6 +1,6 @@
 {
  "questions": "bench/questions/ho10.jsonl",
- "reference_layer": "L6a",
+ "reference_layer": "H3ho",
  "scorer_version": {
   "eval_questions.py": "questions-2026-10-17.1"
  },
@@ -9,7 +9,7 @@
   "pinned": {
    "questions_file": {
     "path": "bench/questions/ho10.jsonl",
-    "sha256": "b87456a30abcde32cfe576b2ff37b995e48161b3696bd395bad224d91f4f9f94"
+    "sha256": "35e7b0aaa791c5e0ee03e1112f74b0cf3906e8b6836c74d2e617b78fceaff251"
    },
    "scorer": {
     "files": {
@@ -37,12 +37,12 @@
    "docs": [
     {
      "path": "/Users/mikel/clinical-insights-local/tmp/layers/catalog_index.md",
-     "sha256": "452b3bfbf153b27fb7a03c2ab7a95a721b685c316f3bd34c5a9a0180d294273e"
+     "sha256": "c5a849705392dd60c73448fec6e18b4a4fbd0e3ff331ce7c8a26f8ded23a9133"
     },
     {
      "path": "/Users/mikel/clinical-insights-local/tmp/layers/docs",
      "files": 62,
-     "sha256": "81ac5f3c5d190973089b4d34fbb2ea76aeee324c8d20754f4a4d6ea9a76e88c6"
+     "sha256": "250e7e7152f8b728936cee201b858df339ccd2d6c677c8e016e83506a9d02ea8"
     },
     {
      "path": "/Users/mikel/clinical-insights-local/tmp/layers/analyst_docs.md",
@@ -66,18 +66,18 @@
    },
    "code": {
     "repo": "/Users/mikel/clinical-insights-local",
-    "head": "9870f15997bdaa41898a73a656700ec41c9799ce",
+    "head": "7d143d06f94ad61f30610b95b1ce35595521616a",
     "dirty": true,
-    "diff_sha256": "6622282605b4c079ea7bd721f815a40a19d5682649d5f096ece8899d5b335bd4"
+    "diff_sha256": "25412eddb115711550d21cab06bd81bdb97882816cf03f8f567a6fd14f7f38bf"
    },
-   "system": "layer:L6a",
+   "system": "layer:H3ho",
    "answer_key": {
-    "answers_sha256": "fa34377ceadb1ad54825cd512771645946b43ba7973c2646e20ea90d47608259",
+    "answers_sha256": "4bdcd3cf15449f6811df137f5ad9c5429da7faaaf976bc9bc732d3a6bc459543",
     "scorer_version": "questions-2026-10-17.1"
    }
   },
-  "pinned_sha256": "a2454004ee827ec90d486a0951ce19d534d7ceac02507449104c23fedc1b72b6",
-  "created_at": "2026-10-17T11:54:28+00:00"
+  "pinned_sha256": "ae55ff8ecf78351fbbc19f44f82c425b28e1fc9be879b415ad548fff2331964e",
+  "created_at": "2026-10-17T13:01:26+00:00"
  },
  "results": {
   "L6a": {
@@ -97,6 +97,23 @@
     "CLN-06",
     "VBC-02"
    ]
+  },
+  "H3ho": {
+   "correct": 10,
+   "answered": 10,
+   "correct_ids": [
+    "ACC-10",
+    "BH-10",
+    "CLN-06",
+    "DQ-08",
+    "HOS-01",
+    "QUA-04",
+    "REV-09",
+    "RWE-10",
+    "RX-13",
+    "VBC-02"
+   ],
+   "wrong_ids": []
   }
  }
 }
