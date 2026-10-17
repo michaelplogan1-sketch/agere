@@ -290,7 +290,8 @@ def _engine_misfit(question, req, want, answer, operation, served):
     if want in ('count', 'value') and answer.get('answer_type') == 'table':
         if _LITERAL.search(q):
             return f'the question states a literal definition; the {operation} engine table is an analysis, not that quantity'
-        if want == 'count':
+        if want == 'count' and not (_num(answer.get('count')) and 'count' in served):
+            # (an engine that states its own count, e.g. queueing's peak staff, answers the count directly)
             noun = _counted_noun(q)
             ints = {k for r in rows[:5] for k, v in r.items() if _num(v) and _integral(v)}
             if noun and rows and not any(noun & _column_terms(k) for k in ints):
