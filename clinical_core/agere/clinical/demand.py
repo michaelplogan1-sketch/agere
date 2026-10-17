@@ -59,7 +59,7 @@ BACKTEST_SIMS = 300
 # ---- parameters -------------------------------------------------------------------------
 def validate(p):
     allowed = {'measure', 'frequency', 'horizon', 'group_by', 'top', 'target_occupancy', 'peak_quantile', 'staffing',
-               'minutes_per_unit', 'fte_hours_per_week'}
+               'minutes_per_unit', 'fte_hours_per_week', 'reconcile', 'hierarchy'}
     if not isinstance(p, dict) or set(p) - allowed: raise ValueError(f'demand parameters: {sorted(allowed)}')
     if p.get('measure') not in MEASURES: raise ValueError(f'measure must be one of {sorted(MEASURES)}')
     freq = p.get('frequency') or 'month'
@@ -75,7 +75,17 @@ def validate(p):
     if type(occ) not in (int, float) or not 0.3 <= occ <= 1.0: raise ValueError('target_occupancy 0.3..1.0')
     peak = p.get('peak_quantile') or 0.95
     if type(peak) not in (int, float) or not 0.5 <= peak < 1.0: raise ValueError('peak_quantile 0.5..0.999')
+    hierarchy = p.get('hierarchy') or []
+    if (not isinstance(hierarchy, (list, tuple)) or len(hierarchy) > 3 or len(set(hierarchy)) != len(hierarchy)
+            or any(h not in GROUP_BY or h == 'none' for h in hierarchy)):
+        raise ValueError(f'hierarchy: ordered list (outermost first) of up to 3 distinct levels from {[g for g in GROUP_BY if g != "none"]}')
+    reconcile = p.get('reconcile')
+    if reconcile is not None and reconcile not in RECONCILE: raise ValueError(f'reconcile must be one of {RECONCILE}')
+    if not hierarchy and reconcile not in (None, 'none'):
+        if group_by == 'none': raise ValueError('reconcile needs a hierarchy (or a group_by to use as a one-level hierarchy)')
+        hierarchy = [group_by]
     out = {'measure': p['measure'], 'frequency': freq, 'horizon': horizon, 'group_by': group_by, 'top': top,
+           'hierarchy': list(hierarchy), 'reconcile': reconcile or ('mint_shrink' if hierarchy else 'none'),
            'target_occupancy': float(occ), 'peak_quantile': float(peak), 'staffing': bool(p.get('staffing', False))}
     for k, lo, hi in (('minutes_per_unit', 0.1, 10000.0), ('fte_hours_per_week', 1.0, 80.0)):
         v = p.get(k)
@@ -598,8 +608,198 @@ def forecast_series(periods, y, freq, horizon, partial=None, booked=None, seed=0
                          'selected_mase': round(mase[best], 3), 'baseline_mase': round(mase[baseline], 3),
                          'skill_vs_baseline': round(1 - mase[best] / mase[baseline], 3) if mase[baseline] > 0 else None,
                          'coverage': coverage})
-    out['_sims'] = sims
+    out.update(_sims=sims, _pt=pt, _sd=sd, _recs=recs, _offset=sc['start'], _yr=yr, _lag=SEASON[freq] if seasonal else 1, _floor=floor)
     return out
+
+
+# ---- hierarchical reconciliation (MinT) -----------------------------------------------------
+RECONCILE = ('mint_shrink', 'ols', 'wls', 'none')
+MIN_RESID = 6          # fewest common one-step residuals for MinT-shrink; below it WLS-structural is used
+MAX_RESID = MAX_ORIGINS
+
+
+def hierarchy_structure(paths):
+    """paths: node paths (tuples of keys; () = network). Returns (S, parent index per node, level per node, bottom indices).
+    S is (nodes x bottoms): S[i, j] = 1 when bottom j lies under node i."""
+    idx = {p: i for i, p in enumerate(paths)}
+    bottoms = [i for i, p in enumerate(paths) if not any(q[:len(p)] == p and len(q) > len(p) for q in paths)]
+    S = np.zeros((len(paths), len(bottoms)))
+    for j, b in enumerate(bottoms):
+        for d in range(len(paths[b]) + 1): S[idx[paths[b][:d]], j] = 1.0
+    parent = [idx.get(p[:-1]) if p else None for p in paths]
+    return S, parent, [len(p) for p in paths], bottoms
+
+
+def shrink_covariance(E):
+    """Schafer-Strimmer shrinkage of the (uncentred, as in MinT) residual covariance towards its diagonal.
+    E is (T x n). Returns (W, lambda). Positive definite whenever lambda > 0, so n may exceed T."""
+    E = np.asarray(E, float); T, n = E.shape
+    sd = np.sqrt((E ** 2).mean(axis=0))
+    sd = np.maximum(sd, max(1e-8, 1e-6 * float(sd.max()) if sd.size else 1e-8))
+    Z = E / sd
+    if n == 1 or T < 2: return np.diag(sd ** 2), 1.0
+    R = Z.T @ Z / T
+    w = Z[:, :, None] * Z[:, None, :]
+    var_r = T / (T - 1.0) ** 3 * ((w - w.mean(axis=0)) ** 2).sum(axis=0)
+    off = ~np.eye(n, dtype=bool)
+    den = float((R[off] ** 2).sum())
+    lam = 1.0 if den <= 1e-12 else float(min(1.0, max(0.0, var_r[off].sum() / den)))
+    Rs = (1 - lam) * R + lam * np.eye(n)
+    return sd[:, None] * Rs * sd[None, :], lam
+
+
+def reconcile_gain(S, method, E=None):
+    """Matrix G (bottoms x nodes) with reconciled = S @ G @ base. G = (S'W^-1 S)^-1 S'W^-1 for the chosen W.
+    method mint_shrink uses the residuals E (falls back to wls when fewer than MIN_RESID rows). Returns (G, info)."""
+    n = S.shape[0]; used, lam = method, None
+    if method == 'mint_shrink' and (E is None or len(E) < MIN_RESID): used = 'wls'
+    if used == 'ols': W = np.eye(n)
+    elif used == 'wls': W = np.diag(S.sum(axis=1))      # structural scaling: bottoms under each node
+    else: W, lam = shrink_covariance(E)
+    W = W + 1e-10 * float(np.trace(W)) / n * np.eye(n)
+    Wi_S = np.linalg.solve(W, S)                        # W^-1 S
+    G = np.linalg.solve(S.T @ Wi_S, Wi_S.T)
+    return G, {'method': used, 'requested': method, 'shrinkage_lambda': None if lam is None else round(lam, 4),
+               'residual_observations': 0 if E is None else int(len(E)), 'series': int(n), 'bottom_series': int(S.shape[1])}
+
+
+def project(S, G, base):
+    """Reconcile base forecasts (..., nodes) -> coherent non-negative (..., nodes): bottoms clipped at zero, then summed up."""
+    b = np.maximum(np.asarray(base) @ G.T, 0.0)
+    return b @ S.T
+
+
+def coherence_gap(values, parent):
+    """Largest |node - sum of its children| over all nodes with children; values is (nodes x ...)."""
+    gap = 0.0
+    kids = defaultdict(list)
+    for i, pa in enumerate(parent):
+        if pa is not None: kids[pa].append(i)
+    for pa, ch in kids.items(): gap = max(gap, float(np.max(np.abs(values[pa] - values[ch].sum(axis=0)))))
+    return gap
+
+
+def fallback_base(y, steps, seed=0):
+    """Mean-of-recent forecast for a node the engine cannot model (too short / feed gap); keeps the hierarchy complete."""
+    y = np.asarray(y, float); w = min(len(y), 2 * MIN_REGIME['month']); yr = y[-w:]
+    rng = np.random.default_rng(seed); recs = []
+    for o in range(max(3, w // 2), w):
+        m = Mean(yr[:o]); h = min(steps, w - o); pt = m.point(h); sd = m.sd * math.sqrt(1 + 1 / m.n)
+        recs += [{'origin': o, 'step': k + 1, 'target': o + k, 'actual': float(yr[o + k]), 'point': float(pt[k]), 'sd': float(sd)} for k in range(h)]
+    m = Mean(yr)
+    return {'_pt': np.maximum(m.point(steps), 0), '_sd': np.full(steps, m.sd * math.sqrt(1 + 1 / m.n)), '_sims': np.maximum(m.simulate(steps, SIMS, rng), 0),
+            '_recs': recs, '_offset': len(y) - w, '_yr': yr, '_lag': 1, '_floor': 0.5}
+
+
+def _step1(s):
+    return {s['_offset'] + r['target']: r for r in s['_recs'] if r['step'] == 1}
+
+
+def reconcile_backtest(bases, S, parent, levels, method, steps):
+    """Rolling-origin comparison on the engine's own backtest records: at each common origin the base forecasts are
+    reconciled with residuals observed before that origin only; MASE (node's own in-sample scale) of base vs reconciled."""
+    by = []
+    for s in bases:
+        d = defaultdict(dict)
+        for r in s['_recs']: d[s['_offset'] + r['origin']][r['step']] = r
+        by.append(d)
+    origins = sorted(set.intersection(*[set(d) for d in by]))
+    res = [{t: r['actual'] - r['point'] for t, r in _step1(s).items()} for s in bases]
+    common = sorted(set.intersection(*[set(d) for d in res]))
+    n = len(bases); base_err, rec_err, used = [[] for _ in range(n)], [[] for _ in range(n)], Counter()
+    for g in origins:
+        prior = [t for t in common if t < g][-MAX_RESID:]
+        E = np.array([[res[i][t] for i in range(n)] for t in prior]) if prior else None
+        G, info = reconcile_gain(S, method, E); used[info['method']] += 1
+        h = min(steps, min(max(d[g]) for d in by))
+        if h < 1: continue
+        pt = np.array([[by[i][g][k]['point'] for i in range(n)] for k in range(1, h + 1)])
+        act = np.array([[by[i][g][k]['actual'] for i in range(n)] for k in range(1, h + 1)])
+        rec = project(S, G, np.maximum(pt, 0) if method == 'none' else pt)
+        for i, s in enumerate(bases):
+            sc = _mase_scale(s['_yr'][:g - s['_offset']], s['_lag'])
+            base_err[i] += list(np.abs(act[:, i] - pt[:, i]) / sc); rec_err[i] += list(np.abs(act[:, i] - rec[:, i]) / sc)
+    if not origins or not base_err[0]: return None
+    bm = np.array([np.mean(e) for e in base_err]); rm = np.array([np.mean(e) for e in rec_err])
+    lv = np.array(levels)
+    return {'origins': len(origins), 'method_by_origin': dict(used), 'base_mase': round(float(bm.mean()), 4), 'reconciled_mase': round(float(rm.mean()), 4),
+            'improved_or_matched': bool(rm.mean() <= bm.mean() + 1e-9),
+            'by_level': {int(l): {'base_mase': round(float(bm[lv == l].mean()), 4), 'reconciled_mase': round(float(rm[lv == l].mean()), 4)} for l in sorted(set(levels))},
+            'by_node': [{'base_mase': round(float(a), 4), 'reconciled_mase': round(float(b), 4)} for a, b in zip(bm, rm)]}
+
+
+def forecast_hierarchy(periods, ys, paths, freq, horizon, method='mint_shrink', partials=None, booked=None, seed=0):
+    """Forecast every node of a hierarchy (paths[0] must be the network, ()) with the single-series engine, then reconcile.
+    ys are aligned to `periods`. Returns (series per node, reconciliation report)."""
+    S, parent, levels, bottoms = hierarchy_structure(paths)
+    partials = partials or [None] * len(paths); booked = booked or [None] * len(paths)
+    series = [forecast_series(periods, ys[i], freq, horizon, partials[i], booked[i], seed=seed + i) for i in range(len(paths))]
+    steps = horizon + (1 if partials[0] else 0)
+    rec = {'method_requested': method, 'nodes': len(paths), 'levels': max(levels) + 1, 'bottom_series': len(bottoms)}
+    if series[0]['status'] != 'forecast' and method != 'none':
+        rec.update(applied=False, reason='the network total could not be forecast, so the hierarchy is left unreconciled: ' + series[0].get('reason', ''))
+        return series, rec
+    fallback = []
+    for i, s in enumerate(series):
+        if s['status'] == 'forecast' or method == 'none': continue
+        fb = fallback_base(ys[i], steps, seed + i)
+        s.update(status='forecast', model='mean_fallback', model_selection='fallback', base_status=s.get('reason'), forecast=[], interval_method={},
+                 backtest={'origins': 0, 'errors': len(fb['_recs']), 'horizon': steps, 'baseline': 'naive', 'mase': {}, 'selected_mase': None,
+                           'baseline_mase': None, 'skill_vs_baseline': None, 'coverage': {'80': {'conformal_sequential': None, 'evaluated': 0, 'model_simulation': None, 'errors': 0},
+                                                                                            '95': {'conformal_sequential': None, 'evaluated': 0, 'model_simulation': None, 'errors': 0}}})
+        s.setdefault('data_issues', []).append({'kind': 'fallback', 'periods': '', 'detail': 'too little modelable history for the series engine; '
+                                                f'forecast from the mean of the recent periods so the hierarchy stays complete ({s.get("reason", "")})'})
+        s.update(fb); fallback.append(i)
+    live = [i for i, s in enumerate(series) if s['status'] == 'forecast']
+    if method == 'none' or len(live) != len(paths):
+        pt = np.array([s['_pt'] for s in series]) if len(live) == len(paths) else None
+        rec.update(applied=False, reason='reconcile=none' if method == 'none' else 'some nodes have no forecast',
+                   coherence={'assessable': pt is not None, 'max_abs_gap': None if pt is None else round(coherence_gap(pt, parent), 6)})
+        return series, rec
+    n = len(paths); PT = np.array([s['_pt'] for s in series]); SD = np.array([s['_sd'] for s in series])
+    floor = 0.5
+    firsts = [_step1(s) for s in series]
+    common = sorted(set.intersection(*[set(d) for d in firsts]))[-MAX_RESID:]
+    E = np.array([[firsts[i][t]['actual'] - firsts[i][t]['point'] for i in range(n)] for t in common]).reshape(len(common), n)
+    Zs = np.array([[(firsts[i][t]['actual'] - firsts[i][t]['point']) / max(firsts[i][t]['sd'], floor) for i in range(n)] for t in common]).reshape(len(common), n)
+    G, info = reconcile_gain(S, method, E)
+    rng = np.random.default_rng(seed + 10_000)
+    if len(common) >= MIN_RESID:   # joint bootstrap of conformal-style standardised residual rows keeps cross-node dependence
+        idx = rng.integers(0, len(common), (SIMS, steps))
+        B = PT.T[None] + Zs[idx] * np.maximum(SD, floor).T[None]
+        interval_method = 'residual_bootstrap_projected'
+    else:
+        B = np.stack([s['_sims'][:SIMS] for s in series], axis=2); interval_method = 'model_simulation_projected'
+    raw_pt = PT.T @ G.T                                  # (steps x bottoms) before clipping
+    RP = project(S, G, PT.T).T                           # nodes x steps
+    RS = project(S, G, B)                                # sims x steps x nodes
+    q = {lv: np.quantile(RS, [(1 - lv) / 2, (1 + lv) / 2], axis=0) for lv in LEVELS}
+    ev = reconcile_backtest(series, S, parent, levels, method, steps)
+    k = periods[-1]; ks = []
+    for _ in range(steps): k = next_period(k, freq); ks.append(k)
+    for i, s in enumerate(series):
+        s['base_forecast'] = [{'period': ks[j], 'point': round(float(PT[i, j]), 2)} for j in range(steps)]
+        fc = []
+        for j in range(steps):
+            pt = float(RP[i, j])
+            row = {'period': ks[j], 'point': round(pt, 2)}
+            for lv, tag in ((0.8, '80'), (0.95, '95')):
+                row['lo' + tag] = round(min(float(q[lv][0][j, i]), pt), 2); row['hi' + tag] = round(max(float(q[lv][1][j, i]), pt), 2)
+            part = partials[i] or (partials[0] and {'period': partials[0]['period'], 'observed_so_far': 0.0})
+            if partials[0] and ks[j] == partials[0]['period']: row.update(in_progress=True, observed_so_far=part['observed_so_far'])
+            if booked[i] and booked[i].get(ks[j]): row['already_booked'] = booked[i][ks[j]]
+            fc.append(row)
+        s['forecast'] = fc; s['reconciled'] = True; s['interval_method'] = {lv: interval_method for lv in LEVELS}
+        if ev: s['reconciliation'] = ev['by_node'][i]
+    gap = coherence_gap(RP, parent)
+    rounded = np.array([[r['point'] for r in s['forecast']] for s in series])
+    rec.update(applied=True, reconciliation=info, interval_method=interval_method, fallback_nodes=fallback,
+               coherence={'max_abs_gap': round(gap, 9), 'coherent': gap < 1e-6, 'max_abs_gap_rounded_to_2dp': round(coherence_gap(rounded, parent), 4),
+                          'base_max_abs_gap': round(coherence_gap(PT, parent), 4)},
+               non_negativity={'min_reconciled': round(float(RP.min()), 6), 'bottom_cells_set_to_zero': int((raw_pt < 0).sum()),
+                               'rule': 'negative bottom values are set to zero and the hierarchy re-aggregated (coherence preserved)'},
+               backtest=ev)
+    return series, rec
 
 
 # ---- capacity and staffing -------------------------------------------------------------------
@@ -631,10 +831,14 @@ def execute(path, patient_ids, params, as_of=None):
     db = sqlite3.connect(f'file:{semantic_layer.ensure(path)}?mode=ro', uri=True)
     try:
         rows, flags = events(db, p['measure'], patient_ids, as_of)
-        attrs = attributes(db) if p['group_by'] in ('practice', 'payer') else {}
+        attrs = attributes(db) if {p['group_by'], *p['hierarchy']} & {'practice', 'payer'} else {}
     finally:
         db.close()
     freq, label = p['frequency'], MEASURES[p['measure']][2]
+    recon = None
+    if p['hierarchy'] and rows:
+        series, table, capacity, recon = _hierarchy_series(rows, p, attrs, as_of)
+        return _finish(p, path, as_of, label, freq, series, table, capacity, flags, recon)
     by_group = defaultdict(list)
     for r in rows:
         by_group['all'].append(r)
@@ -645,7 +849,7 @@ def execute(path, patient_ids, params, as_of=None):
         periods, y, future, partial = build_series(by_group[g], freq, as_of)
         booked = dict(future) if p['measure'] == 'appointments' else None
         s = forecast_series(periods, y, freq, p['horizon'], partial, booked, seed=gi)
-        s.pop('_sims', None)
+        for k in [k for k in s if k.startswith('_')]: s.pop(k)
         s['group'] = g
         if s['status'] == 'forecast':
             for r in s['forecast']: table.append({'group': g, **r})
@@ -653,6 +857,44 @@ def execute(path, patient_ids, params, as_of=None):
             for r in cap: capacity.append({'group': g, **r})
             s['capacity'] = cap
         series.append(s)
+    return _finish(p, path, as_of, label, freq, series, table, capacity, flags, None)
+
+
+def _hierarchy_series(rows, p, attrs, as_of):
+    """Nodes = network, then every prefix of the level keys (e.g. facility -> practice); the `top` largest bottom paths are kept
+    and the rest are pooled into an 'other' bottom under their parent, so the network is always the sum of the kept bottoms."""
+    levels, freq, measure = p['hierarchy'], p['frequency'], p['measure']
+    pth = [tuple(group_key(l, measure, r[1], r[2], attrs) for l in levels) for r in rows]
+    keep = {q for q, _ in sorted(Counter(pth).items(), key=lambda kv: (-kv[1], kv[0]))[:p['top']]}
+    node_rows = defaultdict(list)
+    for r, q in zip(rows, pth):
+        q = q if q in keep else q[:-1] + ('other',)
+        for d in range(len(q) + 1): node_rows[q[:d]].append(r)
+    paths = [()]
+    for d in range(1, len(levels) + 1):
+        paths += sorted((q for q in node_rows if len(q) == d), key=lambda q: (-len(node_rows[q]), q))
+    periods, ys, parts, books = None, [], [], []
+    for q in paths:
+        per, y, future, partial = build_series(node_rows[q], freq, as_of)
+        if periods is None: periods = per
+        cnt = dict(zip(per, y)); ys.append([cnt.get(k, 0.0) for k in periods])
+        parts.append(partial); books.append(dict(future) if measure == 'appointments' else None)
+    if not periods: return [], [], [], None
+    series, recon = forecast_hierarchy(periods, ys, paths, freq, p['horizon'], p['reconcile'], parts, books)
+    S, parent, lv, _ = hierarchy_structure(paths)
+    table, capacity = [], []
+    for i, (q, s) in enumerate(zip(paths, series)):
+        for k in [k for k in s if k.startswith('_')]: s.pop(k)
+        s.update(group='/'.join(q) or 'all', level=lv[i], parent=None if parent[i] is None else '/'.join(paths[parent[i]]) or 'all')
+        if s['status'] == 'forecast':
+            table += [{'group': s['group'], **r} for r in s['forecast']]
+            cap = capacity_rows(s['forecast'], freq, p, measure)
+            capacity += [{'group': s['group'], **r} for r in cap]; s['capacity'] = cap
+    recon['hierarchy'] = list(levels); recon['nodes_by_level'] = dict(Counter(lv))
+    return series, table, capacity, recon
+
+
+def _finish(p, path, as_of, label, freq, series, table, capacity, flags, recon):
     missing, notes = [], []
     if p['staffing'] and not (p['minutes_per_unit'] and p['fte_hours_per_week']):
         missing.append('Staffing needs user-supplied ratios: minutes of staff time per unit and productive hours per FTE per week. '
@@ -690,10 +932,20 @@ def execute(path, patient_ids, params, as_of=None):
     if p['minutes_per_unit'] and p['fte_hours_per_week']:
         method += (f"Staffing = forecast units x {p['minutes_per_unit']:g} min / 60 / ({p['fte_hours_per_week']:g} productive h per FTE-week "
                    'x days/7), using the ratios supplied in the question. ')
-    method += 'Groups forecast independently; group forecasts need not sum to the total.' if p['group_by'] != 'none' else ''
-    return {'schema': VERSION, 'parameters': p, 'as_of': as_of, 'measure_label': label, 'frequency': freq, 'series': series,
+    if recon and recon.get('applied'):
+        r = recon['reconciliation']
+        method += (f"Hierarchy {' > '.join(['network'] + p['hierarchy'])}: every node is forecast by the engine, then reconciled with "
+                   f"{r['method'].replace('_', '-')} (Wickramasuriya, Athanasopoulos & Hyndman 2019: minimum-trace projection onto the coherent subspace"
+                   + (f"; Schafer-Strimmer shrinkage of the one-step residual covariance, lambda {r['shrinkage_lambda']}" if r['shrinkage_lambda'] is not None else '')
+                   + '), so children sum exactly to parents; negative bottom values are set to zero and re-aggregated. Intervals come from '
+                   'conformal-standardised backtest residual rows resampled jointly across nodes and projected through the same map. ')
+    elif recon: method += f"Hierarchy not reconciled ({recon['reason']}). "
+    else: method += 'Groups forecast independently; group forecasts need not sum to the total.' if p['group_by'] != 'none' else ''
+    out = {'schema': VERSION, 'parameters': p, 'as_of': as_of, 'measure_label': label, 'frequency': freq, 'series': series,
             'table': table, 'capacity': capacity, 'flags': {k: v for k, v in flags.items() if not k.startswith('open_stay_admit_')},
             'missing': missing, 'notes': notes, 'method': method}
+    if recon: out['reconciliation'] = recon
+    return out
 
 
 def summary(report):
@@ -731,6 +983,11 @@ def summary(report):
     if cap and 'fte' in cap[0]:
         text += f"Staffing in {cap[0]['period']}: {cap[0]['fte']:g} FTE (80% upper {cap[0]['fte_hi80']:g}). "
     for m in report['missing']: text += m + ' '
+    rc = report.get('reconciliation')
+    if rc and rc.get('applied'):
+        bt2 = rc.get('backtest') or {}
+        text += (f"Forecasts across {rc['nodes']} nodes were reconciled ({rc['reconciliation']['method'].replace('_', '-')}) so children sum to parents"
+                 + (f"; rolling-origin MASE {bt2['base_mase']:.2f} unreconciled vs {bt2['reconciled_mase']:.2f} reconciled" if bt2 else '') + '. ')
     groups = [s for s in report['series'][1:] if s['status'] == 'forecast']
     if groups:
         text += 'By group, first period: ' + '; '.join(f"{s['group']} {s['forecast'][0]['point']:,.1f}" for s in groups[:5]) + '. '
