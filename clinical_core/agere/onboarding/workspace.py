@@ -1,0 +1,431 @@
+"""Customer workspaces: connect a warehouse, auto-map it to the semantic layer, and answer questions on day one.
+
+    ws = Workspace.create('Acme Health', 'snowflake://ACME_DW/CLINICAL')
+    ws.run()                      # profile -> propose -> auto-approve -> build -> raw tables -> verify -> docs -> ready
+    ws.review_items()             # what a person should look at (low-confidence fields, missing required fields, tables)
+    ws.decide(item_id, 'accept' | 'reject' | {'source': 'other_col'})  then  ws.rebuild()
+    ws.ask('How many diabetic patients had an A1c over 9 last year?')
+
+Day one: fields the matcher scores at or above its accept threshold are accepted automatically and the mapping is
+approved as "auto"; everything else waits in the review queue without blocking answers. A person's decisions are
+kept and re-applied on every rebuild. Verification results are recorded with the build, never used to block it.
+Every source table is accounted for: mapped tables feed the modeled tables, and every source table (mapped or not) is
+also copied verbatim as raw_<table>, so the analyst can reach fields the model does not carry.
+
+State lives in artifacts/workspaces/<slug>/: workspace.json, profile.json, mapping.json, semantic.sqlite3,
+analyst_docs/, verification.json, events.jsonl, receipts/. Credentials are never stored: a source spec names the
+warehouse, and connectors read credentials from the environment (see connectors.py).
+"""
+from __future__ import annotations
+
+from contextlib import contextmanager
+from datetime import date, datetime, timezone
+import json
+from pathlib import Path
+import re
+import sqlite3
+import threading
+
+from . import apply as apply_mod, connectors, contract, matcher, profile as profile_mod, verify
+
+ROOT = Path(__file__).resolve().parents[3]
+WORKSPACES = ROOT / 'artifacts' / 'workspaces'
+LEDGER = ROOT / 'artifacts' / 'agere-full' / 'provider-budget.sqlite3'
+STEPS = ('profile', 'propose', 'approve', 'build', 'raw', 'verify', 'docs')
+RAW_BATCH = 5000
+_LOCKS = {}
+_LOCKS_GUARD = threading.Lock()
+
+
+def _now():
+    return datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
+
+
+def slugify(name):
+    s = re.sub(r'[^a-z0-9]+', '-', str(name).lower()).strip('-')
+    if not s:
+        raise ValueError('A workspace needs a name with letters or digits')
+    return s[:60]
+
+
+def _safe_ident(name):
+    return re.sub(r'[^A-Za-z0-9_]', '_', str(name)).lower()
+
+
+def _lock(slug):
+    with _LOCKS_GUARD:
+        return _LOCKS.setdefault(slug, threading.Lock())
+
+
+def list_workspaces(root=WORKSPACES):
+    root = Path(root)
+    if not root.is_dir():
+        return []
+    return [Workspace(p.name, root).summary() for p in sorted(root.iterdir()) if (p / 'workspace.json').is_file()]
+
+
+class Workspace:
+    def __init__(self, slug, root=WORKSPACES):
+        self.slug = slugify(slug)
+        self.dir = Path(root) / self.slug
+        if not (self.dir / 'workspace.json').is_file():
+            raise FileNotFoundError(f'No workspace {self.slug!r}')
+
+    # --- state -----------------------------------------------------------------------------------------------------
+
+    @classmethod
+    def create(cls, name, source, *, as_of=None, raw='all', root=WORKSPACES):
+        """raw: 'all' copies every source table as raw_<table>, 'unmapped' only tables no entity uses, 'none' skips."""
+        if raw not in ('all', 'unmapped', 'none'):
+            raise ValueError("raw must be 'all', 'unmapped' or 'none'")
+        slug = slugify(name)
+        d = Path(root) / slug
+        if (d / 'workspace.json').exists():
+            raise FileExistsError(f'Workspace {slug!r} already exists')
+        d.mkdir(parents=True, exist_ok=True)
+        state = {'schema': 'agere-workspace/1', 'slug': slug, 'name': name, 'source': str(source), 'as_of': as_of,
+                 'raw': raw, 'status': 'created', 'steps': {}, 'decisions': {}, 'created_at': _now(), 'error': None}
+        (d / 'workspace.json').write_text(json.dumps(state, indent=1))
+        ws = cls(slug, root)
+        ws._event('created', source=str(source))
+        return ws
+
+    @property
+    def state(self):
+        return json.loads((self.dir / 'workspace.json').read_text())
+
+    def _save(self, state):
+        tmp = self.dir / 'workspace.json.tmp'
+        tmp.write_text(json.dumps(state, indent=1, default=str))
+        tmp.replace(self.dir / 'workspace.json')
+
+    def _update(self, **kw):
+        s = self.state
+        s.update(kw)
+        s['updated_at'] = _now()
+        self._save(s)
+        return s
+
+    def _event(self, kind, **detail):
+        with open(self.dir / 'events.jsonl', 'a') as f:
+            f.write(json.dumps({'at': _now(), 'event': kind, **detail}, default=str) + '\n')
+
+    def _step(self, name, **detail):
+        s = self.state
+        s['steps'][name] = {'at': _now(), **detail}
+        s['updated_at'] = _now()
+        self._save(s)
+        self._event(name, **detail)
+
+    @property
+    def semantic_path(self):
+        return self.dir / 'semantic.sqlite3'
+
+    @property
+    def docs_dir(self):
+        return self.dir / 'analyst_docs'
+
+    def connect(self):
+        return connectors.connect(self.state['source'])
+
+    def summary(self):
+        s = self.state
+        out = {k: s.get(k) for k in ('slug', 'name', 'status', 'as_of', 'created_at', 'updated_at', 'error')}
+        out['source'] = re.sub(r'//[^/@]*@', '//***@', s['source'])  # never echo inline credentials
+        out['steps'] = {k: v.get('at') for k, v in s['steps'].items()}
+        out['review_open'] = s['steps'].get('propose', {}).get('review_open')
+        out['tables'] = s['steps'].get('build', {}).get('rows')
+        out['raw_tables'] = s['steps'].get('raw', {}).get('tables')
+        out['verification'] = s['steps'].get('verify', {}).get('passed')
+        return out
+
+    # --- pipeline --------------------------------------------------------------------------------------------------
+
+    def run(self, *, through='docs'):
+        """Run every step up to and including `through`. Steps that already ran are re-run from `profile` only when
+        explicitly asked (rebuild()); a failed step records its error and stops."""
+        with _lock(self.slug):
+            conn = self.connect()
+            try:
+                for step in STEPS:
+                    getattr(self, '_do_' + step)(conn)
+                    if step == through:
+                        break
+                if through == 'docs':
+                    self._update(status='ready', error=None)
+            except Exception as exc:
+                self._update(status='failed', error=f'{type(exc).__name__}: {exc}'[:800])
+                self._event('failed', error=f'{type(exc).__name__}: {exc}'[:800])
+                raise
+            finally:
+                conn.close()
+        return self.summary()
+
+    def rebuild(self):
+        """Re-apply the mapping with the reviewer's decisions (no re-profiling) and refresh raw tables, checks, docs."""
+        with _lock(self.slug):
+            conn = self.connect()
+            try:
+                self._apply_decisions()
+                for step in ('approve', 'build', 'raw', 'verify', 'docs'):
+                    getattr(self, '_do_' + step)(conn)
+                self._update(status='ready', error=None)
+            except Exception as exc:
+                self._update(status='failed', error=f'{type(exc).__name__}: {exc}'[:800])
+                raise
+            finally:
+                conn.close()
+        return self.summary()
+
+    def _do_profile(self, conn):
+        self._update(status='profiling')
+        prof = profile_mod.profile_source(conn)
+        (self.dir / 'profile.json').write_text(json.dumps(prof, indent=1, default=str))
+        sm = profile_mod.summary(prof)
+        self._step('profile', tables=len(prof.get('tables', {})), summary=sm)
+
+    def _do_propose(self, conn):
+        self._update(status='mapping')
+        prof = json.loads((self.dir / 'profile.json').read_text())
+        mapping = matcher.propose(contract.load_model(), prof)
+        matcher.save(mapping, self.dir / 'mapping.json')
+        self._apply_decisions()
+        self._step('propose', entities={e: v['source_table'] for e, v in mapping['entities'].items()},
+                   review_open=len(self.review_items()))
+
+    def _do_approve(self, conn):
+        mapping = matcher.load(self.dir / 'mapping.json')
+        if mapping['approval'].get('approved') and mapping['approval'].get('reviewer', '').startswith('person:'):
+            return  # a person approved this exact mapping; keep their approval
+        fields = [f for e in mapping['entities'].values() for f in e['fields'].values()]
+        mapping['approval'] = {'approved': True, 'reviewer': 'auto: matcher accept threshold + reviewer decisions',
+                               'approved_at': _now(),
+                               'accepted_fields': sum(1 for f in fields if f.get('accept')),
+                               'rejected_or_unreviewed_fields': sum(1 for f in fields if f.get('source') and not f.get('accept'))}
+        matcher.save(mapping, self.dir / 'mapping.json')
+        self._step('approve', **{k: v for k, v in mapping['approval'].items() if k != 'approved_at'})
+
+    def _do_build(self, conn):
+        self._update(status='building')
+        receipt = apply_mod.apply(matcher.load(self.dir / 'mapping.json'), conn, self.semantic_path)
+        as_of = self.state.get('as_of') or self._infer_as_of() or date.today().isoformat()
+        db = sqlite3.connect(self.semantic_path)
+        try:
+            db.execute("DELETE FROM meta WHERE key IN ('as_of', 'workspace')")
+            db.executemany('INSERT INTO meta VALUES (?, ?)', [('as_of', as_of), ('workspace', self.slug)])
+            db.commit()
+        finally:
+            db.close()
+        self._update(as_of=as_of)
+        self._step('build', rows=receipt.get('rows'), transform_stats=receipt.get('transform_stats'), as_of=as_of)
+
+    def _infer_as_of(self):
+        """The latest plausible event date in the built layer (data received through then)."""
+        db = sqlite3.connect(f'file:{self.semantic_path}?mode=ro', uri=True)
+        try:
+            best = None
+            for table, col in (('visit', 'event_date'), ('claim', 'service_from'), ('measurement', 'event_date'),
+                               ('condition', 'event_date'), ('medication', 'event_date')):
+                try:
+                    v = db.execute(f"SELECT max({col}) FROM {table} WHERE {col} <= date('now', '+1 day')").fetchone()[0]
+                except sqlite3.Error:
+                    continue
+                if v and (best is None or str(v)[:10] > best):
+                    best = str(v)[:10]
+            return best
+        finally:
+            db.close()
+
+    def _do_raw(self, conn):
+        mode = self.state.get('raw', 'all')
+        if mode == 'none':
+            self._step('raw', tables={}, mode=mode)
+            return
+        mapping = matcher.load(self.dir / 'mapping.json')
+        tables = list(conn.tables()) if mode == 'all' else list(mapping.get('unmapped_source_tables') or [])
+        db = sqlite3.connect(self.semantic_path)
+        copied = {}
+        try:
+            existing = {r[0] for r in db.execute("SELECT name FROM sqlite_master WHERE type='table'")}
+            for t in tables:
+                cols = [c for c, _ in conn.columns(t)]
+                if not cols:
+                    continue
+                name = 'raw_' + _safe_ident(t)
+                if name in existing:
+                    db.execute(f'DROP TABLE "{name}"')
+                safe_cols = []
+                for c in cols:
+                    s = _safe_ident(c) or 'col'
+                    while s in safe_cols:
+                        s += '_'
+                    safe_cols.append(s)
+                db.execute(f'CREATE TABLE "{name}" (' + ', '.join(f'"{c}"' for c in safe_cols) + ')')
+                ins = f'INSERT INTO "{name}" VALUES (' + ', '.join('?' * len(cols)) + ')'
+                n, batch = 0, []
+                for row in conn.rows(t, cols):
+                    batch.append(tuple(v if v is None or isinstance(v, (int, float, str, bytes)) else str(v) for v in row))
+                    if len(batch) >= RAW_BATCH:
+                        db.executemany(ins, batch); n += len(batch); batch = []
+                if batch:
+                    db.executemany(ins, batch); n += len(batch)
+                copied[name] = {'source_table': t, 'rows': n,
+                                'renamed_columns': {c: s for c, s in zip(cols, safe_cols) if c != s}}
+            db.commit()
+        finally:
+            db.close()
+        self._step('raw', tables={k: v['rows'] for k, v in copied.items()}, mode=mode)
+        (self.dir / 'raw_tables.json').write_text(json.dumps(copied, indent=1))
+
+    def _do_verify(self, conn):
+        self._update(status='verifying')
+        try:
+            result = verify.invariants(self.semantic_path, matcher.load(self.dir / 'mapping.json'), conn,
+                                       as_of=self.state.get('as_of'))
+        except Exception as exc:  # verification annotates; it never blocks the workspace
+            result = {'passed': False, 'error': f'{type(exc).__name__}: {exc}'[:500], 'checks': []}
+        (self.dir / 'verification.json').write_text(json.dumps(result, indent=1, default=str))
+        failed = [c.get('name') for c in result.get('checks', []) if isinstance(c, dict) and not c.get('passed')]
+        self._step('verify', passed=result.get('passed'), failed_checks=failed)
+
+    def _do_docs(self, conn):
+        from ..hybrid import catalog
+        mapping = matcher.load(self.dir / 'mapping.json')
+        gaps = self.review_items()
+        lines = [f"Workspace {self.state['name']} ({self.slug}); source {self.summary()['source']}; data as of "
+                 f"{self.state.get('as_of')}.", '', 'Entity -> source table:']
+        lines += [f"- {e}: {v['source_table'] or 'not mapped (use raw_* tables)'}" for e, v in mapping['entities'].items()]
+        if gaps:
+            lines += ['', 'Open mapping questions (answers may need raw_* tables for these):']
+            lines += [f"- {g['entity']}.{g.get('field') or '*'}: {g['reason']}" for g in gaps[:60]]
+        result = catalog.build_docs(self.semantic_path, self.docs_dir, extra_sections={'Workspace mapping': '\n'.join(lines)})
+        self._step('docs', files=result.get('files'), chars=result.get('chars'))
+
+    # --- review ----------------------------------------------------------------------------------------------------
+
+    def review_items(self):
+        """Mapping questions for a person, most important first. Each has a stable id used by decide()."""
+        path = self.dir / 'mapping.json'
+        if not path.is_file():
+            return []
+        mapping = matcher.load(path)
+        decided = self.state.get('decisions', {})
+        items = []
+        for entity, e in mapping['entities'].items():
+            if not e.get('source_table'):
+                items.append({'id': f'{entity}.*', 'entity': entity, 'field': None, 'kind': 'table',
+                              'reason': 'no source table matched this entity', 'priority': 1,
+                              'candidates': [], 'decided': decided.get(f'{entity}.*')})
+                continue
+            if e.get('confidence', 1) < matcher.ACCEPT_THRESHOLD:
+                items.append({'id': f'{entity}.*', 'entity': entity, 'field': None, 'kind': 'table',
+                              'reason': f"table {e['source_table']} chosen with low confidence {e['confidence']}",
+                              'priority': 2, 'current': e['source_table'], 'candidates': e.get('table_alternatives', []),
+                              'decided': decided.get(f'{entity}.*')})
+            for field, f in e['fields'].items():
+                fid = f'{entity}.{field}'
+                if f.get('accept'):
+                    continue
+                if f.get('source') is None and not f.get('required'):
+                    continue  # an optional field the source does not have is not a question
+                reason = ('required field has no source column' if f.get('source') is None
+                          else f"column {f['source']} proposed with confidence {f['confidence']}")
+                items.append({'id': fid, 'entity': entity, 'field': field, 'kind': 'field', 'reason': reason,
+                              'priority': 1 if f.get('required') else 3, 'current': f.get('source'),
+                              'source_table': e['source_table'], 'candidates': f.get('alternatives', []),
+                              'decided': decided.get(fid)})
+        items.sort(key=lambda i: (i['decided'] is not None, i['priority'], i['id']))
+        return items
+
+    def decide(self, item_id, decision, *, reviewer='person'):
+        """decision: 'accept' | 'reject' | {'source': column} (field) | {'source_table': table} (entity)."""
+        if decision not in ('accept', 'reject') and not (isinstance(decision, dict) and set(decision) <= {'source', 'source_table'}):
+            raise ValueError("decision must be 'accept', 'reject', {'source': column} or {'source_table': table}")
+        s = self.state
+        s['decisions'][item_id] = {'decision': decision, 'reviewer': reviewer, 'at': _now()}
+        self._save(s)
+        self._event('decision', item=item_id, decision=decision, reviewer=reviewer)
+        self._apply_decisions()
+        return self.review_items()
+
+    def _apply_decisions(self):
+        path = self.dir / 'mapping.json'
+        if not path.is_file():
+            return
+        mapping = matcher.load(path)
+        prof_path = self.dir / 'profile.json'
+        prof = json.loads(prof_path.read_text()) if prof_path.is_file() else {'tables': {}}
+        for item_id, d in self.state.get('decisions', {}).items():
+            entity, _, field = item_id.partition('.')
+            e = mapping['entities'].get(entity)
+            if e is None:
+                continue
+            dec = d['decision']
+            if field == '*':
+                if isinstance(dec, dict) and dec.get('source_table') in prof['tables']:
+                    e['source_table'], e['status'], e['confidence'] = dec['source_table'], 'reviewed', 1.0
+                elif dec == 'reject':
+                    e['source_table'], e['status'], e['fields'] = None, 'rejected', {}
+                elif dec == 'accept':
+                    e['status'] = 'reviewed'
+                continue
+            f = e['fields'].get(field)
+            if f is None:
+                continue
+            if dec == 'accept':
+                f['accept'] = f.get('source') is not None
+            elif dec == 'reject':
+                f['accept'] = False
+            elif isinstance(dec, dict) and dec.get('source'):
+                cols = (prof['tables'].get(e.get('source_table') or '', {}) or {}).get('columns', {})
+                if dec['source'] not in cols:
+                    raise ValueError(f"{dec['source']} is not a column of {e.get('source_table')}")
+                f.update(source=dec['source'], accept=True, confidence=1.0, evidence=['reviewer override'], transforms=[])
+            f['reviewed'] = True
+        if self.state.get('decisions'):
+            mapping['approval']['approved'] = False  # decisions change the mapping: the next approve re-approves it
+        matcher.save(mapping, path)
+
+    # --- answering -------------------------------------------------------------------------------------------------
+
+    def ask(self, question, *, answer_type=None, send_factory=None):
+        if self.state['status'] != 'ready':
+            raise RuntimeError(f"Workspace {self.slug} is {self.state['status']}; run it first")
+        from ..clinical.semantic_analyst import SemanticWarehouse
+        from ..hybrid import live
+        wh = SemanticWarehouse(self.semantic_path, timeout_s=120)
+        try:
+            out = live.answer(question, self.state['as_of'], wh, send_factory or ledgered_send_factory(self.dir / 'receipts'),
+                              answer_type=answer_type, docs_dir=self.docs_dir)
+        finally:
+            wh.close()
+        record = {'at': _now(), 'question': question, 'decision': out['decision'], 'answer': out['answer'],
+                  'cost_usd': out['cost_usd'], 'interpretation': out['interpretation']}
+        with open(self.dir / 'questions.jsonl', 'a') as f:
+            f.write(json.dumps(record, default=str) + '\n')
+        return out
+
+
+def ledgered_send_factory(receipts_dir):
+    """The product's metered sender (budget ledger, response cache, receipts), one ledger connection per thread."""
+    from ..gateway import BudgetLedger
+    from ..clinical.context_student import send as ledgered
+    from ..clinical import together
+    receipts_dir = Path(receipts_dir)
+    receipts_dir.mkdir(parents=True, exist_ok=True)
+
+    @contextmanager
+    def factory():
+        ledger = BudgetLedger(LEDGER)
+        try:
+            def send(body):
+                raw, receipt = ledgered(body, 'claude', ledger, receipts_dir, parse=lambda r: r,
+                                        timeout=together.SEND_TIMEOUT_S, transport=together.TRANSPORT,
+                                        max_bytes=together.REQUEST_MAX_BYTES)
+                if receipt.get('cache_hit'):
+                    return raw, 0.0, True
+                return raw, (receipt.get('cost_estimate') or {}).get('estimated_usd'), False
+            yield send
+        finally:
+            ledger.close()
+    return factory
