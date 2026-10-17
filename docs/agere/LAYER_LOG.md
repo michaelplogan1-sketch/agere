@@ -256,3 +256,13 @@ router, operator router and Opus reconcile leave the answer path (BUILD_LOG.md s
   pairs, not members; the corrected definition (delivered notes with the stop phrase, any drug, no list condition) ships
   with the pending regeneration.
 - **After the regeneration:** re-score H1 and L7 on the new key digest, re-freeze both baselines, then look at CLN-06.
+
+## Regeneration check and CLN-06 (2026-10-17)
+- **Regeneration not applied yet:** after Mike ran it, the v2.8 sample key digest is still `fa34377c` (the frozen
+  baseline's), questions.jsonl still has the old RX-09 text, and no file under releases/ is newer than the baseline. The
+  manifest caught it; no re-score was done on an unchanged key. Asked the generator where it ran.
+- **CLN-06 (held-out miss):** Agere's set is 63 persons under every reading tested: eGFR current or superseded
+  versions, excluded rows in or out, event or arrival clock, N18 from icd10 or icd10_received, paid or any-status
+  claims; "<60" = value_canonical < 60 (2,483 ">60" censored results excluded). The 3 runs differed only in dropping
+  2 duplicate charts (WHP-1691C78EF591, WHP-D8D13E3EE095), which have no demographic twin, so delivered data can't map
+  them to their person. Not a stack miss on the evidence; sent to the generator for audit (person resolution).
