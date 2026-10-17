@@ -238,10 +238,11 @@ class TogetherTests(unittest.TestCase):
         result = self.run_together(stack2, FakeProvider(lambda body: answer('table', table=table)))
         self.assertEqual(result['answer']['confidence'], 'unverified')
         self.assertEqual(result['together']['decision'], 'engine_kept')
-        # unsupported per the analyst also lowers confidence, never replaces
+        # the analyst saying unsupported is a note, not a downgrade: it has no engines (BUILD_LOG step 14, 084d592)
         stack3 = FakeStack(tempfile.mkdtemp(dir=self.temp.name), fast_result(answer('table', table=table), operation='trajectory'))
         result = self.run_together(stack3, FakeProvider(lambda body: answer('unsupported', 'unsupported', missing=['x'])))
-        self.assertEqual((result['answer']['table'], result['answer']['confidence']), (table, 'low'))
+        self.assertEqual((result['answer']['table'], result['answer']['confidence']), (table, 'unverified'))
+        self.assertEqual(result['together']['decision'], 'engine_only')
 
     def test_both_unsupported_abstains(self):
         stack = FakeStack(self.temp.name, fast_result(answer('unsupported', 'unsupported', missing=['no causal design'])))
