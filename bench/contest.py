@@ -39,6 +39,8 @@ import time
 if __package__ in (None, ''):
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from bench import adapters
+from bench import manifest as run_manifest
+from bench.manifest import sha256_file, sha256_json, warehouse_stamp  # noqa: F401 (re-exported)
 from bench.common import ROOT
 from bench.truth_run import contract, prompt
 
@@ -77,39 +79,6 @@ class Budget:
 
 
 # --- hashing and stamping ----------------------------------------------------------------------------------------------
-
-def sha256_file(path, cache=None):
-    """sha256 of a file; large warehouse files are cached by (path, size, mtime_ns) so a round does not rehash GBs."""
-    path = Path(path).resolve()
-    st = path.stat()
-    key = f'{path}|{st.st_size}|{st.st_mtime_ns}'
-    if cache is not None and key in cache:
-        return cache[key]
-    h = hashlib.sha256()
-    with open(path, 'rb') as f:
-        for chunk in iter(lambda: f.read(1 << 22), b''):
-            h.update(chunk)
-    digest = h.hexdigest()
-    if cache is not None:
-        cache[key] = digest
-    return digest
-
-
-def sha256_json(obj):
-    return hashlib.sha256(json.dumps(obj, sort_keys=True, separators=(',', ':'), default=str).encode()).hexdigest()
-
-
-def warehouse_stamp(path, cache=None):
-    """Hash a warehouse by its manifest when one sits beside it (<file>.manifest.json or manifest.json in a release
-    directory), else by its bytes."""
-    path = Path(path)
-    for manifest in (path.with_name(path.name + '.manifest.json'), path / 'manifest.json' if path.is_dir() else None):
-        if manifest is not None and manifest.is_file():
-            return {'path': str(path), 'hashed': 'manifest', 'manifest': str(manifest), 'sha256': sha256_file(manifest, cache)}
-    if not path.is_file():
-        raise FileNotFoundError(f'Warehouse not found: {path}')
-    return {'path': str(path), 'hashed': 'file', 'bytes': path.stat().st_size, 'sha256': sha256_file(path, cache)}
-
 
 def _verification_value(obj):
     for field in VERIFICATION_FIELDS:
@@ -188,6 +157,19 @@ def build_stamp(args, cfg, questions, cache=None):
             'warehouses': [warehouse_stamp(p, cache) for p in warehouse_paths(cfg)],
             'contestant_config': cfg, 'contestant_config_sha256': sha256_json(cfg),
             'stamped_at': datetime.now(timezone.utc).isoformat(timespec='seconds')}
+
+
+def attempt_manifest(args, cfg, mode, cache=None):
+    """The run manifest (bench/manifest.py) for one attempt: data, docs, questions, scorer, model settings, cache policy."""
+    docs = [WORKSPACE / 'config/agere'] if cfg['kind'] == 'agere' else [Path(cfg['tuva_manifest'])] if cfg.get('tuva_manifest') else []
+    data = warehouse_paths(cfg) + ([args.sample_release] if args.sample_release else [])
+    if cfg['kind'] == 'agere':
+        active = WORKSPACE / 'config/agere/active_warehouse.json'
+        docs.append(active)
+    return run_manifest.build(questions_file=args.questions_file, scorer_files=[args.ecosystem / m for m in SCORER_MODULES],
+                              data=data, docs=[d for d in docs if Path(d).exists()],
+                              model_settings={**cfg, 'mode': mode, 'jobs': args.jobs},
+                              cache_policy=args.cache_policy, system=cfg['contestant'], cache=cache)
 
 
 def freeze_round(round_dir, stamp):
@@ -377,6 +359,7 @@ def run(args, transport=None, scorer=run_scorer, warehouse_factory=None, hash_ca
                         continue
                     (out).mkdir(parents=True, exist_ok=True)
                     (out / 'stamp.json').write_text(json.dumps(stamp, indent=1))
+                    run_manifest.write(out, attempt_manifest(args, cfg, mode, cache))
                     with ThreadPoolExecutor(args.jobs) as pool:
                         rows = list(pool.map(lambda q: run_question(q, contestant, mode, attempt, args.as_of), questions))
                     save_attempt(out, rows, args, scorer)
@@ -414,6 +397,8 @@ def parser():
     p.add_argument('--jobs', type=int, default=3)
     p.add_argument('--ids', nargs='+')
     p.add_argument('--overwrite', action='store_true', help='re-run attempts that already have rows')
+    p.add_argument('--cache-policy', choices=run_manifest.CACHE_POLICIES, default='prompt_cache_only',
+                   help='declared in the run manifest; replayed answers are always reported apart from paid cost')
     return p
 
 

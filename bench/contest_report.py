@@ -121,17 +121,20 @@ def majority_correct(attempts):
 
 
 def economics(rows, precision):
-    costs = [r.get('estimated_cost_usd') for r in rows]
-    known = [c for c in costs if c is not None]
+    """Fail closed: any row with an unknown cost leaves cost per question unknown; replayed / no-new-call rows are
+    counted apart (bench/manifest.py cost_summary), never as $0 of work."""
+    from bench.manifest import cost_summary
+    summary = cost_summary(rows)
     lat = [r['latency_s'] for r in rows if r.get('latency_s') is not None]
     out = {'rows': len(rows), 'latency_median_s': median(lat), 'latency_p90_s': quantile(lat, .9),
-           'cost_complete': len(known) == len(costs) and bool(costs), 'known_cost_usd': round(sum(known), 6)}
+           'cost_complete': summary['complete'] and bool(rows), 'known_cost_usd': summary['known_paid_usd'],
+           'replayed_rows': summary['replayed_rows'], 'unknown_cost_rows': summary['unknown_cost_rows']}
     if not out['cost_complete']:
         out.update(cost_per_question_usd=None, correct_per_dollar=None,
-                   note=f'cost unknown for {len(costs) - len(known)} of {len(costs)} rows')
+                   note=f"cost unknown for {summary['unknown_cost_rows']} of {len(rows)} rows")
         return out
-    total = sum(known)
-    out['cost_per_question_usd'] = total / len(rows)
+    total = summary['total_usd']
+    out['cost_per_question_usd'] = total / summary['paid_rows'] if summary['paid_rows'] else 0.0  # fresh (paid) rows only
     if precision is None or precision[0] < PRECISION_FLOOR:
         out['correct_per_dollar'] = 'below floor'
     elif total == 0:
@@ -195,7 +198,7 @@ def build(round_dir):
 
         econ = economics(run['rows'], res['all']['precision_on_answered'])
         if econ.get('correct_per_dollar', 'x') is None and econ['cost_complete']:
-            econ['correct_per_dollar'] = res['all']['correct'] / sum(r['estimated_cost_usd'] for r in run['rows'])
+            econ['correct_per_dollar'] = res['all']['correct'] / econ['known_cost_usd']
         report['economics'].setdefault(c, {})[m] = econ
 
     for m in modes:

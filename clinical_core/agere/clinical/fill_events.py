@@ -2,7 +2,8 @@
 
 One row per fill the patient actually received: payer pharmacy claims that count as fills (paid, not reversed or
 recouped), pharmacy dispenses that were picked up (not returned to stock) and owned-pharmacy claims. A dispense and its
-payer claim for the same person, class and fill date (+/- 1 day) are one fill seen twice.
+payer claim for the same person, class, ingredient(s) and fill date (+/- 1 day) are one fill seen twice; two drugs of one
+class filled the same day (tramadol and oxycodone) stay two fills.
 
 Per person and class (drug_class, else RxNorm ingredient, else drug name) the pass precomputes the window facts every
 pharmacy and RWE question re-derives: sequence, days since the previous fill, the gap after the previous supply ended,
@@ -16,7 +17,7 @@ import json
 from pathlib import Path
 import sqlite3
 
-VERSION = 'fill-events/1'
+VERSION = 'fill-events/2'  # /2: merging requires the same ingredient(s), not only the same class
 SAME_FILL_DAYS = 1
 WASHOUT_DAYS = 180
 
@@ -44,6 +45,21 @@ def _int(v):
         return None
 
 
+def ingredient_key(name, ingredients_col=None, rxnorm_ingredient=None):
+    """The active ingredient(s) a fill row names, comparable across sources whose names differ in case, salt and brand
+    ('Oxycontin' and 'oxycodone hydrochloride 10 MG' -> 'oxycodone'). Falls back to the delivered ingredient columns, then
+    to the first word of the name."""
+    from .drug_classes import generic_name, ingredients
+    found = ingredients(name) or generic_name(name)
+    if not found and ingredients_col:
+        found = [x.strip().lower() for x in str(ingredients_col).split(',') if x.strip()]
+    if not found and rxnorm_ingredient:
+        return f'rxnorm:{rxnorm_ingredient}'
+    if not found:
+        return f"name:{(name or '').lower().split(' ')[0]}"
+    return '+'.join(sorted(set(found)))
+
+
 def build(out):
     supply = dict(out.execute('SELECT record_id, days_supply FROM payer_pharmacy_claim'))
     payload_supply = {}
@@ -53,29 +69,35 @@ def build(out):
         except ValueError:
             pass
     raw = []
-    for rid, pid, src, d, cls, cat, ing, name in out.execute(
+    ing_keys = {}
+    for rid, pid, src, d, cls, cat, ing, name, ings in out.execute(
             "SELECT record_id, patient_id, source_stream, event_date, drug_class, therapeutic_category, rxnorm_ingredient, "
-            "drug_name FROM medication WHERE picked_up = 1 AND source_stream IN "
+            "drug_name, ingredients FROM medication WHERE picked_up = 1 AND source_stream IN "
             "('payer_pharmacy_claims', 'pharmacy_dispenses', 'pharmacy_claims')"):
         fd = _d(d)
         if fd is None:
             continue
         ds = _int(supply.get(rid) if src == 'payer_pharmacy_claims' else payload_supply.get(rid))
         key = cls or (f'ingredient:{ing}' if ing else f"name:{(name or '').lower().split(' ')[0]}")
+        ik = ing_keys.get((name, ings, ing))
+        if ik is None:
+            ik = ing_keys[(name, ings, ing)] = ingredient_key(name, ings, ing)
         raw.append((pid, key, fd, ds, cls, cat, ing, name, {'payer_pharmacy_claims': 'payer', 'pharmacy_dispenses': 'dispense',
-                                                             'pharmacy_claims': 'pharmacy_claim'}[src], rid))
+                                                             'pharmacy_claims': 'pharmacy_claim'}[src], rid, ik))
     data_start = min((r[2] for r in raw), default=None)
-    raw.sort(key=lambda r: (r[0], r[1], r[2], r[8]))
+    # Merge within person, class and ingredient(s); then order by class and date for the window facts.
+    raw.sort(key=lambda r: (r[0], r[1], r[10], r[2], r[8]))
     fills = []  # merged fills
     for r in raw:
         last = fills[-1] if fills else None
-        if (last and last['pid'] == r[0] and last['key'] == r[1] and (r[2] - last['date']).days <= SAME_FILL_DAYS
-                and r[8] not in last['sources']):
+        if (last and last['pid'] == r[0] and last['key'] == r[1] and last['ing_key'] == r[10]
+                and (r[2] - last['date']).days <= SAME_FILL_DAYS and r[8] not in last['sources']):
             last['sources'].append(r[8]); last['rids'].append(r[9])
             last['days'] = last['days'] or r[3]
             continue
-        fills.append({'pid': r[0], 'key': r[1], 'date': r[2], 'days': r[3], 'cls': r[4], 'cat': r[5], 'ing': r[6],
-                      'name': r[7], 'sources': [r[8]], 'rids': [r[9]]})
+        fills.append({'pid': r[0], 'key': r[1], 'ing_key': r[10], 'date': r[2], 'days': r[3], 'cls': r[4], 'cat': r[5],
+                      'ing': r[6], 'name': r[7], 'sources': [r[8]], 'rids': [r[9]]})
+    fills.sort(key=lambda f: (f['pid'], f['key'], f['date'], f['ing_key'], f['rids'][0]))
     rows = []
     prev = None
     for i, f in enumerate(fills):

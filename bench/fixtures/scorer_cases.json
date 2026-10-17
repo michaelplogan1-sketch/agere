@@ -1,0 +1,990 @@
+{
+ "schema": "agere-scorer-cases/1",
+ "target": "synthetic-patient-ecosystem ecosystem/eval_questions.py _grade (~line 1158)",
+ "outcomes": {
+  "correct": "graded correct",
+  "incorrect": "answered and graded wrong",
+  "malformed": "reported as malformed (its own count), never crashing the run and never graded correct"
+ },
+ "cases": [
+  {
+   "id": "S01",
+   "area": "extra_rows",
+   "title": "Top-5 table with 4 extra rows passes",
+   "key": {
+    "answer_type": "table",
+    "recoverability": "recoverable",
+    "tolerance": {
+     "rel": 0.02
+    },
+    "answer": {
+     "I10": 400,
+     "E78": 350,
+     "E11": 220,
+     "I25": 120,
+     "N18": 90
+    }
+   },
+   "prediction": {
+    "status": "answered",
+    "table": {
+     "I10": 400,
+     "E78": 350,
+     "E11": 220,
+     "I25": 120,
+     "N18": 90,
+     "F32": 80,
+     "J44": 70,
+     "I48": 60,
+     "E66": 50
+    }
+   },
+   "expected": "incorrect",
+   "why": "A top-5 answer with 9 rows is not the answer. Exact key set; extra rows reported as partial credit only."
+  },
+  {
+   "id": "S02",
+   "area": "missing_rows",
+   "title": "10-key table with one key missing passes (90% rule)",
+   "key": {
+    "answer_type": "table",
+    "recoverability": "recoverable",
+    "tolerance": {
+     "rel": 0.02
+    },
+    "answer": {
+     "2028-01": 101,
+     "2028-02": 102,
+     "2028-03": 103,
+     "2028-04": 104,
+     "2028-05": 105,
+     "2028-06": 106,
+     "2028-07": 107,
+     "2028-08": 108,
+     "2028-09": 109,
+     "2028-10": 110
+    }
+   },
+   "prediction": {
+    "status": "answered",
+    "table": {
+     "2028-01": 101,
+     "2028-02": 102,
+     "2028-03": 103,
+     "2028-04": 104,
+     "2028-05": 105,
+     "2028-06": 106,
+     "2028-07": 107,
+     "2028-08": 108,
+     "2028-09": 109
+    }
+   },
+   "expected": "incorrect",
+   "why": "A monthly table missing a month is wrong; report 9/10 as partial credit separately."
+  },
+  {
+   "id": "S03",
+   "area": "extra_rows",
+   "title": "One wrong extra key plus all true keys passes",
+   "key": {
+    "answer_type": "table",
+    "recoverability": "recoverable",
+    "tolerance": {
+     "rel": 0.02
+    },
+    "answer": {
+     "DOAC": 40,
+     "warfarin": 12
+    }
+   },
+   "prediction": {
+    "status": "answered",
+    "table": {
+     "DOAC": 40,
+     "warfarin": 12,
+     "heparin": 3
+    }
+   },
+   "expected": "incorrect",
+   "why": "An extra category is a different answer."
+  },
+  {
+   "id": "S04",
+   "area": "extra_rows",
+   "title": "Patient set with 20% extra patients passes (F1 0.909)",
+   "key": {
+    "answer_type": "patient_set",
+    "recoverability": "recoverable",
+    "tolerance": null,
+    "answer": [
+     "P0",
+     "P1",
+     "P2",
+     "P3",
+     "P4",
+     "P5",
+     "P6",
+     "P7",
+     "P8",
+     "P9",
+     "P10",
+     "P11",
+     "P12",
+     "P13",
+     "P14",
+     "P15",
+     "P16",
+     "P17",
+     "P18",
+     "P19",
+     "P20",
+     "P21",
+     "P22",
+     "P23",
+     "P24",
+     "P25",
+     "P26",
+     "P27",
+     "P28",
+     "P29",
+     "P30",
+     "P31",
+     "P32",
+     "P33",
+     "P34",
+     "P35",
+     "P36",
+     "P37",
+     "P38",
+     "P39",
+     "P40",
+     "P41",
+     "P42",
+     "P43",
+     "P44",
+     "P45",
+     "P46",
+     "P47",
+     "P48",
+     "P49",
+     "P50",
+     "P51",
+     "P52",
+     "P53",
+     "P54",
+     "P55",
+     "P56",
+     "P57",
+     "P58",
+     "P59",
+     "P60",
+     "P61",
+     "P62",
+     "P63",
+     "P64",
+     "P65",
+     "P66",
+     "P67",
+     "P68",
+     "P69",
+     "P70",
+     "P71",
+     "P72",
+     "P73",
+     "P74",
+     "P75",
+     "P76",
+     "P77",
+     "P78",
+     "P79",
+     "P80",
+     "P81",
+     "P82",
+     "P83",
+     "P84",
+     "P85",
+     "P86",
+     "P87",
+     "P88",
+     "P89",
+     "P90",
+     "P91",
+     "P92",
+     "P93",
+     "P94",
+     "P95",
+     "P96",
+     "P97",
+     "P98",
+     "P99"
+    ]
+   },
+   "prediction": {
+    "status": "answered",
+    "patient_ids": [
+     "P0",
+     "P1",
+     "P2",
+     "P3",
+     "P4",
+     "P5",
+     "P6",
+     "P7",
+     "P8",
+     "P9",
+     "P10",
+     "P11",
+     "P12",
+     "P13",
+     "P14",
+     "P15",
+     "P16",
+     "P17",
+     "P18",
+     "P19",
+     "P20",
+     "P21",
+     "P22",
+     "P23",
+     "P24",
+     "P25",
+     "P26",
+     "P27",
+     "P28",
+     "P29",
+     "P30",
+     "P31",
+     "P32",
+     "P33",
+     "P34",
+     "P35",
+     "P36",
+     "P37",
+     "P38",
+     "P39",
+     "P40",
+     "P41",
+     "P42",
+     "P43",
+     "P44",
+     "P45",
+     "P46",
+     "P47",
+     "P48",
+     "P49",
+     "P50",
+     "P51",
+     "P52",
+     "P53",
+     "P54",
+     "P55",
+     "P56",
+     "P57",
+     "P58",
+     "P59",
+     "P60",
+     "P61",
+     "P62",
+     "P63",
+     "P64",
+     "P65",
+     "P66",
+     "P67",
+     "P68",
+     "P69",
+     "P70",
+     "P71",
+     "P72",
+     "P73",
+     "P74",
+     "P75",
+     "P76",
+     "P77",
+     "P78",
+     "P79",
+     "P80",
+     "P81",
+     "P82",
+     "P83",
+     "P84",
+     "P85",
+     "P86",
+     "P87",
+     "P88",
+     "P89",
+     "P90",
+     "P91",
+     "P92",
+     "P93",
+     "P94",
+     "P95",
+     "P96",
+     "P97",
+     "P98",
+     "P99",
+     "P100",
+     "P101",
+     "P102",
+     "P103",
+     "P104",
+     "P105",
+     "P106",
+     "P107",
+     "P108",
+     "P109",
+     "P110",
+     "P111",
+     "P112",
+     "P113",
+     "P114",
+     "P115",
+     "P116",
+     "P117",
+     "P118",
+     "P119"
+    ]
+   },
+   "expected": "incorrect",
+   "why": "20 patients who do not meet the definition are on the list. Exact set; F1 is partial credit."
+  },
+  {
+   "id": "S05",
+   "area": "missing_rows",
+   "title": "Patient set missing 10% of patients passes",
+   "key": {
+    "answer_type": "patient_set",
+    "recoverability": "recoverable",
+    "tolerance": null,
+    "answer": [
+     "P0",
+     "P1",
+     "P2",
+     "P3",
+     "P4",
+     "P5",
+     "P6",
+     "P7",
+     "P8",
+     "P9",
+     "P10",
+     "P11",
+     "P12",
+     "P13",
+     "P14",
+     "P15",
+     "P16",
+     "P17",
+     "P18",
+     "P19",
+     "P20",
+     "P21",
+     "P22",
+     "P23",
+     "P24",
+     "P25",
+     "P26",
+     "P27",
+     "P28",
+     "P29",
+     "P30",
+     "P31",
+     "P32",
+     "P33",
+     "P34",
+     "P35",
+     "P36",
+     "P37",
+     "P38",
+     "P39",
+     "P40",
+     "P41",
+     "P42",
+     "P43",
+     "P44",
+     "P45",
+     "P46",
+     "P47",
+     "P48",
+     "P49",
+     "P50",
+     "P51",
+     "P52",
+     "P53",
+     "P54",
+     "P55",
+     "P56",
+     "P57",
+     "P58",
+     "P59",
+     "P60",
+     "P61",
+     "P62",
+     "P63",
+     "P64",
+     "P65",
+     "P66",
+     "P67",
+     "P68",
+     "P69",
+     "P70",
+     "P71",
+     "P72",
+     "P73",
+     "P74",
+     "P75",
+     "P76",
+     "P77",
+     "P78",
+     "P79",
+     "P80",
+     "P81",
+     "P82",
+     "P83",
+     "P84",
+     "P85",
+     "P86",
+     "P87",
+     "P88",
+     "P89",
+     "P90",
+     "P91",
+     "P92",
+     "P93",
+     "P94",
+     "P95",
+     "P96",
+     "P97",
+     "P98",
+     "P99"
+    ]
+   },
+   "prediction": {
+    "status": "answered",
+    "patient_ids": [
+     "P0",
+     "P1",
+     "P2",
+     "P3",
+     "P4",
+     "P5",
+     "P6",
+     "P7",
+     "P8",
+     "P9",
+     "P10",
+     "P11",
+     "P12",
+     "P13",
+     "P14",
+     "P15",
+     "P16",
+     "P17",
+     "P18",
+     "P19",
+     "P20",
+     "P21",
+     "P22",
+     "P23",
+     "P24",
+     "P25",
+     "P26",
+     "P27",
+     "P28",
+     "P29",
+     "P30",
+     "P31",
+     "P32",
+     "P33",
+     "P34",
+     "P35",
+     "P36",
+     "P37",
+     "P38",
+     "P39",
+     "P40",
+     "P41",
+     "P42",
+     "P43",
+     "P44",
+     "P45",
+     "P46",
+     "P47",
+     "P48",
+     "P49",
+     "P50",
+     "P51",
+     "P52",
+     "P53",
+     "P54",
+     "P55",
+     "P56",
+     "P57",
+     "P58",
+     "P59",
+     "P60",
+     "P61",
+     "P62",
+     "P63",
+     "P64",
+     "P65",
+     "P66",
+     "P67",
+     "P68",
+     "P69",
+     "P70",
+     "P71",
+     "P72",
+     "P73",
+     "P74",
+     "P75",
+     "P76",
+     "P77",
+     "P78",
+     "P79",
+     "P80",
+     "P81",
+     "P82",
+     "P83",
+     "P84",
+     "P85",
+     "P86",
+     "P87",
+     "P88",
+     "P89"
+    ]
+   },
+   "expected": "incorrect",
+   "why": "Ten eligible patients are dropped from a work list."
+  },
+  {
+   "id": "S06",
+   "area": "empty_set",
+   "title": "Correctly empty patient set fails",
+   "key": {
+    "answer_type": "patient_set",
+    "recoverability": "recoverable",
+    "tolerance": null,
+    "answer": []
+   },
+   "prediction": {
+    "status": "answered",
+    "patient_ids": []
+   },
+   "expected": "correct",
+   "why": "No patient meets the definition and the answer says so. precision is 0 by convention when the prediction is empty, so F1 = 0."
+  },
+  {
+   "id": "S07",
+   "area": "empty_set",
+   "title": "Correctly empty table fails",
+   "key": {
+    "answer_type": "table",
+    "recoverability": "recoverable",
+    "tolerance": null,
+    "answer": {}
+   },
+   "prediction": {
+    "status": "answered",
+    "table": {}
+   },
+   "expected": "correct",
+   "why": "\"No rejected claims\" is a valid answer; bool(t) makes it unpassable."
+  },
+  {
+   "id": "S08",
+   "area": "empty_set",
+   "title": "Non-empty answer to an empty patient set (guard)",
+   "key": {
+    "answer_type": "patient_set",
+    "recoverability": "recoverable",
+    "tolerance": null,
+    "answer": []
+   },
+   "prediction": {
+    "status": "answered",
+    "patient_ids": [
+     "P1"
+    ]
+   },
+   "expected": "incorrect",
+   "why": "Guard: must stay incorrect."
+  },
+  {
+   "id": "S09",
+   "area": "empty_set",
+   "title": "Count of zero (guard)",
+   "key": {
+    "answer_type": "count",
+    "recoverability": "recoverable",
+    "tolerance": {
+     "rel": 0.02
+    },
+    "answer": 0
+   },
+   "prediction": {
+    "status": "answered",
+    "count": 0
+   },
+   "expected": "correct",
+   "why": "Guard: must stay correct."
+  },
+  {
+   "id": "S10",
+   "area": "duplicate_keys",
+   "title": "Duplicate table key: last row silently wins",
+   "key": {
+    "answer_type": "table",
+    "recoverability": "recoverable",
+    "tolerance": {
+     "rel": 0.02
+    },
+    "answer": {
+     "CO-45": 30,
+     "CO-97": 12
+    }
+   },
+   "prediction": {
+    "status": "answered",
+    "table": [
+     {
+      "key": "CO-45",
+      "value": 99
+     },
+     {
+      "key": "CO-45",
+      "value": 30
+     },
+     {
+      "key": "CO-97",
+      "value": 12
+     }
+    ]
+   },
+   "expected": "malformed",
+   "why": "Two different values for one key is not an answer; flag it, never pick one."
+  },
+  {
+   "id": "S11",
+   "area": "duplicate_keys",
+   "title": "Keys that collide after normalization (case/space/dot)",
+   "key": {
+    "answer_type": "table",
+    "recoverability": "recoverable",
+    "tolerance": {
+     "rel": 0.02
+    },
+    "answer": {
+     "E11": 220,
+     "I10": 400
+    }
+   },
+   "prediction": {
+    "status": "answered",
+    "table": [
+     {
+      "key": "E11",
+      "value": 5
+     },
+     {
+      "key": "e 11",
+      "value": 220
+     },
+     {
+      "key": "I10",
+      "value": 400
+     }
+    ]
+   },
+   "expected": "malformed",
+   "why": "Normalization merges two rows; the collision must be reported."
+  },
+  {
+   "id": "S12",
+   "area": "duplicate_keys",
+   "title": "Duplicate patient ids (guard: set semantics)",
+   "key": {
+    "answer_type": "patient_set",
+    "recoverability": "recoverable",
+    "tolerance": null,
+    "answer": [
+     "P1",
+     "P2"
+    ]
+   },
+   "prediction": {
+    "status": "answered",
+    "patient_ids": [
+     "P1",
+     "P1",
+     "P2"
+    ]
+   },
+   "expected": "correct",
+   "why": "Guard: a repeated id is the same person; acceptable, optionally counted as a warning."
+  },
+  {
+   "id": "S13",
+   "area": "units",
+   "title": "Absolute tolerance wider than the value accepts a 100x unit error",
+   "key": {
+    "answer_type": "value",
+    "recoverability": "recoverable",
+    "tolerance": {
+     "abs": 0.5
+    },
+    "answer": 0.4
+   },
+   "prediction": {
+    "status": "answered",
+    "value": 0.004
+   },
+   "expected": "incorrect",
+   "why": "0.4% answered as 0.004 (a fraction) is off 100x but inside abs 0.5 points, which accepts anything from 0 to 0.9. Small percents need a relative bound too, or a declared unit in the contract."
+  },
+  {
+   "id": "S14",
+   "area": "units",
+   "title": "Percent given as a fraction (guard)",
+   "key": {
+    "answer_type": "value",
+    "recoverability": "recoverable",
+    "tolerance": {
+     "abs": 0.5
+    },
+    "answer": 12.5
+   },
+   "prediction": {
+    "status": "answered",
+    "value": 0.125
+   },
+   "expected": "incorrect",
+   "why": "Guard: must stay incorrect."
+  },
+  {
+   "id": "S15",
+   "area": "units",
+   "title": "Value with a unit string is scored as a wrong number",
+   "key": {
+    "answer_type": "value",
+    "recoverability": "recoverable",
+    "tolerance": {
+     "abs": 0.5
+    },
+    "answer": 12.5
+   },
+   "prediction": {
+    "status": "answered",
+    "value": "12.5%"
+   },
+   "expected": "malformed",
+   "why": "Either parse a declared unit or report malformed; never silently \"incorrect\"."
+  },
+  {
+   "id": "S16",
+   "area": "units",
+   "title": "Dollar string with separators is scored as a wrong number",
+   "key": {
+    "answer_type": "value",
+    "recoverability": "recoverable",
+    "tolerance": {
+     "rel": 0.02
+    },
+    "answer": 1234567.0
+   },
+   "prediction": {
+    "status": "answered",
+    "value": "$1,234,567"
+   },
+   "expected": "malformed",
+   "why": "Same as S15 for currency."
+  },
+  {
+   "id": "S17",
+   "area": "units",
+   "title": "Zero truth with relative-only tolerance needs an exact zero (guard)",
+   "key": {
+    "answer_type": "count",
+    "recoverability": "recoverable",
+    "tolerance": {
+     "rel": 0.02
+    },
+    "answer": 0
+   },
+   "prediction": {
+    "status": "answered",
+    "count": 1
+   },
+   "expected": "incorrect",
+   "why": "Guard: must stay incorrect."
+  },
+  {
+   "id": "S18",
+   "area": "malformed",
+   "title": "Table row as a one-element list crashes the scorer",
+   "key": {
+    "answer_type": "table",
+    "recoverability": "recoverable",
+    "tolerance": {
+     "rel": 0.02
+    },
+    "answer": {
+     "A": 1
+    }
+   },
+   "prediction": {
+    "status": "answered",
+    "table": [
+     [
+      "A"
+     ]
+    ]
+   },
+   "expected": "malformed",
+   "why": "IndexError in _grade aborts the whole scoring run instead of failing one answer."
+  },
+  {
+   "id": "S19",
+   "area": "malformed",
+   "title": "patient_ids as a comma string is iterated as characters",
+   "key": {
+    "answer_type": "patient_set",
+    "recoverability": "recoverable",
+    "tolerance": null,
+    "answer": [
+     "P1",
+     "P2"
+    ]
+   },
+   "prediction": {
+    "status": "answered",
+    "patient_ids": "P1,P2"
+   },
+   "expected": "malformed",
+   "why": "A string is not a list of ids."
+  },
+  {
+   "id": "S20",
+   "area": "malformed",
+   "title": "Boolean count is read as 1",
+   "key": {
+    "answer_type": "count",
+    "recoverability": "recoverable",
+    "tolerance": {
+     "rel": 0.02
+    },
+    "answer": 1
+   },
+   "prediction": {
+    "status": "answered",
+    "count": true
+   },
+   "expected": "malformed",
+   "why": "float(True) == 1."
+  },
+  {
+   "id": "S21",
+   "area": "malformed",
+   "title": "Answered with no result field",
+   "key": {
+    "answer_type": "count",
+    "recoverability": "recoverable",
+    "tolerance": {
+     "rel": 0.02
+    },
+    "answer": 17
+   },
+   "prediction": {
+    "status": "answered"
+   },
+   "expected": "malformed",
+   "why": "Report as malformed (separate count), not as an answered wrong number."
+  },
+  {
+   "id": "S22",
+   "area": "malformed",
+   "title": "Empty table row becomes key \"None\"",
+   "key": {
+    "answer_type": "table",
+    "recoverability": "recoverable",
+    "tolerance": {
+     "rel": 0.02
+    },
+    "answer": {
+     "A": 1
+    }
+   },
+   "prediction": {
+    "status": "answered",
+    "table": [
+     {},
+     {
+      "key": "A",
+      "value": 1
+     }
+    ]
+   },
+   "expected": "malformed",
+   "why": "An empty row is not a row."
+  },
+  {
+   "id": "S23",
+   "area": "malformed",
+   "title": "Table given as a bare number",
+   "key": {
+    "answer_type": "table",
+    "recoverability": "recoverable",
+    "tolerance": {
+     "rel": 0.02
+    },
+    "answer": {
+     "A": 1
+    }
+   },
+   "prediction": {
+    "status": "answered",
+    "table": 5
+   },
+   "expected": "malformed",
+   "why": "Crashes or mis-scores depending on type."
+  },
+  {
+   "id": "S24",
+   "area": "multi_column",
+   "title": "Two-column key has no canonical form",
+   "key": {
+    "answer_type": "table",
+    "recoverability": "recoverable",
+    "tolerance": {
+     "rel": 0.02
+    },
+    "answer": {
+     "ace_inhibitor -> arb": 12,
+     "statin -> ezetimibe": 4
+    }
+   },
+   "prediction": {
+    "status": "answered",
+    "table": [
+     {
+      "key": "ace_inhibitor | arb",
+      "keys": {
+       "from": "ace_inhibitor",
+       "to": "arb"
+      },
+      "value": 12
+     },
+     {
+      "key": "statin | ezetimibe",
+      "keys": {
+       "from": "statin",
+       "to": "ezetimibe"
+      },
+      "value": 4
+     }
+    ]
+   },
+   "expected": "correct",
+   "why": "The contract needs ordered key columns (e.g. \"keys\": [..]) compared as a tuple, not a free-text separator."
+  }
+ ]
+}
