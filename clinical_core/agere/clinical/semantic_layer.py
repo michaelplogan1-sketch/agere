@@ -13,7 +13,8 @@ import json, re, sqlite3, time
 
 from . import aggregate, client_data, concepts, population_events, population_feeds, source_profile
 
-VERSION = 'semantic-layer/17'  # 17: population_events (payer claim services, unified claims, pharmacy events)
+VERSION = 'semantic-layer/18'  # 18: lab results dated specimen > collected > event > recorded
+# (previous) 'semantic-layer/17'  # 17: population_events (payer claim services, unified claims, pharmacy events)
 GFR_UNNORMALIZED = 'gfr_unnormalized'  # 'glomerular filtration rate' results in a unit that is not per 1.73 m2 (mL/min)
 
 # Source contract: streams whose records are successive snapshots of one business entity (key field).
@@ -202,6 +203,16 @@ SCHEMA_DOC = {
 
 
 def _date(r): return (r.get('event_date') or '')[:10] or None
+
+
+def _result_date(r):
+    """A lab result's clinical date: specimen time, else collected time, else event date, else recorded date (a result
+    delivered without an event date is still dated, not dropped from time-windowed questions)."""
+    for k in ('specimen_time', 'collected_time', 'event_date', 'recorded_date'):
+        v = r.get(k)
+        if v:
+            return str(v)[:10]
+    return None
 
 
 MED_SOURCES = [  # stream, name field, status field, evidence label
@@ -820,6 +831,7 @@ def build(path):
                         if c: note(c, 'condition', pid, d)
                 if st in concepts.MEASUREMENT_STREAMS:
                     spec = concepts.MEASUREMENT_STREAMS[st]
+                    md = _result_date(r) if st == 'labs' else d
                     name = r.get(spec['name']) or next((r.get(f) for f in spec['alt_names'] if r.get(f)), None)
                     series = []
                     if name is not None:
@@ -835,14 +847,14 @@ def build(path):
                         for c in sorted(cs) or [None]:
                             canon, cunit = None, None
                             if c == GFR_UNNORMALIZED:
-                                note(c, 'measurement', pid, d)
+                                note(c, 'measurement', pid, md)
                             elif c:
                                 factor = concepts.MEASUREMENTS[c]['units'].get(unit)
                                 cunit = concepts.MEASUREMENTS[c]['unit']
                                 canon = value * factor if value is not None and factor is not None else None
-                                note(c, 'measurement', pid, d)
+                                note(c, 'measurement', pid, md)
                             out.execute('INSERT INTO measurement VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
-                                        (rid, pid, st, c, name, value, unit, canon, cunit, r.get('result_status'), d,
+                                        (rid, pid, st, c, name, value, unit, canon, cunit, r.get('result_status'), md,
                                          (r.get('recorded_date') or '')[:10] or None, (r.get('available_date') or '')[:10] or None, r.get('organization_id')))
                 if st in QUESTIONNAIRE_STREAMS:
                     c = _questionnaire_concept(r.get('instrument'))
