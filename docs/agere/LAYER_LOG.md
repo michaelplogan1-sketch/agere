@@ -348,3 +348,13 @@ router, operator router and Opus reconcile leave the answer path (BUILD_LOG.md s
 - **Cost and speed:** $14.12 total ($0.14/question, every cost known); p50 180 s, max 539 s.
 - **How answers were decided:** fast path and hybrid core disagreed on 68 questions (hybrid answer shipped), agreed on 15,
   both unsupported on 9; only 1 clarify was issued, so ambiguous questions were mostly answered with one reading.
+
+## Clarify on two readings (2026-10-17, pilot dev split only)
+- **Built:** analysts name defensible readings in the contract (`readings`); data-handling choices and clause precedence
+  are not readings. When a majority of the three name two or more readings, Agere returns `clarify` with them; the
+  tie-break can also trace a split to two readings. The /ask page shows them as "Which do you mean?". Final rule: a7bafa0.
+- **Dev 30 (per-question results allowed on dev only):** P1 20/30 -> P2 (majority asks) 22/30 (+4 correct clarify,
+  2 false clarify) -> P3 (stronger-model confirmation) 20/30 (false clarify gone, 3 of 4 real ones suppressed) ->
+  P4 (unanimous asks, 2-of-3 confirmed) 18/30. Spread is within run-to-run noise on 30 questions, and reruns can reuse
+  ledger-cached model replies, so they are not fully independent. Settled on majority-asks with the tightened rule
+  (not separately rerun). Calibration (70) was scored once in P1 and not rerun.
