@@ -217,3 +217,6 @@ router, operator router and Opus reconcile leave the answer path (BUILD_LOG.md s
   and pricing count as the ruler.
 - **Not yet pinned:** the answer keys themselves (they are private). The generator is asked to publish a key digest;
   until then a key regeneration is only visible as a scorer-version or release change.
+- **Answer keys now pinned** (same day): the scorer reports `answers_sha256`, every run manifest records it, and it is
+  part of the ruler. Baselines re-frozen on key `fa34377c…` (v2.8 sample). Mike's pending key regeneration (RX-10,
+  VBC-02, ACC-10, supersede handling) will make runs NOT COMPARABLE until the baselines are re-scored and re-frozen.

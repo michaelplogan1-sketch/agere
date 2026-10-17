@@ -58,6 +58,16 @@ class ManifestPins(Fixture):
         self.assertFalse(c['comparable'])
         self.assertEqual(c['measurement_changed'], ['scorer'])
 
+    def test_answer_key_digest_is_part_of_the_ruler(self):
+        manifest.write(self.tmp.name, self.build())
+        a = manifest.pin_answer_key(self.tmp.name, json.dumps({'answers_sha256': 'k1', 'scorer_version': 'v1'}))
+        self.assertEqual(a['pinned']['answer_key'], {'answers_sha256': 'k1', 'scorer_version': 'v1'})
+        self.assertEqual(a['pinned_sha256'], manifest.sha256_json(a['pinned']))
+        b = manifest.pin_answer_key(self.tmp.name, json.dumps({'answers_sha256': 'k2', 'scorer_version': 'v1'}))
+        self.assertEqual(manifest.compare(a, b)['measurement_changed'], ['answer_key'])
+        c = manifest.pin_answer_key(self.tmp.name, 'not json')
+        self.assertIsNone(c['pinned']['answer_key']['answers_sha256'])
+
     def test_unknown_cache_policy_is_refused(self):
         with self.assertRaises(ValueError):
             self.build(cache_policy='whatever')

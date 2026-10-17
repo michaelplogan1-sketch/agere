@@ -122,6 +122,22 @@ def write(out_dir, manifest, name='manifest.json'):
     return path
 
 
+def pin_answer_key(out_dir, score_output, name='manifest.json'):
+    """After scoring: pin the sealed key the scorer used (its answers_sha256 and scorer_version, from score() output;
+    Agere never reads the key). A score output without the digest pins answer_key as unknown, which never compares equal
+    to a pinned one."""
+    try:
+        result = score_output if isinstance(score_output, dict) else json.loads(score_output)
+    except (TypeError, ValueError):
+        result = {}
+    path = Path(out_dir) / name
+    m = json.loads(path.read_text())
+    m['pinned']['answer_key'] = {'answers_sha256': result.get('answers_sha256'), 'scorer_version': result.get('scorer_version')}
+    m['pinned_sha256'] = sha256_json(m['pinned'])
+    path.write_text(json.dumps(m, indent=1, default=str))
+    return m
+
+
 def hash_cache(path):
     """A persistent (path, size, mtime) -> sha256 cache so multi-GB data files are hashed once per change."""
     path = Path(path)
@@ -143,7 +159,7 @@ def diff(a, b):
 
 
 # The ruler: fields that must match for two scores to be comparable. The rest describe the contestant being measured.
-MEASUREMENT_FIELDS = ('questions_file', 'scorer', 'data', 'cache_policy', 'pricing')
+MEASUREMENT_FIELDS = ('questions_file', 'scorer', 'answer_key', 'data', 'cache_policy', 'pricing')
 
 
 def compare(baseline, current):

@@ -14,7 +14,7 @@
    "scorer": {
     "files": {
      "/Users/mikel/synthetic-patient-ecosystem/ecosystem/eval_scorer.py": "1b058bba88290aede78b6891b783715d9be85f6278e34cb2137bf2ba51eb0c95",
-     "/Users/mikel/synthetic-patient-ecosystem/ecosystem/eval_questions.py": "f3acccd64e63732d9cbb73dc0bac1ce7ceeb358d8951e49d140f40ff0aae407e"
+     "/Users/mikel/synthetic-patient-ecosystem/ecosystem/eval_questions.py": "0588612da59814026746957e41585e973ec0d9daa5c3b3ecee97217e2f796cc8"
     },
     "declared_version": {
      "eval_questions.py": "questions-2026-10-17.1"
@@ -66,14 +66,18 @@
    },
    "code": {
     "repo": "/Users/mikel/clinical-insights-local",
-    "head": "084d592357f88eaa1a8e7e8d4d2022cc035745a1",
+    "head": "a046c62922278da9dc37114e4d19e1431ae48aee",
     "dirty": true,
-    "diff_sha256": "972905d655c3d5d59457a0b392a821dfa506ebece7f6f7011fecc820a00b2e42"
+    "diff_sha256": "a8730455c62b6ba146e84e28b2934e2b4afa9c241526720cb418966f3b7ec6fc"
    },
-   "system": "layer:L6a"
+   "system": "layer:L6a",
+   "answer_key": {
+    "answers_sha256": "fa34377ceadb1ad54825cd512771645946b43ba7973c2646e20ea90d47608259",
+    "scorer_version": "questions-2026-10-17.1"
+   }
   },
-  "pinned_sha256": "cd5b294e572030841eb071fdcf970d7520c045efb3a09445577f821652fa7f4f",
-  "created_at": "2026-10-17T11:25:50+00:00"
+  "pinned_sha256": "4fe46860ab22ee3d45ec0653570ce2852e1794744f3816353652c43c51cfaa82",
+  "created_at": "2026-10-17T11:27:14+00:00"
  },
  "results": {
   "L6a": {

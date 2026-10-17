@@ -318,6 +318,8 @@ def save_attempt(out, rows, args, scorer):
             (out / f'{name}.err.txt').write_text(stdout[-4000:] + stderr[-4000:])
             log.error('Scorer failed for %s (%s); see %s.err.txt', out, name, name)
             continue
+        if not per and (out / 'manifest.json').exists():
+            run_manifest.pin_answer_key(out, result)
         if per:  # keep only ids and correctness: the report needs nothing else
             result = {'per_question': [{k: x[k] for k in ('id', 'correct', 'answered') if k in x}
                                        for x in result.get('per_question', [])]}

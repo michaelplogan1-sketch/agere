@@ -220,6 +220,7 @@ def main(argv=None):
                 f.write(json.dumps(r['contract'], default=str) + '\n')
         result = score(args.release, args.rescore / 'question_answers.jsonl')
         (args.rescore / 'score.txt').write_text(result.stdout + result.stderr)
+        run_manifest.pin_answer_key(args.rescore, result.stdout, name='manifest_rescore.json')
         per = score(args.release, args.rescore / 'question_answers.jsonl', per_question=True)
         (args.rescore / 'per_question.txt').write_text(per.stdout + per.stderr)
         print(args.rescore)
@@ -266,6 +267,7 @@ def main(argv=None):
     lat = sorted(r['latency_s'] for r in rows)
     result = score(args.release, out / 'question_answers.jsonl')
     (out / 'score.txt').write_text(result.stdout + result.stderr)
+    run_manifest.pin_answer_key(out, result.stdout)
     per = score(args.release, out / 'question_answers.jsonl', per_question=True)
     (out / 'per_question.txt').write_text(per.stdout + per.stderr)
     for part in ('fast', 'analyst'):

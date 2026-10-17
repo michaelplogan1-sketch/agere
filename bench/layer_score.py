@@ -75,6 +75,7 @@ def main(argv=None):
            '--sample-release', str(SAMPLE), '--per-question']
     res = subprocess.run(cmd, cwd=ECOSYSTEM, capture_output=True, text=True)
     (layer / 'score.txt').write_text(res.stdout + res.stderr)
+    m = run_manifest.pin_answer_key(layer, res.stdout)
     costs = run_manifest.cost_summary([{'id': i, **(ans.get(i) or {'error': 'skipped: no answer'})} for i in qs])
     (layer / 'cost.json').write_text(json.dumps(costs, indent=1))
     per = dict(re.findall(r'"id": "([^"]+)",\s*"correct": (true|false)', res.stdout))
