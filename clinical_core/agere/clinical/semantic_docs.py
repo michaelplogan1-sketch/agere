@@ -218,7 +218,9 @@ CONVENTIONS = """## Canonical conventions (apply unless the question defines oth
   once as their person.
 - Payer medical claims (payer_claim, payer_claim_line, claim_adjudication): a claim's status is its LAST adjudication
   (final_status; order adjudications by sequence, not arrival). A frequency-7 replacement supersedes the original; a
-  frequency-8 void ends it; reversals and recoupments carry negative paid amounts. Use rows with counts_in_metrics = 1.
+  frequency-8 void ends it; reversals and recoupments carry negative paid amounts. counts_in_metrics = 1 removes
+  duplicate submissions and replaced versions: use it for money and claim-volume metrics, NOT for denial or CARC counts
+  (a duplicate-claim denial, CARC 18, is itself a denial to count).
   - Paid dollars in a period: sum paid amounts by paid date, reversals/recoupments netting out.
   - Initial denial rate: FIRST adjudication of original claims (first_status). Denials "dated" in a year: the denial
     adjudication's date. An upheld appeal repeats the CARC and is not a second denial; count distinct claims.
@@ -245,6 +247,8 @@ CONVENTIONS = """## Canonical conventions (apply unless the question defines oth
   - Switch: class A's last fill followed within 90 days by class B's first-ever fill in the same therapeutic group, no
     later A. Add-on: a new class's first fill within 90 days of an existing class fill.
   - PDC: >= 2 fills of the class in the year; covered days from the first fill to period end, overlaps de-duplicated.
+- Groups: when a person can belong to more than one group ("a person can be in both"), count them in EACH group they
+  qualify for (groups overlap; no exclusive buckets) and return only the groups the question asks for.
 - Conditions (condition, payer_claim_diagnosis, encounter_diagnosis, problem_list_entry): default = any documentation
   (paid or denied claim, problem list, encounter diagnosis, ADT diagnosis); name another rule if the question asks.
 - Labs and vitals: corrected results replace originals; latest value = latest specimen date (measurement_latest; use the
