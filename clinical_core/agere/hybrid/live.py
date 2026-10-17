@@ -100,10 +100,14 @@ def question_text(q):
     return f"- {q['id']} [{q['answer_type']}] {q['question']}"
 
 
-def analyst_run(q, semantic, send, model, *, user=None, docs_dir=DOCS):
+def analyst_run(q, semantic, send, model, *, user=None, docs_dir=DOCS, run=None):
     """One model run -> (item {'contract', 'sql'} or None, tool-loop result)."""
     from ..clinical.semantic_analyst import SEMANTIC_SQL_TOOL, tool_loop
     user = user or ('Question:\n' + question_text(q) + f"\n(as_of {q['as_of']})")
+    if run is not None:
+        # Each run is its own request: identical bodies would be collapsed by the provider ledger (one pending call, or one
+        # cached reply replayed to every run), which would turn three independent analyses into one copied three times.
+        user += f'\n\nYou are analyst {run} of {RUNS}, working independently of the others.'
     result = tool_loop(user, system_blocks(docs_dir), [SEMANTIC_SQL_TOOL, READ_DOC_TOOL], _executor(semantic, q['as_of'], docs_dir),
                        send=send, model=model, max_tools=MAX_TOOLS, extra={'cache_control': {'type': 'ephemeral'}},
                        format_retries=1)
@@ -167,10 +171,10 @@ def answer(question, as_of, semantic, send_factory, *, qid='Q', answer_type=None
     model, db = model_name(), str(semantic.path)
     docs_dir = Path(docs_dir) if docs_dir else docs_for(semantic.path)
 
-    def one(_):
+    def one(k):
         with send_factory() as send:
             return analyst_run(q | {'answer_type': answer_type or 'count|value|patient_set|table'}, semantic, send, model,
-                               docs_dir=docs_dir)
+                               docs_dir=docs_dir, run=k + 1)
 
     with ThreadPoolExecutor(max_workers=runs) as pool:
         outs = list(pool.map(one, range(runs)))

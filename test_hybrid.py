@@ -149,3 +149,27 @@ class Runner(Db):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+class RunIndependenceTests(unittest.TestCase):
+    def test_each_run_sends_a_distinct_request(self):
+        from contextlib import contextmanager
+        from clinical_core.agere.hybrid import live
+        bodies = []
+
+        class FakeWh:
+            path = '/nonexistent/semantic.sqlite3'
+
+            def query(self, *a, **k):
+                return {'rows': []}
+
+        def send(body):
+            bodies.append(json.dumps(body['messages'][0], sort_keys=True))
+            return {'content': [{'type': 'text', 'text': '{"contract": null, "sql": null}'}], 'usage': {}}, 0.0, False
+
+        @contextmanager
+        def factory():
+            yield send
+        live.answer('How many?', '2030-05-27', FakeWh(), factory, answer_type='count', docs_dir=live.DOCS)
+        self.assertEqual(len(bodies), 3)
+        self.assertEqual(len(set(bodies)), 3)
