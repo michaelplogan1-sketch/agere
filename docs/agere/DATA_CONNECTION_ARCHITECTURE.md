@@ -35,3 +35,14 @@ Agere sits on top of a customer's whole warehouse and answers from all of it. Th
 | Source lineage in answers | Next |
 | Auto-mapping by standard-code detection | Next |
 | Native-format ingestion (CCLF, X12, HL7, payer extracts; v2.8/v2.9 raw/) | Next |
+
+## Status (2026-10-17): customer onboarding built
+| Piece | State |
+|---|---|
+| Connectors | Snowflake, BigQuery, Databricks (credentials from env; SDK required), Postgres, SQLite, DuckDB, file drops (CSV/TSV/JSON/JSONL/Parquet) |
+| Workspace lifecycle | `onboarding/workspace.py`: profile -> auto-map -> auto-approve -> build -> raw passthrough -> verify -> generated docs -> ready |
+| Review queue | Low-confidence fields, missing required fields, uncertain table choices; decisions persist and re-apply on rebuild |
+| Raw tables | Every source table (or only unmapped ones) kept queryable as raw_<table> |
+| Analyst docs | Generated per workspace from its own data (`hybrid/catalog.py`) |
+| Answering | Hybrid core per workspace (`hybrid/live.py`), metered through the provider ledger |
+| API and app | `/api/workspaces/*` and `/workspaces` (service, outside the global lock) |
