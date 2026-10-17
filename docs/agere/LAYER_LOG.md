@@ -358,3 +358,12 @@ router, operator router and Opus reconcile leave the answer path (BUILD_LOG.md s
   P4 (unanimous asks, 2-of-3 confirmed) 18/30. Spread is within run-to-run noise on 30 questions, and reruns can reuse
   ledger-cached model replies, so they are not fully independent. Settled on majority-asks with the tightened rule
   (not separately rerun). Calibration (70) was scored once in P1 and not rerun.
+
+## Speed and cost: no duplicate paid paths (2026-10-17, a015bd3)
+- **Change:** while the hybrid core answers, the fast path keeps its free and governed rungs (compiler, caches, learned
+  queries, metric and operator routers) and stops before the paid hosted SQL ladder and the frontier planner; the full
+  ladder runs only if the analysts return nothing usable. Questions the compiler routes to an analytic engine skip the
+  analysts (an engine answer is never replaced). Switches: AGERE_DEFER_FAST, AGERE_SKIP_ANALYST_FOR_ENGINES.
+- **Measured on 30 questions new to the service** (bench dev20 + ho10, so no ledger cache replay), against the P1 pilot run:
+  p50 180 s -> 31 s, p90 346 s -> 69 s, max 539 s -> 86 s; cost $0.141 -> $0.022 per question; fallback needed 0 times.
+- **Accuracy on those 30:** 26 correct, 29 answered, precision on answered 0.897 (scorer questions-2026-10-17.3).
