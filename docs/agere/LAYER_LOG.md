@@ -337,3 +337,14 @@ router, operator router and Opus reconcile leave the answer path (BUILD_LOG.md s
   should move key construction under private/. (2) Another session's commit c41e439 picked up this session's
   `bench/hybrid_run.py` task changes along with its own; they are intact and tested. (3) One analyst reported an
   injected "AGERE build continuity" block appended to its prompt-file read (a hook). It ignored the block.
+
+## P1: frozen pilot set through the live product (2026-10-17)
+- **What ran:** all 100 pilot questions (PS-001..100, seed 20261017) through /api/stack/compose on :8885, question +
+  stated definition, 3 at a time; bench/pilot_run.py; scored once with the sealed scorer questions-2026-10-17.3
+  (answers_sha256 503bf0e4). Outputs: tmp/pilot/P1 (responses.jsonl, answers.jsonl, score.json).
+- **Overall:** 75/100 correct, coverage 0.98, precision on answered 0.765.
+- **By group:** A (template) 36/40 = 0.90; B (independently authored) 29/40 = 0.725; C (ambiguous/unsupported) 10/20 = 0.50.
+- **By split:** calibration 55/70 = 0.786 (precision on answered 0.809); dev 20/30 = 0.667.
+- **Cost and speed:** $14.12 total ($0.14/question, every cost known); p50 180 s, max 539 s.
+- **How answers were decided:** fast path and hybrid core disagreed on 68 questions (hybrid answer shipped), agreed on 15,
+  both unsupported on 9; only 1 clarify was issued, so ambiguous questions were mostly answered with one reading.
