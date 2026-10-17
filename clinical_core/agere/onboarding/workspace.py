@@ -164,6 +164,8 @@ class Workspace:
                 for step in STEPS:
                     if step in ('ingest', 'stage') and not self.native:
                         continue
+                    if step in ('propose', 'approve') and self.native:
+                        continue  # native deliveries are staged into the full canonical model, not mapped field by field
                     getattr(self, '_do_' + step)(conn)
                     if step == 'stage':  # the landing database now exists and holds the staged tables
                         if conn is not None:
@@ -244,6 +246,8 @@ class Workspace:
 
     def _do_build(self, conn):
         self._update(status='building')
+        if self.native:
+            return self._build_native()
         receipt = apply_mod.apply(matcher.load(self.dir / 'mapping.json'), conn, self.semantic_path)
         as_of = self.state.get('as_of') or self._infer_as_of() or date.today().isoformat()
         db = sqlite3.connect(self.semantic_path)
@@ -278,8 +282,10 @@ class Workspace:
         if mode == 'none':
             self._step('raw', tables={}, mode=mode)
             return
-        mapping = matcher.load(self.dir / 'mapping.json')
-        tables = list(conn.tables()) if mode == 'all' else list(mapping.get('unmapped_source_tables') or [])
+        if self.native or mode == 'all':
+            tables = [t for t in conn.tables() if t not in ('ingest_files',)]
+        else:
+            tables = list(matcher.load(self.dir / 'mapping.json').get('unmapped_source_tables') or [])
         db = sqlite3.connect(self.semantic_path)
         copied = {}
         try:
@@ -316,6 +322,16 @@ class Workspace:
 
     def _do_verify(self, conn):
         self._update(status='verifying')
+        if self.native:
+            rep = json.loads((self.dir / 'stage.json').read_text()) if (self.dir / 'stage.json').is_file() else {}
+            ident = rep.get('identity') or {}
+            checks = [{'name': 'persons_resolved', 'passed': bool(rep.get('people')), 'detail': {'persons': rep.get('people')}},
+                      {'name': 'records_without_person', 'passed': not rep.get('issues'), 'detail': rep.get('unresolved')},
+                      {'name': 'identity_tiers', 'passed': True, 'detail': {k: v for k, v in ident.items() if k != 'largest_clusters'}}]
+            result = {'passed': all(c['passed'] for c in checks), 'checks': checks, 'streams': rep.get('streams')}
+            (self.dir / 'verification.json').write_text(json.dumps(result, indent=1, default=str))
+            self._step('verify', passed=result['passed'], failed_checks=[c['name'] for c in checks if not c['passed']])
+            return
         try:
             result = verify.invariants(self.semantic_path, matcher.load(self.dir / 'mapping.json'), conn,
                                        as_of=self.state.get('as_of'))
@@ -327,6 +343,15 @@ class Workspace:
 
     def _do_docs(self, conn):
         from ..hybrid import catalog
+        if self.native:
+            rep = json.loads((self.dir / 'stage.json').read_text()) if (self.dir / 'stage.json').is_file() else {}
+            lines = [f"Workspace {self.state['name']} ({self.slug}): native feeds ingested and staged into Agere's canonical "
+                     f"model; data as of {self.state.get('as_of')}. Persons are Agere-minted ids (AGP-...) resolved across "
+                     "EHR MRNs, Medicare MBIs, payer member ids and demographics (see stg_person_map in raw tables).",
+                     '', 'Canonical records by stream:'] + [f'- {k}: {v}' for k, v in sorted((rep.get('streams') or {}).items())]
+            result = catalog.build_docs(self.semantic_path, self.docs_dir, extra_sections={'Workspace data': '\n'.join(lines)})
+            self._step('docs', files=result.get('files'), chars=result.get('chars'))
+            return
         mapping = matcher.load(self.dir / 'mapping.json')
         gaps = self.review_items()
         lines = [f"Workspace {self.state['name']} ({self.slug}); source {self.summary()['source']}; data as of "
@@ -339,6 +364,27 @@ class Workspace:
         self._step('docs', files=result.get('files'), chars=result.get('chars'))
 
     # --- review ----------------------------------------------------------------------------------------------------
+
+    def _build_native(self):
+        import shutil
+        src = self.dir / 'stack' / 'semantic.sqlite3'
+        if not src.is_file():
+            raise RuntimeError('Staging did not produce stack/semantic.sqlite3')
+        tmp = self.semantic_path.with_suffix('.tmp')
+        shutil.copyfile(src, tmp)
+        as_of = self.state.get('as_of') or json.loads((self.dir / 'stack' / 'run.json').read_text())['snapshot'].get('as_of')
+        db = sqlite3.connect(tmp)
+        try:
+            db.execute("DELETE FROM meta WHERE key IN ('as_of', 'workspace')")
+            db.executemany('INSERT INTO meta VALUES (?, ?)', [('as_of', as_of), ('workspace', self.slug)])
+            db.commit()
+            rows = {t: db.execute(f'SELECT count(*) FROM "{t}"').fetchone()[0] for (t,) in
+                    db.execute("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'").fetchall()}
+        finally:
+            db.close()
+        tmp.replace(self.semantic_path)
+        self._update(as_of=as_of)
+        self._step('build', rows=rows, as_of=as_of, source='canonical staging')
 
     def review_items(self):
         """Mapping questions for a person, most important first. Each has a stable id used by decide()."""
