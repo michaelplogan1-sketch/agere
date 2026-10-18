@@ -119,9 +119,13 @@ class Landing:
                         (relpath, feed, parser, size, mtime, rows, json.dumps(tables), error, seconds))
 
     def remove_file_rows(self, relpath):
+        """Delete a file's earlier rows from every landing table. -> the tables that held any (streaming change log)."""
+        hit = []
         for t, cols in self.columns.items():
             if '_file' in cols:
-                self.db.execute(f'DELETE FROM "{t}" WHERE _file = ?', (relpath,))
+                if self.db.execute(f'DELETE FROM "{t}" WHERE _file = ?', (relpath,)).rowcount:
+                    hit.append(t)
+        return hit
 
     def commit(self):
         self.flush()
@@ -146,43 +150,87 @@ def ingest(raw_dir, landing_path, *, progress=None, limit=None):
         for i, path in enumerate(files):
             if limit is not None and stats['files'] >= limit:
                 break
-            ctx = context_for(path, raw_dir)
-            st = path.stat()
-            if land.done(ctx['relpath'], st.st_size, st.st_mtime):
-                stats['skipped'] += 1
-                continue
-            mod = next((m for m in mods if _safe_detect(m, path, ctx)), None)
-            if mod is None:
-                land.record(ctx['relpath'], ctx['feed'], None, st.st_size, st.st_mtime, 0, {}, 'no parser', 0)
-                stats['unparsed'] += 1
-                continue
-            if land.seen(ctx['relpath']):
-                land.flush()
-                land.remove_file_rows(ctx['relpath'])  # a changed or failed file replaces its earlier rows
-            t0, n, tables, error = time.time(), 0, {}, None
-            try:
-                for table, row in mod.parse(path, ctx):
-                    table = _ident(table)
-                    out = {_ident(k): _scalar(v) for k, v in row.items()}
-                    out.update(_feed=ctx['feed'], _instance=ctx['instance'], _drop=ctx['drop'], _file=ctx['relpath'], _row=n)
-                    land.add(table, out)
-                    tables[table] = tables.get(table, 0) + 1
-                    n += 1
-            except Exception as exc:  # noqa: BLE001 - a bad file is recorded, never fatal to the delivery
-                error = f'{type(exc).__name__}: {exc}'[:500]
-                stats['errors'] += 1
-            name = mod.__name__.rsplit('.', 1)[-1]
-            land.record(ctx['relpath'], ctx['feed'], name, st.st_size, st.st_mtime, n, tables, error, round(time.time() - t0, 3))
-            stats['files'] += 1
-            stats['rows'] += n
-            stats['by_parser'][name] = stats['by_parser'].get(name, 0) + 1
-            if stats['files'] % 500 == 0:
+            _ingest_file(land, mods, path, raw_dir, stats)
+            if stats['files'] and stats['files'] % 500 == 0 and stats.get('_last_commit') != stats['files']:
+                stats['_last_commit'] = stats['files']
                 land.commit()
                 if progress:
                     progress(i + 1, len(files), stats)
+        stats.pop('_last_commit', None)
         land.commit()
         stats['tables'] = {t: land.db.execute(f'SELECT count(*) FROM "{t}"').fetchone()[0]
                            for t in sorted(land.columns) if t != 'ingest_files'}
+        stats['seconds'] = round(time.time() - started, 1)
+        return stats
+    finally:
+        land.close()
+
+
+def _ingest_file(land, mods, path, raw_dir, stats, changed=None, force=False, before=None):
+    """Parse one delivered file into the landing database (shared by ingest and ingest_paths). changed, when given,
+    collects {'relpath', 'tables', 'replaced', 'rows', 'error'} for a file that was (re)parsed."""
+    ctx = context_for(path, raw_dir)
+    st = path.stat()
+    if not force and land.done(ctx['relpath'], st.st_size, st.st_mtime):
+        stats['skipped'] += 1
+        return
+    if before is not None:
+        before(ctx['relpath'])
+    mod = next((m for m in mods if _safe_detect(m, path, ctx)), None)
+    if mod is None:
+        land.record(ctx['relpath'], ctx['feed'], None, st.st_size, st.st_mtime, 0, {}, 'no parser', 0)
+        stats['unparsed'] += 1
+        if changed is not None:
+            changed.append({'relpath': ctx['relpath'], 'tables': {}, 'replaced': False, 'rows': 0, 'error': 'no parser'})
+        return
+    replaced = land.seen(ctx['relpath'])
+    replaced_tables = []
+    if replaced:
+        land.flush()
+        replaced_tables = land.remove_file_rows(ctx['relpath'])  # a changed or failed file replaces its earlier rows
+    t0, n, tables, error = time.time(), 0, {}, None
+    try:
+        for table, row in mod.parse(path, ctx):
+            table = _ident(table)
+            out = {_ident(k): _scalar(v) for k, v in row.items()}
+            out.update(_feed=ctx['feed'], _instance=ctx['instance'], _drop=ctx['drop'], _file=ctx['relpath'], _row=n)
+            land.add(table, out)
+            tables[table] = tables.get(table, 0) + 1
+            n += 1
+    except Exception as exc:  # noqa: BLE001 - a bad file is recorded, never fatal to the delivery
+        error = f'{type(exc).__name__}: {exc}'[:500]
+        stats['errors'] += 1
+    name = mod.__name__.rsplit('.', 1)[-1]
+    land.record(ctx['relpath'], ctx['feed'], name, st.st_size, st.st_mtime, n, tables, error, round(time.time() - t0, 3))
+    stats['files'] += 1
+    stats['rows'] += n
+    stats['by_parser'][name] = stats['by_parser'].get(name, 0) + 1
+    if changed is not None:
+        changed.append({'relpath': ctx['relpath'], 'tables': dict(tables), 'replaced': replaced,
+                        'replaced_tables': replaced_tables, 'rows': n, 'error': error})
+
+
+def ingest_paths(raw_dir, landing_path, paths, *, force=(), before_file=None):
+    """Incremental ingest (streaming): parse only the given files (absolute, or relative to raw_dir) into the landing
+    database. Files already ingested unchanged are skipped exactly as ingest() skips them. -> stats with 'changed': one
+    entry per (re)parsed file naming the landing tables it wrote (and, for a replaced file, the tables it was removed from).
+    force: relpaths re-parsed even when unchanged; before_file(relpath) runs before each file is parsed."""
+    raw_dir = Path(raw_dir).resolve()
+    mods = parsers()
+    land = Landing(landing_path)
+    stats = {'files': 0, 'skipped': 0, 'unparsed': 0, 'errors': 0, 'rows': 0, 'by_parser': {}}
+    changed = []
+    started = time.time()
+    try:
+        for p in paths:
+            p = Path(p)
+            path = p if p.is_absolute() else raw_dir / p
+            if not path.is_file() or path.name.startswith('.') or 'private' in path.relative_to(raw_dir).parts:
+                continue
+            _ingest_file(land, mods, path, raw_dir, stats, changed, force=str(path.relative_to(raw_dir)) in force,
+                         before=before_file)
+        land.commit()
+        stats['changed'] = changed
         stats['seconds'] = round(time.time() - started, 1)
         return stats
     finally:

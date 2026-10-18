@@ -652,6 +652,21 @@ class Workspace:
                   'answer': out['answer'], 'cost_usd': out['cost_usd'], 'interpretation': out['interpretation']}
         with open(self.dir / 'questions.jsonl', 'a') as f:
             f.write(json.dumps(record, default=str) + '\n')
+        if self.native:  # streaming dependency registry (what the answer read), so a later tick can mark it stale
+            from ..streaming import hooks as streaming_hooks
+            streaming_hooks.on_answer(self, question, out)
+
+    # --- streaming (clinical_core/agere/streaming; AGERE_STREAMING, default on; the batch steps above are unchanged) ---
+
+    def ingest_delta(self, paths=None, **kw):
+        """Incremental ingest of newly delivered files (None = every new file in the delivery folder). -> tick report."""
+        from ..streaming import pipeline as streaming_pipeline
+        return streaming_pipeline.ingest_delta(self, paths, **kw)
+
+    def refresh(self, stale_only=True):
+        """Re-run stale code-rendered answers at the current as_of; model-written answers are flagged for re-ask."""
+        from ..streaming import pipeline as streaming_pipeline
+        return streaming_pipeline.refresh(self, stale_only=stale_only)
 
     def _ask_full(self, question, *, answer_type=None, send_factory=None, live=True):
         from . import workspace_stack
