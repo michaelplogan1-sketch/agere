@@ -284,12 +284,12 @@ class TerminologyFallback(unittest.TestCase):
         self.assertIn('diabetes', m['also'])
 
     def test_threshold_and_candidate_reporting(self):
-        hi = concepts.match_label('EGFR CKD-EPI 2021', 'lab', encoder=TermStub('egfr', 0.9))
+        hi = concepts.match_label('Kidney function estimate 2021', 'lab', encoder=TermStub('egfr', 0.9))
         self.assertEqual((hi['concept'], hi['method'], hi['accepted']), ('egfr', 'encoder', True))
-        lo = concepts.match_label('EGFR CKD-EPI 2021', 'lab', encoder=TermStub('egfr', 0.3))
+        lo = concepts.match_label('Kidney function estimate 2021', 'lab', encoder=TermStub('egfr', 0.3))
         self.assertIsNone(lo['concept'])
         self.assertEqual((lo['candidate'], lo['score'], lo['accepted'], lo['threshold']), ('egfr', 0.3, False, concepts.TERMINOLOGY_THRESHOLDS['lab']))
-        self.assertIsNone(concepts.match_label('EGFR CKD-EPI 2021', 'lab', encoder=None))
+        self.assertIsNone(concepts.match_label('Kidney function estimate 2021', 'lab', encoder=None))
 
     def test_grounding_repairs_unobserved_label_through_fallback_and_says_so(self):
         p = {'streams': {'labs': {'records': 5, 'fields': {'test': {'populated': 5, 'values': {'eGFR': 5}}, 'value': {'populated': 5},
@@ -297,7 +297,7 @@ class TerminologyFallback(unittest.TestCase):
              'patients': {'records': 1, 'fields': {}},
              'measurements': {'labs': [{'name': 'eGFR', 'unit': 'mL/min/1.73m2', 'records': 5, 'numeric': 5, 'range': [20, 90]}]}}
         atom = {'kind': 'record', 'stream': 'labs', 'window': {'basis': 'all_observed', 'start': '', 'end': ''},
-                'conditions': [{'field': 'test', 'op': 'eq', 'value': 'EGFR CKD-EPI 2021'}]}
+                'conditions': [{'field': 'test', 'op': 'eq', 'value': 'Kidney function estimate 2021'}]}
         with mock.patch.object(concepts, 'terminology_encoder', return_value=TermStub('egfr', 0.8)):
             g, report = grounding.prepare({'all': [atom], 'any': [], 'exclude': []}, p)
         self.assertEqual(g['all'][0]['concept'], 'egfr')

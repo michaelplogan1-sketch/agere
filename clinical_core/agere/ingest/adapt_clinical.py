@@ -446,6 +446,8 @@ class _Run:
         self.lab_presence = defaultdict(list)      # (org, mrn, loinc, day) -> EHR values (kept records + FHIR copies)
         self.lab_presence_any = defaultdict(list)  # (org, mrn, '*', day) -> values, for ORU results without LOINC
         self.migration = {}            # migration dedupe key -> vendor
+        self.coverage = {}             # (practice, stream) -> (first, last available_date) the vendor extract delivers it
+        self.vendor_keys = set()       # cross-feed keys of vendor records (_xkey)
 
     # ---- reading
     def has(self, t):
@@ -573,6 +575,11 @@ class _Run:
         return out
 
     def finish(self, rec):
+        if rec['source_table'] == 'appointments':
+            _appointment_dates(rec)
+        vendor = (rec.get('source_system') or '').split(':')[0]
+        if vendor in ('epic', 'athena', 'ecw'):
+            self._cover(rec)
         for k in ENVELOPE:
             rec.setdefault(k, None)
         for k in [k for k, v in rec.items() if v is None and k not in ENVELOPE]:
@@ -581,6 +588,31 @@ class _Run:
             self.unresolved[rec['source_table']] += 1
         self.out[rec['source_table']] += 1
         return rec
+
+    # ---- vendor coverage, for FHIR bulk gap fill
+    def _cover(self, rec):
+        """Remember which data types each vendor extract delivers for a practice, over which delivery dates, and the
+        cross-feed key of every vendor record (see _xkey)."""
+        stream, d = rec['source_table'], rec.get('available_date')
+        for practice in _practices(rec):
+            if d:
+                lo_hi = self.coverage.get((practice, stream))
+                self.coverage[(practice, stream)] = (min(lo_hi[0], d), max(lo_hi[1], d)) if lo_hi else (d, d)
+            k = _xkey(rec, practice)
+            if k:
+                self.vendor_keys.add(k)
+
+    def fhir_gap(self, folder, rec):
+        """None when a fhir_bulk record of a vendor practice should be loaded (the vendor extract does not deliver that
+        data type for that practice within FHIR_LAG_DAYS of the FHIR delivery, and carries no record with the same
+        cross-feed key, see _xkey), else the drop reason."""
+        stream, d = rec['source_table'], rec.get('available_date')
+        span = self.coverage.get((folder, stream))
+        if span and d and _shift(span[0], -FHIR_LAG_DAYS) <= d <= _shift(span[1], FHIR_LAG_DAYS):
+            return 'fhir_type_delivered_by_vendor_extract'
+        if _xkey(rec, folder) in self.vendor_keys:
+            return 'fhir_duplicate_of_vendor_record'
+        return None
 
     def migration_dup(self, rec, key):
         """Second vendor's copy of the same practice event after an EHR migration."""
@@ -757,8 +789,9 @@ class _Run:
             rec, mrn, org = self._epic_base(PROBLEM_LIST_STREAM, r, 'ehr_epic_problem_list', inst, pat, event=noted,
                                             recorded=r.get('date_of_entry'))
             status = EPIC_PROBLEM.get(_c(r.get('problem_status_c')) or '')
-            rec.update(_condition_fields(_c(g.get('dx_name')), code, None, status, _day(r.get('noted_date')),
+            rec.update(_condition_fields(_c(g.get('dx_name')), code, None, status, None,  # Epic carries no onset: noted = documented
                                          _day(r.get('resolved_date')), None))
+            rec['documented_date'] = _day(noted)
             out[(inst, pid)].append((_order(r), rec, r['_variant'] == 'resend'))
         yield from self.emit(self.versions(PROBLEM_LIST_STREAM, out))
 
@@ -1164,11 +1197,12 @@ class _Run:
                 code, snomed = _icd(r.get('diagnosiscode')), _c(r.get('snomedcode'))
                 covered.add((ctx, _c(r.get('chartid')), snomed))
                 rec, mrn, org = self._athena_base(PROBLEM_LIST_STREAM, r, 'ehr_athena_patientproblem', ctx, pid=pid,
-                                                  event=r.get('onsetdate') or r.get('createddatetime'), recorded=r.get('createddatetime'))
+                                                  event=r.get('createddatetime') or r.get('onsetdate'), recorded=r.get('createddatetime'))
                 st = (_c(r.get('status')) or '').lower() or None
                 rec.update(_condition_fields(_c(r.get('problemlistname')), code, snomed, st, _day(r.get('onsetdate')),
                                              _day(r.get('deactivateddatetime')) if st == 'resolved' else None, None))
                 rec['source'] = (_c(r.get('source')) or '').lower() or None
+                rec['documented_date'] = _day(r.get('createddatetime'))
                 cands[(ctx, ppid)].append((_order(r), rec, r['_variant'] == 'resend'))
         for (ctx, spid), rows in self._keyed(self.rows('ehr_athena_patientsnomedproblem', stream=PROBLEM_LIST_STREAM), 'patientsnomedproblemid', PROBLEM_LIST_STREAM).items():
             r = rows[-1]
@@ -1177,7 +1211,7 @@ class _Run:
                 continue
             for r in rows:
                 rec, mrn, org = self._athena_base(PROBLEM_LIST_STREAM, r, 'ehr_athena_patientsnomedproblem', ctx, chart=_c(r.get('chartid')),
-                                                  event=r.get('startdatedatetime') or r.get('entereddatetime'), recorded=r.get('entereddatetime'))
+                                                  event=r.get('entereddatetime') or r.get('startdatedatetime'), recorded=r.get('entereddatetime'))
                 st = (_c(r.get('status')) or '').lower() or None
                 rec.update(_condition_fields(_c(r.get('problemnote')), None, _c(r.get('snomedcode')), st,
                                              _day(r.get('startdatedatetime')), _day(r.get('enddatedatetime')), None))
@@ -1455,11 +1489,12 @@ class _Run:
             for r in rows:
                 status = 'resolved' if _c(r.get('resolved')) == '1' else 'inactive' if _c(r.get('inactiveflag')) == '1' else 'active'
                 rec, mrn, org = self._ecw_base(PROBLEM_LIST_STREAM, r, 'ehr_ecw_problemlist', practice, pid,
-                                               event=r.get('onsetdate') or r.get('addeddate'), recorded=r.get('addeddate'))
+                                               event=r.get('addeddate') or r.get('onsetdate'), recorded=r.get('addeddate'))
                 if _c(r.get('encounterid')):
                     rec['encounter_id'] = f'ecw:{practice}:{_c(r.get("encounterid"))}'
                 rec.update(_condition_fields(desc if desc != code else None, code, None, status, _day(r.get('onsetdate')),
                                              _day(r.get('resolvedon')), None))
+                rec['documented_date'] = _day(r.get('addeddate'))
                 cands[(practice, pid, asmt)].append((_order(r), rec, r['_variant'] == 'resend'))
         yield from self.emit(self.versions(PROBLEM_LIST_STREAM, cands))
 
@@ -1653,19 +1688,24 @@ class _Run:
                     self.drop('malformed_row', stream_of)
                     continue
                 native = folder in FHIR_NATIVE_PRACTICES
-                if not native:
-                    if rt == 'observation':
-                        self._fhir_presence(folder, res)
-                    self.drop('fhir_copy_of_vendor_practice' if folder != 'DEEPCHART' else 'fhir_copy_of_epic_deepchart', stream_of)
-                    continue
                 pid = _ref(res.get('subject') or res.get('patient') or next(
                     (p.get('actor') for p in res.get('participant') or [] if str((p.get('actor') or {}).get('reference', '')).startswith('Patient/')), None))
                 mrn = self.F.get((folder, pid))
                 keys = [fhir_key(folder, pid) if pid else None, mrn_key(mrn, folder) if mrn else None]
-                out = fn(r, res, folder, pid, mrn, keys)
+                out = fn(r, res, folder, pid, mrn, keys, presence=native)
                 if not out:
                     continue
                 stream, rec, extra = out
+                if not native:
+                    reason = self.fhir_gap(folder, rec)
+                    if reason:
+                        if stream == 'labs':
+                            self._fhir_presence(folder, res)
+                        self.drop(reason if folder != 'DEEPCHART' else 'fhir_copy_of_epic_deepchart', stream)
+                        continue
+                    rec['fhir_gap_fill'] = True  # vendor practice: the vendor extract does not deliver this data type
+                    if stream == 'labs':
+                        self._presence(_org_from_name(mrn) or folder, mrn, rec)
                 o = (str((res.get('meta') or {}).get('lastUpdated') or ''), FHIR_ENC_ORDER.get(res.get('status'), 2) if rt == 'encounter' else 0) + _order(r)
                 if stream == 'vitals':
                     vitals[(folder, pid, extra)].append((o, res.get('id'), rec, r))
@@ -1681,7 +1721,7 @@ class _Run:
         return self.base(stream, r, table, vendor='fhir', instance=folder, org=folder, keys=keys, source_patient_id=mrn or pid,
                          encounter_id=f'fhir:{folder}:{encounter}' if encounter else None, event=event, recorded=recorded, signed=signed)
 
-    def _fhir_encounter(self, r, res, folder, pid, mrn, keys):
+    def _fhir_encounter(self, r, res, folder, pid, mrn, keys, presence=True):
         start = (res.get('period') or {}).get('start')
         rec = self._fhir_base('encounters', r, res, folder, pid, mrn, keys, 'fhir_encounter', event=start,
                               recorded=(res.get('meta') or {}).get('lastUpdated'), encounter=res.get('id'))
@@ -1700,7 +1740,7 @@ class _Run:
                     'place_of_service': '02' if etype == 'virtual' else '11' if etype == 'office' else None, 'diagnoses': diags})
         return 'encounters', rec, None
 
-    def _fhir_condition(self, r, res, folder, pid, mrn, keys):
+    def _fhir_condition(self, r, res, folder, pid, mrn, keys, presence=True):
         codes = ((res.get('code') or {}).get('coding') or [])
         icd = next((_icd(c.get('code')) for c in codes if 'icd-10' in str(c.get('system'))), None)
         snomed = next((c.get('code') for c in codes if 'snomed' in str(c.get('system'))), None)
@@ -1708,13 +1748,14 @@ class _Run:
         cat = ' '.join(c.get('code', '') for cc in res.get('category') or [] for c in (cc or {}).get('coding') or [])
         status = next((c.get('code') for c in ((res.get('clinicalStatus') or {}).get('coding') or [])), None)
         onset = res.get('onsetDateTime')
-        rec = self._fhir_base(PROBLEM_LIST_STREAM, r, res, folder, pid, mrn, keys, 'fhir_condition', event=onset or res.get('recordedDate'),
+        rec = self._fhir_base(PROBLEM_LIST_STREAM, r, res, folder, pid, mrn, keys, 'fhir_condition', event=res.get('recordedDate') or onset,
                               recorded=res.get('recordedDate'), encounter=_ref(res.get('encounter')))
         rec.update(_condition_fields(desc, icd, snomed, status, _day(onset), _day(res.get('abatementDateTime')),
                                      None if 'problem-list' in cat else 'clinical_encounter'))
+        rec['documented_date'] = _day(res.get('recordedDate'))
         return PROBLEM_LIST_STREAM, rec, None
 
-    def _fhir_observation(self, r, res, folder, pid, mrn, keys):
+    def _fhir_observation(self, r, res, folder, pid, mrn, keys, presence=True):
         cats = {c.get('code') for cc in res.get('category') or [] for c in (cc or {}).get('coding') or []}
         codes = (res.get('code') or {}).get('coding') or []
         loinc = next((c.get('code') for c in codes if 'loinc' in str(c.get('system'))), None)
@@ -1742,7 +1783,8 @@ class _Run:
         name = (res.get('code') or {}).get('text') or next((c.get('display') for c in codes if c.get('display')), None)
         instrument = _phq(name, loinc)
         q = res.get('valueQuantity') or {}
-        value = q.get('value') if q else _value(res.get('valueString'))
+        value = q.get('value') if q else (res['valueInteger'] if isinstance(res.get('valueInteger'), (int, float)) else
+                                          _num(res.get('valueDecimal')) if res.get('valueDecimal') is not None else _value(res.get('valueString')))
         status = res.get('status')
         if instrument:
             rec = self._fhir_base('mood_questionnaires', r, res, folder, pid, mrn, keys, 'fhir_observation', event=eff, encounter=enc)
@@ -1759,7 +1801,8 @@ class _Run:
                    'entered-in-error': 'cancelled'}.get(status) or _snake(status)
         rec.update(_lab_fields(name, loinc, None, None if rstatus == 'cancelled' else value, q.get('unit'), rr,
                                _hl7_flag(interp) or _flag(value, rr), rstatus, _iso(eff), _iso(res.get('issued')), None, None))
-        self._presence(folder, mrn, rec)
+        if presence:
+            self._presence(folder, mrn, rec)
         return 'labs', rec, None
 
     def _fhir_vitals(self, groups):
@@ -1782,7 +1825,7 @@ class _Run:
             cands[(folder, pid, grp)].append(((), rec, False))
         yield from self.emit(self.versions('vitals', cands))
 
-    def _fhir_medreq(self, r, res, folder, pid, mrn, keys):
+    def _fhir_medreq(self, r, res, folder, pid, mrn, keys, presence=True):
         mcc = res.get('medicationCodeableConcept') or {}
         rxcui = next((c.get('code') for c in mcc.get('coding') or [] if 'rxnorm' in str(c.get('system'))), None)
         name = mcc.get('text') or next((c.get('display') for c in mcc.get('coding') or [] if c.get('display')), None)
@@ -1802,7 +1845,7 @@ class _Run:
                         'frequency': _frequency(sigtext), 'start_time': _iso(res.get('authoredOn'))})
         return stream, rec, None
 
-    def _fhir_docref(self, r, res, folder, pid, mrn, keys):
+    def _fhir_docref(self, r, res, folder, pid, mrn, keys, presence=True):
         text = None
         for c in res.get('content') or []:
             att = (c or {}).get('attachment') or {}
@@ -1825,7 +1868,7 @@ class _Run:
                     'authored_time': _iso(res.get('date')), 'text': text})
         return 'notes', rec, None
 
-    def _fhir_appt(self, r, res, folder, pid, mrn, keys):
+    def _fhir_appt(self, r, res, folder, pid, mrn, keys, presence=True):
         st = res.get('status')
         status = FHIR_APPT.get(st)
         if not status:
@@ -1838,7 +1881,7 @@ class _Run:
                     'slot_minutes': res.get('minutesDuration'), 'booked_at': _iso(res.get('created'))})
         return 'appointments', rec, None
 
-    def _fhir_allergy(self, r, res, folder, pid, mrn, keys):
+    def _fhir_allergy(self, r, res, folder, pid, mrn, keys, presence=True):
         code = res.get('code') or {}
         rx = next((c.get('code') for c in code.get('coding') or [] if 'rxnorm' in str(c.get('system'))), None)
         sub = code.get('text') or next((c.get('display') for c in code.get('coding') or [] if c.get('display')), None)
@@ -1853,7 +1896,7 @@ class _Run:
                     'display': 'NKDA' if nka else (f'{sub} — {reaction}' if reaction else sub), 'verification': 'not_supplied'})
         return 'allergies', rec, None
 
-    def _fhir_imm(self, r, res, folder, pid, mrn, keys):
+    def _fhir_imm(self, r, res, folder, pid, mrn, keys, presence=True):
         vc = res.get('vaccineCode') or {}
         cvx = next((c.get('code') for c in vc.get('coding') or [] if 'cvx' in str(c.get('system'))), None)
         rec = self._fhir_base('immunizations', r, res, folder, pid, mrn, keys, 'fhir_immunization', event=res.get('occurrenceDateTime'),
@@ -2107,6 +2150,59 @@ def _same_value(a, b):
         d = min(_decimals(a), _decimals(b))
         return abs(round(float(a), d) - round(float(b), d)) < 1e-9 or abs(a - b) < 10 ** -d / 2 + 1e-9
     return _vkey(a) == _vkey(b)
+
+
+FHIR_LAG_DAYS = 62  # fhir_bulk arrives up to two monthly cycles after the vendor extract of the same month (inventory DQ-01)
+
+
+def _shift(day, days):
+    from datetime import date, timedelta
+    try:
+        return (date.fromisoformat(day) + timedelta(days=days)).isoformat()
+    except (TypeError, ValueError):
+        return day
+
+
+def _practices(rec):
+    """Practice keys a vendor record covers: its organization, and DEEPCHART for the EPIC-DEEPCHART instance (whose
+    fhir_bulk/DEEPCHART folder re-expresses the same charts)."""
+    out = [rec['organization_id']] if rec.get('organization_id') else []
+    if rec.get('source_system') == 'epic:EPIC-DEEPCHART':
+        out.append('DEEPCHART')
+    return out
+
+
+def _xkey(rec, practice):
+    """Cross-feed duplicate key between a vendor extract and the FHIR bulk copy of the same practice: practice, MRN
+    (source_patient_id), stream and a per-stream discriminator (no shared record ids exist across the two feeds)."""
+    s, d = rec['source_table'], rec.get('event_date')
+    mrn = rec.get('source_patient_id')
+    if not mrn:
+        return None
+    disc = {'appointments': lambda: (rec.get('scheduled_date'),), 'notes': lambda: (d,), 'encounters': lambda: (d,), 'vitals': lambda: (d,),
+            'mood_questionnaires': lambda: (rec.get('instrument'), d),
+            'labs': lambda: (rec.get('loinc') or (rec.get('name') or '').lower(), d, _vkey(rec.get('value'))),
+            'conditions': lambda: (rec.get('icd10') or rec.get('snomed'),),
+            'medication_orders': lambda: (rec.get('rxcui') or (rec.get('medication_name') or '').lower().split(' ')[0], d),
+            'medication_lists': lambda: (rec.get('rxcui') or (rec.get('name') or '').lower().split(' ')[0],),
+            'allergies': lambda: ((rec.get('substance') or rec.get('display') or '').lower(),),
+            'immunizations': lambda: (rec.get('cvx_code'), d)}.get(s)
+    return (practice, mrn, s) + disc() if disc else None
+
+
+def _appointment_dates(rec):
+    """Every appointment version carries its booking (made / created) date and a slot: slot_start, else the scheduled
+    date, else the delivered date, else the made/created date (scheduled_date_source says which)."""
+    rec['booked_date'] = rec.get('booked_date') or _day(rec.get('booked_at'))
+    slot = rec.get('slot_start') or rec.get('scheduled_time') or rec.get('scheduled_date')
+    if not rec.get('scheduled_date'):
+        if _day(slot):
+            rec['scheduled_date'], rec['scheduled_date_source'] = _day(slot), 'slot_start'
+        elif rec.get('booked_date'):
+            rec['scheduled_date'], rec['scheduled_date_source'] = rec['booked_date'], 'made_date'
+        elif rec.get('event_date'):
+            rec['scheduled_date'], rec['scheduled_date_source'] = rec['event_date'], 'record_date'
+    rec['slot_start'] = slot or rec.get('scheduled_date')
 
 
 def _lab_migration_key(rec):

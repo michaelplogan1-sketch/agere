@@ -232,18 +232,70 @@ class FhirTests(unittest.TestCase):
         self.assertEqual(len(lab['_lineage']), 2)
         self.assertEqual(rep['dropped']['fhir_native_bulk_copy'], 1)
 
-    def test_fhir_copy_of_vendor_practice_dropped(self):
+    def athena_lab_practice(self, db, drop='2027-01'):
+        """athena AZ-0 delivering labs (and nothing else) in the given month."""
+        A = 'athena/2186'
+        table(db, 'ehr_athena_patient', [{'contextid': '2186', 'patientid': '2437453', 'enterpriseid': 'ICE-AZ-0-B687E9D'}], instance=A)
+        table(db, 'ehr_athena_department', [{'contextid': '2186', 'departmentid': '647', 'departmentname': 'WHN-PRACTICE-AZ-0'}], instance=A)
+        table(db, 'ehr_athena_document', [{'contextid': '2186', 'documentid': '1', 'patientid': '2437453', 'departmentid': '647',
+                                           'documentclass': 'LABRESULT'}], instance=A, drop=drop)
+        table(db, 'ehr_athena_clinicalresult', [{'contextid': '2186', 'clinicalresultid': '7', 'documentid': '1',
+                                                 'observationdatetime': '2027-01-10 18:00:00.000'}], instance=A, drop=drop)
+        table(db, 'ehr_athena_clinicalresultobservation', [{'contextid': '2186', 'clinicalobservationid': '9', 'clinicalresultid': '7',
+                                                            'observationidentifierloinc': '2345-7', 'observationidentifiertext': 'Glucose',
+                                                            'result': '99', 'resultstatus': 'F'}], instance=A, drop=drop)
+
+    def test_fhir_copy_dropped_only_where_vendor_delivers_the_type(self):
         db = sqlite3.connect(':memory:')
+        self.athena_lab_practice(db)
         self.patient(db, 'WHN-PRACTICE-AZ-0', mrn='ICE-AZ-0-B687E9D')
-        table(db, 'fhir_observation', [{'id': '1', '_resource': self.obs()}], feed='fhir_bulk', instance='WHN-PRACTICE-AZ-0',
-              file='fhir_bulk/WHN-PRACTICE-AZ-0/2027-01/Observation.ndjson')
+        bulk = dict(feed='fhir_bulk', instance='WHN-PRACTICE-AZ-0')
+        table(db, 'fhir_observation', [{'id': '1', '_resource': self.obs()}], file='fhir_bulk/WHN-PRACTICE-AZ-0/2027-01/Observation.ndjson', **bulk)
+        # athena delivers no appointment table: the FHIR appointment is the only scheduling record and is loaded
+        table(db, 'fhir_appointment', [{'id': '62', '_resource': fhir_res(
+            resourceType='Appointment', id='62', meta={'lastUpdated': '2027-01-03T00:00:00Z'}, status='booked', start='2027-01-11T10:00:00-07:00',
+            created='2027-01-02T23:30:00-07:00', participant=[{'actor': {'reference': 'Patient/24026315'}}])}],
+            file='fhir_bulk/WHN-PRACTICE-AZ-0/2027-01/Appointment.ndjson', **bulk)
+        # a FHIR lab delivered in a month the athena extract was not delivering labs: gap fill, unless the same record exists
+        table(db, 'fhir_observation', [{'id': '2', '_resource': self.obs(oid='2', value=1.1)}], drop='2027-06',
+              file='fhir_bulk/WHN-PRACTICE-AZ-0/2027-06/Observation.ndjson', **bulk)
         table(db, 'fhir_encounter', [{'id': '9', '_resource': fhir_res(resourceType='Encounter', id='9', status='finished',
                                                                        subject={'reference': 'Patient/24026315'}, period={'start': '2027-01-15'})}],
               feed='fhir_bulk', instance='DEEPCHART', file='fhir_bulk/DEEPCHART/2027-01/Encounter.ndjson')
+        table(db, 'ehr_epic_pat_enc', [{'pat_enc_csn_id': '1', 'pat_id': 'Z1', 'enc_type_c': '101', 'contact_date': '2027-01-15'}],
+              instance='epic/EPIC-DEEPCHART', drop='2027-01')
         recs, by, rep = run(db)
-        self.assertEqual(recs, [])
-        self.assertEqual(rep['dropped']['fhir_copy_of_vendor_practice'], 1)
+        fhir = [r for r in recs if r['source_system'].startswith('fhir:')]
+        self.assertEqual(sorted((r['source_table'], r['_lineage'][0]['file'].split('/')[2]) for r in fhir),
+                         [('appointments', '2027-01'), ('labs', '2027-06')])
+        self.assertTrue(all(r['fhir_gap_fill'] for r in fhir))
+        self.assertEqual(rep['dropped']['fhir_type_delivered_by_vendor_extract'], 1)
         self.assertEqual(rep['dropped']['fhir_copy_of_epic_deepchart'], 1)
+
+    def test_fhir_cross_feed_duplicate_key(self):
+        db = sqlite3.connect(':memory:')
+        self.athena_lab_practice(db, drop='2026-09')  # athena labs delivered only in 2026-09 ...
+        self.patient(db, 'WHN-PRACTICE-AZ-0', mrn='ICE-AZ-0-B687E9D')
+        same = fhir_res(resourceType='Observation', id='3', status='final', category=[{'coding': [{'code': 'laboratory'}]}],
+                        code={'coding': [{'system': 'http://loinc.org', 'code': '2345-7'}], 'text': 'Glucose'},
+                        subject={'reference': 'Patient/24026315'}, effectiveDateTime='2027-01-10T11:00:00-07:00',
+                        valueQuantity={'value': 99, 'unit': 'mg/dL'})
+        table(db, 'fhir_observation', [{'id': '3', '_resource': same}], feed='fhir_bulk', instance='WHN-PRACTICE-AZ-0', drop='2027-01',
+              file='fhir_bulk/WHN-PRACTICE-AZ-0/2027-01/Observation.ndjson')  # ... the bulk copy of the same result arrives later
+        recs, by, rep = run(db)
+        self.assertEqual([r['source_system'] for r in by['labs']], ['athena:2186'])
+        self.assertEqual(rep['dropped']['fhir_duplicate_of_vendor_record'], 1)
+
+    def test_fhir_survey_total_from_value_integer(self):
+        db = sqlite3.connect(':memory:')
+        self.patient(db, 'WHN-PRACTICE-AK-0', mrn='ICE-AK-0-F9781E3')
+        table(db, 'fhir_observation', [{'id': '5', '_resource': fhir_res(
+            resourceType='Observation', id='5', status='final', category=[{'coding': [{'code': 'survey'}]}],
+            code={'coding': [{'system': 'http://loinc.org', 'code': '44261-6'}], 'text': 'PHQ-9'}, subject={'reference': 'Patient/24026315'},
+            effectiveDateTime='2027-02-16T10:23:00-09:00', valueInteger=14)}], feed='fhir_bulk', instance='WHN-PRACTICE-AK-0',
+            file='fhir_bulk/WHN-PRACTICE-AK-0/2027-02/Observation.ndjson')
+        [q] = run(db)[1]['mood_questionnaires']  # eCW practice: no PHQ in the vendor extract, FHIR is the only source
+        self.assertEqual((q['instrument'], q['total'], q['event_date']), ('PHQ-9', 14, '2027-02-16'))
 
     def test_encounter_in_progress_then_finished(self):
         db = sqlite3.connect(':memory:')
@@ -427,6 +479,46 @@ class Hl7Tests(unittest.TestCase):
         dis = next(e for e in by['adt'] if e['event'] == 'discharge')
         self.assertEqual(dis['destination'], 'snf')
         self.assertEqual(rep['dropped']['adt_repeated_event_for_visit'], 1)
+
+
+class DateClockTests(unittest.TestCase):
+    def test_problem_list_documented_date_is_the_record_date(self):
+        db = sqlite3.connect(':memory:')
+        I = 'ecw/WHN-PRACTICE-AK-0'
+        table(db, 'ehr_ecw_patients', [{'pid': '1', 'hl7id': 'ICE-AK-0-0000001'}], instance=I)
+        table(db, 'ehr_ecw_itemdetail', [{'itemid': '50', 'value': 'E11.9', 'propid': '13'}], instance=I)
+        table(db, 'ehr_ecw_problemlist', [{'patientid': '1', 'asmtid': '50', 'addeddate': '2027-10-08', 'onsetdate': '2027-02-28',
+                                           'inactiveflag': '0', 'resolved': '0', 'deleteflag': '0'}], instance=I, drop='2027-10')
+        [c] = run(db)[1]['conditions']
+        self.assertEqual((c['event_date'], c['recorded_date'], c['documented_date']), ('2027-10-08',) * 3)
+        self.assertEqual((c['onset_date'], c['onset']), ('2027-02-28', '2027-02-28'))
+
+    def test_appointment_versions_carry_booking_and_slot(self):
+        db = sqlite3.connect(':memory:')
+        I = 'epic/EPIC-DEEPCHART'
+        table(db, 'ehr_epic_patient', [{'pat_id': 'Z1'}], instance=I)
+        table(db, 'ehr_epic_f_sched_appt', [{'pat_enc_csn_id': '11', 'pat_id': 'Z1', 'contact_date': '2028-03-01', 'appt_dttm': '2028-03-01 09:00:00',
+                                             'appt_status_c': '1', 'appt_made_dttm': '2028-02-01 08:00:00'}], instance=I, drop='2028-02')
+        table(db, 'ehr_epic_f_sched_appt', [{'pat_enc_csn_id': '11', 'pat_id': 'Z1', 'contact_date': '2028-03-01', 'appt_dttm': '2028-03-01 09:00:00',
+                                             'appt_status_c': '2', 'appt_made_dttm': '2028-02-01 08:00:00'}], instance=I, drop='2028-03')
+        # a version delivered with no slot at all: the made date is the slot of last resort
+        table(db, 'ehr_epic_f_sched_appt', [{'pat_enc_csn_id': '12', 'pat_id': 'Z1', 'contact_date': '', 'appt_dttm': '',
+                                             'appt_status_c': '2', 'appt_made_dttm': '2028-04-02 10:00:00'}], instance=I, drop='2028-04')
+        appts = run(db)[1]['appointments']
+        self.assertTrue(all(a['booked_date'] for a in appts))
+        self.assertEqual(sorted((a['appointment_id'][-2:], a['status'], a['booked_date'], a['scheduled_date'], a.get('scheduled_date_source'))
+                                for a in appts),
+                         [('11', 'booked', '2028-02-01', '2028-03-01', None), ('11', 'fulfilled', '2028-02-01', '2028-03-01', None),
+                          ('12', 'fulfilled', '2028-04-02', '2028-04-02', 'made_date')])
+        self.assertTrue(all(a['slot_start'] for a in appts))
+
+    def test_egfr_label_with_equation_maps_to_concept(self):
+        import re as _re
+        from clinical_core.agere.clinical import concepts
+        names = _re.compile(r'^(?:' + concepts.MEASUREMENTS['egfr']['names'] + r')$', _re.I)
+        self.assertTrue(names.match('EGFR CKD-EPI 2021'))
+        self.assertTrue(names.match('eGFR'))
+        self.assertFalse(names.match('EGFR mutation'))
 
 
 class VariantTests(unittest.TestCase):

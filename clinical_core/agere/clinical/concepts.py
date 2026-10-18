@@ -84,7 +84,9 @@ MEASUREMENTS = {
     'triglycerides': {'label': 'Triglycerides', 'unit': 'mg/dL', 'loinc': ['2571-8'], 'names': r'triglycerides?',
         'units': {'mg/dL': _SAME, 'mmol/L': 88.57}},
     'egfr': {'label': 'Estimated GFR (BSA-normalised)', 'unit': 'mL/min/1.73m2', 'loinc': ['33914-3', '48642-3', '48643-1', '62238-1', '98979-8'],
-        'names': r'egfr|glomerular filtration rate',
+        # eGFR labels with the equation named (EGFR CKD-EPI 2021, eGFR (MDRD), estimated GFR ...) arrive without a LOINC from
+        # some EHR extracts; 'egfr' alone stays an exact label so gene names (EGFR mutation) never match.
+        'names': r'e-?gfr|e-?gfr[ ,(]*(ckd-epi|mdrd|cystatin|creatinine)\b[^/]*|estimated (gfr|glomerular filtration rate)\b.*|glomerular filtration rate',
         'units': {'mL/min/1.73m2': _SAME, 'mL/min/1.73m²': _SAME, 'mL/min/{1.73_m2}': _SAME}},
     'creatinine': {'label': 'Serum creatinine', 'unit': 'mg/dL', 'loinc': ['2160-0'], 'names': r'creatinine',
         'units': {'mg/dL': _SAME, 'umol/L': 1 / 88.42, 'µmol/L': 1 / 88.42}},
