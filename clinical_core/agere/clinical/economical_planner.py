@@ -291,6 +291,18 @@ def _specialist_families(stack,question,ledger,meta,start,local_decline,early):
                       'local_compiler_declined':local_decline,'steps':[],'elapsed_seconds':time.perf_counter()-start}
     return None,({'reason':declined} if declined else None)
 
+def _undelivered_gate(stack,question,meta,start,family_info=None):
+    """-> (unsupported graph, receipt) when the question needs an input this workspace does not deliver, else None."""
+    from . import delivered_inputs
+    missing=delivered_inputs.undelivered(Path(stack.path)/'semantic.sqlite3',question)
+    if not missing:return None
+    graph=validate({'interpretation':f'Needs inputs this delivery does not contain: {question}','coverage':'unsupported','nodes':[],
+                    'unmet_requirements':delivered_inputs.requirements(missing)},meta['snapshot']['as_of'])
+    return graph,{'route':delivered_inputs.ROUTE,'model':None,'new_paid_api_calls':0,'frontier_called':False,
+                  'undelivered':missing,'version':delivered_inputs.VERSION,
+                  'local_compiler_declined':{'route':'not_run_yet',**({'specialist_families':family_info} if family_info else {})},
+                  'steps':[],'elapsed_seconds':time.perf_counter()-start}
+
 def plan(stack,question,ledger,frontier):
     """frontier is a callback; no hosted call occurs for an exact local plan/cache."""
     normalize(question);start=time.perf_counter();meta=stack.retriever.meta
@@ -305,6 +317,11 @@ def plan(stack,question,ledger,frontier):
     # as a knowledge-base explanation); a family claims only a definition it represents in full.
     family_graph,family_info=_specialist_families(stack,question,ledger,meta,start,{'route':'not_run_yet'},True)
     if family_graph is not None:return family_graph,family_info
+    # Undelivered inputs (delivered_inputs.py): a question whose definition depends on a field this workspace does not
+    # deliver (empty on every row, inferred by the native adapters rather than received, or stated as not in the delivery)
+    # declines as unsupported with the input named, before any governed metric, engine or analyst can answer it.
+    gate=_undelivered_gate(stack,question,meta,start,family_info)
+    if gate is not None:return gate
     # Agere's own question compiler runs before any hosted model; the LLM is the fallback.
     from .local_compiler import compile as compile_locally
     from .source_profile import load as load_profile

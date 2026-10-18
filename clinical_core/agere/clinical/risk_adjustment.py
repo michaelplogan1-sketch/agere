@@ -218,6 +218,8 @@ def age_on(birth, when):
 
 
 def _band(age):
+    # a person born after the age reference date (a newborn in a later delivery: age < 0) scores in the youngest band
+    age = max(int(age or 0), AGE_BANDS[0][0])
     for lo, hi in AGE_BANDS:
         if age >= lo and (hi is None or age <= hi): return f'{lo}_{hi if hi is not None else "GT"}'
 
@@ -649,9 +651,10 @@ def run(db, cap, patient_ids, params, as_of):
     pats = []
     for pid, info in scope.items():
         if info['birth_date']:
-            age = age_on(date.fromisoformat(info['birth_date'][:10]), date(year + 1, 2, 1))
+            # born after the CMS age date (Feb 1 of the payment year): age 0, not a negative age with no CMS band
+            age = max(0, age_on(date.fromisoformat(info['birth_date'][:10]), date(year + 1, 2, 1)))
         else:
-            age = int(info['age_reported'] or 0)
+            age = max(0, int(info['age_reported'] or 0))
         sex = info['sex']
         per = by_pat.get(pid, {})
         elig = {k: [d for d in per.get(k, []) if d['eligible']] for k in ('prior', 'year', 'current')}

@@ -197,6 +197,15 @@ def answer(question, as_of, semantic, send_factory, *, qid='Q', answer_type=None
     if not answer_type:
         q.pop('answer_type')
     model, db = model_name(), str(semantic.path)
+    from ..clinical import delivered_inputs
+    missing = delivered_inputs.undelivered(semantic.path, question)
+    if missing:
+        # The question needs an input this delivery does not contain (an empty field, a link the native adapters inferred,
+        # or a stated gap): decline as unsupported with it named; no analyst runs.
+        return {'answer': None, 'answer_type': answer_type, 'decision': 'undelivered_input', 'agree': 0, 'passing': 0,
+                'decline': {'kind': 'unsupported', 'missing': delivered_inputs.requirements(missing)}, 'readings_flagged': 0,
+                'interpretation': 'hybrid undelivered_input; needs: ' + '; '.join(delivered_inputs.missing_names(missing)),
+                'runs': {}, 'contracts': {}, 'cost_usd': 0.0, 'new_paid_api_calls': 0, 'errors': [], 'models': {'analyst': model}}
     docs_dir = Path(docs_dir) if docs_dir else docs_for(semantic.path)
 
     def one(k):

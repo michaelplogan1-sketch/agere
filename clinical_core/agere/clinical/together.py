@@ -188,7 +188,8 @@ SPECIALIST_ROUTES = frozenset({'local_compiler', 'semantic_cache', 'exact_questi
                                'metric_router', 'operator_router', 'operator_router_requires_input',
                                'compact_retrieval_typed_router', 'local_model_rewrite_compiled', 'cohort_family_bottled',
                                'cohort_family',  # cohort_families.py: code-rendered SQL for the stated definition
-                               'dq_family', 'vbc_family'})  # dq_families.py / vbc_families.py: same pattern, delivery+VBC
+                               'dq_family', 'vbc_family',  # dq_families.py / vbc_families.py: same pattern, delivery+VBC
+                               'undelivered_input'})  # delivered_inputs.py: the question needs an input this delivery lacks
 
 
 def engines_defer_on_definitions():
@@ -560,6 +561,15 @@ def decide(stack, question, fast, fast_error, analyst, analyst_state, *, as_of=N
                         reason=f'fast path error: {type(fast_error).__name__}: {fast_error}'[:300])
         return result, together, rec
     f_answer = fast.get('answer') if isinstance(fast.get('answer'), dict) else None
+    if _fast_route(fast) == 'undelivered_input' and (f_answer or {}).get('status') == 'unsupported':
+        # The question depends on an input this delivery does not contain (delivered_inputs.py): an analyst answer would be
+        # computed from an empty or Agere-inferred field, so the decline stands and the analyst's answer is only a reading.
+        out = dict(f_answer)
+        if a_answer is not None and a_answer.get('status') != 'unsupported':
+            out['grounding'] = list(out.get('grounding') or []) + [
+                _reading('Semantic analyst', a_answer, [c.get('sql') for c in (analyst or {}).get('tool_calls') or []])]
+        together.update(decision='undelivered_input', winner='fast', reason='the question needs an input this delivery does not contain')
+        return {**fast, 'answer': out}, together, rec
     if answer_type == 'patient_set' and a_answer is not None and isinstance(a_answer.get('patient_ids'), list) \
             and not isinstance((f_answer or {}).get('patient_ids'), list) or (
             answer_type == 'patient_set' and a_answer is not None and isinstance(a_answer.get('patient_ids'), list) and _engine(fast)):
