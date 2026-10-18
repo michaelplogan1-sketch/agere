@@ -68,7 +68,7 @@
  "programs": [
   {
    "id": "pharmacy_gdmt_titration",
-   "name": "Pharmacist-led GDMT optimization program",
+   "name": "PharmD GDMT optimization program",
    "kind": "pharmacy_gdmt",
    "request_keywords": ["gdmt", "guideline-directed", "guideline directed", "pharmacy", "pharmacist", "heart failure", "hfref"],
    "eligibility": {
@@ -94,7 +94,7 @@
   },
   {
    "id": "access_virtual_pt_msk",
-   "name": "Virtual physical therapy through CMS ACCESS model participants (MSK track)",
+   "name": "ACCESS MSK virtual physical therapy (CMS ACCESS model)",
    "kind": "virtual_pt",
    "context": "cms_access_model",
    "request_keywords": ["physical therapy", "virtual pt", " pt ", "access model", "cms access", "msk", "back pain"],

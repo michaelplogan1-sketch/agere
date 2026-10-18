@@ -471,3 +471,23 @@ class WorkspaceAndApiTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+class ActTests(unittest.TestCase):
+    def test_agents_enroll_routed_patients(self):
+        from clinical_core.agere.plans.act import act
+        plan = {'as_of': '2030-05-27', 'program_kind': 'virtual_pt',
+                'programs': [{'id': 'access_virtual_pt_msk', 'name': 'ACCESS MSK'}],
+                'patients': [
+                    {'patient_id': 'P1', 'route': 'enroll', 'program_id': 'access_virtual_pt_msk',
+                     'vendor_slot': {'display': 'ACCESS MSK vendor A'}, 'attribution': {'npi': {'value': '1234567893'}}},
+                    {'patient_id': 'P2', 'route': 'coverage_check', 'program_id': 'coverage_verification',
+                     'attribution': {}},
+                    {'patient_id': 'P3', 'route': 'exclude'}]}
+        out = act(plan)
+        self.assertEqual(out['summary']['enrolled'], 1)
+        self.assertEqual(out['summary']['coverage_verified'], 1)
+        a = out['actions'][0]
+        self.assertEqual((a['status'], a['vendor'], a['first_visit']['date']), ('enrolled', 'ACCESS MSK vendor A', '2030-05-31'))
+        self.assertEqual([s['step'] for s in a['steps']][-2:], ['pcp_notified', 'closed_loop_check'])
+        self.assertEqual(act(plan), out)  # deterministic

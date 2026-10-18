@@ -17,7 +17,7 @@ def _cohort_ids(env):
 
 
 def build(semantic_path, question=None, *, patient_ids=None, program_kind=None, as_of=None, answer_type=None,
-          cohort=None, gap_details=None, narrative=False, send_factory=None, catalog_path=None):
+          cohort=None, gap_details=None, narrative=False, send_factory=None, catalog_path=None, execute=True):
     """-> {'plan', 'cohort', 'request'}. cohort: callable(question) -> an answer envelope with answer.patient_ids (the
     product's existing answer path); used only when the request names a cohort and no patient_ids are given."""
     cat = catmod.load(catalog_path)
@@ -50,6 +50,9 @@ def build(semantic_path, question=None, *, patient_ids=None, program_kind=None, 
     info['patients'] = len(ids)
     plan = router.route(semantic_path, ids, kind, as_of, gap_details, catalog=cat)
     plan['cohort'] = info
+    if execute:
+        from .act import act
+        plan['execution'] = act(plan)
     plan['narrative'] = narr.draft(plan, send_factory=send_factory, enabled=bool(narrative)) if narrative else \
         {'status': 'disabled', 'reason': 'not requested'}
     return {'plan': plan, 'cohort': info, 'request': parsed}
@@ -62,12 +65,15 @@ def envelope(out, *, pipeline=None, base=None):
     acted = [r['patient_id'] for r in plan['patients'] if r['route'] != 'exclude']
     s = plan['summary']
     routes = ', '.join(f'{k} {v}' for k, v in s['by_route'].items()) or 'no patients'
+    ex = (plan.get('execution') or {}).get('summary')
+    acted_note = (f"; agents enrolled {ex['enrolled']}, verified coverage for {ex['coverage_verified']}, "
+                  f"scheduled {ex['first_visits_scheduled']} first visits") if ex else ''
     cost = (plan['cohort'].get('answer_path') or {}).get('cost_usd')
     ncost = (plan.get('narrative') or {}).get('cost_usd')
     total = None if cost is None and ncost is None else round((cost or 0) + (ncost or 0), 6)
     env = dict(base or {})
     env.update({'pipeline': pipeline or env.get('pipeline') or 'plan', 'answer': {'patient_ids': acted}, 'answer_type': 'plan',
-                'status': 'answered', 'headline': f"Routed plan for {s['patients']} patients ({plan['program_kind']}): {routes}",
+                'status': 'answered', 'headline': f"Routed plan for {s['patients']} patients ({plan['program_kind']}): {routes}{acted_note}",
                 'decision': 'plan', 'route': 'deterministic_router',
                 'interpretation': f"routed plan ({plan['program_kind']}; cohort from {plan['cohort']['source']}; {routes})",
                 'cost_usd': total, 'missing': [], 'decline': None,
