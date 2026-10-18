@@ -1,7 +1,7 @@
 {
  "workspace": "pilot-native-v2-12",
  "as_of": "2030-05-27",
- "locked_with": "generator --gold10 scorer: exact at patient level (2026-10-18)",
+ "locked_with": "generator --gold10 scorer: all 9 exact at patient level (2026-10-18), generator Gold10 digest 05c5b54b",
  "questions": {
   "LBP-PT": {
    "count": 37,
@@ -1466,6 +1466,66 @@
     "mrn:L-VA-0-4143B0CD",
     "mrn:L-VA-0-93DEE805"
    ]
+  },
+  "PHQ-FU": {
+   "count": 53,
+   "fingerprint": "fc9f5a67a1b84d5b",
+   "ids": [
+    "athena:7809:2826227",
+    "athena:8823:3770884",
+    "athena:8956:1841027",
+    "ecw:WHN-PRACTICE-AK-0:48319488",
+    "ecw:WHN-PRACTICE-IL-0:95473310",
+    "ecw:WHN-PRACTICE-SC-0:75298150",
+    "ecw:WHN-PRACTICE-WA-1:67871546",
+    "epic:EPIC-CA:Z1418156",
+    "epic:EPIC-CA:Z2943282",
+    "epic:EPIC-CT:Z2184751",
+    "epic:EPIC-DEEPCHART:Z1004256",
+    "epic:EPIC-DEEPCHART:Z1129066",
+    "epic:EPIC-DEEPCHART:Z1142396",
+    "epic:EPIC-DEEPCHART:Z1309444",
+    "epic:EPIC-DEEPCHART:Z1427077",
+    "epic:EPIC-DEEPCHART:Z2110862",
+    "epic:EPIC-DEEPCHART:Z2117540",
+    "epic:EPIC-DEEPCHART:Z2197036",
+    "epic:EPIC-DEEPCHART:Z2240495",
+    "epic:EPIC-DEEPCHART:Z2279077",
+    "epic:EPIC-DEEPCHART:Z2710937",
+    "epic:EPIC-DEEPCHART:Z2928646",
+    "epic:EPIC-DEEPCHART:Z3082486",
+    "epic:EPIC-DEEPCHART:Z3170339",
+    "epic:EPIC-DEEPCHART:Z3197376",
+    "epic:EPIC-DEEPCHART:Z3414117",
+    "epic:EPIC-DEEPCHART:Z3549031",
+    "epic:EPIC-DEEPCHART:Z3583660",
+    "epic:EPIC-DEEPCHART:Z3969797",
+    "epic:EPIC-DEEPCHART:Z4612717",
+    "epic:EPIC-DEEPCHART:Z4718238",
+    "epic:EPIC-DEEPCHART:Z5069993",
+    "epic:EPIC-DEEPCHART:Z5115922",
+    "epic:EPIC-DEEPCHART:Z5147380",
+    "epic:EPIC-DEEPCHART:Z5211657",
+    "epic:EPIC-DEEPCHART:Z5500651",
+    "epic:EPIC-DEEPCHART:Z5725766",
+    "epic:EPIC-DEEPCHART:Z5766450",
+    "epic:EPIC-DEEPCHART:Z6279681",
+    "epic:EPIC-DEEPCHART:Z6411160",
+    "epic:EPIC-DEEPCHART:Z6413701",
+    "epic:EPIC-DEEPCHART:Z6465679",
+    "epic:EPIC-DEEPCHART:Z6483888",
+    "epic:EPIC-DEEPCHART:Z6527080",
+    "epic:EPIC-DEEPCHART:Z6547148",
+    "epic:EPIC-DEEPCHART:Z6760679",
+    "epic:EPIC-DEEPCHART:Z7939344",
+    "epic:EPIC-DEEPCHART:Z8183358",
+    "epic:EPIC-DEEPCHART:Z8230067",
+    "epic:EPIC-DEEPCHART:Z8462416",
+    "epic:EPIC-DEEPCHART:Z8674611",
+    "epic:EPIC-DEEPCHART:Z9331783",
+    "fhir:WHN-PRACTICE-LA-0:94020048"
+   ]
   }
- }
+ },
+ "generator_digest": "05c5b54ba34728cd"
 }
