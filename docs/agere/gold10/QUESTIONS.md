@@ -24,8 +24,8 @@ Shared building blocks
    ACCESS model (2), with active coverage, payer/product, attributed PCP or practice, and the specific gap (missing
    pillars; days since ED visit). Patients without active coverage go to a coverage-check queue instead. Checked fields:
    routing, coverage, payer, attribution, gap.
-4. A1C-9. Patients with diabetes (E10/E11) whose latest A1c in the 12 months before as_of is > 9.0% and who had no
-   office or virtual visit in the 90 days after that result.
+4. A1C-9. Patients with diabetes (E10/E11) whose latest A1c in the 12 months before as_of is > 9.0%, resulted at least
+   30 days before as_of, and who had no visit (completed office/virtual encounter or billed CPT 99202-99215) on days 1-30.
 5. ED-HIGH. Patients with 4 or more distinct ED visit dates in the 12 months before as_of, with their top 3 ED
    diagnoses.
 6. TCM-GAP. Inpatient discharges (home or home health) in the 6 months before as_of with no office or virtual visit
@@ -36,3 +36,6 @@ Shared building blocks
 9. BCS. Women 52-74 at as_of with active coverage and no mammogram (claim or EHR result) in the 27 months before as_of.
 10. PDC. Patients with 2 or more fills of a statin in the calendar year before as_of whose statin PDC for that year is
    below 80% (each class separately, overlaps not shifted, prior-year supply counts for days it covers).
+
+
+Current wording lives in questions.jsonl (agreed with the generator 2026-10-18). Locked: LBP-PT, TCM-GAP, BCS, PDC (locked.json).
