@@ -552,10 +552,12 @@ def resolve_kind(cat, program_kind=None, plan_request=None):
 
 
 def route(semantic_db, patient_ids, program_kind=None, as_of=None, gap_details=None, *, plan_request=None,
-          catalog=None, catalog_path=None):
+          catalog=None, catalog_path=None, outreach_policy=None):
     """The routed plan for patient_ids (see module doc). program_kind: a catalog kind (pharmacy_gdmt, virtual_pt,
     coverage_check, ...) or request text; plan_request: a parsed request dict (request.parse) or its text.
-    gap_details: optional {patient_id: {...}} from the cohort step, recorded beside the computed gap (never overriding it)."""
+    gap_details: optional {patient_id: {...}} from the cohort step, recorded beside the computed gap (never overriding it).
+    outreach_policy: an approved evolved policy (clinical_core/agere/evolve) to rank / fill capacity; by default the
+    config switch config/agere/evolve_policy.json decides, and it is off, so routing is unchanged."""
     cat = catalog or catmod.load(catalog_path)
     kind = resolve_kind(cat, program_kind, plan_request)
     db = _DB(semantic_db)
@@ -678,7 +680,7 @@ def route(semantic_db, patient_ids, program_kind=None, as_of=None, gap_details=N
                            decision=F(f"care_team_review: no {kind} program accepts this coverage ({', '.join(failed)})",
                                       cov['active']['sources']))
             rows.append(row)
-        return {'schema': SCHEMA, 'generated_by': 'deterministic_router', 'as_of': as_of_d.isoformat(), 'program_kind': kind,
+        plan = {'schema': SCHEMA, 'generated_by': 'deterministic_router', 'as_of': as_of_d.isoformat(), 'program_kind': kind,
                 'gap_type': gap_type, 'catalog_version': cat.get('version'),
                 'programs': [{k: p.get(k) for k in ('id', 'name', 'kind', 'context', 'enrollment_channel', 'vendor_slots')}
                              for p in programs + ([barrier_prog] if barrier_prog else []) + [cov_prog]],
@@ -687,6 +689,17 @@ def route(semantic_db, patient_ids, program_kind=None, as_of=None, gap_details=N
                 'patients': rows, 'summary': summarize(rows)}
     finally:
         db.close()
+    return _outreach_policy(plan, semantic_db, outreach_policy, cat)
+
+
+def _outreach_policy(plan, semantic_db, policy, cat):
+    """Approved evolved outreach policy (evolve/routing.py): explicit argument, else the config switch (default off)."""
+    from ..evolve import routing as policy_routing
+    if policy is None:
+        policy = policy_routing.configured_policy(plan['program_kind'])
+    if not policy:
+        return plan
+    return policy_routing.apply(plan, semantic_db, policy, catalog=cat)
 
 
 def summarize(rows):

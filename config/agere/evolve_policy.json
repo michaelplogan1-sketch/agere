@@ -1,0 +1,6 @@
+{
+ "schema": "agere-evolve-policy-switch/1",
+ "enabled": false,
+ "policies": {},
+ "notes": "Switch for plans/router.py to rank and capacity-fill enrolled patients with an approved evolved outreach policy (clinical_core/agere/evolve/routing.py). Off by default: routing is unchanged. To use one: set enabled true and map a program kind to a policy artifact path, e.g. {\"pharmacy_gdmt\": \"artifacts/evolve/<run>/policies/net_savings.json\"}; the artifact itself must say approved: true."
+}
