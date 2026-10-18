@@ -496,6 +496,23 @@ class Workspace:
 
     # --- answering -------------------------------------------------------------------------------------------------
 
+    def customer_ids(self, person_ids):
+        """{Agere person id: the customer's own identifier} for a native workspace (identity map in landing.sqlite)."""
+        if not self.native or not self.landing_path.is_file() or not person_ids:
+            return {}
+        db = sqlite3.connect(f'file:{self.landing_path}?mode=ro', uri=True)
+        try:
+            keys = {}
+            ids = list(dict.fromkeys(person_ids))
+            for i in range(0, len(ids), 500):
+                chunk = ids[i:i + 500]
+                q = 'SELECT person_id, source_key FROM stg_person_map WHERE person_id IN (' + ','.join('?' * len(chunk)) + ')'
+                for pid, key in db.execute(q, chunk):
+                    keys.setdefault(pid, []).append(key)
+        finally:
+            db.close()
+        return {pid: native_id(k) for pid, k in keys.items() if native_id(k)}
+
     def pipeline_support(self):
         """-> (supported, reason): whether this workspace can answer through the full product pipeline."""
         from . import workspace_stack
@@ -537,6 +554,9 @@ class Workspace:
         return out
 
     def _record(self, question, out):
+        ids = (out.get('answer') or {}).get('patient_ids') if isinstance(out.get('answer'), dict) else None
+        if ids and self.native:
+            out['customer_ids'] = self.customer_ids(ids)  # the customer's own identifiers (MRN, member id, EHR id)
         record = {'at': _now(), 'question': question, 'pipeline': out.get('pipeline'), 'decision': out['decision'],
                   'answer': out['answer'], 'cost_usd': out['cost_usd'], 'interpretation': out['interpretation']}
         with open(self.dir / 'questions.jsonl', 'a') as f:
@@ -562,14 +582,43 @@ class Workspace:
         return out
 
 
-def _answer_record(qid, out, answer_type=None):
-    """One answers-file row in the shared submission shape: {id, status, answer fields, interpretation, ...}."""
+NATIVE_ID_ORDER = ('epic', 'athena', 'ecw', 'fhir', 'mrn', 'hl7', 'mbi', 'member')
+
+
+def native_id(source_keys):
+    """The customer's own identifier for a person, from Agere's identity map keys (epic:/athena:/ecw:/fhir: as they are;
+    a practice MRN or HL7 PID-3 as mrn:<value>; an MBI or payer member id as member:<value>)."""
+    by_kind = {}
+    for k in source_keys or []:
+        kind, _, rest = str(k).partition(':')
+        by_kind.setdefault(kind, []).append(rest)
+    for kind in NATIVE_ID_ORDER:
+        for rest in sorted(by_kind.get(kind, [])):
+            if kind in ('epic', 'athena', 'ecw', 'fhir'):
+                return f'{kind}:{rest}'
+            if kind in ('mrn', 'hl7'):
+                return 'mrn:' + rest.split(':', 1)[-1]
+            if kind in ('mbi', 'member'):
+                return 'member:' + rest.split(':', 1)[-1]
+    return None
+
+
+def _answer_record(qid, out, answer_type=None, id_map=None):
+    """One answers-file row in the shared submission shape: {id, status, answer fields, interpretation, ...}.
+    id_map (person id -> customer identifier) rewrites patient lists into the customer's own identifiers."""
     a = out.get('answer')
     row = {'id': qid, 'answer_type': out.get('answer_type') or answer_type, 'status': 'answered' if a else 'abstain',
            'interpretation': out.get('interpretation'), 'cost_usd': out.get('cost_usd'), 'decision': out.get('decision')}
+    decline = out.get('decline') or {}
+    status = (a or {}).get('status') if isinstance(a, dict) else None
+    if decline.get('kind') == 'clarify' or status == 'clarify':
+        return row | {'status': 'clarify', 'readings': decline.get('readings') or (a or {}).get('readings') or []}
+    if decline.get('kind') == 'unsupported' or status == 'unsupported':
+        return row | {'status': 'unsupported', 'missing': decline.get('missing') or (a or {}).get('missing') or []}
     if a:
         if 'patient_ids' in a:
-            row['patient_ids'] = a['patient_ids']
+            ids = a['patient_ids']
+            row['patient_ids'] = [id_map.get(i) or i for i in ids] if id_map else ids
         elif 'table' in a:
             row['table'] = [{'key': ' -> '.join(str(k) for k in r['keys']), 'value': r['value']} for r in a['table']]
         else:
@@ -577,7 +626,7 @@ def _answer_record(qid, out, answer_type=None):
     return row
 
 
-def ask_many(ws, questions, *, workers=3, send_factory=None, out_path=None, on_usage=None):
+def ask_many(ws, questions, *, workers=3, send_factory=None, out_path=None, on_usage=None, native_ids=False):
     """Answer a list of {id, question, answer_type?} against one workspace. Writes answers.jsonl (submission shape)
     and returns the rows. A question that fails records its error instead of stopping the batch."""
     from concurrent.futures import ThreadPoolExecutor
@@ -589,7 +638,8 @@ def ask_many(ws, questions, *, workers=3, send_factory=None, out_path=None, on_u
             if on_usage:
                 on_usage(ws.slug, {'question': q['question'][:300], 'cost_usd': out.get('cost_usd'),
                                    'seconds': round(__import__('time').time() - t0, 2), 'decision': out.get('decision')})
-            return _answer_record(q['id'], out, q.get('answer_type'))
+            ids = ((out.get('answer') or {}).get('patient_ids') or []) if native_ids else []
+            return _answer_record(q['id'], out, q.get('answer_type'), ws.customer_ids(ids) if ids else None)
         except Exception as exc:  # noqa: BLE001
             return {'id': q['id'], 'status': 'abstain', 'error': f'{type(exc).__name__}: {exc}'[:300]}
     with ThreadPoolExecutor(max_workers=workers) as pool:

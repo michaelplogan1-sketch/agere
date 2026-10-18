@@ -135,3 +135,23 @@ class BatchTests(unittest.TestCase):
         self.assertEqual(rows[0]['count'], 7)
         self.assertEqual(rows[1]['status'], 'abstain')
         self.assertTrue(any(p.name.startswith('answers-') for p in FakeWs.dir.iterdir()))
+
+
+class CustomerIdTests(unittest.TestCase):
+    def test_native_id_preference(self):
+        from clinical_core.agere.onboarding.workspace import native_id
+        self.assertEqual(native_id(['member:WH-PAYER-1:M1', 'epic:EPIC-CA:Z1']), 'epic:EPIC-CA:Z1')
+        self.assertEqual(native_id(['mrn:WHN-PRACTICE-CA-5:ICE-CA-5-1']), 'mrn:ICE-CA-5-1')
+        self.assertEqual(native_id(['hl7:HOSPAK0:L-AK-0-9']), 'mrn:L-AK-0-9')
+        self.assertEqual(native_id(['mbi:2DX0U77CP79']), 'member:2DX0U77CP79')
+        self.assertEqual(native_id(['member:WH-PAYER-MCD2:MCD2X']), 'member:MCD2X')
+        self.assertIsNone(native_id([]))
+
+    def test_declines_and_id_rewrite_in_submission_rows(self):
+        from clinical_core.agere.onboarding.workspace import _answer_record
+        r = _answer_record('Q', {'answer': {'patient_ids': ['AGP-1', 'AGP-2']}}, 'patient_set', {'AGP-1': 'epic:E:Z1'})
+        self.assertEqual(r['patient_ids'], ['epic:E:Z1', 'AGP-2'])
+        c = _answer_record('Q', {'answer': None, 'decline': {'kind': 'clarify', 'readings': ['a', 'b']}})
+        self.assertEqual((c['status'], c['readings']), ('clarify', ['a', 'b']))
+        u = _answer_record('Q', {'answer': None, 'decline': {'kind': 'unsupported', 'missing': ['x']}})
+        self.assertEqual((u['status'], u['missing']), ('unsupported', ['x']))
