@@ -137,7 +137,12 @@ _TABLE_Q = re.compile(r'\b(?:by|per|for each|each|break(?:s)? ?(?:it )?(?:down|o
 
 def money_question(question):
     q = question or ''
-    return bool(_MONEY_Q.search(q)) and not re.search(r'\bhow many\b|\bnumber of\b', q, re.I)
+    if not _MONEY_Q.search(q) or re.search(r'\bhow many\b|\bnumber of\b', q, re.I):
+        return False
+    # "which patients ... (Definition: PHQ-9 total >= 10 ... billed CPT ...)" asks for a patient list, not dollars
+    from .answer_shape import _PATIENT_LIST
+    head = re.split(r'\bdefinition\s*:', q, maxsplit=1, flags=re.I)[0]
+    return not _PATIENT_LIST.search(head)
 
 
 def _num(v): return isinstance(v, (int, float)) and not isinstance(v, bool)

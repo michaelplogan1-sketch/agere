@@ -1,7 +1,7 @@
 {
  "schema": "cascade-thresholds/1",
  "version": "agere-cascade/1",
- "written_at": "2026-10-18T17:32:30Z",
+ "written_at": "2026-10-18T19:53:45Z",
  "target": {
   "alpha": 0.05,
   "delta": 0.1
@@ -103,7 +103,7 @@
     "errors_all": 82
    },
    "score": "route-level (1.0 for every claim): the certificate covers all of the route's claims",
-   "fitted_at": "2026-10-18T17:32:30Z",
+   "fitted_at": "2026-10-18T19:53:45Z",
    "bound_if_accept_all": 0.4742,
    "eligible": 92,
    "decision": "defer",
@@ -152,7 +152,7 @@
    "threshold": 0.71,
    "calibrated": true,
    "method": "Learn-then-Test (fixed-sequence exact binomial tests)",
-   "bind": "240bd1dcbed9b050",
+   "bind": "254b3d1d44fbdc93",
    "data": {
     "labelled": 1102,
     "calibration": 752,
@@ -165,7 +165,7 @@
     "errors_all": 0
    },
    "score": "cascade.cohort_family_score: 1 - 0.08 x convention defaults applied - 0.25 x model-filled slots - 0.05 without an inline definition",
-   "fitted_at": "2026-10-18T17:32:30Z",
+   "fitted_at": "2026-10-18T19:53:45Z",
    "n_accepted": 752,
    "errors_accepted": 0,
    "coverage": 1.0,
@@ -210,7 +210,7 @@
     "errors_all": 65
    },
    "score": "route-level (1.0 for every claim): the certificate covers all of the route's claims",
-   "fitted_at": "2026-10-18T17:32:30Z",
+   "fitted_at": "2026-10-18T19:53:45Z",
    "bound_if_accept_all": 1.0,
    "eligible": 36,
    "decision": "defer",
@@ -272,7 +272,7 @@
     "errors_all": 43
    },
    "score": "learned-router probability when it chose the engine, else 1.0",
-   "fitted_at": "2026-10-18T17:32:30Z",
+   "fitted_at": "2026-10-18T19:53:45Z",
    "bound_if_accept_all": 1.0,
    "eligible": 19,
    "decision": "defer",
@@ -331,7 +331,7 @@
     "errors_all": 0
    },
    "score": "typed decider probability of its chosen analysis",
-   "fitted_at": "2026-10-18T17:32:30Z",
+   "fitted_at": "2026-10-18T19:53:45Z",
    "bound_if_accept_all": null,
    "eligible": 0,
    "decision": "uncalibrated",
@@ -391,7 +391,7 @@
     "errors_all": 0
    },
    "score": "route-level (1.0 for every claim): the certificate covers all of the route's claims",
-   "fitted_at": "2026-10-18T17:32:30Z",
+   "fitted_at": "2026-10-18T19:53:45Z",
    "bound_if_accept_all": 0.5358,
    "eligible": 3,
    "decision": "uncalibrated",
@@ -451,7 +451,7 @@
     "errors_all": 0
    },
    "score": "local encoder cosine similarity to the verified question (identical slots required first)",
-   "fitted_at": "2026-10-18T17:32:30Z",
+   "fitted_at": "2026-10-18T19:53:45Z",
    "n_accepted": 228,
    "errors_accepted": 0,
    "coverage": 0.3089,
@@ -495,7 +495,7 @@
     "errors_all": 1
    },
    "score": "rule confidence",
-   "fitted_at": "2026-10-18T17:32:30Z",
+   "fitted_at": "2026-10-18T19:53:45Z",
    "n_accepted": 1267,
    "errors_accepted": 1,
    "coverage": 1.0,
@@ -539,7 +539,7 @@
     "errors_all": 13
    },
    "score": "barrier-type classifier probability of its label (0 when the student contradicts a barrier)",
-   "fitted_at": "2026-10-18T17:32:30Z",
+   "fitted_at": "2026-10-18T19:53:45Z",
    "n_accepted": 68,
    "errors_accepted": 0,
    "coverage": 0.6667,
@@ -583,7 +583,7 @@
     "errors_all": 20
    },
    "score": "Jev probability of its label",
-   "fitted_at": "2026-10-18T17:32:30Z",
+   "fitted_at": "2026-10-18T19:53:45Z",
    "bound_if_accept_all": 0.213,
    "eligible": 37,
    "decision": "defer",
@@ -644,7 +644,7 @@
     "errors_all": 94
    },
    "score": "Perplexity Decisions probability of its label",
-   "fitted_at": "2026-10-18T17:32:30Z",
+   "fitted_at": "2026-10-18T19:53:45Z",
    "bound_if_accept_all": 0.6632,
    "eligible": 75,
    "decision": "defer",

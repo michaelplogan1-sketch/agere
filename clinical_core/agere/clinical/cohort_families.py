@@ -866,8 +866,8 @@ def parse(question, as_of):
         for role, text, _ in segs:
             codes = _expand(text)
             if role == 'procedure' and codes: fu['procedure_codes'] = codes
-            elif role == 'bh' and [x for x in codes if x.startswith('908')]:
-                fu['bh_codes'] = [x for x in codes if x.startswith('908')]  # E/M codes in the same clause are visits
+            elif role == 'bh' and [x for x in codes if re.match(r'90[78]\d\d', x)]:
+                fu['bh_codes'] = [x for x in codes if re.match(r'90[78]\d\d', x)]  # psychiatry 9079x-908xx; E/M codes are visits
                 c = [x for x in codes if re.match(r'99[24]\d\d', x)]
                 if c: fu['visit'] = {**fu.get('visit', {}), 'cpt': c}
             elif role in ('visit', 'bh'):
