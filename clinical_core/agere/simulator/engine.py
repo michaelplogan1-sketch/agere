@@ -85,7 +85,12 @@ def resolve_plan(semantic_path, plan=None, *, program_kind=None, question=None, 
 
 def simulate(semantic_path, plan=None, *, program_kind=None, question=None, patient_ids=None, as_of=None, horizon_months=None,
              alternatives=None, iterations=None, funnel_scenarios=None, seed=None, parameters=None, parameter_uncertainty=True,
-             contract=None, workspace='adhoc', catalog=None, config=None, per_patient=True):
+             contract=None, workspace='adhoc', catalog=None, config=None, per_patient=True, start_offset_days=None,
+             return_draws=False):
+    """start_offset_days: optional int or {patient_id: days} delaying each patient's first visit (e.g. an outreach policy's
+    capacity wave); rows annotated by an approved outreach policy (row['outreach_policy']['start_offset_days']) are read too.
+    return_draws: also return per-patient Monte Carlo draws per arm (out['draws'], numpy arrays; not JSON) for evaluators
+    that score subsets of the cohort (clinical_core/agere/evolve). Both default off and leave the output unchanged."""
     t0 = time.time()
     cfg = fx.resolve(fx.load_config(config), parameters)
     fx.check_config(cfg)
@@ -243,6 +248,9 @@ def simulate(semantic_path, plan=None, *, program_kind=None, question=None, pati
         targets.append(set(((g.get('missing_pillars') or {}).get('value')) or []))
     present = [4 - len(tg) for tg in targets]
     index = {pid: i for i, pid in enumerate(cohort)}
+    offs = _offsets(cohort_rows, start_offset_days)
+    keep = bool(return_draws)
+    draws_out = {'cohort': list(cohort), 'iterations': N, 'arms': {}} if keep else None
 
     # --- funnel and arms ------------------------------------------------------------------------------------------------
     terms = programs_mod.contract_terms(ccfg.get('program') or 'MSSP ENHANCED')
@@ -274,6 +282,11 @@ def simulate(semantic_path, plan=None, *, program_kind=None, question=None, pati
         if len(sel):
             st[:, sel] = status[sk]
             sd_[:, sel] = start[sk]
+        if offs is not None:
+            sd_ = np.where(st > 0, sd_ + offs[None, :], sd_)
+        pharm_pp = np.zeros((N, n)) if keep else None
+        pillars_pp = np.zeros((N, n)) if keep else None
+        pc_pp = np.zeros((N, n)) if keep else None
         prog_of = [None] * n
         for j, i in enumerate(sel):
             prog_of[i] = program[j]
@@ -304,6 +317,8 @@ def simulate(semantic_path, plan=None, *, program_kind=None, question=None, pati
                     share += s * g['weights'][pil][:, None]
                     n_started += s
                     pharm += np.sum(s * months_on, axis=1) * par[f'drug_cost_month.{pil}']
+                    if keep:
+                        pharm_pp[:, cols] += s * months_on * par[f'drug_cost_month.{pil}'][:, None]
                     if pil == 'rasi':
                         rasa_new[:, cols] |= s
                 hr = fx.gdmt_hr(share, par['gdmt.combination_hr'][:, None])
@@ -318,6 +333,8 @@ def simulate(semantic_path, plan=None, *, program_kind=None, question=None, pati
                 started_any[:, cols] = n_started > 0
                 quad[:, cols] = (n_started + np.array([present[i] for i in cols])[None, :]) >= 4
                 pillar_starts += n_started.sum(1)
+                if keep:
+                    pillars_pp[:, cols] = n_started
             elif pc.get('effect') == 'pt':
                 g = effect_ctx['pt']
                 lag = par['pt.start_lag_days'][:, None]
@@ -342,8 +359,34 @@ def simulate(semantic_path, plan=None, *, program_kind=None, question=None, pati
                 if not spec or not (spec.get('value') or spec.get('high')):
                     continue
                 cnt = flags[flag][:, cols_local].sum(1)[sk]
-                prog_cost += cnt * fx.draw(spec, rng, N, unc)
-        pop_arm = pop_dn - (saved[:, in_pop].sum(1) if n else 0.0)  # claims spending only; program fees are paid outside the claims stream
+                unit = fx.draw(spec, rng, N, unc)
+                prog_cost += cnt * unit
+                if keep:
+                    pc_pp[:, sel[cols_local]] += flags[flag][:, cols_local][sk] * unit[:, None]
+        oap_medicare = np.zeros(N)
+        for prog in sorted({p for p in prog_of if p}):
+            oap = (cfg['programs'].get(prog) or {}).get('oap')
+            if not oap:
+                continue
+            # CMS ACCESS Outcome-Aligned Payment: a recurring per-beneficiary allowed amount (prorated to the horizon), half
+            # paid monthly and half reconciled by the Clinical Outcome Adjustment against the outcome attainment threshold
+            cols_local = np.array([j for j, i in enumerate(sel) if prog_of[i] == prog], int)
+            enrolled = flags['enrolled'][:, cols_local][sk].sum(1)
+            completed = flags['completed'][:, cols_local][sk].sum(1)
+            met = rng.binomial(completed.astype(int), np.clip(fx.draw(oap['p_target_met_if_completed'], rng, N, unc), 0, 1))
+            share = np.where(enrolled > 0, met / np.maximum(enrolled, 1), 0.0)
+            oat = oap['outcome_attainment_threshold']['value']
+            withheld = oap['withheld_share']['value']
+            paid_fraction = (1 - withheld) + withheld * np.minimum(1.0, share / oat)
+            months = min(H, oap.get('care_period_months', 12))
+            allowed = oap['annual_allowed']['value'] * months / 12.0
+            oap_total = enrolled * allowed * paid_fraction + enrolled * fx.draw(oap['co_management_per_enrolled'], rng, N, unc)
+            prog_cost += oap_total
+            if int(str(as_of_s)[:4]) >= int(oap['counts_in_aco_benchmark_from_year']['value']):
+                oap_medicare += enrolled * allowed * paid_fraction * oap['medicare_share']['value']
+            if keep:
+                pc_pp[:, sel[cols_local]] += (flags['enrolled'][:, cols_local][sk] * (allowed * paid_fraction)[:, None])
+        pop_arm = pop_dn - (saved[:, in_pop].sum(1) if n else 0.0) + oap_medicare  # OAPs count in ACO expenditures from 2028
         res = {'arm': arm, 'programs': used_progs, 'admissions': NA.sum(1) - AA.sum(1), 'ed_visits': NE.sum(1) - AE.sum(1),
                'medical_cost': arm_cost.sum(1), 'program_cost': prog_cost, 'pharmacy_cost': pharm,
                'admissions_avoided': AA.sum(1), 'ed_visits_avoided': AE.sum(1),
@@ -356,6 +399,12 @@ def simulate(semantic_path, plan=None, *, program_kind=None, question=None, pati
         if any((cfg['programs'].get(p) or {}).get('effect') == 'pt' for p in used_progs):
             res['quality'].update({'pt_after_ed_lbp_gap_closed': (st[:, sel] > 0).sum(1).astype(float) if len(sel) else np.zeros(N)})
         results[arm['id']] = res
+        if keep:
+            draws_out['arms'][arm['id']] = {'patients': [cohort[i] for i in sel], 'saved': saved, 'admissions_avoided': AA,
+                                            'ed_visits_avoided': AE, 'program_cost': pc_pp, 'pharmacy_cost': pharm_pp,
+                                            'new_therapy': started_any.astype(float), 'pillars_started': pillars_pp,
+                                            'quadruple_added': (quad & ~(np.array(present) >= 4)[None, :]).astype(float) if n else quad,
+                                            'gap_closed': (st > 0).astype(float), 'program': list(prog_of)}
         monthly[arm['id']] = _monthly(ra, re_, (rel_cut, rel_cut_e), np.where(st > 0, sd_, 10 ** 6), H)
         if per_patient and n:
             per_patient_rows[arm['id']] = {'p_completed': (st == funnel.COMPLETED).mean(0), 'p_attended': (st > 0).mean(0),
@@ -454,10 +503,34 @@ def simulate(semantic_path, plan=None, *, program_kind=None, question=None, pati
                                             for m in ('admissions', 'ed_visits', 'medical_cost')},
                    'cost_per_event': {'admission': ca_mean, 'ed': ce_mean}},
     }
-    out['id'] = 'SIM-' + hashlib.sha256(json.dumps([workspace, kind, as_of_s, H, N, seed, unc, router.digest(plan), parameters or {},
-                                                     alternatives, contract or {}], sort_keys=True, default=str).encode()).hexdigest()[:12].upper()
+    id_parts = [workspace, kind, as_of_s, H, N, seed, unc, router.digest(plan), parameters or {}, alternatives, contract or {}]
+    if offs is not None:
+        id_parts.append([int(x) for x in offs])
+    out['id'] = 'SIM-' + hashlib.sha256(json.dumps(id_parts, sort_keys=True, default=str).encode()).hexdigest()[:12].upper()
+    if offs is not None:
+        out['start_offset_days'] = {'patients_delayed': int((offs > 0).sum()), 'max_days': int(offs.max()) if len(offs) else 0}
+    if keep:
+        draws_out['do_nothing'] = {'medical_cost': dn_cost, 'admissions': NA, 'ed_visits': NE}
+        out['draws'] = draws_out
     out['narrative'] = narrative(out)
     return out
+
+
+def _offsets(cohort_rows, start_offset_days):
+    """(n,) int array of first-visit delays in days, or None when nothing is delayed (the default path)."""
+    vals = []
+    for r in cohort_rows:
+        v = (r.get('outreach_policy') or {}).get('start_offset_days')
+        if isinstance(start_offset_days, dict):
+            v = start_offset_days.get(r['patient_id'], v)
+        elif start_offset_days is not None:
+            v = start_offset_days
+        vals.append(int(v or 0))
+    if not any(vals):
+        return None
+    if min(vals) < 0:
+        raise ValueError('start_offset_days must be >= 0')
+    return np.array(vals, np.int32)
 
 
 def _point_recal(recal):

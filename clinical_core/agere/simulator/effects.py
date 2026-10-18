@@ -45,12 +45,15 @@ def load_config(path=None):
 
 def resolve(cfg, overrides=None):
     """Config with parameter overrides applied: {id: number | {value, low, high}}; program cost overrides as
-    'cost.<program_id>.<item>'."""
+    'cost.<program_id>.<item>'; ACCESS OAP terms as 'oap.<program_id>.<field>'."""
     cfg = copy.deepcopy(cfg)
     for pid, v in (overrides or {}).items():
         if pid.startswith('cost.'):
             _, prog, item = pid.split('.', 2)
             slot = cfg['programs'][prog]['costs'].setdefault(item, {'kind': 'override'})
+        elif pid.startswith('oap.'):  # 'oap.<program_id>.<field>' (ACCESS outcome-aligned payment terms)
+            _, prog, item = pid.split('.', 2)
+            slot = cfg['programs'][prog]['oap'].setdefault(item, {'kind': 'override'})
         else:
             if pid not in cfg['parameters']:
                 raise ValueError(f'Unknown simulator parameter {pid!r}')

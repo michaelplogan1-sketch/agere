@@ -13,7 +13,11 @@
  },
  "parameters": {
   "gdmt.combination_hr": {
-   "value": 0.36, "low": 0.29, "high": 0.46, "unit": "hazard_ratio", "kind": "cited",
+   "value": 0.36,
+   "low": 0.29,
+   "high": 0.46,
+   "unit": "hazard_ratio",
+   "kind": "cited",
    "outcome": "CV death or HF hospitalization, quadruple therapy (ARNI + evidence-based beta blocker + MRA + SGLT2i) vs placebo",
    "evidence_id": "ev:hf_combination_effect_valid",
    "source": "van Essen et al., pharmacologic treatment of HFrEF: updated systematic review and network meta-analysis, JACC 2025 (N=103,754), doi:10.1016/j.jacc.2025.08.054",
@@ -21,72 +25,161 @@
    "use": "The only combined multi-pillar effect. Adding all four pillars reproduces this value exactly."
   },
   "gdmt.pillar_hr.rasi": {
-   "value": 0.79, "low": 0.71, "high": 0.89, "unit": "hazard_ratio", "kind": "cited", "outcome": "HF hospitalization (sacubitril/valsartan vs enalapril)",
-   "evidence_id": "ev:hf_arni_hfh_hr_per_protocol", "source": "PARADIGM-HF, doi:10.1001/jama.2020.10262",
+   "value": 0.79,
+   "low": 0.71,
+   "high": 0.89,
+   "unit": "hazard_ratio",
+   "kind": "cited",
+   "outcome": "HF hospitalization (sacubitril/valsartan vs enalapril)",
+   "evidence_id": "ev:hf_arni_hfh_hr_per_protocol",
+   "source": "PARADIGM-HF, doi:10.1001/jama.2020.10262",
    "use": "Relative weight only: this pillar's share of the combined log hazard ratio. Never multiplied with the other pillars."
   },
   "gdmt.pillar_hr.beta_blocker": {
-   "value": 0.66, "low": 0.53, "high": 0.81, "unit": "hazard_ratio", "kind": "cited", "outcome": "all-cause mortality (metoprolol succinate)",
-   "evidence_id": "ev:hf_bb_metoprolol_mortality_hr_per_protocol", "source": "MERIT-HF (Wikstrand, J Intern Med 2014 pooled analysis), doi:10.1111/joim.12141",
+   "value": 0.66,
+   "low": 0.53,
+   "high": 0.81,
+   "unit": "hazard_ratio",
+   "kind": "cited",
+   "outcome": "all-cause mortality (metoprolol succinate)",
+   "evidence_id": "ev:hf_bb_metoprolol_mortality_hr_per_protocol",
+   "source": "MERIT-HF (Wikstrand, J Intern Med 2014 pooled analysis), doi:10.1111/joim.12141",
    "use": "Relative weight only (see gdmt.pillar_hr.rasi)."
   },
   "gdmt.pillar_hr.mra": {
-   "value": 0.63, "low": 0.55, "high": 0.72, "unit": "hazard_ratio", "kind": "cited", "outcome": "HF hospitalization (MRA individual-patient meta-analysis)",
-   "evidence_id": "ev:hf_mra_hfh_hr_per_protocol", "source": "HFrEF MRA IPD meta-analysis, Lancet 2024, doi:10.1016/S0140-6736(24)01733-1",
+   "value": 0.63,
+   "low": 0.55,
+   "high": 0.72,
+   "unit": "hazard_ratio",
+   "kind": "cited",
+   "outcome": "HF hospitalization (MRA individual-patient meta-analysis)",
+   "evidence_id": "ev:hf_mra_hfh_hr_per_protocol",
+   "source": "HFrEF MRA IPD meta-analysis, Lancet 2024, doi:10.1016/S0140-6736(24)01733-1",
    "use": "Relative weight only (see gdmt.pillar_hr.rasi)."
   },
   "gdmt.pillar_hr.sglt2i": {
-   "value": 0.74, "low": 0.68, "high": 0.82, "unit": "hazard_ratio", "kind": "cited", "outcome": "CV death or first HF hospitalization (pooled DAPA-HF + EMPEROR-Reduced)",
-   "evidence_id": "ev:hf_sglt2i_cv_death_or_hfh_hr_pooled", "source": "Zannad et al., Lancet 2020, doi:10.1016/S0140-6736(20)31824-9",
+   "value": 0.74,
+   "low": 0.68,
+   "high": 0.82,
+   "unit": "hazard_ratio",
+   "kind": "cited",
+   "outcome": "CV death or first HF hospitalization (pooled DAPA-HF + EMPEROR-Reduced)",
+   "evidence_id": "ev:hf_sglt2i_cv_death_or_hfh_hr_pooled",
+   "source": "Zannad et al., Lancet 2020, doi:10.1016/S0140-6736(20)31824-9",
    "use": "Relative weight only (see gdmt.pillar_hr.rasi)."
   },
   "gdmt.real_world_effect_fraction": {
-   "value": 0.65, "low": 0.4, "high": 0.9, "unit": "fraction", "kind": "assumption",
+   "value": 0.65,
+   "low": 0.4,
+   "high": 0.9,
+   "unit": "fraction",
+   "kind": "assumption",
    "why": "Share of the trial effect realised in routine care (dose attainment, persistence). Registries report 11-14% of ARNI users at target dose at 12 months (ev:hf_arni_target_dose_12mo_champ, doi:10.1016/j.jacc.2018.04.070; ev:hf_arni_target_dose_12mo_evolution_us, doi:10.1016/j.jchf.2023.08.027)."
   },
   "gdmt.p_pillar_started_completed": {
-   "value": 0.75, "low": 0.6, "high": 0.9, "unit": "probability", "kind": "assumption",
+   "value": 0.75,
+   "low": 0.6,
+   "high": 0.9,
+   "unit": "probability",
+   "kind": "assumption",
    "why": "Probability that each target pillar is started (filled) when the PharmD titration plan is completed."
   },
   "gdmt.p_pillar_started_attended": {
-   "value": 0.25, "low": 0.1, "high": 0.4, "unit": "probability", "kind": "assumption",
+   "value": 0.25,
+   "low": 0.1,
+   "high": 0.4,
+   "unit": "probability",
+   "kind": "assumption",
    "why": "Probability that each target pillar is started when the first pharmacist visit happened but the program was not completed."
   },
   "gdmt.barrier_review.p_pillar_started_completed": {
-   "value": 0.35, "low": 0.2, "high": 0.5, "unit": "probability", "kind": "assumption",
+   "value": 0.35,
+   "low": 0.2,
+   "high": 0.5,
+   "unit": "probability",
+   "kind": "assumption",
    "why": "Barrier review re-verifies documented barriers (rechallenge, alternative agent, cost assistance) before outreach: fewer pillars start per completed review."
   },
   "gdmt.barrier_review.p_pillar_started_attended": {
-   "value": 0.1, "low": 0.05, "high": 0.2, "unit": "probability", "kind": "assumption",
+   "value": 0.1,
+   "low": 0.05,
+   "high": 0.2,
+   "unit": "probability",
+   "kind": "assumption",
    "why": "As above, when the review visit happened but was not completed."
   },
   "gdmt.fill_lag_days": {
-   "value": 14, "low": 14, "high": 14, "unit": "days", "kind": "assumption",
+   "value": 14,
+   "low": 14,
+   "high": 14,
+   "unit": "days",
+   "kind": "assumption",
    "why": "Days from the first pharmacist visit to the first fill of a new pillar; the effect starts at that fill."
   },
   "pt.back_pain_ed_rr": {
-   "value": 0.85, "low": 0.7, "high": 1.0, "unit": "rate_ratio", "kind": "assumption",
+   "value": 0.85,
+   "low": 0.7,
+   "high": 1.0,
+   "unit": "rate_ratio",
+   "kind": "assumption",
    "why": "No cited effect of physical therapy after an ED low back pain visit on repeat back-pain ED visits is loaded in this repository. Range runs from no effect (the early-PT randomized trial in primary care found no significant difference in health care use at one year: Fritz et al., JAMA 2015) to a 30% reduction (observational early-PT cohorts). Replace with a cited value when one is loaded."
   },
   "pt.back_pain_other_spend_rr": {
-   "value": 0.9, "low": 0.8, "high": 1.0, "unit": "rate_ratio", "kind": "assumption",
+   "value": 0.9,
+   "low": 0.8,
+   "high": 1.0,
+   "unit": "rate_ratio",
+   "kind": "assumption",
    "why": "Effect on non-ED back-pain spending (imaging, injections, specialist visits) after PT. Assumption with a range; no cited value loaded."
   },
   "pt.partial_effect_fraction": {
-   "value": 0.25, "low": 0.0, "high": 0.5, "unit": "fraction", "kind": "assumption",
+   "value": 0.25,
+   "low": 0.0,
+   "high": 0.5,
+   "unit": "fraction",
+   "kind": "assumption",
    "why": "Share of the PT effect realised when the evaluation was attended but the program (evaluation + 4 sessions) was not completed."
   },
   "pt.start_lag_days": {
-   "value": 0, "low": 0, "high": 0, "unit": "days", "kind": "assumption",
+   "value": 0,
+   "low": 0,
+   "high": 0,
+   "unit": "days",
+   "kind": "assumption",
    "why": "Effect starts at the attended PT evaluation."
   },
   "drug_cost_month.rasi": {
-   "value": 120, "low": 60, "high": 450, "unit": "USD per patient-month", "kind": "assumption",
+   "value": 120,
+   "low": 60,
+   "high": 450,
+   "unit": "USD per patient-month",
+   "kind": "assumption",
    "why": "Pharmacy-benefit net cost of a RAS inhibitor; low end generic ACEi/ARB, high end branded ARNI. Outside the Medicare A/B benchmark."
   },
-  "drug_cost_month.beta_blocker": {"value": 8, "low": 4, "high": 15, "unit": "USD per patient-month", "kind": "assumption", "why": "Generic evidence-based beta blocker."},
-  "drug_cost_month.mra": {"value": 8, "low": 4, "high": 20, "unit": "USD per patient-month", "kind": "assumption", "why": "Generic spironolactone; eplerenone at the high end."},
-  "drug_cost_month.sglt2i": {"value": 450, "low": 300, "high": 600, "unit": "USD per patient-month", "kind": "assumption", "why": "Branded SGLT2 inhibitor net of an unknown rebate."}
+  "drug_cost_month.beta_blocker": {
+   "value": 8,
+   "low": 4,
+   "high": 15,
+   "unit": "USD per patient-month",
+   "kind": "assumption",
+   "why": "Generic evidence-based beta blocker."
+  },
+  "drug_cost_month.mra": {
+   "value": 8,
+   "low": 4,
+   "high": 20,
+   "unit": "USD per patient-month",
+   "kind": "assumption",
+   "why": "Generic spironolactone; eplerenone at the high end."
+  },
+  "drug_cost_month.sglt2i": {
+   "value": 450,
+   "low": 300,
+   "high": 600,
+   "unit": "USD per patient-month",
+   "kind": "assumption",
+   "why": "Branded SGLT2 inhibitor net of an unknown rebate."
+  }
  },
  "programs": {
   "pharmacy_gdmt_titration": {
@@ -95,10 +188,33 @@
    "p_started_attended": "gdmt.p_pillar_started_attended",
    "targets": "missing_pillars",
    "costs": {
-    "per_outreach": {"value": 12, "low": 8, "high": 20, "kind": "assumption", "why": "pharmacy technician outreach per routed patient"},
-    "per_enrolled": {"value": 150, "low": 100, "high": 250, "kind": "assumption", "why": "first PharmD telehealth visit"},
-    "per_attended": {"value": 0, "low": 0, "high": 0, "kind": "assumption"},
-    "per_completed": {"value": 200, "low": 120, "high": 300, "kind": "assumption", "why": "titration follow-up visits to completion"}
+    "per_outreach": {
+     "value": 12,
+     "low": 8,
+     "high": 20,
+     "kind": "assumption",
+     "why": "pharmacy technician outreach per routed patient"
+    },
+    "per_enrolled": {
+     "value": 150,
+     "low": 100,
+     "high": 250,
+     "kind": "assumption",
+     "why": "first PharmD telehealth visit"
+    },
+    "per_attended": {
+     "value": 0,
+     "low": 0,
+     "high": 0,
+     "kind": "assumption"
+    },
+    "per_completed": {
+     "value": 200,
+     "low": 120,
+     "high": 300,
+     "kind": "assumption",
+     "why": "titration follow-up visits to completion"
+    }
    }
   },
   "pharmd_barrier_review": {
@@ -107,38 +223,146 @@
    "p_started_attended": "gdmt.barrier_review.p_pillar_started_attended",
    "targets": "missing_pillars",
    "costs": {
-    "per_outreach": {"value": 35, "low": 20, "high": 60, "kind": "assumption", "why": "PharmD chart review of documented barriers per routed patient"},
-    "per_enrolled": {"value": 80, "low": 50, "high": 120, "kind": "assumption", "why": "PharmD patient call"},
-    "per_attended": {"value": 0, "low": 0, "high": 0, "kind": "assumption"},
-    "per_completed": {"value": 120, "low": 60, "high": 180, "kind": "assumption", "why": "rechallenge / alternative / cost-assistance plan"}
+    "per_outreach": {
+     "value": 35,
+     "low": 20,
+     "high": 60,
+     "kind": "assumption",
+     "why": "PharmD chart review of documented barriers per routed patient"
+    },
+    "per_enrolled": {
+     "value": 80,
+     "low": 50,
+     "high": 120,
+     "kind": "assumption",
+     "why": "PharmD patient call"
+    },
+    "per_attended": {
+     "value": 0,
+     "low": 0,
+     "high": 0,
+     "kind": "assumption"
+    },
+    "per_completed": {
+     "value": 120,
+     "low": 60,
+     "high": 180,
+     "kind": "assumption",
+     "why": "rechallenge / alternative / cost-assistance plan"
+    }
    }
   },
   "access_virtual_pt_msk": {
    "effect": "pt",
    "costs": {
-    "per_outreach": {"value": 5, "low": 3, "high": 10, "kind": "assumption", "why": "referral and outreach"},
-    "per_enrolled": {"value": 0, "low": 0, "high": 0, "kind": "assumption"},
-    "per_attended": {"value": 150, "low": 100, "high": 200, "kind": "assumption", "why": "virtual PT evaluation"},
-    "per_completed": {"value": 450, "low": 300, "high": 650, "kind": "assumption", "why": "ACCESS episode payment for the completed MSK episode (customer-configured vendor rate)"}
+    "per_outreach": {
+     "value": 5,
+     "low": 3,
+     "high": 10,
+     "kind": "assumption",
+     "why": "referral and outreach"
+    }
+   },
+   "oap": {
+    "track": "MSK",
+    "annual_allowed": {
+     "value": 180,
+     "low": 180,
+     "high": 180,
+     "kind": "cited",
+     "source": "CMS ACCESS Model Payment Amounts and Performance Targets (cms.gov/priorities/innovation/files/access-payments-amts-perf-targets.pdf), retrieved 2026-10-18",
+     "why": "MSK Initial Period allowed amount per beneficiary per year; no Follow-On Period"
+    },
+    "medicare_share": {
+     "value": 0.8,
+     "kind": "cited",
+     "source": "CMS ACCESS Model Payment Amounts and Performance Targets (cms.gov/priorities/innovation/files/access-payments-amts-perf-targets.pdf), retrieved 2026-10-18",
+     "why": "allowed amount = Medicare 80% + beneficiary coinsurance 20% (participants may waive coinsurance)"
+    },
+    "care_period_months": 12,
+    "withheld_share": {
+     "value": 0.5,
+     "kind": "cited",
+     "source": "CMS ACCESS Model Payment Amounts and Performance Targets (cms.gov/priorities/innovation/files/access-payments-amts-perf-targets.pdf), retrieved 2026-10-18",
+     "why": "monthly payments capped at 50% of the Medicare portion; 50% withheld and reconciled after the care period"
+    },
+    "outcome_attainment_threshold": {
+     "value": 0.5,
+     "kind": "cited",
+     "source": "CMS ACCESS Model Payment Amounts and Performance Targets (cms.gov/priorities/innovation/files/access-payments-amts-perf-targets.pdf), retrieved 2026-10-18",
+     "why": "full payment if >= 50% of aligned beneficiaries complete the care period and meet all OAP measure targets"
+    },
+    "p_target_met_if_completed": {
+     "value": 0.65,
+     "low": 0.45,
+     "high": 0.85,
+     "kind": "assumption",
+     "why": "share of completers reaching the MSK targets (2-point PROMIS pain interference reduction and 2-point physical function increase)"
+    },
+    "below_threshold_rule": {
+     "kind": "assumption",
+     "why": "below the OAT the withheld half is paid in proportion to attainment / OAT; the exact Clinical Outcome Adjustment formula is in the RFA and is not modelled here"
+    },
+    "co_management_per_enrolled": {
+     "value": 30,
+     "low": 25,
+     "high": 35,
+     "kind": "cited",
+     "source": "Foley Hoag summary of the CMS ACCESS payment announcement (March 2026): approximately $30 co-management payment to PCPs/referring clinicians",
+     "why": "billed by the primary care or referring clinician"
+    },
+    "counts_in_aco_benchmark_from_year": {
+     "value": 2028,
+     "kind": "cited",
+     "source": "cms.gov/priorities/innovation/innovation-models/access",
+     "why": "no OAP impact on ACO benchmark/performance-year calculations in 2026-2027; included from 2028"
+    }
    }
   },
   "plan_benefit_virtual_pt": {
    "effect": "pt",
    "costs": {
-    "per_outreach": {"value": 5, "low": 3, "high": 10, "kind": "assumption", "why": "referral and outreach"},
-    "per_enrolled": {"value": 0, "low": 0, "high": 0, "kind": "assumption"},
-    "per_attended": {"value": 140, "low": 100, "high": 180, "kind": "assumption", "why": "PT evaluation under the plan benefit"},
-    "per_completed": {"value": 480, "low": 360, "high": 600, "kind": "assumption", "why": "four or more treatment sessions"}
+    "per_outreach": {
+     "value": 5,
+     "low": 3,
+     "high": 10,
+     "kind": "assumption",
+     "why": "referral and outreach"
+    },
+    "per_enrolled": {
+     "value": 0,
+     "low": 0,
+     "high": 0,
+     "kind": "assumption"
+    },
+    "per_attended": {
+     "value": 140,
+     "low": 100,
+     "high": 180,
+     "kind": "assumption",
+     "why": "PT evaluation under the plan benefit"
+    },
+    "per_completed": {
+     "value": 480,
+     "low": 360,
+     "high": 600,
+     "kind": "assumption",
+     "why": "four or more treatment sessions"
+    }
    }
   }
  },
  "effects": {
   "gdmt": {
-   "related_icd10_prefixes": ["I50"],
+   "related_icd10_prefixes": [
+    "I50"
+   ],
    "label": "HF-related (principal diagnosis I50) admissions and ED visits"
   },
   "pt": {
-   "related_icd10_prefixes": ["M54"],
+   "related_icd10_prefixes": [
+    "M54"
+   ],
    "label": "back-pain (principal diagnosis M54) ED visits and spending"
   }
  },
@@ -155,7 +379,11 @@
  "contract": {
   "program": "MSSP ENHANCED",
   "benchmark_factor": 1.0,
-  "benchmark_factors_sensitivity": [1.0, 1.03, 1.05],
+  "benchmark_factors_sensitivity": [
+   1.0,
+   1.03,
+   1.05
+  ],
   "lines_of_business": null,
   "why": "Settlement terms from the Agere program rulebook (config/agere/programs). The benchmark is contract-specific: by default it is the attributed population's projected do-nothing PMPM times benchmark_factor; pass contract={'benchmark_pmpm': ...} for the real one."
  }

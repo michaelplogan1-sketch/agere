@@ -140,6 +140,7 @@ class ZeroEffect(Base):
     ZERO_COSTS = {f'cost.{p}.{k}': 0.0 for p in ('pharmacy_gdmt_titration', 'pharmd_barrier_review', 'access_virtual_pt_msk',
                                                   'plan_benefit_virtual_pt')
                   for k in ('per_outreach', 'per_enrolled', 'per_attended', 'per_completed')}
+    ZERO_COSTS.update({'oap.access_virtual_pt_msk.annual_allowed': 0.0, 'oap.access_virtual_pt_msk.co_management_per_enrolled': 0.0})
 
     def test_gdmt_with_no_effect_equals_do_nothing(self):
         out = self.sim(parameters={'gdmt.combination_hr': 1.0, **self.ZERO_COSTS})
@@ -306,3 +307,12 @@ class Api(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+class AccessOap(unittest.TestCase):
+    def test_oap_paid_in_full_at_threshold_and_prorated_below(self):
+        import numpy as np
+        oat, withheld = 0.5, 0.5
+        for share, expect in ((0.6, 1.0), (0.5, 1.0), (0.25, 0.75), (0.0, 0.5)):
+            paid = (1 - withheld) + withheld * np.minimum(1.0, share / oat)
+            self.assertAlmostEqual(float(paid), expect)
