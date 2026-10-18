@@ -1,0 +1,265 @@
+<title>Agere Architecture</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@500;700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: the stack drawn as a vertical pipeline (files in at the top, action out at the bottom), a detail panel beside
+   it, a step-through trace of one real question, then the competitive case. */
+:root{
+  --bg:#f3f5f6; --panel:#ffffff; --ink:#122027; --muted:#58686f; --line:#d3dcdf;
+  --read:#2f6f8f; --read-s:#e3eff5; --know:#6a4fb0; --know-s:#eee9f8; --decide:#0f7a6b; --decide-s:#e0f2ee;
+  --check:#3d7a2f; --check-s:#e7f2e2; --act:#b0620c; --act-s:#fbeedd; --hi:#ffd98a;
+  --display:"Schibsted Grotesk","Helvetica Neue",Arial,sans-serif; --body:"IBM Plex Sans","Segoe UI",system-ui,sans-serif; --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0d1417; --panel:#141e22; --ink:#e3ebee; --muted:#93a4ab; --line:#26343a;
+  --read:#6db3d6; --read-s:#16303c; --know:#ac97ee; --know-s:#251f3d; --decide:#4cc4b0; --decide-s:#12302b;
+  --check:#86c973; --check-s:#18301a; --act:#f0a252; --act-s:#382712; --hi:#5a4720; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0d1417; --panel:#141e22; --ink:#e3ebee; --muted:#93a4ab; --line:#26343a;
+  --read:#6db3d6; --read-s:#16303c; --know:#ac97ee; --know-s:#251f3d; --decide:#4cc4b0; --decide-s:#12302b;
+  --check:#86c973; --check-s:#18301a; --act:#f0a252; --act-s:#382712; --hi:#5a4720; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font:16px/1.6 var(--body)}
+.wrap{max-width:1160px;margin:0 auto;padding-block:40px 72px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+h1,h2,h3{font-family:var(--display);margin:0;text-wrap:balance}
+h1{font-size:clamp(32px,5.4vw,54px);line-height:1.02;font-weight:800;letter-spacing:-.02em}
+h2{font-size:clamp(22px,3vw,30px);margin-top:64px;letter-spacing:-.01em}
+h3{font-size:17px}
+p{max-width:68ch}
+.eyebrow{font:600 12px/1 var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--decide)}
+.lede{font-size:19px;color:var(--muted);margin-top:14px;max-width:62ch}
+.latin{font-family:var(--mono);font-size:13px;color:var(--muted);margin-top:10px}
+.latin b{color:var(--ink)}
+.nums{display:flex;flex-wrap:wrap;gap:26px 40px;margin-top:26px}
+.num b{display:block;font:800 30px/1 var(--display);font-variant-numeric:tabular-nums}
+.num span{font-size:13px;color:var(--muted)}
+.arch{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:22px;margin-top:22px;align-items:start}
+.pipe{display:grid;gap:8px;min-width:0}
+.io{font:600 12px/1.4 var(--mono);color:var(--muted);text-transform:uppercase;letter-spacing:.06em;display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.io span{border:1px dashed var(--line);border-radius:4px;padding:4px 7px;text-transform:none;letter-spacing:0;font-weight:400;background:var(--panel)}
+.tier{border-radius:10px;padding:10px;display:grid;gap:6px;border:1px solid var(--line)}
+.tier>.tl{display:flex;justify-content:space-between;align-items:baseline;gap:10px;padding:0 4px}
+.tier>.tl b{font:800 13px/1 var(--display);text-transform:uppercase;letter-spacing:.08em}
+.tier>.tl span{font-size:12.5px;color:var(--muted)}
+.t-read{background:var(--read-s)} .t-read>.tl b{color:var(--read)}
+.t-know{background:var(--know-s)} .t-know>.tl b{color:var(--know)}
+.t-decide{background:var(--decide-s)} .t-decide>.tl b{color:var(--decide)}
+.t-check{background:var(--check-s)} .t-check>.tl b{color:var(--check)}
+.t-act{background:var(--act-s)} .t-act>.tl b{color:var(--act)}
+.row{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:6px}
+button.layer{all:unset;box-sizing:border-box;cursor:pointer;background:var(--panel);border:1px solid var(--line);border-radius:7px;padding:9px 11px;display:grid;gap:2px;min-width:0;transition:transform .15s,border-color .15s,box-shadow .15s}
+button.layer b{font:700 14.5px/1.25 var(--display)}
+button.layer span{font-size:12.5px;color:var(--muted);line-height:1.35}
+button.layer:hover{transform:translateY(-1px);border-color:var(--ink)}
+button.layer:focus-visible{outline:2px solid var(--decide);outline-offset:2px}
+button.layer[aria-pressed="true"]{border-color:var(--ink);box-shadow:0 0 0 2px var(--ink) inset}
+button.layer.lit{background:var(--hi);border-color:var(--ink)}
+.arrow{text-align:center;color:var(--muted);font:12px var(--mono);line-height:1}
+.detail{position:sticky;top:calc(env(safe-area-inset-top,0px) + 16px);background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:18px 20px;min-width:0}
+.detail .k{font:600 11px/1 var(--mono);text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.detail h3{font-size:22px;margin-top:6px}
+.detail p{font-size:15px;margin:10px 0 0}
+.detail .adds{margin-top:14px;padding:10px 12px;border-radius:7px;background:var(--bg);font-size:14.5px}
+.detail .adds b{display:block;font:600 11px/1.4 var(--mono);text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:2px}
+.tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
+.tag{font:12px/1.3 var(--mono);padding:3px 7px;border-radius:4px;border:1px solid var(--line)}
+.tag.llm{border-color:var(--know);color:var(--know)}
+.tag.local{border-color:var(--decide);color:var(--decide)}
+.trace{background:var(--panel);border:1px solid var(--line);border-radius:10px;margin-top:18px;overflow:hidden}
+.trace .q{padding:16px 20px;border-bottom:1px solid var(--line);display:flex;flex-wrap:wrap;gap:12px;justify-content:space-between;align-items:center}
+.trace .q blockquote{margin:0;font:600 17px/1.4 var(--display);max-width:70ch}
+.ctrl{display:flex;gap:8px;align-items:center}
+.ctrl button{font:600 13px var(--body);padding:8px 12px;border-radius:6px;border:1px solid var(--line);background:var(--bg);color:var(--ink);cursor:pointer}
+.ctrl button.primary{background:var(--ink);color:var(--panel);border-color:var(--ink)}
+.ctrl button:focus-visible{outline:2px solid var(--decide);outline-offset:2px}
+.ctrl span{font:12px var(--mono);color:var(--muted);font-variant-numeric:tabular-nums;min-width:3.5em;text-align:right}
+.steps{display:grid;grid-template-columns:repeat(9,minmax(0,1fr));border-bottom:1px solid var(--line)}
+.steps button{all:unset;cursor:pointer;padding:8px 4px;text-align:center;font:600 11px/1.2 var(--mono);color:var(--muted);border-right:1px solid var(--line);min-width:0;overflow:hidden;text-overflow:ellipsis}
+.steps button:last-child{border-right:0}
+.steps button[aria-current="step"]{background:var(--ink);color:var(--panel)}
+.steps button.done{color:var(--ink)}
+.stage{display:grid;grid-template-columns:minmax(0,220px) minmax(0,1fr);gap:20px;padding:18px 20px}
+.stage .who{font:700 15px/1.3 var(--display)}
+.stage .who small{display:block;font:600 11px/1.6 var(--mono);text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.stage .what{font-size:15px;min-width:0}
+.stage .what p{margin:0 0 8px;max-width:none}
+.stage pre{margin:8px 0 0;font:12.5px/1.5 var(--mono);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:10px 12px;overflow-x:auto;white-space:pre}
+.cost{display:inline-block;font:600 11px var(--mono);padding:2px 7px;border-radius:9px;border:1px solid currentColor;margin-top:6px}
+.cost.free{color:var(--decide)} .cost.paid{color:var(--know)}
+.claims{display:grid;grid-template-columns:repeat(auto-fit,minmax(330px,1fr));gap:16px;margin-top:18px}
+.claim{border-top:3px solid var(--ink);padding-top:12px;min-width:0}
+.claim h3{font-size:18px}
+.claim p{font-size:15px;margin:8px 0 0}
+.claim .vs{font:600 11.5px/1.5 var(--mono);color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-top:10px}
+.table-wrap{overflow-x:auto;margin-top:18px;border:1px solid var(--line);border-radius:10px;background:var(--panel)}
+table{border-collapse:collapse;width:100%;min-width:860px;font-size:14px}
+th,td{padding:10px 12px;border-bottom:1px solid var(--line);text-align:center;vertical-align:middle}
+th:first-child,td:first-child{text-align:left}
+th{font:600 11.5px/1.35 var(--mono);text-transform:uppercase;letter-spacing:.05em;color:var(--muted);vertical-align:bottom}
+th.us{color:var(--decide)}
+tr:last-child td{border-bottom:0}
+td.us{background:var(--decide-s);font-weight:600}
+.y{color:var(--decide);font-weight:700} .p{color:var(--act);font-weight:600} .n{color:var(--muted)}
+.legend{font-size:13px;color:var(--muted);margin-top:8px}
+.moat{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;margin-top:16px}
+.moat div{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:12px 14px;font-size:14.5px}
+.moat b{display:block;font:700 15px/1.3 var(--display);margin-bottom:4px}
+@media (max-width:820px){.arch{grid-template-columns:minmax(0,1fr)}.detail{position:static}.stage{grid-template-columns:minmax(0,1fr)}.steps{grid-template-columns:repeat(5,minmax(0,1fr))}.steps button{border-bottom:1px solid var(--line)}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<div class="wrap">
+  <div class="eyebrow">Agere · healthcare analytics that acts</div>
+  <h1>From raw health data to enrolled patients, in one system</h1>
+  <p class="lede">Agere reads health data in the formats it actually arrives in, builds one checked model of every patient, claim and contract, answers questions with numbers it executed and verified, tests a program before anyone funds it, and then acts: agents enroll, titrate and monitor the patients who need it.</p>
+  <p class="latin"><b>agere</b> (Latin) · to drive, to do, to act</p>
+  <div class="nums">
+    <div class="num"><b>9 / 9</b><span>locked questions answered identically on repeat runs</span></div>
+    <div class="num"><b>$0</b><span>repeat answers, 1-4 seconds, from certified free tiers</span></div>
+    <div class="num"><b>0.3%</b><span>certified error bound on the cohort-family tier</span></div>
+    <div class="num"><b>97%</b><span>of note sentences decided by free classifiers</span></div>
+    <div class="num"><b>27</b><span>analytic engines</span></div>
+    <div class="num"><b>14</b><span>payment-program rulebooks</span></div>
+  </div>
+
+  <h2>The stack</h2>
+  <p>Data enters at the top and leaves as action at the bottom. Select any layer to see what it does, what runs inside it, and what it adds that the layers above it cannot.</p>
+  <div class="arch">
+    <div class="pipe" id="pipe">
+      <div class="io">In <span>X12 837/835/834</span><span>NCPDP</span><span>HL7 v2</span><span>FHIR bulk</span><span>CCLF / ALR</span><span>Epic · athena · eCW extracts</span><span>notes, faxes, PDFs</span></div>
+      <div class="tier t-read"><div class="tl"><b>Read</b><span>get every row, keep its lineage</span></div>
+        <div class="row"><button class="layer" data-id="ingest"><b>Native feed ingestion</b><span>parsers, identity, streaming</span></button>
+        <button class="layer" data-id="onboard"><b>Connect and onboard</b><span>warehouses, auto-mapping</span></button>
+        <button class="layer" data-id="reader"><b>Clinical text reader</b><span>rules, classifiers, Jev cascade</span></button></div></div>
+      <div class="arrow">↓</div>
+      <div class="tier t-know"><div class="tl"><b>Understand</b><span>one corrected model, governed meaning</span></div>
+        <div class="row"><button class="layer" data-id="model"><b>Canonical model + semantic layer</b><span>versions, settlement, identity</span></button>
+        <button class="layer" data-id="knowledge"><b>Governed knowledge</b><span>metrics, measures, CMS programs</span></button></div></div>
+      <div class="arrow">↓ a request: question, plan, simulation or deliverable</div>
+      <div class="tier t-decide"><div class="tl"><b>Decide</b><span>cheapest correct path, real math</span></div>
+        <div class="row"><button class="layer" data-id="route"><b>Specialists first</b><span>cohort families, compiler, cache, deciders</span></button>
+        <button class="layer" data-id="bottle"><b>Bottled local model</b><span>parser misses, $0</span></button>
+        <button class="layer" data-id="engines"><b>Analytic engines</b><span>statistics, astronomy, forecasting</span></button>
+        <button class="layer" data-id="finance"><b>Contract and market finance</b><span>settlement, VaR, options, ACCESS OAP</span></button>
+        <button class="layer" data-id="simulator"><b>Population simulator</b><span>test a program before funding it</span></button>
+        <button class="layer" data-id="evolve"><b>Evolutionary policy search</b><span>better targeting, proven on held-out</span></button>
+        <button class="layer" data-id="analysts"><b>Language-model analysts</b><span>only what nothing else claims</span></button></div></div>
+      <div class="arrow">↓</div>
+      <div class="tier t-check"><div class="tl"><b>Verify</b><span>no unexecuted number ships</span></div>
+        <div class="row"><button class="layer" data-id="cascade"><b>Certified cascades</b><span>error bounds on every free tier</span></button>
+        <button class="layer" data-id="verify"><b>Verification</b><span>agreement, oracles, declines</span></button></div></div>
+      <div class="arrow">↓</div>
+      <div class="tier t-act"><div class="tl"><b>Act</b><span>agere: do something about it</span></div>
+        <div class="row"><button class="layer" data-id="plans"><b>Routed plans</b><span>coverage, attribution, barriers</span></button>
+        <button class="layer" data-id="agents"><b>Agents</b><span>enroll, titrate, monitor, close the loop</span></button>
+        <button class="layer" data-id="compose"><b>Deliverable composer</b><span>ask for anything</span></button>
+        <button class="layer" data-id="deliver"><b>Deliver and learn</b><span>the Agere app, audited, cached</span></button></div></div>
+      <div class="io">Out <span>verified answer</span><span>enrolled patients</span><span>simulated value</span><span>bespoke deliverables</span><span>closed-loop checks</span></div>
+    </div>
+    <aside class="detail" id="detail" aria-live="polite"></aside>
+  </div>
+
+  <h2>One question, every layer</h2>
+  <p>A real request from the pilot workspace, built from native files of a synthetic health system. Step through it, or press play.</p>
+  <div class="trace">
+    <div class="q"><blockquote>“Find every patient who went to the ER with low back pain and has no PT code, then sign them up for virtual PT.”</blockquote>
+      <div class="ctrl"><button id="prev" type="button">Back</button><button id="play" class="primary" type="button">Play</button><button id="next" type="button">Next</button><span id="pos">1 / 9</span></div></div>
+    <div class="steps" id="steps" role="tablist" aria-label="Trace steps"></div>
+    <div class="stage" id="stage"></div>
+  </div>
+
+  <h2>Why Agere wins</h2>
+  <p>Health analytics today is split across four kinds of vendor, and each stops at its own edge. Agere is the first system that runs the whole chain, and each link is stronger because it can see the others.</p>
+  <div class="claims">
+    <div class="claim"><h3>It reads what health data actually is</h3><p>Every competitor assumes someone already turned 837s, 835s, 834s, NCPDP, HL7, FHIR and CCLF into clean tables. Agere reads the files directly, resolves reversals, retro-terminations, resends and duplicate charts once, and keeps lineage to the file and line.</p><div class="vs">vs data platforms and BI copilots</div></div>
+    <div class="claim"><h3>Free answers with a guaranteed error rate</h3><p>Common population-health questions compile to exact SQL from their stated definition. Each free tier answers only when it is certified under a 5% error bound; the cohort-family tier's bound is 0.3%. Repeat answers come back in seconds at no model cost, and the answer guard no longer pays to re-check them.</p><div class="vs">vs LLM-for-everything assistants</div></div>
+    <div class="claim"><h3>Numbers are executed, never asserted</h3><p>Text-to-SQL copilots return the first query a model writes. In Agere a model never supplies a number: specialists answer from definitions, model-written SQL is executed and must agree across independent runs, and a question with two readings gets a clarifying question.</p><div class="vs">vs warehouse copilots (Cortex, Genie)</div></div>
+    <div class="claim"><h3>Test a program before you fund it</h3><p>Every plan can be simulated on the organization's own population: admissions and ED visits avoided, net savings and shared-savings impact with ranges, against doing nothing or an alternative program, including CMS ACCESS outcome-aligned payments. Evolutionary search then finds better targeting under real staff capacity.</p><div class="vs">vs population health dashboards</div></div>
+    <div class="claim"><h3>Contracts priced like a trading desk prices positions</h3><p>Shared-savings settlement to the published rules, value at risk, contracts valued as options, Shapley allocation of who earned the savings, Nash bargaining for negotiation, and a market view where every practice is a ticker.</p><div class="vs">vs VBC enablement vendors</div></div>
+    <div class="claim"><h3>It closes the loop: analysis becomes action</h3><p>Agents enroll patients in the PharmD GDMT program or an ACCESS MSK vendor, handle declines, denials with appeals and no-shows, titrate under PharmD approval with holds on potassium, kidney function and vitals, monitor at home, and check weeks later that the gap actually closed. People see only the exceptions.</p><div class="vs">vs every analytics product</div></div>
+    <div class="claim"><h3>It reads the notes without paying a model to read every note</h3><p>Why a patient is not on a guideline drug usually lives in a note. Agere's rules and local classifiers decide 97% of candidate sentences for free under certified error bounds; only the genuinely ambiguous remainder goes to a language model, about six cents per thousand notes.</p><div class="vs">vs EHR analytics and LLM-on-every-note add-ons</div></div>
+    <div class="claim"><h3>Ask for anything, not a dashboard</h3><p>“A negotiation simulator for our MSSP contract.” “A board story of our ACCESS MSK launch.” The frontier model designs the deliverable; every number in it comes from the verified stack and is checked before it ships. Four untemplated requests cost $0.36 to $0.51 each.</p><div class="vs">vs fixed reports and worklists</div></div>
+  </div>
+
+  <div class="table-wrap"><table>
+    <thead><tr><th>Capability</th><th class="us">Agere</th><th>Warehouse copilots<br>(Snowflake Cortex, Databricks Genie)</th><th>BI assistants<br>(Tableau, ThoughtSpot, Power BI)</th><th>Population health platforms<br>(Innovaccer, Arcadia, Lightbeam)</th><th>EHR analytics<br>(Epic Cosmos, SlicerDicer)</th></tr></thead>
+    <tbody>
+      <tr><td>Reads 837/835/834, NCPDP, HL7, FHIR, CCLF natively</td><td class="us y">Yes</td><td class="n">No</td><td class="n">No</td><td class="p">Via integration projects</td><td class="p">Own EHR data</td></tr>
+      <tr><td>Claim reversals, retro-terms, resends resolved once, with lineage</td><td class="us y">Yes</td><td class="n">Left to the customer</td><td class="n">Left to the customer</td><td class="p">Inside their pipeline</td><td class="p">Own data only</td></tr>
+      <tr><td>Free tiers with certified error bounds</td><td class="us y">Yes</td><td class="n">No</td><td class="n">No</td><td class="n">No</td><td class="n">No</td></tr>
+      <tr><td>Every number executed and cross-checked before it ships</td><td class="us y">Yes</td><td class="p">Single generated query</td><td class="p">Single generated query</td><td class="p">Fixed reports</td><td class="p">Fixed reports</td></tr>
+      <tr><td>Simulate a program on your own population before funding it</td><td class="us y">Yes</td><td class="n">No</td><td class="n">No</td><td class="p">Benchmarks</td><td class="n">No</td></tr>
+      <tr><td>Contract finance: VaR, options, Shapley, bargaining</td><td class="us y">Yes</td><td class="n">No</td><td class="n">No</td><td class="p">Settlement estimates</td><td class="n">No</td></tr>
+      <tr><td>Reasons not on therapy found in free text at population scale</td><td class="us y">Yes</td><td class="p">LLM per note, costly</td><td class="n">No</td><td class="p">Limited NLP</td><td class="p">Manual note search</td></tr>
+      <tr><td>Agents that enroll, titrate, monitor and close the loop</td><td class="us y">Yes</td><td class="n">No</td><td class="n">No</td><td class="p">Care-management worklists</td><td class="p">In-EHR worklists</td></tr>
+      <tr><td>Any deliverable on request, every number verified</td><td class="us y">Yes</td><td class="p">Charts</td><td class="p">Dashboards</td><td class="n">Fixed reports</td><td class="n">Fixed reports</td></tr>
+    </tbody>
+  </table></div>
+  <p class="legend">Comparison by product category, from each category's public positioning.</p>
+
+  <h2>Why it is hard to copy</h2>
+  <div class="moat">
+    <div><b>The chain is the product</b>A copilot vendor lacks the healthcare model; a population health vendor lacks the verification, the math and the simulator; neither acts. Each would have to build the businesses it does not have.</div>
+    <div><b>Verified answers compound</b>Every verified answer becomes a free, certified plan, and the bottled local model learns the phrasings the parser misses. The longer Agere runs, the cheaper and faster it gets.</div>
+    <div><b>Healthcare semantics, encoded once</b>Settlement rules, identity across MRN, member id and MBI, delivery calendars, measure specs and program math live in one layer every engine, agent and deliverable reads.</div>
+    <div><b>Built to be checked</b>Lineage to the file and line, the definition, the SQL, the certificate, how many runs agreed and what it cost come with every answer.</div>
+  </div>
+</div>
+
+<script>
+const L={
+ ingest:{tier:'Read',name:'Native feed ingestion',what:'Parsers for X12 837P/837I, 835, 834 (change and full files), NCPDP D.0, HL7 v2 ADT and ORU, FHIR R4 bulk, CMS CCLF and ALR, and Epic, athenahealth and eCW extracts. Tiered union-find identity links MRN, member id, MBI and demographics to one person. Delivery metadata tracks resends, truncations, late and missing files; streaming processes each new file as it lands and refreshes the answers built on changed data.',adds:'The other layers can only work on what they can read. Agere starts from the files, keeping every row’s file and line.',tags:[['X12 5010','local'],['HL7 v2.5.1','local'],['NCPDP D.0','local'],['FHIR R4','local'],['union-find identity','local'],['streaming + replay','local']]},
+ onboard:{tier:'Read',name:'Connect and onboard',what:'Read-only connectors for Snowflake, BigQuery, Databricks, Postgres, DuckDB and file drops. Every column is profiled; code systems are detected; the mapping is proposed and only uncertain fields wait for a person.',adds:'Day-one answers on a customer’s existing warehouse with no migration.',tags:[['MiniLM name similarity','local'],['schema reranker','local'],['code-system detectors','local']]},
+ reader:{tier:'Read',name:'Clinical text reader',what:'Reads notes, FHIR documents and fax/PDF OCR text for why a patient is not on a drug (intolerance, potassium, kidney function, angioedema, cost, declined) and for findings like ejection fraction. Tier 1 rules and tier 2 local classifiers decide 97% of candidate sentences under certified error bounds; Jev, the Perplexity decider and Claude take only the ambiguous remainder.',adds:'Structured-field tools cannot see these reasons, and a large model on every note is too expensive. Here they cost about six cents per thousand notes.',tags:[['rules (certified 0.3%)','local'],['local classifier (certified 3.3%)','local'],['context student, Jev-trained','local'],['Jev → Perplexity → Claude','llm']]},
+ model:{tier:'Understand',name:'Canonical model and semantic layer',what:'Typed tables: patients, coverage spans, visits and ED encounters with diagnoses from EHR, HL7 and claims, labs, medications and fills, claims with full adjudication history, a unified procedure table, appointments, notes, therapy barriers and deaths. Version resolution, settlement and duplicate charts are handled once.',adds:'Every engine, agent and deliverable reads the same corrected facts.',tags:[['UltraBERT terminology encoder','local'],['261 conditions / 163 labs / 333 drugs','local'],['therapy barriers','local']]},
+ knowledge:{tier:'Understand',name:'Governed knowledge',what:'53 governed metrics and 25 quality measures, 14 cited payment-program rulebooks including CMS ACCESS, CMS-HCC V24 and V28, and 349 cited knowledge entries.',adds:'When a question matches an adopted definition, the answer uses it exactly, with citations.',tags:[['metric linting','local'],['rendered SQL','local'],['CMS-HCC V28','local']]},
+ route:{tier:'Decide',name:'Specialists first',what:'One box takes a question, a plan, a simulation request or a deliverable request and routes it by rules. Questions go to the deterministic cohort families (follow-up gaps, therapy gaps, utilization, screening, adherence), the compiler, verified caches, the BGE reranker over governed metrics and the Perplexity typed decider before any analyst starts.',adds:'The nine locked questions are answered by code, identically on repeat runs; repeat answers cost $0 in seconds.',tags:[['cohort families (certified)','local'],['deterministic compiler','local'],['BGE reranker','local'],['learned router','local'],['Perplexity decider 27B','llm']]},
+ bottle:{tier:'Decide',name:'Bottled local model',what:'A LoRA on the local Qwen3-4B, distilled from verified examples, fills cohort-family slots for phrasings the parser misses. Five decodes must agree, and the slots must round-trip through the parser and validator.',adds:'On held-out parser misses: 81.7% coverage at 92.7% exact precision, above Haiku on the same task, for $0, instead of falling to the paid SQL ladder.',tags:[['Qwen3-4B + LoRA','local'],['k=5 agreement','local']]},
+ engines:{tier:'Decide',name:'Analytic engines',what:'27 typed engines: survival, target trial emulation, synthetic control, risk and calibration, CUSUM/SPRT monitoring, Kalman trajectories, Markov pathways, demand forecasting, outreach optimization, claims review, network analysis, and uncertainty-weighted change points from astronomy.',adds:'Questions SQL cannot answer, each with a range, not just a point.',tags:[['Timestral-123M','local'],['conformal intervals','local'],['Bayesian shrinkage','local'],['astronomy change points','local']]},
+ finance:{tier:'Decide',name:'Contract and market finance',what:'Shared-savings settlement, risk corridors, IBNR, settlement VaR/CVaR, contracts as options, Shapley allocation, Nash bargaining, a market view of practices as tickers, and CMS ACCESS outcome-aligned payments from CMS’s published amounts.',adds:'Turns utilization and risk into dollars, ranges and negotiating positions.',tags:[['VaR / CVaR','local'],['options','local'],['Shapley','local'],['Nash bargaining','local'],['ACCESS OAP','local']]},
+ simulator:{tier:'Decide',name:'Population simulator',what:'Before acting, a plan runs against a simulated copy of the population: baseline admission, ED and cost models fit on the customer’s own history, the agents’ realistic funnel, cited treatment effects with ranges (never multiplying GDMT pillar hazards), paired Monte Carlo across arms and settlement through the contract terms. A backdated run checks predictions against what happened.',adds:'Answers “is this worth funding?” per program and per population, with ranges, before money is spent.',tags:[['paired Monte Carlo','local'],['held-out calibration','local'],['compare to actual','local']]},
+ evolve:{tier:'Decide',name:'Evolutionary policy search',what:'A frontier model proposes targeting and program-choice policies as small sandboxed functions; each is scored on the simulator under staff capacity and an equity floor, with held-out patients and seeds, and kept in a MAP-Elites archive. Only approved policies change routing.',adds:'Finds who to reach first when capacity is tight, without overfitting.',tags:[['sandboxed policies','local'],['MAP-Elites','local'],['Sonnet proposer','llm']]},
+ analysts:{tier:'Decide',name:'Language-model analysts',what:'For a question nothing else claims, three independent Haiku analysts write an analysis contract and SQL; Agere executes and checks each, they vote, and Sonnet breaks a split. Two readings means a clarifying question.',adds:'Open-ended questions still get answered by executed, agreed SQL.',tags:[['claude-haiku-5-5 × 3','llm'],['claude-sonnet-5-5 tie-break','llm']]},
+ cascade:{tier:'Verify',name:'Certified cascades',what:'Every free tier carries a Learn-then-Test certificate from its own calibration set (2,401 route rows, 1,996 labelled note sentences): it answers only when its error among accepted answers is certified under 5% at 90% confidence, and otherwise defers. Certificates ride in every answer’s receipt, and the answer guard treats a certified answer as verified.',adds:'Cheap and accurate at the same time, with the guarantee stated on the answer.',tags:[['cohort family 0.3%','local'],['semantic cache 1.0%','local'],['note rules 0.3%','local'],['classifier 3.3%','local']]},
+ verify:{tier:'Verify',name:'Verification',what:'Independent paths must agree; oracles test partitions, perturbations, shape and empty results; a full-catalog probe runs before any zero ships. Unsupported questions name the missing input.',adds:'Wrong-but-confident answers are caught before they ship.',tags:[['N-version agreement','local'],['oracles','local'],['clarify / unsupported','local']]},
+ plans:{tier:'Act',name:'Routed plans',what:'A patient list becomes a per-patient route: active coverage, payer and product, attributed PCP or practice, the specific gap, documented barriers scoped to the exact drug with a recency window, and the program that fits.',adds:'A decision per patient, with the evidence for it.',tags:[['deterministic router','local'],['program catalog','local'],['drug-scoped barriers','local']]},
+ agents:{tier:'Act',name:'Agents',what:'On one durable backbone, agents reach patients, take consent, check eligibility, handle prior-auth denials and appeals, enroll with the PharmD GDMT service or an ACCESS MSK vendor, schedule and rebook visits, titrate under PharmD approval with holds on potassium, kidney function and vitals, run home monitoring with escalation, and check that the fill or visit happened. Every step needs a receipt; declines and denials create follow-up work.',adds:'On the pilot heart-failure plan: 217 reached, 172 enrolled, 152 attended, 108 completed; titration held 27 patients on real labs and vitals; monitoring escalated 33.',tags:[['PharmD GDMT','local'],['ACCESS MSK virtual PT','local'],['titration','local'],['home monitoring','local'],['closed-loop checks','local']]},
+ compose:{tier:'Act',name:'Deliverable composer',what:'Ask for any deliverable in plain words. The frontier model designs it; cheap stack tools supply every fact and number with receipts; code injects the verified data and a verifier checks every displayed number before it ships. Revisions reuse the data.',adds:'Living deliverables no dashboard can produce: a contract war room, a negotiation simulator, a self-running program, pharmacist decision cards that write back.',tags:[['claude-opus-5-5 designs','llm'],['stack tools supply numbers','local'],['number verifier','local']]},
+ deliver:{tier:'Act',name:'Deliver and learn',what:'The Agere app: sign-in, roles, API keys, audit log and per-customer workspaces, with Ask, Plan and act, Simulate, Create and Physician value. Verified pairs are stored and reused.',adds:'A product a customer team can log into, getting cheaper with every verified answer.',tags:[['roles + audit','local'],['verified cache','local']]},
+};
+const detail=document.getElementById('detail');
+function show(id){
+  const d=L[id];
+  document.querySelectorAll('button.layer').forEach(b=>b.setAttribute('aria-pressed',b.dataset.id===id?'true':'false'));
+  detail.innerHTML=`<div class="k">${d.tier}</div><h3>${d.name}</h3><p>${d.what}</p><div class="adds"><b>What it adds</b>${d.adds}</div><div class="tags">${d.tags.map(([t,c])=>`<span class="tag ${c}">${t}</span>`).join('')}</div><p style="font-size:12.5px;color:var(--muted);margin-top:12px"><span class="tag local" style="border:0;padding:0">teal</span> = code and local models, no model fee · <span class="tag llm" style="border:0;padding:0">violet</span> = paid language model</p>`;
+}
+document.querySelectorAll('button.layer').forEach(b=>b.addEventListener('click',()=>show(b.dataset.id)));
+show('route');
+
+const T=[
+ {lab:'Read',lit:['ingest'],who:'Native feed ingestion',tier:'Read',cost:'free',what:'<p>Payer 837 claims, 835 remittances, HL7 ADT messages and Epic, athena and eCW extracts are parsed. Each ED registration, claim line and diagnosis keeps its file and line.</p>',code:'107,239 delivered files read\n7,146 PT claim lines (CPT 97161-97164, 97110, 97112, 97140, 97530)\n4,753 ED encounters'},
+ {lab:'Identity',lit:['ingest','model'],who:'Identity and canonical model',tier:'Understand',cost:'free',what:'<p>The same person appears as an Epic MRN, a payer member id and an MBI. Union-find links them, so an ED visit on one feed and a PT claim on another belong to one patient.</p>',code:'epic:E12345  member:WHP1-889201  mrn:A-7731  →  AGP-3f9c…'},
+ {lab:'Meaning',lit:['model','knowledge'],who:'Semantic layer and knowledge',tier:'Understand',cost:'free',what:'<p>ED encounters carry their HL7 and claim diagnoses; procedures from both billing sides sit in one table; low back pain is M54.5*; PT has a governed code set; discharged home excludes same-day admissions.</p>',code:'encounter_diagnosis  (ehr | hl7_adt | payer_claim)\nprocedure_line       (claim_line | payer_claim_line, counts_in_metrics)'},
+ {lab:'Route',lit:['route'],who:'Specialists first',tier:'Decide',cost:'free',what:'<p>The box reads a plan request with a cohort inside it. The cohort family claims the cohort, and its certificate (0.3% error bound) lets it answer without any language model.</p>',code:'intent: plan · program kind: virtual_pt\ncohort family: event_followup_gap (ED + M54.5*, no PT within 60 days)'},
+ {lab:'Cohort',lit:['route','cascade'],who:'Executed definition',tier:'Decide',cost:'free',what:'<p>Code renders the definition as SQL over the semantic layer: ED visits in the last 12 months with M54.5*, not admitted, and no PT code in the 60 days after.</p>',code:'42 candidate patients\n 39 with a PT gap · 2 still inside the 60-day window · 6 with earlier PT'},
+ {lab:'Verify',lit:['verify','cascade'],who:'Verification',tier:'Verify',cost:'free',what:'<p>The list is executed and checked against its definition before anyone acts on it. Patients under 18 and visits that became admissions are excluded with the reason recorded.</p>',code:'excluded: 7 under 18 · 2 admitted · 1 PT within 60 days'},
+ {lab:'Simulate',lit:['simulator','finance'],who:'Population simulator',tier:'Decide',cost:'free',what:'<p>Before enrolling, the plan is compared on the population: ACCESS MSK at about $180 per patient per year in outcome-aligned payments versus plan-benefit PT at about $360 per enrolled patient, with no ACCESS impact on the ACO benchmark in 2026-27.</p>',code:'ACCESS MSK: ~$180 / enrolled patient · plan-benefit PT: ~$360\nback-pain share of later ED visits: 1 in 50 (savings ≈ 0, value = access + gap closure)'},
+ {lab:'Act',lit:['agents','plans'],who:'Agents',tier:'Act',cost:'free',what:'<p>Each patient is routed by coverage: Original Medicare members to an ACCESS MSK vendor, others to their plan’s virtual PT benefit. Agents reach out, take consent, handle denials and no-shows, and book the evaluation.</p>',code:'32 routed → 26 reached → 14 consented → 12 enrolled → 10 attended → 7 completed\nprior auth: 2 denied (1 overturned on appeal)'},
+ {lab:'Close loop',lit:['agents','deliver'],who:'Closed loop and learning',tier:'Act',cost:'free',what:'<p>Weeks later Agere checks for the PT evaluation claim and treatment visits and reopens the gap if they are missing. The verified cohort definition is stored, so the next ask is free.</p>',code:'closure from claims where delivered, otherwise from the agent record\nverified plan cached → next ask: $0.00 in seconds'},
+];
+const steps=document.getElementById('steps'),stage=document.getElementById('stage'),pos=document.getElementById('pos');
+let i=0,timer=null;
+T.forEach((t,k)=>{const b=document.createElement('button');b.type='button';b.textContent=t.lab;b.setAttribute('role','tab');b.addEventListener('click',()=>{stop();go(k)});steps.appendChild(b)});
+function go(k){
+  i=(k+T.length)%T.length;const t=T[i];
+  [...steps.children].forEach((b,j)=>{b.toggleAttribute('aria-current',false);if(j===i)b.setAttribute('aria-current','step');b.classList.toggle('done',j<i)});
+  stage.innerHTML=`<div class="who"><small>${t.tier}</small>${t.who}<br><span class="cost ${t.cost}">${t.cost==='free'?'no model fee':'paid model'}</span></div><div class="what">${t.what}<pre>${t.code}</pre></div>`;
+  pos.textContent=`${i+1} / ${T.length}`;
+  document.querySelectorAll('button.layer').forEach(b=>b.classList.toggle('lit',t.lit.includes(b.dataset.id)));
+}
+function stop(){if(timer){clearInterval(timer);timer=null;document.getElementById('play').textContent='Play'}}
+document.getElementById('next').addEventListener('click',()=>{stop();go(i+1)});
+document.getElementById('prev').addEventListener('click',()=>{stop();go(i-1)});
+document.getElementById('play').addEventListener('click',e=>{if(timer){stop();return}e.target.textContent='Pause';timer=setInterval(()=>{if(i===T.length-1){stop();return}go(i+1)},3200)});
+go(0);
+</script>
