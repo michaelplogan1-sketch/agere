@@ -11,7 +11,7 @@ from collections import defaultdict
 from pathlib import Path
 import json, re, sqlite3, time
 
-from . import aggregate, client_data, concepts, population_events, population_feeds, source_profile
+from . import aggregate, client_data, concepts, population_events, population_feeds, source_profile, therapy_barriers
 
 VERSION = 'semantic-layer/19'  # 19: ED encounter diagnoses (HL7 DG1 + ED claim dx; encounter_diagnosis.source/event_date), ED
 # disposition, procedure_line (provider + payer claim lines), death
@@ -225,6 +225,7 @@ SCHEMA_DOC = {
     **population_feeds.SCHEMA_DOC,
     **population_events.SCHEMA_DOC,
     **client_data.SCHEMA_DOC,
+    **therapy_barriers.SCHEMA_DOC,
 }
 
 
@@ -1041,6 +1042,19 @@ def build(path):
         src.close(); out.close()
     from . import note_facts
     note_facts.build(tmp)  # facts found only in free text, read from and written into the new build
+    if therapy_barriers.enabled():  # AGERE_THERAPY_BARRIERS (default on); the typed tier only with AGERE_THERAPY_BARRIERS_LLM=on
+        try:
+            therapy_barriers.build(tmp, llm=therapy_barriers.llm_enabled())
+        except Exception as e:  # the reader is a post-step: a failure is recorded in meta, never a failed semantic build
+            import warnings
+            warnings.warn(f'therapy_barriers post-step failed: {type(e).__name__}: {e}')
+            err = sqlite3.connect(tmp)
+            try:
+                with err:
+                    err.execute("DELETE FROM meta WHERE key = 'therapy_barrier_error'")
+                    err.execute('INSERT INTO meta VALUES (?,?)', ('therapy_barrier_error', f'{type(e).__name__}: {str(e)[:500]}'))
+            finally:
+                err.close()
     tmp.replace(target)
     from . import record_store; record_store.build(path)  # stream-clustered record copy for population scans (record_store.py)
     return {'path': str(target), 'elapsed_seconds': round(time.perf_counter() - started, 1)}

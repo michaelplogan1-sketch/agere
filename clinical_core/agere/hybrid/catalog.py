@@ -349,6 +349,15 @@ def conventions(have, null_items=None, null_doc=None):
     if 'claim' in have:
         lines.append('- Claims: claim holds one row per claim_id with final_status = the last received status (reversals and '
                      'recoupments net out of paid amounts); claim_event holds every received event.')
+    if 'therapy_barrier' in have:
+        lines.append('- Therapy barriers: "why isn\'t the patient on X", "documented reason not on / stopped X", "intolerance, '
+                     'contraindication, allergy, cost or declined for X" read therapy_barrier (one row per patient + drug_class + '
+                     'barrier_type + evidence; drug_class from drug_class_vocabulary, gdmt_pillar = rasi | beta_blocker | mra | '
+                     'sglt2i for heart-failure GDMT). Rows are affirmed or historical patient barriers only (negated, hypothetical '
+                     'and family mentions are excluded); quote evidence_text and record_id, and filter barrier_type / method / '
+                     'confidence only when the question asks. note_therapy_change.reason is filled from the same reader '
+                     '(reason_source = therapy-barriers/1) where the note explains a stop, hold or deferred change. No row means '
+                     'no documented reason was found, not that none exists.')
     if 'measurement' in have:
         lines.append('- Labs and vitals: latest value = latest event_date (measurement_latest when present); use value_canonical / '
                      'unit_canonical for comparisons across units.')

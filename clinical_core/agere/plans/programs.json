@@ -1,6 +1,6 @@
 {
  "schema": "agere-enrollment-programs/1",
- "version": "2026-10-18.1",
+ "version": "2026-10-18.2",
  "synthetic": true,
  "notes": "Program catalog for routed enrollment plans. Eligibility, gap definitions, exclusions, priorities and vendor slots are data; clinical_core/agere/plans/router.py evaluates them deterministically. Vendor slots are placeholders the customer configures with its contracted vendors.",
  "contexts": {
@@ -89,6 +89,34 @@
    ],
    "vendor_slots": [
     {"slot_id": "gdmt_pharmacy_slot_1", "display": "GDMT pharmacy partner slot 1 (customer-configured)", "vendor_name": null,
+     "assignment": "priority", "filters": {}}
+   ]
+  },
+  {
+   "id": "pharmd_barrier_review",
+   "name": "PharmD review of documented GDMT barriers",
+   "kind": "pharmacy_gdmt",
+   "role": "barrier_review",
+   "notes": "Patients whose every missing GDMT pillar has an affirmed documented barrier (therapy_barrier: intolerance, contraindicating lab or vital sign, allergy, cost, declined, not indicated). A PharmD reviews the documented barriers (re-verify, rechallenge, alternative agent, cost assistance) before any patient outreach; the router sends them here instead of the standard titration program.",
+   "request_keywords": [],
+   "eligibility": {
+    "requires_active_coverage": true,
+    "products": ["commercial", "marketplace", "medicaid", "medicare_advantage", "medicare_ffs", "dual_ma", "dual_ffs"],
+    "lines_of_business": ["commercial", "medicaid", "medicare", "dual"],
+    "age": {"min": 18},
+    "gap_type": "gdmt_pillar_missing"
+   },
+   "enrollment_channel": "pharmd_chart_review",
+   "outreach_channel": "work_queue",
+   "script_template_id": "gdmt_barrier_pharmd_review_v1",
+   "required_fields": ["patient_id", "member_id", "payer_id", "product", "attributed_npi", "barrier_documented_pillars"],
+   "priority_rules": [
+    {"metric": "barrier_documented_count", "gte": 3, "priority": "high"},
+    {"metric": "barrier_documented_count", "gte": 2, "priority": "medium"},
+    {"metric": "barrier_documented_count", "gte": 1, "priority": "low"}
+   ],
+   "vendor_slots": [
+    {"slot_id": "pharmd_barrier_review_queue", "display": "PharmD barrier review queue (customer-configured)", "vendor_name": null,
      "assignment": "priority", "filters": {}}
    ]
   },
