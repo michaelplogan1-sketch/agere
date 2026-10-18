@@ -29,7 +29,10 @@ from . import catalog as catmod
 from .counterparty import SimulatedCounterparty
 
 POSITIVE = {'reached', 'consented', 'reviewed', 'eligible', 'approved', 'overturned', 'enrolled', 'scheduled', 'attended',
-            'completed', 'coverage_found', 'delivered'}
+            'completed', 'coverage_found', 'delivered',
+            # follow-on pathway outcomes (plans/pathways.py)
+            'clear', 'modified', 'sent', 'acknowledged', 'resulted_in_range', 'activated', 'collected', 'collected_out_of_range',
+            'in_range', 'care_team_notified'}
 TERMINAL = {'unreachable', 'declined', 'records_needed', 'eligibility_denied', 'coverage_denied', 'prior_auth_denied',
             'not_scheduled', 'dropped_after_no_show', 'dropped_out', 'completed', 'coverage_found', 'coverage_not_found'}
 OUTCOME_ORDER = ('unreachable', 'declined', 'records_needed', 'eligibility_denied', 'coverage_denied', 'prior_auth_denied',

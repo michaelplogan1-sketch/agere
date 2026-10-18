@@ -541,6 +541,10 @@ def resolve_kind(cat, program_kind=None, plan_request=None):
     if isinstance(plan_request, dict) and plan_request.get('program_kind'):
         program_kind = plan_request['program_kind']
     if program_kind and program_kind in catmod.kinds(cat):
+        follow = [p for p in catmod.programs_of(cat, program_kind) if p.get('role') == 'follow_on']
+        if follow and len(follow) == len(catmod.programs_of(cat, program_kind)):
+            raise ValueError(f"{program_kind!r} is follow-on work: it starts from a {follow[0].get('follows')} plan "
+                             f"(plans/pathways.py), not from its own routed plan")
         return program_kind
     text = program_kind or (plan_request if isinstance(plan_request, str) else (plan_request or {}).get('question'))
     if text:

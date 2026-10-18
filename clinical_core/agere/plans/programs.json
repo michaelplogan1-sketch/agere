@@ -1,6 +1,6 @@
 {
  "schema": "agere-enrollment-programs/1",
- "version": "2026-10-18.3",
+ "version": "2026-10-18.4",
  "synthetic": true,
  "notes": "Program catalog for routed enrollment plans. Eligibility, gap definitions, exclusions, priorities and vendor slots are data; clinical_core/agere/plans/router.py evaluates them deterministically. Vendor slots are placeholders the customer configures with its contracted vendors.",
  "contexts": {
@@ -357,7 +357,21 @@
    "completion": {
     "kind": "fill_for_target_pillars",
     "window_days": 90
-   }
+   },
+   "follow_on": [
+    {
+     "program_id": "hf_remote_monitoring_home_labs",
+     "after_milestone": "enrolled",
+     "start": "enrollment",
+     "why": "remote monitoring and home labs begin at PharmD enrollment so the first titration step has fresh readings"
+    },
+    {
+     "program_id": "gdmt_titration_pathway",
+     "after_milestone": "first_visit_attended",
+     "start": "first_visit",
+     "why": "dose steps follow the pharmacist medication review that sets the titration plan"
+    }
+   ]
   },
   {
    "id": "pharmd_barrier_review",
@@ -510,7 +524,21 @@
    "completion": {
     "kind": "fill_for_target_pillars",
     "window_days": 90
-   }
+   },
+   "follow_on": [
+    {
+     "program_id": "hf_remote_monitoring_home_labs",
+     "after_milestone": "enrolled",
+     "start": "enrollment",
+     "why": "remote monitoring and home labs begin at PharmD enrollment so the first titration step has fresh readings"
+    },
+    {
+     "program_id": "gdmt_titration_pathway",
+     "after_milestone": "first_visit_attended",
+     "start": "first_visit",
+     "why": "dose steps follow the pharmacist medication review that sets the titration plan"
+    }
+   ]
   },
   {
    "id": "access_virtual_pt_msk",
@@ -879,6 +907,394 @@
     "kind": "active_coverage_after",
     "window_days": 30
    }
+  },
+  {
+   "id": "gdmt_titration_pathway",
+   "name": "GDMT titration pathway (PharmD-approved dose steps)",
+   "kind": "gdmt_titration",
+   "role": "follow_on",
+   "follows": "pharmacy_gdmt",
+   "notes": "Follow-on work after PharmD GDMT enrollment (plans/pathways.py). Each cycle the titration agent reads the latest potassium, eGFR, systolic BP and heart rate, holds pillars whose safety thresholds fail, proposes the next dose step for PharmD approval, sends the prescription, instructs the patient and orders the follow-up BMP after RAS-inhibitor or MRA changes. Thresholds and dose ladders are configurable planning data, not clinical guidance; every step is a proposal for the care team.",
+   "request_keywords": [],
+   "eligibility": {
+    "requires_active_coverage": true,
+    "age": {
+     "min": 18
+    }
+   },
+   "enrollment_channel": "pharmd_protocol",
+   "outreach_channel": "phone",
+   "script_template_id": "gdmt_titration_step_v1",
+   "required_fields": [
+    "patient_id",
+    "attributed_npi"
+   ],
+   "priority_rules": [],
+   "vendor_slots": [
+    {
+     "slot_id": "gdmt_titration_slot_1",
+     "display": "PharmD titration service slot 1 (customer-configured)",
+     "vendor_name": null,
+     "assignment": "priority",
+     "filters": {}
+    }
+   ],
+   "workflow": {
+    "agent": "Agere titration agent",
+    "cycles": 3,
+    "cycle_days": 14,
+    "lab_after_days": 7,
+    "completion_label": "titration cycles completed with PharmD-approved dose steps",
+    "pillar_order": [
+     "sglt2i",
+     "mra",
+     "beta_blocker",
+     "rasi"
+    ],
+    "labs_required_for": [
+     "rasi",
+     "mra",
+     "sglt2i"
+    ],
+    "labs_max_age_days": 365,
+    "vitals_max_age_days": 180
+   },
+   "safety_holds": [
+    {
+     "pillar": "rasi",
+     "measure": "systolic_bp",
+     "lt": 100,
+     "reason": "systolic BP below 100 mmHg"
+    },
+    {
+     "pillar": "rasi",
+     "measure": "potassium",
+     "gt": 5.0,
+     "reason": "potassium above 5.0 mmol/L"
+    },
+    {
+     "pillar": "rasi",
+     "measure": "egfr",
+     "lt": 30,
+     "reason": "eGFR below 30"
+    },
+    {
+     "pillar": "mra",
+     "measure": "potassium",
+     "gt": 5.0,
+     "reason": "potassium above 5.0 mmol/L"
+    },
+    {
+     "pillar": "mra",
+     "measure": "egfr",
+     "lt": 30,
+     "reason": "eGFR below 30"
+    },
+    {
+     "pillar": "beta_blocker",
+     "measure": "heart_rate",
+     "lt": 60,
+     "reason": "heart rate below 60 bpm"
+    },
+    {
+     "pillar": "beta_blocker",
+     "measure": "systolic_bp",
+     "lt": 100,
+     "reason": "systolic BP below 100 mmHg"
+    },
+    {
+     "pillar": "sglt2i",
+     "measure": "egfr",
+     "lt": 20,
+     "reason": "eGFR below 20"
+    }
+   ],
+   "dose_ladders": {
+    "rasi": [
+     {
+      "agent": "sacubitril valsartan",
+      "steps": [
+       "24/26 mg BID",
+       "49/51 mg BID",
+       "97/103 mg BID"
+      ],
+      "mg": [
+       24,
+       49,
+       97
+      ]
+     },
+     {
+      "agent": "lisinopril",
+      "steps": [
+       "2.5 mg daily",
+       "5 mg daily",
+       "10 mg daily",
+       "20 mg daily",
+       "40 mg daily"
+      ],
+      "mg": [
+       2.5,
+       5,
+       10,
+       20,
+       40
+      ]
+     },
+     {
+      "agent": "enalapril",
+      "steps": [
+       "2.5 mg BID",
+       "5 mg BID",
+       "10 mg BID"
+      ],
+      "mg": [
+       2.5,
+       5,
+       10
+      ]
+     },
+     {
+      "agent": "losartan",
+      "steps": [
+       "25 mg daily",
+       "50 mg daily",
+       "100 mg daily",
+       "150 mg daily"
+      ],
+      "mg": [
+       25,
+       50,
+       100,
+       150
+      ]
+     },
+     {
+      "agent": "valsartan",
+      "steps": [
+       "40 mg BID",
+       "80 mg BID",
+       "160 mg BID"
+      ],
+      "mg": [
+       40,
+       80,
+       160
+      ]
+     }
+    ],
+    "beta_blocker": [
+     {
+      "agent": "carvedilol",
+      "steps": [
+       "3.125 mg BID",
+       "6.25 mg BID",
+       "12.5 mg BID",
+       "25 mg BID"
+      ],
+      "mg": [
+       3.125,
+       6.25,
+       12.5,
+       25
+      ]
+     },
+     {
+      "agent": "metoprolol",
+      "steps": [
+       "25 mg daily (succinate)",
+       "50 mg daily",
+       "100 mg daily",
+       "200 mg daily"
+      ],
+      "mg": [
+       25,
+       50,
+       100,
+       200
+      ]
+     },
+     {
+      "agent": "bisoprolol",
+      "steps": [
+       "1.25 mg daily",
+       "2.5 mg daily",
+       "5 mg daily",
+       "10 mg daily"
+      ],
+      "mg": [
+       1.25,
+       2.5,
+       5,
+       10
+      ]
+     }
+    ],
+    "mra": [
+     {
+      "agent": "spironolactone",
+      "steps": [
+       "12.5 mg daily",
+       "25 mg daily",
+       "50 mg daily"
+      ],
+      "mg": [
+       12.5,
+       25,
+       50
+      ]
+     },
+     {
+      "agent": "eplerenone",
+      "steps": [
+       "25 mg daily",
+       "50 mg daily"
+      ],
+      "mg": [
+       25,
+       50
+      ]
+     }
+    ],
+    "sglt2i": [
+     {
+      "agent": "dapagliflozin",
+      "steps": [
+       "10 mg daily"
+      ],
+      "mg": [
+       10
+      ]
+     },
+     {
+      "agent": "empagliflozin",
+      "steps": [
+       "10 mg daily"
+      ],
+      "mg": [
+       10
+      ]
+     }
+    ]
+   },
+   "counterparty": {
+    "profile": "pharmd_titration",
+    "p_pharmd_modified": 0.12,
+    "p_pharmd_deferred": 0.08,
+    "p_rx_rejected": 0.04,
+    "p_instructions_unreached": 0.1,
+    "p_lab_out_of_range": 0.07,
+    "p_lab_not_drawn": 0.08,
+    "modifiers": [
+     {
+      "fact": "borderline_potassium",
+      "stage": "lab_out_of_range",
+      "multiply": 2.5,
+      "why": "potassium 4.8-5.0 before the step"
+     },
+     {
+      "fact": "age_80_plus",
+      "stage": "pharmd_deferred",
+      "multiply": 1.5,
+      "why": "age 80 or older: slower titration"
+     }
+    ]
+   },
+   "completion": {
+    "kind": "titration_cycles",
+    "window_days": 90
+   }
+  },
+  {
+   "id": "hf_remote_monitoring_home_labs",
+   "name": "HF remote monitoring + home labs",
+   "kind": "hf_remote_monitoring",
+   "role": "follow_on",
+   "follows": "pharmacy_gdmt",
+   "notes": "Follow-on work after PharmD GDMT enrollment (plans/pathways.py): RPM consent, device shipment and activation, a home BMP draw, 30 days of blood pressure, heart rate and weight readings checked against thresholds, escalation to the care team on a breach (which also holds the next titration step), and a monthly review. Readings are simulated from the latest vitals; thresholds are configurable planning data.",
+   "request_keywords": [],
+   "eligibility": {
+    "requires_active_coverage": true,
+    "age": {
+     "min": 18
+    }
+   },
+   "enrollment_channel": "rpm_vendor",
+   "outreach_channel": "phone",
+   "script_template_id": "hf_rpm_intro_v1",
+   "required_fields": [
+    "patient_id",
+    "attributed_npi"
+   ],
+   "priority_rules": [],
+   "vendor_slots": [
+    {
+     "slot_id": "hf_rpm_slot_1",
+     "display": "RPM + home lab partner slot 1 (customer-configured)",
+     "vendor_name": null,
+     "assignment": "priority",
+     "filters": {}
+    }
+   ],
+   "workflow": {
+    "agent": "Agere monitoring agent",
+    "reading_days": 30,
+    "lab_day": 10,
+    "review_day": 30,
+    "completion_label": "first monitoring month reviewed"
+   },
+   "thresholds": {
+    "weight_gain_kg_3d": 2.0,
+    "weight_gain_kg_7d": 2.5,
+    "systolic_bp_lt": 90,
+    "systolic_bp_gt": 160,
+    "heart_rate_lt": 50,
+    "heart_rate_gt": 110,
+    "potassium_gt": 5.5,
+    "egfr_drop_pct": 30,
+    "min_transmission_days": 16
+   },
+   "counterparty": {
+    "profile": "rpm_vendor",
+    "p_decline": 0.15,
+    "p_shipping_failed": 0.03,
+    "p_not_activated": 0.12,
+    "p_lab_missed": 0.1,
+    "p_weight_gain": 0.1,
+    "p_bp_low": 0.05,
+    "p_low_adherence": 0.12,
+    "p_lab_out_of_range": 0.06,
+    "modifiers": [
+     {
+      "fact": "age_80_plus",
+      "stage": "not_activated",
+      "multiply": 1.6,
+      "why": "age 80 or older: device setup help needed"
+     },
+     {
+      "fact": "interpreter_needed",
+      "stage": "decline",
+      "multiply": 1.3,
+      "why": "interpreter needed"
+     },
+     {
+      "fact": "recent_acute_30d",
+      "stage": "weight_gain",
+      "multiply": 1.8,
+      "why": "ED visit or admission in the last 30 days"
+     },
+     {
+      "fact": "borderline_potassium",
+      "stage": "lab_out_of_range",
+      "multiply": 2.5,
+      "why": "potassium 4.8-5.0 at baseline"
+     }
+    ]
+   },
+   "completion": {
+    "kind": "monitoring_month",
+    "window_days": 45
+   }
   }
  ],
  "barrier_policy": {
@@ -1073,6 +1489,78 @@
     "owner": "care_team",
     "due_days": 10,
     "detail": "chart review could not decide; outside records requested"
+   },
+   "titration_hold": {
+    "type": "titration_hold_review",
+    "owner": "care_team",
+    "due_days": 3,
+    "detail": "safety hold on the next dose step (labs, vitals or a remote-monitoring escalation); PharmD or clinician decides"
+   },
+   "titration_labs_missing": {
+    "type": "lab_order",
+    "owner": "care_team",
+    "due_days": 5,
+    "detail": "no recent potassium / eGFR on file; order a baseline BMP before the dose step"
+   },
+   "pharmd_deferred": {
+    "type": "pharmd_review",
+    "owner": "program",
+    "due_days": 7,
+    "detail": "PharmD deferred the proposed dose step; revisit at the next cycle"
+   },
+   "rx_rejected": {
+    "type": "prescription_issue",
+    "owner": "program",
+    "due_days": 3,
+    "detail": "pharmacy rejected the new prescription; resolve formulary or prior authorization"
+   },
+   "lab_out_of_range": {
+    "type": "clinician_escalation",
+    "owner": "attributed_practice",
+    "due_days": 2,
+    "detail": "follow-up labs out of range after a dose step; titration paused for clinician review"
+   },
+   "lab_not_drawn": {
+    "type": "lab_order",
+    "owner": "care_team",
+    "due_days": 5,
+    "detail": "follow-up BMP not drawn; reschedule (home draw available)"
+   },
+   "instructions_unreached": {
+    "type": "recontact",
+    "owner": "program",
+    "due_days": 3,
+    "detail": "patient not reached with new dose instructions"
+   },
+   "rpm_declined": {
+    "type": "pcp_notice",
+    "owner": "attributed_practice",
+    "due_days": 14,
+    "detail": "patient declined remote monitoring"
+   },
+   "device_not_activated": {
+    "type": "device_support",
+    "owner": "program",
+    "due_days": 5,
+    "detail": "RPM device not activated after two attempts; setup visit or alternative device"
+   },
+   "rpm_threshold_breach": {
+    "type": "clinician_escalation",
+    "owner": "care_team",
+    "due_days": 1,
+    "detail": "remote reading outside threshold; care-team call today, next titration step held"
+   },
+   "home_lab_missed": {
+    "type": "lab_order",
+    "owner": "care_team",
+    "due_days": 5,
+    "detail": "home lab draw missed; reschedule"
+   },
+   "rpm_low_adherence": {
+    "type": "recontact",
+    "owner": "program",
+    "due_days": 7,
+    "detail": "fewer transmission days than the minimum; adherence coaching"
    }
   }
  }

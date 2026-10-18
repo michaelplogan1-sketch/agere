@@ -1,0 +1,19 @@
+{
+ "schema": "agere-physician-value/1",
+ "illustrative": true,
+ "notes": "Illustrative care-reward rates for the hosted Physician value panel (clinical_core/agere/hosted/value.py). They show how completed, receipted work could be credited to the attributed physician; they are NOT contracted rates and NOT payments. A customer replaces them with its own value-based contract terms. Each step is credited once per patient when a work item carries a receipt matching `match` (step + outcome) or a follow-on pathway reaches one of `states`.",
+ "currency": "USD",
+ "pay_schedule": {"cadence": "monthly", "day": 15, "lag_months": 1, "label": "Paid on the 15th of the month after the step's receipt"},
+ "steps": [
+  {"id": "opportunity_reviewed", "order": 1, "label": "Population intelligence", "why": "Care opportunity confirmed and the patient reached", "match": [{"step": "patient_outreach", "outcome": "reached"}], "amount": 20},
+  {"id": "medication_review", "order": 2, "label": "Medication reconciliation", "why": "Therapy, coverage and barriers reviewed; eligibility confirmed", "match": [{"step": "eligibility_check", "outcome": "eligible"}, {"step": "chart_review", "outcome": "reviewed"}], "amount": 40},
+  {"id": "pathway_matched", "order": 3, "label": "Pathway matching", "why": "Matched to an eligible program and enrolled with consent", "match": [{"step": "enrollment", "outcome": "enrolled"}], "amount": 60},
+  {"id": "visit_attended", "order": 4, "label": "Scheduling agent", "why": "First program visit attended; care plan captured", "match": [{"step": "first_visit", "outcome": "attended"}], "amount": 80},
+  {"id": "home_response_reviewed", "order": 5, "label": "RPM + home labs", "why": "Home readings and labs reviewed by the care team", "match": [{"step": "monitoring_review", "outcome": "reviewed"}], "amount": 100},
+  {"id": "follow_through", "order": 6, "label": "Titration + outcome review", "why": "Dose steps completed under PharmD protocol, or the program completed", "match": [{"step": "completion_report", "outcome": "completed"}], "states": {"gdmt_titration_pathway": ["cycles_completed", "target_reached"]}, "amount": 100}
+ ],
+ "bonuses": [
+  {"id": "care_connected", "label": "Care connected", "after_steps": 3, "amount": 50},
+  {"id": "pathway_complete", "label": "Follow-through complete", "after_steps": 6, "amount": 150}
+ ]
+}

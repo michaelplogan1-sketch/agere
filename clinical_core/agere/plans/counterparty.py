@@ -18,6 +18,12 @@ returns the original receipt (the adapter keeps a request ledger; the backbone p
 Receipts: {receipt_id, request_id, counterparty_id ('sim:<slot_id>'), counterparty, step, attempt, outcome, reason, at
 (timestamp from as_of + the step's day offset), detail, basis {probability, draw, modifiers}, simulated: True}.
 These are synthetic planning assumptions for engineering tests, not measured performance of any vendor or payer.
+
+Follow-on pathway steps (PATHWAY_STEPS, driven by plans/pathways.py): safety_check (latest labs / vitals; counterparty
+sim:lab_vitals_feed), dose_step_proposal (PharmD approves / modifies / defers), prescription, patient_instructions,
+followup_labs and home_lab_draw (simulated BMP values near the baseline), device_shipment, device_activation,
+readings_window (30 days of BP / HR / weight against the program thresholds), escalation (sim:care_team_inbox),
+monitoring_review. Same receipt shape, seeding and idempotence as the enrollment steps.
 """
 from __future__ import annotations
 
@@ -26,6 +32,11 @@ import hashlib
 
 VERSION = 'simulated-counterparty/1'
 CLIP = (0.01, 0.97)
+# follow-on pathway steps (plans/pathways.py); the enrollment steps above are unchanged
+PATHWAY_STEPS = {'safety_check', 'dose_step_proposal', 'prescription', 'patient_instructions', 'followup_labs', 'device_shipment',
+                 'device_activation', 'home_lab_draw', 'readings_window', 'escalation', 'monitoring_review'}
+PATHWAY_COUNTERPARTIES = {'safety_check': ('sim:lab_vitals_feed', 'latest labs and vitals (workspace data)'),
+                          'escalation': ('sim:care_team_inbox', 'care-team inbox')}
 
 
 def uniform(*parts):
@@ -97,8 +108,10 @@ class SimulatedCounterparty:
         u = uniform(self.seed, step, attempt)
         outcome, reason, prob, mods, detail = self._dispose(step, attempt, u, request)
         receipt = {'receipt_id': 'RCPT-' + hashlib.sha256(f'{rid}|{outcome}'.encode()).hexdigest()[:12].upper(),
-                   'request_id': rid, 'counterparty_id': f"sim:practice_inbox:{request.get('to') or 'unattributed'}" if step == 'pcp_notification' else self.id,
-                   'counterparty': 'attributed practice inbox' if step == 'pcp_notification' else self.name, 'step': step, 'attempt': attempt,
+                   'request_id': rid, 'counterparty_id': f"sim:practice_inbox:{request.get('to') or 'unattributed'}" if step == 'pcp_notification' else
+                   PATHWAY_COUNTERPARTIES.get(step, (self.id,))[0],
+                   'counterparty': 'attributed practice inbox' if step == 'pcp_notification' else PATHWAY_COUNTERPARTIES.get(step, (None, self.name))[1],
+                   'step': step, 'attempt': attempt,
                    'outcome': outcome, 'reason': reason, 'at': self._after(self.at(request.get('day') or 0, step, attempt),
                                                                            request.get('not_before'), step, attempt),
                    'detail': detail, 'basis': {'probability': None if prob is None else round(prob, 4), 'draw': round(u, 4),
@@ -185,6 +198,103 @@ class SimulatedCounterparty:
                                                             self.seed, step), p, mods, None)
         if step == 'pcp_notification':
             return 'delivered', 'notice delivered to the attributed practice inbox', 1.0, [], {'to': request.get('to')}
+        if step in PATHWAY_STEPS:
+            return self._pathway(step, attempt, u, request)
+        raise ValueError(f'Unknown counterparty step {step!r}')
+
+    # --- follow-on pathways (plans/pathways.py): GDMT titration, remote monitoring + home labs ---------------------------
+
+    def _lab(self, step, attempt, base, key, spread, lo=None):
+        """A simulated follow-up lab value near the baseline (deterministic per seed / step / attempt)."""
+        b = base.get(key)
+        if b is None:
+            return None
+        v = float(b) + (uniform(self.seed, step, attempt, key) - 0.5) * 2 * spread
+        return round(max(v, lo) if lo is not None else v, 1)
+
+    def _pathway(self, step, attempt, u, request):
+        r = self.rates
+        if step == 'safety_check':
+            holds, missing = request.get('holds') or [], request.get('labs_missing') or []
+            detail = {'measures': request.get('measures') or {}, 'holds': holds, 'labs_missing': missing,
+                      'candidates': request.get('candidates') or []}
+            if not request.get('candidates'):
+                return 'hold', '; '.join(sorted({h['reason'] for h in holds})) or 'no pillar can take a dose step', 1.0, [], detail
+            return 'clear', f"latest labs and vitals allow a {request['candidates'][0]} step", 1.0, [], detail
+        if step == 'dose_step_proposal':
+            pd, m1 = self.p('pharmd_deferred', r.get('p_pharmd_deferred', 0.08))
+            pm, m2 = self.p('pharmd_modified', r.get('p_pharmd_modified', 0.12))
+            prop = request.get('proposal') or {}
+            if u < pd:
+                return 'deferred', 'PharmD deferred the step to the next cycle', pd, m1, {'proposal': prop}
+            if u < pd + pm:
+                return 'modified', 'PharmD approved a smaller or later step', pm, m2, {'proposal': prop, 'approved_dose': prop.get('from') or prop.get('to'),
+                                                                                       'note': 'hold the current dose one more cycle before the step'}
+            return 'approved', 'PharmD approved the dose step under the care-team protocol', 1 - pd - pm, m1 + m2, {'proposal': prop,
+                                                                                                                  'approved_dose': prop.get('to')}
+        if step == 'prescription':
+            p, mods = self.p('rx_rejected', r.get('p_rx_rejected', 0.04))
+            return ('rejected', _pick(['non-formulary strength', 'prior authorization required for the new strength', 'duplicate therapy alert'],
+                                      self.seed, step, attempt), p, mods, None) if u < p else \
+                ('sent', 'e-prescription accepted by the pharmacy', 1 - p, mods, {'dose': request.get('dose')})
+        if step == 'patient_instructions':
+            p, mods = self.p('instructions_unreached', r.get('p_instructions_unreached', 0.1))
+            return ('unreached', 'patient not reached with the new instructions', p, mods, None) if u < p else \
+                ('acknowledged', 'patient confirmed the new dose and the lab date', 1 - p, mods, None)
+        if step in ('followup_labs', 'home_lab_draw'):
+            pn, m1 = self.p('lab_not_drawn' if step == 'followup_labs' else 'lab_missed',
+                            r.get('p_lab_not_drawn' if step == 'followup_labs' else 'p_lab_missed', 0.08))
+            if u < pn:
+                return ('lab_not_drawn' if step == 'followup_labs' else 'missed'), 'lab not drawn in the window', pn, m1, None
+            po, m2 = self.p('lab_out_of_range', r.get('p_lab_out_of_range', 0.07))
+            base = request.get('baseline') or {}
+            u2 = uniform(self.seed, step, attempt, 'range')
+            k, eg = self._lab(step, attempt, base, 'potassium', 0.3, 2.5), self._lab(step, attempt, base, 'egfr', 6, 5)
+            if u2 < po:
+                k = round(max(k or 4.6, 5.6) + uniform(self.seed, step, attempt, 'k+') * 0.4, 1)
+                return ('out_of_range' if step == 'followup_labs' else 'collected_out_of_range'), \
+                    f'potassium {k} mmol/L after the change', po, m2, {'potassium': k, 'egfr': eg}
+            return ('resulted_in_range' if step == 'followup_labs' else 'collected'), 'BMP resulted within range', 1 - po, m2, \
+                {'potassium': k if k is None else min(k, 5.4), 'egfr': eg}
+        if step == 'device_shipment':
+            p, mods = self.p('shipping_failed', r.get('p_shipping_failed', 0.03))
+            return ('returned', 'carrier returned the kit (address problem)', p, mods, None) if u < p else \
+                ('delivered', 'blood pressure cuff, scale and home lab kit delivered', 1 - p, mods, None)
+        if step == 'device_activation':
+            p, mods = self.p('not_activated', r.get('p_not_activated', 0.12))
+            return ('not_activated', 'devices not paired yet', p, mods, None) if u < p else \
+                ('activated', 'devices paired; first readings received', 1 - p, mods, None)
+        if step == 'readings_window':
+            th, base, days = request.get('thresholds') or {}, request.get('baseline') or {}, int(request.get('days') or 30)
+            pw, m1 = self.p('weight_gain', r.get('p_weight_gain', 0.1))
+            pb, m2 = self.p('bp_low', r.get('p_bp_low', 0.05))
+            pa, m3 = self.p('low_adherence', r.get('p_low_adherence', 0.12))
+            uw, ub, ua = (uniform(self.seed, step, attempt, x) for x in ('w', 'b', 'a'))
+            sbp, hr = float(base.get('systolic_bp') or 124), float(base.get('heart_rate') or 74)
+            gain = round(2.2 + uw * 1.6, 1) if uw < pw else round(uw * 1.2 - 0.4, 1)
+            sbp_min = round(min(sbp - 18, 82 + ub * 6)) if ub < pb else round(sbp - 4 - ub * 12)
+            summary = {'days': days, 'transmission_days': round(days * (0.35 + 0.15 * ua) if ua < pa else days * (0.75 + 0.25 * ua)),
+                       'weight_change_kg_7d': gain, 'systolic_bp_min': sbp_min, 'systolic_bp_max': round(sbp + 6 + ua * 14),
+                       'heart_rate_min': round(hr - 6 - uw * 6), 'heart_rate_max': round(hr + 8 + ub * 10)}
+            breaches = []
+            if gain >= float(th.get('weight_gain_kg_7d', 2.5)):
+                breaches.append(f"weight up {gain} kg in 7 days")
+            if sbp_min < float(th.get('systolic_bp_lt', 90)):
+                breaches.append(f"systolic BP {sbp_min} mmHg")
+            if summary['heart_rate_min'] < float(th.get('heart_rate_lt', 50)):
+                breaches.append(f"heart rate {summary['heart_rate_min']} bpm")
+            if summary['systolic_bp_max'] > float(th.get('systolic_bp_gt', 160)):
+                breaches.append(f"systolic BP {summary['systolic_bp_max']} mmHg")
+            summary['breaches'] = breaches
+            if breaches:
+                return 'threshold_breach', '; '.join(breaches), max(pw, pb), m1 + m2, summary
+            if summary['transmission_days'] < int(th.get('min_transmission_days', 16)):
+                return 'low_adherence', f"{summary['transmission_days']} of {days} days transmitted", pa, m3, summary
+            return 'in_range', f"{summary['transmission_days']} of {days} days transmitted; all readings within thresholds", 1 - pw, m1, summary
+        if step == 'escalation':
+            return 'care_team_notified', 'care team notified; call scheduled today', 1.0, [], {'reason': request.get('reason')}
+        if step == 'monitoring_review':
+            return 'reviewed', 'monthly remote-monitoring review documented', 1.0, [], None
         raise ValueError(f'Unknown counterparty step {step!r}')
 
     def _pa_required(self):

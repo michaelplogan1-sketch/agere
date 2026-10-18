@@ -25,6 +25,13 @@ routing essentials (route, program, slot, coverage, gap, barriers; never the dat
 Steps advance only on receipts from the simulated counterparty (plans/act.py, plans/counterparty.py); every receipt is
 stored in work_requests under its request_id, so a duplicate submission returns the original receipt.
 
+Follow-on work. A program with a `follow_on` block (pharmacy_gdmt) starts follow-on pathways for items that reach the
+named milestone (plans/pathways.py: remote monitoring + home labs at enrollment, GDMT titration after the attended PharmD
+visit). Each is its own work item in lane '<lane>:next:<kind>' (kind 'follow_on' in item lists), bound to an assessment of
+(parent action, start date, latest labs / vitals / doses), replayed, updated, reassessed or cancelled exactly like plan items;
+its follow-up work lives in '<that lane>:followup:<type>'. The parent plan's counts, funnel and decision are unchanged; the
+run reports follow-on work under 'follow_on'.
+
 Completion. After every run the completion evaluator (plans/completion.py) checks enrolled items against the workspace
 data (fills, PT claims) or the simulated attendance record; a closure that no longer holds is recorded as reopened.
 """
@@ -38,7 +45,7 @@ import sqlite3
 import threading
 
 from ...contracts import digest
-from . import act as actmod, catalog as catmod, completion, router
+from . import act as actmod, catalog as catmod, completion, pathways, router
 
 SCHEMA = 'agere-workspace-action/1'
 STORE_DIR = 'action'
@@ -167,6 +174,9 @@ def run(ws_dir, plan, *, workspace, semantic_path=None, catalog=None, through=No
             acting = [r for r in plan['patients'] if actmod.actionable(r)]
             extra = _acute_facts(semantic_path, [r['patient_id'] for r in acting], as_of)
             counts = Counter()
+            has_follow = any(p.get('follow_on') for p in catmod.programs_of(cat, kind))
+            snaps = pathways.snapshot(semantic_path, [r['patient_id'] for r in acting], as_of, cat) if has_follow and acting else {}
+            fcounts, factions = Counter(), []
             item_ids = []
             for r in acting:
                 pid = r['patient_id']
@@ -191,10 +201,11 @@ def run(ws_dir, plan, *, workspace, semantic_path=None, catalog=None, through=No
                                             'state': action['state'], 'receipts': _receipt_ids(action)})
                     _save_requests(db, action)
                     counts['created'] += 1
+                    eff_through = through
                 else:
                     item_id, rev, payload = old[0], old[1], json.loads(old[2])
                     if payload['assessment_id'] == assessment['id'] and payload['state'] != 'cancelled':
-                        eff = _later(payload.get('through'), through)
+                        eff = eff_through = _later(payload.get('through'), through)
                         ledger = _load_ledger(db, payload['action']['action_id'])
                         action = _strip(actmod.run_patient(r, prog, slot, workspace=workspace, as_of=payload['cycle_as_of'], cat=cat,
                                                            facts=facts, through=eff, ledger=ledger))
@@ -222,7 +233,11 @@ def run(ws_dir, plan, *, workspace, semantic_path=None, catalog=None, through=No
                         _save_requests(db, action)
                         _supersede_followups(db, pid, lane, actor, keep={f['followup_id'] for f in action['followups']})
                         counts['reassessed'] += 1
+                        eff_through = through
                 _upsert_followups(db, pid, lane, item_id, action, dec['id'], actor, counts)
+                if has_follow and prog.get('follow_on'):
+                    factions += _follow_ons(db, r, prog, cat, lane, item_id, action, dec['id'], workspace, snaps.get(pid), facts,
+                                            eff_through, plan.get('catalog_version'), actor, fcounts)
                 db.execute('INSERT OR IGNORE INTO question_decision_tasks VALUES (?,?,?)',
                            (dec['id'], item_id, json.dumps({'assessment_id': assessment['id'], 'patient_id': pid})))
                 item_ids.append(item_id)
@@ -238,6 +253,9 @@ def run(ws_dir, plan, *, workspace, semantic_path=None, catalog=None, through=No
                     _event(db, old[0], old[1] + 1, {'action': 'cancelled', 'actor': actor, 'reason': payload['cancelled_reason']})
                     _supersede_followups(db, r['patient_id'], lane, actor, keep=set())
                     counts['cancelled'] += 1
+                    for frow in db.execute('SELECT id, revision, payload FROM work_items WHERE patient=? AND program LIKE ? AND program NOT LIKE ?',
+                                           (r['patient_id'], lane + pathways.SEP + '%', '%:followup:%')).fetchall():
+                        _cancel_follow_on(db, frow, 'parent item cancelled: ' + str(reason), actor, fcounts)
             closures = _evaluate(db, item_ids, semantic_path, cat, actor, counts)
             db.execute('COMMIT')
         except BaseException:
@@ -246,9 +264,90 @@ def run(ws_dir, plan, *, workspace, semantic_path=None, catalog=None, through=No
         finally:
             db.close()
     actions = [p['action'] for p in _payloads(ws_dir, item_ids)]
-    return {'schema': SCHEMA, 'decision_id': dec['id'], 'replay': replay, 'store': str(store_path(ws_dir) / 'program-work.sqlite3'),
-            'lane': lane, 'items': dict(counts), 'work_items': len(item_ids), 'summary': actmod.summarize(actions),
-            'completion': completion.rates(actions, closures), 'limits': LIMITS, 'external_dispatch_performed': False}
+    out = {'schema': SCHEMA, 'decision_id': dec['id'], 'replay': replay, 'store': str(store_path(ws_dir) / 'program-work.sqlite3'),
+           'lane': lane, 'items': dict(counts), 'work_items': len(item_ids), 'summary': actmod.summarize(actions),
+           'completion': completion.rates(actions, closures), 'limits': LIMITS, 'external_dispatch_performed': False}
+    if has_follow:
+        out['follow_on'] = {'items': dict(fcounts), 'work_items': len(factions), **pathways.summarize(factions)}
+    return out
+
+
+def _cancel_follow_on(db, row, reason, actor, fcounts):
+    fid, rev, raw = row
+    p = json.loads(raw)
+    if p.get('state') == 'cancelled':
+        return
+    p.update(revision=rev + 1, state='cancelled', cancelled_reason=reason)
+    db.execute('UPDATE work_items SET revision=?, payload=? WHERE id=?', (rev + 1, json.dumps(p, default=str), fid))
+    _event(db, fid, rev + 1, {'action': 'cancelled', 'actor': actor, 'reason': reason})
+    _supersede_followups(db, p['patient_id'], p['lane'], actor, keep=set())
+    fcounts['cancelled'] += 1
+
+
+def _follow_ons(db, row, prog, cat, lane, parent_id, parent_action, decision_id, workspace, snap, facts, through, catalog_version,
+                actor, fcounts):
+    """Run and persist the follow-on pathways of one parent item (see module doc). -> the current follow-on actions."""
+    pid = row['patient_id']
+    olds, ledgers = {}, {}
+    for fprog, _ in pathways.follow_on_programs(cat, prog):
+        flane = pathways.lane_for(lane, fprog['kind'])
+        old = db.execute('SELECT id, revision, payload FROM work_items WHERE patient=? AND program=?', (pid, flane)).fetchone()
+        olds[fprog['id']] = old
+        if old:
+            ledgers[fprog['id']] = _load_ledger(db, json.loads(old[2])['action']['action_id'])
+    through_eff = through
+    for old in olds.values():
+        if old:
+            through_eff = _later(json.loads(old[2]).get('through'), through_eff) if json.loads(old[2]).get('state') != 'cancelled' else through_eff
+    out = []
+    for fprog, action in pathways.run_follow_ons(parent_action, row, prog, cat, workspace=workspace, snap=snap, facts=facts,
+                                                 through=through_eff, ledgers=ledgers):
+        flane = pathways.lane_for(lane, fprog['kind'])
+        old = olds.get(fprog['id'])
+        if action is None:
+            if old:
+                _cancel_follow_on(db, old, f"parent no longer at {fprog['id']}'s starting milestone", actor, fcounts)
+            continue
+        action = _strip(action)
+        assessment = {'schema': SCHEMA, 'patient_id': pid, 'lane': flane, 'parent_action': parent_action['action_id'],
+                      'start': action['start'], 'snapshot': snap or {}, 'catalog_version': catalog_version}
+        assessment['id'] = digest(assessment)
+        db.execute('INSERT OR IGNORE INTO work_assessments VALUES (?,?,?,?)', (assessment['id'], pid, flane, json.dumps(assessment, default=str)))
+        base = {'patient_id': pid, 'lane': flane, 'program_kind': fprog['kind'], 'decision_id': decision_id, 'parent_item': parent_id,
+                'parent_action': parent_action['action_id'], 'assessment_id': assessment['id'], 'cycle_as_of': action['start'],
+                'through': through_eff, 'state': action['state'], 'action': action, 'closure': None,
+                'external_dispatch_performed': False, 'synthetic': True}
+        if old is None:
+            fid = 'WN-' + digest([SCHEMA, workspace, pid, flane])[:16]
+            db.execute('INSERT INTO work_items VALUES (?,?,?,?,?)', (fid, pid, flane, 1, json.dumps({**base, 'id': fid, 'revision': 1, 'cycle': 1},
+                                                                                                  default=str)))
+            _event(db, fid, 1, {'action': 'created', 'actor': actor, 'parent_item': parent_id, 'assessment_id': assessment['id'],
+                                'state': action['state'], 'receipts': _receipt_ids(action)})
+            fcounts['created'] += 1
+        else:
+            fid, rev, prev = old[0], old[1], json.loads(old[2])
+            if prev['assessment_id'] == assessment['id'] and prev['state'] != 'cancelled':
+                if _receipt_ids(action) == _receipt_ids(prev['action']) and prev['state'] == action['state']:
+                    fcounts['unchanged'] += 1
+                    out.append(prev['action'])
+                    continue
+                new = [x for x in _receipt_ids(action) if x not in set(_receipt_ids(prev['action']))]
+                db.execute('UPDATE work_items SET revision=?, payload=? WHERE id=?',
+                           (rev + 1, json.dumps({**prev, **base, 'id': fid, 'revision': rev + 1}, default=str), fid))
+                _event(db, fid, rev + 1, {'action': 'receipts_received', 'actor': actor, 'receipts': new, 'state': action['state']})
+                fcounts['updated'] += 1
+            else:
+                db.execute('UPDATE work_items SET revision=?, payload=? WHERE id=?',
+                           (rev + 1, json.dumps({**prev, **base, 'id': fid, 'revision': rev + 1, 'cycle': prev.get('cycle', 1) + 1},
+                                                default=str), fid))
+                _event(db, fid, rev + 1, {'action': 'reassessed', 'actor': actor, 'prior': {k: prev.get(k) for k in ('assessment_id', 'state', 'cycle_as_of')},
+                                          'state': action['state'], 'receipts': _receipt_ids(action)})
+                _supersede_followups(db, pid, flane, actor, keep={f['followup_id'] for f in action['followups']})
+                fcounts['reassessed'] += 1
+        _save_requests(db, action)
+        _upsert_followups(db, pid, flane, fid, action, decision_id, actor, fcounts)
+        out.append(action)
+    return out
 
 
 def _upsert_followups(db, pid, lane, parent_id, action, decision_id, actor, counts):
@@ -342,7 +441,8 @@ def _compact(p):
                 'reason': p.get('reason'), 'parent_item': p.get('parent_item'), 'revision': p['revision']}
     a = p['action']
     last = next((s for s in reversed(a['steps']) if s.get('receipt')), None)
-    return {'id': p['id'], 'patient_id': p['patient_id'], 'lane': p['lane'], 'kind': 'plan_item', 'program_id': a['program_id'],
+    return {'id': p['id'], 'patient_id': p['patient_id'], 'lane': p['lane'], 'kind': 'follow_on' if pathways.SEP in p['lane'] else 'plan_item',
+            'program_id': a['program_id'], 'parent_item': p.get('parent_item'),
             'vendor_slot': a.get('vendor_slot'), 'state': p['state'], 'closure': (p.get('closure') or {}).get('status'),
             'last_receipt': {k: last['receipt'][k] for k in ('outcome', 'at', 'counterparty_id', 'reason')} if last else None,
             'followups': [f['type'] for f in a['followups']], 'barriers': len(a.get('barriers') or []),
@@ -357,8 +457,9 @@ def items(ws_dir, *, lane=None, state=None, kind=None, patient_id=None, limit=50
     try:
         q, args = 'SELECT payload FROM work_items WHERE program LIKE ?', ['plan:%']
         if lane:
-            q += ' AND (program = ? OR program LIKE ?)'
-            args += [lane, lane + ':followup:%']
+            q += ' AND (program = ? OR program LIKE ? OR program LIKE ? OR program LIKE ? OR program LIKE ?)'
+            fk = lane.split(':', 1)[-1]
+            args += [lane, lane + ':followup:%', lane + pathways.SEP + '%', '%' + pathways.SEP + fk, '%' + pathways.SEP + fk + ':followup:%']
         if patient_id:
             q += ' AND patient = ?'
             args.append(patient_id)
@@ -370,6 +471,7 @@ def items(ws_dir, *, lane=None, state=None, kind=None, patient_id=None, limit=50
     if kind:
         rows = [r for r in rows if r['kind'] == kind]
     counts = {'plan_items': dict(Counter(r['state'] for r in rows if r['kind'] == 'plan_item')),
+              'follow_on': dict(Counter(f"{r['program_id']}:{r['state']}" for r in rows if r['kind'] == 'follow_on')),
               'followups': dict(Counter(f"{r['type']}:{r['state']}" for r in rows if r['kind'] == 'followup'))}
     return {'items': rows[:max(1, min(int(limit), 5000))], 'total': len(rows), 'counts': counts}
 
@@ -424,5 +526,16 @@ def decision(ws_dir, decision_id):
     payloads = [p for p in _payloads(ws_dir, ids) if p['state'] != 'cancelled']
     actions = [p['action'] for p in payloads]
     closures = {p['action']['action_id']: p['closure'] for p in payloads if p.get('closure')}
-    return {'decision': {k: v for k, v in d.items() if k != 'patients'} | {'patients': len(d.get('patients') or [])},
-            'summary': actmod.summarize(actions), 'completion': completion.rates(actions, closures)}
+    out = {'decision': {k: v for k, v in d.items() if k != 'patients'} | {'patients': len(d.get('patients') or [])},
+           'summary': actmod.summarize(actions), 'completion': completion.rates(actions, closures)}
+    keep = set(ids)
+    db = _ro(ws_dir)
+    try:
+        fol = [json.loads(r[0]) for r in db.execute('SELECT payload FROM work_items WHERE program LIKE ? AND program NOT LIKE ?',
+                                                     (str(d.get('lane')) + pathways.SEP + '%', '%:followup:%'))]
+    finally:
+        db.close()
+    fol = [p['action'] for p in fol if p.get('parent_item') in keep and p['state'] != 'cancelled']
+    if fol:
+        out['follow_on'] = pathways.summarize(fol)
+    return out

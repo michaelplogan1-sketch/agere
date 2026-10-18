@@ -8,6 +8,7 @@ in `X-CSRF-Token`. Workspace calls are routed to workspace_api with the organiza
 (<data>/tenants/<org>/workspaces), its decrypted warehouse credentials and a usage recorder, so one customer never sees
 another's workspaces, files, credentials, usage or audit. Roles: viewer (read, ask), analyst (+ build and review
 workspaces), admin and owner (+ members, API keys, credentials). See docs/agere/HOSTED_DESIGN.md.
+GET /api/workspaces/<slug>/value is served here (hosted/value.py): illustrative physician rewards from receipted work.
 """
 from __future__ import annotations
 
@@ -29,8 +30,10 @@ RANK = {'viewer': 0, 'analyst': 1, 'admin': 2, 'owner': 3}
 SECURITY_HEADERS = {
     'X-Content-Type-Options': 'nosniff', 'X-Frame-Options': 'DENY', 'Referrer-Policy': 'same-origin',
     'Cross-Origin-Opener-Policy': 'same-origin', 'Permissions-Policy': 'camera=(), microphone=(), geolocation=()',
-    'Content-Security-Policy': "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; "
-                               "img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'",
+    # the two web fonts of the design system (hosted/brand.py) are the only third-party assets
+    'Content-Security-Policy': "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+                               "font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; "
+                               "base-uri 'none'; form-action 'self'",
 }
 
 
@@ -254,6 +257,8 @@ def make_handler(ctx):
                     return self.send(200, {'ok': True, 'service': 'agere-hosted'})
                 if path == '/login':
                     return self.send(200, pages.login(), mime='text/html')
+                if path == '/favicon.ico':
+                    return self.send(204, b'', mime='image/x-icon')
                 p = self.principal()
                 if path in ('/', '/app', '/admin', '/account'):
                     if p is None or p['via'] != 'session':
@@ -270,6 +275,9 @@ def make_handler(ctx):
                               'bytes': x.stat().st_size if x.is_file() else None, 'path': str(x)}
                              for x in sorted(root.iterdir()) if not x.name.endswith('.part')]
                     return self.send(200, {'uploads': items})
+                m = re.fullmatch(r'/api/workspaces/([a-z0-9][a-z0-9_-]{0,80})/value', path)
+                if m:
+                    return self.physician_value(m.group(1), p)
                 if path.startswith('/api/workspaces'):
                     return self.workspaces('GET', path, None, p)
                 if path.startswith('/api/admin/'):
@@ -439,13 +447,27 @@ def make_handler(ctx):
                 ctx.auth.audit(org, uid, 'workspace.ask', {'workspace': workspace, 'question': row.get('question'), 'decision': row.get('decision')},
                                ip=self.client_ip())
 
+            from urllib.parse import parse_qsl
+            query = dict(parse_qsl(urlsplit(self.path).query)) if method == 'GET' else None  # work-item filters (?kind=&state=...)
             code, payload = workspace_api.handle(method, path, body, root=root, credentials=resolve, on_usage=on_usage,
-                                                 can_write=self.require(p, 'analyst'))
+                                                 can_write=self.require(p, 'analyst'), query=query)
             if method == 'POST' and code < 400 and not path.endswith('/ask'):
                 parts = [x for x in path.split('/') if x][2:]
                 action = 'workspace.create' if not parts else 'workspace.' + (parts[1] if len(parts) > 1 else 'update')
                 ctx.auth.audit(org, uid, action, {'workspace': parts[0] if parts else (body or {}).get('name')}, ip=self.client_ip())
             return self.send(code, payload)
+
+        def physician_value(self, slug, p):
+            """GET /api/workspaces/<slug>/value[?npi=]: illustrative physician rewards from receipted work (hosted/value.py)."""
+            from urllib.parse import parse_qs
+            from ..onboarding import workspace as wsmod
+            from .value import physician_value
+            try:
+                ws = wsmod.Workspace(slug, root=ctx.tenant_root(self.org_slug(p)))
+            except FileNotFoundError as exc:
+                return self.error(404, str(exc))
+            npi = (parse_qs(urlsplit(self.path).query).get('npi') or [None])[0]
+            return self.send(200, physician_value(ws.dir, npi=npi))
 
         # --- admin --------------------------------------------------------------------------------------------------
         def admin_get(self, path, p):
