@@ -413,9 +413,12 @@ def _enrollment(ctx):
     loops.sort(key=lambda r: (r['_payer'] or '', r['member_id'] or '', r['_fd'] or '',
                               0 if r['file_type'] == 'change' else 1, r['_file'] or '', r['_row'] or 0))
     by_member = defaultdict(list)
+    demo = {}
     for r in loops:
         if _s(r['member_id']):
             by_member[(r['_payer'], r['member_id'].strip())].append(r)
+            demo.setdefault((r['_payer'], r['member_id'].strip()),
+                            ((_s(r['last_name']) or '').lower(), (_s(r['first_name']) or '').lower(), _d(r['dob'])))
     covered = set()
     for (payer, member), rows in by_member.items():
         covered.add((payer, member))
@@ -444,7 +447,11 @@ def _enrollment(ctx):
             v['coverage_end_source'] = 'flat_eligibility'
             rep['cross_check']['coverage_end_from_flat_eligibility'] += 1
         v['_lineage_extra'] = [_lin('payers_eligibility', s) for s in same]
-    out += _spans_cclf(ctx, cclf8, {(v['payer_id'], v['member_id']) for v in out})
+    # a beneficiary whose Medicare FFS coverage already arrives as an 834 MEDICARE_FFS span (payers 0/1/2, MBI as member
+    # id) gets no second span from CCLF enrollment
+    ffs_834 = {v['member_id'] for v in out if v.get('product') in ('medicare_ffs', 'dual_ffs')}
+    out += _spans_cclf(ctx, cclf8, {(v['payer_id'], v['member_id']) for v in out}, ffs_834)
+    _link_payer_reissues(ctx, out, demo)
     for v in out:
         info = cclf8.get(v['member_id'])
         if info and v['product'] in ('medicare_ffs', 'dual_ffs', None):
@@ -576,8 +583,14 @@ def _flat_eligibility(ctx):
     for r in rows:
         member = _s(r['member_id'])
         payer = _payer_id(r['payer'] or r['_instance'])
+        if member and not identity.normalize_member_id(member):  # column-shifted rows: product/zip/fragment as id
+            ctx.rep['dropped']['malformed_flat_eligibility_row'] += 1
+            continue
         product = (_s(r['product']) or '').lower()
         if not member or not payer:
+            continue
+        if not _d(r['eff_date']):  # a snapshot without an effective date cannot be a span (malformed row)
+            ctx.rep['dropped']['malformed_flat_eligibility_row'] += 1
             continue
         snap = {'eff': _d(r['eff_date']), 'term': _d(r['term_date']), 'product': product if product in PRODUCTS else None,
                 'plan': _s(r['plan_id']), 'pcp_npi': _s(r['pcp_npi']), 'pcp_name': _s(r['pcp_name']),
@@ -647,7 +660,7 @@ def _cclf8(ctx):
     return out
 
 
-def _spans_cclf(ctx, cclf8, existing):
+def _spans_cclf(ctx, cclf8, existing, ffs_834=frozenset()):
     rep = ctx.rep
     payer = 'WH-PAYER-MSSP'
     rows = _keep_files(rep, 'cclf_enrollment', _rows(ctx.db, 'cclf_enrollment', [
@@ -682,6 +695,11 @@ def _spans_cclf(ctx, cclf8, existing):
         m, start = _s(r['current_bene_mbi_id']), _d(r['enrollment_start_date'])
         if not m:
             continue
+        # the enrollment file sends 5 re-issued MBIs with one trailing character more than CCLF8/CCLF9 (12 chars);
+        # the 11-character MBI is the beneficiary key everywhere else, so the span is keyed on it
+        if len(m) == 12 and m[:11] in cclf8 and not identity.normalize_mbi(m):
+            rep['cross_check']['cclf_enrollment_mbi_with_extra_character'] += 1
+            m = m[:11]
         key = (m, start)
         if key in spans:
             rep['dropped']['repeat_cclf_enrollment_row'] += 1
@@ -703,6 +721,9 @@ def _spans_cclf(ctx, cclf8, existing):
     out = []
     for (m, start), s in sorted(spans.items(), key=lambda x: (x[0][0], x[0][1] or '')):
         if (payer, m) in existing:
+            continue
+        if m in ffs_834:
+            rep['dropped']['cclf_span_covered_by_834_medicare_ffs'] += 1
             continue
         info = cclf8.get(m, {})
         dual = info.get('dual')
@@ -731,7 +752,51 @@ def _spans_cclf(ctx, cclf8, existing):
             v['member_id_reissued'] = True
             v['coverage_end'] = v['coverage_end'] or _minus_day(old_of[m][1])
         out.append(v)
+    # one person, one current span: the re-issued MBI's span supersedes the old MBI's span
+    by_member = {v['member_id']: v for v in out}
+    for v in out:
+        old = by_member.get(v.get('previous_member_id'))
+        if old is not None and not v.get('_supersedes'):
+            v['_supersedes'] = old['_rid']
     return out
+
+
+def _link_payer_reissues(ctx, out, demo):
+    """Payer member-id re-issue: at one payer, the same person (834 last name, first name, DOB) gets a new member id
+    whose span starts the day after the old id's span ends. The new span is enrollment_reason member_id_reissued with
+    previous_member_id, and supersedes the old id's final span version (one person, one current span). Several ids of
+    one person with overlapping or non-contiguous spans (duplicate enrollments) stay separate."""
+    finals = [v for v in out if v.get('_final') and v.get('enrollment_source') == 'x12_834']
+    groups = defaultdict(list)
+    for v in finals:
+        d = demo.get((v['payer_id'], v['member_id']))
+        if d and all(d):
+            groups[(v['payer_id'],) + d].append(v)
+    firsts = {(v['payer_id'], v['member_id'], v['coverage_start']): v for v in out if v.get('span_version') == 1}
+    for vs in groups.values():
+        if len({v['member_id'] for v in vs}) < 2:
+            continue
+        for a in vs:
+            end = a.get('coverage_end')
+            if not end or end.startswith('9999'):
+                continue
+            nxt = (date.fromisoformat(end) + timedelta(days=1)).isoformat()
+            for b in vs:
+                if b['member_id'] == a['member_id'] or b['coverage_start'] != nxt:
+                    continue
+                first = firsts.get((b['payer_id'], b['member_id'], b['coverage_start']))
+                if first is None or first.get('_supersedes'):
+                    continue
+                for x in [v for v in out if v['payer_id'] == b['payer_id'] and v['member_id'] == b['member_id']
+                          and v['coverage_start'] == b['coverage_start']]:
+                    x['enrollment_reason'] = 'member_id_reissued'
+                    x['previous_member_id'] = a['member_id']
+                    x['member_id_reissued'] = True
+                a['termination_reason'] = 'member_id_reissued'
+                a['member_id_reissued'] = True
+                first['_supersedes'] = a['_rid']
+                ctx.rep['cross_check']['payer_member_id_reissues_linked'] += 1
+                break
 
 
 # ========================================================================================================= medical claims

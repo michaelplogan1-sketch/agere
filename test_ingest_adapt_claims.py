@@ -461,5 +461,57 @@ class FidelityFixes(unittest.TestCase):
         self.assertEqual(rep['cross_check']['takeback_before_payment_reordered'], 1)
 
 
+class EnrollmentFidelity(unittest.TestCase):
+    def loop(self, L, payer, f, mt, member, begin, end=None, product='COMMERCIAL', fdate='2026-10-05', name=('KELLY', 'CYNTHIA')):
+        L.add('x12_834_member', f'x12_834/{payer}/{fdate[:7]}/{f}', isa_control_number=f, file_type='full' if mt == '030' else 'change',
+              file_date=fdate, maintenance_type_code=mt, member_id=member, subscriber_id=member[:-2] + '00',
+              eligibility_begin_date=begin if mt != '024' else None, benefit_begin_date=begin, eligibility_end_date=end,
+              plan_coverage_description=product, last_name=name[0], first_name=name[1], dob='1962-12-25')
+
+    def test_payer_member_id_reissue_supersedes_old_span(self):
+        L = Landing()
+        self.loop(L, 'WH-PAYER-C1', 'C1_834_FULL_20261005.x12', '030', 'C1OLDID0001', '2026-09-01')
+        self.loop(L, 'WH-PAYER-C1', 'C1_834_CHG_20270705.x12', '024', 'C1OLDID0001', '2026-09-01', end='2027-06-14',
+                  fdate='2027-07-05')
+        self.loop(L, 'WH-PAYER-C1', 'C1_834_CHG_20270705b.x12', '021', 'C1NEWID00012', '2027-06-15', fdate='2027-07-05')
+        # same name and DOB but overlapping coverage: a duplicate enrollment, not a re-issue
+        self.loop(L, 'WH-PAYER-C1', 'C1_834_FULL_20261005b.x12', '030', 'C1DUPID0002', '2026-09-01')
+        by, rep = run(L)
+        cur = current(by['enrollment_spans'])
+        self.assertEqual(sorted(r['member_id'] for r in cur), ['C1DUPID0002', 'C1NEWID00012'])
+        new = [r for r in cur if r['member_id'] == 'C1NEWID00012'][0]
+        self.assertEqual((new['enrollment_reason'], new['previous_member_id'], new['member_id_reissued']),
+                         ('member_id_reissued', 'C1OLDID0001', True))
+        self.assertEqual(rep['cross_check']['payer_member_id_reissues_linked'], 1)
+
+    def test_cclf_span_skipped_for_834_ffs_and_mbi_reissue(self):
+        L = Landing()
+        self.loop(L, 'WH-PAYER-1', '1_834_FULL_20261005.x12', '030', '2DX0U77CP79', '2026-08-28', product='MEDICARE_FFS')
+        ef = 'cms_cclf_csv/enrollment/ENROLLMENT_20300527.csv'
+        for m, start, end in (('2DX0U77CP79', '2026-08-28', ''), ('2H51Q97FQ99', '2026-09-01', '2028-06-16'),
+                              ('2HBCAB84FC1F', '2028-06-17', '')):
+            L.add('cclf_enrollment', ef, current_bene_mbi_id=m, enrollment_start_date=start, enrollment_end_date=end,
+                  file_date='2030-05-27')
+        bf = 'cms_cclf_csv/beneficiary_demographics/P.A9999.ACO.ZC8Y28.D280712.T1.csv'
+        for m, b, e in (('2H51Q97FQ99', '2026-09-01', '2028-06-16'), ('2HBCAB84FC1', '2028-06-17', '2028-07-31')):
+            L.add('cclf_beneficiary_demographics', bf, bene_mbi_id=m, bene_dob='1952-09-24', bene_1st_name='ANN',
+                  bene_last_name='RIVERA', bene_dual_stus_cd='NA', bene_orgnl_entlmt_rsn_cd='0', bene_rng_bgn_dt=b,
+                  bene_rng_end_dt=e, file_date='2028-07-12')
+        L.add('cclf_beneficiary_xref', 'cms_cclf_csv/beneficiary_xref/P.A9999.ACO.ZC9Y28.D280712.T1.csv',
+              crnt_num='2HBCAB84FC1', prvs_num='', prvs_id_obslt_dt='2028-06-17', file_date='2028-07-12')
+        by, rep = run(L)
+        cur = current(by['enrollment_spans'])
+        mssp = [r for r in cur if r['payer_id'] == 'WH-PAYER-MSSP']
+        self.assertEqual([(r['member_id'], r['enrollment_reason'], r['previous_member_id']) for r in mssp],
+                         [('2HBCAB84FC1', 'member_id_reissued', '2H51Q97FQ99')])
+        self.assertEqual(rep['dropped']['cclf_span_covered_by_834_medicare_ffs'], 1)
+        self.assertEqual([r['payer_id'] for r in cur if r['member_id'] == '2DX0U77CP79'], ['WH-PAYER-1'])
+
+
+def current(recs):
+    gone = {r['supersedes_record_id'] for r in recs if r['supersedes_record_id']}
+    return [r for r in recs if r['record_id'] not in gone]
+
+
 if __name__ == '__main__':
     unittest.main()
