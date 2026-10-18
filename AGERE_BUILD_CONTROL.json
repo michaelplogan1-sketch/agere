@@ -1,6 +1,6 @@
 {
  "schema": "agere-build-control/1",
- "updated_at": "2026-10-18T13:55:40.439538+00:00",
+ "updated_at": "2026-10-18T21:41:50.577861+00:00",
  "decision_basis": "AGERE_CTO_REVIEW_2026-10-11_EVENING.md",
  "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
  "required_references": [
@@ -278,20 +278,20 @@
   "kind": "manual_turn_checkpoint",
   "gate_id": "G3",
   "last_delivered_gate": "G3",
-  "user_behavior_delta": "2026-10-18 (Agere hub): native-feed workspaces answer population-health questions through specialists first. Cohort families (event_followup_gap, therapy_class_gap, utilization_threshold, screening_overdue, adherence_pdc) render code SQL from parsed definitions; governed metrics no longer claim questions that state their own definition; the Perplexity typed decider runs before the analysts. Plans run through one action backbone (durable decisions and work items per workspace) with seeded simulated counterparties (decline, denial/appeal, no-show, completion), completion from fills/claims, drug-scoped barriers. Therapy barrier reader over notes/documents (rules, local classifier, Jev/Perplexity cascade). Native staging: ED diagnoses on every ED encounter, unified procedure_line, death table, 834 full-file terminations.",
-  "measured_failure_reduction": "Gold 10 (questions with answers agreed independently with the generator): 8 of 9 locked; the stack answers all locked questions correctly on two consecutive runs with identical patient lists, 4 of 5 from the verified cache at $0 in 1-4 s; language-model analysts for everything scored 1 of the same 5. Cohort families reproduce all 9 references (F1 1.000) with no model. Native 150 on the corrected key: 97/150 (pending the generator's delivered_ids fix).",
+  "user_behavior_delta": "2026-10-18 evening: full stack on main. One box routes questions, plans, simulations and deliverables. Specialists first: cohort, data-quality and VBC families render code SQL from stated definitions under Learn-then-Test certificates (bounds 0.3% / 2.3% / 2.5%); the narrow bottled Qwen3-4B fills parser misses for $0; engines defer to stated definitions; the answer guard trusts certified tiers. Action backbone with realistic counterparties, titration and home monitoring; population simulator with CMS ACCESS OAP economics; evolutionary policy search; open-ended deliverable composer (frontier designs, stack supplies verified numbers); streaming ingest with dependent replay (delta equals full rebuild); the Agere app in the marketing-site design.",
+  "measured_failure_reduction": "Gold 10 (9 questions locked with the generator, digest 05c5b54b): 9/9 correct on a full rebuild of the committed stack, identical across runs, $0, 0-6 s. Native 150 on key 42725a04: 97 -> 106 -> 111 (74%), cost $4.62 -> $3.25, median 43 s -> 28 s. Dispute audit: 11 key defects (generator correcting), 6 Agere rule errors (being fixed), 3 wording.",
   "evidence": [
    "bench/gold10_run.py",
-   "bench/gold10_reference.py",
    "docs/agere/gold10/locked.json",
-   "clinical_core/agere/clinical/cohort_families.py",
-   "clinical_core/agere/plans/backbone.py",
-   "clinical_core/agere/clinical/therapy_barriers.py",
-   "test_cohort_families.py",
-   "test_action_backbone.py"
+   "clinical_core/agere/clinical/cascade.py",
+   "clinical_core/agere/clinical/vbc_families.py",
+   "clinical_core/agere/clinical/dq_families.py",
+   "clinical_core/agere/streaming/pipeline.py",
+   "test_streaming.py",
+   "test_dq_families.py"
   ],
-  "remaining_gap": "PHQ-FU held until the generator fixes its native key builder (never-delivered files counted); streaming/replay, population simulator and calibrated cascades in progress; v2.14 native slice with documents pending; cloud deploy.",
-  "next_action": "Land streaming/replay, population simulator and calibrated cascades; restage pilot; rerun Gold 10 twice; then evolutionary search and narrow bottling.",
+  "remaining_gap": "Apply the six audited rule fixes; rescore native 150 on the generator's corrected key; v2.14 native slice with documents; cloud deployment and SSO; streaming speed (weekly ticks restate most patients).",
+  "next_action": "Commit the rule fixes after Gold 10 stays locked; rescore native 150 on the corrected digest; ingest v2.14 when published.",
   "next": "Merge v2.0 warehouse migration (feature/warehouse-v2, in progress) and re-baseline; Wave C model layer (bottled SLM rung, reranker, learned router, embedding cache, Jev online, automated learning loop); Wave D; v2.1 data (D9-D22) when the generator delivers."
  },
  "decisions": [
@@ -743,6 +743,11 @@
    "at": "2026-10-18T13:55:40.439538+00:00",
    "by": "claude-code:agere-hub",
    "decision": "Mike 2026-10-18: build the product, test on a small locked set of real questions agreed independently with the generator (Gold 10); action pathways are product capabilities with realistic simulated outcomes on one backbone; specialists first, LLMs only where needed; continue autonomously without gated questions."
+  },
+  {
+   "at": "2026-10-18T21:41:50.577861+00:00",
+   "by": "claude-code:agere-hub",
+   "decision": "MVP check complete: Gold 10 9/9 at $0 on the full committed stack; native bank 111/150. Disputes resolved with the generator by audit, not by tuning to keys."
   }
  ]
 }
