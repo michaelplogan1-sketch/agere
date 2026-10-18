@@ -246,7 +246,9 @@ def _run_hybrid(stack, question, as_of, semantic_path):
         with _own_ledger(stack) as ledger:
             yield _ledgered_send(stack, ledger, receipts)
 
-    h = live.answer(question, as_of or wh.as_of, wh, send_factory)
+    # A workspace stack (onboarding/workspace_stack.py) may carry its own sender and analyst docs; the service Stack has neither.
+    own = getattr(stack, 'send_factory', None)
+    h = live.answer(question, as_of or wh.as_of, wh, own or send_factory, docs_dir=getattr(stack, 'docs_dir', None))
     answer = _hybrid_contract(h)
     tool_calls = [{'sql': r.get('sql')} for r in h['runs'].values() if r.get('sql')]
     return {'answer': answer, 'model': h['models']['analyst'], 'estimated_cost_usd': h['cost_usd'],
@@ -262,9 +264,14 @@ def _run_analyst(stack, question, as_of, semantic_path, model):
         return _run_hybrid(stack, question, as_of, semantic_path)
     started, receipts = time.perf_counter(), []
     wh = warehouse(semantic_path)
-    with _own_ledger(stack) as ledger:
-        result = semantic_analyst.analyze(question, as_of or wh.as_of, wh, send=_ledgered_send(stack, ledger, receipts),
-                                          model=model, format_retries=1)  # build log step 12
+    own = getattr(stack, 'send_factory', None)  # a workspace stack's own sender (see _run_hybrid)
+    if own is not None:
+        with own() as send:
+            result = semantic_analyst.analyze(question, as_of or wh.as_of, wh, send=send, model=model, format_retries=1)
+    else:
+        with _own_ledger(stack) as ledger:
+            result = semantic_analyst.analyze(question, as_of or wh.as_of, wh, send=_ledgered_send(stack, ledger, receipts),
+                                              model=model, format_retries=1)  # build log step 12
     result.pop('example_ids', None)
     result.update(receipts=receipts, seconds=round(time.perf_counter() - started, 3))
     return result

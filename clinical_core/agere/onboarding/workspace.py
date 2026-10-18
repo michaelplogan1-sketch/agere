@@ -4,7 +4,7 @@
     ws.run()                      # profile -> propose -> auto-approve -> build -> raw tables -> verify -> docs -> ready
     ws.review_items()             # what a person should look at (low-confidence fields, missing required fields, tables)
     ws.decide(item_id, 'accept' | 'reject' | {'source': 'other_col'})  then  ws.rebuild()
-    ws.ask('How many diabetic patients had an A1c over 9 last year?')
+    ws.ask('How many diabetic patients had an A1c over 9 last year?')   # full pipeline when supported, else hybrid core
 
 Day one: fields the matcher scores at or above its accept threshold are accepted automatically and the mapping is
 approved as "auto"; everything else waits in the review queue without blocking answers. A person's decisions are
@@ -12,8 +12,13 @@ kept and re-applied on every rebuild. Verification results are recorded with the
 Every source table is accounted for: mapped tables feed the modeled tables, and every source table (mapped or not) is
 also copied verbatim as raw_<table>, so the analyst can reach fields the model does not carry.
 
+Answering: a native workspace (staged record store + product semantic layer) answers through the full product pipeline
+(local compiler, governed metrics, analytic engines and the hybrid core, reconciled by together.compose_together) over
+<slug>/pipeline/, prepared after docs by the 'pipeline' step (workspace_stack.py). Other workspaces, or a full-pipeline
+failure, answer through the hybrid core alone (pipeline='hybrid').
+
 State lives in artifacts/workspaces/<slug>/: workspace.json, profile.json, mapping.json, semantic.sqlite3,
-analyst_docs/, verification.json, events.jsonl, receipts/. Credentials are never stored: a source spec names the
+analyst_docs/, verification.json, events.jsonl, receipts/, pipeline/ (native). Credentials are never stored: a source spec names the
 warehouse, and connectors read credentials from the environment (see connectors.py).
 """
 from __future__ import annotations
@@ -177,6 +182,7 @@ class Workspace:
                     if step == through:
                         break
                 if through == 'docs':
+                    self._do_pipeline(conn)
                     self._update(status='ready', error=None)
             except Exception as exc:
                 self._update(status='failed', error=f'{type(exc).__name__}: {exc}'[:800])
@@ -193,7 +199,7 @@ class Workspace:
             conn = self.connect()
             try:
                 self._apply_decisions()
-                for step in ('approve', 'build', 'raw', 'verify', 'docs'):
+                for step in ('approve', 'build', 'raw', 'verify', 'docs', 'pipeline'):
                     getattr(self, '_do_' + step)(conn)
                 self._update(status='ready', error=None)
             except Exception as exc:
@@ -368,6 +374,20 @@ class Workspace:
         result = catalog.build_docs(self.semantic_path, self.docs_dir, extra_sections={'Workspace mapping': '\n'.join(lines)})
         self._step('docs', files=result.get('files'), chars=result.get('chars'))
 
+    def _do_pipeline(self, conn=None):
+        """Native workspaces: prepare <slug>/pipeline for the full answer pipeline (clones + an empty evidence index, a few
+        seconds). It annotates and never blocks: a failure is recorded and answers fall back to the hybrid core."""
+        if not self.native:
+            return
+        from . import workspace_stack
+        try:
+            m = workspace_stack.prepare(self, force=True)
+            detail = ({'supported': True, 'methods': m.get('methods'), 'patients': m.get('patients')} if m.get('supported')
+                      else {'supported': False, 'reason': m.get('reason')})
+        except Exception as exc:  # noqa: BLE001
+            detail = {'supported': False, 'error': f'{type(exc).__name__}: {exc}'[:500]}
+        self._step('pipeline', **detail)
+
     # --- review ----------------------------------------------------------------------------------------------------
 
     def _build_native(self):
@@ -476,9 +496,61 @@ class Workspace:
 
     # --- answering -------------------------------------------------------------------------------------------------
 
-    def ask(self, question, *, answer_type=None, send_factory=None):
+    def pipeline_support(self):
+        """-> (supported, reason): whether this workspace can answer through the full product pipeline."""
+        from . import workspace_stack
+        return workspace_stack.support(self)
+
+    def ask(self, question, *, answer_type=None, send_factory=None, pipeline=None, live=True):
+        """pipeline: 'full' (local compiler, governed metrics, analytic engines + hybrid core via together.compose_together),
+        'hybrid' (the hybrid core alone), or None: 'full' when the workspace supports it, else 'hybrid'. An automatic 'full'
+        that fails answers through the hybrid core (out['pipeline_fallback'] says why). live=False keeps the full pipeline
+        on its local rungs with no hosted call (the hybrid core's sender refuses)."""
         if self.state['status'] != 'ready':
             raise RuntimeError(f"Workspace {self.slug} is {self.state['status']}; run it first")
+        if pipeline not in (None, 'full', 'hybrid'):
+            raise ValueError("pipeline must be 'full', 'hybrid' or None")
+        fallback = None
+        if pipeline in (None, 'full'):
+            ok, reason = self.pipeline_support()
+            if not ok and pipeline == 'full':
+                raise ValueError(f'Full pipeline unavailable on {self.slug}: {reason}')
+            if ok:
+                try:
+                    out = self._ask_full(question, answer_type=answer_type, send_factory=send_factory, live=live)
+                except Exception as exc:  # noqa: BLE001 - heal, don't block: the hybrid core still answers
+                    if pipeline == 'full':
+                        raise
+                    fallback = {'from': 'full', 'reason': f'{type(exc).__name__}: {exc}'[:400]}
+                else:
+                    self._record(question, out)
+                    return out
+            else:
+                fallback = {'from': 'full', 'reason': reason}
+        if not live:
+            raise ValueError('The hybrid core needs live models (live=False is only for the full pipeline)')
+        out = self._ask_hybrid(question, answer_type=answer_type, send_factory=send_factory)
+        out['pipeline'] = 'hybrid'
+        if fallback:
+            out['pipeline_fallback'] = fallback
+        self._record(question, out)
+        return out
+
+    def _record(self, question, out):
+        record = {'at': _now(), 'question': question, 'pipeline': out.get('pipeline'), 'decision': out['decision'],
+                  'answer': out['answer'], 'cost_usd': out['cost_usd'], 'interpretation': out['interpretation']}
+        with open(self.dir / 'questions.jsonl', 'a') as f:
+            f.write(json.dumps(record, default=str) + '\n')
+
+    def _ask_full(self, question, *, answer_type=None, send_factory=None, live=True):
+        from . import workspace_stack
+        from ..clinical import together
+        # no send_factory: live stacks meter the hybrid core through together's ledgered sender (same ledger, receipts under
+        # pipeline/provider-receipts); offline stacks refuse every hosted call
+        stack = workspace_stack.stack_for(self, allow_live=live, send_factory=send_factory)
+        return workspace_stack.envelope(together.compose_together(stack, question), answer_type=answer_type)
+
+    def _ask_hybrid(self, question, *, answer_type=None, send_factory=None):
         from ..clinical.semantic_analyst import SemanticWarehouse
         from ..hybrid import live
         wh = SemanticWarehouse(self.semantic_path, timeout_s=120)
@@ -487,10 +559,6 @@ class Workspace:
                               answer_type=answer_type, docs_dir=self.docs_dir)
         finally:
             wh.close()
-        record = {'at': _now(), 'question': question, 'decision': out['decision'], 'answer': out['answer'],
-                  'cost_usd': out['cost_usd'], 'interpretation': out['interpretation']}
-        with open(self.dir / 'questions.jsonl', 'a') as f:
-            f.write(json.dumps(record, default=str) + '\n')
         return out
 
 

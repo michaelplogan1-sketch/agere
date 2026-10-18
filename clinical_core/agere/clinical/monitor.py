@@ -710,10 +710,11 @@ def peer_outliers(claims, min_claims=30, z_flag=3.5, min_scale=0.05, min_effect=
     resid = []
     for org, xs in per.items():
         logs = [math.log(b / e) for b, e, _ in xs]
-        resid += [x - float(np.mean(logs)) for x in logs]
+        mean_log = float(np.mean(logs))  # once per organization (was recomputed per claim: quadratic on large organizations)
+        resid += [x - mean_log for x in logs]
         rows.append({'organization': org, 'peer_type': _peer_type(org), 'claims': len(xs), 'patients': len({p for _, _, p in xs}),
                      'billed': round(sum(b for b, _, _ in xs) / 100, 2), 'expected_billed': round(sum(e for _, e, _ in xs) / 100, 2),
-                     'log_oe': float(np.mean(logs))})
+                     'log_oe': mean_log})
     if len(rows) < 3: return {'rows': rows, 'status': 'insufficient_peers'}
     s2 = float(np.var(resid)) if resid else 0.0
     for r in rows: r['v'] = s2 / r['claims'] if r['claims'] else math.inf

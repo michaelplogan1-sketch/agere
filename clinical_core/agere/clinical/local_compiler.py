@@ -646,7 +646,8 @@ def _stream_vocabulary(profile):
         forms = {s, spaced}
         if spaced.endswith('s'): forms.add(spaced[:-1])
         names[s] = sorted(forms, key=len, reverse=True)
-    names.setdefault('adt', []).extend(['adt notification', 'adt'])
+    if 'adt' in profile['streams']:  # a delivery without an 'adt' stream (e.g. native adt_messages) must not get a phantom one
+        names.setdefault('adt', []).extend(['adt notification', 'adt'])
     for stream, words in STREAM_SYNONYMS.items():
         if stream in profile['streams']: names[stream] = sorted(set(names.get(stream, [])) | set(words), key=len, reverse=True)
     return names
