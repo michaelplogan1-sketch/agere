@@ -179,8 +179,11 @@ def _rows(ctx, c):
                     out[pid].append((d[:10] if d else None, None, code)); found = True
             if ctx.has('encounter_diagnosis'):
                 clause, args = _icd_clause('d.icd10', c['icd10_prefixes'])
-                for pid, d, code in db.execute(f'SELECT d.patient_id, v.event_date, d.icd10 FROM encounter_diagnosis d JOIN visit v ON v.encounter_id = d.encounter_id '
-                                               f'WHERE {clause}', args):
+                # every encounter source (EHR, HL7 ADT DG1, ED claims) when the layer dates its rows; else EHR visits only
+                sql = ('SELECT d.patient_id, coalesce(v.event_date, d.event_date), d.icd10 FROM encounter_diagnosis d LEFT JOIN visit v '
+                       'ON v.encounter_id = d.encounter_id' if ctx.has('encounter_diagnosis', 'event_date') else
+                       'SELECT d.patient_id, v.event_date, d.icd10 FROM encounter_diagnosis d JOIN visit v ON v.encounter_id = d.encounter_id')
+                for pid, d, code in db.execute(f'{sql} WHERE {clause}', args):
                     out[pid].append((d[:10] if d else None, None, code)); found = True
             if ctx.has('payer_claim_diagnosis') and ctx.has('payer_claim', 'final_status'):
                 # Payer claims (warehouse v2.3+): the only diagnosis source for claims-only members. Paid, current versions only.
@@ -240,7 +243,15 @@ def _rows(ctx, c):
         for system in ('cpt', 'hcpcs'):
             codes = c.get(system)
             if not codes: continue
-            if ctx.has('claim_line', system):
+            if ctx.has('procedure_line', system):
+                # Every delivered procedure line (provider billing + payer claims, copies and voids out): the same evidence as
+                # below - the client's own lines as billed, payer lines when paid.
+                any_source = True
+                q = ','.join('?' * len(codes))
+                for pid, d, code, src in db.execute(f"SELECT patient_id, service_date, {system}, source FROM procedure_line WHERE {system} IN ({q}) "
+                                                    f"AND counts_in_metrics = 1 AND (source = 'claim_line' OR claim_status = 'paid')", codes):
+                    out[pid].append((d[:10] if d else None, None, f'{system.upper()} {code}' + (' (payer claim)' if src == 'payer_claim_line' else '')))
+            elif ctx.has('claim_line', system):
                 any_source = True
                 q = ','.join('?' * len(codes))
                 for pid, d, code in db.execute(f'SELECT patient_id, service_date, {system} FROM claim_line WHERE {system} IN ({q})', codes):
@@ -299,6 +310,11 @@ def _claim_lines(ctx, codes):
     payer claim lines (paid, current versions)."""
     out, q = [], ','.join('?' * len(codes))
     if not codes: return out
+    if ctx.has('procedure_line', 'cpt'):
+        for pid, d, code, src in ctx.db.execute(f"SELECT patient_id, service_date, cpt, source FROM procedure_line WHERE cpt IN ({q}) "
+                                                f"AND counts_in_metrics = 1 AND (source = 'claim_line' OR claim_status = 'paid')", list(codes)):
+            out.append((src, pid, d[:10] if d else None, code))
+        return out
     if ctx.has('claim_line', 'cpt'):
         for pid, d, code in ctx.db.execute(f'SELECT patient_id, service_date, cpt FROM claim_line WHERE cpt IN ({q})', list(codes)):
             out.append(('claim_line', pid, d[:10] if d else None, code))

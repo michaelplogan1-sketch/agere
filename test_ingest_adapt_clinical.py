@@ -125,6 +125,20 @@ class EpicTests(unittest.TestCase):
         self.assertEqual(n['encounter_id'], 'epic:EPIC-AR:5550001')
 
 
+class EhrDeathTests(unittest.TestCase):
+    def test_real_death_dates_kept_column_shifted_values_dropped(self):
+        db = sqlite3.connect(':memory:')
+        table(db, 'ehr_epic_patient', [{'pat_id': 'Z1000001', 'death_date': 'APT 2'}, {'pat_id': 'Z1000002', 'death_date': '06033'},
+                                       {'pat_id': 'Z1000003', 'death_date': '2027-01-05'}, {'pat_id': 'Z1000004', 'death_date': '2031-01-01'}],
+              instance='epic/EPIC-AR', drop='2027-01')
+        table(db, 'ehr_ecw_patients', [{'pid': '41', 'hl7id': 'ICE-AK-0-1', 'deceased': '1', 'deceaseddate': '01/07/2027'}],
+              instance='ecw/WHN-PRACTICE-AK-0', drop='2027-01')
+        recs, by, rep = run(db)
+        got = sorted((r['source'], r['date_of_death']) for r in by['death_records'])
+        self.assertEqual(got, [('ecw patients.deceaseddate', '2027-01-07'), ('epic patient.death_date', '2027-01-05')])
+        self.assertEqual(rep['dropped']['ehr_death_value_not_a_date'], 3)  # junk text, a ZIP code, a date after the delivery
+
+
 class AthenaEcwTests(unittest.TestCase):
     def test_athena_problem(self):
         db = sqlite3.connect(':memory:')
@@ -316,6 +330,35 @@ class FhirTests(unittest.TestCase):
         self.assertEqual([d['icd10'] for d in cur['diagnoses']], ['I25.10', 'I10'])
         self.assertEqual(cur['start_time'], '2027-01-11T08:30:00-08:00')
         self.assertEqual(cur['encounter_id'], 'fhir:WHN-PRACTICE-CA-5:6396217061')
+
+    def test_emergency_encounter_diagnoses_disposition_and_patient_death(self):
+        db = sqlite3.connect(':memory:')
+        F = 'WHN-PRACTICE-CA-5'
+        table(db, 'fhir_patient', [{'id': '24026315', '_resource': fhir_res(resourceType='Patient', id='24026315', identifier=[
+            {'type': {'coding': [{'code': 'MR'}]}, 'value': 'ICE-CA-5-4E1E097'}], deceasedDateTime='2027-01-20')}],
+            feed='fhir_bulk', instance=F, file=f'fhir_bulk/{F}/2027-02/Patient.ndjson', drop='2027-02')
+        icd = 'http://hl7.org/fhir/sid/icd-10-cm'
+        table(db, 'fhir_condition', [
+            {'id': 'c1', '_resource': fhir_res(resourceType='Condition', id='c1', subject={'reference': 'Patient/24026315'},
+                                               code={'coding': [{'system': icd, 'code': 'S93401A'}]}, recordedDate='2027-01-12')},
+            {'id': 'c2', '_resource': fhir_res(resourceType='Condition', id='c2', subject={'reference': 'Patient/24026315'},
+                                               category=[{'coding': [{'code': 'encounter-diagnosis'}]}], encounter={'reference': 'Encounter/E1'},
+                                               code={'coding': [{'system': icd, 'code': 'R07.9'}]}, recordedDate='2027-01-12')}],
+              feed='fhir_bulk', instance=F, file=f'fhir_bulk/{F}/2027-01/Condition.ndjson')
+        table(db, 'fhir_encounter', [{'id': 'E1', '_resource': fhir_res(
+            resourceType='Encounter', id='E1', status='finished', **{'class': {'code': 'EMER'}}, subject={'reference': 'Patient/24026315'},
+            period={'start': '2027-01-12T03:00:00-08:00', 'end': '2027-01-12T07:00:00-08:00'},
+            diagnosis=[{'condition': {'reference': 'Condition/c1'}, 'rank': 1}],
+            hospitalization={'dischargeDisposition': {'coding': [{'code': 'home'}]}})}],
+              feed='fhir_bulk', instance=F, file=f'fhir_bulk/{F}/2027-01/Encounter.ndjson')
+        recs, by, rep = run(db)
+        [enc] = by['encounters']
+        self.assertEqual(enc['type'], 'emergency')
+        self.assertEqual([(d['icd10'], d['type']) for d in enc['diagnoses']], [('S93.401A', 'primary'), ('R07.9', 'secondary')])
+        self.assertEqual(enc['disposition'], 'home')
+        [death] = by['death_records']
+        self.assertEqual((death['date_of_death'], death['source'], death['patient_id']),
+                         ('2027-01-20', 'fhir Patient.deceasedDateTime', 'P|' + ac.fhir_key(F, '24026315')))
 
     def test_document_reference_text(self):
         db = sqlite3.connect(':memory:')

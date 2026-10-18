@@ -264,11 +264,162 @@ class Upgrade(Fixture):
             db.close()
 
     def test_layer_docs_describe_the_new_tables(self):
-        self.assertEqual(SL.VERSION, 'semantic-layer/18')
-        for t in ('cancer_screening', 'claim_adjudication', 'pharmacy_claim_event', 'returned_fill'):
+        self.assertEqual(SL.VERSION, 'semantic-layer/19')
+        for t in ('cancer_screening', 'claim_adjudication', 'pharmacy_claim_event', 'returned_fill', 'procedure_line', 'death',
+                  'encounter_diagnosis'):
             self.assertIn(t, SL.SCHEMA_DOC)
             self.assertIn(t, nl2sql.TABLES)
         self.assertIn('claim.first_paid_date', nl2sql.TABLES)
+
+
+
+# ---- ED encounter diagnoses / disposition, unified procedure lines, deaths (semantic-layer/19) ---------------------------
+def adt(rid, visit, event, d, pid='P1', **kw):
+    return rec(rid, pid, 'adt', d, encounter_id=visit, event=event, visit_number=visit, **kw)
+
+
+def adtm(rid, visit, trig, cls, d, dxs, pid='P1', **kw):
+    return rec(rid, pid, 'adt_messages', d, encounter_id=visit, visit_number=visit, trigger_event=trig, patient_class=cls,
+               message_type=f'ADT^{trig}', message_control_id=rid, admit_datetime=d + 'T08:00:00',
+               diagnoses=[{'code': c, 'system': 'I10', 'type': t} for c, t in dxs], **kw)
+
+
+ED_RECORDS = [
+    # V1: ED visit in ADT with DG1 on the registration (working) and the discharge (final); a professional ED claim for the same
+    # day adds M54.50 (R07.9 is already a DG1 code and is not repeated).
+    adt('A1', 'V1', 'emergency_registration', '2029-03-01', patient_class='emergency', diagnosis={'code': 'R07.9', 'system': 'I10', 'type': 'W'}),
+    adtm('M1a', 'V1', 'A04', 'E', '2029-03-01', [('R07.9', 'W')]),
+    adtm('M1b', 'V1', 'A03', 'E', '2029-03-01', [('R07.89', 'F')], discharge_datetime='2029-03-01T12:00:00'),
+    pmc('ED1-1', 'PC-ED1', 1, 'paid', '2029-03-20', 120.0, pid='P1', sd='2029-03-01', place_of_service='23',
+        principal_diagnosis='R07.9', diagnosis_codes=['R07.9', 'M54.50']),
+    # V2: ED registration that became an inpatient admission in the same visit -> disposition admitted.
+    adt('A2', 'V2', 'emergency_registration', '2029-05-01', patient_class='emergency'),
+    adt('A3', 'V2', 'admission', '2029-05-01', patient_class='inpatient', admit_source='emergency_department'),
+    adtm('M2a', 'V2', 'A04', 'E', '2029-05-01', [('I50.9', 'A')]),
+    # Claims-only member M3: professional POS 23 + institutional ED facility claim (rev 0450, patient status home), same day.
+    pmc('ED2-1', 'PC-ED2', 1, 'paid', '2029-06-20', 90.0, pid='M3', sd='2029-06-02', place_of_service='23',
+        principal_diagnosis='S93.401A', diagnosis_codes=['S93.401A']),
+    pmc('ED3-1', 'PC-ED3', 1, 'paid', '2029-06-25', 400.0, pid='M3', sd='2029-06-02', type_of_bill='0131', discharge_status='home',
+        principal_diagnosis='S93.401A', diagnosis_codes=['S93.401A', 'W19.XXXA']) | {'claim_type': 'institutional'},
+    line('EDL3', 'PC-ED3', None, '2029-06-02', pid='M3') | {'revenue_code': '0450', 'procedure_code_system': None},
+    # Procedures: our own billing line 99213 + the payer copy of it (same patient/date/code), and PT billed by another provider.
+    rec('CL1', 'P1', 'medical_claim_lines', '2029-07-01', claim_id='C9', line_number=1, service_date='2029-07-01',
+        service_code_system='CPT', service_code='99213', units=1),
+    pmc('PC9-1', 'WHN-CLM-C9', 1, 'paid', '2029-07-20', 80.0, pid='P1', sd='2029-07-01'),
+    line('PL1', 'WHN-CLM-C9', '99213', '2029-07-01', pid='P1'),
+    pmc('PT-1', 'PC-PT', 1, 'paid', '2029-08-20', 60.0, pid='M3', sd='2029-08-01'),
+    line('PL2', 'PC-PT', '97110', '2029-08-01', pid='M3'), line('PL3', 'PC-PT', '97161', '2029-08-01', pid='M3') | {'line_number': 2},
+    pmc('PT-2', 'PC-PTV', 1, 'voided', '2029-08-21', 0.0, pid='M4', sd='2029-08-02', freq='8'),
+    line('PL4', 'PC-PTV', '97110', '2029-08-02', pid='M4'),
+    # Deaths: CCLF8 and an EHR column disagree (CCLF8 wins, both kept); an EHR-only death; a death-terminated enrollment span.
+    rec('D1', 'M3', 'death_records', '2029-10-12', date_of_death='2029-09-30', source='CMS CCLF8 beneficiary demographics (bene_death_dt)',
+        source_system='WH-PAYER-MSSP'),
+    rec('D2', 'M3', 'death_records', '2029-10-31', date_of_death='2029-09-29', source='epic patient.death_date', source_system='epic:EPIC-AR'),
+    rec('D3', 'P1', 'death_records', '2029-12-31', date_of_death='2029-12-01', source='athena patient.deceaseddate', source_system='athena:2186'),
+    rec('E1', 'M3', 'enrollment_spans', '2029-01-01', termination_reason='death', coverage_end='2029-09-30'),
+]
+
+
+def build_ed_fixture(path):
+    out = sqlite3.connect(path)
+    out.executescript(SL.DDL)
+    out.executemany('INSERT INTO record VALUES (?,?,?,?,?,?,?,?)',
+                    [(r['record_id'], r['patient_id'], r['source_table'], r['event_date'], r['event_date'], r['available_date'], None,
+                      json.dumps(r)) for r in ED_RECORDS])
+    concept = {'emergency_registration': 'emergency_visit', 'admission': 'inpatient_admission'}
+    out.executemany('INSERT INTO encounter(record_id, patient_id, source_table, encounter_id, type, type_concept, event_date) VALUES (?,?,?,?,?,?,?)',
+                    [(r['record_id'], r['patient_id'], 'adt', r['encounter_id'], r['event'], concept[r['event']], r['event_date'])
+                     for r in ED_RECORDS if r['source_table'] == 'adt'])
+    out.executescript(SL.INDEXES)
+    SL._standards(out, {})
+    with mock.patch.object(SL, '_normalize', lambda out: None):
+        SL._derived(out)
+    SL._deaths(out)
+    SL._settle_claims(out)
+    SL._claim_codes(out)
+    out.execute("INSERT INTO claim(claim_id, patient_id, final_status) VALUES ('C9', 'P1', 'paid')")
+    out.executescript(PF.DDL)
+    PF._payer_claims(out)
+    CD.build_claims(out)
+    CD.adt_visits(out)
+    summary = CD.utilization(out)
+    PE.build(out)
+    out.commit(); out.close()
+    return summary
+
+
+class EdProceduresDeaths(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.tmp = tempfile.TemporaryDirectory()
+        cls.path = Path(cls.tmp.name) / 'semantic.sqlite3'
+        cls.summary = build_ed_fixture(cls.path)
+        cls.db = sqlite3.connect(cls.path)
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.db.close(); cls.tmp.cleanup()
+
+    def rows(self, sql, *args):
+        return self.db.execute(sql, args).fetchall()
+
+    def test_adt_ed_visit_carries_dg1_and_matched_claim_diagnoses(self):
+        got = self.rows("SELECT icd10, type, source FROM encounter_diagnosis WHERE encounter_id = 'V1' ORDER BY source, icd10, type")
+        self.assertEqual(got, [('R07.89', 'final', 'hl7_adt'), ('R07.9', 'working', 'hl7_adt'), ('M54.50', 'secondary', 'payer_claim')])
+        self.assertEqual(self.rows("SELECT DISTINCT event_date FROM encounter_diagnosis WHERE encounter_id = 'V1'"), [('2029-03-01',)])
+
+    def test_every_ed_encounter_has_diagnoses(self):
+        n = self.rows("SELECT count(DISTINCT e.encounter_id) FROM encounter e WHERE e.type_concept = 'emergency_visit'")[0][0]
+        with_dx = self.rows("SELECT count(DISTINCT e.encounter_id) FROM encounter e JOIN encounter_diagnosis d USING (encounter_id) "
+                            "WHERE e.type_concept = 'emergency_visit'")[0][0]
+        self.assertEqual((n, with_dx), (3, 3))  # V1, V2 and the claims-only visit of M3
+
+    def test_claims_only_ed_visit_gets_the_claim_diagnoses_and_status(self):
+        [(enc, disp)] = self.rows("SELECT encounter_id, disposition FROM encounter WHERE source_table = 'payer_medical_claims'")
+        got = self.rows('SELECT icd10, type, source FROM encounter_diagnosis WHERE encounter_id = ? ORDER BY rank', enc)
+        self.assertEqual(got, [('S93.401A', 'principal', 'payer_claim'), ('W19.XXXA', 'secondary', 'payer_claim')])
+        self.assertEqual(disp, 'home')  # the institutional ED claim's patient status
+
+    def test_ed_visit_admitted_in_the_same_visit(self):
+        self.assertEqual(self.rows("SELECT DISTINCT disposition FROM encounter WHERE encounter_id = 'V2' AND type_concept = 'emergency_visit'"),
+                         [('admitted',)])
+        self.assertEqual(self.rows("SELECT DISTINCT disposition FROM encounter WHERE encounter_id = 'V1' AND type_concept = 'emergency_visit'"),
+                         [(None,)])  # nothing delivered: never assumed home
+
+    def test_procedure_line_unifies_provider_and_payer_lines(self):
+        got = self.rows("SELECT record_id, source, code, counts_in_metrics, duplicate_of_record_id FROM procedure_line "
+                        "WHERE code IS NOT NULL ORDER BY record_id")
+        self.assertEqual(got, [('CL1', 'claim_line', '99213', 1, None), ('PL1', 'payer_claim_line', '99213', 0, 'CL1'),
+                               ('PL2', 'payer_claim_line', '97110', 1, None), ('PL3', 'payer_claim_line', '97161', 1, None),
+                               ('PL4', 'payer_claim_line', '97110', 0, None)])
+        pt = self.rows("SELECT DISTINCT patient_id FROM procedure_line WHERE code BETWEEN '97000' AND '97999' AND counts_in_metrics = 1")
+        self.assertEqual(pt, [('M3',)])
+        self.assertEqual(self.rows("SELECT count(*) FROM procedure_line WHERE code = '99213' AND counts_in_metrics = 1"), [(1,)])
+
+    def test_measures_service_criterion_reads_procedure_line(self):
+        from clinical_core.agere.clinical import measures as ME
+        ctx = ME.Context(self.db) if hasattr(ME, 'Context') else None
+        if ctx is None: self.skipTest('measures context not constructible here')
+        rows, missing = ME._rows(ctx, {'type': 'service', 'label': 'PT', 'cpt': ['97110']})
+        self.assertEqual(sorted(rows), ['M3'])
+        self.assertEqual(missing, [])
+
+    def test_death_prefers_cclf8_and_keeps_every_source(self):
+        got = self.rows('SELECT patient_id, death_date, death_source, cclf8_death_date, epic_death_date, athena_death_date, sources, '
+                        'sources_disagree, enrollment_death_term_date FROM death ORDER BY patient_id')
+        self.assertEqual(got, [('M3', '2029-09-30', 'cclf8', '2029-09-30', '2029-09-29', None, 'cclf8,epic', 1, '2029-09-30'),
+                               ('P1', '2029-12-01', 'athena', None, None, '2029-12-01', 'athena', 0, None)])
+        alive = self.rows("SELECT count(*) FROM (SELECT 'M3' AS patient_id UNION SELECT 'P1') p WHERE NOT EXISTS "
+                          "(SELECT 1 FROM death d WHERE d.patient_id = p.patient_id AND d.death_date <= '2029-10-31')")
+        self.assertEqual(alive, [(1,)])
+
+    def test_docs_point_questions_at_the_new_tables(self):
+        from clinical_core.agere.hybrid import catalog
+        conv = catalog.conventions({'procedure_line', 'encounter_diagnosis', 'death'})
+        self.assertIn('procedure_line', conv)
+        self.assertIn("type_concept = 'emergency_visit'", conv)
+        self.assertIn('Alive at X', conv)
+        self.assertIn('procedure_line', SL.SCHEMA_DOC['claim_line'])
 
 
 if __name__ == '__main__':

@@ -254,6 +254,13 @@ CONVENTIONS = """## Canonical conventions (apply unless the question defines oth
   qualify for (groups overlap; no exclusive buckets) and return only the groups the question asks for.
 - Conditions (condition, payer_claim_diagnosis, encounter_diagnosis, problem_list_entry): default = any documentation
   (paid or denied claim, problem list, encounter diagnosis, ADT diagnosis); name another rule if the question asks.
+- Procedures: "had procedure / CPT / HCPCS X" reads procedure_line (the client's own billing lines, source claim_line, plus
+  payer claim lines, source payer_claim_line) WHERE code IN (...) AND counts_in_metrics = 1; claim_line alone misses
+  services other providers billed (physical therapy 97xxx arrives only on payer claims).
+- ED diagnoses: encounter_diagnosis (source ehr | hl7_adt DG1 | payer_claim for ED visits without an EHR chart) JOIN encounter
+  USING (encounter_id) WHERE type_concept = 'emergency_visit'; ED disposition = encounter.disposition (NULL = not delivered).
+- Deaths: death (one row per patient; death_date prefers CCLF8, each source in its own *_death_date column). "Alive at X" =
+  no death_date on or before X.
 - Labs and vitals: corrected results replace originals; latest value = latest specimen date (measurement_latest; use the
   question's tie-break, else the highest); censored strings keep their comparator (value_censor).
 - Corrections and restated records: record_correction has every received record that a later record supersedes, across

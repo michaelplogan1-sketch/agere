@@ -9,7 +9,12 @@ Streams produced (field names as docs/agere/canonical_streams.json and the seman
     medication_orders, medication_lists, appointments (one record per delivered version), notes, immunizations,
     allergies, adt_messages (one per HL7 ADT message, raw codes) and adt (one canonical hospital event per visit and
     kind, v2.8 vocabulary: emergency_registration (A04, class E), admission (A01 / A06), observation_start (A01/A04 in
-    observation), discharge (A03, destination = decoded PV1-36); A08 updates are not events). Problem-list entries are emitted once, on `conditions` (they also carry problem_code), so
+    observation), discharge (A03, destination = decoded PV1-36); A08 updates are not events), death_records (EHR patient death
+    columns - Epic PATIENT.death_date, athena PATIENT.deceaseddate, eCW patients.deceaseddate, FHIR
+    Patient.deceasedDateTime - only when the value is a real date no later than its delivery; column-shifted junk is
+    dropped as ehr_death_value_not_a_date). Encounter diagnoses: Epic PAT_ENC_DX, athena/eCW encounter dx tables, FHIR
+    Encounter.diagnosis (Condition references resolved through the folder's Conditions) + reasonCode + encounter-diagnosis
+    Conditions that name the encounter; FHIR hospitalization.dischargeDisposition -> disposition. Problem-list entries are emitted once, on `conditions` (they also carry problem_code), so
     the semantic layer's condition table, which reads conditions and problem_lists alike, does not count them twice.
     No procedure table is delivered by any EHR feed (athena CLINICALSERVICE*/Epic hsp_* are empty), so none are emitted.
 
@@ -140,6 +145,20 @@ def _valid_day(d):
 def _day(v):
     s = _iso(v)
     return s[:10] if s else None
+
+
+def _death_day(v):
+    """A death column value as an ISO day: ISO / HL7 TS (8+ digits) / MM/DD/YYYY; None for anything else ('06033', 'APT 2')."""
+    v = _c(v)
+    if not v:
+        return None
+    m = re.fullmatch(r'(\d{1,2})/(\d{1,2})/(\d{4})(?:\s.*)?', v)
+    if m:
+        d = f'{m[3]}-{int(m[1]):02d}-{int(m[2]):02d}'
+        return d if _valid_day(d) else None
+    if re.match(r'^\d{4}-\d{2}-\d{2}', v) or re.fullmatch(r'\d{8}(\d{4,6})?([+-]\d{4})?', v):
+        return _day(v)
+    return None
 
 
 def _minute(v):
@@ -353,6 +372,9 @@ FHIR_ENC_STATUS = {'in-progress': 'in_progress', 'finished': 'completed', 'arriv
                    'cancelled': 'cancelled', 'triaged': 'in_progress', 'onleave': 'in_progress'}
 FHIR_ENC_ORDER = {'planned': 0, 'arrived': 1, 'triaged': 1, 'in-progress': 2, 'onleave': 2, 'finished': 3, 'cancelled': 3,
                   'entered-in-error': 4}
+FHIR_DISPOSITION = {'home': 'home', 'alt-home': 'home', 'other-hcf': 'other_facility', 'hosp': 'short_term_hospital',
+                    'long': 'ltch', 'aadvice': 'left_ama', 'exp': 'expired', 'psy': 'psychiatric', 'rehab': 'irf', 'snf': 'snf',
+                    'oth': 'other'}
 HL7_DISPOSITION = {'01': 'home', '02': 'short_term_hospital', '03': 'snf', '04': 'icf', '05': 'other_facility',
                    '06': 'home_health', '07': 'left_ama', '09': 'admitted_inpatient', '20': 'expired', '21': 'law_enforcement',
                    '43': 'federal_hospital', '50': 'hospice_home', '51': 'hospice_facility', '61': 'swing_bed', '62': 'irf',
@@ -680,6 +702,8 @@ class _Run:
         yield from self._epic_notes()
         yield from self._epic_allergies()
         yield from self._epic_immunizations()
+        yield from self._ehr_deaths('epic', 'ehr_epic_patient', 'pat_id', 'death_date', lambda r, inst, k: self._epic_base(
+            'death_records', r, 'ehr_epic_patient', inst, k)[0] if re.fullmatch(r'Z\d+', k) else None)
 
     def _epic_pat(self, inst, pat):
         """(mrn, practice org, person keys) for an Epic patient; practice MRNs preferred over hospital MRNs."""
@@ -1099,6 +1123,8 @@ class _Run:
         yield from self._athena_vitals()
         yield from self._athena_meds()
         yield from self._athena_documents()
+        yield from self._ehr_deaths('athena', 'ehr_athena_patient', 'patientid', 'deceaseddate', lambda r, ctx, k: self._athena_base(
+            'death_records', r, 'ehr_athena_patient', ctx, pid=k)[0] if k.isdigit() else None)
 
     def _athena_person(self, ctx, pid=None, chart=None):
         mrn = self.A['pats'].get((ctx, pid)) if pid else None
@@ -1407,6 +1433,37 @@ class _Run:
         yield from self._ecw_vitals()
         yield from self._ecw_meds()
         yield from self._ecw_immunizations()
+        yield from self._ehr_deaths('ecw', 'ehr_ecw_patients', 'pid', 'deceaseddate', lambda r, practice, k: self._ecw_base(
+            'death_records', r, 'ehr_ecw_patients', practice, k)[0] if k.isdigit() else None)
+
+    def _ehr_deaths(self, vendor, table, key_col, date_col, make):
+        """death_records from an EHR patient table's death column: the latest delivered row per patient, kept only when the
+        value is a real calendar date (ISO, HL7 TS or MM/DD/YYYY) on or before the row's delivery date; anything else
+        (column-shifted addresses, ZIP codes) is dropped as ehr_death_value_not_a_date."""
+        if not self.has(table):
+            return
+        best = {}
+        for r in self.rows(table, count=False):
+            raw, key = _c(r.get(date_col)), _c(r.get(key_col))
+            if not raw or not key:
+                continue
+            d = _death_day(raw)
+            if not d or not ('1900-01-01' <= d <= (_avail(r) or '9999-12-31')):
+                self.drop('ehr_death_value_not_a_date', 'death_records')
+                continue
+            k = (_inst(r), key)
+            if k not in best or _order(r) >= _order(best[k][0]):
+                best[k] = (r, d)
+        cands = {}
+        for (inst, key), (r, d) in best.items():
+            rec = make(r, inst, key)
+            if rec is None:
+                self.drop('malformed_row', 'death_records')
+                continue
+            rec.update({'event_date': d, 'event_date_precision': 'day', 'date_of_death': d, 'place_of_death': None,
+                        'underlying_cause_icd10': None, 'source': f'{vendor} {table.split("_", 2)[-1]}.{date_col}'})
+            cands[(vendor, inst, key)] = [(_order(r), rec, False)]
+        yield from self.emit(self.versions('death_records', cands, chain=False))
 
     def _ecw_base(self, stream, r, table, practice, pid, enc=None, **kw):
         mrn = self.W['pats'].get((practice, pid))
@@ -1671,6 +1728,21 @@ class _Run:
             if mrn and (k not in pats or o >= pats[k][0]):
                 pats[k] = (o, mrn)
         self.F = {k: v[1] for k, v in pats.items()}
+        yield from self._fhir_deaths()
+        self.FC, self.FENC = {}, defaultdict(list)  # (folder, condition id) -> icd10; (folder, encounter id) -> [icd10]
+        if 'fhir_condition' in self.tables:
+            for r in self.rows('fhir_condition', count=False):
+                res = _res(r)
+                codes = ((res.get('code') or {}).get('coding') or [])
+                icd = next((_icd(c.get('code')) for c in codes if 'icd-10' in str(c.get('system')) and c.get('code')), None)
+                if not icd or not res.get('id'):
+                    continue
+                folder = _inst(r)
+                self.FC[(folder, res['id'])] = icd
+                cat = ' '.join(c.get('code', '') for cc in res.get('category') or [] for c in (cc or {}).get('coding') or [])
+                enc = _ref(res.get('encounter'))
+                if enc and 'encounter-diagnosis' in cat and icd not in self.FENC[(folder, enc)]:
+                    self.FENC[(folder, enc)].append(icd)
         for rt, fn in (('encounter', self._fhir_encounter), ('condition', self._fhir_condition), ('observation', self._fhir_observation),
                        ('medicationrequest', self._fhir_medreq), ('documentreference', self._fhir_docref), ('appointment', self._fhir_appt),
                        ('allergyintolerance', self._fhir_allergy), ('immunization', self._fhir_imm)):
@@ -1730,15 +1802,60 @@ class _Run:
         if not etype:
             self.unmap('fhir.encounter.class', cls)
         diags = []
+
+        def add(code):
+            code = _icd(code)
+            if code and code not in [d['icd10'] for d in diags]:
+                diags.append({'rank': len(diags) + 1, 'icd10': code, 'type': 'primary' if not diags else 'secondary'})
+        # Encounter.diagnosis (ranked; R4 condition reference, R5 condition.concept) first, then reasonCode, then the
+        # Conditions filed as encounter-diagnosis for this encounter.
+        for dg in sorted((x for x in res.get('diagnosis') or [] if isinstance(x, dict)), key=lambda x: x.get('rank') or 99):
+            cond = dg.get('condition') or {}
+            code = getattr(self, 'FC', {}).get((folder, _ref(cond))) if isinstance(cond, dict) and cond.get('reference') else None
+            if not code and isinstance(cond, dict):
+                code = next((c.get('code') for c in ((cond.get('concept') or {}).get('coding') or []) if 'icd-10' in str(c.get('system'))), None)
+            add(code)
         for rc in res.get('reasonCode') or []:
             for cd in (rc or {}).get('coding') or []:
-                if 'icd-10' in str(cd.get('system')) and cd.get('code') and cd['code'] not in [d['icd10'] for d in diags]:
-                    diags.append({'rank': len(diags) + 1, 'icd10': _icd(cd['code']), 'type': 'primary' if not diags else 'secondary'})
+                if 'icd-10' in str(cd.get('system')) and cd.get('code'):
+                    add(cd['code'])
+        for code in getattr(self, 'FENC', {}).get((folder, res.get('id')), []):
+            add(code)
+        hosp = res.get('hospitalization') or res.get('admission') or {}
+        dcode = next((c.get('code') for c in ((hosp.get('dischargeDisposition') or {}).get('coding') or []) if c.get('code')), None)
         st = res.get('status')
         rec.update({'type': etype or _snake(cls), 'status': FHIR_ENC_STATUS.get(st) or _snake(st), 'start_time': _iso(start),
                     'end_time': _iso((res.get('period') or {}).get('end')),
-                    'place_of_service': '02' if etype == 'virtual' else '11' if etype == 'office' else None, 'diagnoses': diags})
+                    'place_of_service': '02' if etype == 'virtual' else '11' if etype == 'office' else None, 'diagnoses': diags,
+                    'disposition': FHIR_DISPOSITION.get(dcode, _snake(dcode)) if dcode else None,
+                    'discharge_disposition_code': dcode})
         return 'encounters', rec, None
+
+    def _fhir_deaths(self):
+        """death_records from Patient.deceasedDateTime (latest version per patient; deceasedBoolean alone has no date)."""
+        best = {}
+        for r in self.rows('fhir_patient', count=False):
+            res = _res(r)
+            raw = _c(res.get('deceasedDateTime'))
+            if not raw or not res.get('id'):
+                continue
+            d = _death_day(raw)
+            if not d or not ('1900-01-01' <= d <= (_avail(r) or '9999-12-31')):
+                self.drop('ehr_death_value_not_a_date', 'death_records')
+                continue
+            k = (_inst(r), res['id'])
+            o = (str((res.get('meta') or {}).get('lastUpdated') or ''),) + _order(r)
+            if k not in best or o >= best[k][0]:
+                best[k] = (o, r, d)
+        cands = {}
+        for (folder, fid), (o, r, d) in best.items():
+            mrn = self.F.get((folder, fid))
+            rec = self._fhir_base('death_records', r, {}, folder, fid, mrn, [fhir_key(folder, fid), mrn_key(mrn, folder) if mrn else None],
+                                  'fhir_patient', event=d)
+            rec.update({'date_of_death': d, 'place_of_death': None, 'underlying_cause_icd10': None,
+                        'source': 'fhir Patient.deceasedDateTime'})
+            cands[('fhir', folder, fid)] = [(o, rec, False)]
+        yield from self.emit(self.versions('death_records', cands, chain=False))
 
     def _fhir_condition(self, r, res, folder, pid, mrn, keys, presence=True):
         codes = ((res.get('code') or {}).get('coding') or [])

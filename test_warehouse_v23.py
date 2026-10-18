@@ -491,7 +491,7 @@ class ClientDataRules(unittest.TestCase):
         db = sqlite3.connect(self.path / 'semantic.sqlite3')
         try: meta = dict(db.execute('SELECT key, value FROM meta'))
         finally: db.close()
-        self.assertEqual(meta['version'], 'semantic-layer/18')
+        self.assertEqual(meta['version'], 'semantic-layer/19')
         feeds = json.loads(meta['population_feeds'])
         self.assertEqual(feeds['client_claims']['pharmacy']['b2_reversals_paired'], 1)
         described = semantic_layer.describe(self.path)['tables']

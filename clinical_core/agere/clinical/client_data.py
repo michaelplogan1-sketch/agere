@@ -725,10 +725,13 @@ def utilization(out):
     _add(out, 'stay', 'stay_source TEXT')
     out.execute("UPDATE stay SET stay_source = 'encounters' WHERE stay_source IS NULL")
     ed = defaultdict(list); adm = defaultdict(list)
-    for pid, d, rid, org in out.execute("SELECT patient_id, substr(event_date,1,10), min(record_id), min(organization_id) FROM encounter "
-                                        "WHERE type_concept = 'emergency_visit' AND event_date IS NOT NULL GROUP BY 1, 2"):
+    for pid, d, rid, org, encs in out.execute(
+            "SELECT patient_id, substr(event_date,1,10), min(record_id), min(organization_id), "
+            "group_concat(DISTINCT CASE WHEN source_table <> 'encounters' THEN encounter_id END) FROM encounter "
+            "WHERE type_concept = 'emergency_visit' AND event_date IS NOT NULL GROUP BY 1, 2"):
         ed[pid].append({'kind': 'ed_visit', 'event_date': d, 'end_date': None, 'sources': {'ehr'}, 'records': 1, 'record_id': rid,
-                        'organization_id': org, 'in_ehr': 1, 'discharge_known': None, 'source': 'ehr'})
+                        'organization_id': org, 'in_ehr': 1, 'discharge_known': None, 'source': 'ehr',
+                        'encounters': set((encs or '').split(',')) - {''}, 'claims': []})
     for rowid, pid, a, dis, typ, org, known, rd, gap in out.execute(
             'SELECT rowid, patient_id, admit_date, discharge_date, type, organization_id, discharge_known, readmitted_30d, days_to_readmission FROM stay'):
         kind = 'observation' if str(typ or '').lower() == 'observation' else 'inpatient'
@@ -744,6 +747,7 @@ def utilization(out):
         if classes & {'I', 'O'}:
             cands.append(('adm', pid, {'kind': 'inpatient' if 'I' in classes else 'observation', 'event_date': a, 'end_date': dis if known else None,
                                        'source': 'adt', 'record_id': rid, 'organization_id': org, 'discharge_known': known, 'visit': visit}))
+    first_ed_claim, same_visit_claims = {}, defaultdict(list)
     if _has(out, 'payer_claim'):
         ed_rev = defaultdict(set)
         for cid, rev in out.execute('SELECT payer_claim_id, revenue_code FROM payer_claim_line WHERE revenue_code IS NOT NULL'):
@@ -759,6 +763,9 @@ def utilization(out):
             if (ctype == 'professional' and str(pos) == '23') or any(ED_REVENUE.match(r) for r in revs):
                 if (pid, 'ed', svc[:10]) not in seen:
                     seen.add((pid, 'ed', svc[:10])); cands.append(('ed', pid, {**base, 'kind': 'ed_visit', 'event_date': svc[:10], 'end_date': None}))
+                    first_ed_claim[(pid, svc[:10])] = cid
+                else:  # a second claim of the same ED visit (professional + facility): its diagnoses / status belong to it too
+                    same_visit_claims[first_ed_claim[(pid, svc[:10])]].append(cid)
             if str(tob or '').startswith('011'):
                 a = (adm_d or svc)[:10]; dis = (dis_d or svc_to or '')[:10] or None
                 if (pid, 'adm', a) not in seen:
@@ -775,9 +782,13 @@ def utilization(out):
         events = ed[pid] if kind == 'ed' else adm[pid]
         i = _attach(events, c, (lambda a, b: True))
         if i is None:
-            events.append({**c, 'sources': {c['source']}, 'records': 1, 'in_ehr': 0}); stats[f'{kind}_from_{c["source"]}'] += 1
+            events.append({**c, 'sources': {c['source']}, 'records': 1, 'in_ehr': 0, 'encounters': {c.get('visit')} - {None},
+                           'claims': [c['visit']] if c['source'] == 'claim' else []})
+            stats[f'{kind}_from_{c["source"]}'] += 1
         else:
             e = events[i]; e['sources'].add(c['source']); e['records'] += 1
+            if c['source'] == 'claim': e.setdefault('claims', []).append(c['visit'])
+            elif c.get('visit') and e.get('source') != 'ehr': e.setdefault('encounters', set()).add(c['visit'])
             if not e['end_date'] and c.get('end_date'): e['end_date'] = c['end_date']; e['discharge_known'] = c['discharge_known']
             stats[f'{kind}_{c["source"]}_matched'] += 1
     rows, enc_rows, stay_rows, stay_updates = [], [], [], []
@@ -809,11 +820,73 @@ def utilization(out):
                                   _days(e['event_date'], e['end_date']) if known else None, 'adt' if e['source'] == 'adt' else 'payer_claim'))
     out.executemany('INSERT INTO utilization_event VALUES (' + ','.join('?' * 12) + ')', rows)
     out.executemany('INSERT INTO encounter VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)', enc_rows)
+    stats.update(_ed_encounter_details(out, ed, same_visit_claims))
     out.executemany('UPDATE stay SET readmitted_30d = ?, days_to_readmission = ? WHERE rowid = ?', stay_updates)
     out.executemany('INSERT INTO stay(patient_id, admit_date, discharge_date, type, organization_id, readmitted_30d, days_to_readmission, '
                     'discharge_known, discharge_date_source, discharge_time_utc, los_days, stay_source) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)', stay_rows)
     stats.update(events=len(rows), encounters_added=len(enc_rows), stays_added=len(stay_rows))
     return dict(stats)
+
+
+def _ed_encounter_details(out, ed, same_visit_claims=None):
+    """Diagnoses and disposition for ED encounters that have no EHR chart (ADT and claim-derived encounter rows).
+
+    encounter_diagnosis (source payer_claim): the diagnoses of every payer ED claim the visit matched (utilization above) go on
+    each of the visit's ADT / claim encounter ids; codes the encounter already carries (HL7 DG1) are not repeated. EHR
+    encounters keep their charted diagnoses only. encounter.disposition (ED rows still NULL): admitted / observation when
+    the ADT visit became an inpatient admission (admission / observation_start event of the same visit, or final patient
+    class I / O), else the ADT discharge disposition, else a matched claim's patient discharge status."""
+    if not _has(out, 'encounter_diagnosis'): return {}
+    have = defaultdict(set)
+    for enc, code in out.execute("SELECT encounter_id, icd10 FROM encounter_diagnosis WHERE encounter_id IN "
+                                 "(SELECT encounter_id FROM encounter WHERE type_concept = 'emergency_visit' AND source_table <> 'encounters')"):
+        have[enc].add(code)
+    dx, status, claim_rid = defaultdict(list), {}, {}
+    if _has(out, 'payer_claim_diagnosis'):
+        for cid, rank, code in out.execute('SELECT payer_claim_id, rank, icd10 FROM payer_claim_diagnosis WHERE coalesce(counts_in_metrics, 1) = 1 '
+                                           'AND icd10 IS NOT NULL ORDER BY payer_claim_id, rank'):
+            dx[cid].append((rank, code))
+    if _has(out, 'payer_claim'):
+        claim_rid = {}
+        for cid, rid, st in out.execute('SELECT payer_claim_id, record_id, discharge_status FROM payer_claim'):
+            claim_rid[cid] = rid
+            if st not in (None, ''): status[cid] = st
+    adt_disp = {}
+    for visit, ev in out.execute("SELECT encounter_id, json_extract(r.payload, '$.event') FROM encounter e JOIN record r ON r.record_id = e.record_id "
+                                 "WHERE e.source_table = 'adt' AND json_extract(r.payload, '$.event') IN ('admission', 'observation_start')"):
+        if visit and adt_disp.get(visit) != 'admitted': adt_disp[visit] = 'admitted' if ev == 'admission' else 'observation'
+    if _has(out, 'adt_visit'):
+        cols = {r[1] for r in out.execute('PRAGMA table_info(adt_visit)')}
+        disp = 'discharge_disposition' if 'discharge_disposition' in cols else 'NULL'
+        for visit, final, dd in out.execute(f'SELECT visit_number, final_patient_class, {disp} FROM adt_visit'):
+            cls = str(final or '').upper()[:1]
+            if visit in adt_disp: continue
+            if cls == 'I': adt_disp[visit] = 'admitted'
+            elif cls == 'O': adt_disp[visit] = 'observation'
+            elif dd: adt_disp[visit] = dd
+    for visit, d in out.execute("SELECT encounter_id, max(disposition) FROM encounter WHERE source_table = 'adt' AND disposition IS NOT NULL GROUP BY 1"):
+        adt_disp.setdefault(visit, d)
+    rows, disp_rows = [], []
+    for pid, events in ed.items():
+        for e in events:
+            encs = e.get('encounters') or set()
+            claims = sorted({x for c in e.get('claims') or [] for x in [c, *(same_visit_claims or {}).get(c, [])]})
+            merged, seen = [], set()
+            for cid in claims:
+                for rank, code in dx.get(cid, []):
+                    if code not in seen: seen.add(code); merged.append((cid, code))
+            for enc in encs:
+                for n, (cid, code) in enumerate(merged, 1):
+                    if code in have[enc]: continue
+                    have[enc].add(code)
+                    rows.append((enc, pid, n, code, 'principal' if n == 1 else 'secondary', claim_rid.get(cid) or cid, 'payer_claim', e['event_date']))
+                d = adt_disp.get(enc) or next((status[c] for c in claims if c in status), None)
+                if d: disp_rows.append((d, enc))
+    out.executemany('INSERT INTO encounter_diagnosis(encounter_id, patient_id, rank, icd10, type, record_id, source, event_date) '
+                    'VALUES (?,?,?,?,?,?,?,?)', rows)
+    out.executemany("UPDATE encounter SET disposition = ? WHERE encounter_id = ? AND type_concept = 'emergency_visit' "
+                    "AND source_table <> 'encounters' AND disposition IS NULL", disp_rows)
+    return {'ed_claim_diagnoses_added': len(rows), 'ed_dispositions_set': len(disp_rows)}
 
 
 # ---- note-only therapy decisions ------------------------------------------------------------------------------------

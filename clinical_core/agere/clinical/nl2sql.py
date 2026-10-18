@@ -46,7 +46,10 @@ claim_adjudication(claim_id, claim_source, record_id, patient_id, sequence, stat
 pharmacy_claim_event(claim_id, source, record_id, patient_id, status ['paid','rejected','reversed','recouped'], reject_code, reject_reason, event_date, drug_name, ndc, days_supply, payer_paid_delta_cents, return_to_stock, payer)  -- pharmacy claim transactions from our pharmacy AND the payer feed; net pharmacy payer spend = sum(payer_paid_delta_cents); reject_reason REFILL_TOO_SOON = NCPDP 79
 returned_fill(fill_key, source, record_id, patient_id, event_date, drug_name, ndc, reason)  -- prescriptions prepared but never picked up (returned to stock), both pharmacy sources; count distinct source||fill_key
 cancer_screening(record_id, patient_id, test, result_status, event_date, result_date, birads_category, source ['ehr','payer_claim_line'], code)  -- screening results plus screening mammograms billed on payer claim lines
--- immunization / wellness_visit rows with source = 'payer_claim_line' are services known only from a payer claim line (flu vaccine CPT/G0008, AWV G0438/G0439)
+-- immunization / wellness_visit rows with source = 'payer_claim_line' (or 'claim_line', the client's own billing) are services known only from a claim line (flu vaccine CPT/G0008, AWV G0438/G0439)
+procedure_line(record_id, patient_id, source ['claim_line','payer_claim_line'], claim_id, line_number, service_date, code_system, code, cpt, hcpcs, revenue_code, units, place_of_service, claim_status, counts_in_metrics, duplicate_of_record_id)  -- EVERY procedure line (provider billing + payer claims); use for any "had procedure/CPT/HCPCS X" question WHERE counts_in_metrics = 1
+encounter_diagnosis(encounter_id, patient_id, rank, icd10, type, record_id, source ['ehr','hl7_adt','payer_claim'], event_date)  -- ICD-10 dx on encounters of every source; ED dx: JOIN encounter e USING(encounter_id) WHERE e.type_concept = 'emergency_visit'
+death(patient_id, death_date, death_source, cclf8_death_date, payer_death_date, epic_death_date, athena_death_date, ecw_death_date, fhir_death_date, demographic_update_death_date, enrollment_death_term_date, sources, sources_disagree, first_reported_date, record_ids)  -- one row per patient with a reported death; "alive at X" = no death_date <= X
 concept_patient(concept, kind, patient_id, records, first_date, last_date)  -- who has each concept
 link(record_id, stream, field, target_record_id)  -- every *_record_id reference between records
 record(record_id, patient_id, stream, event_date, recorded_date, available_date, organization_id, payload)  -- every received record; other fields via json_extract(payload,'$.field')"""
@@ -886,7 +889,7 @@ VERIFY_RULES = """
   date, a visit's date and a claim's service event are event_date; sparsely filled payload date fields are not the record date.
 - Never invent streams, fields or values, and never substitute a different attribute for a missing one (e.g. sex for income).
   Check the TABLES columns (patient demographics include race, ethnicity, preferred_language) and the streams shown first.
-  If the question needs data that is truly not listed (death, income, risk-adjustment scores, ...), output exactly one
+  If the question needs data that is truly not listed (income, risk-adjustment scores, ...), output exactly one
   line: MISSING: <table.field or stream.field that is missing> - and no SQL.
 - Name output columns plainly: the group column after the field it groups by (organization_id, payer, practice, month,
   drg_title) and the measure after what it measures (ed_visits, claims, patients, net_paid_usd); never generic names like

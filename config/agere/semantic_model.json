@@ -3,7 +3,7 @@
  "domain": "healthcare",
  "derived_from": {
   "module": "clinical_core/agere/clinical/semantic_layer.py",
-  "semantic_layer_version": "semantic-layer/18",
+  "semantic_layer_version": "semantic-layer/19",
   "versioned_streams": {
    "patient_billing_accounts": "account_id",
    "medical_claims": "claim_id",
@@ -1413,7 +1413,7 @@
   },
   "claim_line": {
    "table": "claim_line",
-   "meaning": "One row per medical claim line: cpt or hcpcs (CPT/HCPCS service code), local_charge_code (the local charge code, kept across releases), revenue_code (UB-04 lines), units, charge_cents.",
+   "meaning": "One row per line of the client's OWN medical claims (provider-side 837 billing): cpt or hcpcs (CPT/HCPCS service code), local_charge_code (the local charge code, kept across releases), revenue_code (UB-04 lines), units, charge_cents. Services billed by other providers arrive only on payer_claim_line: for \"did the patient have procedure X\" use procedure_line (both sides, payer copies of our lines counted once).",
    "grain": "one row per received claim line",
    "keys": [
     "record_id"
@@ -1953,7 +1953,7 @@
   },
   "encounter": {
    "table": "encounter",
-   "meaning": "Encounter records plus ADT notifications (source_table adt, type = ADT event). type_concept = library encounter concept. ED visits that only ADT messages or payer claims carry (claims-only members) are added once each, deduplicated against the EHR (source_table adt_messages | payer_medical_claims, type_concept emergency_visit); see utilization_event.",
+   "meaning": "Encounter records plus ADT notifications (source_table adt, type = ADT event). type_concept = library encounter concept. ED visits that only ADT messages or payer claims carry (claims-only members) are added once each, deduplicated against the EHR (source_table adt_messages | payer_medical_claims, type_concept emergency_visit); see utilization_event. disposition on ED rows (type_concept emergency_visit) from ADT / claims when delivered: admitted (the visit became an inpatient admission, A06 / A01 after ED registration or final patient class I), observation, else the decoded discharge disposition (HL7 PV1-36, FHIR dischargeDisposition, institutional ED claim patient status: home, snf, ...); NULL = not delivered (never assume home). Diagnoses: encounter_diagnosis.",
    "derivation": "Encounter + ADT rows (visit is the onboarding target).",
    "columns": {
     "record_id": "text",
@@ -1974,7 +1974,7 @@
   },
   "encounter_diagnosis": {
    "table": "encounter_diagnosis",
-   "meaning": "ICD-10-CM diagnoses coded on encounters: one row per (encounter_id, rank, icd10, type); type principal/primary/secondary. Administrative contacts are uncoded by design.",
+   "meaning": "ICD-10-CM diagnoses coded on encounters, every encounter source: one row per (encounter_id, rank, icd10, type, source). source = ehr (EHR encounter dx: Epic PAT_ENC_DX, athena/eCW encounter dx, FHIR Encounter.diagnosis/reasonCode; type principal/primary/secondary) | hl7_adt (HL7 ADT DG1 segments of every message of the hospital visit, encounter_id = visit number; type final | admitting | working, rank = DG1 order) | payer_claim (diagnoses of the payer ED claims of an ED visit that has no EHR chart: claim-only ED encounters (encounter_id = payer_claim_id) and ADT ED visits the claim matches within a day; type principal = the claim principal, else secondary; codes the ADT DG1 already carries are not repeated). event_date = the encounter date. ED diagnoses: JOIN encounter e USING (encounter_id) WHERE e.type_concept = 'emergency_visit' (visit holds EHR encounters only). Administrative contacts are uncoded by design.",
    "derivation": "Encounter-coded ICD-10 diagnoses (not yet an onboarding target).",
    "columns": {
     "encounter_id": "text",
@@ -1982,13 +1982,15 @@
     "rank": "integer",
     "icd10": "text",
     "type": "text",
-    "record_id": "text"
+    "record_id": "text",
+    "source": "text",
+    "event_date": "text"
    },
    "onboarding_target": false
   },
   "immunization": {
    "table": "immunization",
-   "meaning": "One row per immunization record: vaccine, product, cvx, mvx, status (administration_status), season (influenza season as recorded, else July-June of the date, e.g. 2029-2030), source = ehr | payer_claim_line (influenza vaccine CPT / G0008 claim lines not within 1 day of an EHR flu shot; code = the billed code).",
+   "meaning": "One row per immunization record: vaccine, product, cvx, mvx, status (administration_status), season (influenza season as recorded, else July-June of the date, e.g. 2029-2030), source = ehr | payer_claim_line | claim_line (influenza vaccine CPT / G0008 payer or own-billing claim lines not within 1 day of an EHR flu shot; code = the billed code).",
    "derivation": "Immunization rows (not yet an onboarding target).",
    "columns": {
     "record_id": "text",

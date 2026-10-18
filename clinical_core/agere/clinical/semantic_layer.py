@@ -13,7 +13,9 @@ import json, re, sqlite3, time
 
 from . import aggregate, client_data, concepts, population_events, population_feeds, source_profile
 
-VERSION = 'semantic-layer/18'  # 18: lab results dated specimen > collected > event > recorded
+VERSION = 'semantic-layer/19'  # 19: ED encounter diagnoses (HL7 DG1 + ED claim dx; encounter_diagnosis.source/event_date), ED
+# disposition, procedure_line (provider + payer claim lines), death
+# (previous) 'semantic-layer/18'  # 18: lab results dated specimen > collected > event > recorded
 # (previous) 'semantic-layer/17'  # 17: population_events (payer claim services, unified claims, pharmacy events)
 GFR_UNNORMALIZED = 'gfr_unnormalized'  # 'glomerular filtration rate' results in a unit that is not per 1.73 m2 (mL/min)
 
@@ -96,7 +98,11 @@ SCHEMA_DOC = {
                    '(PHQ-2 total 0-6), value = total in points; event_time orders same-day administrations.',
     'encounter': 'Encounter records plus ADT notifications (source_table adt, type = ADT event). type_concept = library encounter concept. '
                  'ED visits that only ADT messages or payer claims carry (claims-only members) are added once each, deduplicated against '
-                 'the EHR (source_table adt_messages | payer_medical_claims, type_concept emergency_visit); see utilization_event.',
+                 'the EHR (source_table adt_messages | payer_medical_claims, type_concept emergency_visit); see utilization_event. '
+                 'disposition on ED rows (type_concept emergency_visit) from ADT / claims when delivered: admitted (the visit '
+                 'became an inpatient admission, A06 / A01 after ED registration or final patient class I), observation, else '
+                 'the decoded discharge disposition (HL7 PV1-36, FHIR dischargeDisposition, institutional ED claim patient '
+                 'status: home, snf, ...); NULL = not delivered (never assume home). Diagnoses: encounter_diagnosis.',
     'visit': 'One row per encounter (encounter records repeat once per status version; use visit, not encounter, to count visits). '
              'Latest version wins; versions = number of received versions.',
     'stay': 'Distinct hospital stays (inpatient/observation encounters collapsed by admit day and overlap) with 30-day readmission flag. '
@@ -148,8 +154,8 @@ SCHEMA_DOC = {
     'wellness_visit': 'One row per wellness_visit_services record: visit_type (medicare_annual_wellness, preventive_review, ...), '
                       'hcpcs_code, awv = 1 for a Medicare annual wellness visit (G0438 initial / G0439 subsequent, awv_kind), status '
                       '(count completed), coding_status, event_date, encounter_id. visit.wellness_visit_type / visit.awv mark the '
-                      'encounter. Generic preventive reviews are not AWVs. source = ehr | payer_claim_line: AWVs known only from a '
-                      'payer claim line G0438/G0439 (not within 1 day of an EHR AWV) are rows too, so count AWVs here, not on visit.',
+                      'encounter. Generic preventive reviews are not AWVs. source = ehr | payer_claim_line | claim_line: AWVs known only from a '
+                      'claim line G0438/G0439 (payer claim or the client\'s own billing; not within 1 day of an EHR AWV) are rows too, so count AWVs here, not on visit.',
     'drug_class_vocabulary': 'Every medication.drug_class id with its groups (class_group: antihypertensive, raas_inhibitor, '
                              'diabetes_medication, beers_high_risk; NULL row = ungrouped class). Join on drug_class for group questions.',
     'normalization': 'measurement.loinc/component/lab_category, condition.is_diagnosis/icd10_category/chapter/chronic/'
@@ -174,13 +180,24 @@ SCHEMA_DOC = {
                  'principal_diagnosis/diagnosis_codes (JSON)/billing_npi/rendering_npi/type_of_bill/cpt/hcpcs/local_charge_code, '
                  'patient.birth_date/race/ethnicity/preferred_language/interpreter_needed/marital_status/zip/county (FIPS)/state. '
                  'Source codes win over dictionary mappings; *_source records which was used. meta.standards holds coverage.',
-    'encounter_diagnosis': 'ICD-10-CM diagnoses coded on encounters: one row per (encounter_id, rank, icd10, type); '
-                           'type principal/primary/secondary. Administrative contacts are uncoded by design.',
-    'claim_line': 'One row per medical claim line: cpt or hcpcs (CPT/HCPCS service code), local_charge_code (the local charge '
-                  'code, kept across releases), revenue_code (UB-04 lines), units, charge_cents.',
+    'encounter_diagnosis': 'ICD-10-CM diagnoses coded on encounters, every encounter source: one row per (encounter_id, rank, '
+                           'icd10, type, source). source = ehr (EHR encounter dx: Epic PAT_ENC_DX, athena/eCW encounter dx, FHIR '
+                           'Encounter.diagnosis/reasonCode; type principal/primary/secondary) | hl7_adt (HL7 ADT DG1 segments of '
+                           'every message of the hospital visit, encounter_id = visit number; type final | admitting | working, '
+                           'rank = DG1 order) | payer_claim (diagnoses of the payer ED claims of an ED visit that has no EHR '
+                           'chart: claim-only ED encounters (encounter_id = payer_claim_id) and ADT ED visits the claim matches '
+                           'within a day; type principal = the claim principal, else secondary; codes the ADT DG1 already '
+                           'carries are not repeated). event_date = the encounter date. ED diagnoses: JOIN encounter e USING '
+                           "(encounter_id) WHERE e.type_concept = 'emergency_visit' (visit holds EHR encounters only). "
+                           'Administrative contacts are uncoded by design.',
+    'claim_line': "One row per line of the client's OWN medical claims (provider-side 837 billing): cpt or hcpcs (CPT/HCPCS "
+                  'service code), local_charge_code (the local charge code, kept across releases), revenue_code (UB-04 lines), '
+                  'units, charge_cents. Services billed by other providers arrive only on payer_claim_line: for "did the '
+                  'patient have procedure X" use procedure_line (both sides, payer copies of our lines counted once).',
     'immunization': 'One row per immunization record: vaccine, product, cvx, mvx, status (administration_status), season (influenza '
-                    'season as recorded, else July-June of the date, e.g. 2029-2030), source = ehr | payer_claim_line (influenza '
-                    'vaccine CPT / G0008 claim lines not within 1 day of an EHR flu shot; code = the billed code).',
+                    'season as recorded, else July-June of the date, e.g. 2029-2030), source = ehr | payer_claim_line | claim_line '
+                    '(influenza vaccine CPT / G0008 payer or own-billing claim lines not within 1 day of an EHR flu shot; code = '
+                    'the billed code).',
     'clinician': 'Clinician reference rows: specialty, synthetic npi, NUCC taxonomy_code, organization_id.',
     'organization': 'Organization reference rows: organization_type, npi, taxonomy_code, tin, city/state/postal_code; facility_class '
                     '(hospital, ambulatory_surgery_center, imaging_idtf, urgent_care, dialysis, skilled_nursing, home_health, hospice, '
@@ -196,6 +213,15 @@ SCHEMA_DOC = {
     'patient_population': 'patient.data_segment (deep_chart | claims_plus_ehr | claims_only | duplicate_chart; NULL in panel-only '
                           'releases), patient.line_of_business/payer_id (latest member_month). condition.diagnosis_basis, '
                           'diagnosing_encounter_id, diagnosis_date (onset, else event date) on conditions records.',
+    'death': 'One row per patient with any reported death. death_date = the preferred source (CCLF8 / ALR bene_death_dt '
+             'first, then other payer death records, then EHR: epic, athena, ecw, fhir, then EHR demographic updates); '
+             'death_source names it. Every source keeps its own date column (cclf8_death_date, payer_death_date, '
+             'epic_death_date, athena_death_date, ecw_death_date, fhir_death_date, demographic_update_death_date) so a '
+             'question can pick its sources; sources = comma list, sources_disagree = 1 when the dates differ, '
+             'first_reported_date = earliest arrival, record_ids = JSON list. enrollment_death_term_date = a payer '
+             'enrollment span terminated for death (coverage_end): evidence of death but not a death date, never in '
+             'death_date. EHR death columns count only when they hold a real date (column-shifted junk is dropped at staging). '
+             '"Alive at X" = no death_date on or before X; "died in period" = death_date in the period.',
     **population_feeds.SCHEMA_DOC,
     **population_events.SCHEMA_DOC,
     **client_data.SCHEMA_DOC,
@@ -404,13 +430,30 @@ def _standards(out, people):
                    WHERE source_table = 'labs' AND record_id IN (SELECT record_id FROM lab_codes)""")
     out.execute("UPDATE measurement SET loinc_source = 'source' WHERE loinc IS NOT NULL")
     out.executescript("""
-    CREATE TABLE encounter_diagnosis(encounter_id TEXT, patient_id TEXT, rank INTEGER, icd10 TEXT, type TEXT, record_id TEXT);
-    INSERT INTO encounter_diagnosis SELECT encounter_id, patient_id, rank, icd10, type, min(record_id) FROM (
+    CREATE TABLE encounter_diagnosis(encounter_id TEXT, patient_id TEXT, rank INTEGER, icd10 TEXT, type TEXT, record_id TEXT,
+      source TEXT, event_date TEXT);
+    INSERT INTO encounter_diagnosis SELECT encounter_id, patient_id, rank, icd10, type, min(record_id), 'ehr', min(event_date) FROM (
       SELECT json_extract(r.payload,'$.encounter_id') AS encounter_id, r.patient_id, CAST(json_extract(d.value,'$.rank') AS INTEGER) AS rank,
-             json_extract(d.value,'$.icd10') AS icd10, json_extract(d.value,'$.type') AS type, r.record_id
+             json_extract(d.value,'$.icd10') AS icd10, json_extract(d.value,'$.type') AS type, r.record_id, r.event_date
       FROM record r, json_each(r.payload, '$.diagnoses') d
       WHERE r.stream = 'encounters' AND json_type(r.payload, '$.diagnoses') = 'array')
     GROUP BY encounter_id, patient_id, rank, icd10, type;
+    -- HL7 ADT DG1: every message of the visit (A04/A01/A08/A03), one row per (visit, code, DG1 type); rank = first DG1 position.
+    INSERT INTO encounter_diagnosis SELECT encounter_id, patient_id, min(rank), icd10,
+      CASE upper(coalesce(dtype, '')) WHEN 'F' THEN 'final' WHEN 'A' THEN 'admitting' WHEN 'W' THEN 'working' ELSE 'unspecified' END AS type,
+      min(record_id), 'hl7_adt', min(event_date) FROM (
+      SELECT json_extract(r.payload,'$.encounter_id') AS encounter_id, r.patient_id, CAST(d.key AS INTEGER) + 1 AS rank,
+             upper(json_extract(d.value,'$.code')) AS icd10, json_extract(d.value,'$.type') AS dtype, json_extract(d.value,'$.system') AS sys,
+             r.record_id, r.event_date
+      FROM record r, json_each(r.payload, '$.diagnoses') d
+      WHERE r.stream = 'adt_messages' AND json_type(r.payload, '$.diagnoses') = 'array'
+      UNION ALL
+      SELECT json_extract(r.payload,'$.encounter_id'), r.patient_id, 1, upper(json_extract(r.payload,'$.diagnosis.code')),
+             json_extract(r.payload,'$.diagnosis.type'), json_extract(r.payload,'$.diagnosis.system'), r.record_id, r.event_date
+      FROM record r WHERE r.stream = 'adt' AND json_type(r.payload, '$.diagnosis') = 'object')
+    WHERE encounter_id IS NOT NULL AND icd10 IS NOT NULL AND icd10 <> ''
+      AND upper(coalesce(sys, 'I10')) IN ('I10', 'ICD10', 'ICD-10', 'ICD10CM', 'ICD-10-CM', 'I10C')
+    GROUP BY encounter_id, patient_id, icd10, 5;
     CREATE INDEX encounter_diagnosis_code ON encounter_diagnosis(icd10, patient_id);
     CREATE INDEX encounter_diagnosis_encounter ON encounter_diagnosis(encounter_id);
     CREATE TABLE claim_line(record_id TEXT, claim_id TEXT, patient_id TEXT, line_number INTEGER, service_date TEXT, code_system TEXT,
@@ -435,7 +478,7 @@ def _standards(out, people):
     """)
     _add(out, 'visit', 'principal_icd10 TEXT', 'place_of_service TEXT')
     out.execute("""UPDATE visit SET principal_icd10 = (SELECT d.icd10 FROM encounter_diagnosis d WHERE d.encounter_id = visit.encounter_id
-                     ORDER BY (d.type = 'principal' OR d.type = 'primary') DESC, d.rank LIMIT 1)""")
+                     ORDER BY d.source = 'ehr' DESC, (d.type = 'principal' OR d.type = 'primary') DESC, d.type = 'final' DESC, d.rank LIMIT 1)""")
     out.execute("""CREATE TEMP TABLE pos AS SELECT json_extract(payload,'$.encounter_id') AS encounter_id,
                      max(json_extract(payload,'$.place_of_service')) AS pos FROM record
                      WHERE stream = 'encounters' AND json_extract(payload,'$.place_of_service') IS NOT NULL GROUP BY 1""")
@@ -736,6 +779,49 @@ def _derived(out):
     out.execute("UPDATE measurement SET loinc = NULL, loinc_source = NULL WHERE concept = ? AND loinc_source = 'dictionary'", (GFR_UNNORMALIZED,))
 
 
+DEATH_SOURCES = ('cclf8', 'payer', 'epic', 'athena', 'ecw', 'fhir', 'demographic_update')  # preference order
+
+
+def _death_source(stream, p):
+    if stream == 'demographic_updates': return 'demographic_update'
+    text = str(p.get('source') or '').lower()
+    if 'cclf' in text or 'alr' in text.split() or 'bene_death_dt' in text: return 'cclf8'
+    vendor = str(p.get('source_system') or '').split(':')[0].lower()
+    return vendor if vendor in ('epic', 'athena', 'ecw', 'fhir') else 'payer'
+
+
+def _deaths(out):
+    """death: one row per patient with a reported death; each source's date in its own column, CCLF8 preferred."""
+    cols = ', '.join(f'{s}_death_date TEXT' for s in DEATH_SOURCES)
+    out.execute(f"""CREATE TABLE death(patient_id TEXT PRIMARY KEY, death_date TEXT, death_source TEXT, {cols},
+        enrollment_death_term_date TEXT, sources TEXT, sources_disagree INTEGER, first_reported_date TEXT, record_ids TEXT)""")
+    found = defaultdict(lambda: {'dates': {}, 'rids': [], 'first': None, 'term': None})
+    for rid, pid, stream, payload, av in out.execute(
+            "SELECT record_id, patient_id, stream, payload, available_date FROM record WHERE stream IN ('death_records', 'demographic_updates') "
+            "AND patient_id IS NOT NULL AND json_extract(payload, '$.date_of_death') IS NOT NULL").fetchall():
+        p = json.loads(payload)
+        d = str(p.get('date_of_death') or '')[:10]
+        if not re.fullmatch(r'\d{4}-\d{2}-\d{2}', d): continue
+        f = found[pid]; src = _death_source(stream, p)
+        prev = f['dates'].get(src)
+        if prev is None or (av or '') >= prev[1]: f['dates'][src] = (d, av or '')  # latest delivered value per source
+        f['rids'].append(rid)
+        if av and (f['first'] is None or av < f['first']): f['first'] = av
+    for pid, payload in out.execute("SELECT patient_id, payload FROM record WHERE stream = 'enrollment_spans' AND patient_id IS NOT NULL "
+                                    "AND json_extract(payload, '$.termination_reason') = 'death'").fetchall():
+        end = str(json.loads(payload).get('coverage_end') or '')[:10]
+        if pid in found and end and (found[pid]['term'] is None or end < found[pid]['term']): found[pid]['term'] = end
+    rows = []
+    for pid, f in found.items():
+        best = next(s for s in DEATH_SOURCES if s in f['dates'])
+        dates = {s: v[0] for s, v in f['dates'].items()}
+        rows.append((pid, dates[best], best, *(dates.get(s) for s in DEATH_SOURCES), f['term'],
+                     ','.join(s for s in DEATH_SOURCES if s in dates), int(len(set(dates.values())) > 1), f['first'],
+                     json.dumps(sorted(f['rids']))))
+    out.executemany(f'INSERT INTO death VALUES ({",".join("?" * (len(DEATH_SOURCES) + 8))})', rows)
+    return len(rows)
+
+
 def _drug_class_vocabulary(out):
     from .drug_classes import CLASSES, GROUPS
     out.execute('CREATE TABLE drug_class_vocabulary(drug_class TEXT, class_group TEXT)')
@@ -923,6 +1009,7 @@ def build(path):
         out.execute("CREATE INDEX record_patient_stream ON record(patient_id, stream)")
         _standards(out, people)  # source standard codes first: the dictionary in _normalize only fills their gaps
         _derived(out)  # after indexes: derived entities read the record table by stream and patient
+        _deaths(out)
         settlement = _settle_claims(out)
         _drug_class_vocabulary(out)
         _claim_codes(out)

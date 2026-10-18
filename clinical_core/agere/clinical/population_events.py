@@ -22,6 +22,12 @@ adds payer evidence to the tables planners already use instead of leaving it in 
              (one per fill_id) + payer_pharmacy_claims return-to-stock reversals (one per rx_claim_id). The provider claim
              transaction reversing a returned dispense is that same fill (claim_id = fill_id), so it adds no row.
 
+  procedures procedure_line = every delivered procedure line in one table: the client's own billing lines (claim_line, provider
+             837) and the payer claim lines (payer_claim_line, payer 837 / CCLF), source says which. counts_in_metrics = 0 for
+             voided claims, replaced / duplicate payer submissions, void provider submissions and the payer copy of a provider
+             line (same patient, service date and code; duplicate_of_record_id = the provider line). "Did the patient have
+             procedure X" reads this table; the claim services above read it too (counts_in_metrics = 1).
+
 Idempotent: re-running replaces only what it added (rows with source/claim_source from payer feeds), so an existing
 semantic.sqlite3 can be upgraded in place (apply()).
 """
@@ -29,7 +35,7 @@ from collections import defaultdict
 from datetime import date, timedelta
 import json, sqlite3
 
-VERSION = 'population-events/1'
+VERSION = 'population-events/2'  # 2: procedure_line; claim services read provider and payer lines
 
 FLU_VACCINE_CODES = ('90630', '90653', '90654', '90655', '90656', '90657', '90658', '90660', '90661', '90662', '90664', '90666', '90667',
                      '90668', '90672', '90673', '90674', '90682', '90685', '90686', '90687', '90688', '90689', '90694', '90756', 'G0008')
@@ -39,7 +45,8 @@ HBA1C_TEST_CODES = ('83036', '83037')
 NCPDP_REJECT = {'79': 'REFILL_TOO_SOON', '75': 'PRIOR_AUTHORIZATION_REQUIRED', '70': 'PRODUCT_NOT_COVERED', '76': 'PLAN_LIMITATIONS_EXCEEDED',
                 '88': 'DUR_REJECT', '65': 'PATIENT_NOT_COVERED', 'MR': 'PRODUCT_NOT_ON_FORMULARY'}
 SAME_EVENT_DAYS = 1
-OWN_TABLES = ('cancer_screening', 'claim_adjudication', 'pharmacy_claim_event', 'returned_fill')
+OWN_TABLES = ('cancer_screening', 'claim_adjudication', 'pharmacy_claim_event', 'returned_fill', 'procedure_line')
+CLAIM_LINE_SOURCES = ('payer_claim_line', 'claim_line')  # source values of rows this pass adds to the entity tables
 
 DDL = """
 CREATE TABLE IF NOT EXISTS cancer_screening(record_id TEXT PRIMARY KEY, patient_id TEXT, test TEXT, result_status TEXT, event_date TEXT,
@@ -52,12 +59,25 @@ CREATE TABLE IF NOT EXISTS pharmacy_claim_event(claim_id TEXT, source TEXT, reco
   return_to_stock INTEGER, payer TEXT);
 CREATE TABLE IF NOT EXISTS returned_fill(fill_key TEXT, source TEXT, record_id TEXT, patient_id TEXT, event_date TEXT, drug_name TEXT,
   ndc TEXT, reason TEXT);
+CREATE TABLE IF NOT EXISTS procedure_line(record_id TEXT PRIMARY KEY, patient_id TEXT, source TEXT, claim_id TEXT, line_number INTEGER,
+  service_date TEXT, code_system TEXT, code TEXT, cpt TEXT, hcpcs TEXT, revenue_code TEXT, units REAL, place_of_service TEXT,
+  claim_status TEXT, counts_in_metrics INTEGER, duplicate_of_record_id TEXT);
 """
 
 SCHEMA_DOC = {
+    'procedure_line': 'Every delivered procedure (CPT/HCPCS) line, one row per claim line from either side: source claim_line '
+                      "(the client's own billing, provider 837; claim_id = claim.claim_id) | payer_claim_line (payer feed 837 / "
+                      'CCLF; claim_id = payer_claim_id). code = the billed CPT/HCPCS (cpt / hcpcs split by code_system), '
+                      'service_date, units, revenue_code, place_of_service (claim header), claim_status = final status of the '
+                      'claim. counts_in_metrics = 0 for voided claims, replaced / duplicate payer submissions, void provider '
+                      'submissions and the payer copy of a provider line (same patient, service date, code; '
+                      'duplicate_of_record_id = the provider line). Use it for ANY "had procedure / CPT / HCPCS X" question '
+                      '(physical therapy 97xxx, imaging, screenings): WHERE code IN (...) AND counts_in_metrics = 1 (add '
+                      "claim_status = 'paid' only when the question asks for paid services). claim_line alone holds only the "
+                      "client's own billing; payer_claim_line alone misses it.",
     'cancer_screening': 'One row per cancer screening result (cancer_screening_results: test e.g. bilateral_screening_mammography, '
                         'result_status, event_date = performed_date) plus screening mammograms known only from a payer claim line '
-                        '(77067 / G0202; source payer_claim_line, result_status claim_billed). Same patient within 1 day = one screen.',
+                        '(77067 / G0202; source payer_claim_line, or claim_line for the client\'s own billing line, result_status claim_billed). Same patient within 1 day = one screen.',
     'claim_adjudication': 'One row per adjudication of a medical claim from either source (claim_source medical_claims = our provider '
                           'remittances, payer_medical_claims = the payer feed). payer_paid_delta_cents / allowed_delta_cents: '
                           'reversals negative, recoupments negative paid and 0 allowed, a void reverses the prior net; facility DRG '
@@ -106,23 +126,70 @@ def _tables(out):
     return {r[0] for r in out.execute("SELECT name FROM sqlite_master WHERE type = 'table'")}
 
 
+def _cols(out, table):
+    return {r[1] for r in out.execute(f'PRAGMA table_info({table})')}
+
+
+def _procedure_lines(out):
+    """procedure_line from claim_line (provider) + payer_claim_line (payer); see the module docstring."""
+    out.execute('DELETE FROM procedure_line')
+    have = _tables(out)
+    rows, provider = [], defaultdict(list)
+    if 'claim_line' in have:
+        status, pos = {}, {}
+        if 'claim' in have:
+            ccols = _cols(out, 'claim')
+            for cid, st, p in out.execute(f"SELECT claim_id, final_status, {'place_of_service' if 'place_of_service' in ccols else 'NULL'} FROM claim"):
+                status[cid], pos[cid] = st, p
+        void = {rid for rid, kind in out.execute(
+            "SELECT l.record_id, json_extract(s.payload, '$.submission_kind') FROM record l JOIN record s "
+            "ON s.record_id = json_extract(l.payload, '$.submission_record_id') WHERE l.stream = 'medical_claim_lines'") if kind == 'void'}
+        for rid, pid, cid, ln, d, system, cpt, hcpcs, rev, units in out.execute(
+                'SELECT record_id, patient_id, claim_id, line_number, service_date, code_system, cpt, hcpcs, revenue_code, units FROM claim_line '
+                'ORDER BY patient_id, service_date, record_id').fetchall():
+            code = cpt or hcpcs
+            counts = int(rid not in void and status.get(cid) != 'voided')
+            rows.append([rid, pid, 'claim_line', cid, ln, (d or '')[:10] or None, system, code, cpt, hcpcs, rev, units, pos.get(cid),
+                         status.get(cid), counts, None])
+            if code and d and counts: provider[(pid, d[:10], code)].append(rid)
+    if {'payer_claim_line', 'payer_claim'} <= have:
+        pcols = _cols(out, 'payer_claim')
+        vs = 'c.version_status' if 'version_status' in pcols else 'NULL'
+        for rid, pid, cid, ln, d, svc, system, cpt, hcpcs, rev, units, pos, st, counts, version in out.execute(f"""
+                SELECT l.record_id, l.patient_id, l.payer_claim_id, l.line_number, l.service_date, c.service_from, l.code_system, l.cpt, l.hcpcs,
+                       l.revenue_code, l.units, c.place_of_service, c.final_status, coalesce(l.counts_in_metrics, 1), {vs}
+                FROM payer_claim_line l LEFT JOIN payer_claim c ON c.payer_claim_id = l.payer_claim_id
+                ORDER BY l.patient_id, l.service_date, l.record_id""").fetchall():
+            code = cpt or hcpcs
+            day = ((d or svc) or '')[:10] or None
+            ok = int(counts == 1 and (st or '') != 'voided' and (version or '') not in ('voided', 'superseded_by_replacement'))
+            dup = None
+            if ok and code and day and provider.get((pid, day, code)):
+                dup = provider[(pid, day, code)].pop(0); ok = 0  # the payer's copy of a line our own billing sent
+            rows.append([rid, pid, 'payer_claim_line', cid, ln, day, system, code, cpt, hcpcs, rev, units, pos, st, ok, dup])
+    out.executemany('INSERT OR IGNORE INTO procedure_line VALUES (' + ','.join('?' * 16) + ')', rows)
+    out.execute('CREATE INDEX IF NOT EXISTS procedure_line_code ON procedure_line(code, patient_id)')
+    out.execute('CREATE INDEX IF NOT EXISTS procedure_line_patient ON procedure_line(patient_id, service_date)')
+    return {'procedure_lines': len(rows), 'procedure_lines_counted': sum(r[14] for r in rows),
+            'procedure_lines_provider': sum(r[2] == 'claim_line' for r in rows)}
+
+
 def claim_service_lines(out, codes):
-    """Payer claim lines with one of the codes, on claims that were not voided (and are not duplicate submissions)."""
-    if not {'payer_claim_line', 'payer_claim'} <= _tables(out): return []
+    """[(record_id, patient_id, service_date, code, source)] for counted procedure lines (provider or payer) with one of the
+    codes: not voided, not a replaced / duplicate submission, not the payer copy of a provider line."""
+    if 'procedure_line' not in _tables(out): return []
     q = ','.join('?' * len(codes))
-    return out.execute(f"""SELECT l.record_id, l.patient_id, l.service_date, coalesce(l.cpt, l.hcpcs) FROM payer_claim_line l
-        LEFT JOIN payer_claim c ON c.payer_claim_id = l.payer_claim_id
-        WHERE coalesce(l.cpt, l.hcpcs) IN ({q}) AND l.service_date IS NOT NULL AND coalesce(l.counts_in_metrics, 1) = 1
-          AND coalesce(c.final_status, '') <> 'voided' AND coalesce(c.version_status, '') NOT IN ('voided', 'superseded_by_replacement')
-        ORDER BY l.patient_id, l.service_date, l.record_id""", codes).fetchall()
+    return out.execute(f"""SELECT record_id, patient_id, service_date, code, source FROM procedure_line
+        WHERE code IN ({q}) AND service_date IS NOT NULL AND counts_in_metrics = 1
+        ORDER BY patient_id, service_date, source = 'payer_claim_line', record_id""", codes).fetchall()
 
 
 def _fold(lines, ehr):
     """Claim lines that are not the same event as an EHR record (same patient within 1 day) nor another claim line already kept."""
     kept, seen = [], defaultdict(set)
-    for rid, pid, d, code in lines:
+    for rid, pid, d, code, src in lines:
         if _near(ehr.get(pid, set()), d) or _near(seen[pid], d): continue
-        seen[pid].add(d[:10]); kept.append((rid, pid, d[:10], code))
+        seen[pid].add(d[:10]); kept.append((rid, pid, d[:10], code, src))
     return kept
 
 
@@ -132,18 +199,18 @@ def _services(out):
     summary = {}
     if 'wellness_visit' in have:
         _add(out, 'wellness_visit', 'source TEXT')
-        out.execute("DELETE FROM wellness_visit WHERE source = 'payer_claim_line'")
+        out.execute(f"DELETE FROM wellness_visit WHERE source IN {CLAIM_LINE_SOURCES}")
         out.execute("UPDATE wellness_visit SET source = 'ehr' WHERE source IS NULL")
         ehr = defaultdict(set)
         for pid, d in out.execute("SELECT patient_id, event_date FROM wellness_visit WHERE awv = 1 AND event_date IS NOT NULL"): ehr[pid].add(d[:10])
         rows = _fold(claim_service_lines(out, tuple(AWV_CODES)), ehr)
         out.executemany("""INSERT OR IGNORE INTO wellness_visit(record_id, patient_id, encounter_id, visit_type, hcpcs_code, awv, awv_kind, status,
             coding_status, event_date, available_date, organization_id, source) VALUES (?,?,NULL,'medicare_annual_wellness',?,1,?,'completed',
-            'claim',?,NULL,NULL,'payer_claim_line')""", [(rid, pid, code, AWV_CODES[code], d) for rid, pid, d, code in rows])
+            'claim',?,NULL,NULL,?)""", [(rid, pid, code, AWV_CODES[code], d, src) for rid, pid, d, code, src in rows])
         summary['awv_from_claims'] = len(rows)
     if 'immunization' in have:
         _add(out, 'immunization', 'season TEXT', 'source TEXT', 'code TEXT')
-        out.execute("DELETE FROM immunization WHERE source = 'payer_claim_line'")
+        out.execute(f"DELETE FROM immunization WHERE source IN {CLAIM_LINE_SOURCES}")
         out.execute("UPDATE immunization SET source = 'ehr' WHERE source IS NULL")
         seasons = {rid: (p.get('season') or None) for rid, _, p, _, _ in _rows(out, 'immunizations')}
         out.executemany('UPDATE immunization SET season = ? WHERE record_id = ?',
@@ -154,8 +221,8 @@ def _services(out):
             ehr[pid].add(d[:10])
         rows = _fold(claim_service_lines(out, FLU_VACCINE_CODES), ehr)
         out.executemany("""INSERT INTO immunization(record_id, patient_id, vaccine, product, cvx, mvx, status, event_date, available_date, season,
-            source, code) VALUES (?,?,'influenza',NULL,NULL,NULL,'completed',?,NULL,?,'payer_claim_line',?)""",
-                        [(rid, pid, d, season_of(d), code) for rid, pid, d, code in rows])
+            source, code) VALUES (?,?,'influenza',NULL,NULL,NULL,'completed',?,NULL,?,?,?)""",
+                        [(rid, pid, d, season_of(d), src, code) for rid, pid, d, code, src in rows])
         summary['influenza_from_claims'] = len(rows)
     out.executescript(DDL)
     out.execute('DELETE FROM cancer_screening')
@@ -168,17 +235,17 @@ def _services(out):
     for pid, d in out.execute("SELECT patient_id, event_date FROM cancer_screening WHERE test LIKE '%mammograph%' AND event_date IS NOT NULL"):
         ehr[pid].add(d[:10])
     rows = _fold(claim_service_lines(out, SCREENING_MAMMOGRAM_CODES), ehr)
-    out.executemany("INSERT OR IGNORE INTO cancer_screening VALUES (?,?,'bilateral_screening_mammography','claim_billed',?,NULL,NULL,'payer_claim_line',?)",
-                    [(rid, pid, d, code) for rid, pid, d, code in rows])
+    out.executemany("INSERT OR IGNORE INTO cancer_screening VALUES (?,?,'bilateral_screening_mammography','claim_billed',?,NULL,NULL,?,?)",
+                    [(rid, pid, d, src, code) for rid, pid, d, code, src in rows])
     summary.update(cancer_screening_results=len(screens), screening_mammograms_from_claims=len(rows))
     if 'measurement' in have:
-        out.execute("DELETE FROM measurement WHERE source_table = 'payer_claim_line'")
+        out.execute(f"DELETE FROM measurement WHERE source_table IN {CLAIM_LINE_SOURCES}")
         ehr = defaultdict(set)
         for pid, d in out.execute("SELECT patient_id, event_date FROM measurement WHERE concept = 'hba1c' AND event_date IS NOT NULL"): ehr[pid].add(d[:10])
         rows = _fold(claim_service_lines(out, HBA1C_TEST_CODES), ehr)
         out.executemany("""INSERT INTO measurement(record_id, patient_id, source_table, concept, name, value, unit, value_canonical, unit_canonical,
-            result_status, event_date) VALUES (?,?,'payer_claim_line','hba1c',?,NULL,NULL,NULL,NULL,'claim_billed',?)""",
-                        [(rid, pid, f'CPT {code} (billed test, no result)', d) for rid, pid, d, code in rows])
+            result_status, event_date) VALUES (?,?,?,'hba1c',?,NULL,NULL,NULL,NULL,'claim_billed',?)""",
+                        [(rid, pid, src, f'CPT {code} (billed test, no result)', d) for rid, pid, d, code, src in rows])
         summary['hba1c_tests_from_claims'] = len(rows)
     return summary
 
@@ -312,6 +379,7 @@ def build(out):
     summary = {'version': VERSION}
     for t in OWN_TABLES: out.execute(f'DROP TABLE IF EXISTS {t}')  # tables this pass owns entirely: rebuilt from scratch
     out.executescript(DDL)
+    summary.update(_procedure_lines(out))
     summary.update(_services(out))
     summary.update(_claims(out))
     summary.update(_pharmacy(out))

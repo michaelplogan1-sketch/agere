@@ -328,6 +328,24 @@ def conventions(have, null_items=None, null_doc=None):
     if 'visit' in have or 'visit_event' in have:
         lines.append('- Visits: one real visit = one person + setting + calendar date. visit holds one row per encounter_id; '
                      'visit_event keeps every received version when present. Use visit for counts.')
+    if 'procedure_line' in have:
+        lines.append('- Procedures: "had / received procedure (CPT, HCPCS) X" (physical therapy 97xxx, imaging, screenings, '
+                     'injections) reads procedure_line, every delivered procedure line from the client\'s own billing '
+                     '(source claim_line) and the payer claims (source payer_claim_line): WHERE code IN (...) AND '
+                     'counts_in_metrics = 1 (voids, replaced/duplicate submissions and payer copies of our own lines are 0). '
+                     'claim_line alone misses services other providers billed; add claim_status = \'paid\' only when asked.')
+    if 'encounter_diagnosis' in have:
+        lines.append('- Encounter diagnoses: encounter_diagnosis covers every encounter source (source ehr | hl7_adt = ADT DG1 | '
+                     'payer_claim = ED claim diagnoses for ED visits without an EHR chart). ED visits with diagnosis X: '
+                     'encounter_diagnosis d JOIN encounter e USING (encounter_id) WHERE e.type_concept = \'emergency_visit\'; '
+                     'visit holds EHR encounters only. ED disposition (admitted / observation / home ...) is encounter.disposition, '
+                     'NULL when not delivered.')
+    if 'death' in have:
+        lines.append('- Deaths: death has one row per patient with a reported death; death_date prefers CCLF8 / ALR (Medicare '
+                     'beneficiary file), then other payer death records, then EHR (epic, athena, ecw, fhir, demographic updates); '
+                     'each source keeps its own *_death_date column, so a question that names sources uses those columns. '
+                     '"Alive at X" = no death_date on or before X; "died in period" = death_date in the period. A payer '
+                     'enrollment terminated for death (enrollment_death_term_date) is not a death date.')
     if 'claim' in have:
         lines.append('- Claims: claim holds one row per claim_id with final_status = the last received status (reversals and '
                      'recoupments net out of paid amounts); claim_event holds every received event.')
