@@ -452,7 +452,7 @@ def _empty_answer(a):
     return False
 
 
-def decide(stack, question, fast, fast_error, analyst, analyst_state, *, as_of=None, semantic_path=None):
+def decide(stack, question, fast, fast_error, analyst, analyst_state, *, as_of=None, semantic_path=None, answer_type=None):
     """Combine the fast result and the analyst result. -> (result, together receipt, reconcile dict or None).
     Raises fast_error when the fast path failed and the analyst has no answer."""
     a_answer = _contract((analyst or {}).get('answer')) if analyst_state == 'done' and not (analyst or {}).get('error') else None
@@ -476,6 +476,17 @@ def decide(stack, question, fast, fast_error, analyst, analyst_state, *, as_of=N
                         reason=f'fast path error: {type(fast_error).__name__}: {fast_error}'[:300])
         return result, together, rec
     f_answer = fast.get('answer') if isinstance(fast.get('answer'), dict) else None
+    if answer_type == 'patient_set' and a_answer is not None and isinstance(a_answer.get('patient_ids'), list) \
+            and not isinstance((f_answer or {}).get('patient_ids'), list) or (
+            answer_type == 'patient_set' and a_answer is not None and isinstance(a_answer.get('patient_ids'), list) and _engine(fast)):
+        # A patient list was asked for: the analysts' executed definition is the list; an engine worklist (ranked, capped)
+        # or a bare count is kept only as a reading.
+        out = dict(a_answer)
+        if f_answer:
+            out['grounding'] = list(out.get('grounding') or []) + [_reading('Agere fast path', f_answer, _fast_sql(f_answer, fast.get('planner_receipt')))]
+        _confidence(out, 'unverified', 'Patient list from the independent analysts\' executed definition', evidence='independent_analysts_list')
+        together.update(decision='analysts_answered_list', winner='analyst', reason='patient list requested')
+        return {**fast, 'answer': out}, together, rec
     if fast.get('route') == 'deferred_to_analyst' and a_answer is not None:
         # The fast path deferred (no paid second ladder): the independent analysts' executed answer is the answer.
         out = dict(a_answer)
@@ -601,7 +612,8 @@ def compose_together(stack, question, *, planning='auto', answer_type=None):
     semantic_path = Path(stack.path) / 'semantic.sqlite3'
     as_of = _snapshot_as_of(stack)
     future, model = None, semantic_model()
-    engine = _compiled_engine(stack, question, as_of)
+    # A requested patient list is answered by the analysts' executed definition (engines return ranked, capped worklists).
+    engine = [] if answer_type == 'patient_set' else _compiled_engine(stack, question, as_of)
     if semantic_path.is_file() and not engine:
         future = _pool().submit(_run_analyst, stack, question, as_of, semantic_path, model, answer_type)
     fast, fast_error = None, None
@@ -631,7 +643,7 @@ def compose_together(stack, question, *, planning='auto', answer_type=None):
         fallback = {'reason': 'analysts produced no usable answer', 'route': (fast or {}).get('route')}
     with _released(stack):
         result, together, rec = decide(stack, question, fast, fast_error, analyst, state,
-                                       as_of=as_of, semantic_path=semantic_path)
+                                       as_of=as_of, semantic_path=semantic_path, answer_type=answer_type)
     together.update(engine_route=engine or None, fallback=fallback, deferred=(fast or {}).get('route') == 'deferred_to_analyst' or bool(fallback),
                     hybrid={k: v for k, v in ((analyst or {}).get('hybrid') or {}).items() if k != 'runs'} or None,
                     analyst={**(_part(analyst) or {}), 'model': model, 'state': state,

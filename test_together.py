@@ -556,3 +556,16 @@ class DeferralTests(unittest.TestCase):
         self.assertTrue(together._usable({'answer': {'status': 'clarify'}}, 'done'))
         self.assertFalse(together._usable({'answer': None, 'error': 'hybrid abstained'}, 'done'))
         self.assertFalse(together._usable(None, 'timed_out'))
+
+
+class PatientListTests(unittest.TestCase):
+    def test_requested_patient_list_comes_from_the_analysts(self):
+        fast = {'answer': {'status': 'answered', 'answer_type': 'table', 'table': [{'patient_id': 'p1'}], 'unknown_count': 0,
+                           'missing': [], 'grounding': []}, 'planner_receipt': {'steps': []},
+                'graph': {'nodes': [{'operation': 'outreach'}]}}
+        analyst = {'answer': {'status': 'answered', 'answer_type': 'patient_set', 'patient_ids': ['p1', 'p2', 'p3'], 'count': 3,
+                              'unknown_count': 0, 'missing': [], 'grounding': []}, 'tool_calls': []}
+        result, receipt, _ = together.decide(None, 'q', fast, None, analyst, 'done', answer_type='patient_set')
+        self.assertEqual((result['answer']['patient_ids'], receipt['decision']), (['p1', 'p2', 'p3'], 'analysts_answered_list'))
+        result, receipt, _ = together.decide(None, 'q', fast, None, analyst, 'done')
+        self.assertNotEqual(receipt['decision'], 'analysts_answered_list')
