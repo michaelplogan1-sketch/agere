@@ -17,6 +17,11 @@ Routes (JSON; handled before the service's global stack lock because builds take
                                                action backbone (plans/backbone.py): plan.execution = saved decision id, work
                                                item counts, outcome funnel, closure rates; re-running is an idempotent replay.
                                                format csv adds the outreach task list as {'csv': ...}
+  POST /api/workspaces/<slug>/simulate      {program_kind | question | plan | patient_ids, as_of?, horizon_months?, alternatives?,
+                                             iterations?, seed?, parameters?, parameter_uncertainty?, contract?, per_patient?}
+                                            -> population simulation (simulator/engine.py): summary table and per-arm
+                                               distributions vs doing nothing, calibration, parameters with sources, narrative;
+                                               {simulation_id, observed_through?} -> compare a saved simulation with actuals
   GET  /api/workspaces/<slug>/work          ?program_kind=|lane=&state=&kind=plan_item|followup&patient_id=  work items
   GET  /api/workspaces/<slug>/work/<id>     one work item: step history with counterparty receipts, follow-ups, events
   GET  /api/workspaces/<slug>/decisions     saved plan decisions
@@ -178,6 +183,23 @@ def handle(method, path, body=None, *, root=None, credentials=None, on_usage=Non
                              'as_of': out['plan']['as_of'], 'filename': f"{ws.slug}-plan-{out['plan']['program_kind']}.csv",
                              'csv': tasks_csv(out['plan'])}
             return 200, out
+        if action == 'simulate':
+            from .simulator import service as sim_service
+            if body.get('simulation_id'):
+                obs = body.get('observed_through') or None
+                if obs is not None:
+                    __import__('datetime').date.fromisoformat(str(obs))
+                return 200, sim_service.compare(ws, str(body['simulation_id']), obs)
+            ids = body.get('patient_ids')
+            if ids is not None and (not isinstance(ids, list) or len(ids) > 50000):
+                raise ValueError('patient_ids must be a list of at most 50000 ids')
+            kw = {k: body[k] for k in ('iterations', 'funnel_scenarios', 'seed', 'parameters', 'contract') if body.get(k) is not None}
+            out = ws.simulate(body.get('plan') or None, horizon_months=int(body.get('horizon_months') or 12),
+                              alternatives=body.get('alternatives') or None, program_kind=body.get('program_kind') or None,
+                              question=str(body.get('question') or '').strip() or None, patient_ids=ids, as_of=body.get('as_of') or None,
+                              parameter_uncertainty=body.get('parameter_uncertainty', True) is not False,
+                              per_patient=bool(body.get('per_patient')), **kw)
+            return 200, sim_service.public(out)
         if action == 'ask':
             q = str(body.get('question') or '').strip()
             if not q:

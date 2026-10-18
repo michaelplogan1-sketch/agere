@@ -632,6 +632,18 @@ class Workspace:
         self._record(question or f"plan:{env['plan']['program_kind']} for {len(env['cohort_patient_ids'])} patients", env)
         return env
 
+    def simulate(self, plan=None, horizon_months=12, alternatives=None, **kw):
+        """Test a plan against a simulated copy of this workspace's population before acting (clinical_core/agere/simulator):
+        plan = a routed plan (or a plan() envelope), a program kind ('pharmacy_gdmt', 'virtual_pt') or request text;
+        alternatives = program ids or arm dicts compared with doing nothing. Saved under <workspace>/simulations/<id>.json."""
+        from ..simulator import service
+        return service.simulate(self, plan, horizon_months=horizon_months, alternatives=alternatives, **kw)
+
+    def compare_simulation(self, simulation_id, observed_through=None):
+        """A saved simulation's predictions against what the data later show (simulator/actual.py)."""
+        from ..simulator import service
+        return service.compare(self, simulation_id, observed_through)
+
     def _record(self, question, out):
         ids = (out.get('answer') or {}).get('patient_ids') if isinstance(out.get('answer'), dict) else None
         if ids and self.native:
