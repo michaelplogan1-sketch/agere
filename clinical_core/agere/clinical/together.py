@@ -180,7 +180,8 @@ def deferral_on():
 
 SPECIALIST_ROUTES = frozenset({'local_compiler', 'semantic_cache', 'exact_question_cache', 'learned_verified_sql',
                                'metric_router', 'operator_router', 'operator_router_requires_input',
-                               'compact_retrieval_typed_router', 'local_model_rewrite_compiled'})
+                               'compact_retrieval_typed_router', 'local_model_rewrite_compiled',
+                               'cohort_family'})  # cohort_families.py: code-rendered SQL for the stated definition
 
 
 def specialists_first():
@@ -736,6 +737,13 @@ def compose_together(stack, question, *, planning='auto', answer_type=None):
                     analyst_wait_s=wait_s, elapsed_s=round(time.perf_counter() - t0, 3))
     result = _account(result, analyst if state in ('done', 'failed') else None, state, rec)
     receipt = result['planner_receipt']
+    if receipt.get('route') == 'cohort_family' and together.get('winner') in (None, 'fast', 'both', 'agree'):
+        # The family answer becomes a verified (question -> SQL) pair the learned cache reuses (cohort_families.record).
+        try:
+            from .cohort_families import record as record_family
+            record_family(stack.path, question, receipt, result.get('answer'))
+        except Exception:  # noqa: BLE001 - learning bookkeeping never fails an answer
+            pass
     if isinstance(receipt.get('timings'), dict):
         receipt['timings'] = {**receipt['timings'], 'together_total_s': together['elapsed_s']}
     return {**result, 'together': together}

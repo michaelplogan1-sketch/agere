@@ -622,6 +622,15 @@ def finalize_answer(answer, receipt, encoder=None):
             from .verification_v2 import attach_readings
             out = attach_readings(out, mr['readings'])
         return out
+    fam = receipt.get('cohort_family')
+    if isinstance(fam, dict) and receipt.get('route') in ('cohort_family', 'learned_verified_sql') and _asserted(out):
+        # cohort_families.py: the family and its parameters are the computed definition (what a reviewer checks)
+        out['computed_as'] = {'cohort_family': fam.get('family'), 'version': fam.get('version'), 'parameters': fam.get('parameters'),
+                              'statement': fam.get('statement'), 'defaults': fam.get('defaults') or [],
+                              'model_filled': fam.get('model_filled') or [], 'conforms': True}
+        out['computed'] = fam.get('statement')
+        _add(out, 'QC-METRIC', 'FM-05', ('Computed deterministically as ' + str(fam.get('statement')))[:300], 'info',
+             cohort_family=fam.get('family'))
     if receipt.get('route') == 'hosted_missing_data':
         check = receipt.get('missing_check') or {}
         if check.get('contradicted'):

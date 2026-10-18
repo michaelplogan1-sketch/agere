@@ -219,6 +219,41 @@ def _typed_decider(stack,question,ledger,available,validate,meta,start):
                            {'stage':'typed_decision_router','provider':'perplexity','decision':selected,'receipt':receipt}],
                   'elapsed_seconds':time.perf_counter()-start}
 
+def _cohort_family(stack,question,ledger,meta,start,local_decline,early):
+    """Cohort-family rung (cohort_families.py): a common population-health patient-list shape answered by code-rendered SQL.
+    early=True (right after the local compiler) claims only questions that state their own definition, since the family
+    renders the stated definition; early=False (after the governed metric / operator rungs, before the analysts and the
+    hosted SQL ladder) claims the remaining family questions. A verified family answer for this exact question is reused
+    from the learning store (route learned_verified_sql). -> (graph, receipt) or (None, decline info)."""
+    from . import cohort_families as cf
+    if not cf.enabled():return None,None
+    from .together import _inline_definition
+    if early and not _inline_definition(question):return None,None
+    as_of=meta['snapshot']['as_of']
+    try:
+        known=cf.reuse(stack.path,question)
+        if known:
+            fam=known['plan']['cohort_family']
+            graph=validate({'interpretation':fam['statement'],'coverage':'supported_observation','unmet_requirements':[],
+                            'nodes':[{'id':'answer','operation':'sql','inputs':[],
+                                      'parameters':{'query':known['plan']['query'],'returns':known['plan']['returns']},
+                                      'purpose':f"Cohort family {fam['family']} (verified answer reused)"}]},as_of)
+            return graph,{'route':'learned_verified_sql','model':None,'new_paid_api_calls':0,'frontier_called':False,
+                          'learned_from':known['agreement'],'cohort_family':fam,'local_compiler_declined':local_decline,
+                          'steps':[],'elapsed_seconds':time.perf_counter()-start}
+        live=bool(stack.allow_live) and ledger is not None
+        res=cf.plan(stack.path,question,as_of,ledger=ledger if live else None,receipts=stack.receipts if live else None)
+        if res is None:return None,{'reason':'no cohort family fits (or slots missing without a model)'}
+        graph=validate(res['graph'],as_of)
+    except (ValueError,KeyError,TypeError,RuntimeError,OSError,sqlite3.Error) as exc:  # the rung never blocks the ladder
+        return None,{'error':f'{type(exc).__name__}: {exc}'[:300]}
+    usd=sum(c.get('api_usd') or 0 for c in res['calls'])
+    return graph,{'route':'cohort_family','model':cf.MODEL if res['calls'] else None,
+                  'new_paid_api_calls':sum(0 if c.get('cache_hit') else 1 for c in res['calls']),'frontier_called':False,
+                  'cohort_family':{**res['receipt'],'calls':res['calls']},'local_compiler_declined':local_decline,
+                  'steps':[{'stage':'cohort_family','receipt':{'cost_estimate':{'estimated_usd':usd}}}] if res['calls'] else [],
+                  'elapsed_seconds':time.perf_counter()-start}
+
 def plan(stack,question,ledger,frontier):
     """frontier is a callback; no hosted call occurs for an exact local plan/cache."""
     normalize(question);start=time.perf_counter();meta=stack.retriever.meta
@@ -245,6 +280,11 @@ def plan(stack,question,ledger,frontier):
             return graph,{'route':compile_info['route'],'model':None,'new_paid_api_calls':0,'frontier_called':False,
                           'local_compiler':compile_info,'steps':[],'elapsed_seconds':time.perf_counter()-start}
     local_decline=compile_info
+    # Cohort families (early): a question stating its own definition in a common population-health shape is rendered by
+    # code from the stated definition before any cache, model rewrite or hosted rung.
+    family_graph,family_info=_cohort_family(stack,question,ledger,meta,start,local_decline,True)
+    if family_graph is not None:return family_graph,family_info
+    if family_info:local_decline={**local_decline,'cohort_family':family_info}
     # Next rung: the local small model rewrites the question into canonical phrasing; the deterministic
     # compiler must then fully parse it. The model never executes anything the compiler does not understand.
     # The local rewrite rung trades accuracy for $0; when verified hosted answering is available it is skipped
@@ -394,6 +434,14 @@ def plan(stack,question,ledger,frontier):
                                'operator':route_info['decision'],'local_compiler_declined':local_decline,
                                'steps':metric_steps+[{'stage':'operator_router','receipt':{'cost_estimate':{'estimated_usd':operator_router.cost(route_info)}}}],
                                'elapsed_seconds':time.perf_counter()-start}
+    # Cohort families (late): the remaining family questions (no inline definition) before the analysts / hosted SQL.
+    if 'cohort_family' not in local_decline:
+        family_graph,family_info=_cohort_family(stack,question,ledger,meta,start,local_decline,False)
+        if family_graph is not None:
+            if metric_steps:family_info={**family_info,'steps':metric_steps+family_info['steps'],
+                                         'new_paid_api_calls':family_info['new_paid_api_calls']+len(metric_steps)}
+            return family_graph,family_info
+        if family_info:local_decline={**local_decline,'cohort_family':family_info}
     # Deferral (together.py): when the independent analysts are already answering this question, the fast path stops
     # here instead of paying for a second hosted SQL ladder and the frontier planner (it falls back to them only if the
     # analysts produce no usable answer).
