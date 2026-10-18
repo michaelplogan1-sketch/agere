@@ -234,7 +234,7 @@ def _hybrid_contract(h):
     return out
 
 
-def _run_hybrid(stack, question, as_of, semantic_path):
+def _run_hybrid(stack, question, as_of, semantic_path, answer_type=None):
     """The hybrid core (clinical_core/agere/hybrid/live.py) in the analyst slot: three independent runs, executed and
     checked, voted, tie-broken by a stronger model. Same result shape as _run_analyst."""
     from ..hybrid import live
@@ -248,7 +248,8 @@ def _run_hybrid(stack, question, as_of, semantic_path):
 
     # A workspace stack (onboarding/workspace_stack.py) may carry its own sender and analyst docs; the service Stack has neither.
     own = getattr(stack, 'send_factory', None)
-    h = live.answer(question, as_of or wh.as_of, wh, own or send_factory, docs_dir=getattr(stack, 'docs_dir', None))
+    h = live.answer(question, as_of or wh.as_of, wh, own or send_factory, docs_dir=getattr(stack, 'docs_dir', None),
+                    answer_type=answer_type)
     answer = _hybrid_contract(h)
     tool_calls = [{'sql': r.get('sql')} for r in h['runs'].values() if r.get('sql')]
     return {'answer': answer, 'model': h['models']['analyst'], 'estimated_cost_usd': h['cost_usd'],
@@ -259,9 +260,9 @@ def _run_hybrid(stack, question, as_of, semantic_path):
             'receipts': receipts, 'seconds': round(time.perf_counter() - started, 3)}
 
 
-def _run_analyst(stack, question, as_of, semantic_path, model):
+def _run_analyst(stack, question, as_of, semantic_path, model, answer_type=None):
     if hybrid_on():
-        return _run_hybrid(stack, question, as_of, semantic_path)
+        return _run_hybrid(stack, question, as_of, semantic_path, answer_type)
     started, receipts = time.perf_counter(), []
     wh = warehouse(semantic_path)
     own = getattr(stack, 'send_factory', None)  # a workspace stack's own sender (see _run_hybrid)
@@ -593,7 +594,7 @@ def decide(stack, question, fast, fast_error, analyst, analyst_state, *, as_of=N
     return {**fast, 'answer': out}, together, rec
 
 
-def compose_together(stack, question, *, planning='auto'):
+def compose_together(stack, question, *, planning='auto', answer_type=None):
     """Stack.compose for AGERE_TOGETHER=on: see the module docstring."""
     t0 = time.perf_counter()
     deadline = t0 + budget_s()
@@ -602,7 +603,7 @@ def compose_together(stack, question, *, planning='auto'):
     future, model = None, semantic_model()
     engine = _compiled_engine(stack, question, as_of)
     if semantic_path.is_file() and not engine:
-        future = _pool().submit(_run_analyst, stack, question, as_of, semantic_path, model)
+        future = _pool().submit(_run_analyst, stack, question, as_of, semantic_path, model, answer_type)
     fast, fast_error = None, None
     from .economical_planner import defer_to_analyst
     try:

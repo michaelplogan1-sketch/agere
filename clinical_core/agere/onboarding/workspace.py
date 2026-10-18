@@ -568,7 +568,7 @@ class Workspace:
         # no send_factory: live stacks meter the hybrid core through together's ledgered sender (same ledger, receipts under
         # pipeline/provider-receipts); offline stacks refuse every hosted call
         stack = workspace_stack.stack_for(self, allow_live=live, send_factory=send_factory)
-        return workspace_stack.envelope(together.compose_together(stack, question), answer_type=answer_type)
+        return workspace_stack.envelope(together.compose_together(stack, question, answer_type=answer_type), answer_type=answer_type)
 
     def _ask_hybrid(self, question, *, answer_type=None, send_factory=None):
         from ..clinical.semantic_analyst import SemanticWarehouse

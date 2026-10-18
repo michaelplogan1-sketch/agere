@@ -26,12 +26,16 @@ def main():
     ap.add_argument('--out', type=Path, required=True)
     ap.add_argument('--workers', type=int, default=3)
     ap.add_argument('--limit', type=int)
+    ap.add_argument('--types', help='comma-separated answer types to run (e.g. patient_set)')
     a = ap.parse_args()
     from run_integrated_stack import keys
     keys()
     from clinical_core.agere.onboarding.workspace import Workspace, ask_many
     ws = Workspace(a.workspace)
-    qs = [json.loads(l) for l in QUESTIONS.read_text().splitlines() if l.strip()][:a.limit]
+    qs = [json.loads(l) for l in QUESTIONS.read_text().splitlines() if l.strip()]
+    if a.types:
+        qs = [q for q in qs if q['answer_type'] in a.types.split(',')]
+    qs = qs[:a.limit]
     items = [{'id': q['id'], 'question': q['question'] + (' Definition: ' + q['definition'] if q.get('definition') else ''),
               'answer_type': q['answer_type']} for q in qs]
     a.out.mkdir(parents=True, exist_ok=True)
