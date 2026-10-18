@@ -30,7 +30,7 @@ TERMS = {
 }
 PT_CODES = ('97161', '97162', '97163', '97164', '97110', '97112', '97140', '97530')
 MAMMO_CODES = ('77065', '77066', '77067', 'G0202', 'G0204', 'G0206')
-VISIT_TYPES = ('office', 'virtual')
+VISIT_TYPES = ('office', 'virtual', 'wellness', 'pediatric_office')
 BH_CODES = ('90791', '90792', '90832', '90833', '90834', '90835', '90836', '90837', '90838', '90846', '90847', '90853')
 
 
@@ -45,9 +45,11 @@ def queries(as_of, death_table=False):
             f"""SELECT patient_id FROM record WHERE stream = 'death_records'
                AND json_extract(payload, '$.date_of_death') <= {a}""")
     hf = """SELECT patient_id FROM condition WHERE icd10 LIKE 'I50%'
+            UNION SELECT patient_id FROM encounter_diagnosis WHERE icd10 LIKE 'I50%'
             UNION SELECT patient_id FROM payer_claim
             WHERE replace(principal_diagnosis, '.', '') LIKE 'I50%' OR replace(diagnosis_codes, '.', '') LIKE '%I50%'"""
     diabetes = """SELECT patient_id FROM condition WHERE icd10 LIKE 'E10%' OR icd10 LIKE 'E11%'
+                  UNION SELECT patient_id FROM encounter_diagnosis WHERE icd10 GLOB 'E1[01]*'
                   UNION SELECT patient_id FROM payer_claim WHERE replace(principal_diagnosis, '.', '') GLOB 'E1[01]*'
                      OR replace(diagnosis_codes, '.', '') GLOB '*E1[01]*'"""
 

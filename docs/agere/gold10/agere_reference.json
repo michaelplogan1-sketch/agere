@@ -3,8 +3,8 @@
  "as_of": "2030-05-27",
  "questions": {
   "HF-GDMT": {
-   "count": 363,
-   "fingerprint": "303de5422d8b742a",
+   "count": 366,
+   "fingerprint": "0e45fa838f95b8dd",
    "ids": [
     "athena:2881:2099145",
     "athena:6799:9319681",
@@ -51,6 +51,7 @@
     "epic:EPIC-DEEPCHART:Z1761642",
     "epic:EPIC-DEEPCHART:Z1930574",
     "epic:EPIC-DEEPCHART:Z1941094",
+    "epic:EPIC-DEEPCHART:Z1964005",
     "epic:EPIC-DEEPCHART:Z1974342",
     "epic:EPIC-DEEPCHART:Z1983820",
     "epic:EPIC-DEEPCHART:Z2010159",
@@ -175,6 +176,7 @@
     "epic:EPIC-DEEPCHART:Z5571423",
     "epic:EPIC-DEEPCHART:Z5598546",
     "epic:EPIC-DEEPCHART:Z5610788",
+    "epic:EPIC-DEEPCHART:Z5620371",
     "epic:EPIC-DEEPCHART:Z5674799",
     "epic:EPIC-DEEPCHART:Z5726381",
     "epic:EPIC-DEEPCHART:Z5732822",
@@ -268,6 +270,7 @@
     "epic:EPIC-DEEPCHART:Z8525321",
     "epic:EPIC-DEEPCHART:Z8547189",
     "epic:EPIC-DEEPCHART:Z8607384",
+    "epic:EPIC-DEEPCHART:Z8625293",
     "epic:EPIC-DEEPCHART:Z8628892",
     "epic:EPIC-DEEPCHART:Z8670424",
     "epic:EPIC-DEEPCHART:Z8748865",
