@@ -13,6 +13,25 @@ from unittest.mock import patch
 from clinical_core.agere.onboarding import fixtures, workspace_stack
 from clinical_core.agere.onboarding.workspace import Workspace
 
+
+# These tests pin the hand-set (uncalibrated) behaviour; the shipped certificates in config/agere/cascade_thresholds.json
+# are exercised by test_cascade_calibration.py.
+_CASCADE_ENV = None
+
+
+def setUpModule():
+    global _CASCADE_ENV
+    import os as _os
+    _CASCADE_ENV = _os.environ.get('AGERE_CASCADE')
+    _os.environ['AGERE_CASCADE'] = 'off'
+
+
+def tearDownModule():
+    import os as _os
+    if _CASCADE_ENV is None: _os.environ.pop('AGERE_CASCADE', None)
+    else: _os.environ['AGERE_CASCADE'] = _CASCADE_ENV
+
+
 AS_OF = '2030-05-27'
 
 

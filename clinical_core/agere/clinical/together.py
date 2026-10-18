@@ -27,9 +27,15 @@ Flow (Stack.compose -> compose_together when AGERE_TOGETHER is on (default) and 
      bounded by AGERE_RECONCILE_BUDGET_S (60 s). Pick 1/2 -> that answer, unverified; 'neither' -> the reconciler's
      corrected answer, unverified; abstain / unresolved / timeout -> the fast answer as partial, confidence low, both
      readings in grounding.
+   Certified cascade (cascade.py): a specialist whose route has a Learn-then-Test certificate in
+   config/agere/cascade_thresholds.json claims the question only when its score clears the certified threshold (accepted
+   answers then have error <= alpha with confidence 1 - delta); below it the question goes on to the analysts. Routes
+   without a certificate behave as before and their receipt says 'uncalibrated'.
 5. Receipts: result['together'] (decision, winner, reason, model / cost / calls / seconds per part). Analyst and reconcile
    calls are added to planner_receipt steps, planning_economics and new_paid_api_calls (and planner_receipt's count), so
    the bench adapter's cost completeness holds. An analyst still running at the deadline marks the cost unknown.
+   A certified specialist answer adds certified {tier, alpha, delta, bound, n_calibration, threshold, score, statement} to
+   the result, its answer and planner_receipt; together['certificate'] records the check either way.
 
 AGERE_TOGETHER=off restores the previous behavior exactly (Stack.compose calls Stack._compose only).
 """
@@ -219,6 +225,34 @@ def _specialist_answer(fast, answer_type, question=''):
     if answer_type == 'patient_set' and not isinstance(answer.get('patient_ids'), list):
         return False
     return True
+
+
+def _certify_claim(fast):
+    """Certified cascade (cascade.py): the claiming specialist's certificate, or None when its route is not a calibrated
+    tier. cert['accept'] False = calibrated and below its certified threshold: the question goes on to the analysts.
+    Missing / uncertifiable / stale records accept (today's behaviour) with status 'uncalibrated'."""
+    try:
+        from . import cascade
+        return cascade.certify_route((fast or {}).get('planner_receipt') or {})
+    except Exception:  # noqa: BLE001 - certification bookkeeping never fails an answer
+        return None
+
+
+def _stamp_certificate(result, cert, together):
+    """Receipts gain certified {tier, alpha, delta, bound, n_calibration, ...} when a certified tier answered."""
+    from . import cascade
+    together['certificate'] = {k: cert.get(k) for k in ('tier', 'status', 'score', 'threshold', 'alpha', 'delta', 'bound',
+                                                        'n_calibration', 'reason', 'statement') if cert.get(k) is not None}
+    block = cascade.receipt_block(cert)
+    if block is None:
+        return result
+    receipt = dict(result.get('planner_receipt') or {})
+    receipt['certified'] = block
+    answer = result.get('answer')
+    if isinstance(answer, dict):
+        answer = {**answer, 'certified': block}
+    together['certified'] = block
+    return {**result, 'answer': answer, 'planner_receipt': receipt, 'certified': block}
 
 
 def _usable(analyst, state):
@@ -702,6 +736,15 @@ def compose_together(stack, question, *, planning='auto', answer_type=None):
     except Exception as exc:  # noqa: BLE001 - the analyst may still answer; re-raised in decide otherwise
         fast_error = exc
     claimed = first and fast_error is None and _specialist_answer(fast, answer_type, question)
+    cert = _certify_claim(fast) if fast_error is None and _specialist_answer(fast, answer_type, question) else None
+    if cert is not None and cert.get('status') == 'not_certified' and not _inline_definition(question):
+        # The not-certified verdicts were measured on questions that state their own definition; a bare question is
+        # outside that calibration domain, so the governed / compiled answer stands (recorded as uncalibrated).
+        cert = {**cert, 'accept': True, 'status': 'uncalibrated',
+                'reason': 'outside the calibration domain (no stated definition); ' + str(cert.get('reason') or '')}
+    deferred_by_certificate = bool(claimed and cert is not None and not cert['accept'])
+    if deferred_by_certificate:
+        claimed = False  # calibrated tier below its certified threshold: the next tier (the analysts) answers
     if first and not claimed:
         # No specialist claimed the question: now (and only now) the independent analysts answer it.
         future = _pool().submit(_run_analyst, stack, question, as_of, semantic_path, model, answer_type)
@@ -736,6 +779,20 @@ def compose_together(stack, question, *, planning='auto', answer_type=None):
                     fast_error=f'{type(fast_error).__name__}: {fast_error}'[:300] if fast_error is not None else None,
                     analyst_wait_s=wait_s, elapsed_s=round(time.perf_counter() - t0, 3))
     result = _account(result, analyst if state in ('done', 'failed') else None, state, rec)
+    if cert is not None:
+        if deferred_by_certificate:
+            together['deferred_by_certificate'] = True
+            if together.get('winner') == 'fast' and isinstance(result.get('answer'), dict):
+                # the analysts produced nothing usable, so the deferred specialist answer ships; it is not certified
+                out = dict(result['answer'])
+                if out.get('confidence') == 'verified':
+                    _confidence(out, 'unverified', cert['statement'], evidence='below_certified_threshold')
+                _note(out, 'Shipped after deferral: ' + cert['statement'], 'warning')
+                result = {**result, 'answer': out}
+            together['certificate'] = {k: cert.get(k) for k in ('tier', 'status', 'score', 'threshold', 'alpha', 'delta', 'bound',
+                                                                'n_calibration', 'statement') if cert.get(k) is not None}
+        elif together.get('winner') in ('fast', 'both'):
+            result = _stamp_certificate(result, cert, together)
     receipt = result['planner_receipt']
     if receipt.get('route') == 'cohort_family' and together.get('winner') in (None, 'fast', 'both', 'agree'):
         # The family answer becomes a verified (question -> SQL) pair the learned cache reuses (cohort_families.record).

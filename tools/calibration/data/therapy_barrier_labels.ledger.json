@@ -1,0 +1,19 @@
+{
+ "cases": 1996,
+ "calls": {
+  "claude": 167,
+  "jev": 167,
+  "perplexity": 167
+ },
+ "usd": {
+  "claude": 3.081404,
+  "jev": 0.035974848,
+  "perplexity": 0.012794439999999999
+ },
+ "cache_hits": {
+  "claude": 0,
+  "jev": 0,
+  "perplexity": 0
+ },
+ "errors": []
+}

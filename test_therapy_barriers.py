@@ -13,6 +13,25 @@ from clinical_core.agere.plans import act, router
 
 import test_plans
 
+
+# These tests pin the hand-set (uncalibrated) behaviour; the shipped certificates in config/agere/cascade_thresholds.json
+# are exercised by test_cascade_calibration.py.
+_CASCADE_ENV = None
+
+
+def setUpModule():
+    global _CASCADE_ENV
+    import os as _os
+    _CASCADE_ENV = _os.environ.get('AGERE_CASCADE')
+    _os.environ['AGERE_CASCADE'] = 'off'
+
+
+def tearDownModule():
+    import os as _os
+    if _CASCADE_ENV is None: _os.environ.pop('AGERE_CASCADE', None)
+    else: _os.environ['AGERE_CASCADE'] = _CASCADE_ENV
+
+
 NOTES = [  # record_id, patient_id, date, text, lineage table
     ('N-ALLERGY', 'P1', '2030-01-05', 'Allergies: lisinopril (cough).\nPlan: continue carvedilol 25 mg BID.', 'ehr_epic_hno_info'),
     ('N-NEG', 'P2', '2030-01-06', 'No cough on lisinopril. Tolerating carvedilol well without dizziness.', 'ehr_epic_hno_info'),

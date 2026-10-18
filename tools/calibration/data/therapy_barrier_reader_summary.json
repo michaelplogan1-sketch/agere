@@ -1,0 +1,60 @@
+{
+  "version": "therapy-barriers/1",
+  "text_units": 66141,
+  "units_by_source": {
+    "clinical_note": 64640,
+    "fhir_document_reference": 1501
+  },
+  "fhir_raw_skipped": {
+    "fhir_raw_already_in_notes": 1501,
+    "fhir_raw_unlinked_patient": 66858
+  },
+  "text_chars_all": 73427274,
+  "text_chars_hf_patients": 21432163,
+  "hf_patients": 327,
+  "candidates": 1996,
+  "decided": {
+    "tier1_rules": 1843,
+    "tier2_classifier": 11,
+    "tier3_typed": 0,
+    "pending_typed": 142
+  },
+  "tier1_barrier": 1648,
+  "tier1_rejected": 195,
+  "tier2_barrier": 10,
+  "tier2_rejected": 1,
+  "student_loaded": true,
+  "classifier_training_rows": 1876,
+  "barrier_rows": 1277,
+  "barrier_rows_by_type": {
+    "intolerance_side_effect": 497,
+    "other": 267,
+    "patient_declined": 48,
+    "contraindication_lab": 8,
+    "cost_access": 90,
+    "allergy_angioedema": 367
+  },
+  "barrier_rows_by_method": {
+    "rules": 900,
+    "classifier": 8,
+    "structured": 369
+  },
+  "structured": {
+    "allergy": 369
+  },
+  "therapy_change_reasons_added": 864,
+  "tier3_estimate": {
+    "leftover_cases": 142,
+    "requests_per_provider": 12,
+    "jev_input_tokens": 48578,
+    "jev_usd": 0.002040276,
+    "perplexity_input_tokens_if_all_escalate": 48610,
+    "perplexity_usd_if_all_escalate": 0.0009722,
+    "claude_opus_usd_if_all_escalate": 0.283344,
+    "haiku_usd_same_leftover": 0.007083600000000001,
+    "price_basis": "config/agere/pricing.json (USD per million tokens, checked 2026-10-12)"
+  },
+  "typed_receipt": null,
+  "llm": false,
+  "elapsed_seconds": 199.0
+}

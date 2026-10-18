@@ -28,6 +28,11 @@ Tier 3 (paid, optional, off by default). Only the leftover goes to the typed cla
   (jev-1.13.0, TypeSafe) first, Perplexity Decisions (pplx-decider) second for what Jev leaves uncertain, and Claude
   only when both are uncertain. Every call goes through the metered ledger (context_student.send) and is counted. With
   llm off the bodies are still built so the cost of running them is reported (tier3_estimate).
+Certified cascade (cascade.py, config/agere/cascade_thresholds.json): when a tier has a Learn-then-Test certificate (tiers
+  tier1_rules, tier2_classifier, tier3_jev, tier3_perplexity; fitted by tools/calibrate_cascades.py on Claude-labelled
+  candidates) it decides only at or above its certified threshold, so the labels it accepts have error <= alpha with
+  confidence 1 - delta; below it the candidate goes to the next tier. Without a certificate the hand-set thresholds above
+  apply (today's behaviour). The summary's 'certified' block states each tier's certificate or why it is uncalibrated.
 
 Sources (source_type on every row): clinical_note (record stream notes and the other note_facts.TEXT_SOURCES streams),
 fhir_document_reference (notes whose lineage is a FHIR DocumentReference, and raw_fhir_documentreference rows whose
@@ -738,14 +743,52 @@ def _price(model):
     return prices.get(model) or {}
 
 
-def typed_cascade(cases, send_factory, *, threshold=TYPED_ACCEPT):
-    """Run the cascade over leftover cases -> ({case_id: (label, provider, probability)}, receipt)."""
-    results, receipt = {}, {'calls': Counter(), 'usd': 0.0, 'cache_hits': 0, 'errors': []}
+def tier_gate(tier, fallback):
+    """Certified cascade (cascade.py): the certified acceptance threshold for a reader tier when calibrated (accepted labels
+    then have error <= alpha with confidence 1 - delta), else the hand-set fallback (today's behaviour). -> (threshold, cert).
+    The certificate is evaluated at the threshold itself, so cert['status'] is 'certified' or 'uncalibrated'."""
+    from . import cascade
+    rec = cascade.record(tier) if cascade.enabled() else None
+    probe = rec.get('threshold') if rec and rec.get('calibrated') and rec.get('threshold') is not None else None
+    cert = cascade.certify(tier, probe)
+    if cert['status'] == 'certified':
+        return float(cert['threshold']), cert
+    if cert['status'] == 'not_certified':
+        return math.inf, cert  # measured and not certifiable: the tier decides nothing, its candidates go to the next tier
+    return fallback, cert
+
+
+def certificates():
+    """{tier: certificate block or uncalibrated reason} for the reader's summary receipt."""
+    from . import cascade
+    out = {}
+    for tier, fallback in (('tier1_rules', None), ('tier2_classifier', TIER2_ACCEPT), ('tier3_jev', TYPED_ACCEPT),
+                           ('tier3_perplexity', TYPED_ACCEPT)):
+        thr, cert = tier_gate(tier, fallback)
+        out[tier] = cascade.receipt_block(cert) or {'tier': tier, 'status': cert['status'], 'reason': cert.get('reason'),
+                                                    'threshold_in_force': None if thr == math.inf else thr,
+                                                    **({'deferred': True} if cert['status'] == 'not_certified' else {})}
+    out['tier3_claude'] = {'tier': 'tier3_claude', 'status': 'uncalibrated',
+                           'reason': 'final tier and the calibration reference labeller: its own error is not measured here'}
+    return out
+
+
+def typed_cascade(cases, send_factory, *, threshold=None):
+    """Run the cascade over leftover cases -> ({case_id: (label, provider, probability)}, receipt). threshold=None: each
+    provider's certified threshold (cascade_thresholds.json tier3_jev / tier3_perplexity) when calibrated, else TYPED_ACCEPT;
+    a number forces one threshold for both."""
+    gates = {p: (threshold, None) if threshold is not None else tier_gate(f'tier3_{p}', TYPED_ACCEPT) for p in ('jev', 'perplexity')}
+    results, receipt = {}, {'calls': Counter(), 'usd': 0.0, 'cache_hits': 0, 'errors': [],
+                            'thresholds': {p: g[0] for p, g in gates.items()},
+                            'certified': {p: (g[1] or {}).get('status') == 'certified' for p, g in gates.items()}}
     pending = list(cases)
     with send_factory() as send:
         for provider in ('jev', 'perplexity', 'claude'):
             if not pending:
                 break
+            if provider != 'claude' and gates[provider][0] == math.inf:
+                receipt.setdefault('skipped', []).append(provider)  # measured and not certified: not called at all
+                continue
             nxt = []
             for body in typed_bodies(pending, provider):
                 try:
@@ -761,7 +804,7 @@ def typed_cascade(cases, send_factory, *, threshold=TYPED_ACCEPT):
                 for k in ids:
                     label, p = parsed.get(k, ('unknown', 0.0))
                     final = provider == 'claude'
-                    if label != 'unknown' and (final or (p or 0) >= threshold):
+                    if label != 'unknown' and (final or (p or 0) >= gates[provider][0]):
                         results[k] = (label, provider, p)
                     elif not final:
                         nxt.append(next(c for c in pending if c['case_id'] == k))
@@ -907,14 +950,17 @@ def build(semantic_path, *, send_factory=None, llm=False, receipts_dir=None):
                     defer.append((unit[0], key, reason))
         for i, c in enumerate(cands):
             c['case_id'] = f'c{i:06d}'
-        # tier 1 decisions
+        # tier 1 decisions (a certified rules tier decides only at or above its certified confidence; uncalibrated: all)
+        t1_threshold, _ = tier_gate('tier1_rules', None)
         for c in cands:
             c['tier'], c['decided_by'], c['label'], c['confidence'] = None, None, None, None
             rejected = c['negated'] or c['hypothetical'] or c['meta'] or c['experiencer'] != 'patient'
             if c['rule'] and not rejected:
-                c.update(tier=1, decided_by='rules', label=c['rule_type'], confidence=c['rule_confidence'])
+                if t1_threshold is None or (c['rule_confidence'] or 0) >= t1_threshold:
+                    c.update(tier=1, decided_by='rules', label=c['rule_type'], confidence=c['rule_confidence'])
             elif rejected:
-                c.update(tier=1, decided_by='rules', label=NO_BARRIER, confidence=0.9)
+                if t1_threshold is None or 0.9 >= t1_threshold:
+                    c.update(tier=1, decided_by='rules', label=NO_BARRIER, confidence=0.9)
         # tier 2: student assertion on every candidate, type classifier on the open ones
         student = _student()
         if student is not None and cands:
@@ -927,6 +973,9 @@ def build(semantic_path, *, send_factory=None, llm=False, receipts_dir=None):
         stats['classifier_training_rows'] = len(labelled)
         model = fit_type_classifier(labelled)
         open_ = [c for c in cands if c['tier'] is None]
+        # certified tier 2: one threshold on the classifier probability of its label (barrier or no_barrier) bounds the error
+        # of every label it accepts; uncalibrated: the hand-set TIER2_ACCEPT / TIER2_REJECT pair (today's behaviour)
+        t2_threshold, t2_cert = tier_gate('tier2_classifier', None)
         if model is not None and open_:
             probs = model.predict_proba([_masked(c) for c in open_])
             classes = list(model.classes_)
@@ -934,7 +983,10 @@ def build(semantic_path, *, send_factory=None, llm=False, receipts_dir=None):
                 j = int(p.argmax())
                 c['classifier_label'], c['classifier_probability'] = classes[j], float(p[j])
                 contradicted = c.get('student_assertion') in ('negated', 'other_person', 'retracted') and (c.get('student_probability') or 0) >= 0.5
-                if classes[j] != NO_BARRIER and p[j] >= TIER2_ACCEPT and not contradicted:
+                if t2_threshold is not None:
+                    if p[j] >= t2_threshold and not (contradicted and classes[j] != NO_BARRIER):
+                        c.update(tier=2, decided_by='classifier', label=classes[j], confidence=round(float(p[j]), 3))
+                elif classes[j] != NO_BARRIER and p[j] >= TIER2_ACCEPT and not contradicted:
                     c.update(tier=2, decided_by='classifier', label=classes[j], confidence=round(float(p[j]), 3))
                 elif classes[j] == NO_BARRIER and p[j] >= TIER2_REJECT:
                     c.update(tier=2, decided_by='classifier', label=NO_BARRIER, confidence=round(float(p[j]), 3))
@@ -1045,6 +1097,7 @@ def build(semantic_path, *, send_factory=None, llm=False, receipts_dir=None):
                 'structured': {k[11:]: v for k, v in stats.items() if k.startswith('structured_')},
                 'therapy_change_reasons_added': len(reason_updates),
                 'tier3_estimate': estimate, 'typed_receipt': typed_receipt, 'llm': bool(llm),
+                'certified': certificates(),
                 'elapsed_seconds': round(time.perf_counter() - started, 1)}
             if _has(db, 'meta'):
                 db.execute("DELETE FROM meta WHERE key = 'therapy_barrier_summary'")

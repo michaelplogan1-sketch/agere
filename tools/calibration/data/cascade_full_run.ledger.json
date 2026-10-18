@@ -1,0 +1,15 @@
+{
+ "asked": 720,
+ "routes": {
+  "cohort_family": 407,
+  "metric_router": 72,
+  "operator_router": 75,
+  "local_compiler": 71,
+  "deferred_to_analyst": 1,
+  "hosted_verified_sql": 86,
+  "hosted_missing_data": 5,
+  "learned_verified_sql": 3
+ },
+ "usd_estimate": 0.0,
+ "written_at": "2026-10-18T16:54:40Z"
+}

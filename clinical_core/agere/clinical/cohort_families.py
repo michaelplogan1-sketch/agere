@@ -583,12 +583,19 @@ def _conditions(low):
     return list(dict.fromkeys(out))
 
 
+def _condition_groups(low):
+    """How many distinct named conditions a text mentions (heart failure + diabetes = 2)."""
+    return sum(1 for pat, _ in CONDITIONS if re.search(pat, low))
+
+
 def _age(low):
     m = (re.search(r'\b(?:aged?|ages)\s*(\d{1,3})\s*(?:-|to|through|and)\s*(\d{1,3})', low)
          or re.search(r'\bbetween (?:the )?ages? (?:of )?(\d{1,3}) and (\d{1,3})', low)
          or re.search(r'\b(\d{1,3})\s*(?:-|to)\s*(\d{1,3})\s*(?:years? old|yo\b|at as[_ ]of)', low))
     if m: return [int(m.group(1)), int(m.group(2))]
-    m = re.search(r'\b(?:aged?|ages)?\s*(\d{1,3})\s*(?:\+|and older|and over|or older)', low) or re.search(r'\bover (?:the age of )?(\d{1,3})\b(?! ?%)', low)
+    m = re.search(r'\b(?:aged?|ages)?\s*(\d{1,3})\s*(?:\+|and older|and over|or older)(?!\s*(?:ed|er|emergency|inpatient|hospital\w*|admissions?|'
+                  r'visits?|fills?|trips?|times|encounters?|stays?|claims?)\b)', low) or re.search(r'\bover (?:the age of )?(\d{1,3})\b(?! ?%)', low)
+    # "6+ ED visits" is a count, not an age (cascade calibration 2026-10-18: it was read as age >= 6)
     if m and re.search(r'old|age|over|\+', m.group(0)): return [int(m.group(1)), None]
     return None
 
@@ -702,8 +709,10 @@ def _followup_kinds(low_all, anchor_concept=None):
     kinds = []
     if re.search(_NO + r'(?:[\w-]+\s+){0,2}?(?:physical therapy|\bpt\b|physiotherapy)', low_all): kinds.append('procedure')
     if re.search(_NO + r'(?:[\w-]+\s+){0,2}?(?:behaviou?ral health|psychotherapy|mental health)', low_all): kinds.append('bh')
-    if re.search(_NO + r'(?:[\w-]+\s+){0,3}?(?:visit|follow-?up|encounter|appointment|office)', low_all) \
-            or re.search(r'\bnot (?:been )?seen\b|\bno one saw\b', low_all):
+    visit = [m for m in re.finditer(_NO + r'((?:[\w-]+\s+){0,3}?)(?:visit|follow-?up|encounter|appointment|office)', low_all)
+             # "no behavioral health follow-up" / "no physical therapy visit" name their kind: not a generic visit
+             if not re.search(r'behaviou?ral|mental|psychotherap|physical therapy|physiotherap|\bpt\b', m.group(1))]
+    if visit or re.search(r'\bnot (?:been )?seen\b|\bno one saw\b', low_all):
         generic_only = not re.search(_NO + r'(?:[\w-]+\s+){0,3}?(?:visit|encounter|appointment|office)', low_all)
         kinds.append('visit')
         if generic_only and anchor_concept in ('phq9', 'phq2') and 'bh' not in kinds: kinds.append('bh')
@@ -789,6 +798,8 @@ def parse(question, as_of):
     if not isinstance(question, str) or not question.strip(): return None
     qtext, defn = split_definition(_clean(question))
     if _UNSUPPORTED.search(qtext): return None
+    if not defn and _condition_groups(_lower(qtext)) > 1:
+        return None  # "diabetic patients who also have CKD": one condition population per family; a union answers another question
     family = detect_family(qtext, defn)
     if family is None: return None
     if family != 'adherence_pdc' and re.search(r'\b(?:19|20)\d\d\b', qtext + ' ' + defn):

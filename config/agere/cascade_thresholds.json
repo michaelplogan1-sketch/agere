@@ -1,0 +1,689 @@
+{
+ "schema": "cascade-thresholds/1",
+ "version": "agere-cascade/1",
+ "written_at": "2026-10-18T16:55:07Z",
+ "target": {
+  "alpha": 0.05,
+  "delta": 0.1
+ },
+ "method": "Learn-then-Test certificates per tier (clinical_core/agere/clinical/cascade.py); held-out evaluation in each record",
+ "calibrator": "calibrate-cascades/1",
+ "calibration_sets": {
+  "routes": "tools/calibration/data/cascade_route_calibration.jsonl",
+  "therapy": "tools/calibration/data/therapy_barrier_labels.jsonl"
+ },
+ "split": {
+  "calibration_share": 0.7,
+  "group": "one trusted definition / question / candidate",
+  "blind": "bench heldout* first runs, evaluation only"
+ },
+ "therapy_cascade": {
+  "thresholds_in_force": {
+   "tier1_rules": 0.8,
+   "tier2_classifier": 0.4112975485854458,
+   "tier3_jev": "deferred (not certified)",
+   "tier3_perplexity": "deferred (not certified)"
+  },
+  "tiers": {
+   "tier1_rules": {
+    "decided": 1843,
+    "errors": 1,
+    "reached": 1996,
+    "coverage_of_all": 0.9233,
+    "coverage_of_reached": 0.9233,
+    "error_vs_claude": 0.0005
+   },
+   "tier2_classifier": {
+    "decided": 100,
+    "errors": 0,
+    "reached": 153,
+    "coverage_of_all": 0.0501,
+    "coverage_of_reached": 0.6536,
+    "error_vs_claude": 0.0
+   },
+   "tier3_jev": {
+    "decided": 0,
+    "errors": 0,
+    "reached": 53,
+    "coverage_of_all": 0.0,
+    "coverage_of_reached": 0.0,
+    "error_vs_claude": null
+   },
+   "tier3_perplexity": {
+    "decided": 0,
+    "errors": 0,
+    "reached": 53,
+    "coverage_of_all": 0.0,
+    "coverage_of_reached": 0.0,
+    "error_vs_claude": null
+   },
+   "tier3_claude": {
+    "decided": 53,
+    "errors": 0,
+    "reached": 53,
+    "coverage_of_all": 0.0266,
+    "coverage_of_reached": 1.0,
+    "error_vs_claude": 0.0
+   }
+  },
+  "cost": {
+   "candidates_per_1000_units": 30.18,
+   "usd_per_candidate_typed_tier": 5.3e-05,
+   "usd_per_1000_units": 0.0016,
+   "usd_per_1000_units_if_all_candidates_went_to_claude": 0.06022,
+   "per_case_usd": {
+    "jev": 1.8e-05,
+    "perplexity": 6.4e-06,
+    "claude": 0.0019954
+   },
+   "text_units": 66141,
+   "candidates": 1996,
+   "basis": "measured labelling-run ledger cost per case (Jev, Perplexity); Claude = reader tier3_estimate for its own body"
+  }
+ },
+ "tiers": {
+  "local_compiler": {
+   "tier": "local_compiler",
+   "alpha": 0.05,
+   "delta": 0.1,
+   "n_calibration": 92,
+   "threshold": null,
+   "calibrated": false,
+   "method": "Learn-then-Test (fixed-sequence exact binomial tests)",
+   "bind": "9c0c3ab23c75367d",
+   "data": {
+    "labelled": 181,
+    "calibration": 92,
+    "heldout": 49,
+    "blind": 40,
+    "sources": {
+     "bench": 126,
+     "full_fast_path": 55
+    },
+    "errors_all": 82
+   },
+   "score": "route-level (1.0 for every claim): the certificate covers all of the route's claims",
+   "fitted_at": "2026-10-18T16:55:07Z",
+   "bound_if_accept_all": 0.4742,
+   "eligible": 92,
+   "decision": "defer",
+   "reason": "not certifiable on calibration; at today's threshold 0.0 the held-out data show 19/49 wrong, significantly above alpha=5%: the tier defers",
+   "heldout": {
+    "n": 49,
+    "n_accepted": 0,
+    "errors_accepted": 0,
+    "coverage": 0.0,
+    "error_rate": null,
+    "error_upper_bound": null
+   },
+   "blind_test": {
+    "n": 40,
+    "n_accepted": 0,
+    "errors_accepted": 0,
+    "coverage": 0.0,
+    "error_rate": null,
+    "error_upper_bound": null
+   },
+   "heldout_at_todays_threshold": {
+    "n": 49,
+    "n_accepted": 49,
+    "errors_accepted": 19,
+    "coverage": 1.0,
+    "error_rate": 0.3878,
+    "error_upper_bound": 0.4893,
+    "threshold": 0.0
+   },
+   "blind_at_todays_threshold": {
+    "n": 40,
+    "n_accepted": 40,
+    "errors_accepted": 26,
+    "coverage": 1.0,
+    "error_rate": 0.65,
+    "error_upper_bound": 0.7512,
+    "threshold": 0.0
+   },
+   "ltt_threshold": null
+  },
+  "cohort_family": {
+   "tier": "cohort_family",
+   "alpha": 0.05,
+   "delta": 0.1,
+   "n_calibration": 751,
+   "threshold": 0.71,
+   "calibrated": true,
+   "method": "Learn-then-Test (fixed-sequence exact binomial tests)",
+   "bind": "15aa6e4dd32153d1",
+   "data": {
+    "labelled": 1101,
+    "calibration": 751,
+    "heldout": 350,
+    "blind": 0,
+    "sources": {
+     "offline_cohort_family": 699,
+     "full_fast_path": 402
+    },
+    "errors_all": 0
+   },
+   "score": "cascade.cohort_family_score: 1 - 0.08 x convention defaults applied - 0.25 x model-filled slots - 0.05 without an inline definition",
+   "fitted_at": "2026-10-18T16:55:07Z",
+   "n_accepted": 751,
+   "errors_accepted": 0,
+   "coverage": 1.0,
+   "p_value": 1.8639213028076222e-17,
+   "bound": 0.0031,
+   "decision": "certified",
+   "heldout": {
+    "n": 350,
+    "n_accepted": 350,
+    "errors_accepted": 0,
+    "coverage": 1.0,
+    "error_rate": 0.0,
+    "error_upper_bound": 0.0066
+   },
+   "blind_test": {
+    "n": 0,
+    "n_accepted": 0,
+    "errors_accepted": 0,
+    "coverage": null,
+    "error_rate": null,
+    "error_upper_bound": null
+   }
+  },
+  "metric_router": {
+   "tier": "metric_router",
+   "alpha": 0.05,
+   "delta": 0.1,
+   "n_calibration": 36,
+   "threshold": null,
+   "calibrated": false,
+   "method": "Learn-then-Test (fixed-sequence exact binomial tests)",
+   "bind": "0615a2a334e85d63",
+   "data": {
+    "labelled": 70,
+    "calibration": 36,
+    "heldout": 13,
+    "blind": 21,
+    "sources": {
+     "bench": 22,
+     "full_fast_path": 48
+    },
+    "errors_all": 65
+   },
+   "score": "route-level (1.0 for every claim): the certificate covers all of the route's claims",
+   "fitted_at": "2026-10-18T16:55:07Z",
+   "bound_if_accept_all": 1.0,
+   "eligible": 36,
+   "decision": "defer",
+   "reason": "not certifiable on calibration; at today's threshold 0.0 the held-out data show 13/13 wrong, significantly above alpha=5%: the tier defers",
+   "heldout": {
+    "n": 13,
+    "n_accepted": 0,
+    "errors_accepted": 0,
+    "coverage": 0.0,
+    "error_rate": null,
+    "error_upper_bound": null
+   },
+   "blind_test": {
+    "n": 21,
+    "n_accepted": 0,
+    "errors_accepted": 0,
+    "coverage": 0.0,
+    "error_rate": null,
+    "error_upper_bound": null
+   },
+   "heldout_at_todays_threshold": {
+    "n": 13,
+    "n_accepted": 13,
+    "errors_accepted": 13,
+    "coverage": 1.0,
+    "error_rate": 1.0,
+    "error_upper_bound": 1.0,
+    "threshold": 0.0
+   },
+   "blind_at_todays_threshold": {
+    "n": 21,
+    "n_accepted": 21,
+    "errors_accepted": 16,
+    "coverage": 1.0,
+    "error_rate": 0.7619,
+    "error_upper_bound": 0.8794,
+    "threshold": 0.0
+   },
+   "ltt_threshold": null
+  },
+  "operator_router": {
+   "tier": "operator_router",
+   "alpha": 0.05,
+   "delta": 0.1,
+   "n_calibration": 19,
+   "threshold": null,
+   "calibrated": false,
+   "method": "Learn-then-Test (fixed-sequence exact binomial tests)",
+   "bind": "da1e0a4d1cc132dd",
+   "data": {
+    "labelled": 43,
+    "calibration": 19,
+    "heldout": 19,
+    "blind": 5,
+    "sources": {
+     "bench": 6,
+     "full_fast_path": 37
+    },
+    "errors_all": 43
+   },
+   "score": "learned-router probability when it chose the engine, else 1.0",
+   "fitted_at": "2026-10-18T16:55:07Z",
+   "bound_if_accept_all": 1.0,
+   "eligible": 19,
+   "decision": "defer",
+   "reason": "not certifiable on calibration; at today's threshold 0.0 the held-out data show 19/19 wrong, significantly above alpha=5%: the tier defers",
+   "heldout": {
+    "n": 19,
+    "n_accepted": 0,
+    "errors_accepted": 0,
+    "coverage": 0.0,
+    "error_rate": null,
+    "error_upper_bound": null
+   },
+   "blind_test": {
+    "n": 5,
+    "n_accepted": 0,
+    "errors_accepted": 0,
+    "coverage": 0.0,
+    "error_rate": null,
+    "error_upper_bound": null
+   },
+   "heldout_at_todays_threshold": {
+    "n": 19,
+    "n_accepted": 19,
+    "errors_accepted": 19,
+    "coverage": 1.0,
+    "error_rate": 1.0,
+    "error_upper_bound": 1.0,
+    "threshold": 0.0
+   },
+   "blind_at_todays_threshold": {
+    "n": 5,
+    "n_accepted": 5,
+    "errors_accepted": 5,
+    "coverage": 1.0,
+    "error_rate": 1.0,
+    "error_upper_bound": 1.0,
+    "threshold": 0.0
+   },
+   "ltt_threshold": null
+  },
+  "compact_retrieval_typed_router": {
+   "tier": "compact_retrieval_typed_router",
+   "alpha": 0.05,
+   "delta": 0.1,
+   "n_calibration": 0,
+   "threshold": null,
+   "calibrated": false,
+   "method": "Learn-then-Test (fixed-sequence exact binomial tests)",
+   "bind": "98543918ff843c7d",
+   "data": {
+    "labelled": 0,
+    "calibration": 0,
+    "heldout": 0,
+    "blind": 0,
+    "sources": {},
+    "errors_all": 0
+   },
+   "score": "typed decider probability of its chosen analysis",
+   "fitted_at": "2026-10-18T16:55:07Z",
+   "bound_if_accept_all": null,
+   "eligible": 0,
+   "decision": "uncalibrated",
+   "reason": "no labelled calibration data for this tier; today's behaviour kept (uncalibrated)",
+   "heldout": {
+    "n": 0,
+    "n_accepted": 0,
+    "errors_accepted": 0,
+    "coverage": null,
+    "error_rate": null,
+    "error_upper_bound": null
+   },
+   "blind_test": {
+    "n": 0,
+    "n_accepted": 0,
+    "errors_accepted": 0,
+    "coverage": null,
+    "error_rate": null,
+    "error_upper_bound": null
+   },
+   "heldout_at_todays_threshold": {
+    "n": 0,
+    "n_accepted": 0,
+    "errors_accepted": 0,
+    "coverage": null,
+    "error_rate": null,
+    "error_upper_bound": null,
+    "threshold": 0.0
+   },
+   "blind_at_todays_threshold": {
+    "n": 0,
+    "n_accepted": 0,
+    "errors_accepted": 0,
+    "coverage": null,
+    "error_rate": null,
+    "error_upper_bound": null,
+    "threshold": 0.0
+   }
+  },
+  "learned_verified_sql": {
+   "tier": "learned_verified_sql",
+   "alpha": 0.05,
+   "delta": 0.1,
+   "n_calibration": 3,
+   "threshold": null,
+   "calibrated": false,
+   "method": "Learn-then-Test (fixed-sequence exact binomial tests)",
+   "bind": "8bdd5722c3747f88",
+   "data": {
+    "labelled": 3,
+    "calibration": 3,
+    "heldout": 0,
+    "blind": 0,
+    "sources": {
+     "full_fast_path": 3
+    },
+    "errors_all": 0
+   },
+   "score": "route-level (1.0 for every claim): the certificate covers all of the route's claims",
+   "fitted_at": "2026-10-18T16:55:07Z",
+   "bound_if_accept_all": 0.5358,
+   "eligible": 3,
+   "decision": "uncalibrated",
+   "reason": "not certifiable at alpha=5%, delta=10%: 3 calibration cases (3 with a usable score), 0 wrong; needs >= 45 accepted cases with zero errors (more with errors); too little data: today's behaviour kept",
+   "heldout": {
+    "n": 0,
+    "n_accepted": 0,
+    "errors_accepted": 0,
+    "coverage": null,
+    "error_rate": null,
+    "error_upper_bound": null
+   },
+   "blind_test": {
+    "n": 0,
+    "n_accepted": 0,
+    "errors_accepted": 0,
+    "coverage": null,
+    "error_rate": null,
+    "error_upper_bound": null
+   },
+   "heldout_at_todays_threshold": {
+    "n": 0,
+    "n_accepted": 0,
+    "errors_accepted": 0,
+    "coverage": null,
+    "error_rate": null,
+    "error_upper_bound": null,
+    "threshold": 0.0
+   },
+   "blind_at_todays_threshold": {
+    "n": 0,
+    "n_accepted": 0,
+    "errors_accepted": 0,
+    "coverage": null,
+    "error_rate": null,
+    "error_upper_bound": null,
+    "threshold": 0.0
+   }
+  },
+  "semantic_cache": {
+   "tier": "semantic_cache",
+   "alpha": 0.05,
+   "delta": 0.1,
+   "n_calibration": 738,
+   "threshold": 0.5619,
+   "calibrated": true,
+   "method": "Learn-then-Test (fixed-sequence exact binomial tests)",
+   "bind": "d6adb66ac77d204c",
+   "data": {
+    "labelled": 1003,
+    "calibration": 738,
+    "heldout": 265,
+    "blind": 0,
+    "sources": {
+     "semantic_cache_cases": 1003
+    },
+    "errors_all": 0
+   },
+   "score": "local encoder cosine similarity to the verified question (identical slots required first)",
+   "fitted_at": "2026-10-18T16:55:07Z",
+   "n_accepted": 228,
+   "errors_accepted": 0,
+   "coverage": 0.3089,
+   "p_value": 8.336466433853719e-06,
+   "bound": 0.01,
+   "decision": "certified",
+   "heldout": {
+    "n": 265,
+    "n_accepted": 77,
+    "errors_accepted": 0,
+    "coverage": 0.2906,
+    "error_rate": 0.0,
+    "error_upper_bound": 0.0295
+   },
+   "blind_test": {
+    "n": 0,
+    "n_accepted": 0,
+    "errors_accepted": 0,
+    "coverage": null,
+    "error_rate": null,
+    "error_upper_bound": null
+   }
+  },
+  "tier1_rules": {
+   "tier": "tier1_rules",
+   "alpha": 0.05,
+   "delta": 0.1,
+   "n_calibration": 1267,
+   "threshold": 0.8,
+   "calibrated": true,
+   "method": "Learn-then-Test (fixed-sequence exact binomial tests)",
+   "bind": "0c5ae66c63e0b6f7",
+   "data": {
+    "labelled": 1843,
+    "calibration": 1267,
+    "heldout": 576,
+    "blind": 0,
+    "sources": {
+     "therapy_labels": 1843
+    },
+    "errors_all": 1
+   },
+   "score": "rule confidence",
+   "fitted_at": "2026-10-18T16:55:07Z",
+   "n_accepted": 1267,
+   "errors_accepted": 1,
+   "coverage": 1.0,
+   "p_value": 4.0391991714828766e-27,
+   "bound": 0.0031,
+   "decision": "certified",
+   "heldout": {
+    "n": 576,
+    "n_accepted": 576,
+    "errors_accepted": 0,
+    "coverage": 1.0,
+    "error_rate": 0.0,
+    "error_upper_bound": 0.004
+   },
+   "blind_test": {
+    "n": 0,
+    "n_accepted": 0,
+    "errors_accepted": 0,
+    "coverage": null,
+    "error_rate": null,
+    "error_upper_bound": null
+   }
+  },
+  "tier2_classifier": {
+   "tier": "tier2_classifier",
+   "alpha": 0.05,
+   "delta": 0.1,
+   "n_calibration": 102,
+   "threshold": 0.4112975485854458,
+   "calibrated": true,
+   "method": "Learn-then-Test (fixed-sequence exact binomial tests)",
+   "bind": "0c5ae66c63e0b6f7",
+   "data": {
+    "labelled": 153,
+    "calibration": 102,
+    "heldout": 51,
+    "blind": 0,
+    "sources": {
+     "therapy_labels": 153
+    },
+    "errors_all": 13
+   },
+   "score": "barrier-type classifier probability of its label (0 when the student contradicts a barrier)",
+   "fitted_at": "2026-10-18T16:55:07Z",
+   "n_accepted": 68,
+   "errors_accepted": 0,
+   "coverage": 0.6667,
+   "p_value": 0.030563645913324146,
+   "bound": 0.0333,
+   "decision": "certified",
+   "heldout": {
+    "n": 51,
+    "n_accepted": 32,
+    "errors_accepted": 0,
+    "coverage": 0.6275,
+    "error_rate": 0.0,
+    "error_upper_bound": 0.0694
+   },
+   "blind_test": {
+    "n": 0,
+    "n_accepted": 0,
+    "errors_accepted": 0,
+    "coverage": null,
+    "error_rate": null,
+    "error_upper_bound": null
+   }
+  },
+  "tier3_jev": {
+   "tier": "tier3_jev",
+   "alpha": 0.05,
+   "delta": 0.1,
+   "n_calibration": 102,
+   "threshold": null,
+   "calibrated": false,
+   "method": "Learn-then-Test (fixed-sequence exact binomial tests)",
+   "bind": "0c5ae66c63e0b6f7",
+   "data": {
+    "labelled": 153,
+    "calibration": 102,
+    "heldout": 51,
+    "blind": 0,
+    "sources": {
+     "therapy_labels": 153
+    },
+    "errors_all": 20
+   },
+   "score": "Jev probability of its label",
+   "fitted_at": "2026-10-18T16:55:07Z",
+   "bound_if_accept_all": 0.213,
+   "eligible": 37,
+   "decision": "defer",
+   "reason": "not certifiable on calibration; at today's threshold 0.8 the held-out data show 4/5 wrong, significantly above alpha=5%: the tier defers",
+   "heldout": {
+    "n": 51,
+    "n_accepted": 0,
+    "errors_accepted": 0,
+    "coverage": 0.0,
+    "error_rate": null,
+    "error_upper_bound": null
+   },
+   "blind_test": {
+    "n": 0,
+    "n_accepted": 0,
+    "errors_accepted": 0,
+    "coverage": null,
+    "error_rate": null,
+    "error_upper_bound": null
+   },
+   "heldout_at_todays_threshold": {
+    "n": 51,
+    "n_accepted": 5,
+    "errors_accepted": 4,
+    "coverage": 0.098,
+    "error_rate": 0.8,
+    "error_upper_bound": 0.9791,
+    "threshold": 0.8
+   },
+   "blind_at_todays_threshold": {
+    "n": 0,
+    "n_accepted": 0,
+    "errors_accepted": 0,
+    "coverage": null,
+    "error_rate": null,
+    "error_upper_bound": null,
+    "threshold": 0.8
+   },
+   "ltt_threshold": null
+  },
+  "tier3_perplexity": {
+   "tier": "tier3_perplexity",
+   "alpha": 0.05,
+   "delta": 0.1,
+   "n_calibration": 102,
+   "threshold": null,
+   "calibrated": false,
+   "method": "Learn-then-Test (fixed-sequence exact binomial tests)",
+   "bind": "0c5ae66c63e0b6f7",
+   "data": {
+    "labelled": 153,
+    "calibration": 102,
+    "heldout": 51,
+    "blind": 0,
+    "sources": {
+     "therapy_labels": 153
+    },
+    "errors_all": 94
+   },
+   "score": "Perplexity Decisions probability of its label",
+   "fitted_at": "2026-10-18T16:55:07Z",
+   "bound_if_accept_all": 0.6632,
+   "eligible": 75,
+   "decision": "defer",
+   "reason": "not certifiable on calibration; at today's threshold 0.8 the held-out data show 1/1 wrong, significantly above alpha=5%: the tier defers",
+   "heldout": {
+    "n": 51,
+    "n_accepted": 0,
+    "errors_accepted": 0,
+    "coverage": 0.0,
+    "error_rate": null,
+    "error_upper_bound": null
+   },
+   "blind_test": {
+    "n": 0,
+    "n_accepted": 0,
+    "errors_accepted": 0,
+    "coverage": null,
+    "error_rate": null,
+    "error_upper_bound": null
+   },
+   "heldout_at_todays_threshold": {
+    "n": 51,
+    "n_accepted": 1,
+    "errors_accepted": 1,
+    "coverage": 0.0196,
+    "error_rate": 1.0,
+    "error_upper_bound": 1.0,
+    "threshold": 0.8
+   },
+   "blind_at_todays_threshold": {
+    "n": 0,
+    "n_accepted": 0,
+    "errors_accepted": 0,
+    "coverage": null,
+    "error_rate": null,
+    "error_upper_bound": null,
+    "threshold": 0.8
+   },
+   "ltt_threshold": null
+  }
+ }
+}
