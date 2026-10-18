@@ -276,7 +276,9 @@ def render_event_followup_gap(p, as_of, tables=None):
                   f"row_number() OVER (PARTITION BY patient_id ORDER BY event_date DESC, record_id DESC) rn FROM measurement "
                   f"WHERE concept = {q(an['concept'])} AND value_canonical IS NOT NULL AND coalesce(result_status, '') <> 'cancelled' "
                   f"AND coalesce(result_current, 1) = 1 AND event_date {'>=' if win.get('lower_inclusive') else '>'} "
-                  f"{_shift(a, days=lb.get('days'), months=lb.get('months'))} AND event_date <= {a}) "
+                  f"{_shift(a, days=lb.get('days'), months=lb.get('months'))} "
+                  # "latest" = the latest result inside the stated window (e.g. 30-365 days before as_of)
+                  f"AND event_date <= {_shift(a, days=int(win['min_days_before'])) if win.get('min_days_before') else a}) "
                   f"WHERE rn = 1 AND value_canonical {OPS[an['op']]} {_num(an['value'])}")
     elif an['kind'] == 'measurement':
         anchor = f"SELECT patient_id, event_date AS d FROM measurement WHERE {_measure_where(an)}"
