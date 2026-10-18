@@ -392,7 +392,12 @@ def envelope(result, *, answer_type=None):
     status = a.get('status')
     decline = result.get('workspace_decline')
     answer = None
-    if status in ('answered', 'partial'):
+    want = answer_type or a.get('answer_type')
+    if status in ('answered', 'partial') and want == 'patient_set' and isinstance(a.get('patient_ids'), list):
+        answer = {'patient_ids': a['patient_ids']}  # a patient list was asked for: return it, not just its size
+    elif status in ('answered', 'partial') and want == 'table' and isinstance(a.get('table'), list) and a['table']:
+        answer = {'table': _table_rows(a['table'])}
+    elif status in ('answered', 'partial'):
         if a.get('count') is not None:
             answer = {'count': a['count']}
         elif a.get('value') is not None and not isinstance(a.get('value'), (dict, list)):
@@ -417,5 +422,7 @@ def envelope(result, *, answer_type=None):
             'cost_usd': econ.get('new_api_estimate_usd'), 'new_paid_api_calls': result.get('new_paid_api_calls'),
             'route': receipt.get('route') or result.get('route'), 'operations': ops, 'missing': missing,
             'workspace_decline': {k: v for k, v in (decline or {}).items() if k != 'declined_graph'} or None,
+            'decline': ({'kind': status, 'readings': a.get('readings') or [], 'missing': missing}
+                        if status in ('clarify', 'unsupported') else None),
             'result': {k: result.get(k) for k in ('answer', 'graph', 'route', 'together', 'planning_economics',
                                                    'new_paid_api_calls')}}
