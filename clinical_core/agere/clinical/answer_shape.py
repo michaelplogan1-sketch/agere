@@ -42,7 +42,8 @@ _STOP = {'how', 'many', 'much', 'what', 'which', 'who', 'the', 'and', 'for', 'wi
          'an', 'on', 'at', 'by', 'or', 'as', 'be', 'it', 'we', 'us', 'me', 'do', 'if', 'so', 'same', 'date', 'dates', 'day'}
 
 # ---------------------------------------------------------------------------------------------------- requested shape
-_PATIENT_NOUN = r'(?:patients?|members?|people|persons?|individuals?|beneficiar(?:y|ies)|enrollees?)'
+_PATIENT_NOUN = (r'(?:patients?|members?|people|persons?|individuals?|beneficiar(?:y|ies)|enrollees?|women|men|adults?|children|'
+                 r'kids|infants?|seniors?|veterans?|diabetics?|smokers?|mothers?|pregnancies)')
 _PATIENT_LIST = re.compile(r'\b(?:which|list(?: all)?|who are|identify|name|pull(?: me)?|give me|send me|i need)\b'
                            r'(?:\s+(?:the|our|all|of|of the|of our|a list of|the list of|list of))*(?:\s+[\w+-]+){0,5}?\s+'
                            + _PATIENT_NOUN + r'\b|^\s*who\b|(?:^|[:.;]\s*)who (?:has|have|had|is|are|was|were)\b|'
