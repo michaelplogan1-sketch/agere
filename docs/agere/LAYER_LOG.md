@@ -383,3 +383,7 @@ router, operator router and Opus reconcile leave the answer path (BUILD_LOG.md s
 - **Reading:** on native data most answers came from the analysts (128/150 decisions), so the gap to the v2.8 pilot
   (75/100) sits mainly in the native staged data and native question set, not in the engines. Not tuned against these
   keys.
+- **N5 (after the claims fidelity fix, ed28347; scorer .4):** 71/150 (count 44/86, value 19/39, table 6/16, patient_set
+  2/9; revenue cycle 8/15, hospital operations 13/15). The fidelity audit against the generator's reference rendering
+  (same population, public JSON delivery) found ~11.9K duplicated Medicare FFS claims and under-counted denials and
+  reversals; claims now match the reference to within a few per payer. Enrollment spans fixed next (a703d94).
