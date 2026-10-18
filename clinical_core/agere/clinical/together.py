@@ -189,15 +189,28 @@ def specialists_first():
     return os.environ.get('AGERE_SPECIALISTS_FIRST', 'on').strip().lower() != 'off'
 
 
+_DEFINITION = __import__('re').compile(r'\bdefinition\s*:|\bdefined as\b|\bcounts? as\b|\bmeans\b.{0,80}\b(within|days?|months?|code|icd|cpt)\b', __import__('re').I | __import__('re').S)
+
+
+def _inline_definition(question):
+    """The question carries its own explicit definition (\"Definition: ...\", \"defined as\", criteria with windows/codes)."""
+    return bool(_DEFINITION.search(question or ''))
+
+
 def _fast_route(fast):
     fast = fast or {}
     return (fast.get('planner_receipt') or {}).get('route') or fast.get('route')
 
 
-def _specialist_answer(fast, answer_type):
+def _specialist_answer(fast, answer_type, question=''):
     """A specialist claimed the question: its route is a governed/compiled/cached/engine route and it produced a
     non-empty answer of the requested shape (an unchecked zero or a missing patient list goes on to the analysts)."""
-    if _fast_route(fast) not in SPECIALIST_ROUTES:
+    route = _fast_route(fast)
+    if route not in SPECIALIST_ROUTES:
+        return False
+    if route == 'metric_router' and _inline_definition(question):
+        # The question states its own definition: an organization's standard metric answers a different question, so it
+        # does not claim this one (the stated definition is followed by the path that reads it).
         return False
     answer = (fast or {}).get('answer')
     if not isinstance(answer, dict) or _empty_answer(answer):
@@ -687,7 +700,7 @@ def compose_together(stack, question, *, planning='auto', answer_type=None):
             fast = stack._compose(question, planning=planning)
     except Exception as exc:  # noqa: BLE001 - the analyst may still answer; re-raised in decide otherwise
         fast_error = exc
-    claimed = first and fast_error is None and _specialist_answer(fast, answer_type)
+    claimed = first and fast_error is None and _specialist_answer(fast, answer_type, question)
     if first and not claimed:
         # No specialist claimed the question: now (and only now) the independent analysts answer it.
         future = _pool().submit(_run_analyst, stack, question, as_of, semantic_path, model, answer_type)
