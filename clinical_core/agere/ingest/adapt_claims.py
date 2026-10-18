@@ -26,7 +26,8 @@ payer_medical_claims / payer_medical_claim_lines (diagnoses inside the claim rec
     FULL_RESTATEMENT rows only fill events the incrementals lack. Provider-side 837/835 (x12/) are kept out of these payer streams as copies of the
     payer claim (their lines fill header-only loops; their bare CLM01 becomes source_billing_claim_id). CCLF Part A/B/DME
     are the Medicare FFS (MSSP) claims: an MSSP X12 claim that matches a CCLF claim (837P: MBI + HCPCS + service date;
-    837I: MBI + statement from/thru) is kept once, with CCLF allowed/paid amounts; unmatched CCLF chains (clm_cntl_num tail,
+    837I: MBI + statement from/thru; a 12-character re-issued member id on its 11-character MBI) is kept once, with the 835
+    paid amount and member liability (CAS PR) and the CCLF allowed amount; unmatched CCLF chains (clm_cntl_num tail,
     original / cancel / re-issue) become their own claims.
 payer_pharmacy_claims
     NCPDP D.0 transactions: B1 P paid, B1 R rejected (reject_code = first 511-FB), B2 reversal (transaction_code B2,
@@ -411,15 +412,15 @@ def _enrollment(ctx):
         'pcp_name', 'last_name', 'first_name', 'dob'])
     loops = _isa_filter(rep, 'x12_834_member', _keep_files(rep, 'x12_834_member', loops))
     first_file = {}
-    full_dates = defaultdict(set)  # payer -> dates of quarterly full files
+    full_months = defaultdict(dict)  # payer -> {coverage month of a quarterly full file: its delivery date}
     for r in loops:
         p = _payer_id(r['_instance'])
         fd = _d(r['file_date']) or _d(r['interchange_date']) or _file_date(r['_file'])
-        r['_payer'], r['_fd'] = p, fd
+        r['_payer'], r['_fd'], r['_period'] = p, fd, _period(r['_file'], fd)
         if fd and (p not in first_file or fd < first_file[p]):
             first_file[p] = fd
-        if fd and r['file_type'] == 'full':
-            full_dates[p].add(fd)
+        if r['_period'] and fd and r['file_type'] == 'full':
+            full_months[p][r['_period']] = min(full_months[p].get(r['_period']) or fd, fd)
     loops.sort(key=lambda r: (r['_payer'] or '', r['member_id'] or '', r['_fd'] or '',
                               0 if r['file_type'] == 'change' else 1, r['_file'] or '', r['_row'] or 0))
     by_member = defaultdict(list)
@@ -432,7 +433,7 @@ def _enrollment(ctx):
     covered = set()
     for (payer, member), rows in by_member.items():
         covered.add((payer, member))
-        out += _spans_834(ctx, payer, member, rows, first_file.get(payer), death, sorted(full_dates.get(payer, ())))
+        out += _spans_834(ctx, payer, member, rows, first_file.get(payer), death, sorted(full_months.get(payer, {}).items()))
     # flat-only members (no 834 loop at that payer)
     for (payer, member), snaps in flat.items():
         if (payer, member) in covered:
@@ -456,6 +457,15 @@ def _enrollment(ctx):
             v['coverage_end'] = last['term']
             v['coverage_end_source'] = 'flat_eligibility'
             rep['cross_check']['coverage_end_from_flat_eligibility'] += 1
+        elif v.get('_final') and v.get('termination_reason') == 'absent_from_full_file':
+            # a delivered TERM_DATE overrides the end inferred from full-file omission
+            term = next((s['term'] for s in sorted(same, key=lambda s: (s['fd'] or '', s['_file'], s['_row']), reverse=True)
+                         if s['term'] and not s['term'].startswith('9999')), None)
+            if term and term != v['coverage_end']:
+                v['coverage_end'] = term
+                v['termination_reason'] = 'disenrolled'
+                v['coverage_end_source'] = 'flat_eligibility'
+                rep['cross_check']['inferred_coverage_end_replaced_by_flat_term_date'] += 1
         v['_lineage_extra'] = [_lin('payers_eligibility', s) for s in same]
     # a beneficiary whose Medicare FFS coverage already arrives as an 834 MEDICARE_FFS span (payers 0/1/2, MBI as member
     # id) gets no second span from CCLF enrollment
@@ -488,14 +498,17 @@ def _span_record(ctx, v):
     return rec
 
 
-def _spans_834(ctx, payer, member, rows, first_file, death, full_dates=()):
-    """A quarterly full file replaces membership: a span still open after the last file that reported it ends the day
-    before the next full file from that payer that omits it (no 024 term is sent in full-file months)."""
+def _spans_834(ctx, payer, member, rows, first_file, death, full_months=()):
+    """A quarterly full file replaces membership, but absence from it only proves that coverage ended before that file's
+    coverage month (the YYYY-MM folder it is delivered under), not on its delivery date: a span still open after the last
+    file that reported it ends on the last day of the last coverage month a file reported it. full_months: sorted
+    (coverage month, delivery date) of the payer's full files. A delivered flat-eligibility TERM_DATE overrides this
+    inferred end (_enrollment)."""
     rep = ctx.rep
     spans = {}     # coverage_start -> current version dict
     order = []     # all versions in creation order
     last_active = {}  # coverage_start -> latest file date that reported the span open
-    last_seen = {}    # coverage_start -> latest file date that named the span at all
+    last_seen = {}    # coverage_start -> latest coverage month (YYYY-MM) of a file that named the span at all
     for r in rows:
         mt = _s(r['maintenance_type_code'])
         start = _d(r['eligibility_begin_date']) or _d(r['benefit_begin_date'])
@@ -561,17 +574,20 @@ def _spans_834(ctx, payer, member, rows, first_file, death, full_dates=()):
             order.append(v)
         if end is None or (fd and end >= fd):
             last_active[start] = max(last_active.get(start) or '', fd or '')
-        if fd:
-            last_seen[start] = max(last_seen.get(start) or '', fd)
+        if r.get('_period'):
+            last_seen[start] = max(last_seen.get(start) or '', r['_period'])
     for start, s in list(spans.items()):
         seen = last_seen.get(start)
-        omitted = next((d for d in full_dates if seen and d > seen), None)
+        omitted = next(((m, d) for m, d in full_months if seen and m > seen), None)
         if not omitted:
             continue
-        end = _minus_day(omitted)
-        if s['coverage_end'] and s['coverage_end'] <= end:
+        # a delivered end before the omitting file's coverage month is consistent with the omission: keep it
+        if s['coverage_end'] and s['coverage_end'] < omitted[0] + '-01':
             continue
-        v = _version(s, omitted, s['_lin'][-1], coverage_end=end, termination_reason='absent_from_full_file',
+        end = _month_end(seen)
+        if not end or (s['coverage_end'] and s['coverage_end'] == end):
+            continue
+        v = _version(s, omitted[1], s['_lin'][-1], coverage_end=end, termination_reason='absent_from_full_file',
                      maintenance_type_code=None)
         rep['cross_check']['834_span_ended_by_full_file_omission'] += 1
         spans[start] = v
@@ -580,6 +596,23 @@ def _spans_834(ctx, payer, member, rows, first_file, death, full_dates=()):
     for v in order:
         v['_final'] = id(v) in finals
     return order
+
+
+def _period(path, fd=None):
+    """Coverage month of a monthly-folder delivery: the YYYY-MM folder it sits in (a file is delivered after its month),
+    else the month of its delivery date."""
+    m = re.search(r'/(\d{4})-(\d{2})/', path or '')
+    if m and 1 <= int(m.group(2)) <= 12:
+        return f'{m.group(1)}-{m.group(2)}'
+    return (fd or '')[:7] or None
+
+
+def _month_end(month):
+    try:
+        y, m = int(month[:4]), int(month[5:7])
+    except (TypeError, ValueError):
+        return None
+    return (date(y + (m == 12), m % 12 + 1, 1) - timedelta(days=1)).isoformat()
 
 
 def _new_span(payer, member, start, end, product, r, fd, reason, lin):
@@ -1221,8 +1254,12 @@ def _build_claim(ctx, cid, sloop, vloop, evs, flat, dx, lines, adj, svc, prov_by
     evlist = []
     statuses = []
     flat_events = {(e['paid_date'], e['status']): e for e in (fl or [])}
+    # adjudication sequence of each flat event within its feed (take-back rows repeat the original PAID_DATE: file date)
+    flat_seq = {k: n for n, k in enumerate(sorted(flat_events, key=lambda k: (
+        (flat_events[k]['fd'] if k[1] in ('reversed', 'recouped', 'voided') else k[0]) or '', flat_events[k]['fd'] or '',
+        k[1])))}
     used_flat = set()
-    for e in sorted(evs, key=lambda e: (e['_paid_date'] or '', e['_file'], e['_row'])):
+    for n835, e in enumerate(sorted(evs, key=lambda e: (e['_paid_date'] or '', e['_file'], e['_row']))):
         code = _s(e['claim_status_code'])
         freq = _s(e['frequency_code']) or '1'
         paid = _money(e['paid_amount'])
@@ -1235,8 +1272,9 @@ def _build_claim(ctx, cid, sloop, vloop, evs, flat, dx, lines, adj, svc, prov_by
             status = 'recouped'
         else:
             status = 'paid'
-        # the flat row of this adjudication: compatible status, same paid amount, nearest paid date (the 835 date is
-        # the weekly EFT date, the flat PAID_DATE the adjudication date a few days earlier)
+        # the flat row of this adjudication: same claim id and adjudication sequence (the n-th compatible event of each
+        # feed), compatible status, same paid amount. Never matched on dates: the 835 date is the EFT date and the flat
+        # PAID_DATE the adjudication date, weeks apart for replacement (-R) claims.
         ok = {'paid': ('paid',), 'denied': ('denied', 'denied_upheld'), 'denied_upheld': ('denied_upheld', 'denied'),
               'reversed': ('reversed', 'recouped'), 'voided': ('voided',), 'recouped': ('recouped', 'reversed')}[status]
         f = None
@@ -1244,15 +1282,11 @@ def _build_claim(ctx, cid, sloop, vloop, evs, flat, dx, lines, adj, svc, prov_by
         for k, x in flat_events.items():
             if k in used_flat or k[1] not in ok:
                 continue
-            gap = _days(x['paid_date'], e['_paid_date'])
-            if k[1] in ('reversed', 'recouped', 'voided'):  # take-back rows keep the original PAID_DATE; the file is later
-                g2 = _days(x['fd'], e['_paid_date'])
-                gap = g2 if gap is None or (g2 is not None and abs(g2) < abs(gap)) else gap
-            if gap is None or abs(gap) > 45:
-                continue
             fpaid = _money(x['row']['paid'])
-            cands.append((0 if fpaid is None or paid is None or abs(fpaid - paid) < 0.01 else 1, ok.index(k[1]), abs(gap),
-                          k, x))
+            same_amount = fpaid is None or paid is None or abs(abs(fpaid) - abs(paid)) < 0.01
+            if not same_amount and flat_seq[k] != n835:  # a different amount is the same event only at the same sequence
+                continue
+            cands.append((0 if same_amount else 1, ok.index(k[1]), flat_seq[k], k, x))
         if cands:
             f = min(cands, key=lambda c: c[:3])[4]
         if f is not None:
@@ -1264,7 +1298,9 @@ def _build_claim(ctx, cid, sloop, vloop, evs, flat, dx, lines, adj, svc, prov_by
         elif fl:
             rep['cross_check']['835_event_without_flat_row'] += 1
         statuses.append(status)
-        resp = _money(e['patient_responsibility'])
+        # member liability = the payer's CAS group PR adjustments (claim and line level); CLP05 when no PR is sent
+        pr = [_num(x['amount']) for x in a if (_s(x['group_code']) or '').upper() == 'PR' and _num(x['amount']) is not None]
+        resp = round(sum(pr), 2) if pr else _money(e['patient_responsibility'])
         allowed = None
         if f is not None:
             vals = [_num(l['allowed']) for l in f['lines'].values() if _num(l['allowed']) is not None]
@@ -1583,25 +1619,31 @@ def _cclf_claim(ctx, chain, vs):
 def _match_cclf(ctx, built, cclf):
     """A Medicare FFS X12 claim (WH-PAYER-MSSP, or the MBI members of WH-PAYER-0/1/2) == CCLF claim: keep the X12 claim
     (events, ids) and drop the CCLF copy. Professional/DME: MBI + HCPCS + line service date. Institutional: MBI +
-    statement from/through, preferring the CCLF claim with the same bill type, billing NPI and total charge. MSSP claims
-    take the CCLF allowed/paid amounts; payer 0/1/2 claims keep their own amounts and get the cclf_claim_id link."""
+    statement from/through, preferring the CCLF claim with the same bill type, billing NPI and total charge. A payer
+    member id that is a re-issued MBI with one trailing character (12 characters, CCLF keeps the 11-character MBI) is
+    matched on its 11-character prefix. The 835 is the adjudication of record: paid (CLP04) and member liability (CAS
+    group PR) stay the 835's; MSSP claims take only the CCLF allowed amount (the 835 sends none) and line amounts;
+    payer 0/1/2 claims keep their own amounts and get the cclf_claim_id link."""
     rep = ctx.rep
     claims = cclf['claims']
     for cid, c in built.items():
         h = c['header']
         payer = _short(h.get('payer_id'))
-        if payer not in ('MSSP', '0', '1', '2') or '-X' in _split_claim_id(cid)[1] or not MBI.match(h.get('member_id') or ''):
+        mbi = _mbi11(h.get('member_id'))
+        if payer not in ('MSSP', '0', '1', '2') or '-X' in _split_claim_id(cid)[1] or not identity.normalize_mbi(mbi):
             continue
+        if mbi != h.get('member_id'):
+            rep['cross_check']['medicare_ffs_x12_matched_on_11_character_mbi'] += 1
         hits = Counter()
         if h.get('claim_type') == 'institutional':
-            for ch in cclf['idx_a'].get((h['member_id'], h.get('service_from'), h.get('service_to')), ()):
+            for ch in cclf['idx_a'].get((mbi, h.get('service_from'), h.get('service_to')), ()):
                 ch_h = claims[ch]['header']
                 hits[ch] += 1 + (ch_h.get('type_of_bill') == h.get('type_of_bill')) + \
                     (ch_h.get('billing_provider_npi') == h.get('billing_provider_npi')) + \
                     (claims[ch]['events'][0].get('total_charge') == h.get('total_charge'))
         else:
             for l in c['lines']:
-                for ch in cclf['idx_b'].get((h['member_id'], l['procedure_code'], l['service_date']), ()):
+                for ch in cclf['idx_b'].get((mbi, l['procedure_code'], l['service_date']), ()):
                     hits[ch] += 1
         hits = Counter({ch: n for ch, n in hits.items() if not claims[ch]['matched']})
         if not hits:
@@ -1622,12 +1664,11 @@ def _match_cclf(ctx, built, cclf):
             if e['claim_status'] in ('paid', 'reversed', 'recouped'):
                 sign = -1 if (e['paid_amount'] or 0) < 0 else 1
                 e['x12_paid_amount'], e['x12_allowed_amount'] = e['paid_amount'], e['allowed_amount']
-                if cur['paid_amount'] is not None:
-                    e['paid_amount'] = round(sign * abs(cur['paid_amount']), 2)
                 if cur['allowed_amount'] is not None:
                     e['allowed_amount'] = round(sign * abs(cur['allowed_amount']), 2)
-                if cur['patient_responsibility'] is not None:
-                    e['patient_responsibility'] = round(sign * abs(cur['patient_responsibility']), 2)
+                if cur['paid_amount'] is not None and e['paid_amount'] is not None and \
+                        abs(abs(cur['paid_amount']) - abs(e['paid_amount'])) >= 0.01:
+                    rep['cross_check']['mssp_835_paid_differs_from_cclf'] += 1
         by_key = defaultdict(list)
         for l in cc['lines']:
             by_key[(l['procedure_code'], l['service_date'])].append(l)

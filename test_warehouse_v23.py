@@ -188,13 +188,20 @@ RECORDS = [
     lab('ef1', 'p1', 'eGFR', 50, 'mL/min/1.73m2', '2029-01-05', av='2029-01-06'),
     lab('ef2', 'p1', 'eGFR', 55.6, 'mL/min/1.73m2', '2029-01-05', av='2029-06-01', status='corrected', replaces_result_record_id='ef1'),
     lab('a1', 'm2', 'HEMOGLOBIN A1C', 5.8, '%', '2029-03-04', local_code='HGBA1C'),
+    # one result in three feeds: EHR local code, HL7 ORU LOINC copy, and a FHIR correction of it (same collection minute)
+    lab('xg1', 'p1', 'GLU', 114, 'mg/dL', '2029-04-02', local_code='GLU', specimen_time='2029-04-02T07:15:00', av='2029-04-03', source_system='epic:EPIC-CA'),
+    lab('xg2', 'p1', 'Glucose', 114, 'mg/dL', '2029-04-02', loinc='2345-7', specimen_time='2029-04-02T07:15:00', av='2029-04-04', source_system='hl7:REFLAB'),
+    lab('xt1', 'p1', 'TSH', 2.1, 'mIU/L', '2029-04-02', loinc='3016-3', specimen_time='2029-04-02T07:15:00', av='2029-04-03', source_system='hl7:REFLAB'),
+    lab('xt2', 'p1', 'TSH', 2.4, 'mIU/L', '2029-04-02', loinc='3016-3', specimen_time='2029-04-02T07:15:00', av='2029-04-05',
+        status='corrected', source_system='fhir:WHN-PRACTICE-CA-5'),
     # payer claims: original voided and replaced (frequency 8 / 7), CARC 18 duplicate, undotted ICD-10, missing rendering NPI
     claim('o1a', 'm1', 'O1', 'paid', 1, '2029-02-01', 100.0, principal_diagnosis='E119', diagnosis_codes=['E119', 'I10'], rendering_provider_npi=''),
     claim('o1v', 'm1', 'O1', 'voided', 2, '2029-02-01', 0.0, freq='8', carc='129', event='2029-03-20', principal_diagnosis='E119',
           diagnosis_codes=['E119', 'I10'], rendering_provider_npi=''),
     claim('o1r', 'm1', 'O1-R', 'paid', 1, '2029-02-01', 110.0, freq='7', original_payer_claim_id='O1', event='2029-03-01',
           principal_diagnosis='E11.9', diagnosis_codes=['E11.9', 'I10', 'Z79.899']),
-    claim('dup', 'm1', 'O2-D', 'denied', 1, '2029-02-15', 0.0, carc='18'),
+    claim('dup', 'm1', 'O3-D', 'denied', 1, '2029-02-15', 0.0, carc='18'),       # duplicate of O3 (received): never counts
+    claim('dup9', 'm1', 'O9-D', 'denied', 1, '2029-02-16', 0.0, carc='18'),      # its original never arrived: kept
     claim('den', 'm1', 'O3', 'denied', 1, '2029-02-20', 0.0, carc='CO-16'),
     # utilization for the claims-only member: ED professional claim + ADT ED visit (same day), facility-only ED claim, admission
     claim('ed1', 'm1', 'E1', 'paid', 1, '2029-04-10', 300.0, place_of_service='23'),
@@ -202,7 +209,7 @@ RECORDS = [
     ('ed2l', 'm1', 'payer_medical_claim_lines', {'payer_claim_id': 'E2', 'line_number': 1, 'revenue_code': '0450', 'service_date': '2029-05-05'}),
     claim('ip1', 'm1', 'I1', 'paid', 1, '2029-06-01', 9000.0, ctype='institutional', type_of_bill='0111', admission_date='2029-06-01',
           discharge_date='2029-06-04', to='2029-06-04'),
-    claim('ed3', 'm1', 'E3-D', 'denied', 1, '2029-07-01', 0.0, place_of_service='23', carc='18'),   # duplicate: no visit
+    claim('ed3', 'm1', 'E1-D', 'denied', 1, '2029-07-01', 0.0, place_of_service='23', carc='18'),   # duplicate of E1: no visit
     adt('ad1', 'm1', 'V1', 'A03', 'E', '2029-04-10T22:00', '2029-04-10T22:05'),                   # discharge arrives first
     adt('ad2', 'm1', 'V1', 'A04', 'E', '2029-04-10T18:00', '2029-04-10T23:00'),
     adt('ad3', 'm1', 'V1', 'A08', 'E', '2029-04-10T19:00', '2029-04-10T23:01'),
@@ -318,6 +325,14 @@ class ClientDataRules(unittest.TestCase):
         self.assertEqual(hdl['value_canonical'], 65.0)
         self.assertEqual(self.one("SELECT value_canonical FROM measurement_latest WHERE patient_id = 'p1' AND concept = 'egfr'")['value_canonical'], 55.6)
 
+    def test_one_result_across_feeds(self):
+        rows = {r['record_id']: r for r in self.q("SELECT record_id, result_current, superseded_by_record_id, supersede_reason FROM measurement "
+                                                   "WHERE record_id IN ('xg1','xg2','xt1','xt2')")}
+        self.assertEqual((rows['xg1']['result_current'], rows['xg2']['result_current'], rows['xg2']['supersede_reason']),
+                         (1, 0, 'duplicate_across_feeds'))
+        self.assertEqual((rows['xt1']['result_current'], rows['xt1']['superseded_by_record_id'], rows['xt2']['result_current']),
+                         (0, 'xt2', 1))
+
     def test_local_only_code_decides_the_analyte(self):
         rows = self.q("SELECT concept, loinc, loinc_source, local_code FROM measurement WHERE record_id = 'a1'")
         self.assertEqual(rows, [{'concept': 'hba1c', 'loinc': '4548-4', 'loinc_source': 'local_code_map', 'local_code': 'HGBA1C'}])
@@ -338,7 +353,9 @@ class ClientDataRules(unittest.TestCase):
                          ('superseded_by_replacement', 'O1-R', 0))
         self.assertEqual((c['O1-R']['version_status'], c['O1-R']['claim_frequency_code'], c['O1-R']['original_payer_claim_id'], c['O1-R']['counts_in_metrics']),
                          ('current', '7', 'O1', 1))
-        self.assertEqual((c['O2-D']['version_status'], c['O2-D']['duplicate_submission'], c['O2-D']['counts_in_metrics']), ('duplicate_submission', 1, 0))
+        self.assertEqual((c['O3-D']['version_status'], c['O3-D']['duplicate_submission'], c['O3-D']['counts_in_metrics']), ('duplicate_submission', 1, 0))
+        # a CARC 18 denial whose original was never received is the only copy of the service: kept
+        self.assertEqual((c['O9-D']['version_status'], c['O9-D']['duplicate_submission'], c['O9-D']['counts_in_metrics']), ('current', 0, 1))
         self.assertEqual((c['O3']['version_status'], c['O3']['counts_in_metrics']), ('current', 1))  # an ordinary denial stays
 
     def test_undotted_icd10_normalised_and_rendering_npi_nullable(self):
@@ -355,8 +372,9 @@ class ClientDataRules(unittest.TestCase):
         db = sqlite3.connect(f'file:{self.path / "semantic.sqlite3"}?mode=ro', uri=True); self.addCleanup(db.close)
         r = metrics.resolve({'question': 'payer claim denial rate this year', 'as_of': AS_OF})
         self.assertEqual(r['id'], 'payer_claim_denial_rate')
-        # 2029: counted = O1-R, O3 (denied), E1, E2, I1, E4, H1 -> 1 of 7; O1 (superseded), O2-D and E3-D (CARC 18) never count
-        self.assertAlmostEqual(db.execute(r["sql"]).fetchone()[0], 100 / 7)  # governed SQL returns full precision
+        # 2029: counted = O1-R, O3 (denied), O9-D (denied, no original), E1, E2, I1, E4, H1 -> 2 of 8; O1 (superseded), O3-D and
+        # E1-D (CARC 18 with the original received) never count
+        self.assertAlmostEqual(db.execute(r["sql"]).fetchone()[0], 100 * 2 / 8)  # governed SQL returns full precision
         self.assertEqual(metrics.lint('payer claim denial rate this year', "SELECT 100.0 * sum(final_status = 'denied') / count(*) FROM payer_claim",
                                       AS_OF)[0]['rule'], 'ML-VERSION')
         cost = vbc.execute(self.path, ['m1'], {'metric': 'cost', 'period': {'start': '2029-01-01', 'end': AS_OF}}, AS_OF)['rows'][0]

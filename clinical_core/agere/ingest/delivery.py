@@ -22,12 +22,19 @@ import re
 import sqlite3
 import statistics
 
-VERSION = 'delivery-file/1'
+VERSION = 'delivery-file/2'
 SCHEDULED_FILL = 0.9  # a series is on a schedule when it has a file in at least 90% of its expected periods
 ISSUE_TABLES = ('x12_parse_issue', 'hl7_parse_issue', 'ncpdp_parse_issue', 'fhir_parse_error', 'flat_schema_drift')
 # Landing tables holding one row per delivered record for parsers whose files also yield child rows.
 PRIMARY = {'x12': ('x12_835_claim', 'x12_837_claim', 'x12_834_member'), 'hl7': ('hl7_message',), 'ncpdp': ('ncpdp_claim',)}
 X12_TRUNCATION = ('missing_iea_at_eof', 'missing_se_at_eof', 'missing_ge_at_eof')
+# Parsers whose files are read byte-wise for record counts, header-only and cut-off evidence (one record per line);
+# None = no parser read the file (CMS CCLF fixed-width). HL7 batches and X12 interchanges carry their own trailers.
+LINE_FORMATS = {'flat': 'flat', 'fhir': 'fhir', 'ncpdp': 'ncpdp', None: 'fixed_width'}
+# Activity-driven formats: HL7 batches, X12 interchanges and FHIR exports carry a file only when there was something to
+# send, so their empty periods are never missing files.
+ACTIVITY_PARSERS = ('fhir', 'hl7', 'x12')
+MALFORMED_DRIFT = ('columns_added_removed', 'columns_removed')
 EXT = re.compile(r'(?i)\.(csv|txt|x12|hl7|ndjson|json|dat|edi|psv|tsv|xml|zip|gz)$')
 RESEND = re.compile(r'(?i)(?:^|[_\-. ])resend(?=$|[_\-. ])')
 V2 = re.compile(r'(?i)(?:^|[_\-. ])v(\d+)(?=$|[_\-. ])')
@@ -39,7 +46,7 @@ CREATE TABLE delivery_file(relpath TEXT PRIMARY KEY, feed TEXT, instance TEXT, k
   period TEXT, cadence TEXT, sender TEXT, format TEXT, parser TEXT, bytes INTEGER, sha256 TEXT, delivered_date TEXT,
   name_date TEXT, days_after_name_date INTEGER, days_after_period_end INTEGER, series_usual_lag_days INTEGER,
   late_vs_name_date INTEGER, later_than_series_usual INTEGER, claimed_records INTEGER, parsed_records INTEGER,
-  parsed_rows INTEGER, claimed_vs_parsed_rows INTEGER, parse_error TEXT, parse_issue_count INTEGER, parse_issue_codes TEXT,
+  parsed_rows INTEGER, byte_records INTEGER, claimed_vs_parsed_rows INTEGER, parse_error TEXT, parse_issue_count INTEGER, parse_issue_codes TEXT,
   flat_row_issue_rows INTEGER, schema_drift TEXT, empty_file INTEGER, header_only INTEGER, empty_or_header_only INTEGER,
   empty_where_expected INTEGER, truncated INTEGER, truncation_evidence TEXT, is_resend INTEGER, resend_by_name INTEGER,
   content_identical_to TEXT, is_v2_replacement INTEGER, is_restatement INTEGER, is_original INTEGER,
@@ -61,14 +68,19 @@ DOC = {
         '(raw/manifest.json, in_manifest = 1): delivered_date, sha256, sender, format, claimed_records (record count the '
         'sender states). From parsing: parser (NULL = no parser read the file), parsed_records (records parsed: claims for '
         'X12, messages for HL7, claims for NCPDP, resources for FHIR, data rows for flat files), parsed_rows (all rows '
-        'written including child segments), parse_error, parse_issue_count / parse_issue_codes (rows in the x12/hl7/ncpdp '
+        'written including child segments), byte_records (records counted from the file bytes for line-per-record files: '
+        'complete lines in the file\'s own line terminator, minus the header for delimited files and the 00/99 lines for '
+        'NCPDP; NULL for HL7/X12 or when raw/ is not readable), parse_error, parse_issue_count / parse_issue_codes (rows in the x12/hl7/ncpdp '
         'parse-issue tables, fhir_parse_error and flat short/long rows; X12 se_segment_count_mismatch warnings are '
         'excluded as parser noise), flat_row_issue_rows, schema_drift. Derived: claimed_vs_parsed_rows = claimed_records - '
-        'parsed_records; empty_file (0 bytes); header_only (flat file with bytes but no data row); empty_or_header_only; '
+        'parsed_records; empty_file (0 bytes); header_only (a delimited file holding exactly one complete, terminated '
+        'header line and nothing else, whatever the manifest claims); empty_or_header_only; '
         'empty_where_expected (empty or header-only while the manifest claims records > 0); truncated (cut off: X12 '
         'missing IEA/SE/GE at end of file, HL7 batch trailer declaring more messages than found, NCPDP missing 99 '
-        'trailer, an unparseable last FHIR line, or a flat file with fewer data rows than claimed or no final newline '
-        '(cut mid-record); '
+        'trailer, an unparseable last FHIR line; for flat, FHIR ndjson, NCPDP and CCLF fixed-width files a last record '
+        'cut off (no final line terminator, or a CRLF file ending in a lone CR), a delimited file that stops inside its '
+        'header line, or fewer byte_records than claimed - never on a malformed file or on a byte-identical copy of '
+        'another delivered file); '
         'truncation_evidence names which); is_resend (resend marker in the name, or byte-identical by sha256 to an '
         'earlier-delivered non-empty file of the same series and period; content_identical_to '
         '= that file, else the earliest file with identical bytes of any series or period); resend_by_name; is_v2_replacement '
@@ -83,14 +95,15 @@ DOC = {
     'delivery_gap': (
         'Expected periods with no delivered file, per series (feed|instance|kind of delivery_file). Expected cadence = the '
         'most common step between consecutive periods of the series (so a quarterly series in monthly folders is not '
-        'flagged for its off months). Only scheduled series are checked: a series with files in fewer than 90% of its '
-        'expected periods sends files only when there is activity (a practice\'s remittances from one payer, a '
-        'hospital\'s daily ADT batches), so its empty periods are not gaps. A missing period is one inside the series\' first..last period that the step '
-        'implies but no file covers (resends, v2 and restatement files count as present). position = inside (between two files of the series) or trailing (the series, with at least 6 files, misses only the '
-        'last period its feed delivers, while at least half of the feed\'s other scheduled series still deliver that period and the '
-        'same sender is still delivering files, e.g. one payer\'s monthly file missing in the final month; a sender that '
-        'stopped altogether, such as an EHR instance retired at a migration, is not a gap). A series that starts late is not '
-        'a gap before its first file. previous/next_period and _file are the neighbouring files.'),
+        'flagged for its off months). HL7, X12 and FHIR files are activity-driven (sent only when there is something to '
+        'send) and never checked; resend copies never stand for a period (v2 and restatement files do). A sender writes a '
+        'period only when it has something to deliver (an EHR instance with no activity that month writes no folder), so '
+        'a period its sender skipped altogether is not a gap. Only scheduled series are checked: files in at least 90% of '
+        'the periods (on the step) in which the sender delivered. position = inside (a period between two files of the '
+        'series in which the same sender delivered its other files but not this one) or trailing (the delivery\'s final '
+        'cycle for the feed: the series delivered the cycle before, its usual delivery date - period end + the series\' '
+        'usual lag - has passed by the last delivered date, and the sender delivers that cycle or has never skipped one). '
+        'A series that starts late is not a gap before its first file. previous/next_period and _file are the neighbouring files.'),
 }
 
 
@@ -272,16 +285,52 @@ def _issues(land, tables):
     return issues, trunc, flat_rows, drift, fhir_last, short_last
 
 
-def _ends_with_newline(raw_dir, rel):
-    """True/False for a readable raw file's last byte, None when the raw delivery is not readable here."""
+def scan_lines(data, fmt):
+    """Byte-level facts of a line-per-record file -> dict(complete, records, cut, header_only, cut_in_header).
+
+    The line terminator is the file's own (CRLF when its first line feed follows a CR, else LF; CR-only files are read
+    on CR), so a bare LF inside a CRLF file is an embedded line break, not a record. complete = terminated non-blank
+    lines; a non-blank tail after the last terminator, or a CRLF file ending in a lone CR, is a record cut off (cut).
+    records = complete lines that are records: minus the header line for delimited (flat) files, minus the 00 header
+    and 99 trailer lines for NCPDP. header_only = a delimited file holding exactly one complete header line and nothing
+    else; cut_in_header = a delimited file that stops inside its header line (truncated, not header-only)."""
+    if not data:
+        return {'complete': 0, 'records': 0, 'cut': False, 'header_only': False, 'cut_in_header': False}
+    nl = data.find(b'\n')
+    if nl >= 0:
+        term = b'\r\n' if nl > 0 and data[nl - 1:nl] == b'\r' else b'\n'
+    elif data.count(b'\r') > 1 or (data.count(b'\r') == 1 and not data.endswith(b'\r')):
+        term = b'\r'
+    else:
+        term = None  # no complete line at all
+    if term is None:
+        parts, tail = [], data
+    else:
+        parts = data.split(term)
+        parts, tail = parts[:-1], parts[-1]
+    lines = [x for x in parts if x.strip()]
+    cut = bool(tail.strip()) or (term != b'\n' and tail.endswith(b'\r'))
+    complete = len(lines)
+    if fmt == 'flat':
+        records = max(complete - 1, 0)
+    elif fmt == 'ncpdp':
+        records = sum(1 for i, x in enumerate(lines) if not (i == 0 and x.startswith(b'00')) and not x.startswith(b'99'))
+    else:
+        records = complete
+    return {'complete': complete, 'records': records, 'cut': cut,
+            'header_only': fmt == 'flat' and complete == 1 and not cut,
+            'cut_in_header': fmt == 'flat' and complete == 0 and cut}
+
+
+def _scan_file(raw_dir, rel, fmt):
+    """scan_lines of a readable raw file, None when the raw delivery is not readable here."""
     if not raw_dir:
         return None
     try:
-        with open(Path(raw_dir) / rel, 'rb') as f:
-            f.seek(-1, 2)
-            return f.read(1) in (b'\n', b'\r')
+        data = (Path(raw_dir) / rel).read_bytes()
     except OSError:
         return None
+    return scan_lines(data, fmt)
 
 
 def build(out, landing_path, raw_dir=None):
@@ -312,18 +361,26 @@ def build(out, landing_path, raw_dir=None):
         claimed = m.get('records') if isinstance(m.get('records'), int) else None
         size = m.get('bytes') if size is None else size
         empty = int((size or 0) == 0)
-        header_only = int(parser == 'flat' and not empty and parsed == 0 and not error)
         ev = list(trunc.get(rel, []))
         if parser == 'fhir' and rel in fhir_last and fhir_last[rel] is not None and fhir_last[rel] >= parsed + issues[rel]['fhir:parse_error']:
             ev.append('fhir_last_line_unparseable')
-        if parser == 'flat' and not empty:
-            if claimed is not None and parsed > 0 and claimed > parsed:
-                ev.append('flat_fewer_rows_than_claimed')
-            ends = _ends_with_newline(raw_dir, rel)
-            if ends is False:
-                ev.append('flat_no_final_newline')  # cut mid-record
-            elif ends is None and short_last.get(rel):
+        fmt = LINE_FORMATS.get(parser) if parser in LINE_FORMATS else None
+        scan = _scan_file(raw_dir, rel, fmt) if fmt and not empty else None
+        if scan is not None:
+            header_only = int(scan['header_only'])
+            byte_records = scan['records']
+            if scan['cut_in_header']:
+                ev.append('flat_cut_in_header')  # stops inside its header line
+            elif scan['cut']:
+                ev.append(f'{fmt}_no_final_newline')  # last record cut off (incl. a CRLF file ending in a lone CR)
+        else:
+            header_only = int(parser == 'flat' and not empty and parsed == 0 and not error)
+            byte_records = None
+            if parser == 'flat' and not empty and short_last.get(rel):
                 ev.append('flat_short_last_row')  # raw file not readable here: a short last row is the best evidence
+        # A malformed file (parse error, dropped/added columns, bad rows other than a cut last row) has no reliable count.
+        malformed = bool(error and parser) or drift.get(rel) in MALFORMED_DRIFT or \
+            flat_rows.get(rel, 0) - (1 if short_last.get(rel) else 0) > 0
         name = d['name']
         nd = _name_date(name)
         delivered = m.get('delivered')
@@ -344,13 +401,14 @@ def build(out, landing_path, raw_dir=None):
             'days_after_name_date': (dd - nd).days if dd and nd else None,
             'days_after_period_end': (dd - pe).days if dd and pe else None, 'series_usual_lag_days': None,
             'late_vs_name_date': int(dd > nd) if dd and nd else None, 'later_than_series_usual': None,
-            'claimed_records': claimed, 'parsed_records': parsed, 'parsed_rows': nrows,
+            'claimed_records': claimed, 'parsed_records': parsed, 'parsed_rows': nrows, 'byte_records': byte_records,
             'claimed_vs_parsed_rows': (claimed - parsed) if claimed is not None else None, 'parse_error': error,
             'parse_issue_count': sum(codes.values()), 'parse_issue_codes': json.dumps(dict(sorted(codes.items()))) if codes else None,
             'flat_row_issue_rows': flat_rows.get(rel, 0), 'schema_drift': drift.get(rel),
             'empty_file': empty, 'header_only': header_only, 'empty_or_header_only': int(bool(empty or header_only)),
             'empty_where_expected': int(bool((empty or header_only) and (claimed or 0) > 0)) if claimed is not None else None,
-            'truncated': int(bool(ev)), 'truncation_evidence': ','.join(ev) or None,
+            'truncated': int(bool(ev)), 'truncation_evidence': ','.join(ev) or None, '_ev': ev, '_fmt': fmt,
+            '_malformed': malformed,
             'is_resend': resend_name, 'resend_by_name': resend_name, 'content_identical_to': None,
             'is_v2_replacement': v2, 'is_restatement': restat, 'is_original': int(not (resend_name or v2 or restat)),
             'series_gap_before': 0,
@@ -385,11 +443,27 @@ def build(out, landing_path, raw_dir=None):
             if same is not None:
                 r['is_resend'] = 1
                 r['content_identical_to'] = same['relpath']
+    # Record shortfall: fewer records in the bytes than the manifest claims. Counted from the bytes (the parser's row
+    # count drops or merges malformed rows), and never on a malformed file or on a byte-identical copy of another
+    # delivered file (a stale copy re-sent under a new name or period: its claim describes data that was not sent).
+    for r in rows.values():
+        ev = r.pop('_ev', None)
+        fmt, malformed = r.pop('_fmt', None), r.pop('_malformed', False)
+        if ev is None:
+            continue
+        claimed, n = r.get('claimed_records'), r.get('byte_records')
+        if n is None and fmt == 'flat':
+            n = r.get('parsed_records')  # raw file not readable here: the parsed rows are the best count
+        if (claimed is not None and n and claimed > n and not malformed and not r.get('content_identical_to')
+                and not r.get('header_only')):
+            ev.append('flat_fewer_rows_than_claimed' if fmt == 'flat' else f'{fmt or r.get("parser")}_fewer_records_than_claimed')
+        r['truncated'], r['truncation_evidence'] = int(bool(ev)), ','.join(ev) or None
+        r['empty_or_header_only'] = int(bool(r.get('empty_file') or r.get('header_only')))
     # Lateness against the series' usual lag, and period gaps per series.
     series = defaultdict(list)
     for r in rows.values():
         series[r['series']].append(r)
-    gaps, trailing = [], []
+    gaps = []
     feed_last = {}
     for r in rows.values():
         if r.get('_ord') is not None:
@@ -402,13 +476,36 @@ def build(out, landing_path, raw_dir=None):
             r['series_usual_lag_days'] = usual
             if usual is not None and r.get('days_after_period_end') is not None:
                 r['later_than_series_usual'] = int(r['days_after_period_end'] > usual + 7)
+    # Missing periods. Only scheduled file types are checked: HL7 batches, X12 interchanges and FHIR exports are
+    # activity-driven (a file only when there was something to send), and resend copies never stand for a period. A
+    # sender writes a period's folder only when it has something to deliver (an EHR instance with no activity that
+    # month writes no folder), so a period the sender skipped altogether is not a missing file. A file type is missing
+    # (a) inside its series when its sender delivered its other files that period but not this one, or (b) in the final
+    # cycle, when the series delivered through the previous cycle, its usual delivery date (period end + the series'
+    # usual lag) has passed by the delivery's last delivered date, and the sender still delivers that cycle (or is a
+    # sender that has never skipped a cycle).
+    def _sender(r):
+        return (r.get('sender') or r.get('instance') or r.get('feed'), r.get('feed'), r.get('cadence'))
+
+    def _counts(r):
+        return r.get('_ord') is not None and not r.get('is_resend') and r.get('parser') not in ACTIVITY_PARSERS
+
+    active = defaultdict(set)  # (sender, feed, cadence) -> ordinals in which the sender delivered a scheduled file
+    for r in rows.values():
+        if _counts(r):
+            active[_sender(r)].add(r['_ord'])
+    cutoff = max((r['delivered_date'] for r in rows.values() if r.get('delivered_date')), default=None)
+    for key, group in series.items():
+        g0 = group[0]
+        if any(r.get('parser') in ACTIVITY_PARSERS for r in group):
+            continue
         cad = {r['cadence'] for r in group if r.get('cadence')}
         if len(cad) != 1:
             continue
         cadence = cad.pop()
         present = defaultdict(list)
         for r in group:
-            if r.get('_ord') is not None:
+            if _counts(r):
                 present[r['_ord']].append(r)
         ords = sorted(present)
         if len(ords) < 3:
@@ -417,54 +514,35 @@ def build(out, landing_path, raw_dir=None):
         step = max(steps.items(), key=lambda kv: (kv[1], -kv[0]))[0]
         if step <= 0:
             continue
-        fill = len(ords) / ((ords[-1] - ords[0]) // step + 1)
-        if fill < SCHEDULED_FILL:
+        snd = _sender(next(iter(present[ords[0]])))
+        sender_on = active[snd]
+        grid = range(ords[0], ords[-1] + 1, step)
+        expected = [o for o in grid if o in present or o in sender_on]
+        if len(ords) / max(len(expected), 1) < SCHEDULED_FILL:
             continue  # activity-driven series (files only when there is something to send): absence is not a gap
         for a, b in zip(ords, ords[1:]):
-            if b - a <= step:
-                continue
-            missing = list(range(a + step, b, step))
+            missing = [o for o in range(a + step, b, step) if o in sender_on]
             if not missing:
                 continue
             for r in present[b]:
                 r['series_gap_before'] = len(missing)
             prev_f, next_f = sorted(x['relpath'] for x in present[a])[0], sorted(x['relpath'] for x in present[b])[0]
-            g0 = group[0]
             for o in missing:
                 gaps.append((key, g0['feed'], g0['instance'], g0['kind'], cadence, _label(cadence, o), 'inside',
                              _label(cadence, a), _label(cadence, b), prev_f, next_f))
-        trailing.append((key, group, cadence, step, ords, present))
-    # Trailing: a scheduled series that stops before the last period its feed delivers, counted only while most of the
-    # feed's other scheduled series still deliver that period (not a short final period) and the sender is still
-    # delivering something (not a sender that stopped altogether, such as an EHR instance retired at a migration).
-    sender_last = {}
-    for r in rows.values():
-        snd = r.get('sender') or r.get('instance')
-        if snd and r.get('delivered_date'):
-            sender_last[snd] = max(sender_last.get(snd, ''), r['delivered_date'])
-    have = defaultdict(Counter)  # (feed, cadence) -> {ordinal: scheduled series present}
-    alive = defaultdict(Counter)  # (feed, cadence) -> {ordinal: scheduled series started by then}
-    for key, group, cadence, step, ords, present in trailing:
-        fc = (group[0]['feed'], cadence)
-        for o in ords:
-            have[fc][o] += 1
-        for o in range(ords[0], feed_last[fc] + 1, step):
-            alive[fc][o] += 1
-    for key, group, cadence, step, ords, present in trailing:
-        g0 = group[0]
-        fc = (g0['feed'], cadence)
-        last = feed_last.get(fc)
-        if last is None or last - ords[-1] != step or len(ords) < 6:
-            continue  # only the one final period: a longer silence is a series that ended, not a missing file
-        snd = next((r.get('sender') for r in group if r.get('sender')), None) or g0['instance']
+        last = feed_last.get((g0['feed'], cadence))
+        if last is None or last - ords[-1] != step or cutoff is None:
+            continue  # only the one final cycle: a longer silence is a series that ended, not a missing file
+        usual = g0.get('series_usual_lag_days')
+        due = _period_end(cadence, last) + timedelta(days=max(usual or 0, 0))
+        if due.isoformat() > cutoff:
+            continue  # not yet due when the delivery was cut
+        steady = all(o in sender_on for o in range(min(sender_on), last, step))
+        if last not in sender_on and not steady:
+            continue  # a sender that writes only active periods and sent nothing this cycle
         prev_f = sorted(x['relpath'] for x in present[ords[-1]])[0]
-        for o in (last,):
-            if have[fc][o] < 0.5 * max(alive[fc][o], 1):
-                continue
-            if (sender_last.get(snd) or '') < _period_end(cadence, o).isoformat():
-                continue
-            gaps.append((key, g0['feed'], g0['instance'], g0['kind'], cadence, _label(cadence, o), 'trailing',
-                         _label(cadence, ords[-1]), None, prev_f, None))
+        gaps.append((key, g0['feed'], g0['instance'], g0['kind'], cadence, _label(cadence, last), 'trailing',
+                     _label(cadence, ords[-1]), None, prev_f, None))
     cols = COLUMNS
     out.execute('DROP TABLE IF EXISTS delivery_file')
     out.execute('DROP TABLE IF EXISTS delivery_gap')

@@ -251,8 +251,15 @@ class Reference:
         return {'truncated': r['truncated'], 'empty_expected': r['empty_where_expected'], 'empty_any': r['empty_or_header_only'],
                 'zero_byte': r['empty_file'], 'header_only': r['header_only'], 'v2_replacement': r['is_v2_replacement']}[c] == 1
 
+    def _in_formats(self, r, t):
+        fmts = t['formats']
+        if t['condition'] == 'truncated' and len(fmts) > 1: return True  # a list of formats names evidence kinds
+        if t['condition'] == 'resend_identical' and set(fmts) <= {'flat'}:
+            return r['parser'] not in ('hl7', 'x12')  # whole-file resends: every format but HL7 batches / X12 interchanges
+        return not fmts or self._fmt(r) in fmts
+
     def file_count(self, t):
-        sel = [r for r in self.files() if self._cond(r, t['condition']) and (not t['formats'] or self._fmt(r) in t['formats'])
+        sel = [r for r in self.files() if self._cond(r, t['condition']) and self._in_formats(r, t)
                and (t['year'] is None or (r['delivered_date'] or '')[:4] == str(t['year'])) and (not r['delivered_date'] or r['delivered_date'] <= self.as_of)]
         return dict(Counter(r['feed'] for r in sel)) if t['by_feed'] else len(sel)
 
@@ -324,7 +331,8 @@ class Reference:
         return sum(1 for r in self.rows('SELECT stream FROM record_correction') if not t['streams'] or r['stream'] in t['streams'])
 
     def roster_after_departure(self, t):
-        dates = {r['relpath']: r['name_date'] or r['delivered_date'] for r in self.rows("SELECT relpath, name_date, delivered_date FROM delivery_file WHERE feed = 'rosters'")}
+        dates = {r['relpath']: ((r['period'] or '')[:7] or (r['name_date'] or r['delivered_date'] or '')[:7]) + '-01'
+                 for r in self.rows("SELECT relpath, period, name_date, delivered_date FROM delivery_file WHERE feed = 'rosters'")}
         rows = self.rows('SELECT provider_npi, practice_id, term_date, _file FROM raw_rosters_aco_provider_roster')
         dep = {}
         for r in rows:
@@ -333,7 +341,7 @@ class Reference:
                 k = (r['provider_npi'], r['practice_id'])
                 dep[k] = min(dep.get(k, td), td)
         stale = [r for r in rows if not (r['term_date'] or '').strip() and (r['provider_npi'], r['practice_id']) in dep
-                 and (dates.get(r['_file']) or '') > dep[(r['provider_npi'], r['practice_id'])]]
+                 and dep[(r['provider_npi'], r['practice_id'])] <= (dates.get(r['_file']) or '')]  # gone for the whole roster month
         if t['unit'] == 'rows': return len(stale)
         if t['unit'] == 'providers': return len({r['provider_npi'] for r in stale})
         return len({(r['provider_npi'], r['practice_id']) for r in stale})
@@ -479,7 +487,7 @@ class Reference:
         return dict(Counter(r['scheduled_date'][:7] for r in self.appts() if self._in(r['scheduled_date'], t['year'])))
 
     def repeat(self, t):
-        c = Counter(r['patient_id'] for r in self.appts() if r['final_status'] == t['status'] and r['patient_id'] and r['scheduled_date'] <= self.as_of)
+        c = Counter(r['patient_id'] for r in self.appts() if r['final_status'] == t['status'] and r['patient_id'] and r['scheduled_date'] and r['scheduled_date'] <= self.as_of)
         return sorted(p for p, n in c.items() if n >= t['n'])
 
     def lines(self, t):

@@ -463,6 +463,7 @@ class _Run:
         self.unmapped = defaultdict(Counter)
         self.missing = set()
         self.unresolved = Counter()
+        self.cross_check = Counter()
         self._v2 = {}
         self._pcache = {}
         self.lab_presence = defaultdict(list)      # (org, mrn, loinc, day) -> EHR values (kept records + FHIR copies)
@@ -614,15 +615,66 @@ class _Run:
     # ---- vendor coverage, for FHIR bulk gap fill
     def _cover(self, rec):
         """Remember which data types each vendor extract delivers for a practice, over which delivery dates, and the
-        cross-feed key of every vendor record (see _xkey)."""
+        cross-feed key of every vendor record (see _xkey). Appointments establish type coverage only from a vendor with an
+        appointment table (Epic F_SCHED_APPT): eCW writes kept appointments only as visit rows without an appointment
+        id and athena has no appointment table, so their FHIR Appointment copies are deduplicated per record."""
         stream, d = rec['source_table'], rec.get('available_date')
+        vendor = (rec.get('source_system') or '').split(':')[0]
         for practice in _practices(rec):
-            if d:
+            if d and (stream != 'appointments' or vendor in APPOINTMENT_TABLE_VENDORS):
                 lo_hi = self.coverage.get((practice, stream))
                 self.coverage[(practice, stream)] = (min(lo_hi[0], d), max(lo_hi[1], d)) if lo_hi else (d, d)
             k = _xkey(rec, practice)
             if k:
                 self.vendor_keys.add(k)
+
+    def _fhir_appointment_slots(self):
+        """{(FHIR folder, person, created day): {Appointment.id: [(order, slot start)]}} over every fhir_bulk / ehr FHIR
+        Appointment version, for vendor appointments delivered without a slot."""
+        if getattr(self, '_fslots', None) is None:
+            self._fslots = defaultdict(lambda: defaultdict(list))
+            if 'fhir_appointment' in self.tables:
+                for r in self.rows('fhir_appointment', count=False):
+                    res = _res(r)
+                    folder, created = _inst(r), _day((res or {}).get('created'))
+                    pid = _ref((res or {}).get('patient') or next(
+                        (p.get('actor') for p in (res or {}).get('participant') or []
+                         if str((p.get('actor') or {}).get('reference', '')).startswith('Patient/')), None))
+                    if not (res and folder and created and pid and res.get('id')):
+                        continue
+                    person, _ = self.person([fhir_key(folder, pid)])
+                    if person:
+                        o = (str((res.get('meta') or {}).get('lastUpdated') or ''),) + _order(r)
+                        self._fslots[(folder, person, created)][res['id']].append((o, res.get('start')))
+        return self._fslots
+
+    def _fill_slots_from_fhir(self, recs):
+        """A vendor appointment none of whose versions carries a slot takes the slot of its FHIR copy (same practice
+        folder, person and booking date, one FHIR appointment only): the latest FHIR version that has a start."""
+        by = defaultdict(list)
+        for rec in recs:
+            by[rec.get('appointment_id')].append(rec)
+        for aid, vs in by.items():
+            if any(_day(v.get('slot_start') or v.get('scheduled_time') or v.get('scheduled_date')) for v in vs):
+                continue
+            v0 = vs[0]
+            booked = v0.get('booked_date') or _day(v0.get('booked_at'))
+            if not (aid and v0.get('patient_id') and booked):
+                continue
+            cands = {}
+            for folder in _practices(v0):
+                cands.update(self._fhir_appointment_slots().get((folder, v0['patient_id'], booked)) or {})
+            if len(cands) != 1:
+                self.cross_check['appointment_without_slot' if not cands else 'appointment_slot_fhir_copy_ambiguous'] += 1
+                continue
+            dated = [x for x in next(iter(cands.values())) if _day(x[1])]
+            if not dated:
+                continue
+            slot = max(dated)[1]
+            for v in vs:
+                v['slot_start'], v['scheduled_date'], v['scheduled_date_source'] = _iso(slot), _day(slot), 'fhir_copy'
+            self.cross_check['appointment_slot_from_fhir_copy'] += 1
+        return recs
 
     def fhir_gap(self, folder, rec):
         """None when a fhir_bulk record of a vendor practice should be loaded (the vendor extract does not deliver that
@@ -1005,7 +1057,7 @@ class _Run:
                 if sched:
                     prev_date = sched
                 cands[(inst, csn)].append((_order(r), rec, r['_variant'] == 'resend'))
-        yield from self.emit(self.versions('appointments', cands, chain=False))
+        yield from self.emit(self._fill_slots_from_fhir(self.versions('appointments', cands, chain=False)))
 
     def _epic_notes(self):
         text = defaultdict(dict)
@@ -1525,7 +1577,7 @@ class _Run:
                             'diagnoses': diags})
                 encs[(practice, eid)].append((_order(r), rec, r['_variant'] == 'resend'))
         yield from self.emit(self.versions('encounters', encs), migration=lambda r: (r['event_date'], r.get('type') not in ('telephone', 'virtual')))
-        yield from self.emit(self.versions('appointments', appts, chain=False))
+        yield from self.emit(self._fill_slots_from_fhir(self.versions('appointments', appts, chain=False)))
 
     def _ecw_problems(self):
         g = defaultdict(list)
@@ -1753,6 +1805,7 @@ class _Run:
             stream_of = {'encounter': 'encounters', 'condition': PROBLEM_LIST_STREAM, 'observation': 'labs', 'medicationrequest': 'medication_orders',
                          'documentreference': 'notes', 'appointment': 'appointments', 'allergyintolerance': 'allergies', 'immunization': 'immunizations'}[rt]
             by_stream, vitals = defaultdict(lambda: defaultdict(list)), defaultdict(list)
+            vendor_dup = set()  # (folder, rt, id) of FHIR appointments with a version that duplicates a vendor record
             for r in self.rows(table, stream=stream_of):
                 folder = _inst(r)
                 res = _res(r)
@@ -1770,6 +1823,8 @@ class _Run:
                 stream, rec, extra = out
                 if not native:
                     reason = self.fhir_gap(folder, rec)
+                    if reason == 'fhir_duplicate_of_vendor_record' and stream == 'appointments':
+                        vendor_dup.add((folder, rt, res.get('id')))  # the appointment is deduplicated as a whole below
                     if reason:
                         if stream == 'labs':
                             self._fhir_presence(folder, res)
@@ -1783,6 +1838,8 @@ class _Run:
                     vitals[(folder, pid, extra)].append((o, res.get('id'), rec, r))
                     continue
                 by_stream[stream][(folder, rt, res.get('id'))].append((o, rec, True))  # copies are compared to every version
+            for k in vendor_dup & set(by_stream.get('appointments', {})):
+                self.drop('fhir_duplicate_of_vendor_record', 'appointments', len(by_stream['appointments'].pop(k)))
             for stream, cands in by_stream.items():
                 yield from self.emit(self.versions(stream, cands, chain=stream != 'appointments'),
                                      migration=_lab_migration_key if stream == 'labs' else None)
@@ -2030,7 +2087,9 @@ class _Run:
         mrn = self.F.get((folder, pid))
         q = res.get('valueQuantity') or {}
         loinc = next((c.get('code') for c in (res.get('code') or {}).get('coding') or [] if 'loinc' in str(c.get('system'))), None)
-        rec = {'loinc': loinc, 'specimen_time': res.get('effectiveDateTime'), 'value': q.get('value') if q else res.get('valueString')}
+        name = (res.get('code') or {}).get('text') or next((c.get('display') for c in (res.get('code') or {}).get('coding') or []), None)
+        rec = {'loinc': loinc, 'specimen_time': res.get('effectiveDateTime'), 'value': q.get('value') if q else res.get('valueString'),
+               'name': name, 'result_status': FHIR_LAB_STATUS_CORRECTED.get(res.get('status'), res.get('status'))}
         self._presence(_org_from_name(mrn) or folder, mrn, rec)
 
     # ================================================================================================= HL7
@@ -2175,6 +2234,18 @@ class _Run:
         kept = defaultdict(list)
         for key, versions in chains.items():
             if any(self._present(*p) for *_, p in versions):
+                # the result is in the EHR / FHIR export: counted once, there. A reference-lab correction whose corrected
+                # value the EHR holds only as a final result (or not at all) is added as the correction (the semantic
+                # layer's cross-feed result identity then retires the EHR copies); when the EHR holds the corrected copy,
+                # the HL7 correction is not added again.
+                corr = [v for v in versions if v[1].get('result_status') == 'corrected']
+                if corr:
+                    last = max(corr, key=lambda v: v[0])
+                    if not self._present(*last[3], corrected=True):
+                        kept[key] = [last[:3]]
+                        self.drop('oru_duplicate_of_ehr_lab', 'labs', len(versions) - 1)
+                        self.cross_check['oru_correction_added_over_ehr_final_copy'] += 1
+                        continue
                 self.drop('oru_duplicate_of_ehr_lab', 'labs', len(versions))
                 continue
             kept[key] = [v[:3] for v in versions]
@@ -2191,22 +2262,26 @@ class _Run:
         if not day:
             return
         v = rec.get('value')
+        loinc = _lab_loinc(rec)
+        corrected = rec.get('result_status') == 'corrected'
         for o in {org, _org_from_name(mrn)} - {None}:
-            if rec.get('loinc'):
-                self.lab_presence[(o, mrn, rec['loinc'], day)].append(v)
-            self.lab_presence_any[(o, mrn, '*', day)].append((v, rec.get('loinc'), _name_tokens(rec.get('name'))))
+            if loinc:
+                self.lab_presence[(o, mrn, loinc, day)].append((v, corrected))
+            self.lab_presence_any[(o, mrn, '*', day)].append((v, loinc, _name_tokens(rec.get('name')), corrected))
 
-    def _present(self, org, mrn, loinc, day, value, name=None):
+    def _present(self, org, mrn, loinc, day, value, name=None, corrected=False):
         """Same result already in the EHR: same LOINC + day + value; else (EHR row without LOINC, or ORU without LOINC)
-        same day + value + compatible LOINC/name."""
+        same day + value + compatible LOINC/name. A local-only code (NA, K, HGBA1C ...) stands for its LOINC on either
+        side. corrected=True: the EHR holds that value as a corrected result."""
         if not (mrn and day):
             return False
         toks = _name_tokens(name)
+        loinc = loinc or _lab_loinc({'name': name})
         for o in {org, _org_from_name(mrn)} - {None}:
-            if loinc and any(_same_value(value, v) for v in self.lab_presence.get((o, mrn, loinc, day), ())):
+            if loinc and any(_same_value(value, v) and (c or not corrected) for v, c in self.lab_presence.get((o, mrn, loinc, day), ())):
                 return True
-            for v, l, t in self.lab_presence_any.get((o, mrn, '*', day), ()):
-                if not _same_value(value, v) or (loinc and l and l != loinc):
+            for v, l, t, c in self.lab_presence_any.get((o, mrn, '*', day), ()):
+                if not _same_value(value, v) or (loinc and l and l != loinc) or (corrected and not c):
                     continue
                 if (loinc and l == loinc) or (toks and t and (toks[0] == t[0] or set(toks) <= set(t) or set(t) <= set(toks))):
                     return True
@@ -2226,7 +2301,7 @@ class _Run:
                 'unresolved': dict(self.unresolved), 'missing_tables': sorted(self.missing),
                 'unmapped': {k: dict(v.most_common(15)) for k, v in sorted(self.unmapped.items())},
                 'unmapped_totals': {k: sum(v.values()) for k, v in sorted(self.unmapped.items())},
-                'lab_presence_keys': len(self.lab_presence)}
+                'lab_presence_keys': len(self.lab_presence), 'cross_check': dict(self.cross_check.most_common())}
 
 
 # ------------------------------------------------------------------------------------------------ shared field builders
@@ -2269,6 +2344,7 @@ def _same_value(a, b):
     return _vkey(a) == _vkey(b)
 
 
+APPOINTMENT_TABLE_VENDORS = {'epic'}  # vendor extracts that deliver every appointment (with its id) in a scheduling table
 FHIR_LAG_DAYS = 62  # fhir_bulk arrives up to two monthly cycles after the vendor extract of the same month (inventory DQ-01)
 
 
@@ -2308,18 +2384,30 @@ def _xkey(rec, practice):
 
 
 def _appointment_dates(rec):
-    """Every appointment version carries its booking (made / created) date and a slot: slot_start, else the scheduled
-    date, else the delivered date, else the made/created date (scheduled_date_source says which)."""
+    """Every appointment version carries its booking (made / created) date and, when delivered, a slot: slot_start, else
+    the scheduled date (scheduled_date_source says which). A booking/made date or the record's own date is never a slot
+    date: a version delivered without a slot has none, and the semantic layer takes the slot of the most recent earlier
+    version (a vendor appointment with no slot in any version takes its FHIR copy's slot, _Run._fill_slots_from_fhir)."""
     rec['booked_date'] = rec.get('booked_date') or _day(rec.get('booked_at'))
     slot = rec.get('slot_start') or rec.get('scheduled_time') or rec.get('scheduled_date')
-    if not rec.get('scheduled_date'):
-        if _day(slot):
-            rec['scheduled_date'], rec['scheduled_date_source'] = _day(slot), 'slot_start'
-        elif rec.get('booked_date'):
-            rec['scheduled_date'], rec['scheduled_date_source'] = rec['booked_date'], 'made_date'
-        elif rec.get('event_date'):
-            rec['scheduled_date'], rec['scheduled_date_source'] = rec['event_date'], 'record_date'
+    if not rec.get('scheduled_date') and _day(slot):
+        rec['scheduled_date'], rec['scheduled_date_source'] = _day(slot), 'slot_start'
     rec['slot_start'] = slot or rec.get('scheduled_date')
+
+
+FHIR_LAB_STATUS_CORRECTED = {'corrected': 'corrected', 'amended': 'corrected'}
+
+
+def _lab_loinc(rec):
+    """The result's LOINC, else the LOINC its local-only code stands for (client_data.LOCAL_LAB_CODES)."""
+    if rec.get('loinc'):
+        return rec['loinc']
+    from ..clinical.client_data import LOCAL_LAB_CODES
+    for c in (rec.get('local_code'), rec.get('name')):
+        hit = LOCAL_LAB_CODES.get(str(c or '').strip().upper())
+        if hit:
+            return hit[0]
+    return None
 
 
 def _lab_migration_key(rec):

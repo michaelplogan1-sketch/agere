@@ -175,6 +175,43 @@ class MedicalClaims(unittest.TestCase):
         self.assertEqual(x[0]['patient_id'], 'P-member:WH-PAYER-SUP1:2DX0U77CP79')
         self.assertEqual(claims(by, 'WHN-CLM-eee')[0]['product'], 'medicare_ffs')
 
+    def test_member_liability_is_cas_pr(self):
+        L = Landing()
+        L.c837('x12_payer/WH-PAYER-C1/2027-W10/C1_837P_2027-W10.x12', '800', 'k1', 'WHN-CLM-a1', 'C1ABCDEF123',
+               lines=[('99213', 300.0, '2027-03-02')])
+        L.c835('x12_payer/WH-PAYER-C1/2027-W12/C1_835_2027-W12.x12', '801', '0001', 'e1', 'WHN-CLM-a1', '4', 0.0, 0.0,
+               cas=[('PR', '27', 300.0)])
+        by, _ = run(L)
+        self.assertEqual(claims(by, 'WHN-CLM-a1')[0]['patient_responsibility'], 300.0)
+
+    def test_replacement_matched_to_flat_by_sequence_not_date(self):
+        L = Landing()
+        L.c837('x12_payer/WH-PAYER-C1/2027-W10/C1_837P_2027-W10.x12', '810', 'k1', 'WHN-CLM-b1-R', 'C1ABCDEF123',
+               freq='7', lines=[('99213', 120.0, '2027-03-02')])
+        L.c835('x12_payer/WH-PAYER-C1/2027-W20/C1_835_2027-W20.x12', '811', '0001', 'e1', 'WHN-CLM-b1-R', '1', 80.0, 10.0,
+               eff='2027-05-20', freq='7')
+        L.add('payers_medical', 'payers/WH-PAYER-C1/2027-03/C1_MEDICAL_20270405.txt', claim_id='WHN-CLM-b1-R', claim_line='1',
+              member_id='C1ABCDEF123', claim_type='P', from_date='2027-03-02', to_date='2027-03-02', paid_date='2027-03-25',
+              procedure_code='99213', billed='120', allowed='90', paid='80', member_liability='10', claim_status='paid',
+              payer='C1')
+        by, _ = run(L)
+        evs = claims(by, 'WHN-CLM-b1-R')
+        self.assertEqual([(e['adjudication_source'], e['paid_amount']) for e in evs], [('x12_835', 80.0)])
+
+    def test_reissued_12_character_mbi_links_to_cclf(self):
+        L = Landing()
+        L.c837('x12_payer/WH-PAYER-MSSP/2027-W10/MSSP_837P_2027-W10.x12', '820', 'k1', 'WHN-CLM-c1', '2WC73D759A4E',
+               lines=[('99213', 120.0, '2027-03-02')])
+        L.c835('x12_payer/WH-PAYER-MSSP/2027-W12/MSSP_835_2027-W12.x12', '821', '0001', 'e1', 'WHN-CLM-c1', '1', 25.0, 5.0)
+        L.add('cclf_partb_physicians', 'cms_cclf_csv/partb_physicians/P.A9999.ACO.ZC5Y27.D270412.T1.csv',
+              cur_clm_uniq_id='1001', bene_mbi_id='2WC73D759A4', clm_type_cd='71', clm_adjsmt_type_cd='0', clm_pos_cd='11',
+              file_date='2027-04-12', clm_line_num='1', clm_line_srvc_unit_qty='1', clm_from_dt='2027-03-02',
+              clm_thru_dt='2027-03-02', clm_line_from_dt='2027-03-02', clm_line_hcpcs_cd='99213', clm_line_cvrd_pd_amt='70',
+              clm_line_alowd_chrg_amt='88', clm_cntl_num='20270310C6F550F50B', clm_efctv_dt='2027-03-10')
+        by, rep = run(L)
+        self.assertEqual(claims(by, 'WHN-CLM-c1')[0]['cclf_claim_id'], 'B-C6F550F50B')
+        self.assertFalse(claims(by, 'CCLF-B-C6F550F50B'))
+
     def test_mssp_x12_vs_cclf(self):
         L = Landing()
         L.c837('x12_payer/WH-PAYER-MSSP/2027-W10/MSSP_837P_2027-W10.x12', '700', 'k1', 'WHN-CLM-fff', '7Q45WP7HH60',
@@ -201,7 +238,9 @@ class MedicalClaims(unittest.TestCase):
         by, rep = run(L)
         fff = claims(by, 'WHN-CLM-fff')
         self.assertEqual(len(fff), 1)
-        self.assertEqual(fff[0]['paid_amount'], 70.64)
+        # the 835 is the adjudication of record: CLP04 paid and CLP05/CAS PR member liability stay; CCLF fills allowed
+        self.assertEqual(fff[0]['paid_amount'], 25.0)
+        self.assertEqual(fff[0]['patient_responsibility'], 5.0)
         self.assertEqual(fff[0]['allowed_amount'], 88.3)
         self.assertEqual(fff[0]['x12_paid_amount'], 25.0)
         self.assertEqual(fff[0]['cclf_claim_id'], 'B-C6F550F50B')
@@ -304,9 +343,22 @@ class Enrollment(unittest.TestCase):
         self.assertGreaterEqual(rep['dropped']['repeat_834_loop'], 1)  # the 2027-01 FULL repeats the open span
         new = sorted((r for r in by['enrollment_spans'] if r['member_id'] == 'C1NEWMEM456'), key=lambda r: r['span_version'])
         self.assertEqual(new[0]['enrollment_reason'], 'new_enrollment')
-        # absent from the next quarterly full file: the full file replaces membership, so the span ends the day before it
+        # absent from the next quarterly full file (coverage month 2026-12): coverage ended before that month, so the span
+        # ends on the last day of the last month a file reported it (the 2026-11 change file)
         self.assertEqual((new[-1]['coverage_end'], new[-1]['termination_reason'], new[-1]['available_date']),
-                         ('2027-01-04', 'absent_from_full_file', '2027-01-05'))
+                         ('2026-11-30', 'absent_from_full_file', '2027-01-05'))
+
+    def test_flat_term_date_overrides_inferred_end(self):
+        L = Landing()
+        self.loop(L, 'x12_834/WH-PAYER-C1/2026-09/C1_834_FULL_20261005.x12', '030', 'C1ABCDEF123', '2026-09-01')
+        self.loop(L, 'x12_834/WH-PAYER-C1/2026-12/C1_834_FULL_20270105.x12', '030', 'C1OTHER9999', '2026-09-01',
+                  fdate='2027-01-05')
+        L.add('payers_eligibility', 'payers/WH-PAYER-C1/2026-11/C1_ELIGIBILITY_20261205.txt', member_id='C1ABCDEF123',
+              subscriber_id='C1ABCDEF100', product='commercial', plan_id='P1', eff_date='20260901', term_date='20261115',
+              pcp_npi='1085075368', pcp_name='WHN-PRACTICE-TX-7', payer='C1')
+        by, rep = run(L)
+        last = max((r for r in by['enrollment_spans'] if r['member_id'] == 'C1ABCDEF123'), key=lambda r: r['span_version'])
+        self.assertEqual((last['coverage_end'], last['coverage_end_source']), ('2026-11-15', 'flat_eligibility'))
 
     def test_unresolved_person_kept_with_none(self):
         L = Landing()

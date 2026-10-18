@@ -107,15 +107,17 @@ class PayerClaimHistoryTests(unittest.TestCase):
         self.assertEqual(results['warehouse-hybrid-retrieval/1'], ('paid', 1, 'paid'))
 
 
-def _delivery_fixture(root):
-    """A landing DB + raw folder + manifest covering resend, v2, truncation, empty/header-only files and a series gap."""
+def _delivery_fixture(root, skip=()):
+    """A landing DB + raw folder + manifest covering resend, v2, truncation, empty/header-only files and a series gap
+    (skip: relpaths left out of the delivery)."""
     raw = root / 'raw'
     files = {  # relpath -> (content, parser, data table, parsed rows, claimed records, delivered)
         'payers/WH-PAYER-C1/2026-09/C1_MEDICAL_20261005.txt': ('H\n1\n2\n', 'flat', 'payers_medical', 2, 2, '2026-10-05'),
         'payers/WH-PAYER-C1/2026-09/C1_MEDICAL_20261005_RESEND.txt': ('H\n1\n2\n', 'flat', 'payers_medical', 2, 2, '2026-10-20'),
         'payers/WH-PAYER-C1/2026-10/C1_MEDICAL_20261105.txt': ('H\n1\n2\n3\n', 'flat', 'payers_medical', 3, 3, '2026-11-05'),
         'payers/WH-PAYER-C1/2026-10/C1_MEDICAL_20261105_v2.txt': ('H\n1\n2\n4\n', 'flat', 'payers_medical', 3, 3, '2026-11-12'),
-        # 2026-11 missing (gap)
+        # 2026-11 medical missing while the sender delivered its other files that month (gap)
+        'payers/WH-PAYER-C1/2026-11/C1_ELIGIBILITY_20261205.txt': ('H\nm1\n', 'flat', 'payers_medical', 1, 1, '2026-12-05'),
         'payers/WH-PAYER-C1/2026-12/C1_MEDICAL_20270105.txt': ('H\n1\n2', 'flat', 'payers_medical', 2, 5, '2027-01-25'),
         'payers/WH-PAYER-C1/2027-01/C1_MEDICAL_20270205.txt': ('H\n', 'flat', 'payers_medical', 0, 4, '2027-02-05'),
         'payers/WH-PAYER-C1/2027-02/C1_MEDICAL_20270305.txt': ('', 'flat', 'payers_medical', 0, 3, '2027-03-05'),
@@ -123,6 +125,12 @@ def _delivery_fixture(root):
         'payers/WH-PAYER-C1/2027-04/C1_MEDICAL_20270505.txt': ('H\n5\n', 'flat', 'payers_medical', 1, 1, '2027-05-05'),
         'payers/WH-PAYER-C1/2027-05/C1_MEDICAL_20270605.txt': ('H\n6\n', 'flat', 'payers_medical', 1, 1, '2027-06-05'),
         'payers/WH-PAYER-C1/2027-06/C1_MEDICAL_20270705.txt': ('H\n7\n', 'flat', 'payers_medical', 1, 1, '2027-07-05'),
+        # last month's bytes under this month's name, claiming more rows: a stale copy, not a truncation
+        'payers/WH-PAYER-C1/2027-07/C1_MEDICAL_20270805.txt': ('H\n7\n', 'flat', 'payers_medical', 1, 3, '2027-08-05'),
+        # stops inside its header line (CRLF file ending in a lone CR): truncated, not header-only
+        'payers/WH-PAYER-C1/2027-02/C1_PHARMACY_20270305.txt': ('H1,H2\r', 'flat', 'payers_medical', 0, 2, '2027-03-05'),
+        # CRLF file cut after the CR of its last record; the parser still counts 2 rows
+        'payers/WH-PAYER-C1/2027-03/C1_PHARMACY_20270405.txt': ('H\r\n1\r\n2\r', 'flat', 'payers_medical', 2, 2, '2027-04-05'),
         'x12/835/WHN-PRACTICE-AK-0/2026-10/C1_835_202610.x12': ('ISA*...', 'x12', 'x12_835_claim', 1, 2, '2026-11-02'),
     }
     manifest = []
@@ -131,9 +139,11 @@ def _delivery_fixture(root):
         CREATE TABLE x12_parse_issue(_feed, _instance, _drop, _file, _row, severity, segment_index, reason);
         CREATE TABLE payers_medical(_feed, _instance, _drop, _file, _row, claim_id, flat_row_issue);''')
     for rel, (content, parser, table, n, claimed, delivered) in files.items():
+        if rel in skip:
+            continue
         p = raw / rel
         p.parent.mkdir(parents=True, exist_ok=True)
-        p.write_text(content)
+        p.write_bytes(content.encode())
         data = content.encode()
         import hashlib
         manifest.append({'path': 'raw/' + rel, 'sender': 'WH-PAYER-C1', 'format': 'x', 'records': claimed,
@@ -168,7 +178,7 @@ class DeliveryFileTests(unittest.TestCase):
         cls.tmp.cleanup()
 
     def test_every_file_with_manifest_facts(self):
-        self.assertEqual(self.summary['files'], 12)
+        self.assertEqual(self.summary['files'], 16)
         r = self.rows['C1_MEDICAL_20261005.txt']
         self.assertEqual((r['delivered_date'], r['claimed_records'], r['parsed_records'], r['in_manifest']), ('2026-10-05', 2, 2, 1))
         self.assertEqual((r['feed'], r['instance'], r['kind'], r['period'], r['cadence']),
@@ -196,6 +206,29 @@ class DeliveryFileTests(unittest.TestCase):
         self.assertEqual((empty['empty_file'], empty['empty_where_expected'], empty['truncated']), (1, 1, 0))
         x12 = self.rows['C1_835_202610.x12']
         self.assertEqual((x12['truncated'], x12['truncation_evidence'], x12['parse_issue_count']), (1, 'x12_missing_iea_at_eof', 1))
+        stale = self.rows['C1_MEDICAL_20270805.txt']
+        self.assertEqual((stale['truncated'], stale['byte_records'], stale['claimed_records']), (0, 1, 3))
+        self.assertTrue(stale['content_identical_to'].endswith('C1_MEDICAL_20270705.txt'))
+        in_header = self.rows['C1_PHARMACY_20270305.txt']
+        self.assertEqual((in_header['truncated'], in_header['truncation_evidence'], in_header['header_only'],
+                          in_header['empty_where_expected']), (1, 'flat_cut_in_header', 0, 0))
+        lone_cr = self.rows['C1_PHARMACY_20270405.txt']
+        self.assertEqual((lone_cr['truncated'], lone_cr['byte_records']), (1, 1))
+        self.assertIn('flat_no_final_newline', lone_cr['truncation_evidence'])
+        self.assertIn('flat_fewer_rows_than_claimed', lone_cr['truncation_evidence'])  # counted from the bytes, not the parser
+
+    def test_scan_lines(self):
+        s = delivery.scan_lines
+        self.assertEqual(s(b'a|b\r\n', 'flat'), {'complete': 1, 'records': 0, 'cut': False, 'header_only': True, 'cut_in_header': False})
+        self.assertTrue(s(b'a|b', 'flat')['cut_in_header'])
+        self.assertTrue(s(b'a|b\r', 'flat')['cut_in_header'])
+        self.assertFalse(s(b'a|b\r', 'flat')['header_only'])
+        self.assertEqual(s(b'h\r\n"x\ny"\r\n2\r\n', 'flat')['records'], 2)  # a bare LF inside a CRLF file is embedded
+        self.assertTrue(s(b'h\r\n1\r\n2\r', 'flat')['cut'])
+        self.assertEqual(s(b'{"a":1}\n{"a":2}\n{"a"', 'fhir'), {'complete': 2, 'records': 2, 'cut': True, 'header_only': False,
+                                                              'cut_in_header': False})
+        self.assertEqual(s(b'00\x1cT\nG1\x1cA\nG1\x1cB\n99\x1c2\n', 'ncpdp')['records'], 2)
+        self.assertEqual(s(b'REC1      \nREC2      \nRE', 'fixed_width')['records'], 2)
 
     def test_lateness(self):
         r = self.rows['C1_MEDICAL_20270105.txt']
@@ -206,6 +239,14 @@ class DeliveryFileTests(unittest.TestCase):
         gaps = self.db.execute('SELECT series, missing_period, position, previous_period, next_period FROM delivery_gap').fetchall()
         self.assertEqual(gaps, [('payers|WH-PAYER-C1|C1_MEDICAL_#', '2026-11', 'inside', '2026-10', '2026-12')])
         self.assertEqual(self.rows['C1_MEDICAL_20270105.txt']['series_gap_before'], 1)
+
+    def test_sender_skipping_a_whole_period_is_not_a_gap(self):
+        with tempfile.TemporaryDirectory() as t:
+            root = Path(t)
+            raw = _delivery_fixture(root, skip={'payers/WH-PAYER-C1/2026-11/C1_ELIGIBILITY_20261205.txt'})
+            out = sqlite3.connect(':memory:')
+            delivery.build(out, root / 'landing.sqlite', raw)
+            self.assertEqual(out.execute('SELECT count(*) FROM delivery_gap').fetchone()[0], 0)
 
     def test_without_manifest(self):
         with tempfile.TemporaryDirectory() as t:
@@ -288,9 +329,9 @@ class NativeWorkspaceWiringTests(unittest.TestCase):
             n = db.execute('SELECT count(*) FROM delivery_file').fetchone()[0]
             meta = dict(db.execute('SELECT key, value FROM meta'))
             db.close()
-            self.assertEqual(n, 12)
+            self.assertEqual(n, 16)
             self.assertIn('delivery_file', meta)
-            self.assertEqual(ws.state['steps']['build']['delivery']['files'], 12)
+            self.assertEqual(ws.state['steps']['build']['delivery']['files'], 16)
             ws._do_verify(None)
             v = json.loads((ws.dir / 'verification.json').read_text())
             par = next(c for c in v['checks'] if c['name'] == 'source_parity')

@@ -544,16 +544,16 @@ class DateClockTests(unittest.TestCase):
                                              'appt_status_c': '1', 'appt_made_dttm': '2028-02-01 08:00:00'}], instance=I, drop='2028-02')
         table(db, 'ehr_epic_f_sched_appt', [{'pat_enc_csn_id': '11', 'pat_id': 'Z1', 'contact_date': '2028-03-01', 'appt_dttm': '2028-03-01 09:00:00',
                                              'appt_status_c': '2', 'appt_made_dttm': '2028-02-01 08:00:00'}], instance=I, drop='2028-03')
-        # a version delivered with no slot at all: the made date is the slot of last resort
+        # a version delivered with no slot at all: a made date is never a slot date (no scheduled_date)
         table(db, 'ehr_epic_f_sched_appt', [{'pat_enc_csn_id': '12', 'pat_id': 'Z1', 'contact_date': '', 'appt_dttm': '',
                                              'appt_status_c': '2', 'appt_made_dttm': '2028-04-02 10:00:00'}], instance=I, drop='2028-04')
         appts = run(db)[1]['appointments']
         self.assertTrue(all(a['booked_date'] for a in appts))
-        self.assertEqual(sorted((a['appointment_id'][-2:], a['status'], a['booked_date'], a['scheduled_date'], a.get('scheduled_date_source'))
+        self.assertEqual(sorted((a['appointment_id'][-2:], a['status'], a['booked_date'], a.get('scheduled_date'), a.get('scheduled_date_source'))
                                 for a in appts),
                          [('11', 'booked', '2028-02-01', '2028-03-01', None), ('11', 'fulfilled', '2028-02-01', '2028-03-01', None),
-                          ('12', 'fulfilled', '2028-04-02', '2028-04-02', 'made_date')])
-        self.assertTrue(all(a['slot_start'] for a in appts))
+                          ('12', 'fulfilled', '2028-04-02', None, None)])
+        self.assertTrue(all(a.get('slot_start') for a in appts if a['appointment_id'].endswith('11')))
 
     def test_egfr_label_with_equation_maps_to_concept(self):
         import re as _re

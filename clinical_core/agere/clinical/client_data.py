@@ -9,7 +9,7 @@ labs        string results '>60' / '<0.01' -> numeric value with value_censor ('
             else the same order + test); duplicate interface messages (same order, test, value) -> one current row;
             local-only codes -> LOINC and concept via LOCAL_LAB_CODES; measurement_latest rebuilt on current, included rows.
 claims      frequency-7 replacement supersedes its original (original_payer_claim_id); frequency-8 voids end the original;
-            CARC 18 duplicate submissions never count; ICD-10 sent without the decimal is normalised (received value kept);
+            CARC 18 duplicate submissions never count when their original claim is present (else the claim is kept); ICD-10 sent without the decimal is normalised (received value kept);
             blank rendering NPI -> NULL; counts_in_metrics = the one current, non-duplicate version of each service.
 pharmacy    B2 return-to-stock reversals are paired with the paid claim they reverse; neither counts as a fill
             (counts_as_fill, medication.fill_reversed), so PDC and fill linkage never see a returned prescription.
@@ -204,13 +204,19 @@ def labs(out):
         json_extract(payload,'$.comment'), json_extract(payload,'$.result_status'), json_extract(payload,'$.replaces_result_record_id'),
         json_extract(payload,'$.interface_message_id'), json_extract(payload,'$.local_code'), json_extract(payload,'$.laboratory_order_record_id'),
         coalesce(json_extract(payload,'$.name'), json_extract(payload,'$.test')), json_extract(payload,'$.unit'),
-        coalesce(json_extract(payload,'$.specimen_time'), json_extract(payload,'$.collected_time'), event_date), event_date, available_date
+        coalesce(json_extract(payload,'$.specimen_time'), json_extract(payload,'$.collected_time'), event_date), event_date, available_date,
+        json_extract(payload,'$.loinc'), json_extract(payload,'$.source_system')
         FROM record WHERE stream = 'labs'""").fetchall()
     stats = Counter()
     censored, excluded, local = [], [], []
     groups = defaultdict(list)
     supersede = {}
-    for rid, pid, value, vtype, comment, status, replaces, msg, lcode, order, name, unit, spec, d, av in rows:
+    identity = defaultdict(list)  # (patient, analyte, collection minute) -> results from any feed
+    for rid, pid, value, vtype, comment, status, replaces, msg, lcode, order, name, unit, spec, d, av, loinc, system in rows:
+        analyte = loinc or next((LOCAL_LAB_CODES[str(c).strip().upper()][0] for c in (lcode, name)
+                                 if c and str(c).strip().upper() in LOCAL_LAB_CODES), None)
+        if pid and analyte and isinstance(spec, str) and len(spec) >= 16 and vtype not in (None, 'null'):
+            identity[(pid, analyte, spec[:16])].append((av or '', 0 if msg is None else 1, rid, status, value, system))
         if vtype == 'text':
             m = CENSORED.match(value)
             if m: censored.append((rid, m.group(1), float(m.group(2)), value)); stats['censored'] += 1
@@ -238,6 +244,26 @@ def labs(out):
             k = (status, json.dumps(value))
             if k in seen and rid not in supersede: supersede[rid] = (seen[k], 'duplicate_interface_message'); stats['duplicate_interface_message'] += 1
             else: seen.setdefault(k, rid)
+    # One result across feeds (HL7 ORU, the EHR extract, the FHIR export): the same patient, analyte (LOINC, or the LOINC of a
+    # local-only code) and collection minute is one result. A correction from any feed wins over every other copy; otherwise
+    # copies with the same value are one result (the first arrival). Different values without a correction stay apart, and
+    # results from one source system are left to that system's own versioning (above).
+    for key, g in identity.items():
+        live = [x for x in g if x[2] not in supersede]
+        if len(live) < 2 or len({x[5] for x in live}) < 2: continue
+        live.sort()
+        corrected = [x for x in live if x[3] == 'corrected']
+        if corrected:
+            win = corrected[-1]
+            for x in live:
+                if x[5] != win[5]: supersede[x[2]] = (win[2], 'corrected'); stats['corrected_across_feeds'] += 1
+            continue
+        seen = {}
+        for av, _, rid, status, value, system in live:
+            try: k = round(float(value), 6)
+            except (TypeError, ValueError): k = ' '.join(str(value).lower().split())
+            first = seen.setdefault(k, (rid, system))
+            if first[1] != system: supersede[rid] = (first[0], 'duplicate_across_feeds'); stats['duplicate_across_feeds'] += 1
     out.executemany('UPDATE measurement SET result_current = 0, superseded_by_record_id = ?, supersede_reason = ? WHERE record_id = ?',
                     [(w, why, rid) for rid, (w, why) in supersede.items()])
     out.executemany('UPDATE measurement SET excluded_reason = ?, value_text = ?, value = NULL, value_canonical = NULL WHERE record_id = ?',
@@ -332,10 +358,16 @@ def claims(out):
         if member: i['member'] = member
         if str(freq) == '8' or status == 'voided': i['void'] = True
     replaced = {i['orig']: cid for cid, i in info.items() if i['orig']}
+    present = set(info) | {r[0] for r in out.execute('SELECT payer_claim_id FROM payer_claim')}
     rows, stats = [], Counter()
     for cid, pdx, dx, rnpi, ctype in out.execute('SELECT payer_claim_id, principal_diagnosis, diagnosis_codes, rendering_npi, claim_type FROM payer_claim').fetchall():
         i = info.get(cid) or info.default_factory()
-        dup = int(any(DUPLICATE_CARC.match(c) for c in i['carc']))
+        # a CARC 18 denial drops the claim only when the original it duplicates was received (-D -> its base claim id);
+        # without the original the claim is the only copy of the service and is kept
+        orig = i['orig'] if i['orig'] and i['orig'] != cid else (re.sub(r'-D(?=(-X)?$)', '', cid) if isinstance(cid, str) else None)
+        carc18 = any(DUPLICATE_CARC.match(c) for c in i['carc'])
+        dup = int(carc18 and bool(orig) and orig != cid and orig in present)
+        stats['duplicate_carc_without_original_kept'] += int(carc18 and not dup)
         if dup: status = 'duplicate_submission'
         elif cid in replaced: status = 'superseded_by_replacement'
         elif i['void']: status = 'voided'

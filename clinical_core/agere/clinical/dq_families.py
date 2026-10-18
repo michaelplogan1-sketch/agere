@@ -8,10 +8,13 @@ Families (each renders one read-only SELECT over the semantic layer):
                          file delivered after its normal cycle: after the date in its name, or, for files without a name
                          date, more than 7 days past its series' usual lag after the period end - the next-cycle catch-up
                          shows as ~30 days), resend_identical (a re-send marked in the name whose bytes equal an earlier
-                         file), truncated (delivery_file.truncated with its evidence), empty_expected (0 bytes or header
-                         only while the manifest claims rows), empty_any, zero_byte, header_only, v2_replacement;
-                         optional formats (flat = every parser except hl7/x12/ncpdp/fhir, incl. CCLF fixed-width), a
-                         delivered year, a feed, or grouping by feed
+                         file; a whole-file resend, so every file except HL7 batches and X12 interchanges counts:
+                         delimited, fixed-width, NCPDP and FHIR ndjson), truncated (delivery_file.truncated with its
+                         evidence, every format incl. FHIR, NCPDP and CCLF fixed-width; a definition listing several
+                         formats names the kinds of evidence, not a format filter), empty_expected (0 bytes or a single
+                         complete header line while the manifest claims rows), empty_any, zero_byte, header_only,
+                         v2_replacement; optional formats (flat = every parser except hl7/x12/ncpdp/fhir, incl. CCLF
+                         fixed-width), a delivered year, a feed, or grouping by feed
   missing_periods        expected periodic files that never arrived (delivery_gap rows; expected cadence = the series'
                          usual step, scheduled series only, see delivery.DOC); optional missing-period year, feed, by feed
   duplicate_charts       EHR charts (epic / athena / ecw patient ids, FHIR Patient ids) of one person within one system:
@@ -25,7 +28,8 @@ Families (each renders one read-only SELECT over the semantic layer):
   restated_records       received records that a later record supersedes (record_correction: supersedes_record_id or a lab
                          result's replaces link); optional streams
   roster_after_departure provider-practice affiliations still listed as active (no term date) on a monthly roster file
-                         dated after the affiliation's departure (its term date on any roster row)
+                         for a month the provider had already left: the departure (its term date on any roster row) is
+                         on or before the first day of the roster month, so the provider is gone for all of that month
   conversion_duplicates  records an EHR data conversion created at a migrated practice that copy data already delivered
                          from the old EHR: new-vendor problem / medication-list / allergy / immunization entries stamped
                          with the go-live date, and new-vendor lab results and notes dated before go-live, for patients
@@ -66,6 +70,9 @@ def enabled():
 # ============================================================================================ SQL rendering
 FORMAT_SQL = {'flat': "coalesce(parser, 'flat') NOT IN ('hl7', 'x12', 'ncpdp', 'fhir')", 'hl7': "parser = 'hl7'",
               'x12': "parser = 'x12'", 'ncpdp': "parser = 'ncpdp'", 'fhir': "parser = 'fhir'"}
+# A resent file is a whole file sent again: every format except HL7 batches and X12 interchanges, whose re-sends are
+# message/interchange duplicates (another question). 'Flat files re-sent' therefore covers NCPDP and FHIR ndjson too.
+RESEND_FILE_SQL = "coalesce(parser, 'flat') NOT IN ('hl7', 'x12')"
 CONDITION_SQL = {
     'late': (f"is_original = 1 AND ((name_date IS NOT NULL AND days_after_name_date >= 1) OR "
              f"(name_date IS NULL AND days_after_period_end - series_usual_lag_days > {LATE_TOLERANCE_DAYS}))"),
@@ -88,7 +95,9 @@ def _grouped(table_sql, where, group, unit):
 
 def render_file_count(p, as_of):
     where = [CONDITION_SQL[p['condition']]]
-    if p.get('formats'): where.append('(' + ' OR '.join(FORMAT_SQL[f] for f in p['formats']) + ')')
+    if p['condition'] == 'resend_identical' and set(p.get('formats') or ()) <= {'flat'}:
+        where.append(RESEND_FILE_SQL)
+    elif p.get('formats'): where.append('(' + ' OR '.join(FORMAT_SQL[f] for f in p['formats']) + ')')
     if p.get('year'): where.append(f"substr(delivered_date, 1, 4) = {q(p['year'])}")
     if p.get('feeds'): where.append(f"feed IN ({', '.join(q(f) for f in p['feeds'])})")
     where.append(f"(delivered_date IS NULL OR delivered_date <= {q(as_of)})")
@@ -160,10 +169,10 @@ def render_restated_records(p, as_of):
 
 def render_roster_after_departure(p, as_of):
     body = ("WITH r AS MATERIALIZED (SELECT x.provider_npi AS npi, x.practice_id AS practice, nullif(trim(x.term_date), '') AS term_date, "
-            "coalesce(d.name_date, d.delivered_date) AS roster_date "
+            "coalesce(substr(d.period, 1, 7), substr(coalesce(d.name_date, d.delivered_date), 1, 7)) || '-01' AS roster_month "
             "FROM raw_rosters_aco_provider_roster x LEFT JOIN delivery_file d ON d.relpath = x._file), "
             "t AS (SELECT npi, practice, min(term_date) AS departed FROM r WHERE term_date IS NOT NULL GROUP BY npi, practice), "
-            "stale AS (SELECT r.* FROM r JOIN t USING (npi, practice) WHERE r.term_date IS NULL AND r.roster_date > t.departed) ")
+            "stale AS (SELECT r.* FROM r JOIN t USING (npi, practice) WHERE r.term_date IS NULL AND t.departed <= r.roster_month) ")
     if p['unit'] == 'rows':
         return body + "SELECT count(*) AS roster_rows FROM stale"
     if p['unit'] == 'providers':
@@ -332,7 +341,7 @@ def parse(question, as_of):
             cond = 'late'
             if not has_def: defaults.append('late = after the name date, or > 7 days past the series usual lag')
         elif name == 'resend':
-            if formats and set(formats) - {'flat'}: return None  # HL7/X12 message-level duplicates are another question
+            if set(formats) & {'hl7', 'x12'}: return None  # HL7/X12 message-level duplicates are another question
             if re.search(r'identical|same (?:content|bytes)|byte[- ]for[- ]byte', text):
                 cond = 'resend_identical'
             elif has_def:
@@ -341,6 +350,7 @@ def parse(question, as_of):
                 cond = 'resend_identical'; defaults.append('re-send = resend marker in the name with identical bytes')
         elif name == 'truncated':
             cond = 'truncated'
+            if len(formats) > 1: formats = []  # 'flat files cut mid-record, HL7 batches ..., X12 ...' lists evidence kinds
             if not has_def: defaults.append('truncated = delivery_file truncation evidence')
         elif name == 'empty':
             header = bool(re.search(r'header[- ]only|header only', text))

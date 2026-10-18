@@ -78,6 +78,8 @@ FILES = [
     _df('payers/p/2028-01/M.csv', 'payers', 'flat', truncated=1),
     _df('x12/p/2028-01/I.x12', 'x12', 'x12', truncated=1, delivered_date='2029-01-05'),
     _df('fhir_bulk/f/2028-01/O.ndjson', 'fhir_bulk', 'fhir', truncated=1),
+    _df('fhir_bulk/f/2028-01/O_RESEND.ndjson', 'fhir_bulk', 'fhir', is_original=0, resend_by_name=1,
+        content_identical_to='fhir_bulk/f/2028-01/O.ndjson'),                                    # a whole-file re-send (counts)
     _df('ehr/a/2028-03/E.csv', 'ehr', 'flat', header_only=1, empty_or_header_only=1, empty_where_expected=1),
     _df('ehr/a/2028-03/R.csv', 'ehr', 'flat', header_only=1, empty_or_header_only=1),
     _df('cms_cclf/2028-01/ZC1', 'cms_cclf', None, empty_file=1, empty_or_header_only=1, empty_where_expected=1),
@@ -125,7 +127,9 @@ def build(path):
     db.executemany('INSERT INTO raw_rosters_aco_provider_roster VALUES (?,?,?,?,?,NULL)', [
         ('rosters/2028-01/R_20280110.csv', 1, 'PA', 'N1', ''), ('rosters/2028-02/R_20280210.csv', 1, 'PA', 'N1', ''),
         ('rosters/2028-03/R_20280310.csv', 1, 'PA', 'N1', '2028-02-01'),                 # still listed active on 02-10: stale
-        ('rosters/2028-01/R_20280110.csv', 2, 'PB', 'N2', ''), ('rosters/2028-02/R_20280210.csv', 2, 'PB', 'N2', '2028-02-01')])
+        ('rosters/2028-01/R_20280110.csv', 2, 'PB', 'N2', ''), ('rosters/2028-02/R_20280210.csv', 2, 'PB', 'N2', '2028-02-01'),
+        ('rosters/2028-02/R_20280210.csv', 3, 'PC', 'N3', ''),                           # left 02-05: still on staff on 02-01,
+        ('rosters/2028-03/R_20280310.csv', 3, 'PC', 'N3', '2028-02-05')])                # so the February roster is not stale
     claims = [  # id, pid, product, lob, type, tob, from, to, adm, dis, drg, final, allowed, paid, pr, cim, record
         ('C1', 'P1', 'commercial', 'commercial', 'professional', None, '2028-03-01', '2028-03-01', None, None, None, 'paid', 10000, 8000, 2000, 1, 'k1'),
         ('C2', 'P2', 'medicaid', 'medicaid', 'professional', None, '2028-06-01', '2028-06-01', None, None, None, 'paid', 5000, 5000, 0, 1, 'k2'),
@@ -175,9 +179,9 @@ QUESTIONS = {
     'late': ('How many data files came in late? Definition: Release-wide raw/ deliveries. Files delivered after their normal cycle '
              '(late or caught up in the next cycle).', 2),
     'resend': ('How many files were sent to us twice? Definition: Release-wide raw/ deliveries. Flat files re-sent with identical '
-               'content under another name.', 1),
+               'content under another name.', 2),  # the flat and the FHIR ndjson re-send; never the HL7 batch
     'truncated': ('How many files arrived cut off or incomplete? Definition: Release-wide raw/ deliveries. Flat files truncated '
-                  "mid-record, HL7 batches whose trailer count doesn't match, X12 interchanges missing trailers.", 2),
+                  "mid-record, HL7 batches whose trailer count doesn't match, X12 interchanges missing trailers.", 3),  # FHIR counts
     'missing': ('Are we missing any expected files? How many? Definition: Release-wide raw/ deliveries. Expected periodic files that '
                 'never arrived by as_of.', 3),
     'empty': ('How many files came through empty? Definition: Release-wide raw/ deliveries. Files with a header only, or 0 bytes, '
@@ -280,8 +284,7 @@ class FamilyAnswerTests(Fixture):
 
     def test_routes_and_parameters_are_recorded(self):
         res = dq.plan(None, QUESTIONS['truncated'][0], AS_OF)
-        self.assertEqual(res['spec'], {'family': 'file_count', 'parameters': {'condition': 'truncated', 'formats': ['flat', 'hl7', 'x12']},
-                                       'returns': 'count'})
+        self.assertEqual(res['spec'], {'family': 'file_count', 'parameters': {'condition': 'truncated'}, 'returns': 'count'})
         self.assertEqual(res['receipt']['defaults'], [])
         self.assertIn('dq family file_count@1', res['graph']['interpretation'])
         res = vb.plan(None, QUESTIONS['pmpm_commercial'][0], AS_OF)
@@ -455,7 +458,7 @@ class CalibrationReferenceTests(Fixture):
                   {'family': 'roster_after_departure', 'unit': 'affiliations'},
                   {'family': 'paid', 'year': 2028, 'group': 'product'}, {'family': 'pmpm', 'year': 2028, 'prod': 'commercial'},
                   {'family': 'readmit', 'year': 2028, 'days': 30, 'rate': True}, {'family': 'repeat', 'n': 3, 'status': 'no_show'}]
-        expected = [2, 2, 3, 1, 2, 1, {'commercial': 300.0, 'medicaid': 90.0}, 56.67, 50.0, ['P1']]
+        expected = [2, 3, 3, 1, 2, 1, {'commercial': 300.0, 'medicaid': 90.0}, 56.67, 50.0, ['P1']]
         for t, e in zip(truths, expected):
             with self.subTest(t['family']):
                 got = ref.answer(t)
