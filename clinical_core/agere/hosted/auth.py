@@ -26,6 +26,7 @@ import secrets
 import sqlite3
 import sys
 import threading
+from pathlib import Path
 import time
 from typing import Any, Callable, Optional
 
@@ -165,6 +166,8 @@ _DUMMY_HASH = _scrypt("agere-dummy-password", _DUMMY_SALT)
 class AuthStore:
     def __init__(self, path: str, clock: Callable[[], float] = time.time):
         self.path = str(path)
+        if self.path != ':memory:':
+            Path(self.path).parent.mkdir(parents=True, exist_ok=True)  # a fresh deployment has no data directory yet
         self.clock = clock
         self._local = threading.local()
         self._all_conns: list[sqlite3.Connection] = []

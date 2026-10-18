@@ -35,7 +35,7 @@ fi
 
 # 2. /app logged out -> redirect (3xx) to /login
 read -r code location < <("${CURL[@]}" -w '%{http_code} %{redirect_url}\n' "$BASE/app")
-case "$code" in 30[1278]) check "GET /app redirects (logged out)" 3xx 3xx ;; *) check "GET /app redirects (logged out)" 3xx "$code" ;; esac
+case "$code" in 30[12378]) check "GET /app redirects (logged out)" 3xx 3xx ;; *) check "GET /app redirects (logged out)" 3xx "$code" ;; esac
 if [[ "${location:-}" == *"/login"* ]]; then
   printf 'ok    %-40s %s\n' "GET /app -> /login" "$location"
 else

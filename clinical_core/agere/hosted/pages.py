@@ -100,8 +100,10 @@ async function refresh(){
  const m=await api('/api/admin/members');document.getElementById('members').innerHTML=tbl(m.members,[['email','Email'],['role','Role'],[r=>r.disabled?'disabled':'active','Status']]);
  const k=await api('/api/admin/keys');document.getElementById('keys').innerHTML=tbl(k.keys,[['name','Name'],['role','Role'],['prefix','Key'],['created_at','Created'],['last_used_at','Last used'],[r=>r.revoked?'revoked':'active','Status']]);
  const c=await api('/api/admin/credentials');document.getElementById('creds').innerHTML=tbl(c.credentials,[['name','Name'],['kind','Kind'],['updated_at','Updated']]);
- const u=await api('/api/admin/usage');const ur=Array.isArray(u.usage)?u.usage:(u.usage&&u.usage.by_workspace)||[];document.getElementById('usage').innerHTML=Array.isArray(ur)&&ur.length?tbl(ur,Object.keys(ur[0]).map(x=>[x,x])):'<pre class="muted">'+esc(JSON.stringify(u.usage,null,1))+'</pre>';
- const a=await api('/api/admin/audit');document.getElementById('audit').innerHTML=tbl((a.audit||[]).slice(0,100),[['at','When'],['user','User'],['action','Action'],[r=>JSON.stringify(r.detail||''),'Detail']]);}
+ const u=(await api('/api/admin/usage')).usage||{};const bw=Object.entries(u.by_workspace||{}).map(([w,v])=>Object.assign({workspace:w},typeof v==='object'?v:{value:v}));
+ document.getElementById('usage').innerHTML='<p>'+esc(u.records||0)+' questions · $'+Number(u.cost_usd||0).toFixed(2)+' model cost · '+Math.round(u.seconds||0)+' s answering</p>'+(bw.length?tbl(bw,Object.keys(bw[0]).map(x=>[x,x])):'');
+ const when=s=>s?new Date(s*1000).toLocaleString():'';
+ const a=await api('/api/admin/audit');document.getElementById('audit').innerHTML=tbl((a.audit||[]).slice(0,100),[[r=>when(r.at),'When'],['user','User'],['action','Action'],[r=>JSON.stringify(r.detail||''),'Detail'],['ip','IP']]);}
 document.getElementById('addmem').onclick=async()=>{const m=document.getElementById('memmsg');try{const d=await api('/api/admin/members',{email:document.getElementById('mem').value,role:document.getElementById('role').value});
  m.innerHTML='Added '+esc(d.email)+(d.temporary_password?'. Temporary password (shown once): <code>'+esc(d.temporary_password)+'</code>':'');refresh()}catch(e){m.textContent=e.message}};
 document.getElementById('addkey').onclick=async()=>{const m=document.getElementById('keymsg');try{const d=await api('/api/admin/keys',{name:document.getElementById('kname').value,role:document.getElementById('krole').value});

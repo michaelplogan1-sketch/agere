@@ -295,12 +295,15 @@ def make_handler(ctx):
 
             def on_usage(workspace, row):
                 ctx.auth.record_usage(org, workspace, row.get('question', '')[:80], row.get('cost_usd'), row.get('seconds'))
-                ctx.auth.audit(org, uid, 'ask', {'workspace': workspace, 'question': row.get('question'), 'decision': row.get('decision')})
+                ctx.auth.audit(org, uid, 'workspace.ask', {'workspace': workspace, 'question': row.get('question'), 'decision': row.get('decision')},
+                               ip=self.client_ip())
 
             code, payload = workspace_api.handle(method, path, body, root=root, credentials=resolve, on_usage=on_usage,
                                                  can_write=self.require(p, 'analyst'))
             if method == 'POST' and code < 400 and not path.endswith('/ask'):
-                ctx.auth.audit(org, uid, 'workspace:' + (path.rstrip('/').rsplit('/', 1)[-1]), {'path': path})
+                parts = [x for x in path.split('/') if x][2:]
+                action = 'workspace.create' if not parts else 'workspace.' + (parts[1] if len(parts) > 1 else 'update')
+                ctx.auth.audit(org, uid, action, {'workspace': parts[0] if parts else (body or {}).get('name')}, ip=self.client_ip())
             return self.send(code, payload)
 
         # --- admin --------------------------------------------------------------------------------------------------
@@ -319,7 +322,10 @@ def make_handler(ctx):
             if path == '/api/admin/credentials':
                 return self.send(200, {'credentials': ctx.credentials.names(org)})
             if path == '/api/admin/audit':
-                return self.send(200, {'audit': ctx.auth.audit_log(org, 200)})
+                emails = {m.get('user_id'): m.get('email') for m in ctx.auth.members(org)}
+                rows = [{**r, 'user': emails.get(r.get('user_id')) or (r.get('user_id') and f"user {r['user_id']}") or 'system'}
+                        for r in ctx.auth.audit_log(org, 200)]
+                return self.send(200, {'audit': rows})
             return self.error(404, 'Not found')
 
         def admin_post(self, path, body, p):
@@ -354,11 +360,11 @@ def make_handler(ctx):
                 if not isinstance(values, dict) or not values:
                     raise ValueError('values must be a non-empty object')
                 ctx.credentials.put(org, name, {str(k): str(v) for k, v in values.items()}, kind=body.get('kind'))
-                ctx.auth.audit(org, uid, 'credential_saved', {'name': name, 'keys': sorted(values)})
+                ctx.auth.audit(org, uid, 'credential.saved', {'name': name, 'keys': sorted(values)}, ip=self.client_ip())
                 return self.send(200, {'ok': True})
             if path == '/api/admin/credentials/delete':
                 ctx.credentials.delete(org, str(body['name']))
-                ctx.auth.audit(org, uid, 'credential_deleted', {'name': body['name']})
+                ctx.auth.audit(org, uid, 'credential.deleted', {'name': body['name']}, ip=self.client_ip())
                 return self.send(200, {'ok': True})
             return self.error(404, 'Not found')
 
