@@ -24,13 +24,14 @@ TERMS = {
     'ras': ['lisinopril', 'enalapril', 'ramipril', 'benazepril', 'captopril', 'fosinopril', 'quinapril', 'perindopril',
             'trandolapril', 'moexipril', 'losartan', 'valsartan', 'irbesartan', 'candesartan', 'olmesartan', 'telmisartan',
             'azilsartan', 'eprosartan', 'sacubitril'],
-    'mra': ['spironolactone', 'eplerenone', 'finerenone'],
+    'mra': ['spironolactone', 'eplerenone'],  # finerenone is not an HF MRA
     'sglt2': ['dapagliflozin', 'empagliflozin', 'canagliflozin', 'ertugliflozin', 'sotagliflozin', 'bexagliflozin'],
     'statin': ['atorvastatin', 'rosuvastatin', 'simvastatin', 'pravastatin', 'lovastatin', 'fluvastatin', 'pitavastatin'],
 }
 PT_CODES = ('97161', '97162', '97163', '97164', '97110', '97112', '97140', '97530')
 MAMMO_CODES = ('77065', '77066', '77067', 'G0202', 'G0204', 'G0206')
 VISIT_TYPES = ('office', 'virtual')
+BH_CODES = ('90791', '90792', '90832', '90833', '90834', '90835', '90836', '90837', '90838', '90846', '90847', '90853')
 
 
 def _like_any(col, terms):
@@ -63,7 +64,11 @@ def queries(as_of, death_table=False):
                    WHERE counts_in_metrics = 1 AND substr(type_of_bill, 1, 3) IN ('011', '012') AND admission_date IS NOT NULL
                    UNION SELECT patient_id, admit_date FROM adt_visit WHERE coalesce(final_patient_class, patient_class) = 'I'"""
     procedures = "SELECT patient_id, service_date, cpt FROM payer_claim_line UNION ALL SELECT patient_id, service_date, cpt FROM claim_line"
-    visits = f"SELECT patient_id, event_date AS d FROM visit WHERE type IN {VISIT_TYPES}"
+    # visit = a completed office or virtual encounter, or a billed office visit (CPT 99202-99215); telephone does not count
+    visits = f"""SELECT patient_id, event_date AS d FROM visit WHERE type IN {VISIT_TYPES} AND status = 'completed'
+                UNION SELECT patient_id, service_date FROM procedure_line WHERE cpt BETWEEN '99202' AND '99215'
+                  AND counts_in_metrics = 1"""
+    bh = f"SELECT patient_id, service_date AS d FROM procedure_line WHERE cpt IN {BH_CODES} AND counts_in_metrics = 1"
     return {
         'HF-GDMT': f"""
             SELECT DISTINCT h.patient_id FROM ({hf}) h WHERE h.patient_id NOT IN ({dead})
@@ -84,9 +89,9 @@ def queries(as_of, death_table=False):
                               AND coalesce(result_status, '') <> 'cancelled' AND coalesce(result_current, 1) = 1
                               AND event_date > date({a}, '-365 day') AND event_date <= {a})
             SELECT l.patient_id FROM latest l WHERE l.rn = 1 AND l.value_canonical > 9.0
-              AND l.event_date <= date({a}, '-90 day') AND l.patient_id IN ({diabetes})
+              AND l.event_date <= date({a}, '-30 day') AND l.patient_id IN ({diabetes})
               AND NOT EXISTS (SELECT 1 FROM ({visits}) v WHERE v.patient_id = l.patient_id
-                              AND v.d > l.event_date AND v.d <= date(l.event_date, '+90 day'))""",
+                              AND v.d > l.event_date AND v.d <= date(l.event_date, '+30 day'))""",
         'ED-HIGH': f"""
             SELECT patient_id FROM (
               SELECT patient_id, d FROM ({ed_claim}) UNION SELECT patient_id, event_date FROM encounter WHERE type LIKE 'emergency%')
@@ -97,7 +102,7 @@ def queries(as_of, death_table=False):
                            AND substr(type_of_bill, 1, 3) IN ('011', '012') AND discharge_status IN ('01', '06')
                          UNION SELECT patient_id, discharge_date FROM adt_visit
                            WHERE coalesce(final_patient_class, patient_class) = 'I' AND discharge_disposition IN ('home', 'home_health'))
-            SELECT DISTINCT x.patient_id FROM dis x WHERE x.d > date({a}, '-6 month') AND x.d <= date({a}, '-14 day')
+            SELECT DISTINCT x.patient_id FROM dis x WHERE x.d >= date({a}, '-182 day') AND x.d <= date({a}, '-14 day')
               AND NOT EXISTS (SELECT 1 FROM ({visits}) v WHERE v.patient_id = x.patient_id
                               AND v.d > x.d AND v.d <= date(x.d, '+14 day'))""",
         'SPD': f"""
@@ -109,9 +114,8 @@ def queries(as_of, death_table=False):
             SELECT DISTINCT m.patient_id FROM measurement m WHERE m.concept = 'phq9' AND m.value_canonical >= 10
               AND coalesce(m.result_status, '') <> 'cancelled'
               AND m.event_date > date({a}, '-365 day') AND m.event_date <= date({a}, '-30 day')
-              AND NOT EXISTS (SELECT 1 FROM visit v WHERE v.patient_id = m.patient_id
-                              AND (v.type IN {VISIT_TYPES} OR v.setting LIKE '%behavioral%')
-                              AND v.event_date > m.event_date AND v.event_date <= date(m.event_date, '+30 day'))""",
+              AND NOT EXISTS (SELECT 1 FROM ({visits} UNION {bh}) v WHERE v.patient_id = m.patient_id
+                              AND v.d > m.event_date AND v.d <= date(m.event_date, '+30 day'))""",
         'BCS': f"""
             SELECT p.patient_id FROM patient p WHERE p.sex_reported = 'F' AND p.patient_id NOT IN ({dead})
               AND CAST((julianday({a}) - julianday(p.birth_date)) / 365.25 AS INTEGER) BETWEEN 52 AND 74
