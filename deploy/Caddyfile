@@ -4,7 +4,13 @@
 {$AGERE_DOMAIN} {
 	encode zstd gzip
 
-	request_body {
+	# Extract uploads stream to disk (the app enforces AGERE_UPLOAD_MAX_BYTES); every other request stays small.
+	@upload path /api/uploads/*
+	request_body @upload {
+		max_size 20GB
+	}
+	@small not path /api/uploads/*
+	request_body @small {
 		max_size 2MB
 	}
 

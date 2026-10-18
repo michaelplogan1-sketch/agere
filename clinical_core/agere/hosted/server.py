@@ -12,9 +12,13 @@ workspaces), admin and owner (+ members, API keys, credentials). See docs/agere/
 from __future__ import annotations
 
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+import ipaddress
 import json
+import os
 from pathlib import Path
 import re
+import socket
+import zipfile
 from urllib.parse import urlsplit
 
 from . import pages
@@ -28,6 +32,75 @@ SECURITY_HEADERS = {
     'Content-Security-Policy': "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; "
                                "img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'",
 }
+
+
+UPLOAD_MAX = int(os.environ.get('AGERE_UPLOAD_MAX_BYTES') or 10 * 1024 ** 3)
+UNZIP_MAX = int(os.environ.get('AGERE_UNZIP_MAX_BYTES') or 40 * 1024 ** 3)
+UNZIP_MAX_FILES = int(os.environ.get('AGERE_UNZIP_MAX_FILES') or 500_000)
+FILE_SCHEMES = ('sqlite:///', 'duckdb:///', 'files:///', 'native:///')
+REMOTE_SCHEMES = ('snowflake://', 'bigquery://', 'databricks://', 'postgres://', 'postgresql://')
+
+
+def check_source(source, uploads_root):
+    """A hosted workspace may read a cloud warehouse, or files the organization uploaded; never other server paths
+    (another tenant's data, the server's own files) and never a database on the server's private network."""
+    s = str(source or '').strip()
+    if s.startswith(REMOTE_SCHEMES):
+        if s.startswith(('postgres://', 'postgresql://')) and os.environ.get('AGERE_ALLOW_PRIVATE_DB') != '1':
+            host = urlsplit(s).hostname or ''
+            try:
+                addrs = {ai[4][0] for ai in socket.getaddrinfo(host, None)}
+            except OSError:
+                raise ValueError(f'cannot resolve database host {host!r}')
+            for a in addrs:
+                ip = ipaddress.ip_address(a)
+                if ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_reserved:
+                    raise PermissionError('databases on private or local networks are not reachable from hosted Agere')
+        return s
+    scheme = next((x for x in FILE_SCHEMES if s.startswith(x)), None)
+    raw = s[len(scheme) - 1:] if scheme else s
+    path = Path(raw).resolve()
+    root = Path(uploads_root).resolve()
+    if path != root and root not in path.parents:
+        raise PermissionError('file sources must be uploads of this organization (use the upload button or /api/uploads)')
+    if scheme:
+        return scheme[:-1] + str(path)  # e.g. 'files://' + '/abs/path' -> files:///abs/path
+    return ('files://' if path.is_dir() else 'sqlite://') + str(path)
+
+
+def safe_unzip(zip_path, dest):
+    """Extract a zip without path traversal, absolute paths, links or decompression bombs. -> (files, bytes)."""
+    dest = Path(dest).resolve()
+    dest.mkdir(parents=True, exist_ok=True)
+    total = count = 0
+    with zipfile.ZipFile(zip_path) as z:
+        for info in z.infolist():
+            name = info.filename
+            if info.is_dir():
+                continue
+            if name.startswith(('/', '\\')) or '..' in Path(name).parts or ':' in Path(name).parts[0]:
+                raise ValueError(f'unsafe path in archive: {name[:120]}')
+            if (info.external_attr >> 16) & 0o170000 == 0o120000:
+                raise ValueError(f'links are not allowed in archives: {name[:120]}')
+            count += 1
+            total += info.file_size
+            if count > UNZIP_MAX_FILES or total > UNZIP_MAX:
+                raise ValueError('archive expands beyond the allowed size or file count')
+            target = (dest / name).resolve()
+            if dest not in target.parents:
+                raise ValueError(f'unsafe path in archive: {name[:120]}')
+            target.parent.mkdir(parents=True, exist_ok=True)
+            with z.open(info) as src, open(target, 'wb') as out:
+                written = 0
+                while True:
+                    chunk = src.read(1 << 20)
+                    if not chunk:
+                        break
+                    written += len(chunk)
+                    if written > info.file_size + 1024:
+                        raise ValueError('archive member larger than declared')
+                    out.write(chunk)
+    return count, total
 
 
 def _get(obj, *names):
@@ -47,6 +120,11 @@ class Context:
         self.credentials = credentials
         self.cookie_secure = cookie_secure
         self.trust_proxy = trust_proxy
+
+    def uploads_root(self, org_slug):
+        root = self.tenant_root(org_slug).parent / 'uploads'
+        root.mkdir(parents=True, exist_ok=True)
+        return root
 
     def tenant_root(self, org_slug):
         if not re.fullmatch(r'[a-z0-9][a-z0-9-]{0,63}', str(org_slug or '')):
@@ -186,6 +264,12 @@ def make_handler(ctx):
                     return self.error(401, 'Sign in required')
                 if path == '/api/auth/me':
                     return self.send(200, self.me(p))
+                if path == '/api/uploads':
+                    root = ctx.uploads_root(self.org_slug(p))
+                    items = [{'name': x.name, 'kind': 'folder' if x.is_dir() else 'file',
+                              'bytes': x.stat().st_size if x.is_file() else None, 'path': str(x)}
+                             for x in sorted(root.iterdir()) if not x.name.endswith('.part')]
+                    return self.send(200, {'uploads': items})
                 if path.startswith('/api/workspaces'):
                     return self.workspaces('GET', path, None, p)
                 if path.startswith('/api/admin/'):
@@ -196,6 +280,61 @@ def make_handler(ctx):
             except Exception as exc:  # noqa: BLE001 - never leak a traceback to the client
                 print('error', path, type(exc).__name__, exc, flush=True)
                 return self.error(500, 'Internal error')
+
+        def do_PUT(self):
+            path = urlsplit(self.path).path
+            try:
+                p = self.principal()
+                if p is None:
+                    return self.error(401, 'Sign in required')
+                if not self.csrf_ok(p):
+                    return self.error(403, 'Missing or invalid CSRF token')
+                if not path.startswith('/api/uploads/'):
+                    return self.error(404, 'Not found')
+                if not self.require(p, 'analyst'):
+                    raise PermissionError('your role cannot upload data')
+                return self.upload(path.rsplit('/', 1)[-1], p)
+            except PermissionError as exc:
+                return self.error(403, str(exc))
+            except (ValueError, zipfile.BadZipFile) as exc:
+                return self.error(400, str(exc)[:300])
+            except Exception as exc:  # noqa: BLE001
+                print('error', path, type(exc).__name__, exc, flush=True)
+                return self.error(500, 'Internal error')
+
+        def upload(self, name, p):
+            if not re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9._-]{0,120}', name):
+                raise ValueError('file names use letters, digits, dot, dash and underscore')
+            n = int(self.headers.get('Content-Length') or 0)
+            if n <= 0:
+                raise ValueError('empty upload')
+            if n > UPLOAD_MAX:
+                return self.error(413, f'upload larger than {UPLOAD_MAX // 1024 ** 3} GB')
+            org = self.org_slug(p)
+            root = ctx.uploads_root(org)
+            target = root / name
+            tmp = root / (name + '.part')
+            left = n
+            with open(tmp, 'wb') as out:
+                while left:
+                    chunk = self.rfile.read(min(1 << 20, left))
+                    if not chunk:
+                        raise ValueError('upload ended early')
+                    out.write(chunk)
+                    left -= len(chunk)
+            tmp.replace(target)
+            result = {'ok': True, 'name': name, 'bytes': n}
+            if name.lower().endswith('.zip'):
+                folder = root / name[:-4]
+                files, size = safe_unzip(target, folder)
+                target.unlink()
+                result.update(extracted_files=files, extracted_bytes=size,
+                              sources={'native': f'native://{folder}', 'files': f'files://{folder}'})
+            else:
+                result['sources'] = {'sqlite' if name.endswith(('.sqlite', '.sqlite3', '.db')) else 'files':
+                                     (f'sqlite://{target}' if name.endswith(('.sqlite', '.sqlite3', '.db')) else f'files://{root}')}
+            ctx.auth.audit(org, self.user_id(p), 'upload', {'name': name, 'bytes': n}, ip=self.client_ip())
+            return self.send(200, result)
 
         def do_POST(self):
             path = urlsplit(self.path).path
@@ -289,6 +428,8 @@ def make_handler(ctx):
             org = self.org_slug(p)
             root = ctx.tenant_root(org)
             uid = self.user_id(p)
+            if method == 'POST' and path.rstrip('/') == '/api/workspaces' and isinstance(body, dict):
+                body = {**body, 'source': check_source(body.get('source'), ctx.uploads_root(org))}
 
             def resolve(name):
                 return ctx.credentials.get(org, name)

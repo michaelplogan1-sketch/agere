@@ -73,6 +73,23 @@ def app():
                         '<label>Source</label><input id="source" placeholder="snowflake://DB/SCHEMA">'
                         '<label>Saved credentials (optional)</label><input id="credential" placeholder="name saved by an admin">', 1)
     html = html.replace("source:$('source').value,as_of:", "source:$('source').value,credential:($('credential')||{}).value||null,as_of:", 1)
+    upload = ('<label for="upfile">Or upload extracts (.zip of CSV/X12/HL7/FHIR files, or a .sqlite/.csv file)</label>'
+              '<input id="upfile" type="file" accept=".zip,.csv,.sqlite,.sqlite3,.db,.parquet,.json,.jsonl">'
+              '<label for="uptype">Uploaded zip contains</label><select id="uptype"><option value="native">Native healthcare feeds (X12, HL7, NCPDP, FHIR, EHR extracts)</option>'
+              '<option value="files">Plain tables (one file per table)</option></select>'
+              '<p id="upmsg" class="muted" role="status"></p>')
+    html = html.replace('<label>Data as of (optional)</label>', upload + '<label>Data as of (optional)</label>', 1)
+    upload_js = r'''
+document.getElementById('upfile').onchange=e=>{const f=e.target.files[0];if(!f)return;const m=document.getElementById('upmsg');
+ const name=f.name.replace(/[^A-Za-z0-9._-]/g,'_');const x=new XMLHttpRequest();x.open('PUT','/api/uploads/'+encodeURIComponent(name));
+ x.setRequestHeader('X-CSRF-Token',(ME||{}).csrf||'');x.upload.onprogress=ev=>{if(ev.lengthComputable)m.textContent='Uploading… '+Math.round(100*ev.loaded/ev.total)+'%'};
+ x.onload=()=>{let d={};try{d=JSON.parse(x.responseText)}catch(_){}if(x.status!==200){m.textContent=d.error||('Upload failed ('+x.status+')');return}
+  const s=d.sources||{};const pick=s[document.getElementById('uptype').value]||s.files||s.sqlite||Object.values(s)[0];
+  document.getElementById('source').value=pick||'';if(!document.getElementById('name').value)document.getElementById('name').value=name.replace(/\.[^.]+$/,'');
+  m.textContent='Uploaded '+name+(d.extracted_files?(' ('+d.extracted_files+' files)'):'')+'. Source filled in; press Connect and build.'};
+ x.onerror=()=>{m.textContent='Upload failed'};m.textContent='Uploading…';x.send(f)};
+'''
+    html = html.replace('</script></body>', upload_js + '</script></body>', 1)
     return html
 
 

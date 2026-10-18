@@ -121,7 +121,7 @@ def handle(method, path, body=None, *, root=None, credentials=None, on_usage=Non
                 raise ValueError('questions must be a list of 1-500 {id, question, answer_type?}')
             qs = [{'id': str(q.get('id') or f'Q{i + 1}'), 'question': str(q['question']), 'answer_type': q.get('answer_type')}
                   for i, q in enumerate(qs)]
-            _background(ws.slug + ':batch', lambda: wsmod.ask_many(ws, qs), root)
+            _background(ws.slug + ':batch', lambda: wsmod.ask_many(ws, qs, on_usage=on_usage), root)
             return 202, {'accepted': len(qs), 'results': 'GET /api/workspaces/' + ws.slug + '/questions'}
         if action == 'ask':
             q = str(body.get('question') or '').strip()

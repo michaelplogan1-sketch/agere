@@ -43,6 +43,14 @@ class Client:
         except ValueError:
             return {'_html': raw.decode(errors='replace')[:200]}
 
+    def upload(self, name, data):
+        req = urllib.request.Request(self.base + '/api/uploads/' + name, data=data, method='PUT')
+        req.add_header('Cookie', self.cookie)
+        req.add_header('X-CSRF-Token', self.csrf)
+        req.add_header('Content-Length', str(len(data)))
+        with urllib.request.urlopen(req, timeout=60) as r:
+            return json.loads(r.read())
+
     def login(self, email, password):
         code, headers, body = self.call('POST', '/api/auth/login', {'email': email, 'password': password})
         if code == 200:
@@ -115,7 +123,8 @@ class HostedServerTests(unittest.TestCase):
 
     def test_tenant_isolation_and_roles(self):
         acme = self.client('owner@acme.test')
-        code, _, body = acme.call('POST', '/api/workspaces', {'name': 'Acme Warehouse', 'source': f'sqlite:///{self.source}'})
+        up = acme.upload('acme-clarity.sqlite', self.source.read_bytes())
+        code, _, body = acme.call('POST', '/api/workspaces', {'name': 'Acme Warehouse', 'source': up['sources']['sqlite']})
         self.assertEqual(code, 202)
         for _ in range(200):
             code, _, d = acme.call('GET', '/api/workspaces/acme-warehouse')
@@ -176,6 +185,29 @@ class HostedServerTests(unittest.TestCase):
         analyst = self.client('analyst@acme.test')
         self.assertEqual(analyst.call('POST', '/api/admin/members', {'email': 'x@acme.test', 'role': 'owner'})[0], 403)
 
+    def test_upload_zip_then_build_and_cross_tenant_path_refused(self):
+        import io
+        import zipfile
+        acme = self.client('owner@acme.test')
+        buf = io.BytesIO()
+        with zipfile.ZipFile(buf, 'w') as z:
+            z.writestr('extracts/patients.csv', 'patient_id,birth_date,sex\nA1,1950-01-01,F\nA2,1960-02-02,M\n')
+        data = buf.getvalue()
+        req = urllib.request.Request(self.base + '/api/uploads/acme-extract.zip', data=data, method='PUT')
+        req.add_header('Cookie', acme.cookie)
+        req.add_header('X-CSRF-Token', acme.csrf)
+        req.add_header('Content-Length', str(len(data)))
+        with urllib.request.urlopen(req, timeout=30) as r:
+            out = json.loads(r.read())
+        self.assertEqual(out['extracted_files'], 1)
+        code, _, body = acme.call('POST', '/api/workspaces', {'name': 'Acme Files', 'source': out['sources']['files']})
+        self.assertEqual(code, 202)
+        beta = self.client('owner@beta.test')
+        code, _, body = beta.call('POST', '/api/workspaces', {'name': 'Steal', 'source': out['sources']['files']})
+        self.assertEqual(code, 403)
+        self.assertTrue(any(u['name'] == 'acme-extract' for u in acme.call('GET', '/api/uploads')[2]['uploads']))
+        self.assertEqual(beta.call('GET', '/api/uploads')[2]['uploads'], [])
+
     def test_login_rate_limit(self):
         c = Client(self.base)
         codes = [c.login('nobody@beta.test', 'wrong password here')[0] for _ in range(12)]
@@ -184,3 +216,33 @@ class HostedServerTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+class UploadAndSourceTests(unittest.TestCase):
+    def test_check_source_confines_files_to_the_tenant(self):
+        from clinical_core.agere.hosted.server import check_source
+        with tempfile.TemporaryDirectory() as d:
+            mine = Path(d) / 'acme' / 'uploads'
+            mine.mkdir(parents=True)
+            (mine / 'x.sqlite').write_text('')
+            self.assertEqual(check_source(f'sqlite://{mine}/x.sqlite', mine), f'sqlite://{(mine / "x.sqlite").resolve()}')
+            for bad in (f'sqlite:///etc/hosts', f'files://{d}/beta/uploads', f'native://{mine}/../../beta', '/etc'):
+                with self.assertRaises(PermissionError):
+                    check_source(bad, mine)
+            with self.assertRaises(PermissionError):
+                check_source('postgresql://u@127.0.0.1:5432/db', mine)
+            self.assertEqual(check_source('snowflake://DB/SCHEMA', mine), 'snowflake://DB/SCHEMA')
+
+    def test_safe_unzip_rejects_traversal(self):
+        import zipfile
+        from clinical_core.agere.hosted.server import safe_unzip
+        with tempfile.TemporaryDirectory() as d:
+            z = Path(d) / 'evil.zip'
+            with zipfile.ZipFile(z, 'w') as f:
+                f.writestr('../escape.txt', 'x')
+            with self.assertRaises(ValueError):
+                safe_unzip(z, Path(d) / 'out')
+            ok = Path(d) / 'ok.zip'
+            with zipfile.ZipFile(ok, 'w') as f:
+                f.writestr('ehr/patients.csv', 'id,name\n1,a\n')
+            self.assertEqual(safe_unzip(ok, Path(d) / 'out2')[0], 1)

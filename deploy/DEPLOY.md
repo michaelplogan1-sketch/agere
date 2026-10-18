@@ -113,3 +113,17 @@ Logs rotate at 20 MB x 5 files per container. App audit events (logins, key use,
   each org admin re-enter its credentials. Keep the old key with the matching backups.
 - **User API keys** (`agk_...`): revoke and reissue from Admin; they are stored hashed and shown once.
 - **Sessions**: revoking a user's sessions or disabling the user takes effect on the next request.
+
+## Customer data delivery
+
+- **Uploads:** customers deliver extracts through the app (Workspaces → "Or upload extracts") or
+  `PUT /api/uploads/<name>` with an API key (`curl -T extract.zip -H "Authorization: Bearer agk_..." https://$AGERE_DOMAIN/api/uploads/extract.zip`).
+  Zips are extracted safely (no path traversal, links or decompression bombs) into the organization's own folder;
+  the response names the workspace source to use (`native://...` for X12/HL7/NCPDP/FHIR/EHR feeds, `files://...` for
+  plain tables).
+- **Limits (environment):** `AGERE_UPLOAD_MAX_BYTES` (default 10 GB), `AGERE_UNZIP_MAX_BYTES` (40 GB),
+  `AGERE_UNZIP_MAX_FILES` (500,000). Caddy allows large bodies only on `/api/uploads/*`.
+- **Source rules:** a workspace reads a cloud warehouse (Snowflake, BigQuery, Databricks, Postgres) with credentials an
+  admin saved, or files its own organization uploaded. Paths elsewhere on the server are refused, and Postgres hosts on
+  private or loopback networks are refused unless `AGERE_ALLOW_PRIVATE_DB=1`.
+- **Model-cost ledger:** `AGERE_LEDGER_PATH` (default `/data/provider-budget.sqlite3`).

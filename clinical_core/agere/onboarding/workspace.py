@@ -21,6 +21,7 @@ from __future__ import annotations
 from contextlib import contextmanager
 from datetime import date, datetime, timezone
 import json
+import os
 from pathlib import Path
 import re
 import sqlite3
@@ -30,7 +31,7 @@ from . import apply as apply_mod, connectors, contract, matcher, profile as prof
 
 ROOT = Path(__file__).resolve().parents[3]
 WORKSPACES = ROOT / 'artifacts' / 'workspaces'
-LEDGER = ROOT / 'artifacts' / 'agere-full' / 'provider-budget.sqlite3'
+LEDGER = Path(os.environ.get('AGERE_LEDGER_PATH') or ROOT / 'artifacts' / 'agere-full' / 'provider-budget.sqlite3')
 STEPS = ('ingest', 'stage', 'profile', 'propose', 'approve', 'build', 'raw', 'verify', 'docs')
 NATIVE = 'native://'
 RAW_BATCH = 5000
@@ -508,14 +509,18 @@ def _answer_record(qid, out, answer_type=None):
     return row
 
 
-def ask_many(ws, questions, *, workers=3, send_factory=None, out_path=None):
+def ask_many(ws, questions, *, workers=3, send_factory=None, out_path=None, on_usage=None):
     """Answer a list of {id, question, answer_type?} against one workspace. Writes answers.jsonl (submission shape)
     and returns the rows. A question that fails records its error instead of stopping the batch."""
     from concurrent.futures import ThreadPoolExecutor
 
     def one(q):
         try:
+            t0 = __import__('time').time()
             out = ws.ask(q['question'], answer_type=q.get('answer_type'), send_factory=send_factory)
+            if on_usage:
+                on_usage(ws.slug, {'question': q['question'][:300], 'cost_usd': out.get('cost_usd'),
+                                   'seconds': round(__import__('time').time() - t0, 2), 'decision': out.get('decision')})
             return _answer_record(q['id'], out, q.get('answer_type'))
         except Exception as exc:  # noqa: BLE001
             return {'id': q['id'], 'status': 'abstain', 'error': f'{type(exc).__name__}: {exc}'[:300]}
