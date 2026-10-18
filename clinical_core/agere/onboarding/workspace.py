@@ -709,7 +709,8 @@ def ask_many(ws, questions, *, workers=3, send_factory=None, out_path=None, on_u
     def one(q):
         try:
             t0 = __import__('time').time()
-            out = ws.ask(q['question'], answer_type=q.get('answer_type'), send_factory=send_factory, pipeline=pipeline)
+            kw = {'pipeline': pipeline} if pipeline else {}
+            out = ws.ask(q['question'], answer_type=q.get('answer_type'), send_factory=send_factory, **kw)
             seconds = round(__import__('time').time() - t0, 2)
             if on_usage:
                 on_usage(ws.slug, {'question': q['question'][:300], 'cost_usd': out.get('cost_usd'),
