@@ -67,7 +67,7 @@ from . import identity
 
 STREAMS = ('enrollment_spans', 'payer_medical_claims', 'payer_medical_claim_lines', 'payer_pharmacy_claims',
            'sdoh_vendor_attributes', 'medical_claim_submissions', 'medical_claim_lines', 'medical_claims',
-           'provider_remittance_advice')
+           'provider_remittance_advice', 'death_records')
 
 MBI = re.compile(r'^[1-9][AC-HJKMNP-RT-Y][AC-HJKMNP-RT-Y0-9][0-9][AC-HJKMNP-RT-Y][AC-HJKMNP-RT-Y0-9][0-9]'
                  r'[AC-HJKMNP-RT-Y]{2}[0-9]{2}$')
@@ -94,6 +94,7 @@ DUAL = {'01': 'partial_benefit', '02': 'full_benefit', '03': 'partial_benefit', 
 ENTITLEMENT = {'0': 'age', '1': 'disability', '2': 'esrd', '3': 'disability_and_esrd'}
 PHARMACY_TYPE = {'01': 'retail_pharmacy', '06': 'mail_order_pharmacy', '08': 'specialty_pharmacy',
                  '05': 'long_term_care_pharmacy', '03': 'home_infusion_pharmacy', '04': 'institutional_pharmacy'}
+INPATIENT_TOB = {'011', '018', '021', '028', '041', '065', '066', '086'}  # 0 + facility + classification (inpatient)
 CLP_PAID = {'1', '2', '3', '19', '20', '21'}
 ROUTINE_CARC = {'1', '2', '3', '45'}  # deductible, coinsurance, copay, contractual: not a denial/adjustment reason
 
@@ -210,6 +211,11 @@ def _days(a, b):
         return (date.fromisoformat(b) - date.fromisoformat(a)).days
     except (TypeError, ValueError):
         return None
+
+
+def _near(a, b, days=31):
+    n = _days(a, b)
+    return n is not None and abs(n) <= days
 
 
 def _minus_day(v):
@@ -362,6 +368,7 @@ def records(db, resolve):
     yield from _pharmacy(ctx)
     yield from _sdoh(ctx)
     yield from _provider(ctx)
+    yield from _deaths(ctx)
     ctx.rep['unmapped'] = UNMAPPED
     _REPORT = ctx.rep
 
@@ -452,6 +459,7 @@ def _enrollment(ctx):
     ffs_834 = {v['member_id'] for v in out if v.get('product') in ('medicare_ffs', 'dual_ffs')}
     out += _spans_cclf(ctx, cclf8, {(v['payer_id'], v['member_id']) for v in out}, ffs_834)
     _link_payer_reissues(ctx, out, demo)
+    _roster_practices(ctx, out)
     for v in out:
         info = cclf8.get(v['member_id'])
         if info and v['product'] in ('medicare_ffs', 'dual_ffs', None):
@@ -471,7 +479,8 @@ def _span_record(ctx, v):
     for k in ('member_id', 'payer_id', 'product', 'plan_id', 'coverage_start', 'coverage_end', 'enrollment_reason',
               'termination_reason', 'dual_status', 'medicare_entitlement_reason', 'attribution_practice_id',
               'attribution_npi', 'subscriber_id', 'span_version', 'prior_coverage_end', 'previous_member_id',
-              'member_id_reissued', 'coverage_end_source', 'maintenance_type_code', 'enrollment_source'):
+              'member_id_reissued', 'coverage_end_source', 'maintenance_type_code', 'enrollment_source',
+              'attribution_practice_source'):
         rec[k] = v.get(k)
     return rec
 
@@ -507,7 +516,7 @@ def _spans_834(ctx, payer, member, rows, first_file, death):
             retro = bool(end and last_active.get(target['coverage_start']) and end < last_active[target['coverage_start']])
             reason = 'retroactive_termination' if retro else 'disenrolled'
             dd = death.get(member)
-            if dd and end and abs(_days(dd, end) or 99) <= 31:
+            if dd and end and _near(dd, end):
                 reason = 'death'
             v = _version(target, fd, lin, coverage_end=end, termination_reason=reason, maintenance_type_code=mt)
             spans[target['coverage_start']] = v
@@ -736,7 +745,7 @@ def _spans_cclf(ctx, cclf8, existing, ffs_834=frozenset()):
         if m in attrib:
             v['attribution_npi'] = attrib[m][0]
             v['_lin'] = v['_lin'] + [attrib[m][1]]
-        if info.get('death') and v['coverage_end'] and abs(_days(info['death'], v['coverage_end']) or 99) <= 31:
+        if info.get('death') and v['coverage_end'] and _near(info['death'], v['coverage_end']):
             v['termination_reason'] = 'death'
         elif v['coverage_end']:
             v['termination_reason'] = 'disenrolled'
@@ -752,20 +761,46 @@ def _spans_cclf(ctx, cclf8, existing, ffs_834=frozenset()):
             v['member_id_reissued'] = True
             v['coverage_end'] = v['coverage_end'] or _minus_day(old_of[m][1])
         out.append(v)
-    # one person, one current span: the re-issued MBI's span supersedes the old MBI's span
-    by_member = {v['member_id']: v for v in out}
-    for v in out:
-        old = by_member.get(v.get('previous_member_id'))
-        if old is not None and not v.get('_supersedes'):
-            v['_supersedes'] = old['_rid']
+    # the re-issued MBI's span is linked to the old MBI's span (previous_member_id) but does not supersede it: the old span
+    # is real coverage that ended when the new id began (native definitions keep spans followed by a reissue)
     return out
+
+
+def _roster_practices(ctx, out):
+    """attribution_npi without a practice (Medicare FFS / dual FFS: QALR assigns a group NPI) -> practice through the ACO
+    roster: group_npi first, else provider_npi; the latest roster snapshot wins."""
+    rows = _keep_files(ctx.rep, 'rosters_aco_provider_roster', _rows(ctx.db, 'rosters_aco_provider_roster',
+                                                                      ['group_npi', 'provider_npi', 'practice_id']))
+    by_group, by_prov = {}, {}
+    for r in sorted(rows, key=lambda r: (_file_date(r['_file']) or '', r['_file'], r['_row'])):
+        pr = _s(r['practice_id'])
+        if not pr or not pr.startswith('WHN-'):
+            continue
+        if _s(r['group_npi']):
+            by_group[r['group_npi'].strip()] = (pr, _lin('rosters_aco_provider_roster', r))
+        if _s(r['provider_npi']):
+            by_prov[r['provider_npi'].strip()] = (pr, _lin('rosters_aco_provider_roster', r))
+    for v in out:
+        npi = _s(v.get('attribution_npi'))
+        if not npi or v.get('attribution_practice_id'):
+            continue
+        hit = by_group.get(npi) or by_prov.get(npi)
+        if hit:
+            v['attribution_practice_id'] = hit[0]
+            v['attribution_practice_source'] = 'roster_group_npi' if npi in by_group else 'roster_provider_npi'
+            v.setdefault('_lineage_extra', [])
+            v['_lineage_extra'] = v['_lineage_extra'] + [hit[1]]
+            ctx.rep['cross_check']['attribution_practice_from_roster'] += 1
+        else:
+            ctx.rep['cross_check']['attribution_npi_not_on_roster'] += 1
 
 
 def _link_payer_reissues(ctx, out, demo):
     """Payer member-id re-issue: at one payer, the same person (834 last name, first name, DOB) gets a new member id
     whose span starts the day after the old id's span ends. The new span is enrollment_reason member_id_reissued with
-    previous_member_id, and supersedes the old id's final span version (one person, one current span). Several ids of
-    one person with overlapping or non-contiguous spans (duplicate enrollments) stay separate."""
+    previous_member_id; the old span is kept (termination_reason member_id_reissued), not superseded, because it is the
+    coverage before the reissue. Several ids of one person with overlapping or non-contiguous spans (duplicate
+    enrollments) stay separate."""
     finals = [v for v in out if v.get('_final') and v.get('enrollment_source') == 'x12_834']
     groups = defaultdict(list)
     for v in finals:
@@ -785,7 +820,7 @@ def _link_payer_reissues(ctx, out, demo):
                 if b['member_id'] == a['member_id'] or b['coverage_start'] != nxt:
                     continue
                 first = firsts.get((b['payer_id'], b['member_id'], b['coverage_start']))
-                if first is None or first.get('_supersedes'):
+                if first is None or first.get('previous_member_id'):
                     continue
                 for x in [v for v in out if v['payer_id'] == b['payer_id'] and v['member_id'] == b['member_id']
                           and v['coverage_start'] == b['coverage_start']]:
@@ -794,7 +829,6 @@ def _link_payer_reissues(ctx, out, demo):
                     x['member_id_reissued'] = True
                 a['termination_reason'] = 'member_id_reissued'
                 a['member_id_reissued'] = True
-                first['_supersedes'] = a['_rid']
                 ctx.rep['cross_check']['payer_member_id_reissues_linked'] += 1
                 break
 
@@ -1070,6 +1104,7 @@ def _build_claim(ctx, cid, sloop, vloop, evs, flat, dx, lines, adj, svc, prov_by
         h['admission_type'] = _s(head['admission_type'])
         h['admission_source'] = _s(head['admission_source'])
         h['discharge_status'] = DISCHARGE.get(_s(head['patient_status']) or '', _s(head['patient_status']))
+        h['patient_status'] = _s(head['patient_status'])
         h['billing_provider_npi'] = _s(head['billing_provider_npi'])
         h['rendering_provider_npi'] = _s(head['rendering_npi']) or _s(head['attending_npi'])
         h['total_charge'] = _money(head['total_charge'])
@@ -1096,6 +1131,14 @@ def _build_claim(ctx, cid, sloop, vloop, evs, flat, dx, lines, adj, svc, prov_by
         if h.get('total_charge') is None:
             billed = [_num(l['billed']) for l in fl[0]['lines'].values() if _num(l['billed']) is not None]
             h['total_charge'] = round(sum(billed), 2) if billed else None
+    # 837I never sends DTP*096 (discharge); for an inpatient bill type the statement-through date (DTP*434 end) is the
+    # discharge, so it fills discharge_date with discharge_date_source saying it was derived
+    if h.get('discharge_date'):
+        h['discharge_date_source'] = 'x12_837_dtp096' if head and _d(head['discharge_date']) else 'flat_discharge_date'
+    elif (h.get('type_of_bill') or '')[:3] in INPATIENT_TOB and h.get('service_to'):
+        h['discharge_date'] = h['service_to']
+        h['discharge_date_source'] = 'statement_through'
+        rep['cross_check']['inpatient_discharge_from_statement_through'] += 1
     prov = prov_by_id.get(cid) or prov_by_id.get(base)
     if prov:
         h['source_billing_claim_id'] = _s(prov['patient_control_number'])
@@ -1306,7 +1349,8 @@ def _emit_claim(ctx, c):
             'claim_frequency_code': e['claim_frequency_code'], 'admission_date': h.get('admission_date'),
             'discharge_date': h.get('discharge_date'), 'ms_drg': h.get('ms_drg'),
             'discharge_status': h.get('discharge_status'), 'admission_type': h.get('admission_type'),
-            'admission_source': h.get('admission_source'),
+            'admission_source': h.get('admission_source'), 'patient_status': h.get('patient_status'),
+            'discharge_date_source': h.get('discharge_date_source'),
             'source_billing_claim_id': h.get('source_billing_claim_id'),
             'original_payer_claim_id': h.get('original_payer_claim_id') if '-R' in _split_claim_id(h['payer_claim_id'])[1]
             or e['claim_frequency_code'] == '7' else None,
@@ -1453,8 +1497,10 @@ def _cclf_claim(ctx, chain, vs):
                      rendering_provider_npi=_s(r['atndg_prvdr_npi_num']) or _s(r['clm_atndg_prvdr_npi_num']),
                      discharge_status=DISCHARGE.get(_s(r['bene_ptnt_stus_cd']) or ''),
                      admission_type=_s(r['clm_admsn_type_cd']), admission_source=_s(r['clm_admsn_src_cd']))
+            h['patient_status'] = _s(r['bene_ptnt_stus_cd'])
             if _s(r['clm_type_cd']) == '60':
                 h['admission_date'], h['discharge_date'] = _d(r['clm_from_dt']), _d(r['clm_thru_dt'])
+                h['discharge_date_source'] = 'cclf_clm_thru_dt'
             cur_lines = [{'line_number': _int(x['clm_line_num']) or i, 'procedure_code': _s(x['clm_line_hcpcs_cd']),
                           'revenue_code': _s(x['clm_line_prod_rev_ctr_cd']), 'units': _num(x['clm_line_srvc_unit_qty']),
                           'charge_amount': None, 'allowed_amount': None, 'paid_amount': _money(x['clm_line_cvrd_pd_amt']),
@@ -1569,7 +1615,8 @@ def _match_cclf(ctx, built, cclf):
         if not h.get('diagnosis_codes') and cc['header'].get('diagnosis_codes'):
             h['diagnosis_codes'] = cc['header']['diagnosis_codes']
             h['principal_diagnosis'] = cc['header']['principal_diagnosis']
-        for k in ('ms_drg', 'discharge_status', 'admission_date', 'discharge_date', 'type_of_bill'):
+        for k in ('ms_drg', 'discharge_status', 'admission_date', 'discharge_date', 'discharge_date_source', 'type_of_bill',
+                  'patient_status', 'admission_type', 'admission_source'):
             if not h.get(k) and cc['header'].get(k):
                 h[k] = cc['header'][k]
 
@@ -1705,12 +1752,11 @@ def _pharmacy(ctx):
             prev = rec['_rid']
             pending.append(rec)
     # CCLF7 (Part D PDE) for MSSP: match to MSSP NCPDP on MBI + Rx number + fill number
+    # 5 MSSP cardholder ids arrive as the MBI plus one trailing character (12 chars); the key uses the 11-char MBI
     mssp_paid = {}
-    for rec in pending:
-        if _short(rec['payer_id']) == 'MSSP' and rec['claim_status'] == 'paid' and not rec.get('original_rx_claim_id'):
-            mssp_paid.setdefault((rec['member_id'], rec['prescription_number'], rec['fill_number']), rec)
-        elif _short(rec['payer_id']) == 'MSSP' and rec['claim_status'] == 'paid':
-            mssp_paid.setdefault((rec['member_id'], rec['prescription_number'], rec['fill_number']), rec)
+    for rec in sorted(pending, key=lambda r: 1 if r.get('original_rx_claim_id') else 0):
+        if _short(rec['payer_id']) == 'MSSP' and rec['claim_status'] == 'paid':
+            mssp_paid.setdefault((_mbi11(rec['member_id']), rec['prescription_number'], rec['fill_number']), rec)
     for key, chain in pde['chains'].items():
         hit = mssp_paid.get(key)
         if hit is not None:
@@ -1724,13 +1770,42 @@ def _pharmacy(ctx):
             continue
         rep['cross_check']['cclf_pde_without_ncpdp'] += 1
         pending += _pde_records(ctx, key, chain, ndc_name)
+    # Every event is kept. A reversal or recoupment names the payment it takes back (reverses_record_id) instead of
+    # superseding it, and carries that payment's fill date (its own transaction date stays in transaction_date):
+    # superseding would make staging delete the paid fill, and the reversal's own later date would replace the fill date.
+    by_rid = {r['_rid']: r for r in pending}
+    targets = {}
+    for rec in pending:  # resolve every take-back to its payment first (chains may run through another take-back)
+        if rec['claim_status'] in ('reversed', 'recouped') and rec.get('_sup'):
+            tgt, seen = by_rid.get(rec['_sup']), set()
+            while tgt is not None and tgt['claim_status'] != 'paid' and tgt.get('_sup') and tgt['_rid'] not in seen:
+                seen.add(tgt['_rid'])
+                tgt = by_rid.get(tgt['_sup'])
+            targets[rec['_rid']] = tgt if tgt is not None and tgt['claim_status'] == 'paid' else None
+    fills = {r['_rid']: r['_fill'] for r in pending}
+    for rec in pending:
+        rec['transaction_date'] = rec['_fill']
+        if rec['_rid'] in targets:
+            rec['_sup'] = None
+            tgt = targets[rec['_rid']]
+            if tgt is not None:
+                rec['reverses_record_id'] = tgt['_rid']
+                rec['_fill'] = fills[tgt['_rid']] or rec['_fill']
+                ctx.rep['cross_check'][f'pharmacy_{rec["claim_status"]}_linked_to_paid_fill'] += 1
+            else:
+                ctx.rep['cross_check'][f'pharmacy_{rec["claim_status"]}_without_paid_fill'] += 1
     for rec in pending:
         yield ctx.emit(_rx_record(ctx, rec))
 
 
+def _mbi11(v):
+    v = _s(v) or ''
+    return v[:11] if len(v) == 12 and identity.normalize_mbi(v[:11]) and not identity.normalize_mbi(v) else v
+
+
 def _rx_record(ctx, rec):
     payer, member = rec['payer_id'], rec['member_id']
-    env = _envelope(ctx, 'payer_pharmacy_claims', rec.pop('_rid'), payer, member, rec['_fill'], rec['_fill'],
+    env = _envelope(ctx, 'payer_pharmacy_claims', rec.pop('_rid'), payer, member, rec['_fill'], rec['transaction_date'],
                     rec.pop('_available'), rec.pop('_lin'), rec.pop('_sup'))
     rec['product'] = ctx.product(payer, member, rec['_fill'])
     rec['fill_date'] = rec.pop('_fill')
@@ -2107,3 +2182,47 @@ def _provider(ctx):
             yield ctx.emit(pra)
         if not recs:
             rep['cross_check']['provider_835_without_provider_837'] += 1
+
+
+# ================================================================================================================ deaths
+def _deaths(ctx):
+    """death_records from the only delivered death source: CCLF8 bene_death_dt (MSSP beneficiaries) and ALR 1-1
+    bene_death_dt when sent. One record per MBI (the person resolves through mbi:<MBI>); event/recorded/available date =
+    the first delivery that reported the death. 834 and flat eligibility carry no death date; EHR death columns hold
+    column-shifted junk and stay with the clinical adapter."""
+    rep = ctx.rep
+    found = {}
+    for table, cols in (('cclf_beneficiary_demographics', ['bene_mbi_id', 'bene_death_dt', 'file_date']),
+                        ('alr_aalr1_assigned_beneficiaries', ['bene_mbi_id', 'bene_death_dt'])):
+        rows = _keep_files(rep, table, _rows(ctx.db, table, cols))
+        for r in sorted(rows, key=lambda r: (_d(r.get('file_date')) or _file_date(r['_file']) or '', r['_file'], r['_row'])):
+            mbi, dod = _s(r['bene_mbi_id']), _d(r['bene_death_dt'])
+            if not mbi or not dod:
+                continue
+            fd = _d(r.get('file_date')) or _file_date(r['_file']) or dod
+            d = found.setdefault(mbi, {'dod': dod, 'first': fd, 'lin': [], 'dates': set()})
+            d['dod'] = dod  # latest delivered value
+            d['dates'].add(dod)
+            d['lin'].append(_lin(table, r))
+    # an MBI re-issue reports the same death under both MBIs: one record per person (the later-reported MBI wins)
+    best = {}
+    for mbi, d in found.items():
+        key = identity.mbi_key(mbi)
+        d['pid'] = ctx.resolve(key) if key else None
+        k = d['pid'] or mbi
+        if k in best:
+            rep['dropped']['death_reported_under_second_mbi'] += 1
+            if (d['first'], mbi) < (best[k][1]['first'], best[k][0]):
+                best[k][1]['lin'] += d['lin']
+                continue
+            d['lin'] += best[k][1]['lin']
+        best[k] = (mbi, d)
+    for mbi, d in sorted(best.values()):
+        if len(d['dates']) > 1:
+            rep['cross_check']['death_date_changed_between_deliveries'] += 1
+        pid = d['pid']
+        rec = _envelope(ctx, 'death_records', _rid('death_records', mbi), 'WH-PAYER-MSSP', mbi, d['first'], d['first'],
+                        d['first'], d['lin'][:3] + d['lin'][-1:], person=pid)
+        rec.update({'date_of_death': d['dod'], 'place_of_death': None, 'underlying_cause_icd10': None,
+                    'source': 'CMS CCLF8 beneficiary demographics (bene_death_dt)', 'member_id': mbi})
+        yield ctx.emit(rec)

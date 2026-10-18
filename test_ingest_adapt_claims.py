@@ -231,7 +231,7 @@ class Pharmacy(unittest.TestCase):
         f2 = 'ncpdp/WH-PAYER-C1/2026-10/C1_NCPDP_D0_20261106.txt'
         self.tx(L, f1, 'WHN-RXC-111', 'B1', 'P', '2026-09-11')
         self.tx(L, f1.replace('.txt', '_RESEND.txt'), 'WHN-RXC-111', 'B1', 'P', '2026-09-11')
-        self.tx(L, f2, 'WHN-RXC-111', 'B2', 'A', '2026-09-11', paid=0.0, pay=0.0)
+        self.tx(L, f2, 'WHN-RXC-111', 'B2', 'A', '2026-10-01', paid=0.0, pay=0.0)
         self.tx(L, f1, 'WHN-RXC-222', 'B1', 'R', '2026-09-20', fill=1, paid=0.0, pay=0.0, reject='79', rx='7000000002')
         self.tx(L, f2, 'WHN-RXC-222-R', 'B1', 'P', '2026-10-02', fill=1, rx='7000000002')
         L.add('payers_pharmacy', 'payers/WH-PAYER-C1/2026-09/C1_PHARMACY_20261005.txt', claim_id='WHN-RXC-111',
@@ -242,7 +242,10 @@ class Pharmacy(unittest.TestCase):
         self.assertEqual(set(rx), {('WHN-RXC-111', 'paid'), ('WHN-RXC-111', 'reversed'), ('WHN-RXC-222', 'rejected'),
                                    ('WHN-RXC-222-R', 'paid')})
         paid, rev = rx[('WHN-RXC-111', 'paid')], rx[('WHN-RXC-111', 'reversed')]
-        self.assertEqual(rev['supersedes_record_id'], paid['record_id'])
+        # both events stay; the reversal names the payment and keeps the original fill date
+        self.assertIsNone(rev['supersedes_record_id'])
+        self.assertEqual(rev['reverses_record_id'], paid['record_id'])
+        self.assertEqual((rev['fill_date'], rev['event_date'], rev['transaction_date']), ('2026-09-11', '2026-09-11', '2026-10-01'))
         self.assertEqual(rev['transaction_code'], 'B2')
         self.assertEqual(paid['drug_name'], 'clopidogrel 75 MG Oral Tablet')
         self.assertEqual(paid['plan_paid'], 10.0)
@@ -468,7 +471,7 @@ class EnrollmentFidelity(unittest.TestCase):
               eligibility_begin_date=begin if mt != '024' else None, benefit_begin_date=begin, eligibility_end_date=end,
               plan_coverage_description=product, last_name=name[0], first_name=name[1], dob='1962-12-25')
 
-    def test_payer_member_id_reissue_supersedes_old_span(self):
+    def test_payer_member_id_reissue_links_and_keeps_old_span(self):
         L = Landing()
         self.loop(L, 'WH-PAYER-C1', 'C1_834_FULL_20261005.x12', '030', 'C1OLDID0001', '2026-09-01')
         self.loop(L, 'WH-PAYER-C1', 'C1_834_CHG_20270705.x12', '024', 'C1OLDID0001', '2026-09-01', end='2027-06-14',
@@ -478,7 +481,10 @@ class EnrollmentFidelity(unittest.TestCase):
         self.loop(L, 'WH-PAYER-C1', 'C1_834_FULL_20261005b.x12', '030', 'C1DUPID0002', '2026-09-01')
         by, rep = run(L)
         cur = current(by['enrollment_spans'])
-        self.assertEqual(sorted(r['member_id'] for r in cur), ['C1DUPID0002', 'C1NEWID00012'])
+        # the pre-reissue span is kept (native definitions), the continuation only links to it
+        self.assertEqual(sorted(r['member_id'] for r in cur), ['C1DUPID0002', 'C1NEWID00012', 'C1OLDID0001'])
+        old = [r for r in cur if r['member_id'] == 'C1OLDID0001'][0]
+        self.assertEqual((old['coverage_end'], old['termination_reason']), ('2027-06-14', 'member_id_reissued'))
         new = [r for r in cur if r['member_id'] == 'C1NEWID00012'][0]
         self.assertEqual((new['enrollment_reason'], new['previous_member_id'], new['member_id_reissued']),
                          ('member_id_reissued', 'C1OLDID0001', True))
@@ -502,10 +508,69 @@ class EnrollmentFidelity(unittest.TestCase):
         by, rep = run(L)
         cur = current(by['enrollment_spans'])
         mssp = [r for r in cur if r['payer_id'] == 'WH-PAYER-MSSP']
-        self.assertEqual([(r['member_id'], r['enrollment_reason'], r['previous_member_id']) for r in mssp],
-                         [('2HBCAB84FC1', 'member_id_reissued', '2H51Q97FQ99')])
+        self.assertEqual([(r['member_id'], r['enrollment_reason'], r['previous_member_id'], r['termination_reason'])
+                          for r in sorted(mssp, key=lambda r: r['coverage_start'])],
+                         [('2H51Q97FQ99', 'baseline', None, 'member_id_reissued'),
+                          ('2HBCAB84FC1', 'member_id_reissued', '2H51Q97FQ99', None)])
         self.assertEqual(rep['dropped']['cclf_span_covered_by_834_medicare_ffs'], 1)
         self.assertEqual([r['payer_id'] for r in cur if r['member_id'] == '2DX0U77CP79'], ['WH-PAYER-1'])
+
+
+class NativeDiagnosisFixes(unittest.TestCase):
+    def test_ffs_attribution_practice_from_roster_and_deaths(self):
+        L = Landing()
+        ef = 'cms_cclf_csv/enrollment/ENROLLMENT_20300527.csv'
+        L.add('cclf_enrollment', ef, current_bene_mbi_id='9AA0XQ0EY76', enrollment_start_date='2026-09-01',
+              enrollment_end_date='2030-01-01', file_date='2030-05-27')
+        for f, death in (('P.A9999.ACO.ZC8Y29.D291212.T1.csv', ''), ('P.A9999.ACO.ZC8Y30.D300112.T1.csv', '2030-01-01')):
+            L.add('cclf_beneficiary_demographics', f'cms_cclf_csv/beneficiary_demographics/{f}', bene_mbi_id='9AA0XQ0EY76',
+                  bene_dob='1940-01-01', bene_1st_name='AL', bene_last_name='GREEN', bene_dual_stus_cd='NA',
+                  bene_orgnl_entlmt_rsn_cd='0', bene_death_dt=death, bene_rng_bgn_dt='2026-09-01',
+                  bene_rng_end_dt='2030-01-01', file_date='20' + f.split('.D')[1][:6])
+        L.add('programs_mssp_qalr', 'programs/mssp/2029Q4/P.A9999.ACO.QALR.2029Q4.csv', mbi='9AA0XQ0EY76',
+              assigned_npi='1712816499', assigned_tin='335530888')
+        L.add('rosters_aco_provider_roster', 'rosters/2029-12/ACO_PROVIDER_ROSTER_20291210.csv', group_npi='1712816499',
+              provider_npi='1201884073', practice_id='WHN-PRACTICE-AK-0')
+        by, rep = run(L)
+        span = by['enrollment_spans'][0]
+        self.assertEqual((span['attribution_npi'], span['attribution_practice_id'], span['termination_reason']),
+                         ('1712816499', 'WHN-PRACTICE-AK-0', 'death'))
+        d = by['death_records']
+        self.assertEqual(len(d), 1)
+        self.assertEqual((d[0]['date_of_death'], d[0]['member_id'], d[0]['patient_id'], d[0]['available_date']),
+                         ('2030-01-01', '9AA0XQ0EY76', 'P-mbi:9AA0XQ0EY76', '2030-01-12'))
+
+    def test_inpatient_discharge_from_statement_through(self):
+        L = Landing()
+        L.c837('x12_payer/WH-PAYER-C1/2028-W30/C1_837I_2028-W30.x12', '1400', 'k1', 'WHN-CLM-ip1', 'C1MEMBER01', tx='837I',
+               charge=9000.0, statement_from='2028-07-06', statement_to='2028-07-13', admission_date='2028-07-06',
+               admission_type='1', admission_source='7', patient_status='01', lines=[(None, 9000.0, '2028-07-06')])
+        L.c835('x12_payer/WH-PAYER-C1/2028-W33/C1_835_2028-W33.x12', '1401', '0001', 'e1', 'WHN-CLM-ip1', '1', 6000.0,
+               eff='2028-08-15', charge=9000.0)
+        by, _ = run(L)
+        c = claims(by, 'WHN-CLM-ip1')[0]
+        self.assertEqual((c['type_of_bill'], c['discharge_date'], c['discharge_date_source']),
+                         ('0111', '2028-07-13', 'statement_through'))
+        self.assertEqual((c['admission_type'], c['admission_source'], c['patient_status'], c['discharge_status']),
+                         ('1', '7', '01', 'home'))
+
+    def test_pde_dedupe_with_12_char_cardholder(self):
+        L = Landing()
+        L.add('ncpdp_claim', 'ncpdp/WH-PAYER-MSSP/2028-07/MSSP_NCPDP_D0_20280806.txt', claim_ref='WHN-RXC-m1',
+              file_date='20280806', bin_number='990007', transaction_code='B1', pcn='PARTD', service_provider_id_qualifier='01',
+              service_provider_id='1181918479', date_of_service='2028-07-19', cardholder_id='8QCA20817D15', group_id='PDP01',
+              rx_service_ref_number='7329015879', product_service_id_qualifier='03', product_service_id='00093092806',
+              quantity_dispensed=30, fill_number=0, days_supply=30, response_status_code='P', total_amount_paid=5.0,
+              patient_pay_amount=10.0)
+        L.add('cclf_partd_claims', 'cms_cclf_csv/partd_claims/P.A9999.ACO.ZC7Y28.D280812.T1.csv', cur_clm_uniq_id='77',
+              bene_mbi_id='8QCA20817D1', clm_line_ndc_cd='00093092806', clm_line_from_dt='2028-07-19',
+              prvdr_srvc_id_qlfyr_cd='01', clm_srvc_prvdr_gnrc_id_num='1181918479', clm_line_days_suply_qty='30',
+              clm_line_bene_pmt_amt='10.00', clm_adjsmt_type_cd='0', clm_line_rx_srvc_rfrnc_num='7329015879',
+              clm_line_rx_fill_num='0', clm_phrmcy_srvc_type_cd='01', file_date='2028-08-12')
+        by, rep = run(L)
+        self.assertEqual([r['rx_claim_id'] for r in by['payer_pharmacy_claims']], ['WHN-RXC-m1'])
+        self.assertEqual(rep['dropped']['cclf_pde_matched_mssp_ncpdp'], 1)
+        self.assertEqual(by['payer_pharmacy_claims'][0]['pharmacy_type'], 'retail_pharmacy')
 
 
 def current(recs):

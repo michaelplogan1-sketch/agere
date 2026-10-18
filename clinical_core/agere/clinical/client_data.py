@@ -131,7 +131,7 @@ SCHEMA_DOC = {
     'payer_claim_diagnosis': 'One row per (payer claim, diagnosis position): dotted icd10, icd10_received, counts_in_metrics.',
     'payer_pharmacy_reversal': 'payer_pharmacy_claim.transaction_code B2 = reversal (return to stock: filled, never picked up); '
                                'reversal_of_record_id / reversed_by_record_id pair it with the paid claim it reverses (the claim a reversal or '
-                               'recoupment names in supersedes_record_id, else the same prescription chain within 30 days); '
+                               'recoupment names in reverses_record_id or supersedes_record_id, else the same prescription chain within 30 days); '
                                'counts_as_fill = 1 only for paid, unreversed claims. medication.fill_reversed = 1 on reversed '
                                'fills (PDC and fill linkage ignore them).',
     'adt_visit': 'One row per ADT visit number: patient_class at admission (E/I/O) and after updates, admit_date (A01/A04), '
@@ -387,8 +387,10 @@ def pharmacy(out):
     # Exact links first: a reversal or recoupment that names the paid claim it takes back (supersedes_record_id; the snapshot
     # keeps that paid adjudication current as a step of the claim's chain) pairs with it; the rest pair by prescription chain.
     status_of = {rid: (status, code) for rid, pid, rx, n, ndc, ph, d, status, code in rows}
-    for rid, prev in out.execute("""SELECT record_id, json_extract(payload,'$.supersedes_record_id') FROM record
-                                    WHERE stream = 'payer_pharmacy_claims' AND json_extract(payload,'$.supersedes_record_id') IS NOT NULL"""):
+    for rid, prev in out.execute("""SELECT record_id, COALESCE(json_extract(payload,'$.reverses_record_id'),
+                                                          json_extract(payload,'$.supersedes_record_id')) FROM record
+                                    WHERE stream = 'payer_pharmacy_claims' AND COALESCE(json_extract(payload,'$.reverses_record_id'),
+                                          json_extract(payload,'$.supersedes_record_id')) IS NOT NULL"""):
         st, code = status_of.get(rid, (None, None))
         if (st in ('reversed', 'recouped') or code == 'B2') and status_of.get(prev, (None,))[0] == 'paid' and prev not in used:
             used.add(prev); pairs.append((rid, prev))
