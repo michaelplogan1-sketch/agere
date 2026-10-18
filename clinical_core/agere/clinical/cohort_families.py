@@ -852,10 +852,16 @@ def parse(question, as_of):
         for role, text, _ in segs:
             codes = _expand(text)
             if role == 'procedure' and codes: fu['procedure_codes'] = codes
-            elif role == 'bh' and codes: fu['bh_codes'] = codes
-            elif role == 'visit':
+            elif role == 'bh' and [x for x in codes if x.startswith('908')]:
+                fu['bh_codes'] = [x for x in codes if x.startswith('908')]  # E/M codes in the same clause are visits
                 c = [x for x in codes if re.match(r'99[24]\d\d', x)]
-                if c: fu['visit'] = {'cpt': c}
+                if c: fu['visit'] = {**fu.get('visit', {}), 'cpt': c}
+            elif role in ('visit', 'bh'):
+                c = [x for x in codes if re.match(r'99[24]\d\d', x)]
+                if c: fu['visit'] = {**fu.get('visit', {}), 'cpt': c}
+        if 'visit' in kinds and re.search(r'office[- ]class|office visits? only|virtual(?: and telephone)? (?:visits? )?(?:are |is )?excluded|'
+                                          r'excluding virtual|not virtual', al):
+            fu['visit'] = {**fu.get('visit', {}), 'types': ['office', 'wellness', 'pediatric_office']}
         if 'procedure' in kinds and not fu.get('procedure_codes'):
             if re.search(r'physical therapy|\bpt\b|physiotherapy', al): fu['procedure_codes'] = list(PT_DEFAULT); defaults.append('PT code set')
             else: missing.append('follow-up procedure codes')

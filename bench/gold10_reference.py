@@ -30,7 +30,7 @@ TERMS = {
 }
 PT_CODES = ('97161', '97162', '97163', '97164', '97110', '97112', '97140', '97530')
 MAMMO_CODES = ('77065', '77066', '77067', 'G0202', 'G0204', 'G0206')
-VISIT_TYPES = ('office', 'virtual', 'wellness', 'pediatric_office')
+VISIT_TYPES = ('office', 'wellness', 'pediatric_office')  # office class only: deep-chart phone calls export as virtual (Epic 76)
 BH_CODES = ('90791', '90792', '90832', '90833', '90834', '90835', '90836', '90837', '90838', '90846', '90847', '90853')
 
 
@@ -66,7 +66,7 @@ def queries(as_of, death_table=False):
                    WHERE counts_in_metrics = 1 AND substr(type_of_bill, 1, 3) IN ('011', '012') AND admission_date IS NOT NULL
                    UNION SELECT patient_id, admit_date FROM adt_visit WHERE coalesce(final_patient_class, patient_class) = 'I'"""
     procedures = "SELECT patient_id, service_date, cpt FROM payer_claim_line UNION ALL SELECT patient_id, service_date, cpt FROM claim_line"
-    # visit = a completed office or virtual encounter, or a billed office visit (CPT 99202-99215); telephone does not count
+    # visit = a completed office-class encounter, or a billed office visit (CPT 99202-99215); telephone does not count
     visits = f"""SELECT patient_id, event_date AS d FROM visit WHERE type IN {VISIT_TYPES} AND status = 'completed'
                 UNION SELECT patient_id, service_date FROM procedure_line WHERE cpt BETWEEN '99202' AND '99215'
                   AND counts_in_metrics = 1"""
