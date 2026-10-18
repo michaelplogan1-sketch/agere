@@ -569,7 +569,10 @@ def parse_windows(low):
     fu = (re.search(r'days?\s*1\s*(?:-|to|through)\s*(\d+)\s*(?:after|following)', t)
           or re.search(r'\b(?:in|within) the (\d+)\s*(day|week|month)s?\s+(?:after|following)', t)
           or re.search(r'\bwithin\s+(\d+)\s*(day|week|month)s?\b(?!\s+(?:before|prior))', t)
-          or re.search(r'\b(\d+)\s*(day|week|month)s?\s+(?:after|following|of)\s+(?:the|it|that|discharge|their|each|a)\b', t))
+          or re.search(r'\b(\d+)\s*(day|week|month)s?\s+(?:after|following|of)\s+(?:the|it|that|discharge|their|each|a)\b', t)
+          # "no visit in 90 days", "no follow-up for 2 weeks": a window right after a follow-up word
+          or re.search(r'\b(?:visits?|follow-?ups?|seen|appointments?|encounters?|therapy|pt|claims?)\b[^.;]{0,40}?\b(?:in|for)\s+'
+                       r'(?:the\s+(?:next|following)\s+)?(\d+)\s*(day|week|month)s?\b(?!\s+(?:before|prior|ago))', t))
     if fu:
         unit = fu.group(2) if fu.lastindex and fu.lastindex >= 2 and fu.group(2) else 'day'
         out['followup_days'] = _days(int(fu.group(1)), unit)
@@ -952,7 +955,8 @@ def parse(question, as_of):
         if keys: dclass = {'name': keys[0], 'terms': list(DRUG_CLASSES[keys[0]][1])}
         elif terms: dclass = {'name': terms[0], 'terms': [terms[0]]}
         else: dclass = None; missing.append('drug class')
-        m = re.search(r'(?:below|under|less than|<)\s*(\d+(?:\.\d+)?)\s*(?:%|percent)', al) or re.search(r'(?:below|under|less than|<)\s*(0\.\d+)', al)
+        m = (re.search(r'(?:below|beneath|under|less than|lower than|fewer than|<)\s*(\d+(?:\.\d+)?)\s*(?:%|percent)', al)
+             or re.search(r'(?:below|beneath|under|less than|lower than|<)\s*(0\.\d+)', al))
         thr = float(m.group(1)) if m else 80.0
         if not m: defaults.append('threshold 80%')
         thr = thr / 100 if thr > 1 else thr
@@ -962,7 +966,8 @@ def parse(question, as_of):
         a = dt.date.fromisoformat(str(as_of)[:10])
         y = re.search(r'\b(?:in|during|for)\s+(20\d\d)\b', al)
         if y: period = {'start': f'{y.group(1)}-01-01', 'end': f'{y.group(1)}-12-31'}
-        elif re.search(r'calendar year before|last year|previous year|prior year|past calendar year', al) or not win['lookback']:
+        elif (re.search(r'calendar year before|last year|previous year|prior year|past calendar year', al)
+              and not re.search(r'\b(?:in|over|during|within) the (?:last|past)\s+(?:year|12 months)\b', al)) or not win['lookback']:
             period = {'start': f'{a.year - 1}-01-01', 'end': f'{a.year - 1}-12-31'}
             if not re.search(r'calendar year before|last year|previous year|prior year|past calendar year', al):
                 defaults.append('period = calendar year before as_of')
