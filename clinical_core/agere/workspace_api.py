@@ -11,6 +11,9 @@ Routes (JSON; handled before the service's global stack lock because builds take
   POST /api/workspaces/<slug>/decide        {item, decision}  decision: accept | reject | {source} | {source_table}
   POST /api/workspaces/<slug>/rebuild       re-apply the mapping with decisions (background)
   POST /api/workspaces/<slug>/ask           {question, answer_type?}  -> the hybrid core's answer over this workspace
+  POST /api/workspaces/<slug>/plan          {question | patient_ids, program_kind?, as_of?, narrative?, format?: json|csv}
+                                            -> routed enrollment plan (answer envelope with a `plan` block); format csv adds
+                                               the outreach task list as {'csv': ...}
   POST /api/workspaces/<slug>/batch         {questions: [{id, question, answer_type?}]} -> answered in the background into answers-<time>.jsonl
 """
 from __future__ import annotations
@@ -96,7 +99,7 @@ def handle(method, path, body=None, *, root=None, credentials=None, on_usage=Non
             return 404, {'error': 'Unknown workspace route'}
         body = body or {}
         action = parts[1] if len(parts) > 1 else None
-        if not can_write and (not parts or action not in ('ask',)):
+        if not can_write and (not parts or action not in ('ask', 'plan')):
             return 403, {'error': 'Your role can read and ask questions only'}
         if not parts:
             if not body.get('name') or not body.get('source'):
@@ -123,6 +126,28 @@ def handle(method, path, body=None, *, root=None, credentials=None, on_usage=Non
                   for i, q in enumerate(qs)]
             _background(ws.slug + ':batch', lambda: wsmod.ask_many(ws, qs, on_usage=on_usage), root)
             return 202, {'accepted': len(qs), 'results': 'GET /api/workspaces/' + ws.slug + '/questions'}
+        if action == 'plan':
+            q = str(body.get('question') or '').strip() or None
+            ids = body.get('patient_ids')
+            if ids is not None and (not isinstance(ids, list) or len(ids) > 50000):
+                raise ValueError('patient_ids must be a list of at most 50000 ids')
+            if q is None and ids is None and not body.get('program_kind'):
+                raise ValueError('question, patient_ids or program_kind is required')
+            fmt = str(body.get('format') or 'json').lower()
+            if fmt not in ('json', 'csv'):
+                raise ValueError('format must be json or csv')
+            t0 = __import__('time').time()
+            out = ws.plan(question=q, patient_ids=ids, program_kind=body.get('program_kind') or None,
+                          as_of=body.get('as_of') or None, narrative=bool(body.get('narrative')))
+            if on_usage:
+                on_usage(ws.slug, {'question': (q or f"plan:{out['plan']['program_kind']}")[:300], 'cost_usd': out.get('cost_usd'),
+                                   'seconds': round(__import__('time').time() - t0, 2), 'decision': out.get('decision')})
+            if fmt == 'csv':
+                from .plans import tasks_csv
+                return 200, {'summary': out['plan']['summary'], 'program_kind': out['plan']['program_kind'],
+                             'as_of': out['plan']['as_of'], 'filename': f"{ws.slug}-plan-{out['plan']['program_kind']}.csv",
+                             'csv': tasks_csv(out['plan'])}
+            return 200, out
         if action == 'ask':
             q = str(body.get('question') or '').strip()
             if not q:

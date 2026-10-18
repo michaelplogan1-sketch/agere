@@ -1,0 +1,167 @@
+{
+ "schema": "agere-enrollment-programs/1",
+ "version": "2026-10-18.1",
+ "synthetic": true,
+ "notes": "Program catalog for routed enrollment plans. Eligibility, gap definitions, exclusions, priorities and vendor slots are data; clinical_core/agere/plans/router.py evaluates them deterministically. Vendor slots are placeholders the customer configures with its contracted vendors.",
+ "contexts": {
+  "cms_access_model": {
+   "name": "CMS ACCESS Model (Advancing Chronic Care with Effective, Scalable Solutions)",
+   "sponsor": "CMS Innovation Center",
+   "track": "musculoskeletal (chronic musculoskeletal pain)",
+   "population": "Original Medicare (Part B) beneficiaries",
+   "role_in_plan": "Program context for technology-enabled virtual PT vendors participating in ACCESS; the customer configures which participating vendors fill each slot."
+  }
+ },
+ "coverage": {
+  "primary_rule": "Active span at as_of: coverage_start <= as_of, coverage_end null or >= as_of, available_date <= as_of; secondary products are never primary.",
+  "exclude_products": ["medigap", "cob_secondary"],
+  "exclude_lines_of_business": ["medigap", "cob_secondary"]
+ },
+ "exclusions": {
+  "deceased": {
+   "enrollment_termination_reasons": ["death"],
+   "claim_discharge_statuses": ["expired", "20", "40", "41", "42"],
+   "encounter_dispositions": ["expired", "deceased", "died"]
+  },
+  "hospice": {
+   "lookback_days": 365,
+   "type_of_bill_prefixes": ["081", "082", "81", "82"],
+   "claim_discharge_statuses": ["hospice", "hospice_home", "hospice_facility", "50", "51"],
+   "encounter_dispositions": ["hospice", "hospice_home", "hospice_facility"]
+  }
+ },
+ "gaps": {
+  "gdmt_pillar_missing": {
+   "label": "HFrEF guideline-directed medical therapy: one or more of the four pillars not on board",
+   "lookback_days": 120,
+   "diagnosis_icd10_prefixes": ["I50"],
+   "med_list_statuses": ["active"],
+   "pillars": {
+    "rasi": {"label": "ARNI / ACE inhibitor / ARB", "fill_classes": ["arni", "ace_inhibitor", "arb"],
+             "ingredients": ["sacubitril", "sacubitril valsartan", "lisinopril", "enalapril", "ramipril", "benazepril", "quinapril",
+                             "captopril", "fosinopril", "perindopril", "trandolapril", "moexipril", "losartan", "valsartan",
+                             "irbesartan", "candesartan", "olmesartan", "telmisartan", "azilsartan", "eprosartan"]},
+    "beta_blocker": {"label": "Evidence-based beta blocker (carvedilol, metoprolol succinate, bisoprolol)",
+                     "fill_classes": ["hf_evidence_based_beta_blocker"],
+                     "ingredients": ["carvedilol", "bisoprolol",
+                                     {"key": "metoprolol", "name_any": ["succinate", "24 hr", " er ", " xl", "extended"]}]},
+    "mra": {"label": "Mineralocorticoid receptor antagonist", "fill_classes": ["mra"],
+            "ingredients": ["spironolactone", "eplerenone", "finerenone"]},
+    "sglt2i": {"label": "SGLT2 inhibitor", "fill_classes": ["sglt2_inhibitor"],
+               "ingredients": ["dapagliflozin", "empagliflozin", "sotagliflozin", "canagliflozin", "ertugliflozin"]}
+   }
+  },
+  "pt_after_ed_low_back_pain": {
+   "label": "ED visit discharged with low back pain and no physical therapy within the follow-up window",
+   "event_lookback_days": 365,
+   "diagnosis_icd10_prefixes": ["M54.5"],
+   "ed_place_of_service": ["23"],
+   "ed_encounter_concepts": ["emergency_visit"],
+   "exclude_if_admitted_within_days": 1,
+   "followup_window_days": 60,
+   "pt_cpt": ["97161", "97162", "97163", "97164", "97110", "97112", "97140", "97530"]
+  }
+ },
+ "priority": {
+  "due_days": {"high": 3, "medium": 7, "low": 14}
+ },
+ "programs": [
+  {
+   "id": "pharmacy_gdmt_titration",
+   "name": "Pharmacist-led GDMT optimization program",
+   "kind": "pharmacy_gdmt",
+   "request_keywords": ["gdmt", "guideline-directed", "guideline directed", "pharmacy", "pharmacist", "heart failure", "hfref"],
+   "eligibility": {
+    "requires_active_coverage": true,
+    "products": ["commercial", "marketplace", "medicaid", "medicare_advantage", "medicare_ffs", "dual_ma", "dual_ffs"],
+    "lines_of_business": ["commercial", "medicaid", "medicare", "dual"],
+    "age": {"min": 18},
+    "gap_type": "gdmt_pillar_missing"
+   },
+   "enrollment_channel": "clinical_pharmacist_phone",
+   "outreach_channel": "phone",
+   "script_template_id": "gdmt_pharmacist_intro_v1",
+   "required_fields": ["patient_id", "member_id", "payer_id", "product", "attributed_npi", "missing_pillars", "preferred_language"],
+   "priority_rules": [
+    {"metric": "missing_pillar_count", "gte": 3, "priority": "high"},
+    {"metric": "missing_pillar_count", "gte": 2, "priority": "medium"},
+    {"metric": "missing_pillar_count", "gte": 1, "priority": "low"}
+   ],
+   "vendor_slots": [
+    {"slot_id": "gdmt_pharmacy_slot_1", "display": "GDMT pharmacy partner slot 1 (customer-configured)", "vendor_name": null,
+     "assignment": "priority", "filters": {}}
+   ]
+  },
+  {
+   "id": "access_virtual_pt_msk",
+   "name": "Virtual physical therapy through CMS ACCESS model participants (MSK track)",
+   "kind": "virtual_pt",
+   "context": "cms_access_model",
+   "request_keywords": ["physical therapy", "virtual pt", " pt ", "access model", "cms access", "msk", "back pain"],
+   "eligibility": {
+    "requires_active_coverage": true,
+    "products": ["medicare_ffs", "dual_ffs"],
+    "lines_of_business": ["medicare", "dual"],
+    "age": {"min": 18},
+    "gap_type": "pt_after_ed_low_back_pain"
+   },
+   "enrollment_channel": "vendor_referral",
+   "outreach_channel": "phone_then_sms",
+   "script_template_id": "virtual_pt_access_intro_v1",
+   "required_fields": ["patient_id", "member_id", "payer_id", "product", "attributed_npi", "ed_visit_date", "preferred_language"],
+   "priority_rules": [
+    {"metric": "days_since_ed", "lte": 30, "priority": "high"},
+    {"metric": "days_since_ed", "lte": 60, "priority": "medium"},
+    {"metric": "days_since_ed", "gte": 0, "priority": "low"}
+   ],
+   "vendor_slots": [
+    {"slot_id": "access_msk_vendor_a", "display": "ACCESS MSK vendor A (customer-configured)", "vendor_name": null,
+     "assignment": "hash", "filters": {}},
+    {"slot_id": "access_msk_vendor_b", "display": "ACCESS MSK vendor B (customer-configured)", "vendor_name": null,
+     "assignment": "hash", "filters": {}}
+   ]
+  },
+  {
+   "id": "plan_benefit_virtual_pt",
+   "name": "Virtual physical therapy through the member's plan benefit",
+   "kind": "virtual_pt",
+   "request_keywords": ["physical therapy", "virtual pt", " pt "],
+   "eligibility": {
+    "requires_active_coverage": true,
+    "products": ["commercial", "marketplace", "medicaid", "medicare_advantage", "dual_ma"],
+    "lines_of_business": ["commercial", "medicaid", "medicare", "dual"],
+    "age": {"min": 18},
+    "gap_type": "pt_after_ed_low_back_pain"
+   },
+   "enrollment_channel": "vendor_referral",
+   "outreach_channel": "phone_then_sms",
+   "script_template_id": "virtual_pt_plan_benefit_intro_v1",
+   "required_fields": ["patient_id", "member_id", "payer_id", "product", "attributed_npi", "ed_visit_date", "preferred_language"],
+   "priority_rules": [
+    {"metric": "days_since_ed", "lte": 30, "priority": "high"},
+    {"metric": "days_since_ed", "lte": 60, "priority": "medium"},
+    {"metric": "days_since_ed", "gte": 0, "priority": "low"}
+   ],
+   "vendor_slots": [
+    {"slot_id": "plan_virtual_pt_slot_1", "display": "Plan-benefit virtual PT vendor slot (customer-configured)", "vendor_name": null,
+     "assignment": "priority", "filters": {}}
+   ]
+  },
+  {
+   "id": "coverage_verification",
+   "name": "Coverage verification queue",
+   "kind": "coverage_check",
+   "request_keywords": ["coverage check", "eligibility check", "verify coverage", "insurance verification"],
+   "eligibility": {"requires_active_coverage": false},
+   "enrollment_channel": "eligibility_verification_queue",
+   "outreach_channel": "work_queue",
+   "script_template_id": "coverage_verification_v1",
+   "required_fields": ["patient_id", "member_id", "payer_id", "birth_date"],
+   "priority_rules": [{"metric": "always", "priority": "medium"}],
+   "vendor_slots": [
+    {"slot_id": "coverage_queue", "display": "Coverage verification team (customer-configured)", "vendor_name": null,
+     "assignment": "priority", "filters": {}}
+   ]
+  }
+ ]
+}

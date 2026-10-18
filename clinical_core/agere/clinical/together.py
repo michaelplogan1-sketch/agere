@@ -605,8 +605,39 @@ def decide(stack, question, fast, fast_error, analyst, analyst_state, *, as_of=N
     return {**fast, 'answer': out}, together, rec
 
 
+def _is_plan_request(question):
+    try:
+        from ..plans.request import is_plan_request
+    except ImportError:  # pragma: no cover - the plans package ships with the product
+        return False
+    return is_plan_request(question)
+
+
+def _compose_plan(stack, question, *, planning='auto', program_kind=None):
+    """A plan request ("find HF patients not on full GDMT, then create a plan to sign them up for a pharmacy GDMT program"):
+    the cohort through compose_together (answer_type patient_set), then the deterministic enrollment router
+    (clinical_core/agere/plans). -> the cohort's result with a 'plan' block (workspace_stack.envelope shapes it)."""
+    from ..plans import answer as plan_answer
+    semantic_path = Path(stack.path) / 'semantic.sqlite3'
+    held = {}
+
+    def cohort(q):
+        r = held['result'] = compose_together(stack, q, planning=planning, answer_type='patient_set')
+        a = r.get('answer') if isinstance(r.get('answer'), dict) else {}
+        ids = a.get('patient_ids') if a.get('status') in ('answered', 'partial') else None
+        return {'answer': {'patient_ids': ids} if isinstance(ids, list) else None, 'pipeline': 'full', 'status': a.get('status'),
+                'decision': (r.get('together') or {}).get('decision'),
+                'cost_usd': (r.get('planning_economics') or {}).get('new_api_estimate_usd')}
+    out = plan_answer.build(semantic_path, question, program_kind=program_kind, as_of=_snapshot_as_of(stack),
+                            answer_type='plan', cohort=cohort)
+    return {**held.get('result', {}), 'plan': out['plan']}
+
+
 def compose_together(stack, question, *, planning='auto', answer_type=None):
-    """Stack.compose for AGERE_TOGETHER=on: see the module docstring."""
+    """Stack.compose for AGERE_TOGETHER=on: see the module docstring. A plan request (answer_type 'plan', or a question
+    asking to create a plan / enroll / route patients) computes its cohort here and routes it (_compose_plan)."""
+    if answer_type == 'plan' or (answer_type is None and _is_plan_request(question)):
+        return _compose_plan(stack, question, planning=planning)
     t0 = time.perf_counter()
     deadline = t0 + budget_s()
     semantic_path = Path(stack.path) / 'semantic.sqlite3'

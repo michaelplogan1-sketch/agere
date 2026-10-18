@@ -385,7 +385,13 @@ def _table_rows(table):
 
 def envelope(result, *, answer_type=None):
     """compose_together's result in the workspace answer shape (the hybrid core's keys: answer {count|value|patient_ids|
-    table[{keys, value}]} or None, decision, interpretation, cost_usd, answer_type) plus the full-pipeline receipts."""
+    table[{keys, value}]} or None, decision, interpretation, cost_usd, answer_type) plus the full-pipeline receipts.
+    A plan request's result (a 'plan' block from together._compose_plan) becomes answer_type 'plan': answer.patient_ids =
+    the patients the plan acts on, plan = the routed plan, and the cohort step's receipts stay under 'result'."""
+    if isinstance(result.get('plan'), dict):
+        from ..plans import answer as plan_answer
+        cohort = envelope({k: v for k, v in result.items() if k != 'plan'}, answer_type='patient_set') if result.get('answer') else {}
+        return plan_answer.envelope({'plan': result['plan']}, pipeline='full', base=cohort)
     a = result.get('answer') if isinstance(result.get('answer'), dict) else {}
     graph = result.get('graph') or {}
     ops = [n.get('operation') for n in graph.get('nodes') or [] if isinstance(n, dict)]

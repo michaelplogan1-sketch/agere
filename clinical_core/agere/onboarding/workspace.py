@@ -571,6 +571,10 @@ class Workspace:
         on its local rungs with no hosted call (the hybrid core's sender refuses)."""
         if self.state['status'] != 'ready':
             raise RuntimeError(f"Workspace {self.slug} is {self.state['status']}; run it first")
+        from ..plans.request import is_plan_request
+        if is_plan_request(question, answer_type):
+            # "create a plan / enroll / route" a cohort: cohort through this method, then the deterministic router
+            return self.plan(question=question, send_factory=send_factory, live=live)
         if pipeline not in (None, 'full', 'hybrid'):
             raise ValueError("pipeline must be 'full', 'hybrid' or None")
         fallback = None
@@ -598,6 +602,31 @@ class Workspace:
             out['pipeline_fallback'] = fallback
         self._record(question, out)
         return out
+
+    def plan(self, *, question=None, patient_ids=None, program_kind=None, as_of=None, gap_details=None,
+             send_factory=None, live=True, narrative=False):
+        """A routed enrollment plan (clinical_core/agere/plans): the cohort from patient_ids, else the plan request's cohort
+        question answered through ask(..., answer_type='patient_set'), else the deterministic candidates for the program's
+        gap; then the deterministic router over this workspace's semantic layer. narrative=True drafts prose through the
+        model only when a sender exists (send_factory, or ANTHROPIC_API_KEY for the ledgered sender)."""
+        from ..plans import answer as plan_answer
+        if not self.semantic_path.is_file():
+            raise RuntimeError(f'Workspace {self.slug} has no semantic layer yet; run it first')
+        if question is None and patient_ids is None and not program_kind:
+            raise ValueError('question, patient_ids or program_kind is required')
+
+        def cohort(q):
+            return self.ask(q, answer_type='patient_set', send_factory=send_factory, live=live)
+        sender = send_factory
+        if narrative and sender is None and os.environ.get('ANTHROPIC_API_KEY'):
+            sender = ledgered_send_factory(self.dir / 'receipts')
+        out = plan_answer.build(self.semantic_path, question, patient_ids=patient_ids, program_kind=program_kind,
+                                as_of=as_of or self.state.get('as_of') or None, answer_type='plan',
+                                cohort=cohort if question and self.state['status'] == 'ready' else None,
+                                gap_details=gap_details, narrative=narrative, send_factory=sender)
+        env = plan_answer.envelope(out, pipeline='plan')
+        self._record(question or f"plan:{env['plan']['program_kind']} for {len(env['cohort_patient_ids'])} patients", env)
+        return env
 
     def _record(self, question, out):
         ids = (out.get('answer') or {}).get('patient_ids') if isinstance(out.get('answer'), dict) else None
