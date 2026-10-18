@@ -411,12 +411,15 @@ def _enrollment(ctx):
         'pcp_name', 'last_name', 'first_name', 'dob'])
     loops = _isa_filter(rep, 'x12_834_member', _keep_files(rep, 'x12_834_member', loops))
     first_file = {}
+    full_dates = defaultdict(set)  # payer -> dates of quarterly full files
     for r in loops:
         p = _payer_id(r['_instance'])
         fd = _d(r['file_date']) or _d(r['interchange_date']) or _file_date(r['_file'])
         r['_payer'], r['_fd'] = p, fd
         if fd and (p not in first_file or fd < first_file[p]):
             first_file[p] = fd
+        if fd and r['file_type'] == 'full':
+            full_dates[p].add(fd)
     loops.sort(key=lambda r: (r['_payer'] or '', r['member_id'] or '', r['_fd'] or '',
                               0 if r['file_type'] == 'change' else 1, r['_file'] or '', r['_row'] or 0))
     by_member = defaultdict(list)
@@ -429,7 +432,7 @@ def _enrollment(ctx):
     covered = set()
     for (payer, member), rows in by_member.items():
         covered.add((payer, member))
-        out += _spans_834(ctx, payer, member, rows, first_file.get(payer), death)
+        out += _spans_834(ctx, payer, member, rows, first_file.get(payer), death, sorted(full_dates.get(payer, ())))
     # flat-only members (no 834 loop at that payer)
     for (payer, member), snaps in flat.items():
         if (payer, member) in covered:
@@ -485,11 +488,14 @@ def _span_record(ctx, v):
     return rec
 
 
-def _spans_834(ctx, payer, member, rows, first_file, death):
+def _spans_834(ctx, payer, member, rows, first_file, death, full_dates=()):
+    """A quarterly full file replaces membership: a span still open after the last file that reported it ends the day
+    before the next full file from that payer that omits it (no 024 term is sent in full-file months)."""
     rep = ctx.rep
     spans = {}     # coverage_start -> current version dict
     order = []     # all versions in creation order
     last_active = {}  # coverage_start -> latest file date that reported the span open
+    last_seen = {}    # coverage_start -> latest file date that named the span at all
     for r in rows:
         mt = _s(r['maintenance_type_code'])
         start = _d(r['eligibility_begin_date']) or _d(r['benefit_begin_date'])
@@ -555,6 +561,21 @@ def _spans_834(ctx, payer, member, rows, first_file, death):
             order.append(v)
         if end is None or (fd and end >= fd):
             last_active[start] = max(last_active.get(start) or '', fd or '')
+        if fd:
+            last_seen[start] = max(last_seen.get(start) or '', fd)
+    for start, s in list(spans.items()):
+        seen = last_seen.get(start)
+        omitted = next((d for d in full_dates if seen and d > seen), None)
+        if not omitted:
+            continue
+        end = _minus_day(omitted)
+        if s['coverage_end'] and s['coverage_end'] <= end:
+            continue
+        v = _version(s, omitted, s['_lin'][-1], coverage_end=end, termination_reason='absent_from_full_file',
+                     maintenance_type_code=None)
+        rep['cross_check']['834_span_ended_by_full_file_omission'] += 1
+        spans[start] = v
+        order.append(v)
     finals = {id(v) for v in spans.values()}
     for v in order:
         v['_final'] = id(v) in finals
@@ -723,10 +744,16 @@ def _spans_cclf(ctx, cclf8, existing, ffs_834=frozenset()):
     for m, b in cclf8.items():
         if m in have or not b.get('begin'):
             continue
-        spans[(m, b['begin'])] = {'coverage_start': b['begin'], 'coverage_end': b.get('end') if b.get('end') and
-                                  m in old_of else None, '_fd': b.get('fd'), '_lin': list(b['rows'][-1:]),
+        spans[(m, b['begin'])] = {'coverage_start': b['begin'], 'coverage_end': b.get('end'), '_fd': b.get('fd'), '_lin': list(b['rows'][-1:]),
                                   'source': 'cclf8_range'}
         rep['cross_check']['mssp_span_from_cclf8_range'] += 1
+    # CCLF8's range end (blank while the beneficiary is active) ends an open enrollment-file span
+    for (m, start), s in spans.items():
+        end = (cclf8.get(m) or {}).get('end')
+        if s['source'] == 'cclf_enrollment' and not s['coverage_end'] and end and end >= (start or ''):
+            s['coverage_end'] = end
+            s['_lin'] += list(cclf8[m]['rows'][-1:])
+            rep['cross_check']['cclf_span_ended_by_cclf8_range'] += 1
     out = []
     for (m, start), s in sorted(spans.items(), key=lambda x: (x[0][0], x[0][1] or '')):
         if (payer, m) in existing:

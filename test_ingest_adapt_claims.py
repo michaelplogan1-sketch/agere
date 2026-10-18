@@ -302,9 +302,11 @@ class Enrollment(unittest.TestCase):
             self.assertEqual(v['event_date'], '2026-09-01')
             self.assertEqual(v['patient_id'], 'P-member:WH-PAYER-C1:C1ABCDEF123')
         self.assertGreaterEqual(rep['dropped']['repeat_834_loop'], 1)  # the 2027-01 FULL repeats the open span
-        new = [r for r in by['enrollment_spans'] if r['member_id'] == 'C1NEWMEM456']
-        self.assertEqual(len(new), 1)
+        new = sorted((r for r in by['enrollment_spans'] if r['member_id'] == 'C1NEWMEM456'), key=lambda r: r['span_version'])
         self.assertEqual(new[0]['enrollment_reason'], 'new_enrollment')
+        # absent from the next quarterly full file: the full file replaces membership, so the span ends the day before it
+        self.assertEqual((new[-1]['coverage_end'], new[-1]['termination_reason'], new[-1]['available_date']),
+                         ('2027-01-04', 'absent_from_full_file', '2027-01-05'))
 
     def test_unresolved_person_kept_with_none(self):
         L = Landing()
@@ -511,7 +513,8 @@ class EnrollmentFidelity(unittest.TestCase):
         self.assertEqual([(r['member_id'], r['enrollment_reason'], r['previous_member_id'], r['termination_reason'])
                           for r in sorted(mssp, key=lambda r: r['coverage_start'])],
                          [('2H51Q97FQ99', 'baseline', None, 'member_id_reissued'),
-                          ('2HBCAB84FC1', 'member_id_reissued', '2H51Q97FQ99', None)])
+                          ('2HBCAB84FC1', 'member_id_reissued', '2H51Q97FQ99', 'disenrolled')])
+        self.assertEqual(max(r['coverage_end'] or '' for r in mssp), '2028-07-31')  # CCLF8 range end ends the span
         self.assertEqual(rep['dropped']['cclf_span_covered_by_834_medicare_ffs'], 1)
         self.assertEqual([r['payer_id'] for r in cur if r['member_id'] == '2DX0U77CP79'], ['WH-PAYER-1'])
 
