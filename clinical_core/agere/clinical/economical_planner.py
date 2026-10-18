@@ -196,6 +196,29 @@ class defer_to_analyst:
     def __exit__(self,*exc):_SCOPE.defer=self.prev
 
 
+
+def _typed_decider(stack,question,ledger,available,validate,meta,start):
+    """The typed decision router as a specialist rung: -> (graph, receipt) when it accepts a curated analysis, else None.
+    AGERE_TYPED_DECIDER_FIRST=off keeps it behind the hosted ladder only."""
+    if os.environ.get('AGERE_TYPED_DECIDER_FIRST','on').strip().lower()=='off' or not stack.allow_live:
+        return None
+    if escalation_reason(question) is not None:
+        return None
+    try:
+        choices=candidates(question,stack.retriever.encoder,available)
+        body=decision_body(question,choices)
+        selected,receipt=send(body,'perplexity',ledger,stack.receipts,parse=lambda r:parse_decision(r,body))
+    except (ValueError,RuntimeError,OSError,AttributeError):
+        return None
+    if not selected.get('accepted'):
+        return None
+    graph=validate(copy.deepcopy(recipes()[selected['choice']]['graph']),meta['snapshot']['as_of'])
+    return graph,{'route':'compact_retrieval_typed_router','model':body['model'],'recipe':selected['choice'],
+                  'new_paid_api_calls':0 if receipt.get('cache_hit') else 1,'frontier_called':False,
+                  'steps':[{'stage':'local_compact_retrieval','candidates':choices,'new_paid_api_calls':0},
+                           {'stage':'typed_decision_router','provider':'perplexity','decision':selected,'receipt':receipt}],
+                  'elapsed_seconds':time.perf_counter()-start}
+
 def plan(stack,question,ledger,frontier):
     """frontier is a callback; no hosted call occurs for an exact local plan/cache."""
     normalize(question);start=time.perf_counter();meta=stack.retriever.meta
@@ -375,6 +398,11 @@ def plan(stack,question,ledger,frontier):
     # here instead of paying for a second hosted SQL ladder and the frontier planner (it falls back to them only if the
     # analysts produce no usable answer).
     if deferring():
+        # Specialists before the analysts: the typed decider (one small Perplexity call over the curated analyses the
+        # local retriever ranks) gets the question before it is handed to the independent analysts.
+        typed=_typed_decider(stack,question,ledger,available,validate,meta,start)
+        if typed is not None:
+            return typed
         from .analysis_graph import validate as _validate
         graph=_validate({'interpretation':f'Deferred to the independent analysts: {question}','coverage':'unsupported','nodes':[],
                          'unmet_requirements':['answered by the independent analysts (hybrid core)']},meta['snapshot']['as_of'])

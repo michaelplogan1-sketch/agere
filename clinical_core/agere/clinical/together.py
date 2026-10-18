@@ -178,6 +178,35 @@ def deferral_on():
     return os.environ.get('AGERE_DEFER_FAST', 'on').strip().lower() != 'off'
 
 
+SPECIALIST_ROUTES = frozenset({'local_compiler', 'semantic_cache', 'exact_question_cache', 'learned_verified_sql',
+                               'metric_router', 'operator_router', 'operator_router_requires_input',
+                               'compact_retrieval_typed_router', 'local_model_rewrite_compiled'})
+
+
+def specialists_first():
+    """AGERE_SPECIALISTS_FIRST (default on): the compiler, caches, governed metrics, engines and the typed decider answer
+    first; the language-model analysts start only when none of them claims the question."""
+    return os.environ.get('AGERE_SPECIALISTS_FIRST', 'on').strip().lower() != 'off'
+
+
+def _fast_route(fast):
+    fast = fast or {}
+    return (fast.get('planner_receipt') or {}).get('route') or fast.get('route')
+
+
+def _specialist_answer(fast, answer_type):
+    """A specialist claimed the question: its route is a governed/compiled/cached/engine route and it produced a
+    non-empty answer of the requested shape (an unchecked zero or a missing patient list goes on to the analysts)."""
+    if _fast_route(fast) not in SPECIALIST_ROUTES:
+        return False
+    answer = (fast or {}).get('answer')
+    if not isinstance(answer, dict) or _empty_answer(answer):
+        return False
+    if answer_type == 'patient_set' and not isinstance(answer.get('patient_ids'), list):
+        return False
+    return True
+
+
 def _usable(analyst, state):
     """The analysts returned an answer or a stated decline (clarify / unsupported)."""
     return state == 'done' and isinstance((analyst or {}).get('answer'), dict) and not (analyst or {}).get('error')
@@ -500,11 +529,13 @@ def decide(stack, question, fast, fast_error, analyst, analyst_state, *, as_of=N
     if a_answer is None or f_answer is None:
         reason = {'timed_out': 'analyst did not finish within the budget', 'unavailable': 'semantic layer not built',
                   'skipped_engine': 'analytic engine route: the analysts were not started (an engine answer is never replaced)',
+                  'skipped_specialist': 'a specialist (compiler, cache, governed metric, engine or typed decider) answered; '
+                                        'the analysts were not needed',
                   'failed': (analyst or {}).get('error') or 'analyst returned no valid answer'}.get(
                       together['analyst_state'], 'analyst returned no valid answer')
         if f_answer is None:
             reason = 'fast result has no answer object'
-        elif (_empty_answer(f_answer) and together['analyst_state'] != 'skipped_engine'
+        elif (_empty_answer(f_answer) and together['analyst_state'] not in ('skipped_engine', 'skipped_specialist')
               and os.environ.get('AGERE_UNCHECKED_ZERO', 'abstain') == 'abstain'):
             # Build log step 10: a zero/empty result the analyst could not check would otherwise ship as a confident 0
             # (dev RX-10). Zero is the answer a missed source produces, so it is withheld unless confirmed.
@@ -645,19 +676,24 @@ def compose_together(stack, question, *, planning='auto', answer_type=None):
     future, model = None, semantic_model()
     # A requested patient list is answered by the analysts' executed definition (engines return ranked, capped worklists).
     engine = [] if answer_type == 'patient_set' else _compiled_engine(stack, question, as_of)
-    if semantic_path.is_file() and not engine:
-        future = _pool().submit(_run_analyst, stack, question, as_of, semantic_path, model, answer_type)
     fast, fast_error = None, None
     from .economical_planner import defer_to_analyst
+    first = specialists_first() and semantic_path.is_file() and not engine and deferral_on()
+    if semantic_path.is_file() and not engine and not first:
+        future = _pool().submit(_run_analyst, stack, question, as_of, semantic_path, model, answer_type)
     try:
-        # While the analysts answer, the fast path keeps its free and governed rungs and skips the paid hosted ladder.
-        with defer_to_analyst(future is not None and deferral_on()):
+        # The fast path keeps its free and governed rungs and skips the paid hosted ladder while the analysts may answer.
+        with defer_to_analyst((future is not None or first) and deferral_on()):
             fast = stack._compose(question, planning=planning)
     except Exception as exc:  # noqa: BLE001 - the analyst may still answer; re-raised in decide otherwise
         fast_error = exc
+    claimed = first and fast_error is None and _specialist_answer(fast, answer_type)
+    if first and not claimed:
+        # No specialist claimed the question: now (and only now) the independent analysts answer it.
+        future = _pool().submit(_run_analyst, stack, question, as_of, semantic_path, model, answer_type)
     with _released(stack):
         if future is None:
-            state, analyst = ('skipped_engine' if engine else 'unavailable'), None
+            state, analyst = ('skipped_engine' if engine else 'skipped_specialist' if claimed else 'unavailable'), None
         else:
             state, analyst = _wait(future, deadline)
             if state == 'failed':

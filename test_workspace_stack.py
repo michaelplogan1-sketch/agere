@@ -177,7 +177,15 @@ class WorkspaceStackTests(unittest.TestCase):
         @contextmanager
         def factory():
             yield fake_send
-        with patch.dict(os.environ, {'AGERE_HOSTED_SQL': 'off', 'AGERE_ROUTER': 'off', 'AGERE_METRIC_ROUTER': 'off'}):
+        env = {'AGERE_HOSTED_SQL': 'off', 'AGERE_ROUTER': 'off', 'AGERE_METRIC_ROUTER': 'off'}
+        # specialists first (default): the compiler claims the question, so no language-model call is made
+        with patch.dict(os.environ, env):
+            out = self.ws.ask('How many patients have diabetes?', answer_type='count', send_factory=factory, live=False)
+        self.assertEqual((out['answer'], out['decision']), ({'count': 10}, 'fast_unchanged'))
+        self.assertIn('local_compiler', out['interpretation'])
+        self.assertEqual(calls, [])
+        # with AGERE_SPECIALISTS_FIRST=off both paths run and must agree
+        with patch.dict(os.environ, {**env, 'AGERE_SPECIALISTS_FIRST': 'off'}):
             out = self.ws.ask('How many patients have diabetes?', answer_type='count', send_factory=factory, live=False)
         self.assertEqual(out['pipeline'], 'full')
         self.assertEqual(out['answer'], {'count': 10})
