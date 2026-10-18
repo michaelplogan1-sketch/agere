@@ -89,9 +89,9 @@ def queries(as_of, death_table=False):
                               row_number() OVER (PARTITION BY patient_id ORDER BY event_date DESC, record_id DESC) rn
                             FROM measurement WHERE concept = 'hba1c' AND value_canonical IS NOT NULL
                               AND coalesce(result_status, '') <> 'cancelled' AND coalesce(result_current, 1) = 1
-                              AND event_date > date({a}, '-365 day') AND event_date <= {a})
+                              AND event_date >= date({a}, '-365 day') AND event_date <= date({a}, '-30 day'))
             SELECT l.patient_id FROM latest l WHERE l.rn = 1 AND l.value_canonical > 9.0
-              AND l.event_date <= date({a}, '-30 day') AND l.patient_id IN ({diabetes})
+              AND l.patient_id IN ({diabetes})
               AND NOT EXISTS (SELECT 1 FROM ({visits}) v WHERE v.patient_id = l.patient_id
                               AND v.d > l.event_date AND v.d <= date(l.event_date, '+30 day'))""",
         'ED-HIGH': f"""
