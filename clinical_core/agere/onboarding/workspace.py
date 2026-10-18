@@ -701,7 +701,7 @@ def _answer_record(qid, out, answer_type=None, id_map=None):
     return row
 
 
-def ask_many(ws, questions, *, workers=3, send_factory=None, out_path=None, on_usage=None, native_ids=False):
+def ask_many(ws, questions, *, workers=3, send_factory=None, out_path=None, on_usage=None, native_ids=False, pipeline=None):
     """Answer a list of {id, question, answer_type?} against one workspace. Writes answers.jsonl (submission shape)
     and returns the rows. A question that fails records its error instead of stopping the batch."""
     from concurrent.futures import ThreadPoolExecutor
@@ -709,12 +709,14 @@ def ask_many(ws, questions, *, workers=3, send_factory=None, out_path=None, on_u
     def one(q):
         try:
             t0 = __import__('time').time()
-            out = ws.ask(q['question'], answer_type=q.get('answer_type'), send_factory=send_factory)
+            out = ws.ask(q['question'], answer_type=q.get('answer_type'), send_factory=send_factory, pipeline=pipeline)
+            seconds = round(__import__('time').time() - t0, 2)
             if on_usage:
                 on_usage(ws.slug, {'question': q['question'][:300], 'cost_usd': out.get('cost_usd'),
                                    'seconds': round(__import__('time').time() - t0, 2), 'decision': out.get('decision')})
             ids = ((out.get('answer') or {}).get('patient_ids') or []) if native_ids else []
-            return _answer_record(q['id'], out, q.get('answer_type'), ws.customer_ids(ids) if ids else None)
+            rec = _answer_record(q['id'], out, q.get('answer_type'), ws.customer_ids(ids) if ids else None)
+            return {**rec, 'seconds': seconds, 'pipeline': out.get('pipeline'), 'route': out.get('interpretation', '')[:200]}
         except Exception as exc:  # noqa: BLE001
             return {'id': q['id'], 'status': 'abstain', 'error': f'{type(exc).__name__}: {exc}'[:300]}
     with ThreadPoolExecutor(max_workers=workers) as pool:

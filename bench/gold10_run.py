@@ -45,7 +45,8 @@ def score(answers, ref):
         passed += ok
         rows.append({'id': qid, 'pass': ok, 'f1': round(f1, 3), 'precision': round(p, 3), 'recall': round(rc, 3),
                      'expected': len(want), 'returned': len(got), 'status': a.get('status'),
-                     'answered_by': a.get('decision'), 'missing_sample': sorted(want - got)[:5],
+                     'answered_by': a.get('decision'), 'route': a.get('route'), 'seconds': a.get('seconds'),
+                     'cost_usd': a.get('cost_usd'), 'error': a.get('error'), 'missing_sample': sorted(want - got)[:5],
                      'extra_sample': sorted(got - want)[:5]})
     digest = hashlib.sha256(json.dumps(rows, sort_keys=True).encode()).hexdigest()[:16]
     return {'reference_fingerprint': hashlib.sha256(json.dumps(ref['questions'], sort_keys=True).encode()).hexdigest()[:16],
@@ -56,10 +57,11 @@ def show(result):
     print(f"Gold 10: {result['passed']}/{result['total']} passed  (reference {result['reference_fingerprint']})")
     for r in result['questions']:
         print(f"  {'PASS' if r['pass'] else 'FAIL'}  {r['id']:8s} F1 {r['f1']:.3f}  expected {r['expected']:4d}  "
-              f"returned {r['returned']:4d}  answered by {r['answered_by']}")
+              f"returned {r['returned']:4d}  {r.get('seconds') or 0:6.0f}s  ${r.get('cost_usd') or 0:.3f}  by {r['answered_by']}"
+              + (f"  ERROR {r['error']}" if r.get('error') else ''))
 
 
-def ask(out):
+def ask(out, pipeline=None):
     from run_integrated_stack import keys
     keys()
     from clinical_core.agere.onboarding.workspace import Workspace, ask_many
@@ -69,7 +71,7 @@ def ask(out):
     items = [{'id': q['id'], 'question': q['question'] + ' Definition: ' + q['definition'], 'answer_type': q['answer_type']}
              for q in qs if q['id'] in ref['questions']]
     out.mkdir(parents=True, exist_ok=True)
-    rows = ask_many(ws, items, workers=3, out_path=out / 'answers_raw.jsonl', native_ids=True)
+    rows = ask_many(ws, items, workers=3, out_path=out / 'answers_raw.jsonl', native_ids=True, pipeline=pipeline)
     with open(out / 'answers.jsonl', 'w') as f:
         for r in rows:
             f.write(json.dumps(r, default=str) + '\n')
@@ -116,12 +118,13 @@ def main():
     ap.add_argument('cmd', choices=['ask', 'score', 'selftest'])
     ap.add_argument('--out', type=Path, default=ROOT / 'tmp' / 'gold10' / 'latest')
     ap.add_argument('--answers', type=Path)
+    ap.add_argument('--pipeline', choices=['full', 'hybrid'], help="full = the stack (no silent fallback); hybrid = language-model analysts for everything")
     a = ap.parse_args()
     if a.cmd == 'selftest':
         sys.exit(0 if selftest() else 1)
     _, ref = reference()
     if a.cmd == 'ask':
-        rows = ask(a.out)
+        rows = ask(a.out, a.pipeline)
     else:
         rows = [json.loads(l) for l in a.answers.read_text().splitlines() if l.strip()]
     result = score(rows, ref)
