@@ -152,7 +152,7 @@ class MedicalClaims(unittest.TestCase):
         self.assertEqual(rep['dropped']['provider_835_kept_out_of_payer_streams'], 1)
         self.assertGreaterEqual(rep['dropped']['resend_file'], 1)
 
-    def test_duplicate_dropped_and_crossover_kept(self):
+    def test_duplicate_denial_and_crossover_kept(self):
         L = Landing()
         L.c837('x12_payer/WH-PAYER-MSSP/2027-W10/MSSP_837P_2027-W10.x12', '600', 'k1', 'WHN-CLM-eee', '2DX0U77CP79',
                lines=[('99214', 200.0, '2027-03-01')])
@@ -164,10 +164,9 @@ class MedicalClaims(unittest.TestCase):
         L.c835('x12_payer/WH-PAYER-SUP1/2027-W15/SUP1_835_2027-W15.x12', '603', '0001', 'e1', 'WHN-CLM-eee-X', '1', 30.0,
                eff='2027-04-10')
         by, rep = run(L)
-        ids = {r['payer_claim_id'] for r in by['payer_medical_claims']}
-        self.assertNotIn('WHN-CLM-eee-D', ids)
-        self.assertEqual(rep['dropped']['duplicate_submission_loop_837'], 1)
-        self.assertEqual(rep['dropped']['duplicate_submission_835'], 1)
+        dup = claims(by, 'WHN-CLM-eee-D')  # the payer's denial of the duplicate submission is kept as its own claim
+        self.assertEqual([(r['claim_status'], r['carc']) for r in dup], [('denied', 'CO-18')])
+        self.assertEqual(rep['cross_check']['duplicate_submission_claims_kept'], 1)
         x = claims(by, 'WHN-CLM-eee-X')
         self.assertEqual(len(x), 1)
         self.assertEqual(x[0]['product'], 'medigap')
@@ -380,6 +379,86 @@ class ProviderRevenueCycle(unittest.TestCase):
         self.assertEqual(pra[('zzz999', 'denied')]['status'], 'denied_information_needed')
         # the payer streams are untouched by the practice feed
         self.assertNotIn('payer_medical_claims', by)
+
+
+class FidelityFixes(unittest.TestCase):
+    def test_part_a_matches_837i_and_payer1_matches_cclf(self):
+        L = Landing()
+        L.c837('x12_payer/WH-PAYER-MSSP/2028-W30/MSSP_837I_2028-W30.x12', '1000', 'k1', 'WHN-CLM-inst1', '7Q45WP7HH60',
+               tx='837I', charge=21998.64, statement_from='2028-07-06', statement_to='2028-07-13',
+               lines=[(None, 21998.64, '2028-07-06')])
+        L.c835('x12_payer/WH-PAYER-MSSP/2028-W33/MSSP_835_2028-W33.x12', '1001', '0001', 'e1', 'WHN-CLM-inst1', '1',
+               7000.0, eff='2028-08-15', charge=21998.64)
+        hf = 'cms_cclf_csv/parta_claims_header/P.A9999.ACO.ZC1Y28.D281012.T1.csv'
+        common = dict(bene_mbi_id='7Q45WP7HH60', clm_type_cd='60', clm_from_dt='2028-07-06', clm_thru_dt='2028-07-13',
+                      clm_bill_fac_type_cd='1', clm_bill_clsfctn_cd='1', clm_bill_freq_cd='1', clm_blg_prvdr_npi_num='1111111111',
+                      clm_mdcr_instnl_tot_chrg_amt='21998.64', prncpl_dgns_cd='R5383', dgns_drg_cd='0948',
+                      file_date='2028-10-12')
+        # original, then a cancellation whose clm_org_cntl_num carries a different prefix but the same tail
+        L.add('cclf_parta_claims_header', hf, cur_clm_uniq_id='5001', clm_adjsmt_type_cd='0', clm_pmt_amt='7533.04',
+              clm_cntl_num='20280801DDFA4EB585', clm_efctv_dt='2028-08-01', clm_idr_ld_dt='2028-08-01', **common)
+        L.add('cclf_parta_claims_header', hf, cur_clm_uniq_id='5002', clm_adjsmt_type_cd='1', clm_pmt_amt='-7533.04',
+              clm_cntl_num='20280901DDFA4EB585', clm_org_cntl_num='20280715DDFA4EB585', clm_efctv_dt='2028-09-01',
+              clm_idr_ld_dt='2028-09-01', **common)
+        # WH-PAYER-1 Medicare FFS member (MBI) claim that CCLF Part B also carries
+        L.c837('x12_payer/WH-PAYER-1/2027-W10/1_837P_2027-W10.x12', '1002', 'k1', 'WHN-PCLM-p1', '2DX0U77CP79',
+               lines=[('99213', 120.0, '2027-03-02')])
+        L.c835('x12_payer/WH-PAYER-1/2027-W12/1_835_2027-W12.x12', '1003', '0001', 'e1', 'WHN-PCLM-p1', '1', 50.0,
+               eff='2027-03-20')
+        L.add('cclf_partb_physicians', 'cms_cclf_csv/partb_physicians/P.A9999.ACO.ZC5Y27.D270412.T1.csv',
+              cur_clm_uniq_id='6001', clm_line_num='1', bene_mbi_id='2DX0U77CP79', clm_type_cd='71', clm_from_dt='2027-03-02',
+              clm_thru_dt='2027-03-02', clm_line_from_dt='2027-03-02', clm_line_hcpcs_cd='99213', clm_line_cvrd_pd_amt='70.64',
+              clm_line_alowd_chrg_amt='88.30', clm_adjsmt_type_cd='0', clm_cntl_num='20270310AAAAAAAAAA',
+              clm_efctv_dt='2027-03-10', clm_idr_ld_dt='2027-03-10', file_date='2027-04-12')
+        by, rep = run(L)
+        ids = {r['payer_claim_id'] for r in by['payer_medical_claims']}
+        self.assertEqual(ids, {'WHN-CLM-inst1', 'WHN-PCLM-p1'})  # no CCLF-A / CCLF-B copies
+        inst = claims(by, 'WHN-CLM-inst1')[0]
+        self.assertEqual(inst['cclf_claim_id'], 'A-DDFA4EB585')  # cancel joined the original's chain by tail
+        self.assertEqual(inst['ms_drg'] is not None, True)
+        self.assertEqual(rep['dropped']['cclf_claim_matched_mssp_x12'], 1)
+        p1 = claims(by, 'WHN-PCLM-p1')[0]
+        self.assertEqual((p1['paid_amount'], p1['cclf_claim_id']), (50.0, 'B-AAAAAAAAAA'))  # own amounts, linked
+        self.assertEqual(rep['dropped']['cclf_claim_matched_payer_x12'], 1)
+
+    def test_same_day_reversal_is_final_and_recoupment_mapped(self):
+        L = Landing()
+        f8 = 'x12_payer/WH-PAYER-0/2026-W41/0_837P_2026-W41.x12'
+        L.c837(f8, '1100', 'k1', 'WHN-PCLM-rr', '05414FCBFB', lines=[('99213', 200.0, '2026-10-01')])
+        L.c835('x12_payer/WH-PAYER-0/2026-W42/0_835_2026-W42.x12', '1101', '0001', 'e1', 'WHN-PCLM-rr', '1', 0.0, 141.02,
+               eff='2026-10-16')
+        f47 = 'x12_payer/WH-PAYER-0/2026-W47/0_835_2026-W47.x12'
+        L.c835(f47, '1102', '0001', 'e1', 'WHN-PCLM-rr', '22', 0.0, 141.02, eff='2026-11-20')
+        L.c835(f47, '1102', '0001', 'e2', 'WHN-PCLM-rr', '1', 0.0, 131.46, eff='2026-11-20')
+        # recoupment: the flat row keeps the original PAID_DATE and arrives in a later file; the 835 sends CLP02 22
+        L.c837('x12_payer/WH-PAYER-C2/2028-W02/C2_837P_2028-W02.x12', '1200', 'k1', 'WHN-CLM-rc', 'C2MEMBER11',
+               lines=[('99213', 60.0, '2028-01-05')])
+        L.c835('x12_payer/WH-PAYER-C2/2028-W03/C2_835_2028-W03.x12', '1201', '0001', 'e1', 'WHN-CLM-rc', '1', 17.41, 4.52,
+               eff='2028-01-21')
+        L.c835('x12_payer/WH-PAYER-C2/2028-W11/C2_835_2028-W11.x12', '1202', '0001', 'e1', 'WHN-CLM-rc', '22', -17.41,
+               4.52, eff='2028-03-17', cas=[('CO', '27', 17.41)])
+        for f, st, paid in (('payers/WH-PAYER-C2/2028-01/C2_MEDICAL_20280205.csv', 'paid', '17.41'),
+                            ('payers/WH-PAYER-C2/2028-03/C2_MEDICAL_20280405.csv', 'recouped', '-17.41')):
+            L.add('payers_medical', f, claim_id='WHN-CLM-rc', claim_line='1', member_id='C2MEMBER11', claim_type='P',
+                  paid_date='01/18/2028', claim_status=st, paid=paid, allowed='21.93', billed='60.0', frequency_code='1',
+                  procedure_code='99213', network='IN', payer='C2')
+        # a recoupment delivered before the payment it takes back
+        L.c837('x12_payer/WH-PAYER-C2/2028-W05/C2_837P_2028-W05.x12', '1300', 'k1', 'WHN-CLM-early', 'C2MEMBER11',
+               lines=[('99213', 90.0, '2028-02-01')])
+        L.c835('x12_payer/WH-PAYER-C2/2028-W07/C2_835_2028-W07.x12', '1301', '0001', 'e1', 'WHN-CLM-early', '22', -66.66,
+               eff='2028-02-18', cas=[('CO', '27', 66.66)])
+        L.c835('x12_payer/WH-PAYER-C2/2028-W12/C2_835_2028-W12.x12', '1302', '0001', 'e1', 'WHN-CLM-early', '1', 66.66,
+               eff='2028-03-24')
+        by, rep = run(L)
+        rr = claims(by, 'WHN-PCLM-rr')
+        self.assertEqual([r['claim_status'] for r in rr], ['paid', 'paid', 'reversed'])
+        self.assertEqual(rr[2]['supersedes_record_id'], rr[1]['record_id'])
+        rc = claims(by, 'WHN-CLM-rc')
+        self.assertEqual([r['claim_status'] for r in rc], ['paid', 'recouped'])  # one recoupment, not an extra flat event
+        self.assertEqual(rc[1]['carc'], 'CO-27')
+        early = claims(by, 'WHN-CLM-early')
+        self.assertEqual([r['claim_status'] for r in early], ['paid', 'reversed'])
+        self.assertEqual(rep['cross_check']['takeback_before_payment_reordered'], 1)
 
 
 if __name__ == '__main__':

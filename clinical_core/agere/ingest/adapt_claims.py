@@ -801,10 +801,6 @@ def _medical(ctx):
         cid = _s(r['patient_control_number'])
         if not cid:
             continue
-        base, suffix = _split_claim_id(cid)
-        if '-D' in suffix:
-            rep['dropped']['duplicate_submission_loop_837'] += 1
-            continue
         freq = _s(r['frequency_code']) or '1'
         if (cid, freq) in seen_loop:
             rep['dropped']['repeat_837_loop'] += 1
@@ -847,9 +843,6 @@ def _medical(ctx):
         cid = _s(r['patient_control_number'])
         if not cid:
             continue
-        if '-D' in _split_claim_id(cid)[1]:
-            rep['dropped']['duplicate_submission_835'] += 1
-            continue
         key = (cid, _s(r['payer_claim_control_number']), _s(r['claim_status_code']), r['paid_amount'])
         if key in seen_ev:
             rep['dropped']['repeat_835_event'] += 1
@@ -864,10 +857,10 @@ def _medical(ctx):
     # ---- CCLF (Medicare FFS)
     cclf = _cclf_claims(ctx)
     # ---- assemble
-    claim_ids = set(sub) | set(void) | set(events) | {c for c in flat if '-D' not in _split_claim_id(c)[1]}
-    for c in list(flat):
-        if '-D' in _split_claim_id(c)[1]:
-            rep['dropped']['duplicate_submission_flat'] += len(flat[c]['rows'])
+    # -D duplicate submissions stay their own claims: the payer denied them (CARC 18) and that denial is an event of the
+    # payer feed; client_data marks CARC 18 as duplicate_submission so they never count in metrics.
+    claim_ids = set(sub) | set(void) | set(events) | set(flat)
+    rep['cross_check']['duplicate_submission_claims_kept'] = sum(1 for c in claim_ids if '-D' in _split_claim_id(c)[1])
     built = {}
     for cid in claim_ids:
         built[cid] = _build_claim(ctx, cid, sub.get(cid), void.get(cid), events.get(cid, []), flat.get(cid),
@@ -878,7 +871,7 @@ def _medical(ctx):
             rep['cross_check']['provider_837_without_payer_copy'] += 1
     # flat cross-check (10 flat payers): ids in flat but not in payer 837, and status agreement
     for cid, f in flat.items():
-        if cid not in sub and cid not in void and '-D' not in _split_claim_id(cid)[1]:
+        if cid not in sub and cid not in void:
             rep['cross_check']['flat_claim_not_in_payer_837'] += 1
     # header-only -X crossover/secondary loops: the services are the primary claim's (same charge and diagnoses)
     for cid, c in built.items():
@@ -1117,6 +1110,9 @@ def _build_claim(ctx, cid, sloop, vloop, evs, flat, dx, lines, adj, svc, prov_by
             if k in used_flat or k[1] not in ok:
                 continue
             gap = _days(x['paid_date'], e['_paid_date'])
+            if k[1] in ('reversed', 'recouped', 'voided'):  # take-back rows keep the original PAID_DATE; the file is later
+                g2 = _days(x['fd'], e['_paid_date'])
+                gap = g2 if gap is None or (g2 is not None and abs(g2) < abs(gap)) else gap
             if gap is None or abs(gap) > 45:
                 continue
             fpaid = _money(x['row']['paid'])
@@ -1149,7 +1145,7 @@ def _build_claim(ctx, cid, sloop, vloop, evs, flat, dx, lines, adj, svc, prov_by
               'paid_date': f['paid_date'] if f is not None and f['paid_date'] else e['_paid_date'],
               'remit_date': e['_paid_date'], 'claim_frequency_code': freq, 'payer_icn': _s(e['payer_claim_control_number']),
               'claim_filing_indicator': _s(e['claim_filing_indicator']), 'remark_codes': _s(e['remark_codes']),
-              '_available': e['_available'] or e['_paid_date'],
+              '_available': e['_available'] or e['_paid_date'], '_order': len(evlist),
               '_key': ('835', _s(e['payer_claim_control_number']), code, paid),
               '_lin': [_lin('x12_835_claim', e)] + [_lin('x12_835_adjustment', x) for x in a] +
                       ([_lin('payers_medical', l) for l in f['lines'].values()] if f else [])}
@@ -1184,7 +1180,27 @@ def _build_claim(ctx, cid, sloop, vloop, evs, flat, dx, lines, adj, svc, prov_by
                        'allowed_amount': None, 'patient_responsibility': None, 'total_charge': h.get('total_charge'),
                        'carc': None, 'paid_date': None, 'claim_frequency_code': _s((head or {}).get('frequency_code')) or '1',
                        '_available': h.get('claim_received_date'), '_key': ('pending',), '_lin': []})
-    evlist.sort(key=lambda e: (e['paid_date'] or '9999', 0 if e['adjudication_source'] == 'x12_835' else 1))
+    # same date: the payment or denial first, the take-back (reversal / void / recoupment) after it, as the
+    # payer remits a reversal of the earlier payment beside the corrected payment; then file order
+    # order by the remittance (835) date when there is one: the flat PAID_DATE of a void/recoupment repeats the original
+    # payment's date, so it cannot order events
+    evlist.sort(key=lambda e: (e.get('remit_date') or e['paid_date'] or '9999', 1 if e['claim_status'] in ('reversed', 'voided', 'recouped') else 0,
+                               0 if e['adjudication_source'] == 'x12_835' else 1, e.get('_order', 0)))
+    # a reversal/recoupment delivered before the payment it takes back (a late-period file defect) applies after that
+    # payment: move it behind the first later payment of the same amount
+    i = 0
+    while i < len(evlist):
+        e = evlist[i]
+        amt = abs(e['paid_amount'] or 0)
+        if e['claim_status'] in ('reversed', 'recouped') and amt and not any(
+                x['claim_status'] == 'paid' and abs(x['paid_amount'] or 0) == amt for x in evlist[:i]):
+            j = next((j for j in range(i + 1, len(evlist)) if evlist[j]['claim_status'] == 'paid'
+                      and abs(evlist[j]['paid_amount'] or 0) == amt), None)
+            if j is not None:
+                evlist.insert(j, evlist.pop(i))
+                rep['cross_check']['takeback_before_payment_reordered'] += 1
+                continue
+        i += 1
     if vloop:
         lin.append(_lin('x12_837_claim', vloop))
     prev = None
@@ -1301,7 +1317,8 @@ def _cclf_claims(ctx):
         if adj not in ('0', '1', '2'):
             rep['dropped']['malformed_cclf_row'] += 1
             continue
-        chain = 'A-' + (_s(r['clm_org_cntl_num']) or _s(r['clm_cntl_num']) or num_id(r['cur_clm_uniq_id']))
+        # original, cancellation and re-issue share the clm_cntl_num tail (chars 9-18), as in Part B
+        chain = 'A-' + (_tail(_s(r['clm_org_cntl_num']) or _s(r['clm_cntl_num'])) or num_id(r['cur_clm_uniq_id']))
         versions[chain].append(('A', r, sorted(revs.get(num_id(r['cur_clm_uniq_id']), []),
                                                key=lambda x: _int(x['clm_line_num']) or 0),
                                 sorted(dgns.get(num_id(r['cur_clm_uniq_id']), []),
@@ -1332,7 +1349,7 @@ def _cclf_claims(ctx):
         claims[chain] = _cclf_claim(ctx, chain, vs)
     idx_b, idx_a = defaultdict(set), defaultdict(set)
     for chain, c in claims.items():
-        if chain.startswith('B-'):
+        if chain.startswith(('B-', 'DME-')):
             for l in c['lines']:
                 idx_b[(c['header']['member_id'], l['procedure_code'], l['service_date'])].add(chain)
         elif chain.startswith('A-'):
@@ -1426,30 +1443,40 @@ def _cclf_claim(ctx, chain, vs):
 
 
 def _match_cclf(ctx, built, cclf):
-    """MSSP X12 claim == CCLF claim: keep the X12 claim (events, ids), take CCLF allowed/paid, drop the CCLF copy."""
+    """A Medicare FFS X12 claim (WH-PAYER-MSSP, or the MBI members of WH-PAYER-0/1/2) == CCLF claim: keep the X12 claim
+    (events, ids) and drop the CCLF copy. Professional/DME: MBI + HCPCS + line service date. Institutional: MBI +
+    statement from/through, preferring the CCLF claim with the same bill type, billing NPI and total charge. MSSP claims
+    take the CCLF allowed/paid amounts; payer 0/1/2 claims keep their own amounts and get the cclf_claim_id link."""
     rep = ctx.rep
     claims = cclf['claims']
     for cid, c in built.items():
         h = c['header']
-        if _short(h.get('payer_id')) != 'MSSP' or '-X' in _split_claim_id(cid)[1]:
+        payer = _short(h.get('payer_id'))
+        if payer not in ('MSSP', '0', '1', '2') or '-X' in _split_claim_id(cid)[1] or not MBI.match(h.get('member_id') or ''):
             continue
         hits = Counter()
         if h.get('claim_type') == 'institutional':
             for ch in cclf['idx_a'].get((h['member_id'], h.get('service_from'), h.get('service_to')), ()):
-                hits[ch] += 1
+                ch_h = claims[ch]['header']
+                hits[ch] += 1 + (ch_h.get('type_of_bill') == h.get('type_of_bill')) + \
+                    (ch_h.get('billing_provider_npi') == h.get('billing_provider_npi')) + \
+                    (claims[ch]['events'][0].get('total_charge') == h.get('total_charge'))
         else:
             for l in c['lines']:
                 for ch in cclf['idx_b'].get((h['member_id'], l['procedure_code'], l['service_date']), ()):
                     hits[ch] += 1
         hits = Counter({ch: n for ch, n in hits.items() if not claims[ch]['matched']})
         if not hits:
-            rep['cross_check']['mssp_x12_without_cclf_match'] += 1
+            rep['cross_check'][f'medicare_ffs_x12_without_cclf_match:{payer}'] += 1
             continue
         ch = hits.most_common(1)[0][0]
         cc = claims[ch]
         cc['matched'] = True
-        rep['dropped']['cclf_claim_matched_mssp_x12'] += 1
+        rep['dropped']['cclf_claim_matched_mssp_x12' if payer == 'MSSP' else 'cclf_claim_matched_payer_x12'] += 1
         h['cclf_claim_id'] = ch
+        if payer != 'MSSP':
+            c['_lin'] = c['_lin'] + cc['events'][-1]['_lin']
+            continue
         cur = cc['events'][-1]
         c['_lin'] = c['_lin'] + cc['events'][-1]['_lin']
         for e in c['events']:
