@@ -250,7 +250,12 @@ def handle(method, path, body=None, *, root=None, credentials=None, on_usage=Non
             if not q:
                 raise ValueError('question is required')
             t0 = __import__('time').time()
-            out = ws.ask(q, answer_type=body.get('answer_type') or None)
+            # one box for everything: questions, plans, simulations and deliverables (intent_router; deterministic rules)
+            from . import intent_router
+            intent = intent_router.classify(q, body.get('answer_type') or None)
+            if intent in ('plan', 'simulate', 'deliverable') and not can_write:
+                return 403, {'error': f'Your role can read and ask questions only ({intent} requests write work)'}
+            out = intent_router.handle(ws, q, answer_type=body.get('answer_type') or None)
             if on_usage:
                 on_usage(ws.slug, {'question': q[:300], 'cost_usd': out.get('cost_usd'), 'seconds': round(__import__('time').time() - t0, 2),
                                    'decision': out.get('decision')})
