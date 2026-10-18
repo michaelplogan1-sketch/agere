@@ -7,7 +7,9 @@ Streams produced (field names as docs/agere/canonical_streams.json and the seman
     encounters (with diagnoses list), conditions (EHR problem lists, diagnosis_basis 'ehr_problem_list' as in v2.8),
     labs, vitals (wide columns), mood_questionnaires (PHQ-2/PHQ-9 totals found in flowsheets / result tables),
     medication_orders, medication_lists, appointments (one record per delivered version), notes, immunizations,
-    allergies, adt_messages. Problem-list entries are emitted once, on `conditions` (they also carry problem_code), so
+    allergies, adt_messages (one per HL7 ADT message, raw codes) and adt (one canonical hospital event per visit and
+    kind, v2.8 vocabulary: emergency_registration (A04, class E), admission (A01 / A06), observation_start (A01/A04 in
+    observation), discharge (A03, destination = decoded PV1-36); A08 updates are not events). Problem-list entries are emitted once, on `conditions` (they also carry problem_code), so
     the semantic layer's condition table, which reads conditions and problem_lists alike, does not count them twice.
     No procedure table is delivered by any EHR feed (athena CLINICALSERVICE*/Epic hsp_* are empty), so none are emitted.
 
@@ -1903,6 +1905,7 @@ class _Run:
         for k, m in msgs.items():
             visits[_c(m.get('visit_number')) or f'msg:{k}'].append((_iso(m.get('event_recorded_datetime') or m.get('message_datetime')) or '', k, m))
         cands = defaultdict(list)
+        events = {}  # (visit, event) -> (message time, record): one canonical 'adt' event per visit and kind
         for visit, ms in visits.items():
             ms.sort(key=lambda x: (x[0], _order(x[2])))
             prior_class, admit = None, None
@@ -1938,9 +1941,41 @@ class _Run:
                             'hospital_service': _c(m.get('hospital_service')), 'admit_source': _c(m.get('admit_source'))})
                 if dcode and dcode not in HL7_DISPOSITION:
                     self.unmap('hl7.discharge_disposition', dcode)
+                ev = _adt_event(trig, pclass, _c(m.get('assigned_location')))
+                if ev:
+                    e = self.base('adt', m, 'hl7_message', vendor='hl7', instance=_c(m.get('sending_facility')) or auth or 'unknown', org=org,
+                                  keys=[hl7_key(auth, pid)], source_patient_id=pid, event=t or m.get('message_datetime'),
+                                  recorded=m.get('message_datetime'), encounter_id=_c(m.get('visit_number')))
+                    loc = _c(m.get('assigned_location'))
+                    dest = HL7_DISPOSITION.get(dcode or '', dcode) if dcode else None
+                    e.update({'event': ev, 'patient_class': _adt_class(pclass, loc),
+                              'admission_status': {'admission': 'inpatient', 'observation_start': 'outpatient_observation',
+                                                   'emergency_registration': 'emergency'}.get(ev),
+                              'unit': ADT_UNIT.get(loc or '', _snake(loc)), 'visit_number': _c(m.get('visit_number')),
+                              'trigger_event': trig, 'message_control_id': _c(m.get('message_control_id')),
+                              'admit_source': 'emergency_department' if ev in ('admission', 'observation_start') and prior_class == 'E' else None,
+                              'prior_patient_class': _adt_class(prior_class, None) if prior_class and prior_class != pclass else None,
+                              'destination': dest if ev == 'discharge' else None, 'disposition': dest if ev == 'discharge' else None,
+                              'diagnosis': (_dg1(dis) if ev == 'discharge' and dis else _dg1(adm) if adm else None)})
+                    if ev == 'discharge':
+                        # The concept library matches ED / inpatient / observation on patient_class of ANY adt record, so a
+                        # discharge carrying it would count the visit a second time (465 pilot ED visits end the next day).
+                        # The class at discharge is kept under its own name; the admit-side record carries patient_class.
+                        e['discharge_patient_class'] = e.pop('patient_class')
+                        e['admit_time'] = admit
+                    cur = events.get((visit, ev))
+                    if cur is None or (ev == 'discharge' and t >= cur[0]):  # first admit / registration, last discharge
+                        if cur is not None:
+                            self.drop('adt_repeated_event_for_visit', 'adt')
+                        events[(visit, ev)] = (t, e)
+                    else:
+                        self.drop('adt_repeated_event_for_visit', 'adt')
+                elif trig != 'A08':
+                    self.unmap('hl7.adt_trigger_without_event', f'{trig}:{pclass}')
                 prior_class = pclass or prior_class
                 cands[(visit, _c(m.get('message_control_id')) or k)].append((_order(m), rec, False))
         yield from self.emit(self.versions('adt_messages', cands, chain=False))
+        yield from self.emit(self.versions('adt', {k: [((), e, False)] for k, (_, e) in events.items()}, chain=False))
 
     def oru(self):
         if not self.has('hl7_message') or not self.has('hl7_observation'):
@@ -2103,6 +2138,37 @@ def _ref(ref):
     if not isinstance(ref, str) or not ref:
         return None
     return ref.rsplit('/', 1)[-1]
+
+
+ADT_UNIT = {'ED': 'emergency_department', 'MED': 'medical_unit', 'OBS': 'observation_unit', 'ICU': 'intensive_care_unit',
+            'SURG': 'surgical_unit'}
+ADT_CLASS = {'E': 'emergency', 'I': 'inpatient', 'O': 'outpatient', 'B': 'obstetrics', 'R': 'recurring'}
+
+
+def _adt_class(pclass, loc):
+    """PV1-2 decoded as in v2.8; class O in an observation unit is an observation patient."""
+    if pclass == 'O' and (loc or '').upper() in ('OBS', '') :
+        return 'observation'
+    return ADT_CLASS.get(pclass or '', _snake(pclass))
+
+
+def _adt_event(trig, pclass, loc):
+    """Canonical hospital event (v2.8 'adt' vocabulary) for one ADT trigger; None for updates (A08) and others."""
+    obs = pclass == 'O' or (loc or '').upper() == 'OBS'
+    if trig == 'A03':
+        return 'discharge'
+    if trig == 'A06':
+        return 'observation_start' if pclass == 'O' else 'admission'
+    if trig == 'A01':
+        return 'observation_start' if obs else 'admission'
+    if trig == 'A04':
+        if pclass == 'E' or (loc or '').upper() == 'ED':
+            return 'emergency_registration'
+        if obs:
+            return 'observation_start'
+        if pclass == 'I':
+            return 'admission'
+    return None
 
 
 def _dg1(d):

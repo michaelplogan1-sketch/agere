@@ -379,6 +379,54 @@ class Hl7Tests(unittest.TestCase):
         self.assertEqual(a03['event_date'], '2027-11-12')
         self.assertTrue(all(m.get('supersedes_record_id') is None for m in by['adt_messages']))
         self.assertEqual(rep['dropped']['hl7_resend_duplicate'], 1)
+        # canonical hospital events: ED registration, inpatient admission (from the ED), discharge home
+        ev = {e['event']: e for e in by['adt']}
+        self.assertEqual(sorted(ev), ['admission', 'discharge', 'emergency_registration'])
+        reg, adm, dis = ev['emergency_registration'], ev['admission'], ev['discharge']
+        self.assertEqual((reg['patient_class'], reg['unit'], reg['event_time']), ('emergency', 'emergency_department', '2027-11-08T06:00:00'))
+        self.assertEqual((adm['patient_class'], adm['admit_source'], adm['prior_patient_class']), ('inpatient', 'emergency_department', 'emergency'))
+        self.assertEqual(adm['diagnosis']['code'], 'J18.9')
+        self.assertEqual((dis['destination'], dis['discharge_patient_class'], dis['event_date']), ('home', 'inpatient', '2027-11-12'))
+        self.assertNotIn('patient_class', dis)  # a discharge must not match the ED / inpatient concepts a second time
+        for e in ev.values():
+            self.assertEqual(e['encounter_id'], 'WHN-E-849d504b933a74b218fb')
+            self.assertEqual(e['organization_id'], 'WHN-HOSPITAL-AK-0')
+            self.assertEqual(e['patient_id'], 'P|hl7:HOSPAK0:L-AK-0-D8DEB363')
+            self.assertIsNone(e.get('supersedes_record_id'))
+        # the values hit the concept library's ADT bindings
+        from clinical_core.agere.clinical import concepts
+        import re as _re
+        f = concepts.ENCOUNTERS
+        self.assertRegex(reg['event'], f['emergency_visit']['fields']['adt']['event'])
+        self.assertRegex(adm['event'], f['inpatient_admission']['fields']['adt']['event'])
+        self.assertRegex(adm['patient_class'], f['inpatient_admission']['fields']['adt']['patient_class'])
+
+    def test_adt_events_updates_reposts_and_class_change(self):
+        db = sqlite3.connect(':memory:')
+        f = 'hl7/adt/2028-01/WHN-HOSPITAL-TN-0_20280105.hl7'
+        common = {'message_code': 'ADT', 'patient_id': 'L-TN-0-00000001', 'patient_id_assigning_authority': 'HOSPTN0', 'sending_facility': 'HOSPTN0',
+                  'visit_number': 'WHN-E-000000000000000000aa'}
+        msgs = [('M1', 'A04', 'E', 'ED', '2028-01-05T10:00:00', None), ('M2', 'A08', 'E', 'ED', '2028-01-05T11:00:00', None),
+                ('M3', 'A06', 'I', 'MED', '2028-01-05T15:00:00', None), ('M4', 'A03', 'I', 'MED', '2028-01-07T09:00:00', '03'),
+                ('M5', 'A03', 'I', 'MED', '2028-01-07T12:00:00', '03')]  # a second discharge message for the same visit
+        table(db, 'hl7_message', [{**common, 'message_key': f'f:{i}', 'message_control_id': cid, 'trigger_event': trig,
+                                   'message_type': f'ADT^{trig}', 'patient_class': pc, 'assigned_location': loc, 'message_datetime': t,
+                                   'event_recorded_datetime': t, 'discharge_disposition': disp}
+                                  for i, (cid, trig, pc, loc, t, disp) in enumerate(msgs)], feed='hl7', drop='2028-01', file=f)
+        # an observation stay at another hospital: class O in OBS, no visit-level update
+        table(db, 'hl7_message', [{'message_code': 'ADT', 'patient_id': 'L-TN-0-00000002', 'patient_id_assigning_authority': 'HOSPTN0',
+                                   'sending_facility': 'HOSPTN0', 'visit_number': 'WHN-E-000000000000000000bb', 'message_key': 'g:1',
+                                   'message_control_id': 'N1', 'trigger_event': 'A01', 'message_type': 'ADT^A01', 'patient_class': 'O',
+                                   'assigned_location': 'OBS', 'message_datetime': '2028-01-06T08:00:00'}], feed='hl7', drop='2028-01', file=f)
+        recs, by, rep = run(db)
+        self.assertEqual(len(by['adt_messages']), 6)  # every message kept as received
+        ev = sorted((e['visit_number'][-2:], e['event'], e.get('patient_class') or e['discharge_patient_class'], e['event_time']) for e in by['adt'])
+        self.assertEqual(ev, [('aa', 'admission', 'inpatient', '2028-01-05T15:00:00'), ('aa', 'discharge', 'inpatient', '2028-01-07T12:00:00'),
+                              ('aa', 'emergency_registration', 'emergency', '2028-01-05T10:00:00'),
+                              ('bb', 'observation_start', 'observation', '2028-01-06T08:00:00')])
+        dis = next(e for e in by['adt'] if e['event'] == 'discharge')
+        self.assertEqual(dis['destination'], 'snf')
+        self.assertEqual(rep['dropped']['adt_repeated_event_for_visit'], 1)
 
 
 class VariantTests(unittest.TestCase):
