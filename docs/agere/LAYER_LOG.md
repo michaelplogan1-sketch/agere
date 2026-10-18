@@ -387,3 +387,7 @@ router, operator router and Opus reconcile leave the answer path (BUILD_LOG.md s
   2/9; revenue cycle 8/15, hospital operations 13/15). The fidelity audit against the generator's reference rendering
   (same population, public JSON delivery) found ~11.9K duplicated Medicare FFS claims and under-counted denials and
   reversals; claims now match the reference to within a few per payer. Enrollment spans fixed next (a703d94).
+- **N6 (claims + enrollment fixes, a703d94):** 65/150 (count 40/86, value 19/39, table 5/16, patient_set 1/9). N5 71 vs
+  N6 65 on near-identical data is run-to-run spread of the analysts (they are not deterministic), so the native workspace
+  sits at roughly 43-47% on this set. Data fidelity is now close to the reference for claims, adjudication statuses and
+  enrollment; the remaining gap is in how questions are answered on native data, not in missing or duplicated rows.
