@@ -153,7 +153,7 @@ def main():
     for qid, sql in queries(as_of, death_table=has_death).items():
         pids = sorted({r[0] for r in db.execute(sql) if r[0]})
         keys = ws.customer_ids(pids)
-        ids = sorted({native_id(keys.get(p)) or p for p in pids})
+        ids = sorted({keys.get(p) or p for p in pids})
         fp = hashlib.sha256('\n'.join(ids).encode()).hexdigest()[:16]
         out['questions'][qid] = {'count': len(ids), 'fingerprint': fp, 'ids': ids}
         print(f'{qid:8s} {len(ids):6d}  {fp}')

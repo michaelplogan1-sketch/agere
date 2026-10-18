@@ -103,7 +103,7 @@ def selftest():
             reads.add(qid)
         pids = sorted({r[0] for r in db.execute(sql) if r[0]})
         km = ws.customer_ids(pids)
-        planted.append({'id': qid, 'patient_ids': sorted({native_id(km.get(p)) or p for p in pids}), 'decision': 'planted'})
+        planted.append({'id': qid, 'patient_ids': sorted({km.get(p) or p for p in pids}), 'decision': 'planted'})
     s3 = score(planted, ref)
     failed = {r['id'] for r in s3['questions'] if not r['pass']}
     checks['planted_fault_fails_only_affected'] = bool(failed) and failed <= reads
