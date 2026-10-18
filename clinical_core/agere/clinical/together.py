@@ -190,6 +190,12 @@ SPECIALIST_ROUTES = frozenset({'local_compiler', 'semantic_cache', 'exact_questi
                                'cohort_family'})  # cohort_families.py: code-rendered SQL for the stated definition
 
 
+def engines_defer_on_definitions():
+    """AGERE_ENGINES_DEFER_ON_DEFINITIONS (default on): on a question that states its own definition, analytic engines do
+    not skip the analysts, and an analyst answer that executes the definition wins over a differing engine answer."""
+    return os.environ.get('AGERE_ENGINES_DEFER_ON_DEFINITIONS', 'on').strip().lower() != 'off'
+
+
 def specialists_first():
     """AGERE_SPECIALISTS_FIRST (default on): the compiler, caches, governed metrics, engines and the typed decider answer
     first; the language-model analysts start only when none of them claims the question."""
@@ -606,6 +612,16 @@ def decide(stack, question, fast, fast_error, analyst, analyst_state, *, as_of=N
             _note(out, f'Analytic engine ({", ".join(engines)}) answer; the semantic analyst cannot compute this '
                   'from the semantic layer, so it is not cross-checked.')
             together.update(decision='engine_only', winner='fast', reason='the semantic analyst has no engine for this')
+        elif fk != ak and _inline_definition(question) and engines_defer_on_definitions():
+            # The question states its own definition and the analysts executed it: their answer wins over the engine's
+            # own reading (the engine's answer stays as a reading).
+            out = dict(a_answer)
+            out['grounding'] = list(out.get('grounding') or []) + [
+                _reading(f'Analytic engine ({", ".join(engines)})', f_answer, _fast_sql(f_answer, fast.get('planner_receipt')))]
+            _confidence(out, 'unverified', 'The stated definition, executed by the independent analysts; the engine reads it differently',
+                        evidence='analysts_definition_over_engine')
+            together.update(decision='analysts_over_engine', winner='analyst', reason='stated definition; engine differs')
+            return {**fast, 'answer': out}, together, rec
         elif fk != ak:
             why = 'the semantic analyst reads it differently'
             _confidence(out, 'low', f'Analytic engine answer kept; {why}', evidence='engine_kept_analyst_differs',
@@ -723,7 +739,10 @@ def compose_together(stack, question, *, planning='auto', answer_type=None):
     as_of = _snapshot_as_of(stack)
     future, model = None, semantic_model()
     # A requested patient list is answered by the analysts' executed definition (engines return ranked, capped worklists).
-    engine = [] if answer_type == 'patient_set' else _compiled_engine(stack, question, as_of)
+    # A question that states its own definition is answered by that definition: engines do not skip the analysts there
+    # (measured: engine routes on defined questions were right 1 of 8 times on the native bank).
+    engine = [] if answer_type == 'patient_set' or (_inline_definition(question) and engines_defer_on_definitions()) \
+        else _compiled_engine(stack, question, as_of)
     fast, fast_error = None, None
     from .economical_planner import defer_to_analyst
     first = specialists_first() and semantic_path.is_file() and not engine and deferral_on()

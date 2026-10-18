@@ -223,6 +223,15 @@ class TogetherTests(unittest.TestCase):
         self.assertEqual(readings, {'Agere fast path': 5, 'Semantic analyst': 1})
         self.assertEqual(result['together']['decision'], 'unresolved')
 
+    def test_stated_definition_beats_a_differing_engine(self):
+        table = [{'group': 'a', 'median_days': 30}]
+        stack = FakeStack(self.temp.name, fast_result(answer('table', table=table), operation='survival'))
+        provider = FakeProvider(lambda body: answer('table', table=[{'group': 'a', 'median_days': 45}]), choose(None))
+        together.TRANSPORT = provider
+        result = together.compose_together(stack, 'Median days to follow-up by group? Definition: follow-up = office visit within 30 days.')
+        self.assertEqual(result['answer']['table'], [{'group': 'a', 'median_days': 45}])
+        self.assertEqual(result['together']['decision'], 'analysts_over_engine')
+
     def test_engine_answer_is_never_replaced(self):
         table = [{'group': 'a', 'median_days': 30}]
         stack = FakeStack(self.temp.name, fast_result(answer('table', table=table), operation='survival'))
