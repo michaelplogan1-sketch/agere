@@ -75,7 +75,7 @@ class Workspace:
     # --- state -----------------------------------------------------------------------------------------------------
 
     @classmethod
-    def create(cls, name, source, *, as_of=None, raw='all', root=None):
+    def create(cls, name, source, *, as_of=None, raw='all', root=None, credential=None):
         """raw: 'all' copies every source table as raw_<table>, 'unmapped' only tables no entity uses, 'none' skips."""
         if raw not in ('all', 'unmapped', 'none'):
             raise ValueError("raw must be 'all', 'unmapped' or 'none'")
@@ -85,7 +85,8 @@ class Workspace:
             raise FileExistsError(f'Workspace {slug!r} already exists')
         d.mkdir(parents=True, exist_ok=True)
         state = {'schema': 'agere-workspace/1', 'slug': slug, 'name': name, 'source': str(source), 'as_of': as_of,
-                 'raw': raw, 'status': 'created', 'steps': {}, 'decisions': {}, 'created_at': _now(), 'error': None}
+                 'raw': raw, 'status': 'created', 'steps': {}, 'decisions': {}, 'created_at': _now(), 'error': None,
+                 'credential': credential}
         (d / 'workspace.json').write_text(json.dumps(state, indent=1))
         ws = cls(slug, root)
         ws._event('created', source=str(source))
@@ -140,7 +141,8 @@ class Workspace:
             if not self.landing_path.is_file():
                 return None  # nothing ingested yet; the ingest step creates it
             return connectors.SQLiteConnector(self.landing_path)
-        return connectors.connect(self.state['source'])
+        creds = getattr(self, 'credentials', None)  # hosted: the tenant's decrypted credentials, never os.environ
+        return connectors.connect(self.state['source'], credentials=creds) if creds else connectors.connect(self.state['source'])
 
     def summary(self):
         s = self.state

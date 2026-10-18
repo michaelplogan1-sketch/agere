@@ -5,8 +5,9 @@ tables(), columns(table), row_count(table), sample(table, n), rows(table, column
 close(). Connections are opened read-only (SQLite URI mode=ro, DuckDB read_only=True,
 Postgres default_transaction_read_only). Warehouse connectors (Snowflake, BigQuery,
 Databricks) are declared with the configuration they need but carry no credential
-handling: a pilot supplies an authenticated DB-API client (or the factories below build one from
-environment variables only), Agere never stores secrets. FilesConnector reads a folder of
+handling: a pilot supplies an authenticated DB-API client, or the factories below build one from environment
+variables or from an explicit `credentials` mapping (hosted multi-tenant use: values are read from the mapping and
+never written to os.environ). Connectors never store secrets. FilesConnector reads a folder of
 CSV / TSV / JSON / JSONL / Parquet extracts without writing anything into it.
 """
 import csv
@@ -15,6 +16,7 @@ import os
 import re
 import sqlite3
 import sys
+from collections.abc import Mapping
 from pathlib import Path
 
 IDENT = re.compile(r'^[A-Za-z_][A-Za-z0-9_$]*$')
@@ -110,13 +112,17 @@ class PostgresConnector(Connector):
     nothing here reads or stores credentials."""
     kind = 'postgres'
 
-    def __init__(self, dsn, schema='public'):
+    PG_KEYS = {'PGHOST': 'host', 'PGPORT': 'port', 'PGDATABASE': 'dbname', 'PGUSER': 'user', 'PGPASSWORD': 'password'}
+
+    def __init__(self, dsn, schema='public', credentials=None):
         try:
             import psycopg
         except ImportError as e:
             raise RuntimeError('psycopg is not installed; pip install psycopg to profile Postgres sources') from e
         self.schema = schema
-        self.db = psycopg.connect(dsn, autocommit=True)
+        # Explicit credentials become libpq connection parameters (added to the DSN); never written to os.environ.
+        extra = {kw: str(credentials[k]) for k, kw in self.PG_KEYS.items() if credentials and credentials.get(k)}
+        self.db = psycopg.connect(dsn, autocommit=True, **extra)
         self.db.execute('SET default_transaction_read_only = on')
 
     def tables(self):
@@ -294,9 +300,19 @@ class ClientConnector(Connector):
     def describe(self): return {'kind': self.kind, 'read_only': True, 'database': self.database}
 
 
-# -- Authenticated client factories: credentials come from the environment only, never stored -----------
+# -- Authenticated client factories: credentials come from the environment or an explicit mapping -------
+# With `credentials` (a dict using the same key names as the environment variables) values are read only from
+# that mapping and os.environ is neither read nor written for them. Errors name missing keys, never values.
 
-def _need_env(*names):
+def _get(credentials, name):
+    return os.environ.get(name) if credentials is None else credentials.get(name)
+
+
+def _need_env(*names, credentials=None):
+    if credentials is not None:
+        missing = [n for n in names if not credentials.get(n)]
+        if missing: raise RuntimeError(f'Credential key(s) missing: {", ".join(missing)}')
+        return [credentials[n] for n in names]
     out = []
     for n in names:
         v = os.environ.get(n)
@@ -305,50 +321,82 @@ def _need_env(*names):
     return out
 
 
-def snowflake_client(database, schema):
-    """snowflake-connector-python connection. Env: SNOWFLAKE_ACCOUNT, SNOWFLAKE_USER, SNOWFLAKE_PASSWORD or
-    SNOWFLAKE_PRIVATE_KEY_PATH (optional SNOWFLAKE_PRIVATE_KEY_PASSPHRASE), SNOWFLAKE_WAREHOUSE, SNOWFLAKE_ROLE."""
+def snowflake_client(database, schema, credentials=None):
+    """snowflake-connector-python connection. Keys (env or `credentials`): SNOWFLAKE_ACCOUNT, SNOWFLAKE_USER,
+    SNOWFLAKE_PASSWORD or SNOWFLAKE_PRIVATE_KEY (PEM text) / SNOWFLAKE_PRIVATE_KEY_PATH (optional
+    SNOWFLAKE_PRIVATE_KEY_PASSPHRASE), SNOWFLAKE_WAREHOUSE, SNOWFLAKE_ROLE."""
     try:
         import snowflake.connector as sf
     except ImportError as e:
         raise RuntimeError('snowflake-connector-python is not installed; pip install snowflake-connector-python') from e
-    account, user, warehouse = _need_env('SNOWFLAKE_ACCOUNT', 'SNOWFLAKE_USER', 'SNOWFLAKE_WAREHOUSE')
+    account, user, warehouse = _need_env('SNOWFLAKE_ACCOUNT', 'SNOWFLAKE_USER', 'SNOWFLAKE_WAREHOUSE', credentials=credentials)
     kw = dict(account=account, user=user, warehouse=warehouse, database=database, schema=schema,
               session_parameters={'QUERY_TAG': 'agere-readonly'})
-    if os.environ.get('SNOWFLAKE_ROLE'): kw['role'] = os.environ['SNOWFLAKE_ROLE']
-    key_path = os.environ.get('SNOWFLAKE_PRIVATE_KEY_PATH')
-    if key_path:
+    if _get(credentials, 'SNOWFLAKE_ROLE'): kw['role'] = _get(credentials, 'SNOWFLAKE_ROLE')
+    key_pem = _get(credentials, 'SNOWFLAKE_PRIVATE_KEY')
+    key_path = _get(credentials, 'SNOWFLAKE_PRIVATE_KEY_PATH')
+    if key_pem or key_path:
         try:
             from cryptography.hazmat.primitives import serialization
         except ImportError as e:
             raise RuntimeError('cryptography is not installed; pip install cryptography for Snowflake key-pair auth') from e
-        pw = os.environ.get('SNOWFLAKE_PRIVATE_KEY_PASSPHRASE')
-        with open(key_path, 'rb') as f:
-            key = serialization.load_pem_private_key(f.read(), password=pw.encode() if pw else None)
+        pw = _get(credentials, 'SNOWFLAKE_PRIVATE_KEY_PASSPHRASE')
+        if key_pem:
+            data = key_pem.encode() if isinstance(key_pem, str) else bytes(key_pem)
+        else:
+            with open(key_path, 'rb') as f: data = f.read()
+        try:
+            key = serialization.load_pem_private_key(data, password=pw.encode() if pw else None)
+        except (ValueError, TypeError):
+            src = 'SNOWFLAKE_PRIVATE_KEY' if key_pem else 'SNOWFLAKE_PRIVATE_KEY_PATH'
+            raise RuntimeError(f'{src} could not be loaded as a PEM private key (check SNOWFLAKE_PRIVATE_KEY_PASSPHRASE)') from None
         kw['private_key'] = key.private_bytes(serialization.Encoding.DER, serialization.PrivateFormat.PKCS8,
                                               serialization.NoEncryption())
     else:
-        kw['password'] = _need_env('SNOWFLAKE_PASSWORD')[0]
+        kw['password'] = _need_env('SNOWFLAKE_PASSWORD', credentials=credentials)[0]
     return sf.connect(**kw)
 
 
-def bigquery_client(project, dataset=None):
-    """BigQuery DB-API connection using Application Default Credentials / GOOGLE_APPLICATION_CREDENTIALS."""
+def bigquery_client(project, dataset=None, credentials=None):
+    """BigQuery DB-API connection. Without `credentials`: Application Default Credentials /
+    GOOGLE_APPLICATION_CREDENTIALS. With `credentials`: GOOGLE_APPLICATION_CREDENTIALS_JSON (service-account JSON
+    text) or GOOGLE_APPLICATION_CREDENTIALS (path to the JSON file) from the mapping."""
     try:
         from google.cloud import bigquery
         from google.cloud.bigquery import dbapi
     except ImportError as e:
         raise RuntimeError('google-cloud-bigquery is not installed; pip install google-cloud-bigquery') from e
-    return dbapi.connect(bigquery.Client(project=project))
+    if credentials is None:
+        return dbapi.connect(bigquery.Client(project=project))
+    from google.oauth2 import service_account
+    info, path = credentials.get('GOOGLE_APPLICATION_CREDENTIALS_JSON'), credentials.get('GOOGLE_APPLICATION_CREDENTIALS')
+    if info:
+        if isinstance(info, str):
+            try:
+                info = json.loads(info)
+            except ValueError:
+                raise RuntimeError('GOOGLE_APPLICATION_CREDENTIALS_JSON is not valid JSON') from None
+        if not isinstance(info, dict): raise RuntimeError('GOOGLE_APPLICATION_CREDENTIALS_JSON must be a JSON object')
+        try:
+            creds = service_account.Credentials.from_service_account_info(info)
+        except (ValueError, KeyError):
+            raise RuntimeError('GOOGLE_APPLICATION_CREDENTIALS_JSON is not a usable service-account key') from None
+    elif path:
+        creds = service_account.Credentials.from_service_account_file(path)
+    else:
+        raise RuntimeError('Credential key(s) missing: GOOGLE_APPLICATION_CREDENTIALS_JSON or GOOGLE_APPLICATION_CREDENTIALS')
+    return dbapi.connect(bigquery.Client(project=project, credentials=creds))
 
 
-def databricks_client(catalog, schema):
-    """databricks-sql-connector connection. Env: DATABRICKS_SERVER_HOSTNAME, DATABRICKS_HTTP_PATH, DATABRICKS_TOKEN."""
+def databricks_client(catalog, schema, credentials=None):
+    """databricks-sql-connector connection. Keys (env or `credentials`): DATABRICKS_SERVER_HOSTNAME,
+    DATABRICKS_HTTP_PATH, DATABRICKS_TOKEN."""
     try:
         from databricks import sql as dbsql
     except ImportError as e:
         raise RuntimeError('databricks-sql-connector is not installed; pip install databricks-sql-connector') from e
-    host, http_path, token = _need_env('DATABRICKS_SERVER_HOSTNAME', 'DATABRICKS_HTTP_PATH', 'DATABRICKS_TOKEN')
+    host, http_path, token = _need_env('DATABRICKS_SERVER_HOSTNAME', 'DATABRICKS_HTTP_PATH', 'DATABRICKS_TOKEN',
+                                       credentials=credentials)
     return dbsql.connect(server_hostname=host, http_path=http_path, access_token=token, catalog=catalog, schema=schema)
 
 
@@ -556,21 +604,26 @@ class FilesConnector(Connector):
     def describe(self): return {'kind': self.kind, 'read_only': True, 'path': str(self.path), 'tables': len(self._tables)}
 
 
-def connect(spec):
+def connect(spec, credentials=None):
     """Connector from a spec string: sqlite:///path, duckdb:///path, postgresql://..., files:///abs/dir (or a
     directory path), snowflake://DB/SCHEMA, bigquery://project/dataset, databricks://catalog/schema.
-    Warehouse credentials are read from environment variables by the client factories."""
+    Warehouse credentials are read from environment variables by the client factories, or, when `credentials`
+    (a dict with the same key names) is given, only from that mapping; os.environ is never written."""
+    if credentials is not None and not isinstance(credentials, Mapping):
+        raise TypeError('credentials must be a mapping of credential names to values')
     s = str(spec)
     if s.startswith('sqlite:///'): return SQLiteConnector(s[len('sqlite:///') - 1:])
     if s.startswith('duckdb:///'): return DuckDBConnector(s[len('duckdb:///') - 1:])
-    if s.startswith('postgres://') or s.startswith('postgresql://'): return PostgresConnector(s)
+    if s.startswith('postgres://') or s.startswith('postgresql://'):
+        return PostgresConnector(s) if credentials is None else PostgresConnector(s, credentials=credentials)
     if s.startswith('files://'): return FilesConnector(s[len('files://'):])
     for scheme, factory in (('snowflake', snowflake_client), ('bigquery', bigquery_client), ('databricks', databricks_client)):
         if s.startswith(scheme + '://'):
             parts = [p for p in s[len(scheme) + 3:].split('/') if p]
             if len(parts) != 2: raise ValueError(f'{scheme} spec must be {scheme}://<first>/<second>: {spec}')
             conn_parts = parts
-            return ClientConnector(factory(*conn_parts), scheme, '.'.join(conn_parts))
+            client = factory(*conn_parts) if credentials is None else factory(*conn_parts, credentials=credentials)
+            return ClientConnector(client, scheme, '.'.join(conn_parts))
     if s.endswith(('.sqlite', '.sqlite3', '.db')): return SQLiteConnector(s)
     if s.endswith('.duckdb'): return DuckDBConnector(s)
     if Path(s).is_dir(): return FilesConnector(s)

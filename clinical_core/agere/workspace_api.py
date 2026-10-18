@@ -34,11 +34,12 @@ CONNECTORS = [
 ]
 
 
-def _background(slug, fn):
+def _background(slug, fn, root=None):
+    slug = f'{root}:{slug}' if root else slug  # one job per workspace per tenant root
     with _JOBS_LOCK:
         job = _JOBS.get(slug)
         if job is not None and job.is_alive():
-            raise RuntimeError(f'Workspace {slug} is already building')
+            raise RuntimeError(f'Workspace {slug.rsplit(":", 1)[-1]} is already building')
 
         def run():
             try:
@@ -50,28 +51,42 @@ def _background(slug, fn):
         t.start()
 
 
-def _detail(ws):
+def _job(ws, root=None):
+    return _JOBS.get(f'{root}:{ws.slug}' if root else ws.slug)
+
+
+def _detail(ws, root=None):
     s = ws.state
     out = ws.summary()
     out['steps_detail'] = s['steps']
-    out['building'] = bool(_JOBS.get(ws.slug) and _JOBS[ws.slug].is_alive())
+    job = _job(ws, root)
+    out['building'] = bool(job and job.is_alive())
     v = ws.dir / 'verification.json'
     out['verification_detail'] = json.loads(v.read_text()) if v.is_file() else None
     return out
 
 
-def handle(method, path, body=None):
-    """-> (http status, payload). Raises nothing; errors come back as {'error': ...}."""
+def handle(method, path, body=None, *, root=None, credentials=None, on_usage=None, can_write=True):
+    """-> (http status, payload). Raises nothing; errors come back as {'error': ...}.
+    Hosted callers pass the tenant's workspace root, a credentials(name) -> dict resolver, an on_usage(workspace, row)
+    callback and whether the caller's role may change workspaces (viewers may read and ask only)."""
     parts = [p for p in path.split('/') if p][2:]  # after api/workspaces
+
+    def W(slug):
+        ws = wsmod.Workspace(slug, root=root)
+        name = ws.state.get('credential')
+        if credentials and name:
+            ws.credentials = credentials(name)
+        return ws
     try:
         if method == 'GET':
             if not parts:
-                return 200, {'workspaces': wsmod.list_workspaces()}
+                return 200, {'workspaces': wsmod.list_workspaces(root)}
             if parts == ['connectors']:
                 return 200, {'connectors': CONNECTORS}
-            ws = wsmod.Workspace(parts[0])
+            ws = W(parts[0])
             if len(parts) == 1:
-                return 200, _detail(ws)
+                return 200, _detail(ws, root)
             if parts[1] == 'review':
                 return 200, {'items': ws.review_items()}
             if parts[1] == 'questions':
@@ -80,20 +95,24 @@ def handle(method, path, body=None):
                 return 200, {'questions': rows[-100:][::-1]}
             return 404, {'error': 'Unknown workspace route'}
         body = body or {}
+        action = parts[1] if len(parts) > 1 else None
+        if not can_write and (not parts or action not in ('ask',)):
+            return 403, {'error': 'Your role can read and ask questions only'}
         if not parts:
             if not body.get('name') or not body.get('source'):
                 raise ValueError('name and source are required')
-            ws = wsmod.Workspace.create(body['name'], body['source'], as_of=body.get('as_of') or None, raw=body.get('raw') or 'all')
-            _background(ws.slug, ws.run)
-            return 202, _detail(ws)
-        ws = wsmod.Workspace(parts[0])
-        action = parts[1] if len(parts) > 1 else None
+            ws = wsmod.Workspace.create(body['name'], body['source'], as_of=body.get('as_of') or None, raw=body.get('raw') or 'all',
+                                        root=root, credential=body.get('credential') or None)
+            ws = W(ws.slug)
+            _background(ws.slug, ws.run, root)
+            return 202, _detail(ws, root)
+        ws = W(parts[0])
         if action == 'run':
-            _background(ws.slug, ws.run)
-            return 202, _detail(ws)
+            _background(ws.slug, ws.run, root)
+            return 202, _detail(ws, root)
         if action == 'rebuild':
-            _background(ws.slug, ws.rebuild)
-            return 202, _detail(ws)
+            _background(ws.slug, ws.rebuild, root)
+            return 202, _detail(ws, root)
         if action == 'decide':
             return 200, {'items': ws.decide(body['item'], body['decision'], reviewer='person:' + str(body.get('reviewer') or 'reviewer'))}
         if action == 'batch':
@@ -102,13 +121,17 @@ def handle(method, path, body=None):
                 raise ValueError('questions must be a list of 1-500 {id, question, answer_type?}')
             qs = [{'id': str(q.get('id') or f'Q{i + 1}'), 'question': str(q['question']), 'answer_type': q.get('answer_type')}
                   for i, q in enumerate(qs)]
-            _background(ws.slug + ':batch', lambda: wsmod.ask_many(ws, qs))
+            _background(ws.slug + ':batch', lambda: wsmod.ask_many(ws, qs), root)
             return 202, {'accepted': len(qs), 'results': 'GET /api/workspaces/' + ws.slug + '/questions'}
         if action == 'ask':
             q = str(body.get('question') or '').strip()
             if not q:
                 raise ValueError('question is required')
+            t0 = __import__('time').time()
             out = ws.ask(q, answer_type=body.get('answer_type') or None)
+            if on_usage:
+                on_usage(ws.slug, {'question': q[:300], 'cost_usd': out.get('cost_usd'), 'seconds': round(__import__('time').time() - t0, 2),
+                                   'decision': out.get('decision')})
             return 200, out
         return 404, {'error': 'Unknown workspace action'}
     except FileNotFoundError as exc:
