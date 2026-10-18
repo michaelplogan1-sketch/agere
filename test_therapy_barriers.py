@@ -230,8 +230,11 @@ class TypedCascade(unittest.TestCase):
 
 
 class PlanRouting(unittest.TestCase):
-    """HF1 (missing mra + sglt2i) has a documented barrier for both -> pharmd_barrier_review; HF4 has one documented barrier
-    among several open gaps -> standard titration outreach with the barrier listed."""
+    """Barriers change the action (plans/barriers.py through the catalog's barrier_policy). HF1 (missing mra + sglt2i): the
+    hyperkalemia hold explains the MRA pillar (closed, monitoring action); the empagliflozin cost barrier names one agent,
+    so the SGLT2i gap stays open with the barrier attached -> PharmD barrier review. HF4: lisinopril angioedema excludes
+    ACE inhibitors and flags sacubitril/valsartan, an ARB is still possible, so RASi stays an open gap with the barrier ->
+    PharmD barrier review (a barrier on a pillar the program would start)."""
 
     @classmethod
     def setUpClass(cls):
@@ -259,42 +262,52 @@ class PlanRouting(unittest.TestCase):
     def row(self, pid):
         return next(r for r in self.plan['patients'] if r['patient_id'] == pid)
 
-    def test_all_missing_pillars_documented_routes_to_pharmd_review(self):
+    def test_lab_barrier_explains_pillar_and_cost_barrier_keeps_gap_open(self):
         r = self.row('HF1')
         g = r['gap']
-        self.assertEqual(g['missing_pillars']['value'], [])
-        self.assertEqual(sorted(g['barrier_documented_pillars']['value']), ['mra', 'sglt2i'])
-        self.assertTrue(g['all_missing_barrier_documented'])
+        self.assertEqual(g['missing_pillars']['value'], ['sglt2i'])
+        self.assertEqual(g['barrier_documented_pillars']['value'], ['mra'])
+        self.assertEqual(sorted(g['barrier_pillars']['value']), ['mra', 'sglt2i'])
+        self.assertFalse(g['all_missing_barrier_documented'])
         self.assertEqual(g['pillars']['mra']['status'], 'barrier_documented')
         self.assertEqual(g['pillars']['mra']['barriers']['value'][0]['detail'], 'hyperkalemia K 5.9')
         self.assertIn('therapy_barrier:NB-1', g['pillars']['mra']['barriers']['sources'])
+        self.assertEqual(g['pillars']['sglt2i']['status'], 'gap')
+        self.assertEqual(g['pillars']['sglt2i']['barrier_assessment']['excluded_agents'], ['empagliflozin'])
+        self.assertIn('dapagliflozin', g['pillars']['sglt2i']['barrier_assessment']['usable_agents'])
         self.assertEqual((r['route'], r['program_id'], r['task']['script_template_id']),
                          ('enroll', 'pharmd_barrier_review', 'gdmt_barrier_pharmd_review_v1'))
 
-    def test_partial_barrier_stays_in_titration_with_barrier_listed(self):
+    def test_ace_angioedema_excludes_acei_flags_arni_and_routes_to_review(self):
         r = self.row('HF4')
         g = r['gap']
-        self.assertEqual(g['barrier_documented_pillars']['value'], ['rasi'])
-        self.assertNotIn('rasi', g['missing_pillars']['value'])
+        self.assertEqual(g['barrier_documented_pillars']['value'], [])
+        self.assertIn('rasi', g['missing_pillars']['value'])
         self.assertIn('mra', g['missing_pillars']['value'])  # the post-as_of hold never counts
-        self.assertFalse(g['all_missing_barrier_documented'])
-        self.assertEqual(r['program_id'], 'pharmacy_gdmt_titration')
-        self.assertIn('barrier_documented rasi(allergy_angioedema', router._gap_text(g))
+        a = g['pillars']['rasi']['barrier_assessment']
+        self.assertEqual(a['status'], 'open_with_barrier')
+        self.assertIn('lisinopril', a['excluded_agents'])
+        self.assertIn('losartan', a['usable_agents'])
+        self.assertNotIn('sacubitril valsartan', a['usable_agents'])
+        self.assertEqual(a['flags'][0]['classes'], ['arni'])
+        self.assertEqual(r['program_id'], 'pharmd_barrier_review')
+        self.assertIn('open_with_barrier rasi(allergy_angioedema', router._gap_text(g))
 
     def test_summary_counts_by_barrier_type(self):
         s = self.plan['summary']
-        self.assertEqual(s['barrier_documented_pillar_counts'], {'mra': 1, 'sglt2i': 1, 'rasi': 1})
+        self.assertEqual(s['barrier_documented_pillar_counts'], {'mra': 1})
+        self.assertEqual(s['open_with_barrier_pillar_counts'], {'sglt2i': 1, 'rasi': 1})
         self.assertEqual(s['barriers_by_type'], {'contraindication_lab': 1, 'cost_access': 1, 'allergy_angioedema': 1})
-        self.assertEqual(s['all_missing_barrier_documented'], 1)
-        self.assertEqual(s['by_program'].get('pharmd_barrier_review'), 1)
+        self.assertEqual(s['patients_with_barrier'], 2)
+        self.assertEqual(s['by_program'].get('pharmd_barrier_review'), 2)
 
-    def test_act_runs_barrier_review_agent(self):
-        out = act.act(self.plan)
+    def test_act_carries_barriers_into_every_action(self):
+        out = act.act(self.plan, workspace='test')
         a = next(x for x in out['actions'] if x['patient_id'] == 'HF1')
         self.assertEqual(a['agent'], 'Agere PharmD barrier review agent')
         self.assertEqual({b['pillar'] for b in a['barriers']}, {'mra', 'sglt2i'})
-        self.assertEqual(out['summary']['barrier_reviews'], 1)
-        self.assertNotIn('barriers', next(x for x in out['actions'] if x['patient_id'] == 'HF4'))
+        self.assertEqual(out['summary']['barrier_reviews'], 2)
+        self.assertEqual(out['summary']['actions_with_barriers'], 2)
 
     def test_no_barrier_table_keeps_plain_gaps(self):
         tmp = tempfile.TemporaryDirectory()

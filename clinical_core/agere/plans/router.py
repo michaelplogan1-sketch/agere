@@ -267,11 +267,20 @@ class _GDMT:
                               tuple(_norm_icd(p) + '%' for p in pref),
                               'record_id, patient_id, icd10, event_date') if pref and db.has('condition', 'icd10') else []
         self.dx = _group([c for c in conds if not _d(c.get('event_date')) or _d(c['event_date']) <= as_of])
-        # Documented barriers (therapy_barrier, clinical/therapy_barriers.py): affirmed, patient-experienced, dated by as_of.
-        self.barriers = {}
+        # Documented barriers (therapy_barrier, clinical/therapy_barriers.py) through the catalog's barrier_policy
+        # (plans/barriers.py): drug-scoped, recency-windowed, with source locations. Without a policy, the reader's own
+        # pillar-level documented() view is used.
+        self.barriers, self.policy = {}, cfg.get('_barrier_policy')
         if db.has('therapy_barrier', 'gdmt_pillar', 'barrier_type'):
-            from ..clinical import therapy_barriers
-            self.barriers = therapy_barriers.documented(db.db, ids, as_of.isoformat())
+            if self.policy:
+                from . import barriers as barriermod
+                self.barriers = barriermod.assess(db.db, ids, as_of, self.policy)
+            else:
+                from ..clinical import therapy_barriers
+                legacy = therapy_barriers.documented(db.db, ids, as_of.isoformat())
+                self.barriers = {pid: {pl: {'status': 'explained', 'barriers': rs, 'stale_barriers': [], 'excluded_agents': [],
+                                            'remaining_agents': [], 'usable_agents': [], 'flags': [], 'action': None}
+                                       for pl, rs in v.items()} for pid, v in legacy.items()}
 
     def _med_recent(self, m):
         dates = [_d(m.get(k)) for k in ('last_listed', 'last_order_date', 'last_fill_date')]
@@ -293,35 +302,48 @@ class _GDMT:
             pillars[name] = {'label': p.get('label'), 'on_therapy': F(on, src), 'last_fill_date': F(last_fill, src),
                              'evidence': ('fill' if fills else '') + ('+' if fills and meds else '') + ('med_list' if meds else '') or None}
             (present if on else missing).append(name)
-        # A missing pillar with an affirmed documented barrier for its class is barrier_documented, not an open gap.
-        open_gaps, documented = [], []
+        # A missing pillar whose barriers explain it (every agent excluded, or a pillar-wide reason) is barrier_documented,
+        # not an open gap. A pillar with a current barrier and an agent still possible stays an open gap with the barrier
+        # attached (open_with_barrier); old barriers ride along as history (stale_barriers) and never close a gap.
+        keep = ('barrier_type', 'detail', 'drug_class', 'drug_key', 'event_date', 'last_date', 'evidence_text', 'record_id',
+                'source_type', 'method', 'confidence', 'assertion', 'scope', 'state', 'effective_date', 'span_start', 'span_end')
+        open_gaps, documented, with_barrier, stale_pillars = [], [], [], []
         for name in missing:
-            rows = (self.barriers.get(pid) or {}).get(name) or []
-            if rows:
-                rows = sorted(rows, key=lambda r: (-(r.get('confidence') or 1), r.get('event_date') or ''))
+            a = (self.barriers.get(pid) or {}).get(name)
+            cur = sorted((a or {}).get('barriers') or [], key=lambda r: (-(r.get('confidence') or 1), r.get('event_date') or ''))
+            if a and a['status'] == 'explained' and cur:
                 pillars[name]['status'] = 'barrier_documented'
-                pillars[name]['barriers'] = F([{k: r.get(k) for k in ('barrier_type', 'detail', 'drug_class', 'drug_key', 'event_date',
-                                                                       'evidence_text', 'record_id', 'source_type', 'method', 'confidence',
-                                                                       'assertion')} for r in rows[:5]],
-                                              [_src('therapy_barrier', r.get('record_id')) for r in rows[:5]])
                 documented.append(name)
             else:
                 pillars[name]['status'] = 'gap'
                 open_gaps.append(name)
+            if cur:
+                with_barrier.append(name)
+                pillars[name]['barriers'] = F([{k: r.get(k) for k in keep} for r in cur[:5]],
+                                              [_src('therapy_barrier', r.get('record_id')) for r in cur[:5]])
+            if a and a.get('stale_barriers'):
+                stale_pillars.append(name)
+                pillars[name]['stale_barriers'] = F([{k: r.get(k) for k in keep} | {'flag': 'stale_barrier'} for r in a['stale_barriers'][:5]],
+                                                    [_src('therapy_barrier', r.get('record_id')) for r in a['stale_barriers'][:5]])
+            if a:
+                pillars[name]['barrier_assessment'] = {k: a.get(k) for k in ('status', 'excluded_agents', 'usable_agents', 'flags', 'action')}
         for name in present:
             pillars[name]['status'] = 'on_therapy'
         dx_rows = self.dx.get(pid, [])
         dx_src = [_src('condition', c.get('record_id')) for c in dx_rows]
         barrier_src = [s for n in documented for s in pillars[n]['barriers']['sources']]
+        open_barrier_src = [s for n in with_barrier if n not in documented for s in pillars[n]['barriers']['sources']]
         gap = {'type': self.gap_type,
                'present': F(bool(missing), [s for v in pillars.values() for s in v['on_therapy']['sources']] + dx_src + barrier_src),
                'missing_pillars': F(open_gaps), 'present_pillars': F(present), 'missing_pillar_count': F(len(open_gaps)),
                'barrier_documented_pillars': F(documented, barrier_src),
+               'barrier_pillars': F(with_barrier, barrier_src + open_barrier_src),
+               'stale_barrier_pillars': F(stale_pillars, [s for n in stale_pillars for s in pillars[n]['stale_barriers']['sources']]),
                'all_missing_barrier_documented': bool(documented) and not open_gaps,
                'pillars': pillars, 'lookback_start': self.start.isoformat(),
                'hf_diagnosis': F(bool(dx_rows), dx_src),
                'reason': None if missing else 'no_gap: all four GDMT pillars have a fill or active list entry in the lookback'}
-        metrics = {'missing_pillar_count': len(open_gaps), 'barrier_documented_count': len(documented), 'always': 1}
+        metrics = {'missing_pillar_count': len(open_gaps), 'barrier_documented_count': len(with_barrier), 'always': 1}
         _caller(gap, details, {'missing_pillars': open_gaps})
         return gap, metrics
 
@@ -548,7 +570,8 @@ def route(semantic_db, patient_ids, program_kind=None, as_of=None, gap_details=N
         programs = [p for p in catmod.programs_of(cat, kind) if p.get('role') != 'barrier_review']
         barrier_prog = next((p for p in catmod.programs_of(cat, kind) if p.get('role') == 'barrier_review'), None)
         gap_type = catmod.gap_type_for(cat, kind)
-        evaluator = EVALUATORS[gap_type](db, ids, as_of_d, cat['gaps'][gap_type]) if gap_type else None
+        gap_cfg = {**cat['gaps'][gap_type], '_barrier_policy': cat.get('barrier_policy')} if gap_type else None
+        evaluator = EVALUATORS[gap_type](db, ids, as_of_d, gap_cfg) if gap_type else None
         patients = {r['patient_id']: r for r in db.by_patient('patient', ids)}
         spans = _group(db.by_patient('enrollment_span', ids))
         visits = _group(db.by_patient('encounter', ids, "type_concept = 'primary_care_visit'", (),
@@ -595,12 +618,14 @@ def route(semantic_db, patient_ids, program_kind=None, as_of=None, gap_details=N
                       'interpreter_needed': F((patient or {}).get('interpreter_needed'), psrc)}
             gap, metrics = (evaluator.evaluate(pid, (gap_details or {}).get(pid)) if evaluator else
                             ({'type': None, 'present': F(True), 'reason': None}, {'always': 1}))
-            for k in ('missing_pillars', 'barrier_documented_pillars', 'ed_visit_date', 'days_since_ed', 'last_pt_date'):
+            for k in ('missing_pillars', 'barrier_documented_pillars', 'barrier_pillars', 'ed_visit_date', 'days_since_ed', 'last_pt_date'):
                 if k in gap:
                     fields[k] = gap[k]
             row = {'patient_id': pid, 'known_patient': bool(patient or psp), 'coverage': {k: v for k, v in cov.items() if k != 'span'},
                    'attribution': att, 'age': age, 'gap': gap, 'exclusions': [], 'eligibility': {}, 'route': None,
-                   'program_id': None, 'vendor_slot': None, 'task': None}
+                   'program_id': None, 'vendor_slot': None, 'task': None,
+                   'patient_facts': {'preferred_language': fields['preferred_language']['value'],
+                                     'interpreter_needed': fields['interpreter_needed']['value']}}
             exc = _exclusions(pid, psp, claims.get(pid, []), encs.get(pid, []), as_of_d, exc_cfg)
             if not row['known_patient']:
                 exc.insert(0, {'reason': 'unknown_patient', 'detail': 'no patient or enrollment record in this workspace', 'sources': []})
@@ -611,8 +636,10 @@ def route(semantic_db, patient_ids, program_kind=None, as_of=None, gap_details=N
                 row.update(route='exclude', exclusions=exc, decision=F(f"exclude: {exc[0]['reason']}", exc[0]['sources']))
                 rows.append(row)
                 continue
-            # Every missing pillar has a documented barrier: PharmD review of the barriers, not standard outreach.
-            offered = [barrier_prog] if barrier_prog and gap.get('all_missing_barrier_documented') else programs
+            # Every missing pillar explained by a barrier, or a current barrier on a pillar the program would start: PharmD
+            # review of the barriers (listed on the task), not standard outreach.
+            to_review = bool(gap.get('all_missing_barrier_documented') or (gap.get('barrier_pillars') or {}).get('value'))
+            offered = [barrier_prog] if barrier_prog and to_review else programs
             for p in offered:
                 checks = _eligibility(p, cov, age)
                 row['eligibility'][p['id']] = {'eligible': all(c['passed'] for c in checks), 'checks': checks}
@@ -668,14 +695,19 @@ def summarize(rows):
         return dict(sorted(((k if k is not None else 'unknown'), v) for k, v in c.items()))
     routed = [r for r in rows if r['route'] != 'exclude']
     tasks = [r['task'] for r in rows if r.get('task')]
-    gap_counts, barrier_pillars, barrier_types = Counter(), Counter(), Counter()
+    gap_counts, barrier_pillars, barrier_types, open_barrier, stale = Counter(), Counter(), Counter(), Counter(), Counter()
     for r in rows:
         for m in (r['gap'].get('missing_pillars') or {}).get('value') or []:
             gap_counts[m] += 1
         for m in (r['gap'].get('barrier_documented_pillars') or {}).get('value') or []:
             barrier_pillars[m] += 1
+        for m in (r['gap'].get('barrier_pillars') or {}).get('value') or []:
+            if m not in ((r['gap'].get('barrier_documented_pillars') or {}).get('value') or []):
+                open_barrier[m] += 1
             for b in {b['barrier_type'] for b in r['gap']['pillars'][m]['barriers']['value']}:
                 barrier_types[b] += 1
+        for m in (r['gap'].get('stale_barrier_pillars') or {}).get('value') or []:
+            stale[m] += 1
     return {'patients': len(rows), 'by_route': count(lambda r: r['route']),
             'by_program': dict(Counter(r['program_id'] for r in routed if r['program_id'])),
             'by_vendor_slot': dict(Counter((r['vendor_slot'] or {}).get('slot_id') for r in routed if r.get('vendor_slot'))),
@@ -686,9 +718,13 @@ def summarize(rows):
             'by_attribution_method': count(lambda r: r['attribution']['method']),
             'tasks': len(tasks), 'tasks_by_priority': dict(Counter(t['priority'] for t in tasks)),
             'missing_pillar_counts': dict(gap_counts) or None,
-            **({'barrier_documented_pillar_counts': dict(barrier_pillars), 'barriers_by_type': dict(barrier_types),
+            **({'barrier_documented_pillar_counts': dict(barrier_pillars), 'open_with_barrier_pillar_counts': dict(open_barrier),
+                'barriers_by_type': dict(barrier_types), 'stale_barrier_pillar_counts': dict(stale),
+                'patients_with_barrier': sum(1 for r in rows if (r['gap'].get('barrier_pillars') or {}).get('value')),
+                'patients_with_stale_barrier_only': sum(1 for r in rows if (r['gap'].get('stale_barrier_pillars') or {}).get('value')
+                                                        and not (r['gap'].get('barrier_pillars') or {}).get('value')),
                 'all_missing_barrier_documented': sum(1 for r in rows if r['gap'].get('all_missing_barrier_documented'))}
-               if barrier_pillars else {})}
+               if barrier_pillars or open_barrier or stale else {})}
 
 
 def tasks(plan):
@@ -719,6 +755,12 @@ def _gap_text(gap):
             text += '; barrier_documented ' + ','.join(
                 f"{n}({gap['pillars'][n]['barriers']['value'][0]['barrier_type']}: {gap['pillars'][n]['barriers']['value'][0]['detail']})"
                 for n in documented)
+        opened = [n for n in (gap.get('barrier_pillars') or {}).get('value') or [] if n not in documented]
+        if opened:
+            text += '; open_with_barrier ' + ','.join(
+                f"{n}({gap['pillars'][n]['barriers']['value'][0]['barrier_type']}: {gap['pillars'][n]['barriers']['value'][0]['detail']}"
+                f" [{gap['pillars'][n]['barriers']['value'][0].get('drug_key') or gap['pillars'][n]['barriers']['value'][0].get('drug_class')}])"
+                for n in opened)
         return text
     if gap.get('type') == 'pt_after_ed_low_back_pain':
         return f"ED {gap['ed_visit_date']['value']} ({gap['days_since_ed']['value']}d ago), last PT {gap['last_pt_date']['value']}"

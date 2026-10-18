@@ -1,5 +1,6 @@
 """A plan request end to end: cohort (caller ids, else the existing answer path, else the deterministic candidates for the
-program's gap) -> deterministic router -> optional model narrative -> the answer envelope with a `plan` block.
+program's gap) -> deterministic router -> the action backbone when a workspace store is given (plans/backbone.py) ->
+optional model narrative -> the answer envelope with a `plan` block.
 
     out = build(semantic_path, question, cohort=lambda q: ws.ask(q, answer_type='patient_set'))
     env = envelope(out)          # {'answer': {'patient_ids': [...]}, 'answer_type': 'plan', 'plan': {...}, ...}
@@ -17,9 +18,13 @@ def _cohort_ids(env):
 
 
 def build(semantic_path, question=None, *, patient_ids=None, program_kind=None, as_of=None, answer_type=None,
-          cohort=None, gap_details=None, narrative=False, send_factory=None, catalog_path=None, execute=True):
+          cohort=None, gap_details=None, narrative=False, send_factory=None, catalog_path=None, execute=False,
+          action_store=None, workspace=None, through=None):
     """-> {'plan', 'cohort', 'request'}. cohort: callable(question) -> an answer envelope with answer.patient_ids (the
-    product's existing answer path); used only when the request names a cohort and no patient_ids are given."""
+    product's existing answer path); used only when the request names a cohort and no patient_ids are given.
+    action_store: a workspace directory -> the routed plan runs through the action backbone (plans/backbone.py: durable
+    decision, work items, simulated-counterparty receipts, completion evaluation) and plan['execution'] is its result.
+    execute=True without a store gives the same executor as an in-memory preview (nothing persisted)."""
     cat = catmod.load(catalog_path)
     parsed = req.parse(question or '', answer_type or 'plan', program_kind=program_kind, cat=cat) if question else None
     kind = program_kind or (parsed or {}).get('program_kind')
@@ -50,9 +55,14 @@ def build(semantic_path, question=None, *, patient_ids=None, program_kind=None, 
     info['patients'] = len(ids)
     plan = router.route(semantic_path, ids, kind, as_of, gap_details, catalog=cat)
     plan['cohort'] = info
-    if execute:
+    if action_store is not None:
+        from . import backbone
+        plan['execution'] = backbone.run(action_store, plan, workspace=workspace or 'workspace', semantic_path=semantic_path,
+                                         catalog=cat, through=through, question=question)
+    elif execute:
         from .act import act
-        plan['execution'] = act(plan)
+        plan['execution'] = {**act(plan, workspace=workspace or 'preview', catalog=cat, through=through), 'persisted': False,
+                             'preview': True}
     plan['narrative'] = narr.draft(plan, send_factory=send_factory, enabled=bool(narrative)) if narrative else \
         {'status': 'disabled', 'reason': 'not requested'}
     return {'plan': plan, 'cohort': info, 'request': parsed}
@@ -65,9 +75,17 @@ def envelope(out, *, pipeline=None, base=None):
     acted = [r['patient_id'] for r in plan['patients'] if r['route'] != 'exclude']
     s = plan['summary']
     routes = ', '.join(f'{k} {v}' for k, v in s['by_route'].items()) or 'no patients'
-    ex = (plan.get('execution') or {}).get('summary')
-    acted_note = (f"; agents enrolled {ex['enrolled']}, verified coverage for {ex['coverage_verified']}, "
-                  f"scheduled {ex['first_visits_scheduled']} first visits") if ex else ''
+    ex = plan.get('execution') or {}
+    acted_note = ''
+    if ex.get('summary'):
+        o = ex['summary']['outcomes']
+        clo = (ex.get('completion') or {})
+        acted_note = (f"; {'saved as decision ' + ex['decision_id'][:12] + ', ' if ex.get('decision_id') else 'preview, '}"
+                      f"{ex['summary']['actions']} work items: reached {o.get('reached', 0)}, unreachable {o.get('unreachable', 0)}, "
+                      f"declined {o.get('declined', 0)}, denied {o.get('denied', 0)}, enrolled {o.get('enrolled', 0)}, "
+                      f"first visit attended {o.get('first_visit_attended', 0)}, completed {o.get('completed', 0)}"
+                      + (f", closed {clo.get('closed', 0)}/{clo.get('evaluated', 0)}" if clo.get('evaluated') else '')
+                      + ' (simulated counterparties)')
     cost = (plan['cohort'].get('answer_path') or {}).get('cost_usd')
     ncost = (plan.get('narrative') or {}).get('cost_usd')
     total = None if cost is None and ncost is None else round((cost or 0) + (ncost or 0), 6)

@@ -11,9 +11,16 @@ Routes (JSON; handled before the service's global stack lock because builds take
   POST /api/workspaces/<slug>/decide        {item, decision}  decision: accept | reject | {source} | {source_table}
   POST /api/workspaces/<slug>/rebuild       re-apply the mapping with decisions (background)
   POST /api/workspaces/<slug>/ask           {question, answer_type?}  -> the hybrid core's answer over this workspace
-  POST /api/workspaces/<slug>/plan          {question | patient_ids, program_kind?, as_of?, narrative?, format?: json|csv}
-                                            -> routed enrollment plan (answer envelope with a `plan` block); format csv adds
-                                               the outreach task list as {'csv': ...}
+  POST /api/workspaces/<slug>/plan          {question | patient_ids, program_kind?, as_of?, narrative?, format?: json|csv,
+                                             act?: true, through?: YYYY-MM-DD}
+                                            -> routed enrollment plan (answer envelope with a `plan` block) run through the
+                                               action backbone (plans/backbone.py): plan.execution = saved decision id, work
+                                               item counts, outcome funnel, closure rates; re-running is an idempotent replay.
+                                               format csv adds the outreach task list as {'csv': ...}
+  GET  /api/workspaces/<slug>/work          ?program_kind=|lane=&state=&kind=plan_item|followup&patient_id=  work items
+  GET  /api/workspaces/<slug>/work/<id>     one work item: step history with counterparty receipts, follow-ups, events
+  GET  /api/workspaces/<slug>/decisions     saved plan decisions
+  GET  /api/workspaces/<slug>/decisions/<id> a decision with the current funnel, outcomes and closure rates
   POST /api/workspaces/<slug>/batch         {questions: [{id, question, answer_type?}]} -> answered in the background into answers-<time>.jsonl
 """
 from __future__ import annotations
@@ -69,10 +76,15 @@ def _detail(ws, root=None):
     return out
 
 
-def handle(method, path, body=None, *, root=None, credentials=None, on_usage=None, can_write=True):
-    """-> (http status, payload). Raises nothing; errors come back as {'error': ...}.
+def handle(method, path, body=None, *, root=None, credentials=None, on_usage=None, can_write=True, query=None):
+    """-> (http status, payload). Raises nothing; errors come back as {'error': ...}. query: GET parameters ({name: value})
+    for the work-item list; a '?a=b' suffix on path is parsed too.
     Hosted callers pass the tenant's workspace root, a credentials(name) -> dict resolver, an on_usage(workspace, row)
     callback and whether the caller's role may change workspaces (viewers may read and ask only)."""
+    if '?' in path:
+        from urllib.parse import parse_qsl
+        path, qs = path.split('?', 1)
+        query = {**dict(parse_qsl(qs)), **(query or {})}
     parts = [p for p in path.split('/') if p][2:]  # after api/workspaces
 
     def W(slug):
@@ -92,6 +104,20 @@ def handle(method, path, body=None, *, root=None, credentials=None, on_usage=Non
                 return 200, _detail(ws, root)
             if parts[1] == 'review':
                 return 200, {'items': ws.review_items()}
+            if parts[1] in ('work', 'decisions'):
+                from .plans import backbone
+                if parts[1] == 'work' and len(parts) == 2:
+                    q = query or {}
+                    return 200, backbone.items(ws.dir, lane=q.get('lane') or (f"plan:{q['program_kind']}" if q.get('program_kind') else None),
+                                               state=q.get('state'), kind=q.get('kind'), patient_id=q.get('patient_id'),
+                                               limit=int(q.get('limit') or 500))
+                if parts[1] == 'work' and len(parts) == 3:
+                    return 200, backbone.item(ws.dir, parts[2])
+                if parts[1] == 'decisions' and len(parts) == 2:
+                    return 200, {'decisions': backbone.decisions(ws.dir)}
+                if parts[1] == 'decisions' and len(parts) == 3:
+                    return 200, backbone.decision(ws.dir, parts[2])
+                return 404, {'error': 'Unknown workspace route'}
             if parts[1] == 'questions':
                 f = ws.dir / 'questions.jsonl'
                 rows = [json.loads(l) for l in f.read_text().splitlines()] if f.is_file() else []
@@ -99,7 +125,7 @@ def handle(method, path, body=None, *, root=None, credentials=None, on_usage=Non
             return 404, {'error': 'Unknown workspace route'}
         body = body or {}
         action = parts[1] if len(parts) > 1 else None
-        if not can_write and (not parts or action not in ('ask', 'plan')):
+        if not can_write and (not parts or action != 'ask'):
             return 403, {'error': 'Your role can read and ask questions only'}
         if not parts:
             if not body.get('name') or not body.get('source'):
@@ -137,8 +163,12 @@ def handle(method, path, body=None, *, root=None, credentials=None, on_usage=Non
             if fmt not in ('json', 'csv'):
                 raise ValueError('format must be json or csv')
             t0 = __import__('time').time()
+            through = body.get('through') or None
+            if through is not None:
+                __import__('datetime').date.fromisoformat(str(through))
             out = ws.plan(question=q, patient_ids=ids, program_kind=body.get('program_kind') or None,
-                          as_of=body.get('as_of') or None, narrative=bool(body.get('narrative')))
+                          as_of=body.get('as_of') or None, narrative=bool(body.get('narrative')),
+                          act=body.get('act', True) is not False, through=through)
             if on_usage:
                 on_usage(ws.slug, {'question': (q or f"plan:{out['plan']['program_kind']}")[:300], 'cost_usd': out.get('cost_usd'),
                                    'seconds': round(__import__('time').time() - t0, 2), 'decision': out.get('decision')})

@@ -1,6 +1,6 @@
 {
  "schema": "agere-enrollment-programs/1",
- "version": "2026-10-18.2",
+ "version": "2026-10-18.3",
  "synthetic": true,
  "notes": "Program catalog for routed enrollment plans. Eligibility, gap definitions, exclusions, priorities and vendor slots are data; clinical_core/agere/plans/router.py evaluates them deterministically. Vendor slots are placeholders the customer configures with its contracted vendors.",
  "contexts": {
@@ -14,83 +14,350 @@
  },
  "coverage": {
   "primary_rule": "Active span at as_of: coverage_start <= as_of, coverage_end null or >= as_of, available_date <= as_of; secondary products are never primary.",
-  "exclude_products": ["medigap", "cob_secondary"],
-  "exclude_lines_of_business": ["medigap", "cob_secondary"]
+  "exclude_products": [
+   "medigap",
+   "cob_secondary"
+  ],
+  "exclude_lines_of_business": [
+   "medigap",
+   "cob_secondary"
+  ]
  },
  "exclusions": {
   "deceased": {
-   "enrollment_termination_reasons": ["death"],
-   "claim_discharge_statuses": ["expired", "20", "40", "41", "42"],
-   "encounter_dispositions": ["expired", "deceased", "died"]
+   "enrollment_termination_reasons": [
+    "death"
+   ],
+   "claim_discharge_statuses": [
+    "expired",
+    "20",
+    "40",
+    "41",
+    "42"
+   ],
+   "encounter_dispositions": [
+    "expired",
+    "deceased",
+    "died"
+   ]
   },
   "hospice": {
    "lookback_days": 365,
-   "type_of_bill_prefixes": ["081", "082", "81", "82"],
-   "claim_discharge_statuses": ["hospice", "hospice_home", "hospice_facility", "50", "51"],
-   "encounter_dispositions": ["hospice", "hospice_home", "hospice_facility"]
+   "type_of_bill_prefixes": [
+    "081",
+    "082",
+    "81",
+    "82"
+   ],
+   "claim_discharge_statuses": [
+    "hospice",
+    "hospice_home",
+    "hospice_facility",
+    "50",
+    "51"
+   ],
+   "encounter_dispositions": [
+    "hospice",
+    "hospice_home",
+    "hospice_facility"
+   ]
   }
  },
  "gaps": {
   "gdmt_pillar_missing": {
    "label": "HFrEF guideline-directed medical therapy: one or more of the four pillars not on board",
    "lookback_days": 120,
-   "diagnosis_icd10_prefixes": ["I50"],
-   "med_list_statuses": ["active"],
+   "diagnosis_icd10_prefixes": [
+    "I50"
+   ],
+   "med_list_statuses": [
+    "active"
+   ],
    "pillars": {
-    "rasi": {"label": "ARNI / ACE inhibitor / ARB", "fill_classes": ["arni", "ace_inhibitor", "arb"],
-             "ingredients": ["sacubitril", "sacubitril valsartan", "lisinopril", "enalapril", "ramipril", "benazepril", "quinapril",
-                             "captopril", "fosinopril", "perindopril", "trandolapril", "moexipril", "losartan", "valsartan",
-                             "irbesartan", "candesartan", "olmesartan", "telmisartan", "azilsartan", "eprosartan"]},
-    "beta_blocker": {"label": "Evidence-based beta blocker (carvedilol, metoprolol succinate, bisoprolol)",
-                     "fill_classes": ["hf_evidence_based_beta_blocker"],
-                     "ingredients": ["carvedilol", "bisoprolol",
-                                     {"key": "metoprolol", "name_any": ["succinate", "24 hr", " er ", " xl", "extended"]}]},
-    "mra": {"label": "Mineralocorticoid receptor antagonist", "fill_classes": ["mra"],
-            "ingredients": ["spironolactone", "eplerenone", "finerenone"]},
-    "sglt2i": {"label": "SGLT2 inhibitor", "fill_classes": ["sglt2_inhibitor"],
-               "ingredients": ["dapagliflozin", "empagliflozin", "sotagliflozin", "canagliflozin", "ertugliflozin"]}
+    "rasi": {
+     "label": "ARNI / ACE inhibitor / ARB",
+     "fill_classes": [
+      "arni",
+      "ace_inhibitor",
+      "arb"
+     ],
+     "ingredients": [
+      "sacubitril",
+      "sacubitril valsartan",
+      "lisinopril",
+      "enalapril",
+      "ramipril",
+      "benazepril",
+      "quinapril",
+      "captopril",
+      "fosinopril",
+      "perindopril",
+      "trandolapril",
+      "moexipril",
+      "losartan",
+      "valsartan",
+      "irbesartan",
+      "candesartan",
+      "olmesartan",
+      "telmisartan",
+      "azilsartan",
+      "eprosartan"
+     ]
+    },
+    "beta_blocker": {
+     "label": "Evidence-based beta blocker (carvedilol, metoprolol succinate, bisoprolol)",
+     "fill_classes": [
+      "hf_evidence_based_beta_blocker"
+     ],
+     "ingredients": [
+      "carvedilol",
+      "bisoprolol",
+      {
+       "key": "metoprolol",
+       "name_any": [
+        "succinate",
+        "24 hr",
+        " er ",
+        " xl",
+        "extended"
+       ]
+      }
+     ]
+    },
+    "mra": {
+     "label": "Mineralocorticoid receptor antagonist",
+     "fill_classes": [
+      "mra"
+     ],
+     "ingredients": [
+      "spironolactone",
+      "eplerenone",
+      "finerenone"
+     ]
+    },
+    "sglt2i": {
+     "label": "SGLT2 inhibitor",
+     "fill_classes": [
+      "sglt2_inhibitor"
+     ],
+     "ingredients": [
+      "dapagliflozin",
+      "empagliflozin",
+      "sotagliflozin",
+      "canagliflozin",
+      "ertugliflozin"
+     ]
+    }
    }
   },
   "pt_after_ed_low_back_pain": {
    "label": "ED visit discharged with low back pain and no physical therapy within the follow-up window",
    "event_lookback_days": 365,
-   "diagnosis_icd10_prefixes": ["M54.5"],
-   "ed_place_of_service": ["23"],
-   "ed_encounter_concepts": ["emergency_visit"],
+   "diagnosis_icd10_prefixes": [
+    "M54.5"
+   ],
+   "ed_place_of_service": [
+    "23"
+   ],
+   "ed_encounter_concepts": [
+    "emergency_visit"
+   ],
    "exclude_if_admitted_within_days": 1,
    "followup_window_days": 60,
-   "pt_cpt": ["97161", "97162", "97163", "97164", "97110", "97112", "97140", "97530"]
+   "pt_cpt": [
+    "97161",
+    "97162",
+    "97163",
+    "97164",
+    "97110",
+    "97112",
+    "97140",
+    "97530"
+   ]
   }
  },
  "priority": {
-  "due_days": {"high": 3, "medium": 7, "low": 14}
+  "due_days": {
+   "high": 3,
+   "medium": 7,
+   "low": 14
+  }
  },
  "programs": [
   {
    "id": "pharmacy_gdmt_titration",
    "name": "PharmD GDMT optimization program",
    "kind": "pharmacy_gdmt",
-   "request_keywords": ["gdmt", "guideline-directed", "guideline directed", "pharmacy", "pharmacist", "heart failure", "hfref"],
+   "request_keywords": [
+    "gdmt",
+    "guideline-directed",
+    "guideline directed",
+    "pharmacy",
+    "pharmacist",
+    "heart failure",
+    "hfref"
+   ],
    "eligibility": {
     "requires_active_coverage": true,
-    "products": ["commercial", "marketplace", "medicaid", "medicare_advantage", "medicare_ffs", "dual_ma", "dual_ffs"],
-    "lines_of_business": ["commercial", "medicaid", "medicare", "dual"],
-    "age": {"min": 18},
+    "products": [
+     "commercial",
+     "marketplace",
+     "medicaid",
+     "medicare_advantage",
+     "medicare_ffs",
+     "dual_ma",
+     "dual_ffs"
+    ],
+    "lines_of_business": [
+     "commercial",
+     "medicaid",
+     "medicare",
+     "dual"
+    ],
+    "age": {
+     "min": 18
+    },
     "gap_type": "gdmt_pillar_missing"
    },
    "enrollment_channel": "clinical_pharmacist_phone",
    "outreach_channel": "phone",
    "script_template_id": "gdmt_pharmacist_intro_v1",
-   "required_fields": ["patient_id", "member_id", "payer_id", "product", "attributed_npi", "missing_pillars", "preferred_language"],
+   "required_fields": [
+    "patient_id",
+    "member_id",
+    "payer_id",
+    "product",
+    "attributed_npi",
+    "missing_pillars",
+    "preferred_language"
+   ],
    "priority_rules": [
-    {"metric": "missing_pillar_count", "gte": 3, "priority": "high"},
-    {"metric": "missing_pillar_count", "gte": 2, "priority": "medium"},
-    {"metric": "missing_pillar_count", "gte": 1, "priority": "low"}
+    {
+     "metric": "missing_pillar_count",
+     "gte": 3,
+     "priority": "high"
+    },
+    {
+     "metric": "missing_pillar_count",
+     "gte": 2,
+     "priority": "medium"
+    },
+    {
+     "metric": "missing_pillar_count",
+     "gte": 1,
+     "priority": "low"
+    }
    ],
    "vendor_slots": [
-    {"slot_id": "gdmt_pharmacy_slot_1", "display": "GDMT pharmacy partner slot 1 (customer-configured)", "vendor_name": null,
-     "assignment": "priority", "filters": {}}
-   ]
+    {
+     "slot_id": "gdmt_pharmacy_slot_1",
+     "display": "GDMT pharmacy partner slot 1 (customer-configured)",
+     "vendor_name": null,
+     "assignment": "priority",
+     "filters": {}
+    }
+   ],
+   "workflow": {
+    "agent": "Agere PharmD enrollment agent",
+    "first_visit": "pharmacist medication review (telehealth)",
+    "first_visit_days": 5,
+    "completion_days": 45,
+    "completion_label": "pharmacist titration plan completed and new prescriptions sent"
+   },
+   "counterparty": {
+    "profile": "pharmacist_outreach",
+    "outreach": {
+     "attempts": 3,
+     "attempt_days": [
+      1,
+      3,
+      6
+     ],
+     "p_reach": 0.45
+    },
+    "p_decline": 0.22,
+    "p_eligibility_denied": 0.03,
+    "p_coverage_denied": 0.02,
+    "prior_auth": {
+     "applies_to_pillars": [
+      "sglt2i",
+      "rasi"
+     ],
+     "products": [
+      "commercial",
+      "marketplace",
+      "medicare_advantage",
+      "dual_ma"
+     ],
+     "p_required": 0.35,
+     "p_denied": 0.3,
+     "denial_reasons": [
+      "step therapy required",
+      "missing HF indication documentation",
+      "non-formulary agent"
+     ],
+     "appeal": {
+      "p_overturned": 0.6,
+      "days": 10
+     },
+     "when": "after_first_visit"
+    },
+    "p_scheduling_failed": 0.04,
+    "p_rescheduled": 0.1,
+    "p_no_show": 0.12,
+    "p_reschedule_after_no_show": 0.6,
+    "p_second_no_show": 0.25,
+    "p_completed": 0.78,
+    "modifiers": [
+     {
+      "fact": "barrier_on_target",
+      "stage": "decline",
+      "multiply": 1.5,
+      "why": "documented barrier on a pillar the program would start"
+     },
+     {
+      "fact": "recent_acute_30d",
+      "stage": "decline",
+      "multiply": 0.75,
+      "why": "ED visit or admission in the last 30 days"
+     },
+     {
+      "fact": "recent_acute_30d",
+      "stage": "reach",
+      "multiply": 1.15,
+      "why": "recently in contact with the health system"
+     },
+     {
+      "fact": "interpreter_needed",
+      "stage": "reach",
+      "multiply": 0.85,
+      "why": "interpreter needed"
+     },
+     {
+      "fact": "medicaid",
+      "stage": "reach",
+      "multiply": 0.85,
+      "why": "Medicaid: phone churn"
+     },
+     {
+      "fact": "missing_3plus",
+      "stage": "completed",
+      "multiply": 0.9,
+      "why": "three or more pillars to start"
+     }
+    ],
+    "eligibility_reasons": [
+     "member's plan is not in the PharmD program contract",
+     "already enrolled in a plan-sponsored heart failure program"
+    ],
+    "coverage_reasons": [
+     "coverage terminated at the program's eligibility check"
+    ]
+   },
+   "completion": {
+    "kind": "fill_for_target_pillars",
+    "window_days": 90
+   }
   },
   {
    "id": "pharmd_barrier_review",
@@ -101,95 +368,712 @@
    "request_keywords": [],
    "eligibility": {
     "requires_active_coverage": true,
-    "products": ["commercial", "marketplace", "medicaid", "medicare_advantage", "medicare_ffs", "dual_ma", "dual_ffs"],
-    "lines_of_business": ["commercial", "medicaid", "medicare", "dual"],
-    "age": {"min": 18},
+    "products": [
+     "commercial",
+     "marketplace",
+     "medicaid",
+     "medicare_advantage",
+     "medicare_ffs",
+     "dual_ma",
+     "dual_ffs"
+    ],
+    "lines_of_business": [
+     "commercial",
+     "medicaid",
+     "medicare",
+     "dual"
+    ],
+    "age": {
+     "min": 18
+    },
     "gap_type": "gdmt_pillar_missing"
    },
    "enrollment_channel": "pharmd_chart_review",
    "outreach_channel": "work_queue",
    "script_template_id": "gdmt_barrier_pharmd_review_v1",
-   "required_fields": ["patient_id", "member_id", "payer_id", "product", "attributed_npi", "barrier_documented_pillars"],
+   "required_fields": [
+    "patient_id",
+    "member_id",
+    "payer_id",
+    "product",
+    "attributed_npi",
+    "barrier_documented_pillars"
+   ],
    "priority_rules": [
-    {"metric": "barrier_documented_count", "gte": 3, "priority": "high"},
-    {"metric": "barrier_documented_count", "gte": 2, "priority": "medium"},
-    {"metric": "barrier_documented_count", "gte": 1, "priority": "low"}
+    {
+     "metric": "barrier_documented_count",
+     "gte": 3,
+     "priority": "high"
+    },
+    {
+     "metric": "barrier_documented_count",
+     "gte": 2,
+     "priority": "medium"
+    },
+    {
+     "metric": "barrier_documented_count",
+     "gte": 1,
+     "priority": "low"
+    }
    ],
    "vendor_slots": [
-    {"slot_id": "pharmd_barrier_review_queue", "display": "PharmD barrier review queue (customer-configured)", "vendor_name": null,
-     "assignment": "priority", "filters": {}}
-   ]
+    {
+     "slot_id": "pharmd_barrier_review_queue",
+     "display": "PharmD barrier review queue (customer-configured)",
+     "vendor_name": null,
+     "assignment": "priority",
+     "filters": {}
+    }
+   ],
+   "workflow": {
+    "agent": "Agere PharmD barrier review agent",
+    "first_visit": "pharmacist chart review of the documented barriers, then a patient call",
+    "first_visit_days": 3,
+    "completion_days": 30,
+    "completion_label": "each barrier re-verified with a rechallenge / alternative / cost-assistance plan documented"
+   },
+   "counterparty": {
+    "profile": "pharmd_chart_review",
+    "chart_review": {
+     "p_records_needed": 0.06
+    },
+    "outreach": {
+     "attempts": 3,
+     "attempt_days": [
+      2,
+      4,
+      7
+     ],
+     "p_reach": 0.5
+    },
+    "p_decline": 0.3,
+    "p_eligibility_denied": 0.0,
+    "p_coverage_denied": 0.02,
+    "prior_auth": {
+     "applies_to_pillars": [
+      "sglt2i",
+      "rasi"
+     ],
+     "products": [
+      "commercial",
+      "marketplace",
+      "medicare_advantage",
+      "dual_ma"
+     ],
+     "p_required": 0.35,
+     "p_denied": 0.3,
+     "denial_reasons": [
+      "step therapy required",
+      "missing HF indication documentation",
+      "non-formulary agent"
+     ],
+     "appeal": {
+      "p_overturned": 0.6,
+      "days": 10
+     },
+     "when": "after_first_visit"
+    },
+    "p_scheduling_failed": 0.03,
+    "p_rescheduled": 0.1,
+    "p_no_show": 0.1,
+    "p_reschedule_after_no_show": 0.6,
+    "p_second_no_show": 0.25,
+    "p_completed": 0.65,
+    "modifiers": [
+     {
+      "fact": "barrier_cost_only",
+      "stage": "completed",
+      "multiply": 1.15,
+      "why": "cost barriers resolve with assistance more often"
+     },
+     {
+      "fact": "barrier_declined",
+      "stage": "decline",
+      "multiply": 1.6,
+      "why": "patient previously declined"
+     },
+     {
+      "fact": "interpreter_needed",
+      "stage": "reach",
+      "multiply": 0.85,
+      "why": "interpreter needed"
+     }
+    ],
+    "eligibility_reasons": [
+     "member's plan is not in the PharmD program contract",
+     "already enrolled in a plan-sponsored heart failure program"
+    ],
+    "coverage_reasons": [
+     "coverage terminated at the program's eligibility check"
+    ]
+   },
+   "completion": {
+    "kind": "fill_for_target_pillars",
+    "window_days": 90
+   }
   },
   {
    "id": "access_virtual_pt_msk",
    "name": "ACCESS MSK virtual physical therapy (CMS ACCESS model)",
    "kind": "virtual_pt",
    "context": "cms_access_model",
-   "request_keywords": ["physical therapy", "virtual pt", " pt ", "access model", "cms access", "msk", "back pain"],
+   "request_keywords": [
+    "physical therapy",
+    "virtual pt",
+    " pt ",
+    "access model",
+    "cms access",
+    "msk",
+    "back pain"
+   ],
    "eligibility": {
     "requires_active_coverage": true,
-    "products": ["medicare_ffs", "dual_ffs"],
-    "lines_of_business": ["medicare", "dual"],
-    "age": {"min": 18},
+    "products": [
+     "medicare_ffs",
+     "dual_ffs"
+    ],
+    "lines_of_business": [
+     "medicare",
+     "dual"
+    ],
+    "age": {
+     "min": 18
+    },
     "gap_type": "pt_after_ed_low_back_pain"
    },
    "enrollment_channel": "vendor_referral",
    "outreach_channel": "phone_then_sms",
    "script_template_id": "virtual_pt_access_intro_v1",
-   "required_fields": ["patient_id", "member_id", "payer_id", "product", "attributed_npi", "ed_visit_date", "preferred_language"],
+   "required_fields": [
+    "patient_id",
+    "member_id",
+    "payer_id",
+    "product",
+    "attributed_npi",
+    "ed_visit_date",
+    "preferred_language"
+   ],
    "priority_rules": [
-    {"metric": "days_since_ed", "lte": 30, "priority": "high"},
-    {"metric": "days_since_ed", "lte": 60, "priority": "medium"},
-    {"metric": "days_since_ed", "gte": 0, "priority": "low"}
+    {
+     "metric": "days_since_ed",
+     "lte": 30,
+     "priority": "high"
+    },
+    {
+     "metric": "days_since_ed",
+     "lte": 60,
+     "priority": "medium"
+    },
+    {
+     "metric": "days_since_ed",
+     "gte": 0,
+     "priority": "low"
+    }
    ],
    "vendor_slots": [
-    {"slot_id": "access_msk_vendor_a", "display": "ACCESS MSK vendor A (customer-configured)", "vendor_name": null,
-     "assignment": "hash", "filters": {}},
-    {"slot_id": "access_msk_vendor_b", "display": "ACCESS MSK vendor B (customer-configured)", "vendor_name": null,
-     "assignment": "hash", "filters": {}}
-   ]
+    {
+     "slot_id": "access_msk_vendor_a",
+     "display": "ACCESS MSK vendor A (customer-configured)",
+     "vendor_name": null,
+     "assignment": "hash",
+     "filters": {}
+    },
+    {
+     "slot_id": "access_msk_vendor_b",
+     "display": "ACCESS MSK vendor B (customer-configured)",
+     "vendor_name": null,
+     "assignment": "hash",
+     "filters": {}
+    }
+   ],
+   "workflow": {
+    "agent": "Agere MSK enrollment agent",
+    "first_visit": "virtual PT evaluation (CPT 97161-97163)",
+    "first_visit_days": 4,
+    "completion_days": 30,
+    "completion_label": "PT evaluation and 4+ treatment sessions"
+   },
+   "counterparty": {
+    "profile": "virtual_pt_vendor",
+    "outreach": {
+     "attempts": 3,
+     "attempt_days": [
+      1,
+      2,
+      5
+     ],
+     "p_reach": 0.4
+    },
+    "p_decline": 0.35,
+    "p_eligibility_denied": 0.08,
+    "eligibility_reasons": [
+     "outside the vendor's ACCESS service area",
+     "already receiving PT",
+     "enrolled in Medicare Advantage at vendor check"
+    ],
+    "p_coverage_denied": 0.02,
+    "coverage_reasons": [
+     "Part B not active at vendor check"
+    ],
+    "p_scheduling_failed": 0.05,
+    "p_rescheduled": 0.12,
+    "p_no_show": 0.18,
+    "p_reschedule_after_no_show": 0.55,
+    "p_second_no_show": 0.3,
+    "p_completed": 0.55,
+    "slot_overrides": {
+     "access_msk_vendor_b": {
+      "p_reach": 0.36,
+      "p_no_show": 0.15,
+      "p_completed": 0.6
+     }
+    },
+    "modifiers": [
+     {
+      "fact": "ed_within_30d",
+      "stage": "decline",
+      "multiply": 0.7,
+      "why": "ED visit in the last 30 days: pain is recent"
+     },
+     {
+      "fact": "ed_over_60d",
+      "stage": "decline",
+      "multiply": 1.25,
+      "why": "ED visit more than 60 days ago"
+     },
+     {
+      "fact": "age_80_plus",
+      "stage": "decline",
+      "multiply": 1.3,
+      "why": "age 80+: digital program"
+     },
+     {
+      "fact": "interpreter_needed",
+      "stage": "reach",
+      "multiply": 0.85,
+      "why": "interpreter needed"
+     },
+     {
+      "fact": "dual",
+      "stage": "reach",
+      "multiply": 0.85,
+      "why": "dual eligible: phone churn"
+     }
+    ]
+   },
+   "completion": {
+    "kind": "pt_claim_after_enrollment",
+    "window_days": 90
+   }
   },
   {
    "id": "plan_benefit_virtual_pt",
    "name": "Virtual physical therapy through the member's plan benefit",
    "kind": "virtual_pt",
-   "request_keywords": ["physical therapy", "virtual pt", " pt "],
+   "request_keywords": [
+    "physical therapy",
+    "virtual pt",
+    " pt "
+   ],
    "eligibility": {
     "requires_active_coverage": true,
-    "products": ["commercial", "marketplace", "medicaid", "medicare_advantage", "dual_ma"],
-    "lines_of_business": ["commercial", "medicaid", "medicare", "dual"],
-    "age": {"min": 18},
+    "products": [
+     "commercial",
+     "marketplace",
+     "medicaid",
+     "medicare_advantage",
+     "dual_ma"
+    ],
+    "lines_of_business": [
+     "commercial",
+     "medicaid",
+     "medicare",
+     "dual"
+    ],
+    "age": {
+     "min": 18
+    },
     "gap_type": "pt_after_ed_low_back_pain"
    },
    "enrollment_channel": "vendor_referral",
    "outreach_channel": "phone_then_sms",
    "script_template_id": "virtual_pt_plan_benefit_intro_v1",
-   "required_fields": ["patient_id", "member_id", "payer_id", "product", "attributed_npi", "ed_visit_date", "preferred_language"],
+   "required_fields": [
+    "patient_id",
+    "member_id",
+    "payer_id",
+    "product",
+    "attributed_npi",
+    "ed_visit_date",
+    "preferred_language"
+   ],
    "priority_rules": [
-    {"metric": "days_since_ed", "lte": 30, "priority": "high"},
-    {"metric": "days_since_ed", "lte": 60, "priority": "medium"},
-    {"metric": "days_since_ed", "gte": 0, "priority": "low"}
+    {
+     "metric": "days_since_ed",
+     "lte": 30,
+     "priority": "high"
+    },
+    {
+     "metric": "days_since_ed",
+     "lte": 60,
+     "priority": "medium"
+    },
+    {
+     "metric": "days_since_ed",
+     "gte": 0,
+     "priority": "low"
+    }
    ],
    "vendor_slots": [
-    {"slot_id": "plan_virtual_pt_slot_1", "display": "Plan-benefit virtual PT vendor slot (customer-configured)", "vendor_name": null,
-     "assignment": "priority", "filters": {}}
-   ]
+    {
+     "slot_id": "plan_virtual_pt_slot_1",
+     "display": "Plan-benefit virtual PT vendor slot (customer-configured)",
+     "vendor_name": null,
+     "assignment": "priority",
+     "filters": {}
+    }
+   ],
+   "workflow": {
+    "agent": "Agere MSK enrollment agent",
+    "first_visit": "virtual PT evaluation (CPT 97161-97163)",
+    "first_visit_days": 4,
+    "completion_days": 30,
+    "completion_label": "PT evaluation and 4+ treatment sessions"
+   },
+   "counterparty": {
+    "profile": "plan_benefit_pt",
+    "outreach": {
+     "attempts": 3,
+     "attempt_days": [
+      1,
+      2,
+      5
+     ],
+     "p_reach": 0.38
+    },
+    "p_decline": 0.3,
+    "p_eligibility_denied": 0.05,
+    "eligibility_reasons": [
+     "member not in the vendor's plan network",
+     "already receiving PT"
+    ],
+    "p_coverage_denied": 0.07,
+    "coverage_reasons": [
+     "PT visit benefit exhausted for the plan year",
+     "benefit not included in this plan"
+    ],
+    "prior_auth": {
+     "products": [
+      "commercial",
+      "marketplace",
+      "medicare_advantage",
+      "dual_ma"
+     ],
+     "p_required": 0.7,
+     "p_denied": 0.22,
+     "denial_reasons": [
+      "conservative care not documented",
+      "not medically necessary per plan criteria",
+      "missing referral documentation"
+     ],
+     "appeal": {
+      "p_overturned": 0.55,
+      "days": 10
+     },
+     "when": "before_enrollment"
+    },
+    "p_scheduling_failed": 0.05,
+    "p_rescheduled": 0.12,
+    "p_no_show": 0.2,
+    "p_reschedule_after_no_show": 0.55,
+    "p_second_no_show": 0.3,
+    "p_completed": 0.58,
+    "modifiers": [
+     {
+      "fact": "ed_within_30d",
+      "stage": "decline",
+      "multiply": 0.7,
+      "why": "ED visit in the last 30 days: pain is recent"
+     },
+     {
+      "fact": "ed_over_60d",
+      "stage": "decline",
+      "multiply": 1.25,
+      "why": "ED visit more than 60 days ago"
+     },
+     {
+      "fact": "medicaid",
+      "stage": "reach",
+      "multiply": 0.8,
+      "why": "Medicaid: phone churn"
+     },
+     {
+      "fact": "interpreter_needed",
+      "stage": "reach",
+      "multiply": 0.85,
+      "why": "interpreter needed"
+     }
+    ]
+   },
+   "completion": {
+    "kind": "pt_claim_after_enrollment",
+    "window_days": 90
+   }
   },
   {
    "id": "coverage_verification",
    "name": "Coverage verification queue",
    "kind": "coverage_check",
-   "request_keywords": ["coverage check", "eligibility check", "verify coverage", "insurance verification"],
-   "eligibility": {"requires_active_coverage": false},
+   "request_keywords": [
+    "coverage check",
+    "eligibility check",
+    "verify coverage",
+    "insurance verification"
+   ],
+   "eligibility": {
+    "requires_active_coverage": false
+   },
    "enrollment_channel": "eligibility_verification_queue",
    "outreach_channel": "work_queue",
    "script_template_id": "coverage_verification_v1",
-   "required_fields": ["patient_id", "member_id", "payer_id", "birth_date"],
-   "priority_rules": [{"metric": "always", "priority": "medium"}],
+   "required_fields": [
+    "patient_id",
+    "member_id",
+    "payer_id",
+    "birth_date"
+   ],
+   "priority_rules": [
+    {
+     "metric": "always",
+     "priority": "medium"
+    }
+   ],
    "vendor_slots": [
-    {"slot_id": "coverage_queue", "display": "Coverage verification team (customer-configured)", "vendor_name": null,
-     "assignment": "priority", "filters": {}}
-   ]
+    {
+     "slot_id": "coverage_queue",
+     "display": "Coverage verification team (customer-configured)",
+     "vendor_name": null,
+     "assignment": "priority",
+     "filters": {}
+    }
+   ],
+   "workflow": {
+    "agent": "Agere coverage agent",
+    "first_visit": null,
+    "first_visit_days": null,
+    "completion_days": 7,
+    "completion_label": "coverage found and patient re-routed, or enrollment assistance offered"
+   },
+   "counterparty": {
+    "profile": "eligibility_clearinghouse",
+    "p_coverage_found": 0.25,
+    "found_reasons": [
+     "active span found at another payer (270/271)",
+     "retroactive Medicaid span"
+    ],
+    "not_found_reasons": [
+     "no active coverage at any queried payer"
+    ]
+   },
+   "completion": {
+    "kind": "active_coverage_after",
+    "window_days": 30
+   }
   }
- ]
+ ],
+ "barrier_policy": {
+  "notes": "How documented therapy barriers (therapy_barrier, clinical/therapy_barriers.py) change a GDMT plan (plans/barriers.py). Scope: a barrier excludes only the agent it names (drug_key), or its class when no agent is named; a pillar is explained (closed) only when every agent in it is excluded or the barrier type explains the whole pillar. Recency: a barrier counts when its event_date, or a later restatement (last_date), falls within the window before as_of; older barriers are carried as history (stale_barrier) and never close a gap. Every applicable barrier on a missing pillar routes the patient to PharmD barrier review.",
+  "recency_days": {
+   "default": 1095,
+   "contraindication_lab": 365,
+   "contraindication_vitals": 365
+  },
+  "min_confidence": 0.7,
+  "pillar_explaining_types": [
+   "patient_declined",
+   "not_indicated",
+   "contraindication_lab",
+   "contraindication_vitals"
+  ],
+  "class_wide_types": [
+   "contraindication_lab",
+   "contraindication_vitals",
+   "patient_declined",
+   "not_indicated"
+  ],
+  "cross_class_flags": [
+   {
+    "if_class": "ace_inhibitor",
+    "barrier_types": [
+     "allergy_angioedema"
+    ],
+    "exclude_classes": [
+     "ace_inhibitor"
+    ],
+    "flag_classes": [
+     "arni"
+    ],
+    "flag": "history of ACE-inhibitor angioedema: sacubitril/valsartan is contraindicated; an ARB needs caution and clinician review"
+   },
+   {
+    "if_class": "arni",
+    "barrier_types": [
+     "allergy_angioedema"
+    ],
+    "exclude_classes": [
+     "arni",
+     "ace_inhibitor"
+    ],
+    "flag_classes": [
+     "arb"
+    ],
+    "flag": "angioedema on sacubitril/valsartan: avoid ACE inhibitors; an ARB needs caution and clinician review"
+   }
+  ],
+  "pillar_agents": {
+   "rasi": {
+    "ace_inhibitor": [
+     "lisinopril",
+     "enalapril",
+     "ramipril",
+     "benazepril",
+     "quinapril",
+     "captopril",
+     "fosinopril",
+     "perindopril",
+     "trandolapril",
+     "moexipril"
+    ],
+    "arb": [
+     "losartan",
+     "valsartan",
+     "irbesartan",
+     "candesartan",
+     "olmesartan",
+     "telmisartan",
+     "azilsartan",
+     "eprosartan"
+    ],
+    "arni": [
+     "sacubitril valsartan"
+    ]
+   },
+   "beta_blocker": {
+    "hf_evidence_based_beta_blocker": [
+     "carvedilol",
+     "metoprolol succinate",
+     "bisoprolol"
+    ]
+   },
+   "mra": {
+    "mra": [
+     "spironolactone",
+     "eplerenone",
+     "finerenone"
+    ]
+   },
+   "sglt2i": {
+    "sglt2_inhibitor": [
+     "dapagliflozin",
+     "empagliflozin",
+     "sotagliflozin",
+     "canagliflozin",
+     "ertugliflozin"
+    ]
+   }
+  },
+  "class_aliases": {
+   "beta_blocker": "hf_evidence_based_beta_blocker"
+  },
+  "actions": {
+   "intolerance_side_effect": "alternative agent in the pillar (or supervised rechallenge)",
+   "allergy_angioedema": "exclude the implicated agent or class; clinician review of cross-reactive classes",
+   "cost_access": "patient assistance, formulary alternative or prior authorization",
+   "patient_declined": "clinician-authorized revisit of the patient's decision",
+   "not_indicated": "confirm the indication (EF, diagnosis) before any start",
+   "contraindication_lab": "repeat the lab (potassium, eGFR) and reassess; monitoring plan",
+   "contraindication_vitals": "recheck blood pressure / heart rate; dose or timing adjustment"
+  }
+ },
+ "simulation": {
+  "notes": "Simulated counterparties (plans/counterparty.py). No external system is contacted: each program / vendor slot is an in-process adapter whose dispositions are drawn deterministically from a seeded scenario (seed = workspace | patient | program | plan as_of, one independent uniform draw per stage and attempt), so the same plan always gives the same outcomes. Rates are per program below (synthetic planning assumptions for engineering tests, not measured performance of any vendor). Modifiers multiply a stage probability when a patient fact holds; results are clipped to [0.01, 0.97].",
+  "timestamp_hours": [
+   9,
+   17
+  ],
+  "followups": {
+   "unreachable": {
+    "type": "pcp_notice",
+    "owner": "attributed_practice",
+    "due_days": 14,
+    "detail": "patient not reached after outreach attempts; ask the attributed practice to raise the program at the next visit"
+   },
+   "declined": {
+    "type": "pcp_notice",
+    "owner": "attributed_practice",
+    "due_days": 14,
+    "detail": "patient declined; clinician-authorized revisit"
+   },
+   "eligibility_denied": {
+    "type": "alternate_program",
+    "owner": "care_team",
+    "due_days": 7,
+    "detail": "program denied eligibility; route to an alternate program of the same kind or care-team review"
+   },
+   "coverage_denied": {
+    "type": "alternate_program",
+    "owner": "care_team",
+    "due_days": 7,
+    "detail": "coverage / benefit denied; alternate program, financial counseling or coverage verification"
+   },
+   "prior_auth_denied": {
+    "type": "appeal",
+    "owner": "attributed_practice",
+    "due_days": 10,
+    "detail": "prior authorization denied; appeal with supporting documentation"
+   },
+   "appeal_upheld": {
+    "type": "alternate_program",
+    "owner": "care_team",
+    "due_days": 7,
+    "detail": "appeal upheld; alternate program or self-directed plan"
+   },
+   "dropped_after_no_show": {
+    "type": "pcp_notice",
+    "owner": "attributed_practice",
+    "due_days": 14,
+    "detail": "repeated no-show; practice outreach"
+   },
+   "scheduling_failed": {
+    "type": "recontact",
+    "owner": "program",
+    "due_days": 7,
+    "detail": "enrolled but no first visit could be scheduled"
+   },
+   "dropped_out": {
+    "type": "pcp_notice",
+    "owner": "attributed_practice",
+    "due_days": 21,
+    "detail": "patient stopped the program before completion"
+   },
+   "coverage_not_found": {
+    "type": "alternate_program",
+    "owner": "care_team",
+    "due_days": 7,
+    "detail": "no active coverage found; Medicaid / marketplace enrollment assistance or financial counseling"
+   },
+   "coverage_found": {
+    "type": "reroute",
+    "owner": "care_team",
+    "due_days": 3,
+    "detail": "coverage found; re-run routing for the program"
+   },
+   "records_needed": {
+    "type": "records_request",
+    "owner": "care_team",
+    "due_days": 10,
+    "detail": "chart review could not decide; outside records requested"
+   }
+  }
+ }
 }

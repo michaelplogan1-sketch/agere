@@ -457,8 +457,11 @@ class WorkspaceAndApiTests(unittest.TestCase):
         self.assertEqual(code, 200)
         self.assertEqual((out['answer_type'], out['plan']['cohort']['source']), ('plan', 'caller'))
         self.assertEqual(out['plan']['summary']['by_route'], {'enroll': 2, 'exclude': 1})
+        # a plan writes work items: viewers are refused, writers get the CSV
+        self.assertEqual(workspace_api.handle('POST', '/api/workspaces/plan-clinic/plan', {'program_kind': 'pharmacy_gdmt'},
+                                              root=self.root, can_write=False)[0], 403)
         code, out = workspace_api.handle('POST', '/api/workspaces/plan-clinic/plan', {'program_kind': 'pharmacy_gdmt', 'format': 'csv'},
-                                         root=self.root, can_write=False)  # viewers may plan (read-only compute)
+                                         root=self.root)
         self.assertEqual(code, 200)
         rows = list(csv.DictReader(io.StringIO(out['csv'])))
         self.assertEqual(len(rows), out['summary']['tasks'])
@@ -474,20 +477,32 @@ if __name__ == '__main__':
 
 
 class ActTests(unittest.TestCase):
-    def test_agents_enroll_routed_patients(self):
+    """act.py no longer marks every step done: each step advances only on a simulated-counterparty receipt (see
+    test_action_backbone.py for outcomes, follow-ups, persistence and completion)."""
+
+    def test_steps_advance_only_on_receipts(self):
         from clinical_core.agere.plans.act import act
         plan = {'as_of': '2030-05-27', 'program_kind': 'virtual_pt',
                 'programs': [{'id': 'access_virtual_pt_msk', 'name': 'ACCESS MSK'}],
                 'patients': [
                     {'patient_id': 'P1', 'route': 'enroll', 'program_id': 'access_virtual_pt_msk',
-                     'vendor_slot': {'display': 'ACCESS MSK vendor A'}, 'attribution': {'npi': {'value': '1234567893'}}},
+                     'vendor_slot': {'slot_id': 'access_msk_vendor_a', 'display': 'ACCESS MSK vendor A'},
+                     'coverage': {'active': {'value': True}, 'product': {'value': 'medicare_ffs'}},
+                     'attribution': {'npi': {'value': '1234567893'}}},
                     {'patient_id': 'P2', 'route': 'coverage_check', 'program_id': 'coverage_verification',
-                     'attribution': {}},
+                     'coverage': {'active': {'value': False}}, 'attribution': {}},
                     {'patient_id': 'P3', 'route': 'exclude'}]}
-        out = act(plan)
-        self.assertEqual(out['summary']['enrolled'], 1)
-        self.assertEqual(out['summary']['coverage_verified'], 1)
-        a = out['actions'][0]
-        self.assertEqual((a['status'], a['vendor'], a['first_visit']['date']), ('enrolled', 'ACCESS MSK vendor A', '2030-05-31'))
-        self.assertEqual([s['step'] for s in a['steps']][-2:], ['pcp_notified', 'closed_loop_check'])
-        self.assertEqual(act(plan), out)  # deterministic
+        out = act(plan, workspace='test')
+        self.assertEqual(out['summary']['actions'], 2)
+        self.assertEqual(out['summary']['steps_done_without_receipt'], 0)
+        a = next(x for x in out['actions'] if x['patient_id'] == 'P1')
+        self.assertEqual((a['vendor'], a['counterparty_id']), ('ACCESS MSK vendor A', 'sim:access_msk_vendor_a'))
+        self.assertEqual(a['steps'][0]['step'], 'patient_outreach')
+        for s in a['steps']:
+            if s['status'] in ('done', 'failed', 'moved'):
+                self.assertTrue(s['receipt']['receipt_id'].startswith('RCPT-'))
+                self.assertTrue(s['receipt']['simulated'])
+        c = next(x for x in out['actions'] if x['patient_id'] == 'P2')
+        self.assertIn(c['state'], ('coverage_found', 'coverage_not_found'))
+        self.assertTrue(c['followups'])  # found -> reroute, not found -> enrollment assistance
+        self.assertEqual(act(plan, workspace='test'), out)  # deterministic

@@ -604,11 +604,14 @@ class Workspace:
         return out
 
     def plan(self, *, question=None, patient_ids=None, program_kind=None, as_of=None, gap_details=None,
-             send_factory=None, live=True, narrative=False):
+             send_factory=None, live=True, narrative=False, act=True, through=None):
         """A routed enrollment plan (clinical_core/agere/plans): the cohort from patient_ids, else the plan request's cohort
         question answered through ask(..., answer_type='patient_set'), else the deterministic candidates for the program's
-        gap; then the deterministic router over this workspace's semantic layer. narrative=True drafts prose through the
-        model only when a sender exists (send_factory, or ANTHROPIC_API_KEY for the ledgered sender)."""
+        gap; then the deterministic router over this workspace's semantic layer; then (act=True) the action backbone
+        (plans/backbone.py): a durable decision and work items in <workspace>/action/program-work.sqlite3, steps driven by
+        simulated-counterparty receipts, completion evaluated. Re-running the same plan is an idempotent replay.
+        narrative=True drafts prose through the model only when a sender exists (send_factory, or ANTHROPIC_API_KEY for
+        the ledgered sender)."""
         from ..plans import answer as plan_answer
         if not self.semantic_path.is_file():
             raise RuntimeError(f'Workspace {self.slug} has no semantic layer yet; run it first')
@@ -623,7 +626,8 @@ class Workspace:
         out = plan_answer.build(self.semantic_path, question, patient_ids=patient_ids, program_kind=program_kind,
                                 as_of=as_of or self.state.get('as_of') or None, answer_type='plan',
                                 cohort=cohort if question and self.state['status'] == 'ready' else None,
-                                gap_details=gap_details, narrative=narrative, send_factory=sender)
+                                gap_details=gap_details, narrative=narrative, send_factory=sender,
+                                action_store=self.dir if act else None, workspace=self.slug, through=through)
         env = plan_answer.envelope(out, pipeline='plan')
         self._record(question or f"plan:{env['plan']['program_kind']} for {len(env['cohort_patient_ids'])} patients", env)
         return env
