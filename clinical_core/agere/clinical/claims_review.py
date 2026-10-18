@@ -556,6 +556,8 @@ def underpayment_review(claims, models):
         if c['final_status'] != 'paid' or c['allowed'] <= 0: continue
         m, est = _expected(c, models)
         if not m: continue
+        if m['model'] == 'ratio_of_billed' and not c['billed'] > 0:
+            continue  # no billed amount (some payer feeds send 0): a ratio-of-billed expectation cannot be formed
         x = c['allowed'] / c['billed'] if m['model'] == 'ratio_of_billed' else c['allowed']
         z = (x - m['center']) / m['scale']
         shortfall = est[0] - c['allowed']
