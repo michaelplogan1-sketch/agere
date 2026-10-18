@@ -242,13 +242,16 @@ def _cohort_family(stack,question,ledger,meta,start,local_decline,early):
                           'learned_from':known['agreement'],'cohort_family':fam,'local_compiler_declined':local_decline,
                           'steps':[],'elapsed_seconds':time.perf_counter()-start}
         live=bool(stack.allow_live) and ledger is not None
-        res=cf.plan(stack.path,question,as_of,ledger=ledger if live else None,receipts=stack.receipts if live else None)
+        from . import bottled_cohort_hook  # the narrow bottled slot rung ($0) before the Haiku slot filler; off = cf.plan
+        res=bottled_cohort_hook.plan(stack.path,question,as_of,ledger=ledger if live else None,receipts=stack.receipts if live else None)
         if res is None:return None,{'reason':'no cohort family fits (or slots missing without a model)'}
         graph=validate(res['graph'],as_of)
     except (ValueError,KeyError,TypeError,RuntimeError,OSError,sqlite3.Error) as exc:  # the rung never blocks the ladder
         return None,{'error':f'{type(exc).__name__}: {exc}'[:300]}
     usd=sum(c.get('api_usd') or 0 for c in res['calls'])
-    return graph,{'route':'cohort_family','model':cf.MODEL if res['calls'] else None,
+    # a bottled slot fill is not covered by the parser's cascade certificate: it carries its own route name
+    route='cohort_family_bottled' if ((res['receipt'] or {}).get('bottled') or {}).get('used') else 'cohort_family'
+    return graph,{'route':route,'model':cf.MODEL if res['calls'] else None,
                   'new_paid_api_calls':sum(0 if c.get('cache_hit') else 1 for c in res['calls']),'frontier_called':False,
                   'cohort_family':{**res['receipt'],'calls':res['calls']},'local_compiler_declined':local_decline,
                   'steps':[{'stage':'cohort_family','receipt':{'cost_estimate':{'estimated_usd':usd}}}] if res['calls'] else [],

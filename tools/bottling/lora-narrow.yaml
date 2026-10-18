@@ -1,0 +1,28 @@
+# MLX LoRA for the narrow typed-plan rung (question -> cohort-family slots JSON). Data: tools/bottling/narrow_data.py.
+#   .venv/bin/python -m mlx_lm lora -c tools/bottling/lora-narrow.yaml
+# Short prompts (~450 tokens incl. the slot schema) and ~60-token outputs; checkpoints every 100 iters so a run can
+# resume with --resume-adapter-file <adapter_path>/<iter>_adapters.safetensors.
+# adapters-narrow-v1 = the iter-600 checkpoint: run stopped there (val 0.054 / 0.047 / 0.046 at 200 / 400 / 600, flat) to free the GPU.
+model: /Users/mikel/clinical-insights-local/models/qwen3-4b
+train: true
+data: /Users/mikel/clinical-insights-local/artifacts/bottling/data-narrow-v1
+adapter_path: /Users/mikel/clinical-insights-local/artifacts/bottling/adapters-narrow-v1
+fine_tune_type: lora
+num_layers: 16
+batch_size: 2
+grad_accumulation_steps: 2
+iters: 1200
+learning_rate: 1.0e-4
+lr_schedule:
+  name: cosine_decay
+  warmup: 20         # optimizer updates (iters / grad_accumulation_steps)
+  warmup_init: 1.0e-6
+  arguments: [1.0e-4, 600, 1.0e-5]
+mask_prompt: true          # learn the slots, not the schema
+max_seq_length: 768
+grad_checkpoint: false
+steps_per_report: 20
+steps_per_eval: 200
+val_batches: 20
+save_every: 100
+seed: 7
