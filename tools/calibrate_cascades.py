@@ -4,6 +4,7 @@
     .venv/bin/python tools/calibrate_cascades.py collect-offline --workspace-root <scratch root with a copy of pilot-native-v2-12>
     .venv/bin/python tools/calibrate_cascades.py collect-full    --workspace-root <scratch root> [--limit N] [--workers 3]
     .venv/bin/python tools/calibrate_cascades.py collect-bench
+    .venv/bin/python tools/calibrate_cascades.py collect-families [--semantic <semantic.sqlite3>]   # dq_family + vbc_family
     # 2. therapy-barrier labels: tools/calibration/label_therapy_candidates.py (Claude reference + Jev + Perplexity)
     # 3. fit and write the versioned thresholds
     .venv/bin/python tools/calibrate_cascades.py fit [--alpha 0.05] [--delta 0.10] [--write]
@@ -19,6 +20,10 @@ Calibration data (each row: tier, score, error, group, source, provenance):
   bench     saved bench result rows (bench/results/agere, development/challenge splits; references are our own SQL, not
             generator answer keys) through tools/certify_gates.bench_rows; blind heldout* rows are test-only. Plus the
             semantic-cache adversarial/paraphrase cases (tools/calibration/data/semantic_cache_cases.json).
+  families  question variants with inline definitions (tools/calibration/family_variants.py: years, products, formats,
+            conditions, statuses, codes, counts, windows varied) answered by dq_families.plan / vbc_families.plan alone and
+            executed read-only; truth = an independent Python reference over plain row reads for an explicitly written
+            definition; a variant the family declines is skipped (the route did not claim it).
   therapy   tools/calibration/data/therapy_barrier_labels.jsonl (reference = claude-opus-5-5 label).
 
 Split: by a hash of each row's group (one trusted definition / one question); 70% calibration, 30% held-out evaluation;
@@ -133,6 +138,63 @@ def collect_offline(root):
     errs = sum(r['error'] for r in rows)
     print(f'offline: {len(rows)} claimed ({errs} wrong), skipped {dict(skipped)}; calibration set now {n} rows')
     return rows
+
+
+# ---- offline: the dq_family / vbc_family routes alone -------------------------------------------------------------------
+PILOT_SEMANTIC = ROOT / 'artifacts' / 'workspaces' / SLUG / 'semantic.sqlite3'
+
+
+def collect_families(semantic=None):
+    import family_variants as FV
+    from clinical_core.agere.clinical import dq_families, vbc_families
+    from clinical_core.agere.clinical.sql_query import execute
+    path = Path(semantic or PILOT_SEMANTIC)
+    db = sqlite3.connect(f'file:{path}?mode=ro', uri=True)
+    ref = FV.Reference(db, FV.AS_OF)
+    mods = {'dq_family': dq_families, 'vbc_family': vbc_families}
+    rows = {'dq_family': [], 'vbc_family': []}
+    skipped = Counter()
+    for it in FV.generate():
+        mod = mods[it['tier']]
+        res = mod.plan(None, it['question'], FV.AS_OF)
+        other_tier = 'vbc_family' if it['tier'] == 'dq_family' else 'dq_family'
+        other = mods[other_tier].plan(None, it['question'], FV.AS_OF)
+        if other is not None:  # the other tier also claims it: a routing error charged to that tier
+            rows[other_tier].append({'tier': other_tier, 'item': it['id'], 'group': it['group'],
+                                     'score': C.route_score(other_tier, {other_tier: other['receipt']}), 'error': True,
+                                     'source': 'offline_families', 'question': it['question'], 'answer_type': it['answer_type'],
+                                     'detail': {'claimed_by_wrong_tier': True, 'family_claimed': other['spec']['family']},
+                                     'provenance': it['provenance']})
+        if res is None:
+            skipped[f"{it['tier']}: family did not claim"] += 1
+            continue
+        node = res['graph']['nodes'][0]['parameters']
+        try:
+            out = execute(None, node, target=path, time_limit=120)
+            got = (out.get('value') if node['returns'] in ('count', 'value') else out.get('patient_ids') if node['returns'] == 'patient_set'
+                   else {r['key']: r['value'] for r in out['rows']})
+        except ValueError as exc:
+            got = None; err = str(exc)
+        else:
+            err = None
+        truth = ref.answer(it['truth'])
+        correct = res['spec']['returns'] == it['answer_type'] and FV.same(got, truth, it['answer_type'])
+        rows[it['tier']].append({'tier': it['tier'], 'item': it['id'], 'group': it['group'],
+                                 'score': C.route_score(it['tier'], {it['tier']: res['receipt']}), 'error': not correct,
+                                 'source': 'offline_families', 'question': it['question'], 'answer_type': it['answer_type'],
+                                 'detail': {'family_claimed': res['spec']['family'], 'family_expected': it['family'],
+                                            'got': got if not isinstance(got, list) else len(got),
+                                            'truth': truth if not isinstance(truth, list) else len(truth), 'error': err},
+                                 'provenance': it['provenance']})
+    db.close()
+    allrows = rows['dq_family'] + rows['vbc_family']
+    n = _append(allrows, 'offline_families')
+    for tier, rs in rows.items():
+        errs = [r for r in rs if r['error']]
+        print(f"{tier}: {len(rs)} claimed ({len(errs)} wrong)")
+        for r in errs[:20]: print('   WRONG', r['question'][:120], '|', json.dumps(r['detail'], default=str)[:300])
+    print(f'skipped {dict(skipped)}; calibration set now {n} rows')
+    return allrows
 
 
 # ---- full fast path ---------------------------------------------------------------------------------------------------
@@ -308,6 +370,8 @@ def therapy_rows(path=THERAPY_LABELS):
 # ---- fit ----------------------------------------------------------------------------------------------------------------
 SCORE_DEFS = {
     'cohort_family': 'cascade.cohort_family_score: 1 - 0.08 x convention defaults applied - 0.25 x model-filled slots - 0.05 without an inline definition',
+    'dq_family': 'family_common.score: 1 - 0.08 x convention defaults applied - 0.05 without an inline definition',
+    'vbc_family': 'family_common.score: 1 - 0.08 x convention defaults applied - 0.05 without an inline definition',
     'semantic_cache': 'local encoder cosine similarity to the verified question (identical slots required first)',
     'compact_retrieval_typed_router': 'typed decider probability of its chosen analysis',
     'operator_router': 'learned-router probability when it chose the engine, else 1.0',
@@ -458,6 +522,7 @@ def main(argv=None):
     p.add_argument('--workers', type=int, default=3); p.add_argument('--without-definition', action='store_true')
     p.add_argument('--resume', action='store_true'); p.add_argument('--shard', help='i/n: ask only items with index %% n == i')
     sub.add_parser('collect-bench')
+    p = sub.add_parser('collect-families'); p.add_argument('--semantic')
     p = sub.add_parser('fit'); p.add_argument('--alpha', type=float, default=C.DEFAULT_ALPHA); p.add_argument('--delta', type=float, default=C.DEFAULT_DELTA)
     p.add_argument('--write', action='store_true'); p.add_argument('--out')
     a = ap.parse_args(argv)
@@ -465,6 +530,7 @@ def main(argv=None):
     if a.cmd == 'collect-full': return collect_full(a.workspace_root, a.limit, a.workers, a.without_definition, a.resume,
                                                   tuple(int(x) for x in a.shard.split('/')) if a.shard else None)
     if a.cmd == 'collect-bench': return collect_bench()
+    if a.cmd == 'collect-families': return collect_families(a.semantic)
     return fit_all(a.alpha, a.delta, a.write, a.out)
 
 

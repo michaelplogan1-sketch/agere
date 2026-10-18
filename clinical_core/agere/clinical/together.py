@@ -187,7 +187,8 @@ def deferral_on():
 SPECIALIST_ROUTES = frozenset({'local_compiler', 'semantic_cache', 'exact_question_cache', 'learned_verified_sql',
                                'metric_router', 'operator_router', 'operator_router_requires_input',
                                'compact_retrieval_typed_router', 'local_model_rewrite_compiled', 'cohort_family_bottled',
-                               'cohort_family'})  # cohort_families.py: code-rendered SQL for the stated definition
+                               'cohort_family',  # cohort_families.py: code-rendered SQL for the stated definition
+                               'dq_family', 'vbc_family'})  # dq_families.py / vbc_families.py: same pattern, delivery+VBC
 
 
 def engines_defer_on_definitions():

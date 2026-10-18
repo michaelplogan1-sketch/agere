@@ -3,7 +3,7 @@
 Each free (or near-free) tier that can claim a question or decide a label has a score, and a certificate fitted on
 labelled calibration data (tools/calibrate_cascades.py -> config/agere/cascade_thresholds.json):
 
-  question routing (together.py specialists-first)   local_compiler, cohort_family, metric_router, operator_router,
+  question routing (together.py specialists-first)   local_compiler, cohort_family, dq_family, vbc_family, metric_router, operator_router,
                                                       compact_retrieval_typed_router, learned_verified_sql, semantic_cache
   therapy barrier reader (therapy_barriers.py)        tier1_rules, tier2_classifier, tier3_jev, tier3_perplexity
 
@@ -44,6 +44,8 @@ DEFAULT_DELTA = 0.10
 TIER_CODE = {
     'local_compiler': ('local_compiler.py', 'compiler_rules.py', 'cohorts.py', 'concepts.py', 'analysis_graph.py'),
     'cohort_family': ('cohort_families.py',),
+    'dq_family': ('dq_families.py', 'family_common.py'),
+    'vbc_family': ('vbc_families.py', 'family_common.py'),
     'metric_router': ('metric_router.py', 'metrics.py', 'metric_families.py'),
     'operator_router': ('operator_router.py', 'learned_router.py'),
     'compact_retrieval_typed_router': ('economical_planner.py',),
@@ -54,7 +56,7 @@ TIER_CODE = {
     'tier3_jev': ('therapy_barriers.py',),
     'tier3_perplexity': ('therapy_barriers.py',),
 }
-ROUTE_TIERS = ('local_compiler', 'cohort_family', 'metric_router', 'operator_router', 'compact_retrieval_typed_router',
+ROUTE_TIERS = ('local_compiler', 'cohort_family', 'dq_family', 'vbc_family', 'metric_router', 'operator_router', 'compact_retrieval_typed_router',
                'learned_verified_sql', 'semantic_cache')
 THERAPY_TIERS = ('tier1_rules', 'tier2_classifier', 'tier3_jev', 'tier3_perplexity')
 
@@ -237,6 +239,9 @@ def route_score(route, receipt):
     receipt = receipt or {}
     if route == 'cohort_family':
         return cohort_family_score(receipt.get('cohort_family'))
+    if route in ('dq_family', 'vbc_family'):
+        from .family_common import score
+        return score(receipt.get(route))
     if route == 'semantic_cache':
         sim = (receipt.get('semantic_cache') or {}).get('similarity')
         return None if sim is None else float(sim)

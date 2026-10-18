@@ -230,6 +230,12 @@ class Stack:
                 result=guard_finish(result,receipt)
                 from .answer_shape import final as fit_final  # the shipped answer: requested shape and stated rounding
                 result=fit_final(question,graph,receipt,result)
+                if isinstance(receipt,dict) and receipt.get('route') in ('dq_family','vbc_family'):
+                    try:  # the deterministic family answer becomes a verified (question -> SQL) pair (family_common.record)
+                        from .family_common import record_route
+                        record_route(self.path,question,receipt,result.get('answer'))
+                    except Exception:  # noqa: BLE001 - learning bookkeeping never fails an answer
+                        pass
             lap('finish_s');timings['total_s']=round(time.perf_counter()-t0,3)
             if isinstance(receipt,dict):receipt['timings']=timings
             return {**result,'question':question,'route':'economical_composition_local_execution' if planning=='auto' else 'frontier_composition_local_execution',

@@ -257,6 +257,40 @@ def _cohort_family(stack,question,ledger,meta,start,local_decline,early):
                   'steps':[{'stage':'cohort_family','receipt':{'cost_estimate':{'estimated_usd':usd}}}] if res['calls'] else [],
                   'elapsed_seconds':time.perf_counter()-start}
 
+def _specialist_families(stack,question,ledger,meta,start,local_decline,early):
+    """Data-quality / feed families (dq_families.py) and value-based-care metric families (vbc_families.py): delivery,
+    identity, record-version, claims-finance, membership, attribution, utilization and access questions answered by
+    code-rendered SQL from the question's own definition (no model). early=True (right after the local compiler) claims
+    questions that state their own definition; early=False (with the late cohort rung) claims the plain questions a family
+    can represent with recorded convention defaults. A verified family answer for this exact question is reused from the
+    learning store (route learned_verified_sql). -> (graph, receipt) or (None, decline info)."""
+    from . import dq_families,vbc_families
+    from .together import _inline_definition
+    if early!=_inline_definition(question):return None,None
+    as_of=meta['snapshot']['as_of'];declined={}
+    for mod in (dq_families,vbc_families):
+        if not mod.enabled():continue
+        try:
+            known=mod.reuse(stack.path,question)
+            if known:
+                fam=known['plan'][mod.ROUTE]
+                graph=validate({'interpretation':fam['statement'],'coverage':'supported_observation','unmet_requirements':[],
+                                'nodes':[{'id':'answer','operation':'sql','inputs':[],
+                                          'parameters':{'query':known['plan']['query'],'returns':known['plan']['returns']},
+                                          'purpose':f"{mod.ROUTE} {fam['family']} (verified answer reused)"}]},as_of)
+                return graph,{'route':'learned_verified_sql','model':None,'new_paid_api_calls':0,'frontier_called':False,
+                              'learned_from':known['agreement'],mod.ROUTE:fam,'local_compiler_declined':local_decline,
+                              'steps':[],'elapsed_seconds':time.perf_counter()-start}
+            res=mod.plan(stack.path,question,as_of)
+            if res is None:
+                declined[mod.ROUTE]='no family fits';continue
+            graph=validate(res['graph'],as_of)
+        except (ValueError,KeyError,TypeError,RuntimeError,OSError,sqlite3.Error) as exc:  # the rung never blocks the ladder
+            declined[mod.ROUTE]=f'{type(exc).__name__}: {exc}'[:300];continue
+        return graph,{'route':mod.ROUTE,'model':None,'new_paid_api_calls':0,'frontier_called':False,mod.ROUTE:res['receipt'],
+                      'local_compiler_declined':local_decline,'steps':[],'elapsed_seconds':time.perf_counter()-start}
+    return None,({'reason':declined} if declined else None)
+
 def plan(stack,question,ledger,frontier):
     """frontier is a callback; no hosted call occurs for an exact local plan/cache."""
     normalize(question);start=time.perf_counter();meta=stack.retriever.meta
@@ -265,6 +299,12 @@ def plan(stack,question,ledger,frontier):
     if graph:
         return graph,{'route':'local_compiler','recipe':recipe,'model':None,'new_paid_api_calls':0,
                       'frontier_called':False,'steps':[],'elapsed_seconds':time.perf_counter()-start}
+    # Data-quality and VBC metric families (early): a question stating its own definition in one of their exact shapes
+    # is rendered by code from that definition (dq_families.py, vbc_families.py). They run before the local compiler,
+    # which reads some of these definitions as other intents (e.g. "What's the Medicaid PMPM for 2028? Definition: ..."
+    # as a knowledge-base explanation); a family claims only a definition it represents in full.
+    family_graph,family_info=_specialist_families(stack,question,ledger,meta,start,{'route':'not_run_yet'},True)
+    if family_graph is not None:return family_graph,family_info
     # Agere's own question compiler runs before any hosted model; the LLM is the fallback.
     from .local_compiler import compile as compile_locally
     from .source_profile import load as load_profile
@@ -283,6 +323,7 @@ def plan(stack,question,ledger,frontier):
             return graph,{'route':compile_info['route'],'model':None,'new_paid_api_calls':0,'frontier_called':False,
                           'local_compiler':compile_info,'steps':[],'elapsed_seconds':time.perf_counter()-start}
     local_decline=compile_info
+    if family_info:local_decline={**local_decline,'specialist_families':family_info}
     # Cohort families (early): a question stating its own definition in a common population-health shape is rendered by
     # code from the stated definition before any cache, model rewrite or hosted rung.
     family_graph,family_info=_cohort_family(stack,question,ledger,meta,start,local_decline,True)
@@ -437,6 +478,14 @@ def plan(stack,question,ledger,frontier):
                                'operator':route_info['decision'],'local_compiler_declined':local_decline,
                                'steps':metric_steps+[{'stage':'operator_router','receipt':{'cost_estimate':{'estimated_usd':operator_router.cost(route_info)}}}],
                                'elapsed_seconds':time.perf_counter()-start}
+    # Data-quality / VBC families (late): plain questions a family represents with recorded convention defaults.
+    if 'specialist_families' not in local_decline:
+        family_graph,family_info=_specialist_families(stack,question,ledger,meta,start,local_decline,False)
+        if family_graph is not None:
+            if metric_steps:family_info={**family_info,'steps':metric_steps+family_info['steps'],
+                                         'new_paid_api_calls':family_info['new_paid_api_calls']+len(metric_steps)}
+            return family_graph,family_info
+        if family_info:local_decline={**local_decline,'specialist_families':family_info}
     # Cohort families (late): the remaining family questions (no inline definition) before the analysts / hosted SQL.
     if 'cohort_family' not in local_decline:
         family_graph,family_info=_cohort_family(stack,question,ledger,meta,start,local_decline,False)
