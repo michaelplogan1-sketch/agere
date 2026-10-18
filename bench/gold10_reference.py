@@ -37,10 +37,12 @@ def _like_any(col, terms):
     return '(' + ' OR '.join(f"lower({col}) LIKE '%{t}%'" for t in terms) + ')'
 
 
-def queries(as_of):
+def queries(as_of, death_table=False):
     a = f"'{as_of}'"
-    dead = f"""SELECT patient_id FROM record WHERE stream = 'death_records'
-               AND json_extract(payload, '$.date_of_death') <= {a}"""
+    # alive at as_of = no CCLF8 death date on or before as_of (the death table's cclf8 column; raw records before /19)
+    dead = (f"SELECT patient_id FROM death WHERE cclf8_death_date <= {a}" if death_table else
+            f"""SELECT patient_id FROM record WHERE stream = 'death_records'
+               AND json_extract(payload, '$.date_of_death') <= {a}""")
     hf = """SELECT patient_id FROM condition WHERE icd10 LIKE 'I50%'
             UNION SELECT patient_id FROM payer_claim
             WHERE replace(principal_diagnosis, '.', '') LIKE 'I50%' OR replace(diagnosis_codes, '.', '') LIKE '%I50%'"""
@@ -147,7 +149,8 @@ def main():
     as_of = ws.summary()['as_of']
     db = sqlite3.connect(f"file:{ws.semantic_path}?mode=ro", uri=True)
     out = {'workspace': a.workspace, 'as_of': as_of, 'questions': {}}
-    for qid, sql in queries(as_of).items():
+    has_death = bool(db.execute("SELECT 1 FROM sqlite_master WHERE name = 'death'").fetchone())
+    for qid, sql in queries(as_of, death_table=has_death).items():
         pids = sorted({r[0] for r in db.execute(sql) if r[0]})
         keys = ws.customer_ids(pids)
         ids = sorted({native_id(keys.get(p)) or p for p in pids})

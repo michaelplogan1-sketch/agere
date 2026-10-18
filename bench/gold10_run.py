@@ -95,7 +95,8 @@ def selftest():
     db = sqlite3.connect(f'file:{ws.semantic_path}?mode=ro', uri=True)
     db.execute('CREATE TEMP VIEW fill AS SELECT * FROM main.fill WHERE 0')
     planted, reads = [], set()
-    for qid, sql in g.queries(ref['as_of']).items():
+    has_death = bool(db.execute("SELECT 1 FROM sqlite_master WHERE name = 'death'").fetchone())
+    for qid, sql in g.queries(ref['as_of'], death_table=has_death).items():
         if re.search(r'\bFROM fill\b|\bJOIN fill\b', sql):
             reads.add(qid)
         pids = sorted({r[0] for r in db.execute(sql) if r[0]})
