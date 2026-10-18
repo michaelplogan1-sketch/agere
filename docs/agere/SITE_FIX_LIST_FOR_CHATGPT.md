@@ -1,4 +1,4 @@
-# Ask Tom site: fixes and additions (for ChatGPT)
+# Agere site: fixes and additions (for ChatGPT)
 
 Site reviewed: agere-inside-intelligence.michael-p-loga331119.chatgpt.site (2026-10-18). Keep the design, the
 Data → Intelligence → Knowledge → Wisdom story and the heart-failure journey. Change the items below so every claim
@@ -51,7 +51,7 @@ this site's design system now). Until the hosted URL is public, keep the static 
 
 ## 5. Competitive section
 
-Keep the five comparisons. Add a sixth line to each Ask Tom column: "Reads native claims, enrollment, pharmacy, HL7 and
+Keep the five comparisons. Add a sixth line to each Agere column: "Reads native claims, enrollment, pharmacy, HL7 and
 FHIR files directly, and acts on the answer through agents." That is the gap no listed competitor closes end to end.
 
 ## 6. Physician value / care rewards
@@ -59,6 +59,8 @@ FHIR files directly, and acts on the answer through agents." That is the gap no 
 Keep "illustrative amounts". Add: "Rewards are tied to completed, verified care steps recorded by the agents (a fill, a
 visit, a closed gap), not to clicks."
 
-## 7. Name
+## 7. Name (decided)
 
-The site says "Ask Tom"; the platform underneath is Agere. Suggest a small footer line: "Ask Tom, built on Agere".
+The product is named **Agere** (Latin, "to act"). Replace "Ask Tom" everywhere: logo, page title, nav, eyebrows
+("AGERE / FROM DATA TO WISDOM"), the question box ("Ask Agere"), the rewards panel and the competitive comparisons.
+Keep the design system. "Agere" also fits the story: the last step of Data → Intelligence → Knowledge → Wisdom is acting.
