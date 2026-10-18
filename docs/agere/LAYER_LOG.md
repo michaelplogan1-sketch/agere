@@ -367,3 +367,19 @@ router, operator router and Opus reconcile leave the answer path (BUILD_LOG.md s
 - **Measured on 30 questions new to the service** (bench dev20 + ho10, so no ledger cache replay), against the P1 pilot run:
   p50 180 s -> 31 s, p90 346 s -> 69 s, max 539 s -> 86 s; cost $0.141 -> $0.022 per question; fallback needed 0 times.
 - **Accuracy on those 30:** 26 correct, 29 answered, precision on answered 0.897 (scorer questions-2026-10-17.3).
+
+## N1: native question set through the native pilot workspace (2026-10-18 early)
+- **What ran:** the v2.12 native slice's 150 questions (native-terms definitions) through Workspace.ask on
+  pilot-native-v2-12, full pipeline (compiler, governed metrics, engines, hybrid core), patient lists in native ids;
+  bench/native_run.py; scored once with questions-2026-10-17.3, delivered-data key, answers_sha256 f10e1599.
+- **Result:** 63/150 correct (precision on answered 0.44; note the score file's `truth_context` block, 23/141, is the
+  separate simulation-truth context, not the primary score). By domain: hospital operations 11/15, clinical care 9/15,
+  access 8/15, behavioral health 7/15, quality 7/15, pharmacy 5/15, data quality 4/15, RWE 4/15, VBC 4/15, revenue
+  cycle 4/15; unsupported 8/9. By type: count 42/86, value 19/39, table 2/16, patient_set 0/9. Cost $7.69.
+- **Plumbing fixed after N1 (not re-scored as a whole):** the full-pipeline envelope returned counts for patient-list
+  questions (fixed: the requested type is returned and passed to the analysts); requested patient lists now come from
+  the analysts' executed definition instead of an engine's capped worklist. Patient lists still score 0/9 exact
+  (N4ps); asked the generator for an id-resolution check and per-question F1.
+- **Reading:** on native data most answers came from the analysts (128/150 decisions), so the gap to the v2.8 pilot
+  (75/100) sits mainly in the native staged data and native question set, not in the engines. Not tuned against these
+  keys.
