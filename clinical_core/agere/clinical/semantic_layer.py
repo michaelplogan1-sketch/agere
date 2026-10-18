@@ -565,13 +565,14 @@ def _sql_in(values): return '(' + ','.join(repr(v) for v in values) + ')'
 def _appointments(out):
     """One row per appointment_id. scheduled_date = scheduled_date of the latest version carrying one (a reschedule moves it),
     else the date of the latest received slot_start (population-feed bookings carry booked_at + slot_start instead); never the
-    booking record's own date. booked_date = earliest 'booked' version date; lead_time_days is NULL when either date is unknown."""
+    booking record's own date. booked_date = earliest 'booked' version date, else the earliest booked_date any version carries (native feeds keep only the
+    current version but stamp the booking date on each); lead_time_days is NULL when either date is unknown."""
     kept, no_show, cancelled = _sql_in(APPOINTMENT_KEPT), _sql_in(APPOINTMENT_NO_SHOW), _sql_in(APPOINTMENT_CANCELLED)
     out.execute(f"""
     INSERT INTO appointment
     SELECT appointment_id, max(patient_id),
       coalesce(max(CASE WHEN rn_sched = 1 THEN scheduled_date END), max(CASE WHEN rn_slot = 1 THEN slot_date END)),
-      min(CASE WHEN status = 'booked' THEN event_date END),
+      coalesce(min(CASE WHEN status = 'booked' THEN event_date END), min(booked_payload)),
       max(CASE WHEN rn_last = 1 THEN status END),
       max(status IN {no_show}), max(status IN {cancelled}), max(status = 'rescheduled'), max(status IN {kept}),
       max(organization_id), max(clinician_id), max(purpose), count(*)
@@ -579,7 +580,8 @@ def _appointments(out):
                  row_number() OVER (PARTITION BY appointment_id ORDER BY slot_date IS NULL, event_date DESC, record_id DESC) AS rn_slot
           FROM (SELECT json_extract(payload,'$.appointment_id') AS appointment_id, patient_id, json_extract(payload,'$.status') AS status,
                  substr(json_extract(payload,'$.scheduled_date'), 1, 10) AS scheduled_date,
-                 substr(json_extract(payload,'$.slot_start'), 1, 10) AS slot_date, event_date, organization_id, record_id,
+                 substr(json_extract(payload,'$.slot_start'), 1, 10) AS slot_date,
+                 substr(json_extract(payload,'$.booked_date'), 1, 10) AS booked_payload, event_date, organization_id, record_id,
                  json_extract(payload,'$.clinician_id') AS clinician_id, json_extract(payload,'$.purpose') AS purpose,
                  row_number() OVER (PARTITION BY json_extract(payload,'$.appointment_id')
                                     ORDER BY available_date DESC, json_extract(payload,'$.available_time') DESC, record_id DESC) AS rn_last
@@ -934,9 +936,13 @@ def build(path):
         # canonical picked-up fills. History needs the build's received warehouse, which keeps superseded versions.
         from . import adjudication_history, fill_events
         warehouse = path.parent / 'warehouse.sqlite3'
-        if warehouse.exists():
+        if adjudication_history.has_history(warehouse):
             feeds['adjudication_history'] = adjudication_history.build(out, warehouse)
             feeds['record_correction'] = adjudication_history.build_corrections(out, warehouse)
+            if meta.get('schema') == 'agere-native-stack/1':
+                # Native staging retires superseded versions from the record store, so payer_claim's first status and
+                # version count come from the history (other builds keep their established values).
+                feeds['payer_claim_history'] = adjudication_history.reconcile_payer_claim(out)
         feeds['fill_events'] = fill_events.build(out)
         out.executemany('INSERT INTO meta VALUES (?,?)', [('version', VERSION), ('source_digest', meta['source_digest']),
                                                           ('as_of', meta['snapshot']['as_of']),

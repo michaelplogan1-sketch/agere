@@ -18,7 +18,9 @@ Answering: a native workspace (staged record store + product semantic layer) ans
 failure, answer through the hybrid core alone (pipeline='hybrid').
 
 State lives in artifacts/workspaces/<slug>/: workspace.json, profile.json, mapping.json, semantic.sqlite3,
-analyst_docs/, verification.json, events.jsonl, receipts/, pipeline/ (native). Credentials are never stored: a source spec names the
+analyst_docs/, verification.json, events.jsonl, receipts/, pipeline/ (native), parity.json (native: landing-to-model parity,
+recorded by verify as an annotation). Native builds also add delivery_file / delivery_gap (ingest/delivery.py) to the
+semantic layer at the build step. Credentials are never stored: a source spec names the
 warehouse, and connectors read credentials from the environment (see connectors.py).
 """
 from __future__ import annotations
@@ -209,11 +211,18 @@ class Workspace:
                 conn.close()
         return self.summary()
 
+    @property
+    def raw_dir(self):
+        """The native delivery folder named by a native:// source (None for other workspaces)."""
+        src = self.state['source']
+        if not src.startswith(NATIVE):
+            return None
+        return src[len(NATIVE) - 1:] if src.startswith(NATIVE + '/') else src[len(NATIVE):]
+
     def _do_ingest(self, conn):
         from ..ingest import landing
         self._update(status='ingesting')
-        raw_dir = self.state['source'][len(NATIVE) - 1:] if self.state['source'].startswith(NATIVE + '/') else self.state['source'][len(NATIVE):]
-        stats = landing.ingest(raw_dir, self.landing_path)
+        stats = landing.ingest(self.raw_dir, self.landing_path)
         (self.dir / 'ingest.json').write_text(json.dumps(stats, indent=1, default=str))
         self._step('ingest', files=stats['files'], skipped=stats['skipped'], unparsed=stats['unparsed'],
                    errors=stats['errors'], rows=stats['rows'], tables=len(stats.get('tables', {})))
@@ -339,9 +348,14 @@ class Workspace:
                        'detail': {'records': rep.get('issues'), 'share': round((rep.get('issues') or 0) / max(rep.get('records') or 1, 1), 6),
                                   'by_stream': rep.get('unresolved'), 'threshold': '0.1% of staged records'}},
                       {'name': 'identity_tiers', 'passed': True, 'detail': {k: v for k, v in ident.items() if k != 'largest_clusters'}}]
-            result = {'passed': all(c['passed'] for c in checks), 'checks': checks, 'streams': rep.get('streams')}
+            checks.append(self._source_parity())
+            # source_parity annotates (annotation=True): it is reported, never counted toward passed, never blocks.
+            result = {'passed': all(c['passed'] for c in checks if not c.get('annotation')), 'checks': checks,
+                      'streams': rep.get('streams')}
             (self.dir / 'verification.json').write_text(json.dumps(result, indent=1, default=str))
-            self._step('verify', passed=result['passed'], failed_checks=[c['name'] for c in checks if not c['passed']])
+            self._step('verify', passed=result['passed'],
+                       failed_checks=[c['name'] for c in checks if not c['passed'] and not c.get('annotation')],
+                       parity_flagged=checks[-1].get('detail', {}).get('flagged_count'))
             return
         try:
             result = verify.invariants(self.semantic_path, matcher.load(self.dir / 'mapping.json'), conn,
@@ -352,6 +366,19 @@ class Workspace:
         failed = [c.get('name') for c in result.get('checks', []) if isinstance(c, dict) and not c.get('passed')]
         self._step('verify', passed=result.get('passed'), failed_checks=failed)
 
+    def _source_parity(self):
+        """Landing rows/persons per feed, instance and year vs modeled records (onboarding/parity.py). The full report goes
+        to parity.json; the check is an annotation and a failure to run it is recorded, never raised."""
+        from . import parity
+        try:
+            report = parity.check(self.landing_path, self.semantic_path, self.dir / 'warehouse.sqlite3')
+            (self.dir / 'parity.json').write_text(json.dumps(report, indent=1, default=str))
+            detail = parity.summary(report) | {'report': 'parity.json'}
+            return {'name': 'source_parity', 'annotation': True, 'passed': report['flagged_count'] == 0, 'detail': detail}
+        except Exception as exc:  # noqa: BLE001
+            return {'name': 'source_parity', 'annotation': True, 'passed': False,
+                    'detail': {'error': f'{type(exc).__name__}: {exc}'[:500]}}
+
     def _do_docs(self, conn):
         from ..hybrid import catalog
         if self.native:
@@ -359,6 +386,10 @@ class Workspace:
             lines = [f"Workspace {self.state['name']} ({self.slug}): native feeds ingested and staged into Agere's canonical "
                      f"model; data as of {self.state.get('as_of')}. Persons are Agere-minted ids (AGP-...) resolved across "
                      "EHR MRNs, Medicare MBIs, payer member ids and demographics (see stg_person_map in raw tables).",
+                     '', 'File-level delivery questions (late, resent, v2, cut-off, empty or missing files) use delivery_file '
+                     '(one row per delivered file: manifest delivered date, sha256 and claimed records, parsed records, parse '
+                     'issues) and delivery_gap (expected periods with no file). raw_ingest_files is not loaded: its mtime is '
+                     'the local copy time, not the delivery time.',
                      '', 'Canonical records by stream:'] + [f'- {k}: {v}' for k, v in sorted((rep.get('streams') or {}).items())]
             result = catalog.build_docs(self.semantic_path, self.docs_dir, extra_sections={'Workspace data': '\n'.join(lines)})
             self._step('docs', files=result.get('files'), chars=result.get('chars'))
@@ -403,13 +434,28 @@ class Workspace:
             db.execute("DELETE FROM meta WHERE key IN ('as_of', 'workspace')")
             db.executemany('INSERT INTO meta VALUES (?, ?)', [('as_of', as_of), ('workspace', self.slug)])
             db.commit()
+            delivery_summary = self._delivery_tables(db)
             rows = {t: db.execute(f'SELECT count(*) FROM "{t}"').fetchone()[0] for (t,) in
                     db.execute("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'").fetchall()}
         finally:
             db.close()
         tmp.replace(self.semantic_path)
         self._update(as_of=as_of)
-        self._step('build', rows=rows, as_of=as_of, source='canonical staging')
+        self._step('build', rows=rows, as_of=as_of, source='canonical staging', delivery=delivery_summary)
+
+    def _delivery_tables(self, db):
+        """delivery_file / delivery_gap (file-level delivery facts, ingest/delivery.py) into the semantic layer being built.
+        Annotates and never blocks: a failure is recorded in the build step and the semantic layer is kept as staged."""
+        from ..ingest import delivery
+        try:
+            summary = delivery.build(db, self.landing_path, self.raw_dir)
+            db.execute("DELETE FROM meta WHERE key = 'delivery_file'")
+            db.execute('INSERT INTO meta VALUES (?, ?)', ('delivery_file', json.dumps(summary, default=str)))
+            db.commit()
+            return summary
+        except Exception as exc:  # noqa: BLE001 - delivery facts are an addition; the staged layer stands without them
+            db.rollback()
+            return {'error': f'{type(exc).__name__}: {exc}'[:500]}
 
     def review_items(self):
         """Mapping questions for a person, most important first. Each has a stable id used by decide()."""

@@ -106,7 +106,9 @@ SCHEMA_DOC = {
                     'patients without spans have no rows here (vbc falls back to the coverage record for them).',
     'payer_claim': 'One row per payer medical claim (payer_claim_id; payer feed, separate from provider-side claim). '
                    'Adjudications arrive as successive records (adjudication_sequence); final_status/final_sequence and the '
-                   'amounts (cents) come from the highest sequence. Statuses: paid, denied, denied_upheld, reversed.',
+                   'amounts (cents) come from the highest sequence. first_status = status of the first adjudication, '
+                   'adjudications = number of adjudication versions; on native workspaces both come from the full history '
+                   '(payer_adjudication, superseded versions included). Statuses: paid, denied, denied_upheld, reversed.',
     'payer_claim_line': 'Payer medical claim lines: cpt/hcpcs (procedure code by system), revenue_code, units, charge/allowed cents.',
     'payer_pharmacy_claim': 'Payer pharmacy claims (NCPDP): fill_date, ndc, drug_name, days_supply, quantity, pharmacy NPI/name/type, '
                             'BIN/PCN/group routing, prescriber_npi, claim_status (paid | rejected), plan/patient paid cents.',

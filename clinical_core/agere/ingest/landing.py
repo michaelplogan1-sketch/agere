@@ -6,7 +6,10 @@ Walks raw_dir, derives each file's context from its path (feed = first folder un
 folders when present), hands the file to the first parser whose detect() accepts it, and writes every yielded row
 into its landing table with lineage columns (_feed, _instance, _drop, _file, _row). Columns are added as new fields
 appear, so files of the same kind with drifting headers union cleanly. ingest_files records every file (parser,
-rows, size, mtime, error) and a rerun skips files already ingested unchanged. Nothing in raw_dir is modified.
+rows, size, mtime, error) and a rerun skips files already ingested unchanged. mtime is the local file's modification
+time (when it was copied to disk), not when it was delivered; delivery dates come from the delivery manifest
+(ingest/delivery.py builds delivery_file from ingest_files, the parse-issue tables and raw/manifest.json).
+Nothing in raw_dir is modified.
 """
 from __future__ import annotations
 

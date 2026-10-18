@@ -29,6 +29,19 @@ CREATE INDEX payer_adjudication_status ON payer_adjudication(claim_status, carc,
 """
 
 
+def has_history(warehouse_path):
+    """True when the received warehouse exists and keeps record versions (a records table); fixtures and directory-only
+    stores carry just source_entities."""
+    path = Path(warehouse_path)
+    if not path.is_file():
+        return False
+    db = sqlite3.connect(path.resolve().as_uri() + '?mode=ro', uri=True)
+    try:
+        return db.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='records'").fetchone() is not None
+    finally:
+        db.close()
+
+
 def _cents(v):
     try:
         return None if v is None else int(round(float(v) * 100))
@@ -75,6 +88,39 @@ def build(out, warehouse_path):
     out.executemany('INSERT INTO payer_adjudication VALUES (' + ','.join('?' * 19) + ')', rows)
     return {'version': VERSION, 'adjudications': len(rows), 'claims': len(by_claim),
             'superseded': sum(r[14] for r in rows)}
+
+
+def reconcile_payer_claim(out):
+    """payer_claim.first_status / adjudications / first_available_date from the full adjudication history.
+
+    payer_claim is built from the semantic layer's record table, which keeps current versions only, so a claim whose
+    first adjudication was superseded (denied, then reworked and paid) shows the later status as first_status and
+    counts only the surviving versions. payer_adjudication (built above from the received warehouse) has every version;
+    where it holds a claim, its is_first row and version count win. Claims absent from the history keep their values.
+    Called for native workspace builds (canonical staging retires superseded versions from the record store);
+    -> {'claims_with_history', 'first_status_changed', 'adjudications_changed'}."""
+    tables = {r[0] for r in out.execute("SELECT name FROM sqlite_master WHERE type='table'")}
+    if not {'payer_claim', 'payer_adjudication'} <= tables:
+        return {'skipped': 'payer_claim or payer_adjudication missing'}
+    out.execute('DROP TABLE IF EXISTS temp.claim_history')
+    out.execute("""CREATE TEMP TABLE claim_history AS
+        SELECT payer_claim_id, count(*) AS n, max(CASE WHEN is_first = 1 THEN claim_status END) AS first_status,
+               min(available_date) AS first_available
+        FROM payer_adjudication WHERE payer_claim_id IS NOT NULL GROUP BY payer_claim_id""")
+    out.execute('CREATE INDEX temp.claim_history_id ON claim_history(payer_claim_id)')
+    changed = out.execute("""SELECT count(*), sum(c.first_status IS NOT h.first_status), sum(c.adjudications IS NOT h.n)
+        FROM payer_claim c JOIN claim_history h USING(payer_claim_id)""").fetchone()
+    out.execute("""UPDATE payer_claim SET
+        first_status = (SELECT h.first_status FROM claim_history h WHERE h.payer_claim_id = payer_claim.payer_claim_id),
+        adjudications = (SELECT h.n FROM claim_history h WHERE h.payer_claim_id = payer_claim.payer_claim_id),
+        first_available_date = coalesce((SELECT CASE WHEN h.first_available IS NOT NULL AND
+                                                      (payer_claim.first_available_date IS NULL OR h.first_available < payer_claim.first_available_date)
+                                                 THEN h.first_available END
+                                         FROM claim_history h WHERE h.payer_claim_id = payer_claim.payer_claim_id),
+                                        first_available_date)
+        WHERE payer_claim_id IN (SELECT payer_claim_id FROM claim_history)""")
+    out.execute('DROP TABLE temp.claim_history')
+    return {'claims_with_history': changed[0], 'first_status_changed': changed[1] or 0, 'adjudications_changed': changed[2] or 0}
 
 
 def apply(semantic_path):

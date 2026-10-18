@@ -75,11 +75,19 @@ def _contract_by_table():
 
 
 def _schema_doc():
+    out = {}
     try:
         from ..clinical import semantic_layer
-        return dict(getattr(semantic_layer, 'SCHEMA_DOC', {}) or {})
+        out.update(getattr(semantic_layer, 'SCHEMA_DOC', {}) or {})
     except Exception:
-        return {}
+        pass
+    for mod in ('ingest.delivery',):  # tables added to native workspaces after the semantic build
+        try:
+            import importlib
+            out.update(getattr(importlib.import_module(f'{__package__.rsplit(".", 1)[0]}.{mod}'), 'DOC', {}) or {})
+        except Exception:
+            pass
+    return out
 
 
 def _clip(v):
@@ -235,24 +243,114 @@ def codes_section(profiles, modeled_order):
     return '\n'.join(out) + '\n'
 
 
-def conventions(have):
+SOURCE_COLUMNS = ('payer_id', 'source_table', 'source_system', 'claim_source', 'source_stream', 'stream', 'feed')
+NULL_SCAN_MAX_ROWS = 3_000_000   # tables larger than this are not scanned for null-by-source columns
+NULL_SCAN_SKIP = {'record', 'meta', 'concept_patient', 'link'}
+
+
+def null_by_source(db, tables, counts=None):
+    """Columns that are NULL for every row of some sources while other sources fill them: fields a source never
+    delivers (e.g. network status absent from one payer's feed). -> [{table, column, source_column, null_sources,
+    filled_sources}]. One grouped scan per table; tables without a source column are skipped."""
+    out = []
+    for t in tables:
+        if t in NULL_SCAN_SKIP or t.startswith('raw_') or (counts and counts.get(t, 0) > NULL_SCAN_MAX_ROWS):
+            continue
+        cols = [c for c, _ in _columns(db, t)]
+        src = next((c for c in SOURCE_COLUMNS if c in cols), None)
+        if not src:
+            continue
+        try:
+            n_src = db.execute(f'SELECT count(DISTINCT {_q(src)}) FROM {_q(t)}').fetchone()[0]
+            if not 2 <= n_src <= 60:
+                continue
+            check = [c for c in cols if c != src and c not in ('record_id', 'patient_id')]
+            if not check:
+                continue
+            q = (f'SELECT {_q(src)}, count(*), ' + ', '.join(f"count(NULLIF(trim(CAST({_q(c)} AS TEXT)), ''))" for c in check) +
+                 f' FROM {_q(t)} GROUP BY 1')
+            rows = db.execute(q).fetchall()
+        except sqlite3.Error:
+            continue
+        for i, c in enumerate(check):
+            empty = sorted(str(r[0]) for r in rows if r[1] > 0 and r[2 + i] == 0)
+            filled = sorted(str(r[0]) for r in rows if r[2 + i] > 0)
+            if empty and filled:
+                out.append({'table': t, 'column': c, 'source_column': src, 'null_sources': empty, 'filled_sources': filled,
+                            'rows': sum(r[1] for r in rows)})
+    return out
+
+
+def null_by_source_section(items):
+    lines = ['## Columns NULL because a source never delivers them',
+             'Computed from the data: each column below is NULL on every row from the listed sources and filled for the '
+             'others. NULL there means "not delivered by that source", not "no" or "zero". A question about such a field '
+             'can only be answered for the sources that deliver it; say which sources were excluded.', '']
+    for it in items:
+        lines.append(f"- {it['table']}.{it['column']}: NULL for {it['source_column']} in ({', '.join(it['null_sources'])}); "
+                     f"delivered by ({', '.join(it['filled_sources'])})")
+    if not items:
+        lines.append('No column is empty for a whole source.')
+    return '\n'.join(lines) + '\n'
+
+
+def conventions(have, null_items=None, null_doc=None):
     lines = ['## Canonical conventions (apply unless the question defines otherwise; the question\'s own definition wins)',
-             '- Scope: plain questions mean every patient in the warehouse; deduplicate patients (COUNT(DISTINCT patient_id)).']
+             '- Definitions: when the question states its own definition (population, statuses, dates, inclusions), apply it '
+             'literally and completely. It overrides every default here and every warehouse flag (counts_in_metrics, '
+             'superseded, version_status, duplicate_submission, result_current, excluded_reason and similar): apply such a '
+             'flag only when the question asks for it or its definition needs it. Answer an explicit definition with the '
+             'computed result and state any assumption; do not return clarify for a question that defines what it counts.',
+             '- Scope: plain questions mean every patient in the warehouse; deduplicate patients (COUNT(DISTINCT patient_id)).',
+             '- Patient lists: return every qualifying patient id, never a sample, a top-N or a truncated list, however long '
+             'the list is; the count equals the number of ids returned.',
+             '- Thresholds: "more than N", "over N", "above N", "exceeding N" are strict (> N); "at least N" and "N or more" '
+             'are >= N; "fewer than N" / "under N" are < N; "at most N" is <= N.',
+             '- Money: amounts are stored as integer cents (*_cents columns). Report dollars (cents / 100.0, two decimals) '
+             'unless the question asks for cents.',
+             '- Documented: "documented", "recorded" or "charted" in a time window uses the documentation clock - the date '
+             'the item was written into the record (recorded_date, signed_date, first_recorded, or available_date when the '
+             'table has no recorded date) - not the onset or service date; a documented diagnosis is any condition row in '
+             'the record (all source_table values count) unless the question names a narrower source.']
+    if have & {'payer_claim', 'enrollment_span', 'member_month'}:
+        lines.append('- Product vs line of business: product is the plan product exactly as delivered (commercial, marketplace, '
+                     'medicare_advantage, medicare_ffs, medicaid, dual_ffs, dual_ma, ...); line_of_business is a rollup '
+                     '(marketplace folds into commercial, medicare_ffs and medicare_advantage into medicare, dual_ffs and dual_ma '
+                     'into dual). A question that names a product ("commercial", "marketplace", "Medicare Advantage") filters '
+                     'product; use line_of_business only when the question asks for a line of business.')
+    if 'payer_adjudication' in have and 'payer_claim' in have:
+        lines.append('- Event vs claim grain: payer_adjudication has one row per adjudication event (every version, superseded '
+                     'ones included; is_first / is_last, adjudication_date, carc); payer_claim has one row per claim with its '
+                     'final status and amounts. Counts of adjudications, denials, recoupments or reason codes as events, or '
+                     'anything dated by adjudication date, use payer_adjudication; questions about a claim\'s final outcome '
+                     'use payer_claim. A first, initial or first-pass status is the first adjudication (payer_adjudication '
+                     'is_first = 1).')
     if 'visit' in have or 'visit_event' in have:
         lines.append('- Visits: one real visit = one person + setting + calendar date. visit holds one row per encounter_id; '
                      'visit_event keeps every received version when present. Use visit for counts.')
     if 'claim' in have:
         lines.append('- Claims: claim holds one row per claim_id with final_status = the last received status (reversals and '
-                     'recoupments net out of paid amounts); claim_event holds every received event. Money is integer USD cents.')
+                     'recoupments net out of paid amounts); claim_event holds every received event.')
     if 'measurement' in have:
         lines.append('- Labs and vitals: latest value = latest event_date (measurement_latest when present); use value_canonical / '
                      'unit_canonical for comparisons across units.')
+    if 'delivery_file' in have:
+        lines.append('- Deliveries: questions about the files themselves (late, sent twice, corrected v2, cut off, empty, never '
+                     'arrived) use delivery_file (one row per delivered file: manifest delivered_date, sha256, claimed vs '
+                     'parsed records, parse issues, derived flags) and delivery_gap (expected periods with no file), not record '
+                     'counts. A file\'s local copy time is not its delivery date.')
     lines += ['- Dates: event_date is when the thing happened; available_date is when it arrived. Questions about "as of" a date '
               'restrict to available_date <= as_of where a table has that column. Dates are ISO text; NULL means unknown.',
-              '- Conditions: a documented diagnosis is any condition row (all source_table values count) unless the question names '
-              'a narrower rule; match by icd10 prefix or concept, never by label substrings.',
+              '- Conditions: match by icd10 prefix or concept, never by label substrings.',
               '- Codes: ICD-10-CM dotted upper case; LOINC with check digit; NDC 11-digit; NPI 10-digit.',
               '- Value labels: filter on the exact spellings in section_codes_and_values.md; never guess a spelling.']
+    if null_items:
+        ranked = sorted(null_items, key=lambda i: (SOURCE_COLUMNS.index(i['source_column']), -i.get('rows', 0), i['table'], i['column']))
+        shown = [f"{i['table']}.{i['column']} (NULL for {i['source_column']} {', '.join(i['null_sources'][:8])}"
+                 f"{' ...' if len(i['null_sources']) > 8 else ''})" for i in ranked[:12]]
+        lines.append('- Never delivered: some columns are NULL for whole sources because those sources do not send the field, '
+                     'e.g. ' + '; '.join(shown) + (f'. Full list: {null_doc}' if null_doc else '') + '. Answer such questions '
+                     'from the sources that deliver the field and say which were excluded.')
     return '\n'.join(lines)
 
 
@@ -277,6 +375,10 @@ def build_docs(semantic_path, out_dir, *, model=None, extra_sections=None):
         if 'onboarding_lineage' in all_tables or 'meta' in all_tables:
             files['section_lineage.md'] = lineage_section(db, all_tables)
             sections.append(('Lineage: which source column fed each modeled field', 'section_lineage.md'))
+        modeled_have = set(modeled)
+        null_items = null_by_source(db, modeled, counts)
+        files['section_null_by_source.md'] = null_by_source_section(null_items)
+        sections.append(('Columns NULL because a source never delivers them', 'section_null_by_source.md'))
         for title, md in (extra_sections or {}).items():
             name = f'section_{_slug(title)}.md'
             files[name] = f'## {title}\n\n{md.strip()}\n'
@@ -292,7 +394,7 @@ def build_docs(semantic_path, out_dir, *, model=None, extra_sections=None):
             idx += ['## Raw source tables (not modeled; query directly when the modeled tables lack a field)'] + [line(t) for t in raw]
         for title, name in sections:
             idx.append(f'## {title} -> detail: {out_dir}/{name} ({len(files[name])} chars)')
-        idx.append(conventions(set(modeled)))
+        idx.append(conventions(modeled_have, null_items, f'{out_dir}/section_null_by_source.md'))
         files['catalog_index.md'] = '\n'.join(idx) + '\n'
         stale = [p for p in out_dir.glob('*.md') if p.name.startswith(('table_', 'section_')) and p.name not in files]
         for p in stale:
