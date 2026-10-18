@@ -1,0 +1,29 @@
+# AGERE_DOMAIN comes from deploy/.env (docker-compose.yml passes only that variable to the caddy container).
+# Caddy obtains and renews the TLS certificate automatically once DNS points at this host.
+
+{$AGERE_DOMAIN} {
+	encode zstd gzip
+
+	request_body {
+		max_size 2MB
+	}
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		Content-Security-Policy "frame-ancestors 'none'"
+		X-Frame-Options "DENY"
+		-Server
+	}
+
+	reverse_proxy agere:8080 {
+		health_uri /healthz
+		health_interval 30s
+	}
+
+	log {
+		output stdout
+		format json
+	}
+}

@@ -1,0 +1,39 @@
+# Hosted Agere (serve_hosted.py): pinned runtime dependencies.
+#
+# How this list was derived (2026-10-17, against .venv, Python 3.12.13):
+#   1. Imported clinical_core.agere.hosted.*, workspace_api, onboarding.*, ingest.*, hybrid.*, gateway,
+#      clinical.{semantic_layer, semantic_analyst, context_student, together, concepts, source_profile,
+#      population_feeds, population_events, adjudication_history, fill_events, note_facts, client_data, aggregate}
+#      and diffed sys.modules against sys.stdlib_module_names.
+#      Eager result: cryptography only (hosted/secrets.py imports Fernet at module level).
+#   2. Followed the function-level imports those modules make on the hosted request path
+#      (together -> stack_runtime / economical_planner / local_compiler / metric_router / answer_checks,
+#      semantic_layer -> drug_classes, gateway -> economics / warehouse). Those load numpy + scipy.
+#   3. Pinned each to importlib.metadata.version() from .venv.
+# Everything else in the hosted path is standard library (http.server, sqlite3, urllib, hashlib, json).
+
+# --- required ---------------------------------------------------------------------------------------------
+cryptography==50.0.2   # hosted/secrets.py: Fernet encryption of tenant credentials (AGERE_SECRET_KEY)
+cffi==2.1.1            # cryptography runtime dependency (pinned for reproducibility)
+pycparser==3.11        # cffi dependency
+numpy==2.5.3           # semantic layer / analytic operators reached lazily from together.py + economics
+scipy==1.18.1          # same lazy path (stack_runtime, drug_classes, metric_router, warehouse)
+
+# --- optional extras: uncomment for the source types a customer actually connects --------------------------
+# duckdb==1.5.6                         # onboarding/connectors.py: duckdb:/// sources and Parquet files in files:///
+#                                        # extracts (imported lazily; CSV/SQLite/HL7/FHIR/X12 work without it)
+# PyYAML==6.0.3                         # onboarding/matcher.py: only when a mapping file is .yaml/.yml (JSON is default)
+# snowflake-connector-python            # onboarding/connectors.py: snowflake:// (not installed in .venv, so unpinned;
+#                                        # pin when first used). Key-pair auth also needs cryptography (already above).
+# google-cloud-bigquery                 # onboarding/connectors.py: bigquery:// (not installed in .venv; pin when used)
+# databricks-sql-connector              # onboarding/connectors.py: databricks:// (not installed in .venv; pin when used)
+# psycopg[binary]                       # onboarding/connectors.py: postgresql:// (not installed in .venv; pin when used)
+
+# --- deliberately excluded ---------------------------------------------------------------------------------
+# torch / transformers: imported lazily only by clinical_core/local_encoders.py and clinical/local_decisions.py.
+#   On the hosted path the only caller is concepts.terminology_encoder(), which catches the failure and falls back
+#   to the lexical matcher (and models/ is not shipped in the image). Set AGERE_TERMINOLOGY_ENCODER=off to skip it.
+# mlx / mlx_lm / kev / timestral: Apple-silicon local-model and research paths (bottled, nl2sql local mode,
+#   verification_v2, demand); not reached by the hosted server.
+# scikit-learn / joblib / threadpoolctl: only context_student.fit()/ContextStudent and the *_learning / semantic_student
+#   trainers import them; the hosted path uses context_student.send() (HTTP) only.

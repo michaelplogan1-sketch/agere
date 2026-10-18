@@ -1,0 +1,52 @@
+# Run from this folder:  docker compose up -d --build
+name: agere
+
+services:
+  agere:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    image: agere-hosted:latest
+    env_file: .env
+    environment:
+      AGERE_DATA_DIR: /data
+      AGERE_HOST: 0.0.0.0
+      AGERE_PORT: "8080"
+    volumes:
+      - agere-data:/data
+    restart: unless-stopped
+    # No published ports: only Caddy reaches agere:8080 on the compose network.
+    expose:
+      - "8080"
+    logging:
+      driver: json-file
+      options:
+        max-size: "20m"
+        max-file: "5"
+
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    environment:
+      # Only the hostname; app secrets in .env are not given to the proxy.
+      AGERE_DOMAIN: ${AGERE_DOMAIN:?set AGERE_DOMAIN in deploy/.env}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - agere
+    logging:
+      driver: json-file
+      options:
+        max-size: "20m"
+        max-file: "5"
+
+volumes:
+  agere-data:
+  caddy_data:
+  caddy_config:
