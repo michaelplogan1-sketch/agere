@@ -1607,7 +1607,8 @@ def _match_cclf(ctx, built, cclf):
         if not hits:
             rep['cross_check'][f'medicare_ffs_x12_without_cclf_match:{payer}'] += 1
             continue
-        ch = hits.most_common(1)[0][0]
+        # best score, then the smallest chain key: deterministic regardless of set iteration order (PYTHONHASHSEED)
+        ch = min(hits.items(), key=lambda kv: (-kv[1], str(kv[0])))[0]
         cc = claims[ch]
         cc['matched'] = True
         rep['dropped']['cclf_claim_matched_mssp_x12' if payer == 'MSSP' else 'cclf_claim_matched_payer_x12'] += 1
