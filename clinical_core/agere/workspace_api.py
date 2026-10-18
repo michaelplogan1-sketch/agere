@@ -27,6 +27,14 @@ Routes (JSON; handled before the service's global stack lock because builds take
   GET  /api/workspaces/<slug>/decisions     saved plan decisions
   GET  /api/workspaces/<slug>/decisions/<id> a decision with the current funnel, outcomes and closure rates
   POST /api/workspaces/<slug>/batch         {questions: [{id, question, answer_type?}]} -> answered in the background into answers-<time>.jsonl
+  POST /api/workspaces/<slug>/deliverable   {request | template, params?, audience?, format?: json|html}
+                                            -> a composed, verified, self-contained interactive artifact (deliverables/compose.py):
+                                               {id, status: delivered|rejected, html, verification, costs, tool_calls, receipts}.
+                                               template = a reference example (war_room, pharmacist_cards, self_running_program;
+                                               no model call). Write role: it runs plans and simulations.
+  POST /api/workspaces/<slug>/deliverable/revise   {id, instruction} -> the revised deliverable (cached tool results reused)
+  POST /api/workspaces/<slug>/deliverable/decision {item_id, decision, note?, deliverable_id?, patient_id?} -> written to the work store
+  GET  /api/workspaces/<slug>/deliverables  saved deliverables;  GET /api/workspaces/<slug>/deliverables/<id>  one (spec + html)
 """
 from __future__ import annotations
 
@@ -123,6 +131,12 @@ def handle(method, path, body=None, *, root=None, credentials=None, on_usage=Non
                 if parts[1] == 'decisions' and len(parts) == 3:
                     return 200, backbone.decision(ws.dir, parts[2])
                 return 404, {'error': 'Unknown workspace route'}
+            if parts[1] == 'deliverables':
+                from . import deliverables as dlv
+                if len(parts) == 2:
+                    return 200, {'deliverables': dlv.listing(ws)}
+                spec, _, _, doc = dlv.load(ws, parts[2])
+                return 200, {**spec, 'html': doc}
             if parts[1] == 'questions':
                 f = ws.dir / 'questions.jsonl'
                 rows = [json.loads(l) for l in f.read_text().splitlines()] if f.is_file() else []
@@ -200,6 +214,37 @@ def handle(method, path, body=None, *, root=None, credentials=None, on_usage=Non
                               parameter_uncertainty=body.get('parameter_uncertainty', True) is not False,
                               per_patient=bool(body.get('per_patient')), **kw)
             return 200, sim_service.public(out)
+        if action == 'deliverable':
+            from . import deliverables as dlv
+            sub = parts[2] if len(parts) > 2 else None
+            t0 = __import__('time').time()
+            if sub == 'decision':
+                return 200, dlv.record_decision(ws.dir, body.get('item_id'), str(body.get('decision') or ''), note=body.get('note') or '',
+                                                actor='person:' + str(body.get('reviewer') or 'reviewer'), deliverable_id=body.get('deliverable_id'),
+                                                patient_id=body.get('patient_id'))
+            if sub == 'revise':
+                if not body.get('id') or not str(body.get('instruction') or '').strip():
+                    raise ValueError('id and instruction are required')
+                out = dlv.revise(ws, str(body['id']), str(body['instruction'])[:4000])
+            elif sub is None:
+                req = str(body.get('request') or '').strip() or None
+                if req is None and not body.get('template'):
+                    raise ValueError('request or template is required')
+                params = body.get('params') or {}
+                if not isinstance(params, dict):
+                    raise ValueError('params must be an object')
+                out = dlv.compose(ws, req[:4000] if req else None, audience=body.get('audience') or None, template=body.get('template') or None,
+                                  params=params, live=body.get('live', True) is not False)
+            else:
+                return 404, {'error': 'Unknown deliverable action'}
+            if on_usage:
+                on_usage(ws.slug, {'question': ('deliverable: ' + str(out.get('request') or out.get('template')))[:300],
+                                   'cost_usd': (out.get('costs') or {}).get('total_usd'), 'seconds': round(__import__('time').time() - t0, 2),
+                                   'decision': 'deliverable'})
+            if str(body.get('format') or 'json').lower() == 'html':
+                return (200 if out['status'] == 'delivered' else 422), {'id': out['id'], 'status': out['status'], 'html': out.get('html'),
+                                                                       'verification': out.get('verification')}
+            return (200 if out['status'] == 'delivered' else 422), out
         if action == 'ask':
             q = str(body.get('question') or '').strip()
             if not q:
