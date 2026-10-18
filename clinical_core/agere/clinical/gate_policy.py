@@ -163,6 +163,17 @@ def path_gates(receipt):
 
 def assess(receipt, encoder=None, path=None):
     """-> {'level': verified|unverified|low, 'reason', 'gates': [...]} under the rule in the module docstring."""
+    # A tier certified by the cascade (cascade.py, Learn-then-Test on its own calibration set) is verified as is: the answer
+    # guard then does not spend an independent hosted path re-checking it.
+    try:
+        from . import cascade
+        cert = cascade.certify_route(receipt) if isinstance(receipt, dict) else None
+    except Exception:  # noqa: BLE001 - certification bookkeeping never fails an answer
+        cert = None
+    if cert and cert.get('certified'):
+        return {'level': 'verified', 'reason': 'certified cascade tier: ' + str(cert.get('statement') or cert.get('tier')),
+                'gates': [{'gate': f"cascade.{cert.get('tier')}", 'score': cert.get('score'), 'threshold': cert.get('threshold'),
+                           'certified': True, 'passed': True, 'guarantee': cert.get('statement')}], 'rule': VERSION}
     gates = path_gates(receipt)
     if gates is None:
         return {'level': 'unverified', 'reason': f"no gate path is defined for route {receipt.get('route') if isinstance(receipt, dict) else None}",

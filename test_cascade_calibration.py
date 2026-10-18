@@ -276,3 +276,16 @@ class TherapyCascadeTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+class GatePolicyHonorsCertificates(unittest.TestCase):
+    def test_certified_tier_is_verified_without_a_cross_check(self):
+        from unittest.mock import patch
+        from clinical_core.agere.clinical import gate_policy, cascade
+        cert = {'tier': 'cohort_family', 'certified': True, 'accept': True, 'status': 'certified', 'score': 0.9,
+                'threshold': 0.71, 'statement': 'certified'}
+        with patch.object(cascade, 'certify_route', return_value=cert):
+            out = gate_policy.assess({'route': 'cohort_family'})
+        self.assertEqual(out['level'], 'verified')
+        with patch.object(cascade, 'certify_route', return_value={**cert, 'certified': False}):
+            self.assertNotEqual(gate_policy.assess({'route': 'cohort_family'})['level'], 'verified')
