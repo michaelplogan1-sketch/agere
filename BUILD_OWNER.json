@@ -5,10 +5,10 @@
   "heartbeat_id": "continue-building-the-agere-stack",
   "ownership_verified": "2026-10-19T12:38:11.040529+00:00 explicit user handoff: \"You are taking over the Agere build from Claude Code, at Mike's request.\"",
   "scope": "/Users/mikel/clinical-insights-local build. Use Find Agere site inspiration public site as current design/web preview; its active artifacts/agere-interactive-site checkout is read-only to this build. Separate research and generator remain read-only.",
-  "active_work": "G3: finish and ship connected stack workflows; stronger executed analysis for unclaimed questions. Broad reference audit off the build critical path.",
+  "active_work": "G3: frontier fallback, bounded SQL repair and cost propagation deployed. Continue connected product workflows; broad benchmark audit off build critical path.",
   "latest_delivery": "GRAPH_OBSERVATION_BUILD.md",
   "latest_receipt": "artifacts/agere-graph-observation-v1/implementation-receipt.json",
-  "owned_server_pid": 7655,
+  "owned_server_pid": 9772,
   "owned_server_session": null,
   "full_queue_acceptance": false,
   "spending_limit": "uncapped",
@@ -22,13 +22,13 @@
   "resumed_at": "2026-10-19T12:38:11.040529+00:00",
   "heartbeat_interval_minutes": 5,
   "latest_overnight_report": "AGERE_OVERNIGHT_READINESS_2026-10-11.md",
-  "latest_checkpoint": "2026-10-19T13:17:48.844551+00:00",
+  "latest_checkpoint": "2026-10-19T13:30:34.308645+00:00",
   "protected_manifest": "artifacts/agere-reconciliation-contract-v2/protected-for-continuation.json",
   "latest_morning_report": "AGERE_MORNING_STATUS_2026-10-11.md",
   "latest_architecture_review": "AGERE_CTO_REVIEW_2026-10-11_EVENING.md",
   "pause_reason": null,
   "last_observed_server_session": null,
-  "server_status": "Ready on :8885 from tested committed source 426659c; PID 7655. Health and workspace-list endpoints passed. Existing warehouse configuration overlay preserved. Continuation reminder deleted.",
+  "server_status": "Ready on :8885 from committed source 8687121; PID 9772. Health, workspace listing and population count passed; count 4095 at zero model calls/$0. Warehouse overlay retained. Continuation reminder deleted.",
   "unsealed_work": {
     "status": "inactive_candidate",
     "path": "artifacts/agere-citation-recovery-v1",
@@ -69,19 +69,22 @@
   "source_control": "git; codex/agere-validated-proof; commit only owned paths as Michael Logan <michael.p.logan1@gmail.com>",
   "heartbeat_removal_authorization": "Mike 2026-10-19: \"i am here you dont need the continue building reminder\"; deleted through the Codex automation tool.",
   "live_runtime": {
-    "pid": 7655,
-    "commit": "426659c6f5fb0e0e16b6c09a4edfe9a724ce5f57",
-    "rollback_commit": "a5bafb242feb7b8c2f7ef7ad7d7664100c2df1b9",
+    "pid": 9772,
+    "commit": "8687121a97a8edc9f901ff2fe12dea6c0379ed90",
+    "rollback_commit": "7ee8874e218d41de465b27608463b491a78353e6",
     "health": {
       "status": "ready",
       "synthetic": true
     },
     "config_preserved": true,
     "log": "/private/tmp/agere-live-20261019.log",
+    "workspaces_endpoint": "passed",
     "worktree": "/Users/mikel/agere-mvp-run",
     "port": 8885,
-    "verified_at": "2026-10-19T13:01:02.075794+00:00",
+    "verified_at": "2026-10-19T13:30:34.308645+00:00",
     "source_status": "Committed source; preexisting config overlay and data/model symlinks retained",
-    "frontier_review": "disabled by default"
+    "analyst_model": "claude-opus-5-5",
+    "mechanical_repair": "one bounded attempt",
+    "frontier_review": "optional ambiguity review disabled by default"
   }
 }

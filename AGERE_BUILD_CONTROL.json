@@ -1,6 +1,6 @@
 {
  "schema": "agere-build-control/1",
- "updated_at": "2026-10-19T13:17:48.844551+00:00",
+ "updated_at": "2026-10-19T13:30:34.308645+00:00",
  "decision_basis": "AGERE_CTO_REVIEW_2026-10-11_EVENING.md",
  "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
  "required_references": [
@@ -278,20 +278,24 @@
   "kind": "manual_turn_checkpoint",
   "gate_id": "G3",
   "last_delivered_gate": "G3",
-  "user_behavior_delta": "Complete analytical question definitions are retained up to 12,000 characters across planning, execution and conversations. An optional bounded frontier review executes and checks SQL and may resolve clarification only from an exact definition quote; it remains off by default. Study entry points and scorers reject unvalidated references. Exploratory A2/A3 appear in analysis. Mike removed the continuation reminder; manual chat work remains active.",
-  "measured_failure_reduction": "Three saved Gold-50 abstentions trace to the former 1,500-character input guard. The general fix passes independent tiny fixtures; Gold-50 correctness has not been retested. One authorized validated Gold10 regression passed 9/9, zero API calls/$0, median 0.24s. The prior focused suite passed 101 tests; the added exploratory-report fixture and five validation-gate tests passed. Deleted-reminder continuity is checked with absent, unexpectedly present and unauthorized-removal cases.",
+  "user_behavior_delta": "Live on :8885: unclaimed questions use three Opus analysts with system-executed SQL and one bounded repair for failed contracts/SQL. Specialists and certified cheap tiers still run first. Analyst time starts at dispatch, not before specialist work. Actual model and metered workspace cost survive the shared answer. Optional ambiguity-overriding review remains disabled.",
+  "measured_failure_reduction": "Independent 12-person grouped calculation initially returned through a second hosted fallback with unknown cost after all three analyst contracts failed. The repaired connected workflow answers via analysts_answered with the expected F=100/M=81, one bounded repair and known new API estimate $0.151273 (cached prior calls excluded). 100 focused product tests plus the aggregate-cost regression pass; 18 study-harness/validation tests pass. Live population-count workflow returns 4095 in 0.49s, zero paid calls/$0. Initial and reservation-blocked results retained. No benchmark rerun/rescore.",
   "evidence": [
+   "test_hybrid.py",
+   "test_together.py",
+   "test_workspace_stack.py",
    "test_analytical_fallback.py",
-   "bench/study/test_validation.py",
-   "bench/study/test_study_harness.py",
-   "artifacts/study/S4-input-contract-regression/A/p1/score.json",
-   "docs/agere/study/PROOF_STATUS.md",
-   "docs/agere/study/REFERENCE_AUDIT_2026-10-19.md",
-   "artifacts/study/validated-proof-2026-10-19/evidence.json"
+   "test_plans.py",
+   "artifacts/product-workflows/frontier-fallback-2026-10-19/expected.json",
+   "artifacts/product-workflows/frontier-fallback-2026-10-19/result.json",
+   "artifacts/product-workflows/frontier-fallback-2026-10-19/reservation-blocked-result.json",
+   "artifacts/product-workflows/frontier-fallback-2026-10-19/repaired-result.json",
+   "artifacts/product-workflows/frontier-fallback-2026-10-19/live-specialist-result.json",
+   "artifacts/product-workflows/frontier-fallback-2026-10-19/live-runtime.json"
   ],
-  "remaining_gap": "Gold-50 all 41 new references and native nine remain pending independent validation. Gold10 A9/9 versus Opus7/9 at $0 versus $1.89 is a small descriptive result (paired p=.50), not general superiority. A2/A3 model quality is unqualified and A3 stays disabled. Full ten-area scope and G5 qualification gaps remain. Generator audit additionally identified a BH-G1 index-screen concern, DQ-G1 paid-amount derivation shortcut and inpatient admission fallback coverage. DQ-G1 is not yet a confirmed wrong answer; raw delivered amounts must independently establish it. No corrected digest sealed. Gold-50 cost attribution is incomplete per question (concurrent workers); batch A ledger $1.57448982 versus B $3.6228896, no accuracy-derived metric yet. E has 15 unpriced failed calls.",
-  "next_action": "G3 product delivery: finish the unclaimed-question path using frontier analysts and executed SQL, preserve specialist-first/certified cheap tiers, verify connected workflows on independently known synthetic fixtures, then update the live service. The broad reference audit is deferred from the build critical path. Do not run or rescore unvalidated benchmarks.",
-  "next": "Ship a usable connected question/answer/deliverable workflow and report actual behavior. Continue through substantive full-stack gaps; comparative proof is subsequent qualification rather than a prerequisite to implementation."
+  "remaining_gap": "This is connected product behavior, not broad model-quality qualification or full ten-area completion. Gold-50/native reference validation remains pending and off the build critical path. Genuine missing inputs/ambiguity still decline. Model agreement is not proof of correctness. G5 qualification remains unmet.",
+  "next_action": "G3: continue connected original-question analysis, decision and saved-work workflows across population/ACO/provider questions; fix concrete integration failures using independent small fixtures. Keep specialists first and the full ten-area scope. Broad reference auditing remains off the build critical path; no unvalidated benchmark runs.",
+  "next": "Deliver usable full-stack workflows; retain complete product scope and known qualification gaps."
  },
  "decisions": [
   {
@@ -778,6 +782,13 @@
    "basis": "Mike: \"that seems like way too much work ... i just want the stck built out\". Earlier direction: latency does not matter; use the best component at the right time.",
    "change": "Prioritize connected product implementation over the 41-question reference audit. Complete and activate stronger unclaimed-question analysis after bounded workflow evidence; keep specialist-first architecture and honest unknowns.",
    "scope_impact": "Full ten-area scope retained. No unvalidated benchmark runs, unsupported accuracy claim, publication or real care. The independent audit no longer blocks build work."
+  },
+  {
+   "at": "2026-10-19T13:30:34.308645+00:00",
+   "basis": "Mike prioritizes building the stack. Connected synthetic workflow exposed contract-repair and workspace cost propagation failures.",
+   "change": "Activate Opus for unclaimed questions, bounded mechanical repair, analyst execution time measured from dispatch, and known cost/model propagation. Deployed committed source 8687121 to :8885; health, workspace listing and zero-call count pass. Registered E baseline stays pinned to Haiku/Sonnet; historical results unchanged.",
+   "scope_impact": "Specialists first and explicit missing inputs retained. Optional ambiguity review off. No benchmark rerun, qualification promotion, external publication or care execution.",
+   "evidence": "artifacts/product-workflows/frontier-fallback-2026-10-19/repaired-result.json"
   }
  ]
 }

@@ -12,6 +12,13 @@ answers once reconciled. Gold 10 is validated but too small for a general superi
 The live service on :8885 runs from /Users/mikel/agere-mvp-run. Inspect its actual
 process and revision before updating; retain a known-good recovery commit.
 
+Current product policy: specialists first, then three Opus analysts for unclaimed questions.
+The system executes their SQL and permits one repair for contract/SQL failures.
+The analyst window starts at dispatch; genuine missing inputs and ambiguity remain
+visible. Optional definition-based ambiguity review remains off. The independent
+12-person connected workflow and focused regressions pass; this is not broad
+accuracy qualification. Broader reference auditing does not block product work.
+
 The remaining notes are historical architecture context, not current run instructions.
 
 ## Principle
