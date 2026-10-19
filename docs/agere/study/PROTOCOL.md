@@ -92,3 +92,7 @@ Run with `bench/study/run.py`. Each arm writes answers, the ledger, timings and 
 4. 2026-10-19, run S2 not yet started. Runs S1 and S2-gold50 execute at the same time on one machine (owner's decision:
    wall-clock time). Shared CPU slows locally computed answers (arm A) more than API-bound arms, so reported latency is
    conservative for Agere.
+5. 2026-10-19, after runs S1 and S2. The API credit balance ran out during S1 arm E (all 450 calls refused) and late in S1
+   arm D (48 calls refused); both are invalid and rerun as S1b. A new arm A2 (Agere with Opus as the analyst and tie-break
+   model for questions no specialist claims) is added as an exploratory arm after seeing S2, run on Gold-50 as S3; it is
+   reported as post hoc, not as a pre-registered comparison.

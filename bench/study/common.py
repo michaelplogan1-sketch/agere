@@ -47,6 +47,8 @@ ARMS = {
     'C': {'kind': 'baseline', 'model': 'claude-sonnet-5-5', 'env': {}, 'label': 'Mid model for everything (text-to-SQL)'},
     'D': {'kind': 'baseline', 'model': 'claude-haiku-5-5', 'env': {}, 'label': 'Small model for everything (text-to-SQL)'},
     'E': {'kind': 'agere', 'pipeline': 'hybrid', 'env': {}, 'label': 'Agentic analysts for everything (hybrid core)'},
+    'A2': {'kind': 'agere', 'pipeline': 'full', 'label': 'Agere, Opus analysts and tie-break for unclaimed questions',
+           'env': {'AGERE_HYBRID_MODEL': 'claude-opus-5-5', 'AGERE_HYBRID_ESCALATION_MODEL': 'claude-opus-5-5'}},
     'F1': {'kind': 'agere', 'pipeline': 'full', 'label': 'A without families',
            'env': {'AGERE_COHORT_FAMILIES': 'off', 'AGERE_DQ_FAMILIES': 'off', 'AGERE_VBC_FAMILIES': 'off'}},
     'F2': {'kind': 'agere', 'pipeline': 'full', 'label': 'A without certificates', 'env': {'AGERE_CASCADE': 'off'}},
