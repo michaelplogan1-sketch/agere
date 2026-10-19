@@ -1,0 +1,29 @@
+Use case: precise-object-edit / infographic-diagram.
+Edit ONLY the bottom economics section of the supplied technical LinkedIn image. Keep the entire illustrated architecture, every existing model/component label, Qwen/Apple MLX bottling callout, controlled learning loop, warm white isometric style, palette and top headline exactly as they are. Preserve the portrait proportions.
+
+Remove the entire bottom comparison below the thin horizontal divider: remove dollar amounts, scorer pass counts, Opus baseline, nine-question experiment and comparison footnotes. The user does not want a comparison against only an expensive model.
+
+Replace that footer with a clean, strong editorial economics strip in the same visual style. Exact main footer heading:
+"TOKEN ECONOMICS • REDUCE REPEATED INFERENCE"
+
+Below it, four generously spaced horizontal groups, using small tasteful technical icons or mint/lavender/coral accents rather than large boxes. Exact text:
+"RETRIEVE"
+"Select relevant context"
+
+"COMPUTE"
+"Execute SQL + mathematics"
+
+"REUSE"
+"Reuse accepted plans"
+
+"BOTTLE"
+"Qualify local specialists"
+
+At the bottom, one clear line:
+"Design objective: lower total cost per correct answer"
+And a smaller line:
+"Account for model calls, local compute, training and evaluation."
+
+These are architectural mechanisms and an objective, not measured cross-model savings. Do not insert any prices, percentages, scores, benchmarks, vendor comparison, guaranteed savings, or invented data. Do not add a slogan at the top or project/company branding. Leave the Claude Haiku / Sonnet / Opus model roles within the architecture unchanged: removing the cost comparison must not erase the actual model names.
+
+Keep output professionally composed, exceptionally readable, no new clutter, no gradients/cards replacing the original machinery. Opaque warm-white background.

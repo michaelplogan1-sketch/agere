@@ -22,12 +22,10 @@ Here’s why the pieces are there:
 
 Token economics has two levers: the price of inference and how much inference a workflow needs.
 
-In nine synthetic-data questions with independently reconciled references:
-• This stack: $0.00 model API charges; 9/9 scorer passes.
-• Opus text-to-SQL baseline: $1.89; 7/9 passes.
+Choosing Haiku, Sonnet or Opus changes one part of that equation. The architecture asks another question: what can be retrieved, computed, reused or handled by a qualified local specialist before another hosted call is needed?
 
-That comparison tested Opus, not Haiku or Sonnet. It’s a small experiment, not a general benchmark. Patient-list passes used F1 ≥ 0.98. Compute/build costs were excluded; not every pictured component ran. The learning loop’s additional savings have not been measured.
+Success should be measured as total cost per correct answer, including model calls, local compute, training and evaluation.
 
-The goal: turn useful reasoning into reusable capability, and measure cost per correct answer.
+The goal: turn useful reasoning into reusable capability.
 
 #DataEngineering #HealthcareAI #TokenEconomics

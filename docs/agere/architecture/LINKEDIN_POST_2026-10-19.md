@@ -28,13 +28,11 @@ Here’s why the pieces are there:
 
 Token economics has two levers: the price of inference and how much inference a workflow needs.
 
-In nine synthetic-data questions with independently reconciled references:
-• This stack: $0.00 model API charges; 9/9 scorer passes.
-• Opus text-to-SQL baseline: $1.89; 7/9 passes.
+Choosing Haiku, Sonnet or Opus changes one part of that equation. The architecture asks another question: what can be retrieved, computed, reused or handled by a qualified local specialist before another hosted call is needed?
 
-That comparison tested Opus, not Haiku or Sonnet. It’s a small experiment, not a general benchmark. Patient-list passes used F1 ≥ 0.98. Compute/build costs were excluded; not every pictured component ran. The learning loop’s additional savings have not been measured.
+Success should be measured as total cost per correct answer, including model calls, local compute, training and evaluation.
 
-The goal: turn useful reasoning into reusable capability, and measure cost per correct answer.
+The goal: turn useful reasoning into reusable capability.
 
 #DataEngineering #HealthcareAI #TokenEconomics
 
@@ -77,11 +75,11 @@ UltraBERT should be credited to DMIS Lab, not Hugging Face as its creator. Model
 
 ## Image
 
-Current lead image: [stack cutaway with bottling and controlled learning](linkedin-stack-bottling.png). It replaces the dense neon/card-grid overview with a light isometric machine drawing: shared data/meaning foundation, evidence selection, three selectable execution paths, computation and sourced outputs. Named tools/model roles appear on adjacent callouts. Classic CS mechanisms form the physical base and the valid-work reuse loop is visible. The headline remains Data → Information → Intelligence → Wisdom; observed experiment API economics remain at the bottom. The comparison names the tested Opus text-to-SQL baseline and explicitly says Haiku/Sonnet were not compared. “Saved pilot” is removed. The local Qwen callout includes Apple MLX, and the return loop distinguishes reuse from separate training/evaluation.
+Current lead image: [stack cutaway with architecture-based token economics](linkedin-stack-economics.png). It replaces the dense neon/card-grid overview with a light isometric machine drawing: shared data/meaning foundation, evidence selection, three selectable execution paths, computation and sourced outputs. Named tools/model roles appear on adjacent callouts. Classic CS mechanisms form the physical base and the valid-work reuse loop is visible. The headline remains Data → Information → Intelligence → Wisdom. Mike explicitly rejected an Opus-only public comparison, so the footer now explains four economics mechanisms—retrieve, compute, reuse and bottle—and names lower total cost per correct answer as the design objective. It contains no dollar amounts, pass scores or cross-model savings claim. The local Qwen callout includes Apple MLX, and the return loop distinguishes reuse from separate training/evaluation.
 
 The cutaway is a conceptual architecture illustration, not a literal deployment/network topology or a claim that every displayed module runs on every question. Broad Qwen SQL remains default-off and BioClinical features remain research. All 29 engine names remain available in the [supporting detail page](linkedin-stack-02-methods.png); the hero groups them into four families.
 
-[Exact edit prompt](linkedin-stack-bottling-prompt.txt). Input: [previous cutaway](linkedin-stack-cutaway.png). Generated with the built-in image tool, without a paid external image service or CLI/API fallback. Visually inspected model labels, branch distinctions, status notes, controlled-learning labels and experiment figures. Nothing has been published. Prior PNGs and the [earlier two-page PDF](../../../output/pdf/data-information-intelligence-wisdom-linkedin.pdf) are retained for reference; that PDF has not been updated with this new hero.
+[Exact edit prompt](linkedin-stack-economics-prompt.txt). Input: [previous bottling cutaway](linkedin-stack-bottling.png). Generated with the built-in image tool, without a paid external image service or CLI/API fallback. Visually inspected model labels, branch distinctions, status notes, controlled-learning labels and the mechanism-based economics footer. Nothing has been published. Prior PNGs and the [earlier two-page PDF](../../../output/pdf/data-information-intelligence-wisdom-linkedin.pdf) are retained for reference; that PDF has not been updated with this new hero.
 
 ### Visual references reviewed
 
@@ -91,7 +89,9 @@ The cutaway is a conceptual architecture illustration, not a literal deployment/
 
 The final illustration is original; no source artwork, logos or vendor performance numbers were copied. The interpretation and art direction are editorial choices, not claims that these companies recommend this particular architecture.
 
-### Evidence behind the image's comparison
+### Internal evidence retained; comparison removed from public materials
+
+The historical Opus-only comparison is retained here for traceability, not in the current public post or lead image. Mike rejected that comparison as insufficient against the reasonable cheaper-model objection.
 
 The validated subset of the saved S1-lean run gives the specialist-first stack 9/9 scorer passes and $0.00 incremental model API charges, versus 7/9 and $1.8886696 (displayed as $1.89) for Claude Opus 5.5 text-to-SQL on every question. API dollars per passing answer are $0.00 and $0.2698099428571429 (displayed as $0.27). The denominator for this last metric is passing answers, with all nine questions' API charges in the numerator.
 
@@ -109,3 +109,5 @@ The public hook is “turn useful reasoning into reusable capability.” This is
 - Benchmark exclusions protect training candidate preparation. No new benchmark, adapter training or model activation was performed for this communication revision. No additional savings from the learning loop have been established by the cited nine-question experiment.
 
 Cheaper model selection is a fair comparator. The available validated cost result compares only the tested Opus baseline; it cannot establish a win over Haiku, Sonnet or all LLM architectures. The architecture hypothesis concerns reducing repeated inference through matching, compilation, evidence selection and qualified reuse.
+
+The final public version makes no numerical accuracy/cost comparison. Fair comparative evaluation would need the same validated questions and evidence, comparable execution/repair opportunities, and complete cost accounting across relevant cheaper baselines. No new paid runs were authorized or performed for this revision.
