@@ -46,20 +46,23 @@ Qwen3-4B bottled SQL/slot LoRA paths exist but are off by default. They aim to t
 
 | Observation | Measured model API cost | What it supports |
 |---|---:|---|
-| Live population-count request: 4,095 synthetic patients, 0.49 seconds, zero new paid calls | **$0.0000** | A concrete supported question can execute without a model API charge. |
+| Live `pilot-native-v2-12` workspace population-count request: 4,095 synthetic patients, 0.49 seconds, zero new paid calls | **$0.0000** | A concrete supported question can execute without a model API charge. |
+| Main `/ask` browser check on its separate active snapshot: 4,115 synthetic patients, 4.13 seconds, zero new paid calls | **$0.0000** | Deployed UI visibly reports the executed compiler/cohort route and per-request cost. |
 | Nine independently reconciled Gold 10 questions, saved S1 Agere run | **$0.00 total** | All nine passed the registered scorer without incremental model API charges on that small workload. |
 | Same nine questions, saved S1 Opus SQL baseline | **$1.89 total** | Seven passed; a small observed comparison, not general model or vendor superiority. |
 | Subsequent complex grouped-query repair check | **$0.151273 new API estimate** | This specific verification used cached prior requests plus new requests. It is not a cold-query price or general per-question quote. |
 
 Recommended external wording:
 
-> On a live 4,095-person synthetic warehouse, Agere answered a population-count question in 0.49 seconds with zero model API calls and $0 in incremental model API charges. Other questions may require paid models; per-request usage is recorded.
+> On a live 4,095-person synthetic pilot workspace, Agere answered a population-count question in 0.49 seconds with zero model API calls and $0 in incremental model API charges. Other questions may require paid models; per-request usage is recorded.
 
 Local hardware, setup, ingestion, embeddings, model preparation, maintenance, failed/unpriced requests and human review are not all included in these amounts. API estimates are usage-based estimates, not reconciled invoices. Unknown cost is never zero. No new paid evaluation was performed to prepare this guide.
 
 For a customer workload, report the fractions answered by each route, cold and warm costs, abstentions, correctness, retries and review effort. Average cost depends on that workload mix. Compare the **total cost per correctly completed task** with a capable baseline that has equivalent evidence and tools. A cheaper route that answers the wrong question is not a saving.
 
-Evidence: `artifacts/product-workflows/frontier-fallback-2026-10-19/live-specialist-result.json`, `repaired-result.json`, and [saved analytical evidence](../study/PROOF_STATUS.md). Existing synthetic checks establish finite behavior, not clinical qualification.
+The pilot workspace and main `/ask` use different source snapshots; the population counts above are not interchangeable. The application header shows historical installation-wide usage, not coverage or economics of the current routing policy. The expanded answer card shows the individual request.
+
+Evidence: `artifacts/product-workflows/execution-view-2026-10-19/live-answer.jpg`, `artifacts/product-workflows/frontier-fallback-2026-10-19/live-specialist-result.json`, `repaired-result.json`, and [saved analytical evidence](../study/PROOF_STATUS.md). Existing synthetic checks establish finite behavior, not clinical qualification.
 
 ## Image provenance
 
