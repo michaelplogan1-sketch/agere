@@ -6,14 +6,14 @@
   "ownership_verified": "2026-10-19T12:38:11.040529+00:00 explicit user handoff: \"You are taking over the Agere build from Claude Code, at Mike's request.\"",
   "scope": "/Users/mikel/clinical-insights-local build. Use Find Agere site inspiration public site as current design/web preview; its active artifacts/agere-interactive-site checkout is read-only to this build. Separate research and generator remain read-only.",
   "active_work": "Redesigned the local action workspace with guided program selection, a searchable paginated cohort, preserved selections, patient/task side panels, a visual work board and editable creative-studio presets over the existing saved answer/work APIs.",
-  "latest_delivery": "ACTION_WORKSPACE_DESIGN.md",
-  "latest_receipt": "artifacts/agere-action-design-v1/implementation-receipt.json",
+  "latest_delivery": "SYNTHETIC_ACTION_WORKFLOW.md",
+  "latest_receipt": "artifacts/agere-synthetic-actions-v1/implementation-receipt.json",
   "owned_server_pid": 21963,
   "owned_server_session": 91951,
   "full_queue_acceptance": false,
   "spending_limit": "uncapped",
   "spending_authorization": "Explicit user instruction 2026-10-10; no assistant-selected monetary ceiling",
-  "preceding_delivery": "ANSWER_ACTION_CENTER_BUILD.md",
+  "preceding_delivery": "ACTION_WORKSPACE_DESIGN.md",
   "latest_daily_report": "AGERE_DAILY_STACK_UPDATE_2026-10-11.md",
   "resume_priority": "Follow AGERE_BUILD_CONTROL.json current_gate and checkpoint.next_action.",
   "build_status": "ACTIVE",
@@ -69,23 +69,23 @@
   "source_control": "git; codex/agere-validated-proof; commit only owned paths as Michael Logan <michael.p.logan1@gmail.com>",
   "heartbeat_removal_authorization": "Mike 2026-10-19: \"i am here you dont need the continue building reminder\"; deleted through the Codex automation tool.",
   "live_runtime": {
-    "pid": 21963,
-    "commit": "c814c54bcf366807ecd64d48f881a388ec3634f6",
-    "rollback_commit": "8ff383fdea4964884c94863801af8f34b4820cc8",
+    "pid": 23772,
+    "commit": "b28989f468c1a86ed6f48436ab2b1216ed32f38a",
+    "rollback_commit": "c814c54bcf366807ecd64d48f881a388ec3634f6",
     "health": {
       "status": "ready",
       "synthetic": true
     },
     "config_preserved": true,
-    "log": "/private/tmp/agere-design-live-20261019.log",
+    "log": "/private/tmp/agere-synthetic-live-20261019.log",
     "workspaces_endpoint": "passed",
     "worktree": "/Users/mikel/agere-mvp-run",
     "port": 8885,
-    "verified_at": "2026-10-19T18:14:45.632563+00:00",
+    "verified_at": "2026-10-19T18:48:43.924849+00:00",
     "source_status": "Committed source; preexisting config overlay and data/model symlinks retained",
     "analyst_model": "claude-opus-5-5",
     "mechanical_repair": "one bounded attempt",
     "frontier_review": "optional ambiguity review disabled by default",
-    "action_center": "Redesigned four-view workspace; browser/API persistence passed"
+    "action_center": "Free mockup studio and explicit simulated agents; full question patient review; browser/API/restart passed"
   }
 }

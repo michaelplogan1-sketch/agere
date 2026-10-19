@@ -1,3 +1,7 @@
+# Synthetic demonstration scope — October 19, 2026
+
+Mike clarified that the original compound patient question is table stakes. Frontier-composed deliverables and action agents can be mockups and aspirational, but must work inside the synthetic ecosystem: exact saved cohort, source evidence, an interactive artifact, simulated progress and observable exceptions/outcomes. Use explicit simulation labels; no real care or new paid model execution is required for this increment. This changes execution scope, not the whole-warehouse product charter below.
+
 # Current scope clarification — October 12, 2026
 
 Agere is a general healthcare and healthcare-adjacent intelligence product. Its
