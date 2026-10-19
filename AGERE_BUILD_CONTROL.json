@@ -1,6 +1,6 @@
 {
  "schema": "agere-build-control/1",
- "updated_at": "2026-10-18T21:41:50.577861+00:00",
+ "updated_at": "2026-10-19T00:06:58.011634+00:00",
  "decision_basis": "AGERE_CTO_REVIEW_2026-10-11_EVENING.md",
  "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
  "required_references": [
@@ -278,20 +278,18 @@
   "kind": "manual_turn_checkpoint",
   "gate_id": "G3",
   "last_delivered_gate": "G3",
-  "user_behavior_delta": "2026-10-18 evening: full stack on main. One box routes questions, plans, simulations and deliverables. Specialists first: cohort, data-quality and VBC families render code SQL from stated definitions under Learn-then-Test certificates (bounds 0.3% / 2.3% / 2.5%); the narrow bottled Qwen3-4B fills parser misses for $0; engines defer to stated definitions; the answer guard trusts certified tiers. Action backbone with realistic counterparties, titration and home monitoring; population simulator with CMS ACCESS OAP economics; evolutionary policy search; open-ended deliverable composer (frontier designs, stack supplies verified numbers); streaming ingest with dependent replay (delta equals full rebuild); the Agere app in the marketing-site design.",
-  "measured_failure_reduction": "Gold 10 (9 questions locked with the generator, digest 05c5b54b): 9/9 correct on a full rebuild of the committed stack, identical across runs, $0, 0-6 s. Native 150 on key 42725a04: 97 -> 106 -> 111 (74%), cost $4.62 -> $3.25, median 43 s -> 28 s. Dispute audit: 11 key defects (generator correcting), 6 Agere rule errors (being fixed), 3 wording.",
+  "user_behavior_delta": "2026-10-18 night (cb3f5de, 863dfb8): appointment versions delivered in one monthly file resolve by delivered order (source last-updated, else later row), not a record hash (ACC-11). ED visits count any non-voided payer claim, denied or reversed included, read from claim headers because denied claims arrive without lines (HOS-09); the utilization family now answers calendar-year and '>= N' / 'N or more times' questions at $0. Every product caller honours AGERE_LEDGER_PATH. Pre-registered study harness bench/study (arms A-F6, cold caches per arm-pass, McNemar + bootstrap, linked report).",
+  "measured_failure_reduction": "Both remaining generator batch-2 rule errors fixed generally. Gold 10 9/9 at $0 on the rebuilt pilot. Certificates refit on the new code: cohort 0.31%, dq 2.45%, vbc 2.5%. Study smoke (locked set): A 9/9 $0 with certificates, D (Haiku text-to-SQL) 6/9 $0.066, F2 9/9.",
   "evidence": [
-   "bench/gold10_run.py",
-   "docs/agere/gold10/locked.json",
-   "clinical_core/agere/clinical/cascade.py",
-   "clinical_core/agere/clinical/vbc_families.py",
-   "clinical_core/agere/clinical/dq_families.py",
-   "clinical_core/agere/streaming/pipeline.py",
-   "test_streaming.py",
-   "test_dq_families.py"
+   "test_version_rules.py",
+   "bench/study/test_study_harness.py",
+   "artifacts/study/smoke-2026-10-18b/report.md",
+   "tmp/gold10/G-acc11-hos09/score.json",
+   "config/agere/cascade_thresholds.json",
+   "docs/agere/gold10/locked.json"
   ],
-  "remaining_gap": "Apply the six audited rule fixes; rescore native 150 on the generator's corrected key; v2.14 native slice with documents; cloud deployment and SSO; streaming speed (weekly ticks restate most patients).",
-  "next_action": "Commit the rule fixes after Gold 10 stays locked; rescore native 150 on the corrected digest; ingest v2.14 when published.",
+  "remaining_gap": "Rescore native 150 on the generator's corrected digest (awaiting v1.24 digest); Gold-50 locking; full study run; test_gate_certification.test_failed_check_is_low fails on main independent of these changes; v2.14 native slice; deployment.",
+  "next_action": "On the generator's corrected native digest: rebuild pilot from /Users/mikel/agere-mvp-run, Gold 10, bench/native_run.py, generator scorer, classify misses. On Gold-50: derive answers, compare with --gold10 scorer, lock, run bench/study/run.py --arms A,B,C,D,E,F1..F6 --questions both --repeat 2.",
   "next": "Merge v2.0 warehouse migration (feature/warehouse-v2, in progress) and re-baseline; Wave C model layer (bottled SLM rung, reranker, learned router, embedding cache, Jev online, automated learning loop); Wave D; v2.1 data (D9-D22) when the generator delivers."
  },
  "decisions": [
