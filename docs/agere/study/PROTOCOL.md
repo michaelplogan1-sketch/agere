@@ -89,3 +89,6 @@ Run with `bench/study/run.py`. Each arm writes answers, the ledger, timings and 
    The report states both numbers, accuracy against the sealed key and accuracy after the audited corrections, labels
    them provisional until the audit is complete, and lists the audit in an appendix. Results are rescored from the saved
    raw answers; no arm is rerun.
+4. 2026-10-19, run S2 not yet started. Runs S1 and S2-gold50 execute at the same time on one machine (owner's decision:
+   wall-clock time). Shared CPU slows locally computed answers (arm A) more than API-bound arms, so reported latency is
+   conservative for Agere.
