@@ -1,0 +1,21 @@
+Use case: precise-object-edit / infographic-diagram.
+Asset: final LinkedIn technical architecture illustration.
+The supplied image is the EDIT TARGET. Preserve its beautiful warm-white isometric machine/cutaway aesthetic, headline, mint/lavender/coral routing, typography, source cards, components, all existing model names, classic CS foundation, and portrait composition. This is a targeted content update, not a redesign.
+
+Keep the ONLY top headline exactly "Data → Information → Intelligence → Wisdom". No company/project branding or extra top prose.
+
+Make the following precise edits:
+1. Make the green return loop's purpose clear with a compact, readable annotation "REUSE + CONTROLLED LEARNING" and the lines "Accepted plans + corrections → reusable work" and "Training candidates → separate training → evaluation". Use a tasteful dashed connector from the training-candidate annotation to the local Qwen specialist, to indicate gated updates, not automatic live weight changes. Reflow whitespace around the Qwen region as necessary while keeping every other component visible.
+2. Add "BOTTLING" as the bold title of the existing Qwen narrow specialist callout. Its text should read "Qwen3-4B + narrow LoRA · Apple MLX", "Typed slots → parser checks", "Parser misses; on when available." Keep the separate broad-SQL adapter explicitly labeled "Separate experiment · default-off". Do not imply broad SQL adapter is enabled, or that every accepted plan automatically trains Qwen.
+3. Preserve the Jev 1.13.0 OR Perplexity Decisions / pplx-decider-v1.1-27b alternative modules, UltraBERT-Embed-150M, Granite, BGE, MiniLM, bounded Claude Haiku 5.5 slot filling, Claude Opus 5.5 analyst proposals and Claude Sonnet 5.5 configured alternate. Both cheaper Claude models must remain legible.
+4. Change bottom heading to "TOKEN ECONOMICS • OBSERVED EXPERIMENT". Keep "9 synthetic-data questions • independently reconciled references".
+5. Keep the green cost column heading "Specialist-first", cost "$0.00", caption "Model API charges · 9/9 scorer passes".
+6. Change the coral cost column heading from generic "LLM on every question" to "Opus text-to-SQL baseline"; preserve "$1.89", caption "Claude Opus 5.5 · 7/9 passes".
+7. Replace bottom-right footnote block with these compact exact lines:
+"Opus comparison only; Haiku/Sonnet not compared."
+"Patient-list pass: F1 ≥ 0.98."
+"API charges only; compute/build excluded."
+"Small synthetic set; not every component ran."
+Remove all appearances of "saved pilot" and "observed pilot". No new benchmark values. No claims of superiority over all models or automatic self-training.
+
+Maintain clean editorial hierarchy and readable labels, preserve sophisticated engineering illustration rather than converting to boxes/cards. Give new callouts enough clear space; use leader lines cleanly. Do not obscure the classic CS foundation, existing method explanation, output cards, or footer. Opaque warm white background.

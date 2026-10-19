@@ -1,35 +1,33 @@
 Data → Information → Intelligence → Wisdom
 
-I built a data analytics stack and tested it on synthetic healthcare data to explore how disparate claims, notes, labs and enrollment records can become useful insight—with deliberate attention to token economics.
+I wanted an analytics system that could answer a question—and preserve useful work for the next one.
 
-Each component has a specific job:
+So I built a stack over disparate synthetic healthcare data around two ideas: choose the right method for each question, and “bottle” repeatable tasks into reusable local capability.
 
-• Preserve meaning.
-PDFKit + Apple Vision OCR extract document text. Canonical records, semantic SQL and explicit code mappings preserve patient, date and denominator definitions. UltraBERT-Embed-150M provides catalog/terminology matching when exact mappings fall short.
+Here’s why the pieces are there:
 
-• Retrieve before reasoning.
-BM25 finds exact terms; Granite Embedding English R2 finds related wording. Reciprocal-rank fusion combines rankings. BGE reranker v2-m3 prioritizes relevant passages; a learned schema reranker selects tables, fields and values. The purpose: better evidence and less irrelevant context.
+• Establish meaning. PDFKit + Apple Vision OCR extract documents. Canonical records, semantic SQL and code mappings align patients, dates and denominators. UltraBERT-Embed-150M helps match terminology when exact mappings fall short.
 
-• Interpret bounded evidence.
-Jev 1.13.0 and Perplexity Decisions (pplx-decider-v1.1-27b) are alternatives for typed decisions about subject, assertion and time. They help distinguish a current patient fact from negation or family history. Rules and TF-IDF/logistic heads handle recurring cases; BioClinical-ModernBERT-base supports research task features.
+• Select evidence. BM25 + IBM Granite Embedding English R2 combine exact and semantic retrieval. Reciprocal-rank fusion, BGE reranker v2-m3 and a schema reranker prioritize relevant passages, tables and fields. Better context, less noise.
 
-• Reuse and compile.
-all-MiniLM-L6-v2 supports plan matching and routing. A compiler and SQL families turn supported questions into executable plans. Qwen3-4B + narrow LoRA handles parser misses by proposing typed slots that code checks. Its separate broad-SQL adapter remains an experiment, default-off.
+• Make bounded decisions. TypeSafe’s Jev and Perplexity Decisions are alternative readers for subject, assertion and time: who does a statement concern, is it negated, and is it current? Rules and TF-IDF/logistic heads handle recurring cases; BioClinical ModernBERT supports research features.
 
-• Escalate selectively.
-Perplexity can select complete recipes; Claude Haiku 5.5 fills bounded slots. Claude Opus 5.5 handles unfamiliar questions through analyst proposals, system-run SQL and bounded repair. Claude Sonnet 5.5 remains a configured alternate. Every question does not need every model.
+• Compile and reuse. MiniLM supports plan matching. A compiler, typed contracts and SQL families turn supported questions into executable plans. Numbers come from computation.
 
-• Calculate with appropriate methods.
-The stack has 29 analytical engines: Kaplan–Meier/Cox for time-to-event, propensity methods for treatment comparisons, empirical Bayes for unstable estimates, and queueing methods for capacity questions, among others.
+• Bottle recurring work. Qwen3-4B + narrow LoRA, trained and run locally with Apple MLX, translates unfamiliar phrasing into typed slots that the parser checks. The controlled learning loop captures accepted plans and corrections, prepares training candidates and identifies retraining opportunities. Training, evaluation and activation remain separate steps. The broad SQL adapter is still default-off.
 
-Classic computer science connects it all: types/contracts reject malformed plans; indexes narrow retrieval; memoization + content hashes reuse valid work; dependency invalidation rejects stale results; provenance traces answers; usage ledgers account for calls and retries.
+• Escalate deliberately. Perplexity selects curated recipes; Claude Haiku handles bounded slots. Opus handles unfamiliar questions through analyst proposals and system-executed SQL; Sonnet is a configured alternate. Each question follows the path it needs.
 
-In a saved nine-question pilot with independently reconciled references:
-• Specialist-first stack: $0.00 model API charges; 9/9 scorer passes.
-• Opus text-to-SQL on every question: $1.89; 7/9 passes.
+• Use the right mathematics. The 29 analytical engines include Kaplan–Meier/Cox, propensity methods, empirical Bayes and queueing. Indexes, memoization, content hashes, dependency invalidation, provenance and usage ledgers make work reusable and auditable.
 
-Small synthetic set; not a general benchmark. Patient-list passes used F1 ≥ 0.98. Local compute/build costs were excluded, and not every pictured component ran.
+Token economics has two levers: the price of inference and how much inference a workflow needs.
 
-The goal is to spend tokens where interpretation adds value—and measure total cost per correct answer.
+In nine synthetic-data questions with independently reconciled references:
+• This stack: $0.00 model API charges; 9/9 scorer passes.
+• Opus text-to-SQL baseline: $1.89; 7/9 passes.
+
+That comparison tested Opus, not Haiku or Sonnet. It’s a small experiment, not a general benchmark. Patient-list passes used F1 ≥ 0.98. Compute/build costs were excluded; not every pictured component ran. The learning loop’s additional savings have not been measured.
+
+The goal: turn useful reasoning into reusable capability, and measure cost per correct answer.
 
 #DataEngineering #HealthcareAI #TokenEconomics
