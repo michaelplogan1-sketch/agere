@@ -1,6 +1,6 @@
 {
  "schema": "agere-build-control/1",
- "updated_at": "2026-10-19T17:23:32.420531+00:00",
+ "updated_at": "2026-10-19T17:44:55.762162+00:00",
  "decision_basis": "AGERE_CTO_REVIEW_2026-10-11_EVENING.md",
  "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
  "required_references": [
@@ -221,6 +221,10 @@
     {
      "path": "artifacts/agere-graph-observation-v1/implementation-receipt.json",
      "sha256": "c70e0ac0104f3f22b46783b4df2f132b351f7ff0ebb81225be3a4d6477044b08"
+    },
+    {
+     "path": "artifacts/agere-answer-action-v1/implementation-receipt.json",
+     "sha256": "852a5df08d5fc28e95385128d89c2b408807ebf221c0e432007f8480e7b637a0"
     }
    ]
   },
@@ -278,20 +282,17 @@
   "kind": "manual_turn_checkpoint",
   "gate_id": "G3",
   "last_delivered_gate": "G3",
-  "user_behavior_delta": "Final LinkedIn copy now explains token economics, non-LLM analysis and frontier-model composition of evidence-bound interactive deliverables. Previous unbranded image remains selected. Traced the user-observed main /ask result and located existing program/deliverable components; no runtime behavior changed.",
-  "measured_failure_reduction": "None in the product yet. Screenshot shows the complete EF/GDMT/dose/PCP/cardiologist request mislabeled answered by hf_no_beta_blocker@v1 and raw patient IDs, with 888.93 s latency. Read-only inspection found shape/metric acceptance and /ask rendering gaps, plus existing frontier deliverable composition and program workflow code. No benchmark, paid evaluation, care execution or external publication.",
+  "user_behavior_delta": "Main /ask answers open durable action centers with exact saved cohort/evidence, PharmD/RPM/custom review tasks, owners, progress, CSV export and an explicit frontier deliverable request over the frozen bundle.",
+  "measured_failure_reduction": "Actual zero-call browser answer (general heart failure, 329 synthetic patients) opened the action center; two review tasks and a blocked update persisted through deployment/restart. 148 focused tests pass. Original multi-field HF/GDMT request rejects the narrow beta-blocker metric in regression checks; full clinical answer is not yet verified. Frontier integration stub-tested, no paid generation.",
   "evidence": [
-   "docs/agere/architecture/linkedin-post-public.txt",
-   "docs/agere/architecture/LINKEDIN_POST_2026-10-19.md",
-   "docs/agere/architecture/linkedin-stack-final.png",
-   "clinical_core/agere/ask_view.py",
-   "clinical_core/agere/clinical/metric_router.py",
-   "clinical_core/agere/deliverables/compose.py",
-   "clinical_core/agere/plans/answer.py"
+   "ANSWER_ACTION_CENTER_BUILD.md",
+   "artifacts/agere-answer-action-v1/implementation-receipt.json",
+   "test_answer_action_center.py",
+   "clinical_core/agere/deliverables/answer_context.py"
   ],
-  "remaining_gap": "G3 remains active and G5 blocked. The observed incomplete answer and main /ask-to-program/deliverable integration are not fixed. Existing program simulations and frontier deliverable code do not establish a working main-path command center, patient eligibility or real care execution. Broad accuracy and total-cost advantage remain unestablished.",
-  "next_action": "In G3, fix complete-question acceptance for the user-observed cohort request, then connect the exact saved answer/evidence scope from /ask to existing deliverable/program components. Support frontier composition of interactive artifacts over computed results, explicit missing requirements and reviewable proposed work. Verify the connected synthetic workflow without new paid evaluations or real outreach; preserve general query scope and existing specialists. In G3, consolidate escalation and acceptance policy across together/economical_planner while preserving current specialist coverage, source scope, explicit declines, and per-request cost. Start with behavior-preserving dispatch boundaries; do not lower analyst fan-out or retire a qualified model without relevant evidence.",
-  "next": "Connect correct scoped analysis to an interactive deliverable and proposed program work; do not stop at patient IDs or another architecture catalog."
+  "remaining_gap": "G3 active and G5 blocked. Full EF/GDMT/dose/PCP/cardiologist assessment still requires per-patient evidence and verified end-to-end behavior. Review tasks are not enrollment; actual outreach/RPM fulfillment and outcomes remain unconnected. Paid frontier output quality, broad accuracy and total-cost advantage remain unqualified.",
+  "next_action": "In G3, complete the original multi-part EF/GDMT/dose/provider question with per-patient evidence and explicit missing requirements, and carry it through the deployed saved-answer action center. Reuse existing clinical/reference/program modules and preserve general query scope; do not substitute another narrow metric. Then connect reviewable execution proposals and outcome tracking to the existing shared work backbone without real outreach or paid evaluations. Preserve the pending consolidation of together/economical_planner acceptance and escalation policy, all specialists and full ten-area charter.",
+  "next": "Complete the original multi-part clinical assessment and carry its evidence into action; preserve current working action center."
  },
  "decisions": [
   {
@@ -827,6 +828,13 @@
    "basis": "Mike supplied the /ask screenshot, clarified that Agere must support action (PharmD, RPM, interactive command centers), and identified frontier models as composers of final deliverables. Latest immediate request: remove the wordmark, restore previous image, provide final post.",
    "change": "Finish the requested public copy and preserve the unbranded final image. Sequence the next G3 implementation around the observed full-question acceptance and answer-to-action connection using existing modules.",
    "scope_impact": "No charter narrowing, runtime activation, new model, benchmark or paid evaluation. Full ten-area backlog preserved; current defect and missing integration remain explicit."
+  },
+  {
+   "at": "2026-10-19T17:44:55.762162+00:00",
+   "basis": "Mike: fix the local product so identified patients can lead to action, program work and custom frontier deliverables.",
+   "change": "Main /ask answers open durable action centers with exact saved cohort/evidence, PharmD/RPM/custom review tasks, owners, progress, CSV export and an explicit frontier deliverable request over the frozen bundle.",
+   "scope_impact": "Full ten-area charter and specialists retained. No benchmark rerun, paid evaluation, external contact, care execution or design publication. Source overlay preserved; G3 active and G5 blocked.",
+   "evidence": "artifacts/agere-answer-action-v1/implementation-receipt.json"
   }
  ]
 }
