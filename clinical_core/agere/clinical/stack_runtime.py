@@ -124,6 +124,12 @@ class Stack:
                 'qwen3_4b_active':False,'qwen_status':'Earlier experimental reader; not a current planner or default reader',
                 'scope':'Local models and code handle bounded tasks. Hosted decision routing is not a newly trained local SLM. No universal best model or calibrated end-to-end routing quality is established.'}
     def compose(self,question,*,planning='auto'):
+        from .question_input import validate_question
+        validate_question(question)
+        if planning == 'auto':
+            from . import therapy_review
+            if therapy_review.accepts(question):
+                return therapy_review.answer(self.path, question)
         # Agere "together" (together.py): the fast path below plus an independent semantic analyst started in parallel,
         # reconciled into one answer. AGERE_TOGETHER=off (or a server without live models) keeps exactly the fast path.
         if planning=='auto' and self.allow_live:

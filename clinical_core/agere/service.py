@@ -263,9 +263,15 @@ def serve(run,port,annotations=None,evidence_queries=None,stack=None,allow_live_
                 elif path=='/api/stack/ask':
                     if set(body)!={'question','live'} or type(body['live']) is not bool:raise ValueError('Explicit question/live route required')
                     result=connected_stack.ask(body['question'],live=body['live'])
-                elif path in ('/api/stack/action-work/create', '/api/stack/action-work/update', '/api/stack/action-deliverable'):
+                elif path in ('/api/stack/action-work/create', '/api/stack/action-work/update', '/api/stack/action-deliverable', '/api/stack/action-mockup', '/api/stack/action-simulate'):
                     from .deliverables import answer_context
-                    if path.endswith('/create'):
+                    if path.endswith('/action-mockup'):
+                        from .deliverables.mock_views import create
+                        result=create(connected_stack.path,body)
+                    elif path.endswith('/action-simulate'):
+                        from .deliverables.synthetic_actions import advance
+                        result=advance(connected_stack.path,body)
+                    elif path.endswith('/create'):
                         result=answer_context.create_work(connected_stack.path,body)
                     elif path.endswith('/update'):
                         result=answer_context.update_work(connected_stack.path,body)

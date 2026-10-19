@@ -386,7 +386,7 @@ function vizTable(a){const rows=a.table||[];if(!rows.length)return '';const f=ro
   if(rows.every(r=>isTime(r[key]))){const cats=rows.map(r=>String(r[key]));h+='<h3>'+esc(label(metric))+' by '+esc(label(key))+'</h3>'+lines([{name:label(metric),pts:rows.map((r,i)=>[i,r[metric]])}],{title:label(metric)+' over time',cats,ylabel:label(metric)})}
   else{const sorted=rows.slice().sort((x,y)=>(y[metric]||0)-(x[metric]||0));h+='<h3>'+esc(label(metric))+' by '+esc(label(key))+'</h3>'+hbars(sorted.slice(0,30).map(r=>({label:r[key],value:r[metric],ask:drillable?drill(r[key]):null})),{title:label(metric)+' by '+label(key),ref:/ratio/.test(metric)?1:null,refLabel:'no difference (1.0)'})+
    (drillable?'<p class="hint">Select a bar to ask a follow-up about that '+esc(label(key))+'.</p>':'')}}
- h+=tableHTML(rows,{name:'agere-answer',ask:key&&['group','segment','practice','pcp','payer','coverage_type','facility'].includes(key)?(r=>drill(r[key])):null});
+ h+=tableHTML(rows,{name:'agere-answer',cols:a.table_columns,ask:key&&['group','segment','practice','pcp','payer','coverage_type','facility'].includes(key)?(r=>drill(r[key])):null});
  return h+'</section>'}
 function vizScalar(a){if(a.answer_type==='count'||a.answer_type==='value'){const v=a.answer_type==='count'?a.count:a.value;if(v==null||typeof v==='string')return '';
   return '<section class="sec"><div class="big">'+esc(fmt(v))+(a.unit?esc(a.unit):'')+'</div><div class="muted">'+(a.answer_type==='count'?'count':'value')+(a.unknown_count?' · '+fmt(a.unknown_count)+' patients could not be evaluated':'')+'</div></section>'}
@@ -937,6 +937,7 @@ function vizFunnel(a){const o=(a.overall||{}).risk_outcomes||{},p=o.parameters||
  if((o.data_gaps||[]).length)h+='<details><summary>Data limits ('+o.data_gaps.length+')</summary><ul>'+o.data_gaps.map(x=>'<li>'+esc(x)+'</li>').join('')+'</ul></details>';
  return h}
 function visual0(a){if(!a||a.answer_type==='unsupported')return '';const o=a.overall||{};
+ if(a.answer_type==='table'&&a.table_columns)return '<p class="hint">'+esc(a.interpretation||'')+'</p>'+vizTable(a);
   if(o.loop_closure)return vizLoops(a);
   if(o.diagnostic_delay)return vizDelay(a);
   if(o.risk_outcomes)return vizFunnel(a);

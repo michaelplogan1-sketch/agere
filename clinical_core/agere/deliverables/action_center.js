@@ -4,6 +4,7 @@ const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;',
 const pretty = value => String(value || '').replaceAll('_', ' ');
 const key = new URLSearchParams(location.search).get('context');
 const PAGE_SIZE = 15;
+let selectedTemplate = 'command';
 const states = {needs_review:'Ready to review', in_review:'In progress', blocked:'Needs attention', review_complete:'Review complete', cancelled:'Cancelled'};
 const stateHints = {needs_review:'Ready for a first look', in_review:'Someone is on it', blocked:'Waiting on a next step', review_complete:'Review wrapped up'};
 const programNames = {pharmd:'PharmD review', rpm:'Remote monitoring', custom:'Custom follow-up'};
@@ -148,7 +149,7 @@ function renderOverview() {
   $('overview-work').innerHTML = Object.keys(stateHints).map(state => '<button class="progress-cell" data-state-view="'+state+'"><span class="progress-top"><span><i class="state-dot '+state+'"></i>'+states[state]+'</span>'+icon('arrow')+'</span><strong>'+num(data.counts[state])+'</strong><small>'+stateHints[state]+'</small></button>').join('');
 }
 function taskCard(item) {
-  return '<button class="task-card" data-task="'+esc(item.id)+'" aria-label="Open review for '+esc(item.patient_id)+'"><span class="task-top"><strong>'+esc(item.patient_id)+'</strong>'+icon('arrow')+'</span><span class="task-program">'+esc(programNames[item.program] || item.program)+'</span><p>'+esc(item.note || 'No notes yet. Open this review to add the next step.')+'</p><span class="task-owner"><span class="owner-avatar">'+esc(initials(item.owner))+'</span>'+esc(item.owner)+'</span></button>';
+  return '<button class="task-card" data-task="'+esc(item.id)+'" aria-label="Open review for '+esc(item.patient_id)+'"><span class="task-top"><strong>'+esc(item.patient_id)+'</strong>'+icon('arrow')+'</span><span class="task-program">'+esc(programNames[item.program] || item.program)+'</span><p>'+esc(item.simulation ? 'Demo: '+pretty(item.simulation.status)+' · '+(item.simulation.next_step?pretty(item.simulation.next_step):item.simulation.follow_up||'Journey complete') : item.note || 'No notes yet. Open this review to add the next step.')+'</p><span class="task-owner"><span class="owner-avatar">'+esc(initials(item.owner))+'</span>'+esc(item.owner)+'</span></button>';
 }
 function showWork() {
   if (!data) return;
@@ -181,8 +182,8 @@ function render() {
   }
   $('studio-patients').textContent = num(c.patient_rows.length);
   $('studio-tasks').textContent = num(data.items.length);
-  $('compose').disabled = c.stale || !data.allow_frontier;
-  $('cost').textContent = data.allow_frontier ? 'Build my view uses the existing model API and incurs usage charges. Nothing runs until you click; the estimate is recorded with the result.' : 'Frontier calls are disabled on this server. You can still explore your cohort and manage review work.';
+  $('compose').disabled = c.stale;
+  $('cost').textContent = 'Free synthetic mockup · local template · no model/API calls. Choose a layout; your brief is saved as design intent.';
   renderOverview(); showPatients(); showWork(); showIntent();
 }
 async function refresh() {
@@ -207,7 +208,7 @@ function patientDetails(pid) {
   $('detail-kicker').textContent = 'PATIENT / SAVED ANSWER';
   $('detail-title').textContent = pid;
   const evidenceRows = patient.evidence_rows || [];
-  const details = evidenceRows.length ? evidenceRows.map((row,index) => '<h3 style="font-size:14px;margin-top:25px">Returned detail '+(index+1)+'</h3><dl class="detail-fields">'+Object.entries(row).map(([k,v])=>'<div><dt>'+esc(pretty(k))+'</dt><dd>'+(v==null ? '<span class="muted">Not available</span>' : esc(typeof v==='object'?JSON.stringify(v,null,2):v))+'</dd></div>').join('')+'</dl>').join('') : '<div class="patient-empty">This answer returned a patient identifier only. Clinical details and program suitability have not been assessed.<br><br>Ask for those details before making a clinical decision.</div>';
+  const details = evidenceRows.length ? evidenceRows.map((row,index) => '<h3 style="font-size:14px;margin-top:25px">Returned detail '+(index+1)+'</h3><dl class="detail-fields">'+Object.entries(row).map(([k,v])=>'<div><dt>'+esc(pretty(k))+'</dt><dd>'+(v==null ? '<span class="muted">Not available</span>' : (typeof v==='object'?'<details><summary>Inspect source evidence</summary><pre>'+esc(JSON.stringify(v,null,2))+'</pre></details>':esc(v)))+'</dd></div>').join('')+'</dl>').join('') : '<div class="patient-empty">This answer returned a patient identifier only. Clinical details and program suitability have not been assessed.<br><br>Ask for those details before making a clinical decision.</div>';
   const tasks = data.items.filter(i=>i.patient_id===pid);
   $('detail-content').innerHTML = '<p class="muted">From this answer · '+esc(date(data.context.source.as_of))+'</p>'+details+(tasks.length?'<h3 style="font-size:16px;margin-top:25px">Review work</h3>'+tasks.map(taskCard).join(''):'')+'<div class="sheet-actions"><button class="button primary" data-select-detail="'+esc(pid)+'">'+(selected.has(pid)?'Remove from selection':'Add to selection')+'</button></div>';
   if (!$('detail-dialog').open) openDialog('detail-dialog');
@@ -218,6 +219,21 @@ function editWork(id) {
   $('detail-kicker').textContent = 'REVIEW WORK / '+(programNames[item.program] || item.program).toUpperCase();
   $('detail-title').textContent = item.patient_id;
   $('detail-content').innerHTML = '<form id="edit-work-form"><p class="muted">Keep the next step, owner, and progress together.</p><label for="task-state">Where does it stand?</label><select id="task-state" '+(data.context.stale?'disabled':'')+'>'+data.states.map(s=>'<option value="'+esc(s)+'" '+(s===item.state?'selected':'')+'>'+esc(states[s]||pretty(s))+'</option>').join('')+'</select><label for="task-owner">Who’s taking the lead?</label><input id="task-owner" required maxlength="120" value="'+esc(item.owner)+'"><label for="task-note">What’s the next step?</label><textarea id="task-note" maxlength="2000">'+esc(item.note)+'</textarea><details class="requirements-box"><summary>Review requirements</summary><ul>'+item.requirements.map(r=>'<li>'+esc(r)+'</li>').join('')+'</ul></details><button type="button" class="text-button" data-inspect="'+esc(item.patient_id)+'">Open patient evidence '+icon('arrow')+'</button><p class="cost-note">Review status only. No outreach, enrollment, or care delivery.</p><p id="work-error" class="form-error" role="alert"></p><div class="sheet-actions"><button type="button" class="button" data-close="detail-dialog">Cancel</button><button id="save-work" class="button primary" '+(data.context.stale?'disabled':'')+'>Save progress '+icon('check')+'</button></div></form>';
+  const sim = item.simulation;
+  const demo = document.createElement('section');
+  demo.className = 'requirements-box';
+  demo.innerHTML = '<h3>Try the demo agent</h3><p class="muted">Scripted synthetic journey. No contact, enrollment or care occurs.</p>'+
+    (sim ? '<span class="badge">Simulated · '+esc(pretty(sim.status))+'</span><ol>'+sim.receipts.map(r=>'<li><strong>'+esc(pretty(r.step))+' → '+esc(pretty(r.outcome))+'</strong><p>'+esc(r.reason)+'</p></li>').join('')+'</ol>'+(sim.follow_up?'<p class="warning">'+esc(sim.follow_up)+'</p>':'') :
+      '<label for="demo-scenario">Demo scenario</label><select id="demo-scenario"><option value="happy_path">Successful journey</option><option value="records_needed">Missing records</option><option value="patient_declines">Patient declines</option></select>')+
+    (!sim || sim.status==='running' ? '<button type="button" id="demo-advance" class="button primary" '+(data.context.stale||item.state==='cancelled'?'disabled':'')+'>'+(sim?'Simulate '+esc(pretty(sim.next_step)):'Start demo agent')+' →</button>' : '<p>Demo finished. Its history stays attached to this review.</p>');
+  $('detail-content').append(demo);
+  if ($('demo-advance')) $('demo-advance').onclick = () => run(async () => {
+    $('demo-advance').disabled = true;
+    try {
+      await api('/api/stack/action-simulate',{context_id:key,item_id:id,revision:item.revision,scenario:sim?.scenario||$('demo-scenario').value});
+      await refresh(); editWork(id); notify('Simulated step saved. No external action occurred.');
+    } finally { if ($('demo-advance')) $('demo-advance').disabled = data.context.stale || item.state==='cancelled'; }
+  });
   $('edit-work-form').onsubmit = event => {
     event.preventDefault();
     run(async () => {
@@ -246,7 +262,7 @@ function preview(d) {
   $('preview').innerHTML = '<div class="preview-heading"><h2>'+esc(d.title||'Your custom view')+'</h2><button class="text-button" id="close-preview">Close preview ×</button></div>';
   $('preview').append(frame);
   $('close-preview').onclick = () => $('preview').replaceChildren();
-  $('cost').textContent = 'API estimate: '+(d.costs?.total_usd==null?'unavailable':'$'+Number(d.costs.total_usd).toFixed(4))+'. Binding and number checks passed; interpretation still needs review.';
+  $('cost').textContent = d.mockup ? 'Saved synthetic mockup · $0 model/API cost · no frontier model was used.' : 'API estimate: '+(d.costs?.total_usd==null?'unavailable':'$'+Number(d.costs.total_usd).toFixed(4))+'. Binding and number checks passed; interpretation still needs review.';
   $('preview').scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'instant':'smooth',block:'start'});
 }
 const presets = {
@@ -266,7 +282,8 @@ document.addEventListener('click', event => {
     closeDialog('detail-dialog'); go('cohort'); return;
   }
   const preset = event.target.closest('[data-preset]'); if (preset) {
-    $('brief').value = presets[preset.dataset.preset];
+    selectedTemplate = preset.dataset.preset;
+    $('brief').value = presets[selectedTemplate];
     document.querySelectorAll('[data-preset]').forEach(b=>b.setAttribute('aria-pressed',String(b===preset)));
     $('brief').focus(); return;
   }
@@ -308,13 +325,13 @@ $('review-form').onsubmit = event => {
   });
 };
 $('compose').onclick = () => run(async () => {
-  if (!$('brief').value.trim()) { $('brief').focus(); notify('Describe the view you want to build.'); return; }
+  if (!$('brief').value.trim()) $('brief').value = presets[selectedTemplate];
   $('compose').disabled = true;
   $('build-progress').hidden = false;
   try {
-    const d = await api('/api/stack/action-deliverable',{context_id:key,request:$('brief').value});
+    const d = await api('/api/stack/action-mockup',{context_id:key,template:selectedTemplate,request:$('brief').value});
     preview(d); await loadDeliverables(); notify('Your view is ready and saved in this workspace.');
-  } finally { $('compose').disabled = !data.allow_frontier || data.context.stale; $('build-progress').hidden = true; }
+  } finally { $('compose').disabled = data.context.stale; $('build-progress').hidden = true; }
 });
 $('export').onclick = () => {
   const cols=['patient_id','program','owner','state','note','revision'];

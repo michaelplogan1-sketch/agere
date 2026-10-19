@@ -1,8 +1,9 @@
 """Bridge /ask answers to the existing deliverable runtime and action backbone.
 
 Immutable answer snapshots keep cohort membership and evidence together. Review
-work uses the backbone's revisioned work store; it never runs simulated or real
-outreach. Frontier composition receives the frozen bundle, not a new cohort.
+work uses the backbone's revisioned work store. Explicit demo steps use the same
+store with separate simulation receipts. No real outreach is performed.
+Frontier composition receives the frozen bundle, not a new cohort.
 """
 from collections import Counter
 from datetime import datetime, timezone

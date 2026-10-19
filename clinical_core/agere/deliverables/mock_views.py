@@ -1,0 +1,50 @@
+"""Saved, zero-call mockups of the proposed frontier deliverable experience."""
+from html import escape
+import json
+from . import answer_context as A
+from .receipts import fingerprint
+
+TITLES = {'command': 'Cohort command center', 'brief': 'Care-team briefing', 'explore': 'Patient evidence explorer'}
+
+
+def create(path, request):
+    if set(request) != {'context_id', 'template', 'request'} or request['template'] not in TITLES:
+        raise ValueError('Choose a mockup template for this saved answer')
+    brief = request['request']
+    if not isinstance(brief, str) or len(brief) > 4000:
+        raise ValueError('Keep the design brief within 4000 characters')
+    c, bundle = A.evidence_bundle(path, request['context_id'])
+    items = A.work(path, c)
+    payload = {'question': c['question'], 'headline': c['answer'].get('headline'), 'as_of': c['source']['as_of'],
+               'patients': c['patient_rows'], 'items': items, 'template': request['template'], 'brief': brief,
+               'limitations': c['answer'].get('limitations', [])}
+    key = 'DLV-' + fingerprint(['mock-view/1', c['id'], payload])[:12].upper()
+    title = TITLES[request['template']]
+    # JSON is data, never executable source. Escape HTML parser delimiters too.
+    data = json.dumps(payload).replace('<', '\\u003c').replace('>', '\\u003e').replace('&', '\\u0026')
+    doc = TEMPLATE.replace('%%TITLE%%', escape(title)).replace('%%DATA%%', data)
+    spec = {'id': key, 'title': title, 'status': 'delivered', 'template': request['template'], 'request': brief,
+            'created_at': A.now(), 'revision': 1, 'synthetic': True, 'mockup': True,
+            'generation': 'Local template; aspirational frontier deliverable mockup, no model used',
+            'costs': {'total_usd': 0}, 'new_paid_api_calls': 0,
+            'verification': {'basis': 'Deterministic rendering of saved answer and separately labeled simulation receipts'}}
+    from .compose import _save
+    _save(A.workspace(path, c), key, doc=doc, body=doc, bundle=bundle, spec=spec)
+    return {**spec, 'html': doc}
+
+
+TEMPLATE = '''<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>%%TITLE%%</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#f5f3ec;color:#19352b;font:15px system-ui,sans-serif}header{background:#173c31;color:#fff;padding:32px 36px 28px}h1{font:500 clamp(26px,4vw,42px) Georgia,serif;margin:14px 0}h2{font-size:19px}p{line-height:1.6}.kicker{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#b8d6bf}.badge{display:inline-block;border:1px solid #78958b;border-radius:20px;padding:6px 12px;font-size:12px}main{padding:28px 36px}.metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:26px}.metric,.panel{background:#fff;border:1px solid #d9dfd8;border-radius:18px;padding:20px}.metric strong{display:block;font:38px Georgia}.metric small{color:#66786f}.layout{display:grid;grid-template-columns:1.25fr 1fr;gap:20px}input,select{width:100%;padding:12px;border:1px solid #bdcbc0;border-radius:9px;background:#fff;margin:5px 0 14px;font:inherit}button{cursor:pointer;background:#fff;color:#19352b;border:1px solid #d9dfd8;border-radius:10px;padding:12px;text-align:left;font:inherit}button:hover,button[aria-pressed=true]{background:#e4eee4;border-color:#608774}#people{display:grid;gap:7px;max-height:400px;overflow:auto}button small{display:block;color:#64786e;margin-top:5px}pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#f6f7f2;padding:14px;font-size:12px;max-height:280px;overflow:auto}.event{padding:12px 0 12px 18px;border-left:2px solid #b7cdb8;margin-left:5px}.event strong{display:block}.event small{color:#68796f}.muted{color:#68796f}.amber{background:#fff3d8;color:#745522;padding:13px;border-radius:9px}.context{border-top:1px solid #d6dfd6;margin-top:20px;padding-top:15px}details{margin-top:14px}.brief-mode .layout{grid-template-columns:1fr}.brief-mode #people{max-height:220px}@media(max-width:650px){header,main{padding:22px}.metrics{grid-template-columns:1fr 1fr}.layout{grid-template-columns:1fr}}
+</style></head><body><header><span class="kicker">DATA → INFORMATION → INTELLIGENCE → WISDOM</span><h1>%%TITLE%%</h1><span class="badge">SYNTHETIC MOCKUP · NO MODEL CALL</span><p id="question"></p></header><main><div class="metrics" id="metrics"></div><div class="layout"><section class="panel"><h2 id="section-title">Your patients. Their next chapter.</h2><label for="search">Search this saved cohort</label><input id="search" placeholder="Patient, PCP, therapy or evidence"><label for="filter">Focus</label><select id="filter"><option value="all">All patients</option><option value="work">With assigned review</option><option value="attention">Demo needs attention</option><option value="complete">Demo completed</option></select><div id="people"></div></section><section class="panel"><span class="kicker" style="color:#688575">PATIENT SPOTLIGHT</span><h2 id="patient-title">Choose a patient</h2><div id="detail"><p class="muted">Explore the actual saved evidence alongside separately labeled demo activity.</p></div></section></div><section class="panel context"><h2>What this experience demonstrates</h2><p id="brief"></p><p class="amber">The analytics and patient IDs come from the saved synthetic answer. Agent activity below is scripted simulation. No patient was contacted, enrolled or treated. This mockup uses a local template; frontier generation remains aspirational.</p><details><summary>Source scope and unresolved questions</summary><p id="source"></p><ul id="limits"></ul></details></section></main><script type="application/json" id="data">%%DATA%%</script><script>
+const D=JSON.parse(document.getElementById('data').textContent),$=id=>document.getElementById(id),esc=v=>String(v??'Unknown').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const words=v=>String(v||'').replaceAll('_',' ');const active=D.items.filter(x=>x.state!=='cancelled');
+$('question').textContent=D.question;$('brief').textContent=D.brief||'Move from an evidence-backed patient cohort to a review program, simulated follow-through and a useful interactive workspace.';
+$('source').textContent='Saved snapshot: '+D.as_of+'. This is a saved view; rebuild it to reflect newer work.';$('limits').innerHTML=D.limitations.map(x=>'<li>'+esc(x)+'</li>').join('');
+if(D.template==='brief'){document.body.classList.add('brief-mode');$('section-title').textContent='Team handoff · patients and responsibilities';}if(D.template==='explore')$('section-title').textContent='Follow the evidence';
+const metrics=[[D.patients.length,'patients in saved answer'],[active.length,'review tasks'],[active.filter(x=>x.simulation?.status==='complete').length,'completed demo journeys'],[active.filter(x=>x.simulation?.status==='needs_attention').length,'demo exceptions']];
+$('metrics').innerHTML=metrics.map(([n,t])=>'<div class="metric"><strong>'+n+'</strong><small>'+t+'</small></div>').join('');
+function render(){const q=$('search').value.toLowerCase(),f=$('filter').value;const ps=D.patients.filter(p=>{const w=active.filter(i=>i.patient_id===p.patient_id);return JSON.stringify(p).toLowerCase().includes(q)&&(f==='all'||f==='work'&&w.length||f==='attention'&&w.some(i=>i.simulation?.status==='needs_attention')||f==='complete'&&w.some(i=>i.simulation?.status==='complete'));});$('people').innerHTML=ps.map(p=>{const w=active.filter(i=>i.patient_id===p.patient_id),r=p.evidence_rows[0]||{};return '<button data-patient="'+esc(p.patient_id)+'">'+esc(p.patient_id)+'<small>'+esc(r.gdmt_review_flag||((w.length||'No')+' assigned reviews'))+'</small></button>';}).join('')||'<p>No matching patients.</p>';if(ps.length)detail(ps[0].patient_id);else{$('patient-title').textContent='No match';$('detail').textContent='Choose a different search or focus.'}}
+function detail(pid){const p=D.patients.find(x=>x.patient_id===pid),w=active.filter(x=>x.patient_id===pid);$('patient-title').textContent=pid;const r=p.evidence_rows[0]||{};let h='<h3>Saved answer evidence</h3>';h+=p.evidence_rows.length?Object.entries(r).filter(([k,v])=>k!=='patient_id'&&typeof v!=='object').map(([k,v])=>'<p><strong>'+esc(words(k))+':</strong> '+esc(v)+'</p>').join(''):'<p>Only the patient identifier was returned. Clinical details remain unknown.</p>';h+='<details><summary>Inspect exact evidence</summary><pre>'+esc(JSON.stringify(p.evidence_rows,null,2))+'</pre></details><h3>Simulated agent timeline</h3>';h+=w.map(i=>'<div class="context"><strong>'+esc(words(i.program))+' · '+esc(i.owner)+'</strong><p>Review: '+esc(words(i.state))+'</p>'+(i.simulation?'<span class="badge">SIMULATED · '+esc(words(i.simulation.status))+'</span>'+i.simulation.receipts.map(x=>'<div class="event"><strong>'+esc(words(x.step))+' → '+esc(words(x.outcome))+'</strong><small>Demo day '+esc(x.at.slice(0,10))+'</small><p>'+esc(x.reason)+'</p></div>').join('')+(i.simulation.follow_up?'<p class="amber">'+esc(i.simulation.follow_up)+'</p>':''):'<p class="muted">No demo agent started.</p>')+'</div>').join('')||'<p>No review work assigned.</p>';$('detail').innerHTML=h;}
+$('search').oninput=render;$('filter').onchange=render;$('people').onclick=e=>{const b=e.target.closest('[data-patient]');if(b){detail(b.dataset.patient);$('people').querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));}};render();if(D.patients.length)detail(D.patients[0].patient_id);
+</script></body></html>'''
