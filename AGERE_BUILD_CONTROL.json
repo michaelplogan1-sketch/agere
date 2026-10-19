@@ -1,6 +1,6 @@
 {
  "schema": "agere-build-control/1",
- "updated_at": "2026-10-19T17:01:37.361908+00:00",
+ "updated_at": "2026-10-19T17:06:20.867085+00:00",
  "decision_basis": "AGERE_CTO_REVIEW_2026-10-11_EVENING.md",
  "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
  "required_references": [
@@ -278,13 +278,12 @@
   "kind": "manual_turn_checkpoint",
   "gate_id": "G3",
   "last_delivered_gate": "G3",
-  "user_behavior_delta": "Preserved the approved LinkedIn illustration and corrected only bottling/economics labels. Rewrote the hook with a playful full-stack experiment focus, named tools and reasons. Completed requested CTO critique and tightened public claims, authorship, selective routes, synthetic-data scope and validation limits.",
-  "measured_failure_reduction": "Documentation/visual correction only. Checked source-linked roles, learning/bottling implementation and existing study limitations; reviewed official provider and bottling documentation. Visually inspected final image. Public copy is under 3000 characters; no benchmark comparisons or broad performance promises. No product edits or paid evaluation.",
+  "user_behavior_delta": "Rewrote public LinkedIn copy in Mike\u2019s requested ER-doctor voice: triage analogy, shorter plain-language explanations and named ingredients. Preserved approved image and core model roles/status. Retained synthetic-data scope, broader validation gap and compute/training costs.",
+  "measured_failure_reduction": "Editorial revision only. Checked copy against existing component roles and CTO critique; public post is 2006 characters. No image generation, product edit, benchmark execution or paid evaluation.",
   "evidence": [
-   "docs/agere/architecture/linkedin-stack-final.png",
-   "docs/agere/architecture/linkedin-stack-final-prompt.txt",
    "docs/agere/architecture/linkedin-post-public.txt",
    "docs/agere/architecture/LINKEDIN_POST_2026-10-19.md",
+   "docs/agere/architecture/linkedin-stack-final.png",
    "docs/agere/architecture/CTO_LINKEDIN_REVIEW_2026-10-19.md"
   ],
   "remaining_gap": "G3 active and G5 blocked; exact implementation next action unchanged. Necessity of each layer, broad accuracy, Haiku/Sonnet comparisons and total-cost advantage remain unestablished. Controlled learning is not autonomous retraining; broad SQL adapter remains off. CTO review is communications/architecture scope, not a full code/statistical/clinical audit. Nothing published.",

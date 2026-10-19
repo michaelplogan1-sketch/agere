@@ -4,39 +4,39 @@ Status: prepared for Mike to review and publish. Public copy has no project/comp
 
 ## Post
 
-I went a little mad scientist on a practical question: can we get more reliable insight from messy healthcare data while improving token economics?
+I’m an ER doc who went down an engineering rabbit hole.
 
-The experiment combines UltraBERT, Qwen, Jev and Perplexity with compilers, SQL, retrieval, statistics and some very old computer science.
+The idea was pretty simple: triage the question, then use the right tool to answer it.
 
-With Claude Code/Codex, Python/SQL and Hugging Face tooling, I built a prototype tested on synthetic healthcare data. Each question uses the relevant path through the stack.
+With Claude Code and Codex, I built a prototype on synthetic healthcare data. Here’s what I put in it, and why:
 
-The ingredients:
+• SQL + a shared data layer: keep patients, dates and definitions straight, then calculate the answer.
 
-• Preserve meaning. Native parsers, PDFKit + Apple Vision OCR, semantic SQL and code mappings align claims, notes, labs and enrollment. UltraBERT-Embed-150M helps match terminology and catalog entries when exact mappings fail. Patient, date and denominator definitions matter.
+• UltraBERT: help match unfamiliar terminology and find the right data source.
 
-• Find the useful evidence. BM25 + IBM Granite embeddings cover exact terms and related wording. Reciprocal-rank fusion combines rankings; BGE and schema rerankers prioritize relevant passages, tables and fields. Less irrelevant context.
+• BM25 + IBM Granite + BGE reranking: find useful evidence, including wording that doesn’t exactly match the question, and move the relevant pieces up the list.
 
-• Interpret what the evidence says. TypeSafe’s Jev and Perplexity Decisions are alternative typed readers for subject, assertion and time. Rules and TF-IDF/logistic heads handle recurring distinctions; BioClinical ModernBERT supports research features. A family-history mention should not become a current patient diagnosis.
+• Jev / Perplexity Decisions: interpret things like “current diagnosis” versus “family history.” Two options for a focused decision task.
 
-• Compile what can be computed. MiniLM helps match plans. A compiler, typed contracts, SQL families and Learn-then-Test gates support checked execution and selective escalation. Code produces the numbers.
+• MiniLM + a compiler: recognize supported question patterns and reuse plans we already know how to execute.
 
-• Specialize recurring inference. Qwen3-4B + narrow LoRA + Apple MLX “bottles” a slot-filling task into a local LLM. It still runs inference on new inputs; the aim is cheaper repeated work with parser-checked outputs. The separate broad-SQL adapter remains default-off.
+• Qwen + LoRA + Apple MLX: “bottle” a narrow task into a small local LLM. It still handles new inputs; the aim is cheaper repeated inference, with code checking its output.
 
-• Use broader models where needed. Perplexity selects curated recipes; Claude Haiku fills bounded slots; Opus proposes analyses for unfamiliar questions; Sonnet is a configured alternate. The system executes and checks proposed SQL.
+• Claude Haiku / Opus / Sonnet: Haiku for focused tasks, Opus for unfamiliar analyses, and Sonnet available as another option.
 
-• Bring the mathematics. The analytical engines include Kalman filters, survival analysis, causal methods, empirical Bayes, false-discovery control, graph methods and queueing. Different questions require different assumptions and calculations.
+• Statistics: survival analysis, Kalman filters, causal methods, Bayes and queueing. Different questions need different math.
 
-Underneath: compiler design, type systems, indexes, memoization, content hashes, dependency invalidation, provenance and cost ledgers.
+• Old-school computer science: types, indexes, caching, hashes and provenance. Check the inputs, reuse valid work and keep track of where an answer came from.
 
-A controlled learning loop captures accepted work and corrections, prepares training candidates and flags gaps. New model training and activation are separate, checked steps.
+There’s also a learning loop that captures accepted work and corrections for reuse and future training. Training and switching models are separate steps. I’m also exploring BioClinical ModernBERT for clinical-text tasks.
 
-Token economics combines appropriate model selection with focused context, bounded tasks, reusable computation and specialized inference.
+The token economics piece matters to me: use focused context, smaller tasks and reusable work to make AI more economical. Count local compute and training costs too.
 
-The goal is better total cost per correct answer—including compute, training and evaluation. Broader accuracy and cross-model cost advantages still need validation.
+Still a synthetic-data prototype, with broader accuracy and cost comparisons to do.
 
-Data → Information → Intelligence → Wisdom.
+Data → Information → Intelligence → Wisdom
 
-#DataEngineering #HealthcareAI #TokenEconomics
+#HealthcareAI #DataEngineering #TokenEconomics
 
 ## Optional credit line for the post
 
@@ -122,3 +122,8 @@ Mike approved the existing illustration concept and asked only to correct bottli
 The rewritten hook emphasizes the combination of specialized AI, classical CS and mathematics. Public copy explicitly identifies an AI-assisted Python/SQL prototype tested on synthetic data, says questions use relevant paths, and acknowledges that broader accuracy and cross-model economics need validation. It does not claim that all methods were run on every question or that component count establishes performance.
 
 The requested CTO critique is saved in [CTO LinkedIn review](CTO_LINKEDIN_REVIEW_2026-10-19.md). Review of communication, source-linked implementation roles and existing evidence only; no new benchmark or paid evaluation was performed. This is not a full code, statistical or clinical audit.
+
+
+### Voice revision
+
+At Mike’s request, the public copy now uses his ER-doctor perspective, a simple triage analogy and short ingredient/reason bullets. The approved image is unchanged. Detailed model versions, research branches and mathematical inventory remain in the diagram and technical notes; the post uses plain language and preserves prototype, economics and learning limits.
