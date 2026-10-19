@@ -788,7 +788,7 @@ def utilization(out):
         for cid, pid, ctype, pos, tob, svc, svc_to, adm_d, dis_d, rid, org in out.execute(
                 """SELECT payer_claim_id, patient_id, claim_type, place_of_service, type_of_bill, service_from, service_to, admission_date,
                           discharge_date, record_id, billing_npi FROM payer_claim
-                   WHERE counts_in_metrics = 1 AND final_status NOT IN ('voided', 'reversed') AND service_from IS NOT NULL
+                   WHERE counts_in_metrics = 1 AND final_status <> 'voided' AND service_from IS NOT NULL
                    ORDER BY service_from, payer_claim_id"""):
             revs = ed_rev.get(cid, set())
             base = {'source': 'claim', 'record_id': rid, 'organization_id': org, 'discharge_known': None, 'visit': cid}

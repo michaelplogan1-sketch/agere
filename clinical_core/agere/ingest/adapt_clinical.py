@@ -59,7 +59,7 @@ from .identity import athena_key, ecw_key, epic_key, fhir_key, hl7_key, mrn_key
 ENVELOPE = ('record_id', 'patient_id', 'source_table', 'source_system', 'organization_id', 'event_date', 'recorded_date',
             'available_date', 'encounter_id', 'source_patient_id', 'supersedes_record_id', 'event_date_precision',
             'event_time', 'recorded_time', 'signed_time', 'identity_link_basis')
-VOLATILE = {'record_id', 'supersedes_record_id', 'replaces_result_record_id', 'available_date', 'available_time', '_lineage',
+VOLATILE = {'record_id', 'version_seq', 'supersedes_record_id', 'replaces_result_record_id', 'available_date', 'available_time', '_lineage',
             'patient_id', 'identity_link_basis'}
 PROBLEM_LIST_STREAM = 'conditions'
 FHIR_NATIVE_PRACTICES = {'WHN-PRACTICE-CA-5', 'WHN-PRACTICE-LA-0', 'WHN-PRACTICE-NY-5', 'WHN-PRACTICE-VA-0'}
@@ -588,6 +588,8 @@ class _Run:
             prev = None
             for i, (sig, rec) in enumerate(vers):
                 rec['record_id'] = 'AGR-' + _h(stream, key, sig, i)
+                if not chain:  # unchained versions are resolved downstream: the delivered order (source timestamp, then file row)
+                    rec['version_seq'] = i  # decides between versions delivered on the same day, e.g. two in one monthly file
                 if prev is not None and chain:
                     rec['supersedes_record_id'] = prev['record_id']
                     if stream == 'labs':

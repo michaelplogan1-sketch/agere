@@ -194,7 +194,7 @@ def population_filters(col, pop, a, tables=None):
 def ed_events_sql(ed, a=None):
     """ED visit dates: payer claims (counts in metrics; POS / revenue prefix / CPT) and, when chosen, EHR emergency
     encounters; optional dx prefixes on the claim (principal or any) / on the encounter's diagnoses."""
-    ed = {**ED_DEFAULT, **{k: v for k, v in (ed or {}).items() if v}}
+    ed = {**ED_DEFAULT, **{k: v for k, v in (ed or {}).items() if v or (k == 'cpt' and v == [])}}
     sources = ed.get('sources') or ['claims', 'ehr']
     dx = ed.get('dx_prefixes') or []
     parts = []
@@ -237,8 +237,11 @@ def _measure_where(anchor):
 
 
 def _window(col, a, w):
-    """Lookback + completion bounds on an anchor date column."""
+    """Lookback + completion bounds on an anchor date column; a calendar year ({'year': 2029}) bounds it to that year instead."""
     w = w or {}
+    if w.get('year'):
+        y = int(w['year'])
+        return [f"{col} >= '{y}-01-01'", f"{col} <= '{y}-12-31'"]
     out = []
     lb = w.get('lookback') or DEFAULT_LOOKBACK
     lower = _shift(a, days=lb.get('days'), months=lb.get('months'))
@@ -429,6 +432,8 @@ def validate(spec):
     elif f == 'utilization_threshold':
         if p.get('event') not in ('ed_visit', 'inpatient_admission'): raise ValueError('event must be ed_visit or inpatient_admission')
         if not isinstance(p.get('min_count'), int) or not 1 <= p['min_count'] <= 365: raise ValueError('min_count 1..365')
+        y = (p.get('window') or {}).get('year')
+        if y is not None and (not isinstance(y, int) or not 1900 <= y <= 2100): raise ValueError('window year 1900..2100')
     elif f == 'screening_overdue':
         if not p.get('tests'): raise ValueError('screening tests required')
     elif f == 'adherence_pdc':
@@ -734,6 +739,7 @@ def _ed_spec(segs, low_all, question_low):
         cpt = _expand(re.sub(r'(?i)revenue code\s+\d{3}x', ' ', text))
         cpt = [c for c in cpt if re.match(r'9928', c)]
         if cpt: ed['cpt'] = cpt
+        elif pos or rev: ed['cpt'] = []  # a stated ED rule (POS / revenue code) replaces the default code list
         dx = _icd_tokens(text)
         if dx: ed['dx_prefixes'] = dx
     ed_text = ' '.join(t for r, t, _ in segs if r == 'ed').lower()
@@ -749,6 +755,19 @@ _DRUGLIKE = (r'\bnot (?:on|taking|prescribed|receiving) (?:an?\s+)?[a-z]+(?:ol|i
              r'stat|pam|lam|cin|vir|xaban|gliflozin|glutide|parin|farin|dronate)\b')
 
 
+def _calendar_year(text):
+    """The one calendar year a text scopes events to ("in 2029", "during 2029", "service dates in 2029", "calendar year
+    2029"); None when it names no year, several years, or a year in another role (a birth year, "as of 2029-06-30")."""
+    t = _clean(text).lower()
+    years = set(re.findall(r'\b((?:19|20)\d\d)\b(?!-\d)', t))
+    if len(years) != 1 or re.search(r'\b(?:19|20)\d\d-\d', t):
+        return None
+    y = years.pop()
+    if re.search(r'\b(?:in|during|throughout|for)\s+(?:calendar\s+year\s+|cy\s*|the year\s+)?' + y + r'\b', t):
+        return int(y)
+    return None
+
+
 def detect_family(question, defn=''):
     """-> family name or None (deterministic cues)."""
     ql = _lower(question)
@@ -762,7 +781,7 @@ def detect_family(question, defn=''):
     kinds = _followup_kinds(ql, (has_meas or {}).get('concept'))
     if kinds and (has_ed or has_dis or (has_meas and has_meas.get('op'))): return 'event_followup_gap'
     if (has_ed or re.search(r'admission|hospitali[sz]ation|inpatient stay', ql)) and re.search(
-            r'(\d+)\s*(?:or more|\+|or greater)|at least\s+\d+|more than\s+\d+|\d+\s+or more', ql) and re.search(r'visit|admission|hospitali|stay|trip', ql):
+            r'(\d+)\s*(?:or more|\+|or greater)|at least\s+\d+|more than\s+\d+|\d+\s+or more', ql) and re.search(r'visit|admission|hospitali|stay|trip|\btimes\b', ql):
         return 'utilization_threshold'
     if re.search(r'\bnot (?:on|taking|prescribed|receiving)\b|\bwithout (?:an?\s+)?(?:active\s+)?(?:\w+\s+)?(?:prescription|therapy|statin|medication)|'
                  r'\bmissing\b.*\b(?:pillars?|therap|medication|class)|\bno (?:active )?(?:statin|' +
@@ -805,7 +824,8 @@ def parse(question, as_of):
         return None  # "diabetic patients who also have CKD": one condition population per family; a union answers another question
     family = detect_family(qtext, defn)
     if family is None: return None
-    if family != 'adherence_pdc' and re.search(r'\b(?:19|20)\d\d\b', qtext + ' ' + defn):
+    year = _calendar_year(qtext + ' ' + defn) if family == 'utilization_threshold' else None
+    if family != 'adherence_pdc' and not year and re.search(r'\b(?:19|20)\d\d\b', qtext + ' ' + defn):
         return None  # calendar-dated definitions (measurement years) are not as_of-relative family windows
     returns = returns_for(qtext)
     if returns is None: return None
@@ -915,7 +935,8 @@ def parse(question, as_of):
             if patient_list_question(qtext): returns = 'table'
     elif family == 'utilization_threshold':
         params['event'] = 'ed_visit' if re.search(r'\b(?:ed|er|emergency(?: department| room)?)\b', ql) else 'inpatient_admission'
-        m = (re.search(r'(\d+)\s*(?:or more|\+|or greater)', ql) or re.search(r'at least\s+(\d+)', ql))
+        m = (re.search(r'(\d+)\s*(?:or more|\+|or greater)', ql) or re.search(r'at least\s+(\d+)', ql)
+             or re.search(r'>=\s*(\d+)', dl))
         n = int(m.group(1)) if m else None
         m2 = re.search(r'more than\s+(\d+)', ql)
         if n is None and m2: n = int(m2.group(1)) + 1
@@ -925,8 +946,11 @@ def parse(question, as_of):
             ed = _ed_spec(segs, al, ql)
             ed.setdefault('sources', ['claims', 'ehr'])
             params['ed'] = ed
-        params['window'] = {'lookback': win['lookback'] or dict(DEFAULT_LOOKBACK), 'lower_inclusive': False}
-        if not win['lookback']: defaults.append('window 12 months')
+        if year:
+            params['window'] = {'year': year}  # "in 2029", "service dates in 2029": the calendar year, not a lookback from as_of
+        else:
+            params['window'] = {'lookback': win['lookback'] or dict(DEFAULT_LOOKBACK), 'lower_inclusive': False}
+            if not win['lookback']: defaults.append('window 12 months')
         if def_dx or _conditions(ql): pop['condition_prefixes'] = def_dx or _conditions(ql)
     elif family == 'screening_overdue':
         kind = ('breast' if re.search(r'breast|mammogra', al) else 'cervical' if re.search(r'cervical|pap\b', al)

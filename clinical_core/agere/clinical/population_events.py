@@ -74,7 +74,9 @@ SCHEMA_DOC = {
                       'duplicate_of_record_id = the provider line). Use it for ANY "had procedure / CPT / HCPCS X" question '
                       '(physical therapy 97xxx, imaging, screenings): WHERE code IN (...) AND counts_in_metrics = 1 (add '
                       "claim_status = 'paid' only when the question asks for paid services). claim_line alone holds only the "
-                      "client's own billing; payer_claim_line alone misses it.",
+                      "client's own billing; payer_claim_line alone misses it. Denied payer claims often arrive header-only "
+                      '(no service lines), so a visit that a claim header proves (ED = payer_claim.place_of_service 23; inpatient = '
+                      'type_of_bill 011x) is read from payer_claim / utilization_event, not from lines alone.',
     'cancer_screening': 'One row per cancer screening result (cancer_screening_results: test e.g. bilateral_screening_mammography, '
                         'result_status, event_date = performed_date) plus screening mammograms known only from a payer claim line '
                         '(77067 / G0202; source payer_claim_line, or claim_line for the client\'s own billing line, result_status claim_billed). Same patient within 1 day = one screen.',

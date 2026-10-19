@@ -610,7 +610,9 @@ def _appointments(out):
     """One row per appointment_id. scheduled_date = scheduled_date of the latest version carrying one (a reschedule moves it),
     else the date of the latest received slot_start (population-feed bookings carry booked_at + slot_start instead); never the
     booking record's own date. booked_date = earliest 'booked' version date, else the earliest booked_date any version carries (native feeds keep only the
-    current version but stamp the booking date on each); lead_time_days is NULL when either date is unknown."""
+    current version but stamp the booking date on each); lead_time_days is NULL when either date is unknown. Versions delivered
+    on the same day (one monthly file) are ordered by version_seq: the source's last-updated stamp (FHIR meta.lastUpdated),
+    else the later row; record_id is only the final tie-break."""
     kept, no_show, cancelled = _sql_in(APPOINTMENT_KEPT), _sql_in(APPOINTMENT_NO_SHOW), _sql_in(APPOINTMENT_CANCELLED)
     out.execute(f"""
     INSERT INTO appointment
@@ -620,15 +622,17 @@ def _appointments(out):
       max(CASE WHEN rn_last = 1 THEN status END),
       max(status IN {no_show}), max(status IN {cancelled}), max(status = 'rescheduled'), max(status IN {kept}),
       max(organization_id), max(clinician_id), max(purpose), count(*)
-    FROM (SELECT *, row_number() OVER (PARTITION BY appointment_id ORDER BY scheduled_date IS NULL, event_date DESC, record_id DESC) AS rn_sched,
-                 row_number() OVER (PARTITION BY appointment_id ORDER BY slot_date IS NULL, event_date DESC, record_id DESC) AS rn_slot
+    FROM (SELECT *, row_number() OVER (PARTITION BY appointment_id ORDER BY scheduled_date IS NULL, event_date DESC, version_seq DESC, record_id DESC) AS rn_sched,
+                 row_number() OVER (PARTITION BY appointment_id ORDER BY slot_date IS NULL, event_date DESC, version_seq DESC, record_id DESC) AS rn_slot
           FROM (SELECT json_extract(payload,'$.appointment_id') AS appointment_id, patient_id, json_extract(payload,'$.status') AS status,
                  substr(json_extract(payload,'$.scheduled_date'), 1, 10) AS scheduled_date,
                  substr(json_extract(payload,'$.slot_start'), 1, 10) AS slot_date,
                  substr(json_extract(payload,'$.booked_date'), 1, 10) AS booked_payload, event_date, organization_id, record_id,
                  json_extract(payload,'$.clinician_id') AS clinician_id, json_extract(payload,'$.purpose') AS purpose,
+                 json_extract(payload,'$.version_seq') AS version_seq,
                  row_number() OVER (PARTITION BY json_extract(payload,'$.appointment_id')
-                                    ORDER BY available_date DESC, json_extract(payload,'$.available_time') DESC, record_id DESC) AS rn_last
+                                    ORDER BY available_date DESC, json_extract(payload,'$.available_time') DESC,
+                                             json_extract(payload,'$.version_seq') DESC, record_id DESC) AS rn_last
                 FROM record WHERE stream = 'appointments' AND json_extract(payload,'$.appointment_id') IS NOT NULL))
     GROUP BY appointment_id""")
     out.execute('ALTER TABLE appointment ADD COLUMN lead_time_days INTEGER')

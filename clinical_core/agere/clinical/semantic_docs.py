@@ -257,6 +257,10 @@ CONVENTIONS = """## Canonical conventions (apply unless the question defines oth
 - Procedures: "had procedure / CPT / HCPCS X" reads procedure_line (the client's own billing lines, source claim_line, plus
   payer claim lines, source payer_claim_line) WHERE code IN (...) AND counts_in_metrics = 1; claim_line alone misses
   services other providers billed (physical therapy 97xxx arrives only on payer claims).
+- ED visits: a non-voided payer claim proves the visit whatever its adjudication (paid, denied, reversed; a CARC 18
+  duplicate counts when its original was not received): payer_claim WHERE counts_in_metrics = 1 AND (place_of_service = '23'
+  OR a payer_claim_line revenue code 045x); denied claims often arrive header-only (no lines), so never require a line.
+  utilization_event (kind ed_visit) applies this rule across EHR, ADT and claims.
 - ED diagnoses: encounter_diagnosis (source ehr | hl7_adt DG1 | payer_claim for ED visits without an EHR chart) JOIN encounter
   USING (encounter_id) WHERE type_concept = 'emergency_visit'; ED disposition = encounter.disposition (NULL = not delivered).
 - Deaths: death (one row per patient; death_date prefers CCLF8, each source in its own *_death_date column). "Alive at X" =
