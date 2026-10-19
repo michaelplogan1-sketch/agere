@@ -389,7 +389,8 @@ def resolve(question, prior, hosted=None):
 
     Returns {'standalone', 'method', 'edits', 'frame', 'follow_up', 'reason', 'hosted_receipt'}.
     """
-    if not isinstance(question, str) or not 1 <= len(question.strip()) <= 1500: raise ValueError('Bounded question required')
+    from .question_input import validate_question
+    validate_question(question)
     question = ' '.join(question.split())
     own = parse_frame(question)
     out = {'version': VERSION, 'follow_up': False, 'edits': [], 'reason': None, 'hosted_receipt': None}
@@ -505,12 +506,15 @@ def prior_context(path, conversation_id):
 
 
 def record(path, conversation_id, question, resolution, plan_summary=None, answer_summary=None, error=None):
+    from .question_input import validate_question
+    validate_question(question)
+    validate_question(resolution['standalone'])
     db = _db(path)
     try:
         with db:
             n = db.execute('SELECT coalesce(max(turn), 0) + 1 FROM turns WHERE conversation_id=?', (conversation_id,)).fetchone()[0]
             db.execute('INSERT INTO turns VALUES (?,?,?,?,?,?,?,?,?,?,?)',
-                       (conversation_id, n, time.time(), question[:1500], resolution['standalone'][:1500], resolution['method'],
+                       (conversation_id, n, time.time(), question, resolution['standalone'], resolution['method'],
                         json.dumps(resolution.get('edits') or []), json.dumps(resolution['frame']) if resolution.get('frame') else None,
                         json.dumps(plan_summary) if plan_summary is not None else None,
                         json.dumps(answer_summary) if answer_summary is not None else None, (error or '')[:400] or None))

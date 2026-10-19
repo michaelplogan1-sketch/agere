@@ -62,6 +62,9 @@ def show(result):
 
 
 def ask(out, pipeline=None):
+    from bench.study import common
+    from bench.study.validation import require_validated
+    require_validated(common.locked_questions()[0])
     from run_integrated_stack import keys
     keys()
     from clinical_core.agere.onboarding.workspace import Workspace, ask_many
@@ -120,6 +123,9 @@ def main():
     ap.add_argument('--answers', type=Path)
     ap.add_argument('--pipeline', choices=['full', 'hybrid'], help="full = the stack (no silent fallback); hybrid = language-model analysts for everything")
     a = ap.parse_args()
+    from bench.study import common
+    from bench.study.validation import require_validated
+    require_validated(common.locked_questions()[0])
     if a.cmd == 'selftest':
         sys.exit(0 if selftest() else 1)
     _, ref = reference()

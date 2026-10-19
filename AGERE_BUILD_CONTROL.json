@@ -1,6 +1,6 @@
 {
  "schema": "agere-build-control/1",
- "updated_at": "2026-10-19T00:06:58.011634+00:00",
+ "updated_at": "2026-10-19T12:41:29.946840+00:00",
  "decision_basis": "AGERE_CTO_REVIEW_2026-10-11_EVENING.md",
  "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
  "required_references": [
@@ -288,9 +288,9 @@
    "config/agere/cascade_thresholds.json",
    "docs/agere/gold10/locked.json"
   ],
-  "remaining_gap": "Rescore native 150 on the generator's corrected digest (awaiting v1.24 digest); Gold-50 locking; full study run; test_gate_certification.test_failed_check_is_low fails on main independent of these changes; v2.14 native slice; deployment.",
-  "next_action": "On the generator's corrected native digest: rebuild pilot from /Users/mikel/agere-mvp-run, Gold 10, bench/native_run.py, generator scorer, classify misses. On Gold-50: derive answers, compare with --gold10 scorer, lock, run bench/study/run.py --arms A,B,C,D,E,F1..F6 --questions both --repeat 2.",
-  "next": "Merge v2.0 warehouse migration (feature/warehouse-v2, in progress) and re-baseline; Wave C model layer (bottled SLM rung, reranker, learned router, embedding cache, Jev online, automated learning loop); Wave D; v2.1 data (D9-D22) when the generator delivers."
+  "remaining_gap": "Gold-50 references remain unvalidated (five pending dispute audits, two ambiguous items, two upheld key defects); native nine remain under audit. Gold 10 supports a small descriptive comparison only. Frontier fallback A2 remains exploratory until independently checked.",
+  "next_action": "G3: repair definition-length and unjustified-clarification failures generally; enforce independent reference validation before every study run/rescore. Audit Gold-50 from delivered inputs, reconcile through the generator scorer only, then rescore saved arms once. No unvalidated native/Gold-50 runs; no open-ended test loop.",
+  "next": "After reference reconciliation, one bounded corrected saved-answer analysis; qualify candidate fallback on validated evidence before activation. Full ten-area product backlog retained."
  },
  "decisions": [
   {
@@ -746,6 +746,13 @@
    "at": "2026-10-18T21:41:50.577861+00:00",
    "by": "claude-code:agere-hub",
    "decision": "MVP check complete: Gold 10 9/9 at $0 on the full committed stack; native bank 111/150. Disputes resolved with the generator by audit, not by tuning to keys."
+  },
+  {
+   "at": "2026-10-19T12:41:29.946840+00:00",
+   "basis": "Mike: \"You are taking over the Agere build from Claude Code, at Mike's request.\" \"no test, rerun or rescore against a key until each answer in it has been validated\"",
+   "change": "Transfer build ownership to Codex; keep heartbeat paused. Select Gold-50 independent validation plus saved-answer rescore as least-cost proof route. Repair general routing failures in G3 while references are audited. Public EHRSQL/BIRD assessed as later external replication, not a shortcut to ACO full-stack evidence.",
+   "scope_impact": "No product charter narrowing, reference truth access, external publication or clinical/model superiority claim. Preserve all concurrent work and old study artifacts.",
+   "evidence": "docs/agere/study/PROTOCOL.md"
   }
  ]
 }

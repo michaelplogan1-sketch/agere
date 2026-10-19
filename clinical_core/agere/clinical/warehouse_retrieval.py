@@ -194,7 +194,8 @@ class Retriever:
     def search(self, question, *, patient=None, limit=8,patient_ids=None,analysis_window=None):
         from .clinical_events import validate_window
         window=validate_window(analysis_window,self.meta['snapshot']['as_of'])
-        if not isinstance(question,str) or not 1<=len(question.strip())<=1500:raise ValueError('Bounded question required')
+        from .question_input import validate_question
+        validate_question(question)
         if type(limit) is not int or not 1<=limit<=20:raise ValueError('Bounded result count required')
         if patient and not self.db.execute('SELECT 1 FROM patients WHERE id=?',(patient,)).fetchone():raise ValueError('Unknown patient')
         if patient_ids is not None and (not isinstance(patient_ids,list) or any(not isinstance(p,str) for p in patient_ids)):

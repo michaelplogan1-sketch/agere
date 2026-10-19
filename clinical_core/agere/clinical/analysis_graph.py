@@ -1345,8 +1345,9 @@ def execute(stack, plan, *, question=None):
     started = time.perf_counter()
     path, meta = stack.path, stack.retriever.meta
     plan = validate(plan, meta['snapshot']['as_of'])
-    if question is not None and (not isinstance(question,str) or not 1 <= len(question) <= 1500):
-        raise ValueError('Bounded original graph question required')
+    if question is not None:
+        from .question_input import validate_question
+        validate_question(question)
     db = sqlite3.connect(path / 'stack.sqlite3')
     evidence_db = None
     try:

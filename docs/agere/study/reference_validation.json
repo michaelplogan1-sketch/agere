@@ -1,0 +1,847 @@
+{
+  "schema": "agere-reference-validation/1",
+  "policy": "All selected answers independently reconciled before any run or rescore. Sealing or agreement between model arms is insufficient.",
+  "sets": [
+    {
+      "name": "gold10",
+      "set": "locked",
+      "status": "validated",
+      "generator_digest": "05c5b54ba34728cd",
+      "scorer": "bench/gold10_run.py",
+      "independent_derivation": "bench/gold10_reference.py; user handoff confirms independently reconciled complete patient lists before scoring",
+      "reconciliation": "generator --gold10 scorer, all nine exact, 2026-10-18; locked_with metadata and Mike takeover handoff",
+      "evidence": [
+        {
+          "path": "docs/agere/gold10/locked.json",
+          "sha256": "00ecc0b0b4241f8a10ee99fecab5da57df666d3011845f3d4fc9130ade5e8201"
+        },
+        {
+          "path": "bench/gold10_reference.py",
+          "sha256": "382dd801defb80346bd9cc7093885c41b3b43061c23461b9162d5d607e28f7d7"
+        }
+      ],
+      "questions": {
+        "HF-GDMT": {
+          "status": "validated",
+          "sha256": "ea76d7cdd886eb4b4d118611f138d87db16474925d95873d892df3fc34376f4b"
+        },
+        "LBP-PT": {
+          "status": "validated",
+          "sha256": "8a72263ac4ed8f9b870afff563d259e8209dd62552496781a78ac2925cc17774"
+        },
+        "A1C-9": {
+          "status": "validated",
+          "sha256": "408a77ee448aa9d1af37aa0754ae13be7b73ef0052d62d914bb17050f0aabf5a"
+        },
+        "ED-HIGH": {
+          "status": "validated",
+          "sha256": "07196058c2e9d85dd2a9e43d16b98f6fdc134423cc0fa3a732b261185c3f7c3f"
+        },
+        "TCM-GAP": {
+          "status": "validated",
+          "sha256": "5a744532ab5f7662fa228c4806a2bd044d396cdb71a50ed1665febabf9cfa770"
+        },
+        "SPD": {
+          "status": "validated",
+          "sha256": "b245cce7a1be86662f6fefdc91a38db9b2f1bc95827a2245537ea1a3d2b9a96e"
+        },
+        "PHQ-FU": {
+          "status": "validated",
+          "sha256": "f1761f41cbddb64bd052ecc83765f281a99cdbd034aab67ea9f1bc6c9162657b"
+        },
+        "BCS": {
+          "status": "validated",
+          "sha256": "b66c37560e881959b3b303e32abf0792b12a91e6ec6b982d194eec4b6ff0578a"
+        },
+        "PDC": {
+          "status": "validated",
+          "sha256": "3753b6956faf80c741f3ee9de8f960fcdcccea645a39a322ab8e174ed63ebd8a"
+        }
+      }
+    },
+    {
+      "name": "native150",
+      "set": "breadth",
+      "status": "pending",
+      "generator_digest": "e76655d2",
+      "scorer": "--questions",
+      "reason": "Nine reference answers remain under independent audit",
+      "questions": {
+        "CLN-01": {
+          "status": "pending",
+          "sha256": "18cca394e966824b3a546b24d6dd67f895656c723126e2b88ef25b1b37cfd445"
+        },
+        "CLN-02": {
+          "status": "pending",
+          "sha256": "53c352e1316aebeb7629109ddd869311e41cd747071cfa2da4ad0be4bc3da84d"
+        },
+        "CLN-03": {
+          "status": "pending",
+          "sha256": "745995b6dfb879b902cd771c3203c0b4a3c1cde725b9e9d76b89afb1f38e2c99"
+        },
+        "CLN-04": {
+          "status": "pending",
+          "sha256": "b01e55033584e698db7a0901d0999b64343950113736be6e0dfd79e65f28a656"
+        },
+        "CLN-05": {
+          "status": "pending",
+          "sha256": "a8771a8282f04fd896bd948534c1b1ed9d9ddcece36c749a267abe824d558079"
+        },
+        "CLN-06": {
+          "status": "pending",
+          "sha256": "0234ffbe1a8104dfadf6ede297c434ee5044bc9fdde599316d83e83c0999f097"
+        },
+        "CLN-07": {
+          "status": "pending",
+          "sha256": "1b82bf5648bea9edd683dcf1c98af7c3a38ab6b5bae0a4ab2fdc772a4197d379"
+        },
+        "CLN-08": {
+          "status": "pending",
+          "sha256": "7b48d0f41edb83be043b870e144a991510e5faa207504c29a1ad91f4fa5abfdd"
+        },
+        "CLN-09": {
+          "status": "pending",
+          "sha256": "510aacaf1ac73ba54f1670dede5284fcf54735f507a63a0a6ce2b5fb308c02f3"
+        },
+        "CLN-10": {
+          "status": "pending",
+          "sha256": "a2a9a2acab98cf6ae732aab28011c528ae14cdcf5f6b9af342ba615ac6e0568e"
+        },
+        "CLN-11": {
+          "status": "pending",
+          "sha256": "8730086e08ce47dcd365ade4808fa2dd6fa6bbab97fff14f3ba56d33708198d4"
+        },
+        "CLN-12": {
+          "status": "pending",
+          "sha256": "4c576ed845306179f7f03d349e2ea063df6d1810b69084e7b08e99bbe12d7f34"
+        },
+        "CLN-13": {
+          "status": "pending",
+          "sha256": "89ceaa3b109645472d9196a15d335c8615e1f64bbb1df15aacf2acd897a35703"
+        },
+        "CLN-14": {
+          "status": "pending",
+          "sha256": "1381c06a16f6fa20cb9c99c88501ef1333f654224e46998765afeef074b6269f"
+        },
+        "CLN-15": {
+          "status": "pending",
+          "sha256": "a30fc2792aac14778ba0b660fd44ebfb04a2d2e98c288d41fc261de66c0090a9"
+        },
+        "HOS-01": {
+          "status": "pending",
+          "sha256": "410fcf7dcb130bf206fbe7db357d322b3b84c4d98b48b8cec1ad4fd47a335b88"
+        },
+        "HOS-02": {
+          "status": "pending",
+          "sha256": "97839efa9a11593dbb4001f976e0998b6343ac721e3320c76462bb09091268ee"
+        },
+        "HOS-03": {
+          "status": "pending",
+          "sha256": "d87cb302163fbe456979aab5bf2f26a7729d2c1a926c623d501f0e934b903f77"
+        },
+        "HOS-04": {
+          "status": "pending",
+          "sha256": "e0d2fe20ed61de402c02c911f5222bea8e8b4426f456451b9dbb20e4c692979c"
+        },
+        "HOS-05": {
+          "status": "pending",
+          "sha256": "8de927baf7e9c2fbf429b0108094a622d69ad9c551682b9262fe2f864abd074f"
+        },
+        "HOS-06": {
+          "status": "pending",
+          "sha256": "d527b7a4ea6f05fc7f26011250574f7c84b8075dbc840add54b2f6f1b0922ea5"
+        },
+        "HOS-07": {
+          "status": "pending",
+          "sha256": "0908201baf2376cb3ca2bca873c69403487564765f5756a0e31c3e1279a111c4"
+        },
+        "HOS-08": {
+          "status": "pending",
+          "sha256": "ceade154a5f6cd5de502d37c58b01dcf6fa3c8a1a479a63455f5d1856ca55edb"
+        },
+        "HOS-09": {
+          "status": "pending",
+          "sha256": "44eda9cae5618986842bbacac05c2537df40bb0fc063441e0078b011f98028f3"
+        },
+        "HOS-10": {
+          "status": "pending",
+          "sha256": "8a1c454f86ad86540a46f4cf883810acbd3fe011ebb1dec9da0fc2330ed4afb5"
+        },
+        "HOS-11": {
+          "status": "pending",
+          "sha256": "93498e5fbe1df3e7b25ed27241c6de3288ae3a6462f9dfe0a7d23f87c37cae1a"
+        },
+        "HOS-12": {
+          "status": "pending",
+          "sha256": "365c52428d7f29caf29a5b24c6b09c49208ed51aad9a7523064b3762ebf42ed7"
+        },
+        "HOS-13": {
+          "status": "pending",
+          "sha256": "60d071d1db43f0bfa6bbafd0a1c4b98b137b5e9ab288641cda404efc62622add"
+        },
+        "HOS-14": {
+          "status": "pending",
+          "sha256": "483ea4a17679e62d686c48ff398f7384932dd864f77055e3937fb1c0b55ca21c"
+        },
+        "HOS-15": {
+          "status": "pending",
+          "sha256": "f0f309342298baf3dc2fbef410c867034b2d0c7213936f11a52ee90d36d8f3a4"
+        },
+        "REV-01": {
+          "status": "pending",
+          "sha256": "ab01b7aaf42955421edd95f40ab0fd3402b0826e6a26f7a72241c4e2fd75c637"
+        },
+        "REV-02": {
+          "status": "pending",
+          "sha256": "f9fe13f9d83dd5e6e7135f7e301dbd48e451f42a3f4f5dbafdf483c3fbba74ba"
+        },
+        "REV-03": {
+          "status": "pending",
+          "sha256": "91aa28bccc36d95672c55860fcb390ff5c52434970c6d3c38f473d5254e9073b"
+        },
+        "REV-04": {
+          "status": "pending",
+          "sha256": "741d47c529bbf48aa1230c9fc062a013d7171bf2204c5b5f85fe05bfcdf889bc"
+        },
+        "REV-05": {
+          "status": "pending",
+          "sha256": "9723ea82945139e6ff997cba6836ff93247bc06efc9f7511e21c0b3eb2f8b181"
+        },
+        "REV-06": {
+          "status": "pending",
+          "sha256": "2fd5242ed2d1049d57000069c98963a0ce11c9a5151bce973691c37fc17930f4"
+        },
+        "REV-07": {
+          "status": "pending",
+          "sha256": "5a02bb90a612d8e86a0f75287c2a9c8ec20421bd1fd6727191ed1ecaa13ef2e5"
+        },
+        "REV-08": {
+          "status": "pending",
+          "sha256": "ae009bd97d6dfe3a2ddb2555ca8fc7c21f05d6d3b5bc7d40bcd53352135ca6b3"
+        },
+        "REV-09": {
+          "status": "pending",
+          "sha256": "24411612fc12b2fbb49fe44360ac4af162597136a07c87578337fe9bbdcbb912"
+        },
+        "REV-10": {
+          "status": "pending",
+          "sha256": "bb0b47f246a3276b9072a0ac9bc1bdf9b7f89dbf61fb9d505a25b38f6114d64e"
+        },
+        "REV-11": {
+          "status": "pending",
+          "sha256": "cd03e1c2dfd58e928f2bc9484345213af3d7178a23c669cd0b1d248da885d34b"
+        },
+        "REV-12": {
+          "status": "pending",
+          "sha256": "39425770142f191d3350badd7318677165e12b82e33d31c3732a0c3119ad51bd"
+        },
+        "REV-13": {
+          "status": "pending",
+          "sha256": "9d78e2fd4fef4c8492ed06772e068e7056cf211c543b4ee33f00a9b1f28e148f"
+        },
+        "REV-14": {
+          "status": "pending",
+          "sha256": "62937c9ebc7d27487b8ecc9a536c0a26f2caceee8fdb6acac9cb344cf5aced2a"
+        },
+        "REV-15": {
+          "status": "pending",
+          "sha256": "79b4b54371eebbb714f0a19707864237a97953b791a744e1615836c82b48df59"
+        },
+        "QUA-01": {
+          "status": "pending",
+          "sha256": "613413c475bc054cfb5bc47a15ec50578e53ba21c1bf667f14acaf82df35018d"
+        },
+        "QUA-02": {
+          "status": "pending",
+          "sha256": "9e2cef0bf87bed6a8f1f6e19680833a3d2fe23f840aab6baff1669dc3cfc2bc2"
+        },
+        "QUA-03": {
+          "status": "pending",
+          "sha256": "1b3085af195824ba72fcdd5e4cf8b37ae85a5d7d302bcac2ba110bb1669e28ff"
+        },
+        "QUA-04": {
+          "status": "pending",
+          "sha256": "a1c46c95a6ad129a4ae388cca890ace89212d73edbc6bdca7915aac34622f1be"
+        },
+        "QUA-05": {
+          "status": "pending",
+          "sha256": "89edd3a84508cdf4a64bb0173f43c9109ff4c6f07a941f126a88d64b6e3d8105"
+        },
+        "QUA-06": {
+          "status": "pending",
+          "sha256": "fec50331db91ab670af03573b607d13960e88419c1794d88a44533a07b884d1c"
+        },
+        "QUA-07": {
+          "status": "pending",
+          "sha256": "016b5aae5bfae7b6c66420aba85c11c7497eb94f577be7c279ed179e165b976c"
+        },
+        "QUA-08": {
+          "status": "pending",
+          "sha256": "9ae0ae21f833a956ab0e1646a72db8e05027c87c4c28dcc751e788a4fd9bab77"
+        },
+        "QUA-09": {
+          "status": "pending",
+          "sha256": "72a6ea0d265f73f7cb2e41fa8897e6480e168b82d639207e0710ec90c4aa8093"
+        },
+        "QUA-10": {
+          "status": "pending",
+          "sha256": "716616d04580f7135f5af14a53675a6aa2a39a77deb4c773292ac51043f07502"
+        },
+        "QUA-11": {
+          "status": "pending",
+          "sha256": "cfbe75410c48e545a12947d482f3e1a8931ba39f2bd5a0d61f47a91f4d9229f8"
+        },
+        "QUA-12": {
+          "status": "pending",
+          "sha256": "52e2a5b9df972afaf15530d0a5a6f9555f7f20d3b949439039069036a9deace0"
+        },
+        "QUA-13": {
+          "status": "pending",
+          "sha256": "1c0cc6a5c8d8d6a292edbb1cee85af710bb5cf7e758707fa57f47b001f1b0322"
+        },
+        "QUA-14": {
+          "status": "pending",
+          "sha256": "b383851e93b0c5a7678b3ed36a575f127b0943ce3d238afea3fcfc174263bbe1"
+        },
+        "QUA-15": {
+          "status": "pending",
+          "sha256": "cd65b65a679cd2a7f02832c5414e4a5ec2883940baad610183abe3ed16602c84"
+        },
+        "RX-01": {
+          "status": "pending",
+          "sha256": "bbcaf1dc9d2b92d61e34ca4066a73541b6e18e236b2c3649232bd7a083c9e30d"
+        },
+        "RX-02": {
+          "status": "pending",
+          "sha256": "97bd0bc6e0d5efd454436d7e0e071a6ef57565148bf209621cb3d96b3697991f"
+        },
+        "RX-03": {
+          "status": "pending",
+          "sha256": "8f6d402dc51a348993c1228ca7ca7e8e9c7969de818c3af90ffa1d7bf4b73cc1"
+        },
+        "RX-04": {
+          "status": "pending",
+          "sha256": "bdd4dc6925d86d2746370da2c3c438888a8775e77816679bfcf21b7335dbf5ea"
+        },
+        "RX-05": {
+          "status": "pending",
+          "sha256": "29e5c4b682a427f48feff60f3b6c7f33391298599184a58fa6deaae14155c481"
+        },
+        "RX-06": {
+          "status": "pending",
+          "sha256": "afc955d46bbc0b3eb05324c80df6268107a0be82027fd6069cd14c1655b2be6b"
+        },
+        "RX-07": {
+          "status": "pending",
+          "sha256": "ff74fadbbcdadd37f31752e5f78e6f8aa9b2ab0dacba41a93063b5922f81de6b"
+        },
+        "RX-08": {
+          "status": "pending",
+          "sha256": "21001f8866633943744963ea28aa9c30dd55580e5b356696b807950ed9a8f11d"
+        },
+        "RX-09": {
+          "status": "pending",
+          "sha256": "0c20de759d5983e7a5d3197b3a6bc5ae489fa56ac81ef066c4954fdf1ca8b839"
+        },
+        "RX-10": {
+          "status": "pending",
+          "sha256": "515230a70fd82242f3539f9f07396e81271fb29cfb5fcc51d3c240b3bdfa2e82"
+        },
+        "RX-11": {
+          "status": "pending",
+          "sha256": "d731bbd56a494fcc9c0bfad5bc0b3ef74f396a5cddd62b3cdfcbca4676d0a066"
+        },
+        "RX-12": {
+          "status": "pending",
+          "sha256": "8997a108f172f857718cca751eb0618667ab6bce41a57527205411f90719aac4"
+        },
+        "RX-13": {
+          "status": "pending",
+          "sha256": "c5772fef0b14be2e1c7100b25c5a7788214057714f5fec9b371d0014a6ffadcc"
+        },
+        "RX-14": {
+          "status": "pending",
+          "sha256": "99f6605141d294f5a91ebde42a027aabd72f90df901190b463d40785c97e31e5"
+        },
+        "RX-15": {
+          "status": "pending",
+          "sha256": "204d29a3b2ee6f76d02a2f16804ee4e35100df12a5eb1a6e8c6a8437a5c6e4f5"
+        },
+        "VBC-01": {
+          "status": "pending",
+          "sha256": "2b4c130345ba7f7921072ceea8a38e96c2ba1ee05ef312d448d1a70605e6e63b"
+        },
+        "VBC-02": {
+          "status": "pending",
+          "sha256": "159a24879e14ff3aad247a87c317137e5048bf8e0e9897cca2005310f6188657"
+        },
+        "VBC-03": {
+          "status": "pending",
+          "sha256": "54bfbbe971f7b47b6c3a8419f2a779887aa318a0d04679150aa3f4afbc9ba649"
+        },
+        "VBC-04": {
+          "status": "pending",
+          "sha256": "11f12d1fdbd1666a454a4536b9ab385ef6bc27e6b0f68ec0d2c745c4f464fe02"
+        },
+        "VBC-05": {
+          "status": "pending",
+          "sha256": "ee8748af0ea2f18046cff8e25f01bec18dae475dac33e2e16a68363b1dfb33ff"
+        },
+        "VBC-06": {
+          "status": "pending",
+          "sha256": "2b9994dba8db388bba87dfe18c07b239964ec8ad962854865165359c3f131d74"
+        },
+        "VBC-07": {
+          "status": "pending",
+          "sha256": "1c34575b46476291f3b4b4c4e1bf3e379215db09418882428cdea6dc14de1d0a"
+        },
+        "VBC-08": {
+          "status": "pending",
+          "sha256": "cfa2158b2ffaf6b2648154851fd7e5114a4fb3f95c2395d86673d4b358e13381"
+        },
+        "VBC-09": {
+          "status": "pending",
+          "sha256": "3c005d524d72883e678f28a02f809b41a5493616146bc786356b4011102b4291"
+        },
+        "VBC-10": {
+          "status": "pending",
+          "sha256": "36cd8c38e7a1267f3399e91737a0bc953a2223279eed2ed71d9dea0b7caf27d8"
+        },
+        "VBC-11": {
+          "status": "pending",
+          "sha256": "05c627b44d4c5c7b3893fdc2dc2c72b1a4b91f966c6628970216267623e19288"
+        },
+        "VBC-12": {
+          "status": "pending",
+          "sha256": "e81d011cf8579206c103d33f48c1999b8bf999b41bd3e7cba0396bf82ce7cf08"
+        },
+        "VBC-13": {
+          "status": "pending",
+          "sha256": "27bdafd449818bccd502940bd0525dbb8ba168e378c8a5e4332ba9cfbd5fae0d"
+        },
+        "VBC-14": {
+          "status": "pending",
+          "sha256": "55547ba50b8dafbf02fc96460b99a8ffd4f1516709ddde5ff974d777ed33de55"
+        },
+        "VBC-15": {
+          "status": "pending",
+          "sha256": "5c3375978e51cb52b474c342cfaafcae8a66239a2d819abf30f97d6556fa392b"
+        },
+        "BH-01": {
+          "status": "pending",
+          "sha256": "be4c1bb18485e02beb01d1cf66576e43ec0e3839ce8c71c8e6e8842c83738a39"
+        },
+        "BH-02": {
+          "status": "pending",
+          "sha256": "e79a24f59ab7c7690a1cdd80670e534d7c98c050fa4a10ce520c6b82b91f9d4f"
+        },
+        "BH-03": {
+          "status": "pending",
+          "sha256": "62719b91065a827c9c0ba0c2675cf25032641ea2d8fa42e21a8727c967fb30cc"
+        },
+        "BH-04": {
+          "status": "pending",
+          "sha256": "cdb10d786a31e5311e54014b502a7597515460e5fbda575e3111f754e2e7a252"
+        },
+        "BH-05": {
+          "status": "pending",
+          "sha256": "84cdfba5ceb6434270d731745bc240e10de333fa50bad9184d6c96a69a27b326"
+        },
+        "BH-06": {
+          "status": "pending",
+          "sha256": "e1ef4c84884a64f6a72699a912e3cc3e9b65c59ad3bd03301a4ae926bbc2a7e2"
+        },
+        "BH-07": {
+          "status": "pending",
+          "sha256": "b7456b251aadc13fb2e6f8d685997ef862f033411e24ab2e64066bbaee6c180a"
+        },
+        "BH-08": {
+          "status": "pending",
+          "sha256": "05ae122023fff392855a0fdaede1dc28146ec96537502971c8b7b777d1865201"
+        },
+        "BH-09": {
+          "status": "pending",
+          "sha256": "a5376be349005e00d842d1d368a35859ce090af2bdcb74d1cb70eda40df192a0"
+        },
+        "BH-10": {
+          "status": "pending",
+          "sha256": "e4520fedc2a9ea746bcc8895857db2811c40e7718cb62a7b0437bb8aba9de086"
+        },
+        "BH-11": {
+          "status": "pending",
+          "sha256": "e733474271b9c99d3a97b408cdba6edc4f56f6aaae1aa6c479b8ad55d3e770c1"
+        },
+        "BH-12": {
+          "status": "pending",
+          "sha256": "e6fc70a7f53d26c1ad3540f46b1934e0ab3be3f555ac24c04db851d6c13dce77"
+        },
+        "BH-13": {
+          "status": "pending",
+          "sha256": "a9b375b7217e23dafa0617db20e0236593e672fd6d0e0cd1d4c2e597e181d0ba"
+        },
+        "BH-14": {
+          "status": "pending",
+          "sha256": "e285fd59c4a2da66c6cf58228563b2a7d130f3676737159e5f5df3ca9551c518"
+        },
+        "BH-15": {
+          "status": "pending",
+          "sha256": "15a9c8b9170b164dceeb6b305fe537b23abe166c5de34e3c68a32926ff9d4713"
+        },
+        "ACC-01": {
+          "status": "pending",
+          "sha256": "beadc0d329f9a64e00d678f88d418bca4a3e0bd9f32f66ba4ca947f86c81d9b8"
+        },
+        "ACC-02": {
+          "status": "pending",
+          "sha256": "099901d49ec2325225092a64be1c483e2a66ba43840d21cee904152a08b2e6e6"
+        },
+        "ACC-03": {
+          "status": "pending",
+          "sha256": "52cd4db52d6a5a8326cc2ed73ccc888db0e613a600899dca1cebaaa6d374f82c"
+        },
+        "ACC-04": {
+          "status": "pending",
+          "sha256": "1cce9a9e5aad002507cdecfaf0b550e2b94ca10254aca9bc461e0991ca5c8c56"
+        },
+        "ACC-05": {
+          "status": "pending",
+          "sha256": "a1045160ea58aa722d84e3709ff81b0e3a25d73bc55acec77b4e0401a1cb376c"
+        },
+        "ACC-06": {
+          "status": "pending",
+          "sha256": "59756998c482feeb246e4fa74386b839b920ea7d233e62aabc03486d3bad735d"
+        },
+        "ACC-07": {
+          "status": "pending",
+          "sha256": "7d9ef8039a92c3a47b561ea732863749c3dcdc1134184340c4ca1ad97303d86d"
+        },
+        "ACC-08": {
+          "status": "pending",
+          "sha256": "eb23c2b6700785f0e9db5813db922952688a29d4a29b19655fd825692062805e"
+        },
+        "ACC-09": {
+          "status": "pending",
+          "sha256": "ccb3117c78670987375c6f20443edf0be6191c20bce2f956a56966fbcf2fe6d0"
+        },
+        "ACC-10": {
+          "status": "pending",
+          "sha256": "9ca46b8f976d34658c97ede0083523e8dd1c9199ca76209e13bbaabfc247441c"
+        },
+        "ACC-11": {
+          "status": "pending",
+          "sha256": "2632ac3e29ef79efa7421b346b11b9ac77eec388635092814399c7e73319c29e"
+        },
+        "ACC-12": {
+          "status": "pending",
+          "sha256": "65d1f72ecbc00e4d421d66bc06c1a666c585fddb493252cea817c20dee40b4b4"
+        },
+        "ACC-13": {
+          "status": "pending",
+          "sha256": "380c386ae2c000c338f4d16f0cfd884b193af4689a7f2305e2eca95b7f84644f"
+        },
+        "ACC-14": {
+          "status": "pending",
+          "sha256": "05e7ed23e3d01bc98e1b47ebe6fd417223dedee5c3f7b83157abfe1245cd36be"
+        },
+        "ACC-15": {
+          "status": "pending",
+          "sha256": "7130407688e4514b66c948d34fff403acc29e5c88107388e8d9b66bbf9dbefdb"
+        },
+        "RWE-01": {
+          "status": "pending",
+          "sha256": "ea059da5680562699fd763446fc3bd675cc376c95f13ad5ba80e7b4d27f89ee6"
+        },
+        "RWE-02": {
+          "status": "pending",
+          "sha256": "944f2421db3c0d73838735e418d3d8faf7940af298c3a8291ed34957d0ee2154"
+        },
+        "RWE-03": {
+          "status": "pending",
+          "sha256": "5a8f854b4422540f7a922f9437260cb2db02c04a4fec0614f463613b7e5bcfa7"
+        },
+        "RWE-04": {
+          "status": "pending",
+          "sha256": "a67d936ada909d039eb10592777b4b25c06174da70f5b78d91e12efadb4dc92a"
+        },
+        "RWE-05": {
+          "status": "pending",
+          "sha256": "942e9051795c926a150e0af973a435afd96c67a09a592dbb6db3bae5dae10a06"
+        },
+        "RWE-06": {
+          "status": "pending",
+          "sha256": "4029018895daf21f64226d1b727acaa931ba535d3a09299c2457a226c7206ff5"
+        },
+        "RWE-07": {
+          "status": "pending",
+          "sha256": "1ade800e9dc9dacbdb218a683fdfd2ac95a42c6ad73bafde8c2f039d601a95c0"
+        },
+        "RWE-08": {
+          "status": "pending",
+          "sha256": "e3662fbd316242ddc54a49830545dc3dd8178d8c6314ed5297f97b1d98b666fb"
+        },
+        "RWE-09": {
+          "status": "pending",
+          "sha256": "19038d42fc682eb191416e493230ffccf6598c54ccb61d66c11947e927e2511d"
+        },
+        "RWE-10": {
+          "status": "pending",
+          "sha256": "7529f022f4603f7ed0fc06b11969f53fee75e4fdb82d882a060865371309e379"
+        },
+        "RWE-11": {
+          "status": "pending",
+          "sha256": "ec81e7b2fe97fc03b0ced70f2ef2d026a4d336d7178949bd0bd93a7954629ed0"
+        },
+        "RWE-12": {
+          "status": "pending",
+          "sha256": "152364edc85e2a8efaa1acd58dda06a11ab21ba3b07f896b0294ba3b727eeda7"
+        },
+        "RWE-13": {
+          "status": "pending",
+          "sha256": "9a1095142c73b78eb85754362cca4f2940ce365ea9000a5d34830972e9704ae1"
+        },
+        "RWE-14": {
+          "status": "pending",
+          "sha256": "da197deadd42aa68dddb3f93acc8430cde5868578cce76e30181a24f9daa098a"
+        },
+        "RWE-15": {
+          "status": "pending",
+          "sha256": "d865cedd1c86effbae7fbf15681bf02a8f0886ed2b56a71bc43bf807aff69001"
+        },
+        "DQ-01": {
+          "status": "pending",
+          "sha256": "10c547f7134290a56da8eeca61539ea4bbcedd19c7afcc8c3f5dc05ae2f04f1b"
+        },
+        "DQ-02": {
+          "status": "pending",
+          "sha256": "26bc84752068492cff830c3a35219fd8513c24b326996dfa947e9f892cd4c2c2"
+        },
+        "DQ-03": {
+          "status": "pending",
+          "sha256": "eb89dfff23204d78495cb71505261616583a9ae4c9fc84c393733ba036dbd1a0"
+        },
+        "DQ-04": {
+          "status": "pending",
+          "sha256": "3f083b98b3ebf95ee47c45dd366adbf695f2fc6e9c400d5f750114d742e3834b"
+        },
+        "DQ-05": {
+          "status": "pending",
+          "sha256": "398694c04891b08de2019e9f32be71cc7d58a945598bd789974404b85e54750b"
+        },
+        "DQ-06": {
+          "status": "pending",
+          "sha256": "88f4c6085e2c8e62b067523b5c0fc7c49f14030e74b3cce0d0a2b68acb56cc58"
+        },
+        "DQ-07": {
+          "status": "pending",
+          "sha256": "bb2ccd87e50fcd69e7fd9cdf29a69d361bba66449e9af347f988c9f25bfb9f75"
+        },
+        "DQ-08": {
+          "status": "pending",
+          "sha256": "17952cd62bb2220620bbeeafa4168a37daa8a1d2b832ee0b2304925c6ba0e41c"
+        },
+        "DQ-09": {
+          "status": "pending",
+          "sha256": "a7096f050a2ce036b39af17713e5a08b9cf2cc802883797704a2d4d491540e2c"
+        },
+        "DQ-10": {
+          "status": "pending",
+          "sha256": "5a4bce0d30f3602a5ac9825fd841a1a34375ac52d2af1601e64190da276530a3"
+        },
+        "DQ-11": {
+          "status": "pending",
+          "sha256": "7fae3bd579ddc8dfb968277f849194aeb92cc86638787258145229c292971153"
+        },
+        "DQ-12": {
+          "status": "pending",
+          "sha256": "e1944b04b6fba1aab1b668da45be5633bde21c49b2e77adc8798a4eb1e307c3e"
+        },
+        "DQ-13": {
+          "status": "pending",
+          "sha256": "261b73ccb32a7300e6292ed96b5aec0cf1db39b94136d1498ebc9d35391fbbdc"
+        },
+        "DQ-14": {
+          "status": "pending",
+          "sha256": "415857ca26ccfa476e419527da05a22ee3f4105ea5e1f786608a7534b8990ad2"
+        },
+        "DQ-15": {
+          "status": "pending",
+          "sha256": "964029f5848d214a4ee970923ce69351f34745450784220b18569856923e1f71"
+        }
+      }
+    },
+    {
+      "name": "gold50",
+      "set": "breadth",
+      "status": "pending",
+      "generator_digest": "431bced9a54ecde1",
+      "scorer": "--gold50",
+      "reason": "Independent per-question reconciliation incomplete; upheld key defects and wording disputes unresolved",
+      "questions": {
+        "CLN-G1": {
+          "status": "pending",
+          "sha256": "2049b8ab47bc2298b9c5fd62d49f2ab7ed0ca731b66ba981b9e9e60401c2f1da"
+        },
+        "CLN-G2": {
+          "status": "pending",
+          "sha256": "9593f8d0dc5a6ff0ecef90e74fadc904845b632b4e2887b1b682f3208fbf81b3"
+        },
+        "CLN-G3": {
+          "status": "pending",
+          "sha256": "e05284b462717c13d2048e2fd592c775059990003c130dc63ed07bf92933807c"
+        },
+        "CLN-G4": {
+          "status": "pending",
+          "sha256": "1ae1e9cff6063085d2e143fbef4b87075997aa5b24b9447f96d2fdbdaf7b0f5b"
+        },
+        "HOS-G1": {
+          "status": "pending",
+          "sha256": "3a4174afe05c24c0188bbd30d1452e35871c8944ae844673a4ff853d4226940f"
+        },
+        "HOS-G2": {
+          "status": "pending",
+          "sha256": "c3160e56ee2cefc016dd56f290f03c617f46f3121656ff9430b9756aded91bca"
+        },
+        "HOS-G3": {
+          "status": "pending",
+          "sha256": "dd0c8107d9c30051ac8ee897431216a420d038aaf25eb2374eea700ccb35a7b9"
+        },
+        "HOS-G4": {
+          "status": "pending",
+          "sha256": "49622421a38b6c6def2a7a33530eac8efac8efb7af7c912ae2a540fb64524ba5"
+        },
+        "HOS-G5": {
+          "status": "pending",
+          "sha256": "72fe54305da1ae9188e571e6c427815e031a5474ed6f2ce7235c80b1d2c280e4"
+        },
+        "REV-G1": {
+          "status": "pending",
+          "sha256": "d1000a91cd00c26fdb8a49db43afba6e6103e706e02eff6a7226f4a52fe029c0"
+        },
+        "REV-G2": {
+          "status": "pending",
+          "sha256": "444f9d182801e8e69f9930c92338598f14bf01a500c04a16562ba2247eac62ef"
+        },
+        "REV-G3": {
+          "status": "pending",
+          "sha256": "27b14f7b04ef9b62576c51bc31cfe1348b8d20a0bef75be5a61a4e7f52002e5b"
+        },
+        "REV-G4": {
+          "status": "pending",
+          "sha256": "450fe1506bce5c319cb09c0f05ca72adaf3cb395aa5f57402dd0466ce2b04756"
+        },
+        "QUA-G1": {
+          "status": "pending",
+          "sha256": "83572e30f1b88b6f538f44022f12e5ce5738cd530f59db86b2d83ec60bab6568"
+        },
+        "QUA-G2": {
+          "status": "pending",
+          "sha256": "c08543afcab6fd0324320b35c1198c636be50559ad9272cfa3b014f1d7e2f78e"
+        },
+        "QUA-G3": {
+          "status": "pending",
+          "sha256": "adadf74c49eb79cc41ef4eb9caacbb900d0c01f6d72b98bcd754802ff1966a72"
+        },
+        "QUA-G4": {
+          "status": "pending",
+          "sha256": "9e7393041df15c41e8890a9995611ef51233db649bb8f1d80a0b5bad943890f5"
+        },
+        "RX-G1": {
+          "status": "pending",
+          "sha256": "55f4bd6b28d17190f0ddc29003f943dfb11b5813ff29f14354b3fc8ac0e72c87"
+        },
+        "RX-G2": {
+          "status": "pending",
+          "sha256": "65630d7d73274d47cd9bab5f021361003f90d4602820251d7cf18cafc3c746d1"
+        },
+        "RX-G3": {
+          "status": "pending",
+          "sha256": "d0a236859a56d61de7bb7f21d60e8ca0eea8428461af70e37c872abe7d55b359"
+        },
+        "RX-G4": {
+          "status": "pending",
+          "sha256": "3a4195a924626a1d5061c256cceeca0c5d5a87215aa8f60cea96345cae48c692"
+        },
+        "VBC-G1": {
+          "status": "pending",
+          "sha256": "14171547cb7c8aefb69c00afd5ff2093fd0e9a492f200ec330091709d38dd98c"
+        },
+        "VBC-G2": {
+          "status": "pending",
+          "sha256": "d343f3c2d2e5dbcc83ca16394c64139bcce6a2e415ec12ce36de508ff6dfabd1"
+        },
+        "VBC-G3": {
+          "status": "pending",
+          "sha256": "40f947938db88bfd6ce077a03dfe2ef6b5567d8cb38de46162f1e12b08c27669"
+        },
+        "VBC-G4": {
+          "status": "pending",
+          "sha256": "f21a59d0a479e60c093c13b733f14cafebac3de097012ba50afe635e532fa144"
+        },
+        "BH-G1": {
+          "status": "pending",
+          "sha256": "10e54f5368e9533546a599bee798feb16ed83d41010cd3060a024269ad114684"
+        },
+        "BH-G2": {
+          "status": "pending",
+          "sha256": "fef315b9a9144d9fb57a2badd1dc2fdbd2c438747b75744526aa968f3cb18df5"
+        },
+        "BH-G3": {
+          "status": "pending",
+          "sha256": "eb9c2ee7f46a325c0f16e2a9c5fecb50a7e2934c03b41b73537733be2666d7ef"
+        },
+        "BH-G4": {
+          "status": "pending",
+          "sha256": "6203fd33a9388f26b539f0d2ae06138bb757532bc5d8ce9f8dfc51a0bd701b61"
+        },
+        "ACC-G1": {
+          "status": "pending",
+          "sha256": "590f701bb4a38c5d03df2af3dd8a491cbb36327c35dd620b866017829ef1f3b1"
+        },
+        "ACC-G2": {
+          "status": "pending",
+          "sha256": "792dd31559ba1b08c44e872bc2914bb0b2be492f7cf4505884fe1e95451d7ae2"
+        },
+        "ACC-G3": {
+          "status": "pending",
+          "sha256": "0ebf8404370572f38b8a9dda6f1ec612bfbb054b8b03d48b1c66cb35878406cb"
+        },
+        "ACC-G4": {
+          "status": "pending",
+          "sha256": "ed1ae33041012ba1b6614b6ed166a354e657c444eca3c86609fa642203522dd0"
+        },
+        "RWE-G1": {
+          "status": "pending",
+          "sha256": "875e829733cf4e289a18f0d7ec51e9493a569c716216ec022d35bf56ce8420f3"
+        },
+        "RWE-G2": {
+          "status": "pending",
+          "sha256": "0842cda467b1c2bfe6e52d2bedc51bf786d60388ba882d7d1c1b7dbfdb8d10ec"
+        },
+        "RWE-G3": {
+          "status": "pending",
+          "sha256": "42bf5504064350fe304adad1c382713fea1e2d181d5b56cf681fa235342b66ef"
+        },
+        "RWE-G4": {
+          "status": "pending",
+          "sha256": "70d229bd7c4882eec1aa606f82f68604ced69bd6a4d2b701a96839337be88517"
+        },
+        "DQ-G1": {
+          "status": "pending",
+          "sha256": "1c6c8b97d5bfb72b4e41f7a81f93191201b9993d997abb0d51a0401bc65fdb7d"
+        },
+        "DQ-G2": {
+          "status": "pending",
+          "sha256": "fa0cd1a4eccb438d95ea0c11324305f5be881c0b8eb0ce08ab656b3a49ba2ce1"
+        },
+        "DQ-G3": {
+          "status": "pending",
+          "sha256": "259e9c47b18ec220d010bfc20613c9210e64899d6cdc4bf485e8b55d5fbdb102"
+        },
+        "DQ-G4": {
+          "status": "pending",
+          "sha256": "07a0aa6082c8e8dc2aeec6017ef9bfab1e6d4049a92419aafaf72d5f9931b03c"
+        }
+      }
+    }
+  ]
+}

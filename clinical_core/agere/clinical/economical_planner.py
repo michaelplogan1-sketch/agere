@@ -65,7 +65,8 @@ def recipes():
 
 
 def normalize(question):
-    if not isinstance(question,str) or not 1<=len(question.strip())<=1500:raise ValueError('Bounded question required')
+    from .question_input import validate_question
+    validate_question(question)
     return ' '.join(question.strip().split()).casefold().rstrip('?.')
 
 
@@ -521,7 +522,7 @@ def plan(stack,question,ledger,frontier):
         if typed is not None:
             return typed
         from .analysis_graph import validate as _validate
-        graph=_validate({'interpretation':f'Deferred to the independent analysts: {question}','coverage':'unsupported','nodes':[],
+        graph=_validate({'interpretation':'Deferred to the independent analysts; retain the complete original question and definitions.','coverage':'unsupported','nodes':[],
                          'unmet_requirements':['answered by the independent analysts (hybrid core)']},meta['snapshot']['as_of'])
         steps=list(locals().get('metric_steps') or [])  # a declined metric-router call is still paid
         return graph,{'route':'deferred_to_analyst','model':None,'new_paid_api_calls':len(steps),'frontier_called':False,

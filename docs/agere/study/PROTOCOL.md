@@ -96,3 +96,25 @@ Run with `bench/study/run.py`. Each arm writes answers, the ledger, timings and 
    arm D (48 calls refused); both are invalid and rerun as S1b. A new arm A2 (Agere with Opus as the analyst and tie-break
    model for questions no specialist claims) is added as an exploratory arm after seeing S2, run on Gold-50 as S3; it is
    reported as post hoc, not as a pre-registered comparison.
+6. 2026-10-19, Codex takeover under Mike's explicit direction. Amendment 2's unvalidated-key shortcut and amendment 5's
+   queued reruns are suspended. Every selected reference must have an independent derivation reconciled through the
+   generator scorer before any run or rescore. `reference_validation.json` binds that status to the exact question text
+   and evidence; the study runner, worker, scorer and native runner fail closed. Gold 10 inherits its nine previously
+   reconciled references. Gold-50 and native 150 remain pending. Raw source diagnostics are permitted; they are not
+   scores or automatic validation. No existing arm's answer is changed, and no question is selected for validation
+   based on which arm wins. Resolve ambiguous wording for every arm alike; changed wording requires a new question
+   fingerprint and cannot be scored against old answers as if it were the same task.
+
+   The immediate proof route is independent Gold-50 validation and one rescore of the saved A/B outputs, with all
+   excluded/void questions and reasons disclosed. Public EHRSQL and BIRD remain external replication options: they
+   require a different data/schema integration and test a different workload, so neither substitutes for this ACO
+   comparison. Gold 10 can support a descriptive demonstration now, not a general accuracy-superiority claim. Report
+   incremental model API charges separately from unknown local compute, development and operating cost. The original
+   Gold 10 scorer uses patient-list F1 >= 0.98, not exact-match accuracy; report that threshold explicitly.
+
+   A2 remains unchanged and exploratory. A3 is a new, unrun exploratory candidate: the existing stack with one bounded
+   Opus review when the analyst vote produces no answer or clarification. A clarification can be overridden only by
+   checked SQL, a resolved contract, and an exact quote from the user's definition explaining the resolved choice.
+   Missing-input unanimous declines and successful answers do not cause extra calls. A3 remains disabled by default;
+   deterministic fixture checks establish routing mechanics, not model quality. One Gold-10-only regression run of A
+   is permitted for the longer-question input repair; it is not a new comparative study or an accuracy claim.

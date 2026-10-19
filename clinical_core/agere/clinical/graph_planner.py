@@ -327,8 +327,8 @@ def grounded_fields(fields, profile):
 
 
 def propose(question, path, ledger, *, snapshot, graph_catalog, observed_values=None, profile=None, semantic=None, feedback=None):
-    if not isinstance(question, str) or not 1 <= len(question.strip()) <= 1500:
-        raise ValueError('Bounded population question required')
+    from .question_input import validate_question
+    validate_question(question)
     fields = capabilities()
     fields.pop('schema')
     if profile is not None:

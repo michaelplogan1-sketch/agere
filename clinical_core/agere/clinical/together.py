@@ -341,7 +341,7 @@ def _run_hybrid(stack, question, as_of, semantic_path, answer_type=None):
             'new_paid_api_calls': h['new_paid_api_calls'], 'tool_calls': tool_calls,
             'error': None if answer is not None else 'hybrid abstained: ' + h['interpretation'],
             'hybrid': {k: h.get(k) for k in ('decision', 'agree', 'passing', 'interpretation', 'runs', 'models', 'errors', 'decline',
-                                             'readings_flagged')},
+                                             'readings_flagged', 'review')},
             'receipts': receipts, 'seconds': round(time.perf_counter() - started, 3)}
 
 
@@ -742,6 +742,8 @@ def _compose_plan(stack, question, *, planning='auto', program_kind=None):
 def compose_together(stack, question, *, planning='auto', answer_type=None):
     """Stack.compose for AGERE_TOGETHER=on: see the module docstring. A plan request (answer_type 'plan', or a question
     asking to create a plan / enroll / route patients) computes its cohort here and routes it (_compose_plan)."""
+    from .question_input import validate_question
+    validate_question(question)
     if answer_type == 'plan' or (answer_type is None and _is_plan_request(question)):
         return _compose_plan(stack, question, planning=planning)
     t0 = time.perf_counter()

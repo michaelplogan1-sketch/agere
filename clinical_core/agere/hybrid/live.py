@@ -193,6 +193,8 @@ def _cost(results):
 
 def answer(question, as_of, semantic, send_factory, *, qid='Q', answer_type=None, runs=RUNS, docs_dir=None):
     """The hybrid answer for one question. answer_type: count | value | patient_set | table (None lets the contract say)."""
+    from ..clinical.question_input import validate_question
+    validate_question(question)
     q = {'id': qid, 'question': question, 'as_of': as_of, 'answer_type': answer_type}
     if not answer_type:
         q.pop('answer_type')
@@ -240,6 +242,39 @@ def answer(question, as_of, semantic, send_factory, *, qid='Q', answer_type=None
         if len(hc.readings((item or {}).get('contract'))) >= 2 and not (item or {}).get('sql'):
             ambiguous = merge_readings(items, ['escalation'])  # the tie-break traced the split to two readings
             ans, final = None, 'clarify'
+    # Candidate policy: an analyst's implementation uncertainty is not necessarily
+    # an ambiguity for the user. Give one frontier reviewer the complete definition,
+    # contracts and executed outcomes. Never retry an already escalated request.
+    review = None
+    review_enabled = os.environ.get('AGERE_HYBRID_REVIEW', 'off').lower() == 'on'
+    unclear = final == 'clarify' or any(v.get('clarify') for v in per.values())
+    all_missing = all(v.get('unsupported') for v in per.values())
+    if review_enabled and ans is None and 'escalation' not in per and not all_missing:
+        review_model = os.environ.get('AGERE_HYBRID_REVIEW_MODEL') or 'claude-opus-5-5'
+        prompt = escalation_prompt(q, per, items) + '\n\n' + (
+            'Distinguish genuinely missing user choices from database joins or implementation work. '
+            'Preserve genuine ambiguity and missing data. If you resolve a clarification, return a '
+            'definition_resolution object alongside contract and sql with quote (an exact nonempty '
+            'clause from the question that settles the choice) and explanation. Clear readings and '
+            'unresolved only when that clause settles them; otherwise decline. Do not invent a convention.')
+        with send_factory() as send:
+            item, res = analyst_run(q, semantic, send, review_model, user=prompt, docs_dir=docs_dir)
+        results.append(res)
+        e = evaluate(q, item, db)
+        resolution = (item or {}).get('definition_resolution') or {}
+        quote = resolution.get('quote') if isinstance(resolution, dict) else None
+        settled = (isinstance(quote, str) and len(quote.strip()) >= 12 and quote in question
+                   and isinstance(resolution.get('explanation'), str) and resolution['explanation'].strip())
+        accepted = (e['passed'] and not e['clarify'] and not hc.readings((item or {}).get('contract'))
+                    and (not unclear or settled))
+        review = {'model': review_model, 'accepted': bool(accepted), 'clarification_review': unclear,
+                  'definition_resolution': resolution, 'problems': e['problems']}
+        per['review'], items['review'] = e, item
+        if accepted:
+            ans, final = e['answer'], 'frontier_reviewed'
+        elif hc.readings((item or {}).get('contract')) and not (item or {}).get('sql'):
+            ambiguous = merge_readings(items, ['review'])
+            final = 'clarify'
     decline = None
     if final == 'clarify':
         decline = {'kind': 'clarify', 'readings': ambiguous['readings']}
@@ -258,10 +293,11 @@ def answer(question, as_of, semantic, send_factory, *, qid='Q', answer_type=None
                         readings.append(r)
             decline = {'kind': 'clarify', 'readings': readings[:6]}
     return {'answer': ans, 'answer_type': q['answer_type'], 'decision': final, 'agree': agree, 'passing': passing,
-            'decline': decline, 'readings_flagged': ambiguous['runs'],
+            'decline': decline, 'readings_flagged': ambiguous['runs'], 'review': review,
             'interpretation': f'hybrid {final}; {agree}/{runs} agree; {passing} passed checks',
             'runs': {k: {kk: v.get(kk) for kk in ('passed', 'clarify', 'path', 'problems', 'sql')} for k, v in per.items()},
             'contracts': {k: (i or {}).get('contract') for k, i in items.items()},
             'cost_usd': _cost(results), 'new_paid_api_calls': sum(r.get('new_paid_api_calls', 0) for r in results),
             'errors': [r['error'] for r in results if r.get('error')], 'models': {'analyst': model,
-            **({'escalation': escalation_model_name()} if 'escalation' in per else {})}}
+            **({'escalation': escalation_model_name()} if 'escalation' in per else {}),
+            **({'review': review_model} if 'review' in per else {})}}

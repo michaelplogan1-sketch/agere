@@ -58,6 +58,9 @@ def run_arm_pass(spec, *, ws=None, send_factory=None, keys=True):
     out_dir.mkdir(parents=True, exist_ok=True)
     arm = common.ARMS[spec['arm']]
     questions = common.read_jsonl(spec['questions_file'])
+    if ws is None:
+        from bench.study.validation import require_validated
+        require_validated(questions)
     ledger_path = spec['ledger_path']
     t_start = time.time()
     if ws is None:
@@ -155,12 +158,16 @@ def orchestrate(arms, run_id, *, which='locked', limit=None, repeat=1, workers=1
     run_dir = Path(study_root or common.STUDY_ROOT) / run_id
     if (run_dir / 'run.json').exists():
         raise SystemExit(f'{run_dir} already holds a run; pick a new --run-id')
-    run_dir.mkdir(parents=True, exist_ok=True)
     workspace_slug = common.WORKSPACE
     if questions is None:
         questions = common.load_questions(which, limit)
         if which in ('locked', 'both'):
             workspace_slug = common.locked_questions()[1]
+    validation = None
+    if runner is None:
+        from bench.study.validation import require_validated
+        validation = require_validated(questions)
+    run_dir.mkdir(parents=True, exist_ok=True)
     common.write_jsonl(run_dir / 'questions.jsonl', questions)
     src_ws = Path(workspace_dir) if workspace_dir else (common.ROOT / 'artifacts' / 'workspaces' / workspace_slug)
     ws_fingerprint = None
@@ -177,7 +184,8 @@ def orchestrate(arms, run_id, *, which='locked', limit=None, repeat=1, workers=1
            'questions': {'which': which, 'limit': limit, 'fingerprint': common.question_fingerprint(questions),
                          'file': 'questions.jsonl'},
            'workspace': {'slug': workspace_slug, 'source': str(src_ws), 'fingerprint': ws_fingerprint}, 'repeat': repeat, 'workers': workers,
-           'docs_level': docs_level, 'arms': {}, 'passes': []}
+           'docs_level': docs_level, 'reference_validation': validation,
+           'set2_scorer': common.SET2_SCORER, 'arms': {}, 'passes': []}
     for arm in arms:
         a = common.ARMS[arm]
         run['arms'][arm] = {'label': a['label'], 'kind': a['kind'], 'model': a.get('model'), 'pipeline': a.get('pipeline'),

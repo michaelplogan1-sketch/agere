@@ -46,6 +46,8 @@ def score_locked(answers, ref=None):
     """-> {id: {'correct', 'f1'?, ...}} over the reference's questions (answers missing from the run count as wrong)."""
     g = _gold10()
     if ref is None:
+        from bench.study.validation import require_validated
+        require_validated(common.locked_questions()[0])
         _, ref = g.reference()
     ps = {q: r for q, r in ref['questions'].items() if 'ids' in r}
     out = {}
@@ -67,6 +69,11 @@ def score_locked(answers, ref=None):
 
 def score_breadth(submission_path, out_path=None):
     """Run the generator scorer on a breadth submission -> ({id: {'correct', 'answered', ...}}, the scorer's output)."""
+    from bench.study.validation import require_validated
+    validation = require_validated(common.breadth_questions())
+    flags = {s['scorer'] for s in validation['sets'].values()}
+    if flags != {common.SET2_SCORER}:
+        raise ValueError('Scorer does not match the validated reference')
     flag = common.SET2_SCORER
     cmd = ['python3', '-m', 'ecosystem.eval_scorer', '--release', common.BREADTH_RELEASE, flag, str(Path(submission_path).resolve()),
            '--sample-release', common.BREADTH_SAMPLE] + (['--per-question'] if flag == '--questions' else [])
@@ -143,6 +150,16 @@ def summarize(rows, ledger):
 def score_arm_pass(run_dir, arm, n, *, ref=None, breadth_scorer=None):
     d = common.arm_pass_dir(run_dir, arm, n)
     answers = common.read_jsonl(d / 'answers.jsonl')
+    if ref is None and breadth_scorer is None:
+        from bench.study.validation import require_validated
+        questions = common.read_jsonl(Path(run_dir) / 'questions.jsonl')
+        require_validated(questions)
+        expected = {(q['set'], q['id']) for q in questions}
+        observed = [(a['set'], a['id']) for a in answers]
+        if len(observed) != len(set(observed)) or set(observed) - expected:
+            raise ValueError('Duplicate or unexpected answers in study submission')
+        answers += [{**q, 'status': 'abstain', 'error': 'missing answer', 'cost_usd': None}
+                    for q in questions if (q['set'], q['id']) not in set(observed)]
     locked_ids = {a['id'] for a in answers if a.get('set') == 'locked'}
     locked = score_locked([a for a in answers if a.get('set') == 'locked'], ref) if locked_ids else {}
     locked = {k: v for k, v in locked.items() if k in locked_ids}

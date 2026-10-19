@@ -39,7 +39,8 @@ SET2_SCORER = os.environ.get('AGERE_STUDY_SET2_SCORER') or '--questions'
 # so a flag left in the owner's shell can never leak into an arm; each arm then sets only its own.
 ABLATION_FLAGS = ('AGERE_COHORT_FAMILIES', 'AGERE_DQ_FAMILIES', 'AGERE_VBC_FAMILIES', 'AGERE_CASCADE', 'AGERE_BOTTLED_COHORT',
                   'AGERE_RESULT_CACHE', 'AGERE_SEMANTIC_CACHE', 'AGERE_LEARNED', 'AGERE_PLAN_CACHE', 'AGERE_SPECIALISTS_FIRST',
-                  'AGERE_ENGINES_DEFER_ON_DEFINITIONS', 'AGERE_HYBRID_MODEL', 'AGERE_HYBRID_ESCALATION_MODEL')
+                  'AGERE_ENGINES_DEFER_ON_DEFINITIONS', 'AGERE_HYBRID_MODEL', 'AGERE_HYBRID_ESCALATION_MODEL',
+                  'AGERE_HYBRID_REVIEW', 'AGERE_HYBRID_REVIEW_MODEL')
 
 ARMS = {
     'A': {'kind': 'agere', 'pipeline': 'full', 'env': {}, 'label': 'Agere full stack'},
@@ -49,6 +50,8 @@ ARMS = {
     'E': {'kind': 'agere', 'pipeline': 'hybrid', 'env': {}, 'label': 'Agentic analysts for everything (hybrid core)'},
     'A2': {'kind': 'agere', 'pipeline': 'full', 'label': 'Agere, Opus analysts and tie-break for unclaimed questions',
            'env': {'AGERE_HYBRID_MODEL': 'claude-opus-5-5', 'AGERE_HYBRID_ESCALATION_MODEL': 'claude-opus-5-5'}},
+    'A3': {'kind': 'agere', 'pipeline': 'full', 'label': 'Agere, bounded frontier review of failed or unclear analysts (candidate)',
+           'env': {'AGERE_HYBRID_REVIEW': 'on', 'AGERE_HYBRID_REVIEW_MODEL': 'claude-opus-5-5'}},
     'F1': {'kind': 'agere', 'pipeline': 'full', 'label': 'A without families',
            'env': {'AGERE_COHORT_FAMILIES': 'off', 'AGERE_DQ_FAMILIES': 'off', 'AGERE_VBC_FAMILIES': 'off'}},
     'F2': {'kind': 'agere', 'pipeline': 'full', 'label': 'A without certificates', 'env': {'AGERE_CASCADE': 'off'}},
