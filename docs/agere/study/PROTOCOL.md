@@ -71,4 +71,9 @@ Run with `bench/study/run.py`. Each arm writes answers, the ledger, timings and 
 
 ## Amendments
 
-(none yet)
+1. 2026-10-19, before the first study run (owner's decision: time and cost). The study runs the four arms that carry the
+   headline claim, A (Agere), B (Opus for everything), D (Haiku for everything) and E (analysts for everything), one pass
+   each. Arm C and the ablations F1-F6 are deferred to a later run; repeatability is reported from Gold 10 (identical
+   answers across full rebuilds) instead of a second pass. The locked set is Gold 10 (9 questions, generator digest
+   05c5b54b) until Gold-50 is sealed; the breadth set is the native 150 on the generator's corrected key e76655d2 (nine
+   answers still under audit, reported as provisional). Arms B and D receive the full modeled-table documentation.
