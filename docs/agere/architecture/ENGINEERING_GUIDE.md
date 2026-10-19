@@ -4,6 +4,8 @@ October 19, 2026. Source baseline: `8687121`; live architecture plus selectable 
 
 ![Agere full stack explanation](agere-full-stack-explained-2026-10-19.png)
 
+**Poster correction:** narrow Qwen slots are default-on when available; broad Qwen SQL is default-off. The image’s “both default off” label is incorrect; the written guide and interactive map supersede that label.
+
 The engineering proposition is selective computation: preserve the question's meaning, use reusable domain code where it applies, and spend on model inference where it adds capability. Several routes share one execution and evidence contract. The poster shows the major subsystem families, not every source file or a mandatory sequence of model calls.
 
 ## Full component explanation
@@ -44,7 +46,7 @@ These are established concepts assembled for healthcare workloads. Combining the
 
 ## Optional and research branches
 
-Qwen3-4B bottled SQL/slot LoRA paths exist but are off by default. They aim to turn previously verified work into reusable local inference; availability is not a promotion decision. Kev 4B and Liquid d1-3B experiments did not satisfy their frozen acceptance rules and did not replace the default reader. Joint observation and tensor-train prototypes remain experimental. Showing these as disabled/research branches is deliberate: complexity alone is not a reason to ship a component.
+Qwen3-4B narrow slot filling is enabled by default when its model/adapter is available, only after parser misses or missing slots; AGERE_BOTTLED_COHORT=off disables it. The broader SQL LoRA is off by default. They aim to turn previously verified work into reusable local inference; availability is not a promotion decision. Kev 4B and Liquid d1-3B experiments did not satisfy their frozen acceptance rules and did not replace the default reader. Joint observation and tensor-train prototypes remain experimental. Showing these as disabled/research branches is deliberate: complexity alone is not a reason to ship a component.
 
 ## Cost statements we can substantiate now
 
@@ -71,3 +73,20 @@ Evidence: `artifacts/product-workflows/execution-view-2026-10-19/live-answer.jpg
 ## Image provenance
 
 Generated and revised with the built-in OpenAI image-generation tool. The tool did not expose its underlying model version; no claim about an exact model name or worldwide ranking is made. No Runway upgrade or paid external image generation was used. The [original prompt](stack-atlas-prompt-2026-10-19.txt) and [targeted correction](stack-atlas-edit-2026-10-19.txt) are retained. Gray dashed branches are optional/research; selectable model lists do not mean every model runs for every question.
+
+
+## Simplification review, October 19
+
+The local MVP is implemented and its existing :8885 health check reports ready. Full-product acceptance is still false: G3 (connected workflows) remains active and G5 (role qualification) remains blocked. Those bookkeeping states are not evidence that the core stack is unbuilt. The last implementation exposed per-question execution and cost; the subsequent work explained the architecture. This review changed no product execution policy and made no paid inference calls.
+
+The 100-entry inventory includes models, mechanisms, mathematical concepts and research branches. It is not 100 services or 100 steps per query. Consolidate overlapping policy and state machinery while retaining useful specialist methods:
+
+- **Reader policy:** Jev and Perplexity already share the typed evidence contract. Prefer one configured primary per task, with an alternate or escalation only where demonstrated useful. Perplexity's recipe-selection role is a separate task.
+- **Planning and escalation:** `intent_router`, `economical_planner` and `together` perform different levels of routing, but the planner has its own hosted ladder after analyst failure. Consolidate the policy that decides escalation, acceptance and cost into one explicit dispatch policy. Keep deterministic families and specialized operators behind it.
+- **Work-state implementation:** `program_work_current` and `program_work_v1` duplicate storage/state functions; `program_work` dispatches between them to preserve historical behavior. Extract shared implementation only with compatibility coverage for saved proposals and events. The current `plans/backbone.py` already reuses `question_decision.database` in each workspace; the older review's fully disconnected-action diagnosis is stale.
+- **Paid analyst fan-out:** unclaimed questions currently start three Opus analysts. A staged policy (one analyst, then additional analysis when required) is a candidate for lower cost, not yet established as equally accurate. Retain the current policy until a validated comparison supports changing it.
+- **Inactive experiments:** keep broad Qwen SQL, Kev, Liquid and other unpromoted branches outside default product dependencies. Preserve them as research history. Narrow Qwen slot filling has a different status and must not be grouped with disabled broad SQL.
+
+MiniLM, Granite, UltraBERT and rerankers act on different objects; shared infrastructure is reasonable, but replacing them with one model requires evidence. The 29 analytical engines also implement different methods. A shorter model list alone is not a product improvement.
+
+First proposed implementation target: make the existing escalation policy explicit in one place, preserving route decisions, source scope, missing-input declines and cost accounting. This review does not authorize any unsupported gate promotion or infer that a leaner policy is already qualified.

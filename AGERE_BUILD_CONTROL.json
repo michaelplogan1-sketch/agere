@@ -1,6 +1,6 @@
 {
  "schema": "agere-build-control/1",
- "updated_at": "2026-10-19T15:05:40.102583+00:00",
+ "updated_at": "2026-10-19T15:33:47.200617+00:00",
  "decision_basis": "AGERE_CTO_REVIEW_2026-10-11_EVENING.md",
  "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
  "required_references": [
@@ -278,18 +278,16 @@
   "kind": "manual_turn_checkpoint",
   "gate_id": "G3",
   "last_delivered_gate": "G3",
-  "user_behavior_delta": "User can inspect the full named component inventory, including Jev/Perplexity overlapping roles, Qwen slot versus SQL adapters, UltraBERT catalog/terminology work, all registered analytical engines, classic coding mechanisms, decision/work layers and research candidates. Each entry explains job, error addressed, economic purpose, status and source.",
-  "measured_failure_reduction": "Documentation/visual explanation refinement only; no product accuracy reduction claimed. Catalog coverage check includes 100 unique entries and all 29 PRODUCT engines; all source references resolve. JavaScript syntax and browser selection of Jev, Perplexity, Qwen, UltraBERT and engine entries passed. Revised image visually inspected. No benchmark run or new paid model API evaluation.",
+  "user_behavior_delta": "Read-only build-status and overlap review completed at Mike\u2019s request; corrected narrow Qwen status in the component explanations. No runtime behavior changed.",
+  "measured_failure_reduction": "No product failure reduction claimed. Existing :8885 /health returns ready/synthetic. Source inspection confirms workspace backbone already shares the decision store, work engine versions retain duplicated implementation for compatibility, and the unclaimed-question fallback starts three Opus analysts. Narrow Qwen is default-on when available in both checkout and live source revision; broad SQL remains off.",
   "evidence": [
-   "docs/agere/architecture/component-catalog-2026-10-19.json",
-   "docs/agere/architecture/FULL_STACK_EXPLAINED.md",
    "docs/agere/architecture/ENGINEERING_GUIDE.md",
-   "docs/agere/architecture/agere-full-stack-explained-2026-10-19.png",
-   "docs/agere/architecture/full-stack-explainer-prompt-2026-10-19.txt"
+   "docs/agere/architecture/FULL_STACK_EXPLAINED.md",
+   "docs/agere/architecture/component-catalog-2026-10-19.json"
   ],
-  "remaining_gap": "Architecture rationale does not establish universal model or vendor superiority. Model/route activation and evidence availability vary; Qwen adapters and experimental readers are not automatically enabled. Full cold/warm workload economics and comparative accuracy remain unqualified. Full ten-area product scope preserved.",
-  "next_action": "Continue G3 connected question/decision/work product behavior with selective computation and cost per correct completed task visible. Preserve full ten-area scope and independent-reference evaluation restrictions. The component explanation is complete; do not substitute more catalogs for product work.",
-  "next": "Deliver usable full-stack workflows; retain complete product scope and known qualification gaps."
+  "remaining_gap": "Full-product acceptance remains false: G3 active, G5 blocked. Staged analyst fan-out and model consolidation are recommendations, not qualified behavior. The raster poster retains an incorrect Qwen default-off label, explicitly corrected alongside it. Full ten-area scope and independent-reference restrictions remain.",
+  "next_action": "In G3, consolidate escalation and acceptance policy across together/economical_planner while preserving current specialist coverage, source scope, explicit declines, and per-request cost. Start with behavior-preserving dispatch boundaries; do not lower analyst fan-out or retire a qualified model without relevant evidence.",
+  "next": "Simplify orchestration around the existing components, then demonstrate a connected workflow; do not add another model catalog."
  },
  "decisions": [
   {
@@ -795,6 +793,12 @@
    "basis": "Mike: explain all components and why they improve answers on a health warehouse; Jev/Perplexity share a role and Qwen/UltraBERT must be explicit.",
    "change": "Replace selective component explanation with 100-entry source-linked catalog, all 29 registered engines, complete model roles, revised image and interactive component selection. Preserve optional/research status.",
    "scope_impact": "User-requested explanation only. No runtime change, new model promotion, benchmark execution, paid API evaluation, external service upgrade or publication."
+  },
+  {
+   "at": "2026-10-19T15:33:47.200617+00:00",
+   "basis": "Mike asks whether the stack is built, what is active, and whether overlapping components should be simplified.",
+   "change": "Check current local service and source; record bounded consolidation recommendations and correct narrow Qwen status. No product refactor or changed activation in this review.",
+   "scope_impact": "Preserve all product capabilities, existing work histories and validation restrictions. No paid evaluation, new service or external publication."
   }
  ]
 }

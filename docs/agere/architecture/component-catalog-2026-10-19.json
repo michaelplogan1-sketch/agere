@@ -220,7 +220,7 @@
       "job": "Translate unfamiliar phrasing into compact cohort-family slots, then round-trip those slots through the deterministic parser.",
       "why": "The local model handles language variation while existing code retains responsibility for definitions and SQL.",
       "economics": "Distill reusable work into local inference; no new hosted tokens on an accepted local path. Training and compute still cost resources.",
-      "status": "Implemented optional slot-filling path; flag default off.",
+      "status": "Enabled by default when model/adapter is available; runs only for parser misses or missing slots. AGERE_BOTTLED_COHORT=off disables it.",
       "source": "clinical_core/agere/clinical/bottled_cohort_hook.py",
       "example": "Question \u2192 family/condition/window slots \u2192 parser \u2192 validated SQL. It does not invent ICD code sets."
     },

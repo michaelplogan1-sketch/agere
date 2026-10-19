@@ -8,11 +8,13 @@ A health warehouse provides records. A defensible answer also needs the correct 
 
 ![Agere full stack](agere-full-stack-explained-2026-10-19.png)
 
+**Poster correction:** the image incorrectly labels both Qwen paths as default-off. Narrow slot filling is default-on when available; broad SQL generation is default-off. The component descriptions below and interactive map are corrected. The saved generation prompt is historical.
+
 ## The roles that were previously too vague
 
 **Jev and Perplexity overlap.** They implement the same typed evidence-decision role: supplied state plus named questions, allowed choices and probabilities. Agere supports selecting either, comparing them, or an optional Jev → Perplexity → Claude cascade for unresolved therapy-barrier cases. Perplexity has an additional configured job selecting curated analysis recipes. These are routing choices, not mutually exclusive model capabilities.
 
-**Qwen is not one undifferentiated experiment.** The narrow Qwen3-4B LoRA translates language into slots that existing code turns into SQL. A separate broader LoRA writes SQL directly. Both are default-off paths in the current code, with different acceptance evidence. The old chart-to-JSON experiment is a third historical use and does not evaluate the later narrow-slot adapter.
+**Qwen is not one undifferentiated experiment.** The narrow Qwen3-4B LoRA translates language into slots that existing code turns into SQL. A separate broader LoRA writes SQL directly. The narrow slot adapter is enabled by default when its model is available and runs only after a parser miss or missing slots; the broader SQL adapter is default-off. They have different acceptance evidence. The old chart-to-JSON experiment is a third historical use and does not evaluate the later narrow-slot adapter.
 
 **UltraBERT is not a second chat assistant.** Its two specific jobs are raw-catalog retrieval and thresholded lab/condition terminology fallback. MiniLM helps routing/reuse, Granite helps passage retrieval, BGE reranks passages, and the learned schema reranker selects database items. These layers work on different objects.
 
@@ -203,7 +205,7 @@ Each entry includes the job, the error it addresses, its economic purpose, curre
 **Job:** Translate unfamiliar phrasing into compact cohort-family slots, then round-trip those slots through the deterministic parser.
 **Why it helps:** The local model handles language variation while existing code retains responsibility for definitions and SQL.
 **Economics:** Distill reusable work into local inference; no new hosted tokens on an accepted local path. Training and compute still cost resources.
-**Status:** Implemented optional slot-filling path; flag default off.
+**Status:** Enabled by default when model/adapter is available; runs only for parser misses or missing slots. AGERE_BOTTLED_COHORT=off disables it.
 **Example / method:** Question → family/condition/window slots → parser → validated SQL. It does not invent ICD code sets.
 **Source:** [clinical_core/agere/clinical/bottled_cohort_hook.py](../../../clinical_core/agere/clinical/bottled_cohort_hook.py)
 
