@@ -151,6 +151,29 @@ if __name__ == '__main__':
 
 
 class WholePageScript(unittest.TestCase):
+    def test_execution_view_preserves_cost_unknowns_and_actual_model_dispatch(self):
+        import shutil, subprocess
+        node = shutil.which('node')
+        if not node: self.skipTest('node not installed')
+        html = ask_view.page()
+        code = html[html.index('function executionInfo('):html.index('function resolvedLine(')]
+        setup = "const ROUTES={local_compiler:'Agere compiler'}; const isNum=v=>typeof v==='number'&&isFinite(v); const fmt=String; const label=s=>String(s).replace(/_/g,' '); const esc=s=>String(s).replace(/</g,'&lt;');\n"
+        assertions = r'''
+const assert=require('node:assert/strict');
+let x=executionInfo({});assert.equal(x.cost,'Unknown');assert.equal(x.calls,null);
+assert.match(badges({data:{}}),/API estimate: Unknown/);
+const partial={new_paid_api_calls:3,planning_economics:{new_api_estimate_usd:null,known_api_estimate_usd:.12,failed_or_unpriced_api_cost:true}};
+assert.equal(executionInfo(partial).cost,'Unknown (known portion $0.1200)');
+let local={new_paid_api_calls:0,planner_receipt:{route:'local_compiler'},planning_economics:{new_api_estimate_usd:0,known_api_estimate_usd:0},graph:{nodes:[{operation:'cohort'},{operation:'aggregate'}]},together:{analyst:{state:'skipped_specialist',model:'claude-haiku-5-5'}}};
+x=executionInfo(local);assert.equal(x.cost,'$0.0000');assert.equal(x.calls,0);assert.deepEqual(x.models,[]);assert.deepEqual(x.operations,['cohort','aggregate']);
+let model={new_paid_api_calls:4,planning_economics:{new_api_estimate_usd:.15},planner_receipt:{route:'deferred_to_analyst',steps:[{receipt:{stages:[{model:'claude-haiku-5-5'}]}}]},together:{winner:'analyst',analyst:{state:'done',model:'claude-opus-5-5'},hybrid:{decision:'escalated',models:{analyst:'claude-opus-5-5',escalation:'claude-opus-5-5'}}}};
+x=executionInfo(model);assert.equal(x.route,'Executed analyst SQL');assert.deepEqual(x.models,['claude-haiku-5-5','claude-opus-5-5']);assert.equal(x.decision,'escalated');
+assert.match(executionDetails(model),/How Agere answered/);assert.match(executionDetails(model),/\$0.1500/);
+assert.doesNotMatch(executionDetails({route:'<script>bad</script>'}),/<script>/);
+'''
+        result = subprocess.run([node, '-e', setup+code+assertions], capture_output=True, text=True)
+        self.assertEqual(result.returncode, 0, result.stderr[:1600])
+
     def test_console_script_is_valid_javascript(self):
         """Parallel-builder merges have broken the page script by dropping a shared closing line; node --check catches it."""
         import re, shutil, subprocess, tempfile

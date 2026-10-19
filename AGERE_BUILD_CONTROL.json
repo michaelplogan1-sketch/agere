@@ -1,6 +1,6 @@
 {
  "schema": "agere-build-control/1",
- "updated_at": "2026-10-19T13:30:34.308645+00:00",
+ "updated_at": "2026-10-19T14:39:47.742449+00:00",
  "decision_basis": "AGERE_CTO_REVIEW_2026-10-11_EVENING.md",
  "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
  "required_references": [
@@ -278,23 +278,17 @@
   "kind": "manual_turn_checkpoint",
   "gate_id": "G3",
   "last_delivered_gate": "G3",
-  "user_behavior_delta": "Live on :8885: unclaimed questions use three Opus analysts with system-executed SQL and one bounded repair for failed contracts/SQL. Specialists and certified cheap tiers still run first. Analyst time starts at dispatch, not before specialist work. Actual model and metered workspace cost survive the shared answer. Optional ambiguity-overriding review remains disabled.",
-  "measured_failure_reduction": "Independent 12-person grouped calculation initially returned through a second hosted fallback with unknown cost after all three analyst contracts failed. The repaired connected workflow answers via analysts_answered with the expected F=100/M=81, one bounded repair and known new API estimate $0.151273 (cached prior calls excluded). 100 focused product tests plus the aggregate-cost regression pass; 18 study-harness/validation tests pass. Live population-count workflow returns 4095 in 0.49s, zero paid calls/$0. Initial and reservation-blocked results retained. No benchmark rerun/rescore.",
+  "user_behavior_delta": "The /ask answer card exposes How Agere answered: selected route, executed operators, recorded model names, analyst dispatch/repair and new paid calls/API estimate. Missing and partial costs are explicitly unknown rather than $0. An implementation-grounded stack atlas and engineering rationale explain selectable versus default/research components.",
+  "measured_failure_reduction": "The old answer badge displayed absent costs as zero and showed a specialist route even when the analyst won. Five focused page/JavaScript checks now pass, covering unknown/partial/zero costs, skipped versus executed model dispatch, analyst route selection and escaped receipt text. The image was inspected and corrected to include the decision/work loop and MiniLM. No new paid model API calls or benchmark evaluation.",
   "evidence": [
-   "test_hybrid.py",
-   "test_together.py",
-   "test_workspace_stack.py",
-   "test_analytical_fallback.py",
-   "test_plans.py",
-   "artifacts/product-workflows/frontier-fallback-2026-10-19/expected.json",
-   "artifacts/product-workflows/frontier-fallback-2026-10-19/result.json",
-   "artifacts/product-workflows/frontier-fallback-2026-10-19/reservation-blocked-result.json",
-   "artifacts/product-workflows/frontier-fallback-2026-10-19/repaired-result.json",
-   "artifacts/product-workflows/frontier-fallback-2026-10-19/live-specialist-result.json",
-   "artifacts/product-workflows/frontier-fallback-2026-10-19/live-runtime.json"
+   "test_ask_view.py",
+   "clinical_core/agere/ask_view.py",
+   "docs/agere/architecture/ENGINEERING_GUIDE.md",
+   "docs/agere/architecture/agere-stack-atlas-2026-10-19.png",
+   "artifacts/product-workflows/frontier-fallback-2026-10-19/live-specialist-result.json"
   ],
-  "remaining_gap": "This is connected product behavior, not broad model-quality qualification or full ten-area completion. Gold-50/native reference validation remains pending and off the build critical path. Genuine missing inputs/ambiguity still decline. Model agreement is not proof of correctness. G5 qualification remains unmet.",
-  "next_action": "G3: continue connected original-question analysis, decision and saved-work workflows across population/ACO/provider questions; fix concrete integration failures using independent small fixtures. Keep specialists first and the full ten-area scope. Broad reference auditing remains off the build critical path; no unvalidated benchmark runs.",
+  "remaining_gap": "Per-request API estimates exclude local compute, setup and review. Full cold/warm workload economics and comparative accuracy remain unqualified. Optional/research components are not universally enabled. Full ten-area product scope retained; the broader independent benchmark audit remains off the build critical path.",
+  "next_action": "Deploy and visually check the execution explanation on :8885 without new paid API calls. Continue G3 connected question/decision/work behavior with selective computation and cost per correct completed task visible. Preserve broad product scope and independent-reference evaluation restrictions.",
   "next": "Deliver usable full-stack workflows; retain complete product scope and known qualification gaps."
  },
  "decisions": [
@@ -789,6 +783,12 @@
    "change": "Activate Opus for unclaimed questions, bounded mechanical repair, analyst execution time measured from dispatch, and known cost/model propagation. Deployed committed source 8687121 to :8885; health, workspace listing and zero-call count pass. Registered E baseline stays pinned to Haiku/Sonnet; historical results unchanged.",
    "scope_impact": "Specialists first and explicit missing inputs retained. Optional ambiguity review off. No benchmark rerun, qualification promotion, external publication or care execution.",
    "evidence": "artifacts/product-workflows/frontier-fallback-2026-10-19/repaired-result.json"
+  },
+  {
+   "at": "2026-10-19T14:39:47.742449+00:00",
+   "basis": "Mike: proceed, create a detailed stack image, explain components to engineers and quote supported question costs; no additional spending.",
+   "change": "Provide implementation-grounded architecture atlas and component rationale; expose actual execution and honest API cost in the answer UI. Use built-in image generation, no paid external image service or upgrade. Local checks only.",
+   "scope_impact": "No benchmark rerun, unsupported competitive superlatives, optional-model promotion, external publication or paid API evaluation."
   }
  ]
 }

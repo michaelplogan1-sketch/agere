@@ -1,0 +1,100 @@
+Use case: infographic-diagram.
+Create one extraordinary, exceptionally polished technical architecture poster for AGERE, a healthcare data analytics system. This is a real implemented modular stack with additional optional/research components. Make it a distinctive engineering atlas that a founder can zoom into and show a technical buyer, not generic AI marketing art. Landscape 3:2 composition, highest available resolution and text fidelity, ideally 4K. The diagram must have impeccable, readable typography, accurate model names, deliberate hierarchy, generous panel spacing, numbered layers and fine precise connector lines. Present one coherent system, not unrelated floating boxes.
+
+Visual concept: an exploded precision instrument / computational circuit atlas, with a beautifully organized central branching query engine, a layered data foundation beneath it, evidence and models along the sides, and results / decision loop at the right. Restrained warm ivory background, ink-black typography, deep evergreen computation paths, cobalt model paths, copper mathematical accents, dashed gray research branches. Subtle dimensional etched hardware motifs only around the structure; all text flat and crisp. No robots, brains, stock hospital icons, glowing fantasy or vendor logos. Title "AGERE" very large. Subtitle "Specialists first. Frontier reasoning when needed." Small edition "Architecture atlas • October 2026". Footer "Synthetic-data implementation • Component availability is not clinical qualification".
+
+Critical legend, clearly visible:
+"GREEN — core query paths"
+"BLUE — selectable model components"
+"COPPER — analytical methods"
+"GRAY DASHED — optional / research; not default"
+Do not imply every model runs on every query. Do not claim world-best accuracy, lowest total cost, or uniqueness against all competitors.
+
+Arrange the content below as eight beautifully composed numbered zones around one connected architecture. ALL named components below should be legible, without inventing extra models or accuracy numbers. Arrows show sources -> evidence -> routing -> selected execution -> checked outputs. A return loop from changed evidence to affected results is labeled "Recompute affected results".
+
+01 • DATA FOUNDATION
+"EHR notes • Labs • Medications • Encounters"
+"Claims • Remittances • Enrollment • Contracts"
+"HL7 / FHIR • CSV / JSON • Native warehouse adapters"
+"Identity resolution • Source clocks • Corrections"
+"Versioned semantic layer • SQLite / SQL"
+
+02 • EVIDENCE & CONTEXT
+"Source-linked assertions • Patient + population state"
+"Negation • Subject • Time • Contradictions • Missingness"
+"BM25 + dense retrieval • Reciprocal-rank fusion"
+"Granite Embedding English R2"
+"UltraBERT-Embed-150M"
+"BGE reranker v2-m3"
+"BioClinical ModernBERT-base"
+Badge on model list: "Selectable by route"
+
+03 • SPECIALIST-FIRST QUERY ENGINE (dominant central area, multiple parallel branches, NOT a mandatory sequential chain)
+"Question + explicit definitions + scope"
+"Deterministic compiler"
+"Governed metrics + typed slots"
+"Cohort / data-quality / VBC SQL families"
+"Verified query reuse + semantic cache"
+"Analytical operator dispatch"
+"Learn-then-Test gates • Clarify / abstain"
+An escalation arrow, "Unclaimed questions", goes to zone05.
+A small optional dashed branch says "Qwen3-4B + LoRA • Bottled SQL / slot adapters".
+
+04 • BOUNDED MODEL ROLES (blue selectable components)
+"Claude Haiku 5.5 — metric / operator routing, optional prose"
+"Jev 1.13.0 — typed evidence decisions"
+"Perplexity Decisions — pplx-decider-v1.1-27b"
+"Local classifiers — bounded task heads"
+Place a separate dashed inset beneath:
+"Experimental / not default"
+"Kev 4B • Liquid d1-3B"
+"Joint observation model • Tensor-train prototypes"
+
+05 • FRONTIER ANALYSIS (blue, visually important but smaller than core computation)
+"Claude Opus 5.5"
+"3 independent analyst proposals"
+"Typed analysis contract + SQL"
+"System executes read-only SQL"
+"Contract / result checks • Voting"
+"1 bounded repair / tie-break"
+Small dashed optional label "Definition-based review — off by default"
+Small optional alternate badge "Claude Sonnet 5.5 — configured alternate"
+
+06 • MATHEMATICAL ENGINES (copper, organized into four crisp subpanels)
+"Signals & time"
+"Kalman filtering • Change points • EWMA / CUSUM"
+"Kaplan–Meier • Cox survival"
+"Inference & discovery"
+"Empirical Bayes • BH false-discovery control"
+"Difference-in-differences • Synthetic control"
+"Target-trial emulation • Uplift"
+"Economics & decisions"
+"CMS-HCC V24 / V28 • Claims completion"
+"Monte Carlo • VaR / CVaR"
+"Shapley allocation • Nash bargaining"
+"Capacity-constrained optimization"
+"External ideas"
+"Compiler design • Signal processing"
+"Statistical learning • Operations research"
+"Financial risk • Control theory"
+Small qualifier "Method assumptions remain explicit"
+
+07 • ANSWERS → DECISIONS → WORK
+"Cohorts • Tables • Curves • Explanations"
+"Program eligibility • Coverage • Vendor routing"
+"Persistent work + decision context"
+"Simulation vs observed follow-up"
+"Reports • Interactive deliverables"
+"Numbers bound to computed results"
+"Human review before real-world action"
+
+08 • ENGINEERING & ECONOMICS (foundation band spanning the atlas)
+"Python • SQL • Typed JSON contracts • Validated execution graphs"
+"Read-only execution • Bounded tools • Source hashes"
+"Content-addressed caches • Versioned definitions"
+"Dependency invalidation • Protected evaluation splits"
+"Usage ledger • Model calls • Known / unknown cost"
+Prominent small statement "Avoid unnecessary inference. Reuse verified computation."
+Smaller line "Zero API calls on supported local paths; local compute still has cost."
+
+The final result should feel like a one-of-a-kind, beautifully typeset systems engineering plate with clear flow and enough detail to reward zooming. Preserve the status legend. Avoid illegible microtext and repeated labels. Exact spelling of AGERE, all named models and mathematics is crucial.

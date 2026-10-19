@@ -167,7 +167,9 @@ const DEMO=JSON.parse(document.getElementById('demo-script').textContent);
 const EXAMPLES=["What is our allowed PMPM by payer?","Which CKD patients have a declining eGFR?","Are any of our rates out of control?",
  "who should our care managers call this week? we have 40 slots","Did care management reduce ED visits?","What does the readmission curve look like by payer?"];
 const ROUTES={local_compiler:'Agere compiler',local_unsupported:'Agere compiler (unsupported)',local_requires_input:'Agere compiler (needs your inputs)',local_model_rewrite_compiled:'Local rewrite → compiler',
- hosted_verified_sql:'Hosted models, cross-verified',learned_verified_sql:'Learned (previously verified)',hosted_missing_data:'Hosted: data not available',frontier_escalation:'Frontier model'};
+ hosted_verified_sql:'Hosted models, cross-verified',learned_verified_sql:'Learned (previously verified)',hosted_missing_data:'Hosted: data not available',frontier_escalation:'Frontier model',
+ semantic_cache:'Verified semantic reuse',exact_question_cache:'Exact question reuse',cohort_family:'Cohort SQL family',dq_family:'Data-quality SQL family',vbc_family:'VBC SQL family',
+ metric_router:'Governed metric',operator_router:'Analytical operator',bottled_sql:'Local SQL model',economical_composition_local_execution:'Specialist composition'};
 const $=(s,el)=>(el||document).querySelector(s);
 const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const isNum=v=>typeof v==='number'&&isFinite(v);
@@ -974,10 +976,30 @@ function details(a){let h='';
  const lim=(a.limitations||[]).concat(((a.overall||{}).limitations)||[]);if(lim.length)h+='<details><summary>Limits ('+lim.length+')</summary><ul>'+lim.map(x=>'<li>'+esc(x)+'</li>').join('')+'</ul></details>';
  if(a.query)h+='<details><summary>Query</summary><pre>'+esc(a.query)+'</pre></details>';
  return h}
-function badges(t){const d=t.data||{},a=d.answer||{},pr=d.planner_receipt||{},econ=d.planning_economics||{};const st=t.error?'error':(a.status||'');
+function executionInfo(d){d=d||{};const pr=d.planner_receipt||{},econ=d.planning_economics||{},tg=d.together||{},analyst=tg.analyst||{},hybrid=tg.hybrid||{};
+ const calls=isNum(d.new_paid_api_calls)?d.new_paid_api_calls:isNum(pr.new_paid_api_calls)?pr.new_paid_api_calls:null;
+ const total=econ.failed_or_unpriced_api_cost?null:isNum(econ.new_api_estimate_usd)?econ.new_api_estimate_usd:null;
+ const known=isNum(econ.known_api_estimate_usd)?econ.known_api_estimate_usd:null;
+ const cost=total!=null?'$'+total.toFixed(4):'Unknown'+(known>0?' (known portion $'+known.toFixed(4)+')':'');
+ const models=new Set();function model(v){if(typeof v==='string'&&v)models.add(v)}
+ function walk(r){if(!r||typeof r!=='object')return;model(r.model);(r.stages||[]).forEach(walk);if(r.receipt)walk(r.receipt)}
+ (pr.steps||[]).forEach(walk);if(pr.model)model(pr.model);
+ if(analyst.state&&!String(analyst.state).startsWith('skipped')){model(analyst.model);Object.values(hybrid.models||{}).forEach(model)}
+ if(tg.reconcile)model(tg.reconcile.model);
+ const raw=pr.route||d.route||'',route=tg.winner==='analyst'?'Executed analyst SQL':ROUTES[raw]||raw||'Not recorded';
+ const graph=d.graph||{},nodes=Array.isArray(graph.nodes)?graph.nodes:[],operations=[...new Set(nodes.map(n=>n.operation).filter(Boolean))];
+ return {route,calls,total,known,cost,models:[...models],operations,reason:tg.reason||pr.escalation_reason||'',
+  analystState:analyst.state||tg.analyst_state||'',decision:hybrid.decision||tg.decision||'',cached:!!(d.cache_hit||pr.cache_hit)}}
+function executionDetails(d){const x=executionInfo(d),rows=[['Answer route',x.route],['Executed operators',x.operations.join(', ')||'Not recorded'],
+ ['Models recorded',x.models.join(', ')||'None recorded'],['New paid API calls',x.calls==null?'Unknown':String(x.calls)],['New API cost estimate',x.cost]];
+ if(x.analystState)rows.push(['Analyst dispatch',label(x.analystState)]);if(x.decision)rows.push(['Selection / repair',label(x.decision)]);
+ if(x.cached)rows.push(['Reuse','Cached result reused']);if(x.reason)rows.push(['Route explanation',x.reason]);
+ return '<details data-execution><summary>How Agere answered</summary><div class="tablewrap"><table><tbody>'+rows.map(([k,v])=>'<tr><th scope="row">'+esc(k)+'</th><td class="wrap">'+esc(v)+'</td></tr>').join('')+
+ '</tbody></table></div><p class="hint">API estimates cover this request; reused calls are not new charges. Local compute, setup and review are excluded. Unknown cost is not zero. Execution checks do not establish clinical accuracy.</p></details>'}
+function badges(t){const d=t.data||{},a=d.answer||{},x=executionInfo(d);const st=t.error?'error':(a.status||'');
  const b=['<span class="badge '+esc(st)+'">'+esc(label(st||'unknown'))+'</span>',
-  '<span class="badge">Route: '+esc(ROUTES[pr.route]||pr.route||d.route||'—')+'</span>','<span class="badge">Paid API calls: '+fmt(d.new_paid_api_calls||0)+'</span>',
-  '<span class="badge">Cost: $'+(econ.known_api_estimate_usd||0).toFixed(4)+'</span>','<span class="badge">Latency: '+(t.seconds!=null?t.seconds.toFixed(2)+' s':'—')+'</span>'];
+  '<span class="badge">Route: '+esc(x.route)+'</span>','<span class="badge">Paid API calls: '+(x.calls==null?'Unknown':fmt(x.calls))+'</span>',
+  '<span class="badge">API estimate: '+esc(x.cost)+'</span>','<span class="badge">Latency: '+(t.seconds!=null?t.seconds.toFixed(2)+' s':'—')+'</span>'];
  if(d.cache_hit)b.push('<span class="badge">Reused cached result</span>');return '<div class="badges">'+b.join('')+'</div>'}
 function resolvedLine(t){const c=(t.data||{}).conversation;const r=c?c.resolved_question:t.resolved;if(!r||r===t.question)return '';
  return '<div class="resolved">Answered as: <b>'+esc(r)+'</b>'+(c&&c.method==='hosted'?' (follow-up rewritten by a hosted model, then planned normally)':'')+'</div>'}
@@ -998,7 +1020,7 @@ function renderTurn(i){const t=state.turns[i];const box=$('#answer');state.activ
  let h='<div class="q">'+esc(t.question)+'</div>'+resolvedLine(t)+headlineHTML(a)+badges(t)+warnBox(a)+readingsBox(a,t.resolved||t.question);
  try{h+=visual(a)}catch(err){h+='<div class="alert warn">Visual unavailable: '+esc(err.message)+'</div>'+tableHTML(a.table||[],{name:'agere-answer'})}
  const sg=suggestions(a);if(sg.length)h+='<div class="chips" aria-label="Follow-ups">'+sg.map(s=>'<button type="button" class="chip" data-ask="'+esc(s)+'">'+esc(s)+'</button>').join('')+'</div>';
- h+=details(a);
+ h+=executionDetails(t.data)+details(a);
  h+='<div class="sec flag" data-flag><button type="button" class="btn small" data-flagopen="1" style="color:var(--bad)">Flag as wrong</button></div>';
  box.innerHTML=h;if(t.focus){const el=box.querySelector('[data-focus="'+t.focus+'"]');if(el)el.scrollIntoView({behavior:'smooth',block:'start'})}}
 function renderThread(){const ul=$('#thread');ul.innerHTML=state.turns.map((t,i)=>{const a=(t.data||{}).answer||{};const st=t.pending?'pending':t.error?'error':(a.status||t.status||'');
