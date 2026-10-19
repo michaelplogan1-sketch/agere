@@ -11,7 +11,12 @@ from . import question_decision as q
 
 VERSION = 'question-route-accounting/1'
 ROOT = Path(__file__).resolve().parents[3]
-LEDGER = ROOT/'artifacts/agere-full/provider-budget.sqlite3'
+LEDGER = ROOT/'artifacts/agere-full/provider-budget.sqlite3'  # the shared ledger; _ledger() honours AGERE_LEDGER_PATH
+
+
+def _ledger():
+    from ..gateway import default_ledger_path
+    return default_ledger_path()
 
 
 def identity():
@@ -127,7 +132,7 @@ def prepare(retriever,request,*,ledger_path=None):
     q.care.exact(request,'decision_id')
     row=q.inspect(retriever,request['decision_id'])
     refs,gaps,route=linked_requests(retriever,row)
-    requests,cost,ledger_binding=account(refs,ledger_path or LEDGER)
+    requests,cost,ledger_binding=account(refs,ledger_path or _ledger())
     # q.inspect has validated current dependencies. Read only the existing owned
     # work here; calling full reopen would repeat costly source reconstruction.
     if row['schema']==q.POPULATION_VERSION:

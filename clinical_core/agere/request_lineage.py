@@ -148,7 +148,7 @@ def for_decision(retriever,request,*,ledger_path=None):
     finally:db.close()
     executions={}
     for execution,payload in raw:executions.setdefault(execution,[]).append(json.loads(payload))
-    traces=[];refs={};expected=str(Path(ledger_path or costs.LEDGER).resolve())
+    traces=[];refs={};expected=str(Path(ledger_path or costs._ledger()).resolve())
     origins={};alternative_refs={};alternative_origins={}
     def include(key,execution,origin,was_inference=True,alternative=False):
         target=alternative_refs if alternative else refs
@@ -178,8 +178,8 @@ def for_decision(retriever,request,*,ledger_path=None):
         terminal=events[-1]['kind']
         traces.append({'execution_id':execution,'status':terminal if terminal in ('completed','operation_failed') else 'interrupted_or_running',
                        'relation':relation,'matched_links':sorted(anchors & wanted),'events':events})
-    requests,cost,binding=costs.account(refs,ledger_path or costs.LEDGER)
-    alternative_requests,alternative_cost,alternative_binding=costs.account(alternative_refs,ledger_path or costs.LEDGER)
+    requests,cost,binding=costs.account(refs,ledger_path or costs._ledger())
+    alternative_requests,alternative_cost,alternative_binding=costs.account(alternative_refs,ledger_path or costs._ledger())
     for request_row in requests:request_row['lineage_origins']=sorted(origins[request_row['request_hash']])
     terminals=[t['events'][-1] for t in traces]
     measured=[e['effort'] for e in terminals if e.get('effort')]

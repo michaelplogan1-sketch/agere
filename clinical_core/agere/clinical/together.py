@@ -130,8 +130,8 @@ def _ledger_path(stack):
     explicit = getattr(stack, 'ledger_path', None)
     if explicit:
         return Path(explicit)
-    from .stack_runtime import ROOT
-    return ROOT / 'artifacts/agere-full/provider-budget.sqlite3'
+    from ..gateway import default_ledger_path
+    return default_ledger_path()
 
 
 def _ledgered_send(stack, ledger, receipts):
@@ -151,7 +151,7 @@ def _ledgered_send(stack, ledger, receipts):
 
 @contextmanager
 def _own_ledger(stack):
-    from ..gateway import BudgetLedger
+    from ..gateway import BudgetLedger, default_ledger_path
     ledger = BudgetLedger(_ledger_path(stack))
     try:
         yield ledger

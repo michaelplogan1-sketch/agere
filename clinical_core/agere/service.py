@@ -226,8 +226,8 @@ def serve(run,port,annotations=None,evidence_queries=None,stack=None,allow_live_
                     from .clinical import source_plan_reconciliation
                     if path.endswith('/reconcile'):
                         from .clinical.stack_runtime import ROOT
-                        from .gateway import BudgetLedger
-                        ledger=BudgetLedger(ROOT/'artifacts/agere-full/provider-budget.sqlite3')
+                        from .gateway import BudgetLedger, default_ledger_path
+                        ledger=BudgetLedger(default_ledger_path())
                         try:result=source_plan_reconciliation.reconcile(connected_stack.retriever,body,ledger,allow_live=connected_stack.allow_live)
                         finally:ledger.close()
                     else:
@@ -241,8 +241,8 @@ def serve(run,port,annotations=None,evidence_queries=None,stack=None,allow_live_
                 elif path in ('/api/stack/source-plan-recovery/preview','/api/stack/source-plan-recovery/recover','/api/stack/source-plan-recovery/inspect'):
                     from .clinical import source_plan_recovery
                     from .clinical.stack_runtime import ROOT
-                    from .gateway import BudgetLedger
-                    ledger=BudgetLedger(ROOT/'artifacts/agere-full/provider-budget.sqlite3')
+                    from .gateway import BudgetLedger, default_ledger_path
+                    ledger=BudgetLedger(default_ledger_path())
                     try:result=getattr(source_plan_recovery,path.rsplit('/',1)[1])(connected_stack.retriever,body,ledger)
                     finally:ledger.close()
                 elif path=='/api/stack/search':
@@ -287,8 +287,8 @@ def serve(run,port,annotations=None,evidence_queries=None,stack=None,allow_live_
                     if path.endswith('/output-recovery-plan'):result=source_output_recovery.preview(connected_stack.path,body)
                     else:
                         from .clinical.stack_runtime import ROOT
-                        from .gateway import BudgetLedger
-                        ledger=BudgetLedger(ROOT/'artifacts/agere-full/provider-budget.sqlite3')
+                        from .gateway import BudgetLedger, default_ledger_path
+                        ledger=BudgetLedger(default_ledger_path())
                         try:result=source_output_recovery.run(connected_stack.path,body,ledger,allow_live=connected_stack.allow_live)
                         finally:ledger.close()
                 elif path in ('/api/stack/context/recovery-plan','/api/stack/context/recover'):
@@ -296,8 +296,8 @@ def serve(run,port,annotations=None,evidence_queries=None,stack=None,allow_live_
                     if path.endswith('/recovery-plan'):result=interpretation_recovery.preview(connected_stack.path,body)
                     else:
                         from .clinical.stack_runtime import ROOT
-                        from .gateway import BudgetLedger
-                        ledger=BudgetLedger(ROOT/'artifacts/agere-full/provider-budget.sqlite3')
+                        from .gateway import BudgetLedger, default_ledger_path
+                        ledger=BudgetLedger(default_ledger_path())
                         try:result=interpretation_recovery.run(connected_stack.path,body,ledger,allow_live=connected_stack.allow_live)
                         finally:ledger.close()
                 elif path in ('/api/stack/claims/plan','/api/stack/claims/reconcile'):
@@ -306,8 +306,8 @@ def serve(run,port,annotations=None,evidence_queries=None,stack=None,allow_live_
                     if path.endswith('/plan'):result=claims.preview(connected_stack.path,body['answer_id'])
                     else:
                         from .clinical.stack_runtime import ROOT
-                        from .gateway import BudgetLedger
-                        ledger=BudgetLedger(ROOT/'artifacts/agere-full/provider-budget.sqlite3')
+                        from .gateway import BudgetLedger, default_ledger_path
+                        ledger=BudgetLedger(default_ledger_path())
                         try:result=claims.synthesize(connected_stack.path,body['answer_id'],ledger,allow_live=connected_stack.allow_live)
                         finally:ledger.close()
                 elif path=='/api/stack/context/plan':
@@ -362,8 +362,8 @@ def serve(run,port,annotations=None,evidence_queries=None,stack=None,allow_live_
                     from .clinical import reference_assessment
                     if path.endswith('/reference-assess'):
                         from .clinical.stack_runtime import ROOT
-                        from .gateway import BudgetLedger
-                        ledger=BudgetLedger(ROOT/'artifacts/agere-full/provider-budget.sqlite3')
+                        from .gateway import BudgetLedger, default_ledger_path
+                        ledger=BudgetLedger(default_ledger_path())
                         try: result=reference_assessment.assess(connected_stack.retriever,body,ledger,allow_live=allow_live_stack)
                         finally: ledger.db.close()
                     else:
@@ -374,8 +374,8 @@ def serve(run,port,annotations=None,evidence_queries=None,stack=None,allow_live_
                     route=path.rsplit('/',1)[1]
                     if route in ('information-propose','information-observe'):
                         from .clinical.stack_runtime import ROOT
-                        from .gateway import BudgetLedger
-                        ledger=BudgetLedger(ROOT/'artifacts/agere-full/provider-budget.sqlite3')
+                        from .gateway import BudgetLedger, default_ledger_path
+                        ledger=BudgetLedger(default_ledger_path())
                         try: result=(information.propose if route=='information-propose' else information.observe)(connected_stack.retriever,body,ledger,allow_live=allow_live_stack)
                         finally: ledger.db.close()
                     else:
@@ -388,8 +388,8 @@ def serve(run,port,annotations=None,evidence_queries=None,stack=None,allow_live_
                     action={'prepare':question_decision.prepare,'queue':question_decision.queue,'event':question_decision.event,'followup':question_decision.followup,'observe':question_decision.observe,'review-preview':question_decision.review_preview,'review-prepare':question_decision.prepare_review,'review-answer':question_decision.review_answer,'reanswer-prepare':decision_reassessment.prepare,'reanswer-refresh':decision_reassessment.refresh,'reanswer-queue':decision_reassessment.queue,'acquisition-preview':decision_acquisition.preview,'acquisition-create':decision_acquisition.create,'acquisition-open':decision_acquisition.reopen,'acquisition-check':decision_acquisition.check,'population-prepare':question_decision.prepare_population,'population-match':question_decision.match_population_member,'population-protocol-member':question_decision.open_population_protocol_member,'population-queue':question_decision.queue_population_member,'population-route-member':question_decision.route_population_member,'population-allocate':question_decision.allocate_population,'population-execute':question_decision.execute_population,'population-accountability':question_decision.population_accountability,'population-accountability-open':question_decision.open_population_accountability,'population-prediction-options':question_decision.prediction_contracts,'population-prediction':question_decision.population_prediction,'population-prediction-open':question_decision.open_population_prediction,'population-discovery-options':population_discovery.options,'population-discovery':population_discovery.run,'population-discovery-open':population_discovery.reopen,'economics':decision_economics.run,'economics-open':decision_economics.reopen}[path.rsplit('/',1)[1]]
                     if path.endswith('/prepare') and body.get('planner')=='buyer_documentary_candidate':
                         from .clinical.stack_runtime import ROOT
-                        from .gateway import BudgetLedger
-                        ledger=BudgetLedger(ROOT/'artifacts/agere-full/provider-budget.sqlite3')
+                        from .gateway import BudgetLedger, default_ledger_path
+                        ledger=BudgetLedger(default_ledger_path())
                         try: result=action(connected_stack.retriever,body,ledger=ledger,allow_live=allow_live_stack)
                         finally: ledger.db.close()
                     else: result=action(connected_stack.retriever,body)
@@ -638,9 +638,9 @@ def serve(run,port,annotations=None,evidence_queries=None,stack=None,allow_live_
                         try:result=proposals.select(connected_stack.path,body)
                         except FileNotFoundError as exc:raise ValueError('Unknown saved source-proposal receipt') from exc
                     else:
-                        from .gateway import BudgetLedger
+                        from .gateway import BudgetLedger, default_ledger_path
                         from .clinical.stack_runtime import ROOT
-                        ledger=BudgetLedger(ROOT/'artifacts/agere-full/provider-budget.sqlite3')
+                        ledger=BudgetLedger(default_ledger_path())
                         try:result=proposals.propose(connected_stack.path,body,ledger,allow_live=connected_stack.allow_live)
                         finally:ledger.close()
                 elif path in ('/api/stack/cohort-spans','/api/stack/cohort-spans/select'):
@@ -650,9 +650,9 @@ def serve(run,port,annotations=None,evidence_queries=None,stack=None,allow_live_
                         except FileNotFoundError as exc:raise ValueError('Unknown saved cohort proposal') from exc
                     else:
                         if set(body)!={'cohort_id','item_id'}:raise ValueError('Exact cohort and sampled field required')
-                        from .gateway import BudgetLedger
+                        from .gateway import BudgetLedger, default_ledger_path
                         from .clinical.stack_runtime import ROOT
-                        ledger=BudgetLedger(ROOT/'artifacts/agere-full/provider-budget.sqlite3')
+                        ledger=BudgetLedger(default_ledger_path())
                         try:result=spans.Session(connected_stack.path,body['cohort_id']).propose(body['item_id'],ledger,allow_live=connected_stack.allow_live)
                         finally:ledger.close()
                 elif path=='/api/stack/question-learning':

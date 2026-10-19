@@ -717,7 +717,8 @@ def ledgered_typed_send_factory(receipts_dir, ledger_path=None):
     receipts_dir = Path(receipts_dir)
     receipts_dir.mkdir(parents=True, exist_ok=True)
     if ledger_path is None:
-        from ..onboarding.workspace import LEDGER as ledger_path
+        from ..gateway import default_ledger_path
+        ledger_path = default_ledger_path()
 
     @contextmanager
     def factory():

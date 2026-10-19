@@ -1581,8 +1581,8 @@ def execute(stack, plan, *, question=None):
                 from . import vbc_knowledge
                 ledger = None
                 if vbc_knowledge.synthesis_enabled() and getattr(stack, 'allow_live', False):  # optional hosted synthesis, off by default
-                    from ..gateway import BudgetLedger
-                    ledger = BudgetLedger(Path(__file__).resolve().parents[3] / 'artifacts/agere-full/provider-budget.sqlite3')
+                    from ..gateway import BudgetLedger, default_ledger_path
+                    ledger = BudgetLedger(default_ledger_path())
                 try:
                     detail = vbc_knowledge.execute(params, encoder=getattr(stack.retriever, 'encoder', None), allow_live=ledger is not None,
                                                    ledger=ledger, out=Path(__file__).resolve().parents[3] / 'artifacts/vbc-knowledge/synthesis')

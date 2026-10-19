@@ -760,7 +760,7 @@ def ask_many(ws, questions, *, workers=3, send_factory=None, out_path=None, on_u
 
 def ledgered_send_factory(receipts_dir):
     """The product's metered sender (budget ledger, response cache, receipts), one ledger connection per thread."""
-    from ..gateway import BudgetLedger
+    from ..gateway import BudgetLedger, default_ledger_path
     from ..clinical.context_student import send as ledgered
     from ..clinical import together
     receipts_dir = Path(receipts_dir)
@@ -768,7 +768,7 @@ def ledgered_send_factory(receipts_dir):
 
     @contextmanager
     def factory():
-        ledger = BudgetLedger(LEDGER)
+        ledger = BudgetLedger(default_ledger_path())
         try:
             def send(body):
                 raw, receipt = ledgered(body, 'claude', ledger, receipts_dir, parse=lambda r: r,

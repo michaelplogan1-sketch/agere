@@ -598,6 +598,7 @@ def plan(stack,question,ledger,frontier):
     db.execute('CREATE TABLE IF NOT EXISTS plans(id TEXT PRIMARY KEY,payload TEXT)')
     try:
         old=db.execute('SELECT payload FROM plans WHERE id=?',(key,)).fetchone()
+        if os.environ.get('AGERE_PLAN_CACHE','on')=='off':old=None  # exact-question plan cache off (cold-path measurement)
         if old:
             saved=json.loads(old[0]);graph=validate(saved['graph'],meta['snapshot']['as_of'])
             return graph,{'route':'exact_question_cache','original_route':saved['receipt']['route'],

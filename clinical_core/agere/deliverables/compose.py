@@ -74,7 +74,7 @@ def _now():
 # ------------------------------------------------------------------------------------------------------------ senders
 def ledgered_sender(receipts_dir, ledger_path=None):
     """send(body) -> (response dict, receipt dict with usage and cost) through the product's budget ledger (context_student.send)."""
-    from ..gateway import BudgetLedger
+    from ..gateway import BudgetLedger, default_ledger_path
     from ..clinical.context_student import send as ledgered
     from ..clinical import together
     from ..onboarding import workspace as wsmod
@@ -88,7 +88,7 @@ def ledgered_sender(receipts_dir, ledger_path=None):
     receipts_dir.mkdir(parents=True, exist_ok=True)
 
     def send(body):
-        ledger = BudgetLedger(ledger_path or wsmod.LEDGER)
+        ledger = BudgetLedger(ledger_path or default_ledger_path())
         try:
             raw, receipt = ledgered(body, 'claude', ledger, receipts_dir, parse=lambda r: r, timeout=SEND_TIMEOUT_S,
                                     transport=together.TRANSPORT, max_bytes=6_000_000)

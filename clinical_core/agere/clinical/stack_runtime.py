@@ -2,7 +2,7 @@
 from pathlib import Path
 import hashlib,json,sqlite3,time
 from ...contracts import digest
-from ..gateway import BudgetLedger
+from ..gateway import BudgetLedger, default_ledger_path
 from .warehouse_retrieval import Retriever
 from .analytic_registry import execute,CATALOG
 from .stack_planner import validate,propose,review
@@ -145,7 +145,7 @@ class Stack:
         from .analysis_graph import catalog
         if planning not in ('auto','frontier'):raise ValueError('Unknown planning policy')
         if planning=='frontier' and not self.allow_live:raise ValueError('Live model route disabled on this server')
-        ledger=BudgetLedger(ROOT/'artifacts/agere-full/provider-budget.sqlite3');pending=None
+        ledger=BudgetLedger(default_ledger_path());pending=None
         try:
             values=json.loads((self.path/'cohort-values.json').read_text()) if (self.path/'cohort-values.json').exists() else None
             from .source_profile import load as load_profile
@@ -250,7 +250,7 @@ class Stack:
         return self.compose(question)
     def synthesize_context(self,context_id):
         from .reconciliation import synthesize_context as synthesize
-        ledger=BudgetLedger(ROOT/'artifacts/agere-full/provider-budget.sqlite3')
+        ledger=BudgetLedger(default_ledger_path())
         try:return synthesize(self.path,context_id,ledger,allow_live=self.allow_live)
         finally:ledger.close()
     def prepare_question_context(self,patient,question,selection='passage_reference'):
@@ -265,13 +265,13 @@ class Stack:
         return prepare(self.path,request,self.retriever)
     def reconcile_stable_references(self,answer_id):
         from .stable_reconciliation import synthesize
-        ledger=BudgetLedger(ROOT/'artifacts/agere-full/provider-budget.sqlite3')
+        ledger=BudgetLedger(default_ledger_path())
         try:return synthesize(self.path,answer_id,ledger,allow_live=self.allow_live)
         finally:ledger.close()
     def plan_context(self,context_id):
         from .reconciliation import preview_context as preview,synthesize_context as synthesize
         result=preview(self.path,context_id)
-        ledger=BudgetLedger(ROOT/'artifacts/agere-full/provider-budget.sqlite3')
+        ledger=BudgetLedger(default_ledger_path())
         try:
             budget=ledger.receipt();saved=None
             try:saved=synthesize(self.path,context_id,ledger,allow_live=False)['id']
@@ -288,7 +288,7 @@ class Stack:
         # Compute/validate local dependencies before spending on new specialist calls.
         bundle=inspect(self.path,bundle_id,verify_sources=True)
         reconciliation=reconcile_bundle(self.path,bundle_id) if bundle['parameters']['concepts'] else None
-        ledger=BudgetLedger(ROOT/'artifacts/agere-full/provider-budget.sqlite3')
+        ledger=BudgetLedger(default_ledger_path())
         try:
             result=review(self.path,bundle_id,provider,maximum_passes,ledger,
                           self.path/'pass-review-receipts',allow_live=self.allow_live)
@@ -304,7 +304,7 @@ class Stack:
         if not self.allow_live:raise ValueError('Live model route disabled on this server')
         if not patient:raise ValueError('Explicit patient required for clinical evidence review')
         evidence=self.retriever.search(question,patient=patient,limit=8)
-        ledger=BudgetLedger(ROOT/'artifacts/agere-full/provider-budget.sqlite3')
+        ledger=BudgetLedger(default_ledger_path())
         try:
             proposal=review(question,evidence,provider,ledger)
             return {'synthetic':True,'question':question,'patient_id':patient,'retrieval':evidence,

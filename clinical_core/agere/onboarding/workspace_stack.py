@@ -350,11 +350,11 @@ def stack_for(ws, *, allow_live=False, encoder=True, prepare_missing=True, send_
     with _GUARD:
         stack = _STACKS.get(key)
         if stack is None:
-            from .workspace import LEDGER
+            from ..gateway import default_ledger_path
             for old in [k for k in _STACKS if k[:3] == key[:3]]:
                 _STACKS.pop(old).close()
             stack = _STACKS[key] = _stack_class()(out, allow_live=allow_live, encoder=encoder,
-                                                  docs_dir=_dir(ws) / 'analyst_docs', ledger_path=LEDGER)
+                                                  docs_dir=_dir(ws) / 'analyst_docs', ledger_path=default_ledger_path())
     if send_factory is not None:
         view = copy.copy(stack)
         view.send_factory = send_factory

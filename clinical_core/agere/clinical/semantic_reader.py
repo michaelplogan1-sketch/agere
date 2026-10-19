@@ -11,7 +11,7 @@ import re
 import sqlite3
 
 from ...contracts import digest
-from ..gateway import BudgetLedger, PersistentGateway
+from ..gateway import BudgetLedger, default_ledger_path, PersistentGateway
 from ..narrative_sources import text_fields
 from . import context_builder, longitudinal
 from .context_student import send
@@ -188,7 +188,7 @@ def read(path,target,provider,*,allow_live=False,local_model=None):
         if old:return {**json.loads(old[0]),'cache_hit':True,'new_paid_api_calls':0}
         if provider in ('perplexity','jev'):
             if not allow_live:raise ValueError('Live semantic route disabled; no model call made')
-            ledger=BudgetLedger(ROOT/'artifacts/agere-full/provider-budget.sqlite3')
+            ledger=BudgetLedger(default_ledger_path())
             out=Path(path)/'semantic-provider-receipts';out.mkdir(exist_ok=True)
             try:result,usage=send(body,provider,ledger,out,parse=lambda raw:parse(raw,body))
             finally:ledger.close()

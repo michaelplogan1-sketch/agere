@@ -614,11 +614,11 @@ def handle_compose(stack, body, hosted_factory=None):
 
 def _default_hosted(stack):
     """Hosted rung with its own ledger connection, closed after the single call."""
-    from ..gateway import BudgetLedger
+    from ..gateway import BudgetLedger, default_ledger_path
     from .stack_runtime import ROOT
 
     def call(prior, follow_up):
-        ledger = BudgetLedger(ROOT / 'artifacts/agere-full/provider-budget.sqlite3')
+        ledger = BudgetLedger(default_ledger_path())
         try:
             return hosted_resolver(stack, ledger)(prior, follow_up)
         finally:

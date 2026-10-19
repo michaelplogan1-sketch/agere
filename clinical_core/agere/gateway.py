@@ -7,6 +7,14 @@ from ..contracts import digest
 from ..providers import JevProvider,ClaudeProvider,EvidenceTask
 from .request_lineage import ledger_event
 
+_DEFAULT_LEDGER=Path(__file__).resolve().parents[2]/'artifacts'/'agere-full'/'provider-budget.sqlite3'
+
+
+def default_ledger_path():
+    """The provider ledger every product call opens: AGERE_LEDGER_PATH when set (a study arm, a tenant, a test), else the
+    shared ledger. Read at call time, so a process can point every caller at its own ledger before it asks anything."""
+    return Path(os.environ.get('AGERE_LEDGER_PATH') or _DEFAULT_LEDGER)
+
 class BudgetLedger:
     def __init__(self,path,*,cap_usd=None,legacy_summary=None):
         if cap_usd is not None and (not math.isfinite(cap_usd) or cap_usd<0):raise ValueError('Invalid cap')
