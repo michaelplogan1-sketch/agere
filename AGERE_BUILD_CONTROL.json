@@ -1,6 +1,6 @@
 {
  "schema": "agere-build-control/1",
- "updated_at": "2026-10-19T13:10:24.699585+00:00",
+ "updated_at": "2026-10-19T13:17:48.844551+00:00",
  "decision_basis": "AGERE_CTO_REVIEW_2026-10-11_EVENING.md",
  "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
  "required_references": [
@@ -290,8 +290,8 @@
    "artifacts/study/validated-proof-2026-10-19/evidence.json"
   ],
   "remaining_gap": "Gold-50 all 41 new references and native nine remain pending independent validation. Gold10 A9/9 versus Opus7/9 at $0 versus $1.89 is a small descriptive result (paired p=.50), not general superiority. A2/A3 model quality is unqualified and A3 stays disabled. Full ten-area scope and G5 qualification gaps remain. Generator audit additionally identified a BH-G1 index-screen concern, DQ-G1 paid-amount derivation shortcut and inpatient admission fallback coverage. DQ-G1 is not yet a confirmed wrong answer; raw delivered amounts must independently establish it. No corrected digest sealed. Gold-50 cost attribution is incomplete per question (concurrent workers); batch A ledger $1.57448982 versus B $3.6228896, no accuracy-derived metric yet. E has 15 unpriced failed calls.",
-  "next_action": "G3: complete independent generator validation dispositions and inspect its local status-only evidence. Keep Gold-50/native scoring blocked. Reconcile the added CLP01 patient-control join evidence (423 claims, 461 non-reversal source records); establish latest remittance versions and all other question references. Verify question/source/reference identities, then rescore saved unchanged-question answers once only after every selected reference is independently validated. Use full batch ledgers and disclose subset cost-attribution limits; do not impute unknown costs as zero.",
-  "next": "Keep current committed code running on :8885. Use validated evidence to decide whether a bounded candidate fallback run is justified; preserve unfavorable outcomes and distinguish post-hoc repair from held-out proof."
+  "next_action": "G3 product delivery: finish the unclaimed-question path using frontier analysts and executed SQL, preserve specialist-first/certified cheap tiers, verify connected workflows on independently known synthetic fixtures, then update the live service. The broad reference audit is deferred from the build critical path. Do not run or rescore unvalidated benchmarks.",
+  "next": "Ship a usable connected question/answer/deliverable workflow and report actual behavior. Continue through substantive full-stack gaps; comparative proof is subsequent qualification rather than a prerequisite to implementation."
  },
  "decisions": [
   {
@@ -772,6 +772,12 @@
    "basis": "Additional read-only delivered-data join diagnostic, sent to independent generator owner under Mike packet/validation authorization.",
    "change": "Payer-scoped CLP01 joins match all 423 zero-allowed DRG claims to remittances with matching date and charge; CLP07 had no matches. Preserve 461 source-record versions for independent adjudication, no repricing or scoring. Qualify DQ-G1 as a derivation concern, not a confirmed incorrect answer.",
    "scope_impact": "No product data rebuild, answer-key access, evaluation or publication. All references remain pending."
+  },
+  {
+   "at": "2026-10-19T13:17:48.844551+00:00",
+   "basis": "Mike: \"that seems like way too much work ... i just want the stck built out\". Earlier direction: latency does not matter; use the best component at the right time.",
+   "change": "Prioritize connected product implementation over the 41-question reference audit. Complete and activate stronger unclaimed-question analysis after bounded workflow evidence; keep specialist-first architecture and honest unknowns.",
+   "scope_impact": "Full ten-area scope retained. No unvalidated benchmark runs, unsupported accuracy claim, publication or real care. The independent audit no longer blocks build work."
   }
  ]
 }

@@ -3,11 +3,11 @@ measures, with the model step made by API calls instead of hand-launched subagen
 
     answer(question, as_of, semantic, send_factory) -> {'answer': {...} | None, 'decision', 'runs', 'cost_usd', ...}
 
-- RUNS independent analyst runs (AGERE_HYBRID_MODEL, default Haiku) in parallel. Each sees the versioned docs
+- RUNS independent analyst runs (AGERE_HYBRID_MODEL, default Opus) in parallel. Each sees the versioned docs
   (docs/catalog_index.md in the system prompt, detail files through read_doc) and a read-only query_sql tool, and returns
   one analysis contract plus one SQL query. The system executes that SQL itself; the model never reports the answer.
 - evaluate() validates the contract, runs the SQL, shapes and checks the result; vote.decide() picks unanimous/majority.
-- On a split, one tie-break run (AGERE_HYBRID_ESCALATION_MODEL, default Sonnet) sees every run's contract, SQL and
+- On a split, one tie-break run (AGERE_HYBRID_ESCALATION_MODEL, default Opus) sees every run's contract, SQL and
   executed outcome and writes one contract + SQL, or abstains.
 
 send_factory() is a context manager yielding send(body) -> (response, cost_usd | None, cache_hit), one per thread (the
@@ -25,8 +25,8 @@ from . import contract as hc, execute as hx, vote as hv
 HERE = Path(__file__).resolve().parent
 DOCS = HERE / 'docs'
 RUNS = 3
-DEFAULT_MODEL = 'claude-haiku-5-5'
-DEFAULT_ESCALATION_MODEL = 'claude-sonnet-5-5'
+DEFAULT_MODEL = 'claude-opus-5-5'
+DEFAULT_ESCALATION_MODEL = 'claude-opus-5-5'
 MAX_TOOLS = 14  # up to 8 queries plus doc reads, as in the measured runs
 
 READ_DOC_TOOL = {'name': 'read_doc', 'description': 'Open one documentation detail file named in the catalog index '
@@ -177,7 +177,10 @@ def escalation_prompt(q, per, items):
              '(or list unresolved meanings with sql null to abstain). If their answers differ because the question '
              'itself has two or more defensible readings (not because of an error), list each reading in the contract\'s '
              '"readings" and set sql to null so the user is asked which one they mean.', '', 'Question:', question_text(q),
-             f"(as_of {q['as_of']})"]
+             f"(as_of {q['as_of']})",
+             'Correct contract and execution failures before returning. A sum or average is not a ratio unless it '
+             'actually divides by a denominator; use the measured or derived unit. Final SQL must run standalone: '
+             'use the supplied cutoff date as a SQL literal, not an unbound parameter.']
     for name, r in per.items():
         item = items.get(name) or {}
         outcome = hv.canonical(q['answer_type'], r['answer'])[:600] if r['answer'] else None
@@ -230,7 +233,12 @@ def answer(question, as_of, semantic, send_factory, *, qid='Q', answer_type=None
         # A majority of independent analysts found two or more defensible readings: ask which one, never ship one as fact.
         # (Measured on the pilot dev split: a stronger-model confirmation step suppressed nearly every genuine ambiguity.)
         decision, ans, final = 'clarify', None, 'clarify'
-    elif decision == 'escalate':
+    elif decision == 'escalate' or (
+            ans is None and any(item and (item.get('contract') or item.get('sql')) for item in items.values())
+            and not any(v.get('clarify') or v.get('unsupported') for v in per.values())):
+        # Contract/SQL implementation failures also deserve one bounded repair.
+        # Agreement cannot be established when every proposal fails validation;
+        # do not silently abandon useful SQL or restart the entire hosted ladder.
         with send_factory() as send:
             item, res = analyst_run(q, semantic, send, escalation_model_name(), user=escalation_prompt(q, per, items),
                                     docs_dir=docs_dir)

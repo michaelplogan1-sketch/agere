@@ -1,43 +1,16 @@
-"""Agere "together": the fast answer path and an independent semantic analyst, reconciled into one answer.
+"""Compose a full-stack answer with specialists first and frontier analysis when needed.
 
-Measured on heldout10, Agere's fast path and an LLM over Agere's own semantic layer (bench frontier_semantic) are right on
-different questions; agreement between them is a strong correctness signal and one reconcile turn resolves most
-disagreements (bench/reconcile.py). This module makes that combination the product's answer path.
+The compiler, caches, certified SQL families, governed metrics and analytical engines
+get the first opportunity to answer. An unclaimed question goes to the hybrid core:
+three Opus analysts write contracts and SQL, the system executes/checks/votes, and
+one Opus tie-break can settle disagreement. Genuine missing inputs and ambiguity
+remain visible. The legacy single-analyst route is available with AGERE_HYBRID=off.
 
-Flow (Stack.compose -> compose_together when AGERE_TOGETHER is on (default) and the stack allows live models; planning
-'auto' only):
-1. At question start the semantic analyst (semantic_analyst.analyze over <build>/stack/semantic.sqlite3, model
-   AGERE_SEMANTIC_MODEL, default claude-haiku-5-5) starts in a worker thread with its own ledger connection and its own
-   read-only sqlite connection. Its calls go through the ledgered context_student.send, so cost lands in the provider
-   budget ledger and an identical request replays from the ledger cache.
-2. The fast path (Stack._compose) runs unchanged on the request thread.
-3. The answer waits for the analyst until AGERE_TOGETHER_BUDGET_S (default 90 s) after the question started. The service's
-   global stack lock (stack.answer_lock) is released while waiting and while reconciling, and re-acquired before
-   returning (handle_compose's logging and learning writes run under it).
-4. Decision:
-   - analyst timed out / failed / unavailable -> the fast answer ships unchanged;
-   - fast path errored but the analyst answered -> the analyst's answer, confidence unverified;
-   - an analytic engine answer (survival, risk_adjustment, target_trial, forecast, program_effect, trajectory, demand,
-     monitor) is never replaced; its confidence is lowered to low only when the analyst gives a different answer. The
-     analyst saying unsupported is only a note: it has no engines, so it cannot compute these;
-   - both unsupported -> the abstention ships;
-   - same canonical answer -> confidence verified, evidence 'two_independent_paths_agree';
-   - different answers -> one reconcile turn (AGERE_RECONCILE_MODEL, default claude-opus-5-5; blind order; both answers
-     with their SQL/grounding; at most 4 SQL checks; the question's stated definitions win over governed defaults),
-     bounded by AGERE_RECONCILE_BUDGET_S (60 s). Pick 1/2 -> that answer, unverified; 'neither' -> the reconciler's
-     corrected answer, unverified; abstain / unresolved / timeout -> the fast answer as partial, confidence low, both
-     readings in grounding.
-   Certified cascade (cascade.py): a specialist whose route has a Learn-then-Test certificate in
-   config/agere/cascade_thresholds.json claims the question only when its score clears the certified threshold (accepted
-   answers then have error <= alpha with confidence 1 - delta); below it the question goes on to the analysts. Routes
-   without a certificate behave as before and their receipt says 'uncalibrated'.
-5. Receipts: result['together'] (decision, winner, reason, model / cost / calls / seconds per part). Analyst and reconcile
-   calls are added to planner_receipt steps, planning_economics and new_paid_api_calls (and planner_receipt's count), so
-   the bench adapter's cost completeness holds. An analyst still running at the deadline marks the cost unknown.
-   A certified specialist answer adds certified {tier, alpha, delta, bound, n_calibration, threshold, score, statement} to
-   the result, its answer and planner_receipt; together['certificate'] records the check either way.
-
-AGERE_TOGETHER=off restores the previous behavior exactly (Stack.compose calls Stack._compose only).
+AGERE_TOGETHER_BUDGET_S bounds analyst execution from dispatch (default 900 seconds
+for the hybrid core); time spent in specialists does not consume that window. The
+service lock is released while waiting. SQL execution, costs, models and declines
+are retained in the shared answer and receipt. AGERE_TOGETHER=off restores the
+previous direct Stack._compose path. Model agreement is not clinical qualification.
 """
 from __future__ import annotations
 
@@ -58,7 +31,7 @@ VERSION = 'agere-together/1'
 # "no forecasting model" under the analyst disagreement policy.
 ENGINE_OPERATIONS = frozenset({'survival', 'risk_adjustment', 'target_trial', 'forecast', 'program_effect', 'trajectory',
                                'demand', 'monitor'})
-DEFAULT_HYBRID_BUDGET_S = 240
+DEFAULT_HYBRID_BUDGET_S = 900
 DEFAULT_SEMANTIC_MODEL = 'claude-haiku-5-5'   # semantic-analyst bake-off winner
 DEFAULT_RECONCILE_MODEL = 'claude-opus-5-5'
 DEFAULT_BUDGET_S = 90.0
@@ -473,7 +446,13 @@ def _account(result, analyst, analyst_state, rec):
     steps = list(receipt.get('steps') or [])
     added = 0
     if analyst is not None:
-        step = {'stage': 'together_semantic_analyst', 'receipt': {'stages': list(analyst.get('receipts') or [])}}
+        stages = list(analyst.get('receipts') or [])
+        if not stages and analyst.get('estimated_cost_usd') is not None:
+            # Workspace senders retain individual receipts in their own ledger.
+            # Carry their already-metered aggregate instead of dropping it.
+            stages = [{'model': analyst.get('model'), 'source': 'metered_analyst_total',
+                       'cost_estimate': {'estimated_usd': analyst['estimated_cost_usd']}}]
+        step = {'stage': 'together_semantic_analyst', 'receipt': {'stages': stages}}
         if analyst.get('estimated_cost_usd') is None:
             step['cost_unknown'] = True
         steps.append(step)
@@ -747,7 +726,7 @@ def compose_together(stack, question, *, planning='auto', answer_type=None):
     if answer_type == 'plan' or (answer_type is None and _is_plan_request(question)):
         return _compose_plan(stack, question, planning=planning)
     t0 = time.perf_counter()
-    deadline = t0 + budget_s()
+    deadline = None
     semantic_path = Path(stack.path) / 'semantic.sqlite3'
     as_of = _snapshot_as_of(stack)
     future, model = None, semantic_model()
@@ -760,6 +739,7 @@ def compose_together(stack, question, *, planning='auto', answer_type=None):
     from .economical_planner import defer_to_analyst
     first = specialists_first() and semantic_path.is_file() and not engine and deferral_on()
     if semantic_path.is_file() and not engine and not first:
+        deadline = time.perf_counter() + budget_s()
         future = _pool().submit(_run_analyst, stack, question, as_of, semantic_path, model, answer_type)
     try:
         # The fast path keeps its free and governed rungs and skips the paid hosted ladder while the analysts may answer.
@@ -779,6 +759,8 @@ def compose_together(stack, question, *, planning='auto', answer_type=None):
         claimed = False  # calibrated tier below its certified threshold: the next tier (the analysts) answers
     if first and not claimed:
         # No specialist claimed the question: now (and only now) the independent analysts answer it.
+        # The specialist's work does not consume the analyst's execution window.
+        deadline = time.perf_counter() + budget_s()
         future = _pool().submit(_run_analyst, stack, question, as_of, semantic_path, model, answer_type)
     with _released(stack):
         if future is None:
@@ -802,7 +784,7 @@ def compose_together(stack, question, *, planning='auto', answer_type=None):
                                        as_of=as_of, semantic_path=semantic_path, answer_type=answer_type)
     together.update(engine_route=engine or None, fallback=fallback, deferred=(fast or {}).get('route') == 'deferred_to_analyst' or bool(fallback),
                     hybrid={k: v for k, v in ((analyst or {}).get('hybrid') or {}).items() if k != 'runs'} or None,
-                    analyst={**(_part(analyst) or {}), 'model': model, 'state': state,
+                    analyst={**(_part(analyst) or {}), 'model': (analyst or {}).get('model') or model, 'state': state,
                              'answer_status': ((analyst or {}).get('answer') or {}).get('status')
                              if isinstance((analyst or {}).get('answer'), dict) else None},
                     reconcile=({**(_part(rec.get('result')) or {}), 'picked': rec.get('picked'), 'reason': rec.get('reason'),

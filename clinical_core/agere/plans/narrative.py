@@ -6,7 +6,7 @@ back from it. A digest of the routing decisions is taken before and after and th
 
 Off unless asked for (enabled=True or AGERE_PLAN_NARRATIVE=on) and a sender exists: a send_factory from the caller (the
 product's ledgered sender, as live.answer uses) or, when none is given, nothing -- without one the draft is skipped with
-the reason named. Model: AGERE_PLAN_NARRATIVE_MODEL, default Haiku-class (the hybrid core's default analyst model).
+the reason named. Model: AGERE_PLAN_NARRATIVE_MODEL, default Haiku-class for this bounded prose task.
 """
 from __future__ import annotations
 
@@ -27,8 +27,7 @@ SYSTEM = ('You write concise, plain-language operational prose for a care-manage
 
 
 def model_name():
-    from ..hybrid.live import DEFAULT_MODEL
-    return os.environ.get('AGERE_PLAN_NARRATIVE_MODEL') or DEFAULT_MODEL
+    return os.environ.get('AGERE_PLAN_NARRATIVE_MODEL') or 'claude-haiku-5-5'
 
 
 def enabled_by_env():

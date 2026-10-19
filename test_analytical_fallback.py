@@ -81,6 +81,15 @@ class FrontierReviewTests(unittest.TestCase):
         self.assertIsNone(out['answer'])
         self.assertEqual(len(calls), 3)
 
+    def test_default_policy_repairs_contract_failure_once(self):
+        original = {'contract': contract(unit='ratio', denominator=None), 'sql': 'SELECT count(*) FROM patient'}
+        repair = {'contract': contract(), 'sql': 'SELECT count(*) FROM patient'}
+        out, calls = self.run_case(original, repair, enabled=False)
+        self.assertEqual(out['answer'], {'count': 3})
+        self.assertEqual(out['decision'], 'escalated')
+        self.assertEqual(len(calls), 4)
+        self.assertEqual({model for model, _ in calls}, {'claude-opus-5-5'})
+
 
 class DefinitionLengthTests(unittest.TestCase):
     def test_definition_survives_planning_conversation_and_storage(self):

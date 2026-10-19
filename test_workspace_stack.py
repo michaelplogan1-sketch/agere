@@ -214,6 +214,26 @@ class WorkspaceStackTests(unittest.TestCase):
         last = json.loads((self.ws.dir / 'questions.jsonl').read_text().splitlines()[-1])
         self.assertEqual(last['pipeline'], 'full')
 
+    def test_unclaimed_question_uses_frontier_sql_and_reports_actual_model(self):
+        from clinical_core.agere.clinical import together
+        calls = []
+        @contextmanager
+        def factory():
+            def send(body):
+                calls.append(body['model'])
+                return count_reply(AS_OF)
+            yield send
+        deferred = {'route': 'deferred_to_analyst', 'answer': None}
+        stack = workspace_stack.stack_for(self.ws, encoder=False, send_factory=factory)
+        with patch.dict(os.environ, {'AGERE_HYBRID_MODEL': '', 'AGERE_HYBRID_ESCALATION_MODEL': ''}), \
+                patch.object(stack, '_compose', return_value=deferred), \
+                patch.object(together, '_compiled_engine', return_value=[]):
+            result = together.compose_together(stack, 'Count the delivered fixture population.', answer_type='count')
+        self.assertEqual(result['answer']['count'], 30)
+        self.assertEqual(calls, ['claude-opus-5-5'] * 3)
+        self.assertEqual(result['together']['analyst']['model'], 'claude-opus-5-5')
+        self.assertEqual(result['together']['hybrid']['models']['analyst'], 'claude-opus-5-5')
+
     def test_ask_falls_back_to_the_hybrid_core(self):
         @contextmanager
         def factory():

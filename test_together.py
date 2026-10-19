@@ -497,6 +497,19 @@ class FormatRepairTests(unittest.TestCase):
 
 
 class HybridSlotTests(unittest.TestCase):
+    def test_workspace_analyst_aggregate_cost_is_retained_once(self):
+        analyst = {'estimated_cost_usd': .23, 'new_paid_api_calls': 4,
+                   'model': 'claude-opus-5-5', 'receipts': []}
+        result = together._account({}, analyst, 'done', None)
+        self.assertAlmostEqual(result['planning_economics']['new_api_estimate_usd'], .23)
+        self.assertEqual(result['new_paid_api_calls'], 4)
+        analyst['receipts'] = [{'cost_estimate': {'estimated_usd': .23}}]
+        result = together._account({}, analyst, 'done', None)
+        self.assertAlmostEqual(result['planning_economics']['new_api_estimate_usd'], .23)
+        analyst.update(estimated_cost_usd=None, receipts=[])
+        result = together._account({}, analyst, 'done', None)
+        self.assertIsNone(result['planning_economics']['new_api_estimate_usd'])
+
     """The hybrid core in the analyst slot (AGERE_HYBRID on, the default)."""
 
     def test_hybrid_is_the_default_analyst_with_a_longer_budget(self):
@@ -505,6 +518,26 @@ class HybridSlotTests(unittest.TestCase):
                 os.environ.pop(k, None)
             self.assertTrue(together.hybrid_on())
             self.assertEqual(together.budget_s(), together.DEFAULT_HYBRID_BUDGET_S)
+
+    def test_specialist_time_does_not_consume_analyst_window(self):
+        now = [0.0]
+        def slow_specialist():
+            now[0] = 300.0
+        with tempfile.TemporaryDirectory() as d:
+            stack = FakeStack(d, fast={'route': 'deferred_to_analyst', 'answer': None}, on_compose=slow_specialist)
+            observed = []
+            analyst = {'answer': answer(count=2), 'estimated_cost_usd': 0,
+                       'new_paid_api_calls': 0, 'model': 'fixture', 'tool_calls': []}
+            def wait(future, deadline):
+                observed.append(deadline - now[0])
+                return 'done', analyst
+            with patch.dict(os.environ, {'AGERE_SPECIALISTS_FIRST': 'on', 'AGERE_TOGETHER_BUDGET_S': '60'}), \
+                    patch.object(together.time, 'perf_counter', side_effect=lambda: now[0]), \
+                    patch.object(together, '_compiled_engine', return_value=[]), \
+                    patch.object(together, '_pool') as pool, patch.object(together, '_wait', side_effect=wait):
+                result = together.compose_together(stack, 'Count the fixture population.', answer_type='count')
+            self.assertEqual(observed, [60.0])
+            self.assertEqual(result['answer']['count'], 2)
 
     def test_hybrid_answers_map_to_the_shared_contract(self):
         base = {'interpretation': 'hybrid unanimous; 3/3 agree; 3 passed checks'}
