@@ -1,0 +1,98 @@
+Create an entirely NEW image: a visually exceptional engineering architecture illustration for LinkedIn. This replaces an unsatisfactory infographic made of repetitive text boxes. Do not recreate a dashboard, slide template, spreadsheet, circuit-board wallpaper, neon HUD, or numbered-card grid.
+
+FORMAT / ART DIRECTION
+Portrait 4:5, highest available resolution and sharp typography. A premium editorial technical CUTAWAY: a carefully constructed isometric tabletop machine made from pale ceramic, frosted translucent planes, anodized lavender, mint, coral and graphite. Warm nearly-white background with abundant breathing room. Fine dark engineering leader lines and exquisite crisp typography, like a design journal's annotated exploded architecture drawing. Realistic soft directional shadows, restrained luminous data paths, tangible depth. Asymmetrical but balanced. The machine itself occupies about two-thirds of the page; concise horizontal text annotations occupy the remaining space, pointing to actual parts. Labels are never angled or written on unreadable surfaces. Do not draw literal computer chips for every concept. Show distinct visual operations: files aligning into tables, search candidates narrowing, a switch selecting paths, a computation lattice, an answer assembled from sourced pieces. Make the mechanism memorable and architecturally intelligible at first glance.
+No enclosing panels around every annotation, no repeated database icons, no sci-fi chrome, no stock brain or robot. Use a large-scale coherent sculpture with clearly connected smaller parts, not a catalog of unrelated clip art.
+
+TOP
+Only this headline, in beautiful bold black typography, with small colored arrows, on two balanced lines if needed:
+"Data → Information → Intelligence → Wisdom"
+No subtitle, no marketing prose, no product/company name.
+
+THE VISUAL STORY
+The system runs from upper-left input, through a shared foundation and central dispatch switch, to lower-right checked outputs. A mint bypass path visibly goes from reusable plans/compiler straight to computation. Bounded language specialists and frontier inference are OPTIONAL branching paths selected by the question, not a conveyor that forces every model to run. Show directional arrowheads. A thin return loop labeled "Reuse accepted work" returns from checked outputs to the router. Make selective execution and reuse visible in the shape of the diagram.
+
+Place the following exact concise annotations around the corresponding parts of the machine. Treat them as engineering labels, not prose cards. Every major layer gets a small purpose line. Model names need to be readable and correctly spelled.
+
+A. A fan of heterogeneous source sheets becomes aligned records:
+"INGEST & ALIGN"
+"X12 · NCPDP · HL7 v2 · FHIR · CCLF/ALR"
+"Epic / athena / eCW extracts · SQL connectors"
+"PDFKit + Apple Vision OCR"
+Purpose line: "Preserve identity, time and source lineage."
+
+B. A beautifully exploded transparent data/meaning layer on the same shared base:
+"BIND MEANING"
+"Semantic SQL · codes · aliases"
+"UltraBERT-Embed-150M → terminology / catalog fallback"
+Purpose line: "Keep definitions and denominators consistent."
+
+C. A distinct side-mounted evidence funnel with broad candidate ribbons narrowing into a few evidence tabs; connects to the router and bounded reader:
+"FIND & RANK"
+"BM25 → exact terms"
+"Granite Embedding English R2 → passage meaning"
+"RRF + BGE reranker v2-m3 → relevant evidence"
+"Schema reranker → tables, fields, values"
+Purpose line: "Select useful context."
+
+D. The physically central, striking routing junction with three visibly different selectable tracks:
+"ROUTE THE QUESTION"
+"Intent router · compiler · SQL families"
+"all-MiniLM-L6-v2 → plan matching / reuse"
+"Perplexity Decisions → recipe selection"
+"Learn-then-Test → accept or defer"
+The fast mint track directly reaches the calculation area.
+The local language branch is a small translucent module beside the fast track:
+"Qwen3-4B + narrow LoRA → typed slots"
+"Parser misses; default-on when available."
+
+E. The middle lavender interpretation branch, with Jev and Perplexity as paired ALTERNATIVE modules inside one shared reading role:
+"BOUNDED INTERPRETATION"
+"Jev 1.13.0 OR Perplexity Decisions"
+"pplx-decider-v1.1-27b" as a small label directly beneath PERPLEXITY only.
+"Rules · TF-IDF / logistic heads"
+"Claude Haiku 5.5 → bounded slots"
+Purpose line: "Resolve subject, negation and time."
+
+F. An elevated coral frontier branch; smaller footprint than the shared data/computation core:
+"FRONTIER WHEN NEEDED"
+"Claude Opus 5.5 → 3 analyst proposals"
+"Claude Sonnet 5.5 → configured alternate"
+"System-run SQL · at most 1 repair"
+Purpose line: "Extend coverage; execute and check."
+
+G. Tracks reconverge into a beautiful mathematical calculation lattice integrated with the base:
+"COMPUTE"
+"Read-only SQL + 29 analytical engines"
+"Clinical / causal · economics · operations · care / research"
+"Kalman · Cox · propensity methods · Bayes · queueing"
+Purpose line: "Code produces the numbers."
+The output object contains three elegant small sheets/icons labeled:
+"Results" · "Evidence" · "Checks + cost"
+No invented patient metrics or fake numeric charts.
+
+H. Classic computer science is visually the PHYSICAL FOUNDATION of the whole sculpture, not a side box:
+"CLASSIC COMPUTER SCIENCE"
+"Types + contracts · indexes · memoization · content hashes"
+"Dependency invalidation · provenance · usage ledger · bounded retries"
+"Protected evaluation + ablations"
+Purpose line: "Make work reusable, traceable and testable."
+
+Small discreet status annotation near the appropriate side modules:
+"BioClinical-ModernBERT-base: research features"
+"Qwen3-4B SQL LoRA: separate experiment, default-off"
+Do not imply these two are on the active mandatory route.
+
+BOTTOM OBSERVED ECONOMICS
+Use a clean unboxed editorial comparison with two big cost numerals, not a dense table:
+"TOKEN ECONOMICS • OBSERVED PILOT"
+"9 synthetic-data questions • independently reconciled references"
+Left column: "Specialist-first" with large "$0.00" and small "Model API charges · 9/9 scorer passes"
+Right column: "LLM on every question" with large "$1.89" and small "Claude Opus 5.5 → SQL · 7/9 passes"
+The two cost numerals must have equal prominence. Do not draw percentage-savings graphics.
+Readable footnote:
+"Saved pilot; not every component ran. Patient-list pass: F1 ≥ 0.98."
+"API charges only; compute/build excluded. Small set, not a general benchmark."
+
+VISUAL QUALITY
+The viewer should first see an extraordinary, purposeful system illustration, then understand the three routes, then discover the precise named tools. Include the provided model names and purpose lines with short clean labels. Avoid making the illustration so small that the result returns to being a text-heavy layout. Preserve space by shortening only the connectors and punctuation, never altering model names, statuses, measured figures or architecture. All 29 detailed engine names are in the companion detail page; this hero shows their four families. No branding, no competitive superiority claim, no unaudited costs. Make this feel drawn by a great technical illustrator with a clear mental model, not generated from a generic infographic template.

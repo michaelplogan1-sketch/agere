@@ -72,14 +72,19 @@ UltraBERT should be credited to DMIS Lab, not Hugging Face as its creator. Model
 
 ## Image
 
-Use the two-page portrait carousel in [the uploadable PDF](../../../output/pdf/data-information-intelligence-wisdom-linkedin.pdf), or the individual PNGs:
+Current lead image: [illustrated stack cutaway](linkedin-stack-cutaway.png). It replaces the dense neon/card-grid overview with a light isometric machine drawing: shared data/meaning foundation, evidence selection, three selectable execution paths, computation and sourced outputs. Named tools/model roles appear on adjacent callouts. Classic CS mechanisms form the physical base and the valid-work reuse loop is visible. The headline remains Data → Information → Intelligence → Wisdom; observed pilot API economics remain at the bottom.
 
-1. [Overview](linkedin-stack-01-overview.png): named tools/models, their jobs and a WHY line for each of six stages; local/frontier branches; the saved nine-question API-economics comparison.
-2. [Methods and foundations](linkedin-stack-02-methods.png): all 29 analytical engines, mathematical methods, ten classic computer science mechanisms and their purposes.
+The cutaway is a conceptual architecture illustration, not a literal deployment/network topology or a claim that every displayed module runs on every question. Broad Qwen SQL remains default-off and BioClinical features remain research. All 29 engine names remain available in the [supporting detail page](linkedin-stack-02-methods.png); the hero groups them into four families.
 
-The only top headline remains Data → Information → Intelligence → Wisdom. The pages use midnight petrol, cyan, lime and amber with a clear technical flow. No project branding, employer reference, action-execution panel or research-candidate panel. BioClinical's research status and the broad-Qwen experiment's default-off status remain explicit; Jev and Perplexity are alternatives, not obligatory consecutive steps. Named roles were checked against component-catalog-2026-10-19.json and FULL_STACK_EXPLAINED.md. Model choices shown are local implementation configuration, not claims that these are each provider's newest models.
+[Exact generation prompt](linkedin-stack-cutaway-prompt.txt). Generated with the built-in image tool, without a paid external image service or CLI/API fallback. Visually inspected model labels, branch distinctions, status notes and pilot figures. Nothing has been published. Prior PNGs and the [earlier two-page PDF](../../../output/pdf/data-information-intelligence-wisdom-linkedin.pdf) are retained for reference; that PDF has not been updated with this new hero.
 
-Prompts: [overview prompt](linkedin-stack-01-overview-prompt.txt), [methods prompt](linkedin-stack-02-methods-prompt.txt). Both generated using the built-in image tool, with no external paid image service/API fallback. The PDF embeds the images without changing their contents; both rendered pages were visually inspected. Nothing has been published.
+### Visual references reviewed
+
+- [Vercel: Compute that takes any shape](https://vercel.com/blog/fluid-compute-takes-any-shape): inspected the expanded Fluid diagram. Clear layer grouping and separation of interface, execution and underlying components.
+- [Stripe: Ledger](https://stripe.com/blog/ledger-stripe-system-for-tracking-and-validating-money-movement): inspected the expanded data-quality funnel. One dominant visual form and a restrained palette make the central relationship readable.
+- [Anthropic: Building effective agents](https://www.anthropic.com/engineering/building-effective-agents): reviewed the routing description to inform distinct, selected branches.
+
+The final illustration is original; no source artwork, logos or vendor performance numbers were copied. The interpretation and art direction are editorial choices, not claims that these companies recommend this particular architecture.
 
 ### Evidence behind the image's comparison
 
