@@ -2,9 +2,13 @@
 
 October 19, 2026. Source baseline: `8687121`; live architecture plus selectable and research branches. All demonstrated patient data are synthetic.
 
-![Agere architecture atlas](agere-stack-atlas-2026-10-19.png)
+![Agere full stack explanation](agere-full-stack-explained-2026-10-19.png)
 
 The engineering proposition is selective computation: preserve the question's meaning, use reusable domain code where it applies, and spend on model inference where it adds capability. Several routes share one execution and evidence contract. The poster shows the major subsystem families, not every source file or a mandatory sequence of model calls.
+
+## Full component explanation
+
+The [complete component map](FULL_STACK_EXPLAINED.md) covers 100 model, mechanism and subsystem roles, including every one of the 29 registered analytical engines. It explains why each is included, its economic purpose, implementation status and source. Jev and Perplexity share the typed evidence-decision role; Qwen slot and SQL adapters are separate; UltraBERT has specific catalog/terminology duties. Optional and research branches remain included.
 
 ## Component rationale
 

@@ -1,6 +1,6 @@
 {
  "schema": "agere-build-control/1",
- "updated_at": "2026-10-19T14:45:37.473803+00:00",
+ "updated_at": "2026-10-19T15:05:40.102583+00:00",
  "decision_basis": "AGERE_CTO_REVIEW_2026-10-11_EVENING.md",
  "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
  "required_references": [
@@ -278,18 +278,17 @@
   "kind": "manual_turn_checkpoint",
   "gate_id": "G3",
   "last_delivered_gate": "G3",
-  "user_behavior_delta": "The /ask answer card exposes How Agere answered: selected route, executed operators, recorded model names, analyst dispatch/repair and new paid calls/API estimate. Missing and partial costs are explicitly unknown rather than $0. An implementation-grounded stack atlas and engineering rationale explain selectable versus default/research components.",
-  "measured_failure_reduction": "The old answer badge displayed absent costs as zero and showed a specialist route even when the analyst won. Five focused page/JavaScript checks now pass, covering unknown/partial/zero costs, skipped versus executed model dispatch, analyst route selection and escaped receipt text. The image was inspected and corrected to include the decision/work loop and MiniLM. No new paid model API calls or benchmark evaluation. Deployed committed source d3e84ab; live browser shows compiler/cohort, no recorded models, zero new paid calls and $0.0000 for the active 4115-person synthetic warehouse count.",
+  "user_behavior_delta": "User can inspect the full named component inventory, including Jev/Perplexity overlapping roles, Qwen slot versus SQL adapters, UltraBERT catalog/terminology work, all registered analytical engines, classic coding mechanisms, decision/work layers and research candidates. Each entry explains job, error addressed, economic purpose, status and source.",
+  "measured_failure_reduction": "Documentation/visual explanation refinement only; no product accuracy reduction claimed. Catalog coverage check includes 100 unique entries and all 29 PRODUCT engines; all source references resolve. JavaScript syntax and browser selection of Jev, Perplexity, Qwen, UltraBERT and engine entries passed. Revised image visually inspected. No benchmark run or new paid model API evaluation.",
   "evidence": [
-   "test_ask_view.py",
-   "clinical_core/agere/ask_view.py",
+   "docs/agere/architecture/component-catalog-2026-10-19.json",
+   "docs/agere/architecture/FULL_STACK_EXPLAINED.md",
    "docs/agere/architecture/ENGINEERING_GUIDE.md",
-   "docs/agere/architecture/agere-stack-atlas-2026-10-19.png",
-   "artifacts/product-workflows/frontier-fallback-2026-10-19/live-specialist-result.json",
-   "artifacts/product-workflows/execution-view-2026-10-19/live-answer.jpg"
+   "docs/agere/architecture/agere-full-stack-explained-2026-10-19.png",
+   "docs/agere/architecture/full-stack-explainer-prompt-2026-10-19.txt"
   ],
-  "remaining_gap": "Per-request API estimates exclude local compute, setup and review. Full cold/warm workload economics and comparative accuracy remain unqualified. Optional/research components are not universally enabled. Full ten-area product scope retained; the broader independent benchmark audit remains off the build critical path.",
-  "next_action": "Continue G3 connected question/decision/work behavior with selective computation and cost per correct completed task visible. The execution explanation is deployed and visually verified on :8885. Preserve full ten-area product scope and independent-reference evaluation restrictions.",
+  "remaining_gap": "Architecture rationale does not establish universal model or vendor superiority. Model/route activation and evidence availability vary; Qwen adapters and experimental readers are not automatically enabled. Full cold/warm workload economics and comparative accuracy remain unqualified. Full ten-area product scope preserved.",
+  "next_action": "Continue G3 connected question/decision/work product behavior with selective computation and cost per correct completed task visible. Preserve full ten-area scope and independent-reference evaluation restrictions. The component explanation is complete; do not substitute more catalogs for product work.",
   "next": "Deliver usable full-stack workflows; retain complete product scope and known qualification gaps."
  },
  "decisions": [
@@ -790,6 +789,12 @@
    "basis": "Mike: proceed, create a detailed stack image, explain components to engineers and quote supported question costs; no additional spending.",
    "change": "Provide implementation-grounded architecture atlas and component rationale; expose actual execution and honest API cost in the answer UI. Use built-in image generation, no paid external image service or upgrade. Local checks only. Deployed d3e84ab to :8885 with source/config preservation and rollback point; live zero-call population-count UI verified.",
    "scope_impact": "No benchmark rerun, unsupported competitive superlatives, optional-model promotion, external publication or paid API evaluation."
+  },
+  {
+   "at": "2026-10-19T15:05:40.102583+00:00",
+   "basis": "Mike: explain all components and why they improve answers on a health warehouse; Jev/Perplexity share a role and Qwen/UltraBERT must be explicit.",
+   "change": "Replace selective component explanation with 100-entry source-linked catalog, all 29 registered engines, complete model roles, revised image and interactive component selection. Preserve optional/research status.",
+   "scope_impact": "User-requested explanation only. No runtime change, new model promotion, benchmark execution, paid API evaluation, external service upgrade or publication."
   }
  ]
 }

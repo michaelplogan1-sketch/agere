@@ -1,0 +1,119 @@
+Use case: infographic-diagram. Create a substantially redesigned, new Agere architecture explanation poster using the supplied previous atlas ONLY as a visual identity reference. Keep ivory, dark evergreen, cobalt and copper, precise engineering typography and beautiful fine connectors. Save as a new version. The user wants the WHOLE stack, clear roles and why each component helps answer healthcare-warehouse questions; the old atlas was a component list without enough explanation. Aim for maximum available resolution and legible large typography, landscape 3:2 or a slightly taller 5:4 technical wall chart. No decorative robots, glowing brains, generic hospital art or vendor logos.
+
+Title: "AGERE"
+Subtitle: "Every component has a job."
+Thesis: "Preserve meaning. Select evidence. Interpret language. Execute the right calculation."
+Visible small line: "Routes are selected by the question; every model does not run on every request."
+
+Organize eleven numbered, connected zones. Give every zone the exact purpose line specified, and visually associate model names with their actual tasks. This must feel like a beautifully edited systems map, not a spreadsheet. Use short readable labels, generous spacing and purposeful arrows. The overall reading order is warehouse -> shared meaning -> question routing -> selected code/model/analysis paths -> checked answers -> work. Retrieving a few notes must NOT be drawn as counting the population.
+
+01 / READ THE WAREHOUSE
+Purpose: "Preserve what each source actually means."
+Native feeds: "X12 837 / 835 / 834 · NCPDP · HL7 v2 · FHIR bulk · CCLF / ALR"
+"Epic / athena / eCW extracts · files · SQL warehouse connectors"
+"PDFKit + Apple Vision OCR"
+"Identity · revisions · event and arrival clocks · raw-source lineage"
+
+02 / BIND THE MEANING
+Purpose: "Keep the right patient, concept, dates and denominator."
+"Canonical records + semantic SQL"
+"Codes and aliases · governed metrics · source-bound assertions"
+"UltraBERT-Embed-150M → raw-catalog matching + lab/condition terminology fallback"
+"Exact code / alias matches take priority"
+"Missing evidence stays visible"
+
+03 / FIND AND RANK
+Purpose: "Put relevant evidence and schema in front of the reader."
+"BM25 → exact terms"
+"Granite Embedding English R2 → passage meaning"
+"all-MiniLM-L6-v2 → plan matching + routing / reuse features"
+"Reciprocal-rank fusion → combine search signals"
+"BGE reranker v2-m3 → rank question / passage pairs"
+"Learned schema reranker → select tables, fields and stored values"
+Small: "Indexed paths only; relevance is not proof."
+
+04 / UNDERSTAND WHAT THE TEXT SAYS
+Purpose: "A mention is not automatically a fact."
+Show Jev and Perplexity as two parallel alternatives feeding ONE shared typed-decision interface, not mandatory sequential stages.
+"Jev 1.13.0"
+"Perplexity Decisions · pplx-decider-v1.1-27b"
+Shared box: "Same bounded evidence task: subject · assertion · time · relation · unknown"
+"Use either, compare, or escalate on selected paths"
+"Rules + TF-IDF / logistic task heads → resolve recurring cases locally"
+"BioClinical-ModernBERT-base → clinical features for task heads / research"
+
+05 / CHOOSE THE EXECUTION PATH
+Purpose: "Reuse known logic before generating new logic."
+"Intent + learned routers"
+"Deterministic compiler → typed execution graph"
+"Cohort / data-quality / VBC SQL families"
+"Governed metric + analytical operator routing"
+"Perplexity typed decider → choose a complete registered recipe"
+"Claude Haiku 5.5 → bounded slots, tool selection and optional prose"
+"Learn-then-Test gates → accept or defer"
+"Exact / semantic query reuse → preserve critical slots"
+
+06 / REUSE LEARNED WORK LOCALLY
+Purpose: "Turn recurring paid interpretation into reusable local capability."
+Visibly dashed optional zone:
+"Qwen3-4B + LoRA"
+"Slot adapter → family slots → parser → code-rendered SQL"
+"SQL adapter → generated SQL → execution checks"
+"Separate adapters, separate acceptance evidence"
+"Both paths default off"
+Small: "Local inference avoids hosted tokens; compute and training still cost resources."
+
+07 / EXTEND TO UNFAMILIAR QUESTIONS
+Purpose: "Use frontier reasoning where specialist coverage ends."
+"Claude Opus 5.5 → 3 analyst proposals"
+"Typed contracts · system-run read-only SQL · result checks"
+"1 bounded repair / tie-break"
+"Claude Sonnet 5.5 → policy-search proposer / configured alternate"
+Small: "Agreement can share errors; it is not ground truth."
+
+08 / COMPUTE WITH SPECIALIST METHODS
+Purpose: "Models select analyses; implementations calculate results."
+Arrange all 29 registered engine names in four compact, well-spaced groups, ALL included exactly once:
+"Explain · Discover · Trajectory · Survival · Calibration · Early signal · Program effect · Uplift · Target trial"
+"VBC · Risk adjustment · Claims review · Contract strategy · Market"
+"Demand · Profile · Risk outcomes · Pathway · Network · Scheduling · Queueing"
+"Outreach · Briefing · Knowledge · Line of therapy · Trial feasibility · Loop closure · Diagnostic delay"
+Method ribbon: "Kalman · change points · EWMA / CUSUM · Kaplan–Meier / Cox · empirical Bayes · BH FDR · DiD / synthetic control · propensity methods · Erlang · CMS-HCC V24/V28 · claims completion · Monte Carlo · VaR/CVaR · Shapley · Nash"
+Small: "Inputs and method assumptions determine which analysis is valid."
+
+09 / ANSWER, DECIDE AND FOLLOW THROUGH
+Purpose: "Keep computed evidence attached to the next step."
+"Answers + cohorts + curves · source-linked explanations"
+"Program rules · coverage · attribution · persistent plans"
+"Agents + simulated counterparties · enrollment / monitoring / follow-up"
+"Population simulator + OAP · evolutionary policy search"
+"Value of information + evidence acquisition"
+"Opus tool-grounded deliverables · numbers verified against tool results"
+"App · API · customer workspaces"
+Small: "Simulation and internal work do not establish real-world outcomes."
+
+10 / CLASSIC COMPUTER SCIENCE, APPLIED
+Purpose: "Make correct work reusable and inspectable."
+"Compiler design → preserve meaning"
+"Types + contracts → reject malformed plans"
+"Indexes + query planning → avoid prompt-sized warehouses"
+"Memoization + content hashes → reuse valid work"
+"Dependency invalidation → refresh changed evidence"
+"Provenance + event history → explain the result"
+"Usage ledger + bounded retries → expose inference cost"
+"Protected evaluation + ablations → measure component value"
+
+11 / INCLUDED RESEARCH AND CANDIDATES
+Visibly gray dashed; do not hide this:
+"Kev 4B · Liquid d1-3B → alternative local typed readers"
+"Joint observation model → care / recording hypotheses"
+"Tensor-train → compact interaction model"
+"Source distillation + outcome learning → task-specific research"
+"MedGemma · Chandra OCR 2 → candidates, not active defaults"
+"Not all components are promoted or enabled."
+
+Bottom proposition: "The advantage is the coordinated division of work: meaning, evidence, interpretation, mathematics and verification."
+Footer: "Synthetic-data implementation · Architecture rationale, not a universal superiority claim · October 2026"
+A small legend must distinguish core code, route-specific models, mathematical methods, and optional/research candidates.
+
+Critical factual constraints: Jev and Perplexity overlap on the same evidence-decision task. Perplexity ALSO routes curated plans. UltraBERT has its specific catalog/terminology role, not MiniLM's role. Qwen narrow slots and broad SQL are different, both default off. Do not claim all models are local or free. Do not claim a universal accuracy percentage or best cost. Preserve every numbered zone and all named components. Let the diagram reward zooming but prioritize explanation over decorative circuitry.
