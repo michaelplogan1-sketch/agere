@@ -1,0 +1,61 @@
+Use case: infographic-diagram, premium LinkedIn technical carousel, PAGE 02 / 02. Portrait 4:5, ideally 2400 × 3000, sharp clean lettering.
+Redesign the supplied architecture as a striking editorial systems diagram. Deep midnight petrol background, soft ivory type, restrained electric cyan for data/model paths, acid-lime for purpose labels, warm amber for mathematical/cost accents. Disciplined Swiss typography grid, large headings, elegant compact sans serif, tiny monospaced metadata, high contrast, generous margins. Dim fine engineering grid, subtle luminous branching traces. Bespoke line icons and very restrained depth, no stock robot, brain, human, company logo or decorative code. Magazine-quality technical schematic, not a crowded spreadsheet. Large readable labels over decoration.
+The supplied image is content reference only: do NOT retain its old landscape layout, white background or dense blue text. This is a matching detail page for a new midnight-petrol/cyan/lime editorial overview.
+
+No Agere, employer or other product branding. No superiority claims.
+At the very top keep ONLY the headline "Data → Information → Intelligence → Wisdom", over two balanced lines if needed, plus a small "02 / 02". No top subtitle/prose.
+
+MAIN AREA: a comprehensive analytical engine map, followed by two distinct "uses → why" foundations sections. This page completes an overview of the model architecture, so do not repeat all model names. It must include ALL 29 engine names below, correctly spelled, and show why the group exists.
+
+Section heading "29 ANALYTICAL ENGINES"
+Small principle: "Models select the method. Code performs the calculation."
+Arrange four balanced cards with icons:
+1. "CLINICAL & CAUSAL"
+"Explain · Discover · Trajectory · Survival · Calibration · Monitor · Early signal · Program effect · Uplift · Target trial"
+WHY: "Describe change, compare strategies and expose uncertainty."
+2. "HEALTHCARE ECONOMICS"
+"VBC · Risk adjustment · Claims review · Contract strategy · Market"
+WHY: "Connect utilization, risk and contract assumptions."
+3. "OPERATIONS & POPULATIONS"
+"Demand · Profile · Risk outcomes · Pathway · Network · Scheduling · Queueing"
+WHY: "Compare populations and test capacity constraints."
+4. "CARE DELIVERY & RESEARCH"
+"Outreach · Briefing · Knowledge · Line of therapy · Trial feasibility · Loop closure · Diagnostic delay"
+WHY: "Find reviewable patterns, gaps and eligible cohorts."
+
+Next section: "MATHEMATICAL TOOLS → WHY THEY BELONG"
+Eight short, visually aligned rows, with the tool names slightly brighter than their purposes:
+"Kalman · change points · EWMA/CUSUM → temporal signal and change"
+"Kaplan–Meier · Cox → time at risk and incomplete follow-up"
+"Empirical Bayes · BH FDR → unstable estimates and multiple testing"
+"DiD · synthetic controls · propensity methods → explicit effect assumptions"
+"Erlang · queueing · optimization → feasible capacity and allocation"
+"CMS-HCC V2/V3 · claims completion → declared risk and payment methods"
+"Monte Carlo · VaR/CVaR · Shapley · Nash → uncertainty and allocation"
+"Graphs · information theory · learning to rank → relationships and prioritization"
+A small status note: "Use depends on available inputs and method assumptions."
+
+Next section: "CLASSIC COMPUTER SCIENCE → WHY IT BELONGS"
+Use a tasteful two-column grid of concise mechanism-purpose pairs, with a subtle shared connective rail (these are foundations spanning the stack, not ten obligatory sequential calls):
+"Compiler design → translate meaning into executable operators"
+"Types + contracts → reject malformed plans"
+"Indexes + query planning → locate data without huge prompts"
+"Memoization + content hashes → reuse valid work"
+"Dependency invalidation → reject stale results"
+"Provenance + event history → trace the answer to its sources"
+"Usage ledger + bounded retries → expose inference cost"
+"Selective acceptance + abstention → defer unsupported cases"
+"Verified-work learning → reuse accepted patterns"
+"Protected evaluation + ablations → test each layer's contribution"
+
+Small cross-cutting guardrail strip:
+"Raw-catalog + empty-result guards → inspect missing modeled evidence"
+"Read-only execution + result checks → compute and inspect proposed queries"
+
+BOTTOM: a clear architecture economics rail, visually impactful but not another performance claim:
+"TOKEN ECONOMICS BY DESIGN"
+"Reuse valid work → narrow context → choose the suitable method → escalate when needed"
+"Measure total cost per correct answer, including compute, retries and review."
+Small footnote: "Observed pilot API-cost comparison: page 01. Architecture does not by itself prove superiority."
+
+Keep typography genuinely readable, with at most two columns. Use consistent real words, no garbled text. Do not omit Monitor or any engine. Do not add action-execution or research-candidate panels. Maintain the complete technical content while giving it much more intentional hierarchy and spacing than the reference.

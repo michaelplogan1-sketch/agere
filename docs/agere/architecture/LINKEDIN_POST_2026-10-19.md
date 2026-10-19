@@ -60,7 +60,14 @@ UltraBERT should be credited to DMIS Lab, not Hugging Face as its creator. Model
 
 ## Image
 
-Use data-information-intelligence-wisdom-economics.png. The only top text is Data → Information → Intelligence → Wisdom. Original panels 9 (actions/follow-through) and 11 (research candidates) remain removed; classic computer science is numbered 09. The bottom compares the saved nine-question pilot's API economics. The edit prompt is data-information-intelligence-wisdom-economics-prompt.txt. Generated through the built-in image tool; no external paid image service or API fallback. No platform publishing has been performed.
+Use the two-page portrait carousel in [the uploadable PDF](../../../output/pdf/data-information-intelligence-wisdom-linkedin.pdf), or the individual PNGs:
+
+1. [Overview](linkedin-stack-01-overview.png): named tools/models, their jobs and a WHY line for each of six stages; local/frontier branches; the saved nine-question API-economics comparison.
+2. [Methods and foundations](linkedin-stack-02-methods.png): all 29 analytical engines, mathematical methods, ten classic computer science mechanisms and their purposes.
+
+The only top headline remains Data → Information → Intelligence → Wisdom. The pages use midnight petrol, cyan, lime and amber with a clear technical flow. No project branding, employer reference, action-execution panel or research-candidate panel. BioClinical's research status and the broad-Qwen experiment's default-off status remain explicit; Jev and Perplexity are alternatives, not obligatory consecutive steps. Named roles were checked against component-catalog-2026-10-19.json and FULL_STACK_EXPLAINED.md. Model choices shown are local implementation configuration, not claims that these are each provider's newest models.
+
+Prompts: [overview prompt](linkedin-stack-01-overview-prompt.txt), [methods prompt](linkedin-stack-02-methods-prompt.txt). Both generated using the built-in image tool, with no external paid image service/API fallback. The PDF embeds the images without changing their contents; both rendered pages were visually inspected. Nothing has been published.
 
 ### Evidence behind the image's comparison
 

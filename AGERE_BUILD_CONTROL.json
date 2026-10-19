@@ -1,6 +1,6 @@
 {
  "schema": "agere-build-control/1",
- "updated_at": "2026-10-19T16:02:05.716157+00:00",
+ "updated_at": "2026-10-19T16:10:04.507621+00:00",
  "decision_basis": "AGERE_CTO_REVIEW_2026-10-11_EVENING.md",
  "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
  "required_references": [
@@ -278,15 +278,17 @@
   "kind": "manual_turn_checkpoint",
   "gate_id": "G3",
   "last_delivered_gate": "G3",
-  "user_behavior_delta": "Simplified the public visual to the DIKW headline only at the top and added the saved nine-question pilot API-economics comparison at the bottom: specialist-first $0.00 and 9/9 passes; Opus text-to-SQL $1.89 and 7/9 passes; API dollars per passing answer $0.00 versus $0.27.",
-  "measured_failure_reduction": "Presentation refinement only. Visually verified headline-only header, retained nine panels, comparison values and readable scope/cost footnotes against saved evidence. No runtime change, benchmark rerun, rescore or paid API evaluation.",
+  "user_behavior_delta": "Redesigned the LinkedIn visual into two portrait pages with named tool/model roles and WHY lines: six-stage overview with observed pilot API economics, plus all 29 engines, mathematical methods and classic CS foundations. Packaged both into an uploadable two-page PDF.",
+  "measured_failure_reduction": "Presentation refinement only. Visually checked both generated images and rendered PDF pages; confirmed 29-engine coverage, model/status distinctions and saved pilot figures against existing catalog/evidence. No product change, benchmark rerun, rescore or paid API evaluation.",
   "evidence": [
-   "docs/agere/architecture/data-information-intelligence-wisdom-economics.png",
-   "docs/agere/architecture/data-information-intelligence-wisdom-economics-prompt.txt",
-   "docs/agere/architecture/LINKEDIN_POST_2026-10-19.md",
-   "artifacts/study/validated-proof-2026-10-19/evidence.json"
+   "docs/agere/architecture/linkedin-stack-01-overview.png",
+   "docs/agere/architecture/linkedin-stack-02-methods.png",
+   "docs/agere/architecture/linkedin-stack-01-overview-prompt.txt",
+   "docs/agere/architecture/linkedin-stack-02-methods-prompt.txt",
+   "output/pdf/data-information-intelligence-wisdom-linkedin.pdf",
+   "docs/agere/architecture/LINKEDIN_POST_2026-10-19.md"
   ],
-  "remaining_gap": "Product state unchanged: G3 active, G5 blocked. Pilot evidence is a small workflow-selected synthetic set, not broad superiority proof or total operating cost; no token-count reduction claimed. Local compute/build costs unmeasured. No publication performed.",
+  "remaining_gap": "G3 active and G5 blocked; implementation next action unchanged. Synthetic pilot remains small and workflow-selected; API cost is not total operating cost or measured token-count savings. Model/component inclusion is not independent qualification. No publication performed.",
   "next_action": "In G3, consolidate escalation and acceptance policy across together/economical_planner while preserving current specialist coverage, source scope, explicit declines, and per-request cost. Start with behavior-preserving dispatch boundaries; do not lower analyst fan-out or retire a qualified model without relevant evidence.",
   "next": "Simplify orchestration around the existing components, then demonstrate a connected workflow; do not add another model catalog."
  },

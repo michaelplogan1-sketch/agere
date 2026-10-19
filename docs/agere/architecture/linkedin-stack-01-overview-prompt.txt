@@ -1,0 +1,86 @@
+Use case: infographic-diagram, premium LinkedIn technical carousel. Portrait 4:5, ideally 2400 × 3000, maximum clean lettering and sharpness.
+Redesign the supplied architecture as a striking editorial systems diagram, not a spreadsheet or a wall of boxes. Deep midnight petrol background, soft ivory type, restrained electric cyan for data/model paths, acid-lime for purpose labels, warm amber for frontier/cost. Use a disciplined Swiss typography grid, large headings, elegant compact sans serif, tiny monospaced metadata, high contrast and generous margins. Dim fine engineering grid, subtle luminous branching traces with very restrained depth. Small bespoke isometric data layers and line icons integrated into the flow; no stock robot, brain, human, company logo, decorative code strings or unnecessary ornament. Prioritize large readable actual labels over illustration area. Polished magazine-quality engineering schematic. Each tool is paired directly with its job; clearly separated WHY lines explain the reason for the stage. Exact spelling and numbers are essential.
+No Agere or other product branding, no employer reference, no superiority claim. No top introductory prose or subtitle: the ONLY main top headline is exactly "Data → Information → Intelligence → Wisdom", set over two balanced lines if needed. A tiny 01/02 or 02/02 page index is allowed. Source image is content evidence, not the style to retain. Do not retain its dense landscape table layout.
+
+PAGE 01 / 02: THE QUESTION-TO-ANSWER ARCHITECTURE
+Use most of the page for six numbered, clearly connected stages in a refined two-column grid (three rows), with slender arrows and subtle DIKW progression. The grid must read easily. Do not imply all models run on every question: show the evidence readers as alternatives and local/frontier paths as branches. Within each stage use bright tool names, short role phrases and one clear WHY line. Keep these exact stage contents:
+
+01  INGEST
+USES
+"X12 837/835/834 · NCPDP · HL7 v2 · FHIR"
+"CCLF/ALR · Epic/athena/eCW extracts · SQL connectors"
+"PDFKit + Apple Vision OCR → document text"
+WHY
+"Preserve identity, revisions, event time and source lineage."
+
+02  BIND MEANING
+USES
+"Canonical records + semantic SQL → shared definitions"
+"Codes + aliases → exact concept matches"
+"UltraBERT-Embed-150M → catalog / terminology fallback"
+WHY
+"Keep patient, timeframe and denominator consistent."
+
+03  FIND THE RIGHT EVIDENCE
+USES (visually align tool and purpose)
+"BM25 → exact words"
+"Granite Embedding English R2 → passage meaning"
+"Reciprocal-rank fusion → combine rankings"
+"BGE reranker v2-m3 → question–passage relevance"
+"Learned schema reranker → tables, fields, values"
+WHY
+"Give the next step relevant evidence and a smaller context."
+
+04  INTERPRET THE EVIDENCE
+USES
+"Jev 1.13.0 OR Perplexity Decisions"
+"pplx-decider-v1.1-27b"
+"→ typed subject, assertion, time and relation"
+"Rules + TF-IDF / logistic heads → local recurring cases"
+"BioClinical-ModernBERT-base → research task features"
+WHY
+"A mention, negation or family history is not the same fact."
+Make Jev and Perplexity parallel alternatives inside ONE shared decision role, not consecutive mandatory calls.
+
+05  ROUTE & REUSE
+USES
+"Intent router + compiler → typed execution plan"
+"SQL families + metric/operator routers → known methods"
+"all-MiniLM-L6-v2 → plan matching / routing / reuse"
+"Perplexity Decisions → complete recipe selection"
+"Claude Haiku 5.5 → bounded slots and tool selection"
+"Learn-then-Test gates → accept or defer"
+WHY
+"Reuse a valid plan; preserve every critical filter."
+
+06  HANDLE WHAT REMAINS
+Make two distinct branches within this stage.
+"LOCAL LANGUAGE BRANCH"
+"Qwen3-4B + narrow LoRA → typed slots → parser → SQL"
+"Default-on when available; parser misses only."
+"Qwen3-4B + SQL LoRA → broad SQL experiment, default-off."
+"FRONTIER BRANCH"
+"Claude Opus 5.5 → 3 analyst proposals"
+"Claude Sonnet 5.5 → configured analyst alternate"
+"System-run read-only SQL + result checks"
+"At most 1 bounded repair / tie-break"
+WHY
+"Extend coverage; keep calculation and checking in code."
+
+Below the six stages, a short full-width output rail, not another dense panel:
+"EXECUTE → SQL + 29 ANALYTICAL ENGINES → CHECKED RESULTS + SOURCE LINKS"
+Small label: "Routes depend on the question. Engine and foundation detail: 02."
+
+At the BOTTOM reserve enough height for a visually impressive, easy-to-read metric comparison. Larger cost numerals on aligned equal-sized sides.
+Heading: "TOKEN ECONOMICS • OBSERVED PILOT"
+Context: "9 synthetic-data questions · independently reconciled references"
+Headers: "Specialist-first stack" versus "LLM on every question"
+Baseline sublabel: "Claude Opus 5.5 → SQL"
+Row "Model API charges": "$0.00" versus "$1.89"
+Row "Scorer passes": "9/9" versus "7/9"
+Row "API $ / passing answer": "$0.00" versus "$0.27"
+Footnote in readable small type, exactly:
+"Saved pilot; not every component ran. Patient-list pass: F1 ≥ 0.98."
+"API charges only; local compute/build excluded. Small set, not a general benchmark."
+
+Balance the design so the model roles and WHY lines remain legible when opened on a phone. No huge decorative art stealing room. No invented token counts or percentages.
