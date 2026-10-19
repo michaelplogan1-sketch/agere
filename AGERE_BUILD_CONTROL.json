@@ -1,6 +1,6 @@
 {
  "schema": "agere-build-control/1",
- "updated_at": "2026-10-19T15:48:59.596487+00:00",
+ "updated_at": "2026-10-19T15:56:24.839223+00:00",
  "decision_basis": "AGERE_CTO_REVIEW_2026-10-11_EVENING.md",
  "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
  "required_references": [
@@ -278,15 +278,14 @@
   "kind": "manual_turn_checkpoint",
   "gate_id": "G3",
   "last_delivered_gate": "G3",
-  "user_behavior_delta": "Prepared an unbranded public image and rewritten post about a data-analytics experiment on synthetic healthcare data; model names remain. No project name, product-launch language or employer reference in public copy. No publication or runtime change.",
-  "measured_failure_reduction": "Presentation/privacy refinement only. Inspected generated image: project brand removed, technical model names and token-economics section retained. Public post text checked for absence of project name. No product tests or paid API evaluation.",
+  "user_behavior_delta": "Updated the public visual headline to Data \u2192 Information \u2192 Intelligence \u2192 Wisdom and removed original action/follow-through and research-candidate panels at Mike\u2019s request. Reflowed the core analytics stack, classic computer science and token economics; final panels numbered 01\u201309.",
+  "measured_failure_reduction": "Presentation refinement only. Final image visually inspected for requested heading, removal of original panels 9/11, retained model/analytics content and token economics. No runtime, benchmark or paid API evaluation.",
   "evidence": [
-   "docs/agere/architecture/healthcare-analytics-stack-2026-10-19.png",
-   "docs/agere/architecture/healthcare-analytics-unbranded-prompt-2026-10-19.txt",
-   "docs/agere/architecture/LINKEDIN_POST_2026-10-19.md",
-   "docs/agere/architecture/linkedin-post-public.txt"
+   "docs/agere/architecture/data-information-intelligence-wisdom-stack.png",
+   "docs/agere/architecture/data-information-intelligence-wisdom-prompt.txt",
+   "docs/agere/architecture/LINKEDIN_POST_2026-10-19.md"
   ],
-  "remaining_gap": "Product state unchanged: G3 active, G5 blocked. LinkedIn material is a conceptual-use-case draft, not a comparative accuracy/economics result. No posting performed. Full ten-area scope and independent-reference restrictions remain.",
+  "remaining_gap": "Product state unchanged: G3 active, G5 blocked. Narrower public visual does not remove any product capability or implementation scope. No publication performed; broader comparative accuracy/economics remain unqualified.",
   "next_action": "In G3, consolidate escalation and acceptance policy across together/economical_planner while preserving current specialist coverage, source scope, explicit declines, and per-request cost. Start with behavior-preserving dispatch boundaries; do not lower analyst fan-out or retire a qualified model without relevant evidence.",
   "next": "Simplify orchestration around the existing components, then demonstrate a connected workflow; do not add another model catalog."
  },
@@ -812,6 +811,12 @@
    "basis": "Mike wants public wording about a data analytics stack tested on synthetic healthcare data, with no Agere name; model names should remain.",
    "change": "Create unbranded image and update public post. Keep the first-person technical-experiment framing and bounded performance language.",
    "scope_impact": "No publishing, external contact, runtime changes or gate promotion. Product next action unchanged."
+  },
+  {
+   "at": "2026-10-19T15:56:24.839223+00:00",
+   "basis": "Mike: put Data \u2192 Information \u2192 Intelligence \u2192 Wisdom in the LinkedIn visual; remove sections 9 and 11 so it shows the stack and classic computer science.",
+   "change": "Create unbranded nine-panel analytics-only public visual and update the post\u2019s image pointer.",
+   "scope_impact": "Presentation scope only. Full product charter and implementation next action preserved; no publishing or runtime changes."
   }
  ]
 }

@@ -1,0 +1,25 @@
+Use case: infographic edit. The supplied image is the exact edit target.
+Keep its headline EXACTLY "Data → Information → Intelligence → Wisdom". Keep it unbranded.
+
+REMOVE ENTIRELY these two panels and their contents:
+- Existing 09 "ANSWER, DECIDE AND FOLLOW THROUGH" (including program routing, work, agents, simulation, OAP, policy search, deliverables and app material).
+- Existing 11 "INCLUDED RESEARCH AND CANDIDATES" (including Kev, Liquid, joint observation, tensor-train, distillation and MedGemma/Chandra candidates).
+Do not move their contents elsewhere.
+
+Reflow the remaining diagram to use the reclaimed space, increase readability and leave no blank panel-shaped holes. Keep top panels 01–05; enlarge the second row to fit panels 06, 07 and 08 across the full width. Place CLASSIC COMPUTER SCIENCE across the full width below them and renumber it 09 (was 10). Final numbering must be 01 through 09, with nine panels total. Do not retain a panel numbered 10 or 11.
+
+Preserve the contents and actual roles in remaining panels: source formats/OCR, shared meaning, UltraBERT, BM25/Granite/MiniLM/RRF/BGE/schema reranker, Jev and Perplexity as alternatives on one evidence-decision task, typed routing, compiler, families, Haiku, acceptance gates/query reuse, narrow Qwen slots default-on when available and broad SQL default-off, Opus analysis with system-run SQL/checks, all analytical methods. In panel 07 shorten the Sonnet description to "Configured analyst alternate" because policy-search functionality has been removed from this visual.
+
+Keep ALL 29 analytical engine names in panel 08:
+Explain, Discover, Trajectory, Survival, Calibration, Monitor, Early signal, Program effect, Uplift, Target trial;
+VBC, Risk adjustment, Claims review, Contract strategy, Market;
+Demand, Profile, Risk outcomes, Pathway, Network, Scheduling, Queueing;
+Outreach, Briefing, Knowledge, Line of therapy, Trial feasibility, Loop closure, Diagnostic delay.
+Retain the method ribbon. These are analytics capabilities, not action execution.
+
+Keep the eight classic computer science mechanisms with short, clean explanations: Compiler design; Types + contracts; Indexes + query planning; Memoization + content hashes; Dependency invalidation; Provenance + event history; Usage ledger + bounded retries; Protected evaluation + ablations.
+
+Preserve the prominent TOKEN ECONOMICS band and its exact main line "Optimize total cost per correct answer." Preserve "Fewer hosted tokens ≠ zero total cost. Include compute, retries and review."
+In the small output panel change "reviewable next steps" to "checked results", retaining "computed answers" and "traceable evidence".
+Keep the subtitle "A data analytics experiment using synthetic healthcare data".
+Use the same ivory/evergreen/cobalt/copper visual style, clean typography and maximum available sharpness. No company/product branding, no missing model names from retained panels, no invented performance figures. This edit narrows the VISUAL to the analytics stack and classic computer science, not the entire broader product.

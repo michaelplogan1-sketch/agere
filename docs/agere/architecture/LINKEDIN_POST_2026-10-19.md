@@ -60,4 +60,4 @@ UltraBERT should be credited to DMIS Lab, not Hugging Face as its creator. Model
 
 ## Image
 
-Use healthcare-analytics-stack-2026-10-19.png, the unbranded edition. The branding-removal prompt is healthcare-analytics-unbranded-prompt-2026-10-19.txt. Model names are intentionally retained. Generated through the built-in image tool; no external paid image service or API fallback. No platform publishing has been performed.
+Use data-information-intelligence-wisdom-stack.png, the unbranded analytics-only edition. Its headline is Data → Information → Intelligence → Wisdom. Original panels 9 (actions/follow-through) and 11 (research candidates) are removed; classic computer science is renumbered 09. Model names in the retained stack and token economics remain. The edit prompt is data-information-intelligence-wisdom-prompt.txt. Generated through the built-in image tool; no external paid image service or API fallback. No platform publishing has been performed.
