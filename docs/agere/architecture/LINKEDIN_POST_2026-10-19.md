@@ -4,35 +4,37 @@ Status: prepared for Mike to review and publish. Public copy has no project/comp
 
 ## Post
 
-Data → Information → Intelligence → Wisdom
+I went a little mad scientist on a practical question: can we get more reliable insight from messy healthcare data while improving token economics?
 
-I wanted an analytics system that could answer a question—and preserve useful work for the next one.
+The experiment combines UltraBERT, Qwen, Jev and Perplexity with compilers, SQL, retrieval, statistics and some very old computer science.
 
-So I built a stack over disparate synthetic healthcare data around two ideas: choose the right method for each question, and “bottle” repeatable tasks into reusable local capability.
+With Claude Code/Codex, Python/SQL and Hugging Face tooling, I built a prototype tested on synthetic healthcare data. Each question uses the relevant path through the stack.
 
-Here’s why the pieces are there:
+The ingredients:
 
-• Establish meaning. PDFKit + Apple Vision OCR extract documents. Canonical records, semantic SQL and code mappings align patients, dates and denominators. UltraBERT-Embed-150M helps match terminology when exact mappings fall short.
+• Preserve meaning. Native parsers, PDFKit + Apple Vision OCR, semantic SQL and code mappings align claims, notes, labs and enrollment. UltraBERT-Embed-150M helps match terminology and catalog entries when exact mappings fail. Patient, date and denominator definitions matter.
 
-• Select evidence. BM25 + IBM Granite Embedding English R2 combine exact and semantic retrieval. Reciprocal-rank fusion, BGE reranker v2-m3 and a schema reranker prioritize relevant passages, tables and fields. Better context, less noise.
+• Find the useful evidence. BM25 + IBM Granite embeddings cover exact terms and related wording. Reciprocal-rank fusion combines rankings; BGE and schema rerankers prioritize relevant passages, tables and fields. Less irrelevant context.
 
-• Make bounded decisions. TypeSafe’s Jev and Perplexity Decisions are alternative readers for subject, assertion and time: who does a statement concern, is it negated, and is it current? Rules and TF-IDF/logistic heads handle recurring cases; BioClinical ModernBERT supports research features.
+• Interpret what the evidence says. TypeSafe’s Jev and Perplexity Decisions are alternative typed readers for subject, assertion and time. Rules and TF-IDF/logistic heads handle recurring distinctions; BioClinical ModernBERT supports research features. A family-history mention should not become a current patient diagnosis.
 
-• Compile and reuse. MiniLM supports plan matching. A compiler, typed contracts and SQL families turn supported questions into executable plans. Numbers come from computation.
+• Compile what can be computed. MiniLM helps match plans. A compiler, typed contracts, SQL families and Learn-then-Test gates support checked execution and selective escalation. Code produces the numbers.
 
-• Bottle recurring work. Qwen3-4B + narrow LoRA, trained and run locally with Apple MLX, translates unfamiliar phrasing into typed slots that the parser checks. The controlled learning loop captures accepted plans and corrections, prepares training candidates and identifies retraining opportunities. Training, evaluation and activation remain separate steps. The broad SQL adapter is still default-off.
+• Specialize recurring inference. Qwen3-4B + narrow LoRA + Apple MLX “bottles” a slot-filling task into a local LLM. It still runs inference on new inputs; the aim is cheaper repeated work with parser-checked outputs. The separate broad-SQL adapter remains default-off.
 
-• Escalate deliberately. Perplexity selects curated recipes; Claude Haiku handles bounded slots. Opus handles unfamiliar questions through analyst proposals and system-executed SQL; Sonnet is a configured alternate. Each question follows the path it needs.
+• Use broader models where needed. Perplexity selects curated recipes; Claude Haiku fills bounded slots; Opus proposes analyses for unfamiliar questions; Sonnet is a configured alternate. The system executes and checks proposed SQL.
 
-• Use the right mathematics. The 29 analytical engines include Kaplan–Meier/Cox, propensity methods, empirical Bayes and queueing. Indexes, memoization, content hashes, dependency invalidation, provenance and usage ledgers make work reusable and auditable.
+• Bring the mathematics. The analytical engines include Kalman filters, survival analysis, causal methods, empirical Bayes, false-discovery control, graph methods and queueing. Different questions require different assumptions and calculations.
 
-Token economics has two levers: the price of inference and how much inference a workflow needs.
+Underneath: compiler design, type systems, indexes, memoization, content hashes, dependency invalidation, provenance and cost ledgers.
 
-Choosing Haiku, Sonnet or Opus changes one part of that equation. The architecture asks another question: what can be retrieved, computed, reused or handled by a qualified local specialist before another hosted call is needed?
+A controlled learning loop captures accepted work and corrections, prepares training candidates and flags gaps. New model training and activation are separate, checked steps.
 
-Success should be measured as total cost per correct answer, including model calls, local compute, training and evaluation.
+Token economics combines appropriate model selection with focused context, bounded tasks, reusable computation and specialized inference.
 
-The goal: turn useful reasoning into reusable capability.
+The goal is better total cost per correct answer—including compute, training and evaluation. Broader accuracy and cross-model cost advantages still need validation.
+
+Data → Information → Intelligence → Wisdom.
 
 #DataEngineering #HealthcareAI #TokenEconomics
 
@@ -75,11 +77,11 @@ UltraBERT should be credited to DMIS Lab, not Hugging Face as its creator. Model
 
 ## Image
 
-Current lead image: [stack cutaway with architecture-based token economics](linkedin-stack-economics.png). It replaces the dense neon/card-grid overview with a light isometric machine drawing: shared data/meaning foundation, evidence selection, three selectable execution paths, computation and sourced outputs. Named tools/model roles appear on adjacent callouts. Classic CS mechanisms form the physical base and the valid-work reuse loop is visible. The headline remains Data → Information → Intelligence → Wisdom. Mike explicitly rejected an Opus-only public comparison, so the footer now explains four economics mechanisms—retrieve, compute, reuse and bottle—and names lower total cost per correct answer as the design objective. It contains no dollar amounts, pass scores or cross-model savings claim. The local Qwen callout includes Apple MLX, and the return loop distinguishes reuse from separate training/evaluation.
+Current lead image: [corrected stack cutaway](linkedin-stack-final.png). It replaces the dense neon/card-grid overview with a light isometric machine drawing: shared data/meaning foundation, evidence selection, three selectable execution paths, computation and sourced outputs. Named tools/model roles appear on adjacent callouts. Classic CS mechanisms form the physical base and the valid-work reuse loop is visible. The headline remains Data → Information → Intelligence → Wisdom. Mike explicitly rejected an Opus-only public comparison, so the footer now explains four economics mechanisms—retrieve, compute, reuse and bottle—and names lower total cost per correct answer as the design objective. It contains no dollar amounts, pass scores or cross-model savings claim. The local Qwen callout includes Apple MLX, and the return loop distinguishes reuse from separate training/evaluation.
 
 The cutaway is a conceptual architecture illustration, not a literal deployment/network topology or a claim that every displayed module runs on every question. Broad Qwen SQL remains default-off and BioClinical features remain research. All 29 engine names remain available in the [supporting detail page](linkedin-stack-02-methods.png); the hero groups them into four families.
 
-[Exact edit prompt](linkedin-stack-economics-prompt.txt). Input: [previous bottling cutaway](linkedin-stack-bottling.png). Generated with the built-in image tool, without a paid external image service or CLI/API fallback. Visually inspected model labels, branch distinctions, status notes, controlled-learning labels and the mechanism-based economics footer. Nothing has been published. Prior PNGs and the [earlier two-page PDF](../../../output/pdf/data-information-intelligence-wisdom-linkedin.pdf) are retained for reference; that PDF has not been updated with this new hero.
+[Exact correction prompt](linkedin-stack-final-prompt.txt). Input: [previous economics cutaway](linkedin-stack-economics.png). Generated with the built-in image tool, without a paid external image service or CLI/API fallback. Visually inspected model labels, branch distinctions, status notes, controlled-learning labels and the mechanism-based economics footer. Nothing has been published. Prior PNGs and the [earlier two-page PDF](../../../output/pdf/data-information-intelligence-wisdom-linkedin.pdf) are retained for reference; that PDF has not been updated with this new hero.
 
 ### Visual references reviewed
 
@@ -111,3 +113,12 @@ The public hook is “turn useful reasoning into reusable capability.” This is
 Cheaper model selection is a fair comparator. The available validated cost result compares only the tested Opus baseline; it cannot establish a win over Haiku, Sonnet or all LLM architectures. The architecture hypothesis concerns reducing repeated inference through matching, compilation, evidence selection and qualified reuse.
 
 The final public version makes no numerical accuracy/cost comparison. Fair comparative evaluation would need the same validated questions and evidence, comparable execution/repair opportunities, and complete cost accounting across relevant cheaper baselines. No new paid runs were authorized or performed for this revision.
+
+
+### Final correction and CTO communications review
+
+Mike approved the existing illustration concept and asked only to correct bottling. The current lead preserves the composition and changes the Qwen annotation to show new inputs → local LLM → checked slots, with cheaper recurring inference labeled a goal. The footer says “Specialize LLM inference.” Bottling remains one equal-weight component; it is not caching and does not imply eliminating LLM inference. The separate learning/retraining controls remain visible.
+
+The rewritten hook emphasizes the combination of specialized AI, classical CS and mathematics. Public copy explicitly identifies an AI-assisted Python/SQL prototype tested on synthetic data, says questions use relevant paths, and acknowledges that broader accuracy and cross-model economics need validation. It does not claim that all methods were run on every question or that component count establishes performance.
+
+The requested CTO critique is saved in [CTO LinkedIn review](CTO_LINKEDIN_REVIEW_2026-10-19.md). Review of communication, source-linked implementation roles and existing evidence only; no new benchmark or paid evaluation was performed. This is not a full code, statistical or clinical audit.

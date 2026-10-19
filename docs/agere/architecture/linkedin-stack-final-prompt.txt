@@ -1,0 +1,17 @@
+Use case: precise-object-edit / text correction.
+The supplied image is the EDIT TARGET. The user LIKES THIS EXACT IMAGE. Preserve its composition, all machinery, warm-white background, isometric rendering, colors, typography, model labels, component positions, headline and overall concept. DO NOT redesign, restyle, add laboratory decorations, add a character, enlarge bottling, or make bottling the central feature. Make only these small text corrections:
+
+1. In the existing left-side Qwen bottling annotation, replace its text with:
+"BOTTLING"
+"Qwen3-4B + narrow LoRA · Apple MLX"
+"New inputs → local LLM → checked slots"
+"Goal: cheaper recurring inference"
+"Parser misses; on when available."
+Maintain the same modest prominence as the other component callouts. It must be clear that the local language model still runs inference on fresh inputs. Bottling is one component among many, distinct from caching. Keep the separate Qwen SQL LoRA callout explicitly a separate experiment, default-off.
+
+2. In the bottom economics strip, change ONLY the BOTTLE caption from "Qualify local specialists" to "Specialize LLM inference". Keep the four equal-weight items RETRIEVE, COMPUTE, REUSE, BOTTLE and their icons in place.
+
+3. Change the bottom strip heading to "TOKEN ECONOMICS • MATCH MODELS + METHODS TO TASKS". Keep the existing design objective and cost-accounting line unchanged: "Design objective: lower total cost per correct answer" and "Account for model calls, local compute, training and evaluation."
+
+Preserve every other label and illustrated element unchanged, especially UltraBERT, Jev and Perplexity as alternatives, Granite, BGE, MiniLM, Haiku/Sonnet/Opus, statistical engines, classic CS foundation, and the separate controlled-learning annotation. Preserve top headline exactly "Data → Information → Intelligence → Wisdom".
+No dollars, benchmark comparisons, new savings claims, project branding or extra prose. These are small text edits with the illustration otherwise locked. Opaque background.

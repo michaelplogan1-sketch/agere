@@ -1,6 +1,6 @@
 {
  "schema": "agere-build-control/1",
- "updated_at": "2026-10-19T16:45:42.229025+00:00",
+ "updated_at": "2026-10-19T17:01:37.361908+00:00",
  "decision_basis": "AGERE_CTO_REVIEW_2026-10-11_EVENING.md",
  "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
  "required_references": [
@@ -278,15 +278,16 @@
   "kind": "manual_turn_checkpoint",
   "gate_id": "G3",
   "last_delivered_gate": "G3",
-  "user_behavior_delta": "Replaced the Opus-only comparison in the public LinkedIn image and post with model-independent economics mechanisms: retrieve, compute, reuse and bottle. Preserved Qwen/MLX, UltraBERT, Jev/Perplexity, Haiku/Sonnet/Opus roles and the controlled learning loop. Lower total cost per correct answer is labeled a design objective.",
-  "measured_failure_reduction": "Communication revision only. Visually inspected the final image; public copy contains no comparative prices/pass rates or unmeasured savings claim. Historical evidence remains documented internally. No product change, benchmark execution, paid evaluation, training or publication.",
+  "user_behavior_delta": "Preserved the approved LinkedIn illustration and corrected only bottling/economics labels. Rewrote the hook with a playful full-stack experiment focus, named tools and reasons. Completed requested CTO critique and tightened public claims, authorship, selective routes, synthetic-data scope and validation limits.",
+  "measured_failure_reduction": "Documentation/visual correction only. Checked source-linked roles, learning/bottling implementation and existing study limitations; reviewed official provider and bottling documentation. Visually inspected final image. Public copy is under 3000 characters; no benchmark comparisons or broad performance promises. No product edits or paid evaluation.",
   "evidence": [
-   "docs/agere/architecture/linkedin-stack-economics.png",
-   "docs/agere/architecture/linkedin-stack-economics-prompt.txt",
+   "docs/agere/architecture/linkedin-stack-final.png",
+   "docs/agere/architecture/linkedin-stack-final-prompt.txt",
    "docs/agere/architecture/linkedin-post-public.txt",
-   "docs/agere/architecture/LINKEDIN_POST_2026-10-19.md"
+   "docs/agere/architecture/LINKEDIN_POST_2026-10-19.md",
+   "docs/agere/architecture/CTO_LINKEDIN_REVIEW_2026-10-19.md"
   ],
-  "remaining_gap": "G3 active and G5 blocked; product next action unchanged. A credible cross-model cost chart still needs validated comparable Haiku/Sonnet results; none claimed. Learning-loop incremental savings are unmeasured, retraining/promotion separate, broad SQL default-off. Public post is conceptual synthetic-data experiment framing.",
+  "remaining_gap": "G3 active and G5 blocked; exact implementation next action unchanged. Necessity of each layer, broad accuracy, Haiku/Sonnet comparisons and total-cost advantage remain unestablished. Controlled learning is not autonomous retraining; broad SQL adapter remains off. CTO review is communications/architecture scope, not a full code/statistical/clinical audit. Nothing published.",
   "next_action": "In G3, consolidate escalation and acceptance policy across together/economical_planner while preserving current specialist coverage, source scope, explicit declines, and per-request cost. Start with behavior-preserving dispatch boundaries; do not lower analyst fan-out or retire a qualified model without relevant evidence.",
   "next": "Simplify orchestration around the existing components, then demonstrate a connected workflow; do not add another model catalog."
  },
