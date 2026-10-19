@@ -83,3 +83,9 @@ Run with `bench/study/run.py`. Each arm writes answers, the ledger, timings and 
    against an Agere derivation is skipped: locking only where Agere agrees would bias the set toward Agere, and the sealed
    key is the same independent reference for every arm. Disputes found afterwards are audited by the generator and, if
    upheld, applied to all arms alike and logged here.
+3. 2026-10-19, before any Gold-50 run and before run S1 is scored. Key audit after the runs: every question where an arm's
+   answer misses the sealed key but agrees with at least one other, independent arm (A, B, D or E) goes to the generator
+   for the record-by-record (a)/(b)/(c) audit, whichever arm it is. Upheld corrections are applied to every arm alike.
+   The report states both numbers, accuracy against the sealed key and accuracy after the audited corrections, labels
+   them provisional until the audit is complete, and lists the audit in an appendix. Results are rescored from the saved
+   raw answers; no arm is rerun.
