@@ -154,7 +154,7 @@ def serve(run,port,annotations=None,evidence_queries=None,stack=None,allow_live_
                     raise PermissionError('This route is unavailable in installation mode '+recovery.get('mode','inspection_only')+'. Hosted inference and workspace-bound learning are disabled.')
                 length=int(self.headers.get('Content-Length','0'))
                 intake_path=urlsplit(self.path).path
-                body_bound=2100000 if intake_path in ('/api/stack/portable-intake/preview','/api/stack/portable-intake/save') else 32000
+                body_bound=2100000 if intake_path in ('/api/stack/portable-intake/preview','/api/stack/portable-intake/save','/api/stack/action-work/create') else 32000
                 if not 0<length<=body_bound or self.headers.get('Content-Type','').split(';')[0]!='application/json':raise ValueError('Bounded JSON body required')
                 body=json.loads(self.rfile.read(length))
                 if not isinstance(body,dict):raise ValueError('Object body required')
@@ -263,6 +263,14 @@ def serve(run,port,annotations=None,evidence_queries=None,stack=None,allow_live_
                 elif path=='/api/stack/ask':
                     if set(body)!={'question','live'} or type(body['live']) is not bool:raise ValueError('Explicit question/live route required')
                     result=connected_stack.ask(body['question'],live=body['live'])
+                elif path in ('/api/stack/action-work/create', '/api/stack/action-work/update', '/api/stack/action-deliverable'):
+                    from .deliverables import answer_context
+                    if path.endswith('/create'):
+                        result=answer_context.create_work(connected_stack.path,body)
+                    elif path.endswith('/update'):
+                        result=answer_context.update_work(connected_stack.path,body)
+                    else:
+                        result=answer_context.compose_frontier(connected_stack.path,body,allow_live=connected_stack.allow_live)
                 elif path=='/api/stack/compose':
                     # {question}, {question, planning} and, for follow-ups, either plus conversation_id.
                     from .clinical import conversation
@@ -793,6 +801,32 @@ def serve(run,port,annotations=None,evidence_queries=None,stack=None,allow_live_
                     cid=conversation.check_id(params.get('id',[''])[0] or '')
                     raw=json.dumps({'id':cid,'turns':conversation.turns(connected_stack.path,cid)},default=str).encode();mime='application/json'
                 except ValueError as exc:self.send_error(400,str(exc));return
+            elif parsed.path=='/action-center':
+                if connected_stack is None:self.send_error(404);return
+                from .deliverables.action_center import page
+                raw=page().encode();mime='text/html; charset=utf-8'
+            elif parsed.path in ('/api/stack/action-contexts','/api/stack/action-context','/api/stack/action-deliverables','/api/stack/action-deliverable'):
+                if connected_stack is None:self.send_error(404);return
+                from .deliverables import answer_context
+                try:
+                    key=params.get('context',[''])[0]
+                    if parsed.path.endswith('/action-contexts'):
+                        result={'contexts':answer_context.listing(connected_stack.path)}
+                    elif parsed.path.endswith('/action-context'):
+                        result={**answer_context.inspect(connected_stack.path,key),'allow_frontier':bool(connected_stack.allow_live and not recovery)}
+                    else:
+                        from .deliverables.compose import load,listing
+                        context=answer_context.load(connected_stack.path,key)
+                        ws=answer_context.workspace(connected_stack.path,context)
+                        if parsed.path.endswith('/action-deliverables'):
+                            result={'deliverables':listing(ws)}
+                        else:
+                            spec,_,_,doc=load(ws,params.get('id',[''])[0])
+                            result={**spec,'html':doc if spec.get('status')=='delivered' else None}
+                    raw=json.dumps(result,default=str).encode();mime='application/json'
+                except (ValueError,FileNotFoundError) as exc:
+                    self.send_response(400);self.send_header('Content-Type','application/json');self.end_headers()
+                    self.wfile.write(json.dumps({'error':str(exc)}).encode());return
             elif parsed.path=='/ask':
                 if connected_stack is None:self.send_error(404);return
                 from .ask_view import page as ask_page

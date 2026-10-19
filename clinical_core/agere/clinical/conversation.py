@@ -532,6 +532,7 @@ def summaries(result):
             'new_paid_api_calls': result.get('new_paid_api_calls') or 0}
     a = result.get('answer') or {}
     answer = {'status': a.get('status'), 'answer_type': a.get('answer_type'), 'headline': (a.get('headline') or '')[:400],
+              'action_context': result.get('action_context'),
               'rows': len(a['table']) if isinstance(a.get('table'), list) else None,
               'patients': len(a['patient_ids']) if isinstance(a.get('patient_ids'), list) else None}
     return plan, answer
@@ -583,12 +584,20 @@ def handle_compose(stack, body, hosted_factory=None):
                 # The user must see what was attempted even when it was not answered.
                 exc.args = (f'Resolved question: "{resolution["standalone"]}". {exc}',)
         raise
+    if hosted_calls or hosted_usd:
+        econ = dict(result.get('planning_economics') or {})
+        econ['known_api_estimate_usd'] = (econ.get('known_api_estimate_usd') or 0) + hosted_usd
+        econ['follow_up_resolution_usd'] = hosted_usd
+        result = {**result, 'planning_economics': econ, 'new_paid_api_calls': (result.get('new_paid_api_calls') or 0) + hosted_calls}
+    from ..deliverables import answer_context
+    try:
+        action_context = answer_context.capture(stack.path, resolution['standalone'] if resolution else question,
+                                                result, original_question=question)
+        if action_context:
+            result = {**result, 'action_context': action_context}
+    except (OSError, ValueError, sqlite3.Error) as exc:
+        result = {**result, 'action_context_error': str(exc)}
     if conv is not False:
-        if hosted_calls or hosted_usd:
-            econ = dict(result.get('planning_economics') or {})
-            econ['known_api_estimate_usd'] = (econ.get('known_api_estimate_usd') or 0) + hosted_usd
-            econ['follow_up_resolution_usd'] = hosted_usd
-            result = {**result, 'planning_economics': econ, 'new_paid_api_calls': (result.get('new_paid_api_calls') or 0) + hosted_calls}
         plan, answer = summaries(result)
         n = record(stack.path, conv, question, resolution, plan, answer)
         result = {**result, 'conversation': {

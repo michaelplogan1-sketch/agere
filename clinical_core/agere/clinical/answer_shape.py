@@ -44,7 +44,7 @@ _STOP = {'how', 'many', 'much', 'what', 'which', 'who', 'the', 'and', 'for', 'wi
 # ---------------------------------------------------------------------------------------------------- requested shape
 _PATIENT_NOUN = (r'(?:patients?|members?|people|persons?|individuals?|beneficiar(?:y|ies)|enrollees?|women|men|adults?|children|'
                  r'kids|infants?|seniors?|veterans?|diabetics?|smokers?|mothers?|pregnancies)')
-_PATIENT_LIST = re.compile(r'\b(?:which|list(?: all)?|who are|identify|name|pull(?: me)?|give me|send me|i need)\b'
+_PATIENT_LIST = re.compile(r'\b(?:which|find|list(?: all)?|who are|identify|name|pull(?: me)?|give me|send me|i need)\b'
                            r'(?:\s+(?:the|our|all|of|of the|of our|a list of|the list of|list of))*(?:\s+[\w+-]+){0,5}?\s+'
                            + _PATIENT_NOUN + r'\b|^\s*who\b|(?:^|[:.;]\s*)who (?:has|have|had|is|are|was|were)\b|'
                            r'\b(?:pull|send|give)(?: me)? (?:the |a )?(?:[\w-]+ )?list\b|\bneed a list\b|\bwants a list\b', re.I)
@@ -127,6 +127,8 @@ def requested(question):
     low = re.sub(r'\s+', ' ', re.sub(r'\([^)]*\)', ' ', full))  # parenthetical definitions and value lists state no shape
     if _OPEN.search(re.sub(r'(?:,\s*|\s+)(?:so (?:that )?|in order to |so as to ).*$', '', low)):
         pass  # a yes/no, forecast, recommendation or comparison question states no answer shape
+    elif patient_details_requested(low):
+        out['shape'], out['cue'] = 'table', 'patient details'
     elif _PATIENT_LIST.search(low) and not _COUNT_INTERROGATIVE.search(low) and not _VALUE_INTERROGATIVE.search(low):
         out['shape'], out['cue'] = 'patient_set', 'which patients'
     elif _FOR_EACH.search(low) or _MULTI.search(low) or re.match(r'\s*which\b', low) or (_WHICH_THING.search(low) and not _COUNT_INTERROGATIVE.search(low)
@@ -150,6 +152,20 @@ def requested(question):
     if not out['percent'] and out['shape'] == 'value': out['percent'] = bool(_PERCENT_ASKED.search(full))
     out['terms'] = measure_terms(low)
     return out
+
+
+def patient_details_requested(question):
+    """A cohort plus requested per-person fields is a table, not an ID-only set.
+
+    Keep filtering ('patients with a PCP') distinct from an output requirement
+    ('show their PCP'). This guard is deliberately about output, not eligibility.
+    """
+    q = str(question or '').lower()
+    return bool(re.search(r'\b(?:patients?|members?|people)\b', q) and re.search(
+        r"\b(?:who (?:their|each .{0,20}) (?:pcp|cardiologist|provider|clinician)|"
+        r"(?:list|show|include|return|give|display)\b[^.;?]{0,50}\b(?:their|each (?:patient|member)'?s?)\b|"
+        r"(?:with|including|along with) (?:their|each (?:patient|member)'?s?)\b|"
+        r"(?:flag|label) (?:which |the |each |those )?(?:patients?|members?)\b)", q))
 
 
 def _family(word):

@@ -305,6 +305,24 @@ def unaccounted_components(question, m):
     return out
 
 
+def unaccounted_clinical_scope(question, m):
+    """A fixed metric must not silently replace a broader clinical question.
+
+    These are recognizable requirements, not definitions of clinical eligibility.
+    Builders with explicit slots are checked by their own contracts.
+    """
+    if kind(m) != 'template':
+        return []
+    definition = json.dumps({k: m.get(k) for k in ('id', 'name', 'summary', 'sql_template')}).lower()
+    requirements = (
+        ('GDMT regimen assessment', r'\bgdmt\b|guideline.directed medical therapy', r'\bgdmt\b|guideline.directed|missing_pillars'),
+        ('ejection fraction', r'\b(?:reduced ef|hfref|ejection fraction)\b', r'ejection_fraction|ejection fraction|hfref|reduced ef'),
+        ('dose assessment', r'\b(?:max(?:imum)?|target|tolerated) dose\b', r'\bdose\b|dose_'),
+    )
+    return [label for label, wanted, provided in requirements
+            if re.search(wanted, question or '', re.I) and not re.search(provided, definition, re.I)]
+
+
 # ------------------------------------------------------------------------------------------------ compute
 def compile_metric(mid, m, slots, as_of, question=''):
     """Validated slots -> an executable node: {'operation': 'sql', 'parameters': {query, returns}} or a measure-engine node."""
@@ -473,6 +491,9 @@ def route(question, as_of, ledger=None, out=None, path=None, ask=None, directory
     breakdown = bool(re.search(BREAKDOWN, re.sub(r'\bper (?:member|patient) per (?:month|year)\b|\bper 1,?000\b', ' ', (question or '').lower())))
     for mid in dict.fromkeys(chosen):
         try:
+            missing_scope = unaccounted_clinical_scope(question, lib[mid])
+            if missing_scope:
+                raise LookupError('fixed metric does not cover: ' + ', '.join(missing_scope))
             slots, node = _fill(question, as_of, mid, lib[mid], call, info)
             returns = (node.get('parameters') or {}).get('returns') if node.get('operation') == 'sql' else None
             if breakdown and returns in ('value', 'count') and (slots.get('group_by') in (None, 'none')):

@@ -135,7 +135,7 @@ details pre{white-space:pre-wrap;font-size:12px;color:var(--muted);margin:4px 0;
 .skeleton{color:var(--muted);padding:18px 0}
 </style></head><body>
 <a class="sr" href="#q">Skip to question</a>
-<header class="top"><h1>Agere</h1><span class="tag">Population analytics workspace · synthetic data</span><a class="tag" href="/workspaces">Customer workspaces</a>
+<header class="top"><h1>Agere</h1><span class="tag">Population analytics workspace · synthetic data</span><a class="tag" href="/action-center">Saved workspaces</a><a class="tag" href="/workspaces">Customer workspaces</a>
 <div class="econ" id="econ" aria-label="Question economics"></div></header>
 <div class="demo" id="demo" hidden></div>
 <div class="layout">
@@ -1010,14 +1010,15 @@ function warnBox(a){const w=(a.warnings||[]),m=(a.missing||[]);let h='';
  if(w.length)h+='<div class="alert warn" role="note"><h3>Warnings ('+w.length+')</h3><ul>'+w.map(x=>'<li>'+esc(x)+'</li>').join('')+'</ul></div>';
  if(m.length)h+='<div class="alert '+(a.status==='unsupported'?'bad':'warn')+'" role="note"><h3>Not covered</h3><ul>'+m.map(x=>'<li>'+esc(x)+'</li>').join('')+'</ul></div>';return h}
 function readingsBox(a,q){const r=a.readings||[];if(r.length<2||typeof r[0]==='string')return '';const show=v=>typeof v==='number'?fmt(v):v&&v.patients!=null?fmt(v.patients)+' patients':v&&v.rows?v.rows.length+' rows':esc(JSON.stringify(v));let h='<div class="sec" data-readings><h3>Two defensible readings</h3>'+(a.clarifying_question?'<p class="hint">'+esc(a.clarifying_question)+'</p>':'')+'<div class="readings">';r.forEach((x,i)=>{h+='<div class="reading'+(x.default?' default':'')+'"><div class="muted">'+(x.default?'Shown (default)':'Alternative')+'</div>'+'<div class="val">'+show(x.result)+'</div><p>'+esc(x.definition||'')+'</p>'+(x.query?'<details><summary>Query</summary><pre>'+esc(x.query)+'</pre></details>':'')+(q&&x.definition?'<button type="button" class="btn small" data-ask="'+esc(q+' (definition: '+x.definition+')')+'">Use this reading</button>':'')+'</div>'});return h+'</div></div>'}
+function actionLink(c){if(!c||!/^ANS-[0-9a-f]{24}$/.test(c.id||''))return '';return '<section class="sec"><h3>What should happen next?</h3><p>Turn this answer into an interactive workspace. Review the evidence, prepare PharmD or remote-monitoring work, assign owners and track progress.</p><a class="btn primary" href="/action-center?context='+encodeURIComponent(c.id)+'">Open action center</a><p class="hint">Uses this exact saved answer. Program review does not enroll patients or deliver care.</p></section>'}
 function renderTurn(i){const t=state.turns[i];const box=$('#answer');state.active=i;renderThread();if(!t){box.innerHTML='';return}
  if(t.pending){box.innerHTML='<div class="q">'+esc(t.question)+'</div><p class="skeleton">Planning and computing…</p>';return}
  if(t.error){box.innerHTML='<div class="q">'+esc(t.question)+'</div>'+resolvedLine(t)+'<div class="headline badc">Not answered</div>'+badges(t)+'<div class="alert bad">'+esc(t.error)+'</div>'+
    '<p class="hint">Rephrase as a complete question, or start a new conversation.</p>';return}
- if(!t.data){box.innerHTML='<div class="q">'+esc(t.question)+'</div>'+resolvedLine(t)+'<div class="headline">'+esc(t.summary||'')+'</div><p class="hint">Earlier turn: ask it again to see the full answer.</p>'+
+ if(!t.data){box.innerHTML='<div class="q">'+esc(t.question)+'</div>'+resolvedLine(t)+'<div class="headline">'+esc(t.summary||'')+'</div>'+actionLink(t.action_context)+'<p class="hint">Earlier turn: open its saved workspace, or ask again to recompute.</p>'+
    '<div class="tools"><button type="button" class="btn small" data-ask-standalone="'+esc(t.resolved||t.question)+'">Ask again</button></div>';return}
  const a=t.data.answer||{};state.csv={};
- let h='<div class="q">'+esc(t.question)+'</div>'+resolvedLine(t)+headlineHTML(a)+badges(t)+warnBox(a)+readingsBox(a,t.resolved||t.question);
+ let h='<div class="q">'+esc(t.question)+'</div>'+resolvedLine(t)+headlineHTML(a)+badges(t)+warnBox(a)+readingsBox(a,t.resolved||t.question)+actionLink(t.data.action_context);
  try{h+=visual(a)}catch(err){h+='<div class="alert warn">Visual unavailable: '+esc(err.message)+'</div>'+tableHTML(a.table||[],{name:'agere-answer'})}
  const sg=suggestions(a);if(sg.length)h+='<div class="chips" aria-label="Follow-ups">'+sg.map(s=>'<button type="button" class="chip" data-ask="'+esc(s)+'">'+esc(s)+'</button>').join('')+'</div>';
  h+=executionDetails(t.data)+details(a);
@@ -1039,7 +1040,7 @@ async function ask(question,opt){opt=opt||{};question=String(question||'').trim(
  catch(err){t.pending=false;t.error=String(err)}finally{state.busy=false;$('#askb').disabled=false}
  state.outFilter=null;renderTurn(state.turns.indexOf(t));loadEcon();return t}
 function loadConversation(){if(!state.cid)return;fetch('/api/stack/conversation?id='+encodeURIComponent(state.cid)).then(r=>r.ok?r.json():null).then(d=>{if(!d||state.turns.length)return;
- state.turns=(d.turns||[]).map(x=>({question:x.question,resolved:x.resolved_question,error:x.error||null,summary:(x.answer_summary||{}).headline||'',status:(x.answer_summary||{}).status}));
+ state.turns=(d.turns||[]).map(x=>({question:x.question,resolved:x.resolved_question,error:x.error||null,summary:(x.answer_summary||{}).headline||'',status:(x.answer_summary||{}).status,action_context:(x.answer_summary||{}).action_context}));
  if(state.turns.length)renderTurn(state.turns.length-1)}).catch(()=>{})}
 function newConversation(){state.cid=null;store.set('agere-conversation',null);state.turns=[];state.active=-1;renderThread();
  $('#answer').innerHTML='<p class="muted" style="margin:0">New conversation. Ask a question or pick a briefing card.</p>';$('#q').focus()}
