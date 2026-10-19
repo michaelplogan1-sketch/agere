@@ -4,29 +4,41 @@ Status: prepared for Mike to review and publish. Public copy has no project/comp
 
 ## Post
 
-I recently put together a data analytics stack and tested it on a synthetic healthcare dataset.
+Data → Information → Intelligence → Wisdom
 
-The experiment explored how to turn disparate sources—claims, clinical notes, lab results and enrollment files—into useful insight while keeping inference costs under control.
+I built a data analytics stack and tested it on synthetic healthcare data to explore how disparate claims, notes, labs and enrollment records can become useful insight—with deliberate attention to token economics.
 
-The architecture combines:
+Each component has a specific job:
 
-• Data normalization, shared definitions and source provenance.
-• Embeddings and rerankers to find relevant evidence.
-• Small models and bounded decision models for specific interpretation tasks.
-• SQL and statistical methods for computation.
-• Frontier models for questions that need additional reasoning.
+• Preserve meaning.
+PDFKit + Apple Vision OCR extract document text. Canonical records, semantic SQL and explicit code mappings preserve patient, date and denominator definitions. UltraBERT-Embed-150M provides catalog/terminology matching when exact mappings fall short.
 
-Early results on a small, independently checked set of synthetic-data questions were encouraging. Some questions could be answered without any model API calls. Broader validation is still ahead.
+• Retrieve before reasoning.
+BM25 finds exact terms; Granite Embedding English R2 finds related wording. Reciprocal-rank fusion combines rankings. BGE reranker v2-m3 prioritizes relevant passages; a learned schema reranker selects tables, fields and values. The purpose: better evidence and less irrelevant context.
 
-One of the most interesting parts has been token economics.
+• Interpret bounded evidence.
+Jev 1.13.0 and Perplexity Decisions (pplx-decider-v1.1-27b) are alternatives for typed decisions about subject, assertion and time. They help distinguish a current patient fact from negation or family history. Rules and TF-IDF/logistic heads handle recurring cases; BioClinical-ModernBERT-base supports research task features.
 
-Reusing valid query plans, limiting context to relevant evidence and handling suitable tasks locally can reduce the inference a workflow needs. Each component should earn its place through useful capability, better reliability or lower cost.
+• Reuse and compile.
+all-MiniLM-L6-v2 supports plan matching and routing. A compiler and SQL families turn supported questions into executable plans. Qwen3-4B + narrow LoRA handles parser misses by proposing typed slots that code checks. Its separate broad-SQL adapter remains an experiment, default-off.
 
-The measure I care about is total cost per correct answer—including model calls, local compute, retries and human review.
+• Escalate selectively.
+Perplexity can select complete recipes; Claude Haiku 5.5 fills bounded slots. Claude Opus 5.5 handles unfamiliar questions through analyst proposals, system-run SQL and bounded repair. Claude Sonnet 5.5 remains a configured alternate. Every question does not need every model.
 
-Sharing the architecture below for feedback: where would you simplify it, and which tradeoffs would you test first?
+• Calculate with appropriate methods.
+The stack has 29 analytical engines: Kaplan–Meier/Cox for time-to-event, propensity methods for treatment comparisons, empirical Bayes for unstable estimates, and queueing methods for capacity questions, among others.
 
-#DataEngineering #HealthcareAI #AIArchitecture #TokenEconomics
+Classic computer science connects it all: types/contracts reject malformed plans; indexes narrow retrieval; memoization + content hashes reuse valid work; dependency invalidation rejects stale results; provenance traces answers; usage ledgers account for calls and retries.
+
+In a saved nine-question pilot with independently reconciled references:
+• Specialist-first stack: $0.00 model API charges; 9/9 scorer passes.
+• Opus text-to-SQL on every question: $1.89; 7/9 passes.
+
+Small synthetic set; not a general benchmark. Patient-list passes used F1 ≥ 0.98. Local compute/build costs were excluded, and not every pictured component ran.
+
+The goal is to spend tokens where interpretation adds value—and measure total cost per correct answer.
+
+#DataEngineering #HealthcareAI #TokenEconomics
 
 ## Optional credit line for the post
 

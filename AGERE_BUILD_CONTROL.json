@@ -1,6 +1,6 @@
 {
  "schema": "agere-build-control/1",
- "updated_at": "2026-10-19T16:10:04.507621+00:00",
+ "updated_at": "2026-10-19T16:12:49.853431+00:00",
  "decision_basis": "AGERE_CTO_REVIEW_2026-10-11_EVENING.md",
  "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
  "required_references": [
@@ -278,15 +278,13 @@
   "kind": "manual_turn_checkpoint",
   "gate_id": "G3",
   "last_delivered_gate": "G3",
-  "user_behavior_delta": "Redesigned the LinkedIn visual into two portrait pages with named tool/model roles and WHY lines: six-stage overview with observed pilot API economics, plus all 29 engines, mathematical methods and classic CS foundations. Packaged both into an uploadable two-page PDF.",
-  "measured_failure_reduction": "Presentation refinement only. Visually checked both generated images and rendered PDF pages; confirmed 29-engine coverage, model/status distinctions and saved pilot figures against existing catalog/evidence. No product change, benchmark rerun, rescore or paid API evaluation.",
+  "user_behavior_delta": "Updated the LinkedIn post to explain named model/tool roles, why each stage exists, classic computer science mechanisms and saved pilot API economics. Unbranded first-person synthetic-data framing retained.",
+  "measured_failure_reduction": "Copy refinement only. Checked names/roles against the existing source-linked catalog and pilot figures against saved evidence; no new evaluation or product change.",
   "evidence": [
-   "docs/agere/architecture/linkedin-stack-01-overview.png",
-   "docs/agere/architecture/linkedin-stack-02-methods.png",
-   "docs/agere/architecture/linkedin-stack-01-overview-prompt.txt",
-   "docs/agere/architecture/linkedin-stack-02-methods-prompt.txt",
-   "output/pdf/data-information-intelligence-wisdom-linkedin.pdf",
-   "docs/agere/architecture/LINKEDIN_POST_2026-10-19.md"
+   "docs/agere/architecture/linkedin-post-public.txt",
+   "docs/agere/architecture/LINKEDIN_POST_2026-10-19.md",
+   "docs/agere/architecture/component-catalog-2026-10-19.json",
+   "artifacts/study/validated-proof-2026-10-19/evidence.json"
   ],
   "remaining_gap": "G3 active and G5 blocked; implementation next action unchanged. Synthetic pilot remains small and workflow-selected; API cost is not total operating cost or measured token-count savings. Model/component inclusion is not independent qualification. No publication performed.",
   "next_action": "In G3, consolidate escalation and acceptance policy across together/economical_planner while preserving current specialist coverage, source scope, explicit declines, and per-request cost. Start with behavior-preserving dispatch boundaries; do not lower analyst fan-out or retire a qualified model without relevant evidence.",
