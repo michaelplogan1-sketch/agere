@@ -1,0 +1,9 @@
+Use case: text-localization / precise infographic edit.
+Input image is the edit target.
+Remove the project brand "AGERE" entirely from the top-left header. Remove its separating vertical rule. Reflow the remaining header into that available space so it reads professionally across the same width:
+Main headline: "From disparate data to insight"
+Subtitle: "A data analytics experiment using synthetic healthcare data"
+Keep the line: "Preserve meaning. Select evidence. Use the right code, model or method."
+No replacement logo, project name, company branding, employer name or product launch language.
+Make only this header change. Preserve every other pixel/content region as closely as possible: all eleven zones; all 29 engine names including Monitor; every model name (Jev, Perplexity, Qwen, UltraBERT, Claude etc.); the legend; corrected narrow/default-on and broad/default-off Qwen boxes; the token economics band; the footer and complete existing architecture.
+Keep the same canvas, typography family, ivory/evergreen/cobalt/copper colors, linework, high quality and readability. This is a technical experiment illustration, not an advertisement for a named product. The word AGERE must not appear anywhere.

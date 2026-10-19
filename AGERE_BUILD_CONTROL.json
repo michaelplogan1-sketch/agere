@@ -1,6 +1,6 @@
 {
  "schema": "agere-build-control/1",
- "updated_at": "2026-10-19T15:44:51.574706+00:00",
+ "updated_at": "2026-10-19T15:48:59.596487+00:00",
  "decision_basis": "AGERE_CTO_REVIEW_2026-10-11_EVENING.md",
  "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
  "required_references": [
@@ -278,14 +278,13 @@
   "kind": "manual_turn_checkpoint",
   "gate_id": "G3",
   "last_delivered_gate": "G3",
-  "user_behavior_delta": "Prepared updated LinkedIn image and post framing the stack as a theoretical disparate-data analytics use case, emphasizing token economics and source-specific roles. Verified company attribution suggestions. No publication or runtime change.",
-  "measured_failure_reduction": "Communication correction only: narrow Qwen default-on when available versus broad SQL off; restored Monitor to the poster so its analytical engine labels cover all 29 entries. Final image visually inspected. Existing component catalog unchanged. No benchmark or paid API evaluation.",
+  "user_behavior_delta": "Prepared an unbranded public image and rewritten post about a data-analytics experiment on synthetic healthcare data; model names remain. No project name, product-launch language or employer reference in public copy. No publication or runtime change.",
+  "measured_failure_reduction": "Presentation/privacy refinement only. Inspected generated image: project brand removed, technical model names and token-economics section retained. Public post text checked for absence of project name. No product tests or paid API evaluation.",
   "evidence": [
-   "docs/agere/architecture/agere-linkedin-stack-2026-10-19.png",
+   "docs/agere/architecture/healthcare-analytics-stack-2026-10-19.png",
+   "docs/agere/architecture/healthcare-analytics-unbranded-prompt-2026-10-19.txt",
    "docs/agere/architecture/LINKEDIN_POST_2026-10-19.md",
-   "docs/agere/architecture/linkedin-stack-prompt-2026-10-19.txt",
-   "docs/agere/architecture/linkedin-stack-edit-prompt-2026-10-19.txt",
-   "docs/agere/architecture/ENGINEERING_GUIDE.md"
+   "docs/agere/architecture/linkedin-post-public.txt"
   ],
   "remaining_gap": "Product state unchanged: G3 active, G5 blocked. LinkedIn material is a conceptual-use-case draft, not a comparative accuracy/economics result. No posting performed. Full ten-area scope and independent-reference restrictions remain.",
   "next_action": "In G3, consolidate escalation and acceptance policy across together/economical_planner while preserving current specialist coverage, source scope, explicit declines, and per-request cost. Start with behavior-preserving dispatch boundaries; do not lower analyst fan-out or retire a qualified model without relevant evidence.",
@@ -807,6 +806,12 @@
    "basis": "Mike requests an updated image and LinkedIn post about theoretical insight from disparate sources, including token economics and relevant mentions.",
    "change": "Deliver built-in image edit and draft with attribution links; correct Qwen status and missing Monitor label.",
    "scope_impact": "No publication, external contact, product activation, paid evaluation or gate promotion. Preserve implementation next action."
+  },
+  {
+   "at": "2026-10-19T15:48:59.596487+00:00",
+   "basis": "Mike wants public wording about a data analytics stack tested on synthetic healthcare data, with no Agere name; model names should remain.",
+   "change": "Create unbranded image and update public post. Keep the first-person technical-experiment framing and bounded performance language.",
+   "scope_impact": "No publishing, external contact, runtime changes or gate promotion. Product next action unchanged."
   }
  ]
 }

@@ -1,0 +1,25 @@
+I recently put together a data analytics stack and tested it on a synthetic healthcare dataset.
+
+The experiment explored how to turn disparate sources—claims, clinical notes, lab results and enrollment files—into useful insight while keeping inference costs under control.
+
+The architecture combines:
+
+• Data normalization, shared definitions and source provenance.
+• Embeddings and rerankers to find relevant evidence.
+• Small models and bounded decision models for specific interpretation tasks.
+• SQL and statistical methods for computation.
+• Frontier models for questions that need additional reasoning.
+
+Early results on a small, independently checked set of synthetic-data questions were encouraging. Some questions could be answered without any model API calls. Broader validation is still ahead.
+
+One of the most interesting parts has been token economics.
+
+Reusing valid query plans, limiting context to relevant evidence and handling suitable tasks locally can reduce the inference a workflow needs. Each component should earn its place through useful capability, better reliability or lower cost.
+
+The measure I care about is total cost per correct answer—including model calls, local compute, retries and human review.
+
+Sharing the architecture below for feedback: where would you simplify it, and which tradeoffs would you test first?
+
+#DataEngineering #HealthcareAI #AIArchitecture #TokenEconomics
+Credit to the teams at @TypeSafe AI, @Perplexity, @Anthropic and @Hugging Face whose models and tools support this exploration, alongside IBM Granite, Qwen and the research teams credited in the architecture.
+
