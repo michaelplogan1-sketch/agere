@@ -93,6 +93,20 @@ QUERIES = {
         AND c.allowed_cents=0 AND coalesce(c.drg,'')!=''
         AND c.service_from BETWEEN '2028-01-01' AND '2029-12-31'
         GROUP BY 1 ORDER BY 1""",
+    'VBC-G3.raw_835_patient_control': """SELECT c.payer_id,
+        count(DISTINCT c.payer_claim_id) zero_allowed_drg_claims,
+        count(DISTINCT CASE WHEN r.patient_control_number IS NOT NULL THEN c.payer_claim_id END) matched_835_claims,
+        count(DISTINCT CASE WHEN cast(r.paid_amount AS REAL)+coalesce(cast(r.cas_pr_total AS REAL),0)>0
+              THEN c.payer_claim_id END) with_positive_835_paid_plus_pr,
+        count(DISTINCT CASE WHEN r.statement_from=c.service_from
+              AND round(cast(r.total_charge AS REAL)*100)=c.charge_cents THEN c.payer_claim_id END) matching_date_and_charge,
+        count(DISTINCT r._file||'|'||r.segment_index) matched_source_records
+        FROM payer_claim c LEFT JOIN raw_x12_835_claim r ON r.patient_control_number=c.payer_claim_id
+        AND r._file LIKE 'x12_payer/'||c.payer_id||'/%' AND coalesce(r.is_reversal,0)=0
+        WHERE c.final_status='paid' AND c.counts_in_metrics=1
+        AND c.allowed_cents=0 AND coalesce(c.drg,'')!=''
+        AND c.service_from BETWEEN '2028-01-01' AND '2029-12-31'
+        GROUP BY 1 ORDER BY 1""",
     'QUA-G1.a1c_evidence_sources': f"""WITH diagnoses AS (
         SELECT patient_id,icd10 FROM condition UNION SELECT patient_id,icd10 FROM encounter_diagnosis
         UNION SELECT patient_id,icd10 FROM payer_claim_diagnosis),

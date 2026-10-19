@@ -31,8 +31,12 @@ pilot's delivered-data database. It imports no Agere compiler, specialist, scori
   Medigap/COB amounts are reported separately and excluded from the diagnostic eligibility filter. The packet also
   reports 423 latest-paid, in-metric DRG claims with zero
   modeled allowed amount in 2028-2029; 0 match raw 835
-  payer-control IDs under the literal join. No remittance amount is imputed. Confirm delivered join keys/source
-  coverage before using CLP04 + CAS PR to repair pricing.
+  payer-control IDs under the literal join. A subsequent **patient-control (CLP01) join scoped to the payer's
+  delivered directory matches all 423**, across 461 non-reversal source records. All 423 have at least one
+  remittance with the same service-from date and charge cents and positive paid-plus-PR amounts. This is a
+  join/coverage diagnostic, not a repriced reference: resolve multiple remittance versions before summing amounts.
+  No remittance amount is imputed. The added `VBC-G3.raw_835_patient_control` breakdown records the exact SQL
+  and per-payer counts.
 - **QUA-G1:** the diagnostic diabetic cohort unions condition, encounter and payer diagnoses and applies delivered
   death records and birth-date age. No-A1c patients split as 137 claims-only, 11 claims-plus-EHR, 51 deep-chart
   (199 total). The packet includes source-specific A1c evidence for excluded patients (HL7, Epic, athena, eCW, FHIR).
