@@ -7,6 +7,32 @@ from bench.study import analyze, common
 from bench.study.validation import require_validated
 
 
+def saved_cost_audit():
+    """Audit historical charges without reading scores or changing raw answers."""
+    run = common.STUDY_ROOT / 'S2-gold50'
+    results = {}
+    for arm in ('A', 'B', 'D', 'E'):
+        folder = run / arm / 'p1'
+        ledger = common.read_jsonl(folder / 'ledger.jsonl')
+        answers = common.read_jsonl(folder / 'answers.jsonl')
+        if not ledger or len(answers) != 41:
+            raise ValueError('Incomplete saved cost audit inputs')
+        unpriced = sum(r.get('cost_usd') is None for r in ledger)
+        known = sum(r['cost_usd'] for r in ledger if r.get('cost_usd') is not None)
+        reported = [r.get('ledger_cost_usd', r.get('cost_usd')) for r in answers]
+        results[arm] = {
+            'ledger_rows': len(ledger), 'unpriced_rows': unpriced,
+            'ledger_priced_usd': round(known, 8),
+            'complete_recorded_cost_usd': None if unpriced else round(known, 8),
+            'reported_known_usd': round(sum(c for c in reported if c is not None), 8),
+            'answers_with_unknown_cost': sum(c is None for c in reported),
+            'sources': {name: {'path': str((folder / name).relative_to(common.ROOT)),
+                               'sha256': common.sha256_file(folder / name)}
+                        for name in ('ledger.jsonl', 'answers.jsonl', 'timings.json')},
+            'limitation': 'Concurrent run: no exact cost attribution per question; no cost-per-correct claim before validation.'}
+    return results
+
+
 def main():
     source = common.STUDY_ROOT / 'S1-lean'
     qs = [q for q in common.read_jsonl(source / 'questions.jsonl') if q['set'] == 'locked']
@@ -33,7 +59,7 @@ def main():
         raise ValueError('Regression set differs from the validated comparison')
     result = {'created_at': datetime.now(timezone.utc).isoformat(), 'status': 'limited_demonstration_not_superiority_proof',
               'analysis_type': 'existing validated Gold 10 subset only; no answers rerun or rescored',
-              'reference_validation': validation, 'sources': sources,
+              'reference_validation': validation, 'sources': sources, 'gold50_cost_audit': saved_cost_audit(),
               'post_change_regression': {'path': str(regression_file.relative_to(common.ROOT)),
                                          'sha256': common.sha256_file(regression_file),
                                          'summary': regression['summary'],
@@ -107,6 +133,18 @@ The runner and scorer refuse pending reference sets before further study work. T
 [source-audit packet](REFERENCE_AUDIT_2026-10-19.md) contains the requested breakdowns for all five pending disputes.
 The independent generator owner must reconcile those findings and reseal corrected references. All 41 new questions
 still require per-question independent validation; the five disputes are not the complete validation task.
+
+## Saved Gold-50 cost audit (no accuracy scoring)
+
+The complete A batch ledger records ${result['gold50_cost_audit']['A']['complete_recorded_cost_usd']:.5f} in API charges;
+Opus B records ${result['gold50_cost_audit']['B']['complete_recorded_cost_usd']:.5f}. Agere's per-answer fields sum to
+only ${result['gold50_cost_audit']['A']['reported_known_usd']:.5f}, with three unknown costs on input failures.
+The ledger total must be used for whole-batch cost accounting; missing per-answer costs must not become zeros.
+The run used three concurrent workers, so exact per-question costs cannot be recovered from overlapping ledger windows.
+Any future cost comparison on a subset must disclose this attribution limit and account for the entire batch or
+report conservative bounds. E contains {result['gold50_cost_audit']['E']['unpriced_rows']} unpriced failed ledger rows;
+its complete cost is unknown. Raw answers and ledgers are preserved. No Gold-50 accuracy or cost-per-correct result
+is claimed before independent reference validation.
 '''
     target = common.ROOT / 'docs/agere/study/PROOF_STATUS.md'
     target.write_text(brief)

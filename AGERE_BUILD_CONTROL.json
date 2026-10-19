@@ -1,6 +1,6 @@
 {
  "schema": "agere-build-control/1",
- "updated_at": "2026-10-19T12:58:47.310640+00:00",
+ "updated_at": "2026-10-19T13:06:34.245167+00:00",
  "decision_basis": "AGERE_CTO_REVIEW_2026-10-11_EVENING.md",
  "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
  "required_references": [
@@ -286,10 +286,11 @@
    "bench/study/test_study_harness.py",
    "artifacts/study/S4-input-contract-regression/A/p1/score.json",
    "docs/agere/study/PROOF_STATUS.md",
-   "docs/agere/study/REFERENCE_AUDIT_2026-10-19.md"
+   "docs/agere/study/REFERENCE_AUDIT_2026-10-19.md",
+   "artifacts/study/validated-proof-2026-10-19/evidence.json"
   ],
-  "remaining_gap": "Gold-50 all 41 new references and native nine remain pending independent validation. Gold10 A9/9 versus Opus7/9 at $0 versus $1.89 is a small descriptive result (paired p=.50), not general superiority. A2/A3 model quality is unqualified and A3 stays disabled. Full ten-area scope and G5 qualification gaps remain.",
-  "next_action": "G3: reconcile independently derived Gold-50 references with the generator (packet sent and validation resumed with Mike authorization); retain per-question evidence, wording and digest gates. Once all selected references are independently validated, rescore saved answers once. No unvalidated runs/rescores or repeated Gold10 regression.",
+  "remaining_gap": "Gold-50 all 41 new references and native nine remain pending independent validation. Gold10 A9/9 versus Opus7/9 at $0 versus $1.89 is a small descriptive result (paired p=.50), not general superiority. A2/A3 model quality is unqualified and A3 stays disabled. Full ten-area scope and G5 qualification gaps remain. Generator audit additionally identified BH-G1 index-screen and DQ-G1 paid-amount reference defects plus inpatient admission fallback coverage. No corrected digest sealed. Gold-50 cost attribution is incomplete per question (concurrent workers); batch A ledger $1.57448982 versus B $3.6228896, no accuracy-derived metric yet. E has 15 unpriced failed calls.",
+  "next_action": "G3: await the independent generator validation dispositions and local status-only evidence (generator currently waiting on an approval in its chat). Keep Gold-50/native scoring blocked. Verify question/source/reference identities, then rescore saved unchanged-question answers once only after every selected reference is independently validated. Use complete batch ledgers and disclose subset cost-attribution limits; do not impute unknown costs as zero.",
   "next": "Keep current committed code running on :8885. Use validated evidence to decide whether a bounded candidate fallback run is justified; preserve unfavorable outcomes and distinguish post-hoc repair from held-out proof."
  },
  "decisions": [
@@ -759,6 +760,12 @@
    "basis": "Mike: \"Send packet and resume validation\" and \"i am here you dont need the continue building reminder\". Validated Gold10 regression and general-fixture evidence.",
    "change": "Sent the source-audit packet to the independent generator owner and resumed validation. Deleted the continuation automation through the app. Delivered general input preservation and a default-off frontier review candidate; no unvalidated benchmark work.",
    "scope_impact": "No narrowing, qualification promotion, hidden-key access or outside publication/contact. Existing source configuration overlays preserved."
+  },
+  {
+   "at": "2026-10-19T13:06:34.245167+00:00",
+   "basis": "Read-only saved-ledger audit and independent generator status; no new benchmark evaluation.",
+   "change": "Record Gold-50 full-batch ledger costs instead of understated reported answer sums. Preserve all original answers. Generator is continuing all-question derivations; no validation promotion.",
+   "scope_impact": "No product code change, new model calls or superiority claim."
   }
  ]
 }

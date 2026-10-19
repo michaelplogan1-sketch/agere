@@ -59,3 +59,15 @@ The runner and scorer refuse pending reference sets before further study work. T
 [source-audit packet](REFERENCE_AUDIT_2026-10-19.md) contains the requested breakdowns for all five pending disputes.
 The independent generator owner must reconcile those findings and reseal corrected references. All 41 new questions
 still require per-question independent validation; the five disputes are not the complete validation task.
+
+## Saved Gold-50 cost audit (no accuracy scoring)
+
+The complete A batch ledger records $1.57449 in API charges;
+Opus B records $3.62289. Agere's per-answer fields sum to
+only $1.44625, with three unknown costs on input failures.
+The ledger total must be used for whole-batch cost accounting; missing per-answer costs must not become zeros.
+The run used three concurrent workers, so exact per-question costs cannot be recovered from overlapping ledger windows.
+Any future cost comparison on a subset must disclose this attribution limit and account for the entire batch or
+report conservative bounds. E contains 15 unpriced failed ledger rows;
+its complete cost is unknown. Raw answers and ledgers are preserved. No Gold-50 accuracy or cost-per-correct result
+is claimed before independent reference validation.
