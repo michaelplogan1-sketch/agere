@@ -1,6 +1,6 @@
 {
  "schema": "agere-build-control/1",
- "updated_at": "2026-10-19T17:44:55.762162+00:00",
+ "updated_at": "2026-10-19T18:14:45.632563+00:00",
  "decision_basis": "AGERE_CTO_REVIEW_2026-10-11_EVENING.md",
  "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
  "required_references": [
@@ -225,6 +225,10 @@
     {
      "path": "artifacts/agere-answer-action-v1/implementation-receipt.json",
      "sha256": "852a5df08d5fc28e95385128d89c2b408807ebf221c0e432007f8480e7b637a0"
+    },
+    {
+     "path": "artifacts/agere-action-design-v1/implementation-receipt.json",
+     "sha256": "944f4f716a1f58cadd26badada8551b563791a9ca7a08dbebeb930786259ed9f"
     }
    ]
   },
@@ -282,13 +286,13 @@
   "kind": "manual_turn_checkpoint",
   "gate_id": "G3",
   "last_delivered_gate": "G3",
-  "user_behavior_delta": "Main /ask answers open durable action centers with exact saved cohort/evidence, PharmD/RPM/custom review tasks, owners, progress, CSV export and an explicit frontier deliverable request over the frozen bundle.",
-  "measured_failure_reduction": "Actual zero-call browser answer (general heart failure, 329 synthetic patients) opened the action center; two review tasks and a blocked update persisted through deployment/restart. 148 focused tests pass. Original multi-field HF/GDMT request rejects the narrow beta-blocker metric in regression checks; full clinical answer is not yet verified. Frontier integration stub-tested, no paid generation.",
+  "user_behavior_delta": "Redesigned the local action workspace with guided program selection, a searchable paginated cohort, preserved selections, patient/task side panels, a visual work board and editable creative-studio presets over the existing saved answer/work APIs.",
+  "measured_failure_reduction": "Browser flow from program choice through selected patient and setup to persisted board passed; duplicate creation preserved notes, P-1007 moved into in_review through the existing API and persisted after restart. Selection across pagination/filters and evidence/studio navigation passed. 33 focused regressions passed. Observed 1439px and 727px layouts had no document horizontal overflow; phone-width conformance remains unverified.",
   "evidence": [
-   "ANSWER_ACTION_CENTER_BUILD.md",
-   "artifacts/agere-answer-action-v1/implementation-receipt.json",
-   "test_answer_action_center.py",
-   "clinical_core/agere/deliverables/answer_context.py"
+   "ACTION_WORKSPACE_DESIGN.md",
+   "artifacts/agere-action-design-v1/implementation-receipt.json",
+   "clinical_core/agere/deliverables/action_center.html",
+   "clinical_core/agere/deliverables/action_center.js"
   ],
   "remaining_gap": "G3 active and G5 blocked. Full EF/GDMT/dose/PCP/cardiologist assessment still requires per-patient evidence and verified end-to-end behavior. Review tasks are not enrollment; actual outreach/RPM fulfillment and outcomes remain unconnected. Paid frontier output quality, broad accuracy and total-cost advantage remain unqualified.",
   "next_action": "In G3, complete the original multi-part EF/GDMT/dose/provider question with per-patient evidence and explicit missing requirements, and carry it through the deployed saved-answer action center. Reuse existing clinical/reference/program modules and preserve general query scope; do not substitute another narrow metric. Then connect reviewable execution proposals and outcome tracking to the existing shared work backbone without real outreach or paid evaluations. Preserve the pending consolidation of together/economical_planner acceptance and escalation policy, all specialists and full ten-area charter.",
@@ -835,6 +839,13 @@
    "change": "Main /ask answers open durable action centers with exact saved cohort/evidence, PharmD/RPM/custom review tasks, owners, progress, CSV export and an explicit frontier deliverable request over the frozen bundle.",
    "scope_impact": "Full ten-area charter and specialists retained. No benchmark rerun, paid evaluation, external contact, care execution or design publication. Source overlay preserved; G3 active and G5 blocked.",
    "evidence": "artifacts/agere-answer-action-v1/implementation-receipt.json"
+  },
+  {
+   "at": "2026-10-19T18:14:45.632563+00:00",
+   "basis": "Mike: this is a super boring site; make it more intuitive and fun to use.",
+   "change": "Redesigned the local action workspace with guided program selection, a searchable paginated cohort, preserved selections, patient/task side panels, a visual work board and editable creative-studio presets over the existing saved answer/work APIs.",
+   "scope_impact": "User-directed UI increment before the retained clinical-assessment next action. No clinical/model gate promotion, paid evaluation, external actions or change to the ten-area charter. Existing work and source configuration preserved.",
+   "evidence": "artifacts/agere-action-design-v1/implementation-receipt.json"
   }
  ]
 }
