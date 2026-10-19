@@ -4,35 +4,41 @@ Status: prepared for Mike to review and publish. Public copy has no project/comp
 
 ## Post
 
-I’m an ER doc who went down an engineering rabbit hole.
+I’m an ER doc who went down a mad-scientist engineering rabbit hole because of token economics.
 
-The idea was pretty simple: triage the question, then use the right tool to answer it.
+I wanted to test which healthcare questions need an LLM, and which could be answered more accurately and cheaply with SQL, statistics or a small specialized model.
 
-With Claude Code and Codex, I built a prototype on synthetic healthcare data. Here’s what I put in it, and why:
+With Claude Code and Codex, I built a prototype on synthetic healthcare data. The idea: triage the question, then use the right tools.
 
-• SQL + a shared data layer: keep patients, dates and definitions straight, then calculate the answer.
+Here’s what went into it:
 
-• UltraBERT: help match unfamiliar terminology and find the right data source.
+• SQL + a shared data layer: keep patients, dates and definitions straight, then calculate.
 
-• BM25 + IBM Granite + BGE reranking: find useful evidence, including wording that doesn’t exactly match the question, and move the relevant pieces up the list.
+• UltraBERT: match unfamiliar terminology to the data.
 
-• Jev / Perplexity Decisions: interpret things like “current diagnosis” versus “family history.” Two options for a focused decision task.
+• BM25 + IBM Granite + BGE reranking: find relevant evidence and put the useful pieces first.
 
-• MiniLM + a compiler: recognize supported question patterns and reuse plans we already know how to execute.
+• Jev / Perplexity Decisions: alternative tools for focused interpretation, like current diagnosis versus family history.
 
-• Qwen + LoRA + Apple MLX: “bottle” a narrow task into a small local LLM. It still handles new inputs; the aim is cheaper repeated inference, with code checking its output.
+• MiniLM + a compiler: recognize supported questions and reuse executable plans.
 
-• Claude Haiku / Opus / Sonnet: Haiku for focused tasks, Opus for unfamiliar analyses, and Sonnet available as another option.
+• Qwen + LoRA + Apple MLX: “bottle” a narrow task into a small local LLM that handles new inputs, with code checking its output.
+
+• Claude Haiku / Opus / Sonnet: focused helper tasks, unfamiliar analysis and alternative model choices.
 
 • Statistics: survival analysis, Kalman filters, causal methods, Bayes and queueing. Different questions need different math.
 
-• Old-school computer science: types, indexes, caching, hashes and provenance. Check the inputs, reuse valid work and keep track of where an answer came from.
+• Classic computer science: types, indexes, caching, hashes and provenance. Make work reusable, checkable and traceable.
 
-There’s also a learning loop that captures accepted work and corrections for reuse and future training. Training and switching models are separate steps. I’m also exploring BioClinical ModernBERT for clinical-text tasks.
+A learning loop captures accepted work and corrections for reuse and future training. Training and model changes are separate, evaluated steps. BioClinical ModernBERT is also on the research side.
 
-The token economics piece matters to me: use focused context, smaller tasks and reusable work to make AI more economical. Count local compute and training costs too.
+The next step is the part I’m most interested in: giving a frontier model the computed results and evidence to build something useful—an interactive command center, a PharmD program workspace or a remote-monitoring workflow. Something a team can act on, with clear ownership and review.
 
-Still a synthetic-data prototype, with broader accuracy and cost comparisons to do.
+That’s where I want to spend frontier-model tokens: turning the analysis into a useful deliverable.
+
+The economics question is total cost per useful, correct answer—including model calls, local compute, training and review.
+
+Still a synthetic-data prototype. Broader accuracy and cost comparisons, and the full path from answer to action, remain work in progress.
 
 Data → Information → Intelligence → Wisdom
 
@@ -127,3 +133,10 @@ The requested CTO critique is saved in [CTO LinkedIn review](CTO_LINKEDIN_REVIEW
 ### Voice revision
 
 At Mike’s request, the public copy now uses his ER-doctor perspective, a simple triage analogy and short ingredient/reason bullets. The approved image is unchanged. Detailed model versions, research branches and mathematical inventory remain in the diagram and technical notes; the post uses plain language and preserves prototype, economics and learning limits.
+
+
+### Final motivation and deliverable-role revision
+
+The public post now states token economics and testing non-LLM methods as the motivation, keeps named ingredients and their jobs, and identifies frontier composition of evidence-bound interactive deliverables as the intended next step. It explicitly says the complete answer-to-action path remains work in progress. The observed main /ask failure is not presented as a working program.
+
+Mike briefly requested an Agere wordmark, then requested a return to the previous image. The approved `linkedin-stack-final.png` was never overwritten and remains the final unbranded image. The unused wordmark version was generated with the built-in image tool at `/Users/mikel/.codex/generated_images/01a1542a-b5a3-7d23-94fc-19628fd76094/exec-ba2e2ecd-6fd3-4992-baf9-0ac273b62607.png`; it is not the selected public asset. No external paid image service or CLI/API fallback was used. Nothing has been published.

@@ -1,6 +1,6 @@
 {
  "schema": "agere-build-control/1",
- "updated_at": "2026-10-19T17:06:20.867085+00:00",
+ "updated_at": "2026-10-19T17:23:32.420531+00:00",
  "decision_basis": "AGERE_CTO_REVIEW_2026-10-11_EVENING.md",
  "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
  "required_references": [
@@ -278,17 +278,20 @@
   "kind": "manual_turn_checkpoint",
   "gate_id": "G3",
   "last_delivered_gate": "G3",
-  "user_behavior_delta": "Rewrote public LinkedIn copy in Mike\u2019s requested ER-doctor voice: triage analogy, shorter plain-language explanations and named ingredients. Preserved approved image and core model roles/status. Retained synthetic-data scope, broader validation gap and compute/training costs.",
-  "measured_failure_reduction": "Editorial revision only. Checked copy against existing component roles and CTO critique; public post is 2006 characters. No image generation, product edit, benchmark execution or paid evaluation.",
+  "user_behavior_delta": "Final LinkedIn copy now explains token economics, non-LLM analysis and frontier-model composition of evidence-bound interactive deliverables. Previous unbranded image remains selected. Traced the user-observed main /ask result and located existing program/deliverable components; no runtime behavior changed.",
+  "measured_failure_reduction": "None in the product yet. Screenshot shows the complete EF/GDMT/dose/PCP/cardiologist request mislabeled answered by hf_no_beta_blocker@v1 and raw patient IDs, with 888.93 s latency. Read-only inspection found shape/metric acceptance and /ask rendering gaps, plus existing frontier deliverable composition and program workflow code. No benchmark, paid evaluation, care execution or external publication.",
   "evidence": [
    "docs/agere/architecture/linkedin-post-public.txt",
    "docs/agere/architecture/LINKEDIN_POST_2026-10-19.md",
    "docs/agere/architecture/linkedin-stack-final.png",
-   "docs/agere/architecture/CTO_LINKEDIN_REVIEW_2026-10-19.md"
+   "clinical_core/agere/ask_view.py",
+   "clinical_core/agere/clinical/metric_router.py",
+   "clinical_core/agere/deliverables/compose.py",
+   "clinical_core/agere/plans/answer.py"
   ],
-  "remaining_gap": "G3 active and G5 blocked; exact implementation next action unchanged. Necessity of each layer, broad accuracy, Haiku/Sonnet comparisons and total-cost advantage remain unestablished. Controlled learning is not autonomous retraining; broad SQL adapter remains off. CTO review is communications/architecture scope, not a full code/statistical/clinical audit. Nothing published.",
-  "next_action": "In G3, consolidate escalation and acceptance policy across together/economical_planner while preserving current specialist coverage, source scope, explicit declines, and per-request cost. Start with behavior-preserving dispatch boundaries; do not lower analyst fan-out or retire a qualified model without relevant evidence.",
-  "next": "Simplify orchestration around the existing components, then demonstrate a connected workflow; do not add another model catalog."
+  "remaining_gap": "G3 remains active and G5 blocked. The observed incomplete answer and main /ask-to-program/deliverable integration are not fixed. Existing program simulations and frontier deliverable code do not establish a working main-path command center, patient eligibility or real care execution. Broad accuracy and total-cost advantage remain unestablished.",
+  "next_action": "In G3, fix complete-question acceptance for the user-observed cohort request, then connect the exact saved answer/evidence scope from /ask to existing deliverable/program components. Support frontier composition of interactive artifacts over computed results, explicit missing requirements and reviewable proposed work. Verify the connected synthetic workflow without new paid evaluations or real outreach; preserve general query scope and existing specialists. In G3, consolidate escalation and acceptance policy across together/economical_planner while preserving current specialist coverage, source scope, explicit declines, and per-request cost. Start with behavior-preserving dispatch boundaries; do not lower analyst fan-out or retire a qualified model without relevant evidence.",
+  "next": "Connect correct scoped analysis to an interactive deliverable and proposed program work; do not stop at patient IDs or another architecture catalog."
  },
  "decisions": [
   {
@@ -818,6 +821,12 @@
    "basis": "Mike: put Data \u2192 Information \u2192 Intelligence \u2192 Wisdom in the LinkedIn visual; remove sections 9 and 11 so it shows the stack and classic computer science.",
    "change": "Create unbranded nine-panel analytics-only public visual and update the post\u2019s image pointer.",
    "scope_impact": "Presentation scope only. Full product charter and implementation next action preserved; no publishing or runtime changes."
+  },
+  {
+   "at": "2026-10-19T17:23:32.420531+00:00",
+   "basis": "Mike supplied the /ask screenshot, clarified that Agere must support action (PharmD, RPM, interactive command centers), and identified frontier models as composers of final deliverables. Latest immediate request: remove the wordmark, restore previous image, provide final post.",
+   "change": "Finish the requested public copy and preserve the unbranded final image. Sequence the next G3 implementation around the observed full-question acceptance and answer-to-action connection using existing modules.",
+   "scope_impact": "No charter narrowing, runtime activation, new model, benchmark or paid evaluation. Full ten-area backlog preserved; current defect and missing integration remain explicit."
   }
  ]
 }
