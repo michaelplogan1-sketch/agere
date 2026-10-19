@@ -1,0 +1,32 @@
+Use case: text-localization / precise infographic correction. Edit the supplied image. Preserve the image, all 11 zones, brand, headline, economics band, palette and overall layout. Change only the following content/layout corrections, using clean sharp text.
+
+In zone 06, the SQL adapter is incorrectly inside the green NARROW ADAPTER group. Replace the internals of zone 06 with exactly TWO separate groups:
+SOLID group heading "NARROW SLOTS · DEFAULT-ON WHEN AVAILABLE"
+"Qwen3-4B + LoRA"
+"Parser miss → typed family slots → code-rendered SQL"
+DASHED gray group heading "BROAD SQL · DEFAULT-OFF EXPERIMENT"
+"Qwen3-4B + separate SQL LoRA"
+"Generated SQL → execution checks"
+At bottom of zone 06: "Separate adapters and acceptance evidence. Local inference still has compute cost."
+Do NOT place broad SQL in the narrow group. Do NOT repeat default-on under the broad heading.
+
+Verify and preserve ALL 29 names in zone 08, with 9+5+7+8 items. If any is missing, restore it:
+Clinical & Causal: Explain, Discover, Trajectory, Survival, Calibration, Early signal, Program effect, Uplift, Target trial.
+Healthcare Economics: VBC, Risk adjustment, Claims review, Contract strategy, Market.
+Operations & Population Health: Demand, Profile, Risk outcomes, Pathway, Network, Scheduling, Queueing.
+Care Delivery & Research: Outreach, Briefing, Knowledge, Line of therapy, Trial feasibility, Loop closure, Diagnostic delay.
+Correction to item count: last group has SEVEN, so 9+5+7+7 = 28; include the final 29th engine "Risk outcomes" only once as specified and preserve the source image's 29-item set if an item is otherwise present. [Do not print these instructions/count math.]
+Actually exact official full engine list is: Explain, Discover, Trajectory, Survival, VBC, Program effect, Outreach, Calibration, Monitor, Market, Demand, Profile, Pathway, Briefing, Scheduling, Queueing, Uplift, Early signal, Claims review, Knowledge, Risk adjustment, Network, Contract strategy, Target trial, Line of therapy, Trial feasibility, Loop closure, Diagnostic delay, Risk outcomes.
+Add "Monitor" to the Clinical & Causal group, making 10+5+7+7=29. Every official engine name must appear once. Keep method ribbon.
+
+In zone 10 remove duplicated or garbled secondary text. Each row has a name and ONE explanation only:
+Compiler design — Preserve meaning
+Types + contracts — Reject malformed plans
+Indexes + query planning — Avoid prompt-sized warehouses
+Memoization + content hashes — Reuse valid work
+Dependency invalidation — Refresh changed evidence
+Provenance + event history — Explain the result
+Usage ledger + bounded retries — Expose inference cost
+Protected evaluation + ablations — Measure component value
+
+Preserve all other content exactly. Maximum available image quality and legible text. No new content or style changes.

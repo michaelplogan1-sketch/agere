@@ -1,14 +1,13 @@
 # Agere: how the full stack answers a question
 
-October 19, 2026 · 100 component/role entries · all 29 registered analytical engines.
+October 19, 2026 · 100 component/role entries · all 29 registered analytical engines. Current image: LinkedIn conceptual-use-case edition; earlier posters are superseded.
 
 **The architectural advantage is to preserve meaning, select relevant evidence, interpret ambiguous language in bounded tasks, and execute the right calculation. Each layer addresses a different source of error. Selective routing and reuse are intended to improve economics at the same time.**
 
 A health warehouse provides records. A defensible answer also needs the correct patient identity, time window, concept mapping, denominator, interpretation of notes, estimator and source lineage. Agere supplies those mechanisms above the warehouse. It does not run every component for every question.
 
-![Agere full stack](agere-full-stack-explained-2026-10-19.png)
+![Agere full stack](agere-linkedin-stack-2026-10-19.png)
 
-**Poster correction:** the image incorrectly labels both Qwen paths as default-off. Narrow slot filling is default-on when available; broad SQL generation is default-off. The component descriptions below and interactive map are corrected. The saved generation prompt is historical.
 
 ## The roles that were previously too vague
 

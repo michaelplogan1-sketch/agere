@@ -2,9 +2,8 @@
 
 October 19, 2026. Source baseline: `8687121`; live architecture plus selectable and research branches. All demonstrated patient data are synthetic.
 
-![Agere full stack explanation](agere-full-stack-explained-2026-10-19.png)
+![Agere full stack explanation](agere-linkedin-stack-2026-10-19.png)
 
-**Poster correction:** narrow Qwen slots are default-on when available; broad Qwen SQL is default-off. The image’s “both default off” label is incorrect; the written guide and interactive map supersede that label.
 
 The engineering proposition is selective computation: preserve the question's meaning, use reusable domain code where it applies, and spend on model inference where it adds capability. Several routes share one execution and evidence contract. The poster shows the major subsystem families, not every source file or a mandatory sequence of model calls.
 
@@ -71,6 +70,8 @@ The pilot workspace and main `/ask` use different source snapshots; the populati
 Evidence: `artifacts/product-workflows/execution-view-2026-10-19/live-answer.jpg`, `artifacts/product-workflows/frontier-fallback-2026-10-19/live-specialist-result.json`, `repaired-result.json`, and [saved analytical evidence](../study/PROOF_STATUS.md). Existing synthetic checks establish finite behavior, not clinical qualification.
 
 ## Image provenance
+
+The current [LinkedIn edition](agere-linkedin-stack-2026-10-19.png) presents a theoretical use case, corrects narrow versus broad Qwen status, includes Monitor among all 29 engines, and highlights total cost per correct answer. The [post and attribution suggestions](LINKEDIN_POST_2026-10-19.md), [generation prompt](linkedin-stack-prompt-2026-10-19.txt) and [targeted edit prompt](linkedin-stack-edit-prompt-2026-10-19.txt) are saved. Prior images remain historical. No post has been published.
 
 Generated and revised with the built-in OpenAI image-generation tool. The tool did not expose its underlying model version; no claim about an exact model name or worldwide ranking is made. No Runway upgrade or paid external image generation was used. The [original prompt](stack-atlas-prompt-2026-10-19.txt) and [targeted correction](stack-atlas-edit-2026-10-19.txt) are retained. Gray dashed branches are optional/research; selectable model lists do not mean every model runs for every question.
 
