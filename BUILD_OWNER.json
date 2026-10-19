@@ -8,7 +8,7 @@
   "active_work": "G3: independently validated analytical proof and general fallback accuracy repair; no unvalidated-key runs or rescoring",
   "latest_delivery": "GRAPH_OBSERVATION_BUILD.md",
   "latest_receipt": "artifacts/agere-graph-observation-v1/implementation-receipt.json",
-  "owned_server_pid": 1425,
+  "owned_server_pid": 7655,
   "owned_server_session": null,
   "full_queue_acceptance": false,
   "spending_limit": "uncapped",
@@ -27,8 +27,8 @@
   "latest_morning_report": "AGERE_MORNING_STATUS_2026-10-11.md",
   "latest_architecture_review": "AGERE_CTO_REVIEW_2026-10-11_EVENING.md",
   "pause_reason": null,
-  "last_observed_server_session": 77902,
-  "server_status": "Existing :8885 service verified; update to current committed source pending. Continuation automation deleted at Mike request.",
+  "last_observed_server_session": null,
+  "server_status": "Ready on :8885 from tested committed source 426659c; PID 7655. Health and workspace-list endpoints passed. Existing warehouse configuration overlay preserved. Continuation reminder deleted.",
   "unsealed_work": {
     "status": "inactive_candidate",
     "path": "artifacts/agere-citation-recovery-v1",
@@ -67,5 +67,21 @@
   },
   "owner_agent": "Codex, build owner",
   "source_control": "git; codex/agere-validated-proof; commit only owned paths as Michael Logan <michael.p.logan1@gmail.com>",
-  "heartbeat_removal_authorization": "Mike 2026-10-19: \"i am here you dont need the continue building reminder\"; deleted through the Codex automation tool."
+  "heartbeat_removal_authorization": "Mike 2026-10-19: \"i am here you dont need the continue building reminder\"; deleted through the Codex automation tool.",
+  "live_runtime": {
+    "pid": 7655,
+    "commit": "426659c6f5fb0e0e16b6c09a4edfe9a724ce5f57",
+    "rollback_commit": "a5bafb242feb7b8c2f7ef7ad7d7664100c2df1b9",
+    "health": {
+      "status": "ready",
+      "synthetic": true
+    },
+    "config_preserved": true,
+    "log": "/private/tmp/agere-live-20261019.log",
+    "worktree": "/Users/mikel/agere-mvp-run",
+    "port": 8885,
+    "verified_at": "2026-10-19T13:01:02.075794+00:00",
+    "source_status": "Committed source; preexisting config overlay and data/model symlinks retained",
+    "frontier_review": "disabled by default"
+  }
 }
