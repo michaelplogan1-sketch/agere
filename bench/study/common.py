@@ -30,6 +30,10 @@ GENERATOR = Path('/Users/mikel/synthetic-patient-ecosystem')
 BREADTH_RELEASE = 'releases/healthcare-warehouse-v2.12'
 BREADTH_SAMPLE = 'releases/healthcare-warehouse-v2.12-sample-0.30-native'
 BREADTH_QUESTIONS = GENERATOR / BREADTH_SAMPLE / 'questions' / 'questions.jsonl'
+# The second scored set can be swapped for another sealed generator set (Gold-50: questions/gold50.jsonl, scored with
+# --gold50): AGERE_STUDY_SET2_QUESTIONS names the file, AGERE_STUDY_SET2_SCORER the scorer flag. Defaults: the native 150.
+SET2_QUESTIONS = Path(os.environ.get('AGERE_STUDY_SET2_QUESTIONS') or BREADTH_QUESTIONS)
+SET2_SCORER = os.environ.get('AGERE_STUDY_SET2_SCORER') or '--questions'
 
 # Every flag an arm may set. Arm A (and every other arm) starts with all of these removed from the inherited environment,
 # so a flag left in the owner's shell can never leak into an arm; each arm then sets only its own.
@@ -110,9 +114,14 @@ def locked_questions():
 
 def breadth_questions():
     out = []
-    for q in read_jsonl(BREADTH_QUESTIONS):
+    rows = read_jsonl(SET2_QUESTIONS)
+    shared = next((r.get('definition') for r in rows if r.get('id') == 'SHARED'), None)  # a set's shared definitions
+    for q in rows:
+        if q.get('id') == 'SHARED':
+            continue
         out.append({'set': 'breadth', 'id': q['id'],
-                    'question': q['question'] + (' Definition: ' + q['definition'] if q.get('definition') else ''),
+                    'question': q['question'] + (' Definition: ' + q['definition'] if q.get('definition') else '')
+                    + (' Shared definitions: ' + shared if shared else ''),
                     'answer_type': q['answer_type'], 'domain': q.get('domain')})
     return out
 

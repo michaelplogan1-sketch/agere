@@ -77,3 +77,9 @@ Run with `bench/study/run.py`. Each arm writes answers, the ledger, timings and 
    answers across full rebuilds) instead of a second pass. The locked set is Gold 10 (9 questions, generator digest
    05c5b54b) until Gold-50 is sealed; the breadth set is the native 150 on the generator's corrected key e76655d2 (nine
    answers still under audit, reported as provisional). Arms B and D receive the full modeled-table documentation.
+2. 2026-10-19, before any Gold-50 run. Gold-50 (41 new questions from the generator, sealed answers sha256 431bced9a54ecde1,
+   34 of the 39 answerable outside Agere's family shapes, 2 expected declines) is scored for every arm directly against the
+   generator's sealed key with its --gold50 scorer, run S2-gold50, arms A, B, D and E, one pass. Question-by-question locking
+   against an Agere derivation is skipped: locking only where Agere agrees would bias the set toward Agere, and the sealed
+   key is the same independent reference for every arm. Disputes found afterwards are audited by the generator and, if
+   upheld, applied to all arms alike and logged here.

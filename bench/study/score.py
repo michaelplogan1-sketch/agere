@@ -67,14 +67,18 @@ def score_locked(answers, ref=None):
 
 def score_breadth(submission_path, out_path=None):
     """Run the generator scorer on a breadth submission -> ({id: {'correct', 'answered', ...}}, the scorer's output)."""
-    cmd = ['python3', '-m', 'ecosystem.eval_scorer', '--release', common.BREADTH_RELEASE, '--questions', str(Path(submission_path).resolve()),
-           '--sample-release', common.BREADTH_SAMPLE, '--per-question']
+    flag = common.SET2_SCORER
+    cmd = ['python3', '-m', 'ecosystem.eval_scorer', '--release', common.BREADTH_RELEASE, flag, str(Path(submission_path).resolve()),
+           '--sample-release', common.BREADTH_SAMPLE] + (['--per-question'] if flag == '--questions' else [])
     proc = subprocess.run(cmd, cwd=str(common.GENERATOR), capture_output=True, text=True, timeout=1800)
     if proc.returncode != 0:
         raise RuntimeError(f'generator scorer failed: {proc.stderr[-800:]}')
     res = json.loads(proc.stdout)
     if out_path:
         Path(out_path).write_text(json.dumps(res, indent=1))
+    if 'per_question' not in res and isinstance(res.get('questions'), dict):  # --gold50 / --gold10 shape: {id: result}
+        return {qid: {'id': qid, 'answered': r.get('status') not in ('missing', 'abstain', 'abstained'), **r}
+                for qid, r in res['questions'].items()}, res
     return {r['id']: r for r in res.get('per_question') or []}, res
 
 
