@@ -48,7 +48,7 @@ ARMS = {
     'C': {'kind': 'baseline', 'model': 'claude-sonnet-5-5', 'env': {}, 'label': 'Mid model for everything (text-to-SQL)'},
     'D': {'kind': 'baseline', 'model': 'claude-haiku-5-5', 'env': {}, 'label': 'Small model for everything (text-to-SQL)'},
     'E': {'kind': 'agere', 'pipeline': 'hybrid', 'env': {}, 'label': 'Agentic analysts for everything (hybrid core)'},
-    'A2': {'kind': 'agere', 'pipeline': 'full', 'label': 'Agere, Opus analysts and tie-break for unclaimed questions',
+    'A2': {'kind': 'agere', 'pipeline': 'full', 'label': 'Agere, Opus analysts and tie-break for unclaimed questions (exploratory)',
            'env': {'AGERE_HYBRID_MODEL': 'claude-opus-5-5', 'AGERE_HYBRID_ESCALATION_MODEL': 'claude-opus-5-5'}},
     'A3': {'kind': 'agere', 'pipeline': 'full', 'label': 'Agere, bounded frontier review of failed or unclear analysts (candidate)',
            'env': {'AGERE_HYBRID_REVIEW': 'on', 'AGERE_HYBRID_REVIEW_MODEL': 'claude-opus-5-5'}},
@@ -62,7 +62,7 @@ ARMS = {
     'F6': {'kind': 'agere', 'pipeline': 'full', 'label': 'A without the stated-definition rule',
            'env': {'AGERE_ENGINES_DEFER_ON_DEFINITIONS': 'off'}},
 }
-ARM_ORDER = ('A', 'B', 'C', 'D', 'E', 'F1', 'F2', 'F3', 'F4', 'F5', 'F6')
+ARM_ORDER = ('A', 'A2', 'A3', 'B', 'C', 'D', 'E', 'F1', 'F2', 'F3', 'F4', 'F5', 'F6')
 WARM_ARM = 'A'  # the one arm whose second pass reuses its first pass's caches (protocol: "warm on the second pass by design")
 
 

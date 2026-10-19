@@ -2,7 +2,8 @@
 
 The owner is Codex under Mike's October 19 handoff (BUILD_OWNER.json). Work on
 `codex/agere-validated-proof`; preserve concurrent edits. AGERE_BUILD_CONTROL.json
-owns the gate and exact next action. Automatic heartbeat remains PAUSED.
+owns the gate and exact next action. Mike requested removal of the continuation
+reminder on October 19; the heartbeat is deleted. Continue in human chat turns.
 
 Never run or rescore a benchmark until all selected references are independently
 validated. Gold-50 and native 150 remain blocked on reference audits; reuse saved

@@ -127,6 +127,7 @@ class HarnessTest(unittest.TestCase):
         self.assertEqual(flags[('F5', 1)].get('AGERE_SPECIALISTS_FIRST'), 'off')
         self.assertNotIn('AGERE_SPECIALISTS_FIRST', flags[('A', 1)])
         self.assertTrue(all(p['status'] == 'done' for p in run['passes']), run['passes'])
+
         # A and the fake stack answer all three correctly at $0; D's fixed patient-list SQL gets Q1 right, cannot shape Q2 (count)
         # and lists the wrong patients for Q3
         a = json.loads((run_dir / 'A' / 'p1' / 'score.json').read_text())
@@ -142,6 +143,11 @@ class HarnessTest(unittest.TestCase):
         self.assertIn('F5', analysis['sets']['locked']['ablations'])
         self.assertEqual(analysis['certificates'][0]['tier'], 'cohort_family')
         self.assertTrue(any(r['arm'] == 'A' and r['warm_second_pass'] for r in analysis['repeatability']))
+
+    def test_exploratory_arms_are_not_dropped_from_analysis(self):
+        run_dir = self.run_study(['A2', 'A3'])
+        result = json.loads((run_dir / 'analysis.json').read_text())
+        self.assertEqual(set(result['sets']['locked']['arms']), {'A2', 'A3'})
 
     def test_report_renders_with_linked_numbers_and_no_external_calls(self):
         run_dir = self.run_study(['A', 'D'])

@@ -1,6 +1,6 @@
 {
  "schema": "agere-build-control/1",
- "updated_at": "2026-10-19T12:41:29.946840+00:00",
+ "updated_at": "2026-10-19T12:58:47.310640+00:00",
  "decision_basis": "AGERE_CTO_REVIEW_2026-10-11_EVENING.md",
  "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
  "required_references": [
@@ -278,19 +278,19 @@
   "kind": "manual_turn_checkpoint",
   "gate_id": "G3",
   "last_delivered_gate": "G3",
-  "user_behavior_delta": "2026-10-18 night (cb3f5de, 863dfb8): appointment versions delivered in one monthly file resolve by delivered order (source last-updated, else later row), not a record hash (ACC-11). ED visits count any non-voided payer claim, denied or reversed included, read from claim headers because denied claims arrive without lines (HOS-09); the utilization family now answers calendar-year and '>= N' / 'N or more times' questions at $0. Every product caller honours AGERE_LEDGER_PATH. Pre-registered study harness bench/study (arms A-F6, cold caches per arm-pass, McNemar + bootstrap, linked report).",
-  "measured_failure_reduction": "Both remaining generator batch-2 rule errors fixed generally. Gold 10 9/9 at $0 on the rebuilt pilot. Certificates refit on the new code: cohort 0.31%, dq 2.45%, vbc 2.5%. Study smoke (locked set): A 9/9 $0 with certificates, D (Haiku text-to-SQL) 6/9 $0.066, F2 9/9.",
+  "user_behavior_delta": "Complete analytical question definitions are retained up to 12,000 characters across planning, execution and conversations. An optional bounded frontier review executes and checks SQL and may resolve clarification only from an exact definition quote; it remains off by default. Study entry points and scorers reject unvalidated references. Exploratory A2/A3 appear in analysis. Mike removed the continuation reminder; manual chat work remains active.",
+  "measured_failure_reduction": "Three saved Gold-50 abstentions trace to the former 1,500-character input guard. The general fix passes independent tiny fixtures; Gold-50 correctness has not been retested. One authorized validated Gold10 regression passed 9/9, zero API calls/$0, median 0.24s. The prior focused suite passed 101 tests; the added exploratory-report fixture and five validation-gate tests passed. Deleted-reminder continuity is checked with absent, unexpectedly present and unauthorized-removal cases.",
   "evidence": [
-   "test_version_rules.py",
+   "test_analytical_fallback.py",
+   "bench/study/test_validation.py",
    "bench/study/test_study_harness.py",
-   "artifacts/study/smoke-2026-10-18b/report.md",
-   "tmp/gold10/G-acc11-hos09/score.json",
-   "config/agere/cascade_thresholds.json",
-   "docs/agere/gold10/locked.json"
+   "artifacts/study/S4-input-contract-regression/A/p1/score.json",
+   "docs/agere/study/PROOF_STATUS.md",
+   "docs/agere/study/REFERENCE_AUDIT_2026-10-19.md"
   ],
-  "remaining_gap": "Gold-50 references remain unvalidated (five pending dispute audits, two ambiguous items, two upheld key defects); native nine remain under audit. Gold 10 supports a small descriptive comparison only. Frontier fallback A2 remains exploratory until independently checked.",
-  "next_action": "G3: repair definition-length and unjustified-clarification failures generally; enforce independent reference validation before every study run/rescore. Audit Gold-50 from delivered inputs, reconcile through the generator scorer only, then rescore saved arms once. No unvalidated native/Gold-50 runs; no open-ended test loop.",
-  "next": "After reference reconciliation, one bounded corrected saved-answer analysis; qualify candidate fallback on validated evidence before activation. Full ten-area product backlog retained."
+  "remaining_gap": "Gold-50 all 41 new references and native nine remain pending independent validation. Gold10 A9/9 versus Opus7/9 at $0 versus $1.89 is a small descriptive result (paired p=.50), not general superiority. A2/A3 model quality is unqualified and A3 stays disabled. Full ten-area scope and G5 qualification gaps remain.",
+  "next_action": "G3: reconcile independently derived Gold-50 references with the generator (packet sent and validation resumed with Mike authorization); retain per-question evidence, wording and digest gates. Once all selected references are independently validated, rescore saved answers once. No unvalidated runs/rescores or repeated Gold10 regression.",
+  "next": "Keep current committed code running on :8885. Use validated evidence to decide whether a bounded candidate fallback run is justified; preserve unfavorable outcomes and distinguish post-hoc repair from held-out proof."
  },
  "decisions": [
   {
@@ -753,6 +753,12 @@
    "change": "Transfer build ownership to Codex; keep heartbeat paused. Select Gold-50 independent validation plus saved-answer rescore as least-cost proof route. Repair general routing failures in G3 while references are audited. Public EHRSQL/BIRD assessed as later external replication, not a shortcut to ACO full-stack evidence.",
    "scope_impact": "No product charter narrowing, reference truth access, external publication or clinical/model superiority claim. Preserve all concurrent work and old study artifacts.",
    "evidence": "docs/agere/study/PROTOCOL.md"
+  },
+  {
+   "at": "2026-10-19T12:58:47.310640+00:00",
+   "basis": "Mike: \"Send packet and resume validation\" and \"i am here you dont need the continue building reminder\". Validated Gold10 regression and general-fixture evidence.",
+   "change": "Sent the source-audit packet to the independent generator owner and resumed validation. Deleted the continuation automation through the app. Delivered general input preservation and a default-off frontier review candidate; no unvalidated benchmark work.",
+   "scope_impact": "No narrowing, qualification promotion, hidden-key access or outside publication/contact. Existing source configuration overlays preserved."
   }
  ]
 }

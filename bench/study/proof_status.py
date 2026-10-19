@@ -24,9 +24,20 @@ def main():
             raise ValueError('Unknown cost: cannot report cost per correct answer')
         sources[arm] = {'path': str(file.relative_to(common.ROOT)), 'sha256': common.sha256_file(file)}
     comparison = analyze.compare(rows['A'], rows['B'], 'A', 'B')
+    regression_dir = common.STUDY_ROOT / 'S4-input-contract-regression'
+    regression_questions = common.read_jsonl(regression_dir / 'questions.jsonl')
+    require_validated(regression_questions)
+    regression_file = regression_dir / 'A/p1/score.json'
+    regression = json.loads(regression_file.read_text())
+    if {r['id'] for r in regression['questions']} != set(ids):
+        raise ValueError('Regression set differs from the validated comparison')
     result = {'created_at': datetime.now(timezone.utc).isoformat(), 'status': 'limited_demonstration_not_superiority_proof',
               'analysis_type': 'existing validated Gold 10 subset only; no answers rerun or rescored',
               'reference_validation': validation, 'sources': sources,
+              'post_change_regression': {'path': str(regression_file.relative_to(common.ROOT)),
+                                         'sha256': common.sha256_file(regression_file),
+                                         'summary': regression['summary'],
+                                         'role': 'regression only, not an independent comparison'},
               'arms': {arm: {'n': len(rs), 'passes': sum(r['correct'] for r in rs),
                             'api_cost_usd': round(sum(r['cost_usd'] for r in rs), 8),
                             'api_cost_per_pass_usd': sum(r['cost_usd'] for r in rs) / sum(r['correct'] for r in rs)}
@@ -81,6 +92,12 @@ establishing performance on Agere's native ACO workflow. This is an engineering 
 The product now accepts complete analytical questions and definitions up to 12,000 characters across planning,
 execution and conversation storage. Three saved Gold-50 abstentions reported the old 1,500-character rejection.
 The fix is general and verified on independent tiny fixtures; their benchmark correctness has not been retested.
+
+One authorized post-change Gold 10 regression (S4-input-contract-regression) passed
+{regression['summary']['correct']}/{regression['summary']['n']} with ${regression['summary']['cost_usd']:.2f}
+in model API charges and median latency {regression['summary']['median_seconds']:.2f} seconds.
+This checks preservation of existing validated behavior; it is not a fresh held-out comparison or evidence
+that the pending Gold-50 failures are corrected.
 
 A bounded Opus review candidate can address analyst implementation failures or unsupported clarification requests.
 It executes and checks SQL, preserves genuine missing-input declines, records costs, and requires a quoted definition

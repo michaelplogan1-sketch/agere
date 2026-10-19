@@ -36,18 +36,24 @@ def inspect(root, control, owner, automation, intent="review", gate=None):
     require(control.get("schema") == "agere-build-control/1", "Unknown control schema")
     require(owner.get("build_status") in ("PAUSED", "ACTIVE"), "Invalid build status")
     manual = owner.get("continuation_mode") == "human_turns_with_outcome_next_step_and_master_plan_update"
-    expected_heartbeat = "PAUSED" if manual else owner.get("build_status")
+    heartbeat_deleted = owner.get("heartbeat_status") == "DELETED"
+    expected_heartbeat = "DELETED" if heartbeat_deleted else "PAUSED" if manual else owner.get("build_status")
     require(owner.get("heartbeat_status") == expected_heartbeat,
             "Owner heartbeat status disagrees with continuation mode")
-    require(automation.get("status") == expected_heartbeat,
-            "Actual heartbeat status disagrees with owner")
-    require(automation.get("id") == owner.get("heartbeat_id"), "Wrong heartbeat")
+    if heartbeat_deleted:
+        require(manual and bool(owner.get("heartbeat_removal_authorization")),
+                "Deleted heartbeat requires manual continuation and user authorization")
+        require(not automation, "Deleted heartbeat still exists")
+    else:
+        require(automation.get("status") == expected_heartbeat,
+                "Actual heartbeat status disagrees with owner")
+        require(automation.get("id") == owner.get("heartbeat_id"), "Wrong heartbeat")
     # A paused Codex heartbeat may keep targeting a prior Codex thread when the
     # owner is a non-Codex agent (e.g. Claude Code); it never fires while paused.
-    require(automation.get("target_thread_id") == owner.get("thread_id")
+    require(heartbeat_deleted or automation.get("target_thread_id") == owner.get("thread_id")
             or (automation.get("status") == "PAUSED" and not str(owner.get("thread_id")).startswith("01")),
             "Heartbeat targets a different build owner")
-    require("AGERE_BUILD_CONTROL.json" in automation.get("prompt", ""),
+    require(heartbeat_deleted or "AGERE_BUILD_CONTROL.json" in automation.get("prompt", ""),
             "Heartbeat does not read the canonical control file")
     require(owner.get("build_control") == "AGERE_BUILD_CONTROL.json",
             "Owner does not point to canonical control")
@@ -131,8 +137,12 @@ def main():
         heartbeat_id = owner["heartbeat_id"]
         if Path(heartbeat_id).name != heartbeat_id:
             raise ValueError("Invalid heartbeat identifier")
-        with (codex_dir / "automations" / heartbeat_id / "automation.toml").open("rb") as source:
-            automation = tomllib.load(source)
+        heartbeat_path = codex_dir / "automations" / heartbeat_id / "automation.toml"
+        if owner.get("heartbeat_status") == "DELETED" and not heartbeat_path.exists():
+            automation = {}
+        else:
+            with heartbeat_path.open("rb") as source:
+                automation = tomllib.load(source)
         result = inspect(root, control, owner, automation, args.intent, args.gate)
     except (OSError, ValueError, KeyError) as exc:
         result = {"status": "failed", "errors": [str(exc)]}

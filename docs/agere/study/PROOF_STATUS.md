@@ -45,6 +45,12 @@ The product now accepts complete analytical questions and definitions up to 12,0
 execution and conversation storage. Three saved Gold-50 abstentions reported the old 1,500-character rejection.
 The fix is general and verified on independent tiny fixtures; their benchmark correctness has not been retested.
 
+One authorized post-change Gold 10 regression (S4-input-contract-regression) passed
+9/9 with $0.00
+in model API charges and median latency 0.24 seconds.
+This checks preservation of existing validated behavior; it is not a fresh held-out comparison or evidence
+that the pending Gold-50 failures are corrected.
+
 A bounded Opus review candidate can address analyst implementation failures or unsupported clarification requests.
 It executes and checks SQL, preserves genuine missing-input declines, records costs, and requires a quoted definition
 to override clarification. It remains **disabled by default**, with no model-quality improvement claimed.
