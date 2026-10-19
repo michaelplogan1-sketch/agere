@@ -1,6 +1,6 @@
 {
  "schema": "agere-build-control/1",
- "updated_at": "2026-10-19T15:56:24.839223+00:00",
+ "updated_at": "2026-10-19T16:02:05.716157+00:00",
  "decision_basis": "AGERE_CTO_REVIEW_2026-10-11_EVENING.md",
  "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
  "required_references": [
@@ -278,14 +278,15 @@
   "kind": "manual_turn_checkpoint",
   "gate_id": "G3",
   "last_delivered_gate": "G3",
-  "user_behavior_delta": "Updated the public visual headline to Data \u2192 Information \u2192 Intelligence \u2192 Wisdom and removed original action/follow-through and research-candidate panels at Mike\u2019s request. Reflowed the core analytics stack, classic computer science and token economics; final panels numbered 01\u201309.",
-  "measured_failure_reduction": "Presentation refinement only. Final image visually inspected for requested heading, removal of original panels 9/11, retained model/analytics content and token economics. No runtime, benchmark or paid API evaluation.",
+  "user_behavior_delta": "Simplified the public visual to the DIKW headline only at the top and added the saved nine-question pilot API-economics comparison at the bottom: specialist-first $0.00 and 9/9 passes; Opus text-to-SQL $1.89 and 7/9 passes; API dollars per passing answer $0.00 versus $0.27.",
+  "measured_failure_reduction": "Presentation refinement only. Visually verified headline-only header, retained nine panels, comparison values and readable scope/cost footnotes against saved evidence. No runtime change, benchmark rerun, rescore or paid API evaluation.",
   "evidence": [
-   "docs/agere/architecture/data-information-intelligence-wisdom-stack.png",
-   "docs/agere/architecture/data-information-intelligence-wisdom-prompt.txt",
-   "docs/agere/architecture/LINKEDIN_POST_2026-10-19.md"
+   "docs/agere/architecture/data-information-intelligence-wisdom-economics.png",
+   "docs/agere/architecture/data-information-intelligence-wisdom-economics-prompt.txt",
+   "docs/agere/architecture/LINKEDIN_POST_2026-10-19.md",
+   "artifacts/study/validated-proof-2026-10-19/evidence.json"
   ],
-  "remaining_gap": "Product state unchanged: G3 active, G5 blocked. Narrower public visual does not remove any product capability or implementation scope. No publication performed; broader comparative accuracy/economics remain unqualified.",
+  "remaining_gap": "Product state unchanged: G3 active, G5 blocked. Pilot evidence is a small workflow-selected synthetic set, not broad superiority proof or total operating cost; no token-count reduction claimed. Local compute/build costs unmeasured. No publication performed.",
   "next_action": "In G3, consolidate escalation and acceptance policy across together/economical_planner while preserving current specialist coverage, source scope, explicit declines, and per-request cost. Start with behavior-preserving dispatch boundaries; do not lower analyst fan-out or retire a qualified model without relevant evidence.",
   "next": "Simplify orchestration around the existing components, then demonstrate a connected workflow; do not add another model catalog."
  },

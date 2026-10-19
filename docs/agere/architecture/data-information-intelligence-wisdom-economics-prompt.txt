@@ -1,0 +1,33 @@
+Use case: text-localization / infographic edit.
+Input image: the supplied infographic is the EXACT edit target. Preserve its ivory background, evergreen/cobalt/copper colors, crisp technical architecture styling, and all nine stack panels. Make only the specified top and bottom edits, with improved text sharpness. Output at high resolution for LinkedIn, retaining the same landscape proportions.
+
+TOP: keep ONLY the main headline, verbatim:
+"Data → Information → Intelligence → Wisdom"
+Delete every other item above the stack panels: the synthetic-healthcare subtitle, the sentence beginning "Preserve meaning", the spaced healthcare tagline, the legend, and its small routing sentence. The headline is the entire top header. Move the nine-panel body upward into reclaimed space without shrinking body text.
+
+BODY INVARIANTS: retain panels 01 through 09 and their component labels, model names, explanations, arrows, all 29 analytic engines (including Monitor), and eight classic computer-science mechanisms. Do not add panels for actions or research candidates; those were intentionally removed. Do not add product/company branding. In panel 04 make the Perplexity model ID legible and exact: "pplx-decider-v1.1-27b". Jev remains "Jev 1.13.0". Qwen remains Qwen3-4B + LoRA with narrow slots default-on when available and broad SQL default-off experiment. Keep Opus/Haiku/Sonnet names and distinct roles. These are alternate routes, not all models on every question.
+
+BOTTOM: replace the ENTIRE existing bottom slogan and "FROM NOISE TO INSIGHT" box with ONE full-width, clear comparison panel. This is the actual saved small experiment, so numerical labels must be exact. Make it well-spaced and highly legible, using the reclaimed header space for height if needed. Use an elegant two-column scorecard/table with comparable font sizes, a narrow row-label column, and green/copper column accents. No decorative chart that implies total costs.
+
+Bottom heading, exact:
+"TOKEN ECONOMICS • OBSERVED PILOT RESULTS"
+Small context line:
+"9 questions • synthetic healthcare data • independently reconciled references"
+
+Table headers:
+"Specialist-first stack"
+"LLM on every question"
+Under the second header, smaller:
+"Claude Opus 5.5 → SQL"
+
+Rows and exact values:
+"Model API charges" | "$0.00" | "$1.89"
+"Questions passing scorer" | "9 / 9" | "7 / 9"
+"API cost per passing answer" | "$0.00" | "$0.27"
+
+Emphasize the total API charge figures, but every metric must have its label so $0.00 is clearly API charges, not total operating cost.
+At the bottom, include exactly these two short, readable footnote lines:
+"Saved pilot run; not every component pictured ran. Patient-list pass threshold: F1 ≥ 0.98."
+"API charges only; local compute and build costs excluded. Small set, not a general benchmark."
+
+Do not include unsupported token counts, percent savings, claims of universal accuracy/superiority, zero total cost, or free operation. No other slogans or prose outside the headline, retained stack labels, and specified evidence panel. Keep all lettering clean and correct.
