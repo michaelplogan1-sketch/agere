@@ -1435,7 +1435,12 @@ def execute(stack, plan, *, question=None):
             medication_identity=identity(path)
         context_identities=[];interpretation_snapshots={};outcome_preparations={};protocol_preparations={};baseline_preparations={};landmark_preparations={};financial_preparations={};accountability_preparations={};change_preparations={}
         document_preparations={};document_change_preparations={};acquisition_preparations={};measure_preparations={};reference_preparations={};observation_preparations={}
+        knowledge_dependencies = {}
         for n in plan['nodes']:
+            if n['operation']=='knowledge':
+                from .healthcare_learning import dependency as knowledge_dependency
+                knowledge_dependencies[n['id']] = knowledge_dependency(path, n['parameters']['query'])
+                context_identities.append({'knowledge': n['id'], 'dependency': knowledge_dependencies[n['id']]})
             if n['operation']=='observation_process':
                 from .graph_observation import prepare as prepare_observation
                 observation_preparations[n['id']]=prepare_observation(path,n['parameters'])
@@ -1995,6 +2000,9 @@ def execute(stack, plan, *, question=None):
                 raise ValueError('Reference changed during graph execution; result not cached')
         if functional_population:functional_sources.inspect(path,functional_population['id'])
         for population in domain_populations.values():domain_sources.inspect(path,population['id'])
+        for ident, prior in knowledge_dependencies.items():
+            if knowledge_dependency(path, node_index[ident]['parameters']['query']) != prior:
+                raise ValueError('Knowledge source or correction changed during execution; result not cached')
         # Wall-time receipt per phase/operator (latency budgets read it); not part of the cache key.
         result['compute']['timings'] = {'setup_seconds': round(setup_seconds, 4), 'nodes': node_seconds,
                                         'answer_seconds': round(time.perf_counter() - answer_started, 4)}

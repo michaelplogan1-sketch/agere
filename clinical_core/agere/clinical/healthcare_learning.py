@@ -232,6 +232,11 @@ def topics(question):
     return [k for k,pattern in TOPICS.items() if re.search(pattern, question, re.I)]
 
 
+def dependency(path, question):
+    """Identity for engine-result reuse, including suspended/deleted-source feedback."""
+    return _digest([knowledge_context(question), context(path, question), feedback_context(path, question)])
+
+
 def summary(path):
     counts, gaps, questions = Counter(), Counter(), 0
     target = Path(path)/'learning.sqlite3'

@@ -177,5 +177,27 @@ class HealthcareLearning(unittest.TestCase):
   self.assertFalse(H.feedback_context(self.path,'What is CBP for 2027 Star Ratings?'))
   rejected=self.correct('What is CBP for 2027 Star Ratings?',rule)
   self.assertEqual(rejected['rule_verification']['status'],'rejected')
+ def test_actual_graph_cache_rechecks_corrections_and_sources(self):
+  from test_analysis_graph import GraphExecution, graph, node
+  from clinical_core.agere.clinical import analysis_graph as G
+  fixture=GraphExecution();fixture.setUp();self.addCleanup(fixture.tearDown)
+  q,field,_,_=CASES[0];plan=graph([node('answer','knowledge',parameters={'query':q})])
+  before=G.execute(fixture.stack,plan,question=q)
+  self.assertEqual(before['answer']['status'],'answered')
+  self.assertTrue(G.execute(fixture.stack,plan,question=q)['cache_hit'])
+  rule=rule_for(q,field)
+  learning.record_correction(fixture.root,q,'Recheck the episode period.',rule=rule)
+  after=G.execute(fixture.stack,plan,question=q)
+  self.assertFalse(after['cache_hit']);self.assertNotEqual(before['result_id'],after['result_id'])
+  self.assertTrue(after['answer']['overall']['knowledge']['learning']['verified_rules'])
+  self.assertTrue(G.execute(fixture.stack,plan,question=q)['cache_hit'])
+  learning.record_correction(fixture.root,q,'Still uncertain.')
+  pending=G.execute(fixture.stack,plan,question=q)
+  self.assertFalse(pending['cache_hit'])
+  self.assertFalse(pending['answer']['overall']['knowledge']['learning']['verified_rules'])
+  self.assertTrue(pending['answer']['overall']['knowledge']['learning']['recheck_obligations'])
+  self.mutate_entry(rule['entry_id'],lambda e:e['facts'].update(episode_post_discharge_days=31))
+  changed=G.execute(fixture.stack,plan,question=q)
+  self.assertFalse(changed['cache_hit']);self.assertNotEqual(pending['result_id'],changed['result_id'])
 
 if __name__=='__main__':unittest.main()
