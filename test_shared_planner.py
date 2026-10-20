@@ -152,7 +152,7 @@ class SharedPlanner(unittest.TestCase):
                 'select': [{'kind': 'count_distinct', 'field': 'patient.patient_id', 'alias': 'patients', 'quote': 'Count'}],
                 'where': {'op': '>', 'field': 'patient.age_latest', 'value': 65, 'quote': 'older than 65'},
                 'group_by': [], 'order_by': [], 'limit': None, 'unresolved': []}
-        model = Mock(side_effect=[(json.dumps(plan), {}), (json.dumps({'equivalent': False, 'issues': ['A predicate is incorrect']}), {})])
+        model = Mock(side_effect=[(json.dumps(plan), {}), (json.dumps({'equivalent': False, 'issues': ['A predicate is incorrect']}), {})] * 3)
         with patch.object(S.sql_query, 'execute', side_effect=AssertionError('Must not execute')):
             a = S.compose(self.stack, q, model=model)
         self.assertEqual(a['answer']['status'], 'not_understood')
@@ -168,6 +168,115 @@ class SharedPlanner(unittest.TestCase):
         self.assertEqual(a['count'], 3)
         self.assertEqual(a['status'], 'partial')
         self.assertFalse(a['actionable_cohort'])
+
+    def test_enabled_hosted_interpreter_skips_unqualified_local_and_caches_exact_contract(self):
+        q = 'Count patients who are older than 65'
+        p = L.parse(self.catalog, 'Count patients where age > 65')
+        p['where']['quote'] = 'older than 65'
+        model = Mock(side_effect=[
+            (json.dumps(p), {'api_usd': .02}),
+            (json.dumps({'equivalent': True, 'issues': []}), {'api_usd': .01})])
+        model.identity = 'configured-frontier'
+        self.stack.allow_live = True
+        self.stack.receipts = self.path
+        with patch('clinical_core.agere.clinical.nl2sql.HostedModel', return_value=model), \
+             patch('clinical_core.agere.clinical.nl2sql.LocalModel.get', side_effect=AssertionError('No local guessing')), \
+             patch('clinical_core.agere.gateway.default_ledger_path', return_value=self.path/'ledger.sqlite3'):
+            a = S.compose(self.stack, q)
+            again = S.compose(self.stack, q)
+            deterministic = S.compose(self.stack, 'Count patients')
+        self.assertEqual(a['answer']['status'], 'answered')
+        self.assertEqual(a['answer']['patient_ids'], ['A', 'C', 'OUTSIDE'])
+        self.assertTrue(a['answer']['actionable_cohort'])
+        self.assertFalse(a['planner_receipt']['interpretation']['qualified_interpretation'])
+        self.assertEqual(a['new_paid_api_calls'], 2)
+        self.assertAlmostEqual(a['planning_economics']['new_api_estimate_usd'], .03)
+        self.assertEqual(again['new_paid_api_calls'], 0)
+        self.assertEqual(deterministic['new_paid_api_calls'], 0)
+        self.assertEqual(model.call_count, 2)
+        audit_payload = json.loads(model.call_args_list[1].args[1])
+        self.assertEqual(audit_payload['compiled_sql'], a['request_contract']['query'])
+        self.assertIn('patient', audit_payload['catalog']['selected_schemas'])
+
+    def test_explicit_frontier_policy_is_honored_and_requires_live_capability(self):
+        with self.assertRaises(QuestionNotUnderstood):
+            S.compose(self.stack, 'Count patients', planning='frontier')
+        p = L.parse(self.catalog, 'Count patients')
+        model = Mock(side_effect=[
+            (json.dumps(p), {'api_usd': .01}),
+            (json.dumps({'equivalent': True, 'issues': []}), {'api_usd': .01})])
+        self.stack.allow_live = True
+        self.stack.receipts = self.path
+        with patch('clinical_core.agere.clinical.nl2sql.HostedModel', return_value=model), \
+             patch('clinical_core.agere.gateway.default_ledger_path', return_value=self.path/'ledger.sqlite3'):
+            a = S.compose(self.stack, 'Count patients', planning='frontier')
+        self.assertEqual(model.call_count, 2)
+        self.assertEqual(a['answer']['count'], 5)
+
+    def test_semantic_mismatch_gets_bounded_repair_and_never_executes_wrong_plan(self):
+        q = 'Count patients who are older than 65'
+        p = L.parse(self.catalog, 'Count patients where age > 65')
+        p['where']['quote'] = 'older than 65'
+        model = Mock(side_effect=[
+            (json.dumps(p), {}), (json.dumps({'equivalent': False, 'issues': ['Check the threshold']}), {}),
+            (json.dumps(p), {}), (json.dumps({'equivalent': True, 'issues': []}), {})])
+        a = S.compose(self.stack, q, model=model)
+        self.assertEqual(a['answer']['count'], 3)
+        self.assertEqual(model.call_count, 4)
+        self.assertIn('semantic_review', json.loads(model.call_args_list[2].args[1])['validator_feedback'])
+
+    def test_received_fixed_window_field_satisfies_only_its_actual_window(self):
+        q = 'Average readmitted_30d for admissions in 2029'
+        p = L.parse(self.catalog, q)
+        p['select'][0]['quote'] = '30 day readmission proportion'
+        q = '30 day readmission proportion for admissions in 2029'
+        p['where']['quote'] = 'admissions in 2029'
+        result, _ = self.execute_contract(q, p)
+        self.assertAlmostEqual(result['value'], 1/3)
+        p['select'][0]['quote'] = '90 day readmission proportion'
+        with self.assertRaisesRegex(R.PlanError, 'Numeric constraints'):
+            self.execute_contract(q.replace('30', '90'), p)
+
+    def test_separate_source_spans_do_not_become_unresolved_requirements(self):
+        p = L.parse(self.catalog, 'Count patients')
+        q = 'How many patients? Give the count.'
+        p['select'][0]['quote'] = ['How many', 'count']
+        r, _ = self.execute_contract(q, p)
+        self.assertEqual(r['value'], 5)
+        p['select'][0]['quote'].append('invented wording')
+        with self.assertRaises(R.PlanError): self.execute_contract(q, p)
+
+    def test_analytical_worklist_keeps_selected_subset_not_entire_population(self):
+        r = {'answer': {'status': 'answered', 'patient_ids': ['B'], 'count': 1}}
+        answer = S.engine_answer({}, r, ['A', 'B', 'C'])
+        self.assertEqual(answer['patient_ids'], ['B'])
+        self.assertEqual(answer['count'], 1)
+        r['answer']['patient_ids'] = []
+        self.assertEqual(S.engine_answer({}, r, ['A', 'B', 'C'])['patient_ids'], [])
+        r['answer']['patient_ids'] = ['OUTSIDE']
+        with self.assertRaises(R.PlanError): S.engine_answer({}, r, ['A', 'B', 'C'])
+
+    def test_compound_analyses_retain_each_answer_and_do_not_merge_distinct_worklists(self):
+        graph = {'nodes': [{'id': 'population'}, {'id': 'one', 'purpose': 'First analysis'},
+                           {'id': 'two', 'purpose': 'Second analysis'}]}
+        result = {'answers_by_node': {
+            'one': {'status': 'answered', 'patient_ids': ['A'], 'count': 1},
+            'two': {'status': 'answered', 'patient_ids': ['B'], 'count': 1}}}
+        a = S.engine_answer(graph, result, ['A', 'B', 'C'])
+        self.assertEqual(len(a['sections']), 2)
+        self.assertEqual(a['sections'][0]['answer']['patient_ids'], ['A'])
+        self.assertEqual(a['sections'][1]['answer']['patient_ids'], ['B'])
+        self.assertEqual(a['patient_ids'], [])
+        self.assertFalse(a['actionable_cohort'])
+
+    def test_wording_based_metric_cannot_replace_executed_engine_definition(self):
+        from clinical_core.agere.clinical import answer_checks
+        definition = {'source_request_id': 'fixture', 'operation': 'vbc',
+                      'definition': 'Allowed dollars divided by received covered member-months'}
+        a = {'answer_type': 'value', 'value': 100, 'computed_as': definition.copy()}
+        answer_checks.metric_findings(a, 'What is our allowed PMPM?', '2030-05-27')
+        self.assertEqual(a['computed_as'], definition)
+        self.assertNotIn('computed', a)
 
     def test_all_question_entrypoints_use_one_planner(self):
         from clinical_core.agere.clinical import economical_planner, together, stack_runtime

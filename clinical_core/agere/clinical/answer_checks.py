@@ -309,6 +309,10 @@ def metric_findings(answer, question, as_of=None, execute=None):
     query departs from it (grain, time anchor, window, value set, population, versioning) or the value leaves the
     metric's expected range. Heal-not-block: nothing is changed but the annotations."""
     import os
+    # A sealed shared request already identifies the executed engine and method.
+    # A wording-based catalog match is not evidence that a different metric ran.
+    if (answer.get('computed_as') or {}).get('source_request_id'):
+        return None
     if os.environ.get('AGERE_METRIC_LINT', 'repair') == 'off': return None
     from . import metrics
     r = metrics.resolve({'question': question, 'as_of': as_of})

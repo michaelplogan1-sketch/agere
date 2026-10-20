@@ -326,7 +326,9 @@ class HostedModel:
         usd = ((receipt.get('cost_estimate') or {}).get('estimated_usd') or 0.0) if not receipt.get('cache_hit') else 0.0
         self.cost += usd
         return text, {'seconds': round(time.perf_counter() - start, 2), 'model': self.model, 'api_usd': usd,
-                      'usage': receipt.get('usage'), 'cache_hit': bool(receipt.get('cache_hit'))}
+                      'usage': receipt.get('usage'), 'cache_hit': bool(receipt.get('cache_hit')),
+                      'request_hash': receipt.get('request_hash'),
+                      'api_cost_known': bool(receipt.get('cache_hit')) or (receipt.get('cost_estimate') or {}).get('estimated_usd') is not None}
 
 
 CANONICAL = """Rewrite the question into ONE canonical question Agere's compiler understands. Use only these forms

@@ -585,7 +585,7 @@ def handle_compose(stack, body, hosted_factory=None):
                 # grouping. They operate on immutable membership, never text rewrites.
                 bound = answer_context.followup(stack.path, saved['id'], question)
                 if bound is None:
-                    bound = stack.compose(question, population=parent['patient_ids'], parent=parent)
+                    bound = stack.compose(question, population=parent['patient_ids'], parent=parent, planning=planning)
             elif not shared and saved and is_followup(question) and planning == 'auto' and parse_frame(question) is None:
                 bound = answer_context.followup(stack.path, saved['id'], question)
                 if bound is None:

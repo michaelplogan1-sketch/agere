@@ -83,11 +83,14 @@ CREATE INDEX link_source ON link(record_id);
 
 SCHEMA_DOC = {
     'patient': 'One row per roster patient. age_reported/sex_reported as received; coverage_type/status from latest coverage record, '
+               'age_latest is latest snapshot age, not age at a historical event; disclose this when filtering age. '
                'else (population-feed members without one) coverage_type = line_of_business of the latest enrollment month and '
                'coverage_status active | inactive by whether a span covers the as-of date; coverage_source = coverage_record | '
                'enrollment_span (NULL = no coverage received). pcp_* = latest assigned primary-care relationship.',
     'condition': 'One row per (condition record, matching library concept); concept NULL when no library concept matches. '
-                 'Sources: conditions, condition_assessments, problem_lists. label = received description.',
+                 'Sources: conditions, condition_assessments, problem_lists. label = received description. '
+                 'is_diagnosis=1 distinguishes actual diagnosis labels from assessment topics; use it for patients with a condition. '
+                 'Concepts normalize mapped codes and subtypes; diabetes is the diabetes concept, CKD is chronic_kidney_disease.',
     'measurement': 'Labs and vitals, one row per (record, concept); concept NULL when unmapped. value/unit as received; '
                    'value_canonical in unit_canonical when the unit converts (else NULL). Cancelled results have value NULL. '
                    'concept egfr = BSA-normalised eGFR only (mL/min/1.73m2 or no unit); GFR results reported in another unit (mL/min, '

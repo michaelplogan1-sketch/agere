@@ -22,6 +22,10 @@ STOP_WORDS = set('a an the please me our we us there are is was were be of for t
 class PlanError(ValueError):
     """An interpretation cannot be executed as a complete original request."""
 
+def quote_text(value):
+    """A requirement may be expressed in several discontiguous source spans."""
+    return ' '.join(value) if isinstance(value, list) else value
+
 
 def fingerprint(value):
     return hashlib.sha256(json.dumps(value, sort_keys=True, separators=(',', ':'), allow_nan=False).encode()).hexdigest()
@@ -89,10 +93,15 @@ class Compiler:
         self.json_streams = {}
 
     def bind(self, obj, path, kind):
-        quote = obj.get('quote')
-        if not isinstance(quote, str) or not quote.strip() or quote not in self.question:
-            raise PlanError(f'{path}: a literal fragment of the original question is required')
-        self.bindings.append({'path': path, 'kind': kind, 'quote': quote, 'disposition': 'applied'})
+        quotes = obj.get('quote')
+        if not isinstance(quotes, list): quotes = [quotes]
+        if not 1 <= len(quotes) <= 12:
+            raise PlanError(f'{path}: 1..12 literal source fragments required')
+        for quote in quotes:
+            if not isinstance(quote, str) or not quote.strip() or quote not in self.question:
+                raise PlanError(f'{path}: a literal fragment of the original question is required')
+            self.bindings.append({'path': path, 'kind': kind, 'quote': quote,
+                                  'disposition': 'unresolved' if kind == 'unresolved' else 'applied'})
 
     def field(self, name, scope):
         if not isinstance(name, str): raise PlanError('Explicit field name required')
@@ -127,11 +136,11 @@ class Compiler:
         if op in ('and', 'or'):
             if set(expr) != {'op', 'args', 'quote'} or not isinstance(expr['args'], list) or not 2 <= len(expr['args']) <= 24:
                 raise PlanError('Boolean operations need 2..24 explicit operands')
-            if op == 'or' and not re.search(r'\bor\b|/', expr['quote'], re.I):
+            if op == 'or' and not re.search(r'\bor\b|/', quote_text(expr['quote']), re.I):
                 raise PlanError('An OR requires its original disjunction')
             return '(' + (' AND ' if op == 'and' else ' OR ').join(self.predicate(x, scope, f'{path}.args.{i}', depth+1) for i, x in enumerate(expr['args'])) + ')'
         if op == 'not':
-            if set(expr) != {'op', 'arg', 'quote'} or not re.search(r'\b(not|no|without|exclude|excluding|except|neither)\b', expr['quote'], re.I):
+            if set(expr) != {'op', 'arg', 'quote'} or not re.search(r'\b(not|no|without|exclude|excluding|except|neither)\b', quote_text(expr['quote']), re.I):
                 raise PlanError('Negation must be explicit in the original request')
             return '(NOT ' + self.predicate(expr['arg'], scope, path+'.arg', depth+1) + ')'
         if op == 'exists':
@@ -173,7 +182,7 @@ class Compiler:
         # Independently check literal comparisons rather than trusting a model's
         # statement that a threshold survived. Dates expressed as a whole year
         # legitimately compile into two endpoints and have no comparison cue.
-        cue = re.search(r'(>=|<=|!=|(?<![<>!])=|>|<|\bat least\b|\bat most\b|\bover\b|\bunder\b|\bolder than\b|\byounger than\b|\bgreater than\b|\bless than\b)\s*["\']?([+-]?\d+(?:\.\d+)?)', expr['quote'], re.I)
+        cue = re.search(r'(>=|<=|!=|(?<![<>!])=|>|<|\bat least\b|\bat most\b|\bover\b|\bunder\b|\bolder than\b|\byounger than\b|\bgreater than\b|\bless than\b)\s*["\']?([+-]?\d+(?:\.\d+)?)', quote_text(expr['quote']), re.I)
         if cue and isinstance(value, (int, float)):
             expected = {'at least': '>=', 'at most': '<=', 'over': '>', 'under': '<',
                         'older than': '>', 'younger than': '<', 'greater than': '>', 'less than': '<'}.get(cue[1].lower(), cue[1])
@@ -312,7 +321,7 @@ class Compiler:
                 validate({'interpretation': self.question[:2000], 'coverage': 'supported_observation', 'unmet_requirements': [],
                           'nodes': [{'id': 'p', 'operation': 'cohort', 'inputs': [], 'purpose': 'Input contract validation',
                                      'parameters': {'specification': {'all': [], 'any': [], 'exclude': []}}},
-                                    {'id': 'a', 'operation': op, 'inputs': ['p'], 'parameters': item['parameters'], 'purpose': item['quote']}]},
+                                    {'id': 'a', 'operation': op, 'inputs': ['p'], 'parameters': item['parameters'], 'purpose': quote_text(item['quote'])}]},
                          self.catalog.identity.get('as_of', '2030-05-27'))
         if len(self.bindings) > 160: raise PlanError('Request is too large for one bounded plan')
         # Literal coverage is an omission check, not a semantic-equivalence proof.
@@ -326,7 +335,13 @@ class Compiler:
         # Never accept a numeric/time literal that vanished during interpretation.
         numeric = set(re.findall(r'(?<!\w)\d+(?:\.\d+)?', self.question))
         rendered_numbers = set(re.findall(r'(?<!\w)\d+(?:\.\d+)?', query + json.dumps([a['parameters'] for a in analyses])))
-        unresolved_text = ' '.join(x['quote'] for x in plan['unresolved'])
+        # Received semantic fields can encode a fixed window (readmitted_30d).
+        # Count only referenced, real fields, never model-invented output aliases.
+        for columns in self.catalog.tables.values():
+            for column in columns:
+                if identifier(column) in query:
+                    rendered_numbers.update(re.findall(r'(?<!\w)\d+(?:\.\d+)?', column.replace('_', ' ')))
+        unresolved_text = ' '.join(quote_text(x['quote']) for x in plan['unresolved'])
         missing_numbers = numeric - rendered_numbers - set(re.findall(r'(?<!\w)\d+(?:\.\d+)?', unresolved_text))
         if missing_numbers: raise PlanError('Numeric constraints were not compiled: ' + ', '.join(sorted(missing_numbers)))
         membership = ('SELECT DISTINCT b.patient_id AS patient_id' + relation) if 'patient_id' in self.catalog.tables[self.base] else None

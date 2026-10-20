@@ -1945,12 +1945,27 @@ def execute(stack, plan, *, question=None):
             raise ValueError('Appointment sources changed during graph execution; result not cached')
         result['question']=question
         result['answer']=build_answer(plan, results, memberships, question)
+        if plan['nodes'][0]['operation'] == 'query_population':
+            result['answer']['computed_as'] = {
+                'source_request_id': plan['nodes'][0]['parameters']['contract']['id'],
+                'operation': plan['nodes'][-1]['operation'], 'layer': 'shared_request_engine',
+                'definition': result['answer'].get('method') or 'Registered engine parameters bound to the original request'}
         import os; from .answer_checks import annotate as quality_annotate; from .oracles import readonly_executor  # FMEA poka-yoke: warnings only
         quality_annotate(result['answer'], question, meta['snapshot']['as_of'],
                          execute=readonly_executor(path) if os.environ.get('AGERE_PARTITION_ORACLE', 'on') != 'off' and (path / 'semantic.sqlite3').exists() else None)
         result['answer']['standards']=standards(result['answer'])
         result['answer']['headline']=headline(result['answer'])
         result['answer']['benchmark']=benchmark_references(result['answer'], question, plan['nodes'][-1]['operation'] if plan.get('nodes') else None)
+        # Shared requests may ask for several independent analytical outputs.
+        # Retain each answer instead of silently showing only the final engine.
+        if plan['nodes'][0]['operation'] == 'query_population' and len(plan['nodes']) > 2:
+            result['answers_by_node'] = {}
+            for item in results[1:]:
+                subplan = {**plan, 'nodes': [plan['nodes'][0], item['node']]}
+                part = build_answer(subplan, [results[0], item], memberships, item['node']['purpose'])
+                part['headline'] = headline(part)
+                part['standards'] = standards(part)
+                result['answers_by_node'][item['node']['id']] = part
         if any(n['operation'] in ('source_state','pre_event_state','requirements','protocol_review','program_document','reference_review',*graph_reports.OPERATIONS) for n in plan['nodes']):
             from .graph_decision import source_fingerprint
             result['review_source_fingerprint'] = source_fingerprint(path, result)

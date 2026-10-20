@@ -632,7 +632,9 @@ function paretoChart(rows,f){const W=CW(),T=10,B=74,L=58,R=40,H=T+190+B;const n=
  return s+'</svg>'}
 function calNote(a){const c=((a&&a.overall)||{}).calibration;if(!c||!c.statement)return '';
  return '<p class="hint" data-calibration="1"><b>Calibration.</b> '+esc(c.statement)+(c.method?'<details class="why"><summary>Method</summary><span class="muted" style="font-size:12px">'+esc(c.method)+'</span></details>':'')+'</p>'}
-function visual(a){const v=visual0(a);return v==null?v:v+calNote(a)}
+function visual(a){
+ if(a.answer_type==='composite')return (a.sections||[]).map(s=>'<section class="sec"><h3>'+esc(s.title)+'</h3>'+headlineHTML(s.answer)+warnBox(s.answer)+(visual0(s.answer)||'')+calNote(s.answer)+'</section>').join('');
+ const v=visual0(a);return v==null?v:v+calNote(a)}
 /* early signal: learned pre-event template per channel (whitened units, months before the event) + patients ranked by matched-filter SNR */
 function vizEarlySignal(a){const o=a.overall||{},es=o.early_signal||{},ev=es.evaluation||{},rows=(a.table||[]).slice(0,20);
  const kp=(l,v)=>'<div class="kpi"><div class="l">'+l+'</div><div class="v">'+esc(v)+'</div></div>',pc=v=>isNum(v)?pct(v,1):'—';
@@ -1015,7 +1017,8 @@ function readingsBox(a,q){const r=a.readings||[];if(r.length<2||typeof r[0]==='s
 function actionLink(c){if(!c||!/^ANS-[0-9a-f]{24}$/.test(c.id||''))return '';return '<section class="sec"><h3>What should happen next?</h3><p>Turn this answer into an interactive workspace. Review the evidence, prepare PharmD or remote-monitoring work, assign owners and track progress.</p><a class="btn primary" href="/action-center?context='+encodeURIComponent(c.id)+'">Open action center</a><p class="hint">Uses this exact saved answer. Program review does not enroll patients or deliver care.</p></section>'}
 function requestPlan(d){const c=d.request_contract||(d.planner_receipt||{}).request_contract;if(!c)return '';
  const r=c.request||{},seen=new Set(),items=(c.bindings||[]).filter(b=>{const k=b.kind+':'+b.quote;if(seen.has(k)||b.path==='where'&&b.quote===c.original_question)return false;seen.add(k);return true});
- const review=((d.planner_receipt||{}).interpretation||{}).review==='fully_consumed_grammar'?'Fully parsed request':'Local model interpretation · review required';
+ const interpretation=((d.planner_receipt||{}).interpretation||{});
+ const review=interpretation.review==='fully_consumed_grammar'?'Fully parsed request':interpretation.review==='checked_hosted_interpretation'?'Model interpretation checked against the schema and compiled query':'Candidate interpretation · review required';
  return '<details class="sec" open><summary><strong>How I interpreted your question</strong></summary><p class="hint">'+esc(review)+(c.population?' · limited to '+c.population.length+' saved patients':'')+'</p><ul>'+items.map(b=>'<li>'+esc(b.quote)+' <span class="hint">— '+esc(b.disposition==='unresolved'?'unresolved':b.kind)+'</span></li>').join('')+'</ul><details><summary>Inspect computation</summary><pre style="white-space:pre-wrap;overflow-wrap:anywhere">'+esc(c.query)+'</pre><p class="hint">Request '+esc(c.id.slice(0,12))+' · source '+esc((c.source_identity||{}).source_digest||'')+'</p></details></details>'}
 function renderTurn(i){const t=state.turns[i];const box=$('#answer');state.active=i;renderThread();if(!t){box.innerHTML='';return}
  if(t.pending){box.innerHTML='<div class="q">'+esc(t.question)+'</div><p class="skeleton">Planning and computing…</p>';return}
