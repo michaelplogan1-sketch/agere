@@ -178,7 +178,13 @@ function renderOverview() {
     (s.kind==='monitor'&&s.observations?'<p><small>'+esc(s.scope_label||s.scope)+' · Manual checks · '+s.observations.length+' recorded observation(s)</small></p><details><summary>Baseline &amp; observations</summary><pre>'+esc(JSON.stringify(s.observations.map(o=>({at:o.at,as_of:o.source.as_of,answer:o.measurement})),null,2))+'</pre></details><button class="btn" data-monitor-check="'+i+'">'+(s.mode==='work'?'Check work progress':'Check current snapshot')+' ↗</button>':'')+'</article>').join('')+'</div>';
   host.querySelectorAll('[data-workflow-studio]').forEach(b=>b.onclick=()=>go('studio'));
   host.querySelectorAll('[data-workflow-board]').forEach(b=>b.onclick=()=>go('work'));
-  host.querySelectorAll('[data-workflow-retry]').forEach(b=>b.onclick=()=>run(async()=>{const index=Number(b.dataset.workflowRetry);await api('/api/stack/action-workflow/retry',{context_id:c.id,index,attempt:(steps[index].attempts?.length||1)+1});await refresh();notify('Generation attempt saved. Earlier attempts and costs are retained.');}));
+  host.querySelectorAll('[data-workflow-retry]').forEach(b=>b.onclick=()=>run(async()=>{
+    const index=Number(b.dataset.workflowRetry);b.disabled=true;b.textContent='Generating…';
+    try {
+      await api('/api/stack/action-workflow/retry',{context_id:c.id,index,attempt:(steps[index].attempts?.length||1)+1});
+      await refresh();await loadDeliverables();notify('Generation attempt saved. Earlier attempts and costs are retained.');
+    } finally { if(b.isConnected){b.disabled=false;b.textContent='Retry generation ↗';} }
+  }));
   host.querySelectorAll('[data-monitor-check]').forEach(b=>b.onclick=()=>run(async()=>{const index=Number(b.dataset.monitorCheck),work=steps[index]?.mode==='work';await api('/api/stack/action-monitor',{context_id:c.id,index});await refresh();notify(work?'Simulated work progress checked.':'Monitor checked against the current warehouse.');}));
 }
 function taskCard(item) {
