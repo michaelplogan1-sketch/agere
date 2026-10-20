@@ -36,6 +36,38 @@ def measurement(answer):
     return {k: answer[k] for k in ('status', 'headline', 'count', 'value', 'table', 'sections', 'patient_ids', 'missing') if k in answer}
 
 
+def work_measurement(path, context):
+    """Observed internal simulation states, never patient outcomes or delivered care."""
+    items = A.work(path, context)
+    rows = [{'item_id': i['id'], 'patient_id': i['patient_id'], 'program': i['program'],
+             'revision': i['revision'], 'review_state': i['state'],
+             'simulation_status': (i.get('simulation') or {}).get('status', 'not_started')}
+            for i in items]
+    return {'synthetic': True, 'external_dispatch_performed': False,
+            'scope': 'Saved simulated work; completion does not establish actual care or clinical benefit.',
+            'total': len(rows), 'completed': sum(i['simulation_status'] == 'complete' for i in rows),
+            'needs_attention': sum(i['simulation_status'] == 'needs_attention' for i in rows),
+            'cancelled': sum(i['review_state'] == 'cancelled' for i in rows), 'items': rows}
+
+
+def selected_patients(context, step):
+    ids = context['patient_ids']
+    if not step.get('selection'):
+        return ids, None
+    if not A.supports_patient_work(context):
+        raise ValueError('Work selection requires an explicitly selected patient table')
+    field = step['selection']['output']
+    rows = context['answer'].get('table') or []
+    if len(rows) != len(ids) or {r.get('patient_id') for r in rows} != set(ids):
+        raise ValueError('Work criterion must have one row per saved patient')
+    if any(field not in r or r[field] not in (None, 0, 1) for r in rows):
+        raise ValueError('Work criterion must be a computed boolean 1/0/NULL for every patient')
+    selected = sorted(r['patient_id'] for r in rows if r[field] == 1)
+    return selected, {'output': field, 'selected': len(selected),
+                      'not_selected': sum(r[field] == 0 for r in rows),
+                      'unknown': sum(r[field] is None for r in rows), 'quote': step['selection']['quote']}
+
+
 def materialize(path, key, *, allow_live=False, generation=None, send=None):
     """Prepare requested work; frontier use requires the caller's live authority.
 
@@ -88,12 +120,29 @@ def materialize(path, key, *, allow_live=False, generation=None, send=None):
                     if not c['patient_ids']:
                         s.update(status='needs_definition', reason='This answer has no patient worklist. Select an explicit population before starting patient agents.')
                     else:
-                        A.create_work(path, {'context_id': key, 'program': s['program'], 'patient_ids': c['patient_ids'],
+                        ids, selection = selected_patients(c, s)
+                        if selection:
+                            s['selection_summary'] = selection
+                        if not ids:
+                            s.update(status='needs_definition' if selection and selection['unknown'] else 'no_matches', patients=0,
+                                     reason='No confirmed patients meet the computed work criterion; unknowns remain unresolved.')
+                            steps.append(s)
+                            continue
+                        A.create_work(path, {'context_id': key, 'program': s['program'], 'patient_ids': ids,
                                              'owner': 'Synthetic care team', 'note': s['title'] + ' · simulation only; eligibility not established'})
-                        s.update(status='ready', patients=len(c['patient_ids']),
+                        s.update(status='ready', patients=len(ids),
                                  reason='Review queue prepared. Open a task to run its simulated agent journey.')
                 elif s['kind'] == 'monitor':
-                    if not (c.get('planner_receipt') or {}).get('request_contract'):
+                    if s['mode'] == 'work':
+                        measured = work_measurement(path, c)
+                        if not measured['total']:
+                            s.update(status='needs_definition', reason='No saved simulated work exists for this answer yet.')
+                        else:
+                            s.update(status='watching', schedule='Manual work checks',
+                                     scope_label='Simulated work attached to this saved answer', observations=[{
+                                         'at': A.now(), 'source': c['source'], 'measurement': measured, 'baseline': True}],
+                                     reason='Simulated work baseline recorded; check progress and exceptions as tasks advance.')
+                    elif not (c.get('planner_receipt') or {}).get('request_contract'):
                         s.update(status='needs_definition', reason='An executable shared request is required for exact-definition monitoring.')
                     else:
                         input_population = c['planner_receipt']['request_contract']['population']
@@ -134,6 +183,17 @@ def refresh(stack, request):
         step = steps[index]
         if step.get('unresolved') or not step.get('observations'):
             raise ValueError('Define this monitor before checking it')
+        if step['mode'] == 'work':
+            measured = work_measurement(stack.path, c)
+            if fingerprint(measured) != fingerprint(step['observations'][-1]['measurement']):
+                step['observations'].append({'at': A.now(), 'source': c['source'], 'measurement': measured,
+                                             'changed': True, 'new_paid_api_calls': 0})
+                reason = 'Simulated work changed; review completion and exceptions. No actual care outcome is inferred.'
+            else:
+                reason = 'No change in saved simulated work.'
+            step.update(last_checked=A.now(), reason=reason)
+            _save(stack.path, key, record)
+            return record
         if 'patient_scope' not in step:
             raise ValueError('Monitor scope policy changed. Re-run this question to create a monitor with explicit scope.')
         source = A.source_identity(stack.path)
@@ -152,10 +212,21 @@ def refresh(stack, request):
                     present = {r[0] for r in db.execute('SELECT patient_id FROM patient')}
                 if not set(population) <= present:
                     raise ValueError('Saved patients are missing from the new warehouse. Reconcile the source before checking this monitor.')
-            contract = R.compile_request(catalog, c['question'], original['request_contract']['request'], population=population)
+            original_contract = original['request_contract']
+            general = original_contract.get('kind') == 'general_analysis'
+            if general:
+                from ..clinical import general_analysis as G
+                G.sealed(original_contract)
+                contract = G.prepare(catalog, c['question'], original_contract['analysis'], population=population)
+            else:
+                contract = R.compile_request(catalog, c['question'], original_contract['request'], population=population)
             receipt = {**original, 'request_contract': contract, 'new_paid_api_calls': 0,
                        'known_api_estimate_usd': 0, 'api_cost_known': True}
-            result = S.execute_contract(stack, c['question'], S.graph_for(contract), receipt, population=population)
+            if general:
+                result = G.execute(stack, c['question'], G.graph_for(contract), receipt,
+                                   population=population, economics=S.economics)
+            else:
+                result = S.execute_contract(stack, c['question'], S.graph_for(contract), receipt, population=population)
             answer = result['answer']
             if answer.get('status') != 'answered' or answer.get('missing'):
                 raise ValueError('New snapshot could not produce a complete comparable answer')
