@@ -93,7 +93,7 @@ def concept_definitions():
 
 def concept_sql(expr, compiler, scope):
     from . import concepts
-    from .request_plan import literal, PlanError
+    from .request_plan import literal, PlanError, quote_text
     if set(expr) != {'op', 'kind', 'names', 'version', 'period', 'quote'} or expr['version'] != 1:
         raise PlanError('Explicit versioned concept and period required')
     kind, names = expr['kind'], expr['names']
@@ -101,6 +101,23 @@ def concept_sql(expr, compiler, scope):
     if kind not in ('condition', 'drug_fill') or not isinstance(names, list) or not names or len(names) > 30:
         raise PlanError('Unknown named concept')
     if any(n not in registry[kind] for n in names): raise PlanError('Unknown concept name')
+    # A named definition cannot consume unrelated requirements merely because a
+    # model included them in its quote. Reparse this leaf using the same concept
+    # vocabulary and require the names, polarity and period to agree.
+    from .request_language import Parser
+    quoted = quote_text(expr['quote'])
+    parser = Parser(compiler.catalog, quoted)
+    parser.conditions.update({
+        phrase: preset[1] for phrase, (_, preset) in parser.sources.items()
+        if preset and preset[0] == 'condition'
+    })
+    try:
+        parsed, tail = parser.expression(quoted)
+    except PlanError as exc:
+        raise PlanError('Named concept wording is not fully accounted for: ' + quoted) from exc
+    if (tail.strip() or parsed.get('op') != 'concept' or parsed.get('kind') != kind
+            or set(parsed.get('names', [])) != set(names) or parsed.get('period') != expr['period']):
+        raise PlanError('Named concept wording contains a different or uncompiled requirement: ' + quoted)
     table = 'condition' if kind == 'condition' else 'medication'
     fields = {'patient_id', 'concept', 'is_diagnosis'} if kind == 'condition' else {
         'patient_id', 'drug_class', 'evidence', 'status', 'fill_reversed'}

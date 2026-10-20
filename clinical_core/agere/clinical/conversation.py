@@ -660,11 +660,25 @@ def handle_compose(stack, body, hosted_factory=None):
             result = bound if bound else stack.compose(standalone) if planning == 'auto' else stack.compose(standalone, planning=planning)
     except Exception as exc:
         logged = resolution['standalone'] if resolution else str(question)
-        answer_log.record(stack.path, logged, error=f'{type(exc).__name__}: {exc}', seconds=time.time() - t0)
         from .question_input import failure
         usage = getattr(exc, 'planner_receipt', {})
+        failed = failure(exc)
+        logged_failure = None
+        if hasattr(exc, 'planner_receipt'):
+            from .shared_planner import economics as planner_economics
+            logged_failure = {
+                'answer': {'status': failed['status']},
+                'planner_receipt': {'route': 'shared_planner'},
+                'new_paid_api_calls': usage.get('new_paid_api_calls', 0) + hosted_calls,
+                'planning_economics': planner_economics({
+                    **usage,
+                    'known_api_estimate_usd': usage.get('known_api_estimate_usd', 0) + hosted_usd,
+                }),
+            }
+        answer_log.record(stack.path, logged, result=logged_failure,
+                          error=f'{type(exc).__name__}: {exc}', seconds=time.time() - t0)
         learning.record_outcome(stack.path, logged, 'shared_planner' if getattr(stack, 'shared_request_planning', False) else failure(exc)['status'],
-                                failure(exc)['status'], str(exc),
+                                failed['status'], str(exc),
                                 usage.get('new_paid_api_calls', 0)+hosted_calls,
                                 None if usage.get('api_cost_known') is False else usage.get('known_api_estimate_usd', 0)+hosted_usd)
         if conv is not False:
@@ -687,7 +701,19 @@ def handle_compose(stack, body, hosted_factory=None):
             result = {**result, 'action_context': action_context}
             if result.get('workflow'):
                 from ..deliverables.workflow import materialize
-                result['workflow'] = materialize(stack.path, action_context['id'])['steps']
+                delivered = materialize(stack.path, action_context['id'],
+                                        generation='frontier', allow_live=bool(getattr(stack, 'allow_live', False)))
+                result['workflow'] = delivered['steps']
+                result['new_paid_api_calls'] = (result.get('new_paid_api_calls') or 0) + delivered['new_paid_api_calls']
+                econ = dict(result.get('planning_economics') or {})
+                prior_new = econ.get('new_api_estimate_usd')
+                cost_known = prior_new is not None and econ.get('api_cost_known') is not False and delivered['api_cost_known']
+                econ['workflow_api_estimate_usd'] = delivered['known_api_estimate_usd'] if delivered['api_cost_known'] else None
+                econ['workflow_known_api_estimate_usd'] = delivered['known_api_estimate_usd']
+                econ['known_api_estimate_usd'] = (econ.get('known_api_estimate_usd') or 0) + delivered['known_api_estimate_usd']
+                econ['new_api_estimate_usd'] = prior_new + delivered['known_api_estimate_usd'] if cost_known else None
+                econ['api_cost_known'] = cost_known
+                result['planning_economics'] = econ
     except (OSError, ValueError, sqlite3.Error) as exc:
         result = {**result, 'action_context_error': str(exc)}
     if conv is not False:
@@ -701,10 +727,14 @@ def handle_compose(stack, body, hosted_factory=None):
     answer_log.record(stack.path, logged, result=result, seconds=time.time() - t0)
     pr = result.get('planner_receipt') or {}
     local = pr.get('local_compiler_declined') or {}
+    economics = result.get('planning_economics') or {}
+    outcome_cost = economics.get('new_api_estimate_usd', economics.get('known_api_estimate_usd'))
+    if not result.get('new_paid_api_calls') and outcome_cost is None:
+        outcome_cost = 0
     learning.record_outcome(stack.path, logged, pr.get('route') or 'unknown',
                             (result.get('answer') or {}).get('status') or 'answered',
                             local.get('reason') if isinstance(local, dict) else None,
-                            result.get('new_paid_api_calls') or 0, (result.get('planning_economics') or {}).get('known_api_estimate_usd') or 0)
+                            result.get('new_paid_api_calls') or 0, outcome_cost)
     if pr.get('route') == 'hosted_verified_sql':
         # FM-23: the verified pair is captured only now, after the answer was built and its checks ran; quarantine stays as a
         # backstop for pairs captured earlier (or by older code) that a later check flags.

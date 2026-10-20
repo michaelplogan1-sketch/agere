@@ -49,6 +49,14 @@ def validate(steps, question, *, outputs=(), output_quotes=()):
                           'interactive command center centre dashboard view report brief briefing '
                           'team care clinical evidence explorer custom pharmd rpm titration remote monitoring '
                           'pharmacist pharmacy decision').split())
+            if step['kind'] == 'deliverable':
+                # Bounded presentation vocabulary only. New analytical facts,
+                # filters, dates and calculations must still bind upstream.
+                syntax |= set(('executive leadership board cmo cfo ceo audience '
+                               'concise polished minimal clean accessible responsive printable '
+                               'compact spacious layout column columns sidebar card cards tab tabs '
+                               'light dark theme navy blue green typography font fonts '
+                               'presentation style styled with using').split())
             extra = set(re.findall(r'\w+', quote.lower())) - syntax
             if extra:
                 step['unresolved'].append('Downstream wording needs an explicit scope or deliverable definition: '+', '.join(sorted(extra))+
