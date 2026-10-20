@@ -53,6 +53,42 @@ Never add a filter the question did not ask for: no free-text keyword matches on
 "attended/kept only" restriction when the question says "had an appointment", no extra status, date or source limits.
 When a choice of definition is genuinely needed, choose the plain reading and state it in definitions.
 '''
+# Standard reference knowledge for analyses that need a clinical definition the warehouse does not version.
+# Guideline target doses (2022 AHA/ACC/HFSA heart failure guideline, typical adult targets); not individualized.
+GUIDELINE_TARGET_DOSES = {
+    'sacubitril/valsartan': '97/103 mg twice daily', 'lisinopril': '20-40 mg daily', 'enalapril': '10-20 mg twice daily',
+    'ramipril': '10 mg daily', 'captopril': '50 mg three times daily', 'losartan': '50-150 mg daily',
+    'valsartan': '160 mg twice daily', 'candesartan': '32 mg daily', 'carvedilol': '25 mg twice daily (50 mg twice daily if >85 kg)',
+    'metoprolol succinate': '200 mg daily', 'bisoprolol': '10 mg daily', 'spironolactone': '25-50 mg daily',
+    'eplerenone': '50 mg daily', 'dapagliflozin': '10 mg daily', 'empagliflozin': '10 mg daily'}
+
+
+def governed_knowledge():
+    """Versioned program definitions from the catalog plus standard references, offered to every analysis."""
+    knowledge = {'guideline_target_doses': {'source': '2022 AHA/ACC/HFSA heart failure guideline (typical adult targets)',
+                                            'doses': GUIDELINE_TARGET_DOSES}}
+    try:
+        from ..plans import catalog
+        c = catalog.load()
+        knowledge.update(catalog_version=c.get('version'), care_gap_definitions=c.get('gaps'),
+                         barrier_policy=c.get('barrier_policy'))
+    except Exception as exc:  # noqa: BLE001 - knowledge is advisory context, never a reason to refuse
+        knowledge['catalog_unavailable'] = type(exc).__name__
+    return knowledge
+
+
+ANALYSIS_SYSTEM += '''
+DEFINITIONS: governed_knowledge (in the catalog payload) holds versioned program definitions (e.g. care gaps and their
+drug pillars, fill classes and ingredients, lookback windows, therapy-barrier policy) and standard references such as
+guideline target doses. Use them. A missing governed definition is NEVER a reason to leave a requirement unresolved:
+apply the standard clinical or business definition, name it in definitions, and compute it. "Maximum tolerated dose"
+= below target with a documented intolerance/barrier or dose reduction; otherwise report below-target as not at target.
+Look for evidence across structured and extracted sources (fills, medication lists, note facts such as ejection
+fraction, therapy barriers, therapy changes, encounters with attending specialty, payer claims with rendering NPI,
+care-team records, attribution) before declaring anything unavailable. Unresolved is only for data truly absent.
+For multi-part patient questions, return one table row per patient with a column for each requested element.
+'''
+
 RESCUE_INSTRUCTION = ('Answer this question with {"analysis": ...}. Write the staged SQL for the plain reading of the '
                       'question using the catalog; map each phrase to the step applying it. Unmapped words will be '
                       'reported as unconfirmed rather than blocking the answer. Do not return a typed request.')

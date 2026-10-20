@@ -166,7 +166,7 @@ Source and measure quotes cannot absorb words such as with/where/without; bind f
 Boolean parent quotes do not satisfy coverage; each leaf must retain its own literal source wording.
 '''
 
-from .general_analysis import ANALYSIS_SYSTEM
+from .general_analysis import ANALYSIS_SYSTEM, governed_knowledge
 SYSTEM += ANALYSIS_SYSTEM
 
 AUDIT_SYSTEM = '''Review the original question against a typed warehouse request AND its compiled SQL.
@@ -297,6 +297,7 @@ def schema_slice(catalog, question, extra=(), operations=(), streams=()):
             'analytical_operators': {**{op: info['meaning'] for op, info in operators.items()}, 'governed_metric': 'Versioned governed business measure on the compiled cohort'},
             'selected_operator_contracts': selected_contracts,
             'discovery_metadata': discovery_metadata,
+            'governed_knowledge': governed_knowledge(),
             'as_of': catalog.identity.get('as_of'), 'more_schema_available': True}
 
 
