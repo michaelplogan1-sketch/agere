@@ -26,6 +26,9 @@ def correction_context(path, question):
                             'created': created, 'status': 'needs_revalidation',
                             'authority': 'reported_feedback; not independently verified truth'})
         if len(matches) == 8: break
+    from .economics_learning import context as financial_context
+    matches.extend({'status': 'verified_rule', 'verified_rule': lesson,
+                    'authority': lesson['authority']} for lesson in financial_context(path, question))
     return matches
 
 
@@ -183,13 +186,14 @@ def quarantine(path, question, answer):
     return hits
 
 
-def record_correction(path, question, note, expected=None):
+def record_correction(path, question, note, expected=None, rule=None):
     if not isinstance(question, str) or not question.strip() or not isinstance(note, str) or not note.strip():
         raise ValueError('Correction needs a nonempty original question and explanation')
     from .request_shapes import invalidate
     db = _db(path)
     try:
-        db.execute('INSERT INTO corrections VALUES (?,?,?,?)', (question.strip(), note[:2000], json.dumps(expected), time.time()))
+        cursor = db.execute('INSERT INTO corrections VALUES (?,?,?,?)', (question.strip(), note[:2000], json.dumps(expected), time.time()))
+        correction_id = cursor.lastrowid
         db.commit()
     finally:
         db.close()
@@ -199,8 +203,17 @@ def record_correction(path, question, note, expected=None):
     revoked = invalidate_shapes(path, question, note)
     from . import procedural_memory
     procedural_memory.correction(path, question, note)
-    return {'recorded': True, 'revoked_analysis_shapes': len(revoked), 'status': 'needs_revalidation',
+    result = {'recorded': True, 'correction_id': correction_id, 'revoked_analysis_shapes': len(revoked), 'status': 'needs_revalidation',
             'effect': 'Related learned plans are suspended. Future interpretation receives the correction and must recheck source evidence. Feedback is not automatic clinical approval or model training.'}
+    if rule is not None:
+        from .economics_learning import verify_rule
+        try:
+            result['rule_verification'] = verify_rule(path, correction_id, rule)
+            result['effect'] = result['rule_verification']['effect']
+        except (ValueError, KeyError, TypeError) as exc:
+            result['rule_verification'] = {'status': 'rejected', 'reason': str(exc)}
+            result['effect'] = 'Correction recorded for revalidation. Rule verification failed: ' + str(exc)
+    return result
 
 
 def summary(path):
@@ -222,8 +235,10 @@ def summary(path):
                 if plans.execute('SELECT 1 FROM sqlite_master WHERE name=?', (table,)).fetchone():
                     shapes[table] = dict(plans.execute(f'SELECT status,COUNT(*) FROM {table} GROUP BY status'))
     from . import procedural_memory
+    from .economics_learning import summary as economics_summary
     return {'schema': VERSION, 'routes': routes, 'statuses': statuses, 'verified_training_pairs': verified,
             'procedural_memory': procedural_memory.summary(path),
+            'healthcare_economics': economics_summary(path),
             'corrections': corrections, 'reusable_structures': shapes,
             'learning_mode': 'Continuous capture and checked plan reuse; corrections require revalidation. No automatic model-weight training or clinical qualification.',
             'top_gaps': [{'reason': r, 'count': n} for r, n in gaps]}

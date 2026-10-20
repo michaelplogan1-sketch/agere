@@ -2,8 +2,11 @@
 
 A shared-savings contract pays the ACO a call-like upside and, when two-sided, charges a put-like downside:
 
-    payout = sharing x max(benchmark - cost - MSR x benchmark, 0), capped        (upside, a call on savings)
-           - loss    x max(cost - benchmark - MLR x benchmark, 0), capped        (downside, a short put on losses)
+    payout = sharing x (benchmark - cost), capped, when savings reach the MSR
+           - loss x (cost - benchmark), capped, when losses reach the MLR
+
+MSR/MLR are qualification thresholds, not deductibles: eligible amounts are shared
+from the first dollar. Marginal risk corridors are a separate contract mechanism.
 
 (tiered corridors, program discounts and quality withholds follow vbc.settle exactly; payout() is its vectorised
 twin and is tested against it). Each contract is valued by Monte Carlo over the performance-year cost:
@@ -97,6 +100,7 @@ def _option(o, i):
         for ref in refs:
             res = programs.resolve(ref)
             terms = programs.contract_terms(res, stated)
+            vbc.validate_settlement_terms(terms)
             label = o.get('label') if o.get('label') and len(refs) == 1 else res['label']
             out.append({'label': str(label)[:80], 'program': {'id': res['id'], 'variant': res['variant'], 'year': res['year']},
                         'terms': _clean_terms(terms),
@@ -104,8 +108,7 @@ def _option(o, i):
         return out
     if not _num(stated.get('sharing_rate')) and not stated.get('corridors'):
         raise ValueError(f"Contract strategy needs supplied terms for option {o.get('label') or i + 1}: sharing_rate (or a named program track)")
-    if stated.get('two_sided') and not _num(stated.get('loss_rate')) and not stated.get('corridors'):
-        stated['loss_rate'] = round(1 - float(stated['sharing_rate']), 4)  # vbc.settle's own default for a two-sided offer
+    vbc.validate_settlement_terms(stated)
     return [{'label': str(o.get('label') or f'Offer {chr(65 + i)}')[:80], 'program': None, 'terms': stated, 'source': o.get('source') or 'question'}]
 
 
@@ -183,8 +186,12 @@ def _corridor(pct, corridors):
 def payout(actual, benchmark, mm, t):
     """Net settlement for arrays of actual PMPM and benchmark PMPM (before program discount/withhold): + paid to the
     ACO, - owed by it. Same arithmetic as vbc.settle, element by element."""
+    vbc.validate_settlement_terms(t)
     actual = np.asarray(actual, dtype=float)
     bench = np.broadcast_to(np.asarray(benchmark, dtype=float), actual.shape)
+    if not np.isfinite(actual).all() or (actual < 0).any() or not np.isfinite(bench).all() or (bench <= 0).any():
+        raise ValueError('Settlement simulation needs finite nonnegative costs and positive benchmarks')
+    if not _num(mm) or mm < 0: raise ValueError('Settlement member-months must be finite and nonnegative')
     if not mm: return np.zeros_like(actual)
     withhold = float(t.get('quality_withhold_pct') or 0)
     earned = float(t.get('quality_score', 1.0)) if t.get('quality_mode') == 'withhold' else 1.0
@@ -203,7 +210,7 @@ def payout(actual, benchmark, mm, t):
     down = np.zeros(actual.shape, dtype=bool)
     if t.get('two_sided'):
         if t.get('corridors'): owed = b * mm * _corridor(np.maximum(-sp, 0), t['corridors'])
-        else: owed = -total * float(t.get('loss_rate', 1 - float(t.get('sharing_rate', 0))))
+        else: owed = -total * float(t['loss_rate'])
         if t.get('loss_cap_pct') is not None: owed = np.minimum(owed, b * mm * float(t['loss_cap_pct']))
         if t.get('loss_cap_revenue_pct') is not None and t.get('participant_revenue') is not None:
             owed = np.minimum(owed, float(t['participant_revenue']) * float(t['loss_cap_revenue_pct']))
@@ -311,7 +318,9 @@ class Simulation:
         if vol != 1.0:
             mu = cost.mean()
             cost = mu + vol * (cost - mu)
-        return cost, benchmark * (1 + self.risk_drift_sd * self.z_drift)
+        # Cost volatility around sparse member costs can produce negative draws;
+        # medical spending scenarios have a zero lower bound, disclosed below.
+        return np.maximum(cost, 0.0), benchmark * (1 + self.risk_drift_sd * self.z_drift)
 
 
 def _evaluate(sim, terms, benchmark, spend, p, trend=None, vol=1.0):
@@ -321,7 +330,7 @@ def _evaluate(sim, terms, benchmark, spend, p, trend=None, vol=1.0):
 
 def greeks(sim, terms, benchmark, spend, p):
     """Finite-difference sensitivities of the expected net value on common random numbers."""
-    h = max(1.0, 0.005 * benchmark)
+    h = min(0.5 * benchmark, max(1.0, 0.005 * benchmark))
     f = lambda **kw: _evaluate(sim, terms, kw.pop('b', benchmark), spend, p, **kw)[0]['expected_net']
     t0 = sim.trend_pct
     return {'delta_benchmark_per_usd_pmpm': (f(b=benchmark + h) - f(b=benchmark - h)) / (2 * h),
@@ -527,8 +536,9 @@ def execute(path, patient_ids, params, as_of=None):
         + (' (lambda stated).' if 'risk_aversion' in p['stated'] else ' (lambda default 0.5; set risk_aversion).'),
         ('Care-management spend $%s PMPM as supplied.' % f"{p['care_management_pmpm']:,.2f}") if p['care_management_pmpm'] is not None
         else 'No care-management spend supplied: net value = settlement payout.',
-        'Program terms from the cited rulebook; quality score 1.0 (quality standard met) unless stated; '
-        'participant-revenue loss caps apply only when participant revenue is supplied.']
+        'Program terms from the cited rulebook; full quality credit is assumed unless stated, not established. '
+        'Participant-revenue loss caps require supplied participant revenue.',
+        'Simulated spending is floored at zero after trend and volatility adjustments; this is a modeling assumption.']
     if p['cost_reduction_pct']: assumptions.append(f"Cost reduced by {p['cost_reduction_pct']:.1%} (stated program effect).")
     report = {**base_report, 'status': 'answered', 'options': rows, 'terms': terms_out, 'ranking_flips': flips, 'negotiation': negotiation,
               'distribution': _histograms(nets) if nets else None,

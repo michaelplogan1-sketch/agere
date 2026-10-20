@@ -71,6 +71,7 @@ def validate(p):
             known = (terms.get('program') or {}).get('label')
             raise ValueError('Shared savings needs supplied contract terms: ' + ', '.join(missing)
                              + (f' ({known} supplies the sharing, MSR/MLR, loss and cap terms; the benchmark is contract-specific)' if known else ''))
+        validate_settlement_terms(terms)
     if p['metric'] == 'change':
         if p.get('measure') not in CHANGE_MEASURES: raise ValueError(f'change measure must be one of {CHANGE_MEASURES}')
         cmp = p.get('compare') or {}
@@ -626,6 +627,50 @@ def _quality(db, people, attr, p, start, end, extra=None, as_of=None):
     return rows, 'Internal measure definitions on enrolled members (no official value sets in the received data); rates shrunk with beta-binomial.'
 
 
+def validate_settlement_terms(t):
+    """Validate financial inputs before either scalar settlement or simulated risk.
+
+    A savings share does not determine a commercial loss share. Revenue caps
+    require the actual revenue base; silently omitting one changes liability.
+    """
+    if not isinstance(t, dict): raise ValueError('Settlement terms must be an object')
+    rates = ('sharing_rate', 'loss_rate', 'quality_score', 'savings_cap_pct', 'loss_cap_pct',
+             'loss_cap_revenue_pct', 'discount_pct', 'quality_withhold_pct', 'loss_rate_min', 'loss_rate_max')
+    for name in (*rates, 'msr', 'mlr', 'benchmark_pmpm', 'participant_revenue'):
+        if name not in t: continue
+        v = t[name]
+        if isinstance(v, bool) or not isinstance(v, (int, float)) or not math.isfinite(v) or v < 0:
+            raise ValueError(f'Settlement {name} must be a finite nonnegative number')
+        if name in rates and v > 1: raise ValueError(f'Settlement {name} must be a fraction between 0 and 1')
+        if name in ('msr', 'mlr') and v >= 1: raise ValueError(f'Settlement {name} must be a fraction below 1')
+        if name == 'benchmark_pmpm' and v == 0: raise ValueError('Settlement benchmark_pmpm must be positive')
+    if 'two_sided' in t and type(t['two_sided']) is not bool:
+        raise ValueError('Settlement two_sided must be true or false')
+    if t.get('quality_mode', 'sharing_multiplier') not in ('sharing_multiplier', 'withhold'):
+        raise ValueError('Unknown settlement quality_mode')
+    if not t.get('corridors') and 'sharing_rate' not in t:
+        raise ValueError('Settlement needs supplied sharing_rate or risk corridors')
+    if t.get('two_sided') and not t.get('corridors') and 'loss_rate' not in t:
+        raise ValueError('Downside risk needs supplied loss_rate; it cannot be inferred from sharing_rate')
+    if t.get('two_sided') and t.get('loss_cap_revenue_pct') is not None and 'participant_revenue' not in t:
+        raise ValueError('Downside risk needs supplied participant_revenue to apply the revenue-based loss cap')
+    if t.get('corridors'):
+        if not isinstance(t['corridors'], list): raise ValueError('Risk corridors must be a list')
+        previous = 0.0
+        for band in t['corridors']:
+            if not isinstance(band, dict) or not {'from', 'to', 'rate'} <= set(band):
+                raise ValueError('Risk corridors need from, to and rate')
+            lo, hi, rate = band['from'], band['to'], band['rate']
+            for value in (lo, rate, *(() if hi is None else (hi,))):
+                if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value):
+                    raise ValueError('Risk corridor values must be finite numbers')
+            if previous is None or lo != previous or not 0 <= rate <= 1 or (hi is not None and hi <= lo):
+                raise ValueError('Risk corridors must be ordered, contiguous, nonoverlapping bands starting at zero')
+            previous = hi
+    if effective_benchmark(1.0, t) <= 0:
+        raise ValueError('Program adjustments must leave a positive benchmark')
+
+
 def effective_benchmark(benchmark, t):
     """Benchmark after a program discount (e.g. ACO REACH Global) and any quality withhold not earned back."""
     withhold = float(t.get('quality_withhold_pct') or 0)
@@ -640,7 +685,12 @@ def _corridor_share(pct, corridors):
 
 def settle(actual, benchmark, mm, t):
     """Net settlement for one actual PMPM: positive = paid to the ACO, negative = owed by it."""
-    if not benchmark or not mm: return 0.0
+    validate_settlement_terms(t)
+    for name, value in (('actual PMPM', actual), ('benchmark PMPM', benchmark), ('member-months', mm)):
+        if isinstance(value, (bool, np.bool_)) or not isinstance(value, (int, float, np.number)) or not math.isfinite(value) or value < 0:
+            raise ValueError(f'Settlement {name} must be a finite nonnegative number')
+    if not benchmark: raise ValueError('Settlement benchmark PMPM must be positive')
+    if not mm: return 0.0
     benchmark = effective_benchmark(benchmark, t)
     savings_pct = (benchmark - actual) / benchmark
     total = (benchmark - actual) * mm
@@ -654,12 +704,33 @@ def settle(actual, benchmark, mm, t):
         return shared
     if -savings_pct >= mlr and savings_pct < 0 and t.get('two_sided'):
         if t.get('corridors'): owed = benchmark * mm * _corridor_share(-savings_pct, t['corridors'])
-        else: owed = -total * float(t.get('loss_rate', 1 - float(t['sharing_rate'])))
+        else: owed = -total * float(t['loss_rate'])
         if t.get('loss_cap_pct') is not None: owed = min(owed, benchmark * mm * float(t['loss_cap_pct']))
         if t.get('loss_cap_revenue_pct') is not None and t.get('participant_revenue') is not None:
             owed = min(owed, float(t['participant_revenue']) * float(t['loss_cap_revenue_pct']))
         return -owed
     return 0.0
+
+
+def settlement_explanation(actual, benchmark, mm, t):
+    """Auditable scenario arithmetic; no inference of payment entitlement or causal savings."""
+    net = settle(actual, benchmark, mm, t)
+    adjusted = effective_benchmark(benchmark, t)
+    gross = (adjusted - actual) * mm
+    default = 0.0 if t.get('corridors') else 0.02
+    assumptions = list((t.get('program') or {}).get('assumptions') or [])
+    if 'two_sided' not in t: assumptions.append('Upside-only scenario assumed; downside liability was not supplied.')
+    if 'quality_score' not in t: assumptions.append('Full quality credit assumed for this scenario.')
+    if 'msr' not in t: assumptions.append(f'Minimum savings rate assumed at {default:.1%}.')
+    if t.get('two_sided') and 'mlr' not in t: assumptions.append('Minimum loss rate assumed equal to the minimum savings rate.')
+    return {'basis': 'scenario_on_supplied_terms_not_cms_reconciliation',
+            'benchmark_dollars': round(adjusted * mm, 2), 'expenditure_dollars': round(actual * mm, 2),
+            'gross_savings_or_loss': round(gross, 2), 'net_payment_to_aco': round(net, 2),
+            'savings_hurdle_dollars': round(adjusted * mm * t.get('msr', default), 2),
+            'loss_hurdle_dollars': round(adjusted * mm * t.get('mlr', t.get('msr', default)), 2) if t.get('two_sided') else None,
+            'threshold_method': 'marginal_risk_bands' if t.get('corridors') else 'first_dollar_after_threshold',
+            'downside_exposure': bool(t.get('two_sided')), 'assumptions': assumptions,
+            'causal_savings_established': False, 'payment_entitlement_established': False}
 
 
 def settlement_risk(db, people, start, end, benchmark, t, draws=4000, seed=7):
@@ -755,9 +826,10 @@ def _shared_savings(db, people, attr, p, start, end):
               'savings_pct': round(savings_pct, 4), 'gross_savings_or_loss': round(total, 2), 'terms': t}
     if adjusted != benchmark: result['benchmark_after_program_adjustments_pmpm'] = round(adjusted, 2)
     net = settle(actual, benchmark, mm, t)
+    result['settlement_explanation'] = settlement_explanation(actual, benchmark, mm, t)
     if net > 0: result.update(outcome='shared_savings_earned', payment_to_aco=round(net, 2))
     elif net < 0: result.update(outcome='shared_loss_owed', payment_from_aco=round(-net, 2))
-    else: result.update(outcome='within_corridor', payment_to_aco=0.0)
+    else: result.update(outcome='no_exposure' if not mm else 'upside_only_no_loss' if savings_pct < 0 and not t.get('two_sided') else 'within_corridor', payment_to_aco=0.0)
     result['settlement_risk'] = settlement_risk(db, people, start, end, benchmark, t)
     result['fair_allocation'] = shapley_allocation(db, people, attr, start, end, benchmark, t,
                                                    group_by=p['group_by'] if p.get('group_by') in ('practice', 'pcp', 'coverage_type') else 'practice')

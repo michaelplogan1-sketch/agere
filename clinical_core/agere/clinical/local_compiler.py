@@ -2316,12 +2316,15 @@ def _contract_terms(low):
              'mlr': pct(r'(?:mlr|minimum loss rate) (?:of |is )?(\d+(?:\.\d+)?) ?%'),
              'loss_rate': pct(r'loss (?:sharing )?rate (?:of |is )?(\d+(?:\.\d+)?) ?%'),
              'quality_score': pct(r'quality score (?:of |is )?(\d+(?:\.\d+)?) ?%'),
-             'savings_cap_pct': pct(r'(?:savings )?cap (?:of |is )?(\d+(?:\.\d+)?) ?%')}
+             'savings_cap_pct': pct(r'(?<!loss )(?<!downside )\b(?:savings |upside )?cap (?:of |is )?(\d+(?:\.\d+)?) ?%'),
+             'loss_cap_pct': pct(r'(?:loss|downside) cap (?:of |is )?(\d+(?:\.\d+)?) ?%'),
+             'participant_revenue': num(r'participant revenue (?:of |is |at )?\$?([\d,]+(?:\.\d+)?)(?![\d.])')}
     # Value-first phrasings: "$950 benchmark", "50% sharing", "2% MSR".
     after = {'benchmark_pmpm': num(r'\$([\d,]+(?:\.\d+)?) ?(?:pmpm )?benchmark'),
              'sharing_rate': pct(r'(\d+(?:\.\d+)?) ?% (?:shared savings |savings )?shar(?:ing|e)\b'),
              'msr': pct(r'(\d+(?:\.\d+)?) ?% (?:msr|minimum savings rate)'),
              'mlr': pct(r'(\d+(?:\.\d+)?) ?% (?:mlr|minimum loss rate)'),
+             'loss_rate': pct(r'(\d+(?:\.\d+)?) ?% loss (?:sharing )?rate'),
              'quality_score': pct(r'(\d+(?:\.\d+)?) ?% quality score')}
     terms = {k: terms.get(k) if terms.get(k) is not None else after.get(k) for k in {*terms, *after}}
     terms = {k: v for k, v in terms.items() if v is not None}
@@ -2534,6 +2537,7 @@ def _vbc_question(q, r, profile, as_of, info, terms):
             if re.search(pattern, low): params['measure'] = measure; r.take(pattern, f'measure {measure}', overlap=True); break
     if metric == 'shared_savings':
         params['terms'] = terms
+        r.take(r'participant revenue (?:of |is |at )?\$?[\d,]+(?:\.\d+)?|[\d.]+ ?% loss (?:sharing )?rate|(?:loss|downside) cap (?:of |is )?[\d.]+ ?%', 'contract loss inputs', overlap=True)
         r.take(r'benchmark (?:of |is |at )?\$?[\d,]+(?:\.\d+)? ?(?:pmpm|per member per month)|(?:sharing|share|loss(?: sharing)?) rate (?:of |is )?[\d.]+ ?%|'
                r'(?:msr|mlr|minimum (?:savings|loss) rate) (?:of |is )?[\d.]+ ?%|quality score (?:of |is )?[\d.]+ ?%|(?:savings )?cap (?:of |is )?[\d.]+ ?%|'
                r'[\d.]+ ?% (?:shared savings |savings )?shar(?:ing|e)\b|[\d.]+ ?% (?:msr|mlr|minimum (?:savings|loss) rate)|[\d.]+ ?% quality score|'
@@ -3269,6 +3273,8 @@ def _contract_strategy_question(question, profile, as_of):
 
     def offer_terms(seg):
         t = {}
+        revenue = re.search(r'\bparticipant revenue (?:of |is |at )?\$([\d,]+(?:\.\d+)?)', seg)
+        if revenue: t['participant_revenue'] = float(revenue.group(1).replace(',', ''))
         for key, pattern in (('loss_cap_pct', r"\bloss cap (?:of |at )?(\d+(?:\.\d+)?) ?%|(\d+(?:\.\d+)?) ?% (?:loss|downside) cap\b"),
                              ('savings_cap_pct', r"\b(?:savings |upside )?cap (?:of |at )?(\d+(?:\.\d+)?) ?%|(\d+(?:\.\d+)?) ?% (?:savings |upside )?cap\b"),
                              ('loss_rate', r"\bloss(?: sharing)?(?: rate)? (?:of |at |is )?(\d+(?:\.\d+)?) ?%|(\d+(?:\.\d+)?) ?% (?:shared )?loss(?:es)?(?: sharing| rate)?\b"),
@@ -3333,6 +3339,10 @@ def _contract_strategy_question(question, profile, as_of):
         params['focus'] = ('capacity' if re.search(r"\bhow much (?:downside|risk|loss(?:es)?)\b|\brisk capacity\b|"
                                                   r"\b(?:can|could) we (?:take|bear|absorb|afford|tolerate|handle)\b|\bconfidence\b", low) else
                            'compare' if several else 'value')
+    revenue = re.search(r'\bparticipant revenue (?:of |is |at )?\$([\d,]+(?:\.\d+)?)', low)
+    if revenue and len(re.findall(r'\bparticipant revenue\b', low)) == 1 and not segments:
+        for option in options:
+            option.setdefault('terms', {})['participant_revenue'] = float(revenue.group(1).replace(',', ''))
     params['options'] = options
     if cp: params['counterparty'] = cp
     missing = []

@@ -1190,7 +1190,8 @@ def compare_populations(base, endpoint, groups):
 
 def code_identity():
     from .analytic_registry import code_identity as analytic_identity
-    return digest([analytic_identity(), cohorts.code_identity(),
+    from .programs import rulebook_digest
+    return digest([analytic_identity(), cohorts.code_identity(), rulebook_digest(),
                    *[hashlib.sha256(p.read_bytes()).hexdigest() for p in
                      [Path(__file__), Path(evidence_queries.__file__), Path(__file__).with_name('graph_contracts.py'),
                       Path(__file__).with_name('warehouse_retrieval.py'),

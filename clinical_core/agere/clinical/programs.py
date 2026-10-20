@@ -13,7 +13,7 @@ risk-adjustment engine.
 """
 from functools import lru_cache
 from pathlib import Path
-import json, re
+import copy, hashlib, json, re
 
 SCHEMA = 'agere-program/1'
 ROOT = Path(__file__).resolve().parents[3] / 'config' / 'agere' / 'programs'
@@ -115,8 +115,8 @@ def _lookup(params, dotted):
     return node if isinstance(node, dict) and 'value' in node else None
 
 
-@lru_cache(maxsize=1)
-def _load(root=str(ROOT)):
+@lru_cache(maxsize=4)
+def _load(root, signature):
     out = {}
     for f in sorted(Path(root).glob('*.json')):
         if f.name.startswith('_'): continue
@@ -127,7 +127,19 @@ def _load(root=str(ROOT)):
 
 
 def load(root=None):
-    return _load(str(root or ROOT))
+    root = Path(root or ROOT)
+    signature = tuple((p.name, hashlib.sha256(p.read_bytes()).hexdigest()) for p in sorted(root.glob('*.json'))
+                      if not p.name.startswith('_'))
+    return copy.deepcopy(_load(str(root), signature))
+
+
+def rulebook_digest():
+    """Content identity invalidates reusable plans when program evidence changes."""
+    return hashlib.sha256(json.dumps(load(), sort_keys=True, separators=(',', ':')).encode()).hexdigest()
+
+
+def document_digest(doc):
+    return hashlib.sha256(json.dumps(doc, sort_keys=True, separators=(',', ':')).encode()).hexdigest()
 
 
 def validate_all(root=None):
@@ -189,13 +201,15 @@ def resolve(name_or_ref, year=None, variant=None):
     variants = doc.get('variants') or {}
     if variants and variant not in variants:
         raise ValueError(f"{doc['label']} needs supplied option: one of {', '.join(variants)}")
-    year = int(year or ref.get('year') or max(doc['years']))
+    supplied_year = year or ref.get('year')
+    year = int(supplied_year or max(doc['years']))
     if year not in doc['years']:
         raise ValueError(f"{doc['label']} rulebook covers {doc['year_basis'].replace('_', ' ')}s {', '.join(map(str, doc['years']))}, not {year}")
     params = dict(_flat(doc['parameters']))
     if variant: params.update(_flat(variants[variant].get('parameters') or {}))
     label = doc['label'] + (f' {variant}' if variant and not doc['label'].endswith(' ' + variant) else '')
     return {'id': doc['id'], 'program': doc['program'], 'label': label, 'variant': variant, 'year': year, 'year_basis': doc['year_basis'],
+            'year_selection': 'supplied' if supplied_year else 'latest_stored_year_assumed',
             'kind': doc['kind'], 'status': doc['status'], 'parameters': params, 'doc': doc}
 
 
@@ -246,21 +260,27 @@ def contract_terms(ref, stated=None, year=None, variant=None):
             terms[term] = value(res, name); used.append(name)
         else:
             terms[term] = ref_
+    stated = {k: v for k, v in (stated or {}).items() if k != 'program'}
+    overridden = sorted(k for k in stated if k in terms and stated[k] != terms[k])
+    terms.update(stated)
     if terms.get('loss_rate') is None and terms.get('two_sided') and terms.get('sharing_rate') is not None:
         lo, hi = terms.get('loss_rate_min'), terms.get('loss_rate_max')
         rate = 1 - float(terms['sharing_rate']) * float((stated or {}).get('quality_score', terms.get('quality_score', 1.0)))
         if lo is not None: rate = max(rate, float(lo))
         if hi is not None: rate = min(rate, float(hi))
         terms['loss_rate'] = round(rate, 4)
-    stated = {k: v for k, v in (stated or {}).items() if k != 'program'}
-    overridden = sorted(k for k in stated if k in terms and stated[k] != terms[k])
-    terms.update(stated)
     if 'msr' in stated and 'mlr' not in stated and terms.get('two_sided'): terms['mlr'] = stated['msr']
     if 'msr' in terms: terms.pop('msr_schedule', None)
-    assumptions = list(doc.get('assumptions') or [])
+    assumptions = [a for a in (doc.get('assumptions') or []) if not a.startswith('Quality performance standard met')]
+    if res.get('year_selection') == 'latest_stored_year_assumed':
+        assumptions.append(f"Program year was not supplied; using latest stored {res['year_basis'].replace('_', ' ')} {res['year']} for this scenario.")
     if 'quality_score' not in stated and terms.get('quality_mode', 'sharing_multiplier') == 'sharing_multiplier':
         terms.setdefault('quality_score', 1.0)
+        assumptions.append('Full quality credit is a scenario assumption; actual quality qualification must be established.')
+    if 'msr' in stated:
+        assumptions = [a for a in assumptions if not a.startswith('MSR/MLR defaults')]
     terms['program'] = {'id': res['id'], 'label': res['label'], 'year': res['year'], 'year_basis': res['year_basis'],
+                        'variant': res['variant'], 'source_digest': document_digest(doc), 'year_selection': res.get('year_selection'),
                         'status': res['status'], 'parameters_used': used, 'overridden_by_question': overridden,
                         'assumptions': assumptions, 'sources': sources(res, set(used)), 'last_verified': doc['last_verified']}
     return terms
@@ -270,6 +290,10 @@ def missing_terms(terms):
     """User-only inputs still needed to settle (the program cannot know the benchmark)."""
     out = [k for k in REQUIRED_FROM_USER if not isinstance(terms.get(k), (int, float))]
     if not isinstance(terms.get('sharing_rate'), (int, float)) and not terms.get('corridors'): out.append('sharing_rate')
+    if terms.get('two_sided'):
+        if not isinstance(terms.get('loss_rate'), (int, float)) and not terms.get('corridors'): out.append('loss_rate')
+        if terms.get('loss_cap_revenue_pct') is not None and not isinstance(terms.get('participant_revenue'), (int, float)):
+            out.append('participant_revenue')
     return out
 
 

@@ -129,6 +129,8 @@ class Settlement(unittest.TestCase):
 
     def test_settle_with_basic_level_e_revenue_limit(self):
         t = programs.contract_terms('MSSP BASIC level E', {'msr': 0.0})
+        with self.assertRaisesRegex(ValueError, 'participant_revenue'): vbc.settle(110, 100, 1000, t)
+        t['participant_revenue'] = 100000
         self.assertAlmostEqual(vbc.settle(110, 100, 1000, t), -3000.0)   # 10% loss x 30%
         self.assertAlmostEqual(vbc.settle(200, 100, 1000, t), -4000.0)   # 4% of benchmark cap
         self.assertAlmostEqual(vbc.settle(200, 100, 1000, {**t, 'participant_revenue': 25000}), -2000.0)  # 8% of revenue
@@ -180,6 +182,10 @@ class Routing(unittest.TestCase):
         for case in cases:
             g, info = self.plan(case['question'])
             self.assertIsNotNone(g, (case['question'], info))
+            if g['coverage'] == 'unsupported':
+                self.assertEqual(case['expect_program'], 'mssp_basic')
+                self.assertIn('participant_revenue', ' '.join(g['unmet_requirements']))
+                continue
             self.assertEqual([n['operation'] for n in g['nodes']], [case['expect_operation']], (case['question'], info))
             terms = g['nodes'][-1]['parameters']['terms']
             self.assertEqual(terms['program']['id'], case['expect_program'], case['question'])
@@ -195,6 +201,8 @@ class Routing(unittest.TestCase):
             'With a $1,000 PMPM benchmark, how much shared savings would we earn under MSSP ENHANCED with a 2% MSR?': ('MSSP ENHANCED', 1000.0, 0.75),
         }
         for q, (label, bench, rate) in expect.items():
+            if label in ('MSSP BASIC C', 'MSSP BASIC E'):
+                q += ' with participant revenue of $1,000,000'
             g, info = self.plan(q)
             t = g['nodes'][-1]['parameters']['terms']
             self.assertEqual((t['program']['label'], t['benchmark_pmpm'], t['sharing_rate']), (label, bench, rate), q)

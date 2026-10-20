@@ -18,7 +18,7 @@ P = {'confidence': 0.95, 'risk_aversion': 0.5}
 
 
 def program_terms(name, members=3000):
-    t = programs.contract_terms(name)
+    t = programs.contract_terms(name, {'participant_revenue': 1000000})
     t.pop('program')
     return CS._resolve_msr(t, members)
 
@@ -203,7 +203,9 @@ class Inputs(unittest.TestCase):
             CS.validate({'benchmark_pmpm': 1000, 'options': [{'program': 'commercial_shared_savings_typical'}]})
         with self.assertRaisesRegex(ValueError, 'needs supplied program track'):
             CS.validate({'benchmark_pmpm': 1000, 'options': [{'program': 'MSSP'}]})
-        p = CS.validate({'benchmark_pmpm': 1000, 'options': [{'program': 'MSSP BASIC'}, {'program': 'ACO REACH'}]})
+        with self.assertRaisesRegex(ValueError, 'participant_revenue'):
+            CS.validate({'benchmark_pmpm': 1000, 'options': [{'program': 'MSSP BASIC'}]})
+        p = CS.validate({'benchmark_pmpm': 1000, 'options': [{'program': 'MSSP BASIC', 'terms': {'participant_revenue': 1000000}}, {'program': 'ACO REACH'}]})
         self.assertEqual([o['label'] for o in p['options']], ['MSSP BASIC A', 'MSSP BASIC B', 'MSSP BASIC C', 'MSSP BASIC D', 'MSSP BASIC E',
                                                               'ACO REACH Professional', 'ACO REACH Global'])
 
@@ -215,6 +217,7 @@ class Inputs(unittest.TestCase):
         self.assertIsNone(graph)
         self.assertIn('benchmark_pmpm', info['requires_input'])
         choice['input']['parameters']['benchmark_pmpm'] = 1000
+        choice['input']['parameters']['options'][0]['terms'] = {'participant_revenue': 1000000}
         with mock.patch.object(router, '_ask', side_effect=fake):
             graph, info = router.route('should we go enhanced at 1000', AS_OF, None, None, analysis_graph.validate)
         self.assertEqual(graph['nodes'][-1]['operation'], 'contract_strategy')
@@ -254,6 +257,8 @@ class Routing(unittest.TestCase):
             'Should we take the offer at 55% sharing with a 3% MSR and a $120 benchmark?': ('value', 1),
         }
         for q, (focus, n) in phrasings.items():
+            # BASIC downside tracks need the revenue base for their loss caps.
+            if 'BASIC' in q: q = q.rstrip('?') + ' with participant revenue of $1,000,000?'
             g, info = self.plan(q)
             self.assertIsNotNone(g, (q, info))
             self.assertEqual([x['operation'] for x in g['nodes']], ['contract_strategy'], q)
@@ -272,6 +277,10 @@ class Routing(unittest.TestCase):
         for case in cases:
             g, info = self.plan(case['question'])
             self.assertIsNotNone(g, (case['question'], info))
+            if 'BASIC' in case['question']:
+                self.assertEqual(g['coverage'], 'unsupported')
+                self.assertIn('participant_revenue', ' '.join(g['unmet_requirements']))
+                continue
             self.assertEqual([n['operation'] for n in g['nodes']], [case['expect_operation']], case['question'])
             analysis_graph.validate(g, AS_OF)
 
@@ -293,6 +302,8 @@ class Routing(unittest.TestCase):
                          'What is our settlement under ACO REACH Global 2026 with a benchmark of $1,100 PMPM?',
                          'What would our shared savings be with a benchmark of $90 PMPM and a sharing rate of 50%?']
         for q in vbc_questions:
+            if 'level E' in q or 'level C' in q:
+                q += ' with participant revenue of $1,000,000'
             g, _ = self.plan(q)
             self.assertEqual([n['operation'] for n in g['nodes']], ['vbc'], q)
         for q in ('What would we earn under MSSP ENHANCED?', 'What is our value at risk on the shared savings contract?',

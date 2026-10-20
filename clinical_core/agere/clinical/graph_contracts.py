@@ -172,7 +172,7 @@ def parameter_schema(op, catalog):
                                       'quality only: internal measure, a measure-library id (config/agere/measures) or a measure set'),
                     'output': string(['rates', 'gaps'], 'quality library measures: rates (default) or the care-gap patient list'),
                     'attribution': string(['hybrid', 'prospective', 'plurality']),
-                    'terms': {'type': 'object', 'description': 'shared_savings only: benchmark_pmpm, sharing_rate, msr, mlr, quality_score, two_sided, loss_rate, savings_cap_pct, loss_cap_pct, risk_adjust'},
+                    'terms': {'type': 'object', 'description': 'shared_savings only: benchmark_pmpm, sharing_rate, msr, mlr, quality_score, two_sided, loss_rate, savings_cap_pct, loss_cap_pct, loss_cap_revenue_pct, participant_revenue, risk_adjust. Rates are fractions 0..1. Downside requires explicit loss_rate or a cited program. A revenue cap requires participant_revenue. Never infer missing contract terms.'},
                     'program': {'type': 'string', 'description': 'shared_savings only: a named program whose cited rulebook terms apply, e.g. "MSSP ENHANCED 2026", '
                                 '"MSSP BASIC level E", "ACO REACH Global 2026", "LEAD Professional 2027"; "" when none is named. Terms stated in the question still go in terms and override.'}})
     if op == 'program_effect':
@@ -355,7 +355,8 @@ def parameter_schema(op, catalog):
         from . import contract_strategy as cs
         rate = lambda d: {'type': ['number', 'null'], 'minimum': 0, 'maximum': 1, 'description': d}
         terms = {'type': 'object', 'description': 'Offer terms as stated (rates as fractions): sharing_rate, msr, mlr, two_sided, loss_rate, '
-                                                  'savings_cap_pct, loss_cap_pct, quality_score; override a named program\'s terms'}
+                                                  'savings_cap_pct, loss_cap_pct, loss_cap_revenue_pct, participant_revenue, quality_score; override a named program\'s terms. '
+                                                  'Downside loss_rate must be supplied or come from a cited program. Revenue-based caps require participant_revenue.'}
         option = obj({'label': {'type': 'string', 'description': 'Short name, e.g. "Offer A" or the program'},
                       'program': {'type': 'string', 'description': 'Named track whose cited rulebook terms apply, e.g. "MSSP ENHANCED 2026", "MSSP BASIC" '
                                                                    '(all levels), "MSSP BASIC level E", "ACO REACH" (both options), "ACO REACH Global"; "" for a plain offer'},

@@ -112,6 +112,17 @@ def governed_knowledge():
                          barrier_policy=c.get('barrier_policy'))
     except Exception as exc:  # noqa: BLE001 - knowledge is advisory context, never a reason to refuse
         knowledge['catalog_unavailable'] = type(exc).__name__
+    from . import programs
+    knowledge['healthcare_economics'] = {
+        'programs': [{'id': d['id'], 'label': d['label'], 'years': d['years'], 'year_basis': d['year_basis']}
+                     for d in programs.load().values() if d.get('settlement')],
+        'calculation': 'Use the vbc shared_savings or contract_strategy engine for settlement and downside risk. '
+                       'Use an explicit program/track/year or supplied contract terms; never invent a benchmark or loss share.',
+        'meaning': 'Gross savings differ from the ACO payment and from net value after operating costs. '
+                   'MSR/MLR qualification thresholds differ from marginal risk corridors. '
+                   'A revenue-based loss cap requires participant revenue. '
+                   'Scenario payments do not establish payer entitlement or a causal intervention effect.',
+        'quality': 'State assumed quality credit and elected thresholds; request actual values for a contract-specific conclusion.'}
     return knowledge
 
 

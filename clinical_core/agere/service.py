@@ -292,9 +292,9 @@ def serve(run,port,annotations=None,evidence_queries=None,stack=None,allow_live_
                     result=conversation.handle_compose(connected_stack,body)
                 elif path=='/api/stack/correct':
                     from .clinical import learning
-                    if set(body)-{'question','note','expected'} or not isinstance(body.get('question'),str) or not isinstance(body.get('note'),str):
+                    if set(body)-{'question','note','expected','rule'} or not isinstance(body.get('question'),str) or not isinstance(body.get('note'),str):
                         raise ValueError('Correction needs question and note (optional expected)')
-                    result=learning.record_correction(connected_stack.path,body['question'],body['note'],body.get('expected'))
+                    result=learning.record_correction(connected_stack.path,body['question'],body['note'],body.get('expected'),body.get('rule'))
                 elif path=='/api/stack/briefing-feedback':  # implicit feedback for the briefing ranker (briefing_rank)
                     from .clinical import briefing_rank
                     result=briefing_rank.handle_feedback(connected_stack.path,body)
@@ -801,6 +801,12 @@ def serve(run,port,annotations=None,evidence_queries=None,stack=None,allow_live_
                 if connected_stack is None:self.send_error(404);return
                 from .clinical.intelligence_activity import snapshot as intelligence_snapshot
                 raw=json.dumps(intelligence_snapshot(connected_stack.path)).encode();mime='application/json'
+            elif parsed.path=='/api/stack/economics-learning':
+                if connected_stack is None: self.send_error(404); return
+                from .clinical import economics_learning
+                result=economics_learning.summary(connected_stack.path)
+                result['rule_options']=economics_learning.rule_options(parse_qs(parsed.query).get('question',[''])[0])
+                raw=json.dumps(result).encode();mime='application/json'
             elif parsed.path=='/api/stack/learning':
                 if connected_stack is None:self.send_error(404);return
                 from .clinical.learning import summary as learning_summary
