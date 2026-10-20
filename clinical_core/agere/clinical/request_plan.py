@@ -54,6 +54,7 @@ class Catalog:
     tables: dict
     identity: dict
     stream_fields: dict = dataclass_field(default_factory=dict)
+    profile: dict = dataclass_field(default_factory=dict)
 
     @classmethod
     def load(cls, path):
@@ -71,7 +72,8 @@ class Catalog:
         profile = json.loads(profile_path.read_text()) if profile_path.exists() else {}
         streams = ({s: list(v.get('fields', {})) for s, v in profile.get('streams', {}).items()}
                    if profile.get('source_digest') == identity.get('source_digest') else {})
-        return cls(target, tables, identity, streams)
+        return cls(target, tables, identity, streams,
+                   profile if profile.get('source_digest') == identity.get('source_digest') else {})
 
     def field(self, name):
         if not isinstance(name, str): raise PlanError('Explicit table.column required')

@@ -62,7 +62,7 @@ def policy_identity():
         for name in ('shared_planner.py', 'request_plan.py', 'request_language.py', 'analysis_graph.py',
                      'graph_contracts.py', 'graph_planner.py', 'semantic_layer.py', 'sql_query.py',
                      'age.py', 'request_vocabulary.py', 'request_shapes.py', 'local_request_worker.py',
-                     'concepts.py', 'drug_classes.py', 'nl2sql.py', 'workflow_contract.py',
+                     'concepts.py', 'drug_classes.py', 'nl2sql.py', 'workflow_contract.py', 'request_discovery.py',
                      'metrics.py', 'metric_families.py', 'measures.py', 'risk_adjustment.py', 'vbc.py')}})
 
 SYSTEM = '''Interpret a healthcare warehouse question into a typed relational request. Return JSON only.
@@ -96,6 +96,17 @@ SYSTEM += '''\nOptional joins:[{"table":"clinician","left":"patient.pcp_clinicia
 Optional having: a predicate using result.output_alias for aggregate-result thresholds. It filters grouped results and their exact contributing patient membership.'''
 SYSTEM += '''\nRaw received fields: source or exists may include stream:"exact_stream_name" when table is record/current_record. Then field can be record.payload.received_field (or current_record.payload.received_field). Use only listed stream fields. current_record resolves entity versions; record retains all delivered versions. Never infer current state by counting all versions.'''
 SYSTEM += '\nRequest additional raw field schemas with {"need_streams":["stream_name"]} as a standalone JSON object.'
+SYSTEM += '''
+Evidence discovery is available before planning:
+{"need_discovery":{"terms":["literal topic or field"],"probes":[{"table":"catalog relation","field":"table.column","mode":"values|excerpts","contains":"optional literal substring"}]}}
+Use 1..8 metadata terms and/or 1..3 probes. Raw record.payload fields additionally require stream:"exact received stream".
+Probes retain the original saved patient scope and source identity. They return bounded received values or excerpts with lineage.
+Search alternatives in catalog metadata, raw streams and extracted evidence before claiming unavailable information.
+Metadata matches and substring excerpts are leads, not clinical facts; preserve subject, negation and time in the executable analysis.
+Empty metadata search is not record absence. Empty bounded probes do not establish global/clinical absence.
+Incomplete or truncated discovery must remain explicit. Missing extracted facts may reflect extraction coverage.
+Never use discovery samples as the population or calculator: the final typed request must execute against the complete scoped data.
+'''
 SYSTEM += '''
 quote may be an array of literal substrings when one requirement is expressed in separate places, e.g. ["fraction","percentage"]. Each span is checked.
 For engine analyses, source/select/where describe the INPUT COHORT (normally patient IDs); analytical dates, outcomes, grouping and methods belong in the engine parameters. Do not prefilter the cohort to positive outcomes.
@@ -257,6 +268,8 @@ def schema_slice(catalog, question, extra=(), operations=(), streams=()):
             selected_contracts[op]['date_bounds'] = 'Window/period start and end dates are inclusive. Calendar-year end is YYYY-12-31.'
     stream_names = sorted(catalog.stream_fields, key=lambda s: (-len(words & set(s.replace('_',' ').split())), s))
     selected_streams = list(dict.fromkeys([*streams, *stream_names[:3]]))[:12]
+    from .request_discovery import describe
+    discovery_metadata = describe(catalog, selected, selected_streams)
     from .request_vocabulary import definitions, digest, concept_definitions
     vocabulary = {k: {'version': v['version'], 'definition_digest': digest(v), 'meaning': v.get('summary', v['name'])}
                   for k, v in definitions().items()}
@@ -266,6 +279,7 @@ def schema_slice(catalog, question, extra=(), operations=(), streams=()):
             'selected_stream_fields': {s: catalog.stream_fields[s] for s in selected_streams},
             'analytical_operators': {**{op: info['meaning'] for op, info in operators.items()}, 'governed_metric': 'Versioned governed business measure on the compiled cohort'},
             'selected_operator_contracts': selected_contracts,
+            'discovery_metadata': discovery_metadata,
             'as_of': catalog.identity.get('as_of'), 'more_schema_available': True}
 
 
@@ -325,7 +339,7 @@ def interpret(catalog, question, *, population=None, model=None, force_model=Fal
         if not MODEL_DIR.exists():
             raise QuestionNotUnderstood('The question was preserved, but no complete local interpretation is available. ' + failures[-1])
         return isolated_local(catalog, question, population)
-    attempts, extra, operations, streams, feedback = [], [], [], [], ''
+    attempts, extra, operations, streams, feedback, discovery = [], [], [], [], '', []
     # Disposable local workers own serialization; hosted calls do not queue.
     proposal_count = 0
     for _ in range(6):
@@ -333,10 +347,15 @@ def interpret(catalog, question, *, population=None, model=None, force_model=Fal
         catalog_context = schema_slice(catalog, question, extra, operations, streams)
         user = json.dumps({'catalog': catalog_context, 'question': question,
                            'saved_cohort_size': len(population) if population is not None else None,
-                           'validator_feedback': feedback}, ensure_ascii=False)
+                           'discovery': discovery, 'validator_feedback': feedback}, ensure_ascii=False)
         raw, stats = tracked_call(model, attempts, SYSTEM, user, max_tokens=2600)
         try:
             plan = decode(raw)
+            if set(plan) == {'need_discovery'}:
+                from .request_discovery import run
+                discovery.append(run(catalog, plan['need_discovery'], population=population))
+                feedback = 'Discovery receipts are available. Use them to request schemas or form the complete typed request; do not answer from samples.'
+                continue
             if plan and set(plan) <= {'need_tables', 'need_operations', 'need_streams'}:
                 from .graph_planner import CONTRACTS
                 for key, available in [('need_tables', catalog.tables), ('need_operations', CONTRACTS), ('need_streams', catalog.stream_fields)]:
@@ -354,6 +373,7 @@ def interpret(catalog, question, *, population=None, model=None, force_model=Fal
             raw_audit, stats = tracked_call(model, attempts, AUDIT_SYSTEM, json.dumps({
                 'original_question': question, 'catalog': catalog_context,
                 'request': plan, 'compiled_sql': contract['query'],
+                'discovery': discovery,
                 'saved_cohort_size': len(population) if population is not None else None,
             }), max_tokens=1200)
             audit = decode(raw_audit)
@@ -368,6 +388,7 @@ def interpret(catalog, question, *, population=None, model=None, force_model=Fal
             return contract, {
                 'interpreter': model_name if isinstance(model_name, str) else 'provided_interpreter',
                 'review': 'model_semantic_review', 'semantic_review': audit, 'attempts': attempts,
+                'discovery': discovery,
                 'grammar_decline': failures[0], 'qualified_interpretation': False,
                 'execution_accepted': False}
         except (ValueError, KeyError, TypeError) as exc:
@@ -475,6 +496,7 @@ def execute_contract(stack, question, graph, receipt, *, population=None, parent
                            'missing': issues, 'patient_ids': [], 'actionable_cohort': False,
                            'data_absence_established': False, 'limitations': ['No partial population query was executed.']},
                 'new_paid_api_calls': receipt['new_paid_api_calls'], 'planning_economics': economics(receipt), 'elapsed_seconds': time.perf_counter()-started}
+        rejected['answer']['evidence_discovery'] = interpretation.get('discovery', [])
         if parent:
             rejected['cohort_transform'] = {'parent_context_id': parent['id'], 'input_patient_ids': sorted(population),
                                           'operations': ['Declined edit; saved membership unchanged']}
@@ -522,6 +544,8 @@ def execute_contract(stack, question, graph, receipt, *, population=None, parent
               'unknown_patient_ids': unknown_ids, 'unknown_count': len(unknown_ids),
               'actionable_cohort': bool(ids) and not partial, 'query_evidence': {'query': report['query'], 'source_identity': contract['source_identity']},
               'request_id': contract['id'], 'scope': 'Observed warehouse query; clinical execution is not authorized.'}
+    if interpretation.get('discovery'):
+        answer['evidence_discovery'] = interpretation['discovery']
     if contract.get('coverage_query'):
         coverage = sql_query.execute(stack.path, {'query': contract['coverage_query'], 'returns': 'table'},
                                      patient_ids=population, target=target)
@@ -555,6 +579,8 @@ def execute_contract(stack, question, graph, receipt, *, population=None, parent
         computed['actionable_cohort'] = bool(ids) and computed.get('status') == 'answered' and computed.get('actionable_cohort', True)
         computed['missing'] = list(dict.fromkeys([*computed.get('missing', []), *issues]))
         computed['limitations'] = list(dict.fromkeys([*computed.get('limitations', []), *limitations]))
+        if interpretation.get('discovery'):
+            computed['evidence_discovery'] = interpretation['discovery']
         result.update(answer=computed, results=graph_result['results'])
         if graph_result.get('new_paid_api_calls'):
             receipt['new_paid_api_calls'] += graph_result['new_paid_api_calls']
