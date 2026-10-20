@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-10-20T15:52:35.944414+00:00",
+  "updated_at": "2026-10-20T17:44:32.700576+00:00",
   "decision_basis": "AGERE_SHARED_FRONTIER_2026-10-20.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -257,6 +257,10 @@
         {
           "path": "artifacts/agere-integrated-release-v1/implementation-receipt.json",
           "sha256": "068e635e6bbb8142c78abb5104c121562cc1e61acdc21504abd42d621faa09a3"
+        },
+        {
+          "path": "artifacts/agere-discovery-v1/implementation-receipt.json",
+          "sha256": "7debbbaa523da2172408aaab689365f1dfbe4e40c6e1ad724bdea412332a22a5"
         }
       ]
     },
@@ -314,33 +318,37 @@
     "kind": "delivery_checkpoint",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "Compound warehouse questions now reach bespoke frontier views and manual query monitors through the main answer path; saved replay retains the artifact and adds no API call. Planner definitions and reusable checked shapes extend local coverage.",
-    "measured_failure_reduction": "Removed birth-date age/current-age mismatch, claims-only ED omissions, dropped concept-quote constraints and missing frontier/cost integration. Live check exposed then fixed stale fixed-template capability text. Final live query matches direct SQL (1,278 appointments / 59 practices / 810 patients), view is ready, unchanged-source monitoring retains one baseline and replay uses zero calls.",
+    "user_behavior_delta": "New questions can discover current received-source metadata and bounded evidence through the shared planner. Saved results and follow-ups preserve original contracts and discovery; only current explicitly selected patient populations authorize synthetic work.",
+    "measured_failure_reduction": "Fixed dropped problem-list diagnoses, lost failed-discovery receipts, prompt-growth failure, summary-to-action leakage, false-empty follow-ups and pre-policy legacy bypass. Live remittance answer matches all direct SQL rows (1753 total); six independent grammar queries pass; actual browser confirms guards and one persisted synthetic review item.",
     "evidence": [
       "AGERE_CHIEF_STAFF_2026-10-20.md",
-      "artifacts/agere-integrated-release-v1/implementation-receipt.json",
-      "docs/agere/SHARED_PLANNER_CORRECTNESS_2026-10-20.md"
+      "artifacts/agere-discovery-v1/implementation-receipt.json",
+      "artifacts/agere-discovery-v1/independent-browser-acceptance.json",
+      "artifacts/agere-discovery-v1/claude-independent-review.md"
     ],
-    "remaining_gap": "General source/derived-evidence discovery, multi-entity/temporal semantics and clinical/model qualification remain open. Generated labels and arbitrary JavaScript are not generally verified; standalone export is not security-qualified. Initial requested dark theme needs the toggle; generation latency remains high. Monitoring is manual and actions simulated.",
-    "next_action": "Continue G3 using docs/agere/GENERAL_QUESTION_ARCHITECTURE_PLAN.md: implement source/derived-evidence discovery with defensible absence and extend typed multi-entity/temporal composition through unseen cross-domain vertical slices. Keep this answer-to-work path and explicit scope/source identities; validate independent references before G5 comparisons.",
-    "next": "Whole-warehouse semantic/discovery/DAG capability; independent qualification remains separate.",
+    "remaining_gap": "Derived-value metadata discovery, general multi-entity/temporal semantics, clinical/time reconciliation and independent qualification remain open. Current probe ordering, prompt/latency, generated-content qualification and manual-monitor limits remain. Existing saved work needs refreshed answers. Incidental evaluator UI exposure means this build chat is not blind to that existing bank; qualification requires uncontaminated material.",
+    "next_action": "Actual Claude owner: complete generic bounded, source-identity-bound derived-field value discovery across three domains in request_discovery.py and new test_request_discovery_derived.py, then continue multi-entity/temporal composition under docs/agere/GENERAL_QUESTION_ARCHITECTURE_PLAN.md. Use existing Codex reviewer for frozen-candidate acceptance; preserve scope/source/action safeguards and verify actual API/save/reopen behavior. G5 requires independent validated references and uncontaminated qualification material.",
+    "next": "Derived-field discovery, then shared multi-entity and temporal composition; no full-product completion claim.",
     "latest_review": {
-      "at": "2026-10-20T15:11:42.052382+00:00",
-      "report": "/Users/mikel/Documents/Codex/2026-10-20/agere-coordination/claude-review.md",
-      "kind": "independent_source_review_and_baseline_verifier_reproduction",
+      "at": "2026-10-20T17:44:32.700576+00:00",
+      "report": "artifacts/agere-discovery-v1/claude-independent-review.md",
+      "kind": "actual_claude_frozen_candidate_spotcheck_plus_independent_codex_live_acceptance",
       "evidence": [
-        "/Users/mikel/Documents/Codex/2026-10-20/agere-coordination/claude-review-receipt.json",
-        "/Users/mikel/Documents/Codex/2026-10-20/agere-coordination/integration-verifier-check.json"
+        "artifacts/agere-discovery-v1/claude-review-and-continuation.json",
+        "artifacts/agere-discovery-v1/independent-browser-acceptance.json"
       ]
     },
     "coordination": {
       "planner_thread": "01a159cf-8e56-7bb2-be7e-4889268a99c2",
       "frontier_deliverables_thread": "01a15936-8db1-74f1-886b-8e1ffb89030f",
       "review_coordinator_thread": "01a159c7-3077-7130-9e6c-ce4d64341afb",
-      "status": "Both frozen candidates integrated and locally accepted on final source 780816d. Owner fixed two cross-lane defects plus stale presentation capability text; fresh-copy, focused, direct-SQL and live-browser evidence retained. No duplicate Claude call.",
-      "integration_owner": "01a1542a-b5a3-7d23-94fc-19628fd76094",
-      "next_integration_action": "Current integration sealed. Continue checkpoint.next_action; retain acknowledged presentation, latency and artifact semantic/security limitations.",
-      "artifact_extension": "Artifact lane may edit deliverables/verify.py and runtime.py in its isolated checkout. Service/workspace API/hosted serving changes remain owner-applied integration patches."
+      "status": "Current176aaba release sealed. Actual Claude explicitly accepted next implementation and is now sole owner. Planner released unstarted derived-value lane. Existing Codex reviewer independently reviews Claude candidates.",
+      "integration_owner": "claude-code:local_1c579565-09b5-4e07-a223-1ae6016e7664",
+      "next_integration_action": "Actual Claude owner: complete generic bounded, source-identity-bound derived-field value discovery across three domains in request_discovery.py and new test_request_discovery_derived.py, then continue multi-entity/temporal composition under docs/agere/GENERAL_QUESTION_ARCHITECTURE_PLAN.md. Use existing Codex reviewer for frozen-candidate acceptance; preserve scope/source/action safeguards and verify actual API/save/reopen behavior. G5 requires independent validated references and uncontaminated qualification material.",
+      "artifact_extension": "Read-only independent review only; no overlapping product edit claims.",
+      "architecture_plan": "docs/agere/GENERAL_QUESTION_ARCHITECTURE_PLAN.md",
+      "architecture_plan_sha256": "0c0c914164282669151ce8b1218c4c804cbf1625064f892e5492abdcf7ebc3ed",
+      "acknowledgments": "artifacts/agere-integrated-release-v1/architecture-acknowledgments.json"
     }
   },
   "decisions": [
@@ -1013,6 +1021,15 @@
       "basis": "User authorized cross-chat implementation and Claude double-check; 373 fresh-copy tests (9 skipped), 96 post-prompt checks, authored 180-question development workload and live question-to-frontier-view/monitor/replay evidence.",
       "scope_impact": "Connected G3 failure reduction, not universal coverage or qualification. Preserve full ten-area backlog, G3 active, G5 blocked, config overlay and external-action/benchmark restrictions.",
       "evidence": "artifacts/agere-integrated-release-v1/implementation-receipt.json"
+    }
+  ],
+  "decision_log": [
+    {
+      "at": "2026-10-20T17:44:32.700576+00:00",
+      "decision": "Activate independently reviewed176aaba with rollback270c3b4, seal connected discovery/action-scope increment, and transfer sole build ownership to actual Claude at Mike request.",
+      "basis": "Actual Claude finalR4pass;415tests7skipped on a98a390 and152finalaffectedpass; authored180 workload; real provider discovery and directSQL match; six independent live grammar queries; independent actual browser guard/positive-work checks. Actual Claude message31 read and accepted continuation.",
+      "scope_impact": "G3 active, G5 blocked, all ten areas/full acceptancefalse. Derived-value index and general temporal composition remain next. Old answers inspectable but not usable for new work until refreshed. No real care, benchmark or new service. Evaluation-hygiene disclosure retained.",
+      "evidence": "artifacts/agere-discovery-v1/implementation-receipt.json"
     }
   ]
 }

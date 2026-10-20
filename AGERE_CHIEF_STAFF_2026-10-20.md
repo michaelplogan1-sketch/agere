@@ -255,3 +255,50 @@ All ten acceptance areas remain; G3 is active and G5 blocked. Continue source/de
 evidence discovery with defensible absence and multi-entity/temporal composition
 under the existing architecture plan. This increment does not finish the universal
 warehouse interpreter, authorize real care, or activate autonomous model training.
+
+
+## Received-source discovery and action-scope release —176aaba
+
+The local app now searches current source metadata and bounded values through the
+shared planner, inspects scoped read-only evidence, and saves those receipts even
+when interpretation cannot finish. Discovery is not proof of absence. Follow-ups
+and deliverable evidence retain original contracts, source identity and action limits.
+Documented problem-list diagnoses are included under an explicit condition policy;
+indirect or lab-only evidence is not silently treated as a diagnosis.
+
+Counts and summaries no longer authorize patient work. A current explicit patient
+selection does. Legacy answers stay inspectable, but corrected definitions require
+a refreshed answer before new work. Actual Claude reviewed the frozen candidates
+and confirmed the final R4 fix on176aaba: all54 older contexts blocked for new work,
+fresh329-patient list and289-patient follow-up accepted, fresh summary blocked.
+
+On the actual8885 service, a discovery-led remittance question returned1753 records
+across three payers (608/703/442), matching separate SQL. The reopened answer and
+its follow-up preserved discovery and the original request contract. Live execution
+and replay used zero new paid calls through reuse of existing provider responses;
+replay took11.54seconds. The original successful discovery cost an estimated
+$1.133125 in five calls; a prior prompt-size failure retained$0.227789, totaling
+$1.360914 for six successful provider responses. Local compute/development/review
+are unpriced and total-cost uncertainty remains explicit. These are development
+observations, not comparative accuracy or token-economics claims.
+
+Evidence:415 tests ran on a98a390 (408passed, seven skipped);152 affected final
+policy tests passed;180 authored development questions executed with no model
+attempts. An independent Codex reviewer verified six actual HTTP questions on
+176aaba, with zero paid calls and direct SQL matches for age, all-source ED and
+payer/exclusion variants. A separate browser reviewer verified summary blocking,
+clarification instead of false-empty follow-ups,329→289 selected-cohort scope,
+legacy warnings, saved discovery and one persisted synthetic review item. No real
+outreach occurred and no new frontier artifact was generated for duplicate testing.
+Receipt:artifacts/agere-discovery-v1/implementation-receipt.json. RuntimePID65732,
+session96609, source176aaba; rollback270c3b4.
+
+The generic derived-value index remains incomplete; Claude takes that next, then
+multi-entity/temporal composition. Actual Claude explicitly read the continuation
+handoff and accepted sole implementation ownership at Mike's request; an existing
+Codex reviewer checks subsequent frozen candidates independently. G3 stays active,
+G5 blocked and all ten acceptance areas remain. This is not universal question
+coverage, clinical qualification, autonomous training or production readiness.
+An incidental evaluator UI exposure after code freeze is recorded in the receipt's
+evaluation-hygiene.json; no evaluator files were opened or benchmark executed, and
+future qualification needs uncontaminated material.

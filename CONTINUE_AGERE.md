@@ -2,34 +2,39 @@
 
 # Continue Agere
 
-The owner is Codex under Mike's October 19 handoff (BUILD_OWNER.json). Work on
-`codex/agere-validated-proof`; preserve concurrent edits. AGERE_BUILD_CONTROL.json
-owns the gate and exact next action. Mike requested removal of the continuation
-reminder on October 19; the heartbeat is deleted. Continue in human chat turns.
+The owner is actual Claude Code session `local_1c579565-09b5-4e07-a223-1ae6016e7664`,
+following Mike's explicit continuation request and Claude's message31 acknowledgment.
+BUILD_OWNER.json and AGERE_BUILD_CONTROL.json own authority and next action.
+Work on `codex/agere-validated-proof`; preserve other edits. No continuation reminder.
 
-Never run or rescore a benchmark until all selected references are independently
-validated. Gold-50 and native 150 remain blocked on reference audits; reuse saved
-answers once reconciled. Gold 10 is validated but too small for a general superiority claim.
+Live :8885 is source `176aabab590a938e954fd2e9a510546ee6c474dd` in
+`/Users/mikel/agere-mvp-run`, PID65732/session96609, ready/synthetic and hosted-enabled.
+Rollback is `270c3b4` (previous code780816d). Preserve active config overlay and histories.
+See `artifacts/agere-discovery-v1/implementation-receipt.json` for sealed tests,
+actual provider discovery/directSQL, independent six-query live grammar and browser
+acceptance, action guards, API accounting and known limits.
 
-The live service on :8885 runs from /Users/mikel/agere-mvp-run. Inspect its actual
-process and revision before updating; retain a known-good recovery commit.
+Next: generic bounded derived-field value discovery in request_discovery.py and
+new test_request_discovery_derived.py across three domains. The prior planner lane
+made no edits and released that claim. Then shared multi-entity/temporal composition
+under docs/agere/GENERAL_QUESTION_ARCHITECTURE_PLAN.md. Existing Codex reviewer
+01a15936-8db1-74f1-886b-8e1ffb89030f independently checks Claude's frozen candidates;
+Claude cannot independently qualify its own implementation.
 
-Current verified service policy: :8885 runs source `780816d` from
-`/Users/mikel/agere-mvp-run` (PID 55241, session 59937), with hosted execution
-available. Rollback is `d574c51`. The TextQL-informed point-and-thread field is
-preserved. Integrated planner correctness and checked request-shape reuse now
-connect to bespoke frontier views, explicit fixed templates, simulated work and
-manual query monitors. Exact replay retains the artifact with zero new API calls.
-See AGERE_CHIEF_STAFF_2026-10-20.md and
-artifacts/agere-integrated-release-v1/implementation-receipt.json for actual
-source, tests, live costs and retained failures. First generated view latency,
-initial theme selection and generated-content semantic qualification remain gaps.
-The field's example count still uses the older checked-example store; it does not
-measure the new request-shape cache or prove autonomous retraining.
-General source discovery, analytical expressiveness, clinical/time reconciliation
-and independent qualification remain unfinished. Follow the existing G3/G5
-checkpoint and docs/agere/GENERAL_QUESTION_ARCHITECTURE_PLAN.md. No additional
-spending approval is pending.
+All old saved contexts remain inspectable but need re-asking before new work under
+the current policy. Counts/summaries are provenance; explicit current patient
+selections permit synthetic review. Monitoring is manual; no autonomous retraining.
+G3 remains active, G5 blocked, full acceptance false. Preserve the complete charter.
+No protected benchmark rerun/rescore before independent reference validation.
+During native UI navigation, unrelated evaluator progress was incidentally exposed
+to the outgoing build chat after code freeze. No evaluator files were opened and
+no implementation was based on it; future qualification must use an uncontaminated
+reviewer and fresh held-out material. See evaluation-hygiene.json in this receipt folder.
+
+Claude continuation handoff:
+`/Users/mikel/Documents/Codex/2026-10-20/agere-coordination/CLAUDE_CONTINUATION_HANDOFF.md`.
+The new product-language preference in AGERE_PRODUCT_DIRECTION.md is a pre-existing
+uncommitted edit; preserve it and use purpose-specific output language.
 
 The remaining notes are historical architecture context, not current run instructions.
 
