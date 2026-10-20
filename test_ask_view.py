@@ -151,6 +151,30 @@ if __name__ == '__main__':
 
 
 class WholePageScript(unittest.TestCase):
+    def test_grouped_chart_keeps_missing_first_category_visible(self):
+        import shutil, subprocess
+        node = shutil.which('node')
+        if not node: self.skipTest('node not installed')
+        html = ask_view.page()
+        code = html[html.index('function vizTable('):html.index('function vizScalar(')]
+        setup = """
+const GROUP_KEYS=['practice']; const esc=String, label=String;
+const pickMetric=()=> 'count', isTime=()=>false, drill=String;
+const tableHTML=()=>'<table>original rows</table>';
+let bars=null; const hbars=rows=>{bars=rows;return '<svg>chart</svg>'};
+"""
+        assertions = """
+const assert=require('node:assert/strict');
+const rows=[{pcp_practice_id:null,count:869},{pcp_practice_id:'WH-PRACTICE-0',count:400}];
+const html=vizTable({table:rows});
+assert.match(html,/<svg>chart<\\/svg>/);
+assert.deepEqual(bars.map(r=>[r.label,r.value]),[['Not recorded',869],['WH-PRACTICE-0',400]]);
+assert.equal(bars[0].ask,null);
+assert.match(html,/<table>original rows<\\/table>/);
+assert.equal(rows[0].pcp_practice_id,null);
+"""
+        subprocess.run([node, '-e', setup + code + assertions], check=True, capture_output=True, text=True)
+
     def test_execution_view_preserves_cost_unknowns_and_actual_model_dispatch(self):
         import shutil, subprocess
         node = shutil.which('node')

@@ -265,11 +265,11 @@ function vizTrajectory(a){const rows=a.table||[];if(!rows.length||!('patient_id'
  if(metric){const top=rows.slice().sort((x,y)=>Math.abs(y[metric])-Math.abs(x[metric])).slice(0,15);h+='<h3 style="margin-top:12px">Largest '+esc(label(metric))+' (top '+top.length+')</h3>'+
   hbars(top.map(r=>({label:r.patient_id,value:r[metric]})),{fmt:v=>metric==='probability'?pct(v,0):fmt(v),title:label(metric)+' by patient'})}
  return h+tableHTML(rows,{name:'trajectory-patients'})+'</section>'}
-function vizTable(a){const rows=a.table||[];if(!rows.length)return '';const f=rows[0];const key=GROUP_KEYS.find(k=>k in f&&typeof f[k]!=='object')||Object.keys(f).find(k=>typeof f[k]==='string');
+function vizTable(a){const rows=a.table||[];if(!rows.length)return '';const columns=[...new Set(rows.flatMap(r=>Object.keys(r)))];const key=GROUP_KEYS.find(k=>columns.includes(k)&&rows.some(r=>r[k]!=null&&typeof r[k]!=='object'))||columns.find(k=>rows.some(r=>typeof r[k]==='string'));
  const metric=pickMetric(rows,a.question||a.interpretation);let h='<section class="sec">';
  if(key&&metric&&rows.length>1&&rows.length<=60){const drillable=['group','segment','practice','pcp','payer','coverage_type','facility','organization_id','month','year','quarter'].includes(key);
   if(rows.every(r=>isTime(r[key]))){const cats=rows.map(r=>String(r[key]));h+='<h3>'+esc(label(metric))+' by '+esc(label(key))+'</h3>'+lines([{name:label(metric),pts:rows.map((r,i)=>[i,r[metric]])}],{title:label(metric)+' over time',cats,ylabel:label(metric)})}
-  else{const sorted=rows.slice().sort((x,y)=>(y[metric]||0)-(x[metric]||0));h+='<h3>'+esc(label(metric))+' by '+esc(label(key))+'</h3>'+hbars(sorted.slice(0,30).map(r=>({label:r[key],value:r[metric],ask:drillable?drill(r[key]):null})),{title:label(metric)+' by '+label(key),ref:/ratio/.test(metric)?1:null,refLabel:'no difference (1.0)'})+
+  else{const sorted=rows.slice().sort((x,y)=>(y[metric]||0)-(x[metric]||0));h+='<h3>'+esc(label(metric))+' by '+esc(label(key))+'</h3>'+hbars(sorted.slice(0,30).map(r=>({label:r[key]??'Not recorded',value:r[metric],ask:drillable&&r[key]!=null?drill(r[key]):null})),{title:label(metric)+' by '+label(key),ref:/ratio/.test(metric)?1:null,refLabel:'no difference (1.0)'})+
    (drillable?'<p class="hint">Select a bar to ask a follow-up about that '+esc(label(key))+'.</p>':'')}}
  h+=tableHTML(rows,{name:'agere-answer',cols:a.table_columns,ask:key&&['group','segment','practice','pcp','payer','coverage_type','facility'].includes(key)?(r=>drill(r[key])):null});
  return h+'</section>'}
@@ -1010,5 +1010,6 @@ def page():
     shell = (assets / 'explore.html').read_text().replace('/* EXPLORE_CSS */',
         (assets / 'answer.css').read_text() + '\n' + (assets / 'explore.css').read_text())
     return (PAGE.replace('__EXPLORE_SHELL__', shell)
-            .replace('__EXPLORE_JS__', (assets / 'explore.js').read_text())
+            .replace('__EXPLORE_JS__', (assets / 'explore.js').read_text() + '\n' +
+                     (assets / 'experience.js').read_text())
             .replace('__DEMO_STEPS__', json.dumps(DEMO_STEPS).replace('</', '<\\/')))

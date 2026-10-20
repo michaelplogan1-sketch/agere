@@ -54,7 +54,7 @@ function renderSaved(){
 async function loadSources(){
  if(!sourceAtlas&&!sourceError){
   $('#source-list').innerHTML='<p class="hint">Reading the source inventory…</p>';
-  try{sourceAtlas=await fetchJSON('/api/stack/source-atlas');$('#source-date').textContent='Data as of '+shortDate(sourceAtlas.snapshot?.as_of)}
+  try{sourceAtlas=await fetchJSON('/api/stack/source-atlas')}
   catch(e){sourceError=e.message}
  }
  if(sourceError){$('#source-list').innerHTML='<p class="hint">'+esc(sourceError)+' <button class="text-button" data-reload-sources>Retry</button></p>';return}
@@ -107,7 +107,7 @@ function renderResultData(term=''){
 }
 function openAppDialog(id){lastDialogFocus=document.activeElement;$('#'+id).showModal()}
 function setupExplorer(){
- hydrateUI();renderIdeas();loadSaved();
+ hydrateUI();renderIdeas();loadSaved();setupExperience();
  document.addEventListener('click',e=>{
   const b=e.target.closest('[data-page],[data-topic],[data-idea],[data-close-dialog],[data-answer-tab],[data-reload-saved],[data-reload-sources],[data-source-question]');
   if(!b)return;
