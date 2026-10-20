@@ -19,7 +19,7 @@ function setupExperience(){
  }
  function draw(time){frame=null;if(!field)return;if(!paused&&last&&time-last<30){frame=requestAnimationFrame(draw);return}
   const dt=paused||!last?0:Math.min(.05,(time-last)/1000);last=time;age+=dt;
-  if(!manual&&stage<3&&age>4*(stage+1))selectStage(stage+1,false,false);
+  if(!manual&&stage<3&&age>3.5*(stage+1))selectStage(stage+1,false,false);
   field.render(dt);if(!paused&&visible&&document.visibilityState==='visible')frame=requestAnimationFrame(draw);
  }
  function start(){if(field&&frame===null&&visible&&document.visibilityState==='visible'){last=0;frame=requestAnimationFrame(draw)}}
@@ -40,7 +40,7 @@ function setupExperience(){
    const changes=field?.ingest(sample,previous)||AgereNeural.activityChanges(previous,sample);
    const compact=n=>n==null?'—':new Intl.NumberFormat(undefined,{notation:'compact',maximumFractionDigits:1}).format(n);
    $('#field-answers').textContent=compact(sample.answered);$('#field-memory').textContent=compact(sample.reusable_examples);$('#field-records').textContent=compact(sample.records);
-   const message=changes.sourceChanged?'A new warehouse snapshot has arrived':changes.examples?'New checked examples joined the learning memory':changes.answers?'A new answer. Another connection.':changes.corrections?'Feedback recorded · flagged answers excluded from reuse':changes.records?'New data is joining the network':'Evolving with your warehouse';
+   const message=changes.sourceChanged?'A new warehouse snapshot has arrived':changes.examples?'New checked examples joined the learning memory':changes.answers?'A new answer. Another connection.':changes.corrections?'Feedback recorded · flagged answers excluded from reuse':changes.records?'New data is joining the network':'Every answer adds to the picture';
    $('#scene-event').textContent=message+(field?'':' · 3D preview unavailable');$('#field-activity').dataset.status='current';
    if(changes.sourceChanged){sourceAtlas=null;sourceError=null;loadSources()}
    previous=sample;try{localStorage.setItem('agere-field-activity',JSON.stringify(sample))}catch(_){}
