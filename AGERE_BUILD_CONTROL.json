@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-10-20T17:44:32.700576+00:00",
+  "updated_at": "2026-10-20T18:04:30.320083+00:00",
   "decision_basis": "AGERE_SHARED_FRONTIER_2026-10-20.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -327,7 +327,7 @@
       "artifacts/agere-discovery-v1/claude-independent-review.md"
     ],
     "remaining_gap": "Derived-value metadata discovery, general multi-entity/temporal semantics, clinical/time reconciliation and independent qualification remain open. Current probe ordering, prompt/latency, generated-content qualification and manual-monitor limits remain. Existing saved work needs refreshed answers. Incidental evaluator UI exposure means this build chat is not blind to that existing bank; qualification requires uncontaminated material.",
-    "next_action": "Actual Claude owner: complete generic bounded, source-identity-bound derived-field value discovery across three domains in request_discovery.py and new test_request_discovery_derived.py, then continue multi-entity/temporal composition under docs/agere/GENERAL_QUESTION_ARCHITECTURE_PLAN.md. Use existing Codex reviewer for frozen-candidate acceptance; preserve scope/source/action safeguards and verify actual API/save/reopen behavior. G5 requires independent validated references and uncontaminated qualification material.",
+    "next_action": "Owner (Claude): obtain independent review of 6e21ada, fix findings, activate with rollback to 176aaba and verify in app; then G3 multi-entity/temporal composition per docs/agere/GENERAL_QUESTION_ARCHITECTURE_PLAN.md increment 3.",
     "next": "Derived-field discovery, then shared multi-entity and temporal composition; no full-product completion claim.",
     "latest_review": {
       "at": "2026-10-20T17:44:32.700576+00:00",
@@ -349,6 +349,19 @@
       "architecture_plan": "docs/agere/GENERAL_QUESTION_ARCHITECTURE_PLAN.md",
       "architecture_plan_sha256": "0c0c914164282669151ce8b1218c4c804cbf1625064f892e5492abdcf7ebc3ed",
       "acknowledgments": "artifacts/agere-integrated-release-v1/architecture-acknowledgments.json"
+    },
+    "candidate_in_review": {
+      "commit": "6e21adabf48586ce79c4b999b28feb3ca53da170",
+      "owner": "claude-code:local_1c579565-09b5-4e07-a223-1ae6016e7664",
+      "files": [
+        "clinical_core/agere/clinical/request_discovery.py",
+        "test_request_discovery_derived.py"
+      ],
+      "workflow_change": "Discovery search indexes bounded low-cardinality categorical values of derived relations (fact types, specialties, statuses, categories), identity-checked on every call; observed values rank first and scan completeness stays visible to compact model views.",
+      "measured_failure_reduction": "'ejection fraction', 'cardiology', 'denial', 'angioedema', 'hospice' now surface the derived relations/values that previously had no candidate (note_fact.fact_type, clinician.specialty, claim.final_status, therapy_barrier.barrier_type, organization.organization_type).",
+      "evidence": "/Users/mikel/Documents/Codex/2026-10-20/agere-coordination/CLAUDE_CANDIDATE_HANDOFF.md",
+      "checks": "117 targeted tests OK; full discover 4966 run, 114 pre-existing failures identical on a96a5e3, 0 new; isolated live API 2 questions, 6 Opus calls ~$1.221, discovery answer 52 matches SQL, replay 0 calls; browser reopen shows discovery receipt, no console errors.",
+      "status": "awaiting independent review by Codex 01a15936-8db1-74f1-886b-8e1ffb89030f; not deployed (:8885 remains 176aaba, rollback 270c3b4)"
     }
   },
   "decisions": [
