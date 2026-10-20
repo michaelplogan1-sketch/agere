@@ -62,3 +62,24 @@ clinical/time reconciliation and independent qualification remain incomplete.
 The coordinated `docs/agere/GENERAL_QUESTION_ARCHITECTURE_PLAN.md` is adopted under
 G3/G5, not a separate roadmap. No protected benchmark was run and no real person
 was contacted, enrolled or treated.
+
+## User-directed neural field refinement
+
+The subsequent visual request replaces the rotating orb with seven distinct
+neuron-like cells. Dendritic arbors grow from each cell and nine axon paths
+extend between them. Light pulses traverse those paths; the tips keep growing
+and receding after the initial emergence. Stage selection replays the formation.
+This is a conceptual illustration, without live learning or patient-link claims.
+
+UI source `70f276c` is active on :8885, with `ea3deca` as the prior UI recovery
+point. The existing Python process serves the updated assets on each page load.
+JavaScript syntax and whitespace checks passed. Browser checks covered 1440px
+desktop and 390px mobile (390px document width), keyboard stage changes, pause
+and resume, the five retained briefing cards, and an empty error console.
+Reduced-motion handling was reviewed in code; no OS preference was changed.
+Receipt and screenshots: `artifacts/agere-living-field-v1/implementation-receipt.json`.
+
+This removes the visual mismatch identified by Mike, not an analytical failure.
+G3 remains active; G5 remains blocked. The retained next functional action is
+source/derived-evidence discovery and multi-entity/temporal composition under
+the adopted general-question architecture plan.
