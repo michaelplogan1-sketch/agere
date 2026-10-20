@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-10-20T23:08:33.175483+00:00",
+  "updated_at": "2026-10-20T23:38:07.538163+00:00",
   "decision_basis": "AGERE_SHARED_FRONTIER_2026-10-20.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -273,6 +273,10 @@
         {
           "path": "artifacts/agere-economics-integration-v1/implementation-receipt.json",
           "sha256": "691ae6f84da959342c006056b5ded605df341cb5b8e58c4ac20ee0ab48f869b3"
+        },
+        {
+          "path": "artifacts/agere-site-workflow-v1/implementation-receipt.json",
+          "sha256": "677046741ae06e8b523c9b9de503ef1e4cab1afeb19897b7ee8272a771ad3683"
         }
       ]
     },
@@ -327,31 +331,31 @@
     }
   ],
   "checkpoint": {
-    "kind": "sealed_workflow_increment",
+    "kind": "implementation_delivered",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "Cited program/year rule corrections, suspension and fresh revalidation; financial scenario answer, generated brief and manual monitor with explicit payment direction and source assumptions.",
-    "measured_failure_reduction": "Failed original scenario now completes; percentage-to-fraction binding and repair preserve engine parameters; suspended lessons cannot restore old cache entries; review includes actual engine eligibility and named-program semantics; uncapped legacy transport no longer raises a None comparison error.",
+    "user_behavior_delta": "The approved website design now submits actual questions, restores saved answers and opens evidence, briefs, manual follow-up and learning review in the existing local app.",
+    "measured_failure_reduction": "Removed static-example-only question path in the owned local website; actual count and financial workflow run through it. Browser-discovered unresolved brief getters are rejected before delivery; numeric browser titles use evidence validation without requiring impossible DOM bindings. Exact cached repair recovered with no new calls.",
     "evidence": [
-      "artifacts/agere-economics-integration-v1/implementation-receipt.json",
-      "docs/agere/ECONOMICS_INTEGRATION_2026-10-20.md",
-      "artifacts/agere-economics-integration-v1/correction-cycle-checks.json",
-      "artifacts/agere-economics-integration-v1/live-checks.json"
+      "artifacts/agere-site-workflow-v1/implementation-receipt.json",
+      "docs/agere/SITE_WORKFLOW_INTEGRATION_2026-10-20.md",
+      "artifacts/agere-site-workflow-v1/live-replay-checks.json",
+      "artifacts/agere-site-workflow-v1/repaired-brief-browser.txt"
     ],
-    "remaining_gap": "G3 general temporal/current-state composition, dose/barrier interpretation and conditional work remain incomplete; G5 and all-ten-area acceptance are not complete.; The engine uses completion-adjusted medical and pharmacy allowed costs with a coverage fallback. Scenario arithmetic is not official CMS Parts A/B reconciliation, actuarial qualification, attribution certification or entitlement.; Gross expenditure is derived from rounded PMPM; independent reference validates exposed settlement arithmetic and member-months, not complete expenditure reconciliation.; Full generated workflow latency remains high; same-model review is not independent qualification.; Static artifact verification accepted a generated JavaScript path error. A metered versioned revision repaired this instance and browser checks verified rendering, but automatic runtime validation remains incomplete. Frozen brief workflow status can describe generation-time planned state rather than the current monitor.; The generic savings_pct warning still incorrectly assumes a bounded positive percent, and the data table exposes a ratio while the overview formats percent. Zero saved patient scope is unhelpful on aggregate financial answers. Generated-view meaning and usability qualification remain open.; The prior access reference miss (historical no-show versus latest final status), clinical partial result and frozen generated-view state wording remain in the preceding release evidence.",
-    "next_action": "G3: resolve shared temporal/current-state semantics, starting with historical no-show versus latest final appointment status and current medication/dose/barrier interpretation; verify complete populations and conditional work across admission, access/social, provider/financial and ACO/VBC questions. Add generated-view runtime/meaning acceptance and reduce fresh-workflow latency before independent G5 qualification.",
-    "next": "G3: resolve shared temporal/current-state semantics, starting with historical no-show versus latest final appointment status and current medication/dose/barrier interpretation; verify complete populations and conditional work across admission, access/social, provider/financial and ACO/VBC questions. Add generated-view runtime/meaning acceptance and reduce fresh-workflow latency before independent G5 qualification.",
+    "remaining_gap": "The hosted design preview remains a separate static preview. This release connects its owned design snapshot to the existing local app only; no external backend deployment or publication occurred. G3 temporal/current-state composition, current dose/barrier interpretation, broad multi-entity questions and conditional work remain incomplete. G5 and full ten-area acceptance remain incomplete. The new frozen-view verifier checks direct literal AGERE.get paths and evidence-backed numeric document titles. It is not a general JavaScript evaluator or complete generated-view runtime/meaning verifier. Original failures and repair attempts are preserved. Generated briefs contain generation-time workflow state; this brief still describes planned work inside the frozen snapshot while the surrounding live workflow shows ready/manual monitoring. Financial output is hypothetical completion-adjusted received medical/pharmacy cost arithmetic on supplied terms, not official CMS reconciliation, actuarial qualification, attribution certification or payment entitlement. Prior expenditure reconciliation limits remain. The savings_pct warning incorrectly assumes percentages must be between zero and one hundred. Aggregate financial answers still show zero patients in focus in the action workspace. Fresh compound workflows remain slow. Anthropic returned HTTP 400 credit-balance-too-low during automatic brief repair. The already-paid validated response was replayed offline after fixing the title false positive; no new API call was used. Further uncached provider validation remains blocked pending credit restoration. Learning means recorded outcomes/corrections and checked scoped reuse. No automatic model-weight training or independent clinical/model qualification is claimed.",
+    "next_action": "G3: integrate the isolated healthcare source/correction cache candidate f5ad976 + 5edac69 and temporal candidate 0835f13 + cf6fd98 in controlled increments; verify changed-wording correction/suspension/source-change behavior through the connected website, then the original 21-patient final-status access question and clinical compound answer/workflow with provider calls when credits are available. Keep candidates unactivated until their required owner workflow checks pass; preserve generated-view meaning and latency work and independent G5 qualification.",
+    "next": "G3: integrate the isolated healthcare source/correction cache candidate f5ad976 + 5edac69 and temporal candidate 0835f13 + cf6fd98 in controlled increments; verify changed-wording correction/suspension/source-change behavior through the connected website, then the original 21-patient final-status access question and clinical compound answer/workflow with provider calls when credits are available. Keep candidates unactivated until their required owner workflow checks pass; preserve generated-view meaning and latency work and independent G5 qualification.",
     "latest_review": {
-      "at": "2026-10-20T23:08:33.175483+00:00",
-      "kind": "Owner development/provider/API/browser checks and frozen candidate integration; not independent clinical/actuarial qualification",
-      "report": "docs/agere/ECONOMICS_INTEGRATION_2026-10-20.md",
+      "at": "2026-10-20T23:38:07.538163+00:00",
+      "kind": "Owner working/frozen tests, actual API/browser workflow and cached-response recovery; not independent analytical/clinical qualification",
+      "report": "docs/agere/SITE_WORKFLOW_INTEGRATION_2026-10-20.md",
       "evidence": [
-        "artifacts/agere-economics-integration-v1/implementation-receipt.json"
+        "artifacts/agere-site-workflow-v1/implementation-receipt.json"
       ]
     },
     "coordination": {
       "integration_owner": "01a15af4-c150-76f2-9df2-a44c1428b70d",
-      "status": "Sole runtime/control owner. Human-authorized evidence/procedural and economics candidates integrated. No heartbeat."
+      "status": "Sole runtime/control owner. Website release sealed. Human-authorized temporal and domain-learning/cache candidates remain isolated, pending owner integration and required provider workflow checks. No heartbeat."
     }
   },
   "decisions": [
@@ -1095,6 +1099,20 @@
       "basis": "Direct continuation and verified cross-chat authority; 284-test working/frozen suite with documented missing-data skips, actual financial/correction workflow, independent arithmetic and browser inspection.",
       "scope_impact": "All ten areas retained; G3 active, G5 blocked, full acceptance false. Source-checked memory does not establish model-weight training, clinical quality, actuarial suitability or payment entitlement.",
       "evidence": "artifacts/agere-economics-integration-v1/implementation-receipt.json"
+    },
+    {
+      "at": "2026-10-20T23:14:22.017135+00:00",
+      "decision": "Connect the approved designed website to the existing question and saved-work path before resuming temporal semantics.",
+      "basis": "Mike asks to continue and expects integration in the designed website. Source 9cf1feb shows static examples and no connected backend; existing local app is separate.",
+      "scope_impact": "One connected G3 integration increment; all ten areas and temporal/clinical/latency work retained. Active design checkout remains read-only, no hosted publication or new service.",
+      "evidence": "artifacts/agere-site-workflow-v1/design-source.json"
+    },
+    {
+      "at": "2026-10-20T23:38:07.538163+00:00",
+      "decision": "Activate connected local design-site and frozen brief lookup/title verification release da83c23 with rollback 8e84ac2.",
+      "basis": "Explicit user continuation and request for website integration; 79 working/frozen checks, actual candidate questions and repaired brief, 14 live HTTP checks and same-work zero-call live browser replay.",
+      "scope_impact": "Local connected G3 increment only. Hosted preview remains separate; no publication, source migration or qualification promotion. All ten areas retained; G3 active, G5 blocked and full acceptance false.",
+      "evidence": "artifacts/agere-site-workflow-v1/implementation-receipt.json"
     }
   ]
 }
