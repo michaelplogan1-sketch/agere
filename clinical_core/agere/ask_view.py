@@ -142,7 +142,7 @@ details pre{white-space:pre-wrap;font-size:12px;color:var(--muted);margin:4px 0;
 <nav class="left" aria-label="Conversation">
  <div class="panel"><h2>Conversation</h2>
   <ul class="thread" id="thread"></ul>
-  <p class="hint" id="threadhint">Follow-ups like “now by practice”, “only Medicare”, “what about 2029?”, “list them” or “why?” build on the previous answer.</p>
+  <p class="hint" id="threadhint">Use “Group them by PCP”, “Only age > 65”, or “List them” to refine the saved cohort. Other wording may need interpretation review.</p>
   <div class="tools"><button class="btn small" id="newconv" type="button">New conversation</button></div>
  </div>
 </nav>
@@ -164,9 +164,10 @@ details pre{white-space:pre-wrap;font-size:12px;color:var(--muted);margin:4px 0;
 <script>
 "use strict";
 const DEMO=JSON.parse(document.getElementById('demo-script').textContent);
-const EXAMPLES=["What is our allowed PMPM by payer?","Which CKD patients have a declining eGFR?","Are any of our rates out of control?",
- "who should our care managers call this week? we have 40 slots","Did care management reduce ED visits?","What does the readmission curve look like by payer?"];
-const ROUTES={local_compiler:'Agere compiler',local_unsupported:'Agere compiler (unsupported)',local_requires_input:'Agere compiler (needs your inputs)',local_model_rewrite_compiled:'Local rewrite → compiler',
+const EXAMPLES=["How many ED visits among patients over 65 in 2029 by payer?","Count patients with diabetes and without CKD by PCP",
+ "Average length of stay for admissions in 2029 by practice","Count claims where ever_denied = 1 in 2029 by payer",
+ "Count appointments where kept = 0 by PCP","Count patients where coverage = 'medicare' by practice"];
+const ROUTES={shared_planner:'Shared request planner',local_compiler:'Agere compiler',local_unsupported:'Agere compiler (unsupported)',local_requires_input:'Agere compiler (needs your inputs)',local_model_rewrite_compiled:'Local rewrite → compiler',
  hosted_verified_sql:'Hosted models, cross-verified',learned_verified_sql:'Learned (previously verified)',hosted_missing_data:'Hosted: data not available',frontier_escalation:'Frontier model',
  semantic_cache:'Verified semantic reuse',exact_question_cache:'Exact question reuse',cohort_family:'Cohort SQL family',dq_family:'Data-quality SQL family',vbc_family:'VBC SQL family',
  metric_router:'Governed metric',operator_router:'Analytical operator',bottled_sql:'Local SQL model',economical_composition_local_execution:'Specialist composition'};
