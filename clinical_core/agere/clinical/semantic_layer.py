@@ -81,6 +81,23 @@ CREATE INDEX visit_concept ON visit(type_concept, patient_id);
 CREATE INDEX link_source ON link(record_id);
 """
 
+SOURCE_COVERAGE = {
+    'medical_claims': {
+        'relations': ['claim', 'payer_claim'], 'default_relation': 'claim',
+        'meaning': 'claim merges provider medical claims and distinct payer medical claims with adjudication/replacement and duplicate handling. '
+                   'payer_claim contains only the received payer feed. Broad medical-claim amounts use claim; grouping by payer or PCP '
+                   'does not restrict the source. Explicit payer-reported-only questions can use payer_claim with its counts_in_metrics policy. '
+                   'Never add these overlapping relations together. Observed amounts do not imply complete external cost capture.'},
+    'medication_observations': {
+        'relations': ['medication', 'record', 'current_record'],
+        'meaning': 'Orders, list entries, reports, administrations and pickups are different observations. Neither presence nor absence of '
+                   'a pickup establishes actual current use. Latest received record is not automatically current clinical state. '
+                   'Use direct dated evidence with explicit polarity, preserve conflicts/unknowns, and separate target dose from tolerance.'},
+    'screening': {
+        'relations': ['social_need'],
+        'meaning': 'An explicit screened negative is distinct from never screened. No row is unknown need, never a negative response.'},
+}
+
 SCHEMA_DOC = {
     'patient': 'One row per roster patient. age_reported/sex_reported as received; coverage_type/status from latest coverage record, '
                'Use age_at(birth_date, as_of) for age. Feed-reported ages are historical metadata, never analytical age. '
@@ -140,7 +157,8 @@ SCHEMA_DOC = {
                  'imaging findings, follow-up instructions, goals of care, smoking status) in notes, documents and HIE ED/discharge '
                  'summaries, with negation, temporality and evidence spans; copied-forward note lines count once per patient; rule '
                  'extractor admitted per fact type at >= 0.90 measured precision.',
-    'medication': 'Every medication mention, one row per (record, drug_class): source_stream and evidence (dispensed, claim, ordered, '
+    'medication': 'Observation evidence only: a pickup is not confirmed current use; no row or no fill in a window is unknown current use, not non-use. '
+                  'Every medication mention, one row per (record, drug_class): source_stream and evidence (dispensed, claim, ordered, '
                   'listed, administered, reported, pharmacy_history, payer_claim = payer pharmacy claim), drug_name as received, status. drug_class from the active '
                   'ingredient (statin, beta_blocker, hf_evidence_based_beta_blocker, ace_inhibitor, arb, arni, mra, sglt2_inhibitor, '
                   'glp1_agonist, metformin, insulin, anticoagulant, opioid, ...); NULL when unclassified. drug_class values are exact ids '

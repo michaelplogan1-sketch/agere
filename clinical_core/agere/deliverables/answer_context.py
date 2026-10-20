@@ -104,6 +104,7 @@ def capture(path, question, result, *, original_question=None):
     graph = data.get('graph') or {}
     plan = [{k: n.get(k) for k in ('id', 'operation', 'inputs', 'parameters')} for n in graph.get('nodes') or []]
     key = 'ANS-' + fingerprint({'version': 4, 'context_policy_identity': context_policy,
+                               'feedback_identity': (data.get('planner_receipt') or {}).get('feedback_identity'),
                                'source': source, 'answer': answer, 'plan': plan,
                                'workflow': data['workflow'],
                                'answer_policy_version': (result.get('planner_receipt') or {}).get('version'),
@@ -138,10 +139,14 @@ def load(path, key, *, current=False):
     # A source snapshot can stay unchanged while corrected planning definitions
     # change membership. Preserve old answers for inspection, not new work.
     from ..clinical.shared_planner import policy_identity
+    from ..clinical.learning import correction_context, feedback_identity
     active_policy, ancestor, visited = policy_identity(), data, set()
     for _ in range(32):
         invalidated = invalidated or ancestor.get('context_policy_identity') != active_policy
         r = ancestor.get('planner_receipt') or {}
+        question = ancestor.get('question', '')
+        if correction_context(path, question):
+            invalidated = invalidated or r.get('feedback_identity') != feedback_identity(path, question)
         if r.get('version', '').startswith('shared-warehouse-planner/'):
             invalidated = invalidated or r.get('policy_identity') != active_policy
         parent_key = (ancestor.get('cohort_transform') or {}).get('parent_context_id')

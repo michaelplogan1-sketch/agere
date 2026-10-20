@@ -13,11 +13,11 @@ def spec(year='2029'):
     return {'steps': [
         {'name': 'ed_counts', 'purpose': 'ED visits per patient in the year',
          'sql': f"SELECT patient_id, COUNT(*) AS n FROM utilization_event WHERE kind='ed_visit' "
-                f"AND event_date BETWEEN '{year}-01-01' AND '{year}-12-31' GROUP BY patient_id"},
+                "AND event_date BETWEEN {{parameter:year}} || '-01-01' AND {{parameter:year}} || '-12-31' GROUP BY patient_id"},
         {'name': 'answer', 'purpose': 'Diabetic patients with at least two',
          'sql': 'SELECT COUNT(DISTINCT patient_id) AS patients FROM ed_counts WHERE n >= 2 '
                 'AND patient_id IN {{condition:diabetes}}'}],
-        'final': 'answer', 'returns': 'count',
+        'final': 'answer', 'returns': 'count', 'parameters': [{'name': 'year', 'value': int(year), 'quote': year}],
         'requirements': [{'quote': 'How many patients', 'applied_in': ['answer'], 'how': 'distinct count'},
                          {'quote': 'with diabetes', 'applied_in': ['answer'], 'how': 'governed condition macro'},
                          {'quote': 'two or more ED visits', 'applied_in': ['ed_counts', 'answer'], 'how': 'n >= 2'},
@@ -110,7 +110,7 @@ class GeneralAnalysis(unittest.TestCase):
         self.assertTrue(again['planner_receipt']['interpretation']['exact_contract_cache_hit'])
         self.assertEqual(other_year['new_paid_api_calls'], 0)
         self.assertEqual(other_year['planner_receipt']['interpretation']['interpreter'], 'learned_analysis_shape')
-        self.assertIn("'2028-01-01'", other_year['request_contract']['query'])
+        self.assertIn("2028 || '-01-01'", other_year['request_contract']['query'])
         self.assertEqual(other_year['answer']['count'], 0)  # A's single 2028 visit
         self.assertEqual(model.call_count, 2)
 
@@ -121,10 +121,6 @@ class GeneralAnalysis(unittest.TestCase):
         a = S.compose(self.stack, Q, model=model)
         self.assertEqual(a['answer']['count'], 1)
         self.assertIn('analysis', json.loads(model.call_args_list[1].args[1])['validator_feedback']['instruction'])
-
-    def test_shape_reuse_refuses_ambiguous_or_mismatched_slots(self):
-        self.assertIsNone(G._swap("BETWEEN '2029-01-01' AND '2029-12-31'", ['2030'], ['2031']))
-        self.assertEqual(G._swap("date(d,'+30 days') AND x='2029-01-30'", ['30'], ['14']), "date(d,'+14 days') AND x='2029-01-30'")
 
     def test_final_llm_analysis_answers_when_every_other_path_fails(self):
         bad_typed = (json.dumps({'source': {'table': 'nope', 'quote': 'patients'}}), {})

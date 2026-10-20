@@ -945,8 +945,11 @@ function loadEcon(){fetch('/api/stack/economics').then(r=>r.ok?r.json():null).th
  $('#econ').innerHTML='<span class="pill" title="Questions answered by this installation"><b>'+fmt(e.questions||0)+'</b> questions</span>'+
   '<span class="pill" title="Answered without any paid model call"><b>'+(e.share_without_api_calls!=null?Math.round(100*e.share_without_api_calls)+'%':'—')+'</b> without paid calls</span>'+
   '<span class="pill" title="Known hosted model spend"><b>$'+(e.api_usd||0).toFixed(2)+'</b> spend</span><span id="loop"></span>';loadLoop()}).catch(()=>{})}
-function loadLoop(){fetch('/api/stack/learning-loop').then(r=>r.ok?r.json():null).then(l=>{if(!l||l.status!=='ok'||!$('#loop'))return;const g=l.gaps||{},rt=l.retrain||{};
- $('#loop').innerHTML='<span class="pill" title="'+esc('Learning loop: '+(l.detail||'')+(rt.reason?'. Retrain: '+rt.reason:''))+'"><b>'+fmt(g.actionable_clusters||0)+'</b> gap clusters · <b>'+fmt((l.regressions||{}).cases||0)+'</b> regressions · <b>'+fmt((l.proposals||{}).count||0)+'</b> proposals'+(rt.recommend_retrain?' · retrain due':'')+'</span>'}).catch(()=>{})}
+function loadLoop(){Promise.all(['/api/stack/learning','/api/stack/learning-loop'].map(url=>fetch(url).then(r=>r.ok?r.json():null))).then(([learning,loop])=>{
+ if(!$('#loop'))return;const shapes=learning?.reusable_structures||{},stored=Object.values(shapes).reduce((n,s)=>n+(s.active||0),0),revoked=Object.values(shapes).reduce((n,s)=>n+(s.revoked||0),0);
+ let html=learning?'<span class="pill" title="'+esc(learning.learning_mode||'Checked structures remain source- and policy-bound; counts are not a quality score.')+'"><b>'+fmt(stored)+'</b> saved plan structures · <b>'+fmt(learning.corrections||0)+'</b> corrections · <b>'+fmt(revoked)+'</b> suspended</span>':'';
+ if(loop?.status==='ok'){const g=loop.gaps||{};html+='<span class="pill" title="Offline development report; no automatic model promotion"><b>'+fmt(g.actionable_clusters||0)+'</b> gap clusters · <b>'+fmt((loop.regressions||{}).cases||0)+'</b> regressions</span>'}
+ $('#loop').innerHTML=html}).catch(()=>{})}
 function briefFeedback(card,event){if(!card)return;const body={card_id:card,event};if(state.briefingId)body.briefing_id=state.briefingId;
  fetch('/api/stack/briefing-feedback',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)}).catch(()=>{})}
 function loadBriefing(){return fetch('/api/stack/briefing').then(r=>r.ok?r.json():Promise.reject(r.status)).then(d=>{
@@ -991,7 +994,7 @@ function activate(el){if(el.dataset.csv){downloadCSV(el.dataset.csv);return}
  if(el.dataset.flagsend){const box=el.closest('[data-flag]'),note=$('#flagnote').value.trim();if(!note){$('#flagnote').focus();return}const t=state.turns[state.active]||{};
   const question=((t.data||{}).conversation||{}).resolved_question||t.question;el.disabled=true;
   fetch('/api/stack/correct',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({question,note})}).then(r=>r.json()).then(d=>{
-   document.dispatchEvent(new Event('agere-activity-changed'));box.innerHTML='<p class="'+(d.error?'badc':'goodc')+'" role="status">'+esc(d.error||'Recorded: this answer will not be reused and becomes a regression case.')+'</p>'}).catch(e=>{box.innerHTML='<p class="badc">'+esc(e)+'</p>'})}}
+   document.dispatchEvent(new Event('agere-activity-changed'));loadLoop();box.innerHTML='<p class="'+(d.error?'badc':'goodc')+'" role="status">'+esc(d.error||d.effect||'Correction recorded; related answers require revalidation.')+'</p>'}).catch(e=>{box.innerHTML='<p class="badc">'+esc(e)+'</p>'})}}
 function refreshWorklist(){const t=state.turns[state.active];const box=document.querySelector('[data-worklist]');if(t&&t.data&&box){box.innerHTML=worklist(t.data.answer);box.scrollIntoView({behavior:'smooth',block:'nearest'})}}
 const ACT='[data-edit-question],[data-csv],[data-ask],[data-ask-standalone],[data-turn],[data-demo],#demonext,#demoreset,[data-clearfilter],[data-series],[data-pick],[data-flagopen],[data-flagcancel],[data-flagsend],[data-brief-dismiss]';
 document.addEventListener('click',e=>{const el=e.target.closest(ACT);if(el){e.preventDefault();activate(el)}});

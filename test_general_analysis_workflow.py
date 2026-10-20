@@ -18,13 +18,13 @@ def patient_spec():
         'steps': [{'name': 'selected', 'purpose': 'Patient rows with received ED utilization',
                    'sql': "SELECT p.patient_id, p.payer_id, COUNT(e.patient_id) AS ed_visits FROM patient p "
                           "JOIN utilization_event e ON e.patient_id=p.patient_id AND e.kind='ed_visit' "
-                          "WHERE e.event_date BETWEEN '2029-01-01' AND '2029-12-31' "
+                          "WHERE e.event_date BETWEEN {{parameter:year}} || '-01-01' AND {{parameter:year}} || '-12-31' "
                           "GROUP BY p.patient_id, p.payer_id ORDER BY p.patient_id"}],
         'returns': 'table', 'final': 'selected',
         'patient_selection': {'column': 'patient_id', 'quote': 'List patients'},
         'requirements': [{'quote': 'List patients with ED visits in 2029 and their payer',
                           'applied_in': ['selected'], 'how': 'One row per patient with ED count and payer'}],
-        'unresolved': [],
+        'unresolved': [], 'parameters': [{'name': 'year', 'value': 2029, 'quote': '2029'}],
         'workflow': [
             {'kind': 'deliverable', 'title': 'Utilization brief', 'template': 'brief',
              'quote': 'create a brief', 'unresolved': []},
@@ -46,7 +46,7 @@ class GeneralAnalysisWorkflow(unittest.TestCase):
     def execute(self, spec=None, question=QUESTION, population=None, accepted=True):
         contract = G.prepare(self.catalog, question, spec or patient_spec(), population=population)
         receipt = {'version': S.VERSION, 'policy_identity': S.policy_identity(), 'request_contract': contract,
-                   'interpretation': {'execution_accepted': accepted}, 'new_paid_api_calls': 0,
+                   'interpretation': {'execution_accepted': accepted, 'review': 'checked_hosted_interpretation', 'semantic_review': {'equivalent': True, 'issues': []}}, 'new_paid_api_calls': 0,
                    'known_api_estimate_usd': 0, 'api_cost_known': True}
         result = G.execute(self.stack, question, G.graph_for(contract), receipt,
                            population=population, economics=S.economics)
@@ -115,6 +115,7 @@ class GeneralAnalysisWorkflow(unittest.TestCase):
         q = ('Show allowed claim amounts by payer; create a brief; '
              'prepare a simulated outreach program; monitor this answer')
         spec = patient_spec(); spec.pop('patient_selection')
+        spec['parameters'] = []
         spec['steps'] = [{'name': 'selected', 'purpose': 'Payer totals',
                           'sql': 'SELECT payer, SUM(allowed_cents) AS allowed FROM claim GROUP BY payer ORDER BY payer'}]
         spec['requirements'] = [{'quote': 'Show allowed claim amounts by payer', 'applied_in': ['selected'], 'how': 'Sum received amounts'}]

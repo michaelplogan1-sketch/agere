@@ -291,8 +291,7 @@ def serve(run,port,annotations=None,evidence_queries=None,stack=None,allow_live_
                     from .clinical import learning
                     if set(body)-{'question','note','expected'} or not isinstance(body.get('question'),str) or not isinstance(body.get('note'),str):
                         raise ValueError('Correction needs question and note (optional expected)')
-                    learning.record_correction(connected_stack.path,body['question'],body['note'],body.get('expected'))
-                    result={'recorded':True,'effect':'the stored answer for this question will not be reused; it becomes a regression case'}
+                    result=learning.record_correction(connected_stack.path,body['question'],body['note'],body.get('expected'))
                 elif path=='/api/stack/briefing-feedback':  # implicit feedback for the briefing ranker (briefing_rank)
                     from .clinical import briefing_rank
                     result=briefing_rank.handle_feedback(connected_stack.path,body)

@@ -127,8 +127,8 @@ def instantiate(shape, question):
 
 
 def save(path, catalog, contract, interpretation, policy):
-    from .learning import corrected
-    if corrected(path, contract['original_question']): return None
+    from .learning import correction_context
+    if correction_context(path, contract['original_question']): return None
     audit = interpretation.get('semantic_review') or {}
     if (interpretation.get('review') != 'checked_hosted_interpretation' or not interpretation.get('execution_accepted')
             or audit != {'equivalent': True, 'issues': []} or contract['request']['unresolved']):
@@ -155,8 +155,8 @@ def save(path, catalog, contract, interpretation, policy):
 
 
 def lookup(path, catalog, question, policy, population=None):
-    from .learning import corrected
-    if corrected(path, question): return None
+    from .learning import correction_context
+    if correction_context(path, question): return None
     with _db(path) as db:
         rows = db.execute("SELECT id,payload FROM request_shapes WHERE policy=? AND status='active'", (policy,)).fetchall()
     matches = []

@@ -7,7 +7,31 @@ into new grammar rules or bottled-model training examples.
 import json, os, re, sqlite3, time
 from pathlib import Path
 
-VERSION = 'learning-store/1'
+VERSION = 'learning-store/2'
+
+
+def correction_context(path, question):
+    """Relevant feedback is a constraint to recheck, never an answer key or approval."""
+    target = Path(path) / 'learning.sqlite3'
+    if not target.exists(): return []
+    from .request_shapes import family
+    from .general_analysis import template
+    with sqlite3.connect(f'file:{target}?mode=ro', uri=True) as db:
+        if not db.execute("SELECT 1 FROM sqlite_master WHERE name='corrections'").fetchone(): return []
+        rows = db.execute('SELECT question,note,expected,created FROM corrections ORDER BY created DESC').fetchall()
+    matches = []
+    for q, note, expected, created in rows:
+        if family(q) == family(question) or template(q)[0] == template(question)[0]:
+            matches.append({'question': q, 'note': note, 'expected': json.loads(expected) if expected else None,
+                            'created': created, 'status': 'needs_revalidation',
+                            'authority': 'reported_feedback; not independently verified truth'})
+        if len(matches) == 8: break
+    return matches
+
+
+def feedback_identity(path, question):
+    from .request_plan import fingerprint
+    return fingerprint(correction_context(path, question))
 
 def normalize_question(question):
     return re.sub(r'\s+', ' ', question.strip().rstrip('?.!')).casefold()
@@ -160,14 +184,21 @@ def quarantine(path, question, answer):
 
 
 def record_correction(path, question, note, expected=None):
+    if not isinstance(question, str) or not question.strip() or not isinstance(note, str) or not note.strip():
+        raise ValueError('Correction needs a nonempty original question and explanation')
     from .request_shapes import invalidate
-    invalidate(path, question, note)
     db = _db(path)
     try:
         db.execute('INSERT INTO corrections VALUES (?,?,?,?)', (question.strip(), note[:2000], json.dumps(expected), time.time()))
         db.commit()
     finally:
         db.close()
+    # Persist feedback first: readers fail closed even if cache eviction is interrupted.
+    invalidate(path, question, note)
+    from .general_analysis import invalidate_shapes
+    revoked = invalidate_shapes(path, question, note)
+    return {'recorded': True, 'revoked_analysis_shapes': len(revoked), 'status': 'needs_revalidation',
+            'effect': 'Related learned plans are suspended. Future interpretation receives the correction and must recheck source evidence. Feedback is not automatic clinical approval or model training.'}
 
 
 def summary(path):
@@ -181,8 +212,17 @@ def summary(path):
                           "GROUP BY reason ORDER BY n DESC LIMIT 15").fetchall()
     finally:
         db.close()
+    shapes = {}
+    target = Path(path) / 'question-plans.sqlite3'
+    if target.exists():
+        with sqlite3.connect(f'file:{target}?mode=ro', uri=True) as plans:
+            for table in ('request_shapes', 'analysis_shapes'):
+                if plans.execute('SELECT 1 FROM sqlite_master WHERE name=?', (table,)).fetchone():
+                    shapes[table] = dict(plans.execute(f'SELECT status,COUNT(*) FROM {table} GROUP BY status'))
     return {'schema': VERSION, 'routes': routes, 'statuses': statuses, 'verified_training_pairs': verified,
-            'corrections': corrections, 'top_gaps': [{'reason': r, 'count': n} for r, n in gaps]}
+            'corrections': corrections, 'reusable_structures': shapes,
+            'learning_mode': 'Continuous capture and checked plan reuse; corrections require revalidation. No automatic model-weight training or clinical qualification.',
+            'top_gaps': [{'reason': r, 'count': n} for r, n in gaps]}
 
 
 def loop_summary(path):
