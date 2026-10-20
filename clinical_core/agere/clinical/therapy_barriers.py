@@ -98,7 +98,10 @@ GDMT_PILLAR = {'ace_inhibitor': 'rasi', 'arb': 'rasi', 'arni': 'rasi', 'beta_blo
                'hf_evidence_based_beta_blocker': 'beta_blocker', 'mra': 'mra', 'sglt2_inhibitor': 'sglt2i'}
 
 SCHEMA_DOC = {
-    'therapy_barrier': 'Why a patient is not on (or stopped) a drug, read from free text and structured evidence by the tiered '
+    'therapy_barrier': 'Extracted barrier mentions, not confirmed current contraindications, non-use or maximum tolerated dose. '
+                       'Honor event_date and assertion; historical rows cannot establish current barriers, and an absent row '
+                       'does not establish absence. Classifier scores and same-model/rule supervision are not independent clinical '
+                       'qualification. Retain method and source evidence. Read from free text and structured evidence by the tiered '
                        'therapy-barrier reader (therapy-barriers/1): one row per patient + drug_class + barrier_type + evidence. '
                        'drug_class is the drug_class_vocabulary class (ace_inhibitor, arb, arni, beta_blocker, mra, sglt2_inhibitor, '
                        'statin, ...); gdmt_pillar maps HF classes to rasi | beta_blocker | mra | sglt2i. barrier_type = '

@@ -80,6 +80,7 @@ class Parser:
         self.sources = dict(SOURCES)
         for table in catalog.tables:
             phrase = table.replace('_', ' ')
+            self.sources.setdefault(table, (table, None))
             self.sources.setdefault(phrase, (table, None))
             self.sources.setdefault(phrase+'s', (table, None))
         self.sources = {k: v for k, v in self.sources.items() if v[0] in catalog.tables}

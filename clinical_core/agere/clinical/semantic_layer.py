@@ -149,7 +149,10 @@ SCHEMA_DOC = {
                    'booked_date, NULL when either is unknown. final_status = latest status received; ever_* flags over all versions; '
                    'kept = any arrived, attended or fulfilled version. outcome = kept | no_show (never kept) | cancelled (never kept '
                    'or no-show) | rescheduled | scheduled (still booked) | unassigned (unassigned_requires_review) | unknown. '
-                   'No-show rate = no_show / (kept + no_show), or with cancelled in the denominator - state which.',
+                   'These are different measures: unqualified no-show/current-status questions use final_status; explicitly '
+                   'historical/ever questions use ever_no_show; explicitly history-based outcome questions use outcome. '
+                   'A later cancellation or completion can change final_status while ever_no_show remains 1. '
+                   'For rates state the status basis and denominator; do not substitute history for latest status.',
     'claim_adjustment': 'One row per adjustment line on each medical claim adjudication record: group_code (CO/PR/OA), reason_code '
                         '(X12 CARC), category (deductible, coinsurance, copay, contractual_adjustment, else group-code), amount_cents; '
                         'current_version = 1 on the claim\'s latest version.',

@@ -49,18 +49,33 @@ Authoritative definitions: use {{condition:concept_id}} for patients with a name
 policy), {{drug_fill:drug_class}} for patients with a picked-up fill of a class, and {{as_of}} for the snapshot date.
 Each macro expands to a subquery returning patient_id; use it as  patient_id IN {{condition:heart_failure}}.
 Dose: {{medication_dose}} is a governed relation (patient_id, source_stream, record_id, event_date, drug_text, status,
-per_admin_mg, times_per_day, daily_mg, target_daily_mg) built from structured order/list/label dose fields; use it for
+per_admin_mg, times_per_day, daily_mg, target_daily_mg, target_max_daily_mg) built from structured order/list/label dose fields; use it for
 dose and target comparisons (never parse strengths with LIKE). SQL functions dose_mg(text), per_day(text) and
 target_mg(drug_text) parse other dose text deterministically.
-{{current_dose}} (or {{current_dose:days}}) is the latest dose statement per patient and drug_key inside the governed
-current-therapy window (default: the catalog GDMT lookback before as_of), with dose_status at_target | below_target |
-unknown_dose | no_target. Judge dose only for drugs current in the SAME window as the therapy determination. A current
-drug with no current_dose row, or unknown_dose, is reported as unknown dose, never as at target.
+{{current_dose}} (or {{current_dose:days}}) reconciles the latest order/list documentation per patient and drug_key
+inside the governed lookback (default: catalog GDMT lookback before as_of). It does NOT establish actual use.
+dose_status = at_target | below_target | above_reference | unknown_dose | no_target | not_active | unknown_status | unknown_date |
+conflicting. Only active_documentation in statement_state can have a non-NULL daily_mg. Stopped/held statements
+supersede older active documentation; same-day conflicts and undated statements remain unknown, never picked by ID.
+Product labels cannot supersede a regimen. source_record_ids retains all selected sources; current_use_established=0.
+No row or unknown dose is never at target. target_daily_mg and target_max_daily_mg are lower/upper reference bounds
+from target_reference, not individualized targets. at_target means within this published range only; above_reference
+is not counted as at target. These comparisons do not establish indication, suitability or maximum tolerated dose.
+PRN/range/concentration instructions and a strength without an administration quantity are not fixed daily doses.
 Specialties: {{specialty:cardiology}} (also primary_care, nephrology, endocrinology, pulmonology, oncology, neurology,
 gastroenterology, behavioral_health, emergency, pharmacy, or an exact specialty) returns clinician_id; never match
 specialty text with LIKE.
 Age is age_at(patient.birth_date, {{as_of}}). Never use age_latest. Calendar years are inclusive YYYY-01-01..YYYY-12-31.
 Relative periods ("last 12 months") anchor to {{as_of}}. Mixed-type value columns need typeof() guards.
+Temporal state: distinguish latest received status from any historical status and history-based derived outcomes.
+For appointment no-shows without an explicit historical/ever qualifier, use final_status; use ever_no_show for
+"ever" and outcome only when the history-based outcome is requested. A subsequent cancellation/completion changes
+latest status even if a prior no-show remains in history. Always disclose the status and date basis used.
+For other longitudinal observations, select the latest relevant statement before testing its value; filtering to
+positive values first resurrects superseded positives. Equal-date contradictions and undated relevant statements
+remain unresolved. A negative screen is documented absence on that date, not proof of absence today.
+therapy_barrier rows are extracted mentions: honor assertion and event_date, retain method/source, and do not
+promote historical/affirmed mentions or an absent row into current contraindication, tolerance or suitability.
 Every content word of the question must fall inside some requirement or unresolved quote. Map each filter, exclusion,
 negation, time window, sequence ("after", "within N days"), grouping, comparison, ranking and output to the step
 that applies it. Unresolved is only for information this warehouse truly lacks (check discovery first); never
@@ -103,7 +118,8 @@ GUIDELINE_TARGET_DOSES = {
 
 def governed_knowledge():
     """Versioned program definitions from the catalog plus standard references, offered to every analysis."""
-    knowledge = {'guideline_target_doses': {'source': '2022 AHA/ACC/HFSA heart failure guideline (typical adult targets)',
+    from .dose import REFERENCE
+    knowledge = {'guideline_target_doses': {**REFERENCE,
                                             'doses': GUIDELINE_TARGET_DOSES}}
     try:
         from ..plans import catalog

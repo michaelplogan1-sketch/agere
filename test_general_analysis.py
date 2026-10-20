@@ -166,8 +166,8 @@ class GeneralAnalysis(unittest.TestCase):
             db.executescript("""CREATE TABLE record(record_id TEXT, patient_id TEXT, stream TEXT, event_date TEXT, payload TEXT);
               INSERT INTO record VALUES
                 ('OLD','A','medication_lists','2027-01-01','{"name":"Carvedilol","dose":"25 mg","frequency":"BID","event_date":"2027-01-01"}'),
-                ('NEW','A','medication_lists','2030-01-01','{"name":"Carvedilol","dose":"6.25 mg","frequency":"BID","event_date":"2030-01-01"}'),
-                ('UNK','B','medication_lists','2030-02-01','{"name":"Spironolactone","frequency":"daily","event_date":"2030-02-01"}'),
+                ('NEW','A','medication_lists','2030-01-01','{"name":"Carvedilol","dose":"6.25 mg","frequency":"BID","list_status":"active","event_date":"2030-01-01"}'),
+                ('UNK','B','medication_lists','2030-02-01','{"name":"Spironolactone","frequency":"daily","list_status":"active","event_date":"2030-02-01"}'),
                 ('STALE','C','medication_lists','2026-01-01','{"name":"Lisinopril","dose":"40 mg","frequency":"daily","event_date":"2026-01-01"}');
               CREATE TABLE clinician(clinician_id TEXT, specialty TEXT);
               INSERT INTO clinician VALUES ('C1','Cardiology'),('C2','Cardiothoracic Surgery'),('C3','Family Medicine');""")
