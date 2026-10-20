@@ -55,6 +55,17 @@ class Workflow(unittest.TestCase):
         db.close()
         self.assertFalse(any(i['external_dispatch_performed'] for i in reopened['items']))
 
+    def test_historical_summaries_are_not_authorized_by_legacy_flags(self):
+        for shape, table, select in [
+            ('value', None, [{'kind':'avg'}]),
+            ('table', [{'payer':'P1','count':3}], [{'kind':'count'}]),
+            ('table', [{'payer':'P1','amount':8}], [{'kind':'sum'}]),
+        ]:
+            context = {'answer': {'status':'answered','answer_type':shape,'table':table,
+                                   'patient_ids':['A','B'],'actionable_cohort':True},
+                       'planner_receipt': {'request_contract': {'request': {'select':select}}}}
+            self.assertFalse(A.supports_patient_work(context))
+
     def test_wrong_cohort_stale_data_and_conflicting_revision_rejected(self):
         with self.assertRaisesRegex(ValueError,'outside'): A.create_work(self.path,self.req(patient_ids=['OUTSIDE']))
         item=A.create_work(self.path,self.req())['items'][0]

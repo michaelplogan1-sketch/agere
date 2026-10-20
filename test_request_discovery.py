@@ -215,6 +215,8 @@ class RequestDiscovery(unittest.TestCase):
             self.assertEqual(reopened['answer']['evidence_discovery'], saved['answer']['evidence_discovery'])
             self.assertEqual(reopened['answer']['inherited_evidence_context']['source'], saved['source'])
             self.assertIn('evidence_discovery', json.dumps(bundle.results))
+            self.assertEqual(reopened['planner_receipt']['origin_request_contract']['id'],
+                             saved['planner_receipt']['request_contract']['id'])
             narrowed = S.compose(self.stack, 'List patients over 65', population=expected, parent=saved,
                                  model=lambda *a, **kw: self.fail('Unexpected model'))
             self.assertEqual(narrowed['answer']['evidence_discovery'], saved['answer']['evidence_discovery'])

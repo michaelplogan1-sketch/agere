@@ -57,12 +57,14 @@ def isolated_local(catalog, question, population):
 
 def policy_identity():
     from .request_vocabulary import definitions, concept_definitions
-    return request_plan.fingerprint({'governed_definitions': definitions(), 'concept_definitions': concept_definitions(), **{
+    return request_plan.fingerprint({'governed_definitions': definitions(), 'concept_definitions': concept_definitions(),
+        'answer_context.py': request_plan.fingerprint((Path(__file__).resolve().parents[1]/'deliverables'/'answer_context.py').read_text()), **{
         name: request_plan.fingerprint(Path(__file__).with_name(name).read_text())
         for name in ('shared_planner.py', 'request_plan.py', 'request_language.py', 'analysis_graph.py',
                      'graph_contracts.py', 'graph_planner.py', 'semantic_layer.py', 'sql_query.py',
                      'age.py', 'request_vocabulary.py', 'request_shapes.py', 'local_request_worker.py',
                      'concepts.py', 'drug_classes.py', 'nl2sql.py', 'workflow_contract.py', 'request_discovery.py',
+                     'conversation.py', 'question_input.py',
                      'metrics.py', 'metric_families.py', 'measures.py', 'risk_adjustment.py', 'vbc.py')}})
 
 SYSTEM = '''Interpret a healthcare warehouse question into a typed relational request. Return JSON only.
@@ -560,11 +562,13 @@ def execute_contract(stack, question, graph, receipt, *, population=None, parent
         limitations += old.get('limitations') or []
     if report['truncated'] or (membership and membership['truncated']) or (unknown and unknown['truncated']): issues.append('Result exceeds the complete-output bound; incomplete membership cannot create work.')
     ids = membership.get('patient_ids', []) if membership else []
-    summarized = any(s['kind'] in ('avg', 'sum', 'min', 'max') for s in contract['request']['select'])
+    summarized = any(s['kind'] in ('count', 'count_distinct', 'avg', 'sum', 'min', 'max') for s in contract['request']['select'])
+    patient_output = report['returns'] == 'patient_set' or any(
+        s.get('kind') == 'field' and s.get('field', '').endswith('.patient_id') for s in contract['request']['select'])
     answer = {'status': 'partial' if partial else 'answered', 'answer_type': report['returns'],
               'missing': issues, 'limitations': list(dict.fromkeys(limitations)), 'patient_ids': ids,
               'unknown_patient_ids': unknown_ids, 'unknown_count': len(unknown_ids),
-              'actionable_cohort': bool(ids) and not partial and not summarized, 'query_evidence': {'query': report['query'], 'source_identity': contract['source_identity']},
+              'actionable_cohort': bool(ids) and not partial and not summarized and patient_output, 'query_evidence': {'query': report['query'], 'source_identity': contract['source_identity']},
               'request_id': contract['id'], 'scope': 'Observed warehouse query; clinical execution is not authorized.'}
     if interpretation.get('discovery'):
         answer['evidence_discovery'] = interpretation['discovery']
@@ -610,6 +614,8 @@ def execute_contract(stack, question, graph, receipt, *, population=None, parent
             result.update(new_paid_api_calls=receipt['new_paid_api_calls'], planning_economics=economics(receipt))
     if parent:
         from ..deliverables.answer_context import supports_patient_work
+        result['planner_receipt']['origin_request_contract'] = ((parent.get('planner_receipt') or {}).get('origin_request_contract')
+                                                               or (parent.get('planner_receipt') or {}).get('request_contract'))
         result['answer']['actionable_cohort'] = result['answer'].get('actionable_cohort', False) and supports_patient_work(parent)
         inherited = [*parent['answer'].get('evidence_discovery', []), *result['answer'].get('evidence_discovery', [])]
         if inherited:

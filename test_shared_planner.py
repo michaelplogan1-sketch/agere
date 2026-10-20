@@ -259,7 +259,7 @@ class SharedPlanner(unittest.TestCase):
             deterministic = S.compose(self.stack, 'Count patients')
         self.assertEqual(a['answer']['status'], 'answered')
         self.assertEqual(a['answer']['patient_ids'], ['A', 'C', 'OUTSIDE'])
-        self.assertTrue(a['answer']['actionable_cohort'])
+        self.assertFalse(a['answer']['actionable_cohort'])
         self.assertFalse(a['planner_receipt']['interpretation']['qualified_interpretation'])
         self.assertEqual(a['new_paid_api_calls'], 2)
         self.assertAlmostEqual(a['planning_economics']['new_api_estimate_usd'], .03)

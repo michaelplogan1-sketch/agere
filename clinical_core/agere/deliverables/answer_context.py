@@ -132,6 +132,29 @@ def load(path, key, *, current=False):
     receipt = data.get('planner_receipt') or {}
     if receipt.get('route') in ('cohort_family', 'cohort_family_bottled') and scope_rejection(data['question']):
         invalidated = True
+    # A source snapshot can stay unchanged while corrected planning definitions
+    # change membership. Preserve old answers for inspection, not new work.
+    from ..clinical.shared_planner import policy_identity
+    active_policy, ancestor, visited = None, data, set()
+    for _ in range(32):
+        r = ancestor.get('planner_receipt') or {}
+        if r.get('version', '').startswith('shared-warehouse-planner/'):
+            active_policy = active_policy or policy_identity()
+            invalidated = invalidated or r.get('policy_identity') != active_policy
+        parent_key = (ancestor.get('cohort_transform') or {}).get('parent_context_id')
+        if not parent_key:
+            break
+        if parent_key in visited or not re.fullmatch(r'ANS-[0-9a-f]{24}', parent_key):
+            invalidated = True
+            break
+        visited.add(parent_key)
+        parent_file = root(path)/parent_key/'answer.json'
+        if not parent_file.is_file():
+            invalidated = True
+            break
+        ancestor = json.loads(parent_file.read_text())
+    else:
+        invalidated = True
     if current and invalidated:
         raise ValueError('This saved answer was invalidated after incorrect cohort or constraint handling was found. It remains available for inspection; new work is blocked.')
     if current and stale:
@@ -178,11 +201,24 @@ def supports_patient_work(context):
     answer = context['answer']
     computed = answer.get('computed_as')
     contract = (context.get('planner_receipt') or {}).get('request_contract') or {}
-    summary_select = any(s.get('kind') in ('avg', 'sum', 'min', 'max')
+    summary_select = any(s.get('kind') in ('count', 'count_distinct', 'avg', 'sum', 'min', 'max')
                          for s in contract.get('request', {}).get('select', []))
-    return not (answer.get('actionable_cohort') is False or answer.get('answer_type') == 'value'
+    forbidden = (answer.get('actionable_cohort') is False or answer.get('answer_type') in ('count', 'value')
                 or summary_select or (isinstance(computed, dict) and computed.get('metric_id'))
                 or any(n.get('operation') == 'governed_metric' for n in (context.get('graph') or {}).get('nodes', [])))
+    if forbidden:
+        return False
+    return (answer.get('actionable_cohort') is True or answer.get('answer_type') == 'patient_set'
+            or any(isinstance(r, dict) and (r.get('patient_id') or r.get('patient'))
+                   for r in answer.get('table') or []))
+
+
+def require_patient_reference(context):
+    """An empty summary membership is not an observed empty patient cohort."""
+    a = context['answer']
+    if not context['patient_ids'] and (a.get('analysis_population_count') is not None or a.get('answer_type') == 'value'):
+        from ..clinical.question_input import QuestionNotUnderstood
+        raise QuestionNotUnderstood('The previous answer is an analytical summary, not a selected patient cohort. Ask which population you want to follow.')
 
 
 def create_work(path, request):
@@ -287,6 +323,7 @@ def followup(path, key, question):
     if not (listing or grouping or exclusion):
         return None
     c = load(path, key, current=True)
+    require_patient_reference(c)
     ids = set(c['patient_ids'])
     rows = c['patient_rows']
     operations, evidence = [], []
@@ -332,7 +369,9 @@ def followup(path, key, question):
         answer['headline'] = f'{len(ids)} contributing patients · analytical provenance only'
     return {'question': question, 'answer': answer, 'route': 'saved_cohort',
             'cohort_patient_rows': [r for r in rows if r['patient_id'] in ids],
-            'planner_receipt': {'route': 'saved_cohort', 'new_paid_api_calls': 0},
+            'planner_receipt': {'route': 'saved_cohort', 'new_paid_api_calls': 0,
+                                'origin_request_contract': (c.get('planner_receipt') or {}).get('origin_request_contract')
+                                    or (c.get('planner_receipt') or {}).get('request_contract')},
             'cohort_transform': {'parent_context_id': key, 'input_patient_ids': sorted(c['patient_ids']), 'operations': operations},
             'new_paid_api_calls': 0, 'planning_economics': {'known_api_estimate_usd': 0, 'new_api_estimate_usd': 0}}
 

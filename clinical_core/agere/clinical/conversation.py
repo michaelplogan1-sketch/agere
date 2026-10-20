@@ -634,6 +634,7 @@ def handle_compose(stack, body, hosted_factory=None):
                 if not saved:
                     raise QuestionNotUnderstood('No saved cohort is available for this edit. Ask a complete question first.')
                 parent = answer_context.load(stack.path, saved['id'], current=True)
+                answer_context.require_patient_reference(parent)
                 # Legacy finite transforms remain useful for literal list/count and
                 # grouping. They operate on immutable membership, never text rewrites.
                 bound = answer_context.followup(stack.path, saved['id'], question)

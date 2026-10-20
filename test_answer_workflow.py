@@ -20,27 +20,34 @@ class AnswerWorkflow(unittest.TestCase):
             {'kind': 'deliverable', 'title': 'Claims command center', 'template': 'command', 'quote': 'create a command center', 'unresolved': []},
             {'kind': 'simulation', 'title': 'Outreach review', 'program': 'custom', 'quote': 'prepare a simulated outreach program',
              'unresolved': ['Define program suitability'] if unresolved else []},
-            {'kind': 'monitor', 'title': 'Recorded denied claims', 'mode': 'answer', 'scope': 'query', 'outputs': ['count'], 'quote': 'monitor this answer', 'unresolved': []}]
+            {'kind': 'monitor', 'title': 'Recorded denied claims', 'mode': 'answer', 'scope': 'query', 'outputs': [p['select'][-1]['alias']], 'quote': 'monitor this answer', 'unresolved': []}]
         contract = R.compile_request(self.catalog, q, p)
         receipt = {'version': S.VERSION, 'policy_identity': S.policy_identity(), 'request_contract': contract, 'interpretation': {'execution_accepted': True}, 'new_paid_api_calls': 0}
         result = S.execute_contract(self.stack, q, S.graph_for(contract), receipt)
         c = A.capture(self.path, q, result)
         return q, p, result, c
 
-    def test_compound_request_keeps_results_deliverable_queue_and_monitor(self):
+    def test_summary_keeps_deliverable_and_monitor_but_requires_action_population(self):
         q, p, result, c = self.composed()
         expected = [{'payer': 'P1', 'count': 2}, {'payer': 'P2', 'count': 1}, {'payer': 'P3', 'count': 1}]
         self.assertEqual(result['answer']['table'], expected)
         w = W.materialize(self.path, c['id'])
-        self.assertEqual([s['status'] for s in w['steps']], ['ready', 'ready', 'watching'])
-        self.assertEqual({i['patient_id'] for i in A.inspect(self.path,c['id'])['items']}, {'A', 'B', 'C', 'OUTSIDE'})
+        self.assertEqual([s['status'] for s in w['steps']], ['ready', 'blocked', 'watching'])
+        self.assertEqual(A.inspect(self.path,c['id'])['items'], [])
         self.assertEqual(w, W.materialize(self.path,c['id']))
         self.assertFalse(w['external_dispatch_performed'])
         self.assertEqual(w['steps'][2]['observations'][0]['measurement']['table'], expected)
         import importlib
         composer=importlib.import_module('clinical_core.agere.deliverables.compose')
         _,_,_,html=composer.load(A.workspace(self.path,A.load(self.path,c['id'])),w['steps'][0]['deliverable_id'])
-        self.assertIn('\"owner\": \"Synthetic care team\"',html)  # View includes work prepared by the same request.
+        self.assertNotIn('\"owner\": \"Synthetic care team\"',html)
+
+    def test_explicit_patient_selection_keeps_deliverable_queue_and_monitor(self):
+        _, _, result, context = self.composed(base='List patients with diabetes')
+        self.assertTrue(result['answer']['actionable_cohort'])
+        workflow = W.materialize(self.path, context['id'])
+        self.assertEqual([s['status'] for s in workflow['steps']], ['ready', 'ready', 'watching'])
+        self.assertEqual({i['patient_id'] for i in A.inspect(self.path, context['id'])['items']}, {'A','B','C'})
 
     def test_missing_action_definition_keeps_the_complete_answer_and_other_steps(self):
         _, _, result, c = self.composed(unresolved=True)
@@ -140,7 +147,7 @@ class AnswerWorkflow(unittest.TestCase):
         q,p,_,_=self.composed()
         p['workflow'][2]['scope']='result'
         contract=R.compile_request(self.catalog,q,p,population=['A','B','D'])
-        receipt={'version':S.VERSION,'request_contract':contract,'interpretation':{'execution_accepted':True},'new_paid_api_calls':0}
+        receipt={'version':S.VERSION,'policy_identity':S.policy_identity(),'request_contract':contract,'interpretation':{'execution_accepted':True},'new_paid_api_calls':0}
         result=S.execute_contract(self.stack,q,S.graph_for(contract),receipt,population=['A','B','D'])
         c=A.capture(self.path,q,result)
         self.assertEqual(W.materialize(self.path,c['id'])['steps'][2]['patient_scope'],['A','B'])

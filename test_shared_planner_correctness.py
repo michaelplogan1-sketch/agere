@@ -157,6 +157,37 @@ class Correctness(unittest.TestCase):
         from clinical_core.agere.clinical.analysis_graph import OPERATIONS
         self.assertIn('governed_metric', OPERATIONS)
 
+    def test_counts_are_provenance_and_summary_followups_need_a_population(self):
+        from clinical_core.agere.deliverables import answer_context as A
+        from clinical_core.agere.clinical.question_input import QuestionNotUnderstood
+        for q in ('Count claims in 2029 by payer', 'Count ED visits in 2029', 'Count patients with diabetes'):
+            r = self.ask(q)
+            self.assertFalse(r['answer']['actionable_cohort'])
+            context = A.capture(self.path, q, r)
+            self.assertFalse(A.load(self.path, context['id'])['supports_patient_work'])
+        selected = self.ask('List patients with diabetes')
+        self.assertTrue(selected['answer']['actionable_cohort'])
+        self.stack.compose = lambda q, **kw: S.compose(self.stack, q, model=Mock(side_effect=AssertionError('Model called')), **kw)
+        conversation.handle_compose(self.stack, {'question': 'List patients with diabetes', 'conversation_id': 'summary-scope'})
+        conversation.handle_compose(self.stack, {'question': 'What was our no-show rate in 2029?', 'conversation_id': 'summary-scope'})
+        with self.assertRaisesRegex(QuestionNotUnderstood, 'analytical summary'):
+            conversation.handle_compose(self.stack, {'question': 'Group them by payer', 'conversation_id': 'summary-scope'})
+
+    def test_corrected_policy_invalidates_old_answers_and_their_descendants(self):
+        from clinical_core.agere.deliverables import answer_context as A
+        result = self.ask('List patients with diabetes')
+        parent = A.capture(self.path, 'List patients with diabetes', result)
+        listed = A.followup(self.path, parent['id'], 'list them')
+        child = A.capture(self.path, 'list them', listed)
+        original = A.load(self.path, parent['id'])
+        with patch.object(S, 'policy_identity', return_value='corrected-definition'):
+            for key in (parent['id'], child['id']):
+                archived = A.load(self.path, key)
+                self.assertTrue(archived['invalidated'])
+                self.assertEqual(archived['source'], original['source'])
+                with self.assertRaisesRegex(ValueError, 'invalidated'):
+                    A.load(self.path, key, current=True)
+
     def test_raf_missing_birth_date_is_unknown_not_reported_age(self):
         import test_risk_adjustment as risk_fixtures
         from clinical_core.agere.clinical import risk_adjustment
