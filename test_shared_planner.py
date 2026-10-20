@@ -309,6 +309,34 @@ class SharedPlanner(unittest.TestCase):
         with self.assertRaisesRegex(R.PlanError, 'Numeric constraints'):
             self.execute_contract(q.replace('30', '90'), p)
 
+    def test_quoted_analytical_percentages_accept_fractions_but_not_missing_values(self):
+        p = L.parse(self.catalog, 'Count patients')
+        phrase = 'calculate shared savings with a $100 PMPM benchmark, 50% sharing and 2% minimum savings rate'
+        q = 'Count patients and ' + phrase
+        p['analyses'] = [{'operation': 'vbc', 'quote': phrase, 'parameters': {
+            'metric': 'shared_savings', 'terms': {'benchmark_pmpm': 100, 'sharing_rate': .5, 'msr': .02}}}]
+        contract = R.compile_request(self.catalog, q, p)
+        self.assertEqual(contract['request']['analyses'][0]['parameters']['terms']['msr'], .02)
+        for replacement in (None, .03):
+            wrong = copy.deepcopy(p)
+            if replacement is None: del wrong['analyses'][0]['parameters']['terms']['msr']
+            else: wrong['analyses'][0]['parameters']['terms']['msr'] = replacement
+            with self.subTest(value=replacement), self.assertRaisesRegex(R.PlanError, 'Numeric constraints.*2'):
+                R.compile_request(self.catalog, q, wrong)
+
+    def test_repairable_quote_error_does_not_force_away_from_typed_engines(self):
+        q = 'Count patients who are older than 65'
+        correct = L.parse(self.catalog, 'Count patients where age > 65')
+        correct['where']['quote'] = 'older than 65'
+        wrong = copy.deepcopy(correct); wrong['where']['quote'] = 'older than 64'
+        model = Mock(side_effect=[(json.dumps(wrong), {}), (json.dumps(correct), {}),
+                                  (json.dumps({'equivalent': True, 'issues': []}), {})])
+        result = S.compose(self.stack, q, model=model)
+        self.assertEqual(result['answer']['count'], 3)
+        retry = json.loads(model.call_args_list[1].args[1])['validator_feedback']
+        self.assertIn('Repair this specific validation error', retry['instruction'])
+        self.assertNotIn('do not retry', retry['instruction'])
+
     def test_separate_source_spans_do_not_become_unresolved_requirements(self):
         p = L.parse(self.catalog, 'Count patients')
         q = 'How many patients? Give the count.'

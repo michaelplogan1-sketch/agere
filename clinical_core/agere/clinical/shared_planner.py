@@ -537,8 +537,10 @@ def _interpret(catalog, question, *, population=None, model=None, force_model=Fa
             failures.append(str(exc))
             typed = not (isinstance(locals().get('plan'), dict) and set(plan) == {'analysis'})
             feedback = {'error': str(exc), 'previous_proposal': raw,
-                        'instruction': ('The typed request cannot express this question. Return {"analysis": ...} now; '
-                                        'do not retry the typed request.') if typed else
+                        'instruction': ('Repair this specific validation error while preserving the original question. '
+                                        'A missing quote or incorrect parameter does not establish that the typed request is incapable. '
+                                        'Keep registered analytical engines for their calculations and cited rules. '
+                                        'Use {"analysis": ...} only when the required operation cannot be expressed by the typed request.') if typed else
                                        'Correct the analysis while preserving every original requirement.'}
     if model is not None:
         # The LLM is always available: a staged analysis is the final answer path, never a refusal.

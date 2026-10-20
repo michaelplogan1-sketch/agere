@@ -372,6 +372,21 @@ class Compiler:
         # Never accept a numeric/time literal that vanished during interpretation.
         numeric = set(re.findall(r'(?<!\w)\d+(?:\.\d+)?', self.question))
         rendered_numbers = set(re.findall(r'(?<!\w)\d+(?:\.\d+)?', query + json.dumps([a['parameters'] for a in analyses])))
+        # Analytical contracts commonly express quoted percentages as fractions
+        # (2% -> 0.02). Only numeric parameter values in that same bound analysis
+        # may account for this conversion; prose/aliases cannot satisfy it.
+        from decimal import Decimal
+        def parameter_numbers(value):
+            if isinstance(value, dict):
+                return {n for child in value.values() for n in parameter_numbers(child)}
+            if isinstance(value, list):
+                return {n for child in value for n in parameter_numbers(child)}
+            return {Decimal(str(value))} if type(value) in (int, float) else set()
+        for analysis in analyses:
+            values = parameter_numbers(analysis['parameters'])
+            for match in re.finditer(r'(?<![\w.])(\d+(?:\.\d+)?)\s*%', quote_text(analysis['quote'])):
+                if Decimal(match.group(1)) / 100 in values:
+                    rendered_numbers.add(match.group(1))
         # Received semantic fields can encode a fixed window (readmitted_30d).
         # Count only referenced, real fields, never model-invented output aliases.
         for columns in self.catalog.tables.values():
