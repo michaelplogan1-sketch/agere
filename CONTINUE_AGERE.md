@@ -12,7 +12,7 @@ answers once reconciled. Gold 10 is validated but too small for a general superi
 The live service on :8885 runs from /Users/mikel/agere-mvp-run. Inspect its actual
 process and revision before updating; retain a known-good recovery commit.
 
-Current verified service policy: :8885 runs with hosted models disabled. The general warehouse MVP is incomplete. Read AGERE_REVIEW_CORRECTIONS_2026-10-19.md and the current checkpoint before further implementation. The retained live code still contains a multi-Opus path; it was not qualified by this correction. The next priority is one request contract and planner, not further HF-specific shortcuts.
+Current verified service policy: :8885 runs the shared request compiler from c706f5f with hosted calls disabled. Read AGERE_SHARED_PLANNER_2026-10-19.md and the current checkpoint. Competing default answer paths are retired; existing engines and saved work remain connected. The general MVP is incomplete because unfamiliar-language/clinical qualification remains unresolved. A bounded frontier-validation spending question is pending; do not interpret silence as permission. No new per-question or HF-specific handler.
 
 The remaining notes are historical architecture context, not current run instructions.
 

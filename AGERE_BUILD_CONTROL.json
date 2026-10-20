@@ -1,7 +1,7 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-10-20T01:15:30.455215+00:00",
-  "decision_basis": "AGERE_REVIEW_CORRECTIONS_2026-10-19.md",
+  "updated_at": "2026-10-20T01:58:29.034317+00:00",
+  "decision_basis": "AGERE_SHARED_PLANNER_2026-10-19.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
     "AGENTS.md",
@@ -229,6 +229,10 @@
         {
           "path": "artifacts/agere-action-design-v1/implementation-receipt.json",
           "sha256": "944f4f716a1f58cadd26badada8551b563791a9ca7a08dbebeb930786259ed9f"
+        },
+        {
+          "path": "artifacts/agere-shared-planner-v1/implementation-receipt.json",
+          "sha256": "47d9b325b8fcc0d141a7989c2ae4f8462ac0239f95887dd35328be319ca962f7"
         }
       ]
     },
@@ -286,15 +290,15 @@
     "kind": "manual_turn_checkpoint",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "Confirmed wrong routes now refuse or return partial; saved cohort transformations preserve membership and evidence; known incorrect historical answers are blocked from new work; review-state and owner conflicts are explicit.",
-    "measured_failure_reduction": "98 focused checks passed. Live API exposed and then blocked a learned Qwen scope bypass; age-filtered query executes, failed follow-up does not replace 671-patient membership, and contextless grouping refuses. UI invalidation notice verified. Zero paid API calls.",
+    "user_behavior_delta": "One shared source-bound request compiler now connects new relational combinations, existing analytical engines and exact saved-cohort edits to the local UI and action workspace.",
+    "measured_failure_reduction": "78 focused tests pass; duplicate evidence, mixed predicates, exact follow-up scope, grouped-result membership and conversation metadata checked. Live API 230 -> 114 -> same 114 grouping; new complete question independent. Local Qwen semantic failures retained and refused; one correct unfamiliar breakdown remains partial. Zero paid API calls.",
     "evidence": [
-      "AGERE_REVIEW_CORRECTIONS_2026-10-19.md",
-      "artifacts/agere-review-corrections-v1/implementation-receipt.json"
+      "AGERE_SHARED_PLANNER_2026-10-19.md",
+      "artifacts/agere-shared-planner-v1/implementation-receipt.json"
     ],
-    "remaining_gap": "General planner and original-constraint acceptance remain incomplete; this correction does not complete the synthetic MVP. Clinical reconciliation, broad follow-ups, complete question-level cost lineage and independent comparisons remain open.",
-    "next_action": "Consolidate the existing compose/economical_planner/together paths around one typed request and analysis graph. Account for population, period, every predicate/exclusion, measure, grouping, comparison and evidence requirement before any route/cache/rewrite may report answered. Verify novel compositions across utilization/readmission, finance/denials and population/provider domains with independent fixtures and constraint mutation checks. No new HF-only handler, paid evaluation or unvalidated benchmark.",
-    "next": "General original-request contract and one planner; HF is one regression only."
+    "remaining_gap": "Unfamiliar language interpretation, clinical/temporal reconciliation and independent complete-stack qualification remain incomplete. Hosted validation permission pending.",
+    "next_action": "Resolve the pending hosted-validation spending decision. Qualify a capable generic interpreter on independent unseen cross-domain compositions and constraint mutations through the shared request contract; keep unqualified proposals partial and reject missing constraints. Validate registered-engine selection and original clinical/temporal requirements. Do not add question-specific handlers, enable paid calls without authorization, or run unvalidated benchmarks.",
+    "next": "General language qualification through the shared compiler; no more isolated question handlers."
   },
   "decisions": [
     {
@@ -864,6 +868,13 @@
       "change": "Accept review diagnosis; deliver bounded correctness containment and saved-membership follow-ups, then prioritize shared request/planner acceptance over disease-specific additions.",
       "scope_impact": "Full ten-area charter retained. Synthetic action scope unchanged. No gate promotion, paid calls, benchmark or real care.",
       "evidence": "AGERE_REVIEW_CORRECTIONS_2026-10-19.md"
+    },
+    {
+      "at": "2026-10-20T01:58:29.034317+00:00",
+      "basis": "Mike explicitly asks to build the shared planner, finish the whole-warehouse stack, preserve every constraint and stop per-question fixes.",
+      "change": "One shared source-bound request compiler now connects new relational combinations, existing analytical engines and exact saved-cohort edits to the local UI and action workspace.",
+      "scope_impact": "Full ten-area charter retained. Default question authorities consolidated, existing analytical/action tools retained. General language and clinical qualification remain incomplete; no full gate promotion or paid API calls.",
+      "evidence": "AGERE_SHARED_PLANNER_2026-10-19.md"
     }
   ]
 }
