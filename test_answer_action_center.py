@@ -107,7 +107,7 @@ class Workflow(unittest.TestCase):
         self.assertIn('action_context',r)
         summary=conversation.turns(self.path,'independent-workflow')[0]['answer_summary']
         self.assertEqual(summary['action_context']['id'],r['action_context']['id'])
-        self.assertIn('Open action center',ask_view.page())
+        self.assertIn('Open action workspace',ask_view.page())
 
 class Scope(unittest.TestCase):
     def test_full_user_request_is_not_a_beta_blocker_metric(self):

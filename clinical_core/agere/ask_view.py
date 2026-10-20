@@ -6,6 +6,7 @@ One self-contained HTML page (no external assets; charts are hand-written SVG). 
 the briefing ranker's implicit feedback). /ask?demo=1 adds the scripted buyer walkthrough in DEMO_STEPS; every step asks a real question.
 """
 import json
+from pathlib import Path
 
 # Scripted buyer walkthrough for /ask?demo=1. Edit freely: kind is "briefing" (asks the top briefing card's follow-up),
 # "ask" (a standalone question) or "followup" (a follow-up resolved against the previous turn). "focus" scrolls the
@@ -42,124 +43,7 @@ DEMO_STEPS = [
      'note': 'A follow-up in the same conversation. The console shows the standalone question it was answered as.'},
 ]
 
-PAGE = r"""<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Agere Workspace</title>
-<style>
-:root{--bg:#f6f6f4;--fg:#1c1917;--muted:#57534e;--line:#e2e0dc;--card:#fff;--soft:#f1f0ec;--accent:#0f766e;--accent-fg:#fff;--warn:#92400e;--warn-bg:#fef3c7;
---bad:#b91c1c;--bad-bg:#fee2e2;--good:#166534;--good-bg:#dcfce7;--focus:#2563eb;
---s1:#0f766e;--s2:#b45309;--s3:#4f46e5;--s4:#be123c;--s5:#0369a1;--s6:#4d7c0f;--grid:#e7e5e4;--band:rgba(15,118,110,.10)}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0e0d0c;--fg:#f5f5f4;--muted:#b5afa9;--line:#34302c;--card:#1a1816;--soft:#24211e;--accent:#2dd4bf;--accent-fg:#042f2e;
---warn:#fcd34d;--warn-bg:#3b2a07;--bad:#fca5a5;--bad-bg:#3f1414;--good:#86efac;--good-bg:#0f2e1a;--focus:#93c5fd;
---s1:#2dd4bf;--s2:#fbbf24;--s3:#a5b4fc;--s4:#fb7185;--s5:#7dd3fc;--s6:#a3e635;--grid:#2c2926;--band:rgba(45,212,191,.12)}}
-:root[data-theme="dark"]{--bg:#0e0d0c;--fg:#f5f5f4;--muted:#b5afa9;--line:#34302c;--card:#1a1816;--soft:#24211e;--accent:#2dd4bf;--accent-fg:#042f2e;
---warn:#fcd34d;--warn-bg:#3b2a07;--bad:#fca5a5;--bad-bg:#3f1414;--good:#86efac;--good-bg:#0f2e1a;--focus:#93c5fd;
---s1:#2dd4bf;--s2:#fbbf24;--s3:#a5b4fc;--s4:#fb7185;--s5:#7dd3fc;--s6:#a3e635;--grid:#2c2926;--band:rgba(45,212,191,.12)}
-*{box-sizing:border-box}html{-webkit-text-size-adjust:100%}
-body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif;overflow-x:hidden}
-a{color:var(--accent)}button{font:inherit;color:inherit}
-:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
-.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
-header.top{display:flex;flex-wrap:wrap;align-items:center;gap:8px 16px;padding:10px 16px;border-bottom:1px solid var(--line);background:var(--card)}
-header.top h1{font-size:18px;margin:0;letter-spacing:.2px}header.top .tag{color:var(--muted);font-size:13px}
-.econ{margin-left:auto;display:flex;flex-wrap:wrap;gap:6px;font-size:13px}
-.pill{display:inline-flex;align-items:center;gap:4px;border:1px solid var(--line);border-radius:999px;padding:2px 10px;background:var(--soft);white-space:nowrap}
-.pill b{font-variant-numeric:tabular-nums}
-.layout{display:grid;grid-template-columns:260px minmax(0,1fr) 320px;gap:16px;padding:16px;max-width:1600px;margin:0 auto}
-@media (max-width:1180px){.layout{grid-template-columns:240px minmax(0,1fr)}.right{grid-column:1/-1}}
-@media (max-width:800px){.layout{grid-template-columns:minmax(0,1fr);padding:12px 16px}.left{order:2}.center{order:1}.right{order:3}}
-.panel{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px}
-.panel>h2:not(.headline){font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:0 0 8px}
-.btn{border:1px solid var(--line);background:var(--card);border-radius:8px;padding:6px 12px;cursor:pointer;min-height:36px}
-.btn:hover{border-color:var(--accent)}.btn.primary{background:var(--accent);color:var(--accent-fg);border-color:var(--accent);font-weight:600}
-.btn:disabled{opacity:.55;cursor:default}.btn.small{padding:3px 9px;font-size:13px;min-height:30px}
-.thread{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
-.thread button{display:block;width:100%;text-align:left;border:1px solid var(--line);background:var(--soft);border-radius:8px;padding:8px 10px;cursor:pointer}
-.thread button[aria-current="true"]{border-color:var(--accent);box-shadow:inset 3px 0 0 var(--accent)}
-.thread .tq{font-weight:600;font-size:14px;overflow-wrap:anywhere}.thread .ta{font-size:12px;color:var(--muted);overflow-wrap:anywhere}
-.dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;vertical-align:middle;background:var(--muted)}
-.dot.answered{background:var(--good)}.dot.partial{background:var(--warn)}.dot.error,.dot.unsupported{background:var(--bad)}.dot.clarify{background:var(--warn)}.dot.pending{background:var(--focus)}
-.hint{color:var(--muted);font-size:13px;margin:8px 0 0}
-form.askf{display:flex;gap:8px}form.askf input{flex:1;min-width:0;padding:11px 12px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--fg);font-size:15px}
-.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
-.chip{border:1px solid var(--line);background:var(--card);border-radius:999px;padding:4px 10px;font-size:13px;cursor:pointer;color:var(--accent)}
-.chip:hover{border-color:var(--accent)}
-.answer{margin-top:14px}.answer .q{font-weight:600;color:var(--muted);font-size:14px;overflow-wrap:anywhere}
-.resolved{font-size:13px;color:var(--muted);border-left:3px solid var(--accent);padding-left:8px;margin:6px 0;overflow-wrap:anywhere}
-.headline{font-size:19px;line-height:1.4;font-weight:650;margin:8px 0;overflow-wrap:anywhere}.headline.long{font-size:16px;font-weight:600}
-.badges{display:flex;flex-wrap:wrap;gap:6px;font-size:12px;color:var(--muted)}
-.badge{border:1px solid var(--line);border-radius:6px;padding:1px 8px;background:var(--soft)}
-.badge.answered{color:var(--good);background:var(--good-bg);border-color:transparent}.badge.partial{color:var(--warn);background:var(--warn-bg);border-color:transparent}
-.badge.unsupported,.badge.error{color:var(--bad);background:var(--bad-bg);border-color:transparent}
-.alert{border-radius:10px;padding:10px 12px;margin:12px 0;font-size:14px}.alert ul{margin:4px 0 0;padding-left:18px}
-.alert.warn{background:var(--warn-bg);color:var(--fg);border-left:4px solid var(--warn)}.readings{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr));gap:12px;margin:10px 0}.reading{border:1px solid var(--line,#ccc);border-radius:8px;padding:10px;min-width:0}.reading.default{border-color:var(--accent,#2a6)}.reading .val{font-size:1.3em;font-weight:600;overflow-wrap:anywhere}.reading pre{white-space:pre-wrap;overflow-wrap:anywhere;font-size:.8em;max-height:9em;overflow:auto}.alert.bad{background:var(--bad-bg);border-left:4px solid var(--bad)}
-.alert h3{margin:0;font-size:14px}
-.sec{margin-top:16px}.sec>h3{font-size:14px;margin:0 0 8px}
-.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px}
-.kpi{background:var(--soft);border-radius:10px;padding:8px 10px}.kpi .l{font-size:12px;color:var(--muted)}.kpi .v{font-size:20px;font-weight:650;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
-.big{font-size:44px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.1}
-.chart{width:100%;height:auto;display:block;overflow:visible}
-.chart text{fill:var(--muted);font-size:11px}.chart .axis{stroke:var(--line)}.chart .gridl{stroke:var(--grid)}
-.chart [data-ask],.chart [data-pick]{cursor:pointer}.chart [data-ask]:hover rect,.chart [data-ask]:focus rect{opacity:.8}
-.chart [data-ask]:focus-visible{outline:none}.chart [data-ask]:focus-visible rect{stroke:var(--focus);stroke-width:3}
-.legend{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:12px;color:var(--muted);margin:4px 0}
-.legend button{border:0;background:none;cursor:pointer;padding:2px 0;color:var(--muted)}.legend button[aria-pressed="false"]{opacity:.45;text-decoration:line-through}
-.sw{display:inline-block;width:12px;height:3px;vertical-align:middle;margin-right:5px;border-radius:2px}
-.tablewrap{overflow-x:auto;border:1px solid var(--line);border-radius:8px;margin-top:6px;max-height:520px}
-table{border-collapse:collapse;width:100%;font-size:13px}th,td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--line);vertical-align:top}
-th{position:sticky;top:0;background:var(--soft);color:var(--muted);font-weight:600;white-space:nowrap}td{white-space:nowrap}td.wrap{white-space:normal;min-width:200px;max-width:360px}details.why{border:0;margin:2px 0 0;padding:0}details.why summary{padding:0;font-size:12px}td.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
-tr[data-ask],tr[data-pick]{cursor:pointer}tr[data-ask]:hover td,tr[data-pick]:hover td{background:var(--soft)}
-.rchip{display:inline-block;border-radius:6px;padding:1px 7px;margin:1px 3px 1px 0;font-size:12px;border:1px solid var(--line);background:var(--soft);white-space:normal}
-.rchip.utilization{border-color:var(--s4)}.rchip.care_gap{border-color:var(--s3)}.rchip.rising_risk{border-color:var(--s2)}.rchip.social_need{border-color:var(--s5)}
-.tools{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:6px}
-details{margin-top:8px;border-top:1px solid var(--line);padding-top:6px}summary{cursor:pointer;color:var(--muted);font-size:13px;padding:4px 0}
-details pre{white-space:pre-wrap;font-size:12px;color:var(--muted);margin:4px 0;overflow-wrap:anywhere}
-.pids{display:flex;flex-wrap:wrap;gap:4px;font-family:ui-monospace,Menlo,monospace;font-size:12px}.pids span{background:var(--soft);border-radius:4px;padding:1px 6px}
-.probbar{display:flex;height:28px;border-radius:8px;overflow:hidden;border:1px solid var(--line)}
-.probbar div{display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;color:#fff;min-width:0;overflow:hidden;white-space:nowrap}
-.probbar .earn{background:#166534}.probbar .corr{background:#57534e}.probbar .owe{background:#b91c1c}
-.brief{display:flex;flex-direction:column;gap:8px}
-.brief button{text-align:left;border:1px solid var(--line);background:var(--soft);border-radius:10px;padding:10px;cursor:pointer;width:100%}
-.brief .bcard{position:relative}.brief button.x{position:absolute;top:4px;right:4px;width:auto;padding:2px 8px;border:none;background:none;color:var(--muted);font-size:16px}
-.brief details{font-size:12px;color:var(--muted);margin:2px 6px}.brief .xp{color:var(--accent)}
-.brief button:hover{border-color:var(--accent)}.brief .k{font-size:12px;color:var(--muted)}.brief .h{font-size:14px;font-weight:600;margin:2px 0;overflow-wrap:anywhere}.brief .f{font-size:13px;color:var(--accent);overflow-wrap:anywhere}
-.right.flash .panel{box-shadow:0 0 0 3px var(--accent)}
-.demo{background:var(--card);border-bottom:1px solid var(--line);padding:10px 16px}
-.demo ol{display:flex;flex-wrap:wrap;gap:6px;list-style:none;margin:8px 0 0;padding:0;counter-reset:s}
-.demo li button{border:1px solid var(--line);background:var(--soft);border-radius:999px;padding:4px 10px;font-size:13px;cursor:pointer}
-.demo li button[aria-current="step"]{border-color:var(--accent);background:var(--accent);color:var(--accent-fg)}
-.demo li button.done{color:var(--muted)}
-@media (max-width:600px){.demo ol{flex-wrap:nowrap;overflow-x:auto;padding-bottom:4px}.demo li button{white-space:nowrap}}
-.demonote{border:1px dashed var(--accent);border-radius:10px;padding:8px 12px;margin-top:12px;font-size:14px}
-.flag textarea{width:100%;min-height:64px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--fg);padding:8px;font:inherit}
-.muted{color:var(--muted)}.warnc{color:var(--warn)}.badc{color:var(--bad)}.goodc{color:var(--good)}
-.skeleton{color:var(--muted);padding:18px 0}
-</style></head><body>
-<a class="sr" href="#q">Skip to question</a>
-<header class="top"><h1>Agere</h1><span class="tag">Population analytics workspace · synthetic data</span><a class="tag" href="/action-center">Saved workspaces</a><a class="tag" href="/workspaces">Customer workspaces</a>
-<div class="econ" id="econ" aria-label="Question economics"></div></header>
-<div class="demo" id="demo" hidden></div>
-<div class="layout">
-<nav class="left" aria-label="Conversation">
- <div class="panel"><h2>Conversation</h2>
-  <ul class="thread" id="thread"></ul>
-  <p class="hint" id="threadhint">Use “Group them by PCP”, “Only age > 65”, or “List them” to refine the saved cohort. Other wording may need interpretation review.</p>
-  <div class="tools"><button class="btn small" id="newconv" type="button">New conversation</button></div>
- </div>
-</nav>
-<main class="center" id="main">
- <div class="panel">
-  <form class="askf" id="askf"><label class="sr" for="q">Ask a question</label>
-   <input id="q" placeholder="Ask about the population, care, cost or data" autocomplete="off"><button class="btn primary" id="askb">Ask</button></form>
-  <div class="chips" id="examples" aria-label="Example questions"></div>
- </div>
- <div id="demonote"></div>
- <div id="answer" class="panel answer" aria-live="polite"><p class="muted" style="margin:0">Ask a question, pick a briefing card, or start the demo with <a href="?demo=1">?demo=1</a>.</p></div>
-</main>
-<aside class="right" id="right" aria-label="Briefing">
- <div class="panel"><h2>Briefing</h2><p class="hint" style="margin:0 0 8px">Ranked findings computed locally, without a question. Select one to ask its follow-up.</p>
-  <div class="brief" id="brief">Loading…</div></div>
-</aside>
-</div>
+PAGE = r"""__EXPLORE_SHELL__
 <script id="demo-script" type="application/json">__DEMO_STEPS__</script>
 <script>
 "use strict";
@@ -1014,25 +898,28 @@ function warnBox(a){const w=(a.warnings||[]),m=(a.missing||[]);let h='';
  if(w.length)h+='<div class="alert warn" role="note"><h3>Warnings ('+w.length+')</h3><ul>'+w.map(x=>'<li>'+esc(x)+'</li>').join('')+'</ul></div>';
  if(m.length)h+='<div class="alert '+(a.status==='unsupported'?'bad':'warn')+'" role="note"><h3>Not covered</h3><ul>'+m.map(x=>'<li>'+esc(x)+'</li>').join('')+'</ul></div>';return h}
 function readingsBox(a,q){const r=a.readings||[];if(r.length<2||typeof r[0]==='string')return '';const show=v=>typeof v==='number'?fmt(v):v&&v.patients!=null?fmt(v.patients)+' patients':v&&v.rows?v.rows.length+' rows':esc(JSON.stringify(v));let h='<div class="sec" data-readings><h3>Two defensible readings</h3>'+(a.clarifying_question?'<p class="hint">'+esc(a.clarifying_question)+'</p>':'')+'<div class="readings">';r.forEach((x,i)=>{h+='<div class="reading'+(x.default?' default':'')+'"><div class="muted">'+(x.default?'Shown (default)':'Alternative')+'</div>'+'<div class="val">'+show(x.result)+'</div><p>'+esc(x.definition||'')+'</p>'+(x.query?'<details><summary>Query</summary><pre>'+esc(x.query)+'</pre></details>':'')+(q&&x.definition?'<button type="button" class="btn small" data-ask="'+esc(q+' (definition: '+x.definition+')')+'">Use this reading</button>':'')+'</div>'});return h+'</div></div>'}
-function actionLink(c){if(!c||!/^ANS-[0-9a-f]{24}$/.test(c.id||''))return '';return '<section class="sec"><h3>What should happen next?</h3><p>Turn this answer into an interactive workspace. Review the evidence, prepare PharmD or remote-monitoring work, assign owners and track progress.</p><a class="btn primary" href="/action-center?context='+encodeURIComponent(c.id)+'">Open action center</a><p class="hint">Uses this exact saved answer. Program review does not enroll patients or deliver care.</p></section>'}
+function actionLink(c){if(!c||!/^ANS-[0-9a-f]{24}$/.test(c.id||''))return '';return '<section class="next-step"><div><h3>Take this answer further</h3><p>Create an interactive view, explore the saved cohort, or prepare synthetic follow-up work.</p></div><a class="btn primary" href="/action-center?context='+encodeURIComponent(c.id)+'">Open action workspace ↗</a></section>'}
 function requestPlan(d){const c=d.request_contract||(d.planner_receipt||{}).request_contract;if(!c)return '';
  const r=c.request||{},seen=new Set(),items=(c.bindings||[]).filter(b=>{const k=b.kind+':'+b.quote;if(seen.has(k)||b.path==='where'&&b.quote===c.original_question)return false;seen.add(k);return true});
  const interpretation=((d.planner_receipt||{}).interpretation||{});
  const review=interpretation.review==='fully_consumed_grammar'?'Fully parsed request':interpretation.review==='checked_hosted_interpretation'?'Model interpretation checked against the schema and compiled query':'Candidate interpretation · review required';
  return '<details class="sec" open><summary><strong>How I interpreted your question</strong></summary><p class="hint">'+esc(review)+(c.population?' · limited to '+c.population.length+' saved patients':'')+'</p><ul>'+items.map(b=>'<li>'+esc(b.quote)+' <span class="hint">— '+esc(b.disposition==='unresolved'?'unresolved':b.kind)+'</span></li>').join('')+'</ul><details><summary>Inspect computation</summary><pre style="white-space:pre-wrap;overflow-wrap:anywhere">'+esc(c.query)+'</pre><p class="hint">Request '+esc(c.id.slice(0,12))+' · source '+esc((c.source_identity||{}).source_digest||'')+'</p></details></details>'}
-function renderTurn(i){const t=state.turns[i];const box=$('#answer');state.active=i;renderThread();if(!t){box.innerHTML='';return}
- if(t.pending){box.innerHTML='<div class="q">'+esc(t.question)+'</div><p class="skeleton">Planning and computing…</p>';return}
- if(t.error){box.innerHTML='<div class="q">'+esc(t.question)+'</div>'+resolvedLine(t)+'<div class="headline badc">Not answered</div>'+badges(t)+'<div class="alert bad">'+esc(t.error)+'</div>'+
-   '<p class="hint">Rephrase as a complete question, or start a new conversation.</p>';return}
- if(!t.data){box.innerHTML='<div class="q">'+esc(t.question)+'</div>'+resolvedLine(t)+'<div class="headline">'+esc(t.summary||'')+'</div>'+actionLink(t.action_context)+'<p class="hint">Earlier turn: open its saved workspace, or ask again to recompute.</p>'+
-   '<div class="tools"><button type="button" class="btn small" data-ask-standalone="'+esc(t.resolved||t.question)+'">Ask again</button></div>';return}
- const a=t.data.answer||{};state.csv={};
- let h='<div class="q">'+esc(t.question)+'</div>'+resolvedLine(t)+headlineHTML(a)+badges(t)+warnBox(a)+readingsBox(a,t.resolved||t.question)+actionLink(t.data.action_context);
- try{h+=visual(a)}catch(err){h+='<div class="alert warn">Visual unavailable: '+esc(err.message)+'</div>'+tableHTML(a.table||[],{name:'agere-answer'})}
- const sg=suggestions(a);if(sg.length)h+='<div class="chips" aria-label="Follow-ups">'+sg.map(s=>'<button type="button" class="chip" data-ask="'+esc(s)+'">'+esc(s)+'</button>').join('')+'</div>';
- h+=requestPlan(t.data)+executionDetails(t.data)+details(a);
- h+='<div class="sec flag" data-flag><button type="button" class="btn small" data-flagopen="1" style="color:var(--bad)">Flag as wrong</button></div>';
- box.innerHTML=h;if(t.focus){const el=box.querySelector('[data-focus="'+t.focus+'"]');if(el)el.scrollIntoView({behavior:'smooth',block:'start'})}}
+function renderTurn(i){const t=state.turns[i];const box=$('#answer');state.active=i;renderThread();if(!t){box.innerHTML='';setResultMode(false);return}
+ setResultMode(true);syncScope(t);
+ if(t.pending){box.innerHTML='<div class="q">'+esc(t.question)+'</div><div class="working-state"><div class="working-title"><span class="working-ring" aria-hidden="true"></span>Working through your question</div><p>Interpreting the request and computing against the warehouse. This can take a moment.</p><div class="loading-bars" aria-hidden="true"><i></i><i></i><i></i></div></div>';return}
+ if(t.error){box.innerHTML='<div class="q">'+esc(t.question)+'</div>'+resolvedLine(t)+'<h2 class="headline">This question needs another look.</h2><div class="alert bad">'+esc(t.error)+'</div><p class="hint">Your earlier answers are still in the conversation. Edit the question or start a new analysis.</p><button class="btn" data-edit-question="'+esc(t.question)+'">Edit question</button>';return}
+ if(!t.data){box.innerHTML='<div class="q">'+esc(t.question)+'</div>'+resolvedLine(t)+'<h2 class="headline">'+esc(t.summary||'Saved result')+'</h2>'+actionLink(t.action_context)+'<div class="tools">'+(t.action_context?'<a class="btn primary" href="/ask?context='+encodeURIComponent(t.action_context.id)+'">Open full analysis ↗</a>':'')+'<button type="button" class="btn small" data-ask-standalone="'+esc(t.resolved||t.question)+'">Ask again</button></div>';return}
+ const a=t.data.answer||{};state.csv={};const x=executionInfo(t.data),status={answered:'Answer ready',partial:'Partial answer',not_understood:'Needs clarification',unsupported:'Not supported',low_confidence:'Needs review'}[a.status]||label(a.status||'Unknown status');
+ let h='<div class="answer-topline"><span class="eyebrow">'+(t.archive?'SAVED ANALYSIS':'ANALYSIS RESULT')+'</span><button class="text-button" data-edit-question="'+esc(t.question)+'">Edit question ↗</button></div><div class="q">'+esc(t.question)+'</div>'+resolvedLine(t)+headlineHTML(a)+
+ '<div class="badges"><span class="badge '+esc(a.status)+'">'+esc(status)+'</span><span class="badge">'+(t.archive?'Recorded API cost: ':'API estimate: ')+esc(x.cost)+'</span>'+(t.seconds!=null?'<span class="badge">'+t.seconds.toFixed(1)+' seconds</span>':'')+'</div>'+
+ (t.archiveNotice?'<div class="alert warn">'+esc(t.archiveNotice)+'</div>':'')+warnBox(a)+readingsBox(a,t.resolved||t.question);
+ h+='<div class="answer-tabs" role="tablist" aria-label="Answer views">'+['overview','data','method'].map((n,j)=>'<button type="button" id="tab-'+n+'" role="tab" aria-controls="result-'+n+'" aria-selected="'+(j===0)+'" tabindex="'+(j===0?0:-1)+'" data-answer-tab="'+n+'">'+({overview:'Overview',data:'Data',method:'Method & sources'}[n])+'</button>').join('')+'</div><section class="answer-panel" id="result-overview" data-answer-panel="overview" role="tabpanel" aria-labelledby="tab-overview">';
+ try{h+=visual(a)||'<p class="hint">See the method and sources for the available evidence.</p>'}catch(err){h+='<div class="alert warn">Visual unavailable: '+esc(err.message)+'</div>'+tableHTML(a.table||[],{name:'agere-answer'})}
+ h+='</section><section class="answer-panel" id="result-data-panel" data-answer-panel="data" role="tabpanel" aria-labelledby="tab-data" hidden><div class="result-search"><label class="sr" for="result-search">Search returned rows</label><input id="result-search" type="search" placeholder="Search returned rows"><span id="result-count" class="result-status"></span></div><div id="result-data"></div></section><section class="answer-panel" id="result-method" data-answer-panel="method" role="tabpanel" aria-labelledby="tab-method" hidden>'+requestPlan(t.data)+executionDetails(t.data)+details(a)+'</section>';
+ const sg=activeContext&&!t.archiveBlocked?suggestions(a):[];if(sg.length)h+='<div class="chips" aria-label="Follow-ups">'+sg.map(v=>'<button type="button" class="chip" data-ask="'+esc(v)+'">'+esc(v)+' ↗</button>').join('')+'</div>';
+ h+=actionLink(t.data.action_context)+'<div class="sec flag" data-flag><button type="button" class="btn small" data-flagopen="1">Flag as wrong</button></div>';
+ box.innerHTML=h;$('#tab-data').setAttribute('aria-controls','result-data-panel');renderResultData();showAnswerTab(activeTab);
+ if(t.focus){const el=box.querySelector('[data-focus="'+t.focus+'"]');if(el)el.scrollIntoView({behavior:'smooth',block:'start'})}}
 function renderThread(){const ul=$('#thread');ul.innerHTML=state.turns.map((t,i)=>{const a=(t.data||{}).answer||{};const st=t.pending?'pending':t.error?'error':(a.status||t.status||'');
  const r=((t.data||{}).conversation||{}).resolved_question||t.resolved;
  return '<li><button type="button" data-turn="'+i+'"'+(i===state.active?' aria-current="true"':'')+'><div class="tq"><span class="dot '+esc(st)+'" aria-hidden="true"></span>'+esc(t.question)+'</div>'+
@@ -1040,19 +927,20 @@ function renderThread(){const ul=$('#thread');ul.innerHTML=state.turns.map((t,i)
  $('#threadhint').hidden=state.turns.length>0}
 
 /* ---------- asking ---------- */
-async function ask(question,opt){opt=opt||{};question=String(question||'').trim();if(!question||state.busy)return null;state.busy=true;$('#askb').disabled=true;
+async function ask(question,opt){opt=opt||{};question=String(question||'').trim();if(!question||state.busy)return null;
+ const parent=opt.standalone?null:($('#question-scope').value==='saved'?activeContext:null);
+ state.busy=true;$('#askb').disabled=true;$('#newconv').disabled=true;$('#q').readOnly=true;activeTab='overview';
  if(!state.cid){state.cid=newId();store.set('agere-conversation',state.cid)}
- const t={question,pending:true,focus:opt.focus};state.turns.push(t);renderTurn(state.turns.length-1);const top=$('#answer').getBoundingClientRect().top;if(top<0||top>window.innerHeight-80)$('#answer').scrollIntoView({block:'start'});const t0=performance.now();
- try{const r=await fetch('/api/stack/compose',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({question,conversation_id:state.cid})});
+ const t={question,pending:true,focus:opt.focus};state.turns.push(t);renderTurn(state.turns.length-1);const t0=performance.now();
+ try{const r=await fetch('/api/stack/compose',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({question,conversation_id:state.cid,...(parent?{answer_context_id:parent.id}:{}),...(!parent?{scope:'warehouse'}:{})})});
   let d;try{d=await r.json()}catch(_){d={error:'HTTP '+r.status}}t.seconds=(performance.now()-t0)/1000;t.pending=false;
   if(d.error||!r.ok){t.error=d.error||('HTTP '+r.status)}else{t.data=d;t.resolved=(d.conversation||{}).resolved_question}}
- catch(err){t.pending=false;t.error=String(err)}finally{state.busy=false;$('#askb').disabled=false}
- state.outFilter=null;renderTurn(state.turns.indexOf(t));loadEcon();return t}
-function loadConversation(){if(!state.cid)return;fetch('/api/stack/conversation?id='+encodeURIComponent(state.cid)).then(r=>r.ok?r.json():null).then(d=>{if(!d||state.turns.length)return;
+ catch(err){t.pending=false;t.error=String(err)}finally{state.busy=false;$('#askb').disabled=false;$('#newconv').disabled=false;$('#q').readOnly=false}
+ state.outFilter=null;renderTurn(state.turns.indexOf(t));loadEcon();loadSaved();return t}
+function loadConversation(){if(!state.cid)return;const epoch=conversationEpoch;fetch('/api/stack/conversation?id='+encodeURIComponent(state.cid)).then(r=>r.ok?r.json():null).then(d=>{if(!d||state.turns.length||epoch!==conversationEpoch)return;
  state.turns=(d.turns||[]).map(x=>({question:x.question,resolved:x.resolved_question,error:x.error||null,summary:(x.answer_summary||{}).headline||'',status:(x.answer_summary||{}).status,action_context:(x.answer_summary||{}).action_context}));
  if(state.turns.length)renderTurn(state.turns.length-1)}).catch(()=>{})}
-function newConversation(){state.cid=null;store.set('agere-conversation',null);state.turns=[];state.active=-1;renderThread();
- $('#answer').innerHTML='<p class="muted" style="margin:0">New conversation. Ask a question or pick a briefing card.</p>';$('#q').focus()}
+function newConversation(){if(state.busy)return;conversationEpoch++;state.cid=null;store.set('agere-conversation',null);state.turns=[];state.active=-1;activeContext=null;activeTab='overview';renderThread();syncScope(null);setResultMode(false);$('#answer').innerHTML='';$('#q').value='';history.replaceState(null,'','/ask');$('#q').focus()}
 function loadEcon(){fetch('/api/stack/economics').then(r=>r.ok?r.json():null).then(e=>{if(!e)return;
  $('#econ').innerHTML='<span class="pill" title="Questions answered by this installation"><b>'+fmt(e.questions||0)+'</b> questions</span>'+
   '<span class="pill" title="Answered without any paid model call"><b>'+(e.share_without_api_calls!=null?Math.round(100*e.share_without_api_calls)+'%':'—')+'</b> without paid calls</span>'+
@@ -1062,7 +950,7 @@ function loadLoop(){fetch('/api/stack/learning-loop').then(r=>r.ok?r.json():null
 function briefFeedback(card,event){if(!card)return;const body={card_id:card,event};if(state.briefingId)body.briefing_id=state.briefingId;
  fetch('/api/stack/briefing-feedback',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)}).catch(()=>{})}
 function loadBriefing(){return fetch('/api/stack/briefing').then(r=>r.ok?r.json():Promise.reject(r.status)).then(d=>{const cards=(d.cards||[]).slice();state.briefing=cards;state.briefingId=d.briefing_id||null;
- $('#brief').innerHTML=cards.slice(0,10).map((c,i)=>'<div class="bcard"><button type="button" data-ask-standalone="'+esc(c.follow_up)+'" data-brief-card="'+esc(c.card_id||'')+'"><div class="k">#'+(i+1)+(c.explore?' · <span class="xp" title="Explore slot: shown so the ranker can learn">explore</span>':'')+' · '+esc(label(c.kind))+' · '+esc(label(c.topic||''))+(c.patients?' · '+fmt(c.patients)+' patients':'')+'</div>'+
+ $('#brief').innerHTML=cards.slice(0,3).map((c,i)=>'<div class="bcard"><button type="button" data-ask-standalone="'+esc(c.follow_up)+'" data-brief-card="'+esc(c.card_id||'')+'"><div class="k">#'+(i+1)+(c.explore?' · <span class="xp" title="Explore slot: shown so the ranker can learn">explore</span>':'')+' · '+esc(label(c.kind))+' · '+esc(label(c.topic||''))+(c.patients?' · '+fmt(c.patients)+' patients':'')+'</div>'+
   '<div class="h">'+esc(c.headline)+'</div><div class="f">Ask: '+esc(c.follow_up)+' →</div></button>'+
   (c.why_text?'<details data-brief-open="'+esc(c.card_id||'')+'"><summary>Why #'+(i+1)+'</summary>'+esc(c.why_text)+'</details>':'')+
   (c.card_id?'<button type="button" class="x" data-brief-dismiss="'+esc(c.card_id)+'" aria-label="Dismiss this card" title="Not useful">×</button>':'')+'</div>').join('')||'<p class="hint">No significant findings.</p>';
@@ -1081,11 +969,14 @@ async function runStep(i){const s=DEMO[i];if(!s||state.busy)return;if(i===0){new
   q=cards.length?cards[0].follow_up:null;if(!q){demo.done.add(i);demo.i=i+1;renderDemo();return}}
  await ask(q,{focus:s.focus});demo.done.add(i);demo.i=i+1;renderDemo()}
 
+__EXPLORE_JS__
+
 /* ---------- events (delegated; buttons and role=button elements are keyboard reachable) ---------- */
 function activate(el){if(el.dataset.csv){downloadCSV(el.dataset.csv);return}
  if(el.dataset.briefDismiss){briefFeedback(el.dataset.briefDismiss,'dismissed');const b=el.closest('.bcard');if(b)b.remove();return}
- if(el.dataset.askStandalone!=null){if(el.dataset.briefCard)briefFeedback(el.dataset.briefCard,'asked_follow_up');ask(el.dataset.askStandalone);return}
- if(el.dataset.ask!=null){ask(el.dataset.ask);return}
+ if(el.dataset.askStandalone!=null){if(el.dataset.briefCard)briefFeedback(el.dataset.briefCard,'asked_follow_up');ask(el.dataset.askStandalone,{standalone:true});return}
+ if(el.dataset.ask!=null){if(activeContext)$('#question-scope').value='saved';ask(el.dataset.ask);return}
+ if(el.dataset.editQuestion!=null){$('#q').value=el.dataset.editQuestion;$('#question-scope').value='warehouse';updateScopeNote();$('#q').focus();$('#q').scrollIntoView({block:'center',behavior:'smooth'});return}
  if(el.dataset.turn!=null){renderTurn(+el.dataset.turn);return}
  if(el.dataset.demo!=null){runStep(+el.dataset.demo);return}
  if(el.id==='demonext'){runStep(demo.i);return}if(el.id==='demoreset'){demo.i=0;demo.done.clear();renderDemo();return}
@@ -1102,18 +993,22 @@ function activate(el){if(el.dataset.csv){downloadCSV(el.dataset.csv);return}
   fetch('/api/stack/correct',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({question,note})}).then(r=>r.json()).then(d=>{
    box.innerHTML='<p class="'+(d.error?'badc':'goodc')+'" role="status">'+esc(d.error||'Recorded: this answer will not be reused and becomes a regression case.')+'</p>'}).catch(e=>{box.innerHTML='<p class="badc">'+esc(e)+'</p>'})}}
 function refreshWorklist(){const t=state.turns[state.active];const box=document.querySelector('[data-worklist]');if(t&&t.data&&box){box.innerHTML=worklist(t.data.answer);box.scrollIntoView({behavior:'smooth',block:'nearest'})}}
-const ACT='[data-csv],[data-ask],[data-ask-standalone],[data-turn],[data-demo],#demonext,#demoreset,[data-clearfilter],[data-series],[data-pick],[data-flagopen],[data-flagcancel],[data-flagsend],[data-brief-dismiss]';
+const ACT='[data-edit-question],[data-csv],[data-ask],[data-ask-standalone],[data-turn],[data-demo],#demonext,#demoreset,[data-clearfilter],[data-series],[data-pick],[data-flagopen],[data-flagcancel],[data-flagsend],[data-brief-dismiss]';
 document.addEventListener('click',e=>{const el=e.target.closest(ACT);if(el){e.preventDefault();activate(el)}});
 document.addEventListener('keydown',e=>{if(e.key!=='Enter'&&e.key!==' ')return;const el=e.target.closest(ACT);if(!el||el.tagName==='BUTTON')return;if(e.target.tagName==='TEXTAREA'||e.target.tagName==='INPUT')return;e.preventDefault();activate(el)});
 document.addEventListener('change',e=>{const d=e.target.closest('[data-demsel]');if(!d)return;const st=state[d.dataset.demsel];const box=document.querySelector('[data-chart="'+d.dataset.demsel+'"]');if(st&&box)box.innerHTML=fanChart(st.series[+d.value],st.o)});
 document.addEventListener('change',e=>{const s=e.target.closest('[data-monsel]');if(!s)return;const st=state[s.dataset.monsel];const box=document.querySelector('[data-chart="'+s.dataset.monsel+'"]');if(st&&box)box.innerHTML=controlChart(st.charts[+s.value])});
-$('#askf').addEventListener('submit',e=>{e.preventDefault();const v=$('#q').value;$('#q').value='';ask(v)});
+$('#askf').addEventListener('submit',e=>{e.preventDefault();if(state.busy)return;const v=$('#q').value;if(v.trim()){$('#q').value='';ask(v)}});
 $('#newconv').addEventListener('click',newConversation);
-$('#examples').innerHTML=EXAMPLES.map(x=>'<button type="button" class="chip" data-ask-standalone="'+esc(x)+'">'+esc(x)+'</button>').join('');
-let rz,lastW=window.innerWidth;window.addEventListener('resize',()=>{if(window.innerWidth===lastW)return;lastW=window.innerWidth;clearTimeout(rz);rz=setTimeout(()=>{const t=state.turns[state.active];if(t&&t.data){const f=t.focus;t.focus=null;renderTurn(state.active);t.focus=f}},250)});
-renderThread();loadEcon();loadBriefing();loadConversation();renderDemo();
+
+renderThread();loadEcon();setupExplorer();renderDemo();
 </script></body></html>"""
 
 
 def page():
-    return PAGE.replace('__DEMO_STEPS__', json.dumps(DEMO_STEPS).replace('</', '<\\/'))
+    assets = Path(__file__).parent / 'assets'
+    shell = (assets / 'explore.html').read_text().replace('/* EXPLORE_CSS */',
+        (assets / 'answer.css').read_text() + '\n' + (assets / 'explore.css').read_text())
+    return (PAGE.replace('__EXPLORE_SHELL__', shell)
+            .replace('__EXPLORE_JS__', (assets / 'explore.js').read_text())
+            .replace('__DEMO_STEPS__', json.dumps(DEMO_STEPS).replace('</', '<\\/')))

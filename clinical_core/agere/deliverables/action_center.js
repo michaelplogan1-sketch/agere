@@ -163,6 +163,7 @@ function showWork() {
 }
 function render() {
   const c = data.context;
+  $('back-to-analysis').href='/ask?context='+encodeURIComponent(c.id);
   $('center').hidden = false;
   $('loading').hidden = true;
   $('nav-cohort').textContent = num(c.patient_rows.length);
@@ -178,6 +179,7 @@ function render() {
   if (!$('program').options.length) {
     const options = Object.entries(data.programs).map(([id,p])=>'<option value="'+esc(id)+'">'+esc(p.label)+'</option>').join('');
     $('program').innerHTML = options;
+    if (data.programs.custom) $('program').value = 'custom';
     $('work-program').insertAdjacentHTML('beforeend',options);
     $('work-filter').insertAdjacentHTML('beforeend',Object.keys(stateHints).map(s=>'<option value="'+s+'">'+states[s]+' only</option>').join(''));
   }
@@ -347,9 +349,9 @@ async function init() {
     if (key) { await refresh(); go(viewNames[location.hash.slice(1)]?location.hash.slice(1):'overview',false); await loadDeliverables(); return; }
     const result = await api('/api/stack/action-contexts');
     $('saved').hidden=false; $('loading').hidden=true;
-    document.querySelectorAll('.workspace-nav button').forEach(b=>b.disabled=true);
+    document.querySelector('.workspace-nav').hidden=true;document.querySelector('.side-caption').hidden=true;
     $('view-name').textContent='Saved workspaces';
-    $('saved').innerHTML='<div class="section-kicker">PICK UP WHERE YOU LEFT OFF</div><div class="page-heading"><div><h1>Your work, in one place<span class="copper">.</span></h1><p>Every saved answer is a starting point for what comes next.</p></div></div><div class="saved-grid">'+((result.contexts||[]).map(c=>'<a class="saved-card" href="/action-center?context='+encodeURIComponent(c.id)+'"><h2>'+esc(c.question)+'</h2><p>'+num(c.patients)+' patients · '+esc(date(c.created_at))+icon('arrow')+'</p></a>').join('')||'<div class="empty-state"><h3>Start with a question.</h3><p>Your saved answer will become a workspace for exploring evidence and preparing next steps.</p><a class="button primary" href="/ask">Ask Agere →</a></div>')+'</div>';
+    $('saved').innerHTML='<div class="section-kicker">SYNTHETIC WORK &amp; DELIVERABLES</div><div class="page-heading"><div><h1>Action workspaces<span class="copper">.</span></h1><p>Choose a saved answer to explore its cohort, review work, and simulated activity.</p></div></div><div class="saved-grid">'+((result.contexts||[]).map(c=>'<a class="saved-card" href="/action-center?context='+encodeURIComponent(c.id)+'"><h2>'+esc(c.question)+'</h2><p>'+num(c.patients)+' patients · '+esc(date(c.created_at))+icon('arrow')+'</p></a>').join('')||'<div class="empty-state"><h3>Start with a question.</h3><p>Your saved answer will become a workspace for exploring evidence and preparing next steps.</p><a class="button primary" href="/ask">Ask Agere →</a></div>')+'</div>';
   } catch (error) {
     $('loading').hidden=true;
     $('saved').hidden=false;

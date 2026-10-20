@@ -550,6 +550,14 @@ def compose_shape(body):
     conv = False
     if 'conversation_id' in keys:
         conv = check_id(body['conversation_id']); keys = keys - {'conversation_id'}
+    if 'scope' in keys:
+        if body['scope'] != 'warehouse' or 'answer_context_id' in keys:
+            raise ValueError('Choose either the entire warehouse or one saved answer')
+        keys -= {'scope'}
+    if 'answer_context_id' in keys:
+        if conv is False or not isinstance(body['answer_context_id'], str) or not re.fullmatch(r'ANS-[0-9a-f]{24}', body['answer_context_id']):
+            raise ValueError('A conversation and exact saved answer identity are required')
+        keys -= {'answer_context_id'}
     if keys == {'question'}: return body['question'], 'auto', conv
     if keys == {'question', 'planning'} and body['planning'] == 'scoped_local_candidate':
         return body['question'], body['planning'], conv
@@ -572,11 +580,20 @@ def handle_compose(stack, body, hosted_factory=None):
                 raise QuestionNotUnderstood('This question refers to a previous cohort. Open that conversation or ask a complete question; no whole-population substitution was run.')
             result = stack.compose(question) if planning == 'auto' else stack.compose(question, planning=planning)
         else:
-            prior = prior_context(stack.path, conv)
+            prior = None if body.get('scope') == 'warehouse' else prior_context(stack.path, conv)
+            explicit_context = body.get('answer_context_id')
+            if explicit_context:
+                # The UI may reopen a saved answer or select an earlier turn.
+                # Resolve the server-owned immutable membership, never client IDs.
+                answer_context.load(stack.path, explicit_context, current=True)
+                prior = {'action_context': {'id': explicit_context}}
             saved = (prior or {}).get('action_context')
             bound = None
             shared = getattr(stack, 'shared_request_planning', False) is True
-            shared_edit = refers or bool(re.match(r'^(?:only|exclude|excluding|remove|group by|by)\b', question, re.I))
+            if explicit_context and not shared:
+                raise QuestionNotUnderstood('This service cannot apply an explicitly selected saved cohort. The saved population was preserved; no warehouse-wide query was run.')
+            shared_edit = bool(explicit_context) or (body.get('scope') != 'warehouse' and
+                (refers or bool(re.match(r'^(?:only|exclude|excluding|remove|group by|by)\b', question, re.I))))
             if shared and shared_edit:
                 if not saved:
                     raise QuestionNotUnderstood('No saved cohort is available for this edit. Ask a complete question first.')

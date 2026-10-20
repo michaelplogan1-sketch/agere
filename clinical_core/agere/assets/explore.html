@@ -1,0 +1,70 @@
+<!doctype html><html lang="en" data-theme="light"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Agere Workspace</title><style>/* EXPLORE_CSS */</style></head><body>
+<a class="skip-link" href="#q">Skip to question</a>
+<aside class="app-sidebar" aria-label="Main navigation">
+  <a class="app-brand" href="/ask"><span class="brand-mark" aria-hidden="true">a</span>agere<span class="brand-period">.</span></a>
+  <button id="newconv" class="new-analysis"><span aria-hidden="true">＋</span> New analysis <kbd>⌘ K</kbd></button>
+  <nav class="app-nav">
+    <button data-page="explore" aria-current="page"><span data-ui-icon="compass"></span>Explore</button>
+    <button data-page="saved"><span data-ui-icon="folder"></span>Saved analyses<span id="saved-count" class="nav-number"></span></button>
+    <a href="/action-center"><span data-ui-icon="board"></span>Action workspace<span class="nav-tag">DEMO</span></a>
+    <button class="compact-data" data-page="data"><span data-ui-icon="database"></span>Data library</button>
+  </nav>
+  <div class="sidebar-label">THIS CONVERSATION</div>
+  <ul class="thread" id="thread" aria-label="Conversation history"></ul>
+  <p class="sidebar-help" id="threadhint">Your questions and follow-ups will appear here.</p>
+  <div class="sidebar-bottom">
+    <button class="library-link" data-page="data"><span data-ui-icon="database"></span>Data library</button>
+    <button class="library-link" id="usage-button"><span data-ui-icon="activity"></span>Usage &amp; costs</button>
+    <div class="warehouse-card"><span class="connection-dot"></span><div>Synthetic warehouse<small id="source-date">Local environment</small></div></div>
+  </div>
+</aside>
+<div class="app-content">
+  <header class="app-header"><div class="breadcrumb">Workspace <span>/</span> <strong id="page-name">Explore</strong></div>
+    <div class="header-right"><span class="synthetic-label"><i></i>Synthetic data</span><button class="help-button" id="help-button" aria-label="How Agere works">?</button></div>
+  </header>
+  <main id="main" tabindex="-1">
+    <section id="page-explore">
+      <div id="welcome" class="welcome">
+        <div class="eyebrow"><span class="connection-dot"></span> YOUR WHOLE WAREHOUSE. ONE PLACE TO ASK.</div>
+        <h1>Less noise.<br><span>More understanding.</span></h1>
+        <p>Explore patients, costs, care, operations, and outcomes.<br>Start with a question. Follow the evidence. Decide what comes next.</p>
+      </div>
+      <div class="question-area">
+        <form class="askf" id="askf">
+          <label class="sr" for="q">Ask a question</label>
+          <textarea id="q" rows="2" maxlength="12000" placeholder="What would you like to understand about your data?" required></textarea>
+          <div class="composer-footer"><label class="scope-control"><span data-ui-icon="database"></span><span class="sr">Question scope</span><select id="question-scope" aria-label="Question scope"><option value="warehouse">Entire warehouse</option><option value="saved" disabled>Follow up on this result</option></select></label><span class="key-hint">⌘ / Ctrl + Enter</span><button class="btn primary" id="askb" type="submit">Explore <span aria-hidden="true">↗</span></button></div>
+        </form>
+        <p class="composer-note" id="scope-note">Use your own words. Add a date range, comparison, or filter.</p>
+      </div>
+      <div class="demo" id="demo" hidden></div><div id="demonote"></div>
+      <div id="answer" class="panel answer" aria-live="polite" hidden></div>
+      <div id="home-content">
+        <div class="section-row"><div><h2>A few places to start</h2><p>Examples to edit, not a limit on what you can ask.</p></div><span class="subtle">Choose an idea ↙</span></div>
+        <div id="topic-filters" class="topic-filters" aria-label="Filter example topics"></div>
+        <div id="examples" class="question-grid" aria-label="Example questions"></div>
+        <div class="home-lower">
+          <section class="recent-section"><div class="section-row"><h2>Pick up where you left off</h2><button class="text-button" data-page="saved">View all <span aria-hidden="true">↗</span></button></div><div id="recent-analyses" class="recent-list"><p class="hint">Loading saved analyses…</p></div></section>
+          <section class="flow-card"><div class="eyebrow">FROM QUESTION TO NEXT STEP</div><ol><li><span>01</span><div><strong>Ask across your data</strong><small>One question can connect different sources.</small></div></li><li><span>02</span><div><strong>Explore the answer</strong><small>See the results, definitions, and missing evidence.</small></div></li><li><span>03</span><div><strong>Make it useful</strong><small>Create a view or prepare synthetic follow-up work.</small></div></li></ol></section>
+        </div>
+        <details class="discovery-section" id="right"><summary>Discover signals in the data <span>Computed findings to investigate</span></summary><div class="brief" id="brief"></div></details>
+      </div>
+    </section>
+    <section id="page-saved" hidden>
+      <div class="view-heading"><div class="eyebrow">YOUR ANALYSIS LIBRARY</div><h1>Good questions.<br>Worth coming back to.</h1><p>Reopen an answer, inspect its evidence, or continue in its action workspace.</p></div>
+      <label class="search-box"><span data-ui-icon="search"></span><input id="saved-search" type="search" placeholder="Search saved questions" aria-label="Search saved analyses"></label>
+      <p id="saved-caption" class="hint"></p><div id="saved-list" class="analysis-list"></div>
+    </section>
+    <section id="page-data" hidden>
+      <div class="view-heading"><div class="eyebrow">CONNECTED SOURCE INVENTORY</div><h1>See what’s in<br>your warehouse.</h1><p>Explore the received sources behind your questions. Source coverage is different from answer accuracy.</p></div>
+      <div id="warehouse-stats" class="warehouse-stats"></div>
+      <label class="search-box"><span data-ui-icon="search"></span><input id="source-search" type="search" placeholder="Find a source: claims, appointments, labs…" aria-label="Search data sources"></label>
+      <p id="source-caption" class="hint"></p><div id="source-list" class="source-list"></div>
+    </section>
+  </main>
+  <footer class="app-footer"><button class="text-button" id="footer-usage">Usage &amp; costs</button><span>Data → Information → Intelligence → Wisdom</span></footer>
+</div>
+<dialog id="help-dialog" class="app-dialog" aria-labelledby="help-title"><button class="dialog-close" data-close-dialog="help-dialog" aria-label="Close help">×</button><div class="eyebrow">A QUICK TOUR</div><h2 id="help-title">One question. Many possible next steps.</h2><ol class="help-steps"><li><strong>Ask a complete question.</strong> Include who or what, the measure, and the period you care about. You can ask beyond the example cards.</li><li><strong>Explore the result.</strong> Switch between the overview, returned data, and method. Missing information stays visible.</li><li><strong>Keep the scope clear.</strong> “Follow up on this result” keeps the saved patient set. Choose “Entire warehouse” for a new analysis.</li><li><strong>Open the action workspace.</strong> Inspect the cohort, prepare review work, or make a command-center mockup. Actions are simulated.</li></ol><button class="btn primary" data-close-dialog="help-dialog">Start exploring ↗</button></dialog>
+<dialog id="usage-dialog" class="app-dialog" aria-labelledby="usage-title"><button class="dialog-close" data-close-dialog="usage-dialog" aria-label="Close usage">×</button><div class="eyebrow">LOCAL INSTALLATION</div><h2 id="usage-title">Usage &amp; costs</h2><div id="econ" class="econ" aria-label="Question economics"></div><p class="hint">Historical known API estimates. Missing usage, local compute, development, and human review are excluded. Each new answer also shows its own recorded cost.</p></dialog>

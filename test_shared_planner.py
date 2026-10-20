@@ -146,6 +146,34 @@ class SharedPlanner(unittest.TestCase):
         new = conversation.handle_compose(self.stack, {'question':'Count claims','conversation_id':'shared'})
         self.assertEqual(new['answer']['count'], 5)
 
+    def test_reopened_answer_binds_exact_selected_context_not_latest_turn(self):
+        first = conversation.handle_compose(self.stack, {'question': 'List patients with diabetes', 'conversation_id': 'scope'})
+        saved = first['action_context']['id']
+        conversation.handle_compose(self.stack, {'question': 'Only age > 65', 'conversation_id': 'scope'})
+        selected = conversation.handle_compose(self.stack, {
+            'question': 'Count patients', 'conversation_id': 'scope', 'answer_context_id': saved})
+        self.assertEqual(selected['answer']['count'], 3)
+        self.assertEqual(set(selected['answer']['patient_ids']), {'A', 'B', 'C'})
+        reopened = conversation.handle_compose(self.stack, {
+            'question': 'Count patients', 'conversation_id': 'new-browser', 'answer_context_id': saved})
+        self.assertEqual(reopened['answer']['count'], 3)
+        warehouse = conversation.handle_compose(self.stack, {
+            'question': 'Count patients', 'conversation_id': 'new-browser', 'scope': 'warehouse'})
+        self.assertEqual(warehouse['answer']['count'], 5)
+
+    def test_explicit_scope_rejects_unknown_identity_or_conflicting_selection(self):
+        with self.assertRaises(ValueError):
+            conversation.handle_compose(self.stack, {'question': 'Count patients', 'conversation_id': 'scope',
+                'answer_context_id': 'ANS-' + '0' * 24})
+        for body in [
+            {'question': 'Count patients', 'answer_context_id': 'ANS-' + '0' * 24},
+            {'question': 'Count patients', 'conversation_id': 'scope', 'scope': 'warehouse',
+             'answer_context_id': 'ANS-' + '0' * 24},
+            {'question': 'Count patients', 'scope': 'all-patients-ignore-context'},
+        ]:
+            with self.assertRaises(ValueError):
+                conversation.compose_shape(body)
+
     def test_model_review_rejection_cannot_execute_broader_cohort(self):
         q = 'Count patients who are older than 65'
         plan = {'source': {'table': 'patient', 'quote': 'patients'},
