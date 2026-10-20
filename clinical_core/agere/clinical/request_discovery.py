@@ -4,6 +4,7 @@ No model SQL is accepted. A failed or empty probe never establishes clinical or
 warehouse-wide absence. Search terms and source text remain untrusted data.
 """
 import json
+import os
 import re
 import sqlite3
 import time
@@ -11,12 +12,80 @@ import time
 from .request_plan import PlanError, fingerprint, identifier
 
 VERSION = 'request-discovery/1'
+VALUE_VERSION = 'relation-values/1'
+VALUE_LIMIT = 64
+# Identifiers, contact details, clocks and free text are never indexed as categories.
+_UNINDEXED_TOKENS = {'id', 'ids', 'mrn', 'ssn', 'npi', 'tin', 'email', 'phone', 'address', 'zip', 'postal',
+                     'name', 'first', 'last', 'dob', 'birth', 'date', 'time', 'at', 'cents', 'payload',
+                     'text', 'sentence', 'excerpt', 'comment', 'detail', 'value'}
+_VALUE_CACHE = {}
 
 
 def tokens(text):
     words = re.findall(r'[a-z0-9]+', str(text).lower().replace('_', ' '))
     return {w[:-1] if len(w) > 4 and w.endswith('s') and not w.endswith('ss') else w
             for w in words if len(w) > 2}
+
+
+def _indexable(column, declared_type):
+    if declared_type not in ('', 'TEXT') and 'CHAR' not in declared_type:
+        return False
+    return not set(re.findall(r'[a-z0-9]+', column.lower().replace('_', ' '))) & _UNINDEXED_TOKENS
+
+
+def relation_values(catalog, *, seconds=1.0, total_seconds=30.0):
+    """Bounded distinct categorical values of catalog relations, bound to the source identity.
+
+    Derived relations (extracted facts, normalized concepts, specialties, statuses) carry their
+    meaning in values, not column names. Only low-cardinality text categories are kept; a slow,
+    high-cardinality or skipped column is reported, never treated as absent.
+    """
+    key = fingerprint({'target': str(catalog.target), 'identity': catalog.identity, 'tables': catalog.tables,
+                       'version': VALUE_VERSION, 'limit': VALUE_LIMIT})
+    out = {'version': VALUE_VERSION, 'source_identity_digest': fingerprint(catalog.identity),
+           'fields': {}, 'high_cardinality': [], 'incomplete': [], 'limit': VALUE_LIMIT}
+    db = sqlite3.connect(f'file:{catalog.target}?mode=ro', uri=True)
+    try:
+        db.execute('PRAGMA query_only=ON')
+        # Checked on every call: a cached scan is never served for a stale catalog.
+        if dict(db.execute('SELECT key,value FROM meta')) != catalog.identity:
+            raise PlanError('Warehouse identity changed before value discovery')
+        if key in _VALUE_CACHE:
+            return _VALUE_CACHE[key]
+        started = time.monotonic()
+        for table in sorted(catalog.tables):
+            declared = {r[1]: (r[2] or '').upper() for r in db.execute('PRAGMA table_info(' + identifier(table) + ')')}
+            for column in catalog.tables[table]:
+                if column not in declared or not _indexable(column, declared[column]):
+                    continue  # virtual (computed) or non-categorical field
+                name = table + '.' + column
+                if time.monotonic() - started > total_seconds:
+                    out['incomplete'].append(name)
+                    continue
+                begin = time.monotonic()
+                db.set_progress_handler(lambda: int(time.monotonic() - begin > seconds), 1000)
+                try:
+                    found = [r[0] for r in db.execute(
+                        'SELECT DISTINCT ' + identifier(column) + ' FROM ' + identifier(table) +
+                        ' WHERE ' + identifier(column) + ' IS NOT NULL LIMIT ?', (VALUE_LIMIT + 1,))]
+                except sqlite3.Error:
+                    out['incomplete'].append(name)
+                    continue
+                finally:
+                    db.set_progress_handler(None, 0)
+                if len(found) > VALUE_LIMIT:
+                    out['high_cardinality'].append(name)
+                    continue
+                kept = sorted(v for v in found if isinstance(v, str) and 0 < len(v.strip()) <= 160)
+                if kept:
+                    out['fields'][name] = kept
+    finally:
+        db.close()
+    if not out['incomplete']:  # a transient slow scan is retried, never frozen as the identity's scope
+        if len(_VALUE_CACHE) >= 4:
+            _VALUE_CACHE.pop(next(iter(_VALUE_CACHE)))
+        _VALUE_CACHE[key] = out
+    return out
 
 
 def search(catalog, terms, *, limit=20):
@@ -34,13 +103,30 @@ def search(catalog, terms, *, limit=20):
         related = {w for w in wanted if len(w) >= 6 and any(
             len(a) >= 6 and a[:4] == w[:4] for a in available)}
         return exact, related - exact
+    def value_match(value):
+        # Observed values are stricter than names: exact words or a shared stem of 7+ letters.
+        available = tokens(value)
+        return bool(wanted & available) or any(
+            len(os.path.commonprefix([w, a])) >= 7 for w in wanted for a in available)
+    relation_scan = relation_values(catalog)
     for table, columns in catalog.tables.items():
         fields = [c for c in columns if any(matches(c))]
-        overlap, related = matches(table + ' ' + ' '.join(columns) + ' ' + SCHEMA_DOC.get(table, ''))
+        value_hits = {}
+        for column in columns:
+            hits = [v for v in relation_scan['fields'].get(table + '.' + column, []) if value_match(v)]
+            if hits:
+                value_hits[column] = hits[:5]
+        overlap, related = matches(table + ' ' + ' '.join(columns) + ' ' + SCHEMA_DOC.get(table, '') + ' ' +
+                                   ' '.join(v for hits in value_hits.values() for v in hits))
         if overlap or related:
-            candidates.append({'kind': 'relation', 'name': table, 'fields': fields[:24],
-                               'score': 2 * len(overlap) + len(related), 'matched_terms': sorted(overlap),
-                               'approximate_terms': sorted(related)})
+            entry = {'kind': 'relation', 'name': table,
+                     'fields': list(dict.fromkeys([*fields, *value_hits]))[:24],
+                     'score': 2 * len(overlap) + len(related), 'matched_terms': sorted(overlap),
+                     'approximate_terms': sorted(related)}
+            if value_hits:
+                # Literal observed category values; usable as exact predicate values after schema review.
+                entry['matched_values'] = dict(list(value_hits.items())[:8])
+            candidates.append(entry)
     profile = getattr(catalog, 'profile', {})
     observed_streams = profile.get('streams', {}) if profile.get('source_digest') == catalog.identity.get('source_digest') else {}
     value_fields = []
@@ -59,14 +145,23 @@ def search(catalog, terms, *, limit=20):
                                'profile_value_fields': [c for c, text in values.items() if any(matches(text))][:24],
                                'score': 2 * len(overlap) + len(related), 'matched_terms': sorted(overlap),
                                'approximate_terms': sorted(related)})
-    candidates.sort(key=lambda x: (-x['score'], x['kind'], x['name']))
+    # Equal lexical scores prefer observed literal values, then directly queryable relations.
+    candidates.sort(key=lambda x: (-x['score'], 'matched_values' not in x, x['kind'] != 'relation', x['name']))
     return {'version': VERSION, 'source_identity': catalog.identity, 'terms': terms,
             'candidates': candidates[:limit], 'candidate_count': len(candidates),
             'truncated': len(candidates) > limit, 'catalog_scan_complete': True,
             'searched': {'relations': sorted(catalog.tables), 'streams': sorted(catalog.stream_fields),
                          'bounded_profile_value_fields': sorted(value_fields)},
+            # Top level so compact model views keep the scan's completeness, not only a count.
+            'relation_value_scan': {'version': relation_scan['version'],
+                                    'source_identity_digest': relation_scan['source_identity_digest'],
+                                    'categorical_fields': len(relation_scan['fields']),
+                                    'value_limit': relation_scan['limit'],
+                                    'high_cardinality_fields': len(relation_scan['high_cardinality']),
+                                    'complete': not relation_scan['incomplete'],
+                                    'incomplete_fields': relation_scan['incomplete'][:24]},
             'record_search_performed': False, 'data_absence_established': False,
-            'limitation': 'Lexical/approximate metadata and bounded current-profile value candidates only, not semantic equivalence. No match does not establish missing data; request schemas or bounded field probes.'}
+            'limitation': 'Lexical/approximate metadata, bounded current-profile values and bounded categorical relation values only, not semantic equivalence. High-cardinality, free-text and identifier fields are not value-indexed. No match does not establish missing data; request schemas or bounded field probes.'}
 
 
 def describe(catalog, tables, streams=()):
