@@ -14,7 +14,7 @@ answers once reconciled. Gold 10 is validated but too small for a general superi
 The live service on :8885 runs from /Users/mikel/agere-mvp-run. Inspect its actual
 process and revision before updating; retain a known-good recovery commit.
 
-Current verified service policy: :8885 runs 48c39e3 with checked hosted interpretation enabled. Read AGERE_SHARED_FRONTIER_2026-10-20.md and the current checkpoint. Complete grammar and exact-source caches remain zero-call paths; unfamiliar questions use the configured frontier model through the same compiler. Multiple analytical outputs and exact selected worklists are preserved. Current clinical/temporal reconciliation and independent full-stack qualification remain unfinished. No additional spending approval is pending.
+Current verified service policy: :8885 runs 27e1d63 with checked hosted interpretation and the redesigned whole-warehouse interface. Read AGERE_INTERFACE_2026-10-20.md, retain AGERE_SHARED_FRONTIER_2026-10-20.md as planning evidence, and follow the current checkpoint. Complete grammar and exact-source caches remain zero-call paths; unfamiliar questions use the configured frontier model through the same compiler. Multiple analytical outputs and exact selected worklists are preserved. Current clinical/temporal reconciliation and independent full-stack qualification remain unfinished. No additional spending approval is pending.
 
 The remaining notes are historical architecture context, not current run instructions.
 

@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-10-20T10:39:08.377727+00:00",
+  "updated_at": "2026-10-20T11:14:29.131826+00:00",
   "decision_basis": "AGERE_SHARED_FRONTIER_2026-10-20.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -237,6 +237,10 @@
         {
           "path": "artifacts/agere-shared-frontier-v1/implementation-receipt.json",
           "sha256": "56e3eff977cddc0eca22983557652b1740019341b60abc1a4839fa53c8495ed8"
+        },
+        {
+          "path": "artifacts/agere-interface-v1/implementation-receipt.json",
+          "sha256": "a2fb5688ebbc2212e5647d9da2a2773028d9e9927aaa03d0290d588a2d4f172b"
         }
       ]
     },
@@ -294,15 +298,15 @@
     "kind": "manual_turn_checkpoint",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "New natural-language questions use checked frontier interpretation; relational queries and existing analytical engines preserve the same contract, compound answers and exact selected cohorts through synthetic work.",
-    "measured_failure_reduction": "12/12 handwritten development cases; 4 automatic actual-engine paths; 86 regression tests; live new grouping matches direct SQL; compound answer has both analyses; ten selected patients remain ten in work and mockup.",
+    "user_behavior_delta": "Whole-warehouse Explore, searchable saved analyses/source inventory, three answer views and a consistent general synthetic action workspace. Explicit saved-answer scope survives reopen and earlier-turn selection.",
+    "measured_failure_reduction": "88 regressions pass; formerly ambiguous saved follow-up now returns 10 selected patients vs 4,115 with explicit warehouse scope. Search, source discovery, desktop/mobile and nine-group operations workflow verified.",
     "evidence": [
-      "AGERE_SHARED_FRONTIER_2026-10-20.md",
-      "artifacts/agere-shared-frontier-v1/implementation-receipt.json"
+      "AGERE_INTERFACE_2026-10-20.md",
+      "artifacts/agere-interface-v1/implementation-receipt.json"
     ],
-    "remaining_gap": "Current clinical/temporal reconciliation and independent complete-stack qualification remain incomplete.",
-    "next_action": "Close remaining clinical/time/evidence interpretation gaps through shared primitives and existing engines, with constraint mutations and end-to-end saved-work checks. Preserve explicit unknowns and the full ten-area charter. Hosted execution is authorized; no per-question handlers or unvalidated benchmarks.",
-    "next": "Shared clinical/time semantics and complete workflow acceptance; independent qualification remains separate."
+    "remaining_gap": "General question interpretation, clinical/time/evidence reconciliation and independent full-stack qualification remain incomplete.",
+    "next_action": "Close shared interpretation and clinical/time/evidence gaps across claims, admissions/readmissions, access, providers and contracts using existing engines and constraint mutations; keep whole-warehouse breadth and exact saved context. No per-question handlers or unvalidated benchmarks.",
+    "next": "Whole-warehouse shared planning and complete workflow acceptance; independent qualification remains separate."
   },
   "decisions": [
     {
@@ -892,6 +896,13 @@
       "change": "Activate checked hosted interpretation for unfamiliar questions; retain deterministic and exact-cache zero-call paths, original constraints, all analytical outputs and selected subsets. Separate engineering acceptance from independent model/clinical qualification.",
       "scope_impact": "All ten areas retained; G3 active, G5 blocked, full acceptance false. No protected benchmark or real care execution.",
       "evidence": "artifacts/agere-shared-frontier-v1/implementation-receipt.json"
+    },
+    {
+      "at": "2026-10-20T11:14:29.131826+00:00",
+      "basis": "Mike explicitly rejects HF-centric scope and asks for a much more intuitive interface informed by strong website designs or GitHub.",
+      "change": "Prioritize the connected warehouse interface and explicit saved-scope correction; activate verified source 27e1d63 on :8885.",
+      "scope_impact": "All ten areas retained. G3 active, G5 blocked, no full qualification claim, protected benchmark or real care execution.",
+      "evidence": "artifacts/agere-interface-v1/implementation-receipt.json"
     }
   ]
 }
