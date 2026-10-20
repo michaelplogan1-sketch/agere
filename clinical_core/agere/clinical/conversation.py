@@ -575,18 +575,31 @@ def handle_compose(stack, body, hosted_factory=None):
             prior = prior_context(stack.path, conv)
             saved = (prior or {}).get('action_context')
             bound = None
-            if saved and is_followup(question) and planning == 'auto' and parse_frame(question) is None:
+            shared = getattr(stack, 'shared_request_planning', False) is True
+            shared_edit = refers or bool(re.match(r'^(?:only|exclude|excluding|remove|group by|by)\b', question, re.I))
+            if shared and shared_edit:
+                if not saved:
+                    raise QuestionNotUnderstood('No saved cohort is available for this edit. Ask a complete question first.')
+                parent = answer_context.load(stack.path, saved['id'], current=True)
+                # Legacy finite transforms remain useful for literal list/count and
+                # grouping. They operate on immutable membership, never text rewrites.
+                bound = answer_context.followup(stack.path, saved['id'], question)
+                if bound is None:
+                    bound = stack.compose(question, population=parent['patient_ids'], parent=parent)
+            elif not shared and saved and is_followup(question) and planning == 'auto' and parse_frame(question) is None:
                 bound = answer_context.followup(stack.path, saved['id'], question)
                 if bound is None:
                     raise QuestionNotUnderstood('This follow-up cannot yet be executed over the saved cohort. The original cohort was preserved; no rewritten query or whole-population substitution was run.')
             elif refers:
                 raise QuestionNotUnderstood('No saved patient cohort is available for this follow-up. Ask the complete question first.')
             hosted = None
-            if prior is not None and getattr(stack, 'allow_live', False):
+            if not shared and prior is not None and getattr(stack, 'allow_live', False):
                 hosted = (hosted_factory or _default_hosted)(stack)
             resolution = ({'standalone': question, 'method': 'saved_cohort', 'frame': None, 'follow_up': True,
                            'edits': bound['cohort_transform']['operations'], 'reason': 'Applied to the exact saved cohort',
-                           'hosted_receipt': None} if bound else resolve(question, prior, hosted=hosted))
+                           'hosted_receipt': None} if bound else
+                          {'standalone': question, 'method': 'standalone', 'frame': None, 'follow_up': False,
+                           'edits': [], 'hosted_receipt': None} if shared else resolve(question, prior, hosted=hosted))
             if resolution.get('hosted_receipt'):
                 r = resolution['hosted_receipt']
                 hosted_usd = float(r.get('api_usd') or 0.0); hosted_calls = 0 if r.get('cache_hit') else 1

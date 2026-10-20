@@ -12,6 +12,7 @@ VERSION='integrated-healthcare-stack/2'
 ROOT=Path(__file__).resolve().parents[3]
 
 class Stack:
+    shared_request_planning = True
     def __init__(self,path,*,allow_live=False,rerank=True):
         from .warehouse_concurrency import configure
         self.database_concurrency=configure(path)
@@ -104,44 +105,26 @@ class Stack:
         return execute(self,plan,question=question)
     def model_roles(self):
         from ..gateway import PersistentGateway
-        from . import bottled, nl2sql
-        qwen_slots = bottled.narrow_enabled() and bottled.NarrowModel.available()
-        qwen_rewrite = os.environ.get('AGERE_LOCAL_MODEL', 'off' if self.allow_live else 'on') != 'off' and nl2sql.MODEL_DIR.exists()
-        return {'planning_order':['local compiler / exact question cache','local MiniLM plan-candidate retrieval',
-                                  'Perplexity typed route selection','Claude for unsupported or uncertain composition'],
-                'frontier_model':PersistentGateway.MODELS['claude'],
-                'decision_router':PersistentGateway.MODELS['perplexity'],
-                'retrieval_model':Path(self.retriever.meta['encoder_path']).name,
-                'evidence_reviewers':{k:PersistentGateway.MODELS[k] for k in ('jev','perplexity')},
-                'trained_source_students':{'attached':(self.path/'semantic-student-link.json').exists(),
-                    'roles':['lexical three-axis classification','frozen MiniLM with learned three-axis heads'],
-                    'status':'optional shadow proposals; no automatic acceptance',
-                    'details':'/api/stack/semantic-students'},
-                'source_distillation':{'attached':(self.path/'source-distillation-link.json').exists(),
-                    'status':'protected development acquisition and machine-supervised shadow readers; teacher agreement is not clinical accuracy',
-                    'details':'/api/stack/source-distillation'},
-                'source_synthesis':{'provider':'claude','role':'bounded cross-source explanation with exact citations and review proposals',
-                    'clinical_authority':False,'native_token_check':True,'saved_answer_route':'/api/stack/case-synthesis',
-                    'large_context':'bounded source passes and dependency-preserving excerpt reconciliation',
-                    'question_scope':'hybrid retrieval plus typed source closure; sufficiency unassessed'},
-                'qwen3_4b_active':qwen_slots or qwen_rewrite,
-                'qwen_status':{'narrow_slot_filling_enabled':qwen_slots, 'canonical_rewrite_enabled':qwen_rewrite,
-                    'scope':'Local proposals only; agreement among decodes does not prove preservation of the original question or correctness.'},
-                'scope':'Local models and code handle bounded tasks. Hosted decision routing is not a newly trained local SLM. No universal best model or calibrated end-to-end routing quality is established.'}
-    def compose(self,question,*,planning='auto'):
-        from .question_input import validate_question
-        validate_question(question)
-        if planning == 'auto':
-            from . import therapy_review
-            if therapy_review.accepts(question):
-                return therapy_review.answer(self.path, question)
-        # Agere "together" (together.py): the fast path below plus an independent semantic analyst started in parallel,
-        # reconciled into one answer. AGERE_TOGETHER=off (or a server without live models) keeps exactly the fast path.
-        if planning=='auto' and self.allow_live:
-            from . import together
-            if together.enabled():return together.compose_together(self,question,planning=planning)
-        return self._compose(question,planning=planning)
+        from .nl2sql import MODEL_DIR
+        return {'planning_order': ['fully consumed compositional grammar', 'local Qwen typed request and separate semantic review',
+                                  'configured frontier interpreter only when hosted calls are explicitly enabled'],
+                'shared_request_version': 'warehouse-request/1',
+                'frontier_model': os.environ.get('AGERE_SHARED_INTERPRETER_MODEL', PersistentGateway.MODELS['claude']),
+                'hosted_enabled': self.allow_live, 'qwen3_4b_available': MODEL_DIR.exists(),
+                'qwen3_4b_active': MODEL_DIR.exists(),
+                'qwen_status': {'role': 'typed request proposals, not question rewriting',
+                               'qualification': 'unqualified; proposals remain partial and cannot create program work'},
+                'retired_question_routes': ['parallel SQL analysts', 'answer-authoritative recipes', 'semantic paraphrase plan reuse', 'narrow slot rewriting'],
+                'source_readers': ['Jev/Perplexity source tools remain registered; no implicit hosted dispatch'],
+                'scope': 'One shared compiler and original-request contract. General language, clinical and comparative economics qualification remain open.'}
+    def compose(self,question,*,planning='auto',population=None,parent=None):
+        from .shared_planner import compose
+        if planning not in ('auto', 'frontier'):
+            raise ValueError('The shared planner is the active question policy; legacy candidate dispatch is disabled')
+        return compose(self,question,population=population,parent=parent)
     def _compose(self,question,*,planning='auto'):
+        return self.compose(question,planning=planning)
+    def _legacy_compose(self,question,*,planning='auto'):
         if planning=='scoped_local_candidate':
             from .scoped_review_compiler import compile_question
             with sqlite3.connect(self.path/'stack.sqlite3') as db:

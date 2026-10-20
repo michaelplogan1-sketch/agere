@@ -305,6 +305,11 @@ def _undelivered_gate(stack,question,meta,start,family_info=None):
                   'steps':[],'elapsed_seconds':time.perf_counter()-start}
 
 def plan(stack,question,ledger,frontier):
+    from .shared_planner import plan as shared_plan
+    return shared_plan(stack,question,ledger,frontier)
+
+
+def legacy_plan(stack,question,ledger,frontier):
     """frontier is a callback; no hosted call occurs for an exact local plan/cache."""
     normalize(question);start=time.perf_counter();meta=stack.retriever.meta
     available=(stack.path/'clinical-state-link.json').exists()

@@ -822,7 +822,12 @@ def validate(plan, as_of):
             raise ValueError('Bounded unique node references required')
         validate_inputs(op, inputs, seen)
         p = validate_shared_parameters(op, p)
-        if op == 'cohort':
+        if op == 'query_population':
+            from .request_plan import assert_sealed
+            if set(p) != {'contract'}: raise ValueError('Sealed original request required for population input')
+            assert_sealed(p['contract'])
+            if not p['contract'].get('membership_query'): raise ValueError('Request has no patient membership')
+        elif op == 'cohort':
             if inputs or set(p) != {'specification'}:
                 raise ValueError('Cohort node needs its explicit specification')
             p = {'specification': cohorts.validate(p['specification'], as_of)}
@@ -1357,6 +1362,13 @@ def execute(stack, plan, *, question=None):
         observed = catalog(path)
         concepts = {(r['source'], r['concept']) for r in observed['evidence_concepts']}
         for node in plan['nodes']:
+            if node['operation'] == 'query_population':
+                from .request_plan import Catalog, compile_request
+                contract = node['parameters']['contract']
+                current_catalog = Catalog.load(path)
+                rebuilt = compile_request(current_catalog, contract['original_question'], contract['request'], population=contract['population'])
+                if rebuilt['id'] != contract['id'] or contract['request']['unresolved']:
+                    raise ValueError('Population request changed or has unresolved constraints')
             if node['operation'] in ('sequence','longitudinal'):
                 from .longitudinal import validate_parameters
                 if not observed['longitudinal']['available']:raise ValueError('No longitudinal artifact attached')
@@ -1514,7 +1526,18 @@ def execute(stack, plan, *, question=None):
             op, params = node['operation'], node['parameters']
             value, detail = None, {}
             node_started = time.perf_counter()
-            if op == 'cohort':
+            if op == 'query_population':
+                from . import sql_query
+                c = params['contract']
+                detail = sql_query.execute(path, {'query': c['membership_query'], 'returns': 'patient_set'}, patient_ids=c['population'])
+                if detail['truncated']: raise ValueError('Incomplete request population cannot feed an analytical engine')
+                selected_ids = set(detail['patient_ids'])
+                if not selected_ids <= universe: raise ValueError('Request population contains IDs outside the source roster')
+                unknown = sql_query.execute(path, {'query': c['unknown_membership_query'], 'returns': 'patient_set'}, patient_ids=c['population'])
+                if unknown['truncated']: raise ValueError('Unresolved population exceeds the complete-output bound')
+                value = Membership(universe, selected_ids, set(unknown['patient_ids']) - selected_ids)
+                detail['request_id'] = c['id']
+            elif op == 'cohort':
                 try:
                     selected = cohorts.select(path, params['specification'])
                 except grounding.GroundingError as exc:

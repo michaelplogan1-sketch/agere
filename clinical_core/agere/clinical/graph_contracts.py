@@ -7,7 +7,7 @@ The runtime validators remain authoritative for dates, bounds and source meaning
 import copy
 
 VERSION = 'graph-operator-contracts/20'
-SET_OPS = {'cohort', 'evidence', 'intersect', 'union', 'difference', 'sequence',
+SET_OPS = {'cohort', 'query_population', 'evidence', 'intersect', 'union', 'difference', 'sequence',
            'interpretation', 'source_state', 'pre_event_state', 'requirements', 'outcome',
            'protocol_review', 'program_document', 'functional_review', 'domain_review', 'appointment_followthrough'}
 WORK_SUPPORT = ('accountability_review', 'program_acquisition', 'measure_review')
@@ -82,7 +82,7 @@ def input_contract(op):
         return {'count': [0, 0], 'type': 'membership', 'output': 'report'}
     if op == 'pathway':  # optional population; no population = everyone
         return {'count': [0, 1], 'type': 'membership', 'output': 'report'}
-    lo, hi = ((0, 0) if op in ('cohort', 'evidence') else
+    lo, hi = ((0, 0) if op in ('cohort', 'query_population', 'evidence') else
               (2, 2) if op == 'difference' else
               (2, 10) if op in ('intersect', 'union') else
               (0, 1) if op in ('sql', 'vbc', 'program_effect', 'outreach', 'monitor', 'demand', 'profile', 'calibration') + OPTIONAL_POPULATION else (1, 10) if op == 'reference_review' else (3, 10) if op == 'compare' else (1, 4) if op == 'worklist' else (1, 1))

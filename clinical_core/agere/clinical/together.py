@@ -719,6 +719,11 @@ def _compose_plan(stack, question, *, planning='auto', program_kind=None):
 
 
 def compose_together(stack, question, *, planning='auto', answer_type=None):
+    from .shared_planner import compose
+    return compose(stack, question)
+
+
+def legacy_compose_together(stack, question, *, planning='auto', answer_type=None):
     """Stack.compose for AGERE_TOGETHER=on: see the module docstring. A plan request (answer_type 'plan', or a question
     asking to create a plan / enroll / route patients) computes its cohort here and routes it (_compose_plan)."""
     from .question_input import validate_question
