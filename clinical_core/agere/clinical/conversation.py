@@ -685,7 +685,9 @@ def handle_compose(stack, body, hosted_factory=None):
                                 None if usage.get('api_cost_known') is False else usage.get('known_api_estimate_usd', 0)+hosted_usd)
         if conv is not False:
             fallback = resolution or {'standalone': ' '.join(question.split()), 'method': 'unresolved', 'edits': [], 'frame': None}
-            record(stack.path, conv, question, fallback, error=f'{type(exc).__name__}: {exc}')
+            record(stack.path, conv, question, fallback,
+                   plan_summary={'route': 'shared_planner', **usage} if usage else None,
+                   answer_summary=failed, error=f'{type(exc).__name__}: {exc}')
             if resolution and resolution['follow_up'] and isinstance(exc, (ValueError, PermissionError, RuntimeError)):
                 # The user must see what was attempted even when it was not answered.
                 exc.args = (f'Resolved question: "{resolution["standalone"]}". {exc}',)

@@ -129,6 +129,13 @@ class Correctness(unittest.TestCase):
         answer = S.engine_answer({}, {'answer': {'status': 'answered', 'answer_type': 'value', 'value': 4}}, ['A','B'])
         self.assertEqual(answer['patient_ids'], [])
         self.assertFalse(answer['actionable_cohort'])
+        for q in ('Average age of patients', 'Total allowed_cents for claims in 2029'):
+            result = self.ask(q)
+            self.assertFalse(result['answer']['actionable_cohort'])
+            context = A.capture(self.path, q, result)
+            with self.assertRaisesRegex(ValueError, 'analytical summary'):
+                A.create_work(self.path, {'context_id': context['id'], 'program': 'custom',
+                                         'patient_ids': ['A'], 'owner': 'fixture', 'note': ''})
 
     def test_registered_definitions_cannot_be_model_rewritten(self):
         request = L.parse(self.catalog, 'denial rate 2029')

@@ -155,6 +155,15 @@ class RequestDiscovery(unittest.TestCase):
         self.assertEqual(len(result['evidence_discovery']), 1)
         self.assertEqual(result['planning_economics']['known_api_estimate_usd'], .01)
         self.assertIsNone(result['planning_economics']['new_api_estimate_usd'])
+        calls.clear()
+        self.stack.compose = lambda q: S.compose(self.stack, q, model=model)
+        with self.assertRaises(QuestionNotUnderstood):
+            conversation.handle_compose(self.stack, {'question': 'Inspect received notes', 'conversation_id': 'discovery-failure'})
+        with sqlite3.connect(self.path/'conversations.sqlite3') as db:
+            saved = json.loads(db.execute('SELECT answer_summary FROM turns WHERE conversation_id=?',
+                                         ('discovery-failure',)).fetchone()[0])
+        self.assertEqual(len(saved['evidence_discovery']), 6)
+        self.assertFalse(saved['data_absence_established'])
 
     def test_discovery_composes_and_saves_three_distinct_domains(self):
         cases = [

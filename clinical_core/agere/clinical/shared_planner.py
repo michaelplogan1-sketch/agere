@@ -560,10 +560,11 @@ def execute_contract(stack, question, graph, receipt, *, population=None, parent
         limitations += old.get('limitations') or []
     if report['truncated'] or (membership and membership['truncated']) or (unknown and unknown['truncated']): issues.append('Result exceeds the complete-output bound; incomplete membership cannot create work.')
     ids = membership.get('patient_ids', []) if membership else []
+    summarized = any(s['kind'] in ('avg', 'sum', 'min', 'max') for s in contract['request']['select'])
     answer = {'status': 'partial' if partial else 'answered', 'answer_type': report['returns'],
               'missing': issues, 'limitations': list(dict.fromkeys(limitations)), 'patient_ids': ids,
               'unknown_patient_ids': unknown_ids, 'unknown_count': len(unknown_ids),
-              'actionable_cohort': bool(ids) and not partial, 'query_evidence': {'query': report['query'], 'source_identity': contract['source_identity']},
+              'actionable_cohort': bool(ids) and not partial and not summarized, 'query_evidence': {'query': report['query'], 'source_identity': contract['source_identity']},
               'request_id': contract['id'], 'scope': 'Observed warehouse query; clinical execution is not authorized.'}
     if interpretation.get('discovery'):
         answer['evidence_discovery'] = interpretation['discovery']
