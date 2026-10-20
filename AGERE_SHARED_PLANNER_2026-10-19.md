@@ -47,3 +47,7 @@ Deployed source: c706f5fd0bb99f87bc7a72a2c675bbbb548c8be5 in /Users/mikel/agere-
 The configured frontier interpreter is wired to propose the same request contract, with bounded attempts, the existing provider ledger and per-request known API usage. It has not been called or validated. Mike's earlier no-additional-spending statement is being honored conservatively. An explicit question asking whether a bounded frontier validation is allowed is pending; silence is not authorization. Do not turn hosted calls on until that is resolved.
 
 G3 remains active, G5 blocked, full acceptance false. Next: qualify a capable general language interpreter against independent unseen compositions and constraint mutations, including original clinical/temporal requirements and registered-engine selection. Then assess the remaining source reconciliation, complete prospective economics and broad workflow acceptance. No new disease-specific shortcut or one-question route should substitute for that work. Preserve the entire ten-area charter and the restriction on unvalidated benchmark runs.
+
+## 2026-10-20 spending correction
+
+Mike clarified that the no-additional-spending comment was not a product restriction. Hosted validation and product execution are authorized. The pending-approval paragraph above is historical and superseded; the recorded zero-call delivery remains accurate.

@@ -1,7 +1,7 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-10-20T01:58:29.034317+00:00",
-  "decision_basis": "AGERE_SHARED_PLANNER_2026-10-19.md",
+  "updated_at": "2026-10-20T10:39:08.377727+00:00",
+  "decision_basis": "AGERE_SHARED_FRONTIER_2026-10-20.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
     "AGENTS.md",
@@ -233,6 +233,10 @@
         {
           "path": "artifacts/agere-shared-planner-v1/implementation-receipt.json",
           "sha256": "47d9b325b8fcc0d141a7989c2ae4f8462ac0239f95887dd35328be319ca962f7"
+        },
+        {
+          "path": "artifacts/agere-shared-frontier-v1/implementation-receipt.json",
+          "sha256": "56e3eff977cddc0eca22983557652b1740019341b60abc1a4839fa53c8495ed8"
         }
       ]
     },
@@ -290,15 +294,15 @@
     "kind": "manual_turn_checkpoint",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "One shared source-bound request compiler now connects new relational combinations, existing analytical engines and exact saved-cohort edits to the local UI and action workspace.",
-    "measured_failure_reduction": "78 focused tests pass; duplicate evidence, mixed predicates, exact follow-up scope, grouped-result membership and conversation metadata checked. Live API 230 -> 114 -> same 114 grouping; new complete question independent. Local Qwen semantic failures retained and refused; one correct unfamiliar breakdown remains partial. Zero paid API calls.",
+    "user_behavior_delta": "New natural-language questions use checked frontier interpretation; relational queries and existing analytical engines preserve the same contract, compound answers and exact selected cohorts through synthetic work.",
+    "measured_failure_reduction": "12/12 handwritten development cases; 4 automatic actual-engine paths; 86 regression tests; live new grouping matches direct SQL; compound answer has both analyses; ten selected patients remain ten in work and mockup.",
     "evidence": [
-      "AGERE_SHARED_PLANNER_2026-10-19.md",
-      "artifacts/agere-shared-planner-v1/implementation-receipt.json"
+      "AGERE_SHARED_FRONTIER_2026-10-20.md",
+      "artifacts/agere-shared-frontier-v1/implementation-receipt.json"
     ],
-    "remaining_gap": "Unfamiliar language interpretation, clinical/temporal reconciliation and independent complete-stack qualification remain incomplete. Hosted validation permission pending.",
-    "next_action": "Resolve the pending hosted-validation spending decision. Qualify a capable generic interpreter on independent unseen cross-domain compositions and constraint mutations through the shared request contract; keep unqualified proposals partial and reject missing constraints. Validate registered-engine selection and original clinical/temporal requirements. Do not add question-specific handlers, enable paid calls without authorization, or run unvalidated benchmarks.",
-    "next": "General language qualification through the shared compiler; no more isolated question handlers."
+    "remaining_gap": "Current clinical/temporal reconciliation and independent complete-stack qualification remain incomplete.",
+    "next_action": "Close remaining clinical/time/evidence interpretation gaps through shared primitives and existing engines, with constraint mutations and end-to-end saved-work checks. Preserve explicit unknowns and the full ten-area charter. Hosted execution is authorized; no per-question handlers or unvalidated benchmarks.",
+    "next": "Shared clinical/time semantics and complete workflow acceptance; independent qualification remains separate."
   },
   "decisions": [
     {
@@ -875,6 +879,19 @@
       "change": "One shared source-bound request compiler now connects new relational combinations, existing analytical engines and exact saved-cohort edits to the local UI and action workspace.",
       "scope_impact": "Full ten-area charter retained. Default question authorities consolidated, existing analytical/action tools retained. General language and clinical qualification remain incomplete; no full gate promotion or paid API calls.",
       "evidence": "AGERE_SHARED_PLANNER_2026-10-19.md"
+    },
+    {
+      "at": "2026-10-20T10:15:45.547466+00:00",
+      "basis": "Mike: i never said no additional spending, it just needs to be using the best way to answer a question.",
+      "change": "Correct mistaken image-cost carryover. Hosted model validation and product execution authorized with existing usage accounting; no assistant-selected cap. Prioritize complete deterministic interpretation, then the capable configured interpreter.",
+      "scope_impact": "No narrowing of ten-area charter; no clinical/model qualification or benchmark approval implied."
+    },
+    {
+      "at": "2026-10-20T10:39:08.377727+00:00",
+      "basis": "Actual frontier interpretation diagnostics, independent fixture arithmetic, automatic engine selection and live synthetic question-to-work checks.",
+      "change": "Activate checked hosted interpretation for unfamiliar questions; retain deterministic and exact-cache zero-call paths, original constraints, all analytical outputs and selected subsets. Separate engineering acceptance from independent model/clinical qualification.",
+      "scope_impact": "All ten areas retained; G3 active, G5 blocked, full acceptance false. No protected benchmark or real care execution.",
+      "evidence": "artifacts/agere-shared-frontier-v1/implementation-receipt.json"
     }
   ]
 }

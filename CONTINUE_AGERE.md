@@ -1,3 +1,5 @@
+> Spending correction, 2026-10-20: Mike explicitly authorizes the best capable question-answering path, including hosted models. Earlier pending-permission/no-paid-call statements below are superseded. Usage accounting and benchmark restrictions remain.
+
 # Continue Agere
 
 The owner is Codex under Mike's October 19 handoff (BUILD_OWNER.json). Work on
@@ -12,7 +14,7 @@ answers once reconciled. Gold 10 is validated but too small for a general superi
 The live service on :8885 runs from /Users/mikel/agere-mvp-run. Inspect its actual
 process and revision before updating; retain a known-good recovery commit.
 
-Current verified service policy: :8885 runs the shared request compiler from c706f5f with hosted calls disabled. Read AGERE_SHARED_PLANNER_2026-10-19.md and the current checkpoint. Competing default answer paths are retired; existing engines and saved work remain connected. The general MVP is incomplete because unfamiliar-language/clinical qualification remains unresolved. A bounded frontier-validation spending question is pending; do not interpret silence as permission. No new per-question or HF-specific handler.
+Current verified service policy: :8885 runs 48c39e3 with checked hosted interpretation enabled. Read AGERE_SHARED_FRONTIER_2026-10-20.md and the current checkpoint. Complete grammar and exact-source caches remain zero-call paths; unfamiliar questions use the configured frontier model through the same compiler. Multiple analytical outputs and exact selected worklists are preserved. Current clinical/temporal reconciliation and independent full-stack qualification remain unfinished. No additional spending approval is pending.
 
 The remaining notes are historical architecture context, not current run instructions.
 
