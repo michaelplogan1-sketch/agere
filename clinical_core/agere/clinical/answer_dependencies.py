@@ -36,7 +36,9 @@ def validate(path, context, *, source, policy, check_probes=False):
     used = ((context.get('planner_receipt') or {}).get('interpretation') or {}).get('procedural_memory')
     if used:
         from . import procedural_memory
-        if used.get('identity') != procedural_memory.identity(path, context['question'], probe=check_probes):
+        contract = (context.get('planner_receipt') or {}).get('request_contract') or {}
+        if ('population' not in contract or used.get('identity') != procedural_memory.identity(
+                path, context['question'], probe=check_probes, population=contract.get('population'))):
             derivation = False
             issues.append('A procedural lesson used by this answer is no longer applicable; re-evaluate the original question.')
     observation = context.get('source') == source

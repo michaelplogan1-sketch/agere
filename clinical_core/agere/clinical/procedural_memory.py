@@ -45,6 +45,13 @@ def _family(question):
     return family(question)
 
 
+def _population(population):
+    if population is None: return None
+    if not isinstance(population, (list, tuple, set, frozenset)) or any(not isinstance(p, str) or not p for p in population):
+        raise ValueError('Population must be an explicit set of received patient IDs, or None for the whole warehouse')
+    return sorted(set(population))
+
+
 def records(path):
     """Read without creating or migrating a store on ordinary planner requests."""
     target = Path(path)/'learning.sqlite3'
@@ -72,6 +79,7 @@ def propose(path, context_id, instruction, *, probes, required_fields=None, supe
     if (not context.get('dependencies') or seal(path, context)['derivation'] != context['dependencies']['derivation']
             or not (context.get('planner_receipt') or {}).get('request_contract')):
         raise ValueError('An intact saved execution trajectory is required')
+    population = _population(context['planner_receipt']['request_contract']['population'])
     if context['source'] != A.source_identity(path) or context.get('context_policy_identity') != S.policy_identity():
         raise ValueError('Re-establish the source trajectory under current data and planning definitions before proposing a lesson')
     if not isinstance(instruction, str) or not 1 <= len(instruction.strip()) <= 2000:
@@ -87,7 +95,7 @@ def propose(path, context_id, instruction, *, probes, required_fields=None, supe
             raise ValueError('Probe expectations must bind executed values, rows or patient IDs')
         sql_query.validate({k: probe[k] for k in ('query', 'returns')})
         from .general_analysis import _inspect
-        reads, _ = _inspect(catalog, probe['query'], None)
+        reads, _ = _inspect(catalog, probe['query'], population)
         if not reads:
             raise ValueError('A grounding probe must read received warehouse evidence')
         for table, columns in reads.items():
@@ -98,10 +106,12 @@ def propose(path, context_id, instruction, *, probes, required_fields=None, supe
         raise ValueError('Lesson preconditions must name received tables and columns')
     fields = {t: sorted(set(fields.get(t, [])) | probe_fields.get(t, set())) for t in set(fields) | set(probe_fields)}
     parent = next((r for r in records(path) if r['id'] == supersedes), None) if supersedes else None
-    if supersedes and (not parent or parent['family'] != _family(context['question'])):
-        raise ValueError('A revision must refer to an existing lesson for the same question family')
+    if supersedes and (not parent or parent['family'] != _family(context['question'])
+                       or 'population' not in parent or parent['population'] != population):
+        raise ValueError('A revision must refer to an existing lesson for the same question family and population')
     body = {'schema': VERSION, 'context_id': context_id, 'trajectory': context['dependencies']['derivation'],
             'question': context['question'], 'family': _family(context['question']), 'source': context['source'],
+            'population': population,
             'policy': context['context_policy_identity'], 'instruction': instruction.strip(),
             'required_fields': fields, 'probes': probes, 'supersedes': supersedes,
             'authority': 'Procedural suggestion grounded by declared source probes; not clinical approval'}
@@ -122,7 +132,8 @@ def _probe(path, lesson):
         remaining = deadline - time.monotonic()
         if remaining <= 0:
             raise ValueError('Procedural precondition probes exhausted their five-second budget')
-        result = sql_query.execute(path, {k: probe[k] for k in ('query', 'returns')}, target=target, time_limit=remaining)
+        result = sql_query.execute(path, {k: probe[k] for k in ('query', 'returns')}, target=target,
+                                   patient_ids=lesson['population'], time_limit=remaining)
         if result.get('truncated') or any(result.get(k) != v for k, v in probe['expected'].items()):
             raise ValueError('A declared read-only source probe no longer matches: ' + probe['query'])
         result = {k: result.get(k) for k in probe['expected']}
@@ -156,11 +167,13 @@ def ground(path, lesson_id):
     return lesson_id
 
 
-def select(path, question, *, catalog=None, probe=False):
+def select(path, question, *, catalog=None, probe=False, population=None):
     from ..deliverables import answer_context as A
     from . import shared_planner as S, learning
     from .answer_dependencies import wal_identity
-    rows = [r for r in records(path) if r['status'] == 'active' and r['family'] == _family(question)]
+    population = _population(population)
+    rows = [r for r in records(path) if r['status'] == 'active' and r['family'] == _family(question)
+            and 'population' in r and r['population'] == population]
     if not rows: return []
     catalog = catalog or Catalog.load(path)
     source, policy, feedback = A.source_identity(path), S.policy_identity(), learning.feedback_identity(path, question)
@@ -180,8 +193,8 @@ def select(path, question, *, catalog=None, probe=False):
     return eligible[:3]
 
 
-def identity(path, question, *, catalog=None, probe=False):
-    return fingerprint([r['id'] for r in select(path, question, catalog=catalog, probe=probe)])
+def identity(path, question, *, catalog=None, probe=False, population=None):
+    return fingerprint([r['id'] for r in select(path, question, catalog=catalog, probe=probe, population=population)])
 
 
 def begin_use(path, question, lessons):

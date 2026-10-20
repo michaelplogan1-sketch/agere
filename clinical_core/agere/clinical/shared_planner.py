@@ -390,7 +390,7 @@ def checked_interpret(*args, **kwargs):
 def interpret(catalog, question, *, population=None, model=None, force_model=False, use_memory=True):
     from . import procedural_memory as memory
     path = Path(catalog.target).parent
-    lessons = memory.select(path, question, catalog=catalog, probe=True) if use_memory and model is not None else []
+    lessons = memory.select(path, question, catalog=catalog, probe=True, population=population) if use_memory and model is not None else []
     guided = memory.GuidedModel(model, path, question, lessons) if lessons else None
     try:
         contract, interpretation = _interpret(catalog, question, population=population,
@@ -593,7 +593,7 @@ def plan(stack, question, ledger=None, frontier=None, *, population=None, model=
     hosted_model = os.environ.get('AGERE_SHARED_INTERPRETER_MODEL', PersistentGateway.MODELS['claude'])
     code = policy_identity()
     from . import procedural_memory as memory
-    request_lessons = memory.select(stack.path, question, catalog=catalog, probe=True)
+    request_lessons = memory.select(stack.path, question, catalog=catalog, probe=True, population=population)
     memory_identity = request_plan.fingerprint([r['id'] for r in request_lessons])
     key = request_plan.fingerprint({'question': question, 'population': population, 'source': catalog.identity,
                                     'tables': catalog.tables, 'stream_fields': catalog.stream_fields, 'code': code,

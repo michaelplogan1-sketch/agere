@@ -116,5 +116,37 @@ class ProceduralMemory(unittest.TestCase):
         target.write_text(json.dumps(data))
         with self.assertRaisesRegex(ValueError, 'intact saved'): self.proposal(instruction='From a tampered trace')
 
+    def test_lessons_are_bound_to_exact_input_population_including_empty_scope(self):
+        result = S.compose(self.stack, Q, population=['B', 'A'])
+        self.context = A.capture(self.path, Q, result)['id']
+        lesson = self.proposal(); M.ground(self.path, lesson)
+        self.assertEqual([r['id'] for r in M.select(self.path, Q, population={'A', 'B'})], [lesson])
+        for scope in (None, [], ['A'], ['B'], ['A', 'OUTSIDE']):
+            with self.subTest(scope=scope):
+                self.assertEqual(M.select(self.path, Q, population=scope), [])
+                other = S.compose(self.stack, Q, population=scope)
+                self.assertNotIn('procedural_memory', other['planner_receipt']['interpretation'])
+        same = S.compose(self.stack, Q, population=['A', 'B'])
+        self.assertEqual(same['planner_receipt']['interpretation']['procedural_memory']['lesson_ids'], [lesson])
+        key = A.capture(self.path, Q, same)['id']
+        self.assertFalse(A.load(self.path, key, current=True)['invalidated'])
+        empty = S.compose(self.stack, Q, population=[])
+        self.context = A.capture(self.path, Q, empty)['id']
+        empty_lesson = self.proposal(); M.ground(self.path, empty_lesson)
+        self.assertEqual([r['id'] for r in M.select(self.path, Q, population=[])], [empty_lesson])
+        self.assertEqual(M.select(self.path, Q, population=None), [])
+
+    def test_subset_grounding_probe_can_use_bound_population_and_revision_cannot_broaden(self):
+        result = S.compose(self.stack, Q, population=['A'])
+        self.context = A.capture(self.path, Q, result)['id']
+        lesson = M.propose(self.path, self.context, 'Retain the saved population before counting events.',
+                           probes=[{'query': 'SELECT COUNT(*) AS n FROM patient WHERE patient_id IN (SELECT patient_id FROM population)',
+                                    'returns': 'count', 'expected': {'value': 1}}])
+        M.ground(self.path, lesson)
+        self.assertEqual(M.select(self.path, Q, population=['A'], probe=True)[0]['id'], lesson)
+        self.context = A.capture(self.path, Q, S.compose(self.stack, Q))['id']
+        with self.assertRaisesRegex(ValueError, 'same question family and population'):
+            self.proposal(supersedes=lesson)
+
 
 if __name__ == '__main__': unittest.main()
