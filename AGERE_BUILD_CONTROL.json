@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-10-20T22:39:52.351851+00:00",
+  "updated_at": "2026-10-20T23:08:33.175483+00:00",
   "decision_basis": "AGERE_SHARED_FRONTIER_2026-10-20.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -269,6 +269,10 @@
         {
           "path": "artifacts/agere-learning-safety-v1/implementation-receipt.json",
           "sha256": "73c8367bc5a90529ad270564bff18334823578d56a7aaaab9f14061a992b552e"
+        },
+        {
+          "path": "artifacts/agere-economics-integration-v1/implementation-receipt.json",
+          "sha256": "691ae6f84da959342c006056b5ded605df341cb5b8e58c4ac20ee0ab48f869b3"
         }
       ]
     },
@@ -326,29 +330,28 @@
     "kind": "sealed_workflow_increment",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "Checked parameter reuse, correction-driven suspension/revalidation, source-coverage-aware interpretation, executed requirement and stale-dependency checks, grounded population-bound procedural memory and explicit failed-brief recovery.",
-    "measured_failure_reduction": "Seven of nine provider totals repaired; unsafe numeric replacement and correction bypass removed; unused SQL requirements and stale derivations rejected; failed live workflow recovered; terminal-year punctuation no longer blocks grounded lesson reuse.",
+    "user_behavior_delta": "Cited program/year rule corrections, suspension and fresh revalidation; financial scenario answer, generated brief and manual monitor with explicit payment direction and source assumptions.",
+    "measured_failure_reduction": "Failed original scenario now completes; percentage-to-fraction binding and repair preserve engine parameters; suspended lessons cannot restore old cache entries; review includes actual engine eligibility and named-program semantics; uncapped legacy transport no longer raises a None comparison error.",
     "evidence": [
-      "artifacts/agere-learning-safety-v1/implementation-receipt.json",
-      "docs/agere/LEARNING_SAFETY_2026-10-20.md",
-      "artifacts/agere-learning-safety-v1/acceptance-checks.json",
-      "artifacts/agere-learning-safety-v1/source-scope-checks.json",
-      "artifacts/agere-learning-safety-v1/access-live-dependencies-checks.json"
+      "artifacts/agere-economics-integration-v1/implementation-receipt.json",
+      "docs/agere/ECONOMICS_INTEGRATION_2026-10-20.md",
+      "artifacts/agere-economics-integration-v1/correction-cycle-checks.json",
+      "artifacts/agere-economics-integration-v1/live-checks.json"
     ],
-    "remaining_gap": "Original clinical request remains partial: unresolved dose/barrier/current-state interpretation and full EF-based population qualification; zero enrollment tasks.; Access answer uses disclosed outcome=no_show (22) rather than predeclared latest final_status=no_show (21); strict reference miss retained.; Compilation participation is not semantic sufficiency; same-model review is not independent clinical qualification.; Clinical attempt 365.86 seconds / 11 calls; new workflow latency remains material.; Generated-view meaning qualification (including planned versus current workflow state), manual monitoring, broad procedural/prompt qualification and full ten-area acceptance remain incomplete.; The credit interruption is resolved and explicit retries succeeded. Original failed-call cost remains incomplete; no finite total-spend claim is made.",
-    "next_action": "G3: integrate the frozen healthcare-economics candidate after its exact receipt and workflow checks; resolve shared temporal/current-state and dose/barrier interpretation with versioned source/rule contracts. Exercise admission, access/social, provider/financial and ACO/VBC compositions; retain generated-view runtime/meaning qualification, latency and independent G5 acceptance.",
-    "next": "G3: integrate the frozen healthcare-economics candidate after its exact receipt and workflow checks; resolve shared temporal/current-state and dose/barrier interpretation with versioned source/rule contracts. Exercise admission, access/social, provider/financial and ACO/VBC compositions; retain generated-view runtime/meaning qualification, latency and independent G5 acceptance.",
+    "remaining_gap": "G3 general temporal/current-state composition, dose/barrier interpretation and conditional work remain incomplete; G5 and all-ten-area acceptance are not complete.; The engine uses completion-adjusted medical and pharmacy allowed costs with a coverage fallback. Scenario arithmetic is not official CMS Parts A/B reconciliation, actuarial qualification, attribution certification or entitlement.; Gross expenditure is derived from rounded PMPM; independent reference validates exposed settlement arithmetic and member-months, not complete expenditure reconciliation.; Full generated workflow latency remains high; same-model review is not independent qualification.; Static artifact verification accepted a generated JavaScript path error. A metered versioned revision repaired this instance and browser checks verified rendering, but automatic runtime validation remains incomplete. Frozen brief workflow status can describe generation-time planned state rather than the current monitor.; The generic savings_pct warning still incorrectly assumes a bounded positive percent, and the data table exposes a ratio while the overview formats percent. Zero saved patient scope is unhelpful on aggregate financial answers. Generated-view meaning and usability qualification remain open.; The prior access reference miss (historical no-show versus latest final status), clinical partial result and frozen generated-view state wording remain in the preceding release evidence.",
+    "next_action": "G3: resolve shared temporal/current-state semantics, starting with historical no-show versus latest final appointment status and current medication/dose/barrier interpretation; verify complete populations and conditional work across admission, access/social, provider/financial and ACO/VBC questions. Add generated-view runtime/meaning acceptance and reduce fresh-workflow latency before independent G5 qualification.",
+    "next": "G3: resolve shared temporal/current-state semantics, starting with historical no-show versus latest final appointment status and current medication/dose/barrier interpretation; verify complete populations and conditional work across admission, access/social, provider/financial and ACO/VBC questions. Add generated-view runtime/meaning acceptance and reduce fresh-workflow latency before independent G5 qualification.",
     "latest_review": {
-      "at": "2026-10-20T22:39:52.351851+00:00",
-      "kind": "Owner development/API/browser checks plus frozen user-authorized candidate integration; not independent clinical qualification",
-      "report": "docs/agere/LEARNING_SAFETY_2026-10-20.md",
+      "at": "2026-10-20T23:08:33.175483+00:00",
+      "kind": "Owner development/provider/API/browser checks and frozen candidate integration; not independent clinical/actuarial qualification",
+      "report": "docs/agere/ECONOMICS_INTEGRATION_2026-10-20.md",
       "evidence": [
-        "artifacts/agere-learning-safety-v1/implementation-receipt.json"
+        "artifacts/agere-economics-integration-v1/implementation-receipt.json"
       ]
     },
     "coordination": {
       "integration_owner": "01a15af4-c150-76f2-9df2-a44c1428b70d",
-      "status": "Sole runtime/control owner; user-authorized isolated research candidate lane. Evidence/procedural candidates integrated; separate economics candidate pending exact receipt. No heartbeat."
+      "status": "Sole runtime/control owner. Human-authorized evidence/procedural and economics candidates integrated. No heartbeat."
     }
   },
   "decisions": [
@@ -1035,6 +1038,13 @@
       "basis": "Direct user continuation and verified cross-chat integration authority; 195 primary/frozen checks and actual source-scope, correction, learned reuse and connected work evidence.",
       "scope_impact": "All ten areas retained; G3 active, G5 blocked, full acceptance false. Continuous capture and validated structures are distinct from automatic model-weight training or clinical qualification.",
       "evidence": "artifacts/agere-learning-safety-v1/implementation-receipt.json"
+    },
+    {
+      "at": "2026-10-20T23:08:33.175483+00:00",
+      "decision": "Activate source-bound economics/correction release 8e84ac2 with rollback d6d9af7; retain failed, partial and generated-view repair evidence.",
+      "basis": "Direct continuation and verified cross-chat authority; 284-test working/frozen suite with documented missing-data skips, actual financial/correction workflow, independent arithmetic and browser inspection.",
+      "scope_impact": "All ten areas retained; G3 active, G5 blocked, full acceptance false. Source-checked memory does not establish model-weight training, clinical quality, actuarial suitability or payment entitlement.",
+      "evidence": "artifacts/agere-economics-integration-v1/implementation-receipt.json"
     }
   ],
   "decision_log": [
@@ -1078,6 +1088,13 @@
       "basis": "Direct user continuation and verified cross-chat integration authority; 195 primary/frozen checks and actual source-scope, correction, learned reuse and connected work evidence.",
       "scope_impact": "All ten areas retained; G3 active, G5 blocked, full acceptance false. Continuous capture and validated structures are distinct from automatic model-weight training or clinical qualification.",
       "evidence": "artifacts/agere-learning-safety-v1/implementation-receipt.json"
+    },
+    {
+      "at": "2026-10-20T23:08:33.175483+00:00",
+      "decision": "Activate source-bound economics/correction release 8e84ac2 with rollback d6d9af7; retain failed, partial and generated-view repair evidence.",
+      "basis": "Direct continuation and verified cross-chat authority; 284-test working/frozen suite with documented missing-data skips, actual financial/correction workflow, independent arithmetic and browser inspection.",
+      "scope_impact": "All ten areas retained; G3 active, G5 blocked, full acceptance false. Source-checked memory does not establish model-weight training, clinical quality, actuarial suitability or payment entitlement.",
+      "evidence": "artifacts/agere-economics-integration-v1/implementation-receipt.json"
     }
   ]
 }
