@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-10-20T12:23:06.726047+00:00",
+  "updated_at": "2026-10-20T12:46:59.381940+00:00",
   "decision_basis": "AGERE_SHARED_FRONTIER_2026-10-20.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -245,6 +245,10 @@
         {
           "path": "artifacts/agere-wisdom-design-v1/implementation-receipt.json",
           "sha256": "b0600f1d5a95e7dd90fcc96b688605a436787e3d9b729196cab83ff0f951a26f"
+        },
+        {
+          "path": "artifacts/agere-pronoun-routing-v1/implementation-receipt.json",
+          "sha256": "9bc48e3b1ed5b2f58987523fb1eba19d241e57809744dd3f226419fd52b5b845"
         }
       ]
     },
@@ -302,13 +306,13 @@
     "kind": "manual_turn_checkpoint",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "Data \u2192 Information \u2192 Intelligence \u2192 Wisdom is an interactive navigation system; consistent desktop/mobile source, question, analysis and synthetic action experiences. Missing-first-group charts now retain every category.",
-    "measured_failure_reduction": "27 focused tests pass. A null first group no longer suppresses the nine-group operations chart; deployed search retains 1/9 rows and count 457. Stage navigation, exact saved contexts and 390px no-overflow layout verified.",
+    "user_behavior_delta": "Complete questions with a named population and linked pronouns reach the shared planner unchanged; explicit saved contexts and missing-context protections remain.",
+    "measured_failure_reduction": "80 focused regressions pass. Exact MSK screenshot request now reaches shared planning as standalone; live 230-patient saved follow-up and 4,115-patient warehouse count remain distinct.",
     "evidence": [
-      "AGERE_WISDOM_DESIGN_2026-10-20.md",
-      "artifacts/agere-wisdom-design-v1/implementation-receipt.json"
+      "AGERE_PRONOUN_ROUTING_2026-10-20.md",
+      "artifacts/agere-pronoun-routing-v1/implementation-receipt.json"
     ],
-    "remaining_gap": "General question interpretation, clinical/time/evidence reconciliation and independent full-stack qualification remain incomplete.",
+    "remaining_gap": "The combined eligibility, synthetic-agent creation and monitoring request remains unsupported by the current read-only shared query language. Reported catalog gaps are not evidence of warehouse-wide data absence. General context resolution, clinical/time/evidence reconciliation and independent full-stack qualification remain incomplete.",
     "next_action": "Close G3 through general context resolution and typed question/analysis/synthetic-action/monitoring composition; strengthen semantic constraint coverage and ambiguous Boolean scope. Demonstrate whole-warehouse cases across claims, admissions/readmissions, access, providers and contracts while preserving exact saved populations. Retain clinical/time/evidence reconciliation and independent qualification; no per-question handlers or unvalidated benchmarks.",
     "next": "Whole-warehouse shared planning and complete workflow acceptance; independent qualification remains separate.",
     "latest_review": {
@@ -938,6 +942,13 @@
       "change": "Record actual routing and remaining gaps; completed metered Claude source review and independently reproduced two compiler weaknesses. Prioritize generic context, compound intent and constraint checks within current G3.",
       "scope_impact": "Review only; no product code or deployment change. All ten areas retained, G3 active, G5 blocked, full_queue_acceptance false. Synthetic agents remain synthetic.",
       "evidence": "AGERE_CTO_REVIEW_2026-10-20.md"
+    },
+    {
+      "at": "2026-10-20T12:46:59.381940+00:00",
+      "basis": "Mike reported the MSK ACCESS missing-cohort error and explicitly requested its repair.",
+      "change": "Repair standalone pronoun routing and activate verified source 96dfe3f. Replay the exact request; record the separate unsupported action/monitoring composition instead of claiming end-to-end completion.",
+      "scope_impact": "Full ten-area charter retained; G3 active and G5 blocked. No protected benchmark, real enrollment, contact or care execution.",
+      "evidence": "artifacts/agere-pronoun-routing-v1/implementation-receipt.json"
     }
   ]
 }
