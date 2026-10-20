@@ -14,7 +14,9 @@ VERSION = 'request-discovery/1'
 
 
 def tokens(text):
-    return set(re.findall(r'[a-z0-9]+', str(text).lower().replace('_', ' ')))
+    words = re.findall(r'[a-z0-9]+', str(text).lower().replace('_', ' '))
+    return {w[:-1] if len(w) > 4 and w.endswith('s') and not w.endswith('ss') else w
+            for w in words if len(w) > 2}
 
 
 def search(catalog, terms, *, limit=20):
@@ -25,25 +27,46 @@ def search(catalog, terms, *, limit=20):
         raise PlanError('Discovery needs 1..8 bounded literal search terms')
     wanted = tokens(' '.join(terms))
     candidates = []
+    def matches(text):
+        available = tokens(text)
+        exact = wanted & available
+        # Candidate expansion only, never a semantic equivalence or SQL filter.
+        related = {w for w in wanted if len(w) >= 6 and any(
+            len(a) >= 6 and a[:4] == w[:4] for a in available)}
+        return exact, related - exact
     for table, columns in catalog.tables.items():
-        fields = [c for c in columns if wanted & tokens(c)]
-        overlap = wanted & tokens(table + ' ' + ' '.join(columns) + ' ' + SCHEMA_DOC.get(table, ''))
-        if overlap:
+        fields = [c for c in columns if any(matches(c))]
+        overlap, related = matches(table + ' ' + ' '.join(columns) + ' ' + SCHEMA_DOC.get(table, ''))
+        if overlap or related:
             candidates.append({'kind': 'relation', 'name': table, 'fields': fields[:24],
-                               'score': len(overlap), 'matched_terms': sorted(overlap)})
+                               'score': 2 * len(overlap) + len(related), 'matched_terms': sorted(overlap),
+                               'approximate_terms': sorted(related)})
+    profile = getattr(catalog, 'profile', {})
+    observed_streams = profile.get('streams', {}) if profile.get('source_digest') == catalog.identity.get('source_digest') else {}
+    value_fields = []
     for stream, columns in catalog.stream_fields.items():
-        overlap = wanted & tokens(stream + ' ' + ' '.join(columns))
-        if overlap:
+        profile_fields = observed_streams.get(stream, {}).get('fields', {})
+        values = {}
+        for column in columns:
+            observed = profile_fields.get(column, {}).get('values', {})
+            if isinstance(observed, dict) and 0 < len(observed) <= 64:
+                values[column] = ' '.join(str(v) for v in observed if len(str(v)) <= 160)
+                value_fields.append(stream + '.' + column)
+        overlap, related = matches(stream + ' ' + ' '.join(columns) + ' ' + ' '.join(values.values()))
+        if overlap or related:
             candidates.append({'kind': 'received_stream', 'name': stream,
-                               'fields': [c for c in columns if wanted & tokens(c)][:24],
-                               'score': len(overlap), 'matched_terms': sorted(overlap)})
+                               'fields': [c for c in columns if any(matches(c+' '+values.get(c, '')))][:24],
+                               'profile_value_fields': [c for c, text in values.items() if any(matches(text))][:24],
+                               'score': 2 * len(overlap) + len(related), 'matched_terms': sorted(overlap),
+                               'approximate_terms': sorted(related)})
     candidates.sort(key=lambda x: (-x['score'], x['kind'], x['name']))
     return {'version': VERSION, 'source_identity': catalog.identity, 'terms': terms,
             'candidates': candidates[:limit], 'candidate_count': len(candidates),
             'truncated': len(candidates) > limit, 'catalog_scan_complete': True,
-            'searched': {'relations': sorted(catalog.tables), 'streams': sorted(catalog.stream_fields)},
+            'searched': {'relations': sorted(catalog.tables), 'streams': sorted(catalog.stream_fields),
+                         'bounded_profile_value_fields': sorted(value_fields)},
             'record_search_performed': False, 'data_absence_established': False,
-            'limitation': 'Lexical metadata candidates only. No match does not establish missing data; request schemas or bounded field probes.'}
+            'limitation': 'Lexical/approximate metadata and bounded current-profile value candidates only, not semantic equivalence. No match does not establish missing data; request schemas or bounded field probes.'}
 
 
 def describe(catalog, tables, streams=()):
@@ -204,3 +227,44 @@ def run(catalog, request, *, population=None):
             raise PlanError('Choose 1..3 bounded evidence probes')
         out['probes'] = [probe(catalog, p, population=population) for p in probes]
     return out
+
+
+def prompt_view(receipts, *, max_bytes=12000):
+    """Compact model view; complete source identities and queries stay in receipts.
+
+    Older detail may be omitted to bound the tool loop. That omission is explicit,
+    and cannot establish completeness or absence.
+    """
+    projected = []
+    for receipt in receipts:
+        item = {}
+        for key, entries in receipt.items():
+            many = entries if isinstance(entries, list) else [entries]
+            compact = []
+            for entry in many:
+                view = {k: v for k, v in entry.items()
+                        if k not in ('source_identity', 'query', 'searched', 'elapsed_seconds')}
+                identity = entry['source_identity']
+                view['source_identity'] = {k: identity.get(k) for k in ('source_digest', 'version', 'as_of')}
+                view['source_identity']['fingerprint'] = fingerprint(identity)
+                if 'searched' in entry:
+                    view['searched'] = {k + '_count': len(v) for k, v in entry['searched'].items()}
+                    view['searched']['catalog_fingerprint'] = fingerprint(entry['searched'])
+                view['receipt_id'] = entry.get('id') or fingerprint(entry)
+                compact.append(view)
+            item[key] = compact if isinstance(entries, list) else compact[0]
+        projected.append(item)
+    # Retain recent detail first; older requests/statuses remain inspectable.
+    for item in projected:
+        if len(json.dumps(projected, separators=(',', ':')).encode()) <= max_bytes:
+            break
+        for key, entries in item.items():
+            for entry in entries if isinstance(entries, list) else [entries]:
+                entry.pop('rows', None)
+                entry.pop('candidates', None)
+                entry['prompt_detail_omitted'] = 'Full observations retained in the saved receipt; omission proves no absence.'
+    if len(json.dumps(projected, separators=(',', ':')).encode()) > max_bytes:
+        return [{'receipt_fingerprint': fingerprint(r),
+                 'prompt_detail_omitted': 'Discovery detail exceeds prompt allowance; full evidence saved. Request narrower probes or leave interpretation unresolved.',
+                 'data_absence_established': False} for r in receipts]
+    return projected

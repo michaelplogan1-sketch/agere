@@ -391,6 +391,8 @@ def requires_saved_cohort(question):
     if antecedent is None:
         return True
     link = text[antecedent.end():reference.start()]
+    if reference.group() == 'their' and re.search(r'\b(?:have|has|are|were|with|without|attributed|assigned)\b', link):
+        return False
     # A noun alone is insufficient: "count claims for those patients" still
     # refers outside this question. Only recognize an explicit clause link.
     return not bool(re.search(r'\b(?:and|then|who|whose|that|where|whether|which)\b|[,;:]', link))

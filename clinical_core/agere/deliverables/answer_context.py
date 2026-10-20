@@ -178,6 +178,9 @@ def create_work(path, request):
     c = load(path, request['context_id'], current=True)
     if c['answer'].get('status') != 'answered' or c['answer'].get('missing'):
         raise ValueError('Resolve the incomplete answer before preparing program work')
+    if (c['answer'].get('actionable_cohort') is False or
+            any(n.get('operation') == 'governed_metric' for n in (c.get('graph') or {}).get('nodes', []))):
+        raise ValueError('This analytical summary does not select an action population; ask for the intended patient cohort.')
     program = request['program']
     if program not in PROGRAMS:
         raise ValueError('Unknown review program')

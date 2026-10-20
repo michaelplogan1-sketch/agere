@@ -67,7 +67,7 @@ class Correctness(unittest.TestCase):
             db.execute("INSERT INTO utilization_event VALUES('D','ed_visit','2029-02-01','claim',0)")
             db.execute("INSERT INTO utilization_event VALUES('D','ed_visit','2028-02-01','claim',0)")
         for noun in ('ED visits', 'ER visits', 'emergency visits'):
-            answer = self.ask(noun+' in 2029')['answer']
+            answer = self.ask('Count '+noun+' in 2029')['answer']
             self.assertEqual(answer['count'], 5)
             self.assertIn('D', answer['patient_ids'])
             self.assertEqual(answer['source_coverage']['events'], 5)
@@ -95,6 +95,40 @@ class Correctness(unittest.TestCase):
         self.assertEqual(self.ask('patients on a statin')['answer']['patient_ids'], ['A','B'])
         self.assertEqual(self.ask('patients on a statin in 2028')['answer']['patient_ids'], [])
         self.assertEqual(self.ask('patients with diabetes in 2029 excluding ckd')['answer']['patient_ids'], ['A','B'])
+
+    def test_problem_list_diagnoses_survive_unknown_normalization_flags(self):
+        with sqlite3.connect(self.catalog.target) as db:
+            db.execute('ALTER TABLE condition ADD COLUMN diagnosis_basis TEXT')
+            for concept in ('diabetes', 'chronic_kidney_disease', 'heart_failure'):
+                db.executemany('INSERT INTO condition VALUES(?,?,?,?,?)', [
+                    ('B', concept, None, '2029-01-01', 'ehr_problem_list'),
+                    ('D', concept, None, '2029-01-01', 'laboratory_evidence'),
+                    ('D', concept, 0, '2029-01-01', None)])
+        self.catalog = R.Catalog.load(self.path)
+        for name in ('diabetes', 'ckd', 'heart failure'):
+            answer = self.ask('List patients with '+name)['answer']
+            self.assertIn('B', answer['patient_ids'])
+            self.assertNotIn('D', answer['patient_ids'])
+            self.assertTrue(any('lab-inferred' in x for x in answer['limitations']))
+
+    def test_analytical_summaries_do_not_turn_inputs_into_action_lists(self):
+        from clinical_core.agere.deliverables import answer_context as A
+        for q in ('What was our no-show rate in 2029?',
+                  'Average length of stay by payer in 2029', 'PMPM by payer in 2029', 'ED visits in 2029'):
+            result = self.ask(q)
+            self.assertEqual(result['answer']['status'], 'answered')
+            self.assertFalse(result['answer']['actionable_cohort'])
+            self.assertEqual(result['answer']['patient_ids'], [])
+            self.assertEqual(result['answer']['analysis_population_count'], 5)
+            context = A.capture(self.path, q, result)
+            self.assertEqual(A.load(self.path, context['id'])['patient_ids'], [])
+            with self.assertRaisesRegex(ValueError, 'analytical summary'):
+                A.create_work(self.path, {'context_id': context['id'], 'program': 'custom',
+                                         'patient_ids': ['A'], 'owner': 'fixture', 'note': ''})
+        # No selected membership is not permission to substitute engine inputs.
+        answer = S.engine_answer({}, {'answer': {'status': 'answered', 'answer_type': 'value', 'value': 4}}, ['A','B'])
+        self.assertEqual(answer['patient_ids'], [])
+        self.assertFalse(answer['actionable_cohort'])
 
     def test_registered_definitions_cannot_be_model_rewritten(self):
         request = L.parse(self.catalog, 'denial rate 2029')

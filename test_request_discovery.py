@@ -31,7 +31,8 @@ class RequestDiscovery(unittest.TestCase):
                 CREATE TABLE note_fact(record_id TEXT,patient_id TEXT,concept TEXT);
             """)
         profile = {'source_digest': self.catalog.identity['source_digest'], 'streams': {
-            'intake': {'records': 3, 'fields': {'preference': {'populated': 3, 'types': {'text': 3}, 'distinct': 2}}},
+            'intake': {'records': 3, 'fields': {'preference': {'populated': 3, 'types': {'text': 3}, 'distinct': 2,
+                                                            'values': {'morning': 2, 'afternoon': 1}}}},
             'other_feed': {'records': 0, 'fields': {'different_field': {'populated': 0}}}}}
         (self.path/'source-profile.json').write_text(json.dumps(profile))
         self.catalog = R.Catalog.load(self.path)
@@ -47,6 +48,12 @@ class RequestDiscovery(unittest.TestCase):
         self.assertEqual(meta['relations']['remit_detail']['columns']['adjustment_cents']['unit'], 'cents')
         self.assertIn('missing extracted facts', meta['relations']['note_fact']['extraction_coverage'])
         self.assertEqual(meta['received_streams']['intake']['fields']['preference']['populated'], 3)
+        values = D.search(self.catalog, ['morning'])
+        self.assertIn('intake', [c['name'] for c in values['candidates']])
+        self.assertIn('received_notes', [c['name'] for c in D.search(self.catalog, ['narratives'])['candidates']])
+        self.assertFalse(values['record_search_performed'])
+        self.catalog.profile['source_digest'] = 'stale'
+        self.assertEqual(D.search(self.catalog, ['morning'])['candidates'], [])
 
     def test_probe_scope_lineage_negation_and_raw_stream_preserved(self):
         r = D.probe(self.catalog, {'table': 'received_notes', 'field': 'received_notes.narrative',
@@ -108,6 +115,46 @@ class RequestDiscovery(unittest.TestCase):
         refreshed = R.Catalog.load(self.path)
         self.assertEqual(refreshed.stream_fields, {})
         self.assertEqual(refreshed.profile, {})
+
+    def test_prompt_projection_bounds_detail_without_changing_receipts(self):
+        from copy import deepcopy
+        r = D.run(self.catalog, {'terms': ['narrative'], 'probes': [
+            {'table': 'received_notes', 'field': 'received_notes.narrative', 'mode': 'excerpts'}]})
+        r['probes'][0]['source_identity']['verbose_metadata'] = 'x' * 50000
+        receipts = [deepcopy(r) for _ in range(6)]
+        original = deepcopy(receipts)
+        compact = D.prompt_view(receipts)
+        self.assertLessEqual(len(json.dumps(compact, separators=(',', ':')).encode()), 12000)
+        self.assertEqual(receipts, original)
+        self.assertTrue(all(not p['data_absence_established'] for item in compact for p in item.get('probes', [])))
+        minimal = D.prompt_view(receipts, max_bytes=2000)
+        self.assertLessEqual(len(json.dumps(minimal, separators=(',', ':')).encode()), 2000)
+        self.assertTrue(all('prompt_detail_omitted' in item for item in minimal))
+
+    def test_discovery_survives_exhaustion_and_later_provider_failure(self):
+        from clinical_core.agere.clinical.question_input import failure, QuestionNotUnderstood
+        reply = {'need_discovery': {'probes': [
+            {'table': 'received_notes', 'field': 'received_notes.narrative', 'mode': 'values'}]}}
+        calls = []
+        def model(*args, **kwargs):
+            calls.append(1)
+            return json.dumps(reply), {'api_usd': .01, 'api_cost_known': True}
+        with self.assertRaises(QuestionNotUnderstood) as exhausted:
+            S.checked_interpret(self.catalog, 'Inspect received notes', model=model, force_model=True)
+        result = failure(exhausted.exception)
+        self.assertEqual(len(result['evidence_discovery']), 6)
+        self.assertEqual(result['new_paid_api_calls'], 6)
+        self.assertFalse(result['data_absence_established'])
+        calls.clear()
+        def broken(*args, **kwargs):
+            if calls: raise RuntimeError('fixture provider unavailable')
+            return model(*args, **kwargs)
+        with self.assertRaises(RuntimeError) as unavailable:
+            S.checked_interpret(self.catalog, 'Inspect received notes', model=broken, force_model=True)
+        result = failure(unavailable.exception)
+        self.assertEqual(len(result['evidence_discovery']), 1)
+        self.assertEqual(result['planning_economics']['known_api_estimate_usd'], .01)
+        self.assertIsNone(result['planning_economics']['new_api_estimate_usd'])
 
     def test_discovery_composes_and_saves_three_distinct_domains(self):
         cases = [

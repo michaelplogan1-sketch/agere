@@ -15,6 +15,10 @@ from . import metrics
 from .age import age_at
 
 VERSION = 'shared-request-vocabulary/1'
+CONDITION_EVIDENCE_POLICY = (
+    'Received normalized diagnosis labels, plus ehr_problem_list entries whose diagnosis flag is unknown. '
+    'Assessment topics, lab-inferred, note-only and medication-indication evidence are excluded. '
+    'A match does not establish current clinical status.')
 ALIASES = {
     'denial rate': 'first_pass_denial_rate',
     'first pass denial rate': 'first_pass_denial_rate',
@@ -83,7 +87,8 @@ def digest(definition):
 
 def concept_definitions():
     from . import concepts, drug_classes
-    return {'condition': {k: {'version': 1, 'definition_digest': digest(v)} for k, v in concepts.CONDITIONS.items()},
+    return {'condition': {k: {'version': 1, 'definition_digest': digest([v, CONDITION_EVIDENCE_POLICY])}
+                           for k, v in concepts.CONDITIONS.items()},
             'drug_fill': {k: {'version': 1, 'definition_digest': digest([k, concepts.FILL_EVIDENCE, concepts.FILL_STATUSES,
                                                                       drug_classes.CLASSES.get(k)])}
                           for k in drug_classes.CLASSES},
@@ -128,7 +133,13 @@ def concept_sql(expr, compiler, scope):
     outer = compiler.field('patient.patient_id', scope)
     column = 'concept' if kind == 'condition' else 'drug_class'
     where = f'{alias}.{column} IN ({",".join(map(literal, names))})'
-    where += f' AND {alias}.is_diagnosis = 1' if kind == 'condition' else ' AND '+concepts.picked_up_sql(alias)
+    if kind == 'condition':
+        diagnosis = f'{alias}.is_diagnosis = 1'
+        if 'diagnosis_basis' in compiler.catalog.tables[table]:
+            diagnosis += f" OR ({alias}.is_diagnosis IS NULL AND {alias}.diagnosis_basis = 'ehr_problem_list')"
+        where += ' AND (' + diagnosis + ')'
+    else:
+        where += ' AND '+concepts.picked_up_sql(alias)
     period = expr['period']
     if period:
         if set(period) != {'start', 'end'}: raise PlanError('Explicit concept period required')
@@ -241,7 +252,8 @@ def execute(path, patient_ids, p, as_of=None):
         row['value'] = value
         rows.append(row)
     answer = {'status': 'partial' if missing else 'answered', 'answer_type': 'table' if p['group_by'] else m['output']['returns'],
-              'patient_ids': sorted({pid for ids in groups.values() for pid in ids}),
+              'patient_ids': [], 'actionable_cohort': False,
+              'analysis_population_count': len({pid for ids in groups.values() for pid in ids}),
               'missing': missing, 'limitations': limitations,
               'method': m.get('summary', m['name']),
               'computed_as': {'metric_id': m['id'], 'version': m['version'], 'definition_digest': digest(m),
@@ -254,7 +266,7 @@ def execute(path, patient_ids, p, as_of=None):
                  f"AND event_date BETWEEN {literal(p['period']['start'])} AND {literal(p['period']['end'])} "
                  "AND patient_id IN (SELECT patient_id FROM population) GROUP BY sources,in_ehr")
         coverage = sql_query.execute(path, {'query': query, 'returns': 'table'},
-                                     patient_ids=answer['patient_ids'], target=catalog.target)['rows']
+                                     patient_ids=sorted({pid for ids in groups.values() for pid in ids}), target=catalog.target)['rows']
         answer['source_coverage'] = {'relation': 'utilization_event', 'deduplicated': True, 'source_combinations': coverage,
                                      'events': sum(r['events'] for r in coverage),
                                      'outside_ehr': sum(r['events'] for r in coverage if not r['in_ehr'])}

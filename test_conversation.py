@@ -206,6 +206,9 @@ class Api(unittest.TestCase):
             'Find practices with high admission rates and compare their costs',
             'Show patients with diabetes and count those over 65',
             'Find patients with hypertension and determine whether they have follow-up visits',
+            'How many patients have an assigned cardiologist on their care team?',
+            'How many patients are attributed to a practice by their payer?',
+            'List clinicians with their practices',
         ):
             with self.subTest(question=question):
                 self.assertFalse(C.requires_saved_cohort(question))
@@ -218,6 +221,7 @@ class Api(unittest.TestCase):
         for question in ('List them', 'Count those patients', 'Group these patients by PCP',
                          'Who are their PCPs?', 'Do they have diabetes?',
                          'Count claims for those patients', 'Find appointments for them',
+                         'Count claims for their patients',
                          'Find patients from the previous result and monitor them',
                          'Count the saved cohort'):
             for context in ({}, {'conversation_id': 'missing'},

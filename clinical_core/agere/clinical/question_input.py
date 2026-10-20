@@ -16,7 +16,8 @@ def failure(exc):
     if hasattr(exc, 'planner_receipt'):
         from .shared_planner import economics
         result.update(new_paid_api_calls=exc.planner_receipt['new_paid_api_calls'],
-                      planning_economics=economics(exc.planner_receipt))
+                      planning_economics=economics(exc.planner_receipt),
+                      evidence_discovery=exc.planner_receipt.get('evidence_discovery', []))
     return result
 
 

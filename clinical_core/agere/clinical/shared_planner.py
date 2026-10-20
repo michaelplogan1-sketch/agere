@@ -114,7 +114,9 @@ Consult analytical_operators before declaring a method unsupported. Statistical,
 Use each engine's parameter_schema for canonical concept IDs and enums. For aggregate, vbc, profile and survival, window/period endpoints are inclusive; calendar 2029 is 2029-01-01 through 2029-12-31.
 You may request need_tables, need_operations and need_streams together in ONE JSON object. Never emit multiple JSON documents.
 Aggregates may include where:predicate for conditional aggregation. A ratio's numerator may use this; do not filter its denominator to only positive outcomes.
-Use the received semantic definitions. A patient with a condition requires a condition row with is_diagnosis=1 when that column exists; assessment topics alone are not diagnoses.
+Use the registered condition concept: normalized diagnosis labels OR ehr_problem_list rows with an unknown diagnosis flag.
+Assessment topics, lab-inferred, note-only and medication-indication evidence are excluded by this default.
+Use op=concept for named conditions so the compiler applies this shared evidence policy.
 An unqualified age filter uses patient.age: completed years from birth_date at catalog as_of; an explicit age-at-event request requires that actual time basis.
 Canonical concept names in the catalog include their mapped codes/subtypes. Do not invent synonym lists.
 Unknown group labels stay as null groups rather than silently dropping their patients.
@@ -163,7 +165,7 @@ measures, denominators, entity relationships or current-state claims. Return JSO
 Judge using the supplied catalog and compiler semantics, not hypothetical schemas:
 EXISTS automatically correlates patient_id unless an explicit entity link is supplied; the SQL shows that correlation.
 Patient fields automatically use the unique patient dimension by patient_id. Canonical concepts are code-normalized.
-is_diagnosis=1 distinguishes diagnoses from assessment topics when available.
+Named condition concepts include is_diagnosis=1 OR unknown-flag ehr_problem_list rows; assessment topics and lab-only evidence are excluded.
 patient.age compiles to age_at(patient.birth_date, catalog as_of); reported feed ages must never be used.
 An unknown group label remains a null group; this is not an invented PCP.
 Do not demand an explicit constraint the question never asked for, or invent ambiguity for an ordinary contextual grouping.
@@ -212,7 +214,7 @@ def engine_answer(graph, result, cohort_ids):
     if any(not ids <= set(cohort_ids) for ids in selections):
         raise request_plan.PlanError('Analytical output escaped the original request population')
     ambiguous = len(selections) > 1 and any(ids != selections[0] for ids in selections[1:])
-    ids = sorted(selections[0]) if selections and not ambiguous else ([] if ambiguous else cohort_ids)
+    ids = sorted(selections[0]) if selections and not ambiguous else []
     if not sections or (len(sections) == 1 and graph['nodes'][1]['operation'] == 'governed_metric'):
         answer = {**parts[0], 'patient_ids': ids}
     else:
@@ -224,6 +226,9 @@ def engine_answer(graph, result, cohort_ids):
     if ambiguous:
         answer['missing'].append('Analyses select different patient sets. Choose a specific analysis before creating work.')
         answer['actionable_cohort'] = False
+    if not selections:
+        answer['actionable_cohort'] = False
+        answer['analysis_population_count'] = len(cohort_ids)
     return answer
 
 
@@ -270,10 +275,11 @@ def schema_slice(catalog, question, extra=(), operations=(), streams=()):
     selected_streams = list(dict.fromkeys([*streams, *stream_names[:3]]))[:12]
     from .request_discovery import describe
     discovery_metadata = describe(catalog, selected, selected_streams)
-    from .request_vocabulary import definitions, digest, concept_definitions
+    from .request_vocabulary import definitions, digest, concept_definitions, CONDITION_EVIDENCE_POLICY
     vocabulary = {k: {'version': v['version'], 'definition_digest': digest(v), 'meaning': v.get('summary', v['name'])}
                   for k, v in definitions().items()}
     return {'governed_measures': vocabulary, 'named_concepts': concept_definitions(),
+            'condition_evidence_policy': CONDITION_EVIDENCE_POLICY,
             'all_received_tables': sorted(catalog.tables), 'selected_schemas': descriptions,
             'all_received_streams': sorted(catalog.stream_fields),
             'selected_stream_fields': {s: catalog.stream_fields[s] for s in selected_streams},
@@ -317,6 +323,7 @@ def checked_interpret(*args, **kwargs):
         return interpret(*args, **kwargs)
     except Exception as exc:
         exc.planner_receipt = attempt_receipt(getattr(exc, 'attempts', []))
+        exc.planner_receipt['evidence_discovery'] = getattr(exc, 'discovery', [])
         raise
 
 
@@ -340,15 +347,24 @@ def interpret(catalog, question, *, population=None, model=None, force_model=Fal
             raise QuestionNotUnderstood('The question was preserved, but no complete local interpretation is available. ' + failures[-1])
         return isolated_local(catalog, question, population)
     attempts, extra, operations, streams, feedback, discovery = [], [], [], [], '', []
+    def call(*args, **kwargs):
+        try:
+            return tracked_call(model, attempts, *args, **kwargs)
+        except Exception as exc:
+            exc.discovery = list(discovery)
+            raise
     # Disposable local workers own serialization; hosted calls do not queue.
     proposal_count = 0
     for _ in range(6):
         if proposal_count >= 3: break
         catalog_context = schema_slice(catalog, question, extra, operations, streams)
+        from .request_discovery import prompt_view
+        discovery_context = prompt_view(discovery)
         user = json.dumps({'catalog': catalog_context, 'question': question,
                            'saved_cohort_size': len(population) if population is not None else None,
-                           'discovery': discovery, 'validator_feedback': feedback}, ensure_ascii=False)
-        raw, stats = tracked_call(model, attempts, SYSTEM, user, max_tokens=2600)
+                           'discovery': discovery_context, 'validator_feedback': feedback},
+                          ensure_ascii=False, separators=(',', ':'))
+        raw, stats = call(SYSTEM, user, max_tokens=2600)
         try:
             plan = decode(raw)
             if set(plan) == {'need_discovery'}:
@@ -370,12 +386,12 @@ def interpret(catalog, question, *, population=None, model=None, force_model=Fal
             proposal_count += 1
             plan = request_plan.normalize_wire(catalog, question, plan)
             contract = request_plan.compile_request(catalog, question, plan, population=population)
-            raw_audit, stats = tracked_call(model, attempts, AUDIT_SYSTEM, json.dumps({
+            raw_audit, stats = call(AUDIT_SYSTEM, json.dumps({
                 'original_question': question, 'catalog': catalog_context,
                 'request': plan, 'compiled_sql': contract['query'],
-                'discovery': discovery,
+                'discovery': discovery_context,
                 'saved_cohort_size': len(population) if population is not None else None,
-            }), max_tokens=1200)
+            }, separators=(',', ':')), max_tokens=1200)
             audit = decode(raw_audit)
             if (set(audit) != {'equivalent', 'issues'} or type(audit['equivalent']) is not bool
                     or not isinstance(audit['issues'], list) or any(not isinstance(i, str) for i in audit['issues'])):
@@ -395,8 +411,10 @@ def interpret(catalog, question, *, population=None, model=None, force_model=Fal
             failures.append(str(exc))
             feedback = {'error': str(exc), 'previous_proposal': raw[:16000],
                         'instruction': 'Correct the wire contract while preserving every original requirement.'}
-    raise QuestionNotUnderstood('The original question could not be fully compiled; no reduced question was executed. '+failures[-1],
+    exc = QuestionNotUnderstood('The original question could not be fully compiled; no reduced question was executed. '+failures[-1],
                                 attempts=attempts)
+    exc.discovery = discovery
+    raise exc
 
 
 def plan(stack, question, ledger=None, frontier=None, *, population=None, model=None, planning='auto'):
@@ -521,6 +539,9 @@ def execute_contract(stack, question, graph, receipt, *, population=None, parent
     partial = report['truncated'] or bool(membership and membership['truncated']) or bool(unknown and unknown['truncated'])
     limitations = ['Results describe received records. No matching record does not establish absent care.',
                   'The request and SQL are inspectable. Language/model and clinical accuracy are not independently qualified.']
+    if re.search(r'\bFROM condition\b', contract['query']):
+        from .request_vocabulary import CONDITION_EVIDENCE_POLICY
+        limitations.append('Condition evidence: ' + CONDITION_EVIDENCE_POLICY)
     unknown_ids = sorted(set(unknown['patient_ids']) - set((membership or {}).get('patient_ids', []))) if unknown else []
     if unknown_ids:
         limitations.append(f'{len(unknown_ids)} patients have unresolved null-valued predicates and are outside the matching cohort.')

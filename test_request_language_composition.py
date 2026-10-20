@@ -5,7 +5,7 @@ import unittest
 from unittest.mock import Mock
 
 import test_shared_planner_correctness as fixtures
-from clinical_core.agere.clinical import request_language as L, request_plan as R, shared_planner as S
+from clinical_core.agere.clinical import request_language as L, request_plan as R, shared_planner as S, sql_query
 
 
 class ModifierComposition(unittest.TestCase):
@@ -16,7 +16,13 @@ class ModifierComposition(unittest.TestCase):
         self.path, self.stack, self.catalog = self.fixture.path, self.fixture.stack, self.fixture.catalog
 
     def ask(self, question):
-        return S.compose(self.stack, question, model=Mock(side_effect=AssertionError('Model fallback')))['answer']
+        self.last_result = S.compose(self.stack, question, model=Mock(side_effect=AssertionError('Model fallback')))
+        return self.last_result['answer']
+
+    def analytical_input(self):
+        contract = self.last_result['request_contract']
+        return sql_query.execute(self.path, {'query': contract['membership_query'], 'returns': 'patient_set'},
+                                 patient_ids=contract['population'], target=self.catalog.target)['patient_ids']
 
     def test_governed_period_group_and_exclusion_permutations(self):
         for order in itertools.permutations(['in 2029', 'by payer', 'excluding ckd']):
@@ -25,7 +31,8 @@ class ModifierComposition(unittest.TestCase):
                 answer = self.ask(question)
                 self.assertEqual(answer['table'], [{'payer': 'P1', 'value': 100*2/3}, {'payer': 'P2', 'value': None}])
                 self.assertEqual(answer['computed_as']['period'], {'start': '2029-01-01', 'end': '2029-12-31'})
-                self.assertEqual(answer['patient_ids'], ['A', 'B', 'D'])
+                self.assertEqual(self.analytical_input(), ['A', 'B', 'D'])
+                self.assertEqual(answer['patient_ids'], [])
         for question in ['no-show rate by payer in 2029', 'PMPM by payer in 2029 excluding ckd',
                          'PMPM by payer and sex in 2029', 'PMPM in 2029 grouped by payer and excluding ckd']:
             with self.subTest(question=question):
@@ -69,7 +76,8 @@ class ModifierComposition(unittest.TestCase):
         self.assertEqual(self.ask('patients for payer = "by sex in 2028" by sex')['patient_ids'], ['A'])
         answer = self.ask('denial rate for payer = "2029" in 2029')
         self.assertEqual(answer['value'], 100)
-        self.assertEqual(answer['patient_ids'], ['B'])
+        self.assertEqual(self.analytical_input(), ['B'])
+        self.assertEqual(answer['patient_ids'], [])
         self.assertEqual(answer['computed_as']['period']['start'], '2029-01-01')
 
     def test_unsupported_or_ambiguous_clauses_never_disappear(self):
