@@ -60,7 +60,7 @@ async function loadSources(){
  if(sourceError){$('#source-list').innerHTML='<p class="hint">'+esc(sourceError)+' <button class="text-button" data-reload-sources>Retry</button></p>';return}
  $('#warehouse-stats').innerHTML=[[sourceAtlas.patients,'Patients'],[sourceAtlas.source_categories,'Source categories'],[sourceAtlas.records,'Received records']].map(([n,l])=>'<div><strong>'+fmt(n,0)+'</strong><span>'+l+'</span></div>').join('');
  const term=$('#source-search').value.toLowerCase(),rows=(sourceAtlas.sources||[]).filter(s=>[s.stream,label(s.stream),s.domain].join(' ').toLowerCase().includes(term));
- $('#source-caption').textContent=rows.length+' sources · data as of '+shortDate(sourceAtlas.snapshot?.as_of);
+ $('#source-caption').textContent=rows.length+(rows.length===1?' source':' sources')+' · data as of '+shortDate(sourceAtlas.snapshot?.as_of);
  $('#source-list').innerHTML=rows.map(s=>'<div class="source-card"><strong>'+esc(label(s.stream))+'</strong><p>'+fmt(s.records,0)+' records · '+fmt(s.patients,0)+' patients</p><button class="btn small" data-source-question="'+esc(s.stream)+'">Ask about this source ↗</button></div>').join('')||'<p class="hint">No sources match. Try another name.</p>';
 }
 function syncScope(t){
