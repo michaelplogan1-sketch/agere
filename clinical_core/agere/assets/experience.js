@@ -24,19 +24,38 @@ function setupExperience(){
    return start.map((v,k)=>mix(v,end[k],t)+bend[k]*arc);
   });
   branches.push({id,depth,birth,seed,points,duration:.8+length*1.8});
-  if(depth===4)return;
-  const count=depth===0?3:2;
+  if(depth===3)return;
+  const count=2;
   for(let k=0;k<count;k++){
    const s=seed*3+k+11,spread=depth===0?.85:.72;
    const next=dir.map((v,i)=>v*.76+(random(s+i*101)-.5)*spread*2);
    grow(end,next,length*(.62+random(s+7)*.16),depth+1,birth+length*1.6+.24,s);
   }
  }
- // A bounded, deterministic branching sculpture, independent of warehouse records.
- for(let i=0;i<7;i++){
-  const a=i/7*TAU+.3;
-  grow([0,0,0],[Math.cos(a),Math.sin(a)*.9,(random(i+60)-.5)*1.5],.58+random(i+70)*.17,0,.2+i*.075,i+1);
- }
+ // Seven distinct cell bodies, dendritic arbors and connecting axons: an illustration,
+ // never a claim about actual learning or the topology of the underlying warehouse.
+ const neurons=[
+  {p:[0,.08,.15],birth:0,size:1.2},
+  {p:[-.83,-.64,-.18],birth:1.7,size:.9},
+  {p:[.86,.56,-.12],birth:2.3,size:1},
+  {p:[.66,-.71,.28],birth:3,size:1.05},
+  {p:[-.64,.75,.25],birth:3.8,size:.85},
+  {p:[-1.38,.12,.12],birth:4.6,size:.8},
+  {p:[1.42,-.15,-.30],birth:5.3,size:.8}
+ ];
+ neurons.forEach((cell,i)=>{
+  for(let arm=0;arm<5;arm++){
+   const a=arm/5*TAU+i*1.37;
+   grow(cell.p,[Math.cos(a),Math.sin(a),(random(i*5+arm+60)-.5)*1.3],(.23+random(i*5+arm+70)*.12)*cell.size,0,cell.birth+.12,i*13+arm+1);
+  }
+ });
+ const connections=[[0,1],[0,2],[0,3],[0,4],[1,5],[3,6],[1,3],[4,2],[2,6]].map(([from,to],i)=>{
+  const a=neurons[from].p,b=neurons[to].p,bend=(i%2?1:-1)*.25;
+  const c=a.map((v,k)=>mix(v,b[k],.3)+(k===1?bend:0)),d=a.map((v,k)=>mix(v,b[k],.7)-(k===0?bend:0));
+  return {i,birth:Math.max(.3,neurons[to].birth-1.6)+(i>5?2:0),points:Array.from({length:51},(_,j)=>{
+   const t=j/50,u=1-t;return a.map((v,k)=>u*u*u*v+3*u*u*t*c[k]+3*u*t*t*d[k]+t*t*t*b[k]);
+  })};
+ });
  const dust=Array.from({length:420},(_,i)=>({a:random(i+800)*TAU,r:.7+random(i+1600)*2.5,z:random(i+2400)*2-1,speed:.07+random(i+3200)*.13,seed:i}));
  const palette=[['#61798f','#87b9cc','#d3edf2'],['#698bf6','#94c6e9','#bcf9f3'],['#a38aff','#8af2de','#e2ffad'],['#9ea66d','#d9f79b','#fff5ce']];
  let shape=2;
@@ -89,20 +108,35 @@ function setupExperience(){
    ctx.globalAlpha=alpha;ctx.fillStyle=d.seed%7===0?colors[2]:colors[1];ctx.fillRect(p[0],p[1],d.seed%9===0?1.6:.85,.85);
   }
   const fieldStrength=stage===0?.18:1;
+  // Axons visibly extend from one neuron toward another; a pulse follows the new path.
+  for(const connection of connections){
+   const growth=smooth((age-connection.birth)/1.8);if(!growth||stage===0)continue;
+   const length=growth*50,last=Math.floor(length),path=[];
+   for(let j=0;j<=last;j++)path.push(project(connection.points[j],1));
+   if(last<50)path.push(project(connection.points[last].map((v,k)=>mix(v,connection.points[last+1][k],length-last)),1));
+   const opacity=stage===1?.32:.74;
+   line(path,colors[0],opacity*.12,8);line(path,colors[1],opacity,1.15);
+   const pulse=(phase*.7+connection.i*.37)%1;
+   if(pulse<growth){
+    const at=Math.floor(pulse*50),tip=path[at];
+    line(path.slice(Math.max(0,at-5),at+1),colors[2],.95,1.9);glow(tip[0],tip[1],7,colors[1],.45);
+   }
+   if(growth<1){const tip=path[path.length-1];glow(tip[0],tip[1],9,colors[2],.55)}
+  }
   for(const b of branches){
    const initial=smooth((age-b.birth)/b.duration);
    // The outer growth front continues to sprout and recede after the first formation.
-   const living=b.depth===4?.7+.3*Math.sin(phase*.65+b.seed*.13):1;
+   const living=b.depth===3?.7+.3*Math.sin(phase*.65+b.seed*.13):1;
    const progress=initial*living;if(progress<=0)continue;
    const end=progress*samples,last=Math.floor(end),path=[];
    for(let j=0;j<=last;j++)path.push(project(b.points[j],b.depth));
    if(last<samples){const t=end-last;path.push(project(b.points[last].map((v,k)=>mix(v,b.points[last+1][k],t)),b.depth))}
-   const tip=path[path.length-1],color=colors[b.depth<2?0:b.depth<4?1:2];
+   const tip=path[path.length-1],color=colors[b.depth<1?0:b.depth<3?1:2];
    const depthLight=clamp(tip[2]-.45),alpha=(.44+(4-b.depth)*.10)*depthLight*fieldStrength;
    // Wide low-opacity underpainting gives filaments volume without expensive per-line shadows.
    if(b.depth<3)line(path,color,alpha*.17,9-b.depth*1.8);
    // Parallel, moving hairline strands give each branch a living fibrous surface.
-   if(b.depth<4)for(let strand=0;strand<3;strand++){
+   if(b.depth<3)for(let strand=0;strand<3;strand++){
     const fiber=path.map((p,j)=>{const spread=Math.sin(j/samples*Math.PI)*(2+b.depth);return [p[0]+Math.sin(j*.34+strand*2.1+phase*.5+b.seed)*spread,p[1]+Math.cos(j*.30+strand*2.1+phase*.5+b.seed)*spread]});
     line(fiber,colors[1],alpha*.32,.45);
    }
@@ -115,7 +149,7 @@ function setupExperience(){
    }
    if(b.depth>1){
     const light=(.4+.3*Math.sin(phase*1.7+b.seed))*initial*fieldStrength;
-    ctx.globalAlpha=light;ctx.fillStyle=colors[2];ctx.beginPath();ctx.arc(tip[0],tip[1],b.depth===4?.85:1.25,0,TAU);ctx.fill();
+    ctx.globalAlpha=light;ctx.fillStyle=colors[2];ctx.beginPath();ctx.arc(tip[0],tip[1],b.depth===3?.85:1.25,0,TAU);ctx.fill();
     if(b.id%5===0)glow(tip[0],tip[1],8,colors[1],light*.38);
    }
    // Suspended grains gather around every branch, following its growth front.
@@ -125,11 +159,23 @@ function setupExperience(){
     ctx.fillRect(p[0]+Math.sin(s+phase*.4)*offset,p[1]+Math.cos(s+phase*.3)*offset,.8,.8);
    }
   }
-  // A restrained luminous nucleus, with a persistent heartbeat rather than flashing.
-  const seed=smooth(age/.9),heart=.75+Math.sin(phase*1.2)*.12;
-  glow(w*.5,h*.51,scale*.30,'#a5b6ff',.16*seed*heart);
-  glow(w*.5,h*.51,scale*.10,'#cce8da',.48*seed*heart);
-  glow(w*.5,h*.51,scale*.035,'#f1ffdf',.8*seed);
+  // Distinct organic somas anchor the arbor: bright bodies, darker nuclei, soft halos.
+  neurons.forEach((cell,i)=>{
+   const born=smooth((age-cell.birth)/.8);if(!born)return;
+   const p=project(cell.p),heartbeat=.88+Math.sin(phase*1.3+i)*.12,r=(i===0?6:4.5)*cell.size*p[2]*born;
+   glow(p[0],p[1],r*5,colors[0],.20*born*heartbeat);
+   glow(p[0],p[1],r*2.2,colors[1],.36*born*heartbeat);
+   ctx.beginPath();
+   for(let j=0;j<=40;j++){
+    const a=j/40*TAU,edge=r*(1+.19*Math.cos(a*5+i)+.07*Math.sin(a*3+phase*.4));
+    const x=p[0]+Math.cos(a)*edge,y=p[1]+Math.sin(a)*edge;
+    j?ctx.lineTo(x,y):ctx.moveTo(x,y);
+   }
+   ctx.closePath();ctx.fillStyle=colors[1];ctx.globalAlpha=.68*born;ctx.fill();
+   ctx.strokeStyle=colors[2];ctx.lineWidth=.8;ctx.globalAlpha=.9*born;ctx.stroke();
+   ctx.globalCompositeOperation='source-over';ctx.globalAlpha=.75*born;ctx.fillStyle='#16302e';ctx.beginPath();ctx.arc(p[0],p[1],r*.36,0,TAU);ctx.fill();
+   ctx.globalCompositeOperation='lighter';glow(p[0]-r*.24,p[1]-r*.22,r*.22,'#efffdf',.75*born);
+  });
   ctx.globalAlpha=1;ctx.globalCompositeOperation='source-over';
   if(!paused&&visible&&document.visibilityState==='visible')frame=requestAnimationFrame(draw);
  }
