@@ -168,6 +168,47 @@ def materialize(path, key, *, allow_live=False, generation=None, send=None):
         return record
 
 
+def retry_deliverable(path, request, *, allow_live=False, send=None):
+    """Explicit, revision-checked retry; retain failed artifacts and all attempt costs."""
+    if set(request) != {'context_id', 'index', 'attempt'} or type(request['index']) is not int or type(request['attempt']) is not int:
+        raise ValueError('Choose a saved deliverable and its next attempt number')
+    with _lock:
+        key, index = request['context_id'], request['index']
+        A.load(path, key, current=True)
+        record = read(path, key)
+        steps = record['steps']
+        if not 0 <= index < len(steps):
+            raise ValueError('Saved deliverable not found')
+        step = steps[index]
+        if step['kind'] != 'deliverable' or step.get('status') != 'blocked' or not step.get('deliverable_id'):
+            raise ValueError('Only a failed saved deliverable can be retried')
+        attempts = copy.deepcopy(step.get('attempts') or [{k: step.get(k) for k in
+            ('deliverable_id', 'status', 'reason', 'costs', 'new_paid_api_calls')}])
+        if request['attempt'] != len(attempts) + 1:
+            raise ValueError('The attempt changed. Reload before retrying.')
+        from ..clinical.request_plan import quote_text
+        brief = quote_text(step['quote']) if step.get('quote') else step['title']
+        d = A.compose_frontier(path, {'context_id': key, 'request': brief +
+            f'\nExplicit retry attempt {request["attempt"]} for this saved workflow. Preserve its exact evidence and scope.'},
+            allow_live=allow_live, send=send)
+        latest = {'deliverable_id': d['id'], 'status': 'ready' if d['status'] == 'delivered' else 'blocked',
+                  'reason': 'View saved after retry; earlier attempts and costs are retained.' if d['status'] == 'delivered'
+                            else d.get('failure') or 'Generated view failed evidence checks.',
+                  'costs': d['costs'], 'new_paid_api_calls': d.get('new_paid_api_calls', 0), 'at': A.now()}
+        attempts.append(latest)
+        known = sum((a.get('costs') or {}).get('known_api_estimate_usd', (a.get('costs') or {}).get('total_usd') or 0) for a in attempts)
+        complete = all((a.get('costs') or {}).get('api_cost_known', True) for a in attempts)
+        step.update(latest, attempts=attempts, costs={'known_api_estimate_usd': known, 'api_cost_known': complete,
+                    'total_usd': known if complete else None, 'scope': 'All saved generation attempts; local compute is unpriced.'},
+                    new_paid_api_calls=sum(a.get('new_paid_api_calls', 0) for a in attempts))
+        record.update(new_paid_api_calls=sum(s.get('new_paid_api_calls', 0) for s in steps),
+                      known_api_estimate_usd=sum((s.get('costs') or {}).get('known_api_estimate_usd', (s.get('costs') or {}).get('total_usd') or 0) for s in steps),
+                      api_cost_known=all((s.get('costs') or {}).get('api_cost_known', True) for s in steps))
+        _save(path, key, record)
+        return {**record, 'new_paid_api_calls': d.get('new_paid_api_calls', 0),
+                'retry_costs': d['costs']}
+
+
 def refresh(stack, request):
     if set(request) != {'context_id', 'index'} or type(request['index']) is not int:
         raise ValueError('Choose an exact saved monitor')

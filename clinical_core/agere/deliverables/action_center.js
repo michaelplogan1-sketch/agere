@@ -171,11 +171,14 @@ function renderOverview() {
   host.innerHTML='<div class="section-heading"><div><h2>Your requested next steps</h2><p>The same answer, carried through.</p></div></div><div class="launch-grid">'+steps.map((s,i)=>'<article class="launch-card"><span class="eyebrow">'+esc(s.kind)+' / '+esc(pretty(s.status))+'</span><strong>'+esc(s.title)+'</strong><p>'+esc(s.reason||'')+'</p>'+
     (s.selection_summary?'<p><small>'+num(s.selection_summary.selected)+' selected for work · '+num(s.selection_summary.not_selected)+' outside the work criterion · '+num(s.selection_summary.unknown)+' unresolved</small></p>':'')+
     (s.kind==='deliverable'&&s.deliverable_id?'<button class="btn" data-workflow-studio>Open saved deliverable ↗</button>':'')+
+    (s.kind==='deliverable'&&s.status==='blocked'&&s.deliverable_id?'<button class="btn" data-workflow-retry="'+i+'">Retry generation ↗</button>':'')+
+    (s.attempts?.length?'<p><small>'+s.attempts.length+' generation attempts retained</small></p>':'')+
     (s.kind==='simulation'&&s.status==='ready'?'<button class="btn" data-workflow-board>Run simulated agents ↗</button>':'')+
     (s.kind==='monitor'&&s.mode==='work'&&s.observations?.length?'<p><strong>'+num(s.observations.at(-1).measurement.completed)+' / '+num(s.observations.at(-1).measurement.total)+' simulated journeys complete</strong><br>'+num(s.observations.at(-1).measurement.needs_attention)+' need attention</p>':'')+
     (s.kind==='monitor'&&s.observations?'<p><small>'+esc(s.scope_label||s.scope)+' · Manual checks · '+s.observations.length+' recorded observation(s)</small></p><details><summary>Baseline &amp; observations</summary><pre>'+esc(JSON.stringify(s.observations.map(o=>({at:o.at,as_of:o.source.as_of,answer:o.measurement})),null,2))+'</pre></details><button class="btn" data-monitor-check="'+i+'">'+(s.mode==='work'?'Check work progress':'Check current snapshot')+' ↗</button>':'')+'</article>').join('')+'</div>';
   host.querySelectorAll('[data-workflow-studio]').forEach(b=>b.onclick=()=>go('studio'));
   host.querySelectorAll('[data-workflow-board]').forEach(b=>b.onclick=()=>go('work'));
+  host.querySelectorAll('[data-workflow-retry]').forEach(b=>b.onclick=()=>run(async()=>{const index=Number(b.dataset.workflowRetry);await api('/api/stack/action-workflow/retry',{context_id:c.id,index,attempt:(steps[index].attempts?.length||1)+1});await refresh();notify('Generation attempt saved. Earlier attempts and costs are retained.');}));
   host.querySelectorAll('[data-monitor-check]').forEach(b=>b.onclick=()=>run(async()=>{const index=Number(b.dataset.monitorCheck),work=steps[index]?.mode==='work';await api('/api/stack/action-monitor',{context_id:c.id,index});await refresh();notify(work?'Simulated work progress checked.':'Monitor checked against the current warehouse.');}));
 }
 function taskCard(item) {

@@ -277,6 +277,9 @@ def serve(run,port,annotations=None,evidence_queries=None,stack=None,allow_live_
                         result=answer_context.update_work(connected_stack.path,body)
                     else:
                         result=answer_context.compose_frontier(connected_stack.path,body,allow_live=connected_stack.allow_live)
+                elif path=='/api/stack/action-workflow/retry':
+                    from .deliverables.workflow import retry_deliverable
+                    result=retry_deliverable(connected_stack.path,body,allow_live=connected_stack.allow_live)
                 elif path=='/api/stack/action-monitor':
                     from .deliverables.workflow import refresh
                     result=refresh(connected_stack,body)
