@@ -32,6 +32,13 @@ FAMILIES=[
 REQUEST_MAX_BYTES=128000
 
 
+class RequestSizeLimitError(ValueError):
+    """Local admission failure: no request was sent or ledger call reserved."""
+    def __init__(self, request_bytes, max_bytes):
+        self.request_bytes, self.max_bytes = request_bytes, max_bytes
+        super().__init__(f'Model request exceeds its {max_bytes}-byte bound ({request_bytes} bytes)')
+
+
 def send(body,provider,ledger,out,*,parse,allow_failed_response_revalidation=False,
          revalidation_reason='bounded_probability_rounding/2', timeout=60, transport=None, max_bytes=None):
     # max_bytes: a caller with a larger, deliberately bounded request (the semantic analyst's ~141K-character documented
@@ -40,7 +47,8 @@ def send(body,provider,ledger,out,*,parse,allow_failed_response_revalidation=Fal
     # records 'preset:<name>' and the returned model revision is kept, not pinned.
     expected=body.get('model');ledger_model=expected or 'preset:'+str(body.get('preset'))
     payload=json.dumps(body,allow_nan=False).encode()
-    if len(payload)>(REQUEST_MAX_BYTES if max_bytes is None else max_bytes):raise ValueError('Request exceeds synthetic research bound')
+    limit = REQUEST_MAX_BYTES if max_bytes is None else max_bytes
+    if len(payload)>limit:raise RequestSizeLimitError(len(payload), limit)
     key=digest({'contract':'context-student/1','provider':provider,'body':body})
     old=ledger.db.execute('SELECT status,response FROM calls WHERE id=?',(key,)).fetchone()
     if old and old[0]=='validated':return parse(json.loads(old[1])),{'cache_hit':True,'request_hash':key}

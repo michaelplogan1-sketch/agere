@@ -6,6 +6,7 @@ not answer authorities. Exact-source contracts may be replayed only after full
 revalidation. The existing graph, SQL governor and saved work stores are reused.
 """
 from pathlib import Path
+import copy
 import json
 import os
 import re
@@ -20,6 +21,9 @@ from . import request_language, request_plan, sql_query
 from .question_input import QuestionNotUnderstood, validate_question
 
 VERSION = 'shared-warehouse-planner/3'
+# The shared planner carries schema, governed definitions and bounded repair
+# feedback. Its envelope is distinct from small classification requests.
+REQUEST_MAX_BYTES = 256_000
 _MODEL_LOCK = threading.Lock()
 
 @contextmanager
@@ -73,6 +77,7 @@ Preserve EVERY predicate, negation, OR/AND, time anchor, measure, grouping, requ
 Use literal substrings of the ORIGINAL question in quote fields. Do not use the entire question as a catch-all quote.
 If a requirement is ambiguous or unavailable in this language, retain its exact quote in unresolved with the reason.
 Do not claim absent data because a table was not selected. Request more schema with {"need_tables":["table"]}.
+Resolve columns_in/meaning_in catalog references to the complete definitions at those paths in the same catalog.
 The exact object keys are source, select, where, group_by, order_by, limit, unresolved.
 source: {"table":"received_table", "quote":"literal source wording"}.
 select: array of {"kind":"count|count_distinct|sum|avg|min|max|field|ratio", "alias":"output_name", "quote":"literal measure wording", "field":"table.column"}.
@@ -297,8 +302,30 @@ def decode(text):
     if not isinstance(value, dict): raise request_plan.PlanError('Planner must return an object')
     return value
 
+
+def schema_prompt_view(context):
+    """Remove exact duplicate schema text; retain every definition and field."""
+    view = copy.deepcopy(context)
+    metadata = view.get('discovery_metadata', {}).get('relations', {})
+    for table, schema in view.get('selected_schemas', {}).items():
+        details = metadata.get(table, {})
+        if ('columns' in schema and 'columns' in details
+                and set(schema['columns']) == set(details['columns'])):
+            schema.pop('columns', None)
+            schema['columns_in'] = 'discovery_metadata.relations.' + table + '.columns'
+        if 'meaning' in schema and schema['meaning'] == details.get('meaning'):
+            schema.pop('meaning')
+            schema['meaning_in'] = 'discovery_metadata.relations.' + table + '.meaning'
+    operators = view.get('analytical_operators', {})
+    for name, contract in view.get('selected_operator_contracts', {}).items():
+        if name in operators and operators[name] == contract.get('meaning'):
+            operators[name] = 'Definition in selected_operator_contracts.' + name
+    return view
+
+
 def attempt_receipt(attempts, cached=False):
-    paid = [a for a in attempts if ('api_usd' in a or 'api_cost_known' in a) and not a.get('cache_hit')]
+    paid = [a for a in attempts if ('api_usd' in a or 'api_cost_known' in a)
+            and not a.get('cache_hit') and a.get('request_sent') is not False]
     return {'new_paid_api_calls': 0 if cached else len(paid),
             'known_api_estimate_usd': 0 if cached else sum(a.get('api_usd') or 0 for a in paid),
             'api_cost_known': cached or all(a.get('api_cost_known', False) for a in paid)}
@@ -309,10 +336,16 @@ def tracked_call(model, attempts, *args, **kwargs):
     try:
         raw, stats = model(*args, **kwargs)
     except Exception as exc:
+        from .context_student import RequestSizeLimitError
         # Keep preceding usage even if a later provider call fails before a
         # receipt arrives. Unknown failed-call cost is never reported as $0.
         hosted = getattr(model, 'hosted', False) is True or any('api_usd' in a for a in attempts)
-        failed = {'api_cost_known': False, 'error': type(exc).__name__} if hosted else {'error': type(exc).__name__}
+        if isinstance(exc, RequestSizeLimitError):
+            failed = {'api_cost_known': True, 'api_usd': 0.0, 'request_sent': False,
+                      'error': type(exc).__name__, 'request_bytes': exc.request_bytes,
+                      'max_bytes': exc.max_bytes}
+        else:
+            failed = {'api_cost_known': False, 'error': type(exc).__name__} if hosted else {'error': type(exc).__name__}
         attempts.append(failed)
         exc.attempts = list(attempts)
         raise
@@ -324,6 +357,17 @@ def checked_interpret(*args, **kwargs):
     try:
         return interpret(*args, **kwargs)
     except Exception as exc:
+        from .context_student import RequestSizeLimitError
+        if isinstance(exc, RequestSizeLimitError):
+            failure = QuestionNotUnderstood(
+                'Agere could not fit the complete planning context for this request. '
+                'The original question was preserved; no incomplete plan was executed.',
+                attempts=getattr(exc, 'attempts', []))
+            failure.planner_receipt = attempt_receipt(failure.attempts)
+            failure.planner_receipt['evidence_discovery'] = getattr(exc, 'discovery', [])
+            failure.planner_receipt['request_admission'] = {
+                'request_sent': False, 'request_bytes': exc.request_bytes, 'max_bytes': exc.max_bytes}
+            raise failure from exc
         exc.planner_receipt = attempt_receipt(getattr(exc, 'attempts', []))
         exc.planner_receipt['evidence_discovery'] = getattr(exc, 'discovery', [])
         raise
@@ -359,7 +403,7 @@ def interpret(catalog, question, *, population=None, model=None, force_model=Fal
     proposal_count = 0
     for _ in range(6):
         if proposal_count >= 3: break
-        catalog_context = schema_slice(catalog, question, extra, operations, streams)
+        catalog_context = schema_prompt_view(schema_slice(catalog, question, extra, operations, streams))
         from .request_discovery import prompt_view
         discovery_context = prompt_view(discovery)
         user = json.dumps({'catalog': catalog_context, 'question': question,
@@ -410,6 +454,11 @@ def interpret(catalog, question, *, population=None, model=None, force_model=Fal
                 'grammar_decline': failures[0], 'qualified_interpretation': False,
                 'execution_accepted': False}
         except (ValueError, KeyError, TypeError) as exc:
+            from .context_student import RequestSizeLimitError
+            # Admission is not a malformed proposal. Retrying would spend on
+            # another interpretation while the required audit still cannot fit.
+            if isinstance(exc, RequestSizeLimitError):
+                raise
             failures.append(str(exc))
             feedback = {'error': str(exc), 'previous_proposal': raw[:16000],
                         'instruction': 'Correct the wire contract while preserving every original requirement.'}
@@ -460,7 +509,8 @@ def plan(stack, question, ledger=None, frontier=None, *, population=None, model=
             owned = ledger is None
             current_ledger = ledger or BudgetLedger(default_ledger_path())
             try:
-                hosted = HostedModel(current_ledger, stack.receipts, model=hosted_model)
+                hosted = HostedModel(current_ledger, stack.receipts, model=hosted_model,
+                                     request_max_bytes=REQUEST_MAX_BYTES)
                 with interpretation_window(stack):
                     contract, interpretation = checked_interpret(catalog, question, population=population, model=hosted,
                                                           force_model=planning == 'frontier')

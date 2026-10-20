@@ -310,8 +310,9 @@ class HostedModel:
     single = True
     hosted = True
 
-    def __init__(self, ledger, out, model='claude-haiku-5-5'):
+    def __init__(self, ledger, out, model='claude-haiku-5-5', *, request_max_bytes=None):
         self.ledger, self.out, self.model = ledger, out, model
+        self.request_max_bytes = request_max_bytes
         self.identity = model
         self.cost = 0.0
 
@@ -324,7 +325,8 @@ class HostedModel:
                     {'type': 'text', 'text': 'EXAMPLES\n' + rest}]}]}
         start = time.perf_counter()
         text, receipt = send(body, 'claude', self.ledger, self.out,
-                             parse=lambda raw: ''.join(b.get('text', '') for b in raw.get('content', []) if b.get('type') == 'text'))
+                             parse=lambda raw: ''.join(b.get('text', '') for b in raw.get('content', []) if b.get('type') == 'text'),
+                             max_bytes=self.request_max_bytes)
         usd = ((receipt.get('cost_estimate') or {}).get('estimated_usd') or 0.0) if not receipt.get('cache_hit') else 0.0
         self.cost += usd
         return text, {'seconds': round(time.perf_counter() - start, 2), 'model': self.model, 'api_usd': usd,
