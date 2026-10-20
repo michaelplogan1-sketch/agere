@@ -56,3 +56,27 @@ The original broad `test_metric_first` sweep also selected two obsolete old-rout
 No new independent clinical adjudication, protected head-to-head evaluation or benchmark superiority claim was made. The separate 20-item audit remains Mike's agree/change/drop decision. Audit answers were not modified or used as development fixtures.
 
 Next step: integration owner review this exact patch/manifest, run the fresh-copy checks, then manage deployment and the central continuity checkpoint. All broader product charter and G5 qualification requirements remain open as recorded by the owner.
+
+## Follow-up: modifier order and ordinary phrasing
+
+After the original candidate was integrated as 5e70b6d and deployed by the owner in 780816d, Mike asked this lane to continue. The new candidate is based on 270c3b4 and changes only `request_language.py`, its new `test_request_language_composition.py`, and this handoff note.
+
+Measured failure: seven of twelve diagnostic phrases still required language-model fallback, including `no-show rate by payer in 2029`, `PMPM by payer in 2029 excluding ckd`, `patients on a statin by payer in 2029 excluding ckd`, `How many patients are over 65?`, and `average age by payer`. Grouping previously captured all text to the end of a question.
+
+The shared grammar now consumes catalog-backed grouping dimensions independently of the remaining predicates and period, preserves literal source spans, and supports unambiguous field-based aggregates and ordinary copular phrasing. Literal values containing grouping/date words are masked during syntax recognition. Unknown constraints and ambiguous event periods continue to decline. No new answer path or metric definition was added.
+
+Verification on this candidate:
+
+- The same twelve diagnostic phrases improve from **5/12 to 12/12 locally compiled**, with no model calls. These are development probes, not an unseen benchmark.
+- **112 focused tests pass**, including all six orders of period/group/exclusion for governed denial rate and ED event counts; medication-period binding; age and sum arithmetic; quoted values; unknown clauses; original shared-planner correctness; owner-added concept-quote protections; conversation/workflow integration; and graph contracts.
+- The original, unchanged fixed workload remains **180/180 compiled and executed, 0 frontier calls per 100 questions**. Age and ED direct totals remain 886 and 1,501.
+- Separate handwritten warehouse SQL matches every row for `Count ED visits by payer in 2029 excluding ckd` and `average age by payer` (17 payer groups each).
+- No paid API calls, protected evaluation execution, source-data changes, control changes or live-runtime changes were made in this follow-up.
+
+Evidence and exact patch: `artifacts/shared-planner-modifier-order-2026-10-20/`. The original candidate is deployed; this follow-up remains a frozen integration candidate. The integration owner retains deployment and continuity-checkpoint ownership.
+
+Reproduce the focused suite:
+
+```sh
+.venv/bin/python -m unittest test_request_language_composition test_shared_planner test_shared_planner_correctness test_frontier_conversation_integration test_answer_workflow test_analysis_graph test_graph_contracts -q
+```

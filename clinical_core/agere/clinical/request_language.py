@@ -52,6 +52,27 @@ def related(table, predicate, quote):
     return {'op': 'exists', 'table': table, 'where': predicate, 'quote': quote}
 
 
+def syntax_text(text, *, hide_parentheses=False):
+    """Same offsets, with literals (and optionally nested predicates) masked."""
+    chars, quote, depth = list(text), None, 0
+    for i, char in enumerate(text):
+        if quote:
+            chars[i] = ' '
+            if char == quote: quote = None
+        elif char in ('"', "'"):
+            quote = char
+            chars[i] = ' '
+        elif hide_parentheses and char == '(':
+            depth += 1
+            chars[i] = ' '
+        elif hide_parentheses and char == ')':
+            depth -= 1
+            chars[i] = ' '
+        elif depth:
+            chars[i] = ' '
+    return ''.join(chars)
+
+
 class Parser:
     def __init__(self, catalog, question, *, bound=False):
         self.catalog, self.question, self.bound = catalog, question, bound
@@ -91,6 +112,42 @@ class Parser:
         if not got or got[2]: raise PlanError('Unrecognized or ambiguous dimension: '+text)
         return got[1]
 
+    def grouping(self, text, dimensions):
+        """Consume only named group dimensions; leave later clauses to parse."""
+        markers = list(re.finditer(r'(?<!\S)(?:grouped by|group by|broken down by|by|per)\s+',
+                                   syntax_text(text, hide_parentheses=True), re.I))
+        if not markers: return text, [], None
+        if len(markers) != 1: raise PlanError('Use one explicit grouping clause')
+        marker = markers[0]
+        cursor, groups = marker.end(), []
+        while True:
+            got = self.prefix(text[cursor:], dimensions)
+            if not got: raise PlanError('Unknown grouping dimension: '+text[cursor:])
+            word, field, _ = got
+            if any(value == field for _, value in groups): raise PlanError('Duplicate grouping dimension')
+            groups.append((word, field))
+            cursor += len(word)
+            separator = re.match(r'\s*(?:,\s*|\band\s+)', text[cursor:], re.I)
+            if not separator: break
+            next_cursor = cursor + separator.end()
+            if not self.prefix(text[next_cursor:], dimensions):
+                # "by payer and excluding ckd" starts another predicate.
+                if separator.group().strip().lower() == 'and': break
+                raise PlanError('Missing grouping dimension after comma')
+            cursor = next_cursor
+        quoted = text[marker.start():cursor]
+        return text[:marker.start()]+' '+text[cursor:], groups, quoted
+
+    def bind_parent_quotes(self, value):
+        """Parent booleans do not cover words; leaves keep their literal spans."""
+        if not isinstance(value, dict): return
+        if value.get('op') in ('and', 'or', 'not', 'exists') and value.get('quote') not in self.question:
+            value['quote'] = self.question
+        for child in value.values():
+            if isinstance(child, list):
+                for item in child: self.bind_parent_quotes(item)
+            elif isinstance(child, dict): self.bind_parent_quotes(child)
+
     def condition(self, concept_id, quote):
         return {'op': 'concept', 'kind': 'condition', 'names': [concept_id], 'version': 1, 'period': None, 'quote': quote}
 
@@ -115,11 +172,6 @@ class Parser:
             return {'source': {'table': 'patient', 'quote': marker.group().strip()},
                     'select': [{'kind': 'field', 'field': 'patient.patient_id', 'alias': 'patient_id', 'quote': marker.group().strip()}],
                     'where': where, 'group_by': [], 'order_by': [], 'limit': None, 'unresolved': []}
-        group_text = None
-        group = re.search(r'\s+(?:grouped by|group by|by|per)\s+(.+)$', text, re.I)
-        if group:
-            group_text = group.group(1)
-            text = text[:group.start()].strip()
         lead = re.match(r'(?i)(how many|number of|count|list|which|show|find|group|break down|what is the total|what is the average|total|sum|average|mean)\s+', text)
         # Business questions often name the entity without an imperative.
         # Retain original spans; do not rewrite the question to add "count".
@@ -128,7 +180,7 @@ class Parser:
         verb = lead.group(1).lower() if lead else 'count'
         rest = text[lead.end():] if lead else text
         fn = 'list' if verb in ('list', 'which', 'show', 'find') else 'avg' if verb in ('average', 'mean', 'what is the average') else 'sum' if verb in ('total', 'sum', 'what is the total') else 'count'
-        field_name = None
+        field_name, source = None, None
         if fn in ('sum', 'avg'):
             # A field name may itself contain "of" (e.g. length of stay).
             # Resolve the catalog field and source together instead of splitting
@@ -142,13 +194,21 @@ class Parser:
                 except PlanError: continue
                 split = (rest[:m.start()], rest[m.end():], resolved)
                 break
-            if split is None: raise PlanError('Aggregation needs a recognized field and source')
-            field_text, rest, field_name = split
-        source = self.prefix(rest, self.sources)
+            if split is None:
+                # A catalog field supplies its relation: e.g. "average age".
+                field = self.prefix(rest, self.field_aliases())
+                if not field: raise PlanError('Aggregation needs a recognized field and source')
+                field_text, field_name, rest = field
+                source = (field_text, (field_name.partition('.')[0], None), rest)
+            else:
+                field_text, rest, field_name = split
+        source = source or self.prefix(rest, self.sources)
         if not source and self.bound:
             source = self.prefix(rest, {'them': ('patient', None), 'those patients': ('patient', None), 'these patients': ('patient', None)})
         if not source: raise PlanError('Explicit source or saved cohort required')
         source_quote, (self.base, default), rest = source
+        rest, group_fields, group_quote = self.grouping(rest, self.field_aliases())
+        rest = re.sub(r'^\s*(?:are|were|is|was)(?:\s+there)?\s+', '', rest, flags=re.I)
         base_filter = None
         if default:
             field, value = default
@@ -157,11 +217,10 @@ class Parser:
         where, tail = self.expression(rest)
         if tail.strip(): raise PlanError('Unconsumed request: '+tail)
         where = combine('and', [base_filter, where], self.question)
-        measures = []
-        if group_text:
-            for part in re.split(r'\s+and\s+|,\s*', group_text, flags=re.I):
-                field = self.field(part)
-                measures.append({'kind': 'field', 'field': field, 'alias': field.split('.')[-1], 'quote': part})
+        self.bind_parent_quotes(where)
+        measures = [{'kind': 'field', 'field': field, 'alias': field.split('.')[-1], 'quote': word}
+                    for word, field in group_fields]
+        if measures: measures[0]['quote'] = [measures[0]['quote'], group_quote]
         groups = [m['alias'] for m in measures]
         if fn == 'list' and not groups:
             if 'patient_id' not in self.catalog.tables[self.base]: raise PlanError('List the required columns explicitly')
@@ -186,19 +245,13 @@ class Parser:
         if re.match(r'^(?:for|of|from)\s+(?:admissions|hospital stays)\b', rest, re.I):
             return None  # explicit field/source aggregation uses the relational grammar
         definition = V.definitions()[ident]
-        groups, quotes = [], [measure_quote]
-        match = re.search(r'(?:^|\s+)(?:grouped by|group by|broken down by|by)\s+(.+)$', rest, re.I)
-        if match:
-            for word in re.split(r'\s+and\s+|,\s*', match[1], flags=re.I):
-                word = word.strip()
-                if word.lower() not in V.GROUPS: raise PlanError('Unknown governed grouping: '+word)
-                groups.append(word.lower())
-            quotes.append(match.group().strip())
-            rest = rest[:match.start()]
+        rest, group_fields, group_quote = self.grouping(rest, {k: k for k in V.GROUPS})
+        groups, quotes = [field for _, field in group_fields], [measure_quote]
+        if group_quote: quotes.append(group_quote)
         # A single explicit period belongs to the measure, never to patient DOB.
         periods = list(re.finditer(
             r'\b(?:(?:in|during|for)\s+)?20\d{2}\b|\b(?:last|past|trailing)\s+(?:12|twelve)\s+months\b|\b(?:last year|this year|ytd)\b',
-            rest, re.I))
+            syntax_text(rest), re.I))
         if len(periods) > 1: raise PlanError('Multiple periods need an explicit comparison')
         spoken = periods[0].group() if periods else ''
         start, end, _ = metrics.period_for(spoken, self.catalog.identity['as_of'],
@@ -210,15 +263,7 @@ class Parser:
         self.base = 'patient'
         where, tail = self.expression(rest.strip())
         if tail.strip(): raise PlanError('Unconsumed metric scope: '+tail)
-        def bind_parents(value):
-            if not isinstance(value, dict): return
-            if value.get('op') in ('and', 'or', 'not', 'exists') and value.get('quote') not in self.question:
-                value['quote'] = self.question
-            for child in value.values():
-                if isinstance(child, list):
-                    for item in child: bind_parents(item)
-                elif isinstance(child, dict): bind_parents(child)
-        bind_parents(where)
+        self.bind_parent_quotes(where)
         params = V.parameters(ident, {'start': start.isoformat(), 'end': end.isoformat()}, groups)
         try: V.validate(params)
         except ValueError as exc: raise PlanError(str(exc)) from exc
