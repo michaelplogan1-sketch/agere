@@ -30,6 +30,10 @@ def correction_context(path, question):
     matches.extend(feedback_context(path, question))
     matches.extend({'status': 'verified_rule', 'verified_rule': lesson,
                     'authority': lesson['authority']} for lesson in financial_context(path, question))
+    from . import healthcare_learning
+    matches.extend(healthcare_learning.feedback_context(path, question))
+    matches.extend({'status': 'verified_rule', 'verified_rule': lesson, 'authority': lesson['authority']}
+                   for lesson in healthcare_learning.context(path, question))
     return matches
 
 
@@ -207,7 +211,9 @@ def record_correction(path, question, note, expected=None, rule=None):
     result = {'recorded': True, 'correction_id': correction_id, 'revoked_analysis_shapes': len(revoked), 'status': 'needs_revalidation',
             'effect': 'Related learned plans are suspended. Future interpretation receives the correction and must recheck source evidence. Feedback is not automatic clinical approval or model training.'}
     if rule is not None:
-        from .economics_learning import verify_rule
+        from .economics_learning import verify_rule as financial_verify
+        from .healthcare_learning import verify_rule as healthcare_verify
+        verify_rule = healthcare_verify if isinstance(rule, dict) and 'entry_id' in rule else financial_verify
         try:
             result['rule_verification'] = verify_rule(path, correction_id, rule)
             result['effect'] = result['rule_verification']['effect']
@@ -237,9 +243,11 @@ def summary(path):
                     shapes[table] = dict(plans.execute(f'SELECT status,COUNT(*) FROM {table} GROUP BY status'))
     from . import procedural_memory
     from .economics_learning import summary as economics_summary
+    from .healthcare_learning import summary as healthcare_summary
     return {'schema': VERSION, 'routes': routes, 'statuses': statuses, 'verified_training_pairs': verified,
             'procedural_memory': procedural_memory.summary(path),
             'healthcare_economics': economics_summary(path),
+            'healthcare_domains': healthcare_summary(path),
             'corrections': corrections, 'reusable_structures': shapes,
             'learning_mode': 'Continuous capture and checked plan reuse; corrections require revalidation. No automatic model-weight training or clinical qualification.',
             'top_gaps': [{'reason': r, 'count': n} for r, n in gaps]}

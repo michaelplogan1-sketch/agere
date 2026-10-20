@@ -473,7 +473,8 @@ def build_answer_core(plan, results, memberships, question):
         answer.update(status='answered' if ok else 'unsupported', answer_type='table' if ok else 'unsupported', table=rows,
                       value=summary(report), method=report['method'], count=len(rows),
                       overall={'knowledge': {'query': report['query'], 'retrieval': report['retrieval'], 'corpus': report['corpus'],
-                                             'sources': report['sources'], 'synthesis': report['synthesis']}})
+                                             'sources': report['sources'], 'synthesis': report['synthesis'],
+                                             'source_scope': report.get('source_scope'), 'learning': report.get('learning')}})
         if not ok: answer['missing'].append(summary(report))
         return answer
     if last['operation'] == 'early_signal':
@@ -1218,7 +1219,7 @@ def code_identity():
                       Path(__file__).with_name('demand.py'),
                       Path(__file__).with_name('profile.py'),
                       Path(__file__).with_name('early_signal.py'),
-                      Path(__file__).with_name('vbc_knowledge.py'), *sorted((Path(__file__).resolve().parents[3] / 'config/agere/knowledge').glob('*.jsonl')),
+                      Path(__file__).with_name('healthcare_learning.py'), Path(__file__).with_name('vbc_knowledge.py'), *sorted((Path(__file__).resolve().parents[3] / 'config/agere/knowledge').glob('*.jsonl')),
                       *[Path(__file__).with_name(n) for n in ('program_work.py','program_work_current.py','program_work_v1.py','functional_programs.py','functional_review.py','registered_program_work.py','domain_programs.py','domain_review.py','work_adapters.py')],Path(__file__).with_name('program_documents.py'),Path(__file__).with_name('program_document_change.py'),
                       Path(__file__).with_name('program_acquisition.py'),Path(__file__).with_name('evidence_portfolio.py'),Path(__file__).with_name('program_resolution.py'),Path(__file__).with_name('measure_composition.py'),
                       Path(__file__).with_name('requirement_work.py'), Path(__file__).with_name('graph_decision.py'), Path(__file__).with_name('graph_criteria.py'), Path(__file__).with_name('graph_reports.py'), Path(__file__).with_name('graph_observation.py'), Path(__file__).with_name('graph_references.py'),
@@ -1620,7 +1621,7 @@ def execute(stack, plan, *, question=None):
                     from ..gateway import BudgetLedger, default_ledger_path
                     ledger = BudgetLedger(default_ledger_path())
                 try:
-                    detail = vbc_knowledge.execute(params, encoder=getattr(stack.retriever, 'encoder', None), allow_live=ledger is not None,
+                    detail = vbc_knowledge.execute(params, learning_path=path, encoder=getattr(stack.retriever, 'encoder', None), allow_live=ledger is not None,
                                                    ledger=ledger, out=Path(__file__).resolve().parents[3] / 'artifacts/vbc-knowledge/synthesis')
                 finally:
                     if ledger is not None: ledger.close()

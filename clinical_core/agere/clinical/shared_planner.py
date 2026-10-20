@@ -73,7 +73,7 @@ def policy_identity():
                      'age.py', 'request_vocabulary.py', 'request_shapes.py', 'local_request_worker.py',
                      'concepts.py', 'drug_classes.py', 'nl2sql.py', 'workflow_contract.py', 'request_discovery.py', 'general_analysis.py', 'dose.py',
                      'analysis_evidence.py', 'answer_dependencies.py', 'procedural_memory.py',
-                     'conversation.py', 'question_input.py', 'learning.py', 'economics_learning.py', 'programs.py', 'contract_strategy.py',
+                     'conversation.py', 'question_input.py', 'learning.py', 'economics_learning.py', 'healthcare_learning.py', 'vbc_knowledge.py', 'programs.py', 'contract_strategy.py',
                      'metrics.py', 'metric_families.py', 'measures.py', 'risk_adjustment.py', 'vbc.py')}})
 
 SYSTEM = '''Interpret a healthcare warehouse question into a typed relational request. Return JSON only.
@@ -83,6 +83,11 @@ Use only within their explicit program, variant and year; they do not verify the
 For shared-savings/downside-risk arithmetic use vbc shared_savings or contract_strategy with supplied inputs.
 Never infer a commercial loss rate as one minus the savings rate, ignore a revenue cap, or invent missing terms.
 Name the performance year and distinguish scenario arithmetic, realized payment and causal intervention savings.
+Healthcare verified_rule entries are exact stored reviewed facts bound to entity, source version and year basis.
+Use healthcare_source_context for CMS models, MA/Part D measures and population health.
+Keep Star Ratings year separate from measurement year. Reference-version methods are not patient data periods.
+Never turn approximate measure-engine results into certified HEDIS, contract Stars or beneficiary eligibility.
+Unresolved source scope requires clarification; reported feedback never overrides a cited fact or its applicability.
 Preserve EVERY predicate, negation, OR/AND, time anchor, measure, grouping, requested column and comparison.
 Use literal substrings of the ORIGINAL question in quote fields. Do not use the entire question as a catch-all quote.
 If a requirement is ambiguous or unavailable in this language, retain its exact quote in unresolved with the reason.
@@ -300,6 +305,7 @@ def schema_slice(catalog, question, extra=(), operations=(), streams=()):
     stream_names = sorted(catalog.stream_fields, key=lambda s: (-len(words & set(s.replace('_',' ').split())), s))
     selected_streams = list(dict.fromkeys([*streams, *stream_names[:3]]))
     from .request_discovery import describe
+    from . import healthcare_learning
     discovery_metadata = describe(catalog, selected, selected_streams)
     from .request_vocabulary import definitions, digest, concept_definitions, CONDITION_EVIDENCE_POLICY
     vocabulary = {k: {'version': v['version'], 'definition_digest': digest(v), 'meaning': v.get('summary', v['name'])}
@@ -313,6 +319,7 @@ def schema_slice(catalog, question, extra=(), operations=(), streams=()):
             'selected_operator_contracts': selected_contracts,
             'discovery_metadata': discovery_metadata,
             'governed_knowledge': governed_knowledge(),
+            'healthcare_source_context': healthcare_learning.knowledge_context(question),
             'as_of': catalog.identity.get('as_of'), 'more_schema_available': True}
 
 

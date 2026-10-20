@@ -805,6 +805,14 @@ def serve(run,port,annotations=None,evidence_queries=None,stack=None,allow_live_
                 if connected_stack is None:self.send_error(404);return
                 from .clinical.intelligence_activity import snapshot as intelligence_snapshot
                 raw=json.dumps(intelligence_snapshot(connected_stack.path)).encode();mime='application/json'
+            elif parsed.path=='/api/stack/healthcare-learning':
+                if connected_stack is None: self.send_error(404); return
+                from .clinical import healthcare_learning, economics_learning
+                result=healthcare_learning.summary(connected_stack.path)
+                question=parse_qs(parsed.query).get('question',[''])[0]
+                result['rule_options']=healthcare_learning.rule_options(question) + economics_learning.rule_options(question)
+                result['source_scope']=healthcare_learning.knowledge_context(question)
+                raw=json.dumps(result).encode();mime='application/json'
             elif parsed.path=='/api/stack/economics-learning':
                 if connected_stack is None: self.send_error(404); return
                 from .clinical import economics_learning

@@ -393,25 +393,64 @@ def synthesize(question, hits, *, allow_live=False, ledger=None, out=None, model
             'new_paid_api_calls': 0 if receipt.get('cache_hit') else 1}
 
 
-def execute(params, *, encoder=None, directory=None, allow_live=False, ledger=None, out=None):
+def execute(params, *, encoder=None, directory=None, allow_live=False, ledger=None, out=None, learning_path=None):
     """Retrieve and compose. Report: hits (entries with scores), composed answer, sources, retrieval method."""
     params = validate(params)
     idx = index(encoder, directory)
-    hits, method = idx.search(params['query'], params['top'], params['topic'])
+    from . import healthcare_learning
+    reviewed = healthcare_learning.catalog(directory)
+    named = healthcare_learning.candidates(params['query'], reviewed)
+    scope_notes = []
+    if named:
+        eligible = [e for e in named if healthcare_learning.applicability(e, params['query']) in ('exact', 'unspecified')]
+        scope_notes = [{'id': e['id'], 'scope': e['learning']['scope'],
+                        'applicability': healthcare_learning.applicability(e, params['query']),
+                        'limitations': e['learning']['limitations']} for e in named]
+        # Source scope precedes ranking: a highly similar historical entry must
+        # never displace the applicable specification or hide a missing year.
+        eligible_ids = {e['id'] for e in eligible}
+    else:
+        eligible_ids = None
+    hits, method = idx.search(params['query'], len(idx.entries) if named else params['top'], params['topic'])
+    if eligible_ids is not None:
+        hits = [h for h in hits if h['entry']['id'] in eligible_ids][:params['top']]
+    else:
+        # Unresolved entity aliases must not bypass the reviewed edition guard.
+        hits = [h for h in hits if not h['entry'].get('learning')]
     on_topic = bool(hits) and max(h['coverage'] for h in hits) >= MIN_COVERAGE
     found = [h for h in hits if h['score'] >= MIN_SCORE] if on_topic else []
     text, sources = compose(params['query'], found)
+    unresolved = any(s['applicability'] in ('mismatch', 'ambiguous') for s in scope_notes)
+    if unresolved:
+        text = 'The requested year or version is ambiguous or not covered by the reviewed source. Specify the model performance year, Star Ratings year and measurement year, or reference version.'
+        found, sources = [], []
+    elif found and scope_notes:
+        text += '\n\n' + ' '.join(dict.fromkeys(s['limitations'] for s in scope_notes))
+        if any(s['applicability'] == 'unspecified' for s in scope_notes):
+            text += '\n\nNo applicable year was supplied. The cited edition is background only; specify the year before applying these rules.'
+    learned = healthcare_learning.context(learning_path, params['query']) if learning_path else []
+    feedback = healthcare_learning.feedback_context(learning_path, params['query']) if learning_path else []
+    if any(f['healthcare_feedback']['entry_id'] not in reviewed for f in feedback):
+        unresolved = True
+        text = 'A previously checked source is no longer available in the reviewed catalog. This question needs source revalidation.'
+        found, sources = [], []
+    if learned and found:
+        text += '\n\nSource-checked corrections reused: ' + '; '.join(reviewed[r['entry_id']]['learning']['fields'][r['field']]['label'] + ' = ' + json.dumps(r['value'], ensure_ascii=False) for r in learned) + '.'
+    if feedback and found:
+        text += '\n\nReported feedback prompted a source recheck. The explanation in that feedback remains unverified.'
     report = {'version': VERSION, 'query': params['query'], 'retrieval': method, 'answered': bool(found),
+              'source_scope': scope_notes,
+              'learning': {'verified_rules': learned, 'recheck_obligations': feedback},
               'corpus': {'entries': len(idx.entries), 'digest': corpus_digest(directory)[:16]},
               'answer': text, 'sources': sources, 'new_paid_api_calls': 0, 'synthesis': None,
               'hits': [{'id': h['entry']['id'], 'topic': h['entry']['topic'], 'title': h['entry'].get('title', h['entry']['id']),
                         'score': h['score'], 'bm25': h['bm25'], 'dense': h['dense'], 'summary': h['entry']['summary'],
                         'facts': h['entry']['facts'], 'citations': h['entry']['citations'], 'confidence': h['entry']['confidence'],
                         'last_verified': h['entry']['last_verified'], 'contradictions': h['entry'].get('contradictions') or [],
-                        'coverage': h['coverage'], 'relevant': on_topic and h['score'] >= MIN_SCORE} for h in hits],
+                        'coverage': h['coverage'], 'relevant': not unresolved and on_topic and h['score'] >= MIN_SCORE} for h in hits],
               'method': ('Retrieved cited knowledge entries (' + method + ') and composed the answer extractively from their '
                          'summaries; no model wrote the text.')}
-    if found:
+    if found and not scope_notes:
         s = synthesize(params['query'], found, allow_live=allow_live, ledger=ledger, out=out)
         if s:
             report['synthesis'] = s
@@ -422,6 +461,7 @@ def execute(params, *, encoder=None, directory=None, allow_live=False, ledger=No
 
 def summary(report):
     if not report['answered']:
+        if report.get('answer'): return report['answer']
         return ('No knowledge entry covers this question. The knowledge base holds cited explanations of VBC programs, '
                 'attribution, risk adjustment, quality, CMS/CMMI models, market players, frameworks and evidence.')
     if report.get('synthesis') and report['synthesis'].get('text'): return report['synthesis']['text']

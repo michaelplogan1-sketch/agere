@@ -139,6 +139,15 @@ def governed_knowledge():
                    'A revenue-based loss cap requires participant revenue. '
                    'Scenario payments do not establish payer entitlement or a causal intervention effect.',
         'quality': 'State assumed quality credit and elected thresholds; request actual values for a contract-specific conclusion.'}
+    from . import healthcare_learning
+    reviewed = healthcare_learning.catalog()
+    knowledge['healthcare_domains'] = {
+        'catalog_digest': healthcare_learning._digest({k: v['source_digest'] for k,v in reviewed.items()}),
+        'reviewed_scopes': [e['learning']['scope'] for e in reviewed.values()],
+        'meaning': 'Use knowledge for cited explanations, measure/vbc for operational calculations. '
+                   'Star Ratings year and measurement year differ by measure. Measure definitions are approximations, '
+                   'not certified HEDIS or CMS contract ratings. Preserve denominator, exclusions, observation coverage, '
+                   'source version and case-mix limitations; comparative rates do not establish causal effects.'}
     return knowledge
 
 

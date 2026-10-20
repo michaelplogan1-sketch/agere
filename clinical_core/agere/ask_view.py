@@ -949,6 +949,7 @@ function loadLoop(){Promise.all(['/api/stack/learning','/api/stack/learning-loop
  if(!$('#loop'))return;const shapes=learning?.reusable_structures||{},stored=Object.values(shapes).reduce((n,s)=>n+(s.active||0),0),revoked=Object.values(shapes).reduce((n,s)=>n+(s.revoked||0),0);
  let html=learning?'<span class="pill" title="'+esc(learning.learning_mode||'Checked structures remain source- and policy-bound; counts are not a quality score.')+'"><b>'+fmt(stored)+'</b> saved plan structures · <b>'+fmt(learning.corrections||0)+'</b> corrections · <b>'+fmt(revoked)+'</b> suspended</span>':'';
  if(learning?.procedural_memory?.revisions){const m=learning.procedural_memory;html+='<span class="pill" title="'+esc(m.qualification)+'"><b>'+fmt(m.revisions)+'</b> lesson revisions · <b>'+fmt(m.states?.quarantined||0)+'</b> quarantined</span>'}
+ const hc=learning?.healthcare_domains;if(hc)html+='<span class="pill" title="Questions identify knowledge gaps. Checked facts apply only to their source version and scope."><b>'+fmt(hc.questions)+'</b> healthcare questions · <b>'+fmt(hc.verified_rules)+'</b> checked facts · <b>'+fmt(hc.inactive_rules)+'</b> suspended facts</span>';
  const fin=learning?.healthcare_economics;if(fin)html+='<span class="pill" title="Questions are captured automatically. Rule lessons apply only to their recorded program, year and source version."><b>'+fmt(fin.questions)+'</b> economics questions · <b>'+fmt(fin.verified_rules)+'</b> checked rules · <b>'+fmt(fin.inactive_rules)+'</b> suspended rules</span>';
  if(loop?.status==='ok'){const g=loop.gaps||{};html+='<span class="pill" title="Offline development report; no automatic model promotion"><b>'+fmt(g.actionable_clusters||0)+'</b> gap clusters · <b>'+fmt((loop.regressions||{}).cases||0)+'</b> regressions</span>'}
  $('#loop').innerHTML=html}).catch(()=>{})}
@@ -993,12 +994,13 @@ function activate(el){if(el.dataset.csv){downloadCSV(el.dataset.csv);return}
   state.outFilter=el.dataset.pick;refreshWorklist();return}
  if(el.dataset.flagopen){const box=el.closest('[data-flag]');box.innerHTML='<label for="flagnote"><b>What is wrong with this answer?</b></label><textarea id="flagnote"></textarea><div class="tools"><button type="button" class="btn small primary" data-flagsend="1">Record correction</button><button type="button" class="btn small" data-flagcancel="1">Cancel</button></div>';$('#flagnote').focus();
   const t=state.turns[state.active]||{},question=((t.data||{}).conversation||{}).resolved_question||t.question;
-  fetch('/api/stack/economics-learning?question='+encodeURIComponent(question||'')).then(r=>r.ok?r.json():null).then(d=>{
-   if(!d?.rule_options?.length||!box.querySelector('#flagnote'))return;box._economicsRules=d.rule_options;
+  fetch('/api/stack/healthcare-learning?question='+encodeURIComponent(question||'')).then(r=>r.ok?r.json():null).then(d=>{
+   if(!box.querySelector('#flagnote'))return;
+   if(!d?.rule_options?.length){if(d?.source_scope?.unresolved_scope?.length){const hint=document.createElement('p');hint.className='hint';hint.textContent='To check a cited fact, the question needs a covered model performance year, a clear Star Ratings or measurement year, or the applicable reference version. Your correction can still be recorded for review.';box.insertBefore(hint,box.querySelector('.tools'))}return}box._economicsRules=d.rule_options;
    const label=document.createElement('label');label.textContent='Optional: rule this correction refers to';
-   const select=document.createElement('select');select.dataset.flagrule='1';select.setAttribute('aria-label','Cited program rule');
+   const select=document.createElement('select');select.dataset.flagrule='1';select.setAttribute('aria-label','Cited healthcare fact or program rule');
    select.add(new Option('Keep as feedback for review',''));
-   d.rule_options.forEach((r,i)=>select.add(new Option(r.label+' · '+(typeof r.value==='number'?(r.value*100).toFixed(1)+'%':String(r.value)),String(i))));
+   d.rule_options.forEach((r,i)=>select.add(new Option(r.label+' · '+(r.display_value??(typeof r.value==='number'?(r.value*100).toFixed(1)+'%':String(r.value))),String(i))));
    label.append(select);box.insertBefore(label,box.querySelector('.tools'));
    const note=document.createElement('p');note.className='hint';note.textContent='A selected rule is checked against its cited specification. Your explanation remains feedback to investigate.';label.append(note);
    const cite=document.createElement('p');label.append(cite);select.onchange=()=>{cite.replaceChildren();const rule=box._economicsRules[select.value];if(!rule)return;for(const src of rule.sources){const a=document.createElement('a');a.href=src.url;a.textContent=src.title;a.target='_blank';a.rel='noopener';cite.append(a,document.createTextNode(' '))}};
@@ -1007,7 +1009,7 @@ function activate(el){if(el.dataset.csv){downloadCSV(el.dataset.csv);return}
  if(el.dataset.flagsend){const box=el.closest('[data-flag]'),note=$('#flagnote').value.trim();if(!note){$('#flagnote').focus();return}const t=state.turns[state.active]||{};
   const question=((t.data||{}).conversation||{}).resolved_question||t.question;el.disabled=true;
   const selected=box.querySelector('[data-flagrule]'),chosen=selected&&selected.value!==''?box._economicsRules?.[+selected.value]:null;
-  const rule=chosen?{program:chosen.program,parameter:chosen.parameter,value:chosen.value,source_digest:chosen.source_digest}:null;
+  const rule=chosen?(chosen.entry_id?{scope:chosen.scope,entry_id:chosen.entry_id,field:chosen.field,value:chosen.value,source_digest:chosen.source_digest}:{program:chosen.program,parameter:chosen.parameter,value:chosen.value,source_digest:chosen.source_digest}):null;
   fetch('/api/stack/correct',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({question,note,...(rule?{rule}:{})})}).then(r=>r.json()).then(d=>{
    document.dispatchEvent(new Event('agere-activity-changed'));loadLoop();box.innerHTML='<p class="'+(d.error||d.rule_verification?.status==='rejected'?'badc':'goodc')+'" role="status">'+esc(d.error||d.effect||'Correction recorded; related answers require revalidation.')+'</p>'}).catch(e=>{box.innerHTML='<p class="badc">'+esc(e)+'</p>'})}}
 function refreshWorklist(){const t=state.turns[state.active];const box=document.querySelector('[data-worklist]');if(t&&t.data&&box){box.innerHTML=worklist(t.data.answer);box.scrollIntoView({behavior:'smooth',block:'nearest'})}}

@@ -21,7 +21,7 @@ Window expressions: anchor[+|-N(d|m|y)], anchors period_start, period_end, index
 from collections import defaultdict
 from datetime import date, timedelta
 from pathlib import Path
-import calendar, json, re, sqlite3
+import calendar, copy, hashlib, json, re, sqlite3
 
 VERSION = 'agere-measure-engine/1'
 SCHEMA = 'agere-measure/1'
@@ -40,8 +40,8 @@ _CACHE = {}
 def library(directory=None):
     """{measure id: measure} for every agere-measure/1 file (other JSON files, e.g. sets.json, are skipped)."""
     directory = Path(directory or LIBRARY_DIR)
-    key = (str(directory), tuple(sorted((p.name, p.stat().st_mtime_ns) for p in directory.glob('*.json'))) if directory.is_dir() else ())
-    if key in _CACHE: return _CACHE[key]
+    key = (str(directory), tuple(sorted((p.name, hashlib.sha256(p.read_bytes()).hexdigest()) for p in directory.glob('*.json'))) if directory.is_dir() else ())
+    if key in _CACHE: return copy.deepcopy(_CACHE[key])
     out = {}
     for f in sorted(directory.glob('*.json')) if directory.is_dir() else []:
         m = json.loads(f.read_text())
@@ -50,7 +50,7 @@ def library(directory=None):
         if m['id'] in out: raise ValueError(f'duplicate measure id {m["id"]} in {f.name}')
         out[m['id']] = m
     _CACHE.clear(); _CACHE[key] = out
-    return out
+    return copy.deepcopy(out)
 
 
 def measure_sets(directory=None):
