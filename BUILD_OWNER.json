@@ -71,7 +71,7 @@
   "live_runtime": {
     "pid": 45277,
     "session": 93067,
-    "commit": "70f276c",
+    "commit": "3691174",
     "rollback_commit": "ea3deca",
     "health": {
       "status": "ready",

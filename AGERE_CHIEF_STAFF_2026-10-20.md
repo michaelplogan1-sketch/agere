@@ -71,7 +71,7 @@ extend between them. Light pulses traverse those paths; the tips keep growing
 and receding after the initial emergence. Stage selection replays the formation.
 This is a conceptual illustration, without live learning or patient-link claims.
 
-UI source `70f276c` is active on :8885, with `ea3deca` as the prior UI recovery
+UI source `3691174` is active on :8885, with `ea3deca` as the prior UI recovery
 point. The existing Python process serves the updated assets on each page load.
 JavaScript syntax and whitespace checks passed. Browser checks covered 1440px
 desktop and 390px mobile (390px document width), keyboard stage changes, pause
