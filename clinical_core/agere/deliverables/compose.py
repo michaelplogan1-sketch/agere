@@ -61,6 +61,10 @@ HARD RULES (a verifier enforces them; violations fail the deliverable):
 4. If the data needed is not in the bundle, call a tool. If no tool can produce it, say so in the page instead of inventing it.
 5. Use the CSS tokens so light and dark both work; make it print-friendly; inline everything; keep it self-contained.
 6. Do not claim outcomes the data does not show. Counterparties in the action backbone are simulated; label simulated results as simulated.
+7. In frozen views every AGERE.get call must use a literal complete receipt path, e.g. AGERE.get('R-xxxxxxxxxx:answer.table.0').
+   Do not assemble paths with variables, concatenation, or path-prefix helper functions. Each literal path is checked against the bundle.
+   Check root placement: in saved_answer, source, workflow, stale and invalidated are siblings of answer, not inside answer.
+   Use only fields that are actually present. A missing optional field is unknown; do not call an absent path and hope a fallback catches it.
 
 OUTPUT FORMAT: first line `TITLE: <short title>`, then ONE ```html fenced block containing only the page BODY fragment (your <style>,
 markup and <script>; no <html>, <head>, <body> or data block; the runtime and data are injected around it). Keep the fragment compact

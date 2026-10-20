@@ -62,11 +62,14 @@ class _Text(HTMLParser):
     def __init__(self):
         super().__init__(convert_charrefs=True)
         self.text, self.binds, self.scripts, self.styles = [], [], [], []
+        self.title_text, self._in_title = [], False
         self._skip, self._script_buf = None, []
         self.active_attributes = []
 
     def handle_starttag(self, tag, attrs):
         a = dict(attrs)
+        if tag == 'title':
+            self._in_title = True
         if 'data-bind' in a:
             self.binds.append(a['data-bind'])
         for name, value in attrs:
@@ -85,6 +88,8 @@ class _Text(HTMLParser):
                 self.text.append(' ' + a[k] + ' ')
 
     def handle_endtag(self, tag):
+        if tag == 'title':
+            self._in_title = False
         if self._skip and tag == self._skip[0]:
             body = ''.join(self._script_buf)
             if tag == 'script' and self._skip[1] != 'agere-data':
@@ -96,6 +101,8 @@ class _Text(HTMLParser):
     def handle_data(self, data):
         if self._skip:
             self._script_buf.append(data)
+        elif self._in_title:
+            self.title_text.append(data)
         else:
             self.text.append(data)
 
@@ -194,6 +201,13 @@ def verify(document, bundle, *, structural_max=STRUCTURAL_MAX, check_data_block=
     p.feed(rest)
     idx = NumberIndex(bundle)
     checked = []
+    # Browser-tab titles cannot contain data-bind elements. Still require each
+    # numeric title value to exist in the evidence; body facts keep strict bindings.
+    for tok in text_numbers(' '.join(p.title_text)):
+        rids = idx.match(tok['value'], tok['decimals'], tok['suffix'])
+        checked.append({'text': tok['text'], 'receipts': sorted(rids)[:5], 'where': 'document title'})
+        if not rids:
+            violations.append({'kind': 'title_number_not_in_data', 'detail': tok['text']})
     frozen = bool(bundle.meta.get('frozen_evidence') or
                   any(r['tool'] == 'saved_answer' for r in bundle.receipts.values()))
     text = ' '.join(p.text)
@@ -224,6 +238,20 @@ def verify(document, bundle, *, structural_max=STRUCTURAL_MAX, check_data_block=
         if code.strip() == runtime.JS.strip():
             continue
         if frozen:
+            # A computed lookup hid repeated wrong-root paths from data-bind
+            # checks and stopped all later rendering. Resolve literal getter
+            # paths now; generated frozen views must not assemble them at run time.
+            for lookup in re.finditer(r'\bAGERE\s*\.\s*get\s*\(', code):
+                argument = re.match(r'''\s*(['"])(R-[0-9a-f]{10}(?::[^'"\n]*)?)\1\s*\)''', code[lookup.end():])
+                if not argument:
+                    violations.append({'kind': 'dynamic_data_lookup',
+                        'detail': 'Use AGERE.get with one literal, complete receipt path; no variable or concatenated paths.'})
+                    continue
+                path = argument.group(2)
+                try:
+                    bundle.get(path)
+                except (KeyError, IndexError, TypeError, ValueError):
+                    violations.append({'kind': 'script_binding_unresolved', 'detail': path})
             for rx, label in FROZEN_SCRIPT_RES:
                 hit = rx.search(code)
                 if hit:
