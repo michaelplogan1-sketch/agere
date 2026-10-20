@@ -1,0 +1,13 @@
+export const productStory={
+ id:'journey',name:'Intelligence',kicker:'ONE QUESTION.\nA CONNECTED SYSTEM.',title:['From a question.','To a clearer picture.'],
+ chapterIds:['intelligence-ask','intelligence-ground','intelligence-calculate','intelligence-check','intelligence-discover','intelligence-remember'],
+ labels:[['Your question','Population + time','Decision context'],['Clinical concepts','Cited definitions','Source records'],['Exact counts','Statistical methods','Contract assumptions'],['Data checks','Unsupported inputs','Reviewable answer'],['Patterns + changes','Forecast estimates','Next questions'],['Verified reuse','Source identity','Recorded corrections']],
+ stages:[
+ {n:'01',name:'Ask',title:'Start with the question you actually have.',text:'Ask across population health, quality, operations and finance. Agere builds a plan around the population, dates and definitions the question depends on.',metric:'?',unit:'one question, with its scope',status:'POPULATION + QUALITY + FINANCE',detail:'ask'},
+ {n:'02',name:'Ground',title:'Give every term a meaning.',text:'Connect the words in your question to the records behind them. Healthcare concepts, source rules and cited definitions give every calculation its meaning.',metric:'[ ]',unit:'meaning before measurement',status:'SEMANTIC ENTITIES + DEFINITION REGISTRY',detail:'ground'},
+ {n:'03',name:'Calculate',title:'Use the method the question needs.',text:'Count a population. Compare utilization. Trace payments. Model a settlement. Bring precise calculations and statistical methods to the questions that shape care and cost.',metric:'Σ',unit:'the right calculation, in context',status:'CALCULATIONS + STATISTICAL METHODS',detail:'calculate'},
+ {n:'04',name:'Explain',title:'Make the answer inspectable.',text:'Open the result, the definition or the source records. Keep the calculation and its context within reach as the conversation develops.',metric:'✓',unit:'a clear path back to the work',status:'SCOPE + SOURCE + REASONING',detail:'check'},
+ {n:'05',name:'Discover',title:'Surface the next useful question.',text:'Start with a briefing of meaningful changes and emerging patterns. Follow a trajectory, explore a forecast, and move from a finding to the next useful question.',metric:'↗',unit:'findings to investigate',status:'PATTERNS + NEXT QUESTIONS',detail:'discover'},
+ {n:'06',name:'Remember',title:'Keep what has earned reuse.',text:'Build on verified work, retain its context and remember corrections. Give the next question a stronger starting point while keeping its source and assumptions connected.',metric:'↻',unit:'verified reuse + corrections',status:'VERIFIED WORK + RECORDED CORRECTIONS',detail:'remember'}
+ ]
+};

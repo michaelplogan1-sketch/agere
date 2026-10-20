@@ -1,0 +1,19 @@
+/* Compact architecture introduction, without the circular artwork stage. */
+.product-site .intelligence-theatre.architecture-overview{height:auto;min-height:0;padding:0 5%;background:#142e25;overflow:visible}
+.product-site .architecture-overview .theatre-topline{position:relative;inset:auto;height:76px}
+.product-site .architecture-overview .theatre-copy{position:relative;inset:auto;width:auto;display:grid;grid-template-columns:1.25fr 1fr;align-items:end;gap:8%;padding:48px 0 52px;pointer-events:auto}
+.product-site .architecture-overview .theatre-copy h2{margin-bottom:0;font-size:clamp(52px,5vw,80px)}
+.overview-description p{font-size:16px;line-height:1.8;color:#b3c3ad;max-width:400px;margin:0}
+.overview-description a{display:inline-flex;align-items:center;gap:17px;font-size:13px;padding-bottom:9px;margin-top:23px;border-bottom:1px solid #a8b89566}
+.product-site .architecture-overview .engine-mode-switch{position:relative;inset:auto;height:auto;min-height:116px;grid-template-columns:repeat(3,minmax(0,1fr))}
+.product-site .architecture-overview .engine-mode-switch button{padding-top:23px;padding-bottom:23px}
+@media(max-width:760px){
+ .product-site .intelligence-theatre.architecture-overview{padding:0 6%}
+ .product-site .architecture-overview .theatre-topline{height:62px}
+ .product-site .architecture-overview .theatre-copy{grid-template-columns:1fr;gap:24px;padding:33px 0 34px}
+ .product-site .architecture-overview .theatre-copy h2{font-size:44px;margin-top:20px}
+ .overview-description p{font-size:14px;line-height:1.7}
+ .overview-description a{font-size:12px;margin-top:18px}
+ .product-site .architecture-overview .engine-mode-switch{min-height:105px}
+ .product-site .architecture-overview .engine-mode-switch button{padding-top:17px;padding-bottom:17px}
+}

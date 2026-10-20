@@ -1,0 +1,31 @@
+{
+  "reviewed": "2026-10-18",
+  "product": "Agere",
+  "pilot": {
+    "kind": "synthetic native customer-format feeds",
+    "patients": 4095,
+    "canonical_records": 1034606,
+    "delivered_files": 107239
+  },
+  "benchmark": {
+    "independently_agreed_locked_questions": 9,
+    "repeat_subset_questions": 5,
+    "saved_repeat_runs": 2,
+    "exact_answers_per_repeat_run": 5,
+    "local_answers_per_repeat_run": 4,
+    "local_answer_seconds_range": [0.92, 3.65],
+    "local_answer_model_cost_usd": 0,
+    "model_only_exact_answers_on_same_five": 1,
+    "scope": "Saved synthetic-pilot comparison; five-question repeat subset, not all nine locked questions or general accuracy."
+  },
+  "examples": {
+    "question_explorer": "Static illustrative answers; not connected to the live product.",
+    "briefing_counts": "Illustrative, not current product-run counts.",
+    "rewards": "Illustrative amounts; product rewards attach to verified recorded care steps.",
+    "agent_counterparties": "Current product adapters simulate external counterparts."
+  },
+  "cms_sources": [
+    "https://www.cms.gov/priorities/innovation/files/access-payments-amts-perf-targets.pdf",
+    "https://www.cms.gov/priorities/innovation/access-technical-frequently-asked-questions"
+  ]
+}

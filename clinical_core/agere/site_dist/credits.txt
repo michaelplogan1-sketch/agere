@@ -1,0 +1,29 @@
+AGERE — INTERACTIVE STORY
+
+Custom art direction, 3D geometry, choreography, evidence views and interface.
+
+Built using:
+React — https://github.com/facebook/react (MIT)
+Three.js — https://github.com/mrdoob/three.js (MIT)
+React Three Fiber — https://github.com/pmndrs/react-three-fiber (MIT)
+Lucide — https://github.com/lucide-icons/lucide (ISC)
+Vite — https://github.com/vitejs/vite (MIT)
+DM Sans and IBM Plex Mono — SIL Open Font License
+
+Codrops perspective-grid choreography informed the visual direction. This site uses original scene code and does not copy Codrops assets or source.
+React Bits was evaluated; no React Bits components are included.
+
+October 12 motion redesign references:
+Databricks — https://www.databricks.com/ (product diagrams and direct hierarchy)
+TextQL — https://textql.com/ (architectural motion and engineering annotation)
+System — https://www.system.com/ (editorial scale and connected-system storytelling)
+These are visual references, not affiliations. Geometry, code and copy are Agere's own.
+
+Third-party notices: /third-party-notices.txt
+Fonts are served by Google Fonts under the SIL Open Font License.
+
+2026-10-12 design research
+Research references: Igloo Inc, Buttermax, Active Theory, Bézier, Dropbox Brand, LMI Elimar, Feather and Watch Duty. Competition awards verified separately; app awards are not website awards.
+Additional product-design references: Abridge, Arcadia, Innovaccer and Hippocratic AI.
+The evidence instrument, cube SVG and patient garden diagram are original Agere compositions. No assets or components copied from reference sites.
+GitHub review: Motion, Drei, Lenis, GSAP, Codrops, React Bits, React Postprocessing and Paper Shaders. No new dependencies added.

@@ -1,0 +1,89 @@
+/* One visual system: warm paper, deep forest, copper, and quiet data geometry. */
+:root{--paper:#f2f1e9;--ink:#203e31;--forest:#142e25;--orange:#b7744e;--line:#c6cfc1}
+.product-site{background:var(--paper);color:var(--ink)}
+.product-site .site-header{background:#f2f1e9ed;border-bottom-color:#2444351c;backdrop-filter:blur(14px)}
+.product-site .site-header nav{font-size:13px;gap:28px}
+.product-site .nav-cta{font-size:12px;min-height:44px}
+.product-site .primary-button{background:#b87852;color:#fff9ec;font-size:13px;min-height:48px}
+.product-site .primary-button:hover{background:#a76a46}
+/* An emotional pause uses the same visual language at a quieter scale. */
+/* The ring is live, built from the same evidence tiles. Its center remains open. */
+.product-site .agere-architecture{background:#142e25;--copper:#d4a17b;--engine-muted:#b3c3ad}
+.product-site .intelligence-theatre{height:800px;min-height:0;background:radial-gradient(ellipse at 72% 45%,#29483a 0,transparent 53%),#142e25}
+.product-site .theatre-topline{font-size:10px;height:76px;border-bottom-color:#a6ba9730}
+.product-site .theatre-topline button{font-size:11px;min-height:44px}
+.product-site .theatre-copy{left:5%;top:160px;width:39%}
+.product-site .theatre-copy h2{font-size:clamp(56px,5vw,86px);margin-top:26px;line-height:1.04;letter-spacing:-.06em}
+.product-site .theatre-copy h2 em{font-family:inherit;font-style:normal;color:#d4a17b}
+.product-site .theatre-copy .theatre-eyebrow{font-size:10px;letter-spacing:.06em}
+.product-site .theatre-copy>p{font-size:16px;line-height:1.8;max-width:330px;color:#b3c3ad;margin-top:28px}
+.product-site .theatre-copy>a{font-size:13px;min-height:40px;margin-top:25px}
+.product-site .theatre-signature{margin-top:48px;color:#8ea68d;gap:22px}
+.product-site .theatre-signature>.mono{font-size:9px}.product-site .theatre-signature>span:last-child{font-size:12px}
+.product-site .theatre-canvas{inset:100px 3% 168px 42%;pointer-events:none}
+.product-site .engine-hotspot{visibility:hidden;font-size:12px;border:0;background:#142e25c9;padding:7px 10px;min-height:38px;backdrop-filter:none;color:#a6baa0;gap:7px}
+.hotspot-short{display:none}
+.product-site .hotspot-name{font-size:11px}.product-site .hotspot-index{font-size:9px}
+.product-site .engine-hotspot.is-active{color:#edc5a2;background:#234433}
+.product-site .engine-hotspot.is-active:before{display:none}
+.engine-center-label{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;color:#e6e9d9;gap:12px;pointer-events:none}
+.engine-center-label>.mono{font-size:10px;letter-spacing:.06em;color:#b3c3ad}.engine-center-label strong{font-size:32px;font-weight:450;letter-spacing:-.04em}
+.product-site .theatre-live-caption{bottom:141px;color:#a8bba0;left:5%;right:5%}
+.product-site .theatre-live-caption .mono{font-size:9px;letter-spacing:0}
+.product-site .engine-mode-switch{height:116px;border-top-color:#a6ba9750;background:none}
+.product-site .engine-mode-switch .mono{font-size:10px}.product-site .engine-mode-switch strong{font-size:19px;margin-top:11px}
+.product-site .engine-mode-switch button{padding-left:28px;color:#9aae91}.product-site .engine-mode-switch button:first-child{padding-left:0}
+.product-site .engine-mode-switch button[aria-selected=true]{color:#edc5a2}.product-site .mode-progress{background:#cf9b72}
+.product-site .engine-detail-band{background:#17362a;gap:5%;grid-template-columns:225px 1fr 255px}
+.product-site .system-index>.mono,.product-site .system-logic>.mono,.product-site .system-description>.mono{font-size:9px}
+.product-site .system-index button{font-size:12px;min-height:45px}.product-site .system-index button .mono{font-size:9px}
+.product-site .system-description h3{font-size:34px}.product-site .system-description>p{font-size:14px;line-height:1.8}
+.product-site .system-description li{font-size:11px}.product-site .system-logic code{font-size:10px}
+.product-site .engine-question-lab,.product-site .architecture-case{background:var(--paper)}
+.product-site .architecture-exit{background:#e5e9dd}
+.product-site .question-lab-heading button{min-height:44px;font-size:12px}.product-site .question-lab-caption{font-size:13px}
+.product-site .question-lab-track strong{font-size:18px}.product-site .question-lab-track .mono{font-size:10px}
+.product-site .architecture-case dl>div{font-size:14px}
+/* Carry the same hierarchy into product, financial and proof sections. */
+.product-site .physician-value,.product-site .answer-explorer,.product-site .buyer-section,.product-site .difference-section{background:var(--paper)}
+.product-site .physician-value-top,.product-site .product-section-top,.product-site .funds-instrument-head{font-size:10px}
+.product-site .physician-value-heading p{font-size:16px}.product-site .rewards-jump{font-size:13px}
+.product-site .funds-instrument{background:#e7ebdf;border-color:#bec9b4}
+.product-site .funds-detail>p,.product-site .funds-detail dl{font-size:14px}
+.product-site .answer-explorer-intro>p{font-size:16px}.product-site .answer-explorer-intro>.mono{font-size:10px}
+.product-site .answer-route strong{font-size:13px}.product-site .answer-route .mono{font-size:9px}
+.product-site .question-examples button{font-size:12px;min-height:44px}
+.product-site .answer-surface>p,.product-site .answer-definition p{font-size:14px}
+.product-site .briefing-copy>p,.product-site .buyer-grid p,.product-site .difference-intro{font-size:16px}
+.product-site .briefing-feed article p,.product-site .comparison-table article p{font-size:14px}
+.product-site .comparison-table article{padding-top:25px;padding-bottom:25px}
+.product-site .buyer-grid .mono,.product-site .briefing-tag{font-size:10px}
+.product-site .product-next-step{background:#142e25}.product-site footer{background:#142e25}
+.product-site .product-next-cube{display:none}
+@media(min-width:1600px){.product-site .intelligence-theatre{height:950px}.product-site .theatre-copy{top:185px}.product-site .theatre-canvas{top:105px;bottom:175px}.product-site .theatre-copy h2{font-size:86px}}
+@media(min-width:761px) and (max-width:1100px){
+ .product-site .intelligence-theatre{height:790px}.product-site .theatre-copy{top:145px;width:40%}.product-site .theatre-copy h2{font-size:53px}.product-site .theatre-copy>p{font-size:15px;max-width:290px}
+ .product-site .theatre-canvas{left:42%;right:2%;top:130px;bottom:185px}.product-site .engine-hotspot{padding:6px}.product-site .hotspot-name{font-size:9px}.product-site .hotspot-index{font-size:8px}
+ .product-site .engine-detail-band{grid-template-columns:190px 1fr;gap:40px}.product-site .system-logic{grid-column:2}
+ .product-site .engine-mode-switch strong{font-size:16px}
+}
+@media(max-width:760px){
+ .product-site .site-header{height:69px}.product-site .nav-cta{font-size:10px;min-height:40px;padding:10px 13px}
+ .product-site .intelligence-theatre{height:1010px;background:radial-gradient(ellipse at 50% 58%,#29483a,transparent 55%),#142e25}
+ .product-site .theatre-topline{height:62px;left:6%;right:6%;font-size:8px;letter-spacing:0}.product-site .theatre-topline>div{gap:9px}.product-site .theatre-topline button{font-size:9px}.product-site .theatre-topline button:last-child span{display:none}
+ .product-site .theatre-copy{top:96px;left:6%;width:88%}.product-site .theatre-copy .theatre-eyebrow{font-size:9px}
+ .product-site .theatre-copy h2{font-size:44px;line-height:1.04;margin-top:20px}.product-site .theatre-copy>p{font-size:14px;line-height:1.7;max-width:320px;margin-top:23px}.product-site .theatre-copy>a{font-size:12px;margin-top:18px}
+ .product-site .theatre-signature{display:none}.product-site .theatre-canvas{inset:410px 3% 178px}
+ .product-site .engine-hotspot{min-height:35px;padding:5px;gap:4px}.product-site .hotspot-name{display:none}.product-site .hotspot-short{display:block;font-size:11px}.product-site .hotspot-index{font-size:8px}
+ .engine-center-label{gap:9px}.engine-center-label>.mono{font-size:8px}.engine-center-label strong{font-size:23px}
+ .product-site .theatre-live-caption{bottom:142px;left:6%;right:6%}.product-site .theatre-live-caption .mono{font-size:7px}.product-site .theatre-live-caption>span:last-child{display:none}
+ .product-site .engine-mode-switch{height:117px;left:6%;right:6%;grid-template-columns:repeat(3,1fr)}.product-site .engine-mode-switch button{padding:0 10px;justify-content:center}.product-site .engine-mode-switch .mono{font-size:8px;letter-spacing:0}.product-site .engine-mode-switch strong{font-size:13px;line-height:1.4}.product-site .engine-mode-switch svg{display:none}
+ .product-site .engine-mode-switch .mode-progress{top:0;bottom:auto;left:0;right:100%;width:auto;height:2px}.product-site .engine-mode-switch button[aria-selected=true] .mode-progress{right:0}
+ .product-site .engine-detail-band{display:flex;flex-direction:column;padding:36px 6%;gap:30px}.product-site .system-index>div{display:grid;grid-template-columns:1fr 1fr;gap:0 16px}.product-site .system-index button{font-size:11px}.product-site .system-description h3{font-size:33px}.product-site .system-description>p{font-size:14px}.product-site .system-logic{display:none}
+ .product-site .question-lab-heading button{font-size:11px}.product-site .question-lab-track strong{font-size:11px}.product-site .question-lab-track .mono{font-size:8px}
+ .product-site .question-lab-caption{font-size:12px}.product-site .architecture-case dl>div{font-size:13px}.product-site .architecture-exit{gap:23px}
+ .product-site .physician-value-top,.product-site .product-section-top,.product-site .funds-instrument-head{font-size:8px}
+ .product-site .physician-value-heading p,.product-site .answer-explorer-intro>p,.product-site .briefing-copy>p,.product-site .buyer-grid p,.product-site .difference-intro{font-size:15px}
+ .product-site .comparison-table article p,.product-site .briefing-feed article p{font-size:13px}
+ .product-site .product-next-step h2{font-size:45px}
+}

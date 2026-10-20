@@ -1,0 +1,92 @@
+/* The live blocks remain the hero. A restrained drafting system makes their logic legible. */
+.cinematic-journey{--scene-base:#f0f0e8;overflow-x:clip;overflow-y:visible}
+.cinematic-journey.living-dark{--scene-base:#142f25}
+.cinematic-journey .living-world{--scene-x:0;--scene-y:0}
+.engineering-field{position:absolute;inset:68px -4% 282px;z-index:-2;pointer-events:none;color:var(--scene-muted,#a7c3ae);transform:perspective(1400px) rotateY(calc(var(--scene-x,0)*-3deg)) rotateX(calc(var(--scene-y,0)*1.5deg));transition:transform .7s ease-out}
+.engineering-grid{position:absolute;inset:0;background-image:linear-gradient(currentColor 1px,transparent 1px),linear-gradient(90deg,currentColor 1px,transparent 1px);background-size:34px 34px;opacity:.055;mask-image:radial-gradient(ellipse,#000 10%,transparent 72%)}
+.engineering-field svg{width:100%;height:100%;overflow:visible}
+.engineering-frame{stroke:currentColor;stroke-width:1;opacity:.4}
+.engineering-axis{stroke-dasharray:2 9;opacity:.28}
+.engineering-bus{stroke:currentColor;stroke-width:1;opacity:.25}
+.engineering-terminal{fill:var(--scene-accent,#f3a378);opacity:.8}
+.engineering-packets{stroke:var(--scene-accent,#f3a378);stroke-width:2;stroke-dasharray:10 550;animation:engineering-flow 12s linear infinite}
+.engineering-packets path+path{opacity:.55}
+.is-disconnected .engineering-bus{stroke-dasharray:22 28;opacity:.16}
+.is-disconnected .engineering-packets{stroke-dasharray:3 100;opacity:.45;animation-duration:28s}
+.engineering-register{position:absolute;inset:auto 6% 12px;display:flex;justify-content:space-between;font-size:6px;letter-spacing:.08em;opacity:.65}
+@keyframes engineering-flow{to{stroke-dashoffset:-560}}
+.cinematic-journey .living-canvas{top:50px;left:-9%;right:-9%;height:calc(100% - 282px);min-height:305px;z-index:-1;filter:drop-shadow(0 12px 13px #051a1624)}
+.cinematic-journey .living-world-head{background:linear-gradient(var(--scene-base) 40%,transparent);border-color:var(--scene-line)}
+.cinematic-journey .living-coordinate{z-index:2;background:var(--scene-base);border:0;border-left:1px solid var(--scene-accent);padding:6px 9px;font-size:8px;box-shadow:none}
+.cinematic-journey .living-coordinate>span{border:0;padding:0;margin-right:3px;color:var(--scene-accent)}
+.cinematic-journey .coord-a{top:90px;left:0}
+.cinematic-journey .coord-b{top:36%;right:0}
+.cinematic-journey .coord-c{top:51%;left:1%}
+.journey-signal-rail{display:grid;grid-template-columns:1fr auto 1.25fr auto 1fr;gap:10px;align-items:center;position:relative;z-index:3;flex-shrink:0;margin-top:auto;padding:17px 0 18px;background:var(--scene-base);border-top:1px solid var(--scene-line)}
+.journey-signal-rail>div{display:flex;flex-direction:column;gap:7px}
+.journey-signal-rail .mono{font-size:6px;letter-spacing:.1em;color:var(--scene-muted)}
+.journey-signal-rail strong{font-size:10px;font-weight:450;line-height:1.4;color:var(--scene-ink)}
+.journey-signal-rail .signal-operation strong,.signal-arrow{color:var(--scene-accent)}
+.signal-arrow{font-size:15px;padding:12px 0 0}
+.cinematic-journey .living-answer{margin-top:0;padding-top:20px;background:var(--scene-base);border-color:var(--scene-line)}
+.cinematic-journey .living-answer-heading{margin-bottom:14px}
+.cinematic-journey .living-answer-plus{color:var(--scene-accent)}
+.cinematic-journey .living-answer-line strong{font-weight:420}
+.cinematic-journey .living-answer>p{font-size:12px;letter-spacing:-.01em}
+.cinematic-journey .living-nav{position:relative;z-index:4;background:var(--scene-base)}
+.cinematic-journey .data-fragments{z-index:2;inset:79px 0 291px}
+.cinematic-journey .data-fragments span{background:#f0f0e8ed;border-color:#a7b09a70;box-shadow:0 5px 15px #213d2a08;padding:8px 10px}
+.cinematic-journey .living-next{border-top:1px solid var(--scene-line);padding-top:18px;max-width:370px;font-size:11px;line-height:1.8}
+.cinematic-journey .living-chapter h2{font-size:clamp(40px,4.1vw,63px)}
+.cinematic-journey .care-handoff{border-top:0;margin-top:24px}
+.cinematic-journey .care-handoff li{padding:15px 0;font-size:12px}
+.human-engineering{isolation:isolate;overflow:hidden;border:1px solid #b7b99c55;background:#142f25;min-height:555px;margin-left:25px;--scene-base:#142f25;--scene-muted:#a7c3ae;--scene-accent:#eea275}
+.human-engineering .engineering-field-finale{inset:24px 20px 64px;transform:none}
+.human-engineering .human-scene{inset:0 -40px 30px -80px;z-index:2}
+.human-engineering .home-label{left:20px;right:20px;bottom:22px;z-index:3;color:#b6c8ae;font-size:7px;justify-content:flex-start;border-top:1px solid #bec6a140;padding-top:15px}
+.motion-off .engineering-field{transform:none!important;transition:none!important}
+@media(min-width:761px) and (max-width:1100px){
+ .cinematic-journey .engineering-field{bottom:260px}.cinematic-journey .living-canvas{height:calc(100% - 265px);min-height:290px}
+ .cinematic-journey .living-coordinate{font-size:6px;padding:6px 8px}.cinematic-journey .living-chapter h2{font-size:40px}
+ .journey-signal-rail{gap:7px}.journey-signal-rail strong{font-size:8px}.journey-signal-rail .mono{font-size:5px}
+ .human-engineering{min-height:490px;margin-left:15px}.human-engineering .human-scene{inset:0 -65px 20px -75px}
+}
+@media(max-width:760px){
+ .cinematic-journey .living-world{height:390px;max-height:50svh;min-height:310px}
+ .cinematic-journey .engineering-field{inset:43px 6% 154px}
+ .engineering-register{font-size:4px;bottom:5px}.engineering-grid{background-size:22px 22px}
+ .cinematic-journey .living-canvas,.care-story.cinematic-journey .living-canvas{top:30px;height:calc(100% - 167px);min-height:0;left:0;right:0}
+ .cinematic-journey .living-world-head{position:relative;z-index:3}
+ .cinematic-journey .living-coordinate{font-size:5px;padding:4px 6px;gap:4px}
+ .cinematic-journey .living-coordinate>span{font-size:4px;margin-right:0}
+ .cinematic-journey .coord-a{top:51px;left:6%}.cinematic-journey .coord-b{top:43%;right:5%}.cinematic-journey .coord-c{display:none}
+ .journey-signal-rail{padding:9px 0;gap:6px}.journey-signal-rail>div{gap:4px}.journey-signal-rail strong{font-size:7px}.journey-signal-rail .mono{font-size:4px}.signal-arrow{font-size:11px;padding-top:9px}
+ .cinematic-journey .living-answer{padding:8px 0 9px}.cinematic-journey .living-answer-heading{margin:0}
+ .cinematic-journey .living-answer-line strong{font-size:40px}.cinematic-journey .answer-wide .living-answer-line strong{font-size:27px}.cinematic-journey .living-answer>p{display:none}
+ .cinematic-journey .data-fragments{inset:47px 6% 166px}.cinematic-journey .data-fragments span{font-size:5px;padding:4px 5px}
+ .cinematic-journey .living-chapter{scroll-margin-top:calc(min(50svh,390px) + 92px)!important}
+ .cinematic-journey .living-chapter h2{font-size:39px;line-height:1.1}.cinematic-journey .living-next{font-size:11px;max-width:330px;padding-top:16px}.cinematic-journey .care-handoff li{font-size:11px;padding:13px 0}
+ .human-engineering{margin-left:0;margin-top:27px;min-height:0;height:390px}.human-engineering .human-scene{inset:0 -45px 25px -55px}.human-engineering .home-label{left:17px;right:17px;bottom:18px;font-size:5px}
+}
+@media(max-width:380px){.cinematic-journey .living-chapter h2{font-size:36px}.cinematic-journey .living-answer-line strong{font-size:35px}.cinematic-journey .answer-wide .living-answer-line strong{font-size:25px}.journey-signal-rail strong{font-size:6.5px}}
+@media(prefers-reduced-motion:reduce){.engineering-field,.engineering-field *{transition:none!important;animation:none!important;transform:none!important}}
+
+/* Give the data canvas its own flex row so every formation stays above the explainer. */
+.journey-viewport{position:relative;flex:1;min-height:0;isolation:isolate}
+.cinematic-journey .journey-viewport .engineering-field{inset:16px -1% 12px}
+.cinematic-journey .journey-viewport .living-canvas{top:0;bottom:0;height:100%;min-height:0;left:-7%;right:-7%}
+.cinematic-journey .journey-viewport .data-fragments{inset:20px 0 35px}
+.cinematic-journey .journey-viewport .coord-a{top:25px;left:0}
+.cinematic-journey .journey-viewport .coord-b{top:51%;right:0}
+.cinematic-journey .journey-viewport .coord-c{top:auto;bottom:29px;left:1%}
+.journey-signal-rail{margin-top:0}
+.journey-signal-rail strong{font-size:11px}
+@media(max-width:1100px) and (min-width:761px){.journey-signal-rail strong{font-size:9px}}
+@media(max-width:760px){
+ .cinematic-journey .journey-viewport .engineering-field{inset:10px 0 6px}
+ .cinematic-journey .journey-viewport .living-canvas{left:-5%;right:-5%}
+ .cinematic-journey .journey-viewport .data-fragments{inset:16px 0 22px}
+ .cinematic-journey .journey-viewport .coord-a{top:16px;left:0}
+ .cinematic-journey .journey-viewport .coord-b{top:63%;right:0}
+ .journey-signal-rail strong{font-size:8px}
+}

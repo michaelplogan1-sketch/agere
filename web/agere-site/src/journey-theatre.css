@@ -1,0 +1,73 @@
+/* Editorial copy + a dedicated instrument stage. Detail is reserved for the focal objects. */
+.product-site .living-experience{padding-top:112px;padding-left:5%;padding-right:3%}
+.product-site .living-layout{grid-template-columns:39% 57%;gap:4%}
+.product-site .living-ruler{padding-right:2%;border:0;font-size:9px}
+.product-site .living-opening h1{font-size:clamp(70px,7.05vw,112px);line-height:1.01;margin-top:27px;letter-spacing:-.068em}
+.product-site .living-chapter.living-opening{padding-top:43px}
+.product-site .living-world{top:104px;height:calc(100svh - 166px);max-height:900px;min-height:620px;background:#0a211b;color:#e8e7d7;padding:0 25px;box-shadow:0 20px 55px #142e2510;overflow:hidden;border:1px solid #16372b;--scene-ink:#e8e7d7;--scene-muted:#9aafa1;--scene-line:#a6b9a82b;--scene-accent:#d7a57d;--scene-base:#0a211b}
+.product-site .living-world-head{height:56px;min-height:56px;padding:0;position:relative;z-index:4;border-bottom:1px solid #bbceb31a;background:none}
+.product-site .living-world-head>.mono{font-size:9px;color:#a9b8a8;letter-spacing:.07em}
+.product-site .living-world-head button{color:#a9b8a8;min-height:44px}.product-site .living-world-head button .mono{font-size:8px}
+.product-site .journey-viewport{margin:0 -25px;flex:1;min-height:320px}
+.journey-theatre{height:100%;width:100%;position:relative;isolation:isolate;overflow:hidden;background:radial-gradient(ellipse at 50% 42%,#28463985,transparent 61%),#0a211b;contain:layout paint}
+.theatre-grid{position:absolute;inset:50% -40% -80%;background-image:linear-gradient(#c2c5a111 1px,transparent 1px),linear-gradient(90deg,#c2c5a111 1px,transparent 1px);background-size:45px 45px;transform:perspective(460px) rotateX(60deg) rotateZ(-18deg);mask-image:radial-gradient(ellipse,#000,transparent 65%);z-index:-1}
+.theatre-halo{position:absolute;width:75%;height:75%;left:12.5%;top:10%;border-radius:50%;background:radial-gradient(ellipse,#caa27e0b,transparent 68%);pointer-events:none}
+.journey-coordinate{position:absolute;left:25px;right:25px;top:19px;display:flex;justify-content:space-between;color:#748d7f;font-size:8px;letter-spacing:.08em;z-index:3}
+.journey-coordinate>span{font-size:7px}
+.theatre-stage{position:absolute;left:5%;right:5%;top:9%;bottom:12%;}
+.theatre-module{position:absolute;width:21%;aspect-ratio:100/112;will-change:transform;transform-origin:center;z-index:3;pointer-events:none}
+.simple-cube{display:block;width:100%;height:100%;color:#a8c2a0;user-select:none}
+.module-label{position:absolute;transform:translateX(-50%);text-align:center;color:#d5c9ad;font-size:10px;letter-spacing:.025em;white-space:nowrap;z-index:5;pointer-events:none;padding:4px 6px;background:#0a211bd9;border-bottom:1px solid #cba57d55}
+.theatre-circuit{position:absolute;inset:0;width:100%;height:100%;overflow:visible;z-index:1;stroke:#b9a17d;stroke-width:1;fill:none}
+.theatre-circuit>path{opacity:.3;stroke-linecap:round;stroke-linejoin:round;transition:d .8s}
+.theatre-circuit .circuit-signal{opacity:.9;stroke:#d8b08d;stroke-width:1.5;stroke-dasharray:16 290;animation:signal-travel 14s linear infinite;animation-play-state:paused}
+.theatre-running .circuit-signal{animation-play-state:running}
+.theatre-orbit{stroke:#a7b5a1;opacity:.09;stroke-dasharray:2 7}.theatre-orbit.outer{stroke-dasharray:none;opacity:.07}
+.journey-theatre:not([data-scene='0']):not([data-scene='1']):not([data-scene='5']) .theatre-orbit{opacity:0}
+.record-chip{position:absolute;width:26px;height:29px;z-index:2;will-change:transform;pointer-events:none}
+.source-tag{position:absolute;color:#a6b9a5;font-size:8px;letter-spacing:.025em;padding:9px 0;border-bottom:1px solid #abbfa338;z-index:4;background:linear-gradient(90deg,#0a211bc9,transparent)}
+.source-tag:before{content:'+';color:#d2a279;margin-right:9px}.source-a{top:6%;left:1%}.source-b{top:33%;right:-1%}.source-c{bottom:6%;left:1%}
+.scene-center-tag{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:8px;white-space:nowrap;letter-spacing:.06em;color:#b6c1af;padding:10px 12px;background:#0a211b;z-index:4}
+.theatre-bottom-line{position:absolute;bottom:15px;left:25px;right:25px;display:flex;justify-content:space-between;font-size:7px;color:#7e9788;letter-spacing:.035em;z-index:4}.theatre-bottom-line>span:first-child{display:flex;align-items:center;gap:7px}.theatre-bottom-line i{width:4px;height:4px;background:#e1b18c;border-radius:50%;box-shadow:0 0 9px #c99168}
+.product-site .journey-signal-rail{background:none;border-top:1px solid #bbceb32b;border-bottom:0;padding:17px 0 12px;gap:13px}
+.product-site .journey-signal-rail .mono{font-size:7px;color:#758e7e;letter-spacing:.1em}.product-site .journey-signal-rail strong{font-size:11px;color:#c7d0bd}.product-site .journey-signal-rail .signal-operation strong{color:#dfb28e}.product-site .signal-arrow{color:#d5a67e}
+.product-site .living-answer{padding:13px 0 20px;background:none;display:flex;flex-direction:column;gap:10px;min-height:84px;border:0}
+.product-site .living-answer>.mono{font-size:8px;color:#a2b29e;letter-spacing:.06em}
+.product-site .living-answer>p{display:block;color:#f0ecdb;font-size:22px;font-weight:400;letter-spacing:-.035em;line-height:1.22;margin:0;max-width:500px}
+.product-site .living-nav{padding:0 0 13px;background:none;gap:6px}.product-site .living-nav>a{min-height:44px;justify-content:center;align-items:center;gap:5px;color:#a4b49e;border-top:1px solid #b6c8ab23}.product-site .living-nav>a[aria-current=step]{color:#ebbb90;border-top-color:#c49d78}.product-site .living-nav>a:before{display:none}.product-site .living-nav b{font-size:10px}.product-site .living-nav .mono{font-size:7px}
+.product-site .living-progress{margin:0 -25px;background:#20392d;height:2px}.product-site .living-progress i{background:#ce9d71}
+.product-site .living-chapter:not(.living-opening){min-height:95svh;padding-top:100px;padding-bottom:100px;opacity:.32}.product-site .living-chapter.is-active{opacity:1}
+.product-site .living-chapter h2{font-size:clamp(38px,4.1vw,64px);letter-spacing:-.055em}.product-site .living-chapter>p:not(.living-intro){font-size:16px;line-height:1.75;max-width:390px}
+.product-site .care-handoff{margin-top:25px}.product-site .care-handoff li{font-size:12px;padding:12px 0}
+.product-site .path-picker{margin-top:28px;max-width:355px}.product-site .path-picker>.mono{display:none}.product-site .path-picker>div{margin-top:0}.product-site .chosen-question{font-size:18px;line-height:1.5;max-width:355px;min-height:0}.product-site .living-opening .living-start{margin-top:22px;min-height:50px;font-size:12px}.product-site .living-audience{font-size:8px;margin-top:22px}
+.mobile-story-intro{display:none}
+.scene-life-label{position:absolute;left:50%;top:17%;transform:translateX(-50%);text-align:center;font-size:30px;line-height:1.1;letter-spacing:-.04em;color:#e8e4d3;z-index:4;white-space:nowrap}.scene-life-label em{font-style:normal;color:#d9aa82;margin-left:8px}
+.journey-theatre[data-scene='7'] .scene-life-label{top:1%;font-size:24px}
+.product-site .human-world{height:480px;min-height:0;background:#0a211b;overflow:hidden}.human-world>.journey-theatre{position:absolute;inset:0}.theatre-finale .scene-life-label{display:none}.theatre-finale .theatre-bottom-line>span:last-child{display:none}.theatre-finale .theatre-stage{top:0;bottom:10%}.theatre-finale .module-0{filter:none!important}
+@keyframes signal-travel{to{stroke-dashoffset:-612}}
+@media(min-width:1600px){.product-site .living-experience{padding-left:max(5%,calc((100vw - 1500px)/2));padding-right:max(3%,calc((100vw - 1550px)/2))}.product-site .living-world{max-height:1000px}.product-site .living-opening h1{font-size:112px}.module-label{font-size:10px}.product-site .living-answer>p{font-size:27px}}
+@media(min-width:761px) and (max-width:1100px){.product-site .living-experience{padding-left:4%;padding-right:3%}.product-site .living-layout{grid-template-columns:39% 58%;gap:3%}.product-site .living-opening h1{font-size:clamp(56px,7.2vw,76px)}.product-site .living-world{padding:0 18px;min-height:600px}.product-site .journey-viewport{margin:0 -18px}.source-tag{font-size:6px}.module-label{font-size:6px}.product-site .living-answer>p{font-size:19px}.product-site .journey-signal-rail strong{font-size:9px}.product-site .living-nav b{font-size:8px}.product-site .living-world-head>.mono{font-size:7px}}
+@media(max-width:760px){
+ .product-site .living-experience{padding:91px 6% 0}.product-site .living-ruler{font-size:8px;padding-bottom:0}
+ .mobile-story-intro{display:block;padding:28px 0 27px}.mobile-story-intro .eyebrow{font-size:8px;letter-spacing:.035em;color:#71806b}.mobile-story-intro h1{font-size:clamp(56px,15.8vw,88px);line-height:.98;font-weight:500;letter-spacing:-.065em;margin:20px 0 17px}.mobile-story-intro h1 em{font-style:normal;color:#ad6b44}.mobile-story-intro>p{font-size:14px;color:#61715c}
+ .product-site .living-layout{display:flex}.product-site .living-world{top:69px;position:sticky;width:calc(100% + 13.636%);margin:0 -6.818%;padding:0 6%;height:365px;min-height:320px;max-height:49svh;border:0;box-shadow:none;background:#0a211b}
+ .product-site .living-world-head{min-height:35px;height:35px;padding:0}.product-site .living-world-head>.mono{font-size:7px}.product-site .living-world-head button{min-height:32px}.product-site .living-world-head button .mono{display:none}
+ .product-site .journey-viewport{min-height:160px;margin:0 -6.818%}.journey-coordinate{top:10px;left:6%;right:6%;font-size:6px}.journey-coordinate>span{font-size:5px}.theatre-stage{left:10%;right:10%;top:6%;bottom:8%}
+ .theatre-module{width:20%}.source-tag{font-size:5px;padding:5px 0}.source-tag:before{margin-right:5px}.source-a{top:2%;left:0}.source-b{top:24%;right:-5%}.source-c{bottom:3%;left:0}.record-chip{width:18px;height:20px}.module-label{font-size:7px;padding:2px 3px;letter-spacing:0}.scene-center-tag{font-size:5px;letter-spacing:0;padding:6px}.theatre-bottom-line{display:none}.scene-life-label{font-size:19px;top:12%}
+ .product-site .journey-signal-rail{display:none}.product-site .living-answer{padding:9px 0 8px;gap:5px;min-height:52px}.product-site .living-answer>.mono{font-size:6px}.product-site .living-answer>p{font-size:14px;line-height:1.25;max-width:none;display:block}
+ .product-site .living-nav{padding:0 0 7px;gap:2px;display:grid;grid-template-columns:repeat(var(--chapter-count),minmax(0,1fr))}.product-site .living-nav>a{min-height:33px;gap:3px}.product-site .living-nav b{font-size:7px}.product-site .living-nav .mono{font-size:5px}.product-site .living-progress{margin:0 -6.818%}
+ .product-site .living-opening>.eyebrow,.product-site .living-opening>h1,.product-site .living-opening>.living-intro{display:none}.product-site .living-chapter.living-opening{min-height:300px;padding:23px 0 43px}.product-site .path-picker{margin-top:0;width:100%;max-width:none}.product-site .path-picker>div{margin-top:0}.product-site .chosen-question{font-size:18px;max-width:340px}.product-site .path-picker button{font-size:12px;padding:10px 15px;min-height:44px}.product-site .living-opening .living-start{margin-top:13px;font-size:11px;padding:14px 16px;min-height:46px}.product-site .living-audience{font-size:7px;margin-top:17px}
+ .product-site .living-chapter:not(.living-opening){min-height:78svh;padding:42px 0 65px;scroll-margin-top:calc(min(49svh,365px) + 98px)!important}.product-site .living-chapter h2{font-size:39px}.product-site .living-chapter>p:not(.living-intro){font-size:15px}.product-site .care-handoff li{font-size:12px}.product-site .living-next{font-size:12px}
+ .product-site .human-world{height:330px;margin-top:25px}.theatre-finale .journey-coordinate{font-size:7px}.theatre-finale .theatre-module{width:23%}
+}
+@media(max-width:380px){.product-site .living-world{max-height:48svh;min-height:290px}.product-site .living-answer>p{font-size:13px}.product-site .living-nav b{font-size:6px}.product-site .living-chapter h2{font-size:36px}.mobile-story-intro{padding-top:23px;padding-bottom:24px}}
+@media(prefers-reduced-motion:reduce){.journey-theatre *{animation:none!important;transition:none!important}.product-site .living-chapter{opacity:1!important}}
+.motion-off .journey-theatre *{animation:none!important;transition:none!important}
+
+@media(max-width:760px){.scene-center-tag{display:none}.journey-theatre[data-scene="7"] .scene-life-label{font-size:16px}}
+
+@media(max-width:760px){
+ .product-site .living-nav{display:grid;grid-template-columns:repeat(var(--chapter-count),minmax(0,1fr));gap:2px}
+ .product-site .living-nav>a{min-width:0;min-height:40px}
+ .product-site .living-nav b{font-size:8.5px;letter-spacing:-.03em}.product-site .living-nav .mono{font-size:6px}
+}

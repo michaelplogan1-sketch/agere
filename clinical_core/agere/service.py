@@ -773,7 +773,11 @@ def serve(run,port,annotations=None,evidence_queries=None,stack=None,allow_live_
                 self.send_error(403,'This route is unavailable in installation mode '+recovery.get('mode','inspection_only'));return
             if (parsed.path=='/workspaces' or parsed.path.startswith('/api/workspaces')) and not recovery:
                 self._workspace('GET',parsed.path);return
-            if parsed.path=='/api/stack/meta':
+            if connected_stack is not None and not recovery and (parsed.path in ('/', '/site') or parsed.path.startswith('/site/')):
+                from .site_view import asset
+                try: raw,mime=asset(parsed.path)
+                except FileNotFoundError: self.send_error(404); return
+            elif parsed.path=='/api/stack/meta':
                 if connected_stack is None:self.send_error(404);return
                 raw=json.dumps({**connected_stack.metadata(),'recovery':recovery,'runtime_source_validation':validation_cache.status(),'runtime_vocabulary_index':validation_index}).encode();mime='application/json'
             elif parsed.path in ('/stack-evaluation','/api/stack/workflow-evaluation'):
