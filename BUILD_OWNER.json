@@ -22,7 +22,7 @@
   "resumed_at": "2026-10-19T12:38:11.040529+00:00",
   "heartbeat_interval_minutes": 5,
   "latest_overnight_report": "AGERE_OVERNIGHT_READINESS_2026-10-11.md",
-  "latest_checkpoint": "2026-10-20T19:25:11.994057+00:00",
+  "latest_checkpoint": "2026-10-20T19:38:02.071252+00:00",
   "protected_manifest": "artifacts/agere-reconciliation-contract-v2/protected-for-continuation.json",
   "latest_morning_report": "AGERE_MORNING_STATUS_2026-10-11.md",
   "latest_architecture_review": "AGERE_SHARED_FRONTIER_2026-10-20.md",
@@ -69,9 +69,9 @@
   "source_control": "git; codex/agere-validated-proof; commit only owned paths as Michael Logan <michael.p.logan1@gmail.com>",
   "heartbeat_removal_authorization": "Mike 2026-10-19: \"i am here you dont need the continue building reminder\"; deleted through the Codex automation tool.",
   "live_runtime": {
-    "commit": "9ce4dc83b810ff8e19f7da25c7dde6c48461ed0c",
+    "commit": "9fd61265dade4e371b167f0b92b589080ca42f79",
     "rollback_commit": "5092910a63d3b32bcc2047491cb373d778311734",
-    "pid": 78191,
+    "pid": 79274,
     "workspace": "/Users/mikel/agere-mvp-run",
     "port": 8885,
     "health": {
@@ -80,11 +80,12 @@
     },
     "allow_live_stack": true,
     "configuration_preserved": true,
-    "log": "/private/tmp/agere-live-9ce4dc8.log",
-    "verified_at": "2026-10-20T19:25:11.994057+00:00",
+    "log": "/private/tmp/agere-live-9fd6126.log",
+    "verified_at": "2026-10-20T19:38:02.071252+00:00",
     "deployment_basis": "Mike: \"Deploy 2453d2f to 8885 now with rollback to 5092910\".",
     "live_api_status": "Anthropic key working after Mike removed the account cap.",
-    "acceptance": "20-question dev set on 2453d2f live: 20/20 answered, 16 strict / 20 substantive matches to hand SQL, $11.63. HF compound question on 9ce4dc8 (isolated): 36-row table with GDMT/dose/PCP/cardiologist, partial pending lookback-window decision and structured dose fields."
+    "acceptance": "20-question dev set on 2453d2f live: 20/20 answered, 16 strict / 20 substantive matches to hand SQL, $11.63. HF compound question on 9ce4dc8 (isolated): 36-row table with GDMT/dose/PCP/cardiologist, partial pending lookback-window decision and structured dose fields.",
+    "hf_status": "HF compound question (isolated, 9fd6126 code): 36-row per-patient table with pillar flags, last fills, structured actual/target daily dose with record ids, PCP, cardiologist; partial: dose timing vs 12-month window, unknown dose treated as target, keyword cardiology match."
   },
   "current_spending_constraint": "No assistant-selected monetary cap. Use the best capable path for each question, with usage accounting, caching and bounded repair.",
   "current_turn_spending_policy": "2026-10-20 explicit user correction: \"i never said no additional spending, it just needs to be using the best way to answer a question.\" Hosted validation and product use are authorized; the prior image-cost restriction was misapplied.",
