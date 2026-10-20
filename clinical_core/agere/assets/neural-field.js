@@ -82,7 +82,7 @@ export function createNeuralField(canvas){
   if(dt&&age>nextGrowth){nextGrowth=age+2.6;if(reached>1)connect()}
   routes.forEach((path,i)=>{const t=(age*(.035+rand(i+20)*.028)+rand(i+40))%1,p=path.getPointAt(t);if(age<3||(i>=36&&reached<3)||(i<36&&reached<1))p.z=99;packetPositions.set(p.toArray(),i*3)});packetGeometry.attributes.position.needsUpdate=true;
   for(let i=sprouts.length-1;i>=0;i--){const s=sprouts[i],t=age-s.born;if(t>39){removeSprout(i);continue}s.mesh.geometry.setDrawRange(0,Math.floor(clamp(t/4.5)*61));s.mesh.material.opacity=(s.kind==='ambient'?.16:.55)*Math.min(1,t)*clamp((39-t)/5)}
-  world.updateMatrixWorld();labels.forEach(l=>{const p=world.localToWorld(l.p.clone()).project(camera),x=(p.x*.5+.5)*width-(l.action?45:0),y=(-p.y*.5+.5)*height;const visible=l.level<=reached&&age>l.level*2.6+2&&x>5&&x<width-15&&y>35&&y<height-25;l.el.style.opacity=visible?'1':'0';l.el.style.visibility=visible?'visible':'hidden';l.el.style.transform=`translate(${x}px,${y}px)`});
+  world.updateMatrixWorld();labels.forEach(l=>{const p=world.localToWorld(l.p.clone()).project(camera),x=Math.max(4,Math.min(width-(l.action?(width<500?112:128):100),(p.x*.5+.5)*width-(l.action?45:0))),y=(-p.y*.5+.5)*height;const visible=l.level<=reached&&age>l.level*2.6+2&&x>5&&x<width-15&&y>35&&y<height-25;l.el.style.opacity=visible?'1':'0';l.el.style.visibility=visible?'visible':'hidden';l.el.style.transform=`translate(${x}px,${y}px)`});
   if(Math.floor(age)!==lastReadout){lastReadout=Math.floor(age);Object.assign(canvas.dataset,{conceptAge:String(lastReadout),connectionsCreated:String(serial),activeConnections:String(sprouts.length),rotation:world.rotation.y.toFixed(3),reachedStage:String(reached)})}
   renderer.render(scene,camera);
  }
