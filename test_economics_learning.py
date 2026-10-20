@@ -17,6 +17,16 @@ from clinical_core.agere.clinical import contract_strategy as C, shared_planner 
 
 
 class Settlement(unittest.TestCase):
+    def test_financial_headline_states_payment_direction_and_scenario(self):
+        from clinical_core.agere.clinical.analysis_graph import headline
+        for net, expected in ((246450, 'Hypothetical payment to the ACO: $246,450.'),
+                              (-246450, 'Hypothetical payment owed by the ACO: $246,450.'),
+                              (0, 'No payment to or from the ACO in this hypothetical scenario.')):
+            answer = {'status': 'answered', 'answer_type': 'value', 'value': abs(net),
+                      'table': [{'settlement_explanation': {'basis': 'scenario_on_supplied_terms_not_cms_reconciliation',
+                                                           'net_payment_to_aco': net}}]}
+            self.assertEqual(headline(answer), expected)
+
     def test_independent_upside_downside_thresholds_and_caps(self):
         # $1m benchmark. A 2% hurdle unlocks first-dollar sharing.
         terms = {'sharing_rate': .5, 'loss_rate': .4, 'msr': .02, 'mlr': .02, 'two_sided': True}

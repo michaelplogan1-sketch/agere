@@ -229,6 +229,14 @@ def headline(answer):
                 items = [f"{r.get(key) if not isinstance(r.get(key), dict) else ', '.join(f'{a}={b}' for a, b in r[key].items())} "
                          f"{_fmt(round(r[metric], 2) if isinstance(r[metric], float) else r[metric])}" for r in rows[:3] if metric in r]
                 core = f"{metric.replace('_', ' ')}: " + '; '.join(items) + (f' (+{len(rows) - 3} more)' if len(rows) > 3 else '')
+    rows = answer.get('table') or []
+    settlement = rows[0].get('settlement_explanation') if len(rows) == 1 and isinstance(rows[0], dict) else None
+    if isinstance(settlement, dict) and settlement.get('basis') == 'scenario_on_supplied_terms_not_cms_reconciliation':
+        net = settlement.get('net_payment_to_aco')
+        if isinstance(net, (int, float)) and not isinstance(net, bool) and math.isfinite(net):
+            core = (f'Hypothetical payment to the ACO: ${_fmt(net)}' if net > 0 else
+                    f'Hypothetical payment owed by the ACO: ${_fmt(-net)}' if net < 0 else
+                    'No payment to or from the ACO in this hypothetical scenario')
     defs = []
     for c in (answer.get('concepts') or [])[:3]:
         n = len(c.get('included_labels') or c.get('included_series') or [])

@@ -21,6 +21,16 @@ def fixture():
     return c,b
 
 
+class BoundPolicy(unittest.TestCase):
+    def test_planner_size_policy_allows_unbounded_and_enforces_explicit_bound(self):
+        from clinical_core.agere.clinical.planner_scope import bounded
+        body = {'question': 'x' * 100}
+        self.assertTrue(bounded(body, None))
+        self.assertFalse(bounded(body, 10))
+        self.assertTrue(bounded(body, 200))
+        with self.assertRaises(ValueError): bounded({'value': float('nan')}, None)
+
+
 class ScopeTests(unittest.TestCase):
     # These fixtures exercise deferral/paging at a 20 KB bound; the production
     # bound is larger, but the mechanism under test is the same.

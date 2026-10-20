@@ -42,7 +42,9 @@ def catalog_text(message):
     return c if isinstance(c,str) else c[0]['text']
 
 
-def bounded(body,limit=MAX_BYTES):return len(json.dumps(body,allow_nan=False).encode())<=limit
+def bounded(body,limit=MAX_BYTES):
+    size = len(json.dumps(body,allow_nan=False).encode())
+    return limit is None or size <= limit
 
 
 def value(raw):

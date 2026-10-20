@@ -295,7 +295,10 @@ class GraphExecution(unittest.TestCase):
 
     def test_provider_request_fits_existing_bound(self):
         def capture(body, *args, **kwargs):
-            self.assertLess(len(json.dumps(body).encode()), REQUEST_MAX_BYTES)
+            if REQUEST_MAX_BYTES is not None:
+                self.assertLess(len(json.dumps(body).encode()), REQUEST_MAX_BYTES)
+            else:
+                self.assertGreater(len(json.dumps(body, allow_nan=False).encode()), 0)
             schema = body['output_config']['format']['schema']
             if 'segments' in schema['properties']:
                 result = {'segments': [{'text': 'Describe observed populations.',
