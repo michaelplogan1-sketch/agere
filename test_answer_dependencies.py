@@ -97,6 +97,14 @@ class AnswerDependencies(unittest.TestCase):
         self.assertIn('work changed', delivered['failure'])
         self.assertEqual(self.deliver()['status'], 'delivered')
 
+    def test_old_frozen_deliverable_cannot_be_revised_after_work_changes(self):
+        delivered = self.deliver()
+        A.create_work(self.path, self.request())
+        composer = importlib.import_module('clinical_core.agere.deliverables.compose')
+        with self.assertRaisesRegex(ValueError, 'work changed'):
+            composer.revise(A.workspace(self.path, A.load(self.path, self.key)), delivered['id'], 'Update title',
+                            send=lambda *a: self.fail('Stale revision must not call a provider'))
+
 
 if __name__ == '__main__':
     unittest.main()

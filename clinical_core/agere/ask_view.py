@@ -948,6 +948,7 @@ function loadEcon(){fetch('/api/stack/economics').then(r=>r.ok?r.json():null).th
 function loadLoop(){Promise.all(['/api/stack/learning','/api/stack/learning-loop'].map(url=>fetch(url).then(r=>r.ok?r.json():null))).then(([learning,loop])=>{
  if(!$('#loop'))return;const shapes=learning?.reusable_structures||{},stored=Object.values(shapes).reduce((n,s)=>n+(s.active||0),0),revoked=Object.values(shapes).reduce((n,s)=>n+(s.revoked||0),0);
  let html=learning?'<span class="pill" title="'+esc(learning.learning_mode||'Checked structures remain source- and policy-bound; counts are not a quality score.')+'"><b>'+fmt(stored)+'</b> saved plan structures · <b>'+fmt(learning.corrections||0)+'</b> corrections · <b>'+fmt(revoked)+'</b> suspended</span>':'';
+ if(learning?.procedural_memory?.revisions){const m=learning.procedural_memory;html+='<span class="pill" title="'+esc(m.qualification)+'"><b>'+fmt(m.revisions)+'</b> lesson revisions · <b>'+fmt(m.states?.quarantined||0)+'</b> quarantined</span>'}
  if(loop?.status==='ok'){const g=loop.gaps||{};html+='<span class="pill" title="Offline development report; no automatic model promotion"><b>'+fmt(g.actionable_clusters||0)+'</b> gap clusters · <b>'+fmt((loop.regressions||{}).cases||0)+'</b> regressions</span>'}
  $('#loop').innerHTML=html}).catch(()=>{})}
 function briefFeedback(card,event){if(!card)return;const body={card_id:card,event};if(state.briefingId)body.briefing_id=state.briefingId;

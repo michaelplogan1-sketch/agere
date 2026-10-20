@@ -107,6 +107,7 @@ def capture(path, question, result, *, original_question=None):
     plan = [{k: n.get(k) for k in ('id', 'operation', 'inputs', 'parameters')} for n in graph.get('nodes') or []]
     key = 'ANS-' + fingerprint({'version': 5, 'context_policy_identity': context_policy,
                                'feedback_identity': (data.get('planner_receipt') or {}).get('feedback_identity'),
+                               'procedural_memory_identity': ((data.get('planner_receipt') or {}).get('interpretation', {}).get('procedural_memory') or {}).get('identity'),
                                'source': source, 'answer': answer, 'plan': plan,
                                'workflow': data['workflow'],
                                'answer_policy_version': (result.get('planner_receipt') or {}).get('version'),
@@ -148,7 +149,7 @@ def load(path, key, *, current=False):
     dependency_checks = []
     current_source = source_identity(path)
     for _ in range(32):
-        check = answer_dependencies.validate(path, ancestor, source=current_source, policy=active_policy)
+        check = answer_dependencies.validate(path, ancestor, source=current_source, policy=active_policy, check_probes=current)
         dependency_checks.append({'context_id': ancestor.get('id'), **check})
         invalidated = invalidated or not check['derivation_current']
         stale = stale or not check['observation_current']
@@ -409,6 +410,27 @@ def evidence_bundle(path, key):
     return c, b
 
 
+def bundle_validator(path, bundle):
+    """Validate against the evidence actually sent, including its work snapshot."""
+    def validate_dependencies():
+        contexts, checks = {}, []
+        for rid, receipt in bundle.receipts.items():
+            if receipt['tool'] != 'saved_answer': continue
+            key = receipt['args']['context_id']
+            fresh = load(path, key, current=True)
+            if bundle.results[rid].get('dependencies') != fresh.get('dependencies'):
+                raise ValueError('Saved answer bundle differs from its current sealed derivation.')
+            contexts[key] = fresh
+            checks += fresh['dependency_validation']
+        for receipt in bundle.receipts.values():
+            if receipt['tool'] != 'review_work': continue
+            key = receipt['args']['context_id']
+            if key not in contexts or fingerprint(work(path, contexts[key])) != receipt['data_fingerprint']:
+                raise ValueError('Review work changed during generation; regenerate the deliverable from current work.')
+        return checks
+    return validate_dependencies
+
+
 def compose_frontier(path, request, *, allow_live=False, send=None):
     if set(request) != {'context_id', 'request'} or not isinstance(request['request'], str) or not 1 <= len(request['request'].strip()) <= 4000:
         raise ValueError('A saved answer and a deliverable request up to 4000 characters are required')
@@ -418,11 +440,7 @@ def compose_frontier(path, request, *, allow_live=False, send=None):
     c, b = evidence_bundle(path, request['context_id'])
     # The original question, source, returned evidence and revisioned review
     # work are already in this bundle. A design prompt cannot fetch new facts.
-    work_version = fingerprint(work(path, c))
-    def validate_dependencies():
-        fresh = load(path, c['id'], current=True)
-        if fingerprint(work(path, fresh)) != work_version:
-            raise ValueError('Review work changed during generation; regenerate the deliverable from current work.')
-        return fresh['dependency_validation']
+    validate_dependencies = bundle_validator(path, b)
+    validate_dependencies()
     return compose(workspace(path, c), request['request'].strip(), evidence_bundle=b, tool_calls=[], send=send,
                    validate_dependencies=validate_dependencies)

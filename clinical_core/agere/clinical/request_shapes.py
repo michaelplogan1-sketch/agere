@@ -127,6 +127,7 @@ def instantiate(shape, question):
 
 
 def save(path, catalog, contract, interpretation, policy):
+    if interpretation.get('procedural_memory'): return None  # exact cache retains lesson dependencies
     from .learning import correction_context
     if correction_context(path, contract['original_question']): return None
     audit = interpretation.get('semantic_review') or {}

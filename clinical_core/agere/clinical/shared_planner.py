@@ -71,7 +71,7 @@ def policy_identity():
                      'graph_contracts.py', 'graph_planner.py', 'semantic_layer.py', 'sql_query.py',
                      'age.py', 'request_vocabulary.py', 'request_shapes.py', 'local_request_worker.py',
                      'concepts.py', 'drug_classes.py', 'nl2sql.py', 'workflow_contract.py', 'request_discovery.py', 'general_analysis.py', 'dose.py',
-                     'analysis_evidence.py', 'answer_dependencies.py',
+                     'analysis_evidence.py', 'answer_dependencies.py', 'procedural_memory.py',
                      'conversation.py', 'question_input.py', 'learning.py',
                      'metrics.py', 'metric_families.py', 'measures.py', 'risk_adjustment.py', 'vbc.py')}})
 
@@ -387,7 +387,26 @@ def checked_interpret(*args, **kwargs):
         raise
 
 
-def interpret(catalog, question, *, population=None, model=None, force_model=False):
+def interpret(catalog, question, *, population=None, model=None, force_model=False, use_memory=True):
+    from . import procedural_memory as memory
+    path = Path(catalog.target).parent
+    lessons = memory.select(path, question, catalog=catalog, probe=True) if use_memory and model is not None else []
+    guided = memory.GuidedModel(model, path, question, lessons) if lessons else None
+    try:
+        contract, interpretation = _interpret(catalog, question, population=population,
+                                               model=guided or model, force_model=force_model)
+    except Exception as exc:
+        if guided and guided.use_id:
+            # A provider outage or an unsupported request is not proof that the lesson is wrong.
+            memory.outcome(path, guided.use_id, 'unverified', detail=type(exc).__name__)
+        raise
+    if guided and guided.use_id:
+        interpretation['procedural_memory'] = {'lesson_ids': [r['id'] for r in lessons], 'use_id': guided.use_id,
+                                               'identity': request_plan.fingerprint([r['id'] for r in lessons])}
+    return contract, interpretation
+
+
+def _interpret(catalog, question, *, population=None, model=None, force_model=False):
     failures = []
     from .learning import correction_context
     corrections = correction_context(Path(catalog.target).parent, question)
@@ -573,11 +592,14 @@ def plan(stack, question, ledger=None, frontier=None, *, population=None, model=
     from ..gateway import PersistentGateway
     hosted_model = os.environ.get('AGERE_SHARED_INTERPRETER_MODEL', PersistentGateway.MODELS['claude'])
     code = policy_identity()
+    from . import procedural_memory as memory
+    request_lessons = memory.select(stack.path, question, catalog=catalog, probe=True)
+    memory_identity = request_plan.fingerprint([r['id'] for r in request_lessons])
     key = request_plan.fingerprint({'question': question, 'population': population, 'source': catalog.identity,
                                     'tables': catalog.tables, 'stream_fields': catalog.stream_fields, 'code': code,
                                     'allow_live': bool(getattr(stack, 'allow_live', False)),
                                     'planning': planning,
-                                    'hosted_model': hosted_model})
+                                    'hosted_model': hosted_model, 'procedural_memory': memory_identity})
     cache_path = Path(stack.path)/'question-plans.sqlite3'
     with sqlite3.connect(cache_path) as db:
         db.execute('CREATE TABLE IF NOT EXISTS shared_requests(id TEXT PRIMARY KEY,payload TEXT NOT NULL)')
@@ -608,7 +630,8 @@ def plan(stack, question, ledger=None, frontier=None, *, population=None, model=
         from .request_shapes import lookup
         from . import general_analysis
         reused = (lookup(stack.path, catalog, question, code, population)
-                  or general_analysis.lookup_shape(stack.path, catalog, question, code, population)) if planning != 'frontier' else None
+                  or general_analysis.lookup_shape(stack.path, catalog, question, code, population)) if (
+                      planning != 'frontier' and memory_identity == request_plan.fingerprint([])) else None
         # The small local interpreter has not passed unfamiliar-language checks.
         # When hosted execution is enabled, use the capable interpreter directly
         # after the grammar declines, not three slow failed local guesses first.
@@ -645,6 +668,10 @@ def plan(stack, question, ledger=None, frontier=None, *, population=None, model=
                               else {'request': contract['request']})
                 db.execute('INSERT OR REPLACE INTO shared_requests VALUES (?,?)',
                            (key, json.dumps({'question': question, **saved_plan, 'interpretation': interpretation}, default=str)))
+    if interpretation.get('exact_contract_cache_hit') and interpretation.get('procedural_memory'):
+        interpretation = copy.deepcopy(interpretation)
+        interpretation['procedural_memory']['use_id'] = memory.begin_use(
+            stack.path, question, request_lessons)
     attempts = interpretation.get('attempts', [])
     cached = interpretation.get('exact_contract_cache_hit', False)
     usage = attempt_receipt(attempts, cached)
@@ -665,10 +692,23 @@ def compose(stack, question, *, population=None, parent=None, model=None, planni
     try:
         if receipt['request_contract'].get('kind') == 'general_analysis':
             from . import general_analysis
-            return general_analysis.execute(stack, question, graph, receipt, population=population, parent=parent,
+            result = general_analysis.execute(stack, question, graph, receipt, population=population, parent=parent,
                                             started=started, economics=economics)
-        return execute_contract(stack, question, graph, receipt, population=population, parent=parent, started=started)
+        else:
+            result = execute_contract(stack, question, graph, receipt, population=population, parent=parent, started=started)
+        from . import procedural_memory as memory
+        used = receipt.get('interpretation', {}).get('procedural_memory')
+        if used:
+            audit = receipt['interpretation'].get('semantic_review') or {}
+            status = ('failed' if audit.get('equivalent') is False or audit.get('issues') else
+                      'observed_pass' if result['answer']['status'] == 'answered' else 'unverified')
+            memory.outcome(stack.path, used['use_id'], status, detail=result['answer'].get('missing'))
+        return result
     except Exception as exc:
+        used = receipt.get('interpretation', {}).get('procedural_memory')
+        if used:
+            from . import procedural_memory as memory
+            memory.outcome(stack.path, used['use_id'], 'unverified', detail=type(exc).__name__)
         exc.planner_receipt = receipt
         raise
 

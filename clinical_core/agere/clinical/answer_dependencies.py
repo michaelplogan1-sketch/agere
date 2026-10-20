@@ -29,10 +29,16 @@ def seal(path, context):
             'observation': {'source': context['source'], 'wal': wal_identity(path)}}
 
 
-def validate(path, context, *, source, policy):
+def validate(path, context, *, source, policy, check_probes=False):
     saved = context.get('dependencies')
     issues = []
     derivation = context.get('context_policy_identity') == policy
+    used = ((context.get('planner_receipt') or {}).get('interpretation') or {}).get('procedural_memory')
+    if used:
+        from . import procedural_memory
+        if used.get('identity') != procedural_memory.identity(path, context['question'], probe=check_probes):
+            derivation = False
+            issues.append('A procedural lesson used by this answer is no longer applicable; re-evaluate the original question.')
     observation = context.get('source') == source
     if not saved or saved.get('schema') != VERSION:
         derivation = False

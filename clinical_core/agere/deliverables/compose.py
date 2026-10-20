@@ -493,6 +493,9 @@ def revise(ws, deliverable_id, instruction, *, send=None, save=True, cache=True)
                                any(r['tool'] == 'saved_answer' for r in bundle.receipts.values()))
     if ctx.frozen_evidence:
         bundle.meta['frozen_evidence'] = True
+        from . import answer_context
+        ctx.validate_dependencies = answer_context.bundle_validator(Path(ws.semantic_path).parent, bundle)
+        ctx.validate_dependencies()  # reject stale revisions before any model call
     ledger = Ledger()
     it = intentmod.parse(instruction)
     have = {(r['tool'], json.dumps(r['args'], sort_keys=True)) for r in bundle.receipts.values()}

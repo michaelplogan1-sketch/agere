@@ -197,6 +197,8 @@ def record_correction(path, question, note, expected=None):
     invalidate(path, question, note)
     from .general_analysis import invalidate_shapes
     revoked = invalidate_shapes(path, question, note)
+    from . import procedural_memory
+    procedural_memory.correction(path, question, note)
     return {'recorded': True, 'revoked_analysis_shapes': len(revoked), 'status': 'needs_revalidation',
             'effect': 'Related learned plans are suspended. Future interpretation receives the correction and must recheck source evidence. Feedback is not automatic clinical approval or model training.'}
 
@@ -219,7 +221,9 @@ def summary(path):
             for table in ('request_shapes', 'analysis_shapes'):
                 if plans.execute('SELECT 1 FROM sqlite_master WHERE name=?', (table,)).fetchone():
                     shapes[table] = dict(plans.execute(f'SELECT status,COUNT(*) FROM {table} GROUP BY status'))
+    from . import procedural_memory
     return {'schema': VERSION, 'routes': routes, 'statuses': statuses, 'verified_training_pairs': verified,
+            'procedural_memory': procedural_memory.summary(path),
             'corrections': corrections, 'reusable_structures': shapes,
             'learning_mode': 'Continuous capture and checked plan reuse; corrections require revalidation. No automatic model-weight training or clinical qualification.',
             'top_gaps': [{'reason': r, 'count': n} for r, n in gaps]}

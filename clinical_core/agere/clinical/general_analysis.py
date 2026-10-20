@@ -661,6 +661,7 @@ def invalidate_shapes(path, question, reason):
 
 
 def save_shape(path, contract, policy, interpretation):
+    if interpretation.get('procedural_memory'): return None  # do not detach a plan from its lesson revision
     from .learning import correction_context
     audit = interpretation.get('semantic_review') or {}
     if (interpretation.get('review') != 'checked_hosted_interpretation'

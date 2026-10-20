@@ -29,6 +29,7 @@ def create(path, request):
             'costs': {'total_usd': 0}, 'new_paid_api_calls': 0,
             'verification': {'basis': 'Deterministic rendering of saved answer and separately labeled simulation receipts'}}
     from .compose import _save
+    spec['dependency_validation'] = A.bundle_validator(path, bundle)()
     _save(A.workspace(path, c), key, doc=doc, body=doc, bundle=bundle, spec=spec)
     return {**spec, 'html': doc}
 
