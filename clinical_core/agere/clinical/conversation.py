@@ -389,7 +389,7 @@ def resolve(question, prior, hosted=None):
 
     Returns {'standalone', 'method', 'edits', 'frame', 'follow_up', 'reason', 'hosted_receipt'}.
     """
-    from .question_input import validate_question
+    from .question_input import validate_question, QuestionNotUnderstood
     validate_question(question)
     question = ' '.join(question.split())
     own = parse_frame(question)
@@ -413,13 +413,13 @@ def resolve(question, prior, hosted=None):
             return {**out, 'standalone': text, 'method': 'deterministic_text', 'edits': edits, 'frame': parse_frame(text)}
         reason = 'previous question has no structured frame'
     if hosted is None:
-        raise ValueError(f'Follow-up could not be resolved deterministically ({reason}) and hosted resolution is disabled on this server. '
+        raise QuestionNotUnderstood(f'Follow-up could not be resolved deterministically ({reason}) and hosted resolution is disabled on this server. '
                          f'Ask the full question, e.g. a variant of: "{prior["resolved_question"]}"')
     text, receipt = hosted(prior, question)
     text = ' '.join((text or '').strip().splitlines()[0].split()) if (text or '').strip() else ''
     text = text.strip('"').strip()
     if not text or text.upper().startswith('CANNOT_RESOLVE') or len(text) > 600:
-        raise ValueError(f'Follow-up could not be resolved ({reason}); ask the full question.')
+        raise QuestionNotUnderstood(f'Follow-up could not be resolved ({reason}); ask the full question.')
     return {**out, 'standalone': text, 'method': 'hosted', 'edits': [], 'frame': parse_frame(text), 'reason': reason,
             'hosted_receipt': receipt}
 
@@ -498,10 +498,14 @@ def turns(path, conversation_id):
 
 
 def prior_context(path, conversation_id):
-    rows = turns(path, conversation_id)
+    # Failed/unsupported turns remain in the audit trail but cannot replace the
+    # last usable answer that "them" refers to.
+    rows = [r for r in turns(path, conversation_id) if not r['error']
+            and (r.get('answer_summary') or {}).get('status') in ('answered', 'partial', 'low_confidence')]
     if not rows: return None
     last = rows[-1]
     return {'resolved_question': last['resolved_question'], 'frame': last['frame'],
+            'action_context': (last.get('answer_summary') or {}).get('action_context'),
             'history': [r['resolved_question'] for r in rows[-MAX_CONTEXT_TURNS:]]}
 
 
@@ -560,23 +564,39 @@ def handle_compose(stack, body, hosted_factory=None):
     hosted_usd, hosted_calls = 0.0, 0
     try:
         question, planning, conv = compose_shape(body)
+        from .question_input import QuestionNotUnderstood
+        from ..deliverables import answer_context
+        refers = bool(re.search(r'\b(?:them|those|these|they)\b|^(?:(?:who|what) (?:is|are) )?their\b', question, re.I))
         if conv is False:
+            if refers:
+                raise QuestionNotUnderstood('This question refers to a previous cohort. Open that conversation or ask a complete question; no whole-population substitution was run.')
             result = stack.compose(question) if planning == 'auto' else stack.compose(question, planning=planning)
         else:
             prior = prior_context(stack.path, conv)
+            saved = (prior or {}).get('action_context')
+            bound = None
+            if saved and is_followup(question) and planning == 'auto' and parse_frame(question) is None:
+                bound = answer_context.followup(stack.path, saved['id'], question)
+                if bound is None:
+                    raise QuestionNotUnderstood('This follow-up cannot yet be executed over the saved cohort. The original cohort was preserved; no rewritten query or whole-population substitution was run.')
+            elif refers:
+                raise QuestionNotUnderstood('No saved patient cohort is available for this follow-up. Ask the complete question first.')
             hosted = None
             if prior is not None and getattr(stack, 'allow_live', False):
                 hosted = (hosted_factory or _default_hosted)(stack)
-            resolution = resolve(question, prior, hosted=hosted)
+            resolution = ({'standalone': question, 'method': 'saved_cohort', 'frame': None, 'follow_up': True,
+                           'edits': bound['cohort_transform']['operations'], 'reason': 'Applied to the exact saved cohort',
+                           'hosted_receipt': None} if bound else resolve(question, prior, hosted=hosted))
             if resolution.get('hosted_receipt'):
                 r = resolution['hosted_receipt']
                 hosted_usd = float(r.get('api_usd') or 0.0); hosted_calls = 0 if r.get('cache_hit') else 1
             standalone = resolution['standalone']
-            result = stack.compose(standalone) if planning == 'auto' else stack.compose(standalone, planning=planning)
+            result = bound if bound else stack.compose(standalone) if planning == 'auto' else stack.compose(standalone, planning=planning)
     except Exception as exc:
         logged = resolution['standalone'] if resolution else str(question)
         answer_log.record(stack.path, logged, error=f'{type(exc).__name__}: {exc}', seconds=time.time() - t0)
-        learning.record_outcome(stack.path, logged, 'declined', 'declined', str(exc))
+        from .question_input import failure
+        learning.record_outcome(stack.path, logged, failure(exc)['status'], failure(exc)['status'], str(exc))
         if conv is not False:
             fallback = resolution or {'standalone': ' '.join(question.split()), 'method': 'unresolved', 'edits': [], 'frame': None}
             record(stack.path, conv, question, fallback, error=f'{type(exc).__name__}: {exc}')

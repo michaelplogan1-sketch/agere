@@ -174,6 +174,8 @@ def evaluate_atom(atom, patient, records, as_of):
     if atom['kind'] == 'patient':
         got = patient_value(patient, 'age_reported' if atom['field'] == 'age_latest' else atom['field'], as_of)
         if atom['field'] == 'age_latest':  # a later reported age (demographic update) supersedes the roster value; age_reported = as captured
+            if got is None:
+                got = patient_value(patient, 'age', as_of)
             updates = [r for r in records if r.get('source_table') == 'demographic_updates' and isinstance(r.get('age_reported'), (int, float))
                        and (r.get('event_date') or '')[:10] <= as_of]
             if updates: got = max(updates, key=lambda r: (r.get('event_date') or '', r.get('available_date') or ''))['age_reported']

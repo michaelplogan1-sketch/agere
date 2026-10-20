@@ -42,7 +42,8 @@ class Workflow(unittest.TestCase):
         A.update_work(self.path, {'context_id':self.c['id'],'item_id':item['id'],'revision':1,
                                  'state':'blocked','owner':'Evidence review team','note':'Need provider attribution'})
         # A repeated click cannot reset ownership, notes or progress.
-        A.create_work(self.path,self.req(owner='Different team'))
+        with self.assertRaisesRegex(ValueError, 'different owner'):
+            A.create_work(self.path,self.req(owner='Different team'))
         reopened = A.inspect(self.path, self.c['id'])
         self.assertEqual(reopened['context']['question'],self.question)
         self.assertEqual(reopened['counts'],{'blocked':1,'needs_review':1})

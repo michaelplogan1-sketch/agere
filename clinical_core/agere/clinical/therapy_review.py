@@ -10,7 +10,7 @@ import time
 from ..plans import router, catalog
 from . import clinical_inputs
 
-VERSION = 'patient-therapy-review/1'
+VERSION = 'patient-therapy-review/2'
 
 
 def accepts(question):
@@ -21,6 +21,8 @@ def accepts(question):
         return False
     if not re.search(r'\b(?:flag|review|assess|assessment)\b', q):
         return False
+    if not re.search(r"\b(?:not|missing|aren'?t|aren t|isn'?t|isn t)\b", q):
+        return False  # This tool cannot select a positive/full-treatment cohort.
     # A bounded family, never a loose keyword match that swallows payer/date/age filters.
     words = set(re.findall(r"[a-z0-9]+", q))
     allowed = set('find every all patient patients with heart failure hfref and reduced ef ejection fraction flag which who arent aren t are not on defect free full gdmt guideline directed medical therapy or max maximum target tolerated dose doses their pcp is cardiologist cardiologists primary care provider providers show list them the each review titration assess assessment of for current please medication medications regimen missing classes at a an'.split())
@@ -121,9 +123,12 @@ def answer(path, question):
               'Cardiologist uses active dated care-team assignment where documented, otherwise the latest observed cardiology encounter with ongoing responsibility unconfirmed.']
     headline = f"{len(rows)} HF patients for reduced-EF therapy review; {len(r['ef_unresolved_patient_ids'])} additional HF patients have unresolved EF."
     return {'schema': VERSION, 'synthetic': True, 'question': question, 'route': 'patient_therapy_review',
-        'answer': {'status': 'answered', 'answer_type': 'table', 'headline': headline, 'table': rows,
+        'answer': {'status': 'partial', 'answer_type': 'table', 'headline': 'Incomplete documentary review. ' + headline, 'table': rows,
             'table_columns': ['patient_id','ef_percent','gdmt_review_flag','recorded_doses','maximum_tolerated_dose','pcp','cardiologist'],
-            'patient_ids': [x['patient_id'] for x in rows], 'missing': [], 'limitations': limits,
+            'patient_ids': [x['patient_id'] for x in rows],
+            'missing': ['Requested treatment-gap and dose classification is not implemented reliably.',
+                        'Current phenotype, medication reconciliation and complete care-team attribution remain unverified.'],
+            'actionable_cohort': False, 'limitations': limits,
             'interpretation': 'Interpret defect-free GDMT as a review of four medication pillars, exceptions, dose evidence and care-team attribution. Clinical appropriateness remains unresolved.',
             'overall': r},
         'planner_receipt': {'route': 'patient_therapy_review', 'version': VERSION, 'new_paid_api_calls': 0,

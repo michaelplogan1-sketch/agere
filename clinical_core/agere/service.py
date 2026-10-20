@@ -741,7 +741,9 @@ def serve(run,port,annotations=None,evidence_queries=None,stack=None,allow_live_
                 raw=json.dumps({'error':str(exc)[:400]}).encode();status=403
             except (ValueError,TypeError,KeyError) as exc:
                 from .clinical.program_work import WorkConflict
-                raw=json.dumps({'error':str(exc)[:400]}).encode();status=409 if isinstance(exc,WorkConflict) else 400
+                from .clinical.question_input import failure
+                details = failure(exc) if path=='/api/stack/compose' else {'error':str(exc)[:400]}
+                raw=json.dumps(details).encode();status=409 if isinstance(exc,WorkConflict) else 400
             except RuntimeError as exc:raw=json.dumps({'error':str(exc)[:400]}).encode();status=502
             finally:
                 try:

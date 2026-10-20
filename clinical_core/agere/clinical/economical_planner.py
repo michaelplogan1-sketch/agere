@@ -605,7 +605,9 @@ def plan(stack,question,ledger,frontier):
             return graph,{'route':'exact_question_cache','original_route':saved['receipt']['route'],
                          'model':None,'cache_hit':True,'new_paid_api_calls':0,'frontier_called':False,
                          'prior_planning_receipt':saved['receipt'],'elapsed_seconds':time.perf_counter()-start}
-        if not stack.allow_live:raise ValueError('Not handled locally ('+str(local_decline.get('reason'))+'); hosted planning disabled')
+        if not stack.allow_live:
+            from .question_input import QuestionNotUnderstood
+            raise QuestionNotUnderstood('No executable local interpretation ('+str(local_decline.get('reason'))+'); hosted planning disabled. This does not establish missing warehouse data.')
         steps=[];reason=escalation_reason(question);paid=0;request_key=None;before=None
         if reason is None:
             try:

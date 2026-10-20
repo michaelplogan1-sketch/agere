@@ -824,6 +824,13 @@ def parse(question, as_of):
         return None  # "diabetic patients who also have CKD": one condition population per family; a union answers another question
     family = detect_family(qtext, defn)
     if family is None: return None
+    if family == 'therapy_class_gap':
+        # A gap family has only negative class predicates. Never turn a positive
+        # requirement ("on a statin but not ACEi/ARB") into another missing class.
+        # A compositional planner must represent both sides before answering.
+        polarity_text = re.sub(r'\bnot\s+(?:on|taking|prescribed|receiving)\b', 'without', _lower(qtext))
+        if re.search(r'\b(?:on|taking|prescribed|receiving)\s+(?:an?\s+|any\s+)?', polarity_text):
+            return None
     year = _calendar_year(qtext + ' ' + defn) if family == 'utilization_threshold' else None
     if family != 'adherence_pdc' and not year and re.search(r'\b(?:19|20)\d\d\b', qtext + ' ' + defn):
         return None  # calendar-dated definitions (measurement years) are not as_of-relative family windows

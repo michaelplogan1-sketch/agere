@@ -53,7 +53,7 @@ async function run(fn) {
   try { await fn(); } catch (error) { notify(error.message, true); }
   finally { busy = false; }
 }
-function canCreate() { return data && !data.context.stale && data.context.answer.status === 'answered' && !data.context.answer.missing?.length; }
+function canCreate() { return data && !data.context.stale && !data.context.invalidated && data.context.answer.status === 'answered' && !data.context.answer.missing?.length; }
 function go(view, focus=true) {
   if (!viewNames[view] || !data) return;
   currentView = view;
@@ -168,6 +168,7 @@ function render() {
   $('nav-cohort').textContent = num(c.patient_rows.length);
   $('nav-work').textContent = num(data.items.filter(i=>i.state!=='cancelled').length);
   const warnings = [];
+  if (c.invalidated) warnings.push('This answer was invalidated after a correctness review. Its history is preserved; new work and demo actions are blocked.');
   if (c.stale) warnings.push('Source data has changed. This saved answer is still visible; ask again before changing work.');
   if (c.answer.status !== 'answered') warnings.push('This answer is '+pretty(c.answer.status)+'. Complete the analysis before creating review work.');
   if (c.answer.missing?.length) warnings.push('Not covered: '+c.answer.missing.join('; '));
@@ -182,7 +183,7 @@ function render() {
   }
   $('studio-patients').textContent = num(c.patient_rows.length);
   $('studio-tasks').textContent = num(data.items.length);
-  $('compose').disabled = c.stale;
+  $('compose').disabled = c.stale || c.invalidated;
   $('cost').textContent = 'Free synthetic mockup · local template · no model/API calls. Choose a layout; your brief is saved as design intent.';
   renderOverview(); showPatients(); showWork(); showIntent();
 }
@@ -218,21 +219,21 @@ function editWork(id) {
   if (!item) return;
   $('detail-kicker').textContent = 'REVIEW WORK / '+(programNames[item.program] || item.program).toUpperCase();
   $('detail-title').textContent = item.patient_id;
-  $('detail-content').innerHTML = '<form id="edit-work-form"><p class="muted">Keep the next step, owner, and progress together.</p><label for="task-state">Where does it stand?</label><select id="task-state" '+(data.context.stale?'disabled':'')+'>'+data.states.map(s=>'<option value="'+esc(s)+'" '+(s===item.state?'selected':'')+'>'+esc(states[s]||pretty(s))+'</option>').join('')+'</select><label for="task-owner">Who’s taking the lead?</label><input id="task-owner" required maxlength="120" value="'+esc(item.owner)+'"><label for="task-note">What’s the next step?</label><textarea id="task-note" maxlength="2000">'+esc(item.note)+'</textarea><details class="requirements-box"><summary>Review requirements</summary><ul>'+item.requirements.map(r=>'<li>'+esc(r)+'</li>').join('')+'</ul></details><button type="button" class="text-button" data-inspect="'+esc(item.patient_id)+'">Open patient evidence '+icon('arrow')+'</button><p class="cost-note">Review status only. No outreach, enrollment, or care delivery.</p><p id="work-error" class="form-error" role="alert"></p><div class="sheet-actions"><button type="button" class="button" data-close="detail-dialog">Cancel</button><button id="save-work" class="button primary" '+(data.context.stale?'disabled':'')+'>Save progress '+icon('check')+'</button></div></form>';
+  $('detail-content').innerHTML = '<form id="edit-work-form"><p class="muted">Keep the next step, owner, and progress together.</p><label for="task-state">Where does it stand?</label><select id="task-state" '+((data.context.stale || data.context.invalidated)?'disabled':'')+'>'+data.states.map(s=>'<option value="'+esc(s)+'" '+(s===item.state?'selected':'')+'>'+esc(states[s]||pretty(s))+'</option>').join('')+'</select><label for="task-owner">Who’s taking the lead?</label><input id="task-owner" required maxlength="120" value="'+esc(item.owner)+'"><label for="task-note">What’s the next step?</label><textarea id="task-note" maxlength="2000">'+esc(item.note)+'</textarea><details class="requirements-box"><summary>Review requirements</summary><ul>'+item.requirements.map(r=>'<li>'+esc(r)+'</li>').join('')+'</ul></details><button type="button" class="text-button" data-inspect="'+esc(item.patient_id)+'">Open patient evidence '+icon('arrow')+'</button><p class="cost-note">Review status only. No outreach, enrollment, or care delivery.</p><p id="work-error" class="form-error" role="alert"></p><div class="sheet-actions"><button type="button" class="button" data-close="detail-dialog">Cancel</button><button id="save-work" class="button primary" '+((data.context.stale || data.context.invalidated)?'disabled':'')+'>Save progress '+icon('check')+'</button></div></form>';
   const sim = item.simulation;
   const demo = document.createElement('section');
   demo.className = 'requirements-box';
   demo.innerHTML = '<h3>Try the demo agent</h3><p class="muted">Scripted synthetic journey. No contact, enrollment or care occurs.</p>'+
     (sim ? '<span class="badge">Simulated · '+esc(pretty(sim.status))+'</span><ol>'+sim.receipts.map(r=>'<li><strong>'+esc(pretty(r.step))+' → '+esc(pretty(r.outcome))+'</strong><p>'+esc(r.reason)+'</p></li>').join('')+'</ol>'+(sim.follow_up?'<p class="warning">'+esc(sim.follow_up)+'</p>':'') :
       '<label for="demo-scenario">Demo scenario</label><select id="demo-scenario"><option value="happy_path">Successful journey</option><option value="records_needed">Missing records</option><option value="patient_declines">Patient declines</option></select>')+
-    (!sim || sim.status==='running' ? '<button type="button" id="demo-advance" class="button primary" '+(data.context.stale||item.state==='cancelled'?'disabled':'')+'>'+(sim?'Simulate '+esc(pretty(sim.next_step)):'Start demo agent')+' →</button>' : '<p>Demo finished. Its history stays attached to this review.</p>');
+    (!sim || sim.status==='running' ? '<button type="button" id="demo-advance" class="button primary" '+(data.context.stale||data.context.invalidated||!['needs_review','in_review'].includes(item.state)?'disabled':'')+'>'+(sim?'Simulate '+esc(pretty(sim.next_step)):'Start demo agent')+' →</button>' : '<p>Demo finished. Its history stays attached to this review.</p>');
   $('detail-content').append(demo);
   if ($('demo-advance')) $('demo-advance').onclick = () => run(async () => {
     $('demo-advance').disabled = true;
     try {
       await api('/api/stack/action-simulate',{context_id:key,item_id:id,revision:item.revision,scenario:sim?.scenario||$('demo-scenario').value});
       await refresh(); editWork(id); notify('Simulated step saved. No external action occurred.');
-    } finally { if ($('demo-advance')) $('demo-advance').disabled = data.context.stale || item.state==='cancelled'; }
+    } finally { if ($('demo-advance')) $('demo-advance').disabled = data.context.stale || data.context.invalidated || !['needs_review','in_review'].includes(item.state); }
   });
   $('edit-work-form').onsubmit = event => {
     event.preventDefault();

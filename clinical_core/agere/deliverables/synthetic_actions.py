@@ -26,10 +26,12 @@ def advance(path, request):
         with db:
             db.execute('BEGIN IMMEDIATE')
             row = db.execute('SELECT revision,payload FROM work_items WHERE id=?', (request['item_id'],)).fetchone()
-            if not row or type(request['revision']) is not int or row[0] != request['revision']:
+            if not row:
+                raise ValueError('Work item is absent from this answer context')
+            if type(request['revision']) is not int or row[0] != request['revision']:
                 raise ValueError('Work changed in another window. Reload before advancing.')
             item = json.loads(row[1])
-            if item['patient_id'] not in c['patient_ids'] or item['state'] == 'cancelled':
+            if item['patient_id'] not in c['patient_ids'] or item['state'] not in ('needs_review', 'in_review'):
                 raise ValueError('Select active work within this saved cohort')
             sim = item.get('simulation') or {'scenario': request['scenario'], 'receipts': [], 'status': 'running',
                     'synthetic': True, 'model_calls': 0, 'api_cost_usd': 0,
@@ -53,6 +55,10 @@ def advance(path, request):
             rid = item['id'] + ':demo:' + str(len(sim['receipts']) + 1)
             receipt = cp.submit({'request_id': rid, 'step': step, 'day': len(sim['receipts']),
                                  'attempt': 1, 'not_before': sim['receipts'][-1]['at'] if sim['receipts'] else None})
+            if step == 'chart_review' and receipt['outcome'] == 'reviewed':
+                receipt['reason'] = {'pharmd': 'Simulated pharmacist review of therapy evidence',
+                                     'rpm': 'Simulated monitoring-team review of monitoring evidence',
+                                     'custom': 'Simulated care-team review of the selected evidence'}[item['program']]
             receipt['clinical_eligibility_established'] = False
             receipt['external_dispatch_performed'] = False
             sim['receipts'].append(receipt)

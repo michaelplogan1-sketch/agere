@@ -22,6 +22,13 @@ PROGRAMS = {
     'custom': {'label': 'Custom follow-up review', 'requirements': ['Define the intended action and evidence needed', 'Confirm suitability, patient preferences and responsible team']},
 }
 STATES = ('needs_review', 'in_review', 'blocked', 'review_complete', 'cancelled')
+TRANSITIONS = {
+    'needs_review': {'needs_review', 'in_review', 'blocked', 'cancelled'},
+    'in_review': {'in_review', 'needs_review', 'blocked', 'review_complete', 'cancelled'},
+    'blocked': {'blocked', 'needs_review', 'in_review', 'cancelled'},
+    'review_complete': {'review_complete', 'in_review'},
+    'cancelled': {'cancelled', 'needs_review'},
+}
 
 
 def now():
@@ -67,13 +74,25 @@ def capture(path, question, result, *, original_question=None):
         return None
     source = source_identity(path)
     rows = patient_rows(answer)
+    inherited = result.get('cohort_patient_rows')
+    if inherited is not None:
+        if {r['patient_id'] for r in inherited} != set(answer.get('patient_ids') or []):
+            raise ValueError('Transformed patient evidence does not match the saved cohort')
+        rows = inherited
     data = {'schema': 'agere-answer-context/1', 'question': question,
             'original_question': original_question or question, 'source': source,
             'answer': answer, 'graph': result.get('graph'), 'results': result.get('results'),
             'planner_receipt': result.get('planner_receipt'), 'planning_economics': result.get('planning_economics'),
+            'cohort_transform': result.get('cohort_transform'),
             'patient_rows': rows, 'patient_ids': [r['patient_id'] for r in rows],
             'synthetic': True, 'clinical_eligibility_established': False}
-    key = 'ANS-' + fingerprint(data)[:24]
+    # Identity describes the executed answer, not punctuation, elapsed time,
+    # cache state or cost. Keep the first complete execution receipt immutable.
+    graph = data.get('graph') or {}
+    plan = [{k: n.get(k) for k in ('id', 'operation', 'inputs', 'parameters')} for n in graph.get('nodes') or []]
+    key = 'ANS-' + fingerprint({'version': 2, 'source': source, 'answer': answer, 'plan': plan,
+                               'answer_policy_version': (result.get('planner_receipt') or {}).get('version'),
+                               'cohort_transform': data.get('cohort_transform')})[:24]
     d = root(path) / key
     d.mkdir(parents=True, exist_ok=True)
     target = d / 'answer.json'
@@ -95,9 +114,12 @@ def load(path, key, *, current=False):
         raise ValueError('Saved answer not found in this warehouse')
     data = json.loads(f.read_text())
     stale = data['source'] != source_identity(path)
+    invalidated = ((data.get('planner_receipt') or {}).get('version') == 'patient-therapy-review/1')
+    if current and invalidated:
+        raise ValueError('This saved therapy-review answer was invalidated after incorrect cohort and treatment-scope behavior was found. It remains available for inspection; new work is blocked.')
     if current and stale:
         raise ValueError('The data changed. Ask the question again before creating or changing work.')
-    return {**data, 'stale': stale}
+    return {**data, 'stale': stale, 'invalidated': invalidated}
 
 
 def listing(path):
@@ -173,7 +195,10 @@ def create_work(path, request):
                               'requirements': PROGRAMS[program]['requirements'], 'clinical_eligibility_established': False}
                 aid = fingerprint(assessment)
                 db.execute('INSERT OR IGNORE INTO work_assessments VALUES (?,?,?,?)', (aid, pid, lane, json.dumps(assessment)))
-                if db.execute('SELECT 1 FROM work_items WHERE id=?', (key,)).fetchone():
+                existing = db.execute('SELECT payload FROM work_items WHERE id=?', (key,)).fetchone()
+                if existing and json.loads(existing[0])['owner'] != owner:
+                    raise ValueError('Review work already has a different owner. Open the existing item to change ownership explicitly; no selected work was changed.')
+                if existing:
                     continue  # Idempotent creation never resets progress or changes the assigned owner.
                 item = {'id': key, 'patient_id': pid, 'context_id': c['id'], 'program': program, 'lane': lane,
                         'decision_id': decision_id, 'assessment_id': aid, 'revision': 1, 'state': 'needs_review',
@@ -206,12 +231,71 @@ def update_work(path, request):
             if row[0] != request['revision']:
                 raise ValueError('Work changed in another window. Reload before saving.')
             item = json.loads(row[1])
+            if request['state'] not in TRANSITIONS[item['state']]:
+                raise ValueError(f"Review cannot move from {item['state']} to {request['state']}; start or reopen the review first.")
             item.update(state=request['state'], owner=owner, note=note, revision=row[0] + 1, updated_at=now())
             db.execute('UPDATE work_items SET revision=?,payload=? WHERE id=?', (item['revision'], json.dumps(item), item['id']))
             db.execute('INSERT INTO work_events VALUES (?,?,?)', (item['id'], item['revision'], json.dumps({'action': 'review_updated', 'item': item})))
     finally:
         db.close()
     return inspect(path, c['id'])
+
+
+def followup(path, key, question):
+    """Deterministic transformations of any saved patient set, never a new search.
+
+    Unsupported edits return None. The caller must not rewrite an anaphoric
+    request into an unbound whole-warehouse question.
+    """
+    text = ' '.join(question.lower().strip(' ?.!').split())
+    listing = re.fullmatch(r'(?:list|show|count)(?: me)? (?:them|those patients|these patients)', text)
+    grouping = re.fullmatch(r'(?:group|break down|split)(?: them| those patients| these patients)? by (pcp|practice|payer)', text)
+    exclusion = re.fullmatch(r'(?:exclude|excluding|remove)(?: the)? (?:patients|ones|those|them)(?: who have| who| that have)? (?:died|are deceased|deceased)', text)
+    if not (listing or grouping or exclusion):
+        return None
+    c = load(path, key, current=True)
+    ids = set(c['patient_ids'])
+    rows = c['patient_rows']
+    operations, evidence = [], []
+    db = sqlite3.connect(f'file:{Path(path) / "semantic.sqlite3"}?mode=ro', uri=True)
+    db.row_factory = sqlite3.Row
+    try:
+        table = [r for p in rows for r in p['evidence_rows']] or [{'patient_id': p} for p in sorted(ids)]
+        if exclusion:
+            query = 'SELECT patient_id,death_date,record_ids FROM death WHERE death_date<=?'
+            deaths = [dict(r) for r in db.execute(query, (c['source']['as_of'],)) if r['patient_id'] in ids]
+            ids -= {r['patient_id'] for r in deaths}
+            table = [r for r in table if (r.get('patient_id') or r.get('patient')) in ids]
+            operations.append({'operation': 'exclude_recorded_deaths', 'as_of': c['source']['as_of']})
+            evidence.append({'query': query, 'parameters': [c['source']['as_of']], 'rows': deaths,
+                             'limitation': 'No death record does not confirm that a patient is alive.'})
+        if grouping:
+            field = {'pcp': 'pcp_clinician_id', 'practice': 'pcp_practice_id', 'payer': 'payer_id'}[grouping.group(1)]
+            query = f'SELECT patient_id,{field} FROM patient'
+            people = {r['patient_id']: r[field] for r in db.execute(query) if r['patient_id'] in ids}
+            counts = Counter(people.get(pid) or 'Unknown' for pid in ids)
+            table = [{grouping.group(1): k, 'patients': v} for k, v in sorted(counts.items())]
+            operations.append({'operation': 'group_saved_cohort', 'field': field})
+            evidence.append({'query': query, 'restricted_to_context': key,
+                             'definition': f'Observed patient.{field}; no inference of ongoing care or alternate attribution.'})
+        if listing:
+            operations.append({'operation': 'count_saved_cohort' if text.startswith('count') else 'list_saved_cohort'})
+    finally:
+        db.close()
+    parent = c['answer']
+    status = parent['status']
+    count_only = bool(listing and text.startswith('count'))
+    answer = {'status': status, 'answer_type': 'count' if count_only else 'table', 'count': len(ids),
+              'headline': f'{len(ids)} patients from the saved cohort' + (f', grouped by {grouping.group(1)}.' if grouping else '.'),
+              'table': [] if count_only else table, 'patient_ids': sorted(ids),
+              'missing': parent.get('missing') or [], 'limitations': [*(parent.get('limitations') or []),
+                  'This transformation preserves the original answer limitations and does not re-establish cohort correctness.'],
+              'source_checks': evidence}
+    return {'question': question, 'answer': answer, 'route': 'saved_cohort',
+            'cohort_patient_rows': [r for r in rows if r['patient_id'] in ids],
+            'planner_receipt': {'route': 'saved_cohort', 'new_paid_api_calls': 0},
+            'cohort_transform': {'parent_context_id': key, 'input_patient_ids': sorted(c['patient_ids']), 'operations': operations},
+            'new_paid_api_calls': 0, 'planning_economics': {'known_api_estimate_usd': 0, 'new_api_estimate_usd': 0}}
 
 
 def evidence_bundle(path, key):
