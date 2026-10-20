@@ -70,7 +70,24 @@ def target_mg(text):
     return None
 
 
+_KEYS = [(r'sacubitril', 'sacubitril_valsartan'), (r'metoprolol(?=.*(?:succinate|\ber\b|\bxl\b|24 ?hr|extended))', 'metoprolol_succinate'),
+         (r'metoprolol', 'metoprolol_tartrate'), (r'carvedilol phosphate|carvedilol.*(?:extended|\ber\b|\bcr\b)', 'carvedilol_er')]
+
+
+def drug_key(text):
+    """Stable ingredient key used to compare doses of the same drug over time."""
+    if not isinstance(text, str) or not text.strip():
+        return None
+    t = text.lower()
+    for pattern, key in _KEYS:
+        if re.search(pattern, t):
+            return key
+    m = re.search(r'[a-z][a-z-]+', t)
+    return m.group(0) if m else None
+
+
 def register(db):
+    db.create_function('drug_key', 1, drug_key, deterministic=True)
     db.create_function('dose_mg', 1, dose_mg, deterministic=True)
     db.create_function('per_day', 1, per_day, deterministic=True)
     db.create_function('target_mg', 1, target_mg, deterministic=True)
@@ -104,4 +121,15 @@ MEDICATION_DOSE_SQL = """(SELECT patient_id, source_stream, record_id, event_dat
    CASE WHEN json_extract(payload,'$.strength_unit') LIKE 'mg%' THEN CAST(json_extract(payload,'$.strength') AS REAL)
         ELSE dose_mg(json_extract(payload,'$.product_description')) END,
    per_day(json_extract(payload,'$.directions_text'))
- FROM record WHERE stream = 'medication_label_evidence') WHERE per_admin_mg IS NOT NULL)"""
+ FROM record WHERE stream = 'medication_label_evidence') WHERE drug_text IS NOT NULL)"""
+
+
+def current_dose_sql(as_of, lookback_days):
+    """Latest dose statement per patient and drug inside the current-therapy window, with an explicit status.
+    unknown_dose = the drug is documented but no dose can be parsed; never treated as at target."""
+    return ("(SELECT patient_id, drug_key, event_date AS dose_date, drug_text, record_id, source_stream, daily_mg, "
+            "target_daily_mg, CASE WHEN target_daily_mg IS NULL THEN 'no_target' WHEN daily_mg IS NULL THEN 'unknown_dose' "
+            "WHEN daily_mg >= target_daily_mg THEN 'at_target' ELSE 'below_target' END AS dose_status FROM "
+            "(SELECT d.*, drug_key(d.drug_text) AS drug_key, ROW_NUMBER() OVER (PARTITION BY d.patient_id, drug_key(d.drug_text) "
+            "ORDER BY d.event_date DESC, d.record_id DESC) AS rn FROM " + MEDICATION_DOSE_SQL + " d "
+            f"WHERE d.event_date > date('{as_of}', '-{int(lookback_days)} days') AND d.event_date <= '{as_of}') WHERE rn = 1)")

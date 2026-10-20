@@ -164,6 +164,34 @@ class GeneralAnalysis(unittest.TestCase):
         self.assertEqual([(r['record_id'], r['daily_mg'], r['target_daily_mg']) for r in shown['rows']],
                          [('M1', 25.0, 50.0), ('M2', 12.5, 50.0)])
 
+    def test_current_dose_window_unknown_status_and_specialty_groups(self):
+        import sqlite3
+        with sqlite3.connect(self.path/'semantic.sqlite3') as db:
+            db.executescript("""CREATE TABLE record(record_id TEXT, patient_id TEXT, stream TEXT, event_date TEXT, payload TEXT);
+              INSERT INTO record VALUES
+                ('OLD','A','medication_lists','2027-01-01','{"name":"Carvedilol","dose":"25 mg","frequency":"BID","event_date":"2027-01-01"}'),
+                ('NEW','A','medication_lists','2030-01-01','{"name":"Carvedilol","dose":"6.25 mg","frequency":"BID","event_date":"2030-01-01"}'),
+                ('UNK','B','medication_lists','2030-02-01','{"name":"Spironolactone","frequency":"daily","event_date":"2030-02-01"}'),
+                ('STALE','C','medication_lists','2026-01-01','{"name":"Lisinopril","dose":"40 mg","frequency":"daily","event_date":"2026-01-01"}');
+              CREATE TABLE clinician(clinician_id TEXT, specialty TEXT);
+              INSERT INTO clinician VALUES ('C1','Cardiology'),('C2','Cardiothoracic Surgery'),('C3','Family Medicine');""")
+        catalog = R.Catalog.load(self.path)
+        s = {'steps': [{'name': 'cur', 'purpose': 'current doses', 'sql':
+                        "SELECT patient_id, drug_key, record_id, daily_mg, dose_status FROM {{current_dose}} ORDER BY patient_id"},
+                       {'name': 'cards', 'purpose': 'cardiologists', 'sql': 'SELECT clinician_id FROM {{specialty:cardiology}}'}],
+             'final': 'cur', 'returns': 'table',
+             'requirements': [{'quote': 'current doses', 'applied_in': ['cur'], 'how': 'governed window'},
+                              {'quote': 'cardiologists', 'applied_in': ['cards'], 'how': 'governed specialty'}], 'unresolved': []}
+        c = G.prepare(catalog, 'current doses and cardiologists', s)
+        _, shown = G.preview(catalog, c)
+        self.assertEqual([(r['patient_id'], r['record_id'], r['daily_mg'], r['dose_status']) for r in shown['rows']],
+                         [('A', 'NEW', 12.5, 'below_target'), ('B', 'UNK', None, 'unknown_dose')])  # C is outside the window
+        self.assertIn("specialty IN ('Cardiology')", c['query'])
+        self.assertEqual(G.data_currency(catalog, ['A', 'C'])['stale_patients'], 1)
+        with self.assertRaises(R.PlanError):
+            G.prepare(catalog, 'current doses and cardiologists', {**s, 'steps': [s['steps'][0], {**s['steps'][1],
+                      'sql': 'SELECT clinician_id FROM {{specialty:cardiac_magic}}'}]})
+
 
 if __name__ == '__main__':
     unittest.main()
