@@ -11,7 +11,7 @@ function setupExperience(){
  const preference=matchMedia('(prefers-reduced-motion: reduce)');
  let paused=preference.matches,visible=true,frame=null,last=0,age=0,previous=null,refreshing=false;
  const field=AgereNeural.createNeuralField(canvas);
- if(!field){canvas.hidden=true;$('#scene-event').textContent='3D preview unavailable on this device';motion.hidden=true}
+ if(!field){scene.dataset.renderer='unavailable';canvas.hidden=true;$('#scene-event').textContent='3D preview unavailable on this device';motion.hidden=true}
  function selectStage(n,user=true,redraw=true){stage=n;reached=Math.max(reached,n);manual=manual||user;field?.stage(n,paused);
   document.querySelectorAll('[data-stage]').forEach((b,i)=>{b.setAttribute('aria-selected',String(i===n));b.dataset.reached=String(i<=reached);b.tabIndex=i===n?0:-1});
   $('#stage-detail').setAttribute('aria-labelledby','stage-'+names[n].toLowerCase());$('#scene-word').textContent=names[n].toUpperCase();
@@ -41,7 +41,7 @@ function setupExperience(){
    const compact=n=>n==null?'—':new Intl.NumberFormat(undefined,{notation:'compact',maximumFractionDigits:1}).format(n);
    $('#field-answers').textContent=compact(sample.answered);$('#field-memory').textContent=compact(sample.reusable_examples);$('#field-records').textContent=compact(sample.records);
    const message=changes.sourceChanged?'A new warehouse snapshot has arrived':changes.examples?'New checked examples joined the learning memory':changes.answers?'A new answer. Another connection.':changes.corrections?'Feedback recorded · flagged answers excluded from reuse':changes.records?'New data is joining the network':'Evolving with your warehouse';
-   $('#scene-event').textContent=message;$('#field-activity').dataset.status='current';
+   $('#scene-event').textContent=message+(field?'':' · 3D preview unavailable');$('#field-activity').dataset.status='current';
    if(changes.sourceChanged){sourceAtlas=null;sourceError=null;loadSources()}
    previous=sample;try{localStorage.setItem('agere-field-activity',JSON.stringify(sample))}catch(_){}
    if(paused)field?.still();start();

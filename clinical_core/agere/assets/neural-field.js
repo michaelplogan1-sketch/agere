@@ -64,8 +64,8 @@ export function createNeuralField(canvas){
  function arbor(group,start,direction,length,radius,depth,seed,delay,parts,tips){
   const end=start.clone().addScaledVector(direction,length),side=V(-direction.y,direction.x,0).multiplyScalar((rand(seed)-.5)*length*.5);
   const path=curve([start,start.clone().lerp(end,.35).add(side),start.clone().lerp(end,.72).sub(side.clone().multiplyScalar(.35)),end]);
-  parts.push(growable(tube(path,radius,radius*(depth===2?.22:.37),depth===0?24:12),delay,1.3));
-  if(depth===2){tips.push({p:end,birth:delay+1.3});return}
+  parts.push(growable(tube(path,radius,radius*(depth===3?.22:.37),depth===0?24:12),delay,1.3));
+  if(depth===3){tips.push({p:end,birth:delay+1.3});return}
   for(let fork=0;fork<2;fork++){
    const angle=(fork?1:-1)*(.32+rand(seed+fork+15)*.4),d=direction.clone().applyAxisAngle(V(0,0,1),angle);
    d.z+=(rand(seed+fork+28)-.5)*.65;d.normalize();
@@ -101,7 +101,7 @@ export function createNeuralField(canvas){
   arbor(group,axon.getPoint(1),V(.9,.4,.05).normalize(),.23,.018,1,id*83+9,4,terminals,tips);
   const terminalGeo=mergeGeometries(terminals);group.add(new T.Mesh(terminalGeo,growMat));terminals.forEach(g=>g.dispose());
   const bulbs=new T.InstancedMesh(sphere,terminalMat,tips.length);
-  tips.forEach((t,i)=>{dummy.position.copy(t.p);dummy.scale.setScalar(.019);dummy.updateMatrix();bulbs.setMatrixAt(i,dummy.matrix)});group.add(bulbs);
+  tips.forEach((t,i)=>{dummy.position.copy(t.p);dummy.scale.setScalar(.014);dummy.updateMatrix();bulbs.setMatrixAt(i,dummy.matrix)});group.add(bulbs);
   const c={group,body,nucleus,bulbs,position,size,unlock,id,born:null,axon,branches,tips,growing:[branchGeo,axonGeo,terminalGeo]};cells.push(c);group.visible=false;return c;
  }
  cell(V(-.78,-.02,.50),1.10,.07,0,0);
@@ -140,11 +140,11 @@ export function createNeuralField(canvas){
  }
  function resize(w,h){renderer.setSize(w,h,false);camera.aspect=w/h;camera.position.z=w/h<1.3?10.4:7.5;camera.updateProjectionMatrix()}
  function render(dt=0){
-  age+=Math.min(dt,.05);clock.value=age;energy=Math.max(0,energy-dt*.12);rx+=(px-rx)*.04;ry+=(py-ry)*.04;
+  age+=Math.min(dt,.05);clock.value=age;energy=Math.max(0,energy-dt*.12);if(dt){rx+=(px-rx)*.04;ry+=(py-ry)*.04;}
   // Continuous orbit: foreground and background cells exchange depth over time.
   world.rotation.y=Math.sin(age*.075)*.48+rx*.20;world.rotation.x=Math.sin(age*.10)*.13+ry*.18;world.rotation.z=Math.sin(age*.06)*.045;
   world.position.y=Math.sin(age*.35)*.035;particles.rotation.y=age*.016;
-  cells.forEach(c=>{if(c.born===null)return;const growth=smooth((age-c.born+1)/2);c.group.scale.setScalar(c.size*growth*(1+Math.sin(age*1.1+c.id)*.013));c.body.material.opacity=.42+Math.sin(age*.8+c.id)*.04+energy*.06;c.bulbs.visible=age-c.born>4.5});
+  cells.forEach(c=>{if(c.born===null)return;const growth=smooth((age-c.born+.2)/2);c.group.scale.setScalar(c.size*growth*(1+Math.sin(age*1.1+c.id)*.013));c.body.material.opacity=.42+Math.sin(age*.8+c.id)*.04+energy*.06;c.bulbs.visible=age-c.born>4.5});
   if(dt&&age>nextSprout){nextSprout=age+4;connect()}
   for(let i=links.length-1;i>=0;i--){const l=links[i],t=age-l.born;if(t>l.life+5){removeLink(i);continue}
    const growth=smooth(t/5),fade=1-smooth((t-l.life)/5);l.mesh.geometry.setDrawRange(0,Math.floor(growth*64)*5*6);l.mesh.material.opacity=.48*fade;

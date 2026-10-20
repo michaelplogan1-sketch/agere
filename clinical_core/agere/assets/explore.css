@@ -61,3 +61,5 @@ main#main{max-width:1380px;margin:0 auto;padding:34px 60px 60px;width:100%;flex:
 .field-activity[data-status="unavailable"] .field-event i{background:#9a937a;box-shadow:none}
 @media(min-width:801px){.intelligence-scene{height:420px;min-height:420px}.welcome{align-items:center}.hero-copy{padding-bottom:75px}}
 @media(max-width:520px){.field-activity{padding:0 0 15px}.field-stats{gap:12px;font-size:9px}.field-event{font-size:10px}.intelligence-scene{height:320px;min-height:320px}.scene-caption>span:last-child{display:block;font-size:8px}.motion-toggle{top:320px}}
+
+.intelligence-scene[data-renderer="unavailable"]{height:100px;min-height:100px}
