@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-10-20T11:41:16.361279+00:00",
+  "updated_at": "2026-10-20T12:23:06.726047+00:00",
   "decision_basis": "AGERE_SHARED_FRONTIER_2026-10-20.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -309,8 +309,25 @@
       "artifacts/agere-wisdom-design-v1/implementation-receipt.json"
     ],
     "remaining_gap": "General question interpretation, clinical/time/evidence reconciliation and independent full-stack qualification remain incomplete.",
-    "next_action": "Close shared interpretation and clinical/time/evidence gaps across claims, admissions/readmissions, access, providers and contracts using existing engines and constraint mutations; keep whole-warehouse breadth and exact saved context. No per-question handlers or unvalidated benchmarks.",
-    "next": "Whole-warehouse shared planning and complete workflow acceptance; independent qualification remains separate."
+    "next_action": "Close G3 through general context resolution and typed question/analysis/synthetic-action/monitoring composition; strengthen semantic constraint coverage and ambiguous Boolean scope. Demonstrate whole-warehouse cases across claims, admissions/readmissions, access, providers and contracts while preserving exact saved populations. Retain clinical/time/evidence reconciliation and independent qualification; no per-question handlers or unvalidated benchmarks.",
+    "next": "Whole-warehouse shared planning and complete workflow acceptance; independent qualification remains separate.",
+    "latest_review": {
+      "at": "2026-10-20T12:23:06.726047+00:00",
+      "report": "AGERE_CTO_REVIEW_2026-10-20.md",
+      "kind": "read_only_cto_and_claude_source_review",
+      "workflow_change": "None; assessment and isolated compiler probes only.",
+      "confirmed_gaps": [
+        "Standalone pronouns misclassified as saved-cohort references",
+        "No shared typed action/monitoring intent composition",
+        "Broad literal quotes can satisfy structural coverage despite omitted predicates",
+        "Ambiguous AND/OR wording accepted without scope clarification"
+      ],
+      "evidence": [
+        "artifacts/agere-cto-market-review-v1/routing-audit.json",
+        "artifacts/agere-cto-market-review-v1/claude-api-review.md",
+        "artifacts/agere-cto-market-review-v1/confirmed-review-probes.json"
+      ]
+    }
   },
   "decisions": [
     {
@@ -914,6 +931,13 @@
       "change": "Prioritize and activate this connected interface increment on :8885; correct null-first-group chart rendering discovered in browser validation.",
       "scope_impact": "No charter narrowing or planner-qualification claim. G3 remains active, G5 blocked; all ten areas retained. Shared planning remains the next functional increment.",
       "evidence": "artifacts/agere-wisdom-design-v1/implementation-receipt.json"
+    },
+    {
+      "at": "2026-10-20T12:23:06.726047+00:00",
+      "basis": "Mike requests CTO assessment, SQL routing measurement, market readiness and Claude/Codex cross-review; confirms System at system.com.",
+      "change": "Record actual routing and remaining gaps; completed metered Claude source review and independently reproduced two compiler weaknesses. Prioritize generic context, compound intent and constraint checks within current G3.",
+      "scope_impact": "Review only; no product code or deployment change. All ten areas retained, G3 active, G5 blocked, full_queue_acceptance false. Synthetic agents remain synthetic.",
+      "evidence": "AGERE_CTO_REVIEW_2026-10-20.md"
     }
   ]
 }
