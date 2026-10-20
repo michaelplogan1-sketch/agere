@@ -119,7 +119,13 @@ Downstream product intentions belong in optional workflow, separate from the ana
 {"kind":"deliverable","title":"short requested title","template":"command|brief|explore","quote":"its exact clause","unresolved":[]}
 {"kind":"simulation","title":"short requested program/action","program":"custom|pharmd|rpm","quote":"its exact clause","unresolved":[]}
 {"kind":"monitor","title":"what to watch","mode":"answer","scope":"query|result","outputs":["actual_select_alias_or_analysis_0"],"quote":"its exact clause","unresolved":[]}
-Each step must have exactly the shown keys. Actions and deliverables are explicitly synthetic mockups.
+Each step must have exactly the shown keys. The ecosystem uses synthetic data and actions are simulations.
+Deliverables can be bespoke frontier-generated interactive HTML over the frozen computed answer and saved work.
+The template value is an intent category (command dashboard, brief report, explore view), not a fixed layout restriction.
+Preserve the requested audience, presentation, colors and theme in the exact deliverable quote.
+Ordinary presentation requests such as a polished executive dashboard or dark theme are supported; do not mark
+them unresolved because the template enum has only three values. Missing analytical facts, filters, calculations,
+clinical rules and external integrations still need explicit upstream bindings or unresolved requirements.
 Use custom for all programs other than explicit PharmD or RPM requests. Do not silently substitute one program for another.
 The defined custom simulation is a review queue with scripted chart review, outreach, consent, scheduling and a first visit.
 PharmD adds a scripted eligibility check/enrollment; RPM adds device shipment/activation. Every step is labeled simulated.
@@ -158,6 +164,9 @@ a calendar year ends December 31, not January 1 of the next year. Relational SQL
 If every requested part is represented, equivalent=true with issues=[]; otherwise identify the precise mismatch.'''
 AUDIT_SYSTEM += '''
 workflow describes synthetic deliverables, simulation and monitoring independently of the analytical answer.
+Deliverables support frontier-generated interactive views over frozen evidence, including audience, layout and theme.
+The template enum selects a broad intent, not a fixed visual template. Reject claims that ordinary presentation
+preferences are unsupported merely because they are absent from that enum. Preserve missing analytical requirements.
 Check that every requested workflow intention appears, its program/title preserve the requested intent, and all
 requested monitoring metrics are computed by select/analyses or explicitly unresolved on the monitor step.
 A correctly unresolved downstream intention is represented, not silently discarded. Top-level unresolved is for
