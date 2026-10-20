@@ -67,13 +67,14 @@ function setupExperience(){
   const scale=Math.min(w*.25,h*.31),yaw=.24+Math.sin(phase*.22)*.30+rx*.3,pitch=-.13+ry*.22;
   const cy=Math.cos(yaw),sy=Math.sin(yaw),cx=Math.cos(pitch),sx=Math.sin(pitch);
   const colors=palette[stage],formation=smooth(age/7),breath=1+Math.sin(phase*1.2)*.035;
-  function project(point,depth=0){
+  function project(point){
    let [x,y,z]=point;
    // The selected stage changes the same organism, rather than replacing it with a diagram.
    const focus=clamp(shape-2),order=1-Math.min(1,Math.abs(shape-1));
    x*=1.32-focus*.22;y*=.89+focus*.13;
-   z+=Math.sin(x*2+phase*.7)*.055*depth;
-   y+=Math.sin(x*2.4+phase*.8)*.024*depth;
+   const distance=Math.hypot(x,y,z);
+   z+=Math.sin(x*2+phase*.7)*.055*distance;
+   y+=Math.sin(x*2.4+phase*.8)*.024*distance;
    y=mix(y,Math.round(y*5)/5,order*.3);
    x*=breath;y*=breath;
    const xx=x*cy-z*sy,zz=x*sy+z*cy,yy=y*cx-zz*sx,zz2=y*sx+zz*cx,f=4.8/(4.8+zz2);
@@ -112,8 +113,8 @@ function setupExperience(){
   for(const connection of connections){
    const growth=smooth((age-connection.birth)/1.8);if(!growth||stage===0)continue;
    const length=growth*50,last=Math.floor(length),path=[];
-   for(let j=0;j<=last;j++)path.push(project(connection.points[j],1));
-   if(last<50)path.push(project(connection.points[last].map((v,k)=>mix(v,connection.points[last+1][k],length-last)),1));
+   for(let j=0;j<=last;j++)path.push(project(connection.points[j]));
+   if(last<50)path.push(project(connection.points[last].map((v,k)=>mix(v,connection.points[last+1][k],length-last))));
    const opacity=stage===1?.32:.74;
    line(path,colors[0],opacity*.12,8);line(path,colors[1],opacity,1.15);
    const pulse=(phase*.7+connection.i*.37)%1;
@@ -129,8 +130,8 @@ function setupExperience(){
    const living=b.depth===3?.7+.3*Math.sin(phase*.65+b.seed*.13):1;
    const progress=initial*living;if(progress<=0)continue;
    const end=progress*samples,last=Math.floor(end),path=[];
-   for(let j=0;j<=last;j++)path.push(project(b.points[j],b.depth));
-   if(last<samples){const t=end-last;path.push(project(b.points[last].map((v,k)=>mix(v,b.points[last+1][k],t)),b.depth))}
+   for(let j=0;j<=last;j++)path.push(project(b.points[j]));
+   if(last<samples){const t=end-last;path.push(project(b.points[last].map((v,k)=>mix(v,b.points[last+1][k],t))))}
    const tip=path[path.length-1],color=colors[b.depth<1?0:b.depth<3?1:2];
    const depthLight=clamp(tip[2]-.45),alpha=(.44+(4-b.depth)*.10)*depthLight*fieldStrength;
    // Wide low-opacity underpainting gives filaments volume without expensive per-line shadows.
@@ -186,7 +187,7 @@ function setupExperience(){
  document.querySelectorAll('[data-stage]').forEach((b,i)=>{b.onclick=()=>selectStage(i);b.onkeydown=e=>{if(!['ArrowLeft','ArrowRight','Home','End'].includes(e.key))return;e.preventDefault();const n=e.key==='Home'?0:e.key==='End'?3:(i+(e.key==='ArrowLeft'?3:1))%4;selectStage(n);document.querySelector('[data-stage="'+n+'"]').focus()}});
  $('#stage-action').onclick=()=>{if(stage===0){showPage('data',true);history.replaceState(null,'','/ask#data')}if(stage===1){$('#q').focus();$('#q').scrollIntoView({block:'center',behavior:paused?'instant':'smooth'})}if(stage===2){showPage('saved',true);history.replaceState(null,'','/ask#saved')}if(stage===3)location.href='/action-center'};
  const motion=$('#motion-toggle');function motionLabel(){motion.textContent=paused?'▷':'Ⅱ';motion.setAttribute('aria-label',paused?'Play visual animation':'Pause visual animation');motion.setAttribute('aria-pressed',String(paused))}
- motion.onclick=()=>{paused=!paused;motionLabel();start()};motionLabel();
+ motion.onclick=()=>{paused=!paused;motionLabel();if(paused)stop();else start()};motionLabel();
  motionPreference.addEventListener('change',e=>{paused=e.matches;if(paused){age=14;shape=stage}motionLabel();start()});
  scene.addEventListener('pointermove',e=>{const r=scene.getBoundingClientRect();px=(e.clientX-r.left)/r.width-.5;py=(e.clientY-r.top)/r.height-.5});scene.addEventListener('pointerleave',()=>{px=py=0});
  if(ctx){new ResizeObserver(resize).observe(scene);new IntersectionObserver(entries=>{visible=entries[0].isIntersecting;if(visible)start();else stop()}).observe(scene);document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')start();else stop()});resize()}
