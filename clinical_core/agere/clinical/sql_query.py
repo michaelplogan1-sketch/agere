@@ -31,7 +31,7 @@ def validate(p):
         raise ValueError('sql parameters: query (one SELECT), returns')
     q = p['query'].strip().rstrip(';').strip()
     code = re.sub(r'--[^\n]*', '', q).strip().rstrip(';').strip()  # comments (e.g. the stated definition) are not statements
-    if not 1 <= len(code) <= 8000 or len(q) > 12000: raise ValueError('Bounded SQL query required')
+    if not code: raise ValueError('A SQL query is required')  # no length cap (Mike, 2026-10-20): governed macros expand inline
     if not re.match(r'(?is)^(select|with)\b', code) or ';' in code:
         raise ValueError('Exactly one SELECT/WITH statement is allowed')
     if p.get('returns') not in RETURNS: raise ValueError(f'returns must be one of {RETURNS}')

@@ -91,9 +91,9 @@ def relation_values(catalog, *, seconds=1.0, total_seconds=30.0):
 def search(catalog, terms, *, limit=20):
     """Scan every catalog entry, returning bounded candidates and search scope."""
     from .semantic_layer import SCHEMA_DOC
-    if not isinstance(terms, list) or not 1 <= len(terms) <= 8 or any(
+    if not isinstance(terms, list) or not terms or any(
             not isinstance(t, str) or not 1 <= len(t.strip()) <= 160 for t in terms):
-        raise PlanError('Discovery needs 1..8 bounded literal search terms')
+        raise PlanError('Discovery needs literal search terms')
     wanted = tokens(' '.join(terms))
     candidates = []
     def matches(text):
@@ -168,8 +168,8 @@ def describe(catalog, tables, streams=()):
     """Actual key/type metadata plus existing source/extraction definitions."""
     from .semantic_layer import SCHEMA_DOC
     tables = list(dict.fromkeys(tables))
-    if len(tables) > 16 or any(t not in catalog.tables for t in tables):
-        raise PlanError('Choose at most 16 catalog relations')
+    if any(t not in catalog.tables for t in tables):
+        raise PlanError('Choose catalog relations')
     output = {}
     with sqlite3.connect(f'file:{catalog.target}?mode=ro', uri=True) as db:
         for table in tables:
@@ -318,8 +318,8 @@ def run(catalog, request, *, population=None):
         out['catalog_search'] = search(catalog, request['terms'])
     if 'probes' in request:
         probes = request['probes']
-        if not isinstance(probes, list) or not 1 <= len(probes) <= 3:
-            raise PlanError('Choose 1..3 bounded evidence probes')
+        if not isinstance(probes, list) or not probes:
+            raise PlanError('Provide evidence probes as a list')
         out['probes'] = [probe(catalog, p, population=population) for p in probes]
     return out
 

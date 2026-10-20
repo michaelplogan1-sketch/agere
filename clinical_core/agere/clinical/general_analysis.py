@@ -19,7 +19,7 @@ from .sql_query import register
 from .request_plan import PlanError, fingerprint
 
 VERSION = 'general-analysis/1'
-MAX_STEPS = 12
+MAX_STEPS = 60  # structural sanity only; complex questions need many stages
 _NAME = re.compile(r'^[a-z][a-z0-9_]{0,40}$')
 _MACRO = re.compile(r'\{\{\s*(condition|drug_fill|as_of|medication_dose)\s*(?::\s*([a-z0-9_,\s]+))?\s*\}\}')
 # Grammatical words carry no requirement; every other question word must be accounted for.

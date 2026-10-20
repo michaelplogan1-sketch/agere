@@ -454,7 +454,7 @@ def resolve(question, prior, hosted=None):
     text, receipt = hosted(prior, question)
     text = ' '.join((text or '').strip().splitlines()[0].split()) if (text or '').strip() else ''
     text = text.strip('"').strip()
-    if not text or text.upper().startswith('CANNOT_RESOLVE') or len(text) > 600:
+    if not text or text.upper().startswith('CANNOT_RESOLVE'):
         raise QuestionNotUnderstood(f'Follow-up could not be resolved ({reason}); ask the full question.')
     return {**out, 'standalone': text, 'method': 'hosted', 'edits': [], 'frame': parse_frame(text), 'reason': reason,
             'hosted_receipt': receipt}
@@ -489,7 +489,7 @@ def hosted_resolver(stack, ledger):
         user = ('Rewrite the follow-up into one standalone question, following the examples.'
                 '\n\nEXAMPLES\n' + HOSTED_EXAMPLES + ('\n\nConversation so far:\n' + history if history else '') +
                 f'\n\nPrevious: {prior["resolved_question"]}\nFollow-up: {follow_up}\nStandalone:')
-        text, info = model(HOSTED_SYSTEM, user, max_tokens=200)
+        text, info = model(HOSTED_SYSTEM, user, max_tokens=2000)
         return text, info
     return call
 

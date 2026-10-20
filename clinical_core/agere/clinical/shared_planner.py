@@ -109,7 +109,7 @@ SYSTEM += '\nRequest additional raw field schemas with {"need_streams":["stream_
 SYSTEM += '''
 Evidence discovery is available before planning:
 {"need_discovery":{"terms":["literal topic or field"],"probes":[{"table":"catalog relation","field":"table.column","mode":"values|excerpts","contains":"optional literal substring"}]}}
-Use 1..8 metadata terms and/or 1..3 probes. Raw record.payload fields additionally require stream:"exact received stream".
+Use as many metadata terms and probes as needed. Raw record.payload fields additionally require stream:"exact received stream".
 Probes retain the original saved patient scope and source identity. They return bounded received values or excerpts with lineage.
 Search alternatives in catalog metadata, raw streams and extracted evidence before claiming unavailable information.
 Metadata matches and substring excerpts are leads, not clinical facts; preserve subject, negation and time in the executable analysis.
@@ -253,7 +253,7 @@ def schema_slice(catalog, question, extra=(), operations=(), streams=()):
     selected = list(dict.fromkeys([*extra, *defaults, 'patient', *ranked[:4]]))
     if any(w in question.lower() for w in ('diabet', 'condition', 'ckd', 'heart failure')): selected += ['condition']
     if any(w in question.lower() for w in ('statin', 'medication', 'taking', 'prescribed', 'dose', 'gdmt', 'arb')): selected += ['medication']
-    selected = list(dict.fromkeys(t for t in selected if t in catalog.tables))[:16]
+    selected = list(dict.fromkeys(t for t in selected if t in catalog.tables))  # every requested table is included
     from .semantic_layer import SCHEMA_DOC
     descriptions = {t: {'columns': catalog.tables[t], 'meaning': SCHEMA_DOC.get(t, '')} for t in selected}
     # Values for low-cardinality fields are observed, not guessed label mappings.
@@ -285,7 +285,7 @@ def schema_slice(catalog, question, extra=(), operations=(), streams=()):
         if op in ('aggregate', 'vbc', 'profile', 'survival'):
             selected_contracts[op]['date_bounds'] = 'Window/period start and end dates are inclusive. Calendar-year end is YYYY-12-31.'
     stream_names = sorted(catalog.stream_fields, key=lambda s: (-len(words & set(s.replace('_',' ').split())), s))
-    selected_streams = list(dict.fromkeys([*streams, *stream_names[:3]]))[:12]
+    selected_streams = list(dict.fromkeys([*streams, *stream_names[:3]]))
     from .request_discovery import describe
     discovery_metadata = describe(catalog, selected, selected_streams)
     from .request_vocabulary import definitions, digest, concept_definitions, CONDITION_EVIDENCE_POLICY
