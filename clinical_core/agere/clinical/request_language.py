@@ -118,9 +118,20 @@ class Parser:
         fn = 'list' if verb in ('list', 'which', 'show', 'find') else 'avg' if verb in ('average', 'mean', 'what is the average') else 'sum' if verb in ('total', 'sum', 'what is the total') else 'count'
         field_name = None
         if fn in ('sum', 'avg'):
-            m = re.match(r'(.+?)\s+(?:for|of|from)\s+(.+)', rest, re.I)
-            if not m: raise PlanError('Aggregation needs a field and source')
-            field_text, rest = m.groups()
+            # A field name may itself contain "of" (e.g. length of stay).
+            # Resolve the catalog field and source together instead of splitting
+            # at the first preposition and silently changing the measure.
+            split = None
+            for m in re.finditer(r'\s+(?:for|of|from)\s+', rest, re.I):
+                candidate = self.prefix(rest[m.end():], self.sources)
+                if not candidate: continue
+                self.base = candidate[1][0]
+                try: resolved = self.field(rest[:m.start()])
+                except PlanError: continue
+                split = (rest[:m.start()], rest[m.end():], resolved)
+                break
+            if split is None: raise PlanError('Aggregation needs a recognized field and source')
+            field_text, rest, field_name = split
         source = self.prefix(rest, self.sources)
         if not source and self.bound:
             source = self.prefix(rest, {'them': ('patient', None), 'those patients': ('patient', None), 'these patients': ('patient', None)})
@@ -131,7 +142,6 @@ class Parser:
             field, value = default
             base_filter = (self.condition(value, source_quote)
                            if field == 'condition' else atom(self.base+'.'+field, '=', value, source_quote))
-        if fn in ('sum', 'avg'): field_name = self.field(field_text)
         where, tail = self.expression(rest)
         if tail.strip(): raise PlanError('Unconsumed request: '+tail)
         where = combine('and', [base_filter, where], self.question)

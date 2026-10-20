@@ -75,6 +75,8 @@ class SharedPlanner(unittest.TestCase):
              [{'payer': 'P1', 'sum_allowed_cents': 35000}, {'payer': 'P2', 'sum_allowed_cents': 0}]),
             ('Average los_days for admissions among patients over 65 in 2029 by practice',
              [{'pcp_practice_id': 'ORG1', 'avg_los_days': 3.0}, {'pcp_practice_id': 'ORG2', 'avg_los_days': 5.0}]),
+            ('Average length of stay for admissions among patients over 65 in 2029 by practice',
+             [{'pcp_practice_id': 'ORG1', 'avg_los_days': 3.0}, {'pcp_practice_id': 'ORG2', 'avg_los_days': 5.0}]),
             ('Count appointments where kept = 0 and age >= 65 by PCP', [{'pcp_clinician_id': 'DR1', 'count': 1}]),
         ]
         for q, expected in questions:
