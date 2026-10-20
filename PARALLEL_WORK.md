@@ -1,3 +1,5 @@
+> Current task-scoped status, October 20, 2026: Codex chat01a159cf-8e56-7bb2-be7e-4889268a99c2 integrated admission fix301b65b and activated narrow release5092910 on:8885 (PID73727/session71513,rollback176aaba). Existing overlapping changes are preserved exactly; Claude remains stopped.120 affected release checks and six live grammar checks pass. The exact full HFrEF request FAILED the fresh local-only API test after20.186seconds with no paid call or new workspace; it is NOT READY. See docs/agere/REQUEST_ADMISSION_RELEASE_2026-10-20.md and AGERE_BUILD_CONTROL.json. Keep follow-up in Codex; older ownership/runtime statements below are historical for this bounded window.
+
 # Parallel work
 
 Current: Mike requested actual Claude continuation on2026-10-20. Sole build ownership is now transferred to Claude Code session local_1c579565-09b5-4e07-a223-1ae6016e7664; the newest handoff below supersedes older claims.

@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-10-20T18:04:30.320083+00:00",
+  "updated_at": "2026-10-20T18:47:24.597449+00:00",
   "decision_basis": "AGERE_SHARED_FRONTIER_2026-10-20.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -318,17 +318,15 @@
     "kind": "delivery_checkpoint",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "New questions can discover current received-source metadata and bounded evidence through the shared planner. Saved results and follow-ups preserve original contracts and discovery; only current explicitly selected patient populations authorize synthetic work.",
-    "measured_failure_reduction": "Fixed dropped problem-list diagnoses, lost failed-discovery receipts, prompt-growth failure, summary-to-action leakage, false-empty follow-ups and pre-policy legacy bypass. Live remittance answer matches all direct SQL rows (1753 total); six independent grammar queries pass; actual browser confirms guards and one persisted synthetic review item.",
+    "user_behavior_delta": "Request-size rejection no longer produces the generic synthetic-research-bound error or a phantom paid call. The narrow fix is live; complete HFrEF workflow remains not ready.",
+    "measured_failure_reduction": "Recorded third request now122604bytes vs129918 and passes admission. Audit preflight stops without paid re-planning.120 clean-release tests and six actual live grammar checks pass. Full unchanged request on a fresh local-only test copy fails after20.186s with0paid calls and no saved workspace.",
     "evidence": [
-      "AGERE_CHIEF_STAFF_2026-10-20.md",
-      "artifacts/agere-discovery-v1/implementation-receipt.json",
-      "artifacts/agere-discovery-v1/independent-browser-acceptance.json",
-      "artifacts/agere-discovery-v1/claude-independent-review.md"
+      "docs/agere/REQUEST_ADMISSION_RELEASE_2026-10-20.md",
+      "artifacts/agere-request-admission-v1/implementation-receipt.json"
     ],
-    "remaining_gap": "Derived-value metadata discovery, general multi-entity/temporal semantics, clinical/time reconciliation and independent qualification remain open. Current probe ordering, prompt/latency, generated-content qualification and manual-monitor limits remain. Existing saved work needs refreshed answers. Incidental evaluator UI exposure means this build chat is not blind to that existing bank; qualification requires uncontaminated material.",
-    "next_action": "Owner (Claude): obtain independent review of 6e21ada, fix findings, activate with rollback to 176aaba and verify in app; then G3 multi-entity/temporal composition per docs/agere/GENERAL_QUESTION_ARCHITECTURE_PLAN.md increment 3.",
-    "next": "Derived-field discovery, then shared multi-entity and temporal composition; no full-product completion claim.",
+    "remaining_gap": "Full HFrEF interpretation and medication/dose, provider, action, deliverable and loop-closure workflow remain unverified. Local interpreter timed out; no absent-data inference. G5 remains blocked; no full-product or clinical qualification claim.",
+    "next_action": "Continue within Codex on the full-request interpretation/workflow failure; preserve all original requirements and unfinished general-analysis work. Do not resume overlapping Claude work or declare fresh-copy workflow readiness without a complete passing result.",
+    "next": "Full-request failure remains the active G3 acceptance gap; admission-only release is sealed.",
     "latest_review": {
       "at": "2026-10-20T17:44:32.700576+00:00",
       "report": "artifacts/agere-discovery-v1/claude-independent-review.md",
@@ -342,9 +340,9 @@
       "planner_thread": "01a159cf-8e56-7bb2-be7e-4889268a99c2",
       "frontier_deliverables_thread": "01a15936-8db1-74f1-886b-8e1ffb89030f",
       "review_coordinator_thread": "01a159c7-3077-7130-9e6c-ce4d64341afb",
-      "status": "Current176aaba release sealed. Actual Claude explicitly accepted next implementation and is now sole owner. Planner released unstarted derived-value lane. Existing Codex reviewer independently reviews Claude candidates.",
-      "integration_owner": "claude-code:local_1c579565-09b5-4e07-a223-1ae6016e7664",
-      "next_integration_action": "Actual Claude owner: complete generic bounded, source-identity-bound derived-field value discovery across three domains in request_discovery.py and new test_request_discovery_derived.py, then continue multi-entity/temporal composition under docs/agere/GENERAL_QUESTION_ARCHITECTURE_PLAN.md. Use existing Codex reviewer for frozen-candidate acceptance; preserve scope/source/action safeguards and verify actual API/save/reopen behavior. G5 requires independent validated references and uncontaminated qualification material.",
+      "status": "Task-scoped Codex admission fix deployed. Overlapping Claude session remains paused; no external transmission. Full request failed local-only test.",
+      "integration_owner": "01a159cf-8e56-7bb2-be7e-4889268a99c2",
+      "next_integration_action": "Continue within Codex on the full-request interpretation/workflow failure; preserve all original requirements and unfinished general-analysis work. Do not resume overlapping Claude work or declare fresh-copy workflow readiness without a complete passing result.",
       "artifact_extension": "Read-only independent review only; no overlapping product edit claims.",
       "architecture_plan": "docs/agere/GENERAL_QUESTION_ARCHITECTURE_PLAN.md",
       "architecture_plan_sha256": "0c0c914164282669151ce8b1218c4c804cbf1625064f892e5492abdcf7ebc3ed",
@@ -362,6 +360,15 @@
       "evidence": "/Users/mikel/Documents/Codex/2026-10-20/agere-coordination/CLAUDE_CANDIDATE_HANDOFF.md",
       "checks": "117 targeted tests OK; full discover 4966 run, 114 pre-existing failures identical on a96a5e3, 0 new; isolated live API 2 questions, 6 Opus calls ~$1.221, discovery answer 52 matches SQL, replay 0 calls; browser reopen shows discovery receipt, no console errors.",
       "status": "awaiting independent review by Codex 01a15936-8db1-74f1-886b-8e1ffb89030f; not deployed (:8885 remains 176aaba, rollback 270c3b4)"
+    },
+    "active_correction": {
+      "authorization": "Mike explicitly authorized pausing overlapping build work, preserving changes, integrating the reviewed fix in Codex, and testing the full HFrEF request before readiness claims.",
+      "candidate_review": "/Users/mikel/Documents/Codex/2026-10-20/agere-request-bound-investigation/CODEX_DELTA_REVIEW.md",
+      "preservation": "/Users/mikel/Documents/Codex/2026-10-20/agere-request-bound-investigation/integration/preservation-manifest.json",
+      "measured_failure": "129918-byte interpretation repair rejected before transport and wrongly counted as paid",
+      "remaining_gap": "Full clinical/workflow request unverified; narrow admission fix does not establish complete capability",
+      "status": "deployed_with_failed_full_request_acceptance",
+      "receipt": "artifacts/agere-request-admission-v1/implementation-receipt.json"
     }
   },
   "decisions": [
@@ -1043,6 +1050,20 @@
       "basis": "Actual Claude finalR4pass;415tests7skipped on a98a390 and152finalaffectedpass; authored180 workload; real provider discovery and directSQL match; six independent live grammar queries; independent actual browser guard/positive-work checks. Actual Claude message31 read and accepted continuation.",
       "scope_impact": "G3 active, G5 blocked, all ten areas/full acceptancefalse. Derived-value index and general temporal composition remain next. Old answers inspectable but not usable for new work until refreshed. No real care, benchmark or new service. Evaluation-hygiene disclosure retained.",
       "evidence": "artifacts/agere-discovery-v1/implementation-receipt.json"
+    },
+    {
+      "at": "2026-10-20T18:35:23.370642+00:00",
+      "decision": "Accept explicit task-scoped Codex integration window and pause overlapping build work",
+      "basis": "Mike explicitly authorized pausing overlapping build work, preserving changes, integrating the reviewed fix in Codex, and testing the full HFrEF request before readiness claims.",
+      "scope_impact": "Only reviewed request-admission correction and verification; full charter preserved, G3 active and G5 unchanged; no external transfer or protected benchmark work.",
+      "evidence": "/Users/mikel/Documents/Codex/2026-10-20/agere-request-bound-investigation/integration/preservation-manifest.json"
+    },
+    {
+      "at": "2026-10-20T18:47:24.597449+00:00",
+      "decision": "Activate only reviewed admission correction5092910 with rollback176aaba; retain the failed full-request acceptance result",
+      "basis": "Explicit user-authorized Codex integration window; exact release review,120 clean-release checks,six live grammar checks, and actual full-request local HTTP failure retained",
+      "scope_impact": "Full charter preserved; G3 active,G5 unchanged,full acceptancefalse. No unreviewed general-analysis/derived-discovery activation or external question/diagnostic transfer.",
+      "evidence": "artifacts/agere-request-admission-v1/implementation-receipt.json"
     }
   ]
 }
