@@ -87,7 +87,7 @@ function setupExperience(){
   ctx.clearRect(0,0,w,h);ctx.lineCap='round';ctx.lineJoin='round';
   const scale=Math.min(w*.255,h*.315),yaw=.18+Math.sin(phase*.22)*.26+rx*.25,pitch=-.12+ry*.18;
   const cy=Math.cos(yaw),sy=Math.sin(yaw),cp=Math.cos(pitch),sp=Math.sin(pitch);
-  function project(p){const breath=1+Math.sin(phase*.9)*.018,xx=p[0]*breath,yy=p[1]*breath+Math.sin(p[0]*2+phase*.5)*.045,zz=p[2]+Math.sin(p[1]*2+phase*.4)*.08,x=xx*cy-zz*sy,z=xx*sy+zz*cy,y=yy*cp-z*sp,f=5/(5+z);return [w*.5+x*scale*f,h*.51+y*scale*f,f]}
+  function project(p){const breath=1+Math.sin(phase*.9)*.018,xx=p[0]*breath,yy=p[1]*breath+Math.sin(p[0]*2+phase*.5)*.045,zz=p[2]+Math.sin(p[1]*2+phase*.4)*.08,x=xx*cy-zz*sy,z=xx*sy+zz*cy,y=yy*cp-z*sp,f=5/(5+z);return [w*.5+x*scale*f*1.08,h*.51+y*scale*f*.86,f]}
   function line(points,color,alpha,width){if(points.length<2||alpha<.003)return;ctx.beginPath();points.forEach((p,i)=>i?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1]));ctx.strokeStyle=color;ctx.globalAlpha=alpha;ctx.lineWidth=width;ctx.stroke()}
   function glow(x,y,r,color,alpha){if(alpha<.003||r<=0)return;const g=ctx.createRadialGradient(x,y,0,x,y,r);g.addColorStop(0,color);g.addColorStop(1,color+'00');ctx.fillStyle=g;ctx.globalAlpha=alpha;ctx.fillRect(x-r,y-r,r*2,r*2)}
   function partial(points,t){const at=clamp(t)*(points.length-1),last=Math.floor(at),path=points.slice(0,last+1).map(project);if(last<points.length-1)path.push(project(points[last].map((v,k)=>mix(v,points[last+1][k],at-last))));return path}
