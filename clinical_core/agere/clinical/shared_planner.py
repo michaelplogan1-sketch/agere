@@ -71,6 +71,7 @@ def policy_identity():
                      'graph_contracts.py', 'graph_planner.py', 'semantic_layer.py', 'sql_query.py',
                      'age.py', 'request_vocabulary.py', 'request_shapes.py', 'local_request_worker.py',
                      'concepts.py', 'drug_classes.py', 'nl2sql.py', 'workflow_contract.py', 'request_discovery.py', 'general_analysis.py', 'dose.py',
+                     'analysis_evidence.py', 'answer_dependencies.py',
                      'conversation.py', 'question_input.py', 'learning.py',
                      'metrics.py', 'metric_families.py', 'measures.py', 'risk_adjustment.py', 'vbc.py')}})
 

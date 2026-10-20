@@ -178,7 +178,12 @@ class GeneralAnalysis(unittest.TestCase):
              'final': 'cur', 'returns': 'table',
              'requirements': [{'quote': 'current doses', 'applied_in': ['cur'], 'how': 'governed window'},
                               {'quote': 'cardiologists', 'applied_in': ['cards'], 'how': 'governed specialty'}], 'unresolved': []}
-        c = G.prepare(catalog, 'current doses and cardiologists', s)
+        with self.assertRaisesRegex(R.PlanError, 'not used'):
+            G.prepare(catalog, 'current doses and cardiologists', s)
+        # These are independent outputs: a final dose table cannot also claim
+        # it returned an unrelated, unused cardiologist step.
+        s['requirements'] = s['requirements'][:1]
+        c = G.prepare(catalog, 'current doses', s)
         _, shown = G.preview(catalog, c)
         self.assertEqual([(r['patient_id'], r['record_id'], r['daily_mg'], r['dose_status']) for r in shown['rows']],
                          [('A', 'NEW', 12.5, 'below_target'), ('B', 'UNK', None, 'unknown_dose')])  # C is outside the window

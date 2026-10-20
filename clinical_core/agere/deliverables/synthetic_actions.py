@@ -71,6 +71,7 @@ def advance(path, request):
             db.execute('INSERT INTO work_requests VALUES (?,?,?)', (rid, A.fingerprint([c['id'], item['id'], step]), json.dumps(receipt)))
             db.execute('UPDATE work_items SET revision=?,payload=? WHERE id=?', (item['revision'], json.dumps(item), item['id']))
             db.execute('INSERT INTO work_events VALUES (?,?,?)', (item['id'], item['revision'], json.dumps({'action': 'simulated_agent_step', 'item': item})))
+            A.load(path, c['id'], current=True)
     finally:
         db.close()
     return A.inspect(path, c['id'])

@@ -371,7 +371,7 @@ def _share(body, doc):
 
 # ------------------------------------------------------------------------------------------------------------ entry points
 def compose(ws, request=None, audience=None, *, template=None, params=None, live=True, send=None, save=True, cache=True,
-            allow_model_ask=False, tool_calls=None, evidence_bundle=None):
+            allow_model_ask=False, tool_calls=None, evidence_bundle=None, validate_dependencies=None):
     """-> {'id', 'status': 'delivered'|'rejected', 'html', 'verification', 'costs', 'tool_calls', 'receipts', ...}.
     template: a reference example name (examples.EXAMPLES) rendered deterministically (no model). live=False forbids every model
     call (a request then needs a template or the deterministic rules). send: injected sender (tests); default the ledgered sender."""
@@ -386,6 +386,7 @@ def compose(ws, request=None, audience=None, *, template=None, params=None, live
         raise ValueError(f'template must be one of {sorted(examples.EXAMPLES)}')
     dlv_id = _new_id(ws, request, template, params)
     ctx = toolsmod.ToolContext(ws, cache=cache, allow_model_ask=allow_model_ask)
+    ctx.validate_dependencies = validate_dependencies
     ctx.frozen_evidence = evidence_bundle is not None
     bundle = _bundle(ws, ctx, dlv_id, request, audience)
     if evidence_bundle is not None:
@@ -457,6 +458,13 @@ def _deliver(ws, spec, bundle, title, body, ledger, ctx, send, request, audience
 
 
 def _finish(ws, spec, bundle, body, doc, report, ledger, ctx, t0, save, repaired, revision=None):
+    validator = getattr(ctx, 'validate_dependencies', None)
+    if validator is not None:
+        try:
+            spec['dependency_validation'] = validator()
+        except (ValueError, OSError) as exc:
+            report = {**report, 'passed': False, 'dependency_failure': str(exc)}
+            spec['failure'] = str(exc)
     status = 'delivered' if report.get('passed') else 'rejected'
     for call in ctx.calls:
         if ctx.allow_model_ask and call['tool'] in ('ask', 'cohort'):

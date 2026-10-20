@@ -99,17 +99,20 @@ def capture(path, question, result, *, original_question=None):
             'workflow': result.get('workflow', []),
             'patient_rows': rows, 'patient_ids': [r['patient_id'] for r in rows],
             'synthetic': True, 'clinical_eligibility_established': False}
+    from ..clinical import answer_dependencies
+    data['dependencies'] = answer_dependencies.seal(path, data)
     # Identity describes the executed answer, not punctuation, elapsed time,
     # cache state or cost. Keep the first complete execution receipt immutable.
     graph = data.get('graph') or {}
     plan = [{k: n.get(k) for k in ('id', 'operation', 'inputs', 'parameters')} for n in graph.get('nodes') or []]
-    key = 'ANS-' + fingerprint({'version': 4, 'context_policy_identity': context_policy,
+    key = 'ANS-' + fingerprint({'version': 5, 'context_policy_identity': context_policy,
                                'feedback_identity': (data.get('planner_receipt') or {}).get('feedback_identity'),
                                'source': source, 'answer': answer, 'plan': plan,
                                'workflow': data['workflow'],
                                'answer_policy_version': (result.get('planner_receipt') or {}).get('version'),
                                'answer_policy_identity': (result.get('planner_receipt') or {}).get('policy_identity'),
-                               'cohort_transform': data.get('cohort_transform')})[:24]
+                               'cohort_transform': data.get('cohort_transform'),
+                               'observation_dependencies': data['dependencies']['observation']})[:24]
     d = root(path) / key
     d.mkdir(parents=True, exist_ok=True)
     target = d / 'answer.json'
@@ -141,7 +144,14 @@ def load(path, key, *, current=False):
     from ..clinical.shared_planner import policy_identity
     from ..clinical.learning import correction_context, feedback_identity
     active_policy, ancestor, visited = policy_identity(), data, set()
+    from ..clinical import answer_dependencies
+    dependency_checks = []
+    current_source = source_identity(path)
     for _ in range(32):
+        check = answer_dependencies.validate(path, ancestor, source=current_source, policy=active_policy)
+        dependency_checks.append({'context_id': ancestor.get('id'), **check})
+        invalidated = invalidated or not check['derivation_current']
+        stale = stale or not check['observation_current']
         invalidated = invalidated or ancestor.get('context_policy_identity') != active_policy
         r = ancestor.get('planner_receipt') or {}
         question = ancestor.get('question', '')
@@ -168,6 +178,7 @@ def load(path, key, *, current=False):
     if current and stale:
         raise ValueError('The data changed. Ask the question again before creating or changing work.')
     return {**data, 'stale': stale, 'invalidated': invalidated,
+            'dependency_validation': dependency_checks,
             'supports_patient_work': supports_patient_work(data)}
 
 
@@ -284,6 +295,7 @@ def create_work(path, request):
                 db.execute('INSERT INTO work_items VALUES (?,?,?,?,?)', (key, pid, lane, 1, json.dumps(item)))
                 db.execute('INSERT INTO question_decision_tasks VALUES (?,?,?)', (decision_id, key, json.dumps({'patient_id': pid})))
                 db.execute('INSERT INTO work_events VALUES (?,?,?)', (key, 1, json.dumps({'action': 'review_created', 'item': item})))
+            load(path, c['id'], current=True)  # changed inputs roll back the work transaction
     finally:
         db.close()
     return inspect(path, c['id'])
@@ -313,6 +325,7 @@ def update_work(path, request):
             item.update(state=request['state'], owner=owner, note=note, revision=row[0] + 1, updated_at=now())
             db.execute('UPDATE work_items SET revision=?,payload=? WHERE id=?', (item['revision'], json.dumps(item), item['id']))
             db.execute('INSERT INTO work_events VALUES (?,?,?)', (item['id'], item['revision'], json.dumps({'action': 'review_updated', 'item': item})))
+            load(path, c['id'], current=True)
     finally:
         db.close()
     return inspect(path, c['id'])
@@ -405,4 +418,11 @@ def compose_frontier(path, request, *, allow_live=False, send=None):
     c, b = evidence_bundle(path, request['context_id'])
     # The original question, source, returned evidence and revisioned review
     # work are already in this bundle. A design prompt cannot fetch new facts.
-    return compose(workspace(path, c), request['request'].strip(), evidence_bundle=b, tool_calls=[], send=send)
+    work_version = fingerprint(work(path, c))
+    def validate_dependencies():
+        fresh = load(path, c['id'], current=True)
+        if fingerprint(work(path, fresh)) != work_version:
+            raise ValueError('Review work changed during generation; regenerate the deliverable from current work.')
+        return fresh['dependency_validation']
+    return compose(workspace(path, c), request['request'].strip(), evidence_bundle=b, tool_calls=[], send=send,
+                   validate_dependencies=validate_dependencies)

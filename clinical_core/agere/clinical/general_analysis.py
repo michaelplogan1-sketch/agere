@@ -264,12 +264,16 @@ def uncovered(question, quotes):
     return sorted({w for w in _words(question) if w not in _FUNCTION_WORDS and len(w) > 1 and w not in covered})
 
 
-def _inspect(catalog, query, population):
+def _inspect(catalog, query, population, *, trace=None):
     """Prepare a zero-row query; return source dependencies and final output columns."""
     reads = {}
-    def authorize(action, arg1, arg2, *_):
-        if action == sqlite3.SQLITE_READ and arg1 and arg2:
-            reads.setdefault(arg1, set()).add(arg2)
+    def authorize(action, arg1, arg2, database, origin):
+        if action == sqlite3.SQLITE_READ and arg1:
+            columns = reads.setdefault(arg1, set())
+            if arg2:
+                columns.add(arg2)
+        if trace is not None and action == sqlite3.SQLITE_SELECT and origin:
+            trace.setdefault('steps', set()).add(origin)
         return sqlite3.SQLITE_OK if action in (sqlite3.SQLITE_SELECT, sqlite3.SQLITE_READ, sqlite3.SQLITE_FUNCTION,
                                                getattr(sqlite3, 'SQLITE_RECURSIVE', -1)) else sqlite3.SQLITE_DENY
     db = register(sqlite3.connect(f'file:{catalog.target}?mode=ro', uri=True))
@@ -364,7 +368,8 @@ def prepare(catalog, question, spec, *, population=None, relaxed=False):
     else:
         query = 'WITH ' + ', '.join(f'{n} AS ({s})' for n, s in parts) + f' SELECT * FROM {final}'
     sql_query.validate({'query': query, 'returns': returns})
-    sources, columns = _inspect(catalog, query, population)
+    trace = {}
+    sources, columns = _inspect(catalog, query, population, trace=trace)
     if population is not None:
         # Scope the inputs, not only the returned IDs: otherwise grouped amounts,
         # counts and patient evidence could include people outside the saved cohort.
@@ -373,7 +378,15 @@ def prepare(catalog, question, spec, *, population=None, relaxed=False):
                   '(SELECT patient_id FROM population))' for t in sources if 'patient_id' in catalog.tables[t]]
         if scoped:
             query = 'WITH ' + ', '.join(scoped) + (', ' + query[4:].lstrip() if query.startswith('WITH ') else ' ' + query)
-            sources, columns = _inspect(catalog, query, population)
+            trace = {}
+            sources, columns = _inspect(catalog, query, population, trace=trace)
+    from .analysis_evidence import assess
+    evidence = assess(requirements, unresolved, names, final, trace, sources)
+    disconnected = [r for r in evidence['requirements'] if r['status'] == 'not_executed']
+    if disconnected and not relaxed:
+        raise PlanError('; '.join(r['quote'] + ': ' + r['reason'] for r in disconnected))
+    if disconnected:
+        unresolved = evidence['gaps']
     for r in requirements:
         if 'outputs' in r and (not isinstance(r['outputs'], list) or any(o not in columns for o in r['outputs'])):
             raise PlanError('Requirement outputs must name final result columns')
@@ -395,6 +408,7 @@ def prepare(catalog, question, spec, *, population=None, relaxed=False):
                          'definitions': definitions, 'unresolved': unresolved,
                          'workflow': workflow, 'patient_selection': selection, 'parameters': spec.get('parameters', [])},
             'governed_macros': sorted(macros), 'query': query, 'returns': returns, 'sources': sources,
+            'evidence_completeness': evidence,
             'source_identity': catalog.identity, 'output_columns': columns,
             'population': None if population is None else sorted(set(population)),
             'population_digest': None if population is None else fingerprint(sorted(set(population)))}
@@ -535,7 +549,7 @@ def execute(stack, question, graph, receipt, *, population=None, parent=None, st
               'missing': list(dict.fromkeys(missing)), 'limitations': list(dict.fromkeys(limitations)),
               'patient_ids': ids, 'actionable_cohort': (contract['returns'] == 'patient_set' or bool(contract['analysis'].get('patient_selection'))) and bool(ids) and not partial,
               'analysis': contract['analysis'], 'governed_macros': contract['governed_macros'],
-              'sources': contract['sources'],
+              'sources': contract['sources'], 'evidence_completeness': contract.get('evidence_completeness'),
               'query_evidence': {'query': contract['query'], 'source_identity': contract['source_identity']},
               'request_id': contract['id'], 'data_absence_established': False,
               'scope': 'Observed warehouse query; clinical execution is not authorized.'}
