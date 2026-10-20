@@ -193,7 +193,8 @@ def refresh(stack, request):
                 reason = 'No change in saved simulated work.'
             step.update(last_checked=A.now(), reason=reason)
             _save(stack.path, key, record)
-            return record
+            return {**record, 'new_paid_api_calls': 0, 'known_api_estimate_usd': 0,
+                    'api_cost_known': True}
         if 'patient_scope' not in step:
             raise ValueError('Monitor scope policy changed. Re-run this question to create a monitor with explicit scope.')
         source = A.source_identity(stack.path)
@@ -239,4 +240,5 @@ def refresh(stack, request):
                                          'planning_economics': result.get('planning_economics')})
             step.update(last_checked=A.now(), reason='Observed answer changed; investigate the difference.' if changed else 'New snapshot, same computed answer.')
         _save(stack.path, key, record)
-        return record
+        return {**record, 'new_paid_api_calls': 0, 'known_api_estimate_usd': 0,
+                'api_cost_known': True}

@@ -68,7 +68,7 @@ does not establish a selected work population. The selected rows retain their de
 Put every requested deliverable, simulated action and monitor in analysis.workflow using the SAME workflow
 contract described above for typed requests. Workflow clauses are separate from analytical requirements; do not
 map creating work or a brief to SQL. Unresolved workflow steps stay explicit without invalidating a complete
-analytical answer. Monitor outputs must name actual columns of the FINAL result. For a named monitored metric,
+analytical answer. Answer-monitor outputs must name actual columns of the FINAL result. For a named monitored metric,
 add outputs:["column_alias"] to the analytical requirement that computes it; a cohort filter is not a metric.
 Monitoring re-executes this definition; scope=result freezes selected patients and scope=query retains input scope.
 If the user asks to list a population but create work for only a subset, retain the whole requested patient table
@@ -136,8 +136,11 @@ preview is plausible (scale, units, percent range, empty results). Do not demand
 for. Check every requested deliverable, simulation and monitoring clause against analysis.workflow; a table alone
 does not satisfy those requests. Unresolved downstream steps must disclose missing requirements. Verify that
 patient_selection describes an explicitly requested individual patient list, never a summary's input membership,
-and that its rows and evidence belong to the original scope. Each monitored metric must be computed in the final
-result, not inferred from a filter. Return JSON only: {"equivalent":true|false,"issues":["specific mismatch"]}. Same-model review is an engineering
+and that its rows and evidence belong to the original scope. For mode="answer", each monitored metric must be
+computed in the final result, not inferred from a filter. For mode="work", work_status is supplied by the saved
+simulated task history after the simulation step creates work. It is NOT a SQL output; do not demand it in the
+patient table. This monitor measures simulated progress and exceptions, never actual care outcomes. Return JSON
+only: {"equivalent":true|false,"issues":["specific mismatch"]}. Same-model review is an engineering
 check, not independent qualification.'''
 
 

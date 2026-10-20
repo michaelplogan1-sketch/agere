@@ -85,6 +85,24 @@ class GeneralAnalysisWorkflow(unittest.TestCase):
         self.assertEqual(obs[-1]['new_paid_api_calls'], 0)
         self.assertEqual(len(W.refresh(self.stack, {'context_id': ctx['id'], 'index': 2})['steps'][2]['observations']), 2)
 
+    def test_monitor_reports_no_new_cost_without_erasing_original_generation_cost(self):
+        for mode in ('answer', 'work'):
+            spec = patient_spec()
+            q = QUESTION
+            if mode == 'work':
+                q = q.replace('monitor these patients', 'monitor loop closure')
+                spec['workflow'][2].update(mode='work', outputs=['work_status'], quote='monitor loop closure')
+            _, ctx = self.execute(spec, q)
+            saved = W.materialize(self.path, ctx['id'])
+            saved.update(new_paid_api_calls=2, known_api_estimate_usd=0.25)
+            saved['steps'][0].update(new_paid_api_calls=2, costs={'known_api_estimate_usd': 0.25})
+            W._save(self.path, ctx['id'], saved)
+            refreshed = W.refresh(self.stack, {'context_id': ctx['id'], 'index': 2})
+            self.assertEqual(refreshed['new_paid_api_calls'], 0)
+            self.assertEqual(refreshed['known_api_estimate_usd'], 0)
+            self.assertEqual(refreshed['steps'][0]['costs']['known_api_estimate_usd'], 0.25)
+            self.assertEqual(W.read(self.path, ctx['id'])['known_api_estimate_usd'], 0.25)
+
     def test_query_monitor_keeps_original_input_scope_including_new_matches(self):
         spec = patient_spec(); spec['workflow'][2]['scope'] = 'query'
         _, ctx = self.execute(spec, population=['A', 'B', 'C'])
@@ -214,6 +232,18 @@ class GeneralAnalysisWorkflow(unittest.TestCase):
         self.assertTrue(observed[-1]['measurement']['synthetic'])
         self.assertEqual(observed[-1]['source'], observed[0]['source'])
         self.assertEqual(len(W.refresh(self.stack, {'context_id': ctx['id'], 'index': 2})['steps'][2]['observations']), 2)
+
+    def test_simulated_agents_can_work_with_the_bound_patient_subset(self):
+        spec, question = self.subset_work()
+        old = spec['workflow'][1]['quote']
+        new = ('launch agents for patients with at least two ED visits to work with patients '
+               'to sign up for our pharmD medication titration program')
+        spec['workflow'][1].update(quote=new, program='pharmd')
+        _, ctx = self.execute(spec, question.replace(old, new))
+        flow = W.materialize(self.path, ctx['id'])
+        self.assertEqual(flow['steps'][1]['status'], 'ready')
+        self.assertEqual(flow['steps'][1]['patients'], 1)
+        self.assertEqual(flow['steps'][2]['status'], 'watching')
 
     def test_subset_cannot_use_unbound_or_nonboolean_flag(self):
         spec, question = self.subset_work()
