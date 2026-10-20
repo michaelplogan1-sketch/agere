@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-10-20T14:58:39.300017+00:00",
+  "updated_at": "2026-10-20T15:06:44.828473+00:00",
   "decision_basis": "AGERE_SHARED_FRONTIER_2026-10-20.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -307,12 +307,13 @@
     }
   ],
   "checkpoint": {
-    "kind": "manual_turn_checkpoint",
+    "kind": "coordination_checkpoint",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "Original point-and-thread field now depicts raw records forming shared structure and branching into linked synthetic view, work and monitoring destinations; cumulative motion and real activity hooks retained.",
-    "measured_failure_reduction": "Implemented the explicitly requested TextQL visual direction after the anatomical rendering was rejected. Actual answer count 908\u2192909 triggered one new filament; Monitor link opened saved-answer chooser; stage continuity, pause and 390px layout verified. No analytical gate progress claimed.",
+    "user_behavior_delta": "No runtime change in this coordination checkpoint. The prior TextQL-informed field delivery remains live; active planner correctness and frontier-deliverable candidates now have exclusive file ownership.",
+    "measured_failure_reduction": "Removed stale overlapping planner/deliverable ownership claims from PARALLEL_WORK.md. No analytical failure reduction or gate promotion claimed before candidate acceptance.",
     "evidence": [
+      "PARALLEL_WORK.md",
       "AGERE_CHIEF_STAFF_2026-10-20.md",
       "artifacts/agere-noise-to-action-v1/implementation-receipt.json"
     ],
@@ -320,14 +321,20 @@
     "next_action": "Continue G3 using docs/agere/GENERAL_QUESTION_ARCHITECTURE_PLAN.md: implement source/derived-evidence discovery with defensible absence and extend typed multi-entity/temporal composition through unseen cross-domain vertical slices. Keep this answer-to-work path and explicit scope/source identities; validate independent references before G5 comparisons.",
     "next": "Whole-warehouse semantic/discovery/DAG capability; independent qualification remains separate.",
     "latest_review": {
-      "at": "2026-10-20T14:58:39.300017+00:00",
-      "report": "AGERE_CHIEF_STAFF_2026-10-20.md",
-      "kind": "point_field_browser_and_navigation_verification",
+      "at": "2026-10-20T15:06:44.828473+00:00",
+      "report": "PARALLEL_WORK.md",
+      "kind": "active_lane_ownership_reconciliation",
       "evidence": [
-        "artifacts/agere-noise-to-action-v1/implementation-receipt.json",
-        "artifacts/agere-noise-to-action-v1/browser-checks.json",
-        "artifacts/agere-noise-to-action-v1/desktop.jpg"
+        "PARALLEL_WORK.md"
       ]
+    },
+    "coordination": {
+      "planner_thread": "01a159cf-8e56-7bb2-be7e-4889268a99c2",
+      "frontier_deliverables_thread": "01a15936-8db1-74f1-886b-8e1ffb89030f",
+      "review_coordinator_thread": "01a159c7-3077-7130-9e6c-ce4d64341afb",
+      "status": "Candidates active; await fixed commits and evidence before independent integration checks. Coordinator reports Claude packet transmission blocked by automatic approval review; specific approval pending, no source sent.",
+      "integration_owner": "01a1542a-b5a3-7d23-94fc-19628fd76094",
+      "next_integration_action": "Receive fixed candidates, verify actual user behavior and cross-lane compatibility, then integrate and deploy with rollback. Preserve checkpoint.next_action for the next core discovery/composition increment."
     }
   },
   "decisions": [
@@ -979,6 +986,13 @@
       "decision": "Replace anatomical visual with the explicitly requested TextQL-informed computational field; retain original code and existing activity API.",
       "basis": "User rejected the neuron rendering and supplied the ontology-page reference. Live visual inspection showed fine points and filaments forming an architectural structure.",
       "scope_impact": "Presentation and linked navigation only. No training, source migration, analytical gate promotion or benchmark execution. G3 next functional action and all ten areas preserved."
+    },
+    {
+      "at": "2026-10-20T15:06:44.828473+00:00",
+      "decision": "Reconcile active planner and isolated frontier-deliverable file ownership; retain one integration/control/runtime owner and coordinator-owned independent Claude review.",
+      "basis": "Verified direct human collaboration authorization in Assess Agere platform gaps and active implementation acknowledgements; earlier ownership table overlapped the planner lane.",
+      "scope_impact": "Coordination only. Preserve both candidates, latest sealed delivery, live runtime, all ten areas, G3 active, G5 blocked and full acceptance false. No product edits, duplicate implementation/review call or deployment.",
+      "evidence": "PARALLEL_WORK.md"
     }
   ]
 }
