@@ -19,7 +19,9 @@ TOKEN = re.compile(r'"[^"\n]*"|\'[^\'\n]*\'|(?<![\w.-])\d{4}-\d{2}-\d{2}(?![\w.-
 
 def family(question):
     from .learning import normalize_question
-    return normalize_question(TOKEN.sub('<literal>', question))
+    # Sentence punctuation must not turn a final year/threshold into a fixed
+    # concept. Normalize before tokenization; embedded decimals/codes stay intact.
+    return TOKEN.sub('<literal>', normalize_question(question))
 
 def _db(path):
     db = sqlite3.connect(Path(path)/'question-plans.sqlite3')

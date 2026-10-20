@@ -86,6 +86,21 @@ class ProceduralMemory(unittest.TestCase):
         self.assertEqual(M.select(self.path, Q), [])
         with self.assertRaisesRegex(ValueError, 'Re-establish'): self.proposal(instruction='A new lesson')
 
+    def test_sentence_final_numeric_literal_reuses_lesson_and_correction_suspends_it(self):
+        original = Q.rstrip('?') + '.'
+        changed = original.replace('2029', '2028')
+        # A saved authored trajectory with a terminal literal; eligibility and
+        # correction matching must agree before any hosted proposal is made.
+        self.assertEqual(M._family(original), M._family(changed))
+        self.assertNotEqual(M._family('Use diagnosis E11.9.'), M._family('Use diagnosis E11.8.'))
+        result = S.compose(self.stack, original)
+        self.context = A.capture(self.path, original, result)['id']
+        lesson = self.proposal(); M.ground(self.path, lesson)
+        self.assertEqual([r['id'] for r in M.select(self.path, changed)], [lesson])
+        learning.record_correction(self.path, changed, 'Check the requested service year')
+        self.assertEqual(M.select(self.path, original), [])
+        self.assertEqual(M.records(self.path)[0]['status'], 'quarantined')
+
     def test_mutating_or_false_source_probes_cannot_activate(self):
         with self.assertRaisesRegex(ValueError, 'received warehouse evidence'):
             M.propose(self.path, self.context, 'A tautology is not grounding',
