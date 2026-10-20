@@ -162,6 +162,7 @@ def interpret(catalog, question, *, population=None, model=None):
                     extra = list(dict.fromkeys([*extra, *names]))
                     feedback = 'Requested schemas are now included. Produce the complete typed request.'
                     continue
+                plan = request_plan.normalize_wire(catalog, question, plan)
                 contract = request_plan.compile_request(catalog, question, plan, population=population)
                 break
             except (ValueError, KeyError, TypeError) as exc:

@@ -10,6 +10,7 @@ from dataclasses import dataclass, field as dataclass_field
 from pathlib import Path
 import hashlib
 import json
+import copy
 import math
 import re
 import sqlite3
@@ -354,6 +355,36 @@ class Compiler:
 
 def compile_request(catalog, question, plan, *, population=None):
     return Compiler(catalog, question, population=population).compile(plan)
+
+
+def normalize_wire(catalog, question, proposal):
+    """Resolve wire omissions and unqualified identifiers, never rewrite meaning.
+
+    No predicate, projection, threshold, boolean operator or unmet requirement is
+    removed or invented. Literal quote text may change only in case.
+    """
+    plan = copy.deepcopy(proposal)
+    for key, value in {'where': None, 'group_by': [], 'order_by': [], 'limit': None, 'unresolved': []}.items():
+        plan.setdefault(key, value)
+    base = (plan.get('source') or {}).get('table')
+    def visit(value, table):
+        if isinstance(value, list):
+            for item in value: visit(item, table)
+        elif isinstance(value, dict):
+            if value.get('op') == 'exists': table = value.get('table')
+            field = value.get('field')
+            if isinstance(field, str) and '.' not in field:
+                if field in catalog.tables.get(table, []): value['field'] = table+'.'+field
+                elif field in catalog.tables.get('patient', []): value['field'] = 'patient.'+field
+            if value.get('op') in ('is_null', 'not_null'): value.setdefault('value', None)
+            quote = value.get('quote')
+            if isinstance(quote, str) and quote not in question:
+                matches = list(re.finditer(re.escape(quote), question, re.I))
+                if len(matches) == 1: value['quote'] = matches[0].group()
+            for child in value.values():
+                if isinstance(child, (list, dict)): visit(child, table)
+    visit(plan, base)
+    return plan
 
 
 def assert_sealed(contract):
