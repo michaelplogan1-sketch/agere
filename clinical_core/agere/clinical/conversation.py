@@ -593,7 +593,7 @@ def compose_shape(body):
             raise ValueError('A conversation and exact saved answer identity are required')
         keys -= {'answer_context_id'}
     if keys == {'question'}: return body['question'], 'auto', conv
-    if keys == {'question', 'planning'} and body['planning'] == 'scoped_local_candidate':
+    if keys == {'question', 'planning'} and body['planning'] in ('auto', 'frontier'):
         return body['question'], body['planning'], conv
     raise ValueError('Explicit composition question and supported optional candidate policy required')
 
@@ -681,6 +681,9 @@ def handle_compose(stack, body, hosted_factory=None):
                                                 result, original_question=question)
         if action_context:
             result = {**result, 'action_context': action_context}
+            if result.get('workflow'):
+                from ..deliverables.workflow import materialize
+                result['workflow'] = materialize(stack.path, action_context['id'])['steps']
     except (OSError, ValueError, sqlite3.Error) as exc:
         result = {**result, 'action_context_error': str(exc)}
     if conv is not False:

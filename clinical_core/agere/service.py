@@ -277,6 +277,12 @@ def serve(run,port,annotations=None,evidence_queries=None,stack=None,allow_live_
                         result=answer_context.update_work(connected_stack.path,body)
                     else:
                         result=answer_context.compose_frontier(connected_stack.path,body,allow_live=connected_stack.allow_live)
+                elif path=='/api/stack/action-monitor':
+                    from .deliverables.workflow import refresh
+                    result=refresh(connected_stack,body)
+                elif path=='/api/stack/briefing-pathway':
+                    from .clinical.chief_staff import open_pathway
+                    result=open_pathway(connected_stack.path,body)
                 elif path=='/api/stack/compose':
                     # {question}, {question, planning} and, for follow-ups, either plus conversation_id.
                     from .clinical import conversation
@@ -799,9 +805,8 @@ def serve(run,port,annotations=None,evidence_queries=None,stack=None,allow_live_
                 raw=json.dumps(loop_summary(connected_stack.path),default=str).encode();mime='application/json'
             elif parsed.path=='/api/stack/briefing':
                 if connected_stack is None:self.send_error(404);return
-                from .clinical.briefing import cached as briefing
-                from .clinical import briefing_rank  # learned re-rank; records what was shown (the only history writer)
-                raw=json.dumps(briefing_rank.serve(connected_stack.path,briefing(connected_stack.path),record=True),default=str).encode();mime='application/json'
+                from .clinical.chief_staff import cached as briefing
+                raw=json.dumps(briefing(connected_stack.path),default=str).encode();mime='application/json'
             elif parsed.path=='/api/stack/conversation':
                 if connected_stack is None:self.send_error(404);return
                 from .clinical import conversation

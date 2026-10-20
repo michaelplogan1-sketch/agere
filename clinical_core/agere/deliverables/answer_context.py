@@ -73,6 +73,16 @@ def capture(path, question, result, *, original_question=None):
     if not answer or answer.get('status') not in ('answered', 'partial', 'low_confidence'):
         return None
     source = source_identity(path)
+    produced = result.get('execution_snapshot')
+    contract = (result.get('planner_receipt') or {}).get('request_contract')
+    if produced and produced != source:
+        raise ValueError('Warehouse changed between execution and capture; ask again against the new snapshot')
+    if contract:
+        identity = contract['source_identity']
+        if (identity.get('source_digest') != source['source_digest'] or identity.get('as_of') != source['as_of']
+                or identity.get('version') != source['semantic_version']):
+            raise ValueError('Executed source identity differs from the current warehouse; no context saved')
+    source = produced or source
     rows = patient_rows(answer)
     inherited = result.get('cohort_patient_rows')
     if inherited is not None:
@@ -84,13 +94,15 @@ def capture(path, question, result, *, original_question=None):
             'answer': answer, 'graph': result.get('graph'), 'results': result.get('results'),
             'planner_receipt': result.get('planner_receipt'), 'planning_economics': result.get('planning_economics'),
             'cohort_transform': result.get('cohort_transform'),
+            'workflow': result.get('workflow', []),
             'patient_rows': rows, 'patient_ids': [r['patient_id'] for r in rows],
             'synthetic': True, 'clinical_eligibility_established': False}
     # Identity describes the executed answer, not punctuation, elapsed time,
     # cache state or cost. Keep the first complete execution receipt immutable.
     graph = data.get('graph') or {}
     plan = [{k: n.get(k) for k in ('id', 'operation', 'inputs', 'parameters')} for n in graph.get('nodes') or []]
-    key = 'ANS-' + fingerprint({'version': 2, 'source': source, 'answer': answer, 'plan': plan,
+    key = 'ANS-' + fingerprint({'version': 3, 'source': source, 'answer': answer, 'plan': plan,
+                               'workflow': data['workflow'],
                                'answer_policy_version': (result.get('planner_receipt') or {}).get('version'),
                                'cohort_transform': data.get('cohort_transform')})[:24]
     d = root(path) / key
@@ -154,7 +166,8 @@ def work(path, context):
 def inspect(path, key):
     context = load(path, key)
     items = work(path, context)
-    return {'context': context, 'items': items, 'counts': dict(Counter(i['state'] for i in items)),
+    from .workflow import read
+    return {'context': context, 'workflow': read(path, key), 'items': items, 'counts': dict(Counter(i['state'] for i in items)),
             'programs': PROGRAMS, 'states': STATES, 'external_dispatch_performed': False}
 
 

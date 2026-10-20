@@ -5,7 +5,7 @@ boolean grammar combines any available fields and related-record predicates.
 Unconsumed text declines the parse; it is never discarded by a rewrite.
 """
 import re
-from .request_plan import PlanError
+from .request_plan import PlanError, AmbiguousRequest
 
 SOURCES = {
     'patients': ('patient', None), 'people': ('patient', None), 'members': ('patient', None),
@@ -167,10 +167,22 @@ class Parser:
         """OR of AND terms; parentheses and explicit NOT preserve boolean scope."""
         first, tail = self.conjunction(text)
         terms = [first]
+        fragments = [text[:len(text)-len(tail)].strip()]
         while re.match(r'^or\b', tail, re.I):
-            part, tail = self.conjunction(re.sub(r'^or\s*', '', tail, flags=re.I))
+            rest = re.sub(r'^or\s*', '', tail, flags=re.I)
+            part, tail = self.conjunction(rest)
             if part is None: raise PlanError('Missing OR operand')
             terms.append(part)
+            fragments.append(rest[:len(rest)-len(tail)].strip())
+        def enclosed(fragment):
+            if not fragment.startswith('('): return False
+            depth = 0
+            for i, char in enumerate(fragment):
+                depth += (char == '(') - (char == ')')
+                if depth == 0: return i == len(fragment)-1
+            return False
+        if len(terms) > 1 and any(t and t.get('op') == 'and' and not enclosed(f) for t, f in zip(terms, fragments)):
+            raise AmbiguousRequest('This mixes AND and OR without a clear scope. Add parentheses, for example age > 65 and (diabetes or ckd), or (age > 65 and diabetes) or ckd.')
         return combine('or', terms, text[:len(text)-len(tail)].strip()), tail
 
     def conjunction(self, text):

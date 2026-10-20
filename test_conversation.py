@@ -179,9 +179,9 @@ class Api(unittest.TestCase):
     def test_existing_body_shapes_unchanged(self):
         r = C.handle_compose(self.stack, {'question': BASE})
         self.assertNotIn('conversation', r); self.assertEqual(self.stack.calls[-1], (BASE, 'auto'))
-        C.handle_compose(self.stack, {'question': BASE, 'planning': 'scoped_local_candidate'})
-        self.assertEqual(self.stack.calls[-1], (BASE, 'scoped_local_candidate'))
-        for bad in ({'question': BASE, 'planning': 'frontier'}, {'question': BASE, 'extra': 1}, {'planning': 'x'},
+        C.handle_compose(self.stack, {'question': BASE, 'planning': 'frontier'})
+        self.assertEqual(self.stack.calls[-1], (BASE, 'frontier'))
+        for bad in ({'question': BASE, 'planning': 'scoped_local_candidate'}, {'question': BASE, 'extra': 1}, {'planning': 'x'},
                     {'question': BASE, 'conversation_id': 'bad id!'}, {'question': BASE, 'conversation_id': 7}):
             with self.assertRaises(ValueError): C.handle_compose(self.stack, bad)
         self.assertFalse((Path(self.tmp.name) / 'conversations.sqlite3').exists())
@@ -231,11 +231,11 @@ class Api(unittest.TestCase):
     def test_conversation_body_and_persistence(self):
         r1 = C.handle_compose(self.stack, {'question': BASE, 'conversation_id': 'thread-1'})
         r2 = C.handle_compose(self.stack, {'question': 'only Medicare', 'conversation_id': 'thread-1'})
-        r3 = C.handle_compose(self.stack, {'question': 'by practice', 'conversation_id': 'thread-1', 'planning': 'scoped_local_candidate'})
+        r3 = C.handle_compose(self.stack, {'question': 'by practice', 'conversation_id': 'thread-1', 'planning': 'frontier'})
         self.assertEqual(r1['conversation']['turn'], 1); self.assertEqual(r1['conversation']['resolved_question'], BASE)
         self.assertEqual(r2['conversation']['resolved_question'], 'How many Medicare patients with diabetes had an ED visit in 2028?')
         self.assertEqual(self.stack.calls[1], (r2['conversation']['resolved_question'], 'auto'))  # the planner sees the standalone question
-        self.assertEqual(self.stack.calls[2][1], 'scoped_local_candidate')
+        self.assertEqual(self.stack.calls[2][1], 'frontier')
         self.assertEqual(r3['conversation']['resolved_question'], 'How many Medicare patients with diabetes had an ED visit in 2028 by practice?')
         # persisted across a fresh read (new connection)
         rows = C.turns(self.tmp.name, 'thread-1')

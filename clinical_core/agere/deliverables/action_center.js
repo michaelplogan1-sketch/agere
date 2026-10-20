@@ -147,6 +147,15 @@ function renderOverview() {
   $('coverage-caption').textContent = num(assigned)+' with review work · '+num(c.patient_rows.length)+' total';
   $('overview-work-caption').textContent = active.length ? num(active.length)+' saved review tasks across '+num(assigned)+' patients.' : 'Pick a direction above to start your first review.';
   $('overview-work').innerHTML = Object.keys(stateHints).map(state => '<button class="progress-cell" data-state-view="'+state+'"><span class="progress-top"><span><i class="state-dot '+state+'"></i>'+states[state]+'</span>'+icon('arrow')+'</span><strong>'+num(data.counts[state])+'</strong><small>'+stateHints[state]+'</small></button>').join('');
+  const steps=data.workflow?.steps||[], host=$('requested-workflow');
+  host.hidden=!steps.length;
+  host.innerHTML='<div class="section-heading"><div><h2>Your requested next steps</h2><p>The same answer, carried through.</p></div></div><div class="launch-grid">'+steps.map((s,i)=>'<article class="launch-card"><span class="eyebrow">'+esc(s.kind)+' / '+esc(pretty(s.status))+'</span><strong>'+esc(s.title)+'</strong><p>'+esc(s.reason||'')+'</p>'+
+    (s.kind==='deliverable'&&s.deliverable_id?'<button class="btn" data-workflow-studio>Open saved deliverable ↗</button>':'')+
+    (s.kind==='simulation'&&s.status==='ready'?'<button class="btn" data-workflow-board>Run simulated agents ↗</button>':'')+
+    (s.kind==='monitor'&&s.observations?'<p><small>'+esc(s.scope_label||s.scope)+' · Manual checks · '+s.observations.length+' observed snapshot(s)</small></p><details><summary>Baseline &amp; observations</summary><pre>'+esc(JSON.stringify(s.observations.map(o=>({at:o.at,as_of:o.source.as_of,answer:o.measurement})),null,2))+'</pre></details><button class="btn" data-monitor-check="'+i+'">Check current snapshot ↗</button>':'')+'</article>').join('')+'</div>';
+  host.querySelectorAll('[data-workflow-studio]').forEach(b=>b.onclick=()=>go('studio'));
+  host.querySelectorAll('[data-workflow-board]').forEach(b=>b.onclick=()=>go('work'));
+  host.querySelectorAll('[data-monitor-check]').forEach(b=>b.onclick=()=>run(async()=>{await api('/api/stack/action-monitor',{context_id:c.id,index:Number(b.dataset.monitorCheck)});await refresh();notify('Monitor checked against the current warehouse.');}));
 }
 function taskCard(item) {
   return '<button class="task-card" data-task="'+esc(item.id)+'" aria-label="Open review for '+esc(item.patient_id)+'"><span class="task-top"><strong>'+esc(item.patient_id)+'</strong>'+icon('arrow')+'</span><span class="task-program">'+esc(programNames[item.program] || item.program)+'</span><p>'+esc(item.simulation ? 'Demo: '+pretty(item.simulation.status)+' · '+(item.simulation.next_step?pretty(item.simulation.next_step):item.simulation.follow_up||'Journey complete') : item.note || 'No notes yet. Open this review to add the next step.')+'</p><span class="task-owner"><span class="owner-avatar">'+esc(initials(item.owner))+'</span>'+esc(item.owner)+'</span></button>';

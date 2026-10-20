@@ -22,6 +22,9 @@ STOP_WORDS = set('a an the please me our we us there are is was were be of for t
 class PlanError(ValueError):
     """An interpretation cannot be executed as a complete original request."""
 
+class AmbiguousRequest(PlanError):
+    """The user must choose a scope; a fallback model must not silently choose."""
+
 def quote_text(value):
     """A requirement may be expressed in several discontiguous source spans."""
     return ' '.join(value) if isinstance(value, list) else value
@@ -100,7 +103,12 @@ class Compiler:
         for quote in quotes:
             if not isinstance(quote, str) or not quote.strip() or quote not in self.question:
                 raise PlanError(f'{path}: a literal fragment of the original question is required')
+            if kind in ('population', 'measure') and re.search(
+                    r'\b(with|without|where|whose|who|excluding|exclude|unless)\b', quote, re.I):
+                raise PlanError(f'{path}: bind filter wording to its own predicate, not a broad source or measure quote')
             self.bindings.append({'path': path, 'kind': kind, 'quote': quote,
+                                  'covers': not (kind == 'predicate' and obj.get('op') in ('and', 'or', 'not', 'exists') and
+                                                 (obj.get('where') is not None or obj.get('args') or obj.get('arg'))),
                                   'disposition': 'unresolved' if kind == 'unresolved' else 'applied'})
 
     def field(self, name, scope):
@@ -225,7 +233,7 @@ class Compiler:
 
     def compile(self, plan):
         required = {'source', 'select', 'where', 'group_by', 'order_by', 'limit', 'unresolved'}
-        if not isinstance(plan, dict) or set(plan) - {'analyses', 'joins', 'having'} != required: raise PlanError('Complete typed request fields required')
+        if not isinstance(plan, dict) or set(plan) - {'analyses', 'joins', 'having', 'workflow'} != required: raise PlanError('Complete typed request fields required')
         if not isinstance(plan['source'], dict) or set(plan['source']) - {'stream'} != {'table', 'quote'}: raise PlanError('Explicit source relation required')
         self.base = plan['source']['table']
         if self.base not in self.catalog.tables: raise PlanError(f'Unknown source: {self.base}')
@@ -323,10 +331,27 @@ class Compiler:
                                      'parameters': {'specification': {'all': [], 'any': [], 'exclude': []}}},
                                     {'id': 'a', 'operation': op, 'inputs': ['p'], 'parameters': item['parameters'], 'purpose': quote_text(item['quote'])}]},
                          self.catalog.identity.get('as_of', '2030-05-27'))
+        from .workflow_contract import validate as validate_workflow
+        output_names = [*aliases, *[f'analysis_{i}' for i in range(len(analyses))]]
+        output_quotes = [b['quote'] for b in self.bindings if b['kind'] in ('measure', 'analysis')]
+        for i, step in enumerate(validate_workflow(plan.get('workflow', []), self.question, outputs=output_names, output_quotes=output_quotes)):
+            self.bind(step, f'workflow.{i}', 'workflow')
         if len(self.bindings) > 160: raise PlanError('Request is too large for one bounded plan')
         # Literal coverage is an omission check, not a semantic-equivalence proof.
         covered = [False] * len(self.question)
         for b in self.bindings:
+            if not b['covers']:
+                # A relation's name is structural; its filter words still need
+                # their own leaf predicates. Never cover an entire parent span.
+                obj = plan
+                for part in b['path'].split('.'):
+                    obj = obj[int(part)] if isinstance(obj, list) else obj.get(part, {})
+                table_words = set(str(obj.get('table', '')).split('_')) if isinstance(obj, dict) else set()
+                for match in re.finditer(re.escape(b['quote']), self.question):
+                    for word in re.finditer(r'\w+', b['quote']):
+                        if word.group().lower().rstrip('s') in table_words:
+                            covered[match.start()+word.start():match.start()+word.end()] = [True] * len(word.group())
+                continue
             for match in re.finditer(re.escape(b['quote']), self.question):
                 covered[match.start():match.end()] = [True] * (match.end()-match.start())
         uncovered = [m.group() for m in re.finditer(r'[\w%]+', self.question)
@@ -341,7 +366,7 @@ class Compiler:
             for column in columns:
                 if identifier(column) in query:
                     rendered_numbers.update(re.findall(r'(?<!\w)\d+(?:\.\d+)?', column.replace('_', ' ')))
-        unresolved_text = ' '.join(quote_text(x['quote']) for x in plan['unresolved'])
+        unresolved_text = ' '.join(quote_text(x['quote']) for x in [*plan['unresolved'], *[s for s in plan.get('workflow', []) if s['unresolved']]])
         missing_numbers = numeric - rendered_numbers - set(re.findall(r'(?<!\w)\d+(?:\.\d+)?', unresolved_text))
         if missing_numbers: raise PlanError('Numeric constraints were not compiled: ' + ', '.join(sorted(missing_numbers)))
         membership = ('SELECT DISTINCT b.patient_id AS patient_id' + relation) if 'patient_id' in self.catalog.tables[self.base] else None

@@ -24,3 +24,18 @@ local-only raw results, and stale C2 references in older controls. It does not r
 If Codex is re-engaged later, the rules are: one assigned task, one `codex/<task>` branch,
 owned paths named in the assignment, an executable acceptance check, and no new
 `*_BUILD.md`, receipts or hash manifests.
+
+## Active ownership — October 20, 2026
+
+| Work | Owner / session | Paths | Status / acceptance |
+| --- | --- | --- | --- |
+| Shared question/workflow, chief-of-staff UI, integration and :8885 | Codex build chat 01a1542a-b5a3-7d23-94fc-19628fd76094 | clinical_core/agere/clinical/{shared_planner,request_plan,request_language,workflow_contract,chief_staff,conversation}.py; deliverables/{answer_context,workflow,mock_views,action_center.*}; assets/{explore.*,experience.js}; ask_view.py; service.py; related tests and existing controls | In-flight from 591ee6d; source-bound cross-domain workflow checks and browser acceptance required |
+| General architecture/proof specification | Review chat 01a15957-adcc-7121-8f4e-6ece286ec64e | docs/agere/GENERAL_QUESTION_ARCHITECTURE_PLAN.md only | Received and adopted under existing G3/G5; proposed study thresholds are not results |
+| Independent Claude source review | Configured Anthropic API, model recorded in artifacts/agere-chief-staff-v1/claude-api-review-receipt.json when complete | Read-only bounded source packet; no product paths | Review findings independently reproduced before acceptance; not clinical qualification |
+| Standalone pronoun diagnostic | Diagnostic chat 01a15936-8db1-74f1-886b-8e1ffb89030f | Delivered 96dfe3f / 591ee6d | Integrated; no concurrent runtime ownership |
+
+The local Claude Code CLI authentication is expired. No active authenticated
+Claude Code implementation session or file claim has been verified; do not invent
+one or assign overlapping product edits. The requested Claude double-check uses
+the existing metered API instead. The integration owner alone seals and deploys.
+The separate public design checkout and independent reference work remain untouched.
