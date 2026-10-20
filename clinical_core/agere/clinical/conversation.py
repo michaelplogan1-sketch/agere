@@ -599,7 +599,8 @@ def handle_compose(stack, body, hosted_factory=None):
                            'edits': bound['cohort_transform']['operations'], 'reason': 'Applied to the exact saved cohort',
                            'hosted_receipt': None} if bound else
                           {'standalone': question, 'method': 'standalone', 'frame': None, 'follow_up': False,
-                           'edits': [], 'hosted_receipt': None} if shared else resolve(question, prior, hosted=hosted))
+                           'edits': [], 'reason': 'Original question sent unchanged to the shared planner',
+                           'hosted_receipt': None} if shared else resolve(question, prior, hosted=hosted))
             if resolution.get('hosted_receipt'):
                 r = resolution['hosted_receipt']
                 hosted_usd = float(r.get('api_usd') or 0.0); hosted_calls = 0 if r.get('cache_hit') else 1

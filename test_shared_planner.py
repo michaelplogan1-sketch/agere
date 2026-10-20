@@ -134,6 +134,16 @@ class SharedPlanner(unittest.TestCase):
         self.assertEqual(a['answer']['patient_ids'], ['A'])
         self.assertEqual(a['cohort_transform']['input_patient_ids'], ['A', 'B'])
 
+    def test_conversation_api_uses_shared_plans_without_rewriting_new_questions(self):
+        first = conversation.handle_compose(self.stack, {'question':'List patients with diabetes','conversation_id':'shared'})
+        self.assertEqual(first['answer']['patient_ids'], ['A','B','C'])
+        second = conversation.handle_compose(self.stack, {'question':'Only age > 65','conversation_id':'shared'})
+        self.assertEqual(second['answer']['patient_ids'], ['A','C'])
+        grouped = conversation.handle_compose(self.stack, {'question':'Group them by PCP','conversation_id':'shared'})
+        self.assertEqual(grouped['answer']['patient_ids'], ['A','C'])
+        new = conversation.handle_compose(self.stack, {'question':'Count claims','conversation_id':'shared'})
+        self.assertEqual(new['answer']['count'], 5)
+
     def test_model_review_rejection_cannot_execute_broader_cohort(self):
         q = 'Count patients who are older than 65'
         plan = {'source': {'table': 'patient', 'quote': 'patients'},
