@@ -38,7 +38,7 @@ function setupExperience(){
   grow([0,0,0],[Math.cos(a),Math.sin(a)*.9,(random(i+60)-.5)*1.5],.58+random(i+70)*.17,0,.2+i*.075,i+1);
  }
  const dust=Array.from({length:420},(_,i)=>({a:random(i+800)*TAU,r:.7+random(i+1600)*2.5,z:random(i+2400)*2-1,speed:.07+random(i+3200)*.13,seed:i}));
- const palette=[['#61798f','#87b9cc','#d3edf2'],['#698bf6','#94c6e9','#bcf9f3'],['#8a72e8','#69d8c8','#dcff9d'],['#9ea66d','#d9f79b','#fff5ce']];
+ const palette=[['#61798f','#87b9cc','#d3edf2'],['#698bf6','#94c6e9','#bcf9f3'],['#a38aff','#8af2de','#e2ffad'],['#9ea66d','#d9f79b','#fff5ce']];
  let shape=2;
  function draw(time=0){
   frame=null;if(!ctx||!w||!h)return;
@@ -98,9 +98,14 @@ function setupExperience(){
    for(let j=0;j<=last;j++)path.push(project(b.points[j],b.depth));
    if(last<samples){const t=end-last;path.push(project(b.points[last].map((v,k)=>mix(v,b.points[last+1][k],t)),b.depth))}
    const tip=path[path.length-1],color=colors[b.depth<2?0:b.depth<4?1:2];
-   const depthLight=clamp(tip[2]-.45),alpha=(.27+(4-b.depth)*.07)*depthLight*fieldStrength;
+   const depthLight=clamp(tip[2]-.45),alpha=(.44+(4-b.depth)*.10)*depthLight*fieldStrength;
    // Wide low-opacity underpainting gives filaments volume without expensive per-line shadows.
-   if(b.depth<3)line(path,color,alpha*.13,7-b.depth*1.3);
+   if(b.depth<3)line(path,color,alpha*.17,9-b.depth*1.8);
+   // Parallel, moving hairline strands give each branch a living fibrous surface.
+   if(b.depth<4)for(let strand=0;strand<3;strand++){
+    const fiber=path.map((p,j)=>{const spread=Math.sin(j/samples*Math.PI)*(2+b.depth);return [p[0]+Math.sin(j*.34+strand*2.1+phase*.5+b.seed)*spread,p[1]+Math.cos(j*.30+strand*2.1+phase*.5+b.seed)*spread]});
+    line(fiber,colors[1],alpha*.32,.45);
+   }
    line(path,color,alpha,1.35-b.depth*.19);
    const pulse=(phase*.5-b.birth*.36)%2.6;
    if(pulse>0&&pulse<progress){
@@ -111,12 +116,12 @@ function setupExperience(){
    if(b.depth>1){
     const light=(.4+.3*Math.sin(phase*1.7+b.seed))*initial*fieldStrength;
     ctx.globalAlpha=light;ctx.fillStyle=colors[2];ctx.beginPath();ctx.arc(tip[0],tip[1],b.depth===4?.85:1.25,0,TAU);ctx.fill();
-    if(b.id%5===0)glow(tip[0],tip[1],5,colors[1],light*.3);
+    if(b.id%5===0)glow(tip[0],tip[1],8,colors[1],light*.38);
    }
    // Suspended grains gather around every branch, following its growth front.
-   for(let j=2;j<last;j+=2){
+   for(let j=2;j<last;j++){
     const p=path[j],s=b.id*31+j,offset=2.5+random(s)*6;
-    ctx.globalAlpha=(.13+random(s+100)*.3)*fieldStrength;ctx.fillStyle=colors[b.depth>2?2:1];
+    ctx.globalAlpha=(.19+random(s+100)*.36)*fieldStrength;ctx.fillStyle=colors[b.depth>2?2:1];
     ctx.fillRect(p[0]+Math.sin(s+phase*.4)*offset,p[1]+Math.cos(s+phase*.3)*offset,.8,.8);
    }
   }
