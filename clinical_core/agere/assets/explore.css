@@ -29,3 +29,13 @@ main#main{max-width:1380px;margin:0 auto;padding:34px 60px 60px;width:100%;flex:
 @media(prefers-reduced-motion:reduce){.chief-card{transition:none}.chief-card:hover{transform:none}}
 .chief-card,.answer-workflow{color:#253222}.chief-heading>p,.chief-footnote{color:#a1aaa0}.chief-card h3{color:#253222}.signal-value{color:#20301d}.chief-loading,.brief-loading{color:#b6c4a5;border-color:#374335}.chief-card details summary{color:#586650}.chief-card pre{color:#35452c;background:#e9efdf;padding:10px;border-radius:6px}.answer-workflow h3{color:#253222}.chief-card button:focus-visible,.chief-card a:focus-visible,.chief-card summary:focus-visible{outline:2px solid #526d35;outline-offset:3px}
 .has-result .chief-briefing{display:none}
+
+/* The field emerges from the same darkness as the page, without an instrument frame. */
+.intelligence-scene{background:radial-gradient(ellipse at 50% 51%,#17162555,transparent 68%);box-shadow:none;overflow:hidden}
+.intelligence-scene:before,.intelligence-scene:after{display:none}
+.scene-top{left:8px;color:#89978e}.scene-top i{box-shadow:0 0 12px #d5fa7166}
+.scene-caption{left:8px;right:8px}.scene-caption>span:last-child{color:#849288}
+@media(min-width:801px){.intelligence-scene{height:340px;min-height:340px}.welcome{grid-template-columns:.82fr 1.18fr;gap:34px}.welcome h1{font-size:clamp(53px,5vw,70px)}.motion-toggle{top:10px}.stage-detail{min-height:62px}}
+@media(min-width:1550px){.intelligence-scene{height:390px;min-height:390px}.welcome h1{font-size:76px}}
+@media(min-width:521px) and (max-width:800px){.intelligence-scene{height:290px;min-height:290px}.welcome{gap:8px}}
+@media(max-width:520px){.intelligence-scene{width:78%;height:310px;top:5px;right:-20px;opacity:.75;mask-image:linear-gradient(90deg,transparent,#000 48%)}.motion-toggle{top:27px}}
