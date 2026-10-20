@@ -324,6 +324,24 @@ class SharedPlanner(unittest.TestCase):
             with self.subTest(value=replacement), self.assertRaisesRegex(R.PlanError, 'Numeric constraints.*2'):
                 R.compile_request(self.catalog, q, wrong)
 
+    def test_review_receives_actual_engine_contract_even_when_not_initially_suggested(self):
+        p = L.parse(self.catalog, 'Count patients')
+        q = 'Count patients and calculate shared savings with a $100 PMPM benchmark and 50% sharing'
+        p['analyses'] = [{'operation': 'vbc', 'quote': q.split(' and ', 1)[1], 'parameters': {
+            'metric': 'shared_savings', 'terms': {'benchmark_pmpm': 100, 'sharing_rate': .5}}}]
+        model = Mock(side_effect=[(json.dumps(p), {}), (json.dumps({'equivalent': True, 'issues': []}), {})])
+        original = S.schema_slice
+        def sliced(catalog, question, extra, operations, streams):
+            view = original(catalog, question, extra, operations, streams)
+            if 'vbc' not in operations: view['selected_operator_contracts'].pop('vbc', None)
+            return view
+        with patch.object(S, 'schema_slice', side_effect=sliced):
+            S.interpret(self.catalog, q, model=model, force_model=True)
+        reviewed = json.loads(model.call_args_list[-1].args[1])['catalog']['selected_operator_contracts']['vbc']
+        self.assertIn('program', reviewed['parameters'])
+        self.assertIn('enrolled member-months within period', reviewed['meaning'])
+        self.assertIn('not official Medicare Parts A/B reconciliation', reviewed['meaning'])
+
     def test_repairable_quote_error_does_not_force_away_from_typed_engines(self):
         q = 'Count patients who are older than 65'
         correct = L.parse(self.catalog, 'Count patients where age > 65')

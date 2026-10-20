@@ -41,9 +41,17 @@ CONTRACTS = {
                   'parallel-trends and placebo checks, synthetic control when feasible, and explicit data-support warnings. Never an identified causal '
                   'effect; refuse randomised-trial or counterfactual-count claims, and unnamed programs.'},
     'vbc': {'inputs':['optional earlier_set'],'parameters':{'metric':'eligibility|attribution|utilization|cost|risk|quality|shared_savings','group_by':'none|pcp|practice|coverage_type|age_band|sex',
-        'period':{'start':'YYYY-MM-DD','end':'YYYY-MM-DD'},'measure':'quality measure id (internal or config/agere/measures library id or set)','output':'quality: rates|gaps','terms':'shared_savings contract terms (supplied by the user only)'},
+        'period':{'start':'YYYY-MM-DD','end':'YYYY-MM-DD'},'measure':'quality measure id (internal or config/agere/measures library id or set)','output':'quality: rates|gaps',
+        'program':'optional named program with explicit performance year and variant; resolves versioned, cited stored program rules',
+        'terms':'shared_savings user-supplied inputs/overrides; named program supplies only its stored cited rates and caps; never invent missing inputs'},
         'meaning':'Value-based-care metrics: member-months, PCP attribution, utilization per 1,000 (ED, admissions, readmission, 7-day follow-up) with empirical-Bayes shrinkage, '
-                  'completion-adjusted allowed/paid PMPM, internal risk score (not CMS-HCC), internal quality measures, and shared-savings settlement on user-supplied terms. Never invent contract terms.'},
+                  'completion-adjusted allowed/paid PMPM, internal risk score (not CMS-HCC), internal quality measures, and hypothetical shared-savings/loss settlement. '
+                  'The input cohort is further restricted by the engine to enrolled member-months within period: payer enrollment spans supply member_month; '
+                  'patients without spans use active coverage effective start, with no known termination date. No observed enrolled months means no cost or benchmark exposure. '
+                  'Costs include medical plus pharmacy allowed amounts only in those enrolled months, with modeled completion; payer feeds are preferred where present. '
+                  'This is not official Medicare Parts A/B reconciliation. Program resolves current stored cited rules for the explicit program/year; '
+                  'reported feedback requires rechecking those rules, not treating feedback as authoritative or assuming the rulebook is unavailable. '
+                  'Benchmark and missing contract-specific terms must be supplied. Do not infer payment entitlement or invent terms.'},
     'outreach': {'inputs':['optional earlier_set'],'parameters':{'capacity_patients':40,'capacity_hours':'optional nurse hours','require':['care_gap','rising_risk','social_need','utilization'],
         'group_by':'none|practice|pcp','min_per_practice':0,'max_per_practice':None,'method':'auto|exact|greedy','overlap_discount':0.5,'saturation':0},
         'meaning':'Prioritised, capacity-constrained outreach worklist: per-patient expected value from avoidable utilization (risk score + recent admissions/ED), open care gaps '

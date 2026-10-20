@@ -506,8 +506,12 @@ def _interpret(catalog, question, *, population=None, model=None, force_model=Fa
             proposal_count += 1
             plan = request_plan.normalize_wire(catalog, question, plan)
             contract = request_plan.compile_request(catalog, question, plan, population=population)
+            # The proposed engine may not be among the initial lexical suggestions.
+            # Review its actual contract, including denominator/window semantics.
+            review_operations = list(dict.fromkeys([*operations, *[a['operation'] for a in plan.get('analyses', [])]]))
+            review_catalog = schema_prompt_view(schema_slice(catalog, question, extra, review_operations, streams))
             raw_audit, stats = call(AUDIT_SYSTEM, json.dumps({
-                'original_question': question, 'catalog': catalog_context,
+                'original_question': question, 'catalog': review_catalog,
                 'request': plan, 'compiled_sql': contract['query'],
                 'discovery': discovery_context, 'reported_corrections': corrections,
                 'saved_cohort_size': len(population) if population is not None else None,
