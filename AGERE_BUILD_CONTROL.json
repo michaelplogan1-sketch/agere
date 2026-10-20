@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-10-20T12:46:59.381940+00:00",
+  "updated_at": "2026-10-20T13:23:41.663782+00:00",
   "decision_basis": "AGERE_SHARED_FRONTIER_2026-10-20.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -249,6 +249,10 @@
         {
           "path": "artifacts/agere-pronoun-routing-v1/implementation-receipt.json",
           "sha256": "9bc48e3b1ed5b2f58987523fb1eba19d241e57809744dd3f226419fd52b5b845"
+        },
+        {
+          "path": "artifacts/agere-chief-staff-v1/implementation-receipt.json",
+          "sha256": "bbcc5a536b565285f386d0484535c1f33278fe08057b96aefaa5fdf0e28df254"
         }
       ]
     },
@@ -306,30 +310,23 @@
     "kind": "manual_turn_checkpoint",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "Complete questions with a named population and linked pronouns reach the shared planner unchanged; explicit saved contexts and missing-context protections remain.",
-    "measured_failure_reduction": "80 focused regressions pass. Exact MSK screenshot request now reaches shared planning as standalone; live 230-patient saved follow-up and 4,115-patient warehouse count remain distinct.",
+    "user_behavior_delta": "Opening chief-of-staff brief across five domains; one checked request connects answers, table/cohort deliverables, simulated review queues and explicit query/result-scope manual monitors.",
+    "measured_failure_reduction": "110 focused checks pass. Explicit final-status no-show browser flow matches separate SQL for 417 patients and produces brief + simulated queue + monitor. Claude-surfaced scope, omission, snapshot and provenance issues repaired.",
     "evidence": [
-      "AGERE_PRONOUN_ROUTING_2026-10-20.md",
-      "artifacts/agere-pronoun-routing-v1/implementation-receipt.json"
+      "AGERE_CHIEF_STAFF_2026-10-20.md",
+      "artifacts/agere-chief-staff-v1/implementation-receipt.json"
     ],
-    "remaining_gap": "The combined eligibility, synthetic-agent creation and monitoring request remains unsupported by the current read-only shared query language. Reported catalog gaps are not evidence of warehouse-wide data absence. General context resolution, clinical/time/evidence reconciliation and independent full-stack qualification remain incomplete.",
-    "next_action": "Close G3 through general context resolution and typed question/analysis/synthetic-action/monitoring composition; strengthen semantic constraint coverage and ambiguous Boolean scope. Demonstrate whole-warehouse cases across claims, admissions/readmissions, access, providers and contracts while preserving exact saved populations. Retain clinical/time/evidence reconciliation and independent qualification; no per-question handlers or unvalidated benchmarks.",
-    "next": "Whole-warehouse shared planning and complete workflow acceptance; independent qualification remains separate.",
+    "remaining_gap": "Bounded whole-warehouse composition is connected, but universal semantic preservation, comprehensive source/derived evidence discovery, multi-entity DAG expressiveness, clinical/time reconciliation and independent full-stack qualification remain incomplete. Monitoring is manual and synthetic work is scripted.",
+    "next_action": "Continue G3 using docs/agere/GENERAL_QUESTION_ARCHITECTURE_PLAN.md: implement source/derived-evidence discovery with defensible absence and extend typed multi-entity/temporal composition through unseen cross-domain vertical slices. Keep this answer-to-work path and explicit scope/source identities; validate independent references before G5 comparisons.",
+    "next": "Whole-warehouse semantic/discovery/DAG capability; independent qualification remains separate.",
     "latest_review": {
-      "at": "2026-10-20T12:23:06.726047+00:00",
-      "report": "AGERE_CTO_REVIEW_2026-10-20.md",
-      "kind": "read_only_cto_and_claude_source_review",
-      "workflow_change": "None; assessment and isolated compiler probes only.",
-      "confirmed_gaps": [
-        "Standalone pronouns misclassified as saved-cohort references",
-        "No shared typed action/monitoring intent composition",
-        "Broad literal quotes can satisfy structural coverage despite omitted predicates",
-        "Ambiguous AND/OR wording accepted without scope clarification"
-      ],
+      "at": "2026-10-20T13:23:41.663782+00:00",
+      "report": "AGERE_CHIEF_STAFF_2026-10-20.md",
+      "kind": "implemented_and_claude_reviewed",
       "evidence": [
-        "artifacts/agere-cto-market-review-v1/routing-audit.json",
-        "artifacts/agere-cto-market-review-v1/claude-api-review.md",
-        "artifacts/agere-cto-market-review-v1/confirmed-review-probes.json"
+        "artifacts/agere-chief-staff-v1/claude-api-review.md",
+        "artifacts/agere-chief-staff-v1/claude-recheck.md",
+        "artifacts/agere-chief-staff-v1/final-tests.txt"
       ]
     }
   },
@@ -949,6 +946,13 @@
       "change": "Repair standalone pronoun routing and activate verified source 96dfe3f. Replay the exact request; record the separate unsupported action/monitoring composition instead of claiming end-to-end completion.",
       "scope_impact": "Full ten-area charter retained; G3 active and G5 blocked. No protected benchmark, real enrollment, contact or care execution.",
       "evidence": "artifacts/agere-pronoun-routing-v1/implementation-receipt.json"
+    },
+    {
+      "at": "2026-10-20T13:23:41.663782+00:00",
+      "basis": "Mike requests general warehouse fixes, Claude double-check, useful deliverables/simulated actions/monitoring and an impressive chief-of-staff greeting.",
+      "change": "Deliver and activate shared typed downstream workflow, scoped snapshot checks, computed opening briefing and richer Intelligence field; adopt coordinated architecture/proof specification under existing G3/G5.",
+      "scope_impact": "All ten areas retained, G3 active, G5 blocked, no full qualification claim. No real actions, protected benchmark, external publication or generator/research changes.",
+      "evidence": "AGERE_CHIEF_STAFF_2026-10-20.md"
     }
   ]
 }
