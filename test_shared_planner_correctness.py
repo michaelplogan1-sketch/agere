@@ -303,10 +303,10 @@ class Correctness(unittest.TestCase):
         with self.assertRaises(S.QuestionNotUnderstood) as raised:
             conversation.handle_compose(self.stack, {'question':'An unfamiliar business question','conversation_id':'fail'})
         receipt = raised.exception.planner_receipt
-        self.assertEqual(receipt['new_paid_api_calls'], 6)
-        self.assertEqual(receipt['known_api_estimate_usd'], 1.5)
+        self.assertEqual(receipt['new_paid_api_calls'], 9)  # 6 planning turns + 3 final LLM analysis attempts
+        self.assertEqual(receipt['known_api_estimate_usd'], 2.25)
         with sqlite3.connect(self.path/'learning.sqlite3') as db:
-            self.assertEqual(db.execute('SELECT status,paid_calls,usd FROM outcomes').fetchone(), ('not_understood',6,1.5))
+            self.assertEqual(db.execute('SELECT status,paid_calls,usd FROM outcomes').fetchone(), ('not_understood',9,2.25))
         self.assertFalse(S.attempt_receipt([{'api_usd':0.1}])['api_cost_known'])
 
     def test_interpretation_releases_service_lock_and_local_busy_is_immediate(self):

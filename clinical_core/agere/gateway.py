@@ -25,7 +25,8 @@ class BudgetLedger:
         CREATE TABLE IF NOT EXISTS calls (id TEXT PRIMARY KEY,provider TEXT,model TEXT,reserved REAL,status TEXT,response TEXT,error TEXT,seconds REAL);
         CREATE TABLE IF NOT EXISTS imports (id TEXT PRIMARY KEY,reserved REAL);''')
         with self.db:
-            self.db.execute('INSERT OR IGNORE INTO authorization VALUES (1,?)',(10. if cap_usd is None else cap_usd,))
+            # New ledgers are uncapped unless a caller passes an explicit cap (Mike: no budget caps).
+            self.db.execute('INSERT OR IGNORE INTO authorization VALUES (1,?)',(cap_usd,))
             existing=self.db.execute('SELECT cap FROM authorization WHERE id=1').fetchone()[0]
             if cap_usd is not None and existing!=cap_usd:raise ValueError('Cannot silently change existing authorization')
             if legacy_summary and Path(legacy_summary).exists():

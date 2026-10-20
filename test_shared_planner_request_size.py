@@ -13,11 +13,13 @@ import test_shared_planner as fixtures
 
 
 class RequestAdmission(unittest.TestCase):
-    def test_oversized_request_never_touches_ledger_or_transport(self):
+    def test_explicit_bound_still_refuses_before_ledger_or_transport(self):
+        # No default cap (Mike 2026-10-20); a caller-chosen bound is still enforced before any spend.
+        self.assertIsNone(C.REQUEST_MAX_BYTES)
         ledger, transport = Mock(), Mock()
         with self.assertRaises(C.RequestSizeLimitError) as caught:
             C.send({'model': 'test', 'text': 'é' * 70000}, 'claude', ledger, Path('/unused'),
-                   parse=lambda value: value, transport=transport)
+                   parse=lambda value: value, transport=transport, max_bytes=128000)
         self.assertGreater(caught.exception.request_bytes, caught.exception.max_bytes)
         self.assertEqual(caught.exception.max_bytes, 128000)
         self.assertFalse(ledger.mock_calls)
@@ -28,19 +30,16 @@ class RequestAdmission(unittest.TestCase):
         ledger = Mock()
         ledger.db.execute.return_value.fetchone.return_value = ('validated', json.dumps(response))
         with tempfile.TemporaryDirectory() as directory:
-            default = nl2sql.HostedModel(ledger, Path(directory))
+            bounded = nl2sql.HostedModel(ledger, Path(directory), request_max_bytes=128000)
             planner = nl2sql.HostedModel(ledger, Path(directory), request_max_bytes=S.REQUEST_MAX_BYTES)
+            self.assertIsNone(S.REQUEST_MAX_BYTES)
             with patch.object(C.urllib.request, 'urlopen', side_effect=AssertionError('Network prohibited')):
                 with self.assertRaises(C.RequestSizeLimitError):
-                    default('system', 'x' * 140000)
+                    bounded('system', 'x' * 140000)
                 self.assertFalse(ledger.mock_calls)
-                text, stats = planner('system', 'x' * 140000)
+                text, stats = planner('system', 'x' * 1_000_000)  # uncapped planner sends the complete body
                 self.assertEqual(text, '{"ok":true}')
                 self.assertTrue(stats['cache_hit'])
-                ledger.reset_mock()
-                with self.assertRaises(C.RequestSizeLimitError):
-                    planner('system', 'x' * S.REQUEST_MAX_BYTES)
-                self.assertFalse(ledger.mock_calls)
 
     def test_exact_duplicate_projection_retains_all_definitions_and_original(self):
         original = {

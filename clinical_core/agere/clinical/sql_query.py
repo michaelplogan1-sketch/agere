@@ -14,8 +14,8 @@ from .age import register
 
 VERSION = 'semantic-sql/1'
 RETURNS = ('count', 'value', 'patient_set', 'table')
-MAX_ROWS = 5000
-TIME_LIMIT_SECONDS = 30
+MAX_ROWS = 200000
+TIME_LIMIT_SECONDS = 600
 _ALLOWED = {sqlite3.SQLITE_SELECT, sqlite3.SQLITE_READ, sqlite3.SQLITE_FUNCTION}
 _RECURSIVE = getattr(sqlite3, 'SQLITE_RECURSIVE', None)
 if _RECURSIVE is not None: _ALLOWED.add(_RECURSIVE)

@@ -27,9 +27,9 @@ FAMILIES=[
  'cognitive impairment','hearing difficulty','dizziness on standing','poor medication adherence','home health visit']
 
 
-# Grounded planning carries observed field vocabularies and the concept library.
-# 128 KB: the v2.3 warehouse (4,499 patients, 234 source streams) needs ~70 KB for a fully deferred capability index.
-REQUEST_MAX_BYTES=128000
+# No local request-size cap (Mike, 2026-10-20): the provider's own context window is the only limit.
+# A caller may still pass max_bytes explicitly for a deliberately narrow request.
+REQUEST_MAX_BYTES=None
 
 
 class RequestSizeLimitError(ValueError):
@@ -40,7 +40,7 @@ class RequestSizeLimitError(ValueError):
 
 
 def send(body,provider,ledger,out,*,parse,allow_failed_response_revalidation=False,
-         revalidation_reason='bounded_probability_rounding/2', timeout=60, transport=None, max_bytes=None):
+         revalidation_reason='bounded_probability_rounding/2', timeout=600, transport=None, max_bytes=None):
     # max_bytes: a caller with a larger, deliberately bounded request (the semantic analyst's ~141K-character documented
     # semantic model plus its tool loop) raises the default REQUEST_MAX_BYTES bound explicitly.
     # Preset-routed providers (Perplexity Agent API) choose the model server-side: the ledger
@@ -48,7 +48,7 @@ def send(body,provider,ledger,out,*,parse,allow_failed_response_revalidation=Fal
     expected=body.get('model');ledger_model=expected or 'preset:'+str(body.get('preset'))
     payload=json.dumps(body,allow_nan=False).encode()
     limit = REQUEST_MAX_BYTES if max_bytes is None else max_bytes
-    if len(payload)>limit:raise RequestSizeLimitError(len(payload), limit)
+    if limit is not None and len(payload)>limit:raise RequestSizeLimitError(len(payload), limit)
     key=digest({'contract':'context-student/1','provider':provider,'body':body})
     old=ledger.db.execute('SELECT status,response FROM calls WHERE id=?',(key,)).fetchone()
     if old and old[0]=='validated':return parse(json.loads(old[1])),{'cache_hit':True,'request_hash':key}

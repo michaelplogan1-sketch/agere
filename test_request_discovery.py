@@ -123,7 +123,7 @@ class RequestDiscovery(unittest.TestCase):
         r['probes'][0]['source_identity']['verbose_metadata'] = 'x' * 50000
         receipts = [deepcopy(r) for _ in range(6)]
         original = deepcopy(receipts)
-        compact = D.prompt_view(receipts)
+        compact = D.prompt_view(receipts, max_bytes=12000)  # explicit view bound; the planner default is uncapped
         self.assertLessEqual(len(json.dumps(compact, separators=(',', ':')).encode()), 12000)
         self.assertEqual(receipts, original)
         self.assertTrue(all(not p['data_absence_established'] for item in compact for p in item.get('probes', [])))
@@ -143,7 +143,7 @@ class RequestDiscovery(unittest.TestCase):
             S.checked_interpret(self.catalog, 'Inspect received notes', model=model, force_model=True)
         result = failure(exhausted.exception)
         self.assertEqual(len(result['evidence_discovery']), 6)
-        self.assertEqual(result['new_paid_api_calls'], 6)
+        self.assertEqual(result['new_paid_api_calls'], 9)  # 6 planning turns + 3 final LLM analysis attempts
         self.assertFalse(result['data_absence_established'])
         calls.clear()
         def broken(*args, **kwargs):

@@ -324,7 +324,7 @@ def run(catalog, request, *, population=None):
     return out
 
 
-def prompt_view(receipts, *, max_bytes=12000):
+def prompt_view(receipts, *, max_bytes=None):
     """Compact model view; complete source identities and queries stay in receipts.
 
     Older detail may be omitted to bound the tool loop. That omission is explicit,
@@ -351,14 +351,14 @@ def prompt_view(receipts, *, max_bytes=12000):
         projected.append(item)
     # Retain recent detail first; older requests/statuses remain inspectable.
     for item in projected:
-        if len(json.dumps(projected, separators=(',', ':')).encode()) <= max_bytes:
+        if max_bytes is None or len(json.dumps(projected, separators=(',', ':')).encode()) <= max_bytes:
             break
         for key, entries in item.items():
             for entry in entries if isinstance(entries, list) else [entries]:
                 entry.pop('rows', None)
                 entry.pop('candidates', None)
                 entry['prompt_detail_omitted'] = 'Full observations retained in the saved receipt; omission proves no absence.'
-    if len(json.dumps(projected, separators=(',', ':')).encode()) > max_bytes:
+    if max_bytes is not None and len(json.dumps(projected, separators=(',', ':')).encode()) > max_bytes:
         return [{'receipt_fingerprint': fingerprint(r),
                  'prompt_detail_omitted': 'Discovery detail exceeds prompt allowance; full evidence saved. Request narrower probes or leave interpretation unresolved.',
                  'data_absence_established': False} for r in receipts]
