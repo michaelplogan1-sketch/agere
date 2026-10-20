@@ -4,10 +4,22 @@ Only verified or user-confirmed answers become training data; Agere never learns
 unverified output. Declines and escalations are kept with their reasons so gaps can be clustered
 into new grammar rules or bottled-model training examples.
 """
-import json, os, sqlite3, time
+import json, os, re, sqlite3, time
 from pathlib import Path
 
 VERSION = 'learning-store/1'
+
+def normalize_question(question):
+    return re.sub(r'\s+', ' ', question.strip().rstrip('?.!')).casefold()
+
+
+def corrected(path, question):
+    target = Path(path)/'learning.sqlite3'
+    if not target.exists(): return False
+    with sqlite3.connect(f'file:{target}?mode=ro', uri=True) as db:
+        if not db.execute("SELECT 1 FROM sqlite_master WHERE name='corrections'").fetchone(): return False
+        return any(normalize_question(q) == normalize_question(question) for (q,) in db.execute('SELECT question FROM corrections'))
+
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS verified(question TEXT, plan_kind TEXT, plan TEXT, signature TEXT, route TEXT,
                                     models TEXT, agreement TEXT, created REAL, PRIMARY KEY(question, plan));
@@ -55,11 +67,10 @@ def lookup(path, question):
     """A previously verified plan for this exact question (normalised), or None."""
     target = Path(path) / 'learning.sqlite3'
     if not target.exists() or os.environ.get('AGERE_LEARNED', 'on') == 'off': return None
+    if corrected(path, question): return None
     _db(path).close()  # migrate older stores
     db = sqlite3.connect(f'file:{target}?mode=ro', uri=True)
     try:
-        corrected = db.execute('SELECT 1 FROM corrections WHERE lower(trim(question)) = lower(trim(?))', (question,)).fetchone()
-        if corrected: return None  # a user flagged this question: re-derive, never reuse
         row = db.execute('SELECT plan_kind, plan, agreement FROM verified WHERE lower(trim(question)) = lower(trim(?)) AND context = ? '
                          'ORDER BY created DESC LIMIT 1', (question, context(path))).fetchone()
     finally:
@@ -71,7 +82,7 @@ def record_outcome(path, question, route, status, reason=None, paid_calls=0, usd
     db = _db(path)
     try:
         db.execute('INSERT INTO outcomes VALUES (?,?,?,?,?,?,?)',
-                   (question.strip(), route, status, (reason or '')[:500], int(paid_calls or 0), float(usd or 0), time.time()))
+                   (question.strip(), route, status, (reason or '')[:500], int(paid_calls or 0), None if usd is None else float(usd), time.time()))
         db.commit()
     finally:
         db.close()
@@ -115,7 +126,8 @@ def capture_verified(path, question, planner_receipt, answer):
     answer = answer or {}
     reasons = sorted({c['control'] for c in answer.get('quality_checks') or []
                       if c.get('severity') == 'warning' and c.get('control') in QUARANTINE_CONTROLS})
-    if answer.get('status') not in ('answered', 'partial'): reasons.append(f"answer status {answer.get('status')}")
+    if answer.get('status') != 'answered': reasons.append(f"answer status {answer.get('status')}")
+    if answer.get('missing'): reasons.append('unresolved answer requirements')
     if (hosted.get('verification') or {}).get('judge_findings'): reasons.append('judge query failed a deterministic check')
     if (hosted.get('verification') or {}).get('dissent'): reasons.append('an independent candidate disagrees')
     if hosted.get('readings') or answer.get('readings'): reasons.append('two defensible readings')
@@ -148,6 +160,8 @@ def quarantine(path, question, answer):
 
 
 def record_correction(path, question, note, expected=None):
+    from .request_shapes import invalidate
+    invalidate(path, question, note)
     db = _db(path)
     try:
         db.execute('INSERT INTO corrections VALUES (?,?,?,?)', (question.strip(), note[:2000], json.dumps(expected), time.time()))

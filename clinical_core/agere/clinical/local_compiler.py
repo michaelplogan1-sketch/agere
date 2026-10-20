@@ -1258,7 +1258,7 @@ def _take_period(r, as_of, year_words=r'in|during|for'):
 # ---- population questions (concepts, aggregates, explanations) ------------------
 def _population_question(q, r, profile, as_of, info):
     # Age as captured on the roster only when the question says so; otherwise the latest reported age.
-    AGE_FIELD = 'age_reported' if re.search(r'\b(?:at (?:their |the )?profile capture|as captured|roster age|without advancing|originally reported)\b', q.lower()) else 'age_latest'
+    AGE_FIELD = 'age_reported' if re.search(r'\b(?:at (?:their |the )?profile capture|as captured|roster age|without advancing|originally reported)\b', q.lower()) else 'age'
     low = r.low
     allp, excl = [], []
     # statistic / intent
@@ -1343,9 +1343,9 @@ def _population_question(q, r, profile, as_of, info):
         allp.append({'kind': 'patient', 'field': AGE_FIELD, 'op': 'ge', 'value': int(m.group(1))})
         allp.append({'kind': 'patient', 'field': AGE_FIELD, 'op': 'le', 'value': int(m.group(2))})
         r.take(r'\breproductive age\b|\bof reproductive age\b', None, overlap=True)
-    if r.take(r'\b(?:kids|children|child|pediatric|paediatric|minors)\b', 'children') and not any(a.get('field') in ('age_reported', 'age_latest') for a in allp):
+    if r.take(r'\b(?:kids|children|child|pediatric|paediatric|minors)\b', 'children') and not any(a.get('field') in ('age_reported', 'age') for a in allp):
         allp.append({'kind': 'patient', 'field': AGE_FIELD, 'op': 'lt', 'value': 18})
-    if r.take(r'\b(?:seniors|elderly|older adults|geriatric)\b', 'seniors') and not any(a.get('field') in ('age_reported', 'age_latest') for a in allp):
+    if r.take(r'\b(?:seniors|elderly|older adults|geriatric)\b', 'seniors') and not any(a.get('field') in ('age_reported', 'age') for a in allp):
         allp.append({'kind': 'patient', 'field': AGE_FIELD, 'op': 'ge', 'value': 65})
     words_to_op = {'at least': 'ge', 'over': 'gt', 'above': 'gt', 'older than': 'gt', 'older': 'gt', 'under': 'lt', 'below': 'lt',
                    'younger than': 'lt', 'younger': 'lt'}

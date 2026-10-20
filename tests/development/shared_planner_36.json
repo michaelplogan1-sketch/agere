@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "scope": "Fixed development workload for local routing and constraint preservation; not the sealed evaluation bank or an accuracy benchmark.",
+  "questions": [
+    "denial rate", "no-show rate", "PMPM", "payer allowed PMPM", "payer claim denial rate", "readmission rate",
+    "LOS", "RAF", "KED", "blood pressure control", "breast cancer screening", "statin adherence",
+    "ED visits", "ER visits", "emergency visits", "Count claims", "Count appointments", "Count admissions", "Count visits", "Count hospital stays",
+    "patients with diabetes", "patients with ckd", "patients with heart failure", "patients with hypertension",
+    "patients with copd", "patients with asthma", "patients with depression", "patients with atrial fibrillation",
+    "patients on a statin", "patients on insulin", "patients on metformin", "patients on an arb",
+    "patients on sglt2 inhibitor", "patients on glp1 agonist", "patients on beta blocker", "patients on ace inhibitor"
+  ],
+  "variants": {"base": "", "payer": " for payer = \"WH-PAYER-MSSP\"", "period": " in 2029", "grouping": " by payer", "exclusion": " excluding ckd"}
+}

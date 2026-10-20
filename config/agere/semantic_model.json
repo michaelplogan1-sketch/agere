@@ -190,7 +190,6 @@
     }
    },
    "semantic_layer_columns_derived_elsewhere": [
-    "age_latest",
     "coverage_source",
     "pcp_clinician_id",
     "pcp_practice_id"

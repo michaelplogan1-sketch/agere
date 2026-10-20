@@ -62,8 +62,11 @@ class Catalog:
         target = ensure(path) if (path / 'run.json').exists() else path / 'semantic.sqlite3'
         with sqlite3.connect(f'file:{target}?mode=ro', uri=True) as db:
             names = [r[0] for r in db.execute("SELECT name FROM sqlite_master WHERE type IN ('table','view') AND name != 'meta' AND name NOT LIKE 'sqlite_%'")]
-            tables = {t: [r[1] for r in db.execute('PRAGMA table_info(' + identifier(t) + ')')] for t in names}
+            tables = {t: [r[1] for r in db.execute('PRAGMA table_info(' + identifier(t) + ')')
+                          if r[1] != 'age_latest'] for t in names}
             identity = dict(db.execute('SELECT key,value FROM meta'))
+        if 'birth_date' in tables.get('patient', []):
+            tables['patient'].append('age')
         profile_path = path/'source-profile.json'
         profile = json.loads(profile_path.read_text()) if profile_path.exists() else {}
         streams = ({s: list(v.get('fields', {})) for s, v in profile.get('streams', {}).items()}
@@ -113,6 +116,10 @@ class Compiler:
 
     def field(self, name, scope):
         if not isinstance(name, str): raise PlanError('Explicit field name required')
+        if name == 'patient.age':
+            cutoff = self.catalog.identity.get('as_of')
+            if not cutoff: raise PlanError('Age requires the warehouse as-of date')
+            return f'age_at({self.field("patient.birth_date", scope)}, {literal(cutoff)})'
         if name.startswith('result.') and 'result' in scope:
             alias = name.partition('.')[2]
             if alias not in self.outputs: raise PlanError('Unknown aggregate output: '+alias)
@@ -141,6 +148,9 @@ class Compiler:
         if depth > 12 or not isinstance(expr, dict): raise PlanError('Bounded predicate tree required')
         op = expr.get('op')
         self.bind(expr, path, 'predicate')
+        if op == 'concept':
+            from .request_vocabulary import concept_sql
+            return concept_sql(expr, self, scope)
         if op in ('and', 'or'):
             if set(expr) != {'op', 'args', 'quote'} or not isinstance(expr['args'], list) or not 2 <= len(expr['args']) <= 24:
                 raise PlanError('Boolean operations need 2..24 explicit operands')
@@ -390,6 +400,9 @@ class Compiler:
                    'unknown_membership_query': (f'SELECT DISTINCT b.patient_id AS patient_id{from_clause} WHERE ({where}) IS NULL'
                                                 if 'patient_id' in self.catalog.tables[self.base] else None),
                    'population': sorted(self.population) if self.population is not None else None}
+        if self.base == 'utilization_event':
+            payload['coverage_query'] = ('SELECT b.sources, b.in_ehr, count(*) AS events' + relation +
+                                         ' GROUP BY b.sources,b.in_ehr')
         return {**payload, 'id': fingerprint(payload)}
 
 

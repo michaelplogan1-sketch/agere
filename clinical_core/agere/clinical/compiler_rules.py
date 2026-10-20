@@ -196,8 +196,8 @@ def _threshold_one(text):
     return {'op': op, 'value': value, 'sql_op': SQL_OPS[op]}
 
 
-def _age(text, field='age_latest'):
-    """Age phrase -> list of (op, value) on the patient's latest reported age."""
+def _age(text, field='age'):
+    """Age phrase -> list of (op, value) on the patient's birth-date age at the as-of date."""
     low = text
     m = re.search(r'(\d{1,3})\s*(?:-|–|to|through)\s*(\d{1,3})', low)
     if m: return [('ge', int(m.group(1))), ('le', int(m.group(2)))]
@@ -341,8 +341,8 @@ def resolve_slot(kind, text, spec, profile, as_of):
     if kind == 'age':
         cons = _age(text)
         if not cons: return None
-        where = ' AND '.join(f"age_latest {SQL_OPS[o]} {v}" for o, v in cons)
-        return {'where': where, 'atoms': [{'kind': 'patient', 'field': 'age_latest', 'op': o, 'value': v} for o, v in cons]}
+        where = ' AND '.join(f"age_at(birth_date, '{as_of}') {SQL_OPS[o]} {v}" for o, v in cons)
+        return {'where': where, 'atoms': [{'kind': 'patient', 'field': 'age', 'op': o, 'value': v} for o, v in cons]}
     if kind == 'threshold':
         return _threshold(text)
     if kind == 'icd_range':
@@ -464,10 +464,10 @@ def _population(text, spec, profile):
             if not d: return None
             clauses.append(d['where'])
         rest = rest[mm.end():]
-    pre = [f"age_latest {SQL_OPS[op]} {value}" if kind == 'age' else f"sex_reported = '{value}'" for kind, op, value in cons]
+    pre = [f"age_at(birth_date, (SELECT value FROM meta WHERE key = 'as_of')) {SQL_OPS[op]} {value}" if kind == 'age' else f"sex_reported = '{value}'" for kind, op, value in cons]
     if attributed: pre.append('pcp_clinician_id IS NOT NULL')  # prospective attribution: an assigned primary-care relationship
     where = ' AND '.join(pre + clauses) or '1 = 1'
-    atoms_all = [{'kind': 'patient', 'field': 'age_latest' if k == 'age' else 'sex_reported', 'op': op, 'value': v} for k, op, v in cons] + atoms_all
+    atoms_all = [{'kind': 'patient', 'field': 'age' if k == 'age' else 'sex_reported', 'op': op, 'value': v} for k, op, v in cons] + atoms_all
     out = {'where': where, 'sql': f'SELECT patient_id FROM patient WHERE {where}', 'text': text}
     if expressible: out['spec'] = {'all': atoms_all, 'any': atoms_any, 'exclude': []}
     return out

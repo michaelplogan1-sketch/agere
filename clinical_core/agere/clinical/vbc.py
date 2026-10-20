@@ -120,8 +120,11 @@ def eligibility(db, as_of, start, end):
     """Enrolled months per patient. Patients with payer enrollment spans: the months their spans cover (member_month,
     terminations respected). Others: active coverage from its effective start, open-ended to the snapshot (the coverage
     record carries no termination date), confirmed by any benefit verification in the period."""
-    people = {pid: {'age': a, 'sex': s, 'coverage_type': ct, 'status': st}
-              for pid, a, s, ct, st in db.execute('SELECT patient_id, age_reported, sex_reported, coverage_type, coverage_status FROM patient')}
+    from .age import age_at
+    cols = {r[1] for r in db.execute('PRAGMA table_info(patient)')}
+    birth = 'birth_date' if 'birth_date' in cols else 'NULL'
+    people = {pid: {'age': age_at(born, as_of), 'sex': s, 'coverage_type': ct, 'status': st}
+              for pid, born, s, ct, st in db.execute(f'SELECT patient_id, {birth}, sex_reported, coverage_type, coverage_status FROM patient')}
     for pid, values in demographics(db).items():
         if pid in people: people[pid].update(values)
     starts = {pid: d for pid, d in db.execute("SELECT patient_id, min(coalesce(json_extract(payload,'$.effective_start'), event_date)) "

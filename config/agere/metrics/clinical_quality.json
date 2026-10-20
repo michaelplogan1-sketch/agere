@@ -4,7 +4,7 @@
  "metrics": [
   {
    "id": "kidney_health_evaluation_diabetes",
-   "version": 1,
+   "version": 2,
    "name": "Kidney health evaluation for patients with diabetes (eGFR and uACR)",
    "status": "cited",
    "measures": [
@@ -33,8 +33,8 @@
     "age": {
      "min": 18,
      "max": 85,
-     "field": "age_latest",
-     "note": "age_latest per nl2sql RULES; benchmark references disagree (O31 roster age_reported, M33 latest age)"
+     "field": "age",
+     "note": "Completed years from birth_date at as_of; unknown birth dates remain unknown."
     }
    },
    "denominator": {
@@ -99,7 +99,7 @@
    "engine": {
     "measures": "ked"
    },
-   "sql_template": "SELECT 100.0 * count(DISTINCT CASE WHEN EXISTS (SELECT 1 FROM measurement m WHERE m.patient_id = p.patient_id AND m.concept = 'egfr' AND m.value_canonical IS NOT NULL AND m.event_date BETWEEN '{period_start}' AND '{period_end}') AND EXISTS (SELECT 1 FROM measurement m WHERE m.patient_id = p.patient_id AND m.concept = 'uacr' AND m.value_canonical IS NOT NULL AND m.event_date BETWEEN '{period_start}' AND '{period_end}') THEN p.patient_id END) / count(DISTINCT p.patient_id) AS pct_kidney_health_evaluation FROM patient p JOIN concept_patient cp ON cp.patient_id = p.patient_id AND cp.concept = 'diabetes' WHERE p.age_latest BETWEEN 18 AND 85"
+   "sql_template": "SELECT 100.0 * count(DISTINCT CASE WHEN EXISTS (SELECT 1 FROM measurement m WHERE m.patient_id = p.patient_id AND m.concept = 'egfr' AND m.value_canonical IS NOT NULL AND m.event_date BETWEEN '{period_start}' AND '{period_end}') AND EXISTS (SELECT 1 FROM measurement m WHERE m.patient_id = p.patient_id AND m.concept = 'uacr' AND m.value_canonical IS NOT NULL AND m.event_date BETWEEN '{period_start}' AND '{period_end}') THEN p.patient_id END) / count(DISTINCT p.patient_id) AS pct_kidney_health_evaluation FROM patient p JOIN concept_patient cp ON cp.patient_id = p.patient_id AND cp.concept = 'diabetes' WHERE age_at(p.birth_date, '{as_of}') BETWEEN 18 AND 85"
   },
   {
    "id": "respiratory_registry",
@@ -262,7 +262,7 @@
   },
   {
    "id": "beers_high_risk_medications_65",
-   "version": 1,
+   "version": 2,
    "name": "Older adults dispensed a Beers-list high-risk medication",
    "status": "cited",
    "citations": [
@@ -287,8 +287,8 @@
     "summary": "Patients aged 65 or older.",
     "age": {
      "min": 65,
-     "field": "age_latest",
-     "note": "age_latest per nl2sql RULES; the O11 reference uses roster age_reported"
+     "field": "age",
+     "note": "Completed years from birth_date at as_of; unknown birth dates remain unknown."
     }
    },
    "denominator": {
@@ -349,7 +349,7 @@
    "output": {
     "returns": "count"
    },
-   "sql_template": "SELECT count(DISTINCT p.patient_id) AS patients FROM patient p JOIN medication m ON m.patient_id = p.patient_id WHERE p.age_latest >= 65 AND m.picked_up = 1 AND (m.drug_class IN ('first_generation_antihistamine','benzodiazepine','skeletal_muscle_relaxant') OR lower(m.drug_name) LIKE '%meperidine%')"
+   "sql_template": "SELECT count(DISTINCT p.patient_id) AS patients FROM patient p JOIN medication m ON m.patient_id = p.patient_id WHERE age_at(p.birth_date, '{as_of}') >= 65 AND m.picked_up = 1 AND (m.drug_class IN ('first_generation_antihistamine','benzodiazepine','skeletal_muscle_relaxant') OR lower(m.drug_name) LIKE '%meperidine%')"
   },
   {
    "id": "hf_no_beta_blocker",
@@ -424,7 +424,7 @@
   },
   {
    "id": "adult_obesity_computed_bmi",
-   "version": 1,
+   "version": 2,
    "name": "Adults with BMI >= 30 computed from latest weight and height",
    "status": "internal",
    "internal_reason": "Computed phenotype (BMI = kg / m^2 from the latest weight and a height); CDC adult BMI cut-off 30 is the convention.",
@@ -447,7 +447,8 @@
     "summary": "Adults 18+.",
     "age": {
      "min": 18,
-     "field": "age_latest"
+     "field": "age",
+     "note": "Completed years from birth_date at as_of; unknown birth dates remain unknown."
     }
    },
    "denominator": {
@@ -485,7 +486,7 @@
    "output": {
     "returns": "count"
    },
-   "sql_template": "WITH h AS (SELECT patient_id, max(value) / 100.0 AS m FROM measurement WHERE source_table = 'vitals' AND name = 'height_cm' AND value > 0 GROUP BY patient_id), w AS (SELECT p.patient_id, coalesce((SELECT value_canonical FROM measurement_latest l WHERE l.patient_id = p.patient_id AND l.concept = 'weight'), (SELECT max(value_canonical) FROM measurement m WHERE m.patient_id = p.patient_id AND m.concept = 'weight' AND m.event_date IS NULL)) AS kg FROM patient p WHERE p.age_latest >= 18) SELECT count(*) AS adults_bmi_30_plus FROM w JOIN h ON h.patient_id = w.patient_id WHERE w.kg / (h.m * h.m) >= 30"
+   "sql_template": "WITH h AS (SELECT patient_id, max(value) / 100.0 AS m FROM measurement WHERE source_table = 'vitals' AND name = 'height_cm' AND value > 0 GROUP BY patient_id), w AS (SELECT p.patient_id, coalesce((SELECT value_canonical FROM measurement_latest l WHERE l.patient_id = p.patient_id AND l.concept = 'weight'), (SELECT max(value_canonical) FROM measurement m WHERE m.patient_id = p.patient_id AND m.concept = 'weight' AND m.event_date IS NULL)) AS kg FROM patient p WHERE age_at(p.birth_date, '{as_of}') >= 18) SELECT count(*) AS adults_bmi_30_plus FROM w JOIN h ON h.patient_id = w.patient_id WHERE w.kg / (h.m * h.m) >= 30"
   }
  ]
 }

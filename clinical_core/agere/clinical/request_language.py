@@ -9,23 +9,23 @@ from .request_plan import PlanError, AmbiguousRequest
 
 SOURCES = {
     'patients': ('patient', None), 'people': ('patient', None), 'members': ('patient', None),
-    'ed visits': ('visit', ('type_concept', 'emergency_visit')),
-    'er visits': ('visit', ('type_concept', 'emergency_visit')),
-    'emergency visits': ('visit', ('type_concept', 'emergency_visit')),
+    'ed visits': ('utilization_event', ('kind', 'ed_visit')),
+    'er visits': ('utilization_event', ('kind', 'ed_visit')),
+    'emergency visits': ('utilization_event', ('kind', 'ed_visit')),
     'inpatient admissions': ('stay', ('type', 'inpatient')),
     'admissions': ('stay', ('type', 'inpatient')), 'hospital stays': ('stay', None),
     'claims': ('claim', None), 'visits': ('visit', None), 'appointments': ('appointment', None),
     'diabetics': ('patient', ('condition', 'diabetes')),
 }
 FIELDS = {
-    'age': 'patient.age_latest', 'age latest': 'patient.age_latest', 'sex': 'patient.sex_reported',
+    'age': 'patient.age', 'sex': 'patient.sex_reported',
     'pcp': 'patient.pcp_clinician_id', 'practice': 'patient.pcp_practice_id',
     'coverage': 'patient.coverage_type', 'coverage type': 'patient.coverage_type',
     'payer': 'patient.payer_id', 'language': 'patient.preferred_language',
     'allowed cents': 'claim.allowed_cents', 'billed cents': 'claim.billed_cents',
     'net paid cents': 'claim.net_payer_paid_cents', 'length of stay': 'stay.los_days',
 }
-CLOCKS = {'visit': 'event_date', 'stay': 'admit_date', 'claim': 'service_date',
+CLOCKS = {'utilization_event': 'event_date', 'visit': 'event_date', 'stay': 'admit_date', 'claim': 'service_date',
           'appointment': 'scheduled_date', 'medication': 'event_date',
           'measurement': 'event_date', 'condition': 'event_date', 'record': 'event_date',
           'claim_adjudication': 'event_date', 'member_month': 'month'}
@@ -92,13 +92,22 @@ class Parser:
         return got[1]
 
     def condition(self, concept_id, quote):
-        predicate = atom('condition.concept', '=', concept_id, quote)
-        if 'is_diagnosis' in self.catalog.tables.get('condition', []):
-            predicate = combine('and', [predicate, atom('condition.is_diagnosis', '=', 1, quote)], quote)
-        return related('condition', predicate, quote)
+        return {'op': 'concept', 'kind': 'condition', 'names': [concept_id], 'version': 1, 'period': None, 'quote': quote}
+
+    def concept_period(self, value, tail):
+        match = re.match(r'^\s*(?:in|during)\s+(20\d\d)\b', tail, re.I)
+        if match and self.base == 'patient':
+            year = int(match[1])
+            value['period'] = {'start': f'{year}-01-01', 'end': f'{year}-12-31'}
+            value['quote'] = [value['quote'], match.group().strip()]
+            tail = tail[match.end():]
+        return value, tail
 
     def parse(self):
         text = self.question.strip().rstrip('?.').strip()
+        governed = self.governed(text)
+        if governed is not None:
+            return governed
         if self.bound and re.match(r'^(?:only|where)\s+', text, re.I):
             marker = re.match(r'^(?:only|where)\s+', text, re.I)
             where, tail = self.expression(text[marker.end():])
@@ -112,9 +121,12 @@ class Parser:
             group_text = group.group(1)
             text = text[:group.start()].strip()
         lead = re.match(r'(?i)(how many|number of|count|list|which|show|find|group|break down|what is the total|what is the average|total|sum|average|mean)\s+', text)
-        if not lead: raise PlanError('No complete compositional parse; language interpretation required')
-        verb = lead.group(1).lower()
-        rest = text[lead.end():]
+        # Business questions often name the entity without an imperative.
+        # Retain original spans; do not rewrite the question to add "count".
+        if not lead and not self.prefix(text, self.sources):
+            raise PlanError('No complete compositional parse; language interpretation required')
+        verb = lead.group(1).lower() if lead else 'count'
+        rest = text[lead.end():] if lead else text
         fn = 'list' if verb in ('list', 'which', 'show', 'find') else 'avg' if verb in ('average', 'mean', 'what is the average') else 'sum' if verb in ('total', 'sum', 'what is the total') else 'count'
         field_name = None
         if fn in ('sum', 'avg'):
@@ -153,15 +165,67 @@ class Parser:
         groups = [m['alias'] for m in measures]
         if fn == 'list' and not groups:
             if 'patient_id' not in self.catalog.tables[self.base]: raise PlanError('List the required columns explicitly')
-            measure = {'kind': 'field', 'field': self.base+'.patient_id', 'alias': 'patient_id', 'quote': lead.group(1)}
+            measure = {'kind': 'field', 'field': self.base+'.patient_id', 'alias': 'patient_id', 'quote': lead.group(1) if lead else source_quote}
         elif fn in ('sum', 'avg'):
             measure = {'kind': fn, 'field': field_name, 'alias': fn+'_'+field_name.split('.')[-1], 'quote': lead.group(1)+' '+field_text}
         else:
-            measure = {'kind': 'count_distinct' if self.base == 'patient' else 'count', 'alias': 'patients' if self.base == 'patient' else 'count', 'quote': lead.group(1)}
+            measure = {'kind': 'count_distinct' if self.base == 'patient' else 'count', 'alias': 'patients' if self.base == 'patient' else 'count', 'quote': lead.group(1) if lead else source_quote}
             if self.base == 'patient': measure['field'] = 'patient.patient_id'
         measures.append(measure)
         return {'source': {'table': self.base, 'quote': source_quote}, 'select': measures, 'where': where,
                 'group_by': groups, 'order_by': [], 'limit': None, 'unresolved': []}
+
+    def governed(self, text):
+        """One metric name plus independently consumed scope/period/group slots."""
+        from . import request_vocabulary as V, metrics
+        rest = re.sub(r'^(?:(?:what|how much) (?:is|was|are)|show(?: me)?|give me|tell me)\s+(?:(?:the|our)\s+)?',
+                      '', text, flags=re.I)
+        got = self.prefix(rest, V.aliases())
+        if not got: return None
+        measure_quote, ident, rest = got
+        if re.match(r'^(?:for|of|from)\s+(?:admissions|hospital stays)\b', rest, re.I):
+            return None  # explicit field/source aggregation uses the relational grammar
+        definition = V.definitions()[ident]
+        groups, quotes = [], [measure_quote]
+        match = re.search(r'(?:^|\s+)(?:grouped by|group by|broken down by|by)\s+(.+)$', rest, re.I)
+        if match:
+            for word in re.split(r'\s+and\s+|,\s*', match[1], flags=re.I):
+                word = word.strip()
+                if word.lower() not in V.GROUPS: raise PlanError('Unknown governed grouping: '+word)
+                groups.append(word.lower())
+            quotes.append(match.group().strip())
+            rest = rest[:match.start()]
+        # A single explicit period belongs to the measure, never to patient DOB.
+        periods = list(re.finditer(
+            r'\b(?:(?:in|during|for)\s+)?20\d{2}\b|\b(?:last|past|trailing)\s+(?:12|twelve)\s+months\b|\b(?:last year|this year|ytd)\b',
+            rest, re.I))
+        if len(periods) > 1: raise PlanError('Multiple periods need an explicit comparison')
+        spoken = periods[0].group() if periods else ''
+        start, end, _ = metrics.period_for(spoken, self.catalog.identity['as_of'],
+                                          definition['time_anchor'].get('default', 'all'))
+        if periods:
+            match = periods[0]
+            quotes.append(match.group())
+            rest = rest[:match.start()]+' '+rest[match.end():]
+        self.base = 'patient'
+        where, tail = self.expression(rest.strip())
+        if tail.strip(): raise PlanError('Unconsumed metric scope: '+tail)
+        def bind_parents(value):
+            if not isinstance(value, dict): return
+            if value.get('op') in ('and', 'or', 'not', 'exists') and value.get('quote') not in self.question:
+                value['quote'] = self.question
+            for child in value.values():
+                if isinstance(child, list):
+                    for item in child: bind_parents(item)
+                elif isinstance(child, dict): bind_parents(child)
+        bind_parents(where)
+        params = V.parameters(ident, {'start': start.isoformat(), 'end': end.isoformat()}, groups)
+        try: V.validate(params)
+        except ValueError as exc: raise PlanError(str(exc)) from exc
+        return {'source': {'table': 'patient', 'quote': measure_quote},
+                'select': [{'kind': 'field', 'field': 'patient.patient_id', 'alias': 'patient_id', 'quote': measure_quote}],
+                'where': where, 'group_by': [], 'order_by': [], 'limit': None, 'unresolved': [],
+                'analyses': [{'operation': 'governed_metric', 'parameters': params, 'quote': quotes}]}
 
     def expression(self, text):
         """OR of AND terms; parentheses and explicit NOT preserve boolean scope."""
@@ -200,7 +264,7 @@ class Parser:
 
     def one(self, text):
         start = text
-        filler = re.match(r'^(?:among|for) (?:the )?patients\s+|^who (?:are|have)\s+|^where\s+|^that\s+', text, re.I)
+        filler = re.match(r'^(?:among|for) (?:the )?(?:patients|members)\s+|^who (?:are|have)\s+|^(?:where|for|among)\s+|^that\s+', text, re.I)
         if filler: text = text[filler.end():]
         if text.startswith('('):
             value, tail = self.expression(text[1:])
@@ -212,26 +276,40 @@ class Parser:
             if child is None: raise PlanError('Missing negated predicate')
             return {'op': 'not', 'arg': child, 'quote': start[:len(start)-len(tail)].strip()}, tail
         # Source-specific clock, never a blanket patient-year filter.
-        m = re.match(r'^in (\d{4})(?![\d-])', text, re.I)
+        m = re.match(r'^(?:(?:in|during)\s+)?(\d{4})(?![\d-])', text, re.I)
         if m:
             clock = CLOCKS.get(self.base)
             if not clock: raise PlanError('This period needs an explicit event/date field')
             quote, year = m.group(), int(m.group(1))
             return combine('and', [atom(self.base+'.'+clock, '>=', f'{year}-01-01', quote), atom(self.base+'.'+clock, '<', f'{year+1}-01-01', quote)], quote), text[m.end():]
+        coverage = self.prefix(text, {'medicare': 'medicare', 'medicaid': 'medicaid',
+                                      'commercial': 'commercial', 'uninsured': 'uninsured'})
+        if coverage:
+            quote, value, tail = coverage
+            return atom('patient.coverage_type', '=', value, quote), re.sub(r'^\s+(?:patients|members)\b', '', tail, flags=re.I)
+        deceased = re.match(r'^deceased(?:\s+(?:patients|members))?\b', text, re.I)
+        if deceased and 'current_record' in self.catalog.tables and 'death_records' in self.catalog.stream_fields:
+            quote = deceased.group()
+            return {'op': 'exists', 'table': 'current_record', 'stream': 'death_records', 'where': None, 'quote': quote}, text[deceased.end():]
         m = re.match(r'^(?:with |having |have |has )', text, re.I)
         concept_text = text[m.end():] if m else text
         concept = self.prefix(concept_text, self.conditions)
         if concept:
             quote, concept_id, tail = concept
             quote = text[:len(text)-len(tail)].strip()
-            return self.condition(concept_id, quote), tail
-        med = re.match(r'^(?:on|taking|receiving|prescribed)\s+', text, re.I)
+            return self.concept_period(self.condition(concept_id, quote), tail)
+        med = re.match(r'^(?:on|taking|receiving|prescribed|filled|dispensed)\s+', text, re.I)
         if med:
             got = self.prefix(text[med.end():], self.drugs)
             if got:
                 _, drugs, tail = got
                 quote = text[:len(text)-len(tail)].strip()
-                return related('medication', atom('medication.drug_class', 'in', drugs, quote), quote), tail
+                if med.group().strip().lower() == 'prescribed':
+                    return related('medication', combine('and', [
+                        atom('medication.drug_class', 'in', drugs, quote),
+                        atom('medication.evidence', '=', 'ordered', quote)], quote), quote), tail
+                return self.concept_period({'op': 'concept', 'kind': 'drug_fill', 'names': drugs,
+                                            'version': 1, 'period': None, 'quote': quote}, tail)
         # Presence of another source: same-patient semijoin, not a duplicating join.
         event = re.match(r'^(?:with|having|had)\s+(?:an?\s+)?', text, re.I)
         if event:
@@ -245,7 +323,7 @@ class Parser:
         got = self.prefix(text, self.field_aliases())
         age = re.match(r'^(?:aged?\s+)?(over|under|at least|at most)\s+', text, re.I)
         if not got and age:
-            got = ('', 'patient.age_latest', text)
+            got = ('', 'patient.age', text)
         if got:
             _, field, remainder = got
             comp = re.match(r'^\s*(is not null|is null|is not|not equal to|is|equals?|>=|<=|!=|>|<|=|at least|at most|over|under|above|below|greater than|less than)\s*', remainder, re.I)

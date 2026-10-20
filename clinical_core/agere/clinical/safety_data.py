@@ -9,6 +9,8 @@ from datetime import date, timedelta
 from pathlib import Path
 import json, re, sqlite3
 
+from .age import age_at
+
 ISO = re.compile(r'^(\d{4})-(\d{2})-(\d{2})')
 VISIT_EXCLUDED_STATUS = {'cancelled', 'canceled', 'no_show', 'noshow', 'entered_in_error', 'planned', 'booked', 'scheduled', 'proposed'}
 TELEPHONE_TYPES = {'telephone', 'phone', 'telephone_call'}
@@ -71,14 +73,15 @@ def as_of_of(db, as_of=None):
     return day(str(as_of)) if as_of else day(meta(db).get('as_of')) or date.today().isoformat()
 
 
-def patients(db, patient_ids=None):
+def patients(db, patient_ids=None, as_of=None):
     """{patient_id: {pcp, practice, age, sex}} for the roster (optionally restricted)."""
     cols = columns(db, 'patient')
-    age = 'age_latest' if 'age_latest' in cols else 'age_reported'
+    age = 'birth_date' if 'birth_date' in cols else 'NULL'
+    cutoff = as_of_of(db, as_of)
     out = {}
     for pid, pcp, prac, a, sex in db.execute(f'SELECT patient_id, pcp_clinician_id, pcp_practice_id, {age}, sex_reported FROM patient'):
         if patient_ids is not None and pid not in patient_ids: continue
-        out[pid] = {'pcp': pcp, 'practice': prac, 'age': a, 'sex': (sex or '').upper()[:1] or None}
+        out[pid] = {'pcp': pcp, 'practice': prac, 'age': age_at(a, cutoff), 'sex': (sex or '').upper()[:1] or None}
     return out
 
 

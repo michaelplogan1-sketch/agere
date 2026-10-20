@@ -554,7 +554,7 @@ def lint(question, sql, as_of=None, source=None, resolution=None, directory=None
     found = []
     # ML-POP: age band and attribution
     age = (m.get('population') or {}).get('age')
-    if age and not re.search(r'\bage\w*\b\s*(?:>=|>|<=|<|between|=)', low) and not re.search(r'\bage_band\b', low):
+    if age and not re.search(r'\bage\w*\b\s*(?:>=|>|<=|<|between|=)|\bage_at\([^)]*\)\s*(?:>=|>|<=|<|between|=)', low) and not re.search(r'\bage_band\b', low):
         band = f"{age.get('min', 0)}-{age['max']}" if 'max' in age else f"{age['min']}+"
         found.append(_f('ML-POP', r, f"metric {r['id']} restricts the population to ages {band}; the query applies no age band"))
     att = (m.get('population') or {}).get('attribution')

@@ -22,6 +22,12 @@ SCHEMA = {'type': 'object', 'properties': {
     'required': ['interpretation', 'coverage', 'unmet_requirements', 'nodes'], 'additionalProperties': False}
 
 CONTRACTS = {
+    'governed_metric': {'inputs': ['earlier_set'],
+        'parameters': {'id': 'registered governed measure', 'version': 'registered integer version',
+                       'definition_digest': 'registered SHA-256', 'period': {'start': 'YYYY-MM-DD', 'end': 'YYYY-MM-DD'},
+                       'group_by': 'list of registered population dimensions'},
+        'meaning': 'A named, versioned governed business or quality measure over the compiled population. '
+                   'Use the registered definition digest; no model-written numerator, denominator or SQL.'},
     'trajectory': {'inputs':['earlier_set'],'parameters':{'concept':'measurement concept','direction':'worse|better|up|down|any','min_points':3},
         'meaning':'Per-patient lab/vital trajectories: uncertainty-weighted change points + Theil-Sen slope; flags material, statistically separable changes (e.g. declining eGFR).'},
     'discover': {'inputs':['earlier_set'],'parameters':{'outcome':'cohort specification of the outcome','segments':['practice','pcp','coverage_type','age_band','sex','food_difficulty','transport_difficulty','financial_hardship'],'pairs':True,'direction':'high|low|both'},

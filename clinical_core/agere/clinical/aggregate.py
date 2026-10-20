@@ -11,6 +11,7 @@ relationship on or before the snapshot; payer type = latest coverage record.
 Event counts are de-duplicated to one per patient per day per concept, because
 one visit appears in several sources (encounter + ADT registration).
 """
+from .age import age_at
 from collections import defaultdict
 from pathlib import Path
 import json, math, os, sqlite3, statistics
@@ -222,7 +223,7 @@ def execute(path, patient_ids, params):
         attrs[pid] = {'pcp': pcp.get('clinician_id') if pcp else 'unattributed',
                       'practice': pcp.get('organization_id') if pcp else 'unattributed',
                       'coverage_type': (cov or {}).get('coverage_type') or 'unknown',
-                      'age_band': age_band(person.get('age_reported')), 'sex': person.get('sex_reported') or 'unknown',
+                      'age_band': age_band(age_at(person.get('birth_date'), as_of)), 'sex': person.get('sex_reported') or 'unknown',
                       'burden': min(n_conditions, 3)}
         if p['group_by'] in DEMOGRAPHIC_GROUPS:
             from .vbc import demographic_key

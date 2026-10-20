@@ -20,7 +20,7 @@ OPS = {'lt': '<', 'le': '<=', 'gt': '>', 'ge': '>=', 'eq': '=', 'ne': '<>'}
 PERIOD_PRESETS = ('all_time', 'year', 'ytd', 'trailing_months', 'trailing_days', 'custom', 'before_days')
 ATOM_KINDS = ('condition', 'lab', 'blood_pressure', 'demographic', 'medication', 'visit', 'social_need', 'appointment')
 ROLES = ('all', 'any', 'exclude')
-AGE_BANDS = "CASE WHEN p.age_latest < 18 THEN '0-17' WHEN p.age_latest < 45 THEN '18-44' WHEN p.age_latest < 65 THEN '45-64' ELSE '65+' END"
+AGE_BANDS = "CASE WHEN age_at(p.birth_date, (SELECT value FROM meta WHERE key = 'as_of')) IS NULL THEN NULL WHEN age_at(p.birth_date, (SELECT value FROM meta WHERE key = 'as_of')) < 18 THEN '0-17' WHEN age_at(p.birth_date, (SELECT value FROM meta WHERE key = 'as_of')) < 45 THEN '18-44' WHEN age_at(p.birth_date, (SELECT value FROM meta WHERE key = 'as_of')) < 65 THEN '45-64' ELSE '65+' END"
 PATIENT_GROUPS = {'none': None, 'coverage_type': 'p.coverage_type', 'sex': 'p.sex_reported', 'age_band': AGE_BANDS,
                   'attributed_practice': 'p.pcp_practice_id'}
 
@@ -194,7 +194,7 @@ def atom_sql(atom, as_of):
         return _in(f"SELECT m.patient_id FROM measurement m WHERE {_and([f'm.concept = {q(concept)}', _VALID_LAB, cmp, window])}")
     if kind == 'demographic':
         field = atom.get('field')
-        col = {'age': 'p.age_latest', 'sex': 'p.sex_reported', 'coverage_type': 'p.coverage_type'}.get(field)
+        col = {'age': f"age_at(p.birth_date, {q(as_of)})", 'sex': 'p.sex_reported', 'coverage_type': 'p.coverage_type'}.get(field)
         if not col: raise ValueError('demographic atom: field age|sex|coverage_type')
         if field == 'age':
             parts = []

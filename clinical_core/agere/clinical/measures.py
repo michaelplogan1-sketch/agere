@@ -506,12 +506,8 @@ def availability(ctx, m, start, end):
 
 # ---- people ----------------------------------------------------------------------------
 def _age_at(person, day, as_of):
-    born = person.get('birth_date')
-    if born:
-        b, d = date.fromisoformat(born[:10]), date.fromisoformat(day[:10])
-        return d.year - b.year - ((d.month, d.day) < (b.month, b.day))
-    if person.get('age') is None: return None
-    return person['age'] - (int(as_of[:4]) - int(day[:4]))
+    from .age import age_at
+    return age_at(person.get('birth_date'), day)
 
 
 def _people(db, as_of, start, end, ctx):

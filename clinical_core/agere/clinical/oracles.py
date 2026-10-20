@@ -327,6 +327,8 @@ def readonly_executor(path):
     def run(query):
         target = sql_query.semantic_layer.ensure(path)
         db = sqlite3.connect(f'file:{target}?mode=ro', uri=True)
+        from .age import register
+        register(db)
         deadline = time.perf_counter() + min(getattr(sql_query, 'TIME_LIMIT_SECONDS', 10), 10)
         db.set_progress_handler(lambda: 1 if time.perf_counter() > deadline else 0, 10000)
         db.set_authorizer(sql_query._authorizer)

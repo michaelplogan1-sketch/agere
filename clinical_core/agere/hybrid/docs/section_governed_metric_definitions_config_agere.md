@@ -7,7 +7,7 @@
   grain: {"entity": "patient", "key": "patient_id", "table": "patient"}; unit: percent; returns: value
   time anchor: {"default": "as_of_year", "field": "measurement.event_date", "mode": "period"}
   value sets: {"egfr": {"concept": "egfr", "dimension": "measurement.name", "label_patterns": ["egfr|glomerular filtration"], "standard": {"loinc": ["33914-3", "48642-3", "48643-1", "62238-1", "98979-8"]}}, "uacr": {"concept": "uacr", "dimension": "measurement.name", "exclude": ["Urine albumin"], "label_patterns": ["albumin/creatinine|microalbumin|uacr"], "standard": {"loinc": ["9318-7", "14959-1", "32294-1"]}}}
-  SQL template: SELECT 100.0 * count(DISTINCT CASE WHEN EXISTS (SELECT 1 FROM measurement m WHERE m.patient_id = p.patient_id AND m.concept = 'egfr' AND m.value_canonical IS NOT NULL AND m.event_date BETWEEN '{period_start}' AND '{period_end}') AND EXISTS (SELECT 1 FROM measurement m WHERE m.patient_id = p.patient_id AND m.concept = 'uacr' AND m.value_canonical IS NOT NULL AND m.event_date BETWEEN '{period_start}' AND '{period_end}') THEN p.patient_id END) / count(DISTINCT p.patient_id) AS pct_kidney_health_evaluation FROM patient p JOIN concept_patient cp ON cp.patient_id = p.patient_id AND cp.concept = 'diabetes' WHERE p.age_latest BETWEEN 18 AND 85
+  SQL template: SELECT 100.0 * count(DISTINCT CASE WHEN EXISTS (SELECT 1 FROM measurement m WHERE m.patient_id = p.patient_id AND m.concept = 'egfr' AND m.value_canonical IS NOT NULL AND m.event_date BETWEEN '{period_start}' AND '{period_end}') AND EXISTS (SELECT 1 FROM measurement m WHERE m.patient_id = p.patient_id AND m.concept = 'uacr' AND m.value_canonical IS NOT NULL AND m.event_date BETWEEN '{period_start}' AND '{period_end}') THEN p.patient_id END) / count(DISTINCT p.patient_id) AS pct_kidney_health_evaluation FROM patient p JOIN concept_patient cp ON cp.patient_id = p.patient_id AND cp.concept = 'diabetes' WHERE age_at(p.birth_date, '{as_of}') BETWEEN 18 AND 85
 - respiratory_registry: Respiratory registry (asthma or COPD). Distinct patients with an asthma or COPD condition record (COPD includes emphysema and chronic obstructive bronchitis). All ages. Patient list.
   population: All roster patients.
   denominator: None (patient list).
@@ -31,7 +31,7 @@
   grain: {"entity": "patient", "key": "patient_id", "table": "patient"}; unit: patients; returns: count
   time anchor: {"default": "all", "field": "medication.event_date", "mode": "any_time"}
   value sets: {"beers_drugs": {"dimension": "medication.ingredient", "exclude": ["loratadine", "cetirizine", "fexofenadine", "levocetirizine", "desloratadine"], "standard": {"drug_classes": ["first_generation_antihistamine", "benzodiazepine", "skeletal_muscle_relaxant"], "ingredients": ["diphenhydramine", "chlorpheniramine", "doxylamine", "hydroxyzine", "promethazine", "diazepam", "lorazepam", "clonazepam", "alprazolam", "temazepam", "meperidine", "cyclobenzaprine", "methocarbamol", "carisoprodol"]}}}
-  SQL template: SELECT count(DISTINCT p.patient_id) AS patients FROM patient p JOIN medication m ON m.patient_id = p.patient_id WHERE p.age_latest >= 65 AND m.picked_up = 1 AND (m.drug_class IN ('first_generation_antihistamine','benzodiazepine','skeletal_muscle_relaxant') OR lower(m.drug_name) LIKE '%meperidine%')
+  SQL template: SELECT count(DISTINCT p.patient_id) AS patients FROM patient p JOIN medication m ON m.patient_id = p.patient_id WHERE age_at(p.birth_date, '{as_of}') >= 65 AND m.picked_up = 1 AND (m.drug_class IN ('first_generation_antihistamine','benzodiazepine','skeletal_muscle_relaxant') OR lower(m.drug_name) LIKE '%meperidine%')
 - hf_no_beta_blocker: Heart failure patients with no beta-blocker on record. Patients with heart failure (library concept) with no beta-blocker (drug_class beta_blocker, any evidence: dispensed, claim, ordered, listed, administered, reported) anywhere in their medication records.
   population: Heart failure patients.
   denominator: None (patient list).
@@ -46,7 +46,7 @@
   numerator: Adults with computed BMI >= 30.
   grain: {"entity": "patient", "key": "patient_id", "table": "patient"}; unit: patients; returns: count
   time anchor: {"default": "as_of", "field": "measurement.event_date", "mode": "snapshot"}
-  SQL template: WITH h AS (SELECT patient_id, max(value) / 100.0 AS m FROM measurement WHERE source_table = 'vitals' AND name = 'height_cm' AND value > 0 GROUP BY patient_id), w AS (SELECT p.patient_id, coalesce((SELECT value_canonical FROM measurement_latest l WHERE l.patient_id = p.patient_id AND l.concept = 'weight'), (SELECT max(value_canonical) FROM measurement m WHERE m.patient_id = p.patient_id AND m.concept = 'weight' AND m.event_date IS NULL)) AS kg FROM patient p WHERE p.age_latest >= 18) SELECT count(*) AS adults_bmi_30_plus FROM w JOIN h ON h.patient_id = w.patient_id WHERE w.kg / (h.m * h.m) >= 30
+  SQL template: WITH h AS (SELECT patient_id, max(value) / 100.0 AS m FROM measurement WHERE source_table = 'vitals' AND name = 'height_cm' AND value > 0 GROUP BY patient_id), w AS (SELECT p.patient_id, coalesce((SELECT value_canonical FROM measurement_latest l WHERE l.patient_id = p.patient_id AND l.concept = 'weight'), (SELECT max(value_canonical) FROM measurement m WHERE m.patient_id = p.patient_id AND m.concept = 'weight' AND m.event_date IS NULL)) AS kg FROM patient p WHERE age_at(p.birth_date, '{as_of}') >= 18) SELECT count(*) AS adults_bmi_30_plus FROM w JOIN h ON h.patient_id = w.patient_id WHERE w.kg / (h.m * h.m) >= 30
 ### Domain families
 - patient_cohort: Patients matching a governed population. Distinct roster patients whose records satisfy every population atom: conditions from the concept library (concept_patient: ICD-10-CM, SNOMED CT and adopted labels), lab results by concept (canonical units; "latest" = the lowest value on the most recent dated result, cancelled results excluded), latest paired blood pressure, age/sex/coverage from the roster, medications by governed drug group (picked up = pharmacy dispense with status dispensed; any_record = list, orders, dispenses, pharmacy claims or history), visits by governed visit class, positive social-needs screens, appointment outcomes. Returns the count, the list, a percent with numerator atoms, or a table by roster group.
   population: Roster patients (synthetic); the population slot narrows it.
@@ -275,15 +275,15 @@
   variants: service_date: Distinct medical claims with service_date in the period that have any reversal adjudication record.
   SQL template: SELECT count(DISTINCT claim_id) AS claims_reversed FROM claim_adjudication WHERE status = 'reversed' AND event_date BETWEEN '{period_start}' AND '{period_end}'
 ### Domain utilization
-- ed_visits: Emergency department visits. Distinct ED encounters (encounter versions de-duplicated) dated in the period.
+- ed_visits: Deduplicated all-source emergency department visits (version 2). ED events from ADT, EHR and claims, including claims-only members.
   population: All roster patients.
   denominator: None (count).
-  numerator: Distinct ED encounter_ids (visit.type_concept = 'emergency_visit') with event_date in the period.
-  grain: {"entity": "visit", "key": "encounter_id", "table": "visit"}; unit: visits; returns: count
-  time anchor: {"default": "as_of_year", "field": "visit.event_date", "mode": "period"}
-  value sets: {"ed_visit": {"concept": "emergency_visit", "dimension": "visit.type", "exclude": ["urgent_care", "urgentcare", "observation", "inpatient"], "members": ["emergency", "ED", "ED stroke alert"]}}
+  numerator: Deduplicated utilization_event rows with kind = ed_visit and event_date in the period.
+  grain: {"entity": "visit", "key": "rowid", "table": "utilization_event"}; unit: visits; returns: count
+  time anchor: {"default": "as_of_year", "field": "utilization_event.event_date", "mode": "period"}
+  source coverage: Report sources and in_ehr from the same filtered utilization_event rows.
   variants: hedis_edu: One per patient per date; ED visits ending in inpatient admission excluded (HEDIS EDU).
-  SQL template: SELECT count(DISTINCT encounter_id) AS ed_visits FROM visit WHERE type_concept = 'emergency_visit' AND event_date BETWEEN '{period_start}' AND '{period_end}'
+  SQL template: SELECT count(*) AS ed_visits FROM utilization_event WHERE kind = 'ed_visit' AND event_date BETWEEN '{period_start}' AND '{period_end}'
 - ed_visits_per_1000: ED visits per 1,000 member-years. Distinct ED encounters in the period per 1,000 roster member-years (roster headcount x period length in years).
   population: Roster patients; member-years approximated from roster headcount and period length (no enrollment spans received).
   denominator: Roster patients x days in period / 365.25, divided by 1,000.

@@ -10,6 +10,7 @@ given, is exposed to the query as the CTE `population(patient_id)`.
 import json, re, sqlite3, time
 
 from . import semantic_layer
+from .age import register
 
 VERSION = 'semantic-sql/1'
 RETURNS = ('count', 'value', 'patient_set', 'table')
@@ -29,6 +30,8 @@ def validate(p):
     if not re.match(r'(?is)^(select|with)\b', code) or ';' in code:
         raise ValueError('Exactly one SELECT/WITH statement is allowed')
     if p.get('returns') not in RETURNS: raise ValueError(f'returns must be one of {RETURNS}')
+    if re.search(r'\bage_latest\b', code, re.I):
+        raise ValueError('Stale feed age is not an analytical field; use age_at(birth_date, as_of).')
     return {'query': q, 'returns': p['returns']}
 
 
@@ -46,7 +49,7 @@ def execute(path, params, patient_ids=None, target=None, time_limit=None):
         cte = 'population(patient_id) AS (SELECT value FROM json_each(:population))'
         query = (f'WITH {cte}, ' + query[4:].lstrip()) if re.match(r'(?is)^with\b', query) else f'WITH {cte} {query}'
         args['population'] = json.dumps(sorted(patient_ids))
-    db = sqlite3.connect(f'file:{target}?mode=ro', uri=True)
+    db = register(sqlite3.connect(f'file:{target}?mode=ro', uri=True))
     deadline = time.perf_counter() + (time_limit or TIME_LIMIT_SECONDS)
     db.set_progress_handler(lambda: 1 if time.perf_counter() > deadline else 0, 10000)
     db.set_authorizer(_authorizer)

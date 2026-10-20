@@ -187,16 +187,8 @@ def _age(patient, as_of):
     if not patient:
         return F(None)
     s = [_src('patient', patient['patient_id'])]
-    b = _d(patient.get('birth_date'))
-    if b:
-        return F(as_of.year - b.year - ((as_of.month, as_of.day) < (b.month, b.day)), s)
-    for k in ('age_latest', 'age_reported'):
-        if patient.get(k) not in (None, ''):
-            try:
-                return F(int(float(patient[k])), s)
-            except (TypeError, ValueError):
-                pass
-    return F(None)
+    from ..clinical.age import age_at
+    return F(age_at(patient.get('birth_date'), as_of), s)
 
 
 def _exclusions(pid, spans, claims, encounters, as_of, cfg):

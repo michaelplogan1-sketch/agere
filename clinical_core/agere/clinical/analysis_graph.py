@@ -24,6 +24,7 @@ from .clinical_events import validate_window
 VERSION = 'population-analysis-graph/1'
 from .graph_contracts import SET_OPS, validate_inputs, validate_parameters as validate_shared_parameters
 OPERATIONS = SET_OPS | {'aggregate', 'explain', 'sql', 'vbc', 'monitor', 'demand', 'program_effect', 'discover', 'trajectory', 'survival', 'observation_process', 'reference_review', 'compare', 'analyze', 'retrieve', 'forecast', 'source_changes', 'review','longitudinal','worklist','state_review','medication_identity','context','context_passes','assertion_review','baseline','decision_landmark','financial_accounts','accountability_review','protocol_change','program_document_change','program_acquisition','measure_review','evidence_portfolio','outreach'}
+OPERATIONS |= {'governed_metric'}
 OPERATIONS |= {'market'}  # markets view: practice / PCP / payer tickers (market.py)
 OPERATIONS |= {'pathway'}  # care pathways (Markov chains, process mining)
 OPERATIONS = OPERATIONS | {'profile'}
@@ -315,6 +316,8 @@ def build_answer_core(plan, results, memberships, question):
             report_index = len(plan['nodes']) - 1
     else:
         report_index = len(plan['nodes']) - 1
+    if last['operation'] == 'governed_metric':
+        return results[-1]['result']['answer']
     if last['operation'] == 'trajectory':
         report = results[-1]['result']
         partial = plan.get('coverage') != 'supported_observation' or plan.get('unmet_requirements')
@@ -1678,6 +1681,10 @@ def execute(stack, plan, *, question=None):
                 chosen = memberships[node['inputs'][0]] if node['inputs'] else None
                 detail = demand.execute(path, sorted(chosen.yes) if chosen else None, params, meta['snapshot']['as_of'])
                 if chosen: detail['input_membership'] = membership_receipt(chosen)
+            elif op == 'governed_metric':
+                from .request_vocabulary import execute as execute_measure
+                chosen = memberships[node['inputs'][0]]
+                detail = execute_measure(path, sorted(chosen.yes), params, meta['snapshot']['as_of'])
             elif op == 'sql':
                 from . import sql_query
                 chosen = memberships[node['inputs'][0]] if node['inputs'] else None
@@ -1946,7 +1953,7 @@ def execute(stack, plan, *, question=None):
         result['question']=question
         result['answer']=build_answer(plan, results, memberships, question)
         if plan['nodes'][0]['operation'] == 'query_population':
-            result['answer']['computed_as'] = {
+            result['answer']['computed_as'] = {**result['answer'].get('computed_as', {}),
                 'source_request_id': plan['nodes'][0]['parameters']['contract']['id'],
                 'operation': plan['nodes'][-1]['operation'], 'layer': 'shared_request_engine',
                 'definition': result['answer'].get('method') or 'Registered engine parameters bound to the original request'}

@@ -7,7 +7,7 @@
      "sql": "SELECT COUNT(*) AS count FROM patient;"},
     {"source_id": "D03", "source_split": "development", "answer_type": "count",
      "question": "How many patients had reported age at least 65 at their profile capture, without advancing that age to today?",
-     "note": "age_reported is the captured age; age_latest is a different (advanced) age.",
+     "note": "age_reported is the captured age; analytical age is age_at(birth_date, as_of).",
      "sql": "SELECT COUNT(*) AS count FROM patient WHERE age_reported >= 65;"},
     {"source_id": "D04", "source_split": "development", "answer_type": "count",
      "question": "How many distinct patients have a recorded diabetes diagnosis, including diabetic complications, across ICD-10 and SNOMED? Exclude prediabetes and family history.",

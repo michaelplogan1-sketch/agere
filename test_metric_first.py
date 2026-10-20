@@ -150,7 +150,8 @@ class FixtureCompute(unittest.TestCase):
     def setUpClass(cls):
         cls.tmp = tempfile.TemporaryDirectory()
         cls.root = fixture_stack(Path(cls.tmp.name))
-        cls.db = sqlite3.connect(f'file:{cls.root / "semantic.sqlite3"}?mode=ro', uri=True)
+        from clinical_core.agere.clinical.age import register
+        cls.db = register(sqlite3.connect(f'file:{cls.root / "semantic.sqlite3"}?mode=ro', uri=True))
         cls.lib = MR.routable()
 
     @classmethod
@@ -191,7 +192,9 @@ class FixtureCompute(unittest.TestCase):
     def test_templated_and_measure_metrics_compile(self):
         node = MR.compile_metric('ed_visits', self.lib['ed_visits'], {'period': {'preset': 'year', 'year': 2029}}, AS_OF)
         self.assertIn("BETWEEN '2029-01-01' AND '2029-12-31'", node['parameters']['query'])
-        self.assertEqual(self.db.execute(node['parameters']['query']).fetchall(), [(2,)])
+        # The fixture has one deduplicated all-source ED event; its two EHR
+        # encounter rows are no longer the definition of this named metric.
+        self.assertEqual(self.db.execute(node['parameters']['query']).fetchall(), [(1,)])
         # all_time is every observed date to the snapshot, not the metric's default year-to-date window
         node = MR.compile_metric('ed_visits', self.lib['ed_visits'], {'period': {'preset': 'all_time'}}, AS_OF)
         self.assertIn(f"BETWEEN '1900-01-01' AND '{AS_OF}'", node['parameters']['query'])

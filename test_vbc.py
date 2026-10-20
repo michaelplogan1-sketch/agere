@@ -13,8 +13,8 @@ def claim(pid, day, allowed, paid, status='paid', available=None):
 class VBC(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        patients = {'p1': {'age_reported': 70, 'sex_reported': 'F'}, 'p2': {'age_reported': 50, 'sex_reported': 'M'},
-                    'p3': {'age_reported': 30, 'sex_reported': 'F'}, 'p4': {'age_reported': 40, 'sex_reported': 'M'}}
+        patients = {'p1': {'age_reported': 70, 'birth_date': '1959-01-01', 'sex_reported': 'F'}, 'p2': {'age_reported': 50, 'birth_date': '1979-01-01', 'sex_reported': 'M'},
+                    'p3': {'age_reported': 30, 'birth_date': '1999-01-01', 'sex_reported': 'F'}, 'p4': {'age_reported': 40, 'birth_date': '1989-01-01', 'sex_reported': 'M'}}
         cov = lambda pid, kind, status='active': (pid, 'coverage', {'coverage_type': kind, 'status': status, 'effective_start': '2028-01-01',
                                                                      'event_date': '2028-01-01'})
         recs = [cov('p1', 'medicare'), cov('p2', 'commercial'), cov('p3', 'commercial'), cov('p4', 'uninsured'),

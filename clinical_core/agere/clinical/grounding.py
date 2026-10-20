@@ -64,16 +64,6 @@ def check_record(atom, profile):
 
 
 def check_patient(atom, profile):
-    # age_latest is derived by evaluate_atom from the roster and demographic
-    # updates. It is not a literal field in the received patients stream.
-    if atom['field'] == 'age_latest':
-        dependencies = [('patients', 'age_reported'), ('patients', 'birth_date'),
-                        ('demographic_updates', 'age_reported')]
-        if any(source_profile.populated(profile, stream, field) for stream, field in dependencies):
-            return []
-        return [{'issue': 'field_unavailable', 'stream': 'patients', 'field': 'age_latest',
-                 'severity': 'error', 'sources_checked': dependencies,
-                 'detail': 'No reported age, birth date or demographic age update is available to derive age_latest.'}]
     name = 'birth_date' if atom['field'] == 'age' else atom['field']
     if not source_profile.populated(profile, 'patients', name):
         return [{'issue': 'field_unavailable', 'stream': 'patients', 'field': name, 'severity': 'error',

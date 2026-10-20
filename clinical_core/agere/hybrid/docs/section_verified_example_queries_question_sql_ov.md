@@ -5,7 +5,7 @@ SQL:
 SELECT COUNT(*) AS count FROM patient;
 ### Q: How many patients had reported age at least 65 at their profile capture, without advancing that age to today?
 answer_type: count
-note: age_reported is the captured age; age_latest is a different (advanced) age.
+note: age_reported is the explicitly requested captured age. Analytical age uses age_at(birth_date, as_of).
 SQL:
 SELECT COUNT(*) AS count FROM patient WHERE age_reported >= 65;
 ### Q: How many distinct patients have a recorded diabetes diagnosis, including diabetic complications, across ICD-10 and SNOMED? Exclude prediabetes and family history.

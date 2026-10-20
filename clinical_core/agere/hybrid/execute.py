@@ -61,7 +61,11 @@ def run_sql(db_path, sql, timeout_s=120.0):
     body = re.sub(r"'(?:[^']|'')*'", "''", sql)  # ignore string literals when looking for write keywords
     if _WRITE.search(body) or ';' in body.strip().rstrip(';'):
         return None, None, 'not a single read-only statement'
+    if re.search(r'\bage_latest\b', body, re.I):
+        return None, None, 'Stale feed age is not an analytical field; use age_at(birth_date, as_of).'
     con = sqlite3.connect(f'file:{db_path}?mode=ro', uri=True)
+    from ..clinical.age import register
+    register(con)
     deadline = time.monotonic() + timeout_s
     con.set_progress_handler(lambda: int(time.monotonic() > deadline), 100_000)
     try:

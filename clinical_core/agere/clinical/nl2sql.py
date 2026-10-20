@@ -9,6 +9,7 @@ attempt with the error message. Runs on the local Qwen3-4B (MLX) by default:
 no API tokens. A hosted model can be supplied as the same callable.
 """
 from pathlib import Path
+from .age import register
 import json, math, os, re, time
 from collections import Counter
 
@@ -16,7 +17,7 @@ from . import concepts, source_profile, sql_query
 
 VERSION = 'local-nl2sql/1'
 MODEL_DIR = Path(__file__).resolve().parents[3] / 'models' / 'qwen3-4b'
-TABLES = """patient(patient_id, age_reported, age_latest, sex_reported ['F','M'], coverage_type ['commercial','medicare','medicaid','uninsured'], coverage_source, coverage_status, pcp_clinician_id, pcp_practice_id, birth_date, race, ethnicity, preferred_language, interpreter_needed, marital_status, zip, county, state, line_of_business, payer_id)  -- use age_latest (latest reported age); demographics: race/ethnicity/preferred_language (NULL or '' = missing); coverage_source says where coverage_type came from
+TABLES = """patient(patient_id, age_reported, sex_reported ['F','M'], coverage_type ['commercial','medicare','medicaid','uninsured'], coverage_source, coverage_status, pcp_clinician_id, pcp_practice_id, birth_date, race, ethnicity, preferred_language, interpreter_needed, marital_status, zip, county, state, line_of_business, payer_id)  -- use age_at(birth_date, (SELECT value FROM meta WHERE key='as_of')); demographics: race/ethnicity/preferred_language (NULL or '' = missing); coverage_source says where coverage_type came from
 condition(record_id, patient_id, concept, label, icd10, snomed, event_date, available_date, organization_id, is_diagnosis, icd10_category, chapter, chronic, normalized_label)  -- is_diagnosis=0 for assessment topics/tolerability/review rows  -- one row per (record, concept)
 measurement(record_id, patient_id, source_table ['labs','vitals',...], concept, name, value, unit, value_canonical, unit_canonical, result_status, event_date, available_date, organization_id, loinc, component, lab_category, event_time)  -- labs AND vitals: 'lab results' = source_table='labs', vital signs = source_table='vitals'; concept for governed labs, loinc/component for every other test  -- labs and vitals (plus PHQ-9 / PHQ-2 scores from mood questionnaires); compare value_canonical
 visit(encounter_id, patient_id, type, type_concept, setting, start_time, end_time, status, event_date, end_date, available_date, first_available_date, organization_id, attending_clinician_id, disposition, in_person, is_practice, awv)  -- one row per encounter; count visits here; awv = 1 for an annual wellness visit
@@ -57,7 +58,7 @@ RULES = """Write ONE SQLite SELECT that answers the question. Rules:
 - Use only the tables/fields shown. Dates are 'YYYY-MM-DD' strings; event_date = when it happened, available_date = when it arrived.
 - Patients: count(DISTINCT patient_id). Records/rows: count(*). Visits: use visit (encounter rows repeat per status version).
 - Appointments: use appointment (one row each, statuses resolved). Claims: use claim (one row per claim_id; net paid after reversals).
-- Age: patient.age_latest (latest reported). Length of stay: stay.los_days. Social needs: social_need (both screening instruments).
+- Age: age_at(patient.birth_date, the supplied as-of date). Length of stay: stay.los_days. Social needs: social_need (both screening instruments).
 - Clinical conditions, labs, vitals and encounter types: use the concept columns (they cover ICD-10, SNOMED and label variants).
 - Stream fields not in a typed table: json_extract(payload,'$.field') on record WHERE stream='<stream>'. Booleans compare to 1/0.
 - Day differences: julianday(a) - julianday(b). Year: substr(date,1,4). Percent: 100.0 * part / whole.
@@ -133,7 +134,7 @@ EXAMPLES = [  # generic semantic-layer patterns; retrieved per question (not ben
     ("Average inpatient length of stay in 2027?",
      "SELECT avg(los_days) FROM stay WHERE type = 'inpatient' AND substr(admit_date,1,4) = '2027' AND los_days IS NOT NULL"),
     ("How many men aged 40 to 64 are commercially insured?",
-     "SELECT count(*) FROM patient WHERE sex_reported = 'M' AND age_latest BETWEEN 40 AND 64 AND coverage_type = 'commercial'"),
+     "SELECT count(*) FROM patient WHERE sex_reported = 'M' AND age_at(birth_date, (SELECT value FROM meta WHERE key='as_of')) BETWEEN 40 AND 64 AND coverage_type = 'commercial'"),
     ("How many heart failure patients have an ejection fraction under 40 documented in their notes or reports?",
      "SELECT count(DISTINCT n.patient_id) FROM note_fact n JOIN concept_patient cp ON cp.patient_id = n.patient_id AND cp.concept = 'heart_failure' WHERE n.fact_type = 'ejection_fraction' AND typeof(n.value) IN ('integer','real') AND n.value < 40"),
     ("How many patients told us they stopped a medication because of cost or side effects, by reason?",
@@ -307,6 +308,7 @@ class HostedModel:
     """Cheapest capable hosted model as the next rung (default Claude Haiku 5.5): one call, schema in a
     prompt-cached block, low effort, no exploration. Uses the provider ledger for accounting and dedupe."""
     single = True
+    hosted = True
 
     def __init__(self, ledger, out, model='claude-haiku-5-5'):
         self.ledger, self.out, self.model = ledger, out, model
@@ -447,7 +449,7 @@ def _plausible(path, question, sql, probe):
         v = next(iter(rows[0].values()))
         if isinstance(v, (int, float)):
             import sqlite3
-            db = sqlite3.connect(f'file:{sql_query.semantic_layer.ensure(path)}?mode=ro', uri=True)
+            db = register(sqlite3.connect(f'file:{sql_query.semantic_layer.ensure(path)}?mode=ro', uri=True))
             try:
                 roster = db.execute('SELECT count(*) FROM patient').fetchone()[0]
                 streams = re.findall(r"stream\s*=\s*'([a-z_]+)'", sql)
@@ -561,7 +563,7 @@ def _verified_answer(path, question, as_of, primary, second, judge, decider=None
     metric_pin, metric_receipt = metric_context(question, as_of)  # governed metric definition + canonical SQL (metrics.py)
     if metric_pin: user = user.replace('\n\nEXAMPLES\n', f'\n\n{metric_pin}\n\nEXAMPLES\n', 1)
     import sqlite3
-    db = sqlite3.connect(f'file:{sql_query.semantic_layer.ensure(path)}?mode=ro', uri=True)
+    db = register(sqlite3.connect(f'file:{sql_query.semantic_layer.ensure(path)}?mode=ro', uri=True))
     try: roster = db.execute('SELECT count(*) FROM patient').fetchone()[0]
     finally: db.close()
     receipt = {'version': VERSION + '+verified', 'streams_retrieved': streams, 'attempts': [], 'agreement': None}
@@ -814,7 +816,7 @@ def missing_claim_check(path, claim, profile=None, limit=5):
     if not tokens: return []
     found = []
     try:
-        db = sqlite3.connect(f'file:{sql_query.semantic_layer.ensure(path)}?mode=ro', uri=True)
+        db = register(sqlite3.connect(f'file:{sql_query.semantic_layer.ensure(path)}?mode=ro', uri=True))
     except Exception:  # noqa: BLE001 - no semantic layer: only the data dictionary is checked
         db = None
     try:

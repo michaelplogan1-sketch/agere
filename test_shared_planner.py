@@ -25,20 +25,22 @@ class SharedPlanner(unittest.TestCase):
             db.executescript('''
                 CREATE TABLE meta(key,value);
                 INSERT INTO meta VALUES('version','fixture'),('source_digest','independent-shared-1'),('as_of','2030-05-27');
-                CREATE TABLE patient(patient_id,age_latest,sex_reported,coverage_type,payer_id,pcp_clinician_id,pcp_practice_id);
+                CREATE TABLE patient(patient_id,birth_date,sex_reported,coverage_type,payer_id,pcp_clinician_id,pcp_practice_id);
                 INSERT INTO patient VALUES
-                  ('A',70,'F','medicare','P1','DR1','ORG1'),('B',65,'M','commercial','P1','DR1','ORG1'),
-                  ('C',80,'F','medicare','P2','DR2','ORG2'),('D',NULL,'M','medicaid','P2','DR2','ORG2'),
-                  ('OUTSIDE',90,'F','medicare','P3','DR3','ORG3');
+                  ('A','1960-05-27','F','medicare','P1','DR1','ORG1'),('B','1965-05-27','M','commercial','P1','DR1','ORG1'),
+                  ('C','1950-05-27','F','medicare','P2','DR2','ORG2'),('D',NULL,'M','medicaid','P2','DR2','ORG2'),
+                  ('OUTSIDE','1940-05-27','F','medicare','P3','DR3','ORG3');
                 CREATE TABLE condition(patient_id,concept,is_diagnosis);
                 INSERT INTO condition VALUES('A','diabetes',1),('A','diabetes',1),('B','diabetes',1),
                   ('C','diabetes',1),('C','chronic_kidney_disease',1),('D','diabetes',0),('OUTSIDE','chronic_kidney_disease',1);
-                CREATE TABLE medication(patient_id,drug_class);
-                INSERT INTO medication VALUES('A','statin'),('A','statin'),('B','statin'),('B','arb'),('C','ace_inhibitor');
+                CREATE TABLE medication(patient_id,drug_class,evidence DEFAULT 'dispensed',status DEFAULT 'dispensed',fill_reversed DEFAULT 0,event_date DEFAULT '2029-04-05');
+                INSERT INTO medication(patient_id,drug_class) VALUES('A','statin'),('A','statin'),('B','statin'),('B','arb'),('C','ace_inhibitor');
                 CREATE TABLE visit(patient_id,type_concept,event_date);
                 INSERT INTO visit VALUES('A','emergency_visit','2029-01-02'),('A','emergency_visit','2029-03-03'),
                   ('A','emergency_visit','2028-12-31'),('B','emergency_visit','2029-01-01'),
                   ('C','office_visit','2029-01-01'),('OUTSIDE','emergency_visit','2029-01-01');
+                CREATE TABLE utilization_event(patient_id,kind,event_date,sources,in_ehr);
+                INSERT INTO utilization_event SELECT patient_id,'ed_visit',event_date,'ehr',1 FROM visit WHERE type_concept='emergency_visit';
                 CREATE TABLE claim(claim_id,patient_id,payer,service_date,first_adjudication_date,allowed_cents,ever_denied);
                 INSERT INTO claim VALUES('Q1','A','P1','2029-01-01','2030-01-01',10000,1),
                   ('Q2','A','P1','2029-01-02','2029-02-01',20000,0),('Q3','B','P1','2029-01-03','2029-02-01',5000,1),
@@ -119,13 +121,13 @@ class SharedPlanner(unittest.TestCase):
         with self.assertRaises(R.PlanError): R.assert_sealed(contract)
         plan['where']['field'] = 'patient.invented'
         with self.assertRaises(R.PlanError): R.compile_request(self.catalog, q, plan)
-        plan['where']['field'] = 'patient.age_latest'
+        plan['where']['field'] = 'patient.age'
         plan['where']['value'] = 60
         with self.assertRaisesRegex(R.PlanError, 'threshold|Numeric'): R.compile_request(self.catalog, q, plan)
 
     def test_missing_dimension_nulls_are_not_lost(self):
         a = self.ask('Count patients by age')['answer']['table']
-        self.assertIn({'age_latest': None, 'patients': 1}, a)
+        self.assertIn({'age': None, 'patients': 1}, a)
         self.assertEqual(sum(row['patients'] for row in a), 5)
 
     def test_exact_scope_filters_and_grouping_followup(self):
@@ -220,7 +222,7 @@ class SharedPlanner(unittest.TestCase):
         q = 'Count patients who are older than 65'
         plan = {'source': {'table': 'patient', 'quote': 'patients'},
                 'select': [{'kind': 'count_distinct', 'field': 'patient.patient_id', 'alias': 'patients', 'quote': 'Count'}],
-                'where': {'op': '>', 'field': 'patient.age_latest', 'value': 65, 'quote': 'older than 65'},
+                'where': {'op': '>', 'field': 'patient.age', 'value': 65, 'quote': 'older than 65'},
                 'group_by': [], 'order_by': [], 'limit': None, 'unresolved': []}
         model = Mock(side_effect=[(json.dumps(plan), {}), (json.dumps({'equivalent': False, 'issues': ['A predicate is incorrect']}), {})] * 3)
         with patch.object(S.sql_query, 'execute', side_effect=AssertionError('Must not execute')):
@@ -244,8 +246,8 @@ class SharedPlanner(unittest.TestCase):
         p = L.parse(self.catalog, 'Count patients where age > 65')
         p['where']['quote'] = 'older than 65'
         model = Mock(side_effect=[
-            (json.dumps(p), {'api_usd': .02}),
-            (json.dumps({'equivalent': True, 'issues': []}), {'api_usd': .01})])
+            (json.dumps(p), {'api_usd': .02, 'api_cost_known': True}),
+            (json.dumps({'equivalent': True, 'issues': []}), {'api_usd': .01, 'api_cost_known': True})])
         model.identity = 'configured-frontier'
         self.stack.allow_live = True
         self.stack.receipts = self.path
@@ -273,8 +275,8 @@ class SharedPlanner(unittest.TestCase):
             S.compose(self.stack, 'Count patients', planning='frontier')
         p = L.parse(self.catalog, 'Count patients')
         model = Mock(side_effect=[
-            (json.dumps(p), {'api_usd': .01}),
-            (json.dumps({'equivalent': True, 'issues': []}), {'api_usd': .01})])
+            (json.dumps(p), {'api_usd': .01, 'api_cost_known': True}),
+            (json.dumps({'equivalent': True, 'issues': []}), {'api_usd': .01, 'api_cost_known': True})])
         self.stack.allow_live = True
         self.stack.receipts = self.path
         with patch('clinical_core.agere.clinical.nl2sql.HostedModel', return_value=model), \
@@ -400,7 +402,7 @@ class SharedPlanner(unittest.TestCase):
     def test_unrecognized_extra_measure_fields_cannot_be_ignored(self):
         q = 'List patients'
         p = L.parse(self.catalog, q)
-        p['select'][0]['where'] = {'op': '>', 'field': 'patient.age_latest', 'value': 80, 'quote': 'patients'}
+        p['select'][0]['where'] = {'op': '>', 'field': 'patient.age', 'value': 80, 'quote': 'patients'}
         with self.assertRaisesRegex(R.PlanError, 'measure fields'): R.compile_request(self.catalog, q, p)
 
     def test_partial_medication_state_cannot_create_actionable_cohort(self):

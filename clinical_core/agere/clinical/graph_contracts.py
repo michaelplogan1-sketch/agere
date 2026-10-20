@@ -15,6 +15,7 @@ TYPED = {'aggregate', 'calibration', 'explain', 'sql', 'vbc', 'monitor', 'demand
          'assertion_review', 'source_state', 'pre_event_state', 'context', 'context_passes', 'functional_review',
          'domain_review', 'worklist', 'program_acquisition', 'retrieve', 'forecast',
          'source_changes', 'review', 'measure_review', 'financial_accounts', 'accountability_review', 'outcome', 'appointment_followthrough', 'interpretation', 'requirements', 'protocol_review', 'program_document'}
+TYPED |= {'governed_metric'}
 TYPED |= {'market'}
 OPTIONAL_POPULATION = ('market',)  # report operators that take zero or one population input
 TYPED |= {'pathway'}
@@ -158,6 +159,11 @@ def parameter_schema(op, catalog):
         spec = parameter_schema('cohort', catalog)['properties']['specification']
         return obj({'outcome': spec, 'segments': array(string(discover.SEGMENTS)), 'pairs': {'type': 'boolean'},
                     'direction': string(['high', 'low', 'both'])})
+    if op == 'governed_metric':
+        from .request_vocabulary import definitions, GROUPS
+        return obj({'id': string(definitions()), 'version': {'type': 'integer'},
+                    'definition_digest': string(), 'period': obj({'start': string(), 'end': string()}),
+                    'group_by': array(string(GROUPS))})
     if op == 'vbc':
         from . import vbc
         return obj({'metric': string(vbc.METRICS), 'group_by': string(vbc.GROUP_BY),
@@ -586,6 +592,9 @@ def validate_parameters(op, p):
     if op=='evidence':
         if not isinstance(p,dict) or set(p)!={'plan'}:raise ValueError('Evidence node needs its explicit plan')
         return {'plan':evidence_queries.validate_plan(p['plan'])}
+    if op == 'governed_metric':
+        from .request_vocabulary import validate
+        return validate(p)
     validator = {'assertion_review': assertion_reconciliation.validate, 'source_state': source_state.validate, 'pre_event_state': source_state.validate,
                  'context': context_builder.validate, 'context_passes': context_builder.validate,
                  'functional_review': functional_programs.validate, 'domain_review': domain_programs.validate}.get(op)

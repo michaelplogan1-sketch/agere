@@ -11,7 +11,7 @@ from clinical_core.agere.clinical import metrics, sql_query, verify, answer_chec
 
 AS_OF = '2029-08-15'
 TABLES = {
-    'patient': 'patient_id,age_reported,sex_reported,coverage_type,coverage_status,pcp_clinician_id,pcp_practice_id,age_latest',
+    'patient': 'patient_id,age_reported,sex_reported,coverage_type,coverage_status,pcp_clinician_id,pcp_practice_id,age_latest,birth_date',
     'visit': 'encounter_id,patient_id,type,type_concept,status,event_date,end_date,available_date,organization_id,disposition,versions,'
              'start_time,end_time,in_person,is_practice,first_available_date,setting',
     'stay': 'patient_id,admit_date,discharge_date,type,organization_id,readmitted_30d,days_to_readmission,discharge_known,los_days',
@@ -50,7 +50,8 @@ def build_fixture(path):
     ins = lambda t, rows: db.executemany(f"INSERT INTO {t}({','.join(rows[0])}) VALUES ({','.join('?' * len(rows[0]))})",
                                          [tuple(r.values()) for r in rows])
     ins('patient', [dict(patient_id=f'P{i}', age_reported=40 + i * 5, sex_reported='F', coverage_type='medicare', coverage_status='active',
-                         pcp_clinician_id='C1', pcp_practice_id='WH-PRACTICE-0', age_latest=41 + i * 5) for i in range(8)])
+                         pcp_clinician_id='C1', pcp_practice_id='WH-PRACTICE-0', age_latest=41 + i * 5,
+                         birth_date=f'{2029-(41+i*5)}-01-01') for i in range(8)])
     v = lambda eid, pid, typ, tc, d, **kw: dict(encounter_id=eid, patient_id=pid, type=typ, type_concept=tc, status=kw.get('status', 'completed'),
                                                 event_date=d, end_date=d, available_date=d, organization_id=kw.get('org', 'WH-PRACTICE-0'),
                                                 disposition=kw.get('dispo'), versions=2, start_time=f'{d}T10:00:00', end_time=f'{d}T20:00:00',
@@ -165,7 +166,8 @@ class Fixture(unittest.TestCase):
         cls.stack = Path(cls.tmp.name)
         cls.db_path = cls.stack / 'semantic.sqlite3'
         build_fixture(cls.db_path)
-        cls.db = sqlite3.connect(f'file:{cls.db_path}?mode=ro', uri=True)
+        from clinical_core.agere.clinical.age import register
+        cls.db = register(sqlite3.connect(f'file:{cls.db_path}?mode=ro', uri=True))
         cls.universe = {d: metrics.universe(cls.db, d) for d in metrics.DIMENSIONS}
 
     @classmethod

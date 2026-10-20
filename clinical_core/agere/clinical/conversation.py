@@ -662,7 +662,11 @@ def handle_compose(stack, body, hosted_factory=None):
         logged = resolution['standalone'] if resolution else str(question)
         answer_log.record(stack.path, logged, error=f'{type(exc).__name__}: {exc}', seconds=time.time() - t0)
         from .question_input import failure
-        learning.record_outcome(stack.path, logged, failure(exc)['status'], failure(exc)['status'], str(exc))
+        usage = getattr(exc, 'planner_receipt', {})
+        learning.record_outcome(stack.path, logged, 'shared_planner' if getattr(stack, 'shared_request_planning', False) else failure(exc)['status'],
+                                failure(exc)['status'], str(exc),
+                                usage.get('new_paid_api_calls', 0)+hosted_calls,
+                                None if usage.get('api_cost_known') is False else usage.get('known_api_estimate_usd', 0)+hosted_usd)
         if conv is not False:
             fallback = resolution or {'standalone': ' '.join(question.split()), 'method': 'unresolved', 'edits': [], 'frame': None}
             record(stack.path, conv, question, fallback, error=f'{type(exc).__name__}: {exc}')
@@ -698,7 +702,7 @@ def handle_compose(stack, body, hosted_factory=None):
     pr = result.get('planner_receipt') or {}
     local = pr.get('local_compiler_declined') or {}
     learning.record_outcome(stack.path, logged, pr.get('route') or 'unknown',
-                            'escalated' if result.get('new_paid_api_calls') else (result.get('answer') or {}).get('status') or 'answered',
+                            (result.get('answer') or {}).get('status') or 'answered',
                             local.get('reason') if isinstance(local, dict) else None,
                             result.get('new_paid_api_calls') or 0, (result.get('planning_economics') or {}).get('known_api_estimate_usd') or 0)
     if pr.get('route') == 'hosted_verified_sql':

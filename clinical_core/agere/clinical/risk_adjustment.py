@@ -214,7 +214,8 @@ def apply_hierarchy(model, ccs):
 
 
 def age_on(birth, when):
-    return when.year - birth.year - ((when.month, when.day) < (birth.month, birth.day))
+    from .age import age_at
+    return age_at(birth, when)
 
 
 def _band(age):
@@ -365,17 +366,17 @@ def capability(db):
 
 
 def _scope(db, patient_ids, coverage, patient):
-    rows = db.execute('SELECT patient_id, birth_date, age_reported, sex_reported, coverage_type, pcp_practice_id, pcp_clinician_id FROM patient').fetchall() \
+    rows = db.execute('SELECT patient_id, birth_date, sex_reported, coverage_type, pcp_practice_id, pcp_clinician_id FROM patient').fetchall() \
         if 'birth_date' in _columns(db, 'patient') else \
-        [(r[0], None, r[1], r[2], r[3], r[4], r[5]) for r in db.execute(
-            'SELECT patient_id, age_reported, sex_reported, coverage_type, pcp_practice_id, pcp_clinician_id FROM patient')]
+        [(r[0], None, r[1], r[2], r[3], r[4]) for r in db.execute(
+            'SELECT patient_id, sex_reported, coverage_type, pcp_practice_id, pcp_clinician_id FROM patient')]
     keep = set(patient_ids) if patient_ids is not None else None
     out = {}
-    for pid, birth, age, sex, cov, prac, pcp in rows:
+    for pid, birth, sex, cov, prac, pcp in rows:
         if keep is not None and pid not in keep: continue
         if patient and pid != patient: continue
         if coverage == 'medicare' and (cov or '').lower() != 'medicare': continue
-        out[pid] = {'patient_id': pid, 'birth_date': birth, 'age_reported': age, 'sex': 2 if str(sex).upper().startswith('F') else 1,
+        out[pid] = {'patient_id': pid, 'birth_date': birth, 'sex': 2 if str(sex).upper().startswith('F') else 1,
                     'coverage_type': cov, 'practice': prac, 'pcp': pcp}
     return out
 
@@ -648,13 +649,14 @@ def run(db, cap, patient_ids, params, as_of):
     for pid, per in by_pat.items():
         pc = Counter(d.get('payer') for d in per['year'] if d['kind'] == 'claim' and d.get('payer'))
         if pc: payer_of[pid] = pc.most_common(1)[0][0]
-    pats = []
+    pats, unknown_age = [], []
     for pid, info in scope.items():
-        if info['birth_date']:
-            # born after the CMS age date (Feb 1 of the payment year): age 0, not a negative age with no CMS band
-            age = max(0, age_on(date.fromisoformat(info['birth_date'][:10]), date(year + 1, 2, 1)))
-        else:
-            age = max(0, int(info['age_reported'] or 0))
+        # CMS defines age on February 1 of the payment year. Missing/invalid
+        # birth dates cannot be replaced with feed age or a zero-age score.
+        age = age_on(info['birth_date'], date(year + 1, 2, 1))
+        if age is None:
+            unknown_age.append(pid)
+            continue
         sex = info['sex']
         per = by_pat.get(pid, {})
         elig = {k: [d for d in per.get(k, []) if d['eligible']] for k in ('prior', 'year', 'current')}
@@ -716,8 +718,13 @@ def run(db, cap, patient_ids, params, as_of):
                      'suspect_value': round(sum(s['annual_value_if_documented'] for s in sus), 2)})
     report['patients'] = sorted(pats, key=lambda p: -p['payment_raf'])
     report['population'] = population(pats, params, base_rate)
+    report['population'].update(patients_in_scope=len(scope), patients_scored=len(pats),
+                                patients_with_unknown_age=len(unknown_age))
+    report['unknown_age_patient_ids'] = unknown_age
+    if unknown_age:
+        report['data_gaps'].append(f'{len(unknown_age)} patients lack a valid birth-date age at the CMS reference date; their RAF is unknown.')
     report['data_gaps'] += warehouse_findings(pats, filt, report['population'])
-    report['status'] = 'answered'
+    report['status'] = 'partial' if unknown_age else 'answered'
     return report
 
 

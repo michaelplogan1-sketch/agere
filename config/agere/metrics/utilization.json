@@ -4,13 +4,13 @@
  "metrics": [
   {
    "id": "ed_visits",
-   "version": 1,
-   "name": "Emergency department visits",
+   "version": 2,
+   "name": "Deduplicated all-source emergency department visits",
    "status": "cited",
    "definitions": [
     "emergency_visit"
    ],
-   "summary": "Distinct ED encounters (encounter versions de-duplicated) dated in the period.",
+   "summary": "Deduplicated ED events from ADT, EHR and claims, including claims-only members.",
    "match": {
     "all": [
      "\\b(?:ed|er|emergency(?: department| room)?)\\b"
@@ -30,8 +30,8 @@
    },
    "grain": {
     "entity": "visit",
-    "key": "encounter_id",
-    "table": "visit"
+    "key": "rowid",
+    "table": "utilization_event"
    },
    "population": {
     "summary": "All roster patients."
@@ -40,31 +40,14 @@
     "summary": "None (count)."
    },
    "numerator": {
-    "summary": "Distinct ED encounter_ids (visit.type_concept = 'emergency_visit') with event_date in the period."
+    "summary": "Deduplicated utilization_event rows with kind = ed_visit and event_date in the period."
    },
    "time_anchor": {
-    "field": "visit.event_date",
+    "field": "utilization_event.event_date",
     "mode": "period",
     "default": "as_of_year"
    },
-   "value_sets": {
-    "ed_visit": {
-     "dimension": "visit.type",
-     "concept": "emergency_visit",
-     "members": [
-      "emergency",
-      "ED",
-      "ED stroke alert"
-     ],
-     "exclude": [
-      "urgent_care",
-      "urgentcare",
-      "observation",
-      "inpatient"
-     ],
-     "provenance": "definitions.json emergency_visit; concepts.ENCOUNTERS emergency_visit"
-    }
-   },
+   "value_sets": {},
    "exclusions": [],
    "unit": "visits",
    "expected_range": [
@@ -72,9 +55,9 @@
     1000000
    ],
    "versioning": {
-    "rule": "latest_version_table",
-    "stream": "encounters",
-    "key": "encounter_id"
+    "rule": "distinct_key",
+    "stream": "utilization_event",
+    "key": "rowid"
    },
    "output": {
     "returns": "count"
@@ -85,7 +68,7 @@
      "summary": "One per patient per date; ED visits ending in inpatient admission excluded (HEDIS EDU)."
     }
    },
-   "sql_template": "SELECT count(DISTINCT encounter_id) AS ed_visits FROM visit WHERE type_concept = 'emergency_visit' AND event_date BETWEEN '{period_start}' AND '{period_end}'"
+   "sql_template": "SELECT count(*) AS ed_visits FROM utilization_event WHERE kind = 'ed_visit' AND event_date BETWEEN '{period_start}' AND '{period_end}'"
   },
   {
    "id": "ed_visits_per_1000",

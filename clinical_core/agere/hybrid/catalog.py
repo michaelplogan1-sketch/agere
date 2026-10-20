@@ -55,7 +55,8 @@ def _tables(db):
 
 
 def _columns(db, table):
-    return [(r[1], (r[2] or 'TEXT').lower()) for r in db.execute(f'PRAGMA table_info({_q(table)})')]
+    return [(r[1], (r[2] or 'TEXT').lower()) for r in db.execute(f'PRAGMA table_info({_q(table)})')
+            if r[1] != 'age_latest']
 
 
 def _rowcount(db, table):

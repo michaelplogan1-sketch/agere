@@ -55,7 +55,7 @@ class SlotFilling(unittest.TestCase):
 
     def test_population_any_order_and_cohort_spec(self):
         p = compiler_rules._population('women 65 and older on a statin with diabetes', {}, MINI)
-        self.assertIn("sex_reported = 'F'", p['where']); self.assertIn('age_latest >= 65', p['where'])
+        self.assertIn("sex_reported = 'F'", p['where']); self.assertIn("age_at(birth_date, (SELECT value FROM meta WHERE key = 'as_of')) >= 65", p['where'])
         self.assertIn("drug_class IN ('statin')", p['where']); self.assertIn("'diabetes'", p['where'])
         self.assertNotIn('spec', p)  # a drug class is not a cohort predicate: no typed specification is claimed
         p = compiler_rules._population('adults with ckd and an egfr below 30', {}, MINI)

@@ -83,7 +83,7 @@ CREATE INDEX link_source ON link(record_id);
 
 SCHEMA_DOC = {
     'patient': 'One row per roster patient. age_reported/sex_reported as received; coverage_type/status from latest coverage record, '
-               'age_latest is latest snapshot age, not age at a historical event; disclose this when filtering age. '
+               'Use age_at(birth_date, as_of) for age. Feed-reported ages are historical metadata, never analytical age. '
                'else (population-feed members without one) coverage_type = line_of_business of the latest enrollment month and '
                'coverage_status active | inactive by whether a span covers the as-of date; coverage_source = coverage_record | '
                'enrollment_span (NULL = no coverage received). pcp_* = latest assigned primary-care relationship.',

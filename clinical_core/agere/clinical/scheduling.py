@@ -154,9 +154,11 @@ def evaluate(p, y):
 def _ord(d): return date.fromisoformat(d[:10]).toordinal()
 
 
-def _load(db, patient_ids):
+def _load(db, patient_ids, as_of=None):
+    from .age import age_at
+    as_of = as_of or dict(db.execute('SELECT key,value FROM meta')).get('as_of')
     keep = set(patient_ids) if patient_ids is not None else None
-    patients = {pid: (age, cov) for pid, age, cov in db.execute('SELECT patient_id, coalesce(age_latest, age_reported), coverage_type FROM patient')}
+    patients = {pid: (age_at(born, as_of), cov) for pid, born, cov in db.execute('SELECT patient_id, birth_date, coverage_type FROM patient')}
     needs = defaultdict(list)
     for pid, need, d in db.execute(f"SELECT patient_id, need, event_date FROM social_need WHERE positive = 1 AND event_date IS NOT NULL "
                                    f"AND need IN ({','.join('?' * len(NEEDS))})", NEEDS):
@@ -307,7 +309,7 @@ def execute(path, patient_ids, params, as_of=None):
     db = sqlite3.connect(f'file:{semantic_layer.ensure(path)}?mode=ro', uri=True)
     try:
         as_of = as_of or dict(db.execute('SELECT key, value FROM meta')).get('as_of')
-        rows, needs = _load(db, patient_ids)
+        rows, needs = _load(db, patient_ids, as_of)
     finally:
         db.close()
     as_of_ord = _ord(as_of)
