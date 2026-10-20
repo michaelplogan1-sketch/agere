@@ -37,6 +37,10 @@ class AnswerWorkflow(unittest.TestCase):
         self.assertEqual(w, W.materialize(self.path,c['id']))
         self.assertFalse(w['external_dispatch_performed'])
         self.assertEqual(w['steps'][2]['observations'][0]['measurement']['table'], expected)
+        import importlib
+        composer=importlib.import_module('clinical_core.agere.deliverables.compose')
+        _,_,_,html=composer.load(A.workspace(self.path,A.load(self.path,c['id'])),w['steps'][0]['deliverable_id'])
+        self.assertIn('\"owner\": \"Synthetic care team\"',html)  # View includes work prepared by the same request.
 
     def test_missing_action_definition_keeps_the_complete_answer_and_other_steps(self):
         _, _, result, c = self.composed(unresolved=True)
@@ -108,15 +112,29 @@ class AnswerWorkflow(unittest.TestCase):
         bad=copy.deepcopy(p)
         bad['workflow'][1]['quote']='prepare a simulated outreach program for those without a statin'
         altered=q.replace('prepare a simulated outreach program',bad['workflow'][1]['quote'])
-        with self.assertRaisesRegex(R.PlanError,'population condition'):
-            R.compile_request(self.catalog,altered,bad)
+        R.compile_request(self.catalog,altered,bad)
+        self.assertTrue(bad['workflow'][1]['unresolved'])
         bad=copy.deepcopy(p)
         bad['workflow'][2]['quote']='monitor ED visits afterwards'
         altered=q.replace('monitor this answer','monitor ED visits afterwards')
-        with self.assertRaisesRegex(R.PlanError,'no computed output binding'):
-            R.compile_request(self.catalog,altered,bad)
+        R.compile_request(self.catalog,altered,bad)
+        self.assertTrue(bad['workflow'][2]['unresolved'])
         bad['workflow'][2]['unresolved']=['Define and compute the requested visit outcome']
         R.compile_request(self.catalog,altered,bad)  # Explicit unknown cannot start a monitor.
+
+    def test_workflow_content_cannot_smuggle_unquoted_scope_through_intent(self):
+        q,p,_,_=self.composed()
+        for phrase in ('launch outreach for patients not on a statin',
+                       'assign tasks to patients lacking a PCP',
+                       'make a dashboard only for uninsured members'):
+            bad=copy.deepcopy(p)
+            original=bad['workflow'][1]['quote']
+            bad['workflow'][1]['quote']=phrase
+            if phrase.startswith('make'):
+                bad['workflow'][1].update(kind='deliverable',template='command')
+                bad['workflow'][1].pop('program')
+            contract=R.compile_request(self.catalog,q.replace(original,phrase),bad)
+            self.assertTrue(contract['request']['workflow'][1]['unresolved'])
 
     def test_explicit_result_monitor_freezes_output_while_query_monitor_keeps_parent_input(self):
         q,p,_,_=self.composed()

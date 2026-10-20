@@ -28,3 +28,4 @@ main#main{max-width:1380px;margin:0 auto;padding:34px 60px 60px;width:100%;flex:
 @media(max-width:600px){.chief-heading{display:block}.chief-briefing .brief{grid-template-columns:1fr}.chief-heading h2{letter-spacing:-1px}.chief-card h3{min-height:0}.chief-briefing{padding-top:26px}.signal-value{font-size:36px}}
 @media(prefers-reduced-motion:reduce){.chief-card{transition:none}.chief-card:hover{transform:none}}
 .chief-card,.answer-workflow{color:#253222}.chief-heading>p,.chief-footnote{color:#a1aaa0}.chief-card h3{color:#253222}.signal-value{color:#20301d}.chief-loading,.brief-loading{color:#b6c4a5;border-color:#374335}.chief-card details summary{color:#586650}.chief-card pre{color:#35452c;background:#e9efdf;padding:10px;border-radius:6px}.answer-workflow h3{color:#253222}.chief-card button:focus-visible,.chief-card a:focus-visible,.chief-card summary:focus-visible{outline:2px solid #526d35;outline-offset:3px}
+.has-result .chief-briefing{display:none}

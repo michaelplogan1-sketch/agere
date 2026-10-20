@@ -104,6 +104,7 @@ def capture(path, question, result, *, original_question=None):
     key = 'ANS-' + fingerprint({'version': 3, 'source': source, 'answer': answer, 'plan': plan,
                                'workflow': data['workflow'],
                                'answer_policy_version': (result.get('planner_receipt') or {}).get('version'),
+                               'answer_policy_identity': (result.get('planner_receipt') or {}).get('policy_identity'),
                                'cohort_transform': data.get('cohort_transform')})[:24]
     d = root(path) / key
     d.mkdir(parents=True, exist_ok=True)

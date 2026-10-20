@@ -277,7 +277,7 @@ function vizScalar(a){if(a.answer_type==='count'||a.answer_type==='value'){const
   return '<section class="sec"><div class="big">'+esc(fmt(v))+(a.unit?esc(a.unit):'')+'</div><div class="muted">'+(a.answer_type==='count'?'count':'value')+(a.unknown_count?' · '+fmt(a.unknown_count)+' patients could not be evaluated':'')+'</div></section>'}
  if(a.answer_type==='patient_set'){const ids=a.patient_ids||[];const rows=ids.map(id=>({patient_id:id}));
   return '<section class="sec"><div class="big">'+fmt(a.count!=null?a.count:ids.length)+'</div><div class="muted">patients'+(a.unknown_count?' · '+fmt(a.unknown_count)+' could not be evaluated':'')+'</div>'+
-   (ids.length?'<details open><summary>'+ids.length+' patient IDs</summary><div class="pids">'+ids.slice(0,300).map(i=>'<span>'+esc(i)+'</span>').join('')+'</div>'+(ids.length>300?'<p class="hint">First 300 shown; the CSV has all.</p>':'')+csvButton(rows,'patients')+'</details>':'')+'</section>'}
+   (ids.length?'<details'+(ids.length<=12?' open':'')+'><summary>'+ids.length+' patient IDs</summary><div class="pids">'+ids.slice(0,300).map(i=>'<span>'+esc(i)+'</span>').join('')+'</div>'+(ids.length>300?'<p class="hint">First 300 shown; the CSV has all.</p>':'')+csvButton(rows,'patients')+'</details>':'')+'</section>'}
  return ''}
 function sparkline(vals,dir,title){const v=(vals||[]).filter(isNum);if(v.length<2)return '';const w=96,h=24,lo=Math.min(...v),hi=Math.max(...v),sp=hi-lo||1;
  const X=i=>2+i*(w-6)/(v.length-1),Y=x=>h-3-(x-lo)/sp*(h-6);const d=v.map((x,i)=>(i?'L':'M')+X(i).toFixed(1)+' '+Y(x).toFixed(1)).join('');

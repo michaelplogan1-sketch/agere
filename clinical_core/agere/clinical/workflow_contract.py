@@ -36,8 +36,23 @@ def validate(steps, question, *, outputs=(), output_quotes=()):
             raise PlanError('Choose custom, pharmd or rpm; program suitability remains unverified')
         if step['kind'] == 'monitor' and step['mode'] != 'answer':
             raise PlanError('Monitoring tracks the executed answer; add any new metric to select/analyses or mark it unresolved')
-        if not step['unresolved'] and re.search(r'\b(with|without|where|whose|who|excluding|except|unless|qualifying|eligible)\b', quote, re.I):
-            raise PlanError('A workflow clause contains a population condition. Compile that condition explicitly or mark this downstream scope unresolved.')
+        if step['kind'] != 'monitor' and not step['unresolved']:
+            # Only generic product intent is consumed by this workflow language.
+            # Content describing a different population, eligibility or bespoke
+            # program cannot become permission to act on the analytical output.
+            syntax = set(('and then please a an the this that these those them their our my its for to of '
+                          'patients patient members member population cohort result results answer answers '
+                          'create build make generate compose design prepare launch assign start send run '
+                          'agent agents simulate simulated simulation synthetic mock mockup demo '
+                          'outreach follow up followup program programme review task tasks queue '
+                          'enroll enrol enrollment signup sign help '
+                          'interactive command center centre dashboard view report brief briefing '
+                          'team care clinical evidence explorer custom pharmd rpm titration remote monitoring '
+                          'pharmacist pharmacy decision').split())
+            extra = set(re.findall(r'\w+', quote.lower())) - syntax
+            if extra:
+                step['unresolved'].append('Downstream wording needs an explicit scope or deliverable definition: '+', '.join(sorted(extra))+
+                                          '. The analytical answer is preserved; this step will not execute.')
         if step['kind'] == 'monitor':
             if step['scope'] not in ('query', 'result'):
                 raise PlanError('Monitor scope is query (original input scope) or result (frozen output patients)')
@@ -53,7 +68,8 @@ def validate(steps, question, *, outputs=(), output_quotes=()):
                 available = set(re.findall(r'\w+', ' '.join(output_quotes).lower()))
                 named = set(re.findall(r'\w+', quote.lower())) - syntax - available
                 if named:
-                    raise PlanError('Monitoring text has no computed output binding: '+', '.join(sorted(named))+'. Add the metric or mark the monitor unresolved.')
+                    step['unresolved'].append('Monitoring text has no computed output binding: '+', '.join(sorted(named))+
+                                              '. Add the metric before starting this monitor.')
         verbs = {
             'deliverable': r'\b(create|build|make|generate|compose|design|dashboard|brief|command cent(?:er|re)|deliverable|report|explorer)\b',
             'simulation': r'\b(agent|simulate|simulation|launch|enroll|enrol|sign|assign|outreach|program|programme|follow.up|action|task)\b',

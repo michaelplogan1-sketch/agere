@@ -43,8 +43,12 @@ def materialize(path, key):
         if saved.get('initialized'):
             return saved
         steps = []
-        for step in c.get('workflow', []):
+        # Prepare explicitly requested tasks before freezing deliverable views,
+        # while preserving the user's step order in the returned workflow.
+        ordered = sorted(enumerate(c.get('workflow', [])), key=lambda x: (x[1]['kind'] != 'simulation', x[0]))
+        for index, step in ordered:
             s = copy.deepcopy(step)
+            s['index'] = index
             try:
                 if s.get('origin'):
                     from ..clinical.workflow_contract import validate_selection
@@ -81,6 +85,7 @@ def materialize(path, key):
             except (ValueError, OSError, sqlite3.Error) as exc:
                 s.update(status='blocked', reason=str(exc))
             steps.append(s)
+        steps.sort(key=lambda s: s['index'])
         record = {'initialized': True, 'synthetic': True, 'context_id': key, 'steps': steps,
                   'external_dispatch_performed': False, 'new_paid_api_calls': 0}
         _save(path, key, record)
@@ -93,6 +98,8 @@ def refresh(stack, request):
     key, index = request['context_id'], request['index']
     with _lock:
         c = A.load(stack.path, key)
+        if c.get('invalidated'):
+            raise ValueError('This answer was invalidated. Re-run the original question before checking a monitor.')
         record = read(stack.path, key)
         steps = record['steps']
         if not 0 <= index < len(steps) or steps[index]['kind'] != 'monitor':

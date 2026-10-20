@@ -34,7 +34,7 @@ function setupExperience(){
   const colors=['#d5fa71','#82d6d4','#b8a9fb','#e1fda0'];
   function project(x,y,z){const xx=x*cy-z*sy,zz=x*sy+z*cy,yy=y*cx-zz*sx,depth=y*sx+zz*cx,f=3.8/(3.8+depth);return [w*.5+xx*scale*f,h*.5+yy*scale*f]}
   // Orbital reference planes make the four abstract stages feel spatial.
-  for(let ring=0;ring<5;ring++){ctx.beginPath();for(let j=0;j<=180;j++){const a=j/180*Math.PI*2,r=1.18+ring*.13,tilt=ring*.57+.2;const p=project(Math.cos(a)*r,Math.sin(a)*Math.sin(tilt)*r,Math.sin(a)*Math.cos(tilt)*r);j?ctx.lineTo(...p):ctx.moveTo(...p)}ctx.strokeStyle=colors[stage];ctx.globalAlpha=ring===0?.24:.085;ctx.lineWidth=ring===0?.9:.5;ctx.stroke();}
+  for(let ring=0;ring<5;ring++){ctx.beginPath();for(let j=0;j<=180;j++){const a=j/180*Math.PI*2,r=1.18+ring*.13,tilt=ring*.57+.2;const p=project(Math.cos(a)*r,Math.sin(a)*Math.sin(tilt)*r,Math.sin(a)*Math.cos(tilt)*r);j?ctx.lineTo(...p):ctx.moveTo(...p)}ctx.strokeStyle=colors[stage];ctx.globalAlpha=ring===0?.44:.19;ctx.lineWidth=ring===0?1:.65;ctx.stroke();}
   for(let i=0;i<75;i++){ctx.globalAlpha=.08+random(i+50)*.2;ctx.fillStyle='#e0f2e4';ctx.fillRect(random(i+80)*w,random(i+720)*h,1,1)}
   ctx.globalAlpha=1;
   const projected=points.map((p,i)=>{
