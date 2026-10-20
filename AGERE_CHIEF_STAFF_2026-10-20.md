@@ -63,7 +63,7 @@ The coordinated `docs/agere/GENERAL_QUESTION_ARCHITECTURE_PLAN.md` is adopted un
 G3/G5, not a separate roadmap. No protected benchmark was run and no real person
 was contacted, enrolled or treated.
 
-## User-directed neural field refinement
+## First neural field refinement (superseded visually below)
 
 The subsequent visual request replaces the rotating orb with seven distinct
 neuron-like cells. Dendritic arbors grow from each cell and nine axon paths
@@ -83,3 +83,36 @@ This removes the visual mismatch identified by Mike, not an analytical failure.
 G3 remains active; G5 remains blocked. The retained next functional action is
 source/derived-evidence discovery and multi-entity/temporal composition under
 the adopted general-question architecture plan.
+
+## Cumulative anatomical field refinement
+
+Mike's next request identified star-like bodies, small cells, a finished graph
+and stage resets. UI source `90ef53a` replaces these with larger asymmetric cell
+bodies, visible nuclei, tapered branching dendrites and thinner axon trunks.
+The original procedural drawing was informed by Boston University's Man Lab
+fluorescence microscopy gallery and NIH/NICHD neuron anatomy. Source links are
+in `artifacts/agere-living-field-v2/implementation-receipt.json`; no reference
+photograph is bundled or presented as our animation.
+
+One network accumulates through Data, Information, Intelligence and Wisdom.
+The opening animation advances stages every seven active seconds; clicking a
+stage takes control without resetting age or removing established cells. New
+collaterals initiate roughly every 2.6 active seconds, with individual old
+connections fading to bound drawing work. This is an accelerated anatomical
+illustration, not a biological simulation or live learning telemetry.
+
+Browser verification observed 19 created connections at 40 active seconds and
+36 at 84 seconds. Returning to Data preserved reached stage 3, network age and
+existing connections. Pause held age 85 and created count 36 unchanged across
+separate checks; keyboard End selected Wisdom and resume remained functional.
+1440px desktop and 390px mobile were checked; mobile document width was 390px,
+all five briefing cards remained present and the console had no errors. Mobile
+now gives the illustration its own area, preserving headline readability. JS
+syntax and whitespace checks passed. Reduced-motion code was reviewed, without
+changing the OS preference. Existing Python process 45277 serves these assets;
+recovery is `3691174`.
+
+This second user-directed visual refinement corrects observable presentation
+behavior, with no analytical gate advance. G3 and its retained source-discovery
+and multi-entity/temporal next action remain active; G5 is blocked and all ten
+acceptance areas remain in scope.
