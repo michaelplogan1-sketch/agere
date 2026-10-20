@@ -1,15 +1,15 @@
 {
   "schema": "agere-build-owner/1",
-  "thread_id": "claude-code:local_1c579565-09b5-4e07-a223-1ae6016e7664",
-  "previous_thread_id": "01a159cf-8e56-7bb2-be7e-4889268a99c2",
+  "thread_id": "01a15af4-c150-76f2-9df2-a44c1428b70d",
+  "previous_thread_id": "claude-code:local_1c579565-09b5-4e07-a223-1ae6016e7664",
   "heartbeat_id": "continue-building-the-agere-stack",
-  "ownership_verified": "2026-10-20T17:44:32.700576+00:00 Mike continuation request in coordination chat independently verified; actual Claude message31 read handoff and accepted continuation.",
+  "ownership_verified": "2026-10-20T21:04:37.523810+00:00 Mike requested takeover from Claude and then explicitly said okay please continue.",
   "scope": "/Users/mikel/clinical-insights-local build. Use Find Agere site inspiration public site as current design/web preview; its active artifacts/agere-interactive-site checkout is read-only to this build. Separate research and generator remain read-only.",
-  "active_work": "Land the general analysis path with an always-available LLM fallback, remove prompt-size and budget caps per Mike, verify the 20-question dev set and the full HF request, deploy with rollback.",
-  "latest_delivery": "docs/agere/REQUEST_ADMISSION_RELEASE_2026-10-20.md",
-  "latest_receipt": "artifacts/agere-request-admission-v1/implementation-receipt.json",
-  "owned_server_pid": 73727,
-  "owned_server_session": 71513,
+  "active_work": "G3: correct source-coverage and temporal-state interpretation through shared contracts, starting with the provider claim-source omission and absent-fill versus unknown-current-state failure; verify changed source/window compositions and conditional work. Retain generated-view runtime/meaning validation as a required acceptance gap.",
+  "latest_delivery": "docs/agere/GENERAL_ANALYSIS_WORKFLOW_2026-10-20.md",
+  "latest_receipt": "artifacts/agere-general-workflow-v1/implementation-receipt.json",
+  "owned_server_pid": 81846,
+  "owned_server_session": 16035,
   "full_queue_acceptance": false,
   "spending_limit": "uncapped",
   "spending_authorization": "Explicit user instruction 2026-10-10; no assistant-selected monetary ceiling",
@@ -22,13 +22,13 @@
   "resumed_at": "2026-10-19T12:38:11.040529+00:00",
   "heartbeat_interval_minutes": 5,
   "latest_overnight_report": "AGERE_OVERNIGHT_READINESS_2026-10-11.md",
-  "latest_checkpoint": "2026-10-20T19:38:02.071252+00:00",
+  "latest_checkpoint": "2026-10-20T21:33:29.959082+00:00",
   "protected_manifest": "artifacts/agere-reconciliation-contract-v2/protected-for-continuation.json",
   "latest_morning_report": "AGERE_MORNING_STATUS_2026-10-11.md",
   "latest_architecture_review": "AGERE_SHARED_FRONTIER_2026-10-20.md",
   "pause_reason": null,
-  "last_observed_server_session": 71513,
-  "server_status": "Admission-only fix5092910 live on8885. Six live grammar checks pass; full HFrEF request FAILED local-only test. Concurrent Claude work remains paused and preserved.",
+  "last_observed_server_session": 16035,
+  "server_status": "8d1e262 live on :8885; ready/synthetic; complete access workflow and replay verified. Broad MVP and clinical qualification incomplete.",
   "unsealed_work": {
     "status": "inactive_candidate",
     "path": "artifacts/agere-citation-recovery-v1",
@@ -48,11 +48,10 @@
     "url": "http://127.0.0.1:5178/app.html#overview"
   },
   "pending_handoff": {
-    "status": "transferred",
-    "from": "01a1542a-b5a3-7d23-94fc-19628fd76094",
-    "to": "claude-code:local_1c579565-09b5-4e07-a223-1ae6016e7664",
-    "transferred_at": "2026-10-20T17:44:32.700576+00:00",
-    "basis": "Mike directly requested Claude continuation; actual Claude message31 explicitly acknowledged ability, handoff and ownership boundary."
+    "status": "completed",
+    "from": "claude-code:local_1c579565-09b5-4e07-a223-1ae6016e7664",
+    "to": "01a15af4-c150-76f2-9df2-a44c1428b70d",
+    "transferred_at": "2026-10-20T21:04:37.523810+00:00"
   },
   "web_preview": {
     "thread_id": "01a125ae-00d8-7673-8057-80428998526a",
@@ -65,39 +64,39 @@
     "at": "2026-10-12T21:05:53.583462+00:00",
     "report": "AGERE_EXTERNAL_REVIEW_RESPONSE_2026-10-12.md"
   },
-  "owner_agent": "Claude Code, build owner (ownership returned by Mike)",
+  "owner_agent": "Codex, build owner reassigned directly by Mike",
   "source_control": "git; codex/agere-validated-proof; commit only owned paths as Michael Logan <michael.p.logan1@gmail.com>",
   "heartbeat_removal_authorization": "Mike 2026-10-19: \"i am here you dont need the continue building reminder\"; deleted through the Codex automation tool.",
   "live_runtime": {
-    "commit": "9fd61265dade4e371b167f0b92b589080ca42f79",
-    "rollback_commit": "5092910a63d3b32bcc2047491cb373d778311734",
-    "pid": 79274,
+    "at": "2026-10-20T21:28:55.284637+00:00",
+    "commit": "8d1e2625ba5d5115eab132a18afab644989fd9cf",
     "workspace": "/Users/mikel/agere-mvp-run",
     "port": 8885,
+    "pid": 81846,
+    "session": 16035,
+    "log": "/private/tmp/agere-live-8d1e262.log",
+    "rollback_commit": "9d271ecb5f6b73deeb66c50746c557610b7a16b9",
+    "config_sha256": "4eec831417af506fee543532c304c9cc65d07794015c98af3cc5c48ef77cef52",
+    "code_hashes_match": true,
     "health": {
       "status": "ready",
       "synthetic": true
     },
-    "allow_live_stack": true,
     "configuration_preserved": true,
-    "log": "/private/tmp/agere-live-9fd6126.log",
-    "verified_at": "2026-10-20T19:38:02.071252+00:00",
-    "deployment_basis": "Mike: \"Deploy 2453d2f to 8885 now with rollback to 5092910\".",
-    "live_api_status": "Anthropic key working after Mike removed the account cap.",
-    "acceptance": "20-question dev set on 2453d2f live: 20/20 answered, 16 strict / 20 substantive matches to hand SQL, $11.63. HF compound question on 9ce4dc8 (isolated): 36-row table with GDMT/dose/PCP/cardiologist, partial pending lookback-window decision and structured dose fields.",
-    "hf_status": "HF compound question (isolated, 9fd6126 code): 36-row per-patient table with pillar flags, last fills, structured actual/target daily dose with record ids, PCP, cardiologist; partial: dose timing vs 12-month window, unknown dose treated as target, keyword cardiology match."
+    "allow_live_stack": true,
+    "verified_at": "2026-10-20T21:33:29.959082+00:00",
+    "deployment_basis": "Direct user takeover and continuation; final candidate workflow evidence and saved rollback.",
+    "acceptance": "120 affected/fresh-source checks; final/live access workflow, simulated completion and exception, exact replay; financial/direct-SQL and changed-source checks. Known source-scope, clinical-state and generated-view gaps retained.",
+    "hf_status": "Final isolated request connects 17-row answer, 17 simulated PharmD tasks, HTML deliverable and work monitor. No independent clinical qualification; absent-fill/current-state and coded-concept coverage concerns remain."
   },
   "current_spending_constraint": "No assistant-selected monetary cap. Use the best capable path for each question, with usage accounting, caching and bounded repair.",
   "current_turn_spending_policy": "2026-10-20 explicit user correction: \"i never said no additional spending, it just needs to be using the best way to answer a question.\" Hosted validation and product use are authorized; the prior image-cost restriction was misapplied.",
   "pending_continuation": {
-    "status": "transferred",
-    "to": "claude-code:local_1c579565-09b5-4e07-a223-1ae6016e7664",
-    "authorization": "Mike directly requested in coordination chat 01a159c7-3077-7130-9e6c-ce4d64341afb: you are about to run out of tokens, can claude continue the work please once you run out?",
-    "boundary": "Claude is sole integration/control/runtime owner from this checkpoint. Codex primary stops product/runtime edits; existing Codex reviewers remain read-only. The queued two-file planner lane has no edits and transfers to Claude.",
-    "acknowledgment": "artifacts/agere-discovery-v1/claude-review-and-continuation.json",
-    "transferred_at": "2026-10-20T17:44:32.700576+00:00"
+    "status": "completed",
+    "to": "01a15af4-c150-76f2-9df2-a44c1428b70d",
+    "transferred_at": "2026-10-20T21:04:37.523810+00:00"
   },
-  "continuation_session": "Actual Claude desktop session; current authorized handoff starts the next implementation turn.",
+  "continuation_session": "Current Codex chat 01a15af4-c150-76f2-9df2-a44c1428b70d; manual human-turn continuation; no heartbeat.",
   "task_scoped_integration": {
     "status": "closed_ownership_returned",
     "owner_thread": "01a159cf-8e56-7bb2-be7e-4889268a99c2",
@@ -117,10 +116,19 @@
     "closure": "Mike in the Claude desktop session, 2026-10-20: \"restart please, we have to get this live\" after being asked which agent should own the shared planner. Codex release 5092910 stays live until the next owner deploy; rollback 176aaba retained."
   },
   "ownership_return": {
-    "at": "2026-10-20T18:51:04.266321+00:00",
-    "to": "claude-code:local_1c579565-09b5-4e07-a223-1ae6016e7664",
-    "from": "01a159cf-8e56-7bb2-be7e-4889268a99c2",
-    "basis": "Mike direct instruction in Claude desktop session: restart please, we have to get this live; also: there should be no prompt size or budget caps.",
-    "boundary": "Single integrator: Claude owns product, controls and :8885 deployment. Other agents review only unless Mike reassigns."
-  }
+    "at": "2026-10-20T21:04:37.523810+00:00",
+    "to": "01a15af4-c150-76f2-9df2-a44c1428b70d",
+    "from": "claude-code:local_1c579565-09b5-4e07-a223-1ae6016e7664",
+    "basis": "Direct human instruction in this chat: take over from Claude, assess MVP readiness first, then okay please continue.",
+    "boundary": "Single integration/control/runtime owner is this Codex chat; prior lanes are historical."
+  },
+  "runtime_observation": {
+    "at": "2026-10-20T21:33:29.959082+00:00",
+    "checkout_commit": "8d1e2625ba5d5115eab132a18afab644989fd9cf",
+    "pid": 81846,
+    "url": "http://127.0.0.1:8885/ask",
+    "health": "ready/synthetic",
+    "scope": "Exact files/config and actual live synthetic workflow verified."
+  },
+  "previous_delivery": "docs/agere/REQUEST_ADMISSION_RELEASE_2026-10-20.md"
 }
