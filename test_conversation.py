@@ -8,6 +8,9 @@ from types import SimpleNamespace
 from clinical_core.agere.clinical import conversation as C
 
 BASE = 'How many diabetics had an ED visit in 2028?'
+COMPOUND_REQUEST = ('Find every patient who would qualify for the MSK ACCESS program and launch an agent '
+                    'that would help them sign up and initiate the program, then create a way to monitor '
+                    'them for reduced utilization and improved chronic low back pain.')
 LIVE_STACK = Path(__file__).resolve().parent / 'artifacts/agere-healthcare-v123/stack'
 if not LIVE_STACK.exists():
     LIVE_STACK = Path('/Users/mikel/clinical-insights-local/artifacts/agere-healthcare-v123/stack')
@@ -182,6 +185,48 @@ class Api(unittest.TestCase):
                     {'question': BASE, 'conversation_id': 'bad id!'}, {'question': BASE, 'conversation_id': 7}):
             with self.assertRaises(ValueError): C.handle_compose(self.stack, bad)
         self.assertFalse((Path(self.tmp.name) / 'conversations.sqlite3').exists())
+
+    def test_complete_compound_request_reaches_planner_unchanged(self):
+        for shared in (False, True):
+            self.stack.shared_request_planning = shared
+            for context in ({}, {'conversation_id': 'compound'},
+                            {'conversation_id': 'compound', 'scope': 'warehouse'},
+                            {'scope': 'warehouse'}):
+                with self.subTest(shared=shared, context=context):
+                    result = C.handle_compose(self.stack, {'question': COMPOUND_REQUEST, **context})
+                    self.assertEqual(self.stack.calls[-1], (COMPOUND_REQUEST, 'auto'))
+                    if 'conversation' in result:
+                        self.assertFalse(result['conversation']['follow_up'])
+                        self.assertEqual(result['conversation']['resolved_question'], COMPOUND_REQUEST)
+
+    def test_local_references_across_subjects_are_new_questions(self):
+        for question in (
+            'Find patients with diabetes and show their PCPs',
+            'List claims that were denied and group them by payer',
+            'Find practices with high admission rates and compare their costs',
+            'Show patients with diabetes and count those over 65',
+            'Find patients with hypertension and determine whether they have follow-up visits',
+        ):
+            with self.subTest(question=question):
+                self.assertFalse(C.requires_saved_cohort(question))
+                result = C.handle_compose(self.stack, {'question': question, 'conversation_id': 'local'})
+                self.assertEqual(self.stack.calls[-1], (question, 'auto'))
+                self.assertFalse(result['conversation']['follow_up'])
+
+    def test_missing_external_references_cannot_query_whole_warehouse(self):
+        from clinical_core.agere.clinical.question_input import QuestionNotUnderstood
+        for question in ('List them', 'Count those patients', 'Group these patients by PCP',
+                         'Who are their PCPs?', 'Do they have diabetes?',
+                         'Count claims for those patients', 'Find appointments for them',
+                         'Find patients from the previous result and monitor them',
+                         'Count the saved cohort'):
+            for context in ({}, {'conversation_id': 'missing'},
+                            {'conversation_id': 'missing', 'scope': 'warehouse'}):
+                with self.subTest(question=question, context=context):
+                    before = len(self.stack.calls)
+                    with self.assertRaises(QuestionNotUnderstood):
+                        C.handle_compose(self.stack, {'question': question, **context})
+                    self.assertEqual(len(self.stack.calls), before)
 
     def test_conversation_body_and_persistence(self):
         r1 = C.handle_compose(self.stack, {'question': BASE, 'conversation_id': 'thread-1'})

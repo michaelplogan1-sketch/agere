@@ -174,6 +174,48 @@ class SharedPlanner(unittest.TestCase):
             with self.assertRaises(ValueError):
                 conversation.compose_shape(body)
 
+    def test_compound_request_scope_is_independent_of_prior_answers(self):
+        from test_conversation import COMPOUND_REQUEST
+        first = conversation.handle_compose(self.stack, {
+            'question': 'List patients with diabetes', 'conversation_id': 'compound-scope'})
+        saved = first['action_context']['id']
+        # Inspect dispatch, without claiming that a stub answered eligibility.
+        result = {'answer': {'status': 'not_understood', 'patient_ids': []},
+                  'cohort_transform': {'operations': []}}
+        for scope in ({}, {'scope': 'warehouse'}, {'answer_context_id': saved}):
+            with self.subTest(scope=scope), patch.object(self.stack, 'compose', return_value=result) as compose:
+                conversation.handle_compose(self.stack, {
+                    'question': COMPOUND_REQUEST, 'conversation_id': 'compound-scope', **scope})
+                self.assertEqual(compose.call_args.args, (COMPOUND_REQUEST,))
+                if 'answer_context_id' in scope:
+                    self.assertEqual(set(compose.call_args.kwargs['population']), {'A', 'B', 'C'})
+                    self.assertEqual(compose.call_args.kwargs['parent']['id'], saved)
+                else:
+                    self.assertNotIn('population', compose.call_args.kwargs)
+
+    def test_warehouse_scope_never_inherits_a_pronoun_only_followup(self):
+        conversation.handle_compose(self.stack, {
+            'question': 'List patients with diabetes', 'conversation_id': 'orphan'})
+        with patch.object(self.stack, 'compose') as compose:
+            with self.assertRaises(QuestionNotUnderstood):
+                conversation.handle_compose(self.stack, {
+                    'question': 'Count them', 'conversation_id': 'orphan', 'scope': 'warehouse'})
+            compose.assert_not_called()
+        result = conversation.handle_compose(self.stack, {
+            'question': 'Count them', 'conversation_id': 'orphan'})
+        self.assertEqual(result['answer']['count'], 3)
+
+    def test_related_records_for_prior_patients_keep_the_saved_membership(self):
+        first = conversation.handle_compose(self.stack, {
+            'question': 'List patients with diabetes', 'conversation_id': 'related'})
+        result = {'answer': {'status': 'not_understood', 'patient_ids': []},
+                  'cohort_transform': {'operations': []}}
+        with patch.object(self.stack, 'compose', return_value=result) as compose:
+            conversation.handle_compose(self.stack, {
+                'question': 'Count claims for those patients', 'conversation_id': 'related'})
+        self.assertEqual(set(compose.call_args.kwargs['population']), {'A', 'B', 'C'})
+        self.assertEqual(compose.call_args.kwargs['parent']['id'], first['action_context']['id'])
+
     def test_model_review_rejection_cannot_execute_broader_cohort(self):
         q = 'Count patients who are older than 65'
         plan = {'source': {'table': 'patient', 'quote': 'patients'},

@@ -359,7 +359,41 @@ FOLLOWUP_MARKERS = re.compile(r"^(?:now|and|also|only|just|what about|how about|
 
 def is_followup(text):
     low = ' '.join(text.lower().split())
+    if re.search(r'\b(?:them|those|these|they|their)\b', low) and not requires_saved_cohort(low):
+        return False
     return bool(FOLLOWUP_MARKERS.search(low)) or len(_words(low)) <= 4
+
+
+def requires_saved_cohort(question):
+    """Detect an external reference, not every occurrence of a pronoun.
+
+    A named population followed by a linked clause supplies a local antecedent,
+    as in "find patients ... and monitor them". This only chooses conversation scope;
+    the unchanged question still needs full interpretation by the planner.
+    Explicit references to earlier results always require saved context.
+    """
+    text = ' '.join(question.lower().split())
+    if re.search(r'\b(?:previous|prior|earlier|last|saved|same)\s+'
+                 r'(?:answer|result|analysis|cohort|population|list|patients?|members?)\b', text):
+        return True
+    reference = re.search(r'\b(?:them|those|these|they|their)\b', text)
+    if not reference:
+        return False
+    # Source vocabulary, not disease/program-specific question patterns.
+    from .request_language import SOURCES
+    nouns = set(SOURCES) | {source for source, _ in SOURCES.values()}
+    nouns.update(('patient', 'member', 'beneficiary', 'beneficiaries', 'population', 'cohort',
+                  'clinician', 'clinicians', 'physician', 'physicians', 'provider', 'providers',
+                  'practice', 'practices', 'hospital', 'hospitals', 'facility', 'facilities',
+                  'payer', 'payers', 'contract', 'contracts'))
+    antecedent = re.search(r'\b(?:' + '|'.join(re.escape(n) for n in sorted(nouns, key=len, reverse=True))
+                           + r')\b', text[:reference.start()])
+    if antecedent is None:
+        return True
+    link = text[antecedent.end():reference.start()]
+    # A noun alone is insufficient: "count claims for those patients" still
+    # refers outside this question. Only recognize an explicit clause link.
+    return not bool(re.search(r'\b(?:and|then|who|whose|that|where|whether|which)\b|[,;:]', link))
 
 
 # Period/group edits that are safe on any question text when no structured frame exists.
@@ -574,7 +608,7 @@ def handle_compose(stack, body, hosted_factory=None):
         question, planning, conv = compose_shape(body)
         from .question_input import QuestionNotUnderstood
         from ..deliverables import answer_context
-        refers = bool(re.search(r'\b(?:them|those|these|they)\b|^(?:(?:who|what) (?:is|are) )?their\b', question, re.I))
+        refers = requires_saved_cohort(question)
         if conv is False:
             if refers:
                 raise QuestionNotUnderstood('This question refers to a previous cohort. Open that conversation or ask a complete question; no whole-population substitution was run.')
@@ -617,7 +651,8 @@ def handle_compose(stack, body, hosted_factory=None):
                            'hosted_receipt': None} if bound else
                           {'standalone': question, 'method': 'standalone', 'frame': None, 'follow_up': False,
                            'edits': [], 'reason': 'Original question sent unchanged to the shared planner',
-                           'hosted_receipt': None} if shared else resolve(question, prior, hosted=hosted))
+                           'hosted_receipt': None} if shared or body.get('scope') == 'warehouse'
+                          else resolve(question, prior, hosted=hosted))
             if resolution.get('hosted_receipt'):
                 r = resolution['hosted_receipt']
                 hosted_usd = float(r.get('api_usd') or 0.0); hosted_calls = 0 if r.get('cache_hit') else 1
