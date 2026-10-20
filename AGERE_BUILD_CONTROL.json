@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-10-20T15:11:42.052382+00:00",
+  "updated_at": "2026-10-20T15:52:35.944414+00:00",
   "decision_basis": "AGERE_SHARED_FRONTIER_2026-10-20.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -253,6 +253,10 @@
         {
           "path": "artifacts/agere-chief-staff-v1/implementation-receipt.json",
           "sha256": "bbcc5a536b565285f386d0484535c1f33278fe08057b96aefaa5fdf0e28df254"
+        },
+        {
+          "path": "artifacts/agere-integrated-release-v1/implementation-receipt.json",
+          "sha256": "068e635e6bbb8142c78abb5104c121562cc1e61acdc21504abd42d621faa09a3"
         }
       ]
     },
@@ -307,17 +311,17 @@
     }
   ],
   "checkpoint": {
-    "kind": "coordination_checkpoint",
+    "kind": "delivery_checkpoint",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "No runtime change in this coordination checkpoint. The prior TextQL-informed field delivery remains live; active planner correctness and frontier-deliverable candidates now have exclusive file ownership.",
-    "measured_failure_reduction": "No runtime defect removed in this review checkpoint. Independently reproduced five baseline static-verifier false accepts; confirmed the action-center preview already supplies sandbox/CSP restrictions. Candidate fixes and end-to-end acceptance remain pending.",
+    "user_behavior_delta": "Compound warehouse questions now reach bespoke frontier views and manual query monitors through the main answer path; saved replay retains the artifact and adds no API call. Planner definitions and reusable checked shapes extend local coverage.",
+    "measured_failure_reduction": "Removed birth-date age/current-age mismatch, claims-only ED omissions, dropped concept-quote constraints and missing frontier/cost integration. Live check exposed then fixed stale fixed-template capability text. Final live query matches direct SQL (1,278 appointments / 59 practices / 810 patients), view is ready, unchanged-source monitoring retains one baseline and replay uses zero calls.",
     "evidence": [
-      "PARALLEL_WORK.md",
       "AGERE_CHIEF_STAFF_2026-10-20.md",
-      "artifacts/agere-noise-to-action-v1/implementation-receipt.json"
+      "artifacts/agere-integrated-release-v1/implementation-receipt.json",
+      "docs/agere/SHARED_PLANNER_CORRECTNESS_2026-10-20.md"
     ],
-    "remaining_gap": "Bounded whole-warehouse composition is connected, but universal semantic preservation, comprehensive source/derived evidence discovery, multi-entity DAG expressiveness, clinical/time reconciliation and independent full-stack qualification remain incomplete. Monitoring is manual and synthetic work is scripted.",
+    "remaining_gap": "General source/derived-evidence discovery, multi-entity/temporal semantics and clinical/model qualification remain open. Generated labels and arbitrary JavaScript are not generally verified; standalone export is not security-qualified. Initial requested dark theme needs the toggle; generation latency remains high. Monitoring is manual and actions simulated.",
     "next_action": "Continue G3 using docs/agere/GENERAL_QUESTION_ARCHITECTURE_PLAN.md: implement source/derived-evidence discovery with defensible absence and extend typed multi-entity/temporal composition through unseen cross-domain vertical slices. Keep this answer-to-work path and explicit scope/source identities; validate independent references before G5 comparisons.",
     "next": "Whole-warehouse semantic/discovery/DAG capability; independent qualification remains separate.",
     "latest_review": {
@@ -333,9 +337,9 @@
       "planner_thread": "01a159cf-8e56-7bb2-be7e-4889268a99c2",
       "frontier_deliverables_thread": "01a15936-8db1-74f1-886b-8e1ffb89030f",
       "review_coordinator_thread": "01a159c7-3077-7130-9e6c-ce4d64341afb",
-      "status": "Candidates remain active; no fixed candidate handoff received. User approved the exact source packet and Claude review completed; previous approval block resolved. No duplicate review call. Baseline verifier findings independently reproduced without executing generated JavaScript.",
+      "status": "Both frozen candidates integrated and locally accepted on final source 780816d. Owner fixed two cross-lane defects plus stale presentation capability text; fresh-copy, focused, direct-SQL and live-browser evidence retained. No duplicate Claude call.",
       "integration_owner": "01a1542a-b5a3-7d23-94fc-19628fd76094",
-      "next_integration_action": "Receive fixed candidates, verify actual user behavior and cross-lane compatibility, then integrate and deploy with rollback. Preserve checkpoint.next_action for the next core discovery/composition increment.",
+      "next_integration_action": "Current integration sealed. Continue checkpoint.next_action; retain acknowledged presentation, latency and artifact semantic/security limitations.",
       "artifact_extension": "Artifact lane may edit deliverables/verify.py and runtime.py in its isolated checkout. Service/workspace API/hosted serving changes remain owner-applied integration patches."
     }
   },
@@ -1002,6 +1006,13 @@
       "basis": "Completed review receipt for source d574c51; five seeded verifier false accepts reproduced locally. Existing sandbox/CSP limits prevent treating these static findings as proven browser escapes.",
       "scope_impact": "Review and coordination only; no planner edits, paid review duplication, deployment, automatic training or gate promotion. G3/G5 and complete charter retained.",
       "evidence": "/Users/mikel/Documents/Codex/2026-10-20/agere-coordination/integration-verifier-check.json"
+    },
+    {
+      "at": "2026-10-20T15:52:35.944414+00:00",
+      "decision": "Integrate frozen shared-planner and frontier-deliverable candidates after independent owner checks, fix reproduced contract/cost/presentation-capability defects, and activate 780816d with rollback d574c51.",
+      "basis": "User authorized cross-chat implementation and Claude double-check; 373 fresh-copy tests (9 skipped), 96 post-prompt checks, authored 180-question development workload and live question-to-frontier-view/monitor/replay evidence.",
+      "scope_impact": "Connected G3 failure reduction, not universal coverage or qualification. Preserve full ten-area backlog, G3 active, G5 blocked, config overlay and external-action/benchmark restrictions.",
+      "evidence": "artifacts/agere-integrated-release-v1/implementation-receipt.json"
     }
   ]
 }

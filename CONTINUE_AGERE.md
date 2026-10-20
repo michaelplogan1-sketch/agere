@@ -14,15 +14,18 @@ answers once reconciled. Gold 10 is validated but too small for a general superi
 The live service on :8885 runs from /Users/mikel/agere-mvp-run. Inspect its actual
 process and revision before updating; retain a known-good recovery commit.
 
-Current verified service policy: :8885 serves UI source `4bba3b0` from
-`/Users/mikel/agere-mvp-run` (PID 49741, session 54553; Python core `28881ce`).
-Shared typed composition, chief-of-staff briefing, synthetic actions and manual
-monitoring remain connected. The field is now an original TextQL-informed
-point-and-thread structure: incoming records form shared meaning and branch into
-views, simulated work and monitoring links. Cumulative motion and read-only
-recorded-activity hooks remain. Ambient motion is illustrative; this does not
-activate model retraining. See AGERE_CHIEF_STAFF_2026-10-20.md and
-artifacts/agere-noise-to-action-v1/implementation-receipt.json. Recovery: `28881ce`.
+Current verified service policy: :8885 runs source `780816d` from
+`/Users/mikel/agere-mvp-run` (PID 55241, session 59937), with hosted execution
+available. Rollback is `d574c51`. The TextQL-informed point-and-thread field is
+preserved. Integrated planner correctness and checked request-shape reuse now
+connect to bespoke frontier views, explicit fixed templates, simulated work and
+manual query monitors. Exact replay retains the artifact with zero new API calls.
+See AGERE_CHIEF_STAFF_2026-10-20.md and
+artifacts/agere-integrated-release-v1/implementation-receipt.json for actual
+source, tests, live costs and retained failures. First generated view latency,
+initial theme selection and generated-content semantic qualification remain gaps.
+The field's example count still uses the older checked-example store; it does not
+measure the new request-shape cache or prove autonomous retraining.
 General source discovery, analytical expressiveness, clinical/time reconciliation
 and independent qualification remain unfinished. Follow the existing G3/G5
 checkpoint and docs/agere/GENERAL_QUESTION_ARCHITECTURE_PLAN.md. No additional

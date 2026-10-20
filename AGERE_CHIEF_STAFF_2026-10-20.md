@@ -194,3 +194,64 @@ This follows explicit user steering on presentation and does not advance
 analytical acceptance. G3 remains active, G5 blocked, and the full ten-area
 backlog is preserved. Source discovery and multi-entity/temporal composition
 remain the next functional increment under the adopted architecture plan.
+
+
+## Integrated planner and frontier release — final source 780816d
+
+The frozen planner candidate (49 manifest-verified files, integrated as 5e70b6d)
+and frontier-deliverable candidate (8dff3db, integrated as 0fd0bb2) are now live.
+Age comes from birth date at the applicable clock; governed metrics and named
+concepts preserve reusable definitions; ED counts include claims-only received
+events. Checked request shapes support changed slots and correction-family
+invalidation. This reuse is not independently verified training or automatic
+model promotion. Local Qwen interpretation is isolated and bounded.
+
+Main compound requests now carry the saved answer into bespoke frontier-generated
+views, labeled simulated work and manual monitoring. Fixed local templates remain
+an explicit choice. Owner integration combines planner/artifact usage, preserves
+unknown failed-call costs and avoids double-charging a saved artifact on replay.
+Independent testing found a concept quote could consume an extra condition or
+negation; the compiler now checks the quoted concept's complete meaning.
+
+Live acceptance then caught an outdated planner prompt describing all deliverables
+as fixed mockups. The first query answered correctly but blocked its dark dashboard
+request, costing an estimated $0.572747 in three calls. That failure is retained.
+After correcting the capability description, the exact appointment query returned
+1,278 unkept appointment records across 59 practices, involving 810 patients.
+Separate handwritten SQL matches every returned row. The frontier produced saved
+view DLV-87ADAC20D848 under context ANS-843daa601d15a66e58cd8259; browser inspection
+confirmed the counts, practice-family filter and functional theme toggle. The
+monitor retained the original entire-warehouse input scope and an unchanged source
+created no new observation. The exact replay used zero new API calls and returned
+the same artifact in 0.094 seconds.
+
+The corrected request took 128.529 seconds and four API calls, estimated $0.799049
+including $0.422911 for generation and one repair. All integration live probes
+cost $1.371796. These are single development observations, not comparative token
+economics; local compute, development and review are unpriced. The isolated artifact
+candidate separately recorded $0.348490, and the coordinator's approved Claude
+source review separately recorded $0.290056. That Claude review covered d574c51,
+not the final integration; owner acceptance is not a second independent model audit.
+
+Verification: fresh isolated checkout at 307fe67 ran 373 tests (364 passed, nine
+skipped). The final capability-prompt change at 780816d passed 96 relevant tests.
+The predeclared 36-question development workload and its variants compiled and
+executed 180/180 with no model attempts at 307fe67; this is authored coverage, not
+an unseen benchmark. Age count 886 and all-source ED count 1,501 matched direct
+queries. No protected benchmark was rerun or rescored. Receipt and evidence:
+`artifacts/agere-integrated-release-v1/implementation-receipt.json`.
+
+Runtime is PID 55241 / session 59937 at :8885 in /Users/mikel/agere-mvp-run,
+source 780816d, rollback d574c51. The selected warehouse/config overlay and existing
+histories were preserved. The temporary clean review checkout was removed.
+
+Known limits remain explicit: the generated dashboard initially follows system
+theme despite the request; its toggle works. Its workflow panel is frozen at
+composition time, not a live status feed. Static bindings and representative code
+checks do not prove metric-label truth, clinical validity or arbitrary JavaScript
+safety; the hosted opaque-origin iframe/CSP boundary remains required. Standalone
+export is not security-qualified. First-generation latency needs improvement.
+All ten acceptance areas remain; G3 is active and G5 blocked. Continue source/derived
+evidence discovery with defensible absence and multi-entity/temporal composition
+under the existing architecture plan. This increment does not finish the universal
+warehouse interpreter, authorize real care, or activate autonomous model training.
