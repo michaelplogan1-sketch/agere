@@ -1,7 +1,7 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-10-19T18:48:43.924849+00:00",
-  "decision_basis": "AGERE_CTO_REVIEW_2026-10-11_EVENING.md",
+  "updated_at": "2026-10-20T01:15:30.455215+00:00",
+  "decision_basis": "AGERE_REVIEW_CORRECTIONS_2026-10-19.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
     "AGENTS.md",
@@ -286,17 +286,15 @@
     "kind": "manual_turn_checkpoint",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "Original compound HF question now produces a source-linked patient review table with EF, four-pillar GDMT observations/barriers, literal dose evidence, unresolved maximum tolerated dose, PCP and cardiology attribution. Saved cohorts support free interactive mockups and explicit simulated PharmD/RPM/custom agents in the existing revisioned work store.",
-    "measured_failure_reduction": "59 focused tests passed. Main question completed through the deployed compose API in 0.99 seconds with zero model calls; 32 review candidates and 239 additional HF patients with unresolved EF. Browser selection -> review -> successful/records-needed simulated agents -> interactive saved command center passed. Deployed API verified PharmD and RPM completions plus a records exception, 3 tasks/15 receipts, no changed review status or source evidence, and restart persistence. Prior 329-patient workspace preserved.",
+    "user_behavior_delta": "Confirmed wrong routes now refuse or return partial; saved cohort transformations preserve membership and evidence; known incorrect historical answers are blocked from new work; review-state and owner conflicts are explicit.",
+    "measured_failure_reduction": "98 focused checks passed. Live API exposed and then blocked a learned Qwen scope bypass; age-filtered query executes, failed follow-up does not replace 671-patient membership, and contextless grouping refuses. UI invalidation notice verified. Zero paid API calls.",
     "evidence": [
-      "SYNTHETIC_ACTION_WORKFLOW.md",
-      "artifacts/agere-synthetic-actions-v1/implementation-receipt.json",
-      "clinical_core/agere/clinical/therapy_review.py",
-      "clinical_core/agere/deliverables/synthetic_actions.py"
+      "AGERE_REVIEW_CORRECTIONS_2026-10-19.md",
+      "artifacts/agere-review-corrections-v1/implementation-receipt.json"
     ],
-    "remaining_gap": "G3 remains active and G5 blocked. The new route is a bounded documentary HF-review family, not general clinical qualification. EF source interpretation/currentness, complete current regimen reconciliation, target/maximum tolerated dose and ongoing specialist responsibility remain unresolved where source evidence is insufficient. Mock artifacts are fixed local templates with saved design intent; frontier-generated creativity and real action integrations remain aspirational per Mike. No broad accuracy, competitive or total-cost claim.",
-    "next_action": "Use the original query as a regression for general patient-level evidence composition: improve currentness/conflict handling and dose/tolerance reconciliation through existing source/medication/protocol modules, with unknowns retained. Preserve the now-working synthetic mockup/agent workflow and whole-warehouse scope. Then consolidate together/economical_planner acceptance policy against authorized independent fixtures; no unvalidated benchmark or paid evaluation.",
-    "next": "General patient-level currentness and dose/tolerance composition; preserve delivered synthetic workflow."
+    "remaining_gap": "General planner and original-constraint acceptance remain incomplete; this correction does not complete the synthetic MVP. Clinical reconciliation, broad follow-ups, complete question-level cost lineage and independent comparisons remain open.",
+    "next_action": "Consolidate the existing compose/economical_planner/together paths around one typed request and analysis graph. Account for population, period, every predicate/exclusion, measure, grouping, comparison and evidence requirement before any route/cache/rewrite may report answered. Verify novel compositions across utilization/readmission, finance/denials and population/provider domains with independent fixtures and constraint mutation checks. No new HF-only handler, paid evaluation or unvalidated benchmark.",
+    "next": "General original-request contract and one planner; HF is one regression only."
   },
   "decisions": [
     {
@@ -859,6 +857,13 @@
       "change": "Original compound HF question now produces a source-linked patient review table with EF, four-pillar GDMT observations/barriers, literal dose evidence, unresolved maximum tolerated dose, PCP and cardiology attribution. Saved cohorts support free interactive mockups and explicit simulated PharmD/RPM/custom agents in the existing revisioned work store.",
       "scope_impact": "Full ten-area charter preserved. Synthetic workflow scope delivered; no real execution, paid model call, unvalidated benchmark or qualification promotion.",
       "evidence": "artifacts/agere-synthetic-actions-v1/implementation-receipt.json"
+    },
+    {
+      "at": "2026-10-20T01:15:30.455215+00:00",
+      "basis": "Mike requires arbitrary whole-warehouse questions; supplied independent review demonstrates silently reversed constraints and non-general handler architecture.",
+      "change": "Accept review diagnosis; deliver bounded correctness containment and saved-membership follow-ups, then prioritize shared request/planner acceptance over disease-specific additions.",
+      "scope_impact": "Full ten-area charter retained. Synthetic action scope unchanged. No gate promotion, paid calls, benchmark or real care.",
+      "evidence": "AGERE_REVIEW_CORRECTIONS_2026-10-19.md"
     }
   ]
 }

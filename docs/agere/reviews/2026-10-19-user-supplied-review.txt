@@ -1,0 +1,73 @@
+No, the intended synthetic MVP is not built yet. Agere has a strong data foundation, a large set of hand-built question handlers, and a working labeled action mockup. It does not have a general way to answer questions it hasn’t seen before.
+Today it answers questions in one of two ways:
+- Offline (the free, fast path): it recognizes phrasings someone already built a handler for.
+- Live mode: it hands everything else to three Opus models that write SQL. That path’s accuracy has never been validated, and the clinical logic built locally (the HF review rules, attribution) is not available to it.
+So the same question can get different logic depending on its wording. The biggest thing missing is one general planner whose answers keep every constraint you asked for.
+How I tested. The code matches the recorded runtime commit. Two things differed from the records:
+- The :8885 service was already down, even though BUILD_OWNER.json says it is ready.
+- The runtime depends on a data configuration that isn’t committed to git.
+I ran an isolated copy-on-write clone on port 8895 with no API keys and outbound network blocked. That shows the real offline behavior. I could not exercise the live Opus path without spending money, so I judged it from code and saved logs.
+1. Anything general depends entirely on paid Opus calls (confirmed).
+- With hosted models off, 12 of 13 ordinary new questions were refused with a message like “words not interpreted locally: readmitted, year”. Examples: readmissions by hospital, PMPM by payer, CKD stage 4 without a nephrologist, denial rates by reason.
+- Adding one simple constraint to a question that already works also fails: “by month”, “Medicare Advantage”, “cardiology appointments”, “excluding patients who died”, “at least two ED visits”.
+- The cause is the local layer itself: about 50 handlers plus 48 rules built on roughly 750 regular-expression patterns (economical_planner.py:608). It is honest about refusing, but it can’t combine pieces it hasn’t been taught.
+- What it means for you: the “$0, sub-second” story only holds for pre-built phrasings. Every new combination becomes a three-Opus fan-out that takes minutes.
+2. Some answers are wrong but labeled “answered” (confirmed).
+- “Diabetics on a statin but not on an ACE inhibitor or ARB” returned 749. The same system says only 497 patients are on a statin at all. The handler counted diabetics missing any of the three drug classes, so “on a statin” was flipped into a gap.
+- The HF route ignores negation. “Flag HFrEF patients who ARE on full GDMT at target dose” returns the same 32 “not on GDMT” patients, and that cohort can then be acted on in the workspace.
+- The HF route always reports status: answered with nothing listed as missing (therapy_review.py:124).
+3. “Unknown” sometimes hides a system failure, not missing data (confirmed).
+- “ED visits among patients over 65” was refused with “Patient age_latest is never populated”. In fact age and birth date are filled for all 4,115 patients. The check reads the raw source description instead of the cleaned data layer (grounding.py:66).
+- In the HF table, all 9 patients with PCP “Unknown” have a payer attribution practice the system never reads.
+- All 9 of the network-sourced (WHP-) patients with cardiologist “Unknown” have 1–14 claims billed by a cardiologist that the system never reads.
+- “Max tolerated dose: Unknown” is a fixed string on every row. Yet the warehouse holds 2,018 documented dose increases, 234 declines and 520 intolerance records, and the drug strengths are on file.
+4. The HF review has specific clinical errors (confirmed).
+- Two patients who died (2027 and 2029) are on the 2030 worklist.
+- No EF is ever too old to count. 12 of the 27 numeric EFs are from August 2026, almost four years before the data’s as-of date. Others are copy-forward statements repeated every few days.
+- 25 of 32 rows say all four drug classes are “unobserved” (based on fills in the last 120 days). Many of the same rows list those drugs as “active” in the dose column, with no reconciliation between the two.
+- Every row gets a flag, so “flag which patients” is never actually answered. The “not on max dose” half of the question is never computed.
+- Bottom line: therapy_review.py mostly recognizes your wording. It is a 133-line HF-only handler, not a general capability.
+5. Follow-up questions don’t stay attached to the cohort (confirmed).
+- Follow-ups work by rewriting the question text, not by keeping the patient set. On the HF table, every offline follow-up failed.
+- Failed follow-up turns are saved as context, so “Group them by PCP” became “Exclude patients who have died by PCP?”.
+- Without a conversation ID, “Group them by PCP” answered over the entire population and said “answered”.
+- In live mode, a rewritten HF follow-up no longer matches the HF handler’s allowed words, so it goes to Opus, which uses entirely different logic.
+“Bottling” means: answers the paid models got right are saved as question-and-SQL pairs, and a small local model is trained on them. Only the narrow slot-filling version is switched on.
+“Self-learning” means: answers are logged and verified ones are replayed later. Nothing retrains automatically; retraining is a manual, offline step.
+- Total spend at list price is about $247 across 40,864 calls:
+  - Opus: $137
+  - Sonnet: $64
+  - Haiku: $46
+- Failures: 1,444 calls failed because the API credit balance ran out, and failed calls record no token counts.
+- Answer log: 64% of the 1,408 logged answers made paid calls, and the log undercounts cost in several places.
+- Current policy for a question no handler recognizes: the measured cost was $0.15 and $0.20 in two test runs, and $0.82 taking 290 seconds in the one live answer.
+- The “49/50 at $0 vs $21.12 for a frontier model” claim is not defensible:
+  - The 50 questions are a visible development set that was run about 35 times while the compiler was being changed.
+  - No saved scorecard supports 49/50.
+  - The earlier Agere run cost $3.92, so the later $0 depends on cached answers.
+  - The frontier baseline got raw SQL only, without Agere’s data layer, concept library or metric definitions.
+- A fair comparison would use sealed questions written by someone outside the build, independently checked answers, and identical tools and data for Agere, Haiku, Sonnet and Opus. Measure cold and warm caches separately and report cost per correct answer.
+1. Make every answer account for its constraints. List each requested constraint as applied or refused. Separate five outcomes: answered, partial, data absent (with the query that proves it), not understood, internal error.
+   - Done when: the probe questions above never show “answered” while a constraint was dropped, and nothing is ever “answered” with an empty missing list by default.
+2. Prove every “Unknown”. Before returning Unknown, search the cleaned data layer plus the alternative sources: payer attribution, claims billed by specialists, therapy-change notes, intolerance records.
+   - Done when: the age refusal is gone, the 9 PCP and 9 cardiologist unknowns are resolved or name which sources were checked, and dose is compared to target from the recorded strengths.
+3. Build one general planner. It should turn a question into a typed plan (population, time window, measures, filters, exclusions, grouping, comparison), and deterministic code runs that plan over the data layer. The compiler, question families and HF review become tools it calls, available to Opus as well.
+   - Done when: an outside-written set of base questions, each with an added filter, period or grouping, passes with every constraint accounted for.
+4. Fix the patient-review tool clinically. Include only patients alive and enrolled at the as-of date. Add an EF recency window and show conflicting values. Reconcile med list against fills and prescriptions. Use documented intolerance and declines. Flag only the patients who actually have a gap.
+   - Done when: you hand-audit the 32 rows against expected values you write down.
+5. Tie follow-ups to the answer, not the text. Bind each follow-up to the saved cohort and plan. Don’t save failed turns as context. Key workspaces on the answer content, not the question wording.
+   - Done when: the four follow-ups above work offline.
+6. Run the fair cost comparison described above, with a question ID on every model call.
+7. Clean up the action mockups:
+   - Enforce review-state rules.
+   - Fix the RPM and custom agents that use pharmacist wording.
+   - Fix the owner silently dropped on duplicate task creation.
+   - Fix the misleading “Work changed in another window” error.
+- The cleaned data layer is genuinely good.
+- When the system refuses, it usually explains clearly (“third-next-available isn’t computable: no slot inventory”).
+- Saved workspaces freeze the exact cohort and its evidence.
+- Simulated steps are clearly labeled and kept separate from clinical data.
+- The duplicate-click and stale-revision checks behave correctly.
+You can say that Agere takes messy synthetic EHR, claims, pharmacy, ADT, notes and social-needs data and builds one queryable data layer. It answers common population-health metrics, such as ED volume, denial rate, PMPM and no-show rate, in about a second with no model cost, and shows its definitions. It refuses rather than guessing when it doesn’t understand. It demonstrates a clearly labeled simulated answer-to-action workflow.
+You cannot yet say that it answers any question, that it costs less than frontier-model systems, that it is more accurate than ChatGPT with read-only Epic access, Innovaccer or Arcadia, or that its GDMT review is clinically correct.
+Detailed evidence, reproduction steps and the raw probe outputs are in agere-cto-review-2026-10-19-appendix.md.

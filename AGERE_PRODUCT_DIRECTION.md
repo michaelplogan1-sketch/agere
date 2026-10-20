@@ -1,3 +1,7 @@
+# Whole-warehouse acceptance correction — October 19, 2026
+
+HF is one regression, not the product boundary or flagship implementation shortcut. The intended synthetic MVP is incomplete. A question may use new combinations of sources, predicates, exclusions, periods, groupings and analytical methods. Every route must preserve the original request or explain what capability/evidence is missing. Failed interpretation is not missing data. The independent review and first corrections are in AGERE_REVIEW_CORRECTIONS_2026-10-19.md; AGERE_BUILD_CONTROL.json owns the next implementation. Synthetic frontier deliverables/actions may remain labeled mockups. No broad accuracy or cost-superiority claim is established.
+
 # Synthetic demonstration scope — October 19, 2026
 
 Mike clarified that the original compound patient question is table stakes. Frontier-composed deliverables and action agents can be mockups and aspirational, but must work inside the synthetic ecosystem: exact saved cohort, source evidence, an interactive artifact, simulated progress and observable exceptions/outcomes. Use explicit simulation labels; no real care or new paid model execution is required for this increment. This changes execution scope, not the whole-warehouse product charter below.

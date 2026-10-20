@@ -12,12 +12,7 @@ answers once reconciled. Gold 10 is validated but too small for a general superi
 The live service on :8885 runs from /Users/mikel/agere-mvp-run. Inspect its actual
 process and revision before updating; retain a known-good recovery commit.
 
-Current product policy: specialists first, then three Opus analysts for unclaimed questions.
-The system executes their SQL and permits one repair for contract/SQL failures.
-The analyst window starts at dispatch; genuine missing inputs and ambiguity remain
-visible. Optional definition-based ambiguity review remains off. The independent
-12-person connected workflow and focused regressions pass; this is not broad
-accuracy qualification. Broader reference auditing does not block product work.
+Current verified service policy: :8885 runs with hosted models disabled. The general warehouse MVP is incomplete. Read AGERE_REVIEW_CORRECTIONS_2026-10-19.md and the current checkpoint before further implementation. The retained live code still contains a multi-Opus path; it was not qualified by this correction. The next priority is one request contract and planner, not further HF-specific shortcuts.
 
 The remaining notes are historical architecture context, not current run instructions.
 
@@ -36,10 +31,9 @@ compose -> local compiler (concepts, data dictionary, grammar) -> graph operatio
   shared savings on supplied terms, metric-change decomposition with feed and event-type gap checks)
 - sql (governed read-only SQL over the semantic layer stack/semantic.sqlite3)
 
-## Measured
-Development benchmark (bench/, 50 questions): 49/50 correct, $0, no API calls, p50 0.65 s.
-Frontier+SQL baseline: 49/50, $21.12. A held-out set (bench/questions/heldout.json) is written independently of
-the compiler.
+## Historical comparison withdrawn from current claims
+
+The visible development set and historical cached zero-dollar comparison do not support a general accuracy or cost advantage. No saved evidence currently establishes the claimed 49/50 result under a fair independent comparison. Preserve historical artifacts; do not publish those numbers as validated performance. References must be independently validated before any benchmark rerun or rescore.
 
 ## Restart
 Kill the process listening on :8885, then run `.venv/bin/python serve_current_warehouse.py --port 8885`.
