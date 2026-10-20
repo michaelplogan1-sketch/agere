@@ -54,6 +54,25 @@ async function run(fn) {
   finally { busy = false; }
 }
 function canCreate() { return data && !data.context.stale && !data.context.invalidated && data.context.answer.status === 'answered' && !data.context.answer.missing?.length; }
+function generationLabel(d) {
+  return d.mockup || d.mode === 'reference_example' ? 'Local template' : d.generation === 'frontier' || d.mode === 'composed' ? 'Frontier generated' : 'Generation not recorded';
+}
+function costLabel(d) {
+  if (d.mockup || d.mode === 'reference_example') return 'No model/API calls';
+  const costs = d.costs || {};
+  return costs.total_usd == null
+    ? 'API cost incomplete; known estimate '+(costs.known_api_estimate_usd == null ? 'unavailable' : '$'+Number(costs.known_api_estimate_usd).toFixed(4))
+    : 'API estimate $'+Number(costs.total_usd).toFixed(4);
+}
+function updateGeneration() {
+  const frontier = $('generation').value === 'frontier';
+  $('generation').querySelector('[value="frontier"]').disabled = !data.allow_frontier;
+  $('compose').disabled = data.context.stale || data.context.invalidated || (frontier && !data.allow_frontier);
+  $('compose').innerHTML = icon('spark')+(frontier ? 'Generate custom view' : 'Build local template');
+  $('generation-note').textContent = frontier
+    ? (data.allow_frontier ? 'A frontier model designs this view from your saved answer and work. Usage and verification results are recorded.' : 'Frontier generation is disabled on this server. You can choose a local template.')
+    : 'Uses a fixed layout. Your brief is saved as design intent; a model will not customize it.';
+}
 function go(view, focus=true) {
   if (!viewNames[view] || !data) return;
   currentView = view;
@@ -194,8 +213,7 @@ function render() {
   }
   $('studio-patients').textContent = num(c.patient_rows.length);
   $('studio-tasks').textContent = num(data.items.length);
-  $('compose').disabled = c.stale || c.invalidated;
-  $('cost').textContent = 'Free synthetic mockup · local template · no model/API calls. Choose a layout; your brief is saved as design intent.';
+  updateGeneration();
   renderOverview(); showPatients(); showWork(); showIntent();
 }
 async function refresh() {
@@ -263,10 +281,14 @@ function editWork(id) {
 }
 async function loadDeliverables() {
   const d = await api('/api/stack/action-deliverables?context='+encodeURIComponent(key));
-  $('deliverables').innerHTML = (d.deliverables||[]).map(x => '<button class="creation-card" data-open="'+esc(x.id)+'" '+(x.status!=='delivered'?'disabled':'')+'>'+icon('file')+'<strong>'+esc(x.title||x.id)+'</strong><span>'+esc(pretty(x.status))+' '+(x.status==='delivered'?'· Open view →':'· Not available to open')+'</span></button>').join('') || '<div class="empty-state">'+icon('spark')+'<h3>Your next idea belongs here.</h3><p>Build an interactive view or a team briefing from the saved answer. It will stay in this workspace.</p></div>';
+  $('deliverables').innerHTML = (d.deliverables||[]).map(x => '<button class="creation-card" data-open="'+esc(x.id)+'" '+(x.status!=='delivered'?'disabled':'')+'>'+icon('file')+'<strong>'+esc(x.title||x.id)+'</strong><span>'+esc(generationLabel(x))+' · '+esc(costLabel(x))+'</span><span>'+esc(pretty(x.status))+' '+(x.status==='delivered'?'· Open view →':'· Not available to open')+'</span>'+(x.failure?'<small>'+esc(x.failure)+'</small>':'')+'</button>').join('') || '<div class="empty-state">'+icon('spark')+'<h3>Your next idea belongs here.</h3><p>Build an interactive view or a team briefing from the saved answer. It will stay in this workspace.</p></div>';
 }
 function preview(d) {
-  if (d.status !== 'delivered' || !d.html) throw Error('This generated view did not pass verification and was not delivered.');
+  $('cost').textContent = generationLabel(d)+' · '+costLabel(d)+'. Local compute and review are not priced.';
+  if (d.status !== 'delivered' || !d.html) {
+    const details = (d.verification?.violations || []).slice(0,3).map(v=>v.detail||v.kind).join('; ');
+    throw Error(d.failure || 'This view did not pass verification and was not delivered.'+(details?' '+details:''));
+  }
   const frame = document.createElement('iframe');
   frame.title = d.title || 'Custom deliverable';
   frame.sandbox = 'allow-scripts';
@@ -274,7 +296,8 @@ function preview(d) {
   $('preview').innerHTML = '<div class="preview-heading"><h2>'+esc(d.title||'Your custom view')+'</h2><button class="text-button" id="close-preview">Close preview ×</button></div>';
   $('preview').append(frame);
   $('close-preview').onclick = () => $('preview').replaceChildren();
-  $('cost').textContent = d.mockup ? 'Saved synthetic mockup · $0 model/API cost · no frontier model was used.' : 'API estimate: '+(d.costs?.total_usd==null?'unavailable':'$'+Number(d.costs.total_usd).toFixed(4))+'. Binding and number checks passed; interpretation still needs review.';
+  $('cost').textContent += d.mockup ? ' Fixed synthetic layout.' : ' Binding and number checks passed; interpretation still needs review.';
+  if (data.context.stale || data.context.invalidated) $('cost').textContent += ' Historical artifact: the source answer is stale or invalidated. Re-run the analysis before creating new work.';
   $('preview').scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'instant':'smooth',block:'start'});
 }
 const presets = {
@@ -340,11 +363,21 @@ $('compose').onclick = () => run(async () => {
   if (!$('brief').value.trim()) $('brief').value = presets[selectedTemplate];
   $('compose').disabled = true;
   $('build-progress').hidden = false;
+  $('compose-error').hidden = true;
+  const frontier = $('generation').value === 'frontier';
+  $('generation-progress').textContent = frontier ? 'Designing from your saved evidence, then checking data bindings and numbers. This may take a few minutes.' : 'Building a local template from your saved evidence.';
   try {
-    const d = await api('/api/stack/action-mockup',{context_id:key,template:selectedTemplate,request:$('brief').value});
-    preview(d); await loadDeliverables(); notify('Your view is ready and saved in this workspace.');
-  } finally { $('compose').disabled = data.context.stale; $('build-progress').hidden = true; }
+    const request = {context_id:key,request:$('brief').value};
+    if (!frontier) request.template = selectedTemplate;
+    const d = await api(frontier ? '/api/stack/action-deliverable' : '/api/stack/action-mockup', request);
+    await loadDeliverables(); preview(d); notify('Your view is ready and saved in this workspace.');
+  } catch (error) {
+    $('compose-error').textContent = error.message;
+    $('compose-error').hidden = false;
+    throw error;
+  } finally { updateGeneration(); $('build-progress').hidden = true; }
 });
+$('generation').onchange = updateGeneration;
 $('export').onclick = () => {
   const cols=['patient_id','program','owner','state','note','revision'];
   const cell=value=>{let text=String(value??'');if(/^[=+@\-\t\r]/.test(text))text="'"+text;return '"'+text.replaceAll('"','""')+'"';};

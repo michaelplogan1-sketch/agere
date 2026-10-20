@@ -335,4 +335,6 @@ def compose_frontier(path, request, *, allow_live=False, send=None):
         raise ValueError('Frontier composition is disabled on this server; the local command center remains available')
     from .compose import compose
     c, b = evidence_bundle(path, request['context_id'])
-    return compose(workspace(path, c), request['request'], evidence_bundle=b, tool_calls=[], send=send)
+    # The original question, source, returned evidence and revisioned review
+    # work are already in this bundle. A design prompt cannot fetch new facts.
+    return compose(workspace(path, c), request['request'].strip(), evidence_bundle=b, tool_calls=[], send=send)

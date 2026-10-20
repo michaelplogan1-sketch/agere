@@ -1,6 +1,6 @@
 """Answer-bound deliverables, synthetic work and manual snapshot monitoring.
 
-No new interpretation or external dispatch occurs here. The immutable answer
+No new analytical interpretation or external action dispatch occurs here. The immutable answer
 owns scope; each requested stage records its own success or unresolved needs.
 """
 import copy
@@ -36,12 +36,24 @@ def measurement(answer):
     return {k: answer[k] for k in ('status', 'headline', 'count', 'value', 'table', 'sections', 'patient_ids', 'missing') if k in answer}
 
 
-def materialize(path, key):
+def materialize(path, key, *, allow_live=False, generation=None, send=None):
+    """Prepare requested work; frontier use requires the caller's live authority.
+
+    Legacy/offline callers retain explicitly labeled local templates. The main
+    conversation integration should pass generation='frontier' and allow_live.
+    An explicit frontier request never falls back to a local template.
+    """
+    generation = generation or ('frontier' if allow_live else 'local_template')
+    if generation not in ('frontier', 'local_template'):
+        raise ValueError('Choose frontier or local_template generation')
     with _lock:
         c = A.load(path, key, current=True)
         saved = read(path, key)
         if saved.get('initialized'):
-            return saved
+            # Keep original attempt costs on the steps, but do not charge them
+            # again to a conversation that merely reuses this saved workflow.
+            return {**saved, 'new_paid_api_calls': 0, 'known_api_estimate_usd': 0,
+                    'api_cost_known': True}
         steps = []
         # Prepare explicitly requested tasks before freezing deliverable views,
         # while preserving the user's step order in the returned workflow.
@@ -58,9 +70,20 @@ def materialize(path, key):
                 elif s.get('unresolved'):
                     s.update(status='needs_definition', reason='; '.join(s['unresolved']))
                 elif s['kind'] == 'deliverable':
-                    from .mock_views import create
-                    d = create(path, {'context_id': key, 'template': s['template'], 'request': s['title']})
-                    s.update(status='ready', deliverable_id=d['id'], reason='Interactive synthetic view saved from this exact answer.')
+                    s['generation'] = generation
+                    if generation == 'frontier':
+                        from ..clinical.request_plan import quote_text
+                        brief = quote_text(s['quote']) if s.get('quote') else s['title']
+                        d = A.compose_frontier(path, {'context_id': key, 'request': brief},
+                                               allow_live=allow_live, send=send)
+                        reason = ('Frontier-generated view saved from this answer; structural evidence checks passed.' if d['status'] == 'delivered'
+                                  else d.get('failure') or 'Generated view failed evidence/number checks. Open the studio to review the failure and costs.')
+                    else:
+                        from .mock_views import create
+                        d = create(path, {'context_id': key, 'template': s['template'], 'request': s['title']})
+                        reason = 'Local template saved from this exact answer; no frontier generation.'
+                    s.update(status='ready' if d['status'] == 'delivered' else 'blocked', deliverable_id=d['id'],
+                             reason=reason, costs=d['costs'], new_paid_api_calls=d.get('new_paid_api_calls', 0))
                 elif s['kind'] == 'simulation':
                     if not c['patient_ids']:
                         s.update(status='needs_definition', reason='This answer has no patient worklist. Select an explicit population before starting patient agents.')
@@ -87,7 +110,11 @@ def materialize(path, key):
             steps.append(s)
         steps.sort(key=lambda s: s['index'])
         record = {'initialized': True, 'synthetic': True, 'context_id': key, 'steps': steps,
-                  'external_dispatch_performed': False, 'new_paid_api_calls': 0}
+                  'external_dispatch_performed': False,
+                  'new_paid_api_calls': sum(s.get('new_paid_api_calls', 0) for s in steps),
+                  'known_api_estimate_usd': sum((s.get('costs') or {}).get('known_api_estimate_usd',
+                                                (s.get('costs') or {}).get('total_usd') or 0) for s in steps),
+                  'api_cost_known': all((s.get('costs') or {}).get('api_cost_known', True) for s in steps)}
         _save(path, key, record)
         return record
 

@@ -1,0 +1,223 @@
+"""Saved-answer frontier delivery; independent fixtures, no benchmark data."""
+import importlib
+import json
+from pathlib import Path
+import re
+import sqlite3
+import tempfile
+import unittest
+from unittest.mock import Mock, patch
+
+from clinical_core.agere.deliverables import answer_context as A, workflow as W, runtime, verify
+from clinical_core.agere.deliverables.receipts import Bundle
+
+C = importlib.import_module('clinical_core.agere.deliverables.compose')
+
+
+class FrontierDelivery(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        self.path = Path(self.tmp.name)
+        with sqlite3.connect(self.path / 'semantic.sqlite3') as db:
+            db.executescript("""
+                CREATE TABLE meta(key,value);
+                INSERT INTO meta VALUES('as_of','2030-05-27'),('source_digest','frontier-fixture'),('version','fixture');
+                CREATE TABLE patient(patient_id PRIMARY KEY);
+                INSERT INTO patient VALUES('A'),('B'),('OUTSIDE');
+            """)
+        self.question = 'List the selected patients and create an interactive evidence explorer'
+        result = {'answer': {'status': 'answered', 'answer_type': 'table', 'count': 2,
+                            'headline': 'Selected patients', 'patient_ids': ['A', 'B'],
+                            'table': [{'patient_id': 'A', 'observed_visits': 17},
+                                      {'patient_id': 'B', 'observed_visits': 23}],
+                            'missing': [], 'limitations': ['Synthetic observed records; no eligibility established.']},
+                  'workflow': [{'kind': 'deliverable', 'title': 'Evidence explorer', 'template': 'explore',
+                                'quote': 'create an interactive evidence explorer', 'unresolved': []}]}
+        self.key = A.capture(self.path, self.question, result)['id']
+        self.calls = []
+
+    def sender(self, body):
+        self.calls.append(body)
+        self.assertEqual(body['tool_choice'], {'type': 'none'})
+        text = body['messages'][0]['content']
+        self.assertIn(self.question, text)
+        self.assertNotIn('OUTSIDE', text)
+        rid = re.search(r'"receipt":"(R-[0-9a-f]{10})","tool":"saved_answer"', text).group(1)
+        return {'content': [{'type': 'text', 'text': (
+            f'TITLE: Evidence lens\n```html\n<h1>Evidence lens</h1><p>Synthetic saved evidence</p>'
+            f'<p>Patients <span data-bind="{rid}:answer.count"></span></p>'
+            f'<button id="details">Show evidence</button><section id="evidence" hidden>'
+            f'<span data-bind="{rid}:answer.table.0.observed_visits"></span></section>'
+            '<script>document.getElementById("details").onclick=()=>{document.getElementById("evidence").hidden=false;};</script>\n```')}],
+            'usage': {'input_tokens': 100, 'output_tokens': 200}}, {'cost_estimate': {'estimated_usd': 0.25}}
+
+    def test_workflow_calls_frontier_with_exact_evidence_and_reuses_saved_result(self):
+        with patch.object(C.toolsmod.ToolContext, 'call', side_effect=AssertionError('No new cohort')):
+            result = W.materialize(self.path, self.key, allow_live=True, generation='frontier', send=self.sender)
+            repeated = W.materialize(self.path, self.key, allow_live=True, generation='frontier',
+                                     send=Mock(side_effect=AssertionError('Duplicate generation')))
+        self.assertEqual(result['steps'], repeated['steps'])
+        self.assertEqual(repeated['new_paid_api_calls'], 0)
+        self.assertEqual(repeated['known_api_estimate_usd'], 0)
+        self.assertEqual(result['steps'][0]['status'], 'ready')
+        self.assertEqual(result['steps'][0]['generation'], 'frontier')
+        self.assertEqual(result['new_paid_api_calls'], 1)
+        self.assertEqual(result['known_api_estimate_usd'], 0.25)
+        self.assertFalse(result['external_dispatch_performed'])
+        self.assertIn('REQUEST: create an interactive evidence explorer', self.calls[0]['messages'][0]['content'])
+        ws = A.workspace(self.path, A.load(self.path, self.key))
+        spec, bundle, _, doc = C.load(ws, result['steps'][0]['deliverable_id'])
+        self.assertEqual(spec['mode'], 'composed')
+        self.assertTrue(bundle.meta['frozen_evidence'])
+        saved = next(v for rid, v in bundle.results.items() if bundle.receipts[rid]['tool'] == 'saved_answer')
+        self.assertEqual(saved['patient_ids'], ['A', 'B'])
+        self.assertIn('Show evidence', doc)
+        self.assertEqual(C.listing(ws)[0]['generation'], 'frontier')
+
+    def test_disabled_explicit_frontier_never_falls_back_to_template(self):
+        sender = Mock(side_effect=AssertionError('No authority'))
+        result = W.materialize(self.path, self.key, generation='frontier', send=sender)
+        self.assertEqual(result['steps'][0]['status'], 'blocked')
+        self.assertIn('disabled', result['steps'][0]['reason'])
+        self.assertNotIn('deliverable_id', result['steps'][0])
+        sender.assert_not_called()
+
+    def test_local_template_remains_explicit_and_free(self):
+        with patch.object(C, 'ledgered_sender', side_effect=AssertionError('No model')):
+            result = W.materialize(self.path, self.key, generation='local_template', allow_live=True)
+        self.assertEqual(result['steps'][0]['generation'], 'local_template')
+        self.assertEqual(result['new_paid_api_calls'], 0)
+        self.assertEqual(result['steps'][0]['costs']['total_usd'], 0)
+
+    def test_transport_failure_is_saved_with_unknown_cost_and_no_retry(self):
+        sender = Mock(side_effect=TimeoutError('Secret transport detail'))
+        result = W.materialize(self.path, self.key, allow_live=True, generation='frontier', send=sender)
+        step = result['steps'][0]
+        self.assertEqual(step['status'], 'blocked')
+        self.assertNotIn('Secret transport detail', json.dumps(result))
+        self.assertIsNone(step['costs']['total_usd'])
+        self.assertFalse(result['api_cost_known'])
+        self.assertEqual(result['new_paid_api_calls'], 1)
+        W.materialize(self.path, self.key, allow_live=True, send=sender)
+        self.assertEqual(sender.call_count, 1)
+        ws = A.workspace(self.path, A.load(self.path, self.key))
+        spec, _, _, doc = C.load(ws, step['deliverable_id'])
+        self.assertEqual(spec['status'], 'rejected')
+        self.assertIsNone(doc)
+        self.assertIn('TimeoutError', C.listing(ws)[0]['failure'])
+
+    def test_failed_verification_retains_all_attempt_costs(self):
+        bad = {'content': [{'type': 'text', 'text': 'TITLE: Bad\n```html\n<p>Saved $987,654.</p>\n```'}]}
+        sender = Mock(return_value=(bad, {'cost_estimate': {'estimated_usd': 0.1}}))
+        result = W.materialize(self.path, self.key, allow_live=True, send=sender)
+        self.assertEqual(result['steps'][0]['status'], 'blocked')
+        self.assertEqual(result['new_paid_api_calls'], 2)
+        self.assertEqual(result['known_api_estimate_usd'], 0.2)
+        self.assertFalse(list(A.root(self.path).glob('*/deliverables/DLV-*/artifact.html')))
+
+    def test_frozen_revision_cannot_fetch_new_population(self):
+        out = A.compose_frontier(self.path, {'context_id': self.key, 'request': 'Create an evidence lens'},
+                                 allow_live=True, send=self.sender)
+        ws = A.workspace(self.path, A.load(self.path, self.key))
+        _, bundle, _, _ = C.load(ws, out['id'])
+        # Older saved-answer bundles did not carry the explicit frozen flag.
+        bundle_file = Path(out['path']).with_name('bundle.json')
+        legacy = json.loads(bundle_file.read_text())
+        legacy['meta'].pop('frozen_evidence')
+        bundle_file.write_text(json.dumps(legacy))
+        def revise(body):
+            self.assertEqual(body['tool_choice'], {'type': 'none'})
+            return {'content': [{'type': 'text', 'text': '```json\n[{"find":"Evidence lens</h1>","replace":"Saved evidence</h1>"}]\n```'}]}, {'cache_hit': True}
+        with patch.object(C.toolsmod.ToolContext, 'call', side_effect=AssertionError('No new evidence')):
+            revised = C.revise(ws, out['id'], 'Add a pharmacy plan for everyone and rename the view', send=revise)
+        self.assertEqual(revised['status'], 'delivered')
+        self.assertEqual(revised['revision'], 2)
+        self.assertEqual(revised['new_paid_api_calls'], 0)
+        self.assertEqual(C.load(ws, out['id'])[1].results, bundle.results)
+        self.assertTrue(C.load(ws, out['id'])[1].meta['frozen_evidence'])
+        self.assertTrue((Path(out['path']).parent / 'revisions/r1.html').exists())
+
+    def test_stale_answer_is_rejected_before_provider_use(self):
+        with sqlite3.connect(self.path / 'semantic.sqlite3') as db:
+            db.execute("UPDATE meta SET value='changed' WHERE key='source_digest'")
+        sender = Mock()
+        with self.assertRaisesRegex(ValueError, 'data changed'):
+            A.compose_frontier(self.path, {'context_id': self.key, 'request': 'Build a view'}, allow_live=True, send=sender)
+        sender.assert_not_called()
+
+    def test_distinct_creations_do_not_overwrite_same_second(self):
+        with patch.object(C, '_now', return_value='fixed'):
+            first = C._new_id(None, 'same', None, {})
+            second = C._new_id(None, 'same', None, {})
+        self.assertNotEqual(first, second)
+
+    def test_rejected_revision_archives_previous_delivery_but_has_no_current_html(self):
+        out = A.compose_frontier(self.path, {'context_id': self.key, 'request': 'Create an evidence lens'},
+                                 allow_live=True, send=self.sender)
+        ws = A.workspace(self.path, A.load(self.path, self.key))
+        bad = {'content': [{'type': 'text', 'text': 'TITLE: Bad\n```html\n<p>Saved $987,654.</p>\n```'}]}
+        rev = C.revise(ws, out['id'], 'Change the design', send=Mock(return_value=(bad, {'cost_estimate': {'estimated_usd': 0.1}})))
+        self.assertEqual(rev['status'], 'rejected')
+        self.assertIsNone(C.load(ws, out['id'])[3])
+        self.assertFalse(Path(out['path']).exists())
+        self.assertTrue((Path(out['path']).parent / 'revisions/r1.html').exists())
+        self.assertEqual(rev['costs']['total_usd'], 0.2)
+
+    def test_frozen_verifier_rejects_unbound_values_and_representative_network_cases(self):
+        b = Bundle({'frozen_evidence': True})
+        rid = b.add('saved_answer', {}, {'patient_count': 12, 'spend': 50, 'age': 45})
+        bad = [
+            '<p>Patients 50</p>', '<p>Readmission rate 45%</p>', '<p>Readmissions fell by 7</p>',
+            '<script>const u="inert";fetch(u)</script>',
+            '<script>location="//example.invalid"</script>',
+            '<script>new Image().src="inert"</script>',
+            '<script>window["fe"+"tch"]("inert")</script>',
+            '<form action="/unexpected"><button>Send</button></form>',
+            '<img src="data:image/png;base64,AA==" onerror="fetch(u)">',
+        ]
+        for body in bad:
+            with self.subTest(body=body):
+                report = verify.verify(runtime.wrap(body, b, 'Fixture'), b)
+                self.assertFalse(report['passed'])
+        good = runtime.wrap(f'<p>Patients <span data-bind="{rid}:patient_count"></span></p>'
+                            '<a href="#evidence">Inspect evidence</a><section id="evidence">Saved facts</section>', b, 'Fixture')
+        self.assertTrue(verify.verify(good, b)['passed'])
+        self.assertIn('Content-Security-Policy', good)
+        # Provenance checks cannot establish the truth of the surrounding label.
+        mislabeled = runtime.wrap(f'<p>Rate <span data-bind="{rid}:age"></span>%</p>', b.to_json(), 'Fixture')
+        self.assertTrue(verify.verify(mislabeled, b)['passed'])
+        layout = runtime.wrap('<script>(function(){document.body.insertAdjacentHTML("beforeend",'
+                              '\'<h3 style="margin:0;width:100%">Saved evidence</h3>\');})();</script>', b, 'Fixture')
+        self.assertTrue(verify.verify(layout, b)['passed'])
+
+    def test_unknown_cost_never_becomes_zero_total(self):
+        ledger = C.Ledger()
+        ledger.add('frontier', 'compose', {'model': 'fixture'}, {'usage': {'input_tokens': 123}}, {})
+        summary = ledger.summary()
+        self.assertIsNone(summary['total_usd'])
+        self.assertFalse(summary['api_cost_known'])
+        self.assertEqual(summary['known_api_estimate_usd'], 0)
+        self.assertIsNone(C.Ledger().summary([{'tool': 'ask', 'model_cost_usd': None}])['total_usd'])
+        self.assertEqual(C.Ledger().summary([{'tool': 'ask', 'cached': True}])['total_usd'], 0)
+
+    def test_failed_revision_and_failed_repair_preserve_attempt_accounting(self):
+        for repair in (False, True):
+            with self.subTest(repair=repair):
+                out = A.compose_frontier(self.path, {'context_id': self.key, 'request': 'Create an evidence lens'},
+                                         allow_live=True, send=self.sender)
+                ws = A.workspace(self.path, A.load(self.path, self.key))
+                bad = ({'content': [{'type': 'text', 'text': 'TITLE: Bad\n```html\n<p>Saved $987,654.</p>\n```'}]},
+                       {'cost_estimate': {'estimated_usd': 0.1}})
+                sender = Mock(side_effect=([bad] if repair else []) + [TimeoutError('private detail')])
+                rev = C.revise(ws, out['id'], 'Revise it', send=sender)
+                self.assertEqual(rev['status'], 'rejected')
+                self.assertEqual(rev['new_paid_api_calls'], 2 if repair else 1)
+                self.assertEqual(rev['costs']['known_api_estimate_usd'], 0.1 if repair else 0)
+                self.assertIsNone(rev['costs']['total_usd'])
+                self.assertIsNone(C.load(ws, out['id'])[3])
+                self.assertTrue((Path(out['path']).parent / 'revisions/r1.html').exists())
+
+
+if __name__ == '__main__':
+    unittest.main()

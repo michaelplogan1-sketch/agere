@@ -1,16 +1,18 @@
-"""The number verifier: every number a deliverable shows must come back from an executed tool result.
+"""Static evidence binding and representative code checks for generated artifacts.
 
 verify(document, bundle) checks a wrapped artifact (runtime.wrap) and returns {'passed', 'violations', ...}:
   1. the embedded data block is exactly the bundle (the page cannot carry data the tools did not return);
   2. every number in the visible text (scripts, styles and the data block removed; dates and identifiers skipped) matches
      a bundle number at the displayed precision (as is, x100 for %, /1e3 for K, /1e6 for M; sign-insensitive), and is
-     reported with the receipts it resolves to. Integers 0-10 are allowed as structure (step numbers, "top 5");
+     reported with the receipts it resolves to. Frozen answers instead require explicit bindings for static numbers;
   3. every data-bind path resolves in the bundle;
   4. numeric literals in page scripts are layout-sized integers (<= 2000), common constants, or bundle numbers, so a page
-     cannot type an invented figure into its JavaScript;
+     is checked for common hardcoded figures;
   5. no external network: no http(s):// or protocol-relative URLs, imports, iframes, sockets or beacons; fetch only to the
      same-origin /api/workspaces/ write-back path.
 Fail closed: a document with any violation is not delivered (the composer gets one repair attempt first).
+These checks do not validate surrounding labels, units, clinical claims or all dynamic behavior.
+Sandboxing and CSP are separate requirements; this verifier is not a JavaScript security proof.
 """
 from __future__ import annotations
 
@@ -44,17 +46,37 @@ NETWORK_RES = [
      'fetch to a non-workspace URL'),
 ]
 
+# Representative static guards for frozen, read-only artifacts. These are not
+# a JavaScript security proof; opaque iframe isolation and CSP remain required.
+FROZEN_SCRIPT_RES = [
+    (re.compile(r'\bfetch\s*\(', re.I), 'network fetch in frozen artifact'),
+    (re.compile(r'\b(?:window|self|globalThis|top|parent)\s*\[', re.I), 'computed global access'),
+    (re.compile(r'\blocation\s*(?:=|\.|\[)', re.I), 'navigation in frozen artifact'),
+    (re.compile(r'\b(?:eval|Function)\s*\('), 'dynamic code execution'),
+    (re.compile(r'\bnew\s+Image\b|\.src\s*=', re.I), 'dynamic image/resource URL'),
+    (re.compile(r'''\bsetAttribute\s*\(\s*['"](?:src|href|action|formaction|srcdoc)['"]''', re.I), 'dynamic resource attribute'),
+]
+
 
 class _Text(HTMLParser):
     def __init__(self):
         super().__init__(convert_charrefs=True)
         self.text, self.binds, self.scripts, self.styles = [], [], [], []
         self._skip, self._script_buf = None, []
+        self.active_attributes = []
 
     def handle_starttag(self, tag, attrs):
         a = dict(attrs)
         if 'data-bind' in a:
             self.binds.append(a['data-bind'])
+        for name, value in attrs:
+            if name.startswith('on') and value:
+                self.scripts.append(value)
+            if name in ('src', 'href', 'xlink:href', 'action', 'formaction', 'poster', 'data', 'srcdoc'):
+                if value and not value.startswith('#') and not (tag == 'img' and name == 'src' and value.startswith('data:image/')):
+                    self.active_attributes.append(f'{tag}.{name}')
+        if tag == 'base' or (tag == 'meta' and a.get('http-equiv', '').lower() == 'refresh'):
+            self.active_attributes.append(tag)
         if tag in ('script', 'style'):
             self._skip = (tag, a.get('id'), a.get('type'))
             self._script_buf = []
@@ -172,8 +194,16 @@ def verify(document, bundle, *, structural_max=STRUCTURAL_MAX, check_data_block=
     p.feed(rest)
     idx = NumberIndex(bundle)
     checked = []
+    frozen = bool(bundle.meta.get('frozen_evidence') or
+                  any(r['tool'] == 'saved_answer' for r in bundle.receipts.values()))
     text = ' '.join(p.text)
     for tok in text_numbers(text):
+        if frozen:
+            # Matching an unrelated receipt value is not factual grounding.
+            # Static facts must name the exact value path in an empty binding.
+            violations.append({'kind': 'unbound_number', 'detail': tok['text'],
+                               'context': _context(text, tok['text'])})
+            continue
         if not tok['suffix'] and tok['decimals'] == 0 and tok['value'] <= structural_max:
             continue
         rids = idx.match(tok['value'], tok['decimals'], tok['suffix'])
@@ -193,6 +223,20 @@ def verify(document, bundle, *, structural_max=STRUCTURAL_MAX, check_data_block=
     for code in p.scripts:
         if code.strip() == runtime.JS.strip():
             continue
+        if frozen:
+            for rx, label in FROZEN_SCRIPT_RES:
+                hit = rx.search(code)
+                if hit:
+                    violations.append({'kind': 'frozen_script', 'detail': label})
+            for match in JS_STRING_RE.finditer(code):
+                value = next(g for g in match.groups() if g is not None)
+                value = re.sub(r'\$\{[^}]*\}', ' ', value)
+                # Check the text of literal markup, not its CSS or attributes.
+                # This still cannot validate dynamically constructed claims.
+                literal = _Text()
+                literal.feed(value)
+                for tok in text_numbers(' '.join(literal.text)):
+                    violations.append({'kind': 'unbound_script_number', 'detail': tok['text']})
         for tok in js_string_numbers(code):
             rids = idx.match(tok['value'], tok['decimals'], tok['suffix'])
             checked.append({'text': tok['text'], 'receipts': sorted(rids)[:5], 'where': 'script string'})
@@ -215,6 +259,8 @@ def verify(document, bundle, *, structural_max=STRUCTURAL_MAX, check_data_block=
             hit = rx.search(_without_runtime(code_or_markup))
             if hit:
                 violations.append({'kind': 'network', 'detail': label, 'context': _context(code_or_markup, hit.group(0))})
+    if frozen:
+        violations.extend({'kind': 'frozen_resource', 'detail': name} for name in p.active_attributes)
     seen, uniq = set(), []
     for v in violations:
         k = (v['kind'], v['detail'])
@@ -223,7 +269,8 @@ def verify(document, bundle, *, structural_max=STRUCTURAL_MAX, check_data_block=
             uniq.append(v)
     return {'passed': not uniq, 'violations': uniq[:200], 'violation_count': len(uniq), 'numbers_checked': len(checked),
             'numbers': checked[:400], 'bindings': len(p.binds), 'unresolved_bindings': unresolved[:50],
-            'script_literals_checked': lit_checked, 'receipts': len(bundle.receipts)}
+            'script_literals_checked': lit_checked, 'receipts': len(bundle.receipts),
+            'scope': 'Static binding, number and representative code checks; not semantic/clinical validation or proof of arbitrary JavaScript safety. Sandbox and CSP required.'}
 
 
 def _without_runtime(doc):

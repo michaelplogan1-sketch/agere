@@ -90,7 +90,7 @@ JS = r"""
       return '<tr id="receipt-' + esc(k) + '"><td><code>' + esc(k) + '</code></td><td>' + esc(r.tool) + '</td><td><code>' + esc(JSON.stringify(r.args)) + '</code></td><td>' +
         esc(String(r.definition || '').slice(0, 600)) + (r.sql_fingerprint ? '<br><code>' + esc(r.sql_fingerprint) + '</code>' : '') + '</td><td>' + esc(r.as_of || '') +
         '</td><td><code>' + esc(String(r.data_fingerprint || '').slice(0, 24)) + '</code></td></tr>'}).join('');
-    el.innerHTML = '<details><summary>Receipts: every number on this page resolves to one of these executed results (' + Object.keys(B.receipts).length +
+    el.innerHTML = '<details><summary>Saved evidence receipts (' + Object.keys(B.receipts).length +
       ')</summary><table><tr><th>receipt</th><th>tool</th><th>arguments</th><th>definition / SQL fingerprint</th><th>as of</th><th>data</th></tr>' + rows + '</table></details>';
   }
   function theme(){
@@ -112,12 +112,24 @@ JS = r"""
 """
 
 
+# Frozen artifacts must also be embedded in an opaque-origin sandboxed iframe.
+# Direct HTML serving additionally needs the HTTP CSP sandbox directive; a
+# meta CSP cannot enforce sandboxing.
+FROZEN_CSP = ("default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; "
+              "img-src data:; connect-src 'none'; frame-src 'none'; worker-src 'none'; "
+              "object-src 'none'; form-action 'none'; base-uri 'none'")
+
+
 def wrap(body_html, bundle, title, *, subtitle=None, extra_js=''):
     """The full document. body_html is the page body (may contain its own <style> and <script> blocks)."""
-    data = json.dumps(bundle.to_json() if hasattr(bundle, 'to_json') else bundle, default=str, separators=(',', ':'))
+    payload = bundle.to_json() if hasattr(bundle, 'to_json') else bundle
+    data = json.dumps(payload, default=str, separators=(',', ':'))
     data = data.replace('</', '<\\/')  # never close the data block early
     sub = f'<span>{htmlmod.escape(subtitle)}</span>' if subtitle else '<span></span>'
+    policy = (f'<meta http-equiv="Content-Security-Policy" content="{htmlmod.escape(FROZEN_CSP, quote=True)}">'
+              if payload.get('meta', {}).get('frozen_evidence') else '')
     return ('<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
+            + policy +
             f'<title>{htmlmod.escape(title)}</title><style>{CSS}</style>'
             f'<script id="agere-data" type="application/json">{data}</script><script>{JS}</script></head><body><div class="agere-wrap">'
             f'<div class="agere-top no-print">{sub}<button class="agere-theme" type="button">Light / dark</button></div>'

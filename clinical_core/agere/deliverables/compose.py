@@ -1,4 +1,4 @@
-"""The open-ended deliverable composer: free text in, a self-contained, verified, interactive artifact out.
+"""The open-ended deliverable composer: free text in, a structurally checked interactive artifact out.
 
     out = compose(ws, 'a game-theory negotiation simulator for our MSSP contract', audience='CFO')
     out = revise(ws, out['id'], 'add a panel showing what happens if the benchmark is rebased down')
@@ -12,8 +12,8 @@ Division of labour (token economics):
     call tools for more data; it never writes SQL and never types a number: static numbers are data-bind spans, computed
     numbers come from JS over the embedded bundle (runtime.py). The system prompt (rules, runtime, tool catalog, few-shot
     examples) is prompt-cached.
-  * The verifier (verify.py) checks every rendered number against the tool results; on failure one repair attempt, then
-    fail closed (no artifact is delivered).
+  * The verifier (verify.py) checks static bindings, numeric literals and representative code patterns; on failure one
+    repair attempt, then fail closed. These checks do not validate metric labels, clinical claims or arbitrary JavaScript.
 Every model call goes through the product's budget ledger (context_student.send) and is reported, split frontier / small
 model / tools ($0 unless a tool itself used a model).
 
@@ -23,12 +23,12 @@ bundle.json (verified data + receipts), spec.json (request, audience, intent, to
 from __future__ import annotations
 
 from datetime import datetime, timezone
-import hashlib
 import json
 import os
 from pathlib import Path
 import re
 import time
+import uuid
 
 from . import examples, intent as intentmod, runtime, tools as toolsmod, verify as verifymod
 from .receipts import Bundle, fingerprint, trim as rtrim
@@ -125,8 +125,15 @@ class Ledger:
         tm = round(sum(c.get('model_cost_usd') or 0 for c in tool_calls), 6)
         out = {'frontier': s('frontier'), 'small': s('small'),
                'tools': {'calls': len(tool_calls), 'cached': sum(1 for c in tool_calls if c.get('cached')), 'cost_usd': tm,
-                         'note': 'deterministic layers and local engines cost $0; a tool that used a model (ask) reports its own cost'}}
-        out['total_usd'] = round(out['frontier']['cost_usd'] + out['small']['cost_usd'] + tm, 6)
+                         'note': 'Model/API estimates only. Deterministic and local compute are unpriced.'}}
+        out['known_api_estimate_usd'] = round(out['frontier']['cost_usd'] + out['small']['cost_usd'] + tm, 6)
+        tools_known = all(c.get('cached') or (c.get('api_cost_known') is not False and
+                          (c.get('model_cost_usd') is not None or
+                           not (c.get('tool') == 'ask' or c.get('model_calls') or c.get('model_capable'))))
+                          for c in tool_calls)
+        out['api_cost_known'] = all(c['cost_usd'] is not None for c in self.calls) and tools_known
+        out['total_usd'] = out['known_api_estimate_usd'] if out['api_cost_known'] else None
+        out['scope'] = 'Model/API estimates only; local compute and review are not priced.'
         return out
 
 
@@ -160,9 +167,15 @@ def _cached_tools():
 
 
 def _user_prompt(request, audience, bundle, extra=''):
+    frozen_rules = ('FROZEN ANSWER: no network, navigation, forms, new data tools or write-back. '
+                    'Every static visible number, including small counts, must use an empty data-bind span. '
+                    'Use words or automatic list numbering for structure. Do not type factual numbers in JS strings; '
+                    'render from AGERE.get with AGERE.fmt. Do not use eval, Function, dynamic global properties or resource URL setters.\n'
+                    if bundle.meta.get('frozen_evidence') else '')
     return (f'REQUEST: {request}\nAUDIENCE: {audience or "infer from the request"}\nWORKSPACE: {bundle.meta.get("workspace")} '
             f'(as of {bundle.meta.get("as_of")}; synthetic data)\n{extra}\n'
             f'EVIDENCE SCOPE: {bundle.meta.get("scope") or "Use the executed tools."}\n'
+            + frozen_rules +
             'DATA BUNDLE (receipt id -> tool, arguments, definition, data shape; long lists truncated here but complete on the page):\n'
             + bundle.digest_for_model(max_chars=40000))
 
@@ -192,7 +205,7 @@ def _dir(ws):
 
 
 def _new_id(ws, request, template, params):
-    return 'DLV-' + hashlib.sha256(json.dumps([ws.slug, request, template, params, _now()], default=str).encode()).hexdigest()[:12].upper()
+    return 'DLV-' + uuid.uuid4().hex[:12].upper()
 
 
 def _save(ws, dlv_id, *, doc, body, bundle, spec, revision=None):
@@ -205,6 +218,9 @@ def _save(ws, dlv_id, *, doc, body, bundle, spec, revision=None):
             (r / f'r{revision - 1}.html').write_text((d / 'artifact.html').read_text())
     if doc is not None:
         (d / 'artifact.html').write_text(doc)
+    elif revision is not None:
+        # The prior delivery remains in revisions, not at the current path.
+        (d / 'artifact.html').unlink(missing_ok=True)
     if body is not None:
         (d / 'body.html').write_text(body)
     (d / 'bundle.json').write_text(json.dumps(bundle.to_json(), default=str))
@@ -220,7 +236,7 @@ def load(ws, dlv_id):
     bundle = Bundle.from_json(json.loads((d / 'bundle.json').read_text()))
     body = (d / 'body.html').read_text() if (d / 'body.html').is_file() else None
     doc = (d / 'artifact.html').read_text() if (d / 'artifact.html').is_file() else None
-    return spec, bundle, body, doc
+    return spec, bundle, body, doc if spec.get('status') == 'delivered' else None
 
 
 def listing(ws):
@@ -228,8 +244,13 @@ def listing(ws):
     out = []
     for f in sorted(d.glob('DLV-*/spec.json'), key=lambda p: p.stat().st_mtime, reverse=True):
         s = json.loads(f.read_text())
-        out.append({k: s.get(k) for k in ('id', 'title', 'request', 'audience', 'template', 'status', 'created_at', 'revision')}
-                   | {'total_usd': (s.get('costs') or {}).get('total_usd')})
+        failure = s.get('failure')
+        if not failure and s.get('status') == 'rejected':
+            details = [v.get('detail') or v.get('kind') for v in (s.get('verification') or {}).get('violations', [])[:3]]
+            failure = 'Structural checks rejected this view: ' + '; '.join(str(x) for x in details)
+        out.append({k: s.get(k) for k in ('id', 'title', 'request', 'audience', 'template', 'status', 'created_at', 'revision',
+                                         'mode', 'generation', 'mockup', 'failure', 'new_paid_api_calls')}
+                   | {'costs': s.get('costs'), 'total_usd': (s.get('costs') or {}).get('total_usd'), 'failure': failure})
     return out
 
 
@@ -239,7 +260,14 @@ def _bundle(ws, ctx, dlv_id, request, audience):
 
 
 def _model_call(send, ledger, role, purpose, body):
-    raw, receipt = send(body)
+    try:
+        raw, receipt = send(body)
+    except Exception as exc:
+        # The provider ledger retains transport diagnostics. Do not expose
+        # request bodies/credentials through a UI error or lose attempted cost.
+        ledger.add(role, purpose, body, {}, {})
+        ledger.calls[-1]['failure'] = type(exc).__name__
+        raise
     ledger.add(role, purpose, body, raw, receipt)
     return raw
 
@@ -363,6 +391,7 @@ def compose(ws, request=None, audience=None, *, template=None, params=None, live
     if evidence_bundle is not None:
         bundle.merge(evidence_bundle)
         bundle.meta['scope'] = evidence_bundle.meta.get('scope')
+        bundle.meta['frozen_evidence'] = True
     ledger = Ledger()
     spec = {'schema': SCHEMA, 'id': dlv_id, 'workspace': ws.slug, 'request': request, 'audience': audience or it['audience'],
             'template': template, 'params': params, 'intent': it, 'created_at': _now(), 'revision': 1, 'synthetic': True,
@@ -386,17 +415,29 @@ def compose(ws, request=None, audience=None, *, template=None, params=None, live
             ctx.call(bundle, name, args)
         except Exception as exc:  # noqa: BLE001 - a failed tool is recorded; the composer can still call others
             spec.setdefault('tool_errors', []).append({'tool': name, 'args': args, 'error': f'{type(exc).__name__}: {exc}'[:300]})
-    if not bundle.receipts:
-        _choose_tools(ctx, bundle, request, send, ledger)
-    title, body = _compose_frontier(ctx, bundle, request, audience or it['audience'], send, ledger)
-    spec.update(mode='composed')
-    return _deliver(ws, spec, bundle, title, body, ledger, ctx, send, request, audience or it['audience'], t0, save)
+    spec.update(mode='composed', generation='frontier', frozen_evidence=ctx.frozen_evidence)
+    try:
+        if not bundle.receipts:
+            if ctx.frozen_evidence:
+                raise ValueError('The saved evidence bundle is empty')
+            _choose_tools(ctx, bundle, request, send, ledger)
+        title, body = _compose_frontier(ctx, bundle, request, audience or it['audience'], send, ledger)
+        return _deliver(ws, spec, bundle, title, body, ledger, ctx, send, request, audience or it['audience'], t0, save)
+    except Exception as exc:
+        return _failed(ws, spec, bundle, ledger, ctx, t0, save, exc)
 
 
-def _deliver(ws, spec, bundle, title, body, ledger, ctx, send, request, audience, t0, save, instruction=None):
+def _failed(ws, spec, bundle, ledger, ctx, t0, save, exc, revision=None):
+    spec['failure'] = f'Frontier generation could not finish ({type(exc).__name__}). No artifact was delivered. Inspect provider receipts before retrying; API cost may be incomplete.'
+    report = {'passed': False, 'violations': [{'kind': 'generation_failed', 'detail': spec['failure']}]}
+    return _finish(ws, spec, bundle, None, None, report, ledger, ctx, t0, save,
+                   repaired=any(c['purpose'] == 'repair' for c in ledger.calls), revision=revision)
+
+
+def _deliver(ws, spec, bundle, title, body, ledger, ctx, send, request, audience, t0, save, instruction=None, revision=None):
     if not body:
         report = {'passed': False, 'violations': [{'kind': 'no_output', 'detail': 'the model returned no HTML body'}]}
-        return _finish(ws, spec, bundle, None, None, report, ledger, ctx, t0, save, repaired=False)
+        return _finish(ws, spec, bundle, None, None, report, ledger, ctx, t0, save, repaired=False, revision=revision)
     title = title or spec.get('title') or 'Agere deliverable'
     doc = runtime.wrap(body, bundle, title, subtitle=f"{ws.slug} | synthetic data")
     report = verifymod.verify(doc, bundle)
@@ -412,15 +453,19 @@ def _deliver(ws, spec, bundle, title, body, ledger, ctx, send, request, audience
             report = verifymod.verify(doc, bundle)
         report['first_attempt'] = {'violation_count': first['violation_count'], 'violations': first['violations'][:20]}
     spec['title'] = title
-    return _finish(ws, spec, bundle, body, doc, report, ledger, ctx, t0, save, repaired=repaired)
+    return _finish(ws, spec, bundle, body, doc, report, ledger, ctx, t0, save, repaired=repaired, revision=revision)
 
 
 def _finish(ws, spec, bundle, body, doc, report, ledger, ctx, t0, save, repaired, revision=None):
     status = 'delivered' if report.get('passed') else 'rejected'
+    for call in ctx.calls:
+        if ctx.allow_model_ask and call['tool'] in ('ask', 'cohort'):
+            call['model_capable'] = True
     spec.update(status=status, verification={k: v for k, v in report.items() if k != 'numbers'}, repaired=repaired,
                 costs=ledger.summary(ctx.calls), model_calls=ledger.calls, tool_calls=spec.get('tool_calls', []) + ctx.calls,
                 receipts=list(bundle.receipts), seconds=round(time.time() - t0, 1), text_share=_share(body, doc) if doc else None,
                 bundle_fingerprint=fingerprint(bundle.to_json()['results'])[:16])
+    spec['new_paid_api_calls'] = sum(not c.get('cache_hit') for c in ledger.calls)
     if save:
         d = _save(ws, spec['id'], doc=doc if status == 'delivered' else None, body=body, bundle=bundle, spec=spec, revision=revision)
         if status != 'delivered' and doc:
@@ -436,10 +481,14 @@ def revise(ws, deliverable_id, instruction, *, send=None, save=True, cache=True)
     t0 = time.time()
     spec, bundle, body, _ = load(ws, deliverable_id)
     ctx = toolsmod.ToolContext(ws, cache=cache)
+    ctx.frozen_evidence = bool(bundle.meta.get('frozen_evidence') or
+                               any(r['tool'] == 'saved_answer' for r in bundle.receipts.values()))
+    if ctx.frozen_evidence:
+        bundle.meta['frozen_evidence'] = True
     ledger = Ledger()
     it = intentmod.parse(instruction)
     have = {(r['tool'], json.dumps(r['args'], sort_keys=True)) for r in bundle.receipts.values()}
-    for name, args in it['tools']:
+    for name, args in ([] if ctx.frozen_evidence else it['tools']):
         norm = toolsmod._norm_args(toolsmod.TOOLS[name], args)
         if (name, json.dumps(norm, sort_keys=True)) not in have:
             try:
@@ -449,28 +498,16 @@ def revise(ws, deliverable_id, instruction, *, send=None, save=True, cache=True)
     if spec.get('mode') == 'reference_example' and body is None:
         raise ValueError('reference example has no composed body to revise')
     send = send or ledgered_sender(Path(ws.dir) / 'deliverables' / 'receipts')
-    title, new_body = _compose_frontier(ctx, bundle, spec.get('request') or spec.get('title'), spec.get('audience'), send, ledger,
-                                        current_body=body, instruction=instruction)
     rev = int(spec.get('revision') or 1) + 1
     prior_costs = spec.get('costs')
     spec.update(revision=rev, revised_at=_now(), revisions=(spec.get('revisions') or []) + [{'revision': rev, 'instruction': instruction, 'at': _now(),
                                                                                              'prior_costs': prior_costs}])
     spec['tool_calls'] = []
-    if not new_body:
-        report = {'passed': False, 'violations': [{'kind': 'no_output', 'detail': 'the model returned no HTML body'}]}
-        return _finish(ws, spec, bundle, None, None, report, ledger, ctx, t0, save, repaired=False, revision=rev)
-    doc = runtime.wrap(new_body, bundle, title or spec.get('title'), subtitle=f"{ws.slug} | synthetic data")
-    report = verifymod.verify(doc, bundle)
-    repaired = False
-    if not report['passed']:
-        first = report
-        t2, b2 = _compose_frontier(ctx, bundle, spec.get('request'), spec.get('audience'), send, ledger, current_body=new_body,
-                                   instruction=instruction, violations=report['violations'][:60])
-        repaired = True
-        if b2:
-            new_body, title = b2, t2 or title
-            doc = runtime.wrap(new_body, bundle, title or spec.get('title'), subtitle=f"{ws.slug} | synthetic data")
-            report = verifymod.verify(doc, bundle)
-        report['first_attempt'] = {'violation_count': first['violation_count'], 'violations': first['violations'][:20]}
-    spec['title'] = title or spec.get('title')
-    return _finish(ws, spec, bundle, new_body, doc, report, ledger, ctx, t0, save, repaired=repaired, revision=rev)
+    spec.pop('failure', None)
+    try:
+        title, new_body = _compose_frontier(ctx, bundle, spec.get('request') or spec.get('title'), spec.get('audience'), send, ledger,
+                                           current_body=body, instruction=instruction)
+        return _deliver(ws, spec, bundle, title or spec.get('title'), new_body, ledger, ctx, send,
+                        spec.get('request'), spec.get('audience'), t0, save, instruction=instruction, revision=rev)
+    except Exception as exc:
+        return _failed(ws, spec, bundle, ledger, ctx, t0, save, exc, revision=rev)
