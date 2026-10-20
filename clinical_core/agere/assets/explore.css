@@ -40,9 +40,13 @@ main#main{max-width:1380px;margin:0 auto;padding:34px 60px 60px;width:100%;flex:
 @media(min-width:521px) and (max-width:800px){.intelligence-scene{height:290px;min-height:290px}.welcome{gap:8px}}
 @media(max-width:520px){.intelligence-scene{width:78%;height:310px;top:5px;right:-20px;opacity:.75;mask-image:linear-gradient(90deg,transparent,#000 48%)}.motion-toggle{top:27px}}
 
-/* Give the anatomical detail space, including in narrow app panels. */
+/* Give the luminous field space, including in narrow app panels. */
 @media(min-width:801px){.intelligence-scene{height:420px;min-height:420px}.welcome{grid-template-columns:.78fr 1.22fr;gap:30px}}
 @media(min-width:1550px){.intelligence-scene{height:465px;min-height:465px}}
 @media(min-width:521px) and (max-width:800px){.welcome{grid-template-columns:.85fr 1.15fr;gap:12px}.intelligence-scene{height:365px;min-height:365px}.welcome h1{font-size:40px}}
 @media(max-width:520px){.intelligence-scene{position:relative;inset:auto;width:100%;height:300px;min-height:300px;opacity:1;mask-image:none;pointer-events:auto;margin:10px 0 0}.scene-top{display:flex;left:0}.scene-caption{display:flex;bottom:12px;left:0}.scene-caption>span:last-child{display:none}.motion-toggle{top:320px}.journey{margin-top:0}.welcome h1{font-size:46px}.hero-copy>p{font-size:11px;margin-bottom:10px}.hero-copy .eyebrow{margin-bottom:14px}}
 .journey button[data-reached="true"]:after{content:"";position:absolute;top:-1px;left:0;right:0;height:1px;background:#93b75b66}
+
+.intelligence-scene{background:radial-gradient(ellipse at 52% 49%,#1d233d55,transparent 68%)}
+@media(min-width:801px){.welcome{grid-template-columns:.72fr 1.28fr}.intelligence-scene{height:400px;min-height:400px}}
+@media(min-width:521px) and (max-width:800px){.welcome h1{font-size:43px}.intelligence-scene{height:340px;min-height:340px}}
