@@ -116,3 +116,81 @@ This second user-directed visual refinement corrects observable presentation
 behavior, with no analytical gate advance. G3 and its retained source-discovery
 and multi-entity/temporal next action remain active; G5 is blocked and all ten
 acceptance areas remain in scope.
+
+
+## Reference-led volumetric neurons and recorded activity (visual superseded below)
+
+Mike supplied a 3D neuron anatomy reference and requested rotation, persistent
+growth and activity reflecting questions, learning and incoming data. Source
+`28881ce` replaces the flat illustration with original procedural WebGL geometry:
+translucent blue soma, textured violet nuclei, tapered branching dendrites,
+segmented axons, terminal bulbs and moving signals. Three.js 0.180.0 is bundled
+locally with its MIT license; no reference bitmap or runtime CDN is used.
+
+One network accumulates through the four stages, orbits and breathes, and forms
+bounded additional connections continuously. A new read-only activity endpoint
+returns successful answer counts, source identity/record count, current-source
+reusable checked examples excluding corrections, and correction counts. Missing
+stores return unavailable, not a fabricated zero. The scene responds to actual
+answer and memory deltas, and a changed warehouse identity adds a small neuron
+(up to nine total). Polling is every 20 seconds while the page is visible, with
+additional refreshes after questions and correction submission. Source snapshots
+must actually be activated; this interface does not ingest or retrain anything.
+
+The live UI question check answered the claims-denial count by payer in 0.3
+seconds, with zero paid cost. Successful answers rose from 907 to 908 and the
+scene's recorded-activity growth counter rose from zero to one. Current-source
+reusable examples are zero: the interface does not pretend all historical
+answers have qualified as training examples. Existing checked-plan reuse and
+correction capture remain distinct from autonomous retraining or promotion.
+
+Five backend tests and eight shipped-bundle event-delta checks passed. They cover
+read-only missing/corrupt stores, successful versus failed answers, corrected and
+old-source examples, source change, duplicate polling, decreasing counts and
+unknown observations. Full-page JS syntax and whitespace checks passed. Browser
+checks cover desktop 1440×1000, mobile 390×844 with document width 390, cumulative
+stage switching, keyboard End, pause/resume, actual question-event growth, all
+five briefing cards and no console errors. Source changes were checked with
+fixtures; the active warehouse was not replaced. Reduced-motion behavior was
+reviewed in code without changing the OS preference.
+
+Final live process: PID 49741, session 54553, workspace
+`/Users/mikel/agere-mvp-run`, port 8885, hosted execution policy unchanged.
+Recovery commit: `480ab16`. Evidence:
+`artifacts/agere-neural-3d-v1/implementation-receipt.json`.
+This is a user-directed presentation and activity increment. G3 remains active,
+G5 blocked, all ten scope areas retained. General warehouse discovery and
+multi-entity/temporal analytical composition remain the next functional work.
+
+
+## TextQL-informed noise-to-action field
+
+Mike rejected the anatomical rendering and explicitly requested the visual
+approach of https://textql.com/products/ontology, with more life, growth and a
+clear path from noise to action. The live hero and source-assembly visual were
+reviewed in the browser. Original procedural points and filaments now replace
+the neuron anatomy: incoming records gather into relationships and a folding
+shared structure, then connect to three output panels. No TextQL asset or code
+is copied. The Data → Information → Intelligence → Wisdom theme remains.
+
+The field keeps receiving particles, extending connections, moving packets and
+changing perspective. Stage selection preserves established structure. “Build a
+view,” “Simulate work” and “Monitor” link to the existing synthetic workspace's
+saved-answer chooser; no action is executed by selecting a visual branch.
+Activity integration from the preceding delivery remains: the live claims-count
+check returned in 0.3 seconds at $0.0000, increased successful answers 908→909
+and added one activity-driven filament. Ambient motion remains illustrative.
+
+Source `4bba3b0` is active through asset reloads; Python process 49741/session
+54553 remains on its preceding core. Recovery is `28881ce`. Eight shipped-bundle
+delta checks, full-page JS syntax and whitespace checks passed. Browser checks
+covered 1440×1000 and 390×844, no mobile overflow, all three output links within
+mobile bounds with 28px target heights, five briefing cards, cumulative stages,
+keyboard End, pause/resume and an empty error console. The Monitor branch opened
+the saved-answer chooser and navigation returned to the field. Evidence:
+`artifacts/agere-noise-to-action-v1/implementation-receipt.json`.
+
+This follows explicit user steering on presentation and does not advance
+analytical acceptance. G3 remains active, G5 blocked, and the full ten-area
+backlog is preserved. Source discovery and multi-entity/temporal composition
+remain the next functional increment under the adopted architecture plan.

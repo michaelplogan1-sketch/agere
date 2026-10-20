@@ -14,7 +14,19 @@ answers once reconciled. Gold 10 is validated but too small for a general superi
 The live service on :8885 runs from /Users/mikel/agere-mvp-run. Inspect its actual
 process and revision before updating; retain a known-good recovery commit.
 
-Current verified service policy: :8885 serves UI assets from 90ef53a (Python core unchanged from ea3deca) with shared typed answer/deliverable/simulation/monitoring composition and a computed chief-of-staff opening brief. Read AGERE_CHIEF_STAFF_2026-10-20.md and its receipt for exact evidence and limitations. The anatomical neural Intelligence field continuously grows new connections across cumulative stages without resets; it preserves the Data → Information → Intelligence → Wisdom theme. Monitors distinguish original query scope from explicitly frozen result patients; checks are manual, and actions/deliverables remain synthetic. Complete grammar and exact caches can avoid paid calls; unfamiliar questions use the configured frontier interpreter. General source discovery, analytical expressiveness, clinical/time reconciliation and independent qualification remain unfinished. The coordinated docs/agere/GENERAL_QUESTION_ARCHITECTURE_PLAN.md is adopted under existing G3/G5; follow the control checkpoint. No additional spending approval is pending.
+Current verified service policy: :8885 serves UI source `4bba3b0` from
+`/Users/mikel/agere-mvp-run` (PID 49741, session 54553; Python core `28881ce`).
+Shared typed composition, chief-of-staff briefing, synthetic actions and manual
+monitoring remain connected. The field is now an original TextQL-informed
+point-and-thread structure: incoming records form shared meaning and branch into
+views, simulated work and monitoring links. Cumulative motion and read-only
+recorded-activity hooks remain. Ambient motion is illustrative; this does not
+activate model retraining. See AGERE_CHIEF_STAFF_2026-10-20.md and
+artifacts/agere-noise-to-action-v1/implementation-receipt.json. Recovery: `28881ce`.
+General source discovery, analytical expressiveness, clinical/time reconciliation
+and independent qualification remain unfinished. Follow the existing G3/G5
+checkpoint and docs/agere/GENERAL_QUESTION_ARCHITECTURE_PLAN.md. No additional
+spending approval is pending.
 
 The remaining notes are historical architecture context, not current run instructions.
 
