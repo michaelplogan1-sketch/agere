@@ -10,7 +10,12 @@ given, is exposed to the query as the CTE `population(patient_id)`.
 import json, re, sqlite3, time
 
 from . import semantic_layer
-from .age import register
+from .age import register as register_age
+from .dose import register as register_dose
+
+
+def register(db):
+    return register_dose(register_age(db))
 
 VERSION = 'semantic-sql/1'
 RETURNS = ('count', 'value', 'patient_set', 'table')

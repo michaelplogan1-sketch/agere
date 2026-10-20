@@ -15,13 +15,13 @@ import time
 from pathlib import Path
 
 from . import sql_query
-from .age import register
+from .sql_query import register
 from .request_plan import PlanError, fingerprint
 
 VERSION = 'general-analysis/1'
 MAX_STEPS = 12
 _NAME = re.compile(r'^[a-z][a-z0-9_]{0,40}$')
-_MACRO = re.compile(r'\{\{\s*(condition|drug_fill|as_of)\s*(?::\s*([a-z0-9_,\s]+))?\s*\}\}')
+_MACRO = re.compile(r'\{\{\s*(condition|drug_fill|as_of|medication_dose)\s*(?::\s*([a-z0-9_,\s]+))?\s*\}\}')
 # Grammatical words carry no requirement; every other question word must be accounted for.
 _FUNCTION_WORDS = set('''a an the and or of in on at to for from by with without within into onto over under per
 is are was were be been being do does did have has had having what which who whom whose how many much
@@ -40,6 +40,10 @@ Each step is ONE SELECT over catalog relations and earlier step names (they beco
 Authoritative definitions: use {{condition:concept_id}} for patients with a named condition (governed diagnosis
 policy), {{drug_fill:drug_class}} for patients with a picked-up fill of a class, and {{as_of}} for the snapshot date.
 Each macro expands to a subquery returning patient_id; use it as  patient_id IN {{condition:heart_failure}}.
+Dose: {{medication_dose}} is a governed relation (patient_id, source_stream, record_id, event_date, drug_text, status,
+per_admin_mg, times_per_day, daily_mg, target_daily_mg) built from structured order/list/label dose fields; use it for
+dose and target comparisons (never parse strengths with LIKE). SQL functions dose_mg(text), per_day(text) and
+target_mg(drug_text) parse other dose text deterministically.
 Age is age_at(patient.birth_date, {{as_of}}). Never use age_latest. Calendar years are inclusive YYYY-01-01..YYYY-12-31.
 Relative periods ("last 12 months") anchor to {{as_of}}. Mixed-type value columns need typeof() guards.
 Every content word of the question must fall inside some requirement or unresolved quote. Map each filter, exclusion,
@@ -107,6 +111,9 @@ def _macro_sql(kind, arg, catalog):
     from . import concepts, drug_classes
     if kind == 'as_of':
         return "'" + catalog.identity['as_of'] + "'"
+    if kind == 'medication_dose':
+        from .dose import MEDICATION_DOSE_SQL
+        return MEDICATION_DOSE_SQL
     names = [a.strip() for a in (arg or '').split(',') if a.strip()]
     if not names:
         raise PlanError(f'Macro {kind} needs a name')
@@ -133,7 +140,7 @@ def _expand(sql, catalog, used):
         return _macro_sql(m.group(1), m.group(2), catalog)
     expanded = _MACRO.sub(sub, sql)
     if '{{' in expanded or '}}' in expanded:
-        raise PlanError('Unknown macro; use {{condition:...}}, {{drug_fill:...}} or {{as_of}}')
+        raise PlanError('Unknown macro; use {{condition:...}}, {{drug_fill:...}}, {{medication_dose}} or {{as_of}}')
     return expanded
 
 

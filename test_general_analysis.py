@@ -139,6 +139,31 @@ class GeneralAnalysis(unittest.TestCase):
         self.assertTrue(a['planner_receipt']['interpretation']['final_llm_analysis'])
         self.assertIn('Do not return a typed request', json.loads(model.call_args_list[3].args[1])['validator_feedback']['instruction'])
 
+    def test_governed_dose_relation_and_parsers(self):
+        from clinical_core.agere.clinical import dose as D
+        self.assertEqual((D.dose_mg('carvedilol 12.5 mg tablet BID'), D.per_day('carvedilol 12.5 mg tablet BID')), (12.5, 2.0))
+        self.assertEqual(D.dose_mg('Sacubitril/valsartan 49/51 mg'), 49.0)
+        self.assertEqual(D.target_mg('sacubitril/valsartan'), 194.0)
+        self.assertIsNone(D.target_mg('metoprolol tartrate 25 mg'))  # not an evidence-based HF beta blocker
+        self.assertEqual(D.target_mg('metoprolol succinate 50 mg ER'), 200.0)
+        self.assertIsNone(D.dose_mg('insulin 10 units'))
+        self.assertEqual(D.dose_mg('carvedilol 3.125 mg'), 3.125)  # never mistaken for 25 mg
+        import sqlite3
+        with sqlite3.connect(self.path/'semantic.sqlite3') as db:
+            db.executescript("""CREATE TABLE record(record_id TEXT, patient_id TEXT, stream TEXT, event_date TEXT, payload TEXT);
+              INSERT INTO record VALUES ('M1','A','medication_lists','2029-03-01','{"name":"Carvedilol","dose":"12.5 mg","frequency":"BID","list_status":"active","event_date":"2029-03-01"}'),
+                ('M2','A','medication_orders','2029-04-01','{"medication_name":"carvedilol 6.25 mg tablet","strength":6.25,"strength_unit":"mg/tablet","dose":1,"dose_unit":"tablet","times_per_day":2,"status":"active","event_date":"2029-04-01"}');""")
+        catalog = R.Catalog.load(self.path)
+        s = {'steps': [{'name': 'doses', 'purpose': 'dose evidence', 'sql':
+                        "SELECT patient_id, record_id, daily_mg, target_daily_mg FROM {{medication_dose}} ORDER BY record_id"}],
+             'returns': 'table', 'requirements': [{'quote': 'carvedilol dose', 'applied_in': ['doses'], 'how': 'governed dose relation'}],
+             'unresolved': []}
+        c = G.prepare(catalog, 'carvedilol dose', s)
+        self.assertEqual(c['governed_macros'], ['medication_dose'])
+        _, shown = G.preview(catalog, c)
+        self.assertEqual([(r['record_id'], r['daily_mg'], r['target_daily_mg']) for r in shown['rows']],
+                         [('M1', 25.0, 50.0), ('M2', 12.5, 50.0)])
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -62,13 +62,15 @@ def isolated_local(catalog, question, population):
 
 def policy_identity():
     from .request_vocabulary import definitions, concept_definitions
+    from .general_analysis import governed_knowledge
     return request_plan.fingerprint({'governed_definitions': definitions(), 'concept_definitions': concept_definitions(),
+        'governed_knowledge': governed_knowledge(),
         'answer_context.py': request_plan.fingerprint((Path(__file__).resolve().parents[1]/'deliverables'/'answer_context.py').read_text()), **{
         name: request_plan.fingerprint(Path(__file__).with_name(name).read_text())
         for name in ('shared_planner.py', 'request_plan.py', 'request_language.py', 'analysis_graph.py',
                      'graph_contracts.py', 'graph_planner.py', 'semantic_layer.py', 'sql_query.py',
                      'age.py', 'request_vocabulary.py', 'request_shapes.py', 'local_request_worker.py',
-                     'concepts.py', 'drug_classes.py', 'nl2sql.py', 'workflow_contract.py', 'request_discovery.py', 'general_analysis.py',
+                     'concepts.py', 'drug_classes.py', 'nl2sql.py', 'workflow_contract.py', 'request_discovery.py', 'general_analysis.py', 'dose.py',
                      'conversation.py', 'question_input.py',
                      'metrics.py', 'metric_families.py', 'measures.py', 'risk_adjustment.py', 'vbc.py')}})
 

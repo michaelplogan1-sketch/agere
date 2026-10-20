@@ -1,6 +1,6 @@
 {
  "schema": "agere-enrollment-programs/1",
- "version": "2026-10-18.4",
+ "version": "2026-10-20.1",
  "synthetic": true,
  "notes": "Program catalog for routed enrollment plans. Eligibility, gap definitions, exclusions, priorities and vendor slots are data; clinical_core/agere/plans/router.py evaluates them deterministically. Vendor slots are placeholders the customer configures with its contracted vendors.",
  "contexts": {
@@ -66,7 +66,8 @@
  "gaps": {
   "gdmt_pillar_missing": {
    "label": "HFrEF guideline-directed medical therapy: one or more of the four pillars not on board",
-   "lookback_days": 120,
+   "lookback_days": 365,
+   "lookback_basis": "Current therapy = a picked-up fill within the 12 months before the snapshot date (Mike, 2026-10-20; previously 120 days).",
    "diagnosis_icd10_prefixes": [
     "I50"
    ],
