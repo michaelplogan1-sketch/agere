@@ -64,7 +64,7 @@ function setupExperience(){
   const dt=lastTime?Math.min(40,time-lastTime):0;lastTime=time;
   if(!paused){phase+=dt*.0002;age+=dt*.001;rx+=(px-rx)*.035;ry+=(py-ry)*.035;shape+=(stage-shape)*.025}
   ctx.clearRect(0,0,w,h);
-  const scale=Math.min(w*.25,h*.31),yaw=.24+Math.sin(phase*.22)*.30+rx*.3,pitch=-.13+ry*.22;
+  const scale=Math.min(w*.17,h*.31),yaw=.24+Math.sin(phase*.22)*.30+rx*.3,pitch=-.13+ry*.22;
   const cy=Math.cos(yaw),sy=Math.sin(yaw),cx=Math.cos(pitch),sx=Math.sin(pitch);
   const colors=palette[stage],formation=smooth(age/7),breath=1+Math.sin(phase*1.2)*.035;
   function project(point){
