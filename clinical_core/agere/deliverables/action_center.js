@@ -53,7 +53,7 @@ async function run(fn) {
   try { await fn(); } catch (error) { notify(error.message, true); }
   finally { busy = false; }
 }
-function canCreate() { return data && !data.context.stale && !data.context.invalidated && data.context.answer.status === 'answered' && !data.context.answer.missing?.length; }
+function canCreate() { return data && data.context.supports_patient_work !== false && !data.context.stale && !data.context.invalidated && data.context.answer.status === 'answered' && !data.context.answer.missing?.length; }
 function generationLabel(d) {
   return d.mockup || d.mode === 'reference_example' ? 'Local template' : d.generation === 'frontier' || d.mode === 'composed' ? 'Frontier generated' : 'Generation not recorded';
 }
@@ -149,7 +149,7 @@ function showPatients() {
 }
 function updateSelection() {
   $('selection').textContent = selected.size ? num(selected.size)+' patient'+(selected.size===1?'':'s')+' selected' : 'No patients selected';
-  $('selection-hint').textContent = !canCreate() ? 'This answer needs updating before review work can be created.' : intent ? programNames[intent]+' · ready when you are' : 'Select patients to prepare their next step.';
+  $('selection-hint').textContent = data.context.supports_patient_work === false ? 'This summary is for analysis. Ask which patients should receive follow-up first.' : !canCreate() ? 'This answer needs updating before review work can be created.' : intent ? programNames[intent]+' · ready when you are' : 'Select patients to prepare their next step.';
   $('continue').innerHTML = (intent ? 'Continue with selection' : 'Choose next step') + ' '+icon('arrow');
   $('continue').disabled = !selected.size || !canCreate();
   $('clear').disabled = !selected.size;
@@ -201,6 +201,7 @@ function render() {
   if (c.stale) warnings.push('Source data has changed. This saved answer is still visible; ask again before changing work.');
   if (c.answer.status !== 'answered') warnings.push('This answer is '+pretty(c.answer.status)+'. Complete the analysis before creating review work.');
   if (c.answer.missing?.length) warnings.push('Not covered: '+c.answer.missing.join('; '));
+  if (c.supports_patient_work === false) warnings.push('This is an analytical summary. Build a view or monitor it; ask for a specific patient cohort before preparing follow-up work.');
   $('scope-warning').textContent = warnings.join(' ');
   $('scope-warning').hidden = !warnings.length;
   $('cohort-description').textContent = num(c.patient_rows.length)+' patients from the saved answer. Select who to work with, then choose their next step.';

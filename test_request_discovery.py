@@ -209,6 +209,15 @@ class RequestDiscovery(unittest.TestCase):
             self.assertEqual(saved['answer']['evidence_discovery'][0]['probes'][0]['scope']['patient_count'], 3)
             self.assertEqual(saved['patient_ids'], expected)
             self.assertEqual(len(calls), 3)
+            listed = A.followup(self.path, key, 'list them')
+            child = A.capture(self.path, 'list them', listed)
+            reopened, bundle = A.evidence_bundle(self.path, child['id'])
+            self.assertEqual(reopened['answer']['evidence_discovery'], saved['answer']['evidence_discovery'])
+            self.assertEqual(reopened['answer']['inherited_evidence_context']['source'], saved['source'])
+            self.assertIn('evidence_discovery', json.dumps(bundle.results))
+            narrowed = S.compose(self.stack, 'List patients over 65', population=expected, parent=saved,
+                                 model=lambda *a, **kw: self.fail('Unexpected model'))
+            self.assertEqual(narrowed['answer']['evidence_discovery'], saved['answer']['evidence_discovery'])
 
 
 if __name__ == '__main__':

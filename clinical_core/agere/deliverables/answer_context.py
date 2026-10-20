@@ -136,7 +136,8 @@ def load(path, key, *, current=False):
         raise ValueError('This saved answer was invalidated after incorrect cohort or constraint handling was found. It remains available for inspection; new work is blocked.')
     if current and stale:
         raise ValueError('The data changed. Ask the question again before creating or changing work.')
-    return {**data, 'stale': stale, 'invalidated': invalidated}
+    return {**data, 'stale': stale, 'invalidated': invalidated,
+            'supports_patient_work': supports_patient_work(data)}
 
 
 def listing(path):
@@ -172,14 +173,25 @@ def inspect(path, key):
             'programs': PROGRAMS, 'states': STATES, 'external_dispatch_performed': False}
 
 
+def supports_patient_work(context):
+    """Summary input membership is provenance, not permission to create work."""
+    answer = context['answer']
+    computed = answer.get('computed_as')
+    contract = (context.get('planner_receipt') or {}).get('request_contract') or {}
+    summary_select = any(s.get('kind') in ('avg', 'sum', 'min', 'max')
+                         for s in contract.get('request', {}).get('select', []))
+    return not (answer.get('actionable_cohort') is False or answer.get('answer_type') == 'value'
+                or summary_select or (isinstance(computed, dict) and computed.get('metric_id'))
+                or any(n.get('operation') == 'governed_metric' for n in (context.get('graph') or {}).get('nodes', [])))
+
+
 def create_work(path, request):
     if set(request) != {'context_id', 'program', 'patient_ids', 'owner', 'note'}:
         raise ValueError('Exact answer, program, selected patients, owner and note are required')
     c = load(path, request['context_id'], current=True)
     if c['answer'].get('status') != 'answered' or c['answer'].get('missing'):
         raise ValueError('Resolve the incomplete answer before preparing program work')
-    if (c['answer'].get('actionable_cohort') is False or
-            any(n.get('operation') == 'governed_metric' for n in (c.get('graph') or {}).get('nodes', []))):
+    if not supports_patient_work(c):
         raise ValueError('This analytical summary does not select an action population; ask for the intended patient cohort.')
     program = request['program']
     if program not in PROGRAMS:
@@ -309,9 +321,15 @@ def followup(path, key, question):
     answer = {'status': status, 'answer_type': 'count' if count_only else 'table', 'count': len(ids),
               'headline': f'{len(ids)} patients from the saved cohort' + (f', grouped by {grouping.group(1)}.' if grouping else '.'),
               'table': [] if count_only else table, 'patient_ids': sorted(ids),
+              'actionable_cohort': bool(ids) and supports_patient_work(c),
               'missing': parent.get('missing') or [], 'limitations': [*(parent.get('limitations') or []),
                   'This transformation preserves the original answer limitations and does not re-establish cohort correctness.'],
-              'source_checks': evidence}
+              'source_checks': evidence,
+              'evidence_discovery': parent.get('evidence_discovery', []),
+              'inherited_evidence_context': {'id': key, 'source': c['source']},
+              'query_evidence': parent.get('query_evidence')}
+    if not supports_patient_work(c):
+        answer['headline'] = f'{len(ids)} contributing patients · analytical provenance only'
     return {'question': question, 'answer': answer, 'route': 'saved_cohort',
             'cohort_patient_rows': [r for r in rows if r['patient_id'] in ids],
             'planner_receipt': {'route': 'saved_cohort', 'new_paid_api_calls': 0},

@@ -136,6 +136,18 @@ class Correctness(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, 'analytical summary'):
                 A.create_work(self.path, {'context_id': context['id'], 'program': 'custom',
                                          'patient_ids': ['A'], 'owner': 'fixture', 'note': ''})
+            self.stack.compose = lambda q, **kwargs: S.compose(self.stack, q, model=Mock(side_effect=AssertionError('Model called')), **kwargs)
+            listed = conversation.handle_compose(self.stack, {'question': 'list them', 'conversation_id': 'summary',
+                                                              'answer_context_id': context['id']})
+            child = A.load(self.path, listed['action_context']['id'])
+            self.assertFalse(child['supports_patient_work'])
+            self.assertFalse(child['answer']['actionable_cohort'])
+            with self.assertRaisesRegex(ValueError, 'analytical summary'):
+                A.create_work(self.path, {'context_id': child['id'], 'program': 'custom',
+                                         'patient_ids': ['A'], 'owner': 'fixture', 'note': ''})
+            narrowed = S.compose(self.stack, 'List patients over 65', population=child['patient_ids'], parent=child,
+                                 model=Mock(side_effect=AssertionError('Model called')))
+            self.assertFalse(narrowed['answer']['actionable_cohort'])
 
     def test_registered_definitions_cannot_be_model_rewritten(self):
         request = L.parse(self.catalog, 'denial rate 2029')

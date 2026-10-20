@@ -609,6 +609,12 @@ def execute_contract(stack, question, graph, receipt, *, population=None, parent
             receipt['api_cost_known'] = False  # Do not misreport unpriced engine calls as free.
             result.update(new_paid_api_calls=receipt['new_paid_api_calls'], planning_economics=economics(receipt))
     if parent:
+        from ..deliverables.answer_context import supports_patient_work
+        result['answer']['actionable_cohort'] = result['answer'].get('actionable_cohort', False) and supports_patient_work(parent)
+        inherited = [*parent['answer'].get('evidence_discovery', []), *result['answer'].get('evidence_discovery', [])]
+        if inherited:
+            result['answer']['evidence_discovery'] = list({request_plan.fingerprint(r): r for r in inherited}.values())
+            result['answer']['inherited_evidence_context'] = {'id': parent['id'], 'source': parent['source']}
         result['cohort_transform'] = {'parent_context_id': parent['id'], 'input_patient_ids': sorted(population),
                                      'operations': ['Apply compiled request to exact saved membership'], 'request_id': contract['id']}
         old_rows = {r['patient_id']: r for r in parent.get('patient_rows', [])}
