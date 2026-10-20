@@ -50,3 +50,14 @@ main#main{max-width:1380px;margin:0 auto;padding:34px 60px 60px;width:100%;flex:
 .intelligence-scene{background:radial-gradient(ellipse at 52% 49%,#1d233d55,transparent 68%)}
 @media(min-width:801px){.welcome{grid-template-columns:.72fr 1.28fr}.intelligence-scene{height:400px;min-height:400px}}
 @media(min-width:521px) and (max-width:800px){.welcome h1{font-size:43px}.intelligence-scene{height:340px;min-height:340px}}
+
+/* A volumetric neural sculpture; restrained telemetry keeps it grounded. */
+.intelligence-scene{background:radial-gradient(ellipse at 48% 53%,#1c254744,transparent 70%)}
+.field-activity{padding:4px 8px 19px;color:#a6afbb;font-size:11px}
+.field-event{display:flex;gap:7px;align-items:center;color:#c7cbd8;min-height:20px}
+.field-event i{width:5px;height:5px;border-radius:50%;background:#b5a6ed;box-shadow:0 0 10px #a287ee66}
+.field-stats{display:flex;gap:17px;margin-top:6px;color:#818d9b;font-size:10px;font-variant-numeric:tabular-nums}
+.field-stats b{font-weight:500;color:#bbc6cf}
+.field-activity[data-status="unavailable"] .field-event i{background:#9a937a;box-shadow:none}
+@media(min-width:801px){.intelligence-scene{height:420px;min-height:420px}.welcome{align-items:center}.hero-copy{padding-bottom:75px}}
+@media(max-width:520px){.field-activity{padding:0 0 15px}.field-stats{gap:12px;font-size:9px}.field-event{font-size:10px}.intelligence-scene{height:320px;min-height:320px}.scene-caption>span:last-child{display:block;font-size:8px}.motion-toggle{top:320px}}

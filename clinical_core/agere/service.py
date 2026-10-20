@@ -795,6 +795,10 @@ def serve(run,port,annotations=None,evidence_queries=None,stack=None,allow_live_
                 if connected_stack is None:self.send_error(404);return
                 from .clinical.answer_log import summary as economics_summary
                 raw=json.dumps(economics_summary(connected_stack.path)).encode();mime='application/json'
+            elif parsed.path=='/api/stack/intelligence-activity':
+                if connected_stack is None:self.send_error(404);return
+                from .clinical.intelligence_activity import snapshot as intelligence_snapshot
+                raw=json.dumps(intelligence_snapshot(connected_stack.path)).encode();mime='application/json'
             elif parsed.path=='/api/stack/learning':
                 if connected_stack is None:self.send_error(404);return
                 from .clinical.learning import summary as learning_summary

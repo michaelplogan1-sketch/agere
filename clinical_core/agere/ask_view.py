@@ -936,7 +936,7 @@ async function ask(question,opt){opt=opt||{};question=String(question||'').trim(
   let d;try{d=await r.json()}catch(_){d={error:'HTTP '+r.status}}t.seconds=(performance.now()-t0)/1000;t.pending=false;
   if(d.error||!r.ok){t.error=d.error||('HTTP '+r.status)}else{t.data=d;t.resolved=(d.conversation||{}).resolved_question}}
  catch(err){t.pending=false;t.error=String(err)}finally{state.busy=false;$('#askb').disabled=false;$('#newconv').disabled=false;$('#q').readOnly=false}
- state.outFilter=null;renderTurn(state.turns.indexOf(t));loadEcon();loadSaved();return t}
+ state.outFilter=null;renderTurn(state.turns.indexOf(t));loadEcon();loadSaved();document.dispatchEvent(new Event('agere-activity-changed'));return t}
 function loadConversation(){if(!state.cid)return;const epoch=conversationEpoch;fetch('/api/stack/conversation?id='+encodeURIComponent(state.cid)).then(r=>r.ok?r.json():null).then(d=>{if(!d||state.turns.length||epoch!==conversationEpoch)return;
  state.turns=(d.turns||[]).map(x=>({question:x.question,resolved:x.resolved_question,error:x.error||null,summary:(x.answer_summary||{}).headline||'',status:(x.answer_summary||{}).status,action_context:(x.answer_summary||{}).action_context}));
  renderThread()}).catch(()=>{})}
@@ -1010,6 +1010,6 @@ def page():
     shell = (assets / 'explore.html').read_text().replace('/* EXPLORE_CSS */',
         (assets / 'answer.css').read_text() + '\n' + (assets / 'explore.css').read_text())
     return (PAGE.replace('__EXPLORE_SHELL__', shell)
-            .replace('__EXPLORE_JS__', (assets / 'explore.js').read_text() + '\n' +
+            .replace('__EXPLORE_JS__', (assets / 'neural-field.bundle.js').read_text() + '\n' + (assets / 'explore.js').read_text() + '\n' +
                      (assets / 'experience.js').read_text())
             .replace('__DEMO_STEPS__', json.dumps(DEMO_STEPS).replace('</', '<\\/')))
