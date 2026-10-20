@@ -136,6 +136,21 @@ class Learning(unittest.TestCase):
         self.correct(rule=self.rule)
         self.assertEqual(len(E.context(self.path, self.q)), 1)
 
+    def test_suspension_keeps_cross_wording_feedback_and_cannot_reenable_old_cache(self):
+        other = 'Explain the minimum loss sharing rate for MSSP ENHANCED 2026'
+        before = learning.feedback_identity(self.path, other)
+        self.correct(rule=self.rule)
+        checked = learning.feedback_identity(self.path, other)
+        self.correct()
+        self.assertEqual(E.context(self.path, other), [])
+        pending = learning.correction_context(self.path, other)
+        self.assertTrue(any(c.get('financial_feedback') for c in pending))
+        self.assertFalse(any(c.get('verified_rule') for c in pending))
+        after = learning.feedback_identity(self.path, other)
+        self.assertNotEqual(before, after)
+        self.assertNotEqual(checked, after)
+        self.assertEqual(E.feedback_context(self.path, other.replace('2026', '2025')), [])
+
     def test_verification_is_idempotent_and_history_is_immutable(self):
         r = self.correct(rule=self.rule)
         again = E.verify_rule(self.path, r['correction_id'], self.rule)

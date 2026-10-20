@@ -20,7 +20,7 @@ from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 
 from clinical_core.agere import service
-from clinical_core.agere.clinical import economics_learning as E, programs, vbc
+from clinical_core.agere.clinical import economics_learning as E, learning, programs, vbc
 
 
 def main():
@@ -67,6 +67,7 @@ def main():
                 wrong = call('/api/stack/correct', {'question': question, 'note': 'Incorrect claim', 'rule': {**rule, 'value': .01}})
                 assert wrong['rule_verification']['status'] == 'rejected'
                 assert not E.context(path, question)
+                assert learning.correction_context(path, 'Explain the minimum loss sharing rate for MSSP ENHANCED 2026')
                 call('/api/stack/correct', {'question': question, 'note': 'Rechecked the source value.', 'rule': rule})
                 try: call('/api/stack/compose', {'question': 'Shared savings under MSSP BASIC level E 2026 with a $100 benchmark?'})
                 except HTTPError as exc:

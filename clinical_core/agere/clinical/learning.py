@@ -26,7 +26,8 @@ def correction_context(path, question):
                             'created': created, 'status': 'needs_revalidation',
                             'authority': 'reported_feedback; not independently verified truth'})
         if len(matches) == 8: break
-    from .economics_learning import context as financial_context
+    from .economics_learning import context as financial_context, feedback_context
+    matches.extend(feedback_context(path, question))
     matches.extend({'status': 'verified_rule', 'verified_rule': lesson,
                     'authority': lesson['authority']} for lesson in financial_context(path, question))
     return matches

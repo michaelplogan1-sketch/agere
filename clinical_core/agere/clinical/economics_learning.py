@@ -134,6 +134,25 @@ def context(path, question):
             (r['program']['id'], r['program'].get('variant'), r['program']['year']) == scope][:8]
 
 
+def feedback_context(path, question):
+    """Retain a recheck obligation even when the last checked lesson is suspended.
+
+    Otherwise a changed wording could lose all correction context on suspension
+    and accidentally become eligible for an old exact answer or plan cache.
+    """
+    scope = _scope(question)
+    target = Path(path) / 'learning.sqlite3'
+    if not scope or not target.exists(): return []
+    with closing(sqlite3.connect(target.resolve().as_uri() + '?mode=ro', uri=True)) as db:
+        if not db.execute("SELECT 1 FROM sqlite_master WHERE name='corrections'").fetchone(): return []
+        for cid, q, note, created in db.execute('SELECT rowid,question,note,created FROM corrections ORDER BY rowid DESC'):
+            if _scope(q) == scope:
+                return [{'status': 'needs_revalidation', 'question': q, 'note': note, 'created': created,
+                         'financial_feedback': {'correction_id': cid, 'program': dict(zip(('id', 'variant', 'year'), scope))},
+                         'authority': 'reported_feedback; scope-bound recheck obligation, not verified truth'}]
+    return []
+
+
 def summary(path):
     counts, gaps, questions = Counter(), Counter(), 0
     target = Path(path) / 'learning.sqlite3'
