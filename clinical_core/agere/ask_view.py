@@ -991,7 +991,7 @@ function activate(el){if(el.dataset.csv){downloadCSV(el.dataset.csv);return}
  if(el.dataset.flagsend){const box=el.closest('[data-flag]'),note=$('#flagnote').value.trim();if(!note){$('#flagnote').focus();return}const t=state.turns[state.active]||{};
   const question=((t.data||{}).conversation||{}).resolved_question||t.question;el.disabled=true;
   fetch('/api/stack/correct',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({question,note})}).then(r=>r.json()).then(d=>{
-   box.innerHTML='<p class="'+(d.error?'badc':'goodc')+'" role="status">'+esc(d.error||'Recorded: this answer will not be reused and becomes a regression case.')+'</p>'}).catch(e=>{box.innerHTML='<p class="badc">'+esc(e)+'</p>'})}}
+   document.dispatchEvent(new Event('agere-activity-changed'));box.innerHTML='<p class="'+(d.error?'badc':'goodc')+'" role="status">'+esc(d.error||'Recorded: this answer will not be reused and becomes a regression case.')+'</p>'}).catch(e=>{box.innerHTML='<p class="badc">'+esc(e)+'</p>'})}}
 function refreshWorklist(){const t=state.turns[state.active];const box=document.querySelector('[data-worklist]');if(t&&t.data&&box){box.innerHTML=worklist(t.data.answer);box.scrollIntoView({behavior:'smooth',block:'nearest'})}}
 const ACT='[data-edit-question],[data-csv],[data-ask],[data-ask-standalone],[data-turn],[data-demo],#demonext,#demoreset,[data-clearfilter],[data-series],[data-pick],[data-flagopen],[data-flagcancel],[data-flagsend],[data-brief-dismiss]';
 document.addEventListener('click',e=>{const el=e.target.closest(ACT);if(el){e.preventDefault();activate(el)}});
