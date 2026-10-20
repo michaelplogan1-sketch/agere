@@ -66,6 +66,18 @@ class Workflow(unittest.TestCase):
                        'planner_receipt': {'request_contract': {'request': {'select':select}}}}
             self.assertFalse(A.supports_patient_work(context))
 
+    def test_unversioned_legacy_patient_lists_require_refresh(self):
+        target = A.root(self.path)/self.c['id']/'answer.json'
+        old = json.loads(target.read_text())
+        old.pop('context_policy_identity')
+        old['planner_receipt'] = {'route': 'local_compiler'}
+        target.write_text(json.dumps(old))
+        archived = A.load(self.path, self.c['id'])
+        self.assertTrue(archived['invalidated'])
+        self.assertEqual(archived['patient_ids'], ['A','B','C'])
+        with self.assertRaisesRegex(ValueError, 'invalidated'):
+            A.create_work(self.path, self.req())
+
     def test_wrong_cohort_stale_data_and_conflicting_revision_rejected(self):
         with self.assertRaisesRegex(ValueError,'outside'): A.create_work(self.path,self.req(patient_ids=['OUTSIDE']))
         item=A.create_work(self.path,self.req())['items'][0]

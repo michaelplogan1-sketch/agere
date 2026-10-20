@@ -89,7 +89,9 @@ def capture(path, question, result, *, original_question=None):
         if {r['patient_id'] for r in inherited} != set(answer.get('patient_ids') or []):
             raise ValueError('Transformed patient evidence does not match the saved cohort')
         rows = inherited
-    data = {'schema': 'agere-answer-context/1', 'question': question,
+    from ..clinical.shared_planner import policy_identity
+    context_policy = policy_identity()
+    data = {'schema': 'agere-answer-context/1', 'context_policy_identity': context_policy, 'question': question,
             'original_question': original_question or question, 'source': source,
             'answer': answer, 'graph': result.get('graph'), 'results': result.get('results'),
             'planner_receipt': result.get('planner_receipt'), 'planning_economics': result.get('planning_economics'),
@@ -101,7 +103,8 @@ def capture(path, question, result, *, original_question=None):
     # cache state or cost. Keep the first complete execution receipt immutable.
     graph = data.get('graph') or {}
     plan = [{k: n.get(k) for k in ('id', 'operation', 'inputs', 'parameters')} for n in graph.get('nodes') or []]
-    key = 'ANS-' + fingerprint({'version': 3, 'source': source, 'answer': answer, 'plan': plan,
+    key = 'ANS-' + fingerprint({'version': 4, 'context_policy_identity': context_policy,
+                               'source': source, 'answer': answer, 'plan': plan,
                                'workflow': data['workflow'],
                                'answer_policy_version': (result.get('planner_receipt') or {}).get('version'),
                                'answer_policy_identity': (result.get('planner_receipt') or {}).get('policy_identity'),
@@ -135,11 +138,11 @@ def load(path, key, *, current=False):
     # A source snapshot can stay unchanged while corrected planning definitions
     # change membership. Preserve old answers for inspection, not new work.
     from ..clinical.shared_planner import policy_identity
-    active_policy, ancestor, visited = None, data, set()
+    active_policy, ancestor, visited = policy_identity(), data, set()
     for _ in range(32):
+        invalidated = invalidated or ancestor.get('context_policy_identity') != active_policy
         r = ancestor.get('planner_receipt') or {}
         if r.get('version', '').startswith('shared-warehouse-planner/'):
-            active_policy = active_policy or policy_identity()
             invalidated = invalidated or r.get('policy_identity') != active_policy
         parent_key = (ancestor.get('cohort_transform') or {}).get('parent_context_id')
         if not parent_key:
@@ -156,7 +159,7 @@ def load(path, key, *, current=False):
     else:
         invalidated = True
     if current and invalidated:
-        raise ValueError('This saved answer was invalidated after incorrect cohort or constraint handling was found. It remains available for inspection; new work is blocked.')
+        raise ValueError('This saved answer is invalidated under the current planning definitions. It remains available for inspection; ask again before creating new work.')
     if current and stale:
         raise ValueError('The data changed. Ask the question again before creating or changing work.')
     return {**data, 'stale': stale, 'invalidated': invalidated,

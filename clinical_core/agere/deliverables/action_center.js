@@ -197,7 +197,7 @@ function render() {
   $('nav-cohort').textContent = num(c.patient_rows.length);
   $('nav-work').textContent = num(data.items.filter(i=>i.state!=='cancelled').length);
   const warnings = [];
-  if (c.invalidated) warnings.push('This answer was invalidated after a correctness review. Its history is preserved; new work and demo actions are blocked.');
+  if (c.invalidated) warnings.push('This answer uses an older or invalidated planning definition. Its history is preserved; refresh the answer before new work or demo actions.');
   if (c.stale) warnings.push('Source data has changed. This saved answer is still visible; ask again before changing work.');
   if (c.answer.status !== 'answered') warnings.push('This answer is '+pretty(c.answer.status)+'. Complete the analysis before creating review work.');
   if (c.answer.missing?.length) warnings.push('Not covered: '+c.answer.missing.join('; '));
