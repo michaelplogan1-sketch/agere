@@ -1,6 +1,6 @@
 """One question → registered operations → source evidence → selective model review."""
 from pathlib import Path
-import hashlib,json,sqlite3,time
+import hashlib,json,os,sqlite3,time
 from ...contracts import digest
 from ..gateway import BudgetLedger, default_ledger_path
 from .warehouse_retrieval import Retriever
