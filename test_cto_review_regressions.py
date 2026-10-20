@@ -8,7 +8,7 @@ from types import SimpleNamespace
 import unittest
 from unittest.mock import Mock, patch
 
-from clinical_core.agere.clinical import answer_log, cohorts, cohort_families, conversation, grounding, therapy_review
+from clinical_core.agere.clinical import answer_log, bottled, bottled_cohort_hook, cohorts, cohort_families, conversation, grounding, therapy_review
 from clinical_core.agere.clinical.question_input import QuestionNotUnderstood
 from clinical_core.agere.deliverables import answer_context as A, synthetic_actions as S
 
@@ -34,6 +34,15 @@ class Interpretation(unittest.TestCase):
                   'List patients not on a statin but taking an ARB']:
             self.assertIsNone(cohort_families.parse(q, '2030-05-27'), q)
         self.assertIsNotNone(cohort_families.parse('Which diabetics are not on a statin?', '2030-05-27'))
+
+    def test_learned_slots_cannot_bypass_the_shared_scope_guard(self):
+        q = 'List diabetics on a statin but not on an ACE inhibitor or ARB'
+        model = Mock(side_effect=AssertionError('Rejected scope must not reach a model'))
+        got, receipt = bottled.cohort_slots(q, '2030-05-27', model=model)
+        self.assertIsNone(got)
+        self.assertIn('Positive medication', receipt['declined'])
+        self.assertIsNone(bottled_cohort_hook.plan(None, q, '2030-05-27', model=model))
+        model.assert_not_called()
 
     def test_positive_hf_request_is_not_claimed_and_incomplete_review_is_partial(self):
         for q in ['Flag HFrEF patients who ARE on full GDMT at target dose', 'Review HFrEF patients on GDMT']:

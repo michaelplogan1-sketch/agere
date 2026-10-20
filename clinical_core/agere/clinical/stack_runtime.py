@@ -104,6 +104,9 @@ class Stack:
         return execute(self,plan,question=question)
     def model_roles(self):
         from ..gateway import PersistentGateway
+        from . import bottled, nl2sql
+        qwen_slots = bottled.narrow_enabled() and bottled.NarrowModel.available()
+        qwen_rewrite = os.environ.get('AGERE_LOCAL_MODEL', 'off' if self.allow_live else 'on') != 'off' and nl2sql.MODEL_DIR.exists()
         return {'planning_order':['local compiler / exact question cache','local MiniLM plan-candidate retrieval',
                                   'Perplexity typed route selection','Claude for unsupported or uncertain composition'],
                 'frontier_model':PersistentGateway.MODELS['claude'],
@@ -121,7 +124,9 @@ class Stack:
                     'clinical_authority':False,'native_token_check':True,'saved_answer_route':'/api/stack/case-synthesis',
                     'large_context':'bounded source passes and dependency-preserving excerpt reconciliation',
                     'question_scope':'hybrid retrieval plus typed source closure; sufficiency unassessed'},
-                'qwen3_4b_active':False,'qwen_status':'Earlier experimental reader; not a current planner or default reader',
+                'qwen3_4b_active':qwen_slots or qwen_rewrite,
+                'qwen_status':{'narrow_slot_filling_enabled':qwen_slots, 'canonical_rewrite_enabled':qwen_rewrite,
+                    'scope':'Local proposals only; agreement among decodes does not prove preservation of the original question or correctness.'},
                 'scope':'Local models and code handle bounded tasks. Hosted decision routing is not a newly trained local SLM. No universal best model or calibrated end-to-end routing quality is established.'}
     def compose(self,question,*,planning='auto'):
         from .question_input import validate_question

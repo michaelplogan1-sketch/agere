@@ -814,23 +814,28 @@ def returns_for(question):
     return None
 
 
+def scope_rejection(question):
+    """Shared family scope guard, also required before learned slot rewriting."""
+    qtext, defn = split_definition(_clean(question))
+    if _UNSUPPORTED.search(qtext):
+        return 'Question contains constraints or an answer shape this family cannot represent'
+    if not defn and _condition_groups(_lower(qtext)) > 1:
+        return 'Multiple condition predicates require a compositional plan'
+    if detect_family(qtext, defn) == 'therapy_class_gap':
+        polarity_text = re.sub(r'\bnot\s+(?:on|taking|prescribed|receiving)\b', 'without', _lower(qtext))
+        if re.search(r'\b(?:on|taking|prescribed|receiving)\s+(?:an?\s+|any\s+)?', polarity_text):
+            return 'Positive medication requirements cannot be represented by an all-negative gap family'
+    return None
+
+
 def parse(question, as_of):
     """question (optionally with an inline "Definition: ...") -> {'family', 'parameters', 'returns', 'missing', 'defaults',
     'parsed'} or None when no family fits. Deterministic. 'missing' lists slots only a model (or the user) can fill."""
     if not isinstance(question, str) or not question.strip(): return None
     qtext, defn = split_definition(_clean(question))
-    if _UNSUPPORTED.search(qtext): return None
-    if not defn and _condition_groups(_lower(qtext)) > 1:
-        return None  # "diabetic patients who also have CKD": one condition population per family; a union answers another question
+    if scope_rejection(question): return None
     family = detect_family(qtext, defn)
     if family is None: return None
-    if family == 'therapy_class_gap':
-        # A gap family has only negative class predicates. Never turn a positive
-        # requirement ("on a statin but not ACEi/ARB") into another missing class.
-        # A compositional planner must represent both sides before answering.
-        polarity_text = re.sub(r'\bnot\s+(?:on|taking|prescribed|receiving)\b', 'without', _lower(qtext))
-        if re.search(r'\b(?:on|taking|prescribed|receiving)\s+(?:an?\s+|any\s+)?', polarity_text):
-            return None
     year = _calendar_year(qtext + ' ' + defn) if family == 'utilization_threshold' else None
     if family != 'adherence_pdc' and not year and re.search(r'\b(?:19|20)\d\d\b', qtext + ' ' + defn):
         return None  # calendar-dated definitions (measurement years) are not as_of-relative family windows

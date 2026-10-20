@@ -115,8 +115,12 @@ def load(path, key, *, current=False):
     data = json.loads(f.read_text())
     stale = data['source'] != source_identity(path)
     invalidated = ((data.get('planner_receipt') or {}).get('version') == 'patient-therapy-review/1')
+    from ..clinical.cohort_families import scope_rejection
+    receipt = data.get('planner_receipt') or {}
+    if receipt.get('route') in ('cohort_family', 'cohort_family_bottled') and scope_rejection(data['question']):
+        invalidated = True
     if current and invalidated:
-        raise ValueError('This saved therapy-review answer was invalidated after incorrect cohort and treatment-scope behavior was found. It remains available for inspection; new work is blocked.')
+        raise ValueError('This saved answer was invalidated after incorrect cohort or constraint handling was found. It remains available for inspection; new work is blocked.')
     if current and stale:
         raise ValueError('The data changed. Ask the question again before creating or changing work.')
     return {**data, 'stale': stale, 'invalidated': invalidated}

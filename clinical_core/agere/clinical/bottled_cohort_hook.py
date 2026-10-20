@@ -16,6 +16,8 @@ from . import bottled, cohort_families as cf
 
 
 def plan(path, question, as_of, *, ledger=None, receipts=None, model=None):
+    if cf.scope_rejection(question):
+        return None  # The model cannot erase a constraint rejected by the same tool.
     use = bottled.narrow_enabled() and (model is not None or bottled.NarrowModel.available())
     if not use:
         return cf.plan(path, question, as_of, ledger=ledger, receipts=receipts)

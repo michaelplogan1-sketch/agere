@@ -603,8 +603,9 @@ def cohort_slots(question, as_of, model=None, k=None, agree=None):
     receipt = {'version': NARROW_VERSION, 'k': k, 'agree_required': agree, 'api_usd': 0.0}
     if not isinstance(question, str) or not question.strip(): return None, {**receipt, 'declined': 'empty question'}
     qtext, _ = cf.split_definition(cf._clean(question))
-    if cf._UNSUPPORTED.search(qtext):  # words the families cannot represent (rates, breakdowns, costs, ...): never claimed
-        return None, {**receipt, 'declined': 'question asks for something no family represents'}
+    rejected = cf.scope_rejection(question)
+    if rejected:
+        return None, {**receipt, 'declined': rejected}
     bench = benchmark_match(question)
     if bench: return None, {**receipt, 'declined': f'benchmark question ({bench}): answered only by the verified ladder'}
     model = model or NarrowModel.get()
