@@ -13,3 +13,5 @@ G3 active; G5 and full ten-area acceptance incomplete. The existing checkpoint h
 No paid provider calls for coordinated build work; credits are not a prerequisite. Existing app integration/credentials unchanged. Do not retry paid calls for qualification. Human-authorized temporal and domain-learning lanes are integrated; this chat alone owns controls/runtime. Preserve original sealed lane receipts, separate policy addenda and evaluation-hygiene disclosures.
 
 Synthetic data/actions only. No real care, outreach, payment, external publication, new service, protected evaluation, generator/research/design edits. Full charter remains in AUTONOMOUS_STACK_QUEUE.md, AGERE_PRODUCT_DIRECTION.md and AGERE_RESEARCH_HANDOFF.md.
+
+Active isolated B2 candidate: authorized Review AI stack techniques lane owns queueing.py and queueing-only sections of analysis_graph.py. Avoid overlapping edits. Preserve exact/empty cohort, as-of/event window and forecast evidence scope; owner review/integration awaits its frozen receipt. Details in checkpoint.coordination.queueing_scope_candidate.

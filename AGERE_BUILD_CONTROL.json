@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-10-21T00:43:28.066430+00:00",
+  "updated_at": "2026-10-21T00:47:49.267375+00:00",
   "decision_basis": "AGERE_SHARED_FRONTIER_2026-10-20.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -363,7 +363,27 @@
     },
     "coordination": {
       "integration_owner": "01a15af4-c150-76f2-9df2-a44c1428b70d",
-      "status": "Sole owner. Temporal and domain-learning increments integrated. Direct user identifies /ask as the product surface; no design migration. No paid calls or credit prerequisite."
+      "status": "Sole owner. Temporal and domain-learning increments integrated. Direct user identifies /ask as the product surface; no design migration. No paid calls or credit prerequisite.",
+      "queueing_scope_candidate": {
+        "status": "isolated_implementation_in_progress_not_activated",
+        "thread_id": "01a15b40-8c5e-7263-b8eb-88dc5a24a707",
+        "base_commit": "a2c6335",
+        "blocker": "B2",
+        "reported_defect": "Shared planner attaches a selected cohort, but queueing dispatch discards it and queueing ignores patient_ids/as_of; optional forecast may broaden source/population. Reported by authorized lane; owner integration verification pending.",
+        "owned_files": [
+          "clinical_core/agere/clinical/queueing.py",
+          "clinical_core/agere/clinical/analysis_graph.py (queueing dispatch/answer sections only)",
+          "focused candidate tests and documentation"
+        ],
+        "acceptance": [
+          "exact nonempty subset",
+          "empty subset does not broaden",
+          "as-of cutoff and event window",
+          "forecast source/scope mismatch refusal",
+          "scope and assumptions visible"
+        ],
+        "boundary": "Candidate only. Owner retains clinical/question/control/runtime; no paid calls or protected evaluation."
+      }
     },
     "remaining_blockers": [
       {
