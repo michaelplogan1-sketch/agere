@@ -134,6 +134,11 @@ FILL_STATUSES = ('dispensed', 'paid', 'completed')
 FILL_EVIDENCE_SQL = "('dispensed','claim','payer_claim')"
 
 
+# Conditions whose laboratory-evidence rows count as the condition (Mike, 2026-10-21: diabetes only). Rows flagged
+# as not a diagnosis (rule-outs) stay excluded.
+LAB_EVIDENCE_CONDITIONS = {'diabetes', 'type_1_diabetes', 'type_2_diabetes'}
+
+
 def condition_evidence_sql(names, tables):
     """Governed condition evidence: EHR diagnoses (plus unknown-flag problem-list rows) UNION counted payer-claim
     ICD-10 diagnoses matching the concepts' code prefixes. Returns a subquery of (patient_id, event_date, source).
@@ -147,6 +152,10 @@ def condition_evidence_sql(names, tables):
         dated = 'event_date' if 'event_date' in tables['condition'] else 'NULL AS event_date'
         parts.append("SELECT patient_id, " + dated + ", 'ehr_diagnosis' AS source FROM condition WHERE concept IN ("
                      + ','.join(map(lit, names)) + ') AND (' + diagnosis + ')')
+        lab = sorted(set(names) & LAB_EVIDENCE_CONDITIONS)
+        if lab and 'diagnosis_basis' in tables['condition']:
+            parts.append("SELECT patient_id, " + dated + ", 'laboratory_evidence' AS source FROM condition WHERE concept IN ("
+                         + ','.join(map(lit, lab)) + ") AND is_diagnosis IS NULL AND diagnosis_basis = 'laboratory_evidence'")
     prefixes = sorted({p for n in names for p in CONDITIONS.get(n, {}).get('icd10', [])})
     if prefixes and {'patient_id', 'icd10', 'service_from', 'counts_in_metrics'} <= set(tables.get('payer_claim_diagnosis', [])):
         parts.append("SELECT patient_id, service_from AS event_date, 'payer_claim_diagnosis' AS source FROM payer_claim_diagnosis "

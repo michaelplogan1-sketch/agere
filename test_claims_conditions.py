@@ -12,7 +12,8 @@ class ClaimsConditions(unittest.TestCase):
         self.db.executescript('''
         CREATE TABLE condition(patient_id TEXT, concept TEXT, event_date TEXT, is_diagnosis INTEGER, diagnosis_basis TEXT);
         INSERT INTO condition VALUES ('ehr','diabetes','2029-01-01',1,'ehr_encounter'),
-          ('problem','diabetes','2029-01-01',NULL,'ehr_problem_list'), ('rule_out','diabetes','2029-01-01',0,'ehr_encounter');
+          ('problem','diabetes','2029-01-01',NULL,'ehr_problem_list'), ('rule_out','diabetes','2029-01-01',0,'ehr_encounter'),
+          ('lab_only','diabetes','2029-01-01',NULL,'laboratory_evidence'), ('ckd_lab','chronic_kidney_disease','2029-01-01',NULL,'laboratory_evidence');
         CREATE TABLE payer_claim_diagnosis(patient_id TEXT, icd10 TEXT, service_from TEXT, counts_in_metrics INTEGER);
         INSERT INTO payer_claim_diagnosis VALUES ('claims_only','E11.9','2029-02-01',1), ('denied','E11.65','2029-02-01',0),
           ('other','I10','2029-02-01',1), ('hfref_claim','I50.22','2029-03-01',1);
@@ -26,13 +27,18 @@ class ClaimsConditions(unittest.TestCase):
 
     def test_claims_only_member_is_in_the_condition_population(self):
         sql = concepts.condition_evidence_sql(['diabetes'], self.tables)
-        self.assertEqual(self.patients(sql), ['claims_only', 'ehr', 'problem'])
+        self.assertEqual(self.patients(sql), ['claims_only', 'ehr', 'lab_only', 'problem'])
         sources = dict(self.db.execute(f'SELECT patient_id, source FROM {sql}'))
         self.assertEqual(sources['claims_only'], 'payer_claim_diagnosis')
+        self.assertEqual(sources['lab_only'], 'laboratory_evidence')
+
+    def test_lab_evidence_counts_for_diabetes_only(self):
+        sql = concepts.condition_evidence_sql(['chronic_kidney_disease'], self.tables)
+        self.assertNotIn('ckd_lab', self.patients(sql))
 
     def test_without_claims_table_falls_back_to_ehr(self):
         sql = concepts.condition_evidence_sql(['diabetes'], {'condition': self.tables['condition']})
-        self.assertEqual(self.patients(sql), ['ehr', 'problem'])
+        self.assertEqual(self.patients(sql), ['ehr', 'lab_only', 'problem'])
 
     def test_hfref_phenotype_counts_a_coded_claim(self):
         rows = self.db.execute(f"SELECT patient_id, hfref_basis FROM {PHENOTYPES['hfref']['build'](self.tables)}").fetchall()
