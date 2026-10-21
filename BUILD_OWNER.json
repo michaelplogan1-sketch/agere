@@ -22,7 +22,7 @@
   "resumed_at": "2026-10-19T12:38:11.040529+00:00",
   "heartbeat_interval_minutes": 5,
   "latest_overnight_report": "AGERE_OVERNIGHT_READINESS_2026-10-11.md",
-  "latest_checkpoint": "2026-10-21T14:14:51.887030+00:00",
+  "latest_checkpoint": "2026-10-21T14:19:01.720329+00:00",
   "protected_manifest": "artifacts/agere-reconciliation-contract-v2/protected-for-continuation.json",
   "latest_morning_report": "AGERE_MORNING_STATUS_2026-10-11.md",
   "latest_architecture_review": "AGERE_SHARED_FRONTIER_2026-10-20.md",
@@ -236,5 +236,14 @@
     "current_run": "authorized and continuing",
     "heartbeat": "not_created_auto_review_rejected",
     "reason": "Prior saved no-heartbeat instruction; explicit restoration authorization requested asynchronously. Do not create a workaround scheduler."
+  },
+  "question_answering_policy": {
+    "decided_by": "Mike",
+    "at": "2026-10-21T14:19:01.720329+00:00",
+    "policy": "Deterministic first; an LLM only when the deterministic tier cannot fully parse a question; every verified fallback is saved so the next similar question stays deterministic. Never refuse when an LLM can answer.",
+    "reconciles": [
+      "Mike to Claude 2026-10-20: answer every question; an LLM is always available as the last resort",
+      "Mike to Codex 01a15e17: handle unfamiliar wording without using an LLM"
+    ]
   }
 }

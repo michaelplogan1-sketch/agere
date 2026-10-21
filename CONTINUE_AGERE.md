@@ -1,3 +1,5 @@
+> Question-answering policy, October 21, 2026 (Mike): deterministic first; an LLM only when the deterministic tier cannot fully parse a question; every verified fallback is saved so the next similar question stays deterministic. Do not remove the LLM fallback.
+
 > Ownership returned, October 21, 2026: Mike directed the Claude desktop session (local_1c579565-09b5-4e07-a223-1ae6016e7664) to own the build for the prompt-caching cost fix and model-cost work. Codex chat 01a15af4-c150-76f2-9df2-a44c1428b70d is no longer integrating; review only, no overlapping product/runtime edits.
 
 # Continue Agere
