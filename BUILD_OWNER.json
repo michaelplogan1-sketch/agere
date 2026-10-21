@@ -68,12 +68,12 @@
   "source_control": "git; codex/agere-validated-proof; commit only owned paths as Michael Logan <michael.p.logan1@gmail.com>",
   "heartbeat_removal_authorization": "Mike 2026-10-19: \"i am here you dont need the continue building reminder\"; deleted through the Codex automation tool.",
   "live_runtime": {
-    "at": "2026-10-21T17:31:23.462192+00:00",
-    "commit": "e97aa25b562cf28d97aeedbb42882db9a8784998",
-    "rollback_commit": "4bc77f8b83611312cc7edc2ccad84662942ac6af",
+    "at": "2026-10-21T17:39:10.201135+00:00",
+    "commit": "4653703ac563ff775c0d976e8e816ca5e6d90a7e",
+    "rollback_commit": "e97aa25b562cf28d97aeedbb42882db9a8784998",
     "workspace": "/Users/mikel/agere-mvp-run",
     "port": 8885,
-    "pid": 43323,
+    "pid": 44140,
     "session": 2376,
     "log": "/Users/mikel/agere-mvp-run/server-8885.log",
     "config_sha256": "4eec831417af506fee543532c304c9cc65d07794015c98af3cc5c48ef77cef52",
@@ -107,13 +107,13 @@
       }
     },
     "url": "http://127.0.0.1:8885/ask",
-    "verified_at": "2026-10-21T17:31:23.462192+00:00",
+    "verified_at": "2026-10-21T17:39:10.201135+00:00",
     "api_status": "Working (credit added 2026-10-21).",
     "cost_measurement": "20-question dev set: Opus 5.5 with prompt caching $5.44 (was $12.65 uncached), 76 calls, 2.15M cache-read vs 0.15M cache-write tokens; Sonnet 5.5 $4.75, 137 calls, weaker accuracy. HF question: Opus $0.45, Sonnet $0.41, both partial under current conservative definitions.",
     "hf_acceptance": "HF compound question answered (missing []) under Mike-governed definitions: 36 patients, 144/144 pillar flags match independent SQL, $1.75, 245 s.",
-    "smoke": "0 model calls: 65+ without a 2029-2030 flu shot = 383 living, with disclosure.",
+    "smoke": "0 model calls: 65+ never vaccinated for flu = 292 with age-at-death disclosure.",
     "paid_calls": "DISABLED by Mike 2026-10-21 (\"switch live to no paid calls\"): deterministic tier and saved verified answers only; unparsed questions return not_understood at $0.",
-    "change": "Care gaps count living patients unless asked otherwise.",
+    "change": "Deceased patients age at death.",
     "free_bank_measure": {
       "bank": "/Users/mikel/agere-eval-bank-2 (184 items)",
       "no_llm": true,
@@ -130,7 +130,8 @@
         "6505402": "45 correct / 20 wrong / 11 of 11 (26.0% lenient, 23.1% strict)",
         "14c1d66": "56 correct / 21 wrong / 11 of 11 (32.4% lenient, 29.5% strict); runner now reads comparison answers",
         "4bc77f8": "61 correct / 25 wrong / 11 of 11 (35.3% lenient, 32.4% strict)",
-        "e97aa25": "61 correct / 25 wrong / 11 of 11 (35.3% lenient, 32.4% strict)"
+        "e97aa25": "61 correct / 25 wrong / 11 of 11 (35.3% lenient, 32.4% strict)",
+        "4653703": "61 correct / 25 wrong / 11 of 11 (35.3% lenient); bank references use stale age_latest"
       }
     }
   },
