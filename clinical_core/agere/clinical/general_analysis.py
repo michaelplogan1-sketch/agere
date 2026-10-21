@@ -55,9 +55,17 @@ target_mg(drug_text) parse other dose text deterministically.
 {{current_dose}} (or {{current_dose:days}}) reconciles the latest order/list documentation per patient and drug_key
 inside the governed lookback (default: catalog GDMT lookback before as_of). It does NOT establish actual use.
 dose_status = at_target | below_target | above_reference | unknown_dose | no_target | not_active | unknown_status | unknown_date |
-conflicting. Only active_documentation in statement_state can have a non-NULL daily_mg. Stopped/held statements
+conflicting | interpretation_required. Only active_documentation in statement_state can have a non-NULL daily_mg. Stopped/held statements
 supersede older active documentation; same-day conflicts and undated statements remain unknown, never picked by ID.
 Product labels cannot supersede a regimen. source_record_ids retains all selected sources; current_use_established=0.
+When note_therapy_change is available, later/same-day or undated candidate changes for the same named drug require
+reconciliation: note_review_required=1, statement_state/dose_status=interpretation_required, daily_mg=NULL.
+documented_statement_state/documented_daily_mg/documented_dose_status retain the structured result separately.
+note_evidence preserves candidate actions, exact excerpts, record IDs, extraction method and source-statement dates;
+these are not verified clinical-effective dates. Note-only drugs remain interpretation_required, not confirmed therapy.
+An extracted stop, start or dose change can be negated or hypothetical: never execute it as a clinical instruction.
+note_scan_available=0 means that relation was unavailable, not that notes contain no changes. This scan matches
+named drug keys only; class-only targets, brand/formulation equivalence and unextracted narrative remain outside it.
 No row or unknown dose is never at target. target_daily_mg and target_max_daily_mg are lower/upper reference bounds
 from target_reference, not individualized targets. at_target means within this published range only; above_reference
 is not counted as at target. These comparisons do not establish indication, suitability or maximum tolerated dose.
@@ -211,7 +219,8 @@ def _macro_sql(kind, arg, catalog):
     if kind == 'current_dose':
         from .dose import current_dose_sql
         days = int(arg.strip()) if arg and arg.strip().isdigit() else _current_therapy_days()
-        return current_dose_sql(catalog.identity['as_of'], days)
+        return current_dose_sql(catalog.identity['as_of'], days,
+                                note_changes='note_therapy_change' in catalog.tables)
     if kind == 'specialty':
         return _specialty_sql(arg, catalog)
     names = [a.strip() for a in (arg or '').split(',') if a.strip()]
@@ -574,6 +583,14 @@ def execute(stack, question, graph, receipt, *, population=None, parent=None, st
     if any(m.startswith('condition') for m in contract['governed_macros']):
         from .request_vocabulary import CONDITION_EVIDENCE_POLICY
         limitations.append('Condition evidence: ' + CONDITION_EVIDENCE_POLICY)
+    if any(m.split(':', 1)[0] == 'current_dose' for m in contract['governed_macros']):
+        limitations.append(
+            'Regimen evidence: structured orders/lists describe documentation, not actual use, clinical suitability or maximum tolerated dose. '
+            'Later, same-day or undated named-drug note candidates require interpretation; their source dates are not verified clinical-effective dates. '
+            'Class-only targets, unmatched drug identities and unextracted narrative remain outside this note scan.'
+            if 'note_therapy_change' in contract['sources'] else
+            'Regimen evidence: the note-change relation is unavailable to this calculation. Structured orders/lists alone do not establish '
+            'absence of narrative changes, actual use, clinical suitability or maximum tolerated dose.')
     if 'age_at(' in contract['query']:
         limitations.append('Age is calculated from birth_date at the warehouse as-of date.')
     currency = data_currency(current, ids)

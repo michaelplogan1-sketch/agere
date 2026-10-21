@@ -9,7 +9,7 @@ import json
 import math
 from datetime import date
 
-VERSION = 'medication-dose/2'
+VERSION = 'medication-dose/3'
 REFERENCE = {
     'id': 'aha-acc-hfsa-2022-table14', 'version': 1,
     'source': '2022 AHA/ACC/HFSA guideline, Table 14 (official slide set, slides 87–90)',
@@ -191,7 +191,7 @@ MEDICATION_DOSE_SQL = """(SELECT patient_id, source_stream, record_id, event_dat
  WHERE drug_text IS NOT NULL)"""
 
 
-def current_dose_sql(as_of, lookback_days):
+def _structured_current_dose_sql(as_of, lookback_days):
     """Latest dated regimen documentation, with uncertainty and all selected sources.
 
     Orders/lists describe documentation, not ingestion or maximum tolerance.
@@ -224,3 +224,55 @@ def current_dose_sql(as_of, lookback_days):
             "FROM " + MEDICATION_DOSE_SQL + " d WHERE d.source_stream!='medication_label_evidence' AND "
             f"(d.event_date IS NULL OR (d.event_date>date('{as_of}','-{days} days') AND d.event_date<='{as_of}'))) "
             "WHERE latest=1 OR undated=1 GROUP BY patient_id,drug_key))")
+
+
+def current_dose_sql(as_of, lookback_days, *, note_changes=False):
+    """Reconcile structured regimens with candidate note changes when available.
+
+    A note extraction is an interpretation prerequisite, never a confirmed stop,
+    new dose or actual use. Keep the structured result separately so uncertainty
+    does not erase received evidence. Exact named-drug matching is deliberately
+    narrower than class, brand or formulation equivalence.
+    """
+    structured = _structured_current_dose_sql(as_of, lookback_days)
+    if not note_changes:
+        return ("(SELECT s.*, s.statement_state AS documented_statement_state, "
+                "s.daily_mg AS documented_daily_mg, s.dose_status AS documented_dose_status, "
+                "0 AS note_scan_available, 0 AS note_review_required, '[]' AS note_evidence, "
+                "NULL AS latest_note_date FROM " + structured + " s)")
+    as_of = date.fromisoformat(as_of).isoformat()
+    days = int(lookback_days)
+    # Keep source dates separate from dose dates: extracted changes do not have a
+    # verified clinical-effective date. Null/invalid dates cannot be ordered away.
+    return ("(WITH structured_regimens AS (SELECT * FROM " + structured + "), "
+            "candidate_changes AS (SELECT patient_id, drug_key(target) AS drug_key, record_id, "
+            "statement_day(event_date) AS source_date, action, target, evidence_text, extractor "
+            "FROM note_therapy_change WHERE target_kind='drug' AND drug_key(target) IS NOT NULL "
+            "AND (statement_day(event_date) IS NULL OR "
+            f"(statement_day(event_date)>date('{as_of}','-{days} days') AND statement_day(event_date)<='{as_of}'))), "
+            "regimen_keys AS (SELECT patient_id,drug_key FROM structured_regimens UNION "
+            "SELECT patient_id,drug_key FROM candidate_changes), "
+            "combined AS (SELECT k.patient_id,k.drug_key,s.dose_date,s.drug_text,s.record_id,s.source_stream, "
+            "s.source_record_ids,s.statement_state,s.daily_mg,s.target_daily_mg,s.target_max_daily_mg, "
+            "s.target_reference,s.dose_status, "
+            "(SELECT json_group_array(json_object('record_id',n.record_id,'source_date',n.source_date, "
+            "'action',n.action,'target',n.target,'evidence_text',n.evidence_text,'extractor',n.extractor, "
+            "'authority','unreviewed_extraction','date_basis','source_statement_date')) "
+            "FROM candidate_changes n WHERE n.patient_id=k.patient_id AND n.drug_key=k.drug_key "
+            "AND (n.source_date IS NULL OR s.dose_date IS NULL OR n.source_date>=s.dose_date "
+            "OR s.statement_state='unknown_date')) AS note_evidence "
+            "FROM regimen_keys k LEFT JOIN structured_regimens s ON s.patient_id=k.patient_id AND s.drug_key=k.drug_key) "
+            "SELECT patient_id,drug_key,dose_date,COALESCE(drug_text,drug_key) AS drug_text, "
+            "CASE WHEN json_array_length(note_evidence)=0 THEN record_id END AS record_id, "
+            "CASE WHEN json_array_length(note_evidence)=0 THEN source_stream "
+            "WHEN source_stream IS NULL THEN 'note_therapy_change' ELSE 'multiple' END AS source_stream, "
+            "(SELECT json_group_array(rid) FROM (SELECT value AS rid FROM json_each(COALESCE(source_record_ids,'[]')) "
+            "UNION SELECT json_extract(value,'$.record_id') AS rid FROM json_each(note_evidence)) ORDER BY rid) AS source_record_ids, "
+            "CASE WHEN json_array_length(note_evidence)>0 THEN 'interpretation_required' ELSE statement_state END AS statement_state, "
+            "0 AS current_use_established, CASE WHEN json_array_length(note_evidence)=0 THEN daily_mg END AS daily_mg, "
+            "target_daily_mg,target_max_daily_mg,target_reference, "
+            "CASE WHEN json_array_length(note_evidence)>0 THEN 'interpretation_required' ELSE dose_status END AS dose_status, "
+            "statement_state AS documented_statement_state,daily_mg AS documented_daily_mg,dose_status AS documented_dose_status, "
+            "1 AS note_scan_available,json_array_length(note_evidence)>0 AS note_review_required,note_evidence, "
+            "(SELECT max(json_extract(value,'$.source_date')) FROM json_each(note_evidence)) AS latest_note_date "
+            "FROM combined)")
