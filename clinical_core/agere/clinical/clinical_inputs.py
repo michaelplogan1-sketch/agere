@@ -29,6 +29,60 @@ def identity():
         source_structure.identity(),longitudinal.code_identity()])
 
 
+def care_team_sql(as_of):
+    """Latest documentary relationship per patient, clinician and role.
+
+    Explicit assignment and inclusive effective dates are required. A referral,
+    an encounter, or a payer attribution is not an assigned care relationship.
+    Multiple clinicians remain multiple rows; no ID-based winner is selected.
+    """
+    if not iso(as_of):raise ValueError('Explicit care-team cutoff required')
+    return ("(WITH relationship_sources AS (SELECT patient_id,record_id, "
+            "json_extract(payload,'$.clinician_id') AS clinician_id,json_extract(payload,'$.role') AS role, "
+            "json_extract(payload,'$.organization_id') AS organization_id, "
+            "lower(trim(json_extract(payload,'$.status'))) AS reported_status, "
+            "statement_day(json_extract(payload,'$.event_date')) AS source_date, "
+            "statement_day(json_extract(payload,'$.available_date')) AS available_date, "
+            "json_extract(payload,'$.effective_start') AS start_a,json_extract(payload,'$.relationship_start') AS start_b, "
+            "json_extract(payload,'$.effective_end') AS end_a,json_extract(payload,'$.relationship_end') AS end_b, "
+            "CASE WHEN json_type(payload,'$.clinician_id') IS NOT 'text' OR json_type(payload,'$.role') IS NOT 'text' OR "
+            "(json_extract(payload,'$.patient_id') IS NOT NULL AND json_extract(payload,'$.patient_id')!=patient_id) "
+            "THEN 1 ELSE 0 END AS identity_mismatch "
+            "FROM record WHERE stream='care_team_relationships'), "
+            "dated_relationships AS (SELECT *,statement_day(COALESCE(start_a,start_b)) AS effective_start, "
+            "statement_day(COALESCE(end_a,end_b)) AS effective_end, "
+            "CASE WHEN (start_a IS NOT NULL AND start_b IS NOT NULL AND start_a!=start_b) OR "
+            "(end_a IS NOT NULL AND end_b IS NOT NULL AND end_a!=end_b) OR "
+            "(COALESCE(start_a,start_b) IS NOT NULL AND statement_day(COALESCE(start_a,start_b)) IS NULL) OR "
+            "(COALESCE(end_a,end_b) IS NOT NULL AND statement_day(COALESCE(end_a,end_b)) IS NULL) OR "
+            "(statement_day(COALESCE(end_a,end_b))<statement_day(COALESCE(start_a,start_b))) THEN 1 ELSE 0 END AS interval_issue "
+            f"FROM relationship_sources WHERE (source_date IS NULL OR source_date<='{as_of}') "
+            f"AND (available_date IS NULL OR available_date<='{as_of}')), "
+            "ranked_relationships AS (SELECT *, "
+            "max(source_date IS NULL OR available_date IS NULL) OVER(PARTITION BY patient_id,clinician_id,role) AS undated, "
+            "rank() OVER(PARTITION BY patient_id,clinician_id,role ORDER BY source_date DESC) AS latest "
+            "FROM dated_relationships), "
+            "relationship_state AS (SELECT patient_id,clinician_id,role,max(source_date) AS source_date, "
+            "min(organization_id) AS organization_id,min(reported_status) AS reported_status, "
+            "min(effective_start) AS effective_start,min(effective_end) AS effective_end, "
+            "json_group_array(record_id) AS source_record_ids, "
+            "CASE WHEN typeof(clinician_id)!='text' OR trim(clinician_id)='' OR typeof(role)!='text' OR trim(role)='' "
+            "OR max(identity_mismatch)=1 THEN 'unknown_identity' "
+            "WHEN max(undated)=1 THEN 'unknown_date' WHEN max(interval_issue)=1 THEN 'invalid_interval' "
+            "WHEN count(DISTINCT json_array(reported_status,effective_start,effective_end,organization_id))>1 THEN 'conflicting' "
+            "WHEN min(reported_status) IN ('ended','inactive','discontinued','removed','unassigned') THEN 'ended_documentation' "
+            "WHEN min(reported_status) IN ('referred','referral_received') THEN 'referral_only' "
+            "WHEN min(reported_status) IS NULL OR min(reported_status) NOT IN ('assigned','active') THEN 'unknown_status' "
+            "WHEN min(effective_start) IS NULL THEN 'unknown_start' "
+            f"WHEN min(effective_start)>'{as_of}' THEN 'not_started' "
+            f"WHEN min(effective_end)<'{as_of}' THEN 'ended_documentation' "
+            "ELSE 'documented_assignment' END AS assignment_status "
+            "FROM ranked_relationships WHERE latest=1 OR undated=1 GROUP BY patient_id,clinician_id,role) "
+            "SELECT *,CASE WHEN assignment_status='documented_assignment' THEN 1 "
+            "WHEN assignment_status IN ('referral_only','ended_documentation','not_started') THEN 0 END AS assigned_at_snapshot, "
+            "0 AS current_responsibility_verified FROM relationship_state)")
+
+
 def number(value):
     if type(value) not in (int,float,str) or isinstance(value,bool):return None
     try:n=float(value)

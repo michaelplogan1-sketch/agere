@@ -22,7 +22,7 @@ from .request_plan import PlanError, fingerprint
 VERSION = 'general-analysis/3'
 MAX_STEPS = 60  # structural sanity only; complex questions need many stages
 _NAME = re.compile(r'^[a-z][a-z0-9_]{0,40}$')
-_MACRO = re.compile(r'\{\{\s*(condition|drug_fill|as_of|medication_dose|current_dose|specialty|parameter)\s*(?::\s*([a-z0-9_,\s]+))?\s*\}\}')
+_MACRO = re.compile(r'\{\{\s*(condition|drug_fill|as_of|medication_dose|current_dose|care_team|specialty|parameter)\s*(?::\s*([a-z0-9_,\s]+))?\s*\}\}')
 # Grammatical words carry no requirement; every other question word must be accounted for.
 _FUNCTION_WORDS = set('''a an the and or of in on at to for from by with without within into onto over under per
 is are was were be been being do does did have has had having what which who whom whose how many much
@@ -73,6 +73,14 @@ PRN/range/concentration instructions and a strength without an administration qu
 Specialties: {{specialty:cardiology}} (also primary_care, nephrology, endocrinology, pulmonology, oncology, neurology,
 gastroenterology, behavioral_health, emergency, pharmacy, or an exact specialty) returns clinician_id; never match
 specialty text with LIKE.
+Care teams: {{care_team}} returns latest received relationships per patient_id, clinician_id and role, with
+assignment_status, assigned_at_snapshot (1/0/NULL), reported_status, effective_start/end (inclusive), source_date,
+source_record_ids and organization_id. Only explicit active/assigned status within valid dated boundaries gives
+documented_assignment. Referrals are referral_only; missing status, dates or identity and tied contradictions stay
+unknown/conflicting. Multiple assignments remain multiple rows; do not pick by clinician ID or last visit.
+Use this for documented ongoing assignments, joining clinician specialty with the governed specialty macro.
+Keep encountered/referring clinicians and payer attribution in separate columns. patient.pcp_* is a flattened
+latest-assignment attribute, not a check of current effective intervals or responsibility. current_responsibility_verified=0.
 Age is age_at(patient.birth_date, {{as_of}}). Never use age_latest. Calendar years are inclusive YYYY-01-01..YYYY-12-31.
 Relative periods ("last 12 months") anchor to {{as_of}}. Mixed-type value columns need typeof() guards.
 Temporal state: distinguish latest received status from any historical status and history-based derived outcomes.
@@ -221,6 +229,10 @@ def _macro_sql(kind, arg, catalog):
         days = int(arg.strip()) if arg and arg.strip().isdigit() else _current_therapy_days()
         return current_dose_sql(catalog.identity['as_of'], days,
                                 note_changes='note_therapy_change' in catalog.tables)
+    if kind == 'care_team':
+        if arg:raise PlanError('care_team uses the catalog snapshot; no macro argument is supported')
+        from .clinical_inputs import care_team_sql
+        return care_team_sql(catalog.identity['as_of'])
     if kind == 'specialty':
         return _specialty_sql(arg, catalog)
     names = [a.strip() for a in (arg or '').split(',') if a.strip()]
@@ -290,7 +302,7 @@ def _expand(sql, catalog, used, parameters=None):
         return _macro_sql(m.group(1), m.group(2), catalog)
     expanded = _MACRO.sub(sub, sql)
     if '{{' in expanded or '}}' in expanded:
-        raise PlanError('Unknown macro; use {{condition:...}}, {{drug_fill:...}}, {{medication_dose}}, {{current_dose}}, {{specialty:...}} or {{as_of}}')
+        raise PlanError('Unknown macro; use {{condition:...}}, {{drug_fill:...}}, {{medication_dose}}, {{current_dose}}, {{care_team}}, {{specialty:...}} or {{as_of}}')
     return expanded
 
 
@@ -591,6 +603,10 @@ def execute(stack, question, graph, receipt, *, population=None, parent=None, st
             if 'note_therapy_change' in contract['sources'] else
             'Regimen evidence: the note-change relation is unavailable to this calculation. Structured orders/lists alone do not establish '
             'absence of narrative changes, actual use, clinical suitability or maximum tolerated dose.')
+    if 'care_team' in contract['governed_macros']:
+        limitations.append('Care-team assignment describes explicit received relationship status and inclusive effective dates at the snapshot. '
+                           'Referrals, specialty encounters and payer attribution do not establish assigned ongoing care. '
+                           'Multiple assignments and unknown/conflicting evidence are retained; current clinical responsibility is not independently verified.')
     if 'age_at(' in contract['query']:
         limitations.append('Age is calculated from birth_date at the warehouse as-of date.')
     currency = data_currency(current, ids)

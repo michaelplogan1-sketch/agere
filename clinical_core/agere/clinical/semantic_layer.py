@@ -103,7 +103,9 @@ SCHEMA_DOC = {
                'Use age_at(birth_date, as_of) for age. Feed-reported ages are historical metadata, never analytical age. '
                'else (population-feed members without one) coverage_type = line_of_business of the latest enrollment month and '
                'coverage_status active | inactive by whether a span covers the as-of date; coverage_source = coverage_record | '
-               'enrollment_span (NULL = no coverage received). pcp_* = latest assigned primary-care relationship.',
+               'enrollment_span (NULL = no coverage received). pcp_* = flattened latest assigned primary-care relationship; '
+               'this attribute does not reconcile effective end dates, tied accounts or current responsibility. '
+               'Use the governed care_team relation for dated documentary assignment.',
     'condition': 'One row per (condition record, matching library concept); concept NULL when no library concept matches. '
                  'Sources: conditions, condition_assessments, problem_lists. label = received description. '
                  'is_diagnosis=1 distinguishes actual diagnosis labels from assessment topics; use it for patients with a condition. '
