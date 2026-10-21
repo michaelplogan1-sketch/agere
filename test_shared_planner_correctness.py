@@ -105,12 +105,12 @@ class Correctness(unittest.TestCase):
                     ('D', concept, None, '2029-01-01', 'laboratory_evidence'),
                     ('D', concept, 0, '2029-01-01', None)])
         self.catalog = R.Catalog.load(self.path)
-        # Mike, 2026-10-21: laboratory evidence counts for diabetes only.
-        for name, lab_counts in (('diabetes', True), ('ckd', False), ('heart failure', False)):
+        # Mike, 2026-10-21: laboratory evidence counts for diabetes and CKD.
+        for name, lab_counts in (('diabetes', True), ('ckd', True), ('heart failure', False)):
             answer = self.ask('List patients with '+name)['answer']
             self.assertIn('B', answer['patient_ids'])
             (self.assertIn if lab_counts else self.assertNotIn)('D', answer['patient_ids'])
-            self.assertTrue(any('lab-inferred' in x and 'laboratory evidence of diabetes' in x for x in answer['limitations']))
+            self.assertTrue(any('lab-inferred' in x and 'laboratory evidence of the condition' in x for x in answer['limitations']))
 
     def test_analytical_summaries_do_not_turn_inputs_into_action_lists(self):
         from clinical_core.agere.deliverables import answer_context as A

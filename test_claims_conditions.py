@@ -32,9 +32,11 @@ class ClaimsConditions(unittest.TestCase):
         self.assertEqual(sources['claims_only'], 'payer_claim_diagnosis')
         self.assertEqual(sources['lab_only'], 'laboratory_evidence')
 
-    def test_lab_evidence_counts_for_diabetes_only(self):
+    def test_lab_evidence_counts_for_diabetes_and_ckd_only(self):
         sql = concepts.condition_evidence_sql(['chronic_kidney_disease'], self.tables)
-        self.assertNotIn('ckd_lab', self.patients(sql))
+        self.assertIn('ckd_lab', self.patients(sql))
+        self.db.execute("INSERT INTO condition VALUES ('copd_lab','copd','2029-01-01',NULL,'laboratory_evidence')")
+        self.assertNotIn('copd_lab', self.patients(concepts.condition_evidence_sql(['copd'], self.tables)))
 
     def test_without_claims_table_falls_back_to_ehr(self):
         sql = concepts.condition_evidence_sql(['diabetes'], {'condition': self.tables['condition']})

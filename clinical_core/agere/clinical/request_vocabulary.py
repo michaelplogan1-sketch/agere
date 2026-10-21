@@ -18,7 +18,7 @@ VERSION = 'shared-request-vocabulary/1'
 CONDITION_EVIDENCE_POLICY = (
     'EHR diagnosis labels (plus ehr_problem_list entries whose diagnosis flag is unknown) or a counted payer-claim '
     'ICD-10 diagnosis in the condition\'s code set (Mike, 2026-10-21: claims-only members are included). '
-    'Diabetes also counts laboratory evidence of diabetes (Mike, 2026-10-21); rows flagged as not a diagnosis '
+    'Diabetes and CKD also count laboratory evidence of the condition (Mike, 2026-10-21); rows flagged as not a diagnosis '
     '(rule-outs) stay excluded. For other conditions, lab-inferred evidence is excluded. '
     'Assessment topics, note-only and medication-indication evidence are excluded. '
     'A match does not establish current clinical status.')

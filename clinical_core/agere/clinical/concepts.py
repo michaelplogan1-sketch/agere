@@ -134,9 +134,9 @@ FILL_STATUSES = ('dispensed', 'paid', 'completed')
 FILL_EVIDENCE_SQL = "('dispensed','claim','payer_claim')"
 
 
-# Conditions whose laboratory-evidence rows count as the condition (Mike, 2026-10-21: diabetes only). Rows flagged
-# as not a diagnosis (rule-outs) stay excluded.
-LAB_EVIDENCE_CONDITIONS = {'diabetes', 'type_1_diabetes', 'type_2_diabetes'}
+# Conditions whose laboratory-evidence rows count as the condition (Mike, 2026-10-21: diabetes and CKD). Rows
+# flagged as not a diagnosis (rule-outs) stay excluded.
+LAB_EVIDENCE_CONDITIONS = {'diabetes', 'type_1_diabetes', 'type_2_diabetes', 'chronic_kidney_disease'}
 
 
 def condition_evidence_sql(names, tables):
