@@ -15,7 +15,8 @@ from .dose import register as register_dose
 
 
 def register(db):
-    return register_dose(register_age(db))
+    from .clinical_inputs import register as register_clinical_inputs
+    return register_clinical_inputs(register_dose(register_age(db)))
 
 VERSION = 'semantic-sql/1'
 RETURNS = ('count', 'value', 'patient_set', 'table')

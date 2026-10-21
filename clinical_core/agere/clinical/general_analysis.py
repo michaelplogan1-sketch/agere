@@ -22,7 +22,7 @@ from .request_plan import PlanError, fingerprint
 VERSION = 'general-analysis/3'
 MAX_STEPS = 60  # structural sanity only; complex questions need many stages
 _NAME = re.compile(r'^[a-z][a-z0-9_]{0,40}$')
-_MACRO = re.compile(r'\{\{\s*(condition|drug_fill|as_of|medication_dose|current_dose|care_team|specialty|parameter)\s*(?::\s*([a-z0-9_,\s]+))?\s*\}\}')
+_MACRO = re.compile(r'\{\{\s*(condition|drug_fill|as_of|medication_dose|current_dose|care_team|measurement_evidence|specialty|parameter)\s*(?::\s*([a-z0-9_,\s]+))?\s*\}\}')
 # Grammatical words carry no requirement; every other question word must be accounted for.
 _FUNCTION_WORDS = set('''a an the and or of in on at to for from by with without within into onto over under per
 is are was were be been being do does did have has had having what which who whom whose how many much
@@ -81,6 +81,16 @@ unknown/conflicting. Multiple assignments remain multiple rows; do not pick by c
 Use this for documented ongoing assignments, joining clinician specialty with the governed specialty macro.
 Keep encountered/referring clinicians and payer attribution in separate columns. patient.pcp_* is a flattened
 latest-assignment attribute, not a check of current effective intervals or responsibility. current_responsibility_verified=0.
+Measurements: {{measurement_evidence:lvef}} (also egfr, creatinine, uacr) returns patient_id, observation_id, concept,
+lower/upper, unit, source_date, arrival_date, clinical_date, authority, semantic_status, temporality, exclusion,
+candidate_value, evidence_text, evidence (JSON with source fields/hashes/linked sources), narrative_scan_available,
+current_state_established=0. Structured values reuse the literal unit/status/quality/dependency mapping.
+Use clinical_date for measurement-time questions. Never replace a missing clinical date with source or arrival date.
+Keep excluded, undated and conflicting observations visible; don't silently fall back to an older normal result.
+Narrative EF rows are unreviewed candidates: lower/upper are NULL; candidate_value can be a range midpoint and cannot
+establish a measured value, current EF or phenotype. Inspect exact text, negation, subject and temporality in evidence.
+The EF scan covers only the existing note_fact extraction; other concepts do not have a narrative scan here.
+Missing observations do not mean normal. A diagnosis alone does not establish current HFrEF or treatment suitability.
 Age is age_at(patient.birth_date, {{as_of}}). Never use age_latest. Calendar years are inclusive YYYY-01-01..YYYY-12-31.
 Relative periods ("last 12 months") anchor to {{as_of}}. Mixed-type value columns need typeof() guards.
 Temporal state: distinguish latest received status from any historical status and history-based derived outcomes.
@@ -233,6 +243,10 @@ def _macro_sql(kind, arg, catalog):
         if arg:raise PlanError('care_team uses the catalog snapshot; no macro argument is supported')
         from .clinical_inputs import care_team_sql
         return care_team_sql(catalog.identity['as_of'])
+    if kind == 'measurement_evidence':
+        from .clinical_inputs import measurement_sql
+        try:return measurement_sql((arg or '').strip(),catalog.identity['as_of'],note_facts='note_fact' in catalog.tables)
+        except ValueError as exc:raise PlanError(str(exc)) from exc
     if kind == 'specialty':
         return _specialty_sql(arg, catalog)
     names = [a.strip() for a in (arg or '').split(',') if a.strip()]
@@ -302,7 +316,7 @@ def _expand(sql, catalog, used, parameters=None):
         return _macro_sql(m.group(1), m.group(2), catalog)
     expanded = _MACRO.sub(sub, sql)
     if '{{' in expanded or '}}' in expanded:
-        raise PlanError('Unknown macro; use {{condition:...}}, {{drug_fill:...}}, {{medication_dose}}, {{current_dose}}, {{care_team}}, {{specialty:...}} or {{as_of}}')
+        raise PlanError('Unknown macro; use {{condition:...}}, {{drug_fill:...}}, {{medication_dose}}, {{current_dose}}, {{care_team}}, {{measurement_evidence:...}}, {{specialty:...}} or {{as_of}}')
     return expanded
 
 
@@ -607,6 +621,11 @@ def execute(stack, question, graph, receipt, *, population=None, parent=None, st
         limitations.append('Care-team assignment describes explicit received relationship status and inclusive effective dates at the snapshot. '
                            'Referrals, specialty encounters and payer attribution do not establish assigned ongoing care. '
                            'Multiple assignments and unknown/conflicting evidence are retained; current clinical responsibility is not independently verified.')
+    if any(m.split(':',1)[0]=='measurement_evidence' for m in contract['governed_macros']):
+        limitations.append('Measurement evidence retains mapped structured observations and their unit/status/quality/dependency exclusions. '
+                           'Source and arrival dates are not measurement dates. Narrative EF extractions, including numeric range midpoints, remain '
+                           'unreviewed source candidates; other concepts have no narrative scan in this relation. Missing, undated or conflicting '
+                           'observations cannot establish normality, current phenotype, treatment suitability or current clinical state.')
     if 'age_at(' in contract['query']:
         limitations.append('Age is calculated from birth_date at the warehouse as-of date.')
     currency = data_currency(current, ids)

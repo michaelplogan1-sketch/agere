@@ -64,7 +64,9 @@ def policy_identity():
     from .programs import rulebook_digest
     from .request_vocabulary import definitions, concept_definitions
     from .general_analysis import governed_knowledge
+    from .clinical_inputs import identity as clinical_input_identity
     return request_plan.fingerprint({'governed_definitions': definitions(), 'concept_definitions': concept_definitions(),
+        'clinical_input_policy': clinical_input_identity(),
         'governed_knowledge': governed_knowledge(), 'financial_rulebook': rulebook_digest(),
         'answer_context.py': request_plan.fingerprint((Path(__file__).resolve().parents[1]/'deliverables'/'answer_context.py').read_text()), **{
         name: request_plan.fingerprint(Path(__file__).with_name(name).read_text())

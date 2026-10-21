@@ -61,7 +61,7 @@ def validate(steps, question, *, outputs=(), output_quotes=(), output_bindings=N
                           'outreach follow up followup program programme review task tasks queue '
                           'enroll enrol enrollment signup sign help '
                           'interactive command center centre dashboard view report brief briefing '
-                          'team care clinical evidence explorer custom pharmd rpm titration remote monitoring '
+                          'team care clinical evidence source explorer custom pharmd rpm titration remote monitoring '
                           'pharmacist pharmacy medication decision work up with').split())
             if step['kind'] == 'deliverable':
                 # Bounded presentation vocabulary only. New analytical facts,

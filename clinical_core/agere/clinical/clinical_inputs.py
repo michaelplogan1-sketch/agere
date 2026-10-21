@@ -24,9 +24,75 @@ def mappings():
 
 
 def identity():
+    from .clinical_events import code_identity
     return digest([*[hashlib.sha256(Path(p).read_bytes()).hexdigest() for p in
         (__file__,Path(__file__).with_name('clinical_input_maps.json'),clinical_state.__file__)],
-        source_structure.identity(),longitudinal.code_identity()])
+        source_structure.identity(),longitudinal.code_identity(),code_identity()])
+
+
+def measurement_rows(patient, payloads, concept, as_of):
+    """SQLite binding of the existing literal mapper, without a new reader."""
+    adapter=mappings()
+    if concept not in adapter['measurements']:raise ValueError('Unknown measurement mapping')
+    adapter['measurements']={concept:adapter['measurements'][concept]}
+    records=[json.loads(p) if isinstance(p,str) else p for p in json.loads(payloads)]
+    return json.dumps(measurements(patient,records,[],as_of,adapter).get(concept,[]),allow_nan=False)
+
+
+def register(db):
+    db.create_function('clinical_measurements',4,measurement_rows)
+    return db
+
+
+def measurement_sql(concept, as_of, *, note_facts=False):
+    """Observations, not a current diagnosis. Never substitute a document date.
+
+    Mapped structured values reuse measurements(). Existing narrative extraction
+    is retained only as a source-review candidate: its numeric value can be a
+    range midpoint, and is never exposed as a literal measured lower/upper value.
+    """
+    if not iso(as_of):raise ValueError('Explicit measurement cutoff required')
+    spec=mappings()['measurements'].get(concept)
+    if spec is None:raise ValueError('Unknown measurement mapping')
+    streams={s['stream'] for s in spec['sources']}
+    for source in spec['sources']:
+        for linked in source.get('dependencies',{}).values():streams.update(linked)
+    if 'labs' in streams:streams.add('laboratory_specimens')
+    quote=lambda value:"'"+value.replace("'","''")+"'"
+    structured=("SELECT r.patient_id,json_extract(m.value,'$.id') AS observation_id, "
+        f"{quote(concept)} AS concept,json_extract(m.value,'$.lower') AS lower,json_extract(m.value,'$.upper') AS upper, "
+        "json_extract(m.value,'$.unit') AS unit,json_extract(m.value,'$.source_date') AS source_date, "
+        "json_extract(m.value,'$.arrival_date') AS arrival_date,json_extract(m.value,'$.clinical_date') AS clinical_date, "
+        "json_extract(m.value,'$.authority') AS authority,json_extract(m.value,'$.semantic_status') AS semantic_status, "
+        "json_extract(m.value,'$.temporality') AS temporality,json_extract(m.value,'$.exclusion') AS exclusion, "
+        "NULL AS candidate_value,NULL AS evidence_text,m.value AS evidence, "
+        f"{int(note_facts and concept=='lvef')} AS narrative_scan_available,0 AS current_state_established "
+        "FROM (SELECT patient_id,json_group_array(payload) AS payloads FROM record "
+        f"WHERE stream IN ({','.join(quote(s) for s in sorted(streams))}) "
+        f"AND (statement_day(json_extract(payload,'$.available_date')) IS NULL OR "
+        f"statement_day(json_extract(payload,'$.available_date'))<='{as_of}') GROUP BY patient_id) r, "
+        f"json_each(clinical_measurements(r.patient_id,r.payloads,{quote(concept)},'{as_of}')) m")
+    if not note_facts or concept!='lvef':return '('+structured+')'
+    narrative=("SELECT n.patient_id,'candidate:'||n.record_id||':'||coalesce(n.source_field,'')||':'||coalesce(n.span_start,'') AS observation_id, "
+        "'lvef' AS concept,NULL AS lower,NULL AS upper,n.unit,n.event_date AS source_date, "
+        "statement_day(json_extract(r.payload,'$.available_date')) AS arrival_date,NULL AS clinical_date, "
+        "'unreviewed_narrative_extraction' AS authority,'interpretation_required' AS semantic_status,n.temporality, "
+        "CASE WHEN r.record_id IS NULL THEN 'source_record_unavailable' "
+        "WHEN json_extract(r.payload,'$.patient_id') IS NOT n.patient_id OR json_extract(r.payload,'$.synthetic') IS NOT 1 "
+        "OR json_extract(r.payload,'$.identity_status') IS NOT 'matched' THEN 'source_identity_unresolved' "
+        "WHEN statement_day(json_extract(r.payload,'$.available_date')) IS NULL THEN 'source_availability_unresolved' "
+        "WHEN n.source_field IS NULL OR n.span_start IS NULL OR n.span_end IS NULL OR n.span_start<0 OR n.span_end<=n.span_start "
+        "OR substr(json_extract(r.payload,'$.'||n.source_field),n.span_start+1,n.span_end-n.span_start) IS NOT n.evidence_text "
+        "THEN 'source_span_unverified' ELSE 'unreviewed_extracted_value' END AS exclusion, "
+        "n.value AS candidate_value,n.evidence_text,json_object('record_id',n.record_id,'source_table',n.stream, "
+        "'source_field',n.source_field,'span_start',n.span_start,'span_end',n.span_end,'evidence_text',n.evidence_text, "
+        "'extractor',n.extractor,'negated',n.negated,'experiencer',n.experiencer,'temporality',n.temporality, "
+        "'qualifier',n.qualifier,'candidate_value',n.value,'unit',n.unit) AS evidence,1 AS narrative_scan_available,0 AS current_state_established "
+        "FROM note_fact n LEFT JOIN record r ON r.record_id=n.record_id AND r.patient_id=n.patient_id "
+        "WHERE n.fact_type='ejection_fraction' "
+        f"AND (statement_day(n.event_date) IS NULL OR statement_day(n.event_date)<='{as_of}') "
+        f"AND (statement_day(json_extract(r.payload,'$.available_date')) IS NULL OR statement_day(json_extract(r.payload,'$.available_date'))<='{as_of}')")
+    return '('+structured+' UNION ALL '+narrative+')'
 
 
 def care_team_sql(as_of):
