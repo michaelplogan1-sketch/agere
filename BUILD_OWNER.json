@@ -6,14 +6,14 @@
   "ownership_verified": "2026-10-20T21:04:37.523810+00:00 Mike requested takeover from Claude and then explicitly said okay please continue.",
   "scope": "/Users/mikel/clinical-insights-local build; Mike directly identified http://127.0.0.1:8885/ask as the product surface. Existing separate design checkout and hosted preview remain reference-only/read-only; separate research and generator remain read-only.",
   "active_work": "G3: close the original compound clinical/current-state failure and unfamiliar composition gaps through the existing shared path. Use the existing declared acceptance matrix and ordinary development cases across clinical, utilization, access/social, provider and financial/ACO questions, varying dates, exclusions, thresholds and saved scope. Fix measured execution, generated-output and latency failures. No paid calls, protected evaluation or question-specific handlers; fresh-model and independent clinical qualification remain unverified.",
-  "latest_delivery": "docs/agere/DOMAIN_LEARNING_INTEGRATION_2026-10-20.md",
-  "latest_receipt": "artifacts/agere-domain-integration-v1/implementation-receipt.json",
-  "owned_server_pid": 94926,
-  "owned_server_session": 59846,
+  "latest_delivery": "docs/agere/QUEUEING_SCOPE_INTEGRATION_2026-10-20.md",
+  "latest_receipt": "artifacts/agere-queueing-integration-v1/implementation-receipt.json",
+  "owned_server_pid": 96834,
+  "owned_server_session": 85653,
   "full_queue_acceptance": false,
   "spending_limit": "uncapped",
   "spending_authorization": "Explicit user instruction 2026-10-10; no assistant-selected monetary ceiling",
-  "preceding_delivery": "docs/agere/TEMPORAL_INTEGRATION_2026-10-20.md",
+  "preceding_delivery": "docs/agere/DOMAIN_LEARNING_INTEGRATION_2026-10-20.md",
   "latest_daily_report": "AGERE_DAILY_STACK_UPDATE_2026-10-11.md",
   "resume_priority": "Follow AGERE_BUILD_CONTROL.json current_gate and checkpoint.next_action.",
   "build_status": "ACTIVE",
@@ -22,13 +22,13 @@
   "resumed_at": "2026-10-19T12:38:11.040529+00:00",
   "heartbeat_interval_minutes": 5,
   "latest_overnight_report": "AGERE_OVERNIGHT_READINESS_2026-10-11.md",
-  "latest_checkpoint": "2026-10-21T00:47:49.267375+00:00",
+  "latest_checkpoint": "2026-10-21T01:09:29.354540+00:00",
   "protected_manifest": "artifacts/agere-reconciliation-contract-v2/protected-for-continuation.json",
   "latest_morning_report": "AGERE_MORNING_STATUS_2026-10-11.md",
   "latest_architecture_review": "AGERE_SHARED_FRONTIER_2026-10-20.md",
   "pause_reason": null,
-  "last_observed_server_session": 59846,
-  "server_status": "7b9f8fe active on local :8885/ask; ready/synthetic; source-scoped correction learning and cache dependencies integrated with local evidence. G3/G5 incomplete.",
+  "last_observed_server_session": 85653,
+  "server_status": "8e83d0d active on local :8885/ask; ready/synthetic; queueing population/date/forecast scope and visible rates repaired with local evidence. G3/G5 incomplete.",
   "unsealed_work": {
     "status": "inactive_candidate",
     "path": "artifacts/agere-citation-recovery-v1",
@@ -68,28 +68,27 @@
   "source_control": "git; codex/agere-validated-proof; commit only owned paths as Michael Logan <michael.p.logan1@gmail.com>",
   "heartbeat_removal_authorization": "Mike 2026-10-19: \"i am here you dont need the continue building reminder\"; deleted through the Codex automation tool.",
   "live_runtime": {
-    "at": "2026-10-21T00:43:28.066430+00:00",
-    "commit": "7b9f8fead524550459a07d783cabd32ec86e1925",
-    "rollback_commit": "93409e8c75a3a33d2901df9ebbe1b7b78a25b3ea",
+    "at": "2026-10-21T01:09:29.354540+00:00",
+    "commit": "8e83d0d945486e6caa9a4921ee2b8bd395e8fc5e",
+    "rollback_commit": "7b9f8fead524550459a07d783cabd32ec86e1925",
     "workspace": "/Users/mikel/agere-mvp-run",
     "port": 8885,
-    "pid": 94926,
-    "session": 59846,
-    "log": "/private/tmp/agere-live-domain.log",
+    "pid": 96834,
+    "session": 85653,
+    "log": "/private/tmp/agere-live-queueing.log",
     "config_sha256": "4eec831417af506fee543532c304c9cc65d07794015c98af3cc5c48ef77cef52",
     "configuration_preserved": true,
     "warehouse_stat_preserved": true,
     "source_hashes": {
-      "clinical_core/agere/ask_view.py": "122b5aaa006bfc55a02e8deea1f1b15319342380d11e69119c93773c73aff525",
-      "clinical_core/agere/clinical/analysis_graph.py": "e7cd7d23e80c86299f0982d078b02405be3ea441f428c5db3eb47836df54a222",
-      "clinical_core/agere/clinical/general_analysis.py": "c8e6ff3fc05a5db3cc2a530286b333fd63ae94a068f8822fc76d4dfc7522f9d0",
-      "clinical_core/agere/clinical/healthcare_learning.py": "aa6dc22728a6125394ebe3643376cca4aca1749a60645c10082160dc54ff7351",
-      "clinical_core/agere/clinical/learning.py": "ca654920b94f78f047379dca809e4e970fe2ccc0112bb0ab614e86d0f861f764",
-      "clinical_core/agere/clinical/measures.py": "c96c9b37298a3f33ed371772a2be85c50fb5cded621d0a744caf46f635200d73",
-      "clinical_core/agere/clinical/shared_planner.py": "e5037528fca80f511bc814012099bd1c2f6e8657d29881ee2f0a22f75fce6f84",
-      "clinical_core/agere/clinical/vbc_knowledge.py": "91c2f7bc7825a2ca079eff1786873e54a2f9d08ef57c70b6b68635a128b60bf0",
-      "clinical_core/agere/service.py": "eea5af451d3a6d1ee14273f773b258fc465911e3b4e43310fd8d3cf1f49c3b38",
-      "config/agere/knowledge/reviewed_healthcare_learning.jsonl": "0d9348e6537da86771f95d6427a5552a1e3ccb9d14d09f5e877bfb77377884b6"
+      "clinical_core/agere/ask_view.py": "08aa1661113468117701c4c9e0d207051c690afdf38b0e3f2e748491d23e5663",
+      "clinical_core/agere/assets/explore.js": "ebf480813bdfd6fa057d88e39055ae6d1c8b8274b6f8e057b409e69d6160eba1",
+      "clinical_core/agere/clinical/analysis_graph.py": "da799b58cafc9ef6c2702dd9a738c30cf81eaa0aaa3e9a1f074f3c5aac27cf8b",
+      "clinical_core/agere/clinical/capability_registry.py": "b4183459604a82daf676f9aeb827dff8f549aed0870bef1086f6bb916cdb34b9",
+      "clinical_core/agere/clinical/graph_contracts.py": "05aada2b02aea72f2a17c12eefac2e9d2ae93e19e081ed3dccdab52a2dfbcf7f",
+      "clinical_core/agere/clinical/graph_planner.py": "4ec707c9c00bf4c0b4555378c5ae211b7341c7ab3eb48aa6bebd10883e9419d7",
+      "clinical_core/agere/clinical/queueing.py": "885789a70572bd7c1319f4a693e213343266f822498eea2508c7444c4bdc87ef",
+      "test_ask_view.py": "713e9465647a2c380535184d21457f70e5f4bd0ea06477532fb2498f3acf586f",
+      "test_queueing_scope.py": "27de538368133bbd3fe4f69e45bfab182fb17f8971ff7e29defc80b96bee9b80"
     },
     "code_hashes_match": true,
     "health": {
@@ -144,12 +143,12 @@
     "boundary": "Single integration/control/runtime owner is this Codex chat; prior lanes are historical."
   },
   "runtime_observation": {
-    "at": "2026-10-21T00:43:28.066430+00:00",
-    "checkout_commit": "7b9f8fead524550459a07d783cabd32ec86e1925",
-    "pid": 94926,
+    "at": "2026-10-21T01:09:29.354540+00:00",
+    "checkout_commit": "8e83d0d945486e6caa9a4921ee2b8bd395e8fc5e",
+    "pid": 96834,
     "url": "http://127.0.0.1:8885/ask",
     "health": "ready/synthetic",
-    "scope": "298 primary/frozen tests, actual isolated Ask correction, authored graph/cache lifecycle, live endpoints and fresh deterministic Ask count; zero paid calls."
+    "scope": "226 primary/frozen tests, nine received-source SQL comparisons, authored shared execution/replay and actual browser/live verification; zero paid calls."
   },
   "previous_delivery": "docs/agere/REQUEST_ADMISSION_RELEASE_2026-10-20.md",
   "coordinated_learning_candidate": {
@@ -196,7 +195,7 @@
     "learning_receipt": "artifacts/agere-domain-integration-v1/implementation-receipt.json"
   },
   "coordinated_queueing_candidate": {
-    "status": "isolated_implementation_in_progress_not_activated",
+    "status": "integrated_with_owner_display_repairs_local_evidence_only",
     "thread_id": "01a15b40-8c5e-7263-b8eb-88dc5a24a707",
     "base_commit": "a2c6335",
     "blocker": "B2",
@@ -222,6 +221,10 @@
     ],
     "boundary": "Candidate only. Owner retains clinical/question/control/runtime; no paid calls or protected evaluation.",
     "candidate_progress": "Lane reports shared contract execution passes exact saved subset, empty subset, changed subset and partial mismatched forecast with zero paid calls. Nested forecast model-cache dependency omission is being fixed; final frozen candidate and owner review pending.",
-    "forecast_acceptance": "Unavailable/mismatched automatic forecast must be partial with missing-evidence explanation; historical observations cannot silently substitute for forecast."
+    "forecast_acceptance": "Unavailable/mismatched automatic forecast must be partial with missing-evidence explanation; historical observations cannot silently substitute for forecast.",
+    "source_commit": "e62bba6a52bd73b50f84bb4f6d052ba43d17dbad",
+    "integrated_release": "8e83d0d945486e6caa9a4921ee2b8bd395e8fc5e",
+    "owner_receipt": "artifacts/agere-queueing-integration-v1/implementation-receipt.json",
+    "coordination_status": "handoff complete; no additional lane work requested; remaining work stays in this owner chat"
   }
 }

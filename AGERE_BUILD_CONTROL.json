@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-10-21T00:47:49.267375+00:00",
+  "updated_at": "2026-10-21T01:09:29.354540+00:00",
   "decision_basis": "AGERE_SHARED_FRONTIER_2026-10-20.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -342,30 +342,30 @@
     "kind": "implementation_delivered",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "The existing /ask correction workflow can verify and reuse scoped CMS, MA and population-health facts; conflicts and source changes revoke reuse and invalidate dependent cached results.",
-    "measured_failure_reduction": "Domain facts now participate in the actual correction UI/API and shared learning/cache path. Authored graph checks prove correction/conflict/revalidation recomputation; real browser correction and current saved reuse succeed.",
+    "user_behavior_delta": "Queueing answers preserve the selected population, snapshot and event window, expose that scope and nonzero rates in /ask, and mark mismatched automatic forecasts partial.",
+    "measured_failure_reduction": "Removed shared-graph population admission rejection, ignored cohort/as-of execution, mismatched forecast reuse, hidden scope and misleading zero-rate/empty-follow-up presentation. Exact, changed and empty populations match source execution.",
     "evidence": [
-      "artifacts/agere-domain-integration-v1/implementation-receipt.json",
-      "docs/agere/DOMAIN_LEARNING_INTEGRATION_2026-10-20.md",
-      "artifacts/agere-domain-integration-v1/browser-correction-lifecycle.json",
-      "artifacts/agere-domain-integration-v1/saved-reuse-verification.json"
+      "artifacts/agere-queueing-integration-v1/implementation-receipt.json",
+      "docs/agere/QUEUEING_SCOPE_INTEGRATION_2026-10-20.md",
+      "artifacts/agere-queueing-integration-v1/shared-source-workflow.json",
+      "artifacts/agere-queueing-integration-v1/browser-final-partial.png"
     ],
-    "remaining_gap": "Original EF/current-therapy/dose/barrier question and conditional work are not demonstrated complete. Broad natural-language correctness and temporal composition are unproven. Generated output meaning and representative end-to-end latency have unresolved failures. Local tests do not qualify model interpretation, clinical correctness or real-world use. Learning is source-scoped fact memory and feedback capture. It does not train model weights, refresh external sources automatically, certify measures, establish payment entitlement or authorize care. All ten acceptance areas remain in scope. G3 active, G5 blocked/incomplete, full acceptance false.",
+    "remaining_gap": "Original EF/current-therapy/dose/barrier question and conditional work are not demonstrated complete. Broad natural-language correctness and temporal composition are unproven. Queueing cohort/date admission, execution and forecast mismatch defects are repaired; post-summary follow-up using the original analytical input cohort remains unimplemented. Generated output meaning and representative end-to-end latency have unresolved failures. Queueing overview now exposes scope and preserves small positive rates; chart axis-label contrast remains a presentation limitation. Local tests do not qualify model interpretation, clinical correctness or real-world use. All ten acceptance areas remain in scope; G3 active, G5 incomplete, full acceptance false.",
     "next_action": "G3: close the original compound clinical/current-state failure and unfamiliar composition gaps through the existing shared path. Use the existing declared acceptance matrix and ordinary development cases across clinical, utilization, access/social, provider and financial/ACO questions, varying dates, exclusions, thresholds and saved scope. Fix measured execution, generated-output and latency failures. No paid calls, protected evaluation or question-specific handlers; fresh-model and independent clinical qualification remain unverified.",
     "next": "G3: close the original compound clinical/current-state failure and unfamiliar composition gaps through the existing shared path. Use the existing declared acceptance matrix and ordinary development cases across clinical, utilization, access/social, provider and financial/ACO questions, varying dates, exclusions, thresholds and saved scope. Fix measured execution, generated-output and latency failures. No paid calls, protected evaluation or question-specific handlers; fresh-model and independent clinical qualification remain unverified.",
     "latest_review": {
-      "at": "2026-10-21T00:43:28.066430+00:00",
-      "kind": "Owner source review, primary/frozen regressions, isolated actual browser and graph/cache checks, live Ask/endpoints; no model or clinical qualification",
-      "report": "docs/agere/DOMAIN_LEARNING_INTEGRATION_2026-10-20.md",
+      "at": "2026-10-21T01:09:29.354540+00:00",
+      "kind": "Owner source review, primary/frozen tests, source SQL comparisons, authored workflow and actual candidate/live browser; no model or clinical qualification",
+      "report": "docs/agere/QUEUEING_SCOPE_INTEGRATION_2026-10-20.md",
       "evidence": [
-        "artifacts/agere-domain-integration-v1/implementation-receipt.json"
+        "artifacts/agere-queueing-integration-v1/implementation-receipt.json"
       ]
     },
     "coordination": {
       "integration_owner": "01a15af4-c150-76f2-9df2-a44c1428b70d",
-      "status": "Sole owner. Temporal and domain-learning increments integrated. Direct user identifies /ask as the product surface; no design migration. No paid calls or credit prerequisite.",
+      "status": "Sole owner. Temporal, domain-learning and queueing increments integrated at /ask. No additional lane work requested; handle remaining integration/fixes in this chat. No paid calls or credit prerequisite.",
       "queueing_scope_candidate": {
-        "status": "isolated_implementation_in_progress_not_activated",
+        "status": "integrated_local_evidence_only",
         "thread_id": "01a15b40-8c5e-7263-b8eb-88dc5a24a707",
         "base_commit": "a2c6335",
         "blocker": "B2",
@@ -389,9 +389,12 @@
           "omitted population remains distinct from explicit empty population",
           "queueing nested demand model identity changes invalidate cached results"
         ],
-        "boundary": "Candidate only. Owner retains clinical/question/control/runtime; no paid calls or protected evaluation.",
-        "candidate_progress": "Lane reports shared contract execution passes exact saved subset, empty subset, changed subset and partial mismatched forecast with zero paid calls. Nested forecast model-cache dependency omission is being fixed; final frozen candidate and owner review pending.",
-        "forecast_acceptance": "Unavailable/mismatched automatic forecast must be partial with missing-evidence explanation; historical observations cannot silently substitute for forecast."
+        "boundary": "Handoff complete. This chat owns all remaining work; no additional lane task requested. No paid calls or protected evaluation.",
+        "candidate_progress": "Frozen candidate integrated; owner fixed four browser findings. All 226 primary/frozen tests pass; nine received-source checks and isolated shared execution/browser/live checks pass.",
+        "forecast_acceptance": "Unavailable/mismatched automatic forecast must be partial with missing-evidence explanation; historical observations cannot silently substitute for forecast.",
+        "source_commit": "e62bba6a52bd73b50f84bb4f6d052ba43d17dbad",
+        "integrated_release": "8e83d0d945486e6caa9a4921ee2b8bd395e8fc5e",
+        "owner_receipt": "artifacts/agere-queueing-integration-v1/implementation-receipt.json"
       }
     },
     "remaining_blockers": [
@@ -406,14 +409,14 @@
         "id": "B2",
         "area": "Unfamiliar and multi-domain composition",
         "status": "open",
-        "gap": "Broad natural-language correctness and temporal composition are unproven.",
+        "gap": "Broad natural-language correctness and temporal composition are unproven. Queueing cohort/date admission, execution and forecast mismatch defects are repaired; post-summary follow-up using the original analytical input cohort remains unimplemented.",
         "completion": "Existing declared workflows and ordinary varied development questions preserve date, exclusion, threshold and saved-scope semantics across clinical, utilization, access/social, provider and financial/ACO domains; independently compare execution to source queries. Label authored contracts separately from interpretation."
       },
       {
         "id": "B3",
         "area": "Generated views and response time",
         "status": "open",
-        "gap": "Generated output meaning and representative end-to-end latency have unresolved failures.",
+        "gap": "Generated output meaning and representative end-to-end latency have unresolved failures. Queueing overview now exposes scope and preserves small positive rates; chart axis-label contrast remains a presentation limitation.",
         "completion": "Rendered outputs match saved evidence, preserve scope, and report measured timing; remove reproduced failures without new paid calls."
       },
       {
@@ -1201,6 +1204,13 @@
       "basis": "Direct continuation/site clarification;298 primary/frozen checks, actual browser correction, authored graph lifecycle, live API and count verification, zero paid calls.",
       "scope_impact": "All ten areas retained, G3 active/G5 incomplete. Finite blocker list retained in checkpoint; defer extra model/research work unless it resolves a measured blocker. Existing app configuration and warehouse preserved.",
       "evidence": "artifacts/agere-domain-integration-v1/implementation-receipt.json"
+    },
+    {
+      "at": "2026-10-21T01:09:29.354540+00:00",
+      "decision": "Activate queueing scope/display release8e83d0d at /ask, retaining7b9f8fe rollback. Close candidate handoff; keep remaining work in the sole owner chat.",
+      "basis": "226 primary/frozen checks, independent received-source counts, authored shared scope/replay checks, actual browser findings repaired and live verification with zero provider calls.",
+      "scope_impact": "Specific B2/B3 failure reduction only. Post-summary input-cohort follow-up remains open; G3 active/G5 incomplete and full ten-area charter retained.",
+      "evidence": "artifacts/agere-queueing-integration-v1/implementation-receipt.json"
     }
   ]
 }
