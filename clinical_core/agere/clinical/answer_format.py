@@ -87,6 +87,7 @@ def present(result, target=None):
                 answer['headline'] = f"{len(rows)} rows · " + ', '.join(rows[0].keys())
     _honest_unknown(answer)
     _outside_coverage(result, answer, target)
+    notes += _basis_notes(result)
     if notes:
         answer['limitations'] = list(dict.fromkeys([*(answer.get('limitations') or []), *notes]))
     return result
@@ -140,3 +141,14 @@ def _outside_coverage(result, answer, target):
         answer['missing'] = list(dict.fromkeys([*(answer.get('missing') or []), *gaps]))
     elif gaps:
         answer['limitations'] = list(dict.fromkeys([*(answer.get('limitations') or []), *gaps]))
+
+
+BASIS = {'payer_allowed_medical_pmpm': 'PMPM basis: allowed dollars on paid payer medical claims (plain "PMPM" means allowed; '
+                                      'ask for "paid PMPM" for paid dollars). Pharmacy excluded.',
+         'payer_paid_medical_pmpm': 'PMPM basis: paid dollars on payer medical claims, as asked. Pharmacy excluded.'}
+
+
+def _basis_notes(result):
+    analyses = ((result.get('request_contract') or {}).get('request') or {}).get('analyses') or []
+    return list(dict.fromkeys(BASIS[a['parameters']['id']] for a in analyses
+                              if a.get('operation') == 'governed_metric' and a['parameters'].get('id') in BASIS))

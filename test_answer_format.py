@@ -69,5 +69,11 @@ class AnswerFormat(unittest.TestCase):
         self.assertIn('2026-09-01', a['headline'])
         self.assertNotIn('answerable', present(result('2029-01-01', '2029-12-31'), self.target)['answer'])
 
+    def test_pmpm_answers_state_their_basis(self):
+        r = {'request_contract': {'request': {'analyses': [{'operation': 'governed_metric', 'parameters': {
+                 'id': 'payer_allowed_medical_pmpm', 'period': {'start': '2029-01-01', 'end': '2029-12-31'}}}]}},
+             'answer': {'status': 'answered', 'value': 376.03, 'limitations': []}}
+        self.assertTrue(any('allowed dollars' in l for l in present(r, self.target)['answer']['limitations']))
+
 if __name__ == '__main__':
     unittest.main()
