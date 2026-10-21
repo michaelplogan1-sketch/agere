@@ -22,7 +22,7 @@
   "resumed_at": "2026-10-19T12:38:11.040529+00:00",
   "heartbeat_interval_minutes": 5,
   "latest_overnight_report": "AGERE_OVERNIGHT_READINESS_2026-10-11.md",
-  "latest_checkpoint": "2026-10-21T13:49:29.988594+00:00",
+  "latest_checkpoint": "2026-10-21T14:14:51.887030+00:00",
   "protected_manifest": "artifacts/agere-reconciliation-contract-v2/protected-for-continuation.json",
   "latest_morning_report": "AGERE_MORNING_STATUS_2026-10-11.md",
   "latest_architecture_review": "AGERE_SHARED_FRONTIER_2026-10-20.md",
@@ -69,13 +69,13 @@
   "heartbeat_removal_authorization": "Mike 2026-10-19: \"i am here you dont need the continue building reminder\"; deleted through the Codex automation tool.",
   "live_runtime": {
     "at": "2026-10-21T02:25:18.143040+00:00",
-    "commit": "61e7e77608c711846ac610b612ed90d48009ef42",
+    "commit": "be259ce382235b0807d6feef2f8724905bb93087",
     "rollback_commit": "60aab29c08ad534c1a89b593c934051aa8d56c9c",
     "workspace": "/Users/mikel/agere-mvp-run",
     "port": 8885,
-    "pid": 13583,
+    "pid": 14325,
     "session": 2376,
-    "log": "/private/tmp/agere-live-61e7e77.log",
+    "log": "/private/tmp/agere-live-defs3.log",
     "config_sha256": "4eec831417af506fee543532c304c9cc65d07794015c98af3cc5c48ef77cef52",
     "configuration_preserved": true,
     "warehouse_stat_preserved": true,
@@ -107,9 +107,10 @@
       }
     },
     "url": "http://127.0.0.1:8885/ask",
-    "verified_at": "2026-10-21T13:49:29.988594+00:00",
+    "verified_at": "2026-10-21T14:14:51.887030+00:00",
     "api_status": "Working (credit added 2026-10-21).",
-    "cost_measurement": "20-question dev set: Opus 5.5 with prompt caching $5.44 (was $12.65 uncached), 76 calls, 2.15M cache-read vs 0.15M cache-write tokens; Sonnet 5.5 $4.75, 137 calls, weaker accuracy. HF question: Opus $0.45, Sonnet $0.41, both partial under current conservative definitions."
+    "cost_measurement": "20-question dev set: Opus 5.5 with prompt caching $5.44 (was $12.65 uncached), 76 calls, 2.15M cache-read vs 0.15M cache-write tokens; Sonnet 5.5 $4.75, 137 calls, weaker accuracy. HF question: Opus $0.45, Sonnet $0.41, both partial under current conservative definitions.",
+    "hf_acceptance": "HF compound question answered (missing []) under Mike-governed definitions: 36 patients, 144/144 pillar flags match independent SQL, $1.75, 245 s."
   },
   "current_spending_constraint": "No paid provider calls for the current coordinated build/improvement work, following Mike's verified October20 clarification in Review AI stack techniques. Continue local implementation and deterministic/source/workflow validation without waiting for credits. Existing app integration and credentials remain unchanged; live-model and independent clinical qualification remain explicitly unverified.",
   "current_turn_spending_policy": "No paid provider calls for the current coordinated build/improvement work, following Mike's verified October20 clarification in Review AI stack techniques. Continue local implementation and deterministic/source/workflow validation without waiting for credits. Existing app integration and credentials remain unchanged; live-model and independent clinical qualification remain explicitly unverified.",
