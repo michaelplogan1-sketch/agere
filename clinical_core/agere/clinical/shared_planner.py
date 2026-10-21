@@ -76,7 +76,7 @@ def policy_identity():
                      'age.py', 'request_vocabulary.py', 'request_shapes.py', 'local_request_worker.py',
                      'concepts.py', 'drug_classes.py', 'nl2sql.py', 'workflow_contract.py', 'request_discovery.py', 'general_analysis.py', 'dose.py', 'clinical_definitions.py',
                      'analysis_evidence.py', 'request_program.py', 'answer_dependencies.py', 'procedural_memory.py', 'clinical_inputs.py',
-                     'conversation.py', 'answer_format.py', 'paraphrase.py', 'local_normalizer.py', 'question_input.py', 'learning.py', 'economics_learning.py', 'healthcare_learning.py', 'vbc_knowledge.py', 'programs.py', 'contract_strategy.py',
+                     'conversation.py', 'answer_format.py', 'paraphrase.py', 'local_normalizer.py', 'data_domains.py', 'question_input.py', 'learning.py', 'economics_learning.py', 'healthcare_learning.py', 'vbc_knowledge.py', 'programs.py', 'contract_strategy.py',
                      'metrics.py', 'metric_families.py', 'measures.py', 'risk_adjustment.py', 'vbc.py')}})
 
 SYSTEM = '''Interpret the complete request about the connected warehouse into a typed relational request, staged analysis or request program. Return JSON only.
@@ -903,6 +903,10 @@ def plan(stack, question, ledger=None, frontier=None, *, population=None, model=
 
 def compose(stack, question, *, population=None, parent=None, model=None, planning='auto'):
     started = time.perf_counter()
+    if population is None and parent is None:
+        from . import data_domains
+        absent = data_domains.check(request_plan.Catalog.load(stack.path), question)
+        if absent: return data_domains.answer(question, *absent)  # nothing received could answer it
     graph, receipt = plan(stack, question, population=population, model=model, planning=planning)
     try:
         if receipt['request_contract'].get('kind') == 'request_program':
