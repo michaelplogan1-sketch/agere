@@ -22,7 +22,7 @@
   "resumed_at": "2026-10-19T12:38:11.040529+00:00",
   "heartbeat_interval_minutes": 5,
   "latest_overnight_report": "AGERE_OVERNIGHT_READINESS_2026-10-11.md",
-  "latest_checkpoint": "2026-10-21T14:48:51.620535+00:00",
+  "latest_checkpoint": "2026-10-21T15:02:43.945402+00:00",
   "protected_manifest": "artifacts/agere-reconciliation-contract-v2/protected-for-continuation.json",
   "latest_morning_report": "AGERE_MORNING_STATUS_2026-10-11.md",
   "latest_architecture_review": "AGERE_SHARED_FRONTIER_2026-10-20.md",
@@ -64,7 +64,7 @@
     "at": "2026-10-12T21:05:53.583462+00:00",
     "report": "AGERE_EXTERNAL_REVIEW_RESPONSE_2026-10-12.md"
   },
-  "owner_agent": "Claude Code, build owner (reassigned by Mike 2026-10-21)",
+  "owner_agent": "Claude Code, sole Agere owner (exclusive handoff from Codex at Mike's request, 2026-10-21)",
   "source_control": "git; codex/agere-validated-proof; commit only owned paths as Michael Logan <michael.p.logan1@gmail.com>",
   "heartbeat_removal_authorization": "Mike 2026-10-19: \"i am here you dont need the continue building reminder\"; deleted through the Codex automation tool.",
   "live_runtime": {
@@ -246,5 +246,12 @@
       "Mike to Claude 2026-10-20: answer every question; an LLM is always available as the last resort",
       "Mike to Codex 01a15e17: handle unfamiliar wording without using an LLM"
     ]
+  },
+  "exclusive_handoff": {
+    "at": "2026-10-21T15:02:43.945402+00:00",
+    "from": "Codex chat 01a15e17-8142-7920-8ba5-bbb6cb7a044a",
+    "basis": "Mike in Codex chat: \"can you hand this off to claude so it can take over\"",
+    "receipt": "/Users/mikel/agere-foundational-request/artifacts/agere-claude-exclusive-handoff-v1/handoff.json",
+    "codex_status": "stopped; no pending candidate"
   }
 }
