@@ -687,6 +687,9 @@ def _interpret(catalog, question, *, population=None, model=None, force_model=Fa
     raise exc
 
 
+GRAMMAR_REVIEWS = ('fully_consumed_grammar', 'fully_consumed_grammar_program')
+
+
 def reuse_paraphrase(stack, catalog, question, population, memory_identity):
     """A verified interpretation of a reworded question (paraphrase.py), recompiled under the current code against its
     own verified wording. Zero model calls; never saved under the new wording."""
@@ -761,6 +764,15 @@ def plan(stack, question, ledger=None, frontier=None, *, population=None, model=
         if analysis_id and not valid_shape(stack.path, analysis_id): hit = None
         from .clinical_definitions import superseded
         if superseded(question, {k: saved.get(k) for k in ('program', 'analysis', 'request')}, catalog.tables): hit = None
+    # Deterministic first (Mike, 2026-10-21): a saved model-derived answer yields to the free parser whenever the
+    # parser now reads the whole question; the parse is then saved under this key in its place.
+    grammar = None
+    if model is None and not (hit and saved['interpretation'].get('review') in GRAMMAR_REVIEWS):
+        try:
+            grammar = _interpret(catalog, question, population=population)  # grammar only; never a model
+        except QuestionNotUnderstood:
+            grammar = None
+    if grammar: hit, carried = None, None
     if hit and saved.get('program'):
         try:
             contract = request_program.prepare(catalog, question, saved['program'], population=population)
@@ -792,7 +804,9 @@ def plan(stack, question, ledger=None, frontier=None, *, population=None, model=
                        (key, json.dumps({'question': question, 'stable_key': stable_key, **replay,
                                          'interpretation': {k: v for k, v in interpretation.items()
                                                             if k != 'exact_contract_cache_hit'}}, default=str)))
-    if not hit:
+    if not hit and grammar:
+        contract, interpretation = grammar
+    elif not hit:
         from .request_shapes import lookup
         from . import general_analysis
         reused = (lookup(stack.path, catalog, question, code, population)
@@ -838,15 +852,15 @@ def plan(stack, question, ledger=None, frontier=None, *, population=None, model=
                                                   acceptance_scope='Compiled and reviewed synthetic observation; not clinical qualification')
                     finally:
                         if owned: current_ledger.close()
-        if model is None and interpretation.get('execution_accepted') and interpretation.get('interpreter') != 'paraphrase_reuse' and (
-                contract.get('kind') != 'request_program' or request_program.cacheable(contract, interpretation)):
-            with sqlite3.connect(cache_path) as db:
-                saved_plan = ({'program': contract['program']} if contract.get('kind') == 'request_program' else
-                              {'analysis': contract['analysis']} if contract.get('kind') == 'general_analysis'
-                              else {'request': contract['request']})
-                db.execute('INSERT OR REPLACE INTO shared_requests VALUES (?,?)',
-                           (key, json.dumps({'question': question, 'stable_key': stable_key, **saved_plan,
-                                             'interpretation': interpretation}, default=str)))
+    if not hit and model is None and interpretation.get('execution_accepted') and interpretation.get('interpreter') != 'paraphrase_reuse' and (
+            contract.get('kind') != 'request_program' or request_program.cacheable(contract, interpretation)):
+        with sqlite3.connect(cache_path) as db:
+            saved_plan = ({'program': contract['program']} if contract.get('kind') == 'request_program' else
+                          {'analysis': contract['analysis']} if contract.get('kind') == 'general_analysis'
+                          else {'request': contract['request']})
+            db.execute('INSERT OR REPLACE INTO shared_requests VALUES (?,?)',
+                       (key, json.dumps({'question': question, 'stable_key': stable_key, **saved_plan,
+                                         'interpretation': interpretation}, default=str)))
     if interpretation.get('exact_contract_cache_hit') and interpretation.get('procedural_memory'):
         interpretation = copy.deepcopy(interpretation)
         interpretation['procedural_memory']['use_id'] = memory.begin_use(
