@@ -161,7 +161,14 @@ def lookup(path, catalog, question, policy, population=None):
     from .learning import correction_context
     if correction_context(path, question): return None
     with _db(path) as db:
-        rows = db.execute("SELECT id,payload FROM request_shapes WHERE policy=? AND status='active'", (policy,)).fetchall()
+        rows = db.execute("SELECT id,payload,policy FROM request_shapes WHERE status='active'").fetchall()
+    # Shapes saved under the current code first; otherwise a checked shape from an earlier release, recompiled now.
+    current = [(i, p) for i, p, pol in rows if pol == policy]
+    earlier = [(i, p) for i, p, pol in rows if pol != policy]
+    return _match(catalog, question, population, current) or _match(catalog, question, population, earlier, carried=True)
+
+
+def _match(catalog, question, population, rows, carried=False):
     matches = []
     for ident, payload in rows:
         shape = json.loads(payload)
@@ -178,7 +185,9 @@ def lookup(path, catalog, question, policy, population=None):
     return contract, {'interpreter': 'checked_request_shape', 'review': 'typed_slot_recompile',
                       'request_shape_id': ident, 'execution_accepted': True, 'attempts': [],
                       'qualified_interpretation': False,
-                      'acceptance_scope': 'Reuse of model-checked structure; not independent adjudication'}
+                      'acceptance_scope': 'Reuse of model-checked structure; not independent adjudication',
+                      **({'carry_forward': 'Shape saved under an earlier code release; recompiled under the current code.'}
+                         if carried else {})}
 
 
 def invalidate(path, question, reason):

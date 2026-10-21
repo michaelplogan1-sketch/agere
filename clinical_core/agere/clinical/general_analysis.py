@@ -906,8 +906,16 @@ def lookup_shape(path, catalog, question, policy, population=None):
     text, values = template(question)
     scope = None if population is None else sorted(set(population))
     key = fingerprint({'template': text, 'policy': policy, 'source': catalog.identity, 'population': scope})
+    carried = False
     with _shapes(path) as db:
         row = db.execute("SELECT payload FROM analysis_shapes WHERE id=? AND status='active'", (key,)).fetchone()
+        if not row:
+            # A checked shape saved under an earlier code release; it is recompiled under the current code below.
+            for (payload,) in db.execute("SELECT payload FROM analysis_shapes WHERE template=? AND source=? AND "
+                                         "status='active' ORDER BY rowid DESC", (text, fingerprint(catalog.identity))):
+                if json.loads(payload).get('population') == scope:
+                    row, carried = (payload,), True
+                    break
     if not row: return None
     saved = json.loads(row[0])
     old = saved['values']
@@ -954,4 +962,6 @@ def lookup_shape(path, catalog, question, policy, population=None):
     return contract, {'interpreter': 'learned_analysis_shape', 'review': 'explicit_parameter_recompile',
                       'analysis_shape_id': key, 'shape_source_question': saved['question'],
                       'qualified_interpretation': False, 'acceptance_scope': saved['qualification'],
-                      'execution_accepted': True, 'attempts': []}
+                      'execution_accepted': True, 'attempts': [],
+                      **({'carry_forward': 'Shape saved under an earlier code release; recompiled under the current code.'}
+                         if carried else {})}

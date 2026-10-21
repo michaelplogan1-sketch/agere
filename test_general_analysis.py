@@ -125,6 +125,27 @@ class GeneralAnalysis(unittest.TestCase):
         self.assertEqual(other_year['answer']['count'], 0)  # A's single 2028 visit
         self.assertEqual(model.call_count, 2)
 
+    def test_verified_answer_and_shape_survive_a_code_release(self):
+        model = self.hosted([(json.dumps({'analysis': spec()}), {'api_usd': .2, 'api_cost_known': True}),
+                             (json.dumps({'equivalent': True, 'issues': []}), {'api_usd': .1, 'api_cost_known': True})])
+        def historical_receipt(c,q,**kwargs):
+            contract, interpretation=fixtures.authored_review_fixture(c,q,model,population=kwargs.get('population'))
+            interpretation['review']='checked_hosted_interpretation'
+            return contract,interpretation
+        with patch.object(S,'checked_interpret',side_effect=historical_receipt):
+            first = S.compose(self.stack, Q)
+        with patch.object(S,'policy_identity',return_value='next-release'), \
+             patch.object(S,'checked_interpret',side_effect=AssertionError('must replay, not reinterpret')):
+            again = S.compose(self.stack, Q)
+            other_year = S.compose(self.stack, Q.replace('2029', '2028'))
+            replay = S.compose(self.stack, Q)
+        self.assertEqual(again['answer']['count'], first['answer']['count'])
+        self.assertEqual(again['new_paid_api_calls'], 0)
+        self.assertIn('carry_forward', again['planner_receipt']['interpretation'])
+        self.assertEqual(other_year['answer']['count'], 0)
+        self.assertTrue(replay['planner_receipt']['interpretation']['exact_contract_cache_hit'])
+        self.assertEqual(model.call_count, 2)
+
     def test_typed_failure_can_switch_to_analysis(self):
         model = Mock(side_effect=[(json.dumps({'source': {'table': 'nope', 'quote': 'patients'}}), {}),
                                   (json.dumps({'analysis': spec()}), {}),

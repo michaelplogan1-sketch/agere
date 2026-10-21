@@ -680,10 +680,25 @@ def plan(stack, question, ledger=None, frontier=None, *, population=None, model=
                                     'allow_live': bool(getattr(stack, 'allow_live', False)),
                                     'hosted_model': hosted_model,
                                     'planning': planning, 'procedural_memory': memory_identity})
+    # The same request under any code identity. A verified interpretation keeps its meaning across releases; it is
+    # recompiled and re-executed under the current code below, so changed definitions apply to the replay.
+    stable_key = request_plan.fingerprint({'question': question, 'population': population, 'source': catalog.identity,
+                                           'tables': catalog.tables, 'stream_fields': catalog.stream_fields,
+                                           'planning': planning, 'procedural_memory': memory_identity})
     cache_path = Path(stack.path)/'question-plans.sqlite3'
+    carried = None
     with sqlite3.connect(cache_path) as db:
         db.execute('CREATE TABLE IF NOT EXISTS shared_requests(id TEXT PRIMARY KEY,payload TEXT NOT NULL)')
         hit = db.execute('SELECT payload FROM shared_requests WHERE id=?', (key,)).fetchone() if model is None else None
+        if not hit and model is None:
+            legacy = population is None and planning == 'auto' and memory_identity == request_plan.fingerprint([])
+            for ident, payload in db.execute('SELECT id,payload FROM shared_requests ORDER BY rowid DESC'):
+                item = json.loads(payload)
+                if not item.get('interpretation', {}).get('execution_accepted'): continue
+                if item.get('stable_key') == stable_key or (legacy and 'stable_key' not in item
+                                                             and item.get('question') == question):
+                    hit, carried = (payload,), ident
+                    break
     from .learning import correction_context
     if correction_context(stack.path, question): hit = None
     if hit:
@@ -710,8 +725,22 @@ def plan(stack, question, ledger=None, frontier=None, *, population=None, model=
         except request_plan.PlanError:
             hit = None
     elif hit:
-        contract = request_plan.compile_request(catalog, question, saved['request'], population=population)
-        interpretation = {**saved['interpretation'], 'exact_contract_cache_hit': True}
+        try:
+            contract = request_plan.compile_request(catalog, question, saved['request'], population=population)
+            interpretation = {**saved['interpretation'], 'exact_contract_cache_hit': True}
+        except request_plan.PlanError:
+            if not carried: raise
+            hit = None
+    if hit and carried:
+        interpretation = {**interpretation, 'carried_forward_from': carried,
+                          'carry_forward': 'Verified interpretation saved under an earlier code release; recompiled and '
+                                           're-executed under the current code.'}
+        replay = {k: v for k, v in saved.items() if k in ('program', 'analysis', 'request')}
+        with sqlite3.connect(cache_path) as db:
+            db.execute('INSERT OR REPLACE INTO shared_requests VALUES (?,?)',
+                       (key, json.dumps({'question': question, 'stable_key': stable_key, **replay,
+                                         'interpretation': {k: v for k, v in interpretation.items()
+                                                            if k != 'exact_contract_cache_hit'}}, default=str)))
     if not hit:
         from .request_shapes import lookup
         from . import general_analysis
@@ -761,7 +790,8 @@ def plan(stack, question, ledger=None, frontier=None, *, population=None, model=
                               {'analysis': contract['analysis']} if contract.get('kind') == 'general_analysis'
                               else {'request': contract['request']})
                 db.execute('INSERT OR REPLACE INTO shared_requests VALUES (?,?)',
-                           (key, json.dumps({'question': question, **saved_plan, 'interpretation': interpretation}, default=str)))
+                           (key, json.dumps({'question': question, 'stable_key': stable_key, **saved_plan,
+                                             'interpretation': interpretation}, default=str)))
     if interpretation.get('exact_contract_cache_hit') and interpretation.get('procedural_memory'):
         interpretation = copy.deepcopy(interpretation)
         interpretation['procedural_memory']['use_id'] = memory.begin_use(
