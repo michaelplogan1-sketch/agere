@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-10-21T01:09:29.354540+00:00",
+  "updated_at": "2026-10-21T01:30:58.960365+00:00",
   "decision_basis": "AGERE_SHARED_FRONTIER_2026-10-20.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -285,6 +285,10 @@
         {
           "path": "artifacts/agere-domain-integration-v1/implementation-receipt.json",
           "sha256": "07dfdd10909d4c937fe64d016d8f56fd503e35a4cc80b162e5c4621e28d43b5b"
+        },
+        {
+          "path": "artifacts/agere-summary-scope-v1/implementation-receipt.json",
+          "sha256": "3d0bf68dc2d4e256453bb857166c9294c1197402770ab91b44ffbae433afc1ac"
         }
       ]
     },
@@ -342,28 +346,28 @@
     "kind": "implementation_delivered",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "Queueing answers preserve the selected population, snapshot and event window, expose that scope and nonzero rates in /ask, and mark mismatched automatic forecasts partial.",
-    "measured_failure_reduction": "Removed shared-graph population admission rejection, ignored cohort/as-of execution, mismatched forecast reuse, hidden scope and misleading zero-rate/empty-follow-up presentation. Exact, changed and empty populations match source execution.",
+    "user_behavior_delta": "After an analytical summary, users can explicitly follow its immutable original input population, separately from result-selected patients, through the existing /ask path. Empty stays empty; input scope does not confer patient-work authority.",
+    "measured_failure_reduction": "Closed B2 original-input loss after summaries; sealed input identity and repaired failed-turn/shortcut selection resets. Live 292-patient input remains available beside the 67-patient result of 118 ED visits; explicit input follow-up returns292.",
     "evidence": [
-      "artifacts/agere-queueing-integration-v1/implementation-receipt.json",
-      "docs/agere/QUEUEING_SCOPE_INTEGRATION_2026-10-20.md",
-      "artifacts/agere-queueing-integration-v1/shared-source-workflow.json",
-      "artifacts/agere-queueing-integration-v1/browser-final-partial.png"
+      "artifacts/agere-summary-scope-v1/implementation-receipt.json",
+      "docs/agere/SUMMARY_SCOPE_INTEGRATION_2026-10-20.md",
+      "artifacts/agere-summary-scope-v1/live-checks.json",
+      "artifacts/agere-summary-scope-v1/live-followup.png"
     ],
-    "remaining_gap": "Original EF/current-therapy/dose/barrier question and conditional work are not demonstrated complete. Broad natural-language correctness and temporal composition are unproven. Queueing cohort/date admission, execution and forecast mismatch defects are repaired; post-summary follow-up using the original analytical input cohort remains unimplemented. Generated output meaning and representative end-to-end latency have unresolved failures. Queueing overview now exposes scope and preserves small positive rates; chart axis-label contrast remains a presentation limitation. Local tests do not qualify model interpretation, clinical correctness or real-world use. All ten acceptance areas remain in scope; G3 active, G5 incomplete, full acceptance false.",
-    "next_action": "G3: close the original compound clinical/current-state failure and unfamiliar composition gaps through the existing shared path. Use the existing declared acceptance matrix and ordinary development cases across clinical, utilization, access/social, provider and financial/ACO questions, varying dates, exclusions, thresholds and saved scope. Fix measured execution, generated-output and latency failures. No paid calls, protected evaluation or question-specific handlers; fresh-model and independent clinical qualification remain unverified.",
-    "next": "G3: close the original compound clinical/current-state failure and unfamiliar composition gaps through the existing shared path. Use the existing declared acceptance matrix and ordinary development cases across clinical, utilization, access/social, provider and financial/ACO questions, varying dates, exclusions, thresholds and saved scope. Fix measured execution, generated-output and latency failures. No paid calls, protected evaluation or question-specific handlers; fresh-model and independent clinical qualification remain unverified.",
+    "remaining_gap": "Original EF/current-therapy/dose/barrier question and conditional work are not demonstrated complete. Broad natural-language correctness and temporal/multi-domain composition remain unproven. Queueing cohort/date execution and explicit original-input follow-up after summaries are repaired; these local engineering results do not establish broad interpretation. Generated output meaning and representative end-to-end latency have unresolved failures. Queueing overview now exposes scope and preserves small positive rates; chart axis-label contrast remains a presentation limitation. Local tests do not qualify model interpretation, clinical correctness or real-world use. All ten acceptance areas retained; G3 active, G5 incomplete, full acceptance false.",
+    "next_action": "G3: resolve the original compound clinical/current-state semantics through the existing shared path: distinguish coded diagnosis from current EF evidence, received medication/fill/dose evidence from current therapy, and observed provider encounters from assigned care teams; return specific supported unknowns where evidence is insufficient, then preserve applicable populations through conditional synthetic work. Keep ordinary varied clinical, utilization, access/social, provider and financial/ACO composition regressions. No paid calls, protected evaluation, new helper path or question-specific handler; independent model/clinical qualification remains unverified.",
+    "next": "G3: resolve the original compound clinical/current-state semantics through the existing shared path: distinguish coded diagnosis from current EF evidence, received medication/fill/dose evidence from current therapy, and observed provider encounters from assigned care teams; return specific supported unknowns where evidence is insufficient, then preserve applicable populations through conditional synthetic work. Keep ordinary varied clinical, utilization, access/social, provider and financial/ACO composition regressions. No paid calls, protected evaluation, new helper path or question-specific handler; independent model/clinical qualification remains unverified.",
     "latest_review": {
-      "at": "2026-10-21T01:09:29.354540+00:00",
-      "kind": "Owner source review, primary/frozen tests, source SQL comparisons, authored workflow and actual candidate/live browser; no model or clinical qualification",
-      "report": "docs/agere/QUEUEING_SCOPE_INTEGRATION_2026-10-20.md",
+      "at": "2026-10-21T01:30:58.960365+00:00",
+      "kind": "Owner source review, 121 primary/frozen tests, authored source and HTTP checks, actual candidate/live browser and independent live source SQL; no model or clinical qualification",
+      "report": "docs/agere/SUMMARY_SCOPE_INTEGRATION_2026-10-20.md",
       "evidence": [
-        "artifacts/agere-queueing-integration-v1/implementation-receipt.json"
+        "artifacts/agere-summary-scope-v1/implementation-receipt.json"
       ]
     },
     "coordination": {
       "integration_owner": "01a15af4-c150-76f2-9df2-a44c1428b70d",
-      "status": "Sole owner. Temporal, domain-learning and queueing increments integrated at /ask. No additional lane work requested; handle remaining integration/fixes in this chat. No paid calls or credit prerequisite.",
+      "status": "Sole owner. Authorized lanes integrated; summary scope increment delivered at /ask. No additional lane work requested. Remaining work stays in this chat; no paid calls or credit prerequisite.",
       "queueing_scope_candidate": {
         "status": "integrated_local_evidence_only",
         "thread_id": "01a15b40-8c5e-7263-b8eb-88dc5a24a707",
@@ -409,7 +413,7 @@
         "id": "B2",
         "area": "Unfamiliar and multi-domain composition",
         "status": "open",
-        "gap": "Broad natural-language correctness and temporal composition are unproven. Queueing cohort/date admission, execution and forecast mismatch defects are repaired; post-summary follow-up using the original analytical input cohort remains unimplemented.",
+        "gap": "Broad natural-language correctness and temporal/multi-domain composition remain unproven. Queueing cohort/date execution and explicit original-input follow-up after summaries are repaired; these local engineering results do not establish broad interpretation.",
         "completion": "Existing declared workflows and ordinary varied development questions preserve date, exclusion, threshold and saved-scope semantics across clinical, utilization, access/social, provider and financial/ACO domains; independently compare execution to source queries. Label authored contracts separately from interpretation."
       },
       {
@@ -1211,6 +1215,19 @@
       "basis": "226 primary/frozen checks, independent received-source counts, authored shared scope/replay checks, actual browser findings repaired and live verification with zero provider calls.",
       "scope_impact": "Specific B2/B3 failure reduction only. Post-summary input-cohort follow-up remains open; G3 active/G5 incomplete and full ten-area charter retained.",
       "evidence": "artifacts/agere-queueing-integration-v1/implementation-receipt.json"
+    },
+    {
+      "at": "2026-10-21T01:16:29.603130+00:00",
+      "decision": "Prioritize the existing context-preservation dependency within G3 before expanding compound clinical actions.",
+      "basis": "Trace of the original clinical request retains unresolved current-state/eligibility meaning. Independent shared-path inspection reproduces loss of explicit input population after summaries, affecting clinical, financial and operational compositions.",
+      "scope_impact": "Close a concrete B2 prerequisite through the existing path; B1 clinical semantics and B4 qualification remain open. No plan replacement, model catalog, paid call or clinical authority expansion."
+    },
+    {
+      "at": "2026-10-21T01:30:58.960365+00:00",
+      "decision": "Activate summary-scope release f16b208 at /ask with rollback8e83d0d; close the explicit original-input preservation defect and resume original compound current-state semantics.",
+      "basis": "121 primary/frozen tests, five authored received-source fixtures, six actual HTTP checks, candidate browser and live292\u2192118events/67patients\u2192292 input-follow-up with independent source match and zero calls.",
+      "scope_impact": "Specific B2 failure reduction; no new clinical authority or interpretation qualification. All ten areas retained, G3 active, G5 blocked/full acceptancefalse. No further helper/UI detour before the recorded clinical semantic requirement.",
+      "evidence": "artifacts/agere-summary-scope-v1/implementation-receipt.json"
     }
   ]
 }
