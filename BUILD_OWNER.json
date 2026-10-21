@@ -68,12 +68,12 @@
   "source_control": "git; codex/agere-validated-proof; commit only owned paths as Michael Logan <michael.p.logan1@gmail.com>",
   "heartbeat_removal_authorization": "Mike 2026-10-19: \"i am here you dont need the continue building reminder\"; deleted through the Codex automation tool.",
   "live_runtime": {
-    "at": "2026-10-21T17:42:10.208164+00:00",
-    "commit": "873374ee53dbe7e2f7b358d1880e0a8524c3c9e9",
-    "rollback_commit": "4653703",
+    "at": "2026-10-21T18:00:37.065991+00:00",
+    "commit": "5a904e1a225bf9a1338585459735d00fb118e3a1",
+    "rollback_commit": "873374e",
     "workspace": "/Users/mikel/agere-mvp-run",
     "port": 8885,
-    "pid": 44224,
+    "pid": 47873,
     "session": 2376,
     "log": "/Users/mikel/agere-mvp-run/server-8885.log",
     "config_sha256": "4eec831417af506fee543532c304c9cc65d07794015c98af3cc5c48ef77cef52",
@@ -107,13 +107,13 @@
       }
     },
     "url": "http://127.0.0.1:8885/ask",
-    "verified_at": "2026-10-21T17:42:10.208164+00:00",
+    "verified_at": "2026-10-21T18:00:37.065991+00:00",
     "api_status": "Working (credit added 2026-10-21).",
     "cost_measurement": "20-question dev set: Opus 5.5 with prompt caching $5.44 (was $12.65 uncached), 76 calls, 2.15M cache-read vs 0.15M cache-write tokens; Sonnet 5.5 $4.75, 137 calls, weaker accuracy. HF question: Opus $0.45, Sonnet $0.41, both partial under current conservative definitions.",
     "hf_acceptance": "HF compound question answered (missing []) under Mike-governed definitions: 36 patients, 144/144 pillar flags match independent SQL, $1.75, 245 s.",
-    "smoke": "0 model calls: 65+ never vaccinated for flu = 292, age-at-death disclosure.",
+    "smoke": "0 model calls: HF SGLT2 start within 90 days of discharge = 2; deaths with admission in prior 30 days = 33 (both bank references).",
     "paid_calls": "DISABLED by Mike 2026-10-21 (\"switch live to no paid calls\"): deterministic tier and saved verified answers only; unparsed questions return not_understood at $0.",
-    "change": "Saved analyses without age at death retired.",
+    "change": "Event sequences; saved model answers yield to the free parser.",
     "free_bank_measure": {
       "bank": "/Users/mikel/agere-eval-bank-2 (184 items)",
       "no_llm": true,
@@ -131,7 +131,8 @@
         "14c1d66": "56 correct / 21 wrong / 11 of 11 (32.4% lenient, 29.5% strict); runner now reads comparison answers",
         "4bc77f8": "61 correct / 25 wrong / 11 of 11 (35.3% lenient, 32.4% strict)",
         "e97aa25": "61 correct / 25 wrong / 11 of 11 (35.3% lenient, 32.4% strict)",
-        "4653703": "61 correct / 25 wrong / 11 of 11 (35.3% lenient); bank references use stale age_latest"
+        "4653703": "61 correct / 25 wrong / 11 of 11 (35.3% lenient); bank references use stale age_latest",
+        "5a904e1": "64 correct / 26 wrong / 11 of 11 (37.0% lenient, 34.1% strict)"
       }
     }
   },
