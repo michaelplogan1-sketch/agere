@@ -16,11 +16,13 @@ SOURCES = {
     'emergency visits': ('utilization_event', ('kind', 'ed_visit')),
     'inpatient admissions': ('stay', ('type', 'inpatient')),
     'admissions': ('stay', ('type', 'inpatient')), 'hospital stays': ('stay', None),
-    'claims': ('claim', None), 'visits': ('visit', None), 'appointments': ('appointment', None),
+    # Mike, 2026-10-21: medical-claim finance questions use payer-adjudicated claims, counted rows only.
+    'claims': ('payer_claim', ('counts_in_metrics', 1)), 'medical claims': ('payer_claim', ('counts_in_metrics', 1)),
+    'visits': ('visit', None), 'appointments': ('appointment', None),
     # Adapter vocabulary, not whole-question recipes. These families have
     # distinct received-source coverage and must never be silently combined.
-    'payer-feed medical claims': ('claim', ('claim_source', 'payer_medical_claims')),
-    'payer medical claims': ('claim', ('claim_source', 'payer_medical_claims')),
+    'payer-feed medical claims': ('payer_claim', ('counts_in_metrics', 1)),
+    'payer medical claims': ('payer_claim', ('counts_in_metrics', 1)),
     'provider medical claims': ('claim', ('claim_source', 'medical_claims')),
     'diabetics': ('patient', ('condition', 'diabetes')),
 }
@@ -34,6 +36,7 @@ FIELDS = {
     'admission date': 'stay.admit_date',
 }
 CLOCKS = {'utilization_event': 'event_date', 'visit': 'event_date', 'stay': 'admit_date', 'claim': 'service_date',
+          'payer_claim': 'service_from',
           'appointment': 'scheduled_date', 'medication': 'event_date',
           'measurement': 'event_date', 'condition': 'event_date', 'record': 'event_date',
           'claim_adjudication': 'event_date', 'member_month': 'month'}
@@ -92,6 +95,10 @@ class Parser:
             self.sources.setdefault(table, (table, None))
             self.sources.setdefault(phrase, (table, None))
             self.sources.setdefault(phrase+'s', (table, None))
+        if 'counts_in_metrics' not in catalog.tables.get('payer_claim', []):  # no counted payer claims received
+            self.sources.update({'claims': ('claim', None), 'medical claims': ('claim', None),
+                                 'payer-feed medical claims': ('claim', ('claim_source', 'payer_medical_claims')),
+                                 'payer medical claims': ('claim', ('claim_source', 'payer_medical_claims'))})
         self.sources = {k: v for k, v in self.sources.items() if v[0] in catalog.tables}
         from . import concepts
         self.conditions = dict(CONDITION_ALIASES)
@@ -105,6 +112,7 @@ class Parser:
         fields = dict(FIELDS)
         clock_aliases = {}
         if self.base == 'claim': fields['payer'] = 'claim.payer'
+        if self.base == 'payer_claim': fields['payer'] = 'payer_claim.payer_id'
         for table in ('patient', self.base):
             for column in self.catalog.tables.get(table, []):
                 fields[column] = fields[column.replace('_', ' ')] = table+'.'+column

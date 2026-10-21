@@ -921,6 +921,8 @@ def lookup_shape(path, catalog, question, policy, population=None):
                     break
     if not row: return None
     saved = json.loads(row[0])
+    from .clinical_definitions import superseded
+    if superseded(question, {'analysis': saved['analysis']}, catalog.tables): return None
     old = saved['values']
     if (not saved.get('slots') or len(old) != len(values) or len(set(old)) != len(old)
             or saved.get('population') != scope): return None

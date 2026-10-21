@@ -735,6 +735,8 @@ def plan(stack, question, ledger=None, frontier=None, *, population=None, model=
         from .general_analysis import valid_shape
         analysis_id = saved['interpretation'].get('analysis_shape_id')
         if analysis_id and not valid_shape(stack.path, analysis_id): hit = None
+        from .clinical_definitions import superseded
+        if superseded(question, {k: saved.get(k) for k in ('program', 'analysis', 'request')}, catalog.tables): hit = None
     if hit and saved.get('program'):
         try:
             contract = request_program.prepare(catalog, question, saved['program'], population=population)

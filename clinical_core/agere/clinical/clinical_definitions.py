@@ -71,3 +71,21 @@ def describe():
                                        'decision': TOLERANCE['decision'], 'macro': '{{tolerance_evidence}}',
                                        'columns': ['patient_id', 'drug_key', 'drug_class', 'gdmt_pillar', 'evidence_type',
                                                    'assertion', 'event_date', 'record_id']}}
+
+
+# Owner decisions that retire saved interpretations built on the earlier reading.
+MEDICAL_CLAIMS = {
+    'version': 1, 'decision': DECIDED_BY,
+    'disclosure': ('Medical-claim finance questions (denial rate, paid, PMPM) use payer-adjudicated claims '
+                   '(payer_claim, counted rows only); provider billing claims are used only when asked for.'),
+}
+_PROVIDER_CLAIM = __import__('re').compile(r'(?:FROM|JOIN)\s+\\?"?claim\\?"?(?=[\s)]|$)|"table":\s*"claim"', __import__('re').I)
+
+
+def superseded(question, plan, tables):
+    """True when a saved plan reads the provider claim table for a question that did not ask for provider claims,
+    in a warehouse that has counted payer claims."""
+    import json, re
+    if 'counts_in_metrics' not in tables.get('payer_claim', []): return False
+    if re.search(r'\bprovider\b', str(question), re.I): return False
+    return bool(_PROVIDER_CLAIM.search(json.dumps(plan, default=str)))

@@ -84,7 +84,14 @@ def find(path, question, encoder=None):
     from .learning import correction_context
     saved = _verified(path)
     if not saved or question in saved or correction_context(path, question): return None
-    matching = [q for q in saved if same_meaning(question, q) and not correction_context(path, q)]
+    from .clinical_definitions import superseded
+    from .request_plan import Catalog
+    try:
+        tables = Catalog.load(path).tables
+    except Exception:  # noqa: BLE001 - a stack without a catalog cannot hold superseded finance plans
+        tables = {}
+    matching = [q for q in saved if same_meaning(question, q) and not correction_context(path, q)
+                and not superseded(question, {k: saved[q][1].get(k) for k in ('program', 'analysis', 'request')}, tables)]
     if not matching: return None
     if encoder is None:
         from .schema_rerank import load_encoder

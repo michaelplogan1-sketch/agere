@@ -177,6 +177,8 @@ def _match(catalog, question, population, rows, carried=False):
         try:
             request = instantiate(shape, question)
             if request is None: continue
+            from .clinical_definitions import superseded
+            if superseded(question, {'request': request}, catalog.tables): continue
             contract = compile_request(catalog, question, request, population=population)
         except (ValueError, TypeError, KeyError): continue
         matches.append((ident, contract))
