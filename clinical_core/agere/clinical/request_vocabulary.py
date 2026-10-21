@@ -67,7 +67,8 @@ BASIS_VARIANTS = {k: {'paid': 'payer_paid_medical_pmpm', 'allowed': 'payer_allow
 # Nouns that restate a measure's own population, keyed by its grain (and, for stays, its anchor).
 POPULATION_WORDS = {'claim': r'(?:medical\s+)?claims?|services|dates? of service',
                     'member_month': r'members|member[- ]months|enrolled members',
-                    'appointment': r'appointments', 'stay:discharge_date': r'(?:inpatient\s+)?discharges'}
+                    'appointment': r'appointments', 'stay:discharge_date': r'(?:inpatient\s+)?discharges',
+                    'stay:admit_date': r'(?:inpatient\s+)?(?:admissions|stays)'}
 
 
 def preferred(ident, quote, tables):

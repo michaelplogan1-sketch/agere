@@ -1,23 +1,37 @@
 {
   "schema": "active-healthcare-warehouse/1",
-  "build": "/Users/mikel/clinical-insights-local/artifacts/agere-healthcare-v20",
-  "source_release": "/Users/mikel/synthetic-patient-ecosystem/releases/healthcare-warehouse-v2.0",
+  "build": "/Users/mikel/clinical-insights-local/artifacts/agere-healthcare-v28-sample-0.30",
+  "source_release": "/Users/mikel/clinical-insights-local/artifacts/healthcare-warehouse-v2.8-sample-0.30",
   "snapshot": {
     "source_dataset": {
-      "adapter": "original-cohort-warehouse-adapter/2",
-      "source": "/Users/mikel/synthetic-patient-ecosystem/releases/healthcare-warehouse-v2.0/warehouse.sqlite",
-      "source_sha256": "d370026cd1fc25923dadab343ec54b6a647b52dbfd881d3c26ad81f64f09e5a7",
-      "original_patient_id_digest": "87afb631de11e962b95a12470d2a32b270a8176c74667d28b5a7a653f8ab9a00"
+      "adapter": "original-cohort-warehouse-adapter/4",
+      "source": "/Users/mikel/clinical-insights-local/artifacts/healthcare-warehouse-v2.8-sample-0.30/warehouse.sqlite",
+      "source_sha256": "99d39a1bc4b899e5632f91776077cfa221cc6cc9812ac8b5de60318ce6ad4940",
+      "original_patient_id_digest": "5ed6993ad20141eb7c3fcef2f4fd91f76c08af30861b3c947c6c4f0018d2bfbb"
     },
     "records_with_unknown_event_date": 39763,
-    "release": "673bcd4ed4c92cc04b7997c4441bdc8bc8e5695309cceea01ff8825820174cca",
+    "superseded_by_stream": {
+      "enrollment_spans": 94,
+      "payer_pharmacy_claims": 2214,
+      "medication_lists": 222,
+      "conditions": 76,
+      "payer_medical_claims": 18527,
+      "labs": 123
+    },
+    "not_visible_by_stream": {
+      "death_records": 2
+    },
+    "release": "d212c960d1e55a8663a5afe165741458ee429c7c15df200fb5c3cf2de65c22c4",
     "as_of": "2030-05-27",
-    "excluded": {},
-    "visible_records": 1739068,
+    "excluded": {
+      "future": 2,
+      "superseded": 21256
+    },
+    "visible_records": 2396490,
     "identity_method": "Explicit source crosswalk; no inferred fuzzy merge",
     "coverage": "Unknown outside the observed contributing sources"
   },
   "synthetic": true,
-  "population_policy": "Original healthcare-warehouse roster; no expanded benchmark variants",
-  "activation_basis": "Restated release: Qualified received-source migration, full-population contracts and diagnostic review; prior connection retained"
+  "population_policy": "Rebaselined healthcare-warehouse roster: 4115 received patients loaded fresh; prior roster not carried forward",
+  "activation_basis": "Rebaselined release (fresh load; prior-release diff recorded, not gated); full-population contracts, diagnostic review and client-data checks; prior connection retained"
 }

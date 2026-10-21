@@ -6,7 +6,7 @@ from unittest.mock import Mock, patch
 import test_shared_planner as fixtures
 from clinical_core.agere.clinical import general_analysis as G, request_plan as R, shared_planner as S
 
-Q = 'How many patients with diabetes had two or more ED visits in 2029?'
+Q = 'How many patients with diabetes logged two or more ED visits in 2029?'  # wording the free parser does not read
 
 
 def spec(year='2029'):
@@ -20,7 +20,7 @@ def spec(year='2029'):
         'final': 'answer', 'returns': 'count', 'parameters': [{'name': 'year', 'value': int(year), 'quote': year}],
         'requirements': [{'quote': 'How many patients', 'applied_in': ['answer'], 'how': 'distinct count'},
                          {'quote': 'with diabetes', 'applied_in': ['answer'], 'how': 'governed condition macro'},
-                         {'quote': 'two or more ED visits', 'applied_in': ['ed_counts', 'answer'], 'how': 'n >= 2'},
+                         {'quote': 'logged two or more ED visits', 'applied_in': ['ed_counts', 'answer'], 'how': 'n >= 2'},
                          {'quote': f'in {year}', 'applied_in': ['ed_counts'], 'how': 'inclusive calendar year'}],
         'definitions': [{'term': 'diabetes', 'basis': '{{condition:diabetes}}'}], 'unresolved': []}
 
@@ -75,7 +75,7 @@ class GeneralAnalysis(unittest.TestCase):
         self.assertEqual(a['answer']['status'], 'partial')  # provided interpreter is not an accepted hosted review
         self.assertFalse(a['answer']['actionable_cohort'])
         self.assertIn('utilization_event', a['answer']['sources'])
-        self.assertEqual(a['answer']['analysis']['requirements'][2]['quote'], 'two or more ED visits')
+        self.assertEqual(a['answer']['analysis']['requirements'][2]['quote'], 'logged two or more ED visits')
         audit = json.loads(model.call_args_list[1].args[1])
         self.assertEqual(audit['result_preview']['value'], 1)
         self.assertNotIn('learned_analysis_shape', a)
@@ -157,7 +157,7 @@ class GeneralAnalysis(unittest.TestCase):
     def test_final_llm_analysis_answers_when_every_other_path_fails(self):
         bad_typed = (json.dumps({'source': {'table': 'nope', 'quote': 'patients'}}), {})
         loose = spec()
-        loose['requirements'] = [r for r in loose['requirements'] if r['quote'] != 'two or more ED visits']
+        loose['requirements'] = [r for r in loose['requirements'] if r['quote'] != 'logged two or more ED visits']
         model = Mock(side_effect=[bad_typed] * 3 + [(json.dumps({'analysis': loose}), {}),
                                                     (json.dumps({'equivalent': True, 'issues': []}), {})])
         a = S.compose(self.stack, Q, model=model)
