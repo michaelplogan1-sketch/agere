@@ -30,6 +30,13 @@ PHENOTYPES = {
     },
 }
 
+CURRENT_GDMT = {
+    'version': 1,
+    'decision': 'Mike (clinical owner), 2026-10-20',
+    'disclosure': ('Current GDMT pillar = a picked-up fill of that pillar within the 12 months before the snapshot date; '
+                   'no picked-up fill in that window means not currently on that pillar (reported as 0, not unknown).'),
+}
+
 TOLERANCE = {
     'version': 1,
     'decision': DECIDED_BY,
@@ -51,6 +58,11 @@ def describe():
                                'columns': ['patient_id', 'coded_hfref', 'note_ef_le_40', 'lowest_documented_ef',
                                            'latest_low_ef_date', 'hfref_basis']}
                            for k, v in PHENOTYPES.items()},
+            'current_gdmt': {'version': CURRENT_GDMT['version'], 'definition': CURRENT_GDMT['disclosure'],
+                             'decision': CURRENT_GDMT['decision'],
+                             'evidence': 'fill / {{drug_fill:...}} picked-up fills by the catalog GDMT pillar fill classes'},
+            'precedence': ('For the terms these definitions cover, they override general observation-vs-state caution: '
+                           'apply them, report definite values (0/1, at/below target, maximum tolerated) and disclose them.'),
             'maximum_tolerated_dose': {'version': TOLERANCE['version'], 'definition': TOLERANCE['disclosure'],
                                        'decision': TOLERANCE['decision'], 'macro': '{{tolerance_evidence}}',
                                        'columns': ['patient_id', 'drug_key', 'drug_class', 'gdmt_pillar', 'evidence_type',
