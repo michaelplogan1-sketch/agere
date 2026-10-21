@@ -68,12 +68,12 @@
   "source_control": "git; codex/agere-validated-proof; commit only owned paths as Michael Logan <michael.p.logan1@gmail.com>",
   "heartbeat_removal_authorization": "Mike 2026-10-19: \"i am here you dont need the continue building reminder\"; deleted through the Codex automation tool.",
   "live_runtime": {
-    "at": "2026-10-21T17:16:23.882962+00:00",
-    "commit": "fd379420a72261712c5905b84b7689abd6ba869c",
-    "rollback_commit": "14c1d6694879aa7a139a31daac62791eee7799c5",
+    "at": "2026-10-21T17:25:52.768325+00:00",
+    "commit": "4bc77f8b83611312cc7edc2ccad84662942ac6af",
+    "rollback_commit": "fd379420a72261712c5905b84b7689abd6ba869c",
     "workspace": "/Users/mikel/agere-mvp-run",
     "port": 8885,
-    "pid": 41495,
+    "pid": 42514,
     "session": 2376,
     "log": "/Users/mikel/agere-mvp-run/server-8885.log",
     "config_sha256": "4eec831417af506fee543532c304c9cc65d07794015c98af3cc5c48ef77cef52",
@@ -107,13 +107,13 @@
       }
     },
     "url": "http://127.0.0.1:8885/ask",
-    "verified_at": "2026-10-21T17:16:23.882962+00:00",
+    "verified_at": "2026-10-21T17:25:52.768325+00:00",
     "api_status": "Working (credit added 2026-10-21).",
     "cost_measurement": "20-question dev set: Opus 5.5 with prompt caching $5.44 (was $12.65 uncached), 76 calls, 2.15M cache-read vs 0.15M cache-write tokens; Sonnet 5.5 $4.75, 137 calls, weaker accuracy. HF question: Opus $0.45, Sonnet $0.41, both partial under current conservative definitions.",
     "hf_acceptance": "HF compound question answered (missing []) under Mike-governed definitions: 36 patients, 144/144 pillar flags match independent SQL, $1.75, 245 s.",
-    "smoke": "0 model calls: 2029 PMPM $376.03 with allowed-basis disclosure.",
+    "smoke": "0 model calls: living diabetics with no HbA1c in 12 months = 41 (bank reference 41).",
     "paid_calls": "DISABLED by Mike 2026-10-21 (\"switch live to no paid calls\"): deterministic tier and saved verified answers only; unparsed questions return not_understood at $0.",
-    "change": "PMPM basis disclosure; plain PMPM = allowed (Mike 2026-10-21).",
+    "change": "Care-gap, living, age and social-need wording.",
     "free_bank_measure": {
       "bank": "/Users/mikel/agere-eval-bank-2 (184 items)",
       "no_llm": true,
@@ -128,7 +128,8 @@
         "625e044": "43 correct / 25 wrong / 11 of 11 (24.9% lenient, 22.5% strict), lab-evidence diabetes",
         "be1dd44": "46 correct / 24 wrong / 11 of 11 (26.6% lenient, 23.7% strict)",
         "6505402": "45 correct / 20 wrong / 11 of 11 (26.0% lenient, 23.1% strict)",
-        "14c1d66": "56 correct / 21 wrong / 11 of 11 (32.4% lenient, 29.5% strict); runner now reads comparison answers"
+        "14c1d66": "56 correct / 21 wrong / 11 of 11 (32.4% lenient, 29.5% strict); runner now reads comparison answers",
+        "4bc77f8": "61 correct / 25 wrong / 11 of 11 (35.3% lenient, 32.4% strict)"
       }
     }
   },
