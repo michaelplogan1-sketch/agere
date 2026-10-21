@@ -301,6 +301,10 @@
         {
           "path": "artifacts/agere-measurement-evidence-v1/implementation-receipt.json",
           "sha256": "6697d169e3e7c8bbb736d7082641217fc99b3612256d4903c877188a96307052"
+        },
+        {
+          "path": "artifacts/agere-work-progress-labels-v1/implementation-receipt.json",
+          "sha256": "b1b37137f0aa2440b18e532558e7e9e5667a75e719ddd39cdec9ccf9d0e13d99"
         }
       ]
     },
@@ -358,29 +362,28 @@
     "kind": "implementation_delivered",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "Shared analyses expose mapped measurement evidence with separate clinical/document/arrival dates, explicit exclusions and unreviewed narrative candidates; exact review selection persists into work and monitoring.",
-    "measured_failure_reduction": "Original shared path lacked a governed measurement relation.535 EF observations now preserve133 structured/402 narrative rows,19 explicit measurement dates,16 invalid structured values and100 unverified narrative spans without numeric-midpoint/current-phenotype promotion. eGFR/creatinine reuse the same mapping.",
+    "user_behavior_delta": "Loop-closure overview, work board and task editor distinguish staff review state from simulated-agent outcomes.",
+    "measured_failure_reduction": "Resolved the reproduced apparent contradiction of1 simulated-agent exception beside0 staff-blocked reviews by labeling the distinct states, without changing either count/history.",
     "evidence": [
-      "artifacts/agere-measurement-evidence-v1/implementation-receipt.json",
-      "docs/agere/MEASUREMENT_EVIDENCE_INTEGRATION_2026-10-20.md",
-      "artifacts/agere-measurement-evidence-v1/http-workflow.json",
-      "artifacts/agere-measurement-evidence-v1/original-question-http.json",
-      "artifacts/agere-measurement-evidence-v1/browser-answer.png"
+      "artifacts/agere-work-progress-labels-v1/implementation-receipt.json",
+      "docs/agere/WORK_PROGRESS_LABELS_2026-10-20.md",
+      "artifacts/agere-work-progress-labels-v1/candidate-after.json",
+      "artifacts/agere-work-progress-labels-v1/browser-overview.png"
     ],
-    "remaining_gap": "Regimen-note reconciliation, dated care-team relationships and mapped measurement evidence are integrated. Complete original compound semantics, treatment suitability/maximum tolerated dose, exact conditional work and faithful HTML/monitor acceptance remain unverified; source-supported unknowns are not clinical approval. Broad unfamiliar and temporal/multi-domain interpretation remains unproven. The unmodified original compound request with paid providers disabled timed out in the local interpreter after20.37seconds; no reduced answer was executed. Live hosted behavior was not retested. Existing scope/queueing repairs remain verified. Generated output meaning and representative end-to-end latency have unresolved failures. Queueing overview now exposes scope and preserves small positive rates; chart axis-label contrast remains a presentation limitation. Staff review states and simulated journey exceptions need clearer presentation separation. Local tests do not qualify model interpretation, clinical correctness or real-world use. All ten areas retained; G3 active, G5 incomplete, full acceptance false.",
+    "remaining_gap": "Regimen-note reconciliation, dated care-team relationships and mapped measurement evidence are integrated. Complete original compound semantics, treatment suitability/maximum tolerated dose, exact conditional work and faithful HTML/monitor acceptance remain unverified; source-supported unknowns are not clinical approval. Broad unfamiliar and temporal/multi-domain interpretation remains unproven. The unmodified original compound request with paid providers disabled timed out in the local interpreter after20.37seconds; no reduced answer was executed. Live hosted behavior was not retested. Existing scope/queueing repairs remain verified. Generated output meaning and representative end-to-end latency retain unresolved failures. Queueing scope/small positive rates and staff-versus-agent progress labels are repaired; queueing chart axis-label contrast remains a presentation limitation. Local tests do not qualify model interpretation, clinical correctness or real-world use. All ten areas retained; G3 active, G5 incomplete, full acceptance false.",
     "next_action": "G3: demonstrate the full original compound request through the existing shared path, binding every requirement to executed evidence or a specific supported unknown, exact conditional synthetic work, faithful HTML and loop-closure monitoring. Regimen, care-team and measurement primitives are integrated; do not add another narrow helper without a reproduced missing behavior. The one unmodified no-paid original-question attempt timed out locally after20seconds; local unfamiliar interpretation remains unqualified. Preserve this failure separately from authored execution fixtures. No paid replay, protected evaluation, execution-authority bypass or live fixture injection. Then close remaining broad-domain composition and generated-meaning/latency failures; independent qualification remains separate.",
     "next": "G3: demonstrate the full original compound request through the existing shared path, binding every requirement to executed evidence or a specific supported unknown, exact conditional synthetic work, faithful HTML and loop-closure monitoring. Regimen, care-team and measurement primitives are integrated; do not add another narrow helper without a reproduced missing behavior. The one unmodified no-paid original-question attempt timed out locally after20seconds; local unfamiliar interpretation remains unqualified. Preserve this failure separately from authored execution fixtures. No paid replay, protected evaluation, execution-authority bypass or live fixture injection. Then close remaining broad-domain composition and generated-meaning/latency failures; independent qualification remains separate.",
     "latest_review": {
-      "at": "2026-10-21T02:16:25.818578+00:00",
-      "kind": "Owner/source/primary/frozen/API/browser/live engineering checks; not independent clinical/model qualification",
-      "report": "docs/agere/MEASUREMENT_EVIDENCE_INTEGRATION_2026-10-20.md",
+      "at": "2026-10-21T02:25:18.143040+00:00",
+      "kind": "Owner/JavaScript syntax/existing workflow tests/API-state comparison/candidate and live browser checks; presentation only",
+      "report": "docs/agere/WORK_PROGRESS_LABELS_2026-10-20.md",
       "evidence": [
-        "artifacts/agere-measurement-evidence-v1/implementation-receipt.json"
+        "artifacts/agere-work-progress-labels-v1/implementation-receipt.json"
       ]
     },
     "coordination": {
       "integration_owner": "01a15af4-c150-76f2-9df2-a44c1428b70d",
-      "status": "Sole owner. Measurement evidence delivered at /ask; remaining work stays here. No paid calls, new lane work or heartbeat.",
+      "status": "Sole owner. Shared evidence and loop-closure label increments delivered. No new lane work, paid calls or heartbeat; remaining work stays here.",
       "queueing_scope_candidate": {
         "status": "integrated_local_evidence_only",
         "thread_id": "01a15b40-8c5e-7263-b8eb-88dc5a24a707",
@@ -433,7 +436,7 @@
         "id": "B3",
         "area": "Generated views and response time",
         "status": "open",
-        "gap": "Generated output meaning and representative end-to-end latency have unresolved failures. Queueing overview now exposes scope and preserves small positive rates; chart axis-label contrast remains a presentation limitation. Staff review states and simulated journey exceptions need clearer presentation separation.",
+        "gap": "Generated output meaning and representative end-to-end latency retain unresolved failures. Queueing scope/small positive rates and staff-versus-agent progress labels are repaired; queueing chart axis-label contrast remains a presentation limitation.",
         "completion": "Rendered outputs match saved evidence, preserve scope, and report measured timing; remove reproduced failures without new paid calls."
       },
       {
@@ -1280,6 +1283,19 @@
       "basis": "131 final primary/frozen checks, three mapped-concept source/API workflows, actual browser/live checks and zero paid calls. Original unmodified offline request timed out, so automatic compound completion remains unverified.",
       "scope_impact": "Specific B1 evidence integration only. Full ten-area charter, G3 active/G5 incomplete retained; no local qualification-guard bypass or unsupported readiness claim.",
       "evidence": "artifacts/agere-measurement-evidence-v1/implementation-receipt.json"
+    },
+    {
+      "at": "2026-10-21T02:20:26.572042+00:00",
+      "decision": "Repair the reproduced loop-closure labeling issue while whole-request automatic qualification remains unavailable under the current no-paid build constraint.",
+      "basis": "Repeated actual browser checks show a simulated journey needing attention beside a staff-review counter of zero with the same needs-attention wording. Distinct internal states appear contradictory.",
+      "scope_impact": "Two existing action-workspace assets; no new state, workflow authority, model call or source change."
+    },
+    {
+      "at": "2026-10-21T02:25:18.143040+00:00",
+      "decision": "Activate60aab29 presentation assets with rollbacke10385b, preserving backend and all work histories.",
+      "basis": "Reproduced browser ambiguity;32 primary/frozen regressions, final syntax/browser verification, exact before/after API-state equality and live asset hashes.",
+      "scope_impact": "Specific B3 failure removed; original whole-request/independent qualification blockers retained. No workflow authority, source, paid-provider or external action change.",
+      "evidence": "artifacts/agere-work-progress-labels-v1/implementation-receipt.json"
     }
   ]
 }
