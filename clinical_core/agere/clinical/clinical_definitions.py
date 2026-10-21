@@ -1,0 +1,57 @@
+"""Governed clinical definitions chosen by the clinical owner, exposed to analyses as macros.
+
+Each definition is versioned, carries its decision basis and a disclosure sentence that is attached to every
+answer using it. Definitions select evidence; they do not establish clinical appropriateness.
+"""
+
+DECIDED_BY = 'Mike (clinical owner), 2026-10-21'
+
+PHENOTYPES = {
+    'hfref': {
+        'version': 1,
+        'label': 'Heart failure with reduced ejection fraction',
+        'decision': DECIDED_BY,
+        'disclosure': ('Reduced EF = a coded HFrEF diagnosis, or a heart failure diagnosis with a documented ejection '
+                       'fraction of 40% or less in notes (non-negated, about the patient, any date).'),
+        # Returns patient_id plus the basis for each qualifying patient.
+        'sql': """(SELECT patient_id, MAX(coded) AS coded_hfref, MAX(note_ef) AS note_ef_le_40,
+  MIN(lowest_ef) AS lowest_documented_ef, MAX(ef_date) AS latest_low_ef_date,
+  CASE WHEN MAX(coded) = 1 AND MAX(note_ef) = 1 THEN 'coded_and_note_ef' WHEN MAX(coded) = 1 THEN 'coded_hfref'
+       ELSE 'note_ef_le_40' END AS hfref_basis FROM (
+ SELECT patient_id, 1 AS coded, 0 AS note_ef, NULL AS lowest_ef, NULL AS ef_date FROM condition
+  WHERE concept = 'heart_failure_reduced_ef' AND (is_diagnosis = 1 OR (is_diagnosis IS NULL AND diagnosis_basis = 'ehr_problem_list'))
+ UNION ALL
+ SELECT f.patient_id, 0, 1, CAST(f.value AS REAL), f.event_date FROM note_fact f
+  WHERE f.fact_type = 'ejection_fraction' AND COALESCE(f.negated, 0) = 0 AND COALESCE(f.experiencer, 'patient') = 'patient'
+    AND typeof(f.value) IN ('integer', 'real') AND f.value <= 40
+    AND f.patient_id IN (SELECT patient_id FROM condition WHERE concept IN ('heart_failure', 'heart_failure_reduced_ef')
+                         AND (is_diagnosis = 1 OR (is_diagnosis IS NULL AND diagnosis_basis = 'ehr_problem_list')))
+) GROUP BY patient_id)""",
+    },
+}
+
+TOLERANCE = {
+    'version': 1,
+    'decision': DECIDED_BY,
+    'disclosure': ('Maximum tolerated dose = below the guideline target with a documented intolerance, therapy barrier '
+                   '(any type, affirmed or historical) or dose reduction for that drug or its class.'),
+    # One row per documented tolerance signal, with its source record.
+    'sql': """(SELECT patient_id, drug_key, drug_class, gdmt_pillar, 'barrier:' || barrier_type AS evidence_type,
+   assertion, event_date, record_id FROM therapy_barrier WHERE COALESCE(negated, 0) = 0
+ UNION ALL
+ SELECT patient_id, drug_key, drug_class, NULL, 'dose_decrease', 'affirmed', event_date, record_id
+   FROM note_therapy_change WHERE action = 'dose_decrease')""",
+}
+
+
+def describe():
+    """Prompt-facing summary of the governed clinical definitions."""
+    return {'phenotypes': {k: {'version': v['version'], 'label': v['label'], 'definition': v['disclosure'],
+                               'decision': v['decision'], 'macro': '{{phenotype:' + k + '}}',
+                               'columns': ['patient_id', 'coded_hfref', 'note_ef_le_40', 'lowest_documented_ef',
+                                           'latest_low_ef_date', 'hfref_basis']}
+                           for k, v in PHENOTYPES.items()},
+            'maximum_tolerated_dose': {'version': TOLERANCE['version'], 'definition': TOLERANCE['disclosure'],
+                                       'decision': TOLERANCE['decision'], 'macro': '{{tolerance_evidence}}',
+                                       'columns': ['patient_id', 'drug_key', 'drug_class', 'gdmt_pillar', 'evidence_type',
+                                                   'assertion', 'event_date', 'record_id']}}

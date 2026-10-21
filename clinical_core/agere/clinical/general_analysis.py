@@ -23,7 +23,7 @@ VERSION = 'general-analysis/3'
 MAX_STEPS = 60  # structural sanity only; complex questions need many stages
 _NAME = re.compile(r'^[a-z][a-z0-9_]{0,40}$')
 _PATIENT_NOUN = r'\b(?:patients?|members?|people|persons?|individuals?|beneficiar(?:y|ies)|enrollees?)\b'
-_MACRO = re.compile(r'\{\{\s*(condition|drug_fill|as_of|medication_dose|current_dose|care_team|measurement_evidence|specialty|parameter)\s*(?::\s*([a-z0-9_,\s]+))?\s*\}\}')
+_MACRO = re.compile(r'\{\{\s*(condition|drug_fill|as_of|medication_dose|current_dose|care_team|measurement_evidence|specialty|parameter|phenotype|tolerance_evidence)\s*(?::\s*([a-z0-9_,\s]+))?\s*\}\}')
 # Grammatical words carry no requirement; every other question word must be accounted for.
 _FUNCTION_WORDS = set('''a an the and or of in on at to for from by with without within into onto over under per
 is are was were be been being do does did have has had having what which who whom whose how many much
@@ -176,6 +176,8 @@ def governed_knowledge():
                    'Star Ratings year and measurement year differ by measure. Measure definitions are approximations, '
                    'not certified HEDIS or CMS contract ratings. Preserve denominator, exclusions, observation coverage, '
                    'source version and case-mix limitations; comparative rates do not establish causal effects.'}
+    from . import clinical_definitions
+    knowledge['clinical_owner_definitions'] = clinical_definitions.describe()
     return knowledge
 
 
@@ -183,8 +185,13 @@ ANALYSIS_SYSTEM += '''
 DEFINITIONS: governed_knowledge (in the catalog payload) holds versioned program definitions (e.g. care gaps and their
 drug pillars, fill classes and ingredients, lookback windows, therapy-barrier policy) and standard references such as
 guideline target doses. Use them within their documented scope. A missing clinical, payer or causal definition is
-an unresolved requirement when it cannot be supported. Never invent clinical eligibility, maximum tolerated dose
-or program entitlement. A below-target dose, barrier or dose reduction alone does not establish maximum tolerated dose.
+an unresolved requirement when it cannot be supported. Never invent clinical eligibility or program entitlement.
+clinical_owner_definitions are the clinical owner's governed definitions; when a question uses their terms, apply them
+and name them in definitions: {{phenotype:hfref}} for heart failure with reduced EF (coded HFrEF, or HF with a documented
+EF of 40% or less in notes; columns include hfref_basis), and {{tolerance_evidence}} for maximum tolerated dose
+(below the guideline target AND documented intolerance, therapy barrier or dose reduction for that drug, its class or
+GDMT pillar; report the evidence record_id). Below target without such evidence is "below target, not at maximum
+tolerated"; a drug with unknown dose stays unknown.
 Look for evidence across structured and extracted sources (fills, medication lists, note facts such as ejection
 fraction, therapy barriers, therapy changes, encounters with attending specialty, payer claims with rendering NPI,
 care-team records, attribution) before declaring anything unavailable. Unresolved is only for data truly absent.
@@ -251,6 +258,15 @@ def _macro_sql(kind, arg, catalog):
         except ValueError as exc:raise PlanError(str(exc)) from exc
     if kind == 'specialty':
         return _specialty_sql(arg, catalog)
+    if kind == 'phenotype':
+        from .clinical_definitions import PHENOTYPES
+        key = (arg or '').strip()
+        if key not in PHENOTYPES:
+            raise PlanError('Unknown governed phenotype: ' + key + '. Available: ' + ', '.join(sorted(PHENOTYPES)))
+        return PHENOTYPES[key]['sql']
+    if kind == 'tolerance_evidence':
+        from .clinical_definitions import TOLERANCE
+        return TOLERANCE['sql']
     names = [a.strip() for a in (arg or '').split(',') if a.strip()]
     if not names:
         raise PlanError(f'Macro {kind} needs a name')
@@ -615,6 +631,13 @@ def execute(stack, question, graph, receipt, *, population=None, parent=None, st
     if any(m.startswith('condition') for m in contract['governed_macros']):
         from .request_vocabulary import CONDITION_EVIDENCE_POLICY
         limitations.append('Condition evidence: ' + CONDITION_EVIDENCE_POLICY)
+    from . import clinical_definitions
+    for m in contract['governed_macros']:
+        if m.startswith('phenotype:') and m.split(':', 1)[1] in clinical_definitions.PHENOTYPES:
+            d = clinical_definitions.PHENOTYPES[m.split(':', 1)[1]]
+            limitations.append(f"Definition ({d['decision']}): {d['disclosure']}")
+        if m == 'tolerance_evidence':
+            limitations.append(f"Definition ({clinical_definitions.TOLERANCE['decision']}): {clinical_definitions.TOLERANCE['disclosure']}")
     if any(m.split(':', 1)[0] == 'current_dose' for m in contract['governed_macros']):
         limitations.append(
             'Regimen evidence: structured orders/lists describe documentation, not actual use, clinical suitability or maximum tolerated dose. '

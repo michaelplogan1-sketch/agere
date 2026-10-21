@@ -208,6 +208,34 @@ class GeneralAnalysis(unittest.TestCase):
             G.prepare(self.catalog, cq, counted)
         self.assertIsNone(G.prepare(self.catalog, cq, counted, relaxed=True)['analysis']['patient_selection'])
 
+    def test_clinical_owner_definitions_select_evidence_and_are_disclosed(self):
+        import sqlite3
+        from clinical_core.agere.clinical import clinical_definitions as CD
+        with sqlite3.connect(self.path/'semantic.sqlite3') as db:
+            db.executescript("""DROP TABLE condition;
+              CREATE TABLE condition(patient_id, concept, is_diagnosis, diagnosis_basis);
+              INSERT INTO condition VALUES ('A','heart_failure_reduced_ef',1,NULL),('B','heart_failure',1,NULL),('C','heart_failure',1,NULL),('D','diabetes',1,NULL);
+              CREATE TABLE note_fact(patient_id, fact_type, value, negated, experiencer, event_date);
+              INSERT INTO note_fact VALUES ('B','ejection_fraction',30,0,'patient','2029-01-01'),('C','ejection_fraction',30,1,'patient','2029-01-01'),
+                ('D','ejection_fraction',25,0,'patient','2029-01-01'),('C','ejection_fraction','not_quantifiable',0,'patient','2029-01-01');
+              CREATE TABLE therapy_barrier(patient_id, drug_key, drug_class, gdmt_pillar, barrier_type, assertion, negated, event_date, record_id);
+              INSERT INTO therapy_barrier VALUES ('A','carvedilol','beta_blocker','beta_blocker','intolerance_side_effect','affirmed',0,'2029-02-01','TB1'),
+                ('B','lisinopril','ace_inhibitor','rasi','other','affirmed',1,'2029-02-01','TB2');
+              CREATE TABLE note_therapy_change(patient_id, drug_key, drug_class, action, event_date, record_id);
+              INSERT INTO note_therapy_change VALUES ('B','spironolactone','mra','dose_decrease','2029-03-01','TC1'),('B','x','y','start','2029-03-01','TC2');""")
+        catalog = R.Catalog.load(self.path)
+        q = 'heart failure with reduced EF and tolerated dose'
+        s = {'steps': [{'name': 'ph', 'purpose': 'phenotype', 'sql': 'SELECT patient_id, hfref_basis FROM {{phenotype:hfref}} ORDER BY patient_id'}],
+             'returns': 'table', 'requirements': [{'quote': 'heart failure with reduced EF', 'applied_in': ['ph'], 'how': 'governed'},
+                                                   {'quote': 'and tolerated dose', 'applied_in': ['ph'], 'how': 'x'}], 'unresolved': []}
+        _, shown = G.preview(catalog, G.prepare(catalog, q, s))
+        self.assertEqual([(r['patient_id'], r['hfref_basis']) for r in shown['rows']], [('A', 'coded_hfref'), ('B', 'note_ef_le_40')])
+        s['steps'][0]['sql'] = 'SELECT patient_id, evidence_type, record_id FROM {{tolerance_evidence}} ORDER BY record_id'
+        _, shown = G.preview(catalog, G.prepare(catalog, q, s))
+        self.assertEqual([r['record_id'] for r in shown['rows']], ['TB1', 'TC1'])  # negated barrier and non-decrease changes excluded
+        self.assertIn('40%', CD.PHENOTYPES['hfref']['disclosure'])
+        self.assertIn('clinical_owner_definitions', G.governed_knowledge())
+
 
 if __name__ == '__main__':
     unittest.main()
