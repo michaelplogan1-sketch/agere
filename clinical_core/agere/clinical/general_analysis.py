@@ -39,7 +39,7 @@ Return {"analysis":{"steps":[{"name":"snake_name","purpose":"...","sql":"SELECT 
 "definitions":[{"term":"question term","basis":"governed macro, table.column and values used"}],
 "patient_selection":null,"workflow":[],"parameters":[],
 "unresolved":[{"quote":"literal words","reason":"why it cannot be computed from this warehouse"}]}}
-Each step is ONE SELECT over catalog relations and earlier step names (they become chained CTEs). No WITH, no ';'.
+Each step is ONE SELECT (optionally with its own nested WITH) over catalog relations and earlier step names (they become chained CTEs). No ';'.
 For numeric literals explicitly present in the question, declare parameters:[{"name":"year","value":2029,
 "quote":"2029"}] and use {{parameter:year}} in SQL (e.g. {{parameter:year}} || '-01-01'). Bind only requested
 values, never fixed logic constants, percentages, conversion factors or governed lookbacks. The compiler replaces
@@ -401,8 +401,9 @@ def prepare(catalog, question, spec, *, population=None, relaxed=False):
         if not isinstance(name, str) or not _NAME.match(name) or name in names or name in catalog.tables or name == 'population':
             raise PlanError('Step names must be new unique snake_case identifiers: ' + str(name))
         code = re.sub(r'--[^\n]*', '', step['sql']).strip().rstrip(';').strip()
-        if not re.match(r'(?is)^select\b', code) or ';' in code or re.search(r'(?i)\bwith\s+recursive\b|\bage_latest\b', code):
-            raise PlanError(f'Step {name} must be one SELECT (no WITH, ;, recursion or age_latest)')
+        # A step may carry its own nested WITH; SQLite evaluates it inside the step's CTE.
+        if not re.match(r'(?is)^(?:select|with|values)\b', code) or ';' in code or re.search(r'(?i)\bwith\s+recursive\b|\bage_latest\b', code):
+            raise PlanError(f'Step {name} must be one SELECT or WITH ... SELECT statement (no ;, recursion or age_latest)')
         qualifiers = re.sub(r'/\*.*?\*/', ' ', code, flags=re.S)
         if re.search(r'(?i)\b(?:main|temp)\s*\.', qualifiers) or re.search(r'(?i)["\[`](?:main|temp)["\]`]\s*\.', qualifiers):
             raise PlanError('Use unqualified catalog tables so saved population scope cannot be bypassed')

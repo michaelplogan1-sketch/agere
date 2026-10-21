@@ -54,7 +54,12 @@ class GeneralAnalysis(unittest.TestCase):
             G.prepare(self.catalog, Q, s)
 
     def test_sql_is_bounded_read_only_and_compiled_against_the_catalog(self):
-        for bad in ["WITH x AS (SELECT 1) SELECT * FROM x", "SELECT 1; DELETE FROM patient",
+        nested = spec()
+        nested['steps'][0]['sql'] = ("WITH v AS (SELECT patient_id FROM utilization_event WHERE kind='ed_visit' AND event_date BETWEEN "
+                                     "'2029-01-01' AND '2029-12-31') SELECT patient_id, COUNT(*) AS n FROM v GROUP BY patient_id")
+        _, shown = G.preview(self.catalog, G.prepare(self.catalog, Q, nested))
+        self.assertEqual(shown['value'], 1)  # a nested WITH inside a step is valid SQL and runs
+        for bad in ["WITH RECURSIVE x(n) AS (SELECT 1) SELECT n FROM x", "SELECT 1; DELETE FROM patient",
                     "SELECT age_latest FROM patient", "SELECT * FROM missing_table",
                     "SELECT patient_id FROM patient WHERE patient_id IN {{condition:not_a_concept}}"]:
             s = spec()
