@@ -127,6 +127,7 @@ class Compiler:
         self.base = None
         self.outputs = {}
         self.json_streams = {}
+        self.notes, self.rescaled = [], set()
 
     def bind(self, obj, path, kind):
         quotes = obj.get('quote')
@@ -237,7 +238,28 @@ class Compiler:
                         'no more than':'<=','no less than':'>=','more than':'>','fewer than':'<'}.get(cue[1].lower(), cue[1])
             if op != expected or float(cue[2]) != value:
                 raise PlanError('Literal comparator/threshold differs from the original request')
+        if op in ('>', '>=', '<', '<=') and type(value) in (int, float):
+            value = self.percent_scale(expr['field'], value)
         return f'({field} {op.upper()} {literal(value)})'
+
+    def percent_scale(self, name, value):
+        """A fractional threshold (0.75) on a percentile column stored on a 0-100 scale means 75."""
+        if not 0 < value <= 1: return value
+        try:
+            table, column = self.catalog.field(name)
+        except (PlanError, ValueError, KeyError, TypeError):
+            return value  # an output alias or derived measure, not a stored column
+        if not 0 < value <= 1 or not re.search(r'svi|percentile|pct|percent', column, re.I): return value
+        try:
+            with sqlite3.connect(f'file:{self.catalog.target}?mode=ro', uri=True) as db:
+                low, high = db.execute(f'SELECT MIN({identifier(column)}), MAX({identifier(column)}) FROM {identifier(table)}').fetchone()
+        except sqlite3.Error:
+            return value
+        if low is None or not (0 <= low and 1 < high <= 100): return value
+        scaled = round(value * 100, 6)
+        self.rescaled.add(format(value, 'g')); self.rescaled.add(str(value))
+        self.notes.append(f'{table}.{column} is stored on a 0-100 scale (observed {low}-{high}); the threshold {value} was read as {scaled:g}.')
+        return scaled
 
     def measure(self, expr, scope, path):
         if not isinstance(expr, dict): raise PlanError('Typed measure required')
@@ -263,6 +285,11 @@ class Compiler:
         if expr.get('where'):
             condition = self.predicate(expr['where'], scope, path+'.where')
             field = f'CASE WHEN {condition} THEN {"1" if field == "*" else field} END'
+        if kind == 'count' and expr.get('field') in (None, '*') and self.base in EPISODE_KEYS and self.base in scope:
+            # One admission arrives as several source rows (ADT, encounter, claim); count the episode once.
+            key = " || '|' || ".join(f'{scope[self.base]}.{identifier(c)}' for c in EPISODE_KEYS[self.base])
+            field = f'CASE WHEN {condition} THEN {key} END' if expr.get('where') else key
+            kind = 'count_distinct'
         fn = 'count' if kind == 'count_distinct' else kind
         rendered = f'{fn.upper()}({"DISTINCT " if kind == "count_distinct" else ""}{field})'
         if 'scale' in expr:
@@ -422,6 +449,7 @@ class Compiler:
             for column in columns:
                 if identifier(column) in query:
                     rendered_numbers.update(re.findall(r'(?<!\w)\d+(?:\.\d+)?', column.replace('_', ' ')))
+        rendered_numbers.update(self.rescaled)  # compiled as their 0-100 equivalent, disclosed in notes
         unresolved_text = ' '.join(quote_text(x['quote']) for x in [*plan['unresolved'], *[s for s in plan.get('workflow', []) if s['unresolved']]])
         missing_numbers = numeric - rendered_numbers - set(re.findall(r'(?<!\w)\d+(?:\.\d+)?', unresolved_text))
         if missing_numbers: raise PlanError('Numeric constraints were not compiled: ' + ', '.join(sorted(missing_numbers)))
@@ -446,6 +474,7 @@ class Compiler:
                    'unknown_membership_query': (f'SELECT DISTINCT b.patient_id AS patient_id{from_clause} WHERE ({where}) IS NULL'
                                                 if 'patient_id' in self.catalog.tables[self.base] else None),
                    'population': sorted(self.population) if self.population is not None else None}
+        if self.notes: payload['notes'] = list(dict.fromkeys(self.notes))
         if self.base == 'utilization_event':
             payload['coverage_query'] = ('SELECT b.sources, b.in_ehr, count(*) AS events' + relation +
                                          ' GROUP BY b.sources,b.in_ehr')
@@ -484,6 +513,11 @@ def normalize_wire(catalog, question, proposal):
                 if isinstance(child, (list, dict)): visit(child, table)
     visit(plan, base)
     return plan
+
+
+# Relations whose rows are source observations of one event: counts count the event.
+EPISODE_KEYS = {'stay': ('patient_id', 'admit_date')}
+EPISODE_DISCLOSURE = {'stay': 'Stays are counted as episodes: rows from ADT, encounters and claims that share patient and admit date count once.'}
 
 
 def assert_sealed(contract):
