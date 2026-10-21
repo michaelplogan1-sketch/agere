@@ -932,6 +932,9 @@ def execute_contract(stack, question, graph, receipt, *, population=None, parent
     if 'age_at(' in contract['query']:
         limitations.append('Age is calculated from birth_date at the warehouse as-of date; missing or invalid birth dates remain unknown.')
     limitations += contract.get('notes', [])
+    if re.search(r'\bFROM "?payer_claim"?', contract['query']):
+        from .clinical_definitions import MEDICAL_CLAIMS
+        limitations.append(MEDICAL_CLAIMS['disclosure'])
     if contract['request']['source']['table'] in request_plan.EPISODE_DISCLOSURE and re.search(r'COUNT\(DISTINCT [^)]*admit_date', contract['query']):
         limitations.append(request_plan.EPISODE_DISCLOSURE[contract['request']['source']['table']])
     if not interpretation.get('execution_accepted'):
