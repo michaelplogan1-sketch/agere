@@ -609,6 +609,69 @@ def compose_shape(body):
     raise ValueError('Explicit composition question and supported optional candidate policy required')
 
 
+RESCOPE = [re.compile(p, re.I) for p in (
+    r'^(?:and\s+)?(?:what|how)\s+about\s+(?:for\s+)?(?P<scope>.+?)\??$',
+    r'^(?:and\s+)?just\s+(?:for\s+)?(?P<scope>.+?)\??$',
+    r'^(?:and\s+)?(?:the\s+same\s+)?for\s+(?P<scope>.+?)\??$')]
+EVERYONE_ELSE = re.compile(r'^(?:everyone|everybody|all)\s+else|the\s+rest|(?:the\s+)?others?|(?:all\s+)?other\s+patients$', re.I)
+
+
+def rescope(stack, question, saved):
+    """Re-run the previous measure for another group or year: (result, standalone, note) or None.
+
+    The group is evaluated as its own patient list from the follow-up's words; the previous question then runs unchanged
+    on exactly those patients. 'Everyone else' is the complement of the last group; a year swaps the only year."""
+    match = next((m for m in (rx.match(question.strip()) for rx in RESCOPE) if m), None)
+    if not match: return None
+    from ..deliverables import answer_context
+    from .request_plan import Catalog, compile_request, PlanError
+    from .request_language import Parser
+    from . import sql_query
+    parent = answer_context.load(stack.path, saved['id'], current=True)
+    info = (parent.get('answer') or {}).get('rescope') or {}
+    base = info.get('base_question') or parent.get('original_question') or parent.get('question')
+    scope = match['scope'].strip().rstrip('?.').strip()
+    catalog = Catalog.load(stack.path)
+    year = re.fullmatch(r'(?:in\s+)?(20\d\d)', scope)
+    if year:
+        years = set(re.findall(r'\b20\d\d\b', base))
+        if len(years) != 1: return None
+        old = years.pop(); new_question = re.sub(r'\b' + old + r'\b', year[1], base)
+        population = parent.get('input_patient_ids')
+        result = stack.compose(new_question) if population is None else stack.compose(new_question, population=population)
+        note = f'Follow-up: re-ran "{base}" for {year[1]} instead of {old}.'
+        result['answer']['rescope'] = {**info, 'base_question': new_question}
+    else:
+        if EVERYONE_ELSE.fullmatch(scope):
+            if not info or parent.get('input_patient_ids') is None: return None
+            everyone = info.get('base_population')
+            if everyone is None:
+                everyone = sql_query.execute(stack.path, {'query': 'SELECT patient_id FROM patient', 'returns': 'patient_set'},
+                                             target=catalog.target)['patient_ids']
+            ids = sorted(set(everyone) - set(parent['input_patient_ids']))
+            label = 'everyone outside "' + info.get('scope', 'the previous group') + '"'
+        else:
+            words = re.sub(r'^(?:the\s+)?(?:patients|members|people)\s+(?=who|with|that|whose|aged|over|under)', '', scope, flags=re.I)
+            parser = Parser(catalog, words); parser.base = 'patient'
+            try:
+                where, tail = parser.expression(words)
+                if where is None or tail.strip(): return None
+                plan = {'source': {'table': 'patient', 'quote': words},
+                        'select': [{'kind': 'field', 'field': 'patient.patient_id', 'alias': 'patient_id', 'quote': words}],
+                        'where': where, 'group_by': [], 'order_by': [], 'limit': None, 'unresolved': []}
+                contract = compile_request(catalog, words, plan, population=info.get('base_population'))
+            except (PlanError, ValueError):
+                return None
+            ids = sql_query.execute(stack.path, {'query': contract['query'], 'returns': 'patient_set'},
+                                    patient_ids=info.get('base_population'), target=catalog.target)['patient_ids']
+            label = scope
+        result = stack.compose(base, population=ids)
+        note = f'Follow-up: re-ran "{base}" for {label} ({len(ids)} patients).'
+        result['answer']['rescope'] = {'base_question': base, 'scope': label, 'base_population': info.get('base_population')}
+    result['answer']['limitations'] = [*(result['answer'].get('limitations') or []), note]
+    return result, base if not year else new_question, note
+
+
 def handle_compose(stack, body, hosted_factory=None):
     """Run /api/stack/compose with optional conversation context. Logging matches the single-question route."""
     from . import answer_log, learning
@@ -640,41 +703,48 @@ def handle_compose(stack, body, hosted_factory=None):
             shared = getattr(stack, 'shared_request_planning', False) is True
             if explicit_context and not shared:
                 raise QuestionNotUnderstood('This service cannot apply an explicitly selected saved cohort. The saved population was preserved; no warehouse-wide query was run.')
-            shared_edit = bool(explicit_context) or (body.get('scope') != 'warehouse' and
-                (refers or bool(re.match(r'^(?:only|exclude|excluding|remove|group by|by)\b', question, re.I))))
-            if shared and shared_edit:
-                if not saved:
-                    raise QuestionNotUnderstood('No saved cohort is available for this edit. Ask a complete question first.')
-                parent = answer_context.load(stack.path, saved['id'], current=True)
-                selected_scope = body.get('answer_scope', 'result')
-                parent = answer_context.reference_scope(parent, selected_scope)
-                # Legacy finite transforms remain useful for literal list/count and
-                # grouping. They operate on immutable membership, never text rewrites.
-                bound = answer_context.followup(stack.path, saved['id'], question, scope=selected_scope)
-                if bound is None:
-                    bound = stack.compose(question, population=parent['patient_ids'], parent=parent, planning=planning)
-                bound['cohort_transform']['scope'] = selected_scope
-            elif not shared and saved and is_followup(question) and planning == 'auto' and parse_frame(question) is None:
-                bound = answer_context.followup(stack.path, saved['id'], question)
-                if bound is None:
-                    raise QuestionNotUnderstood('This follow-up cannot yet be executed over the saved cohort. The original cohort was preserved; no rewritten query or whole-population substitution was run.')
-            elif refers:
-                raise QuestionNotUnderstood('No saved patient cohort is available for this follow-up. Ask the complete question first.')
-            hosted = None
-            if not shared and prior is not None and getattr(stack, 'allow_live', False):
-                hosted = (hosted_factory or _default_hosted)(stack)
-            resolution = ({'standalone': question, 'method': 'saved_cohort', 'frame': None, 'follow_up': True,
-                           'edits': bound['cohort_transform']['operations'], 'reason': 'Applied to the exact saved cohort',
-                           'hosted_receipt': None} if bound else
-                          {'standalone': question, 'method': 'standalone', 'frame': None, 'follow_up': False,
-                           'edits': [], 'reason': 'Original question sent unchanged to the shared planner',
-                           'hosted_receipt': None} if shared or body.get('scope') == 'warehouse'
-                          else resolve(question, prior, hosted=hosted))
-            if resolution.get('hosted_receipt'):
-                r = resolution['hosted_receipt']
-                hosted_usd = float(r.get('api_usd') or 0.0); hosted_calls = 0 if r.get('cache_hit') else 1
-            standalone = resolution['standalone']
-            result = bound if bound else stack.compose(standalone) if planning == 'auto' else stack.compose(standalone, planning=planning)
+            rescoped = (rescope(stack, question, saved) if shared and saved and not explicit_context
+                        and body.get('scope') != 'warehouse' else None)
+            if rescoped:
+                result, standalone, note = rescoped
+                resolution = {'standalone': standalone, 'method': 'rescoped', 'frame': None, 'follow_up': True,
+                              'edits': [note], 'reason': note, 'hosted_receipt': None}
+            else:
+                shared_edit = bool(explicit_context) or (body.get('scope') != 'warehouse' and
+                    (refers or bool(re.match(r'^(?:only|exclude|excluding|remove|group by|by)\b', question, re.I))))
+                if shared and shared_edit:
+                    if not saved:
+                        raise QuestionNotUnderstood('No saved cohort is available for this edit. Ask a complete question first.')
+                    parent = answer_context.load(stack.path, saved['id'], current=True)
+                    selected_scope = body.get('answer_scope', 'result')
+                    parent = answer_context.reference_scope(parent, selected_scope)
+                    # Legacy finite transforms remain useful for literal list/count and
+                    # grouping. They operate on immutable membership, never text rewrites.
+                    bound = answer_context.followup(stack.path, saved['id'], question, scope=selected_scope)
+                    if bound is None:
+                        bound = stack.compose(question, population=parent['patient_ids'], parent=parent, planning=planning)
+                    bound['cohort_transform']['scope'] = selected_scope
+                elif not shared and saved and is_followup(question) and planning == 'auto' and parse_frame(question) is None:
+                    bound = answer_context.followup(stack.path, saved['id'], question)
+                    if bound is None:
+                        raise QuestionNotUnderstood('This follow-up cannot yet be executed over the saved cohort. The original cohort was preserved; no rewritten query or whole-population substitution was run.')
+                elif refers:
+                    raise QuestionNotUnderstood('No saved patient cohort is available for this follow-up. Ask the complete question first.')
+                hosted = None
+                if not shared and prior is not None and getattr(stack, 'allow_live', False):
+                    hosted = (hosted_factory or _default_hosted)(stack)
+                resolution = ({'standalone': question, 'method': 'saved_cohort', 'frame': None, 'follow_up': True,
+                               'edits': bound['cohort_transform']['operations'], 'reason': 'Applied to the exact saved cohort',
+                               'hosted_receipt': None} if bound else
+                              {'standalone': question, 'method': 'standalone', 'frame': None, 'follow_up': False,
+                               'edits': [], 'reason': 'Original question sent unchanged to the shared planner',
+                               'hosted_receipt': None} if shared or body.get('scope') == 'warehouse'
+                              else resolve(question, prior, hosted=hosted))
+                if resolution.get('hosted_receipt'):
+                    r = resolution['hosted_receipt']
+                    hosted_usd = float(r.get('api_usd') or 0.0); hosted_calls = 0 if r.get('cache_hit') else 1
+                standalone = resolution['standalone']
+                result = bound if bound else stack.compose(standalone) if planning == 'auto' else stack.compose(standalone, planning=planning)
     except Exception as exc:
         logged = resolution['standalone'] if resolution else str(question)
         from .question_input import failure

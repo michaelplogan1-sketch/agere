@@ -16,7 +16,7 @@ import re
 import sqlite3
 
 VERSION = 'warehouse-request/1'
-STOP_WORDS = set('a an the please me our we us there are is was were be of for to from show give find get tell what which who how many number list count total sum average mean by per with where among patients patient that have has had whose in on at and or but not without excluding exclude only all any every each than then also do does it them those these their overall s plus did see saw'.split())  # 's' is the contraction in what's
+STOP_WORDS = set('a an the please me our we us there are is was were be of for to from show give find get tell what which who how many number list count total sum average mean by per with where among patients patient that have has had whose in on at and or but not without excluding exclude only all any every each than then also do does it them those these their overall s plus did see saw just'.split())  # 's' is the contraction in what's
 
 
 class PlanError(ValueError):

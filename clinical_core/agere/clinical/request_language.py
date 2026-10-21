@@ -54,6 +54,8 @@ EVIDENCE = [
      [('vaccine', 'like', 'pneumococcal%'), ('status', '=', 'completed')]),
     (r'mammograms?', 'cancer_screening', 'event_date', [('test', '=', 'bilateral_screening_mammography')]),
     (r'(?:annual wellness visits?|awvs?)', 'wellness_visit', 'event_date', [('awv', '=', 1)]),
+    (r'(?:(?:inpatient|hospital)\s+)?admissions?|admitted(?:\s+to\s+the\s+hospital)?', 'stay', 'admit_date', [('type', '=', 'inpatient')]),
+    (r'(?:ed|er|emergency(?:\s+department)?)\s+visits?', 'utilization_event', 'event_date', [('kind', '=', 'ed_visit')]),
 ]
 # Dated events that can anchor or follow in a sequence: (pattern, table, date field, fixed predicates).
 SEQUENCE_EVENTS = [
@@ -79,7 +81,8 @@ RANK_TOPICS = [
     (r'(?:pharmacy\s+)?reject(?:ion)?\s+codes?', 'payer_pharmacy_claim', 'reject_code', [('claim_status', '=', 'rejected')],
      r'(?:on|across|in|for)\s+(?:all\s+)?(?:rejected\s+)?pharmacy\s+claims'),
 ]
-NEEDS = {'food insecurity': 'food', 'food': 'food', 'transportation needs': 'transport', 'transportation barriers': 'transport',
+NEEDS = {'food insecurity': 'food', 'food': 'food', 'transportation needs': 'transport', 'transportation need': 'transport',
+         'transportation barriers': 'transport', 'transportation barrier': 'transport',
          'transportation': 'transport', 'transport': 'transport', 'housing instability': 'housing', 'housing': 'housing',
          'utilities': 'utilities', 'safety': 'safety'}
 FIELDS = {
@@ -345,7 +348,8 @@ class Parser:
     NEGATED_LEAD = (r"(?:(?:have|has|had)\s+(?:had\s+)?no|with\s+no|no|(?:did|do|does)\s+not\s+(?:get|have|receive)|didn't\s+(?:get|have|receive)|"
                     r"(?:have|has)\s+not\s+had|(?:have|has)\s+never\s+(?:had|received)|never\s+(?:had|received|got)|missed|"
                     r"(?:are|were|is)\s+missing|missing|without)")
-    POSITIVE_LEAD = r"(?:(?:have|has)\s+(?:had|ever\s+received|received)|had|have|has|with|got|received|ever\s+received)"
+    POSITIVE_LEAD = (r"(?:(?:have|has)\s+(?:had|ever\s+received|received|been)|had|have|has|with|got|received|ever\s+received|"
+                     r"(?:were|was|been)(?=\s+admitted))")
 
     def window(self, text, table, field):
         """A trailing window, calendar year, flu season or 'on record' after a piece of evidence."""
@@ -447,7 +451,7 @@ class Parser:
         start = text
         social = re.match(r'^(?:(?:have|has|had)\s+)?screened\s+(positive\s+)?for\s+', text, re.I)
         if social and 'social_need' in self.catalog.tables:
-            got = self.prefix(text[social.end():], NEEDS)
+            got = self.prefix(re.sub(r'^(?:an?|the)\s+', '', text[social.end():], flags=re.I), NEEDS)
             if got:
                 quote = text[:len(text) - len(got[2])].strip()
                 atoms = [atom('social_need.need', '=', got[1], quote)]
@@ -487,6 +491,8 @@ class Parser:
 
     def parse(self):
         text = self.question.strip().rstrip('?.').strip()
+        just_count = re.search(r'[?.]\s*just (?:the|a) (?:count|number)$', text, re.I) if self.bound else None
+        if just_count: text = text[:just_count.start()].strip()
         governed = self.governed(text)
         if governed is not None:
             return governed
@@ -519,11 +525,12 @@ class Parser:
             raise PlanError('Specify the requested calculation and warehouse source')
         verb = lead.group(1).lower() if lead else 'count'
         rest = text[lead.end():] if lead else text
-        fn = ('list' if verb in ('list', 'enumerate', 'which', 'show', 'find') else
+        fn = ('count' if just_count else 'list' if verb in ('list', 'enumerate', 'which', 'show', 'find') else
               'avg' if verb in ('average', 'mean') or verb.endswith('average') else
               'sum' if verb in ('total', 'sum') or verb.endswith('total') else 'count')
         field_name, source = None, None
         rest = re.sub(r'^(?:of\s+)?(?:all|the|our)\s+', '', rest, flags=re.I)
+        if self.bound: rest = re.sub(r'^of\s+(?=(?:them|those|these)\b)', '', rest, flags=re.I)
         # Adjectives before the population noun ("living Medicaid patients") are filters on that population.
         modifiers = []
         while fn not in ('sum', 'avg'):
@@ -583,7 +590,8 @@ class Parser:
         if front_source and fn not in ('sum','avg'):
             raise PlanError('Use an explicit measure for a fronted source scope')
         if not source and self.bound:
-            source = self.prefix(rest, {'them': ('patient', None), 'those patients': ('patient', None), 'these patients': ('patient', None)})
+            source = self.prefix(rest, {'them': ('patient', None), 'those': ('patient', None), 'these': ('patient', None),
+                                        'those patients': ('patient', None), 'these patients': ('patient', None)})
         if not source: raise PlanError('Explicit source or saved cohort required')
         source_quote, (self.base, default), rest = source
         if self.base == 'stay' and re.search(r'discharge', source_quote, re.I): self.clock = 'discharge_date'
@@ -692,12 +700,15 @@ class Parser:
     def of_scope(self, of):
         """'Of <population>, how many <condition>': count the population rows that meet the condition."""
         source = self.prefix(of[1], self.sources)
+        pronoun = re.fullmatch(r'(?:those|them|these)(?:\s+(?:patients|members))?', of[1].strip(), re.I)
+        if self.bound and pronoun:
+            source = (of[1].strip(), ('patient', None), '')  # the saved cohort the conversation is editing
         if not source: raise PlanError('Fronted scope needs a recognized source')
         source_quote, (self.base, default), scope_text = source
         if self.base == 'stay' and re.search(r'discharge', source_quote, re.I): self.clock = 'discharge_date'
         first, tail = self.expression(scope_text)
         if tail.strip(): raise PlanError('Unconsumed scope: ' + tail)
-        second, tail = self.expression(re.sub(r'^(?:were|was|are|is)\s+', '', of[3], flags=re.I))
+        second, tail = self.expression(re.sub(r'^(?:were|was|are|is)\s+(?!admitted)', '', of[3], flags=re.I))
         if tail.strip(): raise PlanError('Unconsumed request: ' + tail)
         base_filter = None
         if default:
@@ -845,7 +856,7 @@ class Parser:
     def one(self, text):
         start = text
         while True:
-            filler = re.match(r'^(?:among|for) (?:the )?(?:patients|members)\s+|^who\s+|^(?:where|for|among)\s+|^that\s+|^(?:are|were|is|was)\s+', text, re.I)
+            filler = re.match(r'^(?:among|for) (?:the )?(?:patients|members)\s+|^who\s+|^(?:where|for|among)\s+|^that\s+|^also\s+|^(?:are|were|is|was)\s+(?!admitted)', text, re.I)
             if not filler: break
             text = text[filler.end():]
         if text.startswith('('):
