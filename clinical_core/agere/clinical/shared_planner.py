@@ -76,7 +76,7 @@ def policy_identity():
                      'age.py', 'request_vocabulary.py', 'request_shapes.py', 'local_request_worker.py',
                      'concepts.py', 'drug_classes.py', 'nl2sql.py', 'workflow_contract.py', 'request_discovery.py', 'general_analysis.py', 'dose.py', 'clinical_definitions.py',
                      'analysis_evidence.py', 'request_program.py', 'answer_dependencies.py', 'procedural_memory.py', 'clinical_inputs.py',
-                     'conversation.py', 'answer_format.py', 'question_input.py', 'learning.py', 'economics_learning.py', 'healthcare_learning.py', 'vbc_knowledge.py', 'programs.py', 'contract_strategy.py',
+                     'conversation.py', 'answer_format.py', 'paraphrase.py', 'question_input.py', 'learning.py', 'economics_learning.py', 'healthcare_learning.py', 'vbc_knowledge.py', 'programs.py', 'contract_strategy.py',
                      'metrics.py', 'metric_families.py', 'measures.py', 'risk_adjustment.py', 'vbc.py')}})
 
 SYSTEM = '''Interpret the complete request about the connected warehouse into a typed relational request, staged analysis or request program. Return JSON only.
@@ -663,6 +663,31 @@ def _interpret(catalog, question, *, population=None, model=None, force_model=Fa
     raise exc
 
 
+def reuse_paraphrase(stack, catalog, question, population, memory_identity):
+    """A verified interpretation of a reworded question (paraphrase.py), recompiled under the current code against its
+    own verified wording. Zero model calls; never saved under the new wording."""
+    if population is not None or memory_identity != request_plan.fingerprint([]): return None
+    from . import paraphrase, general_analysis
+    found = paraphrase.find(stack.path, question)
+    if not found: return None
+    wording, item, score = found
+    try:
+        if item.get('program'):
+            contract = request_program.prepare(catalog, wording, item['program'])
+        elif item.get('analysis'):
+            contract = general_analysis.prepare(catalog, wording, item['analysis'],
+                                                relaxed=bool(item['interpretation'].get('final_llm_analysis')))
+        else:
+            contract = request_plan.compile_request(catalog, wording, item['request'])
+    except (request_plan.PlanError, ValueError, KeyError):
+        return None
+    interpretation = {k: v for k, v in item['interpretation'].items()
+                      if k not in ('exact_contract_cache_hit', 'carried_forward_from', 'carry_forward')}
+    interpretation.update(interpreter='paraphrase_reuse', paraphrase_of=wording, paraphrase_similarity=score,
+                          paraphrase_policy=paraphrase.VERSION, attempts=[])
+    return contract, interpretation
+
+
 def plan(stack, question, ledger=None, frontier=None, *, population=None, model=None, planning='auto'):
     validate_question(question)
     if planning not in ('auto', 'frontier'):
@@ -759,31 +784,35 @@ def plan(stack, question, ledger=None, frontier=None, *, population=None, model=
                 with interpretation_window(stack):
                     contract, interpretation = checked_interpret(catalog, question, population=population)
             except QuestionNotUnderstood as declined:
-                if not getattr(stack, 'allow_live', False):
+                reworded = reuse_paraphrase(stack, catalog, question, population, memory_identity)
+                if reworded:
+                    contract, interpretation = reworded
+                elif not getattr(stack, 'allow_live', False):
                     raise
-                from ..gateway import BudgetLedger, default_ledger_path
-                from .nl2sql import HostedModel
-                owned = ledger is None
-                current_ledger = ledger or BudgetLedger(default_ledger_path())
-                try:
-                    hosted = HostedModel(current_ledger, stack.receipts, model=hosted_model,
-                                         request_max_bytes=REQUEST_MAX_BYTES)
-                    with interpretation_window(stack):
-                        contract, interpretation = checked_interpret(catalog, question, population=population, model=hosted)
-                    interpretation['hosted_dispatch_authority'] = 'server_allow_live_after_deterministic_decline'
-                    interpretation['deterministic_decline'] = str(declined)
-                    audit = interpretation.get('semantic_review')
-                    unresolved = (contract['analysis']['unresolved'] if contract.get('kind') == 'general_analysis' else
-                                  contract['program']['unresolved'] + [u for n in contract['nodes'] for u in n['unresolved']]
-                                  if contract.get('kind') == 'request_program' else contract['request']['unresolved'])
-                    nodes_verified = (contract.get('kind') != 'request_program' or
-                        all(n['equivalent'] and not n['issues'] for n in (audit or {}).get('nodes', [])))
-                    if audit and audit['equivalent'] and not audit['issues'] and not unresolved and nodes_verified:
-                        interpretation.update(execution_accepted=True, review='checked_hosted_interpretation',
-                                              acceptance_scope='Compiled and reviewed synthetic observation; not clinical qualification')
-                finally:
-                    if owned: current_ledger.close()
-        if model is None and interpretation.get('execution_accepted') and (
+                else:
+                    from ..gateway import BudgetLedger, default_ledger_path
+                    from .nl2sql import HostedModel
+                    owned = ledger is None
+                    current_ledger = ledger or BudgetLedger(default_ledger_path())
+                    try:
+                        hosted = HostedModel(current_ledger, stack.receipts, model=hosted_model,
+                                             request_max_bytes=REQUEST_MAX_BYTES)
+                        with interpretation_window(stack):
+                            contract, interpretation = checked_interpret(catalog, question, population=population, model=hosted)
+                        interpretation['hosted_dispatch_authority'] = 'server_allow_live_after_deterministic_decline'
+                        interpretation['deterministic_decline'] = str(declined)
+                        audit = interpretation.get('semantic_review')
+                        unresolved = (contract['analysis']['unresolved'] if contract.get('kind') == 'general_analysis' else
+                                      contract['program']['unresolved'] + [u for n in contract['nodes'] for u in n['unresolved']]
+                                      if contract.get('kind') == 'request_program' else contract['request']['unresolved'])
+                        nodes_verified = (contract.get('kind') != 'request_program' or
+                            all(n['equivalent'] and not n['issues'] for n in (audit or {}).get('nodes', [])))
+                        if audit and audit['equivalent'] and not audit['issues'] and not unresolved and nodes_verified:
+                            interpretation.update(execution_accepted=True, review='checked_hosted_interpretation',
+                                                  acceptance_scope='Compiled and reviewed synthetic observation; not clinical qualification')
+                    finally:
+                        if owned: current_ledger.close()
+        if model is None and interpretation.get('execution_accepted') and interpretation.get('interpreter') != 'paraphrase_reuse' and (
                 contract.get('kind') != 'request_program' or request_program.cacheable(contract, interpretation)):
             with sqlite3.connect(cache_path) as db:
                 saved_plan = ({'program': contract['program']} if contract.get('kind') == 'request_program' else
@@ -827,6 +856,9 @@ def compose(stack, question, *, population=None, parent=None, model=None, planni
             result = execute_contract(stack, question, graph, receipt, population=population, parent=parent, started=started)
         from .answer_format import present
         present(result, request_plan.Catalog.load(stack.path).target)
+        if receipt.get('interpretation', {}).get('interpreter') == 'paraphrase_reuse':
+            from .paraphrase import disclosure
+            result['answer']['limitations'] = [*(result['answer'].get('limitations') or []), disclosure(receipt['interpretation'])]
         from . import procedural_memory as memory
         used = receipt.get('interpretation', {}).get('procedural_memory')
         if used:
