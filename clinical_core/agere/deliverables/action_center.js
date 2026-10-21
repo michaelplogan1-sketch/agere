@@ -174,7 +174,7 @@ function renderOverview() {
     (s.kind==='deliverable'&&s.status==='blocked'&&s.deliverable_id?'<button class="btn" data-workflow-retry="'+i+'">Retry generation ↗</button>':'')+
     (s.attempts?.length?'<p><small>'+s.attempts.length+' generation attempts retained</small></p>':'')+
     (s.kind==='simulation'&&s.status==='ready'?'<button class="btn" data-workflow-board>Run simulated agents ↗</button>':'')+
-    (s.kind==='monitor'&&s.mode==='work'&&s.observations?.length?'<p><strong>'+num(s.observations.at(-1).measurement.completed)+' / '+num(s.observations.at(-1).measurement.total)+' simulated journeys complete</strong><br>'+num(s.observations.at(-1).measurement.needs_attention)+' simulated agent journeys need attention</p>':'')+
+    (s.kind==='monitor'&&s.mode==='work'&&s.observations?.length?'<p><strong>'+num(s.observations.at(-1).measurement.completed)+' / '+num(s.observations.at(-1).measurement.total)+' simulated journeys complete</strong><br>Simulated agent journeys needing attention: '+num(s.observations.at(-1).measurement.needs_attention)+'</p>':'')+
     (s.kind==='monitor'&&s.observations?'<p><small>'+esc(s.scope_label||s.scope)+' · Manual checks · '+s.observations.length+' recorded observation(s)</small></p><details><summary>Baseline &amp; observations</summary><pre>'+esc(JSON.stringify(s.observations.map(o=>({at:o.at,as_of:o.source.as_of,answer:o.measurement})),null,2))+'</pre></details><button class="btn" data-monitor-check="'+i+'">'+(s.mode==='work'?'Check work progress':'Check current snapshot')+' ↗</button>':'')+'</article>').join('')+'</div>';
   host.querySelectorAll('[data-workflow-studio]').forEach(b=>b.onclick=()=>go('studio'));
   host.querySelectorAll('[data-workflow-board]').forEach(b=>b.onclick=()=>go('work'));
