@@ -13,7 +13,9 @@ class AnswerFormat(unittest.TestCase):
         self.target = Path(self.temp.name) / 'semantic.sqlite3'
         with sqlite3.connect(self.target) as db:
             db.executescript("CREATE TABLE organization(organization_id TEXT, display_name TEXT);"
-                             "INSERT INTO organization VALUES ('H1','North hospital'),('H2','South hospital');")
+                             "INSERT INTO organization VALUES ('H1','North hospital'),('H2','South hospital');"
+                             "CREATE TABLE payer_claim(service_from TEXT);"
+                             "INSERT INTO payer_claim VALUES ('2026-09-01'),('2030-05-01');")
 
     def test_scalar_sum_of_cents_is_dollars(self):
         result = {'request_contract': {'request': {'select': [{'kind': 'sum', 'field': 'claim.paid_cents', 'alias': 'sum_paid_cents'}]}},
@@ -56,6 +58,16 @@ class AnswerFormat(unittest.TestCase):
         a = present({'answer': {'status': 'answered', 'answer_type': 'table', 'table': rows}}, self.target)['answer']
         self.assertNotIn('answerable', a)
         self.assertNotIn('answerable', present({'answer': {'status': 'answered', 'count': 0}}, self.target)['answer'])
+
+    def test_period_before_the_data_begins_is_not_a_zero(self):
+        def result(start, end):
+            return {'request_contract': {'request': {'analyses': [{'operation': 'governed_metric', 'parameters': {
+                        'id': 'payer_medical_paid', 'period': {'start': start, 'end': end}}}]}},
+                    'answer': {'status': 'answered', 'value': 0.0, 'headline': '0.0', 'limitations': []}}
+        a = present(result('2025-01-01', '2025-12-31'), self.target)['answer']
+        self.assertIs(a['answerable'], False)
+        self.assertIn('2026-09-01', a['headline'])
+        self.assertNotIn('answerable', present(result('2029-01-01', '2029-12-31'), self.target)['answer'])
 
 if __name__ == '__main__':
     unittest.main()

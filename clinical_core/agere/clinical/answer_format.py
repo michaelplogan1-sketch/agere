@@ -86,6 +86,7 @@ def present(result, target=None):
             if str(answer.get('headline', '')).endswith(', '.join(columns)):
                 answer['headline'] = f"{len(rows)} rows · " + ', '.join(rows[0].keys())
     _honest_unknown(answer)
+    _outside_coverage(result, answer, target)
     if notes:
         answer['limitations'] = list(dict.fromkeys([*(answer.get('limitations') or []), *notes]))
     return result
@@ -111,3 +112,31 @@ def _honest_unknown(answer):
     answer.update(answerable=False, actionable_cohort=False,
                   headline='Not answerable from the received data: ' + reasons[0])
     answer['missing'] = list(dict.fromkeys([*(answer.get('missing') or []), *reasons]))
+
+
+def _outside_coverage(result, answer, target):
+    """A governed measure asked for a period the source never covers (claims that begin later) is not a zero."""
+    analyses = ((result.get('request_contract') or {}).get('request') or {}).get('analyses') or []
+    if not target or answer.get('answerable') is False: return
+    from .request_vocabulary import definitions
+    gaps = []
+    for a in analyses:
+        if a.get('operation') != 'governed_metric': continue
+        p = a['parameters']
+        field = ((definitions().get(p['id']) or {}).get('time_anchor') or {}).get('field', '')
+        table, _, column = field.partition('.')
+        if not re.fullmatch(r'[a-z_]+', table or '') or not re.fullmatch(r'[a-z_]+', column or ''): continue
+        try:
+            db = sqlite3.connect(f'file:{target}?mode=ro', uri=True)
+            try: low, high = db.execute(f'SELECT MIN({column}), MAX({column}) FROM {table}').fetchone()
+            finally: db.close()
+        except sqlite3.Error:
+            continue
+        if low and (p['period']['end'] < str(low)[:10] or p['period']['start'] > str(high)[:10]):
+            gaps.append(f"{table} data covers {str(low)[:10]} to {str(high)[:10]}; the requested period "
+                        f"{p['period']['start']} to {p['period']['end']} is outside it.")
+    if gaps and len(gaps) == len([a for a in analyses if a.get('operation') == 'governed_metric']):
+        answer.update(answerable=False, actionable_cohort=False, headline='Not answerable from the received data: ' + gaps[0])
+        answer['missing'] = list(dict.fromkeys([*(answer.get('missing') or []), *gaps]))
+    elif gaps:
+        answer['limitations'] = list(dict.fromkeys([*(answer.get('limitations') or []), *gaps]))
