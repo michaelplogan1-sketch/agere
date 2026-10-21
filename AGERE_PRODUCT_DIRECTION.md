@@ -1,3 +1,17 @@
+# Product experience and language — October 20, 2026
+
+Mike explicitly rejects dashboards as Agere's product experience and says never
+to use that term. Do not use “dashboard” or “dashboards” in Agere user-facing
+copy, generated deliverables, pitches or assistant progress updates.
+
+Center the experience on useful answers, clear priorities and getting work done.
+Name each output for its actual purpose: an answer, brief, action plan, work queue
+or requested deliverable. This is a product preference as well as a wording rule;
+renaming a passive collection of metrics does not satisfy it. Preserve evidence,
+patient scope and the distinction between simulated work and observed outcomes.
+
+This records standing user direction; it does not claim a deployed interface change.
+
 # Whole-warehouse acceptance correction — October 19, 2026
 
 HF is one regression, not the product boundary or flagship implementation shortcut. The intended synthetic MVP is incomplete. A question may use new combinations of sources, predicates, exclusions, periods, groupings and analytical methods. Every route must preserve the original request or explain what capability/evidence is missing. Failed interpretation is not missing data. The independent review and first corrections are in AGERE_REVIEW_CORRECTIONS_2026-10-19.md; AGERE_BUILD_CONTROL.json owns the next implementation. Synthetic frontier deliverables/actions may remain labeled mockups. No broad accuracy or cost-superiority claim is established.
