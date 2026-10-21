@@ -79,7 +79,7 @@ MEDICAL_CLAIMS = {
     'disclosure': ('Medical-claim finance questions (denial rate, paid, PMPM) use payer-adjudicated claims '
                    '(payer_claim, counted rows only); provider billing claims are used only when asked for.'),
 }
-_PROVIDER_CLAIM = __import__('re').compile(r'(?:FROM|JOIN)\s+\\?"?claim\\?"?(?=[\s)]|$)|"table":\s*"claim"', __import__('re').I)
+_PROVIDER_CLAIM = __import__('re').compile(r'(?:FROM|JOIN)\s+\\?"?claim(?:_adjustment)?\\?"?(?=[\s)]|$)|"table":\s*"claim(?:_adjustment)?"', __import__('re').I)
 
 
 def superseded(question, plan, tables):

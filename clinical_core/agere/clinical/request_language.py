@@ -68,6 +68,17 @@ SEQUENCE_EVENTS = [
      [('counts_in_metrics', '=', 1), ('cpt', '>=', '99202'), ('cpt', '<=', '99215')]),
     (r'(?:an?\s+)?(?:ed|er|emergency(?:\s+department)?)\s+visits?', 'utilization_event', 'event_date', [('kind', '=', 'ed_visit')]),
 ]
+NUMBER_WORDS = {w: str(i) for i, w in enumerate('zero one two three four five six seven eight nine ten'.split()) if i}
+# Things a question can rank by frequency: (pattern, table, field, fixed predicates, wording that restates the source).
+RANK_TOPICS = [
+    (r'(?:documented\s+)?symptoms?', 'note_fact', 'value', [('fact_type', '=', 'symptom'), ('negated', '=', 0)],
+     r'(?:in|from|across)\s+(?:the\s+|our\s+)?(?:clinical\s+)?notes'),
+    (r'denial\s+(?:reason\s+)?codes?|carcs?', 'payer_claim', 'carc',
+     [('counts_in_metrics', '=', 1), ('final_status', 'in', ['denied', 'denied_upheld'])],
+     r'(?:on|across|in|for)\s+(?:all\s+)?(?:(?:medical|payer)\s+)?claims'),
+    (r'(?:pharmacy\s+)?reject(?:ion)?\s+codes?', 'payer_pharmacy_claim', 'reject_code', [('claim_status', '=', 'rejected')],
+     r'(?:on|across|in|for)\s+(?:all\s+)?(?:rejected\s+)?pharmacy\s+claims'),
+]
 NEEDS = {'food insecurity': 'food', 'food': 'food', 'transportation needs': 'transport', 'transportation barriers': 'transport',
          'transportation': 'transport', 'transport': 'transport', 'housing instability': 'housing', 'housing': 'housing',
          'utilities': 'utilities', 'safety': 'safety'}
@@ -81,7 +92,8 @@ FIELDS = {
     'admission date': 'stay.admit_date',
 }
 CLOCKS = {'utilization_event': 'event_date', 'visit': 'event_date', 'stay': 'admit_date', 'claim': 'service_date',
-          'payer_claim': 'service_from',
+          'payer_claim': 'service_from', 'note_fact': 'event_date', 'payer_pharmacy_claim': 'fill_date',
+          'prescription': 'ordered_date', 'fill': 'fill_date',
           'appointment': 'scheduled_date', 'medication': 'event_date',
           'measurement': 'event_date', 'condition': 'event_date', 'record': 'event_date',
           'claim_adjudication': 'event_date', 'member_month': 'month'}
@@ -353,7 +365,7 @@ class Parser:
 
     def thing(self, text):
         """(table, date field, fixed atoms, quote, tail) for one named kind of received evidence."""
-        text = re.sub(r'^(?:an?|any|a recorded)\s+', '', text, flags=re.I) if re.match(r'^(?:an?|any|a recorded)\s+', text, re.I) else text
+        text = re.sub(r'^(?:an?|any|the|their|a recorded)\s+', '', text, flags=re.I)
         for pattern, table, field, fixed in EVIDENCE:
             if table not in self.catalog.tables: continue
             m = re.match(pattern + r'\b', text, re.I)
@@ -492,6 +504,8 @@ class Parser:
         if front and not front_source: raise PlanError('Fronted scope needs a recognized source')
         if front:
             text=front[2]; self.base=front_source[1][0]
+        ranked = self.ranking(text)
+        if ranked: return ranked
         of = re.match(r'^Of\s+(?:the\s+|our\s+)?(.+?),\s*(how many)\s+(.+)$', text, re.I)
         if of:
             return self.of_scope(of)
@@ -641,6 +655,38 @@ class Parser:
             years = [y for y in (*h.groups(), *m.groups()) if y]
             inner = text[h.end():h.end() + m.start()]
             return inner, years, [q for q in (h.group().strip(' ,'), m.group().strip(' ,')) if q]
+        return None
+
+    def ranking(self, text):
+        """'What is the most common <thing> [in <its source>]' / 'What are the top N <things> ...': counts by value."""
+        head = re.match(r'^(?:what|which)\s+(?:is|are|was|were)\s+(?:the\s+|our\s+)?'
+                        r'(most\s+(?:common(?:ly\s+\w+)?|frequent(?:ly\s+\w+)?)|top\s+(\d+|' + '|'.join(NUMBER_WORDS) + r'))\s+', text, re.I)
+        if not head: return None
+        body = text[head.end():]
+        for pattern, table, field, fixed, restated in RANK_TOPICS:
+            m = re.match(pattern + r'\b', body, re.I)
+            if not m or table not in self.catalog.tables or field not in self.catalog.tables[table]: continue
+            if any(c not in self.catalog.tables[table] for c, _, _ in fixed): continue
+            self.base = table
+            topic, tail = m.group(), body[m.end():]
+            atoms = [atom(f'{table}.{c}', op, v, topic) for c, op, v in fixed]
+            own = re.match(r'^\s*' + restated + r'\b', tail, re.I)
+            if own: atoms[0] = {**atoms[0], 'quote': [topic, own.group().strip()]}; tail = tail[own.end():]
+            paren = re.match(r'^\s*\((affirmed(?:,?\s*not\s+negated)?|not\s+negated)\)', tail, re.I)
+            if paren and any(c == 'negated' for c, _, _ in fixed):
+                i = next(k for k, (c, _, _) in enumerate(fixed) if c == 'negated')
+                atoms[i] = {**atoms[i], 'quote': [topic, paren.group().strip()]}; tail = tail[paren.end():]
+            where, rest = self.expression(tail.strip())
+            if rest.strip(): raise PlanError('Unconsumed request: ' + rest)
+            n = head[2]
+            limit = 1 if not n else int(n) if n.isdigit() else int(NUMBER_WORDS[n.lower()])
+            quote = head.group().strip()
+            return {'source': {'table': table, 'quote': topic},
+                    'select': [{'kind': 'field', 'field': f'{table}.{field}', 'alias': field, 'quote': topic},
+                               {'kind': 'count', 'alias': 'count', 'quote': quote}],
+                    'where': combine('and', [*atoms, where], self.question), 'group_by': [field],
+                    'order_by': [{'alias': 'count', 'direction': 'desc', 'quote': quote}],
+                    'limit': {'value': limit, 'quote': quote}, 'unresolved': []}
         return None
 
     def of_scope(self, of):
@@ -848,6 +894,9 @@ class Parser:
         pcp = re.match(r'^(?:(?:have|has|with)\s+)?(?:an?\s+)?assigned\s+(?:pcp|primary care (?:provider|physician|clinician))\b', text, re.I)
         if pcp and self.base == 'patient' and 'pcp_clinician_id' in self.catalog.tables.get('patient', []):
             return atom('patient.pcp_clinician_id', 'not_null', None, pcp.group()), text[pcp.end():]
+        unfilled = re.match(r'^(?:(?:written|prescribed|ordered)\s+but\s+)?(?:never|not)\s+filled\b|^unfilled\b', text, re.I)
+        if unfilled and self.base == 'prescription' and 'not_filled' in self.observed_values('prescription', 'fill_status'):
+            return atom('prescription.fill_status', '=', 'not_filled', unfilled.group()), text[unfilled.end():]
         status = self.status_word(text)
         if status: return status
         m = re.match(r'^(?:with |having |have |has )(?:both\s+)?', text, re.I)
