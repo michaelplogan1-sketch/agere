@@ -47,8 +47,15 @@ class TemporalDose(unittest.TestCase):
 
     def test_undated_evidence_prevents_silent_selection_of_older_regimen(self):
         self.add('dated', '2030-01-01')
-        self.add('undated', None, dose='6.25 mg', recorded_date='2030-05-01')
+        self.add('undated', None, dose='6.25 mg')  # neither event nor recorded date
         self.assertEqual(self.current()['dose_status'], 'unknown_date')
+
+    def test_recorded_date_dates_a_statement_without_event_date(self):
+        # Dose rule (2026-10-21): a list/order statement without an event date is dated by its recorded date.
+        self.add('dated', '2030-01-01')
+        self.add('recorded', None, dose='6.25 mg', recorded_date='2030-05-01')
+        row = self.current()
+        self.assertEqual((row['dose_date'], row['daily_mg'], row['dose_status']), ('2030-05-01', 12.5, 'below_target'))
 
     def test_unknown_status_and_missing_dose_are_not_at_target(self):
         self.add('one', '2030-01-01', status=None)
