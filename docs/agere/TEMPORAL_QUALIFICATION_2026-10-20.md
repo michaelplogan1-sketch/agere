@@ -24,6 +24,10 @@ Evidence lives in `artifacts/agere-question-qualification-v1/` in the isolated l
 
 ## Exact remaining work
 
-After provider credits are restored, run the frozen candidate's 16-question study, the original access question against the declared 21-patient latest-status reference, and connected answer/work/brief/monitor acceptance. Recheck the original clinical compound, including EF population coverage and conditional work; its preceding partial result remains unresolved. Default activation stays with the build owner and requires that workflow evidence.
+Mike clarified on October 20 that Anthropic calls should not be needed to build the stack. Stop paid calls for this improvement work. Provider credits are not a prerequisite for implementation, integration or local engineering verification. The earlier provider failures remain historical evidence; they do not justify holding all build work.
+
+Continue the original access question's 21-patient latest-status reference and connected answer/work/local-brief/monitor checks using deterministic source contracts, recorded responses or explicitly labeled fixtures. Keep the original question, source/population boundaries and production acceptance checks intact. Such checks establish source arithmetic and workflow behavior, not fresh natural-language model accuracy. Recheck the clinical compound's EF coverage and dose/barrier/conditional-work mechanics locally; its preceding partial result remains unresolved. The build owner retains integration and activation ownership.
+
+The frozen candidate's live-model 16-question study and fresh generated-output behavior remain separately unverified. Do not request credits or run more paid tests for this work without renewed user direction.
 
 Independent clinical adjudication, source-family-disjoint model qualification, a supported smaller-model comparison, calibrated abstention and patient-specific dose/barrier/current-use interpretation remain open. Same-model review, authored fixtures and more conservative unknown handling cannot close those gates. No new model, automatically optimized prompt or procedural lesson is promoted by this candidate.
