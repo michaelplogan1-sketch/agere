@@ -432,7 +432,7 @@ class Compiler:
         if returns == 'patient_set': membership = query
         elif membership and (plan.get('having') or limit) and groups:
             matches = ' AND '.join(f'sg.{identifier(g)} IS {projections[g]}' for g in groups)
-            membership = f'WITH selected_groups AS ({query}) SELECT DISTINCT b.patient_id AS patient_id{relation} AND EXISTS (SELECT 1 FROM selected_groups AS sg WHERE {matches})'
+            membership = f'WITH selected_groups AS MATERIALIZED ({query}) SELECT DISTINCT b.patient_id AS patient_id{relation} AND EXISTS (SELECT 1 FROM selected_groups AS sg WHERE {matches})'
         elif membership and plan.get('having'):
             membership = f'SELECT DISTINCT b.patient_id AS patient_id{relation} AND EXISTS ({query})'
         elif membership and limit and not aggregate:
