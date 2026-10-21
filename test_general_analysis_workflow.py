@@ -43,8 +43,8 @@ QUESTION = ('List patients with ED visits in 2029 and their payer; create a brie
 class GeneralAnalysisWorkflow(unittest.TestCase):
     setUp = fixtures.SharedPlanner.setUp
 
-    def execute(self, spec=None, question=QUESTION, population=None, accepted=True):
-        contract = G.prepare(self.catalog, question, spec or patient_spec(), population=population)
+    def execute(self, spec=None, question=QUESTION, population=None, accepted=True, relaxed=False):
+        contract = G.prepare(self.catalog, question, spec or patient_spec(), population=population, relaxed=relaxed)
         receipt = {'version': S.VERSION, 'policy_identity': S.policy_identity(), 'request_contract': contract,
                    'interpretation': {'execution_accepted': accepted, 'review': 'checked_hosted_interpretation', 'semantic_review': {'equivalent': True, 'issues': []}}, 'new_paid_api_calls': 0,
                    'known_api_estimate_usd': 0, 'api_cost_known': True}
@@ -56,6 +56,14 @@ class GeneralAnalysisWorkflow(unittest.TestCase):
         with sqlite3.connect(self.path / 'semantic.sqlite3') as db:
             db.executescript(statements)
             db.execute("UPDATE meta SET value=value||'-changed' WHERE key='source_digest'")
+
+    def test_merged_patient_nouns_keep_listing_intent_and_aggregate_boundary(self):
+        for noun in ('patient', 'patients', 'member', 'members', 'person', 'people', 'individual', 'beneficiary', 'enrollee'):
+            phrase = 'Find every ' + noun
+            self.assertTrue(G._patient_listing_quote(phrase + ' with recorded evidence', phrase))
+            self.assertFalse(G._patient_listing_quote('Count ' + noun + '; create a brief', noun))
+            self.assertFalse(G._patient_listing_quote('Do not find ' + noun, noun))
+        self.assertTrue(G._patient_listing_quote('List patients with evidence and I want their care team', ['List', 'patients']))
 
     def test_patient_table_creates_exact_work_and_deliverable_and_monitor(self):
         result, ctx = self.execute(population=['A', 'B', 'C'])
@@ -144,7 +152,10 @@ class GeneralAnalysisWorkflow(unittest.TestCase):
             result, ctx = self.execute(spec, accepted=accepted)
             self.assertEqual(result['answer']['status'], 'partial')
             self.assertFalse(result['answer']['actionable_cohort'])
-            self.assertTrue(all(s['status'] == 'blocked' for s in W.materialize(self.path, ctx['id'])['steps']))
+            flow = W.materialize(self.path, ctx['id'])
+            self.assertEqual([s['status'] for s in flow['steps']], ['ready', 'blocked', 'blocked'])
+            self.assertEqual(A.inspect(self.path, ctx['id'])['items'], [])
+            self.assertIn('patient work remains blocked', flow['steps'][0]['reason'])
 
     def test_uncomputed_metric_and_downstream_filter_remain_unresolved(self):
         spec = patient_spec()
@@ -162,6 +173,93 @@ class GeneralAnalysisWorkflow(unittest.TestCase):
                        lambda s: s['patient_selection'].update(column='payer_id')):
             spec = patient_spec(); mutate(spec)
             with self.assertRaises(R.PlanError): G.prepare(self.catalog, QUESTION, spec)
+
+    def test_patient_noun_phrase_and_ordered_fragments_bind_original_listing(self):
+        q = QUESTION.replace('List patients', 'I want you to find all patients')
+        for quote in ('patients', 'all patients', ['find all', 'patients']):
+            with self.subTest(quote=quote):
+                spec = patient_spec()
+                spec['requirements'][0]['quote'] = q.split(';')[0]
+                spec['patient_selection']['quote'] = quote
+                result, ctx = self.execute(spec, q, population=['A', 'B'])
+                self.assertTrue(result['answer']['actionable_cohort'])
+                self.assertEqual(W.materialize(self.path, ctx['id'])['steps'][1]['patients'], 2)
+
+    def test_aggregate_or_recipient_wording_does_not_authorize_a_patient_list(self):
+        for prefix, quote in (('Find the number of patients', 'patients'),
+                              ('Show counts by payer for patients', 'patients'),
+                              ('Count patients', 'patients')):
+            q = QUESTION.replace('List patients', prefix)
+            spec = patient_spec()
+            spec['requirements'][0]['quote'] = q.split(';')[0]
+            spec['patient_selection']['quote'] = quote
+            with self.subTest(question=q), self.assertRaisesRegex(R.PlanError, 'Patient work needs'):
+                self.execute(spec, q)
+        q = QUESTION.replace('prepare a simulated outreach program', 'prepare a simulated outreach program for patients')
+        spec = patient_spec()
+        spec['workflow'][1]['quote'] += ' for patients'
+        spec['patient_selection']['quote'] = 'patients'  # first literal occurrence is the listing
+        self.assertTrue(self.execute(spec, q)[0]['answer']['actionable_cohort'])
+        spec['patient_selection']['quote'] = 'for patients'  # recipient only
+        with self.assertRaisesRegex(R.PlanError, 'Patient work needs'):
+            self.execute(spec, q)
+
+    def test_invented_or_reversed_fragments_are_rejected(self):
+        for quote in (['patients', 'List'], ['List', 'invented patients'], [], [None]):
+            spec = patient_spec(); spec['patient_selection']['quote'] = quote
+            with self.subTest(quote=quote), self.assertRaisesRegex(R.PlanError, 'Patient work needs'):
+                self.execute(spec)
+
+    def test_attached_request_listing_phrase_has_literal_provenance(self):
+        question = ("I want you to find all HFrEF patients who aren't on all 4 pillars of GDMT medications or aren't max dosage, "
+                    "who their pcp is, who their cardiologist is, and create an interactive HTML that will track them for loop closure "
+                    "and I want you to launch agents to sign them up for our virtual pharmD med titration program, "
+                    "they may need in home labs to be done as well as RPM.")
+        for quote in ('find all HFrEF patients', 'all HFrEF patients', ['find all', 'HFrEF patients']):
+            with self.subTest(quote=quote):
+                self.assertTrue(G._patient_listing_quote(question, quote))
+        for quote in ('who their pcp is', 'launch agents', 'them', 'patients with confirmed eligibility'):
+            with self.subTest(quote=quote):
+                self.assertFalse(G._patient_listing_quote(question, quote))
+        self.assertFalse(G._patient_listing_quote('Do not list patients; show counts by payer', 'list patients'))
+
+    def test_final_recovery_retains_analytical_rows_without_patient_work_authority(self):
+        spec = patient_spec(); spec['patient_selection']['quote'] = 'invented patients'
+        result, ctx = self.execute(spec, relaxed=True)
+        self.assertEqual(result['answer']['status'], 'partial')
+        self.assertEqual(result['answer']['patient_ids'], ['A', 'B', 'OUTSIDE'])
+        self.assertFalse(result['answer']['actionable_cohort'])
+        self.assertIsNone(result['request_contract']['analysis']['patient_selection'])
+        self.assertEqual(result['answer']['evidence_completeness']['status'], 'incomplete')
+        self.assertIn('patient work is blocked', ' '.join(result['answer']['missing']))
+        self.assertEqual(A.inspect(self.path, ctx['id'])['items'], [])
+        flow = W.materialize(self.path, ctx['id'])
+        self.assertEqual([s['status'] for s in flow['steps']], ['ready', 'blocked', 'blocked'])
+        compose = importlib.import_module('clinical_core.agere.deliverables.compose')
+        _, _, _, doc = compose.load(A.workspace(self.path, A.load(self.path, ctx['id'])), flow['steps'][0]['deliverable_id'])
+        self.assertIn('Partial evidence · patient work blocked', doc)
+
+    def test_partial_answer_cannot_trigger_frontier_generation_or_work(self):
+        spec = patient_spec(); spec['patient_selection']['quote'] = 'invented patients'
+        _, ctx = self.execute(spec, relaxed=True)
+        send = Mock(side_effect=AssertionError('No provider call is permitted'))
+        flow = W.materialize(self.path, ctx['id'], generation='frontier', allow_live=True, send=send)
+        self.assertTrue(all(s['status'] == 'blocked' for s in flow['steps']))
+        send.assert_not_called()
+        self.assertEqual(A.inspect(self.path, ctx['id'])['items'], [])
+
+    def test_final_workflow_error_preserves_analysis_and_requested_inspection_view(self):
+        spec = patient_spec(); spec['workflow'][1]['program'] = 'unavailable'
+        with self.assertRaisesRegex(R.PlanError, 'Choose custom'):
+            self.execute(spec)
+        result, ctx = self.execute(spec, relaxed=True)
+        self.assertEqual(result['answer']['status'], 'partial')
+        self.assertEqual(result['answer']['patient_ids'], ['A', 'B', 'OUTSIDE'])
+        self.assertIn('Requested workflow step was not compiled', ' '.join(result['answer']['missing']))
+        flow = W.materialize(self.path, ctx['id'])
+        self.assertEqual([s['kind'] for s in flow['steps']], ['deliverable', 'monitor'])
+        self.assertEqual([s['status'] for s in flow['steps']], ['ready', 'blocked'])
+        self.assertEqual(A.inspect(self.path, ctx['id'])['items'], [])
 
     def test_scope_is_enforced_even_when_model_omits_population(self):
         result, _ = self.execute(population=[])
@@ -246,6 +344,51 @@ class GeneralAnalysisWorkflow(unittest.TestCase):
         self.assertEqual(flow['steps'][1]['patients'], 1)
         self.assertEqual(flow['steps'][2]['status'], 'watching')
 
+    def test_virtual_pharmd_signup_wording_keeps_the_bound_subset(self):
+        spec, question = self.subset_work()
+        old = spec['workflow'][1]['quote']
+        new = ('launch agents for patients with at least two ED visits to sign them up '
+               'for our virtual pharmD med titration program')
+        spec['workflow'][1].update(quote=new, program='pharmd')
+        _, ctx = self.execute(spec, question.replace(old, new))
+        flow = W.materialize(self.path, ctx['id'])
+        self.assertEqual(flow['steps'][1]['status'], 'ready')
+        self.assertEqual({i['patient_id'] for i in A.inspect(self.path, ctx['id'])['items']}, {'A'})
+        self.assertEqual(flow['steps'][1]['selection_summary']['unknown'], 1)
+
+    def test_signup_pronoun_binds_earlier_computed_subset(self):
+        spec, question = self.subset_work()
+        criterion = 'patients with at least two ED visits'
+        action = 'I want you to launch agents to sign them up for our virtual pharmD med titration program'
+        question = ('I want you to List patients with ED visits in 2029 and their payer and flag ' + criterion +
+                    '; create a brief; ' + action + '; monitor loop closure')
+        spec['requirements'][-1]['quote'] = 'flag ' + criterion
+        spec['workflow'][1].update(quote=action, program='pharmd')
+        result, ctx = self.execute(spec, question)
+        flow = W.materialize(self.path, ctx['id'])
+        self.assertEqual(result['answer']['patient_ids'], ['A', 'B', 'OUTSIDE'])
+        self.assertEqual(flow['steps'][1]['status'], 'ready')
+        self.assertEqual(flow['steps'][1]['selection_summary']['unknown'], 1)
+        self.assertEqual({i['patient_id'] for i in A.inspect(self.path, ctx['id'])['items']}, {'A'})
+
+    def test_cross_clause_selection_needs_an_unambiguous_patient_antecedent(self):
+        from clinical_core.agere.clinical import workflow_contract as C
+        for action, middle, selection in (
+                ('launch agents for patients', '', {'column': 'patient_id', 'quote': 'List patients'}),
+                ('launch agents to sign them up', '; identify other patients', {'column': 'patient_id', 'quote': 'List patients'}),
+                ('launch agents to sign them up', '', None)):
+            question = 'List patients with a computed gap' + middle + '; ' + action
+            step = dict(kind='simulation', title='Synthetic signup', program='custom', quote=action, unresolved=[],
+                        selection=dict(output='gap', quote='with a computed gap'))
+            with self.subTest(question=question), self.assertRaisesRegex(R.PlanError, 'earlier patient list'):
+                C.validate([step], question, outputs=['gap'], output_bindings={'gap':['with a computed gap']},
+                           patient_selection=selection)
+
+    def test_request_scaffolding_does_not_hide_patient_preferences(self):
+        self.assertEqual(G.uncovered('I want you to List patients', ['List patients']), [])
+        self.assertEqual(G.uncovered('I want you to List patients who want home visits',
+                                     ['List patients', 'home visits']), ['want'])
+
     def test_subset_cannot_use_unbound_or_nonboolean_flag(self):
         spec, question = self.subset_work()
         spec['requirements'][-1].pop('outputs')
@@ -281,8 +424,8 @@ class GeneralAnalysisWorkflow(unittest.TestCase):
             return {'content': [{'type': 'text', 'text': 'TITLE: Utilization brief\n```html\n<h1>Utilization brief</h1>'
                     '<p>Synthetic evidence</p><p data-bind="'+rid+':answer.headline"></p>\n```'}],
                     'usage': {'input_tokens': 100, 'output_tokens': 100}}, {'cost_estimate': {'estimated_usd': .25}}
-        with patch('clinical_core.agere.clinical.nl2sql.HostedModel', return_value=model), \
-             patch('clinical_core.agere.gateway.default_ledger_path', return_value=self.path/'ledger.sqlite3'), \
+        with patch.object(S,'checked_interpret',side_effect=lambda c,q,**kw:
+                fixtures.authored_review_fixture(c,q,model,population=kw.get('population'))), \
              patch.object(composer, 'ledgered_sender', return_value=sender):
             result = conversation.handle_compose(self.stack, {'question': QUESTION, 'scope': 'warehouse'})
             replay = conversation.handle_compose(self.stack, {'question': QUESTION, 'scope': 'warehouse'})

@@ -30,6 +30,11 @@ def quote_text(value):
     return ' '.join(value) if isinstance(value, list) else value
 
 
+def without_request_scaffolding(text):
+    """Ignore first-person request phrasing, preserving patient preferences."""
+    return re.sub(r'\bI\s+(?:want|would\s+like)\s+you\s+to\s+', '', text, flags=re.I)
+
+
 def fingerprint(value):
     return hashlib.sha256(json.dumps(value, sort_keys=True, separators=(',', ':'), allow_nan=False).encode()).hexdigest()
 
@@ -38,6 +43,29 @@ def identifier(value):
     if not isinstance(value, str) or not re.fullmatch(r'[A-Za-z_][A-Za-z_0-9]*', value):
         raise PlanError('Invalid warehouse identifier')
     return '"' + value + '"'
+
+
+def warehouse_metadata(target, db):
+    """Read adapter metadata when present; fingerprint an ordinary SQLite snapshot.
+
+    A received warehouse need not contain Agere's clinical tables or metadata.
+    Without adapter metadata there is no inferred business as-of date. Main-file
+    and WAL identity invalidate plans when the received snapshot changes.
+    """
+    if db.execute("SELECT 1 FROM sqlite_master WHERE name='meta' AND type IN ('table','view')").fetchone():
+        columns = {r[1] for r in db.execute('PRAGMA table_info(meta)')}
+        if {'key', 'value'} <= columns:
+            return dict(db.execute('SELECT key,value FROM meta'))
+    target = Path(target)
+    files = {}
+    for file in (target, Path(str(target) + '-wal')):
+        try:
+            st = file.stat()
+            files[file.name] = {'size': st.st_size, 'mtime_ns': st.st_mtime_ns}
+        except FileNotFoundError:
+            pass
+    return {'source_digest': 'sqlite-snapshot:' + fingerprint({'path': str(target.resolve()), 'files': files}),
+            'version': 'received-sqlite/1', 'as_of': None}
 
 
 def literal(value):
@@ -65,7 +93,7 @@ class Catalog:
             names = [r[0] for r in db.execute("SELECT name FROM sqlite_master WHERE type IN ('table','view') AND name != 'meta' AND name NOT LIKE 'sqlite_%'")]
             tables = {t: [r[1] for r in db.execute('PRAGMA table_info(' + identifier(t) + ')')
                           if r[1] != 'age_latest'] for t in names}
-            identity = dict(db.execute('SELECT key,value FROM meta'))
+            identity = warehouse_metadata(target, db)
         if 'birth_date' in tables.get('patient', []):
             tables['patient'].append('age')
         profile_path = path/'source-profile.json'
@@ -202,10 +230,11 @@ class Compiler:
         # Independently check literal comparisons rather than trusting a model's
         # statement that a threshold survived. Dates expressed as a whole year
         # legitimately compile into two endpoints and have no comparison cue.
-        cue = re.search(r'(>=|<=|!=|(?<![<>!])=|>|<|\bat least\b|\bat most\b|\bover\b|\bunder\b|\bolder than\b|\byounger than\b|\bgreater than\b|\bless than\b)\s*["\']?([+-]?\d+(?:\.\d+)?)', quote_text(expr['quote']), re.I)
+        cue = re.search(r'(>=|<=|!=|(?<![<>!])=|>|<|\bat least\b|\bat most\b|\bno more than\b|\bno less than\b|\bmore than\b|\bfewer than\b|\bover\b|\bunder\b|\bolder than\b|\byounger than\b|\bgreater than\b|\bless than\b)\s*["\']?([+-]?\d+(?:\.\d+)?)', quote_text(expr['quote']), re.I)
         if cue and isinstance(value, (int, float)):
             expected = {'at least': '>=', 'at most': '<=', 'over': '>', 'under': '<',
-                        'older than': '>', 'younger than': '<', 'greater than': '>', 'less than': '<'}.get(cue[1].lower(), cue[1])
+                        'older than': '>', 'younger than': '<', 'greater than': '>', 'less than': '<',
+                        'no more than':'<=','no less than':'>=','more than':'>','fewer than':'<'}.get(cue[1].lower(), cue[1])
             if op != expected or float(cue[2]) != value:
                 raise PlanError('Literal comparator/threshold differs from the original request')
         return f'({field} {op.upper()} {literal(value)})'

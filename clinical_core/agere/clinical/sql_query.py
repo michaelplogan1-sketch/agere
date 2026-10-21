@@ -74,6 +74,8 @@ def execute(path, params, patient_ids=None, target=None, time_limit=None):
               'row_count': len(rows), 'truncated': truncated, 'elapsed_seconds': round(time.perf_counter() - started, 3)}
     if p['returns'] in ('count', 'value'):
         if not rows or not columns: raise ValueError('Scalar query returned no rows')
+        if len(rows) != 1 or len(columns) != 1:
+            raise ValueError('Scalar query must return exactly one row and one column; use table for multiple outputs')
         value = rows[0][0]
         if p['returns'] == 'count' and not isinstance(value, int): raise ValueError('Count query must return an integer')
         result['value'] = value

@@ -45,7 +45,8 @@ def source_identity(path):
         raise ValueError('The active semantic layer is unavailable')
     db = sqlite3.connect(f'file:{semantic}?mode=ro', uri=True)
     try:
-        meta = dict(db.execute('SELECT key,value FROM meta'))
+        from ..clinical.request_plan import warehouse_metadata
+        meta = warehouse_metadata(semantic, db)
     finally:
         db.close()
     st = semantic.stat()
@@ -164,6 +165,9 @@ def load(path, key, *, current=False):
         question = ancestor.get('question', '')
         if correction_context(path, question):
             invalidated = invalidated or r.get('feedback_identity') != feedback_identity(path, question)
+        origin = r.get('program_origin') or {}
+        if origin.get('original_question') and correction_context(path, origin['original_question']):
+            invalidated = invalidated or origin.get('feedback_identity') != feedback_identity(path, origin['original_question'])
         if r.get('version', '').startswith('shared-warehouse-planner/'):
             invalidated = invalidated or r.get('policy_identity') != active_policy
         parent_key = (ancestor.get('cohort_transform') or {}).get('parent_context_id')
@@ -194,7 +198,7 @@ def listing(path):
     out = []
     for f in sorted(root(path).glob('ANS-*/answer.json'), key=lambda p: p.stat().st_mtime, reverse=True):
         d = json.loads(f.read_text())
-        out.append({'id': d['id'], 'question': d['question'], 'patients': len(d['patient_ids']), 'created_at': d['created_at']})
+        out.append({'id': d['id'], 'question': d['question'], 'patients': len(d['patient_ids']), 'created_at': d['created_at'], **scope_options(d)})
     return out[:100]
 
 
@@ -244,7 +248,9 @@ def scope_options(context):
     """Public scope choices; membership itself remains server-owned."""
     answer = context['answer']
     contract = (context.get('planner_receipt') or {}).get('request_contract') or {}
-    summary = (answer.get('analysis_population_count') is not None or answer.get('answer_type') == 'value'
+    summary = (contract.get('kind') == 'request_program' or answer.get('answer_type') == 'composite'
+               or ('request' in contract and contract.get('membership_query') is None)
+               or answer.get('analysis_population_count') is not None or answer.get('answer_type') == 'value'
                or (contract.get('kind') == 'general_analysis' and contract.get('returns') != 'patient_set'
                    and not contract.get('analysis', {}).get('patient_selection')))
     return {'result_scope_available': bool(context['patient_ids']) or not summary,

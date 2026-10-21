@@ -521,7 +521,7 @@ function paretoChart(rows,f){const W=CW(),T=10,B=74,L=58,R=40,H=T+190+B;const n=
 function calNote(a){const c=((a&&a.overall)||{}).calibration;if(!c||!c.statement)return '';
  return '<p class="hint" data-calibration="1"><b>Calibration.</b> '+esc(c.statement)+(c.method?'<details class="why"><summary>Method</summary><span class="muted" style="font-size:12px">'+esc(c.method)+'</span></details>':'')+'</p>'}
 function visual(a){
- if(a.answer_type==='composite')return (a.sections||[]).map(s=>'<section class="sec"><h3>'+esc(s.title)+'</h3>'+headlineHTML(s.answer)+warnBox(s.answer)+(visual0(s.answer)||'')+calNote(s.answer)+'</section>').join('');
+ if(a.answer_type==='composite')return (a.sections||[]).map(s=>'<section class="sec"><h3>'+esc(s.title)+'</h3>'+headlineHTML(s.answer)+warnBox(s.answer)+(visual0(s.answer)||'')+calNote(s.answer)+(s.action_context?'<p><a href="'+esc(s.action_context.url)+'">Open this output’s workspace ↗</a></p>':'')+'</section>').join('');
  const v=visual0(a);return v==null?v:v+calNote(a)}
 /* early signal: learned pre-event template per channel (whitened units, months before the event) + patients ranked by matched-filter SNR */
 function vizEarlySignal(a){const o=a.overall||{},es=o.early_signal||{},ev=es.evaluation||{},rows=(a.table||[]).slice(0,20);

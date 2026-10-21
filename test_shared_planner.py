@@ -16,6 +16,17 @@ from clinical_core.agere.clinical import request_plan as R, request_language as 
 from clinical_core.agere.clinical.question_input import QuestionNotUnderstood
 
 
+def authored_review_fixture(catalog, question, model, *, population=None):
+    """Exercise supplied proposals/cache/work accounting without runtime LLM routing.
+
+    The callable is a mock and acceptance is an authored test fixture, never
+    evidence that a provider response or a clinical/model role was qualified.
+    """
+    contract, interpretation = S.interpret(catalog,question,model=model,population=population,force_model=True)
+    interpretation.update(execution_accepted=True,review='authored_acceptance_fixture')
+    return contract, interpretation
+
+
 class SharedPlanner(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
@@ -62,6 +73,10 @@ class SharedPlanner(unittest.TestCase):
     def ask(self, q, **kw):
         # Every grammar test fails if it unexpectedly asks a model to rescue it.
         return S.compose(self.stack, q, model=Mock(side_effect=AssertionError('Unexpected language fallback')), **kw)
+
+    def compose_model_fixture(self, q, model):
+        with patch.object(L,'parse',side_effect=R.PlanError('Deliberate grammar decline for injected-model unit fixture')):
+            return S.compose(self.stack,q,model=model)
 
     def test_cross_domain_event_measure_and_population(self):
         a = self.ask('How many ED visits among patients over 65 with diabetes in 2029 by payer?')['answer']
@@ -226,7 +241,7 @@ class SharedPlanner(unittest.TestCase):
                 'group_by': [], 'order_by': [], 'limit': None, 'unresolved': []}
         model = Mock(side_effect=[(json.dumps(plan), {}), (json.dumps({'equivalent': False, 'issues': ['A predicate is incorrect']}), {})] * 3)
         with patch.object(S.sql_query, 'execute', side_effect=AssertionError('Must not execute')):
-            a = S.compose(self.stack, q, model=model)
+            a = self.compose_model_fixture(q, model)
         self.assertEqual(a['answer']['status'], 'not_understood')
         self.assertEqual(a['answer']['patient_ids'], [])
         self.assertFalse(a['answer']['data_absence_established'])
@@ -236,54 +251,51 @@ class SharedPlanner(unittest.TestCase):
         p = L.parse(self.catalog, 'Count patients where age > 65')
         p['where']['quote'] = 'older than 65'
         model = Mock(side_effect=[(json.dumps(p), {}), (json.dumps({'equivalent': True, 'issues': []}), {})])
-        a = S.compose(self.stack, q, model=model)['answer']
+        a = self.compose_model_fixture(q, model)['answer']
         self.assertEqual(a['count'], 3)
         self.assertEqual(a['status'], 'partial')
         self.assertFalse(a['actionable_cohort'])
 
-    def test_enabled_hosted_interpreter_skips_unqualified_local_and_caches_exact_contract(self):
-        q = 'Count patients who are older than 65'
-        p = L.parse(self.catalog, 'Count patients where age > 65')
-        p['where']['quote'] = 'older than 65'
-        model = Mock(side_effect=[
-            (json.dumps(p), {'api_usd': .02, 'api_cost_known': True}),
-            (json.dumps({'equivalent': True, 'issues': []}), {'api_usd': .01, 'api_cost_known': True})])
-        model.identity = 'configured-frontier'
+    def test_hosted_enabled_runtime_still_uses_no_language_model(self):
         self.stack.allow_live = True
-        self.stack.receipts = self.path
-        with patch('clinical_core.agere.clinical.nl2sql.HostedModel', return_value=model), \
-             patch('clinical_core.agere.clinical.nl2sql.LocalModel.get', side_effect=AssertionError('No local guessing')), \
-             patch('clinical_core.agere.gateway.default_ledger_path', return_value=self.path/'ledger.sqlite3'):
-            a = S.compose(self.stack, q)
-            again = S.compose(self.stack, q)
-            deterministic = S.compose(self.stack, 'Count patients')
-        self.assertEqual(a['answer']['status'], 'answered')
-        self.assertEqual(a['answer']['patient_ids'], ['A', 'C', 'OUTSIDE'])
-        self.assertFalse(a['answer']['actionable_cohort'])
-        self.assertFalse(a['planner_receipt']['interpretation']['qualified_interpretation'])
-        self.assertEqual(a['new_paid_api_calls'], 2)
-        self.assertAlmostEqual(a['planning_economics']['new_api_estimate_usd'], .03)
-        self.assertEqual(again['new_paid_api_calls'], 0)
-        self.assertEqual(deterministic['new_paid_api_calls'], 0)
-        self.assertEqual(model.call_count, 2)
-        audit_payload = json.loads(model.call_args_list[1].args[1])
-        self.assertEqual(audit_payload['compiled_sql'], a['request_contract']['query'])
-        self.assertIn('patient', audit_payload['catalog']['selected_schemas'])
+        with patch('clinical_core.agere.clinical.nl2sql.HostedModel',side_effect=AssertionError('No hosted interpretation')), \
+             patch('clinical_core.agere.clinical.nl2sql.LocalModel.get',side_effect=AssertionError('No local LLM')):
+            first=S.compose(self.stack,'Count patients who are older than 65')
+            again=S.compose(self.stack,'Count patients who are older than 65')
+        self.assertEqual(first['answer']['patient_ids'],['A','C','OUTSIDE'])
+        self.assertEqual(first['new_paid_api_calls'],0)
+        self.assertTrue(again['planner_receipt']['interpretation']['exact_contract_cache_hit'])
 
-    def test_explicit_frontier_policy_is_honored_and_requires_live_capability(self):
-        with self.assertRaises(QuestionNotUnderstood):
-            S.compose(self.stack, 'Count patients', planning='frontier')
-        p = L.parse(self.catalog, 'Count patients')
-        model = Mock(side_effect=[
-            (json.dumps(p), {'api_usd': .01, 'api_cost_known': True}),
-            (json.dumps({'equivalent': True, 'issues': []}), {'api_usd': .01, 'api_cost_known': True})])
-        self.stack.allow_live = True
-        self.stack.receipts = self.path
-        with patch('clinical_core.agere.clinical.nl2sql.HostedModel', return_value=model), \
-             patch('clinical_core.agere.gateway.default_ledger_path', return_value=self.path/'ledger.sqlite3'):
-            a = S.compose(self.stack, 'Count patients', planning='frontier')
-        self.assertEqual(model.call_count, 2)
-        self.assertEqual(a['answer']['count'], 5)
+    def test_explicit_frontier_policy_cannot_bypass_deterministic_tier(self):
+        for enabled in (False,True):
+            self.stack.allow_live=enabled
+            with patch('clinical_core.agere.clinical.nl2sql.HostedModel',side_effect=AssertionError('Deterministic first')):
+                result=S.compose(self.stack,'Count patients',planning='frontier')
+            self.assertEqual(result['answer']['count'],5)
+            self.assertEqual(result['new_paid_api_calls'],0)
+
+    def test_hosted_fallback_follows_authored_decline_and_verified_result_is_reused(self):
+        # Routing/cache development fixture. The grammar miss and model review
+        # are authored; this does not qualify language or clinical accuracy.
+        q='Count patients who are older than 65'
+        plan=L.parse(self.catalog,q)
+        model=Mock(side_effect=[(json.dumps(plan),{'api_usd':.02,'api_cost_known':True}),
+            (json.dumps({'equivalent':True,'issues':[]}),{'api_usd':.01,'api_cost_known':True})])
+        model.identity='authored-hosted-routing-fixture'
+        self.stack.allow_live=True;self.stack.receipts=self.path
+        with patch.object(L,'parse',side_effect=R.PlanError('Authored deterministic decline')), \
+             patch('clinical_core.agere.clinical.nl2sql.HostedModel',return_value=model) as constructor, \
+             patch('clinical_core.agere.clinical.nl2sql.LocalModel.get',side_effect=AssertionError('No local guesses')), \
+             patch('clinical_core.agere.gateway.default_ledger_path',return_value=self.path/'fixture-ledger.sqlite3'):
+            first=S.compose(self.stack,q)
+            again=S.compose(self.stack,q)
+        self.assertEqual(first['answer']['count'],3)
+        self.assertTrue(first['planner_receipt']['interpretation']['execution_accepted'])
+        self.assertEqual(constructor.call_count,1)
+        self.assertEqual(model.call_count,2)
+        self.assertEqual(first['new_paid_api_calls'],2)  # Authored usage receipt, no actual network.
+        self.assertEqual(again['new_paid_api_calls'],0)
+        self.assertTrue(again['planner_receipt']['interpretation']['exact_contract_cache_hit'])
 
     def test_semantic_mismatch_gets_bounded_repair_and_never_executes_wrong_plan(self):
         q = 'Count patients who are older than 65'
@@ -292,7 +304,7 @@ class SharedPlanner(unittest.TestCase):
         model = Mock(side_effect=[
             (json.dumps(p), {}), (json.dumps({'equivalent': False, 'issues': ['Check the threshold']}), {}),
             (json.dumps(p), {}), (json.dumps({'equivalent': True, 'issues': []}), {})])
-        a = S.compose(self.stack, q, model=model)
+        a = self.compose_model_fixture(q, model)
         self.assertEqual(a['answer']['count'], 3)
         self.assertEqual(model.call_count, 4)
         self.assertIn('semantic_review', json.loads(model.call_args_list[2].args[1])['validator_feedback'])
@@ -342,6 +354,20 @@ class SharedPlanner(unittest.TestCase):
         self.assertIn('enrolled member-months within period', reviewed['meaning'])
         self.assertIn('not official Medicare Parts A/B reconciliation', reviewed['meaning'])
 
+    def test_unknown_wording_is_logged_without_a_provider_attempt(self):
+        self.stack.allow_live=False
+        with patch('urllib.request.urlopen',side_effect=AssertionError('No provider request')):
+            for q in ('Count patients who prefer morning appointments','Count patients who are universally suitable for care'):
+                with self.assertRaises(QuestionNotUnderstood):
+                    conversation.handle_compose(self.stack,{'question':q,'conversation_id':'no-provider'})
+            result=conversation.handle_compose(self.stack,{'question':'Count patients','conversation_id':'no-provider'})
+        self.assertEqual(result['answer']['count'],5)
+        self.assertEqual(result['new_paid_api_calls'],0)
+        with sqlite3.connect(self.path/'conversations.sqlite3') as db:
+            statuses=[json.loads(r[0])['status'] for r in db.execute('SELECT answer_summary FROM turns ORDER BY rowid')]
+        self.assertEqual(statuses,['not_understood','not_understood','answered'])
+
+
     def test_repairable_quote_error_does_not_force_away_from_typed_engines(self):
         q = 'Count patients who are older than 65'
         correct = L.parse(self.catalog, 'Count patients where age > 65')
@@ -349,7 +375,7 @@ class SharedPlanner(unittest.TestCase):
         wrong = copy.deepcopy(correct); wrong['where']['quote'] = 'older than 64'
         model = Mock(side_effect=[(json.dumps(wrong), {}), (json.dumps(correct), {}),
                                   (json.dumps({'equivalent': True, 'issues': []}), {})])
-        result = S.compose(self.stack, q, model=model)
+        result = self.compose_model_fixture(q, model)
         self.assertEqual(result['answer']['count'], 3)
         retry = json.loads(model.call_args_list[1].args[1])['validator_feedback']
         self.assertIn('Repair this specific validation error', retry['instruction'])

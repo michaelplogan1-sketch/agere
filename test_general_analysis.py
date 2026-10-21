@@ -99,11 +99,17 @@ class GeneralAnalysis(unittest.TestCase):
         self.stack.receipts = self.path
         return model
 
-    def test_accepted_answer_is_cached_and_learned_for_same_shape_questions(self):
+    def test_historical_checked_analysis_cache_and_parameter_recompile_remain_compatible(self):
         model = self.hosted([(json.dumps({'analysis': spec()}), {'api_usd': .2, 'api_cost_known': True}),
                              (json.dumps({'equivalent': True, 'issues': []}), {'api_usd': .1, 'api_cost_known': True})])
-        with patch('clinical_core.agere.clinical.nl2sql.HostedModel', return_value=model), \
-             patch('clinical_core.agere.gateway.default_ledger_path', return_value=self.path/'ledger.sqlite3'):
+        def historical_receipt(c,q,**kwargs):
+            # Authored checked receipt for stored-artifact compatibility.
+            # Production creates this receipt only after deterministic decline,
+            # hosted enablement and a successful semantic review.
+            contract, interpretation=fixtures.authored_review_fixture(c,q,model,population=kwargs.get('population'))
+            interpretation['review']='checked_hosted_interpretation'
+            return contract,interpretation
+        with patch.object(S,'checked_interpret',side_effect=historical_receipt):
             first = S.compose(self.stack, Q)
             again = S.compose(self.stack, Q)
             other_year = S.compose(self.stack, Q.replace('2029', '2028'))

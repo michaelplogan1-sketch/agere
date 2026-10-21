@@ -195,11 +195,13 @@ class RequestDiscovery(unittest.TestCase):
                     self.assertTrue(supplied['discovery'])
                     obj = {'equivalent': True, 'issues': []}
                 return json.dumps(obj), {'fixture_no_network': True}
-            # Exercise the real compose/save path. Only the model is a fixture;
-            # no provider request or default/global usage ledger is touched.
-            with patch('clinical_core.agere.clinical.nl2sql.HostedModel', return_value=model), \
-                 patch('clinical_core.agere.gateway.default_ledger_path', return_value=self.path/'test-ledger.sqlite'):
-                result = S.compose(self.stack, q, population=['A','B','C'], planning='frontier')
+            # Isolated authored no-network discovery/acceptance fixture.
+            # Production hosted interpretation requires deterministic decline
+            # and hosted capability enabled on the server.
+            from test_shared_planner import authored_review_fixture
+            with patch.object(S,'checked_interpret',side_effect=lambda c,q,**kw:
+                    authored_review_fixture(c,q,model,population=kw.get('population'))):
+                result = S.compose(self.stack, q, population=['A','B','C'])
             self.assertEqual(result['answer']['status'], 'answered')
             self.assertEqual(result['answer']['patient_ids'], expected)
             self.assertEqual(result['answer']['count'], len(expected))

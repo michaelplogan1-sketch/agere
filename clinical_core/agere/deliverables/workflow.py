@@ -21,7 +21,18 @@ def _file(path, key):
 
 def read(path, key):
     target = _file(path, key)
-    return json.loads(target.read_text()) if target.exists() else {'steps': [], 'synthetic': True}
+    record = json.loads(target.read_text()) if target.exists() else {'steps': [], 'synthetic': True}
+    if record.get('program_links'):
+        steps = []
+        for link in record['steps']:
+            try:
+                child = json.loads(_file(path, link['context_id']).read_text())
+                latest = child['steps'][link['node_index']]
+                steps.append({**latest, **{k: link[k] for k in ('index', 'node_index', 'node_id', 'context_id')}})
+            except (ValueError, KeyError, IndexError, OSError):
+                steps.append({**link, 'status': 'blocked', 'reason': 'Producing workflow is unavailable; open its saved output.'})
+        record['steps'] = steps
+    return record
 
 
 def _save(path, key, record):
@@ -34,6 +45,14 @@ def _save(path, key, record):
 def measurement(answer):
     """Retain actual computed outputs, not an invented intervention outcome."""
     return {k: answer[k] for k in ('status', 'headline', 'count', 'value', 'table', 'sections', 'patient_ids', 'missing') if k in answer}
+
+
+def save_program_workflow(path, key, steps):
+    """Aggregate links for inspection; every effect belongs to its child context."""
+    with _lock:
+        _save(path, key, {'initialized': True, 'synthetic': True, 'context_id': key,
+                         'steps': steps, 'program_links': True, 'external_dispatch_performed': False,
+                         'new_paid_api_calls': 0, 'known_api_estimate_usd': 0, 'api_cost_known': True})
 
 
 def work_measurement(path, context):
@@ -97,7 +116,11 @@ def materialize(path, key, *, allow_live=False, generation=None, send=None):
                 if s.get('origin'):
                     from ..clinical.workflow_contract import validate_selection
                     validate_selection(s)
-                if c['answer'].get('status') != 'answered' or c['answer'].get('missing'):
+                incomplete = c['answer'].get('status') != 'answered' or c['answer'].get('missing')
+                # A local inspection view can show partial evidence and its gaps.
+                # Work and monitoring still require an accepted complete answer.
+                inspection_view = s['kind'] == 'deliverable' and generation == 'local_template'
+                if incomplete and not inspection_view:
                     s.update(status='blocked', reason='Resolve the incomplete analytical answer first.')
                 elif s.get('unresolved'):
                     s.update(status='needs_definition', reason='; '.join(s['unresolved']))
@@ -113,7 +136,8 @@ def materialize(path, key, *, allow_live=False, generation=None, send=None):
                     else:
                         from .mock_views import create
                         d = create(path, {'context_id': key, 'template': s['template'], 'request': s['title']})
-                        reason = 'Local template saved from this exact answer; no frontier generation.'
+                        reason = ('Partial evidence view saved with unresolved requirements; patient work remains blocked.'
+                                  if incomplete else 'Local template saved from this exact answer; no frontier generation.')
                     s.update(status='ready' if d['status'] == 'delivered' else 'blocked', deliverable_id=d['id'],
                              reason=reason, costs=d['costs'], new_paid_api_calls=d.get('new_paid_api_calls', 0))
                 elif s['kind'] == 'simulation':
@@ -176,6 +200,8 @@ def retry_deliverable(path, request, *, allow_live=False, send=None):
         key, index = request['context_id'], request['index']
         A.load(path, key, current=True)
         record = read(path, key)
+        if record.get('program_links'):
+            raise ValueError('Open the producing output workspace to retry its deliverable')
         steps = record['steps']
         if not 0 <= index < len(steps):
             raise ValueError('Saved deliverable not found')
@@ -218,6 +244,8 @@ def refresh(stack, request):
         if c.get('invalidated'):
             raise ValueError('This answer was invalidated. Re-run the original question before checking a monitor.')
         record = read(stack.path, key)
+        if record.get('program_links'):
+            raise ValueError('Open the producing output workspace to check its monitor')
         steps = record['steps']
         if not 0 <= index < len(steps) or steps[index]['kind'] != 'monitor':
             raise ValueError('Saved monitor not found')

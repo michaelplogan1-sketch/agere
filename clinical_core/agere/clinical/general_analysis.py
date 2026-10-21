@@ -114,6 +114,9 @@ For an explicitly requested table of individual patients, set patient_selection 
 {"column":"patient_id","quote":"literal patient-listing clause"}, and return exactly one row per patient with
 the real patient_id. Leave it null for summaries, provider/payer groups or event rows. A patient_id column alone
 does not establish a selected work population. The selected rows retain their detailed evidence columns.
+Include both the listing verb and patient wording in the quote when possible. Literal fragments may be supplied
+as an ordered quote array for discontiguous wording. A patient noun phrase within an explicit listing clause is
+also valid; a count, summary, task recipient or an invented quote cannot authorize patient work.
 Put every requested deliverable, simulated action and monitor in analysis.workflow using the SAME workflow
 contract described above for typed requests. Workflow clauses are separate from analytical requirements; do not
 map creating work or a brief to SQL. Unresolved workflow steps stay explicit without invalidating a complete
@@ -124,6 +127,9 @@ If the user asks to list a population but create work for only a subset, retain 
 and compute a boolean 1/0/NULL output for the work criterion. Bind its exact scope clause in a requirement with
 outputs:["criterion_alias"], then add selection:{"output":"criterion_alias","quote":"that same literal scope clause"}
 to the simulation step. Only 1 creates work; 0 does not and NULL remains unknown. Do not silently act on the full table.
+When a later action refers to the earlier selected patients as "them" or "these patients", its selection quote may
+bind the earlier cohort criterion. Bind that exact criterion to the computed boolean output; do not rewrite the
+action quote to repeat words the user never repeated. Unrelated populations and ambiguous antecedents remain unresolved.
 For explicit task/agent progress or loop closure, add a monitor with mode="work", scope="result", outputs=["work_status"].
 It reads the saved simulated task history, including exceptions and completion, even with an unchanged warehouse.
 It does not measure clinical outcomes or establish successful real care. Use mode="answer" for computed data/outcomes.
@@ -217,7 +223,8 @@ AUDIT_SYSTEM = '''Review a staged warehouse analysis against the ORIGINAL questi
 The clinical owner's governed definitions (reduced EF, current GDMT = picked-up fill within 12 months, maximum
 tolerated dose = below target with documented intolerance/barrier/dose reduction) are correct by definition when
 applied and disclosed; do not flag their use as an issue, but do flag deviations from them.
-as_of is the governed warehouse snapshot date by definition; do not report it as misaligned. Patients whose records
+When provided, as_of is the governed warehouse snapshot date; do not report it as misaligned. An absent as_of
+does not establish a business clock: require an explicit time anchor for relative-date calculations. Patients whose records
 end before a window are a data-currency fact, never proof of current non-use or absence. Check current-state
 judgments against dated direct evidence; missing fills/screens/completions must remain unknown. A recent unrelated
 record does not establish observability of the requested state. Flag CASE/COALESCE/NOT EXISTS that turns absent
@@ -246,6 +253,8 @@ check, not independent qualification.'''
 def _macro_sql(kind, arg, catalog):
     from . import concepts, drug_classes
     if kind == 'as_of':
+        if not catalog.identity.get('as_of'):
+            raise PlanError('Warehouse has no declared as-of date; a relative period needs an explicit business time anchor')
         return "'" + catalog.identity['as_of'] + "'"
     if kind == 'medication_dose':
         from .dose import MEDICATION_DOSE_SQL
@@ -353,11 +362,48 @@ def _words(text):
     return [w for w in re.findall(r"[a-z0-9]+(?:'[a-z]+)?", str(text).lower())]
 
 
+def _patient_listing_quote(question, quote):
+    """Bind a literal patient phrase to listing intent in its original clause.
+
+    Models may quote only the noun phrase, or split a clause across fragments.
+    Inspect the original clause rather than demanding a particular quote shape.
+    Listing intent remains distinct from an aggregate or downstream recipient.
+    """
+    fragments = quote if isinstance(quote, list) else [quote]
+    if not 1 <= len(fragments) <= 12:
+        return False
+    spans, end = [], 0
+    for fragment in fragments:
+        if not isinstance(fragment, str) or not fragment.strip():
+            return False
+        start = question.find(fragment, end)
+        if start < 0:
+            return False
+        end = start + len(fragment)
+        spans.append((start, end))
+    # Quote fragments must refer to the patient noun in a listing clause, not
+    # merely to a verb elsewhere in the question or to a downstream program.
+    listing = r'\b(?:list|show|find|identify|select|return|which)\b[^;.!?]*?' + _PATIENT_NOUN + r'|\b(?:each|per)\s+patient\b'
+    aggregate = r'\b(?:count|counts|number|total|totals|average|mean|median|percentage|percent|proportion|rate|rates|summary|summarize|distribution|how\s+many)\b'
+    for match in re.finditer(listing, question, re.I):
+        if re.search(r"\b(?:not|never|don't|doesn't|shouldn't|mustn't)\s+$", question[:match.start()], re.I):
+            continue
+        if re.search(aggregate, match.group(), re.I):
+            continue
+        people = list(re.finditer(_PATIENT_NOUN, match.group(), re.I))
+        if any(start < match.start() + p.end() and end > match.start() + p.start()
+               for start, end in spans for p in people):
+            return True
+    return False
+
+
 def uncovered(question, quotes):
+    from .request_plan import without_request_scaffolding
     covered = set()
     for q in quotes:
         covered |= set(_words(q))
-    return sorted({w for w in _words(question) if w not in _FUNCTION_WORDS and len(w) > 1 and w not in covered})
+    return sorted({w for w in _words(without_request_scaffolding(question))
+                   if w not in _FUNCTION_WORDS and len(w) > 1 and w not in covered})
 
 
 def _inspect(catalog, query, population, *, trace=None):
@@ -477,6 +523,47 @@ def prepare(catalog, question, spec, *, population=None, relaxed=False):
             query = 'WITH ' + ', '.join(scoped) + (', ' + query[4:].lstrip() if query.startswith('WITH ') else ' ' + query)
             trace = {}
             sources, columns = _inspect(catalog, query, population, trace=trace)
+    selection = spec.get('patient_selection')
+    if selection is not None:
+        valid_selection = (isinstance(selection, dict) and set(selection) == {'column', 'quote'}
+                           and returns == 'table' and selection['column'] == 'patient_id'
+                           and 'patient_id' in columns and _patient_listing_quote(question, selection['quote']))
+        if not valid_selection:
+            reason = ('Patient work needs a literal individual-patient listing clause and a patient_id column. '
+                      'Use the original listing wording, including its verb and patient phrase, or ordered literal fragments.')
+            if not relaxed:
+                raise PlanError(reason)
+            # The final recovery path can still show compiled observations. An
+            # invalid action binding must not erase them or confer work authority.
+            unresolved = [*unresolved, {'quote': question, 'reason': reason +
+                          ' Analytical results are retained; patient work is blocked pending a valid selection.'}]
+            selection = None
+    for r in requirements:
+        if 'outputs' in r and (not isinstance(r['outputs'], list) or any(o not in columns for o in r['outputs'])):
+            raise PlanError('Requirement outputs must name final result columns')
+    from .workflow_contract import validate as validate_workflow
+    workflow_bindings = dict(outputs=columns, patient_selection=selection,
+                             output_quotes=[r['quote'] for r in requirements if r.get('outputs')],
+                             output_bindings={o: [r['quote'] for r in requirements if o in r.get('outputs', [])] for o in columns})
+    try:
+        validate_workflow(workflow, question, **workflow_bindings)
+    except PlanError:
+        if not relaxed:
+            raise
+        # Final recovery preserves compiled observations and valid inspection
+        # views, while explicitly recording every action that cannot compile.
+        retained = []
+        for step in workflow:
+            try:
+                if len(workflow) > 8:
+                    raise PlanError('A request supports up to eight explicit downstream steps')
+                validate_workflow([step], question, **workflow_bindings)
+                retained.append(step)
+            except PlanError as exc:
+                anchor = step['quote'][0] if isinstance(step['quote'], list) else step['quote']
+                unresolved = [*unresolved, {'quote': anchor,
+                              'reason': 'Requested workflow step was not compiled and will not execute: ' + str(exc)}]
+        workflow = retained
     from .analysis_evidence import assess
     evidence = assess(requirements, unresolved, names, final, trace, sources)
     disconnected = [r for r in evidence['requirements'] if r['status'] == 'not_executed']
@@ -484,25 +571,6 @@ def prepare(catalog, question, spec, *, population=None, relaxed=False):
         raise PlanError('; '.join(r['quote'] + ': ' + r['reason'] for r in disconnected))
     if disconnected:
         unresolved = evidence['gaps']
-    for r in requirements:
-        if 'outputs' in r and (not isinstance(r['outputs'], list) or any(o not in columns for o in r['outputs'])):
-            raise PlanError('Requirement outputs must name final result columns')
-    from .workflow_contract import validate as validate_workflow
-    validate_workflow(workflow, question, outputs=columns,
-                      output_quotes=[r['quote'] for r in requirements if r.get('outputs')],
-                      output_bindings={o: [r['quote'] for r in requirements if o in r.get('outputs', [])] for o in columns})
-    selection = spec.get('patient_selection')
-    if selection is not None:
-        valid = (isinstance(selection, dict) and set(selection) == {'column', 'quote'} and returns == 'table'
-                 and selection['column'] == 'patient_id' and 'patient_id' in columns
-                 and isinstance(selection['quote'], str) and selection['quote'].strip()
-                 and _norm(selection['quote']) in _norm(question)
-                 and re.search(_PATIENT_NOUN, selection['quote'], re.I)
-                 and not re.search(r'\b(?:how many|number of|count of|percent|proportion|rate of|average|total)\b', selection['quote'], re.I))
-        if not valid and relaxed:
-            selection = None  # the answer still ships; it simply does not authorize patient work
-        elif not valid:
-            raise PlanError('Patient table selection needs a literal question phrase naming the patients and a patient_id column')
     body = {'kind': 'general_analysis', 'version': VERSION, 'original_question': question,
             'analysis': {'steps': [{'name': n, 'purpose': s.get('purpose', ''), 'sql': s['sql']} for n, s in zip(names, steps)],
                          'final': final, 'returns': returns, 'requirements': requirements,
@@ -555,9 +623,12 @@ def checks(stack, contract, report):
             issues.append('An explicit patient table must contain exactly one row per patient with a nonempty patient_id.')
     db = sqlite3.connect(f'file:{_target(stack)}?mode=ro', uri=True)
     try:
-        roster = db.execute('SELECT COUNT(*) FROM patient').fetchone()[0]
+        tables = dict(db.execute("SELECT name,type FROM sqlite_master WHERE type IN ('table','view')"))
+        roster = db.execute('SELECT COUNT(*) FROM patient').fetchone()[0] if 'patient' in tables else None
         ids = report.get('patient_ids') or [r.get('patient_id') for r in report.get('rows', []) if isinstance(r, dict) and r.get('patient_id')]
-        if ids:
+        if ids and roster is None:
+            issues.append('Patient output cannot be verified: this warehouse has no patient roster.')
+        elif ids:
             unknown = [p for p in set(ids) if not db.execute('SELECT 1 FROM patient WHERE patient_id=?', (p,)).fetchone()]
             if unknown:
                 issues.append(f'{len(unknown)} returned patient ids are not on the roster.')
@@ -566,13 +637,10 @@ def checks(stack, contract, report):
     value = report.get('value')
     if contract['returns'] == 'count' and isinstance(value, int):
         if value < 0: issues.append('Negative count.')
-        if re.search(r'(?i)count\s*\(\s*distinct\s+[a-z_.]*patient_id', contract['query']) and value > roster:
+        if roster is not None and re.search(r'(?i)count\s*\(\s*distinct\s+[a-z_.]*patient_id', contract['query']) and value > roster:
             issues.append(f'Distinct patients ({value}) exceed the roster ({roster}); a join multiplied rows.')
-    for row in report.get('rows', [])[:5000]:
-        for k, v in row.items():
-            if isinstance(v, (int, float)) and re.search(r'(?i)(pct|percent|rate)', k) and not -1e-9 <= v <= 100 + 1e-9:
-                issues.append(f'{k}={v} is outside 0-100.')
-                break
+    # Numeric bounds belong to a measure's declared semantics, not its alias.
+    # Growth percentages and event rates can legitimately exceed 100.
     if contract['returns'] in ('table', 'patient_set') and report.get('row_count') == 0:
         notes.append('No rows matched. This is an observed empty result, not established clinical absence.')
     if contract['returns'] == 'count' and value == 0:
@@ -625,6 +693,7 @@ def execute(stack, question, graph, receipt, *, population=None, parent=None, st
     if audit and (not audit.get('equivalent') or audit.get('issues')):
         issues += audit.get('issues') or ['Review could not establish that the analysis matches the question.']
     missing = [f"{u['quote']}: {u['reason']}" for u in contract['analysis']['unresolved']] + issues
+    computation_complete = not missing
     accepted = bool(interpretation.get('execution_accepted'))
     if not accepted:
         missing.append('This interpretation was not accepted by review; it is shown as a candidate answer.')
@@ -701,6 +770,7 @@ def execute(stack, question, graph, receipt, *, population=None, parent=None, st
               'planning_economics': economics(receipt) if economics else None,
               'elapsed_seconds': time.perf_counter() - started,
               'clinical_execution_authorized': False, 'execution_snapshot': execution_snapshot,
+              'computation_complete': computation_complete,
               'workflow': [{'index': i, **s, 'status': 'needs_definition' if s['unresolved'] else 'planned'}
                            for i, s in enumerate(contract['analysis'].get('workflow', []))]}
     if parent:
@@ -717,7 +787,7 @@ def execute(stack, question, graph, receipt, *, population=None, parent=None, st
     from .learning import feedback_identity, correction_context
     if correction_context(stack.path, question) and receipt.get('feedback_identity') != feedback_identity(stack.path, question):
         raise PlanError('Relevant feedback changed; recheck the question before accepting this answer')
-    if answer['status'] == 'answered' and accepted and interpretation.get('interpreter') != 'learned_analysis_shape':
+    if answer['status'] == 'answered' and accepted and interpretation.get('interpreter') != 'learned_analysis_shape' and not receipt.get('program_origin'):
         shape = save_shape(stack.path, contract, receipt.get('policy_identity'), interpretation)
         if shape: result['learned_analysis_shape'] = shape
     return result

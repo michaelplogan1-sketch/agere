@@ -48,7 +48,8 @@ def relation_values(catalog, *, seconds=1.0, total_seconds=30.0):
     try:
         db.execute('PRAGMA query_only=ON')
         # Checked on every call: a cached scan is never served for a stale catalog.
-        if dict(db.execute('SELECT key,value FROM meta')) != catalog.identity:
+        from .request_plan import warehouse_metadata
+        if warehouse_metadata(catalog.target, db) != catalog.identity:
             raise PlanError('Warehouse identity changed before value discovery')
         if key in _VALUE_CACHE:
             return _VALUE_CACHE[key]
@@ -283,7 +284,8 @@ def probe(catalog, spec, *, population=None, seconds=2.0):
     db = sqlite3.connect(f'file:{catalog.target}?mode=ro', uri=True)
     try:
         db.execute('PRAGMA query_only=ON')
-        if dict(db.execute('SELECT key,value FROM meta')) != catalog.identity:
+        from .request_plan import warehouse_metadata
+        if warehouse_metadata(catalog.target, db) != catalog.identity:
             raise PlanError('Warehouse identity changed before evidence discovery')
         db.set_progress_handler(lambda: int(time.monotonic() - start > seconds), 1000)
         db.row_factory = sqlite3.Row

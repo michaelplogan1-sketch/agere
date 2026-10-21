@@ -364,7 +364,7 @@ def is_followup(text):
     return bool(FOLLOWUP_MARKERS.search(low)) or len(_words(low)) <= 4
 
 
-def requires_saved_cohort(question):
+def requires_saved_cohort(question, catalog=None):
     """Detect an external reference, not every occurrence of a pronoun.
 
     A named population followed by a linked clause supplies a local antecedent,
@@ -386,6 +386,11 @@ def requires_saved_cohort(question):
                   'clinician', 'clinicians', 'physician', 'physicians', 'provider', 'providers',
                   'practice', 'practices', 'hospital', 'hospitals', 'facility', 'facilities',
                   'payer', 'payers', 'contract', 'contracts'))
+    if catalog is not None:
+        # New warehouse entities can introduce a local antecedent too. This
+        # selects context only; the unchanged request still requires review.
+        nouns.update(t.replace('_', ' ') for t in catalog.tables)
+        nouns.update(t.replace('_', ' ') + 's' for t in catalog.tables)
     antecedent = re.search(r'\b(?:' + '|'.join(re.escape(n) for n in sorted(nouns, key=len, reverse=True))
                            + r')\b', text[:reference.start()])
     if antecedent is None:
@@ -615,6 +620,9 @@ def handle_compose(stack, body, hosted_factory=None):
         from .question_input import QuestionNotUnderstood
         from ..deliverables import answer_context
         refers = requires_saved_cohort(question)
+        if refers and getattr(stack, 'shared_request_planning', False) is True:
+            from .request_plan import Catalog
+            refers = requires_saved_cohort(question, Catalog.load(stack.path))
         if conv is False:
             if refers:
                 raise QuestionNotUnderstood('This question refers to a previous cohort. Open that conversation or ask a complete question; no whole-population substitution was run.')
@@ -706,11 +714,17 @@ def handle_compose(stack, body, hosted_factory=None):
         result = {**result, 'planning_economics': econ, 'new_paid_api_calls': (result.get('new_paid_api_calls') or 0) + hosted_calls}
     from ..deliverables import answer_context
     try:
+        if result.get('program_results'):
+            from . import request_program
+            request_program.materialize(stack, result)
         action_context = answer_context.capture(stack.path, resolution['standalone'] if resolution else question,
                                                 result, original_question=question)
         if action_context:
             result = {**result, 'action_context': action_context}
-            if result.get('workflow'):
+            if result.get('workflow') and result.get('program_results'):
+                from ..deliverables.workflow import save_program_workflow
+                save_program_workflow(stack.path, action_context['id'], result['workflow'])
+            elif result.get('workflow'):
                 from ..deliverables.workflow import materialize
                 delivered = materialize(stack.path, action_context['id'],
                                         generation='frontier', allow_live=bool(getattr(stack, 'allow_live', False)))

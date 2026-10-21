@@ -13,8 +13,42 @@ FIELDS = {
 }
 
 
-def validate(steps, question, *, outputs=(), output_quotes=(), output_bindings=None):
-    from .request_plan import PlanError, quote_text
+def _refers_to_selected_patients(question, action_quote, criterion_quote, patient_selection):
+    """Resolve an explicit recipient pronoun to a single earlier patient list.
+
+    The caller has validated the patient table. This only connects literal
+    source spans; the computed criterion and semantic review remain required.
+    """
+    from .request_plan import quote_text
+    if not patient_selection or not re.search(
+            r'\b(?:them|(?:these|those)\s+(?:patients|members|people|individuals)|(?:this|that)\s+(?:cohort|population))\b',
+            quote_text(action_quote), re.I):
+        return False
+    fragments = patient_selection['quote']
+    fragments = fragments if isinstance(fragments, list) else [fragments]
+    if not fragments or any(not isinstance(s, str) or not s for s in fragments):
+        return False
+    start, end = None, 0
+    for fragment in fragments:
+        position = question.find(fragment, end)
+        if position < 0:
+            return False
+        start = position if start is None else start
+        end = position + len(fragment)
+    action_fragment = action_quote[0] if isinstance(action_quote, list) else action_quote
+    action_start = question.find(action_fragment)
+    criterion_start = question.find(criterion_quote, start)
+    if criterion_start < start or criterion_start + len(criterion_quote) > action_start or end > action_start:
+        return False
+    # Another explicit patient list makes the antecedent ambiguous. Do not
+    # resolve a pronoun by choosing a cohort merely because it was supplied.
+    intervening = question[end:action_start]
+    return not re.search(r'\b(?:list|show|find|identify|select|return|which)\b[^;.!?]*\b(?:patients|members|people|individuals)\b',
+                         intervening, re.I)
+
+
+def validate(steps, question, *, outputs=(), output_quotes=(), output_bindings=None, patient_selection=None):
+    from .request_plan import PlanError, quote_text, without_request_scaffolding
     if not isinstance(steps, list) or len(steps) > 8:
         raise PlanError('A request supports up to eight explicit downstream steps')
     for step in steps:
@@ -43,9 +77,11 @@ def validate(steps, question, *, outputs=(), output_quotes=(), output_bindings=N
         if selection is not None:
             if (not isinstance(selection, dict) or set(selection) != {'output', 'quote'}
                     or selection.get('output') not in outputs or not isinstance(selection.get('quote'), str)
-                    or not selection['quote'].strip() or selection['quote'] not in question
-                    or selection['quote'] not in quote):
+                    or not selection['quote'].strip() or selection['quote'] not in question):
                 raise PlanError('Work selection needs a computed boolean output and its literal scope clause')
+            if selection['quote'] not in quote and not _refers_to_selected_patients(
+                    question, step['quote'], selection['quote'], patient_selection):
+                raise PlanError('Work selection must be in the action clause or refer to its explicit earlier patient list')
             bound = (output_bindings or {}).get(selection['output'], [])
             if not any(selection['quote'] in q for q in bound):
                 raise PlanError('Work selection must bind to the analytical requirement computing that output')
@@ -61,8 +97,8 @@ def validate(steps, question, *, outputs=(), output_quotes=(), output_bindings=N
                           'outreach follow up followup program programme review task tasks queue '
                           'enroll enrol enrollment signup sign help '
                           'interactive command center centre dashboard view report brief briefing '
-                          'team care clinical evidence source explorer custom pharmd rpm titration remote monitoring '
-                          'pharmacist pharmacy medication decision work up with').split())
+                          'team care clinical evidence source explorer custom pharmd rpm titration remote monitoring virtual '
+                          'pharmacist pharmacy medication medications med meds decision work up with').split())
             if step['kind'] == 'deliverable':
                 # Bounded presentation vocabulary only. New analytical facts,
                 # filters, dates and calculations must still bind upstream.
@@ -71,7 +107,7 @@ def validate(steps, question, *, outputs=(), output_quotes=(), output_bindings=N
                                'compact spacious layout column columns sidebar card cards tab tabs '
                                'light dark theme navy blue green typography font fonts '
                                'presentation style styled with using html deliverable scoreboard').split())
-            extra = set(re.findall(r'\w+', quote.lower())) - syntax - selection_words
+            extra = set(re.findall(r'\w+', without_request_scaffolding(quote).lower())) - syntax - selection_words
             if extra:
                 step['unresolved'].append('Downstream wording needs an explicit scope or deliverable definition: '+', '.join(sorted(extra))+
                                           '. The analytical answer is preserved; this step will not execute.')
