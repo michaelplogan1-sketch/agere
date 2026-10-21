@@ -25,7 +25,27 @@ SOURCES = {
     'payer medical claims': ('payer_claim', ('counts_in_metrics', 1)),
     'provider medical claims': ('claim', ('claim_source', 'medical_claims')),
     'diabetics': ('patient', ('condition', 'diabetes')),
+    'women': ('patient', ('sex_reported', 'F')), 'men': ('patient', ('sex_reported', 'M')),
+    'female patients': ('patient', ('sex_reported', 'F')), 'male patients': ('patient', ('sex_reported', 'M')),
 }
+# Received evidence a patient can have or lack: (pattern, table, date field, fixed predicates). Values are the
+# warehouse's own codes; each pattern names one kind of record, never a whole question.
+LAB_WORDS = r'(?P<lab>hba1c|a1c|hemoglobin a1c|egfr|uacr|urine albumin[- ]creatinine ratio|urine acr|phq-?9|ldl)'
+LAB_CONCEPTS = {'hba1c': 'hba1c', 'a1c': 'hba1c', 'hemoglobin a1c': 'hba1c', 'egfr': 'egfr', 'uacr': 'uacr',
+                'urine albumin-creatinine ratio': 'uacr', 'urine albumin creatinine ratio': 'uacr', 'urine acr': 'uacr',
+                'phq-9': 'phq9', 'phq9': 'phq9', 'ldl': 'ldl'}
+EVIDENCE = [
+    (LAB_WORDS + r'(?:\s+(?:tests?|results?|scores?|values?|readings?))?(?:\s+recorded)?', 'measurement', 'event_date', None),
+    (r'(?:flu|influenza)\s+(?:shots?|vaccines?|vaccinations?|immunizations?)', 'immunization', 'event_date',
+     [('vaccine', 'in', ['influenza', 'influenza high-dose']), ('status', '=', 'completed')]),
+    (r'pneumococcal\s+(?:vaccines?|vaccinations?|shots?)', 'immunization', 'event_date',
+     [('vaccine', 'like', 'pneumococcal%'), ('status', '=', 'completed')]),
+    (r'mammograms?', 'cancer_screening', 'event_date', [('test', '=', 'bilateral_screening_mammography')]),
+    (r'(?:annual wellness visits?|awvs?)', 'wellness_visit', 'event_date', [('awv', '=', 1)]),
+]
+NEEDS = {'food insecurity': 'food', 'food': 'food', 'transportation needs': 'transport', 'transportation barriers': 'transport',
+         'transportation': 'transport', 'transport': 'transport', 'housing instability': 'housing', 'housing': 'housing',
+         'utilities': 'utilities', 'safety': 'safety'}
 FIELDS = {
     'age': 'patient.age', 'sex': 'patient.sex_reported',
     'pcp': 'patient.pcp_clinician_id', 'practice': 'patient.pcp_practice_id',
@@ -40,10 +60,17 @@ CLOCKS = {'utilization_event': 'event_date', 'visit': 'event_date', 'stay': 'adm
           'appointment': 'scheduled_date', 'medication': 'event_date',
           'measurement': 'event_date', 'condition': 'event_date', 'record': 'event_date',
           'claim_adjudication': 'event_date', 'member_month': 'month'}
-CONDITION_ALIASES = {'diabetes': 'diabetes', 'ckd': 'chronic_kidney_disease', 'chronic kidney disease': 'chronic_kidney_disease',
+CONDITION_ALIASES = {'coronary disease': 'coronary_artery_disease', 'cad': 'coronary_artery_disease',
+                     'a prior heart attack': 'myocardial_infarction', 'prior heart attack': 'myocardial_infarction',
+                     'a heart attack': 'myocardial_infarction', 'heart attack': 'myocardial_infarction',
+                     'atrial fibrillation': 'atrial_fibrillation', 'afib': 'atrial_fibrillation',
+                     'diabetes': 'diabetes', 'ckd': 'chronic_kidney_disease', 'chronic kidney disease': 'chronic_kidney_disease',
                      'heart failure': 'heart_failure', 'hypertension': 'hypertension',
                      'copd': 'copd', 'asthma': 'asthma'}
 DRUG_ALIASES = {'a statin': ['statin'], 'statins': ['statin'], 'statin': ['statin'],
+                'beta-blocker': ['beta_blocker', 'hf_evidence_based_beta_blocker'],
+                'beta blocker': ['beta_blocker', 'hf_evidence_based_beta_blocker'],
+                'sglt2 inhibitor': ['sglt2_inhibitor'], 'sglt2': ['sglt2_inhibitor'],
                 'an ace inhibitor or arb': ['ace_inhibitor', 'arb'],
                 'ace inhibitor or arb': ['ace_inhibitor', 'arb'],
                 'acei/arb': ['ace_inhibitor', 'arb'], 'ace inhibitor': ['ace_inhibitor'],
@@ -242,6 +269,88 @@ class Parser:
             tail = tail[match.end():]
         return value, tail
 
+    NEGATED_LEAD = (r"(?:(?:have|has|had)\s+(?:had\s+)?no|with\s+no|no|(?:did|do|does)\s+not\s+(?:get|have|receive)|didn't\s+(?:get|have|receive)|"
+                    r"(?:have|has)\s+not\s+had|(?:have|has)\s+never\s+(?:had|received)|never\s+(?:had|received|got)|missed|"
+                    r"(?:are|were|is)\s+missing|missing|without)")
+    POSITIVE_LEAD = r"(?:(?:have|has)\s+(?:had|ever\s+received|received)|had|have|has|with|got|received|ever\s+received)"
+
+    def window(self, text, table, field):
+        """A trailing window, calendar year, flu season or 'on record' after a piece of evidence."""
+        m = re.match(r'^\s+(?:in|during|within)\s+the\s+(?:last|past)\s+(\d+)\s+months\b', text, re.I)
+        if m: return [atom(f'{table}.{field}', 'within_last_months', int(m[1]), m.group().strip())], text[m.end():]
+        m = re.match(r'^\s+in\s+the\s+(?:last|past)\s+year\b', text, re.I)
+        if m: return [atom(f'{table}.{field}', 'within_last_months', 12, m.group().strip())], text[m.end():]
+        m = re.match(r'^\s+(?:in|during|for)\s+the\s+(20\d\d)-(20\d\d)\s+(?:flu\s+)?season\b', text, re.I)
+        if m and table == 'immunization' and 'season' in self.catalog.tables.get(table, []):
+            return [atom('immunization.season', '=', f'{m[1]}-{m[2]}', m.group().strip())], text[m.end():]
+        m = re.match(r'^\s+(?:in|during)\s+(20\d\d)\b', text, re.I)
+        if m:
+            y = int(m[1]); q = m.group().strip()
+            return [atom(f'{table}.{field}', '>=', f'{y}-01-01', q), atom(f'{table}.{field}', '<', f'{y+1}-01-01', q)], text[m.end():]
+        m = re.match(r'^\s+(?:on\s+(?:record|file)|ever)\b', text, re.I)
+        return ([], text[m.end():]) if m else ([], text)
+
+    def thing(self, text):
+        """(table, date field, fixed atoms, quote, tail) for one named kind of received evidence."""
+        text = re.sub(r'^(?:an?|any|a recorded)\s+', '', text, flags=re.I) if re.match(r'^(?:an?|any|a recorded)\s+', text, re.I) else text
+        for pattern, table, field, fixed in EVIDENCE:
+            if table not in self.catalog.tables: continue
+            m = re.match(pattern + r'\b', text, re.I)
+            if not m: continue
+            quote = m.group()
+            atoms = [atom(f'{table}.{c}', op, v, quote) for c, op, v in (fixed or [])]
+            if table == 'measurement':
+                key = re.sub(r'\s+', ' ', m.group('lab').lower())
+                atoms = [atom('measurement.concept', '=', LAB_CONCEPTS.get(key, LAB_CONCEPTS.get(key.replace('-', ''))), quote)]
+            return table, field, atoms, quote, text[m.end():]
+        drug = re.match(r'^(.+?)\s+(?:fills?|filled|prescription fills?)\b', text, re.I)
+        if drug and 'fill' in self.catalog.tables:
+            got = self.prefix(drug[1], self.drugs)
+            if got and not got[2].strip():
+                return 'fill', 'fill_date', [atom('fill.drug_class', 'in', got[1], drug.group())], drug.group(), text[drug.end():]
+        return None
+
+    def evidence(self, text):
+        """Having or lacking received evidence (a lab, vaccine, screening, fill, visit or social-need screen)."""
+        if self.base != 'patient': return None
+        start = text
+        social = re.match(r'^(?:(?:have|has|had)\s+)?screened\s+(positive\s+)?for\s+', text, re.I)
+        if social and 'social_need' in self.catalog.tables:
+            got = self.prefix(text[social.end():], NEEDS)
+            if got:
+                quote = text[:len(text) - len(got[2])].strip()
+                atoms = [atom('social_need.need', '=', got[1], quote)]
+                if social[1]: atoms.append(atom('social_need.positive', '=', 1, quote))
+                return related('social_need', combine('and', atoms, quote), quote), got[2]
+        neither = re.match(r'^(?:(?:have|has|had)\s+)?neither\s+', text, re.I)
+        if neither:
+            first = self.thing(text[neither.end():])
+            nor = re.match(r'^\s+nor\s+', first[4]) if first else None
+            second = self.thing(first[4][nor.end():]) if nor else None
+            if second:
+                win1, tail = self.window(second[4], first[0], first[1])
+                win2, _ = self.window(second[4], second[0], second[1])
+                quote = start[:len(start) - len(tail)].strip()
+                first[2][0] = {**first[2][0], 'quote': [neither.group().strip(), first[2][0]['quote']]}
+                second[2][0] = {**second[2][0], 'quote': [nor.group().strip(), second[2][0]['quote']]}
+                parts = [{'op': 'not', 'arg': related(t, combine('and', atoms + win, quote), quote), 'quote': quote}
+                         for (t, _, atoms, _, _), win in ((first, win1), (second, win2))]
+                return combine('and', parts, quote), tail
+        lead = re.match(r'^' + self.NEGATED_LEAD + r'\s+', text, re.I)
+        negated = bool(lead)
+        if not lead: lead = re.match(r'^' + self.POSITIVE_LEAD + r'\s+', text, re.I)
+        found = self.thing(text[lead.end():] if lead else text)
+        if not found or (not lead and not found): return None
+        if not lead: return None  # bare nouns stay with the relational grammar
+        table, field, atoms, _, after = found
+        win, tail = self.window(after, table, field)
+        quote = start[:len(start) - len(tail)].strip()
+        # Verbs and 'on record' carry no constraint of their own; bind them to the evidence leaf they introduce.
+        spare = [s for s in (lead.group().strip(), after[:len(after) - len(tail)].strip() if not win else '') if s]
+        atoms[0] = {**atoms[0], 'quote': [*spare, *([atoms[0]['quote']] if isinstance(atoms[0]['quote'], str) else atoms[0]['quote'])]}
+        value = related(table, combine('and', atoms + win, quote), quote)
+        return ({'op': 'not', 'arg': value, 'quote': quote} if negated else value), tail
+
     def parse(self):
         text = self.question.strip().rstrip('?.').strip()
         governed = self.governed(text)
@@ -276,6 +385,12 @@ class Parser:
               'sum' if verb in ('total', 'sum', 'what is the total', 'what was the total') else 'count')
         field_name, source = None, None
         rest = re.sub(r'^(?:all|the|our)\s+', '', rest, flags=re.I)
+        # Adjectives before the population noun ("living Medicaid patients") are filters on that population.
+        modifiers = []
+        while fn not in ('sum', 'avg'):
+            m = re.match(r'^(living|alive|deceased|medicaid|medicare|commercial)\s+', rest, re.I)
+            if not m: break
+            modifiers.append(m[1]); rest = rest[m.end():]
         if fn in ('sum', 'avg'):
             # A field name may itself contain "of" (e.g. length of stay).
             # Resolve the catalog field and source together instead of splitting
@@ -302,6 +417,13 @@ class Parser:
             else:
                 field_text, rest, field_name = split
         source = source or self.prefix(rest, self.sources)
+        if not source:
+            # "<condition> patients" names the patients with that condition.
+            named = self.prefix(rest, self.conditions)
+            people = re.match(r'^(?:patients|members)\b', named[2], re.I) if named else None
+            if people:
+                quote = rest[:len(rest) - len(named[2])].strip()  # 'patients' itself carries no constraint
+                source = (quote, ('patient', ('condition', named[1])), named[2][people.end():])
         if front_source and fn not in ('sum','avg'):
             raise PlanError('Use an explicit measure for a fronted source scope')
         if not source and self.bound:
@@ -317,6 +439,11 @@ class Parser:
                            if field == 'condition' else atom(self.base+'.'+field, '=', value, source_quote))
         where, tail = self.expression(rest)
         if tail.strip(): raise PlanError('Unconsumed request: '+tail)
+        if modifiers and self.base != 'patient': raise PlanError('Population adjectives apply to patients: ' + ' '.join(modifiers))
+        for word in modifiers:
+            value, left = self.one(word)
+            if value is None or left.strip(): raise PlanError('Unrecognized population adjective: ' + word)
+            where = combine('and', [value, where], self.question)
         where = combine('and', [base_filter, where], self.question)
         self.bind_parent_quotes(where)
         measures = [{'kind': 'field', 'field': field, 'alias': field.split('.')[-1], 'quote': word}
@@ -491,7 +618,9 @@ class Parser:
             value, tail = self.expression(text[1:])
             if not tail.startswith(')'): raise PlanError('Unclosed predicate group')
             return value, tail[1:]
-        neg = re.match(r'^(?:not|without|excluding|exclude)\s+', text, re.I)
+        evidence = self.evidence(text)
+        if evidence: return evidence
+        neg = re.match(r"^(?:not|without|excluding|exclude|(?:do|does)\s+not|don't|doesn't)\s+", text, re.I)
         if neg:
             child, tail = self.one(text[neg.end():])
             if child is None: raise PlanError('Missing negated predicate')
@@ -508,6 +637,20 @@ class Parser:
         if coverage:
             quote, value, tail = coverage
             return atom('patient.coverage_type', '=', value, quote), re.sub(r'^\s*(?:patients|members)\b', '', tail, flags=re.I)
+        if self.base == 'patient' and 'death' in self.catalog.tables:
+            alive = re.match(r'^(?:living|alive|still alive|(?:who\s+)?are\s+(?:still\s+)?alive)\b(?:\s+(?:patients|members))?', text, re.I)
+            if alive:
+                return {'op': 'not', 'arg': related('death', None, alive.group()), 'quote': alive.group()}, text[alive.end():]
+            died = re.match(r'^(?:who\s+)?died\b', text, re.I)
+            if died: return related('death', None, died.group()), text[died.end():]
+        explicit = self.base == 'patient' or bool(re.match(r'^(?:among|for) (?:the )?(?:patients|members)\b', start, re.I))
+        ranged = re.match(r'^aged?\s+(\d+)\s*(?:to|-|\u2013|through)\s*(\d+)\b', text, re.I)
+        if ranged and explicit:
+            quote = ranged.group()
+            return combine('and', [atom('patient.age', '>=', int(ranged[1]), quote), atom('patient.age', '<=', int(ranged[2]), quote)], quote), text[ranged.end():]
+        older = re.match(r'^(?:aged?\s+)?(\d+)\s*(?:\+|(?:and|or)\s+(?:older|over|above))', text, re.I)
+        if older and explicit:
+            return atom('patient.age', '>=', int(older[1]), older.group()), text[older.end():]
         deceased = re.match(r'^deceased(?:\s+(?:patients|members))?\b', text, re.I)
         if deceased and 'current_record' in self.catalog.tables and 'death_records' in self.catalog.stream_fields:
             quote = deceased.group()
@@ -517,8 +660,17 @@ class Parser:
         concept = self.prefix(concept_text, self.conditions)
         if concept:
             quote, concept_id, tail = concept
+            names = [concept_id]
+            # "coronary disease or a prior heart attack": one condition population, not a boolean over clauses.
+            while True:
+                more = re.match(r'^\s*or\s+(?:with\s+)?', tail, re.I)
+                other = self.prefix(tail[more.end():], self.conditions) if more else None
+                if not other: break
+                names.append(other[1]); tail = other[2]
             quote = text[:len(text)-len(tail)].strip()
-            return self.concept_period(self.condition(concept_id, quote), tail)
+            value = self.condition(concept_id, quote)
+            if len(names) > 1: value['names'] = list(dict.fromkeys(n for n in names))
+            return self.concept_period(value, tail)
         med = re.match(r'^(?:on|taking|receiving|prescribed|filled|dispensed)\s+', text, re.I)
         if med:
             got = self.prefix(text[med.end():], self.drugs)

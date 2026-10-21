@@ -169,11 +169,15 @@ class AnswerWorkflow(unittest.TestCase):
 
     def test_ambiguous_boolean_scope_does_not_fall_back_to_model_guess(self):
         model=Mock(side_effect=AssertionError('Ambiguity must remain explicit'))
-        with self.assertRaises(QuestionNotUnderstood):
-            S.compose(self.stack,'List patients over 65 with diabetes or CKD',model=model)
-        model.assert_not_called()
+        # "with diabetes or CKD" is one condition group under "with" (2026-10-21): over 65 and (diabetes or CKD).
+        grouped=S.compose(self.stack,'List patients over 65 with diabetes or CKD',model=model)
         r=S.compose(self.stack,'List patients over 65 and (diabetes or CKD)',model=model)
         self.assertEqual(r['answer']['patient_ids'],['A','C','OUTSIDE'])
+        self.assertEqual(grouped['answer']['patient_ids'],r['answer']['patient_ids'])
+        # A genuinely mixed AND/OR over different kinds of predicates still needs parentheses.
+        with self.assertRaises(QuestionNotUnderstood):
+            S.compose(self.stack,'List patients over 65 and diabetes or age < 30',model=model)
+        model.assert_not_called()
 
     def test_briefing_failure_isolated_and_each_card_reopens_exact_answer(self):
         with patch.object(chief_staff,'CHECKS',[

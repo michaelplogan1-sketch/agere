@@ -189,7 +189,7 @@ class Compiler:
                 raise PlanError('An OR requires its original disjunction')
             return '(' + (' AND ' if op == 'and' else ' OR ').join(self.predicate(x, scope, f'{path}.args.{i}', depth+1) for i, x in enumerate(expr['args'])) + ')'
         if op == 'not':
-            if set(expr) != {'op', 'arg', 'quote'} or not re.search(r'\b(not|no|without|exclude|excluding|except|neither)\b', quote_text(expr['quote']), re.I):
+            if set(expr) != {'op', 'arg', 'quote'} or not re.search(r'\b(not|no|without|exclude|excluding|except|neither|nor|never|missing|missed|living|alive|didn)\b', quote_text(expr['quote']), re.I):
                 raise PlanError('Negation must be explicit in the original request')
             return '(NOT ' + self.predicate(expr['arg'], scope, path+'.arg', depth+1) + ')'
         if op == 'exists':
@@ -226,6 +226,11 @@ class Compiler:
         if op in ('in', 'not_in'):
             if not isinstance(value, list) or not 1 <= len(value) <= 100: raise PlanError('IN requires 1..100 literals')
             return field + (' NOT IN (' if op == 'not_in' else ' IN (') + ','.join(map(literal, value)) + ')'
+        if op == 'within_last_months':
+            # A trailing window ending at the snapshot date: (as_of - N months, as_of].
+            if type(value) is not int or not 1 <= value <= 240: raise PlanError('A trailing window needs 1..240 months')
+            as_of = self.catalog.identity['as_of']
+            return f"({field} > date({literal(as_of)}, {literal('-' + str(value) + ' months')}) AND {field} <= {literal(as_of)})"
         if op not in ('=', '!=', '>', '>=', '<', '<=', 'like'): raise PlanError(f'Unknown predicate operator: {op}')
         if value is None: raise PlanError('Use explicit null predicates, not equality to null')
         # Independently check literal comparisons rather than trusting a model's
@@ -426,7 +431,8 @@ class Compiler:
                      if not all(covered[m.start():m.end()]) and m.group().lower() not in STOP_WORDS]
         if uncovered: raise PlanError('Unaccounted original request text: ' + ', '.join(uncovered))
         # Never accept a numeric/time literal that vanished during interpretation.
-        numeric = set(re.findall(r'(?<!\w)\d+(?:\.\d+)?', self.question))
+        # A number joined to letters by a hyphen is part of a name or code (PHQ-9, COVID-19), not a constraint.
+        numeric = set(re.findall(r'(?<!\w)(?<![A-Za-z]-)\d+(?:\.\d+)?', self.question))
         rendered_numbers = set(re.findall(r'(?<!\w)\d+(?:\.\d+)?', query + json.dumps([a['parameters'] for a in analyses])))
         # Analytical contracts commonly express quoted percentages as fractions
         # (2% -> 0.02). Only numeric parameter values in that same bound analysis
