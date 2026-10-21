@@ -2,8 +2,8 @@
 import ast, json, re, sys, importlib
 from pathlib import Path
 
-WT = Path('/Users/mikel/clinical-insights-local/.claude/worktrees/wire-all-proposers-115154')
-OUT = Path('/private/tmp/claude-501/-Users-mikel/90323f53-aa24-4510-bf37-3d548a0418ad/scratchpad/component_ledger_draft.json')
+WT = Path(__file__).resolve().parents[1]
+OUT = WT/'config/agere/component_ledger.json'
 C = 'clinical_core.agere.clinical.'
 A = 'clinical_core.agere.'
 P = 'clinical_core/agere/clinical/proposers.py'
@@ -612,9 +612,15 @@ for r in rows:
         assert w[7:] in ids, (r['id'], w)
 
 from collections import Counter
-OUT.write_text(json.dumps({'components': rows}, indent=1))
+for r in rows:  # spine stages of the shared planner are not proposer tiers
+    if r['current_wiring'].startswith('cascade_tier:shared_planner.'):
+        r['current_wiring'] = 'spine:' + r['current_wiring'].split('shared_planner.', 1)[1]
+prior = json.loads(OUT.read_text()) if OUT.exists() else {}
+OUT.write_text(json.dumps({'schema': 'agere-component-ledger/1', 'source': 'tools/component_ledger_build.py; verified by test_component_reachability.py',
+                           'rule': "Every built component must be reachable from the question path. None removed or defaulted off without Mike's written approval (2026-10-21).",
+                           'approved_exceptions': prior.get('approved_exceptions', []), 'components': rows}, indent=1))
 print('total', len(rows))
 print('family', dict(Counter(r['family'] for r in rows)))
-def wk(w): return w.split(':')[0] if not w.startswith('cascade_tier') else ('cascade_tier(TIERS)' if w[13:] in [t[0] for t in T] else 'cascade_tier(shared_planner.*)')
+def wk(w): return w.split(':')[0]
 print('wiring', dict(Counter(wk(r['current_wiring']) for r in rows)))
 print('failures', failures)

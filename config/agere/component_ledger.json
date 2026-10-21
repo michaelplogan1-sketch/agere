@@ -1,7 +1,6 @@
 {
  "schema": "agere-component-ledger/1",
- "generated": "2026-10-21",
- "source": "read-only sweep of claude/wire-all-proposers-115154; verified by test_component_reachability.py",
+ "source": "tools/component_ledger_build.py; verified by test_component_reachability.py",
  "rule": "Every built component must be reachable from the question path. None removed or defaulted off without Mike's written approval (2026-10-21).",
  "approved_exceptions": [],
  "components": [
