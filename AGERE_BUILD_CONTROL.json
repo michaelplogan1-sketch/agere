@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-10-21T01:30:58.960365+00:00",
+  "updated_at": "2026-10-21T01:45:55.702779+00:00",
   "decision_basis": "AGERE_SHARED_FRONTIER_2026-10-20.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -289,6 +289,10 @@
         {
           "path": "artifacts/agere-summary-scope-v1/implementation-receipt.json",
           "sha256": "3d0bf68dc2d4e256453bb857166c9294c1197402770ab91b44ffbae433afc1ac"
+        },
+        {
+          "path": "artifacts/agere-regimen-evidence-v1/implementation-receipt.json",
+          "sha256": "ef252e7cbb2b5b0c5ddb605ed3a44a258407f64edee4a3d7438eb9f7414828c0"
         }
       ]
     },
@@ -346,23 +350,23 @@
     "kind": "implementation_delivered",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "After an analytical summary, users can explicitly follow its immutable original input population, separately from result-selected patients, through the existing /ask path. Empty stays empty; input scope does not confer patient-work authority.",
-    "measured_failure_reduction": "Closed B2 original-input loss after summaries; sealed input identity and repaired failed-turn/shortcut selection resets. Live 292-patient input remains available beside the 67-patient result of 118 ED visits; explicit input follow-up returns292.",
+    "user_behavior_delta": "Current-dose analysis retains later/same-day/undated note candidates and note-only drugs as explicit interpretation requirements, preserving structured evidence, exact synthetic review scope and monitor exceptions.",
+    "measured_failure_reduction": "Removed silent omission of note changes from the governed dose macro:204 source keys require interpretation, including71 note-only keys; four prior active-documentation keys had relevant note changes.",
     "evidence": [
-      "artifacts/agere-summary-scope-v1/implementation-receipt.json",
-      "docs/agere/SUMMARY_SCOPE_INTEGRATION_2026-10-20.md",
-      "artifacts/agere-summary-scope-v1/live-checks.json",
-      "artifacts/agere-summary-scope-v1/live-followup.png"
+      "artifacts/agere-regimen-evidence-v1/implementation-receipt.json",
+      "docs/agere/REGIMEN_EVIDENCE_INTEGRATION_2026-10-20.md",
+      "artifacts/agere-regimen-evidence-v1/http-workflow.json",
+      "artifacts/agere-regimen-evidence-v1/browser-monitor.png"
     ],
-    "remaining_gap": "Original EF/current-therapy/dose/barrier question and conditional work are not demonstrated complete. Broad natural-language correctness and temporal/multi-domain composition remain unproven. Queueing cohort/date execution and explicit original-input follow-up after summaries are repaired; these local engineering results do not establish broad interpretation. Generated output meaning and representative end-to-end latency have unresolved failures. Queueing overview now exposes scope and preserves small positive rates; chart axis-label contrast remains a presentation limitation. Local tests do not qualify model interpretation, clinical correctness or real-world use. All ten acceptance areas retained; G3 active, G5 incomplete, full acceptance false.",
-    "next_action": "G3: resolve the original compound clinical/current-state semantics through the existing shared path: distinguish coded diagnosis from current EF evidence, received medication/fill/dose evidence from current therapy, and observed provider encounters from assigned care teams; return specific supported unknowns where evidence is insufficient, then preserve applicable populations through conditional synthetic work. Keep ordinary varied clinical, utilization, access/social, provider and financial/ACO composition regressions. No paid calls, protected evaluation, new helper path or question-specific handler; independent model/clinical qualification remains unverified.",
-    "next": "G3: resolve the original compound clinical/current-state semantics through the existing shared path: distinguish coded diagnosis from current EF evidence, received medication/fill/dose evidence from current therapy, and observed provider encounters from assigned care teams; return specific supported unknowns where evidence is insufficient, then preserve applicable populations through conditional synthetic work. Keep ordinary varied clinical, utilization, access/social, provider and financial/ACO composition regressions. No paid calls, protected evaluation, new helper path or question-specific handler; independent model/clinical qualification remains unverified.",
+    "remaining_gap": "Named-drug structured-versus-note regimen evidence is reconciled with explicit unknowns. Original EF/current-phenotype, care-team attribution, treatment suitability/maximum-tolerated-dose and full conditional work remain incomplete. Broad natural-language correctness and temporal/multi-domain composition remain unproven. Queueing cohort/date execution and explicit original-input follow-up after summaries are repaired; these local engineering results do not establish broad interpretation. Generated output meaning and representative end-to-end latency have unresolved failures. Queueing overview now exposes scope and preserves small positive rates; chart axis-label contrast remains a presentation limitation. Staff review states and simulated journey exceptions need clearer presentation separation. Local tests do not qualify model interpretation, clinical correctness or real-world use. All ten areas retained; G3 active, G5 incomplete, full acceptance false.",
+    "next_action": "G3: complete original compound current-state evidence through the existing shared path. Next reconcile EF/phenotype and care-team assignment semantics: retain dated structured/extracted EF evidence, conflicts and unknowns; distinguish active dated care-team assignment from observed specialty visits and payer attribution. Then demonstrate the full compound request with per-requirement evidence or supported unknowns and exact conditional synthetic work. Keep broad-domain composition regressions. No paid calls, protected evaluation, new helper path or question-specific handler; independent model/clinical qualification remains unverified.",
+    "next": "G3: complete original compound current-state evidence through the existing shared path. Next reconcile EF/phenotype and care-team assignment semantics: retain dated structured/extracted EF evidence, conflicts and unknowns; distinguish active dated care-team assignment from observed specialty visits and payer attribution. Then demonstrate the full compound request with per-requirement evidence or supported unknowns and exact conditional synthetic work. Keep broad-domain composition regressions. No paid calls, protected evaluation, new helper path or question-specific handler; independent model/clinical qualification remains unverified.",
     "latest_review": {
-      "at": "2026-10-21T01:30:58.960365+00:00",
-      "kind": "Owner source review, 121 primary/frozen tests, authored source and HTTP checks, actual candidate/live browser and independent live source SQL; no model or clinical qualification",
-      "report": "docs/agere/SUMMARY_SCOPE_INTEGRATION_2026-10-20.md",
+      "at": "2026-10-21T01:45:55.702779+00:00",
+      "kind": "Owner review, primary/frozen tests, received-source checks, authored HTTP/browser and live verification; not model/clinical qualification",
+      "report": "docs/agere/REGIMEN_EVIDENCE_INTEGRATION_2026-10-20.md",
       "evidence": [
-        "artifacts/agere-summary-scope-v1/implementation-receipt.json"
+        "artifacts/agere-regimen-evidence-v1/implementation-receipt.json"
       ]
     },
     "coordination": {
@@ -406,7 +410,7 @@
         "id": "B1",
         "area": "Clinical compound and current state",
         "status": "open",
-        "gap": "Original EF/current-therapy/dose/barrier question and conditional work are not demonstrated complete.",
+        "gap": "Named-drug structured-versus-note regimen evidence is reconciled with explicit unknowns. Original EF/current-phenotype, care-team attribution, treatment suitability/maximum-tolerated-dose and full conditional work remain incomplete.",
         "completion": "Every requested element has executed received-source evidence or a specific supported unknown; downstream work keeps the exact applicable population."
       },
       {
@@ -420,7 +424,7 @@
         "id": "B3",
         "area": "Generated views and response time",
         "status": "open",
-        "gap": "Generated output meaning and representative end-to-end latency have unresolved failures. Queueing overview now exposes scope and preserves small positive rates; chart axis-label contrast remains a presentation limitation.",
+        "gap": "Generated output meaning and representative end-to-end latency have unresolved failures. Queueing overview now exposes scope and preserves small positive rates; chart axis-label contrast remains a presentation limitation. Staff review states and simulated journey exceptions need clearer presentation separation.",
         "completion": "Rendered outputs match saved evidence, preserve scope, and report measured timing; remove reproduced failures without new paid calls."
       },
       {
@@ -1228,6 +1232,19 @@
       "basis": "121 primary/frozen tests, five authored received-source fixtures, six actual HTTP checks, candidate browser and live292\u2192118events/67patients\u2192292 input-follow-up with independent source match and zero calls.",
       "scope_impact": "Specific B2 failure reduction; no new clinical authority or interpretation qualification. All ten areas retained, G3 active, G5 blocked/full acceptancefalse. No further helper/UI detour before the recorded clinical semantic requirement.",
       "evidence": "artifacts/agere-summary-scope-v1/implementation-receipt.json"
+    },
+    {
+      "at": "2026-10-21T01:36:54.132259+00:00",
+      "decision": "Address the measured B1 structured-versus-note medication conflict through the existing dose macro.",
+      "basis": "Read-only source comparison found four active-documentation rows with same-day or later note changes; current_dose reads only orders/lists. A later stop remains invisible. Notes also contain negated change extraction, so candidates cannot be promoted to clinical fact.",
+      "scope_impact": "Connect source evidence and explicit unknowns; no model/clinical qualification, full charter and current gate preserved."
+    },
+    {
+      "at": "2026-10-21T01:45:55.702779+00:00",
+      "decision": "Activate f8dd1c9 with rollbackf16b208; reconcile note candidates without granting clinical authority, then continue EF and care-team semantics under G3.",
+      "basis": "111 primary/frozen checks, exact source candidate membership/excerpts, three authored source/API workflows and actual browser/live checks with zero paid calls.",
+      "scope_impact": "Specific B1 failure reduction; all ten areas retained, G3 active/G5 incomplete/full acceptancefalse. Recurring continuation was not created after auto-review rejection; current development remains authorized.",
+      "evidence": "artifacts/agere-regimen-evidence-v1/implementation-receipt.json"
     }
   ]
 }

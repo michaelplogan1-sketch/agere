@@ -5,15 +5,15 @@
   "heartbeat_id": "continue-building-the-agere-stack",
   "ownership_verified": "2026-10-20T21:04:37.523810+00:00 Mike requested takeover from Claude and then explicitly said okay please continue.",
   "scope": "/Users/mikel/clinical-insights-local build; Mike directly identified http://127.0.0.1:8885/ask as the product surface. Existing separate design checkout and hosted preview remain reference-only/read-only; separate research and generator remain read-only.",
-  "active_work": "G3: resolve the original compound clinical/current-state semantics through the existing shared path: distinguish coded diagnosis from current EF evidence, received medication/fill/dose evidence from current therapy, and observed provider encounters from assigned care teams; return specific supported unknowns where evidence is insufficient, then preserve applicable populations through conditional synthetic work. Keep ordinary varied clinical, utilization, access/social, provider and financial/ACO composition regressions. No paid calls, protected evaluation, new helper path or question-specific handler; independent model/clinical qualification remains unverified.",
-  "latest_delivery": "docs/agere/SUMMARY_SCOPE_INTEGRATION_2026-10-20.md",
-  "latest_receipt": "artifacts/agere-summary-scope-v1/implementation-receipt.json",
-  "owned_server_pid": 97629,
-  "owned_server_session": 82475,
+  "active_work": "G3: complete original compound current-state evidence through the existing shared path. Next reconcile EF/phenotype and care-team assignment semantics: retain dated structured/extracted EF evidence, conflicts and unknowns; distinguish active dated care-team assignment from observed specialty visits and payer attribution. Then demonstrate the full compound request with per-requirement evidence or supported unknowns and exact conditional synthetic work. Keep broad-domain composition regressions. No paid calls, protected evaluation, new helper path or question-specific handler; independent model/clinical qualification remains unverified.",
+  "latest_delivery": "docs/agere/REGIMEN_EVIDENCE_INTEGRATION_2026-10-20.md",
+  "latest_receipt": "artifacts/agere-regimen-evidence-v1/implementation-receipt.json",
+  "owned_server_pid": 98229,
+  "owned_server_session": 67961,
   "full_queue_acceptance": false,
   "spending_limit": "uncapped",
   "spending_authorization": "Explicit user instruction 2026-10-10; no assistant-selected monetary ceiling",
-  "preceding_delivery": "docs/agere/QUEUEING_SCOPE_INTEGRATION_2026-10-20.md",
+  "preceding_delivery": "docs/agere/SUMMARY_SCOPE_INTEGRATION_2026-10-20.md",
   "latest_daily_report": "AGERE_DAILY_STACK_UPDATE_2026-10-11.md",
   "resume_priority": "Follow AGERE_BUILD_CONTROL.json current_gate and checkpoint.next_action.",
   "build_status": "ACTIVE",
@@ -22,13 +22,13 @@
   "resumed_at": "2026-10-19T12:38:11.040529+00:00",
   "heartbeat_interval_minutes": 5,
   "latest_overnight_report": "AGERE_OVERNIGHT_READINESS_2026-10-11.md",
-  "latest_checkpoint": "2026-10-21T01:30:58.960365+00:00",
+  "latest_checkpoint": "2026-10-21T01:45:55.702779+00:00",
   "protected_manifest": "artifacts/agere-reconciliation-contract-v2/protected-for-continuation.json",
   "latest_morning_report": "AGERE_MORNING_STATUS_2026-10-11.md",
   "latest_architecture_review": "AGERE_SHARED_FRONTIER_2026-10-20.md",
   "pause_reason": null,
-  "last_observed_server_session": 82475,
-  "server_status": "f16b208 active on local :8885/ask; ready/synthetic; explicit original-input follow-ups repaired with source, API and browser evidence. G3/G5 incomplete.",
+  "last_observed_server_session": 67961,
+  "server_status": "f8dd1c9 active on :8885/ask, ready/synthetic; unresolved note changes integrated in governed dose evidence. G3/G5 incomplete.",
   "unsealed_work": {
     "status": "inactive_candidate",
     "path": "artifacts/agere-citation-recovery-v1",
@@ -68,26 +68,21 @@
   "source_control": "git; codex/agere-validated-proof; commit only owned paths as Michael Logan <michael.p.logan1@gmail.com>",
   "heartbeat_removal_authorization": "Mike 2026-10-19: \"i am here you dont need the continue building reminder\"; deleted through the Codex automation tool.",
   "live_runtime": {
-    "at": "2026-10-21T01:30:58.960365+00:00",
-    "commit": "f16b208c517cfc7ed119329eaf9dc03beb60abcc",
-    "rollback_commit": "8e83d0d945486e6caa9a4921ee2b8bd395e8fc5e",
+    "at": "2026-10-21T01:45:55.702779+00:00",
+    "commit": "f8dd1c905dc820533d65b3bca48ab2dcff22f736",
+    "rollback_commit": "f16b208c517cfc7ed119329eaf9dc03beb60abcc",
     "workspace": "/Users/mikel/agere-mvp-run",
     "port": 8885,
-    "pid": 97629,
-    "session": 82475,
-    "log": "/private/tmp/agere-live-summary-scope.log",
+    "pid": 98229,
+    "session": 67961,
+    "log": "/private/tmp/agere-live-regimen-evidence.log",
     "config_sha256": "4eec831417af506fee543532c304c9cc65d07794015c98af3cc5c48ef77cef52",
     "configuration_preserved": true,
     "warehouse_stat_preserved": true,
     "source_hashes": {
-      "clinical_core/agere/ask_view.py": "83d5288e31107852de5e187b9f2af6b79829b3b82fc542d97a6840cf49e4bcd4",
-      "clinical_core/agere/assets/explore.html": "8aa0ad4941e78dc1085763bf657b69da13bf90212948cf5848bb07562994a562",
-      "clinical_core/agere/assets/explore.js": "03412f53a2aea6ad089e82f602393d19c3b2620a75ca1bf7ba45bae171ba15b1",
-      "clinical_core/agere/clinical/answer_dependencies.py": "98fdaac43bc0c6a1cdf9425aac8e18e0d0899b2d3e8a0e8f81f62fbc68013314",
-      "clinical_core/agere/clinical/conversation.py": "3e3c8a9ecc694971361d7f0eb86b27bc1b442c3cc8072c12bddaea33847aa0c3",
-      "clinical_core/agere/deliverables/answer_context.py": "5325d7cd1f748a2b395b423006b6679247cb89935cb8f313c7be9c95aa24d759",
-      "test_ask_view.py": "869e7de35721a5f67a829bb16f5b6b08a20b0cb0d9c9e81498ebbd40deabf358",
-      "test_summary_followup.py": "eb62a8b48d49a5ed7aa845aa1ba97cd32413d112851fbe9e5e0708153d299c5e"
+      "clinical_core/agere/clinical/dose.py": "9f462d3f506aba614fe565ddad5d6d4b2f4a9c2e59aff016d0e549fc11811e9b",
+      "clinical_core/agere/clinical/general_analysis.py": "ad541721954e177260b602c4c3b56d718fc51d6cc00a309f64de948968c34f14",
+      "test_regimen_evidence.py": "ec435430a3fb867b006e9d619b6af88399789952039f44d460e88e0363e81140"
     },
     "code_hashes_match": true,
     "health": {
@@ -142,12 +137,12 @@
     "boundary": "Single integration/control/runtime owner is this Codex chat; prior lanes are historical."
   },
   "runtime_observation": {
-    "at": "2026-10-21T01:30:58.960365+00:00",
-    "checkout_commit": "f16b208c517cfc7ed119329eaf9dc03beb60abcc",
-    "pid": 97629,
+    "at": "2026-10-21T01:45:55.702779+00:00",
+    "checkout_commit": "f8dd1c905dc820533d65b3bca48ab2dcff22f736",
+    "pid": 98229,
     "url": "http://127.0.0.1:8885/ask",
     "health": "ready/synthetic",
-    "scope": "121 primary/frozen tests, five authored source fixtures, six HTTP checks, candidate/live browser and independent live source comparison; zero paid calls."
+    "scope": "111 primary/frozen tests, received-source comparison, three authored HTTP workflows, browser and live source checks; zero paid calls."
   },
   "previous_delivery": "docs/agere/REQUEST_ADMISSION_RELEASE_2026-10-20.md",
   "coordinated_learning_candidate": {
@@ -225,5 +220,12 @@
     "integrated_release": "8e83d0d945486e6caa9a4921ee2b8bd395e8fc5e",
     "owner_receipt": "artifacts/agere-queueing-integration-v1/implementation-receipt.json",
     "coordination_status": "handoff complete; no additional lane work requested; remaining work stays in this owner chat"
+  },
+  "continuation_request": {
+    "at": "2026-10-21T01:45:55.702779+00:00",
+    "request": "Mike is leaving and requests continued MVP development; token economics and data answers remain central.",
+    "current_run": "authorized and continuing",
+    "heartbeat": "not_created_auto_review_rejected",
+    "reason": "Prior saved no-heartbeat instruction; explicit restoration authorization requested asynchronously. Do not create a workaround scheduler."
   }
 }
