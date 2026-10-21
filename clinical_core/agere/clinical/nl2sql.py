@@ -318,11 +318,18 @@ class HostedModel:
 
     def __call__(self, system, user, max_tokens=700, temperature=0.0, seed=None):
         from .context_student import send
-        schema, _, rest = user.partition('\n\nEXAMPLES\n')
+        from .shared_planner import CACHE_BOUNDARY
+        if CACHE_BOUNDARY in user:
+            # Cache only the static prefix (system + catalog); the question-specific remainder follows uncached.
+            cut = user.index(CACHE_BOUNDARY) + len(CACHE_BOUNDARY)
+            blocks = [{'type': 'text', 'text': user[:cut], 'cache_control': {'type': 'ephemeral'}},
+                      {'type': 'text', 'text': user[cut:]}]
+        else:
+            schema, _, rest = user.partition('\n\nEXAMPLES\n')
+            blocks = [{'type': 'text', 'text': schema, 'cache_control': {'type': 'ephemeral'}},
+                      {'type': 'text', 'text': 'EXAMPLES\n' + rest}]
         body = {'model': self.model, 'max_tokens': max_tokens, 'system': system, 'output_config': {'effort': 'low'},
-                'messages': [{'role': 'user', 'content': [
-                    {'type': 'text', 'text': schema, 'cache_control': {'type': 'ephemeral'}},
-                    {'type': 'text', 'text': 'EXAMPLES\n' + rest}]}]}
+                'messages': [{'role': 'user', 'content': blocks}]}
         start = time.perf_counter()
         text, receipt = send(body, 'claude', self.ledger, self.out,
                              parse=lambda raw: ''.join(b.get('text', '') for b in raw.get('content', []) if b.get('type') == 'text'),

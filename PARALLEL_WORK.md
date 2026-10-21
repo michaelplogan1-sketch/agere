@@ -1,3 +1,5 @@
+> Ownership returned, October 21, 2026: Mike directed the Claude desktop session (local_1c579565-09b5-4e07-a223-1ae6016e7664) to own the build for the prompt-caching cost fix and model-cost work. Codex chat 01a15af4-c150-76f2-9df2-a44c1428b70d is no longer integrating; review only, no overlapping product/runtime edits.
+
 # Agere ownership — October 20, 2026
 
 Codex chat `01a15af4-c150-76f2-9df2-a44c1428b70d` is the sole build/integration/control/runtime owner. BUILD_OWNER.json and AGERE_BUILD_CONTROL.json govern authority and sequencing. No new parallel chat work or lane follow-ups requested; handle remaining integration and fixes here.

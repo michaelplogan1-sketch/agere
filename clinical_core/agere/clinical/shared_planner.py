@@ -325,6 +325,21 @@ def schema_slice(catalog, question, extra=(), operations=(), streams=()):
             'as_of': catalog.identity.get('as_of'), 'more_schema_available': True}
 
 
+# Prompt caching: the catalog parts that never change between questions come first and are cached once; the
+# question-specific schema, discovery and feedback follow the boundary. The JSON text the model sees is unchanged.
+STATIC_CATALOG_KEYS = ('governed_measures', 'named_concepts', 'condition_evidence_policy', 'source_coverage',
+                       'all_received_tables', 'all_received_streams', 'analytical_operators', 'governed_knowledge', 'as_of')
+CACHE_BOUNDARY = '"cache_boundary":"static_catalog_above"'
+
+
+def planner_user(context, **rest):
+    static = {k: context[k] for k in STATIC_CATALOG_KEYS if k in context}
+    selected = schema_prompt_view({k: v for k, v in context.items() if k not in STATIC_CATALOG_KEYS})
+    head = json.dumps({'catalog_static': static}, ensure_ascii=False, default=str, separators=(',', ':'), sort_keys=True)
+    tail = json.dumps({'catalog': selected, **rest}, ensure_ascii=False, default=str, separators=(',', ':'))
+    return head[:-1] + ',' + CACHE_BOUNDARY + ',' + tail[1:]
+
+
 def decode(text):
     text = re.sub(r'^```(?:json)?\s*|\s*```$', '', text.strip())
     value = json.loads(text)
@@ -454,14 +469,13 @@ def _interpret(catalog, question, *, population=None, model=None, force_model=Fa
     proposal_count = 0
     for _ in range(6):
         if proposal_count >= 3: break
-        catalog_context = schema_prompt_view(schema_slice(catalog, question, extra, operations, streams))
+        catalog_context = schema_slice(catalog, question, extra, operations, streams)
         from .request_discovery import prompt_view
         discovery_context = prompt_view(discovery)
-        user = json.dumps({'catalog': catalog_context, 'question': question,
-                           'saved_cohort_size': len(population) if population is not None else None,
-                           'discovery': discovery_context, 'validator_feedback': feedback,
-                           'reported_corrections': corrections},
-                          ensure_ascii=False, separators=(',', ':'))
+        user = planner_user(catalog_context, question=question,
+                            saved_cohort_size=len(population) if population is not None else None,
+                            discovery=discovery_context, validator_feedback=feedback,
+                            reported_corrections=corrections)
         raw, stats = call(SYSTEM, user, max_tokens=PLAN_TOKENS)
         try:
             plan = decode(raw)
@@ -518,13 +532,12 @@ def _interpret(catalog, question, *, population=None, model=None, force_model=Fa
             # The proposed engine may not be among the initial lexical suggestions.
             # Review its actual contract, including denominator/window semantics.
             review_operations = list(dict.fromkeys([*operations, *[a['operation'] for a in plan.get('analyses', [])]]))
-            review_catalog = schema_prompt_view(schema_slice(catalog, question, extra, review_operations, streams))
-            raw_audit, stats = call(AUDIT_SYSTEM, json.dumps({
-                'original_question': question, 'catalog': review_catalog,
-                'request': plan, 'compiled_sql': contract['query'],
-                'discovery': discovery_context, 'reported_corrections': corrections,
-                'saved_cohort_size': len(population) if population is not None else None,
-            }, separators=(',', ':')), max_tokens=REVIEW_TOKENS)
+            review_catalog = schema_slice(catalog, question, extra, review_operations, streams)
+            raw_audit, stats = call(AUDIT_SYSTEM, planner_user(
+                review_catalog, original_question=question,
+                request=plan, compiled_sql=contract['query'],
+                discovery=discovery_context, reported_corrections=corrections,
+                saved_cohort_size=len(population) if population is not None else None), max_tokens=REVIEW_TOKENS)
             audit = decode(raw_audit)
             if (set(audit) != {'equivalent', 'issues'} or type(audit['equivalent']) is not bool
                     or not isinstance(audit['issues'], list) or any(not isinstance(i, str) for i in audit['issues'])):
@@ -559,15 +572,14 @@ def _interpret(catalog, question, *, population=None, model=None, force_model=Fa
         # The LLM is always available: a staged analysis is the final answer path, never a refusal.
         from . import general_analysis
         for repair in range(3):
-            catalog_context = schema_prompt_view(schema_slice(catalog, question, extra, operations, streams))
+            catalog_context = schema_slice(catalog, question, extra, operations, streams)
             from .request_discovery import prompt_view
-            user = json.dumps({'catalog': catalog_context, 'question': question,
-                               'saved_cohort_size': len(population) if population is not None else None,
-                               'discovery': prompt_view(discovery),
-                               'validator_feedback': {'instruction': general_analysis.RESCUE_INSTRUCTION,
-                                                      'previous_errors': failures[-3:], 'last_feedback': feedback},
-                               'reported_corrections': corrections},
-                              ensure_ascii=False, default=str, separators=(',', ':'))
+            user = planner_user(catalog_context, question=question,
+                                saved_cohort_size=len(population) if population is not None else None,
+                                discovery=prompt_view(discovery),
+                                validator_feedback={'instruction': general_analysis.RESCUE_INSTRUCTION,
+                                                    'previous_errors': failures[-3:], 'last_feedback': feedback},
+                                reported_corrections=corrections)
             raw, stats = call(SYSTEM, user, max_tokens=PLAN_TOKENS)
             try:
                 proposal = decode(raw)
