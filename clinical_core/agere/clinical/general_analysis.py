@@ -22,6 +22,7 @@ from .request_plan import PlanError, fingerprint
 VERSION = 'general-analysis/3'
 MAX_STEPS = 60  # structural sanity only; complex questions need many stages
 _NAME = re.compile(r'^[a-z][a-z0-9_]{0,40}$')
+_PATIENT_NOUN = r'\b(?:patients?|members?|people|persons?|individuals?|beneficiar(?:y|ies)|enrollees?)\b'
 _MACRO = re.compile(r'\{\{\s*(condition|drug_fill|as_of|medication_dose|current_dose|care_team|measurement_evidence|specialty|parameter)\s*(?::\s*([a-z0-9_,\s]+))?\s*\}\}')
 # Grammatical words carry no requirement; every other question word must be accounted for.
 _FUNCTION_WORDS = set('''a an the and or of in on at to for from by with without within into onto over under per
@@ -468,12 +469,16 @@ def prepare(catalog, question, spec, *, population=None, relaxed=False):
                       output_bindings={o: [r['quote'] for r in requirements if o in r.get('outputs', [])] for o in columns})
     selection = spec.get('patient_selection')
     if selection is not None:
-        if (not isinstance(selection, dict) or set(selection) != {'column', 'quote'} or returns != 'table'
-                or selection['column'] != 'patient_id' or 'patient_id' not in columns
-                or not isinstance(selection['quote'], str) or not selection['quote'].strip()
-                or selection['quote'] not in question
-                or not re.search(r'\b(?:list|show|find|identify|select|return|which)\b[^;.!?]*\b(?:patients|members|people|individuals)\b|\b(?:each|per)\s+patient\b', selection['quote'], re.I)):
-            raise PlanError('Patient table selection needs a literal individual-patient listing clause and a patient_id column')
+        valid = (isinstance(selection, dict) and set(selection) == {'column', 'quote'} and returns == 'table'
+                 and selection['column'] == 'patient_id' and 'patient_id' in columns
+                 and isinstance(selection['quote'], str) and selection['quote'].strip()
+                 and _norm(selection['quote']) in _norm(question)
+                 and re.search(_PATIENT_NOUN, selection['quote'], re.I)
+                 and not re.search(r'\b(?:how many|number of|count of|percent|proportion|rate of|average|total)\b', selection['quote'], re.I))
+        if not valid and relaxed:
+            selection = None  # the answer still ships; it simply does not authorize patient work
+        elif not valid:
+            raise PlanError('Patient table selection needs a literal question phrase naming the patients and a patient_id column')
     body = {'kind': 'general_analysis', 'version': VERSION, 'original_question': question,
             'analysis': {'steps': [{'name': n, 'purpose': s.get('purpose', ''), 'sql': s['sql']} for n, s in zip(names, steps)],
                          'final': final, 'returns': returns, 'requirements': requirements,

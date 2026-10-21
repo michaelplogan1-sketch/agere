@@ -193,6 +193,21 @@ class GeneralAnalysis(unittest.TestCase):
             G.prepare(catalog, 'current doses and cardiologists', {**s, 'steps': [s['steps'][0], {**s['steps'][1],
                       'sql': 'SELECT clinician_id FROM {{specialty:cardiac_magic}}'}]})
 
+    def test_patient_selection_accepts_singular_listing_and_rejects_counts(self):
+        q = 'Find every patient with diabetes and their ED visits'
+        s = {'steps': [{'name': 'rows', 'purpose': 'patients', 'sql':
+                        'SELECT patient_id FROM patient WHERE patient_id IN {{condition:diabetes}}'}],
+             'returns': 'table', 'requirements': [{'quote': 'Find every patient with diabetes', 'applied_in': ['rows'], 'how': 'x'},
+                                                   {'quote': 'their ED visits', 'applied_in': ['rows'], 'how': 'x'}],
+             'unresolved': [], 'patient_selection': {'column': 'patient_id', 'quote': 'Find every patient'}}
+        self.assertEqual(G.prepare(self.catalog, q, s)['analysis']['patient_selection']['quote'], 'Find every patient')
+        counted = {**s, 'patient_selection': {'column': 'patient_id', 'quote': 'How many patients'}}
+        cq = 'How many patients have diabetes'
+        counted['requirements'] = [{'quote': 'How many patients have diabetes', 'applied_in': ['rows'], 'how': 'x'}]
+        with self.assertRaises(R.PlanError):
+            G.prepare(self.catalog, cq, counted)
+        self.assertIsNone(G.prepare(self.catalog, cq, counted, relaxed=True)['analysis']['patient_selection'])
+
 
 if __name__ == '__main__':
     unittest.main()
