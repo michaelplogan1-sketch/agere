@@ -176,11 +176,14 @@ def register(db):
 
 
 # Governed per-record dose evidence: one row per received dose statement with its source record.
-MEDICATION_DOSE_SQL = """(SELECT patient_id, source_stream, record_id, event_date, drug_text, status,
+# A list/order statement without an event date is dated by when it was recorded (date_basis says which).
+MEDICATION_DOSE_SQL = """(SELECT patient_id, source_stream, record_id, event_date, date_basis, drug_text, status,
   per_admin_mg, times_per_day, per_admin_mg * times_per_day AS daily_mg,
   target_mg(drug_text) AS target_daily_mg, target_max_mg(drug_text) AS target_max_daily_mg
  FROM (SELECT patient_id, stream AS source_stream, record_id,
-   statement_day(json_extract(payload,'$.event_date')) AS event_date,
+   statement_day(COALESCE(json_extract(payload,'$.event_date'), json_extract(payload,'$.recorded_date'))) AS event_date,
+   CASE WHEN statement_day(json_extract(payload,'$.event_date')) IS NOT NULL THEN 'event_date'
+        WHEN statement_day(json_extract(payload,'$.recorded_date')) IS NOT NULL THEN 'recorded_date' END AS date_basis,
    lower(CASE stream WHEN 'medication_orders' THEN json_extract(payload,'$.medication_name')
      WHEN 'medication_lists' THEN json_extract(payload,'$.name')
      ELSE COALESCE(json_extract(payload,'$.product_description'),json_extract(payload,'$.medication_display')) END) AS drug_text,
