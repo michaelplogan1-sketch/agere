@@ -68,12 +68,12 @@
   "source_control": "git; codex/agere-validated-proof; commit only owned paths as Michael Logan <michael.p.logan1@gmail.com>",
   "heartbeat_removal_authorization": "Mike 2026-10-19: \"i am here you dont need the continue building reminder\"; deleted through the Codex automation tool.",
   "live_runtime": {
-    "at": "2026-10-21T20:46:08.474949+00:00",
-    "commit": "a106ffd51746b2c2870a333be743a3acb9fe2a19",
-    "rollback_commit": "429559c",
+    "at": "2026-10-21T21:21:28.721837+00:00",
+    "commit": "b77be69efea7bfb3d6b04e5f30d604105c1727d4",
+    "rollback_commit": "a106ffd",
     "workspace": "/Users/mikel/agere-mvp-run",
     "port": 8885,
-    "pid": 60021,
+    "pid": 75171,
     "session": 2376,
     "log": "/Users/mikel/agere-mvp-run/server-8885.log",
     "config_sha256": "4eec831417af506fee543532c304c9cc65d07794015c98af3cc5c48ef77cef52",
@@ -107,13 +107,13 @@
       }
     },
     "url": "http://127.0.0.1:8885/ask",
-    "verified_at": "2026-10-21T20:46:08.474949+00:00",
+    "verified_at": "2026-10-21T21:21:28.721837+00:00",
     "api_status": "Working (credit added 2026-10-21).",
     "cost_measurement": "20-question dev set: Opus 5.5 with prompt caching $5.44 (was $12.65 uncached), 76 calls, 2.15M cache-read vs 0.15M cache-write tokens; Sonnet 5.5 $4.75, 137 calls, weaker accuracy. HF question: Opus $0.45, Sonnet $0.41, both partial under current conservative definitions.",
     "hf_acceptance": "HF compound question answered (missing []) under Mike-governed definitions: 36 patients, 144/144 pillar flags match independent SQL, $1.75, 245 s.",
-    "smoke": "0 model API calls: CAD/MI statin gap answered 205 via the local normalizer with interpreted_as.",
+    "smoke": "0 model API calls: CAHPS = not available (named); no-show 5.52 -> transport-positive 9.83 -> everyone else 4.80 in one conversation.",
     "paid_calls": "DISABLED by Mike 2026-10-21 (\"switch live to no paid calls\"): deterministic tier and saved verified answers only; unparsed questions return not_understood at $0.",
-    "change": "Local normalizer on behind the free parser.",
+    "change": "Follow-up narrowing and re-scoping; honest not-available for absent data domains.",
     "free_bank_measure": {
       "bank": "/Users/mikel/agere-eval-bank-2 (184 items)",
       "no_llm": true,
@@ -136,12 +136,23 @@
         "17837f7": "65 correct / 25 wrong / 11 of 11 (37.6% lenient, 34.7% strict)",
         "a753a48": "74 correct / 27 wrong / 11 of 11 (42.8% lenient, 39.9% strict)",
         "429559c": "87 correct / 15 wrong / 11 of 11 (50.3% lenient, 47.4% strict) on bank v1.2",
-        "a106ffd": "88 correct / 16 wrong / 11 of 11 with the normalizer on (50.9% lenient)"
+        "a106ffd": "88 correct / 16 wrong / 11 of 11 with the normalizer on (50.9% lenient)",
+        "b77be69": "92 correct / 16 wrong / 11 of 11 (53.2% lenient); chain turns 9 correct (was 3)"
       }
     },
     "env": {
       "AGERE_LOCAL_NORMALIZER": "on",
       "adapter": "artifacts/agere-local-planner-v1/adapter (Qwen3-4B LoRA, 3000 iters)"
+    },
+    "sealed_bank": {
+      "round_1": {
+        "commit": "a106ffd",
+        "answerable": 151,
+        "correct": 8,
+        "confidently_wrong": 3,
+        "unknown": 136,
+        "cost_usd": 0
+      }
     }
   },
   "current_spending_constraint": "No paid provider calls for the current coordinated build/improvement work, following Mike's verified October20 clarification in Review AI stack techniques. Continue local implementation and deterministic/source/workflow validation without waiting for credits. Existing app integration and credentials remain unchanged; live-model and independent clinical qualification remain explicitly unverified.",
