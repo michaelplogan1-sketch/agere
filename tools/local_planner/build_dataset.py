@@ -33,7 +33,9 @@ def main():
     bank = {norm(i['question']) for i in json.loads(BANK.read_text())['items']}
     canon = {json.loads(l)['canonical'] for l in (DATA / 'canonical.jsonl').open()}
     pairs, stats = [], Counter()
-    for f in sorted((DATA / 'batches').glob('out_*.jsonl')):
+    # Hand-written rewordings count twice: they carry real client phrasing; scripted ones are supplementary.
+    sources = [(f, 1) for f in sorted((DATA / 'batches').glob('out_*.jsonl'))] + [(f, 2) for f in sorted((DATA / 'hand').glob('out_*.jsonl'))]
+    for f, weight in sources:
         for line in f.open():
             try: row = json.loads(line)
             except ValueError: stats['bad_json'] += 1; continue
@@ -42,7 +44,7 @@ def main():
             if norm(w) in bank or norm(c) in bank: stats['bank_overlap'] += 1; continue
             reason = N.guard(w, c)
             if reason: stats['guard_rejected'] += 1; continue
-            pairs.append((w, c)); stats['kept'] += 1
+            pairs.extend([(w, c)] * weight); stats['kept_hand' if weight > 1 else 'kept'] += 1
     negatives = []
     for line in (DATA / 'batches' / 'negatives.jsonl').open():
         try: q = json.loads(line)['question'].strip()

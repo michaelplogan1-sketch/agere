@@ -76,7 +76,7 @@ def policy_identity():
                      'age.py', 'request_vocabulary.py', 'request_shapes.py', 'local_request_worker.py',
                      'concepts.py', 'drug_classes.py', 'nl2sql.py', 'workflow_contract.py', 'request_discovery.py', 'general_analysis.py', 'dose.py', 'clinical_definitions.py',
                      'analysis_evidence.py', 'request_program.py', 'answer_dependencies.py', 'procedural_memory.py', 'clinical_inputs.py',
-                     'conversation.py', 'answer_format.py', 'paraphrase.py', 'question_input.py', 'learning.py', 'economics_learning.py', 'healthcare_learning.py', 'vbc_knowledge.py', 'programs.py', 'contract_strategy.py',
+                     'conversation.py', 'answer_format.py', 'paraphrase.py', 'local_normalizer.py', 'question_input.py', 'learning.py', 'economics_learning.py', 'healthcare_learning.py', 'vbc_knowledge.py', 'programs.py', 'contract_strategy.py',
                      'metrics.py', 'metric_families.py', 'measures.py', 'risk_adjustment.py', 'vbc.py')}})
 
 SYSTEM = '''Interpret the complete request about the connected warehouse into a typed relational request, staged analysis or request program. Return JSON only.
@@ -690,6 +690,25 @@ def _interpret(catalog, question, *, population=None, model=None, force_model=Fa
 GRAMMAR_REVIEWS = ('fully_consumed_grammar', 'fully_consumed_grammar_program')
 
 
+def reuse_normalizer(catalog, question, population, memory_identity):
+    """The local normalizer's rewording of the question, compiled by the free parser (local_normalizer.py).
+
+    Used only when the guard shows the rewording keeps the client's numbers, years and negation and the free parser
+    reads all of it. Zero paid calls; never saved under the client's wording."""
+    if population is not None or memory_identity != request_plan.fingerprint([]): return None
+    if os.environ.get('AGERE_LOCAL_NORMALIZER', 'off') != 'on': return None  # enabled per server
+    from . import local_normalizer as N
+    proposed = N.propose(question)
+    if not proposed or proposed == N.UNSUPPORTED or N.guard(question, proposed): return None
+    try:
+        contract, interpretation = _interpret(catalog, proposed)
+    except QuestionNotUnderstood:
+        return None
+    if contract.get('kind') == 'request_program': return None  # programs re-verify against the literal question
+    return contract, {**interpretation, 'interpreter': 'local_normalizer', 'normalized_question': proposed,
+                      'normalizer': N.VERSION, 'review': 'local_normalizer_then_grammar', 'attempts': []}
+
+
 def reuse_paraphrase(stack, catalog, question, population, memory_identity):
     """A verified interpretation of a reworded question (paraphrase.py), recompiled under the current code against its
     own verified wording. Zero model calls; never saved under the new wording."""
@@ -824,7 +843,8 @@ def plan(stack, question, ledger=None, frontier=None, *, population=None, model=
                 with interpretation_window(stack):
                     contract, interpretation = checked_interpret(catalog, question, population=population)
             except QuestionNotUnderstood as declined:
-                reworded = reuse_paraphrase(stack, catalog, question, population, memory_identity)
+                reworded = (reuse_paraphrase(stack, catalog, question, population, memory_identity)
+                            or reuse_normalizer(catalog, question, population, memory_identity))
                 if reworded:
                     contract, interpretation = reworded
                 elif not getattr(stack, 'allow_live', False):
@@ -852,7 +872,7 @@ def plan(stack, question, ledger=None, frontier=None, *, population=None, model=
                                                   acceptance_scope='Compiled and reviewed synthetic observation; not clinical qualification')
                     finally:
                         if owned: current_ledger.close()
-    if not hit and model is None and interpretation.get('execution_accepted') and interpretation.get('interpreter') != 'paraphrase_reuse' and (
+    if not hit and model is None and interpretation.get('execution_accepted') and interpretation.get('interpreter') not in ('paraphrase_reuse', 'local_normalizer') and (
             contract.get('kind') != 'request_program' or request_program.cacheable(contract, interpretation)):
         with sqlite3.connect(cache_path) as db:
             saved_plan = ({'program': contract['program']} if contract.get('kind') == 'request_program' else
@@ -896,6 +916,10 @@ def compose(stack, question, *, population=None, parent=None, model=None, planni
             result = execute_contract(stack, question, graph, receipt, population=population, parent=parent, started=started)
         from .answer_format import present
         present(result, request_plan.Catalog.load(stack.path).target)
+        if receipt.get('interpretation', {}).get('interpreter') == 'local_normalizer':
+            from .local_normalizer import disclosure as normalized
+            result['answer']['limitations'] = [*(result['answer'].get('limitations') or []), normalized(receipt['interpretation'])]
+            result['answer']['interpreted_as'] = receipt['interpretation']['normalized_question']
         if receipt.get('interpretation', {}).get('interpreter') == 'paraphrase_reuse':
             from .paraphrase import disclosure
             result['answer']['limitations'] = [*(result['answer'].get('limitations') or []), disclosure(receipt['interpretation'])]
