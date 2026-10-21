@@ -609,6 +609,14 @@ def compose_shape(body):
     raise ValueError('Explicit composition question and supported optional candidate policy required')
 
 
+def _measure_grain(parent):
+    """The grain of the governed measure a saved answer computed, if any."""
+    from .request_vocabulary import definitions
+    analyses = ((((parent.get('planner_receipt') or {}).get('request_contract') or {}).get('request')) or {}).get('analyses') or []
+    ids = [a['parameters']['id'] for a in analyses if a.get('operation') == 'governed_metric']
+    return (definitions().get(ids[0]) or {}).get('grain', {}).get('entity') if ids else None
+
+
 RESCOPE = [re.compile(p, re.I) for p in (
     r'^(?:and\s+)?(?:what|how)\s+about\s+(?:for\s+)?(?P<scope>.+?)\??$',
     r'^(?:and\s+)?just\s+(?:for\s+)?(?P<scope>.+?)\??$',
@@ -624,6 +632,7 @@ def rescope(stack, question, saved):
     match = next((m for m in (rx.match(question.strip()) for rx in RESCOPE) if m), None)
     if not match: return None
     from ..deliverables import answer_context
+    from .question_input import QuestionNotUnderstood
     from .request_plan import Catalog, compile_request, PlanError
     from .request_language import Parser
     from . import sql_query
@@ -652,12 +661,17 @@ def rescope(stack, question, saved):
             label = 'everyone outside "' + info.get('scope', 'the previous group') + '"'
         else:
             words = re.sub(r'^(?:the\s+)?(?:patients|members|people)\s+(?=who|with|that|whose|aged|over|under)', '', scope, flags=re.I)
+            grain = _measure_grain(parent)
+            if grain in ('claim', 'member_month') and re.search(r'\b(?:medicare|medicaid|commercial|dual|line of business)\b', words, re.I):
+                raise QuestionNotUnderstood('For a claim-level measure, a line of business belongs to each claim, not to the '
+                                            "patient's current coverage; ask with the line of business stated in the measure.")
             parser = Parser(catalog, words); parser.base = 'patient'
             try:
                 where, tail = parser.expression(words)
                 if where is None or tail.strip(): return None
-                plan = {'source': {'table': 'patient', 'quote': words},
-                        'select': [{'kind': 'field', 'field': 'patient.patient_id', 'alias': 'patient_id', 'quote': words}],
+                anchor = re.search(r'\b(?!(?:who|with|that|whose|without|excluding|exclude)\b)[A-Za-z][\w-]*', words, re.I).group()
+                plan = {'source': {'table': 'patient', 'quote': anchor},
+                        'select': [{'kind': 'field', 'field': 'patient.patient_id', 'alias': 'patient_id', 'quote': anchor}],
                         'where': where, 'group_by': [], 'order_by': [], 'limit': None, 'unresolved': []}
                 contract = compile_request(catalog, words, plan, population=info.get('base_population'))
             except (PlanError, ValueError):
