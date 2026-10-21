@@ -11,6 +11,10 @@ Inputs
     demand-engine forecast (`demand_forecast: true`) or a supplied weekly volume (`forecast_weekly_arrivals`).
   * Service time from visit start_time/end_time (or stay admit/discharge times, else LOS days), or the user's
     `mean_service_minutes` (stated as an assumption).
+  * Optional selected patient IDs and an inclusive arrival `window`, bounded by the snapshot date.
+    A selected cohort models a dedicated queue; it does not estimate competing facility demand.
+    Automatic forecasting currently requires matching ED events, cohort and snapshot without an additional
+    organization/window restriction. A mismatched forecast remains an explicit unmet requirement.
 
 Models
   * M/M/c Erlang C: P(wait), mean wait, utilization, P(wait > t).        * Erlang A (M/M/c+M) when an abandonment rate is given.
@@ -25,11 +29,11 @@ ASSUMPTIONS and are checked (index of dispersion, service-time CV) with warnings
 from collections import Counter, defaultdict
 from datetime import date, datetime, timedelta
 from pathlib import Path
-import math, sqlite3
+import json, math, sqlite3
 
 import numpy as np
 
-VERSION = 'queueing/1'
+VERSION = 'queueing/2'
 SOURCES = ('ed', 'clinic', 'appointment', 'beds', 'manual')
 OBJECTIVES = ('wait', 'blocking')
 DAYS = ('Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun')
@@ -40,7 +44,7 @@ DEFAULTS = {
     'target_blocking': 0.02, 'abandonment_rate_per_hour': None, 'servers': None, 'capacity_K': None,
     'arrival_rate_per_hour': None, 'qos_beta': None, 'lag_adjustment': True, 'arrival_scale': 1.0,
     'forecast_weekly_arrivals': None, 'demand_forecast': False, 'sensitivity_pct': 10.0, 'max_servers': 1000,
-    'dispersion_warn': 1.25, 'cv_tolerance': 0.30, 'visit_types': None,
+    'dispersion_warn': 1.25, 'cv_tolerance': 0.30, 'visit_types': None, 'window': None,
 }
 MIN_DISPERSION_Z = 3.0
 
@@ -97,6 +101,15 @@ def validate(p):
     if out['source'] is None:
         out['source'] = 'manual' if (out['arrivals'] is not None or out['hourly_rates'] is not None) else 'ed'
     if out['objective'] is None: out['objective'] = 'blocking' if out['source'] == 'beds' else 'wait'
+    window = {'start':'', 'end':''} if out['window'] is None else out['window']
+    if not isinstance(window, dict) or set(window) != {'start', 'end'}:
+        raise ValueError('queueing window: inclusive start and end dates, or empty strings')
+    for value in window.values():
+        if not isinstance(value, str) or (value and date.fromisoformat(value).isoformat() != value):
+            raise ValueError('queueing window dates must be YYYY-MM-DD or empty')
+    if window['start'] and window['end'] and window['start'] > window['end']:
+        raise ValueError('queueing window start must not follow end')
+    out['window'] = dict(window)
     return out
 
 
@@ -288,40 +301,59 @@ def _is_date_only(ts):
     return ts is not None and len(str(ts).strip()) <= 10 and ':' not in str(ts)
 
 
-def _load_semantic(db, p):
-    """Return (arrival datetimes, service minutes, flags) from the semantic layer for p['source']."""
+def _load_semantic(db, p, patient_ids=None, as_of=None):
+    """Read only the selected population's arrivals and completed service evidence."""
     flags = Counter()
     arrivals, service = [], []
     untimed = []
     org, src = p['organization_id'], p['source']
+    window = p['window']
+    def rows(table, columns, where='', bindings=()):
+        clauses, args = ([where] if where else []), list(bindings)
+        if patient_ids is not None:
+            clauses.append('patient_id IN (SELECT value FROM json_each(?))')
+            args.append(json.dumps(patient_ids))
+        if org:
+            clauses.append('organization_id = ?'); args.append(org)
+        return db.execute(f'SELECT {columns} FROM {table}' + (' WHERE ' + ' AND '.join(clauses) if clauses else ''), args)
+
+    def in_window(arrival):
+        if arrival is None:
+            flags['undated'] += 1; return False
+        d = arrival.date().isoformat()
+        return (not window['start'] or d >= window['start']) and (not window['end'] or d <= window['end'])
+
+    def completed(end):
+        return end is not None and (not as_of or end.date().isoformat() <= as_of)
+
     if src in ('ed', 'clinic'):
         types = ('emergency_visit',) if src == 'ed' else tuple(p['visit_types'] or CLINIC_TYPES)
-        q = ('SELECT start_time, end_time, event_date, end_date, organization_id FROM visit WHERE type_concept IN (%s)' % ','.join('?' * len(types)))
-        for st, en, ed, end_d, o in db.execute(q, types):
-            if org and o != org: continue
+        for st, en, ed, end_d in rows('visit', 'start_time, end_time, event_date, end_date',
+                                    'type_concept IN (%s)' % ','.join('?' * len(types)), types):
             a = _parse(st, ed) or _parse(ed)
-            if a is None: flags['undated'] += 1; continue
+            if not in_window(a): continue
+            if a.date().isoformat() != str(ed or '')[:10]: flags['event_clock_mismatch'] += 1
             if ':' not in str(st or ''): flags['date_only'] += 1; untimed.append(a); continue
             arrivals.append(a)
             b = _parse(en, end_d or ed)
-            if b is not None and ':' in str(en or ''): service.append((b - a).total_seconds() / 60.0)
+            if completed(b) and ':' in str(en or ''): service.append((b - a).total_seconds() / 60.0)
     elif src == 'appointment':
-        for d, o, kept in db.execute('SELECT scheduled_date, organization_id, kept FROM appointment'):
-            if org and o != org: continue
+        for d, kept in rows('appointment', 'scheduled_date, kept'):
             if not kept: continue
             a = _parse(d)
-            if a is None: flags['undated'] += 1; continue
+            if not in_window(a): continue
             if _is_date_only(d): flags['date_only'] += 1; untimed.append(a); continue
             arrivals.append(a)
     elif src == 'beds':
-        for ad, dd, known, at, dt, los, o in db.execute('SELECT admit_date, discharge_date, discharge_known, admit_time_utc, discharge_time_utc, los_days, organization_id FROM stay'):
-            if org and o != org: continue
+        for ad, dd, known, at, dt, los in rows('stay', 'admit_date, discharge_date, discharge_known, admit_time_utc, discharge_time_utc, los_days'):
             a = _parse(at) or _parse(ad)
-            if a is None: flags['undated'] += 1; continue
+            if not in_window(a): continue
             if not at: flags['date_only'] += 1; untimed.append(a)
             else: arrivals.append(a)
             b = _parse(dt)
-            if b is not None and at: service.append((b - _parse(at)).total_seconds() / 60.0)
+            # A later discharge/LOS must not reveal service duration at an earlier snapshot.
+            if as_of and (not known or not completed(b or _parse(dd))): continue
+            if completed(b) and at: service.append((b - a).total_seconds() / 60.0)
             elif known and dd and ad:
                 x, y = _parse(ad), _parse(dd)
                 if x and y: service.append(max((y - x).days, 0) * 1440.0); flags['los_in_whole_days'] += 1
@@ -329,14 +361,16 @@ def _load_semantic(db, p):
     return arrivals, service, flags, untimed
 
 
-def hourly_profile(arrivals):
+def hourly_profile(arrivals, window=None):
     """Arrival rate per hour for each of 168 hour-of-week slots, from datetimes; also dispersion pieces.
 
     rate_slot = arrivals in the slot / calendar occurrences of that weekday in the observed range. Counts per
     (date, hour) are zero-filled so variance across occurrences of a slot is measured honestly."""
     if not arrivals: return None
     days = [a.date() for a in arrivals]
-    first, last = min(days), max(days)
+    window = window or {}
+    first = date.fromisoformat(window['start']) if window.get('start') else min(days)
+    last = date.fromisoformat(window['end']) if window.get('end') else max(days)
     n_days = (last - first).days + 1
     occ = Counter((first + timedelta(days=i)).weekday() for i in range(n_days))
     counts = Counter((a.date(), a.hour) for a in arrivals)
@@ -367,10 +401,10 @@ def dispersion(per_slot, min_occ=2):
 
 def service_cv(minutes):
     xs = [x for x in minutes if x is not None and 0 < x <= 20160]
-    if len(xs) < 2: return None
+    if not xs: return None
     m = sum(xs) / len(xs)
-    sd = (sum((x - m) ** 2 for x in xs) / (len(xs) - 1)) ** 0.5
-    return {'n': len(xs), 'mean_minutes': m, 'sd_minutes': sd, 'cv': sd / m if m > 0 else None, 'median_minutes': float(np.median(xs))}
+    sd = (sum((x - m) ** 2 for x in xs) / (len(xs) - 1)) ** 0.5 if len(xs) > 1 else None
+    return {'n': len(xs), 'mean_minutes': m, 'sd_minutes': sd, 'cv': sd / m if sd is not None else None, 'median_minutes': float(np.median(xs))}
 
 
 # ---- SIPP with lag -----------------------------------------------------------------------------
@@ -411,12 +445,15 @@ def _staffing_summary(rows, total):
 
 
 # ---- demand engine integration -----------------------------------------------------------------
-def _demand_forecast(path, p):
+def _demand_forecast(path, p, patient_ids=None, as_of=None):
     from . import demand
-    measure = {'ed': 'ed_visits', 'clinic': 'primary_care_visits', 'appointment': 'appointments', 'beds': 'inpatient_admissions'}.get(p['source'])
-    if measure is None: return None, 'demand_forecast needs source ed, clinic, appointment or beds.'
+    # Other mappings are not equivalent: kept vs scheduled appointments, stay vs
+    # visit admissions, or combined outpatient types vs primary-care visits.
+    if p['source'] != 'ed' or p['organization_id'] or any(p['window'].values()) or p['arrivals'] is not None or p['hourly_rates'] is not None:
+        return None, 'Automatic demand forecast cannot match this source, organization or event window; provide an explicitly scoped weekly volume.'
+    measure = 'ed_visits'
     try:
-        rep = demand.execute(path, None, {'measure': measure, 'frequency': 'week', 'horizon': 1})
+        rep = demand.execute(path, patient_ids, {'measure': measure, 'frequency': 'week', 'horizon': 1}, as_of)
         s = rep['series'][0]
         if s.get('status') != 'forecast': return None, f"demand engine returned no forecast: {s.get('reason')}"
         fc = next((r for r in s['forecast'] if not r.get('in_progress')), s['forecast'][0])
@@ -435,29 +472,58 @@ def _connect(obj):
     return sqlite3.connect(f'file:{semantic_layer.ensure(Path(path))}?mode=ro', uri=True), Path(path), True
 
 
-def execute(stack_or_semantic, params=None):
+def execute(stack_or_semantic, params=None, *, patient_ids=None, as_of=None):
     p = validate(params)
+    forecast_params = dict(p)
+    if as_of:
+        if date.fromisoformat(as_of).isoformat() != as_of: raise ValueError('queueing as_of must be YYYY-MM-DD')
+        if any(v > as_of for v in p['window'].values() if v): raise ValueError('queueing window exceeds snapshot as_of')
+        p['window'] = {**p['window'], 'end': p['window']['end'] or as_of}
+    if patient_ids is not None:
+        if not isinstance(patient_ids, (list, tuple, set, frozenset)) or any(not isinstance(x, str) for x in patient_ids):
+            raise ValueError('queueing patient_ids must be a sequence of patient IDs')
+        patient_ids = sorted(set(patient_ids))
+    manual = p['arrivals'] is not None or p['hourly_rates'] is not None
+    scope = {'basis':'user_supplied_scenario' if manual else 'received_records',
+             'population':'selected' if patient_ids is not None else 'all_received',
+             'patient_count':len(patient_ids) if patient_ids is not None else None,
+             'patient_linkage_verified':not manual, 'organization_id':p['organization_id'],
+             'window':dict(p['window']), 'as_of':as_of}
     warnings, assumptions, notes = [], [], []
+    if patient_ids is not None:
+        assumptions.append('Capacity models a dedicated queue for the selected population; shared facility demand from other patients is excluded.')
+    if manual:
+        assumptions.append('User-supplied arrivals/rates and service durations are scenario assumptions; patient linkage is not verified.')
+    def finish(report):
+        report['input_scope'] = scope
+        return report
     src, objective = p['source'], p['objective']
+    if patient_ids == []:
+        return finish(_insufficient(p, src, warnings, assumptions, 'selected population is empty'))
     db, path, close = _connect(stack_or_semantic)
     arrivals, service, flags, untimed = [], [], Counter(), []
+    supplied_service = False
     try:
         if p['arrivals'] is not None:
             arrivals = [d for d in (_parse(x) for x in p['arrivals']) if d is not None]
             if len(arrivals) < len(p['arrivals']): warnings.append(f"{len(p['arrivals']) - len(arrivals)} arrival timestamps could not be parsed and were dropped.")
+            arrivals = [d for d in arrivals if (not p['window']['start'] or d.date().isoformat() >= p['window']['start'])
+                        and (not p['window']['end'] or d.date().isoformat() <= p['window']['end'])]
             service = list(p['service_minutes'] or [])
+            supplied_service = bool(service)
         elif p['hourly_rates'] is None:
             if db is None: raise ValueError('queueing needs a semantic layer, explicit arrivals or hourly_rates')
             try:
-                arrivals, service, flags, untimed = _load_semantic(db, p)
+                arrivals, service, flags, untimed = _load_semantic(db, p, patient_ids, as_of)
             except sqlite3.Error as e:
                 raise ValueError(f'queueing could not read the semantic layer for source {src}: {e}')
     finally:
         if close and db is not None: db.close()
-    if p['service_minutes'] is not None and not service: service = list(p['service_minutes'])
+    if p['service_minutes'] is not None and not service:
+        service = list(p['service_minutes']); supplied_service = bool(service)
 
     # arrival rates by hour of week
-    profile = hourly_profile(arrivals + untimed if (untimed and len(arrivals) < len(untimed)) else arrivals) if (arrivals or untimed) else None
+    profile = hourly_profile(arrivals + untimed if (untimed and len(arrivals) < len(untimed)) else arrivals, p['window']) if (arrivals or untimed) else None
     rate_source = None
     date_only_mode = bool(untimed) and len(arrivals) < len(untimed)
     if p['hourly_rates'] is not None:
@@ -479,17 +545,17 @@ def execute(stack_or_semantic, params=None):
         if profile['weeks'] < 4:
             warnings.append(f"Only {profile['weeks']:.1f} weeks of arrivals: hour-of-week rates are noisy.")
     else:
-        return _insufficient(p, src, warnings, assumptions, 'no arrivals found for the requested source' if db is not None or p['arrivals'] is not None else 'no data')
+        return finish(_insufficient(p, src, warnings, assumptions, 'no arrivals found in the requested population/source/window' if db is not None or p['arrivals'] is not None else 'no data'))
 
     # service time
     cv = service_cv(service) if service else None
     if cv:
-        mean_min, service_source = cv['mean_minutes'], f"{cv['n']} observed durations"
+        mean_min, service_source = cv['mean_minutes'], f"{cv['n']} " + ('user-provided durations' if supplied_service else 'observed durations')
     elif p['mean_service_minutes']:
         mean_min, service_source = p['mean_service_minutes'], 'user-provided mean_service_minutes'
         assumptions.append(f"Mean service time {mean_min:g} minutes is user-provided; no start/end durations were available to estimate it.")
     else:
-        return _insufficient(p, src, warnings, assumptions, 'no service times observed and no mean_service_minutes provided')
+        return finish(_insufficient(p, src, warnings, assumptions, 'no service times observed and no mean_service_minutes provided'))
     if cv and p['mean_service_minutes'] and abs(p['mean_service_minutes'] - cv['mean_minutes']) > 1e-9:
         mean_min, service_source = p['mean_service_minutes'], 'user-provided mean_service_minutes (overrides observed)'
         assumptions.append(f"Mean service time {mean_min:g} minutes is user-provided and overrides the observed mean of {cv['mean_minutes']:.1f}.")
@@ -499,11 +565,16 @@ def execute(stack_or_semantic, params=None):
     scale = p['arrival_scale']
     weekly_hist = sum(rates)
     forecast = p['forecast_weekly_arrivals']
+    unmet = []
     if p['demand_forecast'] and forecast is None and path is not None:
-        forecast, err = _demand_forecast(path, p)
-        if err: warnings.append(err)
+        if flags['event_clock_mismatch']:
+            forecast, err = None, 'Automatic forecast uses event dates that disagree with the observed arrival timestamps.'
+        else:
+            forecast, err = _demand_forecast(path, forecast_params, patient_ids, as_of)
+        if err: warnings.append(err); unmet.append(err)
     elif p['demand_forecast'] and forecast is None:
-        warnings.append('demand_forecast needs a semantic-layer path; ignored.')
+        err = 'Automatic demand forecast needs a semantic-layer path; historical capacity only.'
+        warnings.append(err); unmet.append(err)
     forecast_info = None
     if forecast and weekly_hist > 0:
         f_scale = forecast['point'] / weekly_hist
@@ -536,7 +607,7 @@ def execute(stack_or_semantic, params=None):
                                          'median_minutes': round(cv['median_minutes'], 3)}
         if bad: warnings.append(f"Service times are not exponential (CV {cv['cv']:.2f} vs 1.0, n={cv['n']}): "
                                 + ('lower variability than exponential makes Erlang waits conservative' if cv['cv'] < 1 else 'higher variability makes Erlang waits optimistic') + '. See allen_cunneen_mean_wait_minutes for an M/G/c adjustment of the mean wait.')
-    elif not cv: warnings.append('Service-time shape (CV) could not be checked; exponential service is assumed.')
+    else: warnings.append('Service-time shape (CV) could not be checked; exponential service is assumed.')
 
     # lag
     lag = p['lag_adjustment']
@@ -584,7 +655,7 @@ def execute(stack_or_semantic, params=None):
     inferred = 'descriptive_model' if (cv and checks['poisson_arrivals']['status'] != 'not_testable') else 'assumption_based'
     answer = {
         'objective': objective, 'source': src,
-        'inputs': {'arrival_rate_source': rate_source, 'arrivals_used': len(arrivals), 'weeks_observed': round(profile['weeks'], 3) if profile else None,
+        'inputs': {'arrival_rate_source': rate_source, 'arrivals_used': len(arrivals) + len(untimed), 'date_only_arrivals': len(untimed), 'weeks_observed': round(profile['weeks'], 3) if profile else None,
                    'arrival_scale_applied': round(scale, 6), 'weekly_arrivals_base': round(weekly_hist, 4), 'weekly_arrivals_planned': round(sum(rates_scaled), 4),
                    'mean_service_minutes': round(mean_min, 4), 'service_source': service_source, 'service_rate_per_hour': round(mu, 6),
                    'peak_arrival_hour': f"{DAYS[peak_rate_slot // 24]} {peak_rate_slot % 24:02d}:00", 'peak_arrival_rate_per_hour': round(rates_scaled[peak_rate_slot], 6),
@@ -596,12 +667,13 @@ def execute(stack_or_semantic, params=None):
         'sensitivity': sens,
         'assumption_checks': checks,
     }
-    return {'schema': VERSION, 'answer': answer, 'warnings': warnings, 'assumptions': assumptions, 'notes': notes, 'inference_status': inferred,
+    return finish({'schema': VERSION, 'answer': answer, 'warnings': warnings, 'assumptions': assumptions, 'notes': notes, 'inference_status': inferred,
+            'unmet_requirements': unmet,
             'optimality_claimed': False, 'parameters': {k: v for k, v in p.items() if k not in ('arrivals', 'service_minutes')},
             'method': ('Hour-of-week arrival rates from timestamped arrivals; Erlang C (stable Erlang B recursion), Erlang A (birth-death with truncation, virtual wait by uniformization), '
                        'Halfin-Whitt square-root staffing, M/M/c/K, SIPP with exponential lag; exact minimum servers by search; index of dispersion and service CV checks.'),
             'limitations': ['Planning approximation under Poisson/exponential assumptions; not an optimal roster and not a validated clinical standard.',
-                            'Synthetic data only; no operational validation.']}
+                            'Synthetic data only; no operational validation.']})
 
 
 def _by_hour_of_day(rows):
@@ -667,9 +739,8 @@ def _insufficient(p, src, warnings, assumptions, reason):
 
 # ---- Agere graph integration -------------------------------------------------------------------
 def engine_execute(path, patient_ids, params, as_of=None):
-    """analysis_graph signature (same as scheduling.execute). Queueing is a facility-level model: it never takes a
-    patient population, so patient_ids is ignored; as_of is not needed (arrivals come from received timestamps)."""
-    return execute(path, params)
+    """Preserve the graph's cohort and cutoff; None and an empty cohort differ."""
+    return execute(path, params, patient_ids=patient_ids, as_of=as_of)
 
 
 def table(report):
@@ -704,4 +775,6 @@ def summary(report):
         text += (f"Arrivals {p['sensitivity_pct']:g}% lower/higher change the peak to {s[0]['peak_servers']}/{s[2]['peak_servers']} "
                  f"and the weekly total to {s[0]['total_server_hours_per_week']:,}/{s[2]['total_server_hours_per_week']:,}. ")
     if report['warnings']: text += f"Warnings ({len(report['warnings'])}): " + report['warnings'][0]
+    if report.get('unmet_requirements'):
+        text = 'Historical capacity estimate only; the requested automatic forecast is unavailable. ' + text
     return text.strip()

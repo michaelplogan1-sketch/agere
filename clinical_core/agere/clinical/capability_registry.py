@@ -56,10 +56,11 @@ PRODUCT['scheduling'] = {'population': 'optional', 'view': 'yield',
                                 'WHICH UPCOMING APPOINTMENTS are likely no-shows (tomorrow / next week), who should get a reminder call, access (booking lead time). '
                                 'A past no-show RATE is a literal lookup, not this.'}
 
-PRODUCT['queueing'] = {'population': 'none', 'view': 'staffing',
+PRODUCT['queueing'] = {'population': 'optional', 'view': 'staffing',
                        'use': 'Queueing-theory capacity sizing (Erlang C / A / B, square-root staffing): HOW MANY nurses / providers / beds per hour (by hour of week) are needed '
                               'to keep patient waits under a target (e.g. P(wait > 30 min) <= 10%) or bed blocking under a target (e.g. <= 2%), the chance a patient waits more than N minutes, '
-                              'utilization, sensitivity to +-10% arrivals. Not demand (volume forecasts; staffing only from user-supplied ratios) and not scheduling (overbooking / no-shows).'}
+                              'utilization, sensitivity to +-10% arrivals. Preserves the selected population and arrival window through the snapshot; assumes a dedicated queue for that population. '
+                              'Not demand (volume forecasts; staffing only from user-supplied ratios) and not scheduling (overbooking / no-shows).'}
 
 PRODUCT['uplift'] = {'population': 'optional', 'view': 'uplift',
                      'use': 'Who BENEFITS from outreach or care management (heterogeneous treatment effects): persuadables, uplift / CATE by member, which patients to enrol because the program changes their outcome most, '

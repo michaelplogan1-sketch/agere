@@ -392,7 +392,7 @@ def build_answer_core(plan, results, memberships, question):
     if last['operation'] == 'queueing':
         from .queueing import summary, table
         report = results[-1]['result']
-        partial = plan.get('coverage') != 'supported_observation' or plan.get('unmet_requirements')
+        partial = plan.get('coverage') != 'supported_observation' or plan.get('unmet_requirements') or report.get('unmet_requirements')
         rows = table(report)
         ok = bool(rows)
         answer.update(status=('partial' if partial else 'answered') if ok else 'unsupported', answer_type='table' if ok else 'unsupported',
@@ -401,7 +401,9 @@ def build_answer_core(plan, results, memberships, question):
                       warnings=report['warnings'], assumptions=report['assumptions'],
                       overall={'queueing': {k: v for k, v in report['answer'].items() if k != 'staffing'} | {
                                    'staffing': {k: v for k, v in (report['answer'].get('staffing') or {}).items() if k != 'by_hour_of_week'}},
+                               'input_scope': report.get('input_scope'), 'input_membership': report.get('input_membership'),
                                'inference_status': report['inference_status'], 'assumptions': report['assumptions']})
+        answer['missing'].extend(report.get('unmet_requirements', []))
         if not ok: answer['missing'].append(summary(report))
         return answer
     if last['operation'] == 'survival':
@@ -925,6 +927,8 @@ def validate(plan, as_of):
         elif op == 'queueing':
             from . import queueing
             p = queueing.validate(p)
+            if any(v > as_of for v in p['window'].values() if v):
+                raise ValueError('queueing window exceeds snapshot as_of')
         elif op == 'briefing':
             from . import briefing_rank
             p = briefing_rank.validate(p)
@@ -1523,7 +1527,9 @@ def execute(stack, plan, *, question=None):
         if appointment_dependency:
             context_identities.append({'appointment_sources':appointment_dependency,'original_question':question})
         context_identities.append({'original_question': question})
-        if any(n.get('operation') == 'demand' for n in plan.get('nodes', [])):
+        if any(n.get('operation') == 'demand' or
+               (n.get('operation') == 'queueing' and n['parameters'].get('demand_forecast'))
+               for n in plan.get('nodes', [])):
             from .demand import default_model
             context_identities.append({'demand_model': default_model()})  # AGERE_DEMAND_TIMESTRAL changes the forecast
         key = digest([VERSION, code_identity(), meta['source_digest'], evidence_meta['model_identity'],
@@ -1592,7 +1598,9 @@ def execute(stack, plan, *, question=None):
                 if chosen: detail['input_membership'] = membership_receipt(chosen)
             elif op == 'queueing':
                 from . import queueing
-                detail = queueing.engine_execute(path, None, params, meta['snapshot']['as_of'])
+                chosen = memberships[node['inputs'][0]] if node['inputs'] else None
+                detail = queueing.engine_execute(path, sorted(chosen.yes) if chosen is not None else None, params, meta['snapshot']['as_of'])
+                if chosen is not None: detail['input_membership'] = membership_receipt(chosen)
             elif op == 'briefing':
                 from . import briefing, briefing_rank
                 detail = briefing_rank.serve(path, briefing.cached(path), record=False)

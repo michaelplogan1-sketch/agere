@@ -24,7 +24,8 @@ TYPED |= {'scheduling'}
 OPTIONAL_POPULATION += ('scheduling',)
 TYPED |= {'uplift'}  # heterogeneous treatment effect / who benefits (uplift.py)
 OPTIONAL_POPULATION += ('uplift',)
-TYPED |= {'queueing'}  # queueing-theory staffing / bed sizing (queueing.py); takes no population
+TYPED |= {'queueing'}  # queueing-theory staffing / bed sizing (queueing.py)
+OPTIONAL_POPULATION += ('queueing',)
 TYPED |= {'briefing'}
 TYPED |= {'early_signal'}
 OPTIONAL_POPULATION += ('early_signal',)
@@ -76,8 +77,6 @@ def array(items, description=None):
 
 def input_contract(op):
     if op == 'knowledge':  # explanation from the cited knowledge base; never a population
-        return {'count': [0, 0], 'type': 'membership', 'output': 'report'}
-    if op == 'queueing':  # facility-level capacity model; takes no population
         return {'count': [0, 0], 'type': 'membership', 'output': 'report'}
     if op == 'briefing':  # whole-population briefing; takes no population
         return {'count': [0, 0], 'type': 'membership', 'output': 'report'}
@@ -236,6 +235,8 @@ def parameter_schema(op, catalog):
         n = lambda lo, hi, d: {'type': ['number', 'null'], 'minimum': lo, 'maximum': hi, 'description': d}
         return obj({'source': string(queueing.SOURCES, 'ed = emergency visits, clinic = outpatient visits, appointment = kept appointments, beds = hospital stays (arrival = admission, service = length of stay); default ed'),
                     'organization_id': {'type': 'string', 'description': 'One organisation the question names, else empty'},
+                    'window': obj({'start': string(description='Inclusive arrival date YYYY-MM-DD, or empty for available history'),
+                                   'end': string(description='Inclusive arrival date YYYY-MM-DD, or empty for snapshot date; cannot exceed snapshot')}),
                     'objective': string(queueing.OBJECTIVES, 'wait: P(wait > threshold) <= target (staff); blocking: Erlang B blocking <= target (beds)'),
                     'wait_threshold_minutes': n(0, 1e5, 'Wait the patient must not exceed, in minutes (default 30)'),
                     'target_wait_probability': n(1e-6, 1, 'Allowed chance of exceeding the threshold, 0..1 (default 0.10)'),
@@ -243,7 +244,7 @@ def parameter_schema(op, catalog):
                     'abandonment_rate_per_hour': n(0, 1e4, 'Patients leaving the queue per hour of waiting (Erlang A), only if stated'),
                     'servers': {'type': ['integer', 'null'], 'minimum': 1, 'maximum': 5000, 'description': 'Staff or beds on hand when the question asks about a stated number, else null'},
                     'mean_service_minutes': n(0.01, 1e6, 'Stated mean service time or length of stay in minutes; null to estimate from visit start/end times'),
-                    'demand_forecast': {'type': 'boolean', 'description': 'true when the question plans for a forecast future period'},
+                    'demand_forecast': {'type': 'boolean', 'description': 'Automatic next-week ED forecast uses the same cohort and snapshot; organization/window restrictions or other event definitions remain unresolved'},
                     'arrival_scale': n(0, 100, 'Multiplier on arrivals, e.g. 1.1 for +10%'),
                     'sensitivity_pct': n(0, 100, 'Arrival sensitivity band in percent (default 10)')})
     if op == 'scheduling':
