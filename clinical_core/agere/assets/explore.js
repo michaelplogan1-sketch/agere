@@ -68,14 +68,17 @@ function syncScope(t){
  activeContext=c&&/^ANS-[0-9a-f]{24}$/.test(c.id)?c:null;
  if(activeContext)history.replaceState(null,'','/ask?context='+encodeURIComponent(activeContext.id));
  const option=$('#question-scope').querySelector('[value="saved"]');
- const a=d.answer||{},summaryWithoutCohort=!(a.patient_ids||[]).length&&(a.analysis_population_count!=null||a.answer_type==='value');
+ const a=d.answer||{},summaryWithoutCohort=c?.result_scope_available===false||(!(a.patient_ids||[]).length&&(a.analysis_population_count!=null||a.answer_type==='value'));
  option.disabled=!activeContext||!!t?.archiveBlocked||summaryWithoutCohort;
  option.textContent=activeContext?(summaryWithoutCohort?'Analytical summary · no selected patients':'Follow up · '+fmt(c.patients??a.patient_ids?.length??0)+' saved patients'):'Follow up on this result';
+ const input=$('#question-scope').querySelector('[value="input"]');
+ input.disabled=!activeContext||!!t?.archiveBlocked||c?.input_patients==null;
+ input.textContent=c?.input_patients!=null?'Original input · '+fmt(c.input_patients)+' patients':'Original input unavailable';
  $('#question-scope').value=option.disabled?'warehouse':'saved';
  updateScopeNote();
 }
 function updateScopeNote(){
- $('#scope-note').textContent=$('#question-scope').value==='saved'?'This follow-up keeps the exact saved patient set. Choose “Entire warehouse” to start a broader question.':'Use your own words. Add a date range, comparison, or filter.';
+ $('#scope-note').textContent=$('#question-scope').value==='input'?'Uses the original question’s saved input patients. These are not necessarily patients selected by its answer, and this choice does not authorize work.':$('#question-scope').value==='saved'?'This follow-up keeps the exact saved patient set. Choose “Entire warehouse” to start a broader question.':'Use your own words. Add a date range, comparison, or filter.';
 }
 async function openSavedContext(id){
  const epoch=++conversationEpoch;
@@ -83,7 +86,7 @@ async function openSavedContext(id){
  try{
   const d=await fetchJSON('/api/stack/action-context?context='+encodeURIComponent(id));if(epoch!==conversationEpoch)return;
   const c=d.context;state.cid=null;store.set('agere-conversation',null);
-  const t={question:c.original_question||c.question,resolved:c.question,archive:true,archiveBlocked:c.stale||c.invalidated,data:{workflow:d.workflow?.steps||[],answer:c.answer,graph:c.graph,results:c.results,planner_receipt:c.planner_receipt,planning_economics:c.planning_economics,action_context:{id:c.id,patients:c.patient_ids.length},new_paid_api_calls:c.planner_receipt?.new_paid_api_calls}};
+  const t={question:c.original_question||c.question,resolved:c.question,archive:true,archiveBlocked:c.stale||c.invalidated,data:{workflow:d.workflow?.steps||[],answer:c.answer,graph:c.graph,results:c.results,planner_receipt:c.planner_receipt,planning_economics:c.planning_economics,action_context:{id:c.id,patients:c.patient_ids.length,input_patients:c.input_patients,result_scope_available:c.result_scope_available},new_paid_api_calls:c.planner_receipt?.new_paid_api_calls}};
   t.archiveNotice=c.invalidated?'This saved answer was invalidated. Its history is available, but it cannot be used for new work or scoped follow-ups.':c.stale?'The warehouse has changed since this answer. Start a new analysis to use current data.':null;
   state.turns=[t];renderTurn(0);
  }catch(e){if(epoch!==conversationEpoch)return;$('#answer').innerHTML='<h2 class="headline">This analysis couldn’t open.</h2><p>'+esc(e.message)+'</p><button class="btn" data-page="saved">Back to saved analyses</button>'}

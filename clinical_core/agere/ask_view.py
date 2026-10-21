@@ -932,11 +932,12 @@ function renderThread(){const ul=$('#thread');ul.innerHTML=state.turns.map((t,i)
 
 /* ---------- asking ---------- */
 async function ask(question,opt){opt=opt||{};question=String(question||'').trim();if(!question||state.busy)return null;
- const parent=opt.standalone?null:($('#question-scope').value==='saved'?activeContext:null);
+ const selectedScope=$('#question-scope').value;
+ const parent=opt.standalone?null:(['saved','input'].includes(selectedScope)?activeContext:null);
  state.busy=true;$('#askb').disabled=true;$('#newconv').disabled=true;$('#q').readOnly=true;activeTab='overview';
  if(!state.cid){state.cid=newId();store.set('agere-conversation',state.cid)}
  const t={question,pending:true,focus:opt.focus};state.turns.push(t);renderTurn(state.turns.length-1);const t0=performance.now();
- try{const r=await fetch('/api/stack/compose',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({question,conversation_id:state.cid,...(parent?{answer_context_id:parent.id}:{}),...(!parent?{scope:'warehouse'}:{})})});
+ try{const r=await fetch('/api/stack/compose',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({question,conversation_id:state.cid,...(parent?{answer_context_id:parent.id,...(selectedScope==='input'?{answer_scope:'input'}:{})}:{}),...(!parent?{scope:'warehouse'}:{})})});
   let d;try{d=await r.json()}catch(_){d={error:'HTTP '+r.status}}t.seconds=(performance.now()-t0)/1000;t.pending=false;
   if(d.error||!r.ok){t.error=d.error||('HTTP '+r.status)}else{t.data=d;t.resolved=(d.conversation||{}).resolved_question}}
  catch(err){t.pending=false;t.error=String(err)}finally{state.busy=false;$('#askb').disabled=false;$('#newconv').disabled=false;$('#q').readOnly=false}

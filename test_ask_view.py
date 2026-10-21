@@ -184,7 +184,7 @@ assert.match(vizQueueing(a),/Arrivals \/ week<\/div><div class="v">0</);
         script = (Path(ask_view.__file__).parent/'assets/explore.js').read_text()
         code = script[script.index('function syncScope('):script.index('function updateScopeNote(')]
         setup = """
-let activeContext; const option={},picker={querySelector:()=>option};
+let activeContext; const option={},input={},picker={querySelector:s=>s.includes('input')?input:option};
 const $=()=>picker, fmt=String, history={replaceState:()=>{}},updateScopeNote=()=>{};
 """
         checks = r'''
@@ -192,6 +192,18 @@ const assert=require('node:assert/strict');
 const t={data:{action_context:{id:'ANS-000000000000000000000001',patients:0},answer:{patient_ids:[],analysis_population_count:3,answer_type:'table'}}};
 syncScope(t);assert.equal(option.disabled,true);assert.equal(picker.value,'warehouse');
 assert.equal(option.textContent,'Analytical summary · no selected patients');
+assert.equal(input.disabled,true);
+t.data.action_context.input_patients=3;
+syncScope(t);assert.equal(input.disabled,false);assert.equal(input.textContent,'Original input · 3 patients');
+assert.equal(picker.value,'warehouse'); // Never silently change summary output into its input.
+t.data.action_context.input_patients=0;
+syncScope(t);assert.equal(input.disabled,false);assert.equal(input.textContent,'Original input · 0 patients');
+t.archiveBlocked=true;syncScope(t);assert.equal(input.disabled,true);
+t.archiveBlocked=false;
+t.data.action_context.result_scope_available=false;
+t.data.answer={patient_ids:[],answer_type:'count'};
+syncScope(t);assert.equal(option.disabled,true);assert.equal(picker.value,'warehouse');
+delete t.data.action_context.result_scope_available;
 t.data.answer={patient_ids:[],answer_type:'patient_set'};
 syncScope(t);assert.equal(option.disabled,false);assert.equal(picker.value,'saved');
 t.data.answer={patient_ids:['A'],answer_type:'count'};t.data.action_context.patients=1;

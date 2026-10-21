@@ -594,6 +594,10 @@ def compose_shape(body):
         if conv is False or not isinstance(body['answer_context_id'], str) or not re.fullmatch(r'ANS-[0-9a-f]{24}', body['answer_context_id']):
             raise ValueError('A conversation and exact saved answer identity are required')
         keys -= {'answer_context_id'}
+    if 'answer_scope' in keys:
+        if body['answer_scope'] not in ('result', 'input') or 'answer_context_id' not in body:
+            raise ValueError('Answer scope must select result or input from an exact saved answer')
+        keys -= {'answer_scope'}
     if keys == {'question'}: return body['question'], 'auto', conv
     if keys == {'question', 'planning'} and body['planning'] in ('auto', 'frontier'):
         return body['question'], body['planning'], conv
@@ -634,12 +638,14 @@ def handle_compose(stack, body, hosted_factory=None):
                 if not saved:
                     raise QuestionNotUnderstood('No saved cohort is available for this edit. Ask a complete question first.')
                 parent = answer_context.load(stack.path, saved['id'], current=True)
-                answer_context.require_patient_reference(parent)
+                selected_scope = body.get('answer_scope', 'result')
+                parent = answer_context.reference_scope(parent, selected_scope)
                 # Legacy finite transforms remain useful for literal list/count and
                 # grouping. They operate on immutable membership, never text rewrites.
-                bound = answer_context.followup(stack.path, saved['id'], question)
+                bound = answer_context.followup(stack.path, saved['id'], question, scope=selected_scope)
                 if bound is None:
                     bound = stack.compose(question, population=parent['patient_ids'], parent=parent, planning=planning)
+                bound['cohort_transform']['scope'] = selected_scope
             elif not shared and saved and is_followup(question) and planning == 'auto' and parse_frame(question) is None:
                 bound = answer_context.followup(stack.path, saved['id'], question)
                 if bound is None:

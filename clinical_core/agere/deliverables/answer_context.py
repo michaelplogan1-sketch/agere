@@ -91,6 +91,10 @@ def capture(path, question, result, *, original_question=None):
         rows = inherited
     from ..clinical.shared_planner import policy_identity
     context_policy = policy_identity()
+    # Preserve an explicit question input independently of output membership.
+    # None means unscoped, [] means an intentionally empty saved population.
+    input_ids = contract.get('population') if contract else (result.get('cohort_transform') or {}).get('input_patient_ids')
+    input_ids = None if input_ids is None else sorted(set(input_ids))
     data = {'schema': 'agere-answer-context/1', 'context_policy_identity': context_policy, 'question': question,
             'original_question': original_question or question, 'source': source,
             'answer': answer, 'graph': result.get('graph'), 'results': result.get('results'),
@@ -98,6 +102,7 @@ def capture(path, question, result, *, original_question=None):
             'cohort_transform': result.get('cohort_transform'),
             'workflow': result.get('workflow', []),
             'patient_rows': rows, 'patient_ids': [r['patient_id'] for r in rows],
+            'input_patient_ids': input_ids,
             'synthetic': True, 'clinical_eligibility_established': False}
     from ..clinical import answer_dependencies
     data['dependencies'] = answer_dependencies.seal(path, data)
@@ -105,7 +110,8 @@ def capture(path, question, result, *, original_question=None):
     # cache state or cost. Keep the first complete execution receipt immutable.
     graph = data.get('graph') or {}
     plan = [{k: n.get(k) for k in ('id', 'operation', 'inputs', 'parameters')} for n in graph.get('nodes') or []]
-    key = 'ANS-' + fingerprint({'version': 5, 'context_policy_identity': context_policy,
+    key = 'ANS-' + fingerprint({'version': 6, 'context_policy_identity': context_policy,
+                               'input_patient_ids': input_ids,
                                'feedback_identity': (data.get('planner_receipt') or {}).get('feedback_identity'),
                                'procedural_memory_identity': ((data.get('planner_receipt') or {}).get('interpretation', {}).get('procedural_memory') or {}).get('identity'),
                                'source': source, 'answer': answer, 'plan': plan,
@@ -124,7 +130,7 @@ def capture(path, question, result, *, original_question=None):
                 json.dump({**data, 'id': key, 'created_at': now()}, f, default=str)
         except FileExistsError:
             pass
-    return {'id': key, 'patients': len(rows), 'url': '/action-center?context=' + key}
+    return {'id': key, 'patients': len(rows), 'url': '/action-center?context=' + key, **scope_options(data)}
 
 
 def load(path, key, *, current=False):
@@ -180,6 +186,7 @@ def load(path, key, *, current=False):
         raise ValueError('The data changed. Ask the question again before creating or changing work.')
     return {**data, 'stale': stale, 'invalidated': invalidated,
             'dependency_validation': dependency_checks,
+            **scope_options(data),
             'supports_patient_work': supports_patient_work(data)}
 
 
@@ -233,12 +240,39 @@ def supports_patient_work(context):
                    for r in answer.get('table') or []))
 
 
+def scope_options(context):
+    """Public scope choices; membership itself remains server-owned."""
+    answer = context['answer']
+    contract = (context.get('planner_receipt') or {}).get('request_contract') or {}
+    summary = (answer.get('analysis_population_count') is not None or answer.get('answer_type') == 'value'
+               or (contract.get('kind') == 'general_analysis' and contract.get('returns') != 'patient_set'
+                   and not contract.get('analysis', {}).get('patient_selection')))
+    return {'result_scope_available': bool(context['patient_ids']) or not summary,
+            'input_patients': None if context.get('input_patient_ids') is None else len(context['input_patient_ids'])}
+
+
 def require_patient_reference(context):
     """An empty summary membership is not an observed empty patient cohort."""
-    a = context['answer']
-    if not context['patient_ids'] and (a.get('analysis_population_count') is not None or a.get('answer_type') == 'value'):
+    if not scope_options(context)['result_scope_available']:
         from ..clinical.question_input import QuestionNotUnderstood
         raise QuestionNotUnderstood('The previous answer is an analytical summary, not a selected patient cohort. Ask which population you want to follow.')
+
+
+def reference_scope(context, scope='result'):
+    """Select a current saved scope without mutating the immutable answer.
+
+    The original input is analytical provenance. It carries no authority from
+    a narrower output cohort to create patient work.
+    """
+    if scope == 'result':
+        require_patient_reference(context)
+        return context
+    if scope != 'input' or context.get('input_patient_ids') is None:
+        raise ValueError('This answer has no explicit saved input population. Choose an available result or the entire warehouse.')
+    ids = context['input_patient_ids']
+    return {**context, 'patient_ids': ids,
+            'patient_rows': [{'patient_id': pid, 'evidence_rows': []} for pid in ids],
+            'answer': {**context['answer'], 'actionable_cohort': False}}
 
 
 def create_work(path, request):
@@ -332,7 +366,7 @@ def update_work(path, request):
     return inspect(path, c['id'])
 
 
-def followup(path, key, question):
+def followup(path, key, question, *, scope='result'):
     """Deterministic transformations of any saved patient set, never a new search.
 
     Unsupported edits return None. The caller must not rewrite an anaphoric
@@ -344,8 +378,7 @@ def followup(path, key, question):
     exclusion = re.fullmatch(r'(?:exclude|excluding|remove)(?: the)? (?:patients|ones|those|them)(?: who have| who| that have)? (?:died|are deceased|deceased)', text)
     if not (listing or grouping or exclusion):
         return None
-    c = load(path, key, current=True)
-    require_patient_reference(c)
+    c = reference_scope(load(path, key, current=True), scope)
     ids = set(c['patient_ids'])
     rows = c['patient_rows']
     operations, evidence = [], []
@@ -388,13 +421,15 @@ def followup(path, key, question):
               'inherited_evidence_context': {'id': key, 'source': c['source']},
               'query_evidence': parent.get('query_evidence')}
     if not supports_patient_work(c):
-        answer['headline'] = f'{len(ids)} contributing patients · analytical provenance only'
+        answer['headline'] = f'{len(ids)} ' + ('original input patients' if scope == 'input' else 'contributing patients') + ' · analytical provenance only'
+    if scope == 'input':
+        answer['limitations'].append('Explicit follow-up on the original question input, not patients selected by its output. No patient-work authority is inherited.')
     return {'question': question, 'answer': answer, 'route': 'saved_cohort',
             'cohort_patient_rows': [r for r in rows if r['patient_id'] in ids],
             'planner_receipt': {'route': 'saved_cohort', 'new_paid_api_calls': 0,
                                 'origin_request_contract': (c.get('planner_receipt') or {}).get('origin_request_contract')
                                     or (c.get('planner_receipt') or {}).get('request_contract')},
-            'cohort_transform': {'parent_context_id': key, 'input_patient_ids': sorted(c['patient_ids']), 'operations': operations},
+            'cohort_transform': {'parent_context_id': key, 'input_patient_ids': sorted(c['patient_ids']), 'scope': scope, 'operations': operations},
             'new_paid_api_calls': 0, 'planning_economics': {'known_api_estimate_usd': 0, 'new_api_estimate_usd': 0}}
 
 

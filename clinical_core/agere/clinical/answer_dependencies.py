@@ -10,7 +10,7 @@ from .request_plan import fingerprint
 
 VERSION = 'answer-dependencies/1'
 FIELDS = ('question', 'original_question', 'source', 'answer', 'patient_ids',
-          'patient_rows', 'graph', 'planner_receipt', 'cohort_transform', 'workflow',
+          'patient_rows', 'input_patient_ids', 'graph', 'planner_receipt', 'cohort_transform', 'workflow',
           'context_policy_identity', 'feedback_identity')
 
 
