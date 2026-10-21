@@ -79,6 +79,180 @@
                "why": "ED visits of claims-only members exist only in ADT and payer claims; utilization_event merges every source into one row per visit"}],
    "output": {"returns": "value"},
    "sql_template": "SELECT 1000.0 * (SELECT count(*) FROM utilization_event WHERE kind = 'ed_visit' AND event_date BETWEEN '{period_start}' AND '{period_end}') / nullif((SELECT count(*) FROM member_month WHERE month BETWEEN substr('{period_start}', 1, 7) AND substr('{period_end}', 1, 7)) / 12.0, 0) AS ed_per_1000_member_years"
+  },
+  {
+   "version": 1,
+   "status": "internal",
+   "value_sets": {},
+   "versioning": {
+    "rule": "latest_version_table",
+    "stream": "payer_medical_claims",
+    "key": "payer_claim_id"
+   },
+   "checks": [
+    {
+     "rule": "ML-VERSION",
+     "requires": "counts_in_metrics",
+     "why": "only the current, non-duplicate version of each medical claim counts (payer_claim.counts_in_metrics = 1)"
+    }
+   ],
+   "output": {
+    "returns": "value"
+   },
+   "time_anchor": {
+    "field": "payer_claim.service_from",
+    "mode": "period",
+    "default": "as_of_year",
+    "forbid_fields": [
+     "first_available_date",
+     "last_available_date"
+    ]
+   },
+   "id": "payer_medical_paid",
+   "name": "Payer-paid medical dollars (current claim versions)",
+   "internal_reason": "Mike 2026-10-21: medical-claim finance uses payer-adjudicated claims, counted rows only.",
+   "summary": "Sum of paid dollars on payer-feed medical claims with service_from in the period, current non-duplicate version of each claim only (payer_claim.counts_in_metrics = 1). Pharmacy excluded.",
+   "match": {
+    "all": [
+     "payer[- ]feed medical paid dollars"
+    ]
+   },
+   "grain": {
+    "entity": "claim",
+    "key": "payer_claim_id",
+    "table": "payer_claim"
+   },
+   "population": {
+    "summary": "Payer-feed medical claims with service_from in the period."
+   },
+   "denominator": {
+    "summary": "None (dollar total)."
+   },
+   "numerator": {
+    "summary": "payer_claim.paid_cents / 100."
+   },
+   "unit": "dollars",
+   "expected_range": [
+    -1000000000,
+    1000000000
+   ],
+   "sql_template": "SELECT coalesce(sum(paid_cents), 0) / 100.0 AS payer_medical_paid FROM payer_claim WHERE counts_in_metrics = 1 AND service_from BETWEEN '{period_start}' AND '{period_end}'"
+  },
+  {
+   "version": 1,
+   "status": "internal",
+   "value_sets": {},
+   "versioning": {
+    "rule": "latest_version_table",
+    "stream": "payer_medical_claims",
+    "key": "payer_claim_id"
+   },
+   "checks": [
+    {
+     "rule": "ML-VERSION",
+     "requires": "counts_in_metrics",
+     "why": "only the current, non-duplicate version of each medical claim counts (payer_claim.counts_in_metrics = 1)"
+    }
+   ],
+   "output": {
+    "returns": "value"
+   },
+   "time_anchor": {
+    "field": "payer_claim.service_from",
+    "mode": "period",
+    "default": "as_of_year",
+    "forbid_fields": [
+     "first_available_date",
+     "last_available_date"
+    ]
+   },
+   "id": "payer_paid_medical_pmpm",
+   "name": "Payer-paid medical cost per member per month (enrollment months)",
+   "internal_reason": "Mike 2026-10-21: payer-adjudicated claims, counted rows only. Paid basis; claims count only in months the member is enrolled, so numerator and denominator cover the same member months. Pharmacy excluded.",
+   "summary": "Paid dollars on payer-feed medical claims (counts_in_metrics = 1) whose service month is an enrolled member month in the period, divided by member months in the period.",
+   "match": {
+    "all": [
+     "payer[- ]feed paid medical pmpm"
+    ]
+   },
+   "grain": {
+    "entity": "member_month",
+    "key": "patient_id+month",
+    "table": "member_month"
+   },
+   "population": {
+    "summary": "Members with member months in the period."
+   },
+   "denominator": {
+    "summary": "member_month rows with month in the period."
+   },
+   "numerator": {
+    "summary": "payer_claim.paid_cents for counted claims in enrolled service months."
+   },
+   "unit": "dollars per member per month",
+   "expected_range": [
+    0,
+    100000
+   ],
+   "sql_template": "SELECT (SELECT coalesce(sum(c.paid_cents), 0) FROM payer_claim c WHERE c.counts_in_metrics = 1 AND c.service_from BETWEEN '{period_start}' AND '{period_end}' AND EXISTS (SELECT 1 FROM member_month m WHERE m.patient_id = c.patient_id AND m.month = substr(c.service_from, 1, 7))) / 100.0 / nullif((SELECT count(*) FROM member_month WHERE month BETWEEN substr('{period_start}', 1, 7) AND substr('{period_end}', 1, 7)), 0) AS payer_paid_medical_pmpm"
+  },
+  {
+   "version": 1,
+   "status": "internal",
+   "value_sets": {},
+   "versioning": {
+    "rule": "latest_version_table",
+    "stream": "payer_medical_claims",
+    "key": "payer_claim_id"
+   },
+   "checks": [
+    {
+     "rule": "ML-VERSION",
+     "requires": "counts_in_metrics",
+     "why": "only the current, non-duplicate version of each medical claim counts (payer_claim.counts_in_metrics = 1)"
+    }
+   ],
+   "output": {
+    "returns": "value"
+   },
+   "time_anchor": {
+    "field": "payer_claim.service_from",
+    "mode": "period",
+    "default": "as_of_year",
+    "forbid_fields": [
+     "first_available_date",
+     "last_available_date"
+    ]
+   },
+   "id": "payer_allowed_medical_pmpm",
+   "name": "Payer-allowed medical cost per member per month (enrollment months)",
+   "internal_reason": "Mike 2026-10-21: payer-adjudicated claims, counted rows only. Allowed basis on paid claims, the existing PMPM convention; enrolled service months only. Pharmacy excluded.",
+   "summary": "Allowed dollars on paid payer-feed medical claims (counts_in_metrics = 1) whose service month is an enrolled member month in the period, divided by member months in the period.",
+   "match": {
+    "all": [
+     "payer[- ]feed allowed medical pmpm"
+    ]
+   },
+   "grain": {
+    "entity": "member_month",
+    "key": "patient_id+month",
+    "table": "member_month"
+   },
+   "population": {
+    "summary": "Members with member months in the period."
+   },
+   "denominator": {
+    "summary": "member_month rows with month in the period."
+   },
+   "numerator": {
+    "summary": "payer_claim.allowed_cents for counted paid claims in enrolled service months."
+   },
+   "unit": "dollars per member per month",
+   "expected_range": [
+    0,
+    100000
+   ],
+   "sql_template": "SELECT (SELECT coalesce(sum(c.allowed_cents), 0) FROM payer_claim c WHERE c.counts_in_metrics = 1 AND c.final_status = 'paid' AND c.service_from BETWEEN '{period_start}' AND '{period_end}' AND EXISTS (SELECT 1 FROM member_month m WHERE m.patient_id = c.patient_id AND m.month = substr(c.service_from, 1, 7))) / 100.0 / nullif((SELECT count(*) FROM member_month WHERE month BETWEEN substr('{period_start}', 1, 7) AND substr('{period_end}', 1, 7)), 0) AS payer_allowed_medical_pmpm"
   }
  ]
 }

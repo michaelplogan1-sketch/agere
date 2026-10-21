@@ -16,7 +16,7 @@ import re
 import sqlite3
 
 VERSION = 'warehouse-request/1'
-STOP_WORDS = set('a an the please me our we us there are is was were be of for to from show give find get tell what which who how many number list count total sum average mean by per with where among patients patient that have has had whose in on at and or but not without excluding exclude only all any every each than then also do does it them those these their'.split())
+STOP_WORDS = set('a an the please me our we us there are is was were be of for to from show give find get tell what which who how many number list count total sum average mean by per with where among patients patient that have has had whose in on at and or but not without excluding exclude only all any every each than then also do does it them those these their overall s'.split())  # 's' is the contraction in what's
 
 
 class PlanError(ValueError):
@@ -439,6 +439,9 @@ class Compiler:
                 return {n for child in value for n in parameter_numbers(child)}
             return {Decimal(str(value))} if type(value) in (int, float) else set()
         for analysis in analyses:
+            # A number in a governed measure's own identity (readmission_30d) is that measure's fixed window.
+            if analysis.get('operation') == 'governed_metric':
+                rendered_numbers.update(re.findall(r'(?<!\w)\d+(?:\.\d+)?', str(analysis['parameters'].get('id', '')).replace('_', ' ')))
             values = parameter_numbers(analysis['parameters'])
             for match in re.finditer(r'(?<![\w.])(\d+(?:\.\d+)?)\s*%', quote_text(analysis['quote'])):
                 if Decimal(match.group(1)) / 100 in values:

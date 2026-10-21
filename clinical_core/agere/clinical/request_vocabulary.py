@@ -48,6 +48,44 @@ ALIASES = {
     'breast cancer screening': 'measure.bcs', 'colorectal cancer screening': 'measure.col',
     'statin adherence': 'measure.pdc_statins',
 }
+# Mike, 2026-10-21: medical-claim finance uses payer-adjudicated claims (counted rows). Generic names resolve to the
+# payer metric when the warehouse has counted payer claims; names of a provider-side convention keep it.
+ALIASES.update({
+    'claim denial rate': 'first_pass_denial_rate', 'medical claim denial rate': 'first_pass_denial_rate',
+    'medical pmpm': 'allowed_pmpm', 'medical cost per member per month': 'allowed_pmpm',
+    'paid pmpm': 'payer_paid_medical_pmpm', 'paid per member per month': 'payer_paid_medical_pmpm',
+    'medical paid': 'payer_medical_paid', 'total medical paid': 'payer_medical_paid',
+    'medical paid dollars': 'payer_medical_paid', 'total paid amount on medical claims': 'payer_medical_paid',
+    'paid amount on medical claims': 'payer_medical_paid',
+})
+# An outcome word in "what share of X were <word>" names the governed rate for that outcome.
+EVENT_METRICS = {r'denied': 'first_pass_denial_rate', r'no[- ]shows?': 'no_show_rate'}
+PAYER_PREFERRED = {'first_pass_denial_rate': 'payer_claim_denial_rate', 'allowed_pmpm': 'payer_allowed_medical_pmpm'}
+PROVIDER_NAMED = re.compile(r'first[- ]pass|provider', re.I)
+BASIS_VARIANTS = {k: {'paid': 'payer_paid_medical_pmpm', 'allowed': 'payer_allowed_medical_pmpm'}
+                  for k in ('allowed_pmpm', 'payer_allowed_medical_pmpm', 'payer_paid_medical_pmpm')}
+# Nouns that restate a measure's own population, keyed by its grain (and, for stays, its anchor).
+POPULATION_WORDS = {'claim': r'(?:medical\s+)?claims?|services|dates? of service',
+                    'member_month': r'members|member[- ]months|enrolled members',
+                    'appointment': r'appointments', 'stay:discharge_date': r'(?:inpatient\s+)?discharges'}
+
+
+def preferred(ident, quote, tables):
+    """The metric a matched name means in this warehouse, or None when its sources were not received."""
+    words = ' '.join(quote) if isinstance(quote, list) else str(quote)
+    payer = 'counts_in_metrics' in tables.get('payer_claim', [])
+    if payer and ident in PAYER_PREFERRED and not PROVIDER_NAMED.search(words):
+        ident = PAYER_PREFERRED[ident]
+    if ident.startswith('payer_') and not payer: return None  # payer-feed measure without a received payer feed
+    return ident if ident in definitions() else None
+
+
+def population_words(definition):
+    grain = definition.get('grain', {}).get('entity')
+    anchor = definition.get('time_anchor', {}).get('field', '').rpartition('.')[2]
+    return POPULATION_WORDS.get(f'{grain}:{anchor}') or POPULATION_WORDS.get(grain)
+
+
 GROUPS = {'payer': 'payer_id', 'payer_id': 'payer_id', 'coverage': 'coverage_type',
           'coverage type': 'coverage_type', 'coverage_type': 'coverage_type',
           'pcp': 'pcp_clinician_id', 'practice': 'pcp_practice_id', 'sex': 'sex_reported',

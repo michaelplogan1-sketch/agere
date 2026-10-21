@@ -14,6 +14,8 @@ class PayerClaims(unittest.TestCase):
         self.path = Path(self.temp.name)
         with sqlite3.connect(self.path / 'semantic.sqlite3') as db:
             db.executescript('''
+            CREATE TABLE meta(key TEXT PRIMARY KEY, value TEXT);
+            INSERT INTO meta VALUES ('version','semantic-layer/fixture'),('as_of','2030-05-27');
             CREATE TABLE patient(patient_id TEXT);
             CREATE TABLE claim(claim_id TEXT, patient_id TEXT, service_date TEXT, final_status TEXT);
             INSERT INTO claim VALUES ('c1','A','2029-02-01','paid'),('c2','A','2029-02-01','paid'),('c3','B','2029-03-01','denied');
@@ -37,6 +39,34 @@ class PayerClaims(unittest.TestCase):
         self.assertFalse(superseded('Denials?', {'request': {'source': {'table': 'payer_claim'}}}, self.catalog.tables))
         self.assertFalse(superseded('Denials?', plan, {'claim': ['claim_id']}))  # no counted payer claims received
 
+    def metric(self, q):
+        r = L.parse(self.catalog, q, bound=False)
+        return [(a['parameters']['id'], a['parameters']['period']['start']) for a in r['analyses']]
+
+    def test_finance_rates_and_totals_resolve_to_payer_metrics(self):
+        for q, ident in [('What was the denial rate in 2029?', 'payer_claim_denial_rate'),
+                         ('What was the 2029 denial rate?', 'payer_claim_denial_rate'),
+                         ('What share of 2029 medical claims were denied?', 'payer_claim_denial_rate'),
+                         ('What share of claims were denied in 2029?', 'payer_claim_denial_rate'),
+                         ('Claim denial rate for 2029 dates of service?', 'payer_claim_denial_rate'),
+                         ('What was the PMPM in 2029?', 'payer_allowed_medical_pmpm'),
+                         ('What was the overall medical PMPM (paid per member per month) for 2029?', 'payer_paid_medical_pmpm'),
+                         ("What's our 2029 medical cost per member per month on a paid basis?", 'payer_paid_medical_pmpm'),
+                         ('What was the total paid amount on medical claims for services in 2029?', 'payer_medical_paid'),
+                         ('What was the first-pass denial rate in 2029?', 'first_pass_denial_rate')]:
+            with self.subTest(q=q): self.assertEqual(self.metric(q), [(ident, '2029-01-01')])
+
+    def test_two_year_comparisons(self):
+        for q in ('How did total medical paid change from 2028 to 2029?', 'denial rate in 2029 vs 2028',
+                  'Compared with 2028, did the 2029 denial rate go up or down?'):
+            with self.subTest(q=q):
+                got = self.metric(q)
+                self.assertEqual([s for _, s in got], ['2028-01-01', '2029-01-01'])
+                self.assertEqual(len({i for i, _ in got}), 1)
+
+    def test_scope_the_measure_cannot_apply_still_declines(self):
+        with self.assertRaises(R.PlanError):
+            L.parse(self.catalog, 'What was the 2029 denial rate for institutional claims only?', bound=False)
 
 if __name__ == '__main__':
     unittest.main()

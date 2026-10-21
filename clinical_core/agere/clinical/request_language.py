@@ -339,25 +339,81 @@ class Parser:
         return {'source': {'table': self.base, 'quote': source_quote}, 'select': measures, 'where': where,
                 'group_by': groups, 'order_by': [], 'limit': None, 'unresolved': []}
 
+    COMPARISON_FRAMES = [  # (head, tail) around one governed measure; the tail/head years are the compared periods
+        (r'^compared (?:with|to)\s+(20\d{2}),?\s+(?:did|was|were|is|has)\s+', r'\s+(?:go|gone|went)\s+up\s+or\s+down$'),
+        (r'^how did\s+', r'\s+change\s+from\s+(20\d{2})\s+to\s+(20\d{2})$'),
+        (r'^year over year,?\s+(?:were|was|did)\s+', r'\s+(?:go\s+)?up\s+or\s+down\s+in\s+(20\d{2})\s+(?:versus|vs\.?|compared (?:with|to))\s+'
+         r'(20\d{2})(?:,?\s+and\s+by\s+how\s+much)?$'),
+        (r'^', r'\s+(?:in\s+)?(20\d{2})\s+(?:versus|vs\.?|compared (?:with|to))\s+(20\d{2})$'),
+    ]
+
+    def comparison_frame(self, text):
+        """(measure text, compared years, frame quotes) for an explicit two-period comparison, else None."""
+        for head, tail in self.COMPARISON_FRAMES:
+            h = re.match(head, text, re.I)
+            m = re.search(tail, text[h.end():], re.I) if h else None
+            if not m: continue
+            years = [y for y in (*h.groups(), *m.groups()) if y]
+            inner = text[h.end():h.end() + m.start()]
+            return inner, years, [q for q in (h.group().strip(' ,'), m.group().strip(' ,')) if q]
+        return None
+
     def governed(self, text):
         """One metric name plus independently consumed scope/period/group slots."""
         from . import request_vocabulary as V, metrics
-        rest = re.sub(r'^(?:(?:what|how much) (?:is|was|are)|show(?: me)?|give me|tell me)\s+(?:(?:the|our)\s+)?',
-                      '', text, flags=re.I)
-        got = self.prefix(rest, V.aliases())
-        if not got: return None
-        measure_quote, ident, rest = got
+        frame = self.comparison_frame(text)
+        if frame: text, compared, frame_quotes = frame
+        rest = re.sub(r"^(?:(?:what|how much) (?:is|was|are)|what'?s|show(?: me)?|give me|tell me)\s+", '', text, flags=re.I)
+        rest = re.sub(r'^(?:(?:the|our|overall)\s+)+', '', rest, flags=re.I)
+        # A leading year ("the 2029 denial rate") is the measure period, kept with its original span.
+        leading = re.match(r'^(20\d{2})\s+', rest)
+        if leading: rest = rest[leading.end():]
+        rest = re.sub(r'^(?:(?:the|our|overall)\s+)+', '', rest, flags=re.I)
+        # "What share of 2029 claims were denied?" names the same governed rate as "denial rate".
+        event = re.match(r'^(?:what\s+|which\s+)?(?:share|percent(?:age)?|proportion|fraction)\s+of\s+(.+?)\s+(?:were|was)\s+('
+                         + '|'.join(V.EVENT_METRICS) + r')((?:\s+(?:in|during)\s+20\d{2})?)$', text if not leading else rest, re.I)
+        if event:
+            ident = next(v for k, v in V.EVENT_METRICS.items() if re.fullmatch(k, event[2], re.I))
+            measure_quote, rest = [text[:event.start(1)].strip(), event[2]], event[1] + event[3]
+            got = True
+        else:
+            got = self.prefix(rest, V.aliases())
+            if not got: return None
+            measure_quote, ident, rest = got
+        if leading: rest = rest + ' ' + leading[1]
+        # A parenthetical that names a metric restates or narrows it: "medical PMPM (paid per member per month)".
+        paren = re.match(r'^\s*\(([^()]+)\)', rest)
+        if paren and paren[1].strip().lower() in V.aliases():
+            ident = V.aliases()[paren[1].strip().lower()]; measure_quote = [measure_quote, paren.group().strip()]
+            rest = rest[paren.end():]
+        basis = re.search(r'\s*\bon an? (paid|allowed) basis\b', rest, re.I)
+        if basis and ident in V.BASIS_VARIANTS:
+            ident = V.BASIS_VARIANTS[ident][basis[1].lower()]
+            measure_quote = [*([measure_quote] if isinstance(measure_quote, str) else measure_quote), basis.group().strip()]
+            rest = rest[:basis.start()] + rest[basis.end():]
+        ident = V.preferred(ident, measure_quote, self.catalog.tables)
+        if ident is None: return None
         if re.match(r'^(?:for|of|from)\s+(?:admissions|hospital stays)\b', rest, re.I):
             return None  # explicit field/source aggregation uses the relational grammar
         definition = V.definitions()[ident]
         rest, group_fields, group_quote = self.grouping(rest, {k: k for k in V.GROUPS})
-        groups, quotes = [field for _, field in group_fields], [measure_quote]
+        groups, quotes = [field for _, field in group_fields], list(measure_quote) if isinstance(measure_quote, list) else [measure_quote]
         if group_quote: quotes.append(group_quote)
         # A single explicit period belongs to the measure, never to patient DOB.
         periods = list(re.finditer(
             r'\b(?:(?:in|during|for)\s+)?20\d{2}\b|\b(?:last|past|trailing)\s+(?:12|twelve)\s+months\b|\b(?:last year|this year|ytd)\b',
             syntax_text(rest), re.I))
-        if len(periods) > 1: raise PlanError('Multiple periods need an explicit comparison')
+        if frame:
+            years = set(compared)
+            for match in reversed(periods):
+                year = re.search(r'20\d{2}', match.group())
+                if not year: raise PlanError('A comparison needs two calendar years')
+                years.add(year.group()); quotes.append(match.group())
+                rest = rest[:match.start()] + ' ' + rest[match.end():]
+            if len(years) != 2: raise PlanError('A comparison needs exactly two calendar years')
+            quotes += frame_quotes
+            periods = []
+        elif len(periods) > 1: raise PlanError('Multiple periods need an explicit comparison')
         spoken = periods[0].group() if periods else ''
         start, end, _ = metrics.period_for(spoken, self.catalog.identity['as_of'],
                                           definition['time_anchor'].get('default', 'all'))
@@ -366,16 +422,29 @@ class Parser:
             quotes.append(match.group())
             rest = rest[:match.start()]+' '+rest[match.end():]
         self.base = 'patient'
+        # Wording that restates the measure's own population ("for 2029 appointments", "on medical claims",
+        # "for inpatient discharges" when the measure is discharge-anchored) adds no constraint.
+        own = V.population_words(definition)
+        if own:
+            restated = re.search(r'(?:^|\s)(?:(?:for|on|of|among|across)\s+)?(?:(?:the|our|all)\s+)?(?:' + own + r')\b', rest, re.I)
+            if restated:
+                quotes.append(restated.group().strip())
+                rest = rest[:restated.start()] + ' ' + rest[restated.end():]
         where, tail = self.expression(rest.strip())
         if tail.strip(): raise PlanError('Unconsumed metric scope: '+tail)
         self.bind_parent_quotes(where)
-        params = V.parameters(ident, {'start': start.isoformat(), 'end': end.isoformat()}, groups)
-        try: V.validate(params)
-        except ValueError as exc: raise PlanError(str(exc)) from exc
+        spans = ([metrics.period_for(y, self.catalog.identity['as_of'], 'all')[:2] for y in sorted(years)]
+                 if frame else [(start, end)])
+        analyses = []
+        for s, e in spans:
+            params = V.parameters(ident, {'start': s.isoformat(), 'end': e.isoformat()}, groups)
+            try: V.validate(params)
+            except ValueError as exc: raise PlanError(str(exc)) from exc
+            analyses.append({'operation': 'governed_metric', 'parameters': params, 'quote': quotes})
         return {'source': {'table': 'patient', 'quote': measure_quote},
                 'select': [{'kind': 'field', 'field': 'patient.patient_id', 'alias': 'patient_id', 'quote': measure_quote}],
                 'where': where, 'group_by': [], 'order_by': [], 'limit': None, 'unresolved': [],
-                'analyses': [{'operation': 'governed_metric', 'parameters': params, 'quote': quotes}]}
+                'analyses': analyses}
 
     def expression(self, text):
         """OR of AND terms; parentheses and explicit NOT preserve boolean scope."""
@@ -438,7 +507,7 @@ class Parser:
                                       'commercial': 'commercial', 'uninsured': 'uninsured'})
         if coverage:
             quote, value, tail = coverage
-            return atom('patient.coverage_type', '=', value, quote), re.sub(r'^\s+(?:patients|members)\b', '', tail, flags=re.I)
+            return atom('patient.coverage_type', '=', value, quote), re.sub(r'^\s*(?:patients|members)\b', '', tail, flags=re.I)
         deceased = re.match(r'^deceased(?:\s+(?:patients|members))?\b', text, re.I)
         if deceased and 'current_record' in self.catalog.tables and 'death_records' in self.catalog.stream_fields:
             quote = deceased.group()

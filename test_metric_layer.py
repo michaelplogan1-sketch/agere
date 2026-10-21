@@ -36,7 +36,7 @@ TABLES = {
     'social_need': 'patient_id,need,positive,instrument,event_date,record_id',
     'current_record': 'stream,key_field,business_id,record_id,patient_id,versions,available_date,event_date,payload',
     # payer feed (v2.2+) with v2.3 claim-version / reversal columns
-    'payer_claim': 'payer_claim_id,patient_id,service_from,final_status,allowed_cents,counts_in_metrics,version_status,first_available_date',
+    'payer_claim': 'payer_claim_id,patient_id,service_from,final_status,allowed_cents,paid_cents,counts_in_metrics,version_status,first_available_date',
     'payer_pharmacy_claim': 'record_id,patient_id,fill_date,claim_status,plan_paid_cents,patient_pay_cents,counts_as_fill',
     'member_month': 'patient_id,month,line_of_business',
     'utilization_event': 'patient_id,kind,event_date,sources',
@@ -145,7 +145,8 @@ def build_fixture(path):
     ins('current_record', [dict(stream='patient_billing_accounts', key_field='account_id', business_id='AC1', record_id='R5', patient_id='P1', versions=2,
                                 available_date='2029-02-01', event_date='2029-02-01', payload='{}')])
     pc = lambda cid, status, allowed, counts, vs: dict(payer_claim_id=cid, patient_id='M1', service_from='2029-03-01', final_status=status,
-                                                     allowed_cents=allowed, counts_in_metrics=counts, version_status=vs, first_available_date='2029-03-20')
+                                                     allowed_cents=allowed, paid_cents=allowed * 4 // 5, counts_in_metrics=counts,
+                                                     version_status=vs, first_available_date='2029-03-20')
     ins('payer_claim', [pc('X1', 'paid', 10000, 1, 'current'), pc('X2', 'denied', 0, 1, 'current'),
                         pc('X3-D', 'denied', 0, 0, 'duplicate_submission'),           # CARC 18 duplicate: not a claim
                         pc('X4', 'voided', 0, 0, 'superseded_by_replacement'), pc('X4-R', 'paid', 6000, 1, 'current')])
@@ -242,6 +243,10 @@ class TemplateTests(Fixture):
         # payer feed: CARC 18 duplicate and superseded original never count; B2-reversed fill is not spend
         self.assertAlmostEqual(val('payer_claim_denial_rate', 'in 2029')[0][0], 100 / 3)  # X2 of X1, X2, X4-R; full precision
         self.assertAlmostEqual(val('payer_allowed_pmpm', 'in 2029')[0][0], (10000 + 6000 + 1000) / 100 / 4)
+        # medical-only payer metrics: counted claims in enrolled months (X1 + X4-R); paid is 80% of allowed here
+        self.assertAlmostEqual(val('payer_medical_paid', 'in 2029')[0][0], (8000 + 4800) / 100)
+        self.assertAlmostEqual(val('payer_paid_medical_pmpm', 'in 2029')[0][0], (8000 + 4800) / 100 / 4)
+        self.assertAlmostEqual(val('payer_allowed_medical_pmpm', 'in 2029')[0][0], (10000 + 6000) / 100 / 4)
         self.assertEqual(val('all_source_ed_visits_per_1000', 'in 2029'), [(3000.0,)])  # 1 ED visit / (4 member months / 12)
         self.assertEqual(val('patient_ar_outstanding'), [(30.0,)])                     # latest AC1 = 3000c, AC2 credit not netted
         self.assertEqual(val('contractual_writeoffs', 'in 2028'), [(0.0,)])            # reversal nets out

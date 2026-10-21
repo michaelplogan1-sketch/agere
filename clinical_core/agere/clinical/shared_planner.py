@@ -235,6 +235,26 @@ def graph_for(contract):
                        'parameters': {'query': contract['query'], 'returns': contract['returns']},
                        'purpose': 'Execute the sealed original request; no downstream reinterpretation'}]}
 
+def compare_periods(graph, sections, answer):
+    """Two runs of one governed measure over two periods: report both values, the change and its direction."""
+    nodes = (graph.get('nodes') or [])[1:]
+    if len(sections) != 2 or len(nodes) != 2 or any(n.get('operation') != 'governed_metric' for n in nodes): return
+    params = [n['parameters'] for n in nodes]
+    if params[0]['id'] != params[1]['id'] or params[0]['period'] == params[1]['period']: return
+    values = [s['answer'].get('value', s['answer'].get('count')) for s in sections]
+    if not all(type(v) in (int, float) for v in values): return
+    (p0, v0), (p1, v1) = sorted(zip([p['period']['start'] for p in params], values))
+    change = v1 - v0
+    pct = None if v0 == 0 else round(100.0 * change / abs(v0), 2)
+    direction = 'up' if change > 0 else 'down' if change < 0 else 'unchanged'
+    fmt = lambda v: f'{v:,.2f}' if isinstance(v, float) else f'{v:,}'
+    answer['comparison'] = {'measure': params[0]['id'], 'earlier': {'period_start': p0, 'value': v0},
+                            'later': {'period_start': p1, 'value': v1}, 'change': change,
+                            'percent_change': pct, 'direction': direction}
+    answer['headline'] = (f"{params[0]['id'].replace('_', ' ')}: {fmt(v0)} ({p0[:4]}) to {fmt(v1)} ({p1[:4]}), {direction}"
+                          + (f' {fmt(abs(change))} ({pct:+.2f}%)' if direction != 'unchanged' and pct is not None else ''))
+
+
 def engine_answer(graph, result, cohort_ids):
     """Keep an engine's selected patients; never widen a worklist to its input."""
     sections = [{'title': n['purpose'], 'answer': result['answers_by_node'][n['id']]}
@@ -253,6 +273,7 @@ def engine_answer(graph, result, cohort_ids):
                   'sections': sections, 'patient_ids': ids,
                   'missing': [m for a in parts for m in a.get('missing', [])],
                   'limitations': [m for a in parts for m in a.get('limitations', [])]}
+    compare_periods(graph, sections, answer)
     if ambiguous:
         answer['missing'].append('Analyses select different patient sets. Choose a specific analysis before creating work.')
         answer['actionable_cohort'] = False
