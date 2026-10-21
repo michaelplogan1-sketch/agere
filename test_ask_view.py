@@ -216,6 +216,17 @@ syncScope(t);assert.equal(option.disabled,false);assert.match(option.textContent
         run = subprocess.run([node, '-e', setup+code+checks], capture_output=True, text=True)
         self.assertEqual(run.returncode, 0, run.stderr[:1600])
 
+    def test_followup_shortcut_preserves_explicit_input_selection(self):
+        import shutil, subprocess
+        node = shutil.which('node')
+        if not node: self.skipTest('node not installed')
+        html = ask_view.page()
+        handler = next(line.strip() for line in html.splitlines() if line.strip().startswith('if(el.dataset.ask!=null)'))
+        script = "const assert=require('node:assert/strict');let activeContext={id:'saved'},asked;const picker={value:'input'},$=()=>picker,ask=q=>{asked=q};function click(el){"+handler+"}\n"
+        script += "click({dataset:{ask:'list them'}});assert.equal(asked,'list them');assert.equal(picker.value,'input');picker.value='warehouse';click({dataset:{ask:'list them'}});assert.equal(picker.value,'saved');"
+        result = subprocess.run([node, '-e', script], capture_output=True, text=True)
+        self.assertEqual(result.returncode, 0, result.stderr[:1600])
+
     def test_grouped_chart_keeps_missing_first_category_visible(self):
         import shutil, subprocess
         node = shutil.which('node')
