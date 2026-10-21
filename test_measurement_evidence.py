@@ -67,7 +67,8 @@ def spec(concept='lvef'):
  question=f'List patients and their documented {concept} evidence; simulate source review for patients with unresolved measurement evidence; monitor loop closure'
  sql=("SELECT p.patient_id,count(m.observation_id) AS observations,group_concat(m.lower) AS documented_values,"
       "group_concat(m.clinical_date) AS measurement_dates,group_concat(m.source_date) AS document_dates,"
-      "group_concat(m.evidence_text,' | ') AS narrative_evidence,"
+      "group_concat(m.evidence_text,' | ') AS narrative_evidence,group_concat(m.authority) AS evidence_authority,"
+      "group_concat(m.exclusion) AS evidence_exclusions,"
       "sum(CASE WHEN m.observation_id IS NOT NULL AND (m.exclusion IS NOT NULL OR m.clinical_date IS NULL) THEN 1 ELSE 0 END)>0 AS needs_review "
       "FROM patient p LEFT JOIN {{measurement_evidence:"+concept+"}} m ON m.patient_id=p.patient_id GROUP BY p.patient_id ORDER BY p.patient_id")
  return question,dict(steps=[dict(name='measurements',purpose='Dated received measurement evidence with explicit uncertainty',sql=sql)],final='measurements',returns='table',

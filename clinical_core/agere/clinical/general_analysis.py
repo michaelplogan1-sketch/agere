@@ -87,6 +87,7 @@ candidate_value, evidence_text, evidence (JSON with source fields/hashes/linked 
 current_state_established=0. Structured values reuse the literal unit/status/quality/dependency mapping.
 Use clinical_date for measurement-time questions. Never replace a missing clinical date with source or arrival date.
 Keep excluded, undated and conflicting observations visible; don't silently fall back to an older normal result.
+Display observation authority and exclusions. source_span_unverified text is a stored extraction candidate, not a verified quote.
 Narrative EF rows are unreviewed candidates: lower/upper are NULL; candidate_value can be a range midpoint and cannot
 establish a measured value, current EF or phenotype. Inspect exact text, negation, subject and temporality in evidence.
 The EF scan covers only the existing note_fact extraction; other concepts do not have a narrative scan here.
