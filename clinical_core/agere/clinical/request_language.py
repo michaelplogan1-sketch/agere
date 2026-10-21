@@ -16,6 +16,8 @@ SOURCES = {
     'emergency visits': ('utilization_event', ('kind', 'ed_visit')),
     'inpatient admissions': ('stay', ('type', 'inpatient')),
     'admissions': ('stay', ('type', 'inpatient')), 'hospital stays': ('stay', None),
+    'inpatient discharges': ('stay', ('type', 'inpatient')), 'hospital discharges': ('stay', ('type', 'inpatient')),
+    'discharges': ('stay', ('type', 'inpatient')),
     # Mike, 2026-10-21: medical-claim finance questions use payer-adjudicated claims, counted rows only.
     'claims': ('payer_claim', ('counts_in_metrics', 1)), 'medical claims': ('payer_claim', ('counts_in_metrics', 1)),
     'visits': ('visit', None), 'appointments': ('appointment', None),
@@ -42,6 +44,15 @@ EVIDENCE = [
      [('vaccine', 'like', 'pneumococcal%'), ('status', '=', 'completed')]),
     (r'mammograms?', 'cancer_screening', 'event_date', [('test', '=', 'bilateral_screening_mammography')]),
     (r'(?:annual wellness visits?|awvs?)', 'wellness_visit', 'event_date', [('awv', '=', 1)]),
+]
+# Dated events that can anchor or follow in a sequence: (pattern, table, date field, fixed predicates).
+SEQUENCE_EVENTS = [
+    (r'(?:an?\s+|their\s+|the\s+)?(?:(?:inpatient|hospital)\s+)?discharges?', 'stay', 'discharge_date',
+     [('type', '=', 'inpatient'), ('discharge_known', '=', 1)]),
+    (r'(?:an?\s+|their\s+|the\s+)?(?:inpatient|hospital)\s+admissions?', 'stay', 'admit_date', [('type', '=', 'inpatient')]),
+    (r'(?:their\s+)?death', 'death', 'death_date', []),
+    (r'(?:an?\s+)?primary\s+care\s+(?:visits?|follow-?ups?)', 'visit', 'event_date', [('type_concept', '=', 'primary_care_visit')]),
+    (r'(?:an?\s+)?(?:ed|er|emergency(?:\s+department)?)\s+visits?', 'utilization_event', 'event_date', [('kind', '=', 'ed_visit')]),
 ]
 NEEDS = {'food insecurity': 'food', 'food': 'food', 'transportation needs': 'transport', 'transportation barriers': 'transport',
          'transportation': 'transport', 'transport': 'transport', 'housing instability': 'housing', 'housing': 'housing',
@@ -117,6 +128,7 @@ class Parser:
         self.base = 'patient'
         self.value_bindings = {}
         self.gaps = []  # quotes of care-gap clauses (lacking received evidence)
+        self.clock = None  # a source phrase can name its own clock ("discharges in 2029" -> discharge_date)
         self.sources = dict(SOURCES)
         for table in catalog.tables:
             phrase = table.replace('_', ' ')
@@ -311,6 +323,52 @@ class Parser:
                 return 'fill', 'fill_date', [atom('fill.drug_class', 'in', got[1], drug.group())], drug.group(), text[drug.end():]
         return None
 
+    def sequence_event(self, text, *, started=False):
+        """(table, date, atoms, tail) for a named dated event; a drug name after 'started' is a new start."""
+        for pattern, table, field, fixed in SEQUENCE_EVENTS:
+            m = re.match(pattern + r'\b', text, re.I)
+            if m and table in self.catalog.tables and field in self.catalog.tables[table]:
+                fixed = [f for f in fixed if f[0] in self.catalog.tables[table]]
+                return table, field, [atom(f'{table}.{c}', op, v, m.group()) for c, op, v in fixed], text[m.end():], m.group()
+        drug = self.prefix(re.sub(r'^(?:an?|the)\s+', '', text, flags=re.I), self.drugs) if 'fill' in self.catalog.tables else None
+        if drug:
+            quote = text[:len(text) - len(drug[2])].strip()
+            atoms = [atom('fill.drug_class', 'in', drug[1], quote)]
+            if started and 'new_user_180' in self.catalog.tables['fill']: atoms.append(atom('fill.new_user_180', '=', 1, quote))
+            return 'fill', 'fill_date', atoms, drug[2], quote
+        return None
+
+    def sequence(self, text):
+        """'<event> within N days after <event>' / '<event> in the N days before <event>'."""
+        start = text
+        lead = re.match(r'^(?:(started|start|starting|began)|(?:have|has|had|got|received|with))\s+', text, re.I)
+        if not lead: return None
+        then = self.sequence_event(text[lead.end():], started=bool(lead[1]))
+        if not then: return None
+        table, field, atoms, tail, then_quote = then
+        window = re.match(r'^\s*(?:within\s+(?:(\d+)\s+days?|(a|one)\s+week)(?:\s+(after|of|following|before|prior\s+to))?|'
+                          r'in\s+the\s+(\d+)\s+days?\s+(before|prior\s+to|preceding|after|following))(?=\s|$)', tail, re.I)
+        if not window: return None
+        n = int(window[1] or window[4] or 7)
+        direction = (window[3] or window[5] or 'after').lower()
+        days = [-n, 0] if direction in ('before', 'prior to', 'preceding') else [1, n]
+        anchor = self.sequence_event(tail[window.end():].lstrip()) if (window[3] or window[5]) else None
+        if anchor:
+            a_table, a_field, a_atoms, rest, a_quote = anchor
+        elif not (window[3] or window[5]) and self.base == 'stay' and self.clock:
+            # "follow-up within a week": after the counted row's own event (each discharge)
+            a_table, a_field, a_atoms, rest, a_quote = 'stay', self.clock, [], tail[window.end():], ''
+        else:
+            return None
+        quote = start[:len(start) - len(rest)].strip()
+        atoms[0] = {**atoms[0], 'quote': [lead.group().strip(), atoms[0]['quote']]}
+        then_event = {'table': table, 'date': field, 'where': combine('and', atoms, then_quote)}
+        if a_table == self.base:  # "each discharge": the counted row itself
+            anchor_event = {'outer': f'{a_table}.{a_field}'}
+        else:
+            anchor_event = {'table': a_table, 'date': a_field, 'where': combine('and', a_atoms, a_quote) if a_atoms else None}
+        return {'op': 'sequence', 'anchor': anchor_event, 'then': then_event, 'days': days, 'quote': quote}, rest
+
     def evidence(self, text):
         """Having or lacking received evidence (a lab, vaccine, screening, fill, visit or social-need screen)."""
         if self.base != 'patient': return None
@@ -374,6 +432,9 @@ class Parser:
         if front and not front_source: raise PlanError('Fronted scope needs a recognized source')
         if front:
             text=front[2]; self.base=front_source[1][0]
+        of = re.match(r'^Of\s+(?:the\s+|our\s+)?(.+?),\s*(how many)\s+(.+)$', text, re.I)
+        if of:
+            return self.of_scope(of)
         unit = re.search(r',?\s+in\s+(cents|days)\s*$',text,re.I)
         if unit: text=text[:unit.start()].strip()
         lead = re.match(r'(?i)(?:(?:please\s+)|(?:(?:can|could|would|will)\s+you\s+)|(?:tell\s+me\s+)|(?:(?:give|show|return)(?:\s+me)?\s+both\s+)|(?:I\s+(?:want|would like)\s+(?:you\s+to|to)\s+))*'
@@ -389,6 +450,9 @@ class Parser:
               'sum' if verb in ('total', 'sum', 'what is the total', 'what was the total') else 'count')
         field_name, source = None, None
         rest = re.sub(r'^(?:all|the|our)\s+', '', rest, flags=re.I)
+        # A year before the population noun ("2029 hospital discharges") is that population's period.
+        lead_year = re.match(r'^(20\d{2})\s+', rest) if fn not in ('sum', 'avg') else None
+        if lead_year: rest = rest[lead_year.end():]
         # Adjectives before the population noun ("living Medicaid patients") are filters on that population.
         modifiers = []
         while fn not in ('sum', 'avg'):
@@ -434,6 +498,7 @@ class Parser:
             source = self.prefix(rest, {'them': ('patient', None), 'those patients': ('patient', None), 'these patients': ('patient', None)})
         if not source: raise PlanError('Explicit source or saved cohort required')
         source_quote, (self.base, default), rest = source
+        if self.base == 'stay' and re.search(r'discharge', source_quote, re.I): self.clock = 'discharge_date'
         rest, group_fields, group_quote = self.grouping(rest, self.field_aliases())
         rest = re.sub(r'^\s*(?:are|were|is|was)(?:\s+there)?\s+', '', rest, flags=re.I)
         base_filter = None
@@ -444,6 +509,10 @@ class Parser:
         where, tail = self.expression(rest)
         if tail.strip(): raise PlanError('Unconsumed request: '+tail)
         if modifiers and self.base != 'patient': raise PlanError('Population adjectives apply to patients: ' + ' '.join(modifiers))
+        if lead_year:
+            value, left = self.one(lead_year[1])
+            if value is None or left.strip(): raise PlanError('A leading year needs a dated population')
+            where = combine('and', [value, where], self.question)
         for word in modifiers:
             value, left = self.one(word)
             if value is None or left.strip(): raise PlanError('Unrecognized population adjective: ' + word)
@@ -494,6 +563,28 @@ class Parser:
             inner = text[h.end():h.end() + m.start()]
             return inner, years, [q for q in (h.group().strip(' ,'), m.group().strip(' ,')) if q]
         return None
+
+    def of_scope(self, of):
+        """'Of <population>, how many <condition>': count the population rows that meet the condition."""
+        source = self.prefix(of[1], self.sources)
+        if not source: raise PlanError('Fronted scope needs a recognized source')
+        source_quote, (self.base, default), scope_text = source
+        if self.base == 'stay' and re.search(r'discharge', source_quote, re.I): self.clock = 'discharge_date'
+        first, tail = self.expression(scope_text)
+        if tail.strip(): raise PlanError('Unconsumed scope: ' + tail)
+        second, tail = self.expression(re.sub(r'^(?:were|was|are|is)\s+', '', of[3], flags=re.I))
+        if tail.strip(): raise PlanError('Unconsumed request: ' + tail)
+        base_filter = None
+        if default:
+            field, value = default
+            base_filter = (self.condition(value, source_quote) if field == 'condition'
+                           else atom(self.base + '.' + field, '=', value, source_quote))
+        where = combine('and', [base_filter, first, second], self.question)
+        self.bind_parent_quotes(where)
+        measure = ({'kind': 'count_distinct', 'field': 'patient.patient_id', 'alias': 'patients', 'quote': of[2]} if self.base == 'patient'
+                   else {'kind': 'count', 'alias': 'count', 'quote': of[2]})
+        return {'source': {'table': self.base, 'quote': source_quote}, 'select': [measure], 'where': where,
+                'group_by': [], 'order_by': [], 'limit': None, 'unresolved': []}
 
     def governed(self, text):
         """One metric name plus independently consumed scope/period/group slots."""
@@ -628,6 +719,8 @@ class Parser:
             value, tail = self.expression(text[1:])
             if not tail.startswith(')'): raise PlanError('Unclosed predicate group')
             return value, tail[1:]
+        seq = self.sequence(text)
+        if seq: return seq
         evidence = self.evidence(text)
         if evidence: return evidence
         neg = re.match(r"^(?:not|without|excluding|exclude|(?:do|does)\s+not|don't|doesn't)\s+", text, re.I)
@@ -638,7 +731,7 @@ class Parser:
         # Source-specific clock, never a blanket patient-year filter.
         m = re.match(r'^(?:(?:in|during)\s+)?(\d{4})(?![\d-])', text, re.I)
         if m:
-            clock = CLOCKS.get(self.base)
+            clock = self.clock or CLOCKS.get(self.base)
             if not clock: raise PlanError('This period needs an explicit event/date field')
             quote, year = m.group(), int(m.group(1))
             return combine('and', [atom(self.base+'.'+clock, '>=', f'{year}-01-01', quote), atom(self.base+'.'+clock, '<', f'{year+1}-01-01', quote)], quote), text[m.end():]

@@ -198,6 +198,8 @@ class Compiler:
             if set(expr) != {'op', 'arg', 'quote'} or not re.search(r'\b(not|no|without|exclude|excluding|except|neither|nor|never|missing|missed|living|alive|didn)\b', quote_text(expr['quote']), re.I):
                 raise PlanError('Negation must be explicit in the original request')
             return '(NOT ' + self.predicate(expr['arg'], scope, path+'.arg', depth+1) + ')'
+        if op == 'sequence':
+            return self.sequence(expr, scope, path, depth)
         if op == 'exists':
             if set(expr) - {'op', 'table', 'where', 'quote', 'link', 'stream'}: raise PlanError('Unknown related-record fields')
             table = expr.get('table')
@@ -252,6 +254,50 @@ class Compiler:
         if op in ('>', '>=', '<', '<=') and type(value) in (int, float):
             value = self.percent_scale(expr['field'], value)
         return f'({field} {op.upper()} {literal(value)})'
+
+    def sequence(self, expr, scope, path, depth):
+        """A later (or earlier) event for the same patient within a day window of an anchor event.
+
+        anchor is another received event {table, date, where} or {'outer': field} for the counted row itself
+        (e.g. each discharge). days = [low, high] is then.date minus anchor date: after = [1, N], before = [-N, 0].
+        """
+        if set(expr) != {'op', 'anchor', 'then', 'days', 'quote'}: raise PlanError('Sequence needs anchor, then, days and source text')
+        days = expr['days']
+        if (not isinstance(days, list) or len(days) != 2 or any(type(d) is not int for d in days)
+                or not -3650 <= days[0] <= days[1] <= 3650):
+            raise PlanError('Sequence window needs two whole-day bounds')
+        then, anchor = expr['then'], expr['anchor']
+        def event(e, role):
+            if not isinstance(e, dict) or set(e) - {'table', 'date', 'where'} or e.get('table') not in self.catalog.tables:
+                raise PlanError(f'Sequence {role} needs a received table')
+            if e['date'] not in self.catalog.tables[e['table']] or 'patient_id' not in self.catalog.tables[e['table']]:
+                raise PlanError(f'Sequence {role} needs a dated patient event')
+        event(then, 'event')
+        self.serial += 1
+        t_alias = 's' + str(self.serial)
+        outer = self.field(self.base + '.patient_id', scope)
+        nested = {**scope}
+        joins = ''
+        if set(anchor) == {'outer'}:
+            anchor_date = self.field(anchor['outer'], scope)
+            if then['table'] in scope: raise PlanError('A sequence over the same relation as its anchor needs an episode definition')
+            conditions = []
+        else:
+            event(anchor, 'anchor')
+            if anchor['table'] == then['table'] or anchor['table'] in scope or then['table'] in scope:
+                raise PlanError('A sequence over the same relation needs an episode definition')
+            self.serial += 1
+            a_alias = 'a' + str(self.serial)
+            nested[anchor['table']] = a_alias
+            joins = f' JOIN {identifier(anchor["table"])} AS {a_alias} ON {a_alias}.patient_id = {t_alias}.patient_id'
+            anchor_date = f'{a_alias}.{identifier(anchor["date"])}'
+            conditions = [self.predicate(anchor['where'], {**nested, then['table']: t_alias}, path + '.anchor', depth + 1)] if anchor.get('where') else []
+        nested[then['table']] = t_alias
+        if then.get('where'): conditions.append(self.predicate(then['where'], nested, path + '.then', depth + 1))
+        gap = f'(julianday({t_alias}.{identifier(then["date"])}) - julianday({anchor_date}))'
+        conditions.append(f'{gap} BETWEEN {days[0]} AND {days[1]}')
+        return (f'EXISTS (SELECT 1 FROM {identifier(then["table"])} AS {t_alias}{joins} WHERE {t_alias}.patient_id = {outer} AND '
+                + ' AND '.join(conditions) + ')')
 
     def percent_scale(self, name, value):
         """A fractional threshold (0.75) on a percentile column stored on a 0-100 scale means 75."""
