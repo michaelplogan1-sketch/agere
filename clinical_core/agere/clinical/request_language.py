@@ -4,6 +4,7 @@ Vocabulary names sources/fields/concepts, not complete questions. The same
 boolean grammar combines any available fields and related-record predicates.
 Unconsumed text declines the parse; it is never discarded by a rewrite.
 """
+import copy
 import re
 import sqlite3
 import time
@@ -38,6 +39,7 @@ SOURCES = {
     'pediatricians': ('clinician', ('specialty', 'Pediatrics')), 'radiologists': ('clinician', ('specialty', 'Radiology')),
     'hospitalists': ('clinician', ('specialty', 'Hospitalist')), 'ophthalmologists': ('clinician', ('specialty', 'Ophthalmology')),
     'women': ('patient', ('sex_reported', 'F')), 'men': ('patient', ('sex_reported', 'M')),
+    'members': ('patient', None), 'attributed members': ('patient', None), 'attributed lives': ('patient', None),
     'female patients': ('patient', ('sex_reported', 'F')), 'male patients': ('patient', ('sex_reported', 'M')),
 }
 # Received evidence a patient can have or lack: (pattern, table, date field, fixed predicates). Values are the
@@ -70,6 +72,7 @@ SEQUENCE_EVENTS = [
      [('counts_in_metrics', '=', 1), ('cpt', '>=', '99202'), ('cpt', '<=', '99215')]),
     (r'(?:an?\s+)?(?:ed|er|emergency(?:\s+department)?)\s+visits?', 'utilization_event', 'event_date', [('kind', '=', 'ed_visit')]),
 ]
+MONTH_NAMES = {m: i for i, m in enumerate('january february march april may june july august september october november december'.split(), 1)}
 NUMBER_WORDS = {w: str(i) for i, w in enumerate('zero one two three four five six seven eight nine ten'.split()) if i}
 # Things a question can rank by frequency: (pattern, table, field, fixed predicates, wording that restates the source).
 RANK_TOPICS = [
@@ -81,10 +84,42 @@ RANK_TOPICS = [
     (r'(?:pharmacy\s+)?reject(?:ion)?\s+codes?', 'payer_pharmacy_claim', 'reject_code', [('claim_status', '=', 'rejected')],
      r'(?:on|across|in|for)\s+(?:all\s+)?(?:rejected\s+)?pharmacy\s+claims'),
 ]
+# Facts documented in notes (note_fact) and therapy barriers: (pattern, table, fixed predicates). Mentions count only
+# when not negated; wording about notes ("documented", "in their notes") is part of the evidence.
+NOTE_EVIDENCE = [
+    (r'(?:a\s+)?current\s+smokers?|currently\s+smok(?:es|ing)', 'note_fact', [('fact_type', '=', 'smoking_status'), ('value', '=', 'current')]),
+    (r'(?:a\s+)?former\s+smokers?', 'note_fact', [('fact_type', '=', 'smoking_status'), ('value', '=', 'former')]),
+    (r'(?:a\s+)?(?:never[- ]smokers?|non-?smokers?)', 'note_fact', [('fact_type', '=', 'smoking_status'), ('value', '=', 'never')]),
+    (r'(?:a\s+)?(?:dnr(?:\s+order)?|do[- ]not[- ]resuscitate(?:\s+order)?)', 'note_fact', [('fact_type', '=', 'goals_of_care'), ('value', '=', 'dnr')]),
+    (r'(?:a\s+)?(?:dni|do[- ]not[- ]intubate)', 'note_fact', [('fact_type', '=', 'goals_of_care'), ('value', '=', 'dni')]),
+    (r'(?:a\s+)?hospice(?:\s+plan)?', 'note_fact', [('fact_type', '=', 'goals_of_care'), ('value', '=', 'hospice')]),
+    (r'(?:a\s+)?comfort[- ]care(?:\s+plan)?', 'note_fact', [('fact_type', '=', 'goals_of_care'), ('value', '=', 'comfort_care')]),
+    (r'(?:a\s+)?palliative[- ]care', 'note_fact', [('fact_type', '=', 'goals_of_care'), ('value', '=', 'palliative_care')]),
+    (r'(?:an?\s+)?advance(?:d)?\s+directives?', 'note_fact', [('fact_type', '=', 'goals_of_care'), ('value', '=', 'advance_directive')]),
+    (r'(?:a\s+)?(?:named\s+)?health\s*care\s+proxy(?:\s+named)?', 'note_fact', [('fact_type', '=', 'goals_of_care'), ('value', '=', 'healthcare_proxy_named')]),
+    (r'skip(?:s|ping)?\s+(?:their\s+)?(?:medications?|meds)\s+because\s+of\s+(?:the\s+)?cost|cost[- ]related\s+(?:medication\s+)?non-?adherence',
+     'note_fact', [('fact_type', '=', 'medication_nonadherence'), ('value', '=', 'cost')]),
+    (r'skip(?:s|ping)?\s+(?:their\s+)?(?:medications?|meds)\s+because\s+of\s+side\s+effects', 'note_fact',
+     [('fact_type', '=', 'medication_nonadherence'), ('value', '=', 'side_effects')]),
+    (r'(?:an?\s+)?transportation\s+needs?', 'note_fact', [('fact_type', '=', 'social_need'), ('value', '=', 'transport')]),
+    (r'(?:an?\s+)?food\s+(?:insecurity|needs?)', 'note_fact', [('fact_type', '=', 'social_need'), ('value', '=', 'food')]),
+    (r'(?:a\s+)?documented\s+medication\s+intolerance(?:\s+or\s+side\s+effect)?(?:\s+as\s+a\s+barrier(?:\s+to\s+(?:therapy|treatment))?)?',
+     'therapy_barrier', [('barrier_type', '=', 'intolerance_side_effect')]),
+]
+NOTE_WORDS = r'\s+(?:documented\s+)?in\s+(?:their\s+|the\s+)?(?:clinical\s+)?notes'
 NEEDS = {'food insecurity': 'food', 'food': 'food', 'transportation needs': 'transport', 'transportation need': 'transport',
          'transportation barriers': 'transport', 'transportation barrier': 'transport',
          'transportation': 'transport', 'transport': 'transport', 'housing instability': 'housing', 'housing': 'housing',
          'utilities': 'utilities', 'safety': 'safety'}
+FIELD_SYNONYMS = {  # everyday names for received fields; the field must exist in the catalog to be used
+    'lead time in days between booking and the appointment': 'appointment.lead_time_days',
+    'days between booking and the appointment': 'appointment.lead_time_days',
+    'booking lead time': 'appointment.lead_time_days', 'lead time in days': 'appointment.lead_time_days',
+    'lead time': 'appointment.lead_time_days',
+    'svi score': 'patient_svi.svi_overall', 'social vulnerability index': 'patient_svi.svi_overall', 'svi': 'patient_svi.svi_overall',
+    'length of stay in days': 'stay.los_days', 'los': 'stay.los_days',
+    'days supply': 'fill.days_supply',
+}
 FIELDS = {
     'age': 'patient.age', 'sex': 'patient.sex_reported',
     'pcp': 'patient.pcp_clinician_id', 'practice': 'patient.pcp_practice_id',
@@ -200,6 +235,9 @@ class Parser:
                     clock_aliases.setdefault(short,set()).add(table+'.'+column)
         for table, columns in self.catalog.tables.items():
             for column in columns: fields[table+'.'+column] = table+'.'+column
+        for phrase, name in FIELD_SYNONYMS.items():
+            table, _, column = name.partition('.')
+            if column in self.catalog.tables.get(table, []): fields.setdefault(phrase, name)
         for short, candidates in clock_aliases.items():
             if short in fields:candidates.add(fields[short])
             if len(candidates)==1:fields[short]=next(iter(candidates))
@@ -445,18 +483,68 @@ class Parser:
             anchor_event = {'table': a_table, 'date': a_field, 'where': combine('and', a_atoms, a_quote) if a_atoms else None}
         return {'op': 'sequence', 'anchor': anchor_event, 'then': then_event, 'days': days, 'quote': quote}, rest
 
+    def note_evidence(self, text):
+        """A documented note fact or therapy barrier, with its documentation wording ('in their notes')."""
+        start = text
+        lead = re.match(r"^(?:(?:have|has|had)\s+(?:notes\s+saying\s+(?:they|that\s+they)\s+)?|(?:are|were|is|was)\s+documented\s+as\s+|"
+                        r"documented\s+as\s+|whose\s+notes\s+(?:record|document|show|mention)\s+|with\s+)", text, re.I)
+        body = text[lead.end():] if lead else text
+        ef = re.match(r'(?:an?\s+)?(?:documented\s+)?(?:ef|ejection\s+fraction)\s+(?:of\s+)?(?:(below|under|less\s+than|above|over|greater\s+than|at\s+least|at\s+most)\s+)?'
+                      r'(\d+)\s*(?:%|percent)?(?:\s+or\s+(higher|more|above|greater|lower|less|below))?', body, re.I)
+        if ef and 'note_fact' in self.catalog.tables and (ef[1] or ef[3]):
+            word = (ef[1] or ef[3]).lower()
+            op = ('<' if word in ('below', 'under', 'less than') else '>' if word in ('above', 'over', 'greater than') else
+                  '>=' if word in ('at least', 'higher', 'more', 'above', 'greater') else '<=')
+            if ef[3]: op = '>=' if word in ('higher', 'more', 'above', 'greater') else '<='
+            quote = ef.group()
+            atoms = [atom('note_fact.fact_type', '=', 'ejection_fraction', quote), atom('note_fact.value', op, int(ef[2]), quote)]
+            plain = re.search(r'\b(?!(?:an?|the|of|documented)\b)[A-Za-z][\w-]*', quote).group()  # no comparator in helper quotes
+            if op in ('>', '>='): atoms.append(atom('note_fact.value', '<=', 100, plain))  # text values sort above numbers
+            tail = body[ef.end():]
+        else:
+            found = None
+            for pattern, table, fixed in NOTE_EVIDENCE:
+                m = re.match(pattern + r'\b', body, re.I)
+                if m and table in self.catalog.tables and all(c in self.catalog.tables[table] for c, _, _ in fixed):
+                    found = (table, [atom(f'{table}.{c}', op, v, m.group()) for c, op, v in fixed], body[m.end():]); break
+            if not found: return None
+            table, atoms, tail = found
+        notes = re.match(NOTE_WORDS, tail, re.I)
+        if notes: tail = tail[notes.end():]
+        quote = start[:len(start) - len(tail)].strip()
+        spare = [s for s in ((lead.group().strip() if lead else ''), notes.group().strip() if notes else '') if s]
+        atoms[0] = {**atoms[0], 'quote': [*spare, atoms[0]['quote']]}
+        table = atoms[0]['field'].split('.')[0]
+        if table == 'note_fact' and 'negated' in self.catalog.tables['note_fact']:
+            plain = re.search(r'\b(?!(?:an?|the|of|documented)\b)[A-Za-z][\w-]*', atoms[0]['quote'][-1]).group()
+            atoms.append(atom('note_fact.negated', '=', 0, plain))  # affirmed mentions only
+        return related(table, combine('and', atoms, quote), quote), tail
+
+    def counted_event(self, text):
+        """A dated event named for counting ('ED visits', 'inpatient admissions', 'statin fills')."""
+        event = self.sequence_event(text)
+        if not event or event[0] == 'any': return None
+        table, field, atoms, tail, quote = event
+        return (table, field, atoms, quote, tail) if atoms else None
+
     def evidence(self, text):
         """Having or lacking received evidence (a lab, vaccine, screening, fill, visit or social-need screen)."""
         if self.base != 'patient': return None
+        noted = self.note_evidence(text)
+        if noted: return noted
         start = text
-        social = re.match(r'^(?:(?:have|has|had)\s+)?screened\s+(positive\s+)?for\s+', text, re.I)
+        social = re.match(r'^(?:(?:have|has|had)\s+)?((?:never|not)\s+)?screened\s+(positive\s+)?for\s+', text, re.I)
         if social and 'social_need' in self.catalog.tables:
             got = self.prefix(re.sub(r'^(?:an?|the)\s+', '', text[social.end():], flags=re.I), NEEDS)
             if got:
-                quote = text[:len(text) - len(got[2])].strip()
+                tail = got[2]
+                structured = re.match(r'^\s*on\s+(?:an?\s+)?(?:structured\s+)?(?:screen|screening)(?:\s+tool)?\b', tail, re.I)
+                if structured: tail = tail[structured.end():]
+                quote = text[:len(text) - len(tail)].strip()
                 atoms = [atom('social_need.need', '=', got[1], quote)]
-                if social[1]: atoms.append(atom('social_need.positive', '=', 1, quote))
-                return related('social_need', combine('and', atoms, quote), quote), got[2]
+                if social[2]: atoms.append(atom('social_need.positive', '=', 1, quote))
+                value = related('social_need', combine('and', atoms, quote), quote)
+                return ({'op': 'not', 'arg': value, 'quote': quote} if social[1] else value), tail
         neither = re.match(r'^(?:(?:have|has|had)\s+)?neither\s+', text, re.I)
         if neither:
             first = self.thing(text[neither.end():])
@@ -472,6 +560,32 @@ class Parser:
                          for (t, _, atoms, _, _), win in ((first, win1), (second, win2))]
                 self.gaps.append(quote)
                 return combine('and', parts, quote), tail
+        many = re.match(r'^(?:(?:have|has|had|with)\s+)?(?:(?:at\s+least)\s+(\d+|' + '|'.join(NUMBER_WORDS) + r')|(\d+|' + '|'.join(NUMBER_WORDS)
+                        + r')\s*(?:\+|or\s+more))\s+', text, re.I)
+        if many:
+            found = self.thing(text[many.end():]) or self.counted_event(text[many.end():])
+            if found:
+                table, field, atoms, _, after = found
+                win, tail = self.window(after, table, field)
+                quote = start[:len(start) - len(tail)].strip()
+                word = (many[1] or many[2]).lower()
+                atoms[0] = {**atoms[0], 'quote': [many.group().strip(), *([atoms[0]['quote']] if isinstance(atoms[0]['quote'], str) else atoms[0]['quote'])]}
+                return {'op': 'count_at_least', 'table': table, 'where': combine('and', atoms + win, quote),
+                        'n': int(word) if word.isdigit() else int(NUMBER_WORDS[word]), 'quote': quote}, tail
+        # Attribution or enrollment in a calendar month (member months).
+        month = re.match(r'^(?:(?:were|was|are|is)\s+)?(attributed(?:\s+to\s+an?\s+(?:practice|pcp|primary\s+care\s+(?:practice|provider)|clinician))?|enrolled)'
+                         r'\s+(?:in|for|as\s+of)\s+(' + '|'.join(MONTH_NAMES) + r')\s+(20\d\d)\b', text, re.I)
+        if month and 'member_month' in self.catalog.tables:
+            quote = month.group(); ym = f'{month[3]}-{MONTH_NAMES[month[2].lower()]:02d}'
+            atoms = [atom('member_month.month', '=', ym, quote)]
+            if month[1].lower().startswith('attributed') and 'attribution_practice_id' in self.catalog.tables['member_month']:
+                atoms.append(atom('member_month.attribution_practice_id', 'not_null', None, month[1]))
+            return related('member_month', combine('and', atoms, quote), quote), text[month.end():]
+        times = re.match(r'^(?:have\s+|has\s+)?no[- ]showed\s+(\d+|' + '|'.join(NUMBER_WORDS) + r')\s+or\s+more\s+times', text, re.I)
+        if times and 'outcome' in self.catalog.tables.get('appointment', []):
+            quote = times.group(); word = times[1].lower()
+            return {'op': 'count_at_least', 'table': 'appointment', 'where': atom('appointment.outcome', '=', 'no_show', quote),
+                    'n': int(word) if word.isdigit() else int(NUMBER_WORDS[word]), 'quote': quote}, text[times.end():]
         lead = re.match(r'^' + self.NEGATED_LEAD + r'\s+', text, re.I)
         negated = bool(lead)
         gap = negated and not re.search(r'\bnever\b', lead.group(), re.I)
@@ -512,7 +626,7 @@ class Parser:
             text=front[2]; self.base=front_source[1][0]
         ranked = self.ranking(text)
         if ranked: return ranked
-        of = re.match(r'^Of\s+(?:the\s+|our\s+)?(.+?),\s*(how many)\s+(.+)$', text, re.I)
+        of = re.match(r'^Of\s+(?:the\s+|our\s+)?(.+?),\s*(how many|what\s+(?:percent(?:age)?|share|proportion|fraction))\s+(.+)$', text, re.I)
         if of:
             return self.of_scope(of)
         unit = re.search(r',?\s+in\s+(cents|days)\s*$',text,re.I)
@@ -599,6 +713,7 @@ class Parser:
         dimensions = {**self.field_aliases(), **({'month': f'{self.base}.{clock}@month'} if clock else {})}
         rest, group_fields, group_quote = self.grouping(rest, dimensions)
         rest = re.sub(r'^\s*(?:are|were|is|was)(?:\s+there)?(?:\s+|$)', '', rest, flags=re.I)
+        rest = re.sub(r'\s+(?:are|were|is)\s+there\s*$', '', rest, flags=re.I)
         rest = re.sub(r'^\s*(?:that\s+)?(?:(?:do|did)\s+)?we\s+(?:have|had|see|saw)\b\s*', '', rest, flags=re.I)
         base_filter = None
         if default:
@@ -708,13 +823,33 @@ class Parser:
         if self.base == 'stay' and re.search(r'discharge', source_quote, re.I): self.clock = 'discharge_date'
         first, tail = self.expression(scope_text)
         if tail.strip(): raise PlanError('Unconsumed scope: ' + tail)
-        second, tail = self.expression(re.sub(r'^(?:were|was|are|is)\s+(?!admitted)', '', of[3], flags=re.I))
+        share = not of[2].lower().startswith('how many')
+        second_text = re.sub(r'^(?:of\s+them\s+)?(?:were|was|are|is)\s+(?!admitted)', '', of[3], flags=re.I).strip()
+        inherited = re.fullmatch(r'(?:had\s+|have\s+)?screened\s+positive', second_text, re.I)
+        if inherited and isinstance(first, dict) and first.get('table') == 'social_need':
+            # "Of patients screened for transport, what percent screened positive": the same screen, positive.
+            q = inherited.group()
+            second = {**copy.deepcopy(first), 'quote': q,
+                      'where': combine('and', [{**copy.deepcopy(first['where']), 'quote': first['where']['quote']},
+                                               atom('social_need.positive', '=', 1, q)], q)}
+            tail = ''
+        else:
+            second, tail = self.expression(second_text)
         if tail.strip(): raise PlanError('Unconsumed request: ' + tail)
         base_filter = None
         if default:
             field, value = default
             base_filter = (self.condition(value, source_quote) if field == 'condition'
                            else atom(self.base + '.' + field, '=', value, source_quote))
+        if share:
+            if self.base != 'patient' or second is None: raise PlanError('A share of a group needs a patient condition to count')
+            where = combine('and', [base_filter, first], self.question)
+            self.bind_parent_quotes(where)
+            measure = {'kind': 'ratio', 'alias': 'percent', 'quote': of[2], 'scale': 100,
+                       'numerator': {'kind': 'count_distinct', 'field': 'patient.patient_id', 'alias': 'meeting', 'quote': of[2], 'where': second},
+                       'denominator': {'kind': 'count_distinct', 'field': 'patient.patient_id', 'alias': 'group', 'quote': of[2]}}
+            return {'source': {'table': self.base, 'quote': source_quote}, 'select': [measure], 'where': where,
+                    'group_by': [], 'order_by': [], 'limit': None, 'unresolved': []}
         where = combine('and', [base_filter, first, second], self.question)
         self.bind_parent_quotes(where)
         measure = ({'kind': 'count_distinct', 'field': 'patient.patient_id', 'alias': 'patients', 'quote': of[2]} if self.base == 'patient'

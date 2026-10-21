@@ -200,6 +200,19 @@ class Compiler:
             return '(NOT ' + self.predicate(expr['arg'], scope, path+'.arg', depth+1) + ')'
         if op == 'sequence':
             return self.sequence(expr, scope, path, depth)
+        if op == 'count_at_least':
+            # At least N related events for the same patient (episodes for relations whose rows are observations).
+            if set(expr) != {'op', 'table', 'where', 'n', 'quote'} or type(expr['n']) is not int or not 1 <= expr['n'] <= 10000:
+                raise PlanError('An event-count threshold needs a relation, a condition and a whole-number N')
+            table = expr['table']
+            if table not in self.catalog.tables or 'patient_id' not in self.catalog.tables[table]: raise PlanError(f'Unknown relation: {table}')
+            self.serial += 1
+            alias = 'k' + str(self.serial)
+            nested = {**scope, table: alias}
+            condition = self.predicate(expr['where'], nested, path + '.where', depth + 1) if expr.get('where') else '1'
+            unit = ("DISTINCT " + " || '|' || ".join(f'{alias}.{identifier(c)}' for c in EPISODE_KEYS[table])) if table in EPISODE_KEYS else '*'
+            outer = self.field(self.base + '.patient_id', scope)
+            return f'((SELECT COUNT({unit}) FROM {identifier(table)} AS {alias} WHERE {alias}.patient_id = {outer} AND {condition}) >= {expr["n"]})'
         if op == 'exists':
             if set(expr) - {'op', 'table', 'where', 'quote', 'link', 'stream'}: raise PlanError('Unknown related-record fields')
             table = expr.get('table')
