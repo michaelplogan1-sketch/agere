@@ -2,9 +2,11 @@
 from pathlib import Path
 import sqlite3
 import tempfile
+import json
+from types import SimpleNamespace
 import unittest
 
-from clinical_core.agere.clinical import request_plan as R, request_language as L, sql_query
+from clinical_core.agere.clinical import request_plan as R, request_language as L, sql_query, shared_planner as S
 
 
 class SequenceLanguage(unittest.TestCase):
@@ -47,6 +49,20 @@ class SequenceLanguage(unittest.TestCase):
         self.assertEqual(self.count('How many patients who died had an inpatient admission in the 30 days before death?'), 1)
         self.assertEqual(self.count('How many patients who died had an inpatient admission in the 10 days before death?'), 0)
 
+
+    def test_saved_model_answer_yields_to_the_free_parser(self):
+        q = 'How many patients started a statin within 90 days after a hospital discharge?'
+        stale = {'source': {'table': 'patient', 'quote': 'patients'},
+                 'select': [{'kind': 'count_distinct', 'field': 'patient.patient_id', 'alias': 'patients', 'quote': 'How many'}],
+                 'where': None, 'group_by': [], 'order_by': [], 'limit': None, 'unresolved': []}
+        with sqlite3.connect(self.path / 'question-plans.sqlite3') as db:
+            db.execute('CREATE TABLE IF NOT EXISTS shared_requests(id TEXT PRIMARY KEY,payload TEXT NOT NULL)')
+            db.execute('INSERT INTO shared_requests VALUES (?,?)', ('old', json.dumps({'question': q, 'request': stale, 'interpretation': {
+                'interpreter': 'hosted', 'review': 'checked_hosted_interpretation', 'execution_accepted': True, 'attempts': []}})))
+        stack = SimpleNamespace(path=self.path, allow_live=False, shared_request_planning=True)
+        result = S.compose(stack, q)
+        self.assertEqual(result['answer']['count'], 2)  # not the stale all-patients count of 3
+        self.assertEqual(result['planner_receipt']['interpretation']['review'], 'fully_consumed_grammar')
 
 if __name__ == '__main__':
     unittest.main()

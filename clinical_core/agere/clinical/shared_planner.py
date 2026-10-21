@@ -767,7 +767,7 @@ def plan(stack, question, ledger=None, frontier=None, *, population=None, model=
     # Deterministic first (Mike, 2026-10-21): a saved model-derived answer yields to the free parser whenever the
     # parser now reads the whole question; the parse is then saved under this key in its place.
     grammar = None
-    if model is None and not (hit and saved['interpretation'].get('review') in GRAMMAR_REVIEWS):
+    if model is None and hit and saved['interpretation'].get('review') not in GRAMMAR_REVIEWS:
         try:
             grammar = _interpret(catalog, question, population=population)  # grammar only; never a model
         except QuestionNotUnderstood:
