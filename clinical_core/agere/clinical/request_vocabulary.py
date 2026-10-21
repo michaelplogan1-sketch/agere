@@ -16,7 +16,8 @@ from .age import age_at
 
 VERSION = 'shared-request-vocabulary/1'
 CONDITION_EVIDENCE_POLICY = (
-    'Received normalized diagnosis labels, plus ehr_problem_list entries whose diagnosis flag is unknown. '
+    'EHR diagnosis labels (plus ehr_problem_list entries whose diagnosis flag is unknown) or a counted payer-claim '
+    'ICD-10 diagnosis in the condition\'s code set (Mike, 2026-10-21: claims-only members are included). '
     'Assessment topics, lab-inferred, note-only and medication-indication evidence are excluded. '
     'A match does not establish current clinical status.')
 ALIASES = {
@@ -132,14 +133,17 @@ def concept_sql(expr, compiler, scope):
     alias = 'concept_'+str(compiler.serial)
     outer = compiler.field('patient.patient_id', scope)
     column = 'concept' if kind == 'condition' else 'drug_class'
-    where = f'{alias}.{column} IN ({",".join(map(literal, names))})'
     if kind == 'condition':
-        diagnosis = f'{alias}.is_diagnosis = 1'
-        if 'diagnosis_basis' in compiler.catalog.tables[table]:
-            diagnosis += f" OR ({alias}.is_diagnosis IS NULL AND {alias}.diagnosis_basis = 'ehr_problem_list')"
-        where += ' AND (' + diagnosis + ')'
-    else:
-        where += ' AND '+concepts.picked_up_sql(alias)
+        evidence = concepts.condition_evidence_sql(names, compiler.catalog.tables)
+        where = 'TRUE'
+        if expr['period']:
+            start, end = (date.fromisoformat(expr['period'][k]).isoformat() for k in ('start', 'end'))
+            if end > compiler.catalog.identity['as_of']: raise PlanError('Concept period exceeds snapshot')
+            where = f'{alias}.event_date BETWEEN {literal(start)} AND {literal(end)}'
+        # Uncorrelated: the condition population is built once, then the patient filter is a set lookup.
+        return f'{outer} IN (SELECT {alias}.patient_id FROM {evidence} {alias} WHERE {where})'
+    where = f'{alias}.{column} IN ({",".join(map(literal, names))})'
+    where += ' AND '+concepts.picked_up_sql(alias)
     period = expr['period']
     if period:
         if set(period) != {'start', 'end'}: raise PlanError('Explicit concept period required')

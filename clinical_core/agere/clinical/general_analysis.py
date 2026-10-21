@@ -279,7 +279,7 @@ def _macro_sql(kind, arg, catalog):
         key = (arg or '').strip()
         if key not in PHENOTYPES:
             raise PlanError('Unknown governed phenotype: ' + key + '. Available: ' + ', '.join(sorted(PHENOTYPES)))
-        return PHENOTYPES[key]['sql']
+        return PHENOTYPES[key]['build'](catalog.tables)
     if kind == 'tolerance_evidence':
         from .clinical_definitions import TOLERANCE
         return TOLERANCE['sql']
@@ -290,11 +290,7 @@ def _macro_sql(kind, arg, catalog):
         unknown = [n for n in names if n not in concepts.CONDITIONS]
         if unknown:
             raise PlanError('Unknown governed condition: ' + ', '.join(unknown))
-        listed = ','.join("'" + n + "'" for n in names)
-        diagnosis = 'is_diagnosis = 1'
-        if 'diagnosis_basis' in catalog.tables.get('condition', []):  # same policy as the typed compiler
-            diagnosis += " OR (is_diagnosis IS NULL AND diagnosis_basis = 'ehr_problem_list')"
-        return "(SELECT DISTINCT patient_id FROM condition WHERE concept IN (" + listed + ") AND (" + diagnosis + "))"
+        return '(SELECT DISTINCT patient_id FROM ' + concepts.condition_evidence_sql(names, catalog.tables) + ')'
     unknown = [n for n in names if n not in drug_classes.CLASSES]
     if unknown:
         raise PlanError('Unknown governed drug class: ' + ', '.join(unknown))

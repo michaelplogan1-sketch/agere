@@ -6,27 +6,31 @@ answer using it. Definitions select evidence; they do not establish clinical app
 
 DECIDED_BY = 'Mike (clinical owner), 2026-10-21'
 
+
+def _hfref_sql(tables):
+    """Coded HFrEF (EHR or counted claim), or HF (EHR or claim) with a documented EF of 40% or less in notes."""
+    from .concepts import condition_evidence_sql
+    coded = condition_evidence_sql(['heart_failure_reduced_ef'], tables)
+    hf = condition_evidence_sql(['heart_failure', 'heart_failure_reduced_ef'], tables)
+    return ("(SELECT patient_id, MAX(coded) AS coded_hfref, MAX(note_ef) AS note_ef_le_40, "
+            "MIN(lowest_ef) AS lowest_documented_ef, MAX(ef_date) AS latest_low_ef_date, "
+            "CASE WHEN MAX(coded) = 1 AND MAX(note_ef) = 1 THEN 'coded_and_note_ef' WHEN MAX(coded) = 1 THEN 'coded_hfref' "
+            "ELSE 'note_ef_le_40' END AS hfref_basis FROM ("
+            "SELECT patient_id, 1 AS coded, 0 AS note_ef, NULL AS lowest_ef, NULL AS ef_date FROM " + coded + " "
+            "UNION ALL SELECT f.patient_id, 0, 1, CAST(f.value AS REAL), f.event_date FROM note_fact f "
+            "WHERE f.fact_type = 'ejection_fraction' AND COALESCE(f.negated, 0) = 0 AND COALESCE(f.experiencer, 'patient') = 'patient' "
+            "AND typeof(f.value) IN ('integer', 'real') AND f.value <= 40 "
+            "AND f.patient_id IN (SELECT patient_id FROM " + hf + ")) GROUP BY patient_id)")
+
 PHENOTYPES = {
     'hfref': {
         'version': 1,
         'label': 'Heart failure with reduced ejection fraction',
         'decision': DECIDED_BY,
-        'disclosure': ('Reduced EF = a coded HFrEF diagnosis, or a heart failure diagnosis with a documented ejection '
-                       'fraction of 40% or less in notes (non-negated, about the patient, any date).'),
+        'disclosure': ('Reduced EF = a coded HFrEF diagnosis (EHR or counted payer claim), or a heart failure diagnosis with a '
+                       'documented ejection fraction of 40% or less in notes (non-negated, about the patient, any date).'),
         # Returns patient_id plus the basis for each qualifying patient.
-        'sql': """(SELECT patient_id, MAX(coded) AS coded_hfref, MAX(note_ef) AS note_ef_le_40,
-  MIN(lowest_ef) AS lowest_documented_ef, MAX(ef_date) AS latest_low_ef_date,
-  CASE WHEN MAX(coded) = 1 AND MAX(note_ef) = 1 THEN 'coded_and_note_ef' WHEN MAX(coded) = 1 THEN 'coded_hfref'
-       ELSE 'note_ef_le_40' END AS hfref_basis FROM (
- SELECT patient_id, 1 AS coded, 0 AS note_ef, NULL AS lowest_ef, NULL AS ef_date FROM condition
-  WHERE concept = 'heart_failure_reduced_ef' AND (is_diagnosis = 1 OR (is_diagnosis IS NULL AND diagnosis_basis = 'ehr_problem_list'))
- UNION ALL
- SELECT f.patient_id, 0, 1, CAST(f.value AS REAL), f.event_date FROM note_fact f
-  WHERE f.fact_type = 'ejection_fraction' AND COALESCE(f.negated, 0) = 0 AND COALESCE(f.experiencer, 'patient') = 'patient'
-    AND typeof(f.value) IN ('integer', 'real') AND f.value <= 40
-    AND f.patient_id IN (SELECT patient_id FROM condition WHERE concept IN ('heart_failure', 'heart_failure_reduced_ef')
-                         AND (is_diagnosis = 1 OR (is_diagnosis IS NULL AND diagnosis_basis = 'ehr_problem_list')))
-) GROUP BY patient_id)""",
+        'build': lambda tables: _hfref_sql(tables),
     },
 }
 

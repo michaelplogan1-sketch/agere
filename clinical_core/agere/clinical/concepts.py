@@ -134,6 +134,28 @@ FILL_STATUSES = ('dispensed', 'paid', 'completed')
 FILL_EVIDENCE_SQL = "('dispensed','claim','payer_claim')"
 
 
+def condition_evidence_sql(names, tables):
+    """Governed condition evidence: EHR diagnoses (plus unknown-flag problem-list rows) UNION counted payer-claim
+    ICD-10 diagnoses matching the concepts' code prefixes. Returns a subquery of (patient_id, event_date, source).
+    Decided by Mike 2026-10-21: claims-only members are part of the condition population."""
+    lit = lambda v: "'" + str(v).replace("'", "''") + "'"
+    parts = []
+    if 'condition' in tables:
+        diagnosis = 'is_diagnosis = 1'
+        if 'diagnosis_basis' in tables['condition']:
+            diagnosis += " OR (is_diagnosis IS NULL AND diagnosis_basis = 'ehr_problem_list')"
+        dated = 'event_date' if 'event_date' in tables['condition'] else 'NULL AS event_date'
+        parts.append("SELECT patient_id, " + dated + ", 'ehr_diagnosis' AS source FROM condition WHERE concept IN ("
+                     + ','.join(map(lit, names)) + ') AND (' + diagnosis + ')')
+    prefixes = sorted({p for n in names for p in CONDITIONS.get(n, {}).get('icd10', [])})
+    if prefixes and {'patient_id', 'icd10', 'service_from', 'counts_in_metrics'} <= set(tables.get('payer_claim_diagnosis', [])):
+        parts.append("SELECT patient_id, service_from AS event_date, 'payer_claim_diagnosis' AS source FROM payer_claim_diagnosis "
+                     'WHERE counts_in_metrics = 1 AND (' + ' OR '.join(f"icd10 LIKE {lit(p + '%')}" for p in prefixes) + ')')
+    if not parts:
+        return None
+    return '(' + ' UNION ALL '.join(parts) + ')'
+
+
 def picked_up_sql(alias='', reversed_column=True):
     """SQL predicate over the medication table: the row is a picked-up fill (see FILL_EVIDENCE / FILL_STATUSES)."""
     a = f'{alias}.' if alias else ''
