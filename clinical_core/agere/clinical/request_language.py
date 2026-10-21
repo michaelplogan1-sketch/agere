@@ -51,7 +51,11 @@ SEQUENCE_EVENTS = [
      [('type', '=', 'inpatient'), ('discharge_known', '=', 1)]),
     (r'(?:an?\s+|their\s+|the\s+)?(?:inpatient|hospital)\s+admissions?', 'stay', 'admit_date', [('type', '=', 'inpatient')]),
     (r'(?:their\s+)?death', 'death', 'death_date', []),
+    # Mike, 2026-10-21: a primary care visit is an EHR primary-care visit or a counted payer claim for an office E/M
+    # visit (CPT 99202-99215); both rows share the pattern, so either source satisfies the event.
     (r'(?:an?\s+)?primary\s+care\s+(?:visits?|follow-?ups?)', 'visit', 'event_date', [('type_concept', '=', 'primary_care_visit')]),
+    (r'(?:an?\s+)?primary\s+care\s+(?:visits?|follow-?ups?)', 'payer_claim_line', 'service_date',
+     [('counts_in_metrics', '=', 1), ('cpt', '>=', '99202'), ('cpt', '<=', '99215')]),
     (r'(?:an?\s+)?(?:ed|er|emergency(?:\s+department)?)\s+visits?', 'utilization_event', 'event_date', [('kind', '=', 'ed_visit')]),
 ]
 NEEDS = {'food insecurity': 'food', 'food': 'food', 'transportation needs': 'transport', 'transportation barriers': 'transport',
@@ -324,12 +328,20 @@ class Parser:
         return None
 
     def sequence_event(self, text, *, started=False):
-        """(table, date, atoms, tail) for a named dated event; a drug name after 'started' is a new start."""
+        """(table, date, atoms, tail, quote) for a named dated event; a drug name after 'started' is a new start.
+        An event received from several sources returns ('any', None, [(table, date, atoms), ...], tail, quote)."""
+        found = []
         for pattern, table, field, fixed in SEQUENCE_EVENTS:
             m = re.match(pattern + r'\b', text, re.I)
             if m and table in self.catalog.tables and field in self.catalog.tables[table]:
-                fixed = [f for f in fixed if f[0] in self.catalog.tables[table]]
-                return table, field, [atom(f'{table}.{c}', op, v, m.group()) for c, op, v in fixed], text[m.end():], m.group()
+                if any(f[0] not in self.catalog.tables[table] for f in fixed): continue
+                if found and m.end() != found[0][3]: continue
+                found.append((table, field, [atom(f'{table}.{c}', op, v, m.group()) for c, op, v in fixed], m.end(), m.group()))
+        if len(found) == 1:
+            table, field, atoms, end, quote = found[0]
+            return table, field, atoms, text[end:], quote
+        if found:
+            return 'any', None, [(t_, f_, a_) for t_, f_, a_, _, _ in found], text[found[0][3]:], found[0][4]
         drug = self.prefix(re.sub(r'^(?:an?|the)\s+', '', text, flags=re.I), self.drugs) if 'fill' in self.catalog.tables else None
         if drug:
             quote = text[:len(text) - len(drug[2])].strip()
@@ -361,8 +373,12 @@ class Parser:
         else:
             return None
         quote = start[:len(start) - len(rest)].strip()
-        atoms[0] = {**atoms[0], 'quote': [lead.group().strip(), atoms[0]['quote']]}
-        then_event = {'table': table, 'date': field, 'where': combine('and', atoms, then_quote)}
+        if table == 'any':
+            options = [(t_, f_, [{**a_[0], 'quote': [lead.group().strip(), a_[0]['quote']]}, *a_[1:]]) for t_, f_, a_ in atoms]
+            then_event = {'any': [{'table': t_, 'date': f_, 'where': combine('and', a_, then_quote)} for t_, f_, a_ in options]}
+        else:
+            atoms[0] = {**atoms[0], 'quote': [lead.group().strip(), atoms[0]['quote']]}
+            then_event = {'table': table, 'date': field, 'where': combine('and', atoms, then_quote)}
         if a_table == self.base:  # "each discharge": the counted row itself
             anchor_event = {'outer': f'{a_table}.{a_field}'}
         else:

@@ -108,3 +108,10 @@ AGE = {
     'disclosure': ('Age is calculated from birth_date: at the warehouse as-of date for living patients, and at the '
                    'date of death for patients with a death record. Missing or invalid birth dates remain unknown.'),
 }
+
+
+PRIMARY_CARE_VISIT = {
+    'version': 1, 'decision': DECIDED_BY,
+    'disclosure': ('Primary care visit = an EHR primary-care visit or a counted payer claim line for an office E/M visit '
+                   '(CPT 99202-99215).'),
+}

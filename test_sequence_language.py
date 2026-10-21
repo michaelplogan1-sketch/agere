@@ -27,6 +27,8 @@ class SequenceLanguage(unittest.TestCase):
               ('C','primary_care_visit','2028-01-30');
             CREATE TABLE fill(patient_id TEXT, drug_class TEXT, fill_date TEXT, new_user_180 INTEGER);
             INSERT INTO fill VALUES ('A','statin','2029-04-01',1),('B','statin','2029-08-15',1),('C','statin','2028-01-10',0);
+            CREATE TABLE payer_claim_line(patient_id TEXT, service_date TEXT, cpt TEXT, counts_in_metrics INTEGER);
+            INSERT INTO payer_claim_line VALUES ('C','2029-12-30','99213',1),('B','2029-06-05','99213',0),('B','2029-06-06','80053',1);
             CREATE TABLE death(patient_id TEXT, death_date TEXT);
             INSERT INTO death VALUES ('C','2030-01-10');
             ''')
@@ -38,8 +40,10 @@ class SequenceLanguage(unittest.TestCase):
 
     def test_follow_up_after_each_counted_discharge(self):
         q = 'Of inpatient discharges in 2029, how many had a primary care visit within 7 days after discharge?'
-        self.assertEqual(self.count(q), 1)  # A day 5; B same day (day 0) does not count; C's 2029 stay has none
-        self.assertEqual(self.count('How many 2029 hospital discharges got a primary care follow-up within a week?'), 1)
+        # A: EHR visit day 5. C: counted office E/M claim day 2 (Mike, 2026-10-21). B: same-day visit, an uncounted
+        # E/M claim and a lab claim do not count.
+        self.assertEqual(self.count(q), 2)
+        self.assertEqual(self.count('How many 2029 hospital discharges got a primary care follow-up within a week?'), 2)
 
     def test_started_a_drug_after_a_discharge(self):
         self.assertEqual(self.count('How many patients started a statin within 30 days after a hospital discharge?'), 1)  # A

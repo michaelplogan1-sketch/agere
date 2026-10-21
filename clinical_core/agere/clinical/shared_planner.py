@@ -972,6 +972,9 @@ def execute_contract(stack, question, graph, receipt, *, population=None, parent
         limitations.append(AGE['disclosure'] if re.search(r'\bdeath\b', contract['query'], re.I) else
                            'Age is calculated from birth_date at the warehouse as-of date.')
     limitations += contract.get('notes', [])
+    if 'payer_claim_line' in contract['query'] and "'99202'" in contract['query']:
+        from .clinical_definitions import PRIMARY_CARE_VISIT
+        limitations.append(PRIMARY_CARE_VISIT['disclosure'])
     if re.search(r'\bNOT EXISTS \(SELECT 1 FROM "death"', contract['query']) and not re.search(
             r'\b(?:living|alive|deceased|died|dead|death)\b', question, re.I):
         from .clinical_definitions import CARE_GAP_LIVING

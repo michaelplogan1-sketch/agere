@@ -262,6 +262,12 @@ class Compiler:
         (e.g. each discharge). days = [low, high] is then.date minus anchor date: after = [1, N], before = [-N, 0].
         """
         if set(expr) != {'op', 'anchor', 'then', 'days', 'quote'}: raise PlanError('Sequence needs anchor, then, days and source text')
+        if isinstance(expr['then'], dict) and set(expr['then']) == {'any'}:
+            # One event received from several sources (an EHR visit or a claim line): any of them satisfies it.
+            options = expr['then']['any']
+            if not isinstance(options, list) or not 1 <= len(options) <= 4: raise PlanError('A sequence event needs 1..4 sources')
+            return '(' + ' OR '.join(self.sequence({**expr, 'then': o}, scope, f'{path}.then.{i}', depth)
+                                     for i, o in enumerate(options)) + ')'
         days = expr['days']
         if (not isinstance(days, list) or len(days) != 2 or any(type(d) is not int for d in days)
                 or not -3650 <= days[0] <= days[1] <= 3650):
