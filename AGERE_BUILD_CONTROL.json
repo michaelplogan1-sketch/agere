@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-10-21T00:31:33.347339+00:00",
+  "updated_at": "2026-10-21T00:43:28.066430+00:00",
   "decision_basis": "AGERE_SHARED_FRONTIER_2026-10-20.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -281,6 +281,10 @@
         {
           "path": "artifacts/agere-temporal-integration-v1/implementation-receipt.json",
           "sha256": "baff204ba8a4e9e8795ae231ae3adfb0b980fe26cdedb4658e478d3a1cb2d8e1"
+        },
+        {
+          "path": "artifacts/agere-domain-integration-v1/implementation-receipt.json",
+          "sha256": "07dfdd10909d4c937fe64d016d8f56fd503e35a4cc80b162e5c4621e28d43b5b"
         }
       ]
     },
@@ -338,29 +342,59 @@
     "kind": "implementation_delivered",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "Received temporal regimen uncertainty is preserved; final appointment status versus history is explicit; exact catalog names use the grammar; decimal dose scale and numbered concentrations are handled conservatively.",
-    "measured_failure_reduction": "Stopped/held/undated/conflicting documentation no longer becomes a definite active target dose. Owner reproduced .5 mg becoming5 and concentrations/ranges being accepted; final parser fixes pass regressions. Authored21-patient workflow has exact saved work scope and no duplicates.",
+    "user_behavior_delta": "The existing /ask correction workflow can verify and reuse scoped CMS, MA and population-health facts; conflicts and source changes revoke reuse and invalidate dependent cached results.",
+    "measured_failure_reduction": "Domain facts now participate in the actual correction UI/API and shared learning/cache path. Authored graph checks prove correction/conflict/revalidation recomputation; real browser correction and current saved reuse succeed.",
     "evidence": [
-      "artifacts/agere-temporal-integration-v1/implementation-receipt.json",
-      "docs/agere/TEMPORAL_INTEGRATION_2026-10-20.md",
-      "artifacts/agere-temporal-integration-v1/access-local-workflow.json",
-      "artifacts/agere-temporal-integration-v1/owner-dose-parsing-failure.json"
+      "artifacts/agere-domain-integration-v1/implementation-receipt.json",
+      "docs/agere/DOMAIN_LEARNING_INTEGRATION_2026-10-20.md",
+      "artifacts/agere-domain-integration-v1/browser-correction-lifecycle.json",
+      "artifacts/agere-domain-integration-v1/saved-reuse-verification.json"
     ],
-    "remaining_gap": "Fresh unfamiliar-language correctness, the original clinical compound (EF coverage, current use, dose/barriers and conditional work), general temporal composition and generated-view meaning/latency remain incomplete. The 21-patient access result is an owner-authored contract execution check. It does not establish that a language model will choose that interpretation for the original question. Dose values are reconciled received documentation and reference arithmetic, not confirmed ingestion, individual dose suitability, maximum tolerated treatment or clinical adjudication. G3 remains active, G5 qualification remains incomplete and full ten-area acceptance is false. Hosted design preview remains separate from the connected local website. No paid calls were made for this increment. Prior lane hosted failures/costs remain historical evidence; further provider qualification is unverified and does not block local build work.",
-    "next_action": "G3: integrate source/correction learning and graph-cache dependency commits f5ad976 + 5edac69; verify local correction, conflict, source-change, API and connected-site behavior without paid calls. Then resolve fresh unfamiliar-language and original clinical compound completeness using local evidence and appropriate baselines. Live-model and independent clinical qualification remain unverified, not a credit-dependent build prerequisite.",
-    "next": "G3: integrate source/correction learning and graph-cache dependency commits f5ad976 + 5edac69; verify local correction, conflict, source-change, API and connected-site behavior without paid calls. Then resolve fresh unfamiliar-language and original clinical compound completeness using local evidence and appropriate baselines. Live-model and independent clinical qualification remain unverified, not a credit-dependent build prerequisite.",
+    "remaining_gap": "Original EF/current-therapy/dose/barrier question and conditional work are not demonstrated complete. Broad natural-language correctness and temporal composition are unproven. Generated output meaning and representative end-to-end latency have unresolved failures. Local tests do not qualify model interpretation, clinical correctness or real-world use. Learning is source-scoped fact memory and feedback capture. It does not train model weights, refresh external sources automatically, certify measures, establish payment entitlement or authorize care. All ten acceptance areas remain in scope. G3 active, G5 blocked/incomplete, full acceptance false.",
+    "next_action": "G3: close the original compound clinical/current-state failure and unfamiliar composition gaps through the existing shared path. Use the existing declared acceptance matrix and ordinary development cases across clinical, utilization, access/social, provider and financial/ACO questions, varying dates, exclusions, thresholds and saved scope. Fix measured execution, generated-output and latency failures. No paid calls, protected evaluation or question-specific handlers; fresh-model and independent clinical qualification remain unverified.",
+    "next": "G3: close the original compound clinical/current-state failure and unfamiliar composition gaps through the existing shared path. Use the existing declared acceptance matrix and ordinary development cases across clinical, utilization, access/social, provider and financial/ACO questions, varying dates, exclusions, thresholds and saved scope. Fix measured execution, generated-output and latency failures. No paid calls, protected evaluation or question-specific handlers; fresh-model and independent clinical qualification remain unverified.",
     "latest_review": {
-      "at": "2026-10-21T00:31:33.347339+00:00",
-      "kind": "Owner code review, working/frozen regressions, received-source SQL and local website; no paid/model or clinical qualification",
-      "report": "docs/agere/TEMPORAL_INTEGRATION_2026-10-20.md",
+      "at": "2026-10-21T00:43:28.066430+00:00",
+      "kind": "Owner source review, primary/frozen regressions, isolated actual browser and graph/cache checks, live Ask/endpoints; no model or clinical qualification",
+      "report": "docs/agere/DOMAIN_LEARNING_INTEGRATION_2026-10-20.md",
       "evidence": [
-        "artifacts/agere-temporal-integration-v1/implementation-receipt.json"
+        "artifacts/agere-domain-integration-v1/implementation-receipt.json"
       ]
     },
     "coordination": {
       "integration_owner": "01a15af4-c150-76f2-9df2-a44c1428b70d",
-      "status": "Sole owner. Temporal increment activated with local evidence only; source/correction-learning cache candidate remains pending. No paid calls or credit prerequisite."
-    }
+      "status": "Sole owner. Temporal and domain-learning increments integrated. Direct user identifies /ask as the product surface; no design migration. No paid calls or credit prerequisite."
+    },
+    "remaining_blockers": [
+      {
+        "id": "B1",
+        "area": "Clinical compound and current state",
+        "status": "open",
+        "gap": "Original EF/current-therapy/dose/barrier question and conditional work are not demonstrated complete.",
+        "completion": "Every requested element has executed received-source evidence or a specific supported unknown; downstream work keeps the exact applicable population."
+      },
+      {
+        "id": "B2",
+        "area": "Unfamiliar and multi-domain composition",
+        "status": "open",
+        "gap": "Broad natural-language correctness and temporal composition are unproven.",
+        "completion": "Existing declared workflows and ordinary varied development questions preserve date, exclusion, threshold and saved-scope semantics across clinical, utilization, access/social, provider and financial/ACO domains; independently compare execution to source queries. Label authored contracts separately from interpretation."
+      },
+      {
+        "id": "B3",
+        "area": "Generated views and response time",
+        "status": "open",
+        "gap": "Generated output meaning and representative end-to-end latency have unresolved failures.",
+        "completion": "Rendered outputs match saved evidence, preserve scope, and report measured timing; remove reproduced failures without new paid calls."
+      },
+      {
+        "id": "B4",
+        "area": "Independent model and clinical qualification",
+        "status": "unverified",
+        "gap": "Local tests do not qualify model interpretation, clinical correctness or real-world use.",
+        "completion": "Independent appropriate qualification remains separate from deterministic engineering acceptance; do not use protected evaluations or credits as a prerequisite for local build work."
+      }
+    ]
   },
   "decisions": [
     {
@@ -1131,6 +1165,13 @@
       "basis": "Verified user clarification;204 working/frozen checks,14 source queries, authored21-patient workflow and fresh deterministic website count with zero provider calls.",
       "scope_impact": "All ten areas retained, G3 active, G5 incomplete. Authored contracts do not establish model interpretation. No paid call, source migration, real care or hosted publication.",
       "evidence": "artifacts/agere-temporal-integration-v1/implementation-receipt.json"
+    },
+    {
+      "at": "2026-10-21T00:43:28.066430+00:00",
+      "decision": "Activate source-scoped domain learning/cache release7b9f8fe at the user-identified /ask surface; preserve93409e8 rollback.",
+      "basis": "Direct continuation/site clarification;298 primary/frozen checks, actual browser correction, authored graph lifecycle, live API and count verification, zero paid calls.",
+      "scope_impact": "All ten areas retained, G3 active/G5 incomplete. Finite blocker list retained in checkpoint; defer extra model/research work unless it resolves a measured blocker. Existing app configuration and warehouse preserved.",
+      "evidence": "artifacts/agere-domain-integration-v1/implementation-receipt.json"
     }
   ]
 }
