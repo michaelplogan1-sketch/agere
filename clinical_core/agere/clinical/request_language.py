@@ -116,6 +116,7 @@ class Parser:
         self.catalog, self.question, self.bound = catalog, question, bound
         self.base = 'patient'
         self.value_bindings = {}
+        self.gaps = []  # quotes of care-gap clauses (lacking received evidence)
         self.sources = dict(SOURCES)
         for table in catalog.tables:
             phrase = table.replace('_', ' ')
@@ -335,9 +336,11 @@ class Parser:
                 second[2][0] = {**second[2][0], 'quote': [nor.group().strip(), second[2][0]['quote']]}
                 parts = [{'op': 'not', 'arg': related(t, combine('and', atoms + win, quote), quote), 'quote': quote}
                          for (t, _, atoms, _, _), win in ((first, win1), (second, win2))]
+                self.gaps.append(quote)
                 return combine('and', parts, quote), tail
         lead = re.match(r'^' + self.NEGATED_LEAD + r'\s+', text, re.I)
         negated = bool(lead)
+        gap = negated and not re.search(r'\bnever\b', lead.group(), re.I)
         if not lead: lead = re.match(r'^' + self.POSITIVE_LEAD + r'\s+', text, re.I)
         found = self.thing(text[lead.end():] if lead else text)
         if not found or (not lead and not found): return None
@@ -349,6 +352,7 @@ class Parser:
         spare = [s for s in (lead.group().strip(), after[:len(after) - len(tail)].strip() if not win else '') if s]
         atoms[0] = {**atoms[0], 'quote': [*spare, *([atoms[0]['quote']] if isinstance(atoms[0]['quote'], str) else atoms[0]['quote'])]}
         value = related(table, combine('and', atoms + win, quote), quote)
+        if gap: self.gaps.append(quote)
         return ({'op': 'not', 'arg': value, 'quote': quote} if negated else value), tail
 
     def parse(self):
@@ -445,6 +449,12 @@ class Parser:
             if value is None or left.strip(): raise PlanError('Unrecognized population adjective: ' + word)
             where = combine('and', [value, where], self.question)
         where = combine('and', [base_filter, where], self.question)
+        # Mike, 2026-10-21: a care gap (didn't get, had no, missing) counts living patients only unless the question
+        # names living or deceased patients itself.
+        if (self.gaps and self.base == 'patient' and 'death' in self.catalog.tables
+                and not re.search(r'\b(?:living|alive|deceased|died|dead|death|including (?:the )?deceased)\b', self.question, re.I)):
+            where = combine('and', [where, {'op': 'not', 'arg': related('death', None, self.gaps[0]), 'quote': self.gaps[0]}],
+                            self.question)
         self.bind_parent_quotes(where)
         measures = [{'kind': 'field', 'field': field, 'alias': field.split('.')[-1], 'quote': word}
                     for word, field in group_fields]
@@ -638,6 +648,11 @@ class Parser:
             quote, value, tail = coverage
             return atom('patient.coverage_type', '=', value, quote), re.sub(r'^\s*(?:patients|members)\b', '', tail, flags=re.I)
         if self.base == 'patient' and 'death' in self.catalog.tables:
+            both = re.match(r'^,?\s*(?:(living)\s+or\s+(deceased)|(alive)\s+or\s+(dead))\s*,?', text, re.I)
+            if both:
+                a, d = (both[1], both[2]) if both[1] else (both[3], both[4])
+                return combine('or', [{'op': 'not', 'arg': related('death', None, a), 'quote': a},
+                                      related('death', None, d)], both.group().strip(' ,')), text[both.end():]
             alive = re.match(r'^(?:living|alive|still alive|(?:who\s+)?are\s+(?:still\s+)?alive)\b(?:\s+(?:patients|members))?', text, re.I)
             if alive:
                 return {'op': 'not', 'arg': related('death', None, alive.group()), 'quote': alive.group()}, text[alive.end():]

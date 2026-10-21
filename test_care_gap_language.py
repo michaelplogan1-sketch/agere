@@ -44,7 +44,10 @@ class CareGapLanguage(unittest.TestCase):
         self.assertEqual(self.count('How many patients with coronary disease or a prior heart attack had no statin fill in the past year?'), 1)
 
     def test_age_forms_living_and_seasons(self):
-        self.assertEqual(self.count('How many patients 65 and older did not get a flu shot in the 2029-2030 season?'), 2)  # B, D
+        # a care gap counts living patients unless the question names living or deceased patients (Mike, 2026-10-21)
+        self.assertEqual(self.count('How many patients 65 and older did not get a flu shot in the 2029-2030 season?'), 1)  # B
+        self.assertEqual(self.count('How many patients 65 and older, living or deceased, did not get a flu shot in the 2029-2030 season?'), 2)
+        self.assertEqual(self.count('How many patients 65 and older have never had a flu shot on record?'), 1)  # D: history, not a gap
         self.assertEqual(self.count('How many living patients 65+ did not get a flu shot in the 2029-2030 season?'), 1)  # B
         self.assertEqual(self.count('How many women aged 30 to 85 have ever received a flu shot on record?'), 1)  # A
         self.assertEqual(self.count('How many patients with diabetes do not have coronary disease?'), 3)

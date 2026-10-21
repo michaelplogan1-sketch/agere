@@ -89,3 +89,10 @@ def superseded(question, plan, tables):
     if 'counts_in_metrics' not in tables.get('payer_claim', []): return False
     if re.search(r'\bprovider\b', str(question), re.I): return False
     return bool(_PROVIDER_CLAIM.search(json.dumps(plan, default=str)))
+
+
+CARE_GAP_LIVING = {
+    'version': 1, 'decision': DECIDED_BY,
+    'disclosure': ('Care gaps (did not get, had no, missing) count living patients only; patients with a death record '
+                   'are excluded unless the question names living or deceased patients.'),
+}
