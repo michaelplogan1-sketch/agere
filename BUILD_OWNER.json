@@ -207,7 +207,8 @@
       "focused candidate tests and documentation",
       "clinical_core/agere/clinical/graph_contracts.py (queueing-only entries)",
       "clinical_core/agere/clinical/capability_registry.py (queueing-only entries)",
-      "clinical_core/agere/clinical/graph_planner.py (queueing CONTRACTS metadata only; no planner logic)"
+      "clinical_core/agere/clinical/graph_planner.py (queueing CONTRACTS metadata only; no planner logic)",
+      "clinical_core/agere/clinical/analysis_graph.py (existing demand model dependency conditional, queueing+demand_forecast only)"
     ],
     "acceptance": [
       "exact nonempty subset",
@@ -216,10 +217,11 @@
       "forecast source/scope mismatch refusal",
       "scope and assumptions visible",
       "shared planner population admission and execution",
-      "omitted population remains distinct from explicit empty population"
+      "omitted population remains distinct from explicit empty population",
+      "queueing nested demand model identity changes invalidate cached results"
     ],
     "boundary": "Candidate only. Owner retains clinical/question/control/runtime; no paid calls or protected evaluation.",
-    "candidate_progress": "Lane reports subset/empty-scope fixtures passing; initial test-catalog omission corrected. Before evidence:3 arrivals instead of1, empty cohort widening, shared admission rejection. Owner verification pending.",
+    "candidate_progress": "Lane reports shared contract execution passes exact saved subset, empty subset, changed subset and partial mismatched forecast with zero paid calls. Nested forecast model-cache dependency omission is being fixed; final frozen candidate and owner review pending.",
     "forecast_acceptance": "Unavailable/mismatched automatic forecast must be partial with missing-evidence explanation; historical observations cannot silently substitute for forecast."
   }
 }
