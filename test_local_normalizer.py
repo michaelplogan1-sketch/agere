@@ -48,5 +48,11 @@ class NormalizerGate(unittest.TestCase):
             self.ask('DM pts over 65 — count?', 'How many patients over 65 have diabetes?')
 
 
+    def test_guard_catches_dropped_qualifiers_and_swapped_concepts(self):
+        self.assertIsNotNone(N.guard('how many tested positive on the food screen?', 'How many patients have screened for food?'))
+        self.assertIsNotNone(N.guard('how many patients under 18 have prediabetes?', 'How many men under 18 have prediabetes?'))
+        self.assertIsNotNone(N.guard('how many HF pts?', 'How many patients have COPD?'))
+        self.assertIsNone(N.guard('DM pts over 65 by sex', 'How many patients over 65 have diabetes by sex?'))
+
 if __name__ == '__main__':
     unittest.main()

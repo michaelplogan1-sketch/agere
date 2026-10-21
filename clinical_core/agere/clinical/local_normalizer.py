@@ -41,12 +41,42 @@ def numbers(text):
     return found
 
 
+# Qualifiers and named concepts that must appear on both sides (with common client synonyms and abbreviations).
+QUALIFIERS = {
+    'female': r'\b(?:women|woman|female|females|ladies)\b', 'male': r'\b(?:men|man|male|males)\b',
+    'positive': r'\bpositive\b|\bscreened\s*\+|\+\s*screen', 'living': r'\b(?:living|alive|not deceased)\b',
+    'deceased': r'\b(?:deceased|died|dead|death)\b', 'medicaid': r'\bmedicaid\b', 'medicare': r'\bmedicare\b',
+    'commercial': r'\bcommercial\b', 'kept': r'\bkept\b', 'cancelled': r'\bcancel(?:l)?ed\b', 'rejected': r'\breject(?:ed|ion)?\b',
+    'reversed': r'\brevers(?:ed|al)\b', 'started': r'\b(?:start|started|starting|began|initiat\w*|new\s+(?:start|user))\b',
+    'by_group': r'\b(?:by|per|split\s+(?:by|out\s+by)|broken\s+down\s+by)\s+(?:payer|sex|gender|coverage|language|month|specialty|line of business|pcp|practice)\b',
+}
+CONCEPTS = {
+    'diabetes': r'\b(?:diabet\w*|dm|t2dm)\b', 'prediabetes': r'\bpre-?diabet\w*\b', 'heart_failure': r'\b(?:heart failure|hf|chf)\b',
+    'ckd': r'\b(?:ckd|chronic kidney disease|kidney disease)\b', 'copd': r'\bcopd\b', 'hypertension': r'\b(?:hypertens\w*|htn|high blood pressure)\b',
+    'asthma': r'\basthma\w*\b', 'depression': r'\b(?:depress\w*|mdd)\b', 'afib': r'\b(?:atrial fibrillation|afib|a-fib|af)\b',
+    'cad': r'\b(?:coronary|cad)\b', 'mi': r'\b(?:heart attack|mi|myocardial infarction)\b', 'obesity': r'\bobes\w*\b',
+    'dementia': r'\bdementia\b', 'stroke': r'\bstroke\b', 'cancer': r'\bcancer\b', 'hyperlipidemia': r'\b(?:hyperlipidemia|high cholesterol)\b',
+    'anxiety': r'\banxiety\b', 'statin': r'\bstatins?\b', 'metformin': r'\bmetformin\b', 'insulin': r'\binsulin\b',
+    'sglt2': r'\bsglt-?2\w*\b', 'beta_blocker': r'\bbeta[- ]?blockers?\b|\bbbs?\b', 'a1c': r'\b(?:hba1c|a1c|hemoglobin a1c)\b',
+    'egfr': r'\begfr\b', 'uacr': r'\b(?:uacr|urine acr|albumin)\b', 'flu': r'\b(?:flu|influenza)\b', 'mammogram': r'\bmammo\w*\b',
+    'food': r'\bfood\b', 'transport': r'\btransport\w*\b', 'housing': r'\bhousing\b',
+}
+
+
+def _present(table, text):
+    return {k for k, rx in table.items() if re.search(rx, text, re.I)}
+
+
 def guard(client, canonical):
-    """None when the canonical keeps the client's numbers and negation, else the reason it was rejected."""
+    """None when the canonical keeps the client's numbers, negation, qualifiers and named concepts, else the reason."""
     if numbers(client) != numbers(canonical):
         return f'numbers differ: {sorted(numbers(client))} vs {sorted(numbers(canonical))}'
     if bool(NEGATION.search(client)) != bool(NEGATION.search(canonical)):
         return 'negation differs'
+    for name, table in (('qualifiers', QUALIFIERS), ('concepts', CONCEPTS)):
+        a, b = _present(table, client), _present(table, canonical)
+        if a != b:
+            return f'{name} differ: {sorted(a ^ b)}'
     return None
 
 
