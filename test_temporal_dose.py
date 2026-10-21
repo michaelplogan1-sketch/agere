@@ -77,6 +77,12 @@ class TemporalDose(unittest.TestCase):
             'strength':25,'strength_unit':'mg/tablet','times_per_day':2})))
         self.assertIsNone(self.current()['daily_mg'])
 
+    def test_decimal_dose_and_numbered_concentration_do_not_change_scale(self):
+        self.assertEqual(D.dose_mg('.5 mg'), 0.5)
+        self.assertEqual(D.dose_mg('0.5 mg'), 0.5)
+        for text in ('25 mg/5 mL', '25 mg per 5 mL', '25 mg in 5 mL', '1,025 mg', '-.5 mg', '.5 to .75 mg'):
+            with self.subTest(text=text): self.assertIsNone(D.dose_mg(text))
+
     def test_explicit_tablet_quantity_and_frequency_are_supported(self):
         self.db.execute('INSERT INTO record VALUES(?,?,?,?)', ('order','A','medication_orders',json.dumps({
             'event_date':'2030-05-01','medication_name':'carvedilol','status':'active',

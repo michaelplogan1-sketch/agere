@@ -54,11 +54,11 @@ def dose_mg(text):
         return None
     t = text.lower()
     # A range, concentration, negative amount or PRN instruction is not one dose.
-    if re.search(r'\d\s*(?:[-–]|to)\s*\d|(?<!\w)-\s*\d|mg\s*(?:/|per\s+)\s*(?:ml|l)\b|\b(?:prn|as needed|up to)\b', t):
+    if re.search(r'\d\s*(?:[-–]|to)\s*\.?\d|(?<!\w)-\s*\.?\d|\d,\d|mg\s*(?:/|per\s+|in\s+)\s*(?:\d+(?:\.\d+)?\s*)?(?:ml|l)\b|\b(?:prn|as needed|up to)\b', t):
         return None
     if re.search(r'\d\s*(?:mcg|µg|ug|g/|units?|meq|ml)\b', t) and not re.search(r'\d\s*mg\b', t):
         return None
-    m = re.search(r'(\d+(?:\.\d+)?)(?:\s*/\s*\d+(?:\.\d+)?)?\s*mg\b', t)
+    m = re.search(r'(?<![\d.])((?:\d+(?:\.\d+)?|\.\d+))(?:\s*/\s*\d+(?:\.\d+)?)?\s*mg\b', t)
     return _positive(m.group(1)) if m else None
 
 
