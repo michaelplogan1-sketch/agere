@@ -370,10 +370,14 @@ function vizScheduling(a){const o=(a.overall||{}).scheduling||{},m=o.model||{},m
  if((o.assumptions||[]).length)h+='<p class="hint"><b>Assumptions.</b> '+esc(o.assumptions.join(' '))+'</p>';
  return h+'</section>'}
 /* queueing / staffing: servers (or beds) needed per hour of week for a wait or blocking target + the Erlang table behind the peak */
-function vizQueueing(a){const o=(a.overall||{}).queueing||{},st=o.staffing||{},sp=o.single_point||{},inp=o.inputs||{},rows=a.table||[],blk=o.objective==='blocking';
- let h='<section class="sec" data-focus="staffing"><h3>'+(blk?'Bed capacity':'Staffing')+' · '+esc(o.source||'')+'</h3><div class="kpis">'+
+function vizQueueing(a){const o=(a.overall||{}).queueing||{},st=o.staffing||{},sp=o.single_point||{},inp=o.inputs||{},rows=a.table||[],blk=o.objective==='blocking',scope=(a.overall||{}).input_scope;
+ const rate=v=>isNum(v)&&v>0&&v<.001?'<0.001':fmt(v);
+ let h='<section class="sec" data-focus="staffing"><h3>'+(blk?'Bed capacity':'Staffing')+' · '+esc(o.source||'')+'</h3>';
+ if(scope){const w=scope.window||{},population=scope.population==='selected'?fmt(scope.patient_count,0)+' selected patients':'All received patients';
+  h+='<p class="hint"><b>Analysis scope.</b> '+esc(population)+' · arrivals '+esc(w.start||'start of available history')+' to '+esc(w.end||scope.as_of||'end of available history')+' (inclusive)'+(scope.as_of?' · snapshot '+esc(scope.as_of):'')+(scope.organization_id?' · organization '+esc(scope.organization_id):'')+'.</p>'}
+ h+='<div class="kpis">'+
   [['Peak '+(blk?'beds':'servers'),fmt(st.peak_servers)+(st.peak_hour?' ('+st.peak_hour+')':'')],[(blk?'Bed':'Server')+'-hours / week',fmt(st.total_server_hours_per_week)],
-   ['Arrivals / week',isNum(inp.weekly_arrivals_planned)?fmt(inp.weekly_arrivals_planned,0):'—'],['Mean service (min)',isNum(inp.mean_service_minutes)?fmt(inp.mean_service_minutes,1):'—'],
+   ['Arrivals / week',rate(inp.weekly_arrivals_planned)],['Observed arrivals',fmt(inp.arrivals_used,0)],['Mean service (min)',isNum(inp.mean_service_minutes)?fmt(inp.mean_service_minutes,1):'—'],
    [blk?'Blocking at mean load':'P(wait) at peak',blk?(isNum(sp.erlang_b_blocking_probability)?pct(sp.erlang_b_blocking_probability,2):'—'):((sp.erlang_c||{}).p_wait!=null?pct(sp.erlang_c.p_wait,0):'—')]
   ].map(k=>'<div class="kpi"><div class="l">'+esc(k[0])+'</div><div class="v">'+esc(k[1])+'</div></div>').join('')+'</div>';
  if(rows.length){const W=CW(),L=36,R=8,T=8,B=26,H=170,m=Math.max(1,...rows.map(r=>r.servers||0)),bw=(W-L-R)/rows.length;

@@ -68,8 +68,9 @@ function syncScope(t){
  activeContext=c&&/^ANS-[0-9a-f]{24}$/.test(c.id)?c:null;
  if(activeContext)history.replaceState(null,'','/ask?context='+encodeURIComponent(activeContext.id));
  const option=$('#question-scope').querySelector('[value="saved"]');
- option.disabled=!activeContext||!!t?.archiveBlocked;
- option.textContent=activeContext?'Follow up · '+fmt(c.patients??d.answer?.patient_ids?.length??0)+' saved patients':'Follow up on this result';
+ const a=d.answer||{},summaryWithoutCohort=!(a.patient_ids||[]).length&&(a.analysis_population_count!=null||a.answer_type==='value');
+ option.disabled=!activeContext||!!t?.archiveBlocked||summaryWithoutCohort;
+ option.textContent=activeContext?(summaryWithoutCohort?'Analytical summary · no selected patients':'Follow up · '+fmt(c.patients??a.patient_ids?.length??0)+' saved patients'):'Follow up on this result';
  $('#question-scope').value=option.disabled?'warehouse':'saved';
  updateScopeNote();
 }

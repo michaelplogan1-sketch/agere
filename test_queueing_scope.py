@@ -61,6 +61,12 @@ class QueueingScope(unittest.TestCase):
         self.assertEqual(inp['weekly_arrivals_base'], .25)  # one of four Mondays, not one per week
         self.assertEqual(report['input_scope']['window'], {'start':'2026-01-01','end':'2026-01-31'})
 
+    def test_summary_keeps_positive_small_rates_and_loads_visible(self):
+        report = self.run_engine(['A'], window={'start':'2026-01-01','end':'2026-01-31'})
+        text = q.summary(report)
+        self.assertIn('0.25/h, offered load 0.125', text)
+        self.assertNotIn('(0.0/h', text)
+
     def test_appointments_and_beds_keep_the_same_scope(self):
         for source, minutes in [('appointment',30), ('beds',1440)]:
             with self.subTest(source=source):

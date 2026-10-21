@@ -151,6 +151,55 @@ if __name__ == '__main__':
 
 
 class WholePageScript(unittest.TestCase):
+    def test_queueing_overview_exposes_scope_and_preserves_small_positive_rates(self):
+        import shutil, subprocess
+        node = shutil.which('node')
+        if not node: self.skipTest('node not installed')
+        html = ask_view.page()
+        helpers = html[html.index('const isNum='):html.index('const usdK=')]
+        code = html[html.index('function vizQueueing('):html.index('function vizUplift(')]
+        setup = "const esc=s=>String(s==null?'':s).replace(/</g,'&lt;'); const pct=String;\n"
+        checks = r'''
+const assert=require('node:assert/strict');
+const a={overall:{queueing:{source:'ed',inputs:{weekly_arrivals_planned:.172,arrivals_used:9}},input_scope:{population:'selected',patient_count:3,window:{start:'2029-01-01',end:'2029-12-31'},as_of:'2030-05-27'}}};
+let rendered=vizQueueing(a);
+assert.match(rendered,/3 selected patients/);
+assert.match(rendered,/2029-01-01 to 2029-12-31 \(inclusive\)/);
+assert.match(rendered,/snapshot 2030-05-27/);
+assert.match(rendered,/Arrivals \/ week<\/div><div class="v">0\.172</);
+assert.match(rendered,/Observed arrivals<\/div><div class="v">9</);
+a.overall.queueing.inputs.weekly_arrivals_planned=.00001;
+assert.match(vizQueueing(a),/Arrivals \/ week<\/div><div class="v">&lt;0\.001</);
+a.overall.queueing.inputs.weekly_arrivals_planned=0;
+assert.match(vizQueueing(a),/Arrivals \/ week<\/div><div class="v">0</);
+'''
+        run = subprocess.run([node, '-e', setup+helpers+code+checks], capture_output=True, text=True)
+        self.assertEqual(run.returncode, 0, run.stderr[:1600])
+
+    def test_summary_without_selected_patients_cannot_offer_empty_cohort_followup(self):
+        import shutil, subprocess
+        from pathlib import Path
+        node = shutil.which('node')
+        if not node: self.skipTest('node not installed')
+        script = (Path(ask_view.__file__).parent/'assets/explore.js').read_text()
+        code = script[script.index('function syncScope('):script.index('function updateScopeNote(')]
+        setup = """
+let activeContext; const option={},picker={querySelector:()=>option};
+const $=()=>picker, fmt=String, history={replaceState:()=>{}},updateScopeNote=()=>{};
+"""
+        checks = r'''
+const assert=require('node:assert/strict');
+const t={data:{action_context:{id:'ANS-000000000000000000000001',patients:0},answer:{patient_ids:[],analysis_population_count:3,answer_type:'table'}}};
+syncScope(t);assert.equal(option.disabled,true);assert.equal(picker.value,'warehouse');
+assert.equal(option.textContent,'Analytical summary · no selected patients');
+t.data.answer={patient_ids:[],answer_type:'patient_set'};
+syncScope(t);assert.equal(option.disabled,false);assert.equal(picker.value,'saved');
+t.data.answer={patient_ids:['A'],answer_type:'count'};t.data.action_context.patients=1;
+syncScope(t);assert.equal(option.disabled,false);assert.match(option.textContent,/1 saved patients/);
+'''
+        run = subprocess.run([node, '-e', setup+code+checks], capture_output=True, text=True)
+        self.assertEqual(run.returncode, 0, run.stderr[:1600])
+
     def test_grouped_chart_keeps_missing_first_category_visible(self):
         import shutil, subprocess
         node = shutil.which('node')

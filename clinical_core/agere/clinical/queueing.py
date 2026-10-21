@@ -765,9 +765,9 @@ def summary(report):
     ec = sp.get('erlang_c')
     if blocking:
         if sp.get('servers'):
-            text += f"At the mean load of {sp['offered_load']:.1f} erlangs, {sp['servers']} beds block {sp['erlang_b_blocking_probability']:.2%} of arrivals (Erlang B). "
+            text += f"At the mean load of {sp['offered_load']:.3g} erlangs, {sp['servers']} beds block {sp['erlang_b_blocking_probability']:.2%} of arrivals (Erlang B). "
     elif ec and ec.get('stable') and sp.get('servers'):
-        text += (f"At the {sp['arrival_rate_basis']} ({sp['arrival_rate_per_hour']:.1f}/h, offered load {sp['offered_load']:.1f}) with {sp['servers']} servers, "
+        text += (f"At the {sp['arrival_rate_basis']} ({sp['arrival_rate_per_hour']:.3g}/h, offered load {sp['offered_load']:.3g}) with {sp['servers']} servers, "
                  f"P(wait) = {ec['p_wait']:.0%}, P(wait > {p['wait_threshold_minutes']:g} min) = {ec['p_wait_gt_t']:.1%}, mean wait {ec['mean_wait_minutes']:.1f} min, "
                  f"utilization {ec['utilization']:.0%}. ")
     s = a['sensitivity']
