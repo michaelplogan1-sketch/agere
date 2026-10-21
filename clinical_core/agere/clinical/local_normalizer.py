@@ -73,6 +73,9 @@ def guard(client, canonical):
         return f'numbers differ: {sorted(numbers(client))} vs {sorted(numbers(canonical))}'
     if bool(NEGATION.search(client)) != bool(NEGATION.search(canonical)):
         return 'negation differs'
+    parts = lambda text: len(re.findall(r'(?:\band\b|[,;])\s*(?:what|which|how\s+many|how\s+much|list|show)\b', text, re.I))
+    if parts(client) != parts(canonical):
+        return 'a multi-part question became a different number of parts'
     for name, table in (('qualifiers', QUALIFIERS), ('concepts', CONCEPTS)):
         a, b = _present(table, client), _present(table, canonical)
         if a != b:

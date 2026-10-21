@@ -749,6 +749,11 @@ class Parser:
         if re.match(r'^(?:for|of|from)\s+(?:admissions|hospital stays)\b', rest, re.I):
             return None  # explicit field/source aggregation uses the relational grammar
         definition = V.definitions()[ident]
+        # A rate's unit is part of its meaning: per member-months is not per member-years.
+        asked = re.search(r'per\s+1,?000\s+member[- ](months?|years?)', self.question, re.I)
+        defined = re.search(r'member[- ](months?|years?)', ' '.join(str(definition.get(k, '')) for k in ('name', 'unit')), re.I)
+        if asked and defined and asked[1].lower()[:4] != defined[1].lower()[:4]:
+            raise PlanError(f'This measure is defined per member-{defined[1].lower()}; the question asks per member-{asked[1].lower()}')
         try:
             rest, group_fields, group_quote = self.grouping(rest, {k: k for k in V.GROUPS})
         except PlanError:
