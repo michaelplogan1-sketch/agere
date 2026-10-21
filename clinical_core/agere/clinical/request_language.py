@@ -12,6 +12,9 @@ from .request_plan import PlanError, AmbiguousRequest
 SOURCES = {
     'patients': ('patient', None), 'people': ('patient', None), 'members': ('patient', None),
     'ed visits': ('utilization_event', ('kind', 'ed_visit')),
+    'emergency department visits': ('utilization_event', ('kind', 'ed_visit')),
+    'hospital admissions': ('stay', ('type', 'inpatient')),
+    'pharmacy claims': ('payer_pharmacy_claim', None),
     'er visits': ('utilization_event', ('kind', 'ed_visit')),
     'emergency visits': ('utilization_event', ('kind', 'ed_visit')),
     'inpatient admissions': ('stay', ('type', 'inpatient')),
@@ -27,6 +30,13 @@ SOURCES = {
     'payer medical claims': ('payer_claim', ('counts_in_metrics', 1)),
     'provider medical claims': ('claim', ('claim_source', 'medical_claims')),
     'diabetics': ('patient', ('condition', 'diabetes')),
+    'cardiologists': ('clinician', ('specialty', 'Cardiology')), 'nephrologists': ('clinician', ('specialty', 'Nephrology')),
+    'endocrinologists': ('clinician', ('specialty', 'Endocrinology')), 'oncologists': ('clinician', ('specialty', 'Oncology')),
+    'neurologists': ('clinician', ('specialty', 'Neurology')), 'pulmonologists': ('clinician', ('specialty', 'Pulmonology')),
+    'gastroenterologists': ('clinician', ('specialty', 'Gastroenterology')), 'dermatologists': ('clinician', ('specialty', 'Dermatology')),
+    'urologists': ('clinician', ('specialty', 'Urology')), 'psychiatrists': ('clinician', ('specialty', 'Psychiatry')),
+    'pediatricians': ('clinician', ('specialty', 'Pediatrics')), 'radiologists': ('clinician', ('specialty', 'Radiology')),
+    'hospitalists': ('clinician', ('specialty', 'Hospitalist')), 'ophthalmologists': ('clinician', ('specialty', 'Ophthalmology')),
     'women': ('patient', ('sex_reported', 'F')), 'men': ('patient', ('sex_reported', 'M')),
     'female patients': ('patient', ('sex_reported', 'F')), 'male patients': ('patient', ('sex_reported', 'M')),
 }
@@ -143,6 +153,9 @@ class Parser:
             self.sources.update({'claims': ('claim', None), 'medical claims': ('claim', None),
                                  'payer-feed medical claims': ('claim', ('claim_source', 'payer_medical_claims')),
                                  'payer medical claims': ('claim', ('claim_source', 'payer_medical_claims'))})
+        for specialty in self.observed_values('clinician', 'specialty', limit=400):
+            for noun in ('providers', 'clinicians', 'physicians', 'doctors'):
+                self.sources.setdefault(f'{specialty.lower()} {noun}', ('clinician', ('specialty', specialty)))
         self.sources = {k: v for k, v in self.sources.items() if v[0] in catalog.tables}
         from . import concepts
         self.conditions = dict(CONDITION_ALIASES)
@@ -162,6 +175,8 @@ class Parser:
                 fields[column] = fields[column.replace('_', ' ')] = table+'.'+column
                 if column.endswith('_cents'):
                     fields[column[:-6].replace('_',' ')+' amount'] = table+'.'+column
+                    fields[column[:-6].replace('_',' ')+' dollars'] = table+'.'+column
+                    fields.setdefault(column[:-6].replace('_',' '), table+'.'+column)
                 # An explicitly named clock can omit its storage suffix, e.g.
                 # "scheduled in 2029" for scheduled_date. Never choose an
                 # unnamed clock merely because it is the only date column.
@@ -213,6 +228,35 @@ class Parser:
             raise AmbiguousRequest('Which field do you mean by '+best[0][1]+'? Choose '+', '.join(sorted({m[2] for m in best})))
         _, phrase, field = best[0]
         return phrase, field, text[size:].lstrip()
+
+    STATUS_COLUMNS = ('outcome', 'final_status', 'claim_status', 'status', 'fill_status')
+
+    def observed_values(self, table, column, limit=40):
+        """Distinct short text values of a categorical column (bounded probe; empty when absent or too many)."""
+        if column not in self.catalog.tables.get(table, []): return []
+        cache = getattr(self, '_observed', None)
+        if cache is None: cache = self._observed = {}
+        if (table, column) not in cache:
+            from .request_plan import identifier
+            try:
+                with sqlite3.connect(self.catalog.target.resolve().as_uri() + '?mode=ro', uri=True) as db:
+                    rows = [r[0] for r in db.execute(f'SELECT DISTINCT {identifier(column)} FROM {identifier(table)} '
+                                                     f'WHERE {identifier(column)} IS NOT NULL LIMIT {limit + 1}')]
+            except sqlite3.Error:
+                rows = []
+            cache[(table, column)] = [r for r in rows if isinstance(r, str)] if len(rows) <= limit else []
+        return cache[(table, column)]
+
+    def status_word(self, text):
+        """A word naming one received status value of the current relation ('cancelled', 'kept', 'rejected')."""
+        m = re.match(r'^([a-z][a-z_-]+)\b', text, re.I)
+        if not m or not self.base: return None
+        word = m[1].lower().replace('-', '_')
+        for column in self.STATUS_COLUMNS:
+            values = {v.lower(): v for v in self.observed_values(self.base, column)}
+            if word in values:
+                return atom(f'{self.base}.{column}', '=', values[word], m.group()), text[m.end():]
+        return None
 
     def observed_literal(self, field, value, *, quoted=False):
         """Resolve an unquoted category's case to a unique received value.
@@ -454,7 +498,7 @@ class Parser:
         unit = re.search(r',?\s+in\s+(cents|days)\s*$',text,re.I)
         if unit: text=text[:unit.start()].strip()
         lead = re.match(r'(?i)(?:(?:please\s+)|(?:(?:can|could|would|will)\s+you\s+)|(?:tell\s+me\s+)|(?:(?:give|show|return)(?:\s+me)?\s+both\s+)|(?:I\s+(?:want|would like)\s+(?:you\s+to|to)\s+))*'
-                        r'(how many|(?:the )?number of|(?:a )?count(?: of)?|tally(?: up)?|list|enumerate|which|show|find|group|break down|what (?:is|was) the total|what (?:is|was) the average|total|sum|average|mean)\s+', text)
+                        r'(how many|(?:the )?number of|(?:a )?count(?: of)?|tally(?: up)?|list|enumerate|which|show|find|group|break down|what (?:is|was|were) (?:the )?total|what (?:is|was) (?:the )?average|total|sum|average|mean)\s+', text)
         # Business questions often name the entity without an imperative.
         # Retain original spans; do not rewrite the question to add "count".
         if not lead and not self.prefix(text, self.sources):
@@ -462,13 +506,10 @@ class Parser:
         verb = lead.group(1).lower() if lead else 'count'
         rest = text[lead.end():] if lead else text
         fn = ('list' if verb in ('list', 'enumerate', 'which', 'show', 'find') else
-              'avg' if verb in ('average', 'mean', 'what is the average', 'what was the average') else
-              'sum' if verb in ('total', 'sum', 'what is the total', 'what was the total') else 'count')
+              'avg' if verb in ('average', 'mean') or verb.endswith('average') else
+              'sum' if verb in ('total', 'sum') or verb.endswith('total') else 'count')
         field_name, source = None, None
-        rest = re.sub(r'^(?:all|the|our)\s+', '', rest, flags=re.I)
-        # A year before the population noun ("2029 hospital discharges") is that population's period.
-        lead_year = re.match(r'^(20\d{2})\s+', rest) if fn not in ('sum', 'avg') else None
-        if lead_year: rest = rest[lead_year.end():]
+        rest = re.sub(r'^(?:of\s+)?(?:all|the|our)\s+', '', rest, flags=re.I)
         # Adjectives before the population noun ("living Medicaid patients") are filters on that population.
         modifiers = []
         while fn not in ('sum', 'avg'):
@@ -481,7 +522,9 @@ class Parser:
             # at the first preposition and silently changing the measure.
             split = None
             for m in re.finditer(r'\s+(?:for|of|from|on|across)\s+', rest, re.I):
-                candidate = self.prefix(rest[m.end():], self.sources)
+                after = rest[m.end():]
+                year = re.match(r'^20\d{2}\s+', after)
+                candidate = self.prefix(after[year.end():] if year else after, self.sources)
                 if not candidate: continue
                 self.base = candidate[1][0]
                 try: resolved = self.field(rest[:m.start()])
@@ -500,7 +543,22 @@ class Parser:
                     source = (field_text, (field_name.partition('.')[0], None), rest)
             else:
                 field_text, rest, field_name = split
+        # A year before the population noun ("2029 hospital discharges") is that population's period.
+        lead_year = re.match(r'^(20\d{2})\s+', rest) if not source else None
+        if lead_year: rest = rest[lead_year.end():]
         source = source or self.prefix(rest, self.sources)
+        adjective = None
+        if not source:
+            # "kept appointments": a status value of the named relation, then the relation.
+            first = re.match(r'^([a-z][a-z_-]+)\s+', rest, re.I)
+            later = self.prefix(rest[first.end():], self.sources) if first else None
+            if later:
+                table = later[1][0]
+                word = first[1].lower().replace('-', '_')
+                for column in self.STATUS_COLUMNS:
+                    values = {v.lower(): v for v in self.observed_values(table, column)}
+                    if word in values:
+                        adjective = atom(f'{table}.{column}', '=', values[word], first[1]); source = later; break
         if not source:
             # "<condition> patients" names the patients with that condition.
             named = self.prefix(rest, self.conditions)
@@ -515,8 +573,11 @@ class Parser:
         if not source: raise PlanError('Explicit source or saved cohort required')
         source_quote, (self.base, default), rest = source
         if self.base == 'stay' and re.search(r'discharge', source_quote, re.I): self.clock = 'discharge_date'
-        rest, group_fields, group_quote = self.grouping(rest, self.field_aliases())
-        rest = re.sub(r'^\s*(?:are|were|is|was)(?:\s+there)?\s+', '', rest, flags=re.I)
+        clock = self.clock or CLOCKS.get(self.base)
+        dimensions = {**self.field_aliases(), **({'month': f'{self.base}.{clock}@month'} if clock else {})}
+        rest, group_fields, group_quote = self.grouping(rest, dimensions)
+        rest = re.sub(r'^\s*(?:are|were|is|was)(?:\s+there)?(?:\s+|$)', '', rest, flags=re.I)
+        rest = re.sub(r'^\s*(?:that\s+)?(?:(?:do|did)\s+)?we\s+(?:have|had|see|saw)\b\s*', '', rest, flags=re.I)
         base_filter = None
         if default:
             field, value = default
@@ -525,6 +586,7 @@ class Parser:
         where, tail = self.expression(rest)
         if tail.strip(): raise PlanError('Unconsumed request: '+tail)
         if modifiers and self.base != 'patient': raise PlanError('Population adjectives apply to patients: ' + ' '.join(modifiers))
+        if adjective: where = combine('and', [adjective, where], self.question)
         if lead_year:
             value, left = self.one(lead_year[1])
             if value is None or left.strip(): raise PlanError('A leading year needs a dated population')
@@ -541,7 +603,8 @@ class Parser:
             where = combine('and', [where, {'op': 'not', 'arg': related('death', None, self.gaps[0]), 'quote': self.gaps[0]}],
                             self.question)
         self.bind_parent_quotes(where)
-        measures = [{'kind': 'field', 'field': field, 'alias': field.split('.')[-1], 'quote': word}
+        measures = [{'kind': 'field', 'field': field.split('@')[0], 'grain': 'month', 'alias': 'month', 'quote': word}
+                    if field.endswith('@month') else {'kind': 'field', 'field': field, 'alias': field.split('.')[-1], 'quote': word}
                     for word, field in group_fields]
         if measures: measures[0]['quote'] = [measures[0]['quote'], group_quote]
         groups = [m['alias'] for m in measures]
@@ -640,7 +703,10 @@ class Parser:
         if re.match(r'^(?:for|of|from)\s+(?:admissions|hospital stays)\b', rest, re.I):
             return None  # explicit field/source aggregation uses the relational grammar
         definition = V.definitions()[ident]
-        rest, group_fields, group_quote = self.grouping(rest, {k: k for k in V.GROUPS})
+        try:
+            rest, group_fields, group_quote = self.grouping(rest, {k: k for k in V.GROUPS})
+        except PlanError:
+            return None  # a grouping the governed measure cannot apply ("by month"): the relational grammar may
         groups, quotes = [field for _, field in group_fields], list(measure_quote) if isinstance(measure_quote, list) else [measure_quote]
         if group_quote: quotes.append(group_quote)
         # A single explicit period belongs to the measure, never to patient DOB.
@@ -715,7 +781,7 @@ class Parser:
     def conjunction(self, text):
         values, tail = [], text.strip()
         while tail and not tail.startswith(')') and not re.match(r'^or\b', tail, re.I):
-            join = re.match(r'^(?:and|but)\s+', tail, re.I)
+            join = re.match(r'^(?:and|but|plus)\s+', tail, re.I)
             if join: tail = tail[join.end():]
             value, remaining = self.one(tail)
             if value is None:
@@ -745,7 +811,7 @@ class Parser:
             if child is None: raise PlanError('Missing negated predicate')
             return {'op': 'not', 'arg': child, 'quote': start[:len(start)-len(tail)].strip()}, tail
         # Source-specific clock, never a blanket patient-year filter.
-        m = re.match(r'^(?:(?:in|during)\s+)?(\d{4})(?![\d-])', text, re.I)
+        m = re.match(r'^(?:(?:in|during)\s+)?(?:calendar\s+year\s+)?(\d{4})(?![\d-])', text, re.I)
         if m:
             clock = self.clock or CLOCKS.get(self.base)
             if not clock: raise PlanError('This period needs an explicit event/date field')
@@ -779,7 +845,12 @@ class Parser:
         if deceased and 'current_record' in self.catalog.tables and 'death_records' in self.catalog.stream_fields:
             quote = deceased.group()
             return {'op': 'exists', 'table': 'current_record', 'stream': 'death_records', 'where': None, 'quote': quote}, text[deceased.end():]
-        m = re.match(r'^(?:with |having |have |has )', text, re.I)
+        pcp = re.match(r'^(?:(?:have|has|with)\s+)?(?:an?\s+)?assigned\s+(?:pcp|primary care (?:provider|physician|clinician))\b', text, re.I)
+        if pcp and self.base == 'patient' and 'pcp_clinician_id' in self.catalog.tables.get('patient', []):
+            return atom('patient.pcp_clinician_id', 'not_null', None, pcp.group()), text[pcp.end():]
+        status = self.status_word(text)
+        if status: return status
+        m = re.match(r'^(?:with |having |have |has )(?:both\s+)?', text, re.I)
         concept_text = text[m.end():] if m else text
         concept = self.prefix(concept_text, self.conditions)
         if concept:
