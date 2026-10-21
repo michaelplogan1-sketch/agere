@@ -736,7 +736,8 @@ def execute(stack, question, graph, receipt, *, population=None, parent=None, st
                            'observations cannot establish normality, current phenotype, treatment suitability or current clinical state.')
     if 'age_at(' in contract['query']:
         from .clinical_definitions import AGE
-        limitations.append(AGE['disclosure'])
+        limitations.append(AGE['disclosure'] if re.search(r'\bdeath\b', contract['query'], re.I) else
+                           'Age is calculated from birth_date at the warehouse as-of date.')
     currency = data_currency(current, ids)
     if currency:
         limitations.append(f"Data currency: {currency['stale_patients']} of {currency['patients']} patients have no received "

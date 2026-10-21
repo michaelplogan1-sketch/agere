@@ -39,6 +39,12 @@ class PayerClaims(unittest.TestCase):
         self.assertFalse(superseded('Denials?', {'request': {'source': {'table': 'payer_claim'}}}, self.catalog.tables))
         self.assertFalse(superseded('Denials?', plan, {'claim': ['claim_id']}))  # no counted payer claims received
 
+    def test_saved_age_analysis_without_age_at_death_retires(self):
+        tables = {'death': ['patient_id', 'death_date']}
+        old = {'analysis': {'steps': [{'sql': "SELECT COUNT(*) FROM patient WHERE age_at(birth_date, '2030-05-27') >= 65"}]}}
+        self.assertTrue(superseded('How many patients 65+?', old, tables))
+        self.assertFalse(superseded('How many patients 65+?', old, {}))
+
     def metric(self, q):
         r = L.parse(self.catalog, q, bound=False)
         return [(a['parameters']['id'], a['parameters']['period']['start']) for a in r['analyses']]

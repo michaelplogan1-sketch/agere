@@ -86,9 +86,14 @@ def superseded(question, plan, tables):
     """True when a saved plan reads the provider claim table for a question that did not ask for provider claims,
     in a warehouse that has counted payer claims."""
     import json, re
+    text = json.dumps(plan, default=str)
+    # Mike, 2026-10-21: deceased patients' age is age at death; a saved analysis computing age without it is retired.
+    if (plan.get('analysis') and 'death_date' in tables.get('death', []) and 'age_at(' in text
+            and not re.search(r'\bdeath\b', text, re.I)):
+        return True
     if 'counts_in_metrics' not in tables.get('payer_claim', []): return False
     if re.search(r'\bprovider\b', str(question), re.I): return False
-    return bool(_PROVIDER_CLAIM.search(json.dumps(plan, default=str)))
+    return bool(_PROVIDER_CLAIM.search(text))
 
 
 CARE_GAP_LIVING = {

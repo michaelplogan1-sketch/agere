@@ -955,7 +955,8 @@ def execute_contract(stack, question, graph, receipt, *, population=None, parent
         limitations.append(f'{len(unknown_ids)} patients have unresolved null-valued predicates and are outside the matching cohort.')
     if 'age_at(' in contract['query']:
         from .clinical_definitions import AGE
-        limitations.append(AGE['disclosure'])
+        limitations.append(AGE['disclosure'] if re.search(r'\bdeath\b', contract['query'], re.I) else
+                           'Age is calculated from birth_date at the warehouse as-of date.')
     limitations += contract.get('notes', [])
     if re.search(r'\bNOT EXISTS \(SELECT 1 FROM "death"', contract['query']) and not re.search(
             r'\b(?:living|alive|deceased|died|dead|death)\b', question, re.I):
