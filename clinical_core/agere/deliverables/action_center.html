@@ -39,7 +39,7 @@
           <button class="launch-card" data-view="cohort"><span class="card-top"><span class="tile-icon peach" data-icon="people"></span><span class="card-number">02</span></span><strong>Explore this cohort</strong><span>Search the exact saved population and inspect the returned details.</span><span class="card-action">Open cohort <span data-icon="arrow"></span></span></button>
           <button class="launch-card studio-card" data-view="studio"><span class="card-top"><span class="tile-icon lavender" data-icon="spark"></span><span class="card-number">03</span></span><strong>Create a deliverable</strong><span>Build an interactive command center, team brief, or evidence explorer.</span><span class="card-action">Open studio <span data-icon="arrow"></span></span></button>
         </div>
-        <div class="section-heading"><div><h2>Work in motion</h2><p id="overview-work-caption">Your next steps, all in one place.</p></div><button class="text-button" data-view="work">Open work board <span data-icon="arrow"></span></button></div>
+        <div class="section-heading"><div><h2>Staff review progress</h2><p id="overview-work-caption">Status recorded by the person reviewing each task.</p></div><button class="text-button" data-view="work">Open work board <span data-icon="arrow"></span></button></div>
         <div id="overview-work" class="overview-work"></div>
         <div class="quiet-note"><span data-icon="shield"></span>Synthetic workspace. Open a review card to try a simulated agent journey.</div>
       </section>
@@ -53,7 +53,7 @@
         <div id="selection-bar" class="selection-bar"><span class="selection-icon" data-icon="people"></span><div><strong id="selection">No patients selected</strong><small id="selection-hint">Select patients to prepare their next step.</small></div><button id="clear" class="text-button">Clear</button><button id="continue" class="button primary">Choose next step <span data-icon="arrow"></span></button></div>
       </section>
       <section id="view-work" class="view" hidden>
-        <div class="section-kicker">03 / FOLLOW THROUGH</div><div class="page-heading"><div><h1>Your work board<span class="copper">.</span></h1><p>One place for the next step, the person responsible, and what’s in the way.</p></div><button class="button primary" data-start="custom"><span data-icon="plus"></span>Add review work</button></div>
+        <div class="section-kicker">03 / FOLLOW THROUGH</div><div class="page-heading"><div><h1>Your work board<span class="copper">.</span></h1><p>Tasks grouped by staff review status. Each card also shows its simulated agent progress.</p></div><button class="button primary" data-start="custom"><span data-icon="plus"></span>Add review work</button></div>
         <div class="board-toolbar"><div class="board-filters"><label>Program<select id="work-program" aria-label="Filter by program"><option value="">All programs</option></select></label><label>View<select id="work-filter" aria-label="Filter work"><option value="">Active board</option><option value="cancelled">Cancelled work</option></select></label></div><div><button id="refresh" class="text-button"><span data-icon="refresh"></span>Refresh</button><button id="export" class="text-button"><span data-icon="download"></span>Export CSV</button></div></div>
         <div id="work" class="board"></div><p class="quiet-note">Open a card to update the review or run a demo agent. Simulated outreach and enrollment stay separate from the source evidence.</p>
       </section>
