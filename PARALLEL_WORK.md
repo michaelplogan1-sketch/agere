@@ -2,7 +2,7 @@
 
 Codex chat `01a15af4-c150-76f2-9df2-a44c1428b70d` is the sole build/integration/control/runtime owner. BUILD_OWNER.json and AGERE_BUILD_CONTROL.json govern authority and sequencing. No new parallel chat work or lane follow-ups requested; handle remaining integration and fixes here.
 
-Live `7cde54679499aac2e84b76fac11d71b07be56882`, runtime `/Users/mikel/agere-mvp-run`, http://127.0.0.1:8885/ask, rollback `f8dd1c905dc820533d65b3bca48ab2dcff22f736`. Latest receipt `artifacts/agere-care-team-evidence-v1/implementation-receipt.json`. Mike identified /ask as the product. Separate design checkout and hosted preview unchanged.
+Live `e10385b7cda79ca7d40ccdbdde4032b9e84e587d`, runtime `/Users/mikel/agere-mvp-run`, http://127.0.0.1:8885/ask, rollback `7cde54679499aac2e84b76fac11d71b07be56882`. Latest receipt `artifacts/agere-measurement-evidence-v1/implementation-receipt.json`. Mike identified /ask as the product. Separate design checkout and hosted preview unchanged.
 
 Completed authorized handoffs:
 
