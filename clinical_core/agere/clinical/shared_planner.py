@@ -247,7 +247,10 @@ def compare_periods(graph, sections, answer):
     change = v1 - v0
     pct = None if v0 == 0 else round(100.0 * change / abs(v0), 2)
     direction = 'up' if change > 0 else 'down' if change < 0 else 'unchanged'
-    fmt = lambda v: f'{v:,.2f}' if isinstance(v, float) else f'{v:,}'
+    from .request_vocabulary import definitions
+    unit = (definitions().get(params[0]['id']) or {}).get('unit', '')
+    money = '$' if str(unit).startswith('dollars') else ''
+    fmt = lambda v: money + (f'{v:,.2f}' if isinstance(v, float) else f'{v:,}')
     answer['comparison'] = {'measure': params[0]['id'], 'earlier': {'period_start': p0, 'value': v0},
                             'later': {'period_start': p1, 'value': v1}, 'change': change,
                             'percent_change': pct, 'direction': direction}
