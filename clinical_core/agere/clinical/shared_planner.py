@@ -196,7 +196,7 @@ Judge using the supplied catalog and compiler semantics, not hypothetical schema
 EXISTS automatically correlates patient_id unless an explicit entity link is supplied; the SQL shows that correlation.
 Patient fields automatically use the unique patient dimension by patient_id. Canonical concepts are code-normalized.
 Named condition concepts include is_diagnosis=1 OR unknown-flag ehr_problem_list rows; assessment topics and lab-only evidence are excluded.
-patient.age compiles to age_at(patient.birth_date, catalog as_of); reported feed ages must never be used.
+patient.age compiles to age_at(patient.birth_date, catalog as_of), or age at death for a patient with a death record; reported feed ages must never be used.
 An unknown group label remains a null group; this is not an invented PCP.
 Do not demand an explicit constraint the question never asked for, or invent ambiguity for an ordinary contextual grouping.
 Same-model review is an engineering check, not independent clinical or model qualification.
@@ -954,7 +954,8 @@ def execute_contract(stack, question, graph, receipt, *, population=None, parent
     if unknown_ids:
         limitations.append(f'{len(unknown_ids)} patients have unresolved null-valued predicates and are outside the matching cohort.')
     if 'age_at(' in contract['query']:
-        limitations.append('Age is calculated from birth_date at the warehouse as-of date; missing or invalid birth dates remain unknown.')
+        from .clinical_definitions import AGE
+        limitations.append(AGE['disclosure'])
     limitations += contract.get('notes', [])
     if re.search(r'\bNOT EXISTS \(SELECT 1 FROM "death"', contract['query']) and not re.search(
             r'\b(?:living|alive|deceased|died|dead|death)\b', question, re.I):

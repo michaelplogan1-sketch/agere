@@ -150,7 +150,13 @@ class Compiler:
         if name == 'patient.age':
             cutoff = self.catalog.identity.get('as_of')
             if not cutoff: raise PlanError('Age requires the warehouse as-of date')
-            return f'age_at({self.field("patient.birth_date", scope)}, {literal(cutoff)})'
+            reference = literal(cutoff)
+            if {'patient_id', 'death_date'} <= set(self.catalog.tables.get('death', [])):
+                # Mike, 2026-10-21: a deceased patient's age is their age at death; living patients age to the snapshot.
+                pid = self.field('patient.patient_id', scope)
+                reference = (f'COALESCE((SELECT MIN(age_death.death_date) FROM death AS age_death WHERE age_death.patient_id = {pid} '
+                             f'AND age_death.death_date <= {literal(cutoff)}), {literal(cutoff)})')
+            return f'age_at({self.field("patient.birth_date", scope)}, {reference})'
         if name.startswith('result.') and 'result' in scope:
             alias = name.partition('.')[2]
             if alias not in self.outputs: raise PlanError('Unknown aggregate output: '+alias)

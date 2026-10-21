@@ -61,5 +61,10 @@ class CareGapLanguage(unittest.TestCase):
             self.count('How many patients HbA1c?')
 
 
+    def test_deceased_patients_age_at_death(self):
+        # D (born 1940) died 2029-01-01 aged 89; living A (1950) is 80 at the 2030-05-27 snapshot (Mike, 2026-10-21)
+        self.assertEqual(self.count('How many patients are over 89?'), 0)
+        self.assertEqual(self.count('How many patients are over 88?'), 1)
+
 if __name__ == '__main__':
     unittest.main()

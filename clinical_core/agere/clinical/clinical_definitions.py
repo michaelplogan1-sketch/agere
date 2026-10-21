@@ -96,3 +96,10 @@ CARE_GAP_LIVING = {
     'disclosure': ('Care gaps (did not get, had no, missing) count living patients only; patients with a death record '
                    'are excluded unless the question names living or deceased patients.'),
 }
+
+
+AGE = {
+    'version': 1, 'decision': DECIDED_BY,
+    'disclosure': ('Age is calculated from birth_date: at the warehouse as-of date for living patients, and at the '
+                   'date of death for patients with a death record. Missing or invalid birth dates remain unknown.'),
+}

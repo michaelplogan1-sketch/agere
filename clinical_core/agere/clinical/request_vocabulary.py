@@ -245,13 +245,15 @@ def execute(path, patient_ids, p, as_of=None):
     with sqlite3.connect(f'file:{catalog.target}?mode=ro', uri=True) as db:
         db.row_factory = sqlite3.Row
         keep = set(patient_ids) if patient_ids is not None else None
+        died = (dict(db.execute('SELECT patient_id, MIN(death_date) FROM death WHERE death_date <= ? GROUP BY patient_id', (as_of,)))
+                if {'patient_id', 'death_date'} <= set(catalog.tables.get('death', [])) else {})
         for row in db.execute('SELECT * FROM patient'):
             if keep is not None and row['patient_id'] not in keep: continue
             values = []
             for name in p['group_by']:
                 field = GROUPS[name]
                 if field in ('age', 'age_band'):
-                    age = age_at(row['birth_date'], as_of)
+                    age = age_at(row['birth_date'], died.get(row['patient_id']) or as_of)  # age at death if deceased
                     value = age if field == 'age' or age is None else (
                         '0-17' if age < 18 else '18-44' if age < 45 else '45-64' if age < 65 else '65+')
                 else:

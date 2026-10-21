@@ -93,7 +93,7 @@ Narrative EF rows are unreviewed candidates: lower/upper are NULL; candidate_val
 establish a measured value, current EF or phenotype. Inspect exact text, negation, subject and temporality in evidence.
 The EF scan covers only the existing note_fact extraction; other concepts do not have a narrative scan here.
 Missing observations do not mean normal. A diagnosis alone does not establish current HFrEF or treatment suitability.
-Age is age_at(patient.birth_date, {{as_of}}). Never use age_latest. Calendar years are inclusive YYYY-01-01..YYYY-12-31.
+Age is age_at(patient.birth_date, {{as_of}}) for living patients and age_at(patient.birth_date, death.death_date) for patients with a death record on or before {{as_of}} (owner definition). Never use age_latest. Calendar years are inclusive YYYY-01-01..YYYY-12-31.
 Relative periods ("last 12 months") anchor to {{as_of}}. Mixed-type value columns need typeof() guards.
 Temporal state: distinguish latest received status from any historical status and history-based derived outcomes.
 For appointment no-shows without an explicit historical/ever qualifier, use final_status; use ever_no_show for
@@ -735,7 +735,8 @@ def execute(stack, question, graph, receipt, *, population=None, parent=None, st
                            'unreviewed source candidates; other concepts have no narrative scan in this relation. Missing, undated or conflicting '
                            'observations cannot establish normality, current phenotype, treatment suitability or current clinical state.')
     if 'age_at(' in contract['query']:
-        limitations.append('Age is calculated from birth_date at the warehouse as-of date.')
+        from .clinical_definitions import AGE
+        limitations.append(AGE['disclosure'])
     currency = data_currency(current, ids)
     if currency:
         limitations.append(f"Data currency: {currency['stale_patients']} of {currency['patients']} patients have no received "
