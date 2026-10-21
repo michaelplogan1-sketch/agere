@@ -1,4 +1,5 @@
-"""Reader-facing presentation of executed answers: money in dollars, organization IDs with their names.
+"""Reader-facing presentation of executed answers: money in dollars, organization IDs with their names, and an
+explicit "not answerable" when the requested value is absent.
 
 Runs after execution on every shared-planner path. It never changes which rows or patients an answer contains; the
 stored values remain inspectable in the query evidence, and each conversion is disclosed in the limitations.
@@ -7,6 +8,8 @@ import re
 import sqlite3
 
 MONEY_AGGREGATES = ('sum', 'avg', 'min', 'max')
+ABSENCE = re.compile(r'\b(not observable|not available|unavailable|cannot be (computed|determined|established|answered)'
+                     r'|no such records?|not (received|present) in the (received )?data)\b', re.I)
 
 
 def _dollars(value):
@@ -82,6 +85,29 @@ def present(result, target=None):
             if names: notes.append('Organization names come from organization.display_name.')
             if str(answer.get('headline', '')).endswith(', '.join(columns)):
                 answer['headline'] = f"{len(rows)} rows · " + ', '.join(rows[0].keys())
+    _honest_unknown(answer)
     if notes:
         answer['limitations'] = list(dict.fromkeys([*(answer.get('limitations') or []), *notes]))
     return result
+
+
+def _honest_unknown(answer):
+    """The requested value is absent: say so instead of showing a null, a flag row or a proxy as the answer."""
+    if answer.get('status') not in ('answered', 'partial'): return
+    reasons = [str(m) for m in answer.get('missing') or []]
+    table = answer.get('table')
+    if any(k in answer for k in ('value', 'count')) and answer.get('value', answer.get('count')) is None:
+        absent = True
+    elif isinstance(table, list) and table and all(isinstance(r, dict) for r in table):
+        notes = [[v for v in r.values() if isinstance(v, str) and ABSENCE.search(v)] for r in table]
+        absent = all(notes)
+        reasons += [n for row in notes for n in row]
+    elif 'value' not in answer and 'count' not in answer and table is None and answer.get('answer_type') in ('count', 'value', 'table'):
+        absent = True
+    else:
+        absent = False
+    if not absent: return
+    reasons = list(dict.fromkeys(reasons)) or ['The requested value is not present in the received data.']
+    answer.update(answerable=False, actionable_cohort=False,
+                  headline='Not answerable from the received data: ' + reasons[0])
+    answer['missing'] = list(dict.fromkeys([*(answer.get('missing') or []), *reasons]))

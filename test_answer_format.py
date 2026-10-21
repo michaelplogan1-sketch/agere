@@ -39,5 +39,23 @@ class AnswerFormat(unittest.TestCase):
         self.assertEqual(present({'answer': {'table': rows}}, self.target)['answer']['table'], rows)
 
 
+    def test_null_requested_value_is_not_answerable(self):
+        a = present({'answer': {'status': 'partial', 'answer_type': 'value', 'value': None,
+                                'missing': ['CAHPS survey responses: no such records in the received data.']}}, self.target)['answer']
+        self.assertIs(a['answerable'], False)
+        self.assertTrue(a['headline'].startswith('Not answerable from the received data: CAHPS'))
+
+    def test_table_that_only_states_absence_is_not_answerable(self):
+        rows = [{'patients': None, 'panel_seen': 1, 'note': 'blood type result values not observable in received data'}]
+        a = present({'answer': {'status': 'answered', 'answer_type': 'table', 'table': rows, 'missing': []}}, self.target)['answer']
+        self.assertIs(a['answerable'], False)
+        self.assertIn('not observable', a['headline'])
+
+    def test_real_answers_stay_answerable(self):
+        rows = [{'hospital': 'H1', 'n': 3, 'note': 'complete'}]
+        a = present({'answer': {'status': 'answered', 'answer_type': 'table', 'table': rows}}, self.target)['answer']
+        self.assertNotIn('answerable', a)
+        self.assertNotIn('answerable', present({'answer': {'status': 'answered', 'count': 0}}, self.target)['answer'])
+
 if __name__ == '__main__':
     unittest.main()

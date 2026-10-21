@@ -205,6 +205,9 @@ Never state that these terms "cannot be established" when the owner definition a
 Look for evidence across structured and extracted sources (fills, medication lists, note facts such as ejection
 fraction, therapy barriers, therapy changes, encounters with attending specialty, payer claims with rendering NPI,
 care-team records, attribution) before declaring anything unavailable. Unresolved is only for data truly absent.
+When the data for the requested measure is truly absent, never present a proxy count, a zero or a related measure as
+the answer: return the requested output as NULL, state the absence in unresolved, and put any clearly labelled proxy in
+its own separately named column.
 For multi-part patient questions, return one table row per patient with a column for each requested element.
 Observation is distinct from current state: picked-up fills establish recorded pickup, not actual current use.
 No fill, order, completion, screen or note in a lookback window means no received evidence of that observation;
