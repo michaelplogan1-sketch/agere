@@ -64,7 +64,8 @@ async function loadSources(){
  $('#source-list').innerHTML=rows.map(s=>'<div class="source-card"><strong>'+esc(label(s.stream))+'</strong><p>'+fmt(s.records,0)+' records · '+fmt(s.patients,0)+' patients</p><button class="btn small" data-source-question="'+esc(s.stream)+'">Ask about this source ↗</button></div>').join('')||'<p class="hint">No sources match. Try another name.</p>';
 }
 function syncScope(t){
- const d=t?.data||{},c=d.action_context||t?.action_context;
+ const retained=(t?.pending||t?.error)?t.scopeBefore:null;
+ const d=t?.data||{},c=retained?.context||d.action_context||t?.action_context;
  activeContext=c&&/^ANS-[0-9a-f]{24}$/.test(c.id)?c:null;
  if(activeContext)history.replaceState(null,'','/ask?context='+encodeURIComponent(activeContext.id));
  const option=$('#question-scope').querySelector('[value="saved"]');
@@ -75,6 +76,7 @@ function syncScope(t){
  input.disabled=!activeContext||!!t?.archiveBlocked||c?.input_patients==null;
  input.textContent=c?.input_patients!=null?'Original input · '+fmt(c.input_patients)+' patients':'Original input unavailable';
  $('#question-scope').value=option.disabled?'warehouse':'saved';
+ if(retained?.value==='input'&&!input.disabled)$('#question-scope').value='input';
  updateScopeNote();
 }
 function updateScopeNote(){
