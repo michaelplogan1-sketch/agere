@@ -43,7 +43,7 @@ def isolated_local(catalog, question, population):
     if not _MODEL_LOCK.acquire(blocking=False):
         raise QuestionNotUnderstood('The local interpreter is busy. Locally compiled questions remain available; retry this unfamiliar wording later.')
     try:
-        limit = min(60, max(1, float(os.environ.get('AGERE_LOCAL_INTERPRET_SECONDS', '20'))))
+        limit = min(600, max(1, float(os.environ.get('AGERE_LOCAL_INTERPRET_SECONDS', '120'))))
         payload = {'catalog': {'target': str(catalog.target), 'tables': catalog.tables,
                                'identity': catalog.identity, 'stream_fields': catalog.stream_fields},
                    'question': question, 'population': population}
@@ -696,7 +696,7 @@ def reuse_normalizer(catalog, question, population, memory_identity):
     Used only when the guard shows the rewording keeps the client's numbers, years and negation and the free parser
     reads all of it. Zero paid calls; never saved under the client's wording."""
     if population is not None or memory_identity != request_plan.fingerprint([]): return None
-    if os.environ.get('AGERE_LOCAL_NORMALIZER', 'off') != 'on': return None  # enabled per server
+    if os.environ.get('AGERE_LOCAL_NORMALIZER', 'on') != 'on': return None  # on by default (Mike, 2026-10-21: Qwen back on)
     from . import local_normalizer as N
     proposed = N.propose(question)
     if not proposed or proposed == N.UNSUPPORTED or N.guard(question, proposed): return None
@@ -843,36 +843,17 @@ def plan(stack, question, ledger=None, frontier=None, *, population=None, model=
                 with interpretation_window(stack):
                     contract, interpretation = checked_interpret(catalog, question, population=population)
             except QuestionNotUnderstood as declined:
-                reworded = (reuse_paraphrase(stack, catalog, question, population, memory_identity)
-                            or reuse_normalizer(catalog, question, population, memory_identity))
-                if reworded:
-                    contract, interpretation = reworded
-                elif not getattr(stack, 'allow_live', False):
-                    raise
-                else:
-                    from ..gateway import BudgetLedger, default_ledger_path
-                    from .nl2sql import HostedModel
-                    owned = ledger is None
-                    current_ledger = ledger or BudgetLedger(default_ledger_path())
-                    try:
-                        hosted = HostedModel(current_ledger, stack.receipts, model=hosted_model,
-                                             request_max_bytes=REQUEST_MAX_BYTES)
-                        with interpretation_window(stack):
-                            contract, interpretation = checked_interpret(catalog, question, population=population, model=hosted)
-                        interpretation['hosted_dispatch_authority'] = 'server_allow_live_after_deterministic_decline'
-                        interpretation['deterministic_decline'] = str(declined)
-                        audit = interpretation.get('semantic_review')
-                        unresolved = (contract['analysis']['unresolved'] if contract.get('kind') == 'general_analysis' else
-                                      contract['program']['unresolved'] + [u for n in contract['nodes'] for u in n['unresolved']]
-                                      if contract.get('kind') == 'request_program' else contract['request']['unresolved'])
-                        nodes_verified = (contract.get('kind') != 'request_program' or
-                            all(n['equivalent'] and not n['issues'] for n in (audit or {}).get('nodes', [])))
-                        if audit and audit['equivalent'] and not audit['issues'] and not unresolved and nodes_verified:
-                            interpretation.update(execution_accepted=True, review='checked_hosted_interpretation',
-                                                  acceptance_scope='Compiled and reviewed synthetic observation; not clinical qualification')
-                    finally:
-                        if owned: current_ledger.close()
-    if not hit and model is None and interpretation.get('execution_accepted') and interpretation.get('interpreter') not in ('paraphrase_reuse', 'local_normalizer') and (
+                # Every other component proposes, cheapest and best-calibrated first; each proposal is checked against
+                # the original question before anything executes (proposers.py). None passing -> not understood.
+                from .proposers import Cascade
+                try:
+                    contract, interpretation = Cascade(stack, catalog, question, population=population, ledger=ledger,
+                                                       hosted_model=hosted_model, memory_identity=memory_identity).run()
+                except QuestionNotUnderstood as failed:
+                    failed.args = (str(declined) + ' ' + str(failed),)
+                    raise failed from declined
+                interpretation['deterministic_decline'] = str(declined)
+    if not hit and model is None and interpretation.get('execution_accepted') and interpretation.get('interpreter') not in ('paraphrase_reuse', 'local_normalizer') and contract.get('kind') != 'checked_graph' and (
             contract.get('kind') != 'request_program' or request_program.cacheable(contract, interpretation)):
         with sqlite3.connect(cache_path) as db:
             saved_plan = ({'program': contract['program']} if contract.get('kind') == 'request_program' else
@@ -888,7 +869,11 @@ def plan(stack, question, ledger=None, frontier=None, *, population=None, model=
     attempts = interpretation.get('attempts', [])
     cached = interpretation.get('exact_contract_cache_hit', False)
     usage = attempt_receipt(attempts, cached)
-    if contract.get('kind') == 'request_program':
+    if interpretation.get('cascade_usage') and not cached:
+        usage = dict(interpretation['cascade_usage'])  # includes proposals that were tried and rejected
+    if contract.get('kind') == 'checked_graph':
+        graph = contract['graph']
+    elif contract.get('kind') == 'request_program':
         graph = request_program.graph_for(contract)
     elif contract.get('kind') == 'general_analysis':
         from . import general_analysis
@@ -909,7 +894,10 @@ def compose(stack, question, *, population=None, parent=None, model=None, planni
         if absent: return data_domains.answer(question, *absent)  # nothing received could answer it
     graph, receipt = plan(stack, question, population=population, model=model, planning=planning)
     try:
-        if receipt['request_contract'].get('kind') == 'request_program':
+        if receipt['request_contract'].get('kind') == 'checked_graph':
+            from . import proposers
+            result = proposers.execute(stack, question, graph, receipt, started=started)
+        elif receipt['request_contract'].get('kind') == 'request_program':
             result = request_program.execute(stack, question, graph, receipt, population=population,
                                              parent=parent, started=started)
         elif receipt['request_contract'].get('kind') == 'general_analysis':

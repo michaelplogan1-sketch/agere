@@ -309,348 +309,344 @@ def plan(stack,question,ledger,frontier):
     return shared_plan(stack,question,ledger,frontier)
 
 
-def legacy_plan(stack,question,ledger,frontier):
-    """frontier is a callback; no hosted call occurs for an exact local plan/cache."""
-    normalize(question);start=time.perf_counter();meta=stack.retriever.meta
-    available=(stack.path/'clinical-state-link.json').exists()
-    graph,recipe=local_plan(question,meta['snapshot']['as_of'])
-    if graph:
-        return graph,{'route':'local_compiler','recipe':recipe,'model':None,'new_paid_api_calls':0,
-                      'frontier_called':False,'steps':[],'elapsed_seconds':time.perf_counter()-start}
-    # Data-quality and VBC metric families (early): a question stating its own definition in one of their exact shapes
-    # is rendered by code from that definition (dq_families.py, vbc_families.py). They run before the local compiler,
-    # which reads some of these definitions as other intents (e.g. "What's the Medicaid PMPM for 2028? Definition: ..."
-    # as a knowledge-base explanation); a family claims only a definition it represents in full.
-    family_graph,family_info=_specialist_families(stack,question,ledger,meta,start,{'route':'not_run_yet'},True)
-    if family_graph is not None:return family_graph,family_info
-    # Undelivered inputs (delivered_inputs.py): a question whose definition depends on a field this workspace does not
-    # deliver (empty on every row, inferred by the native adapters rather than received, or stated as not in the delivery)
-    # declines as unsupported with the input named, before any governed metric, engine or analyst can answer it.
-    gate=_undelivered_gate(stack,question,meta,start,family_info)
-    if gate is not None:return gate
-    # Agere's own question compiler runs before any hosted model; the LLM is the fallback.
-    from .local_compiler import compile as compile_locally
-    from .source_profile import load as load_profile
-    try:
-        profile=load_profile(stack.path)
-    except (OSError,KeyError,ValueError,sqlite3.Error):
-        profile=None  # no materialised store (e.g. test fixtures): only the hosted planner applies
-    compiled,compile_info=(compile_locally(question,profile,meta['snapshot']['as_of']) if profile else
-                           (None,{'route':'fallback','reason':'no source profile available'}))
-    if compiled is not None:
-        try:
-            graph=validate(compiled,meta['snapshot']['as_of'])
+class Ladder:
+    """The former cost ladder, one method per rung. Each rung returns (graph, receipt) or None and records why it
+    declined in self.decline. legacy_plan runs them in the original order and returns the first plan; the shared
+    planner's proposer cascade (proposers.py) calls them one at a time and checks every plan against the literal
+    question before anything executes."""
+    def __init__(self,stack,question,ledger,frontier=None):
+        normalize(question)
+        self.stack,self.question,self.ledger,self.frontier=stack,question,ledger,frontier
+        self.start=time.perf_counter();self.meta=stack.retriever.meta;self.as_of=self.meta['snapshot']['as_of']
+        self.available=(Path(stack.path)/'clinical-state-link.json').exists()
+        self.decline={};self.metric_steps=[];self._profile=self._compiled=None
+    def elapsed(self):return time.perf_counter()-self.start
+    @property
+    def profile(self):
+        if self._profile is None:
+            from .source_profile import load as load_profile
+            try:self._profile=load_profile(self.stack.path)
+            except (OSError,KeyError,ValueError,sqlite3.Error):self._profile=False  # no materialised store (test fixtures)
+        return self._profile or None
+    def compiled(self):
+        """The local compiler's (graph or None, info), computed once."""
+        if self._compiled is None:
+            from .local_compiler import compile as compile_locally
+            self._compiled=(compile_locally(self.question,self.profile,self.as_of) if self.profile else
+                            (None,{'route':'fallback','reason':'no source profile available'}))
+            self.decline={**self._compiled[1],**self.decline}
+        return self._compiled
+
+    def exact_local(self):
+        graph,recipe=local_plan(self.question,self.as_of)
+        if graph:
+            return graph,{'route':'local_compiler','recipe':recipe,'model':None,'new_paid_api_calls':0,
+                          'frontier_called':False,'steps':[],'elapsed_seconds':self.elapsed()}
+    def specialist_families(self,early):
+        # Data-quality and VBC metric families: a question stating its own definition in one of their exact shapes
+        # (early) or a plain question a family represents with recorded convention defaults (late).
+        if not early and 'specialist_families' in self.decline:return None
+        graph,info=_specialist_families(self.stack,self.question,self.ledger,self.meta,self.start,self.decline,early)
+        if graph is not None:return graph,info
+        if info:self.decline['specialist_families']=info
+    def undelivered(self):
+        # A question whose definition depends on a field this workspace does not deliver declines as unsupported with
+        # the input named, before any governed metric, engine or analyst can answer it (delivered_inputs.py).
+        return _undelivered_gate(self.stack,self.question,self.meta,self.start,self.decline.get('specialist_families'))
+    def local_compiler(self):
+        compiled,info=self.compiled()
+        if compiled is None:return None
+        try:graph=validate(compiled,self.as_of)
         except ValueError as exc:
-            compile_info.update(route='fallback',reason=f'local plan failed validation: {exc}')
-        else:
-            return graph,{'route':compile_info['route'],'model':None,'new_paid_api_calls':0,'frontier_called':False,
-                          'local_compiler':compile_info,'steps':[],'elapsed_seconds':time.perf_counter()-start}
-    local_decline=compile_info
-    if family_info:local_decline={**local_decline,'specialist_families':family_info}
-    # Cohort families (early): a question stating its own definition in a common population-health shape is rendered by
-    # code from the stated definition before any cache, model rewrite or hosted rung.
-    family_graph,family_info=_cohort_family(stack,question,ledger,meta,start,local_decline,True)
-    if family_graph is not None:return family_graph,family_info
-    if family_info:local_decline={**local_decline,'cohort_family':family_info}
-    # Next rung: the local small model rewrites the question into canonical phrasing; the deterministic
-    # compiler must then fully parse it. The model never executes anything the compiler does not understand.
-    # The local rewrite rung trades accuracy for $0; when verified hosted answering is available it is skipped
-    # (a wrong free answer costs more than a right one-cent answer). AGERE_LOCAL_MODEL=on forces it.
-    rewrite_default='off' if stack.allow_live else 'on'
-    if profile is not None and os.environ.get('AGERE_LOCAL_MODEL',rewrite_default)!='off':
+            self.decline.update(route='fallback',reason=f'local plan failed validation: {exc}');return None
+        return graph,{'route':info['route'],'model':None,'new_paid_api_calls':0,'frontier_called':False,
+                      'local_compiler':info,'steps':[],'elapsed_seconds':self.elapsed()}
+    def cohort_family(self,early):
+        if not early and 'cohort_family' in self.decline:return None
+        graph,info=_cohort_family(self.stack,self.question,self.ledger,self.meta,self.start,self.decline,early)
+        if graph is not None:return graph,info
+        if info:self.decline['cohort_family']=info
+    def qwen_rewrite(self,default=None):
+        # The local small model rewrites the question into canonical phrasing; the deterministic compiler must then
+        # fully parse it, and the rewrite must keep everything the compiler recognised in the original.
+        default=default or ('off' if self.stack.allow_live else 'on')
+        if self.profile is None or os.environ.get('AGERE_LOCAL_MODEL',default)=='off':return None
+        compile_info=self.compiled()[1]
         try:
             from .nl2sql import canonicalize, MODEL_DIR
-            if MODEL_DIR.exists():
-                rewrite,stats=canonicalize(stack.path,question,meta['snapshot']['as_of'])
-                if rewrite:
-                    compiled,info=compile_locally(rewrite,profile,meta['snapshot']['as_of'])
-                    dropped=rewrite_dropped(compile_info,info)
-                    from .analysis_graph import requested_shape
-                    if requested_shape(question) not in (None,requested_shape(rewrite)):
-                        dropped=dropped+[f'answer shape {requested_shape(question)} became {requested_shape(rewrite)}']
-                    if compiled is not None and dropped:
-                        compiled,info=None,{**info,'reason':'rewrite dropped what the question said: '+', '.join(dropped)}
-                    if compiled is not None:
-                        graph=validate(compiled,meta['snapshot']['as_of'])
-                        return graph,{'route':'local_model_rewrite_compiled','model':stats.get('model'),'new_paid_api_calls':0,
-                                      'frontier_called':False,'rewrite':rewrite,'local_compiler':info,'local_compiler_declined':compile_info,
-                                      'steps':[],'elapsed_seconds':time.perf_counter()-start}
-                    local_decline={**compile_info,'rewrite':rewrite,'rewrite_declined':info.get('reason')}
-                else:
-                    local_decline={**compile_info,'rewrite':None,'rewrite_stats':stats}
+            from .local_compiler import compile as compile_locally
+            if not MODEL_DIR.exists():return None
+            rewrite,stats=canonicalize(self.stack.path,self.question,self.as_of)
+            if not rewrite:
+                self.decline.update(rewrite=None,rewrite_stats=stats);return None
+            compiled,info=compile_locally(rewrite,self.profile,self.as_of)
+            dropped=rewrite_dropped(compile_info,info)
+            from .analysis_graph import requested_shape
+            if requested_shape(self.question) not in (None,requested_shape(rewrite)):
+                dropped=dropped+[f'answer shape {requested_shape(self.question)} became {requested_shape(rewrite)}']
+            if compiled is not None and dropped:
+                compiled,info=None,{**info,'reason':'rewrite dropped what the question said: '+', '.join(dropped)}
+            if compiled is None:
+                self.decline.update(rewrite=rewrite,rewrite_declined=info.get('reason'));return None
+            graph=validate(compiled,self.as_of)
+            return graph,{'route':'local_model_rewrite_compiled','model':stats.get('model'),'new_paid_api_calls':0,
+                          'frontier_called':False,'rewrite':rewrite,'local_compiler':info,'local_compiler_declined':compile_info,
+                          'steps':[],'elapsed_seconds':self.elapsed()}
         except (ValueError,ImportError,OSError) as exc:
-            local_decline={**compile_info,'rewrite_error':str(exc)[:300]}
-    # Free-form local SQL is off by default: its held-out precision was too low for unsupervised answers.
-    if profile is not None and os.environ.get('AGERE_LOCAL_SQL','off')=='on':
+            self.decline['rewrite_error']=str(exc)[:300]
+    def local_sql(self,default='off'):
+        # Free-form local SQL: its held-out precision was too low for unsupervised answers.
+        if self.profile is None or os.environ.get('AGERE_LOCAL_SQL',default)!='on':return None
         try:
             from .nl2sql import answer as local_sql, MODEL_DIR
-            if MODEL_DIR.exists():
-                params,_,receipt=local_sql(stack.path,question,meta['snapshot']['as_of'])
-                graph=validate({'interpretation':question,'coverage':'supported_observation','unmet_requirements':[],
-                                'nodes':[{'id':'answer','operation':'sql','inputs':[],'parameters':params,
-                                          'purpose':'Local model query over the semantic layer'}]},meta['snapshot']['as_of'])
-                return graph,{'route':'local_model_sql','model':receipt['attempts'][-1]['model'],'new_paid_api_calls':0,
-                              'frontier_called':False,'local_compiler_declined':compile_info,'local_model':receipt,'steps':[],
-                              'elapsed_seconds':time.perf_counter()-start}
+            if not MODEL_DIR.exists():return None
+            params,_,receipt=local_sql(self.stack.path,self.question,self.as_of)
+            graph=validate({'interpretation':self.question,'coverage':'supported_observation','unmet_requirements':[],
+                            'nodes':[{'id':'answer','operation':'sql','inputs':[],'parameters':params,
+                                      'purpose':'Local model query over the semantic layer'}]},self.as_of)
+            return graph,{'route':'local_model_sql','model':receipt['attempts'][-1]['model'],'new_paid_api_calls':0,
+                          'frontier_called':False,'local_compiler_declined':self.decline,'local_model':receipt,'steps':[],
+                          'elapsed_seconds':self.elapsed()}
         except (ValueError,ImportError,OSError) as exc:
-            local_decline={**local_decline,'local_model_error':str(exc)[:300]}
-    # Learned rung: a question already answered through the verified hosted ladder reuses its verified query at $0
-    # (re-checked by lint and sanity against the current data before use).
-    if profile is not None:
+            self.decline['local_model_error']=str(exc)[:300]
+    def _sql_graph(self,plan,purpose):
+        from . import verify
+        problems=verify.lint(self.profile,plan['query'])
+        if problems:raise ValueError('; '.join(problems))
+        return validate({'interpretation':self.question,'coverage':'supported_observation','unmet_requirements':[],
+                         'nodes':[{'id':'answer','operation':'sql','inputs':[],'parameters':plan,'purpose':purpose}]},self.as_of)
+    def learned_sql(self):
+        # A question already answered through the verified hosted ladder reuses its verified query (re-linted).
+        if self.profile is None:return None
         from . import learning
-        known=learning.lookup(stack.path,question)
-        if known and known['plan_kind']=='sql':
-            try:
-                from . import verify
-                problems=verify.lint(profile,known['plan']['query'])
-                if problems: raise ValueError('; '.join(problems))
-                graph=validate({'interpretation':question,'coverage':'supported_observation','unmet_requirements':[],
-                                'nodes':[{'id':'answer','operation':'sql','inputs':[],'parameters':known['plan'],
-                                          'purpose':'Previously verified query (learned)'}]},meta['snapshot']['as_of'])
-                return graph,{'route':'learned_verified_sql','model':None,'new_paid_api_calls':0,'frontier_called':False,
-                              'learned_from':known['agreement'],'local_compiler_declined':local_decline,'steps':[],
-                              'elapsed_seconds':time.perf_counter()-start}
-            except ValueError as exc:
-                local_decline={**local_decline,'learned_rejected':str(exc)[:200]}
-    # Semantic cache rung: a paraphrase of a VERIFIED question (same data/semantic context, identical slots: numbers,
-    # dates, thresholds, entities, concepts, and/or, units, answer shape) reuses its verified query at $0, re-linted.
-    # Never across corrected or benchmark questions. AGERE_SEMANTIC_CACHE=off disables it.
-    if profile is not None and os.environ.get('AGERE_SEMANTIC_CACHE','on')!='off':
+        known=learning.lookup(self.stack.path,self.question)
+        if not (known and known['plan_kind']=='sql'):return None
+        try:graph=self._sql_graph(known['plan'],'Previously verified query (learned)')
+        except ValueError as exc:
+            self.decline['learned_rejected']=str(exc)[:200];return None
+        return graph,{'route':'learned_verified_sql','model':None,'new_paid_api_calls':0,'frontier_called':False,
+                      'learned_from':known['agreement'],'local_compiler_declined':self.decline,'steps':[],
+                      'elapsed_seconds':self.elapsed()}
+    def semantic_cache(self):
+        # A paraphrase of a VERIFIED question with identical slots reuses its verified query (re-linted).
+        if self.profile is None or os.environ.get('AGERE_SEMANTIC_CACHE','on')=='off':return None
         from . import semantic_cache
         try:
-            hit,cache_info=semantic_cache.lookup(stack.path,question,getattr(stack.retriever,'encoder',None))
-            if hit:
-                from . import verify
-                problems=verify.lint(profile,hit['plan']['query'])
-                if problems: raise ValueError('; '.join(problems))
-                graph=validate({'interpretation':question,'coverage':'supported_observation','unmet_requirements':[],
-                                'nodes':[{'id':'answer','operation':'sql','inputs':[],'parameters':hit['plan'],
-                                          'purpose':'Verified query reused for a paraphrase (semantic cache)'}]},meta['snapshot']['as_of'])
-                return graph,{'route':'semantic_cache','model':None,'new_paid_api_calls':0,'frontier_called':False,
-                              'learned_from':hit['agreement'],'semantic_cache':cache_info,'local_compiler_declined':local_decline,
-                              'steps':[],'elapsed_seconds':time.perf_counter()-start}
-            local_decline={**local_decline,'semantic_cache':{k:cache_info.get(k) for k in ('reason','candidates','similarity')}}
+            hit,cache_info=semantic_cache.lookup(self.stack.path,self.question,getattr(self.stack.retriever,'encoder',None))
+            if not hit:
+                self.decline['semantic_cache']={k:cache_info.get(k) for k in ('reason','candidates','similarity')};return None
+            graph=self._sql_graph(hit['plan'],'Verified query reused for a paraphrase (semantic cache)')
         except (ValueError,RuntimeError,OSError,sqlite3.Error) as exc:
-            local_decline={**local_decline,'semantic_cache_rejected':str(exc)[:200]}
-    # Bottled rung ($0): the local model fine-tuned on verified ladder answers writes k queries; answered only when the
-    # greedy query passes lint + sanity and enough decodes agree on the result (see bottled.py); else falls through.
-    from . import bottled
-    if profile is not None and bottled.enabled():
+            self.decline['semantic_cache_rejected']=str(exc)[:200];return None
+        return graph,{'route':'semantic_cache','model':None,'new_paid_api_calls':0,'frontier_called':False,
+                      'learned_from':hit['agreement'],'semantic_cache':cache_info,'local_compiler_declined':self.decline,
+                      'steps':[],'elapsed_seconds':self.elapsed()}
+    def bottled_sql(self,enabled=None):
+        # The local model fine-tuned on verified ladder answers writes k queries; kept only when the greedy query
+        # passes lint + sanity and enough decodes agree on the result (bottled.py).
+        from . import bottled
+        if self.profile is None or not (bottled.enabled() if enabled is None else enabled):return None
         try:
-            if bottled.BottledModel.available():
-                params,receipt=bottled.answer(stack.path,question,meta['snapshot']['as_of'],profile)
-                graph=validate({'interpretation':question,'coverage':'supported_observation','unmet_requirements':[],
-                                'nodes':[{'id':'answer','operation':'sql','inputs':[],'parameters':params,
-                                          'purpose':'Bottled local model query (distilled from verified answers)'}]},meta['snapshot']['as_of'])
-                return graph,{'route':'bottled_sql','model':receipt['model'],'new_paid_api_calls':0,'frontier_called':False,
-                              'bottled':receipt,'local_compiler_declined':local_decline,'steps':[],
-                              'elapsed_seconds':time.perf_counter()-start}
+            if not bottled.BottledModel.available():return None
+            params,receipt=bottled.answer(self.stack.path,self.question,self.as_of,self.profile)
+            graph=validate({'interpretation':self.question,'coverage':'supported_observation','unmet_requirements':[],
+                            'nodes':[{'id':'answer','operation':'sql','inputs':[],'parameters':params,
+                                      'purpose':'Bottled local model query (distilled from verified answers)'}]},self.as_of)
         except (ValueError,ImportError,OSError,RuntimeError) as exc:
-            local_decline={**local_decline,'bottled_declined':str(exc)[:300],
-                           **({'bottled':exc.receipt} if hasattr(exc,'receipt') else {})}
-    # Metric-first rung: one small-model tool call chooses a GOVERNED metric (metric layer + families + measures) and fills
-    # its typed slots; the metric's template / builder / measure engine computes deterministically ("computed as metric
-    # <id>@<version>"). no_metric falls through to the operator router and, last, free-form SQL (metric_router.py).
-    metric_steps=[]
-    # Engine lean: when the zero-cost learned router's top label is an analytic engine (>= ENGINE_LEAN), the operator
-    # router goes before the metric rung so a change / subgroup / survival question is not answered with one scalar.
-    # The metric rung still runs if the operator router declines.
-    lean=_engine_lean(stack,question)
-    if lean: local_decline={**local_decline,'engine_lean':lean}
-    for rung in (('operator','metric') if lean and lean['lean'] else ('metric','operator')):
-      if rung=='metric':
+            self.decline.update(bottled_declined=str(exc)[:300],**({'bottled':exc.receipt} if hasattr(exc,'receipt') else {}))
+            return None
+        return graph,{'route':'bottled_sql','model':receipt['model'],'new_paid_api_calls':0,'frontier_called':False,
+                      'bottled':receipt,'local_compiler_declined':self.decline,'steps':[],'elapsed_seconds':self.elapsed()}
+    def engine_lean(self):
+        if 'engine_lean' not in self.decline:
+            self.decline['engine_lean']=_engine_lean(self.stack,self.question)
+        return self.decline['engine_lean']
+    def metric_router(self):
+        # One small-model tool call chooses a GOVERNED metric and fills its typed slots; the metric's template, builder
+        # or measure engine computes deterministically (metric_router.py).
         from . import metric_router
-        if profile is not None and stack.allow_live and ledger is not None and metric_router.enabled():
-            try:
-                routed,metric_info=metric_router.route(question,meta['snapshot']['as_of'],ledger,stack.receipts,path=stack.path)
-            except (ValueError,RuntimeError,OSError,KeyError,TypeError,sqlite3.Error) as exc:  # the rung never blocks the ladder
-                routed,metric_info=None,{'router_error':str(exc)[:300],'calls':[]}
-            metric_steps=[{'stage':'metric_router','receipt':{'cost_estimate':{'estimated_usd':metric_router.cost(metric_info)}}}]
-            if routed is not None:
-                try:
-                    graph=validate(routed,meta['snapshot']['as_of'])
-                except ValueError as exc:  # a governed plan the runtime validator refuses falls through, recorded
-                    graph,metric_info=None,{**metric_info,'decision':'validation_failed','validation_error':str(exc)[:300]}
-            if routed is not None and graph is not None:
-                return graph,{'route':'metric_router','model':metric_router.MODEL,'metric':metric_info.get('metric'),
-                              'metric_router':metric_info,'new_paid_api_calls':sum(0 if c.get('cache_hit') else 1 for c in metric_info['calls']),
-                              'frontier_called':False,'local_compiler_declined':local_decline,'steps':metric_steps,
-                              'elapsed_seconds':time.perf_counter()-start}
-            local_decline={**local_decline,'metric_router':metric_info}
-      else:
-        # Operator router: any phrasing reaches the right analytic engine. One small-model call picks the operator
-        # and fills its typed parameters; the runtime validators decide; literal questions go on to verified SQL.
-        if profile is not None and stack.allow_live and os.environ.get('AGERE_ROUTER','on')!='off':
-            from . import operator_router
-            try:
-                routed,route_info=operator_router.route(question,meta['snapshot']['as_of'],ledger,stack.receipts,validate,
-                                                        encoder=getattr(stack.retriever,'encoder',None))
-            except (ValueError,RuntimeError,OSError) as exc:
-                routed,route_info=None,{'router_error':str(exc)[:300],'calls':[]}
-            local_decline={**local_decline,'operator_router':route_info}
-            if routed is None and route_info.get('requires_input'):
-                graph=validate({'interpretation':f'Needs inputs not in the data: {question}','coverage':'unsupported','nodes':[],
-                                'unmet_requirements':['Missing input: '+route_info['requires_input'][:400]]},meta['snapshot']['as_of'])
-                return graph,{'route':'operator_router_requires_input','model':operator_router.MODEL,'operator':route_info.get('decision'),
-                              'new_paid_api_calls':sum(0 if c.get('cache_hit') else 1 for c in route_info['calls']),'frontier_called':False,
-                              'local_compiler_declined':local_decline,'steps':metric_steps+[{'stage':'operator_router','receipt':{'cost_estimate':{'estimated_usd':operator_router.cost(route_info)}}}],
-                              'elapsed_seconds':time.perf_counter()-start}
-            if routed is not None:
-                return routed,{'route':'operator_router','model':operator_router.MODEL,'new_paid_api_calls':
-                               sum(0 if c.get('cache_hit') else 1 for c in route_info['calls']),'frontier_called':False,
-                               'operator':route_info['decision'],'local_compiler_declined':local_decline,
-                               'steps':metric_steps+[{'stage':'operator_router','receipt':{'cost_estimate':{'estimated_usd':operator_router.cost(route_info)}}}],
-                               'elapsed_seconds':time.perf_counter()-start}
-    # Data-quality / VBC families (late): plain questions a family represents with recorded convention defaults.
-    if 'specialist_families' not in local_decline:
-        family_graph,family_info=_specialist_families(stack,question,ledger,meta,start,local_decline,False)
-        if family_graph is not None:
-            if metric_steps:family_info={**family_info,'steps':metric_steps+family_info['steps'],
-                                         'new_paid_api_calls':family_info['new_paid_api_calls']+len(metric_steps)}
-            return family_graph,family_info
-        if family_info:local_decline={**local_decline,'specialist_families':family_info}
-    # Cohort families (late): the remaining family questions (no inline definition) before the analysts / hosted SQL.
-    if 'cohort_family' not in local_decline:
-        family_graph,family_info=_cohort_family(stack,question,ledger,meta,start,local_decline,False)
-        if family_graph is not None:
-            if metric_steps:family_info={**family_info,'steps':metric_steps+family_info['steps'],
-                                         'new_paid_api_calls':family_info['new_paid_api_calls']+len(metric_steps)}
-            return family_graph,family_info
-        if family_info:local_decline={**local_decline,'cohort_family':family_info}
-    # Deferral (together.py): when the independent analysts are already answering this question, the fast path stops
-    # here instead of paying for a second hosted SQL ladder and the frontier planner (it falls back to them only if the
-    # analysts produce no usable answer).
-    if deferring():
-        # Specialists before the analysts: the typed decider (one small Perplexity call over the curated analyses the
-        # local retriever ranks) gets the question before it is handed to the independent analysts.
-        typed=_typed_decider(stack,question,ledger,available,validate,meta,start)
-        if typed is not None:
-            return typed
-        from .analysis_graph import validate as _validate
-        graph=_validate({'interpretation':'Deferred to the independent analysts; retain the complete original question and definitions.','coverage':'unsupported','nodes':[],
-                         'unmet_requirements':['answered by the independent analysts (hybrid core)']},meta['snapshot']['as_of'])
-        steps=list(locals().get('metric_steps') or [])  # a declined metric-router call is still paid
-        return graph,{'route':'deferred_to_analyst','model':None,'new_paid_api_calls':len(steps),'frontier_called':False,
-                      'local_compiler_declined':local_decline,'steps':steps,
-                      'elapsed_seconds':time.perf_counter()-start}
-    # Cheapest hosted rung: one Haiku call writing governed SQL over the cached schema (~$0.001).
-    if profile is not None and stack.allow_live and os.environ.get('AGERE_HOSTED_SQL','on')!='off':
+        if self.profile is None or not self.stack.allow_live or self.ledger is None or not metric_router.enabled():return None
         try:
-            from .nl2sql import verified_answer, HostedModel
-            hosted=HostedModel(ledger,stack.receipts,model=os.environ.get('AGERE_PRIMARY_MODEL','claude-haiku-5-5'))
+            routed,info=metric_router.route(self.question,self.as_of,self.ledger,self.stack.receipts,path=self.stack.path)
+        except (ValueError,RuntimeError,OSError,KeyError,TypeError,sqlite3.Error) as exc:
+            routed,info=None,{'router_error':str(exc)[:300],'calls':[]}
+        self.metric_steps=[{'stage':'metric_router','receipt':{'cost_estimate':{'estimated_usd':metric_router.cost(info)}}}]
+        graph=None
+        if routed is not None:
+            try:graph=validate(routed,self.as_of)
+            except ValueError as exc:info={**info,'decision':'validation_failed','validation_error':str(exc)[:300]}
+        if graph is None:
+            self.decline['metric_router']=info;return None
+        return graph,{'route':'metric_router','model':metric_router.MODEL,'metric':info.get('metric'),'metric_router':info,
+                      'new_paid_api_calls':sum(0 if c.get('cache_hit') else 1 for c in info['calls']),
+                      'frontier_called':False,'local_compiler_declined':self.decline,'steps':self.metric_steps,
+                      'elapsed_seconds':self.elapsed()}
+    def operator_router(self):
+        # One small-model call picks an analytic engine and fills its typed parameters; the runtime validators decide.
+        if self.profile is None or not self.stack.allow_live or os.environ.get('AGERE_ROUTER','on')=='off':return None
+        from . import operator_router
+        try:
+            routed,info=operator_router.route(self.question,self.as_of,self.ledger,self.stack.receipts,validate,
+                                              encoder=getattr(self.stack.retriever,'encoder',None))
+        except (ValueError,RuntimeError,OSError) as exc:
+            routed,info=None,{'router_error':str(exc)[:300],'calls':[]}
+        self.decline['operator_router']=info
+        calls=sum(0 if c.get('cache_hit') else 1 for c in info['calls'])
+        steps=self.metric_steps+[{'stage':'operator_router','receipt':{'cost_estimate':{'estimated_usd':operator_router.cost(info)}}}]
+        if routed is None and info.get('requires_input'):
+            graph=validate({'interpretation':f'Needs inputs not in the data: {self.question}','coverage':'unsupported','nodes':[],
+                            'unmet_requirements':['Missing input: '+info['requires_input'][:400]]},self.as_of)
+            return graph,{'route':'operator_router_requires_input','model':operator_router.MODEL,'operator':info.get('decision'),
+                          'new_paid_api_calls':calls,'frontier_called':False,'local_compiler_declined':self.decline,
+                          'steps':steps,'elapsed_seconds':self.elapsed()}
+        if routed is not None:
+            return routed,{'route':'operator_router','model':operator_router.MODEL,'new_paid_api_calls':calls,
+                           'frontier_called':False,'operator':info['decision'],'local_compiler_declined':self.decline,
+                           'steps':steps,'elapsed_seconds':self.elapsed()}
+    def typed_decider(self):
+        return _typed_decider(self.stack,self.question,self.ledger,self.available,validate,self.meta,self.start)
+    def hosted_sql(self):
+        # Hosted small-model SQL over the cached schema: Haiku writes, Sonnet confirms, Opus/Perplexity judge
+        # disagreements; independent candidates and oracles decide whether agreement counts (verification_v2).
+        if self.profile is None or not self.stack.allow_live or os.environ.get('AGERE_HOSTED_SQL','on')=='off':return None
+        from . import metric_router
+        try:
+            from .nl2sql import verified_answer, HostedModel, Decider
             from ..gateway import BudgetLedger
-            second=HostedModel(BudgetLedger(ledger.path),stack.receipts,model=os.environ.get('AGERE_SECOND_MODEL','claude-sonnet-5-5'))
-            judge=HostedModel(ledger,stack.receipts,model=os.environ.get('AGERE_JUDGE_MODEL','claude-opus-5-5'))
-            from .nl2sql import Decider
-            decider=Decider(ledger,stack.receipts) if os.environ.get('AGERE_DECIDER_JUDGE','on')!='off' else None
-            # Independent candidates (deterministic compiler, bottled local model) and deterministic oracles decide whether
-            # model agreement counts as verification (verification_v2; AGERE_VERIFICATION_V2=off restores the two-model ladder).
-            # The verified pair is NOT captured here: conversation.handle_compose records it after the answer and its checks.
+            hosted=HostedModel(self.ledger,self.stack.receipts,model=os.environ.get('AGERE_PRIMARY_MODEL','claude-haiku-5-5'))
+            second=HostedModel(BudgetLedger(self.ledger.path),self.stack.receipts,model=os.environ.get('AGERE_SECOND_MODEL','claude-sonnet-5-5'))
+            judge=HostedModel(self.ledger,self.stack.receipts,model=os.environ.get('AGERE_JUDGE_MODEL','claude-opus-5-5'))
+            decider=Decider(self.ledger,self.stack.receipts) if os.environ.get('AGERE_DECIDER_JUDGE','on')!='off' else None
             independent=oracle=None
             if os.environ.get('AGERE_VERIFICATION_V2','on')!='off':
                 from . import verification_v2,oracles
-                as_of=meta['snapshot']['as_of']
-                independent=verification_v2.default_sources(stack.path,as_of,profile)
-                oracle=verification_v2.oracle_for(stack.path,question,as_of,
-                                                  oracles.readonly_executor(stack.path) if os.environ.get('AGERE_PARTITION_ORACLE','on')!='off' else None)
-            params,result,receipt=verified_answer(stack.path,question,meta['snapshot']['as_of'],hosted,second,judge,decider,
+                independent=verification_v2.default_sources(self.stack.path,self.as_of,self.profile)
+                oracle=verification_v2.oracle_for(self.stack.path,self.question,self.as_of,
+                                                  oracles.readonly_executor(self.stack.path) if os.environ.get('AGERE_PARTITION_ORACLE','on')!='off' else None)
+            params,result,receipt=verified_answer(self.stack.path,self.question,self.as_of,hosted,second,judge,decider,
                                                   independent=independent,oracle=oracle)
             from . import verify
             receipt['capture']={'plan':params,'signature':json.dumps(verify.signature(result),default=str)[:4000],
                                 'models':[a.get('model') for a in receipt['attempts']],'agreement':receipt['agreement']}
-            graph=validate({'interpretation':question,'coverage':'supported_observation','unmet_requirements':[],
+            graph=validate({'interpretation':self.question,'coverage':'supported_observation','unmet_requirements':[],
                             'nodes':[{'id':'answer','operation':'sql','inputs':[],'parameters':params,
-                                      'purpose':'Hosted small-model query over the semantic layer'}]},meta['snapshot']['as_of'])
-            hosted.cost+=second.cost+judge.cost+(decider.cost if decider else 0)+sum(c.get('api_usd') or 0 for c in local_decline.get('operator_router',{}).get('calls',[]))
-            hosted.cost+=metric_router.cost(local_decline.get('metric_router') or {})
-            # Free-form SQL is the last resort: verified only with independent agreement (v2) or a lint-clean governed metric;
-            # otherwise the answer is marked low-confidence (or withheld) by metric_router.finalize_answer.
+                                      'purpose':'Hosted small-model query over the semantic layer'}]},self.as_of)
+            cost=hosted.cost+second.cost+judge.cost+(decider.cost if decider else 0)
             try:
                 from . import oracles
-                acceptance=metric_router.acceptance(question,params.get('query'),receipt,meta['snapshot']['as_of'],
-                                                    source=oracles.readonly_executor(stack.path))
+                acceptance=metric_router.acceptance(self.question,params.get('query'),receipt,self.as_of,
+                                                    source=oracles.readonly_executor(self.stack.path))
             except (ValueError,RuntimeError,OSError,sqlite3.Error) as exc:
                 acceptance={'status':'low_confidence','basis':f'acceptance check failed: {exc}'[:300]}
-            paid_calls=sum(1 for a in list(receipt.get('prior_attempts') or [])+receipt['attempts'] if not a.get('cache_hit'))
-            return graph,{'route':'hosted_verified_sql','model':hosted.model,'new_paid_api_calls':paid_calls,
-                          'frontier_called':False,'local_compiler_declined':local_decline,'hosted_sql':receipt,'acceptance':acceptance,
-                          'steps':[{'stage':'hosted_verified_sql','receipt':{'cost_estimate':{'estimated_usd':hosted.cost}}}],
-                          'elapsed_seconds':time.perf_counter()-start}
+            paid=sum(1 for a in list(receipt.get('prior_attempts') or [])+receipt['attempts'] if not a.get('cache_hit'))
+            return graph,{'route':'hosted_verified_sql','model':hosted.model,'new_paid_api_calls':paid,
+                          'frontier_called':False,'local_compiler_declined':self.decline,'hosted_sql':receipt,'acceptance':acceptance,
+                          'steps':[{'stage':'hosted_verified_sql','receipt':{'cost_estimate':{'estimated_usd':cost}}}],
+                          'elapsed_seconds':self.elapsed()}
         except (ValueError,RuntimeError,OSError) as exc:
             from .nl2sql import MissingData
-            if isinstance(exc,MissingData):  # an analyst says the needed data does not exist: answer unsupported, never substitute
-                graph=validate({'interpretation':f'Unsupported by received data: {question}','coverage':'unsupported','nodes':[],
-                                'unmet_requirements':['Missing input: '+str(exc)[:400]]},meta['snapshot']['as_of'])
-                # The hosted calls that produced the claim are paid: account for them (they were recorded as $0 before).
-                spent=sum(getattr(m,'cost',0.0) or 0.0 for m in (locals().get('hosted'),locals().get('second'),locals().get('judge'),locals().get('decider')) if m is not None)
-                spent+=sum(c.get('api_usd') or 0 for c in local_decline.get('operator_router',{}).get('calls',[]))
-                spent+=metric_router.cost(local_decline.get('metric_router') or {})
+            spent=sum(getattr(m,'cost',0.0) or 0.0 for m in (locals().get('hosted'),locals().get('second'),locals().get('judge'),locals().get('decider')) if m is not None)
+            if isinstance(exc,MissingData):  # an analyst says the needed data does not exist: unsupported, never substituted
+                graph=validate({'interpretation':f'Unsupported by received data: {self.question}','coverage':'unsupported','nodes':[],
+                                'unmet_requirements':['Missing input: '+str(exc)[:400]]},self.as_of)
                 ladder=exc.receipt or {}
                 attempts=list(ladder.get('prior_attempts') or [])+list(ladder.get('attempts') or [])
-                paid_calls=sum(1 for a in attempts if not a.get('cache_hit')) if attempts else 2
-                model=getattr(locals().get('hosted'),'model',None)
-                return graph,{'route':'hosted_missing_data','model':model,'new_paid_api_calls':paid_calls,'frontier_called':False,
-                              'local_compiler_declined':local_decline,'hosted_sql':ladder,
+                return graph,{'route':'hosted_missing_data','model':getattr(locals().get('hosted'),'model',None),
+                              'new_paid_api_calls':sum(1 for a in attempts if not a.get('cache_hit')) if attempts else 2,
+                              'frontier_called':False,'local_compiler_declined':self.decline,'hosted_sql':ladder,
                               'missing_check':{'claim':str(exc)[:300],'contradicted':list(exc.contradicted or [])},
                               'steps':[{'stage':'hosted_missing_data','receipt':{'cost_estimate':{'estimated_usd':spent}}}],
-                              'elapsed_seconds':time.perf_counter()-start}
-            local_decline={**local_decline,'hosted_sql_error':str(exc)[:300]}
-    from .analysis_graph import catalog,code_identity
-    # Catalog identity covers source/attached model/policy capability changes.
-    capability=catalog(stack.path)
-    encoder_identity=getattr(getattr(stack.retriever,'encoder',None),'identity',None)
-    key=digest([question.strip(),policy_identity(),code_identity(),encoder_identity,meta['source_digest'],meta['snapshot'],capability])
-    db=sqlite3.connect(stack.path/'question-plans.sqlite3')
-    db.execute('CREATE TABLE IF NOT EXISTS plans(id TEXT PRIMARY KEY,payload TEXT)')
-    try:
-        old=db.execute('SELECT payload FROM plans WHERE id=?',(key,)).fetchone()
-        if os.environ.get('AGERE_PLAN_CACHE','on')=='off':old=None  # exact-question plan cache off (cold-path measurement)
-        if old:
-            saved=json.loads(old[0]);graph=validate(saved['graph'],meta['snapshot']['as_of'])
-            return graph,{'route':'exact_question_cache','original_route':saved['receipt']['route'],
-                         'model':None,'cache_hit':True,'new_paid_api_calls':0,'frontier_called':False,
-                         'prior_planning_receipt':saved['receipt'],'elapsed_seconds':time.perf_counter()-start}
-        if not stack.allow_live:
-            from .question_input import QuestionNotUnderstood
-            raise QuestionNotUnderstood('No executable local interpretation ('+str(local_decline.get('reason'))+'); hosted planning disabled. This does not establish missing warehouse data.')
-        steps=[];reason=escalation_reason(question);paid=0;request_key=None;before=None
-        if reason is None:
-            try:
-                choices=candidates(question,stack.retriever.encoder,available)
-                steps.append({'stage':'local_compact_retrieval','model_identity':stack.retriever.encoder.identity,
-                              'candidates':choices,'scores_are_probabilities':False,'new_paid_api_calls':0})
-                body=decision_body(question,choices);request_key=digest({'contract':'context-student/1','provider':'perplexity','body':body})
-                before=ledger.db.execute('SELECT status FROM calls WHERE id=?',(request_key,)).fetchone()
-                selected,receipt=send(body,'perplexity',ledger,stack.receipts,parse=lambda r:parse_decision(r,body))
-                paid+=0 if receipt.get('cache_hit') else 1
-                steps.append({'stage':'typed_decision_router','provider':'perplexity','decision':selected,'receipt':receipt})
-                if selected['accepted']:
-                    graph=validate(copy.deepcopy(recipes()[selected['choice']]['graph']),meta['snapshot']['as_of'])
-                    result={'route':'compact_retrieval_typed_router','model':body['model'],'recipe':selected['choice'],
-                            'new_paid_api_calls':paid,'frontier_called':False,'steps':steps,
-                            'elapsed_seconds':time.perf_counter()-start}
-                    with db:db.execute('INSERT OR REPLACE INTO plans VALUES (?,?)',(key,json.dumps({'question':question,'graph':graph,'receipt':result,'human_reviewed':False,'training_authority':'unreviewed model plan'})))
-                    return graph,result
-                reason='typed_router_abstained_or_below_threshold'
-            except (ValueError,RuntimeError) as exc:
-                # Preserve failed attempt visibility; no retry of the same paid request.
-                after=ledger.db.execute('SELECT status FROM calls WHERE id=?',(request_key,)).fetchone() if request_key else None
-                attempted=bool(after and before is None)
-                paid+=int(attempted)
-                steps.append({'stage':'cheap_route_unavailable','error_type':type(exc).__name__,
-                              'request_hash':request_key,'new_attempt_reserved':attempted,
-                              'cost_unknown':attempted})
-                reason='cheap_route_failed_or_unavailable'
-        if not stack.allow_live:raise ValueError('No supported local plan; hosted planning disabled')
-        graph,receipt=frontier(capability)
-        paid+=receipt.get('new_paid_api_calls',0 if receipt.get('cache_hit') else 1)
-        steps.append({'stage':'frontier_planner','provider':'claude','receipt':receipt})
-        result={'route':'frontier_escalation','model':PersistentGateway.MODELS['claude'],'escalation_reason':reason,
-                'local_compiler_declined':local_decline,
-                'new_paid_api_calls':paid,'frontier_called':True,'steps':steps,'elapsed_seconds':time.perf_counter()-start}
-        with db:db.execute('INSERT OR REPLACE INTO plans VALUES (?,?)',(key,json.dumps({'question':question,'graph':graph,'receipt':result,'human_reviewed':False,'training_authority':'unreviewed model plan'})))
-        return graph,result
-    finally:db.close()
+                              'elapsed_seconds':self.elapsed()}
+            self.decline['hosted_sql_error']=str(exc)[:300]
+            if spent:self.decline['hosted_sql_spent_usd']=spent
+    def frontier_planner(self,cache=True,decider=True):
+        # The frontier graph planner (graph_planner.propose, Opus) over the full capability catalog; the cheap typed
+        # router over curated recipes runs first when the question is an unfiltered description.
+        from .analysis_graph import catalog,code_identity
+        capability=catalog(self.stack.path)
+        encoder_identity=getattr(getattr(self.stack.retriever,'encoder',None),'identity',None)
+        key=digest([self.question.strip(),policy_identity(),code_identity(),encoder_identity,self.meta['source_digest'],self.meta['snapshot'],capability])
+        db=sqlite3.connect(Path(self.stack.path)/'question-plans.sqlite3')
+        db.execute('CREATE TABLE IF NOT EXISTS plans(id TEXT PRIMARY KEY,payload TEXT)')
+        try:
+            old=db.execute('SELECT payload FROM plans WHERE id=?',(key,)).fetchone()
+            if not cache or os.environ.get('AGERE_PLAN_CACHE','on')=='off':old=None
+            if old:
+                saved=json.loads(old[0]);graph=validate(saved['graph'],self.as_of)
+                return graph,{'route':'exact_question_cache','original_route':saved['receipt']['route'],
+                              'model':None,'cache_hit':True,'new_paid_api_calls':0,'frontier_called':False,
+                              'prior_planning_receipt':saved['receipt'],'elapsed_seconds':self.elapsed()}
+            if not self.stack.allow_live or self.frontier is None:return None
+            steps=[];reason=escalation_reason(self.question) if decider else 'typed_decider_runs_as_its_own_proposer';paid=0;request_key=None;before=None
+            if reason is None:
+                try:
+                    choices=candidates(self.question,self.stack.retriever.encoder,self.available)
+                    steps.append({'stage':'local_compact_retrieval','model_identity':self.stack.retriever.encoder.identity,
+                                  'candidates':choices,'scores_are_probabilities':False,'new_paid_api_calls':0})
+                    body=decision_body(self.question,choices);request_key=digest({'contract':'context-student/1','provider':'perplexity','body':body})
+                    before=self.ledger.db.execute('SELECT status FROM calls WHERE id=?',(request_key,)).fetchone()
+                    selected,receipt=send(body,'perplexity',self.ledger,self.stack.receipts,parse=lambda r:parse_decision(r,body))
+                    paid+=0 if receipt.get('cache_hit') else 1
+                    steps.append({'stage':'typed_decision_router','provider':'perplexity','decision':selected,'receipt':receipt})
+                    if selected['accepted']:
+                        graph=validate(copy.deepcopy(recipes()[selected['choice']]['graph']),self.as_of)
+                        result={'route':'compact_retrieval_typed_router','model':body['model'],'recipe':selected['choice'],
+                                'new_paid_api_calls':paid,'frontier_called':False,'steps':steps,'elapsed_seconds':self.elapsed()}
+                        if cache:
+                            with db:db.execute('INSERT OR REPLACE INTO plans VALUES (?,?)',(key,json.dumps({'question':self.question,'graph':graph,'receipt':result,'human_reviewed':False,'training_authority':'unreviewed model plan'})))
+                        return graph,result
+                    reason='typed_router_abstained_or_below_threshold'
+                except (ValueError,RuntimeError) as exc:
+                    # Preserve failed attempt visibility; no retry of the same paid request.
+                    after=self.ledger.db.execute('SELECT status FROM calls WHERE id=?',(request_key,)).fetchone() if request_key else None
+                    attempted=bool(after and before is None)
+                    paid+=int(attempted)
+                    steps.append({'stage':'cheap_route_unavailable','error_type':type(exc).__name__,
+                                  'request_hash':request_key,'new_attempt_reserved':attempted,'cost_unknown':attempted})
+                    reason='cheap_route_failed_or_unavailable'
+            graph,receipt=self.frontier(capability)
+            paid+=receipt.get('new_paid_api_calls',0 if receipt.get('cache_hit') else 1)
+            steps.append({'stage':'frontier_planner','provider':'claude','receipt':receipt})
+            result={'route':'frontier_escalation','model':PersistentGateway.MODELS['claude'],'escalation_reason':reason,
+                    'local_compiler_declined':self.decline,
+                    'new_paid_api_calls':paid,'frontier_called':True,'steps':steps,'elapsed_seconds':self.elapsed()}
+            if cache:
+                with db:db.execute('INSERT OR REPLACE INTO plans VALUES (?,?)',(key,json.dumps({'question':self.question,'graph':graph,'receipt':result,'human_reviewed':False,'training_authority':'unreviewed model plan'})))
+            return graph,result
+        finally:db.close()
+
+
+def legacy_plan(stack,question,ledger,frontier):
+    """The pre-2026-10-19 ladder: the first rung that produces a plan answers, unchecked. Kept for comparison only; the
+    shared planner calls these rungs as checked proposers (proposers.py)."""
+    L=Ladder(stack,question,ledger,frontier)
+    for rung in (L.exact_local,lambda:L.specialist_families(True),L.undelivered,L.local_compiler,lambda:L.cohort_family(True),
+                 L.qwen_rewrite,L.local_sql,L.learned_sql,L.semantic_cache,L.bottled_sql):
+        found=rung()
+        if found:return found
+    lean=L.engine_lean()
+    for rung in ((L.operator_router,L.metric_router) if lean and lean['lean'] else (L.metric_router,L.operator_router)):
+        found=rung()
+        if found:return found
+    for rung in (lambda:L.specialist_families(False),lambda:L.cohort_family(False)):
+        found=rung()
+        if found:
+            graph,info=found
+            if L.metric_steps:info={**info,'steps':L.metric_steps+info['steps'],'new_paid_api_calls':info['new_paid_api_calls']+len(L.metric_steps)}
+            return graph,info
+    if deferring():
+        typed=L.typed_decider()
+        if typed is not None:return typed
+        graph=validate({'interpretation':'Deferred to the independent analysts; retain the complete original question and definitions.','coverage':'unsupported','nodes':[],
+                        'unmet_requirements':['answered by the independent analysts (hybrid core)']},L.as_of)
+        return graph,{'route':'deferred_to_analyst','model':None,'new_paid_api_calls':len(L.metric_steps),'frontier_called':False,
+                      'local_compiler_declined':L.decline,'steps':list(L.metric_steps),'elapsed_seconds':L.elapsed()}
+    found=L.hosted_sql()
+    if found:return found
+    found=L.frontier_planner()
+    if found:return found
+    from .question_input import QuestionNotUnderstood
+    raise QuestionNotUnderstood('No executable local interpretation ('+str(L.decline.get('reason'))+'); hosted planning disabled. This does not establish missing warehouse data.')
 
 
 def economics(receipt):
