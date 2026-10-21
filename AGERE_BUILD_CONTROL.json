@@ -369,18 +369,22 @@
         "thread_id": "01a15b40-8c5e-7263-b8eb-88dc5a24a707",
         "base_commit": "a2c6335",
         "blocker": "B2",
-        "reported_defect": "Shared planner attaches a selected cohort, but queueing dispatch discards it and queueing ignores patient_ids/as_of; optional forecast may broaden source/population. Reported by authorized lane; owner integration verification pending.",
+        "reported_defect": "Shared planner attaches a selected cohort, but queueing dispatch discards it and queueing ignores patient_ids/as_of; optional forecast may broaden source/population. Reported by authorized lane; owner integration verification pending. Queueing graph admission also forbids the population input supplied by the shared planner; lane will align only queueing declarations.",
         "owned_files": [
           "clinical_core/agere/clinical/queueing.py",
           "clinical_core/agere/clinical/analysis_graph.py (queueing dispatch/answer sections only)",
-          "focused candidate tests and documentation"
+          "focused candidate tests and documentation",
+          "clinical_core/agere/clinical/graph_contracts.py (queueing-only entries)",
+          "clinical_core/agere/clinical/capability_registry.py (queueing-only entries)"
         ],
         "acceptance": [
           "exact nonempty subset",
           "empty subset does not broaden",
           "as-of cutoff and event window",
           "forecast source/scope mismatch refusal",
-          "scope and assumptions visible"
+          "scope and assumptions visible",
+          "shared planner population admission and execution",
+          "omitted population remains distinct from explicit empty population"
         ],
         "boundary": "Candidate only. Owner retains clinical/question/control/runtime; no paid calls or protected evaluation."
       }
