@@ -784,6 +784,9 @@ def utilization(out):
         ed_rev = defaultdict(set)
         for cid, rev in out.execute('SELECT payer_claim_id, revenue_code FROM payer_claim_line WHERE revenue_code IS NOT NULL'):
             ed_rev[cid].add(str(rev))
+        from .ed_definition import ED_CPT  # the governed ED definition also accepts an ED E/M CPT 99281-99285 on a line
+        ed_cpt = {r[0] for r in out.execute(f"SELECT DISTINCT payer_claim_id FROM payer_claim_line WHERE cpt IN ({','.join('?' * len(ED_CPT))})", ED_CPT)} \
+            if 'cpt' in {r[1] for r in out.execute('PRAGMA table_info(payer_claim_line)')} else set()
         seen = set()
         for cid, pid, ctype, pos, tob, svc, svc_to, adm_d, dis_d, rid, org in out.execute(
                 """SELECT payer_claim_id, patient_id, claim_type, place_of_service, type_of_bill, service_from, service_to, admission_date,
@@ -792,7 +795,7 @@ def utilization(out):
                    ORDER BY service_from, payer_claim_id"""):
             revs = ed_rev.get(cid, set())
             base = {'source': 'claim', 'record_id': rid, 'organization_id': org, 'discharge_known': None, 'visit': cid}
-            if (ctype == 'professional' and str(pos) == '23') or any(ED_REVENUE.match(r) for r in revs):
+            if (ctype == 'professional' and str(pos) == '23') or any(ED_REVENUE.match(r) for r in revs) or cid in ed_cpt:
                 if (pid, 'ed', svc[:10]) not in seen:
                     seen.add((pid, 'ed', svc[:10])); cands.append(('ed', pid, {**base, 'kind': 'ed_visit', 'event_date': svc[:10], 'end_date': None}))
                     first_ed_claim[(pid, svc[:10])] = cid

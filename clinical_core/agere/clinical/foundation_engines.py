@@ -19,6 +19,8 @@ from pathlib import Path
 
 VERSION = 'foundation-engines/1'
 OPERATIONS = {
+    'ed_visits': 'ed_definition',
+    'library_measure': 'library_measure',  # any measure-library measure (FUH/FUM/IET exact routing)  # one governed ED visit definition across EHR/ADT/claims with availability status
 }
 
 

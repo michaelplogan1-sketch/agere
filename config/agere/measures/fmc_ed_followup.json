@@ -45,11 +45,8 @@
  "direction": "higher_is_better",
  "unit": "index_event",
  "index": {
-  "type": "encounter",
-  "label": "ED visits",
-  "concepts": [
-   "emergency_visit"
-  ],
+  "type": "ed_visit",
+  "label": "ED visits (governed all-source ED definition: EHR + ADT + claims)",
   "window": {
    "start": "period_start",
    "end": "period_end-7d"

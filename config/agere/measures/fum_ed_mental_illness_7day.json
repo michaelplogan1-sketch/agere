@@ -1,0 +1,288 @@
+{
+ "schema": "agere-measure/1",
+ "id": "fum_ed_mental_illness_7day",
+ "name": "Follow-Up After Emergency Department Visit for Mental Illness (7 days)",
+ "aliases": [
+  "fum 7-day",
+  "fum 7 day",
+  "7-day fum",
+  "fum 7",
+  "follow-up after ed visit for mental illness within 7 days",
+  "7-day follow-up after a mental health ed visit",
+  "7-day follow-up after a psychiatric ed visit",
+  "fum",
+  "fum rate",
+  "follow-up after emergency department visit for mental illness",
+  "follow-up after ed visit for mental illness",
+  "follow up after ed visit for mental illness",
+  "mental health ed follow-up"
+ ],
+ "status": "approximation",
+ "certification": "Approximation of HEDIS FUM (Follow-Up After Emergency Department Visit for Mental Illness), not certified: built from NCQA's public measure summary; the licensed HEDIS value sets are not used (codes here are public ICD-10-CM/CPT/HCPCS examples). Index diagnoses are any visit- or claim-coded diagnosis on the event dates, not only the principal diagnosis.",
+ "steward": "NCQA (HEDIS FUM)",
+ "programs": [
+  "HEDIS",
+  "Medicaid Adult/Child Core Set",
+  "Medicare Part C Star Ratings (display)"
+ ],
+ "spec_year": "HEDIS FUM MY2025 (public summary)",
+ "citations": [
+  {
+   "title": "NCQA HEDIS measure summary: Follow-Up After Emergency Department Visit for Mental Illness",
+   "url": "https://www.ncqa.org/hedis/measures/follow-up-after-emergency-department-visit-for-mental-illness/",
+   "publisher": "NCQA"
+  },
+  {
+   "title": "Medicaid & CHIP Adult and Child Core Set measures (FUH, FUM, IET technical specifications)",
+   "url": "https://www.medicaid.gov/medicaid/quality-of-care/performance-measurement/adult-and-child-health-care-quality-measures/index.html",
+   "publisher": "CMS"
+  }
+ ],
+ "direction": "higher_is_better",
+ "unit": "index_event",
+ "index": {
+  "type": "ed_visit",
+  "label": "ED visits (governed all-source ED definition) with a mental illness or intentional self-harm diagnosis",
+  "icd10_prefixes": [
+   "F20",
+   "F21",
+   "F22",
+   "F23",
+   "F24",
+   "F25",
+   "F28",
+   "F29",
+   "F30",
+   "F31",
+   "F32",
+   "F33",
+   "F34",
+   "F39",
+   "F40",
+   "F41",
+   "F42",
+   "F43",
+   "F44",
+   "F45",
+   "F48",
+   "F50",
+   "F60",
+   "F63",
+   "F64",
+   "F68",
+   "F84",
+   "F90",
+   "F91",
+   "F93",
+   "F94",
+   "F95",
+   "F98",
+   "X71",
+   "X72",
+   "X73",
+   "X74",
+   "X75",
+   "X76",
+   "X77",
+   "X78",
+   "X79",
+   "X80",
+   "X81",
+   "X82",
+   "X83",
+   "T14.91"
+  ],
+  "window": {
+   "start": "period_start",
+   "end": "period_end-30d"
+  },
+  "one_per_days": 30
+ },
+ "denominator": {
+  "summary": "ED visits (one governed ED definition: EHR + ADT + claims) by members 6+ with a mental illness or intentional self-harm diagnosis, period start to 30 days before period end; one visit per 31-day window.",
+  "age": {
+   "min": 6,
+   "max": 200
+  },
+  "criteria": []
+ },
+ "exclusions": [
+  {
+   "type": "stay",
+   "label": "ED visit followed by an inpatient or observation stay within 30 days",
+   "window": {
+    "start": "index",
+    "end": "index+30d"
+   }
+  },
+  {
+   "type": "service",
+   "label": "Hospice or palliative care (Z51.5 / hospice encounter)",
+   "streams": [
+    {
+     "stream": "hospice_enrollments"
+    }
+   ],
+   "hcpcs": [
+    "G9473",
+    "G9474",
+    "G9475",
+    "G9476",
+    "G9477",
+    "G9478",
+    "G9479",
+    "Q5003",
+    "Q5004",
+    "Q5005",
+    "Q5006",
+    "Q5007",
+    "Q5008",
+    "Q5010",
+    "S9126",
+    "T2042",
+    "T2043",
+    "T2044",
+    "T2045",
+    "T2046"
+   ],
+   "window": {
+    "start": "period_start",
+    "end": "period_end"
+   }
+  }
+ ],
+ "numerator": {
+  "summary": "A follow-up within 7 days: an outpatient, telehealth, partial-hospitalization or transitional-care service with a mental health practitioner (behavioral health CPT/HCPCS), or any visit or claim coded with a mental illness diagnosis.",
+  "combine": "any",
+  "criteria": [
+   {
+    "type": "service",
+    "label": "Behavioral health follow-up service within 7 days",
+    "cpt": [
+     "90791",
+     "90792",
+     "90832",
+     "90833",
+     "90834",
+     "90836",
+     "90837",
+     "90838",
+     "90839",
+     "90840",
+     "90845",
+     "90847",
+     "90849",
+     "90853",
+     "90870",
+     "90875",
+     "90876",
+     "99495",
+     "99496"
+    ],
+    "hcpcs": [
+     "G0155",
+     "G0176",
+     "G0177",
+     "G0409",
+     "G0410",
+     "G0411",
+     "H0002",
+     "H0004",
+     "H0031",
+     "H0034",
+     "H0035",
+     "H0036",
+     "H0037",
+     "H0039",
+     "H0040",
+     "H2000",
+     "H2001",
+     "H2010",
+     "H2011",
+     "H2012",
+     "H2013",
+     "H2014",
+     "H2015",
+     "H2016",
+     "H2017",
+     "H2018",
+     "H2019",
+     "H2020",
+     "M0064",
+     "S9480",
+     "S9484",
+     "S9485"
+    ],
+    "window": {
+     "start": "index+1d",
+     "end": "index+7d"
+    },
+    "lookback_check": false
+   },
+   {
+    "type": "condition",
+    "label": "Visit coded with a mental illness diagnosis within 7 days",
+    "icd10_prefixes": [
+     "F20",
+     "F21",
+     "F22",
+     "F23",
+     "F24",
+     "F25",
+     "F28",
+     "F29",
+     "F30",
+     "F31",
+     "F32",
+     "F33",
+     "F34",
+     "F39",
+     "F40",
+     "F41",
+     "F42",
+     "F43",
+     "F44",
+     "F45",
+     "F48",
+     "F50",
+     "F60",
+     "F63",
+     "F64",
+     "F68",
+     "F84",
+     "F90",
+     "F91",
+     "F93",
+     "F94",
+     "F95",
+     "F98",
+     "X71",
+     "X72",
+     "X73",
+     "X74",
+     "X75",
+     "X76",
+     "X77",
+     "X78",
+     "X79",
+     "X80",
+     "X81",
+     "X82",
+     "X83",
+     "T14.91"
+    ],
+    "encounter_dx_only": true,
+    "window": {
+     "start": "index+1d",
+     "end": "index+7d"
+    }
+   }
+  ]
+ },
+ "gap_label": "Mental health ED visit without 7-day follow-up",
+ "outreach": {
+  "value_usd": 250,
+  "minutes": 15,
+  "action": "Post-ED behavioral health follow-up call and visit"
+ }
+}
