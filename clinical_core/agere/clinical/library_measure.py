@@ -13,7 +13,7 @@ import sqlite3
 from pathlib import Path
 
 VERSION = 'agere-library-measure/1'
-OUTPUTS = ('rates', 'gaps', 'patients')
+OUTPUTS = ('rate', 'gaps', 'patients')
 GROUP_BY = ('none', 'pcp', 'practice', 'coverage_type', 'payer', 'age_band', 'sex', 'race', 'ethnicity', 'language')
 
 PRODUCT = {'population': 'optional', 'view': 'table',
@@ -22,7 +22,7 @@ PRODUCT = {'population': 'optional', 'view': 'table',
                   'numerator, denominator, rate, exclusions, care-gap patient list, by practice/PCP/payer.'}
 CONTRACT = {'inputs': ['optional earlier_set'],
             'parameters': {'measure': 'measure-library id', 'period': {'start': '', 'end': ''}, 'group_by': 'none|practice|pcp|payer',
-                           'output': 'rates|gaps|patients', 'follow_up_days': 7},
+                           'output': 'rate|gaps|patients', 'follow_up_days': 7},
             'meaning': 'Evaluate one measure-library measure exactly as its file defines it (citation, spec year, certification '
                        'status). Use for named quality measures such as FUH, FUM, IET when the question asks their rate or gaps.'}
 NATIVE_SCALARS = ('count', 'value')
@@ -58,9 +58,9 @@ def validate(p):
             v and not re.fullmatch(r'\d{4}-\d{2}-\d{2}', str(v)) for v in period.values()):
         raise ValueError('period: {start, end} as YYYY-MM-DD')
     if p.get('group_by', 'none') not in GROUP_BY: raise ValueError(f'group_by: {GROUP_BY}')
-    if p.get('output', 'rates') not in OUTPUTS: raise ValueError(f'output: {OUTPUTS}')
+    if p.get('output', 'rate') not in OUTPUTS: raise ValueError(f'output: {OUTPUTS}')
     return {'measure': p['measure'], 'period': {'start': period.get('start', ''), 'end': period.get('end', '')},
-            'group_by': p.get('group_by', 'none'), 'output': p.get('output', 'rates'),
+            'group_by': p.get('group_by', 'none'), 'output': p.get('output', 'rate'),
             'follow_up_days': follow_up_days(measures.library()[p['measure']])}
 
 
@@ -101,9 +101,9 @@ def answer(report, plan, question):
            'denominator': f"{o.get('denominator')} eligible index events/patients" if 'denominator' in o else None,
            'measure': {'id': report['measure_id'], 'numerator': o.get('numerator'), 'denominator': o.get('denominator'),
                        'rate': o.get('rate'), 'excluded': o.get('excluded'), 'follow_up_days': report['parameters']['follow_up_days']}}
-    if report['parameters']['output'] == 'rates' and o.get('rate') is not None and report['parameters']['group_by'] == 'none':
+    if report['parameters']['output'] == 'rate' and o.get('rate') is not None and report['parameters']['group_by'] == 'none':
         out['value'] = round(o['rate'] * 100, 1); out['unit'] = 'percent'
-    if report['parameters']['output'] != 'rates': out['count'] = len(gaps)
+    if report['parameters']['output'] != 'rate': out['count'] = len(gaps)
     return out
 
 
@@ -126,7 +126,7 @@ def local_question(question, as_of):
         mid = sibling
     t = ' ' + re.sub(r'[?.!,;:()]', ' ', question.lower()) + ' '
     t = re.sub(r'(?<![a-z0-9])' + re.escape(alias.lower()) + r'(?![a-z0-9])', ' ', t, count=1)
-    params = {'measure': mid, 'group_by': 'none', 'output': 'rates'}
+    params = {'measure': mid, 'group_by': 'none', 'output': 'rate'}
     def take(rx, fn=None):
         nonlocal t
         mm = re.search(rx, t)
@@ -150,5 +150,9 @@ def local_question(question, as_of):
     if re.search(r'\b(?:last|past|trailing|this|ytd|year[- ]to[- ]date|20\d\d)\b', question.lower()):
         start, end, _ = period_for(question, as_of or dt.date.today().isoformat(), default='as_of_year')
         params['period'] = {'start': start.isoformat(), 'end': end.isoformat()}
+    elif as_of:  # no stated period: the measure's default measurement period, written into the plan so it is explicit
+        from . import measures as _m
+        s0, e0 = _m.default_period(str(as_of)[:10])
+        params['period'] = {'start': str(s0)[:10], 'end': str(e0)[:10]}
     from .foundation_engines import graph
     return graph(question, 'library_measure', validate(params), f'Measure library: {mid} ({VERSION})')

@@ -119,7 +119,8 @@ _KIND = r'(?P<kind>lab(?:oratory)?(?: test)?|condition|diagnosis|problem|medicat
 _CODE_Q = re.compile(r'^(?:which|what)\s+(?:source\s+|received\s+)?' + _KIND + r'\s+(?:names|labels|strings)(?:\s+in\s+(?:our|the)\s+data)?\s+'
                      r'(?:map|mapped|are mapped|correspond)\s+to\s+(?:loinc|icd-?10(?:-cm)?|the)?\s*(?:code\s+)?(?P<code>[A-Za-z0-9][\w.\-]*)$', re.I)
 _UNMAPPED_Q = re.compile(r'^(?:which|what|list(?:\s+the)?)\s+(?:source\s+|received\s+)?' + _KIND + r'\s+(?:names|labels|strings)'
-                         r'(?:\s+in\s+(?:our|the)\s+data)?\s+(?:are|remain)\s+(?P<status>unmapped|not mapped|mapped)$', re.I)
+                         r'(?:\s+in\s+(?:our|the)\s+data)?\s+(?:(?:are|remain)\s+(?P<status>unmapped|not mapped|mapped)|(?P<neg>did not|didn\'t|do not|don\'t|failed to) map'
+                         r'(?:\s+to\s+(?:a|any|an)?\s*(?:loinc|icd-?10(?:-cm)?|snomed|rxnorm|drug class|standard)?\s*(?:codes?|class(?:es)?)?)?)$', re.I)
 
 
 def _kind(word):
@@ -136,7 +137,7 @@ def local_question(question, as_of=None):
         return graph(question, 'terminology_map', params, 'Received labels mapped to one code (terminology mapping)')
     m = _UNMAPPED_Q.match(q)
     if m:
-        status = 'mapped' if m['status'].lower() == 'mapped' else 'not_mapped'
+        status = 'mapped' if (m['status'] or '').lower() == 'mapped' else 'not_mapped'
         return graph(question, 'terminology_map', {'kind': _kind(m['kind']), 'code': '', 'status': status},
                      'Received labels and their mapping status (terminology mapping)')
     return None

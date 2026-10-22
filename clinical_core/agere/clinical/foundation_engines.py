@@ -21,12 +21,12 @@ VERSION = 'foundation-engines/1'
 OPERATIONS = {
     'record_linkage': 'record_linkage',  # duplicate patient records: Fellegi-Sunter linkage (person_linkage.py)
     'scanned_document_search': 'scanned_documents',  # OCR text of scanned/faxed/outside documents, page/bbox-cited
+    'terminology_map': 'terminology_engine',  # source labels -> LOINC / ICD-10 / drug class (terminology.py)
     'onboarding_review': 'onboarding_review',  # feeds/formats, canonical (Tuva/OMOP) mapping, unmapped, OMOP round trip
     'source_defects': 'dq_detectors',  # detected source defects (Raha-style detectors + discovered FDs)
     'feed_gaps': 'feed_gaps',  # feed sequence gaps and snapshot recovery
-    'ed_visits': 'ed_definition',
-    'library_measure': 'library_measure',  # any measure-library measure (FUH/FUM/IET exact routing)  # one governed ED visit definition across EHR/ADT/claims with availability status
-    'terminology_map': 'terminology_engine',  # source labels -> LOINC / ICD-10 / drug class (terminology.py)
+    'ed_visits': 'ed_definition',  # one governed ED visit definition across EHR/ADT/claims with availability status
+    'library_measure': 'library_measure',  # any measure-library measure (FUH/FUM/IET exact routing)
 }
 
 

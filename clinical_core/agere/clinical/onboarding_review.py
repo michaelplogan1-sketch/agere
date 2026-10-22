@@ -300,10 +300,14 @@ PATTERNS = [
 ]
 
 
+_CLINICAL_TERMS = re.compile(r'\b(?:labs?|loinc|icd-?10\w*|snomed|rxnorm|ndc|drugs?|medications?|diagnos\w+|conditions?|labels?|patients?|members?)\b', re.I)
+
+
 def local_question(question, as_of=None):
     """Exact routing for onboarding questions; a question about late/missing/duplicate files or about patients is left to
     the data-quality families and the clinical tiers."""
     q = ' '.join((question or '').split())
+    if _CLINICAL_TERMS.search(q): return None  # clinical labels / code systems / patients: terminology mapping and clinical tiers
     for topic, rx in PATTERNS:
         if not rx.search(q): continue
         if topic == 'canonical' and not re.search(r'\b(?:map\w*|coverage|cover(?:ed|s)?|how much|share|percent\w*|proportion|fraction|fit|conform\w*)\b', q, re.I):

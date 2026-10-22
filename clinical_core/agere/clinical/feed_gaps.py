@@ -278,7 +278,7 @@ how many much show list find me all every each where that this these those get g
 received file files delivery deliveries records record our arrive arrived arriving come came incomplete partial partially missing
 gaps gap months month periods period dropped drop drops volume short sequence late recovered recover recovery not never have has'''.split())
 _GAP = re.compile(r'\b(arriv\w* (?:incomplete|partial\w*|late)|incomplete (?:feeds?|deliver\w*|files?|data)|partial (?:feeds?|deliver\w*|files?|loads?)|'
-                  r'missing (?:months?|periods?|files?|deliver\w*)|(?:feed|data|delivery|sequence) gaps?|gaps? in (?:the |our )?(?:data|feeds?|deliver\w*)|'
+                  r'missing (?:months?|periods?|files?|deliver\w*)|(?:feed|data|delivery|sequence) gaps?|gaps? in (?:the |our )?(?:[a-z0-9_]+ ){0,2}?(?:data|feeds?|deliver\w*)|'
                   r'(?:volume|feed) drops?|dropped (?:volume|feeds?)|never arrived)\b', re.I)
 
 
@@ -326,7 +326,7 @@ def local_question(question, as_of=None):
     streams = []
     for feed in sorted(FEEDS, key=len, reverse=True):
         rx = re.compile(r'\b' + re.escape(feed) + r'\b', re.I)
-        if rx.search(rest): streams += FEEDS[feed]; rest = rx.sub(' ', rest)
+        if rx.search(rest) or rx.search(m.group(0)): streams += FEEDS[feed]; rest = rx.sub(' ', rest)
     statuses = []
     if re.search(r'\b(?:still|not|never|un)\s*recovered\b|\bstill missing\b', rest, re.I): statuses = ['unrecovered', 'reported_by_manifest']
     rest = re.sub(r'\b(?:still|not yet|never|un)\s*recovered\b|\bstill\b', ' ', rest, flags=re.I)
