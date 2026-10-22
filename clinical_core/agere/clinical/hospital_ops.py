@@ -306,3 +306,32 @@ def run(connected_obj, as_of, patient_ids):
     """Open the semantic layer once -> (db, as_of date)."""
     db, snap = connect(connected_obj)
     return db, str(as_of or snap)[:10]
+
+
+def dx_rows(db, prefixes, keep=None):
+    """Encounter diagnoses whose ICD-10 starts with any prefix -> [(patient_id, icd10, event_date)] (dated rows only)."""
+    out = []
+    clause = ' OR '.join('icd10 LIKE ?' for _ in prefixes)
+    for pid, code, day in db.execute(f'SELECT patient_id, icd10, event_date FROM encounter_diagnosis WHERE event_date IS NOT NULL AND ({clause})',
+                                      [f'{x}%' for x in prefixes]):
+        if keep is None or pid in keep: out.append((pid, code, str(day)[:10]))
+    return out
+
+
+def by_patient(rows):
+    out = {}
+    for r in rows: out.setdefault(r['patient_id'], []).append(r)
+    return out
+
+
+def stay_end(r, as_of):
+    """Visit end date as a date; an open visit runs to the snapshot."""
+    return d(r['end_date']) if r.get('end_date') and r.get('discharge_known') else d(as_of)
+
+
+def patient_days(r, as_of):
+    """Days present at the midnight census (same-day stays count 1; open stays run to the snapshot)."""
+    a, b = d(r['start_date']), stay_end(r, as_of)
+    if a is None or b is None: return 0
+    if r.get('los_days') is not None and r.get('discharge_known'): return max(int(r['los_days']), 1)
+    return max((b - a).days, 1)
