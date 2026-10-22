@@ -53,6 +53,31 @@ METHODS = ('auto', 'bayes', 'credibility')
 DRAWS = 4000
 SEED = 20291013
 FLAGS = ('truly_high', 'truly_low', 'indistinguishable')
+# Misclassification (FRONTIER #45; profiling classification accuracy, PMC6400472): the TRUE class of a unit is 'high' / 'low' when
+# its relative rate lies outside the network by more than MARGIN, else 'average'. Probabilities come from the same posterior draws.
+MARGIN = 0.10
+HIGHER_IS_BETTER = {'bp_control', 'statin_therapy_diabetes', 'primary_care_visits'}
+CLASSES = ('high', 'average', 'low')
+
+
+def misclassification(sample, flag, raw, margin=MARGIN):
+    """Per-unit class probabilities and misclassification probabilities from posterior draws (draws x units, relative scale).
+    reported class: from the 95% flag (truly_high -> high, truly_low -> low, else average);
+    bayes class: the class with the largest posterior probability (minimises the expected number misclassified);
+    raw class: the unshrunken O/E outside the margin (what a naive report would say).
+    -> dict of arrays: p_high, p_average, p_low, reported, p_misclassified, bayes, p_misclassified_bayes, raw_class, p_misclassified_raw"""
+    sample = np.asarray(sample, float)
+    p_high = (sample > 1 + margin).mean(0); p_low = (sample < 1 - margin).mean(0)
+    p_avg = 1 - p_high - p_low
+    probs = {'high': p_high, 'average': p_avg, 'low': p_low}
+    reported = np.array(['high' if f == 'truly_high' else 'low' if f == 'truly_low' else 'average' for f in flag])
+    stack = np.vstack([p_high, p_avg, p_low])
+    bayes = np.array(CLASSES)[stack.argmax(0)]
+    raw = np.asarray(raw, float)
+    raw_class = np.where(~np.isfinite(raw), 'average', np.where(raw > 1 + margin, 'high', np.where(raw < 1 - margin, 'low', 'average')))
+    pick = lambda cls: np.array([probs[c][j] for j, c in enumerate(cls)])
+    return {'p_high': p_high, 'p_average': p_avg, 'p_low': p_low, 'reported': reported, 'p_misclassified': 1 - pick(reported),
+            'bayes': bayes, 'p_misclassified_bayes': 1 - pick(bayes), 'raw_class': raw_class, 'p_misclassified_raw': 1 - pick(raw_class)}
 
 
 def validate(p):
@@ -261,7 +286,8 @@ def analyse(units, y, w, e, kind, method='bayes', threshold_rel=None, draws=DRAW
     p_above = (sample > 1.0).mean(0)
     p_thr = (sample > threshold_rel).mean(0) if threshold_rel is not None else None
     flag = np.where(p_above >= 0.975, 'truly_high', np.where(p_above <= 0.025, 'truly_low', 'indistinguishable'))
-    return {'labels': labels, 'n': n, 'exposure': W, 'observed': O, 'expected': E, 'raw': raw, 'mean': mean, 'lo': lo, 'hi': hi,
+    mis = misclassification(sample, flag, raw)
+    return {'misclassification': mis, 'labels': labels, 'n': n, 'exposure': W, 'observed': O, 'expected': E, 'raw': raw, 'mean': mean, 'lo': lo, 'hi': hi,
             'Z': Z, 'credibility': cred_est, 'p_above': p_above, 'p_threshold': p_thr,
             'rank_mean': ranks.mean(0), 'rank_lo': np.percentile(ranks, 2.5, axis=0, method='lower'),
             'rank_hi': np.percentile(ranks, 97.5, axis=0, method='higher'), 'flag': flag, 'hyper': hyper}
@@ -385,11 +411,12 @@ def execute(path, patient_ids, params, as_of=None):
                       'p_above_network': round(float(res['p_above'][j]), 4),
                       **({'p_above_threshold': round(float(res['p_threshold'][j]), 4)} if res['p_threshold'] is not None else {}),
                       'rank': round(float(res['rank_mean'][j]), 1), 'rank_ci95': [int(res['rank_lo'][j]), int(res['rank_hi'][j])],
-                      'flag': str(res['flag'][j])})
+                      'flag': str(res['flag'][j]), **_mis_row(res['misclassification'], j, p['metric'])})
     units.sort(key=lambda r: (-(r['posterior_rate'] if r['posterior_rate'] is not None else -1e18), str(r['group'])))
     hyper = {k: (round(v, 6) if isinstance(v, float) else v) for k, v in res['hyper'].items()}
     report.update(units=units[:p['top']], units_total=len(units), hyper=hyper,
                   counts={f: sum(u['flag'] == f for u in units) for f in FLAGS},
+                  misclassification=_mis_summary(units),
                   shrinkage_median=_median_shrink(units, level * scale))
     if p['focus']:
         hit = next((u for u in units if str(u['group']).lower() == p['focus'].lower()), None)
@@ -397,6 +424,35 @@ def execute(path, patient_ids, params, as_of=None):
         if hit is None: report['notes'].append(f"Unit {p['focus']} is not among the {len(units)} attributed {UNIT_WORDS[p['unit']]} in scope.")
     report['method'] = _method(p, report, hyper)
     return report
+
+
+def _verdict(cls, metric):
+    if cls == 'average': return 'no different'
+    better = (cls == 'high') == (metric in HIGHER_IS_BETTER)
+    return 'better' if better else 'worse'
+
+
+def _mis_row(m, j, metric):
+    r = lambda v: round(float(v), 4)
+    return {'p_below_network': None, 'p_true_high': r(m['p_high'][j]), 'p_true_average': r(m['p_average'][j]), 'p_true_low': r(m['p_low'][j]),
+            'classification': _verdict(str(m['reported'][j]), metric), 'p_misclassified': r(m['p_misclassified'][j]),
+            'bayes_classification': _verdict(str(m['bayes'][j]), metric), 'p_misclassified_bayes': r(m['p_misclassified_bayes'][j]),
+            'raw_classification': _verdict(str(m['raw_class'][j]), metric), 'p_misclassified_raw': r(m['p_misclassified_raw'][j]),
+            'credible_outlier': str(m['reported'][j]) != 'average'}
+
+
+def _mis_summary(units):
+    """Expected number of units misclassified under each classification rule (sum of per-unit misclassification probabilities)."""
+    for u in units:
+        if u.get('p_below_network') is None: u['p_below_network'] = round(1 - u['p_above_network'], 4)
+    n = len(units)
+    exp = lambda k: round(sum(u[k] for u in units), 2)
+    return {'margin': MARGIN, 'units': n, 'expected_misclassified': exp('p_misclassified'),
+            'expected_misclassified_bayes': exp('p_misclassified_bayes'), 'expected_misclassified_raw': exp('p_misclassified_raw'),
+            'credible_outliers': sum(u['credible_outlier'] for u in units),
+            'units_with_misclassification_over_20pct': sum(u['p_misclassified'] > 0.2 for u in units),
+            'definition': f'true class high/low = relative rate more than {MARGIN:.0%} above/below the network, else no different; '
+                          'P(misclassified) = posterior probability the true class differs from the reported one'}
 
 
 def _median_shrink(units, net):
@@ -432,6 +488,9 @@ def _method(p, report, hyper):
              'rank 1 = highest value, with a 95% rank interval. Hyperparameters (network mean, between-unit CV or SD) are integrated '
              'on a grid under flat priors, so a zero between-unit variance estimate does not collapse every unit onto the mean; '
              'credibility intervals are normal approximations. '
+             f'Misclassification probability per unit = posterior probability that its true class (more than {MARGIN:.0%} above / below the '
+             'network, else no different) differs from the reported class; the expected number misclassified sums these, and is also shown for '
+             'a raw-rate ranking and for the most-probable-class rule. '
              'Differences are associations with the unit, not proof of practice quality: attribution, coding and unmeasured case mix remain.')
     return text
 
@@ -449,7 +508,8 @@ def summary(report):
         text += (f"{focus['group']}: {f(focus['posterior_rate'])} {report['display_unit'] if kind == 'rate' else ''}".rstrip() +
                  f" after shrinkage (95% interval {f(focus['ci95_low'])}-{f(focus['ci95_high'])}; raw {f(focus['raw_rate'])} on {focus['members']} members), "
                  f"P(above network) {focus['p_above_network']:.0%}, rank {focus['rank']:g} of {n} (95% {focus['rank_ci95'][0]}-{focus['rank_ci95'][1]}): "
-                 f"{'truly high' if focus['flag'] == 'truly_high' else 'truly low' if focus['flag'] == 'truly_low' else 'not distinguishable from the network average'}. ")
+                 f"{'truly high' if focus['flag'] == 'truly_high' else 'truly low' if focus['flag'] == 'truly_low' else 'not distinguishable from the network average'} "
+                 f"({focus['classification']}; {focus['p_misclassified']:.0%} probability that label is wrong). ")
     text += (f"Of {n} {UNIT_WORDS[p['unit']]} profiled on {report['metric_label']}{adj} (network {f(report['network_rate'])}), "
              f"{c['truly_high']} truly high, {c['truly_low']} truly low, {c['indistinguishable']} indistinguishable from average.")
     high = [u for u in units if u['flag'] == 'truly_high'][:3] or units[:1]
@@ -458,6 +518,12 @@ def summary(report):
     if p['threshold'] is not None:
         over = sum(u.get('p_above_threshold', 0) >= 0.95 for u in units)
         text += f" {over} of {n} are above {f(p['threshold'])} with at least 95% probability."
+    mis = report.get('misclassification')
+    if mis:
+        text += (f" Misclassification: expected {mis['expected_misclassified']:g} of {n} {UNIT_WORDS[p['unit']]} misclassified under the 95% flags "
+                 f"(vs {mis['expected_misclassified_raw']:g} if ranked on raw rates; {mis['expected_misclassified_bayes']:g} under the most-probable class), "
+                 f"true difference = more than {mis['margin']:.0%} from the network; {mis['credible_outliers']} credible outlier(s); "
+                 f"{mis['units_with_misclassification_over_20pct']} with over 20% chance their label is wrong.")
     k = report['hyper'].get('credibility_k')
     text += (f" Buhlmann-Straub credibility k = {k:,.1f} expected {'dollars' if kind == 'cost' else 'events'}"
              f" (Z = W/(W + k); median Z {np.median([u['credibility_z'] for u in units]):.2f})." if k is not None else
