@@ -44,6 +44,7 @@ TYPED |= {'loop_closure', 'diagnostic_delay', 'risk_outcomes'}  # quality & safe
 OPTIONAL_POPULATION += ('loop_closure', 'diagnostic_delay', 'risk_outcomes')
 TYPED |= {'medication_state', 'default_definition'}  # clinical logic: medication_state.py, default_definitions.py
 OPTIONAL_POPULATION += ('medication_state', 'default_definition')
+TYPED |= {'atomic_questions'}  # atomic typed sub-questions via System One (atomic_questions.py); one population input
 
 
 def _library_measures():
@@ -293,6 +294,17 @@ def parameter_schema(op, catalog):
                     'states': array(string(ms.STATES), 'Select patients with any subject in these states; empty = every evaluated patient.'),
                     'output': string(ms.OUTPUTS, 'patients: one row per patient with a state column per subject; summary: counts; rows: patient x subject'),
                     'grace_days': {'type': 'integer', 'minimum': 0, 'maximum': 365, 'description': f'Fill-coverage grace (default {ms.GRACE_DAYS})'}})
+    if op == 'atomic_questions':
+        from . import atomic_questions as aq
+        option = {'type': 'object', 'additionalProperties': {'type': 'string'}, 'description': "label -> description; must include 'unknown'"}
+        sub = obj({'key': string(None, 'snake_case id'), 'atom': string(None, 'One question about ONE patient'), 'options': option,
+                   'subject': string(None, 'medication_state subject (pillar or drug class) or empty'), 'task_key': string(None, 'calibration key')})
+        return obj({'question': string(None, 'The original question verbatim'), 'sub_questions': array(sub, '1-8 atomic typed sub-questions'),
+                    'sub_question_count': {'type': 'integer', 'minimum': 1, 'maximum': 8},
+                    'aggregation': string(aq.AGGREGATIONS), 'returns': string(aq.RETURNS), 'unit': string(aq.UNITS),
+                    'select_labels': array(string(), 'Option labels that select a patient'),
+                    'maximum_patients': {'type': 'integer', 'minimum': 1, 'maximum': aq.HARD_MAX_PATIENTS},
+                    'window': WINDOW_SCHEMA, 'sources': array(string(aq.SOURCES)), 'providers': array(string(aq.PROVIDERS))})
     if op == 'default_definition':
         from . import default_definitions as dd
         return obj({'definition': string(sorted(dd.DEFINITIONS), 'Named standard used when the question states no definition: '

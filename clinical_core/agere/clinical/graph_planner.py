@@ -332,6 +332,14 @@ CONTRACTS['medication_state'] = {'inputs':['optional earlier_set'],'parameters':
               'fill: likely not taking), documented_stopped_or_intolerant (note stop/declined or therapy barrier on or after the latest fill and listing), '
               'never_recorded (no record of any source: the only unknown), each with its evidence dates and record ids. Use for GDMT pillar, '
               'on/not on/missing a medication class, stopped or intolerant questions; never mark a pillar unknown when a medication record exists.'}
+CONTRACTS['atomic_questions'] = {'inputs':['earlier_set'],'parameters':{'question':'the question verbatim',
+    'sub_questions':[{'key':'snake_case','atom':'one question about ONE patient','options':{'yes':'...','no':'...','unknown':'...'},'subject':'pillar/drug class or ""','task_key':'atomic_yes_no'}],
+    'sub_question_count':1,'aggregation':'any|latest|count|conflict|trajectory','returns':'table|patient_set|count|value|verdict','unit':'patient|document',
+    'select_labels':['yes'],'maximum_patients':25,'window':{'basis':'all_observed','start':'','end':''},'sources':['passages','medication_state'],'providers':['jev','perplexity']},
+    'meaning':'Break a question into atomic typed sub-questions (explicit options incl. unknown) asked of EACH patient\'s ranked passages (and governed '
+              'medication_state rows for medication subjects) by System One (Jev first, Perplexity fallback, ~$0.0002 per patient), aggregated in code: '
+              'any (patient lists, why-factor tables, verdicts), latest (per-pillar tables), count (count or share), conflict / trajectory (per document). '
+              'Every label cites its evidence; patient count per call is capped and a capped answer is partial and says so.'}
 CONTRACTS['default_definition'] = {'inputs':['optional earlier_set'],'parameters':{'definition':'avoidable_spend|pqi_admissions|ed_avoidability|measure_gap|pdc_adherence',
     'period':{'start':'','end':''},'measure':'','drug_classes':[],'threshold':0.8,'group_by':'none|practice|pcp|payer','select':'gap|numerator|denominator'},
     'meaning':'Named standard defaults used when a question states no definition (answer, and name the definition used): avoidable spend = AHRQ PQI 90 '
