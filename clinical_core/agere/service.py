@@ -1,5 +1,6 @@
 """Loopback research interface; hosted stack routes require explicit enablement."""
-import json,mimetypes,time
+import json
+import threading,mimetypes,time
 from functools import lru_cache
 from http.server import BaseHTTPRequestHandler,ThreadingHTTPServer
 from threading import RLock
@@ -1458,4 +1459,14 @@ def serve(run,port,annotations=None,evidence_queries=None,stack=None,allow_live_
             self.send_header('X-Content-Type-Options','nosniff');self.send_header('Cache-Control','no-store');self.end_headers();self.wfile.write(raw)
         def log_message(self,*args):pass
     server=ThreadingHTTPServer(('127.0.0.1',port),Handler)
+    if connected_stack is not None and not recovery:
+        # Saved monitors recompute on a new snapshot in the background (never delays startup or blocks questions).
+        def _monitor_sweep():
+            try:
+                from .clinical.monitor_sweep import sweep_if_due
+                with stack_lock:  # same lock as questions: a sweep never races an answer's writes
+                    sweep_if_due(connected_stack)
+            except Exception as exc:  # noqa: BLE001 - a failed sweep is logged, never fatal
+                print(f'monitor sweep skipped: {type(exc).__name__}: {exc}',flush=True)
+        threading.Thread(target=_monitor_sweep,name='agere-monitor-sweep',daemon=True).start()
     print(f'Agere ready: http://127.0.0.1:{port}',flush=True);server.serve_forever()
