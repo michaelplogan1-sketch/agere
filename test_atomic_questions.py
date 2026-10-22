@@ -229,6 +229,13 @@ class ExecuteTest(Base):
         self.assertTrue(out['report']['do_not_cache'])
         self.assertTrue(any('failed' in l for l in out['answer']['limitations']))
 
+    def test_undated_and_future_evidence_normalized(self):
+        texts = {'P-1007': [('undated', 'carvedilol caused dizziness'), ('2031-01-01', 'future note'), ('2029-01-01', 'old note')]}
+        seen = []
+        st, p, out = self.run_plan(BB_Q, ['P-1007'], lambda q, ev: seen.extend(ev) or 'yes', texts=texts)
+        self.assertEqual([e['date'] for e in seen], ['2030-05-27', '2029-01-01'])
+        self.assertTrue(seen[0]['text'].startswith('[undated source] '))
+
     def test_providers_failed_status_is_not_memoized(self):
         mod = types.ModuleType(S1)
         mod.decide = lambda *a, **k: {'label': 'unknown', 'status': 'providers_failed', 'decided_by': None,

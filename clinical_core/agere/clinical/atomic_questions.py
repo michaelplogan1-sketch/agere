@@ -367,6 +367,15 @@ def passage_evidence(row):
             'date': str(s.get('event_date') or 'undated')[:10], 'note_id': str(s.get('record_id') or row.get('note_id') or '')}
 
 
+def dated(e, as_of):
+    """Provider requests need an ISO date on or before the cutoff: an undated source carries the as-of date and says so in
+    its text; a source dated after the cutoff never enters a request (-> None)."""
+    cutoff = str(as_of)[:10]
+    if re.fullmatch(r'\d{4}-\d{2}-\d{2}', e['date'] or ''):
+        return e if e['date'] <= cutoff else None
+    return {**e, 'date': cutoff, 'text': ('[undated source] ' + e['text'])[:TEXT_CHARS]}
+
+
 def retrieval_query(sub):
     words = sub['atom'].replace('For this patient only, does the submitted evidence establish:', '')
     return (words + ' ' + (sub['subject'] or '').replace('_', ' ')).strip()[:1500] or 'medication'
@@ -450,6 +459,13 @@ def run(stack, patient_ids, params, as_of, *, decide=None):
                     tasks.append((pid, s, doc, [doc]))
             else:
                 tasks.append((pid, s, None, ([structured] if structured else []) + rows))
+    normal = []
+    for pid, s, doc, ev in tasks:
+        if doc is None:
+            normal.append((pid, s, None, [d for d in (dated(e, as_of) for e in ev) if d]))
+        elif dated(doc, as_of):
+            normal.append((pid, s, dated(doc, as_of), [dated(doc, as_of)]))
+    tasks = normal
     live = bool(getattr(stack, 'allow_live', False))
 
     def one(task):
