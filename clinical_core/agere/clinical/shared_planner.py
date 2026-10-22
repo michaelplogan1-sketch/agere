@@ -335,6 +335,7 @@ def schema_slice(catalog, question, extra=(), operations=(), streams=()):
     selected_streams = list(dict.fromkeys([*streams, *stream_names[:3]]))
     from .request_discovery import describe
     from . import healthcare_learning
+    from .legacy_proposers import vbc_context
     discovery_metadata = describe(catalog, selected, selected_streams)
     from .request_vocabulary import definitions, digest, concept_definitions, CONDITION_EVIDENCE_POLICY
     vocabulary = {k: {'version': v['version'], 'definition_digest': digest(v), 'meaning': v.get('summary', v['name'])}
@@ -349,6 +350,7 @@ def schema_slice(catalog, question, extra=(), operations=(), streams=()):
             'discovery_metadata': discovery_metadata,
             'governed_knowledge': governed_knowledge(),
             'healthcare_source_context': healthcare_learning.knowledge_context(question),
+            'vbc_program_context': vbc_context(question),
             'as_of': catalog.identity.get('as_of'), 'more_schema_available': True}
 
 

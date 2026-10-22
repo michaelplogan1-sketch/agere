@@ -24,12 +24,14 @@ from pathlib import Path
 from . import request_plan
 from .literal_check import VERSION as CHECK_VERSION, executable_text, missing, shape_misfit
 from .question_input import QuestionNotUnderstood
+from .answer_checks import gate as answer_gate
 
 VERSION = 'checked-proposer-cascade/1'
 
 # name -> (cost class, calibration evidence from the 2026-10-21 component inventory, what it proposes)
 TIERS = {
     'exact_local_plan': ('free', 'exact authored plans and recipes; exact normalized-question match', 'graph'),
+    'scoped_review_compiler': ('free', 'exact source-review command grammar; abstains otherwise; uncalibrated', 'graph'),
     'specialist_families_early': ('free', 'DQ/VBC families certified, bounds 2.45% / 2.5%', 'graph'),
     'cohort_family_early': ('free (Haiku slot filler only when slots are missing)', 'certified 0.71, 752 cases / 0 errors', 'graph'),
     'undelivered_input': ('free', 'deterministic delivered-field check; declines only', 'decline'),
@@ -45,27 +47,30 @@ TIERS = {
     'typed_decider': ('Perplexity, ~$0.000006/call', 'curated unfiltered recipes only, 0.95 threshold', 'graph'),
     'hosted_typed_interpreter': ('Opus 5.5, ~$0.27/question', '20-question dev set; compiler + quote binding + audit', 'typed'),
     'hosted_verified_sql': ('Haiku -> Sonnet -> Opus judge + Perplexity decider', 'two-model agreement + oracles; uncalibrated', 'graph'),
+    'semantic_analyst': ('Haiku tool loop + Opus reconcile on disagreement', 'legacy single analyst; uncalibrated', 'graph'),
     'frontier_graph_planner': ('Opus 5.5', 'full capability catalog; uncalibrated', 'graph'),
+    'stack_planner_propose': ('Opus 5.5, one call', 'older registry plan proposer; uncalibrated', 'graph'),
     'hybrid_analysts': ('3x Opus 5.5 + vote, ~$0.14/question', '18/20 dev, 7/10 held-out, pilot 75/100', 'answer'),
     'local_compiler': ('free', 'FAILED calibration: held-out 19/49 wrong; proposes only', 'graph'),
     'metric_router': ('Haiku', 'FAILED calibration: held-out 13/13 wrong; proposes only', 'graph'),
     'operator_router': ('Haiku', 'FAILED calibration: held-out 19/19 wrong; proposes only', 'graph'),
     'local_free_sql': ('free (Qwen3-4B)', 'FAILED calibration: precision too low; proposes only', 'graph'),
+    'legacy_cost_ladder': ('free locally; its paid rungs only when live', 'pre-2026-10-19 ladder + together semantics, last resort; uncalibrated', 'graph'),
 }
 ORDER = tuple(TIERS)
 PAID = {'typed_decider', 'hosted_typed_interpreter', 'hosted_verified_sql', 'frontier_graph_planner', 'hybrid_analysts',
-        'metric_router', 'operator_router'}
+        'metric_router', 'operator_router', 'semantic_analyst', 'stack_planner_propose'}
 FEEDBACK_READERS = ('hosted_typed_interpreter',)  # proposers whose prompt includes recorded corrections
 TYPED_WITH_POPULATION = {'qwen_typed_interpreter', 'hosted_typed_interpreter'}  # the only tiers that honour a saved cohort
 
 # Components that are not proposers, and why (stack_runtime.model_roles reports these).
 NOT_PROPOSERS = {
-    'answer_shape': 'post-execution: answer_shape.final reshapes unambiguous outputs before the requested-output check',
+    'answer_shape': 'post-execution: answer_shape.final reshapes, then answer_checks.check reviews shape/fit on every executed proposal',
     'verify lint/sanity': 'inside the SQL rungs: every reused/bottled/hosted SQL is linted (and sanity-checked) before proposal',
     'verification_v2 / oracles': 'inside hosted_verified_sql: independent candidates and oracles decide agreement',
-    'gate_policy / cascade certificates': 'inside the families, semantic cache and typed decider thresholds',
-    'learned_router': 'orders the Haiku routers (engine lean); proposes nothing itself (12.7% wrong as a router)',
-    'answer_guard cross-check': 'stays out: 4/22 caught for $3.19 and its re-plan would bypass these checks; AGERE_CROSS_CHECK remains off',
+    'gate_policy / cascade certificates': 'inside the families, semantic cache and typed decider thresholds; certificate annotated by answer_checks.check',
+    'learned_router': 'orders the cascade (operator_router before metric_router on an engine lean) and leans operator_router',
+    'answer_guard + zero-result probe + cross-check': 'answer_checks.check after every executed proposal; cross-check paid, live only, on uncertified answers',
     'Jev / Perplexity source tools': 'patient-scoped evidence review (Stack.review), not question interpretation; unchanged',
     'retrieval, rerankers, readers, engines, governed metrics': 'used by the proposers above when their plans name them',
 }
@@ -139,8 +144,14 @@ class Cascade:
         except Exception:  # noqa: BLE001 - no learning store (fixtures) means no correction
             corrected = False
         self.corrected = corrected
-        return tuple(n for n in FEEDBACK_READERS if n in ORDER) + tuple(n for n in ORDER if n not in FEEDBACK_READERS) \
+        order = tuple(n for n in FEEDBACK_READERS if n in ORDER) + tuple(n for n in ORDER if n not in FEEDBACK_READERS) \
             if corrected else ORDER
+        try:
+            from .legacy_proposers import router_order
+            order = tuple(router_order(self.stack, self.question, order)[0])
+        except Exception:  # noqa: BLE001 - no encoder (fixtures): keep the default order
+            pass
+        return order
 
     def run(self):
         try:
@@ -303,6 +314,8 @@ class Cascade:
 
     def executed(self, name, graph, receipt, result, paid_execution=0):
         if paid_execution: self.spend(paid_execution, 0, False)
+        if (result.get('answer') or {}).get('status') != 'not_available' and (result := answer_gate(self, name, graph, receipt, result)) is None:
+            return None  # answer_checks rejected it (zero-result probe, guard, shape, certificate); the next proposer tries
         contract = {'kind': 'checked_graph', 'graph': graph, 'legacy_receipt': receipt, 'executed': result,
                     'source_identity': self.catalog.identity,
                     'id': request_plan.fingerprint({'question': self.question, 'graph': graph})}
@@ -328,6 +341,20 @@ class Cascade:
     def tier_metric_router(self): return self.graph('metric_router', self.ladder.metric_router())
     def tier_operator_router(self): return self.graph('operator_router', self.ladder.operator_router())
     def tier_local_free_sql(self): return self.graph('local_free_sql', self.ladder.local_sql(default='on'))
+    def tier_scoped_review_compiler(self):
+        from .legacy_proposers import scoped_review_tier
+        return self.graph('scoped_review_compiler', scoped_review_tier(self.stack, self.question))
+    def tier_semantic_analyst(self):
+        from .legacy_proposers import semantic_analyst_tier
+        return self.graph('semantic_analyst', semantic_analyst_tier(self.stack, self.question, self.ledger))
+    def tier_stack_planner_propose(self):
+        from .legacy_proposers import stack_planner_tier
+        return self.graph('stack_planner_propose', stack_planner_tier(self.stack, self.question, self.ledger))
+    def tier_legacy_cost_ladder(self):
+        from .legacy_proposers import legacy_ladder_tier
+        live = getattr(self.stack, 'allow_live', False)
+        return self.graph('legacy_cost_ladder', legacy_ladder_tier(self.stack, self.question, self.ledger if live else None,
+                                                                   self.ladder.frontier))
 
     # -- executed analyst answers ---------------------------------------------------------------------------------------
     def tier_hybrid_analysts(self):

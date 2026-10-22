@@ -612,6 +612,39 @@ for r in rows:
         assert w[7:] in ids, (r['id'], w)
 
 from collections import Counter
+# Wiring landed after the 2026-10-21 sweep (integration branch). id -> (current_wiring, module, symbol or None to keep).
+WIRED = {
+    'zero_result_probe_shared': ('inside:answer_checks_hook', 'clinical_core.agere.clinical.answer_checks', 'zero_result_probe'),
+    'answer_guard_suspicion': ('inside:answer_checks_hook', None, None),
+    'answer_guard_dense_catalog': ('inside:answer_checks_hook', None, None),
+    'answer_guard_cross_check': ('inside:answer_checks_hook', None, None),
+    'unchecked_zero_guard': ('inside:answer_checks_hook', None, None),
+    'answer_shape_review': ('inside:answer_checks_hook', None, None),
+    'cascade_certificates': ('inside:answer_checks_hook', None, None),
+    'semantic_analyst': ('cascade_tier:semantic_analyst', None, None),
+    'scoped_review_compiler': ('cascade_tier:scoped_review_compiler', None, None),
+    'stack_planner_propose': ('cascade_tier:stack_planner_propose', None, None),
+    'legacy_cost_ladder': ('cascade_tier:legacy_cost_ladder', None, None),
+    'legacy_compose_together': ('inside:legacy_cost_ladder', None, None),
+    'learned_router': ('inside:operator_router', None, None),
+    'vbc_knowledge_context_for': ('inside:hosted_typed_interpreter', None, None),
+    'model_roles_report': ('spine:model_roles', None, None),
+}
+NEW = [  # components added by the build-out
+    {'id': 'answer_checks_hook', 'name': 'Post-execution answer checks', 'family': 'check',
+     'module': 'clinical_core.agere.clinical.answer_checks', 'symbol': 'gate',
+     'role_on_question_path': 'Runs zero-result probe, guards, shape review and certificates on every executed proposal; rejects so the next proposer tries.',
+     'current_wiring': 'spine:execution_checks', 'evidence': 'proposers.py Cascade.executed', 'cost': 'free (cross-check paid, live only)',
+     'calibration': None, 'flag': 'AGERE_CROSS_CHECK'},
+]
+ids_now = {r['id'] for r in rows}
+rows.extend(n for n in NEW if n['id'] not in ids_now)
+by_tier = {r['current_wiring'].split(':', 1)[1]: r for r in rows if r['current_wiring'].startswith('cascade_tier:')}
+for r in rows:
+    if r['id'] in WIRED:
+        wiring, module, symbol = WIRED[r['id']]
+        r['current_wiring'] = wiring
+        if module: r['module'], r['symbol'] = module, symbol
 for r in rows:  # spine stages of the shared planner are not proposer tiers
     if r['current_wiring'].startswith('cascade_tier:shared_planner.'):
         r['current_wiring'] = 'spine:' + r['current_wiring'].split('shared_planner.', 1)[1]
