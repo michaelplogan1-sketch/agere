@@ -32,7 +32,7 @@ ALIASES = {
 MONTHS = {m: i + 1 for i, m in enumerate('january february march april may june july august september october november december'.split())}
 NEGATED = re.compile(r"\bnot\b|!=|<>|\bis null\b|\bexcept\b|=\s*0\b|\bexclu|\bwithout\b|\bno_|\bmissing|\bgap|\babsen|\bnever\b|"
                      r"\bnone\b|\bfalse\b|\black|\bunfilled|\bnot_|\bnon_|\bnegat|\bcancel|\bno.?show", re.I)
-RATE_ASKED = re.compile(r'%|\b(?:percent(?:age)?|share|proportion|fraction|ratio|rate|per\s+1,?000|pmpm|per member)\b', re.I)
+RATE_ASKED = re.compile(r'%|\b(?:percent(?:age)?|share|proportion|(?<!ejection )fraction|ratio|rate|per\s+1,?000|pmpm|per member)\b', re.I)
 RATE_DONE = re.compile(r'/|\bratio\b|\brate\b|percent|\bshare\b|proportion|pmpm|per_1000|denominator|avg\(|\bmean\b|\bpct\b', re.I)
 AVERAGE_ASKED = re.compile(r'\b(?:average|mean|median|typical)\b', re.I)
 AVERAGE_DONE = re.compile(r'avg\(|\bmean\b|median|percentile|/|"statistic"\s*:\s*"(?:mean|median|avg)', re.I)

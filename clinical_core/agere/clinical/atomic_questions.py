@@ -452,7 +452,9 @@ def run(stack, patient_ids, params, as_of, *, decide=None):
             for r in found.get('evidence') or []:
                 src = r.get('source') or {}
                 passages[f"passage:{r['id']}"] = {'record_id': src.get('record_id'), 'field': src.get('field'),
-                                                  'date': (src.get('event_date') or '')[:10] or None}
+                                                  'date': (src.get('event_date') or '')[:10] or None, 'text': r.get('text')}
+            from .ocr_passages import atomic_evidence  # scanned/faxed document spans with page/bbox provenance
+            rows += atomic_evidence(stack.path, pid, retrieval_query(s), passages, already={e['id'] for e in rows}, as_of=as_of)
             structured = structured_evidence(meds.get((pid, s['subject']))) if s['subject'] else None
             if p['unit'] == 'document':
                 for doc in sorted(rows, key=lambda r: r['date']):
@@ -487,7 +489,8 @@ def run(stack, patient_ids, params, as_of, *, decide=None):
                       'document': doc['id'] if doc else None, 'date': doc['date'] if doc else None,
                       'error': d.get('error'), 'evidence_count': len(evidence),
                       'sources': [{'patient_id': pid, 'evidence_id': i, 'text': texts[i]['text'], 'date': texts[i]['date'],
-                                   'record_id': texts[i]['note_id'], **({'field': passages[i]['field']} if i in passages else {})}
+                                   'record_id': texts[i]['note_id'], **({k: v for k, v in passages[i].items() if k in ('field', 'page', 'bbox', 'citation')}
+                                                                      if i in passages else {})}
                                   for i in cited[:3]]})
     structured_states = {f'{pid}|{s}': r['state'] for (pid, s), r in meds.items()}
     return {'schema': VERSION, 'as_of': as_of[:10], 'parameters': p, 'population_patients': len(scoped), 'evaluated_patient_ids': ids,
