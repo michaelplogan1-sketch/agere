@@ -338,8 +338,10 @@ class Ladder:
         """The local compiler's (graph or None, info), computed once."""
         if self._compiled is None:
             from .local_compiler import compile as compile_locally
-            self._compiled=(compile_locally(self.question,self.profile,self.as_of) if self.profile else
-                            (None,{'route':'fallback','reason':'no source profile available'}))
+            from .route_arbiter import bind  # the stack's encoder (learned router) and, when live, System One break route ties
+            with bind(self.stack,getattr(self,'ledger',None)):
+                self._compiled=(compile_locally(self.question,self.profile,self.as_of) if self.profile else
+                                (None,{'route':'fallback','reason':'no source profile available'}))
             self.decline={**self._compiled[1],**self.decline}
         return self._compiled
 

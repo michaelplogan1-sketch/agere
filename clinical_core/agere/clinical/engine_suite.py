@@ -117,17 +117,9 @@ def code_paths():
 
 
 def compile_route(question, profile, as_of):
-    """First engine route that claims the question -> (graph, info); None when no engine phrasing matches."""
-    for op in ROUTE_ORDER:
-        m = available().get(op)
-        if m is None or not hasattr(m, 'route'): continue
-        try:
-            out = m.route(question, profile, as_of)
-        except (ValueError, KeyError, TypeError):
-            continue  # a route that cannot parse declines; the next tier answers
-        if out is not None:
-            return out
-    return None
+    """The engine route that wins arbitration among every engine claim -> (graph, info); None when no engine phrasing matches."""
+    from .route_arbiter import arbitrate
+    return arbitrate(question, profile, as_of, native=False)
 
 
 def plan(op, params, purpose, question, recognised=()):

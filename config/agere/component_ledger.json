@@ -1065,7 +1065,7 @@
    "symbol": "Ladder.frontier_planner",
    "role_on_question_path": "Free cache of earlier frontier/decider graphs keyed by question+policy+snapshot; only reachable via the PAID frontier tier.",
    "current_wiring": "inside:frontier_graph_planner",
-   "evidence": "clinical_core/agere/clinical/economical_planner.py:585 (def); clinical_core/agere/clinical/economical_planner.py:562-580; clinical_core/agere/clinical/proposers.py:55,299",
+   "evidence": "clinical_core/agere/clinical/economical_planner.py:587 (def); clinical_core/agere/clinical/economical_planner.py:562-580; clinical_core/agere/clinical/proposers.py:55,299",
    "cost": "free",
    "calibration": null,
    "flag": "AGERE_PLAN_CACHE"
@@ -1364,7 +1364,7 @@
    "symbol": "shape_misfit",
    "role_on_question_path": "Executed answer must have the requested shape (count/value/patient_set/table).",
    "current_wiring": "inside:checked_proposer_cascade",
-   "evidence": "clinical_core/agere/clinical/literal_check.py:119 (def); literal_check.py:119; clinical_core/agere/clinical/proposers.py:268,329",
+   "evidence": "clinical_core/agere/clinical/literal_check.py:121 (def); literal_check.py:119; clinical_core/agere/clinical/proposers.py:268,329",
    "cost": "free",
    "calibration": null,
    "flag": null
@@ -1507,7 +1507,7 @@
    "symbol": "legacy_plan",
    "role_on_question_path": "Former ordered ladder; superseded by the cascade (rungs reused through Ladder).",
    "current_wiring": "cascade_tier:legacy_cost_ladder",
-   "evidence": "clinical_core/agere/clinical/economical_planner.py:642 (def); clinical_core/agere/clinical/economical_planner.py:619-651",
+   "evidence": "clinical_core/agere/clinical/economical_planner.py:644 (def); clinical_core/agere/clinical/economical_planner.py:619-651",
    "cost": "free",
    "calibration": null,
    "flag": null
@@ -4656,6 +4656,19 @@
    "evidence": "proposers.TIERS",
    "cost": "free retrieval/ranking; Jev/Perplexity ~$0.0002 per confirmation",
    "calibration": "retrieve-then-rank ICD-10/HCC suspects, System One confirms; uncalibrated",
+   "flag": null
+  },
+  {
+   "id": "route_arbiter",
+   "name": "route arbiter",
+   "family": "infrastructure",
+   "module": "clinical_core.agere.clinical.route_arbiter",
+   "symbol": "bind",
+   "role_on_question_path": "Collects every engine route claim plus the native plan and picks one on example similarity, cues and the learned router; receipt in the plan info.",
+   "current_wiring": "inside:local_compiler",
+   "evidence": "wave-1 build 2026-10-22",
+   "cost": "free",
+   "calibration": null,
    "flag": null
   },
   {

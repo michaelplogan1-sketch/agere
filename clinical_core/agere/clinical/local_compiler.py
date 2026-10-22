@@ -746,14 +746,16 @@ def _unread_demographics(question, profile, graph, info):
     return None
 
 
-def _compile(question, profile, as_of):
+def _compile(question, profile, as_of, engines=True):
+    """The route chain; engines=False runs only the native routes (the arbiter's native candidate, no engine suite)."""
     strategy = _contract_strategy_question(question, profile, as_of)  # should-we / which track / negotiate / option value; settlements stay vbc
     if strategy is not None: return strategy
     explained = _knowledge_question(question)  # explanation / strategy questions about VBC itself, never data questions
     if explained is not None:
         return explained
-    from .engine_suite import compile_route  # decision engines (MLR, Stars, staffing, allocation, bandit, social needs, ...): strict phrasings
-    if (plan := compile_route(question, profile, as_of)) is not None: return plan
+    if engines:  # decision engines (MLR, Stars, staffing, allocation, bandit, social needs, ...): every claim collected, then arbitrated against the native plan
+        from .route_arbiter import arbitrate
+        if (plan := arbitrate(question, profile, as_of)) is not None: return plan
     q = _norm(question, as_of)
     low = q.lower()
     timed = survival_intent(low) and not re.search(DEATH_WORDS, low)  # "readmission-free survival" is not mortality
