@@ -1,0 +1,3889 @@
+{
+ "generated": "2026-10-22",
+ "sources_swept": [
+  "/Users/mikel/Desktop/Agere-Stack-Atlas.pdf (pypdf, 11 pages)",
+  "/Users/mikel/Desktop/agere-cto-review-2026-10-19-appendix.md",
+  "/Users/mikel/Agere-Research-Reviews/2026-10-20-dair/ (REVIEW.md, PAPER-MATRIX.md)",
+  "/Users/mikel/agere-research/2026-10-18/ (AGERE_RESEARCH_REPORT.md, CLAUDE_AGERE_STACK_REVIEW.md, prompts)",
+  "/Users/mikel/clinical-insights-local/research/agere/*.md (FRONTIER_RESEARCH_2026-10.md 57 ideas + top-10, and 13 other files)",
+  "/Users/mikel/clinical-insights-local/docs/agere/ (GENERAL_QUESTION_ARCHITECTURE_PLAN, FMEA.md+fmea.json, BOTTLING_INTEGRATION, BUILD_LOG, LAYER_LOG, HANDOFF_2026-10-14/17/18/22, VBC_QUESTION_COVERAGE, all *_INTEGRATION*.md, DUCKDB plan, DATA_CONNECTION_ARCHITECTURE, HEALTHCARE_BACKLOG, LEARNING_SAFETY, GENERAL_ANALYSIS_WORKFLOW, brief-2026-10-21/, architecture/)",
+  "/Users/mikel/clinical-insights-local repo-root docs (ECONOMICAL_ROUTING_BUILD, AGERE_STACK_RECONCILIATION, AGERE_PRODUCT_DIRECTION, AGERE_BUILD_CONTROL.json, AGERE_*REVIEW*, AGERE_SHARED_*, AGERE_WISDOM/INTERFACE/CHIEF_STAFF, AUTONOMOUS_STACK_QUEUE, STACK_INTEGRATION_PLAN, NEXT_STACK_BUILD, BUILD_NEXT, ENGINEERING_RESEARCH and others; 28 files)",
+  "/Users/mikel/.claude/projects/-Users-mikel/memory/agere-*.md, cs1-paper-verdict.md, jev-*.md, insight-engine-project.md",
+  "Transcripts: 821452c3 (10-12..10-15, incl. 10-13 layer ledger 17:59Z and idea map 10:59Z), 6059d831, 961aff1e, c919721f, ddfd89a9, 7226baa0 (93-component inventory), 90323f53, b0d74125, edc8a6c8, 9db9b050, ce9435e8, 6faa7d92, 08bea7dc, 2485d383",
+  "Code: config/agere/component_ledger.json (290 components), clinical_core import graph from clinical_core.agere.service, git branches (claude/system-one-*)"
+ ],
+ "status_method": "built_and_on_question_path = ledger wiring spine/cascade_tier/inside/planner_menu or module reachable from service endpoints; built_but_not_on_question_path = ledger build_time_only or module not imported from clinical_core.agere.service, or flag default off; path_relevance marks items that are offline/ingest/product-surface by design. Wiring was checked statically (ledger + imports + grep), not by runtime usage.",
+ "excluded": "Research verdicts 'skip' (FRONTIER #54-57: data-science agents, GraphRAG, causal PFNs, self-critique) and proposals Mike did not approve (6faa7d92 merge classification steps; c919721f middle-tier router) are not listed as requirements.",
+ "requirements": [
+  {
+   "id": "hosted_llm_ladder",
+   "name": "Haiku -> Sonnet -> Opus verified SQL ladder",
+   "category": "proposer_or_answering",
+   "what_it_should_do": "Answer questions the cheap tiers cannot with a hosted model ladder whose SQL is verified before it is trusted.",
+   "requested_by_or_source": [
+    "transcript 821452c3 2026-10-13T10:59Z (Claude idea map answering Mike 10:59 \"what about all those other ideas\")",
+    "transcript 821452c3 2026-10-13T17:59Z (layer ledger, ~45 ideas, answering Mike 17:56 \"what about all of the other stack layers i have suggested\")",
+    "Agere-Stack-Atlas.pdf p.9"
+   ],
+   "requested_date": "2026-10-13",
+   "ledger_component_ids": [
+    "hosted_verified_sql",
+    "hosted_model_client",
+    "verify_lint",
+    "verify_sanity"
+   ],
+   "status": "built_and_on_question_path",
+   "evidence": "ledger cascade_tier:hosted_verified_sql; clinical/nl2sql.py verified_answer"
+  },
+  {
+   "id": "perplexity_ab_decider",
+   "name": "Perplexity Decisions (pplx-decider) SQL tie-break",
+   "category": "system_one_jev_perplexity",
+   "what_it_should_do": "Break ties between disagreeing SQL candidates with the Perplexity decision model.",
+   "requested_by_or_source": [
+    "transcript 821452c3 2026-10-13T17:59Z (layer ledger, ~45 ideas, answering Mike 17:56 \"what about all of the other stack layers i have suggested\")",
+    "Agere-Stack-Atlas.pdf p.3,p.7",
+    "memory agere-integration-architecture.md (gateway.py:143)"
+   ],
+   "requested_date": "2026-10-13",
+   "ledger_component_ids": [
+    "perplexity_ab_decider"
+   ],
+   "status": "built_and_on_question_path",
+   "evidence": "ledger inside:hosted_verified_sql (AGERE_DECIDER_JUDGE); gateway.py:147; live only when PERPLEXITY key loaded (key loader 8323d5e)"
+  },
+  {
+   "id": "typed_decider",
+   "name": "Typed recipe router (MiniLM candidates + Perplexity selection, 0.95 gate)",
+   "category": "routing",
+   "what_it_should_do": "Let local retrieval propose typed recipes and the Perplexity decider pick one or abstain before Claude escalation.",
+   "requested_by_or_source": [
+    "ECONOMICAL_ROUTING_BUILD.md:8-27",
+    "research/agere/MODEL_ROLE_DECISION_2026-10-09.md:28-32",
+    "Agere-Stack-Atlas.pdf p.9"
+   ],
+   "requested_date": "2026-10-09",
+   "ledger_component_ids": [
+    "typed_decider",
+    "typed_decider_recipes",
+    "typed_decider_candidates",
+    "escalation_reason"
+   ],
+   "status": "built_and_on_question_path",
+   "evidence": "ledger cascade_tier:typed_decider; clinical/economical_planner.py"
+  },
+  {
+   "id": "local_compiler",
+   "name": "Local deterministic compiler rung",
+   "category": "question_understanding",
+   "what_it_should_do": "Parse a question against the warehouse profile into a validated plan with no model call.",
+   "requested_by_or_source": [
+    "transcript 821452c3 2026-10-12T23:20Z (Claude plan step 1)",
+    "Agere-Stack-Atlas.pdf p.4,p.9"
+   ],
+   "requested_date": "2026-10-12",
+   "ledger_component_ids": [
+    "local_compiler",
+    "compiler_rules",
+    "grounding",
+    "concept_resolver"
+   ],
+   "status": "built_and_on_question_path",
+   "evidence": "ledger cascade_tier:local_compiler; clinical/local_compiler.py"
+  },
+  {
+   "id": "compositional_grammar",
+   "name": "Compiler grammar formalism / shared request planner",
+   "category": "question_understanding",
+   "what_it_should_do": "Compile questions into a single typed relational request (grammar first) executed as read-only SQL plus analysis graph.",
+   "requested_by_or_source": [
+    "transcript 821452c3 2026-10-13T10:59Z (Claude idea map answering Mike 10:59 \"what about all those other ideas\") (Compilers)",
+    "AGERE_SHARED_PLANNER_2026-10-19.md:7-23"
+   ],
+   "requested_date": "2026-10-13",
+   "ledger_component_ids": [
+    "compositional_grammar",
+    "compositional_grammar_program",
+    "request_compiler",
+    "shared_planner_plan"
+   ],
+   "status": "built_and_on_question_path",
+   "evidence": "ledger spine:compositional_grammar; clinical/shared_planner.py"
+  },
+  {
+   "id": "compiler_optimizer",
+   "name": "Compiler optimizer that fuses repeated sub-queries",
+   "category": "analytics_engine",
+   "what_it_should_do": "Optimise compiled plans by fusing repeated sub-queries (query-compiler style).",
+   "requested_by_or_source": [
+    "transcript 821452c3 2026-10-13T10:59Z (Claude idea map answering Mike 10:59 \"what about all those other ideas\") (Compilers)",
+    "transcript 821452c3 2026-10-13T17:59Z (layer ledger, ~45 ideas, answering Mike 17:56 \"what about all of the other stack layers i have suggested\") (Wave D)"
+   ],
+   "requested_date": "2026-10-13",
+   "ledger_component_ids": [],
+   "status": "not_built",
+   "evidence": "no match for compiler optimiser / sub-query fusion in clinical_core or tools (grep \"compiler.optim|common.subexpression\" = 0)"
+  },
+  {
+   "id": "operator_router",
+   "name": "Operator router (pick engine, fill typed schema)",
+   "category": "routing",
+   "what_it_should_do": "When the compiler cannot parse, a cheap model picks the engine and fills its typed parameters so every engine is reachable from any phrasing.",
+   "requested_by_or_source": [
+    "transcript 821452c3 2026-10-13T17:59Z (layer ledger, ~45 ideas, answering Mike 17:56 \"what about all of the other stack layers i have suggested\") (step 0 integration spine)",
+    "memory agere-integration-architecture.md"
+   ],
+   "requested_date": "2026-10-13",
+   "ledger_component_ids": [
+    "operator_router"
+   ],
+   "status": "built_and_on_question_path",
+   "evidence": "ledger cascade_tier:operator_router; clinical/operator_router.py; 7226baa0 inventory measured 19/19 held-out wrong"
+  },
+  {
+   "id": "metric_router",
+   "name": "Metric router over governed metrics",
+   "category": "routing",
+   "what_it_should_do": "Pick one governed metric and fill typed slots for metric questions.",
+   "requested_by_or_source": [
+    "Agere-Stack-Atlas.pdf p.4,p.9",
+    "docs/agere/BUILD_LOG.md:18"
+   ],
+   "requested_date": "2026-10-13",
+   "ledger_component_ids": [
+    "metric_router",
+    "metric_families_vocabulary",
+    "gate_policy"
+   ],
+   "status": "built_and_on_question_path",
+   "evidence": "ledger cascade_tier:metric_router"
+  },
+  {
+   "id": "metric_router_exact_fit_gate",
+   "name": "Exact-fit gate on the metric router",
+   "category": "verification_check",
+   "what_it_should_do": "Let a governed metric answer only when its definition matches the question.",
+   "requested_by_or_source": [
+    "transcript 6059d831 2026-10-16T23:13Z (Mike: \"Next layer: an exact-fit gate on the metric router\")",
+    "docs/agere/BUILD_LOG.md:51"
+   ],
+   "requested_date": "2026-10-16",
+   "ledger_component_ids": [],
+   "status": "not_built",
+   "evidence": "parked and never committed (Mike 10-17T13:05 \"Discard the parked metric_router.py edit\"); no exact-fit gate in clinical/metric_router.py",
+   "note": "Mike asked for it, then had the parked edit discarded; counts as dropped, not explicitly deferred"
+  },
+  {
+   "id": "learned_router",
+   "name": "Learned routing classifier",
+   "category": "routing",
+   "what_it_should_do": "Route questions to the right engine/rung for free with a calibrated local classifier.",
+   "requested_by_or_source": [
+    "transcript 821452c3 2026-10-13T17:59Z (layer ledger, ~45 ideas, answering Mike 17:56 \"what about all of the other stack layers i have suggested\") (Wave C)",
+    "transcript 821452c3 2026-10-13T10:59Z (Claude idea map answering Mike 10:59 \"what about all those other ideas\")"
+   ],
+   "requested_date": "2026-10-13",
+   "ledger_component_ids": [
+    "learned_router"
+   ],
+   "status": "built_and_on_question_path",
+   "evidence": "ledger inside:operator_router; clinical/learned_router.py; calibrated gate threshold is None (calibrated_thresholds.json)"
+  },
+  {
+   "id": "learned_cascade_router",
+   "name": "Learned cascade router (predict which rung succeeds, label by outcome)",
+   "category": "routing",
+   "what_it_should_do": "Predict from the outcomes table which rung will succeed and route by measured cost and quality.",
+   "requested_by_or_source": [
+    "research/agere/FRONTIER_RESEARCH_2026-10.md:71 (#28)",
+    "REC AGERE_STACK_RECONCILIATION.md:312",
+    "transcript 90323f53 2026-10-22T10:57Z (label the router by outcome)"
+   ],
+   "requested_date": "2026-10-13",
+   "ledger_component_ids": [
+    "learned_router",
+    "training_factory"
+   ],
+   "status": "partially_built",
+   "evidence": "router retrain data unusable per docs/agere/HANDOFF_2026-10-22.md:45; current router routes by operator, not rung success"
+  },
+  {
+   "id": "schema_reranker",
+   "name": "Field/stream/schema reranker",
+   "category": "retrieval_evidence",
+   "what_it_should_do": "Choose tables, columns and values for SQL writers with a reranker.",
+   "requested_by_or_source": [
+    "transcript 821452c3 2026-10-13T17:59Z (layer ledger, ~45 ideas, answering Mike 17:56 \"what about all of the other stack layers i have suggested\") (Wave C)",
+    "transcript 821452c3 2026-10-13T22:06Z (12 model ideas, answering Mike 22:05 \"have you already built in the classifiers and rerankers?\")"
+   ],
+   "requested_date": "2026-10-13",
+   "ledger_component_ids": [
+    "schema_reranker"
+   ],
+   "status": "built_and_on_question_path",
+   "evidence": "ledger inside:hosted_verified_sql; clinical/schema_rerank.py"
+  },
+  {
+   "id": "cross_encoder_reranker",
+   "name": "Local cross-encoder reranker (BGE v2-m3) for schema and knowledge retrieval",
+   "category": "retrieval_evidence",
+   "what_it_should_do": "Rerank retrieved passages/schema with a local cross-encoder that reads question and passage together.",
+   "requested_by_or_source": [
+    "transcript 821452c3 2026-10-13T22:06Z (12 model ideas, answering Mike 22:05 \"have you already built in the classifiers and rerankers?\") (#3)",
+    "AGERE_LOCAL_MODELS.md:18"
+   ],
+   "requested_date": "2026-10-13",
+   "ledger_component_ids": [
+    "bge_reranker",
+    "warehouse_retriever"
+   ],
+   "status": "built_and_on_question_path",
+   "evidence": "ledger inside:warehouse_retriever; clinical/warehouse_retrieval.py:168"
+  },
+  {
+   "id": "reranker_bakeoff",
+   "name": "BGE v2-m3 vs Qwen3-Reranker-0.6B comparison",
+   "category": "retrieval_evidence",
+   "what_it_should_do": "Compare reranker candidates when retrieval is the bottleneck.",
+   "requested_by_or_source": [
+    "research/agere/MODEL_SELECTION_REVIEW.md:22,40"
+   ],
+   "requested_date": "2026-10-08",
+   "ledger_component_ids": [],
+   "status": "not_built",
+   "evidence": "no Qwen3-Reranker code; source marks it deferred until measured (not a Mike deferral)"
+  },
+  {
+   "id": "semantic_cache",
+   "name": "Meaning-level question cache with embeddings",
+   "category": "token_economics",
+   "what_it_should_do": "Reuse verified answers for rephrased questions with identical slots.",
+   "requested_by_or_source": [
+    "transcript 821452c3 2026-10-13T17:59Z (layer ledger, ~45 ideas, answering Mike 17:56 \"what about all of the other stack layers i have suggested\") (Wave C)",
+    "transcript 821452c3 2026-10-13T10:59Z (Claude idea map answering Mike 10:59 \"what about all those other ideas\")"
+   ],
+   "requested_date": "2026-10-13",
+   "ledger_component_ids": [
+    "semantic_cache",
+    "semantic_cache_slots",
+    "paraphrase_reuse",
+    "paraphrase_same_meaning"
+   ],
+   "status": "built_and_on_question_path",
+   "evidence": "ledger cascade_tier:semantic_cache and paraphrase_reuse"
+  },
+  {
+   "id": "vcache_thresholds",
+   "name": "vCache per-entry learned similarity thresholds",
+   "category": "token_economics",
+   "what_it_should_do": "Use per-entry learned cache thresholds under a user-set error bound.",
+   "requested_by_or_source": [
+    "research/agere/FRONTIER_RESEARCH_2026-10.md:73 (#30)"
+   ],
+   "requested_date": "2026-10-13",
+   "ledger_component_ids": [
+    "calibrated_thresholds"
+   ],
+   "status": "not_built",
+   "evidence": "only one global calibrated threshold (calibrated_thresholds.json semantic_cache.similarity 0.8102); no per-entry thresholds"
+  },
+  {
+   "id": "exact_plan_cache",
+   "name": "Exact plan / exact-contract cache keyed by code and data digest",
+   "category": "token_economics",
+   "what_it_should_do": "Replay a verified plan for an identical question keyed by policy, code hash and data digest.",
+   "requested_by_or_source": [
+    "Agere-Stack-Atlas.pdf p.9",
+    "docs/agere/GENERAL_QUESTION_ARCHITECTURE_PLAN.md:48-49"
+   ],
+   "requested_date": "2026-10-13",
+   "ledger_component_ids": [
+    "exact_contract_cache",
+    "exact_question_plan_cache",
+    "superseded_definition_check"
+   ],
+   "status": "built_and_on_question_path",
+   "evidence": "ledger spine:exact_contract_cache"
+  },
+  {
+   "id": "learned_verified_sql",
+   "name": "Learned verified SQL reuse",
+   "category": "learning_and_training",
+   "what_it_should_do": "Reuse the query of an already verified question, re-linted against the current release.",
+   "requested_by_or_source": [
+    "Agere-Stack-Atlas.pdf p.9"
+   ],
+   "requested_date": "2026-10-13",
+   "ledger_component_ids": [
+    "learned_verified_sql",
+    "learned_store"
+   ],
+   "status": "built_and_on_question_path",
+   "evidence": "ledger cascade_tier:learned_verified_sql"
+  },
+  {
+   "id": "bottled_sql_rung",
+   "name": "Bottled local SQL model rung (Qwen3-4B LoRA, k-agree)",
+   "category": "local_model",
+   "what_it_should_do": "Distil the hosted ladder into a local model that writes SQL at $0, used only where it agrees with itself.",
+   "requested_by_or_source": [
+    "transcript 821452c3 2026-10-13T10:59Z (Claude idea map answering Mike 10:59 \"what about all those other ideas\") (Bottling)",
+    "transcript 821452c3 2026-10-13T17:59Z (layer ledger, ~45 ideas, answering Mike 17:56 \"what about all of the other stack layers i have suggested\") (Wave C)",
+    "transcript 821452c3 2026-10-13T10:49Z (Mike: \"i mean bottling as in this (arXiv 2610.08775)\")"
+   ],
+   "requested_date": "2026-10-13",
+   "ledger_component_ids": [
+    "bottled_sql",
+    "bottled_model",
+    "bottled_candidate"
+   ],
+   "status": "built_and_on_question_path",
+   "evidence": "ledger cascade_tier:bottled_sql; precision 0.29 (memory agere-integration-architecture.md); retraining in tools/training/overnight_chain.sh"
+  },
+  {
+   "id": "bottled_cohort_slots",
+   "name": "Narrow bottled typed-plan slots (Qwen LoRA cohort slots)",
+   "category": "local_model",
+   "what_it_should_do": "Distil narrow typed operator/slot choices rather than free SQL.",
+   "requested_by_or_source": [
+    "/Users/mikel/agere-research/2026-10-18/AGERE_RESEARCH_REPORT.md:84,172",
+    "docs/agere/BOTTLING_INTEGRATION.md:3,94",
+    "transcript 961aff1e 2026-10-18T12:14Z (Mike: \"yes that is fine only add if it makes sense\")"
+   ],
+   "requested_date": "2026-10-18",
+   "ledger_component_ids": [
+    "bottled_cohort_slots"
+   ],
+   "status": "built_and_on_question_path",
+   "evidence": "ledger inside:cohort_families_module (NARROW_DEFAULT on); narrow retrain not promoted 89.5% vs 100% (HANDOFF_2026-10-22)"
+  },
+  {
+   "id": "bottling_distillation_program",
+   "name": "Bottling as distillation into code, rules, classifiers and caches",
+   "category": "learning_and_training",
+   "what_it_should_do": "Spend LLM tokens once to build cheap verified artifacts (rules, shapes, caches, small classifiers) measured against naive distillation.",
+   "requested_by_or_source": [
+    "transcript 821452c3 2026-10-14T11:01Z (Mike on bottling)",
+    "research/agere/BOTTLED_INTAKE_2026-10-11.md:15-21",
+    "transcript edc8a6c8 2026-10-21T19:53Z"
+   ],
+   "requested_date": "2026-10-13",
+   "ledger_component_ids": [
+    "learned_request_shapes",
+    "learned_analysis_shapes",
+    "scoped_review_compiler",
+    "semantic_cache",
+    "compiler_rules"
+   ],
+   "status": "built_and_on_question_path",
+   "evidence": "learned shapes, scoped_review_compiler, compiler growth rules all on path per ledger"
+  },
+  {
+   "id": "compiler_growth",
+   "name": "Self-growing compiler (rules distilled from verified questions, test-gated)",
+   "category": "learning_and_training",
+   "what_it_should_do": "Distil verified questions into declarative compiler rules admitted only through an acceptance gate.",
+   "requested_by_or_source": [
+    "memory agere-integration-architecture.md (queue Mike approved 10-13 evening)",
+    "Agere-Stack-Atlas.pdf p.11"
+   ],
+   "requested_date": "2026-10-13",
+   "ledger_component_ids": [
+    "compiler_rules"
+   ],
+   "status": "built_and_on_question_path",
+   "evidence": "tools/compiler_growth/ (offline growth); rules consumed in ledger compiler_rules inside:local_compiler"
+  },
+  {
+   "id": "qwen_rewrite_compiler",
+   "name": "Local Qwen rewrite -> compiler with meaning-drift checks",
+   "category": "local_model",
+   "what_it_should_do": "Let the local model rewrite a question into compiler form, refusing rewrites that drop constraints.",
+   "requested_by_or_source": [
+    "transcript 821452c3 2026-10-13T01:46Z"
+   ],
+   "requested_date": "2026-10-13",
+   "ledger_component_ids": [
+    "qwen_rewrite_compiler",
+    "rewrite_dropped_check",
+    "meaning_drift_check",
+    "qwen3_4b_local_model"
+   ],
+   "status": "built_and_on_question_path",
+   "evidence": "ledger cascade_tier:qwen_rewrite_compiler"
+  },
+  {
+   "id": "local_normalizer",
+   "name": "Local normalizer LoRA (question normalization)",
+   "category": "local_model",
+   "what_it_should_do": "Normalise wording locally so the grammar can claim more questions at $0.",
+   "requested_by_or_source": [
+    "transcript c919721f 2026-10-21T19:23Z (local planner plan; Mike \"please start with the plan\")"
+   ],
+   "requested_date": "2026-10-21",
+   "ledger_component_ids": [
+    "local_normalizer",
+    "local_normalizer_guard"
+   ],
+   "status": "built_and_on_question_path",
+   "evidence": "ledger cascade_tier:local_normalizer; normalizer-1022 promoted held-out 0.975 (commit ef6759c)"
+  },
+  {
+   "id": "typed_interpreter_training",
+   "name": "Local typed interpreter / short typed adapter prompt training",
+   "category": "local_model",
+   "what_it_should_do": "Train the local model to emit the typed request directly (short adapter prompt).",
+   "requested_by_or_source": [
+    "docs/agere/HANDOFF_2026-10-22.md:45-46"
+   ],
+   "requested_date": "2026-10-22",
+   "ledger_component_ids": [
+    "qwen_typed_interpreter",
+    "local_planner_training"
+   ],
+   "status": "partially_built",
+   "evidence": "qwen_typed_interpreter tier exists (ledger) but model not trained: 35k-token prompt (transcript 90323f53 10-22)"
+  },
+  {
+   "id": "local_free_sql",
+   "name": "Free-form local Qwen SQL rung",
+   "category": "local_model",
+   "what_it_should_do": "Let the local model write SQL for leftovers before paid tiers.",
+   "requested_by_or_source": [
+    "Agere-Stack-Atlas.pdf p.9"
+   ],
+   "requested_date": "2026-10-13",
+   "ledger_component_ids": [
+    "local_free_sql",
+    "nl2sql_stream_retrieval"
+   ],
+   "status": "built_and_on_question_path",
+   "evidence": "ledger cascade_tier:local_free_sql"
+  },
+  {
+   "id": "sql_specialist_base_model",
+   "name": "SQL-specialist open base model (OmniSQL / Arctic-Text2SQL) vs Qwen3-4B",
+   "category": "local_model",
+   "what_it_should_do": "Swap the bottled base for a SQL-specialist model if it beats Qwen3-4B on Agere data.",
+   "requested_by_or_source": [
+    "research/agere/FRONTIER_RESEARCH_2026-10.md:58 (#15)",
+    "transcript 821452c3 2026-10-13T22:21Z (queued)"
+   ],
+   "requested_date": "2026-10-13",
+   "ledger_component_ids": [],
+   "status": "not_built",
+   "evidence": "no OmniSQL/Arctic code or config (grep = 0)"
+  },
+  {
+   "id": "lora_all_layers",
+   "name": "LoRA on all layers incl. MLP with higher LR for bottling",
+   "category": "local_model",
+   "what_it_should_do": "Apply LoRA adapters to all layers (not 16 of 36) per \"LoRA Without Regret\".",
+   "requested_by_or_source": [
+    "research/agere/FRONTIER_RESEARCH_2026-10.md:94 (#51)"
+   ],
+   "requested_date": "2026-10-13",
+   "ledger_component_ids": [
+    "bottling_training"
+   ],
+   "status": "not_built",
+   "evidence": "tools/bottling/lora-v2.yaml:10 still num_layers: 16"
+  },
+  {
+   "id": "constrained_decoding",
+   "name": "Grammar-constrained decoding (+beam) for the local model",
+   "category": "local_model",
+   "what_it_should_do": "Constrain local model output so it cannot emit invalid SQL/JSON.",
+   "requested_by_or_source": [
+    "transcript 821452c3 2026-10-13T22:06Z (12 model ideas, answering Mike 22:05 \"have you already built in the classifiers and rerankers?\") (#11)",
+    "research/agere/FRONTIER_RESEARCH_2026-10.md:74 (#31)",
+    "AGERE_RESEARCH_REPORT.md:85 (PICARD/XGrammar)"
+   ],
+   "requested_date": "2026-10-13",
+   "ledger_component_ids": [],
+   "status": "not_built",
+   "evidence": "no xgrammar/outlines/grammar-constrained decoding code (grep = 0)"
+  },
+  {
+   "id": "active_learning_distillation",
+   "name": "Active learning / active distillation for labeling",
+   "category": "learning_and_training",
+   "what_it_should_do": "Send only uncertain or diverse units to the frontier labeler so each distillation dollar buys more accuracy.",
+   "requested_by_or_source": [
+    "transcript 821452c3 2026-10-13T22:06Z (12 model ideas, answering Mike 22:05 \"have you already built in the classifiers and rerankers?\") (#12)",
+    "research/agere/FRONTIER_RESEARCH_2026-10.md:83 (#40)"
+   ],
+   "requested_date": "2026-10-13",
+   "ledger_component_ids": [],
+   "status": "not_built",
+   "evidence": "no active-learning / uncertainty sampling code (grep = 0)"
+  },
+  {
+   "id": "semantic_entropy_probes",
+   "name": "Semantic entropy probes for local-model abstention",
+   "category": "verification_check",
+   "what_it_should_do": "Use hidden-state probes as a free abstention feature for the local model.",
+   "requested_by_or_source": [
+    "research/agere/FRONTIER_RESEARCH_2026-10.md:72 (#29)"
+   ],
+   "requested_date": "2026-10-13",
+   "ledger_component_ids": [],
+   "status": "not_built",
+   "evidence": "grep semantic.entropy = 0"
+  },
+  {
+   "id": "template_constrained_decoding",
+   "name": "Template-constrained decoding (TeCoD) for recurring questions",
+   "category": "token_economics",
+   "what_it_should_do": "Abstract verified SQL into slot templates, select with an NLI matcher, fill slots under grammar constraint.",
+   "requested_by_or_source": [
+    "research/agere/FRONTIER_RESEARCH_2026-10.md:53 (#10)"
+   ],
+   "requested_date": "2026-10-13",
+   "ledger_component_ids": [
+    "learned_request_shapes"
+   ],
+   "status": "not_built",
+   "evidence": "learned request shapes exist (ledger spine:learned_shapes) but no NLI template matcher or constrained slot filling"
+  },
+  {
+   "id": "frontier_graph_planner",
+   "name": "Frontier (Opus) analysis-graph planner",
+   "category": "proposer_or_answering",
+   "what_it_should_do": "Plan an analysis graph over the full capability index as the last resort.",
+   "requested_by_or_source": [
+    "Agere-Stack-Atlas.pdf p.9",
+    "transcript 821452c3 2026-10-13T10:59Z (Claude idea map answering Mike 10:59 \"what about all those other ideas\") (frontier roles)"
+   ],
+   "requested_date": "2026-10-13",
+   "ledger_component_ids": [
+    "frontier_graph_planner",
+    "graph_planner_contracts",
+    "planner_catalog",
+    "capability_registry_product"
+   ],
+   "status": "built_and_on_question_path",
+   "evidence": "ledger cascade_tier:frontier_graph_planner"
+  },
+  {
+   "id": "hosted_typed_interpreter",
+   "name": "Checked hosted interpreter (tiered Sonnet plans, Opus on failed review)",
+   "category": "proposer_or_answering",
+   "what_it_should_do": "Have a frontier model propose a typed request that a separate pass audits before execution.",
+   "requested_by_or_source": [
+    "AGERE_SHARED_FRONTIER_2026-10-20.md:7-9",
+    "docs/agere/brief-2026-10-21/BUILD_BRIEF_PHASE0-2.md:136-143"
+   ],
+   "requested_date": "2026-10-20",
+   "ledger_component_ids": [
+    "hosted_typed_interpreter",
+    "hosted_interpreter_audit",
+    "shared_judge_model"
+   ],
+   "status": "built_and_on_question_path",
+   "evidence": "ledger cascade_tier:hosted_typed_interpreter; gateway.py:225 model tiers"
+  },
+  {
+   "id": "hybrid_analysts",
+   "name": "Hybrid core: analysts with vote, Sonnet tie-break / escalation",
+   "category": "proposer_or_answering",
+   "what_it_should_do": "Run analysts over the semantic layer with majority vote and escalation, and combine with Agere fast paths (agreement = confidence).",
+   "requested_by_or_source": [
+    "docs/agere/HANDOFF_2026-10-14.md:55,68-72",
+    "docs/agere/LAYER_LOG.md:224-258",
+    "transcript 6059d831 2026-10-15T03:00Z (Priority 1: work TOGETHER)"
+   ],
+   "requested_date": "2026-10-15",
+   "ledger_component_ids": [
+    "hybrid_analysts",
+    "hybrid_live_answer",
+    "hybrid_vote",
+    "hybrid_contract",
+    "hybrid_execute_checks",
+    "hybrid_docs_catalog",
+    "legacy_compose_together",
+    "semantic_analyst"
+   ],
+   "status": "built_and_on_question_path",
+   "evidence": "ledger cascade_tier:hybrid_analysts, semantic_analyst, legacy_cost_ladder"
+  },
+  {
+   "id": "general_analysis_rescue",
+   "name": "General path: model-written staged SQL with governed concepts and rescue",
+   "category": "proposer_or_answering",
+   "what_it_should_do": "Answer any question by staged model SQL that uses governed concepts, metrics and engines, with checks and a second derivation.",
+   "requested_by_or_source": [
+    "transcript c919721f 2026-10-20T18:10Z (Mike: \"We need to be able to answer any question\")",
+    "docs/agere/brief-2026-10-21/BUILD_BRIEF_PHASE0-2.md:49-60"
+   ],
+   "requested_date": "2026-10-20",
+   "ledger_component_ids": [
+    "general_analysis_rescue",
+    "general_analysis_execute",
+    "general_analysis_checks"
+   ],
+   "status": "built_and_on_question_path",
+   "evidence": "ledger inside:hosted_typed_interpreter / spine:execution"
+  },
+  {
+   "id": "all_components_checked_cascade",
+   "name": "All components as checked proposers on every entry point",
+   "category": "routing",
+   "what_it_should_do": "Run every component cheapest-first as a checked proposer through the shared planner on /ask, workspaces and follow-ups.",
+   "requested_by_or_source": [
+    "transcript 7226baa0 2026-10-21T21:11Z and 21:23Z (Mike: \"please use all of them\")",
+    "transcript 90323f53 2026-10-21T21:55Z"
+   ],
+   "requested_date": "2026-10-21",
+   "ledger_component_ids": [
+    "checked_proposer_cascade",
+    "proposers_execute",
+    "ladder_adapter",
+    "intent_router",
+    "workspace_hybrid_pipeline"
+   ],
+   "status": "built_and_on_question_path",
+   "evidence": "config/agere/component_ledger.json (290 components); test_component_reachability.py; clinical/proposers.py 28 tiers"
+  },
+  {
+   "id": "verify_not_first_claim",
+   "name": "Verify-instead-of-first-claim-wins ordering",
+   "category": "routing",
+   "what_it_should_do": "Run stronger components alongside the first claimant and reconcile disagreements instead of accepting the first confident cheap rung.",
+   "requested_by_or_source": [
+    "transcript 6faa7d92 2026-10-19T11:36Z (Mike: \"the best component is being used at the right time\")",
+    "docs/agere/HANDOFF_2026-10-14.md (root cause: ladder stops at first confident cheap rung)"
+   ],
+   "requested_date": "2026-10-19",
+   "ledger_component_ids": [
+    "answer_checks_hook",
+    "cascade_certificates"
+   ],
+   "status": "partially_built",
+   "evidence": "answer_checks.gate runs after every executed proposal (ledger spine:execution_checks) but the cascade still accepts the first proposal that passes checks; reconcile-on-disagreement only inside hybrid/verification_v2"
+  },
+  {
+   "id": "provider_fallback",
+   "name": "Provider-failure classification and model fallback",
+   "category": "token_economics",
+   "what_it_should_do": "Classify billing/rate/overload errors as provider_unavailable and retry the next model.",
+   "requested_by_or_source": [
+    "docs/agere/brief-2026-10-21/BUILD_BRIEF_PHASE0-2.md:26-29"
+   ],
+   "requested_date": "2026-10-21",
+   "ledger_component_ids": [
+    "provider_error_fallback"
+   ],
+   "status": "built_and_on_question_path",
+   "evidence": "ledger spine:hosted_calls; gateway.py:282"
+  },
+  {
+   "id": "prompt_cache_split",
+   "name": "Byte-stable cached prompt prefixes (1h TTL)",
+   "category": "token_economics",
+   "what_it_should_do": "Put schema and rules first in byte-stable prefixes so prompt caching works.",
+   "requested_by_or_source": [
+    "research/agere/FRONTIER_RESEARCH_2026-10.md:67 (#24)",
+    "docs/agere/brief-2026-10-21/BUILD_BRIEF_PHASE0-2.md:114-124"
+   ],
+   "requested_date": "2026-10-13",
+   "ledger_component_ids": [
+    "static_prompt_cache_split"
+   ],
+   "status": "built_and_on_question_path",
+   "evidence": "ledger spine:hosted_prompt_assembly; gateway.py:232 cache_control"
+  },
+  {
+   "id": "answer_time_budget",
+   "name": "Total answer time budget (best candidate marked partial)",
+   "category": "token_economics",
+   "what_it_should_do": "Stop searching at a time budget and return the best executed candidate marked partial, never a refusal.",
+   "requested_by_or_source": [
+    "docs/agere/brief-2026-10-21/BUILD_BRIEF_PHASE0-2.md:95-99"
+   ],
+   "requested_date": "2026-10-21",
+   "ledger_component_ids": [
+    "answer_time_budget"
+   ],
+   "status": "built_and_on_question_path",
+   "evidence": "ledger spine:cascade_budget; clinical/answer_budget.py"
+  },
+  {
+   "id": "schemas_up_front_diff_repairs",
+   "name": "Send likely schemas up front and diff-only repairs",
+   "category": "token_economics",
+   "what_it_should_do": "Send top-k likely schemas with the first call and send only failing fragments on repair.",
+   "requested_by_or_source": [
+    "docs/agere/brief-2026-10-21/BUILD_BRIEF_PHASE0-2.md:126-134"
+   ],
+   "requested_date": "2026-10-21",
+   "ledger_component_ids": [
+    "schema_slice",
+    "request_discovery"
+   ],
+   "status": "partially_built",
+   "evidence": "schema_slice/request_discovery on path (ledger); no diff-only repair path found (not verified in code)"
+  },
+  {
+   "id": "per_question_cost_ledger",
+   "name": "Per-question / per-attempt cost telemetry",
+   "category": "token_economics",
+   "what_it_should_do": "Record question and attempt IDs, tokens, pricing version and stage timings so cost per answer is computable.",
+   "requested_by_or_source": [
+    "/Users/mikel/Desktop/agere-cto-review-2026-10-19-appendix.md:135-146",
+    "docs/agere/GENERAL_QUESTION_ARCHITECTURE_PLAN.md:50,78",
+    "docs/agere/brief-2026-10-21/BUILD_BRIEF_PHASE0-2.md:145-149"
+   ],
+   "requested_date": "2026-10-19",
+   "ledger_component_ids": [
+    "budget_ledger",
+    "answer_log_record"
+   ],
+   "status": "partially_built",
+   "evidence": "budget_ledger and answer_log exist; execution_id appears in many modules but BRIEF 2.5 columns (request_hash on answers, at on ledger, api_usd on errors) not confirmed"
+  },
+  {
+   "id": "token_scorecard",
+   "name": "Token-economics scorecard (no-LLM share, calls by model, Opus-without-failed-Sonnet = failure)",
+   "category": "token_economics",
+   "what_it_should_do": "Report share of answers with no LLM, LLM calls by model, cost per question and how often Jev/Perplexity decide.",
+   "requested_by_or_source": [
+    "transcript 90323f53 2026-10-22T11:09Z (Claude proposal answering Mike 11:08)"
+   ],
+   "requested_date": "2026-10-22",
+   "ledger_component_ids": [],
+   "status": "partially_built",
+   "evidence": "tools/component_usage.py counts per-component runs/answers; no token scorecard page"
+  },
+  {
+   "id": "component_usage_check",
+   "name": "Usage check: flag components wired but never used",
+   "category": "quality_engineering",
+   "what_it_should_do": "Fail or flag any component that is wired in but never runs on realistic questions.",
+   "requested_by_or_source": [
+    "transcript 90323f53 2026-10-22T11:00Z (within six-integration approval)"
+   ],
+   "requested_date": "2026-10-22",
+   "ledger_component_ids": [],
+   "status": "partially_built",
+   "evidence": "tools/component_usage.py exists (tracer); not part of the test suite",
+   "path_relevance": "offline_by_design"
+  },
+  {
+   "id": "stack_lock_removal",
+   "name": "Remove the global one-question-at-a-time lock",
+   "category": "other",
+   "what_it_should_do": "Remove the service-wide lock that makes Agere slow under load.",
+   "requested_by_or_source": [
+    "docs/agere/HANDOFF_2026-10-14.md:56",
+    "transcript 6059d831 2026-10-15T02:47Z (handoff step 5)"
+   ],
+   "requested_date": "2026-10-14",
+   "ledger_component_ids": [],
+   "status": "not_built",
+   "evidence": "clinical_core/agere/service.py:55 stack_lock=RLock() still present"
+  },
+  {
+   "id": "latency_budget_100ms",
+   "name": "<100 ms latency budget (HFT engineering)",
+   "category": "other",
+   "what_it_should_do": "Precompute columnar views and incremental updates so answers return in under 100 ms.",
+   "requested_by_or_source": [
+    "transcript 821452c3 2026-10-13T10:59Z (Claude idea map answering Mike 10:59 \"what about all those other ideas\") (HFT engineering)",
+    "transcript 821452c3 2026-10-13T17:59Z (layer ledger, ~45 ideas, answering Mike 17:56 \"what about all of the other stack layers i have suggested\") (Wave D)"
+   ],
+   "requested_date": "2026-10-13",
+   "ledger_component_ids": [],
+   "status": "deferred_by_mike",
+   "evidence": "no latency budget; Mike 6faa7d92 2026-10-19T11:36Z: \"latency doesnt matter to me really, these aren't instant answers needed\""
+  },
+  {
+   "id": "jev_online_per_record",
+   "name": "Jev online for per-record decisions",
+   "category": "system_one_jev_perplexity",
+   "what_it_should_do": "Use Jev for cheap per-record typed decisions (normalization, signal labels) on the live path.",
+   "requested_by_or_source": [
+    "transcript 821452c3 2026-10-13T17:59Z (layer ledger, ~45 ideas, answering Mike 17:56 \"what about all of the other stack layers i have suggested\") (Wave C)",
+    "transcript 961aff1e 2026-10-18T12:11Z (Mike: classifiers read notes, PDFs, faxes)"
+   ],
+   "requested_date": "2026-10-13",
+   "ledger_component_ids": [
+    "jev_typesafe_review",
+    "gateway_jev_claude_cascade",
+    "persistent_gateway"
+   ],
+   "status": "built_and_on_question_path",
+   "evidence": "ledger inside:engine_review (evidence_review tier); requires TYPESAFE key + --allow-live-stack; key loader added 8323d5e",
+   "note": "Mike 10-22T10:43: \"jev and perplexity were supposed to be a vital part ... how are they not integrated?\" - only the evidence-review reader tier is on main"
+  },
+  {
+   "id": "jev_normalization_check",
+   "name": "Jev second check on lab/drug normalization",
+   "category": "system_one_jev_perplexity",
+   "what_it_should_do": "Use Jev as a second checker on normalization dictionaries.",
+   "requested_by_or_source": [
+    "transcript 821452c3 2026-10-13T22:06Z (12 model ideas, answering Mike 22:05 \"have you already built in the classifiers and rerankers?\")",
+    "memory agere-integration-architecture.md"
+   ],
+   "requested_date": "2026-10-13",
+   "ledger_component_ids": [
+    "jev_normalization_check"
+   ],
+   "status": "built_but_not_on_question_path",
+   "evidence": "ledger build_time_only; tools/normalization/jev_check.py",
+   "path_relevance": "offline_by_design"
+  },
+  {
+   "id": "s1_atomic_decomposition",
+   "name": "System One #1: atomic sub-question decomposition",
+   "category": "system_one_jev_perplexity",
+   "what_it_should_do": "Plan typed per-patient/per-document sub-questions with an aggregation rule; Jev answers each and code combines them.",
+   "requested_by_or_source": [
+    "transcript 90323f53 2026-10-22T11:01Z (Mike: \"Build all six Jev/Perplexity integrations across the question path\")"
+   ],
+   "requested_date": "2026-10-22",
+   "ledger_component_ids": [],
+   "status": "partially_built",
+   "evidence": "uncommitted in worktree .claude/worktrees/system-one-atomic (clinical/atomic_questions.py untracked); branch claude/system-one-atomic has 0 commits beyond main"
+  },
+  {
+   "id": "s1_evidence_attribution",
+   "name": "System One #2: evidence-sentence attribution",
+   "category": "system_one_jev_perplexity",
+   "what_it_should_do": "Score each sentence by deletion for necessity/sufficiency so answers are pinned to source sentences.",
+   "requested_by_or_source": [
+    "transcript 90323f53 2026-10-22T11:01Z"
+   ],
+   "requested_date": "2026-10-22",
+   "ledger_component_ids": [],
+   "status": "partially_built",
+   "evidence": "built on branch claude/system-one-core 469f447, integrated in claude/system-one-integration 83dda93; not merged to main"
+  },
+  {
+   "id": "s1_calibrated_confidence",
+   "name": "System One #3: per-task log-odds calibration",
+   "category": "system_one_jev_perplexity",
+   "what_it_should_do": "Recalibrate Jev/Perplexity probabilities per task.",
+   "requested_by_or_source": [
+    "transcript 90323f53 2026-10-22T11:01Z",
+    "transcript edc8a6c8 2026-10-21T19:49Z (CS1 paper borrowings)"
+   ],
+   "requested_date": "2026-10-22",
+   "ledger_component_ids": [],
+   "status": "partially_built",
+   "evidence": "469f447 (calibrate/fit_calibration) on claude/system-one-integration; not on main"
+  },
+  {
+   "id": "s1_checker_every_proposal",
+   "name": "System One #4: Jev checker on every proposal",
+   "category": "system_one_jev_perplexity",
+   "what_it_should_do": "Run a cheap typed Jev check that each proposed answer addresses the question.",
+   "requested_by_or_source": [
+    "transcript 90323f53 2026-10-22T11:01Z"
+   ],
+   "requested_date": "2026-10-22",
+   "ledger_component_ids": [],
+   "status": "partially_built",
+   "evidence": "d6f1beb/83dda93 on claude/system-one-integration (\"checker on every executed proposal\"); not merged to main"
+  },
+  {
+   "id": "s1_router_and_fallback",
+   "name": "System One #5: Jev router + Jev/Perplexity fallback when Claude is down",
+   "category": "system_one_jev_perplexity",
+   "what_it_should_do": "Let Jev choose which component goes first, and let Jev/Perplexity answer when Claude is unavailable.",
+   "requested_by_or_source": [
+    "transcript 90323f53 2026-10-22T11:01Z",
+    "transcript c919721f 2026-10-20T19:02Z (Perplexity fallback option)"
+   ],
+   "requested_date": "2026-10-22",
+   "ledger_component_ids": [],
+   "status": "partially_built",
+   "evidence": "d6f1beb on claude/system-one-integration; not merged to main"
+  },
+  {
+   "id": "s1_perplexity_definitions",
+   "name": "System One #6: Perplexity cited definitions lookup",
+   "category": "system_one_jev_perplexity",
+   "what_it_should_do": "Find and cite standard definitions (MSSP avoidable spend, PQI, HEDIS) when a question gives none.",
+   "requested_by_or_source": [
+    "transcript 90323f53 2026-10-22T11:01Z"
+   ],
+   "requested_date": "2026-10-22",
+   "ledger_component_ids": [
+    "perplexity_definitions_research"
+   ],
+   "status": "partially_built",
+   "evidence": "definitions_resolver.py 8cb201b on claude/perplexity-definitions, merged into claude/system-one-integration; absent on main (grep definitions_resolver = 0); ledger perplexity_definitions_research is build_time_only"
+  },
+  {
+   "id": "perplexity_search_tools",
+   "name": "Perplexity agent search / decisions review as evidence tools",
+   "category": "system_one_jev_perplexity",
+   "what_it_should_do": "Use Perplexity search and decision models as evidence readers.",
+   "requested_by_or_source": [
+    "transcript 821452c3 2026-10-13T11:02Z (Mike: \"regarding classifiers you do have perplexity as well\")"
+   ],
+   "requested_date": "2026-10-13",
+   "ledger_component_ids": [
+    "perplexity_decisions_review",
+    "perplexity_agent_search"
+   ],
+   "status": "partially_built",
+   "evidence": "perplexity_decisions_review inside:engine_review (on path); perplexity_agent_search build_time_only"
+  },
+  {
+   "id": "healthcare_specific_classifier",
+   "name": "Healthcare-specific System One classifier (Jev labels -> local students)",
+   "category": "system_one_jev_perplexity",
+   "what_it_should_do": "Make classifiers like Jev/Perplexity stronger for healthcare via rules, training and a healthcare-specific student.",
+   "requested_by_or_source": [
+    "transcript 821452c3 2026-10-14T15:32Z (Mike: \"Do we need to make one very healthcare specific?\")"
+   ],
+   "requested_date": "2026-10-14",
+   "ledger_component_ids": [
+    "semantic_student_heads",
+    "context_student",
+    "windowed_student"
+   ],
+   "status": "partially_built",
+   "evidence": "semantic_student_heads/windowed_student inside:engine_review; context_student build_time_only"
+  },
+  {
+   "id": "decider_bakeoff",
+   "name": "Decider bake-off (Jev vs Perplexity vs other deciders)",
+   "category": "system_one_jev_perplexity",
+   "what_it_should_do": "Compare decision models on the same evidence and pick one primary per task.",
+   "requested_by_or_source": [
+    "transcript 6059d831 2026-10-15T02:47Z (handoff step 8: \"the decider bake-off\")",
+    "docs/agere/architecture/ENGINEERING_GUIDE.md:85"
+   ],
+   "requested_date": "2026-10-14",
+   "ledger_component_ids": [
+    "reader_comparison",
+    "model_reader_compare"
+   ],
+   "status": "partially_built",
+   "evidence": "reader_comparison inside:engine_review; model_reader_compare build_time_only; no decider bake-off result recorded"
+  },
+  {
+   "id": "verification_v2",
+   "name": "Verification v2: independent N-version candidates (hosted, local, compiler)",
+   "category": "verification_check",
+   "what_it_should_do": "Trust SQL only when independent families/representations agree and oracles pass (FM-13).",
+   "requested_by_or_source": [
+    "research/agere/FRONTIER_RESEARCH_2026-10.md:46 (#3)",
+    "transcript 821452c3 2026-10-13T22:21Z"
+   ],
+   "requested_date": "2026-10-13",
+   "ledger_component_ids": [
+    "verification_v2",
+    "verification_v2_readings",
+    "sql_oracles",
+    "bottled_candidate"
+   ],
+   "status": "built_and_on_question_path",
+   "evidence": "ledger inside:hosted_verified_sql; clinical/verification_v2.py"
+  },
+  {
+   "id": "execution_self_consistency",
+   "name": "Execution-guided self-consistency / result clustering",
+   "category": "verification_check",
+   "what_it_should_do": "Generate several candidates, execute them and vote on results with cluster share as confidence.",
+   "requested_by_or_source": [
+    "transcript 821452c3 2026-10-13T22:06Z (12 model ideas, answering Mike 22:05 \"have you already built in the classifiers and rerankers?\") (#2)",
+    "research/agere/FRONTIER_RESEARCH_2026-10.md:45 (#2)"
+   ],
+   "requested_date": "2026-10-13",
+   "ledger_component_ids": [
+    "verification_v2",
+    "hybrid_vote"
+   ],
+   "status": "built_and_on_question_path",
+   "evidence": "verification_v2.py:279 and hybrid/live.py:236 majority voting"
+  },
+  {
+   "id": "learned_answer_verifier",
+   "name": "Learned answer verifier (predict probability an answer is wrong)",
+   "category": "verification_check",
+   "what_it_should_do": "Train a small model on verified vs adjudicated-wrong answers to route risky answers to extra checks.",
+   "requested_by_or_source": [
+    "transcript 821452c3 2026-10-13T22:06Z (12 model ideas, answering Mike 22:05 \"have you already built in the classifiers and rerankers?\") (#1)"
+   ],
+   "requested_date": "2026-10-13",
+   "ledger_component_ids": [],
+   "status": "not_built",
+   "evidence": "no answer-verifier model (grep answer.verifier|p_wrong = 0)"
+  },
+  {
+   "id": "outcome_reward_selector",
+   "name": "Learned outcome reward model / pairwise candidate selector",
+   "category": "verification_check",
+   "what_it_should_do": "Select among candidates with a reward model trained on Agere candidates labelled by execution.",
+   "requested_by_or_source": [
+    "research/agere/FRONTIER_RESEARCH_2026-10.md:57 (#14)",
+    "transcript 821452c3 2026-10-13T22:21Z (queued \"learned candidate selector\")"
+   ],
+   "requested_date": "2026-10-13",
+   "ledger_component_ids": [],
+   "status": "not_built",
+   "evidence": "no candidate selector model found"
+  },
+  {
+   "id": "qc_partition",
+   "name": "QC-PARTITION ternary-logic partition oracle",
+   "category": "verification_check",
+   "what_it_should_do": "Require count(p)+count(NOT p)+count(NULL)=count(*) and group totals = total.",
+   "requested_by_or_source": [
+    "research/agere/FRONTIER_RESEARCH_2026-10.md:51 (#8)"
+   ],
+   "requested_date": "2026-10-13",
+   "ledger_component_ids": [
+    "sql_oracles",
+    "answer_checks"
+   ],
+   "status": "built_and_on_question_path",
+   "evidence": "clinical/oracles.py:3; answer_checks.py:20"
+  },
+  {
+   "id": "qc_perturb",
+   "name": "QC-PERTURB question-side metamorphic checks",
+   "category": "verification_check",
+   "what_it_should_do": "Perturb numbers/years/comparators and require the SQL result to move as predicted.",
+   "requested_by_or_source": [
+    "research/agere/FRONTIER_RESEARCH_2026-10.md:50 (#7)"
+   ],
+   "requested_date": "2026-10-13",
+   "ledger_component_ids": [
+    "sql_oracles",
+    "answer_checks"
+   ],
+   "status": "built_and_on_question_path",
+   "evidence": "clinical/oracles.py:12; answer_checks.py:18"
+  },
+  {
+   "id": "deterministic_answer_checks",
+   "name": "Deterministic QC checks (numbers, units, clock, shape, empty, parts, denom, version, period)",
+   "category": "verification_check",
+   "what_it_should_do": "Run cheap deterministic controls on every answer.",
+   "requested_by_or_source": [
+    "Agere-Stack-Atlas.pdf p.6",
+    "docs/agere/FMEA.md:83-165"
+   ],
+   "requested_date": "2026-10-13",
+   "ledger_component_ids": [
+    "answer_checks",
+    "answer_checks_hook",
+    "answer_shape_final",
+    "literal_check_missing",
+    "literal_check_shape"
+   ],
+   "status": "built_and_on_question_path",
+   "evidence": "ledger spine:execution_checks; clinical/answer_checks.py"
+  },
+  {
+   "id": "metric_lint",
+   "name": "Metric lint (grain, anchor, window, value set, population, source, version)",
+   "category": "verification_check",
+   "what_it_should_do": "Lint metric SQL against governed definitions.",
+   "requested_by_or_source": [
+    "Agere-Stack-Atlas.pdf p.6"
+   ],
+   "requested_date": "2026-10-13",
+   "ledger_component_ids": [
+    "verify_metric_lint",
+    "metric_pins"
+   ],
+   "status": "built_and_on_question_path",
+   "evidence": "ledger inside:hosted_verified_sql"
+  },
+  {
+   "id": "ambiguity_readings_clarify",
+   "name": "Disclose both readings / ask one clarifying question on ambiguity",
+   "category": "verification_check",
+   "what_it_should_do": "When candidates disagree or a question has two readings, show both or ask instead of silently picking.",
+   "requested_by_or_source": [
+    "research/agere/FRONTIER_RESEARCH_2026-10.md:52 (#9)",
+    "transcript 961aff1e 2026-10-17T20:20Z (Mike: \"make Agere ask for clarification when a question has two readings\")"
+   ],
+   "requested_date": "2026-10-13",
+   "ledger_component_ids": [
+    "verification_v2_readings"
+   ],
+   "status": "built_and_on_question_path",
+   "evidence": "ledger inside:verification_v2; LAYER_LOG.md:352-360 clarify kept"
+  },
+  {
+   "id": "conformal_ltt_gates",
+   "name": "Learn-then-Test / conformal calibration of every accept threshold",
+   "category": "verification_check",
+   "what_it_should_do": "Replace hand-set thresholds with ones that carry a guaranteed error rate.",
+   "requested_by_or_source": [
+    "research/agere/FRONTIER_RESEARCH_2026-10.md:49 (#6)",
+    "transcript 821452c3 2026-10-13T22:06Z (12 model ideas, answering Mike 22:05 \"have you already built in the classifiers and rerankers?\") (#8)",
+    "/Users/mikel/agere-research/2026-10-18/AGERE_RESEARCH_REPORT.md:29,89,165"
+   ],
+   "requested_date": "2026-10-13",
+   "ledger_component_ids": [
+    "calibrated_thresholds",
+    "cascade_certificates",
+    "gate_policy",
+    "cascade_calibration_tools"
+   ],
+   "status": "partially_built",
+   "evidence": "clinical/calibrated_thresholds.json: only 2 of 15 gates have a threshold (semantic_cache.similarity, local_compiler.operation); rest None"
+  },
+  {
+   "id": "conformal_intervals",
+   "name": "Conformal prediction intervals on forecasts and risk scores",
+   "category": "statistics_method",
+   "what_it_should_do": "Attach guaranteed-coverage intervals with backtested coverage to every forecast/risk score.",
+   "requested_by_or_source": [
+    "transcript 821452c3 2026-10-13T10:59Z (Claude idea map answering Mike 10:59 \"what about all those other ideas\")",
+    "transcript 821452c3 2026-10-13T17:59Z (layer ledger, ~45 ideas, answering Mike 17:56 \"what about all of the other stack layers i have suggested\") (Wave A)"
+   ],
+   "requested_date": "2026-10-13",
+   "ledger_component_ids": [
+    "conformal",
+    "engine_calibration"
+   ],
+   "status": "built_and_on_question_path",
+   "evidence": "ledger conformal inside:engine_calibration; engine_calibration planner_menu"
+  },
+  {
+   "id": "conformal_survival_bounds",
+   "name": "Conformalized survival lower bounds",
+   "category": "statistics_method",
+   "what_it_should_do": "Give distribution-free lower predictive bounds under censoring for survival/calibration.",
+   "requested_by_or_source": [
+    "research/agere/FRONTIER_RESEARCH_2026-10.md:75 (#32)"
+   ],
+   "requested_date": "2026-10-13",
+   "ledger_component_ids": [],
+   "status": "not_built",
+   "evidence": "clinical/survival.py has no conformal bound"
+  },
+  {
+   "id": "answer_guard",
+   "name": "Answer guard suspicion + unchecked-zero guard + zero-result probe",
+   "category": "verification_check",
+   "what_it_should_do": "Flag suspicious answers, never return an unchecked zero, and probe alternative sources before answering 0/empty.",
+   "requested_by_or_source": [
+    "docs/agere/BUILD_LOG.md:27",
+    "docs/agere/brief-2026-10-21/BUILD_BRIEF_PHASE0-2.md:88-93"
+   ],
+   "requested_date": "2026-10-16",
+   "ledger_component_ids": [
+    "answer_guard_suspicion",
+    "unchecked_zero_guard",
+    "zero_result_probe_shared",
+    "answer_guard_dense_catalog"
+   ],
+   "status": "built_and_on_question_path",
+   "evidence": "ledger inside:answer_checks_hook"
+  },
+  {
+   "id": "answer_guard_cross_check",
+   "name": "Answer-guard cross-check (Sonnet + Opus judge)",
+   "category": "verification_check",
+   "what_it_should_do": "Cross-check answers with a second model and judge.",
+   "requested_by_or_source": [
+    "docs/agere/BUILD_LOG.md:31"
+   ],
+   "requested_date": "2026-10-16",
+   "ledger_component_ids": [
+    "answer_guard_cross_check"
+   ],
+   "status": "built_but_not_on_question_path",
+   "evidence": "ledger inside:answer_checks_hook behind AGERE_CROSS_CHECK, default off per Mike-approved live defaults (transcript 6059d831 2026-10-16T11:22Z \"cross-check off\")",
+   "note": "off by Mike-approved setting; \"revisit last\""
+  },
+  {
+   "id": "judge_fix_cross_family",
+   "name": "Fix the judge: cross-family, position-swapped, FMEA rubric",
+   "category": "verification_check",
+   "what_it_should_do": "Measure judge accuracy and use cross-family position-swapped judging.",
+   "requested_by_or_source": [
+    "research/agere/FRONTIER_RESEARCH_2026-10.md:56 (#13)"
+   ],
+   "requested_date": "2026-10-13",
+   "ledger_component_ids": [
+    "perplexity_ab_decider",
+    "shared_judge_model"
+   ],
+   "status": "partially_built",
+   "evidence": "cross-family decider exists; no position-swap or measured judge accuracy found"
+  },
+  {
+   "id": "fmea",
+   "name": "FMEA / fault-tree review of every silent-failure mode",
+   "category": "quality_engineering",
+   "what_it_should_do": "Systematically analyse how answers can go silently wrong and add controls.",
+   "requested_by_or_source": [
+    "transcript 821452c3 2026-10-13T10:59Z (Claude idea map answering Mike 10:59 \"what about all those other ideas\") (rocket-style fault trees and FMEA)",
+    "transcript 821452c3 2026-10-13T17:59Z (layer ledger, ~45 ideas, answering Mike 17:56 \"what about all of the other stack layers i have suggested\") (Wave D)"
+   ],
+   "requested_date": "2026-10-13",
+   "ledger_component_ids": [
+    "answer_checks",
+    "verified_pair_quarantine"
+   ],
+   "status": "partially_built",
+   "evidence": "docs/agere/FMEA.md + fmea.json with controls in answer_checks.py/oracles.py; FMEA.md:207-212 remaining gaps open; no fault-tree analysis"
+  },
+  {
+   "id": "six_sigma_defects",
+   "name": "Six Sigma defect-rate tracking for the stack",
+   "category": "quality_engineering",
+   "what_it_should_do": "Track the stack's defect rate like a manufacturing process.",
+   "requested_by_or_source": [
+    "transcript 821452c3 2026-10-13T10:59Z (Claude idea map answering Mike 10:59 \"what about all those other ideas\") (Manufacturing)",
+    "transcript 821452c3 2026-10-13T17:59Z (layer ledger, ~45 ideas, answering Mike 17:56 \"what about all of the other stack layers i have suggested\") (Wave D)"
+   ],
+   "requested_date": "2026-10-13",
+   "ledger_component_ids": [],
+   "status": "built_but_not_on_question_path",
+   "evidence": "tools/quality/defects.py:1; scorecard_view.py:142",
+   "path_relevance": "offline_by_design"
+  },
+  {
+   "id": "public_error_scorecard",
+   "name": "Public error-rate scorecard from rolling blind tests",
+   "category": "product_surface",
+   "what_it_should_do": "Publish a rolling blind-test error-rate scorecard as a trust feature.",
+   "requested_by_or_source": [
+    "transcript 821452c3 2026-10-13T10:59Z (Claude idea map answering Mike 10:59 \"what about all those other ideas\")",
+    "transcript 821452c3 2026-10-13T17:59Z (layer ledger, ~45 ideas, answering Mike 17:56 \"what about all of the other stack layers i have suggested\") (Wave D)"
+   ],
+   "requested_date": "2026-10-13",
+   "ledger_component_ids": [],
+   "status": "built_but_not_on_question_path",
+   "evidence": "clinical_core/agere/scorecard_view.py:1 served at /scorecard (service.py:872); bench/SCORECARD.md marked superseded",
+   "path_relevance": "product_surface_not_question_path"
+  },
+  {
+   "id": "verified_store_quarantine",
+   "name": "Capture verified pairs only after checks; quarantine flagged pairs; audit store error (PPI)",
+   "category": "learning_and_training",
+   "what_it_should_do": "Save training pairs only after answer checks, quarantine any with a QC warning, and estimate store error with prediction-powered inference.",
+   "requested_by_or_source": [
+    "research/agere/FRONTIER_RESEARCH_2026-10.md:48 (#5)",
+    "FRONTIER top-10 #2 (line 331)"
+   ],
+   "requested_date": "2026-10-13",
+   "ledger_component_ids": [
+    "verified_pair_capture",
+    "verified_pair_quarantine"
+   ],
+   "status": "partially_built",
+   "evidence": "capture-after-checks and quarantine on path (ledger inside:conversation_handle_compose); no PPI store-error audit"
+  },
+  {
+   "id": "pass_k_metric",
+   "name": "pass^k / answer stability as bench metrics",
+   "category": "quality_engineering",
+   "what_it_should_do": "Count a question correct only if all k reruns agree.",
+   "requested_by_or_source": [
+    "research/agere/FRONTIER_RESEARCH_2026-10.md:54 (#11)",
+    "transcript 821452c3 2026-10-13T22:21Z"
+   ],
+   "requested_date": "2026-10-13",
+   "ledger_component_ids": [],
+   "status": "built_but_not_on_question_path",
+   "evidence": "bench/contest_report.py:7,263 majority-of-k and pass^k",
+   "path_relevance": "offline_by_design"
+  },
+  {
+   "id": "benchmark_reference_audit",
+   "name": "Benchmark reference audit via distinguishing/mutated databases (VeriEQL, test-suite accuracy)",
+   "category": "quality_engineering",
+   "what_it_should_do": "Mutate fixture databases to find where reference and candidate SQL differ and re-adjudicate.",
+   "requested_by_or_source": [
+    "research/agere/FRONTIER_RESEARCH_2026-10.md:55 (#12)",
+    "/Users/mikel/agere-research/2026-10-18/AGERE_RESEARCH_REPORT.md:28,83,163"
+   ],
+   "requested_date": "2026-10-13",
+   "ledger_component_ids": [],
+   "status": "partially_built",
+   "evidence": "bench/adjudicate.py and bench/errata exist; no mutation/distinguishing-DB search",
+   "path_relevance": "offline_by_design"
+  },
+  {
+   "id": "interactive_benchmarks",
+   "name": "Interactive follow-up benchmarks (BIRD-INTERACT, EHR-ChatQA) / follow-up & learning-reuse bench",
+   "category": "quality_engineering",
+   "what_it_should_do": "Measure follow-up and learning-reuse failure modes (FM-20/21/22).",
+   "requested_by_or_source": [
+    "research/agere/FRONTIER_RESEARCH_2026-10.md:86 (#43)",
+    "docs/agere/FMEA.md:211"
+   ],
+   "requested_date": "2026-10-13",
+   "ledger_component_ids": [],
+   "status": "not_built",
+   "evidence": "no follow-up benchmark found in bench/",
+   "path_relevance": "offline_by_design"
+  },
+  {
+   "id": "public_benchmark_ehrsql",
+   "name": "EHRSQL 2024 + MIMIC-IV demo public benchmark and training data",
+   "category": "quality_engineering",
+   "what_it_should_do": "Replicate on a public hospital text-to-SQL benchmark and use its train split.",
+   "requested_by_or_source": [
+    "docs/agere/DUCKDB_PARQUET_MIGRATION_PLAN_2026-10-21.md:155",
+    "transcript ce9435e8 2026-10-21T21:02Z (Mike: \"i defer to you for any additions\")"
+   ],
+   "requested_date": "2026-10-21",
+   "ledger_component_ids": [],
+   "status": "not_built",
+   "evidence": "branch claude/ehrsql-2024 has no commits beyond main; no EHRSQL code (only a mention in bench/study/proof_status.py:111)"
+  },
+  {
+   "id": "external_onboarding_datasets",
+   "name": "CMS DE-SynPUF and OHDSI Eunomia onboarding fixtures",
+   "category": "data_ingestion",
+   "what_it_should_do": "Prove onboarding on a foreign claims layout and OMOP fixtures.",
+   "requested_by_or_source": [
+    "docs/agere/DUCKDB_PARQUET_MIGRATION_PLAN_2026-10-21.md:156-157"
+   ],
+   "requested_date": "2026-10-21",
+   "ledger_component_ids": [],
+   "status": "not_built",
+   "evidence": "grep synpuf|eunomia = 0"
+  },
+  {
+   "id": "stage_diagnostics",
+   "name": "Stage diagnostics (which stage failed: retrieval/rerank/reader/planning)",
+   "category": "quality_engineering",
+   "what_it_should_do": "Attribute each failure to the stage that caused it.",
+   "requested_by_or_source": [
+    "/Users/mikel/Agere-Research-Reviews/2026-10-20-dair/REVIEW.md:42,91-99",
+    "AGERE_BUILD_METHOD_REVIEW_2026-10-11.md:36-48"
+   ],
+   "requested_date": "2026-10-11",
+   "ledger_component_ids": [],
+   "status": "not_built",
+   "evidence": "no stage-attribution harness found",
+   "path_relevance": "offline_by_design"
+  },
+  {
+   "id": "harness_delta_controls",
+   "name": "Harness-Delta compute-matched controls",
+   "category": "quality_engineering",
+   "what_it_should_do": "Separate transferable gains from shortcuts with compute-matched baselines.",
+   "requested_by_or_source": [
+    "/Users/mikel/Agere-Research-Reviews/2026-10-20-dair/REVIEW.md:77"
+   ],
+   "requested_date": "2026-10-20",
+   "ledger_component_ids": [],
+   "status": "not_built",
+   "evidence": "not found",
+   "path_relevance": "offline_by_design"
+  },
+  {
+   "id": "fault_injection",
+   "name": "Aerospace-style fault containment (injected failure sequences)",
+   "category": "quality_engineering",
+   "what_it_should_do": "Test recovery against injected failure sequences.",
+   "requested_by_or_source": [
+    "/Users/mikel/agere-research/2026-10-18/AGERE_RESEARCH_REPORT.md:93"
+   ],
+   "requested_date": "2026-10-18",
+   "ledger_component_ids": [],
+   "status": "not_built",
+   "evidence": "not found",
+   "path_relevance": "offline_by_design"
+  },
+  {
+   "id": "label_choice_audit",
+   "name": "Label-choice audit / disclosure on every risk score and worklist",
+   "category": "clinical_logic_or_definitions",
+   "what_it_should_do": "State what each risk score predicts and never use cost as a proxy for need (Obermeyer).",
+   "requested_by_or_source": [
+    "research/agere/FRONTIER_RESEARCH_2026-10.md:66 (#23)"
+   ],
+   "requested_date": "2026-10-13",
+   "ledger_component_ids": [],
+   "status": "not_built",
+   "evidence": "grep obermeyer|label.choice = 0"
+  },
+  {
+   "id": "poka_yoke_guards",
+   "name": "Mistake-proofing guards (silent-drop guards)",
+   "category": "verification_check",
+   "what_it_should_do": "Design out silent-drop failures with guards.",
+   "requested_by_or_source": [
+    "transcript 821452c3 2026-10-13T10:59Z (Claude idea map answering Mike 10:59 \"what about all those other ideas\") (Manufacturing: poka-yoke)"
+   ],
+   "requested_date": "2026-10-13",
+   "ledger_component_ids": [
+    "unchecked_zero_guard",
+    "rewrite_dropped_check",
+    "literal_check_missing"
+   ],
+   "status": "built_and_on_question_path",
+   "evidence": "ledger guards on path"
+  },
+  {
+   "id": "eb_shrinkage_profile",
+   "name": "Empirical-Bayes / hierarchical Bayes provider profiling",
+   "category": "statistics_method",
+   "what_it_should_do": "Compare providers fairly by shrinking small panels (patient -> PCP -> practice).",
+   "requested_by_or_source": [
+    "transcript 821452c3 2026-10-13T10:59Z (Claude idea map answering Mike 10:59 \"what about all those other ideas\")",
+    "transcript 821452c3 2026-10-13T17:59Z (layer ledger, ~45 ideas, answering Mike 17:56 \"what about all of the other stack layers i have suggested\") (Wave A)"
+   ],
+   "requested_date": "2026-10-13",
+   "ledger_component_ids": [
+    "engine_profile"
+   ],
+   "status": "built_and_on_question_path",
+   "evidence": "clinical/profile.py:1 hierarchical Bayes; engine_profile planner_menu"
+  },
+  {
+   "id": "buhlmann_credibility",
+   "name": "Bühlmann-Straub actuarial credibility",
+   "category": "statistics_method",
+   "what_it_should_do": "Express shrinkage in actuarial credibility terms payers trust.",
+   "requested_by_or_source": [
+    "transcript 821452c3 2026-10-13T10:59Z (Claude idea map answering Mike 10:59 \"what about all those other ideas\")",
+    "transcript 821452c3 2026-10-13T17:59Z (layer ledger, ~45 ideas, answering Mike 17:56 \"what about all of the other stack layers i have suggested\") (Wave A)"
+   ],
+   "requested_date": "2026-10-13",
+   "ledger_component_ids": [
+    "engine_profile"
+   ],
+   "status": "built_and_on_question_path",
+   "evidence": "clinical/profile.py:99 buhlmann_straub"
+  },
+  {
+   "id": "profiling_misclassification",
+   "name": "EB profiling that reports misclassification probability",
+   "category": "statistics_method",
+   "what_it_should_do": "Report the probability each provider is misclassified, not only shrunken ranks.",
+   "requested_by_or_source": [
+    "research/agere/FRONTIER_RESEARCH_2026-10.md:88 (#45)"
+   ],
+   "requested_date": "2026-10-13",
+   "ledger_component_ids": [
+    "engine_profile"
+   ],
+   "status": "not_built",
+   "evidence": "no misclassification output in clinical/profile.py"
+  },
+  {
+   "id": "fdr_discovery",
+   "name": "Benjamini-Hochberg false-discovery control in discovery",
+   "category": "statistics_method",
+   "what_it_should_do": "Control false discoveries when scanning many segments.",
+   "requested_by_or_source": [
+    "transcript 821452c3 2026-10-13T10:59Z (Claude idea map answering Mike 10:59 \"what about all those other ideas\")",
+    "transcript 821452c3 2026-10-13T17:59Z (layer ledger, ~45 ideas, answering Mike 17:56 \"what about all of the other stack layers i have suggested\")"
+   ],
+   "requested_date": "2026-10-13",
+   "ledger_component_ids": [
+    "engine_discover"
+   ],
+   "status": "built_and_on_question_path",
+   "evidence": "engine_discover planner_menu"
+  },
+  {
+   "id": "macrobase_diff",
+   "name": "MacroBase-style DIFF explanations (risk ratio + min support)",
+   "category": "statistics_method",
+   "what_it_should_do": "Explain hotspots with risk ratios under minimum support and multiplicity control.",
+   "requested_by_or_source": [
+    "research/agere/FRONTIER_RESEARCH_2026-10.md:62 (#19)",
+    "FRONTIER top-10 #9"
+   ],
+   "requested_date": "2026-10-13",
+   "ledger_component_ids": [
+    "engine_explain",
+    "engine_discover"
+   ],
+   "status": "built_and_on_question_path",
+   "evidence": "clinical/explain.py:7 risk ratios; engine_explain planner_menu"
+  },
+  {
+   "id": "theil_sen",
+   "name": "Theil-Sen robust trends",
+   "category": "statistics_method",
+   "what_it_should_do": "Estimate robust slopes for trajectories and tickers.",
+   "requested_by_or_source": [
+    "transcript 821452c3 2026-10-13T10:59Z (Claude idea map answering Mike 10:59 \"what about all those other ideas\")",
+    "transcript 821452c3 2026-10-13T17:59Z (layer ledger, ~45 ideas, answering Mike 17:56 \"what about all of the other stack layers i have suggested\")"
+   ],
+   "requested_date": "2026-10-13",
+   "ledger_component_ids": [
+    "engine_trajectory",
+    "engine_market"
+   ],
+   "status": "built_and_on_question_path",
+   "evidence": "clinical/trajectory.py:8; market.py:25"
+  },
+  {
+   "id": "poisson_risk",
+   "name": "Poisson GLM risk / O-E outcomes",
+   "category": "statistics_method",
+   "what_it_should_do": "Model event risk and observed/expected outcomes.",
+   "requested_by_or_source": [
+    "transcript 821452c3 2026-10-13T10:59Z (Claude idea map answering Mike 10:59 \"what about all those other ideas\")",
+    "transcript 821452c3 2026-10-13T17:59Z (layer ledger, ~45 ideas, answering Mike 17:56 \"what about all of the other stack layers i have suggested\")"
+   ],
+   "requested_date": "2026-10-13",
+   "ledger_component_ids": [
+    "engine_risk_outcomes"
+   ],
+   "status": "built_and_on_question_path",
+   "evidence": "engine_risk_outcomes planner_menu"
+  },
+  {
+   "id": "kitagawa",
+   "name": "Kitagawa decomposition / indirect standardisation",
+   "category": "statistics_method",
+   "what_it_should_do": "Decompose rate changes into mix vs rate effects.",
+   "requested_by_or_source": [
+    "transcript 821452c3 2026-10-13T10:59Z (Claude idea map answering Mike 10:59 \"what about all those other ideas\")",
+    "transcript 821452c3 2026-10-13T17:59Z (layer ledger, ~45 ideas, answering Mike 17:56 \"what about all of the other stack layers i have suggested\")"
+   ],
+   "requested_date": "2026-10-13",
+   "ledger_component_ids": [
+    "engine_vbc",
+    "engine_briefing"
+   ],
+   "status": "built_and_on_question_path",
+   "evidence": "clinical/vbc.py:910; briefing.py:126"
+  },
+  {
+   "id": "chain_ladder",
+   "name": "Claims chain-ladder (IBNR) completion",
+   "category": "statistics_method",
+   "what_it_should_do": "Complete immature claims months before comparing.",
+   "requested_by_or_source": [
+    "transcript 821452c3 2026-10-13T10:59Z (Claude idea map answering Mike 10:59 \"what about all those other ideas\")",
+    "transcript 821452c3 2026-10-13T17:59Z (layer ledger, ~45 ideas, answering Mike 17:56 \"what about all of the other stack layers i have suggested\")"
+   ],
+   "requested_date": "2026-10-13",
+   "ledger_component_ids": [
+    "analyze_claims_runout",
+    "engine_vbc"
+   ],
+   "status": "built_and_on_question_path",
+   "evidence": "clinical/vbc.py:383; ledger analyze_claims_runout inside:engine_analyze"
+  },
+  {
+   "id": "kalman_trajectories",
+   "name": "Kalman filter trajectories",
+   "category": "statistics_method",
+   "what_it_should_do": "Track each patient's labs as a noisy signal and predict the next value.",
+   "requested_by_or_source": [
+    "transcript 821452c3 2026-10-13T10:59Z (Claude idea map answering Mike 10:59 \"what about all those other ideas\") (Physics)",
+    "transcript 821452c3 2026-10-13T17:59Z (layer ledger, ~45 ideas, answering Mike 17:56 \"what about all of the other stack layers i have suggested\")"
+   ],
+   "requested_date": "2026-10-13",
+   "ledger_component_ids": [
+    "engine_trajectory"
+   ],
+   "status": "built_and_on_question_path",
+   "evidence": "clinical/trajectory.py:47 kalman()"
+  },
+  {
+   "id": "bayesian_blocks",
+   "name": "Bayesian Blocks change points (astronomy)",
+   "category": "statistics_method",
+   "what_it_should_do": "Detect change points in utilization and feeds.",
+   "requested_by_or_source": [
+    "transcript 821452c3 2026-10-13T10:59Z (Claude idea map answering Mike 10:59 \"what about all those other ideas\")",
+    "transcript 821452c3 2026-10-13T17:59Z (layer ledger, ~45 ideas, answering Mike 17:56 \"what about all of the other stack layers i have suggested\")",
+    "research/agere/RESEARCH_PROGRAM.md:15-24"
+   ],
+   "requested_date": "2026-10-08",
+   "ledger_component_ids": [
+    "engine_trajectory",
+    "engine_monitor"
+   ],
+   "status": "built_and_on_question_path",
+   "evidence": "clinical/trajectory.py:4"
+  },
+  {
+   "id": "bayesian_blocks_qualification",
+   "name": "Bayesian Blocks vs CUSUM/Page-Hinkley qualification under feed gaps",
+   "category": "statistics_method",
+   "what_it_should_do": "Measure false-alarm behaviour of change-point methods under feed gaps.",
+   "requested_by_or_source": [
+    "/Users/mikel/agere-research/2026-10-18/AGERE_RESEARCH_REPORT.md:92"
+   ],
+   "requested_date": "2026-10-18",
+   "ledger_component_ids": [],
+   "status": "not_built",
+   "evidence": "no qualification experiment found",
+   "path_relevance": "offline_by_design"
+  },
+  {
+   "id": "matched_filter_early_signal",
+   "name": "Matched-filter early signals (gravitational-wave detection)",
+   "category": "statistics_method",
+   "what_it_should_do": "Detect faint known-shaped signals early, e.g. ED creep before a CHF admission.",
+   "requested_by_or_source": [
+    "transcript 821452c3 2026-10-13T10:59Z (Claude idea map answering Mike 10:59 \"what about all those other ideas\")",
+    "transcript 821452c3 2026-10-13T17:59Z (layer ledger, ~45 ideas, answering Mike 17:56 \"what about all of the other stack layers i have suggested\") (Wave B)"
+   ],
+   "requested_date": "2026-10-13",
+   "ledger_component_ids": [
+    "engine_early_signal"
+   ],
+   "status": "built_and_on_question_path",
+   "evidence": "clinical/early_signal.py:1; engine_early_signal planner_menu (no skill on the synthetic data per memory)"
+  },
+  {
+   "id": "kl_surprise_ranking",
+   "name": "Information-theoretic (KL / Bayesian surprise) ranking for briefing and tickers",
+   "category": "statistics_method",
+   "what_it_should_do": "Rank findings by how unexpected they are, not just how large.",
+   "requested_by_or_source": [
+    "transcript 821452c3 2026-10-13T10:59Z (Claude idea map answering Mike 10:59 \"what about all those other ideas\")",
+    "transcript 821452c3 2026-10-13T17:59Z (layer ledger, ~45 ideas, answering Mike 17:56 \"what about all of the other stack layers i have suggested\")",
+    "research/agere/FRONTIER_RESEARCH_2026-10.md:63 (#20)"
+   ],
+   "requested_date": "2026-10-13",
+   "ledger_component_ids": [
+    "engine_market",
+    "engine_briefing",
+    "briefing_ltr"
+   ],
+   "status": "built_and_on_question_path",
+   "evidence": "clinical/briefing_rank.py:5; market.py:29"
+  },
+  {
+   "id": "control_charts_spc",
+   "name": "Statistical process control charts and EWMA on metrics/feeds",
+   "category": "statistics_method",
+   "what_it_should_do": "Put control charts on every practice metric and data feed.",
+   "requested_by_or_source": [
+    "transcript 821452c3 2026-10-13T10:59Z (Claude idea map answering Mike 10:59 \"what about all those other ideas\") (Manufacturing)",
+    "transcript 821452c3 2026-10-13T17:59Z (layer ledger, ~45 ideas, answering Mike 17:56 \"what about all of the other stack layers i have suggested\")"
+   ],
+   "requested_date": "2026-10-13",
+   "ledger_component_ids": [
+    "engine_monitor"
+   ],
+   "status": "built_and_on_question_path",
+   "evidence": "clinical/monitor.py:13; engine_monitor planner_menu"
+  },
+  {
+   "id": "ra_cusum",
+   "name": "Risk-adjusted CUSUM / VLAD with simulated limits",
+   "category": "statistics_method",
+   "what_it_should_do": "Monitor outcomes with case-mix-adjusted CUSUM and simulated control limits.",
+   "requested_by_or_source": [
+    "research/agere/FRONTIER_RESEARCH_2026-10.md:64 (#21)",
+    "FRONTIER top-10 #10"
+   ],
+   "requested_date": "2026-10-13",
+   "ledger_component_ids": [
+    "engine_monitor"
+   ],
+   "status": "built_and_on_question_path",
+   "evidence": "clinical/monitor.py:793"
+  },
+  {
+   "id": "benford_fraud",
+   "name": "Benford checks and peer-outlier claims review",
+   "category": "analytics_engine",
+   "what_it_should_do": "Detect billing anomalies with Benford's law and peer comparison.",
+   "requested_by_or_source": [
+    "transcript 821452c3 2026-10-13T10:59Z (Claude idea map answering Mike 10:59 \"what about all those other ideas\") (Fraud detection)",
+    "transcript 821452c3 2026-10-13T17:59Z (layer ledger, ~45 ideas, answering Mike 17:56 \"what about all of the other stack layers i have suggested\") (Wave B)",
+    "research/agere/FRONTIER_RESEARCH_2026-10.md:81 (#38)"
+   ],
+   "requested_date": "2026-10-13",
+   "ledger_component_ids": [
+    "engine_claims_review",
+    "engine_monitor"
+   ],
+   "status": "built_and_on_question_path",
+   "evidence": "clinical/claims_review.py:12,711; engine_claims_review planner_menu"
+  },
+  {
+   "id": "survival_analysis",
+   "name": "Survival analysis (KM/Cox) for readmission and gap closure",
+   "category": "statistics_method",
+   "what_it_should_do": "Answer time-to-event questions with survival models.",
+   "requested_by_or_source": [
+    "transcript 821452c3 2026-10-13T10:59Z (Claude idea map answering Mike 10:59 \"what about all those other ideas\")",
+    "transcript 821452c3 2026-10-13T17:59Z (layer ledger, ~45 ideas, answering Mike 17:56 \"what about all of the other stack layers i have suggested\")"
+   ],
+   "requested_date": "2026-10-13",
+   "ledger_component_ids": [
+    "engine_survival"
+   ],
+   "status": "built_and_on_question_path",
+   "evidence": "engine_survival planner_menu"
+  },
+  {
+   "id": "program_effect_causal",
+   "name": "Program effect: synthetic control, DiD, SDID, Callaway-Sant'Anna",
+   "category": "statistics_method",
+   "what_it_should_do": "Answer \"did our program work?\" with modern staggered-adoption estimators.",
+   "requested_by_or_source": [
+    "transcript 821452c3 2026-10-13T10:59Z (Claude idea map answering Mike 10:59 \"what about all those other ideas\")",
+    "transcript 821452c3 2026-10-13T17:59Z (layer ledger, ~45 ideas, answering Mike 17:56 \"what about all of the other stack layers i have suggested\")",
+    "research/agere/FRONTIER_RESEARCH_2026-10.md:69 (#26)"
+   ],
+   "requested_date": "2026-10-13",
+   "ledger_component_ids": [
+    "engine_program_effect"
+   ],
+   "status": "built_and_on_question_path",
+   "evidence": "clinical/program_effect.py:57 METHODS matched_did/sdid/callaway_santanna"
+  },
+  {
+   "id": "target_trial",
+   "name": "Target-trial emulation protocol objects (TARGET) with negative controls",
+   "category": "statistics_method",
+   "what_it_should_do": "Make the target-trial protocol the contract for causal questions, with refutation/negative controls.",
+   "requested_by_or_source": [
+    "research/agere/FRONTIER_RESEARCH_2026-10.md:70 (#27)",
+    "/Users/mikel/agere-research/2026-10-18/AGERE_RESEARCH_REPORT.md:30,88"
+   ],
+   "requested_date": "2026-10-13",
+   "ledger_component_ids": [
+    "engine_target_trial"
+   ],
+   "status": "built_and_on_question_path",
+   "evidence": "clinical/target_trial.py:1,25; engine_target_trial planner_menu"
+  },
+  {
+   "id": "uplift_rate",
+   "name": "Uplift-based outreach targeting evaluated with RATE/Qini",
+   "category": "statistics_method",
+   "what_it_should_do": "Rank outreach by predicted benefit and evaluate with RATE/Qini.",
+   "requested_by_or_source": [
+    "research/agere/FRONTIER_RESEARCH_2026-10.md:65 (#22)",
+    "transcript 821452c3 2026-10-13T22:21Z"
+   ],
+   "requested_date": "2026-10-13",
+   "ledger_component_ids": [
+    "engine_uplift"
+   ],
+   "status": "built_and_on_question_path",
+   "evidence": "clinical/uplift.py:22-26; engine_uplift planner_menu"
+  },
+  {
+   "id": "causal_ml_hte",
+   "name": "Causal ML for heterogeneous effects (double ML, causal forests)",
+   "category": "statistics_method",
+   "what_it_should_do": "Estimate which patients a program helps most with DML/causal forests.",
+   "requested_by_or_source": [
+    "transcript 821452c3 2026-10-13T22:06Z (12 model ideas, answering Mike 22:05 \"have you already built in the classifiers and rerankers?\") (#5)",
+    "ENGINEERING_RESEARCH.md:110 (EconML)"
+   ],
+   "requested_date": "2026-10-13",
+   "ledger_component_ids": [
+    "engine_uplift"
+   ],
+   "status": "partially_built",
+   "evidence": "uplift.py implements meta-learners (T/X-learner, uplift.py:15); no DML or causal forest (grep econml|causal.forest = 0)"
+  },
+  {
+   "id": "markov_process_mining",
+   "name": "Markov chains / process mining of care pathways",
+   "category": "statistics_method",
+   "what_it_should_do": "Show how patients move through care and where pathways leak.",
+   "requested_by_or_source": [
+    "transcript 821452c3 2026-10-13T10:59Z (Claude idea map answering Mike 10:59 \"what about all those other ideas\")",
+    "transcript 821452c3 2026-10-13T17:59Z (layer ledger, ~45 ideas, answering Mike 17:56 \"what about all of the other stack layers i have suggested\") (Wave A)"
+   ],
+   "requested_date": "2026-10-13",
+   "ledger_component_ids": [
+    "engine_pathway"
+   ],
+   "status": "built_and_on_question_path",
+   "evidence": "clinical/pathway.py:1; engine_pathway planner_menu"
+  },
+  {
+   "id": "ocel_conformance",
+   "name": "Object-centric event logs (OCEL 2.0) + guideline conformance for pathways",
+   "category": "statistics_method",
+   "what_it_should_do": "Model pathways as object-centric logs and check guideline conformance.",
+   "requested_by_or_source": [
+    "research/agere/FRONTIER_RESEARCH_2026-10.md:87 (#44)"
+   ],
+   "requested_date": "2026-10-13",
+   "ledger_component_ids": [
+    "engine_pathway"
+   ],
+   "status": "not_built",
+   "evidence": "no OCEL code (grep ocel only in a normalization json)"
+  },
+  {
+   "id": "demand_forecasting",
+   "name": "Demand forecasting (ED volume, beds, staffing)",
+   "category": "analytics_engine",
+   "what_it_should_do": "Forecast ED volume, beds and staffing needs.",
+   "requested_by_or_source": [
+    "transcript 821452c3 2026-10-13T10:59Z (Claude idea map answering Mike 10:59 \"what about all those other ideas\") (Supply chain)",
+    "transcript 821452c3 2026-10-13T17:59Z (layer ledger, ~45 ideas, answering Mike 17:56 \"what about all of the other stack layers i have suggested\") (Wave A)"
+   ],
+   "requested_date": "2026-10-13",
+   "ledger_component_ids": [
+    "engine_demand",
+    "engine_forecast"
+   ],
+   "status": "built_and_on_question_path",
+   "evidence": "engine_demand planner_menu; clinical/demand.py"
+  },
+  {
+   "id": "mint_reconciliation",
+   "name": "MinT hierarchical forecast reconciliation",
+   "category": "statistics_method",
+   "what_it_should_do": "Reconcile forecasts coherently across practice -> region -> network.",
+   "requested_by_or_source": [
+    "research/agere/FRONTIER_RESEARCH_2026-10.md:68 (#25)",
+    "FRONTIER top-10 #10"
+   ],
+   "requested_date": "2026-10-13",
+   "ledger_component_ids": [
+    "engine_demand"
+   ],
+   "status": "built_and_on_question_path",
+   "evidence": "clinical/demand.py:615 MinT reconciliation"
+  },
+  {
+   "id": "timestral_demand",
+   "name": "Timestral time-series model as default demand forecaster",
+   "category": "local_model",
+   "what_it_should_do": "Use Mistral Timestral-123M for demand forecasts with the classic model as fallback.",
+   "requested_by_or_source": [
+    "transcript 9db9b050 2026-10-17T10:46Z (Mike: review Timestral for Agere)",
+    "docs/agere/BUILD_LOG.md:231-279 (Mike approved default)"
+   ],
+   "requested_date": "2026-10-17",
+   "ledger_component_ids": [
+    "engine_demand"
+   ],
+   "status": "built_and_on_question_path",
+   "evidence": "clinical/demand.py:409; analysis_graph.py:1560"
+  },
+  {
+   "id": "chronos_timesfm",
+   "name": "Chronos-2 / TimesFM zero-shot forecasting challengers",
+   "category": "local_model",
+   "what_it_should_do": "Benchmark time-series foundation models against demand backtests and keep only where they win.",
+   "requested_by_or_source": [
+    "transcript 821452c3 2026-10-13T22:06Z (12 model ideas, answering Mike 22:05 \"have you already built in the classifiers and rerankers?\") (#7)",
+    "research/agere/FRONTIER_RESEARCH_2026-10.md:78 (#35)"
+   ],
+   "requested_date": "2026-10-13",
+   "ledger_component_ids": [],
+   "status": "not_built",
+   "evidence": "grep chronos|timesfm = 0 (Timestral was adopted instead)"
+  },
+  {
+   "id": "tabpfn",
+   "name": "TabPFN tabular foundation model challenger",
+   "category": "local_model",
+   "what_it_should_do": "Challenge small-cohort tabular models (no-show, readmission, risk) with TabPFN.",
+   "requested_by_or_source": [
+    "transcript 821452c3 2026-10-13T22:06Z (12 model ideas, answering Mike 22:05 \"have you already built in the classifiers and rerankers?\") (#6)",
+    "research/agere/FRONTIER_RESEARCH_2026-10.md:79 (#36)"
+   ],
+   "requested_date": "2026-10-13",
+   "ledger_component_ids": [],
+   "status": "not_built",
+   "evidence": "grep tabpfn = 0"
+  },
+  {
+   "id": "settlement_var",
+   "name": "Settlement value-at-risk (Monte Carlo) for shared-savings contracts",
+   "category": "analytics_engine",
+   "what_it_should_do": "Show the probability a contract pays nothing or owes money.",
+   "requested_by_or_source": [
+    "transcript 821452c3 2026-10-13T10:59Z (Claude idea map answering Mike 10:59 \"what about all those other ideas\") (Market theory)",
+    "transcript 821452c3 2026-10-13T17:59Z (layer ledger, ~45 ideas, answering Mike 17:56 \"what about all of the other stack layers i have suggested\")"
+   ],
+   "requested_date": "2026-10-13",
+   "ledger_component_ids": [
+    "engine_contract_strategy",
+    "engine_vbc"
+   ],
+   "status": "built_and_on_question_path",
+   "evidence": "clinical/contract_strategy.py:21 CVaR; engine_contract_strategy planner_menu"
+  },
+  {
+   "id": "shapley_attribution",
+   "name": "Shapley savings attribution across practices/PCPs/programs",
+   "category": "analytics_engine",
+   "what_it_should_do": "Split savings and credit fairly with Shapley values.",
+   "requested_by_or_source": [
+    "transcript 821452c3 2026-10-13T10:59Z (Claude idea map answering Mike 10:59 \"what about all those other ideas\") (Game theory)",
+    "transcript 821452c3 2026-10-13T17:59Z (layer ledger, ~45 ideas, answering Mike 17:56 \"what about all of the other stack layers i have suggested\")"
+   ],
+   "requested_date": "2026-10-13",
+   "ledger_component_ids": [
+    "engine_vbc"
+   ],
+   "status": "built_and_on_question_path",
+   "evidence": "clinical/vbc.py:767; engine_vbc planner_menu"
+  },
+  {
+   "id": "knapsack_outreach",
+   "name": "Portfolio/knapsack outreach under nurse capacity",
+   "category": "analytics_engine",
+   "what_it_should_do": "Choose which patients to call to maximise expected avoided cost under capacity.",
+   "requested_by_or_source": [
+    "transcript 821452c3 2026-10-13T10:59Z (Claude idea map answering Mike 10:59 \"what about all those other ideas\")",
+    "transcript 821452c3 2026-10-13T17:59Z (layer ledger, ~45 ideas, answering Mike 17:56 \"what about all of the other stack layers i have suggested\")"
+   ],
+   "requested_date": "2026-10-13",
+   "ledger_component_ids": [
+    "engine_outreach"
+   ],
+   "status": "built_and_on_question_path",
+   "evidence": "clinical/outreach.py:25; engine_outreach planner_menu"
+  },
+  {
+   "id": "bandits_outreach",
+   "name": "Multi-armed bandits learning which outreach works",
+   "category": "learning_and_training",
+   "what_it_should_do": "Learn which outreach works for which segment from outcomes while exploring.",
+   "requested_by_or_source": [
+    "transcript 821452c3 2026-10-13T10:59Z (Claude idea map answering Mike 10:59 \"what about all those other ideas\")",
+    "transcript 821452c3 2026-10-13T17:59Z (layer ledger, ~45 ideas, answering Mike 17:56 \"what about all of the other stack layers i have suggested\")"
+   ],
+   "requested_date": "2026-10-13",
+   "ledger_component_ids": [
+    "engine_outreach"
+   ],
+   "status": "partially_built",
+   "evidence": "clinical/outreach_bandit.py:1 exists; no outcome feed from plans/completion.py into the bandit (CLAUDE_AGERE_STACK_REVIEW.md:111 \"feed outreach_bandit\" proposed)"
+  },
+  {
+   "id": "off_policy_evaluation",
+   "name": "Doubly-robust off-policy evaluation of outreach/bandit policies",
+   "category": "statistics_method",
+   "what_it_should_do": "Evaluate outreach policies from logs before recommending them.",
+   "requested_by_or_source": [
+    "research/agere/FRONTIER_RESEARCH_2026-10.md:80 (#37)"
+   ],
+   "requested_date": "2026-10-13",
+   "ledger_component_ids": [
+    "engine_outreach"
+   ],
+   "status": "not_built",
+   "evidence": "outreach_bandit.py/outreach.py have no OPE (doubly robust appears only in program_effect/uplift)"
+  },
+  {
+   "id": "options_view_contracts",
+   "name": "Options view of downside-risk contracts (Greeks)",
+   "category": "analytics_engine",
+   "what_it_should_do": "Value downside-risk contracts as options on population cost.",
+   "requested_by_or_source": [
+    "transcript 821452c3 2026-10-13T10:59Z (Claude idea map answering Mike 10:59 \"what about all those other ideas\")",
+    "transcript 821452c3 2026-10-13T17:59Z (layer ledger, ~45 ideas, answering Mike 17:56 \"what about all of the other stack layers i have suggested\") (Wave E)"
+   ],
+   "requested_date": "2026-10-13",
+   "ledger_component_ids": [
+    "engine_contract_strategy"
+   ],
+   "status": "built_and_on_question_path",
+   "evidence": "clinical/contract_strategy.py:22 option Greeks"
+  },
+  {
+   "id": "negotiation_simulator",
+   "name": "Contract negotiation simulator (Nash bargaining)",
+   "category": "analytics_engine",
+   "what_it_should_do": "Simulate payer-provider contract terms before signing.",
+   "requested_by_or_source": [
+    "transcript 821452c3 2026-10-13T10:59Z (Claude idea map answering Mike 10:59 \"what about all those other ideas\")",
+    "transcript 821452c3 2026-10-13T17:59Z (layer ledger, ~45 ideas, answering Mike 17:56 \"what about all of the other stack layers i have suggested\") (Wave E)"
+   ],
+   "requested_date": "2026-10-13",
+   "ledger_component_ids": [
+    "engine_contract_strategy"
+   ],
+   "status": "built_and_on_question_path",
+   "evidence": "clinical/contract_strategy.py:26 Nash; engine_contract_strategy planner_menu",
+   "note": "961aff1e 10-17T13:14Z listed \"options, negotiation and mechanism design never built\"; options and negotiation were later built into contract_strategy"
+  },
+  {
+   "id": "mechanism_design_upcoding",
+   "name": "Mechanism design / upcoding detection",
+   "category": "analytics_engine",
+   "what_it_should_do": "Design attribution/incentive rules that cannot be gamed and detect upcoding responses to risk adjustment.",
+   "requested_by_or_source": [
+    "transcript 821452c3 2026-10-13T10:59Z (Claude idea map answering Mike 10:59 \"what about all those other ideas\") (Game theory)",
+    "transcript 821452c3 2026-10-13T17:59Z (layer ledger, ~45 ideas, answering Mike 17:56 \"what about all of the other stack layers i have suggested\") (Wave E)",
+    "memory agere-integration-architecture.md (queue Mike approved 10-13: \"upcoding\")",
+    "transcript 961aff1e 2026-10-18T10:11Z (\"not added yet\": mechanism design)"
+   ],
+   "requested_date": "2026-10-13",
+   "ledger_component_ids": [],
+   "status": "not_built",
+   "evidence": "only an \"upcod\" regex trigger for claims peers in clinical/local_compiler.py:1014; no mechanism-design or upcoding engine"
+  },
+  {
+   "id": "network_spread",
+   "name": "Epidemic / percolation spread across shared-provider networks",
+   "category": "analytics_engine",
+   "what_it_should_do": "Model how utilization/practice patterns spread across a provider network.",
+   "requested_by_or_source": [
+    "transcript 821452c3 2026-10-13T10:59Z (Claude idea map answering Mike 10:59 \"what about all those other ideas\") (speculative)",
+    "transcript 821452c3 2026-10-13T17:59Z (layer ledger, ~45 ideas, answering Mike 17:56 \"what about all of the other stack layers i have suggested\") (Wave E)"
+   ],
+   "requested_date": "2026-10-13",
+   "ledger_component_ids": [
+    "engine_network"
+   ],
+   "status": "not_built",
+   "evidence": "grep percolation|epidemic = 0; engine_network does leakage, not spread"
+  },
+  {
+   "id": "appointment_overbooking",
+   "name": "Appointment overbooking (airline yield management)",
+   "category": "analytics_engine",
+   "what_it_should_do": "Overbook slots by each clinic's predicted no-show rate.",
+   "requested_by_or_source": [
+    "transcript 821452c3 2026-10-13T10:59Z (Claude idea map answering Mike 10:59 \"what about all those other ideas\") (Airlines)",
+    "transcript 821452c3 2026-10-13T17:59Z (layer ledger, ~45 ideas, answering Mike 17:56 \"what about all of the other stack layers i have suggested\") (Wave B)"
+   ],
+   "requested_date": "2026-10-13",
+   "ledger_component_ids": [
+    "engine_scheduling"
+   ],
+   "status": "built_and_on_question_path",
+   "evidence": "engine_scheduling planner_menu; ask_view.py:461"
+  },
+  {
+   "id": "overbooking_fairness",
+   "name": "Overbooking fairness audit by age/payer",
+   "category": "analytics_engine",
+   "what_it_should_do": "Audit the burden of overbooking across subgroups.",
+   "requested_by_or_source": [
+    "research/agere/FRONTIER_RESEARCH_2026-10.md:92 (#49)"
+   ],
+   "requested_date": "2026-10-13",
+   "ledger_component_ids": [
+    "engine_scheduling"
+   ],
+   "status": "not_built",
+   "evidence": "no fairness audit in clinical/scheduling.py"
+  },
+  {
+   "id": "briefing_ltr",
+   "name": "Learning-to-rank for briefing findings",
+   "category": "learning_and_training",
+   "what_it_should_do": "Rank daily briefing cards from clicks and dismissals.",
+   "requested_by_or_source": [
+    "transcript 821452c3 2026-10-13T10:59Z (Claude idea map answering Mike 10:59 \"what about all those other ideas\") (Search engines)",
+    "transcript 821452c3 2026-10-13T17:59Z (layer ledger, ~45 ideas, answering Mike 17:56 \"what about all of the other stack layers i have suggested\") (Wave B)"
+   ],
+   "requested_date": "2026-10-13",
+   "ledger_component_ids": [
+    "briefing_ltr",
+    "engine_briefing"
+   ],
+   "status": "built_and_on_question_path",
+   "evidence": "clinical/briefing_rank.py:1; ledger inside:engine_briefing"
+  },
+  {
+   "id": "scorecard_risk_models",
+   "name": "Auditable credit-scorecard-style risk models",
+   "category": "analytics_engine",
+   "what_it_should_do": "Build points-based explainable risk models a CMO can audit line by line.",
+   "requested_by_or_source": [
+    "transcript 821452c3 2026-10-13T10:59Z (Claude idea map answering Mike 10:59 \"what about all those other ideas\") (Credit scoring)",
+    "transcript 821452c3 2026-10-13T17:59Z (layer ledger, ~45 ideas, answering Mike 17:56 \"what about all of the other stack layers i have suggested\")"
+   ],
+   "requested_date": "2026-10-13",
+   "ledger_component_ids": [],
+   "status": "not_built",
+   "evidence": "no scorecard/points risk model code found"
+  },
+  {
+   "id": "markets_view",
+   "name": "Markets view: each practice as a ticker with \"what moved today\"",
+   "category": "analytics_engine",
+   "what_it_should_do": "Treat practices like tickers with trend, volatility, anomaly alerts and a daily briefing.",
+   "requested_by_or_source": [
+    "transcript 821452c3 2026-10-13T10:59Z (Claude idea map answering Mike 10:59 \"what about all those other ideas\")",
+    "transcript 821452c3 2026-10-13T17:59Z (layer ledger, ~45 ideas, answering Mike 17:56 \"what about all of the other stack layers i have suggested\") (Wave A)"
+   ],
+   "requested_date": "2026-10-13",
+   "ledger_component_ids": [
+    "engine_market"
+   ],
+   "status": "built_and_on_question_path",
+   "evidence": "clinical/market.py; engine_market planner_menu"
+  },
+  {
+   "id": "risk_adjustment_hcc",
+   "name": "CMS-HCC V24/V28 risk adjustment",
+   "category": "clinical_logic_or_definitions",
+   "what_it_should_do": "Compute HCC risk scores matching CMS software.",
+   "requested_by_or_source": [
+    "memory agere-integration-architecture.md (VBC knowledge layer)"
+   ],
+   "requested_date": "2026-10-13",
+   "ledger_component_ids": [
+    "engine_risk_adjustment",
+    "risk_adjustment_tables"
+   ],
+   "status": "built_and_on_question_path",
+   "evidence": "engine_risk_adjustment planner_menu"
+  },
+  {
+   "id": "risk_adjustment_fairness",
+   "name": "Risk-adjustment fairness diagnostics (undercompensated groups)",
+   "category": "statistics_method",
+   "what_it_should_do": "Search for undercompensated groups and offer a constrained/fair regression.",
+   "requested_by_or_source": [
+    "research/agere/FRONTIER_RESEARCH_2026-10.md:76 (#33)"
+   ],
+   "requested_date": "2026-10-13",
+   "ledger_component_ids": [
+    "engine_risk_adjustment"
+   ],
+   "status": "not_built",
+   "evidence": "no fairness code in clinical/risk_adjustment.py"
+  },
+  {
+   "id": "hcc_suspecting",
+   "name": "Retrieve-then-rank ICD-10/HCC suspecting",
+   "category": "clinical_logic_or_definitions",
+   "what_it_should_do": "Suspect missing HCCs by retrieving and ranking candidate codes, never free generation.",
+   "requested_by_or_source": [
+    "research/agere/FRONTIER_RESEARCH_2026-10.md:85 (#42)"
+   ],
+   "requested_date": "2026-10-13",
+   "ledger_component_ids": [],
+   "status": "built_but_not_on_question_path",
+   "evidence": "clinical/hcc_capture.py exists but nothing on the service import graph uses it (only tools/eval_predictions.py:9)"
+  },
+  {
+   "id": "benchmark_rebasing_simulator",
+   "name": "Benchmark ratchet and rebasing simulator (MSSP, LEAD)",
+   "category": "analytics_engine",
+   "what_it_should_do": "Answer \"should we renew early\" with rebasing/ratchet scenarios from rulebooks.",
+   "requested_by_or_source": [
+    "research/agere/FRONTIER_RESEARCH_2026-10.md:77 (#34)"
+   ],
+   "requested_date": "2026-10-13",
+   "ledger_component_ids": [
+    "engine_contract_strategy"
+   ],
+   "status": "not_built",
+   "evidence": "contract_strategy.py:556 lists rebasing/ratchets as a limitation"
+  },
+  {
+   "id": "value_based_care_engine",
+   "name": "Value-based-care engine (attribution, benchmarks, quality, shared savings, contract rules)",
+   "category": "analytics_engine",
+   "what_it_should_do": "Compute attribution, cost/utilization benchmarks, risk adjustment, quality measures and shared savings as versioned rules.",
+   "requested_by_or_source": [
+    "transcript 821452c3 2026-10-12T23:20Z (Claude plan item 2)",
+    "transcript 821452c3 2026-10-12T23:20Z (Mike: \"all of the understanding of what value based care and population health is\")"
+   ],
+   "requested_date": "2026-10-12",
+   "ledger_component_ids": [
+    "engine_vbc",
+    "measure_library",
+    "program_rulebooks",
+    "vbc_families"
+   ],
+   "status": "built_and_on_question_path",
+   "evidence": "engine_vbc planner_menu; config/agere/programs (14 rulebooks)"
+  },
+  {
+   "id": "star_ratings_projection",
+   "name": "Medicare Star-rating projections (cut points, QBP)",
+   "category": "analytics_engine",
+   "what_it_should_do": "Project Star ratings against cut points and quality bonus.",
+   "requested_by_or_source": [
+    "transcript 961aff1e 2026-10-18T10:11Z (\"not added yet\" list)"
+   ],
+   "requested_date": "2026-10-18",
+   "ledger_component_ids": [
+    "program_rulebooks"
+   ],
+   "status": "partially_built",
+   "evidence": "config/agere/programs/ma_star_ratings.json rulebook exists; no projection engine"
+  },
+  {
+   "id": "insight_discovery",
+   "name": "Insight discovery engine (planted-pattern discovery)",
+   "category": "analytics_engine",
+   "what_it_should_do": "Find patterns TextQL/Arcadia-class baselines miss (reconnect insight-engine work).",
+   "requested_by_or_source": [
+    "transcript 821452c3 2026-10-12T23:20Z (Claude plan item 4)"
+   ],
+   "requested_date": "2026-10-12",
+   "ledger_component_ids": [
+    "engine_discover"
+   ],
+   "status": "built_and_on_question_path",
+   "evidence": "engine_discover planner_menu; clinical/discover.py"
+  },
+  {
+   "id": "discharge_forecast_des",
+   "name": "Discharge-count forecasting and discrete-event capacity twin",
+   "category": "analytics_engine",
+   "what_it_should_do": "Forecast discharges/bed-days and run DES capacity scenarios.",
+   "requested_by_or_source": [
+    "research/agere/FRONTIER_RESEARCH_2026-10.md:91 (#48)"
+   ],
+   "requested_date": "2026-10-13",
+   "ledger_component_ids": [
+    "engine_queueing"
+   ],
+   "status": "not_built",
+   "evidence": "no TEND/DES code; only a mention in clinical/work_capacity.py:17"
+  },
+  {
+   "id": "forecast_to_capacity",
+   "name": "Forecast-to-capacity staffing decisions",
+   "category": "analytics_engine",
+   "what_it_should_do": "Turn demand forecasts into staffing decisions.",
+   "requested_by_or_source": [
+    "/Users/mikel/agere-research/2026-10-18/AGERE_RESEARCH_REPORT.md:31"
+   ],
+   "requested_date": "2026-10-18",
+   "ledger_component_ids": [
+    "engine_queueing",
+    "engine_demand"
+   ],
+   "status": "partially_built",
+   "evidence": "engine_queueing and engine_demand on planner menu; no staffing optimisation"
+  },
+  {
+   "id": "capacity_aware_outreach_solver",
+   "name": "Capacity-aware outreach/scheduling allocation (MILP / CP-SAT)",
+   "category": "analytics_engine",
+   "what_it_should_do": "Allocate outreach and slots under capacity with an optimiser.",
+   "requested_by_or_source": [
+    "/Users/mikel/agere-research/2026-10-18/AGERE_RESEARCH_REPORT.md:171",
+    "transcript 961aff1e 2026-10-18T13:17Z (next-build #5)"
+   ],
+   "requested_date": "2026-10-18",
+   "ledger_component_ids": [
+    "engine_outreach"
+   ],
+   "status": "partially_built",
+   "evidence": "knapsack in outreach.py on path; mathematics.allocate MILP (clinical_core/agere/mathematics.py:5) listed as an orphan to wire (CLAUDE_AGERE_STACK_REVIEW.md:125-130)"
+  },
+  {
+   "id": "evolutionary_policy_search",
+   "name": "Evolutionary policy / heuristic search (AlphaEvolve/FunSearch-style)",
+   "category": "learning_and_training",
+   "what_it_should_do": "Evolve outreach/scheduling heuristics against a simulator.",
+   "requested_by_or_source": [
+    "/Users/mikel/agere-research/2026-10-18/AGERE_RESEARCH_REPORT.md:86",
+    "transcript 961aff1e 2026-10-18 (builder bb1f0c6)"
+   ],
+   "requested_date": "2026-10-18",
+   "ledger_component_ids": [],
+   "status": "built_but_not_on_question_path",
+   "evidence": "clinical_core/agere/evolve/ (loop.py not reachable from service; off by default, bb1f0c6); not in ledger"
+  },
+  {
+   "id": "population_simulator",
+   "name": "Population intervention simulator with CMS ACCESS OAP economics",
+   "category": "analytics_engine",
+   "what_it_should_do": "Simulate intervention arms and economics for a population.",
+   "requested_by_or_source": [
+    "transcript 961aff1e 2026-10-18T14:28Z",
+    "/Users/mikel/agere-research/2026-10-18/AGERE_RESEARCH_REPORT.md:90,174"
+   ],
+   "requested_date": "2026-10-18",
+   "ledger_component_ids": [],
+   "status": "built_and_on_question_path",
+   "evidence": "clinical_core/agere/simulator/ served via workspace_api.py:201; not in component ledger",
+   "path_relevance": "product_surface"
+  },
+  {
+   "id": "conditional_reasoning",
+   "name": "Conditional decision kernel + value of information (EVSI)",
+   "category": "analytics_engine",
+   "what_it_should_do": "Show which conclusions survive unknowns and which facts would change them.",
+   "requested_by_or_source": [
+    "research/agere/CONDITIONAL_REASONING_BUILD.md:11-18"
+   ],
+   "requested_date": "2026-10-08",
+   "ledger_component_ids": [
+    "engine_requirements"
+   ],
+   "status": "built_and_on_question_path",
+   "evidence": "clinical/evidence_requirements.py:24; engine_requirements planner_menu"
+  },
+  {
+   "id": "tensor_train_joint_model",
+   "name": "Joint patient-state / source-observation model (tensor-train, latent)",
+   "category": "local_model",
+   "what_it_should_do": "Separate real patient change from feed outage with a joint latent model.",
+   "requested_by_or_source": [
+    "research/agere/RESEARCH_PROGRAM.md:28-40",
+    "AGERE_LOCAL_MODELS.md:20"
+   ],
+   "requested_date": "2026-10-08",
+   "ledger_component_ids": [
+    "tensor_train_model",
+    "outcome_forecast_models"
+   ],
+   "status": "built_but_not_on_question_path",
+   "evidence": "ledger outcome_forecast_models build_time_only (no advantage over logistic; not promoted)"
+  },
+  {
+   "id": "decision_preserving_selection",
+   "name": "Decision-preserving / learned evidence selection",
+   "category": "retrieval_evidence",
+   "what_it_should_do": "Select evidence that preserves decisions under a budget.",
+   "requested_by_or_source": [
+    "research/agere/RESEARCH_PROGRAM.md:42-48",
+    "AGERE_BUILD_CONTROL.json:47-65 (G2)"
+   ],
+   "requested_date": "2026-10-08",
+   "ledger_component_ids": [],
+   "status": "built_but_not_on_question_path",
+   "evidence": "clinical/source_selection.py built; G2 negative decision, candidate not promoted (AGERE_BUILD_CONTROL.json:47-65)"
+  },
+  {
+   "id": "learned_information_acquisition",
+   "name": "Learned information acquisition policy",
+   "category": "analytics_engine",
+   "what_it_should_do": "Learn where to spend evidence-acquisition effort.",
+   "requested_by_or_source": [
+    "research/agere/RESEARCH_PROGRAM.md:50-56"
+   ],
+   "requested_date": "2026-10-08",
+   "ledger_component_ids": [],
+   "status": "not_built",
+   "evidence": "not found"
+  },
+  {
+   "id": "warehouse_retriever",
+   "name": "Stack retriever (FTS5 BM25 + MiniLM + RRF + BGE) with Granite hybrid",
+   "category": "retrieval_evidence",
+   "what_it_should_do": "Retrieve relevant sources and passages for a question.",
+   "requested_by_or_source": [
+    "AGERE_LOCAL_MODELS.md:17-23",
+    "research/agere/MODEL_SELECTION_REVIEW.md:22,39"
+   ],
+   "requested_date": "2026-10-08",
+   "ledger_component_ids": [
+    "warehouse_retriever",
+    "fts5_index",
+    "minilm_encoder",
+    "granite_hybrid_retrieval",
+    "question_context_selection",
+    "workspace_passage_search"
+   ],
+   "status": "built_and_on_question_path",
+   "evidence": "ledger cascade_tier:evidence_retrieval"
+  },
+  {
+   "id": "ultrabert_encoder",
+   "name": "UltraBERT second encoder (catalog/label matching)",
+   "category": "retrieval_evidence",
+   "what_it_should_do": "Find the right data with a second encoder for raw-catalog rerank and label fallback.",
+   "requested_by_or_source": [
+    "docs/agere/HANDOFF_2026-10-14.md:38",
+    "transcript 961aff1e 2026-10-18T11:28Z (Mike: \"local models like ultrabert\")"
+   ],
+   "requested_date": "2026-10-14",
+   "ledger_component_ids": [
+    "ultrabert_second_encoder",
+    "answer_guard_dense_catalog"
+   ],
+   "status": "built_and_on_question_path",
+   "evidence": "ledger inside:answer_guard_dense_catalog behind AGERE_SECOND_ENCODER; local_encoders.py:170"
+  },
+  {
+   "id": "evidence_review_readers",
+   "name": "Evidence review tier: free readers -> MedGemma -> Jev/Perplexity",
+   "category": "retrieval_evidence",
+   "what_it_should_do": "Read notes/documents with student heads, Kev, d1, MedGemma, then Jev/Perplexity when live.",
+   "requested_by_or_source": [
+    "docs/agere/HANDOFF_2026-10-22.md:16-28"
+   ],
+   "requested_date": "2026-10-22",
+   "ledger_component_ids": [
+    "engine_review",
+    "kev_reader",
+    "d1_reader",
+    "medgemma_reader",
+    "semantic_statement_reader",
+    "context_pass_review",
+    "reader_comparison"
+   ],
+   "status": "built_and_on_question_path",
+   "evidence": "ledger cascade_tier:evidence_review"
+  },
+  {
+   "id": "medgemma",
+   "name": "MedGemma 1.5 4B document/image reader",
+   "category": "local_model",
+   "what_it_should_do": "Read clinical documents locally as a challenger reader.",
+   "requested_by_or_source": [
+    "research/agere/MODEL_SELECTION_REVIEW.md:23",
+    "docs/agere/HANDOFF_2026-10-22.md:17"
+   ],
+   "requested_date": "2026-10-08",
+   "ledger_component_ids": [
+    "medgemma_reader"
+   ],
+   "status": "built_and_on_question_path",
+   "evidence": "ledger inside:engine_review; answered wrong in smoke test, needs calibration (90323f53 10-22)"
+  },
+  {
+   "id": "kev_d1_local_deciders",
+   "name": "Kev 4B and Liquid d1-3B local bounded deciders",
+   "category": "local_model",
+   "what_it_should_do": "Make bounded evidence decisions locally.",
+   "requested_by_or_source": [
+    "research/agere/LOCAL_DECISION_RECONCILIATION_2026-10-09.md:11,36,48"
+   ],
+   "requested_date": "2026-10-09",
+   "ledger_component_ids": [
+    "kev_reader",
+    "d1_reader"
+   ],
+   "status": "built_and_on_question_path",
+   "evidence": "ledger inside:engine_review (failed acceptance gate, frozen)"
+  },
+  {
+   "id": "note_facts_extraction",
+   "name": "Distilled note-fact extractor (notes -> facts table) used by questions",
+   "category": "retrieval_evidence",
+   "what_it_should_do": "Extract facts from notes and let question routes use them.",
+   "requested_by_or_source": [
+    "transcript 821452c3 2026-10-13T17:59Z (layer ledger, ~45 ideas, answering Mike 17:56 \"what about all of the other stack layers i have suggested\") (\"no question route uses them\")",
+    "transcript c919721f 2026-10-21T20:46Z (next note-fact families)"
+   ],
+   "requested_date": "2026-10-13",
+   "ledger_component_ids": [
+    "note_facts"
+   ],
+   "status": "built_and_on_question_path",
+   "evidence": "extractor ledger build_time_only; facts read at answer time via clinical_inputs.py:47, general_analysis.py:289"
+  },
+  {
+   "id": "clinical_ner",
+   "name": "Local clinical NER (GLiNER-BioMed / OpenMed) for notes",
+   "category": "local_model",
+   "what_it_should_do": "Keep note facts accurate on real progress notes with a zero-shot biomedical NER checked against Sonnet labels.",
+   "requested_by_or_source": [
+    "transcript 821452c3 2026-10-13T22:06Z (12 model ideas, answering Mike 22:05 \"have you already built in the classifiers and rerankers?\") (#4)",
+    "research/agere/FRONTIER_RESEARCH_2026-10.md:82 (#39)",
+    "ENGINEERING_RESEARCH.md:41 (medspaCy)"
+   ],
+   "requested_date": "2026-10-13",
+   "ledger_component_ids": [],
+   "status": "not_built",
+   "evidence": "grep gliner|openmed = 0; medspaCy only a comment (concepts.py:287)"
+  },
+  {
+   "id": "terminology_mapping",
+   "name": "Clinical terminology mapping (SNOMED/LOINC/RxNorm) + retrieve-then-classify value sets",
+   "category": "clinical_logic_or_definitions",
+   "what_it_should_do": "Map messy labels and notes to codes the compiler can query, LLM only as constrained adjudicator.",
+   "requested_by_or_source": [
+    "transcript 821452c3 2026-10-13T10:59Z (Claude idea map answering Mike 10:59 \"what about all those other ideas\") (Clinical NER and terminology)",
+    "research/agere/FRONTIER_RESEARCH_2026-10.md:61 (#18)"
+   ],
+   "requested_date": "2026-10-13",
+   "ledger_component_ids": [
+    "concept_resolver",
+    "local_normalizer"
+   ],
+   "status": "partially_built",
+   "evidence": "config/agere/normalization dictionaries + concepts.py on path; no retrieve-then-classify value-set adjudicator"
+  },
+  {
+   "id": "therapy_reason_reader_cascade",
+   "name": "Medication-reason / therapy-barrier reader cascade (rules -> classifier -> Jev/Perplexity -> LLM)",
+   "category": "retrieval_evidence",
+   "what_it_should_do": "Read why a patient is not on a therapy from notes, PDFs and faxes with a tiered cascade.",
+   "requested_by_or_source": [
+    "transcript 6059d831 2026-10-17T10:50Z (Mike: use JEV/classifier for prose)",
+    "transcript 961aff1e 2026-10-18T12:11Z",
+    "/Users/mikel/agere-research/2026-10-18/AGERE_RESEARCH_REPORT.md:54-61,161"
+   ],
+   "requested_date": "2026-10-17",
+   "ledger_component_ids": [
+    "therapy_barrier_cascade",
+    "therapy_barrier_classifier"
+   ],
+   "status": "built_but_not_on_question_path",
+   "evidence": "ledger build_time_only for both; runs at build time, not per question"
+  },
+  {
+   "id": "bioclinical_modernbert_student",
+   "name": "BioClinical ModernBERT span/relation student",
+   "category": "local_model",
+   "what_it_should_do": "Train a small clinical encoder reader for evidence relations / medication state.",
+   "requested_by_or_source": [
+    "research/agere/MODEL_SELECTION_REVIEW.md:20,79",
+    "/Users/mikel/agere-research/2026-10-18/AGERE_RESEARCH_REPORT.md:46,67"
+   ],
+   "requested_date": "2026-10-08",
+   "ledger_component_ids": [
+    "relation_learning",
+    "neural_specialist_branch"
+   ],
+   "status": "built_but_not_on_question_path",
+   "evidence": "ledger relation_learning and neural_specialist_branch build_time_only"
+  },
+  {
+   "id": "ocr_document_path",
+   "name": "PDF/fax/echo OCR evidence path (Apple Vision, Chandra, olmOCR/PaddleOCR)",
+   "category": "data_ingestion",
+   "what_it_should_do": "Recover scanned documents faithfully with page/bbox provenance and make them answerable.",
+   "requested_by_or_source": [
+    "/Users/mikel/agere-research/2026-10-18/AGERE_RESEARCH_REPORT.md:49-50,162",
+    "transcript 961aff1e 2026-10-18T12:11Z",
+    "transcript 961aff1e 2026-10-18T10:11Z (\"not added yet\": scanned PDF OCR)"
+   ],
+   "requested_date": "2026-10-18",
+   "ledger_component_ids": [
+    "chandra_ocr",
+    "workspace_passage_search"
+   ],
+   "status": "partially_built",
+   "evidence": "ingest/ocr.py (Vision, Chandra ~190 s/page) not imported by service; chandra_ocr build_time_only; documents.extract_pdf orphan (documents.py:8); passages searchable via workspace_passage_search; olmOCR/Paddle not built"
+  },
+  {
+   "id": "bounded_evidence_packets",
+   "name": "Bounded evidence packets (<=8 subject-anchored sentences)",
+   "category": "retrieval_evidence",
+   "what_it_should_do": "Give readers identical bounded evidence packets with offsets.",
+   "requested_by_or_source": [
+    "research/agere/LOCAL_DECISION_RECONCILIATION_2026-10-09.md:73"
+   ],
+   "requested_date": "2026-10-09",
+   "ledger_component_ids": [],
+   "status": "built_but_not_on_question_path",
+   "evidence": "clinical/bounded_evidence.py not imported by any service-reachable module"
+  },
+  {
+   "id": "evidence_set_completeness",
+   "name": "Evidence-set completeness / conclusion-guided retrieval",
+   "category": "retrieval_evidence",
+   "what_it_should_do": "Fetch the combination of sources each conclusion needs.",
+   "requested_by_or_source": [
+    "/Users/mikel/Agere-Research-Reviews/2026-10-20-dair/REVIEW.md:38,47-57"
+   ],
+   "requested_date": "2026-10-20",
+   "ledger_component_ids": [],
+   "status": "not_built",
+   "evidence": "not found"
+  },
+  {
+   "id": "protected_exception_channels",
+   "name": "Protected exception/contradiction retrieval channels",
+   "category": "retrieval_evidence",
+   "what_it_should_do": "Stop reranking from dropping negative or contradicting evidence.",
+   "requested_by_or_source": [
+    "research/agere/CONTEXT_ENGINEERING_REVIEW_2026-10-09.md:41-46"
+   ],
+   "requested_date": "2026-10-09",
+   "ledger_component_ids": [],
+   "status": "not_built",
+   "evidence": "not found"
+  },
+  {
+   "id": "context_builder_contract",
+   "name": "Unified task-specific context-builder contract",
+   "category": "retrieval_evidence",
+   "what_it_should_do": "Build context with scope, exceptions, contradictions, unknowns and budget per task.",
+   "requested_by_or_source": [
+    "research/agere/CONTEXT_ENGINEERING_REVIEW_2026-10-09.md:54-69"
+   ],
+   "requested_date": "2026-10-09",
+   "ledger_component_ids": [
+    "question_context_selection"
+   ],
+   "status": "built_and_on_question_path",
+   "evidence": "clinical/context_builder.py (service-reachable)"
+  },
+  {
+   "id": "constraint_preserving_compaction",
+   "name": "Constraint-preserving context compaction",
+   "category": "retrieval_evidence",
+   "what_it_should_do": "Protect scope fields when context is compacted.",
+   "requested_by_or_source": [
+    "/Users/mikel/Agere-Research-Reviews/2026-10-20-dair/REVIEW.md:43,101-109"
+   ],
+   "requested_date": "2026-10-20",
+   "ledger_component_ids": [],
+   "status": "not_built",
+   "evidence": "grep compaction = 0"
+  },
+  {
+   "id": "medgraphrag",
+   "name": "MedGraphRAG retrieval challenger",
+   "category": "retrieval_evidence",
+   "what_it_should_do": "Challenge reference-linkage retrieval with graph RAG.",
+   "requested_by_or_source": [
+    "/Users/mikel/Agere-Research-Reviews/2026-10-20-dair/REVIEW.md:131"
+   ],
+   "requested_date": "2026-10-20",
+   "ledger_component_ids": [],
+   "status": "not_built",
+   "evidence": "not found (optional challenger)"
+  },
+  {
+   "id": "knowledge_engine",
+   "name": "Cited VBC/healthcare knowledge engine",
+   "category": "knowledge_and_rules",
+   "what_it_should_do": "Answer program/rule questions from a cited knowledge base.",
+   "requested_by_or_source": [
+    "memory agere-integration-architecture.md (knowledge operator 349 entries)"
+   ],
+   "requested_date": "2026-10-13",
+   "ledger_component_ids": [
+    "engine_knowledge",
+    "vbc_knowledge_index",
+    "vbc_knowledge_synthesis",
+    "vbc_knowledge_context_for",
+    "healthcare_source_context",
+    "governed_knowledge"
+   ],
+   "status": "built_and_on_question_path",
+   "evidence": "engine_knowledge inside:local_compiler; synthesis behind AGERE_KNOWLEDGE_SYNTHESIS default off"
+  },
+  {
+   "id": "governed_metric_layer",
+   "name": "Typed metric definitions in the semantic layer (denominators, attribution, value sets, clocks)",
+   "category": "knowledge_and_rules",
+   "what_it_should_do": "Encode measure mechanics as typed definitions the SQL writer must use.",
+   "requested_by_or_source": [
+    "research/agere/FRONTIER_RESEARCH_2026-10.md:47 (#4)",
+    "FRONTIER top-10 #6"
+   ],
+   "requested_date": "2026-10-13",
+   "ledger_component_ids": [
+    "governed_metric_layer",
+    "governed_measure_vocabulary",
+    "engine_governed_metric",
+    "measure_library"
+   ],
+   "status": "built_and_on_question_path",
+   "evidence": "ledger inside:metric_router / compositional_grammar; clinical/metrics.py"
+  },
+  {
+   "id": "definitions_registry",
+   "name": "Signed-off versioned definitions registry",
+   "category": "clinical_logic_or_definitions",
+   "what_it_should_do": "Keep signed-off, versioned clinical definitions and disclose them on answers.",
+   "requested_by_or_source": [
+    "transcript 821452c3 2026-10-13T10:59Z (Claude idea map answering Mike 10:59 \"what about all those other ideas\") (Phase 2)",
+    "transcript 821452c3 2026-10-13T12:06Z (Mike: \"i sign off on the definitions\")"
+   ],
+   "requested_date": "2026-10-13",
+   "ledger_component_ids": [
+    "clinical_definitions",
+    "superseded_definition_check"
+   ],
+   "status": "built_and_on_question_path",
+   "evidence": "ledger clinical_definitions spine:execution"
+  },
+  {
+   "id": "default_definitions",
+   "name": "Default definitions (AHRQ PQI, NYU ED, measure gaps, PDC>=0.8, target doses)",
+   "category": "clinical_logic_or_definitions",
+   "what_it_should_do": "Apply named standard definitions when a question gives none.",
+   "requested_by_or_source": [
+    "docs/agere/brief-2026-10-21/BUILD_BRIEF_PHASE0-2.md:62-70"
+   ],
+   "requested_date": "2026-10-21",
+   "ledger_component_ids": [
+    "default_definitions"
+   ],
+   "status": "built_and_on_question_path",
+   "evidence": "ledger planner_menu; clinical/default_definitions.py (NYU table is an approximation)"
+  },
+  {
+   "id": "medication_state",
+   "name": "Medication-state reconciliation (filled/listed-not-filled/stopped/never)",
+   "category": "clinical_logic_or_definitions",
+   "what_it_should_do": "Classify each patient-drug as filled_current, listed_not_filled, documented_stopped_or_intolerant or never_recorded.",
+   "requested_by_or_source": [
+    "docs/agere/brief-2026-10-21/BUILD_BRIEF_PHASE0-2.md:72-80"
+   ],
+   "requested_date": "2026-10-21",
+   "ledger_component_ids": [
+    "medication_state_macro"
+   ],
+   "status": "built_and_on_question_path",
+   "evidence": "ledger planner_menu; clinical/medication_state.py"
+  },
+  {
+   "id": "drug_class_vocabulary",
+   "name": "All-healthcare drug-class vocabulary",
+   "category": "clinical_logic_or_definitions",
+   "what_it_should_do": "Classify the ~14k unclassified fills (ADHD, antidepressants, contraceptives, antibiotics).",
+   "requested_by_or_source": [
+    "transcript 6059d831 2026-10-16T21:03Z (Mike: \"Next layer: drug-class vocabulary for all of healthcare\")"
+   ],
+   "requested_date": "2026-10-16",
+   "ledger_component_ids": [
+    "concept_resolver"
+   ],
+   "status": "built_and_on_question_path",
+   "evidence": "clinical/drug_classes.py + drug_brands.json (BUILD_LOG.md:30)"
+  },
+  {
+   "id": "mtd_intolerance",
+   "name": "Max-tolerated dose / documented intolerance logic",
+   "category": "clinical_logic_or_definitions",
+   "what_it_should_do": "Compute target dose and documented intolerance deterministically; below-target with barrier = maximum tolerated.",
+   "requested_by_or_source": [
+    "/Users/mikel/Desktop/agere-cto-review-2026-10-19-appendix.md:77-82",
+    "transcript c919721f 2026-10-21T13:50Z (Mike definition)"
+   ],
+   "requested_date": "2026-10-19",
+   "ledger_component_ids": [
+    "clinical_definitions"
+   ],
+   "status": "built_and_on_question_path",
+   "evidence": "regimen-note reconciliation in dose macro (AGERE_BUILD_CONTROL.json:1250-1259); clinical/dose.py"
+  },
+  {
+   "id": "clinical_correctness_fixes",
+   "name": "Clinical correctness fixes (polarity-aware therapy, alive/enrolled filter, EF recency, PCP attribution fallback)",
+   "category": "clinical_logic_or_definitions",
+   "what_it_should_do": "Stop inverted negation, deceased patients, stale EF and Unknown care-team fields in worklists.",
+   "requested_by_or_source": [
+    "/Users/mikel/Desktop/agere-cto-review-2026-10-19-appendix.md:59-89"
+   ],
+   "requested_date": "2026-10-19",
+   "ledger_component_ids": [
+    "clinical_definitions",
+    "saved_cohort_binding"
+   ],
+   "status": "built_and_on_question_path",
+   "evidence": "CTO appendix verification lines 174-178 and AGERE_BUILD_CONTROL.json:1263-1272 (dated care-team status live)"
+  },
+  {
+   "id": "canonical_tables",
+   "name": "Canonical tables: payer adjudication history, record_correction, picked-up fills",
+   "category": "clinical_logic_or_definitions",
+   "what_it_should_do": "Give analysts canonical history/correction/fill tables.",
+   "requested_by_or_source": [
+    "docs/agere/BUILD_LOG.md:25-28"
+   ],
+   "requested_date": "2026-10-16",
+   "ledger_component_ids": [
+    "clinical_definitions"
+   ],
+   "status": "built_and_on_question_path",
+   "evidence": "clinical/adjudication_history.py, fill_events.py (in-place tables built into the warehouse, BUILD_LOG.md:193)"
+  },
+  {
+   "id": "visit_grouper",
+   "name": "Visit / encounter grouper table",
+   "category": "clinical_logic_or_definitions",
+   "what_it_should_do": "Group encounters into visits for hospital-ops questions.",
+   "requested_by_or_source": [
+    "docs/agere/BUILD_LOG.md:152,189"
+   ],
+   "requested_date": "2026-10-16",
+   "ledger_component_ids": [],
+   "status": "not_built",
+   "evidence": "not built (\"only if a hospital-ops miss shows need\")"
+  },
+  {
+   "id": "one_ed_definition",
+   "name": "One ED/encounter definition across EHR/ADT/claims with availability status",
+   "category": "clinical_logic_or_definitions",
+   "what_it_should_do": "Use one ED definition everywhere and distinguish true zero / source not delivered / definition unresolved.",
+   "requested_by_or_source": [
+    "/Users/mikel/agere-research/2026-10-18/AGERE_RESEARCH_REPORT.md:24,160",
+    "/Users/mikel/agere-research/2026-10-18/CLAUDE_AGERE_STACK_REVIEW.md:74-79,198-207",
+    "transcript 961aff1e 2026-10-18T13:17Z (next-build #1)"
+   ],
+   "requested_date": "2026-10-18",
+   "ledger_component_ids": [
+    "undelivered_input",
+    "delivered_inputs_route"
+   ],
+   "status": "partially_built",
+   "evidence": "undelivered-input gate on path (ledger); docs/agere/HANDOFF_2026-10-18.md:25 HOS-09 ED rule still to do"
+  },
+  {
+   "id": "cql_executable_measures",
+   "name": "Measures/eligibility as executable CQL/ELM contracts",
+   "category": "knowledge_and_rules",
+   "what_it_should_do": "Compile measure population, exclusions and timing into executable logic.",
+   "requested_by_or_source": [
+    "memory agere-integration-architecture.md (queue Mike approved 10-13: \"rules-as-executable-logic (CQL)\")",
+    "/Users/mikel/agere-research/2026-10-18/AGERE_RESEARCH_REPORT.md:27,168",
+    "transcript 961aff1e 2026-10-18T13:17Z (next-build #9)",
+    "docs/agere/HEALTHCARE_BACKLOG.md (cql_rule_engine)"
+   ],
+   "requested_date": "2026-10-13",
+   "ledger_component_ids": [],
+   "status": "not_built",
+   "evidence": "grep \\bcql\\b only in question/router json; no CQL engine"
+  },
+  {
+   "id": "vbc_measures_fuh_fum_iet",
+   "name": "VBC behavioural-health measures (FUH, FUM, IET)",
+   "category": "knowledge_and_rules",
+   "what_it_should_do": "Add FUH/FUM/IET measures to the measure library.",
+   "requested_by_or_source": [
+    "docs/agere/HEALTHCARE_BACKLOG.md:30"
+   ],
+   "requested_date": "2026-10-14",
+   "ledger_component_ids": [
+    "measure_library"
+   ],
+   "status": "partially_built",
+   "evidence": "config/agere/measures/fuh_7day_followup.json exists; no FUM or IET measure files"
+  },
+  {
+   "id": "domain_packs",
+   "name": "Domain packs / industry-neutral core for other industries",
+   "category": "product_surface",
+   "what_it_should_do": "Split an industry-neutral core from configuration packs (insurance, retail, logistics, finance).",
+   "requested_by_or_source": [
+    "transcript 821452c3 2026-10-13T22:01Z (Mike: \"moveable to other industries\")",
+    "Agere-Stack-Atlas.pdf p.5",
+    "docs/agere/HANDOFF_2026-10-14.md:61"
+   ],
+   "requested_date": "2026-10-13",
+   "ledger_component_ids": [],
+   "status": "not_built",
+   "evidence": "only \"industry neutral\" comments in onboarding/codes.py:6, contract.py:11; no pack refactor"
+  },
+  {
+   "id": "native_feed_ingestion",
+   "name": "Native-format ingestion (EHR CSV, X12 837/835/834, CCLF, HL7, NCPDP, FHIR bulk)",
+   "category": "data_ingestion",
+   "what_it_should_do": "Ingest real healthcare feed formats into the canonical record model.",
+   "requested_by_or_source": [
+    "transcript 6059d831 2026-10-15T02:47Z (queued \"native-format ingestion (CCLF, X12, HL7)\")",
+    "transcript 961aff1e 2026-10-17T14:10Z"
+   ],
+   "requested_date": "2026-10-14",
+   "ledger_component_ids": [
+    "ingest_canonical"
+   ],
+   "status": "built_but_not_on_question_path",
+   "evidence": "clinical_core/agere/ingest/{x12,hl7,fhir,ncpdp}.py build-time ingest (ledger ingest_canonical build_time_only)",
+   "path_relevance": "ingest_time_by_design"
+  },
+  {
+   "id": "ccda_ingestion",
+   "name": "C-CDA document ingestion",
+   "category": "data_ingestion",
+   "what_it_should_do": "Ingest C-CDA XML documents.",
+   "requested_by_or_source": [
+    "transcript 961aff1e 2026-10-18T10:11Z (\"not added yet\")",
+    "memory agere-integration-architecture.md (v2.4 C-CDA)"
+   ],
+   "requested_date": "2026-10-14",
+   "ledger_component_ids": [],
+   "status": "not_built",
+   "evidence": "no C-CDA parser (only stream_map.json:208 mention)"
+  },
+  {
+   "id": "customer_onboarding",
+   "name": "Customer warehouse onboarding (connect, auto-map to semantic layer, ask day one)",
+   "category": "data_ingestion",
+   "what_it_should_do": "Connect a customer warehouse, auto-map it, and answer questions on day one.",
+   "requested_by_or_source": [
+    "transcript 961aff1e 2026-10-17T13:23Z (Mike: \"Build customer data onboarding first\")",
+    "memory agere-integration-architecture.md (automatic warehouse onboarding approved 10-13)"
+   ],
+   "requested_date": "2026-10-13",
+   "ledger_component_ids": [
+    "workspace_hybrid_pipeline",
+    "workspace_stack"
+   ],
+   "status": "built_and_on_question_path",
+   "evidence": "onboarding/connectors.py, matcher.py, workspace.py (/api/workspaces); never run against a real account"
+  },
+  {
+   "id": "omop_round_trip",
+   "name": "OMOP round trip onboarding proof",
+   "category": "data_ingestion",
+   "what_it_should_do": "Prove onboarding on a standard data model.",
+   "requested_by_or_source": [
+    "memory agere-integration-architecture.md",
+    "Agere-Stack-Atlas.pdf p.11"
+   ],
+   "requested_date": "2026-10-13",
+   "ledger_component_ids": [],
+   "status": "built_but_not_on_question_path",
+   "evidence": "onboarding/omop_fixture.py (fixture; not service-reachable)",
+   "path_relevance": "offline_by_design"
+  },
+  {
+   "id": "tuva_canonical",
+   "name": "Tuva Project canonical model (dbt + DuckDB) as competitor-grade warehouse",
+   "category": "data_ingestion",
+   "what_it_should_do": "Use the open-source Tuva model instead of a from-scratch canonical model and test on it.",
+   "requested_by_or_source": [
+    "transcript 6059d831 2026-10-15T08:37Z (Mike: \"Use the open-source Tuva Project\")",
+    "docs/agere/DUCKDB_PARQUET_MIGRATION_PLAN_2026-10-21.md:107-108 (step G)"
+   ],
+   "requested_date": "2026-10-15",
+   "ledger_component_ids": [],
+   "status": "built_but_not_on_question_path",
+   "evidence": "clinical_core/agere/canonical/ and bench/tuva.py exist; canonical package not reachable from service; DuckDB step G attach not built"
+  },
+  {
+   "id": "duckdb_migration",
+   "name": "DuckDB/Parquet answer path (parity, semantic.duckdb, engine switch, dialect lint, shadow, Parquet raw)",
+   "category": "data_ingestion",
+   "what_it_should_do": "Move the answer path and raw records to DuckDB/Parquet after a parity harness and shadow run.",
+   "requested_by_or_source": [
+    "transcript 821452c3 2026-10-13T10:59Z (Claude idea map answering Mike 10:59 \"what about all those other ideas\") (HFT: columnar DuckDB)",
+    "transcript 821452c3 2026-10-13T17:59Z (layer ledger, ~45 ideas, answering Mike 17:56 \"what about all of the other stack layers i have suggested\") (Wave D)",
+    "transcript ce9435e8 2026-10-21T20:06Z (Mike: \"write the DuckDB/Parquet migration plan\")"
+   ],
+   "requested_date": "2026-10-13",
+   "ledger_component_ids": [
+    "sql_query_execute"
+   ],
+   "status": "partially_built",
+   "evidence": "tools/duckdb_parity/replay.py (step A) exists; steps B-F not built; answer path still SQLite (sql_query.py)"
+  },
+  {
+   "id": "training_parquet_exporter",
+   "name": "Training/eval Parquet exporter with denylist and shared split",
+   "category": "learning_and_training",
+   "what_it_should_do": "Export one training set with manifest, 70/15/15 split and eval denylist.",
+   "requested_by_or_source": [
+    "docs/agere/DUCKDB_PARQUET_MIGRATION_PLAN_2026-10-21.md:112-147"
+   ],
+   "requested_date": "2026-10-21",
+   "ledger_component_ids": [],
+   "status": "not_built",
+   "evidence": "tools/export/ does not exist"
+  },
+  {
+   "id": "incremental_streaming",
+   "name": "Incremental/streaming updates as each file lands, with replay",
+   "category": "data_ingestion",
+   "what_it_should_do": "Update answers incrementally as feeds arrive and replay corrections.",
+   "requested_by_or_source": [
+    "transcript 821452c3 2026-10-13T10:59Z (Claude idea map answering Mike 10:59 \"what about all those other ideas\") (HFT: incremental updates)",
+    "transcript 821452c3 2026-10-13T17:59Z (layer ledger, ~45 ideas, answering Mike 17:56 \"what about all of the other stack layers i have suggested\") (Wave D)",
+    "/Users/mikel/clinical-insights-local/docs/agere/CHATGPT_RESEARCH_PROMPT.md:149-150"
+   ],
+   "requested_date": "2026-10-13",
+   "ledger_component_ids": [],
+   "status": "built_and_on_question_path",
+   "evidence": "clinical_core/agere/streaming/ (pipeline, replay); hooks called on answers in onboarding/workspace.py:655; not in ledger"
+  },
+  {
+   "id": "order_book_queues_sketches",
+   "name": "Order-book work queues and approximate-count sketches (HFT)",
+   "category": "other",
+   "what_it_should_do": "Use order-book-style priority work queues and sketches for large feeds.",
+   "requested_by_or_source": [
+    "transcript 961aff1e 2026-10-18T11:31Z (reply to Mike 11:28 on HFT)",
+    "docs/agere/CHATGPT_RESEARCH_PROMPT.md:149-151"
+   ],
+   "requested_date": "2026-10-18",
+   "ledger_component_ids": [],
+   "status": "not_built",
+   "evidence": "grep order.book|hyperloglog|bloom = 0"
+  },
+  {
+   "id": "probabilistic_linkage",
+   "name": "Probabilistic record linkage (Fellegi-Sunter / Splink)",
+   "category": "data_ingestion",
+   "what_it_should_do": "Link duplicate patient/provider records probabilistically.",
+   "requested_by_or_source": [
+    "transcript 821452c3 2026-10-13T22:06Z (12 model ideas, answering Mike 22:05 \"have you already built in the classifiers and rerankers?\") (#10)",
+    "research/agere/FRONTIER_RESEARCH_2026-10.md:90 (#47)"
+   ],
+   "requested_date": "2026-10-13",
+   "ledger_component_ids": [],
+   "status": "built_but_not_on_question_path",
+   "evidence": "clinical/person_linkage.py:7 exists but is not imported by any service-reachable module (only tools/eval_predictions.py:16)"
+  },
+  {
+   "id": "reversible_identity",
+   "name": "Reversible identity resolution (split/recompute)",
+   "category": "data_ingestion",
+   "what_it_should_do": "Recover from false merges with identity contradiction checks and reversible splits.",
+   "requested_by_or_source": [
+    "/Users/mikel/agere-research/2026-10-18/AGERE_RESEARCH_REPORT.md:25,167",
+    "transcript 961aff1e 2026-10-18T13:17Z (next-build #8)"
+   ],
+   "requested_date": "2026-10-18",
+   "ledger_component_ids": [],
+   "status": "not_built",
+   "evidence": "not found"
+  },
+  {
+   "id": "data_quality_detectors",
+   "name": "Data-quality detectors for source defects (Raha/Baran, LLM-proposed FDs)",
+   "category": "data_ingestion",
+   "what_it_should_do": "Detect source defects automatically.",
+   "requested_by_or_source": [
+    "research/agere/FRONTIER_RESEARCH_2026-10.md:84 (#41)"
+   ],
+   "requested_date": "2026-10-13",
+   "ledger_component_ids": [
+    "source_profile"
+   ],
+   "status": "partially_built",
+   "evidence": "source_profile and dq_families exist; no Raha/Baran or functional-dependency detectors"
+  },
+  {
+   "id": "source_sequence_gap",
+   "name": "Source sequence-gap / snapshot recovery contracts",
+   "category": "data_ingestion",
+   "what_it_should_do": "Detect partial feed arrival and recover.",
+   "requested_by_or_source": [
+    "research/agere/CODEX_TRADING_RESEARCH_2026-10-09.md:11,32-36"
+   ],
+   "requested_date": "2026-10-09",
+   "ledger_component_ids": [
+    "undelivered_input"
+   ],
+   "status": "partially_built",
+   "evidence": "streaming/delivery_drop.py exists but is not service-reachable; undelivered-input gate on path"
+  },
+  {
+   "id": "release_diff_guard",
+   "name": "Release-diff guard on concepts and fields",
+   "category": "quality_engineering",
+   "what_it_should_do": "Stop silent definition drift across warehouse releases.",
+   "requested_by_or_source": [
+    "Agere-Stack-Atlas.pdf p.2"
+   ],
+   "requested_date": "2026-10-14",
+   "ledger_component_ids": [],
+   "status": "built_but_not_on_question_path",
+   "evidence": "clinical_core/agere/release_diff.py + tools/release_diff_guard.py used at activation (warehouse_activation.py:50)",
+   "path_relevance": "offline_by_design"
+  },
+  {
+   "id": "verified_carry_forward",
+   "name": "Carry verified answers forward across releases",
+   "category": "learning_and_training",
+   "what_it_should_do": "Keep verified answers reusable after a warehouse release.",
+   "requested_by_or_source": [
+    "Agere-Stack-Atlas.pdf p.2",
+    "memory agere-integration-architecture.md (v23 store had 1 pair vs 1,118)"
+   ],
+   "requested_date": "2026-10-14",
+   "ledger_component_ids": [
+    "verified_carry_forward"
+   ],
+   "status": "built_but_not_on_question_path",
+   "evidence": "ledger build_time_only; clinical_core/agere/verified_carry_forward.py",
+   "path_relevance": "offline_by_design"
+  },
+  {
+   "id": "self_improving_loop",
+   "name": "Self-improving learning loop (capture, harvest, cluster gaps, retrain, promote)",
+   "category": "learning_and_training",
+   "what_it_should_do": "Turn verified answers and corrections into training data and cheaper bottles automatically.",
+   "requested_by_or_source": [
+    "transcript 821452c3 2026-10-13T10:59Z (Claude idea map answering Mike 10:59 \"what about all those other ideas\")",
+    "transcript 821452c3 2026-10-13T11:00Z (learning loop plan)",
+    "transcript 821452c3 2026-10-13T17:59Z (layer ledger, ~45 ideas, answering Mike 17:56 \"what about all of the other stack layers i have suggested\") (Wave C)",
+    "transcript 90323f53 2026-10-21T21:51Z (Mike: \"continue teaching and neural network learning\")"
+   ],
+   "requested_date": "2026-10-13",
+   "ledger_component_ids": [
+    "learning_loop",
+    "learning_hooks",
+    "question_learning",
+    "learning_queue_suggest",
+    "correction_record",
+    "training_factory"
+   ],
+   "status": "partially_built",
+   "evidence": "capture/learning hooks on path (spine:post_answer_learning); learning_loop and training_factory build_time_only; router retrain blocked, typed interpreter untrained (HANDOFF_2026-10-22.md:45)"
+  },
+  {
+   "id": "training_pipeline_1m",
+   "name": "Training pipeline: 1M generated questions -> label -> datasets -> train all heads",
+   "category": "learning_and_training",
+   "what_it_should_do": "Generate and label a large question set and train normalizer, slots, bottled SQL, router, shape head and typed interpreter.",
+   "requested_by_or_source": [
+    "transcript 90323f53 2026-10-21T21:51Z (Phase 3 plan approved)"
+   ],
+   "requested_date": "2026-10-21",
+   "ledger_component_ids": [
+    "training_factory",
+    "local_planner_training",
+    "bottling_training"
+   ],
+   "status": "partially_built",
+   "evidence": "tools/training/{question_factory,label,datasets,train_all}.py; overnight_chain.sh running; normalizer promoted; router data unusable"
+  },
+  {
+   "id": "training_hard_types",
+   "name": "Training gaps: hard question types, outcome-labelled router, LLM paraphrase pass",
+   "category": "learning_and_training",
+   "what_it_should_do": "Add engine/notes/definition/why/multi-step questions to training and label the router by outcome.",
+   "requested_by_or_source": [
+    "transcript 90323f53 2026-10-22T10:57Z (Claude proposal)"
+   ],
+   "requested_date": "2026-10-22",
+   "ledger_component_ids": [
+    "training_factory"
+   ],
+   "status": "not_built",
+   "evidence": "proposed, not implemented in tools/training"
+  },
+  {
+   "id": "procedural_memory",
+   "name": "Outcome-linked procedural memory (versioned lessons)",
+   "category": "learning_and_training",
+   "what_it_should_do": "Store scoped lessons tied to outcomes and revise them.",
+   "requested_by_or_source": [
+    "/Users/mikel/Agere-Research-Reviews/2026-10-20-dair/REVIEW.md:41,79-89"
+   ],
+   "requested_date": "2026-10-20",
+   "ledger_component_ids": [
+    "procedural_memory_select",
+    "guided_model"
+   ],
+   "status": "built_and_on_question_path",
+   "evidence": "ledger spine:exact_contract_cache (procedural_memory_select)"
+  },
+  {
+   "id": "dependency_validation_reuse",
+   "name": "Dependency validation at reuse/action time (PlanFence)",
+   "category": "learning_and_training",
+   "what_it_should_do": "Validate derived work against current premises before reuse or action.",
+   "requested_by_or_source": [
+    "/Users/mikel/Agere-Research-Reviews/2026-10-20-dair/REVIEW.md:39,59-67",
+    "/Users/mikel/agere-research/2026-10-18/AGERE_RESEARCH_REPORT.md:26,166"
+   ],
+   "requested_date": "2026-10-18",
+   "ledger_component_ids": [
+    "superseded_definition_check",
+    "correction_block"
+   ],
+   "status": "partially_built",
+   "evidence": "clinical/answer_dependencies.py and context_policy_identity (CTO appendix:265-271); no general premise validation"
+  },
+  {
+   "id": "gepa_prompt_optimization",
+   "name": "GEPA / DSPy reflective prompt optimization",
+   "category": "token_economics",
+   "what_it_should_do": "Tune paid prompts against verified pairs so accuracy rises without bigger models.",
+   "requested_by_or_source": [
+    "transcript 821452c3 2026-10-13T22:06Z (12 model ideas, answering Mike 22:05 \"have you already built in the classifiers and rerankers?\") (#9)",
+    "research/agere/FRONTIER_RESEARCH_2026-10.md:59 (#16)",
+    "/Users/mikel/Agere-Research-Reviews/2026-10-20-dair/REVIEW.md:40,69-77"
+   ],
+   "requested_date": "2026-10-13",
+   "ledger_component_ids": [],
+   "status": "partially_built",
+   "evidence": "tools/learning_loop/prompt_optimizer.py offline search exists; no GEPA run or adopted prompt recorded",
+   "path_relevance": "offline_by_design"
+  },
+  {
+   "id": "harness_sql_training",
+   "name": "HarnessSQL interaction-matched training",
+   "category": "learning_and_training",
+   "what_it_should_do": "Train on probe/execute/repair trajectories.",
+   "requested_by_or_source": [
+    "/Users/mikel/Agere-Research-Reviews/2026-10-20-dair/REVIEW.md:44,111-115"
+   ],
+   "requested_date": "2026-10-20",
+   "ledger_component_ids": [],
+   "status": "not_built",
+   "evidence": "not found"
+  },
+  {
+   "id": "learn_from_mistakes_regressions",
+   "name": "Learn from mistakes: corrections become permanent regression tests",
+   "category": "learning_and_training",
+   "what_it_should_do": "Turn each flagged wrong answer into a permanent regression test and correction.",
+   "requested_by_or_source": [
+    "transcript 821452c3 2026-10-13T11:00Z (learning loop step 5)"
+   ],
+   "requested_date": "2026-10-13",
+   "ledger_component_ids": [
+    "correction_record",
+    "correction_block"
+   ],
+   "status": "built_and_on_question_path",
+   "evidence": "ledger correction_record spine:post_answer_learning; bench/regressions.py"
+  },
+  {
+   "id": "cs1_shuffled_teacher_labels",
+   "name": "Option-order-shuffled teacher labels for the context student",
+   "category": "learning_and_training",
+   "what_it_should_do": "Debias student training labels by shuffling option order.",
+   "requested_by_or_source": [
+    "transcript edc8a6c8 2026-10-21T19:49Z (CS1 paper borrowings)"
+   ],
+   "requested_date": "2026-10-21",
+   "ledger_component_ids": [
+    "context_student"
+   ],
+   "status": "not_built",
+   "evidence": "not found; not in the six approved integrations"
+  },
+  {
+   "id": "followup_binding",
+   "name": "Follow-ups bound to the saved cohort (membership kept)",
+   "category": "question_understanding",
+   "what_it_should_do": "Bind follow-ups to an immutable prior result/cohort instead of rewriting the string.",
+   "requested_by_or_source": [
+    "/Users/mikel/Desktop/agere-cto-review-2026-10-19-appendix.md:90-94",
+    "docs/agere/GENERAL_QUESTION_ARCHITECTURE_PLAN.md:38"
+   ],
+   "requested_date": "2026-10-19",
+   "ledger_component_ids": [
+    "followup_resolver",
+    "followup_hosted_resolver",
+    "saved_cohort_binding"
+   ],
+   "status": "built_and_on_question_path",
+   "evidence": "ledger inside:conversation_handle_compose; membership.py"
+  },
+  {
+   "id": "requirement_contract",
+   "name": "Requirement contract / semantic completeness ledger (no dropped constraints)",
+   "category": "question_understanding",
+   "what_it_should_do": "Carry every requirement, span and Boolean tree through planning and refuse plans that drop constraints.",
+   "requested_by_or_source": [
+    "docs/agere/GENERAL_QUESTION_ARCHITECTURE_PLAN.md:21-27,34",
+    "AGERE_REVIEW_CORRECTIONS_2026-10-19.md:30"
+   ],
+   "requested_date": "2026-10-20",
+   "ledger_component_ids": [
+    "literal_check_missing",
+    "literal_check_shape",
+    "question_input_validate"
+   ],
+   "status": "partially_built",
+   "evidence": "literal checks on path; GQAP increments marked planned; AND/OR ambiguity resolution only recommended (AGERE_CTO_REVIEW_2026-10-20.md:86)"
+  },
+  {
+   "id": "evidence_discovery_absence",
+   "name": "Evidence discovery and defensible absence (unknown vs not found)",
+   "category": "question_understanding",
+   "what_it_should_do": "Discover relevant sources and explain exactly what is missing vs what the system failed to use.",
+   "requested_by_or_source": [
+    "docs/agere/GENERAL_QUESTION_ARCHITECTURE_PLAN.md:35",
+    "transcript c919721f 2026-10-20T00:48Z (Mike review prompt)"
+   ],
+   "requested_date": "2026-10-20",
+   "ledger_component_ids": [
+    "request_discovery",
+    "data_domains_gate",
+    "undelivered_input"
+   ],
+   "status": "built_and_on_question_path",
+   "evidence": "ledger request_discovery inside:hosted_typed_interpreter; data_domains_gate spine"
+  },
+  {
+   "id": "multi_entity_temporal",
+   "name": "Multi-entity and temporal composition (chained cohorts, within N days, before/after)",
+   "category": "question_understanding",
+   "what_it_should_do": "Compose questions across entities and time windows.",
+   "requested_by_or_source": [
+    "AGERE_CHIEF_STAFF_2026-10-20.md:297",
+    "transcript c919721f 2026-10-20T18:09Z"
+   ],
+   "requested_date": "2026-10-20",
+   "ledger_component_ids": [
+    "compositional_grammar_program"
+   ],
+   "status": "partially_built",
+   "evidence": "temporal release live (AGERE_BUILD_CONTROL.json:1216-1219); multi-entity composition still planned (AGERE_CHIEF_STAFF:297)"
+  },
+  {
+   "id": "derived_value_index",
+   "name": "Derived-value discovery index",
+   "category": "retrieval_evidence",
+   "what_it_should_do": "Discover derived values (not only received fields) generically.",
+   "requested_by_or_source": [
+    "AGERE_CHIEF_STAFF_2026-10-20.md:296",
+    "AGERE_BUILD_CONTROL.json:1149"
+   ],
+   "requested_date": "2026-10-20",
+   "ledger_component_ids": [],
+   "status": "not_built",
+   "evidence": "grep derived.value = 0"
+  },
+  {
+   "id": "error_taxonomy",
+   "name": "Error taxonomy (not understood vs data absent vs internal)",
+   "category": "question_understanding",
+   "what_it_should_do": "Separate not-understood, data-absent and internal failures.",
+   "requested_by_or_source": [
+    "/Users/mikel/Desktop/agere-cto-review-2026-10-19-appendix.md:95,178"
+   ],
+   "requested_date": "2026-10-19",
+   "ledger_component_ids": [
+    "question_input_validate"
+   ],
+   "status": "built_and_on_question_path",
+   "evidence": "CTO appendix:178 verified not_understood carries data_absence_established:false"
+  },
+  {
+   "id": "action_backbone",
+   "name": "One action backbone (routed enrollment plans, durable work state)",
+   "category": "product_surface",
+   "what_it_should_do": "Run routed plans through one workspace backbone with owners and states, retiring fake execution.",
+   "requested_by_or_source": [
+    "/Users/mikel/agere-research/2026-10-18/CLAUDE_AGERE_STACK_REVIEW.md:64-69,146-165",
+    "transcript 961aff1e 2026-10-18T13:16Z (Mike approved)"
+   ],
+   "requested_date": "2026-10-18",
+   "ledger_component_ids": [],
+   "status": "built_and_on_question_path",
+   "evidence": "clinical_core/agere/plans/backbone.py via workspace_api.py:121; not in ledger",
+   "path_relevance": "action_surface"
+  },
+  {
+   "id": "aspirational_action_agents",
+   "name": "Synthetic action agents (enroll in ACCESS MSK / PharmD programs) as aspirational mockups",
+   "category": "product_surface",
+   "what_it_should_do": "Show agents signing patients up for programs inside the synthetic ecosystem.",
+   "requested_by_or_source": [
+    "transcript 961aff1e 2026-10-18T11:48Z (Mike: \"pretend like we have the ability ... it is aspiraitonal\")"
+   ],
+   "requested_date": "2026-10-18",
+   "ledger_component_ids": [],
+   "status": "built_and_on_question_path",
+   "evidence": "deliverables/synthetic_actions.py (service.py:272); plans/programs.json",
+   "path_relevance": "action_surface"
+  },
+  {
+   "id": "simulated_counterparty",
+   "name": "Simulated counterparty + follow-up replay",
+   "category": "product_surface",
+   "what_it_should_do": "Simulate declines, denials and no-shows and replay consequences as delivery files.",
+   "requested_by_or_source": [
+    "/Users/mikel/agere-research/2026-10-18/CLAUDE_AGERE_STACK_REVIEW.md:110,167-179"
+   ],
+   "requested_date": "2026-10-18",
+   "ledger_component_ids": [],
+   "status": "built_and_on_question_path",
+   "evidence": "plans/counterparty.py",
+   "path_relevance": "action_surface"
+  },
+  {
+   "id": "completion_evaluator",
+   "name": "Completion evaluator (did the care happen; reopen on reversal)",
+   "category": "product_surface",
+   "what_it_should_do": "Check completion from fills/loop closure and reopen on reversal.",
+   "requested_by_or_source": [
+    "/Users/mikel/agere-research/2026-10-18/CLAUDE_AGERE_STACK_REVIEW.md:111,181-196"
+   ],
+   "requested_date": "2026-10-18",
+   "ledger_component_ids": [
+    "engine_loop_closure"
+   ],
+   "status": "built_and_on_question_path",
+   "evidence": "plans/completion.py; engine_loop_closure planner_menu",
+   "path_relevance": "action_surface"
+  },
+  {
+   "id": "barriers_change_action",
+   "name": "Barriers that change the action",
+   "category": "product_surface",
+   "what_it_should_do": "Route each patient by documented barrier type, drug scope and recency.",
+   "requested_by_or_source": [
+    "/Users/mikel/agere-research/2026-10-18/CLAUDE_AGERE_STACK_REVIEW.md:113,209-225"
+   ],
+   "requested_date": "2026-10-18",
+   "ledger_component_ids": [],
+   "status": "built_and_on_question_path",
+   "evidence": "plans/barriers.py (drug-scoped barriers built)",
+   "path_relevance": "action_surface"
+  },
+  {
+   "id": "prior_auth_med_access",
+   "name": "Prior authorization and medication-access adapter (PA, appeals, Extra Help)",
+   "category": "product_surface",
+   "what_it_should_do": "Handle PA packets, denials and assistance programs as action steps.",
+   "requested_by_or_source": [
+    "/Users/mikel/agere-research/2026-10-18/AGERE_RESEARCH_REPORT.md:127,169",
+    "transcript 961aff1e 2026-10-18T13:17Z (next-build #3)"
+   ],
+   "requested_date": "2026-10-18",
+   "ledger_component_ids": [],
+   "status": "not_built",
+   "evidence": "only PA mentions in therapy_barriers.py:83 and plans/act.py:9; no PA rule table or adapter"
+  },
+  {
+   "id": "referral_sdoh_closure",
+   "name": "Referral and social-needs closure (BSeR, Gravity) + sdoh_needs wiring",
+   "category": "product_surface",
+   "what_it_should_do": "Close referral and social-service loops with zero false closures.",
+   "requested_by_or_source": [
+    "/Users/mikel/agere-research/2026-10-18/AGERE_RESEARCH_REPORT.md:128,132,170",
+    "transcript 961aff1e 2026-10-18T13:17Z (next-build #4)"
+   ],
+   "requested_date": "2026-10-18",
+   "ledger_component_ids": [],
+   "status": "built_but_not_on_question_path",
+   "evidence": "clinical/sdoh_needs.py exists but not service-reachable; no referral closure workflow"
+  },
+  {
+   "id": "opportunity_to_settlement",
+   "name": "Opportunity-to-settlement financial bridge",
+   "category": "analytics_engine",
+   "what_it_should_do": "Link work to measure to settlement with forecast/modeled/realized labels and no double-counted savings.",
+   "requested_by_or_source": [
+    "/Users/mikel/agere-research/2026-10-18/AGERE_RESEARCH_REPORT.md:133,173",
+    "transcript 961aff1e 2026-10-18T13:17Z (next-build #6)"
+   ],
+   "requested_date": "2026-10-18",
+   "ledger_component_ids": [
+    "engine_vbc",
+    "engine_financial_accounts"
+   ],
+   "status": "partially_built",
+   "evidence": "settlement in vbc/contract_strategy and deliverables/finance.py; no work-to-settlement link"
+  },
+  {
+   "id": "care_gap_closure_actions",
+   "name": "Payer care-gap closure (DEQM) and transitions-of-care (TEAM) action families",
+   "category": "product_surface",
+   "what_it_should_do": "Add care-gap and transitions-of-care action families.",
+   "requested_by_or_source": [
+    "/Users/mikel/agere-research/2026-10-18/AGERE_RESEARCH_REPORT.md:130-131"
+   ],
+   "requested_date": "2026-10-18",
+   "ledger_component_ids": [],
+   "status": "not_built",
+   "evidence": "not found"
+  },
+  {
+   "id": "deliverable_composer",
+   "name": "Open-ended frontier deliverable composer (stack supplies every number)",
+   "category": "product_surface",
+   "what_it_should_do": "Let users ask for any deliverable; Opus designs it and the stack supplies verified numbers.",
+   "requested_by_or_source": [
+    "transcript 961aff1e 2026-10-18T14:38Z (Mike: \"people should be able to make whatever they want\")"
+   ],
+   "requested_date": "2026-10-18",
+   "ledger_component_ids": [],
+   "status": "built_and_on_question_path",
+   "evidence": "deliverables/compose.py (service.py:855)",
+   "path_relevance": "product_surface"
+  },
+  {
+   "id": "dikw_interface",
+   "name": "Data -> Information -> Intelligence -> Wisdom interface / warehouse explorer",
+   "category": "product_surface",
+   "what_it_should_do": "Navigate the product as four stages with whole-warehouse and saved-cohort scope.",
+   "requested_by_or_source": [
+    "AGERE_WISDOM_DESIGN_2026-10-20.md:12-29",
+    "AGERE_INTERFACE_2026-10-20.md:5-15"
+   ],
+   "requested_date": "2026-10-20",
+   "ledger_component_ids": [],
+   "status": "built_and_on_question_path",
+   "evidence": "assets/explore.html; site_dist; AGERE_BUILD_CONTROL.json:1043,1049",
+   "path_relevance": "product_surface"
+  },
+  {
+   "id": "chief_of_staff_briefing",
+   "name": "Chief-of-staff opening briefing",
+   "category": "product_surface",
+   "what_it_should_do": "Open with five computed checks (denials, no-shows, readmissions, missing PCP, allowed spend).",
+   "requested_by_or_source": [
+    "AGERE_CHIEF_STAFF_2026-10-20.md:3-15"
+   ],
+   "requested_date": "2026-10-20",
+   "ledger_component_ids": [],
+   "status": "built_and_on_question_path",
+   "evidence": "clinical/chief_staff.py (service.py:832)",
+   "path_relevance": "product_surface"
+  },
+  {
+   "id": "monitors",
+   "name": "Monitors that recompute on new snapshots",
+   "category": "product_surface",
+   "what_it_should_do": "Recompute saved answers on new data with original-scope or frozen membership.",
+   "requested_by_or_source": [
+    "AGERE_CHIEF_STAFF_2026-10-20.md:20-23"
+   ],
+   "requested_date": "2026-10-20",
+   "ledger_component_ids": [
+    "engine_monitor"
+   ],
+   "status": "partially_built",
+   "evidence": "built, manual only; no continuous scheduling"
+  },
+  {
+   "id": "hosted_deploy_sso",
+   "name": "Cloud deploy, SSO, tenant isolation, BAA endpoint",
+   "category": "product_surface",
+   "what_it_should_do": "Deploy Agere as a hosted multi-tenant service with SSO and a BAA-covered model endpoint.",
+   "requested_by_or_source": [
+    "docs/agere/CHATGPT_RESEARCH_PROMPT.md:154",
+    "docs/agere/HANDOFF_2026-10-17.md:17",
+    "transcript ddfd89a9 2026-10-21 (Phase 4)"
+   ],
+   "requested_date": "2026-10-17",
+   "ledger_component_ids": [],
+   "status": "deferred_by_mike",
+   "evidence": "hosted/ (auth, server) built locally only; AGERE_BUILD_CONTROL.json:894 \"Mike: stack first, prove it beats competitors; enterprise readiness deferred.\""
+  },
+  {
+   "id": "per_engine_views",
+   "name": "Per-engine visualisations (KM curves, funnel plots, SPC charts)",
+   "category": "product_surface",
+   "what_it_should_do": "Give each engine its own view.",
+   "requested_by_or_source": [
+    "Agere-Stack-Atlas.pdf p.6",
+    "memory agere-integration-architecture.md (definition of done: console view)"
+   ],
+   "requested_date": "2026-10-13",
+   "ledger_component_ids": [
+    "answer_format_present"
+   ],
+   "status": "built_and_on_question_path",
+   "evidence": "ask_view.py engine views",
+   "path_relevance": "product_surface"
+  },
+  {
+   "id": "verifier_proof_receipt",
+   "name": "Verifier \"proof\" / computed-as receipt on every answer",
+   "category": "verification_check",
+   "what_it_should_do": "Show definitions, plan, independent re-check and data-quality warnings on every answer.",
+   "requested_by_or_source": [
+    "transcript 821452c3 2026-10-13T10:59Z (Claude idea map answering Mike 10:59 \"what about all those other ideas\") (Novel: the verifier is the moat)",
+    "transcript 821452c3 2026-10-13T17:59Z (layer ledger, ~45 ideas, answering Mike 17:56 \"what about all of the other stack layers i have suggested\")"
+   ],
+   "requested_date": "2026-10-13",
+   "ledger_component_ids": [
+    "answer_format_present"
+   ],
+   "status": "built_and_on_question_path",
+   "evidence": "ledger answer_format_present spine:presentation"
+  },
+  {
+   "id": "head_to_head_study",
+   "name": "Fair paid head-to-head / pre-registered study vs competitors and LLM-for-everything",
+   "category": "quality_engineering",
+   "what_it_should_do": "Measure Agere against equal-tools LLM baselines on accuracy and cost per correct answer.",
+   "requested_by_or_source": [
+    "transcript 961aff1e 2026-10-18T23:20Z (Mike: \"create a study we can quote\")",
+    "docs/agere/GENERAL_QUESTION_ARCHITECTURE_PLAN.md:64-66"
+   ],
+   "requested_date": "2026-10-18",
+   "ledger_component_ids": [],
+   "status": "deferred_by_mike",
+   "evidence": "bench/study harness built (smoke run A 9/9); paid run not done; Mike c919721f 2026-10-21T21:06Z: \"No paid run yet\"",
+   "path_relevance": "offline_by_design"
+  },
+  {
+   "id": "clinical_workflow_tasks",
+   "name": "Clinical workflow task set (CT-01..CT-10: GDMT gaps, doses, notes reasons, anticoagulation, statins)",
+   "category": "quality_engineering",
+   "what_it_should_do": "Answer ten known-answer clinical tasks (e.g. HF patients not on GDMT, reasons in notes, below-target dose).",
+   "requested_by_or_source": [
+    "transcript 6059d831 2026-10-17T10:50Z (Mike suggestion, approved 10:53)",
+    "transcript 961aff1e 2026-10-18T11:17Z"
+   ],
+   "requested_date": "2026-10-17",
+   "ledger_component_ids": [
+    "engine_measure_review",
+    "medication_state_macro"
+   ],
+   "status": "partially_built",
+   "evidence": "bench/task_score.py; CT-02 notes reasons depends on build-time therapy cascade; CT-09 deferred to v2.13 by the generator"
+  },
+  {
+   "id": "sealed_truth_scorer",
+   "name": "Sealed truth scorer / independent references / frozen challenge bank",
+   "category": "quality_engineering",
+   "what_it_should_do": "Score against generator truth via a sealed program and independent references.",
+   "requested_by_or_source": [
+    "memory agere-integration-architecture.md (Mike approved 10-14)",
+    "docs/agere/GENERAL_QUESTION_ARCHITECTURE_PLAN.md:56-58"
+   ],
+   "requested_date": "2026-10-14",
+   "ledger_component_ids": [],
+   "status": "built_but_not_on_question_path",
+   "evidence": "sealed bank frozen v1.0 10-21 (memory agere-sealed-baseline-2026-10-21.md); offline",
+   "path_relevance": "offline_by_design"
+  },
+  {
+   "id": "own_open_weight_model",
+   "name": "Own open-weight model / HybridAgent latent-reasoning training (arXiv 2610.18861)",
+   "category": "local_model",
+   "what_it_should_do": "Train Agere's own open-weight model.",
+   "requested_by_or_source": [
+    "transcript 821452c3 2026-10-15T02:20Z (Mike: \"how can this be included in our stack?\")"
+   ],
+   "requested_date": "2026-10-15",
+   "ledger_component_ids": [],
+   "status": "deferred_by_mike",
+   "evidence": "Mike 821452c3 2026-10-15T02:23Z: \"okay we dont need to do that now jsut keep working on the saem stack\"; docs/agere/HANDOFF_2026-10-14.md:62"
+  },
+  {
+   "id": "population_hypothesis",
+   "name": "Population hypothesis increment",
+   "category": "analytics_engine",
+   "what_it_should_do": "Generate and test population hypotheses.",
+   "requested_by_or_source": [
+    "AGERE_EXTERNAL_REVIEW_RESPONSE_2026-10-12.md:7,75"
+   ],
+   "requested_date": "2026-10-12",
+   "ledger_component_ids": [],
+   "status": "deferred_by_mike",
+   "evidence": "AGERE_BUILD_CONTROL.json:862 \"Defer population hypothesis implementation\" while Mike paused the build"
+  },
+  {
+   "id": "engine_hai_surveillance",
+   "name": "HAI surveillance engine",
+   "category": "analytics_engine",
+   "what_it_should_do": "Track hospital-acquired infections.",
+   "requested_by_or_source": [
+    "docs/agere/HEALTHCARE_BACKLOG.md:9-28"
+   ],
+   "requested_date": "2026-10-14",
+   "ledger_component_ids": [],
+   "status": "not_built",
+   "evidence": "only listed in config/agere/healthcare_questions.json (question library); no engine module"
+  },
+  {
+   "id": "engine_antimicrobial_use_metrics",
+   "name": "Antimicrobial use metrics engine",
+   "category": "analytics_engine",
+   "what_it_should_do": "Compute antimicrobial use/stewardship metrics.",
+   "requested_by_or_source": [
+    "docs/agere/HEALTHCARE_BACKLOG.md:9-28"
+   ],
+   "requested_date": "2026-10-14",
+   "ledger_component_ids": [],
+   "status": "not_built",
+   "evidence": "only listed in config/agere/healthcare_questions.json (question library); no engine module"
+  },
+  {
+   "id": "engine_bundle_compliance",
+   "name": "Bundle compliance (e.g. SEP-1) engine",
+   "category": "analytics_engine",
+   "what_it_should_do": "Measure care-bundle compliance.",
+   "requested_by_or_source": [
+    "docs/agere/HEALTHCARE_BACKLOG.md:9-28"
+   ],
+   "requested_date": "2026-10-14",
+   "ledger_component_ids": [],
+   "status": "not_built",
+   "evidence": "only listed in config/agere/healthcare_questions.json (question library); no engine module"
+  },
+  {
+   "id": "engine_capacity_simulation",
+   "name": "Capacity simulation engine",
+   "category": "analytics_engine",
+   "what_it_should_do": "Simulate hospital capacity scenarios.",
+   "requested_by_or_source": [
+    "docs/agere/HEALTHCARE_BACKLOG.md:9-28"
+   ],
+   "requested_date": "2026-10-14",
+   "ledger_component_ids": [],
+   "status": "not_built",
+   "evidence": "only listed in config/agere/healthcare_questions.json (question library); no engine module"
+  },
+  {
+   "id": "engine_prior_auth_rules",
+   "name": "Prior-auth rules engine",
+   "category": "analytics_engine",
+   "what_it_should_do": "Evaluate prior-authorization rules.",
+   "requested_by_or_source": [
+    "docs/agere/HEALTHCARE_BACKLOG.md:9-28"
+   ],
+   "requested_date": "2026-10-14",
+   "ledger_component_ids": [],
+   "status": "not_built",
+   "evidence": "only listed in config/agere/healthcare_questions.json (question library); no engine module"
+  },
+  {
+   "id": "engine_spatiotemporal_cluster",
+   "name": "Spatiotemporal cluster detection engine",
+   "category": "analytics_engine",
+   "what_it_should_do": "Detect space-time clusters.",
+   "requested_by_or_source": [
+    "docs/agere/HEALTHCARE_BACKLOG.md:9-28"
+   ],
+   "requested_date": "2026-10-14",
+   "ledger_component_ids": [],
+   "status": "not_built",
+   "evidence": "only listed in config/agere/healthcare_questions.json (question library); no engine module"
+  },
+  {
+   "id": "engine_survey_adjustment",
+   "name": "Survey weighting/adjustment engine",
+   "category": "analytics_engine",
+   "what_it_should_do": "Adjust survey-based measures.",
+   "requested_by_or_source": [
+    "docs/agere/HEALTHCARE_BACKLOG.md:9-28"
+   ],
+   "requested_date": "2026-10-14",
+   "ledger_component_ids": [],
+   "status": "not_built",
+   "evidence": "only listed in config/agere/healthcare_questions.json (question library); no engine module"
+  },
+  {
+   "id": "engine_cdi_opportunity",
+   "name": "CDI opportunity engine",
+   "category": "analytics_engine",
+   "what_it_should_do": "Find clinical documentation improvement opportunities.",
+   "requested_by_or_source": [
+    "docs/agere/HEALTHCARE_BACKLOG.md:9-28"
+   ],
+   "requested_date": "2026-10-14",
+   "ledger_component_ids": [],
+   "status": "not_built",
+   "evidence": "only listed in config/agere/healthcare_questions.json (question library); no engine module"
+  },
+  {
+   "id": "engine_contract_reimbursement",
+   "name": "Contract reimbursement modelling engine",
+   "category": "analytics_engine",
+   "what_it_should_do": "Model contracted reimbursement.",
+   "requested_by_or_source": [
+    "docs/agere/HEALTHCARE_BACKLOG.md:9-28"
+   ],
+   "requested_date": "2026-10-14",
+   "ledger_component_ids": [],
+   "status": "not_built",
+   "evidence": "only listed in config/agere/healthcare_questions.json (question library); no engine module"
+  },
+  {
+   "id": "engine_ddi_screening",
+   "name": "Drug-drug interaction screening engine",
+   "category": "analytics_engine",
+   "what_it_should_do": "Screen for drug interactions.",
+   "requested_by_or_source": [
+    "docs/agere/HEALTHCARE_BACKLOG.md:9-28"
+   ],
+   "requested_date": "2026-10-14",
+   "ledger_component_ids": [],
+   "status": "not_built",
+   "evidence": "only listed in config/agere/healthcare_questions.json (question library); no engine module"
+  },
+  {
+   "id": "engine_denial_prediction",
+   "name": "Denial prediction engine",
+   "category": "analytics_engine",
+   "what_it_should_do": "Predict claim denials.",
+   "requested_by_or_source": [
+    "docs/agere/HEALTHCARE_BACKLOG.md:9-28"
+   ],
+   "requested_date": "2026-10-14",
+   "ledger_component_ids": [],
+   "status": "not_built",
+   "evidence": "only listed in config/agere/healthcare_questions.json (question library); no engine module"
+  },
+  {
+   "id": "engine_eligibility_340b",
+   "name": "340B eligibility engine",
+   "category": "analytics_engine",
+   "what_it_should_do": "Determine 340B eligibility.",
+   "requested_by_or_source": [
+    "docs/agere/HEALTHCARE_BACKLOG.md:9-28"
+   ],
+   "requested_date": "2026-10-14",
+   "ledger_component_ids": [],
+   "status": "not_built",
+   "evidence": "only listed in config/agere/healthcare_questions.json (question library); no engine module"
+  },
+  {
+   "id": "engine_flow_decomposition",
+   "name": "Patient-flow decomposition engine",
+   "category": "analytics_engine",
+   "what_it_should_do": "Decompose ED/inpatient flow times.",
+   "requested_by_or_source": [
+    "docs/agere/HEALTHCARE_BACKLOG.md:9-28"
+   ],
+   "requested_date": "2026-10-14",
+   "ledger_component_ids": [],
+   "status": "not_built",
+   "evidence": "only listed in config/agere/healthcare_questions.json (question library); no engine module"
+  },
+  {
+   "id": "engine_network_adequacy",
+   "name": "Network adequacy engine",
+   "category": "analytics_engine",
+   "what_it_should_do": "Assess provider network adequacy.",
+   "requested_by_or_source": [
+    "docs/agere/HEALTHCARE_BACKLOG.md:9-28"
+   ],
+   "requested_date": "2026-10-14",
+   "ledger_component_ids": [],
+   "status": "not_built",
+   "evidence": "only listed in config/agere/healthcare_questions.json (question library); no engine module"
+  },
+  {
+   "id": "engine_or_block_optimization",
+   "name": "OR block optimisation engine",
+   "category": "analytics_engine",
+   "what_it_should_do": "Optimise OR block schedules.",
+   "requested_by_or_source": [
+    "docs/agere/HEALTHCARE_BACKLOG.md:9-28"
+   ],
+   "requested_date": "2026-10-14",
+   "ledger_component_ids": [],
+   "status": "not_built",
+   "evidence": "only listed in config/agere/healthcare_questions.json (question library); no engine module"
+  },
+  {
+   "id": "engine_price_transparency_benchmark",
+   "name": "Price transparency benchmark engine",
+   "category": "analytics_engine",
+   "what_it_should_do": "Benchmark prices from transparency files.",
+   "requested_by_or_source": [
+    "docs/agere/HEALTHCARE_BACKLOG.md:9-28"
+   ],
+   "requested_date": "2026-10-14",
+   "ledger_component_ids": [],
+   "status": "not_built",
+   "evidence": "only listed in config/agere/healthcare_questions.json (question library); no engine module"
+  },
+  {
+   "id": "engine_provider_network_graph",
+   "name": "Provider network graph engine",
+   "category": "analytics_engine",
+   "what_it_should_do": "Build provider referral network graph.",
+   "requested_by_or_source": [
+    "docs/agere/HEALTHCARE_BACKLOG.md:9-28"
+   ],
+   "requested_date": "2026-10-14",
+   "ledger_component_ids": [],
+   "status": "not_built",
+   "evidence": "only listed in config/agere/healthcare_questions.json (question library); no engine module"
+  },
+  {
+   "id": "engine_staffing_optimization",
+   "name": "Staffing optimisation engine",
+   "category": "analytics_engine",
+   "what_it_should_do": "Optimise staffing to demand.",
+   "requested_by_or_source": [
+    "docs/agere/HEALTHCARE_BACKLOG.md:9-28"
+   ],
+   "requested_date": "2026-10-14",
+   "ledger_component_ids": [],
+   "status": "not_built",
+   "evidence": "only listed in config/agere/healthcare_questions.json (question library); no engine module"
+  },
+  {
+   "id": "engine_mlr_calculation",
+   "name": "MLR calculation engine",
+   "category": "analytics_engine",
+   "what_it_should_do": "Compute medical loss ratio.",
+   "requested_by_or_source": [
+    "docs/agere/HEALTHCARE_BACKLOG.md:9-28"
+   ],
+   "requested_date": "2026-10-14",
+   "ledger_component_ids": [
+    "engine_contract_strategy"
+   ],
+   "status": "partially_built",
+   "evidence": "MLR appears in contract_strategy.py:6 / general_analysis.py:172 but no dedicated engine"
+  }
+ ]
+}
