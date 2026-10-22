@@ -42,6 +42,8 @@ OPERATIONS |= {'contract_strategy'}  # risk contracts as options, track selectio
 OPERATIONS |= {'target_trial', 'line_of_therapy', 'trial_feasibility'}  # life-sciences / RWE engines (target_trial.py, line_of_therapy.py, trial_feasibility.py)
 OPERATIONS |= {'loop_closure', 'diagnostic_delay', 'risk_outcomes'}  # quality & safety: open loops, diagnostic delay look-back, risk-standardized outcomes
 CLINICAL_LOGIC = {'medication_state': 'medication_state', 'default_definition': 'default_definitions'}  # op -> module (validate/execute/answer)
+from .engine_suite import MODULES as _SUITE, code_paths as _suite_paths  # wave-1 decision engines (engine_suite.py) share the clinical-logic contract
+CLINICAL_LOGIC.update(_SUITE)
 OPERATIONS |= set(CLINICAL_LOGIC)
 OPERATIONS |= {'atomic_questions'}  # atomic typed sub-questions answered by System One per patient (atomic_questions.py)
 NODE_FIELDS = {'id', 'operation', 'inputs', 'parameters', 'purpose'}
@@ -1253,6 +1255,7 @@ def code_identity():
                       Path(__file__).with_name('risk_outcomes.py'), Path(__file__).with_name('safety_data.py'),
                       Path(__file__).with_name('medication_state.py'), Path(__file__).with_name('default_definitions.py'),
                       Path(__file__).with_name('atomic_questions.py'),
+                      *[p for p in _suite_paths() if p.exists()],
                       Path(__file__).with_name('market.py'),
                       Path(__file__).with_name('contract_strategy.py'), Path(__file__).with_name('programs.py'), Path(__file__).with_name('vbc.py'),
                       *[Path(__file__).with_name(n) for n in ('target_trial.py', 'line_of_therapy.py', 'trial_feasibility.py')],
@@ -1712,7 +1715,7 @@ def execute(stack, plan, *, question=None):
                 import importlib
                 engine = importlib.import_module(f'.{CLINICAL_LOGIC[op]}', __package__)
                 chosen = memberships[node['inputs'][0]] if node['inputs'] else None
-                detail = engine.execute(path, sorted(chosen.yes) if chosen else None, params, meta['snapshot']['as_of'])
+                detail = engine.execute(stack if getattr(engine, 'NEEDS_STACK', False) else path, sorted(chosen.yes) if chosen else None, params, meta['snapshot']['as_of'])
                 if chosen: detail['input_membership'] = membership_receipt(chosen)
             elif op in ('loop_closure', 'diagnostic_delay', 'risk_outcomes'):
                 from . import loop_closure, diagnostic_delay, risk_outcomes

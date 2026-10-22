@@ -146,6 +146,9 @@ PRODUCT['default_definition'] = {'population': 'optional', 'view': 'table',
                                         'avoidable ED visits, in dollars), ambulatory-care-sensitive / preventable admissions, avoidable ED visits, '
                                         'open measure gaps (governed denominator minus numerator, as a patient list), medication adherence (PDC >= 0.8).'}
 
+from . import engine_suite as _suite  # wave-1 decision engines declare their own menu entries (engine_suite.MODULES)
+PRODUCT.update(_suite.product())
+
 # Questions a SQL query over the semantic tables answers exactly are handed to the verified SQL ladder.
 LITERAL = ('Literal data questions: counts, lists, sums, averages, maxima, record filters, date arithmetic, simple breakdowns '
            'by a field, shares, rates per 1,000 without case-mix adjustment, dollar totals (paid, allowed, billed, net of reversals), '
@@ -172,6 +175,7 @@ NATIVE_SCALARS = {
     'line_of_therapy': ('value',), 'target_trial': ('value',), 'loop_closure': ('count', 'value'), 'explain': ('value',),
     'medication_state': ('count',), 'default_definition': ('count', 'value'),
 }
+NATIVE_SCALARS.update(_suite.native_scalars())
 
 
 def answers(operation):

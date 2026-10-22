@@ -752,6 +752,8 @@ def _compile(question, profile, as_of):
     explained = _knowledge_question(question)  # explanation / strategy questions about VBC itself, never data questions
     if explained is not None:
         return explained
+    from .engine_suite import compile_route  # decision engines (MLR, Stars, staffing, allocation, bandit, social needs, ...): strict phrasings
+    if (plan := compile_route(question, profile, as_of)) is not None: return plan
     q = _norm(question, as_of)
     low = q.lower()
     timed = survival_intent(low) and not re.search(DEATH_WORDS, low)  # "readmission-free survival" is not mortality

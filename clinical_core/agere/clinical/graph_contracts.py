@@ -44,6 +44,9 @@ TYPED |= {'loop_closure', 'diagnostic_delay', 'risk_outcomes'}  # quality & safe
 OPTIONAL_POPULATION += ('loop_closure', 'diagnostic_delay', 'risk_outcomes')
 TYPED |= {'medication_state', 'default_definition'}  # clinical logic: medication_state.py, default_definitions.py
 OPTIONAL_POPULATION += ('medication_state', 'default_definition')
+from .engine_suite import MODULES as _SUITE  # wave-1 decision engines (engine_suite.py); zero or one population input
+TYPED |= set(_SUITE)
+OPTIONAL_POPULATION += tuple(_SUITE)
 TYPED |= {'atomic_questions'}  # atomic typed sub-questions via System One (atomic_questions.py); one population input
 
 
@@ -287,6 +290,9 @@ def parameter_schema(op, catalog):
                     'spread_model': string(nw.SPREAD_MODELS), 'seeds': {'type': 'integer', 'minimum': 1, 'maximum': 10},
                     'transmission': {'type': 'number', 'minimum': 0.001, 'maximum': 1}, 'steps': {'type': 'integer', 'minimum': 1, 'maximum': 20},
                     'top': {'type': 'integer', 'minimum': 1, 'maximum': 200}})
+    if op in _SUITE:
+        from . import engine_suite
+        return engine_suite.parameter_schema(op, obj, string, array)
     if op == 'medication_state':
         from . import medication_state as ms
         return obj({'subjects': array(string(None, 'gdmt (all four pillars), a pillar (' + ', '.join(ms.PILLARS) + ') or an exact drug class'),
