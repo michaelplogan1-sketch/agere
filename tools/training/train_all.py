@@ -230,7 +230,17 @@ def train_tier_router(ds, out, encoder, identity, smoke):
 
 
 # --------------------------------------------------------------------------------------------------- MLX LoRA jobs
-def lora_command(data, adapter, learner, smoke):
+# LoRA Without Regret (Schulman et al., 2025): adapters on ALL linear layers incl. the MLP (attention-only underperforms at equal
+# parameter count) and a higher LR (~10x the full-FT rate). --lora-all-layers (or AGERE_LORA_ALL_LAYERS=1) switches every job to it.
+ALL_LAYERS = os.environ.get('AGERE_LORA_ALL_LAYERS', '') in ('1', 'on', 'true')
+ALL_LAYERS_CONFIG = {'num_layers': -1, 'learning_rate': 2e-4, 'lora_parameters': {
+    'rank': 16, 'scale': 20.0, 'dropout': 0.0,
+    'keys': ['self_attn.q_proj', 'self_attn.k_proj', 'self_attn.v_proj', 'self_attn.o_proj',
+             'mlp.gate_proj', 'mlp.up_proj', 'mlp.down_proj']}}
+
+
+def lora_command(data, adapter, learner, smoke, all_layers=None):
+    all_layers = ALL_LAYERS if all_layers is None else all_layers
     cfg = LORA[learner]
     iters = 3 if smoke else cfg['iters']
     cmd = [sys.executable, '-m', 'mlx_lm', 'lora', '--model', str(BASE_MODEL), '--train', '--data', str(data),
@@ -238,6 +248,13 @@ def lora_command(data, adapter, learner, smoke):
            '--iters', str(iters), '--learning-rate', '1e-4', '--max-seq-length', str(cfg['max_seq_length']), '--mask-prompt',
            '--steps-per-report', '1' if smoke else '20', '--steps-per-eval', str(iters if smoke else 200), '--val-batches', '2' if smoke else '20',
            '--save-every', str(iters if smoke else 100), '--seed', '7', '--grad-checkpoint']
+    if all_layers:  # rank/keys only exist in the config file; CLI flags above are overridden where the config sets them
+        cmd[cmd.index('--num-layers') + 1] = str(ALL_LAYERS_CONFIG['num_layers'])
+        cmd[cmd.index('--learning-rate') + 1] = str(ALL_LAYERS_CONFIG['learning_rate'])
+        Path(adapter).mkdir(parents=True, exist_ok=True)
+        conf = Path(adapter) / 'lora-all-layers.yaml'
+        conf.write_text(json.dumps({'lora_parameters': ALL_LAYERS_CONFIG['lora_parameters']}, indent=1))  # JSON is valid YAML
+        cmd += ['-c', str(conf)]
     return (['caffeinate', '-i'] if shutil.which('caffeinate') else []) + cmd
 
 
@@ -384,7 +401,10 @@ def main(argv=None):
     ap.add_argument('--learners', default=''); ap.add_argument('--allow-mlx', action='store_true')
     ap.add_argument('--install', action='store_true'); ap.add_argument('--seed-stores', action='store_true')
     ap.add_argument('--eval-limit', type=int, default=200)
+    ap.add_argument('--lora-all-layers', action='store_true', help='LoRA on all layers incl. MLP, rank 16, LR 2e-4 (not run by default)')
     a = ap.parse_args(argv)
+    global ALL_LAYERS
+    ALL_LAYERS = ALL_LAYERS or a.lora_all_layers
     print(json.dumps(run(a.datasets, a.out, a.stack, a.smoke, [l for l in a.learners.split(',') if l] or None,
                          a.allow_mlx, a.install, a.seed_stores, a.eval_limit), indent=1, default=str))
 

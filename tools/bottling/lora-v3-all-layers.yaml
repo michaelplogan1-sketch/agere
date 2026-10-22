@@ -1,0 +1,33 @@
+# MLX LoRA on ALL layers (incl. MLP) for the bottled SQL rung -- "LoRA Without Regret" (Schulman et al., 2025): adapters on every
+# linear layer (36 of 36 blocks, attention + MLP) match full fine-tuning where attention-only / last-16-layers underperforms, and
+# the best LR is ~10x the full-FT rate. NOT RUN: data v2 and the schedule are the lora-v2.yaml ones except layers/rank/LR.
+#   .venv/bin/python -m mlx_lm lora -c tools/bottling/lora-v3-all-layers.yaml
+# train_all.py --lora-all-layers applies the same settings to every learner (normalizer / typed / bottled / narrow).
+model: /Users/mikel/clinical-insights-local/models/qwen3-4b
+train: true
+data: /Users/mikel/clinical-insights-local/artifacts/bottling/data-v2
+adapter_path: /Users/mikel/clinical-insights-local/artifacts/bottling/adapters-v3-all-layers
+fine_tune_type: lora
+num_layers: -1               # all 36 blocks
+lora_parameters:
+  rank: 16
+  scale: 20.0
+  dropout: 0.0
+  keys: [self_attn.q_proj, self_attn.k_proj, self_attn.v_proj, self_attn.o_proj, mlp.gate_proj, mlp.up_proj, mlp.down_proj]
+batch_size: 1
+grad_accumulation_steps: 2
+iters: 1100
+learning_rate: 2.0e-4
+lr_schedule:
+  name: cosine_decay
+  warmup: 15
+  warmup_init: 1.0e-6
+  arguments: [2.0e-4, 535, 2.0e-5]
+mask_prompt: true
+max_seq_length: 4608
+grad_checkpoint: true
+steps_per_report: 10
+steps_per_eval: 200
+val_batches: 21
+save_every: 100
+seed: 7
