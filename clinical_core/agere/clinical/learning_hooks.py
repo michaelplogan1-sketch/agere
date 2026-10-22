@@ -57,13 +57,52 @@ def verified(stack, question, result):
     if answer.get('missing'): reasons.append('unresolved answer requirements')
     if not interpretation_of(result).get('execution_accepted'): reasons.append('interpretation not accepted')
     hits = sorted({c['control'] for c in answer.get('quality_checks') or []
-                   if c.get('severity') == 'warning' and c.get('control') in QUARANTINE_CONTROLS})
+                   if c.get('severity') == 'warning' and c.get('control') in QUARANTINE_CONTROLS | {'QC-DRIFT'}})
     if hits: reasons.append('quality controls: ' + ', '.join(hits))
+    reasons += check_flags(result)
     try:
         if corrected(stack.path, question): reasons.append('a user corrected this question')
     except sqlite3.Error:
         pass
     return not reasons, reasons
+
+
+def check_flags(result):
+    """Flags the answer checks raised on THIS answer that make it unfit to save as a verified pair (FRONTIER #5: capture only
+    after checks, quarantine anything flagged): low confidence (unchecked zero, unreconciled readings), a System One check
+    that found part of the question unanswered, System One families that disagreed in the cross-check, independent
+    proposers that disagreed (claim verification) and an unstable answer (pass^k failed)."""
+    answer = (result or {}).get('answer') or {}
+    interp = interpretation_of(result)
+    checks = ((result or {}).get('planner_receipt') or {}).get('answer_checks') or (result or {}).get('answer_checks') or {}
+    out = []
+    if answer.get('confidence') == 'low' or checks.get('confidence') == 'low': out.append('low confidence')
+    if (checks.get('system_one') or {}).get('label') == 'answers_partially': out.append('System One: part of the question may be unanswered')
+    if (checks.get('system_one_cross_check') or {}).get('verdict') == 'split': out.append('System One families disagree')
+    cv = interp.get('claim_verification') or {}
+    if cv.get('status') == 'unreconciled': out.append('independent proposers disagree')
+    stab = interp.get('answer_stability') or {}
+    if stab.get('k', 0) >= 2 and not stab.get('pass_k'): out.append(f"unstable answer (not pass^{stab['k']})")
+    if answer.get('readings'): out.append('two defensible readings')
+    return out
+
+
+def quarantine_pair(stack, question, result, reasons):
+    """A cascade answer that a check flagged: its plan goes to the quarantined table with the reasons (audit only; never reused
+    or trained on), so the store holds only pairs that passed every check."""
+    from . import learning
+    plan = sql_pair(result)
+    if plan is None: return None
+    db = learning._db(stack.path)
+    try:
+        db.execute('INSERT INTO quarantined(question, plan_kind, plan, signature, route, agreement, controls, created, context) '
+                   'VALUES (?,?,?,?,?,?,?,?,?)',
+                   (question.strip(), 'sql', json.dumps(plan, sort_keys=True), json.dumps(answer_signature(result.get('answer') or {}), default=str)[:4000],
+                    f'cascade:{proposer_of(result)}', None, json.dumps(reasons), time.time(), learning.context(stack.path)))
+        db.commit()
+    finally:
+        db.close()
+    return {'quarantined': True, 'reasons': reasons}
 
 
 def sql_pair(result):
@@ -181,8 +220,22 @@ def after_answer(stack, question, result, *, body=None):
         if pr.get('route') != 'hosted_verified_sql':  # the hosted ladder's own capture already quarantines
             from .learning import quarantine
             receipt['quarantine'] = quarantine(stack.path, question, (result or {}).get('answer'))
+        cascaded = bool(interpretation_of(result).get('proposer'))
+        if not ok and cascaded and ((result or {}).get('answer') or {}).get('status') == 'answered' and proposer not in REPLAYS \
+                and pr.get('route') != 'hosted_verified_sql':
+            receipt['quarantined_pair'] = quarantine_pair(stack, question, result, reasons)
+        stab = interpretation_of(result).get('answer_stability')
+        if paid and cascaded:  # pass^k on paid answers: the verifier's samples, else the proposer's own internal samples
+            from . import answer_stability as S
+            if not stab:
+                samples = [(result or {}).get('answer') or {}, *S.internal_samples(((result or {}).get('request_contract') or {}).get('legacy_receipt'))]
+                stab = S.stability(samples)
+            S.record(stack.path, question, proposer, paid, stab)
+            receipt['answer_stability'] = stab
+        if cascaded:
+            from .cascade_router import record_trace
+            receipt['router_trace'] = record_trace(question, result, ok)
         if ok:
-            cascaded = bool(interpretation_of(result).get('proposer'))
             if cascaded and proposer not in REPLAYS and pr.get('route') != 'hosted_verified_sql':
                 receipt['saved_pair'] = save_pair(stack, question, result, proposer)
             if proposer not in ('semantic_cache', 'learned_verified_sql') or paid:

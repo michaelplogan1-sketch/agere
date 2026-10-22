@@ -209,6 +209,9 @@ def activate(build,config,restatement=False,expansion=False,retraction=False,reb
              'rebaseline':{'basis':REBASELINE_BASIS,'prior_release_diff':diff} if rebaseline else None}
     if diff_gate is not None:receipt['release_diff_gate']=diff_gate
     receipt['source_coverage']=coverage
+    # release-diff guard on the question path: drifted concepts/fields/metrics become QC-DRIFT warnings on answers
+    from .clinical import release_drift
+    receipt['release_drift']=release_drift.install(build,prior=prior['build'] if prior else None)
     if carry_forward and prior:
         try:receipt['verified_carry_forward']=carry_forward_verified(prior['build'],build)
         except Exception as exc:  # noqa: BLE001 - the activation stands; the store starts empty and the receipt says why

@@ -745,14 +745,32 @@ def _guard(stack, question, graph, receipt, answer, profile, state, verdict):
         verdict['annotations'].append('answer guard: ' + '; '.join(f['message'] for f in found))
 
 
-def _cross_check(stack, question, graph, receipt, answer, profile, ledger, hosted, state, verdict):
-    """answer_guard_cross_check: one independent path (paid) for an uncertified comparable answer, live stacks only. Agreement and
+def _cross_check(stack, question, graph, receipt, answer, profile, ledger, hosted, state, verdict, result=None, claude_ok=True):
+    """answer_guard_cross_check for an uncertified answer, live stacks only. System One first (system_one_cross_check: Jev and
+    Perplexity each judge it): both confirm -> cross-checked, no Claude call; both refute -> concrete contradiction; the families
+    split -> the independent Claude path below, only for a comparable answer and only when Claude is available. Agreement and
     unavailability annotate; a disagreement from a non-relaxed independent path is a concrete contradiction."""
     from . import answer_guard as AG
     if _os.environ.get('AGERE_CROSS_CHECK', 'on') == 'off': return 'off'
     if not getattr(stack, 'allow_live', False) or ledger is None: return 'not live'
-    if not AG.comparable(answer): return 'not comparable'
     if state.get('certified'): return 'certified'
+    if AG._asserted(answer) and _s1_gate.ready(stack, 'AGERE_S1_CROSS_CHECK'):
+        from . import system_one_cross_check as X
+        s1 = X.cross_check(stack, question, graph, result or {'answer': answer}, ledger=ledger)
+        verdict['cost']['new_paid_api_calls'] += s1['calls']; verdict['cost']['usd'] += s1['cost_usd']
+        verdict['system_one_cross_check'] = s1
+        if s1['verdict'] == 'confirmed':
+            state['zero_confirmed'] = state.get('zero_confirmed') or 'system_one_cross_check'
+            verdict['annotations'].append(f'Cross-checked by System One ({X.describe(s1)}); no Claude call needed.'); return 'agree'
+        if s1['verdict'] == 'refuted':
+            verdict['accept'] = False
+            verdict['reasons'].append(f'cross-check: both System One families judged it a different question ({X.describe(s1)})'); return 'disagree'
+        if s1['verdict'] != 'split':
+            verdict['annotations'].append(f'Cross-check: System One could not decide ({X.describe(s1)}).'); return 'unavailable'
+        if not claude_ok:
+            verdict['annotations'].append(f'Cross-check: System One families disagree ({X.describe(s1)}); the Claude judge was skipped '
+                                          '(Claude unavailable earlier in this question).'); return 'split'
+    if not AG.comparable(answer): return 'not comparable'
     pending = AG.PendingCheck(stack, question, receipt, ledger=ledger, profile=profile, hosted=hosted,
                               deadline=_time.perf_counter() + AG.budget_s())
     pending.provide(answer)
@@ -839,7 +857,7 @@ def _certificates(receipt, state, verdict):
     return status
 
 
-def check(stack, question, graph, receipt, result, *, ledger=None, catalog=None, profile=None, hosted=None):
+def check(stack, question, graph, receipt, result, *, ledger=None, catalog=None, profile=None, hosted=None, claude_ok=True):
     """Every answer check on one executed proposal. result = analysis_graph execute result (result['answer']).
     ledger: BudgetLedger for the paid cross-check (live only); catalog: request_plan.Catalog (its semantic target);
     profile: source profile (default source_profile.load(stack.path)); hosted: answer_guard.hosted_sql replacement (tests).
@@ -883,8 +901,11 @@ def check(stack, question, graph, receipt, result, *, ledger=None, catalog=None,
     run('cascade_certificates', lambda: _certificates(receipt, state, verdict))
     verdict['checks_run'].remove('cascade_certificates')
     if verdict['accept']:
-        run('answer_guard_cross_check', lambda: _cross_check(stack, question, graph, receipt, answer, prof, ledger, hosted, state, verdict))
+        run('answer_guard_cross_check', lambda: _cross_check(stack, question, graph, receipt, answer, prof, ledger, hosted, state, verdict,
+                                                             result, claude_ok))
     run('unchecked_zero_guard', lambda: _unchecked_zero(receipt, answer, state, verdict))
+    from . import release_drift
+    run('release_drift_guard', lambda: release_drift.annotate(stack, question, graph, answer))  # QC-DRIFT: definitions that drifted this release
     run('answer_shape_review', lambda: _shape(question, graph, result, verdict))
     if verdict['accept']: _s1_gate.apply_check(stack, question, graph, verdict, ledger=ledger)  # System One: answers the question as asked?
     verdict['checks_run'].append('cascade_certificates')
@@ -899,11 +920,12 @@ def gate(cascade, name, graph, receipt, result):
     verdict in result['answer_checks'] and receipt['answer_checks']. Paid cross-check spend goes to cascade.spend."""
     live = getattr(cascade.stack, 'allow_live', False)
     verdict = check(cascade.stack, cascade.question, graph, receipt, result, ledger=cascade.ledger if live else None,
-                    catalog=cascade.catalog if getattr(cascade.catalog, 'target', None) else None)
+                    catalog=cascade.catalog if getattr(cascade.catalog, 'target', None) else None,
+                    claude_ok=not getattr(cascade, 'claude_down', None))
     if verdict['cost']['new_paid_api_calls'] or verdict['cost']['usd']:
         cascade.spend(verdict['cost']['new_paid_api_calls'], verdict['cost']['usd'])
-    summary = {k: verdict[k] for k in ('version', 'accept', 'reasons', 'annotations', 'probe', 'checks_run', 'certificate', 'confidence', 'system_one')
-               if k in verdict}
+    summary = {k: verdict[k] for k in ('version', 'accept', 'reasons', 'annotations', 'probe', 'checks_run', 'certificate', 'confidence', 'system_one',
+                                       'system_one_cross_check') if k in verdict}
     if isinstance(receipt, dict): receipt['answer_checks'] = summary
     if not verdict['accept']:
         cascade.reject(name, verdict['reasons'] or ['answer checks rejected the proposal']); return None

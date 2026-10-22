@@ -58,5 +58,14 @@ def validate(path, context, *, source, policy, check_probes=False):
         issues.append('Warehouse observations changed; recompute before reuse.')
     if not complete:
         issues.append('Some analytical requirements lack executed evidence.')
+    premises = []
+    if context.get('graph'):  # PlanFence: the premises the saved plan was derived under must still hold before reuse or action
+        try:
+            from .plan_fence import premise_issues
+            premises = premise_issues(path, context.get('question'), context['graph'])
+        except Exception:  # noqa: BLE001 - premise validation annotates; it never makes a saved answer unreadable
+            premises = []
+        issues += ['Premise changed: ' + p for p in premises]
     return {'schema': VERSION, 'derivation_current': derivation, 'observation_current': observation,
-            'evidence_complete': complete, 'current': derivation and observation and complete, 'issues': issues}
+            'evidence_complete': complete, 'premises_current': not premises,
+            'current': derivation and observation and complete and not premises, 'issues': issues}

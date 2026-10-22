@@ -244,11 +244,13 @@ def summary(path):
     from . import procedural_memory
     from .economics_learning import summary as economics_summary
     from .healthcare_learning import summary as healthcare_summary
+    from . import store_audit
     return {'schema': VERSION, 'routes': routes, 'statuses': statuses, 'verified_training_pairs': verified,
             'procedural_memory': procedural_memory.summary(path),
             'healthcare_economics': economics_summary(path),
             'healthcare_domains': healthcare_summary(path),
             'corrections': corrections, 'reusable_structures': shapes,
+            'store_audit': store_audit.last(path),
             'learning_mode': 'Continuous capture and checked plan reuse; corrections require revalidation. No automatic model-weight training or clinical qualification.',
             'top_gaps': [{'reason': r, 'count': n} for r, n in gaps]}
 

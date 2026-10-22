@@ -170,6 +170,22 @@ def route_cases(rows):
     return out
 
 
+def store_cases(files=None, blind_q=()):
+    """learned_reuse.answer cases from store audits (clinical/store_audit.py): gold labels (bench / corrections) and pairs both
+    System One families judged the same way. Blind questions are dropped."""
+    paths = [Path(f) for f in files] if files else sorted(MAIN.glob('artifacts/*/stack/store-audit-cases.json'))
+    out, seen = [], set()
+    for p in paths:
+        try: doc = json.loads(p.read_text())
+        except (OSError, ValueError): continue
+        for c in doc.get('cases') or []:
+            if c['key'] in blind_q or c['key'] in seen: continue
+            seen.add(c['key'])
+            out.append({'key': c['key'], 'score': float(c.get('score', 1.0)), 'error': bool(c['error']), 'run': str(p),
+                        'label_source': c.get('label_source')})
+    return out
+
+
 def acceptance_cases(results, blind_q):
     latest = {}
     for path in sorted((Path(results) / 'acceptance').glob('*.json')):
@@ -338,6 +354,16 @@ def certify(name, cases, blind=(), *, bind, fallback, data, floor=None, alpha=No
     else:
         rec['guarantee'] = CT.guarantee_text(rec) + (f"; held-out test {rec['test']['errors_accepted']}/{rec['test']['n_accepted']} wrong "
                                                      f"(upper bound {rec['test']['error_upper_bound']})")
+    if not rec['calibrated']:  # graded certificate: the strictest pre-declared alpha the data certify, unless held-back data refute it
+        g = CT.fit_graded([c['score'] for c in cal], [c['error'] for c in cal], delta, grid, floor)
+        if g:
+            t, b = evaluate(test, g['threshold'], g['alpha'], delta), evaluate(list(blind), g['threshold'], g['alpha'], delta)
+            g.update(test=t, blind_test=b)
+            if t['refutes_alpha'] or b['refutes_alpha']:
+                rec['graded_refuted'] = {**g, 'reason': f"graded alpha {g['alpha']:.0%} refuted by the {'held-out test' if t['refutes_alpha'] else 'blind test'}"}
+            else:
+                g['guarantee'] += f"; held-out test {t['errors_accepted']}/{t['n_accepted']}, blind {b['errors_accepted']}/{b['n_accepted']} wrong"
+                rec['graded'] = g
     return rec
 
 
@@ -347,6 +373,8 @@ def main(argv=None):
     ap.add_argument('--refresh-cache', action='store_true')
     ap.add_argument('--write', action='store_true'); ap.add_argument('--out', default=None)
     ap.add_argument('--only', default='')
+    ap.add_argument('--store-cases', action='append', default=None,
+                    help='store-audit-cases.json files (store_audit.py) adding labelled learned_reuse.answer cases; default: every stack')
     a = ap.parse_args(argv)
     results = results_dir(a.results)
     only = set(filter(None, a.only.split(',')))
@@ -385,13 +413,15 @@ def main(argv=None):
         if want(name):
             records.append(certify(name, by_accept.get(name, []), bind=GP.identity(name), fallback=1.0,
                                    data={'source': 'acceptance runs (bench/results/acceptance, latest per question); error = wrong operation'}))
+    store = store_cases(a.store_cases, blind_q)
     for name, (kind, fallback, _) in GP.GATES.items():
         if kind in ('route', 'flag') and name not in ('local_compiler.operation', 'operator_router.choice') and want(name):
-            records.append(certify(name, by_route.get(name, []), blind_by_route.get(name, []), bind=GP.identity(name), fallback=fallback,
+            extra = store if name == 'learned_reuse.answer' else []
+            records.append(certify(name, by_route.get(name, []) + extra, blind_by_route.get(name, []), bind=GP.identity(name), fallback=fallback,
                                    data={'source': 'bench rows, development/challenge runs (latest per question); '
                                                    'error = delivered answer wrong (adjudicated where available)'}))
     for r in records:
-        status = 'CERTIFIED' if r.get('calibrated') else 'not certified'
+        status = 'CERTIFIED' if r.get('calibrated') else (f"graded {r['graded']['alpha']:.0%}" if r.get('graded') else 'not certified')
         t = r.get('test') or {}
         print(f"{r['name']:30s} {status:13s} thr={r.get('threshold')} n={(r.get('data') or {}).get('labelled')} "
               f"cal={r.get('n_calibration')} | test {t.get('errors_accepted')}/{t.get('n_accepted')} | "

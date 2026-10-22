@@ -26,6 +26,7 @@ from .literal_check import VERSION as CHECK_VERSION, executable_text, missing, s
 from .question_input import QuestionNotUnderstood
 from .answer_checks import gate as answer_gate
 from .system_one_gate import CLAUDE_TIERS, outage
+from . import requirement_ledger, plan_fence, claim_verification
 
 VERSION = 'checked-proposer-cascade/1'
 
@@ -105,6 +106,7 @@ class Cascade:
         self.claude_down = None  # outage kind once a Claude tier failed on the provider: Claude tiers are skipped after that
         self.candidates = []  # executed proposals a check rejected: the System One fallback chooses among them on an outage
         self.routing = None
+        self.learned_routing = None
 
     # -- shared resources -------------------------------------------------------------------------------------------
     @property
@@ -166,13 +168,24 @@ class Cascade:
             order = tuple(router_order(self.stack, self.question, order)[0])
         except Exception:  # noqa: BLE001 - no encoder (fixtures): keep the default order
             pass
+        try:  # learned cascade router (labelled by which tier's checked answer was right): a permutation, never fewer tiers
+            from .cascade_router import reorder as learned_reorder
+            front = None
+            if (self.routing or {}).get('applied'):
+                from .system_one_gate import PINNED_FIRST, ROUTES
+                moved = set(PINNED_FIRST) | set(ROUTES.get(self.routing.get('label'), ()))
+                front = next((i for i, t in enumerate(order) if t not in moved), len(order))
+            order, self.learned_routing = learned_reorder(self.stack, self.question, order, front=front)
+        except Exception:  # noqa: BLE001 - no model / no data: keep the order
+            pass
         return order
 
     def run(self):
         from .answer_budget import start as start_budget
         budget = self.budget = start_budget()
         try:
-            for name in self.order():
+            order = self.order()
+            for name in order:
                 if budget.expired() and budget.best():  # out of time with an executed candidate in hand; never skip to a refusal
                     budget.skip(name); continue
                 if self.population is not None and name not in TYPED_WITH_POPULATION: continue
@@ -195,7 +208,10 @@ class Cascade:
                 if found == 'held':
                     self.note(name, 'decline held', None, started); continue
                 self.note(name, 'accepted', None, started)
-                contract, interpretation = found
+                contract, interpretation = claim_verification.verify(self, order, name, found)  # uncertified: an independent proposer checks it
+                name = interpretation.get('verified_proposer') or name
+                interpretation = {**interpretation, 'requirement_ledger': requirement_ledger.summary(
+                    requirement_ledger.check(self.question, self.evidence(contract)))}
                 return contract, self.finish(interpretation, name)
             if budget.expired() and budget.best():
                 contract, interpretation = budget.best()  # time ran out: the best executed candidate, marked partial
@@ -218,6 +234,16 @@ class Cascade:
             raise exc
         finally:
             self.close()
+
+    def gaps(self, text):
+        """Every requirement of the original question the executable text drops (requirement_ledger: literal check, comparator
+        direction, AND/OR structure)."""
+        return requirement_ledger.gaps(self.question, text)
+
+    def evidence(self, contract):
+        if (contract or {}).get('kind') == 'checked_graph':
+            return executable_text([n.get('parameters') for n in contract['graph'].get('nodes', [])])
+        return evidence_of(contract or {})
 
     def note(self, name, outcome, detail, started):
         self.log.append({'proposer': name, 'outcome': outcome, 'detail': detail,
@@ -285,14 +311,15 @@ class Cascade:
         return {**interpretation, 'interpreter': interpretation.get('interpreter') or name,
                 'proposer': {'name': name, 'cost': cost, 'calibration': calibration, 'kind': kind,
                              'check': CHECK_VERSION, 'cascade': VERSION},
-                'proposers': self.log, 'cascade_usage': self.usage()}
+                'proposers': self.log, 'cascade_usage': self.usage(),
+                'cascade_routing': {'system_one': self.routing, 'learned': self.learned_routing}}
 
     # -- typed proposals ------------------------------------------------------------------------------------------------
     def typed(self, name, found):
         """Accept a compiled typed contract only when the literal check passes over its executable parts."""
         if not found: return None
         contract, interpretation = found
-        gaps = missing(self.question, evidence_of(contract))
+        gaps = self.gaps(evidence_of(contract))
         if gaps: return self.reject(name, gaps)
         return contract, {**interpretation, 'literal_check': 'passed'}
 
@@ -364,8 +391,12 @@ class Cascade:
             if name == 'undelivered_input': return decline
             self.held_decline = self.held_decline or decline
             return 'held'
-        gaps = missing(self.question, executable_text([n.get('parameters') for n in graph.get('nodes', [])]))
+        gaps = self.gaps(executable_text([n.get('parameters') for n in graph.get('nodes', [])]))
         if gaps: return self.reject(name, gaps)
+        if name in plan_fence.FENCED:  # saved work: its premises must still hold before it is reused
+            fence = plan_fence.validate(self.stack, self.question, graph, receipt, tier=name)
+            if isinstance(receipt, dict): receipt['plan_fence'] = fence
+            if not fence['current']: return self.reject(name, ['PlanFence: ' + i for i in fence['issues']])
         try:
             result = self.stack.run_graph(graph, question=self.question)
         except (ValueError, KeyError, TypeError, RuntimeError) as exc:
@@ -468,7 +499,7 @@ class Cascade:
             return 'held'
         if answer['status'] != 'answered':
             return self.reject('hybrid_analysts', ['the analysts found more than one reading: ' + json.dumps(answer.get('readings'), default=str)[:300]])
-        gaps = [g for n in graph['nodes'] for g in missing(self.question, executable_text(n['parameters']))]
+        gaps = [g for n in graph['nodes'] for g in self.gaps(executable_text(n['parameters']))]
         if not graph['nodes'] or gaps: return self.reject('hybrid_analysts', gaps or ['no executed query to check'])
         misfit = shape_misfit(self.question, answer)
         if misfit: return self.reject('hybrid_analysts', [misfit])
