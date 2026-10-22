@@ -123,9 +123,17 @@ def tool(op):
             'input_schema': {'type': 'object', 'properties': properties, 'required': ['parameters']}}
 
 
+def brief(text, limit=260):
+    """The menu line: whole sentences up to ~limit characters (the full description is in the step-2 tool)."""
+    if len(text) <= limit: return text
+    cut = text[:limit]
+    end = max(cut.rfind('. '), cut.rfind('; '))
+    return (cut[:end + 1] if end > 80 else cut.rsplit(' ', 1)[0] + '…').strip()
+
+
 def menu():
     """Step 1: choose the engine from one-line descriptions (stays small as capabilities grow)."""
-    result = [{'name': op, 'description': spec['use'], 'input_schema': {'type': 'object', 'properties': {}}}
+    result = [{'name': op, 'description': brief(spec['use']), 'input_schema': {'type': 'object', 'properties': {}}}
               for op, spec in PRODUCT.items()]
     result.append({'name': 'literal_lookup', 'description': LITERAL, 'input_schema': {'type': 'object', 'properties': {}}})
     result.append({'name': 'not_answerable', 'description': 'The data needed does not exist in this warehouse.',
