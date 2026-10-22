@@ -13,7 +13,7 @@ DOMAINS = [  # (label, question pattern, catalog name hints that would hold it)
      r'\b(?:h?cahps|patient satisfaction|satisfaction scores?|patient experience surveys?|press ganey|nps score)\b',
      ('survey', 'cahps', 'satisfaction', 'experience_score')),
     ('prior authorization requests and decisions', r'\bprior[- ]?auth(?:orization)?s?\b|\bpre-?auth(?:orization)?s?\b',
-     ('prior_auth', 'preauth', 'authorization_request', 'auth_decision')),
+     ('prior_auth', 'preauth', 'authorization_request', 'auth_decision', 'reject_code')),  # reject_code: pharmacy claims rejected for PA (prior_auth_access adapter)
     ('CMS Star ratings', r'\bstar ratings?\b|\bstars? (?:measure )?ratings?\b|\bpart [cd] stars?\b', ('star_rating', 'stars_rating', 'star_measure')),
     ('clinician compensation and RVUs', r'\b(?:w?rvus?|relative value units?|salar(?:y|ies)|physician compensation|provider pay)\b',
      ('rvu', 'salary', 'compensation', 'payroll')),

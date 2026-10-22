@@ -236,6 +236,7 @@ def route(question, profile, as_of):
     if not (gaps or screening): return None
     if re.match(r'(?:what (?:is|are)|explain|define)\b', low) and not re.search(r'\b(?:our|we|my|patients|members|which|how many)\b', low): return None
     if re.search(r'\b(?:cost|spend|pmpm|readmission\w*|admissions?|why|drive[sn]?|predict\w*)\b', low): return None
+    if re.search(r'\b\d+\b|\b(?:last|past|previous|prior|since|within)\b', low): return None  # explicit ages / windows belong to the cohort-family and compiler routes
     params = {}
     if named: params['measures'] = named
     if re.search(r'\bclosed\b|\bmet\b|\bcompliant\b|\bcompleted\b', low) and not re.search(r'\bnot (?:yet )?closed\b|\bclosure\b', low): params['focus'] = 'closed'

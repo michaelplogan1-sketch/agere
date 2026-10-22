@@ -132,7 +132,8 @@ class Families(unittest.TestCase):
                 self.assertEqual(g['nodes'][0]['operation'], op, q)
                 graph_validate(g, AS_OF)
         for q in ('Which patients with food insecurity have never been referred to a community resource?', 'what is a prior authorization',
-                  'what drives readmission after discharge', 'how many patients have diabetes'):
+                  'what drives readmission after discharge', 'how many patients have diabetes',
+                  'How many women aged 50 to 74 have not had a mammogram in the last 24 months?'):
             out = E.compile_route(q, {}, AS_OF)
             self.assertTrue(out is None or out[0]['nodes'][0]['operation'] not in cases, q)
 
