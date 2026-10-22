@@ -19,6 +19,7 @@ from pathlib import Path
 
 VERSION = 'foundation-engines/1'
 OPERATIONS = {
+    'onboarding_review': 'onboarding_review',  # feeds/formats, canonical (Tuva/OMOP) mapping, unmapped, OMOP round trip
 }
 
 

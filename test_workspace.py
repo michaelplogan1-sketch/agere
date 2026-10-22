@@ -41,7 +41,7 @@ class WorkspaceTests(unittest.TestCase):
         self.assertIn('raw_', index)
 
     def test_every_step_recorded_and_listed(self):
-        self.assertEqual(set(self.ws.state['steps']), {'profile', 'propose', 'approve', 'build', 'raw', 'verify', 'docs'})
+        self.assertEqual(set(self.ws.state['steps']), {'detect', 'profile', 'propose', 'approve', 'build', 'raw', 'verify', 'canonical', 'docs'})
         self.assertIn('acme-health', [w['slug'] for w in list_workspaces(self.root)])
 
     def test_unmapped_mode_copies_only_unused_tables(self):
