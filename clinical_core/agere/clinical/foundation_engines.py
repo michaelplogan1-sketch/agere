@@ -21,6 +21,7 @@ VERSION = 'foundation-engines/1'
 OPERATIONS = {
     'record_linkage': 'record_linkage',  # duplicate patient records: Fellegi-Sunter linkage (person_linkage.py)
     'scanned_document_search': 'scanned_documents',  # OCR text of scanned/faxed/outside documents, page/bbox-cited
+    'onboarding_review': 'onboarding_review',  # feeds/formats, canonical (Tuva/OMOP) mapping, unmapped, OMOP round trip
 }
 
 
