@@ -58,4 +58,19 @@ class SignalAndForecastInputs(unittest.TestCase):
                          grouped_split({'patient_id':'b','household_id':'same'}))
 
 
+class TabPFNChallengerTests(unittest.TestCase):
+    def test_candidate_fits_and_verdict_only_promotes_on_win(self):
+        import numpy as np
+        from clinical_core.agere.clinical import tabular_challengers as tc
+        rng = np.random.default_rng(0); X = rng.normal(size=(300, 6)); y = (X[:, 0] + rng.normal(0, 1, 300) > 0).astype(int); X[::9, 2] = np.nan
+        m = tc.TabPFNCandidate(n_estimators=2).fit(X[:200], y[:200])
+        p = m.predict_proba(X[200:])
+        self.assertEqual(p.shape, (100, 2)); self.assertTrue(np.allclose(p.sum(axis=1), 1, atol=1e-5))
+        base = {'boosted_blocks': {'test_calibrated': {'log_loss': .50, 'auroc': .80}}}
+        lose = tc.verdict({**base, 'tabpfn': {'test_calibrated': {'log_loss': .49, 'auroc': .81}}})
+        win = tc.verdict({**base, 'tabpfn': {'test_calibrated': {'log_loss': .45, 'auroc': .81}}})
+        worse_auc = tc.verdict({**base, 'tabpfn': {'test_calibrated': {'log_loss': .45, 'auroc': .79}}})
+        self.assertEqual((lose['default_model'], win['default_model'], worse_auc['default_model']), ('boosted_blocks', 'tabpfn', 'boosted_blocks'))
+
+
 if __name__=='__main__':unittest.main()

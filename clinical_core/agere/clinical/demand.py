@@ -466,6 +466,9 @@ def candidates(n, freq, seasonal):
             out.append(('holt_winters_multiplicative_damped', lambda y: ETS(y, 'damped', 'mul', m)))
     for size in timestral_sizes():
         out.append((f'timestral_{size.lower()}', lambda y, size=size: Timestral(y, size)))
+    from . import foundation_forecasters as ff  # Chronos-2 / TimesFM-2.5 challengers: used only where the backtest says they win
+    for name in ff.enabled():
+        out.append((name, lambda y, name=name: ff.Challenger(y, name)))
     return out
 
 
@@ -559,7 +562,8 @@ def forecast_series(periods, y, freq, horizon, partial=None, booked=None, seed=0
     records, origins, seasonal, baseline = backtest(yr, freq, steps, seed)
     if baseline not in records: baseline = 'naive'
     mase = {name: float(np.mean([r['scaled_error'] for r in recs])) for name, recs in records.items()}
-    classic = {k: v for k, v in mase.items() if not k.startswith('timestral')}
+    from . import foundation_forecasters as ff
+    classic = {k: v for k, v in mase.items() if not ff.is_foundation(k)}
     picked = min(classic, key=lambda k: (round(classic[k], 6), list(classic).index(k)))
     factories = dict(candidates(len(yr), freq, seasonal))
     rng = np.random.default_rng(seed + 1)
@@ -575,6 +579,16 @@ def forecast_series(periods, y, freq, horizon, partial=None, booked=None, seed=0
     if selection != 'default':
         model = factories[picked](yr)
         pt = np.maximum(model.point(steps), 0); sims = np.maximum(model.simulate(steps, SIMS, rng), 0)
+    challengers = {k: mase[k] for k in ff.CHALLENGERS if k in mase}
+    if challengers:  # a challenger replaces the incumbent only by beating its backtest MASE by the margin
+        c = min(challengers, key=challengers.get)
+        if challengers[c] < mase[best] * (1 - ff.CHALLENGER_MARGIN):
+            try:
+                cm = factories[c](yr)
+                cpt = np.maximum(cm.point(steps), 0); csims = np.maximum(cm.simulate(steps, SIMS, rng), 0)
+                model, pt, sims, best, selection = cm, cpt, csims, c, 'challenger_backtest'
+            except ValueError:
+                pass
     sd = sims.std(axis=0)
     recs = records[best]
     floor = 0.5
@@ -960,7 +974,7 @@ def summary(report):
             f"about {fc[0]['point']:,.1f} in {fc[0]['period']} (80% interval {fc[0]['lo80']:,.1f}-{fc[0]['hi80']:,.1f})"
             + (f", {total:,.0f} in total" if len(fc) > 1 else '') + '. ')
     sk = bt['skill_vs_baseline']
-    how = 'default foundation model' if main.get('model_selection') == 'default' else 'chosen by rolling-origin backtest'
+    how = ('default foundation model' if main.get('model_selection') == 'default' else 'foundation-model challenger that beat the incumbent on the rolling-origin backtest' if main.get('model_selection') == 'challenger_backtest' else 'chosen by rolling-origin backtest')
     text += (f"Model {main['model'].replace('_', ' ')} ({how}): MASE {bt['selected_mase']:.2f} vs "
              f"{bt['baseline'].replace('_', ' ')} baseline {bt['baseline_mase']:.2f}"
              + (f" ({sk:+.0%} skill)" if sk is not None else '') + f" over {bt['errors']} forecast errors. ")

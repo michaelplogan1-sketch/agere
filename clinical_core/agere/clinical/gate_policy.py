@@ -126,7 +126,7 @@ def path_gates(receipt):
         return [{'gate': 'local_rewrite.answer', 'score': 1.0, 'passed': True}]
     if route == 'learned_verified_sql':
         return [{'gate': 'learned_reuse.answer', 'score': 1.0, 'passed': True}]
-    if route == 'semantic_cache':
+    if route in ('semantic_cache', 'template_decoding'):
         sim = (receipt.get('semantic_cache') or {}).get('similarity')
         return [{'gate': 'semantic_cache.similarity', 'score': sim, 'passed': None},
                 {'gate': 'learned_reuse.answer', 'score': 1.0, 'passed': True}]

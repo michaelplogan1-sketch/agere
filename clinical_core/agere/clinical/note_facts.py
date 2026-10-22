@@ -475,6 +475,8 @@ def extract(text, stream=None, field=None):
                     continue  # 'lisinopril (cough)' reaction in an allergy list
                 if val == 'bleeding' and re.search(r'bleeding evaluation|evaluation for bleeding|cause', sent, re.I): continue
                 add('symptom', val, m, negated=_negated_before(sent, m.start()), confidence=0.75)
+    from . import clinical_ner  # admitted NER candidates (validated against the Sonnet labels) join the rule facts
+    facts = clinical_ner.augment(orig, facts, stream, field)
     seen, out = set(), []
     for f in facts:  # one fact per (type, value, negation, qualifier) per unit; first mention wins
         k = (f['fact_type'], f['value'], f['negated'], f['qualifier'] if f['fact_type'].startswith('medication') else None)

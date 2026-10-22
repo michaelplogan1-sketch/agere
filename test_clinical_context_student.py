@@ -86,4 +86,34 @@ class StudentBoundaryTest(unittest.TestCase):
             self.assertEqual(l.db.execute('SELECT COUNT(*) FROM authorization_changes').fetchone()[0],1);l.close()
             with self.assertRaises(ValueError):BudgetLedger(path,cap_usd=10)
 
+class ShuffledTeacherTest(unittest.TestCase):
+    def test_orderings_are_distinct_and_canonical_first(self):
+        from clinical_core.agere.clinical.context_student import orderings
+        o=orderings(3);self.assertEqual(o[0],list(LABELS));self.assertEqual(len({tuple(x) for x in o}),3)
+        self.assertEqual(len({x[0] for x in orderings(4)}),4)
+
+    def test_debias_consensus_cancels_first_option_bias(self):
+        from clinical_core.agere.clinical.context_student import debias
+        def dist(top,second,p=.55):
+            d=dict.fromkeys(LABELS,.0);rest=(1-p-.3)/4
+            for k in d:d[k]=rest
+            d[top]=p;d[second]=.3;return d
+        biased=[dist('affirmed','negated'),dist('negated','affirmed'),dist('unknown','affirmed')]  # three orders, label follows position
+        out=debias(biased);self.assertFalse(out['order_stable'])
+        steady=[dist('negated','affirmed')]*3;out=debias(steady)
+        self.assertEqual((out['verifier_label'],out['order_agreement'],out['order_stable']),('negated',1.0,True))
+
+    def test_verify_batch_runs_every_order_with_distinct_cache_variants(self):
+        row={'example_id':'12345678901234567890','concept':'edema','target_quote':'edema','text':'Patient denies edema.','state':'negated'}
+        def fake(body,provider,ledger,out,**kw):
+            first=next(iter(body['questions'].values()))['criteria']
+            ps=dict.fromkeys(LABELS,.02);ps['negated']=.9;ps['affirmed']=.02;tot=sum(ps.values());ps={k:v/tot for k,v in ps.items()}
+            return ([{**row,'verifier_label':'negated','verifier_probabilities':ps,'raw_verifier_probabilities':ps,'machine_agreement':True}],{'variant':kw.get('variant')})
+        with patch('clinical_core.agere.clinical.context_student.send',side_effect=fake) as send:
+            rows,receipt=verify_batch([row],None,Path('/tmp'))
+        self.assertEqual(send.call_count,3);self.assertEqual(receipt['orderings'],3)
+        self.assertEqual([c.kwargs.get('variant') is None for c in send.call_args_list],[True,False,False])
+        self.assertEqual(rows[0]['order_agreement'],1.0);self.assertTrue(rows[0]['machine_agreement'])
+
+
 if __name__=='__main__':unittest.main()

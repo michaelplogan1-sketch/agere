@@ -193,6 +193,9 @@ def fit(stack_path, output, feature_cutoff, label_through, target):
                    l2_regularization=2.0,learning_rate=.05,early_stopping=False,random_state=1729)),
         'boosted_blocks':(FEATURES,HistGradientBoostingClassifier(max_iter=100,max_leaf_nodes=7,min_samples_leaf=40,
                    l2_regularization=2.0,learning_rate=.05,early_stopping=False,random_state=1729))}
+    from . import tabular_challengers
+    if tabular_challengers.available():  # TabPFN challenger: fitted like the others, default only where it wins on test
+        candidates['tabpfn']=(BASE_FEATURES,tabular_challengers.TabPFNCandidate())
     bundles={};test_predictions={};tr=splits=='train';cal=splits=='calibration';test=splits=='test'
     report['test_training_prevalence_baseline']=metrics(y[test],np.full(sum(test),float(y[tr].mean())))
     for name,(names,model) in candidates.items():
@@ -209,6 +212,7 @@ def fit(stack_path, output, feature_cutoff, label_through, target):
                                'omitted_all_missing_training_features':omitted,
                                'selection':'Retained research candidate; no automatic winner or clinical promotion.'}
         test_predictions[name]=iter(map(float,predicted))
+    report['challenger']=tabular_challengers.verdict(report['models'])
     with (output/'training-features.jsonl').open('w') as f:
         for row in training:f.write(json.dumps(row,allow_nan=False)+'\n')
     with (output/'test-predictions.jsonl').open('w') as f:
@@ -247,7 +251,7 @@ def forecast(path, patient_ids, model='all', limit=10):
     if model!='all' and model not in card['models']:raise ValueError('Unregistered forecast model')
     ids=set(patient_ids);rows=[json.loads(r) for r in raw.splitlines() if r]
     rows=[r for r in rows if r['patient_id'] in ids]
-    sort_model='boosted_blocks' if model=='all' else model
+    sort_model=(card.get('challenger') or {}).get('default_model','boosted_blocks') if model=='all' else model
     rows.sort(key=lambda r:(-r['model_scores'][sort_model],r['patient_id']))
     means={name:float(np.mean([r['model_scores'][name] for r in rows])) if rows else None for name in card['models']}
     return {'operator':'research_forecast','synthetic':True,'status':'research_predictions_available',

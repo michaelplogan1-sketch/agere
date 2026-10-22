@@ -450,6 +450,20 @@ class Ladder:
         return graph,{'route':'semantic_cache','model':None,'new_paid_api_calls':0,'frontier_called':False,
                       'learned_from':hit['agreement'],'semantic_cache':cache_info,'local_compiler_declined':self.decline,
                       'steps':[],'elapsed_seconds':self.elapsed()}
+    def template_decoding(self):
+        # TeCoD: a verified query with its VALUE slots refilled for a question with the same structure (template_decoding.py).
+        if self.profile is None or os.environ.get('AGERE_TEMPLATE_DECODING','on')=='off':return None
+        from . import template_decoding
+        try:
+            hit,info=template_decoding.lookup(self.stack.path,self.question,getattr(self.stack.retriever,'encoder',None))
+            if not hit:
+                self.decline['template_decoding']={k:info.get(k) for k in ('reason','templates','entailment','matched_question')};return None
+            graph=self._sql_graph(hit['plan'],'Verified query template with new values (template-constrained decoding)')
+        except (ValueError,RuntimeError,OSError,sqlite3.Error) as exc:
+            self.decline['template_decoding_rejected']=str(exc)[:200];return None
+        return graph,{'route':'template_decoding','model':None,'new_paid_api_calls':0,'frontier_called':False,
+                      'learned_from':hit['agreement'],'template_decoding':info,'semantic_cache':{'similarity':info.get('similarity')},
+                      'local_compiler_declined':self.decline,'steps':[],'elapsed_seconds':self.elapsed()}
     def bottled_sql(self,enabled=None):
         # The local model fine-tuned on verified ladder answers writes k queries; kept only when the greedy query
         # passes lint + sanity and enough decodes agree on the result (bottled.py).

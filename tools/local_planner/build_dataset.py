@@ -55,17 +55,22 @@ def main():
         except Exception:  # noqa: BLE001
             negatives.append(q)
     targets = sorted({c for _, c in pairs}); rng.shuffle(targets)
-    held = set(targets[:max(1, len(targets) // 10)])
+    held_all = targets[:max(2, len(targets) // 10)]
+    held = set(held_all)
+    held_test = set(held_all[::2])   # a real test bucket: half of the held-out targets are valid-only, half test-only
     train = [example(w, c) for w, c in pairs if c not in held] + [example(c, c) for c in targets if c not in held]
-    valid = [example(w, c) for w, c in pairs if c in held]
+    valid = [example(w, c) for w, c in pairs if c in held and c not in held_test]
+    test = [example(w, c) for w, c in pairs if c in held_test]
     rng.shuffle(negatives); cut = len(negatives) // 10
     train += [example(q, N.UNSUPPORTED) for q in negatives[cut:]]
-    valid += [example(q, N.UNSUPPORTED) for q in negatives[:cut]]
-    rng.shuffle(train); rng.shuffle(valid)
+    held_neg = negatives[:cut]
+    valid += [example(q, N.UNSUPPORTED) for q in held_neg[::2]]
+    test += [example(q, N.UNSUPPORTED) for q in held_neg[1::2]]
+    rng.shuffle(train); rng.shuffle(valid); rng.shuffle(test)
     out = DATA / 'mlx'; out.mkdir(exist_ok=True)
-    for name, rows in (('train', train), ('valid', valid), ('test', valid)):
+    for name, rows in (('train', train), ('valid', valid), ('test', test)):
         (out / f'{name}.jsonl').write_text(''.join(json.dumps(r) + '\n' for r in rows))
-    stats.update(train=len(train), valid=len(valid), negatives=len(negatives), held_out_targets=len(held))
+    stats.update(train=len(train), valid=len(valid), test=len(test), negatives=len(negatives), held_out_targets=len(held))
     print(json.dumps(dict(stats), indent=1))
 
 

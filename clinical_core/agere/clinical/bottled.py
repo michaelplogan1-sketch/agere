@@ -160,7 +160,59 @@ def params_for(question, cand):
     return {'query': cand['sql'], 'returns': returns}
 
 
+# ---- grammar constraints (constrained_decoding) ------------------------------------------------------------------
+NARROW_KEYS = ('family', 'ask', 'condition', 'age', 'sex', 'anchor', 'lab', 'lookback', 'followup', 'classes', 'mode', 'event',
+               'min_count', 'screening', 'drug_class', 'threshold', 'period', 'min_fills')
+
+
+def sql_grammar(stack_path=None):
+    """The bottled rung's output grammar: one read-only SELECT/WITH in a ```sql block, FROM/JOIN names from the semantic layer."""
+    from .constrained_decoding import SqlGrammar, semantic_tables
+    return SqlGrammar(tables=semantic_tables(stack_path), fenced=True)
+
+
+def slot_grammar():
+    from .constrained_decoding import JsonGrammar
+    return JsonGrammar(root='object', keys=NARROW_KEYS)
+
+
+def _grammar_kw(model, grammar):
+    """Only the real MLX models take a grammar (test doubles keep their two-argument signature)."""
+    return {'grammar': grammar} if isinstance(model, BottledModel) else {}
+
+
 # ---- the model -------------------------------------------------------------------------------------------------
+BASES = ROOT / 'config' / 'agere' / 'sql_base_models.json'
+
+
+def base_dir():
+    """The SQL base model directory: AGERE_BOTTLED_BASE (a registry id from config/agere/sql_base_models.json, or a path), else the
+    registry default (qwen3-4b). The swap path for a SQL-specialist base (OmniSQL / Arctic-Text2SQL) -- evaluated by tools/bottling/swap_base.py."""
+    want = os.environ.get('AGERE_BOTTLED_BASE')
+    try:
+        reg = json.loads(BASES.read_text())
+    except (OSError, ValueError):
+        reg = {'default': 'qwen3-4b', 'models': {}}
+    entry = (reg['models'].get(want or reg['default']) or {}) if (not want or want in reg['models']) else {}
+    if want and not entry: return Path(want)
+    return ROOT / entry['dir'] if entry.get('dir') else nl2sql.MODEL_DIR
+
+
+def base_adapter_dir():
+    """Adapter for the active base: AGERE_BOTTLED_ADAPTER, else the registry adapter of that base when it exists, else the qwen3 adapter
+    for the default base and none (the base model alone) for a swapped base -- a LoRA only fits the base it was trained on."""
+    explicit = os.environ.get('AGERE_BOTTLED_ADAPTER')
+    if explicit: return Path(explicit)
+    want = os.environ.get('AGERE_BOTTLED_BASE')
+    if not want or base_dir() == nl2sql.MODEL_DIR: return ADAPTER_DIR
+    try:
+        entry = json.loads(BASES.read_text())['models'].get(want) or {}
+    except (OSError, ValueError):
+        entry = {}
+    d = ROOT / entry['adapter_dir'] if entry.get('adapter_dir') else None
+    return d if d and (d / 'adapters.safetensors').exists() else None
+
+
 class BottledModel:
     """Qwen3-4B (MLX) + bottled LoRA adapter, loaded lazily once per process on first use (never at import)."""
     _instance = None
@@ -169,29 +221,32 @@ class BottledModel:
     def __init__(self, model_dir=None, adapter_dir=None):
         os.environ.update(HF_HUB_OFFLINE='1', TRANSFORMERS_OFFLINE='1', HF_HUB_DISABLE_TELEMETRY='1')
         from mlx_lm import load
-        self.model_dir = Path(model_dir or nl2sql.MODEL_DIR)
+        self.model_dir = Path(model_dir or base_dir())
         self.adapter_dir = Path(adapter_dir) if adapter_dir else None
         start = time.perf_counter()
         self.model, self.tokenizer = load(str(self.model_dir), adapter_path=str(self.adapter_dir) if self.adapter_dir else None,
                                           tokenizer_config={'local_files_only': True})
         self.load_seconds = time.perf_counter() - start
-        self.identity = f'qwen3-4b-mlx+{self.adapter_dir.name}' if self.adapter_dir else 'qwen3-4b-mlx'
+        base = f'{self.model_dir.name}-mlx'
+        self.identity = f'{base}+{self.adapter_dir.name}' if self.adapter_dir else base
         self.gen_lock = threading.Lock()
 
     @classmethod
     def available(cls):
-        adapter = Path(os.environ.get('AGERE_BOTTLED_ADAPTER', ADAPTER_DIR))
-        return nl2sql.MODEL_DIR.exists() and (adapter / 'adapters.safetensors').exists()
+        adapter = base_adapter_dir()
+        if base_dir() == nl2sql.MODEL_DIR: return nl2sql.MODEL_DIR.exists() and adapter is not None and (adapter / 'adapters.safetensors').exists()
+        return base_dir().exists()   # a swapped base may run adapter-free (its own specialist weights)
 
     @classmethod
     def get(cls):
         with cls._lock:
             if cls._instance is None:
-                cls._instance = cls(adapter_dir=os.environ.get('AGERE_BOTTLED_ADAPTER', ADAPTER_DIR))
+                cls._instance = cls(adapter_dir=base_adapter_dir())
             return cls._instance
 
-    def __call__(self, msgs, k=1, temperature=SAMPLE_TEMPERATURE, seed=7, max_tokens=MAX_TOKENS):
-        """k completions for one prompt in a single batch: index 0 greedy, the rest sampled. Returns (texts, seconds)."""
+    def __call__(self, msgs, k=1, temperature=SAMPLE_TEMPERATURE, seed=7, max_tokens=MAX_TOKENS, grammar=None):
+        """k completions for one prompt in a single batch: index 0 greedy, the rest sampled. Returns (texts, seconds).
+        grammar: a constrained_decoding grammar; each decode gets its own logits processor (receipts in self.last_grammar)."""
         import mlx.core as mx
         from mlx_lm.generate import BatchGenerator
         from mlx_lm.sample_utils import make_sampler
@@ -208,7 +263,10 @@ class BottledModel:
                 mx.eval([c.state for c in cache])
             gen = BatchGenerator(self.model, stop_tokens=[[t] for t in self.tokenizer.eos_token_ids])
             samplers = [make_sampler(temp=0.0)] + [make_sampler(temp=temperature, top_p=0.95) for _ in range(k - 1)]
-            uids = gen.insert([tokens[-1:]] * k, [max_tokens] * k, caches=[cache] * k, samplers=samplers)
+            from .constrained_decoding import processors
+            procs = [processors(self.tokenizer, grammar) for _ in range(k)] if grammar is not None else None
+            uids = gen.insert([tokens[-1:]] * k, [max_tokens] * k, caches=[cache] * k, samplers=samplers,
+                              **({'logits_processors': procs} if procs and any(procs) else {}))
             out = {u: [] for u in uids}
             try:
                 while responses := gen.next_generated():
@@ -217,6 +275,7 @@ class BottledModel:
             finally:
                 gen.close()
             seconds = time.perf_counter() - start
+        self.last_grammar = [p[0].report() for p in procs if p] if procs else None
         return [self.tokenizer.decode(out[u]) for u in uids], seconds
 
 
@@ -233,8 +292,9 @@ def answer(stack_path, question, as_of, profile, model=None, k=None, agree=None)
     if bench: raise decline(f'benchmark question ({bench}): answered only by the verified ladder')
     model = model or BottledModel.get()
     receipt['model'] = getattr(model, 'identity', type(model).__name__)
-    texts, seconds = model(messages(question, profile, as_of), k=k)
+    texts, seconds = model(messages(question, profile, as_of), k=k, **_grammar_kw(model, sql_grammar(stack_path)))
     receipt['decode_seconds'] = round(seconds, 2)
+    if getattr(model, 'last_grammar', None): receipt['constrained_decoding'] = model.last_grammar
     db = sqlite3.connect(f'file:{Path(stack_path) / "semantic.sqlite3"}?mode=ro', uri=True)
     try: roster = db.execute('SELECT count(*) FROM patient').fetchone()[0]
     except sqlite3.DatabaseError as exc: raise decline(f'semantic layer unavailable: {exc}')
@@ -259,7 +319,7 @@ def candidate(stack_path, question, as_of, profile=None, model=None):
     if profile is None:
         from . import source_profile
         profile = source_profile.load(stack_path)
-    texts, _ = model(messages(question, profile, as_of), k=1)
+    texts, _ = model(messages(question, profile, as_of), k=1, **_grammar_kw(model, sql_grammar(stack_path)))
     db = sqlite3.connect(f'file:{Path(stack_path) / "semantic.sqlite3"}?mode=ro', uri=True)
     try: roster = db.execute('SELECT count(*) FROM patient').fetchone()[0]
     finally: db.close()
@@ -590,8 +650,8 @@ class NarrowModel(BottledModel):
                 cls._instance = cls(adapter_dir=os.environ.get('AGERE_BOTTLED_COHORT_ADAPTER', NARROW_ADAPTER_DIR))
             return cls._instance
 
-    def __call__(self, msgs, k=1, temperature=SAMPLE_TEMPERATURE, seed=7, max_tokens=NARROW_MAX_TOKENS):
-        return super().__call__(msgs, k=k, temperature=temperature, seed=seed, max_tokens=max_tokens)
+    def __call__(self, msgs, k=1, temperature=SAMPLE_TEMPERATURE, seed=7, max_tokens=NARROW_MAX_TOKENS, grammar=None):
+        return super().__call__(msgs, k=k, temperature=temperature, seed=seed, max_tokens=max_tokens, grammar=grammar)
 
 
 def cohort_slots(question, as_of, model=None, k=None, agree=None):
@@ -610,8 +670,9 @@ def cohort_slots(question, as_of, model=None, k=None, agree=None):
     if bench: return None, {**receipt, 'declined': f'benchmark question ({bench}): answered only by the verified ladder'}
     model = model or NarrowModel.get()
     receipt['model'] = getattr(model, 'identity', type(model).__name__)
-    texts, seconds = model(narrow_messages(question), k=k)
+    texts, seconds = model(narrow_messages(question), k=k, **_grammar_kw(model, slot_grammar()))
     receipt['decode_seconds'] = round(seconds, 3)
+    if getattr(model, 'last_grammar', None): receipt['constrained_decoding'] = model.last_grammar
     receipt['decodes'] = [t[:300] for t in texts]
     slots, why = narrow_decide(texts, agree)
     receipt['agreement'] = why if slots else None

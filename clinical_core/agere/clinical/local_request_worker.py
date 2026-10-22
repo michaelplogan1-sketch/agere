@@ -93,9 +93,13 @@ def mlx_generate(adapter):
     from mlx_lm.sample_utils import make_sampler
     model, tok = load(str(_base()), adapter_path=str(adapter))
 
+    from .constrained_decoding import JsonGrammar, processors
+
     def run(messages):
         prompt = tok.apply_chat_template(messages, add_generation_prompt=True, tokenize=False, enable_thinking=False)
-        return generate(model, tok, prompt=prompt, max_tokens=700, sampler=make_sampler(temp=0.0), verbose=False)
+        # grammar-constrained: the typed request is one JSON object (constrained_decoding); decode() still parses it
+        return generate(model, tok, prompt=prompt, max_tokens=700, sampler=make_sampler(temp=0.0), verbose=False,
+                        logits_processors=processors(tok, JsonGrammar(root='object')))
     return run
 
 

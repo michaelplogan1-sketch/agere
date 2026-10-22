@@ -1,0 +1,244 @@
+{
+ "schema": "agere-clinical-ner-admission/1",
+ "version": "clinical-ner/1",
+ "models": {
+  "disease": "openmed-ner-disease-184m",
+  "chem": "openmed-ner-pharma-141m"
+ },
+ "bar": 0.9,
+ "admitted": [
+  "medication_qualifier"
+ ],
+ "evaluation": {
+  "units": 1027,
+  "splits": [
+   "dev",
+   "test"
+  ],
+  "bar": 0.9,
+  "min_n": 10,
+  "rules_symptom": {
+   "extracted": 441,
+   "true_positive": 417,
+   "reference": 446
+  },
+  "symptom": {
+   "added": 20,
+   "true_positive": 0,
+   "recall_gain": 0,
+   "precision": 0.0,
+   "wilson_low": -0.0
+  },
+  "medication_qualifier": {
+   "filled_and_labelled": 14,
+   "correct": 14,
+   "precision": 1.0
+  },
+  "qualifier_errors_sample": [],
+  "admitted": [
+   "medication_qualifier"
+  ]
+ },
+ "errors_sample": [
+  {
+   "unit": "WHL-R-0099dfd8637898375643ff#text",
+   "fact": [
+    "symptom",
+    "nausea_vomiting",
+    true
+   ],
+   "quote": "emesis",
+   "text": "Presented after vomiting and diarrhea beginning 2029-04-18. Received supervised fluid replacement and 3 reassessments. Last observed oral trial tolerated; no em"
+  },
+  {
+   "unit": "WHL-R-0b8d7dca753dd8ee2a3061#text",
+   "fact": [
+    "symptom",
+    "nausea_vomiting",
+    true
+   ],
+   "quote": "emesis",
+   "text": "Course: Presented after vomiting and diarrhea beginning 2029-02-18. Received supervised fluid replacement and 1 reassessments. Last observed oral trial tolerate"
+  },
+  {
+   "unit": "WHL-R-0de8182e2c5448287934ef#text",
+   "fact": [
+    "symptom",
+    "nausea_vomiting",
+    true
+   ],
+   "quote": "emesis",
+   "text": "1. Course: Presented after vomiting and diarrhea beginning 2029-04-30. Received supervised fluid replacement and 1 reassessments. Last observed oral trial toler"
+  },
+  {
+   "unit": "WHL-R-17232fd5a817db031e604e#text",
+   "fact": [
+    "symptom",
+    "nausea_vomiting",
+    true
+   ],
+   "quote": "emesis",
+   "text": "COURSE\nPresented after vomiting and diarrhea beginning 2029-05-05. Received supervised fluid replacement and 4 reassessments. Last observed oral trial tolerated"
+  },
+  {
+   "unit": "WHL-R-37facf488cc16dc5c05ce5#text",
+   "fact": [
+    "symptom",
+    "nausea_vomiting",
+    true
+   ],
+   "quote": "emesis",
+   "text": "Presented after vomiting and diarrhea beginning 2029-04-15. Received supervised fluid replacement and 2 reassessments. Last observed oral trial tolerated; no em"
+  },
+  {
+   "unit": "WHL-R-39170c56411f4a6586b70c#text",
+   "fact": [
+    "symptom",
+    "nausea_vomiting",
+    true
+   ],
+   "quote": "emesis",
+   "text": "Course: Presented after vomiting and diarrhea beginning 2029-05-25. Received supervised fluid replacement and 1 reassessments. Last observed oral trial tolerate"
+  },
+  {
+   "unit": "WHL-R-42469daff66621b5bdb2f1#text",
+   "fact": [
+    "symptom",
+    "nausea_vomiting",
+    true
+   ],
+   "quote": "emesis",
+   "text": "COURSE\nPresented after vomiting and diarrhea beginning 2029-02-21. Received supervised fluid replacement and 1 reassessments. Last observed oral trial tolerated"
+  },
+  {
+   "unit": "WHL-R-44de93206f900aaca9f8e9#text",
+   "fact": [
+    "symptom",
+    "nausea_vomiting",
+    false
+   ],
+   "quote": "emesis",
+   "text": "INTERVAL\nObserved oral trial 200 mL; 0 episodes of emesis. Keeping fluids down and has voided; no orthostatic symptoms on walking.\n\nEXAM\nPulse 89, systolic BP 1"
+  },
+  {
+   "unit": "WHL-R-46bc6ddb10183ccaa96a4d#text",
+   "fact": [
+    "symptom",
+    "nausea_vomiting",
+    false
+   ],
+   "quote": "emesis",
+   "text": "Interval: Observed oral trial 250 mL; 0 episodes of emesis. Keeping fluids down and has voided; no orthostatic symptoms on walking.\nExam: Pulse 86, systolic BP "
+  },
+  {
+   "unit": "WHL-R-4d5a2199e249eafae63622#text",
+   "fact": [
+    "symptom",
+    "nausea_vomiting",
+    false
+   ],
+   "quote": "emesis",
+   "text": "Interval: Observed oral trial 200 mL; 0 episodes of emesis. Keeping fluids down and has voided; no orthostatic symptoms on walking.\nExam: Pulse 94, systolic BP "
+  },
+  {
+   "unit": "WHL-R-5e1a920a3f1759728d5539#text",
+   "fact": [
+    "symptom",
+    "nausea_vomiting",
+    false
+   ],
+   "quote": "emesis",
+   "text": "1. Interval: Observed oral trial 300 mL; 0 episodes of emesis. Keeping fluids down and has voided; no orthostatic symptoms on walking.\n2. Exam: Pulse 94, systol"
+  },
+  {
+   "unit": "WHL-R-71e8a465d8dc58755a425d#text",
+   "fact": [
+    "symptom",
+    "nausea_vomiting",
+    true
+   ],
+   "quote": "emesis",
+   "text": "Course: Presented after vomiting and diarrhea beginning 2029-06-29. Received supervised fluid replacement and 1 reassessments. Last observed oral trial tolerate"
+  },
+  {
+   "unit": "WHL-R-7b21f4d385d7e1395924e3#text",
+   "fact": [
+    "symptom",
+    "nausea_vomiting",
+    true
+   ],
+   "quote": "emesis",
+   "text": "Course: Presented after vomiting and diarrhea beginning 2029-07-15. Received supervised fluid replacement and 3 reassessments. Last observed oral trial tolerate"
+  },
+  {
+   "unit": "WHL-R-908ea16813cc158124a6e4#text",
+   "fact": [
+    "symptom",
+    "nausea_vomiting",
+    false
+   ],
+   "quote": "emesis",
+   "text": "Interval: Observed oral trial 250 mL; 0 episodes of emesis. Keeping fluids down and has voided; no orthostatic symptoms on walking.\nExam: Pulse 77, systolic BP "
+  },
+  {
+   "unit": "WHL-R-9880f5ad8c3d6d24aa030d#text",
+   "fact": [
+    "symptom",
+    "nausea_vomiting",
+    true
+   ],
+   "quote": "emesis",
+   "text": "Course: Presented after vomiting and diarrhea beginning 2029-07-23. Received supervised fluid replacement and 2 reassessments. Last observed oral trial tolerate"
+  },
+  {
+   "unit": "WHL-R-bc8086643d2593e626cc27#text",
+   "fact": [
+    "symptom",
+    "nausea_vomiting",
+    false
+   ],
+   "quote": "emesis",
+   "text": "Observed oral trial 250 mL; 0 episodes of emesis. Keeping fluids down and has voided; no orthostatic symptoms on walking.\n\nPulse 88, systolic BP 110; no new cra"
+  },
+  {
+   "unit": "WHL-R-c9a8954853e223435496f5#text",
+   "fact": [
+    "symptom",
+    "nausea_vomiting",
+    true
+   ],
+   "quote": "emesis",
+   "text": "Course: Presented after vomiting and diarrhea beginning 2029-05-07. Received supervised fluid replacement and 1 reassessments. Last observed oral trial tolerate"
+  },
+  {
+   "unit": "WHL-R-d978e32ac3af0ac0fa6b0d#text",
+   "fact": [
+    "symptom",
+    "nausea_vomiting",
+    true
+   ],
+   "quote": "emesis",
+   "text": "Course: Presented after vomiting and diarrhea beginning 2029-05-07. Received supervised fluid replacement and 1 reassessments. Last observed oral trial tolerate"
+  },
+  {
+   "unit": "WHL-R-f1fb04c72b1dd121221696#text",
+   "fact": [
+    "symptom",
+    "nausea_vomiting",
+    true
+   ],
+   "quote": "emesis",
+   "text": "Course: Presented after vomiting and diarrhea beginning 2029-04-27. Received supervised fluid replacement and 1 reassessments. Last observed oral trial tolerate"
+  },
+  {
+   "unit": "WHL-R-fb011c3d111d69a536732a#text",
+   "fact": [
+    "symptom",
+    "nausea_vomiting",
+    false
+   ],
+   "quote": "emesis",
+   "text": "Observed oral trial 300 mL; 0 episodes of emesis. Keeping fluids down and has voided; no orthostatic symptoms on walking. Pulse 83, systolic BP 115; no new crac"
+  }
+ ]
+}

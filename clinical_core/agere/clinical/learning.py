@@ -93,6 +93,12 @@ def record_verified(path, question, plan_kind, plan, signature, route, models, a
         db.commit()
     finally:
         db.close()
+    if plan_kind == 'sql':
+        try:
+            from . import vcache
+            vcache.on_verified(path, question, plan)  # a reused cache answer later verified independently
+        except Exception:
+            pass
 
 
 def lookup(path, question):
@@ -202,6 +208,11 @@ def record_correction(path, question, note, expected=None, rule=None):
         db.commit()
     finally:
         db.close()
+    try:
+        from . import vcache
+        vcache.on_correction(path, question)  # a corrected cache reuse is an error observation for its entry
+    except Exception:
+        pass
     # Persist feedback first: readers fail closed even if cache eviction is interrupted.
     invalidate(path, question, note)
     from .general_analysis import invalidate_shapes

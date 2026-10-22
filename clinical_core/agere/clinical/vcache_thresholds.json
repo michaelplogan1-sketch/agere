@@ -1,0 +1,332 @@
+{
+ "delta": 0.02,
+ "encoder_identity": "6263ab4c36a37a48513bcea76c43a48b4e1dba807cd4ff746ddb2905c4dd05ad",
+ "entries": {
+  "contractual adjustments by payer for 2028 dos, net of reprocessing": {
+   "_points": [
+    [
+     0.9497,
+     1
+    ],
+    [
+     0.9765,
+     1
+    ],
+    [
+     0.9498,
+     1
+    ]
+   ],
+   "basis": "rule_of_three",
+   "errors": 0,
+   "min_right_similarity": 0.9497,
+   "n": 3,
+   "threshold": 0.9297
+  },
+  "do patients with a positive cost_of_care screen cancel more often? give cancellation rate for positive vs negative vs never screened": {
+   "_points": [
+    [
+     0.9954,
+     1
+    ],
+    [
+     0.9795,
+     1
+    ],
+    [
+     0.9822,
+     1
+    ]
+   ],
+   "basis": "rule_of_three",
+   "errors": 0,
+   "min_right_similarity": 0.9795,
+   "n": 3,
+   "threshold": 0.9595
+  },
+  "for diabetics (any diabetes condition concept), what's the kept-appointment rate": {
+   "_points": [
+    [
+     0.9909,
+     1
+    ],
+    [
+     0.9791,
+     1
+    ],
+    [
+     0.9762,
+     1
+    ]
+   ],
+   "basis": "rule_of_three",
+   "errors": 0,
+   "min_right_similarity": 0.9762,
+   "n": 3,
+   "threshold": 0.9562
+  },
+  "how many appointments have a final_status that conflicts with ever-flags, e.g. final status booked but ever_cancelled = 1": {
+   "_points": [
+    [
+     0.9861,
+     1
+    ],
+    [
+     0.9741,
+     1
+    ],
+    [
+     0.9901,
+     1
+    ]
+   ],
+   "basis": "rule_of_three",
+   "errors": 0,
+   "min_right_similarity": 0.9741,
+   "n": 3,
+   "threshold": 0.9541
+  },
+  "how many attributed patients had zero kept appointments in the past 12 months": {
+   "_points": [
+    [
+     0.9735,
+     1
+    ],
+    [
+     0.985,
+     1
+    ],
+    [
+     0.7821,
+     1
+    ]
+   ],
+   "basis": "rule_of_three",
+   "errors": 0,
+   "min_right_similarity": 0.7821,
+   "n": 3,
+   "threshold": 0.7621
+  },
+  "how many ed patients had no pcp visit at all in the 12 months before their ed visit": {
+   "_points": [
+    [
+     0.9628,
+     1
+    ],
+    [
+     0.9886,
+     1
+    ],
+    [
+     0.8912,
+     1
+    ]
+   ],
+   "basis": "rule_of_three",
+   "errors": 0,
+   "min_right_similarity": 0.8912,
+   "n": 3,
+   "threshold": 0.8712
+  },
+  "how many of our coronary disease patients haven't picked up a statin in the past year": {
+   "_points": [
+    [
+     0.9675,
+     1
+    ],
+    [
+     0.9392,
+     1
+    ],
+    [
+     0.98,
+     1
+    ]
+   ],
+   "basis": "rule_of_three",
+   "errors": 0,
+   "min_right_similarity": 0.9392,
+   "n": 3,
+   "threshold": 0.9192
+  },
+  "how many patients aged 75 or older on a statin in 2028": {
+   "_points": [
+    [
+     0.8756,
+     1
+    ],
+    [
+     0.9882,
+     1
+    ],
+    [
+     0.9894,
+     1
+    ]
+   ],
+   "basis": "rule_of_three",
+   "errors": 0,
+   "min_right_similarity": 0.8756,
+   "n": 3,
+   "threshold": 0.8556
+  },
+  "how many patients had 3 or more ed visits in the last 90 days": {
+   "_points": [
+    [
+     0.9698,
+     1
+    ],
+    [
+     0.9882,
+     1
+    ],
+    [
+     0.991,
+     1
+    ]
+   ],
+   "basis": "rule_of_three",
+   "errors": 0,
+   "min_right_similarity": 0.9698,
+   "n": 3,
+   "threshold": 0.9498
+  },
+  "list patients of pcp-0007 with systolic bp over 150 in january 2029": {
+   "_points": [
+    [
+     0.9417,
+     1
+    ],
+    [
+     0.9743,
+     1
+    ],
+    [
+     0.9502,
+     1
+    ]
+   ],
+   "basis": "rule_of_three",
+   "errors": 0,
+   "min_right_similarity": 0.9417,
+   "n": 3,
+   "threshold": 0.9217
+  },
+  "of patients with a diabetes condition, what % had an ed visit in the last year compared to patients without diabetes": {
+   "_points": [
+    [
+     0.9787,
+     1
+    ],
+    [
+     0.9783,
+     1
+    ],
+    [
+     0.9804,
+     1
+    ]
+   ],
+   "basis": "rule_of_three",
+   "errors": 0,
+   "min_right_similarity": 0.9783,
+   "n": 3,
+   "threshold": 0.9583
+  },
+  "patients with hypertension who were never screened for any social need \u2014 how many": {
+   "_points": [
+    [
+     0.989,
+     1
+    ],
+    [
+     0.8656,
+     1
+    ],
+    [
+     0.994,
+     1
+    ]
+   ],
+   "basis": "rule_of_three",
+   "errors": 0,
+   "min_right_similarity": 0.8656,
+   "n": 3,
+   "threshold": 0.8456
+  },
+  "percent of medicare members with an egfr below 45 in 2029": {
+   "_points": [
+    [
+     0.9569,
+     1
+    ],
+    [
+     0.9392,
+     1
+    ],
+    [
+     0.9948,
+     1
+    ]
+   ],
+   "basis": "rule_of_three",
+   "errors": 0,
+   "min_right_similarity": 0.9392,
+   "n": 3,
+   "threshold": 0.9192
+  },
+  "polypharmacy: patients with 10+ distinct classified drug classes, any evidence source. how many": {
+   "_points": [
+    [
+     0.9086,
+     1
+    ],
+    [
+     0.9878,
+     1
+    ],
+    [
+     0.9762,
+     1
+    ]
+   ],
+   "basis": "rule_of_three",
+   "errors": 0,
+   "min_right_similarity": 0.9086,
+   "n": 3,
+   "threshold": 0.8886
+  },
+  "total net payer paid across all claims, after reversals": {
+   "_points": [
+    [
+     0.9296,
+     1
+    ],
+    [
+     0.9514,
+     1
+    ],
+    [
+     0.9916,
+     1
+    ]
+   ],
+   "basis": "rule_of_three",
+   "errors": 0,
+   "min_right_similarity": 0.9296,
+   "n": 3,
+   "threshold": 0.9096
+  }
+ },
+ "floor": 0.7,
+ "global": {
+  "basis": "rule_of_three",
+  "errors": 0,
+  "n": 305,
+  "rule_of_three_error_bound": 0.0098,
+  "threshold": 0.8102
+ },
+ "observations": 305,
+ "version": "vcache/1",
+ "written_at": "2026-10-22T15:30:31Z"
+}
