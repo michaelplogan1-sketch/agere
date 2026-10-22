@@ -501,6 +501,8 @@ def route(question, as_of, ledger=None, out=None, path=None, ask=None, directory
                 raise LookupError(f'the question asks for a breakdown ("by ..."); metric {mid} returns a single {returns}')
             misfit = shape_misfit(question, mid, node, slots)
             if misfit: raise LookupError(misfit)
+            from . import exact_fit  # one receipted verdict: restrictions the question states must be in the definition or slots
+            info.setdefault('exact_fit', {})[mid] = exact_fit.gate(question, mid, lib[mid], slots, node, as_of)
             filled.append((mid, slots, node))
         except LookupError as exc:
             info.setdefault('declined', []).append({'metric': mid, 'reason': str(exc)[:300]})
