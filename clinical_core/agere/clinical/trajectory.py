@@ -285,8 +285,11 @@ def execute(path, patient_ids, params):
                            f'and not already past it; series need >= {p["min_points"]} dated values. '
                            f'Calibration: {cal["method"]} {cal["statement"]}')}
     unit = concepts.MEASUREMENTS[c]['unit']
+    from . import changepoint_qualification as CQ  # measured detector behaviour under feed gaps (tools/changepoint_qualification.py)
+    qualification, qnote = CQ.summary(), CQ.note()
     return {'schema': VERSION, 'concept': c, 'unit': unit, 'direction': wanted, 'patients_with_series': evaluated,
+            'changepoint_qualification': qualification,
             'flagged': len(flagged), 'patients': flagged[:p['top']],
             'method': (f'Per-patient change points (uncertainty-weighted blocks; per-value error = max({rel:.0%} x value, {floor} {unit})) '
                        f'and Theil-Sen slope; flagged when first vs last segment differ by > 2 SE and by a material amount; '
-                       f'series need >= {p["min_points"]} dated values.')}
+                       f'series need >= {p["min_points"]} dated values.' + (f' {qnote}' if qnote else ''))}

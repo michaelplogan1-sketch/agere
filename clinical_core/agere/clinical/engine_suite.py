@@ -60,11 +60,14 @@ MODULES = {
     'derived_value': 'derived_value_index',         # discovered derived values (days between dates, days since, change, ratios) aggregated with their recipe
     'identity_resolution': 'identity_resolution',   # reversible identity: contradiction checks, split / confirm / undo ledger, effective persons
     'cql_measure': 'cql_measures',                  # governed CQL -> ELM measure logic: rate, eligibility trace, parity with the measure library
+    'policy_evaluation': 'off_policy',              # doubly robust off-policy evaluation of outreach policies from logged outcomes
+    'guideline_conformance': 'guideline_conformance',  # OCEL 2.0 object-centric log + guideline pathway conformance
+    'acquisition_policy': 'acquisition_policy',     # learned where-to-spend-effort policy from recorded outcomes (cost, success, no-further-computation)
 }
-ROUTE_ORDER = ('identity_resolution', 'cql_measure', 'saved_monitors', 'change_attribution', 'social_needs',
+ROUTE_ORDER = ('identity_resolution', 'cql_measure', 'saved_monitors', 'change_attribution', 'social_needs', 'guideline_conformance',
                'star_rating', 'mlr', 'settlement_bridge', 'bundle_compliance', 'hai_surveillance', 'antimicrobial_use',
                'spatiotemporal_cluster', 'network_adequacy', 'overbooking_fairness', 'or_block_optimization',
-               'discharge_forecast', 'capacity_simulation', 'flow_decomposition', 'visit_groups', 'policy_search',
+               'discharge_forecast', 'capacity_simulation', 'flow_decomposition', 'visit_groups', 'policy_search', 'policy_evaluation', 'acquisition_policy',
                'outreach_bandit', 'outreach_allocation', 'staffing_plan', 'transitions_of_care', 'care_gap_closure',
                'domain_pack', 'benchmark_rebasing', 'eligibility_340b', 'ddi_screening', 'prior_auth_rules',
                'prior_auth_access', 'cdi_opportunity', 'upcoding_detection', 'denial_prediction',

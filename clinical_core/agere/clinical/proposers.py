@@ -287,6 +287,13 @@ class Cascade:
             seen.add(contract['id']); pool.append(c)
         started = time.perf_counter()
         if not pool: return None
+        try:  # learned reward model: best-reward candidate first (System One still decides; nothing is dropped)
+            from .candidate_selector import order as _reward_order
+            plans = lambda c: ' '.join(str((n.get('parameters') or {}).get('query') or '') for n in (c['pair'][0]['graph'].get('nodes') or []))
+            pool, _rewards = _reward_order([{**c, 'route': c['name'], 'plan': plans(c)} for c in pool])
+            if _rewards: self.note('candidate_selector', 'ordered', json.dumps(_rewards)[:300], started)
+        except Exception:  # noqa: BLE001 - ordering is advisory
+            pass
         if os.environ.get('AGERE_S1_FALLBACK', 'on') == 'off' or not ready(self.stack, 'AGERE_S1_FALLBACK'):
             self.note('system_one_fallback', 'not available', f'{len(pool)} executed candidate(s); System One not ready', started)
             return None

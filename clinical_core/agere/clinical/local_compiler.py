@@ -1103,7 +1103,10 @@ RA_SUSPECT = (r"\bsuspect(?:ed|ing)? (?:conditions?|diagnos[ie]s|hccs?|list)\b|\
 RA_CORE = (r"\bhccs?\b|\brafs?\b|\brisk adjustment factors?\b|\bcms[- ]?hcc\b|\bhierarchical condition categor(?:y|ies)\b|\bv(?:24|28)\b|"
            r"\bcoding (?:gaps?|completeness|opportunit(?:y|ies))\b|\brisk[- ]adjust(?:ed|ment) (?:revenue|payments?|dollars)\b|"
            r"\b(?:cms|hcc|medicare advantage|ma|aco reach) risk scores?\b|\brisk scores? (?:for|under|in) (?:medicare advantage|ma|aco reach)\b")
-RA_TRIGGER = '|'.join((RA_CORE, RA_RECAPTURE, RA_SUSPECT))
+RA_FAIR = (r"\b(?:under|over)[- ]?compensat\w*\b|\bpredictive ratios?\b|\b(?:under|over)[- ]?paid (?:groups?|subgroups?|populations?)\b|"
+           r"\bfair(?:ness)? (?:of |in )?(?:our |the )?(?:risk[- ]adjustment|risk scores?|rafs?|hcc|payment model)\b|"
+           r"\b(?:risk[- ]adjustment|risk scores?|rafs?) (?:fairness|bias(?:ed)?)\b")  # ra_fairness.py: predictive ratio by group
+RA_TRIGGER = '|'.join((RA_CORE, RA_RECAPTURE, RA_SUSPECT, RA_FAIR))
 RA_FILLER = (r"\b(?:which|what|who|whose|where|how|show|list|give|me|find|our|the|a|an|of|for|is|are|was|were|have|has|had|with|by|per|each|"
              r"patients?|members?|people|average|mean|median|typical|distribution|spread|score|scores|risk|adjustment|adjusted|coded|coding|code|codes|"
              r"diagnosis|diagnoses|conditions?|gaps?|open|last|this|year|yet|not|still|missing|need|needs|needing|review|documentation|evidence|"
@@ -1128,14 +1131,18 @@ def _risk_adjustment_question(q, r, profile, as_of, info):
                                     (r'\bby (?:payer|payor|plan|insurer)s?\b', 'payer'), (r'\bby (?:coverage|insurance)(?: type)?\b', 'coverage_type'))
                if r.take(pattern, f'group by {g}')), None)
     if gb: params['group_by'] = gb
-    if recap and suspect or re.search(r'\bcoding (?:gaps?|opportunit(?:y|ies))\b', low) and not (recap or suspect): focus = 'all'
+    if re.search(RA_FAIR, low): focus = 'fairness'
+    elif recap and suspect or re.search(r'\bcoding (?:gaps?|opportunit(?:y|ies))\b', low) and not (recap or suspect): focus = 'all'
     elif recap: focus = 'recapture'
     elif suspect: focus = 'suspects'
     elif gb or re.search(r'\bdistribution\b|\bcompleteness\b|\bspread\b', low): focus = 'population'
     else: focus = 'raf'
     params['focus'] = focus
-    for pattern in (RA_RECAPTURE, RA_SUSPECT, RA_CORE):
+    for pattern in (RA_RECAPTURE, RA_SUSPECT, RA_CORE, RA_FAIR):
         r.take(pattern, f'risk adjustment {focus}')
+    if focus == 'fairness':
+        r.take(r'\b(?:groups?|subgroups?|segments?|populations?|demographics?|fair(?:ly|ness)?|bias(?:ed)?|paid|enough|correctly|'
+               r'by (?:race|ethnicity|sex|gender|age|condition|coverage)|race|ethnicity|sex|gender|age|conditions?|coverage)\b', 'fairness groups', overlap=True)
     m = r.take(r'\b(?:py|payment year) ?(20\d\d)\b|\bfor (20\d\d) payments?\b', 'payment year')
     if m: params['payment_year'] = int(m[0].group(1) or m[0].group(2))
     m = r.take(r'\$\s?([\d,]+(?:\.\d+)?) ?(?:pmpm|per member per month)\b|\bbase rate (?:of |is |at )?\$?\s?([\d,]+(?:\.\d+)?)(?: ?pmpm)?', 'base rate')

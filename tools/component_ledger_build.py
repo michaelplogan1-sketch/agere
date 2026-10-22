@@ -695,6 +695,12 @@ WAVE1_MODULES = [  # (module, family, wiring, role) — wave-1 modules that chec
     ('engine_suite', 'infrastructure', 'planner_menu', 'Registry for wave-1 decision engines.'),
     ('foundation_engines', 'infrastructure', 'planner_menu', 'Registry for data-foundation engines.'),
     ('hcc_suspecting', 'engine', 'cascade_tier:hcc_suspecting', 'Retrieve-then-rank HCC suspecting confirmed by System One.'),
+    ('exact_fit', 'check', 'inside:metric_router', 'Exact-fit gate: sex/age/payer/condition/window qualifiers must be carried by the metric definition or slots; misfit falls through.'),
+    ('answer_verifier', 'check', 'inside:answer_checks_hook', 'Learned answer verifier: p_wrong from verified vs quarantined answers.'),
+    ('candidate_selector', 'check', 'inside:checked_proposer_cascade', 'Pairwise reward-model selector among System One fallback candidates.'),
+    ('semantic_entropy', 'check', 'inside:answer_checks_hook', 'Semantic-entropy probe from sampled-output agreement.'),
+    ('label_choice', 'check', 'inside:answer_checks_hook', 'Label-choice audit and disclosure for every risk score and worklist.'),
+    ('plan_optimizer', 'infrastructure', 'inside:analysis_graph_execute', 'Fuses repeated sub-queries at graph (node fusion) and SQL (CTE fusion, with fallback) level.'),
 ]
 NEW = [  # components added by the build-out
     {'id': 'atomic_questions', 'name': 'Atomic sub-question decomposition (System One per patient/document)', 'family': 'proposer',

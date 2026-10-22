@@ -56,11 +56,14 @@ def execute(path, params, patient_ids=None, target=None, time_limit=None):
         columns, rows, engine_receipt = duckdb_engine.serve(target, p['query'], patient_ids, time_limit=time_limit or TIME_LIMIT_SECONDS,
                                                             max_rows=MAX_ROWS)
         if columns is not None: return _result(p, columns, rows, started, engine_receipt)
-    query, args = p['query'], {}
+    from . import plan_optimizer  # repeated sub-selects run once (fused CTE); an unfusable form is re-run as planned
+    query, fusion = plan_optimizer.fuse_sql(p['query'])
+    unfused, args = p['query'], {}
     if re.search(r'\bpopulation\b', query, re.I):
         if patient_ids is None: raise ValueError('Query references population but no population input was given')
         cte = 'population(patient_id) AS (SELECT value FROM json_each(:population))'
-        query = (f'WITH {cte}, ' + query[4:].lstrip()) if re.match(r'(?is)^with\b', query) else f'WITH {cte} {query}'
+        add = lambda q: (f'WITH {cte}, ' + q[4:].lstrip()) if re.match(r'(?is)^with\b', q) else f'WITH {cte} {q}'
+        query, unfused = add(query), add(unfused)
         args['population'] = json.dumps(sorted(patient_ids))
     db = register(sqlite3.connect(f'file:{target}?mode=ro', uri=True))
     deadline = time.perf_counter() + (time_limit or TIME_LIMIT_SECONDS)
@@ -68,9 +71,16 @@ def execute(path, params, patient_ids=None, target=None, time_limit=None):
     db.set_authorizer(_authorizer)
     started = time.perf_counter()
     try:
-        cursor = db.execute(query, args)
-        columns = [c[0] for c in cursor.description or []]
-        rows = cursor.fetchmany(MAX_ROWS + 1)
+        try:
+            cursor = db.execute(query, args)
+            columns = [c[0] for c in cursor.description or []]
+            rows = cursor.fetchmany(MAX_ROWS + 1)
+        except sqlite3.DatabaseError as exc:
+            if not fusion['fused'] or 'interrupt' in str(exc).lower(): raise
+            fusion = {**fusion, 'fused': [], 'fallback': str(exc)[:120]}  # the rewrite did not stand alone: run the planned text
+            cursor = db.execute(unfused, args)
+            columns = [c[0] for c in cursor.description or []]
+            rows = cursor.fetchmany(MAX_ROWS + 1)
     except sqlite3.DatabaseError as exc:  # includes authorizer denials and the time limit
         raise ValueError(f'SQL failed: {exc}') from exc
     finally:
@@ -78,6 +88,7 @@ def execute(path, params, patient_ids=None, target=None, time_limit=None):
     if duckdb_engine.shadow_on():
         engine_receipt = {**(engine_receipt or {'engine': 'sqlite'}), 'shadow': duckdb_engine.shadow(
             target, p['query'], patient_ids, columns, rows[:MAX_ROWS], round(time.perf_counter() - started, 4), max_rows=MAX_ROWS)}
+    if fusion['fused'] or fusion.get('fallback'): engine_receipt = {**(engine_receipt or {'engine': 'sqlite'}), 'plan_optimizer': fusion}
     return _result(p, columns, rows, started, engine_receipt)
 
 

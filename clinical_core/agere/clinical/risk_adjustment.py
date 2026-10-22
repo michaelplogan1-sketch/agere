@@ -33,7 +33,7 @@ ROOT = Path(__file__).resolve().parents[3]
 TABLES = ROOT / 'config' / 'agere' / 'risk_adjustment'
 PROGRAMS = ROOT / 'config' / 'agere'
 MODELS = ('V24', 'V28')
-FOCUS = ('all', 'raf', 'recapture', 'suspects', 'population')
+FOCUS = ('all', 'raf', 'recapture', 'suspects', 'population', 'fairness')  # fairness: predictive ratios by group (ra_fairness.py)
 GROUP_BY = ('none', 'practice', 'pcp', 'payer', 'coverage_type')
 SEGMENTS = {'community_non_dual': ('CNA', 'CND'), 'community_full_dual': ('CFA', 'CFD'),
             'community_partial_dual': ('CPA', 'CPD'), 'institutional': ('INS', 'INS')}
@@ -724,6 +724,10 @@ def run(db, cap, patient_ids, params, as_of):
     if unknown_age:
         report['data_gaps'].append(f'{len(unknown_age)} patients lack a valid birth-date age at the CMS reference date; their RAF is unknown.')
     report['data_gaps'] += warehouse_findings(pats, filt, report['population'])
+    if params['focus'] == 'fairness':  # does the risk score pay enough for each group? (Zink & Rose; ra_fairness.py)
+        from . import ra_fairness
+        report['fairness'] = ra_fairness.diagnose(db, pats, start.isoformat(), end.isoformat())
+        report['method'] += ' Fairness: ' + report['fairness'].get('method', report['fairness'].get('note', ''))
     report['status'] = 'partial' if unknown_age else 'answered'
     return report
 
@@ -817,6 +821,11 @@ def summarize(report, limit=None):
               f"({_usd(rc['annual_value'])}/yr at stake), {sum(s['patients'] for s in pop['suspects'])} suspect documentation prompts "
               f"({_usd(pop['dollars_at_stake']['suspects'])}/yr if documented). {p['base_rate_note']}.")
     focus, gb = par['focus'], par['group_by']
+    if focus == 'fairness' and report.get('fairness'):
+        from . import ra_fairness
+        value = ra_fairness.summary(report['fairness']) + ' ' + value
+        cols = ('dimension', 'group', 'patients', 'predictive_ratio', 'pr_ci90', 'predicted_cost', 'realized_cost', 'mean_payment_raf', 'status')
+        return value, [{k: r[k] for k in cols} for r in report['fairness'].get('groups', [])][:max(limit, 60)]
     if gb != 'none' or focus == 'population':
         table = pop['by'][gb if gb != 'none' else 'practice'][:limit]
     elif focus == 'recapture':

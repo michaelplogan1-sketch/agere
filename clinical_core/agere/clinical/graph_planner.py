@@ -234,7 +234,7 @@ CONTRACTS['briefing'] = {'inputs':['none'],'parameters':{'top':10},
               'log2(2 + impact); learned from opened / asked / dismissed feedback; MMR diversity; one explore slot), each with why it ranks there. '
               'Use for what-should-I-look-at-today / briefing / what-needs-attention questions.'}
 
-CONTRACTS['risk_adjustment'] = {'inputs':['optional earlier_set'],'parameters':{'focus':'all|raf|recapture|suspects|population',
+CONTRACTS['risk_adjustment'] = {'inputs':['optional earlier_set'],'parameters':{'focus':'all|raf|recapture|suspects|population|fairness',
     'group_by':'none|practice|pcp|payer|coverage_type','payment_year':2026,'year':None,'coverage':'medicare|all','base_rate_pmpm':None,'patient':'','top':25},
     'meaning':'CMS-HCC risk adjustment (MA / ACO REACH economics) from public CMS V24 and V28 model tables: risk-adjustment-eligible diagnoses '
               '(CMS encounter filtering: face-to-face, acceptable provider, eligible CPT/HCPCS; no lab/radiology-only/DME), HCC hierarchies, interactions, '
