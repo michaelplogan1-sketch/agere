@@ -887,6 +887,8 @@ def check(stack, question, graph, receipt, result, *, ledger=None, catalog=None,
     run('unchecked_zero_guard', lambda: _unchecked_zero(receipt, answer, state, verdict))
     run('answer_shape_review', lambda: _shape(question, graph, result, verdict))
     if verdict['accept']: _s1_gate.apply_check(stack, question, graph, verdict, ledger=ledger)  # System One: answers the question as asked?
+    from . import normalization_check as _norm  # Jev second check on the normalized codes the plan reads (annotation only)
+    run('jev_normalization_check', lambda: _norm.annotate_verdict(stack, graph, answer, verdict, ledger=ledger))
     verdict['checks_run'].append('cascade_certificates')
     verdict['reasons'] = list(dict.fromkeys(verdict['reasons']))
     verdict['annotations'] = list(dict.fromkeys(verdict['annotations']))
@@ -902,7 +904,8 @@ def gate(cascade, name, graph, receipt, result):
                     catalog=cascade.catalog if getattr(cascade.catalog, 'target', None) else None)
     if verdict['cost']['new_paid_api_calls'] or verdict['cost']['usd']:
         cascade.spend(verdict['cost']['new_paid_api_calls'], verdict['cost']['usd'])
-    summary = {k: verdict[k] for k in ('version', 'accept', 'reasons', 'annotations', 'probe', 'checks_run', 'certificate', 'confidence', 'system_one')
+    summary = {k: verdict[k] for k in ('version', 'accept', 'reasons', 'annotations', 'probe', 'checks_run', 'certificate', 'confidence', 'system_one',
+                                       'normalization_check')
                if k in verdict}
     if isinstance(receipt, dict): receipt['answer_checks'] = summary
     if not verdict['accept']:

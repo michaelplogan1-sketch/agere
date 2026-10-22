@@ -1,7 +1,8 @@
 """System One: typed Jev / Perplexity judgments as one shared primitive, before any Claude model.
 
   choice()          one typed Choice call (PersistentGateway.classify; cached by request hash in the provider ledger).
-  decide()          Jev first; Perplexity when Jev is below threshold, says 'unknown' or errors. Never raises for a provider.
+  decide()          local healthcare student first (free, only above its own threshold); then the task's bake-off order
+                    (default Jev, then Perplexity when Jev is below threshold, says 'unknown' or errors). Never raises.
   typed_question()  question-only judgment (evidence=[]), for checker/router builders.
   available()       which provider keys are present (values never read out).
   calibrate() / fit_calibration()  per-task log-odds shift: one scalar per (task_key, option), NLL-fit, identity when unfit.
@@ -105,11 +106,31 @@ def choice(question, options, evidence, *, as_of, provider='jev', ledger=None, a
     return _result(raw, provider, task_key)
 
 
-def decide(question, options, evidence, *, as_of, order=PROVIDERS, threshold=0.8, task_key=None, ledger=None, allow_live=True):
+def decide(question, options, evidence, *, as_of, order=None, threshold=0.8, task_key=None, ledger=None, allow_live=True):
     """Cheapest typed provider first; the next one only when the previous is below threshold (calibrated), says 'unknown',
     or fails. Returns the accepted (else best) choice plus 'decided_by' (None when nobody cleared the bar), 'steps' and
-    total 'cost_usd'. Never raises for a provider failure: when every provider fails the label is 'unknown'."""
+    total 'cost_usd'. Never raises for a provider failure: when every provider fails the label is 'unknown'.
+    order=None takes the task's decider bake-off order (system_one_deciders; default Jev -> Perplexity). Ahead of every paid
+    provider, the task's local healthcare student (system_one_student) decides when it clears its own cross-fitted
+    threshold ($0); a paid decision that clears the bar is kept as a teacher label for that student."""
+    from . import system_one_deciders, system_one_student
+    if order is None:
+        order = system_one_deciders.order_for(task_key)
     steps, results = [], []
+    student = None
+    try:
+        student = system_one_student.predict(task_key, question, _options(options), evidence) if task_key else None
+    except Exception as exc:  # noqa: BLE001 - the student is an optimization; providers still answer
+        steps.append({'provider': 'local_student', 'status': 'error', 'error': f'{type(exc).__name__}: {str(exc)[:200]}'})
+    if student and student.get('label'):
+        steps.append({'provider': 'local_student', 'status': 'answered', 'label': student['label'],
+                      'probability': student['probabilities'][student['label']], 'threshold': student['threshold'], 'cost_usd': 0.0,
+                      'cache_hit': False, 'request_hash': None})
+        return {'label': student['label'], 'probabilities': student['probabilities'], 'calibrated_probabilities': student['probabilities'],
+                'evidence_ids': [], 'provider': 'local_student', 'model': student['reading']['model'], 'cost_usd': 0.0,
+                'cache_hit': False, 'request_hash': None, 'task_key': task_key, 'decided_by': 'local_student', 'steps': steps}
+    if student and student.get('reading'):
+        steps.append({'provider': 'local_student', 'status': 'below_threshold', **student['reading'], 'cost_usd': 0.0})
     for provider in order:
         try:
             r = choice(question, options, evidence, as_of=as_of, provider=provider, ledger=ledger, allow_live=allow_live,
@@ -125,6 +146,7 @@ def decide(question, options, evidence, *, as_of, order=PROVIDERS, threshold=0.8
             continue
         results.append(r)
         if r['label'] != 'unknown' and p is not None and p >= threshold:
+            if task_key: system_one_student.record(task_key, question, options, evidence, r['label'], p, provider)
             return {**r, 'decided_by': provider, 'steps': steps, 'cost_usd': _total(steps)}
     answered = [r for r in results if r.get('status') != 'prepared']
     if answered:
@@ -142,7 +164,7 @@ def _total(steps):
     return sum(s.get('cost_usd') or 0.0 for s in steps)
 
 
-def typed_question(question, options, *, as_of, order=PROVIDERS, threshold=0.8, task_key=None, ledger=None, allow_live=True):
+def typed_question(question, options, *, as_of, order=None, threshold=0.8, task_key=None, ledger=None, allow_live=True):
     """Question-only typed judgment (no evidence), e.g. 'is this question about a medication?' for checkers/routers."""
     return decide(question, options, [], as_of=as_of, order=order, threshold=threshold, task_key=task_key, ledger=ledger,
                   allow_live=allow_live)

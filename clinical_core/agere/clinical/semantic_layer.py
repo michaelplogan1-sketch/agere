@@ -360,18 +360,23 @@ def _normalize(out):
     """Apply the normalization dictionary (each distinct source string mapped once to standard terminology).
     Rules stay authoritative where they map; the dictionary fills gaps and adds standard codes and categories."""
     labs, conds, meds, encs = (_dictionary(d) for d in ('labs', 'conditions', 'medications', 'encounters'))
+    # Jev second check (normalization_check): a dictionary mapping Jev rejected or ranked below the rules (p >= 0.8) is not
+    # applied; rule mappings and source codes are untouched. Every verdict lands in the normalization_check table below.
+    from . import normalization_check
+    held = {d: normalization_check.withheld(d) for d in ('labs', 'medications', 'encounters')}
     for col in ('component TEXT', 'lab_category TEXT'):
         out.execute(f'ALTER TABLE measurement ADD COLUMN {col}')
     # loinc / loinc_source were filled from source codes by _standards; the dictionary only fills the gaps.
     out.executemany("""UPDATE measurement SET loinc_dictionary = ?, component = ?, lab_category = ?, concept = coalesce(concept, ?),
                          loinc_source = CASE WHEN loinc IS NOT NULL THEN loinc_source WHEN ? IS NOT NULL THEN 'dictionary' END,
                          loinc = coalesce(loinc, ?) WHERE name = ?""",
-                    [(v.get('loinc'), v.get('component'), v.get('category'), v.get('agere_concept') if (v.get('confidence') or 0) >= 0.8 else None,
+                    [(v.get('loinc'), v.get('component'), v.get('category'),
+                      v.get('agere_concept') if (v.get('confidence') or 0) >= 0.8 and k not in held['labs'] else None,
                       v.get('loinc'), v.get('loinc'), k) for k, v in labs.items()])
     # Source LOINC identifies the analyte even when the local name is not in the concept library or dictionary.
     by_loinc = defaultdict(set)
-    for v in labs.values():
-        if v.get('loinc') and v.get('agere_concept') and (v.get('confidence') or 0) >= 0.8: by_loinc[v['loinc']].add(v['agere_concept'])
+    for k, v in labs.items():
+        if v.get('loinc') and v.get('agere_concept') and (v.get('confidence') or 0) >= 0.8 and k not in held['labs']: by_loinc[v['loinc']].add(v['agere_concept'])
     out.executemany("UPDATE measurement SET concept = ? WHERE concept IS NULL AND loinc_source = 'source' AND loinc = ?",
                     [(next(iter(cs)), code) for code, cs in by_loinc.items() if len(cs) == 1])
     for col in ('is_diagnosis INTEGER', 'icd10_category TEXT', 'chapter TEXT', 'chronic INTEGER', 'normalized_label TEXT'):
@@ -387,7 +392,7 @@ def _normalize(out):
     extra = []
     for name, v in meds.items():
         have = {c for (c,) in out.execute('SELECT DISTINCT drug_class FROM medication WHERE drug_name = ? AND drug_class IS NOT NULL', (name,))}
-        add = [c for c in (v.get('drug_classes') or []) if c not in have and (v.get('confidence') or 0) >= 0.8]
+        add = [c for c in (v.get('drug_classes') or []) if c not in have and (v.get('confidence') or 0) >= 0.8 and name not in held['medications']]
         if not add: continue
         for row in out.execute('SELECT DISTINCT record_id, patient_id, source_stream, evidence, drug_name, status, event_date, available_date, '
                                'therapeutic_category, ingredients FROM medication WHERE drug_name = ?', (name,)).fetchall():
@@ -402,9 +407,10 @@ def _normalize(out):
                          rxnorm = coalesce(rxnorm, ?) WHERE drug_name = ?""",
                     [(_cuis(v), _cui(v), _cui(v), k) for k, v in meds.items()])
     out.execute('ALTER TABLE visit ADD COLUMN setting TEXT')
-    out.executemany('UPDATE visit SET setting = ? WHERE type = ?', [(v.get('setting'), k) for k, v in encs.items()])
+    out.executemany('UPDATE visit SET setting = ? WHERE type = ?', [(v.get('setting'), k) for k, v in encs.items() if k not in held['encounters']])
     out.executemany('UPDATE visit SET in_person = ? WHERE type = ? AND type_concept IS NULL',
-                    [(int(bool(v.get('in_person'))), k) for k, v in encs.items() if v.get('in_person') is not None])
+                    [(int(bool(v.get('in_person'))), k) for k, v in encs.items() if v.get('in_person') is not None and k not in held['encounters']])
+    normalization_check.build_table(out)
 
 
 def _medications(out):

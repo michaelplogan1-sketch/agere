@@ -241,8 +241,8 @@ class ExecuteTest(Base):
         texts = {'P-1007': [('undated', 'carvedilol caused dizziness'), ('2031-01-01', 'future note'), ('2029-01-01', 'old note')]}
         seen = []
         st, p, out = self.run_plan(BB_Q, ['P-1007'], lambda q, ev: seen.extend(ev) or 'yes', texts=texts)
-        self.assertEqual([e['date'] for e in seen], ['2030-05-27', '2029-01-01'])
-        self.assertTrue(seen[0]['text'].startswith('[undated source] '))
+        self.assertEqual(sorted(e['date'] for e in seen), ['2029-01-01', '2030-05-27'])  # bounded packet: date order, future dropped
+        self.assertTrue(next(e for e in seen if e['date'] == '2030-05-27')['text'].startswith('[undated source] '))
 
     def test_providers_failed_status_is_not_memoized(self):
         mod = types.ModuleType(S1)

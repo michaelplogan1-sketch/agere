@@ -27,11 +27,14 @@ from pathlib import Path
 VERSION = 'evidence-proposers/1'
 ROOT = Path(__file__).resolve().parents[3]
 
-LOCAL_READERS = ('student_lexical', 'student_minilm', 'cohort_windowed_minilm', 'kev', 'd1', 'medgemma')  # free, cheapest first
+# free, cheapest first. student_bioclinical = frozen BioClinical ModernBERT head on the same curriculum as the MiniLM student
+# (tools/train_semantic_students_v2.py; its validation accuracy beside lexical/MiniLM is in comparison.json), read after them.
+LOCAL_READERS = ('student_lexical', 'student_minilm', 'student_bioclinical', 'cohort_windowed_minilm', 'kev', 'd1', 'medgemma')
 PAID_READERS = ('jev', 'perplexity')
 REVIEW_ORDER = LOCAL_READERS + PAID_READERS
 RETRIEVAL_COMPONENTS = ('warehouse_retriever', 'fts5_index', 'minilm_encoder', 'bge_reranker')
 READER_COMPONENTS = {'student_lexical': 'semantic_student_heads', 'student_minilm': 'semantic_student_heads',
+                     'student_bioclinical': 'bioclinical_modernbert_student',
                      'cohort_windowed_minilm': 'windowed_student', 'kev': 'kev_reader', 'd1': 'd1_reader',
                      'jev': 'jev_typesafe_review', 'perplexity': 'perplexity_decisions_review', 'medgemma': 'medgemma_reader'}
 
@@ -45,7 +48,7 @@ EVIDENCE = re.compile(
     r'intoleran\w*|tolerat\w*|contraindicat\w*|eligib\w*|qualif\w*|declin\w*|refus\w*|allerg\w*|adheren\w*|'
     r'side effects?|adverse)\b', re.I)
 ASSERTION = re.compile(r'^\s*(?:does|do|did|is|are|was|were|has|have|had|can|could|should|why)\b', re.I)
-PATIENT_TOKEN = re.compile(r'(?<![\w-])[A-Za-z]{0,12}[-_]?\d[\w-]{0,40}(?![\w-])')
+PATIENT_TOKEN = re.compile(r'(?<![\w-])[A-Za-z]{0,12}(?:[-_][A-Za-z]{1,8})?[-_]?\d[\w-]{0,40}(?![\w-])')  # P-1, WHP-51EE.., P-HF03
 STOP = set('a an and are as at be by did do does for from had has have in is it its of on or patient patients that the '
            'their there this to was were what which who whom why with chart charts note notes document documents say says '
            'said show shows mention mentions mentioned any about documented text'.split())
@@ -293,7 +296,7 @@ def read_locally(stack, question, patient, evidence, providers=LOCAL_READERS):
     if not goal: return {'verdict': 'unknown', 'readings': [], 'components': [], 'reason': 'no retrieved passages'}
     cohort = None
     native = [p for p in ('cohort_windowed_minilm', 'kev', 'd1') if p in providers]
-    for provider in [p for p in ('student_lexical', 'student_minilm') if p in providers] + (['comparison'] if native else []):
+    for provider in [p for p in ('student_lexical', 'student_minilm', 'student_bioclinical') if p in providers] + (['comparison'] if native else []):
         verdicts = []
         for target in goal:
             started = time.perf_counter()
@@ -362,6 +365,26 @@ def context_bundle(stack, question, patient):
     return None
 
 
+def system_one_packet(stack, question, evidence, external=None, *, decide=None):
+    """System One (local student -> bake-off order Jev/Perplexity) over the bounded packet plus a cited external item."""
+    from .atomic_questions import YES_NO, passage_evidence, dated
+    from . import external_evidence, system_one_deciders
+    cutoff = as_of(stack)[:10]
+    items = [d for d in (dated(passage_evidence(r), cutoff) for r in evidence) if d]
+    ext = external_evidence.evidence_item(external, cutoff) if external else None
+    if ext: items.append(ext)
+    if decide is None:
+        from . import system_one
+        decide = system_one.decide
+    d = decide('For this patient only, does the submitted evidence establish: ' + question[:500], YES_NO, items, as_of=cutoff,
+               order=system_one_deciders.order_for('atomic_yes_no'), task_key='atomic_yes_no', allow_live=True)
+    new = sum(1 for s in d.get('steps') or [] if s.get('status') == 'answered' and not s.get('cache_hit') and s.get('provider') != 'local_student')
+    return {'label': d.get('label') if d.get('decided_by') else 'unknown', 'raw_label': d.get('label'),  # below every bar: undecided
+            'decided_by': d.get('decided_by'), 'probabilities': d.get('calibrated_probabilities'),
+            'evidence_ids': d.get('evidence_ids'), 'steps': d.get('steps'), 'new_paid_api_calls': new, 'cost_usd': d.get('cost_usd') or 0.0,
+            'external_cited': bool(ext)}
+
+
 def gateway_cascade(stack, question, patient, evidence):
     """Jev, then Claude when Jev is uncertain (PersistentGateway.cascade). Paid; allow_live only."""
     from ..gateway import BudgetLedger, PersistentGateway, default_ledger_path
@@ -382,9 +405,16 @@ def review_patient(stack, question, patient, providers=REVIEW_ORDER):
     """Free readers first; escalate an undecided question to paid readers only with stack.allow_live. Never raises for a
     single reader failing; paid providers are skipped (and say so) without allow_live."""
     started = time.perf_counter()
-    evidence = stack.retriever.search(question, patient=patient, limit=8)
+    try:  # bounded subject-anchored packet with learned category selection: the SAME evidence for every reader
+        from . import evidence_packets
+        from .atomic_questions import med_subjects
+        evidence = evidence_packets.packet(stack, question, patient, subject=(med_subjects(question) or [None])[0], question=question)
+        packet_components = ['evidence_packets', 'learned_evidence_selection']
+    except Exception:  # noqa: BLE001 - packet building failed: the ranked passages still go to the readers
+        evidence, packet_components = stack.retriever.search(question, patient=patient, limit=8), []
     local = read_locally(stack, question, patient, evidence['evidence'], [p for p in providers if p in LOCAL_READERS])
-    steps, paid_calls, components = [], 0, ['warehouse_retriever'] + local['components']
+    steps, paid_calls, components = [], 0, ['warehouse_retriever'] + packet_components + local['components']
+    paid_usd, external = 0.0, None
     outcome, decided_by = local['verdict'], local.get('decided_by')
     if outcome not in ('yes', 'no') and 'medgemma' in providers and evidence['evidence']:
         try:  # local MedGemma reads the same passages before any paid reader (skipped when its weights are absent)
@@ -402,14 +432,24 @@ def review_patient(stack, question, patient, providers=REVIEW_ORDER):
         if not getattr(stack, 'allow_live', False):
             steps.append({'provider': ', '.join(paid), 'status': 'skipped', 'reason': 'paid readers need allow_live'})
         else:
-            plan = [('jev', lambda: stack.review(question, patient, 'jev'))] if 'jev' in paid else []
-            bundle = context_bundle(stack, question, patient) if 'jev' in paid else None
-            if bundle: plan.append(('context_pass_review', lambda: stack.review_passes(bundle, 'jev', 8)))
-            if 'perplexity' in paid: plan.append(('perplexity', lambda: stack.review(question, patient, 'perplexity')))
+            from . import external_evidence, system_one_deciders
+            if external_evidence.needs_external(question, evidence['evidence']):  # cited guideline/label context
+                external = external_evidence.search(question, allow_live=True)
+                components.append('perplexity_agent_search')
+                paid_usd += float(external.get('cost_usd') or 0.0); paid_calls += 1 if external.get('cost_usd') else 0
+            # System One over the bounded packet (+ cited external reference): student first, then the bake-off order
+            plan = [('system_one_packet', lambda: system_one_packet(stack, question, evidence['evidence'], external))]
+            order = [p for p in system_one_deciders.order_for('atomic_yes_no', paid)]
+            for prov in order:
+                plan.append((prov, lambda prov=prov: stack.review(question, patient, prov)))
+                if prov == 'jev':
+                    bundle = context_bundle(stack, question, patient)
+                    if bundle: plan.append(('context_pass_review', lambda: stack.review_passes(bundle, 'jev', 8)))
             if 'jev' in paid and evidence['evidence']:
                 plan.append(('gateway_jev_claude_cascade', lambda: gateway_cascade(stack, question, patient, evidence['evidence'])))
             for name, call in plan:
-                components += {'jev': ['jev_typesafe_review', 'persistent_gateway'], 'perplexity': ['perplexity_decisions_review'],
+                components += {'system_one_packet': ['system_one', 'decider_bakeoff', 'system_one_student'],
+                               'jev': ['jev_typesafe_review', 'persistent_gateway'], 'perplexity': ['perplexity_decisions_review'],
                                'context_pass_review': ['context_pass_review'],
                                'gateway_jev_claude_cascade': ['gateway_jev_claude_cascade', 'persistent_gateway']}[name]
                 try:
@@ -418,6 +458,8 @@ def review_patient(stack, question, patient, providers=REVIEW_ORDER):
                     steps.append({'provider': name, 'status': 'failed', 'reason': f'{type(exc).__name__}: {exc}'[:300]}); continue
                 if name == 'gateway_jev_claude_cascade':
                     paid_calls += 0 if result.get('cache_hit') else 1 + (result.get('route') == 'frontier')
+                elif name == 'system_one_packet':
+                    paid_calls += result.get('new_paid_api_calls', 0); paid_usd += result.get('cost_usd') or 0.0
                 else:
                     paid_calls += int(result.get('new_paid_api_calls', 0) or 0)
                 v = paid_verdict(result)
@@ -425,7 +467,8 @@ def review_patient(stack, question, patient, providers=REVIEW_ORDER):
                 if v in ('yes', 'no'): outcome, decided_by = v, name; break
     return {'synthetic': True, 'question': question, 'patient_id': patient, 'verdict': outcome, 'decided_by': decided_by,
             'retrieval': evidence, 'local_readings': local['readings'], 'paid_steps': steps,
-            'components': list(dict.fromkeys(components)), 'new_paid_api_calls': paid_calls,
+            'components': list(dict.fromkeys(components)), 'new_paid_api_calls': paid_calls, 'estimated_usd': round(paid_usd, 6),
+            'external_context': external, 'evidence_packet': {k: evidence.get(k) for k in ('schema', 'stats', 'selection', 'bounded')},
             'elapsed_seconds': round(time.perf_counter() - started, 3), 'clinical_decision_authority': False,
             'complete_evidence_guarantee': False,
             'scope': 'Bounded ranked passages read free first; paid readers only for an undecided question with allow_live.'}

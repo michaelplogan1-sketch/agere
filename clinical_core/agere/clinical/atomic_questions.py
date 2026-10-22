@@ -32,7 +32,7 @@ VERSION = 'atomic-questions/1'
 AGGREGATIONS = ('any', 'latest', 'trajectory', 'conflict', 'count')
 RETURNS = ('table', 'patient_set', 'count', 'value', 'verdict')
 UNITS = ('patient', 'document')
-SOURCES = ('passages', 'medication_state')
+SOURCES = ('passages', 'medication_state', 'therapy_barriers', 'external')  # external = cited Perplexity Agent search
 PROVIDERS = ('jev', 'perplexity')
 COST_PER_CALL = {'jev': 0.0002, 'perplexity': 0.0001}  # measured 2026-10-22; used only when System One reports no cost
 HARD_MAX_PATIENTS = 200
@@ -270,6 +270,9 @@ def plan(stack, question, population=None, *, maximum_patients=None, ledger=None
             spec['all'] = [{'kind': 'concept', 'concept': core['concept'], 'window': {'basis': 'all_observed', 'start': '', 'end': ''}}]
     subs = core['sub_questions']
     sources = ['passages'] + (['medication_state'] if any(s['subject'] for s in subs) else [])
+    if any(s['task_key'] == 'atomic_why_factor' and s['subject'] for s in subs): sources.append('therapy_barriers')
+    from . import external_evidence
+    if any(external_evidence.needs_external(s['atom']) for s in subs): sources.append('external')
     cap = max(1, min(HARD_MAX_PATIENTS, int(maximum_patients or max_patients())))
     return {'schema': VERSION, 'question': question, 'subject_question': subs[0]['atom'], 'options': subs[0]['options'],
             'sub_questions': subs, 'scope': {'patients': list(core['patients'] or []) or None, 'cohort': spec,
@@ -418,7 +421,9 @@ def ask(question, options, evidence, *, as_of, task_key, providers, allow_live, 
         if decide is None:
             from . import system_one
             decide = system_one.decide
-        out = dict(decide(question, options, evidence, as_of=as_of, order=tuple(providers), task_key=task_key, allow_live=allow_live))
+        from . import system_one_deciders
+        order = system_one_deciders.order_for(task_key, providers)  # decider bake-off primary first
+        out = dict(decide(question, options, evidence, as_of=as_of, order=order, task_key=task_key, allow_live=allow_live))
     except Exception as exc:  # noqa: BLE001 - both providers failing is an unknown, not an outage of the whole answer
         return {'label': 'unknown', 'probabilities': None, 'evidence_ids': [], 'error': f'{type(exc).__name__}: {exc}'[:300],
                 'decided_by': None, 'steps': [], 'memo_hit': False}
@@ -443,22 +448,54 @@ def run(stack, patient_ids, params, as_of, *, decide=None):
     ids = scoped[:p['maximum_patients']]
     subs = p['sub_questions']
     meds = medication_rows(stack, ids, [s['subject'] for s in subs if s['subject']]) if 'medication_state' in p['sources'] else {}
+    live = bool(getattr(stack, 'allow_live', False))
+    barriers, barrier_receipts = {}, []
+    if 'therapy_barriers' in p['sources']:  # build facts + live tier-3 cascade (therapy_barrier_answers)
+        from . import therapy_barrier_answers as tba
+        for subject in dict.fromkeys(s['subject'] for s in subs if s['subject'] and s['task_key'] == 'atomic_why_factor'):
+            try:
+                ev, rec = tba.evidence(stack, ids, subject, as_of=as_of, live=True, decide=decide)
+            except Exception as exc:  # noqa: BLE001 - barrier facts are extra evidence; passages still answer
+                ev, rec = {}, {'status': 'failed', 'reason': f'{type(exc).__name__}: {exc}'[:200]}
+            for pid, items in ev.items(): barriers[(pid, subject)] = items
+            barrier_receipts.append({'subject': subject, **{k: v for k, v in (rec or {}).items() if k != 'decisions'},
+                                     'facts': sum(len(v) for v in ev.values())})
+    external, external_receipts = {}, []
+    if 'external' in p['sources']:  # cited Perplexity Agent search for general criteria the warehouse cannot hold
+        from . import external_evidence
+        for s in subs:
+            if not external_evidence.needs_external(s['atom']): continue
+            q = external_evidence.reference_query(s['atom'], s['subject'])
+            hit = next((r for r in external_receipts if r['query_in'] == q), None)
+            if hit is None:
+                res = external_evidence.search(q, allow_live=live)
+                hit = {'query_in': q, 'result': res}; external_receipts.append(hit)
+            item = external_evidence.evidence_item(hit['result'], as_of)
+            if item: external[s['key']] = item
+    packets = []
     tasks, passages = [], {}
     for pid in ids:  # retrieval on this thread (the retriever's sqlite connection is not shared across threads)
         for s in subs:
-            found = stack.retriever.search(retrieval_query(s), patient=pid,
-                                           limit=DOCUMENTS_PER_PATIENT if p['unit'] == 'document' else PASSAGES_PER_ATOM)
+            if p['unit'] == 'document':
+                found = stack.retriever.search(retrieval_query(s), patient=pid, limit=DOCUMENTS_PER_PATIENT)
+            else:  # bounded subject-anchored packet with learned category selection (evidence_packets)
+                from . import evidence_packets
+                found = evidence_packets.packet(stack, retrieval_query(s), pid, subject=s['subject'] or None, question=p['question'],
+                                                limit=PASSAGES_PER_ATOM + 2, window=p['window'])
+                packets.append({'patient_id': pid, 'key': s['key'], **found['stats'], 'category_order': found['selection'].get('category_order')})
             rows = [passage_evidence(r) for r in found.get('evidence') or [] if r.get('text')]
             for r in found.get('evidence') or []:
                 src = r.get('source') or {}
                 passages[f"passage:{r['id']}"] = {'record_id': src.get('record_id'), 'field': src.get('field'),
                                                   'date': (src.get('event_date') or '')[:10] or None}
             structured = structured_evidence(meds.get((pid, s['subject']))) if s['subject'] else None
+            extra = (barriers.get((pid, s['subject']), []) if s['task_key'] == 'atomic_why_factor' else []) + \
+                ([external[s['key']]] if s['key'] in external else [])
             if p['unit'] == 'document':
                 for doc in sorted(rows, key=lambda r: r['date']):
                     tasks.append((pid, s, doc, [doc]))
             else:
-                tasks.append((pid, s, None, ([structured] if structured else []) + rows))
+                tasks.append((pid, s, None, ([structured] if structured else []) + extra + rows))
     normal = []
     for pid, s, doc, ev in tasks:
         if doc is None:
@@ -466,7 +503,6 @@ def run(stack, patient_ids, params, as_of, *, decide=None):
         elif dated(doc, as_of):
             normal.append((pid, s, dated(doc, as_of), [dated(doc, as_of)]))
     tasks = normal
-    live = bool(getattr(stack, 'allow_live', False))
 
     def one(task):
         pid, s, doc, evidence = task
@@ -490,10 +526,17 @@ def run(stack, patient_ids, params, as_of, *, decide=None):
                                    'record_id': texts[i]['note_id'], **({'field': passages[i]['field']} if i in passages else {})}
                                   for i in cited[:3]]})
     structured_states = {f'{pid}|{s}': r['state'] for (pid, s), r in meds.items()}
+    for rec in barrier_receipts:
+        calls, usd = calls + int(rec.get('new_paid_api_calls') or 0), usd + float(rec.get('estimated_usd') or 0.0)
+    for rec in external_receipts:
+        if rec['result'].get('cost_usd'): calls, usd = calls + 1, usd + float(rec['result']['cost_usd'])
     return {'schema': VERSION, 'as_of': as_of[:10], 'parameters': p, 'population_patients': len(scoped), 'evaluated_patient_ids': ids,
             'capped': len(scoped) > len(ids), 'cap': p['maximum_patients'], 'cells': cells, 'structured_states': structured_states,
             'system_one': {'decisions': len(cells), 'new_paid_api_calls': calls, 'estimated_usd': round(usd, 6), 'errors': errors,
                            'decided_by': by, 'memo_hits': sum(1 for d in decisions if d.get('memo_hit'))},
+            'evidence_packets': packets, 'therapy_barriers': barrier_receipts,
+            'external_evidence': [{'query': r['query_in'], 'status': r['result'].get('status'), 'sources': r['result'].get('sources'),
+                                   'cached': r['result'].get('cached'), 'cost_usd': r['result'].get('cost_usd')} for r in external_receipts],
             'new_paid_api_calls': calls, 'do_not_cache': errors > 0 or not cells,
             'elapsed_seconds': round(time.perf_counter() - started, 3), 'clinical_decision_authority': False}
 
@@ -586,7 +629,9 @@ def answer(report, plan_, question):
     s1 = report['system_one']
     method = (f"{VERSION}: {len(keys)} atomic typed sub-question(s) asked of each patient's "
               f"{'documents one at a time' if p['unit'] == 'document' else 'ranked passages'}"
-              f"{' and governed medication_state rows' if 'medication_state' in p['sources'] else ''} by System One "
+              f"{' and governed medication_state rows' if 'medication_state' in p['sources'] else ''}"
+              f"{', therapy-barrier facts (build + live tier-3 cascade)' if 'therapy_barriers' in p['sources'] else ''}"
+              f"{', cited external references (Perplexity Agent search)' if 'external' in p['sources'] else ''} by System One "
               f"(Jev first, Perplexity when Jev is unsure); aggregated in code by '{p['aggregation']}'.")
     limitations = [method, f"System One decisions {s1['decisions']} (new paid calls {s1['new_paid_api_calls']}, ~${s1['estimated_usd']:.4f}; "
                            f"decided by {s1['decided_by']}); a typed reading of bounded ranked passages, not clinical adjudication."]
@@ -639,8 +684,12 @@ def tier(stack, question, population=None, *, maximum_patients=None, decide=None
     return graph, {'route': 'atomic_system_one', 'model': 'system_one (jev -> perplexity)', 'frontier_called': False,
                    'new_paid_api_calls': s1['new_paid_api_calls'] + planner_calls, 'steps': steps,
                    'cost_class': 'Jev/Perplexity ~$0.0002 per patient', 'planner': p['planner'],
-                   'components': ['atomic_questions', 'system_one', 'jev_typesafe_review', 'perplexity_decisions_review',
-                                  'warehouse_retriever'] + (['medication_state'] if 'medication_state' in p['scope']['sources'] else []),
+                   'components': ['atomic_questions', 'system_one', 'decider_bakeoff', 'system_one_student', 'jev_typesafe_review',
+                                  'perplexity_decisions_review', 'warehouse_retriever', 'evidence_packets', 'learned_evidence_selection']
+                                 + (['medication_state'] if 'medication_state' in p['scope']['sources'] else [])
+                                 + (['therapy_barrier_cascade', 'therapy_barrier_classifier'] if 'therapy_barriers' in p['scope']['sources'] else [])
+                                 + (['perplexity_agent_search'] if 'external' in p['scope']['sources'] else []),
                    'preflight': {'patients_in_scope': pre['population_patients'], 'evaluated': len(pre['evaluated_patient_ids']),
-                                 'capped': pre['capped'], 'decisions': s1['decisions'], 'errors': s1['errors']},
+                                 'capped': pre['capped'], 'decisions': s1['decisions'], 'errors': s1['errors'],
+                                 'therapy_barriers': pre.get('therapy_barriers'), 'external_evidence': pre.get('external_evidence')},
                    'atomic_version': VERSION, 'elapsed_seconds': round(time.perf_counter() - started, 3)}

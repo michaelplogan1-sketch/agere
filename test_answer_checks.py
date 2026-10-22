@@ -253,7 +253,8 @@ class Isolation(Base):
             v = self.check('How many patients have heart failure?', 'SELECT 1', count(4))
         self.assertTrue(any('zero_result_probe_shared failed: RuntimeError: boom' in a for a in v['annotations']))
         self.assertEqual(v['checks_run'], ['zero_result_probe_shared', 'answer_guard_suspicion', 'answer_guard_dense_catalog',
-                                           'answer_guard_cross_check', 'unchecked_zero_guard', 'answer_shape_review', 'cascade_certificates'])
+                                           'answer_guard_cross_check', 'unchecked_zero_guard', 'answer_shape_review', 'jev_normalization_check',
+                                           'cascade_certificates'])
 
     def test_no_answer_object(self):
         self.assertTrue(A.check(self.stack, 'q', {}, {}, {'results': []})['accept'])
