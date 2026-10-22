@@ -701,6 +701,11 @@ def execute(stack, question, graph, receipt, *, population=None, parent=None, st
                                               if isinstance(r, dict) and isinstance(r.get('patient_id'), str)})
     if population is not None and not set(ids) <= set(population):
         raise PlanError('Analysis output escaped the saved input population; no answer or work was saved')
+    kept = None
+    if not ids and contract['returns'] != 'patient_set':  # keep who a patient count counted (follow-ups narrow it)
+        from .membership import derive
+        kept = derive(stack.path, {'query': contract['query']}, report, population, target=current.target)
+        ids = kept['patient_ids'] if kept else ids
     limitations = ['Results describe received records. No matching record does not establish absent care.',
                    'Model-planned analysis; SQL, steps, sources and requirement mapping are inspectable. '
                    'Language and clinical accuracy are not independently qualified.', *notes]
@@ -760,6 +765,7 @@ def execute(stack, question, graph, receipt, *, population=None, parent=None, st
     else:
         answer['table'] = report['rows']
         answer['headline'] = f"{len(report['rows'])} rows · " + ', '.join(report['columns'])
+    if kept: answer['membership_role'] = kept['role']
     if interpretation.get('discovery'):
         answer['evidence_discovery'] = interpretation['discovery']
     if currency:

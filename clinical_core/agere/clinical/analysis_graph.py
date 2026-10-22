@@ -760,6 +760,8 @@ def build_answer_core(plan, results, memberships, question):
         elif kind == 'value': answer['value'] = _tidy(report['value'])
         elif kind == 'patient_set': answer.update(patient_ids=report['patient_ids'], count=len(report['patient_ids']))
         else: answer['table'] = [{k: _tidy(v) for k, v in r.items()} if isinstance(r, dict) else r for r in report['rows']]
+        kept = report.get('retained_membership')
+        if kept: answer.update(patient_ids=kept['patient_ids'], membership_role=kept['role'])
         if report['truncated']: answer['missing'].append(f'Result truncated at {report["row_count"]} rows.')
         return answer
     if last['operation'] == 'explain':
@@ -785,6 +787,8 @@ def build_answer_core(plan, results, memberships, question):
                 rows = [{key: r['group'], val: r['value']} for r in rows]
             answer.update(answer_type='table', table=rows)
         answer.update(status='partial' if partial else 'answered', method=report['method'], overall=report['overall'])
+        if report.get('numerator_patient_ids') is not None:  # patients behind the count/rate numerator (follow-ups narrow it)
+            answer.update(patient_ids=report['numerator_patient_ids'], membership_role='numerator')
         return answer
     terminal = next((n['id'] for n in reversed(plan['nodes']) if n['id'] in memberships), None)
     if terminal is None or plan['nodes'][-1]['id'] != terminal:
@@ -1713,6 +1717,10 @@ def execute(stack, plan, *, question=None):
                 chosen = memberships[node['inputs'][0]] if node['inputs'] else None
                 detail = sql_query.execute(path, params, sorted(chosen.yes) if chosen else None)
                 if chosen: detail['input_membership'] = membership_receipt(chosen)
+                if detail['returns'] != 'patient_set':  # keep who a patient count counted (follow-ups narrow it)
+                    from .membership import derive
+                    kept = derive(path, params, detail, sorted(chosen.yes) if chosen else None)
+                    if kept: detail['retained_membership'] = kept
             elif op == 'explain':
                 from . import explain
                 chosen = memberships[node['inputs'][0]]

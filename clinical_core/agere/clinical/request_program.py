@@ -292,10 +292,14 @@ def execute(stack, question, graph, receipt, *, population=None, parent=None, st
     if not overall_accepted:
         missing += (audit or {}).get('issues') or ['Request decomposition has not been accepted by review.']
     complete = all(s['answer']['status'] == 'answered' for s in sections) and not missing
+    # Follow-ups narrow the one patient set every patient-level output selected; differing sets are never unioned.
+    chosen = [set(s['answer']['patient_ids']) for s in sections if s['answer'].get('patient_ids')]
+    shared = sorted(chosen[0]) if chosen and all(c == chosen[0] for c in chosen) else []
     answer = {'status': 'answered' if complete else 'partial', 'answer_type': 'composite',
               'headline': f"{sum(s['answer']['status'] == 'answered' for s in sections)} of {len(sections)} requested outputs answered",
-              'sections': sections, 'missing': missing, 'limitations': [], 'patient_ids': [],
+              'sections': sections, 'missing': missing, 'limitations': [], 'patient_ids': shared,
               'actionable_cohort': False, 'data_absence_established': False}
+    if shared: answer['membership_role'] = 'shared_selection'
     child_calls = sum((p['result'] or {}).get('new_paid_api_calls', 0) for p in parts)
     economics = S.economics(receipt)
     if child_calls:

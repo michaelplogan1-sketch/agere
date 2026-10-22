@@ -128,6 +128,7 @@ class Compiler:
         self.outputs = {}
         self.json_streams = {}
         self.notes, self.rescaled = [], set()
+        self.conditions = {}  # measure path -> its conditional (numerator) predicate
 
     def bind(self, obj, path, kind):
         quotes = obj.get('quote')
@@ -361,6 +362,7 @@ class Compiler:
         if expr.get('where'):
             condition = self.predicate(expr['where'], scope, path+'.where')
             field = f'CASE WHEN {condition} THEN {"1" if field == "*" else field} END'
+            self.conditions[path] = condition
         if kind == 'count' and expr.get('field') in (None, '*') and self.base in EPISODE_KEYS and self.base in scope:
             # One admission arrives as several source rows (ADT, encounter, claim); count the episode once.
             key = " || '|' || ".join(f'{scope[self.base]}.{identifier(c)}' for c in EPISODE_KEYS[self.base])
@@ -548,6 +550,13 @@ class Compiler:
             # rows explicitly contain patient IDs; never substitute all matches.
             if 'patient_id' not in aliases: membership = None
             else: membership = f'SELECT DISTINCT patient_id FROM ({query})'
+        measured = [(i, e) for i, e in enumerate(plan['select']) if e['kind'] != 'field']
+        if membership and returns != 'patient_set' and len(measured) == 1 and not plan.get('having') and not limit:
+            # A conditional count or a ratio's conditional numerator: retain the patients it counted, not its whole base.
+            i, e = measured[0]
+            key = f'select.{i}' + ('.numerator' if e['kind'] == 'ratio' else '')
+            if key in self.conditions and (e['kind'] != 'ratio' or e['numerator'].get('kind') in ('count', 'count_distinct')):
+                membership = f'SELECT DISTINCT b.patient_id AS patient_id{relation} AND ({self.conditions[key]})'
         payload = {'version': VERSION, 'original_question': self.question, 'request': plan,
                    'source_identity': self.catalog.identity, 'bindings': self.bindings,
                    'query': query, 'membership_query': membership, 'returns': returns,

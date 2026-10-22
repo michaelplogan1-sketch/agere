@@ -84,6 +84,11 @@ def capture(path, question, result, *, original_question=None):
                 or identity.get('version') != source['semantic_version']):
             raise ValueError('Executed source identity differs from the current warehouse; no context saved')
     source = produced or source
+    if not answer.get('patient_ids') and (contract or result.get('request_contract') or {}).get('kind') == 'checked_graph':
+        # Every patient-level count keeps who it counted (stored, not shown) so follow-ups can narrow it.
+        from ..clinical.membership import from_graph
+        kept = from_graph(path, result.get('graph'), answer)
+        if kept: answer = {**answer, 'patient_ids': kept['patient_ids'], 'membership_role': kept['role']}
     rows = patient_rows(answer)
     inherited = result.get('cohort_patient_rows')
     if inherited is not None:
@@ -252,7 +257,9 @@ def scope_options(context):
                or ('request' in contract and contract.get('membership_query') is None)
                or answer.get('analysis_population_count') is not None or answer.get('answer_type') == 'value'
                or (contract.get('kind') == 'general_analysis' and contract.get('returns') != 'patient_set'
-                   and not contract.get('analysis', {}).get('patient_selection')))
+                   and not contract.get('analysis', {}).get('patient_selection'))
+               # A non-empty count/table that retained no patient ids (event or provider rows) selects no cohort.
+               or (answer.get('answer_type') in ('count', 'table') and bool(answer.get('count') or answer.get('table'))))
     return {'result_scope_available': bool(context['patient_ids']) or not summary,
             'input_patients': None if context.get('input_patient_ids') is None else len(context['input_patient_ids'])}
 
