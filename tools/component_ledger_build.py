@@ -701,6 +701,42 @@ WAVE1_MODULES = [  # (module, family, wiring, role) — wave-1 modules that chec
     ('semantic_entropy', 'check', 'inside:answer_checks_hook', 'Semantic-entropy probe from sampled-output agreement.'),
     ('label_choice', 'check', 'inside:answer_checks_hook', 'Label-choice audit and disclosure for every risk score and worklist.'),
     ('plan_optimizer', 'infrastructure', 'inside:analysis_graph_execute', 'Fuses repeated sub-queries at graph (node fusion) and SQL (CTE fusion, with fallback) level.'),
+    ('active_labeling', 'learning', 'build_time_only', 'Active learning for frontier labeling: uncertainty + diversity + audit slice; option-order-shuffled teacher labels.'),
+    ('care_actions', 'infrastructure', 'inside:engine_care_gap_closure', 'Shared action-family plumbing for care gaps, transitions of care and prior-auth access.'),
+    ('changepoint_qualification', 'check', 'inside:engine_monitor', 'Bayesian Blocks vs CUSUM/Page-Hinkley/EWMA qualified under feed gaps; monitor and trajectory attach the verdict.'),
+    ('clinical_ner', 'local_model', 'build_time_only', 'Local clinical NER (OpenMed) feeding note facts, admitted per fact type by measured precision vs Sonnet labels.'),
+    ('constrained_decoding', 'local_model', 'inside:bottled_sql', 'Grammar-constrained decoding (JSON/SQL/template grammars) for the local models.'),
+    ('context_compaction', 'infrastructure', 'inside:engine_context', 'Constraint-preserving context compaction: pinned scope fields, tiered demotion, verify().'),
+    ('evidence_completeness', 'retrieval', 'inside:warehouse_retriever', 'Evidence-set completeness: fetch the combination of sources each conclusion needs.'),
+    ('foundation_forecasters', 'local_model', 'inside:engine_demand', 'Chronos-2 / TimesFM demand challengers, default only where they win the backtest.'),
+    ('hospital_ops', 'infrastructure', 'inside:engine_visit_groups', 'Shared hospital-operations readers (visits, census, stays).'),
+    ('med_graph_rag', 'retrieval', 'inside:warehouse_retriever', 'MedGraphRAG concept graph as fallback retriever.'),
+    ('ocel', 'engine', 'inside:engine_guideline_conformance', 'OCEL 2.0 object-centric event log for guideline conformance.'),
+    ('protected_channels', 'retrieval', 'inside:warehouse_retriever', 'Protected exception/contradiction channels that reranking cannot drop.'),
+    ('ra_fairness', 'check', 'inside:engine_risk_adjustment', 'Risk-adjustment fairness diagnostics: predictive ratios, undercompensated groups, fair regression.'),
+    ('reranker_bakeoff', 'retrieval', 'inside:warehouse_retriever', 'BGE v2-m3 vs Qwen3-Reranker comparison, adopted per query type.'),
+    ('revenue_common', 'infrastructure', 'inside:engine_prior_auth_rules', 'Shared revenue-cycle helpers for the wave-2 payer engines.'),
+    ('stage_diagnostics', 'check', 'inside:checked_proposer_cascade', 'Attributes each failure to the stage that caused it (retrieval, rerank, reading).'),
+    ('tabular_challengers', 'local_model', 'inside:engine_forecast', 'TabPFN-v2 challenger beside warehouse predictors, default only where it wins.'),
+    ('template_decoding', 'local_model', 'inside:ladder_adapter', 'TeCoD: verified SQL as slot templates, matcher, grammar-constrained slot fill.'),
+    ('vcache', 'infrastructure', 'inside:semantic_cache', 'vCache per-entry learned similarity thresholds under an error bound.'),
+    ('clinical_core.agere.fault_containment', 'check', 'inside:analysis_graph_execute', 'Fault containment: failures contained per engine, DataAbsent on missing sources.'),
+    ('clinical_core.agere.ingest.ccda', 'infrastructure', 'build_time_only', 'C-CDA R2.1 ingestion into the canonical model.'),
+    ('clinical_core.agere.onboarding.ccda_fixture', 'infrastructure', 'build_time_only', 'Synthetic C-CDA fixture.'),
+    ('clinical_core.agere.onboarding.public_fixtures', 'infrastructure', 'build_time_only', 'DE-SynPUF and OHDSI Eunomia onboarding fixtures.'),
+    ('clinical_core.agere.packs.logistics_sample', 'knowledge', 'inside:engine_domain_pack', 'Logistics example domain pack.'),
+    ('clinical_core.agere.request_locks', 'infrastructure', 'spine:service', 'Per-resource request locks replacing the service-wide one-question lock.'),
+    ('clinical_core.agere.work_queue', 'infrastructure', 'inside:care_actions', 'Order-book work queues and count sketches for action families.'),
+    ('tools.bottling.swap_base', 'local_model', 'build_time_only', 'SQL-specialist base swap path (OmniSQL/Arctic) with paired evaluation.'),
+    ('tools.calibration.fit_vcache', 'learning', 'build_time_only', 'Fits vCache per-entry thresholds.'),
+    ('tools.changepoint_qualification', 'check', 'build_time_only', 'Change-point qualification runner.'),
+    ('tools.export.training_parquet', 'learning', 'build_time_only', 'Training/eval Parquet exporter with denylist.'),
+    ('tools.fault_injection', 'check', 'build_time_only', 'Injected failure sequences for fault containment.'),
+    ('tools.feed_sketch', 'infrastructure', 'build_time_only', 'Checks count sketches on the real feed.'),
+    ('tools.learned_routing.train_answer_verifier', 'learning', 'build_time_only', 'Trains the learned answer verifier.'),
+    ('tools.learned_routing.train_candidate_selector', 'learning', 'build_time_only', 'Trains the pairwise candidate selector.'),
+    ('tools.notes_extraction.ner_evaluate', 'local_model', 'build_time_only', 'Evaluates local NER against Sonnet labels.'),
+    ('tools.training.harness_sql', 'learning', 'build_time_only', 'HarnessSQL interaction-matched training trajectories.'),
 ]
 NEW = [  # components added by the build-out
     {'id': 'atomic_questions', 'name': 'Atomic sub-question decomposition (System One per patient/document)', 'family': 'proposer',
@@ -776,7 +812,7 @@ def first_public(module):
 for mod_name, fam, wiring, role in WAVE1_MODULES:
     cid = mod_name.rsplit('.', 1)[-1]
     if cid in {r['id'] for r in rows}: continue
-    module = mod_name if mod_name.startswith('tools.') else f'{C}{mod_name}'
+    module = mod_name if mod_name.startswith(('tools.', 'clinical_core.')) else f'{C}{mod_name}'
     rows.append({'id': cid, 'name': cid.replace('_', ' '), 'family': fam, 'module': module, 'symbol': first_public(module),
                  'role_on_question_path': role, 'current_wiring': wiring, 'evidence': 'wave-1 build 2026-10-22', 'cost': 'free',
                  'calibration': None, 'flag': None})
