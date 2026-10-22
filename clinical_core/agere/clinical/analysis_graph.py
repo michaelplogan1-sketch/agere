@@ -1726,7 +1726,8 @@ def execute(stack, plan, *, question=None):
                 import importlib
                 engine = importlib.import_module(f'.{CLINICAL_LOGIC[op]}', __package__)
                 chosen = memberships[node['inputs'][0]] if node['inputs'] else None
-                detail = engine.execute(stack if getattr(engine, 'NEEDS_STACK', False) else path, sorted(chosen.yes) if chosen else None, params, meta['snapshot']['as_of'])
+                from ..fault_containment import contain_engine  # a missing source raises DataAbsent, not a raw sqlite error
+                detail = contain_engine(engine, stack if getattr(engine, 'NEEDS_STACK', False) else path, sorted(chosen.yes) if chosen else None, params, meta['snapshot']['as_of'])
                 if hasattr(engine, 'review'): detail = engine.review(stack, detail); paid_calls += detail.get('new_paid_api_calls', 0)  # System One note review
                 if chosen: detail['input_membership'] = membership_receipt(chosen)
             elif op in ('loop_closure', 'diagnostic_delay', 'risk_outcomes'):

@@ -30,7 +30,7 @@ FAILED = frozenset({'rejected', 'error', 'declined', 'no proposal', 'decline hel
 CHECK = re.compile(r'answer guard:|cross-check:|answer shape:|certificate:|zero[- ]result|probe|system one check|answer checks|'
                    r'the question asks for an? |the plan did not produce an answer|output check', re.I)
 EXECUTION = re.compile(r'execution failed|operationalerror|sqlite3?\.|programmingerror|duckdb|no such (?:table|column)|'
-                       r'database (?:is locked|disk image)|timed? ?out|timeout', re.I)
+                       r'database (?:is locked|disk image)|timed? ?out|timeout|absent from this warehouse|malformed', re.I)
 RERANK = re.compile(r'\brerank|reranker|schema_rerank|bge', re.I)
 RETRIEVAL = re.compile(r'\bretriev|no (?:passages?|evidence) (?:found|retrieved)|semantic cache|no cached|cache miss|vector', re.I)
 READING = re.compile(r'\breader\b|\breading\b|windowed|student|extract', re.I)

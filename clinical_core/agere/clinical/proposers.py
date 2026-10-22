@@ -209,6 +209,9 @@ class Cascade:
                     continue
                 except Exception as exc:  # noqa: BLE001 - one component failing never stops the others (heal, don't block)
                     self.note(name, 'error', f'{type(exc).__name__}: {exc}', started)
+                    from ..fault_containment import on_tier_error  # a malformed state store is quarantined and recreated, not hit again
+                    healed = on_tier_error(getattr(self.stack, 'path', '.'), exc)
+                    if healed: self.log[-1]['healed_stores'] = healed
                     if name in PAID and (outage(exc) or (isinstance(exc, RuntimeError) and not isinstance(exc, (ValueError, KeyError, TypeError, AttributeError, sqlite3.Error)))):
                         self.provider_error = self.provider_error or exc
                         if name in CLAUDE_TIERS: self.claude_down = self.claude_down or outage(exc)  # only a real provider outage (billing, rate, overload)
