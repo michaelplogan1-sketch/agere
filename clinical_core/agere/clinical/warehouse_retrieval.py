@@ -196,13 +196,13 @@ class Retriever:
         if self.annotation_db:self.annotation_db.close()
     def policy(self,question):
         """Adopted reranker / graph fallback for this question's type (reranker_bakeoff.choice) and the identities that key the cache."""
-        from . import reranker_bakeoff as RB, protected_channels as PC, med_graph_rag as MG
+        from . import reranker_bakeoff as RB, protected_channels as PC, med_graph_rag as MG, evidence_completeness as EC
         c=RB.choice(question) if self.reranker else {'type':RB.query_type(question),'reranker':None,'graph_fallback':False,'basis':'reranking disabled'}
         if c['reranker']=='qwen' and not (RB.QWEN_PATH/'agere-model.json').exists():
             c={**c,'reranker':'bge','basis':c['basis']+'; Qwen3 reranker not installed: incumbent BGE'}
         graph=(self.path/MG.FILE).exists()
         ident={'bge':self.reranker.identity if self.reranker else None,'qwen':'qwen3-reranker-0.6b:'+RB.VERSION}.get(c['reranker'])
-        code=digest([hashlib.sha256(Path(m.__file__).read_bytes()).hexdigest() for m in (RB,PC,MG)])
+        code=digest([hashlib.sha256(Path(m.__file__).read_bytes()).hexdigest() for m in (RB,PC,MG,EC)])
         return {**c,'reranker_identity':ident,'graph_identity':MG.VERSION if graph else None,'code':code}
     def _reranker(self,name):
         if not self.reranker or name is None:return None
@@ -321,7 +321,7 @@ class Retriever:
             candidates.append({'id':str(pid),'text':content,'source':source,'note_id':source['record_id'],
                                'start':source['start'],'protected':False,'rrf_score':fusion[pid]})
         return candidates,members,scope_join
-    def search(self, question, *, patient=None, limit=8,patient_ids=None,analysis_window=None):
+    def search(self, question, *, patient=None, limit=8,patient_ids=None,analysis_window=None,complete=True):
         from .clinical_events import validate_window
         window=validate_window(analysis_window,self.meta['snapshot']['as_of'])
         from .question_input import validate_question
@@ -335,7 +335,7 @@ class Retriever:
         policy=self.policy(question)
         key=digest([VERSION,hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),self.meta['source_digest'],
                     self.encoder.identity,policy['reranker_identity'],policy['graph_identity'],policy['code'],
-                    getattr(self,'annotation_identity',None),question,patient,limit,membership,window])
+                    getattr(self,'annotation_identity',None),question,patient,limit,membership,window,bool(complete)])
         t=time.perf_counter();old=self.db.execute('SELECT payload FROM result_cache WHERE id=?',(key,)).fetchone()
         if old:return {**json.loads(old[0]),'cache_hit':True,'elapsed_seconds':time.perf_counter()-t,'new_paid_api_calls':0}
         candidates,members,scope_join=self._candidates(question,patient,membership,window,scoped)
@@ -354,6 +354,10 @@ class Retriever:
             if group in seen or (not patient and by_patient[s['patient_id']]>=2):return False
             seen.add(group);by_patient[s['patient_id']]+=1;return True
         selected=PC.select(ranked,limit,patient,accept)
+        evidence_set=None
+        if complete and patient:  # conclusion-guided: fetch the components of the conclusion the question asks for that the ranked set lacks
+            from . import evidence_completeness as EC
+            selected,evidence_set=EC.complete(lambda q:self.search(q,patient=patient,limit=12,analysis_window=analysis_window,complete=False)['evidence'],question,selected,limit)
         if self.annotation_db:
             by_patient={}
             for row in selected:
@@ -376,6 +380,7 @@ class Retriever:
                 'method':'FTS5 BM25 + MiniLM cosine'+(' + concept graph' if graph_used else '')+' → reciprocal-rank fusion → '+
                          {'qwen':'Qwen3 reranker','bge':'BGE reranker'}.get(policy['reranker'] if reranker else '', 'no reranker')+
                          ' → protected exception/contradiction slots → source diversity',
+                'evidence_set':evidence_set,
                 'retrieval_policy':{'query_type':policy['type'],'reranker':policy['reranker'] if reranker else None,'basis':policy['basis'],
                                     'graph_fallback':bool(graph_used),'graph_nodes':(graph_used or {}).get('nodes'),
                                     'exception_channel_candidates':len(channel),
