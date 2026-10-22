@@ -29,9 +29,10 @@ MODULES = {
     'saved_monitors': 'monitor_sweep',              # saved-answer monitors recomputed on new snapshots
     'policy_evaluation': 'off_policy',              # doubly robust off-policy evaluation of outreach policies from logged outcomes
     'guideline_conformance': 'guideline_conformance',  # OCEL 2.0 object-centric log + guideline pathway conformance
+    'acquisition_policy': 'acquisition_policy',     # learned where-to-spend-effort policy from recorded outcomes (cost, success, no-further-computation)
 }
 ROUTE_ORDER = ('saved_monitors', 'change_attribution', 'social_needs', 'guideline_conformance', 'star_rating', 'mlr', 'settlement_bridge',
-               'policy_search', 'policy_evaluation', 'outreach_bandit', 'outreach_allocation', 'staffing_plan')
+               'policy_search', 'policy_evaluation', 'acquisition_policy', 'outreach_bandit', 'outreach_allocation', 'staffing_plan')
 
 
 def module(op):

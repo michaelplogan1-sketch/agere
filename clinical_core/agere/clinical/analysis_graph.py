@@ -1418,6 +1418,8 @@ def execute(stack, plan, *, question=None):
     started = time.perf_counter()
     path, meta = stack.path, stack.retriever.meta
     plan = validate(plan, meta['snapshot']['as_of'])
+    from .plan_optimizer import optimize_plan  # identical nodes run once (compiler common-subexpression elimination)
+    plan, fusion = optimize_plan(plan)
     if question is not None:
         from .question_input import validate_question
         validate_question(question)
@@ -2047,6 +2049,7 @@ def execute(stack, plan, *, question=None):
             raise ValueError('Appointment sources changed during graph execution; result not cached')
         result['question']=question
         result['answer']=build_answer(plan, results, memberships, question)
+        if fusion['fused']: result['plan_optimizer'] = fusion
         if plan['nodes'][0]['operation'] == 'query_population':
             result['answer']['computed_as'] = {**result['answer'].get('computed_as', {}),
                 'source_request_id': plan['nodes'][0]['parameters']['contract']['id'],
