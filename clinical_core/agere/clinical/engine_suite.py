@@ -27,9 +27,13 @@ MODULES = {
     'change_attribution': 'change_attribution',     # joint patient-state / source-observation tensor model: real change vs feed outage
     'social_needs': 'social_needs',                 # corroborated social needs + referral (BSeR/Gravity) closure
     'saved_monitors': 'monitor_sweep',              # saved-answer monitors recomputed on new snapshots
+    'care_gap_closure': 'care_gap_closure',         # payer care gaps (DEQM open/closed gap per member and measure) + closing actions
+    'transitions_of_care': 'transitions_of_care',   # discharge follow-up (TEAM/TCM): visit, contact, med reconciliation, readmission
+    'prior_auth_access': 'prior_auth_access',       # prior authorization / non-coverage rejects: resolve, appeal, Extra Help screen
 }
 ROUTE_ORDER = ('saved_monitors', 'change_attribution', 'social_needs', 'star_rating', 'mlr', 'settlement_bridge',
-               'policy_search', 'outreach_bandit', 'outreach_allocation', 'staffing_plan')
+               'policy_search', 'outreach_bandit', 'outreach_allocation', 'staffing_plan',
+               'prior_auth_access', 'transitions_of_care', 'care_gap_closure')
 
 
 def module(op):
