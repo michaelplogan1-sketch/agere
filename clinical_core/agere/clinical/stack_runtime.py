@@ -104,21 +104,42 @@ class Stack:
         from .analysis_graph import execute
         return execute(self,plan,question=question)
     def model_roles(self):
+        """The live question cascade as built (proposers.TIERS/ORDER/NOT_PROPOSERS), Qwen status from the env defaults and
+        component-ledger counts; nothing here is hand-maintained, so it cannot go stale."""
+        from collections import Counter
         from ..gateway import PersistentGateway
         from .nl2sql import MODEL_DIR
-        return {'planning_order': ['fully consumed compositional grammar',
-                                  'schema-grounded deterministic interpretation of source fields, values and operators',
-                                  'configured hosted interpretation only after the deterministic tier cannot fully parse the original request'],
-                'shared_request_version': 'warehouse-request/1',
-                'frontier_model': os.environ.get('AGERE_SHARED_INTERPRETER_MODEL', PersistentGateway.MODELS['claude']),
-                'question_interpretation_llm_enabled': self.allow_live, 'deterministic_first': True,
-                'hosted_enabled': self.allow_live, 'hosted_tools_enabled': self.allow_live, 'qwen3_4b_available': MODEL_DIR.exists(),
-                'qwen3_4b_active': False,
-                'qwen_status': {'role': 'not an automatic question fallback',
-                               'qualification': 'unqualified; proposals remain partial and cannot create program work'},
-                'retired_question_routes': ['parallel SQL analysts', 'answer-authoritative recipes', 'semantic paraphrase plan reuse', 'narrow slot rewriting'],
-                'source_readers': ['Jev/Perplexity source tools remain registered; no implicit hosted dispatch'],
-                'scope': 'One shared compiler and original-request contract. General language, clinical and comparative economics qualification remain open.'}
+        from . import proposers as P
+        live=bool(self.allow_live);env=lambda k,d='on':os.environ.get(k,d)
+        cascade=[{'tier':n,'cost':P.TIERS[n][0],'calibration':P.TIERS[n][1],'proposes':P.TIERS[n][2],'paid':n in P.PAID,
+                  'enabled':P.enabled(n,self)} for n in P.ORDER]
+        qwen_on=MODEL_DIR.exists()
+        qwen={'model_installed':qwen_on,
+              'local_normalizer':qwen_on and env('AGERE_LOCAL_NORMALIZER')=='on',
+              'qwen_typed_interpreter':qwen_on and env('AGERE_LOCAL_TYPED')!='off',
+              'qwen_rewrite_compiler':qwen_on and env('AGERE_LOCAL_MODEL')!='off','bottled_sql':env('AGERE_BOTTLED')!='off',
+              'local_free_sql':qwen_on and env('AGERE_LOCAL_SQL')=='on',
+              'role':'free checked proposers: every proposal is recompiled and literal-checked before it executes'}
+        try:
+            components=json.loads((ROOT/'config/agere/component_ledger.json').read_text())['components']
+            wiring=Counter(c['current_wiring'].split(':',1)[0] for c in components)
+            ledger={'components':len(components),'by_wiring':dict(sorted(wiring.items())),
+                    'off_path':sorted(c['id'] for c in components if c['current_wiring'] in ('not_on_path','named_only'))}
+        except (OSError,ValueError,KeyError) as exc:
+            ledger={'error':f'{type(exc).__name__}: {exc}'[:200]}
+        return {'planning_order':['exact tiers: contract cache, learned shapes, fully consumed grammar',
+                                  *[f"{c['tier']} ({c['cost']})" for c in cascade if c['enabled']]],
+                'cascade':cascade,'cascade_version':P.VERSION,'shared_request_version':'warehouse-request/1',
+                'not_proposers':dict(P.NOT_PROPOSERS),'feedback_readers':list(P.FEEDBACK_READERS),
+                'typed_with_population':sorted(P.TYPED_WITH_POPULATION),
+                'proposers_on':env('AGERE_PROPOSERS')!='off',
+                'skipped_by_env':sorted(s.strip() for s in env('AGERE_PROPOSER_SKIP','').split(',') if s.strip()),
+                'frontier_model':os.environ.get('AGERE_SHARED_INTERPRETER_MODEL',PersistentGateway.MODELS['claude']),
+                'question_interpretation_llm_enabled':live,'deterministic_first':True,'hosted_enabled':live,
+                'qwen3_4b_available':qwen_on,'qwen3_4b_active':any(v for k,v in qwen.items() if k not in ('model_installed','role')),
+                'qwen_status':qwen,'component_ledger':ledger,
+                'source_readers':['Jev/Perplexity source tools: patient-scoped evidence review (Stack.review)'],
+                'scope':'Every proposal passes the literal-question and requested-output checks before it answers; not clinical qualification.'}
     def compose(self,question,*,planning='auto',population=None,parent=None):
         from .shared_planner import compose
         if planning not in ('auto', 'frontier'):
