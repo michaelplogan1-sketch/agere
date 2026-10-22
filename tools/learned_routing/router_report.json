@@ -1,6 +1,6 @@
 {
  "version": "learned-router/1",
- "trained_at": "2026-10-22T08:12:43",
+ "trained_at": "2026-10-22T08:46:41",
  "training_rows": 2486,
  "label_sources": {
   "harvest_route": 87,
@@ -5812,5 +5812,5 @@
   "per_100_router_questions_seconds": 0.0,
   "coverage_used": 0.1762
  },
- "seconds": 198.6
+ "seconds": 196.4
 }

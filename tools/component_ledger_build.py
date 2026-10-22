@@ -661,6 +661,41 @@ WIRED = {
     'workspace_hybrid_pipeline': ('spine:workspace_fallback', None, None),
     'tensor_train_model': ('inside:outcome_forecast_models', 'clinical_core.agere.tensor_train', 'fit_tensor'),
 }
+WAVE1_MODULES = [  # (module, family, wiring, role) — wave-1 modules that check, route, learn or measure on the question path
+    ('judge', 'check', 'inside:claim_verification', 'Cross-family, position-swapped System One judge between disagreeing answers.'),
+    ('claim_verification', 'check', 'spine:cascade_run', 'An uncertified first claim is verified by an independent family; disagreements go to the judge.'),
+    ('cascade_router', 'infrastructure', 'spine:cascade_order', 'Learned router labelled by which tier answered correctly; reorders, never drops tiers.'),
+    ('tier_router', 'infrastructure', 'spine:cascade_order', 'Outcome-labelled tier router trained from verified answers.'),
+    ('requirement_ledger', 'check', 'spine:cascade_gaps', 'Every requirement (comparators, AND/OR) carried through planning; proposals that drop one are rejected.'),
+    ('plan_fence', 'check', 'inside:answer_checks_hook', 'Reused plans and saved answers re-validated against current premises before use.'),
+    ('store_audit', 'learning', 'inside:learning_hooks', 'Prediction-powered error estimate for the verified answer store.'),
+    ('answer_stability', 'check', 'inside:claim_verification', 'pass^k stability of paid answers.'),
+    ('release_drift', 'check', 'inside:answer_checks_hook', 'QC-DRIFT warnings when a definition or source drifted this release.'),
+    ('system_one_cross_check', 'check', 'inside:answer_checks_hook', 'Jev + Perplexity cross-check before any Claude judge.'),
+    ('cost_telemetry', 'infrastructure', 'spine:conversation', 'Per-question cost: attempts, tokens, pricing version, stage timings.'),
+    ('token_scorecard', 'infrastructure', 'build_time_only', 'No-LLM share, calls by model, cost per question, Jev/Perplexity decisions.'),
+    ('schema_prefetch', 'infrastructure', 'inside:hosted_typed_interpreter', 'Likely schemas sent up front; repairs send only the failing fragment.'),
+    ('tools.training.router_outcomes', 'learning', 'inside:learning_hooks', 'Router-outcome rows written for every verified answer.'),
+    ('system_one_deciders', 'evidence_tool', 'inside:system_one', 'Decider bake-off: primary System One provider per task.'),
+    ('system_one_student', 'local_model', 'inside:system_one', 'Local student distilled from Jev/Perplexity labels, tried before the paid call.'),
+    ('external_evidence', 'evidence_tool', 'inside:atomic_questions', 'Perplexity search as a cited external evidence source.'),
+    ('evidence_packets', 'evidence_tool', 'inside:engine_review', 'Bounded evidence packets with learned selection for readers and System One.'),
+    ('therapy_barrier_answers', 'evidence_tool', 'inside:atomic_questions', 'Why-not-on-therapy answers from barrier facts plus a live System One pass.'),
+    ('normalization_check', 'check', 'inside:answer_checks_hook', 'Jev second check on lab/drug normalization.'),
+    ('dq_detectors', 'check', 'inside:answer_checks_hook', 'Source-defect detectors; answers reading a defective table are annotated.'),
+    ('feed_gaps', 'check', 'inside:answer_checks_hook', 'Feed sequence-gap detection; answers reading a gap month are warned.'),
+    ('duckdb_engine', 'infrastructure', 'spine:sql_execution', 'DuckDB answer path with SQLite fallback and shadow lint.'),
+    ('ocr_passages', 'retrieval', 'inside:warehouse_retriever', 'OCR text with page/bbox provenance, answerable through retrieval.'),
+    ('record_linkage', 'infrastructure', 'planner_menu', 'Probabilistic record linkage; duplicate-patient questions.'),
+    ('ed_definition', 'metric_or_measure', 'planner_menu', 'One ED definition across EHR/ADT/claims with true-zero vs not-delivered status.'),
+    ('terminology', 'knowledge', 'cascade_tier:terminology_mapping', 'Label-to-code mapping with System One adjudication.'),
+    ('library_measure', 'metric_or_measure', 'planner_menu', 'Measure library incl. FUH/FUM/IET.'),
+    ('quality_scorecard', 'infrastructure', 'spine:service', 'DPMO/sigma production scorecard and public error-rate scorecard API.'),
+    ('clinical_tasks', 'engine', 'planner_menu', 'Clinical workflow tasks CT-01..CT-10.'),
+    ('engine_suite', 'infrastructure', 'planner_menu', 'Registry for wave-1 decision engines.'),
+    ('foundation_engines', 'infrastructure', 'planner_menu', 'Registry for data-foundation engines.'),
+    ('hcc_suspecting', 'engine', 'cascade_tier:hcc_suspecting', 'Retrieve-then-rank HCC suspecting confirmed by System One.'),
+]
 NEW = [  # components added by the build-out
     {'id': 'atomic_questions', 'name': 'Atomic sub-question decomposition (System One per patient/document)', 'family': 'proposer',
      'module': 'clinical_core.agere.clinical.atomic_questions', 'symbol': 'tier',
@@ -706,6 +741,39 @@ NEW = [  # components added by the build-out
 ]
 ids_now = {r['id'] for r in rows}
 rows.extend(n for n in NEW if n['id'] not in ids_now)
+# Discovery: every engine on the planner menu and every cascade tier is a component, whether or not it was listed above.
+sys.path.insert(0, str(WT))
+from clinical_core.agere.clinical.capability_registry import PRODUCT as _PRODUCT
+from clinical_core.agere.clinical import analysis_graph as _AG, proposers as _PR
+known = {r['id'] for r in rows} | {r.get('symbol') for r in rows}
+engine_ops = {**{op: None for op in _PRODUCT}, **{op: mod for op, mod in _AG.CLINICAL_LOGIC.items()}}
+for op, mod in sorted(engine_ops.items()):
+    if op in known or f'engine_{op}' in known: continue
+    module = f"{C}{mod}" if isinstance(mod, str) else 'clinical_core.agere.clinical.capability_registry'
+    rows.append({'id': f'engine_{op}', 'name': f'{op} engine', 'family': 'engine', 'module': module,
+                 'symbol': None if isinstance(mod, str) else 'PRODUCT',
+                 'role_on_question_path': (_PRODUCT.get(op, {}).get('use') or f'{op} analysis')[:200],
+                 'current_wiring': 'planner_menu', 'evidence': 'capability_registry.PRODUCT / analysis_graph.CLINICAL_LOGIC',
+                 'cost': 'free', 'calibration': None, 'flag': None})
+tiers_known = {r['current_wiring'].split(':', 1)[1] for r in rows if r['current_wiring'].startswith('cascade_tier:')}
+for tier in _PR.ORDER:
+    if tier in tiers_known or tier in {r['id'] for r in rows}: continue
+    cost, calibration, kind = _PR.TIERS[tier]
+    rows.append({'id': tier, 'name': f'{tier} cascade tier', 'family': 'proposer', 'module': f'{C}proposers', 'symbol': f'Cascade.tier_{tier}',
+                 'role_on_question_path': f'Cascade tier proposing a {kind} answer, checked before it ships.', 'current_wiring': f'cascade_tier:{tier}',
+                 'evidence': 'proposers.TIERS', 'cost': cost, 'calibration': calibration, 'flag': None})
+def first_public(module):
+    path = WT / (module.replace('.', '/') + '.py')
+    for node in ast.parse(path.read_text()).body:
+        if isinstance(node, (ast.FunctionDef, ast.ClassDef)) and not node.name.startswith('_'): return node.name
+    return None
+for mod_name, fam, wiring, role in WAVE1_MODULES:
+    cid = mod_name.rsplit('.', 1)[-1]
+    if cid in {r['id'] for r in rows}: continue
+    module = mod_name if mod_name.startswith('tools.') else f'{C}{mod_name}'
+    rows.append({'id': cid, 'name': cid.replace('_', ' '), 'family': fam, 'module': module, 'symbol': first_public(module),
+                 'role_on_question_path': role, 'current_wiring': wiring, 'evidence': 'wave-1 build 2026-10-22', 'cost': 'free',
+                 'calibration': None, 'flag': None})
 by_tier = {r['current_wiring'].split(':', 1)[1]: r for r in rows if r['current_wiring'].startswith('cascade_tier:')}
 for r in rows:
     if r['id'] in WIRED:
