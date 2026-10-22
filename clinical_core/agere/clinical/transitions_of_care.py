@@ -137,7 +137,8 @@ def run(db, patient_ids, p, as_of):
                  'readmit_rate': round(sum(r['readmitted_30d'] for r in v) / len(v), 4)} for k, v in sorted(g.items(), key=lambda kv: -len(kv[1]))]
     sel = {'gaps': [r for r in rows if r['gap']], 'readmitted': [r for r in rows if r['readmitted_30d']]}.get(p['focus'], rows)
     sel.sort(key=lambda r: (-len(r['next_actions']), r['discharge_date']), reverse=False)
-    return {'schema': VERSION, 'as_of': as_of, 'parameters': p, 'discharges': n, 'summary': summary, 'by_group': by_group, 'table': sel[:p['top']],
+    queue = CA.work_queue(rows, lambda r: len(r['next_actions']) + 2 * r['readmitted_30d'] + (1 if r['disposition'] in ('snf', 'irf', 'home_health') else 0), lambda r: r['organization'])
+    return {'schema': VERSION, 'as_of': as_of, 'parameters': p, 'discharges': n, 'summary': summary, 'by_group': by_group, 'work_queue': queue, 'table': sel[:p['top']],
             'patient_ids': sorted({r['patient_id'] for r in sel}), 'unknown_discharge_stays': unknown,
             'method': f"Discharges {lo} to {as_of}; visit within {p['follow_up_days']} days, reached contact within 4 days, med rec within 30 days."}
 
@@ -165,7 +166,7 @@ def answer(report, plan, question):
     return {'status': 'partial' if partial else 'answered', 'answer_type': 'table', 'table': report['table'], 'count': len(report['patient_ids']),
             'patient_ids': report['patient_ids'], 'value': headline(report) + '.', 'method': report['method'],
             'definitions': [{'term': 'transition of care', 'basis': 'CMS TEAM / TCM: discharge, reached contact, follow-up visit (7/14 days), medication reconciliation (30 days)'}],
-            'limitations': ASSUMPTIONS, 'membership_role': 'selected', 'overall': {'transitions_of_care': {'summary': report['summary'], 'by_group': report['by_group']}}}
+            'limitations': ASSUMPTIONS, 'membership_role': 'selected', 'overall': {'transitions_of_care': {'summary': report['summary'], 'by_group': report['by_group'], 'work_queue': report.get('work_queue')}}}
 
 
 TOC = (r'\btransitions? of care\b|\bpost[- ]?discharge\b|\bafter (?:a )?(?:hospital )?discharge\b|\bdischarge follow[- ]?up\b|\bfollowed up (?:after|within)\b|'

@@ -113,6 +113,11 @@ class Families(unittest.TestCase):
         self.assertEqual([c['patient_id'] for c in r['table']], ['F1'])  # F2 is a full-benefit dual
         self.assertIn('cost barrier', r['table'][0]['basis'])
 
+    def test_work_queue_ranks_lapsed_first(self):
+        r = PA.execute(self.path, None, {'focus': 'prior_auth'}, AS_OF)
+        self.assertEqual([x['patient_id'] for x in r['work_queue']['next']], ['F2', 'F3'])  # lapsed appeal outranks the open PA; resolved rests nowhere
+        self.assertEqual(r['work_queue']['resting'], 2)
+
     def test_validate_rejects_unknown(self):
         for m in (G, T, PA):
             with self.assertRaises(ValueError): m.validate({'bogus': 1})

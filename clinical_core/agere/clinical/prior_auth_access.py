@@ -125,7 +125,8 @@ def run(db, patient_ids, p, as_of):
     by_group = [{'group': k, 'cases': sum(v.values()), **{s: v[s] for s in (*STATE, 'candidate') if v[s]}} for k, v in sorted(g.items(), key=lambda kv: -sum(kv[1].values()))]
     days = sorted(c['days_to_resolution'] for c in sel if c.get('days_to_resolution') is not None)
     sel = sorted(sel, key=lambda c: (c['state'] == 'resolved_paid', -(c.get('days_open') or 0), c['patient_id']))
-    return {'schema': VERSION, 'as_of': as_of, 'parameters': p, 'cases': len(sel), 'states': dict(Counter(c['state'] for c in sel)), 'by_group': by_group,
+    queue = CA.work_queue(sel, lambda c: (10 if c['state'] == 'lapsed' else 5 if c['state'] == 'open' else 6) + min((c.get('days_open') or 0) / 30, 4), lambda c: c['payer'])
+    return {'schema': VERSION, 'as_of': as_of, 'parameters': p, 'work_queue': queue, 'cases': len(sel), 'states': dict(Counter(c['state'] for c in sel)), 'by_group': by_group,
             'median_days_to_resolution': days[len(days) // 2] if days else None, 'extra_help_candidates': len(eh), 'table': sel[:p['top']],
             'patient_ids': sorted({c['patient_id'] for c in sel}),
             'method': f"Rejected pharmacy claims (75 PA, 70 not covered) resolved by a later paid claim for the same member and drug within {p['resolution_days']} days."}
@@ -155,7 +156,7 @@ def answer(report, plan, question):
     return {'status': 'partial' if partial else 'answered', 'answer_type': 'table', 'table': report['table'], 'count': len(report['patient_ids']),
             'patient_ids': report['patient_ids'], 'value': headline(report) + '.', 'method': report['method'],
             'definitions': [{'term': 'resolved', 'basis': 'a paid pharmacy claim for the same member and drug after the reject, within the resolution window'}],
-            'limitations': ASSUMPTIONS, 'membership_role': 'selected', 'overall': {'prior_auth_access': {'states': report['states'], 'by_group': report['by_group']}}}
+            'limitations': ASSUMPTIONS, 'membership_role': 'selected', 'overall': {'prior_auth_access': {'states': report['states'], 'by_group': report['by_group'], 'work_queue': report.get('work_queue')}}}
 
 
 PA = (r'\bprior auth\w*\b|\bprior-auth\w*\b|\bpa (?:denials?|requests?|packets?|rejects?|required)\b|\bformulary exceptions?\b|\bextra help\b|\blis\b|\blow[- ]income subsid\w*\b|'

@@ -45,3 +45,18 @@ def missing_tables(db, needed):
     """Tables a question needs that this warehouse lacks (reported as a limitation, never a crash)."""
     have = tables(db)
     return sorted(set(needed) - have)
+
+
+def work_queue(rows, priority, resource=lambda r: None, top=10):
+    """The proposed actions in `rows` as an order-book work queue (work_queue.OrderBook): best first, equal priority in arrival
+    order. Returns {'resting', 'depth', 'next'}: a level-2 view and the next items a team would take. Capacity matching
+    (OrderBook.match) is available to the caller; here nothing is filled, only ranked."""
+    from ..work_queue import OrderBook
+    book = OrderBook()
+    for i, r in enumerate(rows):
+        if r.get('next_action') or r.get('next_actions'):
+            book.add(i, priority(r), resource(r), r)
+    ordered = book.ordered()
+    return {'resting': len(book), 'depth': book.depth()[:8],
+            'next': [{'patient_id': v['payload']['patient_id'], 'priority': v['priority'], 'resource': v['resource'],
+                      'action': (v['payload'].get('next_action') or v['payload']['next_actions'][0])['step']} for _, v in ordered[:top]]}

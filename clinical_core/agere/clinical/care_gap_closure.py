@@ -167,7 +167,10 @@ def run(db, patient_ids, p, as_of):
     table = [r for r in rows if focus in ('all', 'summary') or r['gap_status'] == f'{focus}-gap']
     table.sort(key=lambda r: (r['gap_status'] != 'open-gap', r['measure'], r['patient_id']))
     ids = sorted({r['patient_id'] for r in (rows if focus in ('all', 'summary') else table)})
-    return {'schema': VERSION, 'as_of': as_of, 'parameters': p, 'measures': measures, 'unavailable_measures': unavailable, 'summary': summary,
+    weight = {'bcs': 4, 'col': 3, 'awv': 2, 'flu': 1}
+    queue = CA.work_queue(rows, lambda r: weight[r['measure']] + (3 if 'recontact' in r['next_action']['step'] else 0) + (-1 if 'confirm the' in r['next_action']['step'] else 0),
+                          lambda r: r['practice'])
+    return {'schema': VERSION, 'as_of': as_of, 'parameters': p, 'measures': measures, 'unavailable_measures': unavailable, 'summary': summary, 'work_queue': queue,
             'by_group': by_group, 'table': table[:p['top']], 'patient_ids': ids,
             'open': sum(c['open-gap'] for c in counts.values()), 'closed': sum(c['closed-gap'] for c in counts.values()),
             'method': f"DEQM gap status per member and measure; lookbacks end {as_of}; closure evidence {p['closure_evidence']}."}
@@ -195,7 +198,7 @@ def answer(report, plan, question):
             'patient_ids': report['patient_ids'], 'value': headline(report), 'method': report['method'],
             'definitions': [{'term': 'open-gap / closed-gap', 'basis': 'HL7 DEQM Gaps in Care report statuses per member and measure'}],
             'limitations': ASSUMPTIONS, 'membership_role': 'selected',
-            'overall': {'care_gap_closure': {'summary': report['summary'], 'by_group': report['by_group']}}}
+            'overall': {'care_gap_closure': {'summary': report['summary'], 'by_group': report['by_group'], 'work_queue': report['work_queue']}}}
 
 
 GAPS = r'\bcare gaps?\b|\bgaps? in care\b|\bgap closure\b|\bclos(?:e|ing) (?:the |our )?(?:care )?gaps?\b|\bdeqm\b|\bhedis gaps?\b|\bopen gaps?\b|\b(?:screening|vaccin\w*|immuni[sz]ation|mammogra\w*|colorectal|breast|flu|wellness) gaps?\b'
