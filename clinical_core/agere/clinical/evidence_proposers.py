@@ -242,7 +242,10 @@ def retrieval_tier(stack, question, population=None, *, granite_encoder=None):
     graph = graph_of(question, nodes)
     from .analysis_graph import validate
     validate(graph, cutoff)
-    return graph, receipt('evidence_retrieval', started, components, scope=scope, granite_fallback=fallback,
+    from .ocr_passages import cite_evidence  # scanned/faxed passages cited by page and bbox
+    ocr = cite_evidence(stack.path, found.get('evidence'))
+    if ocr: components.append('ocr_passages')
+    return graph, receipt('evidence_retrieval', started, components, scope=scope, granite_fallback=fallback, ocr_citations=ocr,
                           question_context=context, preflight={'passages': len(found['evidence']),
                                                                'method': found.get('method'), 'cache_hit': found.get('cache_hit')})
 

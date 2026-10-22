@@ -155,7 +155,22 @@ def source_coverage_check(build,enforce=None):
     return {k:report[k] for k in ('schema','enforce','passed','counts','unread','unread_records','invalid_declarations')}
 
 
-def activate(build,config,restatement=False,expansion=False,retraction=False,rebaseline=False,carry_forward=False,
+def source_quality_check(build):
+    """Activation hook: detect source defects (clinical/dq_detectors.py) and feed sequence gaps (clinical/feed_gaps.py) once for
+    this release, cached beside the stack for the question path (answers that read a defective table or a gap period are
+    annotated). Informational: never blocks activation."""
+    from .clinical import dq_detectors,feed_gaps
+    out={}
+    for name,mod,key in (('source_defects',dq_detectors,'findings'),('feed_gaps',feed_gaps,'gaps')):
+        try:
+            report=mod.detect(Path(build)/'stack')
+            out[name]={'version':report['version'],'source_digest':report['source_digest'],key:len(report[key]),'seconds':report['seconds']}
+        except Exception as exc:  # noqa: BLE001 - informational; activation stands
+            out[name]={'error':f'{type(exc).__name__}: {exc}'[:300]}
+    return out
+
+
+def activate(build,config,restatement=False,expansion=False,retraction=False,rebaseline=False,carry_forward=True,
              require_release_diff=False,release_diff_accepted=(),source_coverage_enforce=None):
     if rebaseline and (restatement or expansion or retraction):
         raise ValueError('--rebaseline is a fresh load; it cannot be combined with --restatement, --expansion or --retraction')
@@ -212,6 +227,7 @@ def activate(build,config,restatement=False,expansion=False,retraction=False,reb
     # release-diff guard on the question path: drifted concepts/fields/metrics become QC-DRIFT warnings on answers
     from .clinical import release_drift
     receipt['release_drift']=release_drift.install(build,prior=prior['build'] if prior else None)
+    receipt['source_quality']=source_quality_check(build)
     if carry_forward and prior:
         try:receipt['verified_carry_forward']=carry_forward_verified(prior['build'],build)
         except Exception as exc:  # noqa: BLE001 - the activation stands; the store starts empty and the receipt says why

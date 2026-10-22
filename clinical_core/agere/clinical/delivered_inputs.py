@@ -131,6 +131,8 @@ def undelivered(path, question):
             for item in NATIVE_INFERRED:
                 if any(re.search(p, low) for p in item['patterns']):
                     out.append({'input': item['input'], 'reason': item['reason'], 'source': 'inferred_natively'})
+        ed = _ed_undelivered(target, low)
+        if ed: out.append(ed)
         for ident in dict.fromkeys(_IDENT.findall(low)):
             if ident in prof['columns'] and _null_everywhere(target, prof, ident):
                 if any(ident in o['input'] for o in out): continue
@@ -140,6 +142,21 @@ def undelivered(path, question):
         return out
     except (OSError, sqlite3.Error, ValueError):
         return []
+
+
+def _ed_undelivered(target, low):
+    """An ED question on a workspace with no ED-capable source at all (EHR encounters, ADT, claims; ed_definition.py): the
+    zero would be 'source not delivered', never a true zero, so the question declines with the input named."""
+    from .ed_definition import ED_QUESTION, availability, columns
+    if not ED_QUESTION.search(low): return None
+    db = sqlite3.connect(f'file:{target}?mode=ro', uri=True)
+    try:
+        avail = availability(db, '0000-01-01', '9999-12-31', tables=columns(db))
+    finally:
+        db.close()
+    if avail['delivered_sources']: return None
+    return {'input': 'an ED-capable source (EHR encounters, ADT or claims)', 'source': 'ed_definition',
+            'reason': 'no feed in this delivery can show an ED visit, so no ED count (including zero) is observable'}
 
 
 def requirements(missing):

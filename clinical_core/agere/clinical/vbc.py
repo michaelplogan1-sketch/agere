@@ -271,7 +271,8 @@ def _utilization(db, people, attr, p, start, end):
     groups = defaultdict(lambda: {'members': 0, 'member_years': 0.0, 'ed_visits': 0, 'admissions': 0, 'index_stays': 0,
                                   'readmissions': 0, 'discharges_7d_eligible': 0, 'followup_7d': 0})
     ed = defaultdict(set)
-    for pid, d in db.execute("SELECT patient_id, event_date FROM encounter WHERE type_concept='emergency_visit' AND event_date BETWEEN ? AND ?", (start, end)):
+    from .ed_definition import visits_sql  # the one governed ED definition (EHR + ADT + claims, one per patient-day)
+    for pid, d in db.execute(f"SELECT patient_id, event_date FROM ({visits_sql(db)}) WHERE event_date BETWEEN ? AND ?", (start, end)):
         ed[pid].add(d)
     stays = defaultdict(list)
     for pid, a, dis, rd in db.execute("SELECT patient_id, admit_date, discharge_date, readmitted_30d FROM stay WHERE admit_date BETWEEN ? AND ?", (start, end)):
@@ -861,7 +862,8 @@ def _measure_by_segment(db, measure, group_by, start, end, keep):
             if month in months.get(pid, ()): out[_group_key(group_by, pid, people, attr)][1] += allowed / 100 * completion.get(month, 1.0)
     else:
         if measure == 'ed_rate':
-            rows = db.execute("SELECT DISTINCT patient_id, event_date FROM encounter WHERE type_concept='emergency_visit' AND event_date BETWEEN ? AND ?", (start, end))
+            from .ed_definition import visits_sql  # the one governed ED definition
+            rows = db.execute(f"SELECT DISTINCT patient_id, event_date FROM ({visits_sql(db)}) WHERE event_date BETWEEN ? AND ?", (start, end))
         else:
             rows = db.execute("SELECT patient_id, admit_date FROM stay WHERE admit_date BETWEEN ? AND ?", (start, end))
         for pid, d in rows:
@@ -890,8 +892,9 @@ def _feed_checks(db, measure, a, b):
                            'period_b_monthly_mean': round(float(np.mean([series.get(m, 0) for m in months_b])), 1), 'first_flagged_month': flagged[0]})
     # Event-type gaps: the measured event vanishes while its stream keeps flowing (coding/feed change, not care).
     if measure in ('ed_rate', 'admit_rate'):
-        sql = ("SELECT substr(event_date,1,7), count(DISTINCT patient_id || event_date) FROM encounter WHERE type_concept='emergency_visit' "
-               "AND event_date BETWEEN ? AND ? GROUP BY 1" if measure == 'ed_rate' else
+        from .ed_definition import visits_sql  # the one governed ED definition
+        sql = (f"SELECT substr(event_date,1,7), count(DISTINCT patient_id || event_date) FROM ({visits_sql(db)}) "
+               "WHERE event_date BETWEEN ? AND ? GROUP BY 1" if measure == 'ed_rate' else
                "SELECT substr(admit_date,1,7), count(*) FROM stay WHERE admit_date BETWEEN ? AND ? GROUP BY 1")
         events = dict(db.execute(sql, (a['start'], b['end'])))
         totals = dict(db.execute("SELECT substr(event_date,1,7), count(*) FROM record WHERE stream=? AND event_date BETWEEN ? AND ? GROUP BY 1",

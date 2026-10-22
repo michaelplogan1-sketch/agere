@@ -44,6 +44,9 @@ TYPED |= {'loop_closure', 'diagnostic_delay', 'risk_outcomes'}  # quality & safe
 OPTIONAL_POPULATION += ('loop_closure', 'diagnostic_delay', 'risk_outcomes')
 TYPED |= {'medication_state', 'default_definition'}  # clinical logic: medication_state.py, default_definitions.py
 OPTIONAL_POPULATION += ('medication_state', 'default_definition')
+from .foundation_engines import OPERATIONS as _FOUNDATION
+TYPED |= set(_FOUNDATION)  # data-foundation engines (foundation_engines.py)
+OPTIONAL_POPULATION += tuple(_FOUNDATION)
 TYPED |= {'atomic_questions'}  # atomic typed sub-questions via System One (atomic_questions.py); one population input
 
 
@@ -294,6 +297,9 @@ def parameter_schema(op, catalog):
                     'states': array(string(ms.STATES), 'Select patients with any subject in these states; empty = every evaluated patient.'),
                     'output': string(ms.OUTPUTS, 'patients: one row per patient with a state column per subject; summary: counts; rows: patient x subject'),
                     'grace_days': {'type': 'integer', 'minimum': 0, 'maximum': 365, 'description': f'Fill-coverage grace (default {ms.GRACE_DAYS})'}})
+    if op in _FOUNDATION:
+        from .foundation_engines import schema
+        return schema(op, catalog, obj, string, array)
     if op == 'atomic_questions':
         from . import atomic_questions as aq
         option = {'type': 'object', 'additionalProperties': {'type': 'string'}, 'description': "label -> description; must include 'unknown'"}

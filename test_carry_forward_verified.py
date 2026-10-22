@@ -140,6 +140,35 @@ class CarryForward(unittest.TestCase):
         self.assertEqual(json.loads(hit['plan'] if isinstance(hit['plan'], str) else json.dumps(hit['plan']))['query'], GOOD[1])
         self.assertIsNone(learning.lookup(self.new, ANCHORED[0]))  # quarantined pairs are never reused
 
+    def test_question_lookup_carries_one_question_on_demand(self):
+        stores = [self.old / 'learning.sqlite3']
+        self.assertIsNone(learning.lookup(self.new, GOOD[0]))
+        got = CF.carry_question(self.new, GOOD[0], stores=stores)
+        self.assertEqual(got['plan']['query'], GOOD[1])
+        self.assertEqual(got['carried_from']['context'], 'digest-v123|semantic-layer/12')
+        hit = learning.lookup(self.new, GOOD[0])  # written under the new context: the next ask is a plain learned hit
+        self.assertEqual(hit['plan']['query'], GOOD[1])
+        prov = json.loads(sqlite3.connect(self.new / 'learning.sqlite3').execute('SELECT provenance FROM verified').fetchone()[0])
+        self.assertEqual(prov['carried_on'], 'question_lookup')
+        self.assertIsNone(CF.carry_question(self.new, ANCHORED[0], stores=stores))   # fails re-verification: quarantined
+        q = sqlite3.connect(self.new / 'learning.sqlite3').execute('SELECT controls FROM quarantined WHERE question=?', (ANCHORED[0],)).fetchone()
+        self.assertIn('dates anchored', q[0])
+        self.assertIsNone(CF.carry_question(self.new, CORRECTED[0], stores=stores))  # corrected: never carried
+        self.assertIsNone(CF.carry_question(self.new, 'never asked before?', stores=stores))
+
+    def test_prior_stores_reads_activation_history(self):
+        hist = self.root / 'history'; hist.mkdir()
+        (hist / 'a.json').write_text(json.dumps({'build': str(self.old.parent)}))
+        old, CF.HISTORY = CF.HISTORY, hist
+        try:
+            self.assertEqual(CF.prior_stores(self.new), [self.old / 'learning.sqlite3'])
+        finally:
+            CF.HISTORY = old
+
+    def test_activation_carries_forward_by_default(self):
+        import inspect
+        self.assertIs(inspect.signature(warehouse_activation.activate).parameters['carry_forward'].default, True)
+
     def test_cli(self):
         from tools import carry_forward_verified as cli
         with contextlib.redirect_stdout(io.StringIO()) as out, contextlib.redirect_stderr(io.StringIO()):

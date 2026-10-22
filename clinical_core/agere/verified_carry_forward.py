@@ -340,3 +340,75 @@ def _reason_kind(reason):
         if reason.startswith(prefix): return prefix
     m = re.match(r'(QC-[A-Z]+)', reason)
     return m.group(1) if m else reason[:40]
+
+
+# ---------------------------------------------------------------- on the question path: carry one question forward on demand
+REPO = Path(__file__).resolve().parents[2]
+HISTORY = REPO / 'config/agere/activation-history'
+
+
+def prior_stores(stack):
+    """Learning stores whose verified pairs may predate this release: the stack's own store (pairs under an older context, e.g.
+    a semantic-layer version bump) and every previously activated build's store (config/agere/activation-history)."""
+    stack = _stack(stack)
+    out = [stack / 'learning.sqlite3']
+    for f in sorted(HISTORY.glob('*.json')) if HISTORY.exists() else []:
+        try:
+            build = json.loads(f.read_text()).get('build')
+        except (OSError, ValueError):
+            continue
+        if build and (_stack(build) / 'learning.sqlite3').exists() and _stack(build).resolve() != stack.resolve():
+            out.append(_stack(build) / 'learning.sqlite3')
+    return [p for p in out if p.exists()]
+
+
+def carry_question(stack, question, *, stores=None):
+    """A verified SQL plan for this exact question from an earlier context or release, re-verified NOW on this build with the
+    same checks as carry_forward (lint, schema, values, snapshot anchoring, execution, sanity, oracles). A pair that passes
+    is written to this stack's store under the current context (provenance: carried on lookup) and returned as
+    {'plan_kind', 'plan', 'agreement', 'carried_from'}; one that fails is quarantined with its reasons. None when nothing
+    earlier exists or nothing passes. Never raises (the learned tier simply has no proposal)."""
+    try:
+        stack = _stack(stack)
+        build = Build(stack)
+        current = build.context()
+        norm = (question or '').strip().lower()
+        corrected = set()
+        for store in stores or prior_stores(stack):
+            corrected |= {(r['question'] or '').strip().lower() for r in _rows(store, 'corrections', ('question',))}
+        if norm in corrected: return None
+        seen = set()
+        for store in stores or prior_stores(stack):
+            rows = [r for r in _rows(store, 'verified', VERIFIED_COLS)
+                    if (r['question'] or '').strip().lower() == norm and r['context'] != current and r['plan_kind'] == 'sql']
+            for pair in sorted(rows, key=lambda r: -(r['created'] or 0)):
+                if pair['plan'] in seen: continue
+                seen.add(pair['plan'])
+                origin_run = store.parent / 'run.json'
+                prior_as_of = (json.loads(origin_run.read_text()).get('snapshot') or {}).get('as_of') if origin_run.exists() else build.as_of
+                r = replay_pair(build, pair, prior_as_of, frozenset(corrected))
+                from .clinical import learning
+                db = learning._db(stack)
+                try:
+                    prov = {'origin_store': str(store), 'origin_context': pair['context'], 'origin_created': pair['created'],
+                            'origin_as_of': prior_as_of, 'reverified_on': current, 'reverified_at': time.time(),
+                            'checks': r.get('checks'), 'tool': VERSION, 'carried_on': 'question_lookup'}
+                    if r['status'] == 'pass':
+                        db.execute(f"INSERT OR REPLACE INTO verified({', '.join(VERIFIED_COLS)}) VALUES ({','.join('?' * len(VERIFIED_COLS))})",
+                                   (pair['question'].strip(), 'sql', pair['plan'], json.dumps(r['signature'], default=str)[:4000],
+                                    pair['route'] or 'hosted_verified_sql', pair['models'], pair['agreement'], time.time(), current,
+                                    json.dumps(prov, default=str)))
+                    else:
+                        db.execute('INSERT INTO quarantined(question, plan_kind, plan, signature, route, agreement, controls, created, context, provenance) '
+                                   'VALUES (?,?,?,?,?,?,?,?,?,?)', (pair['question'].strip(), 'sql', pair['plan'], (pair['signature'] or '')[:4000],
+                                   pair['route'], pair['agreement'], json.dumps(r['reasons']), time.time(), current,
+                                   json.dumps({**prov, 'carry_forward': 'quarantined'}, default=str)))
+                    db.commit()
+                finally:
+                    db.close()
+                if r['status'] == 'pass':
+                    return {'plan_kind': 'sql', 'plan': json.loads(pair['plan']), 'agreement': pair['agreement'],
+                            'carried_from': {'store': str(store), 'context': pair['context'], 'checks': r.get('checks')}}
+        return None
+    except Exception:  # noqa: BLE001 - carry-forward is an optimisation on the learned tier; never blocks the cascade
+        return None

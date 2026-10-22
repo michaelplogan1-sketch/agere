@@ -72,7 +72,7 @@ _BY_NOT = {'at', 'a', 'an', 'more', 'less', 'over', 'under', 'about', 'around', 
            'number', 'which'}
 
 _PCT = r'percent(?:age)?s?|%'
-_VALUE_WORDS = (_PCT + r'|share|proportion|fraction|rates?|averages?|mean|median|total|sum|ratio|pmpm|amount|longest|shortest|'
+_VALUE_WORDS = (_PCT + r'|share|proportion|(?<!ejection )fraction|rates?|averages?|mean|median|total|sum|ratio|pmpm|amount|longest|shortest|'
                 r'maximum|minimum|dollars?|cost|spend(?:ing)?|length of stay|per member per month|per 1,?000')
 _VALUE_INTERROGATIVE = re.compile(r'\bhow much\b|\bhow often\b|\bwhat(?:\'s|\s+is|\s+was|\s+are|\s+were|\s+share|\s+percentage|\s+percent|'
                                   r'\s+proportion|\s+fraction)?\s*(?:the\s+|our\s+|their\s+)?(?:[\w-]+\s+){0,5}?(?:(?:' + _VALUE_WORDS + r')\b|%)', re.I)
@@ -172,7 +172,7 @@ def _family(word):
     w = word.lower()
     for fam, rx in (('percentage', _PCT), ('per_1000', r'per 1,?000'), ('pmpm', r'pmpm|per member per month'),
                     ('average', r'average|mean|on average'), ('median', r'median'), ('rate', r'\brates?\b'),
-                    ('share', r'share|proportion|fraction'), ('ratio', r'ratio'), ('longest', r'longest|maximum'),
+                    ('share', r'share|proportion|(?<!ejection )fraction'), ('ratio', r'ratio'), ('longest', r'longest|maximum'),
                     ('shortest', r'shortest|minimum'), ('total', r'total|sum|how much|amount|dollars?|cost|spend')):
         if re.search(rx, w): return fam
     return 'value'

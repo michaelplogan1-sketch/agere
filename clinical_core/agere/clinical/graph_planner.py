@@ -347,6 +347,8 @@ CONTRACTS['default_definition'] = {'inputs':['optional earlier_set'],'parameters
               'NYU/Billings categories per ED visit; measure_gap = the governed measure denominator minus numerator as a patient list; pdc_adherence = '
               'PQA PDC >= 0.8 for any drug classes. Patient lists, numerator and denominator membership are returned.'}
 
+from .foundation_engines import contracts as _foundation_contracts
+CONTRACTS.update(_foundation_contracts())  # data-foundation engines (foundation_engines.py)
 
 def grounded_fields(fields, profile):
     """Offer only streams/fields the received data populates, with small value vocabularies."""

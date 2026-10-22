@@ -135,6 +135,19 @@ def _visits(db, concept, start, end, keep):
     return rows
 
 
+def _ed_visits(db, start, end, keep):
+    """ED visits under the one governed definition (ed_definition.py: EHR + ADT + claims, one per patient-day); an EHR visit
+    without a principal diagnosis takes its first-ranked encounter diagnosis, as _visits does."""
+    from .ed_definition import events
+    rows = events(db, start, end, keep)
+    if any(not r['principal'] for r in rows) and _cols(db, 'encounter_diagnosis'):
+        first = {}
+        for enc, code in db.execute('SELECT encounter_id, icd10 FROM encounter_diagnosis WHERE icd10 IS NOT NULL ORDER BY rank'):
+            first.setdefault(enc, code)
+        for r in rows: r['principal'] = r['principal'] or first.get(r['encounter_id'])
+    return rows
+
+
 def _allowed(db, rows):
     """Allowed cents per visit: claims of the patient with a service date within the visit dates (None without claims)."""
     if not {'patient_id', 'service_date', 'allowed_cents'} <= _cols(db, 'claim'):
@@ -179,7 +192,7 @@ def pqi_admissions(db, start, end, keep=None, group_by='none'):
 def ed_avoidability(db, start, end, keep=None, group_by='none'):
     group = _groups(db, group_by)
     rows, special = [], defaultdict(int)
-    for v in _visits(db, 'emergency_visit', start, end, keep):
+    for v in _ed_visits(db, start, end, keep):
         kind, w = ed_category(v['principal'])
         if w is None: special[kind] += 1
         avoidable = round(w[0] + w[1] + w[2], 3) if w else 0.0
@@ -284,9 +297,10 @@ def macro_sql(kind, catalog):
     """{{pqi_admission}}: (patient_id, encounter_id, event_date, principal_icd10, pqi) admissions;
     {{ed_avoidability}}: (patient_id, encounter_id, event_date, principal_icd10, nyu_category, avoidable_probability)."""
     def q(v): return "'" + str(v).replace("'", "''") + "'"
-    if 'principal_icd10' not in (catalog.tables.get('visit') or ()):
+    if kind == 'pqi_admission' and 'principal_icd10' not in (catalog.tables.get('visit') or ()):
         from .request_plan import PlanError
         raise PlanError(f'{kind} needs visit.principal_icd10, which this warehouse does not carry')
+    from .ed_definition import relation_sql
     code = "replace(upper(v.principal_icd10), '.', '')"
     if kind == 'pqi_admission':
         age = 'age_at(p.birth_date, substr(v.event_date,1,10))'
@@ -305,7 +319,7 @@ def macro_sql(kind, catalog):
             f"CASE WHEN v.principal_icd10 IS NULL THEN 'unclassified' {special} WHEN ({prob}) IS NOT NULL THEN 'weighted' "
             f"ELSE 'unclassified' END AS nyu_category, "
             f"CASE WHEN v.principal_icd10 IS NULL THEN 0 {zero} ELSE coalesce(({prob}), 0) END AS avoidable_probability "
-            "FROM visit v WHERE v.type_concept = 'emergency_visit')")
+            f"FROM {relation_sql(catalog.tables)} v WHERE v.classification = 'ed')")  # the one governed ED definition
 
 
 # ---- registered engine ----------------------------------------------------------------------------------------------

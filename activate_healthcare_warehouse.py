@@ -14,8 +14,9 @@ if __name__=='__main__':
     p.add_argument('--rebaseline',action='store_true',help='Fresh baseline load (the release regenerates the population; not a continuation of the '
                    'prior release). Every non-migration receipt must pass; the prior-release migration audit must exist and is recorded as '
                    'an informational diff, not gated. Mutually exclusive with --restatement/--expansion/--retraction')
-    p.add_argument('--carry-forward-verified',action='store_true',help='After activation, replay the prior stack\'s verified '
+    p.add_argument('--carry-forward-verified',action='store_true',default=True,help='(default) After activation, replay the prior stack\'s verified '
                    'question->SQL pairs on this build: passing pairs are carried with provenance, the rest quarantined with reasons')
+    p.add_argument('--no-carry-forward-verified',dest='carry_forward_verified',action='store_false',help='Skip the verified-pair replay')
     p.add_argument('--require-release-diff',action='store_true',help='Refuse activation unless BUILD/release-diff.json '
                    '(tools/release_diff_guard.py) exists for this build and has no unacknowledged flags')
     p.add_argument('--accept-release-diff',type=Path,help='JSON {"accepted": [finding ids or kinds]} acknowledged by a reviewer')

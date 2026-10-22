@@ -39,7 +39,10 @@ from . import apply as apply_mod, connectors, contract, matcher, profile as prof
 ROOT = Path(__file__).resolve().parents[3]
 WORKSPACES = ROOT / 'artifacts' / 'workspaces'
 LEDGER = Path(os.environ.get('AGERE_LEDGER_PATH') or ROOT / 'artifacts' / 'agere-full' / 'provider-budget.sqlite3')
-STEPS = ('ingest', 'stage', 'profile', 'propose', 'approve', 'build', 'raw', 'verify', 'docs')
+# detect: native delivery (X12/HL7/FHIR/NCPDP/CCLF/EHR CSV) vs OMOP vs Tuva input layer vs warehouse (formats.py);
+# round_trip: OMOP sources only (round_trip.py); canonical: Tuva/OMOP mapping receipt (canonical_map.py).
+# Probabilistic person linkage (clinical/person_linkage.py) plugs in as its own step after 'build'.
+STEPS = ('detect', 'ingest', 'stage', 'profile', 'propose', 'approve', 'build', 'raw', 'verify', 'round_trip', 'canonical', 'docs')
 NATIVE = 'native://'
 RAW_BATCH = 5000
 _LOCKS = {}
@@ -88,13 +91,15 @@ class Workspace:
         if raw not in ('all', 'unmapped', 'none'):
             raise ValueError("raw must be 'all', 'unmapped' or 'none'")
         slug = slugify(name)
+        from . import formats
+        source, detection = formats.normalize_source(source)  # a plain folder of native feeds is ingested natively
         d = Path(root or WORKSPACES) / slug
         if (d / 'workspace.json').exists():
             raise FileExistsError(f'Workspace {slug!r} already exists')
         d.mkdir(parents=True, exist_ok=True)
         state = {'schema': 'agere-workspace/1', 'slug': slug, 'name': name, 'source': str(source), 'as_of': as_of,
                  'raw': raw, 'status': 'created', 'steps': {}, 'decisions': {}, 'created_at': _now(), 'error': None,
-                 'credential': credential}
+                 'credential': credential, 'source_kind': detection['kind']}
         (d / 'workspace.json').write_text(json.dumps(state, indent=1))
         ws = cls(slug, root)
         ws._event('created', source=str(source))
@@ -201,7 +206,7 @@ class Workspace:
             conn = self.connect()
             try:
                 self._apply_decisions()
-                for step in ('approve', 'build', 'raw', 'verify', 'docs', 'pipeline'):
+                for step in ('approve', 'build', 'raw', 'verify', 'round_trip', 'canonical', 'docs', 'pipeline'):
                     getattr(self, '_do_' + step)(conn)
                 self._update(status='ready', error=None)
             except Exception as exc:
@@ -218,6 +223,55 @@ class Workspace:
         if not src.startswith(NATIVE):
             return None
         return src[len(NATIVE) - 1:] if src.startswith(NATIVE + '/') else src[len(NATIVE):]
+
+    def _do_detect(self, conn):
+        """Record what the source is (formats.detect_source) in source_format.json; annotates, never blocks."""
+        from . import formats
+        det = formats.detect_source(self.state['source'])
+        (self.dir / 'source_format.json').write_text(json.dumps(det, indent=1, default=str))
+        self._update(source_kind=det['kind'])
+        self._step('detect', source_kind=det['kind'], files=det.get('files'), formats=det.get('formats'), tables=det.get('tables'))
+
+    def _do_round_trip(self, conn):
+        """OMOP sources: OMOP tables vs the modeled layer, and vs the native reference build when it holds these people."""
+        if self.state.get('source_kind') != 'omop':
+            return
+        from . import formats, round_trip
+        try:
+            ref = self.state.get('round_trip_reference') or round_trip.default_reference()
+            report = round_trip.run(formats._path_of(self.state['source']), self.semantic_path, ref, self.dir)
+        except Exception as exc:  # noqa: BLE001 - annotation only
+            report = {'schema': round_trip.VERSION, 'error': f'{type(exc).__name__}: {exc}'[:500], 'reproduced': False}
+        (self.dir / 'round_trip.json').write_text(json.dumps(report, indent=1, default=str))
+        np_ = report.get('native_parity') or {}
+        self._step('round_trip', reproduced=report.get('reproduced'), source_parity=(report.get('source_parity') or {}).get('all_match'),
+                   native_reference=np_.get('reference'), native_within_tolerance=np_.get('all_within_tolerance'))
+
+    def _do_canonical(self, conn):
+        """Mapping receipt to the canonical model (Tuva input layer / OMOP CDM names): canonical.json. Annotates only."""
+        from . import canonical_map
+        try:
+            if self.native:
+                db = sqlite3.connect(f'file:{self.semantic_path}?mode=ro', uri=True)
+                try:
+                    streams = dict(db.execute('SELECT stream, count(*) FROM record GROUP BY stream').fetchall())
+                finally:
+                    db.close()
+                report = canonical_map.stream_receipt(streams)
+            else:
+                report = canonical_map.entity_receipt(self.semantic_path)
+                if (self.dir / 'mapping.json').is_file():
+                    m = matcher.load(self.dir / 'mapping.json')
+                    report['source_tables'] = {e: v.get('source_table') for e, v in m['entities'].items()}
+                    report['unmapped_source_tables'] = list(m.get('unmapped_source_tables') or [])
+                    report['unmapped_fields'] = [{'entity': g['entity'], 'field': g.get('field'), 'reason': g['reason']}
+                                                 for g in self.review_items()]
+            report['source_kind'] = self.state.get('source_kind')
+        except Exception as exc:  # noqa: BLE001
+            report = {'schema': canonical_map.VERSION, 'error': f'{type(exc).__name__}: {exc}'[:500]}
+        (self.dir / 'canonical.json').write_text(json.dumps(report, indent=1, default=str))
+        self._step('canonical', share_mapped=report.get('share_mapped'), share_tuva=report.get('share_tuva'),
+                   share_omop=report.get('share_omop'), unmapped=len(report.get('unmapped') or []))
 
     def _do_ingest(self, conn):
         from ..ingest import landing
@@ -363,7 +417,7 @@ class Workspace:
         except Exception as exc:  # verification annotates; it never blocks the workspace
             result = {'passed': False, 'error': f'{type(exc).__name__}: {exc}'[:500], 'checks': []}
         (self.dir / 'verification.json').write_text(json.dumps(result, indent=1, default=str))
-        failed = [c.get('name') for c in result.get('checks', []) if isinstance(c, dict) and not c.get('passed')]
+        failed = [c.get('name') or c.get('check') for c in result.get('checks', []) if isinstance(c, dict) and not c.get('passed')]
         self._step('verify', passed=result.get('passed'), failed_checks=failed)
 
     def _source_parity(self):

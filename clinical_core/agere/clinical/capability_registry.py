@@ -173,6 +173,10 @@ NATIVE_SCALARS = {
     'medication_state': ('count',), 'default_definition': ('count', 'value'),
 }
 
+from .foundation_engines import products as _foundation_products, native_scalars as _foundation_scalars
+PRODUCT.update(_foundation_products())  # data-foundation engines (foundation_engines.py)
+NATIVE_SCALARS.update(_foundation_scalars())
+
 
 def answers(operation):
     """Requested shapes an engine natively answers; None for operations that are not engines (sql, aggregate, cohorts)."""

@@ -5,6 +5,8 @@
     ocr_scanned_documents(warehouse_db, root, release)   v2.3+ image-only outside PDFs -> source_document_ocr rows
     extractions(warehouse_db, release)                   -> [{record_id, patient_id, text, method}] for the passage stores
     index_workspace_documents(pipeline_dir, root)        scanned_documents records without text -> workspace passage index
+                                                         and page/bbox-cited spans (clinical/ocr_passages.py)
+    page_spans(pages, engine)                            -> [{page, text, bbox, engine, char_start, char_end}] citable spans
 
 Engine chain (first one that yields at least min_chars wins; otherwise the longest result is kept):
   pdf_text_layer  standard-library PDF text reader (outside_documents.py): free, exact, no OCR
@@ -34,6 +36,7 @@ IMAGE_EXTS = ('.png', '.jpg', '.jpeg', '.tif', '.tiff', '.heic', '.bmp', '.gif')
 DOCUMENT_EXTS = ('.pdf',) + IMAGE_EXTS
 CHAIN = ('pdf_text_layer', 'apple_vision', 'chandra', 'tesseract')
 MIN_CHARS = 40
+SPAN_CHARS = 400  # citable span length (characters)
 CHANDRA_REPOS = ('datalab-to/chandra-ocr-2', 'datalab-to/chandra')
 DDL = """CREATE TABLE IF NOT EXISTS source_document_ocr(release TEXT, record_id TEXT, patient_id TEXT, relative_path TEXT,
   sha256 TEXT, status TEXT, engine TEXT, text TEXT, text_chars INTEGER, pages_json TEXT, attempts_json TEXT, reader TEXT,
@@ -112,7 +115,9 @@ def _apple_vision(path):
         raw = subprocess.run([str(binary), str(pdf)], check=True, capture_output=True, text=True, timeout=300).stdout
     result = json.loads(raw)
     pages = [{'page': p.get('page'), 'method': p.get('method'), 'text': p.get('text') or '',
-              'confidence': (sum(r['confidence'] for r in p['regions']) / len(p['regions'])) if p.get('regions') else None}
+              'confidence': (sum(r['confidence'] for r in p['regions']) / len(p['regions'])) if p.get('regions') else None,
+              'regions': [{'text': r.get('text') or '', 'confidence': r.get('confidence'), 'bbox': vision_bbox(r.get('box'))}
+                          for r in p.get('regions') or []]}
              for p in result.get('pages') or []]
     return '\n\n'.join(p['text'] for p in pages if p['text']), pages, None
 
@@ -142,6 +147,79 @@ def _tesseract(path):
     if path.suffix.lower() not in IMAGE_EXTS: return '', [], 'tesseract reads images only here'
     text = subprocess.run([exe, str(path), 'stdout'], check=True, capture_output=True, text=True, timeout=300).stdout
     return text, [{'page': 1, 'method': 'tesseract', 'text': text, 'confidence': None}], None
+
+
+def vision_bbox(box):
+    """Vision boundingBox [x, y, w, h] (normalized, bottom-left origin) -> [x0, y0, x1, y1] normalized, top-left origin."""
+    if not (isinstance(box, (list, tuple)) and len(box) == 4 and all(isinstance(v, (int, float)) for v in box)): return None
+    x, y, w, h = box
+    return [round(x, 4), round(1 - (y + h), 4), round(x + w, 4), round(1 - y, 4)]
+
+
+def _union(boxes):
+    boxes = [b for b in boxes if b]
+    if not boxes: return None
+    return [min(b[0] for b in boxes), min(b[1] for b in boxes), max(b[2] for b in boxes), max(b[3] for b in boxes)]
+
+
+def page_spans(pages, engine, *, max_chars=SPAN_CHARS):
+    """Per-page citable spans with char offsets into the joined document text ('\n\n' between pages, as read_document joins).
+    A page with recognised regions (Apple Vision) yields line blocks with the union of their boxes; a page without regions
+    (text layer, Chandra, tesseract) yields paragraph blocks with bbox None (the engine gave no geometry, none is invented).
+    A page whose number the engine did not report keeps page None. -> [{page, text, bbox, engine, char_start, char_end}]"""
+    spans, offset = [], 0
+    for p in pages:
+        text = p.get('text') or ''
+        if not text: continue
+        number = p.get('page')
+        regions = [r for r in p.get('regions') or [] if (r.get('text') or '').strip()]
+        if regions:
+            cursor, block = 0, []
+            def flush(block):
+                if not block: return
+                start, end = block[0][0], block[-1][1]
+                spans.append({'page': number, 'text': text[start:end], 'bbox': _union([r['bbox'] for _, _, r in block]),
+                              'engine': engine, 'char_start': offset + start, 'char_end': offset + end})
+            for r in regions:
+                at = text.find(r['text'], cursor)
+                if at < 0: continue
+                if block and (at + len(r['text']) - block[0][0]) > max_chars:
+                    flush(block); block = []
+                block.append((at, at + len(r['text']), r)); cursor = at + len(r['text'])
+            flush(block)
+        else:
+            for start, end in text_blocks(text, max_chars):
+                spans.append({'page': number, 'text': text[start:end], 'bbox': None, 'engine': engine,
+                              'char_start': offset + start, 'char_end': offset + end})
+        offset += len(text) + 2
+    return spans
+
+
+def anchor(spans, text):
+    """Re-anchor span offsets on the final document text (it is stripped and page-joined); a span not found keeps None."""
+    out, cursor = [], 0
+    for sp in spans:
+        at = text.find(sp['text'], cursor)
+        if at < 0: at = text.find(sp['text'])
+        out.append({**sp, 'char_start': at if at >= 0 else None, 'char_end': at + len(sp['text']) if at >= 0 else None})
+        if at >= 0: cursor = at + len(sp['text'])
+    return out
+
+
+def text_blocks(text, max_chars=None):
+    """(start, end) offsets of paragraph blocks (split at blank lines; long paragraphs at line ends near max_chars)."""
+    import re
+    max_chars = max_chars or SPAN_CHARS
+    out = []
+    for m in re.finditer(r'\S(?:.*?)(?=\n[ \t]*\n|\Z)', text, re.S):
+        start, end = m.start(), m.end()
+        while end - start > max_chars:
+            cut = text.rfind('\n', start, start + max_chars)
+            if cut <= start: cut = start + max_chars
+            out.append((start, cut)); start = cut
+            while start < end and text[start].isspace(): start += 1
+        if end > start: out.append((start, end))
+    return out
 
 
 ENGINES = {'pdf_text_layer': _text_layer, 'apple_vision': _apple_vision, 'chandra': _chandra, 'tesseract': _tesseract}
@@ -174,8 +252,12 @@ def read_document(path, *, chain=CHAIN, min_chars=MIN_CHARS, engines_override=No
     if best is None:
         return {**base, 'status': 'empty', 'engine': None, 'text': None, 'text_chars': 0, 'pages': [], 'sha256': _sha(path), 'attempts': attempts}
     name, text, pages = best
+    spans = page_spans(pages, name) if sum(len(p.get('text') or '') for p in pages) else []
+    if not spans or ''.join(sp['text'] for sp in spans).strip() == '':  # pages without text: cite the whole document, page unknown
+        spans = [{'page': None, 'text': text[a:b], 'bbox': None, 'engine': name, 'char_start': a, 'char_end': b} for a, b in text_blocks(text)]
+    spans = anchor(spans, text)
     return {**base, 'status': 'text_layer' if name == 'pdf_text_layer' else 'ocr', 'engine': name, 'text': text,
-            'text_chars': len(text), 'pages': pages, 'sha256': _sha(path), 'attempts': attempts}
+            'text_chars': len(text), 'pages': pages, 'spans': spans, 'sha256': _sha(path), 'attempts': attempts}
 
 
 # --- wiring: warehouse builds and workspace passage stores --------------------------------------------------------------------
@@ -225,9 +307,14 @@ def extractions(warehouse_db, release):
     db = sqlite3.connect(Path(warehouse_db).resolve().as_uri() + '?mode=ro', uri=True)
     try:
         if not db.execute("SELECT 1 FROM sqlite_master WHERE name='source_document_ocr'").fetchone(): return []
-        return [{'record_id': r, 'patient_id': p, 'text': t, 'method': e} for r, p, t, e in db.execute(
-            "SELECT record_id, patient_id, text, engine FROM source_document_ocr WHERE release=? AND status='ocr' AND text_chars>0 "
-            'ORDER BY record_id', (release,))]
+        out = []
+        for r, p, t, e, pages in db.execute(
+                "SELECT record_id, patient_id, text, engine, pages_json FROM source_document_ocr WHERE release=? AND status='ocr' "
+                'AND text_chars>0 ORDER BY record_id', (release,)):
+            try: spans = anchor(page_spans(json.loads(pages or '[]'), e), t)
+            except (ValueError, TypeError, KeyError): spans = []
+            out.append({'record_id': r, 'patient_id': p, 'text': t, 'method': e, 'spans': spans})
+        return out
     finally:
         db.close()
 
@@ -273,7 +360,11 @@ def index_workspace_documents(pipeline_dir, root, *, limit=None, reader=read_doc
             cache[rel] = reader(path) if path else {'status': 'missing', 'text': None}
         got = cache[rel]
         counts[got['status']] = counts.get(got['status'], 0) + 1
-        if got.get('text'): rows.append({'record_id': rid, 'patient_id': pid, 'text': got['text'], 'method': got.get('engine')})
-    if rows: WP.add_extractions(pipeline_dir, rows)
+        if got.get('text'): rows.append({'record_id': rid, 'patient_id': pid, 'text': got['text'], 'method': got.get('engine'),
+                                         'spans': got.get('spans') or []})
+    if rows:
+        WP.add_extractions(pipeline_dir, [{k: v for k, v in r.items() if k != 'spans'} for r in rows])
+        from ..clinical import ocr_passages  # page/bbox-cited spans beside the passage index (question path: scanned_document_search)
+        ocr_passages.add_documents(pipeline_dir, rows)
     index = WP.update(pipeline_dir) if (rows and update_index) else None
     return {'documents': len(todo), 'bound': len(rows), 'by_status': counts, 'index': index}

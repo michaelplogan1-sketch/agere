@@ -215,6 +215,31 @@
      "accessed": "2026-10-13"
     }
    ]
+  },
+  "behavioral_health": {
+   "name": "Behavioral health follow-up and SUD treatment measures (computable approximations)",
+   "aliases": [
+    "behavioral health measures",
+    "behavioral health measure set",
+    "bh measures",
+    "fuh fum iet"
+   ],
+   "measures": [
+    "fuh_mental_illness_7day",
+    "fuh_mental_illness_30day",
+    "fum_ed_mental_illness_7day",
+    "fum_ed_mental_illness_30day",
+    "iet_initiation",
+    "iet_engagement"
+   ],
+   "note": "HEDIS FUH, FUM and IET approximations from public summaries; FUM indexes on the governed all-source ED definition.",
+   "citations": [
+    {
+     "title": "Medicaid & CHIP Adult and Child Core Set measures (FUH, FUM, IET technical specifications)",
+     "url": "https://www.medicaid.gov/medicaid/quality-of-care/performance-measurement/adult-and-child-health-care-quality-measures/index.html",
+     "publisher": "CMS"
+    }
+   ]
   }
  }
 }
