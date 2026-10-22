@@ -38,7 +38,7 @@ BASE_MODEL = Path(os.environ.get('AGERE_BASE_MODEL') or next((p / 'models' / 'qw
 MARGIN = 0.005  # a candidate must beat the current model by at least this held-out accuracy
 LORA = {'normalizer': {'max_seq_length': 512, 'iters': 2000, 'batch_size': 4},
         'typed': {'max_seq_length': 2048, 'iters': 3000, 'batch_size': 1},
-        'bottled': {'max_seq_length': 4608, 'iters': 1500, 'batch_size': 1},
+        'bottled': {'max_seq_length': 3072, 'iters': 1500, 'batch_size': 1},  # 4608 ran out of GPU memory on the 24 GB Mac
         'narrow': {'max_seq_length': 768, 'iters': 1200, 'batch_size': 2}}
 
 
@@ -197,7 +197,7 @@ def lora_command(data, adapter, learner, smoke):
            '--adapter-path', str(adapter), '--fine-tune-type', 'lora', '--num-layers', '16', '--batch-size', str(1 if smoke else cfg['batch_size']),
            '--iters', str(iters), '--learning-rate', '1e-4', '--max-seq-length', str(cfg['max_seq_length']), '--mask-prompt',
            '--steps-per-report', '1' if smoke else '20', '--steps-per-eval', str(iters if smoke else 200), '--val-batches', '2' if smoke else '20',
-           '--save-every', str(iters if smoke else 100), '--seed', '7']
+           '--save-every', str(iters if smoke else 100), '--seed', '7', '--grad-checkpoint']
     return (['caffeinate', '-i'] if shutil.which('caffeinate') else []) + cmd
 
 
