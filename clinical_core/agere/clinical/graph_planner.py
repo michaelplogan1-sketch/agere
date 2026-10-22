@@ -326,6 +326,19 @@ CONTRACTS['claims_review'] = {'inputs':['optional earlier_set'],'parameters':{'f
               'paid claims (payer x service x setting) with intervals, denial CARC Pareto, first-pass/overturn rates, days to resolution, recovered vs written off. '
               'Use for billing-pattern / leaking-money / underpaid / denial-pattern questions; control charts and feed health stay with monitor.'}
 
+CONTRACTS['medication_state'] = {'inputs':['optional earlier_set'],'parameters':{'subjects':['gdmt'],'states':[],'output':'patients|summary|rows','grace_days':30},
+    'meaning':'Governed medication-state reconciliation per patient x drug class or GDMT pillar (rasi, beta_blocker, mra, sglt2i; gdmt = all four): '
+              'filled_current (picked-up fill covering the as-of date + 30 days grace), listed_not_filled (listed/ordered/previously filled, no covering '
+              'fill: likely not taking), documented_stopped_or_intolerant (note stop/declined or therapy barrier on or after the latest fill and listing), '
+              'never_recorded (no record of any source: the only unknown), each with its evidence dates and record ids. Use for GDMT pillar, '
+              'on/not on/missing a medication class, stopped or intolerant questions; never mark a pillar unknown when a medication record exists.'}
+CONTRACTS['default_definition'] = {'inputs':['optional earlier_set'],'parameters':{'definition':'avoidable_spend|pqi_admissions|ed_avoidability|measure_gap|pdc_adherence',
+    'period':{'start':'','end':''},'measure':'','drug_classes':[],'threshold':0.8,'group_by':'none|practice|pcp|payer','select':'gap|numerator|denominator'},
+    'meaning':'Named standard defaults used when a question states no definition (answer, and name the definition used): avoidable spend = AHRQ PQI 90 '
+              'admission dollars + NYU/Billings avoidable-weighted ED dollars; pqi_admissions = ambulatory-care-sensitive admissions; ed_avoidability = '
+              'NYU/Billings categories per ED visit; measure_gap = the governed measure denominator minus numerator as a patient list; pdc_adherence = '
+              'PQA PDC >= 0.8 for any drug classes. Patient lists, numerator and denominator membership are returned.'}
+
 
 def grounded_fields(fields, profile):
     """Offer only streams/fields the received data populates, with small value vocabularies."""
