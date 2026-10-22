@@ -636,7 +636,7 @@ def rescope(stack, question, saved):
     from .request_plan import Catalog, compile_request, PlanError
     from .request_language import Parser
     from . import sql_query
-    parent = answer_context.load(stack.path, saved['id'], current=True)
+    parent = answer_context.load(stack.path, saved['id'], current=True, follow_up=True)
     info = (parent.get('answer') or {}).get('rescope') or {}
     base = info.get('base_question') or parent.get('original_question') or parent.get('question')
     scope = match['scope'].strip().rstrip('?.').strip()
@@ -731,7 +731,7 @@ def handle_compose(stack, body, hosted_factory=None):
                 if shared and shared_edit:
                     if not saved:
                         raise QuestionNotUnderstood('No saved cohort is available for this edit. Ask a complete question first.')
-                    parent = answer_context.load(stack.path, saved['id'], current=True)
+                    parent = answer_context.load(stack.path, saved['id'], current=True, follow_up=True)
                     selected_scope = body.get('answer_scope', 'result')
                     parent = answer_context.reference_scope(parent, selected_scope)
                     # Legacy finite transforms remain useful for literal list/count and

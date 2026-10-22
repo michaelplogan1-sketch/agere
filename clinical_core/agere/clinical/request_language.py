@@ -61,6 +61,7 @@ EVIDENCE = [
     (r'(?:annual wellness visits?|awvs?)', 'wellness_visit', 'event_date', [('awv', '=', 1)]),
     (r'(?:(?:inpatient|hospital)\s+)?admissions?|admitted(?:\s+to\s+the\s+hospital)?', 'stay', 'admit_date', [('type', '=', 'inpatient')]),
     (r'(?:ed|er|emergency(?:\s+department)?)\s+visits?', 'utilization_event', 'event_date', [('kind', '=', 'ed_visit')]),
+    (r'(?:(?:office|clinic|outpatient)\s+)?(?:visits?|encounters?)', 'visit', 'event_date', [('encounter_id', 'not_null', None)]),
 ]
 # Dated events that can anchor or follow in a sequence: (pattern, table, date field, fixed predicates).
 SEQUENCE_EVENTS = [
@@ -324,6 +325,19 @@ class Parser:
                 return atom(f'{self.base}.{column}', '=', values[word], m.group()), text[m.end():]
         return None
 
+    SEX_COLUMNS = ('sex_reported', 'sex', 'gender')
+    SEX_WORDS = {'women': 'f', 'woman': 'f', 'female': 'f', 'females': 'f', 'men': 'm', 'man': 'm', 'male': 'm', 'males': 'm'}
+
+    def sex_value(self, word):
+        """The stored sex code a plain word names ('women' -> 'F'): the observed value whose initial matches, when exactly one does."""
+        initial = self.SEX_WORDS.get(str(word).strip().lower())
+        if not initial: return None
+        for column in self.SEX_COLUMNS:
+            values = [v for v in self.observed_values('patient', column) if v.lower()[:1] == initial and (len(v) == 1 or v.lower() in
+                      ('female', 'male', 'woman', 'man'))]
+            if len(values) == 1: return values[0]
+        return None
+
     def observed_literal(self, field, value, *, quoted=False):
         """Resolve an unquoted category's case to a unique received value.
 
@@ -334,6 +348,9 @@ class Parser:
         if quoted or not isinstance(value,str):return value
         table,column=field.split('.')
         if column == 'id' or column.endswith(('_id','_key','_code')):return value
+        if column in self.SEX_COLUMNS:
+            coded = self.sex_value(value)  # 'female' / 'women' name the stored code (F), never a value no row carries
+            if coded: return coded
         key=(field,value)
         if key in self.value_bindings:return self.value_bindings[key]
         with sqlite3.connect(self.catalog.target.resolve().as_uri()+'?mode=ro',uri=True) as db:
@@ -417,6 +434,24 @@ class Parser:
             return [atom(f'{table}.{field}', '>=', f'{y}-01-01', q), atom(f'{table}.{field}', '<', f'{y+1}-01-01', q)], text[m.end():]
         m = re.match(r'^\s+(?:on\s+(?:record|file)|ever)\b', text, re.I)
         return ([], text[m.end():]) if m else ([], text)
+
+    LAB_COMPARISON = re.compile(r'^\s+(?:(?:results?|values?|scores?|levels?)\s+)?(?:(?:is|was|were|of|that\s+(?:is|was)|measured|came\s+back)\s+)?'
+                                r'(above|over|greater than|more than|higher than|>=|>|at least|below|under|less than|lower than|<=|<|at most|no more than|no less than)\s*'
+                                r'(\d+(?:\.\d+)?)(?:\s*(?:%|percent\b|mg/dl\b|mmol/l\b|ml/min(?:/1\.73\s*m2)?))?', re.I)
+    LAB_OPS = {'above': '>', 'over': '>', 'greater than': '>', 'more than': '>', 'higher than': '>', '>': '>', '>=': '>=', 'at least': '>=', 'no less than': '>=',
+               'below': '<', 'under': '<', 'less than': '<', 'lower than': '<', '<': '<', '<=': '<=', 'at most': '<=', 'no more than': '<='}
+
+    def lab_comparison(self, text):
+        """A result threshold after a lab ("A1c above 9"): current results only, compared on the canonical value. -> (atoms, tail) or None.
+        It reads as "has a (current) result meeting the threshold" in the stated window; the latest-result reading needs the word "latest"."""
+        m = self.LAB_COMPARISON.match(text)
+        cols = self.catalog.tables.get('measurement', [])
+        if not m or 'value_canonical' not in cols: return None
+        quote = m.group().strip()
+        number = float(m[2]) if '.' in m[2] else int(m[2])
+        atoms = [atom('measurement.value_canonical', self.LAB_OPS[m[1].lower()], number, quote)]
+        if 'result_current' in cols: atoms.append(atom('measurement.result_current', '=', 1, quote))
+        return atoms, text[m.end():]
 
     def thing(self, text):
         """(table, date field, fixed atoms, quote, tail) for one named kind of received evidence."""
@@ -651,6 +686,8 @@ class Parser:
         if not found or (not lead and not found): return None
         if not lead: return None  # bare nouns stay with the relational grammar
         table, field, atoms, _, after = found
+        measured = self.lab_comparison(after) if table == 'measurement' else None
+        if measured: atoms, after = [*atoms, *measured[0]], measured[1]
         win, tail = self.window(after, table, field)
         quote = start[:len(start) - len(tail)].strip()
         # Verbs and 'on record' carry no constraint of their own; bind them to the evidence leaf they introduce.
@@ -667,6 +704,16 @@ class Parser:
         governed = self.governed(text)
         if governed is not None:
             return governed
+        anaphoric = False  # the quote of the words that refer to the saved cohort, once the request leads with them
+        if self.bound:
+            # A follow-up narrows the saved cohort: "And of those, which are women?", "Who among them has diabetes?". The leader is
+            # consumed as scope (its words stay in the original question for the quotes); the rest is an ordinary request over the cohort.
+            text = re.sub(r'^(?:(?:and|now|then|next|also|ok(?:ay)?)\b[\s,]*)+', '', text, flags=re.I)
+            scoped = re.match(r'^(?:of|among|within|from)\s+(?:those|them|these|that\s+(?:group|cohort|list)|the\s+(?:same\s+)?(?:patients|members|cohort|list|group))'
+                              r'(?:\s+(?:patients|members))?\s*,?\s*', text, re.I)
+            if scoped and text[scoped.end():].strip() and not re.match(r'(?:how many|what\s+(?:percent|share|proportion|fraction))\b', text[scoped.end():], re.I):
+                text = text[scoped.end():]  # the words stay in the question: the quotes below are slices of it
+                anaphoric = scoped.group().strip(' ,')
         if self.bound and re.match(r'^(?:only|where)\s+', text, re.I):
             marker = re.match(r'^(?:only|where)\s+', text, re.I)
             where, tail = self.expression(text[marker.end():])
@@ -689,19 +736,19 @@ class Parser:
         unit = re.search(r',?\s+in\s+(cents|days)\s*$',text,re.I)
         if unit: text=text[:unit.start()].strip()
         lead = re.match(r'(?i)(?:(?:please\s+)|(?:(?:can|could|would|will)\s+you\s+)|(?:tell\s+me\s+)|(?:(?:give|show|return)(?:\s+me)?\s+both\s+)|(?:I\s+(?:want|would like)\s+(?:you\s+to|to)\s+))*'
-                        r'(how many|(?:the )?number of|(?:a )?count(?: of)?|tally(?: up)?|list|enumerate|which|show|find|group|break down|what (?:is|was|were) (?:the )?total|what (?:is|was) (?:the )?average|total|sum|average|mean)\s+', text)
+                        r'(how many|(?:the )?number of|(?:a )?count(?: of)?|tally(?: up)?|list|enumerate|which|show|find|' + ('who|' if self.bound else '') + r'group|break down|what (?:is|was|were) (?:the )?total|what (?:is|was) (?:the )?average|total|sum|average|mean)\s+', text)
         # Business questions often name the entity without an imperative.
         # Retain original spans; do not rewrite the question to add "count".
-        if not lead and not self.prefix(text, self.sources):
+        if not lead and not self.prefix(text, self.sources) and not anaphoric:
             raise PlanError('Specify the requested calculation and warehouse source')
-        verb = lead.group(1).lower() if lead else 'count'
+        verb = lead.group(1).lower() if lead else 'list' if anaphoric else 'count'
         rest = text[lead.end():] if lead else text
-        fn = ('count' if just_count else 'list' if verb in ('list', 'enumerate', 'which', 'show', 'find') else
+        fn = ('count' if just_count else 'list' if verb in ('list', 'enumerate', 'which', 'who', 'show', 'find') else
               'avg' if verb in ('average', 'mean') or verb.endswith('average') else
               'sum' if verb in ('total', 'sum') or verb.endswith('total') else 'count')
         field_name, source = None, None
         rest = re.sub(r'^(?:of\s+)?(?:all|the|our)\s+', '', rest, flags=re.I)
-        if self.bound: rest = re.sub(r'^of\s+(?=(?:them|those|these)\b)', '', rest, flags=re.I)
+        if self.bound: rest = re.sub(r'^(?:of|among)\s+(?=(?:them|those|these)\b)', '', rest, flags=re.I)
         # Adjectives before the population noun ("living Medicaid patients") are filters on that population.
         modifiers = []
         while fn not in ('sum', 'avg'):
@@ -763,6 +810,8 @@ class Parser:
         if not source and self.bound:
             source = self.prefix(rest, {'them': ('patient', None), 'those': ('patient', None), 'these': ('patient', None),
                                         'those patients': ('patient', None), 'these patients': ('patient', None)})
+        if not source and anaphoric:
+            source = (anaphoric, ('patient', None), rest)  # "Of those, which are women": the saved cohort itself is the population
         if not source: raise PlanError('Explicit source or saved cohort required')
         source_quote, (self.base, default), rest = source
         if self.base == 'stay' and re.search(r'discharge', source_quote, re.I): self.clock = 'discharge_date'
@@ -802,13 +851,15 @@ class Parser:
                     for word, field in group_fields]
         if measures: measures[0]['quote'] = [measures[0]['quote'], group_quote]
         groups = [m['alias'] for m in measures]
+        # "who" is filter wording: a follow-up that opens with it quotes the words that name the cohort instead
+        measure_quote = lead.group().strip() if lead and not re.search(r'\bwho\b', lead.group(), re.I) else (source_quote or (lead.group().strip() if lead else ''))
         if fn == 'list' and not groups:
             if 'patient_id' not in self.catalog.tables[self.base]: raise PlanError('List the required columns explicitly')
-            measure = {'kind': 'field', 'field': self.base+'.patient_id', 'alias': 'patient_id', 'quote': lead.group().strip() if lead else source_quote}
+            measure = {'kind': 'field', 'field': self.base+'.patient_id', 'alias': 'patient_id', 'quote': measure_quote}
         elif fn in ('sum', 'avg'):
             measure = {'kind': fn, 'field': field_name, 'alias': fn+'_'+field_name.split('.')[-1], 'quote': [lead.group().strip(), field_text]}
         else:
-            measure = {'kind': 'count_distinct' if self.base == 'patient' else 'count', 'alias': 'patients' if self.base == 'patient' else 'count', 'quote': lead.group().strip() if lead else source_quote}
+            measure = {'kind': 'count_distinct' if self.base == 'patient' else 'count', 'alias': 'patients' if self.base == 'patient' else 'count', 'quote': measure_quote}
             if self.base == 'patient': measure['field'] = 'patient.patient_id'
         measures.append(measure)
         if unit:
@@ -1048,7 +1099,8 @@ class Parser:
     def one(self, text):
         start = text
         while True:
-            filler = re.match(r'^(?:among|for) (?:the )?(?:patients|members)\s+|^who\s+|^(?:where|for|among)\s+|^that\s+|^also\s+|^(?:are|were|is|was)\s+(?!admitted)', text, re.I)
+            filler = re.match(r'^(?:among|for) (?:the )?(?:patients|members)\s+|^who\s+|^(?:where|for|among)\s+|^that\s+|^also\s+|^(?:are|were|is|was)\s+(?!admitted)'
+                              + (r'|^(?:those|ones|them|these)\s+(?:patients\s+|members\s+)?(?:who\s+|that\s+)?(?=(?:with|having|have|has|had|on|taking|without|not|over|under|aged?|in|during)\b)' if self.bound else ''), text, re.I)
             if not filler: break
             text = text[filler.end():]
         if text.startswith('('):
@@ -1071,10 +1123,16 @@ class Parser:
             if not clock: raise PlanError('This period needs an explicit event/date field')
             quote, year = m.group(), int(m.group(1))
             return combine('and', [atom(self.base+'.'+clock, '>=', f'{year}-01-01', quote), atom(self.base+'.'+clock, '<', f'{year+1}-01-01', quote)], quote), text[m.end():]
-        coverage = self.prefix(text, {'medicare': 'medicare', 'medicaid': 'medicaid',
-                                      'commercial': 'commercial', 'uninsured': 'uninsured'})
-        if coverage:
+        if self.base == 'patient' and 'sex_reported' in self.catalog.tables.get('patient', []):
+            sex = re.match(r'^(?:(?:are|were)\s+)?(women|woman|females?|men|man|males?)\b(?:\s+(?:patients|members))?', text, re.I)
+            coded = self.sex_value(sex[1]) if sex else None
+            if coded: return atom('patient.sex_reported', '=', coded, sex.group().strip()), text[sex.end():]
+        payer = re.match(r'^(?:(?:on|with|under|covered by|enrolled in|insured by|in)\s+)?(?:an?\s+)?', text, re.I)
+        coverage = self.prefix(text[payer.end():], {'medicare': 'medicare', 'medicaid': 'medicaid',
+                                                    'commercial': 'commercial', 'uninsured': 'uninsured'})
+        if coverage and self.base == 'patient' or (coverage and not payer.group()):
             quote, value, tail = coverage
+            quote = text[:len(text) - len(tail)].strip()
             return atom('patient.coverage_type', '=', value, quote), re.sub(r'^\s*(?:patients|members)\b', '', tail, flags=re.I)
         if self.base == 'patient' and 'death' in self.catalog.tables:
             both = re.match(r'^,?\s*(?:(living)\s+or\s+(deceased)|(alive)\s+or\s+(dead))\s*,?', text, re.I)
@@ -1110,6 +1168,10 @@ class Parser:
         m = re.match(r'^(?:with |having |have |has )(?:both\s+)?', text, re.I)
         concept_text = text[m.end():] if m else text
         concept = self.prefix(concept_text, self.conditions)
+        if not concept and m:  # "have a history of diabetes", "with a diagnosis of CKD": the article words carry no constraint
+            article = re.match(r'^(?:(?:an?|any|the)\s+)?(?:(?:history|diagnosis|record)\s+of\s+)?(?:(?:prior|known)\s+)?', concept_text, re.I)
+            concept = self.prefix(concept_text[article.end():], self.conditions) if article and article.end() else None
+            if concept: concept_text = concept_text[article.end():]
         if concept:
             quote, concept_id, tail = concept
             names = [concept_id]

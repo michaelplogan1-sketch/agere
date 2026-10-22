@@ -139,7 +139,11 @@ def capture(path, question, result, *, original_question=None):
     return {'id': key, 'patients': len(rows), 'url': '/action-center?context=' + key, **scope_options(data)}
 
 
-def load(path, key, *, current=False):
+def load(path, key, *, current=False, follow_up=False):
+    """follow_up=True: the caller only narrows, lists or groups the exact saved membership (no new work is created). A system
+    quarantine ('quarantine: QC-...' written by learning.quarantine when an answer tripped a quality control) records that the
+    plan must not be reused or learned from; it is not a user correction of the cohort the user saw, so it does not invalidate the
+    saved membership for a follow-up. A user correction still does."""
     if not isinstance(key, str) or not re.fullmatch(r'ANS-[0-9a-f]{24}', key):
         raise ValueError('A saved answer context is required')
     f = root(path) / key / 'answer.json'
@@ -168,10 +172,13 @@ def load(path, key, *, current=False):
         invalidated = invalidated or ancestor.get('context_policy_identity') != active_policy
         r = ancestor.get('planner_receipt') or {}
         question = ancestor.get('question', '')
-        if correction_context(path, question):
+        def feedback(q):
+            matches = correction_context(path, q)
+            return [m for m in matches if not (follow_up and str(m.get('note') or '').startswith('quarantine:'))]
+        if feedback(question):
             invalidated = invalidated or r.get('feedback_identity') != feedback_identity(path, question)
         origin = r.get('program_origin') or {}
-        if origin.get('original_question') and correction_context(path, origin['original_question']):
+        if origin.get('original_question') and feedback(origin['original_question']):
             invalidated = invalidated or origin.get('feedback_identity') != feedback_identity(path, origin['original_question'])
         if r.get('version', '').startswith('shared-warehouse-planner/'):
             invalidated = invalidated or r.get('policy_identity') != active_policy
@@ -391,7 +398,7 @@ def followup(path, key, question, *, scope='result'):
     exclusion = re.fullmatch(r'(?:exclude|excluding|remove)(?: the)? (?:patients|ones|those|them)(?: who have| who| that have)? (?:died|are deceased|deceased)', text)
     if not (listing or grouping or exclusion):
         return None
-    c = reference_scope(load(path, key, current=True), scope)
+    c = reference_scope(load(path, key, current=True, follow_up=True), scope)
     ids = set(c['patient_ids'])
     rows = c['patient_rows']
     operations, evidence = [], []
