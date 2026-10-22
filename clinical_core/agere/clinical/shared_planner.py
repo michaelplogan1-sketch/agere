@@ -521,6 +521,9 @@ def _interpret(catalog, question, *, population=None, model=None, force_model=Fa
         raise QuestionNotUnderstood('The original question was preserved, but part of its meaning needs clarification: '
                                     + failures[-1] + '. No language model was called and no reduced question was executed.')
     attempts, extra, operations, streams, feedback, discovery = [], [], [], [], '', []
+    from . import schema_prefetch  # likely schemas up front; repairs send only the failing fragment (patch replies merge)
+    likely, last_plan = schema_prefetch.likely(catalog, question), None
+    extra, operations, streams = list(likely['tables']), list(likely['operations']), list(likely['streams'])
     def call(*args, **kwargs):
         try:
             return tracked_call(model, attempts, *args, **kwargs)
@@ -540,7 +543,7 @@ def _interpret(catalog, question, *, population=None, model=None, force_model=Fa
                             reported_corrections=corrections)
         raw, stats = call(SYSTEM, user, max_tokens=PLAN_TOKENS)
         try:
-            plan = decode(raw)
+            plan = schema_prefetch.apply_patch(last_plan, decode(raw))
             if set(plan) == {'need_discovery'}:
                 from .request_discovery import run
                 discovery.append(run(catalog, plan['need_discovery'], population=population))
@@ -612,7 +615,9 @@ def _interpret(catalog, question, *, population=None, model=None, force_model=Fa
                         or not isinstance(audit['issues'], list) or any(not isinstance(i, str) for i in audit['issues'])):
                     raise request_plan.PlanError('Interpretation review must contain equivalent and text issues')
                 if not audit['equivalent'] or audit['issues']:
-                    feedback = {'semantic_review': audit, 'previous_analysis': plan['analysis'], 'result_preview': shown,
+                    last_plan = ('analysis', plan['analysis'])
+                    feedback = schema_prefetch.repair_feedback(audit, plan['analysis'], kind='analysis', extra={'result_preview': shown}) or {
+                                'semantic_review': audit, 'previous_analysis': plan['analysis'], 'result_preview': shown,
                                 'instruction': 'Repair the actual mismatches while preserving every requirement of the original question.'}
                     if proposal_count >= 3: break  # preserve the failed review for the bounded rescue/repair pass
                     continue
@@ -641,7 +646,8 @@ def _interpret(catalog, question, *, population=None, model=None, force_model=Fa
                     or not isinstance(audit['issues'], list) or any(not isinstance(i, str) for i in audit['issues'])):
                 raise request_plan.PlanError('Interpretation review must contain equivalent and text issues')
             if not plan['unresolved'] and (not audit['equivalent'] or audit['issues']) and proposal_count < 3:
-                feedback = {'semantic_review': audit, 'previous_proposal': plan,
+                last_plan = ('request', plan)
+                feedback = schema_prefetch.repair_feedback(audit, plan) or {'semantic_review': audit, 'previous_proposal': plan,
                             'instruction': 'Preserve the original question; repair actual mismatches. If the typed request cannot express a requirement, return {"analysis": ...} instead of leaving it unresolved.'}
                 continue
             model_name = getattr(model, 'identity', 'provided_interpreter')

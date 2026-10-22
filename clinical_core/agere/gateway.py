@@ -60,6 +60,7 @@ class BudgetLedger:
                 self.db.commit()
                 if row[0]=='validated':
                     ledger_event(self,'cache_reused',key,provider=provider,model=model)
+                    from .clinical.cost_telemetry import tag;tag(self,key,reused=True)  # per-question attribution
                     return json.loads(row[1])
                 ledger_event(self,'retry_blocked',key,provider=provider,model=model,status=row[0])
                 raise ValueError('Prior request pending/failed; explicit new attempt required, no silent paid retry')
@@ -68,6 +69,7 @@ class BudgetLedger:
             self.db.execute('INSERT INTO calls VALUES (?,?,?,?,?,?,?,?)',(key,provider,model,reservation,'pending',None,None,0))
             self.db.commit()
             ledger_event(self,'reserved',key,provider=provider,model=model,status='pending')
+            from .clinical.cost_telemetry import tag;tag(self,key)  # per-question attribution (cost_telemetry)
             return None
         except Exception:self.db.rollback();raise
     def abandon_pending(self):
@@ -280,12 +282,13 @@ def classify_provider_error(exc):
 
 def fallback_model(model):
     """AGERE_FALLBACK_MODEL (alias AGERE_INTERPRETER_FALLBACK) when set and different, else the next model in the Claude 5
-    family (Opus -> Sonnet -> Haiku; Haiku -> Sonnet). None for models outside the family."""
+    family (Opus -> Sonnet -> Haiku), never to a more expensive model: Haiku has no Claude fallback (System One takes over in
+    the cascade). None for models outside the family."""
     chosen=os.environ.get('AGERE_FALLBACK_MODEL') or os.environ.get('AGERE_INTERPRETER_FALLBACK')
     if chosen:return chosen if chosen!=model else None
     if model not in CLAUDE_FAMILY:return None
     i=CLAUDE_FAMILY.index(model)
-    return CLAUDE_FAMILY[i+1] if i+1<len(CLAUDE_FAMILY) else CLAUDE_FAMILY[i-1]
+    return CLAUDE_FAMILY[i+1] if i+1<len(CLAUDE_FAMILY) else None
 
 
 def call_with_fallback(call,model,*,sleep=time.sleep,backoff=None,fallback=None):

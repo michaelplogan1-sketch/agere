@@ -8,7 +8,10 @@ Each item is one canonical question with its canonical structured request and 3-
     does not read yet: these teach the local typed interpreter what only the hosted one answers today);
   * slot families: cohort-family slots (bottled.canonical_question / spec_from_slots) for the narrow typed rung.
 Entities, measures (governed metrics, the measure vocabulary, VBC library seeds), filters (concepts, value thresholds,
-periods, demographics, payer), groupings, rankings, comparisons, trends, follow-up chains and engine questions.
+periods, demographics, payer), groupings, rankings, comparisons, trends, follow-up chains and engine questions; the HARD
+families add engine questions (medication_state on an exact cohort), definition-dependent questions (default_definitions:
+PQI, ED avoidability, avoidable spend, measure gaps, PDC), notes/evidence questions (note facts, therapy barriers; patient
+yes/no items System-One-verifiable), why questions (exact change by group), trends and multi-step chains ('steps').
 Paraphrases are template + lexical variation and must keep numbers, negation, qualifiers and concepts
 (local_normalizer.guard). An optional LLM paraphrase hook runs only with --llm-paraphrase AND an API key.
 Generation is a deterministic stream: item i depends only on (seed, i); duplicates are skipped. Synthetic data only.
@@ -511,6 +514,192 @@ def f_narrow_cohort(rng, v):
             'slots': {'family': family}}
 
 
+# ---- hard question types (2026-10-22): engines, notes/evidence, definition-dependent, why/trend, multi-step chains ----
+# Labels are exact: engine/definition requests run the registered engine on the exact cohort; notes questions are typed
+# requests over the extracted note facts (System One re-reads the patient's passages with label.py --s1-verify);
+# why/trend/multi-step questions are 'steps' requests: grammar-read sub-questions executed exactly and combined in code.
+COHORTS = [None, 'heart failure', 'diabetes', 'CKD', 'hypertension', 'COPD', 'coronary disease']
+MED_SUBJECTS = {'GDMT': 'gdmt', 'a beta-blocker': 'beta_blocker', 'an MRA': 'mra', 'an SGLT2 inhibitor': 'sglt2i',
+                'an ACE inhibitor, ARB or ARNI': 'rasi', 'a statin': 'statin', 'metformin': 'metformin', 'insulin': 'insulin'}
+MED_STATES = {'listed_not_filled': ['listed on but not filling', 'prescribed but not picking up', 'on the med list but not filling'],
+              'filled_current': ['currently filling', 'actively filling', 'covered by a current fill of'],
+              'documented_stopped_or_intolerant': ['documented as stopped or intolerant to', 'recorded as having stopped'],
+              'never_recorded': ['missing any record of', 'never recorded on']}
+DEF_PHRASES = {'pqi_admissions': ['PQI admissions', 'potentially preventable admissions', 'ambulatory care sensitive admissions',
+                                  'avoidable hospitalizations'],
+               'ed_avoidability': ['potentially avoidable ED visits', 'avoidable ER visits', 'preventable emergency visits',
+                                   'non-emergent ED visits'],
+               'avoidable_spend': ['avoidable spend', 'preventable cost', 'avoidable dollars']}
+DEF_MEASURES = {'cbp': 'blood pressure control', 'bcs': 'breast cancer screening', 'col': 'colorectal cancer screening',
+                'gsd_control_lt8': 'diabetes A1c control', 'ked': 'kidney health evaluation', 'spc_statin_cvd': 'statin therapy for cardiovascular disease',
+                'spd_statin_diabetes': 'statin therapy for diabetes', 'dsf_depression_screening_followup': 'depression screening follow-up'}
+PDC_CLASSES = {'statins': ['statin'], 'metformin': ['metformin'], 'RAS antagonists': ['ace_inhibitor', 'arb'], 'SGLT2 inhibitors': ['sglt2_inhibitor'],
+               'beta-blockers': ['beta_blocker']}
+DEF_GROUPS = {'': 'none', ' by payer': 'payer', ' by practice': 'practice', ' by PCP': 'pcp'}
+NOTE_FACTS = {  # wording -> (fact_type, value)
+    'chest pain': ('symptom', 'chest_pain'), 'nausea or vomiting': ('symptom', 'nausea_vomiting'), 'diarrhea': ('symptom', 'diarrhea'),
+    'fever': ('symptom', 'fever'), 'syncope': ('symptom', 'syncope'), 'dizziness': ('symptom', 'dizziness'), 'cough': ('symptom', 'cough'),
+    'fatigue': ('symptom', 'fatigue'), 'bleeding': ('symptom', 'bleeding'), 'wheezing': ('symptom', 'wheeze'),
+    'exertional dyspnea': ('dyspnea', 'exertional'), 'shortness of breath at rest': ('dyspnea', 'resting'),
+    'transportation problems': ('social_need', 'transport'), 'food insecurity': ('social_need', 'food'),
+    'financial strain': ('social_need', 'financial'), 'caregiver support needs': ('social_need', 'caregiver_support'),
+    'medication side effects as a reason for nonadherence': ('medication_nonadherence', 'side_effects'),
+    'cost as a reason for nonadherence': ('medication_nonadherence', 'cost'), 'a fracture on imaging': ('imaging_finding', 'fracture'),
+    'reduced systolic function': ('imaging_finding', 'reduced_systolic_function'), 'current smoking': ('smoking_status', 'current')}
+BARRIER_CLASSES = {'statin': 'statin', 'ACE inhibitor': 'ace_inhibitor', 'beta-blocker': 'beta_blocker', 'opioid': 'opioid',
+                   'loop diuretic': 'loop_diuretic', 'antiplatelet': 'antiplatelet'}
+BARRIER_TYPES = {'intolerance': 'intolerance_side_effect', 'allergy': 'allergy_angioedema', 'refusal': 'patient_declined'}
+WHY_SOURCES = ['ED visits', 'inpatient admissions', 'claims', 'pharmacy claims']
+WHY_GROUPS = ['payer', 'sex']
+TREND_SOURCES = ['ED visits', 'inpatient admissions', 'appointments']
+
+
+def _patient_ids(v):
+    """A few patient ids that have note facts (read once, bounded); synthetic-looking ids when the table is absent."""
+    if getattr(v, '_note_patients', None) is None:
+        try:
+            with sqlite3.connect(f'file:{v.catalog.target}?mode=ro', uri=True) as db:
+                v._note_patients = [r[0] for r in db.execute('SELECT DISTINCT patient_id FROM note_fact LIMIT 400')]
+        except (sqlite3.Error, AttributeError):
+            v._note_patients = []
+        v._note_patients = v._note_patients or [f'P-{1001 + i}' for i in range(200)]
+    return v._note_patients
+
+
+def f_engine(rng, v):
+    """Medication-state engine over an exact cohort: 'Which heart failure patients are listed on but not filling GDMT?'"""
+    c = rng.choice(COHORTS)
+    subj = rng.choice(sorted(MED_SUBJECTS))
+    state = rng.choice(sorted(MED_STATES)); phrase = rng.choice(MED_STATES[state])
+    lead = rng.choice(['Which', 'How many'])
+    who = f'{c} patients' if c else 'patients'
+    q = f'{lead} {who} are {phrase} {subj}?'
+    cohort = f'Which patients have {c}?' if c else None
+    req = {'operation': 'medication_state', 'parameters': {'subjects': [MED_SUBJECTS[subj]], 'states': [state], 'output': 'patients'},
+           'cohort': cohort, 'returns': 'count' if lead == 'How many' else 'patient_set'}
+    return {'form': f'medication_state/{state}/{lead.split()[0].lower()}/{"cohort" if c else "all"}', 'canonical': q,
+            'request': {'kind': 'engine', 'value': req}, 'slots': {'cohort': c, 'subject': subj, 'state': state},
+            'router_label': 'medication_state'}
+
+
+def f_definition(rng, v):
+    """Questions whose answer depends on a definition the question does not state; the label names the default used."""
+    kind = rng.choice(['pqi_admissions', 'ed_avoidability', 'avoidable_spend', 'measure_gap', 'pdc_adherence'])
+    y = rng.choice([None, *v.years])
+    period = f' in {y}' if y else rng.choice([' in the last year', ' over the past year', ''])
+    params = {'definition': kind, 'period': {'start': f'{y}-01-01', 'end': f'{y}-12-31'} if y else {}}
+    if kind in DEF_PHRASES:
+        g = rng.choice(sorted(DEF_GROUPS)); params['group_by'] = DEF_GROUPS[g]
+        thing = rng.choice(DEF_PHRASES[kind])
+        q = (f'What was our {thing}{period}{g}?' if kind == 'avoidable_spend' else
+             f'How many {thing} did we have{period}{g}?' if rng.random() < 0.5 else f'How many {thing} were there{period}{g}?')
+    elif kind == 'measure_gap':
+        mid = rng.choice(sorted(DEF_MEASURES)); params['measure'] = mid
+        sel = rng.choice(['gap', 'numerator', 'denominator']); params['select'] = sel
+        q = {'gap': f'Which patients are in the gap for {DEF_MEASURES[mid]}{period}?',
+             'numerator': f'Which patients met {DEF_MEASURES[mid]}{period}?',
+             'denominator': f'Which patients are eligible for {DEF_MEASURES[mid]}{period}?'}[sel]
+    else:
+        name = rng.choice(sorted(PDC_CLASSES)); params['drug_classes'] = PDC_CLASSES[name]
+        sel = rng.choice(['gap', 'numerator']); params['select'] = sel
+        q = (f'Which patients on {name} are non-adherent{period}?' if sel == 'gap' else f'Which patients are adherent to {name}{period}?')
+    return {'form': f'{kind}/{params.get("group_by") or params.get("select") or "none"}/{"year" if y else "default_period"}', 'canonical': q,
+            'request': {'kind': 'engine', 'value': {'operation': 'default_definition', 'parameters': params, 'cohort': None,
+                                                     'returns': 'table'}},
+            'slots': {'definition': kind, 'year': y}, 'router_label': 'default_definition', 'definition_dependent': True}
+
+
+def f_notes(rng, v):
+    """Evidence/notes questions as typed requests over extracted note facts (literal quotes); patient-level ones are
+    System-One-verifiable against the patient's passages."""
+    form = rng.choice(['count_patients', 'patient_passages', 'patient_yes_no', 'barrier_patients'])
+    if form == 'barrier_patients':
+        cls, btype = rng.choice(sorted(BARRIER_CLASSES)), rng.choice(sorted(BARRIER_TYPES))
+        lead = rng.choice(['Which', 'How many'])
+        q = f'{lead} patients have a documented {cls} {btype}?'
+        sel = ([{'kind': 'field', 'field': 'therapy_barrier.patient_id', 'alias': 'patient_id', 'quote': 'Which patients'}] if lead == 'Which' else
+               [{'kind': 'count_distinct', 'field': 'therapy_barrier.patient_id', 'alias': 'patients', 'quote': 'How many patients'}])
+        where = AND([P('therapy_barrier.drug_class', '=', BARRIER_CLASSES[cls], cls), P('therapy_barrier.barrier_type', '=', BARRIER_TYPES[btype], btype),
+                     P('therapy_barrier.negated', '=', 0, 'documented')], q)
+        req = REQ('therapy_barrier', f'{cls} {btype}', sel, where)
+        return {'form': f'barrier/{btype}/{lead.split()[0].lower()}', 'canonical': q, 'request': {'kind': 'request', 'value': req},
+                'slots': {'drug_class': cls, 'barrier': btype}}
+    phrase = rng.choice(sorted(NOTE_FACTS)); ftype, value = NOTE_FACTS[phrase]
+    if form == 'count_patients':
+        y = rng.choice([None, *v.years])
+        period = f' in {y}' if y else ''
+        q = f'How many patients have {phrase} documented in their notes{period}?'
+        preds = [P('note_fact.fact_type', '=', ftype, phrase), P('note_fact.value', '=', value, phrase), P('note_fact.negated', '=', 0, 'documented')]
+        if y: preds += YEAR('note_fact.event_date', y, f'in {y}')
+        req = REQ('note_fact', 'notes', [{'kind': 'count_distinct', 'alias': 'patients', 'quote': 'How many patients', 'field': 'note_fact.patient_id'}],
+                  AND(preds, q))
+        return {'form': f'count/{ftype}/{"year" if y else "all"}', 'canonical': q, 'request': {'kind': 'request', 'value': req},
+                'slots': {'fact': phrase, 'year': y}}
+    pid = rng.choice(_patient_ids(v))
+    preds = [P('note_fact.patient_id', '=', pid, f'patient {pid}'), P('note_fact.fact_type', '=', ftype, phrase),
+             P('note_fact.value', '=', value, phrase)]
+    if form == 'patient_passages':
+        q = f'What do the notes say about {phrase} for patient {pid}?'
+        sel = [{'kind': 'field', 'field': 'note_fact.record_id', 'alias': 'record_id', 'quote': 'notes'},
+               {'kind': 'field', 'field': 'note_fact.event_date', 'alias': 'event_date', 'quote': 'notes'},
+               {'kind': 'field', 'field': 'note_fact.negated', 'alias': 'negated', 'quote': 'say'},
+               {'kind': 'field', 'field': 'note_fact.evidence_text', 'alias': 'evidence_text', 'quote': 'What do the notes say about'}]
+        req = REQ('note_fact', 'notes', sel, AND(preds, q))
+        verify = None
+    else:
+        q = f'Do the notes for patient {pid} document {phrase}?'
+        preds.append(P('note_fact.negated', '=', 0, 'document'))
+        req = REQ('note_fact', 'notes', [{'kind': 'count', 'alias': 'documented_mentions', 'quote': 'Do the notes'}], AND(preds, q))
+        verify = {'system_one': True, 'patient_id': pid, 'fact': phrase, 'fact_type': ftype, 'value': value}
+    return {'form': f'{form}/{ftype}', 'canonical': q, 'request': {'kind': 'request', 'value': req},
+            'slots': {'fact': phrase, 'patient': pid}, 'verify': verify}
+
+
+def f_why(rng, v):
+    """'Why did ED visits go up from 2028 to 2029?' -> the exact change by group (a driver decomposition)."""
+    src, grp = rng.choice(WHY_SOURCES), rng.choice(WHY_GROUPS)
+    a, b = rng.choice(list(zip(v.years, v.years[1:])))
+    form = rng.choice(['why_change', 'what_explains', 'which_drove'])
+    q = {'why_change': f'Why did {src} change from {a} to {b}?', 'what_explains': f'What explains the change in {src} between {a} and {b}?',
+         'which_drove': f'Which {grp} groups drove the change in {src} from {a} to {b}?'}[form]
+    steps = [f'How many {src} were there in {a} by {grp}?', f'How many {src} were there in {b} by {grp}?']
+    return {'form': f'{form}/{grp}', 'canonical': q, 'request': {'kind': 'steps', 'value': {'steps': steps, 'combine': 'delta_by_group',
+            'by': grp}}, 'slots': {'source': src, 'years': [a, b], 'group': grp}, 'router_label': 'explain'}
+
+
+def f_trend(rng, v):
+    src, y = rng.choice(TREND_SOURCES), rng.choice(v.years)
+    form = rng.choice(['up_down', 'direction', 'month_by_month'])
+    q = {'up_down': f'Are {src} trending up or down in {y}?', 'direction': f'What is the monthly trend in {src} during {y}?',
+         'month_by_month': f'How did {src} change month by month in {y}?'}[form]
+    return {'form': form, 'canonical': q, 'request': {'kind': 'steps', 'value': {'steps': [f'Show {src} by month for {y}'], 'combine': 'trend'}},
+            'slots': {'source': src, 'year': y}}
+
+
+def f_multi_step(rng, v):
+    c = rng.choice(CONDITIONS[:10]); y = rng.choice(v.years)
+    event = rng.choice([('had an ED visit', 'an ED visit'), ('had an inpatient admission', 'an inpatient admission')])
+    form = rng.choice(['share', 'count_and_share', 'difference', 'ratio'])
+    if form in ('share', 'count_and_share'):
+        steps = [f'How many patients have {c}?', f'How many patients with {c} {event[0]} in {y}?']
+        q = (f'Of patients with {c}, what share {event[0]} in {y}?' if form == 'share' else
+             f'How many patients with {c} {event[0]} in {y}, and what percent of all {c} patients is that?')
+        combine = form
+    elif form == 'difference':
+        src = rng.choice(['ED visits', 'inpatient admissions', 'claims'])
+        a, b = rng.choice(list(zip(v.years, v.years[1:])))
+        steps = [f'How many {src} were there in {a}?', f'How many {src} were there in {b}?']
+        q = f'How many more {src} were there in {b} than in {a}, and what is the percent change?'
+        combine = 'difference'
+    else:
+        d = rng.choice([x for x in CONDITIONS[:10] if x != c])
+        steps = [f'How many patients have {c}?', f'How many patients have {d}?']
+        q = f'What is the ratio of patients with {c} to patients with {d}?'
+        combine = 'ratio'
+    return {'form': form, 'canonical': q, 'request': {'kind': 'steps', 'value': {'steps': steps, 'combine': combine}},
+            'slots': {'condition': c, 'year': y}}
+
+
 FAMILIES = {  # name -> (weight, generator, request source)
     'condition_count': (14, f_condition_count, 'grammar'), 'condition_list': (5, f_condition_list, 'grammar'),
     'condition_combo': (5, f_condition_combo, 'grammar'), 'care_gap': (12, f_care_gap, 'grammar'),
@@ -521,7 +710,10 @@ FAMILIES = {  # name -> (weight, generator, request source)
     'followup_chain': (4, f_followup_chain, 'grammar'), 'vbc_seed': (1, f_vbc_seed, 'grammar'),
     'lab_threshold': (7, f_lab_threshold, 'typed'), 'top_conditions': (1, f_top_conditions, 'typed'),
     'table_aggregate': (10, f_table_aggregate, 'typed'), 'narrow_cohort': (3, f_narrow_cohort, 'slots'),
+    'engine': (3, f_engine, 'engine'), 'definition': (4, f_definition, 'engine'), 'notes': (5, f_notes, 'typed'),
+    'why': (3, f_why, 'steps'), 'trend': (2, f_trend, 'steps'), 'multi_step': (4, f_multi_step, 'steps'),
 }
+HARD = ('engine', 'definition', 'notes', 'why', 'trend', 'multi_step')
 
 
 # ------------------------------------------------------------------------------------------------------ paraphrases
@@ -674,7 +866,8 @@ def build(family, gen, source, rng, vocab, seed, index, llm=None):
             'template_family': template_family(family, raw.get('template_key') or raw['form']),
             'canonical': canonical, 'paraphrases': para, 'request_source': source,
             'request': request, 'chain': raw.get('chain'), 'slots': raw.get('slots'),
-            'expected_engine': raw.get('expected_engine'), 'synthetic': True}
+            'expected_engine': raw.get('expected_engine'), 'router_label': raw.get('router_label'), 'verify': raw.get('verify'),
+            'definition_dependent': bool(raw.get('definition_dependent')), 'synthetic': True}
 
 
 def generate(n, seed=1, vocab=None, families=None, start=0, llm=None):

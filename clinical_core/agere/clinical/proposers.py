@@ -179,6 +179,11 @@ class Cascade:
             order, self.learned_routing = learned_reorder(self.stack, self.question, order, front=front)
         except Exception:  # noqa: BLE001 - no model / no data: keep the order
             pass
+        try:  # outcome-labelled tier router (trained from verified answers): the predicted tier first, never removes one
+            from .tier_router import reorder
+            order, self.tier_routing = reorder(self.stack, self.question, order)
+        except Exception:  # noqa: BLE001 - no promoted model / encoder: keep the order
+            pass
         return order
 
     def run(self):
@@ -197,7 +202,10 @@ class Cascade:
                 try:
                     found = getattr(self, 'tier_' + name)()
                 except QuestionNotUnderstood as exc:
-                    self.note(name, 'declined', str(exc), started); continue
+                    self.note(name, 'declined', str(exc), started)
+                    cause = exc.__cause__ or exc.__context__  # a decline wrapping a provider outage still means Claude is down
+                    if name in CLAUDE_TIERS and cause is not None and outage(cause): self.claude_down = self.claude_down or outage(cause)
+                    continue
                 except Exception as exc:  # noqa: BLE001 - one component failing never stops the others (heal, don't block)
                     self.note(name, 'error', f'{type(exc).__name__}: {exc}', started)
                     if name in PAID and (outage(exc) or (isinstance(exc, RuntimeError) and not isinstance(exc, (ValueError, KeyError, TypeError, AttributeError, sqlite3.Error)))):
@@ -312,8 +320,9 @@ class Cascade:
         return {**interpretation, 'interpreter': interpretation.get('interpreter') or name,
                 'proposer': {'name': name, 'cost': cost, 'calibration': calibration, 'kind': kind,
                              'check': CHECK_VERSION, 'cascade': VERSION},
-                'proposers': self.log, 'cascade_usage': self.usage(),
-                'cascade_routing': {'system_one': self.routing, 'learned': self.learned_routing}}
+                'proposers': self.log, 'cascade_usage': self.usage(), 'system_one_routing': self.routing,
+                'cascade_routing': {'system_one': self.routing, 'learned': self.learned_routing,
+                                    'tier_router': getattr(self, 'tier_routing', None)}}
 
     # -- typed proposals ------------------------------------------------------------------------------------------------
     def typed(self, name, found):
