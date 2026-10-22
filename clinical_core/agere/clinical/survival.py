@@ -19,6 +19,12 @@ Events:
                    censored at the last result of that measurement (crossing is only observable when tested)
 Methods: product-limit (Kaplan-Meier) estimator, Greenwood variance with log(-log) 95% intervals,
 k-group log-rank test, Cox proportional hazards by Newton-Raphson on the Efron partial likelihood.
+Conformalized survival lower bounds (Candes, Lei & Ren, JRSS-B 2023; default on, alpha = 0.1): for each group a
+distribution-free lower predictive bound L with P(T >= L) >= 1 - alpha under censoring. Units are split by patient into
+train / calibration / held-out test; the KM alpha-quantile of the training split is the predictor, calibration units
+with censoring time C >= c0 are scored V = q(x) - min(T, c0) and weighted by 1 / P(C >= c0 | group) (Kaplan-Meier of
+censoring), and L = min(q(x) - eta, c0) with eta the weighted (1 - alpha) quantile; empirical IPCW coverage is
+reported on the held-out split.
 """
 from collections import Counter, defaultdict
 from datetime import date
@@ -157,7 +163,7 @@ def cox(times, events, X, names, max_iter=50, tol=1e-9):
 
 # ---- parameters ----------------------------------------------------------------------
 def validate(p):
-    allowed = {'index', 'event', 'horizon_days', 'time_points', 'group_by', 'group_concept', 'cox', 'covariates', 'top'}
+    allowed = {'index', 'event', 'horizon_days', 'time_points', 'group_by', 'group_concept', 'cox', 'covariates', 'top', 'alpha', 'lower_bound'}
     if not isinstance(p, dict) or set(p) - allowed: raise ValueError(f'survival parameters: {sorted(allowed)}')
     index = p.get('index')
     if not isinstance(index, dict) or index.get('type') not in INDEX_TYPES or set(index) - {'type', 'concept', 'date', 'window'}:
@@ -212,7 +218,99 @@ def validate(p):
     elif out['cox']:
         out['covariates'] = list(COVARIATES)
     if type(out['top']) is not int or not 1 <= out['top'] <= 200: raise ValueError('top 1..200')
+    alpha = p.get('alpha', 0.1)
+    if isinstance(alpha, bool) or not isinstance(alpha, (int, float)) or not 0.01 <= alpha <= 0.5: raise ValueError('alpha 0.01..0.5')
+    out['alpha'] = float(alpha)
+    out['lower_bound'] = bool(p.get('lower_bound', True))  # conformal lower bounds default on
     return out
+
+
+# ---- conformalized survival lower bounds (Candes, Lei & Ren 2023) ---------------------------
+def _split(pid):
+    """Deterministic patient-level split: 'train' 50%, 'calibration' 30%, 'test' 20% (no patient spans splits)."""
+    import hashlib
+    h = int(hashlib.sha256(str(pid).encode()).hexdigest()[:8], 16) % 10
+    return 'train' if h < 5 else 'calibration' if h < 8 else 'test'
+
+
+def km_quantile(times, events, q, cap):
+    """Smallest time with KM survival <= 1 - q (the q-quantile of T); cap when the curve never falls that far."""
+    for r in kaplan_meier(times, events):
+        if r['events'] and r['survival'] <= 1 - q: return float(r['time'])
+    return float(cap)
+
+
+def _censor_survival(times, events, c0):
+    """P(C >= c0) from the Kaplan-Meier estimate of the censoring distribution (censorings are its events)."""
+    s = 1.0
+    for r in kaplan_meier(times, [1 - e for e in events]):
+        if r['time'] >= c0: break
+        s = r['survival']
+    return s
+
+
+def _weighted_quantile(values, weights, level, test_weight):
+    """Weighted (level) quantile of the calibration scores with the test point's weight placed at +infinity."""
+    order = sorted(zip(values, weights))
+    total = sum(weights) + test_weight
+    acc = 0.0
+    for v, w in order:
+        acc += w
+        if acc / total >= level: return v
+    return math.inf
+
+
+def conformal_lower_bounds(units_rows, groups_of, admin_of, alpha=0.1, c0=None, min_calibration=20):
+    """units_rows: [(pid, zero, time, event, reason)]; groups_of(row) -> group key; admin_of(row) -> administrative censoring
+    time (the follow-up the unit could have had). Censoring time C: the observed time for censored units, the administrative
+    limit for units with an event (known for every unit; non-administrative censoring of event units is unobserved).
+    -> {'alpha', 'c0', 'eta', 'groups': {g: {...}}, 'coverage': {...}} or {'status': 'insufficient', ...}."""
+    rows = list(units_rows)
+    C = [r[2] if not r[3] else admin_of(r) for r in rows]
+    if c0 is None:
+        c0 = float(np.median(C)) if C else 0.0
+    split = [_split(r[0]) for r in rows]
+    train = [i for i, s in enumerate(split) if s == 'train']
+    calib = [i for i, s in enumerate(split) if s == 'calibration']
+    test = [i for i, s in enumerate(split) if s == 'test']
+    cap = c0
+    q_all = km_quantile([rows[i][2] for i in train], [rows[i][3] for i in train], alpha, cap) if train else cap
+    by_group = defaultdict(list)
+    for i in train: by_group[groups_of(rows[i])].append(i)
+    qhat = {g: (km_quantile([rows[i][2] for i in ix], [rows[i][3] for i in ix], alpha, cap) if len(ix) >= SMALL_GROUP else q_all)
+            for g, ix in by_group.items()}
+    q = lambda g: min(qhat.get(g, q_all), c0)
+    # censoring survival P(C >= c0 | group): KM of censoring on train + calibration, pooled for small groups
+    pool = train + calib
+    c_all = _censor_survival([rows[i][2] for i in pool], [rows[i][3] for i in pool], c0)
+    cg = defaultdict(list)
+    for i in pool: cg[groups_of(rows[i])].append(i)
+    chat = {g: (_censor_survival([rows[i][2] for i in ix], [rows[i][3] for i in ix], c0) if len(ix) >= SMALL_GROUP else c_all)
+            for g, ix in cg.items()}
+    ch = lambda g: max(chat.get(g, c_all), 0.05)  # weights bounded at 20
+    usable = [i for i in calib if C[i] >= c0]
+    if len(usable) < min_calibration:
+        return {'status': 'insufficient', 'alpha': alpha, 'c0': c0, 'calibration_units': len(usable),
+                'reason': f'{len(usable)} calibration units observed to day {c0:g} (need {min_calibration})'}
+    scores = [q(groups_of(rows[i])) - min(rows[i][2], c0) for i in usable]
+    weights = [1.0 / ch(groups_of(rows[i])) for i in usable]
+    test_weight = max(weights)  # conservative: the largest weight a test point can carry
+    eta = _weighted_quantile(scores, weights, 1 - alpha, test_weight)
+    lower = lambda g: max(0.0, min(q(g) - eta, c0)) if math.isfinite(eta) else 0.0
+    covered = [(1.0 / ch(groups_of(rows[i])), min(rows[i][2], c0) >= lower(groups_of(rows[i]))) for i in test if C[i] >= c0]
+    cov = (sum(w for w, ok in covered if ok) / sum(w for w, _ in covered)) if covered else None
+    groups = {}
+    for g in set(groups_of(r) for r in rows):
+        groups[g] = {'lower_bound_days': round(lower(g), 1), 'predicted_quantile_days': round(q(g), 1),
+                     'censoring_survival_at_c0': round(ch(g), 4), 'train_units': len(by_group.get(g, []))}
+    return {'status': 'ok', 'alpha': alpha, 'c0': round(c0, 1), 'eta': round(eta, 3) if math.isfinite(eta) else None,
+            'calibration_units': len(usable), 'groups': groups,
+            'coverage': {'target': round(1 - alpha, 3), 'empirical_ipcw': round(cov, 4) if cov is not None else None,
+                         'test_units': len(covered)},
+            'method': (f'Conformalized lower predictive bound (Candes, Lei & Ren 2023): KM {alpha:g}-quantile of the training split as '
+                       f'predictor, calibration units with censoring time >= c0 = {c0:g} days scored q(x) - min(T, c0), weighted by '
+                       f'1/P(C >= c0 | group) (KM of censoring); L = min(q(x) - eta, c0); P(T >= L) >= {1 - alpha:.0%} marginally. '
+                       f'Censoring times of units with an event are taken as their administrative limit (snapshot/horizon).')}
 
 
 # ---- data -----------------------------------------------------------------------------
@@ -361,6 +459,13 @@ def execute(path, patient_ids, params):
     what, zero = describe_event(p)
     groups = defaultdict(list)
     for r in rows: groups[_group(attrs[r[0]], p)].append(r)
+    bounds = None
+    if p.get('lower_bound', True) and rows:
+        try:
+            bounds = conformal_lower_bounds(rows, lambda r: _group(attrs[r[0]], p),
+                                            lambda r: min(p['horizon_days'], _days(r[1], as_of)), p.get('alpha', 0.1))
+        except (ValueError, ZeroDivisionError) as exc:  # a bound that cannot be computed never takes the curve down
+            bounds = {'status': 'error', 'reason': f'{type(exc).__name__}: {exc}'[:200]}
     summaries, table = [], []
     for g, rs in groups.items():
         km = kaplan_meier([r[2] for r in rs], [r[3] for r in rs])
@@ -380,7 +485,10 @@ def execute(path, patient_ids, params):
                           'ci95_low': round(1 - hi, 4), 'ci95_high': round(1 - lo, 4), 'small_group': s['small_group']})
     curves = {str(s['group']): [{'day': int(r['time']), 'at_risk': r['at_risk'], 'events': r['events'], 'censored': r['censored'],
                                  'survival': round(r['survival'], 4)} for r in s['_km']][:400] for s in shown}
-    for s in summaries: s.pop('_km')
+    for s in summaries:
+        s.pop('_km')
+        if bounds and bounds.get('status') == 'ok' and s['group'] in bounds['groups']:
+            s['conformal_lower_bound_days'] = bounds['groups'][s['group']]['lower_bound_days']
     test = logrank([r[2] for r in rows], [r[3] for r in rows], [_group(attrs[r[0]], p) for r in rows]) if len(groups) > 1 else None
     model, cox_note = None, None
     if p['cox'] and rows and sum(r[3] for r in rows) >= 5:
@@ -418,11 +526,12 @@ def execute(path, patient_ids, params):
     if model: method += ('Cox proportional hazards (Efron ties, Newton-Raphson; reference = most common level; levels with under 5 units or '
                          'no events are not estimated); hazard ratios are associations, not causal effects, and proportional hazards is not tested. ')
     method += f'Groups under {SMALL_GROUP} units are flagged.'
+    if bounds and bounds.get('status') == 'ok': method += ' ' + bounds['method']
     return {'schema': VERSION, 'parameters': p, 'event_label': what, 'time_zero': zero, 'as_of': as_of,
             'units': len(rows), 'patients': len({r[0] for r in rows}), 'events': sum(r[3] for r in rows),
             'excluded': {k: v for k, v in excluded.items() if k != 'included_without_baseline_result'},
             'included_without_baseline_result': excluded.get('included_without_baseline_result', 0), 'groups': summaries, 'groups_total': len(summaries), 'table': table, 'curves': curves,
-            'logrank': test, 'cox': model, 'notes': [cox_note] if cox_note else [], 'method': method}
+            'logrank': test, 'cox': model, 'notes': [cox_note] if cox_note else [], 'method': method, 'conformal_lower_bounds': bounds}
 
 
 def summary(report):
@@ -448,5 +557,14 @@ def summary(report):
                for c in report['cox']['coefficients'][:4]]
         text += ' Cox: ' + '; '.join(hrs) + '.'
         if report['cox'].get('note'): text += ' ' + report['cox']['note']
+    b = report.get('conformal_lower_bounds') or {}
+    if b.get('status') == 'ok':
+        shown = [f"{g} {v['lower_bound_days']:g} days" for g, v in list(b['groups'].items())[:6]]
+        cov = b['coverage']['empirical_ipcw']
+        text += (f" Conformal {1 - b['alpha']:.0%} lower bound on time to {report['event_label']} (distribution-free, censoring-weighted, "
+                 f"c0 {b['c0']:g} days): " + '; '.join(shown)
+                 + (f" (held-out coverage {cov:.1%} on {b['coverage']['test_units']} units)" if cov is not None else '') + '.')
+    elif b.get('status') in ('insufficient', 'error'):
+        text += f" Conformal lower bound not computed: {b.get('reason')}."
     for note in report.get('notes') or []: text += ' ' + note
     return text
