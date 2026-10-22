@@ -189,6 +189,7 @@ def route(question, profile, as_of):
     if not re.search(CR_RX, q): return None
     if rc.knowledge_only(q): return None
     if re.search(r'\bprice transparency\b|\bmrfs?\b|\bcompetitors?\b', q): return None
+    if re.search(r'\bshared[- ]savings\b|\baco\b|\bmssp\b|\breach\b|\bbenchmark pmpm\b|\bsettlement\b', q): return None  # value-based settlement stays vbc
     # peer-claim underpayment and revenue-leakage reviews stay claims_review unless contract terms are named
     if re.search(r'\bsimilar claims\b|\bleak\w*\b|\brework\b', q) and not re.search(r'\bcontract\w*\b|\brepric\w+\b|\brenegotiat\w+\b', q): return None
     params = {}

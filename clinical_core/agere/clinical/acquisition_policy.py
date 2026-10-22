@@ -157,7 +157,7 @@ METHOD = ('Beta(1,1) posteriors on P(answered and never corrected) per (question
 
 def execute(stack, patient_ids, params, as_of):
     p = validate(params)
-    rows = outcome_rows(stack.path)
+    rows = outcome_rows(getattr(stack, 'path', stack))  # engines receive the stack path; some callers pass the stack
     table, policy = estimate(rows, p)
     return {'schema': VERSION, 'as_of': str(as_of)[:10], 'parameters': p, 'outcomes': len(rows), 'table': table, 'policy': policy,
             'method': METHOD, 'assumptions': ASSUMPTIONS, 'patient_ids': []}
