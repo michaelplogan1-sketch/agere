@@ -192,6 +192,7 @@ def similarity_gate(encoder=None):
 def lookup(path, question, encoder, *, threshold=None):
     """-> (hit | None, receipt). hit = {plan_kind, plan, agreement, matched_question}."""
     from . import learning
+    pinned = threshold is not None
     gate = similarity_gate(encoder) if threshold is None else {'threshold': threshold, 'calibrated': False}
     threshold = gate['threshold']
     receipt = {'cache': VERSION, 'threshold': threshold, 'threshold_calibrated': gate['calibrated']}
@@ -213,9 +214,19 @@ def lookup(path, question, encoder, *, threshold=None):
     norms = np.maximum(np.linalg.norm(vectors, axis=1), 1e-12)
     sims = vectors[1:] @ vectors[0] / (norms[1:] * norms[0])
     best = int(np.argmax(sims))
+    entry_cuts = None
+    from . import vcache
+    if not pinned and vcache.enabled():
+        ident = getattr(encoder, 'identity', None)
+        entry_cuts = [vcache.entry_threshold(path, c['question'], threshold, ident) for c in candidates]
+        # the candidate with the most headroom over ITS OWN cut wins (a looser entry may beat a closer, stricter one)
+        best = int(np.argmax([float(sims[i]) - entry_cuts[i][0] for i in range(len(candidates))]))
+    cut, vreceipt = entry_cuts[best] if entry_cuts else (threshold, None)
     receipt.update(candidates=len(candidates), matched_question=candidates[best]['question'], similarity=round(float(sims[best]), 4),
                    slots=slots(question))
-    if sims[best] < threshold: return None, {**receipt, 'reason': 'identical slots but similarity below threshold'}
+    if vreceipt: receipt.update(threshold=cut, global_threshold=threshold, vcache=vreceipt)
+    if sims[best] < cut: return None, {**receipt, 'reason': 'identical slots but similarity below threshold'}
     hit = candidates[best]
+    if vreceipt: vcache.log_reuse(path, question, hit['question'], float(sims[best]), hit['plan'])
     return {'plan_kind': hit['plan_kind'], 'plan': hit['plan'], 'agreement': hit['agreement'], 'matched_question': hit['question']}, \
            {**receipt, 'reason': 'reused'}

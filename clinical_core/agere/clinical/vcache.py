@@ -106,8 +106,25 @@ def fit(cases, *, bound=None, min_obs=3, encoder_identity=None, global_threshold
     obs = [c for c in cases if c['score'] is not None and c['score'] >= 0]
     out = {'version': VERSION, 'delta': bound, 'floor': FLOOR, 'encoder_identity': encoder_identity,
            'written_at': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()), 'observations': len(obs), 'entries': {}}
-    if len(obs) < 5 or len({c['correct'] for c in obs}) < 2:
-        out['global'] = {'threshold': global_threshold, 'reason': 'too few labelled observations of both kinds'}
+    if len(obs) < 5:
+        out['global'] = {'threshold': global_threshold, 'reason': 'too few labelled observations'}
+        return out
+    if len({c['correct'] for c in obs}) < 2:
+        # Every labelled reuse was right (the slot gate already removed the adversarial pairs): no curve exists, so use
+        # the rule of three -- n clean observations bound the error rate by 3/n at 95% -- and loosen only where that clears delta.
+        n = len(obs)
+        clean = bool(obs[0]['correct']) and 3.0 / n <= bound
+        out['global'] = {'threshold': global_threshold, 'n': n, 'errors': 0 if clean else n, 'basis': 'rule_of_three',
+                         'rule_of_three_error_bound': round(3.0 / n, 4)}
+        if clean:
+            by = {}
+            for c in obs: by.setdefault(c['key'], []).append(c)
+            for k, rows in by.items():
+                if len(rows) < min_obs: continue
+                lo = min(r['score'] for r in rows)
+                out['entries'][k] = {'threshold': round(max(FLOOR, lo - 0.02), 4), 'n': len(rows), 'errors': 0,
+                                     'basis': 'rule_of_three', 'min_right_similarity': lo,
+                                     '_points': [[round(r['score'], 4), 1] for r in rows]}
         return out
     t, g, cov = fit_curve([c['score'] for c in obs], [c['correct'] for c in obs])
     gcut = cut_for(t, g, cov, bound)
@@ -188,6 +205,12 @@ def entry_threshold(path, entry_question, default, encoder_identity=None):
             if cut is not None:
                 return cut, {**receipt, 'source': 'entry (offline + online)', 'n': len(pts), 'online': len(online)}
             return max(default, 0.99), {**receipt, 'source': 'entry evidence too unsafe', 'n': len(pts)}
+    errs = [o['score'] for o in online if not o['correct']]
+    if row and row.get('threshold') is not None and errs:  # no fitted curve: an online error pushes the cut above it
+        return max(row['threshold'], round(max(errs) + 0.0025, 4)), {**receipt, 'source': 'entry (fitted, raised by online error)',
+                                                                   'n': row['n'], 'online': len(online)}
+    if not row and errs:
+        return max(default, round(max(errs) + 0.0025, 4)), {**receipt, 'source': 'global raised by online error', 'online': len(online)}
     if row and row.get('threshold') is not None:
         return row['threshold'], {**receipt, 'source': 'entry (fitted)', 'n': row['n'], 'errors': row['errors']}
     if row:  # observed, but no similarity meets the bound for this entry
