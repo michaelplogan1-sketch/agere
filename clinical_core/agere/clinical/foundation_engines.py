@@ -19,6 +19,7 @@ from pathlib import Path
 
 VERSION = 'foundation-engines/1'
 OPERATIONS = {
+    'scanned_document_search': 'scanned_documents',  # OCR text of scanned/faxed/outside documents, page/bbox-cited
 }
 
 
