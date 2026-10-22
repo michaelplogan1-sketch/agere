@@ -18,6 +18,7 @@ Usage: python tools/training/train_all.py --datasets artifacts/training/datasets
 """
 import argparse
 import json
+import re
 import os
 import shutil
 import subprocess
@@ -268,7 +269,8 @@ def evaluate_adapter(learner, adapter, held, stack):
             msgs = bottled.messages(r['question'], *profile_as_of)
         else: msgs = bottled.narrow_messages(r['question'])
         text = tok.apply_chat_template(msgs, add_generation_prompt=True, tokenize=False, enable_thinking=False)
-        out = generate(model, tok, prompt=text, max_tokens=700, sampler=make_sampler(temp=0.0), verbose=False).strip()
+        out = generate(model, tok, prompt=text, max_tokens=700, sampler=make_sampler(temp=0.0), verbose=False)
+        out = re.sub(r'<think>.*?</think>', '', out, flags=re.S).strip()  # Qwen3 emits an empty think block first
         try: ok += score(learner, r, out, ctx)
         except Exception:  # noqa: BLE001 - an output that does not compile/execute is simply wrong
             pass
