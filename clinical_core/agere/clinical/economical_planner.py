@@ -423,12 +423,15 @@ class Ladder:
         if self.profile is None:return None
         from . import learning
         known=learning.lookup(self.stack.path,self.question)
+        if not known and os.environ.get('AGERE_CARRY_ON_LOOKUP','on')!='off':  # verified under an earlier release/context: re-verify now
+            from ..verified_carry_forward import carry_question
+            known=carry_question(self.stack.path,self.question)
         if not (known and known['plan_kind']=='sql'):return None
         try:graph=self._sql_graph(known['plan'],'Previously verified query (learned)')
         except ValueError as exc:
             self.decline['learned_rejected']=str(exc)[:200];return None
         return graph,{'route':'learned_verified_sql','model':None,'new_paid_api_calls':0,'frontier_called':False,
-                      'learned_from':known['agreement'],'local_compiler_declined':self.decline,'steps':[],
+                      'learned_from':known['agreement'],'carried_from':known.get('carried_from'),'local_compiler_declined':self.decline,'steps':[],
                       'elapsed_seconds':self.elapsed()}
     def semantic_cache(self):
         # A paraphrase of a VERIFIED question with identical slots reuses its verified query (re-linted).

@@ -155,7 +155,7 @@ def source_coverage_check(build,enforce=None):
     return {k:report[k] for k in ('schema','enforce','passed','counts','unread','unread_records','invalid_declarations')}
 
 
-def activate(build,config,restatement=False,expansion=False,retraction=False,rebaseline=False,carry_forward=False,
+def activate(build,config,restatement=False,expansion=False,retraction=False,rebaseline=False,carry_forward=True,
              require_release_diff=False,release_diff_accepted=(),source_coverage_enforce=None):
     if rebaseline and (restatement or expansion or retraction):
         raise ValueError('--rebaseline is a fresh load; it cannot be combined with --restatement, --expansion or --retraction')
