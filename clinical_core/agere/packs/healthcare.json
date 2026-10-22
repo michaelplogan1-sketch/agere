@@ -1,0 +1,12 @@
+{
+  "id": "healthcare",
+  "label": "Healthcare (default pack)",
+  "industry": "healthcare",
+  "description": "Descriptor only. Every healthcare engine, measure library, definition, check and warehouse keeps running unchanged; the domain_pack engine never claims a question while this pack is active.",
+  "entities": [{"table": "patient", "description": "one row per member / patient", "columns": [{"name": "patient_id", "description": "stable patient key"}]}],
+  "measures": [],
+  "dimensions": [],
+  "actions": ["care_gap_closure", "transitions_of_care", "prior_auth_access", "outreach_allocation", "social_needs"],
+  "engines": "clinical_core.agere.clinical.engine_suite.MODULES",
+  "warehouse": {"active": "config/agere/active_warehouse.json"}
+}

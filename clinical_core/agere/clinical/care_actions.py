@@ -60,3 +60,19 @@ def work_queue(rows, priority, resource=lambda r: None, top=10):
     return {'resting': len(book), 'depth': book.depth()[:8],
             'next': [{'patient_id': v['payload']['patient_id'], 'priority': v['priority'], 'resource': v['resource'],
                       'action': (v['payload'].get('next_action') or v['payload']['next_actions'][0])['step']} for _, v in ordered[:top]]}
+
+
+NEGATION_Q = r"\b(?:not|no|never|without|open|unresolved|missing|overdue|lapsed|didn't|did not|haven't|lack\w*)\b"
+RATE_Q = r'%|\b(?:percent\w*|share|proportion|ratio|rate)\b'
+
+
+def purpose(base, question, *, vocabulary=''):
+    """Route purpose text. The plan's executable text is what the literal check reads, so the purpose states, in canonical words, the
+    semantics the engine really applies: the exclusion of already-closed items, the denominator of a rate, and the domain terms."""
+    import re
+    low = str(question).lower()
+    out = [base]
+    if re.search(NEGATION_Q, low): out.append('excludes (not including) items that already have closing evidence')
+    if re.search(RATE_Q, low): out.append('rate = numerator / denominator over the applicable population')
+    if vocabulary: out.append(vocabulary)
+    return '; '.join(out)

@@ -70,21 +70,21 @@ class Families(unittest.TestCase):
     def tearDownClass(cls): cls.tmp.cleanup()
 
     def test_care_gaps_deqm_states_and_claim_only(self):
-        r = G.execute(self.path, None, {'measures': ['bcs'], 'focus': 'all'}, AS_OF)
+        r = G.execute(self.path, None, {'measures': ['breast_cancer_screening_mammogram'], 'focus': 'all'}, AS_OF)
         st = {x['patient_id']: x for x in r['table']}
         self.assertEqual(set(st), {'F1', 'F2', 'F3'})  # F4 inactive, M1 male: not applicable
         self.assertEqual(st['F1']['gap_status'], 'closed-gap'); self.assertEqual(st['F1']['evidence'], 'result')
         self.assertEqual(st['F2']['evidence'], 'claim'); self.assertEqual(st['F2']['gap_status'], 'closed-gap')
         self.assertEqual(st['F3']['gap_status'], 'open-gap')
         self.assertIn('2030-06-10', st['F3']['next_action']['step']); self.assertEqual(st['F3']['next_action']['status'], 'proposed')
-        strict = G.execute(self.path, None, {'measures': ['bcs'], 'closure_evidence': 'result_only'}, AS_OF)
+        strict = G.execute(self.path, None, {'measures': ['breast_cancer_screening_mammogram'], 'closure_evidence': 'result_only', 'focus': 'no_closing_evidence'}, AS_OF)
         self.assertEqual({x['patient_id'] for x in strict['table']}, {'F2', 'F3'})
         self.assertEqual(strict['summary'][0]['claim_only_held_open'], 1)
 
     def test_missing_table_is_partial_not_a_crash(self):
         with tempfile.TemporaryDirectory() as d:
             db = sqlite3.connect(Path(d)/'semantic.sqlite3'); db.executescript('CREATE TABLE patient(patient_id TEXT, sex_reported TEXT, birth_date TEXT, age_latest INTEGER, coverage_status TEXT, line_of_business TEXT, pcp_practice_id TEXT)'); db.close()
-            r = G.execute(d, None, {'measures': ['flu']}, AS_OF)
+            r = G.execute(d, None, {'measures': ['influenza_flu_vaccine']}, AS_OF)
             self.assertEqual(r['unavailable_measures'], ['flu'])
             self.assertEqual(G.answer(r, {'coverage': 'supported_observation'}, 'q')['status'], 'partial')
             self.assertIn('absent', T.headline(T.execute(d, None, {}, AS_OF)))
@@ -100,21 +100,21 @@ class Families(unittest.TestCase):
         self.assertEqual(T.execute(self.path, None, {'focus': 'readmitted'}, AS_OF)['patient_ids'], ['D2'])
 
     def test_prior_auth_outcomes(self):
-        r = PA.execute(self.path, None, {'focus': 'prior_auth'}, AS_OF)
+        r = PA.execute(self.path, None, {'focus': 'rejected_prior_auth'}, AS_OF)
         s = {c['patient_id']: c for c in r['table']}
         self.assertEqual((s['F1']['state'], s['F1']['days_to_resolution']), ('resolved_paid', 7)); self.assertNotIn('next_action', s['F1'])
         self.assertEqual(s['F2']['state'], 'lapsed'); self.assertIn('appeal', s['F2']['next_action']['step'])
         self.assertEqual(s['F3']['state'], 'open')
         self.assertEqual(r['cases'], 3)  # reject 79 refill-too-soon is not an access case
-        self.assertEqual([c['patient_id'] for c in PA.execute(self.path, None, {'focus': 'not_covered'}, AS_OF)['table']], ['F1'])
+        self.assertEqual([c['patient_id'] for c in PA.execute(self.path, None, {'focus': 'rejected_not_covered'}, AS_OF)['table']], ['F1'])
 
     def test_extra_help_screen_skips_duals(self):
-        r = PA.execute(self.path, None, {'focus': 'extra_help'}, AS_OF)
+        r = PA.execute(self.path, None, {'focus': 'medicare_extra_help'}, AS_OF)
         self.assertEqual([c['patient_id'] for c in r['table']], ['F1'])  # F2 is a full-benefit dual
         self.assertIn('cost barrier', r['table'][0]['basis'])
 
     def test_work_queue_ranks_lapsed_first(self):
-        r = PA.execute(self.path, None, {'focus': 'prior_auth'}, AS_OF)
+        r = PA.execute(self.path, None, {'focus': 'rejected_prior_auth'}, AS_OF)
         self.assertEqual([x['patient_id'] for x in r['work_queue']['next']], ['F2', 'F3'])  # lapsed appeal outranks the open PA; resolved rests nowhere
         self.assertEqual(r['work_queue']['resting'], 2)
 
@@ -139,6 +139,17 @@ class Families(unittest.TestCase):
     def test_every_suite_engine_is_on_the_menu(self):
         for op in ('care_gap_closure', 'transitions_of_care', 'prior_auth_access'):
             self.assertIn(op, PRODUCT, op); self.assertIn(op, CONTRACTS, op); self.assertIn(op, graph_contracts.TYPED, op)
+
+    def test_templates_pass_the_literal_question_check(self):
+        # The cascade rejects a plan that drops part of the question (numbers, negation, time window, rate, named concepts) unless the
+        # plan's executable parameters carry it; every template and the benchmark phrasings must survive that check.
+        from clinical_core.agere.clinical import literal_check
+        qs = [q for m in (G, T, PA) for q in m.TEMPLATES] + ['Which discharges did not get a follow-up visit within 7 days?',
+              'Which members have an open breast cancer screening gap?', 'how many PA denials never got approved and need an appeal']
+        for q in qs:
+            out = E.compile_route(q, {}, AS_OF)
+            self.assertIsNotNone(out, q)
+            self.assertEqual(literal_check.missing(q, literal_check.executable_text(out[0])), [], q)
 
     def test_templates_route_to_their_engine(self):
         for m in (G, T, PA):

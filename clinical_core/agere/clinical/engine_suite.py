@@ -29,11 +29,12 @@ MODULES = {
     'saved_monitors': 'monitor_sweep',              # saved-answer monitors recomputed on new snapshots
     'care_gap_closure': 'care_gap_closure',         # payer care gaps (DEQM open/closed gap per member and measure) + closing actions
     'transitions_of_care': 'transitions_of_care',   # discharge follow-up (TEAM/TCM): visit, contact, med reconciliation, readmission
+    'domain_pack': 'domain_pack',                   # non-healthcare industry packs (AGERE_PACK); never claims a question under the healthcare pack
     'prior_auth_access': 'prior_auth_access',       # prior authorization / non-coverage rejects: resolve, appeal, Extra Help screen
 }
 ROUTE_ORDER = ('saved_monitors', 'change_attribution', 'social_needs', 'star_rating', 'mlr', 'settlement_bridge',
                'policy_search', 'outreach_bandit', 'outreach_allocation', 'staffing_plan',
-               'prior_auth_access', 'transitions_of_care', 'care_gap_closure')
+               'prior_auth_access', 'transitions_of_care', 'care_gap_closure', 'domain_pack')
 
 
 def module(op):

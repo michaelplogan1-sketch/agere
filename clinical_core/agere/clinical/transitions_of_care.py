@@ -16,7 +16,8 @@ from . import care_actions as CA
 
 VERSION = 'transitions-of-care/1'
 OP = 'transitions_of_care'
-FOCUS = ('gaps', 'all', 'summary', 'readmitted')
+FOCUS = ('missing_step', 'all', 'summary', 'readmitted')
+DENOMINATOR = ('known_discharges', 'all_stays')
 GROUP_BY = ('none', 'organization', 'disposition', 'type')
 VISIT_CONCEPTS = ('primary_care_visit', 'specialist_visit', 'telehealth_contact')
 REACHED = ('conversation_completed', 'patient_reached')
@@ -25,7 +26,7 @@ PRODUCT = {'population': 'optional', 'view': 'loops',
                   'days, post-discharge contact within 2 business days, medication reconciliation within 30 days, 30-day readmission, '
                   'by hospital or discharge disposition, and the next action for each discharge missing a step.'}
 CONTRACT = {'inputs': ['optional earlier_set'],
-            'parameters': {'focus': 'gaps|all|summary|readmitted', 'window_days': 365, 'follow_up_days': 7, 'stay_types': ['inpatient', 'observation'],
+            'parameters': {'focus': 'missing_step|all|summary|readmitted', 'as_of': 'optional ISO date', 'denominator': 'known_discharges|all_stays', 'window_days': 365, 'follow_up_days': 7, 'stay_types': ['inpatient', 'observation'],
                            'group_by': 'none|organization|disposition|type', 'top': 200},
             'meaning': 'Per discharge (known discharge date inside the window): reached contact within 4 days, kept ambulatory/telehealth '
                        'visit within follow_up_days (7 or 14), medication reconciliation within 30 days, readmission within 30 days; rates '
@@ -37,18 +38,22 @@ ASSUMPTIONS = ['Synthetic warehouse data; only discharges with a known discharge
 
 
 def schema(obj, string, array):
-    return obj({'focus': string(FOCUS, 'gaps: discharges missing a step; all; summary: rates only; readmitted: 30-day readmissions'),
+    return obj({'focus': string(FOCUS, 'missing_step: discharges missing a step; all; summary: rates only; readmitted: 30-day readmissions'),
+                'as_of': {'type': 'string', 'description': 'ISO date the window ends on; empty = the snapshot date'},
+                'denominator': string(DENOMINATOR, 'known_discharges: only stays with a known discharge date; all_stays: stays with an unknown discharge date count as having no completed step'),
                 'window_days': {'type': 'integer', 'minimum': 7, 'maximum': 1830}, 'follow_up_days': {'type': 'integer', 'enum': [7, 14]},
                 'stay_types': array(string(('inpatient', 'observation')), 'Stay types; empty = both'),
                 'group_by': string(GROUP_BY), 'top': {'type': 'integer', 'minimum': 1, 'maximum': 5000}})
 
 
 def validate(p):
-    allowed = {'focus', 'window_days', 'follow_up_days', 'stay_types', 'group_by', 'top'}
+    allowed = {'focus', 'window_days', 'follow_up_days', 'stay_types', 'group_by', 'top', 'as_of', 'denominator'}
     if not isinstance(p, dict) or set(p) - allowed: raise ValueError('transitions_of_care parameters: ' + ', '.join(sorted(allowed)))
-    out = {'focus': p.get('focus', 'gaps'), 'window_days': p.get('window_days', 365), 'follow_up_days': p.get('follow_up_days', 7),
+    out = {'focus': p.get('focus', 'missing_step'), 'as_of': p.get('as_of') or '', 'denominator': p.get('denominator', 'known_discharges'), 'window_days': p.get('window_days', 365), 'follow_up_days': p.get('follow_up_days', 7),
            'stay_types': sorted(set(p.get('stay_types') or [])), 'group_by': p.get('group_by', 'none'), 'top': p.get('top', 200)}
     if out['focus'] not in FOCUS: raise ValueError(f'focus: {FOCUS}')
+    if out['as_of'] and not re.fullmatch(r'\d{4}-\d{2}-\d{2}', out['as_of']): raise ValueError('as_of: ISO date')
+    if out['denominator'] not in DENOMINATOR: raise ValueError(f'denominator: {DENOMINATOR}')
     if type(out['window_days']) is not int or not 7 <= out['window_days'] <= 1830: raise ValueError('window_days 7..1830')
     if out['follow_up_days'] not in (7, 14): raise ValueError('follow_up_days 7 or 14')
     if any(s not in ('inpatient', 'observation') for s in out['stay_types']): raise ValueError('stay_types: inpatient, observation')
@@ -64,6 +69,7 @@ def _within(days, lo, hi):
 
 def run(db, patient_ids, p, as_of):
     keep = set(patient_ids) if patient_ids is not None else None
+    as_of = p['as_of'] or as_of
     t = CA.tables(db)
     absent = CA.missing_tables(db, ('stay',))
     if absent:
@@ -124,7 +130,7 @@ def run(db, patient_ids, p, as_of):
         row['gap'] = bool(steps)
         row['next_actions'] = steps
         rows.append(row)
-    n = len(rows)
+    n = len(rows) + (unknown if p['denominator'] == 'all_stays' else 0)
     fv = f'visit_within_{p["follow_up_days"]}d'
     rate = lambda k: {'n': k, 'rate': round(k / n, 4) if n else None, 'ci95': CA.wilson(k, n)}
     summary = {'discharges': n, 'contact_within_4d': rate(sum(r['contact_within_4d'] for r in rows)), fv: rate(sum(r[fv] for r in rows)),
@@ -135,7 +141,7 @@ def run(db, patient_ids, p, as_of):
     for r in rows: g[key(r)].append(r)
     by_group = [{'group': k, 'discharges': len(v), 'visit_rate': round(sum(r[fv] for r in v) / len(v), 4), 'med_rec_rate': round(sum(r['med_rec_within_30d'] for r in v) / len(v), 4),
                  'readmit_rate': round(sum(r['readmitted_30d'] for r in v) / len(v), 4)} for k, v in sorted(g.items(), key=lambda kv: -len(kv[1]))]
-    sel = {'gaps': [r for r in rows if r['gap']], 'readmitted': [r for r in rows if r['readmitted_30d']]}.get(p['focus'], rows)
+    sel = {'missing_step': [r for r in rows if r['gap']], 'readmitted': [r for r in rows if r['readmitted_30d']]}.get(p['focus'], rows)
     sel.sort(key=lambda r: (-len(r['next_actions']), r['discharge_date']), reverse=False)
     queue = CA.work_queue(rows, lambda r: len(r['next_actions']) + 2 * r['readmitted_30d'] + (1 if r['disposition'] in ('snf', 'irf', 'home_health') else 0), lambda r: r['organization'])
     return {'schema': VERSION, 'as_of': as_of, 'parameters': p, 'discharges': n, 'summary': summary, 'by_group': by_group, 'work_queue': queue, 'table': sel[:p['top']],
@@ -179,16 +185,18 @@ def route(question, profile, as_of):
     if not re.search(TOC, low): return None
     if re.match(r'(?:what (?:is|are)|explain|define)\b', low) and not re.search(r'\b(?:our|we|my|patients|members|which|how many)\b', low): return None
     if re.search(r'\b(?:cost|spend|pmpm|why|drive[sn]?|predict\w*|risk of)\b', low): return None
-    params = {}
+    params = {'follow_up_days': 7, 'group_by': 'none', 'as_of': str(as_of)[:10], 'denominator': 'known_discharges'}
     if re.search(r'\b(?:14|fourteen)[- ]day\b', low): params['follow_up_days'] = 14
     if re.search(r'\breadmi\w*\b', low) and not re.search(r'\b(?:follow|visit|reconcil\w*|contact)\b', low): params['focus'] = 'readmitted'
+    elif re.search(r'\bgaps?\b|\bdid not\b|\bwithout\b|\bno follow|\bnever\b|\bmissed?\b|\bnot\b', low): params['focus'] = 'missing_step'
     elif re.search(r'\bhow many\b|\brate\b|\bpercent\w*\b|\bsummary\b|\bwhat share\b|\bproportion\b', low): params['focus'] = 'summary'
-    else: params['focus'] = 'gaps'
+    else: params['focus'] = 'missing_step'
     if re.search(r'\bby (?:hospital|facility|organi[sz]ation)\b|\bwhich hospitals?\b', low): params['group_by'] = 'organization'
     elif re.search(r'\bby disposition\b|\bsnf\b|\bhome health\b', low): params['group_by'] = 'disposition'
     m = re.search(r'\b(?:last|past) (\d{1,3}) days\b', low)
     if m and 7 <= int(m.group(1)) <= 1830: params['window_days'] = int(m.group(1))
     if re.search(r'\bobservation\b', low): params['stay_types'] = ['observation']
+    params.setdefault('window_days', 365)
     return plan(OP, params, 'Transitions of care (TEAM / TCM) follow-up completion', question, [f"focus {params['focus']}"])
 
 

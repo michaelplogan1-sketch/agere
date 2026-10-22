@@ -15,7 +15,7 @@ from . import care_actions as CA
 
 VERSION = 'prior-auth-access/1'
 OP = 'prior_auth_access'
-FOCUS = ('prior_auth', 'not_covered', 'extra_help', 'all')
+FOCUS = ('rejected_prior_auth', 'rejected_not_covered', 'medicare_extra_help', 'all')
 STATE = ('open', 'lapsed', 'resolved_paid')
 GROUP_BY = ('none', 'payer', 'drug', 'state')
 REJECT = {'75': 'prior_authorization_required', '70': 'product_not_covered'}
@@ -24,7 +24,7 @@ PRODUCT = {'population': 'optional', 'view': 'loops',
                   'still unresolved, how long approvals took, denials that lapsed and need an appeal, formulary exceptions, and Medicare '
                   'members to screen for Extra Help (LIS) when cost blocks a medication.'}
 CONTRACT = {'inputs': ['optional earlier_set'],
-            'parameters': {'focus': 'prior_auth|not_covered|extra_help|all', 'state': 'open|lapsed|resolved_paid', 'resolution_days': 60,
+            'parameters': {'focus': 'rejected_prior_auth|rejected_not_covered|medicare_extra_help|all', 'state': 'open|lapsed|resolved_paid', 'resolution_days': 60,
                            'group_by': 'none|payer|drug|state', 'top': 200},
             'meaning': 'Rejected pharmacy claims (code 75 prior authorization, 70 not covered) as access cases: resolved_paid when a paid claim '
                        'for the same member and drug follows within resolution_days (with days to resolution), open inside the window, lapsed '
@@ -37,7 +37,7 @@ ASSUMPTIONS = ['Synthetic warehouse data; resolution means a later paid claim fo
 
 
 def schema(obj, string, array):
-    return obj({'focus': string(FOCUS, 'prior_auth: code 75; not_covered: code 70; extra_help: Medicare screen candidates; all'),
+    return obj({'focus': string(FOCUS, 'rejected_prior_auth: code 75; rejected_not_covered: code 70; medicare_extra_help: Medicare screen candidates; all'),
                 'state': string(STATE + ('',), 'Only cases in this state; empty = any'),
                 'resolution_days': {'type': 'integer', 'minimum': 7, 'maximum': 365}, 'group_by': string(GROUP_BY),
                 'top': {'type': 'integer', 'minimum': 1, 'maximum': 5000}})
@@ -46,7 +46,7 @@ def schema(obj, string, array):
 def validate(p):
     allowed = {'focus', 'state', 'resolution_days', 'group_by', 'top'}
     if not isinstance(p, dict) or set(p) - allowed: raise ValueError('prior_auth_access parameters: ' + ', '.join(sorted(allowed)))
-    out = {'focus': p.get('focus', 'prior_auth'), 'state': p.get('state') or '', 'resolution_days': p.get('resolution_days', 60),
+    out = {'focus': p.get('focus', 'rejected_prior_auth'), 'state': p.get('state') or '', 'resolution_days': p.get('resolution_days', 60),
            'group_by': p.get('group_by', 'none'), 'top': p.get('top', 200)}
     if out['focus'] not in FOCUS: raise ValueError(f'focus: {FOCUS}')
     if out['state'] and out['state'] not in STATE: raise ValueError(f'state: {STATE}')
@@ -116,8 +116,8 @@ def run(db, patient_ids, p, as_of):
         s = next_step(c)
         if s: c['next_action'] = s
     pa = [c for c in allc if c['reject_code'] == '75']
-    eh = extra_help(db, keep, as_of, {c['patient_id'] for c in allc if c['state'] != 'resolved_paid'}) if p['focus'] in ('extra_help', 'all') else []
-    sel = {'prior_auth': pa, 'not_covered': [c for c in allc if c['reject_code'] == '70'], 'extra_help': eh, 'all': allc + eh}[p['focus']]
+    eh = extra_help(db, keep, as_of, {c['patient_id'] for c in allc if c['state'] != 'resolved_paid'}) if p['focus'] in ('medicare_extra_help', 'all') else []
+    sel = {'rejected_prior_auth': pa, 'rejected_not_covered': [c for c in allc if c['reject_code'] == '70'], 'medicare_extra_help': eh, 'all': allc + eh}[p['focus']]
     if p['state']: sel = [c for c in sel if c['state'] == p['state']]
     key = lambda c: {'payer': c['payer'], 'drug': (c['drug'] or '')[:40], 'state': c['state']}.get(p['group_by'], 'all')
     g = defaultdict(Counter)
@@ -144,7 +144,7 @@ def execute(path, patient_ids, params, as_of):
 def headline(r):
     if r.get('unavailable'): return 'Medication-access cases cannot be computed: ' + ', '.join(r['unavailable']) + ' absent from this warehouse'
     s = r['states']
-    if r['parameters']['focus'] == 'extra_help': return f"{r['extra_help_candidates']} Medicare members with no dual status and a PA / non-coverage reject or documented cost barrier to screen for Extra Help"
+    if r['parameters']['focus'] == 'medicare_extra_help': return f"{r['extra_help_candidates']} Medicare members with no dual status and a PA / non-coverage reject or documented cost barrier to screen for Extra Help"
     med = f", median {r['median_days_to_resolution']} days to a paid claim" if r['median_days_to_resolution'] is not None else ''
     eh = f"; {r['extra_help_candidates']} Medicare members to screen for Extra Help" if r['extra_help_candidates'] else ''
     return (f"{r['cases']} {r['parameters']['focus'].replace('_', ' ')} cases: {s.get('resolved_paid', 0)} resolved with a paid claim{med}, "
@@ -170,15 +170,16 @@ def route(question, profile, as_of):
     if re.match(r'(?:what (?:is|are)|explain|define|how (?:do|does))\b', low) and not re.search(r'\b(?:our|we|my|patients|members|which|how many)\b', low): return None
     if re.search(r'\b(?:cost|spend|pmpm|why|drive[sn]?|predict\w*|readmission\w*)\b', low) and not re.search(r'\bextra help\b', low): return None
     params = {}
-    if re.search(r'\bextra help\b|\blis\b|\blow[- ]income subsid\w*\b', low): params['focus'] = 'extra_help'
-    elif re.search(r'\bnot covered\b|\bformulary exceptions?\b|\bnon-?coverage\b', low) and not re.search(r'\bprior auth', low): params['focus'] = 'not_covered'
+    if re.search(r'\bextra help\b|\blis\b|\blow[- ]income subsid\w*\b', low): params['focus'] = 'medicare_extra_help'
+    elif re.search(r'\bnot covered\b|\bformulary exceptions?\b|\bnon-?coverage\b', low) and not re.search(r'\bprior auth', low): params['focus'] = 'rejected_not_covered'
     elif re.search(r'\bmedication access\b|\ball (?:access|rejects?)\b', low): params['focus'] = 'all'
-    else: params['focus'] = 'prior_auth'
+    else: params['focus'] = 'rejected_prior_auth'
     if re.search(r'\bstill (?:open|pending|unresolved)\b|\bpending\b|\bunresolved\b|\bwaiting\b|\bopen\b', low): params['state'] = 'open'
     elif re.search(r'\blapsed\b|\bneed(?:s)? (?:an? )?appeal\b|\bappeal\b|\bnever (?:resolved|approved)\b|\bstuck\b', low): params['state'] = 'lapsed'
     elif re.search(r'\bapproved\b|\bresolved\b|\bgot (?:the|their) (?:drug|medication)\b', low): params['state'] = 'resolved_paid'
     if re.search(r'\bby (?:payer|plan)\b|\bwhich (?:payers?|plans?)\b', low): params['group_by'] = 'payer'
     elif re.search(r'\bby (?:drug|medication)\b|\bwhich (?:drugs?|medications?)\b', low): params['group_by'] = 'drug'
+    params.setdefault('group_by', 'none')
     return plan(OP, params, 'Prior authorization and medication-access cases', question, [f"focus {params['focus']}"])
 
 

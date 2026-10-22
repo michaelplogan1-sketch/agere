@@ -28,6 +28,12 @@ def query(run,question):
     return {'question':question,'trained_domain_proposal':plan,**scoped,'narrative_evidence':evidence,
             'scope':'Bounded screening dispatch; trained domain proposal is informational only','synthetic':True}
 
+def _pack_status():
+    try:
+        from . import packs;return packs.status()
+    except Exception as exc:return {'error':str(exc)[:120]}
+
+
 def serve(run,port,annotations=None,evidence_queries=None,stack=None,allow_live_stack=False,recovery=None):
     if recovery and allow_live_stack:raise ValueError('Restored installations have hosted inference disabled')
     from .local_release import READ_POSTS,recovery_routes,check_local_request
@@ -781,7 +787,7 @@ def serve(run,port,annotations=None,evidence_queries=None,stack=None,allow_live_
                 except FileNotFoundError: self.send_error(404); return
             elif parsed.path=='/api/stack/meta':
                 if connected_stack is None:self.send_error(404);return
-                raw=json.dumps({**connected_stack.metadata(),'recovery':recovery,'runtime_source_validation':validation_cache.status(),'runtime_vocabulary_index':validation_index,'request_locks':request_locks.status() if request_locks else None}).encode();mime='application/json'
+                raw=json.dumps({**connected_stack.metadata(),'recovery':recovery,'runtime_source_validation':validation_cache.status(),'runtime_vocabulary_index':validation_index,'request_locks':request_locks.status() if request_locks else None,'domain_pack':_pack_status()}).encode();mime='application/json'
             elif parsed.path in ('/stack-evaluation','/api/stack/workflow-evaluation'):
                 from .clinical.stack_runtime import ROOT
                 from .workflow_evaluation_view import page as evaluation_page

@@ -1,0 +1,185 @@
+{
+  "id": "logistics",
+  "label": "Logistics and freight (example non-healthcare pack)",
+  "industry": "logistics",
+  "description": "Worked example of an industry pack: shipments moving between warehouses on carrier lanes. Same core, same checks and receipts, different vocabulary and tables. Synthetic data only.",
+  "entities": [
+    {
+      "table": "shipment",
+      "description": "one row per shipment",
+      "columns": [
+        {
+          "name": "shipment_id",
+          "description": "shipment key"
+        },
+        {
+          "name": "carrier",
+          "description": "carrier name"
+        },
+        {
+          "name": "lane",
+          "description": "origin-destination lane"
+        },
+        {
+          "name": "mode",
+          "description": "truck, rail or air"
+        },
+        {
+          "name": "promised_date",
+          "description": "date promised to the customer"
+        },
+        {
+          "name": "delivered_date",
+          "description": "actual delivery date; null while in transit"
+        },
+        {
+          "name": "weight_kg",
+          "description": "shipment weight"
+        },
+        {
+          "name": "damaged",
+          "description": "1 when damage was reported"
+        },
+        {
+          "name": "cost_usd",
+          "description": "freight cost"
+        },
+        {
+          "name": "late_days",
+          "description": "days after the promised date (0 when on time); null while in transit"
+        }
+      ]
+    }
+  ],
+  "measures": [
+    {
+      "id": "shipments",
+      "label": "Shipments",
+      "table": "shipment",
+      "expression": "count(*)",
+      "unit": "shipments",
+      "definition": "every shipment row",
+      "generic": true,
+      "synonyms": [
+        "shipments?",
+        "loads?",
+        "orders? shipped"
+      ],
+      "statistic": "count"
+    },
+    {
+      "id": "on_time_rate",
+      "label": "On-time delivery rate",
+      "table": "shipment",
+      "expression": "avg(case when late_days = 0 then 1.0 else 0.0 end)",
+      "where": "delivered_date is not null",
+      "unit": "share of delivered shipments",
+      "definition": "delivered shipments with late_days = 0 over delivered shipments",
+      "synonyms": [
+        "on[- ]time",
+        "otd",
+        "delivered on time",
+        "punctual\\w*"
+      ],
+      "statistic": "share_of_denominator"
+    },
+    {
+      "id": "late_shipments",
+      "label": "Late shipments",
+      "table": "shipment",
+      "expression": "sum(case when late_days > 0 then 1 else 0 end)",
+      "where": "delivered_date is not null",
+      "unit": "shipments",
+      "definition": "delivered shipments with late_days > 0",
+      "synonyms": [
+        "late",
+        "delayed",
+        "behind schedule",
+        "overdue deliver\\w*"
+      ],
+      "statistic": "sum"
+    },
+    {
+      "id": "damage_rate",
+      "label": "Damage rate",
+      "table": "shipment",
+      "expression": "avg(damaged * 1.0)",
+      "unit": "share of shipments",
+      "definition": "shipments with a damage report over all shipments",
+      "synonyms": [
+        "damage\\w*",
+        "broken",
+        "claims? rate"
+      ],
+      "statistic": "share_of_denominator"
+    },
+    {
+      "id": "avg_cost",
+      "label": "Average freight cost",
+      "table": "shipment",
+      "expression": "avg(cost_usd)",
+      "unit": "USD per shipment",
+      "definition": "mean cost_usd over shipments",
+      "synonyms": [
+        "average cost",
+        "avg cost",
+        "cost per shipment",
+        "freight cost"
+      ],
+      "statistic": "mean"
+    },
+    {
+      "id": "in_transit",
+      "label": "In transit",
+      "table": "shipment",
+      "expression": "count(*)",
+      "where": "delivered_date is null",
+      "unit": "shipments",
+      "definition": "shipments with no delivery date yet",
+      "synonyms": [
+        "in transit",
+        "still moving",
+        "not (?:yet )?delivered",
+        "undelivered",
+        "open shipments?"
+      ],
+      "statistic": "count"
+    }
+  ],
+  "dimensions": [
+    {
+      "id": "carrier",
+      "table": "shipment",
+      "column": "carrier",
+      "synonyms": [
+        "carriers?"
+      ]
+    },
+    {
+      "id": "lane",
+      "table": "shipment",
+      "column": "lane",
+      "synonyms": [
+        "lanes?",
+        "routes?"
+      ]
+    },
+    {
+      "id": "mode",
+      "table": "shipment",
+      "column": "mode",
+      "synonyms": [
+        "mode",
+        "transport mode"
+      ]
+    }
+  ],
+  "actions": [
+    "escalate_late_lane",
+    "reroute_carrier",
+    "file_damage_claim"
+  ],
+  "warehouse": {
+    "sample_builder": "clinical_core.agere.packs.logistics_sample.build"
+  }
+}
