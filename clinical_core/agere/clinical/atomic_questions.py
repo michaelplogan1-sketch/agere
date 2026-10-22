@@ -27,6 +27,7 @@ from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 from ...contracts import digest
+from .question_input import QuestionNotUnderstood
 
 VERSION = 'atomic-questions/1'
 AGGREGATIONS = ('any', 'latest', 'trajectory', 'conflict', 'count')
@@ -507,9 +508,11 @@ def run(stack, patient_ids, params, as_of, *, decide=None):
             normal.append((pid, s, dated(doc, as_of), [dated(doc, as_of)]))
     tasks = normal
 
+    from .answer_budget import stop_check
+    stop = stop_check()  # bound here: pool threads do not inherit the cascade's context
+
     def one(task):
-        from .answer_budget import cancelled
-        if cancelled(): raise RuntimeError('tier time share exhausted')  # the cascade moved on; stop spending
+        if stop(): raise QuestionNotUnderstood('tier time share exhausted before every sub-question was asked')  # stop spending
         pid, s, doc, evidence = task
         return ask(s['atom'], s['options'], evidence, as_of=as_of[:10], task_key=s['task_key'], providers=p['providers'],
                    allow_live=live, decide=decide)

@@ -15,7 +15,6 @@ Qwen SQL) run last and only propose. When every proposal fails, the question is 
 what each proposer would have dropped; a reduced or substituted question is never executed (2026-10-19 protection).
 Honest declines naming missing data (undelivered input, missing-data claims) stand only if nothing later answers.
 """
-import contextvars
 import json
 import os
 import sqlite3
@@ -219,26 +218,21 @@ class Cascade:
         return budget.seconds * TIER_SHARE['heavy' if name in HEAVY or name in PAID else 'other']
 
     def call_tier(self, name, limit):
-        """Run one tier, abandoning it when it passes its time share: it yields like a decline (QuestionNotUnderstood) and the
-        cascade continues; the abandoned work is told to stop (answer_budget.cancelled) and can no longer record anything."""
+        """Run one tier on the cascade's own thread with a deadline (no concurrent tiers: in-process models and stack writes stay
+        serial). The tier's loops and model calls stop at the deadline (answer_budget.cancelled / tier_remaining); a tier that
+        reaches it without a proposal yields like a decline (QuestionNotUnderstood) and the cascade continues."""
         fn = getattr(self, 'tier_' + name)
         if limit is None: return fn()
         from .answer_budget import _cancel, _deadline
-        box, stop = {}, threading.Event()
-        ctx = contextvars.copy_context()
-        def work():
-            _cancel.set(stop); _deadline.set(time.monotonic() + limit)
-            try:
-                box['value'] = fn()
-            except BaseException as exc:  # noqa: BLE001 - re-raised in the cascade thread
-                box['error'] = exc
-        worker = threading.Thread(target=ctx.run, args=(work,), daemon=True, name=f'agere-tier-{name}')
-        worker.start(); worker.join(limit)
-        if worker.is_alive():
-            stop.set()
+        tokens = (_cancel.set(threading.Event()), _deadline.set(time.monotonic() + limit))
+        try:
+            found = fn()
+            over = time.monotonic() >= _deadline.get()
+        finally:
+            _deadline.reset(tokens[1]); _cancel.reset(tokens[0])
+        if found is None and over:
             raise QuestionNotUnderstood(f'time share exhausted: {name} used its {limit:.0f}s of the answer budget without a proposal')
-        if 'error' in box: raise box['error']
-        return box['value']
+        return found
 
     def run(self):
         from .answer_budget import start as start_budget

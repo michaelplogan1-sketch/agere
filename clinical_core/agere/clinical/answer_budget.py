@@ -22,9 +22,14 @@ _deadline = contextvars.ContextVar('agere_tier_deadline', default=None)  # time.
 
 
 def cancelled():
-    """True inside a tier the cascade has abandoned for passing its time share (loops stop; nothing is recorded)."""
-    event = _cancel.get()
-    return bool(event is not None and event.is_set())
+    """True inside a tier that has passed its time share (loops stop; nothing more is recorded)."""
+    return stop_check()()
+
+
+def stop_check():
+    """The running tier's stop test, bound now so worker threads (which do not inherit context) can call it."""
+    event, deadline = _cancel.get(), _deadline.get()
+    return lambda: bool((event is not None and event.is_set()) or (deadline is not None and time.monotonic() >= deadline))
 
 
 def tier_remaining(default):
