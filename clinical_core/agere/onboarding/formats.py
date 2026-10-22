@@ -68,6 +68,9 @@ def standard(parser, path, feed=None):
     if parser == 'fhir':
         m = re.search(rb'"resourceType"\s*:\s*"([A-Za-z]+)"', head)
         return f"FHIR {m.group(1).decode()} (bulk ndjson)" if m else 'FHIR bulk ndjson'
+    if parser == 'ccda':
+        m = re.search(rb'<title[^>]*>([^<]{1,60})<', head)
+        return 'C-CDA R2.1 ' + (m.group(1).decode('utf-8', 'replace').strip() if m else 'clinical document')
     if parser == 'ncpdp': return 'NCPDP telecom/SCRIPT'
     if parser == 'documents': return 'scanned document (PDF/image, OCR)'
     if parser == 'flat':
