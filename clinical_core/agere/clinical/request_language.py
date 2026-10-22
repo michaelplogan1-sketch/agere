@@ -5,9 +5,12 @@ boolean grammar combines any available fields and related-record predicates.
 Unconsumed text declines the parse; it is never discarded by a rewrite.
 """
 import copy
+import json
 import re
+import threading
 import sqlite3
 import time
+from pathlib import Path
 from .request_plan import PlanError, AmbiguousRequest
 
 SOURCES = {
@@ -214,6 +217,16 @@ class Parser:
         self.drugs = {k.replace('_', ' '): [k] for k in CLASSES}
         self.drugs.update({k.replace('_', ' '): list(v) for k, v in GROUPS.items()})
         self.drugs.update(DRUG_ALIASES)
+        self.labs, self.terminology = {}, []
+        try:  # messy clinical labels (CHF, Entresto, glycated hgb) -> library concepts: deterministic + saved mappings only
+            from .terminology import grammar_terms, store_path
+            terms = grammar_terms(question, store_path(Path(catalog.target).parent),
+                                  known=[*self.conditions, *self.drugs, *LAB_CONCEPTS])
+            for k, table in (('condition', self.conditions), ('medication', self.drugs), ('lab', self.labs)):
+                for span, value in terms[k].items(): table.setdefault(span.lower(), value)
+            self.terminology = terms['used']
+        except Exception:  # noqa: BLE001 - the mapper only widens vocabulary; the grammar never depends on it
+            pass
 
     def field_aliases(self):
         fields = dict(FIELDS)
@@ -408,6 +421,11 @@ class Parser:
     def thing(self, text):
         """(table, date field, fixed atoms, quote, tail) for one named kind of received evidence."""
         text = re.sub(r'^(?:an?|any|the|their|a recorded)\s+', '', text, flags=re.I)
+        lab = self.prefix(text, self.labs) if self.labs and 'measurement' in self.catalog.tables else None
+        if lab:  # a mapped lab label (terminology.py), with the same optional result wording as LAB_WORDS
+            more = re.match(r'(?:\s+(?:tests?|results?|scores?|values?|readings?))?(?:\s+recorded)?\b', text[len(lab[0]):], re.I)
+            quote = text[:len(lab[0]) + more.end()]
+            return 'measurement', 'event_date', [atom('measurement.concept', '=', lab[1], quote)], quote, text[len(quote):]
         for pattern, table, field, fixed in EVIDENCE:
             if table not in self.catalog.tables: continue
             m = re.match(pattern + r'\b', text, re.I)
@@ -1133,7 +1151,22 @@ class Parser:
 
 
 def parse(catalog, question, *, bound=False):
-    return Parser(catalog, question, bound=bound).parse()
+    parser = Parser(catalog, question, bound=bound)
+    plan = parser.parse()
+    text = json.dumps(plan, default=str).lower()
+    used = [t for t in parser.terminology if t['span'].lower() in text]
+    used = [t for t in used if not any(t['span'] != o['span'] and t['span'].lower() in o['span'].lower() for o in used)]
+    _TERMS.used = (question, used)
+    return plan
+
+
+_TERMS = threading.local()
+
+
+def terminology_used(question):
+    """Messy clinical labels the last parse of this question mapped (terminology.py): span, concept, method, codes."""
+    q, used = getattr(_TERMS, 'used', (None, []))
+    return list(used) if q == question else []
 
 
 def parse_program(catalog, question, *, bound=False):

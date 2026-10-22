@@ -1,0 +1,27 @@
+{
+  "schema": "agere-lay-terms/1",
+  "note": "Curated plain-language and abbreviation synonyms an analyst types for a library concept (terminology.py deterministic tier). Exact whole-term matches only; anything else goes through retrieval and System One adjudication.",
+  "condition": {
+    "high blood pressure": "hypertension", "elevated blood pressure": "hypertension", "htn": "hypertension",
+    "chf": "heart_failure", "congestive heart failure": "heart_failure", "hf": "heart_failure",
+    "hfref": "heart_failure_reduced_ef", "heart failure with reduced ejection fraction": "heart_failure_reduced_ef",
+    "t2dm": "type_2_diabetes", "type 2 diabetes": "type_2_diabetes", "type ii diabetes": "type_2_diabetes", "dm2": "type_2_diabetes",
+    "t1dm": "type_1_diabetes", "type 1 diabetes": "type_1_diabetes",
+    "kidney disease": "chronic_kidney_disease", "chronic renal disease": "chronic_kidney_disease", "esrd": "chronic_kidney_disease",
+    "a-fib": "atrial_fibrillation", "af": "atrial_fibrillation",
+    "high cholesterol": "hyperlipidemia", "hld": "hyperlipidemia",
+    "emphysema": "copd", "mi": "myocardial_infarction", "cva": "stroke", "osa": "sleep_apnea",
+    "major depression": "depression", "low thyroid": "hypothyroidism"
+  },
+  "lab": {
+    "glycated hgb": "hba1c", "glycated hemoglobin": "hba1c", "glycosylated hemoglobin": "hba1c", "hgba1c": "hba1c", "a1c": "hba1c",
+    "bnp": "nt_probnp", "pro-bnp": "nt_probnp", "probnp": "nt_probnp",
+    "kidney function": "egfr", "gfr": "egfr", "microalbumin": "uacr", "urine microalbumin": "uacr",
+    "blood sugar": "glucose", "lipids ldl": "ldl", "bad cholesterol": "ldl", "good cholesterol": "hdl", "thyroid stimulating hormone": "tsh"
+  },
+  "medication": {
+    "ace inhibitors": ["ace_inhibitor"], "arbs": ["arb"], "sglt2 inhibitors": ["sglt2_inhibitor"], "sglt2i": ["sglt2_inhibitor"],
+    "glp-1": ["glp1_agonist"], "glp1": ["glp1_agonist"], "glp-1 agonist": ["glp1_agonist"], "mra": ["mra"],
+    "blood thinner": ["anticoagulant"], "blood thinners": ["anticoagulant"]
+  }
+}

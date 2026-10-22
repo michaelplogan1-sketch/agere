@@ -507,9 +507,10 @@ def _interpret(catalog, question, *, population=None, model=None, force_model=Fa
                     'interpreter':'compositional_grammar_program','review':'fully_consumed_grammar_program',
                     'execution_accepted':True,'attempts':[]}
             plan = request_language.parse(catalog, question, bound=population is not None)
+            terms = request_language.terminology_used(question)
             return request_plan.compile_request(catalog, question, plan, population=population), {
                 'interpreter': 'compositional_grammar', 'review': 'fully_consumed_grammar',
-                'execution_accepted': True, 'attempts': []}
+                'execution_accepted': True, 'attempts': [], **({'terminology': terms} if terms else {})}
         except request_plan.AmbiguousRequest as exc:
             raise QuestionNotUnderstood(str(exc)) from exc
         except request_plan.PlanError as exc:

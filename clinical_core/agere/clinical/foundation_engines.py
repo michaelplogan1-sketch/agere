@@ -19,6 +19,7 @@ from pathlib import Path
 
 VERSION = 'foundation-engines/1'
 OPERATIONS = {
+    'terminology_map': 'terminology_engine',  # source labels -> LOINC / ICD-10 / drug class (terminology.py)
 }
 
 
