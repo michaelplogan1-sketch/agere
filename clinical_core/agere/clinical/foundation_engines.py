@@ -26,6 +26,7 @@ OPERATIONS = {
     'feed_gaps': 'feed_gaps',  # feed sequence gaps and snapshot recovery
     'ed_visits': 'ed_definition',
     'library_measure': 'library_measure',  # any measure-library measure (FUH/FUM/IET exact routing)  # one governed ED visit definition across EHR/ADT/claims with availability status
+    'terminology_map': 'terminology_engine',  # source labels -> LOINC / ICD-10 / drug class (terminology.py)
 }
 
 

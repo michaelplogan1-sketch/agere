@@ -37,6 +37,7 @@ TIERS = {
     'cohort_family_early': ('free (Haiku slot filler only when slots are missing)', 'certified 0.71, 752 cases / 0 errors', 'graph'),
     'undelivered_input': ('free', 'deterministic delivered-field check; declines only', 'decline'),
     'paraphrase_reuse': ('free (MiniLM)', 'verified interpretation of a slot-identical rewording', 'typed'),
+    'terminology_mapping': ('free (saved/deterministic); Jev/Perplexity ~$0.0002 for an unmapped term, live only', 'retrieve-then-classify clinical term (System One p>=0.8 or abstain), then the fully consumed grammar; uncalibrated', 'typed'),
     'semantic_cache': ('free (MiniLM)', 'certified, 0/94 test errors', 'graph'),
     'evidence_retrieval': ('free (FTS5+MiniLM+BGE; Granite fallback)', 'ranked passages; literal + output check; uncalibrated', 'graph'),
     'learned_verified_sql': ('free', 'verified hosted answers, n=3, uncalibrated', 'graph'),
@@ -65,7 +66,7 @@ ORDER = tuple(TIERS)
 PAID = {'typed_decider', 'hosted_typed_interpreter', 'hosted_verified_sql', 'frontier_graph_planner', 'hybrid_analysts',
         'metric_router', 'operator_router', 'semantic_analyst', 'stack_planner_propose', 'atomic_system_one'}
 FEEDBACK_READERS = ('hosted_typed_interpreter',)  # proposers whose prompt includes recorded corrections
-TYPED_WITH_POPULATION = {'qwen_typed_interpreter', 'hosted_typed_interpreter', 'evidence_retrieval', 'evidence_review', 'atomic_system_one'}  # the only tiers that honour a saved cohort
+TYPED_WITH_POPULATION = {'terminology_mapping', 'qwen_typed_interpreter', 'hosted_typed_interpreter', 'evidence_retrieval', 'evidence_review', 'atomic_system_one'}  # the only tiers that honour a saved cohort
 
 # Components that are not proposers, and why (stack_runtime.model_roles reports these).
 NOT_PROPOSERS = {
@@ -300,6 +301,19 @@ class Cascade:
         from .shared_planner import reuse_paraphrase
         return self.typed('paraphrase_reuse', reuse_paraphrase(self.stack, self.catalog, self.question, self.population,
                                                                 self.memory_identity))
+
+    def tier_terminology_mapping(self):
+        from .terminology import tier
+        live = getattr(self.stack, 'allow_live', False)
+        try:
+            found = tier(self.stack, self.catalog, self.question, self.population, self.ledger if live else None)
+        except QuestionNotUnderstood as exc:
+            used = getattr(exc, 'terminology_usage', None) or {}
+            self.spend(used.get('new_paid_api_calls', 0), used.get('known_api_estimate_usd', 0.0)); raise
+        if not found: return None
+        used = found[1].get('terminology_usage') or {}
+        self.spend(used.get('new_paid_api_calls', 0), used.get('known_api_estimate_usd', 0.0))
+        return self.typed('terminology_mapping', found)
 
     def tier_local_normalizer(self):
         from .shared_planner import reuse_normalizer
