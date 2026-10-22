@@ -19,7 +19,7 @@ VERSION = 'observed-outcome-learning/1'
 SPLITS = ('train', 'calibration', 'development_validation')
 PLAN = {'salt': 'agere-observed-outcome-development/1', 'buckets': [70, 85, 100],
         'minimum_per_class': {'train': 10, 'calibration': 5, 'development_validation': 5},
-        'candidates': ['logistic', 'logistic_without_arrival_blocks'],
+        'candidates': ['logistic', 'logistic_without_arrival_blocks', 'tensor_train'],
         'automatic_promotion': False, 'target': 'received_observation_only'}
 
 
@@ -148,10 +148,21 @@ def fit_rows(qualification, output):
         data = [encoded({k: v for k, v in r['values'].items()
                  if name == 'logistic' or not k.startswith('source_blocks:')}) for r in rows]
         vec = DictVectorizer(sparse=True); xtrain = vec.fit_transform([v for v, keep in zip(data, tr) if keep])
-        model = make_pipeline(StandardScaler(with_mean=False), LogisticRegression(C=1, max_iter=1000, random_state=1729))
-        model.fit(xtrain, y[tr])
-        def scores(mask):
-            return np.clip(model.predict_proba(vec.transform([v for v, keep in zip(data, mask) if keep]))[:, 1], 1e-7, 1-1e-7)
+        if name == 'tensor_train':  # classical low-rank tensor-train comparator on min-max scaled dense features
+            import torch
+            from ..tensor_train import fit_tensor
+            dense = xtrain.toarray(); lo, span = dense.min(0), np.ptp(dense, 0) + 1e-9
+            model, _ = fit_tensor((dense - lo) / span, y[tr], 2)
+            def scores(mask):
+                x = (vec.transform([v for v, keep in zip(data, mask) if keep]).toarray() - lo) / span
+                with torch.no_grad():
+                    p = torch.softmax(model(torch.tensor(np.clip(x, 0, 1), dtype=torch.float32)), 1)[:, 1].numpy()
+                return np.clip(p, 1e-7, 1-1e-7)
+        else:
+            model = make_pipeline(StandardScaler(with_mean=False), LogisticRegression(C=1, max_iter=1000, random_state=1729))
+            model.fit(xtrain, y[tr])
+            def scores(mask):
+                return np.clip(model.predict_proba(vec.transform([v for v, keep in zip(data, mask) if keep]))[:, 1], 1e-7, 1-1e-7)
         rawcal = scores(cal)
         calibrator = LogisticRegression(C=1, max_iter=1000).fit(np.log(rawcal/(1-rawcal)).reshape(-1, 1), y[cal])
         raw = scores(val); calibrated = calibrator.predict_proba(np.log(raw/(1-raw)).reshape(-1, 1))[:, 1]
