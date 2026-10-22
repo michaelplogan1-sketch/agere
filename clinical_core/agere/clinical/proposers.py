@@ -73,7 +73,12 @@ PAID = {'typed_decider', 'hosted_typed_interpreter', 'hosted_verified_sql', 'fro
 # Tiers whose cost is minutes, not seconds: the free local compiler (when its plan already passes the literal check) is tried before them, and
 # each tier may use only a share of the answer budget (a tier that runs out yields like a decline; the cascade continues).
 HEAVY = ('atomic_system_one', 'evidence_retrieval', 'evidence_review', 'qwen_rewrite_compiler', 'qwen_typed_interpreter', 'bottled_sql')
-TIER_SHARE = {'heavy': 0.25, 'other': 0.5}  # fraction of the answer budget one tier may use (paid tiers count as heavy)
+TIER_SHARE = {'heavy': 0.25, 'other': 0.5}
+# Tiers that run a local MLX model (in process or in the typed-worker subprocess). Questions run concurrently (no service-wide
+# lock), but two local models on the GPU at once exhausted Metal memory and aborted the server: these tiers take turns.
+LOCAL_MODEL_TIERS = frozenset({'local_normalizer', 'qwen_rewrite_compiler', 'bottled_sql', 'qwen_typed_interpreter', 'local_free_sql',
+                               'evidence_retrieval', 'evidence_review'})
+LOCAL_MODEL_LOCK = threading.Lock()  # fraction of the answer budget one tier may use (paid tiers count as heavy)
 FEEDBACK_READERS = ('hosted_typed_interpreter',)  # proposers whose prompt includes recorded corrections
 TYPED_WITH_POPULATION = {'terminology_mapping', 'qwen_typed_interpreter', 'hosted_typed_interpreter', 'evidence_retrieval', 'evidence_review', 'atomic_system_one', 'hcc_suspecting'}  # the only tiers that honour a saved cohort
 
@@ -222,6 +227,12 @@ class Cascade:
         serial). The tier's loops and model calls stop at the deadline (answer_budget.cancelled / tier_remaining); a tier that
         reaches it without a proposal yields like a decline (QuestionNotUnderstood) and the cascade continues."""
         fn = getattr(self, 'tier_' + name)
+        if name in LOCAL_MODEL_TIERS:
+            with LOCAL_MODEL_LOCK:  # one local model on the GPU at a time across concurrent questions
+                return self._call_tier(fn, name, limit)
+        return self._call_tier(fn, name, limit)
+
+    def _call_tier(self, fn, name, limit):
         if limit is None: return fn()
         from .answer_budget import _cancel, _deadline
         tokens = (_cancel.set(threading.Event()), _deadline.set(time.monotonic() + limit))

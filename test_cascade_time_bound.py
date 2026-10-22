@@ -121,3 +121,19 @@ class EarlyLiteralCheck(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+class LocalModelTurns(unittest.TestCase):
+    def test_local_model_tiers_never_overlap_across_concurrent_questions(self):
+        active, peak, lock = [0], [0], threading.Lock()
+
+        def tier(self):
+            with lock: active[0] += 1; peak[0] = max(peak[0], active[0])
+            time.sleep(0.05)
+            with lock: active[0] -= 1
+
+        with patch.object(P.Cascade, 'tier_bottled_sql', tier, create=True), patch.object(P.Cascade, 'tier_qwen_typed_interpreter', tier, create=True):
+            runs = [threading.Thread(target=cascade().call_tier, args=(n, None)) for n in ('bottled_sql', 'qwen_typed_interpreter') * 3]
+            for t in runs: t.start()
+            for t in runs: t.join()
+        self.assertEqual(peak[0], 1)
