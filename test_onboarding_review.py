@@ -111,7 +111,7 @@ class OmopWorkspace(unittest.TestCase):
         a = ask('Which source feeds did we onboard and in what formats?')
         self.assertIn('omop', a['headline'])
         a = ask('How much of our data maps to the Tuva canonical model?')
-        self.assertEqual(a['unit'], 'percent of received records')
+        self.assertEqual(a['unit'], '% of received records')
 
 
 class Routing(unittest.TestCase):

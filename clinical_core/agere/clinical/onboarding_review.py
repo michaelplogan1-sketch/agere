@@ -278,7 +278,7 @@ def answer(report, plan, question):
            'definitions': [{'term': f"onboarding {report['topic']}", 'basis': report['definition']}],
            'limitations': [basis, 'Describes how the data was received and mapped, not clinical content.']}
     if report['topic'] == 'canonical' and report.get('value') is not None:
-        out.update(answer_type='value', value=round(100 * report['value'], 1), unit='percent of received records',
+        out.update(answer_type='value', value=round(100 * report['value'], 1), unit='% of received records',
                    numerator=report.get('records_mapped'), denominator=report.get('records_total'))
     if report['topic'] == 'round_trip' and report.get('value') is not None:
         out.update(verdict='yes' if report['value'] else 'no')
