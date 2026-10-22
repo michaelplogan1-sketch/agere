@@ -186,6 +186,7 @@ def route(question, profile, as_of):
     if re.match(r'(?:what (?:is|are)|explain|define)\b', low) and not re.search(r'\b(?:our|we|my|patients|members|which|how many)\b', low): return None
     if re.search(r'\b(?:cost|spend|pmpm|why|drive[sn]?|predict\w*|risk of)\b', low): return None
     # time-to-event belongs to survival, care paths / network leakage to pathway
+    if re.search(r'\brisk[- ]standardi[sz]ed\b|\bedac\b|\brsrr\b|\bo/e\b|\bobserved[- ](?:to[- ])?expected\b|\bexcess readmission\b|\bhrrp\b', low): return None  # risk_outcomes
     if re.search(r'\bhow long (?:until|till|before|to|does it take)\b|\btime (?:to|until)\b|\bkaplan|\bsurvival\b|\bcurves?\b|\bcox\b|\bhazards?\b', low): return None
     if re.search(r'\bleak\w*\b|\bout[- ]of[- ]network\b|\bjourneys?\b|\bcare paths?\b|\bpatient flow\b|\bwhere do (?:our |the )?(?:patients|members) go\b', low): return None
     params = {'follow_up_days': 7, 'group_by': 'none', 'as_of': str(as_of)[:10], 'denominator': 'known_discharges'}
