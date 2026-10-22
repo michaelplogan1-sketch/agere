@@ -101,7 +101,8 @@ def verify(cascade, order, name, found):
         if not tier_on(v, cascade.stack): continue
         t0 = time.perf_counter()
         try:
-            got = getattr(cascade, 'tier_' + v)()
+            got = cascade.call_tier(v, cascade.tier_seconds(v, budget)) if budget is not None and hasattr(cascade, 'call_tier') \
+                else getattr(cascade, 'tier_' + v)()  # verifiers get the same per-tier time share as proposers
         except Exception as exc:  # noqa: BLE001 - a verifier failing never stops the answer
             cascade.note(v, 'verification error', f'{type(exc).__name__}: {exc}'[:300], t0); receipt['tried'].append(v); proposed += 1
             from .system_one_gate import CLAUDE_TIERS, outage
