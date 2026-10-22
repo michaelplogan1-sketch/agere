@@ -37,7 +37,7 @@ TIER_OF_ROUTE = {
     'local_compiler': 'local_compiler', 'metric_router': 'metric_router', 'operator_router': 'operator_router',
     'hosted_verified_sql': 'hosted_verified_sql', 'hosted_missing_data': 'hosted_verified_sql', 'cohort_family': 'cohort_family_early',
     'cohort_family_bottled': 'bottled_sql', 'dq_family': 'specialist_families_early', 'vbc_family': 'specialist_families_early',
-    'semantic_cache': 'semantic_cache', 'learned_verified_sql': 'learned_verified_sql', 'bottled_sql': 'bottled_sql',
+    'semantic_cache': 'semantic_cache', 'template_decoding': 'template_decoding', 'learned_verified_sql': 'learned_verified_sql', 'bottled_sql': 'bottled_sql',
     'local_model_rewrite_compiled': 'qwen_rewrite_compiler', 'local_model_sql': 'local_free_sql', 'frontier_escalation': 'frontier_graph_planner',
     'compact_retrieval_typed_router': 'typed_decider', 'evidence_retrieval': 'evidence_retrieval', 'evidence_review': 'evidence_review',
     'together_semantic_analyst': 'semantic_analyst', 'hybrid_analysts': 'hybrid_analysts', 'local_requires_input': 'undelivered_input',

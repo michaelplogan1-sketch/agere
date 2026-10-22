@@ -1075,10 +1075,10 @@ def review(stack, question, graph, receipt, result, *, ledger=None, frontier=Non
 
 # ---------------------------------------------------------------------------------------------------- 4. cross-check
 COMPARABLE = ('count', 'value', 'patient_set')
-HOSTED_ROUTES = {'hosted_verified_sql', 'learned_verified_sql', 'semantic_cache', 'bottled_sql', 'local_model_sql'}
+HOSTED_ROUTES = {'hosted_verified_sql', 'learned_verified_sql', 'semantic_cache', 'template_decoding', 'bottled_sql', 'local_model_sql'}
 # end-to-end gate per route (gate_policy.path_gates names), for the fallback when gate_policy is absent
 _ROUTE_GATE = {'local_compiler': 'local_compiler.answer', 'local_model_rewrite_compiled': 'local_rewrite.answer',
-               'learned_verified_sql': 'learned_reuse.answer', 'semantic_cache': 'learned_reuse.answer', 'bottled_sql': 'bottled.answer',
+               'learned_verified_sql': 'learned_reuse.answer', 'semantic_cache': 'learned_reuse.answer', 'template_decoding': 'learned_reuse.answer', 'bottled_sql': 'bottled.answer',
                'metric_router': 'metric_router.answer', 'operator_router': 'operator_router.answer', 'hosted_verified_sql': 'freeform_sql.verified',
                'compact_retrieval_typed_router': 'typed_route.answer', 'frontier_escalation': 'frontier_planner.answer'}
 

@@ -40,6 +40,7 @@ TIERS = {
     'paraphrase_reuse': ('free (MiniLM)', 'verified interpretation of a slot-identical rewording', 'typed'),
     'terminology_mapping': ('free (saved/deterministic); Jev/Perplexity ~$0.0002 for an unmapped term, live only', 'retrieve-then-classify clinical term (System One p>=0.8 or abstain), then the fully consumed grammar; uncalibrated', 'typed'),
     'semantic_cache': ('free (MiniLM)', 'certified, 0/94 test errors', 'graph'),
+    'template_decoding': ('free (MiniLM; local model only to fill slots)', 'TeCoD: verified query structure kept, only typed value slots refilled; literal-bound; uncalibrated', 'graph'),
     'evidence_retrieval': ('free (FTS5+MiniLM+BGE; Granite fallback)', 'ranked passages; literal + output check; uncalibrated', 'graph'),
     'learned_verified_sql': ('free', 'verified hosted answers, n=3, uncalibrated', 'graph'),
     'evidence_review': ('free readers first; Jev/Perplexity only with allow_live', 'students/windowed/Kev/d1 then typed providers; uncalibrated', 'graph'),
@@ -464,6 +465,7 @@ class Cascade:
     def tier_cohort_family_early(self): return self.graph('cohort_family_early', self.ladder.cohort_family(True))
     def tier_undelivered_input(self): return self.graph('undelivered_input', self.ladder.undelivered())
     def tier_semantic_cache(self): return self.graph('semantic_cache', self.ladder.semantic_cache())
+    def tier_template_decoding(self): return self.graph('template_decoding', self.ladder.template_decoding())
     def tier_learned_verified_sql(self): return self.graph('learned_verified_sql', self.ladder.learned_sql())
     def tier_specialist_families_late(self): return self.graph('specialist_families_late', self.ladder.specialist_families(False))
     def tier_cohort_family_late(self): return self.graph('cohort_family_late', self.ladder.cohort_family(False))

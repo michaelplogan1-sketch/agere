@@ -21,7 +21,7 @@ import time
 from pathlib import Path
 
 VERSION = 'plan-fence/1'
-FENCED = ('learned_verified_sql', 'semantic_cache', 'bottled_sql', 'paraphrase_reuse')
+FENCED = ('learned_verified_sql', 'semantic_cache', 'template_decoding', 'bottled_sql', 'paraphrase_reuse')
 _TABLE = re.compile(r'\b(?:from|join)\s+"?([A-Za-z_][A-Za-z0-9_]*)"?', re.I)
 _QUALIFIED = re.compile(r'\b([a-z_][a-z0-9_]*)\.([a-z_][a-z0-9_]*)\b')
 _CTE = re.compile(r'(?:\bwith\b|,)\s*([A-Za-z_][A-Za-z0-9_]*)\s+as\s*\(', re.I)
