@@ -1,0 +1,30 @@
+[
+  {
+    "question": "Use the simulator to evolve an outreach prioritization policy for our heart failure pharmacist program",
+    "expect_operation": "policy_search"
+  },
+  {
+    "question": "Find the best outreach policy for GDMT gap closure with 30 patients per quarter, simulated",
+    "expect_operation": "policy_search"
+  },
+  {
+    "question": "Can evolutionary search find a targeting rule that beats our router order in simulation?",
+    "expect_operation": "policy_search"
+  },
+  {
+    "question": "Optimize our outreach heuristic to maximize simulated admissions avoided",
+    "expect_operation": "policy_search"
+  },
+  {
+    "question": "Search for a better scheduling policy for the pharmacist outreach waves using the population simulator",
+    "expect_operation": "policy_search"
+  },
+  {
+    "question": "Which outreach strategy does the simulator say saves the most money under our capacity?",
+    "expect_operation": "policy_search"
+  },
+  {
+    "question": "Evolve a policy for remote monitoring enrollment that beats highest risk first",
+    "expect_operation": "policy_search"
+  }
+]
