@@ -213,5 +213,7 @@ def activate(build,config,restatement=False,expansion=False,retraction=False,reb
         try:receipt['verified_carry_forward']=carry_forward_verified(prior['build'],build)
         except Exception as exc:  # noqa: BLE001 - the activation stands; the store starts empty and the receipt says why
             receipt['verified_carry_forward']={'error':f'{type(exc).__name__}: {exc}'[:300]}
+    from .clinical.monitor_sweep import schedule  # saved-answer monitors recompute on the new snapshot (sweep_if_due / scheduler)
+    receipt['monitor_sweep_scheduled']=schedule(build/'stack',f"activated release {connection['release']}")
     (build/'activation.json').write_text(json.dumps(receipt,indent=2)+'\n')
     return receipt

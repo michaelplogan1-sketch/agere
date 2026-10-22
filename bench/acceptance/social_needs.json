@@ -1,0 +1,8 @@
+[
+  {"question": "Which patients with food insecurity have never been referred to a community resource?", "expect_operation": "social_needs"},
+  {"question": "How many community service referrals are still open and overdue?", "expect_operation": "social_needs"},
+  {"question": "What is our social needs referral close rate by practice?", "expect_operation": "social_needs"},
+  {"question": "List members with a corroborated housing instability need", "expect_operation": "social_needs"},
+  {"question": "Which transportation referrals were closed with the ride actually delivered?", "expect_operation": "social_needs"},
+  {"question": "Show SDOH referral loops that failed or got no response", "expect_operation": "social_needs"}
+]

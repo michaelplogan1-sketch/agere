@@ -1,0 +1,6 @@
+[
+  {"question": "Did any of our saved monitors change after the latest data refresh?", "expect_operation": "saved_monitors"},
+  {"question": "Recompute my monitors on the new snapshot", "expect_operation": "saved_monitors"},
+  {"question": "Which of my monitors are pending a recompute?", "expect_operation": "saved_monitors"},
+  {"question": "Show the status of our saved monitors", "expect_operation": "saved_monitors"}
+]
