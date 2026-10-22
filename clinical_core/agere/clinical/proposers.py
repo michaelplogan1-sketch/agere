@@ -25,6 +25,7 @@ from . import request_plan
 from .literal_check import VERSION as CHECK_VERSION, executable_text, missing, shape_misfit
 from .question_input import QuestionNotUnderstood
 from .answer_checks import gate as answer_gate
+from .system_one_gate import CLAUDE_TIERS, outage
 
 VERSION = 'checked-proposer-cascade/1'
 
@@ -100,6 +101,9 @@ class Cascade:
         self.log, self.usd, self.calls, self.cost_known = [], 0.0, 0, True
         self.held_decline = None
         self.provider_error = None
+        self.claude_down = None  # outage kind once a Claude tier failed on the provider: Claude tiers are skipped after that
+        self.candidates = []  # executed proposals a check rejected: the System One fallback chooses among them on an outage
+        self.routing = None
 
     # -- shared resources -------------------------------------------------------------------------------------------
     @property
@@ -146,8 +150,16 @@ class Cascade:
         except Exception:  # noqa: BLE001 - no learning store (fixtures) means no correction
             corrected = False
         self.corrected = corrected
-        order = tuple(n for n in FEEDBACK_READERS if n in ORDER) + tuple(n for n in ORDER if n not in FEEDBACK_READERS) \
-            if corrected else ORDER
+        order = ORDER
+        try:  # System One (Jev, then Perplexity) classifies the question and moves the fitting tiers first; never removes one
+            from .system_one_gate import route_receipt, ready
+            if ready(self.stack, 'AGERE_S1_ROUTER'):
+                order, self.routing = route_receipt(self.question, order, stack=self.stack, ledger=self.ledger)
+            if self.routing: self.spend(self.routing.get('calls', 0), self.routing.get('cost_usd', 0.0))
+        except Exception:  # noqa: BLE001 - routing is an optimization; keep the default order
+            order = ORDER
+        order = tuple(n for n in FEEDBACK_READERS if n in order) + tuple(n for n in order if n not in FEEDBACK_READERS) \
+            if corrected else tuple(order)
         try:
             from .legacy_proposers import router_order
             order = tuple(router_order(self.stack, self.question, order)[0])
@@ -165,6 +177,8 @@ class Cascade:
                 if self.population is not None and name not in TYPED_WITH_POPULATION: continue
                 if not enabled(name, self.stack): continue
                 started = time.perf_counter()
+                if self.claude_down and name in CLAUDE_TIERS:  # one outage per question: no repeated failing Claude calls
+                    self.note(name, 'skipped', f'Claude unavailable ({self.claude_down}) earlier in this question', started); continue
                 try:
                     found = getattr(self, 'tier_' + name)()
                 except QuestionNotUnderstood as exc:
@@ -173,6 +187,7 @@ class Cascade:
                     self.note(name, 'error', f'{type(exc).__name__}: {exc}', started)
                     if name in PAID and not isinstance(exc, (ValueError, KeyError, TypeError, AttributeError, sqlite3.Error)):
                         self.provider_error = self.provider_error or exc
+                        if name in CLAUDE_TIERS: self.claude_down = self.claude_down or outage(exc) or 'unavailable'
                     continue
                 if found is None:
                     self.note(name, 'no proposal', None, started); continue
@@ -188,6 +203,8 @@ class Cascade:
                 contract, interpretation = self.held_decline
                 return contract, self.finish(interpretation, interpretation['interpreter'])
             if self.provider_error is not None:
+                found = self.system_one_fallback()  # Claude out: System One picks among the executed candidates (partial)
+                if found: return found
                 # A provider outage is reported as an outage (unverified), never as a question nobody could read.
                 self.provider_error.planner_receipt = {**self.usage(), 'proposers': self.log}
                 raise self.provider_error
@@ -208,6 +225,52 @@ class Cascade:
     def reject(self, name, reasons):
         self.log.append({'proposer': name, 'outcome': 'rejected', 'detail': '; '.join(reasons), 'seconds': None})
         return None
+
+    def keep(self, name, pair, reasons=None):
+        """Remember an executed proposal a check rejected (for the System One fallback); reasons default to its last rejection."""
+        if reasons is None:
+            reasons = next((e['detail'] for e in reversed(self.log) if e['proposer'] == name and e['outcome'] == 'rejected'), None)
+            reasons = [reasons] if reasons else []
+        self.candidates.append({'name': name, 'pair': pair, 'reasons': list(reasons)})
+
+    def system_one_fallback(self):
+        """Claude unavailable: system_one.decide picks the best executed-but-rejected candidate (never one System One's own check
+        judged a different question); returned marked partial with the reason. None when nothing to pick or System One can't."""
+        from .system_one_gate import fallback, ready
+        pool, seen = [], set()
+        for c in self.candidates:
+            contract = c['pair'][0]
+            if contract['id'] in seen or any('System One check:' in r for r in c['reasons']): continue
+            seen.add(contract['id']); pool.append(c)
+        started = time.perf_counter()
+        if not pool: return None
+        if os.environ.get('AGERE_S1_FALLBACK', 'on') == 'off' or not ready(self.stack, 'AGERE_S1_FALLBACK'):
+            self.note('system_one_fallback', 'not available', f'{len(pool)} executed candidate(s); System One not ready', started)
+            return None
+        try:
+            pick = fallback(self.question, [{'name': c['name'], 'graph': c['pair'][0]['graph'], 'result': c['pair'][0]['executed'],
+                                             'reasons': c['reasons']} for c in pool], stack=self.stack, ledger=self.ledger)
+        except Exception as exc:  # noqa: BLE001 - the outage is reported instead
+            self.note('system_one_fallback', 'error', f'{type(exc).__name__}: {exc}'[:300], started); return None
+        self.spend(pick['calls'], pick['cost_usd'])
+        if pick['index'] is None:
+            self.note('system_one_fallback', 'no proposal', f"System One ({pick['decided_by']}) found no candidate that answers "
+                      f"the question as asked ({pick['label']}, p={pick['p']:.2f})", started)
+            return None
+        chosen = pool[pick['index']]
+        why = (f"Claude was unavailable ({self.claude_down or 'provider error'}); System One ({pick['decided_by']}, p={pick['p']:.2f}) "
+               f"chose this executed candidate from {chosen['name']} among {pick['candidates']}"
+               + (f"; open checks: {'; '.join(chosen['reasons'])[:300]}" if chosen['reasons'] else '') + '.')
+        self.note('system_one_fallback', 'accepted', why, started)
+        contract, interpretation = chosen['pair']
+        executed = dict(contract['executed'])
+        answer = dict(executed.get('answer') or {})
+        answer['limitations'] = list(dict.fromkeys([*(answer.get('limitations') or []), 'Partial: ' + why]))
+        answer.setdefault('confidence', 'low')
+        contract = {**contract, 'executed': {**executed, 'answer': answer}}
+        interpretation = self.finish(interpretation, chosen['name'])
+        return contract, {**interpretation, 'partial': True, 'partial_reason': 'system_one_fallback_provider_unavailable',
+                          'system_one_fallback': pick, 'limitations': [*(interpretation.get('limitations') or []), why]}
 
     def usage(self):
         return {'new_paid_api_calls': self.calls, 'known_api_estimate_usd': round(self.usd, 6), 'api_cost_known': self.cost_known}
@@ -314,7 +377,7 @@ class Cascade:
         misfit = shape_misfit(self.question, result.get('answer'))
         if misfit:
             offered = getattr(self, 'budget', None) and self.executed(name, graph, receipt, result)
-            if offered: self.budget.offer(offered, label=name, reasons=[misfit])
+            if offered: self.budget.offer(offered, label=name, reasons=[misfit]); self.keep(name, offered, [misfit])
             return self.reject(name, [misfit])
         return self.executed(name, graph, receipt, result, paid_execution=result.get('new_paid_api_calls', 0))
 
@@ -326,8 +389,14 @@ class Cascade:
 
     def executed(self, name, graph, receipt, result, paid_execution=0):
         if paid_execution: self.spend(paid_execution, 0, False)
-        if (result.get('answer') or {}).get('status') != 'not_available' and (result := answer_gate(self, name, graph, receipt, result)) is None:
-            return None  # answer_checks rejected it (zero-result probe, guard, shape, certificate); the next proposer tries
+        if (result.get('answer') or {}).get('status') != 'not_available':
+            checked = answer_gate(self, name, graph, receipt, result)
+            if checked is None:  # answer_checks rejected it (zero-result probe, guard, shape, certificate, System One); next proposer tries
+                self.keep(name, self.contract_of(name, graph, receipt, result)); return None
+            result = checked
+        return self.contract_of(name, graph, receipt, result)
+
+    def contract_of(self, name, graph, receipt, result):
         contract = {'kind': 'checked_graph', 'graph': graph, 'legacy_receipt': receipt, 'executed': result,
                     'source_identity': self.catalog.identity,
                     'id': request_plan.fingerprint({'question': self.question, 'graph': graph})}
