@@ -410,6 +410,7 @@ import os as _os
 import sqlite3 as _sqlite3
 import time as _time
 from pathlib import Path as _Path
+from . import system_one_gate as _s1_gate
 
 CHECK_VERSION = 'shared-answer-checks/1'
 PROBE_VERSION = 'zero-result-probe/1'
@@ -885,6 +886,7 @@ def check(stack, question, graph, receipt, result, *, ledger=None, catalog=None,
         run('answer_guard_cross_check', lambda: _cross_check(stack, question, graph, receipt, answer, prof, ledger, hosted, state, verdict))
     run('unchecked_zero_guard', lambda: _unchecked_zero(receipt, answer, state, verdict))
     run('answer_shape_review', lambda: _shape(question, graph, result, verdict))
+    if verdict['accept']: _s1_gate.apply_check(stack, question, graph, verdict, ledger=ledger)  # System One: answers the question as asked?
     verdict['checks_run'].append('cascade_certificates')
     verdict['reasons'] = list(dict.fromkeys(verdict['reasons']))
     verdict['annotations'] = list(dict.fromkeys(verdict['annotations']))
@@ -900,7 +902,7 @@ def gate(cascade, name, graph, receipt, result):
                     catalog=cascade.catalog if getattr(cascade.catalog, 'target', None) else None)
     if verdict['cost']['new_paid_api_calls'] or verdict['cost']['usd']:
         cascade.spend(verdict['cost']['new_paid_api_calls'], verdict['cost']['usd'])
-    summary = {k: verdict[k] for k in ('version', 'accept', 'reasons', 'annotations', 'probe', 'checks_run', 'certificate', 'confidence')
+    summary = {k: verdict[k] for k in ('version', 'accept', 'reasons', 'annotations', 'probe', 'checks_run', 'certificate', 'confidence', 'system_one')
                if k in verdict}
     if isinstance(receipt, dict): receipt['answer_checks'] = summary
     if not verdict['accept']:
