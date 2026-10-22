@@ -125,7 +125,9 @@ def lines(db, start, end, keep, p):
         code = str(code).upper()
         per_unit = allowed / 100 / (units if units and units > 0 else 1)
         payer, product, npi = c
-        if product == 'medicare_ffs': medicare[code].append(per_unit)
+        if product == 'medicare_ffs':
+            medicare[code].append(per_unit)
+            if 'medicare_ffs' not in p['products']: continue  # Medicare FFS is the reference, not a negotiated-rate cell
         if (p['payers'] and payer not in p['payers']) or (p['products'] and product not in p['products']): continue
         cells[(payer, npi, code)].append(per_unit)
     return cells, medicare, orgs
@@ -255,7 +257,7 @@ def answer(report, plan, question):
 PT_RX = (r'\bprice transparency\b|\btransparency (?:in coverage|files?|data)\b|\bmachine[- ]readable (?:files?|mrfs?)\b|\bmrfs?\b|\btic (?:files?|data)\b'
          r'|\bnegotiated (?:rates?|prices?)\b|\bcontracted rates?\b.{0,40}\b(?:compare|benchmark|vs|versus|competitor|market|other payers)\b'
          r'|\brate benchmark\w*\b|\b(?:benchmark|compare)\w* (?:our )?(?:rates|prices|reimbursement rates)\b|(?:\bpercent|%) of medicare\b'
-         r'|\bwhat (?:do|does) (?:each|other|the) payers? pay\b.{0,40}\b(?:for|cpt|code)\b|\bcompetitors?\b.{0,30}\b(?:rates?|prices?|paid)\b')
+         r'|\bwhat (?:do|does) (?:each|other|the) payers? pay\b.{0,40}\b(?:for|cpt|code)\b|\bcompetitors?\b.{0,30}\b(?:rates?|prices?|paid)\b|\brates? sit\b|\b(?:vs|versus|against) the market\b')
 
 
 def route(question, profile, as_of):

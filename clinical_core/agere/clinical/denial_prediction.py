@@ -315,7 +315,7 @@ def answer(report, plan, question):
 PREDICT = (r'\bpredict\w*\b|\bforecast\w*\b|\blikely (?:to be|to get) denied\b|\bat risk of (?:being )?denied\b|\bat risk of denial\b|'
            r'\bdenial (?:risk|probability|likelihood|score|propensity)\b|\brisk of denial\b|\bprobability (?:of|that) (?:a |the |each )?(?:claim|denial)|'
            r'\bwill (?:be|get) denied\b|\bgoing to (?:be|get) denied\b|\bwhich claims (?:will|are likely|might|may)\b|\bscrub\w*\b.*\bbefore\b|'
-           r'\bpre-?submission\b|\bbefore (?:we )?(?:submit|send|release)\w*\b')
+           r'\bprobability\b.{0,40}\bdenied\b|\bpre-?submission\b|\bbefore (?:we )?(?:submit|send|release)\w*\b')
 DENIAL = r'\bdenial\w*\b|\bdenied\b|\bdeny\b|\brejection\w*\b|\brejected\b'
 
 
@@ -340,6 +340,6 @@ def route(question, profile, as_of):
 
 
 TEMPLATES = ['Which claims are likely to be denied?', 'Predict which of our recent claims will get denied and why',
-             'Denial risk score for claims submitted in the last 14 days', 'What is the probability that each claim is denied on first pass?',
+             'Denial risk score for claims submitted in the last 14 days', 'Give me the probability that each of our claims is denied on first pass',
              'Which Medicaid claims are at risk of denial before we submit them?', 'Score pending claims for denial likelihood with the reason',
              'Forecast denials for this week\'s claims', 'Top 20 claims most likely to be denied and what to fix']

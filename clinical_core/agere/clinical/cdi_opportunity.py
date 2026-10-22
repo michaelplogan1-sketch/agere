@@ -386,7 +386,7 @@ def answer(report, plan, question):
 CDI_RX = (r'\bcdi\b|\bclinical documentation (?:improvement|integrity|opportunit\w*)\b|\bdocumentation (?:improvement|opportunit\w*|quer\w*)\b'
           r'|\b(?:cc|mcc)s?\b.{0,40}\b(?:missing|missed|uncoded|not coded|capture|opportunit\w*)\b|\b(?:missing|missed|uncoded|capture)\b.{0,40}\b(?:cc|mcc)s?\b'
           r'|\bdrg (?:severity|optimi[sz]ation|opportunit\w*|under-?coding|downcod\w*)\b|\bunder-?coded (?:stays|admissions|drgs?|inpatient)\b'
-          r'|\bseverity (?:capture|of illness capture)\b|\bquery opportunit\w*\b')
+          r'|\bseverity (?:capture|of illness capture)\b|\bquery opportunit\w*\b|\b(?:aki|sepsis|hyponatr\w*|malnutrition|encephalopathy)\b.{0,50}\bbut (?:no|not)\b.{0,25}\bcod\w*')
 
 
 def route(question, profile, as_of):
@@ -394,6 +394,7 @@ def route(question, profile, as_of):
     q = rc.low(question)
     if not re.search(CDI_RX, q): return None
     if rc.knowledge_only(q): return None
+    if re.search(r'\bcreep\b|\bupcod\w*|\bcoding intensity\b', q): return None  # severity creep -> upcoding_detection
     params = {}
     rules = [r for r, rx in (('hyponatremia', r'hyponatr'), ('aki', r'\baki\b|acute kidney'), ('sepsis', r'\bsep(?:sis|tic)\b'),
                              ('respiratory_failure', r'respiratory failure'), ('acute_heart_failure', r'heart failure|\bchf\b'),

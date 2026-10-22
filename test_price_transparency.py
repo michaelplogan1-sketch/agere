@@ -48,7 +48,7 @@ class PriceBenchmark(unittest.TestCase):
         self.assertEqual(c['medicare_ffs_median'], 90.0)
         self.assertEqual(c['payers']['PAY-1']['median'], 120.0)
         self.assertAlmostEqual(c['payers']['PAY-1']['pct_of_medicare'], round(120 / 90, 3))
-        self.assertEqual(c['market_median'], 115.0)  # median of 100, 120, 140, 130 (Medicare cell is its own payer: 90)
+        self.assertEqual(c['market_median'], 125.0)  # median of 100, 120, 140, 130; Medicare FFS is the reference, not a cell
         alpha = next(x for x in r['rows'] if x['payer'] == 'PAY-1' and x['npi'] == '111')
         self.assertEqual((alpha['lines'], alpha['median_allowed'], alpha['percentile_in_payer'], alpha['own']), (6, 100.0, 0.0, True))
         a = P.answer(r, {'coverage': 'supported_observation'}, 'q')
