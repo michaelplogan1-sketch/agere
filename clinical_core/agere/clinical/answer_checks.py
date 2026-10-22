@@ -395,3 +395,520 @@ def annotate(answer, question, as_of=None, execute=None):
     except Exception as exc:  # noqa: BLE001 - controls annotate; they must never take an answer down
         answer.setdefault('quality_checks', []).append({'control': 'error', 'fmea': None, 'message': f'{type(exc).__name__}: {exc}'[:200]})
     return answer
+
+
+# ==================================================================================================== shared post-execution hook
+# check(): every answer-checking component on the shared question path, run once on a proposal the checked-proposer cascade
+# (proposers.Cascade) has already executed. Order: zero-result probe -> answer guard (suspicion, catalog probe incl. dense
+# retrieval, zero contradictions; paid cross-check only live + uncertified) -> unchecked-zero guard -> answer shape review ->
+# cascade certificate + gate policy. Heal, never block: accept=False rejects THIS proposal only (the cascade's next proposer
+# tries) and is used only for concrete evidence (data found elsewhere, a contradicting value, a wrong shape that cannot be
+# reshaped, a calibrated certificate below its threshold); everything else is an annotation. A sub-check that raises is
+# recorded in annotations and never stops the others.
+import json as _json
+import os as _os
+import sqlite3 as _sqlite3
+import time as _time
+from pathlib import Path as _Path
+
+CHECK_VERSION = 'shared-answer-checks/1'
+PROBE_VERSION = 'zero-result-probe/1'
+PROBE_BUDGET_S = 6.0
+PROBE_MAX_LITERALS = 8
+
+# family, semantic table, group column (source within the table), date column(s), {column: match kind}
+#   eq: case-insensitive equality; like: substring of a received label/name; code: ICD-style prefix; code_json: prefix inside a JSON list
+PROBES = (
+    ('condition', 'condition', 'source_table', 'event_date', {'concept': 'eq', 'normalized_label': 'like', 'label': 'like', 'icd10': 'code'}),
+    ('condition', 'problem_list_entry', None, 'first_recorded', {'problem_key': 'eq', 'label': 'like', 'icd10': 'code'}),
+    ('condition', 'encounter_diagnosis', 'source', 'event_date', {'icd10': 'code'}),
+    ('condition', 'claim', None, 'service_date', {'principal_diagnosis': 'code', 'diagnosis_codes': 'code_json'}),
+    ('condition', 'payer_claim', None, 'service_from', {'principal_diagnosis': 'code', 'diagnosis_codes': 'code_json'}),
+    ('condition', 'note_fact', 'stream', 'event_date', {'fact_type': 'eq', 'value': 'eq'}),
+    ('measurement', 'measurement', 'source_table', 'event_date', {'concept': 'eq', 'name': 'like', 'component': 'like', 'loinc': 'eq'}),
+    ('any', 'concept_patient', 'kind', ('first_date', 'last_date'), {'concept': 'eq'}),
+    ('medication', 'medication', 'source_stream', 'event_date', {'drug_class': 'eq', 'drug_name': 'like', 'ingredients': 'like',
+                                                                 'therapeutic_category': 'eq', 'rxnorm': 'eq', 'ndc': 'eq'}),
+    ('encounter', 'visit', None, 'event_date', {'type_concept': 'eq', 'type': 'like', 'setting': 'eq', 'wellness_visit_type': 'eq'}),
+    ('encounter', 'encounter', 'source_table', 'event_date', {'type_concept': 'eq', 'type': 'like'}),
+    ('encounter', 'utilization_event', None, 'event_date', {'kind': 'eq'}),
+    ('encounter', 'stay', 'stay_source', 'admit_date', {'type': 'like'}),
+    ('procedure', 'procedure_line', 'source', 'service_date', {'cpt': 'eq', 'hcpcs': 'eq', 'code': 'eq'}),
+    ('procedure', 'claim_line', None, 'service_date', {'cpt': 'eq', 'hcpcs': 'eq', 'local_charge_code': 'eq'}),
+    ('procedure', 'payer_claim_line', None, 'service_date', {'cpt': 'eq', 'hcpcs': 'eq'}),
+    ('procedure', 'wellness_visit', 'source', 'event_date', {'hcpcs_code': 'eq', 'visit_type': 'eq', 'awv_kind': 'eq'}),
+    ('procedure', 'immunization', 'source', 'event_date', {'vaccine': 'like', 'cvx': 'eq', 'code': 'eq', 'product': 'like'}),
+)
+PROBE_TABLES = {p[1] for p in PROBES}
+_ICD = re.compile(r'^[A-TV-Z]\d{2}(?:\.[0-9A-Z]{0,4})?$', re.I)
+_IDENT = re.compile(r'^[a-z][a-z0-9_ ]{2,48}$', re.I)
+_SQL_LITERAL = re.compile(r"'((?:[^']|'')*)'")
+# literal values that name a status, polarity or bookkeeping state, never the subject of a predicate
+_NOT_SUBJECT = {'answered', 'partial', 'completed', 'complete', 'final', 'active', 'inactive', 'resolved', 'dispensed', 'paid', 'denied',
+                'reversed', 'cancelled', 'canceled', 'booked', 'arrived', 'fulfilled', 'yes', 'no', 'true', 'false', 'null', 'none',
+                'unknown', 'male', 'female', 'other', 'principal', 'primary', 'secondary', 'ehr', 'payer_claim', 'claim', 'record',
+                'current', 'amended', 'preliminary', 'entered_in_error', 'positive', 'negative', 'count', 'table', 'value',
+                'patient_set', 'sql', 'stream', 'payload', 'event_date', 'patient_id'}
+
+
+def _zero_kind(answer):
+    """'zero' | 'empty' | 'all_unknown' | None for an asserted answer."""
+    if not isinstance(answer, dict) or answer.get('answer_type') in (None, 'unsupported'): return None
+    if answer.get('status') not in ('answered', 'partial'): return None
+    t = answer.get('answer_type')
+    if t in ('count', 'value'):
+        v = answer.get(t)
+        if v == 0 and not isinstance(v, bool):
+            return 'all_unknown' if (answer.get('unknown_count') or 0) > 0 else 'zero'
+        if v is None and (answer.get('unknown_count') or 0) > 0: return 'all_unknown'
+        return None
+    if t == 'patient_set':
+        return None if answer.get('patient_ids') or answer.get('count') else ('all_unknown' if answer.get('unknown_count') else 'empty')
+    if t == 'table':
+        rows = answer.get('table')
+        if isinstance(rows, list) and not rows: return 'empty'
+        if isinstance(rows, list) and all(isinstance(r, dict) for r in rows):
+            vals = [v for r in rows for v in list(r.values())[1:]]
+            if vals and all(v is None or str(v).strip().lower() in ('', 'unknown', 'none') for v in vals): return 'all_unknown'
+    return None
+
+
+def _queries(graph, answer):
+    out = [str(answer.get('query'))] if isinstance(answer, dict) and answer.get('query') else []
+    for n in (graph or {}).get('nodes') or []:
+        p = n.get('parameters') if isinstance(n, dict) else None
+        if isinstance(p, dict):
+            for k in ('query', 'membership_query', 'unknown_membership_query'):
+                if isinstance(p.get(k), str) and p[k] and p[k] not in out: out.append(p[k])
+    return out
+
+
+def _plan_strings(graph):
+    """Identifier-like strings of non-SQL plan parameters (cohort concepts, drug classes, encounter concepts)."""
+    out = []
+
+    def walk(v, key=None):
+        if isinstance(v, dict):
+            for k, x in v.items():
+                if k not in ('query', 'membership_query', 'unknown_membership_query', 'purpose', 'returns', 'analysis_window'): walk(x, k)
+        elif isinstance(v, list):
+            for x in v: walk(x, key)
+        elif isinstance(v, str) and (_IDENT.match(v) or _ICD.match(v)) and ' ' not in v.strip():
+            out.append(v)
+    for n in (graph or {}).get('nodes') or []:
+        if isinstance(n, dict) and n.get('operation') != 'sql': walk(n.get('parameters'))
+    return out
+
+
+def _literals(sqls, extra=()):
+    lits = []
+    for sql in sqls:
+        code = re.sub(r'--[^\n]*', '', sql)
+        for m in _SQL_LITERAL.findall(code):
+            lits.append(m.replace("''", "'"))
+    lits += list(extra)
+    out = []
+    for raw in lits:
+        v = raw.strip().strip('%').strip()
+        if not v or len(v) < 3 or len(v) > 60: continue
+        if re.fullmatch(r'[\d.,:\- ]+', v) or re.fullmatch(r'\$\.\w+', v): continue  # numbers, dates, json paths
+        if v.lower() in _NOT_SUBJECT or v.lower().startswith('$.'): continue
+        if not (_ICD.match(v) or _IDENT.match(v) or re.fullmatch(r'[A-Z0-9]{4,6}', v)): continue
+        if v not in out: out.append(v)
+    return out[:PROBE_MAX_LITERALS]
+
+
+def _tables_read(sqls):
+    read = set()
+    for sql in sqls:
+        for t in re.findall(r'\b(?:from|join)\s+([A-Za-z_][A-Za-z0-9_]*)', sql, re.I):
+            read.add(t.lower())
+    return read
+
+
+def _group_filter(sql, group):
+    """Source values the SQL restricts a group column to ({'problem_lists'}), or None when it does not filter on it."""
+    if not group: return None
+    vals, hit = set(), False
+    for m in re.finditer(r'\b' + re.escape(group) + r"\s*=\s*'((?:[^']|'')*)'", sql, re.I):
+        hit = True; vals.add(m.group(1))
+    for m in re.finditer(r'\b' + re.escape(group) + r'\s+in\s*\(([^)]*)\)', sql, re.I):
+        hit = True; vals |= set(_SQL_LITERAL.findall(m.group(1)))
+    return vals if hit else None
+
+
+def _code_prefixes(lit):
+    """ICD prefixes a literal stands for: itself when it is a code, or the library concept's code prefixes ('diabetes' -> E08..E13)."""
+    if _ICD.match(lit): return [lit.upper()]
+    try:
+        from .concepts import CONDITIONS
+        return list(CONDITIONS.get(lit.lower(), {}).get('icd10') or [])
+    except Exception:  # noqa: BLE001 - expansion is an aid only
+        return []
+
+
+def _semantic_target(stack, catalog):
+    if catalog is not None and getattr(catalog, 'target', None): return _Path(catalog.target)
+    path = getattr(stack, 'path', None)
+    return _Path(path) / 'semantic.sqlite3' if path else None
+
+
+def _probe_db(target):
+    db = _sqlite3.connect(f'file:{target}?mode=ro', uri=True)
+    deadline = _time.perf_counter() + PROBE_BUDGET_S
+    db.set_progress_handler(lambda: 1 if _time.perf_counter() > deadline else 0, 20000)
+    return db
+
+
+def _count_source(db, cols, table, group, date, matchers, lit, period):
+    """-> [(group value or table, distinct patients)] with matching rows, or None when no column of the table can match."""
+    have = cols.get(table)
+    if not have: return None
+    clauses, args = [], []
+    prefixes = _code_prefixes(lit)
+    for col, kind in matchers.items():
+        if col not in have: continue
+        if kind == 'eq':
+            clauses.append(f'lower({col}) = lower(?)'); args.append(lit)
+        elif kind == 'like' and len(lit) >= 4 and not _ICD.match(lit) and re.search(r'[a-z]', lit, re.I):
+            clauses.append(f'lower({col}) LIKE ?'); args.append('%' + lit.lower() + '%')
+        elif kind == 'code' and prefixes:
+            for p in prefixes[:12]: clauses.append(f'upper({col}) LIKE ?'); args.append(p.upper() + '%')
+        elif kind == 'code_json' and prefixes:
+            for p in prefixes[:12]: clauses.append(f'upper({col}) LIKE ?'); args.append('%"' + p.upper() + '%')
+    if not clauses: return None
+    where = '(' + ' OR '.join(clauses) + ')'
+    if period:
+        lo, hi = period
+        if isinstance(date, tuple) and all(d in have for d in date):
+            where += f' AND {date[0]} <= ? AND {date[1]} >= ?'; args += [hi, lo]
+        elif isinstance(date, str) and date in have:
+            where += f' AND substr({date}, 1, 10) BETWEEN ? AND ?'; args += [lo, hi]
+    who = 'count(DISTINCT patient_id)' if 'patient_id' in have else 'count(*)'
+    if group and group in have:
+        rows = db.execute(f'SELECT {group}, {who} FROM {table} WHERE {where} GROUP BY {group}', args).fetchall()
+        return [(str(g), n) for g, n in rows if n]
+    n = db.execute(f'SELECT {who} FROM {table} WHERE {where}', args).fetchone()[0]
+    return [(table, n)] if n else []
+
+
+def zero_result_probe(stack, question, graph, answer, *, catalog=None, target=None):
+    """Zero-result discovery probe (ledger zero_result_probe_shared). For a 0 / empty / all-unknown answer, each predicate value
+    the executed plan filtered on is counted in every semantic source that can hold it (conditions vs problem lists vs encounter
+    and claim diagnoses vs labs; medication lists vs orders vs fills vs pharmacy claims; EHR visits vs ADT vs claims; claim lines
+    vs wellness / immunization records), in the question's period. A predicate whose sources the answer read hold no matching
+    rows while a source it did not read does is where the data lives. Free, read-only, bounded (PROBE_BUDGET_S).
+    -> None (not a zero answer) or {'version', 'trigger', 'period', 'tables_read', 'predicates': [{'literal', 'own', 'alternatives',
+       'flagged'}], 'flagged': [...], 'complete', 'reason'?}"""
+    trigger = _zero_kind(answer)
+    if trigger is None: return None
+    from .answer_guard import _ABSENCE_Q, period_of
+    out = {'version': PROBE_VERSION, 'trigger': trigger, 'period': None, 'tables_read': [], 'predicates': [], 'flagged': [],
+           'complete': True}
+    if _ABSENCE_Q.search(question or ''):
+        out['reason'] = 'the question asks about absence; a zero is a plausible answer'; return out
+    sqls = _queries(graph, answer)
+    read = _tables_read(sqls)
+    lits = _literals(sqls, _plan_strings(graph))
+    period = period_of(question)
+    out.update(period=list(period) if period else None, tables_read=sorted(read))
+    if not lits:
+        out['reason'] = 'the plan filtered on no predicate value to look up'; return out
+    target = _Path(target) if target else _semantic_target(stack, catalog)
+    if target is None or not target.exists():
+        out.update(complete=False, reason='no semantic layer to probe'); return out
+    db = _probe_db(target)
+    try:
+        names = {r[0] for r in db.execute("SELECT name FROM sqlite_master WHERE type IN ('table','view')")}
+        cols = {t: {r[1] for r in db.execute(f'PRAGMA table_info({t})')} for t in PROBE_TABLES if t in names}
+        sql_text = ' '.join(sqls)
+        try:  # stream / source names select a source; they are not predicates to look up
+            streams = {r[0] for r in db.execute('SELECT DISTINCT stream FROM record')} if 'record' in names else set()
+        except _sqlite3.Error:
+            streams = set()
+        lits = [l for l in lits if l not in streams]
+        for lit in lits:
+            own, alt, own_known = [], [], False
+            for family, table, group, date, matchers in PROBES:
+                try:
+                    found = _count_source(db, cols, table, group, date, matchers, lit, period)
+                except _sqlite3.OperationalError as exc:
+                    if 'interrupt' in str(exc).lower(): out['complete'] = False; break
+                    continue
+                if found is None: continue
+                if table in read:
+                    own_known = True
+                    # the answer read only the sources its SQL restricts this table to (source_table = 'problem_lists'), else all
+                    named = _group_filter(sql_text, group)
+                    for g, n in found:
+                        row = {'table': table, 'source': g, 'family': family, 'patients': n}
+                        (own if (named is None or g in named) else alt).append(row)
+                else:
+                    alt += [{'table': table, 'source': g, 'family': family, 'patients': n} for g, n in found]
+            alt.sort(key=lambda r: -r['patients'])
+            flagged = own_known and not sum(r['patients'] for r in own) and bool(alt)
+            out['predicates'].append({'literal': lit, 'own': own, 'alternatives': alt[:8], 'own_known': own_known, 'flagged': flagged})
+            if flagged: out['flagged'].append(lit)
+            if not out['complete']: break
+    finally:
+        db.close()
+    return out
+
+
+def _where(rows, k=3):
+    return ', '.join(f"{r['patients']} patients in {r['table']}" + (f" ({r['source']})" if r['source'] != r['table'] else '') for r in rows[:k])
+
+
+def _probe_reasons(probe):
+    out = []
+    for p in probe.get('predicates') or []:
+        if not p['flagged']: continue
+        when = f" in {probe['period'][0][:4]}" if probe.get('period') and probe['period'][0][:4] == probe['period'][1][:4] else ''
+        out.append(f"zero-result probe: {p['literal']!r} matches no rows{when} in the sources this answer read "
+                   f"({', '.join(sorted({r['table'] for r in p['own']}) or [t for t in probe['tables_read'] if t in PROBE_TABLES]) or 'its tables'}), "
+                   f"but {_where(p['alternatives'])}; read those sources")
+    return out
+
+
+# ---- the hook ---------------------------------------------------------------------------------------------------------------
+def _route(receipt):
+    return (receipt or {}).get('route') if isinstance(receipt, dict) else None
+
+
+def _profile(stack, profile):
+    if profile is not None: return profile
+    try:
+        from .source_profile import load
+        return load(stack.path)
+    except Exception:  # noqa: BLE001 - no profile means the catalog probe is skipped (annotated)
+        return None
+
+
+def _guard(stack, question, graph, receipt, answer, profile, state, verdict):
+    """answer_guard_suspicion + answer_guard_dense_catalog (free parts): suspicion -> full-catalog probe (lexical + dense RRF) ->
+    zero contradictions. Rejects only for an unread likely source or a concrete contradiction; a source the answer read that
+    returned nothing, or no source anywhere, is annotated."""
+    from . import answer_guard as AG
+    if not AG.enabled():
+        verdict['annotations'].append('answer guard off (AGERE_ANSWER_GUARD=off)'); return
+    found = AG.suspicion(question, answer)
+    claim = AG.decline_claim(answer, receipt) if not found else None
+    state['suspicion'] = [f['kind'] for f in found]
+    if not found and not claim: return
+    if profile is None:
+        verdict['annotations'].append('answer guard: ' + '; '.join(f['message'] for f in found) + ' (no source profile to probe)'); return
+    p = AG.probe(question, profile, path=getattr(stack, 'path', None), encoder=getattr(getattr(stack, 'retriever', None), 'encoder', None))
+    used = AG.used_sources(graph, answer, profile.get('streams') or {})
+    for c in p['candidates']: c['used'] = c['stream'] in used
+    kinds = {f['kind'] for f in found}
+    zero_only = bool(found) and kinds <= AG.ZERO_KINDS
+    contra = AG.zero_contradictions(answer, profile, used, p['period'], getattr(stack, 'path', None)) if zero_only else []
+    likely = [c for c in p['candidates'] if c['likely']]
+    state['guard_probe'] = {'streams_searched': p['streams_searched'], 'dense': bool(p.get('dense')),
+                            'likely': [c['stream'] for c in likely], 'used': sorted(used)[:40],
+                            'contradictions': [{k: c.get(k) for k in ('stream', 'contradiction')} for c in contra]}
+    if claim:
+        unread = [c for c in likely if not c['used']]
+        if unread:
+            verdict['accept'] = False
+            verdict['reasons'].append(f'answer guard: the answer declined ({claim[:120]}) but ' + '; '.join(AG.describe_source(c) for c in unread[:2]))
+        else:
+            verdict['annotations'].append(f"Catalog check: searched all {p['streams_searched']} received streams; no unread source holds it, so the decline stands.")
+        return
+    if contra:
+        verdict['accept'] = False
+        verdict['reasons'].append('answer guard: ' + '; '.join(AG.describe_source(c) for c in contra[:2]))
+        return
+    unread = [c for c in likely if not c['used']]
+    if unread:
+        verdict['accept'] = False
+        verdict['reasons'].append('answer guard: ' + found[0]['message'] + ', yet ' + '; '.join(AG.describe_source(c) for c in unread[:2])
+                                  + " that this answer didn't read")
+        return
+    if zero_only and not likely:
+        state['zero_confirmed'] = 'catalog'
+        what = ', '.join(p['terms'][:6]) or 'the question terms'
+        verdict['annotations'].append(f"Catalog check: searched all {p['streams_searched']} received streams (names, fields, values and codes) "
+                                      f"for {what}" + (f" in {p['period'][0][:4]}" if p['period'] else '') + '; no unread source has matching records, so the zero stands.')
+    elif zero_only:
+        verdict['annotations'].append('answer guard: ' + '; '.join(AG.describe_source(c) for c in likely[:2]) + ', and this answer read it and found none')
+    elif kinds - {'money_small'} and not likely:
+        # a shape/units suspicion with no catalog evidence: a concrete misfit (dollars answered with a count, % outside 0-100)
+        hard = [f for f in found if f['kind'] in ('money_shape', 'rate_range', 'rate_shape')]
+        if hard:
+            verdict['accept'] = False
+            verdict['reasons'].append('answer guard: ' + '; '.join(f['message'] for f in hard))
+        else:
+            verdict['annotations'].append('answer guard: ' + '; '.join(f['message'] for f in found))
+    else:
+        verdict['annotations'].append('answer guard: ' + '; '.join(f['message'] for f in found))
+
+
+def _cross_check(stack, question, graph, receipt, answer, profile, ledger, hosted, state, verdict):
+    """answer_guard_cross_check: one independent path (paid) for an uncertified comparable answer, live stacks only. Agreement and
+    unavailability annotate; a disagreement from a non-relaxed independent path is a concrete contradiction."""
+    from . import answer_guard as AG
+    if _os.environ.get('AGERE_CROSS_CHECK', 'on') == 'off': return 'off'
+    if not getattr(stack, 'allow_live', False) or ledger is None: return 'not live'
+    if not AG.comparable(answer): return 'not comparable'
+    if state.get('certified'): return 'certified'
+    pending = AG.PendingCheck(stack, question, receipt, ledger=ledger, profile=profile, hosted=hosted,
+                              deadline=_time.perf_counter() + AG.budget_s())
+    pending.provide(answer)
+    out = pending.result()
+    if out is None:
+        verdict['annotations'].append(f'Cross-check: not finished within {AG.budget_s()} s; the answer is not cross-checked.'); return 'timed_out'
+    if out[0] is None:
+        _, why, usd, n = out
+        verdict['cost']['new_paid_api_calls'] += n or 0; verdict['cost']['usd'] += usd or 0.0
+        verdict['annotations'].append(f'Cross-check unavailable: {why}'); return 'unavailable'
+    label, g, r, res, usd, n = out
+    verdict['cost']['new_paid_api_calls'] += n or 0; verdict['cost']['usd'] += usd or 0.0
+    if res is None:
+        verdict['annotations'].append('Cross-checked: verification v2 already found independent agreement.'); return 'agree'
+    other = (res or {}).get('answer') or {}
+    if AG._asserted(other) and AG._same(answer, other):
+        state['zero_confirmed'] = state.get('zero_confirmed') or 'cross_check'
+        verdict['annotations'].append(f'Cross-checked: an independent path ({label}) gives the same answer.'); return 'agree'
+    if not AG._asserted(other) or label.endswith('(relaxed)'):
+        verdict['annotations'].append(f'Cross-check: the independent path ({label}) gave no comparable answer.'); return 'unavailable'
+    verdict['accept'] = False
+    verdict['reasons'].append(f"cross-check: an independent path ({label}) answered {_json.dumps(AG._summary(other), default=str)[:160]}, "
+                              f"this proposal answered {_json.dumps(AG._summary(answer), default=str)[:160]}")
+    return 'disagree'
+
+
+def _unchecked_zero(receipt, answer, state, verdict):
+    """unchecked_zero_guard (together.decide): a zero/empty nothing independent confirmed ships at low confidence, never as a
+    confident 0. Confirmations: analyst-executed answer, catalog check, zero-result probe with every predicate looked up,
+    cross-check agreement, certified tier."""
+    from .together import _empty_answer
+    if _os.environ.get('AGERE_UNCHECKED_ZERO', 'abstain') != 'abstain' or not _empty_answer(answer): return None
+    probe = verdict.get('probe') or {}
+    if _route(receipt) == 'hybrid_analysts': state['zero_confirmed'] = state.get('zero_confirmed') or 'independent_analysts'
+    if probe.get('complete') and probe.get('predicates') and not probe.get('flagged'):
+        state['zero_confirmed'] = state.get('zero_confirmed') or 'zero_result_probe'
+    if state.get('certified'): state['zero_confirmed'] = state.get('zero_confirmed') or 'certified_tier'
+    if state.get('zero_confirmed'): return state['zero_confirmed']
+    verdict['annotations'].append('Unchecked zero: no independent check confirmed this empty result (low confidence).')
+    verdict['confidence'] = 'low'
+    return 'unchecked'
+
+
+def _shape(question, graph, result, verdict):
+    """answer_shape_review: free conformance; unambiguous reshape replaces the answer, a misfit rejects the proposal."""
+    from . import answer_shape as S
+    answer = result['answer']
+    if answer.get('withheld') is not None and answer.get('answer_type') == 'unsupported':
+        verdict['accept'] = False
+        verdict['reasons'].append('answer shape: ' + str((answer.get('missing') or ['wrong-shaped answer withheld'])[-1])[:300])
+        return 'withheld'
+    fixed, info = S.conform(question, answer, operation=S._final_operation(graph))
+    if info['status'] == 'misfit':
+        verdict['accept'] = False
+        verdict['reasons'].append(f"answer shape: the question asks for a {info.get('requested')}; the proposal returned a "
+                                  f"{info.get('answered')} ({info.get('reason')})")
+    elif info['status'] == 'reshaped':
+        fixed = {k: v for k, v in fixed.items() if k != 'headline'}  # proposers.execute restates the headline
+        verdict['result'] = {**result, 'answer': fixed}
+        verdict['annotations'].append(f"Answer shape: reshaped ({info.get('how')}).")
+    elif info.get('rounded') is not None:
+        verdict['result'] = {**result, 'answer': fixed}
+    return info['status']
+
+
+def _certificates(receipt, state, verdict):
+    """cascade_certificates + gate_policy.assess: annotate certified / uncalibrated; only a calibrated tier scoring below its
+    certified threshold rejects (the certificate itself defers to the next tier). 'not_certified' tiers propose by design."""
+    from . import cascade, gate_policy
+    cert = cascade.certify_route(receipt) if isinstance(receipt, dict) else None
+    gate = gate_policy.assess(receipt) if isinstance(receipt, dict) else None
+    status = (cert or {}).get('status') or ('certified' if (gate or {}).get('level') == 'verified' else 'uncalibrated')
+    state['certified'] = status == 'certified' or (gate or {}).get('level') == 'verified'
+    verdict['certificate'] = {'status': status, **({k: cert.get(k) for k in ('tier', 'score', 'threshold', 'alpha', 'delta', 'bound',
+                                                                             'n_calibration', 'reason') if cert.get(k) is not None} if cert else {}),
+                              'gate_level': (gate or {}).get('level'), 'gate_reason': (gate or {}).get('reason')}
+    if cert and cert.get('status') == 'below_threshold':
+        verdict['accept'] = False
+        verdict['reasons'].append('certificate: ' + cert['statement'])
+    elif cert and cert.get('status') == 'certified':
+        verdict['annotations'].append('Certified: ' + cert['statement'] + '.')
+    else:
+        verdict['annotations'].append(f"Certificate: {status}" + (f" ({(cert or gate or {}).get('reason')})" if (cert or gate) else '') + '.')
+    return status
+
+
+def check(stack, question, graph, receipt, result, *, ledger=None, catalog=None, profile=None, hosted=None):
+    """Every answer check on one executed proposal. result = analysis_graph execute result (result['answer']).
+    ledger: BudgetLedger for the paid cross-check (live only); catalog: request_plan.Catalog (its semantic target);
+    profile: source profile (default source_profile.load(stack.path)); hosted: answer_guard.hosted_sql replacement (tests).
+    -> {'accept', 'reasons', 'annotations', 'probe', 'checks_run', 'certificate', 'confidence'?, 'result' (possibly reshaped),
+        'cost': {'new_paid_api_calls', 'usd'}, 'version'}"""
+    verdict = {'version': CHECK_VERSION, 'accept': True, 'reasons': [], 'annotations': [], 'probe': None, 'checks_run': [],
+               'certificate': None, 'result': result, 'cost': {'new_paid_api_calls': 0, 'usd': 0.0}}
+    answer = (result or {}).get('answer') if isinstance(result, dict) else None
+    if not isinstance(answer, dict):
+        verdict['annotations'].append('answer checks: no answer object to check'); return verdict
+    state = {}
+
+    def run(component, fn):
+        verdict['checks_run'].append(component)
+        try:
+            return fn()
+        except Exception as exc:  # noqa: BLE001 - one check failing never stops the others (heal, don't block)
+            verdict['annotations'].append(f'{component} failed: {type(exc).__name__}: {exc}'[:300])
+            return None
+
+    def probe():
+        p = zero_result_probe(stack, question, graph, answer, catalog=catalog)
+        verdict['probe'] = p
+        if p and p['flagged']:
+            verdict['accept'] = False
+            verdict['reasons'] += _probe_reasons(p)
+        elif p and p.get('predicates'):
+            verdict['annotations'].append('Zero-result probe: ' + ('; '.join(
+                f"{q['literal']!r} has no matching rows in any other source" if not q['alternatives'] else
+                f"{q['literal']!r} also in {_where(q['alternatives'], 2)}" for q in p['predicates'][:4]))
+                + ('' if p['complete'] else ' (probe stopped at its time budget)') + '.')
+        elif p and p.get('reason'):
+            verdict['annotations'].append('Zero-result probe: ' + p['reason'] + '.')
+        return p
+    run('zero_result_probe_shared', probe)
+    prof = _profile(stack, profile)
+    run('answer_guard_suspicion', lambda: _guard(stack, question, graph, receipt, answer, prof, state, verdict))
+    verdict['checks_run'].append('answer_guard_dense_catalog')  # inside the guard probe (AG.probe dense='auto')
+    # certificates are read before the paid cross-check and the unchecked-zero guard (both depend on certification);
+    # they are reported in the documented order below
+    run('cascade_certificates', lambda: _certificates(receipt, state, verdict))
+    verdict['checks_run'].remove('cascade_certificates')
+    if verdict['accept']:
+        run('answer_guard_cross_check', lambda: _cross_check(stack, question, graph, receipt, answer, prof, ledger, hosted, state, verdict))
+    run('unchecked_zero_guard', lambda: _unchecked_zero(receipt, answer, state, verdict))
+    run('answer_shape_review', lambda: _shape(question, graph, result, verdict))
+    verdict['checks_run'].append('cascade_certificates')
+    verdict['reasons'] = list(dict.fromkeys(verdict['reasons']))
+    verdict['annotations'] = list(dict.fromkeys(verdict['annotations']))
+    return verdict
+
+
+def gate(cascade, name, graph, receipt, result):
+    """proposers.Cascade hook: run check() on an executed proposal. Rejected -> cascade.reject(name, reasons) and None (the next
+    proposer tries); accepted -> the (possibly reshaped) result with annotations in answer['limitations'], the probe and the
+    verdict in result['answer_checks'] and receipt['answer_checks']. Paid cross-check spend goes to cascade.spend."""
+    live = getattr(cascade.stack, 'allow_live', False)
+    verdict = check(cascade.stack, cascade.question, graph, receipt, result, ledger=cascade.ledger if live else None,
+                    catalog=cascade.catalog if getattr(cascade.catalog, 'target', None) else None)
+    if verdict['cost']['new_paid_api_calls'] or verdict['cost']['usd']:
+        cascade.spend(verdict['cost']['new_paid_api_calls'], verdict['cost']['usd'])
+    summary = {k: verdict[k] for k in ('version', 'accept', 'reasons', 'annotations', 'probe', 'checks_run', 'certificate', 'confidence')
+               if k in verdict}
+    if isinstance(receipt, dict): receipt['answer_checks'] = summary
+    if not verdict['accept']:
+        cascade.reject(name, verdict['reasons'] or ['answer checks rejected the proposal']); return None
+    out = dict(verdict['result'])
+    answer = dict(out['answer'])
+    answer['limitations'] = list(dict.fromkeys([*(answer.get('limitations') or []), *verdict['annotations']]))
+    if verdict.get('confidence') == 'low': answer.setdefault('confidence', 'low')
+    out['answer'] = answer
+    out['answer_checks'] = summary
+    return out
