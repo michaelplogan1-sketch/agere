@@ -231,3 +231,78 @@ def iso(dt_value):
 
 def add_days(day, n):
     return (date.fromisoformat(str(day)[:10]) + timedelta(days=n)).isoformat()
+
+
+# ---- shared engine plumbing (wave-2 hospital-ops engines) -----------------------------------------------------------------
+def spec_validate(name, defaults, spec, p):
+    """Authoritative validator from a spec {param: (kind, *args)}: enum / list_enum / int / num / bool / date / str (None allowed)."""
+    p = dict(p or {})
+    if set(p) - set(defaults): raise ValueError(f'{name} parameters: ' + ', '.join(sorted(defaults)))
+    out = {**defaults, **{k: v for k, v in p.items() if v is not None}}
+    for k, (kind, *a) in spec.items():
+        v = out[k]
+        if kind == 'enum' and v not in a[0]: raise ValueError(f'{k}: {tuple(a[0])}')
+        elif kind == 'list_enum':
+            if not isinstance(v, list) or any(x not in a[0] for x in v): raise ValueError(f'{k}: {tuple(a[0])}')
+        elif kind == 'int' and v is not None and (type(v) is not int or not a[0] <= v <= a[1]): raise ValueError(f'{k}: integer {a[0]}..{a[1]}')
+        elif kind == 'num' and v is not None and (isinstance(v, bool) or not isinstance(v, (int, float)) or not a[0] <= v <= a[1]):
+            raise ValueError(f'{k}: number {a[0]}..{a[1]}')
+        elif kind == 'bool': out[k] = bool(v)
+        elif kind == 'date' and v is not None and d(v) is None: raise ValueError(f'{k}: ISO date')
+        elif kind == 'str' and v is not None and not isinstance(v, str): raise ValueError(f'{k}: text')
+    return out
+
+
+def spec_schema(spec, obj, string, array):
+    props = {}
+    for k, (kind, *a) in spec.items():
+        if kind == 'enum': props[k] = string(list(a[0]), k)
+        elif kind == 'list_enum': props[k] = array(string(list(a[0])), k)
+        elif kind == 'int': props[k] = {'type': ['integer', 'null'], 'minimum': a[0], 'maximum': a[1], 'description': k}
+        elif kind == 'num': props[k] = {'type': ['number', 'null'], 'minimum': a[0], 'maximum': a[1], 'description': k}
+        elif kind == 'bool': props[k] = {'type': 'boolean', 'description': k}
+        elif kind in ('date', 'str'): props[k] = {'type': ['string', 'null'], 'description': k}
+    return obj(props)
+
+
+def common_params(low):
+    """Facility / trailing-window / calendar-year phrasing shared by every route."""
+    out = {}
+    m = re.search(r'\b(?:last|past|previous) (\d{1,3}) months?\b', low)
+    if m and 1 <= int(m.group(1)) <= 120: out['months'] = int(m.group(1))
+    elif re.search(r'\b(?:last|past) year\b|\blast 12 months\b', low): out['months'] = 12
+    yr = re.search(r'\bin (20\d\d)\b', low)
+    if yr: out.update(start=f'{yr.group(1)}-01-01', end=f'{yr.group(1)}-12-31')
+    fac = re.search(r'\b(hospital[\s-]*\d+|wh[n]?-hospital-[\w-]+)\b', low)
+    if fac: out['facility'] = fac.group(1)
+    return out
+
+
+def visits_in(db, as_of, p, patient_ids=None, classes=None, need=None):
+    """Governed visits (visit_groups.load) restricted to the question window / facility / classes -> (rows, basis, (start, end), fac, notes)."""
+    from . import visit_groups
+    rows, basis = visit_groups.load(db, patient_ids, as_of)
+    start, end = window(as_of, p.get('months'), p.get('start'), p.get('end'))
+    fac, notes = None, []
+    if p.get('facility'):
+        fac = resolve_facility(p['facility'], facilities(db))
+        if not fac: notes.append(f"No facility matches '{p['facility']}'; every facility is counted.")
+    sel = [r for r in rows if (not start or r['start_date'] >= start) and r['start_date'] <= end and (not fac or r['organization_id'] == fac)
+           and (not classes or r['visit_class'] in classes) and (not need or need(r))]
+    return sel, basis, (start, end), fac, notes
+
+
+def generic_answer(op, report, plan, headline_text):
+    partial = plan.get('coverage') != 'supported_observation' or plan.get('unmet_requirements')
+    out = {'status': 'partial' if partial else 'answered', 'answer_type': 'table', 'table': report['table'], 'count': report['receipt'].get('count'),
+           'patient_ids': report.get('patient_ids', []), 'value': headline_text, 'method': report['method'],
+           'limitations': report['assumptions'] + report.get('notes', []) + [f"Source: {report['basis']}."], 'overall': {op: report['receipt']}}
+    for k in ('detail', 'scenarios', 'clusters', 'cases'):
+        if report.get(k): out['overall'][k] = report[k]
+    return out
+
+
+def run(connected_obj, as_of, patient_ids):
+    """Open the semantic layer once -> (db, as_of date)."""
+    db, snap = connect(connected_obj)
+    return db, str(as_of or snap)[:10]
