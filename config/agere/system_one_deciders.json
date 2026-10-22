@@ -1,0 +1,328 @@
+{
+  "default_order": [
+    "jev",
+    "perplexity"
+  ],
+  "generated": "2026-10-22T13:01:16+00:00",
+  "schema": "system-one-deciders/1",
+  "tasks": {
+    "atomic_gdmt_pillar": {
+      "as_of": "2030-05-27",
+      "calibration": {
+        "ece_after": 0.09481018111683348,
+        "ece_after_loo": 0.15157894762816534,
+        "ece_before": 0.10172529340904801,
+        "n": 12,
+        "nll_after_loo": 0.2049347472698778,
+        "nll_before": 0.2255221759751951
+      },
+      "cost_usd": 0.0,
+      "decided_at": "2026-10-22T12:59:34+00:00",
+      "n": 12,
+      "order": [
+        "perplexity",
+        "jev"
+      ],
+      "primary": "perplexity",
+      "results": {
+        "jev": {
+          "accuracy": 0.8333,
+          "accuracy_over_all_rows": 0.8333,
+          "answered": 12,
+          "ece": 0.1317,
+          "mean_cost_usd": 0.0,
+          "mean_seconds": 0.007,
+          "n": 12,
+          "nll": 0.2083
+        },
+        "local_student": {
+          "accuracy": 0.0,
+          "accuracy_over_all_rows": 0.0,
+          "answered": 12,
+          "ece": 0.4106,
+          "mean_cost_usd": 0.0,
+          "mean_seconds": 0.001,
+          "n": 12,
+          "nll": 5.0086
+        },
+        "perplexity": {
+          "accuracy": 0.9167,
+          "accuracy_over_all_rows": 0.9167,
+          "answered": 12,
+          "ece": 0.1017,
+          "mean_cost_usd": 0.0,
+          "mean_seconds": 0.011,
+          "n": 12,
+          "nll": 0.2255
+        }
+      },
+      "rule": "primary = highest accuracy over all rows, then lower cost, then lower NLL; order lists paid providers only (the local student runs ahead of them inside system_one.decide when its own held-out threshold clears)",
+      "set": "clinical_core.agere.clinical.system_one_deciders:atomic_gdmt_pillar"
+    },
+    "atomic_why_factor": {
+      "as_of": "2030-05-27",
+      "calibration": {
+        "ece_after": 0.05823568982048121,
+        "ece_after_loo": 0.08629601126950043,
+        "ece_before": 0.0711037571570515,
+        "n": 16,
+        "nll_after_loo": 0.10995253874984462,
+        "nll_before": 0.0888077349624543
+      },
+      "cost_usd": 0.0,
+      "decided_at": "2026-10-22T12:59:33+00:00",
+      "n": 16,
+      "order": [
+        "perplexity",
+        "jev"
+      ],
+      "primary": "perplexity",
+      "results": {
+        "jev": {
+          "accuracy": 0.875,
+          "accuracy_over_all_rows": 0.875,
+          "answered": 16,
+          "ece": 0.1288,
+          "mean_cost_usd": 0.0,
+          "mean_seconds": 0.443,
+          "n": 16,
+          "nll": 0.27
+        },
+        "local_student": {
+          "accuracy": 0.125,
+          "accuracy_over_all_rows": 0.125,
+          "answered": 16,
+          "ece": 0.4732,
+          "mean_cost_usd": 0.0,
+          "mean_seconds": 0.001,
+          "n": 16,
+          "nll": 1.5562
+        },
+        "perplexity": {
+          "accuracy": 1.0,
+          "accuracy_over_all_rows": 1.0,
+          "answered": 16,
+          "ece": 0.0711,
+          "mean_cost_usd": 0.0,
+          "mean_seconds": 0.009,
+          "n": 16,
+          "nll": 0.0888
+        }
+      },
+      "rule": "primary = highest accuracy over all rows, then lower cost, then lower NLL; order lists paid providers only (the local student runs ahead of them inside system_one.decide when its own held-out threshold clears)",
+      "set": "clinical_core.agere.clinical.system_one_deciders:atomic_why_factor"
+    },
+    "atomic_yes_no": {
+      "as_of": "2030-05-27",
+      "calibration": {
+        "ece_after": 0.04687309202116402,
+        "ece_after_loo": 0.05558717647430697,
+        "ece_before": 0.05326463270128488,
+        "n": 24,
+        "nll_after_loo": 0.07674452616311843,
+        "nll_before": 0.06459962174740809
+      },
+      "cost_usd": 0.0,
+      "decided_at": "2026-10-22T12:59:32+00:00",
+      "n": 24,
+      "order": [
+        "perplexity",
+        "jev"
+      ],
+      "primary": "perplexity",
+      "results": {
+        "jev": {
+          "accuracy": 0.9583,
+          "accuracy_over_all_rows": 0.9583,
+          "answered": 24,
+          "ece": 0.0346,
+          "mean_cost_usd": 0.0,
+          "mean_seconds": 0.223,
+          "n": 24,
+          "nll": 0.0462
+        },
+        "local_student": {
+          "accuracy": 0.2083,
+          "accuracy_over_all_rows": 0.2083,
+          "answered": 24,
+          "ece": 0.2515,
+          "mean_cost_usd": 0.0,
+          "mean_seconds": 0.001,
+          "n": 24,
+          "nll": 1.3922
+        },
+        "perplexity": {
+          "accuracy": 1.0,
+          "accuracy_over_all_rows": 1.0,
+          "answered": 24,
+          "ece": 0.0533,
+          "mean_cost_usd": 0.0,
+          "mean_seconds": 0.005,
+          "n": 24,
+          "nll": 0.0646
+        }
+      },
+      "rule": "primary = highest accuracy over all rows, then lower cost, then lower NLL; order lists paid providers only (the local student runs ahead of them inside system_one.decide when its own held-out threshold clears)",
+      "set": "clinical_core.agere.clinical.system_one_deciders:atomic_yes_no"
+    },
+    "chart_assertion": {
+      "as_of": "2030-05-27",
+      "calibration": {
+        "ece_after": 0.08210130360173694,
+        "ece_after_loo": 0.08129766358301442,
+        "ece_before": 0.08207017443557925,
+        "n": 24,
+        "nll_after_loo": 0.42075512832015743,
+        "nll_before": 0.415397476612312
+      },
+      "cost_usd": 0.0,
+      "decided_at": "2026-10-22T12:59:31+00:00",
+      "n": 24,
+      "order": [
+        "perplexity",
+        "jev"
+      ],
+      "primary": "perplexity",
+      "results": {
+        "jev": {
+          "accuracy": 0.875,
+          "accuracy_over_all_rows": 0.875,
+          "answered": 24,
+          "ece": 0.1067,
+          "mean_cost_usd": 0.0,
+          "mean_seconds": 0.234,
+          "n": 24,
+          "nll": 0.3255
+        },
+        "local_student": {
+          "accuracy": 0.2083,
+          "accuracy_over_all_rows": 0.2083,
+          "answered": 24,
+          "ece": 0.2546,
+          "mean_cost_usd": 0.0,
+          "mean_seconds": 0.001,
+          "n": 24,
+          "nll": 1.3925
+        },
+        "perplexity": {
+          "accuracy": 0.9167,
+          "accuracy_over_all_rows": 0.9167,
+          "answered": 24,
+          "ece": 0.0821,
+          "mean_cost_usd": 0.0,
+          "mean_seconds": 0.005,
+          "n": 24,
+          "nll": 0.4154
+        }
+      },
+      "rule": "primary = highest accuracy over all rows, then lower cost, then lower NLL; order lists paid providers only (the local student runs ahead of them inside system_one.decide when its own held-out threshold clears)",
+      "set": "clinical_core.agere.clinical.system_one_deciders:chart_assertion"
+    },
+    "hcc_confirm": {
+      "as_of": "2030-05-27",
+      "calibration": {
+        "ece_after": 0.01013830818938762,
+        "ece_after_loo": 0.01870078492345122,
+        "ece_before": 0.017501572497094064,
+        "n": 12,
+        "nll_after_loo": 0.019793120455913065,
+        "nll_before": 0.018336258073708783
+      },
+      "cost_usd": 0.0,
+      "decided_at": "2026-10-22T12:59:34+00:00",
+      "n": 12,
+      "order": [
+        "jev",
+        "perplexity"
+      ],
+      "primary": "jev",
+      "results": {
+        "jev": {
+          "accuracy": 1.0,
+          "accuracy_over_all_rows": 1.0,
+          "answered": 12,
+          "ece": 0.0175,
+          "mean_cost_usd": 0.0,
+          "mean_seconds": 0.006,
+          "n": 12,
+          "nll": 0.0183
+        },
+        "local_student": {
+          "accuracy": 0.0833,
+          "accuracy_over_all_rows": 0.0833,
+          "answered": 12,
+          "ece": 0.5284,
+          "mean_cost_usd": 0.0,
+          "mean_seconds": 0.001,
+          "n": 12,
+          "nll": 2.2339
+        },
+        "perplexity": {
+          "accuracy": 1.0,
+          "accuracy_over_all_rows": 1.0,
+          "answered": 12,
+          "ece": 0.0498,
+          "mean_cost_usd": 0.0,
+          "mean_seconds": 0.009,
+          "n": 12,
+          "nll": 0.0541
+        }
+      },
+      "rule": "primary = highest accuracy over all rows, then lower cost, then lower NLL; order lists paid providers only (the local student runs ahead of them inside system_one.decide when its own held-out threshold clears)",
+      "set": "clinical_core.agere.clinical.system_one_deciders:hcc_confirm"
+    },
+    "therapy_barrier_reason": {
+      "as_of": "2030-05-27",
+      "calibration": {
+        "ece_after": 0.07406261067699497,
+        "ece_after_loo": 0.08291467319500453,
+        "ece_before": 0.1409642805231962,
+        "n": 40,
+        "nll_after_loo": 0.09205578480029865,
+        "nll_before": 0.6796514838857416
+      },
+      "cost_usd": 0.001768,
+      "decided_at": "2026-10-22T13:01:06+00:00",
+      "n": 40,
+      "order": [
+        "perplexity",
+        "jev"
+      ],
+      "primary": "local_student",
+      "results": {
+        "jev": {
+          "accuracy": 0.7027,
+          "accuracy_over_all_rows": 0.65,
+          "answered": 37,
+          "ece": 0.1984,
+          "mean_cost_usd": 3.622e-05,
+          "mean_seconds": 8.318,
+          "n": 40,
+          "nll": 0.5289
+        },
+        "local_student": {
+          "accuracy": 0.925,
+          "accuracy_over_all_rows": 0.925,
+          "answered": 40,
+          "ece": 0.3012,
+          "mean_cost_usd": 0.0,
+          "mean_seconds": 0.001,
+          "n": 40,
+          "nll": 0.5837
+        },
+        "perplexity": {
+          "accuracy": 0.775,
+          "accuracy_over_all_rows": 0.775,
+          "answered": 40,
+          "ece": 0.141,
+          "mean_cost_usd": 1.071e-05,
+          "mean_seconds": 9.399,
+          "n": 40,
+          "nll": 0.6797
+        }
+      },
+      "rule": "primary = highest accuracy over all rows, then lower cost, then lower NLL; order lists paid providers only (the local student runs ahead of them inside system_one.decide when its own held-out threshold clears)",
+      "set": "clinical_core.agere.clinical.system_one_deciders:therapy_barrier_reason"
+    }
+  }
+}

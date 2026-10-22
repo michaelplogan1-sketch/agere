@@ -147,7 +147,7 @@ def therapy_barrier_silver(stack_path, *, limit=40):
     import sqlite3
     from .therapy_barriers import TYPED_LABELS
     path = Path(stack_path or json.loads((ROOT/'config/agere/active_warehouse.json').read_text())['build'])
-    target = path/'semantic.sqlite3' if (path/'semantic.sqlite3').exists() else path/'stack'/'semantic.sqlite3'
+    target = path/'stack'/'semantic.sqlite3' if (path/'stack'/'semantic.sqlite3').exists() else path/'semantic.sqlite3'  # build -> its stack
     db = sqlite3.connect(f'file:{target}?mode=ro', uri=True)
     try:
         pos = db.execute("SELECT case_id, drug_key, drug_class, sentence, label FROM therapy_barrier_candidate WHERE tier = 1 AND rule IS NOT NULL "
@@ -262,12 +262,12 @@ def bakeoff(task_keys=TASKS, *, as_of='2030-05-27', ledger=None, allow_live=True
             except ValueError as exc:
                 entry['calibration'] = {'status': 'not_fit', 'reason': str(exc)}
         doc['tasks'][task] = entry
-    doc['generated'] = datetime.now(timezone.utc).isoformat(timespec='seconds')
-    doc['default_order'] = list(DEFAULT_ORDER)
-    if save:
-        path = config_path(); path.parent.mkdir(parents=True, exist_ok=True)
-        tmp = path.with_suffix('.tmp'); tmp.write_text(json.dumps(doc, indent=2, sort_keys=True) + '\n'); tmp.replace(path)
-        with _LOCK: _CACHE.pop(str(path), None)
+        doc['generated'] = datetime.now(timezone.utc).isoformat(timespec='seconds')
+        doc['default_order'] = list(DEFAULT_ORDER)
+        if save:  # after every task, so a failure later never loses a finished task's result
+            path = config_path(); path.parent.mkdir(parents=True, exist_ok=True)
+            tmp = path.with_suffix('.tmp'); tmp.write_text(json.dumps(doc, indent=2, sort_keys=True) + '\n'); tmp.replace(path)
+            with _LOCK: _CACHE.pop(str(path), None)
     return doc
 
 
