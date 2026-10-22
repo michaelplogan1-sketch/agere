@@ -126,8 +126,10 @@ def propose(question):
     model, tokenizer = loaded
     text = tokenizer.apply_chat_template(prompt(question), add_generation_prompt=True, tokenize=False,
                                          enable_thinking=False)
-    with _LOCK:
-        out = generate(model, tokenizer, prompt=text, max_tokens=96, sampler=make_sampler(temp=0.0), verbose=False)
+    from .constrained_decoding import LineGrammar, processors
+    with _LOCK:  # grammar-constrained: one non-empty line, no <think> preamble (constrained_decoding)
+        out = generate(model, tokenizer, prompt=text, max_tokens=96, sampler=make_sampler(temp=0.0), verbose=False,
+                       logits_processors=processors(tokenizer, LineGrammar()))
     out = re.sub(r'<think>.*?</think>', '', out, flags=re.S).strip().splitlines()
     return out[0].strip() if out else None
 
