@@ -1437,6 +1437,20 @@ def execute(path, patient_ids, params, as_of=None):
             'integrity': integrity, 'tests_examined': tests, 'look_elsewhere_bits': round(math.log2(max(tests, 1)), 2),
             'annual_allowed_per_member': _r(annual), 'members_in_scope': len(pop.months),
             'method': METHOD, 'limitations': LIMITATIONS}
+    try:  # the change-point detector qualified under feed gaps (changepoint_qualification.json) re-reads every chart; additive
+        from . import changepoint_qualification as CQ
+        qnote = CQ.note()
+        if qnote:
+            charts = []
+            for c in chart_status:
+                excluded = {m for ms in c.get('data_signal_months') or [] for m in (ms if isinstance(ms, list) else [ms])}
+                sig = CQ.chart_signals(c.get('chart') or [], excluded)
+                if sig and sig['signal_months']:
+                    charts.append({'series': c['series'], 'group_by': c['group_by'], 'group': c['group'], 'signal_months': sig['signal_months']})
+            out['changepoint_qualification'] = {**CQ.summary(), 'charts_with_qualified_signals': charts[:20]}
+            out['limitations'] = [*out['limitations'], qnote + f" Its signals appear on {len(charts)} of {len(chart_status)} charts."]
+    except Exception:  # noqa: BLE001 - qualification is an annotation; the monitor answer stands without it
+        pass
     if feed_reports:  # real change vs feed outage for the flagged streams (joint tensor model; never breaks the monitor answer)
         from .change_attribution import annotate_monitor
         annotate_monitor(out, path, as_of, keep)
