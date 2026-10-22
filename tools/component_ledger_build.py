@@ -650,6 +650,8 @@ WIRED = {
     'workspace_passage_search': ('inside:warehouse_retriever', 'clinical_core.agere.clinical.workspace_passages', 'PassageIndex'),
     'medgemma_reader': ('inside:engine_review', 'clinical_core.agere.clinical.document_readers', 'MedGemmaReader'),
     'chandra_ocr': ('build_time_only', 'clinical_core.agere.ingest.ocr', 'read_document'),
+    'medication_state_macro': ('planner_menu', 'clinical_core.agere.clinical.medication_state', 'state_sql'),
+    'default_definitions': ('planner_menu', 'clinical_core.agere.clinical.default_definitions', 'run'),
     'intent_router': ('spine:workspace_entry', None, None),
     'workspace_hybrid_pipeline': ('spine:workspace_fallback', None, None),
     'tensor_train_model': ('inside:outcome_forecast_models', 'clinical_core.agere.tensor_train', 'fit_tensor'),

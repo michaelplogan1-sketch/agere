@@ -142,7 +142,7 @@
    "symbol": "execute",
    "role_on_question_path": "Executes staged model-SQL analyses from the hosted interpreter rescue path; runs general_analysis.checks.",
    "current_wiring": "spine:execution",
-   "evidence": "clinical_core/agere/clinical/general_analysis.py:676 (def); general_analysis.py:676; clinical_core/agere/clinical/shared_planner.py:903-906",
+   "evidence": "clinical_core/agere/clinical/general_analysis.py:695 (def); general_analysis.py:676; clinical_core/agere/clinical/shared_planner.py:903-906",
    "cost": "free",
    "calibration": null,
    "flag": null
@@ -155,7 +155,7 @@
    "symbol": "execute",
    "role_on_question_path": "Read-only execution of every graph node (engines, set ops, sql); attaches answer_checks + benchmarks.",
    "current_wiring": "inside:checked_proposer_cascade",
-   "evidence": "clinical_core/agere/clinical/analysis_graph.py:1379 (def); clinical_core/agere/clinical/analysis_graph.py:1365-2024; clinical_core/agere/clinical/proposers.py:260",
+   "evidence": "clinical_core/agere/clinical/analysis_graph.py:1393 (def); clinical_core/agere/clinical/analysis_graph.py:1365-2024; clinical_core/agere/clinical/proposers.py:260",
    "cost": "free",
    "calibration": null,
    "flag": null
@@ -168,7 +168,7 @@
    "symbol": "validate",
    "role_on_question_path": "Validates node operations, inputs and parameters before any graph executes.",
    "current_wiring": "inside:ladder_adapter",
-   "evidence": "clinical_core/agere/clinical/analysis_graph.py:819 (def); clinical_core/agere/clinical/analysis_graph.py:806-1116",
+   "evidence": "clinical_core/agere/clinical/analysis_graph.py:829 (def); clinical_core/agere/clinical/analysis_graph.py:806-1116",
    "cost": "free",
    "calibration": null,
    "flag": null
@@ -376,7 +376,7 @@
    "symbol": "lookup_shape",
    "role_on_question_path": "Reuses a verified staged-analysis shape with swapped literals.",
    "current_wiring": "spine:learned_shapes",
-   "evidence": "clinical_core/agere/clinical/general_analysis.py:908 (def); general_analysis.py:908; clinical_core/agere/clinical/shared_planner.py:830-833",
+   "evidence": "clinical_core/agere/clinical/general_analysis.py:940 (def); general_analysis.py:908; clinical_core/agere/clinical/shared_planner.py:830-833",
    "cost": "free",
    "calibration": null,
    "flag": null
@@ -415,7 +415,7 @@
    "symbol": "compile_request",
    "role_on_question_path": "Compiles every typed request to SQL with quote binding; also re-compiles proposals against the original question.",
    "current_wiring": "inside:compositional_grammar",
-   "evidence": "clinical_core/agere/clinical/request_plan.py:564 (def); request_plan.py:564; proposers.py:345-351",
+   "evidence": "clinical_core/agere/clinical/request_plan.py:573 (def); request_plan.py:564; proposers.py:345-351",
    "cost": "free",
    "calibration": null,
    "flag": null
@@ -428,7 +428,7 @@
    "symbol": "assert_sealed",
    "role_on_question_path": "Rejects a contract that did not come from this process compiler.",
    "current_wiring": "inside:execute_contract",
-   "evidence": "clinical_core/agere/clinical/request_plan.py:603 (def); request_plan.py:603",
+   "evidence": "clinical_core/agere/clinical/request_plan.py:612 (def); request_plan.py:603",
    "cost": "free",
    "calibration": null,
    "flag": null
@@ -662,7 +662,7 @@
    "symbol": "propose",
    "role_on_question_path": "Opus proposes a typed graph over the full capability catalog; Ladder.frontier_planner also holds the free exact-question plan cache (gated as paid here).",
    "current_wiring": "cascade_tier:frontier_graph_planner",
-   "evidence": "clinical_core/agere/clinical/graph_planner.py:346 (def); clinical_core/agere/clinical/proposers.py:47 (TIERS), clinical_core/agere/clinical/proposers.py:299 (tier method); PAID set proposers.py:55 (skipped unless allow_live)",
+   "evidence": "clinical_core/agere/clinical/graph_planner.py:359 (def); clinical_core/agere/clinical/proposers.py:47 (TIERS), clinical_core/agere/clinical/proposers.py:299 (tier method); PAID set proposers.py:55 (skipped unless allow_live)",
    "cost": "paid:claude-opus-5-5",
    "calibration": "full capability catalog; uncalibrated",
    "flag": "AGERE_PLAN_CACHE, --allow-live-stack"
@@ -1286,7 +1286,7 @@
    "symbol": "prepare",
    "role_on_question_path": "Hosted interpreter may return a staged SQL analysis; prepared (relaxed) and audited.",
    "current_wiring": "inside:hosted_typed_interpreter",
-   "evidence": "clinical_core/agere/clinical/general_analysis.py:439 (def); general_analysis.py:439; clinical_core/agere/clinical/shared_planner.py:559-603",
+   "evidence": "clinical_core/agere/clinical/general_analysis.py:458 (def); general_analysis.py:439; clinical_core/agere/clinical/shared_planner.py:559-603",
    "cost": "paid:claude-opus-5-5",
    "calibration": null,
    "flag": null
@@ -1299,7 +1299,7 @@
    "symbol": "checks",
    "role_on_question_path": "Result checks and uncovered-quote detection on staged analyses.",
    "current_wiring": "inside:general_analysis_execute",
-   "evidence": "clinical_core/agere/clinical/general_analysis.py:612 (def); general_analysis.py:399,612",
+   "evidence": "clinical_core/agere/clinical/general_analysis.py:631 (def); general_analysis.py:399,612",
    "cost": "free",
    "calibration": null,
    "flag": null
@@ -1416,7 +1416,7 @@
    "symbol": "benchmark_references",
    "role_on_question_path": "Attaches external benchmark ranges (config/agere/benchmarks.json) to engine answers.",
    "current_wiring": "inside:analysis_graph_execute",
-   "evidence": "clinical_core/agere/clinical/analysis_graph.py:159,1542,1988; benchmarks.py:80",
+   "evidence": "clinical_core/agere/clinical/analysis_graph.py:161 (def); clinical_core/agere/clinical/analysis_graph.py:159,1542,1988; benchmarks.py:80",
    "cost": "free",
    "calibration": null,
    "flag": null
@@ -2066,7 +2066,7 @@
    "symbol": "evidence_membership",
    "role_on_question_path": "Membership from indexed narrative evidence clauses.",
    "current_wiring": "inside:frontier_graph_planner",
-   "evidence": "clinical_core/agere/clinical/analysis_graph.py:1152 (def); clinical_core/agere/clinical/analysis_graph.py:1721 (dispatch)",
+   "evidence": "clinical_core/agere/clinical/analysis_graph.py:1165 (def); clinical_core/agere/clinical/analysis_graph.py:1721 (dispatch)",
    "cost": "free",
    "calibration": null,
    "flag": null
@@ -2079,7 +2079,7 @@
    "symbol": "combine",
    "role_on_question_path": "Three-valued set intersection.",
    "current_wiring": "inside:frontier_graph_planner",
-   "evidence": "clinical_core/agere/clinical/analysis_graph.py:66 (def); clinical_core/agere/clinical/analysis_graph.py:1723 (dispatch)",
+   "evidence": "clinical_core/agere/clinical/analysis_graph.py:68 (def); clinical_core/agere/clinical/analysis_graph.py:1723 (dispatch)",
    "cost": "free",
    "calibration": null,
    "flag": null
@@ -2092,7 +2092,7 @@
    "symbol": "combine",
    "role_on_question_path": "Three-valued set union.",
    "current_wiring": "inside:frontier_graph_planner",
-   "evidence": "clinical_core/agere/clinical/analysis_graph.py:66 (def); clinical_core/agere/clinical/analysis_graph.py:1723 (dispatch)",
+   "evidence": "clinical_core/agere/clinical/analysis_graph.py:68 (def); clinical_core/agere/clinical/analysis_graph.py:1723 (dispatch)",
    "cost": "free",
    "calibration": null,
    "flag": null
@@ -2105,7 +2105,7 @@
    "symbol": "combine",
    "role_on_question_path": "Three-valued set difference.",
    "current_wiring": "inside:frontier_graph_planner",
-   "evidence": "clinical_core/agere/clinical/analysis_graph.py:66 (def); clinical_core/agere/clinical/analysis_graph.py:1723 (dispatch)",
+   "evidence": "clinical_core/agere/clinical/analysis_graph.py:68 (def); clinical_core/agere/clinical/analysis_graph.py:1723 (dispatch)",
    "cost": "free",
    "calibration": null,
    "flag": null
@@ -2118,7 +2118,7 @@
    "symbol": "compare_populations",
    "role_on_question_path": "Fisher/BH comparison of populations.",
    "current_wiring": "inside:frontier_graph_planner",
-   "evidence": "clinical_core/agere/clinical/analysis_graph.py:1179 (def); clinical_core/agere/clinical/analysis_graph.py:1726 (dispatch)",
+   "evidence": "clinical_core/agere/clinical/analysis_graph.py:1192 (def); clinical_core/agere/clinical/analysis_graph.py:1726 (dispatch)",
    "cost": "free",
    "calibration": null,
    "flag": null
@@ -3405,7 +3405,7 @@
    "symbol": "save_shape",
    "role_on_question_path": "Saves verified staged-analysis shapes.",
    "current_wiring": "inside:general_analysis_execute",
-   "evidence": "clinical_core/agere/clinical/general_analysis.py:862 (def); general_analysis.py:862",
+   "evidence": "clinical_core/agere/clinical/general_analysis.py:894 (def); general_analysis.py:862",
    "cost": "free",
    "calibration": null,
    "flag": null
@@ -3622,10 +3622,10 @@
    "id": "medication_state_macro",
    "name": "Medication state reconciliation macro",
    "family": "metric_or_measure",
-   "module": null,
-   "symbol": null,
+   "module": "clinical_core.agere.clinical.medication_state",
+   "symbol": "state_sql",
    "role_on_question_path": "Shared governed macro: filled_current / listed_not_filled / documented_stopped_or_intolerant / never_recorded with evidence dates.",
-   "current_wiring": "not_built",
+   "current_wiring": "planner_menu",
    "evidence": "docs/agere/brief-2026-10-21/BUILD_BRIEF_PHASE0-2.md 1.4",
    "cost": "free",
    "calibration": null,
@@ -3635,10 +3635,10 @@
    "id": "default_definitions",
    "name": "Named standard default definitions (avoidable spend etc.)",
    "family": "metric_or_measure",
-   "module": null,
-   "symbol": null,
+   "module": "clinical_core.agere.clinical.default_definitions",
+   "symbol": "run",
    "role_on_question_path": "AHRQ PQI + NYU/Billings ED avoidability, measure denominator-minus-numerator gaps, PDC>=0.8, guideline target doses instead of refusals.",
-   "current_wiring": "not_built",
+   "current_wiring": "planner_menu",
    "evidence": "docs/agere/brief-2026-10-21/BUILD_BRIEF_PHASE0-2.md 1.3; docs/agere/VBC_QUESTION_COVERAGE.md:107 (ED avoidability not implemented)",
    "cost": "free",
    "calibration": null,
