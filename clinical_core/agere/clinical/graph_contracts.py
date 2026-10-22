@@ -42,6 +42,8 @@ TYPED |= {'target_trial', 'line_of_therapy', 'trial_feasibility'}  # life-scienc
 OPTIONAL_POPULATION += ('target_trial', 'line_of_therapy', 'trial_feasibility')
 TYPED |= {'loop_closure', 'diagnostic_delay', 'risk_outcomes'}  # quality & safety engines (loop_closure.py, diagnostic_delay.py, risk_outcomes.py)
 OPTIONAL_POPULATION += ('loop_closure', 'diagnostic_delay', 'risk_outcomes')
+TYPED |= {'medication_state', 'default_definition'}  # clinical logic: medication_state.py, default_definitions.py
+OPTIONAL_POPULATION += ('medication_state', 'default_definition')
 
 
 def _library_measures():
@@ -284,6 +286,22 @@ def parameter_schema(op, catalog):
                     'spread_model': string(nw.SPREAD_MODELS), 'seeds': {'type': 'integer', 'minimum': 1, 'maximum': 10},
                     'transmission': {'type': 'number', 'minimum': 0.001, 'maximum': 1}, 'steps': {'type': 'integer', 'minimum': 1, 'maximum': 20},
                     'top': {'type': 'integer', 'minimum': 1, 'maximum': 200}})
+    if op == 'medication_state':
+        from . import medication_state as ms
+        return obj({'subjects': array(string(None, 'gdmt (all four pillars), a pillar (' + ', '.join(ms.PILLARS) + ') or an exact drug class'),
+                                      'What to classify; default gdmt.'),
+                    'states': array(string(ms.STATES), 'Select patients with any subject in these states; empty = every evaluated patient.'),
+                    'output': string(ms.OUTPUTS, 'patients: one row per patient with a state column per subject; summary: counts; rows: patient x subject'),
+                    'grace_days': {'type': 'integer', 'minimum': 0, 'maximum': 365, 'description': f'Fill-coverage grace (default {ms.GRACE_DAYS})'}})
+    if op == 'default_definition':
+        from . import default_definitions as dd
+        return obj({'definition': string(sorted(dd.DEFINITIONS), 'Named standard used when the question states no definition: '
+                                         + '; '.join(f"{k} = {v['name']}" for k, v in dd.DEFINITIONS.items())),
+                    'period': obj({'start': {'type': 'string'}, 'end': {'type': 'string'}}),
+                    'measure': string(None, 'measure_gap: a patient-unit measure-library id; else empty'),
+                    'drug_classes': array(string(), 'pdc_adherence: drug classes; else empty'),
+                    'threshold': {'type': 'number', 'minimum': 0.01, 'maximum': 1, 'description': f'PDC threshold (default {dd.PDC_THRESHOLD})'},
+                    'group_by': string(dd.GROUP_BY), 'select': string(dd.SELECT, 'Patient list for measure_gap/pdc_adherence (default gap)')})
     if op == 'loop_closure':
         from . import loop_closure as lc
         return obj({'focus': string(lc.FOCUS, 'results: abnormal + critical labs; critical; screening: positive mammogram/FIT; recommendations: report or '

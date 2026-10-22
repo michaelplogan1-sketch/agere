@@ -41,6 +41,8 @@ OPERATIONS |= {'network'}  # provider patient-sharing network: hubs, communities
 OPERATIONS |= {'contract_strategy'}  # risk contracts as options, track selection, Nash negotiation (contract_strategy.py)
 OPERATIONS |= {'target_trial', 'line_of_therapy', 'trial_feasibility'}  # life-sciences / RWE engines (target_trial.py, line_of_therapy.py, trial_feasibility.py)
 OPERATIONS |= {'loop_closure', 'diagnostic_delay', 'risk_outcomes'}  # quality & safety: open loops, diagnostic delay look-back, risk-standardized outcomes
+CLINICAL_LOGIC = {'medication_state': 'medication_state', 'default_definition': 'default_definitions'}  # op -> module (validate/execute/answer)
+OPERATIONS |= set(CLINICAL_LOGIC)
 NODE_FIELDS = {'id', 'operation', 'inputs', 'parameters', 'purpose'}
 LIMITS = [
     'Membership means observed predicate matches, not confirmed disease or absent care.',
@@ -617,6 +619,10 @@ def build_answer_core(plan, results, memberships, question):
                                                                                'sites', 'pcps', 'diversity', 'forecast')}})
         if unapplied: answer['missing'] += [f'Criterion not computable from received data: {x}' for x in unapplied]
         return answer
+    if last['operation'] in CLINICAL_LOGIC:
+        import importlib
+        answer.update(importlib.import_module(f".{CLINICAL_LOGIC[last['operation']]}", __package__).answer(results[-1]['result'], plan, question))
+        return answer
     if last['operation'] == 'loop_closure':
         from .loop_closure import summarize as lc_summary
         report = results[-1]['result']
@@ -773,6 +779,8 @@ def build_answer_core(plan, results, memberships, question):
         elif kind == 'value': answer['value'] = _tidy(report['value'])
         elif kind == 'patient_set': answer.update(patient_ids=report['patient_ids'], count=len(report['patient_ids']))
         else: answer['table'] = [{k: _tidy(v) for k, v in r.items()} if isinstance(r, dict) else r for r in report['rows']]
+        kept = report.get('retained_membership')
+        if kept: answer.update(patient_ids=kept['patient_ids'], membership_role=kept['role'])
         if report['truncated']: answer['missing'].append(f'Result truncated at {report["row_count"]} rows.')
         return answer
     if last['operation'] == 'explain':
@@ -798,6 +806,8 @@ def build_answer_core(plan, results, memberships, question):
                 rows = [{key: r['group'], val: r['value']} for r in rows]
             answer.update(answer_type='table', table=rows)
         answer.update(status='partial' if partial else 'answered', method=report['method'], overall=report['overall'])
+        if report.get('numerator_patient_ids') is not None:  # patients behind the count/rate numerator (follow-ups narrow it)
+            answer.update(patient_ids=report['numerator_patient_ids'], membership_role='numerator')
         return answer
     terminal = next((n['id'] for n in reversed(plan['nodes']) if n['id'] in memberships), None)
     if terminal is None or plan['nodes'][-1]['id'] != terminal:
@@ -888,6 +898,9 @@ def validate(plan, as_of):
             p = network.validate(p)
             if any(v > str(as_of)[:10] for v in p['period'].values() if v):
                 raise ValueError('Network period exceeds snapshot cutoff')
+        elif op in CLINICAL_LOGIC:
+            import importlib
+            p = importlib.import_module(f'.{CLINICAL_LOGIC[op]}', __package__).validate(p)
         elif op in ('loop_closure', 'diagnostic_delay', 'risk_outcomes'):
             from . import loop_closure, diagnostic_delay, risk_outcomes
             p = {'loop_closure': loop_closure, 'diagnostic_delay': diagnostic_delay, 'risk_outcomes': risk_outcomes}[op].validate(p)
@@ -1230,6 +1243,7 @@ def code_identity():
                       Path(__file__).with_name('network.py'),
                       Path(__file__).with_name('loop_closure.py'), Path(__file__).with_name('diagnostic_delay.py'),
                       Path(__file__).with_name('risk_outcomes.py'), Path(__file__).with_name('safety_data.py'),
+                      Path(__file__).with_name('medication_state.py'), Path(__file__).with_name('default_definitions.py'),
                       Path(__file__).with_name('market.py'),
                       Path(__file__).with_name('contract_strategy.py'), Path(__file__).with_name('programs.py'), Path(__file__).with_name('vbc.py'),
                       *[Path(__file__).with_name(n) for n in ('target_trial.py', 'line_of_therapy.py', 'trial_feasibility.py')],
@@ -1685,6 +1699,12 @@ def execute(stack, plan, *, question=None):
                 chosen = memberships[node['inputs'][0]] if node['inputs'] else None
                 detail = network.execute(path, sorted(chosen.yes) if chosen else None, params, meta['snapshot']['as_of'])
                 if chosen: detail['input_membership'] = membership_receipt(chosen)
+            elif op in CLINICAL_LOGIC:
+                import importlib
+                engine = importlib.import_module(f'.{CLINICAL_LOGIC[op]}', __package__)
+                chosen = memberships[node['inputs'][0]] if node['inputs'] else None
+                detail = engine.execute(path, sorted(chosen.yes) if chosen else None, params, meta['snapshot']['as_of'])
+                if chosen: detail['input_membership'] = membership_receipt(chosen)
             elif op in ('loop_closure', 'diagnostic_delay', 'risk_outcomes'):
                 from . import loop_closure, diagnostic_delay, risk_outcomes
                 engine = {'loop_closure': loop_closure, 'diagnostic_delay': diagnostic_delay, 'risk_outcomes': risk_outcomes}[op]
@@ -1725,6 +1745,10 @@ def execute(stack, plan, *, question=None):
                 chosen = memberships[node['inputs'][0]] if node['inputs'] else None
                 detail = sql_query.execute(path, params, sorted(chosen.yes) if chosen else None)
                 if chosen: detail['input_membership'] = membership_receipt(chosen)
+                if detail['returns'] != 'patient_set':  # keep who a patient count counted (follow-ups narrow it)
+                    from .membership import derive
+                    kept = derive(path, params, detail, sorted(chosen.yes) if chosen else None)
+                    if kept: detail['retained_membership'] = kept
             elif op == 'explain':
                 from . import explain
                 chosen = memberships[node['inputs'][0]]

@@ -322,7 +322,9 @@ def execute(path, patient_ids, params):
     else: rows.sort(key=lambda r: (r.get('small_group'), -(r.get(rank) if r.get(rank) is not None else -1e18), str(r['group'])))
     overall = summarise('all', list(people))
     notes = [f"No received records match concept '{p['concept']}'."] if target is not None and not target['bindings'] else []
+    counted = sorted(x for x in people if (x in values if p['measure'] == 'value' else numerator(x)))  # retained membership
     return {'schema': VERSION, 'parameters': p, 'notes': notes, 'rows': rows[:p['top']], 'groups_total': len(rows), 'overall': overall,
+            'numerator_patient_ids': counted,
             'ranked_by': rank, 'records_with_unknown_date': unknown_dates,
             'unattributed_patients': sum(a['pcp'] == 'unattributed' for a in attrs.values()) if p['group_by'] in ('pcp', 'practice') else None,
             'interpretation': grounding.interpretation({'all': [{'kind': 'concept', '_resolved': target}]}) if target else [],

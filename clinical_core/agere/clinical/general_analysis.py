@@ -23,7 +23,7 @@ VERSION = 'general-analysis/3'
 MAX_STEPS = 60  # structural sanity only; complex questions need many stages
 _NAME = re.compile(r'^[a-z][a-z0-9_]{0,40}$')
 _PATIENT_NOUN = r'\b(?:patients?|members?|people|persons?|individuals?|beneficiar(?:y|ies)|enrollees?)\b'
-_MACRO = re.compile(r'\{\{\s*(condition|drug_fill|as_of|medication_dose|current_dose|care_team|measurement_evidence|specialty|parameter|phenotype|tolerance_evidence)\s*(?::\s*([a-z0-9_,\s]+))?\s*\}\}')
+_MACRO = re.compile(r'\{\{\s*(condition|drug_fill|as_of|medication_dose|current_dose|care_team|measurement_evidence|specialty|parameter|phenotype|tolerance_evidence|medication_state|pqi_admission|ed_avoidability)\s*(?::\s*([a-z0-9_,\s]+))?\s*\}\}')
 # Grammatical words carry no requirement; every other question word must be accounted for.
 _FUNCTION_WORDS = set('''a an the and or of in on at to for from by with without within into onto over under per
 is are was were be been being do does did have has had having what which who whom whose how many much
@@ -218,6 +218,19 @@ Conditional work must preserve these NULLs; do not select unknown patients as co
 review can be simulated when explicitly requested, but enrollment suitability and patient consent remain separate.
 '''
 
+ANALYSIS_SYSTEM += '''
+MEDICATION STATE (governed): {{medication_state:gdmt}} (or a pillar rasi|beta_blocker|mra|sglt2i, or drug classes, comma-separated)
+is a relation of patient_id, subject, state, last_fill_date, covered_through, last_listed_date, stop_date, stop_evidence,
+evidence_record_ids, basis for every (scoped) patient x subject. state = filled_current | listed_not_filled |
+documented_stopped_or_intolerant | never_recorded. Use it for GDMT pillars and on/not-on/stopped medication questions; a
+pillar is unknown only when never_recorded. For "not on X", listed_not_filled counts as likely not taking: show its dates.
+DEFAULT DEFINITIONS (when the question names no definition, answer with the standard and name it in definitions):
+avoidable admissions = AHRQ PQI 90: {{pqi_admission}} = (patient_id, encounter_id, event_date, principal_icd10, pqi);
+avoidable ED = NYU/Billings: {{ed_avoidability}} = (patient_id, encounter_id, event_date, principal_icd10, nyu_category,
+avoidable_probability); avoidable spend = PQI admission allowed dollars + ED allowed dollars x avoidable_probability;
+screening/measure gap = the governed measure's denominator minus numerator; adherence = PDC >= 0.8.
+'''
+
 RESCUE_INSTRUCTION = ('Answer this question with {"analysis": ...}. Write the staged SQL for the plain reading of the '
                       'question using the catalog; map each phrase to the step applying it. Unmapped words will be '
                       'reported as unconfirmed rather than blocking the answer. Do not return a typed request.')
@@ -286,6 +299,12 @@ def _macro_sql(kind, arg, catalog):
     if kind == 'tolerance_evidence':
         from .clinical_definitions import TOLERANCE
         return TOLERANCE['sql']
+    if kind == 'medication_state':
+        from .medication_state import macro_sql
+        return macro_sql(arg, catalog)
+    if kind in ('pqi_admission', 'ed_avoidability'):
+        from .default_definitions import macro_sql
+        return macro_sql(kind, catalog)
     names = [a.strip() for a in (arg or '').split(',') if a.strip()]
     if not names:
         raise PlanError(f'Macro {kind} needs a name')
@@ -701,6 +720,11 @@ def execute(stack, question, graph, receipt, *, population=None, parent=None, st
                                               if isinstance(r, dict) and isinstance(r.get('patient_id'), str)})
     if population is not None and not set(ids) <= set(population):
         raise PlanError('Analysis output escaped the saved input population; no answer or work was saved')
+    kept = None
+    if not ids and contract['returns'] != 'patient_set':  # keep who a patient count counted (follow-ups narrow it)
+        from .membership import derive
+        kept = derive(stack.path, {'query': contract['query']}, report, population, target=current.target)
+        ids = kept['patient_ids'] if kept else ids
     limitations = ['Results describe received records. No matching record does not establish absent care.',
                    'Model-planned analysis; SQL, steps, sources and requirement mapping are inspectable. '
                    'Language and clinical accuracy are not independently qualified.', *notes]
@@ -717,6 +741,13 @@ def execute(stack, question, graph, receipt, *, population=None, parent=None, st
                 limitations.append(f"Definition ({clinical_definitions.CURRENT_GDMT['decision']}): {clinical_definitions.CURRENT_GDMT['disclosure']}")
         if m == 'tolerance_evidence':
             limitations.append(f"Definition ({clinical_definitions.TOLERANCE['decision']}): {clinical_definitions.TOLERANCE['disclosure']}")
+        if m.split(':', 1)[0] == 'medication_state':
+            from .medication_state import DISCLOSURE
+            limitations.append(DISCLOSURE)
+        if m in ('pqi_admission', 'ed_avoidability'):
+            from .default_definitions import DEFINITIONS
+            d = DEFINITIONS['pqi_admissions' if m == 'pqi_admission' else 'ed_avoidability']
+            limitations.append(f"Definition used ({d['name']}): {d['basis']}")
     if any(m.split(':', 1)[0] == 'current_dose' for m in contract['governed_macros']):
         limitations.append(
             'Regimen evidence: structured orders/lists describe documentation, not actual use, clinical suitability or maximum tolerated dose. '
@@ -760,6 +791,7 @@ def execute(stack, question, graph, receipt, *, population=None, parent=None, st
     else:
         answer['table'] = report['rows']
         answer['headline'] = f"{len(report['rows'])} rows · " + ', '.join(report['columns'])
+    if kept: answer['membership_role'] = kept['role']
     if interpretation.get('discovery'):
         answer['evidence_discovery'] = interpretation['discovery']
     if currency:

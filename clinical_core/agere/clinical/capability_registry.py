@@ -137,6 +137,15 @@ PRODUCT['risk_outcomes'] = {'population': 'optional', 'view': 'funnel',
                                    'readmission, ED revisits, post-discharge ED visits, length of stay or mortality by hospital, practice or PCP. '
                                    'Plain "fair comparison" of PCPs/practices is profile.'}
 
+PRODUCT['medication_state'] = {'population': 'optional', 'view': 'table',
+                               'use': 'MEDICATION STATE per patient and drug class or GDMT pillar (RASi/ARNI, evidence-based beta-blocker, MRA, SGLT2i): '
+                                      'filled and current, on the list but not filled (likely not taking), documented stopped or intolerant, or never '
+                                      'recorded, with evidence dates. Which HF patients are missing a GDMT pillar, who is on / not on / stopped a class.'}
+PRODUCT['default_definition'] = {'population': 'optional', 'view': 'table',
+                                 'use': 'NAMED STANDARD DEFINITIONS when a question states none: avoidable spend (AHRQ PQI admissions + NYU/Billings '
+                                        'avoidable ED visits, in dollars), ambulatory-care-sensitive / preventable admissions, avoidable ED visits, '
+                                        'open measure gaps (governed denominator minus numerator, as a patient list), medication adherence (PDC >= 0.8).'}
+
 # Questions a SQL query over the semantic tables answers exactly are handed to the verified SQL ladder.
 LITERAL = ('Literal data questions: counts, lists, sums, averages, maxima, record filters, date arithmetic, simple breakdowns '
            'by a field, shares, rates per 1,000 without case-mix adjustment, dollar totals (paid, allowed, billed, net of reversals), '
@@ -161,6 +170,7 @@ NATIVE_SCALARS = {
     'profile': ('value',), 'risk_outcomes': ('value',), 'risk_adjustment': ('value',), 'program_effect': ('value',),
     'market': ('value',), 'monitor': ('value',), 'claims_review': ('value',), 'vbc': ('count', 'value'), 'calibration': ('value',),
     'line_of_therapy': ('value',), 'target_trial': ('value',), 'loop_closure': ('count', 'value'), 'explain': ('value',),
+    'medication_state': ('count',), 'default_definition': ('count', 'value'),
 }
 
 
