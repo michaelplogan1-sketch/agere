@@ -189,6 +189,8 @@ def route(question, profile, as_of):
     if not re.search(CR_RX, q): return None
     if rc.knowledge_only(q): return None
     if re.search(r'\bprice transparency\b|\bmrfs?\b|\bcompetitors?\b', q): return None
+    # peer-claim underpayment and revenue-leakage reviews stay claims_review unless contract terms are named
+    if re.search(r'\bsimilar claims\b|\bleak\w*\b|\brework\b', q) and not re.search(r'\bcontract\w*\b|\brepric\w+\b|\brenegotiat\w+\b', q): return None
     params = {}
     codes = [c.upper() for c in re.findall(r'\b(\d{5}|[a-z]\d{4})\b', q) if not re.fullmatch(r'20\d{3}', c)]
     if codes: params['codes'] = sorted(set(codes))

@@ -248,7 +248,9 @@ class Compiler(unittest.TestCase):
         self.assertEqual(p['leakage'], 'organization_or_practice')
 
     def test_declines_rather_than_guesses(self):
-        for q in ('Patient flow by month', 'Where do patients go after an ED visit or a discharge?',
+        g, info = local_compiler.compile('Patient flow by month', self.profile, AS_OF)  # ED / inpatient stage flow (flow_decomposition), never a guessed pathway
+        self.assertNotEqual((g or {'nodes': [{}]})['nodes'][-1].get('operation'), 'pathway')
+        for q in ('Where do patients go after an ED visit or a discharge?',
                   'Which journeys lead to readmission for medicare patients?', 'Care path after a PCP visit within 900 days'):
             g, info = local_compiler.compile(q, self.profile, AS_OF)
             self.assertEqual(info['route'], 'fallback', q)

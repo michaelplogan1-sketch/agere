@@ -222,7 +222,7 @@ def answer(report, plan, question):
             'overall': {'care_gap_closure': {'summary': report['summary'], 'by_group': report['by_group'], 'work_queue': report['work_queue']}}}
 
 
-GAPS = r'\bcare gaps?\b|\bgaps? in care\b|\bgap closure\b|\bclos(?:e|ing) (?:the |our )?(?:care )?gaps?\b|\bdeqm\b|\bhedis gaps?\b|\bopen gaps?\b|\b(?:screening|vaccin\w*|immuni[sz]ation|mammogra\w*|colorectal|breast|flu|wellness) gaps?\b'
+GAPS = r'\bcare gaps?\b|\bgaps? in care\b|\bgap closure\b|\bclos(?:e|ing) (?:the |our )?(?:care )?gaps?\b|\bdeqm\b|\bhedis gaps?\b|\bopen gaps?\b|\b(?:vaccin\w*|immuni[sz]ation|flu|wellness) gaps?\b'  # named screening-measure gaps stay with the measure library
 MEASURE_WORDS = ((MEASURES[0], r'\bbreast\b|\bmammogra\w*\b|\bbcs\b'), (MEASURES[1], r'\bcolorectal\b|\bcolon\w*\b|\bfit\b|\bcol\b'),
                  (MEASURES[2], r'\bflu\b|\binfluenza\b'), (MEASURES[3], r'\bannual wellness\b|\bawv\b|\bwellness visits?\b'))
 
@@ -234,6 +234,7 @@ def route(question, profile, as_of):
     gaps = re.search(GAPS, low)
     screening = re.search(r'\b(?:overdue|due|missing|needing|need|without|not (?:had|received|up to date)|never had|behind on)\b', low) and named
     if not (gaps or screening): return None
+    if re.search(r'\b(?:positive|abnormal)\b', low): return None  # follow-up of a positive / abnormal result is loop_closure
     if re.match(r'(?:what (?:is|are)|explain|define)\b', low) and not re.search(r'\b(?:our|we|my|patients|members|which|how many)\b', low): return None
     if re.search(r'\b(?:cost|spend|pmpm|readmission\w*|admissions?|why|drive[sn]?|predict\w*)\b', low): return None
     if re.search(r'\b\d+\b|\b(?:last|past|previous|prior|since|within)\b', low): return None  # explicit ages / windows belong to the cohort-family and compiler routes
