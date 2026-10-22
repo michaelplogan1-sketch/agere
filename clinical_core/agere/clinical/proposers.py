@@ -17,6 +17,7 @@ Honest declines naming missing data (undelivered input, missing-data claims) sta
 """
 import json
 import os
+import sqlite3
 import time
 from pathlib import Path
 
@@ -54,6 +55,7 @@ TIERS = {
 ORDER = tuple(TIERS)
 PAID = {'typed_decider', 'hosted_typed_interpreter', 'hosted_verified_sql', 'frontier_graph_planner', 'hybrid_analysts',
         'metric_router', 'operator_router'}
+FEEDBACK_READERS = ('hosted_typed_interpreter',)  # proposers whose prompt includes recorded corrections
 TYPED_WITH_POPULATION = {'qwen_typed_interpreter', 'hosted_typed_interpreter'}  # the only tiers that honour a saved cohort
 
 # Components that are not proposers, and why (stack_runtime.model_roles reports these).
@@ -90,6 +92,7 @@ class Cascade:
         self._ladder = None
         self.log, self.usd, self.calls, self.cost_known = [], 0.0, 0, True
         self.held_decline = None
+        self.provider_error = None
 
     # -- shared resources -------------------------------------------------------------------------------------------
     @property
@@ -127,9 +130,21 @@ class Cascade:
         self.cost_known = self.cost_known and known
 
     # -- the cascade --------------------------------------------------------------------------------------------------
+    def order(self):
+        """A recorded correction is read only by the hosted interpreter, so it goes first for that question; every other
+        proposer still follows in its usual order."""
+        from .learning import correction_context
+        try:
+            corrected = bool(correction_context(self.stack.path, self.question))
+        except Exception:  # noqa: BLE001 - no learning store (fixtures) means no correction
+            corrected = False
+        self.corrected = corrected
+        return tuple(n for n in FEEDBACK_READERS if n in ORDER) + tuple(n for n in ORDER if n not in FEEDBACK_READERS) \
+            if corrected else ORDER
+
     def run(self):
         try:
-            for name in ORDER:
+            for name in self.order():
                 if self.population is not None and name not in TYPED_WITH_POPULATION: continue
                 if not enabled(name, self.stack): continue
                 started = time.perf_counter()
@@ -137,8 +152,11 @@ class Cascade:
                     found = getattr(self, 'tier_' + name)()
                 except QuestionNotUnderstood as exc:
                     self.note(name, 'declined', str(exc), started); continue
-                except (ValueError, KeyError, TypeError, RuntimeError, OSError, AttributeError) as exc:
-                    self.note(name, 'error', f'{type(exc).__name__}: {exc}', started); continue
+                except Exception as exc:  # noqa: BLE001 - one component failing never stops the others (heal, don't block)
+                    self.note(name, 'error', f'{type(exc).__name__}: {exc}', started)
+                    if name in PAID and not isinstance(exc, (ValueError, KeyError, TypeError, AttributeError, sqlite3.Error)):
+                        self.provider_error = self.provider_error or exc
+                    continue
                 if found is None:
                     self.note(name, 'no proposal', None, started); continue
                 if found == 'held':
@@ -149,6 +167,10 @@ class Cascade:
             if self.held_decline:
                 contract, interpretation = self.held_decline
                 return contract, self.finish(interpretation, interpretation['interpreter'])
+            if self.provider_error is not None:
+                # A provider outage is reported as an outage (unverified), never as a question nobody could read.
+                self.provider_error.planner_receipt = {**self.usage(), 'proposers': self.log}
+                raise self.provider_error
             reasons = [f"{e['proposer']}: {e['detail']}" for e in self.log if e['outcome'] == 'rejected']
             exc = QuestionNotUnderstood(
                 'The original question was preserved; no proposer produced a plan that keeps all of it, so nothing was '
@@ -172,6 +194,10 @@ class Cascade:
 
     def finish(self, interpretation, name):
         cost, calibration, kind = TIERS[name]
+        if getattr(self, 'corrected', False) and 'feedback_identity' not in interpretation:
+            from .learning import feedback_identity
+            interpretation = {**interpretation, 'feedback_identity': feedback_identity(self.stack.path, self.question),
+                              'feedback_consumed': name in FEEDBACK_READERS}
         return {**interpretation, 'interpreter': interpretation.get('interpreter') or name,
                 'proposer': {'name': name, 'cost': cost, 'calibration': calibration, 'kind': kind,
                              'check': CHECK_VERSION, 'cascade': VERSION},

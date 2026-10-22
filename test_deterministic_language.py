@@ -1,6 +1,7 @@
 """Model-free wording/meaning checks on a separate nonclinical warehouse."""
 import copy
 import json
+import os
 from pathlib import Path
 import sqlite3
 import tempfile
@@ -34,6 +35,9 @@ class DeterministicLanguage(unittest.TestCase):
         self.catalog=R.Catalog.load(self.path)
         self.stack=SimpleNamespace(path=self.path,allow_live=True,shared_request_planning=True)
         self.stack.compose=lambda q,**kwargs:S.compose(self.stack,q,**kwargs)
+        # These tests cover the deterministic tier alone; the proposer cascade behind it is covered by
+        # test_component_reachability and the proposer tests.
+        cascade=patch.dict(os.environ,{'AGERE_PROPOSERS':'off'});cascade.start();self.addCleanup(cascade.stop)
         for target in ('clinical_core.agere.clinical.nl2sql.HostedModel',
                        'clinical_core.agere.clinical.nl2sql.LocalModel.get',
                        'clinical_core.agere.clinical.shared_planner.isolated_local','urllib.request.urlopen'):

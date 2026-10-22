@@ -246,7 +246,10 @@ class MissingClaims(Fixture):
         self.assertEqual(receipt['route'], 'hosted_missing_data')
         self.assertEqual(receipt['new_paid_api_calls'], 2)
         econ = planner.economics(receipt)
-        self.assertAlmostEqual(econ['new_api_estimate_usd'], 0.009)  # four hosted models (4 x 0.002) + the metric-router call; never $0
+        # the hosted ladder's four models (4 x 0.002); never $0. In the proposer cascade the metric router runs after the
+        # hosted ladder, so its call is counted in the cascade total, not in this proposal's steps.
+        self.assertAlmostEqual(econ['new_api_estimate_usd'], 0.008)
+        self.assertGreaterEqual(receipt['known_api_estimate_usd'], 0.008)
         self.assertEqual(receipt['missing_check']['contradicted'][0]['name'], 'patient.race')
 
 

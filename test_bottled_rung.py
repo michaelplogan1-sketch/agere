@@ -111,7 +111,14 @@ class Answer(unittest.TestCase):
 
 class Planner(unittest.TestCase):
     def stack(self, root, live=False):
-        return SimpleNamespace(path=root, receipts=root, allow_live=live,
+        def run_graph(graph, question=None):
+            # The shared planner's cascade executes a checked proposal before accepting it; run its SQL on the fixture.
+            sql = [n for n in graph['nodes'] if n['operation'] == 'sql']
+            if not sql: return {'answer': {'status': 'answered', 'answer_type': 'count', 'count': 0}, 'results': []}
+            with sqlite3.connect(root / 'semantic.sqlite3') as db:
+                value = db.execute(sql[-1]['parameters']['query']).fetchone()[0]
+            return {'answer': {'status': 'answered', 'answer_type': 'count', 'count': value}, 'results': []}
+        return SimpleNamespace(path=root, receipts=root, allow_live=live, run_graph=run_graph,
                                retriever=SimpleNamespace(meta={'source_digest': 's', 'snapshot': {'as_of': '2029-08-15'}}))
 
     def common(self):
@@ -140,7 +147,10 @@ class Planner(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp); fixture(root)
             model = FakeModel([GOOD, OTHER, OTHER]); model.question = Answer.Q
-            routed = {'interpretation': 'x', 'coverage': 'supported_observation', 'unmet_requirements': [], 'nodes': []}
+            # The cascade executes and checks a router's plan before accepting it, so the routed plan carries real SQL.
+            routed = {'interpretation': 'x', 'coverage': 'supported_observation', 'unmet_requirements': [],
+                      'nodes': [{'id': 'n1', 'operation': 'sql', 'inputs': [], 'purpose': 'routed',
+                                 'parameters': {'query': GOOD.split('\n', 2)[2].rsplit('\n', 1)[0], 'returns': 'count'}}]}
             from clinical_core.agere.clinical import operator_router
             ctx = self.common() + [patch.object(bottled.BottledModel, 'get', return_value=model),
                                    patch.object(operator_router, 'route', return_value=(routed, {'decision': 'x', 'calls': []})),

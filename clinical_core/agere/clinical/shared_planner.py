@@ -880,10 +880,15 @@ def plan(stack, question, ledger=None, frontier=None, *, population=None, model=
         graph = general_analysis.graph_for(contract)
     else:
         graph = graph_for(contract)
-    return graph, {'route': 'shared_planner', 'version': VERSION, 'policy_identity': code,
-                                'feedback_identity': interpretation.get('feedback_identity', request_plan.fingerprint([])), 'request_contract': contract,
-                                'interpretation': interpretation, **usage, 'steps': [],
-                                'frontier_called': usage['new_paid_api_calls'] > 0}
+    # A proposer's plan keeps its own route and rung evidence (bottled agreement, declines, missing-data checks) on the receipt.
+    proposed = {k: v for k, v in (contract.get('legacy_receipt') or {}).items()
+                if k not in ('new_paid_api_calls', 'frontier_called', 'request_contract', 'interpretation')} \
+        if contract.get('kind') == 'checked_graph' else {}
+    return graph, {**proposed, 'route': proposed.get('route') or 'shared_planner', 'planner': 'shared_planner',
+                   'version': VERSION, 'policy_identity': code,
+                   'feedback_identity': interpretation.get('feedback_identity', request_plan.fingerprint([])), 'request_contract': contract,
+                   'interpretation': interpretation, **usage, 'steps': proposed.get('steps', []),
+                   'frontier_called': usage['new_paid_api_calls'] > 0}
 
 
 def compose(stack, question, *, population=None, parent=None, model=None, planning='auto'):
