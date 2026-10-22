@@ -28,6 +28,7 @@ SCHEMA = 'agere-measure/1'
 LIBRARY_DIR = Path(__file__).resolve().parents[3] / 'config' / 'agere' / 'measures'
 UNITS = ('patient', 'index_event', 'admission_rate')
 TYPES = ('condition', 'measurement', 'blood_pressure', 'medication', 'service', 'encounter', 'stay', 'pdc')
+INDEX_TYPES = ('encounter', 'stay', 'ed_visit', 'diagnosis')  # ed_visit = the governed ED definition (ed_definition.py); diagnosis = coded-visit dx dates
 GROUP_BY = ('none', 'pcp', 'practice', 'coverage_type', 'payer', 'age_band', 'sex', 'race', 'ethnicity', 'race_ethnicity', 'language', 'interpreter')
 OUTPUTS = ('rates', 'gaps', 'patients')  # patients: one row per denominator patient (eligible, excluded, met, pdc)
 DISPENSE_STATUSES = ('dispensed', 'paid')
@@ -101,7 +102,8 @@ def validate_measure(m, where='measure'):
         for i, c in enumerate(num['criteria']): _check_criterion(c, f'{where} numerator[{i}]')
     if m['unit'] in ('index_event', 'admission_rate'):
         idx = m.get('index') or {}
-        if idx.get('type') not in ('encounter', 'stay'): raise ValueError(f'{where}: index type encounter|stay')
+        if idx.get('type') not in INDEX_TYPES: raise ValueError(f'{where}: index type one of {INDEX_TYPES}')
+        if idx['type'] == 'diagnosis' and not idx.get('icd10_prefixes'): raise ValueError(f'{where}: diagnosis index needs icd10_prefixes')
         _check_window(idx.get('window'), f'{where} index')
     return m
 
@@ -166,7 +168,19 @@ def _rows(ctx, c):
     key = json.dumps({k: v for k, v in c.items() if k not in ('window', 'label', 'value', 'min_dates', 'note')}, sort_keys=True)
     if key in ctx._cache: return ctx._cache[key]
     db, out, missing, t = ctx.db, defaultdict(list), [], c['type']
-    if t == 'condition':
+    if t == 'condition' and c.get('encounter_dx_only'):
+        # Diagnoses coded on a visit or claim only (never problem-list entries): 'a visit with a principal/any diagnosis of X'.
+        out = _visit_dx(ctx, c['icd10_prefixes'])
+        if not out: missing.append(f"{c['label']}: visit or claim diagnosis codes (none received)")
+    elif t == 'diagnosis':
+        out = _visit_dx(ctx, c['icd10_prefixes'])
+        if not out: missing.append(f"{c['label']}: visit or claim diagnosis codes (none received)")
+    elif t == 'ed_visit':
+        # The one governed ED definition (EHR + ADT + claims, one per patient-day); its sources are the evidence detail.
+        from .ed_definition import events
+        for e in events(ctx.db, tables={n: ctx.columns(n) for n in ('encounter', 'visit', 'adt_visit', 'payer_claim', 'payer_claim_line', 'claim')}):
+            out[e['patient_id']].append((e['day'], None, f"ED visit ({e['sources']})"))
+    elif t == 'condition':
         if c.get('concepts'):
             q = ','.join('?' * len(c['concepts']))
             for pid, d, concept in db.execute(f'SELECT patient_id, coalesce(event_date, onset, recorded_date), concept FROM condition WHERE concept IN ({q})', c['concepts']):
@@ -303,6 +317,47 @@ def _rows(ctx, c):
         missing.append(f"{c['label']}: no such records in the received data")
     ctx._cache[key] = (dict(out), missing)
     return ctx._cache[key]
+
+
+def _visit_dx(ctx, prefixes):
+    """{patient_id: [(date, None, code)]} for ICD-10 prefixes coded on visits (encounter_diagnosis, dated by its visit) and on
+    payer claims (paid or denied, counting in metrics: a coded encounter happened either way). One row per patient-date-code."""
+    out, seen = defaultdict(list), set()
+    def add(pid, d, code):
+        if not d or (pid, d[:10], code) in seen: return
+        seen.add((pid, d[:10], code)); out[pid].append((d[:10], None, code))
+    if ctx.has('encounter_diagnosis'):
+        clause, args = _icd_clause('d.icd10', prefixes)
+        sql = ('SELECT d.patient_id, coalesce(d.event_date, v.event_date), d.icd10 FROM encounter_diagnosis d LEFT JOIN visit v ON v.encounter_id = d.encounter_id'
+               if ctx.has('encounter_diagnosis', 'event_date') else
+               'SELECT d.patient_id, v.event_date, d.icd10 FROM encounter_diagnosis d JOIN visit v ON v.encounter_id = d.encounter_id')
+        for pid, d, code in ctx.db.execute(f'{sql} WHERE {clause}', args): add(pid, d, code)
+    if ctx.has('payer_claim_diagnosis') and ctx.has('payer_claim', 'final_status'):
+        clause, args = _icd_clause('d.icd10', prefixes)
+        for pid, d, code in ctx.db.execute(f"SELECT d.patient_id, coalesce(d.service_from, p.service_from), d.icd10 FROM payer_claim_diagnosis d JOIN payer_claim p "
+                                           f"ON p.payer_claim_id = d.payer_claim_id WHERE p.final_status <> 'voided' AND coalesce(d.counts_in_metrics, 1) = 1 "
+                                           f"AND {clause}", args): add(pid, d, code)
+    return dict(out)
+
+
+def _index_events(ctx, idx):
+    """Index events after the index's own diagnosis filter and new-episode rule:
+    icd10_prefixes          keep events with a matching visit/claim diagnosis dated within the event (admit..discharge, else that day)
+    negative_history_days   (diagnosis index) the diagnosis is new: none of the prefixes in the prior N days
+    first_only              keep each patient's first qualifying event per evaluation (IET: one episode per intake period)"""
+    rows, miss = _rows(ctx, idx)
+    if idx.get('icd10_prefixes') and idx['type'] != 'diagnosis':
+        dx = _visit_dx(ctx, idx['icd10_prefixes'])
+        kept = {}
+        for pid, evs in rows.items():
+            days = {r[0] for r in dx.get(pid, [])}
+            keep = [e for e in evs if e[0] and any(e[0] <= d <= ((e[1] if idx['type'] == 'stay' else None) or e[0]) for d in days)]
+            if keep: kept[pid] = keep
+        rows = kept
+    if idx.get('negative_history_days'):
+        n = idx['negative_history_days']
+        rows = {pid: [e for e in evs if not any(o[0] and shift(e[0], -n, 'd') <= o[0] < e[0] for o in evs)] for pid, evs in rows.items()}
+    return rows, miss
 
 
 def _claim_lines(ctx, codes):
@@ -495,7 +550,7 @@ def availability(ctx, m, start, end):
         miss, _ = check(c)
         warnings += [f'exclusion not applied: {x}' for x in miss]
     if m['unit'] in ('index_event', 'admission_rate'):
-        rows, miss = _rows(ctx, m['index'])
+        rows, miss = _index_events(ctx, m['index'])
         if not rows: missing += miss
         if m['unit'] == 'admission_rate' and not ctx.has('visit', 'principal_icd10'):
             missing.append('principal ICD-10 diagnosis on admissions (not in this release)')
@@ -596,7 +651,7 @@ def evaluate_db(db, m, start, end, as_of, group_by='none', keep=None, people=Non
                              'gap': m.get('gap_label', m['name']), 'evidence': '; '.join(t for _, t in num_results)})
     elif m['unit'] == 'index_event':
         idx = m['index']
-        rows, _ = _rows(ctx, idx)
+        rows, _ = _index_events(ctx, idx)
         lo, hi = at(idx['window']['start'], anchors0), at(idx['window']['end'], anchors0)
         use_end = idx.get('index_date') == 'discharge'
         for pid, events in rows.items():
@@ -610,6 +665,7 @@ def evaluate_db(db, m, start, end, as_of, group_by='none', keep=None, people=Non
                 if not _in(day, lo, hi): continue
                 if day[:7] not in set(info['months']): continue
                 if last_counted and idx.get('one_per_days') and day <= shift(last_counted, idx['one_per_days'], 'd'): continue
+                if last_counted and idx.get('first_only'): break
                 if not demographic(pid, info, day): continue
                 anchors = {**anchors0, 'index': admit, 'index_end': dis or admit}
                 if not all(ok for ok, _ in (_evaluate(ctx, c, pid, anchors) for c in den.get('criteria', []))): continue

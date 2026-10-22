@@ -1,0 +1,155 @@
+{
+ "schema": "agere-measure/1",
+ "id": "iet_engagement",
+ "name": "Engagement of Substance Use Disorder Treatment (IET engagement, 34 days after initiation)",
+ "aliases": [
+  "iet engagement",
+  "engagement of sud treatment",
+  "engagement of substance use disorder treatment",
+  "sud treatment engagement",
+  "engagement of alcohol or drug treatment",
+  "alcohol or drug treatment engagement"
+ ],
+ "status": "approximation",
+ "certification": "Approximation of HEDIS IET (Initiation and Engagement of Substance Use Disorder Treatment), not certified: built from NCQA's public measure summary; the licensed HEDIS value sets are not used (codes here are public ICD-10-CM/CPT/HCPCS examples). Index diagnoses are any visit- or claim-coded diagnosis on the event dates, not only the principal diagnosis.",
+ "steward": "NCQA (HEDIS IET)",
+ "programs": [
+  "HEDIS",
+  "Medicaid Adult/Child Core Set",
+  "Medicare Part C Star Ratings (display)"
+ ],
+ "spec_year": "HEDIS IET MY2025 (public summary)",
+ "citations": [
+  {
+   "title": "NCQA HEDIS measure summary: Initiation of Substance Use Disorder Treatment",
+   "url": "https://www.ncqa.org/hedis/measures/initiation-and-engagement-of-substance-use-disorder-treatment/",
+   "publisher": "NCQA"
+  },
+  {
+   "title": "Medicaid & CHIP Adult and Child Core Set measures (FUH, FUM, IET technical specifications)",
+   "url": "https://www.medicaid.gov/medicaid/quality-of-care/performance-measurement/adult-and-child-health-care-quality-measures/index.html",
+   "publisher": "CMS"
+  }
+ ],
+ "direction": "higher_is_better",
+ "unit": "index_event",
+ "index": {
+  "type": "diagnosis",
+  "label": "New substance use disorder episodes (visit- or claim-coded SUD diagnosis, none in the prior 194 days)",
+  "icd10_prefixes": [
+   "F10",
+   "F11",
+   "F12",
+   "F13",
+   "F14",
+   "F15",
+   "F16",
+   "F18",
+   "F19"
+  ],
+  "negative_history_days": 194,
+  "first_only": true,
+  "window": {
+   "start": "period_start",
+   "end": "period_end-47d"
+  }
+ },
+ "denominator": {
+  "summary": "Members 13+ with a new SUD episode (first visit- or claim-coded alcohol, opioid or other drug use disorder diagnosis with no SUD diagnosis in the prior 194 days) from period start to 47 days before period end (the Jan 1 - Nov 14 intake period).",
+  "age": {
+   "min": 13,
+   "max": 200
+  },
+  "criteria": []
+ },
+ "exclusions": [
+  {
+   "type": "service",
+   "label": "Hospice or palliative care (Z51.5 / hospice encounter)",
+   "streams": [
+    {
+     "stream": "hospice_enrollments"
+    }
+   ],
+   "hcpcs": [
+    "G9473",
+    "G9474",
+    "G9475",
+    "G9476",
+    "G9477",
+    "G9478",
+    "G9479",
+    "Q5003",
+    "Q5004",
+    "Q5005",
+    "Q5006",
+    "Q5007",
+    "Q5008",
+    "Q5010",
+    "S9126",
+    "T2042",
+    "T2043",
+    "T2044",
+    "T2045",
+    "T2046"
+   ],
+   "window": {
+    "start": "period_start",
+    "end": "period_end"
+   }
+  }
+ ],
+ "numerator": {
+  "summary": "Initiated (an SUD-coded visit on days 1-13) and engaged: SUD-coded visits on at least 3 distinct dates within days 1-47 (initiation + two more within 34 days; approximation: service-only engagement visits are not counted).",
+  "combine": "all",
+  "criteria": [
+   {
+    "type": "condition",
+    "label": "Initiation: SUD-coded visit on days 1-13",
+    "icd10_prefixes": [
+     "F10",
+     "F11",
+     "F12",
+     "F13",
+     "F14",
+     "F15",
+     "F16",
+     "F18",
+     "F19"
+    ],
+    "encounter_dx_only": true,
+    "window": {
+     "start": "index+1d",
+     "end": "index+13d"
+    }
+   },
+   {
+    "type": "condition",
+    "label": "Engagement: SUD-coded visits on 3+ dates within 47 days",
+    "icd10_prefixes": [
+     "F10",
+     "F11",
+     "F12",
+     "F13",
+     "F14",
+     "F15",
+     "F16",
+     "F18",
+     "F19"
+    ],
+    "encounter_dx_only": true,
+    "min_dates": 3,
+    "window": {
+     "start": "index+1d",
+     "end": "index+47d"
+    }
+   }
+  ]
+ },
+ "gap_label": "New SUD episode without engagement in treatment",
+ "outreach": {
+  "value_usd": 300,
+  "minutes": 20,
+  "action": "SUD treatment linkage call; schedule intake or MAT visit"
+ }
+}

@@ -77,7 +77,7 @@ class Utilization(unittest.TestCase):
     def test_governed_macros_execute(self):
         from clinical_core.agere.clinical.age import register
         register(self.db)
-        catalog = SimpleNamespace(tables={'visit': ['principal_icd10']})
+        catalog = SimpleNamespace(tables={'visit': ['encounter_id', 'patient_id', 'type_concept', 'event_date', 'end_date', 'principal_icd10']})
         pqi = self.db.execute(f"SELECT patient_id, pqi FROM {D.macro_sql('pqi_admission', catalog)} ORDER BY patient_id").fetchall()
         self.assertEqual(pqi, [('A', 'pqi_08'), ('B', 'pqi_15'), ('D', 'pqi_08')])  # macro rows carry no period; the step filters
         ed = dict(self.db.execute(f"SELECT encounter_id, avoidable_probability FROM {D.macro_sql('ed_avoidability', catalog)}"))

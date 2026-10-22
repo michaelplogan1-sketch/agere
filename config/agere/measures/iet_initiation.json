@@ -1,0 +1,205 @@
+{
+ "schema": "agere-measure/1",
+ "id": "iet_initiation",
+ "name": "Initiation of Substance Use Disorder Treatment (IET initiation, 14 days)",
+ "aliases": [
+  "iet initiation",
+  "iet",
+  "iet rate",
+  "initiation of sud treatment",
+  "initiation of substance use disorder treatment",
+  "initiation of alcohol or drug treatment",
+  "alcohol or drug treatment initiation",
+  "alcohol or drug treatment initiation within 14 days",
+  "sud treatment initiation",
+  "initiation and engagement of substance use disorder treatment",
+  "initiation and engagement of alcohol and other drug"
+ ],
+ "status": "approximation",
+ "certification": "Approximation of HEDIS IET (Initiation and Engagement of Substance Use Disorder Treatment), not certified: built from NCQA's public measure summary; the licensed HEDIS value sets are not used (codes here are public ICD-10-CM/CPT/HCPCS examples). Index diagnoses are any visit- or claim-coded diagnosis on the event dates, not only the principal diagnosis.",
+ "steward": "NCQA (HEDIS IET)",
+ "programs": [
+  "HEDIS",
+  "Medicaid Adult/Child Core Set",
+  "Medicare Part C Star Ratings (display)"
+ ],
+ "spec_year": "HEDIS IET MY2025 (public summary)",
+ "citations": [
+  {
+   "title": "NCQA HEDIS measure summary: Initiation of Substance Use Disorder Treatment",
+   "url": "https://www.ncqa.org/hedis/measures/initiation-and-engagement-of-substance-use-disorder-treatment/",
+   "publisher": "NCQA"
+  },
+  {
+   "title": "Medicaid & CHIP Adult and Child Core Set measures (FUH, FUM, IET technical specifications)",
+   "url": "https://www.medicaid.gov/medicaid/quality-of-care/performance-measurement/adult-and-child-health-care-quality-measures/index.html",
+   "publisher": "CMS"
+  }
+ ],
+ "direction": "higher_is_better",
+ "unit": "index_event",
+ "index": {
+  "type": "diagnosis",
+  "label": "New substance use disorder episodes (visit- or claim-coded SUD diagnosis, none in the prior 194 days)",
+  "icd10_prefixes": [
+   "F10",
+   "F11",
+   "F12",
+   "F13",
+   "F14",
+   "F15",
+   "F16",
+   "F18",
+   "F19"
+  ],
+  "negative_history_days": 194,
+  "first_only": true,
+  "window": {
+   "start": "period_start",
+   "end": "period_end-47d"
+  }
+ },
+ "denominator": {
+  "summary": "Members 13+ with a new SUD episode (first visit- or claim-coded alcohol, opioid or other drug use disorder diagnosis with no SUD diagnosis in the prior 194 days) from period start to 47 days before period end (the Jan 1 - Nov 14 intake period).",
+  "age": {
+   "min": 13,
+   "max": 200
+  },
+  "criteria": []
+ },
+ "exclusions": [
+  {
+   "type": "service",
+   "label": "Hospice or palliative care (Z51.5 / hospice encounter)",
+   "streams": [
+    {
+     "stream": "hospice_enrollments"
+    }
+   ],
+   "hcpcs": [
+    "G9473",
+    "G9474",
+    "G9475",
+    "G9476",
+    "G9477",
+    "G9478",
+    "G9479",
+    "Q5003",
+    "Q5004",
+    "Q5005",
+    "Q5006",
+    "Q5007",
+    "Q5008",
+    "Q5010",
+    "S9126",
+    "T2042",
+    "T2043",
+    "T2044",
+    "T2045",
+    "T2046"
+   ],
+   "window": {
+    "start": "period_start",
+    "end": "period_end"
+   }
+  }
+ ],
+ "numerator": {
+  "summary": "Treatment initiated within 14 days of the episode date: an SUD treatment service (CPT/HCPCS incl. MAT administration), a visit coded with an SUD diagnosis on days 1-13, or an opioid/alcohol use disorder medication (naltrexone; naloxone excluded).",
+  "combine": "any",
+  "criteria": [
+   {
+    "type": "service",
+    "label": "SUD treatment service within 14 days",
+    "cpt": [
+     "99408",
+     "99409",
+     "90832",
+     "90834",
+     "90837",
+     "90853"
+    ],
+    "hcpcs": [
+     "H0001",
+     "H0005",
+     "H0007",
+     "H0015",
+     "H0016",
+     "H0020",
+     "H0022",
+     "H0047",
+     "H0050",
+     "H2035",
+     "H2036",
+     "T1006",
+     "T1012",
+     "G0396",
+     "G0397",
+     "G2067",
+     "G2068",
+     "G2069",
+     "G2070",
+     "G2071",
+     "G2072",
+     "G2073",
+     "G2074",
+     "G2075",
+     "G2076",
+     "G2077",
+     "G2078",
+     "G2079",
+     "G2080",
+     "J0571",
+     "J0572",
+     "J0573",
+     "J0574",
+     "J0575",
+     "J2315"
+    ],
+    "window": {
+     "start": "index",
+     "end": "index+13d"
+    },
+    "lookback_check": false
+   },
+   {
+    "type": "condition",
+    "label": "Visit coded with an SUD diagnosis on days 1-13",
+    "icd10_prefixes": [
+     "F10",
+     "F11",
+     "F12",
+     "F13",
+     "F14",
+     "F15",
+     "F16",
+     "F18",
+     "F19"
+    ],
+    "encounter_dx_only": true,
+    "window": {
+     "start": "index+1d",
+     "end": "index+13d"
+    }
+   },
+   {
+    "type": "medication",
+    "label": "SUD medication within 14 days",
+    "classes": [
+     "opioid_antagonist"
+    ],
+    "exclude_names": "naloxone|narcan",
+    "window": {
+     "start": "index",
+     "end": "index+13d"
+    }
+   }
+  ]
+ },
+ "gap_label": "New SUD episode without treatment initiation in 14 days",
+ "outreach": {
+  "value_usd": 300,
+  "minutes": 20,
+  "action": "SUD treatment linkage call; schedule intake or MAT visit"
+ }
+}
