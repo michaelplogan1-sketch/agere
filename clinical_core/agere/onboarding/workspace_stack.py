@@ -15,9 +15,12 @@ What a product Stack needs and how a workspace gets it (docs/agere/WORKSPACE_FUL
                       so this is an EMPTY index over the workspace's patients: evidence predicates decline as unmapped
 - provider-receipts/, question-plans.sqlite3 (created on first plan), operators.json
 
-No retrieval index (passages, vectors) is built: it costs an embedding pass over every record. The retriever here carries
-the snapshot meta and the local MiniLM encoder (used by the engine-lean router and the semantic cache, free) and declines
-passage search ('retrieve' nodes) with the missing input named.
+- passages.sqlite3     incremental passage index (clinical/workspace_passages.py): FTS5 over every record, MiniLM vectors
+                      computed lazily for narrative windows. Built at prepare time (an unchanged store costs one count),
+                      re-synced when the record store changes. 'retrieve' nodes and Stack.review search it.
+
+The retriever carries the snapshot meta, the local MiniLM encoder (engine-lean router, semantic cache, passage vectors;
+free) and the passage index. Without the encoder, passage search is lexical only.
 
 Files are cloned with clonefile(2) (copy-on-write, no extra space, the workspace's own files are never opened for writing).
 Where cloning is unavailable they are copied. The pipeline folder is rebuilt when a source file changes (size / mtime).
@@ -192,7 +195,8 @@ def prepare(ws, *, force=False, allow_copy=True):
            # the native run has no retrieval build id; the delivery digest identifies the evidence/semantic pairing
            'source_run': native.get('source_run') or native['source_digest'], 'snapshot': native['snapshot'],
            'patients': native.get('patients'), 'visible_records': native.get('visible_records'),
-           'retrieval': 'none: no passage index or vectors (retrieve nodes decline)', 'built_at': _now()}
+           'retrieval': 'passages.sqlite3: incremental FTS5 passage index, lazily embedded MiniLM vectors for narrative windows',
+           'built_at': _now()}
     (out / 'run.json').write_text(json.dumps(run, indent=1))
     db = sqlite3.connect(out / 'stack.sqlite3', timeout=30)
     try:
@@ -211,13 +215,18 @@ def prepare(ws, *, force=False, allow_copy=True):
     source_profile._CACHE.pop((str(out), run['source_digest']), None)
     source_profile.load(out)  # validates the copy (or rebuilds it from stack.sqlite3)
     _empty_evidence(out, run, patients)
+    from ..clinical import workspace_passages
+    try:
+        passages = workspace_passages.update(out)
+    except Exception as exc:  # noqa: BLE001 - the index is rebuilt lazily on first search; never fail the build
+        passages = {'status': 'deferred', 'reason': f'{type(exc).__name__}: {exc}'[:300]}
     from ..clinical.analysis_graph import OPERATIONS
     (out / 'operators.json').write_text(json.dumps(sorted(OPERATIONS)))
     (out / 'provider-receipts').mkdir(exist_ok=True)
     manifest = {'schema': SCHEMA, 'supported': True, 'built_at': _now(), 'path': str(out), 'methods': methods,
-                'database_concurrency': concurrency, 'patients': len(patients),
+                'database_concurrency': concurrency, 'patients': len(patients), 'passage_index': passages,
                 'sources': {n: _fingerprint(p) for n, p in src.items() if p.is_file()},
-                'absent': {'retrieval index': 'retrieve nodes decline', 'narrative evidence annotations': 'evidence nodes decline',
+                'absent': {'narrative evidence annotations': 'evidence nodes decline',
                            'forecast / longitudinal / clinical-state links': 'nodes needing them decline'}}
     (out / 'pipeline.json').write_text(json.dumps(manifest, indent=1))
     with _GUARD:
@@ -229,8 +238,8 @@ def prepare(ws, *, force=False, allow_copy=True):
 # --- the Stack ----------------------------------------------------------------------------------------------------------------
 
 class WorkspaceRetriever:
-    """The parts of warehouse_retrieval.Retriever the planner and engines read: meta (snapshot, digests), the local encoder
-    and a read connection. Passage search declines: a workspace build has no passage index."""
+    """The parts of warehouse_retrieval.Retriever the planner and engines read: meta (snapshot, digests), the local encoder,
+    a read connection and passage search over the workspace's incremental passage index (opened on first search)."""
     reranker = None
     annotation_db = None
 
@@ -239,6 +248,8 @@ class WorkspaceRetriever:
         self.meta = json.loads((self.path / 'run.json').read_text())
         self.db = sqlite3.connect(f"file:{self.path / 'stack.sqlite3'}?mode=ro", uri=True, check_same_thread=False)
         self.encoder = None
+        self.passages = None
+        self._passage_lock = threading.Lock()
         if encoder:
             try:
                 from ...local_encoders import LocalEncoder
@@ -253,10 +264,17 @@ class WorkspaceRetriever:
                 self.encoder = None
 
     def search(self, question, *, patient=None, limit=8, patient_ids=None, analysis_window=None):
-        raise ValueError('Missing input: passage retrieval index (workspace builds carry no passage index or vectors)')
+        with self._passage_lock:
+            if self.passages is None:
+                from ..clinical.workspace_passages import PassageIndex
+                self.passages = PassageIndex(self.path, encoder=self.encoder, reranker=self.reranker, meta=self.meta)
+        return self.passages.search(question, patient=patient, limit=limit, patient_ids=patient_ids,
+                                    analysis_window=analysis_window)
 
     def close(self):
         self.db.close()
+        if self.passages is not None:
+            self.passages.close()
         if self.encoder is not None:
             try:
                 self.encoder.close()

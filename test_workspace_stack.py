@@ -153,8 +153,29 @@ class WorkspaceStackTests(unittest.TestCase):
         built = json.loads((out / 'pipeline.json').read_text())['built_at']
         self.assertEqual(workspace_stack.prepare(self.ws)['built_at'], built)
         self.assertIs(workspace_stack.stack_for(self.ws, encoder=False), stack)
-        with self.assertRaises(ValueError):
-            stack.retriever.search('anything')
+        # passage search runs on the workspace's incremental index (lexical here: encoder off)
+        self.assertTrue((out / 'passages.sqlite3').is_file())
+        self.assertIn(json.loads((out / 'pipeline.json').read_text())['passage_index']['status'], ('updated', 'current'))
+        found = stack.retriever.search('notes visit follow up')
+        self.assertEqual(found['schema'], 'workspace-passage-index/1')
+        self.assertEqual(found['new_paid_api_calls'], 0)
+        for row in found['evidence']:
+            self.assertEqual(row['source']['quote'], row['text'])
+
+    def test_retrieve_node_runs_on_the_workspace_passage_index(self):
+        stack = workspace_stack.stack_for(self.ws, encoder=False)
+        graph = {'interpretation': 'diabetes passages', 'coverage': 'supported_observation', 'unmet_requirements': [],
+                 'nodes': [{'id': 'population', 'operation': 'cohort', 'inputs': [],
+                            'parameters': {'specification': {'all': [], 'any': [], 'exclude': []}}, 'purpose': 'all'},
+                           {'id': 'r', 'operation': 'retrieve', 'inputs': ['population'],
+                            'parameters': {'query': 'type 2 diabetes', 'analysis_window': None}, 'purpose': 'passages'}]}
+        result = stack.run_graph(graph, question='Show diabetes passages')
+        self.assertIsNone(result.get('workspace_decline'))
+        detail = next(x['result'] for x in result['results'] if x['node']['operation'] == 'retrieve')
+        self.assertEqual(detail['schema'], 'workspace-passage-index/1')
+        self.assertTrue(detail['scope_applied_before_ranking'])
+        quotes = [e['text'] for e in detail['evidence']]
+        self.assertTrue(quotes and all('diabetes' in q.lower() for q in quotes), quotes)
 
     def test_engine_without_its_input_declines_as_unsupported(self):
         stack = workspace_stack.stack_for(self.ws, encoder=False)

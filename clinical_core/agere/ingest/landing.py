@@ -28,7 +28,7 @@ def parsers():
     """Parser modules in detection order (most specific first). Missing modules are skipped."""
     import importlib
     out = []
-    for name in ('x12', 'hl7', 'ncpdp', 'fhir', 'flat'):
+    for name in ('x12', 'hl7', 'ncpdp', 'fhir', 'flat', 'documents'):  # documents: PDFs/images -> OCR text
         try:
             out.append(importlib.import_module(f'{__package__}.{name}'))
         except ImportError:
