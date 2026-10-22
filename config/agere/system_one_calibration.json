@@ -1,0 +1,37 @@
+{
+  "note": "Tasks absent here are identity (no shift). Only chart_assertion has a labeled set; no warehouse stream carries ground-truth assertion labels for note text.",
+  "schema": "system-one-calibration/1",
+  "tasks": {
+    "chart_assertion": {
+      "ece_after": 0.0669623015731396,
+      "ece_after_loo": 0.09893342126654707,
+      "ece_before": 0.11458180375294595,
+      "fitted_at": "2026-10-22T11:08:44+00:00",
+      "l2": 0.01,
+      "label_counts": {
+        "no": 9,
+        "unknown": 7,
+        "yes": 8
+      },
+      "method": "per-option log-odds shift, NLL + L2",
+      "n": 24,
+      "nll_after": 0.16295198114186776,
+      "nll_after_loo": 0.2735769215006372,
+      "nll_before": 0.31997649224404306,
+      "shift": {
+        "no": 1.454959,
+        "unknown": 0.395344,
+        "yes": -1.850303
+      },
+      "source": {
+        "cost_usd": 0.000582288,
+        "model": "jev-1.13.0",
+        "note": "24 live Jev calls on 2026-10-22 (refit from ledger cache is free); labels exact by construction; small handcrafted set, so check ece_after_loo, not ece_after",
+        "provider": "jev",
+        "raw_top_label_accuracy": 0.875,
+        "rows_answered": 24,
+        "set": "CHART_ASSERTION_SEED (system_one.py, handcrafted)"
+      }
+    }
+  }
+}
