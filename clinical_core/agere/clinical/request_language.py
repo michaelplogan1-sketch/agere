@@ -458,7 +458,7 @@ class Parser:
         text = re.sub(r'^(?:an?|any|the|their|a recorded)\s+', '', text, flags=re.I)
         lab = self.prefix(text, self.labs) if self.labs and 'measurement' in self.catalog.tables else None
         if lab:  # a mapped lab label (terminology.py), with the same optional result wording as LAB_WORDS
-            more = re.match(r'(?:\s+(?:tests?|results?|scores?|values?|readings?))?(?:\s+recorded)?\b', text[len(lab[0]):], re.I)
+            more = re.match(r'(?:\s+(?:tests?|results?|scores?|values?|readings?))?(?:\s+recorded)?(?!\w)', text[len(lab[0]):], re.I)  # (?!\w), not \b: the slice starts at a space after the label
             quote = text[:len(lab[0]) + more.end()]
             return 'measurement', 'event_date', [atom('measurement.concept', '=', lab[1], quote)], quote, text[len(quote):]
         for pattern, table, field, fixed in EVIDENCE:

@@ -44,6 +44,11 @@ class Narrowing(unittest.TestCase):
         self.assertEqual(self.narrow('Of those, which had an A1c above 9 in 2029?'), ['A'])
         self.assertEqual(self.narrow('Of those, which had a visit in 2029?'), ['A', 'B', 'C'])
 
+    def test_mapped_lab_label_followed_by_a_comparison(self):  # rq-05 crashed: \b at the start of the slice after the label
+        parser = L.Parser(self.catalog, 'x'); parser.labs = {'hba1c': 'hba1c'}
+        table, _, atoms, quote, tail = parser.thing('HbA1c above 9')
+        self.assertEqual((table, len(atoms), quote, tail.strip()), ('measurement', 1, 'HbA1c', 'above 9'))
+
     def test_age_uses_the_governed_definition_and_chains_compose(self):
         self.assertEqual(self.narrow('And which of them are over 65?'), ['A', 'C'])   # B turns 65 on the as-of date: not over 65
         women = self.narrow('Of those, which are women?')
