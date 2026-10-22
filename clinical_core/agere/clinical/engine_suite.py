@@ -27,9 +27,11 @@ MODULES = {
     'change_attribution': 'change_attribution',     # joint patient-state / source-observation tensor model: real change vs feed outage
     'social_needs': 'social_needs',                 # corroborated social needs + referral (BSeR/Gravity) closure
     'saved_monitors': 'monitor_sweep',              # saved-answer monitors recomputed on new snapshots
+    'policy_evaluation': 'off_policy',              # doubly robust off-policy evaluation of outreach policies from logged outcomes
+    'guideline_conformance': 'guideline_conformance',  # OCEL 2.0 object-centric log + guideline pathway conformance
 }
-ROUTE_ORDER = ('saved_monitors', 'change_attribution', 'social_needs', 'star_rating', 'mlr', 'settlement_bridge',
-               'policy_search', 'outreach_bandit', 'outreach_allocation', 'staffing_plan')
+ROUTE_ORDER = ('saved_monitors', 'change_attribution', 'social_needs', 'guideline_conformance', 'star_rating', 'mlr', 'settlement_bridge',
+               'policy_search', 'policy_evaluation', 'outreach_bandit', 'outreach_allocation', 'staffing_plan')
 
 
 def module(op):
