@@ -43,6 +43,7 @@ OPERATIONS |= {'target_trial', 'line_of_therapy', 'trial_feasibility'}  # life-s
 OPERATIONS |= {'loop_closure', 'diagnostic_delay', 'risk_outcomes'}  # quality & safety: open loops, diagnostic delay look-back, risk-standardized outcomes
 CLINICAL_LOGIC = {'medication_state': 'medication_state', 'default_definition': 'default_definitions'}  # op -> module (validate/execute/answer)
 OPERATIONS |= set(CLINICAL_LOGIC)
+OPERATIONS |= {'atomic_questions'}  # atomic typed sub-questions answered by System One per patient (atomic_questions.py)
 NODE_FIELDS = {'id', 'operation', 'inputs', 'parameters', 'purpose'}
 LIMITS = [
     'Membership means observed predicate matches, not confirmed disease or absent care.',
@@ -619,6 +620,10 @@ def build_answer_core(plan, results, memberships, question):
                                                                                'sites', 'pcps', 'diversity', 'forecast')}})
         if unapplied: answer['missing'] += [f'Criterion not computable from received data: {x}' for x in unapplied]
         return answer
+    if last['operation'] == 'atomic_questions':
+        from . import atomic_questions
+        answer.update(atomic_questions.answer(results[-1]['result'], plan, question))
+        return answer
     if last['operation'] in CLINICAL_LOGIC:
         import importlib
         answer.update(importlib.import_module(f".{CLINICAL_LOGIC[last['operation']]}", __package__).answer(results[-1]['result'], plan, question))
@@ -901,6 +906,9 @@ def validate(plan, as_of):
         elif op in CLINICAL_LOGIC:
             import importlib
             p = importlib.import_module(f'.{CLINICAL_LOGIC[op]}', __package__).validate(p)
+        elif op == 'atomic_questions':
+            from . import atomic_questions
+            p = atomic_questions.validate(p)
         elif op in ('loop_closure', 'diagnostic_delay', 'risk_outcomes'):
             from . import loop_closure, diagnostic_delay, risk_outcomes
             p = {'loop_closure': loop_closure, 'diagnostic_delay': diagnostic_delay, 'risk_outcomes': risk_outcomes}[op].validate(p)
@@ -1244,6 +1252,7 @@ def code_identity():
                       Path(__file__).with_name('loop_closure.py'), Path(__file__).with_name('diagnostic_delay.py'),
                       Path(__file__).with_name('risk_outcomes.py'), Path(__file__).with_name('safety_data.py'),
                       Path(__file__).with_name('medication_state.py'), Path(__file__).with_name('default_definitions.py'),
+                      Path(__file__).with_name('atomic_questions.py'),
                       Path(__file__).with_name('market.py'),
                       Path(__file__).with_name('contract_strategy.py'), Path(__file__).with_name('programs.py'), Path(__file__).with_name('vbc.py'),
                       *[Path(__file__).with_name(n) for n in ('target_trial.py', 'line_of_therapy.py', 'trial_feasibility.py')],
@@ -1786,6 +1795,12 @@ def execute(stack, plan, *, question=None):
                 detail=source_summary(rows,meta['snapshot']['as_of'],streams)
                 detail['input_membership']=membership_receipt(chosen)
                 detail['source_record_count']=len(rows)
+            elif op == 'atomic_questions':
+                from . import atomic_questions
+                chosen = memberships[node['inputs'][0]]
+                detail = atomic_questions.run(stack, sorted(chosen.yes), params, meta['snapshot']['as_of'])
+                paid_calls += detail['new_paid_api_calls']
+                detail['input_membership'] = membership_receipt(chosen)
             elif op == 'review':
                 chosen=memberships[node['inputs'][0]];ids=sorted(chosen.yes)[:params['maximum_patients']];reviews=[]
                 from .evidence_proposers import review_patient
@@ -2050,7 +2065,7 @@ def execute(stack, plan, *, question=None):
         # Wall-time receipt per phase/operator (latency budgets read it); not part of the cache key.
         result['compute']['timings'] = {'setup_seconds': round(setup_seconds, 4), 'nodes': node_seconds,
                                         'answer_seconds': round(time.perf_counter() - answer_started, 4)}
-        if result_cache_enabled():
+        if result_cache_enabled() and not any(r['result'].get('do_not_cache') for r in results):  # e.g. a System One outage
             with db:
                 db.execute('INSERT OR REPLACE INTO result_cache VALUES (?,?)', (key, json.dumps(result, allow_nan=False, default=_json_default)))
         return result
