@@ -53,11 +53,16 @@ MODULES = {
     'spatiotemporal_cluster': 'spatiotemporal_cluster',  # space-time permutation scan over ED syndromes by ZIP / county
     'overbooking_fairness': 'overbooking_fairness', # who bears overbooking burden by age band and payer (scheduling model replay)
     'network_adequacy': 'network_adequacy',         # specialty access per county / state: realized network, ratios, out-of-network
+    'care_gap_closure': 'care_gap_closure',         # payer care gaps (DEQM open/closed gap per member and measure) + closing actions
+    'transitions_of_care': 'transitions_of_care',   # discharge follow-up (TEAM/TCM): visit, contact, med reconciliation, readmission
+    'domain_pack': 'domain_pack',                   # non-healthcare industry packs (AGERE_PACK); never claims a question under the healthcare pack
+    'prior_auth_access': 'prior_auth_access',       # prior authorization / non-coverage rejects: resolve, appeal, Extra Help screen
 }
 ROUTE_ORDER = ('saved_monitors', 'change_attribution', 'social_needs', 'star_rating', 'mlr', 'settlement_bridge',
                'bundle_compliance', 'hai_surveillance', 'antimicrobial_use', 'spatiotemporal_cluster', 'network_adequacy',
                'overbooking_fairness', 'or_block_optimization', 'discharge_forecast', 'capacity_simulation', 'flow_decomposition',
                'visit_groups', 'policy_search', 'outreach_bandit', 'outreach_allocation', 'staffing_plan',
+               'prior_auth_access', 'transitions_of_care', 'care_gap_closure', 'domain_pack',
                'benchmark_rebasing', 'eligibility_340b', 'ddi_screening', 'prior_auth_rules', 'cdi_opportunity', 'upcoding_detection',
                'denial_prediction', 'contract_reimbursement', 'price_benchmark', 'network_spread', 'provider_network_graph',
                'survey_adjustment', 'scorecard_risk')
