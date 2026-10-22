@@ -19,6 +19,8 @@ from pathlib import Path
 
 VERSION = 'foundation-engines/1'
 OPERATIONS = {
+    'source_defects': 'dq_detectors',  # detected source defects (Raha-style detectors + discovered FDs)
+    'feed_gaps': 'feed_gaps',  # feed sequence gaps and snapshot recovery
 }
 
 
