@@ -476,7 +476,10 @@ def run(stack, patient_ids, params, as_of, *, decide=None):
             if item: external[s['key']] = item
     packets = []
     tasks, passages = [], {}
+    from .answer_budget import stop_check
+    stop = stop_check()  # the tier's time share; bound here because pool threads below do not inherit the cascade's context
     for pid in ids:  # retrieval on this thread (the retriever's sqlite connection is not shared across threads)
+        if stop(): raise QuestionNotUnderstood(f'tier time share exhausted while gathering evidence ({len(packets)} packets of {len(ids) * len(subs)})')
         for s in subs:
             if p['unit'] == 'document':
                 found = stack.retriever.search(retrieval_query(s), patient=pid, limit=DOCUMENTS_PER_PATIENT)
@@ -507,9 +510,6 @@ def run(stack, patient_ids, params, as_of, *, decide=None):
         elif dated(doc, as_of):
             normal.append((pid, s, dated(doc, as_of), [dated(doc, as_of)]))
     tasks = normal
-
-    from .answer_budget import stop_check
-    stop = stop_check()  # bound here: pool threads do not inherit the cascade's context
 
     def one(task):
         if stop(): raise QuestionNotUnderstood('tier time share exhausted before every sub-question was asked')  # stop spending
