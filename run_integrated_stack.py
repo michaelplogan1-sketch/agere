@@ -5,7 +5,23 @@ from clinical_core.agere.clinical.stack_runtime import Stack
 from clinical_core.agere.clinical.analytic_registry import execute,compute_all,CATALOG
 from clinical_core.agere.clinical.cohorts import select
 
+DESKTOP_KEYS = {'typesafe': 'TYPESAFE_API_KEY', 'jev': 'TYPESAFE_API_KEY', 'perplexity': 'PERPLEXITY_API_KEY',
+                'anthropic': 'ANTHROPIC_API_KEY', 'open ai': 'OPENAI_API_KEY', 'openai': 'OPENAI_API_KEY'}
+
+
+def desktop_keys(path=Path.home()/'Desktop'/'typesafe_key.txt'):
+    """Mike's key file: a bare first line is the TypeSafe (Jev) key, then 'Label: key' lines. Never printed."""
+    if not path.exists(): return
+    lines = [l.strip() for l in path.read_text().splitlines() if l.strip()]
+    for i, line in enumerate(lines):
+        label, sep, value = line.partition(':')
+        name = DESKTOP_KEYS.get(label.strip().lower()) if sep else ('TYPESAFE_API_KEY' if i == 0 else None)
+        value = value.strip() if sep else line
+        if name and value: os.environ[name] = value.strip('"\'')
+
+
 def keys():
+    desktop_keys()  # the Desktop file is the current source; the older env file only fills what it lacks
     for line in Path('/Users/mikel/insight-engine/.env').read_text().splitlines():
         line=line.strip().removeprefix('export ')
         if '=' not in line:continue
