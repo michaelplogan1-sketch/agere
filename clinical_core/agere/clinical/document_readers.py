@@ -97,15 +97,24 @@ def available(name):
     return next((a for a in availability() if a['provider'] == name), {'provider': name, 'available': False, 'reason': 'unknown reader'})
 
 
-class MedGemmaReader:
-    """Lazy MedGemma (Gemma 3, text-only) reader. identity is computable without loading weights."""
-    backend = 'mlx_lm_gemma3_text_bf16'
+def _bits():
+    try: b = int(os.environ.get('AGERE_MEDGEMMA_BITS', '4'))
+    except ValueError: b = 4
+    return b if b in (4, 8, 16) else 4
 
-    def __init__(self, path=None, *, loader=None):
+
+class MedGemmaReader:
+    """Lazy MedGemma (Gemma 3, text-only) reader. identity is computable without loading weights.
+    Weights load lazily and are quantized in memory (AGERE_MEDGEMMA_BITS, default 4: ~2.5 GB resident instead of ~8 GB
+    bf16 on a shared 24 GB machine; 16 keeps bf16)."""
+
+    def __init__(self, path=None, *, loader=None, bits=None):
         self.path = Path(path) if path else medgemma_path()
         if self.path is None: raise FileNotFoundError(available('medgemma')['reason'])
+        self.bits = bits or _bits()
+        self.backend = 'mlx_lm_gemma3_text_' + ('bf16' if self.bits == 16 else f'q{self.bits}_g64')
         files = sorted((f.name, f.stat().st_size) for f in self.path.iterdir() if f.suffix in ('.safetensors', '.json', '.model'))
-        self.identity = digest([VERSION, str(self.path.name), self.path.parent.name, files, SYSTEM, LETTERS])
+        self.identity = digest([VERSION, str(self.path.name), self.path.parent.name, files, SYSTEM, LETTERS, self.bits])
         self._loader = loader            # tests inject (model, tokenizer); production uses mlx_lm.load
         self.model = self.tokenizer = None
         self.load_seconds = None
@@ -117,8 +126,14 @@ class MedGemmaReader:
                 self.model, self.tokenizer = self._loader(self.path)
             else:
                 os.environ.update(HF_HUB_OFFLINE='1', TRANSFORMERS_OFFLINE='1', HF_HUB_DISABLE_TELEMETRY='1')
+                import mlx.core as mx
+                import mlx.nn as nn
                 from mlx_lm import load
-                self.model, self.tokenizer = load(str(self.path))
+                self.model, self.tokenizer = load(str(self.path), lazy=True)
+                if self.bits != 16:  # quantize while weights are still lazy: bf16 tensors are never all resident at once
+                    nn.quantize(self.model, group_size=64, bits=self.bits,
+                                class_predicate=lambda _, m: hasattr(m, 'to_quantized') and m.weight.shape[-1] % 64 == 0)
+                mx.eval(self.model.parameters())
             self.load_seconds = time.perf_counter() - start
         return self
 
