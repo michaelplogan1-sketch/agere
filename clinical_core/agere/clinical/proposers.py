@@ -166,6 +166,11 @@ class Cascade:
             order = tuple(router_order(self.stack, self.question, order)[0])
         except Exception:  # noqa: BLE001 - no encoder (fixtures): keep the default order
             pass
+        try:  # outcome-labelled tier router (trained from verified answers): the predicted tier first, never removes one
+            from .tier_router import reorder
+            order, self.tier_routing = reorder(self.stack, self.question, order)
+        except Exception:  # noqa: BLE001 - no promoted model / encoder: keep the order
+            pass
         return order
 
     def run(self):

@@ -9,6 +9,7 @@
   shape        question -> answer shape (count / value / table / patient_set / composite): a MiniLM student head.
   cache        verified (question -> SQL) pairs for seeding learned_verified_sql / semantic cache and (question -> request)
                pairs for paraphrase reuse; seeding a stack is explicit (seed_stores, train_all --seed-stores).
+  decompose    question -> grammar-read sub-questions + exact combine (why / trend / multi-step chains; atomic decomposition).
   bottled      (question -> SQL) for bottled SQL (bottled.messages, materialized at training time) and
                (question -> cohort slots) for the narrow rung (bottled.narrow_messages).
 Splits hold out whole TEMPLATE FAMILIES (family/form), never single paraphrases, so held-out scores measure
@@ -30,7 +31,7 @@ sys.path.insert(0, str(ROOT))
 
 VERSION = 'training-datasets/1'
 HELDOUT, VALID = 15, 10  # percent of template families
-LEARNERS = ('normalizer', 'typed', 'router', 'shape', 'cache', 'bottled', 'narrow')
+LEARNERS = ('normalizer', 'typed', 'router', 'shape', 'cache', 'bottled', 'narrow', 'decompose')
 TYPED_SYSTEM = ('Interpret the analytics question about the connected synthetic warehouse into ONE typed request JSON: '
                 'source, select, where, group_by, order_by, limit, unresolved (optional analyses for registered engines), or '
                 '{"program": ...} for a multi-part request, or {"cohort_family_slots": ...} for a cohort-family question. '
@@ -115,6 +116,7 @@ def typed_messages(question, catalog_tables, tables, target=None):
 
 
 def router_label(r, labels):
+    if r.get('router_label') in labels: return r['router_label']  # hard families name the operator that answers them
     for e in r.get('engines') or []:
         if e in labels: return e
     return 'literal_lookup'  # executed by the shared compiler (plain SQL, governed metric, cohort family, program)
@@ -123,6 +125,7 @@ def router_label(r, labels):
 def shape_label(r):
     req, ans = r['request'], r['answer']
     if req['kind'] == 'program': return 'composite'
+    if req['kind'] == 'engine': return 'count' if ans.get('answer_type') == 'count' else 'patient_set'
     return ans.get('answer_type') or ans.get('returns') or ('table' if 'rows' in ans else 'value')
 
 
@@ -172,6 +175,12 @@ def build(labels, out, catalog_tables=None, bench=None, normalizer_targets='gram
         if r['request']['kind'] == 'cohort_family_slots':
             for text, style in texts:
                 sets['narrow'][split].append({**meta, 'question': text, 'slots': r['request']['value']})
+        # (g) decomposition (System One #1 atomic sub-questions): question -> grammar-read steps + exact combine
+        if r['request']['kind'] == 'steps':
+            for text, style in texts:
+                if not text.startswith('Previous question:'):
+                    sets['decompose'][split].append({**meta, 'question': text, 'steps': r['request']['value']['steps'],
+                                                     'combine': r['request']['value']['combine'], 'answer_key': r['answer_key']})
     if vbc:  # curated router seeds from the VBC library (expected_engine), held out by domain like any template family
         lib = json.loads((ROOT / 'config' / 'agere' / 'vbc_questions.json').read_text())['questions']
         for q in lib:

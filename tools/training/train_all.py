@@ -1,5 +1,6 @@
 """Retrain every local learner from the labeled datasets, evaluate on HELD-OUT template families, promote only winners.
 
+  tier_router     outcome-labelled: which cascade tier's checked answer was right (router_outcomes.py); MiniLM head.
   router, shape   MiniLM features (learned_router.features) + sklearn logistic regression, temperature fitted on the valid
                   split; scored on held-out families against the current model (router: learned_router_model.json; shape:
                   the majority-class baseline when no model exists).
@@ -189,6 +190,45 @@ def train_shape(ds, out, encoder, identity, smoke):
                    current_heldout_accuracy=cur, heldout_rows=len(held), smoke=smoke)
 
 
+def train_tier_router(ds, out, encoder, identity, smoke):
+    """Outcome-labelled tier router (router_outcomes rows): MiniLM head over the cascade tiers, promoted only on a held-out
+    win over the current promoted head (else the majority-tier baseline). Pointer: <out>/promoted/tier_router.json."""
+    from clinical_core.agere.clinical import tier_router as TR
+    from clinical_core.agere.clinical.proposers import ORDER
+    from tools.learned_routing.train import choose_threshold
+    from clinical_core.agere.clinical import learned_router as LR
+    labels = list(ORDER)
+    lim = 2000 if smoke else None
+    train, valid, held = ([r for r in load(Path(ds) / 'tier_router' / f'{s}.jsonl', lim) if r.get('label') in labels]
+                          for s in ('train', 'valid', 'heldout'))
+    if not train or len({r['label'] for r in train}) < 2: return receipt(out, 'tier_router', 'skipped', reason='fewer than two tiers in train')
+    model = fit_head(train, valid, labels, encoder)
+    cand = head_accuracy(model, held, labels, encoder)
+    current = TR.load(TR.model_path()) if TR.model_path() else None
+    if current and current.get('encoder_identity') == identity and current.get('labels') == labels:
+        cur, basis = head_accuracy({'W': current['W'], 'b': current['b'], 'temperature': current['temperature']}, held, labels, encoder), 'current promoted tier router'
+    else:
+        majority = max(labels, key=lambda t: sum(r['label'] == t for r in train))
+        cur, basis = (sum(r['label'] == majority for r in held) / len(held) if held else None), f'majority tier ({majority})'
+    threshold = 1.01
+    if held:
+        X = LR.features([r['question'] for r in held], encoder)
+        p = LR.softmax((X @ model['W'].T + model['b']) / model['temperature'])
+        y = np.array([labels.index(r['label']) for r in held])
+        threshold = choose_threshold(p.max(1), p.argmax(1) == y)[0]
+    decision, why = decide(cand, cur)
+    d = Path(out) / 'models' / 'tier_router'; d.mkdir(parents=True, exist_ok=True)
+    path = d / f'model-{time.strftime("%Y%m%d-%H%M%S")}.json'
+    path.write_text(json.dumps({'version': TR.VERSION, 'labels': labels, 'encoder_identity': identity, 'temperature': model['temperature'],
+                                'threshold': threshold, 'heldout': {'n': len(held), 'accuracy': cand}, 'train_rows': len(train),
+                                'weights': np.round(model['W'], 6).tolist(), 'bias': np.round(model['b'], 6).tolist()}, separators=(',', ':')))
+    if decision == 'promoted' and not smoke:
+        pointer = Path(out) / 'promoted' / 'tier_router.json'; pointer.parent.mkdir(parents=True, exist_ok=True)
+        pointer.write_text(json.dumps({'model': str(path), 'heldout_accuracy': cand, 'at': time.strftime('%Y%m%d-%H%M%S')}, indent=1))
+    return receipt(out, 'tier_router', decision, reason=why, basis=basis, candidate=str(path), candidate_heldout_accuracy=cand,
+                   current_heldout_accuracy=cur, heldout_rows=len(held), threshold=threshold, smoke=smoke)
+
+
 # --------------------------------------------------------------------------------------------------- MLX LoRA jobs
 def lora_command(data, adapter, learner, smoke):
     cfg = LORA[learner]
@@ -312,13 +352,14 @@ def score(learner, r, out, ctx):
 def run(ds, out, stack=None, smoke=False, learners=None, allow_mlx=False, install=False, seed_stores=False, eval_limit=200):
     from tools.training.question_factory import active_stack, assert_public
     stack = assert_public(stack or active_stack())
-    learners = learners or ['router', 'shape', 'normalizer', 'typed', 'bottled', 'narrow']
+    learners = learners or ['router', 'shape', 'tier_router', 'normalizer', 'typed', 'bottled', 'narrow']
     results, started = {}, time.time()
-    if any(l in learners for l in ('router', 'shape')):
+    if any(l in learners for l in ('router', 'shape', 'tier_router')):
         encoder, identity = encoder_for(stack)
         try:
             if 'router' in learners: results['router'] = train_router(ds, out, stack, encoder, identity, smoke, install)
             if 'shape' in learners: results['shape'] = train_shape(ds, out, encoder, identity, smoke)
+            if 'tier_router' in learners: results['tier_router'] = train_tier_router(ds, out, encoder, identity, smoke)
         finally:
             encoder.close()
     for learner in ('normalizer', 'typed', 'bottled', 'narrow'):

@@ -524,7 +524,7 @@ MED_SUBJECTS = {'GDMT': 'gdmt', 'a beta-blocker': 'beta_blocker', 'an MRA': 'mra
 MED_STATES = {'listed_not_filled': ['listed on but not filling', 'prescribed but not picking up', 'on the med list but not filling'],
               'filled_current': ['currently filling', 'actively filling', 'covered by a current fill of'],
               'documented_stopped_or_intolerant': ['documented as stopped or intolerant to', 'recorded as having stopped'],
-              'never_recorded': ['with no record at all of', 'never recorded on']}
+              'never_recorded': ['missing any record of', 'never recorded on']}
 DEF_PHRASES = {'pqi_admissions': ['PQI admissions', 'potentially preventable admissions', 'ambulatory care sensitive admissions',
                                   'avoidable hospitalizations'],
                'ed_avoidability': ['potentially avoidable ED visits', 'avoidable ER visits', 'preventable emergency visits',
@@ -643,7 +643,7 @@ def f_notes(rng, v):
         sel = [{'kind': 'field', 'field': 'note_fact.record_id', 'alias': 'record_id', 'quote': 'notes'},
                {'kind': 'field', 'field': 'note_fact.event_date', 'alias': 'event_date', 'quote': 'notes'},
                {'kind': 'field', 'field': 'note_fact.negated', 'alias': 'negated', 'quote': 'say'},
-               {'kind': 'field', 'field': 'note_fact.evidence_text', 'alias': 'evidence_text', 'quote': 'What do the notes say'}]
+               {'kind': 'field', 'field': 'note_fact.evidence_text', 'alias': 'evidence_text', 'quote': 'What do the notes say about'}]
         req = REQ('note_fact', 'notes', sel, AND(preds, q))
         verify = None
     else:

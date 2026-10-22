@@ -11,3 +11,5 @@ while pgrep -f "question_factory.py --n 1000000" > /dev/null; do sleep 60; done
 step label1m  $PY tools/training/label.py --questions artifacts/training/questions-1m --out artifacts/training/labels-1m --workers 6
 step datasets $PY tools/training/datasets.py --labels artifacts/training/labels-1m,artifacts/training/labels,artifacts/training/traffic --out artifacts/training/datasets-1m
 step norm1m   $PY tools/training/train_all.py --datasets artifacts/training/datasets-1m --out artifacts/training/runs/normalizer-1m --learners normalizer --allow-mlx --eval-limit 400
+# Self-improving loop: harvested traffic/corrections -> datasets (+ outcome-labelled tier router) -> retrain -> promote.
+step selfimprove $PY tools/training/self_improve.py --allow-mlx --learners router,shape,tier_router,normalizer

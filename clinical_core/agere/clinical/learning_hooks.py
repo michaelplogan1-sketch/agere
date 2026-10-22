@@ -9,7 +9,9 @@ after_answer(stack, question, result, body=None):
     under the new wording; the hosted verified ladder keeps its own capture (learning.capture_verified).
   * every verified answer is appended to the training corpus (<AGERE_TRAINING_DIR or artifacts/training>/traffic) in the
     labeled-row format tools/training/datasets.py reads, so the self-learning loop retrains on real traffic too; a
-    decline is appended to the gaps file (grammar growth / negatives), never as a learned answer.
+    decline is appended to the gaps file (grammar growth / negatives), never as a learned answer. Every verified cascaded
+    answer also appends a router-outcome row (the tier whose checked answer was right; tools/training/router_outcomes.py),
+    the outcome-labelled data the tier router trains on (tools/training/self_improve.py closes the loop).
   * the off-path learning components are wired: learning.quarantine -> record_correction for answers that trip a
     high-precision control (correction_record); an explicit correction in the request body (learning.record_correction,
     also excluded from the corpus); question-source learning tasks (question_learning.prepare); learning-queue
@@ -134,6 +136,15 @@ def corpus_row(question, result, proposer, paid):
             'proposer': proposer, 'paid': paid, 'at': time.strftime('%Y-%m-%dT%H:%M:%S'), 'synthetic': True}
 
 
+def router_outcome_row(question, result, proposer, paid):
+    """tools/training/router_outcomes.py row: the accepted (verified) tier and what the tiers before it did."""
+    log = interpretation_of(result).get('proposers') or []
+    return {'schema': 'router-outcome/1', 'question': question, 'accepted': proposer, 'paid': paid,
+            'tried': [(e.get('proposer'), e.get('outcome')) for e in log][:40],
+            'question_id': ((result or {}).get('cost_telemetry') or {}).get('question_id'),
+            'at': time.strftime('%Y-%m-%dT%H:%M:%S'), 'synthetic': True}
+
+
 def append(name, row):
     d = training_dir(); d.mkdir(parents=True, exist_ok=True)
     path = d / f'{name}-{time.strftime("%Y%m%d")}.jsonl'
@@ -187,6 +198,8 @@ def after_answer(stack, question, result, *, body=None):
                 receipt['saved_pair'] = save_pair(stack, question, result, proposer)
             if proposer not in ('semantic_cache', 'learned_verified_sql') or paid:
                 receipt['corpus'] = append('labels-traffic', corpus_row(question, result, proposer, paid))
+            if cascaded:  # outcome-labelled router data: this tier's checked answer was the verified one
+                receipt['router_outcome'] = append('router-outcomes', router_outcome_row(question, result, proposer, paid))
         elif (result or {}).get('answer', {}).get('status') in ('not_understood', 'not_available', 'unsupported', 'partial'):
             receipt['corpus'] = append('gaps', {'question': question, 'status': result['answer']['status'], 'reasons': reasons,
                                                 'proposers': [{k: p.get(k) for k in ('proposer', 'outcome', 'detail')}
