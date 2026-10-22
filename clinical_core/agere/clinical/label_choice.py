@@ -47,7 +47,7 @@ def disclosure(op):
     text = f'{score} {_STATEMENT[kind]}: its label is {label}.'
     if proxy:
         text += (' Patients whose care was under-delivered or who cost less because of access barriers rank lower at equal need; '
-                 'cost is never a stand-in for need here, so the list is a spending priority and clinical need is shown separately.')
+                 'read it as a spending priority, never as a ranking of clinical need.')
     return {'op': op, 'score': score, 'label': label, 'label_kind': kind, 'cost_proxy_for_need': proxy, 'statement': text, 'version': VERSION}
 
 
