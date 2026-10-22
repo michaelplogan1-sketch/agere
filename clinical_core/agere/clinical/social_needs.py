@@ -270,6 +270,8 @@ def route(question, profile, as_of):
     if re.search(r'\b(?:drive|drives|driver|associated|predict\w*|why)\b', low): return None
     if re.search(r'\b(?:contact|call|prioriti[sz]\w*|capacity|benefit\w*|respond\w*|uplift|persuadable\w*)\b', low): return None  # worklists stay outreach, who-benefits stays uplift  # why / what drives stays explain / discover
     if re.search(r'\b(?:pmpm|cost|spend|admissions?|ed visits?|readmission\w*)\b', low) and not re.search(REFERRAL, low): return None
+    if re.search(r'\bscreen\w*\b|\bpositiv\w*\b|\bper (?:pcp|practice|payer|clinic)\b|\bpercent\b', low) and not re.search(REFERRAL + r'|\bcorroborat\w*\b|\bunmet\b', low):
+        return None  # screening counts / positivity breakdowns are literal lookups
     params = {}
     from .sdoh_needs import NEEDS
     named = [n for n, rx in (('food', r'\bfood\b'), ('transport', r'\btransport\w*\b|\brides?\b'), ('housing', r'\bhous\w*\b|\bhomeless\w*\b'),
@@ -279,7 +281,8 @@ def route(question, profile, as_of):
     elif re.search(r'\b(?:still )?open\b|\bnot (?:yet )?(?:closed|completed|resolved|connected)\b|\bunresolved\b|\boverdue\b|\bstuck\b|\bfailed\b', low): params['focus'] = 'open'
     elif re.search(r'\b(?:were|got|been) (?:closed|completed|resolved|connected)\b|\bclosed loops?\b', low): params['focus'] = 'closed'
     elif re.search(REFERRAL, low): params['focus'] = 'referrals'
-    elif re.search(r'\bwho\b|\bwhich (?:patients|members)\b|\bhow many\b|\blist\b|\bpatients with\b|\bmembers with\b', low): params['focus'] = 'needs'
+    elif re.search(r'\b(?:corroborat\w*|unmet|confirmed|verified|substantiated)\b', low) and \
+            re.search(r'\bwho\b|\bwhich (?:patients|members)\b|\bhow many\b|\blist\b|\bpatients with\b|\bmembers with\b', low): params['focus'] = 'needs'
     else: return None
     if re.search(r'\bby (?:practice|clinic)\b|\bwhich (?:practices?|clinics?)\b|\beach (?:practice|clinic)\b', low): params['group_by'] = 'practice'
     elif re.search(r'\bby need\b|\bby (?:type|need type)\b', low): params['group_by'] = 'need'
@@ -294,5 +297,5 @@ TEMPLATES = ['Which patients have {need} and were never referred?', 'Show open c
              'How many social service referrals were closed with the service actually delivered?',
              'social needs referral close rate by practice', 'who has unmet social needs right now',
              'Which community resource referrals are overdue?', 'Did our food bank referrals get completed?',
-             'list members with corroborated transportation needs', 'closed loop rate for SDOH referrals by clinic',
+             'list members with corroborated transportation needs', 'which members have an unmet housing need with no community referral', 'closed loop rate for SDOH referrals by clinic',
              'Which housing referrals are still open after 30 days?']

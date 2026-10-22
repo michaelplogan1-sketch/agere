@@ -242,7 +242,7 @@ def answer(report, plan, question):
 
 # ---- free local-compiler route ----------------------------------------------------------------------------
 STAFF = r'(?:nurses?|providers?|physicians?|doctors?|clinicians?|staff|rns?|techs?|apps?)'
-ROSTER = (r'\bshifts?\b|\brosters?\b|\bfte\b|\bfull[- ]time equivalents?\b|\bstaffing (?:plan|schedule|decisions?|levels?|model)\b|'
+ROSTER = (r'\bshifts?\b|\bstaffing (?:needed|required|needs?)\b|\brosters?\b|\bfte\b|\bfull[- ]time equivalents?\b|\bstaffing (?:plan|schedule|decisions?|levels?|model)\b|'
           r'\bschedul\w* (?:\w+ ){0,2}' + STAFF + r'\b|\bhow many ' + STAFF + r' (?:should|do|will|must) we (?:schedule|post|hire|staff|roster)\b|\bpost(?:ed)? shifts?\b')
 FORECAST = (r'\bforecast\w*\b|\bprojected\b|\bexpected (?:demand|volume|visits)\b|\bnext (?:\d{1,2} |two |three |four |six |eight )?(?:weeks?|month|quarter)\b|'
             r'\bcoming (?:weeks?|month)\b|\bupcoming\b|\bdemand\b')
