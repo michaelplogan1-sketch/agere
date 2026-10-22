@@ -326,6 +326,19 @@ def build_answer_core(plan, results, memberships, question):
         report_index = len(plan['nodes']) - 1
     if last['operation'] == 'governed_metric':
         return results[-1]['result']['answer']
+    if last['operation'] in ('retrieve', 'review'):
+        # Evidence answers: the ranked passages, or each reviewed patient's reader verdict, each with its source.
+        report = results[-1]['result']
+        if last['operation'] == 'retrieve':
+            rows = [{'patient_id': (e.get('source') or {}).get('patient_id') or e.get('patient_id'), 'note_id': e.get('note_id'),
+                     'source': e.get('source'), 'text': (e.get('text') or '')[:600]} for e in report.get('evidence') or []]
+        else:
+            rows = [{'patient_id': r.get('patient_id'), 'verdict': r.get('verdict'), 'decided_by': r.get('decided_by'),
+                     'evidence': r.get('evidence')} for r in report.get('reviews') or []]
+        ids = sorted({r['patient_id'] for r in rows if r.get('patient_id')})
+        answer.update(status='answered' if rows else 'partial', answer_type='table', table=rows, patient_ids=ids,
+                      count=len(rows), value=f"{len(rows)} {'passages' if last['operation'] == 'retrieve' else 'patient reviews'}")
+        return answer
     if last['operation'] == 'trajectory':
         report = results[-1]['result']
         partial = plan.get('coverage') != 'supported_observation' or plan.get('unmet_requirements')
@@ -995,8 +1008,9 @@ def validate(plan, as_of):
         elif op == 'review':
             if len(inputs)!=1 or set(p)!={'providers','question','maximum_patients'}:
                 raise ValueError('Explicit bounded patient review required')
-            if not isinstance(p['providers'],list) or not 1<=len(p['providers'])<=2 or any(x not in ('jev','perplexity') for x in p['providers']) or len(set(p['providers']))!=len(p['providers']):
-                raise ValueError('Use named Jev/Perplexity review routes')
+            from .evidence_proposers import REVIEW_ORDER
+            if not isinstance(p['providers'],list) or not 1<=len(p['providers'])<=len(REVIEW_ORDER) or any(x not in REVIEW_ORDER for x in p['providers']) or len(set(p['providers']))!=len(p['providers']):
+                raise ValueError('Use named review readers (local readers first, then Jev/Perplexity)')
             if type(p['maximum_patients']) is not int or not 1<=p['maximum_patients']<=3 or not isinstance(p['question'],str) or not 1<=len(p['question'])<=1000:
                 raise ValueError('One to three sampled patient reviews and a bounded assertion question required')
         elif op in ('sequence','longitudinal'):
@@ -1391,8 +1405,6 @@ def execute(stack, plan, *, question=None):
                 if not observed['longitudinal']['available']:raise ValueError('No longitudinal artifact attached')
                 validate_parameters(node['parameters'],meta['snapshot']['as_of'],
                                     'sequence' if node['operation']=='sequence' else 'context',observed['longitudinal']['vocabulary'])
-            if node['operation']=='review' and not stack.allow_live:
-                raise ValueError('Live model route disabled on this server')
             if node['operation']=='forecast' and not observed['forecast']['available']:
                 raise ValueError('No fitted forecast artifact is attached')
             if node['operation'] == 'evidence':
@@ -1752,10 +1764,10 @@ def execute(stack, plan, *, question=None):
                 detail['source_record_count']=len(rows)
             elif op == 'review':
                 chosen=memberships[node['inputs'][0]];ids=sorted(chosen.yes)[:params['maximum_patients']];reviews=[]
-                for pid in ids:
-                    for provider in params['providers']:
-                        review=stack.review(params['question'],pid,provider);reviews.append(review)
-                        paid_calls+=review['new_paid_api_calls']
+                from .evidence_proposers import review_patient
+                for pid in ids:  # free readers first; paid readers only when still undecided and the server allows live calls
+                    review=review_patient(stack,params['question'],pid,params['providers']);reviews.append(review)
+                    paid_calls+=review.get('new_paid_api_calls',0)
                 detail={'providers':params['providers'],'selected_patients':ids,'population_patients':len(chosen.yes),
                         'sampling':'First patient IDs in the selected set; bounded review sample, not full-population adjudication.',
                         'reviews':reviews,'clinical_decision_authority':False}

@@ -144,29 +144,30 @@ class Review(unittest.TestCase):
         stack = fake_stack(hits=[passage('P-1001', 'Statin intolerance: myalgia on atorvastatin.')])
         graph, receipt = E.review_tier(stack, self.Q)
         validate(graph, AS_OF)
-        self.assertEqual([n['operation'] for n in graph['nodes']], ['cohort', 'retrieve'])
-        self.assertEqual(receipt['verdicts'], {'P-1001': 'yes'})
-        self.assertEqual(receipt['local_review']['P-1001']['decided_by'], 'student_lexical')
-        self.assertEqual((stack.paid, receipt['new_paid_api_calls']), ([], 0))
-        self.assertIn('semantic_student_heads', receipt['components'])
-        self.assertNotIn('jev', receipt['providers'])
+        # The review node now carries the full reader order (local readers first), so the graph ends in review.
+        self.assertEqual([n['operation'] for n in graph['nodes']], ['cohort', 'retrieve', 'review'])
+        node = graph['nodes'][-1]
+        self.assertEqual(node['parameters']['providers'][:len(E.LOCAL_READERS)], list(E.LOCAL_READERS))  # free readers first
+        self.assertEqual((stack.paid, receipt['new_paid_api_calls']), ([], 0))  # readers run at execution, not planning
+        # the readers' verdicts themselves are covered by test_review_patient_cascade
 
     def test_undecided_chart_escalates_to_paid_review_only_with_live(self):
         hits = [passage('P-1001', 'Statin intolerance discussed.')]
         with patch.object(E, '_comparison_cohort', return_value=None), \
                 patch('clinical_core.agere.clinical.semantic_reader.read', side_effect=ValueError('no native model')):
             graph, receipt = E.review_tier(fake_stack(hits, reading='unknown'), self.Q)
-            self.assertNotIn('review', [n['operation'] for n in graph['nodes']])
+            self.assertEqual(graph['nodes'][-1]['operation'], 'review')  # paid readers inside are skipped without live
             graph, receipt = E.review_tier(fake_stack(hits, allow_live=True, reading='unknown'), self.Q)
         validate(graph, AS_OF)
         node = graph['nodes'][-1]
-        self.assertEqual((node['operation'], node['inputs'], node['parameters']['providers']), ('review', ['undecided'], ['jev', 'perplexity']))
+        self.assertEqual(node['operation'], 'review')
+        self.assertEqual(node['parameters']['providers'][-2:], ['jev', 'perplexity'])
         self.assertIn('jev_typesafe_review', receipt['components'])
         self.assertIn('kev_reader', receipt['components'])  # the native readers were tried (and failed) first
 
-    def test_review_node_takes_only_paid_routes_today(self):
-        self.assertFalse(E.review_node_accepts(E.LOCAL_READERS, AS_OF))
-        self.assertTrue(E.review_node_accepts(['jev'], AS_OF))
+    def test_review_node_takes_every_reader(self):
+        self.assertTrue(E.review_node_accepts(E.LOCAL_READERS, AS_OF))
+        self.assertTrue(E.review_node_accepts(E.REVIEW_ORDER, AS_OF))
 
     def test_review_patient_cascade(self):
         hits = [passage('P-1001', 'Statin intolerance discussed.')]

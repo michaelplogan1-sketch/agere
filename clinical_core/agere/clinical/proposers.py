@@ -37,7 +37,9 @@ TIERS = {
     'undelivered_input': ('free', 'deterministic delivered-field check; declines only', 'decline'),
     'paraphrase_reuse': ('free (MiniLM)', 'verified interpretation of a slot-identical rewording', 'typed'),
     'semantic_cache': ('free (MiniLM)', 'certified, 0/94 test errors', 'graph'),
+    'evidence_retrieval': ('free (FTS5+MiniLM+BGE; Granite fallback)', 'ranked passages; literal + output check; uncalibrated', 'graph'),
     'learned_verified_sql': ('free', 'verified hosted answers, n=3, uncalibrated', 'graph'),
+    'evidence_review': ('free readers first; Jev/Perplexity only with allow_live', 'students/windowed/Kev/d1 then typed providers; uncalibrated', 'graph'),
     'specialist_families_late': ('free', 'DQ/VBC families with recorded convention defaults', 'graph'),
     'cohort_family_late': ('free (Haiku slot filler only when slots are missing)', 'certified 0.71', 'graph'),
     'local_normalizer': ('free (Qwen3-4B LoRA)', 'rewording guarded, then fully consumed grammar', 'typed'),
@@ -61,7 +63,7 @@ ORDER = tuple(TIERS)
 PAID = {'typed_decider', 'hosted_typed_interpreter', 'hosted_verified_sql', 'frontier_graph_planner', 'hybrid_analysts',
         'metric_router', 'operator_router', 'semantic_analyst', 'stack_planner_propose'}
 FEEDBACK_READERS = ('hosted_typed_interpreter',)  # proposers whose prompt includes recorded corrections
-TYPED_WITH_POPULATION = {'qwen_typed_interpreter', 'hosted_typed_interpreter'}  # the only tiers that honour a saved cohort
+TYPED_WITH_POPULATION = {'qwen_typed_interpreter', 'hosted_typed_interpreter', 'evidence_retrieval', 'evidence_review'}  # the only tiers that honour a saved cohort
 
 # Components that are not proposers, and why (stack_runtime.model_roles reports these).
 NOT_PROPOSERS = {
@@ -71,8 +73,8 @@ NOT_PROPOSERS = {
     'gate_policy / cascade certificates': 'inside the families, semantic cache and typed decider thresholds; certificate annotated by answer_checks.check',
     'learned_router': 'orders the cascade (operator_router before metric_router on an engine lean) and leans operator_router',
     'answer_guard + zero-result probe + cross-check': 'answer_checks.check after every executed proposal; cross-check paid, live only, on uncertified answers',
-    'Jev / Perplexity source tools': 'patient-scoped evidence review (Stack.review), not question interpretation; unchanged',
-    'retrieval, rerankers, readers, engines, governed metrics': 'used by the proposers above when their plans name them',
+    'Jev / Perplexity, local readers, retrieval, rerankers': 'evidence_retrieval and evidence_review tiers (free readers first, paid only live)',
+    'engines, governed metrics': 'used by the proposers above when their plans name them',
 }
 
 
@@ -351,6 +353,12 @@ class Cascade:
     def tier_metric_router(self): return self.graph('metric_router', self.ladder.metric_router())
     def tier_operator_router(self): return self.graph('operator_router', self.ladder.operator_router())
     def tier_local_free_sql(self): return self.graph('local_free_sql', self.ladder.local_sql(default='on'))
+    def tier_evidence_retrieval(self):
+        from .evidence_proposers import retrieval_tier
+        return self.graph('evidence_retrieval', retrieval_tier(self.stack, self.question, self.population))
+    def tier_evidence_review(self):
+        from .evidence_proposers import review_tier
+        return self.graph('evidence_review', review_tier(self.stack, self.question, self.population))
     def tier_scoped_review_compiler(self):
         from .legacy_proposers import scoped_review_tier
         return self.graph('scoped_review_compiler', scoped_review_tier(self.stack, self.question))
