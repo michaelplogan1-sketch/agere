@@ -28,7 +28,7 @@ CLINIC_MEASURE = {'primary_care_visit': 'primary_care_visits', 'specialist_visit
 DEFAULTS = {'source': 'ed', 'visit_types': [], 'weeks': 4, 'shift_lengths': [8, 10, 12], 'start_step_hours': 1,
             'wait_threshold_minutes': 30.0, 'target_wait_probability': 0.10, 'target_blocking': 0.02, 'mean_service_minutes': None,
             'min_on_duty': 0, 'fte_hours_per_week': 40.0, 'cost_per_hour_usd': None, 'current_fte': None,
-            'current_hours_per_week': None, 'staff_to': 'point'}
+            'current_hours_per_week': None, 'staff_to': 'point', 'patients_per_nurse': None}
 STAFF_TO = ('point', 'hi80')
 
 PRODUCT = {'population': 'optional', 'view': 'staffing',
@@ -39,7 +39,7 @@ CONTRACT = {'inputs': ['optional earlier_set'],
             'parameters': {'source': 'ed|clinic|appointment|beds', 'visit_types': [], 'weeks': 4, 'shift_lengths': [8, 10, 12],
                            'start_step_hours': 1, 'wait_threshold_minutes': 30, 'target_wait_probability': 0.1, 'target_blocking': 0.02,
                            'mean_service_minutes': None, 'min_on_duty': 0, 'fte_hours_per_week': 40, 'cost_per_hour_usd': None,
-                           'current_fte': None, 'current_hours_per_week': None, 'staff_to': 'point|hi80'},
+                           'current_fte': None, 'current_hours_per_week': None, 'staff_to': 'point|hi80', 'patients_per_nurse': None},
             'meaning': 'Forecast-to-capacity: the demand engine forecasts weekly volume (80% interval) for the next weeks; the queueing engine\'s '
                        'received hour-of-week arrival profile and service time are rescaled to each forecast week; SIPP Erlang C (wait) or '
                        'Erlang B (beds) gives staff needed per hour block; an integer program picks shift starts and lengths covering every '
@@ -60,7 +60,8 @@ def schema(obj, string, array):
                 'min_on_duty': {'type': 'integer', 'minimum': 0, 'maximum': 100, 'description': 'floor of staff on duty every hour'},
                 'fte_hours_per_week': num(1, 80, 'paid hours per FTE (default 40)'), 'cost_per_hour_usd': num(0, 10000, 'stated loaded hourly rate'),
                 'current_fte': num(0, 10000, 'current staffing in FTE'), 'current_hours_per_week': num(0, 100000, 'current paid hours per week'),
-                'staff_to': string(STAFF_TO, 'point forecast (default) or the 80% upper forecast')})
+                'staff_to': string(STAFF_TO, 'point forecast (default) or the 80% upper forecast'),
+                'patients_per_nurse': num(0.5, 50, 'beds only: nurse staffing ratio; occupied beds per hour block become nurses = ceil(beds / ratio)')})
 
 
 def validate(p):
@@ -83,6 +84,7 @@ def validate(p):
         out[k] = float(out[k])
     for k, lo, hi in (('mean_service_minutes', 0.1, 1e5), ('cost_per_hour_usd', 0, 1e4), ('current_fte', 0, 1e4), ('current_hours_per_week', 0, 1e5)):
         if out[k] is not None and (type(out[k]) not in (int, float) or not lo <= out[k] <= hi): raise ValueError(f'{k} {lo}..{hi}')
+    if out['patients_per_nurse'] is not None and (type(out['patients_per_nurse']) not in (int, float) or not 0.5 <= out['patients_per_nurse'] <= 50): raise ValueError('patients_per_nurse 0.5..50')
     if out['staff_to'] not in STAFF_TO: raise ValueError(f'staff_to: {STAFF_TO}')
     return out
 
@@ -144,6 +146,12 @@ def _queue_params(p):
     return queueing.validate(q)
 
 
+def to_nurses(req, ratio):
+    """Beds needed per hour block -> nurses on duty at a stated patients-per-nurse ratio (ceiling); unchanged when no ratio is stated."""
+    if not ratio: return req
+    return [int(math.ceil(r / ratio - 1e-9)) for r in req]
+
+
 def run(path, patient_ids, p, as_of):
     from . import queueing
     qp = _queue_params(p)
@@ -169,7 +177,7 @@ def run(path, patient_ids, p, as_of):
             if vol is None: continue
             scale = (vol / hist) if hist > 0 else 0.0
             req_rows, _ = queueing.sipp(rates, mu, qp, lag=qp['lag_adjustment'], scale=scale)
-            req = [r['servers'] or 0 for r in req_rows]
+            req = to_nurses([r['servers'] or 0 for r in req_rows], p['patients_per_nurse'] if p['source'] == 'beds' else None)
             sol = shift_milp(req, p['shift_lengths'], p['start_step_hours'], p['min_on_duty'])
             row[label] = {'scale_vs_history': round(scale, 4), 'requirement_staff_hours': sol['requirement_hours'],
                           'peak_staff': max(req) if req else 0, 'paid_hours': sol['paid_hours'], 'shifts': sol['shift_count'],
@@ -193,6 +201,7 @@ def run(path, patient_ids, p, as_of):
                    'Each forecast week uses the historical hour-of-week arrival shape rescaled to that week\'s forecast volume.',
                    f"Shifts of {', '.join(map(str, p['shift_lengths']))} hours may start every {p['start_step_hours']} hour(s), any day, wrapping Sunday to Monday; "
                    'breaks, handoff overlap, skill mix and individual availability are not modelled.',
+                   *([f"Beds are staffed at {p['patients_per_nurse']:g} patients per nurse: nurses on duty = ceil(forecast occupied beds per hour block / ratio); acuity mix and skill mix are not modelled."] if p['source'] == 'beds' and p['patients_per_nurse'] else []),
                    f"FTE = paid hours / {p['fte_hours_per_week']:g} hours." + (f" Cost at the stated ${p['cost_per_hour_usd']:g}/hour." if p['cost_per_hour_usd'] is not None else ' No hourly rate stated, so no dollar cost.')]
     return {'schema': VERSION, 'status': 'planned', 'as_of': as_of, 'parameters': p, 'forecast': fc, 'weeks': plans, 'table': table,
             'gap_vs_current': gaps, 'queueing': {'objective': a['objective'], 'mean_service_minutes': inp['mean_service_minutes'],

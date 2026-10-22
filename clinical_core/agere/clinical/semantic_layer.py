@@ -127,6 +127,12 @@ SCHEMA_DOC = {
                  'status: home, snf, ...); NULL = not delivered (never assume home). Diagnoses: encounter_diagnosis.',
     'visit': 'One row per encounter (encounter records repeat once per status version; use visit, not encounter, to count visits). '
              'Latest version wins; versions = number of received versions.',
+    'visit_group': ('One row per hospital visit (visit_groups.py): ED, observation and inpatient episodes from EHR encounters, ADT messages, '
+                    'stays and claims grouped per patient by overlapping dates at the same facility (overnight ED -> admission joins). '
+                    'visit_class = emergency | ed_to_observation | ed_to_inpatient | observation | observation_to_inpatient | direct_inpatient. '
+                    'Clocks (ISO UTC, NULL when only a date was received): ed_arrival, ed_departure, admit_decision (ADT A06), inpatient_admit, '
+                    'discharge_time; ed_hours, los_days (dates) and los_hours (clocks); discharge_known 0 = still in house at the snapshot. '
+                    'members = source rows grouped (json), sources = contributing feeds. Use it for hospital-visit counts, flow and census.'),
     'stay': 'Distinct hospital stays (inpatient/observation encounters collapsed by admit day and overlap) with 30-day readmission flag. '
             'discharge_date and los_days are NULL when no discharge time was received (discharge_known = 0); never treat those as 0 days. '
             'discharge_date is the ADT discharge (A03) date of the stay\'s encounter when one was received (discharge_date_source = adt), '
@@ -1068,6 +1074,8 @@ def build(path):
                 # version count come from the history (other builds keep their established values).
                 feeds['payer_claim_history'] = adjudication_history.reconcile_payer_claim(out)
         feeds['fill_events'] = fill_events.build(out)
+        from . import visit_groups  # governed hospital-visit table (wave 2): one row per ED / observation / inpatient visit
+        feeds['visit_groups'] = visit_groups.build(out, meta['snapshot']['as_of'])
         out.executemany('INSERT INTO meta VALUES (?,?)', [('version', VERSION), ('source_digest', meta['source_digest']),
                                                           ('as_of', meta['snapshot']['as_of']),
                                                           ('standards', json.dumps(_standards_summary(out))),

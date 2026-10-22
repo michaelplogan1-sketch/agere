@@ -1,4 +1,4 @@
-"""Decision engines registered on the planner menu from one place (wave-1 scorecard engines).
+"""Decision engines registered on the planner menu from one place (wave-1 scorecard engines; wave-2 hospital operations).
 
 Each engine module declares its own menu entry and contract, so the shared hot files carry one hook each:
   OP                      operation name (analysis_graph operation, PRODUCT key, CONTRACTS key, graph_contracts TYPED)
@@ -41,9 +41,23 @@ MODULES = {
     'benchmark_rebasing': 'benchmark_rebasing',     # MSSP/LEAD benchmark ratchet and rebasing scenarios ("should we renew early") from rulebooks
     'survey_adjustment': 'survey_adjustment',       # survey nonresponse raking, patient-mix adjustment, top-box, key drivers
     'scorecard_risk': 'scorecard_risk',             # auditable points-based (credit-scorecard style) risk models, line-by-line patient points
+    # wave 2: hospital operations (shared readers in hospital_ops.py; visits from the governed visit_group table)
+    'visit_groups': 'visit_groups',                 # visit / encounter grouper: one governed row per hospital visit with stage clocks
+    'capacity_simulation': 'capacity_simulation',   # discrete-event simulation of ED boarding and inpatient beds, what-if scenarios
+    'discharge_forecast': 'discharge_forecast',     # discharge-count / bed-day forecast from the in-house census + capacity twin
+    'flow_decomposition': 'flow_decomposition',     # stage-level ED / inpatient interval decomposition, censoring-aware percentiles
+    'or_block_optimization': 'or_block',            # OR block allocation from surgical claims (durations modelled, stated)
+    'hai_surveillance': 'hai_surveillance',         # hospital-onset infection surveillance (NHSN day-3 window), rates and SPC
+    'antimicrobial_use': 'antimicrobial_use',       # days of therapy per 1,000 days present, spectrum, IV-to-oral, de-escalation
+    'bundle_compliance': 'bundle_compliance',       # SEP-1 all-or-none bundle compliance with element-level failure reasons
+    'spatiotemporal_cluster': 'spatiotemporal_cluster',  # space-time permutation scan over ED syndromes by ZIP / county
+    'overbooking_fairness': 'overbooking_fairness', # who bears overbooking burden by age band and payer (scheduling model replay)
+    'network_adequacy': 'network_adequacy',         # specialty access per county / state: realized network, ratios, out-of-network
 }
 ROUTE_ORDER = ('saved_monitors', 'change_attribution', 'social_needs', 'star_rating', 'mlr', 'settlement_bridge',
-               'policy_search', 'outreach_bandit', 'outreach_allocation', 'staffing_plan',
+               'bundle_compliance', 'hai_surveillance', 'antimicrobial_use', 'spatiotemporal_cluster', 'network_adequacy',
+               'overbooking_fairness', 'or_block_optimization', 'discharge_forecast', 'capacity_simulation', 'flow_decomposition',
+               'visit_groups', 'policy_search', 'outreach_bandit', 'outreach_allocation', 'staffing_plan',
                'benchmark_rebasing', 'eligibility_340b', 'ddi_screening', 'prior_auth_rules', 'cdi_opportunity', 'upcoding_detection',
                'denial_prediction', 'contract_reimbursement', 'price_benchmark', 'network_spread', 'provider_network_graph',
                'survey_adjustment', 'scorecard_risk')
