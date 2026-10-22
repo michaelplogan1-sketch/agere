@@ -1,0 +1,29 @@
+{
+  "schema": "agere-interactive-chains/1",
+  "about": "Multi-turn chains on the synthetic warehouse. Each turn after the first is a follow-up in the same conversation. Checks: slot_kept (FM-20: a follow-up rewrite keeps the earlier slots; the answer equals the previous answer's patients intersected with an independent SQL filter), no_stale_reuse (FM-21: a changed slot never returns the earlier cached answer), reuse_consistent (FM-22: an identical or paraphrased repeat returns the same patients as the first ask).",
+  "chains": [
+    {"id": "hf-narrowing", "failure_mode": "FM-20", "turns": [
+      {"q": "Which patients have heart failure?"},
+      {"q": "Of those, which are women?", "check": "slot_kept", "of": 0, "intersect_sql": "SELECT patient_id FROM patient WHERE sex_reported = 'F'"},
+      {"q": "And which of them are over 65?", "check": "slot_kept", "of": 1, "intersect_sql": "SELECT patient_id FROM patient WHERE age_latest > 65"}
+    ]},
+    {"id": "gap-narrowing", "failure_mode": "FM-20", "turns": [
+      {"q": "Which members have an open breast cancer screening gap?"},
+      {"q": "Which of those are on Medicare?", "check": "slot_kept", "of": 0, "intersect_sql": "SELECT patient_id FROM patient WHERE line_of_business = 'medicare'"}
+    ]},
+    {"id": "swap-condition", "failure_mode": "FM-21", "turns": [
+      {"q": "How many patients have diabetes?"},
+      {"q": "How many patients have heart failure?", "check": "no_stale_reuse", "of": 0},
+      {"q": "How many patients have diabetes?", "check": "reuse_consistent", "of": 0}
+    ]},
+    {"id": "swap-scope", "failure_mode": "FM-21", "turns": [
+      {"q": "How many Medicare patients have heart failure?"},
+      {"q": "How many Medicaid patients have heart failure?", "check": "no_stale_reuse", "of": 0}
+    ]},
+    {"id": "repeat-and-paraphrase", "failure_mode": "FM-22", "turns": [
+      {"q": "Which patients have chronic kidney disease?"},
+      {"q": "Which patients have chronic kidney disease?", "check": "reuse_consistent", "of": 0},
+      {"q": "List the patients with chronic kidney disease", "check": "reuse_consistent", "of": 0}
+    ]}
+  ]
+}
