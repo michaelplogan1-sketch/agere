@@ -26,7 +26,7 @@ from .literal_check import VERSION as CHECK_VERSION, executable_text, missing, s
 from .question_input import QuestionNotUnderstood
 from .answer_checks import gate as answer_gate
 from .system_one_gate import CLAUDE_TIERS, outage
-from . import requirement_ledger, plan_fence, claim_verification
+from . import requirement_ledger, plan_fence, claim_verification, stage_diagnostics
 
 VERSION = 'checked-proposer-cascade/1'
 
@@ -233,7 +233,8 @@ class Cascade:
                 found = self.system_one_fallback()  # Claude out: System One picks among the executed candidates (partial)
                 if found: return found
                 # A provider outage is reported as an outage (unverified), never as a question nobody could read.
-                self.provider_error.planner_receipt = {**self.usage(), 'proposers': self.log}
+                self.provider_error.planner_receipt = {**self.usage(), 'proposers': self.log,
+                                                       'stage_diagnostics': stage_diagnostics.attribute(self.log, error=self.provider_error)}
                 raise self.provider_error
             reasons = [f"{e['proposer']}: {e['detail']}" for e in self.log if e['outcome'] == 'rejected']
             exc = QuestionNotUnderstood(
@@ -241,6 +242,7 @@ class Cascade:
                 'executed.' + (' Closest proposals and what they dropped: ' + ' | '.join(reasons[:4]) if reasons else ''))
             exc.planner_receipt = self.usage()
             exc.planner_receipt['proposers'] = self.log
+            exc.planner_receipt['stage_diagnostics'] = stage_diagnostics.attribute(self.log)  # which stage failed
             raise exc
         finally:
             self.close()
@@ -322,6 +324,7 @@ class Cascade:
                 'proposer': {'name': name, 'cost': cost, 'calibration': calibration, 'kind': kind,
                              'check': CHECK_VERSION, 'cascade': VERSION},
                 'proposers': self.log, 'cascade_usage': self.usage(), 'system_one_routing': self.routing,
+                'stage_diagnostics': stage_diagnostics.attribute(self.log, answered_by=name),
                 'cascade_routing': {'system_one': self.routing, 'learned': self.learned_routing,
                                     'tier_router': getattr(self, 'tier_routing', None)}}
 

@@ -90,7 +90,9 @@ def load_questions(path=QUESTIONS, limit=None):
 
 
 def ask(stack, conversation, row, conv):
-    """One question through handle_compose -> per-question log row (components_run filled by the caller)."""
+    """One question through handle_compose -> per-question log row (components_run filled by the caller). failed_stage /
+    stage_diagnostics: which stage (retrieval / rerank / reading / planning / execution / check) each failure happened in."""
+    from clinical_core.agere.clinical import stage_diagnostics
     body = {'question': row['question']}
     body['conversation_id'] = conv.get(row['follow_up_of'], row['follow_up_of']) if row.get('follow_up_of') else f"usage-{row['id']}"
     conv[row['id']] = body['conversation_id']
@@ -102,13 +104,15 @@ def ask(stack, conversation, row, conv):
         status, by = answer.get('status'), interp.get('interpreter') or (result.get('planner_receipt') or {}).get('route')
         tried = [(e['proposer'], e['outcome']) for e in interp.get('proposers') or []]
         paid, telemetry = result.get('new_paid_api_calls'), result.get('cost_telemetry')
+        stages = stage_diagnostics.from_result(result)
     except Exception as exc:  # noqa: BLE001 - a failed question is data
         status, by, paid = f'error:{type(exc).__name__}', None, None
         tried = [(e['proposer'], e['outcome']) for e in (getattr(exc, 'planner_receipt', {}) or {}).get('proposers', [])]
         answer, telemetry = {'error': str(exc)[:300]}, getattr(exc, 'cost_telemetry', None)
+        stages = stage_diagnostics.from_result(exc=exc)
     return {'id': row['id'], 'question': row['question'], 'family': row.get('family'), 'status': status, 'answered_by': by,
             'cascade': tried, 'paid_calls': paid, 'headline': answer.get('headline') or answer.get('value') or answer.get('error'),
-            'cost_telemetry': telemetry}
+            'cost_telemetry': telemetry, 'failed_stage': stages.get('failed_stage'), 'stage_diagnostics': stages}
 
 
 def report(ledger, wrapped, skipped, ran, statuses, answered_by, total, question_set=None):
@@ -144,6 +148,8 @@ def run(questions=QUESTIONS, out=None, limit=None, stack=None):
                                  default=str) + '\n')
             log.flush()
     rep = report(ledger, wrapped, skipped, ran, statuses, answered_by, len(rows), str(questions))
+    from clinical_core.agere.clinical import stage_diagnostics
+    rep['stages'] = stage_diagnostics.summarize(map(json.loads, (out/'per_question.jsonl').read_text().splitlines()))
     (out/'usage.json').write_text(json.dumps(rep, indent=1))
     return rep
 
@@ -170,7 +176,10 @@ def from_per_question(path, ledger=None):
             except Exception:  # noqa: BLE001
                 ok = False
         (wrapped if ok else skipped).append(c['id'])
-    return report(ledger, wrapped, skipped, ran, statuses, answered_by, len(rows), str(path))
+    rep = report(ledger, wrapped, skipped, ran, statuses, answered_by, len(rows), str(path))
+    from clinical_core.agere.clinical import stage_diagnostics
+    rep['stages'] = stage_diagnostics.summarize(rows)
+    return rep
 
 
 def usage_root():
