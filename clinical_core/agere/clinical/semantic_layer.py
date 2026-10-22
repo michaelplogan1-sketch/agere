@@ -9,7 +9,7 @@ value/unit and the canonical unit conversion.
 """
 from collections import defaultdict
 from pathlib import Path
-import json, re, sqlite3, time
+import json, os, re, sqlite3, time
 
 from . import aggregate, client_data, concepts, population_events, population_feeds, source_profile, therapy_barriers
 
@@ -1087,7 +1087,10 @@ def build(path):
                 err.close()
     tmp.replace(target)
     from . import record_store; record_store.build(path)  # stream-clustered record copy for population scans (record_store.py)
-    return {'path': str(target), 'elapsed_seconds': round(time.perf_counter() - started, 1)}
+    duck = None
+    if os.environ.get('AGERE_SEMANTIC_DUCKDB', 'on') != 'off':  # semantic.duckdb beside it (duckdb_engine.build never raises)
+        from . import duckdb_engine; duck = duckdb_engine.build(target)
+    return {'path': str(target), 'elapsed_seconds': round(time.perf_counter() - started, 1), 'duckdb': duck}
 
 
 def ensure(path):

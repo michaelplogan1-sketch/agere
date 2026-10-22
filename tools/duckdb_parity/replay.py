@@ -335,6 +335,8 @@ def main(argv=None):
     ap.add_argument('--threads', type=int)
     ap.add_argument('--memory-limit', default='8GB')
     ap.add_argument('--rebuild-mirror', action='store_true')
+    ap.add_argument('--duckdb', type=Path, help='DuckDB file to compare against (default: the digest-checked semantic.duckdb '
+                    'beside the SQLite target when present, else a cached mirror)')
     ap.add_argument('--out', type=Path, help='report directory (default artifacts/duckdb-parity/<UTC stamp>)')
     ap.add_argument('--gate', action='store_true', help='exit 1 if any statement differs or fails only on DuckDB')
     args = ap.parse_args(argv)
@@ -355,7 +357,9 @@ def main(argv=None):
               'sqlite': sqlite3.sqlite_version, 'time_limit_s': args.time_limit, 'corpora': {}}
     for name, (sqlite_path, statements) in plan.items():
         if args.limit: statements = statements[:args.limit]
-        mirror, built = ensure_mirror(sqlite_path, rebuild=args.rebuild_mirror)
+        from clinical_core.agere.clinical import duckdb_engine
+        beside = None if args.rebuild_mirror else (args.duckdb or duckdb_engine.current(sqlite_path))  # step B semantic.duckdb
+        mirror, built = (Path(beside), None) if beside else ensure_mirror(sqlite_path, rebuild=args.rebuild_mirror)
         if built: print(f'[{name}] mirror built: {mirror.name} ({built["tables"]} tables, {built["seconds"]} s)', flush=True)
 
         def progress(i, n, row, name=name):

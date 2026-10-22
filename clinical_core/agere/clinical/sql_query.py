@@ -49,6 +49,13 @@ def execute(path, params, patient_ids=None, target=None, time_limit=None):
     """target: an existing semantic.sqlite3 to read as-is (never rebuilt; used to replay against a read-only build)."""
     p = validate(params)
     target = target or semantic_layer.ensure(path)
+    from . import duckdb_engine  # DuckDB serving (AGERE_SQL_ENGINE=duckdb) with SQLite fallback; shadow comparison
+    engine_receipt = None
+    if duckdb_engine.engine() == 'duckdb':
+        started = time.perf_counter()
+        columns, rows, engine_receipt = duckdb_engine.serve(target, p['query'], patient_ids, time_limit=time_limit or TIME_LIMIT_SECONDS,
+                                                            max_rows=MAX_ROWS)
+        if columns is not None: return _result(p, columns, rows, started, engine_receipt)
     query, args = p['query'], {}
     if re.search(r'\bpopulation\b', query, re.I):
         if patient_ids is None: raise ValueError('Query references population but no population input was given')
@@ -68,10 +75,18 @@ def execute(path, params, patient_ids=None, target=None, time_limit=None):
         raise ValueError(f'SQL failed: {exc}') from exc
     finally:
         db.close()
+    if duckdb_engine.shadow_on():
+        engine_receipt = {**(engine_receipt or {'engine': 'sqlite'}), 'shadow': duckdb_engine.shadow(
+            target, p['query'], patient_ids, columns, rows[:MAX_ROWS], round(time.perf_counter() - started, 4), max_rows=MAX_ROWS)}
+    return _result(p, columns, rows, started, engine_receipt)
+
+
+def _result(p, columns, rows, started, engine_receipt=None):
     truncated = len(rows) > MAX_ROWS
     rows = [list(r) for r in rows[:MAX_ROWS]]
     result = {'schema': VERSION, 'query': p['query'], 'returns': p['returns'], 'columns': columns,
               'row_count': len(rows), 'truncated': truncated, 'elapsed_seconds': round(time.perf_counter() - started, 3)}
+    if engine_receipt: result['engine'] = engine_receipt
     if p['returns'] in ('count', 'value'):
         if not rows or not columns: raise ValueError('Scalar query returned no rows')
         if len(rows) != 1 or len(columns) != 1:
