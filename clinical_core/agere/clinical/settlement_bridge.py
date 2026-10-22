@@ -219,7 +219,7 @@ def run(db, patient_ids, p, as_of):
                     'once per patient; not a measured effect.',
                     'Care-gap planning values are not settlement dollars and are not added (they earn money only through the quality gate).']
     return {'schema': VERSION, 'as_of': end, 'parameters': p, 'period': {'start': start, 'end': end},
-            'program': terms['program']['label'], 'member_months': mm, 'actual_pmpm': actual, 'benchmark_pmpm': bench,
+            'program': terms['program']['label'], 'savings_cap_pct': terms.get('savings_cap_pct'), 'member_months': mm, 'actual_pmpm': actual, 'benchmark_pmpm': bench,
             'projected_actual_pmpm': round(actual_new, 2), 'quality_score': {'current': q_now, 'projected': q_proj},
             'waterfall': waterfall, 'measures': [{k: v for k, v in r.items() if k != 'gap_patient_ids'} for r in qrows], 'declined': declined,
             'gross_utilization_savings': {'dollars': round(gross_util, 2), 'label': 'modeled', 'counted_in_settlement': 'contract share only'},
@@ -250,7 +250,10 @@ def headline(r):
             f"(forecast quality gate {w['forecast']:+,.0f}, quality score {r['quality_score']['current']:.2f} -> {r['quality_score']['projected']:.2f}; "
             f"modeled utilization {w['modeled']:+,.0f} from ${r['gross_utilization_savings']['dollars']:,.0f} gross savings). "
             f"Actual ${r['actual_pmpm']:,.2f} vs benchmark ${r['benchmark_pmpm']:,.2f} PMPM over {r['member_months']:,} member months; "
-            f"dedupe removed ${d['adjustment_utilization']:,.0f} of utilization double-counted across work items")
+            f"dedupe removed ${d['adjustment_utilization']:,.0f} of utilization double-counted across work items"
+            + (f"; realized savings already sit at the program's {float(r['savings_cap_pct']):.0%} savings cap, so further quality or "
+               f"utilization gains add no settlement dollars under these terms" if r.get('savings_cap_pct') is not None and w['realized'] > 0
+               and abs(w['realized'] - r['benchmark_pmpm'] * r['member_months'] * float(r['savings_cap_pct'])) < 1 else ''))
 
 
 def answer(report, plan, question):
