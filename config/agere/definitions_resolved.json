@@ -1,0 +1,155 @@
+{
+ "schema": "agere-definitions-resolved/1",
+ "entries": {
+  "ahrq pqi 90 overall composite": {
+   "term": "AHRQ PQI 90 overall composite",
+   "definition": "AHRQ’s area-level rate of preventable hospital discharges among residents aged 18 and older, reported per 100,000 population. It combines qualifying discharges for the component PQIs, counting a discharge only once even if it qualifies for multiple components.",
+   "numerator": "Qualifying discharges for PQIs 1, 3, 5, 7, 8, 10, 11, 12, 13, 14, 15, and 16 under the applicable specifications; duplicate discharges across components count once.",
+   "denominator": "Population aged 18 and older in the metropolitan area or county, assigned by the patient’s residence.",
+   "exclusions": [
+    "Discharges excluded by the component PQI numerator rules."
+   ],
+   "period": null,
+   "steward": "AHRQ, Prevention Quality Indicators (PQI) #90, Version 5.0 (March 2015); current AHRQ listing identifies Version 2025.",
+   "standard": true,
+   "sources": [
+    {
+     "title": "PQI #90 Prevention Quality Overall Composite",
+     "url": "https://qualityindicators.ahrq.gov/Downloads/Modules/PQI/V45/TechSpecs/PQI%2090%20Prevention%20Quality%20Overall%20Composite.pdf"
+    },
+    {
+     "title": "[PDF] Prevention Quality Overall Composite Technical Specifications",
+     "url": "https://qualityindicators.ahrq.gov/downloads/modules/pqi/v50/techspecs/pqi_90_prevention_quality_overall_composite_.pdf"
+    },
+    {
+     "title": "All Measures - AHRQ Quality Indicators",
+     "url": "https://qualityindicators.ahrq.gov/measures/all_measures?tag=RM"
+    }
+   ],
+   "provider": "perplexity_agent",
+   "preset": "fast",
+   "served_model": "openai/gpt-6-luna",
+   "status": "cited",
+   "request_hash": "8ffeb50000b6807d6e2d1e4cd7cea8d643d91949a0617f869d715a0e12737818",
+   "query_digest": "68a84495cfc07de8fbe317b0cd0ebc13122d092951b030253d45805912720f46",
+   "retrieved": "2026-10-22",
+   "cost_usd": 0.00171
+  },
+  "hcc recapture rate": {
+   "term": "HCC recapture rate",
+   "definition": "In common industry usage, the rate is the share of prior-year HCCs that are documented again in the current year; it is a tracking convention, not an exact CMS-published measure definition. The calculation may vary by program, including which prior-year conditions count and whether the unit is HCCs or members.",
+   "numerator": "Prior-year HCCs documented again in the current year",
+   "denominator": "HCCs documented in the prior year and selected for recapture under the reporting convention",
+   "exclusions": [],
+   "period": "Prior year compared with the current calendar year; specific lookback varies by convention",
+   "steward": "Industry convention; no CMS, NCQA, AHRQ, or PQA measure specification identified in the available sources",
+   "standard": false,
+   "sources": [
+    {
+     "title": "Value-Based Compensation: Still Lagging | FTI Consulting",
+     "url": "https://www.fticonsulting.com/insights/articles/value-based-compensation-still-lagging"
+    },
+    {
+     "title": "HCC Recapture: How It Works, V28 Changes, & How to Fix ...",
+     "url": "https://ushealthinsights.com/article/hcc-recapture/"
+    },
+    {
+     "title": "[PDF] Risk Adjustment Factor FAQ - Banner Health Network",
+     "url": "https://www.bannerhealthnetwork.com/document/375"
+    },
+    {
+     "title": "Risk Adjustment Analytics That Hold Up at Audit - Invent Health",
+     "url": "https://inventhealth.com/risk-adjustment-analytics/"
+    }
+   ],
+   "provider": "perplexity_agent",
+   "preset": "fast",
+   "served_model": "openai/gpt-6-luna",
+   "status": "cited",
+   "request_hash": "877badf63ce3adce5bfcb120b9c03adc42317c0994005bdd12df9296827ea85e",
+   "query_digest": "e35900e2a087fba11931271054eca14511bea46242b05af312071d0753d8e736",
+   "retrieved": "2026-10-22",
+   "cost_usd": 0.00167
+  },
+  "hedis breast cancer screening bcs e": {
+   "term": "HEDIS breast cancer screening (BCS-E)",
+   "definition": "NCQA HEDIS measure of the percentage of women ages 50–74 who are recommended for routine breast cancer screening and have a mammogram during the specified screening window.",
+   "numerator": "Women with one or more mammograms from October 1 two years before the measurement period through the end of the measurement period.",
+   "denominator": "Eligible women ages 52–74 by the end of the measurement period who are recommended for routine breast cancer screening, before exclusions.",
+   "exclusions": [
+    "Bilateral mastectomy or both right and left unilateral mastectomies at any time through the measurement-period end",
+    "Gender-affirming chest surgery with a diagnosis of gender dysphoria",
+    "For members 66 and older, applicable institutional SNP enrollment or long-term institutional residence",
+    "For members 66 and older, both frailty and advanced illness",
+    "Palliative care during the measurement year",
+    "Hospice use or hospice benefit election during the measurement year",
+    "Death during the measurement year"
+   ],
+   "period": "Mammogram window: October 1 two years before the measurement period through its end; the cited 2025 guide describes the measurement period as the measurement year.",
+   "steward": "NCQA, HEDIS Breast Cancer Screening (BCS-E), Measurement Year 2025; NCQA technical specifications govern the measure.",
+   "standard": true,
+   "sources": [
+    {
+     "title": "[PDF] Breast Cancer Screening (BCS-E) 2025",
+     "url": "https://files.providernews.anthem.com/5922/MULTI-BCBS-CM-075652-24-CPN74732-BCS-E-2025_FINAL.pdf"
+    },
+    {
+     "title": "2025 HEDIS® Coding & Reference Guide ...",
+     "url": "https://www.bcbsks.com/documents/2025-hedis-coding-reference-guide"
+    },
+    {
+     "title": "HEDIS Measures and Technical Resources - NCQA",
+     "url": "https://www.ncqa.org/hedis/measures/"
+    }
+   ],
+   "provider": "perplexity_agent",
+   "preset": "fast",
+   "served_model": "openai/gpt-6-luna",
+   "status": "cited",
+   "request_hash": "e1c214631e66518b7d47ac74f4bc5f803276c5daa2ae4c7b37f52387842f49c4",
+   "query_digest": "c845278492f8bd21bdb14baee900d0644877e5eab32c920b837490435310db15",
+   "retrieved": "2026-10-22",
+   "cost_usd": 0.0018
+  },
+  "mssp avoidable spend": {
+   "term": "MSSP avoidable spend",
+   "definition": "No CMS or other measure steward definition for the exact term “MSSP avoidable spend” was identified. In common ACO industry usage, it refers to spending on unnecessary or avoidable services or utilization that an ACO seeks to reduce; this is not a standardized MSSP measure and is distinct from CMS-calculated savings against an ACO benchmark.",
+   "numerator": null,
+   "denominator": null,
+   "exclusions": [],
+   "period": null,
+   "steward": "No steward-defined measure or specification identified; industry convention, sources dated 2020–2024",
+   "standard": false,
+   "sources": [
+    {
+     "title": "Shared Savings Program linked to net losses in traditional Medicare ...",
+     "url": "https://www.healthcaredive.com/news/medicare-shared-savings-losses-traditional-jama-health/703110/"
+    },
+    {
+     "title": "Medicare Shared Savings Program Continues to Deliver Meaningful ...",
+     "url": "https://www.cms.gov/newsroom/press-releases/medicare-shared-savings-program-continues-deliver-meaningful-savings-high-quality-health-care"
+    },
+    {
+     "title": "Medicare Accountable Care Organizations: Past Performance and ...",
+     "url": "https://www.cbo.gov/publication/60213"
+    },
+    {
+     "title": "August 2020",
+     "url": "https://www.mckinsey.com/~/media/McKinsey/Industries/Healthcare%20Systems%20and%20Services/Our%20Insights/The%20math%20of%20ACOs/The-math-of-ACOs.pdf"
+    }
+   ],
+   "provider": "perplexity_agent",
+   "preset": "fast",
+   "served_model": "openai/gpt-6-luna",
+   "status": "cited",
+   "request_hash": "ac46f40bf54f8d9d04ad742c9668411b513e703839d5a27218036f25890b9079",
+   "query_digest": "5fccae652383803048ba6e7291e8849dc68ecef9827769b2965b11870a2ebe06",
+   "retrieved": "2026-10-22",
+   "cost_usd": 0.00164
+  }
+ },
+ "version": "definitions-resolver/1",
+ "status": "machine-researched standard definitions with cited sources; not reviewed by a person",
+ "researched_via": "Perplexity Agent API (POST /v1/responses, web search), preset fast then medium when fast found no cited definition",
+ "use": "Used only for terms no governed layer defines; every answer under one names the definition and its sources."
+}
