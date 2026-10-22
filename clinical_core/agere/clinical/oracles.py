@@ -269,7 +269,7 @@ def perturbation(question, sql, as_of=None):
 
 
 # ---- QC-SHAPE / QC-EMPTY: the answer cannot be what was asked ----------------------------------------------------------
-_RATE = re.compile(r'%|\bpercent(?:age)?\b|\bshare\b|\bproportion\b|\brate\b|\bfraction\b|\bper 1,?000\b', re.I)
+_RATE = re.compile(r'%|\bpercent(?:age)?\b|\bshare\b|\bproportion\b|\brate\b|\b(?<!ejection )fraction\b|\bper 1,?000\b', re.I)
 _POPULATED = re.compile(r'\b(?:how many|number of|count|which|who|list)\b', re.I)
 _ABSENCE_Q = re.compile(r'\b(?:no|not|never|without|none|zero|missing|lacks?|lacking|any)\b', re.I)
 

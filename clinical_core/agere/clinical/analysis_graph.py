@@ -99,7 +99,7 @@ def answer_coverage(plan, results):
             'meaning': 'Execution coverage is separate from plan support. These are bounded source observations, not clinical or causal conclusions.'}
 
 
-STATISTIC_WORDS = [('share', r'\b(share|percent(age)?|proportion|fraction|what %)\b'),
+STATISTIC_WORDS = [('share', r'\b(share|percent(age)?|proportion|(?<!ejection )fraction|what %)\b'),
                    ('mean', r'\b(average|mean)\b'), ('median', r'\bmedian\b'),
                    ('rate_per_1000', r'\b(rate|per 1,?000|utili[sz]ation)\b'), ('count', r'\b(how many|number of|count)\b')]
 COUNT_QUESTION = re.compile(r'\b(how many|number of|count|what (?:share|proportion|percent(?:age)?))\b', re.I)
@@ -179,7 +179,7 @@ def requested_shape(question):
                  r'(?! 1,?000\b)(?! (?:at least|at most|more than|less than|over|under|about|around|up to|\$?\d))', q) and \
             not re.search(r'\bper 1,?000\b(?!.*\bby\b)', q):
         return 'table'
-    if '%' in q or re.search(r'\b(?:percent(?:age)?|share|proportion|fraction|rate|per 1,?000|average|mean|median|sum|total|how much|'
+    if '%' in q or re.search(r'\b(?:percent(?:age)?|share|proportion|(?<!ejection )fraction|rate|per 1,?000|average|mean|median|sum|total|how much|'
                              r'pmpm|per member per month|ratio)\b', q):
         return 'value'
     if re.search(r'\b(?:which|list|who)\b', q): return 'patient_set'
