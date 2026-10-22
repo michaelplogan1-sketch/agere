@@ -1,0 +1,30 @@
+[
+  {
+    "question": "Build a nurse shift roster for the ED for the next 4 weeks based on the visit forecast",
+    "expect_operation": "staffing_plan"
+  },
+  {
+    "question": "How many FTE do we need to post for urgent care over the next month given forecasted demand?",
+    "expect_operation": "staffing_plan"
+  },
+  {
+    "question": "Turn next month's ED forecast into 12-hour shifts that keep waits under 30 minutes",
+    "expect_operation": "staffing_plan"
+  },
+  {
+    "question": "What staffing plan covers the forecast primary care volume for the next 2 weeks, we have 10 FTE today?",
+    "expect_operation": "staffing_plan"
+  },
+  {
+    "question": "Schedule ED nurses for the coming weeks so that forecast demand is covered, staffing to the upper forecast",
+    "expect_operation": "staffing_plan"
+  },
+  {
+    "question": "How many shifts should we post for inpatient beds next quarter based on projected admissions?",
+    "expect_operation": "staffing_plan"
+  },
+  {
+    "question": "Create a staffing schedule from the demand forecast for the emergency department at $70 per hour",
+    "expect_operation": "staffing_plan"
+  }
+]

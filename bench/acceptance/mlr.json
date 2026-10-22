@@ -1,0 +1,26 @@
+[
+  {
+    "question": "What was our medical loss ratio by line of business in 2029?",
+    "expect_operation": "mlr"
+  },
+  {
+    "question": "Will the Medicare Advantage book need to pay an MLR remittance if premium is $1,150 PMPM?",
+    "expect_operation": "mlr"
+  },
+  {
+    "question": "MLR for commercial and marketplace plans, three-year aggregate, at $450 premium",
+    "expect_operation": "mlr"
+  },
+  {
+    "question": "What premium would we need for Medicaid to hit the 85% loss ratio minimum?",
+    "expect_operation": "mlr"
+  },
+  {
+    "question": "Show the medical loss ratio trend by year for each product",
+    "expect_operation": "mlr"
+  },
+  {
+    "question": "Are our small group plans above the 80% MLR floor with $500 premium?",
+    "expect_operation": "mlr"
+  }
+]

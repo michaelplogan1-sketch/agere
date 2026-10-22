@@ -349,6 +349,9 @@ CONTRACTS['default_definition'] = {'inputs':['optional earlier_set'],'parameters
 
 from .foundation_engines import contracts as _foundation_contracts
 CONTRACTS.update(_foundation_contracts())  # data-foundation engines (foundation_engines.py)
+from . import engine_suite as _suite  # wave-1 decision engines declare their own contracts
+CONTRACTS.update(_suite.contracts())
+
 
 def grounded_fields(fields, profile):
     """Offer only streams/fields the received data populates, with small value vocabularies."""

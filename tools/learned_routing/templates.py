@@ -278,6 +278,19 @@ T = {
 }
 
 
+
+def _engine_templates():
+    """Decision engines (clinical/engine_suite.py) carry their own paraphrase templates next to their routes."""
+    try:
+        from clinical_core.agere.clinical import engine_suite
+    except ImportError:
+        return {}
+    return {op: list(m.TEMPLATES) for op, m in engine_suite.available().items() if getattr(m, 'TEMPLATES', None)}
+
+
+T.update({op: T.get(op, []) + ts for op, ts in _engine_templates().items()})
+
+
 def generate(per_template=6, seed=7):
     """-> rows {question, intent, template}. Fillers are sampled; duplicates dropped."""
     rng = random.Random(seed)
