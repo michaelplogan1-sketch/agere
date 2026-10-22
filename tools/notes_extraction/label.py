@@ -60,9 +60,15 @@ def batches(units, max_chars=9000, max_units=6):
     if cur: yield cur
 
 
-def label(model, jobs, effort='medium'):
+def label(model, jobs, effort='medium', budget=None):
     units = read_jsonl(OUT / 'sample.jsonl')
     target = OUT / f'labels-{model}.jsonl'
+    previous = []
+    if budget:  # active labeling: only the uncertain / diverse / audit units not yet labelled (free local signals decide)
+        from clinical_core.agere.clinical import active_labeling
+        previous = [r for r in (read_jsonl(target) if target.exists() else []) if 'error' not in r]
+        units, rep = active_labeling.select(units, budget, active_labeling.unit_uncertainty, labelled={r['unit_id'] for r in previous})
+        print('active labeling:', rep)
     def run(batch):
         try:
             value, usd, hit = call(model, LABEL_SYSTEM, 'Extract facts for each unit.\n' + units_payload(batch), effort=effort)
@@ -83,6 +89,7 @@ def label(model, jobs, effort='medium'):
     with ThreadPoolExecutor(jobs) as ex:
         for out, usd, hit in ex.map(run, list(batches(units))):
             rows += out; total += usd; hits += hit
+    rows = previous + rows
     target.write_text('\n'.join(json.dumps(r, ensure_ascii=False) for r in rows) + '\n')
     errs = sum('error' in r for r in rows)
     print(f'{model}: {len(rows)} units labelled, {sum(len(r.get("facts", [])) for r in rows)} facts, errors {errs}, '
@@ -97,5 +104,6 @@ if __name__ == '__main__':
     ap.add_argument('step', choices=['sample', 'label'])
     ap.add_argument('--model', default='claude-sonnet-5-5')
     ap.add_argument('--jobs', type=int, default=6)
+    ap.add_argument('--budget', type=int, help='active labeling: label at most this many NEW units, chosen by uncertainty + diversity')
     a = ap.parse_args()
-    sample() if a.step == 'sample' else label(a.model, a.jobs)
+    sample() if a.step == 'sample' else label(a.model, a.jobs, budget=a.budget)
