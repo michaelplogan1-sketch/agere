@@ -71,6 +71,15 @@ class Registered(unittest.TestCase):
             with self.assertRaises(ValueError): mod.validate({'bogus': 1})
 
 
+class StaffingRatio(unittest.TestCase):
+    def test_nurse_ratio_extension_of_staffing_plan(self):
+        from clinical_core.agere.clinical import staffing_plan as SP
+        self.assertEqual(SP.to_nurses([0, 1, 4, 5, 9], 4), [0, 1, 1, 2, 3])
+        self.assertEqual(SP.to_nurses([3, 4], None), [3, 4])
+        self.assertEqual(SP.validate({'source': 'beds', 'patients_per_nurse': 5})['patients_per_nurse'], 5)
+        with self.assertRaises(ValueError): SP.validate({'patients_per_nurse': 0})
+
+
 class Capacity(unittest.TestCase):
     def test_more_beds_cut_boarding_and_common_random_numbers_hold(self):
         twin = {'rates': [3.0] * 7, 'los_hours': [96.0] * 20, 'ed_share': 1.0}
