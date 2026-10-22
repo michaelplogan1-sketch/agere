@@ -255,12 +255,18 @@ class GraphExecution(unittest.TestCase):
         screen['parameters']['plan']['clauses'][0]['value_equals']=True
         self.assertEqual(execute(self.stack,graph([screen]))['results'][0]['result']['counts']['matched'],0)
 
-    def test_unavailable_forecast_and_disabled_live_review_fail_before_execution(self):
+    def test_unavailable_forecast_fails_and_paid_review_is_skipped_without_live(self):
         self.stack.allow_live=False
         plan=graph([self.base,node('predict','forecast',['base'],{'model':'all'})])
         with self.assertRaisesRegex(ValueError,'No fitted'):execute(self.stack,plan)
-        plan=graph([self.base,node('read','review',['base'],{'providers':['jev'],'question':'Evidence?', 'maximum_patients':1})])
-        with self.assertRaisesRegex(ValueError,'disabled'):execute(self.stack,plan)
+        # Review no longer needs live mode (free readers run first); a paid-only reader list is skipped, never called.
+        with patch('clinical_core.agere.clinical.evidence_proposers.review_patient',
+                   return_value={'patient_id':'P1','verdict':'unknown','paid_steps':[{'provider':'jev','status':'skipped'}],
+                                 'new_paid_api_calls':0}) as reviewed:
+            plan=graph([self.base,node('read','review',['base'],{'providers':['jev'],'question':'Evidence?', 'maximum_patients':1})])
+            result=execute(self.stack,plan)
+        self.assertEqual(result.get('new_paid_api_calls',0),0)
+        self.assertLessEqual(reviewed.call_count,1)
 
     def test_source_snapshot_mismatch_rejected(self):
         meta = json.loads((self.evidence/'run.json').read_text()); meta['snapshot'] = {'as_of': '2026-01-01'}
