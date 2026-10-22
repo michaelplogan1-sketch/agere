@@ -256,6 +256,10 @@ class Compiler(unittest.TestCase):
         self.assertEqual(g['nodes'][-1]['parameters'], {'capacity_patients': 50, 'group_by': 'practice'})
         g = self.compile('Care management: who should we call next week? 25 calls, at least 2 per practice')
         self.assertEqual(g['nodes'][-1]['parameters'], {'capacity_patients': 25, 'min_per_practice': 2})
+        for q in ['Who should we prioritize for outreach?', 'who should our care managers call this week?']:  # no capacity: engine default
+            g = self.compile(q)
+            self.assertEqual([(n['operation'], n['parameters']) for n in g['nodes']], [('outreach', {})])
+            self.assertEqual(outreach.validate(g['nodes'][-1]['parameters'])['capacity_patients'], 50)
 
     def test_outreach_list_without_capacity_is_not_hijacked(self):
         for q in ['Pull me the list of diabetics whose most recent A1c is 8 or above',

@@ -2650,6 +2650,7 @@ def _measure_question(q, profile, as_of):
 # (no capacity) stays a patient-set question.
 OUTREACH_INTENT = (r'\boutreach\b|\bcare managers?\b|\bcare management\b|\bnurses?\b|\bcall(?:s|ed)?\b|\breach out\b|\bcontact\b|'
                    r'\bfollow[- ]?up\b|\bprioriti[sz]e\b|\bworklist\b|\bwork list\b')
+OUTREACH_UNSIZED = (r'\bprioriti[sz]e\b[^.?]{0,40}\b(?:outreach|calls?|care management|follow[- ]?up)\b|\bwho should (?:our |the )?(?:care managers?|nurses?|team|we)?\s*(?:call|contact|reach out to|prioriti[sz]e)\b')
 OUTREACH_SLOTS = (r'\b(?:we have |with |for |capacity (?:of |for )?)?(\d{1,4}) (?:outreach |call |nurse |care[- ]manager )?(?:slots?|calls?|patients?|members?|people|contacts?)\b'
                   r'(?: (?:a|per|this|next) (?:week|month|day))?|'
                   r'\b(?:max(?:imum)?|top|up to|at most|no more than|limit(?: of)?|cap(?: of)?) (\d{1,4})\b(?! hours?)(?: (?:patients?|members?|people|slots?|calls?))?|'
@@ -2672,7 +2673,8 @@ def _outreach_question(q, profile, as_of):
     low = _strip_framing(q.lower())
     if not re.search(OUTREACH_INTENT, low): return None
     slots, hours = re.search(OUTREACH_SLOTS, low), re.search(OUTREACH_HOURS, low)
-    if not slots and not hours: return None
+    # no stated capacity: a clear prioritisation ask still routes; the outreach engine states its default capacity
+    if not slots and not hours and not re.search(OUTREACH_UNSIZED, low): return None
     r = Reader(low); r.profile = profile
     info = {'compiler': VERSION, 'recognised': r.notes, 'paraphrased': [], 'route': 'local_compiler'}
     params = {}
