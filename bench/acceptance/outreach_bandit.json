@@ -1,0 +1,8 @@
+[
+  {"question": "Which outreach channel works best for getting patients to engage with care management?", "expect_operation": "outreach_bandit"},
+  {"question": "Is phone outreach performing better than text or mail for enrollment?", "expect_operation": "outreach_bandit"},
+  {"question": "What have we learned about which outreach method works for high-risk vs low-risk members, by risk tier?", "expect_operation": "outreach_bandit"},
+  {"question": "Run a bandit on our outreach channels and tell me how to split the next 200 contacts", "expect_operation": "outreach_bandit"},
+  {"question": "Should we keep exploring mail outreach or put everything into phone calls? Simulate the regret.", "expect_operation": "outreach_bandit"},
+  {"question": "Engagement rate by outreach channel for first attempts versus repeat attempts", "expect_operation": "outreach_bandit"}
+]

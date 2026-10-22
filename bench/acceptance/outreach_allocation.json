@@ -1,0 +1,8 @@
+[
+  {"question": "Allocate our outreach list across phone, text and mail for the next 4 weeks given 20 staff hours of phone a week", "expect_operation": "outreach_allocation"},
+  {"question": "Optimize which members get a call versus a text each week with our care manager capacity", "expect_operation": "outreach_allocation"},
+  {"question": "Assign outreach candidates to weekly phone slots over the next 6 weeks to maximize value", "expect_operation": "outreach_allocation"},
+  {"question": "With 10 hours of phone and 2 hours of text per week, how should we schedule outreach across channels?", "expect_operation": "outreach_allocation"},
+  {"question": "Optimise our outreach plan under staff capacity and keep at least 3 patients per practice", "expect_operation": "outreach_allocation"},
+  {"question": "What's the best weekly allocation of mail slots and phone hours for outreach next month?", "expect_operation": "outreach_allocation"}
+]
