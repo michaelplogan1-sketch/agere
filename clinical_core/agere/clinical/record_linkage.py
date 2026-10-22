@@ -146,9 +146,16 @@ def decide(scored, threshold=None):
     return out, links
 
 
+def _decide(path, scored, threshold=None):
+    """decide(), with the recorded identity decisions (splits, rejects, confirms: identity_resolution ledger) applied when there are any."""
+    from . import identity_resolution as IR
+    over = IR.overrides(path)
+    return IR.decide(scored, threshold, over) if over else decide(scored, threshold)
+
+
 def enterprise_person_ids(path, threshold=None):
     """{patient_id: enterprise person id} for every chart linked to another chart (read by other engines)."""
-    return decide(build(path), threshold)[0]
+    return _decide(path, build(path), threshold)[0]
 
 
 def person_of(path, patient_id, threshold=None):
@@ -170,7 +177,7 @@ def _groups(path, ids, by):
 def execute(path, patient_ids, params, as_of):
     p = validate(params)
     scored = build(path)
-    assign, links = decide(scored, p['threshold'])
+    assign, links = _decide(path, scored, p['threshold'])
     if patient_ids is not None:  # scope: persons with at least one chart in the population
         scope = set(patient_ids)
         keep = {v for k, v in assign.items() if k in scope}
@@ -204,7 +211,7 @@ def execute(path, patient_ids, params, as_of):
     return {'version': VERSION, 'linkage': pl.VERSION, 'parameters': p, 'source_digest': scored['source_digest'],
             'charts_compared': scored['charts'] if patient_ids is None else len(patient_ids), 'candidate_pairs': scored['candidate_pairs'],
             'persons_with_duplicates': len(persons), 'linked_charts': len(assign), 'extra_charts': len(assign) - len(persons),
-            'links': len(links), 'rules': {r: sum(l['rule'] == r for l in links) for r in ('fellegi_sunter', 'member_id', 'mrn')},
+            'links': len(links), 'rules': {r: sum(l['rule'] == r for l in links) for r in ('fellegi_sunter', 'member_id', 'mrn', 'confirmed')},
             'patient_ids': sorted(assign), 'rows': rows, 'u_probabilities': scored['u_probabilities'],
             'evidence': [{'chart_a': l['a'], 'chart_b': l['b'], 'weight_bits': l['weight'], 'rule': l['rule'], 'field_weights': l['weights']}
                          for l in sorted(links, key=lambda l: -l['weight'])[:50]]}
