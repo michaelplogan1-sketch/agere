@@ -942,6 +942,11 @@ def compose(stack, question, *, population=None, parent=None, model=None, planni
             result = execute_contract(stack, question, graph, receipt, population=population, parent=parent, started=started)
         from .answer_format import present
         present(result, request_plan.Catalog.load(stack.path).target)
+        try:  # release-diff guard: every answer path carries a QC-DRIFT warning when it reads a definition that drifted
+            from . import release_drift
+            release_drift.annotate(stack, question, graph, result['answer'])
+        except Exception:  # noqa: BLE001 - a warning never takes an answer down
+            pass
         if receipt.get('interpretation', {}).get('interpreter') == 'local_normalizer':
             from .local_normalizer import disclosure as normalized
             result['answer']['limitations'] = [*(result['answer'].get('limitations') or []), normalized(receipt['interpretation'])]

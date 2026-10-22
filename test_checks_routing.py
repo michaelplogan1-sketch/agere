@@ -259,6 +259,28 @@ class ClaimVerification(unittest.TestCase):
         self.assertEqual((a['count'], a['confidence'], len(a['readings'])), (4, 'low', 2))
         self.assertFalse(interp['answer_stability']['pass_k'])
 
+    def test_free_non_proposers_do_not_use_the_cap_and_claude_stops_after_an_outage(self):
+        from clinical_core.agere.gateway import ProviderUnavailable
+        order = ('semantic_cache', 'scoped_review_compiler', 'specialist_families_early', 'cohort_family_early', 'local_compiler',
+                 'hosted_typed_interpreter', 'hosted_verified_sql', 'evidence_retrieval', 'atomic_system_one')
+        c = FakeCascade({'scoped_review_compiler': None, 'specialist_families_early': None, 'cohort_family_early': None,
+                         'local_compiler': None, 'evidence_retrieval': None, 'atomic_system_one': contract(4)})
+        def boom(): raise ProviderUnavailable('provider_unavailable (billing): credit balance is too low')
+        c.tier_hosted_typed_interpreter = boom
+        c.tier_hosted_verified_sql = lambda: self.fail('a second Claude verifier ran after an outage')
+        with patch('clinical_core.agere.clinical.system_one_gate.outage', return_value='billing'):
+            _, interp = CV.verify(c, order, 'semantic_cache', contract(4))
+        cv = interp['claim_verification']
+        self.assertEqual(cv['status'], 'confirmed')  # 5 free non-proposers did not use the cap; System One confirmed before any Claude tier
+        self.assertEqual(cv['verifier'], 'atomic_system_one')
+        c2 = FakeCascade({'scoped_review_compiler': None, 'atomic_system_one': None})
+        c2.tier_hosted_typed_interpreter = boom
+        c2.tier_hosted_verified_sql = lambda: self.fail('a second Claude verifier ran after an outage')
+        with patch('clinical_core.agere.clinical.system_one_gate.outage', return_value='billing'):
+            _, interp = CV.verify(c2, ('semantic_cache', 'scoped_review_compiler', 'atomic_system_one', 'hosted_typed_interpreter',
+                                       'hosted_verified_sql'), 'semantic_cache', contract(4))
+        self.assertEqual((interp['claim_verification']['status'], c2.claude_down), ('no_verifier', 'billing'))
+
     def test_cascade_run_verifies(self):
         class C(P.Cascade):
             def order(self): return ('semantic_cache', 'evidence_retrieval')

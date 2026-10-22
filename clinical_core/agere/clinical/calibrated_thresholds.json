@@ -4,30 +4,30 @@
   "alpha": 0.02,
   "delta": 0.1
  },
- "written_at": "2026-10-15T01:14:26Z",
+ "written_at": "2026-10-22T12:50:11Z",
  "method": "Learn-then-Test, fixed-sequence binomial tests (conformal.ltt_threshold)",
  "gates": {
   "learned_router": {
    "alpha": 0.02,
    "delta": 0.1,
-   "n_calibration": 322,
+   "n_calibration": 346,
    "threshold": null,
    "tested": 1,
    "min_accepted_for_zero_errors": 114,
    "name": "learned_router",
-   "fallback": 0.9053889977621657,
+   "fallback": 0.9345917406187068,
    "data": {
-    "source": "router_report.json acceptance_rows (model trained 2026-10-14T08:09:43); report matches the committed model",
-    "labelled": 460,
-    "calibration": 322,
-    "test": 138,
+    "source": "router_report.json acceptance_rows (model trained 2026-10-21T20:14:06); report matches the committed model",
+    "labelled": 493,
+    "calibration": 346,
+    "test": 147,
     "blind_test": 0
    },
-   "fitted_at": "2026-10-15T01:14:26Z",
+   "fitted_at": "2026-10-22T12:50:10Z",
    "search_floor": null,
-   "bind": "d933c5b7af3c357c",
+   "bind": "34af387a2353257f",
    "calibrated": false,
-   "reason": "not certifiable at alpha=2%, delta=10% from 322 calibration cases; hand-set 0.9053889977621657 kept; needs >= 114 accepted calibration cases at the observed 0.0% error at threshold 0.9939 (~1499 labelled cases in all at 11% acceptance with the 70/30 split; have 460); at the hand-set threshold 0.9053889977621657 the test shows 7/55 wrong",
+   "reason": "not certifiable at alpha=2%, delta=10% from 346 calibration cases; hand-set 0.9345917406187068 kept; needs >= 114 accepted calibration cases at the observed 0.0% error at threshold 0.9961 (~1639 labelled cases in all at 10% acceptance with the 70/30 split; have 493); at the hand-set threshold 0.9345917406187068 the test shows 7/59 wrong",
    "kind": "score",
    "error_definition": "the engine the local router picked was not the expected engine",
    "certifier": "certify-gates/1",
@@ -36,11 +36,11 @@
     "blind_sets": "heldout* splits: first (blind) run only, test-only; never calibration"
    },
    "test": {
-    "n": 138,
-    "n_accepted": 55,
+    "n": 147,
+    "n_accepted": 59,
     "errors_accepted": 7,
-    "error_rate": 0.1273,
-    "error_upper_bound": 0.2047,
+    "error_rate": 0.1186,
+    "error_upper_bound": 0.1914,
     "refutes_alpha": true
    },
    "blind_test": {
@@ -52,16 +52,51 @@
     "refutes_alpha": false
    },
    "observed": {
-    "threshold": 0.9939,
-    "n_accepted": 50,
+    "threshold": 0.9961,
+    "n_accepted": 49,
     "error_rate": 0.0,
-    "acceptance_rate": 0.1087,
+    "acceptance_rate": 0.0994,
     "accepted_needed": 114,
-    "labelled_needed": 1499
+    "labelled_needed": 1639
    },
    "accepted_needed": 114,
-   "labelled_needed": 1499,
-   "needs": "needs >= 114 accepted calibration cases at the observed 0.0% error at threshold 0.9939 (~1499 labelled cases in all at 11% acceptance with the 70/30 split; have 460); at the hand-set threshold 0.9053889977621657 the test shows 7/55 wrong"
+   "labelled_needed": 1639,
+   "needs": "needs >= 114 accepted calibration cases at the observed 0.0% error at threshold 0.9961 (~1639 labelled cases in all at 10% acceptance with the 70/30 split; have 493); at the hand-set threshold 0.9345917406187068 the test shows 7/59 wrong",
+   "graded": {
+    "alpha": 0.1,
+    "delta": 0.1,
+    "per_level_delta": 0.01667,
+    "threshold": 0.9859,
+    "n_accepted": 81,
+    "errors_accepted": 2,
+    "coverage": 0.2341,
+    "n_calibration": 346,
+    "ladder": [
+     0.05,
+     0.1,
+     0.15,
+     0.2,
+     0.3,
+     0.4
+    ],
+    "guarantee": "graded: error among accepted <= 10% with probability >= 90% (Learn-then-Test on 346 labelled cases, Bonferroni over the alpha ladder 5%, 10%, 15%, 20%, 30%, 40%; 81 accepted, 2 wrong; exchangeability assumed); held-out test 2/28, blind 0/0 wrong",
+    "test": {
+     "n": 147,
+     "n_accepted": 28,
+     "errors_accepted": 2,
+     "error_rate": 0.0714,
+     "error_upper_bound": 0.1791,
+     "refutes_alpha": false
+    },
+    "blind_test": {
+     "n": 0,
+     "n_accepted": 0,
+     "errors_accepted": 0,
+     "error_rate": null,
+     "error_upper_bound": null,
+     "refutes_alpha": false
+    }
+   }
   },
   "semantic_cache.similarity": {
    "alpha": 0.02,
@@ -83,7 +118,7 @@
     "test": 341,
     "blind_test": 0
    },
-   "fitted_at": "2026-10-15T01:14:26Z",
+   "fitted_at": "2026-10-22T12:50:11Z",
    "search_floor": 0.8,
    "bind": "6263ab4c36a37a48513bcea76c43a48b4e1dba807cd4ff746ddb2905c4dd05ad",
    "calibrated": true,
@@ -128,7 +163,7 @@
     "test": 0,
     "blind_test": 0
    },
-   "fitted_at": "2026-10-15T01:14:26Z",
+   "fitted_at": "2026-10-22T12:50:11Z",
    "search_floor": null,
    "bind": "da76aa4c429d36be",
    "calibrated": false,
@@ -184,7 +219,7 @@
     "test": 0,
     "blind_test": 6
    },
-   "fitted_at": "2026-10-15T01:14:26Z",
+   "fitted_at": "2026-10-22T12:50:11Z",
    "search_floor": null,
    "bind": "81096e18b93c6caf",
    "calibrated": false,
@@ -227,28 +262,28 @@
   "local_compiler.operation": {
    "alpha": 0.02,
    "delta": 0.1,
-   "n_calibration": 176,
+   "n_calibration": 200,
    "threshold": 1.0,
    "tested": 1,
-   "n_accepted": 176,
+   "n_accepted": 200,
    "errors_accepted": 0,
    "coverage": 1.0,
-   "p_value": 0.028562046500915286,
+   "p_value": 0.017587946605721567,
    "empirical_error": 0.0,
    "name": "local_compiler.operation",
    "fallback": 1.0,
    "data": {
     "source": "acceptance runs (bench/results/acceptance, latest per question); error = wrong operation",
-    "labelled": 250,
-    "calibration": 176,
-    "test": 74,
+    "labelled": 283,
+    "calibration": 200,
+    "test": 83,
     "blind_test": 0
    },
-   "fitted_at": "2026-10-15T01:14:26Z",
+   "fitted_at": "2026-10-22T12:50:11Z",
    "search_floor": null,
-   "bind": "0f1f881724a15a1f",
+   "bind": "be0df7865620fe5e",
    "calibrated": true,
-   "guarantee": "error among accepted <= 2% with probability >= 90% (Learn-then-Test on 176 labelled cases; 176 accepted, 0 wrong; exchangeability assumed); held-out test 0/74 wrong (upper bound 0.0306)",
+   "guarantee": "error among accepted <= 2% with probability >= 90% (Learn-then-Test on 200 labelled cases; 200 accepted, 0 wrong; exchangeability assumed); held-out test 0/83 wrong (upper bound 0.0274)",
    "kind": "route",
    "error_definition": "the deterministic compiler planned a different operation than expected",
    "certifier": "certify-gates/1",
@@ -257,11 +292,11 @@
     "blind_sets": "heldout* splits: first (blind) run only, test-only; never calibration"
    },
    "test": {
-    "n": 74,
-    "n_accepted": 74,
+    "n": 83,
+    "n_accepted": 83,
     "errors_accepted": 0,
     "error_rate": 0.0,
-    "error_upper_bound": 0.0306,
+    "error_upper_bound": 0.0274,
     "refutes_alpha": false
    },
    "blind_test": {
@@ -276,7 +311,7 @@
   "operator_router.choice": {
    "alpha": 0.02,
    "delta": 0.1,
-   "n_calibration": 113,
+   "n_calibration": 112,
    "threshold": null,
    "tested": 0,
    "min_accepted_for_zero_errors": 114,
@@ -284,16 +319,16 @@
    "fallback": 1.0,
    "data": {
     "source": "acceptance runs (bench/results/acceptance, latest per question); error = wrong operation",
-    "labelled": 162,
-    "calibration": 113,
-    "test": 49,
+    "labelled": 160,
+    "calibration": 112,
+    "test": 48,
     "blind_test": 0
    },
-   "fitted_at": "2026-10-15T01:14:26Z",
+   "fitted_at": "2026-10-22T12:50:11Z",
    "search_floor": null,
-   "bind": "1666e8ec57931813",
+   "bind": "da1e0a4d1cc132dd",
    "calibrated": false,
-   "reason": "not certifiable at alpha=2%, delta=10% from 113 calibration cases; hand-set 1.0 kept; the test shows 7/49 wrong (14%, significantly above 2%); more calibration data cannot certify this gate until its error rate falls (non-blind estimate: observed error among accepted 14.8% >= alpha 2% at every threshold with >= 10 accepted: more data alone cannot certify this gate; its error rate must fall below 2%)",
+   "reason": "not certifiable at alpha=2%, delta=10% from 112 calibration cases; hand-set 1.0 kept; the test shows 6/48 wrong (12%, significantly above 2%); more calibration data cannot certify this gate until its error rate falls (non-blind estimate: observed error among accepted 14.4% >= alpha 2% at every threshold with >= 10 accepted: more data alone cannot certify this gate; its error rate must fall below 2%)",
    "kind": "route",
    "error_definition": "the analytic engine the operator router chose was not the expected operation",
    "certifier": "certify-gates/1",
@@ -302,11 +337,11 @@
     "blind_sets": "heldout* splits: first (blind) run only, test-only; never calibration"
    },
    "test": {
-    "n": 49,
-    "n_accepted": 49,
-    "errors_accepted": 7,
-    "error_rate": 0.1429,
-    "error_upper_bound": 0.2285,
+    "n": 48,
+    "n_accepted": 48,
+    "errors_accepted": 6,
+    "error_rate": 0.125,
+    "error_upper_bound": 0.2091,
     "refutes_alpha": true
    },
    "blind_test": {
@@ -319,15 +354,50 @@
    },
    "observed": {
     "threshold": 1.0,
-    "n_accepted": 162,
-    "error_rate": 0.1481,
+    "n_accepted": 160,
+    "error_rate": 0.1437,
     "acceptance_rate": 1.0,
     "accepted_needed": null,
     "labelled_needed": null
    },
    "accepted_needed": null,
    "labelled_needed": null,
-   "needs": "the test shows 7/49 wrong (14%, significantly above 2%); more calibration data cannot certify this gate until its error rate falls (non-blind estimate: observed error among accepted 14.8% >= alpha 2% at every threshold with >= 10 accepted: more data alone cannot certify this gate; its error rate must fall below 2%)"
+   "needs": "the test shows 6/48 wrong (12%, significantly above 2%); more calibration data cannot certify this gate until its error rate falls (non-blind estimate: observed error among accepted 14.4% >= alpha 2% at every threshold with >= 10 accepted: more data alone cannot certify this gate; its error rate must fall below 2%)",
+   "graded": {
+    "alpha": 0.3,
+    "delta": 0.1,
+    "per_level_delta": 0.01667,
+    "threshold": 1.0,
+    "n_accepted": 112,
+    "errors_accepted": 17,
+    "coverage": 1.0,
+    "n_calibration": 112,
+    "ladder": [
+     0.05,
+     0.1,
+     0.15,
+     0.2,
+     0.3,
+     0.4
+    ],
+    "guarantee": "graded: error among accepted <= 30% with probability >= 90% (Learn-then-Test on 112 labelled cases, Bonferroni over the alpha ladder 5%, 10%, 15%, 20%, 30%, 40%; 112 accepted, 17 wrong; exchangeability assumed); held-out test 6/48, blind 0/0 wrong",
+    "test": {
+     "n": 48,
+     "n_accepted": 48,
+     "errors_accepted": 6,
+     "error_rate": 0.125,
+     "error_upper_bound": 0.2091,
+     "refutes_alpha": false
+    },
+    "blind_test": {
+     "n": 0,
+     "n_accepted": 0,
+     "errors_accepted": 0,
+     "error_rate": null,
+     "error_upper_bound": null,
+     "refutes_alpha": false
+    }
+   }
   },
   "local_compiler.answer": {
    "alpha": 0.02,
@@ -343,13 +413,13 @@
     "labelled": 86,
     "calibration": 56,
     "test": 30,
-    "blind_test": 37
+    "blind_test": 40
    },
-   "fitted_at": "2026-10-15T01:14:26Z",
+   "fitted_at": "2026-10-22T12:50:11Z",
    "search_floor": null,
-   "bind": "2b4590e2d42df56c",
+   "bind": "01253af7c4f651d7",
    "calibrated": false,
-   "reason": "not certifiable at alpha=2%, delta=10% from 56 calibration cases; hand-set 1.0 kept; the blind test shows 24/37 wrong (65%, significantly above 2%); more calibration data cannot certify this gate until its error rate falls (non-blind estimate: needs >= 587 accepted calibration cases at the observed 1.2% error (~839 labelled cases in all at 100% acceptance with the 70/30 split; have 86))",
+   "reason": "not certifiable at alpha=2%, delta=10% from 56 calibration cases; hand-set 1.0 kept; the blind test shows 26/40 wrong (65%, significantly above 2%); more calibration data cannot certify this gate until its error rate falls (non-blind estimate: needs >= 587 accepted calibration cases at the observed 1.2% error (~839 labelled cases in all at 100% acceptance with the 70/30 split; have 86))",
    "kind": "route",
    "error_definition": "the delivered answer was wrong",
    "certifier": "certify-gates/1",
@@ -366,11 +436,11 @@
     "refutes_alpha": false
    },
    "blind_test": {
-    "n": 37,
-    "n_accepted": 37,
-    "errors_accepted": 24,
-    "error_rate": 0.6486,
-    "error_upper_bound": 0.7541,
+    "n": 40,
+    "n_accepted": 40,
+    "errors_accepted": 26,
+    "error_rate": 0.65,
+    "error_upper_bound": 0.7512,
     "refutes_alpha": true
    },
    "observed": {
@@ -383,7 +453,43 @@
    },
    "accepted_needed": 587,
    "labelled_needed": null,
-   "needs": "the blind test shows 24/37 wrong (65%, significantly above 2%); more calibration data cannot certify this gate until its error rate falls (non-blind estimate: needs >= 587 accepted calibration cases at the observed 1.2% error (~839 labelled cases in all at 100% acceptance with the 70/30 split; have 86))"
+   "needs": "the blind test shows 26/40 wrong (65%, significantly above 2%); more calibration data cannot certify this gate until its error rate falls (non-blind estimate: needs >= 587 accepted calibration cases at the observed 1.2% error (~839 labelled cases in all at 100% acceptance with the 70/30 split; have 86))",
+   "graded_refuted": {
+    "alpha": 0.15,
+    "delta": 0.1,
+    "per_level_delta": 0.01667,
+    "threshold": 1.0,
+    "n_accepted": 56,
+    "errors_accepted": 1,
+    "coverage": 1.0,
+    "n_calibration": 56,
+    "ladder": [
+     0.05,
+     0.1,
+     0.15,
+     0.2,
+     0.3,
+     0.4
+    ],
+    "guarantee": "graded: error among accepted <= 15% with probability >= 90% (Learn-then-Test on 56 labelled cases, Bonferroni over the alpha ladder 5%, 10%, 15%, 20%, 30%, 40%; 56 accepted, 1 wrong; exchangeability assumed)",
+    "test": {
+     "n": 30,
+     "n_accepted": 30,
+     "errors_accepted": 0,
+     "error_rate": 0.0,
+     "error_upper_bound": 0.0739,
+     "refutes_alpha": false
+    },
+    "blind_test": {
+     "n": 40,
+     "n_accepted": 40,
+     "errors_accepted": 26,
+     "error_rate": 0.65,
+     "error_upper_bound": 0.7512,
+     "refutes_alpha": true
+    },
+    "reason": "graded alpha 15% refuted by the blind test"
+   }
   },
   "local_rewrite.answer": {
    "alpha": 0.02,
@@ -401,9 +507,9 @@
     "test": 0,
     "blind_test": 13
    },
-   "fitted_at": "2026-10-15T01:14:26Z",
+   "fitted_at": "2026-10-22T12:50:11Z",
    "search_floor": null,
-   "bind": "88be37cdb5cdbe93",
+   "bind": "4468c211fe0840ee",
    "calibrated": false,
    "reason": "not certifiable at alpha=2%, delta=10% from 0 calibration cases; hand-set 1.0 kept; the blind test shows 9/13 wrong (69%, significantly above 2%); more calibration data cannot certify this gate until its error rate falls (non-blind estimate: only 0 accepted labelled case(s) (0 wrong); needs >= 114 accepted calibration cases with zero errors (~163 labelled cases with the 70/30 split), more if any are wrong)",
    "kind": "route",
@@ -444,7 +550,7 @@
   "learned_reuse.answer": {
    "alpha": 0.02,
    "delta": 0.1,
-   "n_calibration": 0,
+   "n_calibration": 11,
    "threshold": null,
    "tested": 0,
    "min_accepted_for_zero_errors": 114,
@@ -452,16 +558,16 @@
    "fallback": 1.0,
    "data": {
     "source": "bench rows, development/challenge runs (latest per question); error = delivered answer wrong (adjudicated where available)",
-    "labelled": 0,
-    "calibration": 0,
-    "test": 0,
+    "labelled": 15,
+    "calibration": 11,
+    "test": 4,
     "blind_test": 0
    },
-   "fitted_at": "2026-10-15T01:14:26Z",
+   "fitted_at": "2026-10-22T12:50:11Z",
    "search_floor": null,
-   "bind": "1908f4e5bb6a6fd2",
+   "bind": "25df16853ac055d9",
    "calibrated": false,
-   "reason": "not certifiable at alpha=2%, delta=10% from 0 calibration cases; hand-set 1.0 kept; only 0 accepted labelled case(s) (0 wrong); needs >= 114 accepted calibration cases with zero errors (~163 labelled cases with the 70/30 split), more if any are wrong",
+   "reason": "not certifiable at alpha=2%, delta=10% from 11 calibration cases; hand-set 1.0 kept; observed error among accepted 13.3% >= alpha 2% at every threshold with >= 10 accepted: more data alone cannot certify this gate; its error rate must fall below 2%",
    "kind": "route",
    "error_definition": "the delivered answer was wrong",
    "certifier": "certify-gates/1",
@@ -470,11 +576,11 @@
     "blind_sets": "heldout* splits: first (blind) run only, test-only; never calibration"
    },
    "test": {
-    "n": 0,
-    "n_accepted": 0,
+    "n": 4,
+    "n_accepted": 4,
     "errors_accepted": 0,
-    "error_rate": null,
-    "error_upper_bound": null,
+    "error_rate": 0.0,
+    "error_upper_bound": 0.4377,
     "refutes_alpha": false
    },
    "blind_test": {
@@ -487,15 +593,15 @@
    },
    "observed": {
     "threshold": 1.0,
-    "n_accepted": 0,
-    "error_rate": 0.0,
-    "acceptance_rate": null,
-    "accepted_needed": 114,
+    "n_accepted": 15,
+    "error_rate": 0.1333,
+    "acceptance_rate": 1.0,
+    "accepted_needed": null,
     "labelled_needed": null
    },
-   "accepted_needed": 114,
-   "labelled_needed": 163,
-   "needs": "only 0 accepted labelled case(s) (0 wrong); needs >= 114 accepted calibration cases with zero errors (~163 labelled cases with the 70/30 split), more if any are wrong"
+   "accepted_needed": null,
+   "labelled_needed": null,
+   "needs": "observed error among accepted 13.3% >= alpha 2% at every threshold with >= 10 accepted: more data alone cannot certify this gate; its error rate must fall below 2%"
   },
   "bottled.answer": {
    "alpha": 0.02,
@@ -513,9 +619,9 @@
     "test": 0,
     "blind_test": 0
    },
-   "fitted_at": "2026-10-15T01:14:26Z",
+   "fitted_at": "2026-10-22T12:50:11Z",
    "search_floor": null,
-   "bind": "b280d239902d45ce",
+   "bind": "1b26a5adfd6d7ec2",
    "calibrated": false,
    "reason": "not certifiable at alpha=2%, delta=10% from 0 calibration cases; hand-set 1.0 kept; only 0 accepted labelled case(s) (0 wrong); needs >= 114 accepted calibration cases with zero errors (~163 labelled cases with the 70/30 split), more if any are wrong",
    "kind": "route",
@@ -567,13 +673,13 @@
     "labelled": 1,
     "calibration": 0,
     "test": 1,
-    "blind_test": 14
+    "blind_test": 21
    },
-   "fitted_at": "2026-10-15T01:14:26Z",
+   "fitted_at": "2026-10-22T12:50:11Z",
    "search_floor": null,
-   "bind": "6d4ca72729827058",
+   "bind": "234e559d1da22f82",
    "calibrated": false,
-   "reason": "not certifiable at alpha=2%, delta=10% from 0 calibration cases; hand-set 1.0 kept; the blind test shows 11/14 wrong (79%, significantly above 2%); more calibration data cannot certify this gate until its error rate falls (non-blind estimate: only 1 accepted labelled case(s) (1 wrong); needs >= 114 accepted calibration cases with zero errors (~163 labelled cases with the 70/30 split), more if any are wrong)",
+   "reason": "not certifiable at alpha=2%, delta=10% from 0 calibration cases; hand-set 1.0 kept; the blind test shows 16/21 wrong (76%, significantly above 2%); more calibration data cannot certify this gate until its error rate falls (non-blind estimate: only 1 accepted labelled case(s) (1 wrong); needs >= 114 accepted calibration cases with zero errors (~163 labelled cases with the 70/30 split), more if any are wrong)",
    "kind": "route",
    "error_definition": "the delivered answer was wrong",
    "certifier": "certify-gates/1",
@@ -590,11 +696,11 @@
     "refutes_alpha": true
    },
    "blind_test": {
-    "n": 14,
-    "n_accepted": 14,
-    "errors_accepted": 11,
-    "error_rate": 0.7857,
-    "error_upper_bound": 0.9185,
+    "n": 21,
+    "n_accepted": 21,
+    "errors_accepted": 16,
+    "error_rate": 0.7619,
+    "error_upper_bound": 0.8794,
     "refutes_alpha": true
    },
    "observed": {
@@ -607,7 +713,7 @@
    },
    "accepted_needed": 114,
    "labelled_needed": null,
-   "needs": "the blind test shows 11/14 wrong (79%, significantly above 2%); more calibration data cannot certify this gate until its error rate falls (non-blind estimate: only 1 accepted labelled case(s) (1 wrong); needs >= 114 accepted calibration cases with zero errors (~163 labelled cases with the 70/30 split), more if any are wrong)"
+   "needs": "the blind test shows 16/21 wrong (76%, significantly above 2%); more calibration data cannot certify this gate until its error rate falls (non-blind estimate: only 1 accepted labelled case(s) (1 wrong); needs >= 114 accepted calibration cases with zero errors (~163 labelled cases with the 70/30 split), more if any are wrong)"
   },
   "operator_router.answer": {
    "alpha": 0.02,
@@ -623,13 +729,13 @@
     "labelled": 1,
     "calibration": 1,
     "test": 0,
-    "blind_test": 3
+    "blind_test": 5
    },
-   "fitted_at": "2026-10-15T01:14:26Z",
+   "fitted_at": "2026-10-22T12:50:11Z",
    "search_floor": null,
-   "bind": "fd35ff213bd5a865",
+   "bind": "1c8a32570b897226",
    "calibrated": false,
-   "reason": "not certifiable at alpha=2%, delta=10% from 1 calibration cases; hand-set 1.0 kept; the blind test shows 3/3 wrong (100%, significantly above 2%); more calibration data cannot certify this gate until its error rate falls (non-blind estimate: only 1 accepted labelled case(s) (1 wrong); needs >= 114 accepted calibration cases with zero errors (~163 labelled cases with the 70/30 split), more if any are wrong)",
+   "reason": "not certifiable at alpha=2%, delta=10% from 1 calibration cases; hand-set 1.0 kept; the blind test shows 5/5 wrong (100%, significantly above 2%); more calibration data cannot certify this gate until its error rate falls (non-blind estimate: only 1 accepted labelled case(s) (1 wrong); needs >= 114 accepted calibration cases with zero errors (~163 labelled cases with the 70/30 split), more if any are wrong)",
    "kind": "route",
    "error_definition": "the delivered answer was wrong",
    "certifier": "certify-gates/1",
@@ -646,9 +752,9 @@
     "refutes_alpha": false
    },
    "blind_test": {
-    "n": 3,
-    "n_accepted": 3,
-    "errors_accepted": 3,
+    "n": 5,
+    "n_accepted": 5,
+    "errors_accepted": 5,
     "error_rate": 1.0,
     "error_upper_bound": 1.0,
     "refutes_alpha": true
@@ -663,7 +769,7 @@
    },
    "accepted_needed": 114,
    "labelled_needed": null,
-   "needs": "the blind test shows 3/3 wrong (100%, significantly above 2%); more calibration data cannot certify this gate until its error rate falls (non-blind estimate: only 1 accepted labelled case(s) (1 wrong); needs >= 114 accepted calibration cases with zero errors (~163 labelled cases with the 70/30 split), more if any are wrong)"
+   "needs": "the blind test shows 5/5 wrong (100%, significantly above 2%); more calibration data cannot certify this gate until its error rate falls (non-blind estimate: only 1 accepted labelled case(s) (1 wrong); needs >= 114 accepted calibration cases with zero errors (~163 labelled cases with the 70/30 split), more if any are wrong)"
   },
   "freeform_sql.verified": {
    "alpha": 0.02,
@@ -679,13 +785,13 @@
     "labelled": 1,
     "calibration": 1,
     "test": 0,
-    "blind_test": 184
+    "blind_test": 203
    },
-   "fitted_at": "2026-10-15T01:14:26Z",
+   "fitted_at": "2026-10-22T12:50:11Z",
    "search_floor": null,
-   "bind": "2a58f82c2a681ebf",
+   "bind": "5defb3a1662e59b5",
    "calibrated": false,
-   "reason": "not certifiable at alpha=2%, delta=10% from 1 calibration cases; hand-set 1.0 kept; the blind test shows 6/8 wrong (75%, significantly above 2%); more calibration data cannot certify this gate until its error rate falls (non-blind estimate: only 0 accepted labelled case(s) (0 wrong); needs >= 114 accepted calibration cases with zero errors (~163 labelled cases with the 70/30 split), more if any are wrong)",
+   "reason": "not certifiable at alpha=2%, delta=10% from 1 calibration cases; hand-set 1.0 kept; the blind test shows 8/11 wrong (73%, significantly above 2%); more calibration data cannot certify this gate until its error rate falls (non-blind estimate: only 0 accepted labelled case(s) (0 wrong); needs >= 114 accepted calibration cases with zero errors (~163 labelled cases with the 70/30 split), more if any are wrong)",
    "kind": "flag",
    "error_definition": "an answer the free-form acceptance check marked verified was wrong",
    "certifier": "certify-gates/1",
@@ -702,11 +808,11 @@
     "refutes_alpha": false
    },
    "blind_test": {
-    "n": 184,
-    "n_accepted": 8,
-    "errors_accepted": 6,
-    "error_rate": 0.75,
-    "error_upper_bound": 0.9314,
+    "n": 203,
+    "n_accepted": 11,
+    "errors_accepted": 8,
+    "error_rate": 0.7273,
+    "error_upper_bound": 0.8952,
     "refutes_alpha": true
    },
    "observed": {
@@ -719,7 +825,7 @@
    },
    "accepted_needed": 114,
    "labelled_needed": null,
-   "needs": "the blind test shows 6/8 wrong (75%, significantly above 2%); more calibration data cannot certify this gate until its error rate falls (non-blind estimate: only 0 accepted labelled case(s) (0 wrong); needs >= 114 accepted calibration cases with zero errors (~163 labelled cases with the 70/30 split), more if any are wrong)"
+   "needs": "the blind test shows 8/11 wrong (73%, significantly above 2%); more calibration data cannot certify this gate until its error rate falls (non-blind estimate: only 0 accepted labelled case(s) (0 wrong); needs >= 114 accepted calibration cases with zero errors (~163 labelled cases with the 70/30 split), more if any are wrong)"
   },
   "typed_route.answer": {
    "alpha": 0.02,
@@ -737,9 +843,9 @@
     "test": 0,
     "blind_test": 0
    },
-   "fitted_at": "2026-10-15T01:14:26Z",
+   "fitted_at": "2026-10-22T12:50:11Z",
    "search_floor": null,
-   "bind": "c79511b898e02f0f",
+   "bind": "6a9bfd568746281d",
    "calibrated": false,
    "reason": "not certifiable at alpha=2%, delta=10% from 0 calibration cases; hand-set 1.0 kept; only 0 accepted labelled case(s) (0 wrong); needs >= 114 accepted calibration cases with zero errors (~163 labelled cases with the 70/30 split), more if any are wrong",
    "kind": "route",
@@ -791,13 +897,13 @@
     "labelled": 0,
     "calibration": 0,
     "test": 0,
-    "blind_test": 13
+    "blind_test": 14
    },
-   "fitted_at": "2026-10-15T01:14:26Z",
+   "fitted_at": "2026-10-22T12:50:11Z",
    "search_floor": null,
-   "bind": "c79511b898e02f0f",
+   "bind": "6a9bfd568746281d",
    "calibrated": false,
-   "reason": "not certifiable at alpha=2%, delta=10% from 0 calibration cases; hand-set 1.0 kept; the blind test shows 10/13 wrong (77%, significantly above 2%); more calibration data cannot certify this gate until its error rate falls (non-blind estimate: only 0 accepted labelled case(s) (0 wrong); needs >= 114 accepted calibration cases with zero errors (~163 labelled cases with the 70/30 split), more if any are wrong)",
+   "reason": "not certifiable at alpha=2%, delta=10% from 0 calibration cases; hand-set 1.0 kept; the blind test shows 11/14 wrong (79%, significantly above 2%); more calibration data cannot certify this gate until its error rate falls (non-blind estimate: only 0 accepted labelled case(s) (0 wrong); needs >= 114 accepted calibration cases with zero errors (~163 labelled cases with the 70/30 split), more if any are wrong)",
    "kind": "route",
    "error_definition": "the delivered answer was wrong",
    "certifier": "certify-gates/1",
@@ -814,11 +920,11 @@
     "refutes_alpha": false
    },
    "blind_test": {
-    "n": 13,
-    "n_accepted": 13,
-    "errors_accepted": 10,
-    "error_rate": 0.7692,
-    "error_upper_bound": 0.912,
+    "n": 14,
+    "n_accepted": 14,
+    "errors_accepted": 11,
+    "error_rate": 0.7857,
+    "error_upper_bound": 0.9185,
     "refutes_alpha": true
    },
    "observed": {
@@ -831,7 +937,7 @@
    },
    "accepted_needed": 114,
    "labelled_needed": null,
-   "needs": "the blind test shows 10/13 wrong (77%, significantly above 2%); more calibration data cannot certify this gate until its error rate falls (non-blind estimate: only 0 accepted labelled case(s) (0 wrong); needs >= 114 accepted calibration cases with zero errors (~163 labelled cases with the 70/30 split), more if any are wrong)"
+   "needs": "the blind test shows 11/14 wrong (79%, significantly above 2%); more calibration data cannot certify this gate until its error rate falls (non-blind estimate: only 0 accepted labelled case(s) (0 wrong); needs >= 114 accepted calibration cases with zero errors (~163 labelled cases with the 70/30 split), more if any are wrong)"
   }
  }
 }

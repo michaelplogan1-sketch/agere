@@ -11,7 +11,8 @@ executes, and reconciles:
   no verifier nothing independent executed; the first claim stands and the receipt says what was tried
 Never removes a tier and never stops the question: a verifier that errors or declines is just noted. Every paid call
 (System One judge, paid verifier tiers) is charged to the cascade. AGERE_VERIFY_CLAIMS=off restores first-claim-wins;
-AGERE_VERIFY_MAX (default 3) bounds the verifiers tried per question.
+AGERE_VERIFY_MAX (default 3) bounds the verifiers that actually propose (a free tier that proposes nothing does not count;
+at most 4x that many tiers are asked).
 """
 import os
 import time
@@ -87,8 +88,10 @@ def verify(cascade, order, name, found):
     first_family = FAMILY.get(name, name)
     receipt = {'version': VERSION, 'first_claim': name, 'tried': [], 'status': 'no_verifier'}
     second = None
-    for v in verifiers(order, name, tried={e['proposer'] for e in cascade.log}, claude_down=bool(cascade.claude_down))[:max_verifiers() * 4]:
-        if len(receipt['tried']) >= max_verifiers(): break
+    proposed = 0
+    for v in verifiers(order, name, tried={e['proposer'] for e in cascade.log}, claude_down=bool(cascade.claude_down)):
+        if proposed >= max_verifiers() or len(receipt['tried']) >= max_verifiers() * 4: break
+        if cascade.claude_down and cost_class(v) == 'claude': continue
         budget = getattr(cascade, 'budget', None)
         if budget is not None and budget.expired(): receipt['stopped'] = 'answer time budget'; break
         from .proposers import enabled as tier_on
@@ -100,8 +103,12 @@ def verify(cascade, order, name, found):
         try:
             got = getattr(cascade, 'tier_' + v)()
         except Exception as exc:  # noqa: BLE001 - a verifier failing never stops the answer
-            cascade.note(v, 'verification error', f'{type(exc).__name__}: {exc}'[:300], t0); receipt['tried'].append(v); continue
+            cascade.note(v, 'verification error', f'{type(exc).__name__}: {exc}'[:300], t0); receipt['tried'].append(v); proposed += 1
+            from .system_one_gate import CLAUDE_TIERS, outage
+            if v in CLAUDE_TIERS and outage(exc): cascade.claude_down = cascade.claude_down or outage(exc)  # no further Claude verifier
+            continue
         receipt['tried'].append(v)
+        if got or cost_class(v) != 'free': proposed += 1
         if not got or got == 'held' or not isinstance(got, tuple) or (got[0] or {}).get('kind') != 'checked_graph' \
                 or _answer(got[0]).get('status') not in ('answered', 'partial'):
             cascade.note(v, 'verification: no comparable answer', None, t0); continue
