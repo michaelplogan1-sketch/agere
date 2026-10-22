@@ -1,0 +1,80 @@
+{
+ "measures": {
+  "cbp": {
+   "aliases": [
+    "blood pressure control",
+    "blood pressure measure",
+    "bp control",
+    "cbp",
+    "cbp measure",
+    "cms165",
+    "controlling blood pressure",
+    "controlling high blood pressure",
+    "hypertension control",
+    "hypertension control measure",
+    "quality #236",
+    "quality id 236"
+   ],
+   "cql": "cbp.cql",
+   "cql_sha256": "56afe6b140862f136f38446e3cbcc09b9bcf7c3af086947c811e213f38940fe3",
+   "elm_sha256": "3129c7da8c1c1f1c98bcc53b0f040c3d575dfeb77de699d15317298fddc03c81",
+   "governed_by": "Agere measure governance",
+   "name": "Controlling High Blood Pressure",
+   "note": "compiled from CQL",
+   "reference_measure": "cbp",
+   "spec_year": "CMS165v14 (2026 performance period); HEDIS CBP MY2025 (2027 Star Ratings C14)",
+   "status": "approximation",
+   "steward": "NCQA (HEDIS CBP); CMS eCQM CMS165 / MSSP APP Quality ID 236"
+  },
+  "gsd_control_lt8": {
+   "aliases": [
+    "a1c control",
+    "a1c control below 8",
+    "a1c under 8",
+    "a1c under 8 measure",
+    "diabetes a1c control",
+    "diabetes control",
+    "glycemic control",
+    "glycemic status",
+    "glycemic status <8",
+    "glycemic status assessment",
+    "gsd control",
+    "hba1c control",
+    "hba1c control (<8"
+   ],
+   "cql": "gsd_control_lt8.cql",
+   "cql_sha256": "0e880697ca1c1114b7461c7dd6f31b7bc8d063fd1337f3046e7eebb626834bb7",
+   "elm_sha256": "821c445ed63de0ac2c079e6899c1006d21dc9abf963cc1b8ecd3dce2db808846",
+   "governed_by": "Agere measure governance",
+   "name": "Glycemic Status Assessment for Patients With Diabetes: control (<8.0%)",
+   "note": "compiled from CQL",
+   "reference_measure": "gsd_control_lt8",
+   "spec_year": "HEDIS MY2025",
+   "status": "approximation",
+   "steward": "NCQA (HEDIS GSD)"
+  },
+  "spd_statin_diabetes": {
+   "aliases": [
+    "diabetes statin",
+    "spd",
+    "spd measure",
+    "statin therapy",
+    "statin therapy for diabetes",
+    "statin therapy for patients with diabetes",
+    "statin use in diabetes",
+    "statins for diabetics measure"
+   ],
+   "cql": "spd_statin_diabetes.cql",
+   "cql_sha256": "d6dbe06486a8cb018231d78bdb3c40211a165048619d2f5202a5e63c0200e524",
+   "elm_sha256": "cde1ee3632d0db28c8dc6f2c8f45e22f3590a21b801a3f3b5898c0adf860b6d4",
+   "governed_by": "Agere measure governance",
+   "name": "Statin Therapy for Patients With Diabetes: received statin therapy",
+   "note": "compiled from CQL",
+   "reference_measure": "spd_statin_diabetes",
+   "spec_year": "HEDIS MY2025",
+   "status": "approximation",
+   "steward": "NCQA (HEDIS SPD)"
+  }
+ },
+ "schema": "agere-cql-registry/1"
+}
