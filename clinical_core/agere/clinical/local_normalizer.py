@@ -12,7 +12,17 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
 BASE_MODEL = ROOT / 'models' / 'qwen3-4b'
-ADAPTER = Path(os.environ.get('AGERE_NORMALIZER_ADAPTER') or ROOT / 'artifacts' / 'agere-local-planner-v1' / 'adapter')
+def promoted_adapter():
+    """Latest adapter the training orchestrator promoted (it beat the previous one on held-out families), or None."""
+    import json
+    pointers = sorted((ROOT / 'artifacts' / 'training' / 'runs').glob('*/promoted/normalizer.json'), key=lambda p: p.stat().st_mtime)
+    for pointer in reversed(pointers):
+        adapter = ROOT / json.loads(pointer.read_text())['adapter']
+        if (adapter / 'adapters.safetensors').exists(): return adapter
+    return None
+
+
+ADAPTER = Path(os.environ.get('AGERE_NORMALIZER_ADAPTER') or promoted_adapter() or ROOT / 'artifacts' / 'agere-local-planner-v1' / 'adapter')
 VERSION = 'local-normalizer/1'
 UNSUPPORTED = 'UNSUPPORTED'
 SYSTEM = ('Rewrite the analytics question into the precise wording the Agere parser reads. Keep every number, year, '
