@@ -248,7 +248,7 @@ def hosted_core(stack, question, population, ledger=None):
         if owned: ledger.close()
 
 
-def plan(stack, question, population=None, *, maximum_patients=None, ledger=None):
+def plan(stack, question, population=None, *, maximum_patients=None, ledger=None, hosted=True):
     """-> {'subject_question','options','sub_questions','scope':{'patients','cohort','sources','window'},'aggregation','returns',
     'unit','select_labels','maximum_patients','planner','planner_receipt'} or None."""
     from .evidence_proposers import window
@@ -257,7 +257,7 @@ def plan(stack, question, population=None, *, maximum_patients=None, ledger=None
         try: core, planner = local_core(stack, question, population), 'qwen_typed_interpreter'
         except Exception:  # noqa: BLE001 - local model absent/busy: next planner
             core = None
-    if core is None:
+    if core is None and hosted:
         core, receipt = hosted_core(stack, question, population, ledger)
         planner = 'hosted_claude'
     if core is None: return None
@@ -619,7 +619,10 @@ def tier(stack, question, population=None, *, maximum_patients=None, decide=None
     the exact new calls and cost and stack.run_graph replays the same decisions free."""
     if not getattr(stack, 'allow_live', False) and os.environ.get('AGERE_ATOMIC_OFFLINE') != 'on': return None
     started = time.perf_counter()
-    p = plan(stack, question, population, maximum_patients=maximum_patients, ledger=ledger)
+    # In the cascade, planning stays free (patterns, local Qwen): Claude planning is the hosted interpreter tier's job, so this
+    # tier never spends a Claude call ahead of it (AGERE_ATOMIC_HOSTED_PLANNER=on restores the hosted planner).
+    p = plan(stack, question, population, maximum_patients=maximum_patients, ledger=ledger,
+             hosted=os.environ.get('AGERE_ATOMIC_HOSTED_PLANNER', 'off') == 'on')
     if p is None: return None
     as_of = stack.retriever.meta['snapshot']['as_of']
     graph = graph_of(question, p)
