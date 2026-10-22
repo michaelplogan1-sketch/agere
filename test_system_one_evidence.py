@@ -205,7 +205,9 @@ class Normalization(unittest.TestCase):
             'Zocor 20 mg': {'drug_classes': ['statin'], 'jev_choice': 'dictionary_and_rules', 'jev_p': 0.97, 'source_count': 40},
             'Nystatin oral': {'drug_classes': ['statin'], 'jev_choice': 'none', 'jev_p': 0.93, 'source_count': 5},
             'Rosu new': {'drug_classes': ['statin'], 'source_count': 2}}}))
-        (d/'labs.json').write_text(json.dumps({'entries': {}})); (d/'encounters.json').write_text(json.dumps({'entries': {}}))
+        (d/'labs.json').write_text(json.dumps({'entries': {}}))
+        (d/'encounters.json').write_text(json.dumps({'entries': {'office': {'agere_concept': None, 'setting': 'primary_care', 'jev_choice': 'rules',
+                                                                            'jev_p': 0.98, 'source_count': 7340}}}))
         self.p = mock.patch.object(NC, 'DIR', d); self.p.start(); NC._CACHE.clear()
 
     def tearDown(self):
@@ -227,6 +229,12 @@ class Normalization(unittest.TestCase):
         NC.annotate_verdict(SimpleNamespace(allow_live=False), g, answer, verdict)
         self.assertIn('Nystatin oral', verdict['annotations'][0]); self.assertIn('normalization_check', answer)
         self.assertIsNone(NC.annotate({'nodes': [{'operation': 'sql', 'parameters': {'query': 'SELECT 1'}}]}))
+
+    def test_rule_preferred_encounter_is_reported_not_withheld(self):
+        self.assertEqual(NC.withheld('encounters'), {})  # the dictionary's care setting still applies at build
+        a = NC.annotate({'nodes': [{'operation': 'sql', 'parameters': {'query': "SELECT count(*) FROM visit WHERE type_concept='primary_care_visit'"}}]})
+        c = a['contested'][0]
+        self.assertEqual((c['source_string'], c['rule_mapping'], c['status']), ('office', ['primary_care_visit'], 'rules_preferred'))
 
 
 class Hcc(Temp):

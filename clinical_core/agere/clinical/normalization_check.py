@@ -56,7 +56,8 @@ def withheld(domain, min_p=MIN_P):
         variants = list(v['variants_by_unit'].values()) if isinstance(v.get('variants_by_unit'), dict) else [v]
         for e in variants:
             s = verdict(e)
-            if s in ('rejected', 'rules_preferred') and (e.get('jev_p') or 0) >= min_p:
+            # encounters: the dictionary also carries the care setting, which a concept preference does not overturn
+            if (s == 'rejected' or s == 'rules_preferred' and domain != 'encounters') and (e.get('jev_p') or 0) >= min_p:
                 out[k] = s
     return out
 
@@ -105,14 +106,26 @@ def plan_concepts(graph):
     return found
 
 
+def _rule(domain, raw):
+    import sys
+    if str(ROOT) not in sys.path: sys.path.insert(0, str(ROOT))
+    from tools.normalization import jev_check
+    try:
+        r = {'labs': jev_check.rule_lab, 'medications': jev_check.rule_med, 'encounters': jev_check.rule_encounter}[domain](raw)
+    except Exception:  # noqa: BLE001 - no rule mapping
+        return set()
+    return set(r) if isinstance(r, list) else {r} if r else set()
+
+
 def feeding(domain, concepts_):
-    """[(source string, entry)] whose dictionary mapping lands in these concepts."""
+    """[(source string, entry)] whose dictionary mapping OR rule mapping lands in these concepts."""
     out = []
     for k, v in entries(domain).items():
         variants = list(v['variants_by_unit'].values()) if isinstance(v.get('variants_by_unit'), dict) else [v]
         for e in variants:
             m = set(e.get('drug_classes') or []) if domain == 'medications' else {e.get('agere_concept')}
-            if m & concepts_: out.append((k, {**e, 'source_count': v.get('source_count', e.get('source_count'))})); break
+            if (m | _rule(domain, k)) & concepts_:
+                out.append((k, {**e, 'source_count': v.get('source_count', e.get('source_count')), 'rule_mapping': sorted(_rule(domain, k))})); break
     return out
 
 
@@ -145,9 +158,10 @@ def annotate(graph, *, as_of='2030-05-27', allow_live=False, decide=None):
             s = verdict(e)
             if s == 'agreed': agreed += 1
             elif s == 'unchecked': unchecked.append((d, raw, e))
-            else: contested.append({'domain': d, 'source_string': raw, 'mapping': mapping(d, e), 'jev_choice': e.get('jev_choice'),
+            else: contested.append({'domain': d, 'source_string': raw, 'mapping': mapping(d, e), 'rule_mapping': e.get('rule_mapping'),
+                                    'jev_choice': e.get('jev_choice'),
                                     'jev_p': e.get('jev_p'), 'source_rows': e.get('source_count'), 'status': s,
-                                    'withheld_at_build': (e.get('jev_p') or 0) >= MIN_P})
+                                    'withheld_at_build': raw in withheld(d)})
     live, calls, usd = [], 0, 0.0
     if unchecked and allow_live:
         for d, raw, e in unchecked[:LIVE_MAX]:
@@ -171,7 +185,8 @@ def annotate_verdict(stack, graph, answer, verdict_, *, ledger=None):
     verdict_['normalization_check'] = {k: out[k] for k in ('concepts', 'source_strings', 'agreed', 'unchecked')}
     verdict_['cost']['new_paid_api_calls'] += out['cost']['new_paid_api_calls']; verdict_['cost']['usd'] += out['cost']['usd']
     if out['contested']:
-        top = '; '.join(f"{c['source_string']!r} -> {c['mapping'] or 'none'} (Jev: {c['jev_choice']}, p={c['jev_p']}, {c['source_rows']} rows)"
+        top = '; '.join(f"{c['source_string']!r} -> dictionary {c['mapping'] or 'none'} / rules {', '.join(c.get('rule_mapping') or []) or 'none'} "
+                        f"(Jev: {c['jev_choice']}, p={c['jev_p']}, {c['source_rows']} rows)"
                         for c in out['contested'][:4])
         verdict_['annotations'].append(f"Normalization second check (Jev): {out['agreed']} of {out['source_strings']} source strings feeding "
                                        f"{', '.join(sorted({x for v in out['concepts'].values() for x in v}))[:120]} agree with the dictionary; "

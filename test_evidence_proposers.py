@@ -173,7 +173,8 @@ class Review(unittest.TestCase):
         hits = [passage('P-1001', 'Statin intolerance discussed.')]
         with patch.object(E, '_comparison_cohort', return_value=None), \
                 patch('clinical_core.agere.clinical.document_readers.availability', return_value=[]), \
-                patch('clinical_core.agere.clinical.semantic_reader.read', side_effect=ValueError('no native model')):
+                patch('clinical_core.agere.clinical.semantic_reader.read', side_effect=ValueError('no native model')), \
+                patch.dict(os.environ, {'AGERE_SYSTEM_ONE_DECIDERS': '/nonexistent/deciders.json'}):  # default Jev -> Perplexity order
             off = E.review_patient(fake_stack(hits, reading='unknown'), self.Q, 'P-1001')
             stack = fake_stack(hits, allow_live=True, reading='unknown')
             on = E.review_patient(stack, self.Q, 'P-1001')

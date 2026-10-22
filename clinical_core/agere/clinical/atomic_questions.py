@@ -404,7 +404,8 @@ def _spent(decision):
     steps = decision.get('steps') or [decision]
     calls, usd = 0, 0.0
     for s in steps:
-        if s.get('cache_hit') or s.get('status') in ('failed', 'error', 'skipped') or s.get('error'): continue
+        if s.get('cache_hit') or s.get('status') in ('failed', 'error', 'skipped', 'below_threshold') or s.get('error'): continue
+        if s.get('provider') == 'local_student': continue  # the free local student is never a paid call
         if s.get('label') is None and s.get('probabilities') is None: continue
         calls += 1
         c = s.get('cost_usd')

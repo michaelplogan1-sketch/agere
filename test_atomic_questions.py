@@ -249,7 +249,8 @@ class ExecuteTest(Base):
         mod.decide = lambda *a, **k: {'label': 'unknown', 'status': 'providers_failed', 'decided_by': None,
                                       'steps': [{'provider': 'jev', 'status': 'error', 'error': 'HTTP 503'}]}
         st = Stack(['P-1007'])
-        with mock.patch.dict(sys.modules, {S1: mod}):
+        import clinical_core.agere.clinical as pkg
+        with mock.patch.dict(sys.modules, {S1: mod}), mock.patch.object(pkg, 'system_one', mod, create=True):
             out = aq.execute(st, aq.plan(st, BB_Q))
         self.assertEqual(out['report']['system_one']['errors'], 1)
         self.assertEqual(out['report']['new_paid_api_calls'], 0)
