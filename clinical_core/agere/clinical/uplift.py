@@ -45,7 +45,8 @@ from . import aggregate, outreach, program_effect, semantic_layer
 VERSION = 'uplift/1'
 OUTCOMES = ('ed_visits', 'admissions', 'ed_or_admission')
 OUTCOME_TYPES = ('binary', 'count')
-LEARNERS = ('x', 't')
+LEARNERS = ('x', 't', 'dml', 'causal_forest')  # dml = cross-fitted double ML R-learner, causal_forest = honest GRF-style forest (causal_hte.py)
+LEARNER_SETS = {'both': ('x', 't'), 'all': LEARNERS}
 MIN_ARM = 30
 FEATURES = ('age', 'female', 'medicare', 'prior_ed', 'prior_admissions', 'chronic_conditions', 'baseline_risk')
 ASSUMPTIONS = [
@@ -72,7 +73,7 @@ def validate(p):
     if not isinstance(p, dict) or set(p) - allowed:
         raise ValueError('uplift parameters: ' + ', '.join(sorted(allowed)))
     out = {'program': p.get('program', 'care_management'), 'outcome': p.get('outcome', 'ed_or_admission'),
-           'outcome_type': p.get('outcome_type', 'binary'), 'learners': p.get('learners', 'both'),
+           'outcome_type': p.get('outcome_type', 'binary'), 'learners': p.get('learners', 'all'),
            'primary_learner': p.get('primary_learner', 'x'), 'target_population': p.get('target_population', 'untreated'),
            'interactions': p.get('interactions', False)}
     ids = p.get('treated_patient_ids')
@@ -86,9 +87,9 @@ def validate(p):
     elif out['program'] not in program_effect.PROGRAMS: raise ValueError(f'program must be one of {sorted(program_effect.PROGRAMS)} or pass treated_patient_ids')
     if out['outcome'] not in OUTCOMES: raise ValueError(f'outcome must be one of {OUTCOMES}')
     if out['outcome_type'] not in OUTCOME_TYPES: raise ValueError(f'outcome_type must be one of {OUTCOME_TYPES}')
-    if out['learners'] not in ('both', *LEARNERS): raise ValueError("learners must be 'both', 'x' or 't'")
-    if out['primary_learner'] not in LEARNERS: raise ValueError("primary_learner must be 'x' or 't'")
-    if out['learners'] != 'both' and out['primary_learner'] != out['learners']: out['primary_learner'] = out['learners']
+    if out['learners'] not in (*LEARNER_SETS, *LEARNERS): raise ValueError(f"learners must be one of {(*LEARNER_SETS, *LEARNERS)}")
+    if out['primary_learner'] not in LEARNERS: raise ValueError(f'primary_learner must be one of {LEARNERS}')
+    if out['primary_learner'] not in LEARNER_SETS.get(out['learners'], (out['learners'],)): out['primary_learner'] = LEARNER_SETS.get(out['learners'], (out['learners'],))[0]
     if out['target_population'] not in ('untreated', 'all'): raise ValueError("target_population must be 'untreated' or 'all'")
     if type(out['interactions']) is not bool: raise ValueError('interactions must be true or false')
     out['pre_days'] = _num(p, 'pre_days', 180, 30, 730, True); out['post_days'] = _num(p, 'post_days', 90, 14, 365, True)
@@ -275,6 +276,14 @@ def analyze(X, t, y, family='logistic', folds=5, l2=1.0, trim=0.05, bootstrap=20
             D0 = predict_glm(m1, Z[t0], family) - y[t0]
             g1, g0 = fit_glm(Z[t1], D1, 'gaussian', l2), fit_glm(Z[t0], D0, 'gaussian', l2)
             tau['x'][te] = ec[te] * predict_glm(g0, Z[te], 'gaussian') + (1 - ec[te]) * predict_glm(g1, Z[te], 'gaussian')
+    ml = [l for l in learners if l in ('dml', 'causal_forest')]
+    if ml:  # causal ML learners: gradient-boosted nuisances, same folds and overlap set (causal_hte.py)
+        from . import causal_hte
+        cm = causal_hte.fit((X - mu_) / sd_, t, y, fold, keep, ml, seed)
+        for l in ml: tau[l] = cm['tau'][l]
+        out['dml_ate_benefit'] = {**cm['dml_ate'], 'estimate': sgn * cm['dml_ate']['estimate'],
+                                  'ci95': sorted(sgn * v for v in cm['dml_ate']['ci95'])}
+        if cm['importance'] is not None: out['causal_forest_importance'] = {names[j]: float(cm['importance'][j]) for j in range(d)}
     gamma = mu1h - mu0h + t * (y - mu1h) / ec - (1 - t) * (y - mu0h) / (1 - ec)
     # Ranking-evaluation scores must not contain the learners' own contrast mu1 - mu0 (that would reward any ranking by
     # construction): use the residual-on-residual transform (T - e)(Y - m) / (e (1 - e)), whose conditional mean is tau(x)
@@ -287,7 +296,7 @@ def analyze(X, t, y, family='logistic', folds=5, l2=1.0, trim=0.05, bootstrap=20
                           'observed_rate_treated': float(y[keep & (t == 1)].mean()), 'observed_rate_control': float(y[keep & (t == 0)].mean())}
     evals = {}
     for l in learners:
-        evals[l] = _evaluate(sgn * tau[l][keep], G, bootstrap, np.random.default_rng(seed + (1 if l == 'x' else 2)), fold[keep])
+        evals[l] = _evaluate(sgn * tau[l][keep], G, bootstrap, np.random.default_rng(seed + 1 + LEARNERS.index(l)), fold[keep])
     out['learners'] = evals
     pb = sgn * tau[primary]
     # linear surrogate for per-member reasons: contribution_j = coef_j * (x_j - mean_j) toward predicted benefit
@@ -410,7 +419,7 @@ def execute(path, patient_ids, params, as_of=None):
     score = _baseline_risk(rows, p['folds'], p['l2'], p['seed'], binary)
     for r, s in zip(rows, score): r['baseline_risk'] = float(s)
     X = np.array([[r[c] for c in FEATURES] for r in rows]); t = np.array([r['treated'] for r in rows]); y = np.array([r['y'] for r in rows])
-    learners = LEARNERS if p['learners'] == 'both' else (p['learners'],)
+    learners = LEARNER_SETS.get(p['learners'], (p['learners'],))
     res = analyze(X, t, y, family, p['folds'], p['l2'], p['trim'], p['bootstrap'], p['seed'], learners, p['primary_learner'],
                   p['interactions'], 'decrease', FEATURES)
     sample = {k: res[k] for k in ('n', 'n_treated', 'n_control', 'kept', 'kept_treated', 'kept_control', 'trimmed_treated', 'trimmed_control')}
@@ -500,7 +509,7 @@ def execute(path, patient_ids, params, as_of=None):
                    f"vs {rand_events:.2f} for random selection of the same size." if worklist else ' No eligible member has a positive expected net value.'))
     method = (f"Cohort: {definition}. Pre window {p['pre_days']}d, outcome window {p['post_days']}d after the index date. Propensity: cross-fitted ridge logistic "
               f"(l2 {p['l2']:g}), overlap bounds [{p['trim']:g}, {1 - p['trim']:g}]. Learners ({', '.join(l.upper() for l in learners)}) with {p['folds']}-fold cross-fitting, "
-              f"ridge {'logistic' if binary else 'Poisson'} base models (IRLS, numpy). Evaluation on held-out predictions (residual-on-residual scores for ranking metrics, doubly robust ATE): RATE AUTOC and Qini with "
+              f"ridge {'logistic' if binary else 'Poisson'} base models (IRLS, numpy) for T/X; DML (R-learner on gradient-boosted residuals) and an honest causal forest (GRF-style, leaf effects re-estimated on held-out halves) for DML/CAUSAL_FOREST. Evaluation on held-out predictions (residual-on-residual scores for ranking metrics, doubly robust ATE): RATE AUTOC and Qini with "
               f"{p['bootstrap']}-draw bootstrap CIs, decile calibration. Reasons = largest contributions of a linear surrogate of the predicted uplift "
               f"(R2 {res['surrogate']['r2'] if res['surrogate']['r2'] is None else round(res['surrogate']['r2'], 3)}). Targeting = positive uplift x value per event, top by net value within capacity.")
     result = {**base, 'sample': sample,
@@ -508,6 +517,8 @@ def execute(path, patient_ids, params, as_of=None):
               'ate': res['ate_benefit'],
               'learners': {l: {k: v for k, v in e.items()} for l, e in res['learners'].items()},
               'primary_learner': prim,
+              **({'dml_ate': res['dml_ate_benefit']} if 'dml_ate_benefit' in res else {}),
+              **({'causal_forest_importance': res['causal_forest_importance']} if 'causal_forest_importance' in res else {}),
               'segments': segments,
               'members': [{k: v for k, v in x.items() if k != 'i'} for x in sorted(ordered, key=lambda x: (-x['predicted_uplift'], x['patient_id']))][:p['top']],
               'targeting': {'capacity': {'patients': cap_n, 'minutes': cap_min, 'minutes_per_contact': p['minutes_per_contact'], 'slots': slots},

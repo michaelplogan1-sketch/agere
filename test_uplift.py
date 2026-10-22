@@ -141,7 +141,7 @@ class ExecuteOnSemanticLayer(unittest.TestCase):
             self.assertIn(k, r)
         self.assertEqual(r['schema'], uplift.VERSION)
         self.assertIn(r['inference_status'], ('estimated_under_assumptions', 'limited'))
-        self.assertEqual(set(r['learners']), {'x', 't'})
+        self.assertEqual(set(r['learners']), set(uplift.LEARNERS))  # default 'all': T, X, DML, causal forest
         self.assertEqual(len(r['segments']), 10)
         self.assertLessEqual(len(r['answer']['recommended_targeting']), 10)
         for w in r['answer']['recommended_targeting']:

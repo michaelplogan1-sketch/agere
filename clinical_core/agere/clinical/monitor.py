@@ -1431,12 +1431,16 @@ def execute(path, patient_ids, params, as_of=None):
         chart_status.sort(key=lambda c: ({'rate_signal': 0, 'data_feed_anomaly': 1, 'in_control': 2}[c['status']], -c['surprise_bits']))
     finally:
         db.close()
-    return {'schema': VERSION, 'check': p['check'], 'parameters': p, 'period': {'chart_months': [months[0], months[-1]], 'report_months': [report[0], report[-1]]},
+    out = {'schema': VERSION, 'check': p['check'], 'parameters': p, 'period': {'chart_months': [months[0], months[-1]], 'report_months': [report[0], report[-1]]},
             'rows': findings, 'chart_status': chart_status, 'feeds': feed_reports, 'event_type_gaps': {k: {kk: vv for kk, vv in v.items() if kk != 'chart'}
                                                                                                        for k, v in type_gaps.items() if v},
             'integrity': integrity, 'tests_examined': tests, 'look_elsewhere_bits': round(math.log2(max(tests, 1)), 2),
             'annual_allowed_per_member': _r(annual), 'members_in_scope': len(pop.months),
             'method': METHOD, 'limitations': LIMITATIONS}
+    if feed_reports:  # real change vs feed outage for the flagged streams (joint tensor model; never breaks the monitor answer)
+        from .change_attribution import annotate_monitor
+        annotate_monitor(out, path, as_of, keep)
+    return out
 
 
 METHOD = ('Monthly control charts over a 36-month window ending at the last complete month: u-charts (events per member-month, per-point '

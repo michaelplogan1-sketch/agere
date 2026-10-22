@@ -1,0 +1,9 @@
+[
+  {"question": "Is the drop in lab volume last month real, or is it a feed outage?", "expect_operation": "change_attribution"},
+  {"question": "Did claims volume fall because of an interface problem or a real change in patients?", "expect_operation": "change_attribution"},
+  {"question": "Was the spike in telephone messages a real change or a data issue?", "expect_operation": "change_attribution"},
+  {"question": "Real change or data problem: encounter volume dropped at WH-PRACTICE-3", "expect_operation": "change_attribution"},
+  {"question": "Is the decline in pharmacy dispenses genuine or due to a feed gap?", "expect_operation": "change_attribution"},
+  {"question": "Our appointment counts went down in the last 2 months; outage or real?", "expect_operation": "change_attribution"},
+  {"question": "Separate true patient changes from capture changes in visit and lab volume by payer", "expect_operation": "change_attribution"}
+]

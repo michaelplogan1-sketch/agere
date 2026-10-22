@@ -1,0 +1,8 @@
+[
+  {"question": "Use a causal forest to find which members benefit most from care management", "expect_operation": "uplift"},
+  {"question": "Double machine learning estimate of who benefits from outreach on ED visits", "expect_operation": "uplift"},
+  {"question": "With double ML, which patients would benefit the most from transitions of care?", "expect_operation": "uplift"},
+  {"question": "Causal forest heterogeneous treatment effects of care management on admissions", "expect_operation": "uplift"},
+  {"question": "Which members respond best to the care management program according to a causal forest?", "expect_operation": "uplift"},
+  {"question": "Estimate CATE with DML for care coordination and show who benefits most", "expect_operation": "uplift"}
+]
