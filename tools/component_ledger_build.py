@@ -629,6 +629,13 @@ WIRED = {
     'learned_router': ('inside:operator_router', None, None),
     'vbc_knowledge_context_for': ('inside:hosted_typed_interpreter', None, None),
     'model_roles_report': ('spine:model_roles', None, None),
+    'static_prompt_cache_split': ('spine:hosted_prompt_assembly', 'clinical_core.agere.gateway', 'cache_control'),
+    'provider_error_fallback': ('spine:hosted_calls', 'clinical_core.agere.gateway', 'call_with_fallback'),
+    'answer_time_budget': ('spine:cascade_budget', 'clinical_core.agere.clinical.answer_budget', 'start'),
+    'shared_judge_model': ('spine:hosted_calls', 'clinical_core.agere.gateway', 'model_tiers'),
+    'intent_router': ('spine:workspace_entry', None, None),
+    'workspace_hybrid_pipeline': ('spine:workspace_fallback', None, None),
+    'tensor_train_model': ('inside:outcome_forecast_models', 'clinical_core.agere.tensor_train', 'fit_tensor'),
 }
 NEW = [  # components added by the build-out
     {'id': 'answer_checks_hook', 'name': 'Post-execution answer checks', 'family': 'check',

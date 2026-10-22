@@ -767,7 +767,7 @@ def plan(stack, question, ledger=None, frontier=None, *, population=None, model=
         raise QuestionNotUnderstood('Use the shared question route. Deterministic interpretation always runs before a hosted fallback.')
     catalog = request_plan.Catalog.load(stack.path)
     from ..gateway import PersistentGateway
-    hosted_model = os.environ.get('AGERE_SHARED_INTERPRETER_MODEL', PersistentGateway.MODELS['claude'])
+    hosted_model = os.environ.get('AGERE_SHARED_INTERPRETER_MODEL') or 'tiered'  # Sonnet plans, judge reviews, Opus on a failed review
     code = policy_identity()
     from . import procedural_memory as memory
     request_lessons = memory.select(stack.path, question, catalog=catalog, probe=True, population=population)

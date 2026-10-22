@@ -154,8 +154,12 @@ class Cascade:
         return order
 
     def run(self):
+        from .answer_budget import start as start_budget
+        budget = self.budget = start_budget()
         try:
             for name in self.order():
+                if budget.expired() and budget.best():  # out of time with an executed candidate in hand; never skip to a refusal
+                    budget.skip(name); continue
                 if self.population is not None and name not in TYPED_WITH_POPULATION: continue
                 if not enabled(name, self.stack): continue
                 started = time.perf_counter()
@@ -175,6 +179,9 @@ class Cascade:
                 self.note(name, 'accepted', None, started)
                 contract, interpretation = found
                 return contract, self.finish(interpretation, name)
+            if budget.expired() and budget.best():
+                contract, interpretation = budget.best()  # time ran out: the best executed candidate, marked partial
+                return contract, budget.partial(self.finish(interpretation, interpretation['interpreter']))
             if self.held_decline:
                 contract, interpretation = self.held_decline
                 return contract, self.finish(interpretation, interpretation['interpreter'])
@@ -303,7 +310,10 @@ class Cascade:
         except (ValueError, KeyError, TypeError):
             pass  # reshaping is optional; the output check below decides
         misfit = shape_misfit(self.question, result.get('answer'))
-        if misfit: return self.reject(name, [misfit])
+        if misfit:
+            offered = getattr(self, 'budget', None) and self.executed(name, graph, receipt, result)
+            if offered: self.budget.offer(offered, label=name, reasons=[misfit])
+            return self.reject(name, [misfit])
         return self.executed(name, graph, receipt, result, paid_execution=result.get('new_paid_api_calls', 0))
 
     def declined(self, name, graph, receipt):
