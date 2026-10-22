@@ -149,6 +149,8 @@ def build(warehouse, clinical_run, output, *, document_extractions=None, encoder
         write(output/'run.json',report); return report
     finally: db.close(); encoder.close()
 
+COMMON_TERM_PASSAGES=100000  # lexical terms in more passages than this are dropped from the MATCH (term_frequency)
+
 class Retriever:
     def __init__(self, path, *, rerank=True):
         self.path=Path(path); self.meta=json.loads((self.path/'run.json').read_text())
@@ -269,7 +271,7 @@ class Retriever:
             members=membership if membership is not None else [r[0] for r in self.db.execute('SELECT id FROM patients')]
             if patient:members=[p for p in members if p==patient]
             self.db.executemany('INSERT INTO query_scope_patients VALUES (?)',((p,) for p in members))
-            sql='INSERT INTO query_scope_passages SELECT p.id FROM passages p JOIN query_scope_patients sp ON sp.id=p.patient'
+            sql='INSERT INTO query_scope_passages SELECT p.id FROM query_scope_patients sp CROSS JOIN passages p ON sp.id=p.patient'  # CROSS JOIN fixes the order: the planner scanned all passages for a one-patient scope
             params=[]
             if window['basis']!='all_observed':
                 sql+=" JOIN records r ON r.id=json_extract(p.source,'$.record_id')"
@@ -287,7 +289,7 @@ class Retriever:
         expanded=question.lower()
         for topic,aliases in ALIASES.items():
             if topic in expanded:expanded+=' '+' '.join(aliases)
-        terms=list(dict.fromkeys(re.findall(r'[a-z0-9]{2,}',expanded)))[:80]
+        terms=[t for t in dict.fromkeys(re.findall(r'[a-z0-9]{2,}',expanded)) if self.term_frequency(t)<=COMMON_TERM_PASSAGES][:80]
         expression=' OR '.join('"'+x+'"' for x in terms)
         params=[expression];where=''
         if patient:where=' AND p.patient=?';params.append(patient)
@@ -321,6 +323,17 @@ class Retriever:
             candidates.append({'id':str(pid),'text':content,'source':source,'note_id':source['record_id'],
                                'start':source['start'],'protected':False,'rrf_score':fusion[pid]})
         return candidates,members,scope_join
+    def term_frequency(self, term):
+        """Passages containing term (fts5vocab, cached). A term in a large share of passages (a year, 'patient') adds nothing to
+        ranking but makes the MATCH read millions of rows, so _candidates leaves it out."""
+        cache=self.__dict__.setdefault('_term_df',{})
+        if term not in cache:
+            try:
+                self.db.execute('CREATE VIRTUAL TABLE IF NOT EXISTS temp.search_vocab USING fts5vocab(main,search,row)')
+                row=self.db.execute('SELECT doc FROM temp.search_vocab WHERE term=?',(term,)).fetchone()
+                cache[term]=row[0] if row else 0
+            except sqlite3.Error:cache[term]=0  # no vocabulary (older index): keep the term
+        return cache[term]
     def search(self, question, *, patient=None, limit=8,patient_ids=None,analysis_window=None,complete=True):
         from .clinical_events import validate_window
         window=validate_window(analysis_window,self.meta['snapshot']['as_of'])
