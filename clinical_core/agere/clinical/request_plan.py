@@ -275,7 +275,17 @@ class Compiler:
         anchor is another received event {table, date, where} or {'outer': field} for the counted row itself
         (e.g. each discharge). days = [low, high] is then.date minus anchor date: after = [1, N], before = [-N, 0].
         """
-        if set(expr) != {'op', 'anchor', 'then', 'days', 'quote'}: raise PlanError('Sequence needs anchor, then, days and source text')
+        if set(expr) - {'window'} != {'op', 'anchor', 'then', 'days', 'quote'}: raise PlanError('Sequence needs anchor, then, days and source text')
+        if 'window' in expr:  # a window stated in weeks/months/years, compiled to whole days and disclosed
+            w = expr['window']
+            units = {'week': 7, 'month': 30, 'year': 365}
+            if (not isinstance(w, dict) or set(w) != {'n', 'unit'} or type(w['n']) is not int or w['unit'] not in units
+                    or w['n'] * units[w['unit']] not in [abs(d) for d in expr['days']]):
+                raise PlanError('A sequence window in weeks/months/years must match its day bounds')
+            if str(w['n']) not in self.rescaled:
+                self.rescaled.add(str(w['n']))
+                self.notes.append(f"{w['n']} {w['unit']}(s) compiled as {w['n'] * units[w['unit']]} days ({units[w['unit']]} days per {w['unit']}).")
+            expr = {k: v for k, v in expr.items() if k != 'window'}
         if isinstance(expr['then'], dict) and set(expr['then']) == {'any'}:
             # One event received from several sources (an EHR visit or a claim line): any of them satisfies it.
             options = expr['then']['any']
@@ -288,7 +298,7 @@ class Compiler:
             raise PlanError('Sequence window needs two whole-day bounds')
         then, anchor = expr['then'], expr['anchor']
         def event(e, role):
-            if not isinstance(e, dict) or set(e) - {'table', 'date', 'where'} or e.get('table') not in self.catalog.tables:
+            if not isinstance(e, dict) or set(e) - {'table', 'date', 'where', *(('rank',) if role == 'anchor' else ())} or e.get('table') not in self.catalog.tables:
                 raise PlanError(f'Sequence {role} needs a received table')
             if e['date'] not in self.catalog.tables[e['table']] or 'patient_id' not in self.catalog.tables[e['table']]:
                 raise PlanError(f'Sequence {role} needs a dated patient event')
@@ -312,6 +322,15 @@ class Compiler:
             joins = f' JOIN {identifier(anchor["table"])} AS {a_alias} ON {a_alias}.patient_id = {t_alias}.patient_id'
             anchor_date = f'{a_alias}.{identifier(anchor["date"])}'
             conditions = [self.predicate(anchor['where'], {**nested, then['table']: t_alias}, path + '.anchor', depth + 1)] if anchor.get('where') else []
+            if anchor.get('rank') is not None:  # "their first / most recent <event>": the patient's earliest / latest qualifying one
+                if anchor['rank'] not in ('first', 'last'): raise PlanError('Anchor rank is first or last')
+                self.serial += 1
+                f_alias = 'f' + str(self.serial)
+                inner = self.predicate(anchor['where'], {**scope, anchor['table']: f_alias}, path + '.anchor_rank', depth + 1) if anchor.get('where') else '1'
+                pick = 'MIN' if anchor['rank'] == 'first' else 'MAX'
+                joins += (f' JOIN (SELECT {f_alias}.patient_id AS pid, {pick}({f_alias}.{identifier(anchor["date"])}) AS d FROM '
+                          f'{identifier(anchor["table"])} AS {f_alias} WHERE {inner} GROUP BY {f_alias}.patient_id) AS {f_alias}r '
+                          f'ON {f_alias}r.pid = {a_alias}.patient_id AND {anchor_date} = {f_alias}r.d')
         nested[then['table']] = t_alias
         if then.get('where'): conditions.append(self.predicate(then['where'], nested, path + '.then', depth + 1))
         gap = f'(julianday({t_alias}.{identifier(then["date"])}) - julianday({anchor_date}))'

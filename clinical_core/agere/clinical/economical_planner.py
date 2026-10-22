@@ -93,6 +93,9 @@ def local_plan(question,as_of):
     from .measure_composition import local_question as measure_question
     measure=measure_question(question)
     if measure:return validate(measure,as_of),'exact_documentary_measure'
+    from .clinical_tasks import local_question as clinical_task_question
+    task=clinical_task_question(question)
+    if task:return validate(task,as_of),'exact_clinical_task'
     for ident,recipe in recipes().items():
         for suffix in ('',' across all observed patients',' for the whole observed population'):
             if key==normalize(recipe['title']+suffix):

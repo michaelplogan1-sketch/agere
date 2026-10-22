@@ -50,6 +50,8 @@ OPTIONAL_POPULATION += tuple(_FOUNDATION)
 from .engine_suite import MODULES as _SUITE  # wave-1 decision engines (engine_suite.py); zero or one population input
 TYPED |= set(_SUITE)
 OPTIONAL_POPULATION += tuple(_SUITE)
+TYPED |= {'clinical_task'}  # clinical workflow tasks CT-01..CT-10 (clinical_tasks.py)
+OPTIONAL_POPULATION += ('clinical_task',)
 TYPED |= {'atomic_questions'}  # atomic typed sub-questions via System One (atomic_questions.py); one population input
 TYPED |= {'hcc_suspects'}  # retrieve-then-rank ICD-10/HCC suspecting, System One confirmation (hcc_suspecting.py); one population
 
@@ -326,6 +328,13 @@ def parameter_schema(op, catalog):
                     'confirm': {'type': 'boolean', 'description': 'Confirm the top candidates with System One'},
                     'maximum_patients': {'type': 'integer', 'minimum': 1, 'maximum': hs.HARD_MAX_PATIENTS},
                     'channels': array(string(hs.CHANNELS), 'Closed candidate channels')})
+    if op == 'clinical_task':
+        from . import clinical_tasks as ct
+        return obj({'task': string(list(ct.TASKS), '; '.join(f'{k} = {v[0]}' for k, v in ct.TASKS.items())),
+                    'step': string(['a', 'b', 'c', 'all'], 'Task step; empty = the final gap step'),
+                    'index_date': {'type': 'string', 'description': 'YYYY-MM-DD evaluation date; empty = snapshot as-of'},
+                    'grace_days': {'type': 'integer', 'minimum': 0, 'maximum': 400, 'description': f'On-drug grace (default {ct.GRACE_DAYS} = 90-day lookback)'},
+                    'output': string(ct.OUTPUTS), 'include_documented_reason': {'type': 'boolean', 'description': 'CT-03: keep rows with a documented titration barrier'}})
     if op == 'default_definition':
         from . import default_definitions as dd
         return obj({'definition': string(sorted(dd.DEFINITIONS), 'Named standard used when the question states no definition: '

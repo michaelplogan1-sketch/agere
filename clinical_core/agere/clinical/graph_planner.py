@@ -332,6 +332,13 @@ CONTRACTS['medication_state'] = {'inputs':['optional earlier_set'],'parameters':
               'fill: likely not taking), documented_stopped_or_intolerant (note stop/declined or therapy barrier on or after the latest fill and listing), '
               'never_recorded (no record of any source: the only unknown), each with its evidence dates and record ids. Use for GDMT pillar, '
               'on/not on/missing a medication class, stopped or intolerant questions; never mark a pillar unknown when a medication record exists.'}
+CONTRACTS['clinical_task'] = {'inputs':['optional earlier_set'],'parameters':{'task':'CT-01..CT-10','step':'a|b|c|all|""','index_date':'','grace_days':91,'output':'rows|patients|summary'},
+    'meaning':'Known-answer clinical workflow tasks on governed definitions: CT-01 HFrEF GDMT pillar gaps, CT-02 documented reasons for '
+              'those gaps (barriers, note stops, allergies; System One reads notes for unexplained gaps when live), CT-03 GDMT below the '
+              'ACC/AHA target dose, CT-04 T2D with ASCVD/CKD not on SGLT2i or GLP-1 RA, CT-05 AFib CHA2DS2-VASc >= 2 not anticoagulated, '
+              'CT-06 CKD 3+ with UACR >= 30 not on ACEi/ARB or SGLT2i, CT-07 statin-indicated not on a statin (+ intolerance), CT-08 '
+              'MI in 12 months without beta-blocker / high-intensity statin, CT-09 MRA with potassium >= 5.5, CT-10 documented '
+              'intolerance or allergy still filled or ordered. On = medication_state filled_current (91-day grace).'}
 CONTRACTS['atomic_questions'] = {'inputs':['earlier_set'],'parameters':{'question':'the question verbatim',
     'sub_questions':[{'key':'snake_case','atom':'one question about ONE patient','options':{'yes':'...','no':'...','unknown':'...'},'subject':'pillar/drug class or ""','task_key':'atomic_yes_no'}],
     'sub_question_count':1,'aggregation':'any|latest|count|conflict|trajectory','returns':'table|patient_set|count|value|verdict','unit':'patient|document',

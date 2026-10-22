@@ -466,40 +466,79 @@ class Parser:
             return 'fill', 'fill_date', atoms, drug[2], quote
         return None
 
-    def sequence(self, text):
-        """'<event> within N days after <event>' / '<event> in the N days before <event>'."""
+    SEQUENCE_UNITS = {'day': 1, 'days': 1, 'week': 7, 'weeks': 7, 'month': 30, 'months': 30, 'year': 365, 'years': 365}
+
+    def sequence(self, text, negated=None):
+        """'<event> within N days|weeks|months after <event>' / '<event> in the N days before <event>' / '<event> before|after
+        [their first|last] <event> [in 2029|in the last N months]'; a negated lead ('no', 'had no', 'never had') negates the
+        whole sequence. Multi-entity, temporal composition: the then-event and anchor are different received relations
+        (stays, ED visits, visits, claim lines, fills, death) joined on the patient, each with its own fixed predicates."""
         start = text
-        lead = re.match(r'^(?:(started|start|starting|began)|(?:have|has|had|got|received|with))\s+', text, re.I)
-        if not lead: return None
-        then = self.sequence_event(text[lead.end():], started=bool(lead[1]))
+        neg = re.match(r"^(?:(?:have|has|had)\s+(?:had\s+)?no|with\s+no|no|(?:did|do|does)\s+not\s+(?:have|get|fill|receive)|"
+                       r"didn't\s+(?:have|get|fill|receive)|never\s+(?:had|got|filled|received))\s+", text, re.I)
+        if neg:
+            inner = self.sequence(text[neg.end():], negated=neg.group().strip())
+            if not inner: return None
+            value, rest = inner
+            return {'op': 'not', 'arg': value, 'quote': start[:len(start) - len(rest)].strip()}, rest
+        lead = None if negated else re.match(r'^(?:(started|start|starting|began)|(?:have|has|had|got|received|with|filled|picked\s+up|refilled))\s+', text, re.I)
+        if not lead and not negated: return None
+        lead_quote, lead_end = (lead.group().strip(), lead.end()) if lead else (negated, 0)
+        then = self.sequence_event(text[lead_end:], started=bool(lead and lead[1]))
         if not then: return None
         table, field, atoms, tail, then_quote = then
-        window = re.match(r'^\s*(?:within\s+(?:(\d+)\s+days?|(a|one)\s+week)(?:\s+(after|of|following|before|prior\s+to))?|'
-                          r'in\s+the\s+(\d+)\s+days?\s+(before|prior\s+to|preceding|after|following))(?=\s|$)', tail, re.I)
+        window = re.match(r'^\s*(?:within\s+(?:(\d+)\s+(days?|weeks?|months?|years?)|(a|one)\s+(week|month|year))(?:\s+(after|of|following|before|prior\s+to))?|'
+                          r'in\s+the\s+(\d+)\s+(days?|weeks?|months?)\s+(before|prior\s+to|preceding|after|following)|'
+                          r'(any\s+time\s+)?(before|after|following|prior\s+to|preceding))(?=\s|$)', tail, re.I)
         if not window: return None
-        n = int(window[1] or window[4] or 7)
-        direction = (window[3] or window[5] or 'after').lower()
-        days = [-n, 0] if direction in ('before', 'prior to', 'preceding') else [1, n]
-        anchor = self.sequence_event(tail[window.end():].lstrip()) if (window[3] or window[5]) else None
+        bounded = not window[10]
+        if bounded:
+            n = int(window[1] or window[6] or 1) * self.SEQUENCE_UNITS[(window[2] or window[4] or window[7] or 'week').lower()]
+            if not (window[1] or window[6]) and not window[4]: n = 7
+            direction = (window[5] or window[8] or 'after').lower()
+            days = [-n, 0] if direction in ('before', 'prior to', 'preceding') else [1, n]
+            explicit = window[5] or window[8]
+            unit = (window[2] or window[4] or window[7] or 'day').lower().rstrip('s')
+            stated = {'n': int(window[1] or window[6] or 1), 'unit': unit} if unit in ('week', 'month', 'year') else None
+        else:
+            stated = None
+            direction = window[10].lower()
+            days = [-3650, 0] if direction in ('before', 'prior to', 'preceding') else [1, 3650]
+            explicit = True
+        rank, after = None, tail[window.end():].lstrip()
+        anchor_text, extra = after, []
+        ranked = re.match(r'^(?:(?:the|their|his|her)\s+)?(first|initial|earliest|last|latest|most\s+recent)\s+', after, re.I)
+        if ranked:
+            rank = 'first' if ranked[1].lower() in ('first', 'initial', 'earliest') else 'last'
+            after = after[ranked.end():]
+        anchor = self.sequence_event(after) if explicit else None
         if anchor:
             a_table, a_field, a_atoms, rest, a_quote = anchor
-        elif not (window[3] or window[5]) and self.base == 'stay' and self.clock:
+            if a_table != 'any' and a_field:
+                extra, rest = self.window(rest, a_table, a_field)  # "after a discharge in 2029", "... in the last 12 months"
+                a_atoms = list(a_atoms) + extra
+            if extra or rank:  # one literal span: rank + event + its period
+                a_quote = anchor_text[:len(anchor_text) - len(rest)].strip()
+        elif bounded and not explicit and self.base == 'stay' and self.clock:
             # "follow-up within a week": after the counted row's own event (each discharge)
             a_table, a_field, a_atoms, rest, a_quote = 'stay', self.clock, [], tail[window.end():], ''
         else:
             return None
+        if a_table == 'any': return None  # an anchor from several sources needs one date per source; not composed here
         quote = start[:len(start) - len(rest)].strip()
         if table == 'any':
-            options = [(t_, f_, [{**a_[0], 'quote': [lead.group().strip(), a_[0]['quote']]}, *a_[1:]]) for t_, f_, a_ in atoms]
+            options = [(t_, f_, [{**a_[0], 'quote': [lead_quote, a_[0]['quote']]}, *a_[1:]]) for t_, f_, a_ in atoms]
             then_event = {'any': [{'table': t_, 'date': f_, 'where': combine('and', a_, then_quote)} for t_, f_, a_ in options]}
         else:
-            atoms[0] = {**atoms[0], 'quote': [lead.group().strip(), atoms[0]['quote']]}
+            if atoms: atoms[0] = {**atoms[0], 'quote': [lead_quote, atoms[0]['quote']]}
             then_event = {'table': table, 'date': field, 'where': combine('and', atoms, then_quote)}
-        if a_table == self.base:  # "each discharge": the counted row itself
+        if a_table == self.base and not rank:  # "each discharge": the counted row itself
             anchor_event = {'outer': f'{a_table}.{a_field}'}
         else:
             anchor_event = {'table': a_table, 'date': a_field, 'where': combine('and', a_atoms, a_quote) if a_atoms else None}
-        return {'op': 'sequence', 'anchor': anchor_event, 'then': then_event, 'days': days, 'quote': quote}, rest
+            if rank: anchor_event['rank'] = rank
+        return {'op': 'sequence', 'anchor': anchor_event, 'then': then_event, 'days': days, 'quote': quote,
+                **({'window': stated} if stated else {})}, rest
 
     def note_evidence(self, text):
         """A documented note fact or therapy barrier, with its documentation wording ('in their notes')."""

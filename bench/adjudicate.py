@@ -25,10 +25,10 @@ Classify the engine's answer into exactly one category:
 - "reference_questionable": the engine's reading is better than the reference's.
 Reply JSON only: {"category": "...", "reason": "one sentence"}"""
 def judge(item):
-    i,q,ref_interp,exp,sql,got=item
+    i,q,ref_interp,exp,sql,got,mut=item
     ledger=BudgetLedger(ROOT/'artifacts/agere-full/provider-budget.sqlite3')
     m=nl2sql.HostedModel(ledger,P/'provider-receipts',model='claude-opus-5-5')
-    text,_=m(SYS, f"QUESTION: {q}\n\nEXAMPLES\nREFERENCE DEFINITION: {ref_interp}\nREFERENCE ANSWER: {exp}\n\nENGINE SQL: {sql}\nENGINE ANSWER: {got}", max_tokens=700)
+    text,_=m(SYS, f"QUESTION: {q}\n\nEXAMPLES\nREFERENCE DEFINITION: {ref_interp}\nREFERENCE ANSWER: {exp}\n\nENGINE SQL: {sql}\nENGINE ANSWER: {got}"+(f"\nMUTATION AUDIT (reference vs engine SQL on mutated databases): {mut['summary']}" if mut else ''), max_tokens=700)
     mm=re.search(r'\{.*\}',text,re.S)
     try: return i, json.loads(mm.group(0)), m.cost
     except Exception:
@@ -40,8 +40,13 @@ for l in open(sys.argv[1]):
     if s.get('correct'): continue
     a=r.get('answer') or {}; e=r['expected']
     pick=lambda x: json.dumps(next((x[k] for k in ('count','value') if x.get(k) is not None), None) if any(x.get(k) is not None for k in ('count','value')) else (x.get('table') or x.get('patient_ids') or [])[:10] or x.get('missing'), default=str)[:900]
-    items.append((r['id'], r['question'], qs[r['id']]['interpretation'][:1200], pick(e), (a.get('query') or 'n/a')[:1500], pick(a)))
+    try:  # distinguishing-database evidence (bench/mutation_audit.py) when both SQLs read the same database
+        from bench.mutation_audit import evidence_for
+        mut=evidence_for(qs[r['id']], a.get('query'))
+    except Exception: mut=None  # noqa: BLE001 - evidence is optional
+    items.append((r['id'], r['question'], qs[r['id']]['interpretation'][:1200], pick(e), (a.get('query') or 'n/a')[:1500], pick(a), mut))
 with ThreadPoolExecutor(4) as ex: res=list(ex.map(judge, items))
+muts={it[0]: it[6] for it in items}
 import collections; c=collections.Counter(); cost=0
 for i,v,usd in res: c[v.get('category')]+=1; cost+=usd or 0; print(i, v.get('category'), '|', (v.get('reason') or '')[:170])
 print(dict(c), '$%.2f'%cost)
@@ -51,5 +56,5 @@ _src=Path(sys.argv[1]).resolve(); _out=ROOT/'bench'/'results'/'adjudications'; _
 (_out/f'{_src.parent.name}__{_src.stem}.json').write_text(json.dumps({'schema':'bench-adjudication/1','system':_src.parent.name,
     'results_file':f'{_src.parent.name}/{_src.name}','adjudicated_at':_time.strftime('%Y-%m-%dT%H:%M:%SZ',_time.gmtime()),
     'adjudicator':'claude-opus-5-5 via bench/adjudicate.py rubric','provenance':'bench/adjudicate.py','counts':dict(c),
-    'items':[{'id':i,'category':v.get('category'),'reason':(v.get('reason') or '')[:400]} for i,v,_ in res],'items_complete':True,
+    'items':[{'id':i,'category':v.get('category'),'reason':(v.get('reason') or '')[:400],'mutation_audit':(muts.get(i) or {}).get('verdict')} for i,v,_ in res],'items_complete':True,
     'cost_usd':round(cost,4)},indent=1))

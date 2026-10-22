@@ -581,6 +581,40 @@
    "rank": 13
   },
   {
+   "id": "FM-11",
+   "stage": "sql_generation",
+   "failure_mode": "Nonexistent field, stream or join (hallucinated schema)",
+   "effect": "NULL-filled joins give zero or empty results presented as findings",
+   "cause": "json_extract on a missing field silently returns NULL",
+   "severity": 8,
+   "detection_before": 3,
+   "detection": 3,
+   "controls_existing": [
+    "verify.lint: streams, fields, values and concepts must exist in the received data"
+   ],
+   "controls_added": [],
+   "evidence_rule": {
+    "adjudicated_pattern": "nonexistent|does not exist|not present in",
+    "mechanical": [],
+    "replay_control": null
+   },
+   "occurrence_judgment": null,
+   "occurrence": 6,
+   "occurrence_basis": "measured: 1 per 132 opportunities",
+   "evidence": {
+    "adjudicated": {
+     "count": 1,
+     "opportunities": 132,
+     "examples": [
+      "M:M44"
+     ]
+    }
+   },
+   "rpn": 144,
+   "rpn_before": 144,
+   "rank": 14
+  },
+  {
    "id": "FM-14",
    "stage": "verification",
    "failure_mode": "Unit mismatch (cents vs dollars, days vs hours, fraction vs percent)",
@@ -620,40 +654,6 @@
    },
    "rpn": 144,
    "rpn_before": 240,
-   "rank": 14
-  },
-  {
-   "id": "FM-11",
-   "stage": "sql_generation",
-   "failure_mode": "Nonexistent field, stream or join (hallucinated schema)",
-   "effect": "NULL-filled joins give zero or empty results presented as findings",
-   "cause": "json_extract on a missing field silently returns NULL",
-   "severity": 8,
-   "detection_before": 3,
-   "detection": 3,
-   "controls_existing": [
-    "verify.lint: streams, fields, values and concepts must exist in the received data"
-   ],
-   "controls_added": [],
-   "evidence_rule": {
-    "adjudicated_pattern": "nonexistent|does not exist|not present in",
-    "mechanical": [],
-    "replay_control": null
-   },
-   "occurrence_judgment": null,
-   "occurrence": 6,
-   "occurrence_basis": "measured: 1 per 132 opportunities",
-   "evidence": {
-    "adjudicated": {
-     "count": 1,
-     "opportunities": 132,
-     "examples": [
-      "M:M44"
-     ]
-    }
-   },
-   "rpn": 144,
-   "rpn_before": 144,
    "rank": 15
   },
   {
@@ -690,6 +690,36 @@
    "rpn": 126,
    "rpn_before": 378,
    "rank": 16
+  },
+  {
+   "id": "FM-33",
+   "stage": "verification",
+   "failure_mode": "The benchmark reference itself is wrong, so a correct engine answer is counted as a defect (or a wrong one as correct)",
+   "effect": "Misdirected fixes; scorecard error rate wrong",
+   "cause": "Reference SQL encodes a different definition than the question",
+   "severity": 6,
+   "detection_before": 7,
+   "detection": 4,
+   "controls_existing": [
+    "bench/adjudicate.py rubric",
+    "bench/errata.json"
+   ],
+   "controls_added": [
+    "MUT-AUDIT"
+   ],
+   "evidence_rule": {
+    "adjudicated_pattern": null,
+    "mechanical": [],
+    "replay_control": null
+   },
+   "occurrence_judgment": 5,
+   "note": "bench/mutation_audit.py searches distinguishing databases for reference vs candidate SQL and every errata correction; evidence attached by adjudicate.py. test_mutation_audit",
+   "occurrence": 5,
+   "occurrence_basis": "judgment (no benchmark measures this mode; 2026-10-22 cascade review)",
+   "evidence": {},
+   "rpn": 120,
+   "rpn_before": 210,
+   "rank": 17
   },
   {
    "id": "FM-04",
@@ -735,7 +765,7 @@
    },
    "rpn": 120,
    "rpn_before": 120,
-   "rank": 17
+   "rank": 18
   },
   {
    "id": "FM-22",
@@ -763,7 +793,66 @@
    "evidence": {},
    "rpn": 96,
    "rpn_before": 96,
-   "rank": 18
+   "rank": 19
+  },
+  {
+   "id": "FM-26",
+   "stage": "routing",
+   "failure_mode": "Exact-local recognizer answers a narrower or broader population than asked (e.g. all AFib vs CHA2DS2-VASc >= 2)",
+   "effect": "Confident answer to a different clinical question",
+   "cause": "Keyword recognizers match a task family but not its population or threshold",
+   "severity": 8,
+   "detection_before": 8,
+   "detection": 3,
+   "controls_existing": [
+    "literal_check.missing over the node definition"
+   ],
+   "controls_added": [
+    "CT-FIT"
+   ],
+   "evidence_rule": {
+    "adjudicated_pattern": null,
+    "mechanical": [],
+    "replay_control": null
+   },
+   "occurrence_judgment": 4,
+   "note": "clinical_tasks.fits: the question must state the task population and thresholds; other numbers or a strict \">\" decline to the next tier. test_clinical_tasks.RecognizerTests",
+   "occurrence": 4,
+   "occurrence_basis": "judgment (no benchmark measures this mode; 2026-10-22 cascade review)",
+   "evidence": {},
+   "rpn": 96,
+   "rpn_before": 256,
+   "rank": 20
+  },
+  {
+   "id": "FM-27",
+   "stage": "answer_rendering",
+   "failure_mode": "A correct empty answer is rejected by the shape / zero-result checks and a worse proposer answers",
+   "effect": "A wrong \"not answerable\" or substitute answer replaces the right empty set",
+   "cause": "Engine tables with zero rows did not satisfy a patient_set shape check",
+   "severity": 7,
+   "detection_before": 7,
+   "detection": 3,
+   "controls_existing": [
+    "answer_checks zero-result probe",
+    "literal_check.shape_misfit"
+   ],
+   "controls_added": [
+    "CT-SHAPE"
+   ],
+   "evidence_rule": {
+    "adjudicated_pattern": null,
+    "mechanical": [],
+    "replay_control": null
+   },
+   "occurrence_judgment": 4,
+   "note": "Observed 2026-10-22 on CT-09 (no MRA patient with K >= 5.5): exact_local_plan rejected, local_compiler answered \"not answerable\". clinical_tasks.answer returns the requested shape. test_clinical_tasks.EngineTests.test_empty_answer_keeps_requested_shape",
+   "occurrence": 4,
+   "occurrence_basis": "judgment (no benchmark measures this mode; 2026-10-22 cascade review)",
+   "evidence": {},
+   "rpn": 84,
+   "rpn_before": 196,
+   "rank": 21
   },
   {
    "id": "FM-15",
@@ -800,7 +889,65 @@
    },
    "rpn": 80,
    "rpn_before": 80,
-   "rank": 19
+   "rank": 22
+  },
+  {
+   "id": "FM-28",
+   "stage": "verification",
+   "failure_mode": "System One label \"unknown\", an error or an outage silently becomes a documented reason (or \"none documented\")",
+   "effect": "A gap reason the chart does not support, or a false all-clear",
+   "cause": "Typed-judgment output treated as definite without its abstention",
+   "severity": 8,
+   "detection_before": 7,
+   "detection": 3,
+   "controls_existing": [
+    "atomic_questions keeps unknown and cites evidence"
+   ],
+   "controls_added": [
+    "CT-S1-REVIEW"
+   ],
+   "evidence_rule": {
+    "adjudicated_pattern": null,
+    "mechanical": [],
+    "replay_control": null
+   },
+   "occurrence_judgment": 3,
+   "note": "clinical_tasks.review fills a reason only from a non-unknown System One label with its cited passage; counts reviewed / open / capped on the receipt. test_clinical_tasks.ReviewTests",
+   "occurrence": 3,
+   "occurrence_basis": "judgment (no benchmark measures this mode; 2026-10-22 cascade review)",
+   "evidence": {},
+   "rpn": 72,
+   "rpn_before": 168,
+   "rank": 23
+  },
+  {
+   "id": "FM-35",
+   "stage": "execution",
+   "failure_mode": "Production defect rate drifts (refusals, internal errors, user-reported wrong answers) with nobody noticing",
+   "effect": "Silent loss of answer quality between benchmark runs",
+   "cause": "Answer log was only read for cost",
+   "severity": 6,
+   "detection_before": 8,
+   "detection": 3,
+   "controls_existing": [
+    "answer_log.summary (cost only)"
+   ],
+   "controls_added": [
+    "SIX-SIGMA-P"
+   ],
+   "evidence_rule": {
+    "adjudicated_pattern": null,
+    "mechanical": [],
+    "replay_control": null
+   },
+   "occurrence_judgment": 4,
+   "note": "quality_scorecard.production: DPMO, sigma, Wilson interval and a Laney p-chart per day from answers.sqlite3 + corrections, served at /api/scorecard. test_quality_gates.ProductionTests",
+   "occurrence": 4,
+   "occurrence_basis": "judgment (no benchmark measures this mode; 2026-10-22 cascade review)",
+   "evidence": {},
+   "rpn": 72,
+   "rpn_before": 192,
+   "rank": 24
   },
   {
    "id": "FM-12",
@@ -835,7 +982,7 @@
    },
    "rpn": 70,
    "rpn_before": 84,
-   "rank": 20
+   "rank": 25
   },
   {
    "id": "FM-20",
@@ -863,7 +1010,37 @@
    "evidence": {},
    "rpn": 63,
    "rpn_before": 63,
-   "rank": 21
+   "rank": 26
+  },
+  {
+   "id": "FM-32",
+   "stage": "question_parse",
+   "failure_mode": "A sequence window in weeks / months / years compiles to the wrong day bound, or a \"first\" anchor matches every event",
+   "effect": "Wrong temporal cohort delivered with a correct-looking plan",
+   "cause": "Unit conversion and anchor ranking were implicit",
+   "severity": 7,
+   "detection_before": 7,
+   "detection": 3,
+   "controls_existing": [
+    "request_plan numeric-constraint check"
+   ],
+   "controls_added": [
+    "SEQ-WINDOW",
+    "SEQ-RANK"
+   ],
+   "evidence_rule": {
+    "adjudicated_pattern": null,
+    "mechanical": [],
+    "replay_control": null
+   },
+   "occurrence_judgment": 3,
+   "note": "request_plan.sequence validates window n x unit against the day bounds and discloses it in notes; rank first/last joins the per-patient MIN/MAX. test_temporal_composition",
+   "occurrence": 3,
+   "occurrence_basis": "judgment (no benchmark measures this mode; 2026-10-22 cascade review)",
+   "evidence": {},
+   "rpn": 63,
+   "rpn_before": 147,
+   "rank": 27
   },
   {
    "id": "FM-18",
@@ -908,7 +1085,7 @@
    },
    "rpn": 60,
    "rpn_before": 60,
-   "rank": 22
+   "rank": 28
   },
   {
    "id": "FM-17",
@@ -945,7 +1122,34 @@
    },
    "rpn": 50,
    "rpn_before": 50,
-   "rank": 23
+   "rank": 29
+  },
+  {
+   "id": "FM-31",
+   "stage": "verification",
+   "failure_mode": "Claude outage: the System One fallback returns a candidate a check judged to answer a different question",
+   "effect": "A substituted answer marked only partial",
+   "cause": "Fallback pool not filtered by the reason for rejection",
+   "severity": 8,
+   "detection_before": 3,
+   "detection": 3,
+   "controls_existing": [
+    "Cascade.system_one_fallback skips candidates with a System One different-question rejection"
+   ],
+   "controls_added": [],
+   "evidence_rule": {
+    "adjudicated_pattern": null,
+    "mechanical": [],
+    "replay_control": null
+   },
+   "occurrence_judgment": 2,
+   "note": "test_system_one_gate.test_fallback_picks_an_executed_candidate_marked_partial",
+   "occurrence": 2,
+   "occurrence_basis": "judgment (no benchmark measures this mode; 2026-10-22 cascade review)",
+   "evidence": {},
+   "rpn": 48,
+   "rpn_before": 48,
+   "rank": 30
   },
   {
    "id": "FM-03",
@@ -981,7 +1185,93 @@
    },
    "rpn": 48,
    "rpn_before": 48,
-   "rank": 24
+   "rank": 31
+  },
+  {
+   "id": "FM-30",
+   "stage": "execution",
+   "failure_mode": "A paid System One / Jev / Perplexity call never reaches the cascade usage or receipt",
+   "effect": "Hidden spend; token economics understated",
+   "cause": "A component spends inside an engine without returning its calls",
+   "severity": 5,
+   "detection_before": 6,
+   "detection": 3,
+   "controls_existing": [
+    "Cascade.spend for routing and checks"
+   ],
+   "controls_added": [
+    "CT-S1-COST"
+   ],
+   "evidence_rule": {
+    "adjudicated_pattern": null,
+    "mechanical": [],
+    "replay_control": null
+   },
+   "occurrence_judgment": 3,
+   "note": "clinical_tasks.review adds new_paid_api_calls to its report; analysis_graph adds an engine review's calls to paid_calls. test_clinical_tasks.ReviewTests.test_review_charges_calls; test_system_one_gate.test_gate_charges_the_cascade",
+   "occurrence": 3,
+   "occurrence_basis": "judgment (no benchmark measures this mode; 2026-10-22 cascade review)",
+   "evidence": {},
+   "rpn": 45,
+   "rpn_before": 90,
+   "rank": 32
+  },
+  {
+   "id": "FM-34",
+   "stage": "learning_reuse",
+   "failure_mode": "Sealed truth rows leak into Agere (printed, saved or trained on)",
+   "effect": "The sealed evaluation stops being an honest measure",
+   "cause": "Scorer output or predictions carried row-level content",
+   "severity": 9,
+   "detection_before": 6,
+   "detection": 2,
+   "controls_existing": [
+    "eval_scorer prints aggregates",
+    "question_factory.assert_public"
+   ],
+   "controls_added": [
+    "SEALED-AGG"
+   ],
+   "evidence_rule": {
+    "adjudicated_pattern": null,
+    "mechanical": [],
+    "replay_control": null
+   },
+   "occurrence_judgment": 2,
+   "note": "tools/quality/sealed_gate.aggregates drops ids, row lists and long text before printing or saving. test_quality_gates.SealedGateTests",
+   "occurrence": 2,
+   "occurrence_basis": "judgment (no benchmark measures this mode; 2026-10-22 cascade review)",
+   "evidence": {},
+   "rpn": 36,
+   "rpn_before": 108,
+   "rank": 33
+  },
+  {
+   "id": "FM-29",
+   "stage": "routing",
+   "failure_mode": "System One routing drops or permanently skips a cascade tier",
+   "effect": "A question a later tier could answer is refused",
+   "cause": "Router output used as a filter instead of an order",
+   "severity": 6,
+   "detection_before": 3,
+   "detection": 3,
+   "controls_existing": [
+    "system_one_gate.reorder is a permutation"
+   ],
+   "controls_added": [],
+   "evidence_rule": {
+    "adjudicated_pattern": null,
+    "mechanical": [],
+    "replay_control": null
+   },
+   "occurrence_judgment": 2,
+   "note": "test_system_one_gate.test_reorder_is_a_permutation_with_exact_plan_first; test_unknown_low_p_error_and_offline_keep_order",
+   "occurrence": 2,
+   "occurrence_basis": "judgment (no benchmark measures this mode; 2026-10-22 cascade review)",
+   "evidence": {},
+   "rpn": 36,
+   "rpn_before": 36,
+   "rank": 34
   },
   {
    "id": "FM-21",
@@ -1009,7 +1299,7 @@
    "evidence": {},
    "rpn": 32,
    "rpn_before": 32,
-   "rank": 25
+   "rank": 35
   }
  ]
 }

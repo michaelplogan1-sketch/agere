@@ -59,18 +59,28 @@ table below is regenerated from it by `.venv/bin/python tools/quality/defects.py
 | 11 | FM-19 | answer_rendering | Defensible alternative definition used without the user seeing it | 4 | 10 | 5 | 200 | 240 | 14 adjudicated / 132 | QC-DENOM |
 | 12 | FM-25 | population | Source data defects distort results (feed gaps, partial feeds, generator defects) | 6 | 6 | 5 | 180 | 180 | judgment (no benchmark measures this mode) | - |
 | 13 | FM-02 | question_parse | Wrong answer shape (count vs list vs rate vs table) | 5 | 8 | 4 | 160 | 160 | 1 adjudicated / 132; 63 scored / 1718 | - |
-| 14 | FM-14 | verification | Unit mismatch (cents vs dollars, days vs hours, fraction vs percent) | 8 | 6 | 3 | 144 | 240 | 1 adjudicated / 132; QC-UNITS fired on 3 wrong / 0 right | QC-UNITS |
-| 15 | FM-11 | sql_generation | Nonexistent field, stream or join (hallucinated schema) | 8 | 6 | 3 | 144 | 144 | 1 adjudicated / 132 | - |
+| 14 | FM-11 | sql_generation | Nonexistent field, stream or join (hallucinated schema) | 8 | 6 | 3 | 144 | 144 | 1 adjudicated / 132 | - |
+| 15 | FM-14 | verification | Unit mismatch (cents vs dollars, days vs hours, fraction vs percent) | 8 | 6 | 3 | 144 | 240 | 1 adjudicated / 132; QC-UNITS fired on 3 wrong / 0 right | QC-UNITS |
 | 16 | FM-16 | execution | Partial current period in a time series (latest month/quarter/year only partly observed) | 6 | 7 | 3 | 126 | 378 | QC-PERIOD fired on 19 wrong / 0 right | QC-PERIOD |
-| 17 | FM-04 | routing | False "data is missing" refusal on an answerable question | 5 | 8 | 3 | 120 | 120 | 4 adjudicated / 132; 37 scored / 1718 | - |
-| 18 | FM-22 | learning_reuse | Stale learned plan reused after the data or semantic layer changed | 8 | 3 | 4 | 96 | 96 | judgment (no benchmark measures this mode) | - |
-| 19 | FM-15 | execution | Execution error, timeout or no answer | 4 | 10 | 2 | 80 | 80 | 800 scored / 1718 | - |
-| 20 | FM-12 | sql_generation | Wrong time window or as-of cutoff | 7 | 2 | 5 | 70 | 84 | 0 adjudicated / 132 | QC-NUMBERS |
-| 21 | FM-20 | follow_ups | Follow-up rewrite drops or changes a slot | 7 | 3 | 3 | 63 | 63 | judgment (no benchmark measures this mode) | - |
-| 22 | FM-18 | answer_rendering | Right numbers, wrong presentation (rounding, column names, split rows, partial flag on a right value) | 2 | 10 | 3 | 60 | 60 | 22 adjudicated / 132; 10 scored / 1718 | - |
-| 23 | FM-17 | answer_rendering | Invalid answer contract or truncated result | 5 | 5 | 2 | 50 | 50 | 8 scored / 1718 | - |
-| 24 | FM-03 | routing | Question routed to the wrong engine or rung | 6 | 2 | 4 | 48 | 48 | 0 acceptance fails / 140 | - |
-| 25 | FM-21 | follow_ups | Cached plan or answer reused across a changed slot or context | 8 | 2 | 2 | 32 | 32 | judgment (no benchmark measures this mode) | - |
+| 17 | FM-33 | verification | The benchmark reference itself is wrong, so a correct engine answer is counted as a defect (or a wrong one as correct) | 6 | 5 | 4 | 120 | 210 | judgment (no benchmark measures this mode; 2026-10-22 cascade review) | MUT-AUDIT |
+| 18 | FM-04 | routing | False "data is missing" refusal on an answerable question | 5 | 8 | 3 | 120 | 120 | 4 adjudicated / 132; 37 scored / 1718 | - |
+| 19 | FM-22 | learning_reuse | Stale learned plan reused after the data or semantic layer changed | 8 | 3 | 4 | 96 | 96 | judgment (no benchmark measures this mode) | - |
+| 20 | FM-26 | routing | Exact-local recognizer answers a narrower or broader population than asked (e.g. all AFib vs CHA2DS2-VASc >= 2) | 8 | 4 | 3 | 96 | 256 | judgment (no benchmark measures this mode; 2026-10-22 cascade review) | CT-FIT |
+| 21 | FM-27 | answer_rendering | A correct empty answer is rejected by the shape / zero-result checks and a worse proposer answers | 7 | 4 | 3 | 84 | 196 | judgment (no benchmark measures this mode; 2026-10-22 cascade review) | CT-SHAPE |
+| 22 | FM-15 | execution | Execution error, timeout or no answer | 4 | 10 | 2 | 80 | 80 | 800 scored / 1718 | - |
+| 23 | FM-28 | verification | System One label "unknown", an error or an outage silently becomes a documented reason (or "none documented") | 8 | 3 | 3 | 72 | 168 | judgment (no benchmark measures this mode; 2026-10-22 cascade review) | CT-S1-REVIEW |
+| 24 | FM-35 | execution | Production defect rate drifts (refusals, internal errors, user-reported wrong answers) with nobody noticing | 6 | 4 | 3 | 72 | 192 | judgment (no benchmark measures this mode; 2026-10-22 cascade review) | SIX-SIGMA-P |
+| 25 | FM-12 | sql_generation | Wrong time window or as-of cutoff | 7 | 2 | 5 | 70 | 84 | 0 adjudicated / 132 | QC-NUMBERS |
+| 26 | FM-20 | follow_ups | Follow-up rewrite drops or changes a slot | 7 | 3 | 3 | 63 | 63 | judgment (no benchmark measures this mode) | - |
+| 27 | FM-32 | question_parse | A sequence window in weeks / months / years compiles to the wrong day bound, or a "first" anchor matches every event | 7 | 3 | 3 | 63 | 147 | judgment (no benchmark measures this mode; 2026-10-22 cascade review) | SEQ-WINDOW, SEQ-RANK |
+| 28 | FM-18 | answer_rendering | Right numbers, wrong presentation (rounding, column names, split rows, partial flag on a right value) | 2 | 10 | 3 | 60 | 60 | 22 adjudicated / 132; 10 scored / 1718 | - |
+| 29 | FM-17 | answer_rendering | Invalid answer contract or truncated result | 5 | 5 | 2 | 50 | 50 | 8 scored / 1718 | - |
+| 30 | FM-31 | verification | Claude outage: the System One fallback returns a candidate a check judged to answer a different question | 8 | 2 | 3 | 48 | 48 | judgment (no benchmark measures this mode; 2026-10-22 cascade review) | - |
+| 31 | FM-03 | routing | Question routed to the wrong engine or rung | 6 | 2 | 4 | 48 | 48 | 0 acceptance fails / 140 | - |
+| 32 | FM-30 | execution | A paid System One / Jev / Perplexity call never reaches the cascade usage or receipt | 5 | 3 | 3 | 45 | 90 | judgment (no benchmark measures this mode; 2026-10-22 cascade review) | CT-S1-COST |
+| 33 | FM-34 | learning_reuse | Sealed truth rows leak into Agere (printed, saved or trained on) | 9 | 2 | 2 | 36 | 108 | judgment (no benchmark measures this mode; 2026-10-22 cascade review) | SEALED-AGG |
+| 34 | FM-29 | routing | System One routing drops or permanently skips a cascade tier | 6 | 2 | 3 | 36 | 36 | judgment (no benchmark measures this mode; 2026-10-22 cascade review) | - |
+| 35 | FM-21 | follow_ups | Cached plan or answer reused across a changed slot or context | 8 | 2 | 2 | 32 | 32 | judgment (no benchmark measures this mode) | - |
 <!-- fmea-table:end -->
 
 ## Controls added (poka-yoke, heal-not-block)
@@ -200,6 +210,61 @@ Value-set and anchor findings, all review items and nothing auto-added:
 - The benchmark references disagree on which age field to use: O11, O31 and N07 use roster `age_reported`, while M33
   uses the latest age. The metrics pin `age_latest`, following the nl2sql rules; the owner decides.
 
+## Current cascade and System One (FM-26 to FM-35), 2026-10-22
+
+The question path is now the checked-proposer cascade (`proposers.py`): exact tiers (contract cache, learned shapes,
+fully consumed grammar incl. temporal sequences), then proposers cheapest first, each accepted only after the literal
+check, read-only execution, the output-shape check and `answer_checks.gate`. System One (Jev, then Perplexity) orders
+the tiers (`system_one_gate.route_receipt`), checks executed answers, answers atomic per-patient sub-questions
+(`atomic_questions`) and picks among executed candidates when Claude is out (`system_one_fallback`).
+
+| Stage | Where it lives | What can go wrong (mode) |
+|---|---|---|
+| Exact local tiers | `economical_planner.local_plan` (incl. `clinical_tasks.local_question`), `request_language` | recognizer substitutes a population (FM-26); temporal unit / anchor misread (FM-32) |
+| System One routing | `system_one_gate.route_receipt` | a tier dropped (FM-29); spend not charged (FM-30) |
+| Output checks | `literal_check.shape_misfit`, `answer_checks.gate` (zero-result probe) | a correct empty answer rejected and replaced (FM-27) |
+| Atomic System One | `atomic_questions.run`, `clinical_tasks.review` | unknown / error read as a reason (FM-28); spend not charged (FM-30) |
+| Claude outage | `Cascade.system_one_fallback` | different-question candidate returned (FM-31) |
+| Evaluation | `bench/mutation_audit.py`, `tools/quality/sealed_gate.py`, `quality_scorecard.py` | wrong reference (FM-33); sealed truth leak (FM-34); unnoticed production drift (FM-35) |
+
+### Fault tree: a wrong answer is delivered without a warning (top event)
+
+```
+TOP  wrong answer delivered silently
+ OR  G1 question misread and accepted
+      OR  exact recognizer substitutes population/threshold ............ FM-26  [CT-FIT, literal check]
+      OR  temporal window/anchor compiled wrong .......................... FM-32  [SEQ-WINDOW, SEQ-RANK, numeric check]
+      OR  rewording drops a qualifier .................................... FM-01  [literal check, QC-NUMBERS]
+ OR  G2 right reading, wrong data or definition
+      OR  value set / denominator / clock ............................... FM-05/06/07 [QC-DENOM, QC-CLOCK]
+      OR  versioned rows double counted .................................. FM-08  [QC-VERSION]
+ OR  G3 checks pass a wrong answer
+      AND correlated model error ........................................ FM-13
+          AND agreement + lint pass (no independent oracle)
+      OR  System One unknown/error read as definite ...................... FM-28  [CT-S1-REVIEW]
+      OR  fallback returns a different-question candidate ................ FM-31  [fallback pool filter]
+ OR  G4 checks reject the right answer and a worse one wins
+      OR  correct empty set fails the shape check ........................ FM-27  [CT-SHAPE]
+ OR  G5 measurement hides it
+      OR  benchmark reference wrong ...................................... FM-33  [MUT-AUDIT]
+      OR  production drift unobserved .................................... FM-35  [SIX-SIGMA-P, /api/scorecard]
+```
+Minimal cut sets of size one (single points of failure) are FM-26, FM-27, FM-28, FM-31 and FM-32; each now has a
+control with a unit test. FM-13 needs two events (shared misreading AND no independent oracle) and stays the top RPN.
+
+### Controls added 2026-10-22 (each with a test)
+
+| Control | Mode | Where | Test |
+|---|---|---|---|
+| CT-FIT | FM-26 | `clinical_tasks.fits` | `test_clinical_tasks.RecognizerTests` |
+| CT-SHAPE | FM-27 | `clinical_tasks.answer` (requested shape, one row per patient) | `test_clinical_tasks.EngineTests` |
+| CT-S1-REVIEW | FM-28 | `clinical_tasks.review` | `test_clinical_tasks.ReviewTests` |
+| CT-S1-COST | FM-30 | `clinical_tasks.review` + `analysis_graph` engine review hook | `test_clinical_tasks.ReviewTests` |
+| SEQ-WINDOW, SEQ-RANK | FM-32 | `request_plan.Compiler.sequence`, `request_language.Parser.sequence` | `test_temporal_composition` |
+| MUT-AUDIT | FM-33 | `bench/mutation_audit.py`, `bench/adjudicate.py` | `test_mutation_audit` |
+| SEALED-AGG | FM-34 | `tools/quality/sealed_gate.aggregates` | `test_quality_gates.SealedGateTests` |
+| SIX-SIGMA-P | FM-35 | `clinical_core/agere/clinical/quality_scorecard.py`, `/api/scorecard` | `test_quality_gates.ProductionTests` |
+
 ## Remaining gaps (not closed here)
 
 - **FM-13 / FM-23, correlated errors and learning from them.** Every adjudicated hosted-route engine error passed lint,
@@ -208,5 +273,8 @@ Value-set and anchor findings, all review items and nothing auto-added:
   semantic-layer encodings of the mechanics behind FM-05/06/07 (measure age bands, attribution, value sets, clocks).
 - **FM-05 / FM-06 definitions.** Measure denominators (HEDIS age bands, attribution) and value sets are not encoded for
   the SQL writer; QC-DENOM makes the denominator visible but cannot judge it.
-- **Follow-ups (FM-20/21) and learning reuse (FM-22)** have no benchmark; occurrence is judged.
+- **Follow-ups (FM-20/21) and learning reuse (FM-22)** have no benchmark; occurrence is judged. FM-26 to FM-35 occurrence is
+  judged too until the production p-chart (FM-35) has enough days to measure it.
+- **FM-27 beyond clinical tasks.** Other engines still return an empty table for an empty patient set; the shape check can
+  reject them the same way.
 - **Adjudication coverage.** Blind sets K, L and P have no saved adjudication; their trend uses strict scores only.

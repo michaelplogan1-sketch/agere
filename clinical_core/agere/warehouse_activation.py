@@ -171,7 +171,7 @@ def source_quality_check(build):
 
 
 def activate(build,config,restatement=False,expansion=False,retraction=False,rebaseline=False,carry_forward=True,
-             require_release_diff=False,release_diff_accepted=(),source_coverage_enforce=None):
+             require_release_diff=False,release_diff_accepted=(),source_coverage_enforce=None,sealed_gate=None,enforce_sealed_gate=False):
     if rebaseline and (restatement or expansion or retraction):
         raise ValueError('--rebaseline is a fresh load; it cannot be combined with --restatement, --expansion or --retraction')
     from .healthcare_warehouse import checksum
@@ -234,5 +234,32 @@ def activate(build,config,restatement=False,expansion=False,retraction=False,reb
             receipt['verified_carry_forward']={'error':f'{type(exc).__name__}: {exc}'[:300]}
     from .clinical.monitor_sweep import schedule  # saved-answer monitors recompute on the new snapshot (sweep_if_due / scheduler)
     receipt['monitor_sweep_scheduled']=schedule(build/'stack',f"activated release {connection['release']}")
+    if sealed_gate if sealed_gate is not None else os.environ.get('AGERE_SEALED_GATE','on')!='off':
+        receipt['quality_gates']=quality_gates(build,enforce_sealed_gate)
     (build/'activation.json').write_text(json.dumps(receipt,indent=2)+'\n')
     return receipt
+
+
+def quality_gates(build,enforce=False):
+    """Release gates run on activation (heal, never block unless enforce): the sealed truth scorer (aggregates only,
+    tools/quality/sealed_gate.py) and the clinical workflow task agreement with independent references
+    (bench/clinical_task_reference.py, saved for the public scorecard)."""
+    import importlib.util,datetime
+    root=Path(__file__).resolve().parents[2];out={}
+    def load(rel,name):
+        spec=importlib.util.spec_from_file_location(name,root/rel);m=importlib.util.module_from_spec(spec);spec.loader.exec_module(m);return m
+    try:out['sealed_truth']=load('tools/quality/sealed_gate.py','agere_sealed_gate').run(build,enforce=enforce)
+    except ValueError:raise
+    except Exception as exc:out['sealed_truth']={'status':'error','reason':f'{type(exc).__name__}: {exc}'[:300]}  # noqa: BLE001
+    if out['sealed_truth'].get('aggregates'):out['sealed_truth']={k:v for k,v in out['sealed_truth'].items() if k!='aggregates'}  # summary on the receipt; aggregates in bench/results
+    try:
+        ref=load('bench/clinical_task_reference.py','agere_clinical_task_reference')
+        snapshot=json.loads((Path(build)/'connection.json').read_text())['snapshot']
+        scores=ref.score(build,'2028-12-31',snapshot['as_of'])
+        doc={'schema':'clinical-task-agreement/1','build':str(build),'index_date':'2028-12-31','scored_at':datetime.datetime.now(datetime.timezone.utc).isoformat(timespec='seconds'),
+             'scores':scores,'reference':'bench/clinical_task_reference.py (independent of the engine; no private truth)'}
+        target=root/'bench'/'results'/'clinical_tasks';target.mkdir(parents=True,exist_ok=True)
+        (target/'latest.json').write_text(json.dumps(doc,indent=1))
+        out['clinical_tasks']={'status':'saved','min_f1':min((s.get('f1',s.get('recall',1)) for t in scores.values() for s in t.values()),default=None)}
+    except Exception as exc:out['clinical_tasks']={'status':'error','reason':f'{type(exc).__name__}: {exc}'[:300]}  # noqa: BLE001
+    return out
