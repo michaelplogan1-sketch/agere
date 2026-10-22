@@ -27,9 +27,26 @@ MODULES = {
     'change_attribution': 'change_attribution',     # joint patient-state / source-observation tensor model: real change vs feed outage
     'social_needs': 'social_needs',                 # corroborated social needs + referral (BSeR/Gravity) closure
     'saved_monitors': 'monitor_sweep',              # saved-answer monitors recomputed on new snapshots
+    # wave 2: revenue cycle, payer, pharmacy and provider-network engines (shared helpers in revenue_common.py)
+    'denial_prediction': 'denial_prediction',       # claim-level first-pass denial risk with CARC reason attribution, time-split validated
+    'cdi_opportunity': 'cdi_opportunity',           # expected vs coded CC/MCC severity on inpatient claims from EHR evidence (CDI worklist)
+    'contract_reimbursement': 'contract_reimbursement',  # expected reimbursement under observed or supplied contract terms; variance, repricing
+    'price_benchmark': 'price_transparency',        # negotiated-rate benchmark across payers / providers (claims-derived or supplied TiC MRF)
+    'prior_auth_rules': 'prior_auth_rules',         # prior-auth rule evaluation, auth-denial analytics, gold-card and auto-approval candidates
+    'eligibility_340b': 'eligibility_340b',         # 340B patient/prescription eligibility and duplicate-discount / modifier compliance
+    'ddi_screening': 'ddi_screening',               # concurrent-fill drug-drug interaction screen (cited rule table; System One review)
+    'provider_network_graph': 'provider_network_graph',  # referral/billing graph: concentration, reciprocity, steering and kickback patterns
+    'network_spread': 'network_spread',             # observed contagion + percolation/epidemic threshold of practice patterns on the sharing graph
+    'upcoding_detection': 'upcoding_detection',     # upcoding detection (E/M, DRG severity, risk-adjustment coding) + incentive-compatibility design
+    'benchmark_rebasing': 'benchmark_rebasing',     # MSSP/LEAD benchmark ratchet and rebasing scenarios ("should we renew early") from rulebooks
+    'survey_adjustment': 'survey_adjustment',       # survey nonresponse raking, patient-mix adjustment, top-box, key drivers
+    'scorecard_risk': 'scorecard_risk',             # auditable points-based (credit-scorecard style) risk models, line-by-line patient points
 }
 ROUTE_ORDER = ('saved_monitors', 'change_attribution', 'social_needs', 'star_rating', 'mlr', 'settlement_bridge',
-               'policy_search', 'outreach_bandit', 'outreach_allocation', 'staffing_plan')
+               'policy_search', 'outreach_bandit', 'outreach_allocation', 'staffing_plan',
+               'benchmark_rebasing', 'eligibility_340b', 'ddi_screening', 'prior_auth_rules', 'cdi_opportunity', 'upcoding_detection',
+               'denial_prediction', 'contract_reimbursement', 'price_benchmark', 'network_spread', 'provider_network_graph',
+               'survey_adjustment', 'scorecard_risk')
 
 
 def module(op):
