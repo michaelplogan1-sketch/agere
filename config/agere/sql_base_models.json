@@ -1,0 +1,14 @@
+{
+ "schema": "agere-sql-base-models/1",
+ "note": "Candidate bases for the bottled SQL rung. A candidate replaces qwen3-4b only if tools/bottling/swap_base.py compare says it beats it on the same held-out questions. Download rule: only if the weights are < 2 GB; otherwise the swap path (AGERE_BOTTLED_BASE) and the harness are ready and the model is fetched when allowed.",
+ "default": "qwen3-4b",
+ "max_download_gb": 2.0,
+ "models": {
+  "qwen3-4b": {"dir": "models/qwen3-4b", "role": "incumbent", "params": "4B", "adapter_dir": "artifacts/bottling/adapters-v2b"},
+  "omnisql-7b": {"dir": "models/omnisql-7b-4bit", "hf": "sazak/OmniSQL-7B-4bit-mlx", "source": "seeklhy/OmniSQL-7B", "params": "7B", "weights_gb": 4.3,
+                 "paper": "OmniSQL (Li et al., 2025): synthesised text2SQL data; 7B beats GPT-4o on BIRD/Spider variants", "adapter_dir": "artifacts/bottling/adapters-omnisql-7b"},
+  "arctic-text2sql-r1-7b": {"dir": "models/arctic-text2sql-r1-7b", "hf": "Snowflake/Arctic-Text2SQL-R1-7B", "weights_gb": 15.2, "params": "7B",
+                 "paper": "Arctic-Text2SQL-R1 (Snowflake, 2025): execution-reward RL; needs an MLX 4-bit conversion (mlx_lm.convert -q)",
+                 "adapter_dir": "artifacts/bottling/adapters-arctic-text2sql-r1-7b"}
+ }
+}

@@ -182,6 +182,37 @@ def _grammar_kw(model, grammar):
 
 
 # ---- the model -------------------------------------------------------------------------------------------------
+BASES = ROOT / 'config' / 'agere' / 'sql_base_models.json'
+
+
+def base_dir():
+    """The SQL base model directory: AGERE_BOTTLED_BASE (a registry id from config/agere/sql_base_models.json, or a path), else the
+    registry default (qwen3-4b). The swap path for a SQL-specialist base (OmniSQL / Arctic-Text2SQL) -- evaluated by tools/bottling/swap_base.py."""
+    want = os.environ.get('AGERE_BOTTLED_BASE')
+    try:
+        reg = json.loads(BASES.read_text())
+    except (OSError, ValueError):
+        reg = {'default': 'qwen3-4b', 'models': {}}
+    entry = (reg['models'].get(want or reg['default']) or {}) if (not want or want in reg['models']) else {}
+    if want and not entry: return Path(want)
+    return ROOT / entry['dir'] if entry.get('dir') else nl2sql.MODEL_DIR
+
+
+def base_adapter_dir():
+    """Adapter for the active base: AGERE_BOTTLED_ADAPTER, else the registry adapter of that base when it exists, else the qwen3 adapter
+    for the default base and none (the base model alone) for a swapped base -- a LoRA only fits the base it was trained on."""
+    explicit = os.environ.get('AGERE_BOTTLED_ADAPTER')
+    if explicit: return Path(explicit)
+    want = os.environ.get('AGERE_BOTTLED_BASE')
+    if not want or base_dir() == nl2sql.MODEL_DIR: return ADAPTER_DIR
+    try:
+        entry = json.loads(BASES.read_text())['models'].get(want) or {}
+    except (OSError, ValueError):
+        entry = {}
+    d = ROOT / entry['adapter_dir'] if entry.get('adapter_dir') else None
+    return d if d and (d / 'adapters.safetensors').exists() else None
+
+
 class BottledModel:
     """Qwen3-4B (MLX) + bottled LoRA adapter, loaded lazily once per process on first use (never at import)."""
     _instance = None
@@ -190,25 +221,27 @@ class BottledModel:
     def __init__(self, model_dir=None, adapter_dir=None):
         os.environ.update(HF_HUB_OFFLINE='1', TRANSFORMERS_OFFLINE='1', HF_HUB_DISABLE_TELEMETRY='1')
         from mlx_lm import load
-        self.model_dir = Path(model_dir or nl2sql.MODEL_DIR)
+        self.model_dir = Path(model_dir or base_dir())
         self.adapter_dir = Path(adapter_dir) if adapter_dir else None
         start = time.perf_counter()
         self.model, self.tokenizer = load(str(self.model_dir), adapter_path=str(self.adapter_dir) if self.adapter_dir else None,
                                           tokenizer_config={'local_files_only': True})
         self.load_seconds = time.perf_counter() - start
-        self.identity = f'qwen3-4b-mlx+{self.adapter_dir.name}' if self.adapter_dir else 'qwen3-4b-mlx'
+        base = f'{self.model_dir.name}-mlx'
+        self.identity = f'{base}+{self.adapter_dir.name}' if self.adapter_dir else base
         self.gen_lock = threading.Lock()
 
     @classmethod
     def available(cls):
-        adapter = Path(os.environ.get('AGERE_BOTTLED_ADAPTER', ADAPTER_DIR))
-        return nl2sql.MODEL_DIR.exists() and (adapter / 'adapters.safetensors').exists()
+        adapter = base_adapter_dir()
+        if base_dir() == nl2sql.MODEL_DIR: return nl2sql.MODEL_DIR.exists() and adapter is not None and (adapter / 'adapters.safetensors').exists()
+        return base_dir().exists()   # a swapped base may run adapter-free (its own specialist weights)
 
     @classmethod
     def get(cls):
         with cls._lock:
             if cls._instance is None:
-                cls._instance = cls(adapter_dir=os.environ.get('AGERE_BOTTLED_ADAPTER', ADAPTER_DIR))
+                cls._instance = cls(adapter_dir=base_adapter_dir())
             return cls._instance
 
     def __call__(self, msgs, k=1, temperature=SAMPLE_TEMPERATURE, seed=7, max_tokens=MAX_TOKENS, grammar=None):
