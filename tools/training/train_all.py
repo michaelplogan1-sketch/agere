@@ -86,7 +86,11 @@ def fit_head(train, valid, labels, encoder, C=4.0):
     clf = LogisticRegression(C=C, max_iter=4000, class_weight='balanced')
     clf.fit(X, y)
     W = np.zeros((len(labels), X.shape[1])); b = np.full(len(labels), -30.0)
-    for i, cls in enumerate(clf.classes_): W[cls] = clf.coef_[i]; b[cls] = clf.intercept_[i]
+    if len(clf.classes_) == 2:  # sklearn keeps one row for a binary problem: logit(class 1) - logit(class 0)
+        W[clf.classes_[0]], b[clf.classes_[0]] = 0.0, 0.0
+        W[clf.classes_[1]], b[clf.classes_[1]] = clf.coef_[0], clf.intercept_[0]
+    else:
+        for i, cls in enumerate(clf.classes_): W[cls] = clf.coef_[i]; b[cls] = clf.intercept_[i]
     temperature = fit_temperature(Xv @ W.T + b, yv) if len(valid) else 1.0
     return {'W': W, 'b': b, 'temperature': temperature}
 
@@ -103,7 +107,7 @@ def head_accuracy(model, rows, labels, encoder):
 def train_router(ds, out, stack, encoder, identity, smoke, install):
     from clinical_core.agere.clinical import learned_router as LR
     from tools.learned_routing.train import choose_threshold
-    lim = 300 if smoke else None
+    lim = 2000 if smoke else None
     train, valid, held = (load(Path(ds) / 'router' / f'{s}.jsonl', lim) for s in ('train', 'valid', 'heldout'))
     if not train or len({r['label'] for r in train}) < 2: return receipt(out, 'router', 'skipped', reason='fewer than two labels in train')
     model = fit_head(train, valid, LR.LABELS, encoder)
@@ -156,7 +160,7 @@ SHAPES = ['count', 'value', 'table', 'patient_set', 'composite']
 
 
 def train_shape(ds, out, encoder, identity, smoke):
-    lim = 300 if smoke else None
+    lim = 2000 if smoke else None
     train, valid, held = (load(Path(ds) / 'shape' / f'{s}.jsonl', lim) for s in ('train', 'valid', 'heldout'))
     train, valid, held = ([r for r in x if r['label'] in SHAPES] for x in (train, valid, held))
     if not train or len({r['label'] for r in train}) < 2: return receipt(out, 'shape', 'skipped', reason='fewer than two labels in train')
