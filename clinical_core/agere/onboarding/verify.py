@@ -89,6 +89,12 @@ def _one(db, sql, args=()):
     return db.execute(sql, args).fetchone()[0]
 
 
+def source_is_dollars(values, field_spec):
+    """Scale of a money column the mapping feeds into a cents field. Decimals reveal dollars; the mapping's own declaration
+    (a dollars_to_cents transform) wins for a whole-dollar column, where every value is an integer and nothing reveals the scale."""
+    return any(float(v) != int(float(v)) for v in values) or any(t.get('op') == 'dollars_to_cents' for t in (field_spec.get('transforms') or []))
+
+
 def invariants(db_path, mapping, conn, as_of=None, model=None):
     db = sqlite3.connect(f'file:{db_path}?mode=ro', uri=True)
     out = []
@@ -190,7 +196,7 @@ def invariants(db_path, mapping, conn, as_of=None, model=None):
             f = (e.get('fields') or {}).get(field) or {}
             if not (f.get('accept') and f.get('source')): continue
             vals = [r[0] for r in conn.rows(e['source_table'], [f['source']]) if r[0] is not None and codes.is_number(r[0])]
-            dollars = any(float(v) != int(float(v)) for v in vals)
+            dollars = source_is_dollars(vals, f)
             expected = round(sum(float(v) for v in vals) * (100 if dollars else 1))
             got = _one(db, f'SELECT coalesce(sum({field}),0) FROM {table}')
             tol = 0.5 * len(vals) + 1

@@ -24,16 +24,16 @@ import statistics
 
 VERSION = 'delivery-file/2'
 SCHEDULED_FILL = 0.9  # a series is on a schedule when it has a file in at least 90% of its expected periods
-ISSUE_TABLES = ('x12_parse_issue', 'hl7_parse_issue', 'ncpdp_parse_issue', 'fhir_parse_error', 'flat_schema_drift')
+ISSUE_TABLES = ('x12_parse_issue', 'hl7_parse_issue', 'ncpdp_parse_issue', 'fhir_parse_error', 'ccda_parse_issue', 'flat_schema_drift')
 # Landing tables holding one row per delivered record for parsers whose files also yield child rows.
-PRIMARY = {'x12': ('x12_835_claim', 'x12_837_claim', 'x12_834_member'), 'hl7': ('hl7_message',), 'ncpdp': ('ncpdp_claim',)}
+PRIMARY = {'x12': ('x12_835_claim', 'x12_837_claim', 'x12_834_member'), 'hl7': ('hl7_message',), 'ncpdp': ('ncpdp_claim',), 'ccda': ('ccda_document',)}
 X12_TRUNCATION = ('missing_iea_at_eof', 'missing_se_at_eof', 'missing_ge_at_eof')
 # Parsers whose files are read byte-wise for record counts, header-only and cut-off evidence (one record per line);
 # None = no parser read the file (CMS CCLF fixed-width). HL7 batches and X12 interchanges carry their own trailers.
 LINE_FORMATS = {'flat': 'flat', 'fhir': 'fhir', 'ncpdp': 'ncpdp', None: 'fixed_width'}
 # Activity-driven formats: HL7 batches, X12 interchanges and FHIR exports carry a file only when there was something to
 # send, so their empty periods are never missing files.
-ACTIVITY_PARSERS = ('fhir', 'hl7', 'x12')
+ACTIVITY_PARSERS = ('fhir', 'hl7', 'x12', 'ccda')
 MALFORMED_DRIFT = ('columns_added_removed', 'columns_removed')
 EXT = re.compile(r'(?i)\.(csv|txt|x12|hl7|ndjson|json|dat|edi|psv|tsv|xml|zip|gz)$')
 RESEND = re.compile(r'(?i)(?:^|[_\-. ])resend(?=$|[_\-. ])')
@@ -257,6 +257,9 @@ def _issues(land, tables):
             issues[f]['ncpdp:' + str(code)] += n
             if code == 'missing_trailer':
                 trunc[f].append('ncpdp_missing_trailer')
+    if 'ccda_parse_issue' in tables:
+        for f, code, n in land.execute('SELECT _file, code, count(*) FROM ccda_parse_issue GROUP BY 1, 2'):
+            issues[f]['ccda:' + str(code)] += n
     fhir_last = {}
     if 'fhir_parse_error' in tables:
         for f, n, last in land.execute('SELECT _file, count(*), max(line_no) FROM fhir_parse_error GROUP BY 1'):

@@ -49,16 +49,17 @@ def identity(retriever):
 
 
 def selected(rows, patient, limit=8):
-    """The existing source diversity policy, verified against live output below."""
-    output, seen, counts = [], set(), Counter()
-    for row in rows:
+    """The retriever's selection policy (protected exception/contradiction slots, then source diversity), verified against
+    live output below."""
+    from . import protected_channels
+
+    def accept(row, seen, counts):
         s = row['source']; group = (s['patient_id'], s['record_id'], s['field'])
         if group in seen or (not patient and counts[s['patient_id']] >= 2):
-            continue
-        output.append(row); seen.add(group); counts[s['patient_id']] += 1
-        if len(output) == limit:
-            break
-    return output
+            return False
+        seen.add(group); counts[s['patient_id']] += 1
+        return True
+    return protected_channels.select([dict(r) for r in rows], limit, patient, accept)
 
 
 def validate_sources(retriever, rows):
@@ -92,7 +93,8 @@ class Recorder:
         self.before, self.after = [], []
 
     def rank(self, query, rows, *, top_k):
-        if len(rows) > 24 or len({r['id'] for r in rows}) != len(rows):
+        from .protected_channels import CHANNEL_CANDIDATES
+        if len(rows) > 48 + CHANNEL_CANDIDATES or len({r['id'] for r in rows}) != len(rows):
             raise ValueError('Unexpected retrieval candidate contract')
         self.before = deepcopy(rows)
         validate_sources(self.retriever, self.before)

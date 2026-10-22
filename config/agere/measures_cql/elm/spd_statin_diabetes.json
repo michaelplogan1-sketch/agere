@@ -1,0 +1,597 @@
+{
+ "library": {
+  "identifier": {
+   "id": "StatinTherapyDiabetes",
+   "version": "1.0.0"
+  },
+  "parameters": [
+   {
+    "default": {
+     "high": {
+      "type": "Date",
+      "value": "2030-05-27"
+     },
+     "low": {
+      "type": "Date",
+      "value": "2029-06-01"
+     },
+     "type": "Interval"
+    },
+    "name": "Measurement Period"
+   }
+  ],
+  "statements": [
+   {
+    "expression": {
+     "operand": [
+      {
+       "operand": [
+        {
+         "operand": [
+          {
+           "operand": [
+            {
+             "operand": {
+              "operand": {
+               "name": "Measurement Period",
+               "type": "ParameterRef"
+              },
+              "type": "End"
+             },
+             "type": "AgeInYearsAt"
+            },
+            {
+             "type": "Literal",
+             "value": 40,
+             "valueType": "Integer"
+            }
+           ],
+           "type": "GreaterOrEqual"
+          },
+          {
+           "operand": [
+            {
+             "operand": {
+              "operand": {
+               "name": "Measurement Period",
+               "type": "ParameterRef"
+              },
+              "type": "End"
+             },
+             "type": "AgeInYearsAt"
+            },
+            {
+             "type": "Literal",
+             "value": 75,
+             "valueType": "Integer"
+            }
+           ],
+           "type": "LessOrEqual"
+          }
+         ],
+         "type": "And"
+        },
+        {
+         "name": "EnrolledThroughout",
+         "operand": [
+          {
+           "name": "Measurement Period",
+           "type": "ParameterRef"
+          },
+          {
+           "type": "Literal",
+           "value": 1,
+           "valueType": "Integer"
+          }
+         ],
+         "type": "FunctionRef"
+        }
+       ],
+       "type": "And"
+      },
+      {
+       "operand": {
+        "source": {
+         "alias": "C",
+         "expression": {
+          "dataType": "Condition",
+          "type": "Retrieve",
+          "valueSet": "Diabetes"
+         }
+        },
+        "type": "Query",
+        "where": {
+         "operand": [
+          {
+           "operand": [
+            {
+             "path": "date",
+             "source": {
+              "name": "C",
+              "type": "AliasRef"
+             },
+             "type": "Property"
+            },
+            {
+             "high": {
+              "operand": {
+               "name": "Measurement Period",
+               "type": "ParameterRef"
+              },
+              "type": "End"
+             },
+             "low": {
+              "operand": [
+               {
+                "operand": {
+                 "name": "Measurement Period",
+                 "type": "ParameterRef"
+                },
+                "type": "Start"
+               },
+               {
+                "type": "Quantity",
+                "unit": "month",
+                "value": 12
+               }
+              ],
+              "type": "Subtract"
+             },
+             "type": "Interval"
+            }
+           ],
+           "type": "In"
+          },
+          {
+           "operand": {
+            "path": "date",
+            "source": {
+             "name": "C",
+             "type": "AliasRef"
+            },
+            "type": "Property"
+           },
+           "type": "IsNull"
+          }
+         ],
+         "type": "Or"
+        }
+       },
+       "type": "Exists"
+      }
+     ],
+     "type": "And"
+    },
+    "name": "Initial Population"
+   },
+   {
+    "expression": {
+     "name": "Initial Population",
+     "type": "ExpressionRef"
+    },
+    "name": "Denominator"
+   },
+   {
+    "expression": {
+     "operand": [
+      {
+       "operand": [
+        {
+         "operand": [
+          {
+           "operand": {
+            "source": {
+             "alias": "X",
+             "expression": {
+              "dataType": "Condition",
+              "type": "Retrieve",
+              "valueSet": "ASCVD"
+             }
+            },
+            "type": "Query",
+            "where": {
+             "operand": [
+              {
+               "operand": [
+                {
+                 "path": "date",
+                 "source": {
+                  "name": "X",
+                  "type": "AliasRef"
+                 },
+                 "type": "Property"
+                },
+                {
+                 "high": {
+                  "operand": {
+                   "name": "Measurement Period",
+                   "type": "ParameterRef"
+                  },
+                  "type": "End"
+                 },
+                 "low": {
+                  "operand": [
+                   {
+                    "operand": {
+                     "name": "Measurement Period",
+                     "type": "ParameterRef"
+                    },
+                    "type": "Start"
+                   },
+                   {
+                    "type": "Quantity",
+                    "unit": "month",
+                    "value": 12
+                   }
+                  ],
+                  "type": "Subtract"
+                 },
+                 "type": "Interval"
+                }
+               ],
+               "type": "In"
+              },
+              {
+               "operand": {
+                "path": "date",
+                "source": {
+                 "name": "X",
+                 "type": "AliasRef"
+                },
+                "type": "Property"
+               },
+               "type": "IsNull"
+              }
+             ],
+             "type": "Or"
+            }
+           },
+           "type": "Exists"
+          },
+          {
+           "operand": {
+            "source": {
+             "alias": "X",
+             "expression": {
+              "dataType": "Procedure",
+              "type": "Retrieve",
+              "valueSet": "Hospice"
+             }
+            },
+            "type": "Query",
+            "where": {
+             "operand": [
+              {
+               "path": "date",
+               "source": {
+                "name": "X",
+                "type": "AliasRef"
+               },
+               "type": "Property"
+              },
+              {
+               "high": {
+                "operand": {
+                 "name": "Measurement Period",
+                 "type": "ParameterRef"
+                },
+                "type": "End"
+               },
+               "low": {
+                "operand": {
+                 "name": "Measurement Period",
+                 "type": "ParameterRef"
+                },
+                "type": "Start"
+               },
+               "type": "Interval"
+              }
+             ],
+             "type": "In"
+            }
+           },
+           "type": "Exists"
+          }
+         ],
+         "type": "Or"
+        },
+        {
+         "operand": {
+          "source": {
+           "alias": "X",
+           "expression": {
+            "dataType": "Condition",
+            "type": "Retrieve",
+            "valueSet": "Palliative care"
+           }
+          },
+          "type": "Query",
+          "where": {
+           "operand": [
+            {
+             "operand": [
+              {
+               "path": "date",
+               "source": {
+                "name": "X",
+                "type": "AliasRef"
+               },
+               "type": "Property"
+              },
+              {
+               "high": {
+                "operand": {
+                 "name": "Measurement Period",
+                 "type": "ParameterRef"
+                },
+                "type": "End"
+               },
+               "low": {
+                "operand": {
+                 "name": "Measurement Period",
+                 "type": "ParameterRef"
+                },
+                "type": "Start"
+               },
+               "type": "Interval"
+              }
+             ],
+             "type": "In"
+            },
+            {
+             "operand": {
+              "path": "date",
+              "source": {
+               "name": "X",
+               "type": "AliasRef"
+              },
+              "type": "Property"
+             },
+             "type": "IsNull"
+            }
+           ],
+           "type": "Or"
+          }
+         },
+         "type": "Exists"
+        }
+       ],
+       "type": "Or"
+      },
+      {
+       "operand": {
+        "source": {
+         "alias": "X",
+         "expression": {
+          "dataType": "Condition",
+          "type": "Retrieve",
+          "valueSet": "ESRD or dialysis"
+         }
+        },
+        "type": "Query",
+        "where": {
+         "operand": [
+          {
+           "operand": [
+            {
+             "path": "date",
+             "source": {
+              "name": "X",
+              "type": "AliasRef"
+             },
+             "type": "Property"
+            },
+            {
+             "high": {
+              "operand": {
+               "name": "Measurement Period",
+               "type": "ParameterRef"
+              },
+              "type": "End"
+             },
+             "low": {
+              "operand": [
+               {
+                "operand": {
+                 "name": "Measurement Period",
+                 "type": "ParameterRef"
+                },
+                "type": "Start"
+               },
+               {
+                "type": "Quantity",
+                "unit": "month",
+                "value": 12
+               }
+              ],
+              "type": "Subtract"
+             },
+             "type": "Interval"
+            }
+           ],
+           "type": "In"
+          },
+          {
+           "operand": {
+            "path": "date",
+            "source": {
+             "name": "X",
+             "type": "AliasRef"
+            },
+            "type": "Property"
+           },
+           "type": "IsNull"
+          }
+         ],
+         "type": "Or"
+        }
+       },
+       "type": "Exists"
+      }
+     ],
+     "type": "Or"
+    },
+    "name": "Denominator Exclusion"
+   },
+   {
+    "expression": {
+     "operand": {
+      "source": {
+       "alias": "M",
+       "expression": {
+        "dataType": "MedicationDispense",
+        "type": "Retrieve",
+        "valueSet": "Statin"
+       }
+      },
+      "type": "Query",
+      "where": {
+       "operand": [
+        {
+         "path": "date",
+         "source": {
+          "name": "M",
+          "type": "AliasRef"
+         },
+         "type": "Property"
+        },
+        {
+         "high": {
+          "operand": {
+           "name": "Measurement Period",
+           "type": "ParameterRef"
+          },
+          "type": "End"
+         },
+         "low": {
+          "operand": {
+           "name": "Measurement Period",
+           "type": "ParameterRef"
+          },
+          "type": "Start"
+         },
+         "type": "Interval"
+        }
+       ],
+       "type": "In"
+      }
+     },
+     "type": "Exists"
+    },
+    "name": "Numerator"
+   }
+  ],
+  "valueSets": [
+   {
+    "binding": {
+     "concepts": [
+      "diabetes",
+      "type_2_diabetes",
+      "type_1_diabetes"
+     ],
+     "icd10_prefixes": [
+      "E10",
+      "E11",
+      "E13"
+     ],
+     "type": "condition"
+    },
+    "name": "Diabetes"
+   },
+   {
+    "binding": {
+     "concepts": [
+      "coronary_artery_disease",
+      "myocardial_infarction",
+      "stroke"
+     ],
+     "icd10_prefixes": [
+      "I20",
+      "I21",
+      "I22",
+      "I23",
+      "I24",
+      "I25",
+      "I63",
+      "I65",
+      "I66",
+      "I70",
+      "I73.9",
+      "I74",
+      "Z95.1",
+      "Z95.5",
+      "Z98.61"
+     ],
+     "type": "condition"
+    },
+    "name": "ASCVD"
+   },
+   {
+    "binding": {
+     "hcpcs": [
+      "G9473",
+      "G9474",
+      "G9475",
+      "G9476",
+      "G9477",
+      "G9478",
+      "G9479",
+      "Q5003",
+      "Q5004",
+      "Q5005",
+      "Q5006",
+      "Q5007",
+      "Q5008",
+      "Q5010",
+      "S9126",
+      "T2042",
+      "T2043",
+      "T2044",
+      "T2045",
+      "T2046"
+     ],
+     "streams": [
+      {
+       "stream": "hospice_enrollments"
+      }
+     ],
+     "type": "service"
+    },
+    "name": "Hospice"
+   },
+   {
+    "binding": {
+     "icd10_prefixes": [
+      "Z51.5"
+     ],
+     "type": "condition"
+    },
+    "name": "Palliative care"
+   },
+   {
+    "binding": {
+     "icd10_prefixes": [
+      "N18.6",
+      "Z99.2"
+     ],
+     "type": "condition"
+    },
+    "name": "ESRD or dialysis"
+   },
+   {
+    "binding": {
+     "classes": [
+      "statin"
+     ],
+     "evidence": [
+      "dispensed",
+      "claim",
+      "payer_claim"
+     ],
+     "type": "medication"
+    },
+    "name": "Statin"
+   }
+  ]
+ }
+}

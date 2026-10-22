@@ -57,15 +57,19 @@ MODULES = {
     'transitions_of_care': 'transitions_of_care',   # discharge follow-up (TEAM/TCM): visit, contact, med reconciliation, readmission
     'domain_pack': 'domain_pack',                   # non-healthcare industry packs (AGERE_PACK); never claims a question under the healthcare pack
     'prior_auth_access': 'prior_auth_access',       # prior authorization / non-coverage rejects: resolve, appeal, Extra Help screen
+    'derived_value': 'derived_value_index',         # discovered derived values (days between dates, days since, change, ratios) aggregated with their recipe
+    'identity_resolution': 'identity_resolution',   # reversible identity: contradiction checks, split / confirm / undo ledger, effective persons
+    'cql_measure': 'cql_measures',                  # governed CQL -> ELM measure logic: rate, eligibility trace, parity with the measure library
 }
-ROUTE_ORDER = ('saved_monitors', 'change_attribution', 'social_needs', 'star_rating', 'mlr', 'settlement_bridge',
-               'bundle_compliance', 'hai_surveillance', 'antimicrobial_use', 'spatiotemporal_cluster', 'network_adequacy',
-               'overbooking_fairness', 'or_block_optimization', 'discharge_forecast', 'capacity_simulation', 'flow_decomposition',
-               'visit_groups', 'policy_search', 'outreach_bandit', 'outreach_allocation', 'staffing_plan',
-               'transitions_of_care', 'care_gap_closure', 'domain_pack',
-               'benchmark_rebasing', 'eligibility_340b', 'ddi_screening', 'prior_auth_rules', 'prior_auth_access', 'cdi_opportunity', 'upcoding_detection',
-               'denial_prediction', 'contract_reimbursement', 'price_benchmark', 'network_spread', 'provider_network_graph',
-               'survey_adjustment', 'scorecard_risk')
+ROUTE_ORDER = ('identity_resolution', 'cql_measure', 'saved_monitors', 'change_attribution', 'social_needs',
+               'star_rating', 'mlr', 'settlement_bridge', 'bundle_compliance', 'hai_surveillance', 'antimicrobial_use',
+               'spatiotemporal_cluster', 'network_adequacy', 'overbooking_fairness', 'or_block_optimization',
+               'discharge_forecast', 'capacity_simulation', 'flow_decomposition', 'visit_groups', 'policy_search',
+               'outreach_bandit', 'outreach_allocation', 'staffing_plan', 'transitions_of_care', 'care_gap_closure',
+               'domain_pack', 'benchmark_rebasing', 'eligibility_340b', 'ddi_screening', 'prior_auth_rules',
+               'prior_auth_access', 'cdi_opportunity', 'upcoding_detection', 'denial_prediction',
+               'contract_reimbursement', 'price_benchmark', 'network_spread', 'provider_network_graph',
+               'survey_adjustment', 'scorecard_risk', 'derived_value')
 
 
 def module(op):

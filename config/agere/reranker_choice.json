@@ -1,0 +1,191 @@
+{
+ "by_type": {
+  "medication": {
+   "reranker": "bge",
+   "graph_fallback": true,
+   "ndcg8": {
+    "rrf": {
+     "ndcg8": 0.6976,
+     "n": 6,
+     "mrr": 0.8472,
+     "p8": 0.6667
+    },
+    "bge": {
+     "ndcg8": 0.8819,
+     "n": 6,
+     "mrr": 1.0,
+     "p8": 0.7083,
+     "seconds_per_question": 2.366
+    },
+    "qwen": {
+     "ndcg8": 0.7877,
+     "n": 6,
+     "mrr": 1.0,
+     "p8": 0.6458,
+     "seconds_per_question": 5.754
+    }
+   },
+   "record_recall8": {
+    "hybrid": 0.9375,
+    "graph": 1.0,
+    "hybrid_plus_graph": 0.9583
+   },
+   "questions": 6,
+   "basis": "nDCG@8 bge 0.8819 vs qwen 0.7877 on 6 questions; record recall@8 hybrid 0.9375 vs hybrid+graph 0.9583"
+  },
+  "lab": {
+   "reranker": "bge",
+   "graph_fallback": false,
+   "ndcg8": {
+    "rrf": {
+     "ndcg8": 0.8879,
+     "n": 4,
+     "mrr": 1.0,
+     "p8": 0.7812
+    },
+    "bge": {
+     "ndcg8": 0.8816,
+     "n": 4,
+     "mrr": 1.0,
+     "p8": 0.8125,
+     "seconds_per_question": 2.87
+    },
+    "qwen": {
+     "ndcg8": 0.75,
+     "n": 4,
+     "mrr": 0.7679,
+     "p8": 0.75,
+     "seconds_per_question": 7.874
+    }
+   },
+   "record_recall8": {
+    "hybrid": 0.9688,
+    "graph": 1.0,
+    "hybrid_plus_graph": 0.9688
+   },
+   "questions": 4,
+   "basis": "nDCG@8 bge 0.8816 vs qwen 0.75 on 4 questions; record recall@8 hybrid 0.9688 vs hybrid+graph 0.9688"
+  },
+  "condition": {
+   "reranker": "bge",
+   "graph_fallback": false,
+   "ndcg8": {
+    "rrf": {
+     "ndcg8": 0.5988,
+     "n": 4,
+     "mrr": 0.8333,
+     "p8": 0.375
+    },
+    "bge": {
+     "ndcg8": 0.7789,
+     "n": 4,
+     "mrr": 0.8,
+     "p8": 0.5938,
+     "seconds_per_question": 1.83
+    },
+    "qwen": {
+     "ndcg8": 0.7391,
+     "n": 4,
+     "mrr": 0.8125,
+     "p8": 0.5,
+     "seconds_per_question": 5.408
+    }
+   },
+   "record_recall8": {
+    "hybrid": 0.9375,
+    "graph": 0.75,
+    "hybrid_plus_graph": 0.8438
+   },
+   "questions": 4,
+   "basis": "nDCG@8 bge 0.7789 vs qwen 0.7391 on 4 questions; record recall@8 hybrid 0.9375 vs hybrid+graph 0.8438"
+  },
+  "social": {
+   "reranker": "qwen",
+   "graph_fallback": false,
+   "ndcg8": {
+    "rrf": {
+     "ndcg8": 0.229,
+     "n": 3,
+     "mrr": 0.1613,
+     "p8": 0.125
+    },
+    "bge": {
+     "ndcg8": 0.3569,
+     "n": 3,
+     "mrr": 0.246,
+     "p8": 0.125,
+     "seconds_per_question": 1.414
+    },
+    "qwen": {
+     "ndcg8": 0.7689,
+     "n": 3,
+     "mrr": 0.7778,
+     "p8": 0.2083,
+     "seconds_per_question": 4.64
+    }
+   },
+   "record_recall8": {
+    "hybrid": 0.6667,
+    "graph": 0.0,
+    "hybrid_plus_graph": 0.6667
+   },
+   "questions": 3,
+   "basis": "nDCG@8 bge 0.3569 vs qwen 0.7689 on 3 questions; record recall@8 hybrid 0.6667 vs hybrid+graph 0.6667"
+  },
+  "exception": {
+   "reranker": "bge",
+   "graph_fallback": false,
+   "ndcg8": {
+    "rrf": {
+     "ndcg8": 0.5576,
+     "n": 4,
+     "mrr": 0.7083,
+     "p8": 0.375
+    },
+    "bge": {
+     "ndcg8": 0.7701,
+     "n": 4,
+     "mrr": 0.875,
+     "p8": 0.5,
+     "seconds_per_question": 2.403
+    },
+    "qwen": {
+     "ndcg8": 0.6969,
+     "n": 4,
+     "mrr": 0.75,
+     "p8": 0.4688,
+     "seconds_per_question": 6.013
+    }
+   },
+   "record_recall8": {
+    "hybrid": 0.9167,
+    "graph": 0.75,
+    "hybrid_plus_graph": 0.9167
+   },
+   "questions": 4,
+   "basis": "nDCG@8 bge 0.7701 vs qwen 0.6969 on 4 questions; record recall@8 hybrid 0.9167 vs hybrid+graph 0.9167"
+  }
+ },
+ "adopted": {
+  "medication": "bge",
+  "lab": "bge",
+  "condition": "bge",
+  "social": "qwen",
+  "exception": "bge"
+ },
+ "graph_fallback_types": [
+  "medication"
+ ],
+ "schema": "reranker-bakeoff/1",
+ "synthetic": true,
+ "stack": "/Users/mikel/clinical-insights-local/artifacts/agere-healthcare-v28-sample-0.30/stack",
+ "source_digest": "de1e487344c2c5662c55cbe8302497f559bd7cff85d06572f78b1fb2fabedacd",
+ "questions": 21,
+ "seconds": 1227.0,
+ "new_paid_api_calls": 0,
+ "models": {
+  "bge": "bge-reranker-v2-m3",
+  "qwen": "qwen3-reranker-0.6b"
+ },
+ "labels": "Structured-field relevance (labs.name, drug names/status, ICD-10 categories) and stated term families for narrative records, fixed before retrieval; every reranker reorders the same fused candidates."
+}

@@ -50,6 +50,9 @@ def main():
             r=build(out/'warehouse.sqlite3',out/'clinical',out/'stack',reuse_model_cache=a.reuse_model_cache)
             progress({'stage':'retrieval_completed','patients':r['patients'],'records':r['visible_records'],
                       'passages':r['passages'],'dense_texts':r['dense_passage_texts']})
+        from clinical_core.agere.clinical import med_graph_rag
+        progress({'stage':'concept_graph'});g=med_graph_rag.build(out/'stack')  # fallback retriever the measured reranker/graph policy reads
+        progress({'stage':'concept_graph_completed','nodes':g['nodes'],'edges':g['edges'],'links':g['links']})
     if a.stage in ('readers','all'):
         from clinical_core.agere.clinical.reader_warehouse import annotate
         from clinical_core.agere.clinical.evidence_queries import build_index
@@ -67,11 +70,13 @@ def main():
         configure(out/'stack')
         from clinical_core.agere.clinical import analytic_registry, clinical_events, clinical_state, longitudinal, program_registry
         from build_cohort_stack import values
+        from clinical_core.agere.clinical import derived_value_index
         stack=out/'stack'
         for name,fn in [('events',lambda:clinical_events.build(stack)),
                         ('operators',lambda:analytic_registry.compute_all(stack)),
                         ('reviews',lambda:analytic_registry.attach_clinical_reviews(stack,out/'clinical')),
-                        ('values',lambda:values(stack)),('programs',lambda:program_registry.install_defaults(stack))]:
+                        ('values',lambda:values(stack)),('programs',lambda:program_registry.install_defaults(stack)),
+                        ('derived_values',lambda:derived_value_index.build(stack))]:
             progress({'stage':name});fn()
         if not (out/'longitudinal'/'run.json').exists():longitudinal.build(stack,out/'longitudinal')
         state=out/'clinical-state'

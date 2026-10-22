@@ -1,0 +1,659 @@
+{
+ "library": {
+  "identifier": {
+   "id": "ControllingHighBloodPressure",
+   "version": "1.0.0"
+  },
+  "parameters": [
+   {
+    "default": {
+     "high": {
+      "type": "Date",
+      "value": "2030-05-27"
+     },
+     "low": {
+      "type": "Date",
+      "value": "2029-06-01"
+     },
+     "type": "Interval"
+    },
+    "name": "Measurement Period"
+   }
+  ],
+  "statements": [
+   {
+    "expression": {
+     "operand": [
+      {
+       "operand": [
+        {
+         "operand": [
+          {
+           "operand": [
+            {
+             "operand": {
+              "operand": {
+               "name": "Measurement Period",
+               "type": "ParameterRef"
+              },
+              "type": "End"
+             },
+             "type": "AgeInYearsAt"
+            },
+            {
+             "type": "Literal",
+             "value": 18,
+             "valueType": "Integer"
+            }
+           ],
+           "type": "GreaterOrEqual"
+          },
+          {
+           "operand": [
+            {
+             "operand": {
+              "operand": {
+               "name": "Measurement Period",
+               "type": "ParameterRef"
+              },
+              "type": "End"
+             },
+             "type": "AgeInYearsAt"
+            },
+            {
+             "type": "Literal",
+             "value": 85,
+             "valueType": "Integer"
+            }
+           ],
+           "type": "LessOrEqual"
+          }
+         ],
+         "type": "And"
+        },
+        {
+         "name": "EnrolledThroughout",
+         "operand": [
+          {
+           "name": "Measurement Period",
+           "type": "ParameterRef"
+          },
+          {
+           "type": "Literal",
+           "value": 1,
+           "valueType": "Integer"
+          }
+         ],
+         "type": "FunctionRef"
+        }
+       ],
+       "type": "And"
+      },
+      {
+       "operand": {
+        "source": {
+         "alias": "C",
+         "expression": {
+          "dataType": "Condition",
+          "type": "Retrieve",
+          "valueSet": "Hypertension"
+         }
+        },
+        "type": "Query",
+        "where": {
+         "operand": [
+          {
+           "operand": [
+            {
+             "path": "date",
+             "source": {
+              "name": "C",
+              "type": "AliasRef"
+             },
+             "type": "Property"
+            },
+            {
+             "high": {
+              "operand": [
+               {
+                "operand": {
+                 "name": "Measurement Period",
+                 "type": "ParameterRef"
+                },
+                "type": "Start"
+               },
+               {
+                "type": "Quantity",
+                "unit": "month",
+                "value": 6
+               }
+              ],
+              "type": "Add"
+             },
+             "low": {
+              "operand": [
+               {
+                "operand": {
+                 "name": "Measurement Period",
+                 "type": "ParameterRef"
+                },
+                "type": "Start"
+               },
+               {
+                "type": "Quantity",
+                "unit": "year",
+                "value": 50
+               }
+              ],
+              "type": "Subtract"
+             },
+             "type": "Interval"
+            }
+           ],
+           "type": "In"
+          },
+          {
+           "operand": {
+            "path": "date",
+            "source": {
+             "name": "C",
+             "type": "AliasRef"
+            },
+            "type": "Property"
+           },
+           "type": "IsNull"
+          }
+         ],
+         "type": "Or"
+        }
+       },
+       "type": "Exists"
+      }
+     ],
+     "type": "And"
+    },
+    "name": "Initial Population"
+   },
+   {
+    "expression": {
+     "name": "Initial Population",
+     "type": "ExpressionRef"
+    },
+    "name": "Denominator"
+   },
+   {
+    "expression": {
+     "operand": [
+      {
+       "operand": [
+        {
+         "operand": [
+          {
+           "operand": {
+            "source": {
+             "alias": "X",
+             "expression": {
+              "dataType": "Procedure",
+              "type": "Retrieve",
+              "valueSet": "Hospice"
+             }
+            },
+            "type": "Query",
+            "where": {
+             "operand": [
+              {
+               "path": "date",
+               "source": {
+                "name": "X",
+                "type": "AliasRef"
+               },
+               "type": "Property"
+              },
+              {
+               "high": {
+                "operand": {
+                 "name": "Measurement Period",
+                 "type": "ParameterRef"
+                },
+                "type": "End"
+               },
+               "low": {
+                "operand": {
+                 "name": "Measurement Period",
+                 "type": "ParameterRef"
+                },
+                "type": "Start"
+               },
+               "type": "Interval"
+              }
+             ],
+             "type": "In"
+            }
+           },
+           "type": "Exists"
+          },
+          {
+           "operand": {
+            "source": {
+             "alias": "X",
+             "expression": {
+              "dataType": "Condition",
+              "type": "Retrieve",
+              "valueSet": "Palliative care"
+             }
+            },
+            "type": "Query",
+            "where": {
+             "operand": [
+              {
+               "operand": [
+                {
+                 "path": "date",
+                 "source": {
+                  "name": "X",
+                  "type": "AliasRef"
+                 },
+                 "type": "Property"
+                },
+                {
+                 "high": {
+                  "operand": {
+                   "name": "Measurement Period",
+                   "type": "ParameterRef"
+                  },
+                  "type": "End"
+                 },
+                 "low": {
+                  "operand": {
+                   "name": "Measurement Period",
+                   "type": "ParameterRef"
+                  },
+                  "type": "Start"
+                 },
+                 "type": "Interval"
+                }
+               ],
+               "type": "In"
+              },
+              {
+               "operand": {
+                "path": "date",
+                "source": {
+                 "name": "X",
+                 "type": "AliasRef"
+                },
+                "type": "Property"
+               },
+               "type": "IsNull"
+              }
+             ],
+             "type": "Or"
+            }
+           },
+           "type": "Exists"
+          }
+         ],
+         "type": "Or"
+        },
+        {
+         "operand": {
+          "source": {
+           "alias": "X",
+           "expression": {
+            "dataType": "Condition",
+            "type": "Retrieve",
+            "valueSet": "ESRD or dialysis"
+           }
+          },
+          "type": "Query",
+          "where": {
+           "operand": [
+            {
+             "operand": [
+              {
+               "path": "date",
+               "source": {
+                "name": "X",
+                "type": "AliasRef"
+               },
+               "type": "Property"
+              },
+              {
+               "high": {
+                "operand": {
+                 "name": "Measurement Period",
+                 "type": "ParameterRef"
+                },
+                "type": "End"
+               },
+               "low": {
+                "operand": [
+                 {
+                  "operand": {
+                   "name": "Measurement Period",
+                   "type": "ParameterRef"
+                  },
+                  "type": "Start"
+                 },
+                 {
+                  "type": "Quantity",
+                  "unit": "month",
+                  "value": 12
+                 }
+                ],
+                "type": "Subtract"
+               },
+               "type": "Interval"
+              }
+             ],
+             "type": "In"
+            },
+            {
+             "operand": {
+              "path": "date",
+              "source": {
+               "name": "X",
+               "type": "AliasRef"
+              },
+              "type": "Property"
+             },
+             "type": "IsNull"
+            }
+           ],
+           "type": "Or"
+          }
+         },
+         "type": "Exists"
+        }
+       ],
+       "type": "Or"
+      },
+      {
+       "operand": {
+        "source": {
+         "alias": "X",
+         "expression": {
+          "dataType": "Condition",
+          "type": "Retrieve",
+          "valueSet": "Pregnancy"
+         }
+        },
+        "type": "Query",
+        "where": {
+         "operand": [
+          {
+           "operand": [
+            {
+             "path": "date",
+             "source": {
+              "name": "X",
+              "type": "AliasRef"
+             },
+             "type": "Property"
+            },
+            {
+             "high": {
+              "operand": {
+               "name": "Measurement Period",
+               "type": "ParameterRef"
+              },
+              "type": "End"
+             },
+             "low": {
+              "operand": {
+               "name": "Measurement Period",
+               "type": "ParameterRef"
+              },
+              "type": "Start"
+             },
+             "type": "Interval"
+            }
+           ],
+           "type": "In"
+          },
+          {
+           "operand": {
+            "path": "date",
+            "source": {
+             "name": "X",
+             "type": "AliasRef"
+            },
+            "type": "Property"
+           },
+           "type": "IsNull"
+          }
+         ],
+         "type": "Or"
+        }
+       },
+       "type": "Exists"
+      }
+     ],
+     "type": "Or"
+    },
+    "name": "Denominator Exclusion"
+   },
+   {
+    "expression": {
+     "operand": [
+      {
+       "operand": [
+        {
+         "path": "systolic",
+         "source": {
+          "source": {
+           "source": {
+            "alias": "O",
+            "expression": {
+             "dataType": "Observation",
+             "type": "Retrieve",
+             "valueSet": "Blood pressure"
+            }
+           },
+           "type": "Query",
+           "where": {
+            "operand": [
+             {
+              "path": "date",
+              "source": {
+               "name": "O",
+               "type": "AliasRef"
+              },
+              "type": "Property"
+             },
+             {
+              "high": {
+               "operand": {
+                "name": "Measurement Period",
+                "type": "ParameterRef"
+               },
+               "type": "End"
+              },
+              "low": {
+               "operand": {
+                "name": "Measurement Period",
+                "type": "ParameterRef"
+               },
+               "type": "Start"
+              },
+              "type": "Interval"
+             }
+            ],
+            "type": "In"
+           }
+          },
+          "type": "Last"
+         },
+         "type": "Property"
+        },
+        {
+         "type": "Literal",
+         "value": 140,
+         "valueType": "Integer"
+        }
+       ],
+       "type": "Less"
+      },
+      {
+       "operand": [
+        {
+         "path": "diastolic",
+         "source": {
+          "source": {
+           "source": {
+            "alias": "O",
+            "expression": {
+             "dataType": "Observation",
+             "type": "Retrieve",
+             "valueSet": "Blood pressure"
+            }
+           },
+           "type": "Query",
+           "where": {
+            "operand": [
+             {
+              "path": "date",
+              "source": {
+               "name": "O",
+               "type": "AliasRef"
+              },
+              "type": "Property"
+             },
+             {
+              "high": {
+               "operand": {
+                "name": "Measurement Period",
+                "type": "ParameterRef"
+               },
+               "type": "End"
+              },
+              "low": {
+               "operand": {
+                "name": "Measurement Period",
+                "type": "ParameterRef"
+               },
+               "type": "Start"
+              },
+              "type": "Interval"
+             }
+            ],
+            "type": "In"
+           }
+          },
+          "type": "Last"
+         },
+         "type": "Property"
+        },
+        {
+         "type": "Literal",
+         "value": 90,
+         "valueType": "Integer"
+        }
+       ],
+       "type": "Less"
+      }
+     ],
+     "type": "And"
+    },
+    "name": "Numerator"
+   }
+  ],
+  "valueSets": [
+   {
+    "binding": {
+     "concepts": [
+      "hypertension"
+     ],
+     "icd10_prefixes": [
+      "I10",
+      "I11",
+      "I12",
+      "I13",
+      "I16"
+     ],
+     "type": "condition"
+    },
+    "name": "Hypertension"
+   },
+   {
+    "binding": {
+     "hcpcs": [
+      "G9473",
+      "G9474",
+      "G9475",
+      "G9476",
+      "G9477",
+      "G9478",
+      "G9479",
+      "Q5003",
+      "Q5004",
+      "Q5005",
+      "Q5006",
+      "Q5007",
+      "Q5008",
+      "Q5010",
+      "S9126",
+      "T2042",
+      "T2043",
+      "T2044",
+      "T2045",
+      "T2046"
+     ],
+     "streams": [
+      {
+       "stream": "hospice_enrollments"
+      }
+     ],
+     "type": "service"
+    },
+    "name": "Hospice"
+   },
+   {
+    "binding": {
+     "icd10_prefixes": [
+      "Z51.5"
+     ],
+     "type": "condition"
+    },
+    "name": "Palliative care"
+   },
+   {
+    "binding": {
+     "icd10_prefixes": [
+      "N18.6",
+      "Z99.2"
+     ],
+     "type": "condition"
+    },
+    "name": "ESRD or dialysis"
+   },
+   {
+    "binding": {
+     "icd10_prefixes": [
+      "O0",
+      "O1",
+      "O2",
+      "O3",
+      "O4",
+      "O6",
+      "O7",
+      "O8",
+      "O9",
+      "Z33",
+      "Z34"
+     ],
+     "type": "condition"
+    },
+    "name": "Pregnancy"
+   },
+   {
+    "binding": {
+     "diastolic_below": 90,
+     "systolic_below": 140,
+     "type": "blood_pressure"
+    },
+    "name": "Blood pressure"
+   }
+  ]
+ }
+}

@@ -385,8 +385,18 @@ def for_model(path, context_id, tokenizer, max_input_tokens, reserved_tokens):
     finally: db.close()
     text = encode(receipt['model_context']).decode()
     tokens = len(tokenizer.encode(text))
+    compaction = None
     if tokens + reserved_tokens > max_input_tokens:
-        raise ValueError('Native model token budget exceeded; no truncation performed')
+        # Heal, never wall the user out: demote the least valuable units to trimmed / digest / pointer tiers while the question,
+        # scope, permissions, evidence versions and every protected unit stay intact (context_compaction.verify).
+        from . import context_compaction
+        got = context_compaction.compact(receipt['model_context'], lambda t: len(tokenizer.encode(t)), max_input_tokens - reserved_tokens)
+        if not got['fit']:
+            raise ValueError('Native model token budget exceeded; compaction cannot keep the pinned constraints and protected units within it'
+                             + (': ' + '; '.join(got['failures'][:3]) if got['failures'] else ''))
+        text = context_compaction.encode(got['context'])
+        tokens = got['tokens']
+        compaction = {'schema': got['schema'], 'before_tokens': got['before_tokens'], 'tiers': got['tiers'], 'verified': got['verified']}
     return {'context_id': context_id, 'text': text, 'context_tokens': tokens,
-            'reserved_tokens': reserved_tokens, 'max_input_tokens': max_input_tokens,
+            'reserved_tokens': reserved_tokens, 'max_input_tokens': max_input_tokens, 'compaction': compaction,
             'clinical_decision_authority': False}

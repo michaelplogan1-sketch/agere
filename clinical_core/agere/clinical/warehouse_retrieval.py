@@ -166,6 +166,7 @@ class Retriever:
         if not self.meta.get('vector_file_sha256') or hashlib.sha256((self.path/'vectors.npy').read_bytes()).hexdigest()!=self.meta['vector_file_sha256']:
             raise ValueError('Vector file content changed')
         self.reranker=LocalReranker(ROOT/'models/bge-reranker-v2-m3',cache=self.path/'model-cache.sqlite3') if rerank else None
+        self._installed_reranker=self.reranker
         if (self.path/'clinical-events.json').exists():
             from .clinical_events import code_identity
             events=json.loads((self.path/'clinical-events.json').read_text())
@@ -188,25 +189,77 @@ class Retriever:
             self.annotation_db=sqlite3.connect((Path(link['path'])/'evidence.sqlite3').resolve().as_uri()+'?mode=ro',uri=True,check_same_thread=False)
             self.annotation_identity=link['model_identity']
     def close(self):
+        if getattr(self,'_qwen',None):self._qwen.close()
+        if getattr(self,'_graph',None):self._graph.close()
         self.db.close();self.encoder.close()
         if self.reranker:self.reranker.close()
         if self.annotation_db:self.annotation_db.close()
-    def search(self, question, *, patient=None, limit=8,patient_ids=None,analysis_window=None):
+    def policy(self,question):
+        """Adopted reranker / graph fallback for this question's type (reranker_bakeoff.choice) and the identities that key the cache."""
+        from . import reranker_bakeoff as RB, protected_channels as PC, med_graph_rag as MG, evidence_completeness as EC
+        c=RB.choice(question) if self.reranker else {'type':RB.query_type(question),'reranker':None,'graph_fallback':False,'basis':'reranking disabled'}
+        if c['reranker']=='qwen' and not (RB.QWEN_PATH/'agere-model.json').exists():
+            c={**c,'reranker':'bge','basis':c['basis']+'; Qwen3 reranker not installed: incumbent BGE'}
+        graph=(self.path/MG.FILE).exists()
+        ident={'bge':self.reranker.identity if self.reranker else None,'qwen':'qwen3-reranker-0.6b:'+RB.VERSION}.get(c['reranker'])
+        code=digest([hashlib.sha256(Path(m.__file__).read_bytes()).hexdigest() for m in (RB,PC,MG,EC)])
+        return {**c,'reranker_identity':ident,'graph_identity':MG.VERSION if graph else None,'code':code}
+    def _reranker(self,name):
+        if not self.reranker or name is None:return None
+        if self.reranker is not getattr(self,'_installed_reranker',self.reranker):return self.reranker  # an inspector's explicitly installed reranker
+        if name=='qwen':
+            if getattr(self,'_qwen',None) is None:
+                from .reranker_bakeoff import QwenReranker,QWEN_PATH
+                self._qwen=QwenReranker(QWEN_PATH,cache=self.path/'model-cache.sqlite3')
+            return self._qwen
+        return self.reranker
+    def candidates(self,question,*,patient=None,patient_ids=None,analysis_window=None):
+        """The fused candidate passages before reranking (reranker comparison and diagnostics)."""
         from .clinical_events import validate_window
         window=validate_window(analysis_window,self.meta['snapshot']['as_of'])
-        from .question_input import validate_question
-        validate_question(question)
-        if type(limit) is not int or not 1<=limit<=20:raise ValueError('Bounded result count required')
-        if patient and not self.db.execute('SELECT 1 FROM patients WHERE id=?',(patient,)).fetchone():raise ValueError('Unknown patient')
-        if patient_ids is not None and (not isinstance(patient_ids,list) or any(not isinstance(p,str) for p in patient_ids)):
-            raise ValueError('Explicit cohort membership required')
-        scoped=patient_ids is not None or window['basis']!='all_observed'
         membership=sorted(set(patient_ids)) if patient_ids is not None else None
-        key=digest([VERSION,hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),self.meta['source_digest'],
-                    self.encoder.identity,self.reranker.identity if self.reranker else None,
-                    getattr(self,'annotation_identity',None),question,patient,limit,membership,window])
-        t=time.perf_counter();old=self.db.execute('SELECT payload FROM result_cache WHERE id=?',(key,)).fetchone()
-        if old:return {**json.loads(old[0]),'cache_hit':True,'elapsed_seconds':time.perf_counter()-t,'new_paid_api_calls':0}
+        scoped=patient_ids is not None or window['basis']!='all_observed'
+        return self._candidates(question,patient,membership,window,scoped)[0]
+    def _exception_channel(self,question,patient,scope_join,have):
+        """Protected exception channel: subject terms AND exception cues, same scope, outside the fused top 24."""
+        from . import protected_channels as PC
+        expr=PC.channel_query(question)
+        if not expr:return []
+        params=[expr];where=''
+        if patient:where=' AND p.patient=?';params.append(patient)
+        try:
+            ids=[r[0] for r in self.db.execute('SELECT p.id FROM search JOIN passages p ON p.id=search.rowid'+scope_join+' WHERE search MATCH ?'+where+' ORDER BY bm25(search),p.id LIMIT 40',params)]
+        except sqlite3.OperationalError:
+            return []
+        out=[]
+        for pid in ids:
+            if str(pid) in have:continue
+            content,source=self.db.execute('SELECT c.text,p.source FROM passages p JOIN contents c ON c.id=p.content WHERE p.id=?',(pid,)).fetchone()
+            if not PC.kinds(content):continue
+            source=json.loads(source)
+            out.append({'id':str(pid),'text':content,'source':source,'note_id':source['record_id'],'start':source['start'],'protected':False,
+                        'rrf_score':0.0,'protected_channel':{'channel':'exception','kinds':PC.kinds(content),'terms':PC.subject_terms(question)}})
+            if len(out)>=PC.CHANNEL_CANDIDATES:break
+        return out
+    def _graph_fallback(self,question,patient,membership,candidates):
+        """Concept-graph candidates (med_graph_rag) fused with the hybrid candidates by reciprocal rank."""
+        from . import med_graph_rag as MG
+        if not (self.path/MG.FILE).exists():return None
+        if getattr(self,'_graph',None) is None:
+            self._graph=MG.GraphRetriever(self.path,stack_db=self.db)
+        found=self._graph.search(question,patient=patient,patient_ids=membership,limit=24)
+        if not found['candidates']:return None
+        fusion=Counter();byid={}
+        for ranking in (candidates,found['candidates']):
+            for rank,c in enumerate(ranking,1):
+                if c['id'] in byid and ranking is not candidates:
+                    byid[c['id']]['graph_score']=c.get('graph_score')
+                byid.setdefault(c['id'],c);fusion[c['id']]+=1/(60+rank)
+        merged=[byid[i] for i,_ in fusion.most_common(max(24,len(candidates)))]
+        return {'candidates':merged,'nodes':found['nodes']}
+    def _candidates(self,question,patient,membership,window,scoped):
+        """Scope -> lexical + dense -> reciprocal-rank fusion: the 24 fused candidates every reranker reorders."""
+        members=None
         scope_join=''
         if scoped:
             # Temporary tables avoid SQL parameter-count limits and filter BEFORE ranking.
@@ -267,13 +320,44 @@ class Retriever:
             source=json.loads(source)
             candidates.append({'id':str(pid),'text':content,'source':source,'note_id':source['record_id'],
                                'start':source['start'],'protected':False,'rrf_score':fusion[pid]})
-        ranked=self.reranker.rank(question,candidates,top_k=len(candidates)) if self.reranker and candidates else candidates
-        selected=[];seen=set();by_patient=Counter()
-        for row in ranked:
+        return candidates,members,scope_join
+    def search(self, question, *, patient=None, limit=8,patient_ids=None,analysis_window=None,complete=True):
+        from .clinical_events import validate_window
+        window=validate_window(analysis_window,self.meta['snapshot']['as_of'])
+        from .question_input import validate_question
+        validate_question(question)
+        if type(limit) is not int or not 1<=limit<=20:raise ValueError('Bounded result count required')
+        if patient and not self.db.execute('SELECT 1 FROM patients WHERE id=?',(patient,)).fetchone():raise ValueError('Unknown patient')
+        if patient_ids is not None and (not isinstance(patient_ids,list) or any(not isinstance(p,str) for p in patient_ids)):
+            raise ValueError('Explicit cohort membership required')
+        scoped=patient_ids is not None or window['basis']!='all_observed'
+        membership=sorted(set(patient_ids)) if patient_ids is not None else None
+        policy=self.policy(question)
+        key=digest([VERSION,hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),self.meta['source_digest'],
+                    self.encoder.identity,policy['reranker_identity'],policy['graph_identity'],policy['code'],
+                    getattr(self,'annotation_identity',None),question,patient,limit,membership,window,bool(complete)])
+        t=time.perf_counter();old=self.db.execute('SELECT payload FROM result_cache WHERE id=?',(key,)).fetchone()
+        if old:return {**json.loads(old[0]),'cache_hit':True,'elapsed_seconds':time.perf_counter()-t,'new_paid_api_calls':0}
+        candidates,members,scope_join=self._candidates(question,patient,membership,window,scoped)
+        from . import protected_channels as PC
+        channel=self._exception_channel(question,patient,scope_join,{c['id'] for c in candidates})
+        candidates=candidates+channel
+        graph_used=None
+        if policy['graph_fallback'] or len(candidates)<limit:
+            graph_used=self._graph_fallback(question,patient,membership,candidates)
+            if graph_used: candidates=graph_used['candidates']
+        PC.mark(question,candidates)
+        reranker=self._reranker(policy['reranker'])
+        ranked=reranker.rank(question,[{**c,'protected':False} for c in candidates],top_k=len(candidates)) if reranker and candidates else candidates
+        def accept(row,seen,by_patient):
             s=row['source'];group=(s['patient_id'],s['record_id'],s['field'])
-            if group in seen or (not patient and by_patient[s['patient_id']]>=2):continue
-            selected.append(row);seen.add(group);by_patient[s['patient_id']]+=1
-            if len(selected)>=limit:break
+            if group in seen or (not patient and by_patient[s['patient_id']]>=2):return False
+            seen.add(group);by_patient[s['patient_id']]+=1;return True
+        selected=PC.select(ranked,limit,patient,accept)
+        evidence_set=None
+        if complete and patient:  # conclusion-guided: fetch the components of the conclusion the question asks for that the ranked set lacks
+            from . import evidence_completeness as EC
+            selected,evidence_set=EC.complete(lambda q:self.search(q,patient=patient,limit=12,analysis_window=analysis_window,complete=False)['evidence'],question,selected,limit)
         if self.annotation_db:
             by_patient={}
             for row in selected:
@@ -292,10 +376,19 @@ class Retriever:
                                    'review_routing':a.get('review_routing')})
                 row['chart_context_annotations']=labels
         result={'schema':VERSION,'synthetic':True,'question':question,'patient_id':patient,'evidence':selected,
-                'candidate_passages':len(candidates),'method':'FTS5 BM25 + MiniLM cosine → reciprocal-rank fusion → BGE reranker → source diversity',
+                'candidate_passages':len(candidates),
+                'method':'FTS5 BM25 + MiniLM cosine'+(' + concept graph' if graph_used else '')+' → reciprocal-rank fusion → '+
+                         {'qwen':'Qwen3 reranker','bge':'BGE reranker'}.get(policy['reranker'] if reranker else '', 'no reranker')+
+                         ' → protected exception/contradiction slots → source diversity',
+                'evidence_set':evidence_set,
+                'retrieval_policy':{'query_type':policy['type'],'reranker':policy['reranker'] if reranker else None,'basis':policy['basis'],
+                                    'graph_fallback':bool(graph_used),'graph_nodes':(graph_used or {}).get('nodes'),
+                                    'exception_channel_candidates':len(channel),
+                                    'protected_selected':sum(1 for r in selected if r.get('protected')),
+                                    'protected_reserve':PC.reserve(limit)},
                 'snapshot':self.meta['snapshot'],'source_run':self.meta['source_run'],'cache_hit':False,
                 'elapsed_seconds':time.perf_counter()-t,'new_paid_api_calls':0,'complete_evidence_guarantee':False,
-                'query_windows':len(query_windows),'query_embedding':'Normalized mean of complete token windows; no source truncation',
+                'query_windows':len(self.encoder.windows(question,size=160,overlap=24)),'query_embedding':'Normalized mean of complete token windows; no source truncation',
                 'analysis_window':window,'cohort_patient_count':len(members) if scoped else None,
                 'scope_applied_before_ranking':scoped,
                 'scope':'Ranked passages for inspection, not a complete cohort or clinical answer. Scores are relevance, not correctness probabilities.'}
