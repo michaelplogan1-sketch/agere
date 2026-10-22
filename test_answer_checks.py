@@ -254,7 +254,7 @@ class Isolation(Base):
         self.assertTrue(any('zero_result_probe_shared failed: RuntimeError: boom' in a for a in v['annotations']))
         self.assertEqual(v['checks_run'], ['zero_result_probe_shared', 'answer_guard_suspicion', 'answer_guard_dense_catalog',
                                            'answer_guard_cross_check', 'unchecked_zero_guard', 'release_drift_guard', 'answer_shape_review',
-                                           'source_defect_annotation', 'cascade_certificates'])
+                                           'source_defect_annotation', 'jev_normalization_check', 'cascade_certificates'])
 
     def test_no_answer_object(self):
         self.assertTrue(A.check(self.stack, 'q', {}, {}, {'results': []})['accept'])

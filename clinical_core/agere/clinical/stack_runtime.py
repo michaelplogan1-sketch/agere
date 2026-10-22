@@ -312,7 +312,7 @@ class Stack:
             return bind_specialist_review(bundle,result,reconciliation) if reconciliation else result
         finally:ledger.close()
     def refine_statement(self,target,provider):
-        if provider in ('student_lexical','student_minilm'):
+        if provider in ('student_lexical','student_minilm','student_bioclinical'):
             from .semantic_student import read
             return read(self.path,target,provider)
         from .semantic_reader import read

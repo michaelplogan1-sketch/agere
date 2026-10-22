@@ -46,7 +46,10 @@ class Base(unittest.TestCase):
         self.tmp = tempfile.TemporaryDirectory()
         self.ledger_path = Path(self.tmp.name) / 'ledger.sqlite3'
         self.cal = Path(self.tmp.name) / 'cal.json'
-        self.env = mock.patch.dict(os.environ, {'AGERE_SYSTEM_ONE_CALIBRATION': str(self.cal), 'AGERE_LEDGER_PATH': str(self.ledger_path)})
+        self.env = mock.patch.dict(os.environ, {'AGERE_SYSTEM_ONE_CALIBRATION': str(self.cal), 'AGERE_LEDGER_PATH': str(self.ledger_path),
+                                                'AGERE_SYSTEM_ONE_DECIDERS': str(Path(self.tmp.name) / 'deciders.json'),
+                                                'AGERE_SYSTEM_ONE_STUDENTS': str(Path(self.tmp.name) / 'students'),
+                                                'AGERE_SYSTEM_ONE_DISTILL': str(Path(self.tmp.name) / 'distill.sqlite3')})
         self.env.start()
         FakeGateway.calls = []
 

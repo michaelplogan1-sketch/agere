@@ -141,6 +141,11 @@ PRODUCT['medication_state'] = {'population': 'optional', 'view': 'table',
                                'use': 'MEDICATION STATE per patient and drug class or GDMT pillar (RASi/ARNI, evidence-based beta-blocker, MRA, SGLT2i): '
                                       'filled and current, on the list but not filled (likely not taking), documented stopped or intolerant, or never '
                                       'recorded, with evidence dates. Which HF patients are missing a GDMT pillar, who is on / not on / stopped a class.'}
+PRODUCT['hcc_suspects'] = {'population': 'required', 'view': 'table',
+                           'use': 'HCC / ICD-10 SUSPECTING for named patients or a cohort: which conditions are supported by labs, fills, '
+                                  'problem lists, prior-year codes or note text but not coded this year, ranked by evidence and RAF value, '
+                                  'each top candidate confirmed by System One with cited evidence (retrieve-then-rank, never free generation). '
+                                  'Population RAF, recapture rates and dollar totals are risk_adjustment.'}
 PRODUCT['default_definition'] = {'population': 'optional', 'view': 'table',
                                  'use': 'NAMED STANDARD DEFINITIONS when a question states none: avoidable spend (AHRQ PQI admissions + NYU/Billings '
                                         'avoidable ED visits, in dollars), ambulatory-care-sensitive / preventable admissions, avoidable ED visits, '
@@ -173,7 +178,7 @@ NATIVE_SCALARS = {
     'profile': ('value',), 'risk_outcomes': ('value',), 'risk_adjustment': ('value',), 'program_effect': ('value',),
     'market': ('value',), 'monitor': ('value',), 'claims_review': ('value',), 'vbc': ('count', 'value'), 'calibration': ('value',),
     'line_of_therapy': ('value',), 'target_trial': ('value',), 'loop_closure': ('count', 'value'), 'explain': ('value',),
-    'medication_state': ('count',), 'default_definition': ('count', 'value'),
+    'medication_state': ('count',), 'default_definition': ('count', 'value'), 'hcc_suspects': ('count',),
 }
 NATIVE_SCALARS.update(_suite.native_scalars())
 

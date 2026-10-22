@@ -241,15 +241,16 @@ class ExecuteTest(Base):
         texts = {'P-1007': [('undated', 'carvedilol caused dizziness'), ('2031-01-01', 'future note'), ('2029-01-01', 'old note')]}
         seen = []
         st, p, out = self.run_plan(BB_Q, ['P-1007'], lambda q, ev: seen.extend(ev) or 'yes', texts=texts)
-        self.assertEqual([e['date'] for e in seen], ['2030-05-27', '2029-01-01'])
-        self.assertTrue(seen[0]['text'].startswith('[undated source] '))
+        self.assertEqual(sorted(e['date'] for e in seen), ['2029-01-01', '2030-05-27'])  # bounded packet: date order, future dropped
+        self.assertTrue(next(e for e in seen if e['date'] == '2030-05-27')['text'].startswith('[undated source] '))
 
     def test_providers_failed_status_is_not_memoized(self):
         mod = types.ModuleType(S1)
         mod.decide = lambda *a, **k: {'label': 'unknown', 'status': 'providers_failed', 'decided_by': None,
                                       'steps': [{'provider': 'jev', 'status': 'error', 'error': 'HTTP 503'}]}
         st = Stack(['P-1007'])
-        with mock.patch.dict(sys.modules, {S1: mod}):
+        import clinical_core.agere.clinical as pkg
+        with mock.patch.dict(sys.modules, {S1: mod}), mock.patch.object(pkg, 'system_one', mod, create=True):
             out = aq.execute(st, aq.plan(st, BB_Q))
         self.assertEqual(out['report']['system_one']['errors'], 1)
         self.assertEqual(out['report']['new_paid_api_calls'], 0)

@@ -51,6 +51,7 @@ from .engine_suite import MODULES as _SUITE  # wave-1 decision engines (engine_s
 TYPED |= set(_SUITE)
 OPTIONAL_POPULATION += tuple(_SUITE)
 TYPED |= {'atomic_questions'}  # atomic typed sub-questions via System One (atomic_questions.py); one population input
+TYPED |= {'hcc_suspects'}  # retrieve-then-rank ICD-10/HCC suspecting, System One confirmation (hcc_suspecting.py); one population
 
 
 def _library_measures():
@@ -317,6 +318,14 @@ def parameter_schema(op, catalog):
                     'select_labels': array(string(), 'Option labels that select a patient'),
                     'maximum_patients': {'type': 'integer', 'minimum': 1, 'maximum': aq.HARD_MAX_PATIENTS},
                     'window': WINDOW_SCHEMA, 'sources': array(string(aq.SOURCES)), 'providers': array(string(aq.PROVIDERS))})
+    if op == 'hcc_suspects':
+        from . import hcc_suspecting as hs
+        return obj({'question': string(None, 'The original question verbatim'),
+                    'year': {'type': ['integer', 'null'], 'description': 'Collection year (default: the year before the as-of date)'},
+                    'top': {'type': 'integer', 'minimum': 1, 'maximum': 10, 'description': 'Ranked candidates confirmed per patient'},
+                    'confirm': {'type': 'boolean', 'description': 'Confirm the top candidates with System One'},
+                    'maximum_patients': {'type': 'integer', 'minimum': 1, 'maximum': hs.HARD_MAX_PATIENTS},
+                    'channels': array(string(hs.CHANNELS), 'Closed candidate channels')})
     if op == 'default_definition':
         from . import default_definitions as dd
         return obj({'definition': string(sorted(dd.DEFINITIONS), 'Named standard used when the question states no definition: '

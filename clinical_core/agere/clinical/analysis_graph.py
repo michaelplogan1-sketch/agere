@@ -48,6 +48,7 @@ from .engine_suite import MODULES as _SUITE, code_paths as _suite_paths  # wave-
 CLINICAL_LOGIC.update(_SUITE)
 OPERATIONS |= set(CLINICAL_LOGIC)
 OPERATIONS |= {'atomic_questions'}  # atomic typed sub-questions answered by System One per patient (atomic_questions.py)
+OPERATIONS |= {'hcc_suspects'}  # retrieve-then-rank ICD-10/HCC suspects confirmed by System One (hcc_suspecting.py)
 NODE_FIELDS = {'id', 'operation', 'inputs', 'parameters', 'purpose'}
 LIMITS = [
     'Membership means observed predicate matches, not confirmed disease or absent care.',
@@ -628,6 +629,10 @@ def build_answer_core(plan, results, memberships, question):
         from . import atomic_questions
         answer.update(atomic_questions.answer(results[-1]['result'], plan, question))
         return answer
+    if last['operation'] == 'hcc_suspects':
+        from . import hcc_suspecting
+        answer.update(hcc_suspecting.answer(results[-1]['result'], plan, question))
+        return answer
     if last['operation'] in CLINICAL_LOGIC:
         import importlib
         answer.update(importlib.import_module(f".{CLINICAL_LOGIC[last['operation']]}", __package__).answer(results[-1]['result'], plan, question))
@@ -913,6 +918,10 @@ def validate(plan, as_of):
         elif op == 'atomic_questions':
             from . import atomic_questions
             p = atomic_questions.validate(p)
+        elif op == 'hcc_suspects':
+            from . import hcc_suspecting
+            if len(inputs) != 1: raise ValueError('hcc_suspects reads one population')
+            p = hcc_suspecting.validate(p)
         elif op in ('loop_closure', 'diagnostic_delay', 'risk_outcomes'):
             from . import loop_closure, diagnostic_delay, risk_outcomes
             p = {'loop_closure': loop_closure, 'diagnostic_delay': diagnostic_delay, 'risk_outcomes': risk_outcomes}[op].validate(p)
@@ -1256,7 +1265,7 @@ def code_identity():
                       Path(__file__).with_name('loop_closure.py'), Path(__file__).with_name('diagnostic_delay.py'),
                       Path(__file__).with_name('risk_outcomes.py'), Path(__file__).with_name('safety_data.py'),
                       Path(__file__).with_name('medication_state.py'), Path(__file__).with_name('default_definitions.py'),
-                      Path(__file__).with_name('atomic_questions.py'), *_foundation_files(),
+                      Path(__file__).with_name('atomic_questions.py'), Path(__file__).with_name('hcc_suspecting.py'), *_foundation_files(),
                       *[p for p in _suite_paths() if p.exists()],
                       Path(__file__).with_name('market.py'),
                       Path(__file__).with_name('contract_strategy.py'), Path(__file__).with_name('programs.py'), Path(__file__).with_name('vbc.py'),
@@ -1804,6 +1813,12 @@ def execute(stack, plan, *, question=None):
                 from . import atomic_questions
                 chosen = memberships[node['inputs'][0]]
                 detail = atomic_questions.run(stack, sorted(chosen.yes), params, meta['snapshot']['as_of'])
+                paid_calls += detail['new_paid_api_calls']
+                detail['input_membership'] = membership_receipt(chosen)
+            elif op == 'hcc_suspects':
+                from . import hcc_suspecting
+                chosen = memberships[node['inputs'][0]]
+                detail = hcc_suspecting.run(stack, sorted(chosen.yes), params, meta['snapshot']['as_of'])
                 paid_calls += detail['new_paid_api_calls']
                 detail['input_membership'] = membership_receipt(chosen)
             elif op == 'review':

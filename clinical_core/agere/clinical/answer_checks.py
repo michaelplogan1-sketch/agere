@@ -909,6 +909,8 @@ def check(stack, question, graph, receipt, result, *, ledger=None, catalog=None,
     run('answer_shape_review', lambda: _shape(question, graph, result, verdict))
     run('source_defect_annotation', lambda: verdict['annotations'].extend(__import__(__package__ + '.dq_detectors', fromlist=['annotate']).annotate(stack, question, graph, answer)))
     if verdict['accept']: _s1_gate.apply_check(stack, question, graph, verdict, ledger=ledger)  # System One: answers the question as asked?
+    from . import normalization_check as _norm  # Jev second check on the normalized codes the plan reads (annotation only)
+    run('jev_normalization_check', lambda: _norm.annotate_verdict(stack, graph, answer, verdict, ledger=ledger))
     verdict['checks_run'].append('cascade_certificates')
     verdict['reasons'] = list(dict.fromkeys(verdict['reasons']))
     verdict['annotations'] = list(dict.fromkeys(verdict['annotations']))
@@ -926,7 +928,7 @@ def gate(cascade, name, graph, receipt, result):
     if verdict['cost']['new_paid_api_calls'] or verdict['cost']['usd']:
         cascade.spend(verdict['cost']['new_paid_api_calls'], verdict['cost']['usd'])
     summary = {k: verdict[k] for k in ('version', 'accept', 'reasons', 'annotations', 'probe', 'checks_run', 'certificate', 'confidence', 'system_one',
-                                       'system_one_cross_check') if k in verdict}
+                                       'system_one_cross_check', 'normalization_check') if k in verdict}
     if isinstance(receipt, dict): receipt['answer_checks'] = summary
     if not verdict['accept']:
         cascade.reject(name, verdict['reasons'] or ['answer checks rejected the proposal']); return None

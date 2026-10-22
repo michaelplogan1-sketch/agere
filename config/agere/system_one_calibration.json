@@ -2,11 +2,75 @@
   "note": "Tasks absent here are identity (no shift). Only chart_assertion has a labeled set; no warehouse stream carries ground-truth assertion labels for note text.",
   "schema": "system-one-calibration/1",
   "tasks": {
-    "chart_assertion": {
-      "ece_after": 0.0669623015731396,
-      "ece_after_loo": 0.09893342126654707,
-      "ece_before": 0.11458180375294595,
-      "fitted_at": "2026-10-22T11:08:44+00:00",
+    "atomic_gdmt_pillar": {
+      "ece_after": 0.09481018111683348,
+      "ece_after_loo": 0.15157894762816534,
+      "ece_before": 0.10172529340904801,
+      "fitted_at": "2026-10-22T12:59:34+00:00",
+      "l2": 0.01,
+      "label_counts": {
+        "intolerant": 3,
+        "not_on": 2,
+        "on": 4,
+        "stopped": 2,
+        "unknown": 1
+      },
+      "method": "per-option log-odds shift, NLL + L2",
+      "n": 12,
+      "nll_after": 0.10550753956266577,
+      "nll_after_loo": 0.2049347472698778,
+      "nll_before": 0.2255221759751951,
+      "shift": {
+        "intolerant": 1.692575,
+        "not_on": -0.429779,
+        "on": -0.335191,
+        "stopped": -0.626863,
+        "unknown": -0.300742
+      },
+      "source": {
+        "model": "pplx-decider-v1.1-27b",
+        "provider": "perplexity",
+        "raw_top_label_accuracy": 0.9167,
+        "rows_answered": 12,
+        "set": "clinical_core.agere.clinical.system_one_deciders:atomic_gdmt_pillar",
+        "via": "system-one-deciders/1"
+      }
+    },
+    "atomic_why_factor": {
+      "ece_after": 0.05823568982048121,
+      "ece_after_loo": 0.08629601126950043,
+      "ece_before": 0.0711037571570515,
+      "fitted_at": "2026-10-22T12:59:33+00:00",
+      "l2": 0.01,
+      "label_counts": {
+        "no": 7,
+        "unknown": 2,
+        "yes": 7
+      },
+      "method": "per-option log-odds shift, NLL + L2",
+      "n": 16,
+      "nll_after": 0.06605015723737223,
+      "nll_after_loo": 0.10995253874984462,
+      "nll_before": 0.0888077349624543,
+      "shift": {
+        "no": 0.257531,
+        "unknown": -0.646663,
+        "yes": 0.389132
+      },
+      "source": {
+        "model": "pplx-decider-v1.1-27b",
+        "provider": "perplexity",
+        "raw_top_label_accuracy": 1.0,
+        "rows_answered": 16,
+        "set": "clinical_core.agere.clinical.system_one_deciders:atomic_why_factor",
+        "via": "system-one-deciders/1"
+      }
+    },
+    "atomic_yes_no": {
+      "ece_after": 0.04687309202116402,
+      "ece_after_loo": 0.05558717647430697,
+      "ece_before": 0.05326463270128488,
+      "fitted_at": "2026-10-22T12:59:32+00:00",
       "l2": 0.01,
       "label_counts": {
         "no": 9,
@@ -15,22 +79,125 @@
       },
       "method": "per-option log-odds shift, NLL + L2",
       "n": 24,
-      "nll_after": 0.16295198114186776,
-      "nll_after_loo": 0.2735769215006372,
-      "nll_before": 0.31997649224404306,
+      "nll_after": 0.05275483237075396,
+      "nll_after_loo": 0.07674452616311843,
+      "nll_before": 0.06459962174740809,
       "shift": {
-        "no": 1.454959,
-        "unknown": 0.395344,
-        "yes": -1.850303
+        "no": -0.526232,
+        "unknown": 0.058725,
+        "yes": 0.467507
       },
       "source": {
-        "cost_usd": 0.000582288,
-        "model": "jev-1.13.0",
-        "note": "24 live Jev calls on 2026-10-22 (refit from ledger cache is free); labels exact by construction; small handcrafted set, so check ece_after_loo, not ece_after",
-        "provider": "jev",
-        "raw_top_label_accuracy": 0.875,
+        "model": "pplx-decider-v1.1-27b",
+        "provider": "perplexity",
+        "raw_top_label_accuracy": 1.0,
         "rows_answered": 24,
-        "set": "CHART_ASSERTION_SEED (system_one.py, handcrafted)"
+        "set": "clinical_core.agere.clinical.system_one_deciders:atomic_yes_no",
+        "via": "system-one-deciders/1"
+      }
+    },
+    "chart_assertion": {
+      "ece_after": 0.08210130360173694,
+      "ece_after_loo": 0.08129766358301442,
+      "ece_before": 0.08207017443557925,
+      "fitted_at": "2026-10-22T12:59:31+00:00",
+      "l2": 0.01,
+      "label_counts": {
+        "no": 9,
+        "unknown": 7,
+        "yes": 8
+      },
+      "method": "per-option log-odds shift, NLL + L2",
+      "n": 24,
+      "nll_after": 0.2839878410810344,
+      "nll_after_loo": 0.42075512832015743,
+      "nll_before": 0.415397476612312,
+      "shift": {
+        "no": 0.71375,
+        "unknown": 0.941469,
+        "yes": -1.655219
+      },
+      "source": {
+        "model": "pplx-decider-v1.1-27b",
+        "provider": "perplexity",
+        "raw_top_label_accuracy": 0.9167,
+        "rows_answered": 24,
+        "set": "clinical_core.agere.clinical.system_one_deciders:chart_assertion",
+        "via": "system-one-deciders/1"
+      }
+    },
+    "hcc_confirm": {
+      "ece_after": 0.01013830818938762,
+      "ece_after_loo": 0.01870078492345122,
+      "ece_before": 0.017501572497094064,
+      "fitted_at": "2026-10-22T12:59:34+00:00",
+      "l2": 0.01,
+      "label_counts": {
+        "no": 5,
+        "unknown": 1,
+        "yes": 6
+      },
+      "method": "per-option log-odds shift, NLL + L2",
+      "n": 12,
+      "nll_after": 0.010401588665945873,
+      "nll_after_loo": 0.019793120455913065,
+      "nll_before": 0.018336258073708783,
+      "shift": {
+        "no": -0.569938,
+        "unknown": 0.067538,
+        "yes": 0.502399
+      },
+      "source": {
+        "model": "jev-1.13.0",
+        "provider": "jev",
+        "raw_top_label_accuracy": 1.0,
+        "rows_answered": 12,
+        "set": "clinical_core.agere.clinical.system_one_deciders:hcc_confirm",
+        "via": "system-one-deciders/1"
+      }
+    },
+    "therapy_barrier_reason": {
+      "ece_after": 0.07406261067699497,
+      "ece_after_loo": 0.08291467319500453,
+      "ece_before": 0.1409642805231962,
+      "fitted_at": "2026-10-22T13:01:06+00:00",
+      "l2": 0.01,
+      "label_counts": {
+        "allergy_angioedema": 5,
+        "contraindication_lab": 5,
+        "contraindication_vitals": 0,
+        "cost_access": 5,
+        "intolerance_side_effect": 5,
+        "no_barrier": 10,
+        "not_indicated": 0,
+        "other": 5,
+        "patient_declined": 5,
+        "unknown": 0
+      },
+      "method": "per-option log-odds shift, NLL + L2",
+      "n": 40,
+      "nll_after": 0.08091454744867145,
+      "nll_after_loo": 0.09205578480029865,
+      "nll_before": 0.6796514838857416,
+      "shift": {
+        "allergy_angioedema": 0.826159,
+        "contraindication_lab": -1.312572,
+        "contraindication_vitals": -0.114977,
+        "cost_access": -0.017757,
+        "intolerance_side_effect": 0.172337,
+        "no_barrier": 2.891202,
+        "not_indicated": -0.135415,
+        "other": -0.443107,
+        "patient_declined": -0.097407,
+        "unknown": -1.768463
+      },
+      "source": {
+        "model": "pplx-decider-v1.1-27b",
+        "provider": "perplexity",
+        "raw_top_label_accuracy": 0.775,
+        "rows_answered": 40,
+        "set": "clinical_core.agere.clinical.system_one_deciders:therapy_barrier_reason",
+        "via": "system-one-deciders/1"
       }
     }
   }

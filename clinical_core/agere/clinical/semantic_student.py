@@ -25,7 +25,11 @@ PARTITIONS=('train','calibration','validation')
 POLICY={'minimum_accepted_rows':30,'minimum_accepted_families':5,
         'maximum_empirical_error_upper_95':0.10,'minimum_coverage':0.25,
         'temperature_bounds':[0.25,4.0], 'automatic_promotion':False}
-PROVIDERS={'student_lexical':'lexical','student_minilm':'minilm'}
+PROVIDERS={'student_lexical':'lexical','student_minilm':'minilm','student_bioclinical':'bioclinical'}
+ENCODERS={'minilm':'minilm-l6-v2','bioclinical':'bioclinical-modernbert'}  # frozen encoders under models/ (mean pooling)
+# Students trained by tools/train_semantic_students_v2.py from the same authored curriculum; used when a stack has no
+# explicit semantic-student-link.json (a stack link always wins).
+DEFAULT_DIR=Path(__file__).resolve().parents[3]/'artifacts'/'agere-semantic-students-v2'
 
 
 def sha(path): return hashlib.sha256(Path(path).read_bytes()).hexdigest()
@@ -135,7 +139,7 @@ def metrics(rows,preds,threshold):
 
 
 def fit(rows,output,*,kind,supervision,provenance):
-    if kind not in ('lexical','minilm'):raise ValueError('Unknown student representation')
+    if kind not in ('lexical',*ENCODERS):raise ValueError('Unknown student representation')
     if supervision not in ('authored_synthetic_development','source_reviewed_snapshot','machine_teacher_snapshot'):raise ValueError('Explicit supervision type required')
     validate_rows(rows)
     output=Path(output);output.mkdir(parents=True,exist_ok=False)
@@ -152,7 +156,7 @@ def fit(rows,output,*,kind,supervision,provenance):
             arrays['idf']=vectorizer.idf_
         else:
             from ...local_encoders import LocalEncoder
-            encoder=LocalEncoder(reader.ROOT/'models/minilm-l6-v2',pooling='mean',cache=output/'encoder-cache.sqlite3')
+            encoder=LocalEncoder(reader.ROOT/'models'/ENCODERS[kind],pooling='mean',cache=output/'encoder-cache.sqlite3')
             feature={'kind':kind,'encoder_path':str(encoder.path),'encoder_identity':encoder.identity,'pooling':'mean'}
             representations={p:encoder.encode(texts[p],batch_size=16) for p in PARTITIONS}
         with threadpool_limits(limits=4):
@@ -219,7 +223,7 @@ class Student:
         if self.feature['kind']=='lexical':
             self.vectorizer=TfidfVectorizer(analyzer='char_wb',ngram_range=(3,5),sublinear_tf=True,vocabulary=self.feature['vocabulary'])
             self.vectorizer.idf_=self.arrays['idf']
-        elif self.feature['kind']=='minilm':
+        elif self.feature['kind'] in ENCODERS:
             from ...local_encoders import LocalEncoder
             self.encoder=LocalEncoder(self.feature['encoder_path'],pooling=self.feature['pooling'],cache=self.path/'inference-cache.sqlite3')
             if self.encoder.identity!=self.feature['encoder_identity']:
@@ -240,7 +244,7 @@ class Student:
 
 
 def attach(stack,models):
-    if set(models)!=set(PROVIDERS):raise ValueError('Attach both compared local students')
+    if not set(models)<=set(PROVIDERS) or not {'student_lexical','student_minilm'}<=set(models):raise ValueError('Attach both compared local students (BioClinical optional)')
     links={}
     for provider,path in models.items():
         path=Path(path).resolve();m=verify(path)
@@ -254,8 +258,12 @@ def attach(stack,models):
 def linked(stack,provider):
     if provider not in PROVIDERS:raise ValueError('Unknown local student')
     f=Path(stack)/'semantic-student-link.json'
-    if not f.exists():raise ValueError('No trained local students attached')
-    link=json.loads(f.read_text())[provider];path=Path(link['path'])
+    links=json.loads(f.read_text()) if f.exists() else {}
+    if provider not in links:
+        default=DEFAULT_DIR/PROVIDERS[provider]
+        if not (default/'manifest.json').exists():raise ValueError('No trained local student attached for '+provider)
+        links[provider]={'path':str(default),'manifest_sha256':sha(default/'manifest.json')}
+    link=links[provider];path=Path(link['path'])
     if sha(path/'manifest.json')!=link['manifest_sha256']:raise ValueError('Attached student manifest changed')
     m=verify(path)
     if m['kind']!=PROVIDERS[provider]:raise ValueError('Wrong model linked to student provider')
@@ -274,12 +282,12 @@ def linked(stack,provider):
 
 
 def status(stack):
-    if not (Path(stack)/'semantic-student-link.json').exists():return {'synthetic':True,'models':{},'status':'not_attached'}
     models={}
     for provider in PROVIDERS:
-        path,m,h=linked(stack,provider)
+        try:path,m,h=linked(stack,provider)
+        except ValueError:continue  # not attached / not trained: the other students still report
         models[provider]={'model_identity':h,'score_reference':m.get('score_reference','supplied_development_labels'),**{k:m[k] for k in ('kind','supervision','counts','calibration','validation','release','limits','model_artifact_bytes','foundation_weights_updated')}}
-    return {'synthetic':True,'models':models,'status':'shadow_only','new_paid_api_calls':0}
+    return {'synthetic':True,'models':models,'status':'shadow_only' if models else 'not_attached','new_paid_api_calls':0}
 
 
 def read(stack,target,provider):

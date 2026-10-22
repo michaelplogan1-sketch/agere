@@ -44,6 +44,7 @@ TIERS = {
     'learned_verified_sql': ('free', 'verified hosted answers, n=3, uncalibrated', 'graph'),
     'evidence_review': ('free readers first; Jev/Perplexity only with allow_live', 'students/windowed/Kev/d1 then typed providers; uncalibrated', 'graph'),
     'atomic_system_one': ('Jev/Perplexity ~$0.0002 per patient', 'atomic typed sub-questions per patient, aggregated in code; literal + output check; uncalibrated', 'graph'),
+    'hcc_suspecting': ('free retrieval/ranking; Jev/Perplexity ~$0.0002 per confirmation', 'retrieve-then-rank ICD-10/HCC suspects, System One confirms; uncalibrated', 'graph'),
     'specialist_families_late': ('free', 'DQ/VBC families with recorded convention defaults', 'graph'),
     'cohort_family_late': ('free (Haiku slot filler only when slots are missing)', 'certified 0.71', 'graph'),
     'local_normalizer': ('free (Qwen3-4B LoRA)', 'rewording guarded, then fully consumed grammar', 'typed'),
@@ -67,7 +68,7 @@ ORDER = tuple(TIERS)
 PAID = {'typed_decider', 'hosted_typed_interpreter', 'hosted_verified_sql', 'frontier_graph_planner', 'hybrid_analysts',
         'metric_router', 'operator_router', 'semantic_analyst', 'stack_planner_propose', 'atomic_system_one'}
 FEEDBACK_READERS = ('hosted_typed_interpreter',)  # proposers whose prompt includes recorded corrections
-TYPED_WITH_POPULATION = {'terminology_mapping', 'qwen_typed_interpreter', 'hosted_typed_interpreter', 'evidence_retrieval', 'evidence_review', 'atomic_system_one'}  # the only tiers that honour a saved cohort
+TYPED_WITH_POPULATION = {'terminology_mapping', 'qwen_typed_interpreter', 'hosted_typed_interpreter', 'evidence_retrieval', 'evidence_review', 'atomic_system_one', 'hcc_suspecting'}  # the only tiers that honour a saved cohort
 
 # Components that are not proposers, and why (stack_runtime.model_roles reports these).
 NOT_PROPOSERS = {
@@ -486,6 +487,9 @@ class Cascade:
     def tier_atomic_system_one(self):
         from .atomic_questions import tier
         return self.graph('atomic_system_one', tier(self.stack, self.question, self.population, ledger=self.ledger))
+    def tier_hcc_suspecting(self):
+        from .hcc_suspecting import tier
+        return self.graph('hcc_suspecting', tier(self.stack, self.question, self.population))
     def tier_scoped_review_compiler(self):
         from .legacy_proposers import scoped_review_tier
         return self.graph('scoped_review_compiler', scoped_review_tier(self.stack, self.question))

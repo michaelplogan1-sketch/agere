@@ -340,6 +340,13 @@ CONTRACTS['atomic_questions'] = {'inputs':['earlier_set'],'parameters':{'questio
               'medication_state rows for medication subjects) by System One (Jev first, Perplexity fallback, ~$0.0002 per patient), aggregated in code: '
               'any (patient lists, why-factor tables, verdicts), latest (per-pillar tables), count (count or share), conflict / trajectory (per document). '
               'Every label cites its evidence; patient count per call is capped and a capped answer is partial and says so.'}
+CONTRACTS['hcc_suspects'] = {'inputs':['earlier_set'],'parameters':{'question':'the question verbatim','year':None,'top':3,'confirm':True,
+    'maximum_patients':10,'channels':['recapture','evidence_rules','notes']},
+    'meaning':'HCC / ICD-10 SUSPECTING by retrieve-then-rank, never free code generation: candidates from closed channels (V28 recapture gaps, '
+              'eGFR/HbA1c/LVEF/BMI/PHQ evidence rules and problem-list entries with no eligible code, a closed phrase table over the patient\'s '
+              'notes), already-coded HCCs dropped hierarchy-aware, ranked in code (channel, evidence rows, RAF delta, corroboration), the top '
+              'candidates per patient confirmed by System One (yes/no/unknown with cited evidence). Use for "which HCCs should we suspect for P", '
+              '"undocumented / uncoded conditions", "suspected diagnoses missing a code". Population RAF and recapture totals stay risk_adjustment.'}
 CONTRACTS['default_definition'] = {'inputs':['optional earlier_set'],'parameters':{'definition':'avoidable_spend|pqi_admissions|ed_avoidability|measure_gap|pdc_adherence',
     'period':{'start':'','end':''},'measure':'','drug_classes':[],'threshold':0.8,'group_by':'none|practice|pcp|payer','select':'gap|numerator|denominator'},
     'meaning':'Named standard defaults used when a question states no definition (answer, and name the definition used): avoidable spend = AHRQ PQI 90 '
