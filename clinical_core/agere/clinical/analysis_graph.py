@@ -42,6 +42,8 @@ OPERATIONS |= {'contract_strategy'}  # risk contracts as options, track selectio
 OPERATIONS |= {'target_trial', 'line_of_therapy', 'trial_feasibility'}  # life-sciences / RWE engines (target_trial.py, line_of_therapy.py, trial_feasibility.py)
 OPERATIONS |= {'loop_closure', 'diagnostic_delay', 'risk_outcomes'}  # quality & safety: open loops, diagnostic delay look-back, risk-standardized outcomes
 CLINICAL_LOGIC = {'medication_state': 'medication_state', 'default_definition': 'default_definitions'}  # op -> module (validate/execute/answer)
+from .foundation_engines import OPERATIONS as _FOUNDATION, files as _foundation_files
+CLINICAL_LOGIC.update(_FOUNDATION)  # data-foundation engines (foundation_engines.py): same validate/execute/answer contract
 OPERATIONS |= set(CLINICAL_LOGIC)
 OPERATIONS |= {'atomic_questions'}  # atomic typed sub-questions answered by System One per patient (atomic_questions.py)
 NODE_FIELDS = {'id', 'operation', 'inputs', 'parameters', 'purpose'}
@@ -1252,7 +1254,7 @@ def code_identity():
                       Path(__file__).with_name('loop_closure.py'), Path(__file__).with_name('diagnostic_delay.py'),
                       Path(__file__).with_name('risk_outcomes.py'), Path(__file__).with_name('safety_data.py'),
                       Path(__file__).with_name('medication_state.py'), Path(__file__).with_name('default_definitions.py'),
-                      Path(__file__).with_name('atomic_questions.py'),
+                      Path(__file__).with_name('atomic_questions.py'), *_foundation_files(),
                       Path(__file__).with_name('market.py'),
                       Path(__file__).with_name('contract_strategy.py'), Path(__file__).with_name('programs.py'), Path(__file__).with_name('vbc.py'),
                       *[Path(__file__).with_name(n) for n in ('target_trial.py', 'line_of_therapy.py', 'trial_feasibility.py')],

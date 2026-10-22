@@ -87,6 +87,9 @@ def local_plan(question,as_of):
     from .program_acquisition import local_question as acquisition_question
     acquisition=acquisition_question(question)
     if acquisition:return validate(acquisition,as_of),'exact_imported_program_acquisition'
+    from .foundation_engines import local_question as foundation_question
+    foundation,op=foundation_question(question,as_of)
+    if foundation:return validate(foundation,as_of),f'exact_foundation_{op}'
     from .measure_composition import local_question as measure_question
     measure=measure_question(question)
     if measure:return validate(measure,as_of),'exact_documentary_measure'
