@@ -790,6 +790,8 @@ def handle_compose(stack, body, hosted_factory=None):
             if resolution and resolution['follow_up'] and isinstance(exc, (ValueError, PermissionError, RuntimeError)):
                 # The user must see what was attempted even when it was not answered.
                 exc.args = (f'Resolved question: "{resolution["standalone"]}". {exc}',)
+        from .learning_hooks import after_failure
+        after_failure(stack, logged, exc)
         raise
     if hosted_calls or hosted_usd:
         econ = dict(result.get('planning_economics') or {})
@@ -854,6 +856,8 @@ def handle_compose(stack, body, hosted_factory=None):
         learning.quarantine(stack.path, logged, result.get('answer'))
     if isinstance(local, dict) and local.get('operator_router'):
         learning.record_routing(stack.path, logged, local['operator_router'], executed=pr.get('route') == 'operator_router')
+    from .learning_hooks import after_answer  # every answer feeds learning: saved pairs, question learning, training corpus
+    result = {**result, 'learning': after_answer(stack, logged, result, body=body)}
     return result
 
 
