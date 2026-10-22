@@ -232,6 +232,8 @@ def route(question, profile, as_of):
     low = ' '.join(str(question).lower().split())
     named = [m for m, rx in MEASURE_WORDS if re.search(rx, low)]
     gaps = re.search(GAPS, low)
+    # a named screening gap at member level is a DEQM gap list; rates and practice / PCP breakdowns stay with the measure library
+    if not gaps and named and re.search(r'\b(?:screening|mammogra\w*|colorectal|breast) gaps?\b', low) and re.search(r'\b(?:which|list|show) (?:of (?:our |the )?)?members\b|\bmembers (?:with|who have)\b', low): gaps = True
     screening = re.search(r'\b(?:overdue|due|missing|needing|need|without|not (?:had|received|up to date)|never had|behind on)\b', low) and named
     if not (gaps or screening): return None
     if re.search(r'\b(?:positive|abnormal)\b', low): return None  # follow-up of a positive / abnormal result is loop_closure

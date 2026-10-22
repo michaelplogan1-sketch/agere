@@ -186,4 +186,4 @@ def route(question, profile, as_of):
 TEMPLATES = ['Which prior authorization requests are still unresolved?', 'how many PA denials never got approved and need an appeal',
              'prior auth rejects by payer', 'which Medicare members should we screen for Extra Help', 'list rejected pharmacy claims not covered by the plan',
              'how long do prior authorizations take to resolve', 'formulary exception candidates', 'medication access summary by drug',
-             'pharmacy PA rejects by plan', 'which drugs get rejected at the pharmacy for missing prior auth', 'reject code 75 counts by payer']
+             'pharmacy PA rejects by plan', 'pharmacy prior auth rejects by drug', 'pharmacy prior authorization rejects by payer']
