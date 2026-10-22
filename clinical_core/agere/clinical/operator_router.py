@@ -123,7 +123,7 @@ def tool(op):
             'input_schema': {'type': 'object', 'properties': properties, 'required': ['parameters']}}
 
 
-def brief(text, limit=260):
+def brief(text, limit=150):
     """The menu line: whole sentences up to ~limit characters (the full description is in the step-2 tool)."""
     if len(text) <= limit: return text
     cut = text[:limit]
