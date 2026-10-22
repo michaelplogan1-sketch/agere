@@ -1,0 +1,30 @@
+[
+  {
+    "question": "Where do we land on Medicare Star Ratings this year?",
+    "expect_operation": "star_rating"
+  },
+  {
+    "question": "What is our projected overall star rating and do we earn the quality bonus payment?",
+    "expect_operation": "star_rating"
+  },
+  {
+    "question": "How many more patients do we need to close to get to 4 stars?",
+    "expect_operation": "star_rating"
+  },
+  {
+    "question": "Probability our MA contract reaches 4 stars if we close 40% of open gaps",
+    "expect_operation": "star_rating"
+  },
+  {
+    "question": "Which star measures are below the 4-star cut point?",
+    "expect_operation": "star_rating"
+  },
+  {
+    "question": "Estimate our QBP dollars with a $1,100 benchmark",
+    "expect_operation": "star_rating"
+  },
+  {
+    "question": "Can we get to 4.5 stars?",
+    "expect_operation": "star_rating"
+  }
+]

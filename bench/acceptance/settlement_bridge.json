@@ -1,0 +1,26 @@
+[
+  {
+    "question": "What is closing our care gaps worth in the MSSP settlement?",
+    "expect_operation": "settlement_bridge"
+  },
+  {
+    "question": "Build the opportunity-to-settlement bridge for our outreach worklist",
+    "expect_operation": "settlement_bridge"
+  },
+  {
+    "question": "Show the settlement waterfall from current to projected if we work the outreach list",
+    "expect_operation": "settlement_bridge"
+  },
+  {
+    "question": "How much shared savings would gap closures and outreach to 150 patients add?",
+    "expect_operation": "settlement_bridge"
+  },
+  {
+    "question": "Bridge our quality gap closure work to shared savings dollars with a $1,050 benchmark",
+    "expect_operation": "settlement_bridge"
+  },
+  {
+    "question": "What would working the worklist earn us under ACO REACH?",
+    "expect_operation": "settlement_bridge"
+  }
+]
