@@ -77,7 +77,7 @@
    "symbol": "Cascade",
    "role_on_question_path": "Runs the 22 TIERS in ORDER after the deterministic decline; every proposal must pass literal + output checks.",
    "current_wiring": "spine:checked_proposer_cascade",
-   "evidence": "clinical_core/agere/clinical/proposers.py:95 (def); clinical_core/agere/clinical/proposers.py:85-160; clinical_core/agere/clinical/shared_planner.py:844-856",
+   "evidence": "clinical_core/agere/clinical/proposers.py:96 (def); clinical_core/agere/clinical/proposers.py:85-160; clinical_core/agere/clinical/shared_planner.py:844-856",
    "cost": "free",
    "calibration": null,
    "flag": "AGERE_PROPOSERS, AGERE_PROPOSER_SKIP"
@@ -90,7 +90,7 @@
    "symbol": "execute",
    "role_on_question_path": "Presents the result already executed inside the cascade with proposer calibration disclosed.",
    "current_wiring": "spine:execution",
-   "evidence": "clinical_core/agere/clinical/proposers.py:494 (def); clinical_core/agere/clinical/proposers.py:354-371; clinical_core/agere/clinical/shared_planner.py:897-899",
+   "evidence": "clinical_core/agere/clinical/proposers.py:498 (def); clinical_core/agere/clinical/proposers.py:354-371; clinical_core/agere/clinical/shared_planner.py:897-899",
    "cost": "free",
    "calibration": null,
    "flag": null
@@ -155,7 +155,7 @@
    "symbol": "execute",
    "role_on_question_path": "Read-only execution of every graph node (engines, set ops, sql); attaches answer_checks + benchmarks.",
    "current_wiring": "inside:checked_proposer_cascade",
-   "evidence": "clinical_core/agere/clinical/analysis_graph.py:1393 (def); clinical_core/agere/clinical/analysis_graph.py:1365-2024; clinical_core/agere/clinical/proposers.py:260",
+   "evidence": "clinical_core/agere/clinical/analysis_graph.py:1402 (def); clinical_core/agere/clinical/analysis_graph.py:1365-2024; clinical_core/agere/clinical/proposers.py:260",
    "cost": "free",
    "calibration": null,
    "flag": null
@@ -168,7 +168,7 @@
    "symbol": "validate",
    "role_on_question_path": "Validates node operations, inputs and parameters before any graph executes.",
    "current_wiring": "inside:ladder_adapter",
-   "evidence": "clinical_core/agere/clinical/analysis_graph.py:829 (def); clinical_core/agere/clinical/analysis_graph.py:806-1116",
+   "evidence": "clinical_core/agere/clinical/analysis_graph.py:834 (def); clinical_core/agere/clinical/analysis_graph.py:806-1116",
    "cost": "free",
    "calibration": null,
    "flag": null
@@ -662,7 +662,7 @@
    "symbol": "propose",
    "role_on_question_path": "Opus proposes a typed graph over the full capability catalog; Ladder.frontier_planner also holds the free exact-question plan cache (gated as paid here).",
    "current_wiring": "cascade_tier:frontier_graph_planner",
-   "evidence": "clinical_core/agere/clinical/graph_planner.py:359 (def); clinical_core/agere/clinical/proposers.py:47 (TIERS), clinical_core/agere/clinical/proposers.py:299 (tier method); PAID set proposers.py:55 (skipped unless allow_live)",
+   "evidence": "clinical_core/agere/clinical/graph_planner.py:367 (def); clinical_core/agere/clinical/proposers.py:47 (TIERS), clinical_core/agere/clinical/proposers.py:299 (tier method); PAID set proposers.py:55 (skipped unless allow_live)",
    "cost": "paid:claude-opus-5-5",
    "calibration": "full capability catalog; uncalibrated",
    "flag": "AGERE_PLAN_CACHE, --allow-live-stack"
@@ -1416,7 +1416,7 @@
    "symbol": "benchmark_references",
    "role_on_question_path": "Attaches external benchmark ranges (config/agere/benchmarks.json) to engine answers.",
    "current_wiring": "inside:analysis_graph_execute",
-   "evidence": "clinical_core/agere/clinical/analysis_graph.py:161 (def); clinical_core/agere/clinical/analysis_graph.py:159,1542,1988; benchmarks.py:80",
+   "evidence": "clinical_core/agere/clinical/analysis_graph.py:162 (def); clinical_core/agere/clinical/analysis_graph.py:159,1542,1988; benchmarks.py:80",
    "cost": "free",
    "calibration": null,
    "flag": null
@@ -2066,7 +2066,7 @@
    "symbol": "evidence_membership",
    "role_on_question_path": "Membership from indexed narrative evidence clauses.",
    "current_wiring": "inside:frontier_graph_planner",
-   "evidence": "clinical_core/agere/clinical/analysis_graph.py:1165 (def); clinical_core/agere/clinical/analysis_graph.py:1721 (dispatch)",
+   "evidence": "clinical_core/agere/clinical/analysis_graph.py:1173 (def); clinical_core/agere/clinical/analysis_graph.py:1721 (dispatch)",
    "cost": "free",
    "calibration": null,
    "flag": null
@@ -2079,7 +2079,7 @@
    "symbol": "combine",
    "role_on_question_path": "Three-valued set intersection.",
    "current_wiring": "inside:frontier_graph_planner",
-   "evidence": "clinical_core/agere/clinical/analysis_graph.py:68 (def); clinical_core/agere/clinical/analysis_graph.py:1723 (dispatch)",
+   "evidence": "clinical_core/agere/clinical/analysis_graph.py:69 (def); clinical_core/agere/clinical/analysis_graph.py:1723 (dispatch)",
    "cost": "free",
    "calibration": null,
    "flag": null
@@ -2092,7 +2092,7 @@
    "symbol": "combine",
    "role_on_question_path": "Three-valued set union.",
    "current_wiring": "inside:frontier_graph_planner",
-   "evidence": "clinical_core/agere/clinical/analysis_graph.py:68 (def); clinical_core/agere/clinical/analysis_graph.py:1723 (dispatch)",
+   "evidence": "clinical_core/agere/clinical/analysis_graph.py:69 (def); clinical_core/agere/clinical/analysis_graph.py:1723 (dispatch)",
    "cost": "free",
    "calibration": null,
    "flag": null
@@ -2105,7 +2105,7 @@
    "symbol": "combine",
    "role_on_question_path": "Three-valued set difference.",
    "current_wiring": "inside:frontier_graph_planner",
-   "evidence": "clinical_core/agere/clinical/analysis_graph.py:68 (def); clinical_core/agere/clinical/analysis_graph.py:1723 (dispatch)",
+   "evidence": "clinical_core/agere/clinical/analysis_graph.py:69 (def); clinical_core/agere/clinical/analysis_graph.py:1723 (dispatch)",
    "cost": "free",
    "calibration": null,
    "flag": null
@@ -2118,7 +2118,7 @@
    "symbol": "compare_populations",
    "role_on_question_path": "Fisher/BH comparison of populations.",
    "current_wiring": "inside:frontier_graph_planner",
-   "evidence": "clinical_core/agere/clinical/analysis_graph.py:1192 (def); clinical_core/agere/clinical/analysis_graph.py:1726 (dispatch)",
+   "evidence": "clinical_core/agere/clinical/analysis_graph.py:1200 (def); clinical_core/agere/clinical/analysis_graph.py:1726 (dispatch)",
    "cost": "free",
    "calibration": null,
    "flag": null
@@ -3734,6 +3734,19 @@
    "cost": "free",
    "calibration": null,
    "flag": null
+  },
+  {
+   "id": "atomic_questions",
+   "name": "Atomic sub-question decomposition (System One per patient/document)",
+   "family": "proposer",
+   "module": "clinical_core.agere.clinical.atomic_questions",
+   "symbol": "tier",
+   "role_on_question_path": "Splits a question into typed per-patient sub-questions, Jev (then Perplexity) answers each, code aggregates and cites sources.",
+   "current_wiring": "cascade_tier:atomic_system_one",
+   "evidence": "proposers.tier_atomic_system_one",
+   "cost": "paid:jev (~$0.0002/patient)",
+   "calibration": null,
+   "flag": "AGERE_ATOMIC_MAX_PATIENTS"
   },
   {
    "id": "system_one",

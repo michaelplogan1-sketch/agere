@@ -41,6 +41,7 @@ TIERS = {
     'evidence_retrieval': ('free (FTS5+MiniLM+BGE; Granite fallback)', 'ranked passages; literal + output check; uncalibrated', 'graph'),
     'learned_verified_sql': ('free', 'verified hosted answers, n=3, uncalibrated', 'graph'),
     'evidence_review': ('free readers first; Jev/Perplexity only with allow_live', 'students/windowed/Kev/d1 then typed providers; uncalibrated', 'graph'),
+    'atomic_system_one': ('Jev/Perplexity ~$0.0002 per patient', 'atomic typed sub-questions per patient, aggregated in code; literal + output check; uncalibrated', 'graph'),
     'specialist_families_late': ('free', 'DQ/VBC families with recorded convention defaults', 'graph'),
     'cohort_family_late': ('free (Haiku slot filler only when slots are missing)', 'certified 0.71', 'graph'),
     'local_normalizer': ('free (Qwen3-4B LoRA)', 'rewording guarded, then fully consumed grammar', 'typed'),
@@ -62,9 +63,9 @@ TIERS = {
 }
 ORDER = tuple(TIERS)
 PAID = {'typed_decider', 'hosted_typed_interpreter', 'hosted_verified_sql', 'frontier_graph_planner', 'hybrid_analysts',
-        'metric_router', 'operator_router', 'semantic_analyst', 'stack_planner_propose'}
+        'metric_router', 'operator_router', 'semantic_analyst', 'stack_planner_propose', 'atomic_system_one'}
 FEEDBACK_READERS = ('hosted_typed_interpreter',)  # proposers whose prompt includes recorded corrections
-TYPED_WITH_POPULATION = {'qwen_typed_interpreter', 'hosted_typed_interpreter', 'evidence_retrieval', 'evidence_review'}  # the only tiers that honour a saved cohort
+TYPED_WITH_POPULATION = {'qwen_typed_interpreter', 'hosted_typed_interpreter', 'evidence_retrieval', 'evidence_review', 'atomic_system_one'}  # the only tiers that honour a saved cohort
 
 # Components that are not proposers, and why (stack_runtime.model_roles reports these).
 NOT_PROPOSERS = {
@@ -185,9 +186,9 @@ class Cascade:
                     self.note(name, 'declined', str(exc), started); continue
                 except Exception as exc:  # noqa: BLE001 - one component failing never stops the others (heal, don't block)
                     self.note(name, 'error', f'{type(exc).__name__}: {exc}', started)
-                    if name in PAID and not isinstance(exc, (ValueError, KeyError, TypeError, AttributeError, sqlite3.Error)):
+                    if name in PAID and (outage(exc) or (isinstance(exc, RuntimeError) and not isinstance(exc, (ValueError, KeyError, TypeError, AttributeError, sqlite3.Error)))):
                         self.provider_error = self.provider_error or exc
-                        if name in CLAUDE_TIERS: self.claude_down = self.claude_down or outage(exc) or 'unavailable'
+                        if name in CLAUDE_TIERS: self.claude_down = self.claude_down or outage(exc)  # only a real provider outage (billing, rate, overload)
                     continue
                 if found is None:
                     self.note(name, 'no proposal', None, started); continue
@@ -428,6 +429,9 @@ class Cascade:
     def tier_evidence_review(self):
         from .evidence_proposers import review_tier
         return self.graph('evidence_review', review_tier(self.stack, self.question, self.population))
+    def tier_atomic_system_one(self):
+        from .atomic_questions import tier
+        return self.graph('atomic_system_one', tier(self.stack, self.question, self.population, ledger=self.ledger))
     def tier_scoped_review_compiler(self):
         from .legacy_proposers import scoped_review_tier
         return self.graph('scoped_review_compiler', scoped_review_tier(self.stack, self.question))

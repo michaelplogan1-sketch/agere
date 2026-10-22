@@ -662,6 +662,10 @@ WIRED = {
     'tensor_train_model': ('inside:outcome_forecast_models', 'clinical_core.agere.tensor_train', 'fit_tensor'),
 }
 NEW = [  # components added by the build-out
+    {'id': 'atomic_questions', 'name': 'Atomic sub-question decomposition (System One per patient/document)', 'family': 'proposer',
+     'module': 'clinical_core.agere.clinical.atomic_questions', 'symbol': 'tier',
+     'role_on_question_path': 'Splits a question into typed per-patient sub-questions, Jev (then Perplexity) answers each, code aggregates and cites sources.',
+     'current_wiring': 'cascade_tier:atomic_system_one', 'evidence': 'proposers.tier_atomic_system_one', 'cost': 'paid:jev (~$0.0002/patient)', 'calibration': None, 'flag': 'AGERE_ATOMIC_MAX_PATIENTS'},
     {'id': 'system_one', 'name': 'System One core (Jev then Perplexity typed choices, calibration, attribution)', 'family': 'evidence_tool',
      'module': 'clinical_core.agere.clinical.system_one', 'symbol': 'decide',
      'role_on_question_path': 'Typed judgments with probabilities for every System One use: checks, routing, chart reads, fallback, definitions.',

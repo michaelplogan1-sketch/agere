@@ -76,7 +76,15 @@ class Base(unittest.TestCase):
         self.addCleanup(self.meds.stop)
 
     def system_one(self, rule):
-        return mock.patch.dict(sys.modules, {S1: fake_system_one(rule, self.calls)})
+        # patch both the module table and the package attribute: once the real system_one is imported, `from . import
+        # system_one` reads the package attribute
+        import contextlib
+        import clinical_core.agere.clinical as pkg
+        fake = fake_system_one(rule, self.calls)
+        stack = contextlib.ExitStack()
+        stack.enter_context(mock.patch.dict(sys.modules, {S1: fake}))
+        stack.enter_context(mock.patch.object(pkg, 'system_one', fake, create=True))
+        return stack
 
 
 class PlanTest(Base):
