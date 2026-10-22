@@ -1,0 +1,313 @@
+{
+  "name": "EHRSQL 2024 shared task (MIMIC-IV demo)",
+  "built_by": "bench/external/build_ehrsql_db.py",
+  "policy": "Public data only. MIMIC-IV demo is the open 100-patient subset (ODbL), not credentialed MIMIC-IV. The EHRSQL test split is on bench/external/ehrsql_test_denylist.json and must never be trained on.",
+  "sources": {
+    "ehrsql_2024": {
+      "url": "https://github.com/glee4810/ehrsql-2024/tree/f9e1aa02160d39e3f8df52bf5c69c5cf2e472499",
+      "commit": "f9e1aa02160d39e3f8df52bf5c69c5cf2e472499",
+      "archive": "download/ehrsql-2024-f9e1aa0.tar.gz",
+      "archive_sha256": "ac9609a934192b541cfc8fd7bc25cd2f8e0a442406fa8d1ba47c274e57a6ecb4",
+      "licence": "CC-BY-4.0",
+      "citation": "Lee et al., Overview of the EHRSQL 2024 Shared Task on Reliable Text-to-SQL Modeling on Electronic Health Records, ClinicalNLP 2024, arXiv:2405.06673",
+      "homepage": "https://sites.google.com/view/ehrsql-2024"
+    },
+    "mimic_iv_demo": {
+      "url": "https://physionet.org/content/mimic-iv-demo/2.2/",
+      "version": "2.2",
+      "archive": "download/mimic-iv-clinical-database-demo-2.2.zip",
+      "archive_sha256": "97301a03820e8f41af211cf3462ddc19aefe75bbed05f11753859affaafeb8ec",
+      "licence": "ODbL-1.0 (Open Data Commons Open Database License v1.0)",
+      "citation": "Johnson A, Bulgarelli L, Pollard T, Horng S, Celi LA, Mark R. MIMIC-IV Clinical Database Demo (version 2.2). PhysioNet (2023). https://doi.org/10.13026/dp1f-ex47",
+      "physionet_sha256sums_verified": true,
+      "patients": 100
+    }
+  },
+  "files": {
+    "mimic_iv.sqlite": {
+      "sha256": "a26a60261d7e3bbf1869ffd92efe1803abdbce3eb256a2883fc0439c63427796",
+      "bytes": 37023744,
+      "licence": "ODbL-1.0",
+      "origin": "ehrsql-repo/data/mimic_iv/mimic_iv.sqlite (organisers' preprocessing of the demo: time-shifted to 2100, value dedup); scoring database, SQLite dialect"
+    },
+    "mimic_iv.duckdb": {
+      "sha256": "3fc0f7b374f246c650b1462dd0e05d337b4b86422e4f3b5c64d54336fae39c69",
+      "bytes": 11546624,
+      "licence": "ODbL-1.0",
+      "origin": "mimic_iv.sqlite loaded table by table with declared types"
+    },
+    "mimic_iv_demo_raw.duckdb": {
+      "sha256": "10f431d3b8640b1aa462d45d1b8e52339f85f99a43c0b053d35cf46c3545e84e",
+      "bytes": 39333888,
+      "licence": "ODbL-1.0",
+      "origin": "raw PhysioNet demo CSVs (hosp_*, icu_*), provenance only"
+    }
+  },
+  "row_counts": {
+    "ehrsql_schema": {
+      "patients": {
+        "sqlite": 94,
+        "duckdb": 94
+      },
+      "admissions": {
+        "sqlite": 119,
+        "duckdb": 119
+      },
+      "d_icd_diagnoses": {
+        "sqlite": 106308,
+        "duckdb": 106308
+      },
+      "d_icd_procedures": {
+        "sqlite": 85254,
+        "duckdb": 85254
+      },
+      "d_labitems": {
+        "sqlite": 1594,
+        "duckdb": 1594
+      },
+      "d_items": {
+        "sqlite": 3522,
+        "duckdb": 3522
+      },
+      "diagnoses_icd": {
+        "sqlite": 1561,
+        "duckdb": 1561
+      },
+      "procedures_icd": {
+        "sqlite": 379,
+        "duckdb": 379
+      },
+      "labevents": {
+        "sqlite": 26426,
+        "duckdb": 26426
+      },
+      "prescriptions": {
+        "sqlite": 5354,
+        "duckdb": 5354
+      },
+      "cost": {
+        "sqlite": 33720,
+        "duckdb": 33720
+      },
+      "chartevents": {
+        "sqlite": 31926,
+        "duckdb": 31926
+      },
+      "inputevents": {
+        "sqlite": 9000,
+        "duckdb": 9000
+      },
+      "outputevents": {
+        "sqlite": 5292,
+        "duckdb": 5292
+      },
+      "microbiologyevents": {
+        "sqlite": 1060,
+        "duckdb": 1060
+      },
+      "icustays": {
+        "sqlite": 88,
+        "duckdb": 88
+      },
+      "transfers": {
+        "sqlite": 515,
+        "duckdb": 515
+      }
+    },
+    "raw_demo": {
+      "hosp_admissions": {
+        "csv_rows": 275,
+        "duckdb": 275
+      },
+      "hosp_d_hcpcs": {
+        "csv_rows": 89200,
+        "duckdb": 89200
+      },
+      "hosp_d_icd_diagnoses": {
+        "csv_rows": 109775,
+        "duckdb": 109775
+      },
+      "hosp_d_icd_procedures": {
+        "csv_rows": 85257,
+        "duckdb": 85257
+      },
+      "hosp_d_labitems": {
+        "csv_rows": 1622,
+        "duckdb": 1622
+      },
+      "hosp_diagnoses_icd": {
+        "csv_rows": 4506,
+        "duckdb": 4506
+      },
+      "hosp_drgcodes": {
+        "csv_rows": 454,
+        "duckdb": 454
+      },
+      "hosp_emar": {
+        "csv_rows": 35835,
+        "duckdb": 35835
+      },
+      "hosp_emar_detail": {
+        "csv_rows": 72018,
+        "duckdb": 72018
+      },
+      "hosp_hcpcsevents": {
+        "csv_rows": 61,
+        "duckdb": 61
+      },
+      "hosp_labevents": {
+        "csv_rows": 107727,
+        "duckdb": 107727
+      },
+      "hosp_microbiologyevents": {
+        "csv_rows": 2899,
+        "duckdb": 2899
+      },
+      "hosp_omr": {
+        "csv_rows": 2964,
+        "duckdb": 2964
+      },
+      "hosp_patients": {
+        "csv_rows": 100,
+        "duckdb": 100
+      },
+      "hosp_pharmacy": {
+        "csv_rows": 15306,
+        "duckdb": 15306
+      },
+      "hosp_poe": {
+        "csv_rows": 45154,
+        "duckdb": 45154
+      },
+      "hosp_poe_detail": {
+        "csv_rows": 3795,
+        "duckdb": 3795
+      },
+      "hosp_prescriptions": {
+        "csv_rows": 18087,
+        "duckdb": 18087
+      },
+      "hosp_procedures_icd": {
+        "csv_rows": 722,
+        "duckdb": 722
+      },
+      "hosp_provider": {
+        "csv_rows": 40508,
+        "duckdb": 40508
+      },
+      "hosp_services": {
+        "csv_rows": 319,
+        "duckdb": 319
+      },
+      "hosp_transfers": {
+        "csv_rows": 1190,
+        "duckdb": 1190
+      },
+      "icu_caregiver": {
+        "csv_rows": 15468,
+        "duckdb": 15468
+      },
+      "icu_chartevents": {
+        "csv_rows": 668862,
+        "duckdb": 668862
+      },
+      "icu_d_items": {
+        "csv_rows": 4014,
+        "duckdb": 4014
+      },
+      "icu_datetimeevents": {
+        "csv_rows": 15280,
+        "duckdb": 15280
+      },
+      "icu_icustays": {
+        "csv_rows": 140,
+        "duckdb": 140
+      },
+      "icu_ingredientevents": {
+        "csv_rows": 25728,
+        "duckdb": 25728
+      },
+      "icu_inputevents": {
+        "csv_rows": 20404,
+        "duckdb": 20404
+      },
+      "icu_outputevents": {
+        "csv_rows": 9362,
+        "duckdb": 9362
+      },
+      "icu_procedureevents": {
+        "csv_rows": 1468,
+        "duckdb": 1468
+      }
+    }
+  },
+  "splits": {
+    "train": {
+      "questions": 5124,
+      "unanswerable": 450,
+      "files": {
+        "data.json": {
+          "sha256": "d6215562c03da5aa1cb096406eebefc15279847b7466b2604055dccd40d9e005",
+          "bytes": 755050
+        },
+        "label.json": {
+          "sha256": "bbfc13a6291d8677eafe4c6b25f186708f5150abf8e19788fa567ec997855ca3",
+          "bytes": 2492116
+        },
+        "answer.json": {
+          "sha256": "87f5f2d1485dbf7e2f4a0ffbf1f8179516f252def642d2db9c54ba2ea0df580a",
+          "bytes": 713125
+        },
+        "annotated.json": {
+          "sha256": "84bf5b26925b8f56f0c1ec06fc977d5c3b4578452feeb8b029089858a327f2ae",
+          "bytes": 6236075
+        }
+      }
+    },
+    "valid": {
+      "questions": 1163,
+      "unanswerable": 232,
+      "files": {
+        "data.json": {
+          "sha256": "eeccae3bd8ec96b1bf5ae7a1cb0e723c971a015a17ab57467bf9b027a24c3e62",
+          "bytes": 169832
+        },
+        "label.json": {
+          "sha256": "9addafb996119b0e4a1b05928a6d4d42f33c073fa6d72edbdf8273faa40a6db0",
+          "bytes": 511584
+        },
+        "answer.json": {
+          "sha256": "d8339672bb752bde0bbda4ed4359db0fb64fb8d9e81cb7a782866b7cca17484b",
+          "bytes": 145360
+        },
+        "annotated.json": {
+          "sha256": "9d6bd4d6cadb50975c1aabf0d1dfb9c183ed391dcf086d7c9958dec95ac46ccb",
+          "bytes": 1279481
+        }
+      }
+    },
+    "test": {
+      "questions": 1167,
+      "unanswerable": 233,
+      "files": {
+        "data.json": {
+          "sha256": "b141da1fd5fa7e7ba8179ce87528653daa8eaa68d5510662e7a65b51cc626b42",
+          "bytes": 171799
+        },
+        "label.json": {
+          "sha256": "307d8666440e45d35aa7852e19d32160844025592352f47a2aa0325178005450",
+          "bytes": 516885
+        },
+        "answer.json": {
+          "sha256": "98c21b3a484fa7b4ed2c79edefbafac78b5ed7d940d26e14d0e5fcba759c1f56",
+          "bytes": 148577
+        },
+        "annotated.json": {
+          "sha256": "f835acf43037d6857dd41a69e7716ed324ad899cd6abeb69be4743bd762d4f4d",
+          "bytes": 1290707
+        }
+      }
+    }
+  },
+  "answerable_note": "label.json holds the reference SQL ('null' = unanswerable); answer.json the executed result."
+}
