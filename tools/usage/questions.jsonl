@@ -1,0 +1,48 @@
+{"id": "rq-00", "family": "count", "question": "How many patients have diabetes?"}
+{"id": "rq-01", "family": "count", "question": "How many Medicare patients over 65 have heart failure?"}
+{"id": "rq-02", "family": "count", "question": "How many women aged 50 to 74 have not had a mammogram in the last 24 months?"}
+{"id": "rq-03", "family": "care_gap", "question": "Which diabetic patients have had no HbA1c test in the last 12 months?"}
+{"id": "rq-04", "family": "care_gap", "question": "How many patients with CKD had neither an eGFR nor a uACR in 2029?"}
+{"id": "rq-05", "family": "lab", "question": "How many patients with diabetes have a latest HbA1c above 9?"}
+{"id": "rq-06", "family": "lab", "question": "What is the average latest LDL of patients with coronary disease?"}
+{"id": "rq-07", "family": "utilization", "question": "How many Medicaid patients had 3 or more ED visits in the last 12 months?"}
+{"id": "rq-08", "family": "utilization", "question": "Show inpatient admissions by month for 2029"}
+{"id": "rq-09", "family": "money", "question": "What were total paid dollars on 2029 medical claims by payer?"}
+{"id": "rq-10", "family": "metric", "question": "What was the blood pressure control rate in 2029 by payer?"}
+{"id": "rq-11", "family": "metric", "question": "Compared with 2028, did the 2029 medication adherence for diabetes medications go up or down?"}
+{"id": "rq-12", "family": "ranking", "question": "What are the top five denial reason codes across all medical claims in 2029?"}
+{"id": "rq-13", "family": "sequence", "question": "Of inpatient discharges in 2029, how many had a primary care visit within 7 days after discharge?"}
+{"id": "rq-14", "family": "cohort_family", "question": "Which patients over 60 with hypertension had an ER visit in the last 12 months?"}
+{"id": "rq-15", "family": "pharmacy", "question": "How many pharmacy claims were rejected in 2029?"}
+{"id": "rq-16", "family": "notes", "question": "What do the notes say about statin intolerance for patient P-1007?"}
+{"id": "rq-17", "family": "notes", "question": "Which patients have chest pain documented in their notes in 2029?"}
+{"id": "rq-18", "family": "notes", "question": "How many patients have a documented intolerance to statins?"}
+{"id": "rq-19", "family": "notes", "question": "Which heart failure patients have exertional dyspnea mentioned in recent notes?"}
+{"id": "rq-20", "family": "notes", "question": "Do any notes for patient P-1012 mention transportation problems getting to appointments?"}
+{"id": "rq-21", "family": "definition", "question": "How many potentially avoidable ED visits did we have in the last year?"}
+{"id": "rq-22", "family": "definition", "question": "How many PQI admissions were there in 2029 by payer?"}
+{"id": "rq-23", "family": "definition", "question": "What was our avoidable spend over the past year?"}
+{"id": "rq-24", "family": "definition", "question": "Which patients on statins are non-adherent by PDC in 2029?"}
+{"id": "rq-25", "family": "definition", "question": "How many patients are in the gap for the diabetes HbA1c testing measure?"}
+{"id": "rq-26", "family": "engine", "question": "Which heart failure patients are missing a GDMT pillar on their medication fills?"}
+{"id": "rq-27", "family": "engine", "question": "What drives 30-day readmissions among our heart failure patients?"}
+{"id": "rq-28", "family": "engine", "question": "Which practices have an unusual concentration of ED visits?"}
+{"id": "rq-29", "family": "engine", "question": "Which patients with CKD have a declining eGFR trajectory?"}
+{"id": "rq-30", "family": "engine", "question": "What is the risk-adjusted cost for our Medicare Advantage members?"}
+{"id": "rq-31", "family": "engine", "question": "How long until patients with diabetes develop CKD?"}
+{"id": "rq-32", "family": "why", "question": "Why did ED visits go up from 2028 to 2029?"}
+{"id": "rq-33", "family": "why", "question": "What explains the increase in inpatient admissions for Medicaid patients in 2029?"}
+{"id": "rq-34", "family": "trend", "question": "Are ED visits trending up or down in 2029?"}
+{"id": "rq-35", "family": "trend", "question": "How has the number of patients with uncontrolled diabetes changed month by month in 2029?"}
+{"id": "rq-36", "family": "multi_step", "question": "Of patients with diabetes, what share had an ED visit in 2029?"}
+{"id": "rq-37", "family": "multi_step", "question": "How many patients with heart failure had an inpatient admission in 2029, and what percent of all heart failure patients is that?"}
+{"id": "rq-38", "family": "multi_step", "question": "Find patients with diabetes and CKD, then count how many of them filled an SGLT2 inhibitor in 2029"}
+{"id": "rq-39", "family": "vbc", "question": "How many attributed lives does each practice have?"}
+{"id": "rq-40", "family": "vbc", "question": "Which care gaps should we close first to improve our quality score?"}
+{"id": "rq-41", "family": "knowledge", "question": "How does MSSP decide which ACO a beneficiary is assigned to?"}
+{"id": "rq-42", "family": "out_of_scope", "question": "What is the weather in Nashville today?"}
+{"id": "rq-43", "family": "followup_base", "question": "How many patients over 65 have COPD?"}
+{"id": "rq-44", "family": "followup", "question": "break that down by payer", "follow_up_of": "rq-43"}
+{"id": "rq-45", "family": "followup", "question": "What about just women?", "follow_up_of": "rq-43"}
+{"id": "rq-46", "family": "typo", "question": "how mnay medicaid pts with CHF filled insulin in 2028"}
+{"id": "rq-47", "family": "paraphrase", "question": "Pull the members with afib who are 65+ and on Medicare"}
