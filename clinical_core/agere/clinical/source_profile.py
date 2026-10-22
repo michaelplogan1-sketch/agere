@@ -87,6 +87,11 @@ def load(path):
         digest = f'unversioned:{stat.st_size}:{stat.st_mtime_ns}'
     meta = {'source_digest': digest}
     key = (str(path), meta['source_digest'])
+    try:  # the derived-value index finds a build's folder from the profile's digest at route time (derived_value_index.route)
+        from . import derived_value_index
+        derived_value_index.attach(path, meta['source_digest'])
+    except ImportError:
+        pass
     if key in _CACHE: return _CACHE[key]
     target = path / 'source-profile.json'
     if target.exists():

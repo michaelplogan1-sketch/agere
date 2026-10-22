@@ -232,11 +232,16 @@ def prepare(ws, *, force=False, allow_copy=True):
         graph = {'status': 'built', **{k: v for k, v in med_graph_rag.build(out).items() if k in ('nodes', 'edges', 'links')}, 'file': med_graph_rag.FILE}
     except Exception as exc:  # noqa: BLE001 - annotates, never blocks the build
         graph = {'status': 'deferred', 'reason': f'{type(exc).__name__}: {exc}'[:300]}
+    from ..clinical import derived_value_index
+    try:  # derived values the semantic layer computes or the tables imply, with their recipes (derived_value engine, discover())
+        derived = {'status': 'built', **{k: v for k, v in derived_value_index.build(out).items() if k in ('entries', 'with_support', 'by_kind')}, 'file': derived_value_index.FILE}
+    except Exception as exc:  # noqa: BLE001 - annotates, never blocks the build
+        derived = {'status': 'deferred', 'reason': f'{type(exc).__name__}: {exc}'[:300]}
     from ..clinical.analysis_graph import OPERATIONS
     (out / 'operators.json').write_text(json.dumps(sorted(OPERATIONS)))
     (out / 'provider-receipts').mkdir(exist_ok=True)
     manifest = {'schema': SCHEMA, 'supported': True, 'built_at': _now(), 'path': str(out), 'methods': methods,
-                'database_concurrency': concurrency, 'patients': len(patients), 'passage_index': passages, 'person_links': links, 'concept_graph': graph,
+                'database_concurrency': concurrency, 'patients': len(patients), 'passage_index': passages, 'person_links': links, 'concept_graph': graph, 'derived_values': derived,
                 'sources': {n: _fingerprint(p) for n, p in src.items() if p.is_file()},
                 'absent': {'narrative evidence annotations': 'evidence nodes decline',
                            'forecast / longitudinal / clinical-state links': 'nodes needing them decline'}}

@@ -27,11 +27,12 @@ MODULES = {
     'change_attribution': 'change_attribution',     # joint patient-state / source-observation tensor model: real change vs feed outage
     'social_needs': 'social_needs',                 # corroborated social needs + referral (BSeR/Gravity) closure
     'saved_monitors': 'monitor_sweep',              # saved-answer monitors recomputed on new snapshots
+    'derived_value': 'derived_value_index',         # discovered derived values (days between dates, days since, change, ratios) aggregated with their recipe
     'identity_resolution': 'identity_resolution',   # reversible identity: contradiction checks, split / confirm / undo ledger, effective persons
     'cql_measure': 'cql_measures',                  # governed CQL -> ELM measure logic: rate, eligibility trace, parity with the measure library
 }
 ROUTE_ORDER = ('identity_resolution', 'cql_measure', 'saved_monitors', 'change_attribution', 'social_needs', 'star_rating', 'mlr', 'settlement_bridge',
-               'policy_search', 'outreach_bandit', 'outreach_allocation', 'staffing_plan')
+               'policy_search', 'outreach_bandit', 'outreach_allocation', 'staffing_plan', 'derived_value')
 
 
 def module(op):

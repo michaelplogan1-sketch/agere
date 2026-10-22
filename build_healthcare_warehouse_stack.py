@@ -70,11 +70,13 @@ def main():
         configure(out/'stack')
         from clinical_core.agere.clinical import analytic_registry, clinical_events, clinical_state, longitudinal, program_registry
         from build_cohort_stack import values
+        from clinical_core.agere.clinical import derived_value_index
         stack=out/'stack'
         for name,fn in [('events',lambda:clinical_events.build(stack)),
                         ('operators',lambda:analytic_registry.compute_all(stack)),
                         ('reviews',lambda:analytic_registry.attach_clinical_reviews(stack,out/'clinical')),
-                        ('values',lambda:values(stack)),('programs',lambda:program_registry.install_defaults(stack))]:
+                        ('values',lambda:values(stack)),('programs',lambda:program_registry.install_defaults(stack)),
+                        ('derived_values',lambda:derived_value_index.build(stack))]:
             progress({'stage':name});fn()
         if not (out/'longitudinal'/'run.json').exists():longitudinal.build(stack,out/'longitudinal')
         state=out/'clinical-state'
