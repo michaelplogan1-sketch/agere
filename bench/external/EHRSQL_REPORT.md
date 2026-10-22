@@ -48,4 +48,9 @@ the check. The training exporter planned in `DUCKDB_PARQUET_MIGRATION_PLAN_2026-
 on any hit. That exporter doesn't exist yet, so this is the list plus the check function, not an enforced gate. The
 example retriever in `ehrsql_run.py` already calls it. No train or valid question hits the list.
 
-RESULTS_PLACEHOLDER
+## Free-tier dry run (2026-10-22, wave 2)
+
+`python -I bench/external/ehrsql_run.py --system agere_local --split valid --limit 12` (Qwen3-4B on MLX, k=6 train examples, $0 API):
+12 valid questions, 25.8 s total, RS(0) 83.33 (10 of 12 execution-correct, 2 wrong, 0 abstentions, 0 repairs). The first 12 valid
+questions contain no unanswerable item, so abstention precision is not measured by this subset; the harness scores it on the full
+split. No paid run was made. Full-split numbers need a deliberate run (`--limit` omitted, valid only; test stays refused).
