@@ -96,7 +96,7 @@ def _execute(path, plan):
     return {'answer': {'status': 'answered', 'answer_type': 'table', 'table': rows}}
 
 
-def audit(stack, *, ledger=None, limit=None, results=None, write=True, s1=None):
+def audit(stack, *, ledger=None, limit=None, results=None, write=True, s1=None, out_dir=None):
     """-> {'version', 'pairs', 'audited', 'ppi': ppi_mean(...), 'flagged': [...], 'cost_usd', 'calls'}"""
     from .system_one_cross_check import cross_check
     path = Path(stack.path)
@@ -125,6 +125,7 @@ def audit(stack, *, ledger=None, limit=None, results=None, write=True, s1=None):
     out = {'version': VERSION, 'pairs': len(pairs(path)), 'audited': len(ps), 'ppi': ppi_mean(preds, gold_pairs), 'flagged': flagged[:50],
            'cost_usd': round(usd, 6), 'calls': calls, 'at': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime())}
     if write:
+        path = Path(out_dir) if out_dir else path
         (path / 'store-audit.json').write_text(json.dumps(out, indent=1, default=str) + '\n')
         (path / 'store-audit-cases.json').write_text(json.dumps({'version': VERSION, 'gate': 'learned_reuse.answer', 'cases': cases}, indent=1) + '\n')
     return out

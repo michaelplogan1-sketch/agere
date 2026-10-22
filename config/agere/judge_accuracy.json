@@ -1,0 +1,71 @@
+{
+ "version": "cross-family-judge/1",
+ "n": 89,
+ "decided": 85,
+ "coverage": 0.9551,
+ "accuracy": 0.9765,
+ "split_rate": 0.0,
+ "providers": {
+  "jev": {
+   "asked": 88,
+   "position_consistency": 0.8864,
+   "accuracy_consistent": 0.9872,
+   "accuracy_single_order": 0.9756
+  },
+  "perplexity": {
+   "asked": 89,
+   "position_consistency": 0.9551,
+   "accuracy_consistent": 0.9765,
+   "accuracy_single_order": 0.9651
+  }
+ },
+ "cost_usd": 0.00895,
+ "set_swap": {
+  "version": "cross-family-judge/1",
+  "n": 85,
+  "decided": 82,
+  "coverage": 0.9647,
+  "accuracy": 1.0,
+  "split_rate": 0.0,
+  "providers": {
+   "jev": {
+    "asked": 84,
+    "position_consistency": 0.9167,
+    "accuracy_consistent": 1.0,
+    "accuracy_single_order": 1.0
+   },
+   "perplexity": {
+    "asked": 85,
+    "position_consistency": 0.9647,
+    "accuracy_consistent": 1.0,
+    "accuracy_single_order": 1.0
+   }
+  },
+  "cost_usd": 0.0
+ },
+ "set_hard": {
+  "version": "cross-family-judge/1",
+  "n": 4,
+  "decided": 3,
+  "coverage": 0.75,
+  "accuracy": 0.3333,
+  "split_rate": 0.0,
+  "providers": {
+   "jev": {
+    "asked": 4,
+    "position_consistency": 0.25,
+    "accuracy_consistent": 0.0,
+    "accuracy_single_order": 0.0
+   },
+   "perplexity": {
+    "asked": 4,
+    "position_consistency": 0.75,
+    "accuracy_consistent": 0.3333,
+    "accuracy_single_order": 0.25
+   }
+  },
+  "cost_usd": 0.0
+ },
+ "measured_at": "2026-10-22T12:33:25Z",
+ "set": "saved non-blind bench rows (swap + hard pairs)"
+}

@@ -44,6 +44,8 @@ TIER_OF_ROUTE = {
     'local_unsupported': 'undelivered_input', 'scoped_review_compiler': 'scoped_review_compiler', 'atomic_system_one': 'atomic_system_one',
 }
 NEGATIVE_OUTCOMES = {'no proposal', 'rejected', 'error', 'declined'}
+# a provider outage (no credits, rate limit, overload) says nothing about whether the tier would have been right
+OUTAGE = re.compile(r'provider_unavailable|credit balance|billing|rate.?limit|overload|ProviderUnavailable|HTTP 429|HTTP 529', re.I)
 _WORD = re.compile(r"[a-z0-9%$]+")
 
 
@@ -89,6 +91,7 @@ def _from_log(question, log, accepted, right, source):
     rows = []
     if accepted: rows.append({'question': question, 'tier': accepted, 'right': bool(right), 'source': source})
     for e in log or []:
+        if e.get('outcome') == 'error' and OUTAGE.search(str(e.get('detail') or '')): continue
         if e.get('proposer') != accepted and e.get('outcome') in NEGATIVE_OUTCOMES:
             rows.append({'question': question, 'tier': e['proposer'], 'right': False, 'source': source + ':tried'})
     return rows
@@ -149,9 +152,9 @@ def outcome_labels(stack_paths):
             if 'outcomes' not in names: continue
             corrected = {_norm(q) for (q,) in db.execute('SELECT question FROM corrections')} if 'corrections' in names else set()
             quarantined = {_norm(q) for (q,) in db.execute('SELECT question FROM quarantined')} if 'quarantined' in names else set()
-            for q, route, status in db.execute('SELECT question, route, status FROM outcomes'):
+            for q, route, status, reason in db.execute('SELECT question, route, status, reason FROM outcomes'):
                 tier = TIER_OF_ROUTE.get(route)
-                if not tier: continue
+                if not tier or OUTAGE.search(str(reason or '')): continue
                 if status == 'answered':
                     right = _norm(q) not in corrected and _norm(q) not in quarantined
                 elif status in ('escalated', 'declined', 'internal_error', 'not_understood'):
@@ -248,6 +251,21 @@ def load(path=None):
     return _MODEL[key]
 
 
+def dependent(model):
+    """Tiers whose prediction depends on the question (a fitted model that beat the tier's base rate in cross-validation)."""
+    return {t for t, rec in (model or {}).get('tiers', {}).items()
+            if rec.get('weights') is not None and (rec.get('cv_accuracy') or 0) > (rec.get('base_accuracy') or 1)}
+
+
+def fixed_tail():
+    """Tiers that failed held-out calibration run last by design (proposers.TIERS): the router never moves them."""
+    try:
+        from .proposers import TIERS
+        return {t for t, (_, calibration, _) in TIERS.items() if str(calibration).startswith('FAILED')}
+    except Exception:  # noqa: BLE001
+        return set()
+
+
 def predict(question, model=None):
     """{tier: P(right)} for every tier the model knows (question-dependent when the tier has weights)."""
     model = model or load()
@@ -255,7 +273,7 @@ def predict(question, model=None):
     f = features(question)
     out = {}
     for tier, rec in model['tiers'].items():
-        if rec.get('weights') is not None and (rec.get('cv_accuracy') or 0) >= (rec.get('base_accuracy') or 1):
+        if tier in dependent(model):
             z = rec['bias'] + _dot(rec['weights'], f)
             p = 1 / (1 + math.exp(-max(-30, min(30, z))))
             out[tier] = round((p * rec['n'] + PRIOR_STRENGTH * rec['base']) / (rec['n'] + PRIOR_STRENGTH), 4)
@@ -273,7 +291,7 @@ def reorder(stack, question, order, *, model=None, front=None):
     from .claim_verification import cost_class
     from .system_one_gate import PINNED_FIRST
     p = predict(question, model)
-    g = model.get('global', 0.5)
+    movable = dependent(model) - fixed_tail()  # base rates alone never reorder the designed cascade; question signal does
     if front is None:  # the System One block: pinned tiers + the tiers its route moved first (Cascade passes it)
         front = len([t for t in order[:1] if t in PINNED_FIRST])
     blocks = [order[:front], order[front:]]
@@ -282,16 +300,18 @@ def reorder(stack, question, order, *, model=None, front=None):
         pinned = [t for t in block if t in PINNED_FIRST]
         rest = [t for t in block if t not in PINNED_FIRST]
         slots = {}
-        for i, t in enumerate(rest): slots.setdefault(cost_class(t), []).append(i)
-        placed = [None] * len(rest)
+        for i, t in enumerate(rest):
+            if t in movable: slots.setdefault(cost_class(t), []).append(i)
+        placed = list(rest)
         for cls, idx in slots.items():
-            members = sorted((rest[i] for i in idx), key=lambda t: (-p.get(t, g), rest.index(t)))
+            members = sorted((rest[i] for i in idx), key=lambda t: (-p[t], rest.index(t)))
             for i, t in zip(idx, members): placed[i] = t
         out += pinned + placed
     out = tuple(out)
     if sorted(out) != sorted(order): return order, {'version': VERSION, 'applied': False, 'error': 'not a permutation'}  # never fewer tiers
     moved = [t for t, u in zip(out, order) if t != u]
-    return out, {'version': VERSION, 'applied': bool(moved), 'moved': len(moved), 'top': sorted(p.items(), key=lambda kv: -kv[1])[:5],
+    return out, {'version': VERSION, 'applied': bool(moved), 'moved': len(moved), 'movable': sorted(movable & set(order)),
+                 'predicted': {t: p[t] for t in order if t in p},
                  'model_labels': model.get('n_labels'), 'trained_at': model.get('trained_at')}
 
 
@@ -306,7 +326,8 @@ def record_trace(question, result, verified, directory=None):
     d.mkdir(parents=True, exist_ok=True)
     path = d / f'cascade-traces-{time.strftime("%Y%m%d")}.jsonl'
     row = {'schema': VERSION, 'question': question, 'accepted': proposer_of(result), 'verified': bool(verified),
-           'proposers': [{k: e.get(k) for k in ('proposer', 'outcome')} for e in log][:40],
+           'proposers': [{'proposer': e.get('proposer'), 'outcome': e.get('outcome'),
+                          **({'detail': str(e.get('detail'))[:160]} if e.get('outcome') == 'error' else {})} for e in log][:40],
            'usage': interp.get('cascade_usage'), 'at': time.strftime('%Y-%m-%dT%H:%M:%S')}
     with path.open('a') as f: f.write(json.dumps(row, separators=(',', ':'), default=str) + '\n')
     return str(path)
