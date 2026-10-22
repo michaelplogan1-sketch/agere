@@ -107,7 +107,9 @@ def missing(question, evidence):
         gaps.append('the question asks for an average; the plan computes none')
     if SUPERLATIVE.search(q) and not ORDERED.search(text):
         gaps.append('the question asks for a ranking; the plan has no ordering')
-    if RELATIVE_TIME.search(q) and not DATED.search(text):
+    windows = [m.group(0).lower() for m in RELATIVE_TIME.finditer(q)]
+    work_period = windows and all(w.startswith('this') for w in windows) and re.search(r'"capacity_(?:patients|hours)"', text)
+    if windows and not DATED.search(text) and not work_period:  # 'this week' on a capacity plan is the work period, not a data window
         gaps.append('the question names a time window; the plan has no date restriction')
     return gaps
 

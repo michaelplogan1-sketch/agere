@@ -261,6 +261,13 @@ class Compiler(unittest.TestCase):
             self.assertEqual([(n['operation'], n['parameters']) for n in g['nodes']], [('outreach', {})])
             self.assertEqual(outreach.validate(g['nodes'][-1]['parameters'])['capacity_patients'], 50)
 
+    def test_work_period_passes_the_literal_check(self):
+        from clinical_core.agere.clinical import literal_check
+        q = 'Who should our care managers call this week? We have 40 slots'
+        g = self.compile(q)
+        self.assertEqual(literal_check.missing(q, literal_check.executable_text(g)), [])
+        self.assertTrue(literal_check.missing('Which patients were discharged last month?', '"capacity_patients": 40'))  # a look-back window still needs a date
+
     def test_outreach_list_without_capacity_is_not_hijacked(self):
         for q in ['Pull me the list of diabetics whose most recent A1c is 8 or above',
                   'Nephrology outreach list please: everyone with an eGFR under 30',
