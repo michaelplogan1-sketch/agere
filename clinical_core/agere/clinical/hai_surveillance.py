@@ -149,7 +149,7 @@ HAI = (r'\b(?:hai|hais|hospital[- ](?:acquired|onset|associated) (?:infections?|
 def route(question, profile, as_of):
     from .engine_suite import plan
     low = ' '.join(str(question).lower().split())
-    if not re.search(HAI, low) or re.match(r'(?:what (?:is|are) (?:a|an|the definition)|explain|define)\b', low): return None
+    if not re.search(HAI, low) or H.is_definition(low): return None
     if re.search(r'\bsir\b', low) and not re.search(r'infect|hai|nhsn|hospital', low): return None
     params = H.common_params(low); names = []
     if re.search(r'\bcauti\b|catheter', low): names.append('cauti')

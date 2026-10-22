@@ -169,14 +169,14 @@ def answer(report, plan, question):
     return H.generic_answer(OP, report, plan, headline(report) + '.')
 
 
-SEP = (r'\b(?:sep[- ]?1|sepsis bundle|sepsis (?:bundle )?compliance|bundle compliance|care bundle|all[- ]or[- ]none bundle|hour[- ]?[13] bundle|'
+SEP = (r'\b(?:sepsis .{0,40}bundle|bundle .{0,40}sepsis|3[- ]hour bundle|sep[- ]?1|sepsis bundle|sepsis (?:bundle )?compliance|bundle compliance|care bundle|all[- ]or[- ]none bundle|hour[- ]?[13] bundle|'
        r'lactate (?:within|measured) .{0,20}hours|time[- ]zero|antibiotics? within (?:1|3|one|three) hours? .{0,25}sepsis|sepsis .{0,30}(?:lactate|antibiotics? within))\b')
 
 
 def route(question, profile, as_of):
     from .engine_suite import plan
     low = ' '.join(str(question).lower().split())
-    if not re.search(SEP, low) or re.match(r'(?:what (?:is|are) (?:a|an|the definition)|explain|define)\b', low): return None
+    if not re.search(SEP, low) or H.is_definition(low): return None
     params = H.common_params(low)
     if re.search(r'\bby (?:facility|hospital|site)\b|\bper (?:facility|hospital)\b', low): params['group_by'] = 'facility'
     elif re.search(r'\bby month\b|\bmonthly\b|\btrend\b', low): params['group_by'] = 'month'

@@ -178,16 +178,16 @@ def answer(report, plan, question):
 
 
 CAP = (r'\b(?:capacity (?:simulation|what[- ]if|twin|scenario)|simulate (?:the )?(?:ed|beds?|capacity|boarding|census|occupancy)|'
-       r'(?:open|add|adding|more|fewer|remove|close)\s+\d+\s+(?:more |additional |fewer )?(?:inpatient |staffed )?beds?|boarding (?:hours|time) (?:fall|drop|change|if)|'
+       r'(?:open(?:ed|ing)?|add(?:ed|ing)?|more|fewer|remove|close)\s+\d+\s+(?:more |additional |fewer )?(?:inpatient |staffed )?beds?|boarding (?:hours|time) (?:fall|drop|change|if)|'
        r'what happens to (?:ed )?boarding|(?:if|when) (?:los|length of stay) (?:drops|falls|shortens|rises|increases)|bed sensitivity|how many beds do we need)\b')
 
 
 def route(question, profile, as_of):
     from .engine_suite import plan
     low = ' '.join(str(question).lower().split())
-    if not re.search(CAP, low) or re.match(r'(?:what (?:is|are) (?:a|an)|explain|define)\b', low): return None
+    if not re.search(CAP, low) or H.is_definition(low): return None
     params = H.common_params(low)
-    m = re.search(r'\b(?:open|add|adding|more)\s+(\d{1,3})\s+(?:more |additional )?(?:inpatient |staffed )?beds?', low)
+    m = re.search(r'\b(?:open(?:ed|ing)?|add(?:ed|ing)?|more)\s+(\d{1,3})\s+(?:more |additional )?(?:inpatient |staffed )?beds?', low)
     if m: params['add_beds'] = int(m.group(1))
     m = re.search(r'\b(?:close|remove|fewer)\s+(\d{1,3})\s+(?:more |additional )?(?:inpatient |staffed )?beds?', low)
     if m: params['add_beds'] = -int(m.group(1))

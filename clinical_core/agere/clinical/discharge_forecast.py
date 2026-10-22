@@ -118,13 +118,13 @@ def answer(report, plan, question):
 
 
 FC = (r'\b(?:discharge (?:forecast|prediction|projection)|forecast (?:of )?(?:the )?(?:discharges?|bed[- ]days|census)|how many (?:patients|discharges) (?:will|are we going to|should we expect to) '
-      r'(?:be )?(?:discharg|go home|leave)|expected discharges|predict(?:ed)? discharges|projected census|census (?:forecast|projection)|discharges? (?:expected )?(?:this|next|over the next) (?:week|\d+ days))\b')
+      r'(?:be )?(?:discharg\w*|go home|leave)|expected discharges|predict(?:ed)? discharges|projected census|census (?:forecast|projection)|discharges? (?:expected )?(?:this|next|over the next) (?:week|\d+ days))\b')
 
 
 def route(question, profile, as_of):
     from .engine_suite import plan
     low = ' '.join(str(question).lower().split())
-    if not re.search(FC, low) or re.match(r'(?:what (?:is|are) (?:a|an)|explain|define)\b', low): return None
+    if not re.search(FC, low) or H.is_definition(low): return None
     params = H.common_params(low)
     params.pop('start', None); params.pop('end', None); params.pop('months', None) if 'months' not in low else None
     m = re.search(r'\bnext (\d{1,2}|two|three|four|seven|ten|fourteen) days?\b', low)

@@ -159,13 +159,13 @@ def answer(report, plan, question):
 
 
 FAIR = (r'\b(?:overbooking|over[- ]booking|overbook(?:ed)?)\b')
-EQ = r'\b(?:fair(?:ness)?|equit\w+|disparit\w+|bias(?:ed)?|burden|disproportionate\w*|who (?:gets|bears|is)|by (?:age|payer|insurance|coverage)|across (?:age|payers?)|audit)\b'
+EQ = r'\b(?:bumped|deferred|double[- ]booked|age bands?|fair(?:ness)?|equit\w+|disparit\w+|bias(?:ed)?|burden|disproportionate\w*|who (?:gets|bears|is)|by (?:age|payer|insurance|coverage)|across (?:age|payers?)|audit)\b'
 
 
 def route(question, profile, as_of):
     from .engine_suite import plan
     low = ' '.join(str(question).lower().split())
-    if not (re.search(FAIR, low) and re.search(EQ, low)) or re.match(r'(?:what (?:is|are) (?:a|an|the definition)|explain|define)\b', low): return None
+    if not (re.search(FAIR, low) and re.search(EQ, low)) or H.is_definition(low): return None
     params = {}
     if re.search(r'\bage\b', low) and not re.search(r'\bpayer|insurance|coverage', low): params['by'] = 'age'
     elif re.search(r'\bpayer|insurance|coverage', low) and not re.search(r'\bage\b', low): params['by'] = 'payer'

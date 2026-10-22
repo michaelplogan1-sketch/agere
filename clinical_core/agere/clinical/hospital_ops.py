@@ -335,3 +335,8 @@ def patient_days(r, as_of):
     if a is None or b is None: return 0
     if r.get('los_days') is not None and r.get('discharge_known'): return max(int(r['los_days']), 1)
     return max((b - a).days, 1)
+
+
+def is_definition(low):
+    """Concept questions ("what is a CLABSI?", "explain ...", "define ...") are answered by the knowledge tiers, not by an engine."""
+    return bool(re.match(r"(?:what (?:is|are) (?:an?|the (?:definition|meaning) of)\b|what (?:is|are) [\w.\-]+\??$|explain\b|define\b)", low))

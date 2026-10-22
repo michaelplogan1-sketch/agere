@@ -180,7 +180,7 @@ CLU = (r'\b(?:clusters?|outbreaks?|hot ?spots?|syndromic|space[- ]time|spatiotem
 def route(question, profile, as_of):
     from .engine_suite import plan
     low = ' '.join(str(question).lower().split())
-    if not re.search(CLU, low) or re.match(r'(?:what (?:is|are) (?:a|an|the definition)|explain|define)\b', low): return None
+    if not re.search(CLU, low) or H.is_definition(low): return None
     if not re.search(r'\bed\b|emergency|zip|county|counties|outbreak|syndrom|visits?|cases', low): return None
     if re.search(r'\bcare gaps?\b|\bpatient clusters?\b|\bcluster(?:ing)? of patients by\b|\bk-?means\b|\bsegments?\b', low): return None
     params = {}

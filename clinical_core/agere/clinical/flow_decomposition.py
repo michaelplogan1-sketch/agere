@@ -133,7 +133,7 @@ FLOW = (r'\b(?:patient[- ]flow|flow decomposition|door[- ]to[- ](?:\w+[- ]?)?(?:
 def route(question, profile, as_of):
     from .engine_suite import plan
     low = ' '.join(str(question).lower().split())
-    if not re.search(FLOW, low) or re.match(r'(?:what (?:is|are) (?:a|an)|explain|define)\b', low): return None
+    if not re.search(FLOW, low) or H.is_definition(low): return None
     if re.search(r'\bif we (?:open|add)\b|\bsimulat', low): return None  # capacity twin
     params = H.common_params(low)
     if re.search(r'\bby (?:facility|hospital|site)\b|\bper (?:facility|hospital)\b', low): params['group_by'] = 'facility'

@@ -373,7 +373,7 @@ def route(question, profile, as_of):
     from .engine_suite import plan
     low = ' '.join(str(question).lower().split())
     if not re.search(VISIT, low): return None
-    if re.match(r'(?:what (?:is|are) (?:a|an|the definition)|explain|define)\b', low): return None
+    if H.is_definition(low): return None
     params = {}
     if re.search(r'\bby (?:facility|hospital|site)\b|\bper (?:facility|hospital)\b|\beach (?:facility|hospital)\b', low): params['group_by'] = 'facility'
     elif re.search(r'\bby month\b|\bmonthly\b|\bper month\b|\beach month\b', low): params['group_by'] = 'month'
