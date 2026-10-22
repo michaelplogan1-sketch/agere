@@ -172,6 +172,7 @@ class Review(unittest.TestCase):
     def test_review_patient_cascade(self):
         hits = [passage('P-1001', 'Statin intolerance discussed.')]
         with patch.object(E, '_comparison_cohort', return_value=None), \
+                patch('clinical_core.agere.clinical.document_readers.availability', return_value=[]), \
                 patch('clinical_core.agere.clinical.semantic_reader.read', side_effect=ValueError('no native model')):
             off = E.review_patient(fake_stack(hits, reading='unknown'), self.Q, 'P-1001')
             stack = fake_stack(hits, allow_live=True, reading='unknown')

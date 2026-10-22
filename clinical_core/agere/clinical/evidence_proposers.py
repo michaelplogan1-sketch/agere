@@ -27,13 +27,13 @@ from pathlib import Path
 VERSION = 'evidence-proposers/1'
 ROOT = Path(__file__).resolve().parents[3]
 
-LOCAL_READERS = ('student_lexical', 'student_minilm', 'cohort_windowed_minilm', 'kev', 'd1')  # free, cheapest first
+LOCAL_READERS = ('student_lexical', 'student_minilm', 'cohort_windowed_minilm', 'kev', 'd1', 'medgemma')  # free, cheapest first
 PAID_READERS = ('jev', 'perplexity')
 REVIEW_ORDER = LOCAL_READERS + PAID_READERS
 RETRIEVAL_COMPONENTS = ('warehouse_retriever', 'fts5_index', 'minilm_encoder', 'bge_reranker')
 READER_COMPONENTS = {'student_lexical': 'semantic_student_heads', 'student_minilm': 'semantic_student_heads',
                      'cohort_windowed_minilm': 'windowed_student', 'kev': 'kev_reader', 'd1': 'd1_reader',
-                     'jev': 'jev_typesafe_review', 'perplexity': 'perplexity_decisions_review'}
+                     'jev': 'jev_typesafe_review', 'perplexity': 'perplexity_decisions_review', 'medgemma': 'medgemma_reader'}
 
 NARRATIVE = re.compile(
     r"\b(?:notes?|documents?|documented|documentation|charts?|charted|charting|narratives?|free[- ]?text|passages?|"
@@ -386,6 +386,17 @@ def review_patient(stack, question, patient, providers=REVIEW_ORDER):
     local = read_locally(stack, question, patient, evidence['evidence'], [p for p in providers if p in LOCAL_READERS])
     steps, paid_calls, components = [], 0, ['warehouse_retriever'] + local['components']
     outcome, decided_by = local['verdict'], local.get('decided_by')
+    if outcome not in ('yes', 'no') and 'medgemma' in providers and evidence['evidence']:
+        try:  # local MedGemma reads the same passages before any paid reader (skipped when its weights are absent)
+            from . import document_readers
+            if any(r['provider'] == 'medgemma' and r['available'] for r in document_readers.availability()):
+                result = document_readers.review(question, evidence, 'medgemma')
+                components.append('medgemma_reader')
+                v = paid_verdict(result)
+                steps.append({'provider': 'medgemma', 'status': 'completed', 'verdict': v, 'result': result})
+                if v in ('yes', 'no'): outcome, decided_by = v, 'medgemma'
+        except Exception as exc:  # noqa: BLE001 - a local model failing never stops the paid readers
+            steps.append({'provider': 'medgemma', 'status': 'failed', 'reason': f'{type(exc).__name__}: {exc}'[:300]})
     paid = [p for p in providers if p in PAID_READERS]
     if outcome not in ('yes', 'no') and paid:
         if not getattr(stack, 'allow_live', False):
