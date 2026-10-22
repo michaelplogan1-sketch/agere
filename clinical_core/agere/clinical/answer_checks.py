@@ -886,6 +886,7 @@ def check(stack, question, graph, receipt, result, *, ledger=None, catalog=None,
         run('answer_guard_cross_check', lambda: _cross_check(stack, question, graph, receipt, answer, prof, ledger, hosted, state, verdict))
     run('unchecked_zero_guard', lambda: _unchecked_zero(receipt, answer, state, verdict))
     run('answer_shape_review', lambda: _shape(question, graph, result, verdict))
+    run('source_defect_annotation', lambda: verdict['annotations'].extend(__import__(__package__ + '.dq_detectors', fromlist=['annotate']).annotate(stack, question, graph, answer)))
     if verdict['accept']: _s1_gate.apply_check(stack, question, graph, verdict, ledger=ledger)  # System One: answers the question as asked?
     verdict['checks_run'].append('cascade_certificates')
     verdict['reasons'] = list(dict.fromkeys(verdict['reasons']))
