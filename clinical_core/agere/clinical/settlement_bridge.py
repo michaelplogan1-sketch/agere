@@ -268,9 +268,9 @@ def answer(report, plan, question):
 
 
 # ---- free local-compiler route ----------------------------------------------------------------------------------------
-WORK = (r'\bclos\w* (?:the |our |all |those |these )?(?:care |quality |measure )?gaps\b|\bgap closures?\b|\boutreach\b|\bworklist\b|\bwork list\b|'
+WORK = (r'\bclos\w* (?:the |our |all |those |these )?(?:open )?(?:care |quality |measure )?gaps\b|\bgap closures?\b|\bcare[- ]gap (?:work|closures?)\b|\boutreach\b|\bworklist\b|\bwork list\b|'
         r'\bcare management\b|\bwork(?:ing)? the list\b|\bquality (?:improvement|gate|score)\b')
-MONEY = r'\bsettlement\b|\bshared savings\b|\bworth\b|\bdollars?\b|\bfinancial (?:impact|bridge)\b|\bbridge\b|\bwaterfall\b|\bpayout\b|\bearn\b|\$'
+MONEY = r'\bsettlement\b|\b(?:realized|modeled|forecast) savings\b|\bshared savings\b|\bworth\b|\bdollars?\b|\bfinancial (?:impact|bridge)\b|\bbridge\b|\bwaterfall\b|\bpayout\b|\bearn\b|\$'
 
 
 def route(question, profile, as_of):

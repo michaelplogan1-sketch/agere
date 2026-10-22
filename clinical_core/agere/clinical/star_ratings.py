@@ -322,7 +322,7 @@ def answer(report, plan, question):
 
 
 # ---- free local-compiler route ----------------------------------------------------------------------------------------
-STAR_RX = r'\bstars? ratings?\b|\bstar (?:score|bonus|measures?|cut ?points?|projection)\b|\b(?:4|5|four|five|3\.5|4\.5)[- ]stars?\b|\bqbp\b|\bquality bonus payments?\b|\bcut ?points?\b'
+STAR_RX = r'\bstars? ratings?\b|\bstar (?:score|bonus|measures?|cut ?points?|projection)\b|\b(?:4|5|four|five|3\.5|4\.5)[- ]stars?\b|\bqbp\b|\bquality bonus payments?\b|\bcut ?points?\b|\b(?:up|raise|lift) (?:by )?(?:a|one|1) stars?\b|\bland on stars\b|\bstars? (?:this|next) year\b'
 
 
 def route(question, profile, as_of):
@@ -340,7 +340,7 @@ def route(question, profile, as_of):
                              ('pdc_diabetes', r'\bdiabetes (?:medication )?adherence\b'), ('pcr_readmissions', r'\breadmission\w*\b'),
                              ('trc', r'\btransitions? of care\b|\btrc\b'), ('ked', r'\bkidney health\b|\bked\b')) if re.search(rx, low)]
     if named and re.search(r'\bonly\b|\bjust\b', low): params['measures'] = named
-    if named and not re.search(r'\bstar ratings?\b|\boverall\b|\bqbp\b|\bquality bonus\b|\bget (?:us )?to\b|\breach\b|\bproject\w*\b|\bforecast\b', low):
+    if named and not re.search(r'\bstar ratings?\b|\boverall\b|\bqbp\b|\bquality bonus\b|\bget (?:us )?to\b|\breach\b|\bproject\w*\b|\bforecast\b|\bup (?:a|one|1) stars?\b', low):
         return None  # one measure's distance to its cut point stays with the vbc measure answer
     c = re.search(r'\b(\d{1,3})\s?%\s+of (?:(?:the|our) )?(?:open )?gaps\b|\bclos\w* (\d{1,3})\s?%', low)
     if c and 0 <= int(c.group(1) or c.group(2)) <= 100: params['closure_rate'] = int(c.group(1) or c.group(2)) / 100

@@ -470,6 +470,7 @@ def route(question, profile, as_of):
     q = rc.low(question)
     if not re.search(SURVEY_RX, q): return None
     if rc.knowledge_only(q): return None
+    if re.search(r'\bdiagnos\w+\b|\brisk (?:adjustment|scores?)\b|\bhccs?\b', q) and not re.search(r'\bsurveys?\b|\brespondents?\b|\bnon-?response\b', q): return None  # HRA as a coding source is upcoding_detection
     if re.search(r'\b(?:send|mail|launch|design|write|draft)\b.{0,30}\bsurveys?\b', q): return None  # survey operations, not estimates
     params = {}
     item = next((k for k, rx in ITEM_RX if re.search(rx, q)), None)

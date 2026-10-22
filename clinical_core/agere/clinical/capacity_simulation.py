@@ -186,6 +186,7 @@ def route(question, profile, as_of):
     from .engine_suite import plan
     low = ' '.join(str(question).lower().split())
     if not re.search(CAP, low) or H.is_definition(low): return None
+    if re.search(r'\bblocking\b|\bblocked\b', low) and not re.search(r'\bboarding\b|\bsimulat\w*\b|\bwhat[- ]if\b|\bscenario\b', low): return None  # a blocking-probability target is the queueing (Erlang loss) route
     params = H.common_params(low)
     m = re.search(r'\b(?:open(?:ed|ing)?|add(?:ed|ing)?|more)\s+(\d{1,3})\s+(?:more |additional )?(?:inpatient |staffed )?beds?', low)
     if m: params['add_beds'] = int(m.group(1))

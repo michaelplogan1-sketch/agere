@@ -189,6 +189,7 @@ def route(question, profile, as_of):
     if re.search(r'\brisk[- ]standardi[sz]ed\b|\bedac\b|\brsrr\b|\bo/e\b|\bobserved[- ](?:to[- ])?expected\b|\bexcess readmission\b|\bhrrp\b', low): return None  # risk_outcomes
     if re.search(r'\bhow long (?:until|till|before|to|does it take)\b|\btime (?:to|until)\b|\bkaplan|\bsurvival\b|\bcurves?\b|\bcox\b|\bhazards?\b', low): return None
     if re.search(r'\bleak\w*\b|\bout[- ]of[- ]network\b|\bjourneys?\b|\bcare paths?\b|\bpatient flow\b|\bwhere do (?:our |the )?(?:patients|members) go\b', low): return None
+    if re.search(r'\bby (?:pcp|practice|payer|plan|provider|age|sex)s?\b|\bper (?:pcp|practice|payer|provider)\b', low): return None  # grouping this engine cannot apply: the measure library groups by practice / payer
     params = {'follow_up_days': 7, 'group_by': 'none', 'as_of': str(as_of)[:10], 'denominator': 'known_discharges'}
     if re.search(r'\b(?:14|fourteen)[- ]day\b', low): params['follow_up_days'] = 14
     if re.search(r'\breadmi\w*\b', low) and not re.search(r'\b(?:follow|visit|reconcil\w*|contact)\b', low): params['focus'] = 'readmitted'
