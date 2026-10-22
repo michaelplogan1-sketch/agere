@@ -62,8 +62,8 @@ ROUTE_ORDER = ('saved_monitors', 'change_attribution', 'social_needs', 'star_rat
                'bundle_compliance', 'hai_surveillance', 'antimicrobial_use', 'spatiotemporal_cluster', 'network_adequacy',
                'overbooking_fairness', 'or_block_optimization', 'discharge_forecast', 'capacity_simulation', 'flow_decomposition',
                'visit_groups', 'policy_search', 'outreach_bandit', 'outreach_allocation', 'staffing_plan',
-               'prior_auth_access', 'transitions_of_care', 'care_gap_closure', 'domain_pack',
-               'benchmark_rebasing', 'eligibility_340b', 'ddi_screening', 'prior_auth_rules', 'cdi_opportunity', 'upcoding_detection',
+               'transitions_of_care', 'care_gap_closure', 'domain_pack',
+               'benchmark_rebasing', 'eligibility_340b', 'ddi_screening', 'prior_auth_rules', 'prior_auth_access', 'cdi_opportunity', 'upcoding_detection',
                'denial_prediction', 'contract_reimbursement', 'price_benchmark', 'network_spread', 'provider_network_graph',
                'survey_adjustment', 'scorecard_risk')
 

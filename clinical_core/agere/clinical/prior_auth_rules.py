@@ -346,6 +346,9 @@ def route(question, profile, as_of):
     q = rc.low(question)
     if not re.search(PA, q): return None
     if re.search(r'\boauth\b|\bauthori[sz]ation (?:token|header|code flow)\b', q): return None
+    # resolving individual requests (unresolved, appeals, pharmacy rejects, time to resolve, Extra Help) is prior_auth_access
+    if re.search(r'\bunresolved\b|\bstill (?:open|pending)\b|\bappeal\w*\b|\breject\w*\b|\bnever got approved\b|\bextra help\b|'
+                 r'\b(?:how long|time to) (?:do |does )?(?:\w+ ){0,3}(?:take to )?resolve\b|\bresolv\w*\b', q): return None
     if rc.knowledge_only(q) and not re.search(r'\b(?:cpt|hcpcs|code)\s*[a-z]?\d{4,5}\b|\b[a-z]\d{4}\b|\b\d{5}\b', q): return None
     params = {}
     codes = re.findall(r'\b([a-z]\d{4}|\d{5})(?:\s*-\s*([a-z]?\d{4,5}))?\b', q)
