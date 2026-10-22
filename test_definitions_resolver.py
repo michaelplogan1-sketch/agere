@@ -61,12 +61,13 @@ class Detect(unittest.TestCase):
             calls.append((ask, set(options), kw['task_key']))
             return {'label': 'governed', 'probabilities': {'governed': .93, 'needs_standard_definition': .05, 'unknown': .02}}
         fake = types.ModuleType('system_one'); fake.typed_question = typed_question
-        with mock.patch.dict(sys.modules, {'clinical_core.agere.clinical.system_one': fake}):
+        import clinical_core.agere.clinical as pkg  # patch the package attribute too: an earlier import binds it
+        with mock.patch.dict(sys.modules, {'clinical_core.agere.clinical.system_one': fake}), mock.patch.object(pkg, 'system_one', fake, create=True):
             self.assertEqual(dr.detect('MSSP avoidable spend by practice'), [])
         self.assertEqual(calls[0][1], {'governed', 'needs_standard_definition', 'unknown'})
         def low(ask, options, **kw): return {'label': 'governed', 'probabilities': {'governed': .6, 'unknown': .4}}
         fake.typed_question = low
-        with mock.patch.dict(sys.modules, {'clinical_core.agere.clinical.system_one': fake}):
+        with mock.patch.dict(sys.modules, {'clinical_core.agere.clinical.system_one': fake}), mock.patch.object(pkg, 'system_one', fake, create=True):
             self.assertEqual(dr.detect('MSSP avoidable spend by practice'), ['MSSP avoidable spend'])
 
     def test_candidates_keep_measure_code_and_longest_span(self):

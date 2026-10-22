@@ -190,8 +190,8 @@ def governed_knowledge():
 ANALYSIS_SYSTEM += '''
 DEFINITIONS: governed_knowledge (in the catalog payload) holds versioned program definitions (e.g. care gaps and their
 drug pillars, fill classes and ingredients, lookback windows, therapy-barrier policy) and standard references such as
-guideline target doses. Use them within their documented scope. A missing clinical, payer or causal definition is
-an unresolved requirement when it cannot be supported. Never invent clinical eligibility or program entitlement.
+guideline target doses. Use them within their documented scope. Check resolved_definitions first; a cited definition
+there is supported. A missing clinical, payer or causal definition is an unresolved requirement when it cannot be supported. Never invent clinical eligibility or program entitlement.
 clinical_owner_definitions are the clinical owner's governed definitions; when a question uses their terms, apply them
 and name them in definitions: {{phenotype:hfref}} for heart failure with reduced EF (coded HFrEF, or HF with a documented
 EF of 40% or less in notes; columns include hfref_basis), and {{tolerance_evidence}} for maximum tolerated dose

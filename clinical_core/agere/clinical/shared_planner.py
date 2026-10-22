@@ -149,7 +149,7 @@ unresolved is ONLY for requirements that cannot be implemented, not notes about 
 For a compound request, bind each actual predicate and output to its own wording; do not hide an unimplemented requirement in a parent quote.
 '''
 SYSTEM += '''
-Use governed_metric analyses for named business measures in governed_measures; supply id, version, definition_digest, inclusive period and group_by. The compiler and engine expand the registered definition; never recreate or alter its numerator or denominator. patient.age is a virtual as-of birth-date age, never a received column.
+Use governed_metric analyses for named business measures in governed_measures; supply id, version, definition_digest, inclusive period and group_by. The compiler and engine expand the registered definition; never recreate or alter its numerator or denominator. A term in resolved_definitions is a cited standard no governed measure covers: compute it with received data and name it with its source in definitions; that is not recreating a governed definition. patient.age is a virtual as-of birth-date age, never a received column.
 Use named_concepts for diagnosis and picked-up medication predicates: {"op":"concept","kind":"condition|drug_fill","names":["registered name"],"version":1,"period":null,"quote":"literal condition"}. An explicit concept period uses {"start":"YYYY-MM-DD","end":"YYYY-MM-DD"}. Do not replace these definitions with mentions or model-invented evidence rules.
 '''
 SYSTEM += '''
@@ -175,7 +175,7 @@ Use scope=result only for an explicit request to follow THESE returned patients;
 outputs references actual select aliases or analysis_N nodes, never invented metrics. An unresolved monitor may have outputs=[].
 A named monitoring metric must have its own quote in select or analyses; mentioning it only in a population filter is insufficient.
 If the user names additional outcomes to monitor, include those metrics in select or analyses, requesting their engine schemas.
-If an outcome/clinical program definition is unavailable, explain it in that step's unresolved list; do not invent a metric, eligibility or improvement.
+If an outcome/clinical program definition is unavailable in governed_measures, named_concepts and resolved_definitions, explain it in that step's unresolved list; do not invent a metric, eligibility or improvement.
 Unresolved downstream steps do not invalidate a fully supported analytical answer. An unresolved population criterion DOES invalidate the population query: keep it in top-level unresolved.
 Never reinterpret "qualifies for a program" as merely having a condition. Program eligibility needs the received versioned definition and all its criteria.
 Workflow quotes must contain only their own intention, not the query's filters. Do not put model-written prose in the answer as a substitute for computation.
@@ -336,6 +336,7 @@ def schema_slice(catalog, question, extra=(), operations=(), streams=()):
     from .request_discovery import describe
     from . import healthcare_learning
     from .legacy_proposers import vbc_context
+    from .definitions_resolver import context as resolved_definitions
     discovery_metadata = describe(catalog, selected, selected_streams)
     from .request_vocabulary import definitions, digest, concept_definitions, CONDITION_EVIDENCE_POLICY
     vocabulary = {k: {'version': v['version'], 'definition_digest': digest(v), 'meaning': v.get('summary', v['name'])}
@@ -351,6 +352,7 @@ def schema_slice(catalog, question, extra=(), operations=(), streams=()):
             'governed_knowledge': governed_knowledge(),
             'healthcare_source_context': healthcare_learning.knowledge_context(question),
             'vbc_program_context': vbc_context(question),
+            'resolved_definitions': resolved_definitions(question),
             'as_of': catalog.identity.get('as_of'), 'more_schema_available': True}
 
 
