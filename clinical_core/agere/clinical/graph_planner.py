@@ -443,8 +443,8 @@ def propose(question, path, ledger, *, snapshot, graph_catalog, observed_values=
         'analytic_operators': [[k,v['purpose']] for k,v in CATALOG.items()]}
     if semantic is not None: catalog['semantic_layer'] = semantic
     catalog['node_contracts']['worklist']['parameters']={'program':'Exact work_programs id; all currently registered programs are supplied.'}
-    if feedback:
-        instructions += f' A previous plan for this question failed when executed: {feedback[:500]}. Produce a different plan that avoids this failure.'
+    # Instructions stay byte-stable across questions (cached system block); per-question feedback follows the catalog.
+    notes = [f'A previous plan for this question failed when executed: {feedback[:500]}. Produce a different plan that avoids this failure.'] if feedback else []
     body = {'model': PersistentGateway.MODELS['claude'], 'max_tokens': 6000, 'system': instructions,
         'messages': [{'role': 'user', 'content': scope_content(catalog)}],
         'output_config': {'format': {'type': 'json_schema', 'schema': SCHEMA}}}
@@ -470,16 +470,35 @@ def propose(question, path, ledger, *, snapshot, graph_catalog, observed_values=
 
     from .planner_scope import dispatch
     # A saved response that failed validation is re-checked offline with current code before any paid resend.
-    call = lambda b, **kw: send(b, 'claude', ledger, path, **{'allow_failed_response_revalidation': True,
-                                                             'revalidation_reason': 'planner_code_updated', **kw})
+    from ..gateway import call_with_fallback
+    def call(b, **kw):
+        b = cache_layout(b, notes)
+        return call_with_fallback(lambda m: send({**b, 'model': m}, 'claude', ledger, path, **{
+            'allow_failed_response_revalidation': True, 'revalidation_reason': 'planner_code_updated', **kw}), b['model'])
     try:
         return dispatch(body, catalog, call, parse=parse)
     except (ValueError, KeyError, TypeError) as exc:
         if 'bound' in str(exc): raise
-        # One repair attempt: the same request plus the validator's message.
-        retry = {**body, 'system': body['system'] + f' A previous plan for this question failed validation with: {str(exc)[:400]}. Return a corrected graph that satisfies the contracts.'}
-        graph, receipt = dispatch(retry, catalog, call, parse=parse)
+        # One repair attempt: the same request plus the validator's message (after the cached prefix).
+        notes.append(f'A previous plan for this question failed validation with: {str(exc)[:400]}. Return a corrected graph that satisfies the contracts.')
+        graph, receipt = dispatch(body, catalog, call, parse=parse)
         return graph, {**receipt, 'repaired_after_validation_error': str(exc)[:400]}
+
+
+def cache_layout(body, notes=()):
+    """Hosted request layout: the stage's system prompt (question-independent) is one cached block with the same TTL as
+    the catalog block; per-question notes (execution/validation feedback) go after the catalog as uncached user text."""
+    from .planner_scope import CACHE
+    body = dict(body)
+    if isinstance(body.get('system'), str) and body['system']:
+        body['system'] = [{'type': 'text', 'text': body['system'], CACHE[0]: CACHE[1]}]
+    if notes:
+        messages = [dict(m) for m in body['messages']]
+        last = messages[-1]
+        content = last['content'] if isinstance(last['content'], list) else [{'type': 'text', 'text': last['content']}]
+        last['content'] = [*content, *({'type': 'text', 'text': n} for n in notes)]
+        body['messages'] = messages
+    return body
 
 
 def heal_concept(name):

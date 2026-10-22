@@ -37,7 +37,7 @@ class PromptCaching(unittest.TestCase):
         with tempfile.TemporaryDirectory() as d, patch('clinical_core.agere.clinical.context_student.send', fake_send):
             nl2sql.HostedModel(None, Path(d), model='claude-opus-5-5')('system', user, max_tokens=10)
         blocks = sent['messages'][0]['content']
-        self.assertEqual(blocks[0]['cache_control'], {'type': 'ephemeral'})
+        self.assertEqual(blocks[0]['cache_control'], {'type': 'ephemeral', 'ttl': '1h'})
         self.assertNotIn('cache_control', blocks[1])
         self.assertEqual(blocks[0]['text'] + blocks[1]['text'], user)
         self.assertIn('How many patients have diabetes?', blocks[1]['text'])
