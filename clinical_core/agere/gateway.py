@@ -212,3 +212,99 @@ def supported_task(subject,cutoff,records,options):
         if not text:continue
         evidence.append({'id':r['record_id'],'note_id':r['record_id'],'date':r['event_date'],'text':text})
     return EvidenceTask(subject,cutoff,{'unknown':'Insufficient, contradictory or unavailable evidence',**options},evidence)
+
+
+# -- token economics: model tiers, stable cache prefixes, provider fallback ----------------------------------------------
+# Claude 5 family, most capable first. Planning drafts run Sonnet-class; Opus-class only after a failed review.
+CLAUDE_FAMILY=('claude-opus-5-5','claude-sonnet-5-5','claude-haiku-5-5')
+PLANNER_MODEL='claude-sonnet-5-5'
+ESCALATION_MODEL='claude-opus-5-5'
+
+
+def model_tiers():
+    """{'planner','judge','escalation'} model ids. AGERE_PLANNER_MODEL drafts (default Sonnet 5.5), AGERE_SHARED_JUDGE_MODEL
+    reviews (default: the planner model), AGERE_ESCALATION_MODEL re-plans and re-reviews after a failed review (default Opus 5.5)."""
+    planner=os.environ.get('AGERE_PLANNER_MODEL') or PLANNER_MODEL
+    return {'planner':planner,'judge':os.environ.get('AGERE_SHARED_JUDGE_MODEL') or planner,
+            'escalation':os.environ.get('AGERE_ESCALATION_MODEL') or ESCALATION_MODEL}
+
+
+def cache_control():
+    """Ephemeral cache marker; 1h TTL by default (AGERE_PROMPT_CACHE_TTL=5m for the 5-minute cache)."""
+    ttl=os.environ.get('AGERE_PROMPT_CACHE_TTL','1h')
+    return {'type':'ephemeral','ttl':'1h'} if ttl!='5m' else {'type':'ephemeral'}
+
+
+def _canonical(value):
+    if isinstance(value,dict):return {str(k):_canonical(v) for k,v in value.items()}
+    if isinstance(value,(set,frozenset)):return sorted((_canonical(v) for v in value),key=lambda v:json.dumps(v,sort_keys=True,default=str))
+    if isinstance(value,(list,tuple)):return [_canonical(v) for v in value]
+    return value
+
+
+def stable_json(value):
+    """Byte-identical serialization for cached prefixes: sorted keys, sorted sets, compact separators (hash-seed independent)."""
+    return json.dumps(_canonical(value),ensure_ascii=False,sort_keys=True,separators=(',',':'),default=str)
+
+
+class ProviderUnavailable(RuntimeError):
+    """The provider could not serve the request (billing/credit, rate limit, overload, 5xx, transport) after one retry
+    and the fallback model. .kind names the class; .attempts lists [{'model','kind','error'}]."""
+    def __init__(self,message,*,kind=None,attempts=()):
+        super().__init__(message);self.kind=kind;self.attempts=list(attempts)
+
+
+_PROVIDER_PATTERNS=(('billing',('credit balance','billing','insufficient credit','insufficient_quota','payment required','http 402')),
+                    ('rate_limit',('http 429','rate limit','rate_limit','too many requests')),
+                    ('overloaded',('http 529','overloaded')),
+                    ('server',('http 500','http 502','http 503','http 504','internal server error','service unavailable','bad gateway','api_error')),
+                    ('timeout',('timed out','timeout','connection reset','connection refused','remote end closed','urlerror')))
+
+
+def classify_provider_error(exc):
+    """'billing' | 'rate_limit' | 'overloaded' | 'server' | 'timeout' when the provider (not the request) failed, else None.
+    Request errors (400 schema, parse failures, size bounds) return None and are never retried on another model."""
+    if isinstance(exc,ProviderUnavailable):return exc.kind
+    code=getattr(exc,'code',None)
+    if isinstance(exc,urllib.error.HTTPError) and isinstance(code,int):
+        if code==402:return 'billing'
+        if code==429:return 'rate_limit'
+        if code==529:return 'overloaded'
+        if code>=500:return 'server'
+    elif isinstance(exc,(TimeoutError,ConnectionError,urllib.error.URLError)):return 'timeout'
+    text=(type(exc).__name__+': '+str(exc)).lower()
+    for kind,needles in _PROVIDER_PATTERNS:
+        if any(n in text for n in needles):return kind
+    return None
+
+
+def fallback_model(model):
+    """AGERE_FALLBACK_MODEL (alias AGERE_INTERPRETER_FALLBACK) when set and different, else the next model in the Claude 5
+    family (Opus -> Sonnet -> Haiku; Haiku -> Sonnet). None for models outside the family."""
+    chosen=os.environ.get('AGERE_FALLBACK_MODEL') or os.environ.get('AGERE_INTERPRETER_FALLBACK')
+    if chosen:return chosen if chosen!=model else None
+    if model not in CLAUDE_FAMILY:return None
+    i=CLAUDE_FAMILY.index(model)
+    return CLAUDE_FAMILY[i+1] if i+1<len(CLAUDE_FAMILY) else CLAUDE_FAMILY[i-1]
+
+
+def call_with_fallback(call,model,*,sleep=time.sleep,backoff=None,fallback=None):
+    """call(model) -> result. A provider-unavailable failure is retried once on the same model after a backoff
+    (AGERE_PROVIDER_BACKOFF_SECONDS, default 2; billing errors skip the retry), then once on the fallback model; when that
+    also fails a typed ProviderUnavailable is raised. Request errors propagate unchanged on the first attempt."""
+    backoff=float(os.environ.get('AGERE_PROVIDER_BACKOFF_SECONDS','2')) if backoff is None else backoff
+    alternate=fallback_model(model) if fallback is None else fallback
+    attempts=[]
+    for target in (model,alternate):
+        if target is None:continue
+        for retry in (False,True):
+            try:return call(target)
+            except Exception as exc:
+                kind=classify_provider_error(exc)
+                if kind is None:raise
+                attempts.append({'model':target,'kind':kind,'error':str(exc)[:300]})
+                if retry or kind=='billing' or target!=model:break
+                if backoff>0:sleep(backoff)
+    last=attempts[-1]
+    raise ProviderUnavailable(f"provider_unavailable ({last['kind']}) after {len(attempts)} attempt(s): "+'; '.join(
+        f"{a['model']}: {a['error'][:120]}" for a in attempts),kind=last['kind'],attempts=attempts) from None

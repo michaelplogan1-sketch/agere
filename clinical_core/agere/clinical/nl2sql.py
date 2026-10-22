@@ -305,41 +305,105 @@ class LocalModel:
 
 
 class HostedModel:
-    """Cheapest capable hosted model as the next rung (default Claude Haiku 5.5): one call, schema in a
-    prompt-cached block, low effort, no exploration. Uses the provider ledger for accounting and dedupe."""
+    """Hosted Claude rung (default Claude Haiku 5.5): one call, low effort, no exploration, provider ledger for accounting
+    and dedupe. Prompt cache: the system prompt and the question-independent catalog prefix are stable cached blocks
+    (1h TTL); question-specific content follows uncached. model='tiered' drafts on the planner model (Sonnet 5.5), reviews
+    on AGERE_SHARED_JUDGE_MODEL, and moves planning and review to the escalation model (Opus 5.5) only after a review
+    fails. Provider outages retry once, then fall back to the next family model (gateway.call_with_fallback)."""
     single = True
     hosted = True
 
     def __init__(self, ledger, out, model='claude-haiku-5-5', *, request_max_bytes=None):
         self.ledger, self.out, self.model = ledger, out, model
         self.request_max_bytes = request_max_bytes
-        self.identity = model
+        self.tiered = model == 'tiered'
+        self.escalated = False
+        self.last_model = None
         self.cost = 0.0
+
+    @property
+    def identity(self):
+        if self.last_model: return self.last_model
+        if self.tiered:
+            from ..gateway import model_tiers
+            return model_tiers()['planner']
+        return self.model
+
+    def role(self, system, user):
+        return 'judge' if system in judge_systems() else 'planner'
+
+    def choose(self, role, user):
+        """Model for this call. Untiered: the configured model. Tiered: planner/judge until a review fails, then escalation."""
+        if not self.tiered: return self.model
+        from ..gateway import model_tiers
+        tiers = model_tiers()
+        if role == 'planner' and '"semantic_review"' in user:
+            self.escalated = True  # review feedback only follows a failed review: re-plan on the escalation model
+        return tiers['escalation'] if self.escalated else tiers[role]
 
     def __call__(self, system, user, max_tokens=700, temperature=0.0, seed=None):
         from .context_student import send
-        from .shared_planner import CACHE_BOUNDARY
-        if CACHE_BOUNDARY in user:
-            # Cache only the static prefix (system + catalog); the question-specific remainder follows uncached.
-            cut = user.index(CACHE_BOUNDARY) + len(CACHE_BOUNDARY)
-            blocks = [{'type': 'text', 'text': user[:cut], 'cache_control': {'type': 'ephemeral'}},
-                      {'type': 'text', 'text': user[cut:]}]
-        else:
-            schema, _, rest = user.partition('\n\nEXAMPLES\n')
-            blocks = [{'type': 'text', 'text': schema, 'cache_control': {'type': 'ephemeral'}},
-                      {'type': 'text', 'text': 'EXAMPLES\n' + rest}]
-        body = {'model': self.model, 'max_tokens': max_tokens, 'system': system, 'output_config': {'effort': 'low'},
-                'messages': [{'role': 'user', 'content': blocks}]}
+        from ..gateway import call_with_fallback
+        role = self.role(system, user)
+        model = self.choose(role, user)
+        body = {'max_tokens': max_tokens, 'system': hosted_system(system), 'output_config': {'effort': 'low'},
+                'messages': [{'role': 'user', 'content': hosted_user_blocks(user)}]}
         start = time.perf_counter()
-        text, receipt = send(body, 'claude', self.ledger, self.out,
-                             parse=lambda raw: ''.join(b.get('text', '') for b in raw.get('content', []) if b.get('type') == 'text'),
-                             max_bytes=self.request_max_bytes)
+        parse = lambda raw: ''.join(b.get('text', '') for b in raw.get('content', []) if b.get('type') == 'text')
+
+        def attempt(target):
+            text, receipt = send({'model': target, **body}, 'claude', self.ledger, self.out, parse=parse,
+                                 max_bytes=self.request_max_bytes)
+            return text, receipt, target
+        text, receipt, used = call_with_fallback(attempt, model)
+        self.last_model = used
+        if self.tiered and role == 'judge' and review_failed(text): self.escalated = True
         usd = ((receipt.get('cost_estimate') or {}).get('estimated_usd') or 0.0) if not receipt.get('cache_hit') else 0.0
         self.cost += usd
-        return text, {'seconds': round(time.perf_counter() - start, 2), 'model': self.model, 'api_usd': usd,
+        return text, {'seconds': round(time.perf_counter() - start, 2), 'model': used, 'api_usd': usd, 'role': role,
+                      **({'fallback_from': model} if used != model else {}),
                       'usage': receipt.get('usage'), 'cache_hit': bool(receipt.get('cache_hit')),
                       'request_hash': receipt.get('request_hash'),
                       'api_cost_known': bool(receipt.get('cache_hit')) or (receipt.get('cost_estimate') or {}).get('estimated_usd') is not None}
+
+
+def judge_systems():
+    """System prompts of the semantic review/judge calls (they route to the judge model under model='tiered')."""
+    from . import shared_planner, request_program, general_analysis
+    return {shared_planner.AUDIT_SYSTEM, request_program.AUDIT_SYSTEM, general_analysis.AUDIT_SYSTEM}
+
+
+def review_failed(text):
+    """True when a judge reply says the plan is not equivalent or lists issues (unparseable replies count as failed)."""
+    try:
+        audit = json.loads(re.sub(r'^```(?:json)?\s*|\s*```$', '', text.strip()))
+    except (ValueError, TypeError):
+        return True
+    if not isinstance(audit, dict): return True
+    nodes = audit.get('nodes') if isinstance(audit.get('nodes'), list) else []
+    return (audit.get('equivalent') is not True or bool(audit.get('issues'))
+            or any(isinstance(n, dict) and (n.get('equivalent') is not True or n.get('issues')) for n in nodes))
+
+
+def hosted_system(system):
+    """The system prompt is question-independent: one cached block (empty prompts stay a plain string)."""
+    from ..gateway import cache_control
+    return [{'type': 'text', 'text': system, 'cache_control': cache_control()}] if system else system
+
+
+def hosted_user_blocks(user):
+    """Stable prefix (cached) then the question-specific remainder (never cached). Planner JSON splits at its cache
+    boundary; plain prompts split at EXAMPLES (callers put only static text before it); otherwise nothing in the user
+    message is cached, so a per-question message never pays a cache write."""
+    from ..gateway import cache_control
+    from .shared_planner import cache_split
+    split = cache_split(user)
+    if split is None and '\n\nEXAMPLES\n' in user:
+        head, _, rest = user.partition('\n\nEXAMPLES\n')
+        split = head, '\n\nEXAMPLES\n' + rest
+    if split is None or not split[0]: return [{'type': 'text', 'text': user}]
+    head, rest = split
+    return [{'type': 'text', 'text': head, 'cache_control': cache_control()}] + ([{'type': 'text', 'text': rest}] if rest else [])
 
 
 CANONICAL = """Rewrite the question into ONE canonical question Agere's compiler understands. Use only these forms

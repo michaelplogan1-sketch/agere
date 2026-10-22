@@ -72,9 +72,12 @@ def _rules():
 
 
 def system_blocks(docs_dir=DOCS):
+    # Tools + preamble + rules + catalog index are question-independent: one stable prefix cached for 1h (it precedes the
+    # tool loop's 5-minute automatic breakpoint, as longer TTLs must). The question and analyst number follow in messages.
+    from ..gateway import cache_control
     index = (Path(docs_dir) / 'catalog_index.md').read_text()
     return [{'type': 'text', 'text': PREAMBLE + _rules() + FINAL},
-            {'type': 'text', 'text': index, 'cache_control': {'type': 'ephemeral'}}]
+            {'type': 'text', 'text': index, 'cache_control': cache_control()}]
 
 
 def read_doc(name, docs_dir=DOCS):

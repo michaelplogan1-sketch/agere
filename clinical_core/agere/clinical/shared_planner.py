@@ -364,9 +364,34 @@ CACHE_BOUNDARY = '"cache_boundary":"static_catalog_above"'
 def planner_user(context, **rest):
     static = {k: context[k] for k in STATIC_CATALOG_KEYS if k in context}
     selected = schema_prompt_view({k: v for k, v in context.items() if k not in STATIC_CATALOG_KEYS})
-    head = json.dumps({'catalog_static': static}, ensure_ascii=False, default=str, separators=(',', ':'), sort_keys=True)
-    tail = json.dumps({'catalog': selected, **rest}, ensure_ascii=False, default=str, separators=(',', ':'))
-    return head[:-1] + ',' + CACHE_BOUNDARY + ',' + tail[1:]
+    return _join_cached({'catalog_static': static}, {'catalog': selected, **rest})
+
+
+def _join_cached(static, rest):
+    # stable_json sorts keys AND sets, so the cached prefix is byte-identical across questions and processes.
+    from ..gateway import stable_json
+    head = stable_json(static)
+    tail = json.dumps(rest, ensure_ascii=False, default=str, separators=(',', ':'))
+    return head[:-1] + ',' + CACHE_BOUNDARY + (',' + tail[1:] if rest else '}')
+
+
+def cache_split(user):
+    """(static prefix ending at CACHE_BOUNDARY, question-specific remainder) for a hosted user message, or None.
+    A wrapper that re-serialized the planner JSON (procedural lessons use default separators) is re-joined canonically,
+    so its static catalog stays cacheable instead of the whole per-question message being cached."""
+    if CACHE_BOUNDARY in user:
+        cut = user.index(CACHE_BOUNDARY) + len(CACHE_BOUNDARY)
+        return user[:cut], user[cut:]
+    if '"catalog_static"' not in user or '"cache_boundary"' not in user: return None
+    try:
+        data = json.loads(user)
+    except ValueError:
+        return None
+    if not isinstance(data, dict) or 'catalog_static' not in data: return None
+    data.pop('cache_boundary', None)
+    text = _join_cached({'catalog_static': data.pop('catalog_static')}, data)
+    cut = text.index(CACHE_BOUNDARY) + len(CACHE_BOUNDARY)
+    return text[:cut], text[cut:]
 
 
 def decode(text):
