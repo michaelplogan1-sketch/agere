@@ -136,7 +136,13 @@ def run(db, patient_ids, p, as_of):
                       'regret_per_contact': round(regret / (p['simulate_rounds'] * p['simulate_batch']), 5),
                       'simulated_engaged': engaged, 'curve': curve,
                       'final_p_best': {f'{s["arm"][0]}|{s["arm"][1]}': s['p_best'] for s in final}}
-    return {**base, 'status': 'learning_from_logged_outcomes', 'arms': arms, 'attempts': len(log),
+    ope = None
+    try:  # off-policy evaluation before any recommendation (off_policy.py): DR value of the Thompson / best-arm policies vs logged
+        from .off_policy import check_recommendation
+        ope = check_recommendation(db, keep, as_of, p['segment_by'], p['seed'])
+    except Exception as exc:  # noqa: BLE001 - the check annotates; it never takes the bandit answer down
+        ope = {'status': 'error', 'reason': f'{type(exc).__name__}: {exc}'[:200]}
+    return {**base, 'status': 'learning_from_logged_outcomes', 'arms': arms, 'attempts': len(log), 'off_policy_check': ope,
             'patients': len({x['patient_id'] for x in log}), 'patient_ids': sorted({x['patient_id'] for x in log}),
             'period': {'start': log[0]['date'], 'end': log[-1]['date']},
             'allocation': {f'{a[0]}|{a[1]}': int(n) for a, n in sorted(alloc.items())}, 'simulation': simulation, 'method': METHOD}
@@ -171,6 +177,9 @@ def headline(r):
     text = (f"Best arm: {b['channel']}{seg}, engagement {b['posterior_mean']:.0%} (95% CrI {b['ci95'][0]:.0%}-{b['ci95'][1]:.0%}, "
             f"P(best) {b['p_best']:.0%}) from {r['attempts']} logged attempts on {r['patients']} patients ({r['period']['start']} to "
             f"{r['period']['end']}, synthetic log). Next {r['parameters']['next_batch']} contacts by Thompson sampling: {alloc}")
+    from .off_policy import describe_check
+    ope = describe_check(r.get('off_policy_check'))
+    if ope: text += '. ' + ope
     if r['simulation']:
         s = r['simulation']
         text += (f". Simulated outcomes ({s['rounds']} rounds x {s['batch']}): cumulative regret {s['cumulative_regret']:.1f} engagements "
@@ -187,7 +196,8 @@ def answer(report, plan, question):
             'patient_ids': report['patient_ids'], 'value': headline(report) + '.', 'method': report['method'],
             'definitions': [{'term': 'engagement', 'basis': 'outreach_attempts outcome = engaged'}],
             'limitations': ASSUMPTIONS, 'membership_role': 'evaluated',
-            'overall': {'outreach_bandit': {'allocation': report['allocation'], 'simulation': report['simulation']}}}
+            'overall': {'outreach_bandit': {'allocation': report['allocation'], 'simulation': report['simulation'],
+                                            'off_policy_check': report.get('off_policy_check')}}}
 
 
 # ---- free local-compiler route ----------------------------------------------------------------------------------------
