@@ -24,7 +24,7 @@ import numpy as np
 
 VERSION = 'template-decoding/1'
 _DATE = r'\d{4}-\d{2}-\d{2}'
-_NUM = r'(?<![\w.\-])-?\d+(?:\.\d+)?(?![\w.])'
+_NUM = r'(?<![\w.\-])(?<!\d,)-?\d+(?:\.\d+)?(?!\w|\.\d)(?!,\d)'   # not part of 1,000 / 3.2.1 / ids
 LITERAL = re.compile(f'(?<![\\w-])({_DATE})(?![\\w-])|({_NUM})')
 KIND_FULL = {'date': _DATE, 'integer': r'-?\d+', 'number': r'-?\d+(?:\.\d+)?'}
 
@@ -48,12 +48,13 @@ def literals(question):
 
 def _sql_sub(sql, lit, token):
     """Replace standalone occurrences of the literal in SQL (not identifiers, not after LIMIT/OFFSET); quotes around it are kept."""
-    pat = re.compile(r"(?<![\w.\-])" + re.escape(lit) + r"(?![\w.])")
+    pat = re.compile(r"(?<![\w.\-])" + re.escape(lit) + r"(?!\w|\.\d)")
     parts, n, last = [], 0, 0
     for m in pat.finditer(sql):
         before = sql[:m.start()]
         if re.search(r'(?i)\b(?:limit|offset)\s+$', before): continue
-        if not re.fullmatch(_DATE, lit) and not re.search(r"(?i)(?:[<>=!]=?|<>|\(|,|'|\b(?:between|and|in|or|then|else)\b)\s*$", before): continue  # a value position, not structure
+        in_comment = '--' in sql[sql.rfind('\n', 0, m.start()) + 1:m.start()]   # a DEFINITION comment states the value too: keep it truthful
+        if not in_comment and not re.fullmatch(_DATE, lit) and not re.search(r"(?i)(?:[<>=!]=?|<>|\(|,|'|\b(?:between|and|in|or|then|else)\b)\s*$", before): continue  # a value position, not structure
         parts.append(sql[last:m.start()]); parts.append(token); last = m.end(); n += 1
     parts.append(sql[last:])
     return ''.join(parts), n
@@ -61,6 +62,7 @@ def _sql_sub(sql, lit, token):
 
 def abstract(question, sql):
     """-> template dict or None. {'question': 'text with {s0}', 'sql': '...{s0}...', 'slots': [{'name','kind','example'}]}"""
+    question = question.strip()
     q_t, s_t, slots = question, sql, []
     # dates first so '2030-05-27' is one slot, then years/numbers; a year inside an already-slotted date is gone by then
     for lit, kind in sorted(literals(question), key=lambda x: (x[1] != 'date', question.index(x[0]))):
@@ -76,7 +78,7 @@ def abstract(question, sql):
         if kind == 'integer' and re.fullmatch(r'(?:19|20)\d\d', lit):
             # period ends are written as the NEXT year's first day ('2029-01-01'): a derived slot, so the range moves with the year
             s_t = re.sub(r"(?<!\d)" + str(int(lit) + 1) + r"(?=-\d\d-\d\d)", '{s%d+1}' % len(slots), s_t)
-        q_t = re.sub(r"(?<![\w.\-])" + re.escape(lit) + r"(?![\w.])", token, q_t)
+        q_t = re.sub(r"(?<![\w.\-])" + re.escape(lit) + r"(?!\w|\.\d)", token, q_t)
         slots.append({'name': token[1:-1], 'kind': kind, 'example': lit})
     if not slots: return None
     t = {'question': q_t, 'sql': s_t, 'slots': slots}
@@ -94,10 +96,16 @@ def instantiate(template, values):
 
 
 def _question_regex(template):
-    parts = re.split(r'(\{s\d+\})', template['question'])
+    parts = re.split(r'(\{s\d+\})', template['question'].strip())
     kinds = {s['name']: s['kind'] for s in template['slots']}
-    pat = ''.join(f"(?P<{p[1:-1]}>{KIND_FULL[kinds[p[1:-1]]]})" if re.fullmatch(r'\{s\d+\}', p) else re.escape(p) for p in parts)
-    return re.compile(r'\s*' + pat.replace(r'\ ', r'\s+') + r'\s*$', re.I)
+    seen, pat = set(), []
+    for p in parts:
+        if re.fullmatch(r'\{s\d+\}', p):
+            n = p[1:-1]
+            pat.append(f'(?P={n})' if n in seen else f'(?P<{n}>{KIND_FULL[kinds[n]]})')   # a value repeated in the question must repeat
+            seen.add(n)
+        else: pat.append(re.escape(p))
+    return re.compile(r'\s*' + ''.join(pat).replace(r'\ ', r'\s+') + r'\s*$', re.I)
 
 
 def _masked(question, kinds=None):

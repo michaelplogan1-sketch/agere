@@ -40,6 +40,13 @@ class TemplateTests(unittest.TestCase):
             # the exact verified question belongs to the learned rung
             self.assertIsNone(td.lookup(d, Q1, Enc())[0])
 
+    def test_repeated_value_slot_uses_backreference(self):
+        t = td.abstract('Patients over 65 with a visit after 65 days', "SELECT count(*) FROM patient WHERE age > 65 AND days > 65")
+        self.assertEqual(len(t['slots']), 1)
+        rx = td._question_regex(t)
+        self.assertTrue(rx.match('Patients over 70 with a visit after 70 days'))
+        self.assertFalse(rx.match('Patients over 70 with a visit after 71 days'))
+
     def test_model_slot_fill_is_grammar_constrained(self):
         t = td.abstract(Q2, S2)
         t['source_questions'] = [Q2]
