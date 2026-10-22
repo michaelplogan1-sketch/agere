@@ -1,0 +1,123 @@
+"""Cascade ordering and time bound: the free compiler plan goes ahead of the heavy tiers, one slow tier cannot use the whole answer budget,
+and a paid tier whose plan the literal check will reject is declined before its first paid call."""
+import os
+import threading
+import time
+import unittest
+from types import SimpleNamespace
+from unittest.mock import patch
+
+from clinical_core.agere.clinical import atomic_questions, proposers as P
+from clinical_core.agere.clinical.answer_budget import cancelled
+from clinical_core.agere.clinical.question_input import QuestionNotUnderstood
+
+QUESTION = 'how many patients have diabetes'
+GOOD = {'coverage': 'supported_observation', 'nodes': [{'id': 'a', 'operation': 'sql', 'parameters': {'query': "select count(*) from patients where condition = 'diabetes'"}}]}
+BAD = {'coverage': 'supported_observation', 'nodes': [{'id': 'a', 'operation': 'sql', 'parameters': {'query': 'select count(*) from patients'}}]}
+
+
+def cascade(q=QUESTION, live=True):
+    stack = SimpleNamespace(allow_live=live, path='/nonexistent', retriever=SimpleNamespace(meta={'snapshot': {'as_of': '2030-05-27'}}))
+    return P.Cascade(stack, SimpleNamespace(identity={}), q, ledger=SimpleNamespace(close=lambda: None))
+
+
+def with_plan(c, graph):
+    c._ladder = SimpleNamespace(compiled=lambda: (graph, {'route': 'local_compiler'}))
+    return c
+
+
+class FreeFirst(unittest.TestCase):
+    def test_compiler_plan_that_passes_the_literal_check_goes_before_the_heavy_tiers(self):
+        order = tuple(P.ORDER)
+        moved = with_plan(cascade(), GOOD).free_first(order)
+        self.assertEqual(sorted(moved), sorted(order))  # a permutation: no tier dropped
+        heavy = [moved.index(t) for t in P.HEAVY]
+        self.assertLess(moved.index('local_compiler'), min(heavy))
+        self.assertEqual(moved.index('local_compiler') + 1, min(heavy))
+        self.assertLess(moved.index('exact_local_plan'), moved.index('local_compiler'))  # cheaper free tiers still go first
+        self.assertLess(moved.index('local_compiler'), moved.index('hosted_typed_interpreter'))  # System One / Claude order unchanged
+
+    def test_plan_that_fails_the_check_or_is_missing_leaves_the_order(self):
+        order = tuple(P.ORDER)
+        self.assertEqual(with_plan(cascade(), BAD).free_first(order), order)
+        self.assertEqual(with_plan(cascade(), None).free_first(order), order)
+        self.assertEqual(cascade().free_first(order), order)  # no profile / ladder on a fixture stack
+
+
+class TimeShare(unittest.TestCase):
+    def run_cascade(self, slow, budget='3'):
+        reached, late = [], []
+
+        def stub(name):
+            def tier(self):
+                reached.append(name)
+                if name == slow:
+                    while not cancelled() and time.monotonic() < deadline: time.sleep(0.02)
+                    time.sleep(0.2)
+                    late.append(self.reject(name, ['late rejection']))  # an abandoned tier records nothing
+                return None
+            return tier
+        deadline = time.monotonic() + 20
+        with patch.dict(os.environ, {'AGERE_ANSWER_BUDGET_SECONDS': budget, 'AGERE_S1_ROUTER': 'off', 'AGERE_LOCAL_TYPED': 'off'}), \
+                patch.multiple(P.Cascade, **{'tier_' + n: stub(n) for n in P.ORDER}):
+            c = cascade(live=True)
+            started = time.perf_counter()
+            with self.assertRaises(QuestionNotUnderstood):
+                c.run()
+            return c, reached, time.perf_counter() - started
+
+    def test_a_slow_tier_yields_like_a_decline_and_the_cascade_continues(self):
+        c, reached, took = self.run_cascade('atomic_system_one')
+        share = 3 * P.TIER_SHARE['heavy']
+        self.assertLess(took, share + 3)  # nowhere near the 20 s the fake tier would take
+        entry = next(e for e in c.log if e['proposer'] == 'atomic_system_one')
+        self.assertEqual(entry['outcome'], 'declined')
+        self.assertIn('time share exhausted', entry['detail'])
+        self.assertTrue(set(P.ORDER) - {'typed_decider'} <= set(reached) | {'typed_decider'})  # every later tier still ran
+        self.assertIn('legacy_cost_ladder', reached)
+        time.sleep(0.5)
+        self.assertFalse([e for e in c.log if e['outcome'] == 'rejected' and e['detail'] == 'late rejection'])
+
+    def test_no_time_limit_runs_the_tier_inline(self):
+        threads = []
+        def tier(self):
+            threads.append(threading.current_thread().name); return None
+        with patch.dict(os.environ, {'AGERE_ANSWER_BUDGET_SECONDS': 'off'}):
+            c = cascade()
+            c.budget = SimpleNamespace(seconds=float('inf'))
+            self.assertIsNone(c.tier_seconds('bottled_sql', c.budget))
+            with patch.object(P.Cascade, 'tier_bottled_sql', tier):
+                c.call_tier('bottled_sql', None)
+        self.assertEqual(threads, [threading.current_thread().name])
+
+
+class EarlyLiteralCheck(unittest.TestCase):
+    def test_atomic_tier_declines_before_any_system_one_call(self):
+        called = []
+        plan = {'planner': 'pattern', 'scope': {'sources': []}}
+        c = cascade('Who should our care managers call this week? We have 40 slots')
+        with patch.object(atomic_questions, 'plan', lambda *a, **k: plan), patch.object(atomic_questions, 'graph_of', lambda q, p: BAD), \
+                patch('clinical_core.agere.clinical.analysis_graph.validate', lambda g, a: g), \
+                patch.object(atomic_questions, 'execute', lambda *a, **k: called.append(1)):
+            with self.assertRaises(QuestionNotUnderstood) as ctx:
+                c.tier_atomic_system_one()
+        self.assertEqual(called, [])  # no paid per-patient decision was started
+        self.assertIn('literal pre-check', str(ctx.exception))
+        self.assertIn('40', str(ctx.exception))
+
+    def test_a_plan_that_passes_goes_on_to_system_one(self):
+        called = []
+        plan = {'planner': 'pattern', 'scope': {'sources': []}}
+        c = cascade()
+        report = {'report': {'cells': [], 'system_one': {'errors': 0, 'estimated_usd': 0, 'new_paid_api_calls': 0, 'decided_by': {}, 'decisions': 0},
+                             'population_patients': 0, 'evaluated_patient_ids': [], 'capped': False}}
+        with patch.object(atomic_questions, 'plan', lambda *a, **k: plan), patch.object(atomic_questions, 'graph_of', lambda q, p: GOOD), \
+                patch('clinical_core.agere.clinical.analysis_graph.validate', lambda g, a: g), \
+                patch.object(atomic_questions, 'execute', lambda *a, **k: called.append(1) or report):
+            found = atomic_questions.tier(c.stack, QUESTION, None, early_check=lambda g: None if not c.gaps(P.executable_text([n['parameters'] for n in g['nodes']])) else 1 / 0)
+        self.assertEqual(called, [1])
+        self.assertIsNotNone(found)
+
+
+if __name__ == '__main__':
+    unittest.main()

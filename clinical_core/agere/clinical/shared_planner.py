@@ -43,7 +43,8 @@ def isolated_local(catalog, question, population):
     if not _MODEL_LOCK.acquire(blocking=False):
         raise QuestionNotUnderstood('The local interpreter is busy. Locally compiled questions remain available; retry this unfamiliar wording later.')
     try:
-        limit = min(600, max(1, float(os.environ.get('AGERE_LOCAL_INTERPRET_SECONDS', '120'))))
+        from .answer_budget import tier_remaining  # the cascade's time share for this tier caps the model call
+        limit = tier_remaining(min(600, max(1, float(os.environ.get('AGERE_LOCAL_INTERPRET_SECONDS', '120')))))
         payload = {'catalog': {'target': str(catalog.target), 'tables': catalog.tables,
                                'identity': catalog.identity, 'stream_fields': catalog.stream_fields},
                    'question': question, 'population': population}

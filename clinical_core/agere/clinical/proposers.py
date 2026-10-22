@@ -15,9 +15,11 @@ Qwen SQL) run last and only propose. When every proposal fails, the question is 
 what each proposer would have dropped; a reduced or substituted question is never executed (2026-10-19 protection).
 Honest declines naming missing data (undelivered input, missing-data claims) stand only if nothing later answers.
 """
+import contextvars
 import json
 import os
 import sqlite3
+import threading
 import time
 from pathlib import Path
 
@@ -27,6 +29,7 @@ from .question_input import QuestionNotUnderstood
 from .answer_checks import gate as answer_gate
 from .system_one_gate import CLAUDE_TIERS, outage
 from . import requirement_ledger, plan_fence, claim_verification, stage_diagnostics
+from .answer_budget import cancelled
 
 VERSION = 'checked-proposer-cascade/1'
 
@@ -68,6 +71,10 @@ TIERS = {
 ORDER = tuple(TIERS)
 PAID = {'typed_decider', 'hosted_typed_interpreter', 'hosted_verified_sql', 'frontier_graph_planner', 'hybrid_analysts',
         'metric_router', 'operator_router', 'semantic_analyst', 'stack_planner_propose', 'atomic_system_one'}
+# Tiers whose cost is minutes, not seconds: the free local compiler (when its plan already passes the literal check) is tried before them, and
+# each tier may use only a share of the answer budget (a tier that runs out yields like a decline; the cascade continues).
+HEAVY = ('atomic_system_one', 'evidence_retrieval', 'evidence_review', 'qwen_rewrite_compiler', 'qwen_typed_interpreter', 'bottled_sql')
+TIER_SHARE = {'heavy': 0.25, 'other': 0.5}  # fraction of the answer budget one tier may use (paid tiers count as heavy)
 FEEDBACK_READERS = ('hosted_typed_interpreter',)  # proposers whose prompt includes recorded corrections
 TYPED_WITH_POPULATION = {'terminology_mapping', 'qwen_typed_interpreter', 'hosted_typed_interpreter', 'evidence_retrieval', 'evidence_review', 'atomic_system_one', 'hcc_suspecting'}  # the only tiers that honour a saved cohort
 
@@ -186,7 +193,52 @@ class Cascade:
             order, self.tier_routing = reorder(self.stack, self.question, order)
         except Exception:  # noqa: BLE001 - no promoted model / encoder: keep the order
             pass
-        return order
+        return self.free_first(order)
+
+    def free_first(self, order):
+        """local_compiler (free; arbitrated engine route) ahead of the heavy tiers when its plan already passes the literal check.
+        A permutation: nothing is dropped, and a plan that fails the check leaves the order as it was."""
+        order = tuple(order)
+        heavy = [i for i, t in enumerate(order) if t in HEAVY]
+        if 'local_compiler' not in order or not heavy or order.index('local_compiler') < min(heavy): return order
+        try:
+            graph, _ = self.ladder.compiled()
+            if not graph or not graph.get('nodes') or graph.get('coverage') == 'unsupported': return order
+            if self.gaps(executable_text([n.get('parameters') for n in graph['nodes']])): return order
+        except Exception:  # noqa: BLE001 - no profile / fixture stack: keep the order
+            return order
+        first = order[min(heavy)]
+        rest = [t for t in order if t != 'local_compiler']
+        i = rest.index(first)
+        self.free_first_receipt = {'moved': 'local_compiler', 'before': first}
+        return tuple(rest[:i] + ['local_compiler'] + rest[i:])
+
+    def tier_seconds(self, name, budget):
+        """This tier's share of the answer budget in seconds, or None when the budget is unlimited."""
+        if budget.seconds == float('inf'): return None
+        return budget.seconds * TIER_SHARE['heavy' if name in HEAVY or name in PAID else 'other']
+
+    def call_tier(self, name, limit):
+        """Run one tier, abandoning it when it passes its time share: it yields like a decline (QuestionNotUnderstood) and the
+        cascade continues; the abandoned work is told to stop (answer_budget.cancelled) and can no longer record anything."""
+        fn = getattr(self, 'tier_' + name)
+        if limit is None: return fn()
+        from .answer_budget import _cancel, _deadline
+        box, stop = {}, threading.Event()
+        ctx = contextvars.copy_context()
+        def work():
+            _cancel.set(stop); _deadline.set(time.monotonic() + limit)
+            try:
+                box['value'] = fn()
+            except BaseException as exc:  # noqa: BLE001 - re-raised in the cascade thread
+                box['error'] = exc
+        worker = threading.Thread(target=ctx.run, args=(work,), daemon=True, name=f'agere-tier-{name}')
+        worker.start(); worker.join(limit)
+        if worker.is_alive():
+            stop.set()
+            raise QuestionNotUnderstood(f'time share exhausted: {name} used its {limit:.0f}s of the answer budget without a proposal')
+        if 'error' in box: raise box['error']
+        return box['value']
 
     def run(self):
         from .answer_budget import start as start_budget
@@ -202,7 +254,7 @@ class Cascade:
                 if self.claude_down and name in CLAUDE_TIERS:  # one outage per question: no repeated failing Claude calls
                     self.note(name, 'skipped', f'Claude unavailable ({self.claude_down}) earlier in this question', started); continue
                 try:
-                    found = getattr(self, 'tier_' + name)()
+                    found = self.call_tier(name, self.tier_seconds(name, budget))
                 except QuestionNotUnderstood as exc:
                     self.note(name, 'declined', str(exc), started)
                     cause = exc.__cause__ or exc.__context__  # a decline wrapping a provider outage still means Claude is down
@@ -266,6 +318,7 @@ class Cascade:
                          'seconds': round(time.perf_counter() - started, 3)})
 
     def reject(self, name, reasons):
+        if cancelled(): return None  # an abandoned tier records nothing
         self.log.append({'proposer': name, 'outcome': 'rejected', 'detail': '; '.join(reasons), 'seconds': None})
         return None
 
@@ -274,6 +327,7 @@ class Cascade:
         if reasons is None:
             reasons = next((e['detail'] for e in reversed(self.log) if e['proposer'] == name and e['outcome'] == 'rejected'), None)
             reasons = [reasons] if reasons else []
+        if cancelled(): return
         self.candidates.append({'name': name, 'pair': pair, 'reasons': list(reasons)})
 
     def system_one_fallback(self):
@@ -337,7 +391,8 @@ class Cascade:
                 'proposers': self.log, 'cascade_usage': self.usage(), 'system_one_routing': self.routing,
                 'stage_diagnostics': stage_diagnostics.attribute(self.log, answered_by=name),
                 'cascade_routing': {'system_one': self.routing, 'learned': self.learned_routing,
-                                    'tier_router': getattr(self, 'tier_routing', None)}}
+                                    'tier_router': getattr(self, 'tier_routing', None),
+                                    'free_first': getattr(self, 'free_first_receipt', None)}}
 
     # -- typed proposals ------------------------------------------------------------------------------------------------
     def typed(self, name, found):
@@ -501,7 +556,10 @@ class Cascade:
         return self.graph('evidence_review', review_tier(self.stack, self.question, self.population))
     def tier_atomic_system_one(self):
         from .atomic_questions import tier
-        return self.graph('atomic_system_one', tier(self.stack, self.question, self.population, ledger=self.ledger))
+        def early(graph):  # System One is paid per patient: a plan the literal check will reject is declined before any call
+            gaps = self.gaps(executable_text([n.get('parameters') for n in graph.get('nodes', [])]))
+            if gaps: raise QuestionNotUnderstood('literal pre-check before any System One call: the plan drops ' + '; '.join(gaps)[:300])
+        return self.graph('atomic_system_one', tier(self.stack, self.question, self.population, ledger=self.ledger, early_check=early))
     def tier_hcc_suspecting(self):
         from .hcc_suspecting import tier
         return self.graph('hcc_suspecting', tier(self.stack, self.question, self.population))

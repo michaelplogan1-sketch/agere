@@ -508,6 +508,8 @@ def run(stack, patient_ids, params, as_of, *, decide=None):
     tasks = normal
 
     def one(task):
+        from .answer_budget import cancelled
+        if cancelled(): raise RuntimeError('tier time share exhausted')  # the cascade moved on; stop spending
         pid, s, doc, evidence = task
         return ask(s['atom'], s['options'], evidence, as_of=as_of[:10], task_key=s['task_key'], providers=p['providers'],
                    allow_live=live, decide=decide)
@@ -663,7 +665,7 @@ def graph_of(question, plan_):
     return base(question, [population, node])
 
 
-def tier(stack, question, population=None, *, maximum_patients=None, decide=None, ledger=None):
+def tier(stack, question, population=None, *, maximum_patients=None, decide=None, ledger=None, early_check=None):
     """Ladder-rung contract: (graph, receipt) or None. System One is called here once (memoized), so the receipt carries
     the exact new calls and cost and stack.run_graph replays the same decisions free."""
     if not getattr(stack, 'allow_live', False) and os.environ.get('AGERE_ATOMIC_OFFLINE') != 'on': return None
@@ -677,6 +679,7 @@ def tier(stack, question, population=None, *, maximum_patients=None, decide=None
     graph = graph_of(question, p)
     from .analysis_graph import validate as validate_graph
     validate_graph(graph, as_of)
+    if early_check: early_check(graph)  # the cascade's literal check on the plan, before the first paid decision
     pre = execute(stack, p, decide=decide)['report']
     s1 = pre['system_one']
     if pre['cells'] and s1['errors'] == len(pre['cells']): return None  # System One unavailable for every decision: next proposer

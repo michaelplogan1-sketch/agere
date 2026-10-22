@@ -17,6 +17,20 @@ import time
 DEFAULT_SECONDS = 120.0
 VERSION = 'answer-time-budget/1'
 _current = contextvars.ContextVar('agere_answer_budget', default=None)
+_cancel = contextvars.ContextVar('agere_tier_cancel', default=None)      # threading.Event set when the running tier passed its time share
+_deadline = contextvars.ContextVar('agere_tier_deadline', default=None)  # time.monotonic() by which the running tier's share ends
+
+
+def cancelled():
+    """True inside a tier the cascade has abandoned for passing its time share (loops stop; nothing is recorded)."""
+    event = _cancel.get()
+    return bool(event is not None and event.is_set())
+
+
+def tier_remaining(default):
+    """Seconds left in the running tier's share (capped at default); default when no share applies."""
+    deadline = _deadline.get()
+    return default if deadline is None else max(1.0, min(default, deadline - time.monotonic()))
 
 
 def default_seconds():
