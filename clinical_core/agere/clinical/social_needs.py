@@ -270,8 +270,9 @@ def route(question, profile, as_of):
     if re.search(r'\b(?:drive|drives|driver|associated|predict\w*|why)\b', low): return None
     if re.search(r'\b(?:contact|call|prioriti[sz]\w*|capacity|benefit\w*|respond\w*|uplift|persuadable\w*)\b', low): return None  # worklists stay outreach, who-benefits stays uplift  # why / what drives stays explain / discover
     if re.search(r'\b(?:pmpm|cost|spend|admissions?|ed visits?|readmission\w*)\b', low) and not re.search(REFERRAL, low): return None
-    if re.search(r'\bscreen\w*\b|\bpositiv\w*\b|\bper (?:pcp|practice|payer|clinic)\b|\bpercent\b', low) and not re.search(REFERRAL + r'|\bcorroborat\w*\b|\bunmet\b', low):
-        return None  # screening counts / positivity breakdowns are literal lookups
+    if re.search(r'\bscreen\w*\b|\bpositiv\w*\b', low): return None  # screen-based cohorts (incl. "no referral" windows) compile exactly
+    if re.search(r'\bper (?:pcp|practice|payer|clinic)\b|\bpercent\b', low) and not re.search(REFERRAL + r'|\bcorroborat\w*\b|\bunmet\b', low):
+        return None  # positivity breakdowns are literal lookups
     params = {}
     from .sdoh_needs import NEEDS
     named = [n for n, rx in (('food', r'\bfood\b'), ('transport', r'\btransport\w*\b|\brides?\b'), ('housing', r'\bhous\w*\b|\bhomeless\w*\b'),

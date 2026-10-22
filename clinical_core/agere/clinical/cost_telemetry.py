@@ -28,7 +28,7 @@ ROOT = Path(__file__).resolve().parents[3]
 CURRENT = contextvars.ContextVar('agere_question_id', default=None)
 SYSTEM_ONE = ('jev', 'perplexity', 'perplexity_agent')
 LOCAL_LLM_TIERS = frozenset({'local_normalizer', 'qwen_rewrite_compiler', 'bottled_sql', 'qwen_typed_interpreter', 'local_free_sql'})
-SYSTEM_ONE_TIERS = frozenset({'atomic_system_one', 'typed_decider'})
+SYSTEM_ONE_TIERS = frozenset({'atomic_system_one', 'typed_decider', 'evidence_review', 'hcc_suspecting', 'terminology_mapping'})
 DDL = """CREATE TABLE IF NOT EXISTS answer_costs(question_id TEXT PRIMARY KEY, at REAL, question_sha TEXT, pricing_version TEXT,
   attempt_ids TEXT, api_calls INTEGER, input_tokens INTEGER, output_tokens INTEGER, cache_read_tokens INTEGER,
   cache_write_tokens INTEGER, api_usd REAL, usd_known INTEGER, answered_by TEXT, status TEXT, stages TEXT, payload TEXT)"""
