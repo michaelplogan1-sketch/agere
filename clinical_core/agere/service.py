@@ -868,6 +868,9 @@ def serve(run,port,annotations=None,evidence_queries=None,stack=None,allow_live_
                 if connected_stack is None:self.send_error(404);return
                 from .ask_view import page as ask_page
                 raw=ask_page().encode();mime='text/html; charset=utf-8'
+            elif parsed.path in ('/api/scorecard','/api/stack/quality'):  # Six Sigma defect rates (answer log) + public error-rate scorecard, JSON
+                from .clinical.quality_scorecard import scorecard as quality_scorecard
+                raw=json.dumps(quality_scorecard(connected_stack.path if connected_stack is not None else None),default=str).encode();mime='application/json'
             elif parsed.path=='/scorecard':  # error-rate scorecard from bench/results (read-only) + learning summary
                 from .scorecard_view import page as scorecard_page
                 from .clinical.learning import summary as learning_summary

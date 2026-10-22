@@ -141,6 +141,11 @@ PRODUCT['medication_state'] = {'population': 'optional', 'view': 'table',
                                'use': 'MEDICATION STATE per patient and drug class or GDMT pillar (RASi/ARNI, evidence-based beta-blocker, MRA, SGLT2i): '
                                       'filled and current, on the list but not filled (likely not taking), documented stopped or intolerant, or never '
                                       'recorded, with evidence dates. Which HF patients are missing a GDMT pillar, who is on / not on / stopped a class.'}
+PRODUCT['clinical_task'] = {'population': 'optional', 'view': 'table',
+                            'use': 'CLINICAL WORKFLOW CARE GAPS (CT-01..CT-10): HFrEF patients missing GDMT pillars and the documented '
+                                   'reasons, GDMT below target dose, diabetes with ASCVD/CKD not on SGLT2i/GLP-1 RA, AFib not '
+                                   'anticoagulated (CHA2DS2-VASc), CKD with albuminuria not on ACEi/ARB or SGLT2i, statin gaps, post-MI '
+                                   'beta-blocker / high-intensity statin gaps, MRA with high potassium, intolerance documented but still filled.'}
 PRODUCT['default_definition'] = {'population': 'optional', 'view': 'table',
                                  'use': 'NAMED STANDARD DEFINITIONS when a question states none: avoidable spend (AHRQ PQI admissions + NYU/Billings '
                                         'avoidable ED visits, in dollars), ambulatory-care-sensitive / preventable admissions, avoidable ED visits, '
@@ -170,7 +175,7 @@ NATIVE_SCALARS = {
     'profile': ('value',), 'risk_outcomes': ('value',), 'risk_adjustment': ('value',), 'program_effect': ('value',),
     'market': ('value',), 'monitor': ('value',), 'claims_review': ('value',), 'vbc': ('count', 'value'), 'calibration': ('value',),
     'line_of_therapy': ('value',), 'target_trial': ('value',), 'loop_closure': ('count', 'value'), 'explain': ('value',),
-    'medication_state': ('count',), 'default_definition': ('count', 'value'),
+    'medication_state': ('count',), 'default_definition': ('count', 'value'), 'clinical_task': ('count',),
 }
 
 

@@ -44,6 +44,8 @@ TYPED |= {'loop_closure', 'diagnostic_delay', 'risk_outcomes'}  # quality & safe
 OPTIONAL_POPULATION += ('loop_closure', 'diagnostic_delay', 'risk_outcomes')
 TYPED |= {'medication_state', 'default_definition'}  # clinical logic: medication_state.py, default_definitions.py
 OPTIONAL_POPULATION += ('medication_state', 'default_definition')
+TYPED |= {'clinical_task'}  # clinical workflow tasks CT-01..CT-10 (clinical_tasks.py)
+OPTIONAL_POPULATION += ('clinical_task',)
 TYPED |= {'atomic_questions'}  # atomic typed sub-questions via System One (atomic_questions.py); one population input
 
 
@@ -305,6 +307,13 @@ def parameter_schema(op, catalog):
                     'select_labels': array(string(), 'Option labels that select a patient'),
                     'maximum_patients': {'type': 'integer', 'minimum': 1, 'maximum': aq.HARD_MAX_PATIENTS},
                     'window': WINDOW_SCHEMA, 'sources': array(string(aq.SOURCES)), 'providers': array(string(aq.PROVIDERS))})
+    if op == 'clinical_task':
+        from . import clinical_tasks as ct
+        return obj({'task': string(list(ct.TASKS), '; '.join(f'{k} = {v[0]}' for k, v in ct.TASKS.items())),
+                    'step': string(['a', 'b', 'c', 'all'], 'Task step; empty = the final gap step'),
+                    'index_date': {'type': 'string', 'description': 'YYYY-MM-DD evaluation date; empty = snapshot as-of'},
+                    'grace_days': {'type': 'integer', 'minimum': 0, 'maximum': 400, 'description': f'On-drug grace (default {ct.GRACE_DAYS} = 90-day lookback)'},
+                    'output': string(ct.OUTPUTS), 'include_documented_reason': {'type': 'boolean', 'description': 'CT-03: keep rows with a documented titration barrier'}})
     if op == 'default_definition':
         from . import default_definitions as dd
         return obj({'definition': string(sorted(dd.DEFINITIONS), 'Named standard used when the question states no definition: '
