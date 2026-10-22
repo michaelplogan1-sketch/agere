@@ -60,6 +60,7 @@ class BudgetLedger:
                 self.db.commit()
                 if row[0]=='validated':
                     ledger_event(self,'cache_reused',key,provider=provider,model=model)
+                    from .clinical.cost_telemetry import tag;tag(self,key,reused=True)  # per-question attribution
                     return json.loads(row[1])
                 ledger_event(self,'retry_blocked',key,provider=provider,model=model,status=row[0])
                 raise ValueError('Prior request pending/failed; explicit new attempt required, no silent paid retry')
@@ -68,6 +69,7 @@ class BudgetLedger:
             self.db.execute('INSERT INTO calls VALUES (?,?,?,?,?,?,?,?)',(key,provider,model,reservation,'pending',None,None,0))
             self.db.commit()
             ledger_event(self,'reserved',key,provider=provider,model=model,status='pending')
+            from .clinical.cost_telemetry import tag;tag(self,key)  # per-question attribution (cost_telemetry)
             return None
         except Exception:self.db.rollback();raise
     def abandon_pending(self):

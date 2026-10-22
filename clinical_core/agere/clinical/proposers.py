@@ -285,7 +285,7 @@ class Cascade:
         return {**interpretation, 'interpreter': interpretation.get('interpreter') or name,
                 'proposer': {'name': name, 'cost': cost, 'calibration': calibration, 'kind': kind,
                              'check': CHECK_VERSION, 'cascade': VERSION},
-                'proposers': self.log, 'cascade_usage': self.usage()}
+                'proposers': self.log, 'cascade_usage': self.usage(), 'system_one_routing': self.routing}
 
     # -- typed proposals ------------------------------------------------------------------------------------------------
     def typed(self, name, found):

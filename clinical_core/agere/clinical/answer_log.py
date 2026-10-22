@@ -10,10 +10,12 @@ DDL = """CREATE TABLE IF NOT EXISTS answers(at REAL, question_sha TEXT, question
   api_calls INTEGER, api_usd REAL, seconds REAL, error TEXT)"""
 
 
-def record(path, question, result=None, error=None, seconds=0.0):
+def record(path, question, result=None, error=None, seconds=0.0, question_id=None):
     db = sqlite3.connect(Path(path) / 'answers.sqlite3')
     try:
         db.execute(DDL)
+        if 'question_id' not in {r[1] for r in db.execute('PRAGMA table_info(answers)')}:  # joins answer_costs (cost_telemetry)
+            db.execute('ALTER TABLE answers ADD COLUMN question_id TEXT')
         a = (result or {}).get('answer') or {}
         econ = (result or {}).get('planning_economics') or {}
         route = ((result or {}).get('planner_receipt') or {}).get('route') or ('error' if error else None)
@@ -24,11 +26,12 @@ def record(path, question, result=None, error=None, seconds=0.0):
         # Unknown failed-attempt usage is NULL, never an invented zero-cost run.
         if error and result is None:
             calls, cost = None, None
-        db.execute('INSERT INTO answers VALUES (?,?,?,?,?,?,?,?,?,?)',
+        db.execute('INSERT INTO answers(at,question_sha,question,route,status,answer_type,api_calls,api_usd,seconds,error,question_id) '
+                   'VALUES (?,?,?,?,?,?,?,?,?,?,?)',
                    (time.time(), hashlib.sha256(question.encode()).hexdigest(), question[:500], route,
                     a.get('status') or ('error' if error else None), a.get('answer_type'),
                     calls, cost, round(seconds, 3),
-                    (error or '')[:300]))
+                    (error or '')[:300], question_id))
         db.commit()
     finally:
         db.close()

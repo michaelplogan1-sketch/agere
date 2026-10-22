@@ -692,6 +692,8 @@ def handle_compose(stack, body, hosted_factory=None):
     question, conv = str(body.get('question', '')), False
     resolution, t0 = None, time.time()
     hosted_usd, hosted_calls = 0.0, 0
+    from . import cost_telemetry  # per-question id, attempt ids, tokens, pricing version, stage timings
+    probe = cost_telemetry.start(question)
     try:
         question, planning, conv = compose_shape(body)
         from .question_input import QuestionNotUnderstood
@@ -776,8 +778,9 @@ def handle_compose(stack, body, hosted_factory=None):
                     'known_api_estimate_usd': usage.get('known_api_estimate_usd', 0) + hosted_usd,
                 }),
             }
+        probe.mark('compose')
         answer_log.record(stack.path, logged, result=logged_failure,
-                          error=f'{type(exc).__name__}: {exc}', seconds=time.time() - t0)
+                          error=f'{type(exc).__name__}: {exc}', seconds=time.time() - t0, question_id=probe.question_id)
         learning.record_outcome(stack.path, logged, 'shared_planner' if getattr(stack, 'shared_request_planning', False) else failure(exc)['status'],
                                 failed['status'], str(exc),
                                 usage.get('new_paid_api_calls', 0)+hosted_calls,
@@ -792,7 +795,11 @@ def handle_compose(stack, body, hosted_factory=None):
                 exc.args = (f'Resolved question: "{resolution["standalone"]}". {exc}',)
         from .learning_hooks import after_failure
         after_failure(stack, logged, exc)
+        probe.mark('learning')
+        exc.cost_telemetry = probe.finish(logged_failure, error=f'{type(exc).__name__}: {exc}')
+        cost_telemetry.record(stack.path, exc.cost_telemetry)
         raise
+    probe.mark('compose')
     if hosted_calls or hosted_usd:
         econ = dict(result.get('planning_economics') or {})
         econ['known_api_estimate_usd'] = (econ.get('known_api_estimate_usd') or 0) + hosted_usd
@@ -835,7 +842,8 @@ def handle_compose(stack, body, hosted_factory=None):
             'follow_up': resolution['follow_up'], 'method': resolution['method'], 'edits': resolution['edits'],
             'reason': resolution['reason'], 'version': VERSION}}
     logged = resolution['standalone'] if resolution else question
-    answer_log.record(stack.path, logged, result=result, seconds=time.time() - t0)
+    probe.mark('capture')
+    answer_log.record(stack.path, logged, result=result, seconds=time.time() - t0, question_id=probe.question_id)
     pr = result.get('planner_receipt') or {}
     local = pr.get('local_compiler_declined') or {}
     economics = result.get('planning_economics') or {}
@@ -858,7 +866,10 @@ def handle_compose(stack, body, hosted_factory=None):
         learning.record_routing(stack.path, logged, local['operator_router'], executed=pr.get('route') == 'operator_router')
     from .learning_hooks import after_answer  # every answer feeds learning: saved pairs, question learning, training corpus
     result = {**result, 'learning': after_answer(stack, logged, result, body=body)}
-    return result
+    probe.mark('learning')
+    telemetry = probe.finish(result)
+    cost_telemetry.record(stack.path, telemetry)
+    return {**result, 'cost_telemetry': telemetry}
 
 
 def _default_hosted(stack):
