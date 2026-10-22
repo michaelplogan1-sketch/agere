@@ -2,7 +2,7 @@
 import json,mimetypes,time
 from functools import lru_cache
 from http.server import BaseHTTPRequestHandler,ThreadingHTTPServer
-from threading import RLock
+from contextlib import ExitStack
 from pathlib import Path
 from urllib.parse import urlsplit,parse_qs
 from .warehouse import lines
@@ -52,13 +52,14 @@ def serve(run,port,annotations=None,evidence_queries=None,stack=None,allow_live_
                 reader_metadata['transfer_diagnostic']={k:transfer[k] for k in ('examples','metrics','review_candidates','scope')}
     query_root=Path(evidence_queries).resolve() if evidence_queries is not None else None
     connected_stack=None
-    stack_lock=RLock()
+    request_locks=None
     if stack is not None:
         from .clinical.stack_runtime import Stack
         connected_stack=Stack(stack,allow_live=allow_live_stack)
-        # together.compose_together releases this lock while it only waits on the semantic analyst / reconcile threads,
-        # and re-acquires it before handle_compose's logging and learning writes.
-        connected_stack.answer_lock=stack_lock
+        # No service-wide lock: each request holds only the resources it writes (request_locks.resources); questions run
+        # concurrently. stack.answer_lock is the per-thread write lock interpretation windows release.
+        from .request_locks import install as install_request_locks
+        request_locks=install_request_locks(connected_stack)
         clinical_metadata=json.loads((root/'run.json').read_text())
         if connected_stack.retriever.meta['source_run']!=clinical_metadata.get('cache_key_digest'):
             raise ValueError('Connected stack belongs to another clinical snapshot')
@@ -148,7 +149,7 @@ def serve(run,port,annotations=None,evidence_queries=None,stack=None,allow_live_
                 self._workspace('POST',urlsplit(self.path).path,body);return
             if connected_stack is None:self.send_error(404,'Connected stack unavailable');return
             execution=None
-            stack_lock.acquire()
+            held=ExitStack()
             try:
                 if recovery and urlsplit(self.path).path not in recovery_posts:
                     raise PermissionError('This route is unavailable in installation mode '+recovery.get('mode','inspection_only')+'. Hosted inference and workspace-bound learning are disabled.')
@@ -160,6 +161,7 @@ def serve(run,port,annotations=None,evidence_queries=None,stack=None,allow_live_
                 if not isinstance(body,dict):raise ValueError('Object body required')
                 path=urlsplit(self.path).path
                 if local_operations:check_local_request(path,body)
+                held.enter_context(request_locks.for_route(path,body))  # per-resource locks (request_locks.py), never one global lock
                 from . import request_lineage
                 execution=None if recovery and path in READ_POSTS else request_lineage.begin(connected_stack.path,path,body)
                 if path=='/api/stack/appointment-graph/work':
@@ -759,7 +761,7 @@ def serve(run,port,annotations=None,evidence_queries=None,stack=None,allow_live_
                         if 'status' not in locals() or status!=200:execution.finish()
                 finally:
                     if execution:execution.close()
-                    stack_lock.release()
+                    held.close()
             self.send_response(status);self.send_header('Content-Type','application/json');self.send_header('Content-Length',str(len(raw)))
             self.send_header('Cache-Control','no-store');self.send_header('X-Content-Type-Options','nosniff');self.end_headers();self.wfile.write(raw)
         def do_GET(self):
@@ -779,7 +781,7 @@ def serve(run,port,annotations=None,evidence_queries=None,stack=None,allow_live_
                 except FileNotFoundError: self.send_error(404); return
             elif parsed.path=='/api/stack/meta':
                 if connected_stack is None:self.send_error(404);return
-                raw=json.dumps({**connected_stack.metadata(),'recovery':recovery,'runtime_source_validation':validation_cache.status(),'runtime_vocabulary_index':validation_index}).encode();mime='application/json'
+                raw=json.dumps({**connected_stack.metadata(),'recovery':recovery,'runtime_source_validation':validation_cache.status(),'runtime_vocabulary_index':validation_index,'request_locks':request_locks.status() if request_locks else None}).encode();mime='application/json'
             elif parsed.path in ('/stack-evaluation','/api/stack/workflow-evaluation'):
                 from .clinical.stack_runtime import ROOT
                 from .workflow_evaluation_view import page as evaluation_page
