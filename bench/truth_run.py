@@ -207,6 +207,7 @@ def main(argv=None):
     p.add_argument('--cache-policy', choices=run_manifest.CACHE_POLICIES, default='prompt_cache_only',
                    help='declared in the run manifest; replayed answers are always reported apart from paid cost')
     p.add_argument('--docs', nargs='*', type=Path, help='documentation files/dirs the contestant reads (pinned in the manifest)')
+    p.add_argument('--resume', type=Path, help='continue a run directory: answers already saved in partial.jsonl are kept, the rest are asked')
     args = p.parse_args(argv)
     if args.rescore:
         args.rescore = args.rescore.resolve()
@@ -229,12 +230,28 @@ def main(argv=None):
     if args.ids:
         ids = {i for a in args.ids for i in a.split(',')}
         questions = [q for q in questions if q['id'] in ids]
-    stamp = datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ')
-    name = '-'.join(x for x in [args.system, args.model.replace('claude-', '') if args.system != 'agere' else '',
-                                args.mode, args.label, stamp] if x)
-    out = ROOT / 'results/truth' / args.release / name
-    out.mkdir(parents=True, exist_ok=True)
-    run_manifest.write(out, manifest_for(args, ECOSYSTEM / 'releases' / args.release / 'questions/questions.jsonl'))
+    if args.resume:
+        out = args.resume.resolve()
+    else:
+        stamp = datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ')
+        name = '-'.join(x for x in [args.system, args.model.replace('claude-', '') if args.system != 'agere' else '',
+                                    args.mode, args.label, stamp] if x)
+        out = ROOT / 'results/truth' / args.release / name
+        out.mkdir(parents=True, exist_ok=True)
+        run_manifest.write(out, manifest_for(args, ECOSYSTEM / 'releases' / args.release / 'questions/questions.jsonl'))
+    # Every finished answer is appended to partial.jsonl as it lands, so a crash keeps the work; --resume skips those questions.
+    # A row whose failure was the service itself (unreachable, 5xx) is asked again, never kept as the system's answer.
+    partial = out / 'partial.jsonl'
+    transport = lambda r: bool(r.get('error')) and any(t in str(r['error']) for t in ('HTTP 5', 'Connection', 'URLError', 'timed out', 'Remote end closed'))
+    done = {}
+    if partial.exists():
+        for line in partial.read_text().splitlines():
+            if line.strip():
+                r = json.loads(line)
+                if not transport(r): done[r['id']] = r
+    order = [q['id'] for q in questions]
+    todo = [q for q in questions if q['id'] not in done]
+    print(f'{len(done)} saved, {len(todo)} to ask', flush=True)
     spent = [0.0, False]  # known paid spend, whether any row's cost was unknown
     lock = __import__('threading').Lock()
 
@@ -247,6 +264,8 @@ def main(argv=None):
                         'skipped: budget unverifiable (a cost was unknown)', 'answer': None, 'contract': contract(q, None)}
         r = run_one(q, args)
         with lock:
+            with open(partial, 'a') as f:
+                f.write(json.dumps(r, default=str) + '\n')
             kind = run_manifest.cost_class(r)
             if kind == 'paid':
                 spent[0] += r['estimated_cost_usd']
@@ -255,7 +274,8 @@ def main(argv=None):
         return r
 
     with ThreadPoolExecutor(args.jobs) as pool:
-        rows = list(pool.map(guarded, questions))
+        fresh = {r['id']: r for r in pool.map(guarded, todo)}
+    rows = [done.get(i) or fresh[i] for i in order]
     with open(out / 'rows.jsonl', 'w') as f:
         for r in rows:
             f.write(json.dumps(r, default=str) + '\n')
