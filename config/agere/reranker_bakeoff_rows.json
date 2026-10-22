@@ -1,0 +1,695 @@
+[
+ {
+  "type": "lab",
+  "concept": "hba1c",
+  "patient": "WHP-4FA3DB3CB25D",
+  "question": "What were the patient's hba1c results?",
+  "candidates": 24,
+  "relevant_in_candidates": 5,
+  "relevant_records": 1,
+  "metrics": {
+   "rrf": {
+    "ndcg8": 0.830419897363192,
+    "mrr": 1.0,
+    "p8": 0.5
+   },
+   "bge": {
+    "ndcg8": 0.6164336326286644,
+    "mrr": 1.0,
+    "p8": 0.375,
+    "seconds": 0.001
+   },
+   "qwen": {
+    "ndcg8": 0.0,
+    "mrr": 0.07142857142857142,
+    "p8": 0.0,
+    "seconds": 0.001
+   }
+  },
+  "recall8": {
+   "hybrid": 1.0,
+   "graph": 1.0,
+   "hybrid_plus_graph": 1.0
+  }
+ },
+ {
+  "type": "medication",
+  "concept": "lisinopril",
+  "patient": "WHP-4FA3DB3CB25D",
+  "question": "Is the patient taking lisinopril?",
+  "candidates": 24,
+  "relevant_in_candidates": 6,
+  "relevant_records": 1,
+  "metrics": {
+   "rrf": {
+    "ndcg8": 0.7402849195166222,
+    "mrr": 1.0,
+    "p8": 0.5
+   },
+   "bge": {
+    "ndcg8": 0.6238470455881189,
+    "mrr": 1.0,
+    "p8": 0.375,
+    "seconds": 0.001
+   },
+   "qwen": {
+    "ndcg8": 0.4935232796777482,
+    "mrr": 1.0,
+    "p8": 0.25,
+    "seconds": 0.001
+   }
+  },
+  "recall8": {
+   "hybrid": 1.0,
+   "graph": 1.0,
+   "hybrid_plus_graph": 1.0
+  }
+ },
+ {
+  "type": "condition",
+  "concept": "diabetes",
+  "patient": "WHP-4FA3DB3CB25D",
+  "question": "Does the patient have diabetes?",
+  "candidates": 24,
+  "relevant_in_candidates": 2,
+  "relevant_records": 1,
+  "metrics": {
+   "rrf": {
+    "ndcg8": 0.8175295903539445,
+    "mrr": 1.0,
+    "p8": 0.25
+   },
+   "bge": {
+    "ndcg8": 0.9197207891481876,
+    "mrr": 1.0,
+    "p8": 0.25,
+    "seconds": 1.63
+   },
+   "qwen": {
+    "ndcg8": 1.0,
+    "mrr": 1.0,
+    "p8": 0.25,
+    "seconds": 4.74
+   }
+  },
+  "recall8": {
+   "hybrid": 1.0,
+   "graph": 1.0,
+   "hybrid_plus_graph": 1.0
+  }
+ },
+ {
+  "type": "condition",
+  "concept": "hypertension",
+  "patient": "WHP-4FA3DB3CB25D",
+  "question": "Does the patient have hypertension?",
+  "candidates": 24,
+  "relevant_in_candidates": 5,
+  "relevant_records": 1,
+  "metrics": {
+   "rrf": {
+    "ndcg8": 0.5599069317497283,
+    "mrr": 0.3333333333333333,
+    "p8": 0.5
+   },
+   "bge": {
+    "ndcg8": 0.36506978196970796,
+    "mrr": 0.2,
+    "p8": 0.375,
+    "seconds": 1.714
+   },
+   "qwen": {
+    "ndcg8": 0.14606834984270645,
+    "mrr": 0.25,
+    "p8": 0.125,
+    "seconds": 4.977
+   }
+  },
+  "recall8": {
+   "hybrid": 1.0,
+   "graph": 1.0,
+   "hybrid_plus_graph": 1.0
+  }
+ },
+ {
+  "type": "social",
+  "concept": "transportation",
+  "patient": "WHP-4FA3DB3CB25D",
+  "question": "Does the patient report problems with transportation?",
+  "candidates": 24,
+  "relevant_in_candidates": 2,
+  "relevant_records": 1,
+  "metrics": {
+   "rrf": {
+    "ndcg8": 0.20438239758848611,
+    "mrr": 0.14285714285714285,
+    "p8": 0.125
+   },
+   "bge": {
+    "ndcg8": 0.5706417189553201,
+    "mrr": 0.3333333333333333,
+    "p8": 0.25,
+    "seconds": 1.553
+   },
+   "qwen": {
+    "ndcg8": 0.8065735963827293,
+    "mrr": 1.0,
+    "p8": 0.25,
+    "seconds": 4.71
+   }
+  },
+  "recall8": {
+   "hybrid": 1.0,
+   "graph": 0.0,
+   "hybrid_plus_graph": 1.0
+  }
+ },
+ {
+  "type": "social",
+  "concept": "food insecurity",
+  "patient": "WHP-4FA3DB3CB25D",
+  "question": "Does the patient report problems with food insecurity?",
+  "candidates": 24,
+  "relevant_in_candidates": 1,
+  "relevant_records": 1,
+  "metrics": {
+   "rrf": {
+    "ndcg8": 0.0,
+    "mrr": 0.09090909090909091,
+    "p8": 0.0
+   },
+   "bge": {
+    "ndcg8": 0.5,
+    "mrr": 0.3333333333333333,
+    "p8": 0.125,
+    "seconds": 1.606
+   },
+   "qwen": {
+    "ndcg8": 0.5,
+    "mrr": 0.3333333333333333,
+    "p8": 0.125,
+    "seconds": 4.733
+   }
+  },
+  "recall8": {
+   "hybrid": 1.0,
+   "graph": 0.0,
+   "hybrid_plus_graph": 1.0
+  }
+ },
+ {
+  "type": "exception",
+  "concept": "lisinopril",
+  "patient": "WHP-4FA3DB3CB25D",
+  "question": "Did the patient stop or not tolerate lisinopril?",
+  "candidates": 24,
+  "relevant_in_candidates": 7,
+  "relevant_records": 1,
+  "metrics": {
+   "rrf": {
+    "ndcg8": 0.7899917627398735,
+    "mrr": 1.0,
+    "p8": 0.625
+   },
+   "bge": {
+    "ndcg8": 0.7441790405874917,
+    "mrr": 1.0,
+    "p8": 0.625,
+    "seconds": 1.659
+   },
+   "qwen": {
+    "ndcg8": 0.4990283278655561,
+    "mrr": 1.0,
+    "p8": 0.375,
+    "seconds": 4.93
+   }
+  },
+  "recall8": {
+   "hybrid": 1.0,
+   "graph": 1.0,
+   "hybrid_plus_graph": 1.0
+  }
+ },
+ {
+  "type": "lab",
+  "concept": "egfr",
+  "patient": "SYN-6AA72541-097",
+  "question": "What were the patient's egfr results?",
+  "candidates": 24,
+  "relevant_in_candidates": 24,
+  "relevant_records": 75,
+  "metrics": {
+   "rrf": {
+    "ndcg8": 1.0,
+    "mrr": 1.0,
+    "p8": 1.0
+   },
+   "bge": {
+    "ndcg8": 1.0,
+    "mrr": 1.0,
+    "p8": 1.0,
+    "seconds": 4.171
+   },
+   "qwen": {
+    "ndcg8": 1.0,
+    "mrr": 1.0,
+    "p8": 1.0,
+    "seconds": 10.567
+   }
+  },
+  "recall8": {
+   "hybrid": 1.0,
+   "graph": 1.0,
+   "hybrid_plus_graph": 1.0
+  }
+ },
+ {
+  "type": "lab",
+  "concept": "potassium",
+  "patient": "SYN-6AA72541-097",
+  "question": "What were the patient's potassium results?",
+  "candidates": 24,
+  "relevant_in_candidates": 11,
+  "relevant_records": 53,
+  "metrics": {
+   "rrf": {
+    "ndcg8": 0.8009634987298764,
+    "mrr": 1.0,
+    "p8": 0.75
+   },
+   "bge": {
+    "ndcg8": 1.0,
+    "mrr": 1.0,
+    "p8": 1.0,
+    "seconds": 3.186
+   },
+   "qwen": {
+    "ndcg8": 1.0,
+    "mrr": 1.0,
+    "p8": 1.0,
+    "seconds": 11.159
+   }
+  },
+  "recall8": {
+   "hybrid": 1.0,
+   "graph": 1.0,
+   "hybrid_plus_graph": 1.0
+  }
+ },
+ {
+  "type": "lab",
+  "concept": "ldl",
+  "patient": "SYN-6AA72541-097",
+  "question": "What were the patient's ldl results?",
+  "candidates": 24,
+  "relevant_in_candidates": 21,
+  "relevant_records": 21,
+  "metrics": {
+   "rrf": {
+    "ndcg8": 0.9202054614375518,
+    "mrr": 1.0,
+    "p8": 0.875
+   },
+   "bge": {
+    "ndcg8": 0.9098999913476322,
+    "mrr": 1.0,
+    "p8": 0.875,
+    "seconds": 4.123
+   },
+   "qwen": {
+    "ndcg8": 1.0,
+    "mrr": 1.0,
+    "p8": 1.0,
+    "seconds": 9.769
+   }
+  },
+  "recall8": {
+   "hybrid": 0.875,
+   "graph": 1.0,
+   "hybrid_plus_graph": 0.875
+  }
+ },
+ {
+  "type": "medication",
+  "concept": "amlodipine",
+  "patient": "SYN-6AA72541-097",
+  "question": "Is the patient taking amlodipine?",
+  "candidates": 24,
+  "relevant_in_candidates": 17,
+  "relevant_records": 169,
+  "metrics": {
+   "rrf": {
+    "ndcg8": 0.6050030788735191,
+    "mrr": 1.0,
+    "p8": 0.625
+   },
+   "bge": {
+    "ndcg8": 0.7937341100537232,
+    "mrr": 1.0,
+    "p8": 0.75,
+    "seconds": 2.186
+   },
+   "qwen": {
+    "ndcg8": 0.8358912271816661,
+    "mrr": 1.0,
+    "p8": 0.75,
+    "seconds": 5.866
+   }
+  },
+  "recall8": {
+   "hybrid": 0.75,
+   "graph": 1.0,
+   "hybrid_plus_graph": 0.875
+  }
+ },
+ {
+  "type": "medication",
+  "concept": "metoprolol",
+  "patient": "SYN-6AA72541-097",
+  "question": "Is the patient taking metoprolol?",
+  "candidates": 24,
+  "relevant_in_candidates": 2,
+  "relevant_records": 2,
+  "metrics": {
+   "rrf": {
+    "ndcg8": 0.0,
+    "mrr": 0.08333333333333333,
+    "p8": 0.0
+   },
+   "bge": {
+    "ndcg8": 1.0,
+    "mrr": 1.0,
+    "p8": 0.25,
+    "seconds": 1.396
+   },
+   "qwen": {
+    "ndcg8": 0.6131471927654584,
+    "mrr": 1.0,
+    "p8": 0.125,
+    "seconds": 4.751
+   }
+  },
+  "recall8": {
+   "hybrid": 1.0,
+   "graph": 1.0,
+   "hybrid_plus_graph": 1.0
+  }
+ },
+ {
+  "type": "condition",
+  "concept": "chronic kidney disease",
+  "patient": "SYN-6AA72541-097",
+  "question": "Does the patient have chronic kidney disease?",
+  "candidates": 24,
+  "relevant_in_candidates": 7,
+  "relevant_records": 22,
+  "metrics": {
+   "rrf": {
+    "ndcg8": 0.6053650088957859,
+    "mrr": 1.0,
+    "p8": 0.5
+   },
+   "bge": {
+    "ndcg8": 0.8308928690816113,
+    "mrr": 1.0,
+    "p8": 0.75,
+    "seconds": 1.671
+   },
+   "qwen": {
+    "ndcg8": 0.8104616303452686,
+    "mrr": 1.0,
+    "p8": 0.625,
+    "seconds": 5.438
+   }
+  },
+  "recall8": {
+   "hybrid": 0.75,
+   "graph": 0.0,
+   "hybrid_plus_graph": 0.375
+  }
+ },
+ {
+  "type": "social",
+  "concept": "medication cost",
+  "patient": "SYN-6AA72541-097",
+  "question": "Does the patient report problems with medication cost?",
+  "candidates": 24,
+  "relevant_in_candidates": 2,
+  "relevant_records": 2,
+  "metrics": {
+   "rrf": {
+    "ndcg8": 0.48247555939075504,
+    "mrr": 0.25,
+    "p8": 0.25
+   },
+   "bge": {
+    "ndcg8": 0.0,
+    "mrr": 0.07142857142857142,
+    "p8": 0.0,
+    "seconds": 1.083
+   },
+   "qwen": {
+    "ndcg8": 1.0,
+    "mrr": 1.0,
+    "p8": 0.25,
+    "seconds": 4.478
+   }
+  },
+  "recall8": {
+   "hybrid": 0.0,
+   "graph": 0.0,
+   "hybrid_plus_graph": 0.0
+  }
+ },
+ {
+  "type": "medication",
+  "concept": "furosemide",
+  "patient": "SYN-A83BD76F-CBD",
+  "question": "Is the patient taking furosemide?",
+  "candidates": 24,
+  "relevant_in_candidates": 18,
+  "relevant_records": 92,
+  "metrics": {
+   "rrf": {
+    "ndcg8": 0.8404109228751035,
+    "mrr": 1.0,
+    "p8": 0.875
+   },
+   "bge": {
+    "ndcg8": 0.8735286486161714,
+    "mrr": 1.0,
+    "p8": 0.875,
+    "seconds": 2.802
+   },
+   "qwen": {
+    "ndcg8": 0.9098999913476322,
+    "mrr": 1.0,
+    "p8": 0.875,
+    "seconds": 6.947
+   }
+  },
+  "recall8": {
+   "hybrid": 0.875,
+   "graph": 1.0,
+   "hybrid_plus_graph": 0.875
+  }
+ },
+ {
+  "type": "condition",
+  "concept": "heart failure",
+  "patient": "SYN-A83BD76F-CBD",
+  "question": "Does the patient have heart failure?",
+  "candidates": 24,
+  "relevant_in_candidates": 17,
+  "relevant_records": 51,
+  "metrics": {
+   "rrf": {
+    "ndcg8": 0.4125317798925535,
+    "mrr": 1.0,
+    "p8": 0.25
+   },
+   "bge": {
+    "ndcg8": 1.0,
+    "mrr": 1.0,
+    "p8": 1.0,
+    "seconds": 2.306
+   },
+   "qwen": {
+    "ndcg8": 1.0,
+    "mrr": 1.0,
+    "p8": 1.0,
+    "seconds": 6.477
+   }
+  },
+  "recall8": {
+   "hybrid": 1.0,
+   "graph": 1.0,
+   "hybrid_plus_graph": 1.0
+  }
+ },
+ {
+  "type": "medication",
+  "concept": "atorvastatin",
+  "patient": "WHP-84C8367AABB3",
+  "question": "Is the patient taking atorvastatin?",
+  "candidates": 24,
+  "relevant_in_candidates": 22,
+  "relevant_records": 20,
+  "metrics": {
+   "rrf": {
+    "ndcg8": 1.0,
+    "mrr": 1.0,
+    "p8": 1.0
+   },
+   "bge": {
+    "ndcg8": 1.0,
+    "mrr": 1.0,
+    "p8": 1.0,
+    "seconds": 3.95
+   },
+   "qwen": {
+    "ndcg8": 1.0,
+    "mrr": 1.0,
+    "p8": 1.0,
+    "seconds": 11.39
+   }
+  },
+  "recall8": {
+   "hybrid": 1.0,
+   "graph": 1.0,
+   "hybrid_plus_graph": 1.0
+  }
+ },
+ {
+  "type": "medication",
+  "concept": "metformin",
+  "patient": "WHP-D867EF1BE546",
+  "question": "Is the patient taking metformin?",
+  "candidates": 24,
+  "relevant_in_candidates": 16,
+  "relevant_records": 8,
+  "metrics": {
+   "rrf": {
+    "ndcg8": 1.0,
+    "mrr": 1.0,
+    "p8": 1.0
+   },
+   "bge": {
+    "ndcg8": 1.0,
+    "mrr": 1.0,
+    "p8": 1.0,
+    "seconds": 3.859
+   },
+   "qwen": {
+    "ndcg8": 0.8735286486161714,
+    "mrr": 1.0,
+    "p8": 0.875,
+    "seconds": 5.57
+   }
+  },
+  "recall8": {
+   "hybrid": 1.0,
+   "graph": 1.0,
+   "hybrid_plus_graph": 1.0
+  }
+ },
+ {
+  "type": "exception",
+  "concept": "atorvastatin",
+  "patient": "SYN-17CC983D-7CD",
+  "question": "Did the patient stop or not tolerate atorvastatin?",
+  "candidates": 24,
+  "relevant_in_candidates": 2,
+  "relevant_records": 1,
+  "metrics": {
+   "rrf": {
+    "ndcg8": 0.38685280723454163,
+    "mrr": 0.5,
+    "p8": 0.125
+   },
+   "bge": {
+    "ndcg8": 0.8175295903539445,
+    "mrr": 1.0,
+    "p8": 0.25,
+    "seconds": 1.575
+   },
+   "qwen": {
+    "ndcg8": 0.5912352048230277,
+    "mrr": 0.5,
+    "p8": 0.25,
+    "seconds": 6.521
+   }
+  },
+  "recall8": {
+   "hybrid": 1.0,
+   "graph": 1.0,
+   "hybrid_plus_graph": 1.0
+  }
+ },
+ {
+  "type": "exception",
+  "concept": "metoprolol",
+  "patient": "SYN-38B950E6-569",
+  "question": "Did the patient stop or not tolerate metoprolol?",
+  "candidates": 24,
+  "relevant_in_candidates": 6,
+  "relevant_records": 3,
+  "metrics": {
+   "rrf": {
+    "ndcg8": 0.7526136409516658,
+    "mrr": 1.0,
+    "p8": 0.5
+   },
+   "bge": {
+    "ndcg8": 0.8829374068620365,
+    "mrr": 1.0,
+    "p8": 0.625,
+    "seconds": 2.946
+   },
+   "qwen": {
+    "ndcg8": 0.6973975865011866,
+    "mrr": 0.5,
+    "p8": 0.625,
+    "seconds": 6.319
+   }
+  },
+  "recall8": {
+   "hybrid": 1.0,
+   "graph": 1.0,
+   "hybrid_plus_graph": 1.0
+  }
+ },
+ {
+  "type": "exception",
+  "concept": "metformin",
+  "patient": "SYN-7EAAFA9C-521",
+  "question": "Did the patient stop or not tolerate metformin?",
+  "candidates": 24,
+  "relevant_in_candidates": 5,
+  "relevant_records": 3,
+  "metrics": {
+   "rrf": {
+    "ndcg8": 0.30078518014914984,
+    "mrr": 0.3333333333333333,
+    "p8": 0.25
+   },
+   "bge": {
+    "ndcg8": 0.6355827475831716,
+    "mrr": 0.5,
+    "p8": 0.5,
+    "seconds": 3.431
+   },
+   "qwen": {
+    "ndcg8": 1.0,
+    "mrr": 1.0,
+    "p8": 0.625,
+    "seconds": 6.282
+   }
+  },
+  "recall8": {
+   "hybrid": 0.6666666666666666,
+   "graph": 0.0,
+   "hybrid_plus_graph": 0.6666666666666666
+  }
+ }
+]

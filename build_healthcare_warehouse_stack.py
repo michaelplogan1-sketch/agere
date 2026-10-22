@@ -50,6 +50,9 @@ def main():
             r=build(out/'warehouse.sqlite3',out/'clinical',out/'stack',reuse_model_cache=a.reuse_model_cache)
             progress({'stage':'retrieval_completed','patients':r['patients'],'records':r['visible_records'],
                       'passages':r['passages'],'dense_texts':r['dense_passage_texts']})
+        from clinical_core.agere.clinical import med_graph_rag
+        progress({'stage':'concept_graph'});g=med_graph_rag.build(out/'stack')  # fallback retriever the measured reranker/graph policy reads
+        progress({'stage':'concept_graph_completed','nodes':g['nodes'],'edges':g['edges'],'links':g['links']})
     if a.stage in ('readers','all'):
         from clinical_core.agere.clinical.reader_warehouse import annotate
         from clinical_core.agere.clinical.evidence_queries import build_index

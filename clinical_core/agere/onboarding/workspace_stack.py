@@ -227,11 +227,16 @@ def prepare(ws, *, force=False, allow_copy=True):
                  'persons_with_duplicates': len(set(record_linkage.decide(scored)[0].values())), 'file': record_linkage.CACHE}
     except Exception as exc:  # noqa: BLE001 - annotates, never blocks the build
         links = {'status': 'deferred', 'reason': f'{type(exc).__name__}: {exc}'[:300]}
+    from ..clinical import med_graph_rag
+    try:  # concept graph: the fallback retriever the measured reranker/graph policy reads (warehouse_retrieval.Retriever)
+        graph = {'status': 'built', **{k: v for k, v in med_graph_rag.build(out).items() if k in ('nodes', 'edges', 'links')}, 'file': med_graph_rag.FILE}
+    except Exception as exc:  # noqa: BLE001 - annotates, never blocks the build
+        graph = {'status': 'deferred', 'reason': f'{type(exc).__name__}: {exc}'[:300]}
     from ..clinical.analysis_graph import OPERATIONS
     (out / 'operators.json').write_text(json.dumps(sorted(OPERATIONS)))
     (out / 'provider-receipts').mkdir(exist_ok=True)
     manifest = {'schema': SCHEMA, 'supported': True, 'built_at': _now(), 'path': str(out), 'methods': methods,
-                'database_concurrency': concurrency, 'patients': len(patients), 'passage_index': passages, 'person_links': links,
+                'database_concurrency': concurrency, 'patients': len(patients), 'passage_index': passages, 'person_links': links, 'concept_graph': graph,
                 'sources': {n: _fingerprint(p) for n, p in src.items() if p.is_file()},
                 'absent': {'narrative evidence annotations': 'evidence nodes decline',
                            'forecast / longitudinal / clinical-state links': 'nodes needing them decline'}}

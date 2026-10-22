@@ -14,7 +14,8 @@ cap; no guarantee that exceptions, negative evidence and contradictory accounts 
                  one negated/stopped): both are kept so the disagreement is visible
 
 Selection reserves up to RESERVE_SHARE of the result slots for protected rows (best reranker score first); the remaining
-slots are filled by relevance as before. Protected rows are labelled with their channel and cue. Kinds are heuristic
+slots are filled by relevance as before. Rows are labelled with their channel and cue; protected=True marks the rows a
+reserved slot kept (the guarantee), not rows relevance would have kept anyway. Kinds are heuristic
 cues for inspection, not clinical interpretation; an absent cue proves nothing. No model calls; synthetic data only.
 """
 from collections import defaultdict
@@ -98,7 +99,10 @@ def mark(question, candidates):
         for t, rows in per_term.items():
             pols = {p for p, _ in rows}
             if pols == {'negated', 'affirmed'}:
-                for p, row in rows:
+                # keep the disagreement visible without flooding the selection: the best affirmed account (fused order) against up to two negated ones
+                affirmed = [r for p, r in rows if p == 'affirmed'][:1]
+                negated = [r for p, r in rows if p == 'negated'][:2]
+                for p, row in [('affirmed', r) for r in affirmed] + [('negated', r) for r in negated]:
                     ch = row.get('protected_channel') or {}
                     if ch.get('channel') != 'contradiction':
                         row['protected_channel'] = {'channel': 'contradiction', 'kinds': kinds(row.get('text')) or ['affirmed'],
@@ -127,10 +131,11 @@ def select(ranked, limit, patient, accept):
     from collections import Counter
     seen, by_patient, chosen = set(), Counter(), []
     slots = reserve(limit)
+    reserved = set()
     for row in ranked:
         if len(chosen) >= slots: break
         if row.get('protected_channel') and accept(row, seen, by_patient):
-            chosen.append(row)
+            chosen.append(row); reserved.add(id(row))
     for row in ranked:
         if len(chosen) >= limit: break
         if row in chosen: continue
@@ -138,5 +143,5 @@ def select(ranked, limit, patient, accept):
     order = {id(r): i for i, r in enumerate(ranked)}
     chosen.sort(key=lambda r: order[id(r)])
     for r in chosen:
-        if r.get('protected_channel'): r['protected'] = True
+        r['protected'] = id(r) in reserved       # protected = held by a reserved slot, i.e. kept by the guarantee, not by relevance
     return chosen

@@ -31,6 +31,13 @@ class ProtectedChannelTests(unittest.TestCase):
         self.assertEqual(rows[1]['protected_channel']['channel'], 'contradiction')
         self.assertNotIn('protected_channel', rows[2])
 
+    def test_contradiction_channel_marks_best_affirmed_and_at_most_two_negated(self):
+        rows = [row(i, f'Continues metformin report {i}') for i in range(1, 6)] + [row(i, f'Metformin stopped report {i}') for i in range(6, 10)]
+        PC.mark('Is the patient on metformin?', rows)
+        by = {r['id']: r['protected_channel']['polarity'] for r in rows if (r.get('protected_channel') or {}).get('channel') == 'contradiction'}
+        self.assertEqual(sorted(by.values()), ['affirmed', 'negated', 'negated'])
+        self.assertEqual(by['1'], 'affirmed')
+
     def test_select_reserves_slots_for_protected_rows(self):
         ranked = [row(i, f'metformin note {i}') for i in range(1, 9)]
         ranked[7]['protected_channel'] = {'channel': 'exception', 'kinds': ['intolerance'], 'terms': ['metformin']}
